@@ -1,0 +1,43 @@
+{
+	"ClassName": "Camera",
+	"Properties": {
+		"CFrame": [0, 0, -114.75, -1, 0, 0, 0, 1, 0, 0, 0, -1],
+		"FieldOfView": 1
+	},
+	"Children": [
+		{
+			"Name": "Part",
+			"ClassName": "Part",
+			"Properties": {
+				"Anchored": true,
+				"CanCollide": false,
+				"CastShadow": false,
+				"Size": [2, 2, 0.05],
+				"Transparency": 1,
+				"Material": "Metal"
+			},
+			"Children": [
+				{
+					"ClassName": "PointLight",
+					"Properties": {
+						"Brightness": 3,
+						"Range": 11
+					}
+				},
+				{
+					"ClassName": "Decal",
+					"Properties": {
+						"Texture": "rbxassetid://10650688092"
+					}
+				},
+				{
+					"ClassName": "Decal",
+					"Properties": {
+						"Face": "Back",
+						"Texture": "rbxassetid://10650688092"
+					}
+				}
+			]
+		}
+	]
+}

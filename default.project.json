@@ -1,0 +1,24 @@
+{
+	"name": "kohls-admin",
+	"tree": {
+		"$className": "DataModel",
+
+		"ServerScriptService": {
+			"Kohl's Admin": {
+				"$path": "Loader"
+			}
+		},
+
+		"Workspace": {
+			"Baseplate": {
+				"$className": "Part",
+				"$properties": {
+					"Anchored": true,
+					"Locked": true,
+					"Position": [0, -10, 0],
+					"Size": [512, 20, 512]
+				}
+			}
+		}
+	}
+}
