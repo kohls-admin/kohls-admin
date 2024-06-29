@@ -1,5 +1,5 @@
 -- eventually make it so u can ctrl+drag window to minimize on screen edge
-
+local GuiService = game:GetService("GuiService")
 local UserInputService = game:getService("UserInputService")
 local Tween = game:GetService("TweenService")
 local Class = require(script.Parent)
@@ -198,6 +198,9 @@ return Class:Create({
 				local endAbsolute
 
 				local function update(input)
+					if self.Resizing then
+						return
+					end
 					local delta = input.Position - dragStart
 					window.Position = startPos
 						+ UDim2.new(
@@ -210,8 +213,10 @@ return Class:Create({
 
 				con[#con + 1] = window.Bar.InputBegan:Connect(function(input)
 					if
-						input.UserInputType == Enum.UserInputType.MouseButton1
-						or input.UserInputType == Enum.UserInputType.Touch
+						(
+							input.UserInputType == Enum.UserInputType.MouseButton1
+							or input.UserInputType == Enum.UserInputType.Touch
+						) and not self.Resizing
 					then
 						dragging = true
 						dragStart = input.Position
@@ -219,7 +224,9 @@ return Class:Create({
 						startAbsolute = window.AbsolutePosition
 						endAbsolute = Vector2.new(
 							workspace.CurrentCamera.ViewportSize.X - (startAbsolute.X + window.AbsoluteSize.X),
-							workspace.CurrentCamera.ViewportSize.Y - 36 - (startAbsolute.Y + window.AbsoluteSize.Y)
+							workspace.CurrentCamera.ViewportSize.Y
+								- GuiService.TopbarInset.Height
+								- (startAbsolute.Y + window.AbsoluteSize.Y)
 						)
 
 						input.Changed:Connect(function()
@@ -309,6 +316,10 @@ return Class:Create({
 			Class.CheckType(value, "Vector2")
 			self:rawset("MaxSize", value)
 		end,
+		Resizing = function(self, value)
+			Class.CheckType(value, "boolean")
+			self:rawset("Resizing", value)
+		end,
 		Resizable = function(self, value)
 			Class.CheckType(value, "boolean")
 			self:rawset("Resizable", value)
@@ -336,7 +347,8 @@ return Class:Create({
 					if hovering then
 						local pos = window.AbsolutePosition
 						local mouse = UserInputService:GetMouseLocation()
-						resizeIcon.Position = UDim2.new(0, mouse.X - pos.x, 0, mouse.Y - 36 - pos.y)
+						resizeIcon.Position =
+							UDim2.new(0, mouse.X - pos.x, 0, mouse.Y - GuiService.TopbarInset.Height - pos.y)
 					end
 				end)
 
@@ -364,6 +376,7 @@ return Class:Create({
 							or input.UserInputType == Enum.UserInputType.Touch
 						) and not self.Minimized
 					then
+						self.Resizing = true
 						dragging = true
 						dragStart = input.Position
 						startPos = window.Position
@@ -373,6 +386,7 @@ return Class:Create({
 						input.Changed:Connect(function()
 							if input.UserInputState == Enum.UserInputState.End then
 								dragging = false
+								self.Resizing = false
 							end
 						end)
 					end
@@ -474,6 +488,6 @@ return Class:Create({
 		self.Minimize = true
 		self.Resizable = true
 		self.MaxSize = Vector2.new(9e9, 9e9)
-		self.MinSize = Vector2.new(64, 64)
+		self.MinSize = Vector2.new(128, 128)
 	end,
 })
