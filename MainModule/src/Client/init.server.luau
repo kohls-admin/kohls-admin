@@ -1,6 +1,7 @@
 -- NOTE: CLIENT ENTRY POINT
 -- NOT A SERVER SCRIPT, HAS CLIENT RUNCONTEXT
 local _K = require(script.Parent)
+local Scroller = require(script.Scroller)
 
 local LocalPlayer = _K.Services.Players.LocalPlayer
 
@@ -35,6 +36,49 @@ _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEve
 		end
 	end
 end)
+
+local testList = {}
+for i = 1, 1e5 do
+	testList[i] = i .. ": this is a test log, let's see just how terrible we can make this stress test."
+end
+
+local testFrame = Instance.new("Frame", Interface)
+testFrame.BackgroundTransparency = 0.3
+testFrame.BackgroundColor3 = Color3.new()
+testFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+testFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+testFrame.Size = UDim2.new(0.5, 0, 0.5, 0)
+testFrame.SizeConstraint = Enum.SizeConstraint.RelativeYY
+
+local testInput = Instance.new("TextBox", testFrame)
+testInput.Text = ""
+testInput.Size = UDim2.new(1, 0, 0, 32)
+testInput.Font = Enum.Font.RobotoMono
+testInput.TextSize = 24
+
+local scrollerTest = Scroller.new(testList)
+
+local function filterTest(list)
+	local filter = testInput.Text:lower()
+	local new = {}
+	for i, v in list do
+		if v:lower():find(filter, 1, true) then
+			table.insert(new, v)
+		end
+	end
+	return new
+end
+
+scrollerTest:filter(filterTest)
+
+testInput:GetPropertyChangedSignal("Text"):Connect(function()
+	scrollerTest:refreshList()
+end)
+
+scrollerTest:setParent(testFrame)
+
+scrollerTest._frame.Size = UDim2.new(1, 0, 1, -32)
+scrollerTest._frame.Position = UDim2.new(0, 0, 0, 32)
 
 Interface.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
