@@ -4,7 +4,6 @@ local TextService = game:GetService("TextService")
 
 local Clack = require(script.Clack)
 local CompletionData = require(script.CompletionData)
-local Scroller = require(script.Scroller)
 
 local ChatInputBarConfiguration = TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
 
