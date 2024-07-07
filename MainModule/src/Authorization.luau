@@ -190,7 +190,7 @@ function module.requestCommand(context, to, ...)
 			pcall(context.definition.run, context, ...)
 		else
 			-- replace first player argument with to
-			local args = module._K.Util.shallowCopy(context.args)
+			local args = table.clone(context.args)
 			for index, arg in args do
 				local valueType = typeof(arg)
 				if valueType == "table" then

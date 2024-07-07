@@ -51,11 +51,11 @@ function module.trim(s: string): string
 end
 
 function module.escapeRichText(s: string): string
-	s = string.gsub( s, "&",  "&amp;" ) -- first because substitutes contain it
-	s = string.gsub( s, "<",  "&lt;" )
-	s = string.gsub( s, ">",  "&gt;" )
-	s = string.gsub( s, "\"", "&quot;" )
-	s = string.gsub( s, "'",  "&apos;" )
+	s = string.gsub(s, "&", "&amp;") -- first because substitutes contain it
+	s = string.gsub(s, "<", "&lt;")
+	s = string.gsub(s, ">", "&gt;")
+	s = string.gsub(s, '"', "&quot;")
+	s = string.gsub(s, "'", "&apos;")
 	return s
 end
 
@@ -67,16 +67,7 @@ function module.getNames(objects: any): { string }
 	return names, objects
 end
 
---[=[
-	Returns a function that is a fuzzy finder for the specified set or container.
-
-	Can pass an array of strings, array of instances, array of EnumItems,
-	array of dictionaries with a Name key or an instance (in which case its children will be used).
-
-	Exact matches will be inserted in the front of the resulting array.
-]=]
-
-function module.querySuggestions(text: string, names: {string}, instances: {any})
+function module.querySuggestions(text: string, names: { string }, instances: { any })
 	local results = {}
 	local textLower = string.lower(text)
 
@@ -85,12 +76,12 @@ function module.querySuggestions(text: string, names: {string}, instances: {any}
 		-- Continue on checking for non-exact matches...
 		-- exact match goes to the start
 		if name == textLower then
-			table.insert(results, 1, {name, value})
+			table.insert(results, 1, { name, value })
 		else
 			local found = string.find(name, textLower, 1, true)
 			-- start matches are normal priority
 			if found == 1 then
-				table.insert(results, {name, value})
+				table.insert(results, { name, value })
 			end
 		end
 	end
@@ -98,7 +89,7 @@ function module.querySuggestions(text: string, names: {string}, instances: {any}
 	return results
 end
 
-function module.newSuggestions(setOrContainer: any): ({string}, {any})
+function module.newSuggestions(setOrContainer: any): ({ string }, { any })
 	local names
 	local instances = {}
 	local setType = typeof(setOrContainer)
@@ -112,9 +103,13 @@ function module.newSuggestions(setOrContainer: any): ({string}, {any})
 		names, instances = module.getNames(setOrContainer:GetChildren())
 	elseif setType == "table" then
 		local setItemType = typeof(setOrContainer[1])
-		if setItemType == "Instance"
+		if
+			setItemType == "Instance"
 			or setItemType == "EnumItem"
-			or (setItemType == "table" and (type(setOrContainer[1].Name) == "string" or type(setOrContainer[1].name) == "string"))
+			or (
+				setItemType == "table"
+				and (type(setOrContainer[1].Name) == "string" or type(setOrContainer[1].name) == "string")
+			)
 		then
 			names, instances = module.getNames(setOrContainer)
 		elseif setItemType == "string" then

@@ -44,7 +44,7 @@ else
 end
 
 -- register internal modules to _K
-for _, module in { "Authorization", "Registry", "Process" } do
+for _, module in { "Authorization", "Registry", "Process", "Flux" } do
 	_K[module] = require(script[module])
 	_K[module]._K = _K
 end
