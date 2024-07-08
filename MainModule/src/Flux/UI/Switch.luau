@@ -17,17 +17,24 @@ function Switch.new(definition)
 		end)
 	)
 
+	local cappedPadding = UI.compute(function(use)
+		return UDim.new(0, math.min(use(UI.Theme.PaddingHalf).Offset, 4))
+	end)
+
 	new._instance = UI.new "TextButton" {
 		Name = "Switch",
 		Active = true,
 		AutoButtonColor = false,
+		AnchorPoint = Vector2.new(1, 0),
 		BackgroundColor3 = UI.tween(
 			UI.Theme.NormalTween,
 			UI.compute(function(use)
-				return if use(new.Value) then use(UI.Theme.Secondary) else use(UI.Theme.Border)
+				local border, secondary = use(UI.Theme.Border), use(UI.Theme.Secondary)
+				return if use(new.Value) then secondary else border
 			end)
 		),
 		BackgroundTransparency = backgroundTransparency,
+		Position = UDim2.new(1, 0, 0, 0),
 		Text = "",
 		TextTransparency = 1,
 		Size = UDim2.new(0, 48, 0, 24),
@@ -38,10 +45,10 @@ function Switch.new(definition)
 			},
 
 			UIPadding = UI.new "UIPadding" {
-				PaddingLeft = UDim.new(0, 4),
-				PaddingRight = UDim.new(0, 4),
-				PaddingTop = UDim.new(0, 4),
-				PaddingBottom = UDim.new(0, 4),
+				PaddingLeft = cappedPadding,
+				PaddingRight = cappedPadding,
+				PaddingTop = cappedPadding,
+				PaddingBottom = cappedPadding,
 			},
 
 			Circle = UI.new "Frame" {

@@ -70,7 +70,7 @@ function Slider.new(definition)
 		Active = true,
 		BackgroundTransparency = 1,
 		Size = UI.compute(function(use)
-			return if use(new.Vertical) then UDim2.new(0, 32, 1, 0) else UDim2.new(1, 0, 0, 32)
+			return if use(new.Vertical) then UDim2.new(0, 24, 1, 0) else UDim2.new(1, 0, 0, 24)
 		end),
 
 		[UI.Children] = {

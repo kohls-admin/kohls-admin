@@ -82,6 +82,7 @@ function Select.new(definition)
 				CornerRadius = UI.Theme.CornerRadius,
 			},
 			UIStroke = UI.new "UIStroke" {
+				Enabled = UI.Theme.StrokeEnabled,
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 				Transparency = UI.Theme.Transparency,
 				Color = UI.Theme.Border,

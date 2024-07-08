@@ -13,7 +13,7 @@ function ListItem.new(definition)
 	new._instance = UI.new "Frame" {
 		Name = "ListItem",
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 32),
+		Size = UDim2.new(1, 0, 0, 24),
 
 		UI.new "TextLabel" {
 			Text = new.Text,

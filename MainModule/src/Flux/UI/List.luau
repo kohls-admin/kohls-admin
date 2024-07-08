@@ -9,12 +9,12 @@ function List.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Collapsible = false,
 		Label = "NEW LIST New List",
-		Padding = UDim.new(0, 8),
+		-- Padding = UDim.new(0, 8),
 	}, definition)
 
 	local listLayout = UI.new "UIListLayout" {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = new.Padding,
+		Padding = UI.Theme.Padding,
 		HorizontalAlignment = Enum.HorizontalAlignment.Left,
 		VerticalAlignment = Enum.VerticalAlignment.Top,
 	}

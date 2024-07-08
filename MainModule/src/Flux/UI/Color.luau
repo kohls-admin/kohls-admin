@@ -16,9 +16,9 @@ function Color.new(definition)
 	new._instance = UI.new "TextButton" {
 		Text = "",
 		BackgroundColor3 = new.Value,
-		AnchorPoint = Vector2.new(1, 0),
-		Size = UDim2.new(0, 32, 0, 32),
-		Position = UDim2.new(1, 0, 0, 0),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Size = UDim2.new(0, 24, 0, 24),
+		Position = UDim2.new(1, 0, 0.5, 0),
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
@@ -49,8 +49,8 @@ function Color.new(definition)
 		Position = UI.compute(function(use)
 			local pos = use(absolutePosition)
 			return UDim2.fromOffset(
-				pos.x + 32,
-				pos.y + 32 + use(UI.Theme.PaddingHalf).Offset + use(UI.TopbarInset).Height
+				pos.x + 24,
+				pos.y + 24 + use(UI.Theme.PaddingHalf).Offset + use(UI.TopbarInset).Height
 			)
 		end),
 
@@ -60,6 +60,7 @@ function Color.new(definition)
 			end),
 		},
 		UI.new "UIStroke" {
+			Enabled = UI.Theme.StrokeEnabled,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Transparency = UI.Theme.Transparency,
 			Color = UI.Theme.Border,
@@ -71,6 +72,17 @@ function Color.new(definition)
 			end,
 		},
 	}
+
+	UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if
+			(input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch)
+			and new._dialog._instance.Visible
+			and not UI.pointInGuiObject(input.Position.X, input.Position.Y, new._dialog._instance)
+			and not UI.pointInGuiObject(input.Position.X, input.Position.Y, new._instance)
+		then
+			new._dialog._instance.Visible = false
+		end
+	end)
 
 	return setmetatable(new, Color)
 end

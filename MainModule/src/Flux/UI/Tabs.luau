@@ -15,10 +15,13 @@ function Tabs.new(definition)
 	local tabList = UI.new "UIListLayout" {
 		FillDirection = Enum.FillDirection.Horizontal,
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UI.Theme.Padding,
+		Padding = UI.compute(function(use)
+			return UDim.new(0, use(UI.Theme.Padding).Offset + (if use(UI.Theme.StrokeEnabled) then 2 else 0))
+		end),
 	}
 
 	local tabs = UI.new "Frame" {
+		Name = "Tabs",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 		Position = UI.tween(UI.Theme.NormalTween, UI.computeFrom(UDim2.new, 0, tabOffset, 0, 0)),
@@ -36,6 +39,14 @@ function Tabs.new(definition)
 			true
 		)
 		-- TODO: keep current page visible when resizing down?
+	end)
+
+	local strokePadding = UI.compute(function(use)
+		return UDim.new(0, if use(UI.Theme.StrokeEnabled) then 1 else 0)
+	end)
+
+	local strokeTabSize = UI.compute(function(use)
+		return use(new.TabSize) - (if use(UI.Theme.StrokeEnabled) then 2 else 0)
 	end)
 
 	local pages = UI.new "UIPageLayout" {
@@ -58,8 +69,12 @@ function Tabs.new(definition)
 				ClipsDescendants = true,
 				Size = UDim2.new(1, 0, 0, 24),
 
-				[UI.Children] = {
-					Tabs = tabs,
+				tabs,
+				UI.new "UIPadding" {
+					PaddingTop = strokePadding,
+					PaddingBottom = strokePadding,
+					PaddingLeft = strokePadding,
+					PaddingRight = strokePadding,
 				},
 
 				[UI.Event] = {
@@ -109,7 +124,7 @@ function Tabs.new(definition)
 			Name = nameState,
 			LayoutOrder = page.LayoutOrder,
 			AutoButtonColor = false,
-			Size = UI.computeFrom(UDim2.new, 0, new.TabSize, 1, 0),
+			Size = UI.computeFrom(UDim2.new, 0, strokeTabSize, 1, 0),
 			BackgroundColor3 = UI.Theme.Border,
 			BackgroundTransparency = UI.tween(
 				UI.Theme.NormalTween,
@@ -133,6 +148,7 @@ function Tabs.new(definition)
 				CornerRadius = UI.Theme.CornerDiameter,
 			},
 			UI.new "UIStroke" {
+				Enabled = UI.Theme.StrokeEnabled,
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 				Transparency = UI.Theme.Transparency,
 				Color = UI.Theme.Border,

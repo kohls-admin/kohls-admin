@@ -144,7 +144,10 @@ function Window.new(definition)
 		)
 	end
 
-	UI.UserInputService.InputBegan:Connect(function(input)
+	UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then
+			return
+		end
 		if
 			(input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch)
 			and not new.Minimized._value
@@ -237,6 +240,7 @@ function Window.new(definition)
 			},
 
 			UIStroke = UI.new "UIStroke" {
+				Enabled = UI.Theme.StrokeEnabled,
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 				Transparency = UI.Theme.Transparency,
 				Color = UI.Theme.Border,

@@ -77,193 +77,118 @@ end
 
 Interface.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
+local themeList = UI.new "List" {
+	Collapsible = true,
+	Label = "Theme",
+
+	UI.new "ListItem" {
+		Text = "Border Enabled Checkbox",
+		UI.new "Checkbox" {
+			Value = UI.Theme.StrokeEnabled,
+		},
+	},
+
+	UI.new "ListItem" {
+		Text = "Border Enabled",
+		UI.new "Switch" {
+			Value = UI.Theme.StrokeEnabled,
+		},
+	},
+
+	UI.new "ListItem" {
+		Text = "Corner Radius",
+		UI.new "Slider" {
+			Snap = 16,
+			Value = UI.Theme.CornerRadius._value.Offset,
+			[UI.Hook] = {
+				Value = function(value)
+					UI.Theme.CornerRadius:set(UDim.new(0, value))
+				end,
+			},
+		},
+	},
+
+	UI.new "ListItem" {
+		Text = "Padding",
+		UI.new "Slider" {
+			Snap = 16,
+			Value = UI.Theme.Padding._value.Offset,
+			[UI.Hook] = {
+				Value = function(value)
+					UI.Theme.Padding:set(UDim.new(0, value))
+				end,
+			},
+		},
+	},
+
+	UI.new "ListItem" {
+		Text = "Background Transparency",
+		UI.new "Slider" {
+			Value = UI.Theme.Transparency,
+		},
+	},
+}
+
+local count = 0
+for _, child in themeList._instance.UIContent:GetChildren() do
+	if child:IsA("GuiObject") then
+		count += 1
+	end
+end
+
+local colors = {
+	"Primary",
+	"PrimaryText",
+	"Secondary",
+	"SecondaryText",
+	"Muted",
+	"MutedText",
+	"Border",
+	"BorderMuted",
+	"Valid",
+	"Invalid",
+}
+
+for index, key in colors do
+	local state = UI.Theme[key]
+	UI.new "ListItem" {
+		LayoutOrder = index + count,
+		Parent = themeList._instance.UIContent,
+		Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
+		UI.new "Color" {
+			Value = state,
+		},
+	}
+end
+
+local Settings = UI.new "ScrollingFrame" {
+	Name = "Settings",
+	BorderSizePixel = 0,
+	BackgroundTransparency = 1,
+	Size = UDim2.new(1, 0, 1, 0),
+	ScrollBarThickness = 8,
+	ScrollBarImageColor3 = UI.Theme.Secondary,
+	ScrollBarImageTransparency = UI.Theme.Transparency,
+	TopImage = "rbxassetid://18370266164",
+	MidImage = "rbxassetid://18370268668",
+	BottomImage = "rbxassetid://18370271296",
+	CanvasSize = UDim2.new(0, 0, 0, 0),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
+
+	[UI.Children] = {
+		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder },
+		Theme = themeList,
+	},
+}
+
 local uiTestWindow = UI.new "Window" {
 	Parent = UI.LayerDefault,
 	Title = "Flux UI Test",
 
 	[UI.Children] = {
 		Tabs = UI.new "Tabs" {
-
-			UI.new "ScrollingFrame" {
-				Name = "Settings",
-				BorderSizePixel = 0,
-				BackgroundTransparency = 1,
-				Size = UDim2.new(1, 0, 1, 0),
-				ScrollBarThickness = 8,
-				ScrollBarImageColor3 = UI.Theme.PrimaryText,
-				ScrollBarImageTransparency = UI.Theme.Transparency,
-				TopImage = "rbxassetid://18370266164",
-				MidImage = "rbxassetid://18370268668",
-				BottomImage = "rbxassetid://18370271296",
-				CanvasSize = UDim2.new(0, 0, 0, 0),
-				AutomaticCanvasSize = Enum.AutomaticSize.Y,
-				VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
-
-				[UI.Children] = {
-					Layout = UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder },
-
-					Theme = UI.new "List" {
-						Collapsible = true,
-						Label = "Theme",
-
-						UI.new "ListItem" {
-							Text = "Corner Radius",
-							UI.new "Slider" {
-								Snap = 16,
-								Value = UI.Theme.CornerRadius._value.Offset,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.CornerRadius:set(UDim.new(0, value))
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Background Transparency",
-							UI.new "Slider" {
-								Value = UI.Theme.Transparency._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.Transparency:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Primary Background Color",
-							UI.new "Color" {
-								Value = UI.Theme.Primary._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.Primary:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Primary Text Color",
-							UI.new "Color" {
-								Value = UI.Theme.PrimaryText._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.PrimaryText:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Secondary Background Color",
-							UI.new "Color" {
-								Value = UI.Theme.Secondary._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.Secondary:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Secondary Text Color",
-							UI.new "Color" {
-								Value = UI.Theme.SecondaryText._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.SecondaryText:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Muted Background Color",
-							UI.new "Color" {
-								Value = UI.Theme.Muted._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.Muted:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Muted Text Color",
-							UI.new "Color" {
-								Value = UI.Theme.MutedText._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.MutedText:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Border Color",
-							UI.new "Color" {
-								Value = UI.Theme.Border._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.Border:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Border Muted Color",
-							UI.new "Color" {
-								Value = UI.Theme.BorderMuted._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.BorderMuted:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Valid Color",
-							UI.new "Color" {
-								Value = UI.Theme.ValidColor._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.ValidColor:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "ListItem" {
-							Text = "Invalid Color",
-							UI.new "Color" {
-								Value = UI.Theme.InvalidColor._value,
-								[UI.Hook] = {
-									Value = function(value)
-										UI.Theme.InvalidColor:set(value)
-									end,
-								},
-							},
-						},
-
-						UI.new "Button" { UI.new "Tooltip" {} },
-						UI.new "Select" { UI.new "Tooltip" {} },
-						UI.new "ColorPicker" {
-							[UI.Hook] = {
-								Value = function(value)
-									print("Color value changed", value)
-								end,
-							},
-						},
-						UI.new "Switch" {},
-					},
-				},
-			},
+			Settings,
 			UI.new "ColorPicker" {},
 		},
 	},

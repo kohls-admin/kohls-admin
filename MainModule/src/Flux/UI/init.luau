@@ -31,8 +31,8 @@ local UI = {
 		Border = state(Color3.fromRGB(100, 100, 100)),
 		BorderMuted = state(Color3.fromRGB(50, 50, 50)),
 
-		ValidColor = state(Color3.fromRGB(0, 255, 0)),
-		InvalidColor = state(Color3.fromRGB(255, 0, 0)),
+		Valid = state(Color3.fromRGB(0, 255, 0)),
+		Invalid = state(Color3.fromRGB(255, 0, 0)),
 
 		FontSize = state(16),
 		Font = state(Enum.Font.Roboto),
@@ -40,6 +40,7 @@ local UI = {
 
 		CornerRadius = state(UDim.new(0, 8)),
 		Padding = state(UDim.new(0, 8)),
+		StrokeEnabled = state(false),
 
 		NormalTween = TweenInfo.new(0.2),
 		-- BasePixelHeight 32?
@@ -107,6 +108,11 @@ UI.Theme.PaddingDouble = UI.compute(function(use)
 	return UDim.new(padding.Scale * 2, padding.Offset * 2)
 end)
 
+UI.Theme.CornerHalf = UI.compute(function(use)
+	local radius = use(UI.Theme.CornerRadius)
+	return UDim.new(radius.Scale / 2, radius.Offset / 2)
+end)
+
 UI.Theme.CornerDiameter = UI.compute(function(use)
 	local radius = use(UI.Theme.CornerRadius)
 	return UDim.new(radius.Scale * 2, radius.Offset * 2)
@@ -144,6 +150,12 @@ function UI.invertLuminance(color: Color3, amount: number): Color3
 	local newB = math.clamp(math.sqrt(bLum * targetRatio / 0.114), 0, 1)
 
 	return Color3.new(newR, newG, newB)
+end
+
+function UI.pointInGuiObject(x: number, y: number, object: GuiObject)
+	local size = object.AbsoluteSize
+	local position = object.AbsolutePosition
+	return x >= position.X and x <= position.X + size.X and y >= position.Y and y <= position.Y + size.Y
 end
 
 function UI.makeStatefulDefaults(default: { [any]: any }, definition: { [any]: any }?)

@@ -27,12 +27,13 @@ function ColorPicker.new(definition)
 		Vertical = true,
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.new(0, 16, 1, 0),
 
 		[UI.Children] = {
 			Rainbow = UI.new "Frame" {
 				BackgroundColor3 = Color3.new(1, 1, 1),
 				AnchorPoint = Vector2.new(0.5, 0),
-				Size = UDim2.new(0, 8, 1, 0),
+				Size = UDim2.new(0, 4, 1, 0),
 				Position = UDim2.new(0.5, 0, 0, 0),
 
 				[UI.Children] = {
@@ -40,6 +41,7 @@ function ColorPicker.new(definition)
 						CornerRadius = UI.Theme.CornerRadius,
 					},
 					UIStroke = UI.new "UIStroke" {
+						Enabled = UI.Theme.StrokeEnabled,
 						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 						Color = UI.Theme.Border,
 						Transparency = UI.Theme.Transparency,
@@ -116,11 +118,12 @@ function ColorPicker.new(definition)
 		BackgroundTransparency = 1,
 		Size = UI.compute(function(use)
 			local offset = use(UI.Theme.PaddingDouble).Offset
-			return UDim2.new(0, 96 + offset / 2, 0, 64 + offset)
+			return UDim2.new(0, 80 + offset * 1.5, 0, 64 + offset)
 		end),
 
 		UI.new "UIPadding" {
 			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
 			PaddingTop = UI.Theme.Padding,
 			PaddingBottom = UI.Theme.Padding,
 		},
@@ -137,6 +140,7 @@ function ColorPicker.new(definition)
 						CornerRadius = UI.Theme.CornerRadius,
 					},
 					UIStroke = UI.new "UIStroke" {
+						Enabled = UI.Theme.StrokeEnabled,
 						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 						Color = UI.Theme.Border,
 						Transparency = UI.Theme.Transparency,
