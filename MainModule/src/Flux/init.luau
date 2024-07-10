@@ -325,6 +325,14 @@ function Flux.edit(instance: Instance, properties: Dict<any>): Instance
 	properties[Flux.Event.Attribute] = nil
 	properties[Flux.Event.Property] = nil
 
+	-- numeric index child definition
+	for index, child in ipairs(properties) do
+		if typeof(child) == "Instance" then
+			child.Parent = instance
+		end
+		properties[index] = nil
+	end
+
 	for property, value in properties do
 		cleanBind(instance, value, property)
 		if isState(value) then
@@ -356,13 +364,6 @@ function Flux.edit(instance: Instance, properties: Dict<any>): Instance
 			child.Name = name or child.Name
 			child.Parent = instance
 		end
-	end
-	-- numeric index child definition
-	for index, child in ipairs(properties) do
-		if typeof(child) == "Instance" then
-			child.Parent = instance
-		end
-		properties[index] = nil
 	end
 
 	if events then
