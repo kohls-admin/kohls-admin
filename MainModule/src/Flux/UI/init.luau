@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
+local TextService = game:GetService("TextService")
 local UserInputService = game:GetService("UserInputService")
 
 local Flux = require(script.Parent)
@@ -10,6 +11,7 @@ local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 -- TODO: allow a way to easily override builtin theme binds with a new compute or whatever!
 local UI = {
 	GuiService = GuiService,
+	TextService = TextService,
 	UserInputService = UserInputService,
 
 	Class = {},
@@ -17,6 +19,8 @@ local UI = {
 	Scope = Flux.Scope.UI,
 	TopbarInset = state(GuiService, "TopbarInset"),
 	Theme = {
+		ClackAll = state(true),
+		ClackEnabled = state(true),
 		Transparency = state(0.3),
 
 		Primary = state(Color3.fromRGB(0, 0, 0)),
@@ -74,6 +78,10 @@ UI.Scope.Theme = UI.Theme
 UI.__index = UI
 setmetatable(UI, Flux)
 
+UI.Theme.TransparencyClamped = UI.compute(function(use)
+	return math.min(0.75, use(UI.Theme.Transparency))
+end)
+
 UI.Theme.FontHeavy = Flux.compute(function(use)
 	local font = Font.fromEnum(use(UI.Theme.Font))
 	font.Weight = Enum.FontWeight.Heavy
@@ -116,6 +124,14 @@ end)
 UI.Theme.CornerDiameter = UI.compute(function(use)
 	local radius = use(UI.Theme.CornerRadius)
 	return UDim.new(radius.Scale * 2, radius.Offset * 2)
+end)
+
+UI.Theme.ScrollMidImage = UI.state("rbxassetid://18370268668")
+UI.Theme.ScrollTopImage = UI.compute(function(use)
+	return if use(UI.Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://18370266164"
+end)
+UI.Theme.ScrollBottomImage = UI.compute(function(use)
+	return if use(UI.Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://18370271296"
 end)
 
 local _currentHover
@@ -223,7 +239,7 @@ function UI.new(className)
 					end
 					if type(hook) == "function" then
 						-- FIX: add a way to clean it up with the class:Destroy() method
-						local cleanup = classMember:hook(hook)
+						local _cleanup = classMember:hook(hook)
 					end
 				end
 			end

@@ -1,7 +1,6 @@
 -- NOTE: CLIENT ENTRY POINT
 -- NOT A SERVER SCRIPT, HAS CLIENT RUNCONTEXT
 local _K = require(script.Parent)
-local Scroller = require(script.Scroller)
 local Flux = require(script.Parent.Flux)
 local UI = require(script.Parent.Flux.UI).registerChildren()
 
@@ -40,46 +39,38 @@ _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEve
 	end
 end)
 
-local testList = {}
-for i = 1, 1e5 do
-	testList[i] = i .. ": this is a test log, let's see just how terrible we can make this stress test."
-end
-
--- local testInput = Instance.new("TextBox", testFrame)
--- testInput.Text = ""
--- testInput.Size = UDim2.new(1, 0, 0, 32)
--- testInput.Font = Enum.Font.RobotoMono
--- testInput.TextSize = 24
---
--- local scrollerTest = Scroller.new(testList)
---
--- local function filterTest(list)
--- 	local filter = testInput.Text:lower()
--- 	local new = {}
--- 	for i, v in list do
--- 		if v:lower():find(filter, 1, true) then
--- 			table.insert(new, v)
--- 		end
--- 	end
--- 	return new
--- end
---
--- scrollerTest:filter(filterTest)
---
--- testInput:GetPropertyChangedSignal("Text"):Connect(function()
--- 	scrollerTest:refreshList()
--- end)
---
--- scrollerTest:setParent(testFrame)
---
--- scrollerTest._frame.Size = UDim2.new(1, 0, 1, -32)
--- scrollerTest._frame.Position = UDim2.new(0, 0, 0, 32)
-
 Interface.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local themeList = UI.new "List" {
 	Collapsible = true,
 	Label = "Theme",
+
+	UI.new "ListItem" {
+		Text = "Input Test",
+		UI.new "Input" {
+			FontSize = 14,
+			Padding = UDim.new(0, 5),
+			Icon = "rbxassetid://18416000656",
+			IconProperties = {
+				Size = UDim2.fromOffset(18, 18),
+				-- ResampleMode = Enum.ResamplerMode.Pixelated,
+			},
+		},
+	},
+
+	UI.new "ListItem" {
+		Text = "Enable typing sounds",
+		UI.new "Switch" {
+			Value = UI.Theme.ClackEnabled,
+		},
+	},
+
+	UI.new "ListItem" {
+		Text = "Sounds on every TextBox",
+		UI.new "Switch" {
+			Value = UI.Theme.ClackAll,
+		},
+	},
 
 	UI.new "ListItem" {
 		Text = "Border Enabled Checkbox",
@@ -94,39 +85,6 @@ local themeList = UI.new "List" {
 			Value = UI.Theme.StrokeEnabled,
 		},
 	},
-
-	UI.new "ListItem" {
-		Text = "Corner Radius",
-		UI.new "Slider" {
-			Snap = 16,
-			Value = UI.Theme.CornerRadius._value.Offset,
-			[UI.Hook] = {
-				Value = function(value)
-					UI.Theme.CornerRadius:set(UDim.new(0, value))
-				end,
-			},
-		},
-	},
-
-	UI.new "ListItem" {
-		Text = "Padding",
-		UI.new "Slider" {
-			Snap = 16,
-			Value = UI.Theme.Padding._value.Offset,
-			[UI.Hook] = {
-				Value = function(value)
-					UI.Theme.Padding:set(UDim.new(0, value))
-				end,
-			},
-		},
-	},
-
-	UI.new "ListItem" {
-		Text = "Background Transparency",
-		UI.new "Slider" {
-			Value = UI.Theme.Transparency,
-		},
-	},
 }
 
 local count = 0
@@ -134,6 +92,101 @@ for _, child in themeList._instance.UIContent:GetChildren() do
 	if child:IsA("GuiObject") then
 		count += 1
 	end
+end
+
+-- udim options
+for i, key in { "CornerRadius", "Padding" } do
+	count += 1
+	local input
+	local slider = UI.new "Slider" {
+		Snap = 17,
+		Value = UI.Theme[key]._value.Offset + 1,
+		UI.new "UIFlexItem" {
+			FlexMode = Enum.UIFlexMode.Fill,
+		},
+		[UI.Hook] = {
+			Value = function(value)
+				UI.Theme[key]:set(UDim.new(0, value - 1))
+				if tonumber(input._input.Text) == value - 1 then
+					return
+				end
+				input._input.Text = value - 1
+			end,
+		},
+	}
+	input = UI.new "Input" {
+		Font = UI.Theme.FontMono,
+		Size = UDim2.new(0, 24, 1, 0),
+		FontSize = 14,
+		Padding = UDim.new(0, 5),
+		IntegerOnly = true,
+		NumberRange = NumberRange.new(0, 16),
+		Placeholder = "",
+		Value = UI.Theme[key]._value.Offset,
+		[UI.Hook] = {
+			Value = function(value)
+				local number = tonumber(value)
+				if not number then
+					return
+				end
+				UI.Theme[key]:set(UDim.new(0, number))
+				if tonumber(slider.Value._value) == number + 1 then
+					return
+				end
+				slider.Value:set(number + 1)
+			end,
+		},
+	}
+	UI.new "ListItem" {
+		LayoutOrder = count,
+		Parent = themeList._content,
+		Text = key:gsub("(.)(%u)", "%1 %2"),
+		input,
+		slider,
+	}
+end
+
+do
+	count += 1
+	local input = UI.new "Input" {
+		Font = UI.Theme.FontMono,
+		Size = UDim2.new(0, 30, 1, 0),
+		FontSize = 14,
+		Padding = UDim.new(0, 5),
+		NumberOnly = true,
+		NumberRange = NumberRange.new(0, 1),
+		Placeholder = "",
+		Value = UI.Theme.Transparency._value,
+		[UI.Hook] = {
+			Value = function(value)
+				local number = tonumber(value)
+				if not number then
+					return
+				end
+				UI.Theme.Transparency:set(number)
+			end,
+		},
+	}
+	UI.new "ListItem" {
+		LayoutOrder = count,
+		Parent = themeList._content,
+		Text = "Background Transparency",
+		input,
+		UI.new "Slider" {
+			Value = UI.Theme.Transparency,
+			UI.new "UIFlexItem" {
+				FlexMode = Enum.UIFlexMode.Fill,
+			},
+			[UI.Hook] = {
+				Value = function(value)
+					if tonumber(input._input.Text) == value then
+						return
+					end
+					input._input.Text = value
+				end,
+			},
+		},
+	}
 end
 
 local colors = {
@@ -168,29 +221,73 @@ local Settings = UI.new "ScrollingFrame" {
 	Size = UDim2.new(1, 0, 1, 0),
 	ScrollBarThickness = 8,
 	ScrollBarImageColor3 = UI.Theme.Secondary,
-	ScrollBarImageTransparency = UI.Theme.Transparency,
-	TopImage = "rbxassetid://18370266164",
-	MidImage = "rbxassetid://18370268668",
-	BottomImage = "rbxassetid://18370271296",
+	ScrollBarImageTransparency = UI.Theme.TransparencyClamped,
+	TopImage = UI.Theme.ScrollTopImage,
+	MidImage = UI.Theme.ScrollMidImage,
+	BottomImage = UI.Theme.ScrollBottomImage,
 	CanvasSize = UDim2.new(0, 0, 0, 0),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
-	[UI.Children] = {
-		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder },
-		Theme = themeList,
+	UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder },
+	themeList,
+}
+
+local testList = {}
+for i = 1, 1e5 do
+	testList[i] = i .. ": this is a test log, let's see just how terrible we can make this stress test."
+end
+table.insert(testList, #testList / 2, "needle")
+
+local scrollerTest = UI.new "ScrollerFast" {
+	List = testList,
+	UI.new "UIFlexItem" {
+		FlexMode = Enum.UIFlexMode.Fill,
 	},
 }
 
-local uiTestWindow = UI.new "Window" {
+local scrollerInput = UI.new "Input" {
+	Placeholder = "Search logs...",
+	Icon = "rbxassetid://18416000656",
+	IconProperties = {
+		Size = UDim2.fromOffset(18, 18),
+		-- ResampleMode = Enum.ResamplerMode.Pixelated,
+	},
+}
+
+scrollerInput._input:GetPropertyChangedSignal("Text"):Connect(function()
+	scrollerTest:refreshList()
+end)
+
+local scrollerFrame = UI.new "Frame" {
+	BackgroundTransparency = 1,
+	Size = UDim2.new(1, 0, 1, 0),
+	UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
+	scrollerInput,
+	scrollerTest,
+}
+
+local function filterTest(list)
+	local filter = scrollerInput._input.Text:lower()
+	local new = {}
+	for i, v in list do
+		if v:lower():find(filter, 1, true) then
+			table.insert(new, v)
+		end
+	end
+	return new
+end
+
+scrollerTest:filter(filterTest)
+
+local _uiTestWindow = UI.new "Window" {
 	Parent = UI.LayerDefault,
 	Title = "Flux UI Test",
 
-	[UI.Children] = {
-		Tabs = UI.new "Tabs" {
-			Settings,
-			UI.new "ColorPicker" {},
-		},
+	UI.new "Tabs" {
+		scrollerFrame,
+		Settings,
+		UI.new "ColorPicker" {},
 	},
 }
 

@@ -90,7 +90,7 @@ function List.new(definition)
 		},
 	}
 
-	local content = UI.new "Frame" {
+	new._content = UI.new "Frame" {
 		Name = "UIContent",
 		Parent = new._instance,
 		BackgroundTransparency = 1,

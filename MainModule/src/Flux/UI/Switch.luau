@@ -13,7 +13,7 @@ function Switch.new(definition)
 	local backgroundTransparency = UI.tween(
 		UI.Theme.NormalTween,
 		UI.compute(function(use)
-			return if use(new.Value) then 0 else use(UI.Theme.Transparency)
+			return if use(new.Value) then 0 else use(UI.Theme.TransparencyClamped)
 		end)
 	)
 
@@ -39,35 +39,37 @@ function Switch.new(definition)
 		TextTransparency = 1,
 		Size = UDim2.new(0, 48, 0, 24),
 
-		[UI.Children] = {
-			UICorner = UI.new "UICorner" {
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerDiameter,
+		},
+		UI.new "UIStroke" {
+			Enabled = UI.Theme.StrokeEnabled,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Transparency = UI.Theme.Transparency,
+			Color = UI.Theme.Border,
+		},
+		UI.new "UIPadding" {
+			PaddingLeft = cappedPadding,
+			PaddingRight = cappedPadding,
+			PaddingTop = cappedPadding,
+			PaddingBottom = cappedPadding,
+		},
+
+		UI.new "Frame" {
+			Name = "Circle",
+			BackgroundColor3 = UI.Theme.Primary,
+			BackgroundTransparency = backgroundTransparency,
+			Size = UDim2.new(1, 0, 1, 0),
+			SizeConstraint = Enum.SizeConstraint.RelativeYY,
+			Position = UI.tween(
+				UI.Theme.NormalTween,
+				UI.compute(function(use)
+					return UDim2.new(0, if use(new.Value) then 24 else 0, 0, 0)
+				end)
+			),
+
+			UI.new "UICorner" {
 				CornerRadius = UI.Theme.CornerDiameter,
-			},
-
-			UIPadding = UI.new "UIPadding" {
-				PaddingLeft = cappedPadding,
-				PaddingRight = cappedPadding,
-				PaddingTop = cappedPadding,
-				PaddingBottom = cappedPadding,
-			},
-
-			Circle = UI.new "Frame" {
-				BackgroundColor3 = UI.Theme.Primary,
-				BackgroundTransparency = backgroundTransparency,
-				Size = UDim2.new(1, 0, 1, 0),
-				SizeConstraint = Enum.SizeConstraint.RelativeYY,
-				Position = UI.tween(
-					UI.Theme.NormalTween,
-					UI.compute(function(use)
-						return UDim2.new(0, if use(new.Value) then 24 else 0, 0, 0)
-					end)
-				),
-
-				[UI.Children] = {
-					UICorner = UI.new "UICorner" {
-						CornerRadius = UI.Theme.CornerDiameter,
-					},
-				},
 			},
 		},
 

@@ -3,7 +3,6 @@ local TextChatService = game:GetService("TextChatService")
 local TextService = game:GetService("TextService")
 
 local _K = require(script.Parent.Parent)
-local Clack = require(script.Clack)
 local CompletionData = require(script.CompletionData)
 
 local Flux = _K.Flux
@@ -535,7 +534,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 	if input.UserInputType == Enum.UserInputType.Keyboard then
 		-- TODO: check for tab to complete suggestion
 		-- TODO: check for up/down arrow to adjust suggestion index and update suggestion labels without deleting!
-		task.spawn(Clack.sound, input.KeyCode)
 		if not Input:IsFocused() then
 			return
 		end

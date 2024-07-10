@@ -17,9 +17,11 @@ function Slider.new(definition)
 
 	local dragInput
 	local dragging = UI.state(false)
-	local valueAlpha = UI.state(
-		if new.Snap._value > 1 then math.max(0, new.Value._value - 1) / (new.Snap._value - 1) else new.Value._value
-	)
+	local valueAlpha = UI.compute(function(use)
+		local snap = use(new.Snap)
+		local value = use(new.Value)
+		return if snap > 1 then math.max(0, value - 1) / (snap - 1) else value
+	end)
 
 	local function update(input)
 		if not dragInput then
@@ -32,11 +34,7 @@ function Slider.new(definition)
 		local snap = new.Snap._value
 
 		if snap > 1 then
-			local snapInt = math.round(1 + value * (snap - 1))
-			valueAlpha:set(math.max(0, snapInt - 1) / (snap - 1))
-			value = snapInt
-		else
-			valueAlpha:set(value)
+			value = math.round(1 + value * (snap - 1))
 		end
 
 		new.Value:set(value)
@@ -109,7 +107,7 @@ function Slider.new(definition)
 					return if use(new.Vertical) then Vector2.new(0.5, 0) else Vector2.new(0, 0.5)
 				end),
 				BackgroundColor3 = UI.Theme.Secondary,
-				BackgroundTransparency = UI.Theme.Transparency,
+				BackgroundTransparency = UI.Theme.TransparencyClamped,
 				BorderSizePixel = 0,
 				Position = UI.compute(function(use)
 					return if use(new.Vertical) then UDim2.new(0.5, 0, 0, 0) else UDim2.new(0, 0, 0.5, 0)
@@ -129,7 +127,7 @@ function Slider.new(definition)
 					return if use(new.Vertical) then Vector2.new(0.5, 1) else Vector2.new(1, 0.5)
 				end),
 				BackgroundColor3 = UI.Theme.Border,
-				BackgroundTransparency = UI.Theme.Transparency,
+				BackgroundTransparency = UI.Theme.TransparencyClamped,
 				BorderSizePixel = 0,
 				Position = UI.compute(function(use)
 					return if use(new.Vertical) then UDim2.new(0.5, 0, 1, 0) else UDim2.new(1, 0, 0.5, 0)

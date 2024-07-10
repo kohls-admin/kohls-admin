@@ -60,7 +60,7 @@ function Button.new(definition)
 
 			IconFrame = UI.new "Frame" {
 				LayoutOrder = UI.compute(function(use)
-					return if new.IconRightAlign then 3 else 1
+					return if use(new.IconRightAlign) then 3 else 1
 				end),
 				BackgroundTransparency = 1,
 				Size = UDim2.new(1, 0, 1, 0),
@@ -173,6 +173,7 @@ function Button.new(definition)
 	new.Activated = new._instance.Activated
 
 	if definition.IconProperties then
+		-- TODO: whenever new.IconProperties is changed we need to update!
 		UI.edit(listFrame:FindFirstChild("IconFrame"):FindFirstChild("Icon"), definition.IconProperties)
 	end
 

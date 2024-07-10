@@ -55,7 +55,7 @@ function Tabs.new(definition)
 		EasingStyle = Enum.EasingStyle.Quad,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		ScrollWheelInputEnabled = false,
-		Padding = UDim.new(0, 8),
+		Padding = UI.Theme.Padding,
 	}
 	new._pages = pages
 	new._instance = UI.new "Frame" {
@@ -101,7 +101,6 @@ function Tabs.new(definition)
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, -24),
 		Position = UDim2.new(0, 0, 1, 0),
-		ClipsDescendants = true,
 
 		[UI.Children] = {
 			Pages = pages,

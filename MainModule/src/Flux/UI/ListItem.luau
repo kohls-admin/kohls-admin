@@ -8,7 +8,28 @@ setmetatable(ListItem, BaseClass)
 function ListItem.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Text = "ListItem Label",
+		ContentListLayout = true,
 	}, definition)
+
+	local UIContent = UI.new "Frame" {
+		Name = "UIContent",
+		AnchorPoint = Vector2.new(1, 0),
+		Size = UDim2.new(0.5, 0, 1, 0),
+		Position = UDim2.new(1, 0, 0, 0),
+		BackgroundTransparency = 1,
+	}
+
+	local layout = UI.new "UIListLayout" {
+		Parent = UIContent,
+		HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		FillDirection = Enum.FillDirection.Horizontal,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UI.Theme.Padding,
+	}
+
+	new._layoutParentCompute = UI.compute(function(use)
+		layout.Parent = if use(new.ContentListLayout) then UIContent else nil
+	end)
 
 	new._instance = UI.new "Frame" {
 		Name = "ListItem",
@@ -26,13 +47,7 @@ function ListItem.new(definition)
 			BackgroundTransparency = 1,
 		},
 
-		UI.new "Frame" {
-			Name = "UIContent",
-			AnchorPoint = Vector2.new(1, 0),
-			Size = UDim2.new(0.5, 0, 1, 0),
-			Position = UDim2.new(1, 0, 0, 0),
-			BackgroundTransparency = 1,
-		},
+		UIContent,
 	}
 
 	return setmetatable(new, ListItem)

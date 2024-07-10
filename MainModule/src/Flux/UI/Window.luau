@@ -123,7 +123,7 @@ function Window.new(definition)
 		end
 	end
 
-	local resizeBuffer = 6
+	local resizeBuffer = 4
 	local startSize, xSize, xPos, ySize, yPos
 	local function resizeUpdate(input)
 		local delta = input.Position - dragStart
@@ -228,7 +228,6 @@ function Window.new(definition)
 
 	new._instance = UI.new "Frame" {
 		Name = "Window",
-		Active = true,
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
 		Size = new.Size,
@@ -280,6 +279,7 @@ function Window.new(definition)
 			},
 
 			TitleBar = UI.new "Frame" {
+				Active = true,
 				LayoutOrder = -9e9,
 				BackgroundTransparency = 1,
 				ClipsDescendants = true,

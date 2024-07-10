@@ -104,7 +104,7 @@ local Flux = {
 	Scope = setmetatable({}, scopeMetatable),
 	Attribute = newproxy(),
 	Children = newproxy(),
-	Event = newproxy(),
+	Event = table.freeze({ Attribute = {}, Property = {} }),
 
 	peek = peek,
 	isState = isState,
@@ -316,10 +316,14 @@ function Flux.edit(instance: Instance, properties: Dict<any>): Instance
 	local attributes = properties[Flux.Attribute]
 	local children = properties[Flux.Children]
 	local events = properties[Flux.Event]
+	local eventAttributes = properties[Flux.Event.Attribute]
+	local eventProperties = properties[Flux.Event.Property]
 
 	properties[Flux.Attribute] = nil
 	properties[Flux.Children] = nil
 	properties[Flux.Event] = nil
+	properties[Flux.Event.Attribute] = nil
+	properties[Flux.Event.Property] = nil
 
 	for property, value in properties do
 		cleanBind(instance, value, property)
@@ -332,7 +336,7 @@ function Flux.edit(instance: Instance, properties: Dict<any>): Instance
 
 	if attributes then
 		if typeof(attributes) ~= "table" then
-			error("Invalid Attribute definition")
+			error("Invalid Flux.Attribute definition")
 		end
 		for attribute, value in attributes do
 			cleanBind(instance, value, "." .. attribute)
@@ -346,7 +350,7 @@ function Flux.edit(instance: Instance, properties: Dict<any>): Instance
 
 	if children then
 		if typeof(children) ~= "table" then
-			error("Invalid Children definition")
+			error("Invalid Flux.Children definition")
 		end
 		for name, child in children do
 			child.Name = name or child.Name
@@ -363,14 +367,32 @@ function Flux.edit(instance: Instance, properties: Dict<any>): Instance
 
 	if events then
 		if typeof(events) ~= "table" then
-			error("Invalid Events definition")
+			error("Invalid Flux.Event definition")
 		end
 		for event, callback in events do
 			(instance[event] :: RBXScriptSignal):Connect(callback)
 		end
 	end
 
-	if parent then
+	if eventAttributes then
+		if typeof(eventAttributes) ~= "table" then
+			error("Invalid Flux.Event.Attribute definition")
+		end
+		for attribute, callback in eventAttributes do
+			instance:GetAttributeChangedSignal(attribute):Connect(callback)
+		end
+	end
+
+	if eventProperties then
+		if typeof(eventProperties) ~= "table" then
+			error("Invalid Flux.Event.Property definition")
+		end
+		for property, callback in eventProperties do
+			instance:GetPropertyChangedSignal(property):Connect(callback)
+		end
+	end
+
+	if typeof(parent) == "Instance" then
 		instance.Parent = parent
 	end
 	return instance
