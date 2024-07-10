@@ -63,10 +63,11 @@ function Input.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Cursor = "_",
 		DisplayText = "",
-		Placeholder = "Placeholder Text",
+		Placeholder = "",
 		Value = "",
 		Font = UI.Theme.Font,
 		FontSize = UI.Theme.FontSize,
+		TextColor3 = UI.Theme.PrimaryText,
 		Padding = UI.Theme.Padding,
 		Icon = "", -- TODO: set up an icon
 		IconProperties = {},
@@ -81,7 +82,7 @@ function Input.new(definition)
 		Size = UDim2.new(1, 0, 1, 0),
 		BackgroundTransparency = 1,
 		TextSize = new.FontSize,
-		TextColor3 = UI.Theme.PrimaryText,
+		TextColor3 = new.TextColor3,
 		Font = new.Font,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
@@ -104,7 +105,6 @@ function Input.new(definition)
 		BackgroundTransparency = 1,
 		TextTransparency = 1,
 		TextSize = new.FontSize,
-		TextColor3 = UI.Theme.PrimaryText,
 		Text = new.Value._value,
 		Font = new.Font,
 		RichText = true,
@@ -218,6 +218,10 @@ function Input.new(definition)
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 		Image = new.Icon,
+		ImageColor3 = UI.Theme.Secondary,
+		Visible = UI.compute(function(use)
+			return use(new.Icon) ~= ""
+		end),
 	}
 	if definition.IconProperties then
 		UI.edit(icon, definition.IconProperties)
