@@ -32,7 +32,7 @@ function ListItem.new(definition)
 	end)
 
 	new._instance = UI.new "Frame" {
-		Name = new.Text,
+		Name = new.Text._value,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 24),
 
@@ -40,6 +40,7 @@ function ListItem.new(definition)
 			Text = new.Text,
 			Size = UDim2.new(0.5, 0, 1, 0),
 			TextXAlignment = Enum.TextXAlignment.Left,
+			RichText = true,
 			Font = UI.Theme.Font,
 			TextSize = UI.Theme.FontSize,
 			TextColor3 = UI.Theme.PrimaryText,

@@ -226,6 +226,8 @@ for index, key in colors do
 	)
 end
 
+local settingsRichFormat = `<font transparency="0.5">%s</font>%s<font transparency="0.5">%s</font>`
+
 local Settings = UI.new "Scroller" {
 	Name = "Settings",
 
@@ -241,7 +243,22 @@ local Settings = UI.new "Scroller" {
 				local filter = string.lower(value)
 				for _, lineItems in settingsLineItems do
 					for _, lineItem in lineItems do
-						lineItem._instance.Visible = string.find(string.lower(UI.peek(lineItem.Text)), filter)
+						if value == "" then
+							lineItem.Text:set(lineItem._instance.Name)
+							lineItem._instance.Visible = true
+						end
+						local rawText = lineItem._instance.Name
+						local found = string.find(string.lower(rawText), filter)
+						local text = if found
+							then string.format(
+								settingsRichFormat,
+								_K.Util.escapeRichText(string.sub(rawText, 1, found - 1)),
+								_K.Util.escapeRichText(string.sub(rawText, found, found + #filter - 1)),
+								_K.Util.escapeRichText(string.sub(rawText, found + #filter))
+							)
+							else rawText
+						lineItem.Text:set(text)
+						lineItem._instance.Visible = found
 					end
 				end
 			end,
