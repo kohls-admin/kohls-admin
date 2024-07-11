@@ -101,7 +101,10 @@ function Window.new(definition)
 		)
 	end
 
-	local function dragInputBegan(input)
+	local function dragInputBegan(input, gameProcessed)
+		if gameProcessed then
+			return
+		end
 		if
 			(input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch)
 			and not resizing._value
@@ -144,7 +147,7 @@ function Window.new(definition)
 		)
 	end
 
-	UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	local function resizeBegan(input, gameProcessed)
 		if gameProcessed then
 			return
 		end
@@ -176,8 +179,9 @@ function Window.new(definition)
 				end)
 			end
 		end
-	end)
+	end
 
+	UI.UserInputService.InputBegan:Connect(resizeBegan)
 	UI.UserInputService.InputChanged:Connect(function(input)
 		if
 			input.UserInputType == Enum.UserInputType.MouseMovement
@@ -259,6 +263,10 @@ function Window.new(definition)
 					local inputPos = use(inputPosition)
 					return UDim2.fromOffset(inputPos.X, inputPos.Y + use(UI.TopbarInset).Height) - use(new.Position)
 				end),
+
+				[UI.Event] = {
+					InputBegan = resizeBegan,
+				},
 			},
 
 			UIContent = UI.new "Frame" {
