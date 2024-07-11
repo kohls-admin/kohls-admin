@@ -61,7 +61,7 @@ function ColorPicker.new(definition)
 	local hueColor = UI.computeFrom(Color3.fromHSV, hueSlider.Value, 1, 1)
 	new.Value = UI.computeFrom(Color3.fromHSV, hueSlider.Value, saturationState, valueState)
 
-	UI.edit(hueSlider._instance:FindFirstChild("Slider"), {
+	UI.edit(hueSlider._slider, {
 		BackgroundColor3 = hueColor,
 		UI.new "UIStroke" {
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
@@ -70,7 +70,6 @@ function ColorPicker.new(definition)
 		},
 	})
 	hueSlider._instance:FindFirstChild("Filled"):Destroy()
-	hueSlider._instance:FindFirstChild("Unfilled"):Destroy()
 
 	local sv, dragInput
 	local function update(input)

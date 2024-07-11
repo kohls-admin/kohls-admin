@@ -63,6 +63,34 @@ function Slider.new(definition)
 
 	UserInputService.InputChanged:Connect(update)
 
+	new._slider = UI.new "Frame" {
+		Name = "Slider",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundColor3 = UI.Theme.SecondaryText,
+		Position = UI.tween(
+			UI.Theme.NormalTween,
+			UI.compute(function(use)
+				return if use(new.Vertical)
+					then UDim2.new(0.5, 0, use(valueAlpha), 0)
+					else UDim2.new(use(valueAlpha), 0, 0.5, 0)
+			end)
+		),
+		Size = UI.tween(
+			UI.Theme.NormalTween,
+			UI.compute(function(use)
+				return if use(dragging) then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
+			end)
+		),
+
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerDiameter,
+		},
+
+		[UI.Event] = {
+			InputBegan = inputBegan,
+		},
+	}
+
 	new._instance = UI.new "Frame" {
 		Name = "Slider",
 		Active = true,
@@ -71,75 +99,44 @@ function Slider.new(definition)
 			return if use(new.Vertical) then UDim2.new(0, 24, 1, 0) else UDim2.new(1, 0, 0, 24)
 		end),
 
-		[UI.Children] = {
-			Slider = UI.new "Frame" {
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				BackgroundColor3 = UI.Theme.Secondary,
-				ZIndex = 2,
-				Position = UI.tween(
-					UI.Theme.NormalTween,
-					UI.compute(function(use)
-						return if use(new.Vertical)
-							then UDim2.new(0.5, 0, use(valueAlpha), 0)
-							else UDim2.new(use(valueAlpha), 0, 0.5, 0)
-					end)
-				),
-				Size = UI.tween(
-					UI.Theme.NormalTween,
-					UI.compute(function(use)
-						return if use(dragging) then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
-					end)
-				),
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerDiameter,
+		},
+		UI.new "UIStroke" {
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Transparency = UI.Theme.TransparencyClamped,
+			Color = UI.Theme.Border,
+		},
 
-				[UI.Children] = {
-					UICorner = UI.new "UICorner" {
-						CornerRadius = UI.Theme.CornerDiameter,
-					},
-				},
+		UI.new "Frame" {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 1, 0),
+			ZIndex = 2,
 
-				[UI.Event] = {
-					InputBegan = inputBegan,
-				},
+			UI.new "UIPadding" {
+				PaddingLeft = UDim.new(0, 12),
+				PaddingRight = UDim.new(0, 12),
 			},
 
-			Filled = UI.new "Frame" {
-				AnchorPoint = UI.compute(function(use)
-					return if use(new.Vertical) then Vector2.new(0.5, 0) else Vector2.new(0, 0.5)
-				end),
-				BackgroundColor3 = UI.Theme.Secondary,
-				BackgroundTransparency = UI.Theme.TransparencyClamped,
-				BorderSizePixel = 0,
-				Position = UI.compute(function(use)
-					return if use(new.Vertical) then UDim2.new(0.5, 0, 0, 0) else UDim2.new(0, 0, 0.5, 0)
-				end),
-				Size = UI.tween(
-					UI.Theme.NormalTween,
-					UI.compute(function(use)
-						return if use(new.Vertical)
-							then UDim2.new(0, 2, use(valueAlpha), 0)
-							else UDim2.new(use(valueAlpha), 0, 0, 2)
-					end)
-				),
-			},
+			new._slider,
+		},
 
-			Unfilled = UI.new "Frame" {
-				AnchorPoint = UI.compute(function(use)
-					return if use(new.Vertical) then Vector2.new(0.5, 1) else Vector2.new(1, 0.5)
-				end),
-				BackgroundColor3 = UI.Theme.Border,
-				BackgroundTransparency = UI.Theme.TransparencyClamped,
-				BorderSizePixel = 0,
-				Position = UI.compute(function(use)
-					return if use(new.Vertical) then UDim2.new(0.5, 0, 1, 0) else UDim2.new(1, 0, 0.5, 0)
-				end),
-				Size = UI.tween(
-					UI.Theme.NormalTween,
-					UI.compute(function(use)
-						return if use(new.Vertical)
-							then UDim2.new(0, 2, 1 - use(valueAlpha), 0)
-							else UDim2.new(1 - use(valueAlpha), 0, 0, 2)
-					end)
-				),
+		UI.new "Frame" {
+			Name = "Filled",
+			BackgroundColor3 = UI.Theme.Secondary,
+			BackgroundTransparency = UI.Theme.TransparencyClamped,
+			BorderSizePixel = 0,
+			Size = UI.tween(
+				UI.Theme.NormalTween,
+				UI.compute(function(use)
+					local alpha = use(valueAlpha)
+					local buffer = 24 * (1 - alpha)
+					return if use(new.Vertical) then UDim2.new(1, 0, alpha, buffer) else UDim2.new(alpha, buffer, 1, 0)
+				end)
+			),
+
+			UI.new "UICorner" {
+				CornerRadius = UI.Theme.CornerDiameter,
 			},
 		},
 
