@@ -109,6 +109,8 @@ function ColorPicker.new(definition)
 
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 		UI.new "Input" {
+			BackgroundColor3 = Color3.new(),
+			BackgroundTransparency = 0,
 			Size = UDim2.new(0, 36, 0, 24),
 			Font = UI.Theme.FontMono,
 			FontSize = 14,
@@ -131,6 +133,8 @@ function ColorPicker.new(definition)
 			},
 		},
 		UI.new "Input" {
+			BackgroundColor3 = Color3.new(),
+			BackgroundTransparency = 0,
 			Size = UDim2.new(0, 36, 0, 24),
 			Font = UI.Theme.FontMono,
 			FontSize = 14,
@@ -153,10 +157,12 @@ function ColorPicker.new(definition)
 			},
 		},
 		UI.new "Input" {
+			BackgroundColor3 = Color3.new(),
+			BackgroundTransparency = 0,
 			Size = UDim2.new(0, 36, 0, 24),
 			Font = UI.Theme.FontMono,
 			FontSize = 14,
-			TextColor3 = Color3.new(0.4, 0.6, 1),
+			TextColor3 = Color3.new(0.4, 0.8, 1),
 			Padding = UDim.new(0, 5),
 			IntegerOnly = true,
 			NumberRange = NumberRange.new(0, 255),
