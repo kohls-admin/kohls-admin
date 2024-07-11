@@ -9,7 +9,7 @@ return function(_K, message, cursorPosition)
 		},
 	}
 
-	if message == _K.settings.prefix then
+	if message == _K.settings.prefix:get() then
 		data.query = ""
 		data.rawArg = ""
 		data.argPos = 2
@@ -22,7 +22,7 @@ return function(_K, message, cursorPosition)
 		return data
 	end
 
-	local rawCommands = _K.Process.rawParse(_K.Util.trimStart(message), _K.settings.prefix)
+	local rawCommands = _K.Process.rawParse(_K.Util.trimStart(message), _K.settings.prefix:get())
 	if not rawCommands then
 		table.insert(data.invalid, { 1, message, "Invalid command" })
 		return data -- invalid command string, show valid example

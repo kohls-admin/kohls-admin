@@ -215,7 +215,7 @@ function module.runCommands(from: (Player | number)?, rawString: string, chatted
 	-- TODO: allow for remote commands with no player? or a userid to log remote users?
 	local message = module._K.Util.trimStart(rawString)
 
-	local rawCommands = module.rawParse(message, module._K.settings.prefix)
+	local rawCommands = module.rawParse(message, module._K.settings.prefix:get())
 	if not rawCommands then
 		return -- no valid commands found, show feedback
 	end

@@ -564,8 +564,8 @@ Input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 	if Input.CursorPosition == -1 then
 		Cursor.Visible = false
 	else
-		if Input.CursorPosition < #_K.settings.prefix + 1 then
-			Input.CursorPosition = #_K.settings.prefix + 1
+		if Input.CursorPosition < #_K.settings.prefix:get() + 1 then
+			Input.CursorPosition = #_K.settings.prefix:get() + 1
 			return
 		end
 		if tabCompleting then
@@ -594,7 +594,7 @@ Input.FocusLost:Connect(function(enterPressed)
 				table.remove(commandHistory)
 			end
 		end
-		Input.Text = _K.settings.prefix
+		Input.Text = _K.settings.prefix:get()
 	end
 end)
 -- FIX: make sure _K reliant connections aren't connected until init!
@@ -602,9 +602,10 @@ Input:GetPropertyChangedSignal("Text"):Connect(function()
 	if tabCompleting then
 		return
 	end
-	if string.find(Input.Text, _K.settings.prefix, 1, true) ~= 1 then
-		Input.Text = _K.settings.prefix .. Input.Text
-		Input.CursorPosition += #_K.settings.prefix
+	local prefix = _K.settings.prefix:get()
+	if string.find(Input.Text, prefix, 1, true) ~= 1 then
+		Input.Text = prefix .. Input.Text
+		Input.CursorPosition += utf8.len(prefix)
 		return
 	end
 	local bounds = TextService:GetTextSize(Input.Text, Input.TextSize, Input.Font, Vector2.zero)
@@ -616,7 +617,7 @@ Input:GetPropertyChangedSignal("Text"):Connect(function()
 		Input.Position = UDim2.new(0, 0, 0, 0)
 		Input.Size = UDim2.new(1, 0, 1, 0)
 	end
-	if Input.Text == _K.settings.prefix then
+	if Input.Text == _K.settings.prefix:get() then
 		InputLabel.Text = Input.Text .. "<font transparency='0.5'><i>command</i></font>"
 	else
 		InputLabel.Text = _K.Util.escapeRichText(Input.Text)
@@ -625,7 +626,7 @@ end)
 
 return {
 	init = function(self, context)
-		Input.Text = context.settings.prefix
+		Input.Text = context.settings.prefix:get()
 		CommandBar.Parent = context.Interface
 		context.hotkeys.commandBar = { key = Enum.KeyCode.Quote, callback = self.show }
 		context.CommandBarState = { textSize, validState, indicatorColor }

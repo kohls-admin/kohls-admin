@@ -49,6 +49,11 @@ for _, module in { "Authorization", "Registry", "Process", "Flux" } do
 	_K[module]._K = _K
 end
 
+-- Flux stateful settings
+for key, value in _K.settings do
+	_K.settings[key] = _K.Flux.state(value)
+end
+
 -- register types
 for _, child in script.DefaultTypes:GetChildren() do
 	require(child)(_K)
@@ -83,7 +88,7 @@ _K.Remote.Test.OnServerEvent:Connect(print)
 
 -- replicate addons
 addons.Parent = script
--- selene: warn(incorrect_standard_library_use)
+
 script.Parent = _K.Services.ReplicatedStorage
 script.Name = "Kohl's Admin Source"
 

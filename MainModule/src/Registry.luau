@@ -17,7 +17,7 @@ function module.registerHook(key: string, mutable: boolean?)
 		warn('Hook "' .. key .. '" already exists')
 		return
 	end
-	local signalType = if mutable and module._K.settings.mutableHooks then "SignalFast" else "SignalGood"
+	local signalType = if mutable and module._K.settings.mutableHooks:get() then "SignalFast" else "SignalGood"
 	module.hooks[key] = module._K.Util[signalType].new()
 end
 
