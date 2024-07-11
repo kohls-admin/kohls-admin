@@ -11,7 +11,7 @@ function ListItem.new(definition)
 		ContentListLayout = true,
 	}, definition)
 
-	local UIContent = UI.new "Frame" {
+	new._content = UI.new "Frame" {
 		Name = "UIContent",
 		AnchorPoint = Vector2.new(1, 0),
 		Size = UDim2.new(0.5, 0, 1, 0),
@@ -20,7 +20,7 @@ function ListItem.new(definition)
 	}
 
 	local layout = UI.new "UIListLayout" {
-		Parent = UIContent,
+		Parent = new._content,
 		HorizontalAlignment = Enum.HorizontalAlignment.Right,
 		FillDirection = Enum.FillDirection.Horizontal,
 		SortOrder = Enum.SortOrder.LayoutOrder,
@@ -28,11 +28,11 @@ function ListItem.new(definition)
 	}
 
 	new._layoutParentCompute = UI.compute(function(use)
-		layout.Parent = if use(new.ContentListLayout) then UIContent else nil
+		layout.Parent = if use(new.ContentListLayout) then new._content else nil
 	end)
 
 	new._instance = UI.new "Frame" {
-		Name = "ListItem",
+		Name = new.Text,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 24),
 
@@ -47,7 +47,7 @@ function ListItem.new(definition)
 			BackgroundTransparency = 1,
 		},
 
-		UIContent,
+		new._content,
 	}
 
 	return setmetatable(new, ListItem)

@@ -16,6 +16,7 @@ local UI = {
 
 	Class = {},
 	Hook = newproxy(),
+	Nil = newproxy(),
 	Scope = Flux.Scope.UI,
 	TopbarInset = state(GuiService, "TopbarInset"),
 	Theme = {
@@ -179,6 +180,10 @@ function UI.makeStatefulDefaults(default: { [any]: any }, definition: { [any]: a
 		if definition then
 			value = definition[key] or value
 		end
+		if value == UI.Nil then
+			default[key] = nil
+			continue
+		end
 		if not Flux.isState(value) then
 			value = Flux.state(value)
 		end
@@ -187,77 +192,90 @@ function UI.makeStatefulDefaults(default: { [any]: any }, definition: { [any]: a
 	return default
 end
 
+function UI.edit(new, definition)
+	local newIsTable = type(new) == "table"
+	local instance = if newIsTable then new._instance else new
+	local children = definition[UI.Children]
+	local parent = definition.Parent
+	local contentParent = newIsTable and new._content or instance
+
+	if children then
+		if typeof(children) ~= "table" then
+			error("Invalid Children definition")
+		end
+		for name, child in children do
+			if type(child) == "table" and child._instance then
+				child = child._instance
+			end
+			if type(name) == "number" then
+				if child:IsA("GuiObject") then
+					child.LayoutOrder = name
+				end
+			else
+				child.Name = name or child.Name
+			end
+			child.Parent = contentParent
+		end
+		definition[UI.Children] = nil
+	end
+	-- numeric index child definition
+	for index, child in ipairs(definition) do
+		if type(child) == "table" and child._instance then
+			child = child._instance
+		end
+		if typeof(child) ~= "Instance" then
+			error("Invalid UI Instance")
+		end
+		if child:IsA("GuiObject") then
+			child.LayoutOrder = if child.LayoutOrder > 0 then child.LayoutOrder else index
+		end
+		child.Parent = contentParent
+		definition[index] = nil
+	end
+
+	if newIsTable then
+		local hooks = definition[UI.Hook]
+		definition[UI.Hook] = nil
+		if hooks then
+			for key, hook in hooks do
+				local classMember = new[key]
+				if not UI.isState(classMember) then
+					error(`Invalid UI State Hook {key}`)
+				end
+				if type(hook) == "function" then
+					-- FIX: add a way to clean it up with the class:Destroy() method
+					local _cleanup = classMember:hook(hook)
+				end
+			end
+		end
+		for key, value in definition do
+			local classMember = new[key]
+			if classMember == nil then
+				continue
+			end
+			definition[key] = nil -- strip class members
+			-- connect alias signals
+			if typeof(classMember) == "RBXScriptSignal" then
+				classMember:Connect(value)
+			end
+		end
+	end
+
+	definition.Parent = nil
+	if parent then
+		instance.Parent = if type(parent) == "table" then (parent._content or parent._instance) else parent
+	end
+	-- apply non class members to the root instance with Flux.edit
+	Flux.edit(instance, definition)
+	return new
+end
+
 function UI.new(className)
 	local class = UI.Class[className]
 	return function(definition)
 		local new = class and class.new(definition)
 		local instance = if new then new._instance else Instance.new(className)
-		local children = definition[UI.Children]
-
-		if children then
-			if typeof(children) ~= "table" then
-				error("Invalid Children definition")
-			end
-			for name, child in children do
-				if type(child) == "table" and child._instance then
-					child = child._instance
-				end
-				if type(name) == "number" then
-					if child:IsA("GuiObject") then
-						child.LayoutOrder = name
-					end
-				else
-					child.Name = name or child.Name
-				end
-				child.Parent = instance:FindFirstChild("UIContent") or instance
-			end
-			definition[UI.Children] = nil
-		end
-		-- numeric index child definition
-		for index, child in ipairs(definition) do
-			if type(child) == "table" and child._instance then
-				child = child._instance
-			end
-			if typeof(child) ~= "Instance" then
-				error("Invalid UI Instance")
-			end
-			if child:IsA("GuiObject") then
-				child.LayoutOrder = if child.LayoutOrder > 0 then child.LayoutOrder else index
-			end
-			child.Parent = instance:FindFirstChild("UIContent") or instance
-			definition[index] = nil
-		end
-
-		if new then
-			local hooks = definition[UI.Hook]
-			definition[UI.Hook] = nil
-			if hooks then
-				for key, hook in hooks do
-					local classMember = new[key]
-					if not UI.isState(classMember) then
-						error("Invalid UI State Hook", key)
-					end
-					if type(hook) == "function" then
-						-- FIX: add a way to clean it up with the class:Destroy() method
-						local _cleanup = classMember:hook(hook)
-					end
-				end
-			end
-			for key, value in definition do
-				local classMember = new[key]
-				if classMember == nil then
-					continue
-				end
-				definition[key] = nil -- strip class members
-				-- connect alias signals
-				if typeof(classMember) == "RBXScriptSignal" then
-					classMember:Connect(value)
-				end
-			end
-		end
-		-- apply non class members to the root instance
-		UI.edit(instance, definition)
-		return new or instance
+		return UI.edit(new or instance, definition)
 	end
 end
 

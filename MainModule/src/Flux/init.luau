@@ -309,31 +309,31 @@ local function cleanBind(instance: Instance, value: State<any>, property: string
 	end
 end
 
-function Flux.edit(instance: Instance, properties: Dict<any>): Instance
-	local parent = properties.Parent
-	properties.Parent = nil
+function Flux.edit(instance: Instance, definition: Dict<any>): Instance
+	local parent = definition.Parent
+	definition.Parent = nil
 
-	local attributes = properties[Flux.Attribute]
-	local children = properties[Flux.Children]
-	local events = properties[Flux.Event]
-	local eventAttributes = properties[Flux.Event.Attribute]
-	local eventProperties = properties[Flux.Event.Property]
+	local attributes = definition[Flux.Attribute]
+	local children = definition[Flux.Children]
+	local events = definition[Flux.Event]
+	local eventAttributes = definition[Flux.Event.Attribute]
+	local eventProperties = definition[Flux.Event.Property]
 
-	properties[Flux.Attribute] = nil
-	properties[Flux.Children] = nil
-	properties[Flux.Event] = nil
-	properties[Flux.Event.Attribute] = nil
-	properties[Flux.Event.Property] = nil
+	definition[Flux.Attribute] = nil
+	definition[Flux.Children] = nil
+	definition[Flux.Event] = nil
+	definition[Flux.Event.Attribute] = nil
+	definition[Flux.Event.Property] = nil
 
 	-- numeric index child definition
-	for index, child in ipairs(properties) do
+	for index, child in ipairs(definition) do
 		if typeof(child) == "Instance" then
 			child.Parent = instance
 		end
-		properties[index] = nil
+		definition[index] = nil
 	end
 
-	for property, value in properties do
+	for property, value in definition do
 		cleanBind(instance, value, property)
 		if isState(value) then
 			setupBind(instance, value, property)

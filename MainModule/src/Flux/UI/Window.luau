@@ -213,7 +213,6 @@ function Window.new(definition)
 	end)
 
 	local exitButton = UI.new "Button" {
-		LayoutOrder = 2,
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
 		Size = UDim2.new(0, 32, 0, 32),
 		Icon = "rbxassetid://1476571006",
@@ -230,6 +229,21 @@ function Window.new(definition)
 	}
 	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 
+	new._content = UI.new "Frame" {
+		AnchorPoint = Vector2.new(0, 1),
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 1, -32),
+		Position = UDim2.new(0, 0, 1, 0),
+		ClipsDescendants = true,
+
+		UI.new "UIPadding" {
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+		},
+	}
+
 	new._instance = UI.new "Frame" {
 		Name = "Window",
 		BackgroundColor3 = UI.Theme.Primary,
@@ -237,120 +251,86 @@ function Window.new(definition)
 		Size = new.Size,
 		Position = new.Position,
 
-		[UI.Children] = {
-			UICorner = UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
-			},
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerRadius,
+		},
+		UI.new "UIStroke" {
+			Enabled = UI.Theme.StrokeEnabled,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Transparency = UI.Theme.Transparency,
+			Color = UI.Theme.Border,
+		},
 
-			UIStroke = UI.new "UIStroke" {
-				Enabled = UI.Theme.StrokeEnabled,
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				Transparency = UI.Theme.Transparency,
-				Color = UI.Theme.Border,
-			},
+		UI.new "ImageLabel" {
+			Name = "ResizeIcon",
+			ZIndex = 1e3,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			BackgroundTransparency = 1,
+			Image = "rbxassetid://2286551482",
+			ImageRectSize = Vector2.new(15, 15),
+			ImageRectOffset = resizeIconRectOffset,
+			Size = UDim2.new(0, 15, 0, 15),
+			Visible = resizeHover,
+			ResampleMode = Enum.ResamplerMode.Pixelated,
+			Position = UI.compute(function(use)
+				local inputPos = use(inputPosition)
+				return UDim2.fromOffset(inputPos.X, inputPos.Y + use(UI.TopbarInset).Height) - use(new.Position)
+			end),
 
-			ResizeIcon = UI.new "ImageLabel" {
-				ZIndex = 1e3,
-				AnchorPoint = Vector2.new(0.5, 0.5),
+			[UI.Event] = {
+				InputBegan = resizeBegan,
+			},
+		},
+
+		new._content,
+
+		UI.new "Frame" {
+			Name = "TitleBar",
+			Active = true,
+			LayoutOrder = -9e9,
+			BackgroundTransparency = 1,
+			ClipsDescendants = true,
+			Size = UDim2.new(1, 0, 0, 32),
+
+			UI.new "Frame" {
+				Name = "ListFrame",
+				ZIndex = 2,
 				BackgroundTransparency = 1,
-				Image = "rbxassetid://2286551482",
-				ImageRectSize = Vector2.new(15, 15),
-				ImageRectOffset = resizeIconRectOffset,
-				Size = UDim2.new(0, 15, 0, 15),
-				Visible = resizeHover,
-				ResampleMode = Enum.ResamplerMode.Pixelated,
-				Position = UI.compute(function(use)
-					local inputPos = use(inputPosition)
-					return UDim2.fromOffset(inputPos.X, inputPos.Y + use(UI.TopbarInset).Height) - use(new.Position)
-				end),
+				Size = UDim2.new(1, 0, 1, 0),
 
-				[UI.Event] = {
-					InputBegan = resizeBegan,
+				UI.new "UIListLayout" {
+					FillDirection = Enum.FillDirection.Horizontal,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					Padding = UI.Theme.Padding,
 				},
-			},
-
-			UIContent = UI.new "Frame" {
-				AnchorPoint = Vector2.new(0, 1),
-				BackgroundTransparency = 1,
-				Size = UDim2.new(1, 0, 1, -32),
-				Position = UDim2.new(0, 0, 1, 0),
-				ClipsDescendants = true,
-
-				[UI.Children] = {
-					UIPadding = UI.new "UIPadding" {
-						PaddingLeft = UI.Theme.Padding,
-						PaddingRight = UI.Theme.Padding,
-						PaddingTop = UI.Theme.Padding,
-						PaddingBottom = UI.Theme.Padding,
-					},
+				UI.new "UIPadding" {
+					PaddingLeft = UI.Theme.Padding,
 				},
-			},
 
-			TitleBar = UI.new "Frame" {
-				Active = true,
-				LayoutOrder = -9e9,
-				BackgroundTransparency = 1,
-				ClipsDescendants = true,
-				Size = UDim2.new(1, 0, 0, 32),
+				UI.new "TextLabel" {
+					Name = "Title",
+					BackgroundTransparency = 1,
+					Size = UDim2.new(1, 0, 1, 0),
+					Font = UI.Theme.Font,
+					Text = new.Title,
+					TextColor3 = UI.Theme.PrimaryText,
+					TextSize = UI.compute(function(use)
+						return use(UI.Theme.FontSize) + 8
+					end),
+					TextStrokeTransparency = 0.9,
+					TextXAlignment = "Left",
+					TextTruncate = Enum.TextTruncate.AtEnd,
 
-				[UI.Children] = {
-					-- ColorClipped = UI.new "Frame" {
-					-- 	BackgroundColor3 = UI.Theme.Secondary,
-					-- 	BackgroundTransparency = 0.9,
-					-- 	Size = UI.compute(function(use)
-					-- 		return UDim2.new(1, 0, 0, 32 + use(UI.Theme.CornerRadius).Offset)
-					-- 	end),
-					-- 	[UI.Children] = {
-					-- 		UICorner = UI.new "UICorner" {
-					-- 			CornerRadius = UI.Theme.CornerRadius,
-					-- 		},
-					-- 	},
-					-- },
-
-					ListFrame = UI.new "Frame" {
-						ZIndex = 2,
-						BackgroundTransparency = 1,
-						Size = UDim2.new(1, 0, 1, 0),
-
-						[UI.Children] = {
-							ListLayout = UI.new "UIListLayout" {
-								FillDirection = Enum.FillDirection.Horizontal,
-								SortOrder = Enum.SortOrder.LayoutOrder,
-								Padding = UI.Theme.Padding,
-							},
-
-							UIPadding = UI.new "UIPadding" {
-								PaddingLeft = UI.Theme.Padding,
-							},
-
-							Title = UI.new "TextLabel" {
-								BackgroundTransparency = 1,
-								Size = UDim2.new(1, 0, 1, 0),
-								Font = UI.Theme.Font,
-								Text = new.Title,
-								TextColor3 = UI.Theme.PrimaryText,
-								TextSize = UI.compute(function(use)
-									return use(UI.Theme.FontSize) + 8
-								end),
-								TextStrokeTransparency = 0.9,
-								TextXAlignment = "Left",
-								TextTruncate = Enum.TextTruncate.AtEnd,
-
-								[UI.Children] = {
-									Flex = UI.new "UIFlexItem" {
-										FlexMode = Enum.UIFlexMode.Fill,
-									},
-								},
-							},
-
-							Exit = exitButton,
-						},
+					UI.new "UIFlexItem" {
+						FlexMode = Enum.UIFlexMode.Fill,
 					},
 				},
 
-				[UI.Event] = {
-					InputBegan = dragInputBegan,
-				},
+				exitButton,
+			},
+
+			[UI.Event] = {
+				InputBegan = dragInputBegan,
 			},
 		},
 	}

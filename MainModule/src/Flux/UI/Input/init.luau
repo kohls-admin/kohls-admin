@@ -55,6 +55,19 @@ local function updateCursor(cursor, input, inputMask, inputOffset, selection)
 	end
 end
 
+local MODIFIERS = {
+	Enum.KeyCode.LeftControl,
+	Enum.KeyCode.RightControl,
+	Enum.KeyCode.LeftShift,
+	Enum.KeyCode.RightShift,
+	Enum.KeyCode.LeftAlt,
+	Enum.KeyCode.RightAlt,
+	Enum.KeyCode.LeftMeta,
+	Enum.KeyCode.RightMeta,
+	Enum.KeyCode.LeftSuper,
+	Enum.KeyCode.RightSuper,
+}
+
 local Input = {}
 Input.__index = Input
 setmetatable(Input, BaseClass)
@@ -72,6 +85,10 @@ function Input.new(definition)
 		Icon = "", -- TODO: set up an icon
 		IconProperties = {},
 		IconRightAlign = false,
+		HotkeyInput = false,
+		Hotkey = UI.Nil,
+		Modifiers = UI.Nil,
+		MaxChars = math.huge,
 		NumberOnly = false,
 		IntegerOnly = false,
 		NumberRange = NumberRange.new(0, 1),
@@ -117,23 +134,41 @@ function Input.new(definition)
 			FocusLost = function()
 				local text = new._input.Text
 				if text == "" and (new.NumberOnly._value or new.IntegerOnly._value) then
-					new._input.Text = new.NumberRange._value.Min
+					new.Value:set(new.NumberRange._value.Min)
 				end
-				-- if number/int then clamp final text
-				-- local integerOnly = new.IntegerOnly._value
-				-- if (new.NumberOnly._value or integerOnly) and text ~= "" then
-				-- 	local number = tonumber(text)
-				-- 	if not number or (integerOnly and string.find(text, "%D")) then
-				-- 		error("focus lost on non number>?!?!??!?!")
-				-- 		return
-				-- 	end
-				-- 	print("focus lost")
-				-- 	new._input.Text = math.clamp(number, new.NumberRange._value.Min, new.NumberRange._value.Max)
-				-- end
 			end,
 		},
 	}
 	new._input:AddTag("KeyClackSound")
+
+	if new.HotkeyInput._value then
+		new._input.Focused:Connect(function()
+			table.clear(new.Modifiers._value)
+			new.Value:set("")
+		end)
+		UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if not new._input:IsFocused() then
+				return
+			end
+			if input.UserInputType == Enum.UserInputType.Keyboard then
+				local mods = new.Modifiers._value
+				mods.Shift = input:IsModifierKeyDown(Enum.ModifierKey.Shift)
+				mods.Ctrl = input:IsModifierKeyDown(Enum.ModifierKey.Ctrl)
+				mods.Alt = input:IsModifierKeyDown(Enum.ModifierKey.Alt)
+
+				local hotkeyText =
+					`{mods.Ctrl and "Ctrl+" or ""}{mods.Shift and "Shift+" or ""}{mods.Alt and "Alt+" or ""}`
+				if table.find(MODIFIERS, input.KeyCode) then
+					new.Value:set(hotkeyText)
+					return
+				end
+
+				new.Value:set(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
+				new.Hotkey:set(input.KeyCode)
+				new._input:ReleaseFocus(true)
+			end
+		end)
+	end
 
 	local selection = UI.new "Frame" {
 		Name = "Selection",
@@ -202,6 +237,11 @@ function Input.new(definition)
 			if new._input.CursorPosition - 1 > textLength then
 				new._input.CursorPosition = textLength + 1
 			end
+		end
+		if new.MaxChars._value ~= math.huge then
+			text = string.sub(text, 1, new.MaxChars._value)
+			new._input.CursorPosition = math.min(new.MaxChars._value + 1, new._input.CursorPosition)
+			new._input.Text = text
 		end
 		new.Value:set(text)
 	end)

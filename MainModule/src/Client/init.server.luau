@@ -17,7 +17,10 @@ local Interface = Flux.new "ScreenGui" {
 }
 
 _K.Interface = Interface
-_K.hotkeys = {}
+_K.clientSettings = {}
+_K.hotkeys = {
+	commandBarKey = { key = Enum.KeyCode.Semicolon, mods = {} },
+}
 
 require(script.CommandBar):init(_K)
 
@@ -41,62 +44,69 @@ end)
 
 Interface.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local themeList = UI.new "List" {
-	Collapsible = true,
-	Label = "Theme",
-
-	UI.new "ListItem" {
-		Text = "Input Test",
-		UI.new "Input" {
-			FontSize = 14,
-			Padding = UDim.new(0, 5),
-			Icon = "rbxassetid://18416000656",
-			IconProperties = {
-				Size = UDim2.fromOffset(18, 18),
-				-- ResampleMode = Enum.ResamplerMode.Pixelated,
+local settingsLineItems = {
+	General = {
+		-- FIX: prevent selecting reserved characters (comma, space, !@#$%^&*)
+		-- TODO: consider allowing argument prefixes?
+		UI.new "ListItem" {
+			Text = "Command Prefix",
+			UI.new "Input" {
+				Font = UI.Theme.FontMono,
+				Size = UDim2.new(0, 24, 1, 0),
+				FontSize = 14,
+				Padding = UDim.new(0, 5),
+				Placeholder = ":",
+				MaxChars = 1,
+				Value = _K.settings.prefix,
+			},
+		},
+		UI.new "ListItem" {
+			Text = "Command Bar Hotkey",
+			UI.new "Input" {
+				Font = UI.Theme.FontMono,
+				Size = UDim2.new(1, 0, 1, 0),
+				FontSize = 14,
+				Padding = UDim.new(0, 5),
+				Placeholder = ";",
+				HotkeyInput = true,
+				Hotkey = _K.hotkeys.commandBarKey.key,
+				Modifiers = _K.hotkeys.commandBarKey.mods,
 			},
 		},
 	},
-
-	UI.new "ListItem" {
-		Text = "Enable typing sounds",
-		UI.new "Switch" {
-			Value = UI.Theme.ClackEnabled,
+	Theme = {
+		UI.new "ListItem" {
+			Text = "Enable typing sounds",
+			UI.new "Switch" {
+				Value = UI.Theme.ClackEnabled,
+			},
 		},
-	},
 
-	UI.new "ListItem" {
-		Text = "Sounds on every TextBox",
-		UI.new "Switch" {
-			Value = UI.Theme.ClackAll,
+		UI.new "ListItem" {
+			Text = "Sounds on every TextBox",
+			UI.new "Switch" {
+				Value = UI.Theme.ClackAll,
+			},
 		},
-	},
 
-	UI.new "ListItem" {
-		Text = "Border Enabled Checkbox",
-		UI.new "Checkbox" {
-			Value = UI.Theme.StrokeEnabled,
+		UI.new "ListItem" {
+			Text = "Border Enabled Checkbox",
+			UI.new "Checkbox" {
+				Value = UI.Theme.StrokeEnabled,
+			},
 		},
-	},
 
-	UI.new "ListItem" {
-		Text = "Border Enabled",
-		UI.new "Switch" {
-			Value = UI.Theme.StrokeEnabled,
+		UI.new "ListItem" {
+			Text = "Border Enabled",
+			UI.new "Switch" {
+				Value = UI.Theme.StrokeEnabled,
+			},
 		},
 	},
 }
 
-local count = 0
-for _, child in themeList._instance.UIContent:GetChildren() do
-	if child:IsA("GuiObject") then
-		count += 1
-	end
-end
-
 -- udim options
 for i, key in { "CornerRadius", "Padding" } do
-	count += 1
 	local input
 	local slider = UI.new "Slider" {
 		Snap = 17,
@@ -137,17 +147,17 @@ for i, key in { "CornerRadius", "Padding" } do
 			end,
 		},
 	}
-	UI.new "ListItem" {
-		LayoutOrder = count,
-		Parent = themeList._content,
-		Text = key:gsub("(.)(%u)", "%1 %2"),
-		input,
-		slider,
-	}
+	table.insert(
+		settingsLineItems.Theme,
+		UI.new "ListItem" {
+			Text = key:gsub("(.)(%u)", "%1 %2"),
+			input,
+			slider,
+		}
+	)
 end
 
 do
-	count += 1
 	local input = UI.new "Input" {
 		Font = UI.Theme.FontMono,
 		Size = UDim2.new(0, 30, 1, 0),
@@ -167,26 +177,27 @@ do
 			end,
 		},
 	}
-	UI.new "ListItem" {
-		LayoutOrder = count,
-		Parent = themeList._content,
-		Text = "Background Transparency",
-		input,
-		UI.new "Slider" {
-			Value = UI.Theme.Transparency,
-			UI.new "UIFlexItem" {
-				FlexMode = Enum.UIFlexMode.Fill,
+	table.insert(
+		settingsLineItems.Theme,
+		UI.new "ListItem" {
+			Text = "Background Transparency",
+			input,
+			UI.new "Slider" {
+				Value = UI.Theme.Transparency,
+				UI.new "UIFlexItem" {
+					FlexMode = Enum.UIFlexMode.Fill,
+				},
+				[UI.Hook] = {
+					Value = function(value)
+						if tonumber(input._input.Text) == value then
+							return
+						end
+						input._input.Text = value
+					end,
+				},
 			},
-			[UI.Hook] = {
-				Value = function(value)
-					if tonumber(input._input.Text) == value then
-						return
-					end
-					input._input.Text = value
-				end,
-			},
-		},
-	}
+		}
+	)
 end
 
 local colors = {
@@ -204,34 +215,56 @@ local colors = {
 
 for index, key in colors do
 	local state = UI.Theme[key]
-	UI.new "ListItem" {
-		LayoutOrder = index + count,
-		Parent = themeList._instance.UIContent,
-		Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
-		UI.new "Color" {
-			Value = state,
-		},
-	}
+	table.insert(
+		settingsLineItems.Theme,
+		UI.new "ListItem" {
+			Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
+			UI.new "Color" {
+				Value = state,
+			},
+		}
+	)
 end
 
-local Settings = UI.new "ScrollingFrame" {
+local Settings = UI.new "Scroller" {
 	Name = "Settings",
-	BorderSizePixel = 0,
-	BackgroundTransparency = 1,
-	Size = UDim2.new(1, 0, 1, 0),
-	ScrollBarThickness = 8,
-	ScrollBarImageColor3 = UI.Theme.Secondary,
-	ScrollBarImageTransparency = UI.Theme.TransparencyClamped,
-	TopImage = UI.Theme.ScrollTopImage,
-	MidImage = UI.Theme.ScrollMidImage,
-	BottomImage = UI.Theme.ScrollBottomImage,
-	CanvasSize = UDim2.new(0, 0, 0, 0),
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
-	UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder },
-	themeList,
+	UI.new "Input" {
+		Placeholder = "Search settings",
+		Icon = "rbxassetid://18416000656",
+		IconProperties = {
+			Size = UDim2.fromOffset(18, 18),
+		},
+		[UI.Hook] = {
+			Value = function(value)
+				-- filter settings
+				local filter = string.lower(value)
+				for _, lineItems in settingsLineItems do
+					for _, lineItem in lineItems do
+						lineItem._instance.Visible = string.find(string.lower(UI.peek(lineItem.Text)), filter)
+					end
+				end
+			end,
+		},
+	},
 }
+
+local keyOrder = { "theme" }
+for key, lineItems in settingsLineItems do
+	local list = UI.new "List" {
+		Parent = Settings,
+		Name = key,
+		Label = key,
+		Collapsible = true,
+		LayoutOrder = table.find(keyOrder, string.lower(key)),
+	}
+	for index, lineItem in ipairs(lineItems) do
+		UI.edit(lineItem, {
+			LayoutOrder = index,
+			Parent = list,
+		})
+	end
+end
 
 local testList = {}
 for i = 1, 1e5 do
@@ -247,7 +280,7 @@ local scrollerTest = UI.new "ScrollerFast" {
 }
 
 local scrollerInput = UI.new "Input" {
-	Placeholder = "Search logs...",
+	Placeholder = "Search logs",
 	Icon = "rbxassetid://18416000656",
 	IconProperties = {
 		Size = UDim2.fromOffset(18, 18),
@@ -282,12 +315,15 @@ scrollerTest:filter(filterTest)
 
 local _uiTestWindow = UI.new "Window" {
 	Parent = UI.LayerDefault,
-	Title = "Flux UI Test",
+	Title = "Settings",
 
 	UI.new "Tabs" {
-		scrollerFrame,
 		Settings,
-		UI.new "ColorPicker" {},
+		scrollerFrame,
+		UI.new "Frame" {},
+		UI.new "Frame" {},
+		UI.new "Frame" {},
+		UI.new "Frame" {},
 		UI.new "Frame" {},
 		UI.new "Frame" {},
 		UI.new "Frame" {},

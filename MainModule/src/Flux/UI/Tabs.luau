@@ -121,7 +121,12 @@ function Tabs.new(definition)
 		},
 	}
 
-	local content = UI.new "Frame" {
+	local currentPage = UI.state(nil)
+	local tabFontSize = UI.compute(function(use)
+		return use(UI.Theme.FontSize) - 4
+	end)
+
+	new._content = UI.new "Frame" {
 		LayoutOrder = 2,
 		Name = "UIContent",
 		Parent = new._instance,
@@ -134,101 +139,102 @@ function Tabs.new(definition)
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
 		},
-	}
 
-	local currentPage = UI.state(nil)
-	local tabFontSize = UI.compute(function(use)
-		return use(UI.Theme.FontSize) - 4
-	end)
-	content.ChildAdded:Connect(function(page)
-		local nameState = UI.state(page, "Name")
-		local upperState = UI.computeFrom(string.upper, nameState)
-		local hovering, textFits, button = UI.state(false), UI.state(false)
-		button = UI.new "TextButton" {
-			Parent = tabs,
-			Name = nameState,
-			LayoutOrder = page.LayoutOrder,
-			AutoButtonColor = false,
-			AutomaticSize = Enum.AutomaticSize.XY,
-			Size = UDim2.new(0, 0, 0, 0), --UI.computeFrom(UDim2.new, 0, strokeTabSize, 1, 0),
-			BackgroundColor3 = UI.Theme.Border,
-			BackgroundTransparency = UI.tween(
-				UI.Theme.NormalTween,
-				UI.compute(function(use)
-					return if use(currentPage) == page then use(UI.Theme.Transparency) else 1
-				end)
-			),
-			Font = UI.Theme.Font,
-			Text = upperState,
-			TextSize = tabFontSize,
-			TextColor3 = UI.Theme.PrimaryText,
-			TextTransparency = UI.tween(
-				UI.Theme.NormalTween,
-				UI.compute(function(use)
-					return if use(hovering) or use(currentPage) == page then 0 else 0.5
-				end)
-			),
+		[UI.Event] = {
+			ChildAdded = function(page)
+				local nameState = UI.state(page, "Name")
+				local upperState = UI.computeFrom(string.upper, nameState)
+				local hovering, textFits, button = UI.state(false), UI.state(false)
+				button = UI.new "TextButton" {
+					Parent = tabs,
+					Name = nameState,
+					LayoutOrder = page.LayoutOrder,
+					AutoButtonColor = false,
+					AutomaticSize = Enum.AutomaticSize.XY,
+					Size = UDim2.new(0, 0, 0, 0), --UI.computeFrom(UDim2.new, 0, strokeTabSize, 1, 0),
+					BackgroundColor3 = UI.Theme.Border,
+					BackgroundTransparency = UI.tween(
+						UI.Theme.NormalTween,
+						UI.compute(function(use)
+							return if use(currentPage) == page then use(UI.Theme.Transparency) else 1
+						end)
+					),
+					Font = UI.Theme.Font,
+					Text = upperState,
+					TextSize = tabFontSize,
+					TextColor3 = UI.Theme.PrimaryText,
+					TextTransparency = UI.tween(
+						UI.Theme.NormalTween,
+						UI.compute(function(use)
+							return if use(hovering) or use(currentPage) == page then 0 else 0.5
+						end)
+					),
 
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerDiameter,
-			},
-			UI.new "UIStroke" {
-				Enabled = UI.Theme.StrokeEnabled,
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				Transparency = UI.Theme.Transparency,
-				Color = UI.Theme.Border,
-			},
-			UI.new "UIPadding" {
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-			},
-			UI.new "Tooltip" {
-				Text = upperState,
-				Enabled = UI.compute(function(use)
-					return not use(textFits)
-				end),
-			},
+					UI.new "UICorner" {
+						CornerRadius = UI.Theme.CornerDiameter,
+					},
+					UI.new "UIStroke" {
+						Enabled = UI.Theme.StrokeEnabled,
+						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+						Transparency = UI.Theme.Transparency,
+						Color = UI.Theme.Border,
+					},
+					UI.new "UIPadding" {
+						PaddingTop = UI.Theme.Padding,
+						PaddingBottom = UI.Theme.Padding,
+						PaddingLeft = UI.Theme.Padding,
+						PaddingRight = UI.Theme.Padding,
+					},
+					UI.new "Tooltip" {
+						Text = upperState,
+						Enabled = UI.compute(function(use)
+							return not use(textFits)
+						end),
+					},
 
-			[UI.Event] = {
-				MouseEnter = function()
-					hovering:set(true)
-				end,
-				MouseLeave = function()
-					hovering:set(false)
-				end,
-				Activated = function()
-					currentPage:set(page)
-					pages:JumpTo(page)
-					local absoluteStart = tabs.Parent.AbsolutePosition.X
-					local absoluteEnd = absoluteStart + tabs.Parent.AbsoluteSize.X
-					local buttonStart = button.AbsolutePosition.X
-					local buttonEnd = buttonStart + button.AbsoluteSize.X + tabList.Padding.Offset
+					[UI.Event] = {
+						MouseEnter = function()
+							hovering:set(true)
+						end,
+						MouseLeave = function()
+							hovering:set(false)
+						end,
+						Activated = function()
+							currentPage:set(page)
+							pages:JumpTo(page)
+							local absoluteStart = tabs.Parent.AbsolutePosition.X
+							local absoluteEnd = absoluteStart + tabs.Parent.AbsoluteSize.X
+							local buttonStart = button.AbsolutePosition.X
+							local buttonEnd = buttonStart + button.AbsoluteSize.X + tabList.Padding.Offset
 
-					if absoluteEnd < buttonEnd + 32 then
-						tabOffset:set(
-							math.max(
-								-tabList.AbsoluteContentSize.X + tabs.AbsoluteSize.X,
-								tabOffset._value - (32 + (buttonEnd - absoluteEnd))
-							)
-						)
-					elseif buttonStart - 32 < absoluteStart then
-						tabOffset:set(
-							math.min(0, tabOffset._value + (absoluteStart - buttonStart) + 32 + tabList.Padding.Offset)
-						)
-						-- tabOffset:set(math.min(0, tabOffset._value + new.TabSize._value + tabList.Padding.Offset))
+							if absoluteEnd < buttonEnd + 32 then
+								tabOffset:set(
+									math.max(
+										-tabList.AbsoluteContentSize.X + tabs.AbsoluteSize.X,
+										tabOffset._value - (32 + (buttonEnd - absoluteEnd))
+									)
+								)
+							elseif buttonStart - 32 < absoluteStart then
+								tabOffset:set(
+									math.min(
+										0,
+										tabOffset._value + (absoluteStart - buttonStart) + 32 + tabList.Padding.Offset
+									)
+								)
+								-- tabOffset:set(math.min(0, tabOffset._value + new.TabSize._value + tabList.Padding.Offset))
+							end
+						end,
+					},
+				}
+				textFits:bindToProperty(button, "TextFits")
+				task.defer(function()
+					if pages.CurrentPage == page then
+						currentPage:set(page)
 					end
-				end,
-			},
-		}
-		textFits:bindToProperty(button, "TextFits")
-		task.defer(function()
-			if pages.CurrentPage == page then
-				currentPage:set(page)
-			end
-		end)
-	end)
+				end)
+			end,
+		},
+	}
 
 	return setmetatable(new, Tabs)
 end
