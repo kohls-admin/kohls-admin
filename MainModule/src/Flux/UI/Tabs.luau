@@ -7,7 +7,7 @@ setmetatable(Tabs, BaseClass)
 
 function Tabs.new(definition)
 	local new = UI.makeStatefulDefaults({
-		TabSize = 64,
+		-- TabSize = 64,
 	}, definition)
 
 	local tabOffset = UI.state(0)
@@ -15,9 +15,7 @@ function Tabs.new(definition)
 	local tabList = UI.new "UIListLayout" {
 		FillDirection = Enum.FillDirection.Horizontal,
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UI.compute(function(use)
-			return UDim.new(0, use(UI.Theme.Padding).Offset + (if use(UI.Theme.StrokeEnabled) then 2 else 0))
-		end),
+		Padding = UI.Theme.Padding,
 	}
 
 	local tabs = UI.new "Frame" {
@@ -26,9 +24,7 @@ function Tabs.new(definition)
 		Size = UDim2.new(1, 0, 1, 0),
 		Position = UI.tween(UI.Theme.NormalTween, UI.computeFrom(UDim2.new, 0, tabOffset, 0, 0)),
 
-		[UI.Children] = {
-			UIListLayout = tabList,
-		},
+		tabList,
 	}
 
 	-- clamp offset on resize
@@ -41,13 +37,10 @@ function Tabs.new(definition)
 		-- TODO: keep current page visible when resizing down?
 	end)
 
-	local strokePadding = UI.compute(function(use)
-		return UDim.new(0, if use(UI.Theme.StrokeEnabled) then 1 else 0)
-	end)
-
-	local strokeTabSize = UI.compute(function(use)
-		return use(new.TabSize) - (if use(UI.Theme.StrokeEnabled) then 2 else 0)
-	end)
+	-- local strokePadding = UI.compute(function(use)
+	-- 	return UDim.new(0, if use(UI.Theme.StrokeEnabled) then 1 else 0)
+	-- end)
+	local lastScroll
 
 	local pages = UI.new "UIPageLayout" {
 		Animated = true,
@@ -63,50 +56,83 @@ function Tabs.new(definition)
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 
-		[UI.Children] = {
-			Bar = UI.new "Frame" {
-				BackgroundTransparency = 1,
-				ClipsDescendants = true,
-				Size = UDim2.new(1, 0, 0, 24),
+		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 
-				tabs,
-				UI.new "UIPadding" {
-					PaddingTop = strokePadding,
-					PaddingBottom = strokePadding,
-					PaddingLeft = strokePadding,
-					PaddingRight = strokePadding,
-				},
+		UI.new "Frame" {
+			Name = "Bar",
+			BackgroundTransparency = 1,
+			ClipsDescendants = true,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			Size = UDim2.new(1, 0, 0, 0),
 
-				[UI.Event] = {
-					MouseWheelForward = function()
-						tabOffset:set(math.min(0, tabOffset._value + new.TabSize._value + tabList.Padding.Offset))
-					end,
-					MouseWheelBackward = function()
-						tabOffset:set(
-							math.max(
-								math.min(0, -tabList.AbsoluteContentSize.X + tabs.AbsoluteSize.X),
-								tabOffset._value - (new.TabSize._value + tabList.Padding.Offset)
-							)
-						)
-					end,
-				},
+			tabs,
+			UI.new "UIPadding" {
+				PaddingTop = UDim.new(0, 1),
+				PaddingBottom = UDim.new(0, 1),
+				PaddingLeft = UDim.new(0, 1),
+				PaddingRight = UDim.new(0, 1),
+			},
+
+			[UI.Event] = {
+				-- TODO: Figure out next/previous tab size
+				MouseWheelForward = function()
+					local absoluteStart = new._instance.AbsolutePosition.X
+					local closest, closestChild = math.huge, nil
+					for _, child in tabs:GetChildren() do
+						if child:IsA("GuiObject") then
+							local childStart = child.AbsolutePosition.X
+							if childStart < absoluteStart - 2 and absoluteStart - childStart < closest then
+								closest = math.floor(absoluteStart - childStart)
+								closestChild = child
+							end
+						end
+					end
+					if closest == math.huge or lastScroll == closestChild then
+						return
+					end
+					lastScroll = closestChild
+					tabOffset:set(math.min(0, -(closestChild.AbsolutePosition.X - tabs.AbsolutePosition.X)))
+				end,
+				MouseWheelBackward = function()
+					local absoluteStart = new._instance.AbsolutePosition.X
+					local closest, closestChild = 9e9, nil
+					for _, child in tabs:GetChildren() do
+						if child:IsA("GuiObject") then
+							local childStart = child.AbsolutePosition.X
+							if childStart > absoluteStart + 2 and childStart - absoluteStart < closest then
+								closest = math.floor(childStart - absoluteStart)
+								closestChild = child
+							end
+						end
+					end
+					if closest == math.huge or lastScroll == closestChild then
+						return
+					end
+					local maxOffset = tabList.AbsoluteContentSize.X - tabs.AbsoluteSize.X
+
+					if maxOffset > 0 then
+						lastScroll = closestChild
+					end
+					tabOffset:set(
+						math.max(math.min(0, -maxOffset), -(closestChild.AbsolutePosition.X - tabs.AbsolutePosition.X))
+					)
+				end,
 			},
 		},
 	}
 
 	local content = UI.new "Frame" {
+		LayoutOrder = 2,
 		Name = "UIContent",
 		Parent = new._instance,
 		AnchorPoint = Vector2.new(0, 1),
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, -24),
+		Size = UDim2.new(1, 0, 1, 0),
 		Position = UDim2.new(0, 0, 1, 0),
 
-		[UI.Children] = {
-			Pages = pages,
-			UIPadding = UI.new "UIPadding" {
-				PaddingTop = UI.Theme.Padding,
-			},
+		pages,
+		UI.new "UIFlexItem" {
+			FlexMode = Enum.UIFlexMode.Fill,
 		},
 	}
 
@@ -123,7 +149,8 @@ function Tabs.new(definition)
 			Name = nameState,
 			LayoutOrder = page.LayoutOrder,
 			AutoButtonColor = false,
-			Size = UI.computeFrom(UDim2.new, 0, strokeTabSize, 1, 0),
+			AutomaticSize = Enum.AutomaticSize.XY,
+			Size = UDim2.new(0, 0, 0, 0), --UI.computeFrom(UDim2.new, 0, strokeTabSize, 1, 0),
 			BackgroundColor3 = UI.Theme.Border,
 			BackgroundTransparency = UI.tween(
 				UI.Theme.NormalTween,
@@ -135,7 +162,6 @@ function Tabs.new(definition)
 			Text = upperState,
 			TextSize = tabFontSize,
 			TextColor3 = UI.Theme.PrimaryText,
-			TextTruncate = Enum.TextTruncate.AtEnd,
 			TextTransparency = UI.tween(
 				UI.Theme.NormalTween,
 				UI.compute(function(use)
@@ -151,6 +177,12 @@ function Tabs.new(definition)
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 				Transparency = UI.Theme.Transparency,
 				Color = UI.Theme.Border,
+			},
+			UI.new "UIPadding" {
+				PaddingTop = UI.Theme.Padding,
+				PaddingBottom = UI.Theme.Padding,
+				PaddingLeft = UI.Theme.Padding,
+				PaddingRight = UI.Theme.Padding,
 			},
 			UI.new "Tooltip" {
 				Text = upperState,
@@ -169,24 +201,23 @@ function Tabs.new(definition)
 				Activated = function()
 					currentPage:set(page)
 					pages:JumpTo(page)
-					if
-						button.AbsolutePosition.X
-						> tabs.Parent.AbsolutePosition.X
-							+ tabs.Parent.AbsoluteSize.X
-							- new.TabSize._value * 1.5
-							- tabList.Padding.Offset
-					then
+					local absoluteStart = tabs.Parent.AbsolutePosition.X
+					local absoluteEnd = absoluteStart + tabs.Parent.AbsoluteSize.X
+					local buttonStart = button.AbsolutePosition.X
+					local buttonEnd = buttonStart + button.AbsoluteSize.X + tabList.Padding.Offset
+
+					if absoluteEnd < buttonEnd + 32 then
 						tabOffset:set(
 							math.max(
 								-tabList.AbsoluteContentSize.X + tabs.AbsoluteSize.X,
-								tabOffset._value - (new.TabSize._value + tabList.Padding.Offset)
+								tabOffset._value - (32 + (buttonEnd - absoluteEnd))
 							)
 						)
-					elseif
-						button.AbsolutePosition.X
-						< tabs.Parent.AbsolutePosition.X + new.TabSize._value + tabList.Padding.Offset
-					then
-						tabOffset:set(math.min(0, tabOffset._value + new.TabSize._value * 1.5 + tabList.Padding.Offset))
+					elseif buttonStart - 32 < absoluteStart then
+						tabOffset:set(
+							math.min(0, tabOffset._value + (absoluteStart - buttonStart) + 32 + tabList.Padding.Offset)
+						)
+						-- tabOffset:set(math.min(0, tabOffset._value + new.TabSize._value + tabList.Padding.Offset))
 					end
 				end,
 			},

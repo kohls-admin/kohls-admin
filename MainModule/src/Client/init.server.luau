@@ -288,6 +288,12 @@ local _uiTestWindow = UI.new "Window" {
 		scrollerFrame,
 		Settings,
 		UI.new "ColorPicker" {},
+		UI.new "Frame" {},
+		UI.new "Frame" {},
+		UI.new "Frame" {},
+		UI.new "Frame" {},
+		UI.new "Frame" {},
+		UI.new "Frame" {},
 	},
 }
 

@@ -44,7 +44,7 @@ local UI = {
 
 		CornerRadius = state(UDim.new(0, 8)),
 		Padding = state(UDim.new(0, 8)),
-		StrokeEnabled = state(false),
+		StrokeEnabled = state(true),
 
 		NormalTween = TweenInfo.new(0.2),
 		-- BasePixelHeight 32?
