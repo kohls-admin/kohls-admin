@@ -628,7 +628,7 @@ return {
 	init = function(self, context)
 		Input.Text = context.settings.prefix:get()
 		CommandBar.Parent = context.Interface
-		context.hotkeys.commandBar = { key = Enum.KeyCode.Quote, callback = self.show }
+		context.hotkeys.commandBar = { key = Enum.KeyCode.Semicolon, mods = {}, callback = self.show }
 		context.CommandBarState = { textSize, validState, indicatorColor }
 	end,
 	show = function()

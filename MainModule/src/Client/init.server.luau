@@ -18,11 +18,14 @@ local Interface = Flux.new "ScreenGui" {
 
 _K.Interface = Interface
 _K.clientSettings = {}
-_K.hotkeys = {
-	commandBarKey = { key = Enum.KeyCode.Semicolon, mods = {} },
-}
+_K.hotkeys = {}
 
 require(script.CommandBar):init(_K)
+
+-- stateful hotkeys
+for _, data in _K.hotkeys do
+	data.key = Flux.state(data.key)
+end
 
 -- implement autocomplete
 -- check for start of command and autocomplete it based on _K.Registry.commands
@@ -35,7 +38,23 @@ _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEve
 	end
 	if input.UserInputType == Enum.UserInputType.Keyboard then
 		for keyName, data in _K.hotkeys do
-			if input.KeyCode == data.key or (type(data.key) == "table" and table.find(data.key, input.KeyCode)) then
+			if
+				input.KeyCode == data.key._value
+				or (type(data.key._value) == "table" and table.find(data.key._value, input.KeyCode))
+			then
+				local missingMod = false
+				for mod, value in data.mods do
+					if not value then
+						continue
+					end
+					if not input:IsModifierKeyDown(Enum.ModifierKey[mod]) then
+						missingMod = true
+						break
+					end
+				end
+				if missingMod then
+					return
+				end
 				task.defer(data.callback)
 			end
 		end
@@ -55,7 +74,7 @@ local settingsLineItems = {
 				Size = UDim2.new(0, 24, 1, 0),
 				FontSize = 14,
 				Padding = UDim.new(0, 5),
-				Placeholder = ":",
+				Placeholder = ";",
 				MaxChars = 1,
 				Value = _K.settings.prefix,
 			},
@@ -69,8 +88,9 @@ local settingsLineItems = {
 				Padding = UDim.new(0, 5),
 				Placeholder = ";",
 				HotkeyInput = true,
-				Hotkey = _K.hotkeys.commandBarKey.key,
-				Modifiers = _K.hotkeys.commandBarKey.mods,
+				Value = UI.UserInputService:GetStringForKeyCode(_K.hotkeys.commandBar.key._value),
+				Hotkey = _K.hotkeys.commandBar.key,
+				Modifiers = _K.hotkeys.commandBar.mods,
 			},
 		},
 	},

@@ -153,11 +153,9 @@ function Input.new(definition)
 			if input.UserInputType == Enum.UserInputType.Keyboard then
 				local mods = new.Modifiers._value
 				mods.Shift = input:IsModifierKeyDown(Enum.ModifierKey.Shift)
-				mods.Ctrl = input:IsModifierKeyDown(Enum.ModifierKey.Ctrl)
 				mods.Alt = input:IsModifierKeyDown(Enum.ModifierKey.Alt)
 
-				local hotkeyText =
-					`{mods.Ctrl and "Ctrl+" or ""}{mods.Shift and "Shift+" or ""}{mods.Alt and "Alt+" or ""}`
+				local hotkeyText = `{mods.Shift and "Shift+" or ""}{mods.Alt and "Alt+" or ""}`
 				if table.find(MODIFIERS, input.KeyCode) then
 					new.Value:set(hotkeyText)
 					return
