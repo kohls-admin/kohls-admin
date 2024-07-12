@@ -211,7 +211,7 @@ function module.prepareCommand(commandArray, from, message)
 		}
 end
 
-function module.runCommands(from: (Player | number)?, rawString: string, chatted: boolean?)
+function module.runCommands(from: (Player | number)?, rawString: string)
 	-- TODO: validate permissions!
 	-- TODO: allow for remote commands with no player? or a userid to log remote users?
 	local message = module._K.Util.trimStart(rawString)
@@ -229,11 +229,19 @@ function module.runCommands(from: (Player | number)?, rawString: string, chatted
 				break
 			end
 
-			-- -- TODO: check if client/server and handle client/server run?
-			-- -- need to also pass the validated command object to the server if on client?
+			if module._K.IsServer then
+				if not result.definition.run then
+					continue -- skip running client commands on server
+				end
+			else -- client
+				if not result.definition.clientRun then
+					continue -- skip running server commands on client
+				end
+			end
 
 			-- TODO pre/post command hooks
-			local success, err = pcall(result.definition.run, result, unpack(result.args))
+			local success, err =
+				pcall(result.definition[if module._K.IsServer then "run" else "clientRun"], result, unpack(result.args))
 			if not success then
 				-- show command error
 				-- TODO: propagate error info to send relevant information to the client? (for serverside run only?)

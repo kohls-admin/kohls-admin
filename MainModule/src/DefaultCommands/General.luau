@@ -1,5 +1,28 @@
 return {
 	{
+		name = "alias",
+		aliases = {},
+		description = "Creates a command alias out of a command and given arguments.",
+		group = "General",
+		args = {
+			{
+				type = "string",
+				name = "Alias name",
+				description = "The name of the command alias.",
+			},
+			{
+				type = "string",
+				name = "Command string",
+				description = "The command string to alias.",
+			},
+		},
+
+		clientRun = function(context, alias: string, command: string)
+			context.Registry.registerCommandAlias(alias, command)
+		end,
+	},
+
+	{
 		name = "message",
 		aliases = { "m", "msg" },
 		description = "Sends a message to everyone in the server.",

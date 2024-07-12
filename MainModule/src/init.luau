@@ -89,15 +89,15 @@ if addons then
 	end
 end
 
+_K.IsServer = _K.Services.RunService:IsServer()
+if not _K.IsServer then
+	return _K
+end
 --------------------------
 -- START OF SERVER CODE --
 --------------------------
 
 -- TODO: include Loader settings then include datastore settings to override
-
-if not _K.Services.RunService:IsServer() then
-	return _K
-end
 
 -- define remotes
 for _, remote in { "Init", "Command", "Log" } do

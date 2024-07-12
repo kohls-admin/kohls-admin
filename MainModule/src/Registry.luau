@@ -56,7 +56,7 @@ function module.registerCommand(commandObject)
 
 	if commandObject.aliases then
 		for _, alias in commandObject.aliases do
-			-- errof if alias conflicts
+			-- error if alias conflicts
 			local conflict = module.commands[string.lower(alias)]
 			assert(
 				not conflict,
@@ -65,6 +65,26 @@ function module.registerCommand(commandObject)
 			module.commands[string.lower(alias)] = commandObject
 		end
 	end
+end
+
+local aliases = {}
+function module.registerCommandAlias(alias, command)
+	local oldAlias = aliases[alias]
+	if not oldAlias and module.commands[string.lower(alias)] then
+		warn("Command alias already exists")
+		return
+	end
+
+	module.registerCommand {
+		name = alias,
+		aliases = {},
+		description = `Alias of "{command}"`,
+		group = "Local",
+		args = {},
+		clientRun = function(context)
+			context.Process.runCommands(game.Players.LocalPlayer, command)
+		end,
+	}
 end
 
 -- TODO: handle replication of the entire module and stuff?
