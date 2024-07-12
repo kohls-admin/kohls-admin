@@ -36,7 +36,9 @@ function ScrollerFast:render()
 			}
 		end
 		lineItem.Visible = true
-		lineItem.Text = if self._renderText then self._renderText(self._filteredList[i]) else self._filteredList[i]
+		lineItem.Text = if self.RenderText
+			then self.RenderText._value(self, self._filteredList[i])
+			else self._filteredList[i]
 		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
 		lineItem.Parent = self._instance
 
@@ -59,7 +61,7 @@ function ScrollerFast:updateList()
 end
 
 function ScrollerFast:refreshList()
-	self._filteredList = if self._filterFunction then self._filterFunction(self._sortedList) else self._sortedList
+	self._filteredList = if self._filterFunction then self._filterFunction(self, self._sortedList) else self._sortedList
 	self:render()
 end
 
@@ -81,6 +83,8 @@ end
 function ScrollerFast.new(definition)
 	local new = UI.makeStatefulDefaults({
 		List = {},
+		FilterText = UI.Nil,
+		RenderText = UI.Nil,
 	}, definition)
 
 	new._rawList = definition.List

@@ -246,7 +246,7 @@ for index, key in colors do
 	)
 end
 
-local settingsRichFormat = `<font transparency="0.5">%s</font>%s<font transparency="0.5">%s</font>`
+local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
 local Settings = UI.new "Scroller" {
 	Name = "Settings",
@@ -271,7 +271,7 @@ local Settings = UI.new "Scroller" {
 						local found = string.find(string.lower(rawText), filter)
 						local text = if found
 							then string.format(
-								settingsRichFormat,
+								filterRichFormat,
 								_K.Util.escapeRichText(string.sub(rawText, 1, found - 1)),
 								_K.Util.escapeRichText(string.sub(rawText, found, found + #filter - 1)),
 								_K.Util.escapeRichText(string.sub(rawText, found + #filter))
@@ -303,14 +303,44 @@ for key, lineItems in settingsLineItems do
 	end
 end
 
-local testList = {}
-for i = 1, 1e5 do
-	testList[i] = i .. ": this is a test log, let's see just how terrible we can make this stress test."
-end
-table.insert(testList, #testList / 2, "needle")
+local logTypeColors = {
+	Chat = "#0f0",
+	Command = "#ff0",
+	Info = "#0ff",
+	Warning = "#f80",
+	Error = "#f00",
+}
 
 local scrollerTest = UI.new "ScrollerFast" {
-	List = testList,
+	List = _K.logs,
+	FilterText = function(log)
+		local timestamp = os.date("%b %d %X", log[1])
+		local logTypeLabel = _K.Enum.LogType[log[3]]
+		return `{timestamp} {logTypeLabel:upper()} {log[2]}`
+	end,
+	RenderText = function(self, log)
+		local msg = log[2]
+		local timestamp = os.date("%b %d %X", log[1])
+		local logTypeLabel = _K.Enum.LogType[log[3]]
+
+		if self._filter ~= "" then
+			local text = `{timestamp} {logTypeLabel:upper()} {msg}`
+			local filterFound = string.find(text:lower(), self._filter)
+			return if filterFound
+				then string.format(
+					filterRichFormat,
+					_K.Util.escapeRichText(string.sub(text, 1, filterFound - 1)),
+					_K.Util.escapeRichText(string.sub(text, filterFound, filterFound + #self._filter - 1)),
+					_K.Util.escapeRichText(string.sub(text, filterFound + #self._filter))
+				)
+				else text
+		end
+
+		local found = string.find(msg, " ")
+		return `<font transparency="0.5">{_K.Util.escapeRichText(timestamp)}</font> <font color="{logTypeColors[logTypeLabel]}" weight="900">{logTypeLabel:upper()}</font> <b>{_K.Util.escapeRichText(
+			string.sub(msg, 1, found - 1)
+		)}</b>{string.sub(msg, found)}`
+	end,
 	UI.new "UIFlexItem" {
 		FlexMode = Enum.UIFlexMode.Fill,
 	},
@@ -330,6 +360,7 @@ scrollerInput._input:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 local scrollerFrame = UI.new "Frame" {
+	Name = "Logs",
 	BackgroundTransparency = 1,
 	Size = UDim2.new(1, 0, 1, 0),
 	UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
@@ -337,11 +368,12 @@ local scrollerFrame = UI.new "Frame" {
 	scrollerTest,
 }
 
-local function filterTest(list)
+local function filterTest(self, list)
 	local filter = scrollerInput._input.Text:lower()
+	self._filter = filter
 	local new = {}
 	for i, v in list do
-		if v:lower():find(filter, 1, true) then
+		if self.FilterText._value(v):lower():find(filter, 1, true) then
 			table.insert(new, v)
 		end
 	end
@@ -370,152 +402,20 @@ local _uiTestWindow = UI.new "Window" {
 	},
 }
 
--- NOTE: NEW INTERFACE FRAMEWORK TEST
--- local test = UI.new "Window" {
--- 	Parent = UI.LayerDefault,
---
--- 	[UI.Children] = {
--- 		Tabs = UI.new "Tabs" {
--- 			[UI.Children] = {
--- 				ListFrame = UI.new "Frame" {
--- 					Size = UDim2.new(1, 0, 1, 0),
--- 					BackgroundTransparency = 1,
--- 					[UI.Children] = {
--- 						Layout = UI.new "UIListLayout" {},
--- 						List = UI.new "List" {
--- 							Collapsible = true,
--- 							Label = "This is a test THIS IS A TEST",
--- 							[UI.Children] = {
--- 								Button = UI.new "Button" {},
--- 								Button2 = UI.new "Button" {},
--- 								Button3 = UI.new "Button" {},
--- 								Button4 = UI.new "Button" {},
--- 								Select = UI.new "Select" {
--- 									UI.new "Tooltip" {},
--- 								},
--- 							},
--- 						},
--- 						List2 = UI.new "List" {
--- 							Collapsible = true,
--- 							Label = "This is a test2 THIS IS A TEST2",
--- 							[UI.Children] = {
--- 								Button = UI.new "Button" {},
--- 								Button2 = UI.new "Button" {},
--- 								Button3 = UI.new "Button" {},
--- 								Button4 = UI.new "Button" {},
--- 							},
--- 						},
--- 					},
--- 				},
--- 				Snap = UI.new "Slider" {
--- 					Snap = 5,
--- 					[UI.Hook] = {
--- 						Value = function(value)
--- 							print("Slider value changed", value)
--- 						end,
--- 					},
--- 				},
--- 				Vertical = UI.new "Slider" {
--- 					Vertical = true,
--- 					[UI.Hook] = {
--- 						Value = function(value)
--- 							print("Slider snap value changed", value)
--- 						end,
--- 					},
--- 					[UI.Children] = {
--- 						Flex = UI.new "UIFlexItem" {
--- 							FlexMode = Enum.UIFlexMode.Fill,
--- 						},
--- 					},
--- 				},
--- 				Switch = UI.new "Switch" {
--- 					[UI.Hook] = {
--- 						Value = function(value)
--- 							print("Switch value changed", value)
--- 						end,
--- 					},
--- 				},
--- 				Color = UI.new "ColorPicker" {
--- 					[UI.Hook] = {
--- 						Value = function(value)
--- 							print("Color value changed", value)
--- 						end,
--- 					},
--- 				},
--- 			},
--- 		},
--- 	},
--- }
--- local test = UI.new "Frame" {
--- 	Parent = Interface,
--- 	BackgroundTransparency = 0.3,
--- 	BackgroundColor3 = Color3.new(),
--- 	AnchorPoint = Vector2.new(0.5, 0.5),
--- 	Position = UDim2.new(0.5, 0, 0.5, 0),
--- 	Size = UDim2.new(0, 512, 0, 512),
---
--- 	[UI.Children] = {
--- 		UICorner = UI.new "UICorner" {
--- 			CornerRadius = UDim.new(0, 16),
--- 		},
--- 		Padding = UI.new "UIPadding" {
--- 			PaddingLeft = UDim.new(0, 8),
--- 			PaddingRight = UDim.new(0, 8),
--- 			PaddingTop = UDim.new(0, 8),
--- 			PaddingBottom = UDim.new(0, 8),
--- 		},
--- 		ListLayout = UI.new "UIListLayout" {
--- 			Padding = UDim.new(0, 8),
--- 		},
--- 		Button = UI.new "Button" {
--- 			BackgroundColor3 = Color3.fromRGB(200, 0, 0),
--- 			Size = UDim2.new(0, 32, 0, 32),
--- 			Text = "",
--- 			Icon = "rbxassetid://1476571006",
--- 			IconProperties = {
--- 				AnchorPoint = Vector2.new(0.5, 0.5),
--- 				Size = UDim2.new(0, 10, 0, 10),
--- 				Position = UDim2.new(0.5, 0, 0.5, 0),
--- 				ResampleMode = Enum.ResamplerMode.Pixelated,
--- 			},
--- 			Activated = function()
--- 				print("Test button pressed!")
--- 			end,
--- 		},
--- 		Test = UI.new "Slider" {
--- 			Snap = 5,
--- 			[UI.Hook] = {
--- 				Value = function(value)
--- 					print("Slider value changed", value)
--- 				end,
--- 			},
--- 		},
--- 		Test2 = UI.new "Slider" {
--- 			Vertical = true,
--- 			[UI.Hook] = {
--- 				Value = function(value)
--- 					print("Slider snap value changed", value)
--- 				end,
--- 			},
--- 			[UI.Children] = {
--- 				Flex = UI.new "UIFlexItem" {
--- 					FlexMode = Enum.UIFlexMode.Fill,
--- 				},
--- 			},
--- 		},
--- 		Lol = UI.new "Switch" {
--- 			[UI.Hook] = {
--- 				Value = function(value)
--- 					print("Switch value changed", value)
--- 				end,
--- 			},
--- 		},
--- 		Color = UI.new "ColorPicker" {
--- 			[UI.Hook] = {
--- 				Value = function(value)
--- 					print("Color value changed", value)
--- 				end,
--- 			},
--- 		},
--- 	},
--- }
+local initCon
+initCon = _K.Remote "Init".OnClientEvent:Connect(function(auth, bans, logs, settings)
+	initCon:Disconnect()
+	_K.Authorization = auth
+	_K.bans = bans
+	_K.logs = logs
+	_K.settings = settings
+	scrollerTest:updateList()
+end)
+
+_K.Remote "Log".OnClientEvent:Connect(function(log)
+	table.insert(_K.logs, log)
+	if #_K.logs > 1e5 then
+		table.remove(_K.logs, 1)
+	end
+	scrollerTest:updateList()
+end)

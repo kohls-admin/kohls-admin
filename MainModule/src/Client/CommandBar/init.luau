@@ -581,7 +581,9 @@ Input.FocusLost:Connect(function(enterPressed)
 	CommandBar.Visible = false
 	Input.TextEditable = false
 	if enterPressed then
-		task.spawn(_K.Process.runCommands, _K.Services.Players.LocalPlayer, Input.Text)
+		-- FIX: if validated lol
+		_K.Remote "Command":FireServer(Input.Text)
+		-- task.spawn(_K.Process.runCommands, _K.Services.Players.LocalPlayer, Input.Text)
 		-- Find the command in the history (and remove if not the most recent)
 		local cmd = string.sub(Input.Text, 2)
 		local foundIndex = table.find(commandHistory, cmd)

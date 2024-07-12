@@ -22,15 +22,15 @@ local module = {
 		ban = false,
 		-- can kick or ban users from the current server session
 		kick = false,
-		-- allows the user to manage roles of other users with a lower role
+		-- allows the user to manage roles of other users with a lesser role
 		roles = false,
-		-- can view dev tools
-		dev = false,
+		-- can configure the global admin settings
+		settings = false,
 		-- can view audit logs
 		logs = false,
 
 		-- COSMETIC PERMISSIONS
-		-- can use commands that require a staff OR vip permission
+		-- can use commands that require VIP permission
 		vip = false,
 
 		-- allowed command groups?
@@ -70,11 +70,14 @@ local module = {
 			roles = true,
 			logs = true,
 		},
-		dev = {
+		superadmin = {
 			_rank = 4,
-			name = "Developer",
-			dev = true,
+			name = "SuperAdmin",
+			ban = true,
+			kick = true,
+			roles = true,
 			logs = true,
+			settings = true,
 		},
 		-- FIXME should this be defined and configurable? (or should it just be forced...)
 		creator = {
@@ -88,7 +91,7 @@ local module = {
 		-- example role data structure
 		-- [userid] = {data}
 		[1] = {
-			-- last known username
+			-- last known username? (update over time on init?)
 			name = "Roblox",
 			roles = { "creator" },
 		},
@@ -103,11 +106,10 @@ function module.userRoleAdd(userId, role)
 	local userPermissions = module.permissions[userId]
 	if not userPermissions then
 		local player = Players:GetPlayerByUserId(userId)
-		userPermissions = {
+		module.permissions[userId] = {
 			name = if player then player.name else Players:GetNameFromUserIdAsync(userId),
 			roles = { role },
 		}
-		module.permissions[userId] = userPermissions
 	else
 		if not table.find(userPermissions.roles, role) then
 			table.insert(userPermissions.roles, role)
@@ -161,6 +163,12 @@ function module.hasPermission(userId, permission)
 	end
 	local userPermissions = module.permissions[userId]
 	if userPermissions then
+		if
+			userPermissions.permissions
+			and (userPermissions.permissions.admin or userPermissions.permissions[permission])
+		then
+			return true
+		end
 		for _, roleId in userPermissions.roles do
 			local role = module.roles[roleId]
 			if role and (role.admin or role[permission]) then

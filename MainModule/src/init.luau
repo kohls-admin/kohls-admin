@@ -24,6 +24,8 @@ local _K = {
 		[1] = { "Roblox" },
 	},
 
+	logs = {},
+
 	-- configuration
 	settings = {
 		prefix = ":",
@@ -31,9 +33,10 @@ local _K = {
 	},
 }
 
--- assign shorthand
+-- shorthand utility
 _K.Services = _K.Util.Services
 _K.Remote = _K.Util.Remote
+_K.Enum = _K.Util.Enum
 
 -- assign CreatorId
 if game.CreatorType == Enum.CreatorType.Group then
@@ -41,6 +44,19 @@ if game.CreatorType == Enum.CreatorType.Group then
 	_K.creatorId = groupInfo.Owner.Id
 else
 	_K.creatorId = game.CreatorId
+end
+
+_K.Enum.LogType = { "Chat", "Command", "Info", "Warning", "Error" }
+function _K.log(message: string, logType: string, player: Player?)
+	-- fire this log to all clients that are authorized!
+	-- TODO: make sure they pull logs on client init
+	-- make sure to sort by timestamp for new datastore entries
+	local log = { os.time(), message, _K.Enum.LogType[logType], player and player.UserId }
+	table.insert(_K.logs, log)
+	if #_K.logs > 1e5 then
+		table.remove(_K.logs, 1)
+	end
+	_K.Remote "Log":FireAllClients(log)
 end
 
 -- register internal modules to _K
@@ -83,8 +99,17 @@ if not _K.Services.RunService:IsServer() then
 	return _K
 end
 
+-- define remotes
+for _, remote in { "Init", "Command", "Log" } do
+	_K.Remote(remote)
+end
+
 -- network test
-_K.Remote.Test.OnServerEvent:Connect(print)
+_K.Remote "Init".OnServerEvent:Connect(function(player)
+	-- send their own player permissions always for clientside validation
+	-- TODO: make sure data is network safe!
+	_K.Remote "Init":FireClient(player, _K.Authorization, _K.bans, _K.logs, _K.settings)
+end)
 
 -- replicate addons
 addons.Parent = script
@@ -132,10 +157,7 @@ local function playerAdded(player: Player)
 		return
 	end
 	player.Chatted:Connect(function(message: string)
-		local success, err = _K.Process.runCommands(player, message, true)
-		if not success then
-			print(err)
-		end
+		_K.Process.runCommands(player, message, true)
 	end)
 end
 
@@ -144,5 +166,7 @@ _K.Services.Players.PlayerAdded:Connect(playerAdded)
 for _, player in _K.Services.Players:GetPlayers() do
 	playerAdded(player)
 end
+
+_K.Remote "Command".OnServerEvent:Connect(_K.Process.runCommands)
 
 return _K

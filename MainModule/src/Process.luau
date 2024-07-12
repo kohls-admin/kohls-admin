@@ -212,39 +212,43 @@ function module.prepareCommand(commandArray, from, message)
 end
 
 function module.runCommands(from: (Player | number)?, rawString: string, chatted: boolean?)
+	-- TODO: validate permissions!
 	-- TODO: allow for remote commands with no player? or a userid to log remote users?
 	local message = module._K.Util.trimStart(rawString)
 
+	local commandRan, commandError
 	local rawCommands = module.rawParse(message, module._K.settings.prefix:get())
-	if not rawCommands then
-		return -- no valid commands found, show feedback
-	end
+	if rawCommands then
+		for _, commandArray in rawCommands do
+			-- print("commandArray", commandArray)
+			local ok, result = module.prepareCommand(commandArray, from, message)
 
-	print("rawCommands", rawCommands)
+			if not ok then
+				-- TODO: need to have a unified way of displaying feedback, and a way for autocomplete lol
+				commandError = result
+				break
+			end
 
-	for _, commandArray in rawCommands do
-		print("commandArray", commandArray)
-		local ok, result = module.prepareCommand(commandArray, from, message)
+			-- -- TODO: check if client/server and handle client/server run?
+			-- -- need to also pass the validated command object to the server if on client?
 
-		if not ok then
-			-- TODO: need to have a unified way of displaying feedback, and a way for autocomplete lol
-			print(result)
-			return false, result
-		end
-
-		-- -- TODO: check if client/server and handle client/server run?
-		-- -- need to also pass the validated command object to the server if on client?
-
-		-- TODO pre/post command hooks
-		local success, err = pcall(result.definition.run, result, unpack(result.args))
-		if not success then
-			-- show command error
-			-- TODO: propagate error info to send relevant information to the client? (for serverside run only?)
-			print(err)
-			return success, err
+			-- TODO pre/post command hooks
+			local success, err = pcall(result.definition.run, result, unpack(result.args))
+			if not success then
+				-- show command error
+				-- TODO: propagate error info to send relevant information to the client? (for serverside run only?)
+				commandError = err
+			else
+				commandRan = true
+			end
 		end
 	end
-	return
+	-- print("rawCommands", rawCommands)
+
+	-- TODO: error visual feedback for user
+	local logType = if commandRan then "Command" elseif commandError then "Error" else "Chat"
+	module._K.log(tostring(from) .. " " .. message, logType, from)
+	return commandRan
 end
 
 return module
