@@ -1,7 +1,7 @@
 local Bans = {}
 Bans.__index = Bans
 
-local banRichFormat = `%s <b>%s</b>\t%s\t<font transparency="0.5">%s</font>`
+local banRichFormat = `<b>%s</b> %s\t%s\t<font transparency="0.5">%s</font>`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
 function Bans.new(_K)
@@ -19,7 +19,7 @@ function Bans.new(_K)
 				else "Session"
 
 			if self._filter ~= "" then
-				local text = `{ban.userId} {ban[1]}\t{ban[2]}\t{term}`
+				local text = `{ban[1]} {ban.userId}\t{ban[2]}\t{term}`
 				local filterFound = string.find(text:lower(), self._filter)
 				return if filterFound
 					then string.format(
@@ -31,7 +31,7 @@ function Bans.new(_K)
 					else text
 			end
 
-			return string.format(banRichFormat, escape(ban.userId), escape(ban[1]), escape(ban[2]), escape(term))
+			return string.format(banRichFormat, escape(ban[1]), escape(ban.userId), escape(ban[2]), escape(term))
 		end,
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
@@ -52,7 +52,7 @@ function Bans.new(_K)
 			local term = if ban[3]
 				then (if ban[3] > 0 then os.date("%y-%m-%d %X", ban[3]) else "Permanently")
 				else "Session"
-			local text = `{userId} {ban[1]}\t{ban[2]}\t{term}`
+			local text = `{ban[1]} {ban.userId}\t{ban[2]}\t{term}`
 			if text:lower():find(filter, 1, true) then
 				table.insert(new, ban)
 			end

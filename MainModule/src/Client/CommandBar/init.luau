@@ -564,7 +564,6 @@ Input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 	if Input.CursorPosition == -1 then
 		Cursor.Visible = false
 	else
-		print(_K.settings.prefix)
 		if Input.CursorPosition < #Flux.peek(_K.settings.prefix) + 1 then
 			Input.CursorPosition = #Flux.peek(_K.settings.prefix) + 1
 			return

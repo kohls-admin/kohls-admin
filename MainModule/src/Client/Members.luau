@@ -1,7 +1,7 @@
 local Members = {}
 Members.__index = Members
 
-local memberRichFormat = `%s <b>%s</b>\t<font transparency="0.5">%s</font>`
+local memberRichFormat = `<b>%s</b> %s\t<font transparency="0.5">%s</font>`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
 function Members.new(_K)
@@ -15,7 +15,7 @@ function Members.new(_K)
 		FilterInput = true,
 		RenderText = function(self, member)
 			if self._filter ~= "" then
-				local text = `{member.userId} {member.name}\t{table.concat(member.roles, " | ")}`
+				local text = `{member.name} {member.userId}\t{table.concat(member.roles, " | ")}`
 				local filterFound = string.find(text:lower(), self._filter)
 				return if filterFound
 					then string.format(
@@ -29,8 +29,8 @@ function Members.new(_K)
 
 			return string.format(
 				memberRichFormat,
-				escape(member.userId),
 				escape(member.name),
+				escape(member.userId),
 				escape(table.concat(member.roles, " | "))
 			)
 		end,
@@ -49,7 +49,7 @@ function Members.new(_K)
 				continue
 			end
 			member.userId = userId
-			local text = `{userId} {member.name}\t{table.concat(member.roles, " | ")}`
+			local text = `{member.name} {userId}\t{table.concat(member.roles, " | ")}`
 			if text:lower():find(filter, 1, true) then
 				table.insert(new, member)
 			end

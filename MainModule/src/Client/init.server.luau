@@ -61,28 +61,85 @@ local dashboardLogs = Logs.new(_K)
 local dashboardCommands = Commands.new(_K)
 local dashboardSettings = Settings.new(_K)
 
-local _uiTestWindow = UI.new "Window" {
+local dashboard = UI.new "Window" {
 	Parent = UI.LayerDefault,
-	Title = "Dashboard",
+	Title = "Kohl's Admin Dashboard",
+	Visible = false,
 
 	UI.new "Tabs" {
-		dashboardMembers,
-		dashboardBans,
-		dashboardLogs,
 		dashboardCommands,
+		dashboardBans,
+		dashboardMembers,
+		dashboardLogs,
 		dashboardSettings,
-		UI.new "Frame" {},
-		UI.new "Frame" {},
-		UI.new "Frame" {},
-		UI.new "Frame" {},
-		UI.new "Frame" {},
-		UI.new "Frame" {},
-		UI.new "Frame" {},
-		UI.new "Frame" {},
-		UI.new "Frame" {},
-		UI.new "Frame" {},
 	},
 }
+-- TopbarStandard.Holders.Left
+local holder = UI.PlayerGui:FindFirstChild("TopbarStandard")
+if holder and holder:FindFirstChild("Holders") and holder.Holders:FindFirstChild("Left") then
+	holder = holder.Holders.Left
+end
+
+local dashboardButton
+dashboardButton = UI.new "TextButton" {
+	Parent = holder or UI.LayerTop,
+	LayoutOrder = -1,
+	Name = "kDashboard",
+	AutoButtonColor = true,
+	BackgroundColor3 = Color3.new(),
+	BackgroundTransparency = 0.3,
+	BorderSizePixel = 0,
+	Size = UDim2.fromOffset(44, 44),
+	Position = UDim2.fromOffset(172, 12),
+	Text = "",
+	TextTransparency = 1,
+
+	UI.new "UICorner" {
+		CornerRadius = UDim.new(1, 0),
+	},
+	UI.new "UIPadding" {
+		PaddingLeft = UDim.new(0, 12),
+		PaddingRight = UDim.new(0, 12),
+		PaddingTop = UDim.new(0, 12),
+		PaddingBottom = UDim.new(0, 12),
+	},
+
+	UI.new "ImageLabel" {
+		BackgroundTransparency = 1,
+		Image = "rbxassetid://10650723871",
+		Size = UDim2.fromScale(1, 1),
+	},
+
+	[UI.Event] = {
+		Activated = function()
+			dashboard._instance.Visible = not dashboard._instance.Visible
+		end,
+		MouseEnter = function()
+			dashboardButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+		end,
+		MouseLeave = function()
+			dashboardButton.BackgroundColor3 = Color3.new()
+		end,
+	},
+}
+
+task.spawn(function()
+	local white = Color3.new(1, 1, 1)
+	while dashboard and dashboard._instance and dashboardButton do
+		dashboardButton.ImageLabel.ImageColor3 = if dashboard._instance.Visible
+			then Color3.fromHSV((tick() / 10) % 1, 1, 1)
+			else white
+		task.wait()
+	end
+end)
+
+local dashCon
+dashCon = UI.PlayerGui.ChildAdded:Connect(function(child)
+	if child.Name == "TopbarStandard" and child:FindFirstChild("Holders") and child.Holders:FindFirstChild("Left") then
+		dashCon:Disconnect()
+		dashboardButton.Parent = child.Holders.Left
+	end
+end)
 
 local initCon
 initCon = _K.Remote "Init".OnClientEvent:Connect(function(auth, bans, logs, settings)
@@ -92,7 +149,6 @@ initCon = _K.Remote "Init".OnClientEvent:Connect(function(auth, bans, logs, sett
 
 	_K.bans = bans
 	_K.banState:set(bans)
-	print("init bans", bans)
 
 	_K.logs = logs
 	_K.logState:set(logs)

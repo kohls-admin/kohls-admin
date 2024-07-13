@@ -25,9 +25,10 @@ function Commands.new(_K)
 		FilterInput = true,
 		RenderText = function(self, command)
 			if self._filter ~= "" then
-				local text = `{UI.peek(_K.settings.prefix)}{command.name}{if command.aliases
+				local aliasText = if command.aliases and #command.aliases ~= 0
 					then "/" .. table.concat(command.aliases, "/")
-					else ""} {command.description}`
+					else ""
+				local text = `{UI.peek(_K.settings.prefix)}{command.name}{aliasText} {command.description}`
 				local filterFound = string.find(text:lower(), self._filter)
 				return if filterFound
 					then string.format(
@@ -61,9 +62,10 @@ function Commands.new(_K)
 		self._filter = filter
 		local new = {}
 		for _, command in list do
-			local text = `{UI.peek(_K.settings.prefix)}{command.name}{if command.aliases
+			local aliasText = if command.aliases and #command.aliases ~= 0
 				then "/" .. table.concat(command.aliases, "/")
-				else ""} {command.description}`
+				else ""
+			local text = `{UI.peek(_K.settings.prefix)}{command.name}{aliasText} {command.description}`
 			if text:lower():find(filter, 1, true) then
 				table.insert(new, command)
 			end

@@ -13,6 +13,7 @@ local UI = {
 	GuiService = GuiService,
 	TextService = TextService,
 	UserInputService = UserInputService,
+	PlayerGui = playerGui,
 
 	Class = {},
 	Hook = newproxy(),

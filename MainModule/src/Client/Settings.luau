@@ -200,7 +200,6 @@ function Settings.new(_K)
 			},
 			[UI.Hook] = {
 				Value = function(value)
-					print(`input value "{value}"`)
 					-- filter settings
 					local filter = string.lower(value)
 					for _, lineItems in settingsLineItems do

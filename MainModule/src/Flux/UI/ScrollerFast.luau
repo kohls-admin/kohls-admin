@@ -84,7 +84,6 @@ function ScrollerFast:cloneRaw()
 	if self.DictList._value then
 		local list = {}
 		for key in self.List._value do
-			print("raw clone", key)
 			table.insert(list, key)
 		end
 		self._sortedList = list
