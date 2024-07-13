@@ -111,6 +111,10 @@ end
 -- TODO: should probably not save roles to a player datastore otherwise those would need to be updated too ;(
 -- TODO: instead let the game developer handle their own player save state and just give roles on join?
 
+local function roleSort(a: string, b: string): boolean
+	return module.roles[a]._rank > module.roles[b]._rank
+end
+
 function module.userRoleAdd(userId, role)
 	local member = module.members[tostring(userId)]
 	if not member then
@@ -122,6 +126,7 @@ function module.userRoleAdd(userId, role)
 	else
 		if not table.find(member.roles, role) then
 			table.insert(member.roles, role)
+			table.sort(member.roles, roleSort)
 		end
 	end
 end
