@@ -50,7 +50,7 @@ return {
 		description = "Kills one or more players.",
 		group = "General",
 		-- asks players with the same or higher rank if the command should work on them
-		abusable = true, -- shorthand for context._K.Authorization.shouldRequest(context, player)
+		abusable = true, -- shorthand for context._K.Auth.shouldRequest(context, player)
 		args = {
 			{
 				type = "players",
@@ -62,7 +62,7 @@ return {
 		run = function(context, players)
 			print(context, players)
 			for _, player in players do
-				if context._K.Authorization.shouldRequest(context, player) then
+				if context._K.Auth.shouldRequest(context, player) then
 					continue
 				end
 				if player.Character then
@@ -98,7 +98,7 @@ return {
 		run = function(context, players, duration, reason)
 			local flags = context.flags
 			for _, player in players do
-				if context._K.Authorization.shouldRequest(context, player) then
+				if context._K.Auth.shouldRequest(context, player) then
 					continue
 				end
 				-- do i change this to a serverban command? (will flags really be useful?)

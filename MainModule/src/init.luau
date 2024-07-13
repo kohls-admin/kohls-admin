@@ -8,6 +8,7 @@
 
 local _K = {
 	-- modules
+	Auth = require(script.Authorization),
 	Util = require(script.Util),
 
 	-- key used to check when global data has been changed for a save cycle
@@ -18,10 +19,14 @@ local _K = {
 	bans = {
 		-- [UserId] = {Username, Reason, Timestamp}
 		-- Username is the last known username of the user when they were banned
+		-- TODO: progressively parse and update each name!
 		-- if Timestamp is -1 the ban is permanent
 		-- if Timestamp is nil the ban is for the server session only
 		-- saves only if Timestamp isn't nil
-		[1] = { "Roblox" },
+		["1"] = { "Roblox", "He noob.", -1 },
+		["2"] = { "John Doe", "He been noob." },
+		["3"] = { "Jane Doe", "She was a noob." },
+		["5"] = { "Jack Doe", "Wow!", 1720922623 },
 	},
 
 	logs = {},
@@ -38,6 +43,9 @@ _K.Services = _K.Util.Services
 _K.Remote = _K.Util.Remote
 _K.Enum = _K.Util.Enum
 
+_K.IsServer = _K.Services.RunService:IsServer()
+_K.IsClient = _K.Services.RunService:IsClient()
+
 -- assign CreatorId
 if game.CreatorType == Enum.CreatorType.Group then
 	local groupInfo = _K.Services.GroupService:GetGroupInfoAsync(game.CreatorId)
@@ -46,21 +54,26 @@ else
 	_K.creatorId = game.CreatorId
 end
 
-_K.Enum.LogType = { "Chat", "Command", "Info", "Warning", "Error" }
-function _K.log(message: string, logType: string, player: Player?)
+_K.Enum.LogType = { "Chat", "Command", "Info", "Warning", "Error", "System" }
+function _K.log(message: string, logType: string, from: Player?)
 	-- fire this log to all clients that are authorized!
 	-- TODO: make sure they pull logs on client init
 	-- make sure to sort by timestamp for new datastore entries
-	local log = { os.time(), message, _K.Enum.LogType[logType], player and player.UserId }
+	if from then
+		message = tostring(from) .. ": " .. message
+	end
+	local log = { os.time(), message, _K.Enum.LogType[logType] }
 	table.insert(_K.logs, log)
 	if #_K.logs > 1e5 then
 		table.remove(_K.logs, 1)
 	end
-	_K.Remote "Log":FireAllClients(log)
+	if _K.IsServer then
+		_K.Remote "Log":FireAllClients(log)
+	end
 end
 
 -- register internal modules to _K
-for _, module in { "Authorization", "Registry", "Process", "Flux" } do
+for _, module in { "Registry", "Process", "Flux" } do
 	_K[module] = require(script[module])
 	_K[module]._K = _K
 end
@@ -89,7 +102,6 @@ if addons then
 	end
 end
 
-_K.IsServer = _K.Services.RunService:IsServer()
 if not _K.IsServer then
 	return _K
 end
@@ -108,7 +120,7 @@ end
 _K.Remote "Init".OnServerEvent:Connect(function(player)
 	-- send their own player permissions always for clientside validation
 	-- TODO: make sure data is network safe!
-	_K.Remote "Init":FireClient(player, _K.Authorization, _K.bans, _K.logs, _K.settings)
+	_K.Remote "Init":FireClient(player, _K.Auth, _K.bans, _K.logs, _K.settings)
 end)
 
 -- replicate addons
@@ -168,5 +180,7 @@ for _, player in _K.Services.Players:GetPlayers() do
 end
 
 _K.Remote "Command".OnServerEvent:Connect(_K.Process.runCommands)
+-- NOTE: probably shouldn't network system logs to other servers, ideally only command and error logs
+_K.log("Server initialized.", "System")
 
 return _K

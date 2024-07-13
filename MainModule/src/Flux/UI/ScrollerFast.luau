@@ -14,11 +14,11 @@ setmetatable(ScrollerFast, BaseClass)
 
 function ScrollerFast:render()
 	local lineHeight = self._lineHeight._value
-	local startIndex = math.floor(self._instance.CanvasPosition.Y / lineHeight) + 1
+	local startIndex = math.floor(self._scroller.CanvasPosition.Y / lineHeight) + 1
 	local endIndex =
-		math.min(startIndex + math.ceil(self._instance.AbsoluteWindowSize.Y / lineHeight), #self._filteredList)
+		math.min(startIndex + math.ceil(self._scroller.AbsoluteWindowSize.Y / lineHeight), #self._filteredList)
 
-	self._instance.CanvasSize = UDim2.new(0, 0, 0, #self._filteredList * lineHeight)
+	self._scroller.CanvasSize = UDim2.new(0, 0, 0, #self._filteredList * lineHeight)
 
 	local cacheIndex = 1
 	for i = startIndex, endIndex do
@@ -28,7 +28,7 @@ function ScrollerFast:render()
 				BackgroundTransparency = 1,
 				Size = self._lineItemSize,
 				RichText = true,
-				Font = UI.Theme.Font,
+				Font = UI.Theme.FontMono,
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = UI.Theme.PrimaryText,
 				TextTruncate = Enum.TextTruncate.AtEnd,
@@ -40,7 +40,7 @@ function ScrollerFast:render()
 			then self.RenderText._value(self, self._filteredList[i])
 			else self._filteredList[i]
 		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
-		lineItem.Parent = self._instance
+		lineItem.Parent = self._scroller
 
 		self._lineItemCache[cacheIndex] = lineItem
 		cacheIndex = cacheIndex + 1
@@ -53,9 +53,9 @@ end
 
 -- Used to render changes from the _rawList
 function ScrollerFast:updateList()
-	self._sortedList = table.clone(self._rawList)
+	self:cloneRaw()
 	if self._sortFunction then
-		table.sort(self._sortedList)
+		table.sort(self._sortedList, self._sortFunction)
 	end
 	self:refreshList()
 end
@@ -75,28 +75,46 @@ function ScrollerFast:sort(sortFunction: (...any) -> any)
 	if sortFunction then
 		table.sort(self._sortedList, sortFunction)
 	else -- unsort
-		self._sortedList = table.clone(self._rawList)
+		self:cloneRaw()
 	end
 	self:refreshList()
 end
 
+function ScrollerFast:cloneRaw()
+	if self.DictList._value then
+		local list = {}
+		for key in self.List._value do
+			print("raw clone", key)
+			table.insert(list, key)
+		end
+		self._sortedList = list
+	else
+		self._sortedList = table.clone(self.List._value)
+	end
+end
+
+-- if dictlist then convert List into an array
 function ScrollerFast.new(definition)
-	local new = UI.makeStatefulDefaults({
+	local self = UI.makeStatefulDefaults({
 		List = {},
-		FilterText = UI.Nil,
+		DictList = false,
+		FilterInput = false,
 		RenderText = UI.Nil,
 	}, definition)
 
-	new._rawList = definition.List
-	new._sortedList = table.clone(new._rawList)
-	new._filteredList = new._sortedList
-	new._lineItemCache = {}
+	ScrollerFast.cloneRaw(self)
+	self._filteredList = self._sortedList
+	self._lineItemCache = {}
+
+	self.List:hook(function()
+		self:updateList()
+	end)
 
 	local function render()
-		ScrollerFast.render(new)
+		ScrollerFast.render(self)
 	end
 
-	new._instance = UI.new "ScrollingFrame" {
+	self._scroller = UI.new "ScrollingFrame" {
 		Name = "ScrollerFast",
 		BorderSizePixel = 0,
 		BackgroundTransparency = 1,
@@ -110,15 +128,43 @@ function ScrollerFast.new(definition)
 		BottomImage = UI.Theme.ScrollBottomImage,
 		VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
-		-- UI.new "UIPadding" { PaddingRight = UI.Theme.Padding },
 		[UI.Event.Property] = {
 			AbsoluteWindowSize = render,
 			CanvasPosition = render,
+		},
+	}
+
+	self._instance = UI.new "Frame" {
+		Name = "ScrollerFast",
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 1, 0),
+
+		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
+		self._scroller,
+
+		[UI.Event.Property] = {
 			Parent = render,
 		},
 	}
 
-	return setmetatable(new, ScrollerFast)
+	if self.FilterInput._value then
+		self._input = UI.new "Input" {
+			LayoutOrder = -1,
+			Parent = self._instance,
+			Placeholder = "Search",
+			Icon = "rbxassetid://18416000656",
+			IconProperties = {
+				Size = UDim2.fromOffset(18, 18),
+			},
+
+			[UI.Hook] = {
+				Value = function()
+					self:refreshList()
+				end,
+			},
+		}
+	end
+	return setmetatable(self, ScrollerFast)
 end
 
 return ScrollerFast

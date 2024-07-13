@@ -564,8 +564,9 @@ Input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 	if Input.CursorPosition == -1 then
 		Cursor.Visible = false
 	else
-		if Input.CursorPosition < #_K.settings.prefix:get() + 1 then
-			Input.CursorPosition = #_K.settings.prefix:get() + 1
+		print(_K.settings.prefix)
+		if Input.CursorPosition < #Flux.peek(_K.settings.prefix) + 1 then
+			Input.CursorPosition = #Flux.peek(_K.settings.prefix) + 1
 			return
 		end
 		if tabCompleting then
@@ -596,7 +597,7 @@ Input.FocusLost:Connect(function(enterPressed)
 				table.remove(commandHistory)
 			end
 		end
-		Input.Text = _K.settings.prefix:get()
+		Input.Text = Flux.peek(_K.settings.prefix)
 	end
 end)
 -- FIX: make sure _K reliant connections aren't connected until init!
@@ -604,7 +605,7 @@ Input:GetPropertyChangedSignal("Text"):Connect(function()
 	if tabCompleting then
 		return
 	end
-	local prefix = _K.settings.prefix:get()
+	local prefix = Flux.peek(_K.settings.prefix)
 	if string.find(Input.Text, prefix, 1, true) ~= 1 then
 		Input.Text = prefix .. Input.Text
 		Input.CursorPosition += utf8.len(prefix)
@@ -619,7 +620,7 @@ Input:GetPropertyChangedSignal("Text"):Connect(function()
 		Input.Position = UDim2.new(0, 0, 0, 0)
 		Input.Size = UDim2.new(1, 0, 1, 0)
 	end
-	if Input.Text == _K.settings.prefix:get() then
+	if Input.Text == Flux.peek(_K.settings.prefix) then
 		InputLabel.Text = Input.Text .. "<font transparency='0.5'><i>command</i></font>"
 	else
 		InputLabel.Text = _K.Util.escapeRichText(Input.Text)
@@ -628,8 +629,8 @@ end)
 
 return {
 	init = function(self, context)
-		Input.Text = context.settings.prefix:get()
-		CommandBar.Parent = context.Interface
+		Input.Text = Flux.peek(context.settings.prefix)
+		CommandBar.Parent = context.UI.LayerTop
 		context.hotkeys.commandBar = { key = Enum.KeyCode.Semicolon, mods = {}, callback = self.show }
 		context.CommandBarState = { textSize, validState, indicatorColor }
 	end,

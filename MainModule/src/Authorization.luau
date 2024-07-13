@@ -7,8 +7,6 @@
 local Players = game:GetService("Players")
 
 local module = {
-	_K = nil,
-
 	defaultRole = {
 		-- role "_rank" determines hierarchy
 		-- 0 is reserved for the default role
@@ -87,42 +85,53 @@ local module = {
 		},
 	},
 
-	permissions = {
+	members = {
 		-- example role data structure
 		-- [userid] = {data}
-		[1] = {
+		["1"] = {
 			-- last known username? (update over time on init?)
 			name = "Roblox",
-			roles = { "creator" },
+			roles = { "admin", "vip" },
+		},
+		["44391621"] = {
+			name = "Kohl",
+			roles = { "creator", "superadmin", "admin", "mod", "vip" },
 		},
 	},
 }
+
+if game.CreatorId > 0 then
+	module.members[tostring(game.CreatorId)] = {
+		name = game:GetService("Players"):GetNameFromUserIdAsync(game.CreatorId),
+		roles = { "creator" },
+	}
+end
 
 -- for adding/removing roles only save staff roles
 -- TODO: should probably not save roles to a player datastore otherwise those would need to be updated too ;(
 -- TODO: instead let the game developer handle their own player save state and just give roles on join?
 
 function module.userRoleAdd(userId, role)
-	local userPermissions = module.permissions[userId]
-	if not userPermissions then
+	local member = module.members[tostring(userId)]
+	if not member then
 		local player = Players:GetPlayerByUserId(userId)
-		module.permissions[userId] = {
+		module.members[tostring(userId)] = {
 			name = if player then player.name else Players:GetNameFromUserIdAsync(userId),
 			roles = { role },
 		}
 	else
-		if not table.find(userPermissions.roles, role) then
-			table.insert(userPermissions.roles, role)
+		if not table.find(member.roles, role) then
+			table.insert(member.roles, role)
 		end
 	end
 end
 
 function module.userRoleRemove(userId, role)
-	local userPermissions = module.permissions[userId]
-	if userPermissions then
-		local index = table.find(userPermissions.roles, role)
+	local member = module.members[tostring(userId)]
+	if member then
+		local index = table.find(member.roles, role)
 		if index then
-			table.remove(userPermissions, index)
+			table.remove(member, index)
 		end
 	end
 end
@@ -144,9 +153,9 @@ end
 function module.getRank(userId, permission)
 	permission = permission or "_rank"
 	local rank = 0
-	local userPermissions = module.permissions[userId]
-	if userPermissions then
-		for _, roleId in userPermissions.roles do
+	local member = module.members[tostring(userId)]
+	if member then
+		for _, roleId in member.roles do
 			local role = module.roles[roleId]
 			if role and role[permission] then
 				rank = math.max(rank, role._rank)
@@ -161,15 +170,12 @@ function module.hasPermission(userId, permission)
 	if module.defaultRole[permission] or module.defaultRole.admin then
 		return true
 	end
-	local userPermissions = module.permissions[userId]
-	if userPermissions then
-		if
-			userPermissions.permissions
-			and (userPermissions.permissions.admin or userPermissions.permissions[permission])
-		then
+	local member = module.members[tostring(userId)]
+	if member then
+		if member.permissions and (member.permissions.admin or member.permissions[permission]) then
 			return true
 		end
-		for _, roleId in userPermissions.roles do
+		for _, roleId in member.roles do
 			local role = module.roles[roleId]
 			if role and (role.admin or role[permission]) then
 				return true

@@ -74,10 +74,10 @@ local directMagic = {
 		return player ~= from
 	end,
 	admins = function(player)
-		return _K.Authorization.permissions[player.UserId]
+		return _K.Auth.members[player.UserId]
 	end,
 	nonadmins = function(player)
-		return not _K.Authorization.permissions[player.UserId]
+		return not _K.Auth.members[player.UserId]
 	end,
 	friends = function(player, from)
 		return player ~= from and player:IsFriendsWith(from.UserId)
@@ -178,10 +178,10 @@ local typeMagic = {
 
 local function roleParse(arg)
 	local players = {}
-	for id, roleData in _K.Authorization.roles do
+	for id, roleData in _K.Auth.roles do
 		if string.lower(roleData.name) == arg then
 			for _, player in Players:GetPlayers() do
-				local userPermissions = _K.Authorization.permissions[player.UserId]
+				local userPermissions = _K.Auth.members[player.UserId]
 				if userPermissions and table.find(userPermissions.roles, id) then
 					table.insert(players, player)
 				end
@@ -218,7 +218,13 @@ local function parseIndividual(arg, from)
 		return from
 	end
 	for _, player in Players:GetPlayers() do
-		print("parseIndividual", arg, from, string.lower(player.Name), string.find(string.lower(player.Name), arg, 1, true))
+		print(
+			"parseIndividual",
+			arg,
+			from,
+			string.lower(player.Name),
+			string.find(string.lower(player.Name), arg, 1, true)
+		)
 		if string.find(string.lower(player.Name), arg, 1, true) == 1 then
 			return player
 		end

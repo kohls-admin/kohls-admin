@@ -71,7 +71,7 @@ local MODIFIERS = {
 local Input = {}
 Input.__index = Input
 setmetatable(Input, BaseClass)
--- TODO: send button
+-- TODO: send/clear button
 function Input.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Cursor = "_",
@@ -82,7 +82,7 @@ function Input.new(definition)
 		FontSize = UI.Theme.FontSize,
 		TextColor3 = UI.Theme.PrimaryText,
 		Padding = UI.Theme.Padding,
-		Icon = "", -- TODO: set up an icon
+		Icon = "",
 		IconProperties = {},
 		IconRightAlign = false,
 		HotkeyInput = false,

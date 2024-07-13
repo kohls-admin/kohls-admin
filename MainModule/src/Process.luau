@@ -229,19 +229,13 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 				break
 			end
 
-			if module._K.IsServer then
-				if not result.definition.run then
-					continue -- skip running client commands on server
-				end
-			else -- client
-				if not result.definition.clientRun then
-					continue -- skip running server commands on client
-				end
+			local run = result.definition[if module._K.IsServer then "run" else "clientRun"]
+			if not run then
+				continue
 			end
 
 			-- TODO pre/post command hooks
-			local success, err =
-				pcall(result.definition[if module._K.IsServer then "run" else "clientRun"], result, unpack(result.args))
+			local success, err = pcall(run, result, unpack(result.args))
 			if not success then
 				-- show command error
 				-- TODO: propagate error info to send relevant information to the client? (for serverside run only?)
@@ -255,7 +249,7 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 
 	-- TODO: error visual feedback for user
 	local logType = if commandRan then "Command" elseif commandError then "Error" else "Chat"
-	module._K.log(tostring(from) .. " " .. message, logType, from)
+	module._K.log(if commandError then commandError else message, logType, from)
 	return commandRan
 end
 
