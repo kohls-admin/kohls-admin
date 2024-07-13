@@ -116,7 +116,7 @@ return function(_K, message, cursorPosition)
 					data.argPos = pos
 					data.rawArg = transformedArg
 					data.query = string.sub(transformedArg, 1, cursorPosition - pos)
-					data.suggestions = transformedType.suggestions(data.query)
+					data.suggestions = transformedType.suggestions(data.query, Players.LocalPlayer)
 				end
 			end
 		end
