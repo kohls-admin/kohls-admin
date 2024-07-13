@@ -17,6 +17,10 @@ function ListItem.new(definition)
 		Size = UDim2.new(0.5, 0, 1, 0),
 		Position = UDim2.new(1, 0, 0, 0),
 		BackgroundTransparency = 1,
+
+		UI.new "UIPadding" {
+			PaddingRight = UDim.new(0, 1),
+		},
 	}
 
 	local layout = UI.new "UIListLayout" {

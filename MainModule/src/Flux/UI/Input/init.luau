@@ -255,6 +255,7 @@ function Input.new(definition)
 		LayoutOrder = 1,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
+		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 		Image = new.Icon,
 		ImageColor3 = UI.Theme.Secondary,
 		Visible = UI.compute(function(use)
