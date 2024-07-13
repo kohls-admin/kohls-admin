@@ -5,232 +5,180 @@ local TextService = game:GetService("TextService")
 local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
 
-local Flux = _K.Flux
+local UI = _K.UI
 
 local ChatInputBarConfiguration = TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
 
-local textSize = Flux.state(16)
-local validState = Flux.state(nil)
-local indicatorColor = Flux.compute(function(use)
+local validState = UI.state(nil)
+local indicatorColor = UI.compute(function(use)
 	local valid = use(validState)
 	if valid == true then
-		return Color3.new(0, 1, 0)
+		return use(UI.Theme.Valid)
 	elseif valid == false then
-		return Color3.new(1, 0, 0)
+		return use(UI.Theme.Invalid)
 	else
 		return Color3.new(1, 1, 1)
 	end
 end)
-local InputMask = Flux.new "Frame" {
-	Name = "Mask",
-	ClipsDescendants = true,
-	BackgroundTransparency = 1,
-	Position = UDim2.new(0, 20, 0, 0),
-	Size = UDim2.new(1, -20, 1, 0),
-}
 
-local Input = Flux.new "TextBox" {
-	Parent = InputMask,
-	TextEditable = false,
-	AutoLocalize = false,
-	ClearTextOnFocus = false,
-	Size = UDim2.new(1, -32, 1, 0),
-	BackgroundTransparency = 1,
-	TextTransparency = 1,
-	TextSize = textSize,
-	TextColor3 = Color3.new(1, 1, 1),
-	Font = Enum.Font.RobotoMono,
-	RichText = true,
-	TextXAlignment = Enum.TextXAlignment.Left,
-	TextYAlignment = Enum.TextYAlignment.Center,
-}
-
-local InputLabel = Flux.new "TextLabel" {
-	Parent = Input,
-	AutoLocalize = false,
-	Size = UDim2.new(1, 0, 1, 0),
-	BackgroundTransparency = 1,
-	TextSize = textSize,
-	TextColor3 = Color3.new(1, 1, 1),
-	Font = Enum.Font.RobotoMono,
-	RichText = true,
-	TextXAlignment = Enum.TextXAlignment.Left,
-	TextYAlignment = Enum.TextYAlignment.Center,
-}
-
-local Selection = Flux.new "Frame" {
-	Parent = InputMask,
-	Name = "Selection",
+local Input = UI.new "Input" {
 	AnchorPoint = Vector2.new(0, 0.5),
-	BackgroundTransparency = 0.75,
-	Size = UDim2.new(0, 0, 0, Input.TextSize),
-	Position = UDim2.new(0, 0, 0.5, 0),
-	BackgroundColor3 = Color3.new(1, 1, 1),
-	BorderSizePixel = 0,
-	Visible = false,
-}
+	Placeholder = "Search",
+	BackgroundColor3 = UI.Theme.Primary,
+	BackgroundTransparency = UI.Theme.Transparency,
+	Font = UI.Theme.FontMono,
 
-local Cursor = Flux.edit(InputLabel:Clone(), {
-	Size = UDim2.new(0, 12, 1, 0),
-	Position = UDim2.new(0, 0, 0, 0),
-	Text = "_",
-	TextSize = textSize,
-	Visible = false,
-})
+	UI.new "Frame" {
+		Name = "CircleIndicator",
+		BackgroundTransparency = 1,
+		Size = UDim2.new(0, 14, 1, 0),
 
-local CommandBar = Flux.new "Frame" {
-	Name = "CommandBar",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Size = UDim2.new(0, 512, 0, 32),
-	Position = UDim2.new(0.5, 0, 0.5, 0),
-	BackgroundColor3 = Color3.new(0, 0, 0),
-	BackgroundTransparency = 0.3,
-	ZIndex = 100,
-	Visible = false,
-
-	[Flux.Children] = {
-		UICorner = Flux.new "UICorner" {
-			CornerRadius = UDim.new(1, 0),
+		UI.new "UIPadding" {
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
 		},
 
-		InputFrame = Flux.new "Frame" {
-			ClipsDescendants = true,
+		UI.new "Frame" {
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, 0, 1, 0),
+			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-			[Flux.Children] = {
-				Padding = Flux.new "UIPadding" {
-					PaddingTop = UDim.new(0, 8),
-					PaddingBottom = UDim.new(0, 8),
-					PaddingLeft = UDim.new(0, 8),
-					PaddingRight = UDim.new(0, 8),
-				},
+			UI.new "UICorner" {
+				CornerRadius = UDim.new(1, 0),
+			},
+			UI.new "UIStroke" {
+				Thickness = 2,
+				Color = indicatorColor,
+			},
 
-				Cursor = Cursor,
-				InputMask = InputMask,
+			UI.new "ImageLabel" {
+				Name = "Valid",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundTransparency = 1,
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				Size = UDim2.new(0, 14, 0, 14),
+				ImageColor3 = Color3.new(0, 1, 0),
+				Image = "rbxassetid://2340153468",
+				Visible = UI.compute(function(use)
+					return use(validState) == true
+				end),
+				-- ResampleMode = Enum.ResamplerMode.Pixelated
+			},
 
-				CircleIndicator = Flux.new "Frame" {
-					BackgroundTransparency = 1,
-					Size = UDim2.new(1, 0, 1, 0),
-					SizeConstraint = Enum.SizeConstraint.RelativeYY,
-
-					[Flux.Children] = {
-						UICorner = Flux.new "UICorner" {
-							CornerRadius = UDim.new(1, 0),
-						},
-						UIStroke = Flux.new "UIStroke" {
-							Thickness = 2,
-							Color = indicatorColor,
-						},
-
-						IconValid = Flux.new "ImageLabel" {
-							AnchorPoint = Vector2.new(0.5, 0.5),
-							BackgroundTransparency = 1,
-							Position = UDim2.new(0.5, 0, 0.5, 0),
-							Size = UDim2.new(0, 14, 0, 14),
-							ImageColor3 = Color3.new(0, 1, 0),
-							Image = "rbxassetid://2340153468",
-							Visible = Flux.compute(function(use)
-								return use(validState) == true
-							end),
-							-- ResampleMode = Enum.ResamplerMode.Pixelated
-						},
-
-						IconInvalid = Flux.new "ImageLabel" {
-							AnchorPoint = Vector2.new(0.5, 0.5),
-							BackgroundTransparency = 1,
-							Position = UDim2.new(0.5, 0, 0.5, 0),
-							Size = UDim2.new(0, 10, 0, 10),
-							ImageColor3 = Color3.new(1, 0, 0),
-							Image = "rbxassetid://1476571006",
-							Visible = Flux.compute(function(use)
-								return use(validState) == false
-							end),
-							-- ResampleMode = Enum.ResamplerMode.Pixelated
-						},
-					},
-				},
+			UI.new "ImageLabel" {
+				Name = "Invalid",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundTransparency = 1,
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				Size = UDim2.new(0, 10, 0, 10),
+				ImageColor3 = Color3.new(1, 0, 0),
+				Image = "rbxassetid://1476571006",
+				Visible = UI.compute(function(use)
+					return use(validState) == false
+				end),
+				-- ResampleMode = Enum.ResamplerMode.Pixelated
 			},
 		},
 	},
-}
 
-local TooltipFrame = Flux.new "Frame" {
-	Parent = CommandBar,
-	Name = "Tooltip",
-	BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-	BackgroundTransparency = 0.3,
-	Size = UDim2.fromOffset(200, 32),
-	Visible = false,
-	[Flux.Children] = {
-		UICorner = Flux.new "UICorner" {
-			CornerRadius = UDim.new(0, 8),
-		},
+	[UI.Hook] = {
+		Value = function(text)
+			-- TODO: do what it used to do on text changed?
+		end,
 	},
 }
 
-local TooltipLayout = Flux.new "UIListLayout" {
+UI.edit(Input._instance.UICorner, {
+	CornerRadius = UI.Theme.CornerDiameter,
+})
+
+local CommandBar = UI.new "Frame" {
+	Name = "CommandBar",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Size = UDim2.new(0, 512, 0, 0),
+	Position = UDim2.new(0.5, 0, 0.5, 0),
+	BackgroundTransparency = 1,
+	ZIndex = 100,
+	Visible = false,
+
+	Input,
+}
+
+local TooltipFrame = UI.new "Frame" {
+	Parent = CommandBar,
+	Name = "Tooltip",
+	BackgroundColor3 = UI.Theme.Primary,
+	BackgroundTransparency = UI.Theme.Transparency,
+	Size = UDim2.fromOffset(200, 32),
+	Visible = false,
+
+	UI.new "UICorner" {
+		CornerRadius = UI.Theme.CornerRadius,
+	},
+	UI.new "UIStroke" {
+		Color = UI.Theme.Border,
+	},
+}
+
+local TooltipLayout = UI.new "UIListLayout" {
 	Parent = TooltipFrame,
 	SortOrder = Enum.SortOrder.LayoutOrder,
 	Padding = UDim.new(0, 0),
 }
 
-local Tooltip = Flux.new "TextLabel" {
+local Tooltip = UI.new "TextLabel" {
 	Parent = TooltipFrame,
 	LayoutOrder = 0,
 	Name = "Tooltip",
 	BackgroundTransparency = 1,
-	Size = Flux.computeFrom(UDim2.new, 1, 0, 0, textSize),
+	Size = UI.computeFrom(UDim2.new, 1, 0, 0, UI.Theme.FontSize),
 	TextWrapped = true,
 	RichText = true,
-	Font = Enum.Font.RobotoMono,
-	TextSize = textSize,
-	TextColor3 = Color3.new(1, 1, 1),
+	Font = UI.Theme.FontMono,
+	TextSize = UI.Theme.FontSize,
+	TextColor3 = UI.Theme.PrimaryText,
 	TextXAlignment = Enum.TextXAlignment.Left,
-}
 
-local TooltipPadding = Flux.new "UIPadding" {
-	Parent = Tooltip,
-	PaddingTop = UDim.new(0, 8),
-	PaddingBottom = UDim.new(0, 8),
-	PaddingLeft = UDim.new(0, 8),
-	PaddingRight = UDim.new(0, 8),
+	UI.new "UIPadding" {
+		PaddingTop = UI.Theme.Padding,
+		PaddingBottom = UI.Theme.Padding,
+		PaddingLeft = UI.Theme.Padding,
+		PaddingRight = UI.Theme.Padding,
+	},
 }
 
 Tooltip:GetPropertyChangedSignal("TextBounds"):Connect(function()
-	Tooltip.Size = UDim2.new(1, 0, 0, Tooltip.TextBounds.Y + TooltipPadding.PaddingTop.Offset * 2)
+	Tooltip.Size = UDim2.new(1, 0, 0, Tooltip.TextBounds.Y + UI.Theme.Padding._value.Offset * 2)
 end)
 
 TooltipLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	TooltipFrame.Size =
-		UDim2.fromOffset(256, TooltipLayout.AbsoluteContentSize.Y + TooltipPadding.PaddingTop.Offset / 2)
+	TooltipFrame.Size = UDim2.fromOffset(256, TooltipLayout.AbsoluteContentSize.Y + UI.Theme.Padding._value.Offset / 2)
 end)
 
-local SuggestionFrame = Flux.new "Frame" {
+local SuggestionFrame = UI.new "Frame" {
 	Name = "Suggestion",
 	BackgroundTransparency = 0.9,
-	BackgroundColor3 = Color3.new(1, 1, 1),
-	Size = UDim2.new(1, 0, 0, Tooltip.TextSize + TooltipPadding.PaddingTop.Offset),
-	[Flux.Children] = {
-		Label = Flux.new "TextLabel" {
-			LayoutOrder = 0,
-			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 1, 0),
-			TextWrapped = true,
-			RichText = true,
-			Font = Enum.Font.RobotoMono,
-			TextSize = textSize,
-			TextColor3 = Color3.new(1, 1, 1),
-			TextXAlignment = Enum.TextXAlignment.Left,
+	BackgroundColor3 = UI.Theme.Secondary,
+	Size = UI.compute(function(use)
+		return UDim2.new(1, 0, 0, Tooltip.TextSize + use(UI.Theme.Padding).Offset)
+	end),
 
-			[Flux.Children] = {
-				SuggestionPadding = Flux.new "UIPadding" {
-					PaddingTop = UDim.new(0, 4),
-					PaddingBottom = UDim.new(0, 4),
-					PaddingLeft = UDim.new(0, 8),
-					PaddingRight = UDim.new(0, 8),
-				},
-			},
+	UI.new "TextLabel" {
+		LayoutOrder = 0,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 1, 0),
+		TextWrapped = true,
+		RichText = true,
+		Font = UI.Theme.FontMono,
+		TextSize = UI.Theme.FontSize,
+		TextColor3 = UI.Theme.PrimaryText,
+		TextXAlignment = Enum.TextXAlignment.Left,
+
+		UI.new "UIPadding" {
+			PaddingTop = UI.Theme.PaddingHalf,
+			PaddingBottom = UI.Theme.PaddingHalf,
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
 		},
 	},
 }
@@ -297,7 +245,7 @@ end
 
 local function clearCompletion()
 	TooltipFrame.Visible = false
-	InputLabel.Text = _K.Util.escapeRichText(Input.Text)
+	Input.DisplayText:set(_K.Util.escapeRichText(Input._input.Text))
 	for _, label in suggestionLabels do
 		label:Destroy()
 	end
@@ -328,10 +276,11 @@ local function updateCompletion()
 		print("invalid", invalid)
 		local pos, text, err = unpack(invalid)
 		-- red text inlineFormat
-		InputLabel.Text =
+		Input.DisplayText:set(
 			`<font transparency="0.33">{_K.Util.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.escapeRichText(
 				text
 			)}</b></font>{_K.Util.escapeRichText(string.sub(data.message, pos + #text))}</font>`
+		)
 		Tooltip.Text = if not data.argDefinition
 			then ""
 			else string.format(
@@ -384,7 +333,12 @@ local function updateCompletion()
 		Tooltip.Font,
 		Vector2.zero
 	).X
-	TooltipFrame.Position = UDim2.new(0, argX + 20, 1, 4)
+	TooltipFrame.Position = UDim2.new(
+		0,
+		math.floor(argX) + 14 + UI.Theme.Padding._value.Offset,
+		0,
+		Input._input.AbsoluteSize.Y / 2 + UI.Theme.PaddingHalf._value.Offset
+	)
 
 	if not (data.suggestions and #data.suggestions > 0) then
 		print("nothing to suggest")
@@ -407,13 +361,15 @@ local function updateCompletion()
 	-- inline format (preceding message, query, post query arg, suggestion, post query message)
 	-- FIX: how to not escape invalid/valid rich text coloring?
 	-- need a way to merge it somehow? (or don't use richtext maybe red underline instead! with a button you can hover to show error tooltip :)
-	InputLabel.Text = string.format(
-		inlineFormat,
-		_K.Util.escapeRichText(string.sub(data.message, 1, data.argPos - 1)),
-		_K.Util.escapeRichText(data.query),
-		_K.Util.escapeRichText(string.sub(data.rawArg, #data.query + 1)),
-		_K.Util.escapeRichText(string.sub(suggestionText, #data.rawArg + 1)),
-		_K.Util.escapeRichText(string.sub(data.message, endPos))
+	Input.DisplayText:set(
+		string.format(
+			inlineFormat,
+			_K.Util.escapeRichText(string.sub(data.message, 1, data.argPos - 1)),
+			_K.Util.escapeRichText(data.query),
+			_K.Util.escapeRichText(string.sub(data.rawArg, #data.query + 1)),
+			_K.Util.escapeRichText(string.sub(suggestionText, #data.rawArg + 1)),
+			_K.Util.escapeRichText(string.sub(data.message, endPos))
+		)
 	)
 
 	-- show completion tooltip
@@ -441,69 +397,8 @@ local function updateCompletionData()
 	end
 	table.clear(suggestionLabels)
 	suggestionIndex = 1
-	currentCompletionData = CompletionData(_K, Input.Text, Input.CursorPosition)
+	currentCompletionData = CompletionData(_K, Input._input.Text, Input._input.CursorPosition)
 	updateCompletion()
-end
-
-local function bytePositionToWidth(text, size, font, bytePosition)
-	if bytePosition == 1 then
-		return 0
-	end
-	local sub = string.sub(text, 1, bytePosition - 1)
-	local bounds = TextService:GetTextSize(sub, size, font, Vector2.zero)
-	return bounds.X
-end
-
-local inputOffset = 0
-
-local function updateSelection()
-	local cursorWidth = bytePositionToWidth(Input.Text, Input.TextSize, Input.Font, Input.CursorPosition)
-	local selectWidth = bytePositionToWidth(Input.Text, Input.TextSize, Input.Font, Input.SelectionStart)
-	local deltaWidth = cursorWidth - selectWidth
-
-	Selection.Size = UDim2.new(0, deltaWidth, 1, 0)
-	Selection.Position = UDim2.new(0, selectWidth - inputOffset, 0.5, 0)
-	Selection.Visible = true
-end
-
-Input:GetPropertyChangedSignal("SelectionStart"):Connect(function()
-	if Input.SelectionStart == -1 then
-		Selection.Visible = false
-	else
-		updateSelection()
-	end
-end)
-
-local function updateCursor()
-	-- if Input.CursorPosition == -1 then
-	-- 	return
-	-- end
-
-	local textWidthToCursor = bytePositionToWidth(Input.Text, Input.TextSize, Input.Font, Input.CursorPosition)
-	local visibleWidth = InputMask.AbsoluteSize.X
-	local cursorOffset = textWidthToCursor - inputOffset
-
-	local margin = if (Input.TextBounds.X > visibleWidth or inputOffset > 0) and textWidthToCursor > 32 then 32 else 0
-	if cursorOffset > visibleWidth then
-		inputOffset += cursorOffset - visibleWidth
-		inputOffset = math.min(inputOffset, Input.TextBounds.X)
-		cursorOffset = visibleWidth
-	elseif cursorOffset < margin then
-		inputOffset += cursorOffset - margin
-		if margin == 0 or inputOffset <= Input.TextSize / 2 then
-			inputOffset = math.min(0, inputOffset)
-		end
-		cursorOffset = margin
-	end
-
-	Input.Position = UDim2.fromOffset(-inputOffset, 0)
-	Cursor.Position = UDim2.fromOffset(cursorOffset + 20, 1)
-
-	Cursor.Visible = true
-
-	if Input.SelectionStart ~= -1 then
-		updateSelection()
-	end
 end
 
 local focused, textBoxFocused = {}, false
@@ -534,7 +429,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 	if input.UserInputType == Enum.UserInputType.Keyboard then
 		-- TODO: check for tab to complete suggestion
 		-- TODO: check for up/down arrow to adjust suggestion index and update suggestion labels without deleting!
-		if not Input:IsFocused() then
+		if not Input._input:IsFocused() then
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.Tab then
@@ -546,8 +441,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 			local pos, text = unpack(currentCompletion)
 			task.delay(0, function()
 				tabCompleting = false
-				Input.Text = text
-				Input.CursorPosition = pos + 1
+				Input._input.Text = text
+				Input._input.CursorPosition = pos + 1
 			end)
 		elseif input.KeyCode == Enum.KeyCode.Up then
 			suggestionIndex = math.max(1, suggestionIndex - 1)
@@ -560,32 +455,29 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 	end
 end)
 
-Input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
-	if Input.CursorPosition == -1 then
-		Cursor.Visible = false
-	else
-		if Input.CursorPosition < #Flux.peek(_K.settings.prefix) + 1 then
-			Input.CursorPosition = #Flux.peek(_K.settings.prefix) + 1
+Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
+	local cursorPosition = Input._input.CursorPosition
+	if cursorPosition ~= -1 then
+		if cursorPosition < #UI.peek(_K.settings.prefix) + 1 then
+			Input._input.CursorPosition = #UI.peek(_K.settings.prefix) + 1
 			return
 		end
 		if tabCompleting then
 			return -- don't show tab artifact
 		end
-		-- defer for text to register
-		task.defer(updateCursor)
 		task.defer(updateCompletionData)
 	end
 end)
 
-Input.FocusLost:Connect(function(enterPressed)
+Input._input.FocusLost:Connect(function(enterPressed)
 	CommandBar.Visible = false
-	Input.TextEditable = false
+	Input._input.TextEditable = false
 	if enterPressed then
 		-- FIX: if validated lol
-		_K.Remote "Command":FireServer(Input.Text)
+		_K.Remote "Command":FireServer(Input._input.Text)
 		-- task.spawn(_K.Process.runCommands, _K.Services.Players.LocalPlayer, Input.Text)
 		-- Find the command in the history (and remove if not the most recent)
-		local cmd = string.sub(Input.Text, 2)
+		local cmd = string.sub(Input._input.Text, 2)
 		local foundIndex = table.find(commandHistory, cmd)
 		if foundIndex ~= 1 then
 			if foundIndex then
@@ -596,49 +488,42 @@ Input.FocusLost:Connect(function(enterPressed)
 				table.remove(commandHistory)
 			end
 		end
-		Input.Text = Flux.peek(_K.settings.prefix)
+		Input._input.Text = UI.peek(_K.settings.prefix)
 	end
 end)
 -- FIX: make sure _K reliant connections aren't connected until init!
-Input:GetPropertyChangedSignal("Text"):Connect(function()
+Input._input:GetPropertyChangedSignal("Text"):Connect(function()
 	if tabCompleting then
 		return
 	end
-	local prefix = Flux.peek(_K.settings.prefix)
-	if string.find(Input.Text, prefix, 1, true) ~= 1 then
-		Input.Text = prefix .. Input.Text
-		Input.CursorPosition += utf8.len(prefix)
+	local prefix = UI.peek(_K.settings.prefix)
+	if string.find(Input._input.Text, prefix, 1, true) ~= 1 then
+		Input._input.Text = prefix .. Input._input.Text
+		Input._input.CursorPosition += utf8.len(prefix)
 		return
 	end
-	local bounds = TextService:GetTextSize(Input.Text, Input.TextSize, Input.Font, Vector2.zero)
 
-	if bounds.X > InputMask.AbsoluteSize.X then
-		Input.Position = UDim2.fromOffset(-inputOffset, 0)
-		Input.Size = UDim2.new(0, bounds.X, 1, 0)
+	if Input._input.Text == UI.peek(_K.settings.prefix) then
+		Input.DisplayText:set(Input._input.Text .. "<font transparency='0.5'><i>command</i></font>")
 	else
-		Input.Position = UDim2.new(0, 0, 0, 0)
-		Input.Size = UDim2.new(1, 0, 1, 0)
-	end
-	if Input.Text == Flux.peek(_K.settings.prefix) then
-		InputLabel.Text = Input.Text .. "<font transparency='0.5'><i>command</i></font>"
-	else
-		InputLabel.Text = _K.Util.escapeRichText(Input.Text)
+		Input.DisplayText:set(_K.Util.escapeRichText(Input._input.Text))
 	end
 end)
 
 return {
 	init = function(self, context)
-		Input.Text = Flux.peek(context.settings.prefix)
+		Input._input.Text = UI.peek(context.settings.prefix)
+		Input._input.TextEditable = false
 		CommandBar.Parent = context.UI.LayerTop
 		context.hotkeys.commandBar = { key = Enum.KeyCode.Semicolon, mods = {}, callback = self.show }
-		context.CommandBarState = { textSize, validState, indicatorColor }
+		context.CommandBarState = { validState, indicatorColor }
 	end,
 	show = function()
 		CommandBar.Visible = true
-		Input:CaptureFocus()
+		Input._input:CaptureFocus()
 		-- prevent input hotkey from being captured
 		task.delay(0, function()
-			Input.TextEditable = true
+			Input._input.TextEditable = true
 		end)
 	end,
 }

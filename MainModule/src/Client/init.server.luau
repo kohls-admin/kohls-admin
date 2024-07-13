@@ -3,7 +3,6 @@
 local _K = require(script.Parent)
 local Flux = require(script.Parent.Flux)
 local UI = require(script.Parent.Flux.UI).registerChildren()
-local CommandBar = require(script.CommandBar)
 local Bans = require(script.Bans)
 local Logs = require(script.Logs)
 local Members = require(script.Members)
@@ -14,6 +13,7 @@ _K.UI = UI
 _K.clientSettings = {}
 _K.hotkeys = {}
 
+local CommandBar = require(script.CommandBar)
 CommandBar:init(_K)
 
 -- stateful hotkeys
