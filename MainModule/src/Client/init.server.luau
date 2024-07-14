@@ -82,15 +82,16 @@ end
 
 local dashboardButton
 dashboardButton = UI.new "TextButton" {
-	Parent = holder or UI.LayerTop,
+	Parent = holder or UI.TopBarFrame,
 	LayoutOrder = -1,
 	Name = "kDashboard",
+	AnchorPoint = Vector2.new(0, 1),
 	AutoButtonColor = true,
 	BackgroundColor3 = Color3.new(),
 	BackgroundTransparency = 0.3,
 	BorderSizePixel = 0,
 	Size = UDim2.fromOffset(44, 44),
-	Position = UDim2.fromOffset(172, 12),
+	Position = UDim2.fromScale(0, 1),
 	Text = "",
 	TextTransparency = 1,
 

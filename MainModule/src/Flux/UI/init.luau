@@ -75,10 +75,31 @@ local UI = {
 		IgnoreGuiInset = true,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	},
+	LayerTopBar = Flux.new "ScreenGui" {
+		Parent = playerGui,
+		Name = "FluxUILayerTopBar",
+		DisplayOrder = 10,
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		ScreenInsets = Enum.ScreenInsets.TopbarSafeInsets,
+	},
 }
 UI.Scope.Theme = UI.Theme
 UI.__index = UI
 setmetatable(UI, Flux)
+
+UI.TopBarFrame = UI.new "Frame" {
+	Parent = UI.LayerTopBar,
+	BackgroundTransparency = 1,
+	Size = UDim2.new(1, 0, 1, 0),
+
+	UI.new "UIPadding" {
+		PaddingLeft = UDim.new(0, 12),
+		PaddingRight = UDim.new(0, 12),
+		PaddingBottom = UDim.new(0, 2),
+	},
+}
 
 UI.Theme.TransparencyClamped = UI.compute(function(use)
 	return math.min(0.75, use(UI.Theme.Transparency))
