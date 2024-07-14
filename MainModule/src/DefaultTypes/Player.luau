@@ -287,7 +287,7 @@ local typeId = {
 return function(context)
 	_K = context
 
-	local typeIds = _K.Util.shallowCopy(typeMultiple)
+	local typeIds = table.clone(typeMultiple)
 	typeIds.prefixes["#"] = "integer"
 
 	_K.Registry.registerType("inversePlayers", typeInverse, typeIndividual)

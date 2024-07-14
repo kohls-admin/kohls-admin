@@ -19,12 +19,11 @@ function module.toHashMap(array: List): Dict
 	return map
 end
 
-function module.shallowCopy(original: Dict): Dict
-	local copy = {}
-	for key, value in original do
-		copy[key] = value
+function module.mergeTable(to: Dict, from: Dict): Dict
+	for key, value in from do
+		to[key] = value
 	end
-	return copy
+	return to
 end
 
 function module.deepCopy(original: Dict): Dict

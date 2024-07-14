@@ -145,16 +145,17 @@ end)
 local initCon
 initCon = _K.Remote "Init".OnClientEvent:Connect(function(auth, bans, logs, settings)
 	initCon:Disconnect()
-	_K.Auth = auth
-	_K.memberState:set(auth.members)
+	_K.Util.mergeTable(_K.Auth, auth)
+	_K.memberState:set(_K.Auth.members)
 
-	_K.bans = bans
-	_K.banState:set(bans)
+	_K.Util.mergeTable(_K.bans, bans)
+	_K.banState:set(_K.bans)
 
-	_K.logs = logs
-	_K.logState:set(logs)
+	_K.Util.mergeTable(_K.logs, logs)
+	_K.logState:set(_K.logs)
 
 	-- need to update all the settings values somehow xD
+	-- need to improve networking performance!
 	for key, value in settings do
 		_K.settings[key]:set(UI.peek(value))
 	end
