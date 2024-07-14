@@ -1,13 +1,10 @@
 local UserInputService = game:GetService("UserInputService")
-local TextChatService = game:GetService("TextChatService")
 local TextService = game:GetService("TextService")
 
 local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
 
 local UI = _K.UI
-
-local ChatInputBarConfiguration = TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
 
 local validState = UI.state(nil)
 local indicatorColor = UI.compute(function(use)
@@ -81,11 +78,11 @@ local Input = UI.new "Input" {
 		},
 	},
 
-	[UI.Hook] = {
-		Value = function(text)
-			-- TODO: do what it used to do on text changed?
-		end,
-	},
+	-- [UI.Hook] = {
+	-- 	Value = function(text)
+	-- 		-- TODO: do what it used to do on text changed?
+	-- 	end,
+	-- },
 }
 
 UI.edit(Input._instance.UICorner, {
@@ -107,6 +104,7 @@ local CommandBar = UI.new "Frame" {
 local TooltipFrame = UI.new "Frame" {
 	Parent = CommandBar,
 	Name = "Tooltip",
+	Active = true,
 	BackgroundColor3 = UI.Theme.Primary,
 	BackgroundTransparency = UI.Theme.Transparency,
 	Size = UDim2.fromOffset(200, 32),
@@ -155,13 +153,15 @@ TooltipLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	TooltipFrame.Size = UDim2.fromOffset(256, TooltipLayout.AbsoluteContentSize.Y + UI.Theme.Padding._value.Offset / 2)
 end)
 
-local SuggestionFrame = UI.new "Frame" {
+local SuggestionFrame = UI.new "TextButton" {
 	Name = "Suggestion",
 	BackgroundTransparency = 0.9,
 	BackgroundColor3 = UI.Theme.Secondary,
 	Size = UI.compute(function(use)
 		return UDim2.new(1, 0, 0, Tooltip.TextSize + use(UI.Theme.Padding).Offset)
 	end),
+	Text = "",
+	TextTransparency = 1,
 
 	UI.new "TextLabel" {
 		LayoutOrder = 0,
@@ -194,6 +194,20 @@ local playerThumbs = {}
 local suggestionIndex = 1
 local suggestionLabels = {}
 
+local updateCompletion, currentCompletion, tabCompleting
+local function completeSuggestion()
+	if not currentCompletion then
+		return
+	end
+	tabCompleting = true
+	local pos, text = unpack(currentCompletion)
+	task.delay(0, function()
+		tabCompleting = false
+		Input._input.Text = text
+		Input._input.CursorPosition = pos + 1
+	end)
+end
+
 local function updateSuggestionLabels(data)
 	for _, label in suggestionLabels do
 		label:Destroy()
@@ -209,6 +223,9 @@ local function updateSuggestionLabels(data)
 	end
 
 	for i, suggestion in data.suggestions do
+		if i >= 8 then -- limit to 8 suggestions?
+			break
+		end
 		local name, value = unpack(suggestion)
 		local frame = SuggestionFrame:Clone()
 		local label = frame:FindFirstChildOfClass("TextLabel")
@@ -237,6 +254,12 @@ local function updateSuggestionLabels(data)
 		end
 
 		label.Text = string.format(suggestFormat, data.query, string.sub(name, #data.query + 1))
+		frame.Activated:Connect(function()
+			Input._input:CaptureFocus()
+			suggestionIndex = i
+			updateCompletion()
+			completeSuggestion()
+		end)
 		frame.Parent = TooltipFrame
 		-- show highlight
 		table.insert(suggestionLabels, frame)
@@ -253,8 +276,8 @@ local function clearCompletion()
 end
 
 local commandHistory = {}
-local currentCompletion, currentCompletionData
-local function updateCompletion()
+local currentCompletionData
+updateCompletion = function()
 	local data = currentCompletionData
 	currentCompletion = nil
 	print("auto", data)
@@ -401,49 +424,13 @@ local function updateCompletionData()
 	updateCompletion()
 end
 
-local focused, textBoxFocused = {}, false
-UserInputService.TextBoxFocused:Connect(function(textbox)
-	if not textbox then
-		return
-	end
-	focused[textbox] = true
-	textBoxFocused = true
-end)
-
-UserInputService.TextBoxFocusReleased:Connect(function(textbox)
-	if not textbox then
-		return
-	end
-	focused[textbox] = nil
-	if next(focused) then
-		return
-	end
-	textBoxFocused = false
-end)
-
-local tabCompleting
-UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-	if not (textBoxFocused or ChatInputBarConfiguration.IsFocused) then
-		return
-	end
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.UserInputType == Enum.UserInputType.Keyboard then
-		-- TODO: check for tab to complete suggestion
-		-- TODO: check for up/down arrow to adjust suggestion index and update suggestion labels without deleting!
 		if not Input._input:IsFocused() then
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.Tab then
-			print(currentCompletion)
-			if not currentCompletion then
-				return
-			end
-			tabCompleting = true
-			local pos, text = unpack(currentCompletion)
-			task.delay(0, function()
-				tabCompleting = false
-				Input._input.Text = text
-				Input._input.CursorPosition = pos + 1
-			end)
+			completeSuggestion()
 		elseif input.KeyCode == Enum.KeyCode.Up then
 			suggestionIndex = math.max(1, suggestionIndex - 1)
 			updateCompletion()
@@ -452,6 +439,14 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 			suggestionIndex = math.min(math.max(1, max), suggestionIndex + 1)
 			updateCompletion()
 		end
+	elseif
+		input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+	then
+		if gameProcessed then
+			return
+		end
+		CommandBar.Visible = false
+		Input._input.TextEditable = false
 	end
 end)
 
@@ -470,9 +465,9 @@ Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 end)
 
 Input._input.FocusLost:Connect(function(enterPressed)
-	CommandBar.Visible = false
-	Input._input.TextEditable = false
 	if enterPressed then
+		CommandBar.Visible = false
+		Input._input.TextEditable = false
 		-- FIX: if validated lol
 		_K.Remote "Command":FireServer(Input._input.Text)
 		-- task.spawn(_K.Process.runCommands, _K.Services.Players.LocalPlayer, Input.Text)
