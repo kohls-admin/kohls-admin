@@ -92,7 +92,7 @@ function module.validateArgument(argDefinition, from, rawType, rawArgs)
 			end
 		end
 		local arg = if argType.transform then argType.transform(rawArg) else rawArg
-		table.insert(transformedArgs, module._K.Util.trim(arg))
+		table.insert(transformedArgs, if type(arg) == "string" then module._K.Util.trim(arg) else arg)
 		table.insert(transformedTypes, argType)
 	end
 	-- validate arguments
