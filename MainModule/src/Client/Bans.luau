@@ -33,11 +33,12 @@ function Bans.new(_K)
 
 			return string.format(banRichFormat, escape(ban[1]), escape(ban.userId), escape(ban[2]), escape(term))
 		end,
+	}
+	UI.edit(scroller._scroller, {
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
 		},
-	}
-
+	})
 	local function filterTest(self, list)
 		local filter = scroller._input.Value._value:lower()
 		self._filter = filter

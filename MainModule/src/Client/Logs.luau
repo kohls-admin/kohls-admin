@@ -46,11 +46,12 @@ function Logs.new(_K)
 				escape(msg)
 			)
 		end,
+	}
+	UI.edit(scroller._scroller, {
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
 		},
-	}
-
+	})
 	local function filterTest(self, list)
 		local filter = scroller._input.Value._value:lower()
 		self._filter = filter

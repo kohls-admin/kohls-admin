@@ -34,11 +34,12 @@ function Members.new(_K)
 				escape(table.concat(member.roles, " | "))
 			)
 		end,
+	}
+	UI.edit(scroller._scroller, {
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
 		},
-	}
-
+	})
 	local function filterTest(self, list)
 		local filter = scroller._input.Value._value:lower()
 		self._filter = filter
