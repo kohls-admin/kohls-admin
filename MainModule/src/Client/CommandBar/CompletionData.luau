@@ -99,14 +99,13 @@ return function(_K, message, cursorPosition)
 				-- TODO: account for transformed type suggestions and listable types (like players)
 				local transformPos = argPos
 				for k, transformedArg in transformedArgs do
+					local rawTransformArg = rawArgs[k]
 					local transformedType = transformedTypes[k]
 					data.suggestionType = transformedType
 					local pos = transformPos
-					transformPos += #transformedArg + 1
-					print(argPos, pos, pos + #transformedArg, cursorPosition)
+					transformPos += #rawTransformArg + 1
 					-- cursor within this transformedArg
-					print(cursorPosition < pos, cursorPosition > transformPos)
-					if cursorPosition < pos or cursorPosition > pos + #transformedArg then
+					if cursorPosition < pos or (not greedy and cursorPosition > transformPos) then
 						continue
 					end
 					if not transformedType.suggestions then
@@ -114,9 +113,11 @@ return function(_K, message, cursorPosition)
 					end
 					-- data.query = transformedArg
 					data.argPos = pos
-					data.rawArg = transformedArg
-					data.query = string.sub(transformedArg, 1, cursorPosition - pos)
+					data.rawArg = rawTransformArg
+					data.transformedArg = transformedArg
+					data.query = string.sub(rawTransformArg, 1, cursorPosition - pos)
 					data.suggestions = transformedType.suggestions(data.query, Players.LocalPlayer)
+					break
 				end
 			end
 		end

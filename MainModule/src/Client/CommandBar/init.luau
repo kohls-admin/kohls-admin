@@ -376,6 +376,16 @@ updateCompletion = function()
 	print(suggestionIndex, #data.suggestions)
 	local suggestionText, suggestionValue = unpack(currentSuggestion)
 
+	if data.query ~= "" then
+		local reservedCharacters = { " ", _K.settings.prefix._value, "," }
+		for _, char in reservedCharacters do
+			if string.find(suggestionText, char) and not string.find(suggestionText, '^["`]') then
+				suggestionText = `"{suggestionText}"`
+				break
+			end
+		end
+	end
+
 	currentCompletion = {
 		data.argPos + #suggestionText,
 		string.sub(data.message, 1, data.argPos - 1) .. suggestionText .. string.sub(data.message, endPos),

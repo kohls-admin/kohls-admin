@@ -66,18 +66,23 @@ function module.getNames(objects: any): { string }
 	return names, objects
 end
 
+function module.stripQuotes(text: string): string
+	return string.gsub(text, '["`]', "")
+end
+
 function module.querySuggestions(text: string, names: { string }, instances: { any })
 	local results = {}
 	local textLower = string.lower(text)
 
 	for key, name in names do
+		local nameLower = string.lower(name)
 		local value = instances and instances[key] or name
 		-- Continue on checking for non-exact matches...
 		-- exact match goes to the start
-		if name == textLower then
+		if nameLower == textLower then
 			table.insert(results, 1, { name, value })
 		else
-			local found = string.find(name, textLower, 1, true)
+			local found = string.find(nameLower, textLower, 1, true)
 			-- start matches are normal priority
 			if found == 1 then
 				table.insert(results, { name, value })

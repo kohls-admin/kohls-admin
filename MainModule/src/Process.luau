@@ -23,6 +23,7 @@ function module.rawParse(message: string, prefix: string, delimiter: string?): {
 	for first, last in utf8.graphemes(message) do
 		local char: string = string.sub(message, first, last)
 		if string.find(char, '["`]') and not escaped and (not quoted or quoted == char) then
+			table.insert(argument, char)
 			if not quoted and not string.find(lastChar, argDelimiter) then
 				argument = { first }
 				table.insert(command, argument)
@@ -77,9 +78,10 @@ end
 
 function module.validateArgument(argDefinition, from, rawType, rawArgs)
 	-- transform arguments
-	local transformedArgs = {}
-	local transformedTypes = {}
-	for _, rawArg in rawArgs do
+	local rawLength = #rawArgs
+	local transformedArgs = table.create(rawLength)
+	local transformedTypes = table.create(rawLength)
+	for i, rawArg in rawArgs do
 		local argType = rawType
 		-- argument prefixes
 		if rawType.prefixes then
@@ -91,21 +93,20 @@ function module.validateArgument(argDefinition, from, rawType, rawArgs)
 				end
 			end
 		end
-		local arg = if argType.transform then argType.transform(rawArg) else rawArg
-		table.insert(transformedArgs, if type(arg) == "string" then module._K.Util.trim(arg) else arg)
-		table.insert(transformedTypes, argType)
+		local arg = module._K.Util.stripQuotes(rawArg)
+		arg = if argType.transform then argType.transform(arg) else arg
+		transformedArgs[i] = if type(arg) == "string" then module._K.Util.trim(arg) else arg
+		transformedTypes[i] = argType
 	end
 	-- validate arguments
-	for i, arg in transformedArgs do
+	for i, transformedArg in transformedArgs do
 		local argType = transformedTypes[i]
-		local ok, result = argType.validate(arg, from)
-		print("validation", ok, arg, argType, result)
+		local ok, result = argType.validate(transformedArg, from)
 		if not ok then
 			-- TODO: compile a list of feedback to display
-			return false, result or "Invalid argument: " .. arg
+			return false, result or "Invalid argument: " .. transformedArg
 		end
 	end
-	print("validated")
 	return true, { transformedArgs, transformedTypes }
 end
 
@@ -158,34 +159,23 @@ function module.prepareCommand(commandArray, from, message)
 	local args = {}
 	local argsIndex = 1
 	local argsLength = #commandDefinition.args
-	print("command", message)
 	for i = 2, #commandArray do
 		local argPos, rawArg = unpack(commandArray[i])
-		print("arg", argPos, rawArg)
 
 		-- if it's the last argument concat the rest of the commands's arguments
 		if argsIndex == argsLength then
 			local lastArg = commandArray[#commandArray]
 			rawArg = string.sub(message, argPos, lastArg[1] + #lastArg[2])
-			print("lastarg", rawArg)
 		end
 
-		-- TODO: finish flag implementation, make sure last argument logic doesn't conflict with behaviour
-		-- local flag = string.match(rawArg, "^%-%-?(%a%w*)")
-		-- if flag then
-		-- 	self.flags[string.lower(flag)] = true
-		-- 	continue
-		-- end
 		local argDefinition = i - 1 <= argsLength and commandDefinition.args[argsIndex]
 		if not argDefinition then
-			print("no argDefinition lol", i - 1, argsLength, argsIndex)
 			-- end of defined positional arguments
-			-- NOTE: probably shouldn't break here and instead only parse the rest as flags? (unless greedy type)
+
 			break
 		end
 
 		local parsedArg, exitCmd = module.prepareArgument(argDefinition, from, message, argPos, rawArg)
-		print("parsed", parsedArg)
 		if parsedArg then
 			table.insert(args, parsedArg)
 		end
@@ -220,7 +210,6 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 	local rawCommands = module.rawParse(message, module._K.settings.prefix:get())
 	if rawCommands then
 		for _, commandArray in rawCommands do
-			-- print("commandArray", commandArray)
 			local ok, result = module.prepareCommand(commandArray, from, message)
 
 			if not ok then
@@ -245,7 +234,6 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 			end
 		end
 	end
-	-- print("rawCommands", rawCommands)
 
 	-- TODO: error visual feedback for user
 	local logType = if commandRan then "Command" elseif commandError then "Error" else "Chat"

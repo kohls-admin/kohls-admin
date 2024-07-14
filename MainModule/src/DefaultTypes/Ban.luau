@@ -22,7 +22,8 @@ local typeBan = {
 	suggestions = function(text)
 		local names = {}
 		for userId, bans in context.bans do
-			names[userId] = bans[1]
+			local name = bans[1]
+			names[userId] = if string.find(name, " ") then `"{name}"` else name
 		end
 		return context.Util.querySuggestions(text, names, context.bans)
 	end,
