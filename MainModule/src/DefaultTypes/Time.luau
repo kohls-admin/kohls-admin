@@ -10,7 +10,9 @@ local TIME_UNITS = {
 	{ 1 / 1000, "millisecond" },
 }
 
-function unitDuration(unit: string): number?
+-- TODO suggestions, ideally 1 of each unit, or whatever number they current have + a unit
+
+local function unitDuration(unit: string): number?
 	-- special case to return millisecond duration if unit is "ms(s)"
 	-- prevents "ms" from defaulting to minutes, other solutions are nasty
 	if unit == "ms" or unit == "mss" then
@@ -31,7 +33,14 @@ function unitDuration(unit: string): number?
 	return
 end
 
-function parseTime(input: string): (boolean, string | number)
+local function parseTime(input: string): (boolean, string | number)
+	if input == "" then
+		return true, ""
+	end
+	if tonumber(input) then
+		-- no units specified, default to seconds?
+		return true, tonumber(input) :: number
+	end
 	if string.find(input, TIME_PATTERN) == nil then
 		return false, "Invalid time format."
 	end
@@ -49,17 +58,63 @@ function parseTime(input: string): (boolean, string | number)
 	return true, seconds
 end
 
+local suggestedUnits = {
+	"second",
+	"minute",
+	"hour",
+	"day",
+	"week",
+	"month",
+	"year",
+	"millisecond",
+	"s",
+	"m",
+	"h",
+	"d",
+	"w",
+	"y",
+	"hr",
+	"wk",
+	"yr",
+	"ms",
+}
+
+local pluralUnits = {}
+
+local defaultSuggestions = {}
+for i, value in suggestedUnits do
+	defaultSuggestions[i] = "1" .. value
+	if #value > 1 then
+		pluralUnits[i] = value .. "s"
+	end
+end
+
 return function(_K)
 	_K.Registry.registerType("timeSimple", {
-		transform = function(v: string)
-			local ok, result = parseTime(v)
-			return if ok then result else false, result
-		end,
 		validate = function(v)
-			return v
+			return parseTime(v)
 		end,
 		parse = function(v)
-			return v
+			local ok, result = parseTime(v)
+			if not ok then
+				error("Invalid time value")
+			end
+			return result
+		end,
+		suggestions = function(text)
+			local number = string.match(text, "^%d+")
+			print("time suggestion", number, text)
+			if number then
+				print("time number match", number, text)
+				local names = {}
+				local original = if tonumber(number) > 1 then pluralUnits else suggestedUnits
+				for i, value in original do
+					names[i] = number .. value
+				end
+				return _K.Util.querySuggestions(text, names, names)
+			else
+				return _K.Util.querySuggestions(text, defaultSuggestions, defaultSuggestions)
+			end
 		end,
 	})
 end
