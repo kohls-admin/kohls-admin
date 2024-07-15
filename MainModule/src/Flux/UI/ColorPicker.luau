@@ -230,36 +230,49 @@ function ColorPicker.new(definition)
 			},
 		},
 		UI.new "Frame" {
-			Name = "Picker",
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			BackgroundColor3 = new.Value,
-			Size = UI.tween(
-				UI.Theme.NormalTween,
-				UI.compute(function(use)
-					return if use(dragging) then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
-				end)
-			),
-			Position = UI.tween(
-				UI.Theme.NormalTween,
-				UI.compute(function(use)
-					return UDim2.new(use(saturationState), 0, 1 - use(valueState), 0)
-				end)
-			),
+			Name = "PickerContainer",
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 1, 0),
 			ZIndex = 3,
 
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerDiameter,
+			UI.new "UIPadding" {
+				PaddingLeft = UDim.new(0, 8),
+				PaddingRight = UDim.new(0, 8),
+				PaddingTop = UDim.new(0, 8),
+				PaddingBottom = UDim.new(0, 8),
 			},
-			UI.new "UIStroke" {
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				Color = Color3.new(1, 1, 1),
-				Thickness = 1.5,
-			},
+			UI.new "Frame" {
+				Name = "Picker",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = new.Value,
+				Size = UI.tween(
+					UI.Theme.NormalTween,
+					UI.compute(function(use)
+						return if use(dragging) then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
+					end)
+				),
+				Position = UI.tween(
+					UI.Theme.NormalTween,
+					UI.compute(function(use)
+						return UDim2.new(use(saturationState), 0, 1 - use(valueState), 0)
+					end)
+				),
 
-			[UI.Event] = {
-				InputBegan = inputBegan,
+				UI.new "UICorner" {
+					CornerRadius = UI.Theme.CornerDiameter,
+				},
+				UI.new "UIStroke" {
+					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+					Color = Color3.new(1, 1, 1),
+					Thickness = 1.5,
+				},
+
+				[UI.Event] = {
+					InputBegan = inputBegan,
+				},
 			},
 		},
+
 		[UI.Event] = {
 			InputBegan = inputBegan,
 		},
