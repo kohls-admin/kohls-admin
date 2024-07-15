@@ -33,10 +33,10 @@ local module = {
 
 		-- allowed command groups?
 		groups = {
-			administration = false,
-			moderation = false,
-			general = false,
-			utility = true,
+			-- "administration",
+			-- "moderation",
+			-- "general",
+			"utility",
 		},
 
 		-- command name/alias filter
