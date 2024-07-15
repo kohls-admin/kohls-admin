@@ -37,6 +37,9 @@ function module.registerType(name: string, typeObject: Dict, override: Dict?)
 end
 
 function module.registerCommand(commandObject)
+	if not commandObject.name then
+		return -- invalid commandObject definition
+	end
 	local oldCommand = module.commands[string.lower(commandObject.name)]
 	if oldCommand then
 		local index = table.find(module.commandsList, oldCommand)
