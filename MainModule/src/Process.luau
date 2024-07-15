@@ -156,6 +156,11 @@ function module.prepareCommand(commandArray, from, message)
 		return false, "Invalid command: " .. commandArray[1][2]
 	end
 
+	if not module._K.Auth.hasCommandGroup(from.UserId, commandDefinition.group) then
+		print("Invalid permissions for command: " .. commandArray[1][2])
+		return false, "Invalid permissions for command: " .. commandArray[1][2]
+	end
+
 	local args = {}
 	local argsIndex = 1
 	local argsLength = #commandDefinition.args

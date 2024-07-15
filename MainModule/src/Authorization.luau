@@ -33,8 +33,10 @@ local module = {
 
 		-- allowed command groups?
 		groups = {
-			utility = false,
+			administration = false,
 			moderation = false,
+			general = false,
+			utility = true,
 		},
 
 		-- command name/alias filter
@@ -59,6 +61,7 @@ local module = {
 			name = "Moderator",
 			kick = true,
 			logs = true,
+			groups = { "moderation", "general" },
 		},
 		admin = {
 			_rank = 3,
@@ -67,6 +70,7 @@ local module = {
 			kick = true,
 			roles = true,
 			logs = true,
+			groups = { "administration", "moderation", "general" },
 		},
 		superadmin = {
 			_rank = 4,
@@ -76,6 +80,7 @@ local module = {
 			roles = true,
 			logs = true,
 			settings = true,
+			groups = { "administration", "moderation", "general" },
 		},
 		-- FIXME should this be defined and configurable? (or should it just be forced...)
 		creator = {
@@ -95,7 +100,7 @@ local module = {
 		},
 		["44391621"] = {
 			name = "Kohl",
-			roles = { "creator", "superadmin", "admin", "mod", "vip" },
+			roles = { "mod", "vip" },
 		},
 	},
 }
@@ -168,6 +173,30 @@ function module.getRank(userId, permission)
 		end
 	end
 	return rank
+end
+
+function module.hasCommandGroup(userId: number, group: string): boolean
+	group = string.lower(group)
+	if module.defaultRole.admin or (module.defaultRole.groups and table.find(module.defaultRole.groups, group)) then
+		return true
+	end
+	local member = module.members[tostring(userId)]
+	if member then
+		if member.permissions and member.permissions.admin then
+			return true
+		end
+		for _, roleId in member.roles do
+			local role = module.roles[roleId]
+			if not role then
+				warn("undefined role?", role)
+				continue
+			end
+			if role.admin or (role.groups and table.find(role.groups, group)) then
+				return true
+			end
+		end
+	end
+	return false
 end
 
 function module.hasPermission(userId, permission)

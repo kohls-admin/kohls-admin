@@ -14,6 +14,7 @@ return function(_K, message, cursorPosition)
 		data.rawArg = ""
 		data.argPos = 2
 		data.argIndex = 0
+		data.suggestionPos = 2
 		data.suggestionType = "History"
 		-- data.suggestions = {}
 		-- for alias, value in _K.Registry.commands do
@@ -43,23 +44,43 @@ return function(_K, message, cursorPosition)
 		local lastArgDefinition = commandDefinition and commandDefinition.args[#commandDefinition.args]
 		greedy = lastArgDefinition and lastArgDefinition.type == "stringGreedy"
 
+		data.commandDefinition = commandDefinition
+
 		for i, arg in commandArray do
 			local argPos, rawArg = unpack(arg)
 			-- FIX: need to validate every command/argument even if not in cursor...
 			local query = string.sub(rawArg, 1, cursorPosition - argPos)
 			local cursorOutsideArg = cursorPosition < argPos or cursorPosition > argPos + #rawArg
-			data.query = query
-			data.rawArg = rawArg
-			data.argPos = argPos
-			data.argIndex = i
-			data.commandDefinition = commandDefinition
 
 			if i == 1 then -- command suggestions
 				if cursorOutsideArg then
 					continue
 				end
+				data.argIndex = i
+				data.argPos = argPos
+				data.query = query
+				data.rawArg = rawArg
 				data.suggestionType = _K.Registry.types.command
-				data.suggestions = _K.Registry.types.command.suggestions(query)
+				data.suggestions = _K.Registry.types.command.suggestions(query, Players.LocalPlayer)
+
+				local invalidPermissions = nil
+				local oldSuggestions = data.suggestions
+				data.suggestions = table.create(#data.suggestions)
+				for i, suggestionData in oldSuggestions do
+					local name, command = unpack(suggestionData)
+					print("invalidperms", query, name, command)
+					if invalidPermissions ~= false and string.lower(query) == string.lower(name) then
+						invalidPermissions = true
+					end
+					if command and _K.Auth.hasCommandGroup(Players.LocalPlayer.UserId, command.group) then
+						invalidPermissions = false
+						table.insert(data.suggestions, suggestionData)
+					end
+				end
+				if invalidPermissions then
+					table.insert(data.invalid, { argPos, rawArg, "Invalid permissions" })
+					return data
+				end
 				if #data.suggestions < 1 then
 					table.insert(data.invalid, { argPos, rawArg, "Invalid command" })
 					return data
@@ -68,7 +89,11 @@ return function(_K, message, cursorPosition)
 				-- validate command
 				if not commandDefinition then
 					-- invalid command feedback
-					table.insert(data.invalid, { argPos, rawArg, "Invalid command" })
+					data.argIndex = 1
+					data.argPos, data.rawArg = unpack(commandArray[1])
+					data.query = data.rawArg
+					data.suggestionType = _K.Registry.types.command
+					table.insert(data.invalid, { data.argPos, data.rawArg, "Invalid command" })
 					return data
 				end
 				local argDefinition = commandDefinition.args[i - 1]
@@ -80,7 +105,6 @@ return function(_K, message, cursorPosition)
 					table.insert(data.invalid, { argPos, rawArg, "Too many arguments" })
 					return data
 				end
-				data.argDefinition = argDefinition
 				local rawType, rawArgs = _K.Process.initArgument(argDefinition, rawArg)
 				local ok, result = _K.Process.validateArgument(argDefinition, Players.LocalPlayer, rawType, rawArgs)
 				-- invalid argument
@@ -93,9 +117,14 @@ return function(_K, message, cursorPosition)
 				if cursorPosition < argPos or (not greedy and cursorPosition > argPos + #rawArg) then
 					continue -- not within cursor
 				end
+				data.argIndex = i
+				data.argPos = argPos
+				data.query = query
+				data.rawArg = rawArg
+				data.argDefinition = argDefinition
+				data.suggestionType = rawType
 
 				local transformedArgs, transformedTypes = unpack(result)
-
 				-- TODO: account for transformed type suggestions and listable types (like players)
 				local transformPos = argPos
 				for k, transformedArg in transformedArgs do

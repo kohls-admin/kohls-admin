@@ -95,6 +95,7 @@ function module.registerCommandModule(commandModule)
 
 	for _, commandObject in commandList do
 		-- TODO: check for server method definition & overwrite run method?
+		commandObject.group = commandModule.Name
 		module.registerCommand(commandObject)
 	end
 

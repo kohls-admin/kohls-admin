@@ -186,7 +186,7 @@ local SuggestionFrame = UI.new "TextButton" {
 local argumentFormat =
 	`<b><sc>%s</sc> <font transparency="0.66" size="15"><i>&lt;%s&gt;</i></font></b>\n<font size="14">%s</font>`
 local inlineFormat =
-	`<font transparency="0.33">%s</font>%s<font transparency="0.33">%s</font><font transparency="0.66">%s</font>%s`
+	`<font transparency="0.33">%s</font>%s<font transparency="0.33">%s<font transparency="0.66">%s</font>%s</font>`
 local suggestFormat = `%s<font transparency="0.5">%s</font>`
 
 local playerThumbs = {}
@@ -214,13 +214,13 @@ local function updateSuggestionLabels(data)
 	end
 	table.clear(suggestionLabels)
 
-	local argType
-	if data.argDefinition then
-		argType = data.argDefinition.type
-		if argType:find("player") == 1 then
-			argType = "player"
-		end
-	end
+	-- local argType
+	-- if data.argDefinition then
+	-- 	argType = data.argDefinition.type
+	-- 	if argType:find("player") == 1 then
+	-- 		argType = "player"
+	-- 	end
+	-- end
 
 	for i, suggestion in data.suggestions do
 		if i >= 8 then -- limit to 8 suggestions?
@@ -232,7 +232,8 @@ local function updateSuggestionLabels(data)
 		frame.LayoutOrder = i
 		frame.BackgroundTransparency = if i == suggestionIndex then 0.9 else 0.95
 
-		if argType == "player" then
+		print("player ? suggestionType", data.suggestionType, data.suggestionType == _K.Registry.types.player)
+		if string.find(data.suggestionType.displayName, "player") then
 			name = `{name} ({value.DisplayName})`
 			local userId = value.UserId
 			local image = playerThumbs[tostring(userId)]
@@ -467,9 +468,9 @@ Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 			Input._input.CursorPosition = #UI.peek(_K.settings.prefix) + 1
 			return
 		end
-		if tabCompleting then
-			return -- don't show tab artifact
-		end
+		-- if tabCompleting then
+		-- 	return -- don't show tab artifact
+		-- end
 		task.defer(updateCompletionData)
 	end
 end)
