@@ -35,8 +35,12 @@ local _K = {
 	-- configuration
 	settings = {
 		prefix = ":",
+		vip = true,
 		mutableHooks = false,
 	},
+
+	Registry = nil,
+	Process = nil,
 }
 
 -- shorthand utility
@@ -100,6 +104,7 @@ function _K.log(message: string, logType: string, from: Player?)
 		message = tostring(from) .. ": " .. message
 	end
 	local log = { os.time(), message, _K.Enum.LogType[logType], from and from.UserId }
+	_K.Registry.hooks.preLog:Fire(log)
 	table.insert(_K.logs, log)
 	if #_K.logs > 1e5 then
 		table.remove(_K.logs, 1)
@@ -116,19 +121,26 @@ function _K.log(message: string, logType: string, from: Player?)
 			if ok then
 				for _, player in _K.Services.Players:GetPlayers() do
 					local _, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
-					_K.Remote "Log":FireClient(player, filtered)
+					_K.Remote "Log":FireClient(player, { log[1], filtered, log[3] })
 				end
 			end
 		else
 			_K.Remote "Log":FireAllClients(log)
 		end
 	end
+	_K.Registry.hooks.postLog:Fire(log)
 end
 
 -- register internal modules to _K
 for _, module in { "Registry", "Process", "Flux" } do
 	_K[module] = require(script[module])
 	_K[module]._K = _K
+end
+
+-- register default hooks
+for i, hook in ipairs(_K.Registry.hooks) do
+	_K.Registry.registerHook(hook)
+	_K.Registry.hooks[i] = nil
 end
 
 -- Flux stateful settings

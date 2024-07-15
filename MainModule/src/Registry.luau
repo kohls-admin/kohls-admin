@@ -6,7 +6,7 @@ type Dict = { [any]: any }
 
 local module = {
 	_K = nil,
-	hooks = {},
+	hooks = { "preLog", "postLog", "preCommandRan", "postCommandRan" },
 	types = {},
 	commands = {},
 	commandsList = {},
@@ -17,8 +17,10 @@ function module.registerHook(key: string, mutable: boolean?)
 		warn('Hook "' .. key .. '" already exists')
 		return
 	end
-	local signalType = if mutable and module._K.settings.mutableHooks:get() then "SignalFast" else "SignalGood"
-	module.hooks[key] = module._K.Util[signalType].new()
+	local signalType = if mutable and module._K.settings.mutableHooks._value then "SignalFast" else "SignalGood"
+	local hook = module._K.Util[signalType].new()
+	module.hooks[key] = hook
+	return hook
 end
 
 function module.registerType(name: string, typeObject: Dict, override: Dict?)

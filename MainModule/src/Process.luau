@@ -243,15 +243,19 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 			end
 
 			-- TODO pre/post command hooks
+			module._K.Registry.hooks.preCommandRan:Fire(result)
 			local success, err = pcall(run, result, unpack(result.args))
 			if not success then
 				-- show command error
 				-- TODO: propagate error info to send relevant information to the client? (for serverside run only?)
 				commandError = err
+				result.commandError = err
 				warn("commandError", err)
 			else
 				commandRan = true
+				result.commandRan = true
 			end
+			module._K.Registry.hooks.postCommandRan:Fire(result)
 			if result.greedy then
 				print("greedy!")
 				break
