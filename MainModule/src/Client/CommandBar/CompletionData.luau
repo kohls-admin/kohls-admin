@@ -10,11 +10,10 @@ return function(_K, message, cursorPosition)
 	}
 
 	if message == _K.settings.prefix:get() then
-		data.query = ""
-		data.rawArg = ""
 		data.argPos = 2
 		data.argIndex = 0
-		data.suggestionPos = 2
+		data.query = ""
+		data.rawArg = ""
 		data.suggestionType = "History"
 		-- data.suggestions = {}
 		-- for alias, value in _K.Registry.commands do
@@ -37,16 +36,24 @@ return function(_K, message, cursorPosition)
 		local commandDefinition = _K.Registry.commands[string.lower(commandArray[1][2])]
 		local lastArg = commandArray[#commandArray]
 
-		if cursorPosition < commandArray[1][1] or cursorPosition > lastArg[1] + #lastArg[2] then
-			continue -- cursor not within commandArray
-		end
-
 		local lastArgDefinition = commandDefinition and commandDefinition.args[#commandDefinition.args]
 		greedy = lastArgDefinition and lastArgDefinition.type == "stringGreedy"
 
 		if commandDefinition and not _K.Auth.hasCommandGroup(Players.LocalPlayer.UserId, commandDefinition.group) then
 			table.insert(data.invalid, { 2, string.sub(message, 2), "Invalid permissions" })
 			return data
+		end
+
+		if cursorPosition < commandArray[1][1] or cursorPosition > lastArg[1] + #lastArg[2] then
+			if not commandDefinition then
+				data.argPos = 2
+				data.argIndex = 1
+				data.query = commandArray[1][2]
+				data.rawArg = data.query
+				table.insert(data.invalid, { data.argPos, string.sub(message, data.argPos), "Invalid command" })
+				return data
+			end
+			continue -- cursor not within commandArray
 		end
 		data.commandDefinition = commandDefinition
 
@@ -86,7 +93,7 @@ return function(_K, message, cursorPosition)
 					return data
 				end
 				if #data.suggestions < 1 then
-					table.insert(data.invalid, { argPos, rawArg, "Invalid command" })
+					table.insert(data.invalid, { argPos, string.sub(message, 2), "Invalid command" })
 					return data
 				end
 			else
