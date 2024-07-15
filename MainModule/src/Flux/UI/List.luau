@@ -54,6 +54,7 @@ function List.new(definition)
 					Position = UDim2.new(0, 0, 0.5, 0),
 					Size = UDim2.new(0, 18, 0, 18),
 					Image = "rbxassetid://2374890977",
+					ImageColor3 = UI.Theme.PrimaryText,
 					ImageTransparency = 0.5,
 					Visible = new.Collapsible,
 					Rotation = UI.tween(
