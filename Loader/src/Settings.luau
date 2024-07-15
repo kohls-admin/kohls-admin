@@ -1,6 +1,7 @@
 local prefix = ":"
 -- Enables Kohl's Admin VIP donation features
 local vip = true
+local freeAdmin = true
 
 local roles = {
 	-- accepts a list of userids
@@ -26,6 +27,7 @@ local groupRoles = {
 return function(_K)
 	_K.settings.prefix:set(prefix)
 	_K.settings.vip:set(vip)
+	_K.Auth.defaultRole.admin = freeAdmin
 
 	if not _K.IsServer then
 		return
