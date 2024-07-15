@@ -479,6 +479,10 @@ Input._input.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
 		CommandBar.Visible = false
 		Input._input.TextEditable = false
+		if currentCompletionData and currentCompletionData.invalid and #currentCompletionData.invalid > 0 then
+			-- if not fully validated need to show feedback
+			return
+		end
 		-- FIX: if validated lol
 		_K.Remote "Command":FireServer(Input._input.Text)
 		-- task.spawn(_K.Process.runCommands, _K.Services.Players.LocalPlayer, Input.Text)
