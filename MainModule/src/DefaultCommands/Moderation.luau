@@ -33,16 +33,35 @@ return {
 			-- need to somehow display only session bans in suggestions...
 			-- TODO: only show lower rank players in the suggestions if defined in argDef
 			local canBan = context._K.Auth.hasPermission(context.from.UserId, "ban")
-			for _, player in players do
-				if duration and canBan then
-					if duration > 0 then
-						duration = os.time() + duration
-					end
-					-- use new banasync
+			local timestamp
+			if duration and canBan then
+				if duration > 0 then
+					timestamp = os.time() + duration
 				end
-				-- TODO: network ban and use a generic ban handler for extensions to use
-				context._K.bans[player.UserId] = { player.Username, reason, duration }
+				-- use new banasync
+			end
+
+			local ids = table.create(#players)
+			for _, player in players do
+				context._K.banHandler(
+					player.UserId,
+					player.Username,
+					reason,
+					timestamp,
+					context.from.UserId,
+					context.from.Name
+				)
 				player:Kick(reason)
+			end
+			if canBan and duration and duration ~= 0 then
+				local ok = pcall(
+					context._K.Services.Players.BanAsync,
+					context._K.Services.Players,
+					{ UserIds = ids, PrivateReason = reason, Duration = duration }
+				)
+				if not ok then
+					-- TODO: retry banasync
+				end
 			end
 		end,
 	},
@@ -101,12 +120,7 @@ return {
 					end
 				end
 
-				-- TODO: network ban and use a generic ban handler for extensions to use
-				context._K.bans[userId] = {
-					userName,
-					reason,
-					duration,
-				}
+				context._K.banHandler(userId, userName, reason, duration, context.from.UserId, context.from.Name)
 				if userName ~= "" then
 					continue
 				end
@@ -119,8 +133,19 @@ return {
 					)
 					if ok then
 						context._K.bans[userId][1] = result
+						-- TODO: network ban name
 					end
 				end)
+			end
+			if canBan and duration and duration ~= 0 then
+				local ok = pcall(
+					context._K.Services.Players.BanAsync,
+					context._K.Services.Players,
+					{ UserIds = userIds, PrivateReason = reason, Duration = duration }
+				)
+				if not ok then
+					-- TODO: retry banasync
+				end
 			end
 		end,
 	},
@@ -138,11 +163,15 @@ return {
 			kick = true,
 		},
 		run = function(context, bans)
-			for _, userId in bans do
-				-- TODO: network ban and use a generic ban handler for extensions to use
+			local ids = table.create(#bans)
+			for i, userId in bans do
 				context._K.bans[userId] = nil
+				context._K.Remote "Ban":FireAllClients(userId)
+				-- trigger ban save
 				-- unbanasync
+				table.insert(ids, tonumber(userId))
 			end
+			context._K.Services.Players:UnbanAsync({ UserIds = ids })
 		end,
 	},
 

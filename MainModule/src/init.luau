@@ -5,6 +5,7 @@
 --------------------------
 -- START OF SHARED CODE --
 --------------------------
+local TextChatService = game:GetService("TextService")
 
 local _K = {
 	-- modules
@@ -23,10 +24,10 @@ local _K = {
 		-- if Timestamp is -1 the ban is permanent
 		-- if Timestamp is nil the ban is for the server session only
 		-- saves only if Timestamp isn't nil
-		["1"] = { "Roblox", "He noob.", -1 },
-		["2"] = { "John Doe", "He been noob." },
-		["3"] = { "Jane Doe", "She was a noob." },
-		["5"] = { "Jack Doe", "Wow!", 1720922623 },
+		["1"] = { "Roblox", "He noob.", -1, 44391621, "Scripth" },
+		["2"] = { "John Doe", "He been noob.", nil, 44391621, "Scripth" },
+		["3"] = { "Jane Doe", "She was a noob.", nil, 44391621, "Scripth" },
+		["5"] = { "Jack Doe", "Wow!", 1720922623, 44391621, "Scripth" },
 	},
 
 	logs = {},
@@ -54,6 +55,42 @@ else
 	_K.creatorId = game.CreatorId
 end
 
+function _K.filterMessage(message: string, from: number, to: number): string
+	local ok, result = pcall(
+		TextChatService.FilterStringAsync,
+		TextChatService,
+		message,
+		from,
+		Enum.TextFilterContext[if _K.Auth.defaultRole.logs then "PublicChat" else "PrivateChat"]
+	)
+	if ok then
+		ok, result = pcall(result.GetChatForUserAsync, result, to)
+		if ok then
+			return result
+		end
+	end
+	return "TextChatService filtering failed."
+end
+
+function _K.handleBan(userId, name, reason, duration, fromUserId, fromName)
+	_K.bans[tostring(userId)] = { name, reason, duration, fromUserId, fromName }
+	-- network ban to all with filtered season?
+	-- _K.filterMessage(reason, fromUserId or game.CreatorId, )
+	local ok, result = pcall(
+		TextChatService.FilterStringAsync,
+		TextChatService,
+		reason,
+		fromUserId,
+		Enum.TextFilterContext.PrivateChat
+	)
+	if ok then
+		for _, player in _K.Services.Players:GetPlayers() do
+			local _, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
+			_K.Remote "Ban":FireClient(player, userId, { name, filtered, duration, fromUserId, fromName })
+		end
+	end
+end
+
 _K.Enum.LogType = { "Chat", "Command", "Info", "Warning", "Error", "System" }
 function _K.log(message: string, logType: string, from: Player?)
 	-- fire this log to all clients that are authorized!
@@ -62,13 +99,29 @@ function _K.log(message: string, logType: string, from: Player?)
 	if from then
 		message = tostring(from) .. ": " .. message
 	end
-	local log = { os.time(), message, _K.Enum.LogType[logType] }
+	local log = { os.time(), message, _K.Enum.LogType[logType], from and from.UserId }
 	table.insert(_K.logs, log)
 	if #_K.logs > 1e5 then
 		table.remove(_K.logs, 1)
 	end
 	if _K.IsServer then
-		_K.Remote "Log":FireAllClients(log)
+		if from then
+			local ok, result = pcall(
+				TextChatService.FilterStringAsync,
+				TextChatService,
+				message,
+				from,
+				Enum.TextFilterContext[if _K.Auth.defaultRole.logs then "PublicChat" else "PrivateChat"]
+			)
+			if ok then
+				for _, player in _K.Services.Players:GetPlayers() do
+					local _, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
+					_K.Remote "Log":FireClient(player, filtered)
+				end
+			end
+		else
+			_K.Remote "Log":FireAllClients(log)
+		end
 	end
 end
 
@@ -147,9 +200,18 @@ end
 _K.Remote "Init".OnServerEvent:Connect(function(player)
 	-- send their own player permissions always for clientside validation
 	-- TODO: make sure data is network safe!
-	_K.Remote "Init":FireClient(player, _K.Auth, _K.bans, _K.logs, _K.settings)
-end)
 
+	local bans = {}
+	local logs = table.create(#_K.logs)
+	for _, items in { bans, logs } do
+		for i, item in items do
+			local message = if item[4] then _K.filterMessage(item[2], item[4], player.UserId) else item[2]
+			bans[i] = { item[1], message, item[3], item[4] }
+		end
+	end
+
+	_K.Remote "Init":FireClient(player, _K.Auth, bans, logs, _K.settings)
+end)
 
 script.Parent = _K.Services.ReplicatedStorage
 script.Name = "Kohl's Admin Source"
