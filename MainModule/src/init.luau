@@ -94,11 +94,38 @@ for _, child in script.DefaultCommands:GetChildren() do
 end
 
 -- register addons
-local addonParent = (shared._K_LOADER or script)
-local addons = typeof(addonParent) == "Instance" and addonParent:FindFirstChild("Addons")
-if addons then
-	for _, addon in addons:GetChildren() do
-		require(addon)(_K)
+if _K.IsServer then
+	local K_LOADER = shared._K_LOADER
+	local addons = K_LOADER:FindFirstChild("Addons")
+	local serverAddons = Instance.new("Folder", K_LOADER)
+	serverAddons.Name = "ServerAddons"
+
+	local settingsAddon = K_LOADER:FindFirstChild("Settings")
+	if settingsAddon then
+		settingsAddon.Parent = addons
+	end
+
+	if addons then
+		for _, addon in addons:GetChildren() do
+			if addon:IsA("ModuleScript") then
+				if string.find(addon.Name, "Server$") then
+					addon.Parent = serverAddons
+					require(addon)
+				elseif not string.find(addon.Name, "Client$") then
+					require(addon)
+				end
+			end
+		end
+		addons.Parent = script
+	end
+elseif _K.IsClient then
+	local addons = script:FindFirstChild("Addons")
+	if addons then
+		for _, addon in addons:GetChildren() do
+			if addon:IsA("ModuleScript") then
+				require(addon)
+			end
+		end
 	end
 end
 
@@ -123,8 +150,6 @@ _K.Remote "Init".OnServerEvent:Connect(function(player)
 	_K.Remote "Init":FireClient(player, _K.Auth, _K.bans, _K.logs, _K.settings)
 end)
 
--- replicate addons
-addons.Parent = script
 
 script.Parent = _K.Services.ReplicatedStorage
 script.Name = "Kohl's Admin Source"

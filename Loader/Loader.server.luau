@@ -4,6 +4,4 @@ if shared._K_LOADER then
 end
 shared._K_LOADER = script.Parent
 
--- require included modulescript or id based on settings
-
 require(script.MainModule)
