@@ -25,7 +25,7 @@ return function(_K, message, cursorPosition)
 
 	local rawCommands = _K.Process.rawParse(_K.Util.trimStart(message), _K.settings.prefix:get())
 	if not rawCommands then
-		table.insert(data.invalid, { 1, message, "Invalid command" })
+		table.insert(data.invalid, { 2, string.sub(message, 2), "Invalid command" })
 		return data -- invalid command string, show valid example
 	end
 
@@ -44,6 +44,10 @@ return function(_K, message, cursorPosition)
 		local lastArgDefinition = commandDefinition and commandDefinition.args[#commandDefinition.args]
 		greedy = lastArgDefinition and lastArgDefinition.type == "stringGreedy"
 
+		if commandDefinition and not _K.Auth.hasCommandGroup(Players.LocalPlayer.UserId, commandDefinition.group) then
+			table.insert(data.invalid, { 2, string.sub(message, 2), "Invalid permissions" })
+			return data
+		end
 		data.commandDefinition = commandDefinition
 
 		for i, arg in commandArray do
