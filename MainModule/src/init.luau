@@ -138,9 +138,10 @@ for _, module in { "Registry", "Process", "Flux" } do
 end
 
 -- register default hooks
-for i, hook in ipairs(_K.Registry.hooks) do
+local hooks = _K.Registry.hooks
+_K.Registry.hooks = {}
+for i, hook in ipairs(hooks) do
 	_K.Registry.registerHook(hook)
-	_K.Registry.hooks[i] = nil
 end
 
 -- Flux stateful settings
