@@ -98,10 +98,6 @@ local module = {
 			name = "Roblox",
 			roles = { "admin", "vip" },
 		},
-		["44391621"] = {
-			name = "Kohl",
-			roles = { "mod", "vip" },
-		},
 	},
 }
 
