@@ -69,17 +69,20 @@ end
 
 local aliases = {}
 function module.registerCommandAlias(alias, command)
+	print("command alias", alias, command)
 	local oldAlias = aliases[alias]
 	if not oldAlias and module.commands[string.lower(alias)] then
 		warn("Command alias already exists")
 		return
 	end
 
+	print("adding command alias", alias, command)
+
 	module.registerCommand {
 		name = alias,
 		aliases = {},
 		description = `Alias of "{command}"`,
-		group = "Local",
+		group = "Utility",
 		args = {},
 		clientRun = function(context)
 			context.Process.runCommands(game.Players.LocalPlayer, command)

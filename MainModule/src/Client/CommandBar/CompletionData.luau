@@ -44,6 +44,8 @@ return function(_K, message, cursorPosition)
 			return data
 		end
 
+		-- TODO: if within greedy and cursor not within command array we need to set the argpos
+
 		if cursorPosition < commandArray[1][1] or cursorPosition > lastArg[1] + #lastArg[2] then
 			if not commandDefinition then
 				data.argPos = 2
@@ -52,6 +54,13 @@ return function(_K, message, cursorPosition)
 				data.rawArg = data.query
 				table.insert(data.invalid, { data.argPos, string.sub(message, data.argPos), "Invalid command" })
 				return data
+			end
+			if greedy and cursorPosition > lastArg[1] + #lastArg[2] then
+				data.argPos = lastArg[1]
+				data.argIndex = #commandArray
+				data.query = string.sub(message, data.argPos)
+				data.rawArg = data.query
+				data.suggestionType = _K.Registry.types.stringGreedy
 			end
 			continue -- cursor not within commandArray
 		end

@@ -164,11 +164,13 @@ function module.prepareCommand(commandArray, from, message)
 	local args = {}
 	local argsIndex = 1
 	local argsLength = #commandDefinition.args
+	local lastArgDefinition = commandDefinition.args[argsLength]
+	local greedy = false
 	for i = 2, #commandArray do
 		local argPos, rawArg = unpack(commandArray[i])
 
 		-- if it's the last argument concat the rest of the commands's arguments
-		if argsIndex == argsLength then
+		if argsIndex - 1 == argsLength then
 			local lastArg = commandArray[#commandArray]
 			rawArg = string.sub(message, argPos, lastArg[1] + #lastArg[2])
 		end
@@ -180,13 +182,21 @@ function module.prepareCommand(commandArray, from, message)
 			break
 		end
 
+		if
+			argDefinition.type == "stringGreedy" or (i == #commandArray and lastArgDefinition.type == "stringGreedy")
+		then
+			print("greedy string prepare command", argDefinition)
+			rawArg = string.sub(message, argPos)
+			greedy = true
+		end
+
 		local parsedArg, exitCmd = module.prepareArgument(argDefinition, from, message, argPos, rawArg)
 		if parsedArg then
 			table.insert(args, parsedArg)
 		end
 
-		if exitCmd == true then
-			-- exit with immediate execution (what was this for again? NOTE IT)
+		if exitCmd == true or greedy then
+			-- exit with immediate execution, for stringGreedy early return and other early returns from argument parsing
 			break
 		else
 			-- TODO: need to step only if the argument is successful or optional
@@ -203,6 +213,7 @@ function module.prepareCommand(commandArray, from, message)
 			definition = commandDefinition,
 			from = from,
 			message = message,
+			greedy = greedy,
 		}
 end
 
@@ -214,7 +225,7 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 	local commandRan, commandError
 	local rawCommands = module.rawParse(message, module._K.settings.prefix:get())
 	if rawCommands then
-		for _, commandArray in rawCommands do
+		for i, commandArray in rawCommands do
 			local ok, result = module.prepareCommand(commandArray, from, message)
 
 			if not ok then
@@ -225,6 +236,9 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 
 			local run = result.definition[if module._K.IsServer then "run" else "clientRun"]
 			if not run then
+				if result.greedy then
+					break
+				end
 				continue
 			end
 
@@ -234,8 +248,13 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 				-- show command error
 				-- TODO: propagate error info to send relevant information to the client? (for serverside run only?)
 				commandError = err
+				warn("commandError", err)
 			else
 				commandRan = true
+			end
+			if result.greedy then
+				print("greedy!")
+				break
 			end
 		end
 	end
