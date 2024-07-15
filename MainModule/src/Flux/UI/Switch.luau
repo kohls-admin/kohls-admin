@@ -57,7 +57,7 @@ function Switch.new(definition)
 
 		UI.new "Frame" {
 			Name = "Circle",
-			BackgroundColor3 = UI.Theme.Primary,
+			BackgroundColor3 = UI.Theme.SecondaryText,
 			BackgroundTransparency = backgroundTransparency,
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
