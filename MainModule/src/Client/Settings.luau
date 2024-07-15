@@ -191,6 +191,7 @@ function Settings.new(_K)
 
 	local settingsScroller = UI.new "Scroller" {
 		Name = "Settings",
+		ClipsDescendants = false,
 
 		UI.new "Input" {
 			Placeholder = "Search",

@@ -134,10 +134,17 @@ function Tabs.new(definition)
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 		Position = UDim2.new(0, 0, 1, 0),
+		ClipsDescendants = true,
 
 		pages,
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
+		},
+		UI.new "UIPadding" {
+			PaddingTop = UDim.new(0, 1),
+			PaddingBottom = UDim.new(0, 1),
+			PaddingLeft = UDim.new(0, 1),
+			PaddingRight = UDim.new(0, 1),
 		},
 
 		[UI.Event] = {
