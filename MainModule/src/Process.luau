@@ -9,7 +9,7 @@ module._K = {}
 function module.rawParse(message: string, prefix: string, delimiter: string?): { any }?
 	local argDelimiter: string = delimiter or "%s"
 	-- is there a command prefix?
-	if string.find(message, string.format("^%s%%a", prefix)) ~= 1 then
+	if string.find(message, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
 		return
 	end
 	local prefixLen = #prefix
