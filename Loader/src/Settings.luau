@@ -24,8 +24,8 @@ local groupRoles = {
 -- Careful! Easy configuration is above.
 -- Only change the code below if you understand the consequences.
 return function(_K)
-	_K.settings.prefix = prefix
-	_K.settings.vip = vip
+	_K.settings.prefix:set(prefix)
+	_K.settings.vip:set(vip)
 
 	if not _K.IsServer then
 		return
