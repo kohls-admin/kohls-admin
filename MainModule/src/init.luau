@@ -163,9 +163,9 @@ if _K.IsServer then
 			if addon:IsA("ModuleScript") then
 				if string.find(addon.Name, "Server$") then
 					addon.Parent = serverAddons
-					require(addon)
+					require(addon)(_K)
 				elseif not string.find(addon.Name, "Client$") then
-					require(addon)
+					require(addon)(_K)
 				end
 			end
 		end
@@ -176,7 +176,7 @@ elseif _K.IsClient then
 	if addons then
 		for _, addon in addons:GetChildren() do
 			if addon:IsA("ModuleScript") then
-				require(addon)
+				require(addon)(_K)
 			end
 		end
 	end
