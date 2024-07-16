@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  ci:
+    name: CI and Deployment
+    runs-on: ubuntu-latest
+    environment: testing
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: Roblox/setup-foreman@v1
+        with:
+          version: "*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          allow-external-github-org: true
+      - run: foreman --version
+      - run: rojo --version
+
+      - name: Deploy Testing Place
+        run: rojo upload --api_key "$PLACE_PUBLISHING_KEY" --universe_id 6276172392 --asset_id 18522821798
+        env:
+          PLACE_PUBLISHING_KEY: ${{ secrets.PLACE_PUBLISHING_KEY }}
