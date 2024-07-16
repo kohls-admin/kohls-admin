@@ -110,11 +110,11 @@ UI.TopBarFrame = UI.new "Frame" {
 
 	UI.new "UIListLayout" {
 		SortOrder = Enum.SortOrder.LayoutOrder,
+		VerticalAlignment = Enum.VerticalAlignment.Bottom,
 	},
 	UI.new "UIPadding" {
 		PaddingLeft = UDim.new(0, 12),
 		PaddingRight = UDim.new(0, 12),
-		PaddingBottom = UDim.new(0, 2),
 	},
 }
 
