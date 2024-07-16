@@ -20,6 +20,7 @@ function Select.new(definition)
 	local listContentSize = UI.state(list, "AbsoluteContentSize")
 
 	local menu, menuFrame = UI.new "ScrollingFrame" {
+		Name = "Menu",
 		ZIndex = 100,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
@@ -29,33 +30,32 @@ function Select.new(definition)
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 0,
 
-		[UI.Children] = {
-			ListLayout = list,
-		},
+		list,
 	}
 
 	new._instance = UI.new "Frame" {
 		ZIndex = 100,
 		Name = "Select",
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 32), -- TODO: use fontsize derivative for sizing
+		Size = UDim2.new(1, 0, 0, 24), -- TODO: use fontsize derivative for sizing
 
-		[UI.Children] = {
-			Header = UI.new "Button" {
-				Icon = "rbxassetid://2374890977",
-				IconRightAlign = true,
-				IconProperties = {
-					Size = UDim2.new(0, 18, 0, 18),
-				},
-				Label = new.Choice,
-				Size = UDim2.new(1, 0, 0, 32),
-				TextXAlignment = Enum.TextXAlignment.Left,
+		UI.new "Button" {
+			Name = "Header",
+			Icon = "rbxassetid://2374890977",
+			IconRightAlign = true,
+			IconProperties = {
+				Size = UDim2.new(0, 18, 0, 18),
+			},
+			Label = new.Choice,
+			TextSize = 16,
+			Padding = UDim.new(0, 8),
+			Size = UDim2.new(1, 0, 0, 24),
+			TextXAlignment = Enum.TextXAlignment.Left,
 
-				[UI.Event] = {
-					Activated = function()
-						menuFrame.Visible = not menuFrame.Visible
-					end,
-				},
+			[UI.Event] = {
+				Activated = function()
+					menuFrame.Visible = not menuFrame.Visible
+				end,
 			},
 		},
 	}
@@ -69,36 +69,43 @@ function Select.new(definition)
 		Parent = UI.LayerTop,
 		BackgroundColor3 = UI.Theme.Primary,
 		Size = UI.compute(function(use)
-			return UDim2.new(0, use(absoluteSize).X, 0, math.min(#use(new.Choices), 7.5) * 32)
+			return UDim2.new(0, use(absoluteSize).X, 0, math.min(#use(new.Choices), 7.5) * 24)
 		end),
 		Position = UI.compute(function(use)
 			local pos = use(absolutePosition)
-			return UDim2.fromOffset(pos.x, pos.y + 32 + use(UI.Theme.PaddingHalf).Offset + use(UI.TopbarInset).Height)
+			return UDim2.fromOffset(pos.x, pos.y + 24 + use(UI.Theme.PaddingHalf).Offset + use(UI.TopbarInset).Height)
 		end),
 
-		[UI.Children] = {
-			Menu = menu,
-			UICorner = UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
-			},
-			UIStroke = UI.new "UIStroke" {
-				Enabled = UI.Theme.StrokeEnabled,
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				Transparency = UI.Theme.Transparency,
-				Color = UI.Theme.Border,
-			},
+		menu,
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerRadius,
+		},
+		UI.new "UIStroke" {
+			Enabled = UI.Theme.StrokeEnabled,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Transparency = UI.Theme.Transparency,
+			Color = UI.Theme.Border,
 		},
 	}
 
 	local function updateChoices()
 		for i, choice in new.Choices._value do
+			if typeof(choice) == "EnumItem" then
+				if choice.Name == "Unknown" then
+					continue
+				end
+				choice = choice.Name
+			end
 			local choiceButton = UI.new "Button" {
 				LayoutOrder = i,
 				ZIndex = 1e3,
 				Parent = menu,
 				Name = choice,
 				Label = choice,
+				TextSize = 16,
+				Padding = UDim.new(0, 8),
 				TextXAlignment = Enum.TextXAlignment.Left,
+				Size = UDim2.new(1, 0, 0, 24),
 
 				[UI.Event] = {
 					Activated = function()

@@ -77,8 +77,85 @@ function Settings.new(_K)
 					Value = UI.Theme.StrokeEnabled,
 				},
 			},
+			UI.new "ListItem" {
+				Text = "Font",
+				UI.new "Select" {
+					Choice = UI.Theme.Font._value.Name,
+					Choices = Enum.Font:GetEnumItems(),
+					[UI.Hook] = {
+						Choice = function(value)
+							UI.Theme.Font:set(Enum.Font[value])
+						end,
+					},
+				},
+			},
+			UI.new "ListItem" {
+				Text = "Font Mono",
+				UI.new "Select" {
+					Choice = UI.Theme.FontMono._value.Name,
+					Choices = Enum.Font:GetEnumItems(),
+					[UI.Hook] = {
+						Choice = function(value)
+							UI.Theme.FontMono:set(Enum.Font[value])
+						end,
+					},
+				},
+			},
 		},
 	}
+
+	-- font size
+	do
+		local input
+		local slider = UI.new "Slider" {
+			Snap = 25,
+			Value = math.clamp(UI.Theme.FontSize._value - 7, 1, 25),
+			UI.new "UIFlexItem" {
+				FlexMode = Enum.UIFlexMode.Fill,
+			},
+			[UI.Hook] = {
+				Value = function(value)
+					UI.Theme.FontSize:set(value + 7)
+					if tonumber(input._input.Text) == value + 7 then
+						return
+					end
+					input._input.Text = value + 7
+				end,
+			},
+		}
+		input = UI.new "Input" {
+			Font = UI.Theme.FontMono,
+			Size = UDim2.new(0, 30, 1, 0),
+			FontSize = 14,
+			Padding = UDim.new(0, 5),
+			NumberOnly = true,
+			NumberRange = NumberRange.new(8, 32),
+			Placeholder = "",
+			Value = UI.Theme.FontSize._value,
+			[UI.Hook] = {
+				Value = function(value)
+					local number = tonumber(value)
+					if not number then
+						return
+					end
+					UI.Theme.FontSize:set(number)
+					if tonumber(slider.Value._value) == number - 7 then
+						return
+					end
+					print("font size input", number)
+					slider.Value:set(number - 7)
+				end,
+			},
+		}
+		table.insert(
+			settingsLineItems.Theme,
+			UI.new "ListItem" {
+				Text = "Font Size",
+				input,
+				slider,
+			}
+		)
+	end
 
 	-- UDim options
 	for i, key in { "CornerRadius", "Padding" } do

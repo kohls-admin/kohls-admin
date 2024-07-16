@@ -13,8 +13,10 @@ function Button.new(definition)
 		Label = "Default Button Text",
 		IconProperties = {},
 		IconRightAlign = false,
+		TextSize = UI.Theme.FontSize,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
+		Padding = UI.Theme.Padding,
 	}, definition)
 
 	local hovering = UI.state(false)
@@ -36,7 +38,7 @@ function Button.new(definition)
 				Size = UDim2.new(1, 0, 1, 0),
 				Font = UI.Theme.Font,
 				Text = new.Label,
-				TextSize = UI.Theme.FontSize,
+				TextSize = new.TextSize,
 				TextColor3 = UI.Theme.PrimaryText,
 				TextTransparency = 0,
 				TextStrokeTransparency = 0.9,
@@ -47,14 +49,12 @@ function Button.new(definition)
 					return use(new.Label) ~= ""
 				end),
 
-				[UI.Children] = {
-					UIFlexItem = UI.new "UIFlexItem" {
-						FlexMode = Enum.UIFlexMode.Fill,
-					},
-					UIPadding = UI.new "UIPadding" {
-						PaddingLeft = UI.Theme.Padding,
-						PaddingRight = UI.Theme.Padding,
-					},
+				UI.new "UIFlexItem" {
+					FlexMode = Enum.UIFlexMode.Fill,
+				},
+				UI.new "UIPadding" {
+					PaddingLeft = new.Padding,
+					PaddingRight = new.Padding,
 				},
 			},
 
@@ -69,14 +69,13 @@ function Button.new(definition)
 					return use(new.Icon) ~= ""
 				end),
 
-				[UI.Children] = {
-					Icon = UI.new "ImageLabel" {
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						Position = UDim2.new(0.5, 0, 0.5, 0),
-						BackgroundTransparency = 1,
-						Size = UDim2.new(1, 0, 1, 0),
-						Image = new.Icon,
-					},
+				UI.new "ImageLabel" {
+					Name = "Icon",
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.new(0.5, 0, 0.5, 0),
+					BackgroundTransparency = 1,
+					Size = UDim2.new(1, 0, 1, 0),
+					Image = new.Icon,
 				},
 			},
 		},
@@ -89,10 +88,8 @@ function Button.new(definition)
 			return if UI.getLuminance(use(UI.Theme.Border)) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
 		end),
 
-		[UI.Children] = {
-			UICorner = UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
-			},
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerRadius,
 		},
 	}
 
@@ -113,21 +110,18 @@ function Button.new(definition)
 		TextTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 32),
 
-		[UI.Children] = {
-			UICorner = UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
-			},
-
-			UIStroke = UI.new "UIStroke" {
-				Enabled = UI.Theme.StrokeEnabled,
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				Transparency = UI.Theme.Transparency,
-				Color = UI.Theme.Border,
-			},
-
-			ListFrame = listFrame,
-			Ripple = ripple,
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerRadius,
 		},
+		UI.new "UIStroke" {
+			Enabled = UI.Theme.StrokeEnabled,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Transparency = UI.Theme.Transparency,
+			Color = UI.Theme.Border,
+		},
+
+		listFrame,
+		ripple,
 
 		[UI.Event] = {
 			InputBegan = function(input, processed)
