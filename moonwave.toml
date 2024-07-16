@@ -1,0 +1,35 @@
+title = "Kohl's Admin"
+gitRepoUrl = "https://github.com/kohls-admin/main"
+gitSourceBranch = "master"
+
+changelog = true
+classOrder = []
+
+[docusaurus]
+onBrokenLinks = "throw"
+onBrokenMarkdownLinks = "warn"
+favicon = "/logo.svg"
+
+# From git:
+organizationName = "kohls-admin"
+projectName = "main"
+deploymentBranch = "gh-pages"
+tagline = "Embrace creativity, not chaos."
+url = "https://docs.kohl.gg"
+baseUrl = "/"
+
+[navbar]
+title = ""
+
+[[navbar.items]]
+href = "https://discord.gg/kohl"
+label = "Discord"
+position = "right"
+
+[navbar.logo]
+alt = "Kohl's Admin"
+src = "/logo-load.svg"
+
+[footer]
+style = "dark"
+copyright = "Copyright © 2024 Kohl"

@@ -3,102 +3,186 @@ local GuiService = game:GetService("GuiService")
 local TextService = game:GetService("TextService")
 local UserInputService = game:GetService("UserInputService")
 
+local Types = require(script.Parent.Types)
 local Flux = require(script.Parent)
 local state = Flux.state
 
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 -- TODO: allow a way to easily override builtin theme binds with a new compute or whatever!
-local UI = {
-	GuiService = GuiService,
-	TextService = TextService,
-	UserInputService = UserInputService,
-	PlayerGui = playerGui,
 
-	Class = {},
-	Hook = newproxy(),
-	Nil = newproxy(),
-	Scope = Flux.Scope.UI,
-	TopbarInset = state(GuiService, "TopbarInset"),
-	Theme = {
-		ClackAll = state(true),
-		ClackEnabled = state(true),
-		Transparency = state(0.3),
-
-		Primary = state(Color3.fromRGB(0, 0, 0)),
-		PrimaryText = state(Color3.fromRGB(255, 255, 255)),
-
-		Secondary = state(Color3.fromRGB(255, 255, 255)),
-		SecondaryText = state(Color3.fromRGB(0, 0, 0)),
-
-		Muted = state(Color3.fromRGB(200, 200, 200)),
-		MutedText = state(Color3.fromRGB(127, 127, 127)),
-
-		Border = state(Color3.fromRGB(100, 100, 100)),
-		BorderMuted = state(Color3.fromRGB(50, 50, 50)),
-
-		Valid = state(Color3.fromRGB(0, 255, 0)),
-		Invalid = state(Color3.fromRGB(255, 0, 0)),
-
-		FontSize = state(16),
-		Font = state(Enum.Font.Roboto),
-		FontMono = state(Enum.Font.RobotoMono),
-
-		CornerRadius = state(UDim.new(0, 8)),
-		Padding = state(UDim.new(0, 8)),
-		StrokeEnabled = state(true),
-
-		NormalTween = TweenInfo.new(0.2),
-		-- BasePixelHeight 32?
-	},
-
-	LayerBottom = Flux.new "ScreenGui" {
-		Parent = playerGui,
-		Name = "FluxUILayerBottom",
-		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	},
-	LayerDefault = Flux.new "ScreenGui" {
-		Parent = playerGui,
-		Name = "FluxUILayerDefault",
-		DisplayOrder = 2,
-		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	},
-	LayerTop = Flux.new "ScreenGui" {
-		Parent = playerGui,
-		Name = "FluxUILayerTop",
-		DisplayOrder = 999999999,
-		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	},
-	LayerTopBar = Flux.new "ScreenGui" {
-		Parent = playerGui,
-		Name = "FluxUILayerTopBar",
-		DisplayOrder = 10,
-		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		ScreenInsets = Enum.ScreenInsets.TopbarSafeInsets,
-	},
-}
-UI.Scope.Theme = UI.Theme
+--- @class UI
+local UI = { Class = {} }
 UI.__index = UI
 setmetatable(UI, Flux)
 
+--- @within UI
+--- @prop GuiService GuiService
+UI.GuiService = GuiService
+
+--- @within UI
+--- @prop TextService TextService
+UI.TextService = TextService
+
+--- @within UI
+--- @prop UserInputService UserInputService
+UI.UserInputService = UserInputService
+
+--- @within UI
+--- @prop PlayerGui PlayerGui
+UI.PlayerGui = playerGui
+
+--- @within UI
+--- A marker for defining UI state hooks
+--- @prop hook newproxy
+UI.Hook = newproxy()
+
+--- @within UI
+--- A marker for defining Nil defaultState
+--- @prop Attribute newproxy
+UI.Nil = newproxy()
+
+--- @within UI
+--- A scope object for organizing and cleaning up UI states
+--- @prop Scope Scope
+UI.Scope = UI.Scope.UI
+
+--- @within UI
+--- GuiService.TopbarInset as a Flux state
+--- @prop TopbarInset State<Rect>
+UI.TopbarInset = state(GuiService, "TopbarInset")
+
+--- @within UI
+--- The lowermost ScreenGui for UI components
+--- @prop LayerBottom State<ScreenGui>
+UI.LayerBottom = Flux.new "ScreenGui" {
+	Parent = playerGui,
+	Name = "FluxUILayerBottom",
+	ResetOnSpawn = false,
+	IgnoreGuiInset = true,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+}
+
+--- @within UI
+--- The default ScreenGui for UI components
+--- @prop LayerDefault State<ScreenGui>
+UI.LayerDefault = Flux.new "ScreenGui" {
+	Parent = playerGui,
+	Name = "FluxUILayerDefault",
+	DisplayOrder = 2,
+	ResetOnSpawn = false,
+	IgnoreGuiInset = true,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+}
+
+--- @within UI
+--- The topmost ScreenGui for UI components
+--- @prop LayerTop State<ScreenGui>
+UI.LayerTop = Flux.new "ScreenGui" {
+	Parent = playerGui,
+	Name = "FluxUILayerTop",
+	DisplayOrder = 999999999,
+	ResetOnSpawn = false,
+	IgnoreGuiInset = true,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+}
+
+--- @within UI
+--- The TopBar ScreenGui for UI components
+--- @prop LayerTopBar State<ScreenGui>
+UI.LayerTopBar = Flux.new "ScreenGui" {
+	Parent = playerGui,
+	Name = "FluxUILayerTopBar",
+	DisplayOrder = 10,
+	ResetOnSpawn = false,
+	IgnoreGuiInset = true,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	ScreenInsets = Enum.ScreenInsets.TopbarSafeInsets,
+}
+
+--- @within UI
+--- A sorted TopBar Frame for UI components, parented under [UI.LayerTopBar]
+--- @prop TopBarFrame State<Frame>
 UI.TopBarFrame = UI.new "Frame" {
 	Parent = UI.LayerTopBar,
 	BackgroundTransparency = 1,
 	Size = UDim2.new(1, 0, 1, 0),
 
+	UI.new "UIListLayout" {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	},
 	UI.new "UIPadding" {
 		PaddingLeft = UDim.new(0, 12),
 		PaddingRight = UDim.new(0, 12),
 		PaddingBottom = UDim.new(0, 2),
 	},
+}
+
+--- @within UI
+--- A directory of Flux state for UI components to use as theme variables
+--- @interface Theme
+--- .ClackAll State<boolean>
+--- .ClackEnabled State<boolean>
+--- .Transparency State<number>
+--- .Primary State<Color3>
+--- .PrimaryText State<Color3>
+--- .Secondary State<Color3>
+--- .SecondaryText State<Color3>
+--- .Muted State<Color3>
+--- .MutedText State<Color3>
+--- .Border State<Color3>
+--- .BorderMuted State<Color3>
+--- .Valid State<Color3>
+--- .Invalid State<Color3>
+--- .FontSize State<number>
+--- .Font State<Font>
+--- .FontMono State<Font>
+--- .FontHeavy State<Font>
+--- .FontBold State<Font>
+--- .FontSemiBold State<Font>
+--- .FontLight State<Font>
+--- .CornerRadius State<UDim>
+--- .CornerHalf State<UDim>
+--- .CornerDiameter State<UDim>
+--- .Padding State<UDim>
+--- .PaddingHalf State<UDim>
+--- .PaddingDouble State<UDim>
+--- .StrokeEnabled State<boolean>
+--- .NormalTween State<TweenInfo>
+--- .TransparencyClamped State<number>
+--- .ScrollMidImage State<string>
+--- .ScrollTopImage State<string>
+--- .ScrollBottomImage State<string>
+UI.Theme = {
+	ClackAll = state(true),
+	ClackEnabled = state(true),
+	Transparency = state(0.3),
+
+	Primary = state(Color3.fromRGB(0, 0, 0)),
+	PrimaryText = state(Color3.fromRGB(255, 255, 255)),
+
+	Secondary = state(Color3.fromRGB(255, 255, 255)),
+	SecondaryText = state(Color3.fromRGB(0, 0, 0)),
+
+	Muted = state(Color3.fromRGB(200, 200, 200)),
+	MutedText = state(Color3.fromRGB(127, 127, 127)),
+
+	Border = state(Color3.fromRGB(100, 100, 100)),
+	BorderMuted = state(Color3.fromRGB(50, 50, 50)),
+
+	Valid = state(Color3.fromRGB(0, 255, 0)),
+	Invalid = state(Color3.fromRGB(255, 0, 0)),
+
+	FontSize = state(16),
+	Font = state(Enum.Font.Roboto),
+	FontMono = state(Enum.Font.RobotoMono),
+
+	CornerRadius = state(UDim.new(0, 8)),
+	Padding = state(UDim.new(0, 8)),
+	StrokeEnabled = state(true),
+
+	NormalTween = TweenInfo.new(0.2),
+	-- BasePixelHeight 32?
 }
 
 UI.Theme.TransparencyClamped = UI.compute(function(use)
@@ -158,21 +242,25 @@ UI.Theme.ScrollBottomImage = UI.compute(function(use)
 end)
 
 local _currentHover
-function UI.handleHover(new)
-	if not Flux.isState(new) then
+
+--- Handles a global hovering state for specific edge-cases
+function UI.handleHover(hoverState: Types.State<boolean>)
+	if not Flux.isState(hoverState) then
 		error("Invalid hovering state")
 	end
-	if _currentHover and not rawequal(_currentHover, new) then
+	if _currentHover and not rawequal(_currentHover, hoverState) then
 		_currentHover:set(false)
 	end
-	_currentHover = new
-	new:set(true)
+	_currentHover = hoverState
+	hoverState:set(true)
 end
 
+--- Gets the luminance of a [Color3]
 function UI.getLuminance(color: Color3): number
 	return math.sqrt(0.299 * color.R ^ 2 + 0.587 * color.G ^ 2 + 0.114 * color.B ^ 2)
 end
 
+--- Inverts the luminance of a [Color3] by an amount
 function UI.invertLuminance(color: Color3, amount: number): Color3
 	local rLum = 0.299 * color.R ^ 2
 	local gLum = 0.587 * color.G ^ 2
@@ -191,12 +279,14 @@ function UI.invertLuminance(color: Color3, amount: number): Color3
 	return Color3.new(newR, newG, newB)
 end
 
+--- Checks if x, y is within the absolute bounds of the GuiObject
 function UI.pointInGuiObject(x: number, y: number, object: GuiObject)
 	local size = object.AbsoluteSize
 	local position = object.AbsolutePosition
 	return x >= position.X and x <= position.X + size.X and y >= position.Y and y <= position.Y + size.Y
 end
 
+--- Helper function for defining Flux state defaults
 function UI.makeStatefulDefaults(default: { [any]: any }, definition: { [any]: any }?)
 	for key, value in default do
 		if definition then
@@ -214,7 +304,11 @@ function UI.makeStatefulDefaults(default: { [any]: any }, definition: { [any]: a
 	return default
 end
 
-function UI.edit(new, definition)
+--- Inherits [Flux.edit]
+--- * Parents children to the ._content variable of a UI component if one exists
+--- * Numeric indicies are defined as children with [GuiObject.LayoutOrder] set to the index
+--- * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
+function UI.edit(new: Instance | Types.Dict<any>, definition: Types.Dict<any>)
 	local newIsTable = type(new) == "table"
 	local instance = if newIsTable then new._instance else new
 	local children = definition[UI.Children]
@@ -292,22 +386,25 @@ function UI.edit(new, definition)
 	return new
 end
 
-function UI.new(className)
+--- Creates a new Instance with [UI.edit]
+function UI.new(className: string)
 	local class = UI.Class[className]
-	return function(definition)
+	return function(definition: Types.Dict<any>)
 		local new = class and class.new(definition)
 		local instance = if new then new._instance else Instance.new(className)
 		return UI.edit(new or instance, definition)
 	end
 end
 
-function UI.register(className, class)
+--- Registers a new UI component class
+function UI.register(className: string, class: Types.Dict<any>)
 	if UI.Class[className] then
 		error(`UI class "{className}" already exists`)
 	end
 	UI.Class[className] = class
 end
 
+--- Run to register all default children in the UI module
 function UI.registerChildren()
 	UI.registerChildren = nil :: any
 	for _, child in script:GetChildren() do
