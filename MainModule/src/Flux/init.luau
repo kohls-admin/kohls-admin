@@ -154,7 +154,7 @@ end
 function Flux:_update(noTween: boolean?)
 	local _operation = self._operation
 	if type(_operation) == "table" then
-		local computation = _operation[1] :: Function
+		local computation = _operation[1] :: Types.Function
 		local args = {}
 		for i = 2, #_operation do
 			table.insert(args, peek(_operation[i]))
@@ -218,7 +218,7 @@ function Flux:Destroy()
 end
 
 --- Adds a hook callback function to be called when the state changes
-function Flux:hook(callback: Function): Function
+function Flux:hook(callback: Types.Function): Types.Function
 	if not self._hooks then
 		self._hooks = {}
 	end

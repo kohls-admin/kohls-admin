@@ -309,11 +309,15 @@ end
 --- * Numeric indicies are defined as children with [GuiObject.LayoutOrder] set to the index
 --- * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
 function UI.edit(new: Instance | Types.Dict<any>, definition: Types.Dict<any>)
-	local newIsTable = type(new) == "table"
-	local instance = if newIsTable then new._instance else new
+	local instance = new
+	local contentParent = instance
 	local children = definition[UI.Children]
 	local parent = definition.Parent
-	local contentParent = newIsTable and new._content or instance
+
+	if type(new) == "table" then
+		instance = new._instance
+		contentParent = new._content
+	end
 
 	if children then
 		if typeof(children) ~= "table" then
@@ -349,7 +353,7 @@ function UI.edit(new: Instance | Types.Dict<any>, definition: Types.Dict<any>)
 		definition[index] = nil
 	end
 
-	if newIsTable then
+	if type(new) == "table" then
 		local hooks = definition[UI.Hook]
 		definition[UI.Hook] = nil
 		if hooks then
