@@ -27,14 +27,14 @@
 				{
 					"ClassName": "Decal",
 					"Properties": {
-						"Texture": "rbxassetid://10650688092"
+						"Texture": "rbxassetid://10650688076"
 					}
 				},
 				{
 					"ClassName": "Decal",
 					"Properties": {
 						"Face": "Back",
-						"Texture": "rbxassetid://10650688092"
+						"Texture": "rbxassetid://10650688076"
 					}
 				}
 			]
