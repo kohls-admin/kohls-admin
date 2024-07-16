@@ -25,6 +25,6 @@ jobs:
       - run: rojo --version
 
       - name: Deploy Testing Place
-        run: rojo upload --api_key "$PLACE_PUBLISHING_KEY" --universe_id 6276172392 --asset_id 18522821798
+        run: rojo upload --api_key "$PLACE_PUBLISHING_KEY" --universe_id 6195299643 --asset_id 18274376677
         env:
           PLACE_PUBLISHING_KEY: ${{ secrets.PLACE_PUBLISHING_KEY }}
