@@ -1,7 +1,7 @@
 <div align="center">
 	<img src="assets/logo.svg" alt="Kohl's Admin" height="150" />
 	<br/>
-	<a href="https://kohl.gg/docs"><img src="https://img.shields.io/badge/docs-kohls.gg-222" /></a>
+	<a href="https://kohl.gg/docs"><img src="https://img.shields.io/badge/docs-kohl.gg-222" /></a>
 	<a href="https://discord.gg/bwCC7gV"><img src="https://img.shields.io/discord/694630328064671775" /></a>
 	<br/><br/>
 	<h1>Embrace creativity, not chaos.</h1>
