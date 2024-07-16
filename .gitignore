@@ -3,3 +3,4 @@
 sourcemap.json
 !.moonwave/
 !.gitignore
+!.github
