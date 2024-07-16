@@ -89,6 +89,12 @@ if holder and holder:FindFirstChild("Holders") and holder.Holders:FindFirstChild
 	holder = holder.Holders.Left
 end
 
+local oldTopbar = UI.compute(function(use)
+	return use(UI.TopbarInset).Height
+end)
+local dasboardButtonPadding = UI.compute(function(use)
+	return UDim.new(0, if use(oldTopbar) then 6 else 12)
+end)
 local dashboardButton
 dashboardButton = UI.new "TextButton" {
 	Parent = holder or UI.TopBarFrame,
@@ -97,21 +103,27 @@ dashboardButton = UI.new "TextButton" {
 	AnchorPoint = Vector2.new(0, 1),
 	AutoButtonColor = true,
 	BackgroundColor3 = Color3.new(),
-	BackgroundTransparency = 0.3,
+	BackgroundTransparency = UI.compute(function(use)
+		return if use(oldTopbar) then 0.5 else 0.3
+	end),
 	BorderSizePixel = 0,
-	Size = UDim2.fromOffset(44, 44),
+	Size = UI.compute(function(use)
+		return if use(oldTopbar) then UDim2.fromOffset(32, 32) else UDim2.fromOffset(44, 44)
+	end),
 	Position = UDim2.fromScale(0, 1),
 	Text = "",
 	TextTransparency = 1,
 
 	UI.new "UICorner" {
-		CornerRadius = UDim.new(1, 0),
+		CornerRadius = UI.compute(function(use)
+			return if use(oldTopbar) then UDim.new(0, 9) else UDim.new(1, 0)
+		end),
 	},
 	UI.new "UIPadding" {
-		PaddingLeft = UDim.new(0, 12),
-		PaddingRight = UDim.new(0, 12),
-		PaddingTop = UDim.new(0, 12),
-		PaddingBottom = UDim.new(0, 12),
+		PaddingLeft = dasboardButtonPadding,
+		PaddingRight = dasboardButtonPadding,
+		PaddingTop = dasboardButtonPadding,
+		PaddingBottom = dasboardButtonPadding,
 	},
 
 	UI.new "ImageLabel" {
