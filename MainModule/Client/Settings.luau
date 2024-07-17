@@ -32,6 +32,12 @@ function Settings.new(_K)
 					Placeholder = ";",
 					MaxChars = 1,
 					Value = _K.settings.prefix,
+
+					[UI.Hook] = {
+						Value = function(value)
+							_K.Remote "Prefix":FireServer(value)
+						end,
+					},
 				},
 			},
 			UI.new "ListItem" {

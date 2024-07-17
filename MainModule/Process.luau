@@ -221,9 +221,9 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 	-- TODO: validate permissions!
 	-- TODO: allow for remote commands with no player? or a userid to log remote users?
 	local message = module._K.Util.trimStart(rawString)
-
+	local userId = if typeof(from) == "Instance" then from.UserId else from
 	local commandRan, commandError
-	local rawCommands = module.rawParse(message, module._K.settings.prefix:get())
+	local rawCommands = module.rawParse(message, module._K.playerPrefix[userId] or module._K.settings.prefix:get())
 	if rawCommands then
 		for i, commandArray in rawCommands do
 			local ok, result = module.prepareCommand(commandArray, from, message)
