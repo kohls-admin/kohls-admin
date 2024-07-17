@@ -1,0 +1,15 @@
+{
+	"name": "Kohl's Admin",
+	"tree": {
+		"$path": "../Loader/src",
+		"Loader": {
+			"$path": "../Loader/Loader.server.luau",
+			"MainModule": {
+				"$path": "../MainModule"
+			}
+		},
+		"LICENSE": {
+			"$path": "../LICENSE.txt"
+		}
+	}
+}

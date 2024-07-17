@@ -6,8 +6,8 @@ on:
       - master
 
 jobs:
-  ci:
-    name: CI and Deployment
+  publish:
+    name: Publish changes to Roblox
     runs-on: ubuntu-latest
     environment: testing
 
@@ -24,7 +24,8 @@ jobs:
       - run: foreman --version
       - run: rojo --version
 
-      - name: Deploy Testing Place
-        run: rojo upload --api_key "$PLACE_PUBLISHING_KEY" --universe_id 6195299643 --asset_id 18274376677
-        env:
-          PLACE_PUBLISHING_KEY: ${{ secrets.PLACE_PUBLISHING_KEY }}
+      - name: Publish Test Place
+        run: rojo upload --api_key "${{ secrets.PLACE_PUBLISHING_KEY }}" --universe_id ${{ secrets.TEST_UNIVERSE_ID }} --asset_id ${{ secrets.TEST_PLACE_ID }}
+
+      - name: Publish Test Loader
+        run: rojo upload --asset_id ${{ secrets.TEST_LOADER_ID }} --cookie "${{ secrets.ROBLOSECURITY }}"
