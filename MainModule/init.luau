@@ -32,6 +32,7 @@ local _K = {
 	},
 
 	logs = {},
+	playerPrefix = {},
 
 	-- configuration
 	settings = {
@@ -263,6 +264,11 @@ local function banHandler(player)
 	player:Kick(if reason then banMessage .. "\n Reason: " .. reason else banMessage)
 	return true
 end
+
+-- handle custom command prefix
+_K.Remote "Prefix".OnServerEvent:Connect(function(player, prefix)
+	_K.playerPrefix[player.UserId] = prefix
+end)
 
 -- handle player chatting
 local function playerAdded(player: Player)

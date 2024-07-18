@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  publish:
+    name: Publish changes to Roblox
+    runs-on: ubuntu-latest
+    environment: testing
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: Roblox/setup-foreman@v1
+        with:
+          version: "*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          allow-external-github-org: true
+      - run: foreman --version
+      - run: rojo --version
+
+      - name: Publish Test Place
+        run: rojo upload --api_key "${{ secrets.PLACE_PUBLISHING_KEY }}" --universe_id ${{ secrets.TEST_UNIVERSE_ID }} --asset_id ${{ secrets.TEST_PLACE_ID }}
+
+      - name: Publish Test Loader
+        run: rojo upload --asset_id ${{ secrets.TEST_LOADER_ID }} --cookie "${{ secrets.ROBLOSECURITY }}" .github/loader.project.json

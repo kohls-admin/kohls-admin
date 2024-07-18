@@ -110,19 +110,19 @@ Flux.__index = Flux
 Flux.Scope = setmetatable({}, scopeMetatable)
 
 --- @within Flux
---- A marker for defining Instance attributes in Flux.edit
+--- A marker for defining Instance attributes in [Flux.edit]
 --- @prop Attribute newproxy
 --- @readonly
 Flux.Attribute = newproxy()
 
 --- @within Flux
---- A marker for defining Instance children in Flux.edit
+--- A marker for defining Instance children in [Flux.edit]
 --- @prop Children newproxy
 --- @readonly
 Flux.Children = newproxy()
 
 --- @within Flux
---- Markers for defining events in Flux.edit
+--- Markers for defining events in [Flux.edit]
 --- @prop Event { Attribute = newproxy, Property = newproxy }
 --- @readonly
 Flux.Event = table.freeze({ Attribute = newproxy(), Property = newproxy() })
@@ -154,7 +154,7 @@ end
 function Flux:_update(noTween: boolean?)
 	local _operation = self._operation
 	if type(_operation) == "table" then
-		local computation = _operation[1] :: Function
+		local computation = _operation[1] :: Types.Function
 		local args = {}
 		for i = 2, #_operation do
 			table.insert(args, peek(_operation[i]))
@@ -218,7 +218,7 @@ function Flux:Destroy()
 end
 
 --- Adds a hook callback function to be called when the state changes
-function Flux:hook(callback: Function): Function
+function Flux:hook(callback: Types.Function): Types.Function
 	if not self._hooks then
 		self._hooks = {}
 	end
