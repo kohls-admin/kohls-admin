@@ -1,7 +1,7 @@
 -- TODO: load settings module stuff eventually? haha
 -- TODO: client compatibility
 -- need pre/post hooks for almost everything so addons can just DO IT?
--- Delzi was here :)
+-- Delzi was here so hard :)
 
 --------------------------
 -- START OF SHARED CODE --
