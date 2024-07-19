@@ -242,11 +242,9 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 				continue
 			end
 
-			-- TODO pre/post command hooks
-			module._K.Registry.hooks.preCommandRan:Fire(result)
+			context.hook.preCommand:Fire(result)
 			local success, err = pcall(run, result, unpack(result.args))
 			if not success then
-				-- show command error
 				-- TODO: propagate error info to send relevant information to the client? (for serverside run only?)
 				commandError = err
 				result.commandError = err
@@ -255,7 +253,7 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 				commandRan = true
 				result.commandRan = true
 			end
-			module._K.Registry.hooks.postCommandRan:Fire(result)
+			context.hook.postCommand:Fire(result)
 			if result.greedy then
 				print("greedy!")
 				break
@@ -264,8 +262,15 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 	end
 
 	-- TODO: error visual feedback for user
-	local logType = if commandRan then "Command" elseif commandError then "Error" else "Chat"
-	module._K.log(if commandError then commandError else message, logType, from)
+	if not (commandRan or commandError or context.IsServer) then
+		-- skip logging on client if nothing happened
+		return commandRan
+	end
+	context.log(
+		if commandError then commandError else message,
+		if commandRan then "COMMAND" elseif commandError then "ERROR" else "CHAT",
+		from
+	)
 	return commandRan
 end
 

@@ -7,10 +7,22 @@
 --------------------------
 local TextChatService = game:GetService("TextService")
 
+local Util = require(script.Util)
+
 local _K = {
 	-- modules
-	Util = require(script.Util),
 	Auth = require(script.Auth),
+	Util = Util,
+	Registry = nil,
+	Process = nil,
+
+	logger = Util.Logger.new(),
+	client = nil,
+	hook = {
+		log = Util.SignalGood.new(),
+		preCommand = Util.SignalGood.new(),
+		postCommand = Util.SignalGood.new(),
+	},
 
 	-- key used to check when global data has been changed for a save cycle
 	-- TODO: account for race conditions... use a timestamp?
@@ -30,7 +42,6 @@ local _K = {
 		["5"] = { "Jack Doe", "Wow!", 1720922623, 44391621, "Scripth" },
 	},
 
-	logs = {},
 	playerPrefix = {},
 
 	-- configuration
@@ -39,10 +50,9 @@ local _K = {
 		vip = true,
 		mutableHooks = false,
 	},
-
-	Registry = nil,
-	Process = nil,
 }
+
+_K.logs = _K.logger.logs
 
 -- shorthand utility
 _K.Services = _K.Util.Services
@@ -58,6 +68,44 @@ if game.CreatorType == Enum.CreatorType.Group then
 	_K.creatorId = groupInfo.Owner.Id
 else
 	_K.creatorId = game.CreatorId
+end
+
+function _K.log(text, level, from: Player? | number?)
+	-- fire this log to all clients that are authorized!
+	-- TODO: make sure they pull logs on client init
+	-- make sure to sort by timestamp for new datastore entries
+	local userId = if typeof(from) == "Instance" then from.UserId else from
+
+	local log = _K.logger:log(text, level, userId)
+
+	_K.hook.log:Fire(log)
+
+	if _K.IsServer then
+		if userId then
+			local ok, result = pcall(
+				TextChatService.FilterStringAsync,
+				TextChatService,
+				text,
+				userId,
+				Enum.TextFilterContext[if _K.Auth.defaultRole.logs then "PublicChat" else "PrivateChat"]
+			)
+			if ok then
+				for _, player in _K.Services.Players:GetPlayers() do
+					local success, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
+					if success then
+						_K.Remote "Log":FireClient(player, { filtered, level, log.time, userId })
+					else -- retry
+					end
+				end
+			else
+				-- TODO: if not ok, retry
+			end
+		else
+			_K.Remote "Log":FireAllClients(log)
+		end
+	end
+
+	return log
 end
 
 function _K.filterMessage(message: string, from: number, to: number): string
@@ -94,55 +142,6 @@ function _K.handleBan(userId, name, reason, duration, fromUserId, fromName)
 			_K.Remote "Ban":FireClient(player, userId, { name, filtered, duration, fromUserId, fromName })
 		end
 	end
-end
-
-_K.Enum.LogType = { "Chat", "Command", "Info", "Warning", "Error", "System" }
-function _K.log(message: string, logType: string, from: Player?)
-	-- fire this log to all clients that are authorized!
-	-- TODO: make sure they pull logs on client init
-	-- make sure to sort by timestamp for new datastore entries
-	if from then
-		message = tostring(from) .. ": " .. message
-	end
-	local log = { os.time(), message, _K.Enum.LogType[logType], from and from.UserId }
-	_K.Registry.hooks.preLog:Fire(log)
-	table.insert(_K.logs, log)
-	if #_K.logs > 1e5 then
-		table.remove(_K.logs, 1)
-	end
-	if _K.IsServer then
-		if from then
-			local ok, result = pcall(
-				TextChatService.FilterStringAsync,
-				TextChatService,
-				message,
-				from,
-				Enum.TextFilterContext[if _K.Auth.defaultRole.logs then "PublicChat" else "PrivateChat"]
-			)
-			if ok then
-				for _, player in _K.Services.Players:GetPlayers() do
-					local _, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
-					_K.Remote "Log":FireClient(player, { log[1], filtered, log[3] })
-				end
-			end
-		else
-			_K.Remote "Log":FireAllClients(log)
-		end
-	end
-	_K.Registry.hooks.postLog:Fire(log)
-end
-
--- register internal modules to _K
-for _, module in { "Registry", "Process", "Flux" } do
-	_K[module] = require(script[module])
-	_K[module]._K = _K
-end
-
--- register default hooks
-local hooks = _K.Registry.hooks
-_K.Registry.hooks = {}
-for i, hook in ipairs(hooks) do
-	_K.Registry.registerHook(hook)
 end
 
 -- Flux stateful settings
@@ -215,13 +214,14 @@ _K.Remote "Init".OnServerEvent:Connect(function(player)
 	-- send their own player permissions always for clientside validation
 	-- TODO: make sure data is network safe!
 
-	local bans = {}
-	local logs = table.create(#_K.logs)
-	for _, items in { bans, logs } do
-		for i, item in items do
-			local message = if item[4] then _K.filterMessage(item[2], item[4], player.UserId) else item[2]
-			bans[i] = { item[1], message, item[3], item[4] }
-		end
+	local bans, logs = {}, table.create(#_K.logs)
+	for i, ban in _K.bans do
+		local reason = if ban[4] then _K.filterMessage(ban[2], ban[4], player.UserId) else ban[2]
+		bans[i] = { ban[1], reason, ban[3], ban[4] }
+	end
+	for i, log in _K.logs do
+		local text = if log.user then _K.filterMessage(log.text, log.user, player.UserId) else log.text
+		logs[i] = { text, log.level, log.time, log.user }
 	end
 
 	_K.Remote "Init":FireClient(player, _K.Auth, bans, logs, _K.settings)
@@ -236,7 +236,7 @@ script.Client.Enabled = true
 local function banHandler(player)
 	local banInfo = _K.bans[player.UserId]
 	-- TODO: should staff roles bypass bans? add a settings toggle
-	if not banInfo or player.UserId == _K.CreatorId then
+	if not banInfo or player.UserId == _K.creatorId then
 		-- not banned
 		return
 	end
@@ -275,7 +275,7 @@ local function playerAdded(player: Player)
 		return
 	end
 	player.Chatted:Connect(function(message: string)
-		_K.Process.runCommands(player, message, true)
+		_K.Process.runCommands(_K, player, message)
 	end)
 end
 
@@ -287,6 +287,6 @@ end
 
 _K.Remote "Command".OnServerEvent:Connect(_K.Process.runCommands)
 -- NOTE: probably shouldn't network system logs to other servers, ideally only command and error logs
-_K.log("Server initialized.", "System")
+_K.log("Server initialized.", "INFO")
 
 return _K

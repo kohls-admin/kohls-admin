@@ -172,8 +172,18 @@ initCon = _K.Remote "Init".OnClientEvent:Connect(function(auth, bans, logs, sett
 	_K.Util.mergeTable(_K.bans, bans)
 	_K.banState:set(_K.bans)
 
-	_K.Util.mergeTable(_K.logs, logs)
-	_K.logState:set(_K.logs)
+	for k, log in logs do
+		table.insert(_K.logs, {
+			text = log[1],
+			level = log[2],
+			time = log[3],
+			user = log[4],
+		})
+		if #_K.logs > 100_000 then
+			table.remove(_K.logs, 1)
+		end
+	end
+	UI.Scope.logs:set(_K.logs)
 
 	-- need to update all the settings values somehow xD
 	-- need to improve networking performance!
@@ -185,10 +195,14 @@ end)
 
 _K.Remote "Log".OnClientEvent:Connect(function(log)
 	-- TODO: PERF: add to sorted list and filtered list directly
-	local raw = UI.peek(_K.logs)
-	table.insert(raw, log)
-	if #raw > 1e5 then
-		table.remove(raw, 1)
+	table.insert(_K.logs, {
+		text = log[1],
+		level = log[2],
+		time = log[3],
+		user = log[4],
+	})
+	if #_K.logs > 1e5 then
+		table.remove(_K.logs, 1)
 	end
 	dashboardLogs:updateList()
 end)

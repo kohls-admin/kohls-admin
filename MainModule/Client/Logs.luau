@@ -1,15 +1,20 @@
 local Logs = {}
 Logs.__index = Logs
 
-local logRichFormat = `<font transparency="0.5">%s</font> <font color="%s"><b>%s</b></font> %s`
+local logRichFormat = `<font transparency="0.5">%s</font> <font color="%s"><b>%s</b></font> %s%s`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 local logTypeColors = {
-	Chat = "#0f0",
-	Command = "#ff0",
-	Info = "#0ff",
-	Warning = "#f80",
-	Error = "#f00",
-	System = "#fff",
+	DEBUG = "#888",
+	INFO = "#fff",
+	WARN = "#f80",
+	ERROR = "#f00",
+	CHAT = "#0ff",
+	COMMAND = "#ff0",
+	JOIN = "#0f8",
+	LEAVE = "#80f",
+	KILL = "#800",
+	DEATH = "#880",
+	PURCHASE = "#0f0",
 }
 
 function Logs.new(_K)
@@ -21,12 +26,13 @@ function Logs.new(_K)
 		List = _K.logState,
 		FilterInput = true,
 		RenderText = function(self, log)
-			local msg = log[2]
-			local timestamp = os.date("%y-%m-%d %X", log[1])
-			local logTypeLabel = _K.Enum.LogType[log[3]]
+			local timestamp = os.date("%y-%m-%d %X", log.time)
+			local levelText = _K.logger:decode(log.level)
 
 			if self._filter ~= "" then
-				local text = `{timestamp} {logTypeLabel:upper()} {msg}`
+				local text = `{timestamp} {levelText:upper()} {if log.user
+					then _K.Util.getUserName(log.user) .. ": "
+					else ""}{log.text}`
 				local filterFound = string.find(text:lower(), self._filter)
 				return if filterFound
 					then string.format(
@@ -41,9 +47,10 @@ function Logs.new(_K)
 			return string.format(
 				logRichFormat,
 				escape(timestamp),
-				logTypeColors[logTypeLabel] or "#fff",
-				logTypeLabel:upper(),
-				escape(msg)
+				logTypeColors[levelText] or "#fff",
+				levelText:upper(),
+				escape(if log.user then _K.Util.getUserName(log.user) .. ": " else ""),
+				escape(log.text)
 			)
 		end,
 	}
@@ -57,9 +64,11 @@ function Logs.new(_K)
 		self._filter = filter
 		local new = {}
 		for i, log in list do
-			local timestamp = os.date("%y-%m-%d %X", log[1])
-			local logTypeLabel = _K.Enum.LogType[log[3]]
-			local text = `{timestamp} {logTypeLabel:upper()} {log[2]}`
+			local timestamp = os.date("%y-%m-%d %X", log.time)
+			local levelText = _K.logger:decode(log.level)
+			local text = `{timestamp} {levelText:upper()} {if log.user
+				then _K.Util.getUserName(log.user) .. ": "
+				else ""}{log.text}`
 			if text:lower():find(filter, 1, true) then
 				table.insert(new, log)
 			end

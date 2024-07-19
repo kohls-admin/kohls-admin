@@ -1,15 +1,43 @@
 type Dict = { [any]: any }
 type List = { any }
 
-local module = {}
+local module = {
+	Logger = require(script.Logger),
+	ReadableTime = require(script.ReadableTime),
+	Remote = require(script.Remote),
+	Rollout = require(script.Rollout),
+	SignalFast = require(script.SignalFast),
+	SignalGood = require(script.SignalGood),
+}
 
 module.Services = setmetatable({}, {
-	__index = function(self, key)
+	__index = function(self, key: string)
 		local service = game:GetService(key)
 		self[key] = service
 		return service
 	end,
 })
+
+local userNameCache = {} :: { [number]: string }
+function module.getUserName(userId: number): string?
+	if userNameCache[userId] then
+		return userNameCache[userId]
+	end
+
+	local player = module.Services.Players:GetPlayerByUserId(userId)
+	if player then
+		userNameCache[userId] = player.Name
+		return player.Name
+	end
+
+	local ok, result = pcall(module.Services.Players.GetNameFromUserIdAsync, module.Services.Players, userId)
+	if ok then
+		userNameCache[userId] = result
+		return result
+	end
+
+	return "Unknown"
+end
 
 function module.toHashMap(array: List): Dict
 	local map = {}
@@ -132,12 +160,6 @@ function module.newSuggestions(setOrContainer: any): ({ string }, { any })
 		names[i] = string.lower(name)
 	end
 	return names, instances
-end
-
-for _, child in script:GetChildren() do
-	if child.ClassName == "ModuleScript" then
-		module[child.Name] = require(child)
-	end
 end
 
 return module

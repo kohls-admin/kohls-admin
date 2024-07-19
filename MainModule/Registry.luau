@@ -1,27 +1,15 @@
--- local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 -- local Util = require(script.Parent.Util)
 
 type Dict = { [any]: any }
 
 local module = {
-	_K = nil,
-	hooks = { "preLog", "postLog", "preCommandRan", "postCommandRan" },
 	types = {},
 	commands = {},
 	commandsList = {},
 }
-
-function module.registerHook(key: string, mutable: boolean?)
-	if module.hooks[key] then
-		warn('Hook "' .. key .. '" already exists')
-		return
-	end
-	local signalType = if mutable and module._K.settings.mutableHooks._value then "SignalFast" else "SignalGood"
-	local hook = module._K.Util[signalType].new()
-	module.hooks[key] = hook
-	return hook
-end
 
 function module.registerType(name: string, typeObject: Dict, override: Dict?)
 	assert(name and typeof(name) == "string", "Invalid type name: " .. typeof(name))
@@ -90,7 +78,7 @@ function module.registerCommandAlias(alias, command)
 		group = "Utility",
 		args = {},
 		clientRun = function(context)
-			context.Process.runCommands(game.Players.LocalPlayer, command)
+			context.Process.runCommands(Players.LocalPlayer, command)
 		end,
 	}
 end
