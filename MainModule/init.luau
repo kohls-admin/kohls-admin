@@ -247,7 +247,7 @@ local function banHandler(player)
 		if timeStamp > 0 then
 			local timeRemaining = timeStamp - os.time()
 			if timeRemaining > 0 then
-				banMessage = "You are banned from this experience for " .. _K.Util.simpleTime(timeRemaining) .. "!"
+				banMessage = "You are banned from this experience for " .. _K.Util.ReadableTime(timeRemaining) .. "!"
 			else
 				-- unbanning
 				_K.bans[player.UserId] = nil
