@@ -9,8 +9,8 @@ local TextChatService = game:GetService("TextService")
 
 local _K = {
 	-- modules
-	Auth = require(script.Authorization),
 	Util = require(script.Util),
+	Auth = require(script.Auth),
 
 	-- key used to check when global data has been changed for a save cycle
 	-- TODO: account for race conditions... use a timestamp?
