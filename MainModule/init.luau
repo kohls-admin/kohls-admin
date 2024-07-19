@@ -57,7 +57,6 @@ _K.logs = _K.logger.logs
 -- shorthand utility
 _K.Services = _K.Util.Services
 _K.Remote = _K.Util.Remote
-_K.Enum = _K.Util.Enum
 
 _K.IsServer = _K.Services.RunService:IsServer()
 _K.IsClient = _K.Services.RunService:IsClient()
