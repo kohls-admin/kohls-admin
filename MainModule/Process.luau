@@ -1,5 +1,8 @@
+local Auth = require(script.Parent.Auth)
+local Registry = require(script.Parent.Registry)
+local Util = require(script.Parent.Util)
+
 local module = {}
-module._K = {}
 
 -- TODO: test the automatic whitespace stripping?
 -- have argument types use the raw string if they want to parse whitespace :)
@@ -71,7 +74,7 @@ function module.rawParse(message: string, prefix: string, delimiter: string?): {
 end
 
 function module.initArgument(argDefinition, rawArg)
-	local rawType = module._K.Registry.types[argDefinition.type]
+	local rawType = Registry.types[argDefinition.type]
 	local rawArgs = if rawType.listable then string.split(rawArg) else { rawArg }
 	return rawType, rawArgs
 end
@@ -87,15 +90,15 @@ function module.validateArgument(argDefinition, from, rawType, rawArgs)
 		if rawType.prefixes then
 			for prefix, prefixType in rawType.prefixes do
 				if string.find(rawArg, prefix) == 1 then
-					argType = module._K.Registry.types[prefixType]
+					argType = Registry.types[prefixType]
 					rawArg = string.sub(rawArg, #prefix + 1)
 					break
 				end
 			end
 		end
-		local arg = module._K.Util.stripQuotes(rawArg)
+		local arg = Util.stripQuotes(rawArg)
 		arg = if argType.transform then argType.transform(arg) else arg
-		transformedArgs[i] = if type(arg) == "string" then module._K.Util.trim(arg) else arg
+		transformedArgs[i] = if type(arg) == "string" then Util.trim(arg) else arg
 		transformedTypes[i] = argType
 	end
 	-- validate arguments
@@ -147,16 +150,16 @@ function module.prepareArgument(argDefinition, from, message, argPos, rawArg)
 	return (if rawType.listable then parsedArgs else parsedArgs[1]), exitCmd
 end
 
-function module.prepareCommand(commandArray, from, message)
+function module.prepareCommand(context, commandArray, from, message)
 	-- TODO: prepare commandArray[1] like an argument to validate and get the commandDefinition from the parsed result?
-	local commandDefinition = module._K.Registry.commands[string.lower(commandArray[1][2])]
+	local commandDefinition = Registry.commands[string.lower(commandArray[1][2])]
 	if not commandDefinition then
 		-- NOTE: this should only happen with .Chatted commands, cmdbar should be instantly validated
 		print("Invalid command: " .. commandArray[1][2])
 		return false, "Invalid command: " .. commandArray[1][2]
 	end
 
-	if not module._K.Auth.hasCommandGroup(from.UserId, commandDefinition.group) then
+	if not Auth.hasCommandGroup(from.UserId, commandDefinition.group) then
 		print("Invalid permissions for command: " .. commandArray[1][2])
 		return false, "Invalid permissions for command: " .. commandArray[1][2]
 	end
@@ -207,7 +210,7 @@ function module.prepareCommand(commandArray, from, message)
 	-- TODO: return feedback array to be merged
 	return true,
 		{
-			_K = module._K,
+			_K = context,
 			args = args,
 			array = commandArray,
 			definition = commandDefinition,
@@ -217,16 +220,16 @@ function module.prepareCommand(commandArray, from, message)
 		}
 end
 
-function module.runCommands(from: (Player | number)?, rawString: string)
+function module.runCommands(context, from: (Player | number)?, rawString: string)
 	-- TODO: validate permissions!
 	-- TODO: allow for remote commands with no player? or a userid to log remote users?
-	local message = module._K.Util.trimStart(rawString)
+	local message = Util.trimStart(rawString)
 	local userId = if typeof(from) == "Instance" then from.UserId else from
 	local commandRan, commandError
-	local rawCommands = module.rawParse(message, module._K.playerPrefix[userId] or module._K.settings.prefix:get())
+	local rawCommands = module.rawParse(message, context.playerPrefix[userId] or context.settings.prefix:get())
 	if rawCommands then
 		for i, commandArray in rawCommands do
-			local ok, result = module.prepareCommand(commandArray, from, message)
+			local ok, result = module.prepareCommand(context, commandArray, from, message)
 
 			if not ok then
 				-- TODO: need to have a unified way of displaying feedback, and a way for autocomplete lol
@@ -234,7 +237,7 @@ function module.runCommands(from: (Player | number)?, rawString: string)
 				break
 			end
 
-			local run = result.definition[if module._K.IsServer then "run" else "clientRun"]
+			local run = result.definition[if context.IsServer then "run" else "clientRun"]
 			if not run then
 				if result.greedy then
 					break

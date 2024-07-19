@@ -1,9 +1,3 @@
--- allow for lookup of a player's "profile" ingame
--- store roles with "admin-like" permissions in a global datastore
--- necessary to prevent abuse against other users with "admin-like" roles
--- also allows for the "staff" command
--- should just be pure data that the command system references to give access to various parts
-
 local Players = game:GetService("Players")
 
 local module = {

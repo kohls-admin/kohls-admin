@@ -78,7 +78,7 @@ function module.registerCommandAlias(alias, command)
 		group = "Utility",
 		args = {},
 		clientRun = function(context)
-			context.Process.runCommands(Players.LocalPlayer, command)
+			context.Process.runCommands(context, Players.LocalPlayer, command)
 		end,
 	}
 end

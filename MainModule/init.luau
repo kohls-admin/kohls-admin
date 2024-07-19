@@ -11,10 +11,11 @@ local Util = require(script.Util)
 
 local _K = {
 	-- modules
+	Flux = require(script.Flux),
 	Auth = require(script.Auth),
+	Process = require(script.Process),
+	Registry = require(script.Registry),
 	Util = Util,
-	Registry = nil,
-	Process = nil,
 
 	logger = Util.Logger.new(),
 	client = nil,
@@ -284,7 +285,9 @@ for _, player in _K.Services.Players:GetPlayers() do
 	playerAdded(player)
 end
 
-_K.Remote "Command".OnServerEvent:Connect(_K.Process.runCommands)
+_K.Remote "Command".OnServerEvent:Connect(function(player, message)
+	_K.Process.runCommands(_K, player, message)
+end)
 -- NOTE: probably shouldn't network system logs to other servers, ideally only command and error logs
 _K.log("Server initialized.", "INFO")
 
