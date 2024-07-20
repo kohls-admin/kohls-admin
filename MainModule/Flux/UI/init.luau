@@ -3,9 +3,17 @@ local GuiService = game:GetService("GuiService")
 local TextService = game:GetService("TextService")
 local UserInputService = game:GetService("UserInputService")
 
-local Types = require(script.Parent.Types)
 local Flux = require(script.Parent)
 local state = Flux.state
+
+export type Function = Flux.Function
+export type List<T> = Flux.List<T>
+export type Set<T> = Flux.Set<T>
+export type Dict<T> = Flux.Dict<T>
+export type State<T> = Flux.State<T>
+export type Stateful<T> = Flux.Stateful<T>
+export type SpecialKey = Flux.SpecialKey
+export type SpecialDefinition = Flux.SpecialDefinition
 
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
@@ -33,13 +41,30 @@ UI.UserInputService = UserInputService
 UI.PlayerGui = playerGui
 
 --- @within UI
---- A marker for defining UI state hooks
---- @prop hook newproxy
+--- A marker for defining Instance attributes in [UI.edit]
+--- @prop Attribute newproxy
+--- @readonly
+
+--- @within UI
+--- A marker for defining Instance children in [UI.edit]
+--- @prop Children newproxy
+--- @readonly
+
+--- @within UI
+--- Markers for defining events in [UI.edit]
+--- @prop Event { Attribute = newproxy, Property = newproxy }
+--- @readonly
+
+--- @within UI
+--- A marker for defining UI state hooks in [UI.edit]
+--- @prop Hook newproxy
+--- @readonly
 UI.Hook = newproxy()
 
 --- @within UI
---- A marker for defining Nil defaultState
---- @prop Attribute newproxy
+--- A marker for defining Nil defaultState in [UI.makeStatefulDefaults]
+--- @prop Nil newproxy
+--- @readonly
 UI.Nil = newproxy()
 
 --- @within UI
@@ -244,7 +269,7 @@ end)
 local _currentHover
 
 --- Handles a global hovering state for specific edge-cases
-function UI.handleHover(hoverState: Types.State<boolean>)
+function UI.handleHover(hoverState: State<boolean>)
 	if not Flux.isState(hoverState) then
 		error("Invalid hovering state")
 	end
@@ -287,7 +312,7 @@ function UI.pointInGuiObject(x: number, y: number, object: GuiObject)
 end
 
 --- Helper function for defining Flux state defaults
-function UI.makeStatefulDefaults(default: { [any]: any }, definition: { [any]: any }?)
+function UI.makeStatefulDefaults(default: Dict<any>, definition: SpecialDefinition?)
 	for key, value in default do
 		if definition then
 			value = definition[key] or value
@@ -308,7 +333,10 @@ end
 --- * Parents children to the ._content variable of a UI component if one exists
 --- * Numeric indicies are defined as children with [GuiObject.LayoutOrder] set to the index
 --- * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
-function UI.edit(new: Instance | Types.Dict<any>, definition: Types.Dict<any>)
+--- @param definition SpecialDefinition | GuiObject
+function UI.edit(new: Instance | Dict<any>, definition)
+	definition = definition :: SpecialDefinition & GuiObject
+
 	local instance = new
 	local contentParent = instance
 	local children = definition[UI.Children]
@@ -391,17 +419,21 @@ function UI.edit(new: Instance | Types.Dict<any>, definition: Types.Dict<any>)
 end
 
 --- Creates a new Instance with [UI.edit]
-function UI.new(className: string)
+--- @within UI
+--- @function new
+--- @param className string
+--- @return UI.edit
+UI.new = function(className)
 	local class = UI.Class[className]
-	return function(definition: Types.Dict<any>)
+	return function(definition)
 		local new = class and class.new(definition)
 		local instance = if new then new._instance else Instance.new(className)
 		return UI.edit(new or instance, definition)
 	end
-end
+end :: ((className: string) -> (properties: GuiObject & SpecialDefinition) -> Instance) & typeof(Instance.new)
 
 --- Registers a new UI component class
-function UI.register(className: string, class: Types.Dict<any>)
+function UI.register(className: string, class: Dict<any>)
 	if UI.Class[className] then
 		error(`UI class "{className}" already exists`)
 	end
@@ -409,7 +441,7 @@ function UI.register(className: string, class: Types.Dict<any>)
 end
 
 --- Run to register all default children in the UI module
-function UI.registerChildren()
+function UI.registerChildren(): typeof(UI)
 	UI.registerChildren = nil :: any
 	for _, child in script:GetChildren() do
 		if child:IsA("ModuleScript") then

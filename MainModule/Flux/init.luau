@@ -1,6 +1,64 @@
-local TweenService = game:GetService("TweenService")
+--- A generic function type
+--- @within Flux
+--- @type Function (...any) -> ...any
+export type Function = (...any) -> ...any
 
-local Types = require(script.Types)
+--- A generic list type
+--- @within Flux
+--- @type List { T }
+export type List<T> = { T }
+
+--- A generic set type implemented as a table with boolean values
+--- @within Flux
+--- @type Set { [T]: boolean }
+export type Set<T> = { [T]: boolean }
+
+--- Represents a dictionary-like table with keys of type `T` and values of any type.
+--- @within Flux
+--- @type Dict { [T]: any }
+export type Dict<T> = { [T]: any }
+
+--[=[
+	Represents a reactive state object in the Flux system
+	@within Flux
+	@type State { _update: (State<T>) -> boolean, _dependencies: Set<State<T>>, _dependents: Set<State<T>>, _binds: { [T]: any, _cleanup: List<any> }, _hooks: Dict<Function>, _value: T, _stateful: boolean, _operation: List<any>?, _tweenInfo: TweenInfo?, set: (self: State<T>, new: T, force: boolean?, noTween: boolean?) -> State<T>, get: (self: State<T>) -> T, hook: (self: State<T>, callback: Function) -> Function, Destroy: (self: State<T>) -> (), bindToProperty: (self: State<T>, instance: Instance, property: string) -> (), bindToAttribute: (self: State<T>, instance: Instance, attribute: string) -> (), }
+]=]
+export type State<T> = {
+	_update: (State<T>) -> boolean,
+	_dependencies: Set<State<T>>,
+	_dependents: Set<State<T>>,
+	_binds: { [T]: any, _cleanup: List<any> },
+	_hooks: Dict<Function>,
+	_value: T,
+	_stateful: boolean,
+	_operation: List<any>?,
+	_tweenInfo: TweenInfo?,
+	set: (self: State<T>, new: T, force: boolean?, noTween: boolean?) -> State<T>,
+	get: (self: State<T>) -> T,
+	hook: (self: State<T>, callback: Function) -> Function,
+	Destroy: (self: State<T>) -> (),
+	bindToProperty: (self: State<T>, instance: Instance, property: string) -> (),
+	bindToAttribute: (self: State<T>, instance: Instance, attribute: string) -> (),
+}
+
+--- A type for state or raw values
+--- @within Flux
+--- @type Stateful<T> = T | State<T>
+export type Stateful<T> = T | State<T>
+
+--- A type for state or raw values
+--- @within Flux
+--- @type SpecialKey = { type: "SpecialKey" }
+export type SpecialKey = {
+	type: "SpecialKey",
+}
+
+--- Represents the definition used in [Flux.new] and [Flux.edit]
+--- @within Flux
+--- @type SpecialDefinition = { [number | string | SpecialKey]: unknown }
+export type SpecialDefinition = { [any]: unknown }
+
+local TweenService = game:GetService("TweenService")
 
 local WEAK_KEYS_METATABLE = { __mode = "k" }
 local ATTRIBUTE_PREFIX = "Attribute:"
@@ -27,7 +85,7 @@ local function peekVariadic(...: any): ...any
 	return unpack(result)
 end
 
-local function assertNotCircular<T>(state: Types.State<T>, other: Types.State<T>)
+local function assertNotCircular<T>(state: State<T>, other: State<T>)
 	if state._dependents[other] or other._dependencies[state] then
 		error("Circular dependency chain detected!")
 	end
@@ -104,6 +162,10 @@ local Flux = {
 }
 Flux.__index = Flux
 
+function Flux.specialKey(): SpecialKey
+	return table.freeze({ type = "SpecialKey" })
+end
+
 --- @within Flux
 --- A scope object for organizing and cleaning up Flux states
 --- @prop Scope Scope
@@ -111,24 +173,24 @@ Flux.Scope = setmetatable({}, scopeMetatable)
 
 --- @within Flux
 --- A marker for defining Instance attributes in [Flux.edit]
---- @prop Attribute newproxy
+--- @prop Attribute SpecialKey
 --- @readonly
-Flux.Attribute = newproxy()
+Flux.Attribute = Flux.specialKey()
 
 --- @within Flux
 --- A marker for defining Instance children in [Flux.edit]
---- @prop Children newproxy
+--- @prop Children SpecialKey
 --- @readonly
-Flux.Children = newproxy()
+Flux.Children = Flux.specialKey()
 
 --- @within Flux
 --- Markers for defining events in [Flux.edit]
---- @prop Event { Attribute = newproxy, Property = newproxy }
+--- @prop Event SpecialKey & { Attribute = SpecialKey, Property = SpecialKey }
 --- @readonly
-Flux.Event = table.freeze({ Attribute = newproxy(), Property = newproxy() })
+Flux.Event = table.freeze({ type = "SpecialKey", Attribute = newproxy(), Property = newproxy() })
 
 --- Adds a dependency to the current state
-function Flux:_addDependency<T>(dependency: Types.State<T>)
+function Flux:_addDependency<T>(dependency: State<T>)
 	if isState(dependency) then
 		assertNotCircular(self, dependency)
 		dependency._dependents[self] = true
@@ -137,7 +199,7 @@ function Flux:_addDependency<T>(dependency: Types.State<T>)
 end
 
 --- Removes a dependency from the current state
-function Flux:_removeDependency<T>(dependency: Types.State<T>)
+function Flux:_removeDependency<T>(dependency: State<T>)
 	if not isState(dependency) then
 		return
 	end
@@ -154,7 +216,7 @@ end
 function Flux:_update(noTween: boolean?)
 	local _operation = self._operation
 	if type(_operation) == "table" then
-		local computation = _operation[1] :: Types.Function
+		local computation = _operation[1] :: Function
 		local args = {}
 		for i = 2, #_operation do
 			table.insert(args, peek(_operation[i]))
@@ -218,7 +280,7 @@ function Flux:Destroy()
 end
 
 --- Adds a hook callback function to be called when the state changes
-function Flux:hook(callback: Types.Function): Types.Function
+function Flux:hook(callback: Function): Function
 	if not self._hooks then
 		self._hooks = {}
 	end
@@ -234,7 +296,7 @@ function Flux:get(): any
 end
 
 --- Sets a new value for the state and triggers an update
-function Flux:set<T>(new: T, forceUpdate: boolean?, noTween: boolean?): Types.State<T>
+function Flux:set<T>(new: T, forceUpdate: boolean?, noTween: boolean?): State<T>
 	local old = self._value
 	if not forceUpdate and type(old) ~= "table" and new == old then
 		return self
@@ -275,9 +337,9 @@ function Flux:bindToAttribute(instance: Instance, attribute: string)
 	end)
 end
 
-local instanceStateRef: { [Instance]: { [string | Types.State<any>]: string | Types.State<any> } } = {}
+local instanceStateRef: { [Instance]: { [string | State<any>]: string | State<any> } } = {}
 
-local function setupBind(instance: Instance, value: Types.State<any>, property: string)
+local function setupBind(instance: Instance, value: State<any>, property: string)
 	if not value._binds then
 		value._binds = { _cleanup = {} }
 	end
@@ -302,7 +364,7 @@ local function setupBind(instance: Instance, value: Types.State<any>, property: 
 end
 
 -- unbind existing state, only have one bound to a property at a time
-local function cleanBind(instance: Instance, value: Types.State<any>, property: string)
+local function cleanBind(instance: Instance, value: State<any>, property: string)
 	-- TODO: attempt to destroy it if no other dependents?
 	local ref = instanceStateRef[instance]
 	if not ref then
@@ -325,7 +387,9 @@ local function cleanBind(instance: Instance, value: Types.State<any>, property: 
 end
 
 --- Edits an existing Instance with Flux state bindings and other properties
-function Flux.edit(instance: Instance, definition: Types.Dict<any>): Instance
+--- @param definition SpecialDefinition & Instance
+function Flux.edit(instance: Instance, definition): Instance
+	definition = definition :: SpecialDefinition & Instance
 	local parent = definition.Parent
 	definition.Parent = nil
 
@@ -416,14 +480,18 @@ function Flux.edit(instance: Instance, definition: Types.Dict<any>): Instance
 end
 
 --- Creates a new Instance with Flux state bindings and other properties
-function Flux.new(className: string): (properties: Types.Dict<any>) -> Instance
-	return function(properties: Types.Dict<any>)
+--- @within Flux
+--- @function new
+--- @param className string
+--- @return Flux.edit
+Flux.new = function(className)
+	return function(properties)
 		return Flux.edit(Instance.new(className), properties)
 	end
-end
+end :: ((className: string) -> (properties: Instance & SpecialDefinition) -> Instance) & typeof(Instance.new)
 
 --- Creates a computed state based on other states or static values
-function Flux.computeFrom<T>(computation: (...any) -> T, ...: any): Types.State<T>
+function Flux.computeFrom<T>(computation: (...any) -> T, ...: any): State<T>
 	local result = computation(peekVariadic(...))
 	local new = Flux.state(result)
 	for i = 1, select("#", ...) do
@@ -437,9 +505,9 @@ function Flux.computeFrom<T>(computation: (...any) -> T, ...: any): Types.State<
 end
 
 --- Creates a computed state, passing a use function to access and bind other states
-function Flux.compute<T>(computation: (use: <U>(U | Types.State<U>) -> U?) -> T): Types.State<T>
+function Flux.compute<T>(computation: (use: <U>(U | State<U>) -> U?) -> T): State<T>
 	local new = Flux.state(nil)
-	local function use<U>(state: U | Types.State<U>): U?
+	local function use<U>(state: U | State<U>): U?
 		if not isState(state) then
 			error("Invalid Flux state object")
 		end
@@ -453,7 +521,7 @@ function Flux.compute<T>(computation: (use: <U>(U | Types.State<U>) -> U?) -> T)
 end
 
 --- Applies TweenService tweens with Instance properties bound to the Flux state
-function Flux.tween<T>(tweenInfo: TweenInfo, state: Types.State<T>): Types.State<T>
+function Flux.tween<T>(tweenInfo: TweenInfo, state: State<T>): State<T>
 	if not isState(state) then
 		error("Invalid Flux state object")
 	end
@@ -462,9 +530,9 @@ function Flux.tween<T>(tweenInfo: TweenInfo, state: Types.State<T>): Types.State
 end
 
 --- Creates a new Flux state with an initial value
-function Flux.state<T>(initialValue: T | Types.State<T> | Instance, property: string?): Types.State<T>
+function Flux.state<T>(initialValue: T | State<T> | Instance, property: string?): State<T>
 	if isState(initialValue) then
-		return initialValue :: Types.State<T>
+		return initialValue :: State<T>
 	end
 	local new = setmetatable({
 		_dependents = setmetatable({}, WEAK_KEYS_METATABLE),
