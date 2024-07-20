@@ -43,19 +43,19 @@ export type State<T> = {
 
 --- A type for state or raw values
 --- @within Flux
---- @type Stateful<T> = T | State<T>
+--- @type Stateful<T> T | State<T>
 export type Stateful<T> = T | State<T>
 
 --- A type for state or raw values
 --- @within Flux
---- @type SpecialKey = { type: "SpecialKey" }
+--- @type SpecialKey { type: "SpecialKey" }
 export type SpecialKey = {
 	type: "SpecialKey",
 }
 
 --- Represents the definition used in [Flux.new] and [Flux.edit]
 --- @within Flux
---- @type SpecialDefinition = { [number | string | SpecialKey]: unknown }
+--- @type SpecialDefinition { [number | string | SpecialKey]: unknown }
 export type SpecialDefinition = { [any]: unknown }
 
 local TweenService = game:GetService("TweenService")
