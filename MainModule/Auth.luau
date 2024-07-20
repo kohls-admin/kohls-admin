@@ -1,6 +1,9 @@
 local Players = game:GetService("Players")
 
-local module = {
+export type Role = "vip" | "mod" | "admin" | "superadmin" | "creator"
+
+--- @class Auth
+local Auth = {
 	defaultRole = {
 		-- role "_rank" determines hierarchy
 		-- 0 is reserved for the default role
@@ -96,7 +99,7 @@ local module = {
 }
 
 if game.CreatorId > 0 then
-	module.members[tostring(game.CreatorId)] = {
+	Auth.members[tostring(game.CreatorId)] = {
 		name = game:GetService("Players"):GetNameFromUserIdAsync(game.CreatorId),
 		roles = { "creator" },
 	}
@@ -106,15 +109,16 @@ end
 -- TODO: should probably not save roles to a player datastore otherwise those would need to be updated too ;(
 -- TODO: instead let the game developer handle their own player save state and just give roles on join?
 
-local function roleSort(a: string, b: string): boolean
-	return module.roles[a]._rank > module.roles[b]._rank
+local function roleSort(a: Role, b: Role): boolean
+	return Auth.roles[a]._rank > Auth.roles[b]._rank
 end
 
-function module.userRoleAdd(userId, role)
-	local member = module.members[tostring(userId)]
+--- Adds a role to a user if they don't already have it
+function Auth.userRoleAdd(userId: number, role: Role)
+	local member = Auth.members[tostring(userId)]
 	if not member then
 		local player = Players:GetPlayerByUserId(userId)
-		module.members[tostring(userId)] = {
+		Auth.members[tostring(userId)] = {
 			name = if player then player.name else Players:GetNameFromUserIdAsync(userId),
 			roles = { role },
 		}
@@ -126,8 +130,9 @@ function module.userRoleAdd(userId, role)
 	end
 end
 
-function module.userRoleRemove(userId, role)
-	local member = module.members[tostring(userId)]
+--- Removes a role from a user if it exists
+function Auth.userRoleRemove(userId: number, role: Role)
+	local member = Auth.members[tostring(userId)]
 	if member then
 		local index = table.find(member.roles, role)
 		if index then
@@ -136,27 +141,14 @@ function module.userRoleRemove(userId, role)
 	end
 end
 
-function module.getRoleId(roleString)
-	roleString = string.lower(roleString)
-	for _, role in module.roles do
-		local nameLower = string.lower(role.name)
-		if nameLower == roleString then
-			return role._id
-		-- TODO: allow a partial match? or should this be a part of autocomplete validation?
-		elseif string.find(nameLower, roleString) == 1 then
-			return role._id
-		end
-	end
-	return
-end
-
-function module.getRank(userId, permission)
+--- Checks the maximum role rank of the user, if permission is given it will fetch the highest rank of the roles with that permission
+function Auth.getRank(userId: number, permission: string?): number
 	permission = permission or "_rank"
 	local rank = 0
-	local member = module.members[tostring(userId)]
+	local member = Auth.members[tostring(userId)]
 	if member then
 		for _, roleId in member.roles do
-			local role = module.roles[roleId]
+			local role = Auth.roles[roleId]
 			if role and role[permission] then
 				rank = math.max(rank, role._rank)
 			end
@@ -165,18 +157,19 @@ function module.getRank(userId, permission)
 	return rank
 end
 
-function module.hasCommandGroup(userId: number, group: string): boolean
+--- Checks if a user has access to a command group
+function Auth.hasCommandGroup(userId: number, group: string): boolean
 	group = string.lower(group)
-	if module.defaultRole.admin or (module.defaultRole.groups and table.find(module.defaultRole.groups, group)) then
+	if Auth.defaultRole.admin or (Auth.defaultRole.groups and table.find(Auth.defaultRole.groups, group)) then
 		return true
 	end
-	local member = module.members[tostring(userId)]
+	local member = Auth.members[tostring(userId)]
 	if member then
 		if member.permissions and member.permissions.admin then
 			return true
 		end
 		for _, roleId in member.roles do
-			local role = module.roles[roleId]
+			local role = Auth.roles[roleId]
 			if not role then
 				warn("undefined role?", role)
 				continue
@@ -189,18 +182,19 @@ function module.hasCommandGroup(userId: number, group: string): boolean
 	return false
 end
 
-function module.hasPermission(userId, permission)
+--- Checks if a user has access to a permission
+function Auth.hasPermission(userId: number, permission: string): boolean
 	-- does everyone have the permission?
-	if module.defaultRole[permission] or module.defaultRole.admin then
+	if Auth.defaultRole[permission] or Auth.defaultRole.admin then
 		return true
 	end
-	local member = module.members[tostring(userId)]
+	local member = Auth.members[tostring(userId)]
 	if member then
 		if member.permissions and (member.permissions.admin or member.permissions[permission]) then
 			return true
 		end
 		for _, roleId in member.roles do
-			local role = module.roles[roleId]
+			local role = Auth.roles[roleId]
 			if role and (role.admin or role[permission]) then
 				return true
 			end
@@ -209,11 +203,13 @@ function module.hasPermission(userId, permission)
 	return false
 end
 
-function module.rankDiff(userIdFrom, userIdTo, permission)
-	return module.getRank(userIdFrom, permission) - module.getRank(userIdTo, permission)
+--- Gets the difference of two users' ranks, with an optional permission parameter
+function Auth.rankDiff(userIdFrom: number, userIdTo: number, permission: string?)
+	return Auth.getRank(userIdFrom, permission) - Auth.getRank(userIdTo, permission)
 end
 
-function module.requestCommand(context, to, ...)
+--- Requests a command execution with a dialog interface
+function Auth.requestCommand(context: { [any]: any }, to: Player, ...: any)
 	print(string.format('%s requested to run command "%s" on %s.', context.from.Name, context.definition.name, to.Name))
 	-- TODO: have some pretty "command requested" feedback sent
 	-- for now just going to ignore the requests automatically
@@ -235,7 +231,7 @@ function module.requestCommand(context, to, ...)
 					local value = next(arg)
 					if typeof(value) == "Instance" and value:IsA("Player") then
 						table.clear(arg)
-						table.insert(to)
+						table.insert(arg, to)
 					end
 				elseif valueType == "Instance" and arg:IsA("Player") then
 					args[index] = to
@@ -246,15 +242,16 @@ function module.requestCommand(context, to, ...)
 	end
 end
 
-function module.shouldRequest(context, to, ...)
+--- Shorthand utility for potentially abusive commands to check if they should show a request dialog
+function Auth.shouldRequest(context: { [any]: any }, to: Player, ...: any): boolean
 	if context.Requested and context.Requested[to] then
 		return false
 	end
-	if context.from ~= to and module.rankDiff(context.from.UserId, to.UserId) <= 0 then
-		pcall(module.requestCommand, context, to, ...)
+	if context.from ~= to and Auth.rankDiff(context.from.UserId, to.UserId) <= 0 then
+		pcall(Auth.requestCommand, context, to, ...)
 		return true
 	end
 	return false
 end
 
-return module
+return Auth

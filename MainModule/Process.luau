@@ -2,14 +2,14 @@ local Auth = require(script.Parent.Auth)
 local Registry = require(script.Parent.Registry)
 local Util = require(script.Parent.Util)
 
-local module = {}
+type ArgumentType = Registry.ArgumentType
+type ArgumentDefinition = Registry.ArgumentDefinition
 
--- TODO: test the automatic whitespace stripping?
--- have argument types use the raw string if they want to parse whitespace :)
+--- @class Process
+local Process = {}
 
--- TODO: test support for utf8
-
-function module.rawParse(message: string, prefix: string, delimiter: string?): { any }?
+--- Parses a string into a raw command format.
+function Process.rawParse(message: string, prefix: string, delimiter: string?): { any }?
 	local argDelimiter: string = delimiter or "%s"
 	-- is there a command prefix?
 	if string.find(message, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
@@ -73,13 +73,20 @@ function module.rawParse(message: string, prefix: string, delimiter: string?): {
 	return commands
 end
 
-function module.initArgument(argDefinition, rawArg)
+--- Initializes an argument.
+function Process.initArgument(argDefinition: ArgumentDefinition, rawArg: string): (ArgumentType, { string })
 	local rawType = Registry.types[argDefinition.type]
 	local rawArgs = if rawType.listable then string.split(rawArg) else { rawArg }
 	return rawType, rawArgs
 end
 
-function module.validateArgument(argDefinition, from, rawType, rawArgs)
+--- Validates an argument.
+function Process.validateArgument(
+	argDefinition: ArgumentDefinition,
+	from: number,
+	rawType: ArgumentType,
+	rawArgs: { string }
+): (boolean, string | { any })
 	-- transform arguments
 	local rawLength = #rawArgs
 	local transformedArgs = table.create(rawLength)
@@ -113,9 +120,16 @@ function module.validateArgument(argDefinition, from, rawType, rawArgs)
 	return true, { transformedArgs, transformedTypes }
 end
 
-function module.prepareArgument(argDefinition, from, message, argPos, rawArg)
-	local rawType, rawArgs = module.initArgument(argDefinition, rawArg)
-	local ok, result = module.validateArgument(argDefinition, from, rawType, rawArgs)
+--- Prepares an argument for use with a command
+function Process.prepareArgument(
+	argDefinition: ArgumentDefinition,
+	from: number,
+	message: string,
+	argPos: number,
+	rawArg: string
+): (any?, boolean?)
+	local rawType, rawArgs = Process.initArgument(argDefinition, rawArg)
+	local ok, result = Process.validateArgument(argDefinition, from, rawType, rawArgs)
 	if not ok then
 		-- FIX: please figure out feedback lol
 		warn(result)
@@ -150,7 +164,21 @@ function module.prepareArgument(argDefinition, from, message, argPos, rawArg)
 	return (if rawType.listable then parsedArgs else parsedArgs[1]), exitCmd
 end
 
-function module.prepareCommand(context, commandArray, from, message)
+--- Prepares a command to be executed
+function Process.prepareCommand(
+	context: any,
+	commandArray: { any },
+	from: number,
+	message: string
+): (boolean, string | {
+	_K: { any },
+	args: { any },
+	array: { any },
+	definition: { any },
+	from: number,
+	message: string,
+	greedy: boolean,
+})
 	-- TODO: prepare commandArray[1] like an argument to validate and get the commandDefinition from the parsed result?
 	local commandDefinition = Registry.commands[string.lower(commandArray[1][2])]
 	if not commandDefinition then
@@ -159,7 +187,7 @@ function module.prepareCommand(context, commandArray, from, message)
 		return false, "Invalid command: " .. commandArray[1][2]
 	end
 
-	if not Auth.hasCommandGroup(from.UserId, commandDefinition.group) then
+	if not Auth.hasCommandGroup(from, commandDefinition.group) then
 		print("Invalid permissions for command: " .. commandArray[1][2])
 		return false, "Invalid permissions for command: " .. commandArray[1][2]
 	end
@@ -193,7 +221,7 @@ function module.prepareCommand(context, commandArray, from, message)
 			greedy = true
 		end
 
-		local parsedArg, exitCmd = module.prepareArgument(argDefinition, from, message, argPos, rawArg)
+		local parsedArg, exitCmd = Process.prepareArgument(argDefinition, from, message, argPos, rawArg)
 		if parsedArg then
 			table.insert(args, parsedArg)
 		end
@@ -220,16 +248,22 @@ function module.prepareCommand(context, commandArray, from, message)
 		}
 end
 
-function module.runCommands(context, from: (Player | number)?, rawString: string)
+--- Executes commands
+function Process.runCommands(context: any, from: (Player | number)?, rawString: string): boolean
 	-- TODO: validate permissions!
 	-- TODO: allow for remote commands with no player? or a userid to log remote users?
+	if not utf8.len(rawString) then
+		context.log(tostring(from) .. ": Invalid utf8 string", "ERROR")
+		context.log(rawString, "CHAT", from)
+		return false
+	end
 	local message = Util.trimStart(rawString)
 	local userId = if typeof(from) == "Instance" then from.UserId else from
 	local commandRan, commandError
-	local rawCommands = module.rawParse(message, context.playerPrefix[userId] or context.settings.prefix:get())
+	local rawCommands = Process.rawParse(message, context.playerPrefix[userId] or context.settings.prefix:get())
 	if rawCommands then
 		for i, commandArray in rawCommands do
-			local ok, result = module.prepareCommand(context, commandArray, from, message)
+			local ok, result = Process.prepareCommand(context, commandArray, userId, message)
 
 			if not ok then
 				-- TODO: need to have a unified way of displaying feedback, and a way for autocomplete lol
@@ -277,4 +311,4 @@ function module.runCommands(context, from: (Player | number)?, rawString: string
 	return commandRan
 end
 
-return module
+return Process
