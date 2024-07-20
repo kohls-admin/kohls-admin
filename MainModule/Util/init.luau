@@ -1,8 +1,11 @@
 type Dict = { [any]: any }
 type List = { any }
 
-local module = {
-	Logger = require(script.Logger),
+local Logger = require(script.Logger)
+
+--- @class Util
+local Util = {
+	Logger = Logger,
 	ReadableTime = require(script.ReadableTime),
 	Remote = require(script.Remote),
 	Rollout = require(script.Rollout),
@@ -10,7 +13,11 @@ local module = {
 	SignalGood = require(script.SignalGood),
 }
 
-module.Services = setmetatable({}, {
+export type Log = Logger.Log
+export type LogType = Logger.LogType
+export type Logger = Logger.Logger
+
+Util.Services = setmetatable({}, {
 	__index = function(self, key: string)
 		local service = game:GetService(key)
 		self[key] = service
@@ -19,18 +26,18 @@ module.Services = setmetatable({}, {
 })
 
 local userNameCache = {} :: { [number]: string }
-function module.getUserName(userId: number): string?
+function Util.getUserName(userId: number): string?
 	if userNameCache[userId] then
 		return userNameCache[userId]
 	end
 
-	local player = module.Services.Players:GetPlayerByUserId(userId)
+	local player = Util.Services.Players:GetPlayerByUserId(userId)
 	if player then
 		userNameCache[userId] = player.Name
 		return player.Name
 	end
 
-	local ok, result = pcall(module.Services.Players.GetNameFromUserIdAsync, module.Services.Players, userId)
+	local ok, result = pcall(Util.Services.Players.GetNameFromUserIdAsync, Util.Services.Players, userId)
 	if ok then
 		userNameCache[userId] = result
 		return result
@@ -39,7 +46,7 @@ function module.getUserName(userId: number): string?
 	return "Unknown"
 end
 
-function module.toHashMap(array: List): Dict
+function Util.toHashMap(array: List): Dict
 	local map = {}
 	for _, key in array do
 		map[key] = true
@@ -47,37 +54,37 @@ function module.toHashMap(array: List): Dict
 	return map
 end
 
-function module.mergeTable(to: Dict, from: Dict): Dict
+function Util.mergeTable(to: Dict, from: Dict): Dict
 	for key, value in from do
 		to[key] = value
 	end
 	return to
 end
 
-function module.deepCopy(original: Dict): Dict
+function Util.deepCopy(original: Dict): Dict
 	local copy = {}
 	for key, value in original do
 		if type(value) == "table" then
-			value = module.deepCopy(value)
+			value = Util.deepCopy(value)
 		end
 		copy[key] = value
 	end
 	return copy
 end
 
-function module.trimStart(s: string): string
+function Util.trimStart(s: string): string
 	return if string.find(s, "^%s*$") then "" else (string.match(s, "^%s*(.*)") or "")
 end
 
-function module.trimEnd(s: string): string
+function Util.trimEnd(s: string): string
 	return if string.find(s, "^%s*$") then "" else (string.match(s, "(.-)%s*$") or "")
 end
 
-function module.trim(s: string): string
+function Util.trim(s: string): string
 	return if string.find(s, "^%s*$") then "" else (string.match(s, "^%s*(.*%S)") or "")
 end
 
-function module.escapeRichText(s: string): string
+function Util.escapeRichText(s: string): string
 	s = string.gsub(s, "&", "&amp;") -- first because substitutes contain it
 	s = string.gsub(s, "<", "&lt;")
 	s = string.gsub(s, ">", "&gt;")
@@ -86,7 +93,7 @@ function module.escapeRichText(s: string): string
 	return s
 end
 
-function module.getNames(objects: any): { string }
+function Util.getNames(objects: any): { string }
 	local names = {}
 	for key, object in objects do
 		names[key] = object.Name or object.name or tostring(object)
@@ -94,11 +101,11 @@ function module.getNames(objects: any): { string }
 	return names, objects
 end
 
-function module.stripQuotes(text: string): string
+function Util.stripQuotes(text: string): string
 	return string.gsub(text, '["`]', "")
 end
 
-function module.querySuggestions(text: string, names: { string }, instances: { any })
+function Util.querySuggestions(text: string, names: { string }, instances: { any })
 	local results = {}
 	local textLower = string.lower(text)
 
@@ -121,7 +128,7 @@ function module.querySuggestions(text: string, names: { string }, instances: { a
 	return results
 end
 
-function module.newSuggestions(setOrContainer: any): ({ string }, { any })
+function Util.newSuggestions(setOrContainer: any): ({ string }, { any })
 	local names
 	local instances = {}
 	local setType = typeof(setOrContainer)
@@ -132,7 +139,7 @@ function module.newSuggestions(setOrContainer: any): ({ string }, { any })
 	end
 
 	if setType == "Instance" then
-		names, instances = module.getNames(setOrContainer:GetChildren())
+		names, instances = Util.getNames(setOrContainer:GetChildren())
 	elseif setType == "table" then
 		local setItemType = typeof(setOrContainer[1])
 		if
@@ -143,7 +150,7 @@ function module.newSuggestions(setOrContainer: any): ({ string }, { any })
 				and (type(setOrContainer[1].Name) == "string" or type(setOrContainer[1].name) == "string")
 			)
 		then
-			names, instances = module.getNames(setOrContainer)
+			names, instances = Util.getNames(setOrContainer)
 		elseif setItemType == "string" then
 			names = setOrContainer
 		elseif setOrContainer[1] ~= nil then
@@ -162,4 +169,4 @@ function module.newSuggestions(setOrContainer: any): ({ string }, { any })
 	return names, instances
 end
 
-return module
+return Util

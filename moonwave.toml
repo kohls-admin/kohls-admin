@@ -3,7 +3,18 @@ gitRepoUrl = "https://github.com/kohls-admin/main"
 gitSourceBranch = "master"
 
 changelog = true
-classOrder = []
+
+[[classOrder]]
+section = "Core"
+classes = ["_K", "Auth", "Process", "Registry"]
+
+[[classOrder]]
+section = "State"
+classes = ["Flux", "UI", "Checkbox"]
+
+[[classOrder]]
+section = "Utility"
+classes = ["Util", "Logger"]
 
 [docusaurus]
 onBrokenLinks = "throw"

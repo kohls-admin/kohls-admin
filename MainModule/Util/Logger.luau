@@ -1,3 +1,5 @@
+--- @within Logger
+--- @type LogType "DEBUG" | "INFO" | "WARN" | "ERROR" | "CHAT" | "COMMAND" | "JOIN" | "LEAVE" | "KILL" | "DEATH" | "DAMAGE" | "PURCHASE" | string
 export type LogType =
 	"DEBUG"
 	| "INFO"
@@ -13,6 +15,8 @@ export type LogType =
 	| "PURCHASE"
 	| string
 
+--- @within Logger
+--- @type Log { text: string, level: LogType, time: number, user: number? }
 export type Log = {
 	text: string,
 	level: LogType,
@@ -20,10 +24,13 @@ export type Log = {
 	user: number?,
 }
 
-local Class = {}
-Class.__index = Class
+--- @class Logger
+local Logger = {}
+Logger.__index = Logger
 
-export type Logger = typeof(setmetatable({} :: { logs: { Log }, debug: boolean? }, Class))
+--- @within Logger
+--- @type Logger typeof(setmetatable({} :: { logs: { Log }, debug: boolean? }, Logger))
+export type Logger = typeof(setmetatable({} :: { logs: { Log }, debug: boolean? }, Logger))
 
 -- WARN: DO NOT CHANGE THE ARRAY ORDER WITHOUT A DATASTORE MIGRATION!
 local decode, encode = {}, {}
@@ -48,19 +55,19 @@ do
 	encode[level] = key
 end
 
-function Class.new(debugEnabled: boolean?): Logger
-	return setmetatable({ logs = {}, debug = debugEnabled }, Class)
+function Logger.new(debugEnabled: boolean?): Logger
+	return setmetatable({ logs = {}, debug = debugEnabled }, Logger)
 end
 
-function Class:encode(level: LogType): string
+function Logger:encode(level: LogType): string
 	return encode[level] or level
 end
 
-function Class:decode(key: string): LogType
+function Logger:decode(key: string): LogType
 	return decode[key] or key
 end
 
-function Class:log(text: string, level: LogType, userId: number?): Log?
+function Logger:log(text: string, level: LogType, userId: number?): Log?
 	if level == "DEBUG" and not self.debug then
 		return
 	end
@@ -80,4 +87,4 @@ function Class:log(text: string, level: LogType, userId: number?): Log?
 	return log
 end
 
-return Class
+return Logger

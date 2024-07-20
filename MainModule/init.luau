@@ -1,7 +1,3 @@
--- TODO: load settings module stuff eventually? haha
--- TODO: client compatibility
--- need pre/post hooks for almost everything so addons can just DO IT?
-
 --------------------------
 -- START OF SHARED CODE --
 --------------------------
@@ -9,6 +5,45 @@ local TextChatService = game:GetService("TextService")
 
 local Util = require(script.Util)
 
+export type Log = Util.Log
+export type LogType = Util.LogType
+export type Logger = Util.Logger
+
+--- @within _K
+--- @type Hook "log" | "preCommand" | "postCommand"
+export type Hook = "log" | "preCommand" | "postCommand"
+
+--- @within _K
+--- @prop Flux Flux
+
+--- @within _K
+--- @prop Auth Auth
+
+--- @within _K
+--- @prop Process Process
+
+--- @within _K
+--- @prop Registry Registry
+
+--- @within _K
+--- @prop Util Util
+
+--- @within _K
+--- @prop logger Logger
+
+--- @within _K
+--- @prop hook { [Hook]: RBXScriptSignal }
+
+--- @within _K
+--- @prop bans { [string]: {any} }
+
+--- @within _K
+--- @prop settings { [string]: {any} }
+
+--- @within _K
+--- @prop logs { Log }
+
+--- @class _K
 local _K = {
 	-- modules
 	Flux = require(script.Flux),
@@ -70,7 +105,8 @@ else
 	_K.creatorId = game.CreatorId
 end
 
-function _K.log(text, level, from: Player? | number?)
+--- The core log function
+function _K.log(text: string, level: LogType, from: Player? | number?): Log
 	-- fire this log to all clients that are authorized!
 	-- TODO: make sure they pull logs on client init
 	-- make sure to sort by timestamp for new datastore entries
@@ -108,6 +144,7 @@ function _K.log(text, level, from: Player? | number?)
 	return log
 end
 
+--- Filters a message with [TextChatService.FilterStringAsync]
 function _K.filterMessage(message: string, from: number, to: number): string
 	local ok, result = pcall(
 		TextChatService.FilterStringAsync,
@@ -125,7 +162,15 @@ function _K.filterMessage(message: string, from: number, to: number): string
 	return "TextChatService filtering failed."
 end
 
-function _K.handleBan(userId, name, reason, duration, fromUserId, fromName)
+--- Generic ban handler
+function _K.handleBan(
+	userId: number,
+	name: string,
+	reason: string,
+	duration: number,
+	fromUserId: number,
+	fromName: string
+)
 	_K.bans[tostring(userId)] = { name, reason, duration, fromUserId, fromName }
 	-- network ban to all with filtered season?
 	-- _K.filterMessage(reason, fromUserId or game.CreatorId, )
