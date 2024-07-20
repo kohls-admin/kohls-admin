@@ -9,15 +9,16 @@ local Members = require(script.Members)
 local Commands = require(script.Commands)
 local Settings = require(script.Settings)
 
-_K.UI = UI
-_K.clientSettings = {}
-_K.hotkeys = {}
+_K.client = {}
+_K.client.UI = UI
+_K.client.settings = {}
+_K.client.hotkeys = {}
 
 local CommandBar = require(script.CommandBar)
 CommandBar:init(_K)
 
 -- stateful hotkeys
-for _, data in _K.hotkeys do
+for _, data in _K.client.hotkeys do
 	data.key = Flux.state(data.key)
 end
 
@@ -26,7 +27,7 @@ _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEve
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.Keyboard then
-		for keyName, data in _K.hotkeys do
+		for keyName, data in _K.client.hotkeys do
 			if
 				input.KeyCode == data.key._value
 				or (type(data.key._value) == "table" and table.find(data.key._value, input.KeyCode))
@@ -50,10 +51,10 @@ _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEve
 	end
 end)
 
-_K.memberState = Flux.state(_K.Auth.members)
-_K.banState = Flux.state(_K.bans)
-_K.logState = Flux.state(_K.logs)
-_K.settingState = Flux.state(_K.settings)
+UI.Scope.members = Flux.state(_K.Auth.members)
+UI.Scope.bans = Flux.state(_K.bans)
+UI.Scope.logs = Flux.state(_K.logs)
+UI.Scope.settings = Flux.state(_K.settings)
 
 local dashboardBans = Bans.new(_K)
 local dashboardMembers = Members.new(_K)
@@ -167,10 +168,10 @@ local initCon
 initCon = _K.Remote "Init".OnClientEvent:Connect(function(auth, bans, logs, settings)
 	initCon:Disconnect()
 	_K.Util.mergeTable(_K.Auth, auth)
-	_K.memberState:set(_K.Auth.members)
+	UI.Scope.members:set(_K.Auth.members)
 
 	_K.Util.mergeTable(_K.bans, bans)
-	_K.banState:set(_K.bans)
+	UI.Scope.bans:set(_K.bans)
 
 	for k, log in logs do
 		table.insert(_K.logs, {

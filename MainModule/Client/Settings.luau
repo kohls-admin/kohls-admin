@@ -16,7 +16,7 @@ local colors = {
 }
 
 function Settings.new(_K)
-	local UI = _K.UI
+	local UI = _K.client.UI
 
 	local settingsLineItems = {
 		General = {
@@ -49,9 +49,9 @@ function Settings.new(_K)
 					Padding = UDim.new(0, 5),
 					Placeholder = ";",
 					HotkeyInput = true,
-					Value = UI.UserInputService:GetStringForKeyCode(_K.hotkeys.commandBar.key._value),
-					Hotkey = _K.hotkeys.commandBar.key,
-					Modifiers = _K.hotkeys.commandBar.mods,
+					Value = UI.UserInputService:GetStringForKeyCode(_K.client.hotkeys.commandBar.key._value),
+					Hotkey = _K.client.hotkeys.commandBar.key,
+					Modifiers = _K.client.hotkeys.commandBar.mods,
 				},
 			},
 		},

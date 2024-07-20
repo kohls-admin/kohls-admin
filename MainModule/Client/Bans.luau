@@ -5,12 +5,12 @@ local banRichFormat = `<b>%s</b> %s\t%s\t<font transparency="0.5">%s</font>`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
 function Bans.new(_K)
-	local UI = _K.UI
+	local UI = _K.client.UI
 	local escape = _K.Util.escapeRichText
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Bans",
-		List = _K.banState,
+		List = UI.Scope.bans,
 		DictList = true,
 		FilterInput = true,
 		RenderText = function(self, ban)

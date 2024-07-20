@@ -4,7 +4,7 @@ Commands.__index = Commands
 local commandRichFormat = `<b>%s</b> %s`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
-local function argsString(command)
+local function _argsString(command)
 	if not command.args or #command.args == 0 then
 		return ""
 	end
@@ -16,7 +16,7 @@ local function argsString(command)
 end
 
 function Commands.new(_K)
-	local UI = _K.UI
+	local UI = _K.client.UI
 	local escape = _K.Util.escapeRichText
 
 	local scroller = UI.new "ScrollerFast" {

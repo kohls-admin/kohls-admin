@@ -4,7 +4,7 @@ local TextService = game:GetService("TextService")
 local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
 
-local UI = _K.UI
+local UI = _K.client.UI
 
 local validState = UI.state(nil)
 local indicatorColor = UI.compute(function(use)
@@ -524,9 +524,9 @@ return {
 	init = function(self, context)
 		Input._input.Text = UI.peek(context.settings.prefix)
 		Input._input.TextEditable = false
-		CommandBar.Parent = context.UI.LayerTop
-		context.hotkeys.commandBar = { key = Enum.KeyCode.Semicolon, mods = {}, callback = self.show }
-		context.CommandBarState = { validState, indicatorColor }
+		CommandBar.Parent = context.client.UI.LayerTop
+		context.client.hotkeys.commandBar = { key = Enum.KeyCode.Semicolon, mods = {}, callback = self.show }
+		context.client.CommandBarState = { validState, indicatorColor }
 	end,
 	show = function()
 		CommandBar.Visible = true

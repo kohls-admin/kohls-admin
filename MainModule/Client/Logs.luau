@@ -18,12 +18,12 @@ local logTypeColors = {
 }
 
 function Logs.new(_K)
-	local UI = _K.UI
+	local UI = _K.client.UI
 	local escape = _K.Util.escapeRichText
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Logs",
-		List = _K.logState,
+		List = UI.Scope.logs,
 		FilterInput = true,
 		RenderText = function(self, log)
 			local timestamp = os.date("%y-%m-%d %X", log.time)
