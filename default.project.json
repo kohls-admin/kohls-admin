@@ -16,6 +16,18 @@
 					"$path": "LICENSE.txt"
 				}
 			}
+		},
+
+		"Workspace": {
+			"Baseplate": {
+				"$className": "Part",
+				"$properties": {
+					"Anchored": true,
+					"Locked": true,
+					"Position": [0, -10, 0],
+					"Size": [512, 20, 512]
+				}
+			}
 		}
 	}
 }
