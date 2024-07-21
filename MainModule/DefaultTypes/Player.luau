@@ -1,5 +1,5 @@
 local Players = game:GetService("Players")
-local Teams = game:GetService("Teams")
+local _Teams = game:GetService("Teams")
 
 -- TODO: set up some nice errors for improper matching of various thingies?
 -- TODO: convert lists to hashmaps to remove duplicates
@@ -80,7 +80,7 @@ local directMagic = {
 		return not _K.Auth.members[player.UserId]
 	end,
 	friends = function(player, from)
-		return player ~= from and player:IsFriendsWith(from.UserId)
+		return player ~= from and player:IsFriendsWith(from)
 	end,
 	close = function(player, from)
 		return if player.Character and from.Character
@@ -157,12 +157,12 @@ local function partialMatch(arg)
 	return
 end
 
-local function magicParse(arg, from)
+local function magicParse(arg)
 	local players = {}
 	local check = directMagic[arg] or partialMatch(arg)
 	for _, player in Players:GetPlayers() do
 		-- TODO: handle feedback ;)
-		local success, feedback = check(player, from)
+		local success, _feedback = check(player, Players.LocalPlayer)
 		if success then
 			table.insert(players, player)
 		end
@@ -213,18 +213,12 @@ local typeRandom = {
 	end,
 }
 
-local function parseIndividual(arg, from)
+local function parseIndividual(arg)
 	if arg == "@" or arg == "@me" then
-		return from
+		return Players.LocalPlayer
 	end
 	for _, player in Players:GetPlayers() do
-		print(
-			"parseIndividual",
-			arg,
-			from,
-			string.lower(player.Name),
-			string.find(string.lower(player.Name), arg, 1, true)
-		)
+		print("parseIndividual", arg, string.lower(player.Name), string.find(string.lower(player.Name), arg, 1, true))
 		if string.find(string.lower(player.Name), arg, 1, true) == 1 then
 			return player
 		end
@@ -270,8 +264,8 @@ local typeMultiple = {
 	},
 }
 
-local function parseId(arg, from)
-	local player = parseIndividual(arg, from)
+local function parseId(arg)
+	local player = parseIndividual(arg)
 	return tonumber(if player then player.UserId else arg)
 end
 

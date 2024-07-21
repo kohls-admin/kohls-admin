@@ -9,6 +9,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to ban.",
+				ignoreSelf = true,
 				lowerRank = true,
 			},
 			{
@@ -32,7 +33,7 @@ return {
 			-- if lacking administrator command group only allow session banning?
 			-- need to somehow display only session bans in suggestions...
 			-- TODO: only show lower rank players in the suggestions if defined in argDef
-			local canBan = context._K.Auth.hasPermission(context.from.UserId, "ban")
+			local canBan = context._K.Auth.hasPermission(context.from, "ban")
 			local timestamp
 			if duration and canBan then
 				if duration > 0 then
@@ -48,7 +49,7 @@ return {
 					player.Username,
 					reason,
 					timestamp,
-					context.from.UserId,
+					context.from,
 					context.from.Name
 				)
 				player:Kick(reason)
@@ -98,8 +99,8 @@ return {
 			if type(reason) == "string" then
 				reason = string.sub(reason, 1, 400) -- banasync limit
 			end
-			local canBan = context._K.Auth.hasPermission(context.from.UserId, "ban")
-			local rank = context._K.Auth.getRank(context.from.UserId)
+			local canBan = context._K.Auth.hasPermission(context.from, "ban")
+			local rank = context._K.Auth.getRank(context.from)
 			for _, userId in userIds do
 				-- only ban if rank is lower haha
 				if rank <= context._K.Auth.getRank(userId) then
@@ -120,7 +121,14 @@ return {
 					end
 				end
 
-				context._K.banHandler(userId, userName, reason, duration, context.from.UserId, context.from.Name)
+				context._K.banHandler(
+					userId,
+					userName,
+					reason,
+					duration,
+					context.from,
+					context._K.Util.getUserName(context.from)
+				)
 				if userName ~= "" then
 					continue
 				end
@@ -183,7 +191,8 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to kick.",
-				lowerRank = true, -- TODO: respect lowerRank???!?!?
+				ignoreSelf = true,
+				lowerRank = true,
 			},
 			{
 				type = "string",
@@ -211,13 +220,15 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to kill.",
+				shouldRequest = true,
 			},
 		},
 		run = function(context, players)
 			for _, player in players do
-				if context._K.Auth.shouldRequest(context, player) then
-					continue
-				end
+				-- if context._K.Auth.shouldRequest(context, player) then
+				-- 	print("kill shouldRequest", context, player)
+				-- 	continue
+				-- end
 				if player.Character then
 					player.Character:BreakJoints()
 				end

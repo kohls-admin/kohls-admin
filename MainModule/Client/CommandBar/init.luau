@@ -281,7 +281,6 @@ local currentCompletionData
 updateCompletion = function()
 	local data = currentCompletionData
 	currentCompletion = nil
-	print("auto", data)
 
 	if data.suggestionType == "History" then
 		TooltipFrame.Visible = false

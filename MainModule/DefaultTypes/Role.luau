@@ -1,9 +1,9 @@
 local context
 
 local typeRole = {
-	validate = function(input: string, from: Player): (boolean, string?)
+	validate = function(input: string, from: number): (boolean, string?)
 		local query = string.lower(input)
-		local rank = context.Auth.getRank(from.UserId)
+		local rank = context.Auth.getRank(from)
 		for roleName, role in context.Auth.roles do
 			if rank > role._rank and string.find(string.lower(roleName), query) == 1 then
 				return true
@@ -11,9 +11,9 @@ local typeRole = {
 		end
 		return false, "Invalid role."
 	end,
-	parse = function(input: string, from: Player): string
+	parse = function(input: string, from: number): string
 		local query = string.lower(input)
-		local rank = context.Auth.getRank(from.UserId)
+		local rank = context.Auth.getRank(from)
 		for roleName, role in context.Auth.roles do
 			if rank > role._rank and string.find(string.lower(roleName), query) == 1 then
 				return roleName
@@ -21,9 +21,9 @@ local typeRole = {
 		end
 		error("Invalid role value")
 	end,
-	suggestions = function(text, from)
+	suggestions = function(text: string, from: number)
 		local names = {}
-		local rank = context.Auth.getRank(from.UserId)
+		local rank = context.Auth.getRank(from)
 		for roleName, role in context.Auth.roles do
 			if rank > role._rank then
 				names[roleName] = roleName
