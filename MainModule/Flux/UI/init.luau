@@ -344,7 +344,7 @@ function UI.edit(new: Instance | Dict<any>, definition)
 
 	if type(new) == "table" then
 		instance = new._instance
-		contentParent = new._content
+		contentParent = new._content or new._instance
 	end
 
 	if children then
