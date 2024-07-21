@@ -247,7 +247,7 @@ function Auth.shouldRequest(context: { [any]: any }, to: Player, ...: any): bool
 	if context.Requested and context.Requested[to] then
 		return false
 	end
-	if context.from ~= to and Auth.rankDiff(context.from.UserId, to.UserId) <= 0 then
+	if context.from ~= to.UserId and Auth.rankDiff(context.from, to.UserId) <= 0 then
 		pcall(Auth.requestCommand, context, to, ...)
 		return true
 	end
