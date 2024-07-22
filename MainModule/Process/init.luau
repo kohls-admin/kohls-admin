@@ -33,12 +33,7 @@ function Process.rawParse(message: string, prefix: string, delimiter: string?): 
 				table.insert(command, argument)
 			end
 			quoted = not quoted and char or nil
-		elseif
-			not (quoted or escaped)
-			and char == prefix
-			and string.find(lastChar, argDelimiter)
-			and string.find(string.sub(message, last + 1), "^%a")
-		then
+		elseif not (quoted or escaped) and char == prefix and string.find(lastChar, argDelimiter) then
 			if #argument == 1 then
 				table.remove(command)
 			end
