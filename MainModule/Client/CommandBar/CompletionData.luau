@@ -90,7 +90,7 @@ return function(_K, text, cursorPosition)
 			data.rawArg = commandText
 			data.query = string.sub(commandText, 1, cursorPosition - commandPos)
 			data.suggestionType = _K.Registry.types.command
-			data.suggestions = _K.Registry.types.command.suggestions(data.query, Players.LocalPlayer)
+			data.suggestions = _K.Registry.types.command.suggestions(data.query, Players.LocalPlayer.UserId)
 			-- TODO: filter for authorized commands
 
 			if #data.suggestions < 1 then
@@ -99,7 +99,6 @@ return function(_K, text, cursorPosition)
 			end
 
 			local rawSuggestions = data.suggestions
-			print("rawCommandSuggestions", data.suggestions)
 			data.suggestions = table.create(#data.suggestions)
 			for _, suggestionData in rawSuggestions do
 				local name, cmd = unpack(suggestionData)
@@ -169,7 +168,7 @@ return function(_K, text, cursorPosition)
 				data.rawArg = rawArg
 				data.transformedArg = transformedArg
 				data.query = string.sub(rawArg, 1, cursorPosition - pos)
-				data.suggestions = transformedType.suggestions(data.query, Players.LocalPlayer)
+				data.suggestions = transformedType.suggestions(data.query, Players.LocalPlayer.UserId)
 			end
 		end
 	end
