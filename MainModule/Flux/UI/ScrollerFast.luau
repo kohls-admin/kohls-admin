@@ -34,6 +34,7 @@ function ScrollerFast:render()
 				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			}
+			table.insert(self._lineItemCache, lineItem)
 		end
 		lineItem.Visible = true
 		lineItem.Text = if self.RenderText
@@ -42,7 +43,6 @@ function ScrollerFast:render()
 		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
 		lineItem.Parent = self._scroller
 
-		self._lineItemCache[cacheIndex] = lineItem
 		cacheIndex = cacheIndex + 1
 	end
 
