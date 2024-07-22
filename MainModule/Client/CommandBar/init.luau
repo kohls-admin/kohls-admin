@@ -199,8 +199,17 @@ local function completeSuggestion()
 	if not currentCompletion then
 		return
 	end
+
 	tabCompleting = true
 	local pos, text = unpack(currentCompletion)
+
+	if not string.find(text, " $") then
+		text = text .. " "
+		pos += 1
+	end
+
+	Input._input.Text = text
+	Input._input.CursorPosition = pos + 1
 	task.delay(0, function()
 		tabCompleting = false
 		Input._input.Text = text
@@ -232,7 +241,6 @@ local function updateSuggestionLabels(data)
 		frame.LayoutOrder = i
 		frame.BackgroundTransparency = if i == suggestionIndex then 0.9 else 0.95
 
-		print("player ? suggestionType", data.suggestionType, data.suggestionType == _K.Registry.types.player)
 		if string.find(data.suggestionType.displayName, "player") then
 			name = `{name} ({value.DisplayName})`
 			local userId = value.UserId
@@ -296,7 +304,6 @@ updateCompletion = function()
 	-- TODO: somehow show validated arguments/text as green :)
 	for _, invalid in data.invalid do
 		validState:set(false)
-		print("invalid", invalid)
 		local pos, text, err = unpack(invalid)
 		-- red text inlineFormat
 		Input.DisplayText:set(
@@ -336,7 +343,6 @@ updateCompletion = function()
 	end
 	-- show normal argument type hints here!
 	if data.argDefinition then
-		print("argDef", data.argDefinition)
 		Tooltip.Text = string.format(
 			argumentFormat,
 			_K.Util.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
@@ -364,7 +370,6 @@ updateCompletion = function()
 	)
 
 	if not (data.suggestions and #data.suggestions > 0) then
-		print("nothing to suggest")
 		return
 	end
 	-- suggestion hints
@@ -373,7 +378,6 @@ updateCompletion = function()
 	-- local firstValue = data.suggestions[1][2]
 	local endPos = data.argPos + #data.rawArg
 	local currentSuggestion = data.suggestions[suggestionIndex]
-	print(suggestionIndex, #data.suggestions)
 	local suggestionText, suggestionValue = unpack(currentSuggestion)
 
 	if data.query ~= "" then

@@ -218,7 +218,6 @@ local function parseIndividual(arg)
 		return Players.LocalPlayer
 	end
 	for _, player in Players:GetPlayers() do
-		print("parseIndividual", arg, string.lower(player.Name), string.find(string.lower(player.Name), arg, 1, true))
 		if string.find(string.lower(player.Name), arg, 1, true) == 1 then
 			return player
 		end
