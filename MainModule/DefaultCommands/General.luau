@@ -14,12 +14,7 @@ return {
 		},
 
 		run = function(context, message)
-			local msgObject = Instance.new("Message")
-			msgObject.Text = message
-			msgObject.Parent = workspace
-			task.delay(5, function()
-				msgObject:Destroy()
-			end)
+			context._K.Remote.Announce:FireAllClients(message, context.from)
 		end,
 	},
 	{

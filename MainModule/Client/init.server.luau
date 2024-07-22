@@ -3,6 +3,7 @@
 local _K = require(script.Parent)
 local Flux = require(script.Parent.Flux)
 local UI = require(script.Parent.Flux.UI).registerChildren()
+local Announce = require(script.Announce)
 local Bans = require(script.Bans)
 local Logs = require(script.Logs)
 local Members = require(script.Members)
@@ -207,5 +208,7 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 	end
 	dashboardLogs:updateList()
 end)
+
+_K.Remote.Announce.OnClientEvent:Connect(Announce)
 
 _K.Remote.Init:FireServer()
