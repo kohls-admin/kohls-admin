@@ -28,11 +28,14 @@ function Logs.new(_K)
 		RenderText = function(self, log)
 			local timestamp = os.date("%y-%m-%d %X", log.time)
 			local levelText = _K.logger:decode(log.level)
+			local userInfo = log.from and _K.Util.getUserInfo(log.from)
+			local displayName = if userInfo and (userInfo.DisplayName ~= userInfo.Username)
+				then userInfo.DisplayName .. " "
+				else ""
 
 			if self._filter ~= "" then
-				local text = `{timestamp} {levelText:upper()} {if log.user
-					then _K.Util.getUserName(log.user) .. ": "
-					else ""}{log.text}`
+				local fromText = if userInfo then `{displayName}@{userInfo.Username}: ` else ""
+				local text = `{timestamp} {levelText:upper()} {fromText}{log.text}`
 				local filterFound = string.find(text:lower(), self._filter)
 				return if filterFound
 					then string.format(
@@ -49,7 +52,9 @@ function Logs.new(_K)
 				escape(timestamp),
 				logTypeColors[levelText] or "#fff",
 				levelText:upper(),
-				escape(if log.user then _K.Util.getUserName(log.user) .. ": " else ""),
+				if userInfo
+					then `{escape(displayName)}<font transparency="0.5">@{escape(userInfo.Username)}:</font> `
+					else "",
 				escape(log.text)
 			)
 		end,
@@ -66,9 +71,12 @@ function Logs.new(_K)
 		for i, log in list do
 			local timestamp = os.date("%y-%m-%d %X", log.time)
 			local levelText = _K.logger:decode(log.level)
-			local text = `{timestamp} {levelText:upper()} {if log.user
-				then _K.Util.getUserName(log.user) .. ": "
-				else ""}{log.text}`
+			local userInfo = log.from and _K.Util.getUserInfo(log.from)
+			local displayName = if userInfo and (userInfo.DisplayName ~= userInfo.Username)
+				then userInfo.DisplayName .. " "
+				else ""
+			local fromText = if userInfo then `{displayName}@{userInfo.Username}: ` else ""
+			local text = `{timestamp} {levelText:upper()} {fromText}{log.text}`
 			if text:lower():find(filter, 1, true) then
 				table.insert(new, log)
 			end

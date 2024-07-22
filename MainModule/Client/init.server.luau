@@ -179,7 +179,7 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, settin
 			text = log[1],
 			level = log[2],
 			time = log[3],
-			user = log[4],
+			from = log[4],
 		})
 		if #_K.logs > 100_000 then
 			table.remove(_K.logs, 1)
@@ -201,7 +201,7 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 		text = log[1],
 		level = log[2],
 		time = log[3],
-		user = log[4],
+		from = log[4],
 	})
 	if #_K.logs > 1e5 then
 		table.remove(_K.logs, 1)

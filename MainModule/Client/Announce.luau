@@ -28,7 +28,8 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 		local content, isReady =
 			Players:GetUserThumbnailAsync(from, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
 		image = content or image
-		name = Util.getUserName(from)
+		local info = Util.getUserInfo(from)
+		name = `{info.DisplayName} <font transparency="0.5">@{info.Username}</font>`
 	end
 
 	removeExisting()

@@ -24,25 +24,34 @@ Util.Services = setmetatable({}, {
 	end,
 })
 
-local userNameCache = {} :: { [number]: string }
-function Util.getUserName(userId: number): string?
-	if userNameCache[userId] then
-		return userNameCache[userId]
+local userInfoCache =
+	{} :: { [number]: { Id: number, Username: string, DisplayName: string, HasVerifiedBadge: boolean } }
+function Util.getUserInfo(userId: number)
+	if userInfoCache[userId] then
+		return userInfoCache[userId]
 	end
+
+	userId = tonumber(userId) :: number
 
 	local player = Util.Services.Players:GetPlayerByUserId(userId)
 	if player then
-		userNameCache[userId] = player.Name
-		return player.Name
+		userInfoCache[userId] = {
+			Id = userId,
+			Username = player.Name,
+			DisplayName = player.DisplayName,
+			HasVerifiedBadge = player.HasVerifiedBadge,
+		}
+		return userInfoCache[userId]
 	end
 
-	local ok, result = pcall(Util.Services.Players.GetNameFromUserIdAsync, Util.Services.Players, userId)
-	if ok then
-		userNameCache[userId] = result
-		return result
+	local ok, result =
+		pcall(Util.Services.UserService.GetUserInfosByUserIdsAsync, Util.Services.UserService, { userId })
+	if ok and result and result[1] then
+		userInfoCache[userId] = result[1]
+		return result[1]
 	end
 
-	return "Unknown"
+	return { Id = userId, Username = "Unknown", DisplayName = "Unknown", HasVerifiedBadge = false }
 end
 
 function Util.toHashMap(array: List): Dict

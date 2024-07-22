@@ -127,22 +127,15 @@ return {
 					reason,
 					duration,
 					context.from,
-					context._K.Util.getUserName(context.from)
+					context._K.Util.getUserInfo(context.from).Username
 				)
 				if userName ~= "" then
 					continue
 				end
 				-- populate the username if not found
 				task.spawn(function()
-					local ok, result = pcall(
-						context._K.Services.Players.GetNameFromUserIdAsync,
-						context._K.Services.Players,
-						tonumber(userId)
-					)
-					if ok then
-						context._K.bans[userId][1] = result
-						-- TODO: network ban name
-					end
+					context._K.bans[userId][1] = context._K.Util.getUserInfo(userId).Username
+					-- TODO: network ban name and update for clients
 				end)
 			end
 			if canBan and duration and duration ~= 0 then

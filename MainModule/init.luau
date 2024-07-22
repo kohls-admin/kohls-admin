@@ -130,30 +130,29 @@ else
 end
 
 --- The core log function
-function _K.log(text: string, level: LogType, from: Player? | number?): Log
+function _K.log(text: string, level: LogType, from: number?): Log
 	-- fire this log to all clients that are authorized!
 	-- TODO: make sure they pull logs on client init
 	-- make sure to sort by timestamp for new datastore entries
-	local userId = if typeof(from) == "Instance" then from.UserId else from
 
-	local log = _K.logger:log(text, level, userId)
+	local log = _K.logger:log(text, level, from)
 
 	_K.hook.log:Fire(log)
 
 	if _K.IsServer then
-		if userId then
+		if from then
 			local ok, result = pcall(
 				TextChatService.FilterStringAsync,
 				TextChatService,
 				text,
-				userId,
+				from,
 				Enum.TextFilterContext[if _K.Auth.defaultRole.logs then "PublicChat" else "PrivateChat"]
 			)
 			if ok then
 				for _, player in _K.Services.Players:GetPlayers() do
 					local success, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
 					if success then
-						_K.Remote.Log:FireClient(player, { filtered, level, log.time, userId })
+						_K.Remote.Log:FireClient(player, { filtered, level, log.time, from })
 					else -- retry
 					end
 				end
@@ -161,7 +160,7 @@ function _K.log(text: string, level: LogType, from: Player? | number?): Log
 				-- TODO: if not ok, retry
 			end
 		else
-			_K.Remote.Log:FireAllClients(log)
+			_K.Remote.Log:FireAllClients({ log.text, log.level, log.time, log.from })
 		end
 	end
 
@@ -284,8 +283,8 @@ _K.Remote.Init.OnServerEvent:Connect(function(player)
 		bans[i] = { ban[1], reason, ban[3], ban[4] }
 	end
 	for i, log in _K.logs do
-		local text = if log.user then _K.filterMessage(log.text, log.user, player.UserId) else log.text
-		logs[i] = { text, log.level, log.time, log.user }
+		local text = if log.from then _K.filterMessage(log.text, log.from, player.UserId) else log.text
+		logs[i] = { text, log.level, log.time, log.from }
 	end
 
 	_K.Remote.Init:FireClient(player, _K.Auth, bans, logs, _K.settings)

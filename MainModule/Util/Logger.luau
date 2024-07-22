@@ -21,7 +21,7 @@ export type Log = {
 	text: string,
 	level: LogType,
 	time: number,
-	user: number?,
+	from: number?,
 }
 
 --- @class Logger
@@ -76,7 +76,7 @@ function Logger:log(text: string, level: LogType, userId: number?): Log?
 		text = text,
 		level = encode[level],
 		time = os.time(),
-		user = userId,
+		from = userId,
 	}
 
 	table.insert(self.logs, log)
