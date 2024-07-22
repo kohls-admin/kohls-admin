@@ -25,7 +25,6 @@ function Scroller.new(definition)
 
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 		UI.new "UIPadding" {
-			PaddingLeft = UI.Theme.Padding,
 			PaddingRight = UI.Theme.Padding,
 		},
 	}

@@ -31,7 +31,7 @@ function ScrollerFast:render()
 				Font = UI.Theme.FontMono,
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = UI.Theme.PrimaryText,
-				TextTruncate = Enum.TextTruncate.AtEnd,
+				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			}
 		end

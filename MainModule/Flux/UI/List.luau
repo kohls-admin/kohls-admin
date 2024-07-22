@@ -27,7 +27,7 @@ function List.new(definition)
 		BackgroundTransparency = 1,
 		ClipsDescendants = true,
 		Size = UI.tween(
-			UI.Theme.NormalTween,
+			UI.Theme.TweenOut,
 			UI.compute(function(use)
 				return UDim2.new(
 					1,
@@ -58,7 +58,7 @@ function List.new(definition)
 					ImageTransparency = 0.5,
 					Visible = new.Collapsible,
 					Rotation = UI.tween(
-						UI.Theme.NormalTween,
+						UI.Theme.TweenOut,
 						UI.compute(function(use)
 							return if use(collapsed) then -90 else 0
 						end)
@@ -77,7 +77,7 @@ function List.new(definition)
 					TextSize = UI.Theme.FontSize,
 					TextColor3 = UI.Theme.PrimaryText,
 					TextTransparency = 0.5,
-					TextTruncate = Enum.TextTruncate.AtEnd,
+					TextTruncate = Enum.TextTruncate.SplitWord,
 					TextXAlignment = "Left",
 				},
 
@@ -98,7 +98,7 @@ function List.new(definition)
 		BackgroundTransparency = 1,
 		Position = UDim2.new(0, 0, 0, 24),
 		Size = UI.tween(
-			UI.Theme.NormalTween,
+			UI.Theme.TweenOut,
 			UI.compute(function(use)
 				local collapse = use(collapsed)
 				return UDim2.new(

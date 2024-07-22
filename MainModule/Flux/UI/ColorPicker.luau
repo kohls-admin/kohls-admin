@@ -246,13 +246,13 @@ function ColorPicker.new(definition)
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				BackgroundColor3 = new.Value,
 				Size = UI.tween(
-					UI.Theme.NormalTween,
+					UI.Theme.TweenOut,
 					UI.compute(function(use)
 						return if use(dragging) then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
 					end)
 				),
 				Position = UI.tween(
-					UI.Theme.NormalTween,
+					UI.Theme.TweenOut,
 					UI.compute(function(use)
 						return UDim2.new(use(saturationState), 0, 1 - use(valueState), 0)
 					end)

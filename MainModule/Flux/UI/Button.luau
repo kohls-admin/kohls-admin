@@ -42,7 +42,7 @@ function Button.new(definition)
 				TextColor3 = UI.Theme.PrimaryText,
 				TextTransparency = 0,
 				TextStrokeTransparency = 0.9,
-				TextTruncate = Enum.TextTruncate.AtEnd,
+				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = new.TextXAlignment,
 				TextYAlignment = new.TextYAlignment,
 				Visible = UI.compute(function(use)
@@ -138,7 +138,7 @@ function Button.new(definition)
 				local x = input.Position.X
 				ripple.Size = UDim2.new(0, 0, 1, 0)
 				ripple.Position = UDim2.new(0, x - ap.x, 0, 0)
-				Tween:Create(ripple, UI.Theme.NormalTween, {
+				Tween:Create(ripple, UI.Theme.TweenOut, {
 					BackgroundTransparency = 0.9,
 					Size = UDim2.new(1, 0, 1, 0),
 					Position = UDim2.new(0.5, 0, 0, 0),
@@ -154,7 +154,7 @@ function Button.new(definition)
 				then
 					return
 				end
-				Tween:Create(ripple, UI.Theme.NormalTween, { BackgroundTransparency = 1 }):Play()
+				Tween:Create(ripple, UI.Theme.TweenOut, { BackgroundTransparency = 1 }):Play()
 			end,
 			MouseEnter = function()
 				UI.handleHover(hovering)

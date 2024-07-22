@@ -1,11 +1,37 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent)
 
-local Checkbox = {}
+export type Function = UI.Function
+export type List<T> = UI.List<T>
+export type Set<T> = UI.Set<T>
+export type Dict<T> = UI.Dict<T>
+export type State<T> = UI.State<T>
+export type Stateful<T> = UI.Stateful<T>
+export type SpecialKey = UI.SpecialKey
+export type SpecialDefinition = UI.SpecialDefinition
+
+--- A generic function type
+--- @within Checkbox
+--- @type CheckboxDefinition { Value: Types.Stateful<boolean>, _instance: TextButton }
+type CheckboxDefinition = SpecialDefinition & {
+	Value: Stateful<boolean>,
+	_instance: TextButton,
+}
+
+type CheckboxClass = {
+	__index: CheckboxClass,
+	new: (definition: CheckboxDefinition) -> Checkbox,
+}
+
+type Checkbox = typeof(setmetatable({} :: CheckboxDefinition, {} :: CheckboxClass))
+
+--- @class Checkbox
+local Checkbox = {} :: CheckboxClass
 Checkbox.__index = Checkbox
 setmetatable(Checkbox, BaseClass)
 
-function Checkbox.new(definition)
+--- Creates a new checkbox.
+function Checkbox.new(definition: CheckboxDefinition)
 	local new = UI.makeStatefulDefaults({
 		Value = false,
 	}, definition)
@@ -35,7 +61,7 @@ function Checkbox.new(definition)
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
 			Size = UI.tween(
-				UI.Theme.NormalTween,
+				UI.Theme.TweenOut,
 				UI.compute(function(use)
 					return UDim2.new(if use(new.Value) then 1 else 0, 0, 1, 0)
 				end)

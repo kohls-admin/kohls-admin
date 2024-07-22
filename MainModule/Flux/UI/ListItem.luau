@@ -48,7 +48,7 @@ function ListItem.new(definition)
 			Font = UI.Theme.Font,
 			TextSize = UI.Theme.FontSize,
 			TextColor3 = UI.Theme.PrimaryText,
-			TextTruncate = Enum.TextTruncate.AtEnd,
+			TextTruncate = Enum.TextTruncate.SplitWord,
 			BackgroundTransparency = 1,
 		},
 

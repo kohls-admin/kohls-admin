@@ -231,12 +231,13 @@ function Window.new(definition)
 
 	new._content = UI.new "Frame" {
 		Name = "UIContent",
-		AnchorPoint = Vector2.new(0, 1),
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, -32),
-		Position = UDim2.new(0, 0, 1, 0),
+		Size = UDim2.new(1, 0, 1, 0),
 		ClipsDescendants = true,
 
+		UI.new "UIFlexItem" {
+			FlexMode = Enum.UIFlexMode.Fill,
+		},
 		UI.new "UIPadding" {
 			PaddingLeft = UI.Theme.Padding,
 			PaddingRight = UI.Theme.Padding,
@@ -283,21 +284,23 @@ function Window.new(definition)
 			},
 		},
 
-		new._content,
-
 		UI.new "Frame" {
-			Name = "TitleBar",
-			Active = true,
-			LayoutOrder = -9e9,
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
-			Size = UDim2.new(1, 0, 0, 32),
+			Size = UDim2.fromScale(1, 1),
+
+			UI.new "UIListLayout" {
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			},
 
 			UI.new "Frame" {
-				Name = "ListFrame",
-				ZIndex = 2,
+				Name = "TitleBar",
+				Active = true,
+				LayoutOrder = -9e9,
 				BackgroundTransparency = 1,
-				Size = UDim2.new(1, 0, 1, 0),
+				ClipsDescendants = true,
+				AutomaticSize = Enum.AutomaticSize.Y,
+				Size = UDim2.new(1, 0, 0, 0),
 
 				UI.new "UIListLayout" {
 					FillDirection = Enum.FillDirection.Horizontal,
@@ -311,28 +314,33 @@ function Window.new(definition)
 				UI.new "TextLabel" {
 					Name = "Title",
 					BackgroundTransparency = 1,
-					Size = UDim2.new(1, 0, 1, 0),
+					AutomaticSize = Enum.AutomaticSize.Y,
+					Size = UDim2.new(1, 0, 0, 0),
 					Font = UI.Theme.Font,
 					Text = new.Title,
 					TextColor3 = UI.Theme.PrimaryText,
-					TextSize = UI.compute(function(use)
-						return use(UI.Theme.FontSize) + 8
-					end),
+					TextSize = UI.Theme.FontSizeLarger,
 					TextStrokeTransparency = 0.9,
 					TextXAlignment = "Left",
-					TextTruncate = Enum.TextTruncate.AtEnd,
+					TextYAlignment = "Bottom",
+					TextTruncate = Enum.TextTruncate.SplitWord,
 
+					UI.new "UIPadding" {
+						PaddingTop = UI.Theme.Padding,
+					},
 					UI.new "UIFlexItem" {
 						FlexMode = Enum.UIFlexMode.Fill,
 					},
 				},
 
 				exitButton,
+
+				[UI.Event] = {
+					InputBegan = dragInputBegan,
+				},
 			},
 
-			[UI.Event] = {
-				InputBegan = dragInputBegan,
-			},
+			new._content,
 		},
 	}
 

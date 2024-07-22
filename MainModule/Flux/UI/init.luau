@@ -206,7 +206,10 @@ UI.Theme = {
 	Padding = state(UDim.new(0, 8)),
 	StrokeEnabled = state(true),
 
-	NormalTween = TweenInfo.new(0.2),
+	TweenIn = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In),
+	TweenOut = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out),
+	TweenInOut = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut),
+
 	-- BasePixelHeight 32?
 }
 
@@ -236,6 +239,18 @@ UI.Theme.FontLight = Flux.compute(function(use)
 	local font = Font.fromEnum(use(UI.Theme.Font))
 	font.Weight = Enum.FontWeight.Light
 	return font
+end)
+
+UI.Theme.FontSizeLargest = Flux.compute(function(use)
+	return math.round(use(UI.Theme.FontSize) * 1.75)
+end)
+
+UI.Theme.FontSizeLarger = Flux.compute(function(use)
+	return math.round(use(UI.Theme.FontSize) * 1.5)
+end)
+
+UI.Theme.FontSizeLarge = Flux.compute(function(use)
+	return math.round(use(UI.Theme.FontSize) * 1.25)
 end)
 
 UI.Theme.PaddingHalf = UI.compute(function(use)
@@ -334,7 +349,7 @@ end
 --- * Numeric indicies are defined as children with [GuiObject.LayoutOrder] set to the index
 --- * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
 --- @param definition SpecialDefinition | GuiObject
-function UI.edit(new: Instance | Dict<any>, definition)
+function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 	definition = definition :: SpecialDefinition & GuiObject
 
 	local instance = new
@@ -426,11 +441,9 @@ end
 UI.new = function(className)
 	local class = UI.Class[className]
 	return function(definition)
-		local new = class and class.new(definition)
-		local instance = if new then new._instance else Instance.new(className)
-		return UI.edit(new or instance, definition)
+		return UI.edit(if class then class.new(definition) else Instance.new(className), definition)
 	end
-end :: ((className: string) -> (properties: GuiObject & SpecialDefinition) -> Instance) & typeof(Instance.new)
+end :: ((className: string) -> (properties: GuiObject & SpecialDefinition) -> Instance | Dict<any>) & typeof(Instance.new)
 
 --- Registers a new UI component class
 function UI.register(className: string, class: Dict<any>)

@@ -68,7 +68,7 @@ function Slider.new(definition)
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		BackgroundColor3 = UI.Theme.SecondaryText,
 		Position = UI.tween(
-			UI.Theme.NormalTween,
+			UI.Theme.TweenOut,
 			UI.compute(function(use)
 				return if use(new.Vertical)
 					then UDim2.new(0.5, 0, use(valueAlpha), 0)
@@ -76,7 +76,7 @@ function Slider.new(definition)
 			end)
 		),
 		Size = UI.tween(
-			UI.Theme.NormalTween,
+			UI.Theme.TweenOut,
 			UI.compute(function(use)
 				return if use(dragging) then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
 			end)
@@ -127,7 +127,7 @@ function Slider.new(definition)
 			BackgroundTransparency = UI.Theme.TransparencyClamped,
 			BorderSizePixel = 0,
 			Size = UI.tween(
-				UI.Theme.NormalTween,
+				UI.Theme.TweenOut,
 				UI.compute(function(use)
 					local alpha = use(valueAlpha)
 					local buffer = 24 * (1 - alpha)

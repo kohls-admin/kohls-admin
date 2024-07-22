@@ -22,7 +22,7 @@ function Tabs.new(definition)
 		Name = "Tabs",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
-		Position = UI.tween(UI.Theme.NormalTween, UI.computeFrom(UDim2.new, 0, tabOffset, 0, 0)),
+		Position = UI.tween(UI.Theme.TweenOut, UI.computeFrom(UDim2.new, 0, tabOffset, 0, 0)),
 
 		tabList,
 	}
@@ -161,7 +161,7 @@ function Tabs.new(definition)
 					Size = UDim2.new(0, 0, 0, 0), --UI.computeFrom(UDim2.new, 0, strokeTabSize, 1, 0),
 					BackgroundColor3 = UI.Theme.Border,
 					BackgroundTransparency = UI.tween(
-						UI.Theme.NormalTween,
+						UI.Theme.TweenOut,
 						UI.compute(function(use)
 							return if use(currentPage) == page then use(UI.Theme.Transparency) else 1
 						end)
@@ -171,7 +171,7 @@ function Tabs.new(definition)
 					TextSize = tabFontSize,
 					TextColor3 = UI.Theme.PrimaryText,
 					TextTransparency = UI.tween(
-						UI.Theme.NormalTween,
+						UI.Theme.TweenOut,
 						UI.compute(function(use)
 							return if use(hovering) or use(currentPage) == page then 0 else 0.5
 						end)
