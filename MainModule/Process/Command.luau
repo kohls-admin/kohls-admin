@@ -40,7 +40,7 @@ function Command:validate()
 		local argPos, rawArg = unpack(commandArray[i])
 
 		-- if last defined argument, concat the rest of the command's arguments
-		if self.argsIndex == self.argsLength then
+		if self.argIndex == self.argLength then
 			local lastArg = commandArray[#commandArray]
 			rawArg = string.sub(self.text, argPos, lastArg[1] + #lastArg[2])
 		end
