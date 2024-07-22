@@ -35,7 +35,7 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Value = function(value)
-							_K.Remote "Prefix":FireServer(value)
+							_K.Remote.Prefix:FireServer(value)
 						end,
 					},
 				},

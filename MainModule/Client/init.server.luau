@@ -165,7 +165,7 @@ dashCon = UI.PlayerGui.ChildAdded:Connect(function(child)
 end)
 
 local initCon
-initCon = _K.Remote "Init".OnClientEvent:Connect(function(auth, bans, logs, settings)
+initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, settings)
 	initCon:Disconnect()
 	_K.Util.mergeTable(_K.Auth, auth)
 	UI.Scope.members:set(_K.Auth.members)
@@ -194,7 +194,7 @@ initCon = _K.Remote "Init".OnClientEvent:Connect(function(auth, bans, logs, sett
 	dashboardLogs:updateList()
 end)
 
-_K.Remote "Log".OnClientEvent:Connect(function(log)
+_K.Remote.Log.OnClientEvent:Connect(function(log)
 	-- TODO: PERF: add to sorted list and filtered list directly
 	table.insert(_K.logs, {
 		text = log[1],
@@ -208,4 +208,4 @@ _K.Remote "Log".OnClientEvent:Connect(function(log)
 	dashboardLogs:updateList()
 end)
 
-_K.Remote "Init":FireServer()
+_K.Remote.Init:FireServer()

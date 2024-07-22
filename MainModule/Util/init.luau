@@ -7,7 +7,6 @@ local Logger = require(script.Logger)
 local Util = {
 	Logger = Logger,
 	ReadableTime = require(script.ReadableTime),
-	Remote = require(script.Remote),
 	Rollout = require(script.Rollout),
 	SignalFast = require(script.SignalFast),
 	SignalGood = require(script.SignalGood),

@@ -174,7 +174,7 @@ return {
 			local ids = table.create(#bans)
 			for i, userId in bans do
 				context._K.bans[userId] = nil
-				context._K.Remote "Ban":FireAllClients(userId)
+				context._K.Remote.Ban:FireAllClients(userId)
 				-- trigger ban save
 				-- unbanasync
 				table.insert(ids, tonumber(userId))

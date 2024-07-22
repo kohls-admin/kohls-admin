@@ -92,10 +92,34 @@ _K.logs = _K.logger.logs
 
 -- shorthand utility
 _K.Services = _K.Util.Services
-_K.Remote = _K.Util.Remote
 
+_K.IsStudio = _K.Services.RunService:IsStudio()
 _K.IsServer = _K.Services.RunService:IsServer()
 _K.IsClient = _K.Services.RunService:IsClient()
+
+-- initialize remote events
+local _REMOTE = Instance.new("RemoteEvent")
+local remoteFolder = if _K.IsServer then Instance.new("Folder", script) else script:WaitForChild("Remotes")
+remoteFolder.Name = "Remotes"
+
+_K.Remote = {
+	Init = _REMOTE,
+	Log = _REMOTE,
+	Prefix = _REMOTE,
+	Announce = _REMOTE,
+	Ban = _REMOTE,
+	Command = _REMOTE,
+}
+
+for name in _K.Remote do
+	if _K.IsServer then
+		local remote = Instance.new("RemoteEvent", remoteFolder)
+		remote.Name = name
+		_K.Remote[name] = remote
+	else
+		_K.Remote[name] = remoteFolder:WaitForChild(name)
+	end
+end
 
 -- assign CreatorId
 if game.CreatorType == Enum.CreatorType.Group then
@@ -129,7 +153,7 @@ function _K.log(text: string, level: LogType, from: Player? | number?): Log
 				for _, player in _K.Services.Players:GetPlayers() do
 					local success, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
 					if success then
-						_K.Remote "Log":FireClient(player, { filtered, level, log.time, userId })
+						_K.Remote.Log:FireClient(player, { filtered, level, log.time, userId })
 					else -- retry
 					end
 				end
@@ -137,7 +161,7 @@ function _K.log(text: string, level: LogType, from: Player? | number?): Log
 				-- TODO: if not ok, retry
 			end
 		else
-			_K.Remote "Log":FireAllClients(log)
+			_K.Remote.Log:FireAllClients(log)
 		end
 	end
 
@@ -184,7 +208,7 @@ function _K.handleBan(
 	if ok then
 		for _, player in _K.Services.Players:GetPlayers() do
 			local _, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
-			_K.Remote "Ban":FireClient(player, userId, { name, filtered, duration, fromUserId, fromName })
+			_K.Remote.Ban:FireClient(player, userId, { name, filtered, duration, fromUserId, fromName })
 		end
 	end
 end
@@ -249,13 +273,8 @@ end
 
 -- TODO: include Loader settings then include datastore settings to override
 
--- define remotes
-for _, remote in { "Init", "Command", "Log" } do
-	_K.Remote(remote)
-end
-
 -- network test
-_K.Remote "Init".OnServerEvent:Connect(function(player)
+_K.Remote.Init.OnServerEvent:Connect(function(player)
 	-- send their own player permissions always for clientside validation
 	-- TODO: make sure data is network safe!
 
@@ -269,7 +288,7 @@ _K.Remote "Init".OnServerEvent:Connect(function(player)
 		logs[i] = { text, log.level, log.time, log.user }
 	end
 
-	_K.Remote "Init":FireClient(player, _K.Auth, bans, logs, _K.settings)
+	_K.Remote.Init:FireClient(player, _K.Auth, bans, logs, _K.settings)
 end)
 
 script.Parent = _K.Services.ReplicatedStorage
@@ -310,7 +329,7 @@ local function banHandler(player)
 end
 
 -- handle custom command prefix
-_K.Remote "Prefix".OnServerEvent:Connect(function(player, prefix)
+_K.Remote.Prefix.OnServerEvent:Connect(function(player, prefix)
 	_K.playerPrefix[player.UserId] = prefix
 end)
 
@@ -320,7 +339,7 @@ local function playerAdded(player: Player)
 		return
 	end
 	player.Chatted:Connect(function(message: string)
-		_K.Process.runCommands(_K, player, message)
+		_K.Process.runCommands(_K, player.UserId, message)
 	end)
 end
 
@@ -330,8 +349,8 @@ for _, player in _K.Services.Players:GetPlayers() do
 	playerAdded(player)
 end
 
-_K.Remote "Command".OnServerEvent:Connect(function(player, message)
-	_K.Process.runCommands(_K, player, message)
+_K.Remote.Command.OnServerEvent:Connect(function(player, message)
+	_K.Process.runCommands(_K, player.UserId, message)
 end)
 -- NOTE: probably shouldn't network system logs to other servers, ideally only command and error logs
 _K.log("Server initialized.", "INFO")
