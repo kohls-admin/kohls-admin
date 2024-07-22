@@ -103,6 +103,10 @@ function Process.prepareCommands(context: any, from: number, rawText: string)
 			command.Error = result
 			break
 		end
+
+		if command.greedy then
+			break
+		end
 	end
 
 	return true, commands

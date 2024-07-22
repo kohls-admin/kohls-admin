@@ -50,6 +50,10 @@ return function(_K, text, cursorPosition)
 			return data
 		end
 
+		if not greedy and lastArgDefinition and lastArgDefinition.type == "stringGreedy" then
+			greedy = true
+		end
+
 		if not greedy and commandDefinition and #commandArray - 1 > #commandDefinition.args then
 			local lastDefined = commandArray[#commandDefinition.args + 1] or lastArg
 			local finalText = string.sub(text, lastDefined[1] + #lastDefined[2])
@@ -63,7 +67,6 @@ return function(_K, text, cursorPosition)
 			end
 		end
 
-		greedy = greedy or (lastArgDefinition and lastArgDefinition.type == "stringGreedy")
 		if cursorPosition < commandArray[1][1] or cursorPosition > commandEnd then
 			if not commandDefinition and not greedy then
 				data.argIndex = 1
@@ -74,11 +77,12 @@ return function(_K, text, cursorPosition)
 				return data
 			end
 			if greedy and cursorPosition > commandEnd then
-				data.argPos = lastArg[1]
-				data.argIndex = #commandArray
+				data.argIndex = #commandDefinition.args
+				data.argPos = commandArray[data.argIndex + 1][1]
+				data.suggestionType = _K.Registry.types.stringGreedy
 				data.query = string.sub(text, data.argPos)
 				data.rawArg = data.query
-				data.suggestionType = _K.Registry.types.stringGreedy
+				return data
 			end
 			continue -- cursor not within commandArray
 			-- FIX: need to still validate the command for a total valid state
