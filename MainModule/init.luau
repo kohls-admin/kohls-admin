@@ -3,7 +3,7 @@
 --------------------------
 local TextChatService = game:GetService("TextService")
 
-local Util = require(script.Util)
+local Util = require(script:WaitForChild("Util"))
 
 export type Log = Util.Log
 export type LogType = Util.LogType
