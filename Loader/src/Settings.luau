@@ -57,6 +57,10 @@ return function(_K)
 
 	-- handle on join role givers
 	_K.Services.Players.PlayerAdded:Connect(function(player)
+		-- studio testing roles
+		if _K.Services.RunService:IsStudio() then
+			_K.Auth.userRoleAdd(player.UserId, "creator")
+		end
 		-- gamepass role giver
 		for id, roles in gamePassRoles do
 			if not _K.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, id) then
