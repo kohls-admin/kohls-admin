@@ -76,6 +76,9 @@ UI.Scope = UI.Scope.UI
 --- GuiService.TopbarInset as a Flux state
 --- @prop TopbarInset State<Rect>
 UI.TopbarInset = state(GuiService, "TopbarInset")
+UI.LegacyTopBar = Flux.compute(function(use)
+	return use(UI.TopbarInset).Height == 36
+end)
 
 --- @within UI
 --- The lowermost ScreenGui for UI components
@@ -140,6 +143,9 @@ UI.TopBarFrame = UI.new "Frame" {
 	UI.new "UIPadding" {
 		PaddingLeft = UDim.new(0, 12),
 		PaddingRight = UDim.new(0, 12),
+		PaddingBottom = Flux.compute(function(use)
+			return UDim.new(0, if use(UI.LegacyTopBar) then 0 else 2)
+		end),
 	},
 }
 
