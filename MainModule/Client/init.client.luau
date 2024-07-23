@@ -1,5 +1,3 @@
--- NOTE: CLIENT ENTRY POINT
--- NOT A SERVER SCRIPT, HAS CLIENT RUNCONTEXT
 local _K = require(script.Parent)
 local Flux = require(script.Parent.Flux)
 local UI = require(script.Parent.Flux.UI).registerChildren()
@@ -7,6 +5,7 @@ local Announce = require(script.Announce)
 local Bans = require(script.Bans)
 local Logs = require(script.Logs)
 local Members = require(script.Members)
+local Noclip = require(script.Noclip)
 local Commands = require(script.Commands)
 local Settings = require(script.Settings)
 
@@ -17,6 +16,9 @@ _K.client.hotkeys = {}
 
 local CommandBar = require(script.CommandBar)
 CommandBar:init(_K)
+
+_K.Remote.Announce.OnClientEvent:Connect(Announce)
+_K.Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
 
 -- stateful hotkeys
 for _, data in _K.client.hotkeys do
@@ -91,11 +93,8 @@ if holder and holder:FindFirstChild("Holders") and holder.Holders:FindFirstChild
 	holder = holder.Holders.Left
 end
 
-local oldTopbar = UI.compute(function(use)
-	return use(UI.TopbarInset).Height
-end)
 local dasboardButtonPadding = UI.compute(function(use)
-	return UDim.new(0, if use(oldTopbar) then 6 else 12)
+	return UDim.new(0, if use(UI.LegacyTopBar) then 6 else 12)
 end)
 local dashboardButton
 dashboardButton = UI.new "TextButton" {
@@ -106,11 +105,11 @@ dashboardButton = UI.new "TextButton" {
 	AutoButtonColor = true,
 	BackgroundColor3 = Color3.new(),
 	BackgroundTransparency = UI.compute(function(use)
-		return if use(oldTopbar) then 0.5 else 0.3
+		return if use(UI.LegacyTopBar) then 0.5 else 0.3
 	end),
 	BorderSizePixel = 0,
 	Size = UI.compute(function(use)
-		return if use(oldTopbar) then UDim2.fromOffset(32, 32) else UDim2.fromOffset(44, 44)
+		return if use(UI.LegacyTopBar) then UDim2.fromOffset(32, 32) else UDim2.fromOffset(44, 44)
 	end),
 	Position = UDim2.fromScale(0, 1),
 	Text = "",
@@ -118,7 +117,7 @@ dashboardButton = UI.new "TextButton" {
 
 	UI.new "UICorner" {
 		CornerRadius = UI.compute(function(use)
-			return if use(oldTopbar) then UDim.new(0, 9) else UDim.new(1, 0)
+			return if use(UI.LegacyTopBar) then UDim.new(0, 9) else UDim.new(1, 0)
 		end),
 	},
 	UI.new "UIPadding" {
@@ -148,12 +147,14 @@ dashboardButton = UI.new "TextButton" {
 }
 
 task.spawn(function()
-	local white = Color3.new(1, 1, 1)
-	while dashboard and dashboard._instance and dashboardButton do
-		dashboardButton.ImageLabel.ImageColor3 = if dashboard._instance.Visible
-			then Color3.fromHSV((tick() / 10) % 1, 1, 1)
-			else white
-		task.wait()
+	local elapsed = 1
+	while dashboard and dashboardButton and dashboard._instance do
+		if not dashboard._instance.Visible then
+			elapsed = 1
+		end
+		local alpha = math.abs(elapsed % 2 - 1) * 0.7
+		dashboardButton.ImageLabel.ImageTransparency = -(math.cos(math.pi * alpha) - 1) / 2
+		elapsed += task.wait()
 	end
 end)
 
@@ -208,7 +209,5 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 	end
 	dashboardLogs:updateList()
 end)
-
-_K.Remote.Announce.OnClientEvent:Connect(Announce)
 
 _K.Remote.Init:FireServer()
