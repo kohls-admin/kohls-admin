@@ -25,6 +25,7 @@ function Logs.new(_K)
 		Name = "Logs",
 		List = UI.Scope.logs,
 		FilterInput = true,
+		ReverseOrder = true,
 		RenderText = function(self, log)
 			local timestamp = os.date("%y-%m-%d %X", log.time)
 			local levelText = _K.logger:decode(log.level)
