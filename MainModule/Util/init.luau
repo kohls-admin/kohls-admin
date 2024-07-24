@@ -80,6 +80,17 @@ function Util.deepCopy(original: Dict): Dict
 	return copy
 end
 
+function Util.fastRemove(t: { any }, index: number, indexEnd: number?)
+	for i = index, indexEnd or index do
+		t[i] = nil
+	end
+	local shift = 1
+	for i, v in t do
+		t[shift], t[i] = v, nil
+		shift += 1
+	end
+end
+
 function Util.trimStart(s: string): string
 	return if string.find(s, "^%s*$") then "" else (string.match(s, "^%s*(.*)") or "")
 end
