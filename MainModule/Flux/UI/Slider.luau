@@ -29,8 +29,8 @@ function Slider.new(definition)
 		end
 		-- stylua: ignore
 		local value = if new.Vertical._value
-			then math.clamp((input.Position.Y - new._instance.AbsolutePosition.Y) / new._instance.AbsoluteSize.Y, 0, 1)
-			else math.clamp((input.Position.X - new._instance.AbsolutePosition.X) / new._instance.AbsoluteSize.X, 0, 1)
+			then math.clamp((input.Position.Y - new._instance.AbsolutePosition.Y - 12) / (new._instance.AbsoluteSize.Y - 24), 0, 1)
+			else math.clamp((input.Position.X - new._instance.AbsolutePosition.X - 12) / (new._instance.AbsoluteSize.X - 24), 0, 1)
 		local snap = new.Snap._value
 
 		if snap > 1 then
