@@ -46,10 +46,10 @@ export type Hook = "log" | "preCommand" | "postCommand"
 --- @class _K
 local _K = {
 	-- modules
-	Flux = require(script.Flux),
-	Auth = require(script.Auth),
-	Process = require(script.Process),
-	Registry = require(script.Registry),
+	Flux = require(script:WaitForChild("Flux")),
+	Auth = require(script:WaitForChild("Auth")),
+	Process = require(script:WaitForChild("Process")),
+	Registry = require(script:WaitForChild("Registry")),
 	Util = Util,
 
 	logger = Util.Logger.new(),
