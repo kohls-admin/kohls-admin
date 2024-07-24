@@ -124,8 +124,10 @@ end
 
 -- assign CreatorId
 if game.CreatorType == Enum.CreatorType.Group then
-	local groupInfo = _K.Services.GroupService:GetGroupInfoAsync(game.CreatorId)
-	_K.creatorId = groupInfo.Owner.Id
+	local ok, result = pcall(_K.Services.GroupService.GetGroupInfoAsync, _K.Services.GroupService, game.CreatorId)
+	if ok then
+		_K.creatorId = result.Owner.Id
+	end
 else
 	_K.creatorId = game.CreatorId
 end
