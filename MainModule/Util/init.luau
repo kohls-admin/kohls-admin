@@ -26,6 +26,7 @@ Util.Services = setmetatable({}, {
 
 local userInfoCache =
 	{} :: { [number]: { Id: number, Username: string, DisplayName: string, HasVerifiedBadge: boolean } }
+
 function Util.getUserInfo(userId: number)
 	if userInfoCache[userId] then
 		return userInfoCache[userId]
@@ -70,12 +71,11 @@ function Util.mergeTable(to: Dict, from: Dict): Dict
 end
 
 function Util.deepCopy(original: Dict): Dict
-	local copy = {}
-	for key, value in original do
+	local copy = table.clone(original)
+	for key, value in copy do
 		if type(value) == "table" then
-			value = Util.deepCopy(value)
+			copy[key] = Util.deepCopy(value)
 		end
-		copy[key] = value
 	end
 	return copy
 end
