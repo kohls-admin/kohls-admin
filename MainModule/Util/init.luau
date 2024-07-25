@@ -137,6 +137,22 @@ function Util.throttle(delay: number, func: (...any) -> ...any)
 	end
 end
 
+do
+	local budget, expireTime = 1 / 120, 0
+
+	-- Call at start of process to prevent unnecessarily waiting.
+	function Util.deferTimerReset()
+		expireTime = tick() + budget
+	end
+
+	function Util.deferWait()
+		if tick() >= expireTime then
+			task.wait()
+			Util.deferTimerReset()
+		end
+	end
+end
+
 function Util.getNames(objects: any): { string }
 	local names = {}
 	for key, object in objects do
