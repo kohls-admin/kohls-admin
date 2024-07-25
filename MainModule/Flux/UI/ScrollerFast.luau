@@ -99,6 +99,7 @@ function ScrollerFast.new(definition)
 		List = {},
 		DictList = false,
 		FilterInput = false,
+		FilterInputDebounce = 0,
 		RenderText = UI.Nil,
 		ReverseOrder = false,
 	}, definition)
@@ -149,6 +150,13 @@ function ScrollerFast.new(definition)
 	}
 
 	if self.FilterInput._value then
+		local thread = false
+		local function debounce()
+			if thread then
+				task.cancel(thread)
+			end
+			thread = task.delay(self.FilterInputDebounce._value, self.refeshList, self)
+		end
 		self._input = UI.new "Input" {
 			LayoutOrder = -1,
 			Parent = self._instance,
@@ -159,9 +167,7 @@ function ScrollerFast.new(definition)
 			},
 
 			[UI.Hook] = {
-				Value = function()
-					self:refreshList()
-				end,
+				Value = debounce,
 			},
 		}
 	end

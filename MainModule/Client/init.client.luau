@@ -313,8 +313,10 @@ local levels = {
 	"PURCHASE",
 }
 
-for i = 1, 1e4 do
-	_K.logger:log(lines[math.random(1, 100)], levels[math.random(1, #levels)])
+_K.Util.deferTimerReset()
+for i = 1, 1_000_000 do
+	_K.logger:log("log #" .. i .. ": " .. lines[math.random(1, 100)], levels[math.random(1, #levels)])
+	_K.Util.deferWait()
 end
 
 dashboardLogs:updateList()
