@@ -39,6 +39,7 @@ local function Fly(enable)
 	if not (Character and Humanoid and Character.PrimaryPart) then
 		return
 	end
+	lastStop = elapsedTime()
 	if enable then
 		if FlyEnabled and not FlyConnection then
 			Character.PrimaryPart.Anchored, Humanoid.PlatformStand = true, true
@@ -91,6 +92,9 @@ local function onCharacter(character)
 		return
 	end
 
+	Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+	Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+
 	if typeof(noclipping) == "RBXScriptConnection" then
 		noclipping:Disconnect()
 	end
@@ -131,6 +135,10 @@ function Noclip.noclip(enabled: boolean)
 			end
 			noclipping = nil
 		end
+		Humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+		Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+		Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+
 		for _, descendant in LocalPlayer.Character:GetDescendants() do
 			if descendant:IsA("BasePart") then
 				if collideCache[descendant] then
