@@ -30,7 +30,7 @@ local function hide(info, height: number?)
 	resetOffset(height)
 	announce.ZIndex = -1
 	visible:set(nil)
-	task.delay(1 + UI.Theme.TweenOut.Time, announce.Destroy, announce)
+	task.delay(1 + UI.Theme.TweenOut._value.Time, announce.Destroy, announce)
 end
 
 return function(text: string, from: number?, delay: number?, name: string?, image: string?)

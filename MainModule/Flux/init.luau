@@ -21,7 +21,23 @@ export type Dict<T> = { [T]: any }
 --[=[
 	Represents a reactive state object in the Flux system
 	@within Flux
-	@type State { _update: (State<T>) -> boolean, _dependencies: Set<State<T>>, _dependents: Set<State<T>>, _binds: { [T]: any, _cleanup: List<any> }, _hooks: Dict<Function>, _value: T, _stateful: boolean, _operation: List<any>?, _tweenInfo: TweenInfo?, set: (self: State<T>, new: T, force: boolean?, noTween: boolean?) -> State<T>, get: (self: State<T>) -> T, hook: (self: State<T>, callback: Function) -> Function, Destroy: (self: State<T>) -> (), bindToProperty: (self: State<T>, instance: Instance, property: string) -> (), bindToAttribute: (self: State<T>, instance: Instance, attribute: string) -> (), }
+	@type State {
+		_update: (State<T>) -> boolean,
+		_dependencies: Set<State<T>>,
+		_dependents: Set<State<T>>,
+		_binds: { [T]: any, _cleanup: List<any> },
+		_hooks: Dict<Function>,
+		_value: T,
+		_stateful: boolean,
+		_operation: List<any>?,
+		_tweenInfo: TweenInfo | any,
+		set: (self: State<T>, new: T, force: boolean?, noTween: boolean?) -> State<T>,
+		get: (self: State<T>) -> T,
+		hook: (self: State<T>, callback: Function) -> Function,
+		Destroy: (self: State<T>) -> (),
+		bindToProperty: (self: State<T>, instance: Instance, property: string) -> (),
+		bindToAttribute: (self: State<T>, instance: Instance, attribute: string) -> (),
+	}
 ]=]
 export type State<T> = {
 	_update: (State<T>) -> boolean,
@@ -32,7 +48,7 @@ export type State<T> = {
 	_value: T,
 	_stateful: boolean,
 	_operation: List<any>?,
-	_tweenInfo: TweenInfo?,
+	_tweenInfo: TweenInfo | any,
 	set: (self: State<T>, new: T, force: boolean?, noTween: boolean?) -> State<T>,
 	get: (self: State<T>) -> T,
 	hook: (self: State<T>, callback: Function) -> Function,
@@ -232,7 +248,7 @@ function Flux:_update(noTween: boolean?)
 					instance:SetAttribute(k, value)
 				elseif type(v) == "string" then -- property
 					if not noTween and self._tweenInfo then
-						TweenService:Create(instance, self._tweenInfo, { [v] = value }):Play()
+						TweenService:Create(instance, peek(self._tweenInfo), { [v] = value }):Play()
 					else
 						setProperty(instance, v, value)
 					end
@@ -521,7 +537,7 @@ function Flux.compute<T>(computation: (use: <U>(U | State<U>) -> U?) -> T): Stat
 end
 
 --- Applies TweenService tweens with Instance properties bound to the Flux state
-function Flux.tween<T>(tweenInfo: TweenInfo, state: State<T>): State<T>
+function Flux.tween<T>(tweenInfo: Stateful<TweenInfo>, state: State<T>): State<T>
 	if not isState(state) then
 		error("Invalid Flux state object")
 	end
