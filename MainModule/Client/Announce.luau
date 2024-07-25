@@ -46,26 +46,9 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 		name = `{info.DisplayName} <font transparency="0.5">@{info.Username}</font>`
 	end
 
-	local timeLabel = UI.new "TextLabel" {
-		Name = "Time",
-		AnchorPoint = Vector2.new(1, 0),
-		BackgroundTransparency = 1,
-		TextTransparency = 0.75,
-		TextColor3 = UI.Theme.PrimaryText,
-		Text = math.ceil(delay),
-		TextSize = UI.Theme.FontSizeLarger,
-		TextXAlignment = "Right",
-		Font = UI.Theme.Font,
-
-		AutomaticSize = Enum.AutomaticSize.XY,
-		Size = UI.computeFrom(UDim2.fromOffset, 0, UI.Theme.FontSizeLarger),
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
-		},
-	}
-
 	local visible = UI.state(false)
 	local offset = UI.state(0)
+	local self
 
 	local bar = UI.new "Frame" {
 		Name = "Bar",
@@ -77,8 +60,25 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 		},
 	}
 
-	local card, self
-	card = UI.new "TextButton" {
+	local exitButton = UI.new "Button" {
+		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
+		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarger, 0, UI.Theme.FontSizeLarger),
+		Icon = "rbxassetid://1476571006",
+		IconProperties = {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Size = UDim2.new(0, 10, 0, 10),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			ResampleMode = Enum.ResamplerMode.Pixelated,
+		},
+		Text = "",
+		Activated = function()
+			hide(self)
+		end,
+	}
+	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+
+	local card
+	card = UI.new "Frame" {
 		Parent = UI.LayerTop,
 		Name = "Announcement",
 		AnchorPoint = UI.tween(
@@ -87,11 +87,8 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 				return Vector2.new(0.5, if use(visible) then 0 else 1)
 			end)
 		),
-		AutoButtonColor = false,
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
-		TextTransparency = 1,
-		Text = "",
 
 		AutomaticSize = Enum.AutomaticSize.XY,
 		Position = UI.tween(
@@ -190,9 +187,13 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 
 					AutomaticSize = Enum.AutomaticSize.XY,
 					Size = UI.compute(UDim2.fromOffset, 0, UI.Theme.FontSizeLarger),
+
+					UI.new "UIFlexItem" {
+						FlexMode = Enum.UIFlexMode.Fill,
+					},
 				},
 
-				timeLabel,
+				exitButton,
 			},
 
 			UI.new "TextLabel" {
@@ -200,7 +201,7 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 				BackgroundTransparency = 1,
 				TextColor3 = UI.Theme.PrimaryText,
 				Text = text,
-				TextSize = UI.Theme.FontSize,
+				TextSize = UI.Theme.FontSizeLarge,
 				TextXAlignment = "Left",
 				TextWrapped = true,
 				Font = UI.Theme.Font,
@@ -212,12 +213,6 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 					FlexMode = Enum.UIFlexMode.Fill,
 				},
 			},
-		},
-
-		[UI.Event] = {
-			Activated = function()
-				hide(self)
-			end,
 		},
 	}
 
@@ -237,15 +232,9 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 	local height =
 		TextService:GetTextSize(text, UI.Theme.FontSize._value, UI.Theme.Font._value, Vector2.new(512, 9e9)).Y
 
-	if resetOffset(height) > UI.LayerTop.AbsoluteSize.Y * 0.4 - UI.TopbarInset._value.Height then
+	if resetOffset(height) > (UI.LayerTop.AbsoluteSize.Y - UI.TopbarInset._value.Height) / 2 then
 		hide(existing[#existing], height)
 	end
 
-	task.spawn(function()
-		repeat
-			timeLabel.Text = math.ceil(delay)
-			delay -= task.wait(math.min(1, delay))
-		until delay <= 0 or not table.find(existing, self)
-		hide(self)
-	end)
+	task.delay(delay, hide, self)
 end
