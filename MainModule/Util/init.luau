@@ -112,6 +112,31 @@ function Util.escapeRichText(s: string): string
 	return s
 end
 
+function Util.debounce(delay: number, func: (...any) -> ...any)
+	local thread
+	return function(...)
+		if thread then
+			task.cancel(thread)
+		end
+		thread = task.delay(delay, func, ...)
+	end
+end
+
+function Util.throttle(delay: number, func: (...any) -> ...any)
+	local throttled
+	local function reset()
+		throttled = nil
+	end
+	return function(...)
+		if throttled then
+			return
+		end
+		throttled = true
+		task.delay(delay, reset)
+		func(...)
+	end
+end
+
 function Util.getNames(objects: any): { string }
 	local names = {}
 	for key, object in objects do
