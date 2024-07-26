@@ -107,6 +107,80 @@ return {
 		end,
 	},
 	{
+		name = "invisible",
+		aliases = { "inv" },
+		description = "Makes one or more player(s) invisible.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to make invisible.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				for _, child in player.Character:GetDescendants() do
+					if
+						(child:IsA("BasePart") or child:IsA("Decal") or child:IsA("Texture"))
+						and not child:GetAttribute("kTransparency")
+					then
+						child:SetAttribute("kTransparency", child.Transparency)
+						child.Transparency = 1
+					elseif
+						(
+							child:IsA("Light")
+							or child:IsA("Beam")
+							or child:IsA("Trail")
+							or child:IsA("ParticleEmitter")
+							or child:IsA("Fire")
+							or child:IsA("Smoke")
+							or child:IsA("Sparkles")
+							or child:IsA("SurfaceGui")
+						) and not child:GetAttribute("kEnabled")
+					then
+						child:SetAttribute("kEnabled", child.Enabled)
+						child.Enabled = false
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "visible",
+		aliases = { "vis" },
+		description = "Makes one or more player(s) visible.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to make visible.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				for _, child in player.Character:GetDescendants() do
+					local kTransparency = child:GetAttribute("kTransparency")
+					local kEnabled = child:GetAttribute("kEnabled")
+					if kTransparency then
+						child:SetAttribute("kTransparency", nil)
+						child.Transparency = kTransparency
+					elseif kEnabled then
+						child:SetAttribute("kEnabled", nil)
+						child.Enabled = kEnabled
+					end
+				end
+			end
+		end,
+	},
+	{
 		name = "respawn",
 		description = "Respawns the character of one or more player(s).",
 		args = {
@@ -125,6 +199,7 @@ return {
 	},
 	{
 		name = "refresh",
+		aliases = { "re" },
 		description = "Refreshes the character of one or more player(s).",
 		args = {
 			{
