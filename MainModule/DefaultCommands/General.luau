@@ -2,7 +2,7 @@
 
 local noclipCache = {}
 
-local spectateConnections = {}
+local spectateConnection
 
 local function spectateCleanup(context)
 	for subject, spectators in context._K.spectators do
@@ -67,16 +67,15 @@ return {
 			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
 				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
 			end
-			if spectateConnections[context.from] then
-				spectateConnections[context.from]:Disconnect()
+			if spectateConnection then
+				spectateConnection:Disconnect()
 			end
-			spectateConnections[context.from] = player.CharacterAdded:Connect(function()
+			spectateConnection = player.CharacterAdded:Connect(function()
 				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
 			end)
 		end,
 		run = function(context, player)
 			spectateCleanup(context)
-			-- apply spectate
 			if not context._K.spectators[player] then
 				context._K.spectators[player] = {}
 			end
@@ -95,9 +94,9 @@ return {
 			if character then
 				workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")
 			end
-			if spectateConnections[context.from] then
-				spectateConnections[context.from]:Disconnect()
-				spectateConnections[context.from] = nil
+			if spectateConnection then
+				spectateConnection:Disconnect()
+				spectateConnection = nil
 			end
 		end,
 		run = spectateCleanup,
