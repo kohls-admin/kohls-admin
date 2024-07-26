@@ -20,6 +20,47 @@ return {
 		end,
 	},
 	{
+		name = "ff",
+		description = "Gives a ForceField to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to protect.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player and player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
+					Instance.new("ForceField", player.Character)
+				end
+			end
+		end,
+	},
+	{
+		name = "unff",
+		description = "Removes a ForceField from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove a ForceField from.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player and player.Character then
+					local ff = player.Character:FindFirstChildOfClass("ForceField")
+					if ff then
+						ff:Destroy()
+					end
+				end
+			end
+		end,
+	},
+	{
 		name = "fly",
 		aliases = { "noclip" },
 		description = "Enables flight and disables collisions on one or more player(s).",
