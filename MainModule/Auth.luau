@@ -7,7 +7,9 @@ local Auth = {
 	defaultRole = {
 		-- role "_rank" determines hierarchy
 		-- 0 is reserved for the default role
-		name = "everyone",
+		_rank = 0,
+		name = "Player",
+		color = "#0ff",
 
 		-- STAFF PERMISSIONS (anyone with one of these permissions will be saved to the list of staff)
 
@@ -46,12 +48,12 @@ local Auth = {
 	},
 	-- role definition
 	roles = {
-		-- the default role given to everyone
 		-- unique key should NEVER be changed or you may lose save data
 		vip = {
 			_rank = 1,
 			name = "VIP",
 			vip = true,
+			color = "#0f8",
 		},
 		mod = {
 			_rank = 2,
@@ -59,6 +61,7 @@ local Auth = {
 			kick = true,
 			logs = true,
 			groups = { "moderation", "general" },
+			color = "#0f0",
 		},
 		admin = {
 			_rank = 3,
@@ -68,6 +71,7 @@ local Auth = {
 			roles = true,
 			logs = true,
 			groups = { "administration", "moderation", "general" },
+			color = "#ff0",
 		},
 		superadmin = {
 			_rank = 4,
@@ -78,12 +82,14 @@ local Auth = {
 			logs = true,
 			settings = true,
 			groups = { "administration", "moderation", "general" },
+			color = "#f80",
 		},
 		-- FIXME should this be defined and configurable? (or should it just be forced...)
 		creator = {
 			_rank = math.huge,
 			name = "Game Creator",
 			admin = true,
+			color = "#f00",
 		},
 	},
 
