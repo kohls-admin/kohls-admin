@@ -8,6 +8,7 @@ local Members = require(script.Members)
 local Noclip = require(script.Noclip)
 local Commands = require(script.Commands)
 local Settings = require(script.Settings)
+local Credit = require(script.Credit)
 
 _K.client = {}
 _K.client.UI = UI
@@ -96,6 +97,7 @@ local dashboardMembers = Members.new(_K)
 local dashboardLogs = Logs.new(_K)
 local dashboardCommands = Commands.new(_K)
 local dashboardSettings = Settings.new(_K)
+local dashboardCredits = Credit.new(_K)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerDefault,
@@ -108,15 +110,16 @@ local dashboard = UI.new "Window" {
 		dashboardMembers,
 		dashboardLogs,
 		dashboardSettings,
-		UI.new "TextLabel" {
-			Name = "Credit",
-			BackgroundTransparency = 1,
-			Font = UI.Theme.Font,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = UI.Theme.PrimaryText,
-			Size = UDim2.new(1, 0, 0, 32),
-			Text = "Kohl's Admin (Created by Scripth)",
-		},
+		dashboardCredits,
+		-- UI.new "TextLabel" {
+		-- 	Name = "Credit",
+		-- 	BackgroundTransparency = 1,
+		-- 	Font = UI.Theme.Font,
+		-- 	TextSize = UI.Theme.FontSize,
+		-- 	TextColor3 = UI.Theme.PrimaryText,
+		-- 	Size = UDim2.new(1, 0, 0, 32),
+		-- 	Text = "Kohl's Admin (Created by Scripth)",
+		-- },
 	},
 }
 -- TopbarStandard.Holders.Left
