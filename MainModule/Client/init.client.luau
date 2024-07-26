@@ -18,6 +18,10 @@ _K.client.hotkeys = {}
 local CommandBar = require(script.CommandBar)
 CommandBar:init(_K)
 
+UI.LocalPlayer.Chatted:Connect(function(message: string)
+	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, message)
+end)
+
 _K.Remote.Announce.OnClientEvent:Connect(Announce)
 _K.Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
 
