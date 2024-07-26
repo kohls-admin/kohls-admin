@@ -107,24 +107,42 @@ return {
 		end,
 	},
 	{
-		name = "hint",
-		aliases = { "h" },
-		description = "Sends a hint to everyone in the server.",
+		name = "respawn",
+		description = "Respawns the character of one or more player(s).",
 		args = {
 			{
-				type = "stringGreedy",
-				name = "Message",
-				description = "The message to send.",
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to respawn.",
 			},
 		},
 
-		run = function(context, message)
-			local msgObject = Instance.new("Hint")
-			msgObject.Text = message
-			msgObject.Parent = workspace
-			task.delay(5, function()
-				msgObject:Destroy()
-			end)
+		run = function(context, players)
+			for _, player in players do
+				player:LoadCharacter()
+			end
+		end,
+	},
+	{
+		name = "refresh",
+		description = "Refreshes the character of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to refresh.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player and player.Character then
+					local old = player.Character:GetPivot()
+					player:LoadCharacter()
+					player.Character:PivotTo(old)
+					context._K.Remote.Refresh:FireClient(player)
+				end
+			end
 		end,
 	},
 }

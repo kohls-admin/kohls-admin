@@ -20,6 +20,21 @@ CommandBar:init(_K)
 _K.Remote.Announce.OnClientEvent:Connect(Announce)
 _K.Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
 
+local lastCameraCFrame
+_K.Remote.Refresh.OnClientEvent:Connect(function()
+	if lastCameraCFrame then
+		while workspace.CurrentCamera.CFrame == lastCameraCFrame do
+			task.wait()
+		end
+		print("set")
+		workspace.CurrentCamera.CFrame = lastCameraCFrame
+	end
+end)
+
+UI.LocalPlayer.CharacterRemoving:Connect(function()
+	lastCameraCFrame = workspace.CurrentCamera.CFrame
+end)
+
 -- stateful hotkeys
 for _, data in _K.client.hotkeys do
 	data.key = Flux.state(data.key)
