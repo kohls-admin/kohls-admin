@@ -2,6 +2,19 @@
 
 local noclipCache = {}
 
+local function spectateCleanup(context)
+	for subject, spectators in context._K.spectators do
+		local found = table.find(spectators, context.fromPlayer)
+		if found then
+			table.remove(spectators, found)
+			if #spectators == 0 then
+				context._K.spectators[subject] = nil
+				context._K.Remote.SpectateSubject:FireClient(subject)
+			end
+		end
+	end
+end
+
 return {
 	{
 		name = "message",
@@ -179,6 +192,45 @@ return {
 				end
 			end
 		end,
+	},
+	{
+		name = "spectate",
+		aliases = { "spy", "watch" },
+		description = "Spectate a player.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to spectate.",
+			},
+		},
+
+		clientRun = function(context, player)
+			workspace.CurrentCamera.CameraSubject = nil
+		end,
+		run = function(context, player)
+			spectateCleanup(context)
+			-- apply spectate
+			if not context._K.spectators[player] then
+				context._K.spectators[player] = {}
+			end
+			context._K.Remote.SpectateSubject:FireClient(player, true)
+			table.insert(context._K.spectators[player], context.fromPlayer)
+		end,
+	},
+	{
+		name = "unspectate",
+		aliases = { "unspy", "unwatch" },
+		description = "Stop spectating.",
+		args = {},
+
+		clientRun = function(context)
+			local character = context.fromPlayer.Character
+			if character then
+				workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")
+			end
+		end,
+		run = spectateCleanup,
 	},
 	{
 		name = "respawn",

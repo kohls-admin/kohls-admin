@@ -1,3 +1,5 @@
+local Players = game:GetService("Players")
+
 local Argument = require(script.Parent.Argument)
 
 local Command = {
@@ -12,6 +14,7 @@ function Command.new(_K, commandDefinition, commandArray, from, text)
 		array = commandArray,
 		definition = commandDefinition,
 		from = from,
+		fromPlayer = Players:GetPlayerByUserId(from),
 		text = text,
 
 		argIndex = 1,
