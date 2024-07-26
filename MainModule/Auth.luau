@@ -105,6 +105,8 @@ if game.CreatorId > 0 then
 	}
 end
 
+Auth.roles.defaultRole = Auth.defaultRole
+
 -- for adding/removing roles only save staff roles
 -- TODO: should probably not save roles to a player datastore otherwise those would need to be updated too ;(
 -- TODO: instead let the game developer handle their own player save state and just give roles on join?
