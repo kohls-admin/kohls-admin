@@ -33,6 +33,97 @@ return {
 		end,
 	},
 	{
+		name = "hurt",
+		aliases = { "damage" },
+		description = "Damages one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to hurt.",
+			},
+			{
+				type = "number",
+				name = "Damage",
+				description = "The damage to deal to their health.",
+			},
+		},
+
+		run = function(context, players, health)
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid:TakeDamage(health)
+				end
+			end
+		end,
+	},
+	{
+		name = "health",
+		aliases = { "maxhealth" },
+		description = "Changes the maximum health one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose health to change.",
+			},
+			{
+				type = "number",
+				name = "Max Health",
+				description = "The new maximum health.",
+			},
+		},
+
+		run = function(context, players, health)
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid.MaxHealth = health
+				end
+			end
+		end,
+	},
+	{
+		name = "heal",
+		description = "Heals one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to heal.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid.Health = humanoid.MaxHealth
+				end
+			end
+		end,
+	},
+	{
+		name = "god",
+		description = "Makes one or more player(s) invincible.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to make invincible.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
+					Instance.new("ForceField", player.Character).Visible = false
+				end
+			end
+		end,
+	},
+	{
 		name = "ff",
 		description = "Gives a ForceField to one or more player(s).",
 		args = {
@@ -45,7 +136,7 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if player and player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
+				if player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
 					Instance.new("ForceField", player.Character)
 				end
 			end
@@ -53,6 +144,7 @@ return {
 	},
 	{
 		name = "unff",
+		aliases = { "ungod" },
 		description = "Removes a ForceField from one or more player(s).",
 		args = {
 			{
@@ -64,7 +156,7 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if player and player.Character then
+				if player.Character then
 					local ff = player.Character:FindFirstChildOfClass("ForceField")
 					if ff then
 						ff:Destroy()
