@@ -141,6 +141,16 @@ function Auth.userRoleRemove(userId: number, role: Role)
 	end
 end
 
+--- Gets the role entry from a rank number
+function Auth.getRoleFromRank(rank: number): Role?
+	for _, roleData in Auth.roles do
+		if roleData._rank == rank then
+			return roleData
+		end
+	end
+	return
+end
+
 --- Checks the maximum role rank of the user, if permission is given it will fetch the highest rank of the roles with that permission
 function Auth.getRank(userId: number, permission: string?): number
 	permission = permission or "_rank"
