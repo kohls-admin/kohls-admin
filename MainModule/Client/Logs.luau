@@ -50,8 +50,8 @@ function Logs.new(_K)
 				)
 			end
 
-			local found = string.find(log.filterText, filter, 1, true)
-			if found then
+			local ok, found = pcall(string.find, log.filterText, filter)
+			if ok and found then
 				log.filterIndex = found
 				table.insert(new, log)
 			end
