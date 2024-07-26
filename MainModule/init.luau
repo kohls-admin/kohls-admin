@@ -110,6 +110,7 @@ _K.Remote = {
 	Ban = _REMOTE,
 	Command = _REMOTE,
 	Noclip = _REMOTE,
+	Refresh = _REMOTE,
 }
 
 for name in _K.Remote do

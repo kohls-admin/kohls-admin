@@ -23,10 +23,7 @@ _K.Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
 local lastCameraCFrame
 _K.Remote.Refresh.OnClientEvent:Connect(function()
 	if lastCameraCFrame then
-		while workspace.CurrentCamera.CFrame == lastCameraCFrame do
-			task.wait()
-		end
-		print("set")
+		workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Wait()
 		workspace.CurrentCamera.CFrame = lastCameraCFrame
 	end
 end)
