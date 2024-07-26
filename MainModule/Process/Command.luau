@@ -27,7 +27,17 @@ function Command:run()
 	if not self.validated then
 		return false, "Command must be validated before it is run!"
 	end
-	return pcall(self.definition.run, self, unpack(self.preparedArgs))
+
+	local run = self.definition[if self._K.IsServer then "run" else "clientRun"]
+	if not run then
+		return
+	end
+
+	self._K.hook.preCommand:Fire(self)
+	local ok, err = pcall(run, self, unpack(self.preparedArgs))
+	self._K.hook.postCommand:Fire(self)
+
+	return ok, err
 end
 
 function Command:validate()
