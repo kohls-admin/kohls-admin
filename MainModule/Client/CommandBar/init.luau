@@ -486,6 +486,10 @@ Input._input.FocusLost:Connect(function(enterPressed)
 			-- if not fully validated need to show feedback
 			return
 		end
+		-- ignore empty command strings
+		if Input._input.Text == UI.peek(_K.settings.prefix) then
+			return
+		end
 		-- FIX: if validated lol
 		_K.Remote.Command:FireServer(Input._input.Text)
 		task.spawn(_K.Process.runCommands, _K, _K.Services.Players.LocalPlayer.UserId, Input._input.Text)
@@ -511,8 +515,9 @@ Input._input:GetPropertyChangedSignal("Text"):Connect(function()
 	end
 	local prefix = UI.peek(_K.settings.prefix)
 	if string.find(Input._input.Text, prefix, 1, true) ~= 1 then
+		Input._input.CursorPosition += 1
 		Input._input.Text = prefix .. Input._input.Text
-		Input._input.CursorPosition += utf8.len(prefix)
+		Input._input.CursorPosition += 1
 		return
 	end
 
