@@ -194,9 +194,26 @@ return {
 		end,
 	},
 	{
+		name = "follow",
+		description = "Follows a player with your camera.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to follow.",
+			},
+		},
+
+		clientRun = function(context, player)
+			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
+			end
+		end,
+	},
+	{
 		name = "spectate",
 		aliases = { "spy", "watch" },
-		description = "Spectate a player.",
+		description = "Spectate a player's point of view.",
 		args = {
 			{
 				type = "player",
@@ -220,7 +237,7 @@ return {
 	},
 	{
 		name = "unspectate",
-		aliases = { "unspy", "unwatch" },
+		aliases = { "unspy", "unwatch", "unfollow" },
 		description = "Stop spectating.",
 		args = {},
 
