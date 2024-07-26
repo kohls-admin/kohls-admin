@@ -21,6 +21,7 @@ CommandBar:init(_K)
 _K.Remote.Announce.OnClientEvent:Connect(Announce)
 _K.Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
 
+-- refresh command setup
 local lastCameraCFrame
 _K.Remote.Refresh.OnClientEvent:Connect(function()
 	if lastCameraCFrame then
@@ -31,6 +32,25 @@ end)
 
 UI.LocalPlayer.CharacterRemoving:Connect(function()
 	lastCameraCFrame = workspace.CurrentCamera.CFrame
+end)
+
+-- spectate command setup
+local function spectateNetwork()
+	_K.Remote.SpectateSubject:FireServer(workspace.CurrentCamera.CFrame)
+end
+
+_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame)
+	workspace.CurrentCamera.CFrame = cframe
+end)
+
+local spectateConnection
+_K.Remote.SpectateSubject.OnClientEvent:Connect(function(enabled: boolean)
+	if spectateConnection then
+		spectateConnection:Disconnect()
+	end
+	if enabled then
+		spectateConnection = _K.Services.RunService.Heartbeat:Connect(spectateNetwork)
+	end
 end)
 
 -- stateful hotkeys
@@ -108,9 +128,15 @@ if holder and holder:FindFirstChild("Holders") and holder.Holders:FindFirstChild
 	holder = holder.Holders.Left
 end
 
+local function dashboardToggle()
+	dashboard._instance.Visible = not dashboard._instance.Visible
+end
+_K.client.hotkeys.dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = dashboardToggle }
+
 local dasboardButtonPadding = UI.compute(function(use)
 	return UDim.new(0, if use(UI.LegacyTopBar) then 6 else 12)
 end)
+
 local dashboardButton
 dashboardButton = UI.new "TextButton" {
 	Parent = holder or UI.TopBarFrame,
@@ -149,9 +175,7 @@ dashboardButton = UI.new "TextButton" {
 	},
 
 	[UI.Event] = {
-		Activated = function()
-			dashboard._instance.Visible = not dashboard._instance.Visible
-		end,
+		Activated = dashboardToggle,
 		MouseEnter = function()
 			dashboardButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 		end,

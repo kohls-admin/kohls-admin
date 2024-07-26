@@ -2,6 +2,19 @@
 
 local noclipCache = {}
 
+local function spectateCleanup(context)
+	for subject, spectators in context._K.spectators do
+		local found = table.find(spectators, context.fromPlayer)
+		if found then
+			table.remove(spectators, found)
+			if #spectators == 0 then
+				context._K.spectators[subject] = nil
+				context._K.Remote.SpectateSubject:FireClient(subject)
+			end
+		end
+	end
+end
+
 return {
 	{
 		name = "message",
@@ -20,45 +33,60 @@ return {
 		end,
 	},
 	{
-		name = "ff",
-		description = "Gives a ForceField to one or more player(s).",
+		name = "follow",
+		description = "Follows a player with your camera.",
 		args = {
 			{
-				type = "players",
-				name = "Player(s)",
-				description = "The player(s) to protect.",
+				type = "player",
+				name = "Player",
+				description = "The player to follow.",
 			},
 		},
 
-		run = function(context, players)
-			for _, player in players do
-				if player and player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
-					Instance.new("ForceField", player.Character)
-				end
+		clientRun = function(context, player)
+			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
 			end
 		end,
 	},
 	{
-		name = "unff",
-		description = "Removes a ForceField from one or more player(s).",
+		name = "spectate",
+		aliases = { "spy", "watch" },
+		description = "Spectate a player's point of view.",
 		args = {
 			{
-				type = "players",
-				name = "Player(s)",
-				description = "The player(s) to remove a ForceField from.",
+				type = "player",
+				name = "Player",
+				description = "The player to spectate.",
 			},
 		},
 
-		run = function(context, players)
-			for _, player in players do
-				if player and player.Character then
-					local ff = player.Character:FindFirstChildOfClass("ForceField")
-					if ff then
-						ff:Destroy()
-					end
-				end
+		clientRun = function(context, player)
+			workspace.CurrentCamera.CameraSubject = nil
+		end,
+		run = function(context, player)
+			spectateCleanup(context)
+			-- apply spectate
+			if not context._K.spectators[player] then
+				context._K.spectators[player] = {}
+			end
+			context._K.Remote.SpectateSubject:FireClient(player, true)
+			table.insert(context._K.spectators[player], context.fromPlayer)
+		end,
+	},
+	{
+		name = "unspectate",
+		aliases = { "unspy", "unwatch", "unfollow" },
+		description = "Stop spectating.",
+		args = {},
+
+		clientRun = function(context)
+			local character = context.fromPlayer.Character
+			if character then
+				workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")
 			end
 		end,
+		run = spectateCleanup,
 	},
 	{
 		name = "fly",
@@ -103,45 +131,6 @@ return {
 				player.DevCameraOcclusionMode = noclipCache[player]
 				noclipCache[player] = nil
 				context._K.Remote.Noclip:FireClient(player)
-			end
-		end,
-	},
-	{
-		name = "respawn",
-		description = "Respawns the character of one or more player(s).",
-		args = {
-			{
-				type = "players",
-				name = "Player(s)",
-				description = "The player(s) to respawn.",
-			},
-		},
-
-		run = function(context, players)
-			for _, player in players do
-				player:LoadCharacter()
-			end
-		end,
-	},
-	{
-		name = "refresh",
-		description = "Refreshes the character of one or more player(s).",
-		args = {
-			{
-				type = "players",
-				name = "Player(s)",
-				description = "The player(s) to refresh.",
-			},
-		},
-
-		run = function(context, players)
-			for _, player in players do
-				if player and player.Character then
-					local old = player.Character:GetPivot()
-					player:LoadCharacter()
-					player.Character:PivotTo(old)
-					context._K.Remote.Refresh:FireClient(player)
-				end
 			end
 		end,
 	},

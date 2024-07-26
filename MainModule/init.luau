@@ -111,6 +111,8 @@ _K.Remote = {
 	Command = _REMOTE,
 	Noclip = _REMOTE,
 	Refresh = _REMOTE,
+	Spectate = _REMOTE,
+	SpectateSubject = _REMOTE,
 }
 
 for name in _K.Remote do
@@ -352,9 +354,20 @@ for _, player in _K.Services.Players:GetPlayers() do
 	playerAdded(player)
 end
 
-_K.Remote.Command.OnServerEvent:Connect(function(player, message)
+_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string)
 	_K.Process.runCommands(_K, player.UserId, message)
 end)
+
+_K.spectators = {}
+_K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe: CFrame)
+	if not _K.spectators[player] then
+		return
+	end
+	for _, player in _K.spectators[player] do
+		_K.Remote.Spectate:FireClient(player, cframe)
+	end
+end)
+
 -- NOTE: probably shouldn't network system logs to other servers, ideally only command and error logs
 _K.log("Server initialized.", "INFO")
 
