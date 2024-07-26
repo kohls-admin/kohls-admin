@@ -155,7 +155,7 @@ function ScrollerFast.new(definition)
 			if thread then
 				task.cancel(thread)
 			end
-			thread = task.delay(self.FilterInputDebounce._value, self.refeshList, self)
+			thread = task.delay(self.FilterInputDebounce._value, self.refreshList, self)
 		end
 		self._input = UI.new "Input" {
 			LayoutOrder = -1,
