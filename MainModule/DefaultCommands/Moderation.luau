@@ -561,6 +561,74 @@ return {
 			end
 		end,
 	},
+
+	{
+		name = "freeze",
+		aliases = { "anchor" },
+		description = "Freezes one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to freeze.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character or player.Character:FindFirstChild("kFreeze") then
+					continue
+				end
+				for _, descendant in player.Character:GetDescendants() do
+					if descendant:IsA("BasePart") then
+						descendant.Anchored = true
+					end
+				end
+				local orientation, size = player.Character:GetBoundingBox()
+				local kFreeze = Instance.new("Part")
+				kFreeze.Name = "kFreeze"
+				kFreeze.Anchored = true
+				kFreeze.CFrame = orientation
+				kFreeze.Reflectance = 1
+				kFreeze.Transparency = 0.3
+				kFreeze.Size = size + Vector3.new(2, 2, 2)
+				kFreeze.Color = Color3.fromHex("#8bf")
+				kFreeze.Material = Enum.Material.Ice
+				kFreeze.TopSurface = Enum.SurfaceType.Smooth
+				kFreeze.BottomSurface = Enum.SurfaceType.Smooth
+				kFreeze.Parent = player.Character
+			end
+		end,
+	},
+	{
+		name = "thaw",
+		aliases = { "unfreeze", "unanchor" },
+		description = "Thaws one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to thaw.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				local kFreeze = player.Character:FindFirstChild("kFreeze")
+				if kFreeze then
+					kFreeze:Destroy()
+				end
+				for _, descendant in player.Character:GetDescendants() do
+					if descendant:IsA("BasePart") then
+						descendant.Anchored = false
+					end
+				end
+			end
+		end,
+	},
 	{
 		name = "jail",
 		aliases = {},
