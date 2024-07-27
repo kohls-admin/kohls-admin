@@ -71,6 +71,37 @@ local function jailCharacter(character)
 	kJail.Parent = workspace
 end
 
+local function teleportCharacter(from, to)
+	if not (from and to) then
+		return
+	end
+
+	-- prevent teleporting seats
+	local humanoid = from:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		if humanoid.SeatPart then
+			local weld = humanoid.SeatPart:FindFirstChild("SeatWeld")
+			if weld then
+				weld:Destroy()
+			end
+		end
+		humanoid.Sit = false
+	end
+
+	-- reset velocity on teleport
+	for _, v in from:GetDescendants() do
+		if v:IsA("BasePart") then
+			v.AssemblyLinearVelocity = Vector3.zero
+		end
+	end
+
+	-- add a small offset to prevent clipping
+	local offset =
+		Vector3.new((math.random(1, 2) - 1) * math.random(2, 4), 0, (math.random(1, 2) - 1) * math.random(2, 4))
+
+	from:PivotTo(to:GetPivot() + offset)
+end
+
 return {
 	{
 		name = "ban",
@@ -720,6 +751,61 @@ return {
 		end,
 	},
 
+	{
+		name = "bring",
+		aliases = {},
+		description = "Teleports a player to you.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to bring.",
+			},
+		},
+
+		run = function(context, player)
+			teleportCharacter(player.Character, context.fromPlayer.Character)
+		end,
+	},
+	{
+		name = "to",
+		aliases = { "goto" },
+		description = "Teleports to a player.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to teleport to.",
+			},
+		},
+
+		run = function(context, player)
+			teleportCharacter(context.fromPlayer.Character, player.Character)
+		end,
+	},
+	{
+		name = "tp",
+		aliases = { "teleport" },
+		description = "Teleports one or more player(s) to another player.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player to teleport.",
+			},
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to teleport to.",
+			},
+		},
+
+		run = function(context, players, target)
+			for _, player in players do
+				teleportCharacter(player.Character, target.Character)
+			end
+		end,
+	},
 
 	{
 		name = "jump",
