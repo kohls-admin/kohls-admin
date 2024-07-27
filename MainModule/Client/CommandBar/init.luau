@@ -381,7 +381,7 @@ updateCompletion = function()
 	local suggestionText, suggestionValue = unpack(currentSuggestion)
 
 	if data.query ~= "" then
-		local reservedCharacters = { " ", _K.settings.prefix._value, "," }
+		local reservedCharacters = { " ", _K.settings.prefix._value }
 		for _, char in reservedCharacters do
 			if string.find(suggestionText, char) and not string.find(suggestionText, '^["`]') then
 				suggestionText = `"{suggestionText}"`
