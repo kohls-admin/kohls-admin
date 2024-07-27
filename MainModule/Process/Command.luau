@@ -74,7 +74,7 @@ function Command:validate()
 
 		local prepared, feedback = arg:prepare()
 		if not prepared then
-			return false, feedback
+			return false, feedback or "Invalid command"
 		end
 		table.insert(self.preparedArgs, prepared)
 
