@@ -866,6 +866,7 @@ return {
 	},
 	{
 		name = "speed",
+		aliases = { "walkspeed" },
 		description = "Changes the walkspeed of one or more player(s).",
 		args = {
 			{
