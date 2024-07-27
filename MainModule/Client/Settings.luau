@@ -54,6 +54,20 @@ function Settings.new(_K)
 					Modifiers = _K.client.hotkeys.commandBar.mods,
 				},
 			},
+			UI.new "ListItem" {
+				Text = "Dashboard Hotkey",
+				UI.new "Input" {
+					Font = UI.Theme.FontMono,
+					Size = UDim2.new(1, 0, 1, 0),
+					FontSize = 14,
+					Padding = UDim.new(0, 5),
+					Placeholder = "'",
+					HotkeyInput = true,
+					Value = UI.UserInputService:GetStringForKeyCode(_K.client.hotkeys.dashboard.key._value),
+					Hotkey = _K.client.hotkeys.dashboard.key,
+					Modifiers = _K.client.hotkeys.dashboard.mods,
+				},
+			},
 		},
 		Theme = {
 			UI.new "ListItem" {

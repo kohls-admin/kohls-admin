@@ -13,7 +13,9 @@ local Credit = require(script.Credit)
 _K.client = {}
 _K.client.UI = UI
 _K.client.settings = {}
-_K.client.hotkeys = {}
+_K.client.hotkeys = {
+	dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
+}
 
 local CommandBar = require(script.CommandBar)
 CommandBar:init(_K)
@@ -69,8 +71,11 @@ _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEve
 	if input.UserInputType == Enum.UserInputType.Keyboard then
 		for keyName, data in _K.client.hotkeys do
 			if
-				input.KeyCode == data.key._value
-				or (type(data.key._value) == "table" and table.find(data.key._value, input.KeyCode))
+				data.callback
+				and (
+					input.KeyCode == data.key._value
+					or (type(data.key._value) == "table" and table.find(data.key._value, input.KeyCode))
+				)
 			then
 				local missingMod = false
 				for mod, value in data.mods do
@@ -135,7 +140,7 @@ end
 local function dashboardToggle()
 	dashboard._instance.Visible = not dashboard._instance.Visible
 end
-_K.client.hotkeys.dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = dashboardToggle }
+_K.client.hotkeys.dashboard.callback = dashboardToggle
 
 local dasboardButtonPadding = UI.compute(function(use)
 	return UDim.new(0, if use(UI.LegacyTopBar) then 6 else 12)
