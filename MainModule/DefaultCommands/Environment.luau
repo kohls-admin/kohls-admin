@@ -62,3 +62,75 @@ return {
 				* if workspace.GlobalWind.Magnitude > 0 then workspace.GlobalWind.Unit else -Vector3.xAxis
 		end,
 	},
+
+	{
+		name = "watercolor",
+		description = "Changes the color of Terrain water.",
+		args = {
+			{
+				type = "color",
+				name = "Color",
+				description = `The color of the water, default is {workspace.Terrain.WaterColor}.`,
+			},
+		},
+		run = function(context, color)
+			workspace.Terrain.WaterColor = color
+		end,
+	},
+	{
+		name = "waterreflectance",
+		description = "Changes the reflectance of Terrain water.",
+		args = {
+			{
+				type = "number",
+				name = "Reflectance",
+				description = `The reflectance of the water, default is {workspace.Terrain.WaterReflectance}.`,
+			},
+		},
+		run = function(context, reflectance)
+			workspace.Terrain.WaterReflectance = reflectance
+		end,
+	},
+	{
+		name = "watertransparency",
+		description = "Changes the transparency of Terrain water.",
+		args = {
+			{
+				type = "number",
+				name = "Transparency",
+				description = `The transparency of the water, default is {workspace.Terrain.WaterTransparency}.`,
+			},
+		},
+		run = function(context, transparency)
+			workspace.Terrain.WaterTransparency = transparency
+		end,
+	},
+	{
+		name = "watersize",
+		description = "Changes the wave size of Terrain water.",
+		args = {
+			{
+				type = "number",
+				name = "Size",
+				description = `The wave size of the water, default is {workspace.Terrain.WaterWaveSize}.`,
+			},
+		},
+		run = function(context, size)
+			workspace.Terrain.WaterWaveSize = size
+		end,
+	},
+	{
+		name = "waterspeed",
+		description = "Changes the wave speed of Terrain water.",
+		args = {
+			{
+				type = "number",
+				name = "Speed",
+				description = `The wave speed of the water, default is {workspace.Terrain.WaterWaveSpeed}.`,
+			},
+		},
+		run = function(context, speed)
+			workspace.Terrain.WaterWaveSpeed = speed
+		end,
+	},
+}
