@@ -35,6 +35,29 @@ return {
 		end,
 	},
 	{
+		name = "privatemessage",
+		aliases = { "pm", "pmsg" },
+		description = "Sends a message to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to message.",
+			},
+			{
+				type = "stringGreedy",
+				name = "Message",
+				description = "The message to send.",
+			},
+		},
+
+		run = function(context, message, players)
+			for _, player in players do
+				context._K.Remote.Announce:FireClient(player, message, context.from)
+			end
+		end,
+	},
+	{
 		name = "follow",
 		description = "Follows a player with your camera.",
 		args = {
