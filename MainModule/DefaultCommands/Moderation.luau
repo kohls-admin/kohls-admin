@@ -1,5 +1,76 @@
 -- dangerous moderation commands, but not the most dangerous of commands
 
+local Players = game:GetService("Players")
+
+local jailParts = {}
+local jailConnections = {}
+
+local function jailCharacter(character)
+	local player = Players:GetPlayerFromCharacter(character)
+	if not (player and character and character.PrimaryPart and character:FindFirstChildOfClass("Humanoid")) then
+		return
+	end
+
+	local existing = jailParts[player]
+	if existing then
+		task.defer(character.PivotTo, character, existing.CFrame)
+		return
+	end
+
+	local root = character.PrimaryPart
+	local groundPos = root.Position
+		- Vector3.new(0, character:FindFirstChildOfClass("Humanoid").HipHeight + root.Size.Y / 2, 0)
+
+	local _, size = character:GetBoundingBox()
+	local width = math.max(size.X, size.Y, size.Z) + 2
+	local position = groundPos + Vector3.new(0, width / 2, 0)
+	local offset = width / 2 - 0.5
+
+	local kJail = Instance.new("Part")
+	kJail.Name = "kJail"
+	kJail.Anchored = true
+	kJail.Size = Vector3.new(width, width, width)
+	kJail.CFrame = CFrame.new(position)
+	kJail.Color = Color3.new(0, 0, 0)
+	kJail.Transparency = 0.3
+	kJail.Material = Enum.Material.Neon
+	kJail.TopSurface = Enum.SurfaceType.Smooth
+	kJail.BottomSurface = Enum.SurfaceType.Smooth
+
+	jailParts[player] = kJail
+
+	local top = kJail:Clone()
+	top.Parent = kJail
+	top.Transparency = 1
+	top.Size = Vector3.new(width, 1, width)
+	top.Position = position + Vector3.new(0, offset, 0)
+
+	local bottom = top:Clone()
+	bottom.Parent = kJail
+	bottom.Position = position - Vector3.new(0, offset + 1, 0)
+
+	local left = top:Clone()
+	left.Parent = kJail
+	left.Size = Vector3.new(1, width, width)
+	left.Position = position - Vector3.new(offset, 0, 0)
+
+	local right = left:Clone()
+	right.Parent = kJail
+	right.Position = position + Vector3.new(offset, 0, 0)
+
+	local front = top:Clone()
+	front.Parent = kJail
+	front.Size = Vector3.new(width, width, 1)
+	front.Position = position - Vector3.new(0, 0, offset)
+
+	local back = front:Clone()
+	back.Parent = kJail
+	back.Position = position + Vector3.new(0, 0, offset)
+
+	kJail.CanCollide = false
+	kJail.Parent = workspace
+end
+
 return {
 	{
 		name = "ban",
@@ -199,6 +270,63 @@ return {
 		run = function(context, players, duration: number?, reason: string?)
 			for _, player in players do
 				player:Kick(reason)
+			end
+		end,
+	},
+	{
+		name = "punish",
+		aliases = {},
+		description = "Punishes one or more player(s) to the void.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to punish.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if
+					player.Character
+					and not player.Character:GetAttribute("kPunish")
+					and player.Character.PrimaryPart
+					and player.Character.PrimaryPart:FindFirstChildOfClass("Attachment")
+				then
+					player.Character:SetAttribute("kPunish", player.Character:GetPivot())
+					local force = Instance.new("VectorForce")
+					force.Name = "kPunishForce"
+					force.Force = Vector3.new(0, 9e9, 0)
+					force.ApplyAtCenterOfMass = true
+					force.RelativeTo = Enum.ActuatorRelativeTo.World
+					force.Attachment0 = player.Character.PrimaryPart:FindFirstChildOfClass("Attachment")
+					force.Parent = player.Character
+				end
+			end
+		end,
+	},
+	{
+		name = "unpunish",
+		aliases = {},
+		description = "Unpunishes one or more player(s) from the void.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to forgive.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:GetAttribute("kPunish") then
+					local force = player.Character:FindFirstChild("kPunishForce")
+					if force then
+						force:Destroy()
+					end
+					player.Character:PivotTo(player.Character:GetAttribute("kPunish"))
+					player.Character:SetAttribute("kPunish", nil)
+				end
 			end
 		end,
 	},
@@ -433,6 +561,97 @@ return {
 			end
 		end,
 	},
+	{
+		name = "jail",
+		aliases = {},
+		description = "Jails one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to jail.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if jailParts[player] then
+					continue
+				end
+				jailConnections[player] = player.CharacterAdded:Connect(jailCharacter)
+				if player.Character then
+					jailCharacter(player.Character)
+				end
+			end
+		end,
+	},
+	{
+		name = "unjail",
+		aliases = {},
+		description = "Frees one or more player(s) from jail.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to release.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if jailConnections[player] then
+					jailConnections[player]:Disconnect()
+					jailConnections[player] = nil
+				end
+				if jailParts[player] then
+					jailParts[player]:Destroy()
+					jailParts[player] = nil
+				end
+			end
+		end,
+	},
+
+	{
+		name = "stun",
+		aliases = { "disable" },
+		description = "Stuns one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to stun.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").PlatformStand = true
+				end
+			end
+		end,
+	},
+	{
+		name = "unstun",
+		aliases = { "undisable", "enable" },
+		description = "Removes stun from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove the stun from.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").PlatformStand = false
+				end
+			end
+		end,
+	},
+
 	{
 		name = "respawn",
 		description = "Respawns the character of one or more player(s).",
