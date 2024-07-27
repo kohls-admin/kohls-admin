@@ -720,6 +720,88 @@ return {
 		end,
 	},
 
+
+	{
+		name = "jump",
+		description = "Makes one or more player(s) jump.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) who will jump.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").Jump = true
+				end
+			end
+		end,
+	},
+	{
+		name = "sit",
+		description = "Makes one or more player(s) sit.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) who will sit.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").Sit = true
+				end
+			end
+		end,
+	},
+	{
+		name = "unsit",
+		description = "Makes one or more player(s) stop sitting.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) who will stop sitting.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").Sit = false
+				end
+			end
+		end,
+	},
+	{
+		name = "speed",
+		description = "Changes the walkspeed of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose walkspeed to change.",
+			},
+			{
+				type = "number",
+				name = "Walk Speed",
+				description = "The walkspeed to use.",
+			},
+		},
+
+		run = function(context, players, walkSpeed)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed
+				end
+			end
+		end,
+	},
 	{
 		name = "respawn",
 		description = "Respawns the character of one or more player(s).",
