@@ -54,6 +54,7 @@ export type ArgumentDefinition = {
 	name: string,
 	description: string,
 	optional: boolean?,
+	-- player type options
 	lowerRank: boolean?,
 	ignoreSelf: boolean?,
 	shouldRequest: boolean?,
@@ -108,7 +109,6 @@ function Registry.registerType(name: string, typeObject: ArgumentType, override:
 	assert(Registry.types[name] == nil, 'Type "' .. name .. '" already exists!')
 
 	if override then
-		typeObject = table.clone(typeObject)
 		for key, value in override do
 			typeObject[key] = value
 		end
