@@ -14,6 +14,7 @@ export type ArgumentFunction = (value: any, from: Player) -> ...any
 --[=[
 	@within Registry
 	@type ArgumentType = {
+		name: string,
 		displayName: string?,
 		listable: boolean?,
 		transform: ArgumentFunction?,
@@ -26,6 +27,7 @@ export type ArgumentFunction = (value: any, from: Player) -> ...any
 	}
 ]=]
 export type ArgumentType = {
+	name: string,
 	displayName: string?,
 	listable: boolean?,
 	transform: ArgumentFunction?,
@@ -114,6 +116,7 @@ function Registry.registerType(name: string, typeObject: ArgumentType, override:
 		end
 	end
 
+	typeObject.name = name
 	typeObject.displayName = typeObject.displayName or name
 	Registry.types[name] = typeObject
 end
