@@ -1,5 +1,9 @@
 local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
 local TextService = game:GetService("TextService")
+
+-- disable CoreGui HealthBar for dashboard button consistency
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 
 local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
