@@ -178,9 +178,6 @@ local typeMagic = {
 }
 
 local function roleParse(arg, self)
-	if string.find("me", arg, 1, true) == 1 then
-		return { self.command.fromPlayer }
-	end
 	local players, valid = {}, false
 	for id in _K.Auth.roles do
 		if string.find(string.lower(id), arg, 1, true) == 1 then
@@ -202,7 +199,7 @@ local typeRoles = {
 	validate = genValidate(roleParse),
 	parse = roleParse,
 	suggestions = function(text, self)
-		local names = { "@", "@me" }
+		local names = { "me" }
 		for role in next, _K.Auth.roles do
 			table.insert(names, "@" .. role)
 		end
@@ -226,7 +223,7 @@ local typeRandom = {
 }
 
 local function parseIndividual(arg, self)
-	if arg == "" or arg == "@" or arg == "@me" then
+	if arg == "" or arg == "me" then
 		return self.command.fromPlayer
 	end
 	for _, player in Players:GetPlayers() do
