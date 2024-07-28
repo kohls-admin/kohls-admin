@@ -165,7 +165,7 @@ function Util.stripQuotes(text: string): string
 	return string.gsub(text, '["`]', "")
 end
 
-function Util.querySuggestions(text: string, names: { string }, instances: { any })
+function Util.querySuggestions(text: string, names: { string }, instances: { any }?)
 	local results = {}
 	local textLower = string.lower(text)
 
@@ -227,6 +227,21 @@ function Util.newSuggestions(setOrContainer: any): ({ string }, { any })
 		names[i] = string.lower(name)
 	end
 	return names, instances
+end
+
+function Util.makeEnumType(typeName: string, enumItems: { EnumItem | string })
+	local suggestions = Util.newSuggestions(enumItems)
+	return {
+		validate = function(text)
+			return Util.querySuggestions(text, suggestions)[1] ~= nil, `Invalid {typeName}`
+		end,
+		parse = function(text)
+			return Util.querySuggestions(text, suggestions, enumItems)[1][2]
+		end,
+		suggestions = function(text)
+			return Util.querySuggestions(text, suggestions, enumItems)
+		end,
+	}
 end
 
 return Util
