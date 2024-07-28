@@ -35,4 +35,49 @@ return {
 			end
 		end,
 	},
+	{
+		name = "clearlogs",
+		aliases = {},
+		description = "Removes all Kohl's Admin logs.",
+		args = {},
+		run = function(context)
+			table.clear(context._K.logs._value)
+		end,
+	},
+	{
+		name = "clearterrain",
+		aliases = { "cterrain" },
+		description = "Removes the terrain.",
+		args = {},
+		run = function(context)
+			workspace.Terrain:Clear()
+		end,
+	},
+	{
+		name = "shutdown",
+		aliases = {},
+		description = "Shuts down the server.",
+		args = {
+			{
+				type = "timeSimple",
+				name = "Delay",
+				description = "The delay before shutting down.",
+				optional = true,
+			},
+		},
+		run = function(context, delay)
+			if delay ~= context.OPTIONAL then
+				context._K.Remote.Announce:FireAllClients(`Server will shut down in {delay} seconds`)
+				task.wait(delay)
+			end
+			local from = tostring(context.fromPlayer or context.from)
+			local function kick(player)
+				player:Kick(`{from} has shutdown the server.`)
+			end
+			game:GetService("Players").PlayerAdded(kick)
+			for _, player in game:GetService("Players") do
+				kick(player)
+			end
+		end,
+	},
 }
