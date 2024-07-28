@@ -78,7 +78,7 @@ return function(_K, text, cursorPosition)
 			end
 			if greedy and cursorPosition > commandEnd then
 				data.argIndex = #commandDefinition.args
-				data.argPos = commandArray[data.argIndex + 1][1]
+				data.argPos = commandArray[math.min(#commandArray, data.argIndex + 1)][1]
 				data.suggestionType = _K.Registry.types.stringGreedy
 				data.query = string.sub(text, data.argPos)
 				data.rawArg = data.query
