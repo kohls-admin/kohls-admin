@@ -68,7 +68,7 @@ return {
 			},
 		},
 
-		clientRun = function(context, player)
+		runClient = function(context, player)
 			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
 				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
 			end
@@ -86,7 +86,7 @@ return {
 			},
 		},
 
-		clientRun = function(context, player)
+		runClient = function(context, player)
 			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
 				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
 			end
@@ -112,7 +112,7 @@ return {
 		description = "Stop spectating.",
 		args = {},
 
-		clientRun = function(context)
+		runClient = function(context)
 			local character = context.fromPlayer.Character
 			if character then
 				workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")

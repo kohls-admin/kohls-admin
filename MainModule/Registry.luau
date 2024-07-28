@@ -33,14 +33,14 @@ export type ArgumentDefinition = {
 }
 
 --- @within Registry
---- @type CommandDefinition { name: string, aliases: { string }?, description: string, group: string, args: { ArgumentDefinition }, clientRun: (...any) -> ()?, run: (...any) -> ()? }
+--- @type CommandDefinition { name: string, aliases: { string }?, description: string, group: string, args: { ArgumentDefinition }, runClient: (...any) -> ()?, run: (...any) -> ()? }
 export type CommandDefinition = {
 	name: string,
 	aliases: { string }?,
 	description: string,
 	group: string,
 	args: { ArgumentDefinition },
-	clientRun: (...any) -> ()?,
+	runClient: (...any) -> ()?,
 	run: (...any) -> ()?,
 }
 
@@ -129,7 +129,7 @@ function Registry.registerCommandAlias(alias: string, command: string)
 		description = `Alias of "{command}"`,
 		group = "Utility",
 		args = {},
-		clientRun = function(context)
+		runClient = function(context)
 			context.Process.runCommands(context, Players.LocalPlayer, command)
 		end,
 	}

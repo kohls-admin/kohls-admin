@@ -18,7 +18,7 @@ return {
 			},
 		},
 
-		clientRun = function(context, players, userId)
+		runClient = function(context, players, userId)
 			for _, player in players do
 				player.CharacterAppearanceId = userId
 				player:LoadCharacter()
@@ -37,7 +37,7 @@ return {
 			},
 		},
 
-		clientRun = function(context, players, userId)
+		runClient = function(context, players, userId)
 			for _, player in players do
 				player.CharacterAppearanceId = player.UserId
 				player:LoadCharacter()

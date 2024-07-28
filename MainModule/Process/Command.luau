@@ -31,7 +31,7 @@ function Command:run()
 		return false, "Command must be validated before it is run!"
 	end
 
-	local run = self.definition[if self._K.IsServer then "run" else "clientRun"]
+	local run = self.definition[if self._K.IsServer then "run" else "runClient"]
 	if not run then
 		return
 	end

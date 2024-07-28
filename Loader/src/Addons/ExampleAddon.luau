@@ -14,7 +14,7 @@ return function(_K)
 	-- 			description = "The message to send. Argument Description for the custom command",
 	-- 		},
 	-- 	},
-	-- 	clientRun = function(context, message)
+	-- 	runClient = function(context, message)
 	-- 		print("Custom command ran on the client!", context, message)
 	-- 	end,
 	-- 	run = function(context, message)
