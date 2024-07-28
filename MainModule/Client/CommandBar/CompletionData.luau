@@ -133,16 +133,6 @@ return function(_K, text, cursorPosition)
 		local ok, result = command:validate()
 		table.insert(data.commands, command)
 
-		if not ok then
-			command.Error = result
-			if command.invalidArg then
-				table.insert(data.invalid, { command.invalidPos, command.invalidArg, result })
-			else
-				table.insert(data.invalid, { commandPos, string.sub(text, commandPos, commandEnd), result })
-			end
-			return data
-		end
-
 		-- argument suggestions
 		for i, arg in command.args do
 			if cursorPosition < arg.argPos or cursorPosition > arg.argPos + #arg.rawArg then
@@ -177,6 +167,16 @@ return function(_K, text, cursorPosition)
 				data.query = string.sub(rawArg, 1, cursorPosition - pos)
 				data.suggestions = transformedType.suggestions(data.query, Players.LocalPlayer.UserId)
 			end
+		end
+
+		if not ok and not (data.suggestionType and data.rawArg == "") then
+			command.Error = result
+			if command.invalidArg then
+				table.insert(data.invalid, { command.invalidPos, command.invalidArg, result })
+			else
+				table.insert(data.invalid, { commandPos, string.sub(text, commandPos, commandEnd), result })
+			end
+			return data
 		end
 	end
 
