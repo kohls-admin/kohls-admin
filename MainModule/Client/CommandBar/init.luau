@@ -241,7 +241,7 @@ local function updateSuggestionLabels(data)
 		frame.LayoutOrder = i
 		frame.BackgroundTransparency = if i == suggestionIndex then 0.9 else 0.95
 
-		if string.find(data.suggestionType.displayName, "player") then
+		if typeof(value) == "Instance" and value:IsA("Player") then
 			name = `{name} ({value.DisplayName})`
 			local userId = value.UserId
 			local image = playerThumbs[tostring(userId)]
