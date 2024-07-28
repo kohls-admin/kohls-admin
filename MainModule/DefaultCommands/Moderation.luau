@@ -205,7 +205,7 @@ return {
 			local rank = context._K.Auth.getRank(context.from)
 			for _, userId in userIds do
 				-- only ban if rank is lower haha
-				if rank <= context._K.Auth.getRank(userId) then
+				if userId == context.from or rank <= context._K.Auth.getRank(userId) then
 					continue
 				end
 				if duration and canBan then
