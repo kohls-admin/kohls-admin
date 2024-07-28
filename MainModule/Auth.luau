@@ -81,7 +81,7 @@ local Auth = {
 			roles = true,
 			logs = true,
 			settings = true,
-			groups = { "administration", "moderation", "general" },
+			groups = { "creator", "administration", "moderation", "general" },
 			color = "#f80",
 		},
 		-- FIXME should this be defined and configurable? (or should it just be forced...)
