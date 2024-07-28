@@ -929,4 +929,95 @@ return {
 			end
 		end,
 	},
+
+	{
+		name = "buy",
+		aliases = { "purchase" },
+		description = "Prompts a purchase for one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to prompt.",
+			},
+			{
+				type = "infoType",
+				name = "Purchase Type",
+				description = "The Enum.InfoType of the purchase",
+			},
+			{
+				type = "integer",
+				name = "Identifier",
+				description = "The identifier of the item to purchase.",
+			},
+		},
+
+		env = function(_K)
+			local MarketplaceService = game:GetService("MarketplaceService")
+			return {
+				market = MarketplaceService,
+				method = {
+					[Enum.InfoType.Asset] = MarketplaceService.PromptPurchase,
+					[Enum.InfoType.Bundle] = MarketplaceService.PromptBundlePurchase,
+					[Enum.InfoType.GamePass] = MarketplaceService.PromptGamePassPurchase,
+					[Enum.InfoType.Product] = MarketplaceService.PromptProductPurchase,
+					[Enum.InfoType.Subscription] = MarketplaceService.PromptSubscriptionPurchase,
+				},
+			}
+		end,
+
+		run = function(context, players, infoType, id)
+			local method = context.env.method[infoType]
+			if not method then
+				return
+			end
+			for _, player in players do
+				pcall(method, context.env.market, player, id)
+			end
+		end,
+	},
+	{
+		name = "change",
+		aliases = {},
+		description = "Changes a leaderstat of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose leaderstat to change.",
+			},
+			{
+				type = "string",
+				name = "Stat",
+				description = "The stat to change.",
+			},
+			{
+				type = "stringGreedy",
+				name = "Value",
+				description = "The value of the stat.",
+			},
+		},
+
+		run = function(context, players, stat, value)
+			stat = string.lower(stat)
+			for _, player in players do
+				local leaderstats = player:FindFirstChild("leaderstats")
+				if not leaderstats then
+					continue
+				end
+				for _, child in leaderstats:GetChildren() do
+					if string.find(string.lower(child.Name), stat) == 1 then
+						if child:IsA("IntValue") or child:IsA("NumberValue") then
+							child.Value = tonumber(value)
+						elseif child:IsA("BoolValue") then
+							local v = string.lower(value)
+							child.Value = v ~= "false" and v ~= "nil" and v ~= "0" and v ~= "off"
+						elseif child:IsA("StringValue") then
+							child.Value = value
+						end
+					end
+				end
+			end
+		end,
+	},
 }
