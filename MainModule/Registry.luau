@@ -5,12 +5,26 @@ local RunService = game:GetService("RunService")
 
 type Dict = { [any]: any }
 
+type Environment = {} | (_K: any) -> {}
+
 --- @within Registry
 --- @type ArgumentFunction (value: any, from: Player) -> ...any
 export type ArgumentFunction = (value: any, from: Player) -> ...any
 
---- @within Registry
---- @type ArgumentType { displayName: string?, listable: boolean?, transform: ArgumentFunction?, validate: ArgumentFunction, parse: ArgumentFunction, preParse: ArgumentFunction?, postParse: ArgumentFunction?, suggestions: ArgumentFunction?, prefixes: { [string]: string }? }
+--[=[
+	@within Registry
+	@type ArgumentType = {
+		displayName: string?,
+		listable: boolean?,
+		transform: ArgumentFunction?,
+		validate: ArgumentFunction,
+		parse: ArgumentFunction,
+		preParse: ArgumentFunction?,
+		postParse: ArgumentFunction?,
+		suggestions: ArgumentFunction?,
+		prefixes: { [string]: string }?,
+	}
+]=]
 export type ArgumentType = {
 	displayName: string?,
 	listable: boolean?,
@@ -23,23 +37,50 @@ export type ArgumentType = {
 	prefixes: { [string]: string }?,
 }
 
---- @within Registry
---- @type ArgumentDefinition { type: string, name: string, description: string, lowerRank: boolean? }
+--[=[
+	@within Registry
+	@type ArgumentDefinition = {
+		type: string,
+		name: string,
+		description: string,
+		optional: boolean?,
+		lowerRank: boolean?,
+		ignoreSelf: boolean?,
+		shouldRequest: boolean?,
+	}
+]=]
 export type ArgumentDefinition = {
 	type: string,
 	name: string,
 	description: string,
+	optional: boolean?,
 	lowerRank: boolean?,
+	ignoreSelf: boolean?,
+	shouldRequest: boolean?,
 }
 
---- @within Registry
---- @type CommandDefinition { name: string, aliases: { string }?, description: string, group: string, args: { ArgumentDefinition }, runClient: (...any) -> ()?, run: (...any) -> ()? }
+--[=[
+	@within Registry
+	@type CommandDefinition = {
+		name: string,
+		aliases: { string }?,
+		description: string,
+		group: string,
+		args: { ArgumentDefinition },
+		envClient: {} | () -> {}?,
+		env: {} | () -> {}?,
+		runClient: (...any) -> ()?,
+		run: (...any) -> ()?,
+	}
+]=]
 export type CommandDefinition = {
 	name: string,
 	aliases: { string }?,
 	description: string,
 	group: string,
 	args: { ArgumentDefinition },
+	envClient: Environment?,
+	env: Environment?,
 	runClient: (...any) -> ()?,
 	run: (...any) -> ()?,
 }
@@ -66,18 +107,19 @@ function Registry.registerType(name: string, typeObject: ArgumentType, override:
 	assert(string.find(name, "^%w*$"), 'Invalid type name: "' .. name .. '", type names must be alphanumeric!')
 	assert(Registry.types[name] == nil, 'Type "' .. name .. '" already exists!')
 
-	typeObject.displayName = typeObject.displayName or name
-	Registry.types[name] = typeObject
-
 	if override then
+		typeObject = table.clone(typeObject)
 		for key, value in override do
 			typeObject[key] = value
 		end
 	end
+
+	typeObject.displayName = typeObject.displayName or name
+	Registry.types[name] = typeObject
 end
 
 --- Registers a command
-function Registry.registerCommand(commandObject: CommandDefinition)
+function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 	if not commandObject.name then
 		return -- invalid commandObject definition
 	end
@@ -94,6 +136,12 @@ function Registry.registerCommand(commandObject: CommandDefinition)
 		end
 	elseif not oldCommand then
 		table.insert(Registry.commandsList, commandObject)
+	end
+
+	if RunService:IsServer() and type(commandObject.env) == "function" then
+		commandObject.env = commandObject.env(_K)
+	elseif not RunService:IsServer() and type(commandObject.envClient) == "function" then
+		commandObject.envClient = commandObject.envClient(_K)
 	end
 
 	Registry.commands[string.lower(commandObject.name)] = commandObject
@@ -113,7 +161,7 @@ end
 
 local aliases = {}
 --- Registers a local command alias
-function Registry.registerCommandAlias(alias: string, command: string)
+function Registry.registerCommandAlias(_K: any, alias: string, command: string)
 	print("command alias", alias, command)
 	local oldAlias = aliases[alias]
 	if not oldAlias and Registry.commands[string.lower(alias)] then
@@ -123,7 +171,7 @@ function Registry.registerCommandAlias(alias: string, command: string)
 
 	print("adding command alias", alias, command)
 
-	Registry.registerCommand {
+	Registry.registerCommand(_K, {
 		name = alias,
 		aliases = {},
 		description = `Alias of "{command}"`,
@@ -132,18 +180,18 @@ function Registry.registerCommandAlias(alias: string, command: string)
 		runClient = function(context)
 			context.Process.runCommands(context, Players.LocalPlayer, command)
 		end,
-	}
+	})
 end
 
 --- Registers a list of commands with the module name as the command group
-function Registry.registerCommandModule(commandModule: ModuleScript)
+function Registry.registerCommandModule(_K: any, commandModule: ModuleScript)
 	local moduleResult = require(commandModule)
 	local moduleList = #moduleResult > 0 and commandModule.Name
 	local commandList = if moduleList then moduleResult else { moduleResult }
 
 	for _, commandObject in commandList do
 		commandObject.group = commandModule.Name
-		Registry.registerCommand(commandObject)
+		Registry.registerCommand(_K, commandObject)
 	end
 end
 

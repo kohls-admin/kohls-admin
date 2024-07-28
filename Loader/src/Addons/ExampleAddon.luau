@@ -2,7 +2,7 @@
 return function(_K)
 	-- print("Hello World from ExampleAddon! IsServer:", _K.IsServer)
 
-	-- _K.Registry.registerCommand({
+	-- _K.Registry.registerCommand(_K, {
 	-- 	name = "customcommand",
 	-- 	aliases = { "customcommandalias" },
 	-- 	description = "Custom command description.",

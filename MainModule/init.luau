@@ -88,6 +88,10 @@ local _K = {
 	},
 }
 
+-- make core classes inherit _K
+_K.Registry.__index = _K
+_K.Registry = setmetatable(_K.Registry, _K)
+
 _K.logs = _K.logger.logs
 
 -- shorthand utility
@@ -230,7 +234,7 @@ end
 
 -- register commands
 for _, child in script.DefaultCommands:GetChildren() do
-	_K.Registry.registerCommandModule(child)
+	_K.Registry.registerCommandModule(_K, child)
 end
 
 -- register addons
