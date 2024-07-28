@@ -201,19 +201,21 @@ function Util.newSuggestions(setOrContainer: any): ({ string }, { any })
 	if setType == "Instance" then
 		names, instances = Util.getNames(setOrContainer:GetChildren())
 	elseif setType == "table" then
-		local setItemType = typeof(setOrContainer[1])
+		local setItem = setOrContainer[1] or next(setOrContainer)
+		local setItemType = typeof(setItem)
 		if
 			setItemType == "Instance"
 			or setItemType == "EnumItem"
 			or (
 				setItemType == "table"
-				and (type(setOrContainer[1].Name) == "string" or type(setOrContainer[1].name) == "string")
+				and setItem
+				and (type(setItem.Name) == "string" or type(setItem.name) == "string")
 			)
 		then
 			names, instances = Util.getNames(setOrContainer)
 		elseif setItemType == "string" then
 			names = setOrContainer
-		elseif setOrContainer[1] ~= nil then
+		elseif setItem ~= nil then
 			error("only accepts tables of instances or strings.")
 		else
 			names = {}
@@ -232,6 +234,7 @@ end
 function Util.makeEnumType(typeName: string, enumItems: { EnumItem | string })
 	local suggestions = Util.newSuggestions(enumItems)
 	return {
+		displayName = typeName,
 		validate = function(text)
 			return Util.querySuggestions(text, suggestions)[1] ~= nil, `Invalid {typeName}`
 		end,

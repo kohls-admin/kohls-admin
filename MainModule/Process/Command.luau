@@ -5,6 +5,7 @@ local Argument = require(script.Parent.Argument)
 local Command = {
 	_K = nil,
 	Argument = Argument,
+	OPTIONAL = Argument.OPTIONAL,
 }
 Command.__index = Command
 
@@ -74,11 +75,11 @@ function Command:validate()
 		local arg = Argument.new(self, argDefinition, argPos, rawArg)
 		table.insert(self.args, arg)
 
-		local prepared, feedback = arg:prepare()
-		if not prepared then
-			return false, feedback or "Invalid command"
+		local ok, result = arg:prepare()
+		if not ok then
+			return false, result or "Argument failed to prepare"
 		end
-		table.insert(self.preparedArgs, prepared)
+		table.insert(self.preparedArgs, result)
 
 		if arg.exit == true or self.greedy then
 			-- exit with immediate execution

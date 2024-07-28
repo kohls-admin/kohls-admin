@@ -942,8 +942,9 @@ return {
 			},
 			{
 				type = "infoType",
-				name = "Purchase Type",
-				description = "The Enum.InfoType of the purchase",
+				name = "Info Type",
+				description = "The Enum.InfoType of the purchase.",
+				optional = true,
 			},
 			{
 				type = "integer",
@@ -967,6 +968,9 @@ return {
 		end,
 
 		run = function(context, players, infoType, id)
+			if infoType == context.OPTIONAL then
+				infoType = Enum.InfoType.Asset
+			end
 			local method = context.env.method[infoType]
 			if not method then
 				return
