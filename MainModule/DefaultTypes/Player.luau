@@ -199,7 +199,7 @@ local typeRoles = {
 	validate = genValidate(roleParse),
 	parse = roleParse,
 	suggestions = function(text, self)
-		local names = { "me" }
+		local names = {}
 		for role in next, _K.Auth.roles do
 			table.insert(names, "@" .. role)
 		end
@@ -266,9 +266,14 @@ local typeIndividual = {
 	transform = string.lower,
 	validate = genValidate(parseIndividual),
 	parse = parseIndividual,
-	suggestions = function(text)
+	suggestions = function(text, from, definition)
 		local players = Players:GetPlayers()
 		local suggestions = _K.Util.newSuggestions(players)
+		-- add me suggestion
+		if not definition.ignoreSelf then
+			table.insert(suggestions, 1, "me")
+			table.insert(players, Players.LocalPlayer)
+		end
 		-- add prefix suggestions
 		for prefix, name in typeMultiple.prefixes do
 			table.insert(suggestions, prefix)
