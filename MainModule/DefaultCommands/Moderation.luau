@@ -313,6 +313,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to punish.",
+				shouldRequest = true,
 			},
 		},
 
@@ -370,15 +371,11 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to kill.",
-				shouldRequest = true,
+				lowerRank = true,
 			},
 		},
 		run = function(context, players)
 			for _, player in players do
-				-- if context._K.Auth.shouldRequest(context, player) then
-				-- 	print("kill shouldRequest", context, player)
-				-- 	continue
-				-- end
 				if player.Character then
 					player.Character:BreakJoints()
 				end
@@ -394,6 +391,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to hurt.",
+				shouldRequest = true,
 			},
 			{
 				type = "number",
@@ -429,10 +427,12 @@ return {
 		},
 
 		run = function(context, players, health)
+			health = math.max(1, health)
 			for _, player in players do
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
 					humanoid.MaxHealth = health
+					humanoid.Health = health
 				end
 			end
 		end,
@@ -504,6 +504,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to remove a ForceField from.",
+				shouldRequest = true,
 			},
 		},
 
@@ -570,6 +571,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to make visible.",
+				shouldRequest = true,
 			},
 		},
 
@@ -602,6 +604,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to freeze.",
+				shouldRequest = true,
 			},
 		},
 
@@ -669,6 +672,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to jail.",
+				shouldRequest = true,
 			},
 		},
 
@@ -719,6 +723,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to stun.",
+				shouldRequest = true,
 			},
 		},
 
@@ -760,6 +765,7 @@ return {
 				type = "player",
 				name = "Player",
 				description = "The player to bring.",
+				shouldRequest = true,
 			},
 		},
 
@@ -792,6 +798,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player to teleport.",
+				shouldRequest = true,
 			},
 			{
 				type = "player",
@@ -815,6 +822,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) who will jump.",
+				shouldRequest = true,
 			},
 		},
 
@@ -834,6 +842,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) who will sit.",
+				shouldRequest = true,
 			},
 		},
 
@@ -853,6 +862,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) who will stop sitting.",
+				shouldRequest = true,
 			},
 		},
 
@@ -897,6 +907,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to respawn.",
+				shouldRequest = true,
 			},
 		},
 
@@ -915,6 +926,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to refresh.",
+				shouldRequest = true,
 			},
 		},
 

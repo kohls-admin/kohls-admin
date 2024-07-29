@@ -88,10 +88,6 @@ local _K = {
 	},
 }
 
--- make core classes inherit _K
-_K.Registry.__index = _K
-_K.Registry = setmetatable(_K.Registry, _K)
-
 _K.logs = _K.logger.logs
 
 -- shorthand utility
@@ -103,6 +99,7 @@ _K.IsClient = _K.Services.RunService:IsClient()
 
 -- initialize remote events
 local _REMOTE = Instance.new("RemoteEvent")
+local _REMOTECALL = Instance.new("RemoteFunction")
 local remoteFolder = if _K.IsServer then Instance.new("Folder", script) else script:WaitForChild("Remotes")
 remoteFolder.Name = "Remotes"
 
@@ -117,11 +114,13 @@ _K.Remote = {
 	Refresh = _REMOTE,
 	Spectate = _REMOTE,
 	SpectateSubject = _REMOTE,
+
+	RequestCommand = _REMOTECALL,
 }
 
-for name in _K.Remote do
+for name, base in _K.Remote do
 	if _K.IsServer then
-		local remote = Instance.new("RemoteEvent", remoteFolder)
+		local remote = Instance.new(base.ClassName, remoteFolder)
 		remote.Name = name
 		_K.Remote[name] = remote
 	else

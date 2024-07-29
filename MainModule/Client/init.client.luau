@@ -6,9 +6,11 @@ local Bans = require(script.Bans)
 local Logs = require(script.Logs)
 local Members = require(script.Members)
 local Noclip = require(script.Noclip)
+local Notify = require(script.Notify)
 local Commands = require(script.Commands)
 local Settings = require(script.Settings)
 local Credit = require(script.Credit)
+local UserFrame = require(script.UserFrame)
 
 _K.client = {}
 _K.client.UI = UI
@@ -26,6 +28,27 @@ end)
 
 _K.Remote.Announce.OnClientEvent:Connect(Announce)
 _K.Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
+_K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
+	local actionSignal = _K.Util.SignalGood.new()
+	Notify({
+		Text = `\t<font transparency="0.5">{text}</font>`,
+		ActionText = "Permit this action?",
+		Action = true,
+		LeftAction = true,
+		RightAction = true,
+		Duration = -1,
+
+		UserFrame(from.UserId, from.DisplayName),
+
+		[UI.Hook] = {
+			Action = function(v)
+				actionSignal:Fire(v)
+			end,
+		},
+	})
+
+	return actionSignal:Wait() == true
+end
 
 -- refresh command setup
 local lastCameraCFrame

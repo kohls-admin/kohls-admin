@@ -15,7 +15,7 @@ return {
 			workspace.AirDensity = density
 		end,
 	},
-	{
+	{ -- technically abusive, can reproduce punish behaviour
 		name = "gravity",
 		description = "Changes the world's gravity.",
 		args = {

@@ -113,11 +113,15 @@ function Argument:parse()
 				table.remove(self.parsedArgs, found)
 			end
 		end
-		if self.definition.lowerRank then
+		if self.definition.lowerRank and not self.definition.shouldRequest then
 			local rank = self._K.Auth.getRank(self.command.fromPlayer.UserId)
 			local new = {}
 			for _, arg in self.parsedArgs do
-				if arg == Argument.OPTIONAL or rank > self._K.Auth.getRank(arg.UserId) then
+				if
+					arg == Argument.OPTIONAL
+					or arg == self.command.fromPlayer
+					or rank > self._K.Auth.getRank(arg.UserId)
+				then
 					table.insert(new, arg)
 				end
 			end

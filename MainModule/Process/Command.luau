@@ -3,7 +3,6 @@ local Players = game:GetService("Players")
 local Argument = require(script.Parent.Argument)
 
 local Command = {
-	_K = nil,
 	Argument = Argument,
 	OPTIONAL = Argument.OPTIONAL,
 }
@@ -37,6 +36,56 @@ function Command:run()
 	local run = self.definition[if self._K.IsServer then "run" else "runClient"]
 	if not run then
 		return
+	end
+
+	-- filter args for shouldRequest
+	-- TODO: silently fail for userids of lowerRank/shouldRequest
+	if self._K.IsServer then
+		for argIndex, arg in self.args do
+			if arg.definition.shouldRequest and string.find(string.lower(arg.rawType.name), "player", 1, true) then
+				-- use instead of lowerRank to request the command to those who aren't higher rank
+				local prepared = self.preparedArgs[argIndex]
+				if prepared == Argument.OPTIONAL then
+					continue
+				end
+
+				local rank = self._K.Auth.getRank(self.fromPlayer.UserId)
+
+				if typeof(prepared) == "Instance" then
+					if arg == self.fromPlayer then
+						continue -- don't request self
+					end
+					if rank <= self._K.Auth.getRank(arg.UserId) then
+						local accepted = self._K.Remote.RequestCommand:InvokeClient(arg, self.fromPlayer, self.text)
+						if not accepted then
+							return false, "Command request denied."
+						end
+					end
+				else -- table?
+					for i, player in prepared do
+						if player == self.fromPlayer then
+							continue -- don't request self
+						end
+						if arg ~= Argument.OPTIONAL and rank <= self._K.Auth.getRank(arg.UserId) then
+							prepared[i] = nil
+							task.spawn(function()
+								local accepted =
+									self._K.Remote.RequestCommand:InvokeClient(player, self.fromPlayer, self.text)
+								if accepted then
+									-- these ignore hooks, clone self in the future to allow for hooks?
+									local soloPrepared = table.clone(self.preparedArgs)
+									soloPrepared[argIndex] = { player }
+									pcall(run, self, unpack(soloPrepared))
+								end
+							end)
+						end
+					end
+					if #prepared == 0 then
+						return true
+					end
+				end
+			end
+		end
 	end
 
 	self._K.hook.preCommand:Fire(self)
