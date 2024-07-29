@@ -57,8 +57,6 @@ return function(_K)
 	_K.Registry.registerType("stringGreedy", {
 		displayName = "string",
 		validate = simpleValidate,
-		parse = function(_, _, message, pos)
-			return _K.Util.trim(string.sub(message, pos))
-		end,
+		parse = tostring,
 	})
 end
