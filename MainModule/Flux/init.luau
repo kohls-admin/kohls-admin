@@ -285,13 +285,15 @@ function Flux:Destroy()
 	if self._bindConnection then
 		self._bindConnection:Disconnect()
 	end
-	for _, disconnect in self._binds._cleanup do
-		if disconnect then
-			disconnect()
+	if self.binds then
+		for _, disconnect in self._binds._cleanup do
+			if disconnect then
+				disconnect()
+			end
 		end
+		table.clear(self._binds)
 	end
 	table.clear(self._dependents)
-	table.clear(self._binds)
 	table.clear(self)
 end
 
@@ -524,10 +526,9 @@ end
 function Flux.compute<T>(computation: (use: <U>(U | State<U>) -> U?) -> T): State<T>
 	local new = Flux.state(nil)
 	local function use<U>(state: U | State<U>): U?
-		if not isState(state) then
-			error("Invalid Flux state object")
+		if isState(state) then
+			new:_addDependency(state)
 		end
-		new:_addDependency(state)
 		return peek(state) :: U
 	end
 	local result = computation(use)
