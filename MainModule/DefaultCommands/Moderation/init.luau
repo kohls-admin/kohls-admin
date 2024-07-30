@@ -1,106 +1,7 @@
 -- dangerous moderation commands, but not the most dangerous of commands
 
-local Players = game:GetService("Players")
-
-local jailParts = {}
-local jailConnections = {}
-
-local function jailCharacter(character)
-	local player = Players:GetPlayerFromCharacter(character)
-	if not (player and character and character.PrimaryPart and character:FindFirstChildOfClass("Humanoid")) then
-		return
-	end
-
-	local existing = jailParts[player]
-	if existing then
-		task.defer(character.PivotTo, character, existing.CFrame)
-		return
-	end
-
-	local root = character.PrimaryPart
-	local groundPos = root.Position
-		- Vector3.new(0, character:FindFirstChildOfClass("Humanoid").HipHeight + root.Size.Y / 2, 0)
-
-	local _, size = character:GetBoundingBox()
-	local width = math.max(size.X, size.Y, size.Z) + 2
-	local position = groundPos + Vector3.new(0, width / 2, 0)
-	local offset = width / 2 - 0.5
-
-	local kJail = Instance.new("Part")
-	kJail.Name = "kJail"
-	kJail.Anchored = true
-	kJail.Size = Vector3.new(width, width, width)
-	kJail.CFrame = CFrame.new(position)
-	kJail.Color = Color3.new(0, 0, 0)
-	kJail.Transparency = 0.3
-	kJail.Material = Enum.Material.Neon
-	kJail.TopSurface = Enum.SurfaceType.Smooth
-	kJail.BottomSurface = Enum.SurfaceType.Smooth
-
-	jailParts[player] = kJail
-
-	local top = kJail:Clone()
-	top.Parent = kJail
-	top.Transparency = 1
-	top.Size = Vector3.new(width, 1, width)
-	top.Position = position + Vector3.new(0, offset, 0)
-
-	local bottom = top:Clone()
-	bottom.Parent = kJail
-	bottom.Position = position - Vector3.new(0, offset + 1, 0)
-
-	local left = top:Clone()
-	left.Parent = kJail
-	left.Size = Vector3.new(1, width, width)
-	left.Position = position - Vector3.new(offset, 0, 0)
-
-	local right = left:Clone()
-	right.Parent = kJail
-	right.Position = position + Vector3.new(offset, 0, 0)
-
-	local front = top:Clone()
-	front.Parent = kJail
-	front.Size = Vector3.new(width, width, 1)
-	front.Position = position - Vector3.new(0, 0, offset)
-
-	local back = front:Clone()
-	back.Parent = kJail
-	back.Position = position + Vector3.new(0, 0, offset)
-
-	kJail.CanCollide = false
-	kJail.Parent = workspace
-end
-
-local function teleportCharacter(from, to)
-	if not (from and to) then
-		return
-	end
-
-	-- prevent teleporting seats
-	local humanoid = from:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		if humanoid.SeatPart then
-			local weld = humanoid.SeatPart:FindFirstChild("SeatWeld")
-			if weld then
-				weld:Destroy()
-			end
-		end
-		humanoid.Sit = false
-	end
-
-	-- reset velocity on teleport
-	for _, v in from:GetDescendants() do
-		if v:IsA("BasePart") then
-			v.AssemblyLinearVelocity = Vector3.zero
-		end
-	end
-
-	-- add a small offset to prevent clipping
-	local offset =
-		Vector3.new((math.random(1, 2) - 1) * math.random(2, 4), 0, (math.random(1, 2) - 1) * math.random(2, 4))
-
-	from:PivotTo(to:GetPivot() + offset)
-end
+local Jail = require(script.Jail)
+local teleportCharacter = require(script.teleportCharacter)
 
 return {
 	{
@@ -355,6 +256,9 @@ return {
 					local force = player.Character:FindFirstChild("kPunishForce")
 					if force then
 						force:Destroy()
+					end
+					if player.Character.PrimaryPart then
+						player.Character.PrimaryPart.AssemblyLinearVelocity = Vector3.zero
 					end
 					player.Character:PivotTo(player.Character:GetAttribute("kPunish"))
 					player.Character:SetAttribute("kPunish", nil)
@@ -678,12 +582,12 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if jailParts[player] then
+				if Jail.Parts[player] then
 					continue
 				end
-				jailConnections[player] = player.CharacterAdded:Connect(jailCharacter)
+				Jail.Connections[player] = player.CharacterAdded:Connect(Jail.new)
 				if player.Character then
-					jailCharacter(player.Character)
+					Jail.new(player.Character)
 				end
 			end
 		end,
@@ -702,13 +606,13 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if jailConnections[player] then
-					jailConnections[player]:Disconnect()
-					jailConnections[player] = nil
+				if Jail.Connections[player] then
+					Jail.Connections[player]:Disconnect()
+					Jail.Connections[player] = nil
 				end
-				if jailParts[player] then
-					jailParts[player]:Destroy()
-					jailParts[player] = nil
+				if Jail.Parts[player] then
+					Jail.Parts[player]:Destroy()
+					Jail.Parts[player] = nil
 				end
 			end
 		end,
@@ -901,6 +805,7 @@ return {
 	},
 	{
 		name = "respawn",
+		aliases = { "spawn" },
 		description = "Respawns the character of one or more player(s).",
 		args = {
 			{
@@ -1013,7 +918,6 @@ return {
 				description = "The value of the stat.",
 			},
 		},
-
 		run = function(context, players, stat, value)
 			stat = string.lower(stat)
 			for _, player in players do
@@ -1033,6 +937,79 @@ return {
 						end
 					end
 				end
+			end
+		end,
+	},
+	{
+		name = "resetstats",
+		description = "Resets the stats of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose stats to reset.",
+				shouldRequest = true,
+			},
+		},
+		run = function(context, players)
+			for _, player in players do
+				local leaderstats = player:FindFirstChild("leaderstats")
+				if not leaderstats then
+					continue
+				end
+				for _, child in leaderstats:GetChildren() do
+					if child:IsA("IntValue") or child:IsA("NumberValue") then
+						child.Value = 0
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "team",
+		aliases = { "tm" },
+		description = "Changes the team of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose teams to change.",
+			},
+			{
+				type = "team",
+				name = "Team",
+				description = "The team to assign.",
+			},
+		},
+		run = function(context, players, team)
+			for _, player in players do
+				player.Team = team
+			end
+		end,
+	},
+	{
+		name = "randomizeteams",
+		aliases = { "randomiseteams", "randomteams", "rteams", "rteam", "rt" },
+		description = "Randomizes the team of one or more player(s) from a list of teams.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose teams to randomize.",
+			},
+			{
+				type = "teams",
+				name = "Random Teams",
+				description = "The teams to randomly assign.",
+			},
+		},
+		run = function(context, players, teams)
+			local randomSort = {}
+			for _, player in players do
+				table.insert(randomSort, math.ceil(math.random(#randomSort + 1)), player)
+			end
+			for i, player in randomSort do
+				player.Team = teams[((i - 1) % #teams) + 1]
 			end
 		end,
 	},
