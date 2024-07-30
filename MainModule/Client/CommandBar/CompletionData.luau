@@ -169,7 +169,7 @@ return function(_K, text, cursorPosition)
 			end
 		end
 
-		if not ok and not (data.suggestionType and data.rawArg == "") then
+		if not ok and not (data.suggestionType and (data.rawArg == "" or #data.suggestions > 0)) then
 			command.Error = result
 			if command.invalidArg then
 				table.insert(data.invalid, { command.invalidPos, command.invalidArg, result })

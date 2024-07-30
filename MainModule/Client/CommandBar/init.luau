@@ -227,18 +227,11 @@ local function updateSuggestionLabels(data)
 	end
 	table.clear(suggestionLabels)
 
-	-- local argType
-	-- if data.argDefinition then
-	-- 	argType = data.argDefinition.type
-	-- 	if argType:find("player") == 1 then
-	-- 		argType = "player"
-	-- 	end
-	-- end
+	local amount = math.min(7, #data.suggestions - 1)
+	local start = math.max(1, suggestionIndex - 7)
 
-	for i, suggestion in data.suggestions do
-		if i >= 8 then -- limit to 8 suggestions?
-			break
-		end
+	for i = start, start + amount do
+		local suggestion = data.suggestions[i]
 		local name, value = unpack(suggestion)
 		local frame = SuggestionFrame:Clone()
 		local label = frame:FindFirstChildOfClass("TextLabel")
