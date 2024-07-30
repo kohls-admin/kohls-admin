@@ -76,8 +76,9 @@ function ColorPicker.new(definition)
 		if not dragInput then
 			return
 		end
-		saturationState:set(math.clamp((input.Position.X - sv.AbsolutePosition.X) / sv.AbsoluteSize.X, 0, 1))
-		valueState:set(1 - math.clamp((input.Position.Y - sv.AbsolutePosition.Y) / sv.AbsoluteSize.Y, 0, 1))
+		-- stylua: ignore
+		saturationState:set(math.clamp((input.Position.X - sv.AbsolutePosition.X - 8) / (sv.AbsoluteSize.X - 16), 0, 1))
+		valueState:set(1 - math.clamp((input.Position.Y - sv.AbsolutePosition.Y - 8) / (sv.AbsoluteSize.Y - 16), 0, 1))
 	end
 
 	local function inputBegan(input)

@@ -80,7 +80,7 @@ function Logger:log(text: string, level: LogType, userId: number?): Log?
 	}
 
 	table.insert(self.logs, log)
-	if #self.logs > 100_000 then
+	if #self.logs > 1_000_000 then
 		table.remove(self.logs, 1)
 	end
 

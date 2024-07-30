@@ -124,18 +124,14 @@ function Process.runCommands(context: any, from: number, rawText: string): boole
 				break
 			end
 
-			local run = command.definition[if context.IsServer then "run" else "clientRun"]
-			if not run then
+			local success, err = command:run()
+
+			if success == nil then
 				if command.greedy then
 					break
 				end
 				continue
-			end
-
-			context.hook.preCommand:Fire(command)
-
-			local success, err = command:run()
-			if success then
+			elseif success == true then
 				commandRan = true
 				command.Ran = true
 			elseif success == false then
@@ -143,8 +139,6 @@ function Process.runCommands(context: any, from: number, rawText: string): boole
 				command.Error = err
 				warn("commandError", err)
 			end
-
-			context.hook.postCommand:Fire(command)
 
 			if command.greedy then
 				break

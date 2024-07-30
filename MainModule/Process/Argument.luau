@@ -1,6 +1,8 @@
 -- TODO: need to refactor this to make autocomplete easier hahahahaha ;(
 
-local Argument = {}
+local Argument = {
+	OPTIONAL = table.freeze({ type = "Optional" }),
+}
 Argument.__index = Argument
 
 function Argument.new(command, definition, argPos, rawArg)
@@ -40,7 +42,7 @@ function Argument:transform()
 		local argType = self.rawType
 		if argType.prefixes then
 			for prefix, prefixType in argType.prefixes do
-				if string.find(rawArg, prefix) == 1 then
+				if string.find(rawArg, prefix, 1, true) == 1 then
 					argType = self._K.Registry.types[prefixType]
 					rawArg = string.sub(rawArg, #prefix + 1)
 					break
@@ -56,7 +58,7 @@ function Argument:transform()
 end
 
 function Argument:validate()
-	if self.validated then
+	if self.validated or self.definition.optional then
 		return true
 	end
 
@@ -64,7 +66,7 @@ function Argument:validate()
 	for i, arg in self.transformedArgs do
 		local rawArg = self.rawArgs[i]
 		local argType = self.transformedTypes[i]
-		local ok, result = argType.validate(arg, self.command.from)
+		local ok, result = argType.validate(arg, self)
 		if not ok then
 			self.command.invalidArg = rawArg
 			self.command.invalidPos = transformPos
@@ -78,28 +80,57 @@ function Argument:validate()
 end
 
 function Argument:parse()
-	if not self.validated then
+	if not (self.validated or self.definition.optional) then
 		return false, "Argument must be validated before parsing"
 	end
 
 	local parseArgs = self.transformedArgs
 	if self.rawType.preParse then
-		local arg, exit = self.rawType.preParse(self.transformedArgs, self.command.from, self.command.text, self.argPos)
+		local ok, arg, exit = pcall(self.rawType.preParse, self.transformedArgs, self)
+		if not ok then
+			warn("preParseArg error", arg)
+		end
 		self.exit = self.exit or exit
 		parseArgs = arg or parseArgs
 	end
 
 	for i, arg in parseArgs do
-		local argType = self.transformedTypes[i]
-		arg, self.exit = argType.parse(arg, self.command.from, self.command.text, self.argPos)
-		table.insert(self.parsedArgs, arg)
+		local argType, ok = self.transformedTypes[i], nil
+		ok, arg, self.exit = pcall(argType.parse, arg, self)
+		if not ok then
+			warn("parseArg error", arg)
+		end
+		table.insert(self.parsedArgs, if ok then arg else Argument.OPTIONAL)
 		if self.exit then
 			break
 		end
 	end
 
+	if string.find(string.lower(self.rawType.name), "player", 1, true) then
+		if self.definition.ignoreSelf then
+			local found = table.find(self.parsedArgs, self.command.fromPlayer)
+			if found then
+				table.remove(self.parsedArgs, found)
+			end
+		end
+		if self.definition.lowerRank and not self.definition.shouldRequest then
+			local rank = self._K.Auth.getRank(self.command.fromPlayer.UserId)
+			local new = {}
+			for _, arg in self.parsedArgs do
+				if
+					arg == Argument.OPTIONAL
+					or arg == self.command.fromPlayer
+					or rank > self._K.Auth.getRank(arg.UserId)
+				then
+					table.insert(new, arg)
+				end
+			end
+			self.parsedArgs = new
+		end
+	end
+
 	if self.rawType.postParse then
-		self.parsedArgs = self.rawType.postParse(self.parsedArgs)
+		_, self.parsedArgs = pcall(self.rawType.postParse, self.parsedArgs, self)
 	end
 
 	return if self.rawType.listable then self.parsedArgs else self.parsedArgs[1]
@@ -107,7 +138,7 @@ end
 
 function Argument:prepare()
 	if self.validated then
-		return if self.rawType.listable then self.parsedArgs else self.parsedArgs[1]
+		return true, if self.rawType.listable then self.parsedArgs else self.parsedArgs[1]
 	end
 
 	self:transform()
@@ -116,7 +147,7 @@ function Argument:prepare()
 		return false, feedback
 	end
 
-	return self:parse()
+	return true, self:parse()
 end
 
 return Argument

@@ -1,5 +1,107 @@
 -- dangerous moderation commands, but not the most dangerous of commands
 
+local Players = game:GetService("Players")
+
+local jailParts = {}
+local jailConnections = {}
+
+local function jailCharacter(character)
+	local player = Players:GetPlayerFromCharacter(character)
+	if not (player and character and character.PrimaryPart and character:FindFirstChildOfClass("Humanoid")) then
+		return
+	end
+
+	local existing = jailParts[player]
+	if existing then
+		task.defer(character.PivotTo, character, existing.CFrame)
+		return
+	end
+
+	local root = character.PrimaryPart
+	local groundPos = root.Position
+		- Vector3.new(0, character:FindFirstChildOfClass("Humanoid").HipHeight + root.Size.Y / 2, 0)
+
+	local _, size = character:GetBoundingBox()
+	local width = math.max(size.X, size.Y, size.Z) + 2
+	local position = groundPos + Vector3.new(0, width / 2, 0)
+	local offset = width / 2 - 0.5
+
+	local kJail = Instance.new("Part")
+	kJail.Name = "kJail"
+	kJail.Anchored = true
+	kJail.Size = Vector3.new(width, width, width)
+	kJail.CFrame = CFrame.new(position)
+	kJail.Color = Color3.new(0, 0, 0)
+	kJail.Transparency = 0.3
+	kJail.Material = Enum.Material.Neon
+	kJail.TopSurface = Enum.SurfaceType.Smooth
+	kJail.BottomSurface = Enum.SurfaceType.Smooth
+
+	jailParts[player] = kJail
+
+	local top = kJail:Clone()
+	top.Parent = kJail
+	top.Transparency = 1
+	top.Size = Vector3.new(width, 1, width)
+	top.Position = position + Vector3.new(0, offset, 0)
+
+	local bottom = top:Clone()
+	bottom.Parent = kJail
+	bottom.Position = position - Vector3.new(0, offset + 1, 0)
+
+	local left = top:Clone()
+	left.Parent = kJail
+	left.Size = Vector3.new(1, width, width)
+	left.Position = position - Vector3.new(offset, 0, 0)
+
+	local right = left:Clone()
+	right.Parent = kJail
+	right.Position = position + Vector3.new(offset, 0, 0)
+
+	local front = top:Clone()
+	front.Parent = kJail
+	front.Size = Vector3.new(width, width, 1)
+	front.Position = position - Vector3.new(0, 0, offset)
+
+	local back = front:Clone()
+	back.Parent = kJail
+	back.Position = position + Vector3.new(0, 0, offset)
+
+	kJail.CanCollide = false
+	kJail.Parent = workspace
+end
+
+local function teleportCharacter(from, to)
+	if not (from and to) then
+		return
+	end
+
+	-- prevent teleporting seats
+	local humanoid = from:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		if humanoid.SeatPart then
+			local weld = humanoid.SeatPart:FindFirstChild("SeatWeld")
+			if weld then
+				weld:Destroy()
+			end
+		end
+		humanoid.Sit = false
+	end
+
+	-- reset velocity on teleport
+	for _, v in from:GetDescendants() do
+		if v:IsA("BasePart") then
+			v.AssemblyLinearVelocity = Vector3.zero
+		end
+	end
+
+	-- add a small offset to prevent clipping
+	local offset =
+		Vector3.new((math.random(1, 2) - 1) * math.random(2, 4), 0, (math.random(1, 2) - 1) * math.random(2, 4))
+
+	from:PivotTo(to:GetPivot() + offset)
+end
+
 return {
 	{
 		name = "ban",
@@ -103,7 +205,7 @@ return {
 			local rank = context._K.Auth.getRank(context.from)
 			for _, userId in userIds do
 				-- only ban if rank is lower haha
-				if rank <= context._K.Auth.getRank(userId) then
+				if userId == context.from or rank <= context._K.Auth.getRank(userId) then
 					continue
 				end
 				if duration and canBan then
@@ -175,7 +277,6 @@ return {
 			context._K.Services.Players:UnbanAsync({ UserIds = ids })
 		end,
 	},
-
 	{
 		name = "kick",
 		description = "Kicks one or more players.",
@@ -203,7 +304,64 @@ return {
 			end
 		end,
 	},
+	{
+		name = "punish",
+		aliases = {},
+		description = "Punishes one or more player(s) to the void.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to punish.",
+				shouldRequest = true,
+			},
+		},
 
+		run = function(context, players)
+			for _, player in players do
+				if
+					player.Character
+					and not player.Character:GetAttribute("kPunish")
+					and player.Character.PrimaryPart
+					and player.Character.PrimaryPart:FindFirstChildOfClass("Attachment")
+				then
+					player.Character:SetAttribute("kPunish", player.Character:GetPivot())
+					local force = Instance.new("VectorForce")
+					force.Name = "kPunishForce"
+					force.Force = Vector3.new(0, 9e9, 0)
+					force.ApplyAtCenterOfMass = true
+					force.RelativeTo = Enum.ActuatorRelativeTo.World
+					force.Attachment0 = player.Character.PrimaryPart:FindFirstChildOfClass("Attachment")
+					force.Parent = player.Character
+				end
+			end
+		end,
+	},
+	{
+		name = "unpunish",
+		aliases = {},
+		description = "Unpunishes one or more player(s) from the void.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to forgive.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:GetAttribute("kPunish") then
+					local force = player.Character:FindFirstChild("kPunishForce")
+					if force then
+						force:Destroy()
+					end
+					player.Character:PivotTo(player.Character:GetAttribute("kPunish"))
+					player.Character:SetAttribute("kPunish", nil)
+				end
+			end
+		end,
+	},
 	{
 		name = "kill",
 		aliases = { "unalive" },
@@ -213,17 +371,667 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to kill.",
-				shouldRequest = true,
+				lowerRank = true,
 			},
 		},
 		run = function(context, players)
 			for _, player in players do
-				-- if context._K.Auth.shouldRequest(context, player) then
-				-- 	print("kill shouldRequest", context, player)
-				-- 	continue
-				-- end
 				if player.Character then
 					player.Character:BreakJoints()
+				end
+			end
+		end,
+	},
+	{
+		name = "hurt",
+		aliases = { "damage" },
+		description = "Damages one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to hurt.",
+				shouldRequest = true,
+			},
+			{
+				type = "number",
+				name = "Damage",
+				description = "The damage to deal to their health.",
+			},
+		},
+
+		run = function(context, players, health)
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid:TakeDamage(health)
+				end
+			end
+		end,
+	},
+	{
+		name = "health",
+		aliases = { "maxhealth" },
+		description = "Changes the maximum health one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose health to change.",
+			},
+			{
+				type = "number",
+				name = "Max Health",
+				description = "The new maximum health.",
+			},
+		},
+
+		run = function(context, players, health)
+			health = math.max(1, health)
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid.MaxHealth = health
+					humanoid.Health = health
+				end
+			end
+		end,
+	},
+	{
+		name = "heal",
+		description = "Heals one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to heal.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid.Health = humanoid.MaxHealth
+				end
+			end
+		end,
+	},
+	{
+		name = "god",
+		description = "Makes one or more player(s) invincible.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to make invincible.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
+					Instance.new("ForceField", player.Character).Visible = false
+				end
+			end
+		end,
+	},
+	{
+		name = "ff",
+		description = "Gives a ForceField to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to protect.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
+					Instance.new("ForceField", player.Character)
+				end
+			end
+		end,
+	},
+	{
+		name = "unff",
+		aliases = { "ungod" },
+		description = "Removes a ForceField from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove a ForceField from.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character then
+					local ff = player.Character:FindFirstChildOfClass("ForceField")
+					if ff then
+						ff:Destroy()
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "invisible",
+		aliases = { "inv" },
+		description = "Makes one or more player(s) invisible.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to make invisible.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				for _, child in player.Character:GetDescendants() do
+					if
+						(child:IsA("BasePart") or child:IsA("Decal") or child:IsA("Texture"))
+						and not child:GetAttribute("kTransparency")
+					then
+						child:SetAttribute("kTransparency", child.Transparency)
+						child.Transparency = 1
+					elseif
+						(
+							child:IsA("Light")
+							or child:IsA("Beam")
+							or child:IsA("Trail")
+							or child:IsA("ParticleEmitter")
+							or child:IsA("Fire")
+							or child:IsA("Smoke")
+							or child:IsA("Sparkles")
+							or child:IsA("SurfaceGui")
+						) and not child:GetAttribute("kEnabled")
+					then
+						child:SetAttribute("kEnabled", child.Enabled)
+						child.Enabled = false
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "visible",
+		aliases = { "vis" },
+		description = "Makes one or more player(s) visible.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to make visible.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				for _, child in player.Character:GetDescendants() do
+					local kTransparency = child:GetAttribute("kTransparency")
+					local kEnabled = child:GetAttribute("kEnabled")
+					if kTransparency then
+						child:SetAttribute("kTransparency", nil)
+						child.Transparency = kTransparency
+					elseif kEnabled then
+						child:SetAttribute("kEnabled", nil)
+						child.Enabled = kEnabled
+					end
+				end
+			end
+		end,
+	},
+
+	{
+		name = "freeze",
+		aliases = { "anchor" },
+		description = "Freezes one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to freeze.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character or player.Character:FindFirstChild("kFreeze") then
+					continue
+				end
+				for _, descendant in player.Character:GetDescendants() do
+					if descendant:IsA("BasePart") then
+						descendant.Anchored = true
+					end
+				end
+				local orientation, size = player.Character:GetBoundingBox()
+				local kFreeze = Instance.new("Part")
+				kFreeze.Name = "kFreeze"
+				kFreeze.Anchored = true
+				kFreeze.CFrame = orientation
+				kFreeze.Reflectance = 1
+				kFreeze.Transparency = 0.3
+				kFreeze.Size = size + Vector3.new(2, 2, 2)
+				kFreeze.Color = Color3.fromHex("#8bf")
+				kFreeze.Material = Enum.Material.Ice
+				kFreeze.TopSurface = Enum.SurfaceType.Smooth
+				kFreeze.BottomSurface = Enum.SurfaceType.Smooth
+				kFreeze.Parent = player.Character
+			end
+		end,
+	},
+	{
+		name = "thaw",
+		aliases = { "unfreeze", "unanchor" },
+		description = "Thaws one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to thaw.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				local kFreeze = player.Character:FindFirstChild("kFreeze")
+				if kFreeze then
+					kFreeze:Destroy()
+				end
+				for _, descendant in player.Character:GetDescendants() do
+					if descendant:IsA("BasePart") then
+						descendant.Anchored = false
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "jail",
+		aliases = {},
+		description = "Jails one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to jail.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if jailParts[player] then
+					continue
+				end
+				jailConnections[player] = player.CharacterAdded:Connect(jailCharacter)
+				if player.Character then
+					jailCharacter(player.Character)
+				end
+			end
+		end,
+	},
+	{
+		name = "unjail",
+		aliases = {},
+		description = "Frees one or more player(s) from jail.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to release.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if jailConnections[player] then
+					jailConnections[player]:Disconnect()
+					jailConnections[player] = nil
+				end
+				if jailParts[player] then
+					jailParts[player]:Destroy()
+					jailParts[player] = nil
+				end
+			end
+		end,
+	},
+
+	{
+		name = "stun",
+		aliases = { "disable" },
+		description = "Stuns one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to stun.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").PlatformStand = true
+				end
+			end
+		end,
+	},
+	{
+		name = "unstun",
+		aliases = { "undisable", "enable" },
+		description = "Removes stun from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove the stun from.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").PlatformStand = false
+				end
+			end
+		end,
+	},
+
+	{
+		name = "bring",
+		aliases = {},
+		description = "Teleports a player to you.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to bring.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, player)
+			teleportCharacter(player.Character, context.fromPlayer.Character)
+		end,
+	},
+	{
+		name = "to",
+		aliases = { "goto" },
+		description = "Teleports to a player.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to teleport to.",
+			},
+		},
+
+		run = function(context, player)
+			teleportCharacter(context.fromPlayer.Character, player.Character)
+		end,
+	},
+	{
+		name = "tp",
+		aliases = { "teleport" },
+		description = "Teleports one or more player(s) to another player.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player to teleport.",
+				shouldRequest = true,
+			},
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to teleport to.",
+			},
+		},
+
+		run = function(context, players, target)
+			for _, player in players do
+				teleportCharacter(player.Character, target.Character)
+			end
+		end,
+	},
+
+	{
+		name = "jump",
+		description = "Makes one or more player(s) jump.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) who will jump.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").Jump = true
+				end
+			end
+		end,
+	},
+	{
+		name = "sit",
+		description = "Makes one or more player(s) sit.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) who will sit.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").Sit = true
+				end
+			end
+		end,
+	},
+	{
+		name = "unsit",
+		description = "Makes one or more player(s) stop sitting.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) who will stop sitting.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").Sit = false
+				end
+			end
+		end,
+	},
+	{
+		name = "speed",
+		aliases = { "walkspeed" },
+		description = "Changes the walkspeed of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose walkspeed to change.",
+			},
+			{
+				type = "number",
+				name = "Walk Speed",
+				description = "The walkspeed to use.",
+			},
+		},
+
+		run = function(context, players, walkSpeed)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed
+				end
+			end
+		end,
+	},
+	{
+		name = "respawn",
+		description = "Respawns the character of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to respawn.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				player:LoadCharacter()
+			end
+		end,
+	},
+	{
+		name = "refresh",
+		aliases = { "re" },
+		description = "Refreshes the character of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to refresh.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if player and player.Character then
+					local old = player.Character:GetPivot()
+					player:LoadCharacter()
+					player.Character:PivotTo(old)
+					context._K.Remote.Refresh:FireClient(player)
+				end
+			end
+		end,
+	},
+
+	{
+		name = "buy",
+		aliases = { "purchase" },
+		description = "Prompts a purchase for one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to prompt.",
+			},
+			{
+				type = "infoType",
+				name = "Info Type",
+				description = "The Enum.InfoType of the purchase.",
+				optional = true,
+			},
+			{
+				type = "integer",
+				name = "Identifier",
+				description = "The identifier of the item to purchase.",
+			},
+		},
+
+		env = function(_K)
+			local MarketplaceService = game:GetService("MarketplaceService")
+			return {
+				market = MarketplaceService,
+				method = {
+					[Enum.InfoType.Asset] = MarketplaceService.PromptPurchase,
+					[Enum.InfoType.Bundle] = MarketplaceService.PromptBundlePurchase,
+					[Enum.InfoType.GamePass] = MarketplaceService.PromptGamePassPurchase,
+					[Enum.InfoType.Product] = MarketplaceService.PromptProductPurchase,
+					[Enum.InfoType.Subscription] = MarketplaceService.PromptSubscriptionPurchase,
+				},
+			}
+		end,
+
+		run = function(context, players, infoType, id)
+			if infoType == context.OPTIONAL then
+				infoType = Enum.InfoType.Asset
+			end
+			local method = context.env.method[infoType]
+			if not method then
+				return
+			end
+			for _, player in players do
+				pcall(method, context.env.market, player, id)
+			end
+		end,
+	},
+	{
+		name = "change",
+		aliases = {},
+		description = "Changes a leaderstat of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose leaderstat to change.",
+			},
+			{
+				type = "string",
+				name = "Stat",
+				description = "The stat to change.",
+			},
+			{
+				type = "stringGreedy",
+				name = "Value",
+				description = "The value of the stat.",
+			},
+		},
+
+		run = function(context, players, stat, value)
+			stat = string.lower(stat)
+			for _, player in players do
+				local leaderstats = player:FindFirstChild("leaderstats")
+				if not leaderstats then
+					continue
+				end
+				for _, child in leaderstats:GetChildren() do
+					if string.find(string.lower(child.Name), stat) == 1 then
+						if child:IsA("IntValue") or child:IsA("NumberValue") then
+							child.Value = tonumber(value)
+						elseif child:IsA("BoolValue") then
+							local v = string.lower(value)
+							child.Value = v ~= "false" and v ~= "nil" and v ~= "0" and v ~= "off"
+						elseif child:IsA("StringValue") then
+							child.Value = value
+						end
+					end
 				end
 			end
 		end,

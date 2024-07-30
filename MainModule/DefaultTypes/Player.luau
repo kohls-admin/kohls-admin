@@ -32,8 +32,9 @@ local _K = nil
 ]]
 
 local function genValidate(validate)
-	return function(v)
-		return validate(v), "Invalid player"
+	return function(v, self)
+		local ok, feedback = validate(v, self)
+		return ok, feedback or "Invalid player"
 	end
 end
 
@@ -176,10 +177,11 @@ local typeMagic = {
 	parse = magicParse,
 }
 
-local function roleParse(arg)
-	local players = {}
-	for id, roleData in _K.Auth.roles do
-		if string.lower(roleData.name) == arg then
+local function roleParse(arg, self)
+	local players, valid = {}, false
+	for id in _K.Auth.roles do
+		if string.find(string.lower(id), arg, 1, true) == 1 then
+			valid = true
 			for _, player in Players:GetPlayers() do
 				local userPermissions = _K.Auth.members[player.UserId]
 				if userPermissions and table.find(userPermissions.roles, id) then
@@ -189,13 +191,20 @@ local function roleParse(arg)
 			break
 		end
 	end
-	return #players > 0 and players
+	return if valid then players else false, `Invalid role`
 end
 
 local typeRoles = {
 	transform = string.lower,
 	validate = genValidate(roleParse),
 	parse = roleParse,
+	suggestions = function(text, self)
+		local names = {}
+		for role in next, _K.Auth.roles do
+			table.insert(names, "@" .. role)
+		end
+		return _K.Util.querySuggestions(text, names)
+	end,
 }
 
 local typeRandom = {
@@ -213,9 +222,9 @@ local typeRandom = {
 	end,
 }
 
-local function parseIndividual(arg)
-	if arg == "@" or arg == "@me" then
-		return Players.LocalPlayer
+local function parseIndividual(arg, self)
+	if arg == "" or arg == "me" then
+		return self.command.fromPlayer
 	end
 	for _, player in Players:GetPlayers() do
 		if string.find(string.lower(player.Name), arg, 1, true) == 1 then
@@ -224,16 +233,6 @@ local function parseIndividual(arg)
 	end
 	return
 end
-
-local typeIndividual = {
-	transform = string.lower,
-	validate = genValidate(parseIndividual),
-	parse = parseIndividual,
-	suggestions = function(text)
-		local players = Players:GetPlayers()
-		return _K.Util.querySuggestions(text, _K.Util.newSuggestions(players), players)
-	end,
-}
 
 local typeMultiple = {
 	listable = true,
@@ -256,11 +255,31 @@ local typeMultiple = {
 	-- this will require parsing? lol
 	prefixes = {
 		["~"] = "randomPlayers",
-		["%!"] = "inversePlayers",
-		["%$"] = "magicPlayers",
+		["!"] = "inversePlayers",
+		["$"] = "magicPlayers",
 		["@"] = "rolePlayers",
-		["%%"] = "teamPlayers",
+		["%"] = "teamPlayers",
 	},
+}
+
+local typeIndividual = {
+	transform = string.lower,
+	validate = genValidate(parseIndividual),
+	parse = parseIndividual,
+	suggestions = function(text, from, definition)
+		local players = Players:GetPlayers()
+		local suggestions = _K.Util.newSuggestions(players)
+		-- add me suggestion
+		if not definition.ignoreSelf then
+			table.insert(suggestions, 1, "me")
+			table.insert(players, Players.LocalPlayer)
+		end
+		-- add prefix suggestions
+		for prefix, name in typeMultiple.prefixes do
+			table.insert(suggestions, prefix)
+		end
+		return _K.Util.querySuggestions(text, suggestions, players)
+	end,
 }
 
 local function parseId(arg)

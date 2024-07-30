@@ -6,19 +6,81 @@ local Bans = require(script.Bans)
 local Logs = require(script.Logs)
 local Members = require(script.Members)
 local Noclip = require(script.Noclip)
+local Notify = require(script.Notify)
 local Commands = require(script.Commands)
 local Settings = require(script.Settings)
+local Credit = require(script.Credit)
+local UserFrame = require(script.UserFrame)
 
 _K.client = {}
 _K.client.UI = UI
 _K.client.settings = {}
-_K.client.hotkeys = {}
+_K.client.hotkeys = {
+	dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
+}
 
 local CommandBar = require(script.CommandBar)
 CommandBar:init(_K)
 
+UI.LocalPlayer.Chatted:Connect(function(message: string)
+	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, message)
+end)
+
 _K.Remote.Announce.OnClientEvent:Connect(Announce)
 _K.Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
+_K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
+	local actionSignal = _K.Util.SignalGood.new()
+	Notify({
+		Text = `\t<font transparency="0.5">{text}</font>`,
+		ActionText = "Permit this action?",
+		Action = true,
+		LeftAction = true,
+		RightAction = true,
+		Duration = -1,
+
+		UserFrame(from.UserId, from.DisplayName),
+
+		[UI.Hook] = {
+			Action = function(v)
+				actionSignal:Fire(v)
+			end,
+		},
+	})
+
+	return actionSignal:Wait() == true
+end
+
+-- refresh command setup
+local lastCameraCFrame
+_K.Remote.Refresh.OnClientEvent:Connect(function()
+	if lastCameraCFrame then
+		workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Wait()
+		workspace.CurrentCamera.CFrame = lastCameraCFrame
+	end
+end)
+
+UI.LocalPlayer.CharacterRemoving:Connect(function()
+	lastCameraCFrame = workspace.CurrentCamera.CFrame
+end)
+
+-- spectate command setup
+local function spectateNetwork()
+	_K.Remote.SpectateSubject:FireServer(workspace.CurrentCamera.CFrame)
+end
+
+_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame)
+	workspace.CurrentCamera.CFrame = cframe
+end)
+
+local spectateConnection
+_K.Remote.SpectateSubject.OnClientEvent:Connect(function(enabled: boolean)
+	if spectateConnection then
+		spectateConnection:Disconnect()
+	end
+	if enabled then
+		spectateConnection = _K.Services.RunService.Heartbeat:Connect(spectateNetwork)
+	end
+end)
 
 -- stateful hotkeys
 for _, data in _K.client.hotkeys do
@@ -32,8 +94,11 @@ _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEve
 	if input.UserInputType == Enum.UserInputType.Keyboard then
 		for keyName, data in _K.client.hotkeys do
 			if
-				input.KeyCode == data.key._value
-				or (type(data.key._value) == "table" and table.find(data.key._value, input.KeyCode))
+				data.callback
+				and (
+					input.KeyCode == data.key._value
+					or (type(data.key._value) == "table" and table.find(data.key._value, input.KeyCode))
+				)
 			then
 				local missingMod = false
 				for mod, value in data.mods do
@@ -64,6 +129,7 @@ local dashboardMembers = Members.new(_K)
 local dashboardLogs = Logs.new(_K)
 local dashboardCommands = Commands.new(_K)
 local dashboardSettings = Settings.new(_K)
+local dashboardCredits = Credit.new(_K)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerDefault,
@@ -76,15 +142,16 @@ local dashboard = UI.new "Window" {
 		dashboardMembers,
 		dashboardLogs,
 		dashboardSettings,
-		UI.new "TextLabel" {
-			Name = "Credit",
-			BackgroundTransparency = 1,
-			Font = UI.Theme.Font,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = UI.Theme.PrimaryText,
-			Size = UDim2.new(1, 0, 0, 32),
-			Text = "Kohl's Admin (Created by Scripth)",
-		},
+		dashboardCredits,
+		-- UI.new "TextLabel" {
+		-- 	Name = "Credit",
+		-- 	BackgroundTransparency = 1,
+		-- 	Font = UI.Theme.Font,
+		-- 	TextSize = UI.Theme.FontSize,
+		-- 	TextColor3 = UI.Theme.PrimaryText,
+		-- 	Size = UDim2.new(1, 0, 0, 32),
+		-- 	Text = "Kohl's Admin (Created by Scripth)",
+		-- },
 	},
 }
 -- TopbarStandard.Holders.Left
@@ -93,9 +160,15 @@ if holder and holder:FindFirstChild("Holders") and holder.Holders:FindFirstChild
 	holder = holder.Holders.Left
 end
 
+local function dashboardToggle()
+	dashboard._instance.Visible = not dashboard._instance.Visible
+end
+_K.client.hotkeys.dashboard.callback = dashboardToggle
+
 local dasboardButtonPadding = UI.compute(function(use)
 	return UDim.new(0, if use(UI.LegacyTopBar) then 6 else 12)
 end)
+
 local dashboardButton
 dashboardButton = UI.new "TextButton" {
 	Parent = holder or UI.TopBarFrame,
@@ -134,9 +207,7 @@ dashboardButton = UI.new "TextButton" {
 	},
 
 	[UI.Event] = {
-		Activated = function()
-			dashboard._instance.Visible = not dashboard._instance.Visible
-		end,
+		Activated = dashboardToggle,
 		MouseEnter = function()
 			dashboardButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 		end,
@@ -211,3 +282,112 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 end)
 
 _K.Remote.Init:FireServer()
+
+local loremIpsum = {
+	"Lorem",
+	"ipsum",
+	"dolor",
+	"sit",
+	"amet",
+	"consectetur",
+	"adipiscing",
+	"elit",
+	"sed",
+	"do",
+	"eiusmod",
+	"tempor",
+	"incididunt",
+	"ut",
+	"labore",
+	"et",
+	"dolore",
+	"magna",
+	"aliqua",
+	"Ut",
+	"enim",
+	"ad",
+	"minim",
+	"veniam",
+	"quis",
+	"nostrud",
+	"exercitation",
+	"ullamco",
+	"laboris",
+	"nisi",
+	"ut",
+	"aliquip",
+	"ex",
+	"ea",
+	"commodo",
+	"consequat",
+	"Duis",
+	"aute",
+	"irure",
+	"dolor",
+	"in",
+	"reprehenderit",
+	"in",
+	"voluptate",
+	"velit",
+	"esse",
+	"cillum",
+	"dolore",
+	"eu",
+	"fugiat",
+	"nulla",
+	"pariatur",
+	"Excepteur",
+	"sint",
+	"occaecat",
+	"cupidatat",
+	"non",
+	"proident",
+	"sunt",
+	"in",
+	"culpa",
+	"qui",
+	"officia",
+	"deserunt",
+	"mollit",
+	"anim",
+	"id",
+	"est",
+	"laborum",
+}
+
+local function generateLoremIpsum(wordCount: number): string
+	local result = {}
+	for i = 1, wordCount do
+		local randomIndex = math.random(1, #loremIpsum)
+		table.insert(result, loremIpsum[randomIndex])
+	end
+	return table.concat(result, " ")
+end
+
+local lines = {}
+for i = 1, 100 do
+	table.insert(lines, generateLoremIpsum(math.random(16, 32)))
+end
+
+local levels = {
+	"DEBUG",
+	"INFO",
+	"WARN",
+	"ERROR",
+	"CHAT",
+	"COMMAND",
+	"JOIN",
+	"LEAVE",
+	"KILL",
+	"DEATH",
+	"DAMAGE",
+	"PURCHASE",
+}
+
+_K.Util.deferTimerReset()
+for i = 1, 1_000_000 do
+	_K.logger:log("log #" .. i .. ": " .. lines[math.random(1, 100)], levels[math.random(1, #levels)])
+	_K.Util.deferWait()
+end
+
+dashboardLogs:updateList()

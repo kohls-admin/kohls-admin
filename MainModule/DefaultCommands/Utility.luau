@@ -18,8 +18,8 @@ return {
 	-- 		},
 	-- 	},
 
-	-- 	clientRun = function(context, alias: string, command: string)
-	-- 		context._K.Registry.registerCommandAlias(alias, command)
+	-- 	runClient = function(context, alias: string, command: string)
+	-- 		context._K.Registry.registerCommandAlias(context._K, alias, command)
 	-- 	end,
 	-- },
 }

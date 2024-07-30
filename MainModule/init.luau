@@ -46,10 +46,10 @@ export type Hook = "log" | "preCommand" | "postCommand"
 --- @class _K
 local _K = {
 	-- modules
-	Flux = require(script.Flux),
-	Auth = require(script.Auth),
-	Process = require(script.Process),
-	Registry = require(script.Registry),
+	Flux = require(script:WaitForChild("Flux")),
+	Auth = require(script:WaitForChild("Auth")),
+	Process = require(script:WaitForChild("Process")),
+	Registry = require(script:WaitForChild("Registry")),
 	Util = Util,
 
 	logger = Util.Logger.new(),
@@ -99,6 +99,7 @@ _K.IsClient = _K.Services.RunService:IsClient()
 
 -- initialize remote events
 local _REMOTE = Instance.new("RemoteEvent")
+local _REMOTECALL = Instance.new("RemoteFunction")
 local remoteFolder = if _K.IsServer then Instance.new("Folder", script) else script:WaitForChild("Remotes")
 remoteFolder.Name = "Remotes"
 
@@ -109,11 +110,17 @@ _K.Remote = {
 	Announce = _REMOTE,
 	Ban = _REMOTE,
 	Command = _REMOTE,
+	Noclip = _REMOTE,
+	Refresh = _REMOTE,
+	Spectate = _REMOTE,
+	SpectateSubject = _REMOTE,
+
+	RequestCommand = _REMOTECALL,
 }
 
-for name in _K.Remote do
+for name, base in _K.Remote do
 	if _K.IsServer then
-		local remote = Instance.new("RemoteEvent", remoteFolder)
+		local remote = Instance.new(base.ClassName, remoteFolder)
 		remote.Name = name
 		_K.Remote[name] = remote
 	else
@@ -123,8 +130,10 @@ end
 
 -- assign CreatorId
 if game.CreatorType == Enum.CreatorType.Group then
-	local groupInfo = _K.Services.GroupService:GetGroupInfoAsync(game.CreatorId)
-	_K.creatorId = groupInfo.Owner.Id
+	local ok, result = pcall(_K.Services.GroupService.GetGroupInfoAsync, _K.Services.GroupService, game.CreatorId)
+	if ok then
+		_K.creatorId = result.Owner.Id
+	end
 else
 	_K.creatorId = game.CreatorId
 end
@@ -224,7 +233,7 @@ end
 
 -- register commands
 for _, child in script.DefaultCommands:GetChildren() do
-	_K.Registry.registerCommandModule(child)
+	_K.Registry.registerCommandModule(_K, child)
 end
 
 -- register addons
@@ -348,9 +357,20 @@ for _, player in _K.Services.Players:GetPlayers() do
 	playerAdded(player)
 end
 
-_K.Remote.Command.OnServerEvent:Connect(function(player, message)
+_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string)
 	_K.Process.runCommands(_K, player.UserId, message)
 end)
+
+_K.spectators = {}
+_K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe: CFrame)
+	if not _K.spectators[player] then
+		return
+	end
+	for _, player in _K.spectators[player] do
+		_K.Remote.Spectate:FireClient(player, cframe)
+	end
+end)
+
 -- NOTE: probably shouldn't network system logs to other servers, ideally only command and error logs
 _K.log("Server initialized.", "INFO")
 

@@ -26,6 +26,7 @@ Util.Services = setmetatable({}, {
 
 local userInfoCache =
 	{} :: { [number]: { Id: number, Username: string, DisplayName: string, HasVerifiedBadge: boolean } }
+
 function Util.getUserInfo(userId: number)
 	if userInfoCache[userId] then
 		return userInfoCache[userId]
@@ -70,14 +71,24 @@ function Util.mergeTable(to: Dict, from: Dict): Dict
 end
 
 function Util.deepCopy(original: Dict): Dict
-	local copy = {}
-	for key, value in original do
+	local copy = table.clone(original)
+	for key, value in copy do
 		if type(value) == "table" then
-			value = Util.deepCopy(value)
+			copy[key] = Util.deepCopy(value)
 		end
-		copy[key] = value
 	end
 	return copy
+end
+
+function Util.fastRemove(t: { any }, index: number, indexEnd: number?)
+	for i = index, indexEnd or index do
+		t[i] = nil
+	end
+	local shift = 1
+	for i, v in t do
+		t[shift], t[i] = v, nil
+		shift += 1
+	end
 end
 
 function Util.trimStart(s: string): string
@@ -101,6 +112,47 @@ function Util.escapeRichText(s: string): string
 	return s
 end
 
+function Util.debounce(delay: number, func: (...any) -> ...any)
+	local thread
+	return function(...)
+		if thread then
+			task.cancel(thread)
+		end
+		thread = task.delay(delay, func, ...)
+	end
+end
+
+function Util.throttle(delay: number, func: (...any) -> ...any)
+	local throttled
+	local function reset()
+		throttled = nil
+	end
+	return function(...)
+		if throttled then
+			return
+		end
+		throttled = true
+		task.delay(delay, reset)
+		func(...)
+	end
+end
+
+do
+	local budget, expireTime = 1 / 120, 0
+
+	-- Call at start of process to prevent unnecessarily waiting.
+	function Util.deferTimerReset()
+		expireTime = tick() + budget
+	end
+
+	function Util.deferWait()
+		if tick() >= expireTime then
+			task.wait()
+			Util.deferTimerReset()
+		end
+	end
+end
+
 function Util.getNames(objects: any): { string }
 	local names = {}
 	for key, object in objects do
@@ -113,7 +165,7 @@ function Util.stripQuotes(text: string): string
 	return string.gsub(text, '["`]', "")
 end
 
-function Util.querySuggestions(text: string, names: { string }, instances: { any })
+function Util.querySuggestions(text: string, names: { string }, instances: { any }?)
 	local results = {}
 	local textLower = string.lower(text)
 
@@ -149,19 +201,21 @@ function Util.newSuggestions(setOrContainer: any): ({ string }, { any })
 	if setType == "Instance" then
 		names, instances = Util.getNames(setOrContainer:GetChildren())
 	elseif setType == "table" then
-		local setItemType = typeof(setOrContainer[1])
+		local setItem = setOrContainer[1] or next(setOrContainer)
+		local setItemType = typeof(setItem)
 		if
 			setItemType == "Instance"
 			or setItemType == "EnumItem"
 			or (
 				setItemType == "table"
-				and (type(setOrContainer[1].Name) == "string" or type(setOrContainer[1].name) == "string")
+				and setItem
+				and (type(setItem.Name) == "string" or type(setItem.name) == "string")
 			)
 		then
 			names, instances = Util.getNames(setOrContainer)
 		elseif setItemType == "string" then
 			names = setOrContainer
-		elseif setOrContainer[1] ~= nil then
+		elseif setItem ~= nil then
 			error("only accepts tables of instances or strings.")
 		else
 			names = {}
@@ -175,6 +229,22 @@ function Util.newSuggestions(setOrContainer: any): ({ string }, { any })
 		names[i] = string.lower(name)
 	end
 	return names, instances
+end
+
+function Util.makeEnumType(typeName: string, enumItems: { EnumItem | string })
+	local suggestions = Util.newSuggestions(enumItems)
+	return {
+		displayName = typeName,
+		validate = function(text)
+			return Util.querySuggestions(text, suggestions)[1] ~= nil, `Invalid {typeName}`
+		end,
+		parse = function(text)
+			return Util.querySuggestions(text, suggestions, enumItems)[1][2]
+		end,
+		suggestions = function(text)
+			return Util.querySuggestions(text, suggestions, enumItems)
+		end,
+	}
 end
 
 return Util

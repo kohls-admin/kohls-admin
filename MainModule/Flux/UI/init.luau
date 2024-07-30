@@ -37,6 +37,10 @@ UI.TextService = TextService
 UI.UserInputService = UserInputService
 
 --- @within UI
+--- @prop LocalPlayer Player
+UI.LocalPlayer = Players.LocalPlayer
+
+--- @within UI
 --- @prop PlayerGui PlayerGui
 UI.PlayerGui = playerGui
 
@@ -212,9 +216,9 @@ UI.Theme = {
 	Padding = state(UDim.new(0, 8)),
 	StrokeEnabled = state(true),
 
-	TweenIn = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In),
-	TweenOut = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out),
-	TweenInOut = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut),
+	TweenIn = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In)),
+	TweenOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)),
+	TweenInOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut)),
 
 	-- BasePixelHeight 32?
 }
@@ -247,6 +251,10 @@ UI.Theme.FontLight = Flux.compute(function(use)
 	return font
 end)
 
+UI.Theme.FontSizeDouble = Flux.compute(function(use)
+	return math.round(use(UI.Theme.FontSize) * 2)
+end)
+
 UI.Theme.FontSizeLargest = Flux.compute(function(use)
 	return math.round(use(UI.Theme.FontSize) * 1.75)
 end)
@@ -257,6 +265,18 @@ end)
 
 UI.Theme.FontSizeLarge = Flux.compute(function(use)
 	return math.round(use(UI.Theme.FontSize) * 1.25)
+end)
+
+UI.Theme.FontSizeSmall = Flux.compute(function(use)
+	return math.round(use(UI.Theme.FontSize) * 0.75)
+end)
+
+UI.Theme.FontSizeSmaller = Flux.compute(function(use)
+	return math.round(use(UI.Theme.FontSize) * 0.5)
+end)
+
+UI.Theme.FontSizeSmallest = Flux.compute(function(use)
+	return math.round(use(UI.Theme.FontSize) * 0.25)
 end)
 
 UI.Theme.PaddingHalf = UI.compute(function(use)

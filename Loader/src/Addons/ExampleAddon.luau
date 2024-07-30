@@ -2,7 +2,7 @@
 return function(_K)
 	-- print("Hello World from ExampleAddon! IsServer:", _K.IsServer)
 
-	-- _K.Registry.registerCommand({
+	-- _K.Registry.registerCommand(_K, {
 	-- 	name = "customcommand",
 	-- 	aliases = { "customcommandalias" },
 	-- 	description = "Custom command description.",
@@ -14,7 +14,7 @@ return function(_K)
 	-- 			description = "The message to send. Argument Description for the custom command",
 	-- 		},
 	-- 	},
-	-- 	clientRun = function(context, message)
+	-- 	runClient = function(context, message)
 	-- 		print("Custom command ran on the client!", context, message)
 	-- 	end,
 	-- 	run = function(context, message)

@@ -78,7 +78,7 @@ return function(_K, text, cursorPosition)
 			end
 			if greedy and cursorPosition > commandEnd then
 				data.argIndex = #commandDefinition.args
-				data.argPos = commandArray[data.argIndex + 1][1]
+				data.argPos = commandArray[math.min(#commandArray, data.argIndex + 1)][1]
 				data.suggestionType = _K.Registry.types.stringGreedy
 				data.query = string.sub(text, data.argPos)
 				data.rawArg = data.query
@@ -133,16 +133,6 @@ return function(_K, text, cursorPosition)
 		local ok, result = command:validate()
 		table.insert(data.commands, command)
 
-		if not ok then
-			command.Error = result
-			if command.invalidArg then
-				table.insert(data.invalid, { command.invalidPos, command.invalidArg, result })
-			else
-				table.insert(data.invalid, { commandPos, string.sub(text, commandPos, commandEnd), result })
-			end
-			return data
-		end
-
 		-- argument suggestions
 		for i, arg in command.args do
 			if cursorPosition < arg.argPos or cursorPosition > arg.argPos + #arg.rawArg then
@@ -175,8 +165,18 @@ return function(_K, text, cursorPosition)
 				data.rawArg = rawArg
 				data.transformedArg = transformedArg
 				data.query = string.sub(rawArg, 1, cursorPosition - pos)
-				data.suggestions = transformedType.suggestions(data.query, Players.LocalPlayer.UserId)
+				data.suggestions = transformedType.suggestions(data.query, Players.LocalPlayer.UserId, arg.definition)
 			end
+		end
+
+		if not ok and not (data.suggestionType and data.rawArg == "") then
+			command.Error = result
+			if command.invalidArg then
+				table.insert(data.invalid, { command.invalidPos, command.invalidArg, result })
+			else
+				table.insert(data.invalid, { commandPos, string.sub(text, commandPos, commandEnd), result })
+			end
+			return data
 		end
 	end
 

@@ -1,9 +1,9 @@
 local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
 
+local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.Parent.Flux.UI)
-local Util = require(script.Parent.Parent.Util)
-
+local UserFrame = require(script.Parent.UserFrame)
 local existing = {}
 
 local function resetOffset(height: number?)
@@ -30,70 +30,64 @@ local function hide(info, height: number?)
 	resetOffset(height)
 	announce.ZIndex = -1
 	visible:set(nil)
-	task.delay(1 + UI.Theme.TweenOut.Time, announce.Destroy, announce)
+	task.delay(1 + UI.Theme.TweenOut._value.Time, announce.Destroy, announce)
 end
 
 return function(text: string, from: number?, delay: number?, name: string?, image: string?)
 	delay = delay or 4 + 0.125 * #text
-	name = name or "Kohl's Admin"
-	image = image or "rbxassetid://10650688076"
-
-	if from then
-		local content, _isReady =
-			Players:GetUserThumbnailAsync(from, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
-		image = content or image
-		local info = Util.getUserInfo(from)
-		name = `{info.DisplayName} <font transparency="0.5">@{info.Username}</font>`
-	end
-
-	local timeLabel = UI.new "TextLabel" {
-		Name = "Time",
-		AnchorPoint = Vector2.new(1, 0),
-		BackgroundTransparency = 1,
-		TextTransparency = 0.75,
-		TextColor3 = UI.Theme.PrimaryText,
-		Text = math.ceil(delay),
-		TextSize = UI.Theme.FontSizeLarger,
-		TextXAlignment = "Right",
-		Font = UI.Theme.Font,
-
-		AutomaticSize = Enum.AutomaticSize.XY,
-		Size = UI.computeFrom(UDim2.fromOffset, 0, UI.Theme.FontSizeLarger),
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
-		},
-	}
 
 	local visible = UI.state(false)
 	local offset = UI.state(0)
+	local self
 
-	local bar = UI.new "Frame" {
-		Name = "Bar",
-		AnchorPoint = Vector2.new(0, 1),
-		BackgroundColor3 = UI.Theme.Secondary,
-		Position = UDim2.fromScale(0, 1),
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
+	local function close()
+		hide(self)
+	end
+
+	local exitButton = UI.new "Button" {
+		LayoutOrder = 9,
+		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
+		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarger, 0, UI.Theme.FontSizeLarger),
+		Icon = "rbxassetid://1476571006",
+		IconProperties = {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Size = UDim2.new(0, 10, 0, 10),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			ResampleMode = Enum.ResamplerMode.Pixelated,
 		},
+		Text = "",
+		Activated = close,
 	}
+	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 
-	local card, self
-	card = UI.new "TextButton" {
+	local userFrame = UserFrame(from, name, image)
+
+	UI.edit(userFrame, {
+		UI.new "Frame" {
+			LayoutOrder = 8,
+			Name = "Spacer",
+			BackgroundTransparency = 1,
+			UI.new "UIFlexItem" {
+				FlexMode = Enum.UIFlexMode.Fill,
+			},
+		},
+
+		exitButton,
+	})
+
+	local dialog
+	dialog = UI.new "Dialog" {
 		Parent = UI.LayerTop,
-		Name = "Announcement",
+		Duration = delay,
+		Close = close,
+
+		Size = UDim2.new(0.5),
 		AnchorPoint = UI.tween(
 			UI.Theme.TweenInOut,
 			UI.compute(function(use)
 				return Vector2.new(0.5, if use(visible) then 0 else 1)
 			end)
 		),
-		AutoButtonColor = false,
-		BackgroundColor3 = UI.Theme.Primary,
-		BackgroundTransparency = UI.Theme.Transparency,
-		TextTransparency = 1,
-		Text = "",
-
-		AutomaticSize = Enum.AutomaticSize.XY,
 		Position = UI.tween(
 			UI.Theme.TweenInOut,
 			UI.compute(function(use)
@@ -103,43 +97,12 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 				return UDim2.new(0.5, 0, 0, if use(visible) then height + padding + offset else 0)
 			end)
 		),
-		Size = UDim2.new(),
-
-		UI.new "UISizeConstraint" {
-			MinSize = Vector2.new(128, 0),
-			MaxSize = Vector2.new(512, 9e9),
-		},
-
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
-		},
-		UI.new "UIStroke" {
-			Enabled = UI.Theme.StrokeEnabled,
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Transparency = UI.Theme.Transparency,
-			Color = UI.Theme.Border,
-		},
-
-		UI.new "Frame" {
-			ZIndex = -1,
-			Name = "Progress",
-			BackgroundTransparency = 1,
-			AnchorPoint = Vector2.new(0, 1),
-			Position = UDim2.fromScale(0, 1),
-			Size = UI.tween(
-				TweenInfo.new(delay, Enum.EasingStyle.Linear),
-				UI.compute(function(use)
-					return UDim2.new(if use(visible) ~= false then 0 else 1, 0, 0, 4)
-				end)
-			),
-			ClipsDescendants = true,
-			bar,
-		},
 
 		UI.new "Frame" {
 			Name = "Content",
 			BackgroundTransparency = 1,
-			AutomaticSize = Enum.AutomaticSize.XY,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			Size = UDim2.fromScale(1, 0),
 
 			UI.new "UIPadding" {
 				PaddingLeft = UI.Theme.Padding,
@@ -149,58 +112,17 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 			},
 			UI.new "UIListLayout" {
 				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.Padding,
+				Padding = UI.Theme.PaddingDouble,
 				HorizontalFlex = Enum.UIFlexAlignment.Fill,
 			},
 
-			UI.new "Frame" {
-				Name = "Header",
-				Size = UDim2.new(),
-				AutomaticSize = Enum.AutomaticSize.XY,
-				BackgroundTransparency = 1,
-
-				UI.new "UIListLayout" {
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UI.Theme.Padding,
-					FillDirection = Enum.FillDirection.Horizontal,
-				},
-
-				UI.new "ImageLabel" {
-					Name = "Icon",
-					BackgroundTransparency = UI.Theme.Transparency,
-					BackgroundColor3 = UI.Theme.Border,
-					Size = UI.computeFrom(UDim2.fromOffset, UI.Theme.FontSizeLarger, UI.Theme.FontSizeLarger),
-					Image = image,
-
-					UI.new "UICorner" {
-						CornerRadius = UDim.new(1, 0),
-					},
-				},
-
-				UI.new "TextLabel" {
-					Name = "From",
-					BackgroundTransparency = 1,
-					TextColor3 = UI.Theme.PrimaryText,
-					Text = `<b>{name}</b>`,
-					TextSize = UI.Theme.FontSizeLarger,
-					TextTruncate = Enum.TextTruncate.SplitWord,
-					TextXAlignment = "Left",
-					Font = UI.Theme.Font,
-					RichText = true,
-
-					AutomaticSize = Enum.AutomaticSize.XY,
-					Size = UI.compute(UDim2.fromOffset, 0, UI.Theme.FontSizeLarger),
-				},
-
-				timeLabel,
-			},
-
+			userFrame,
 			UI.new "TextLabel" {
 				Name = "Message",
 				BackgroundTransparency = 1,
 				TextColor3 = UI.Theme.PrimaryText,
 				Text = text,
-				TextSize = UI.Theme.FontSize,
+				TextSize = UI.Theme.FontSizeLarge,
 				TextXAlignment = "Left",
 				TextWrapped = true,
 				Font = UI.Theme.Font,
@@ -213,39 +135,21 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 				},
 			},
 		},
-
-		[UI.Event] = {
-			Activated = function()
-				hide(self)
-			end,
-		},
 	}
 
-	self = { card, visible, offset }
+	UI.new "UISizeConstraint" {
+		Parent = dialog._instance,
+		MaxSize = Vector2.new(512, 9e9),
+	}
+
+	self = { dialog._instance, visible, offset }
 	table.insert(existing, 1, self)
 	visible:set(true)
 
-	local sizeState = UI.state(card, "AbsoluteSize")
-
-	UI.edit(bar, {
-		Size = UI.compute(function(use)
-			local size = use(sizeState)
-			return UDim2.fromOffset(size.X, size.Y)
-		end),
-	})
-
 	local height =
-		TextService:GetTextSize(text, UI.Theme.FontSize._value, UI.Theme.Font._value, Vector2.new(512, 9e9)).Y
+		TextService:GetTextSize(text, UI.Theme.FontSizeLarge._value, UI.Theme.Font._value, Vector2.new(512, 9e9)).Y
 
-	if resetOffset(height) > UI.LayerTop.AbsoluteSize.Y * 0.4 - UI.TopbarInset._value.Height then
+	if resetOffset(height) > (UI.LayerTop.AbsoluteSize.Y - UI.TopbarInset._value.Height) / 2 then
 		hide(existing[#existing], height)
 	end
-
-	task.spawn(function()
-		repeat
-			timeLabel.Text = math.ceil(delay)
-			delay -= task.wait(math.min(1, delay))
-		until delay <= 0 or not table.find(existing, self)
-		hide(self)
-	end)
 end

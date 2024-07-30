@@ -2,6 +2,21 @@
 
 local noclipCache = {}
 
+local spectateConnection
+
+local function spectateCleanup(context)
+	for subject, spectators in context._K.spectators do
+		local found = table.find(spectators, context.fromPlayer)
+		if found then
+			table.remove(spectators, found)
+			if #spectators == 0 then
+				context._K.spectators[subject] = nil
+				context._K.Remote.SpectateSubject:FireClient(subject)
+			end
+		end
+	end
+end
+
 return {
 	{
 		name = "message",
@@ -18,6 +33,96 @@ return {
 		run = function(context, message)
 			context._K.Remote.Announce:FireAllClients(message, context.from)
 		end,
+	},
+	{
+		name = "privatemessage",
+		aliases = { "pm", "pmsg" },
+		description = "Sends a message to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to message.",
+			},
+			{
+				type = "stringGreedy",
+				name = "Message",
+				description = "The message to send.",
+			},
+		},
+
+		run = function(context, message, players)
+			for _, player in players do
+				context._K.Remote.Announce:FireClient(player, message, context.from)
+			end
+		end,
+	},
+	{
+		name = "follow",
+		description = "Follows a player with your camera.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to follow.",
+			},
+		},
+
+		runClient = function(context, player)
+			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
+			end
+		end,
+	},
+	{
+		name = "spectate",
+		aliases = { "spy", "watch" },
+		description = "Spectate a player's point of view.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to spectate.",
+			},
+		},
+
+		runClient = function(context, player)
+			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
+			end
+			if spectateConnection then
+				spectateConnection:Disconnect()
+			end
+			spectateConnection = player.CharacterAdded:Connect(function()
+				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
+			end)
+		end,
+		run = function(context, player)
+			spectateCleanup(context)
+			if not context._K.spectators[player] then
+				context._K.spectators[player] = {}
+			end
+			context._K.Remote.SpectateSubject:FireClient(player, true)
+			table.insert(context._K.spectators[player], context.fromPlayer)
+		end,
+	},
+	{
+		name = "unspectate",
+		aliases = { "unspy", "unwatch", "unfollow" },
+		description = "Stop spectating.",
+		args = {},
+
+		runClient = function(context)
+			local character = context.fromPlayer.Character
+			if character then
+				workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")
+			end
+			if spectateConnection then
+				spectateConnection:Disconnect()
+				spectateConnection = nil
+			end
+		end,
+		run = spectateCleanup,
 	},
 	{
 		name = "fly",
@@ -51,6 +156,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to remove flight from.",
+				shouldRequest = true,
 			},
 		},
 
@@ -63,27 +169,6 @@ return {
 				noclipCache[player] = nil
 				context._K.Remote.Noclip:FireClient(player)
 			end
-		end,
-	},
-	{
-		name = "hint",
-		aliases = { "h" },
-		description = "Sends a hint to everyone in the server.",
-		args = {
-			{
-				type = "stringGreedy",
-				name = "Message",
-				description = "The message to send.",
-			},
-		},
-
-		run = function(context, message)
-			local msgObject = Instance.new("Hint")
-			msgObject.Text = message
-			msgObject.Parent = workspace
-			task.delay(5, function()
-				msgObject:Destroy()
-			end)
 		end,
 	},
 }

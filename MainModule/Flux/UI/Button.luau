@@ -138,7 +138,7 @@ function Button.new(definition)
 				local x = input.Position.X
 				ripple.Size = UDim2.new(0, 0, 1, 0)
 				ripple.Position = UDim2.new(0, x - ap.x, 0, 0)
-				Tween:Create(ripple, UI.Theme.TweenOut, {
+				Tween:Create(ripple, UI.Theme.TweenOut._value, {
 					BackgroundTransparency = 0.9,
 					Size = UDim2.new(1, 0, 1, 0),
 					Position = UDim2.new(0.5, 0, 0, 0),
@@ -154,7 +154,7 @@ function Button.new(definition)
 				then
 					return
 				end
-				Tween:Create(ripple, UI.Theme.TweenOut, { BackgroundTransparency = 1 }):Play()
+				Tween:Create(ripple, UI.Theme.TweenOut._value, { BackgroundTransparency = 1 }):Play()
 			end,
 			MouseEnter = function()
 				UI.handleHover(hovering)

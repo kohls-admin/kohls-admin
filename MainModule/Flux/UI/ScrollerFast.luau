@@ -36,10 +36,11 @@ function ScrollerFast:render()
 			}
 			table.insert(self._lineItemCache, lineItem)
 		end
-		lineItem.Visible = true
-		lineItem.Text = if self.RenderText
-			then self.RenderText._value(self, self._filteredList[i])
+		local lineData = if self.ReverseOrder._value
+			then self._filteredList[#self._filteredList - i + 1]
 			else self._filteredList[i]
+		lineItem.Visible = true
+		lineItem.Text = if self.RenderText then self.RenderText._value(self, lineData) else lineData
 		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
 		lineItem.Parent = self._scroller
 
@@ -98,7 +99,9 @@ function ScrollerFast.new(definition)
 		List = {},
 		DictList = false,
 		FilterInput = false,
+		FilterInputDebounce = 0,
 		RenderText = UI.Nil,
+		ReverseOrder = false,
 	}, definition)
 
 	ScrollerFast.cloneRaw(self)
@@ -147,6 +150,13 @@ function ScrollerFast.new(definition)
 	}
 
 	if self.FilterInput._value then
+		local thread = false
+		local function debounce()
+			if thread then
+				task.cancel(thread)
+			end
+			thread = task.delay(self.FilterInputDebounce._value, self.refreshList, self)
+		end
 		self._input = UI.new "Input" {
 			LayoutOrder = -1,
 			Parent = self._instance,
@@ -157,9 +167,7 @@ function ScrollerFast.new(definition)
 			},
 
 			[UI.Hook] = {
-				Value = function()
-					self:refreshList()
-				end,
+				Value = debounce,
 			},
 		}
 	end

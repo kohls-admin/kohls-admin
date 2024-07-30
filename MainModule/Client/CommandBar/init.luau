@@ -1,5 +1,9 @@
 local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
 local TextService = game:GetService("TextService")
+
+-- disable CoreGui HealthBar for dashboard button consistency
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 
 local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
@@ -241,7 +245,7 @@ local function updateSuggestionLabels(data)
 		frame.LayoutOrder = i
 		frame.BackgroundTransparency = if i == suggestionIndex then 0.9 else 0.95
 
-		if string.find(data.suggestionType.displayName, "player") then
+		if typeof(value) == "Instance" and value:IsA("Player") then
 			name = `{name} ({value.DisplayName})`
 			local userId = value.UserId
 			local image = playerThumbs[tostring(userId)]
@@ -381,7 +385,7 @@ updateCompletion = function()
 	local suggestionText, suggestionValue = unpack(currentSuggestion)
 
 	if data.query ~= "" then
-		local reservedCharacters = { " ", _K.settings.prefix._value, "," }
+		local reservedCharacters = { " ", _K.settings.prefix._value }
 		for _, char in reservedCharacters do
 			if string.find(suggestionText, char) and not string.find(suggestionText, '^["`]') then
 				suggestionText = `"{suggestionText}"`
@@ -486,9 +490,13 @@ Input._input.FocusLost:Connect(function(enterPressed)
 			-- if not fully validated need to show feedback
 			return
 		end
+		-- ignore empty command strings
+		if Input._input.Text == UI.peek(_K.settings.prefix) then
+			return
+		end
 		-- FIX: if validated lol
 		_K.Remote.Command:FireServer(Input._input.Text)
-		task.spawn(_K.Process.runCommands, _K, _K.Services.Players.LocalPlayer, Input._input.Text)
+		task.spawn(_K.Process.runCommands, _K, _K.Services.Players.LocalPlayer.UserId, Input._input.Text)
 		-- Find the command in the history (and remove if not the most recent)
 		local cmd = string.sub(Input._input.Text, 2)
 		local foundIndex = table.find(commandHistory, cmd)
@@ -511,8 +519,9 @@ Input._input:GetPropertyChangedSignal("Text"):Connect(function()
 	end
 	local prefix = UI.peek(_K.settings.prefix)
 	if string.find(Input._input.Text, prefix, 1, true) ~= 1 then
+		Input._input.CursorPosition += 1
 		Input._input.Text = prefix .. Input._input.Text
-		Input._input.CursorPosition += utf8.len(prefix)
+		Input._input.CursorPosition += 1
 		return
 	end
 
