@@ -268,17 +268,29 @@ local typeIndividual = {
 	parse = parseIndividual,
 	suggestions = function(text, from, definition)
 		local players = Players:GetPlayers()
-		local suggestions = _K.Util.newSuggestions(players)
+		local names, instances = {}, {}
 		-- add me suggestion
 		if not definition.ignoreSelf then
-			table.insert(suggestions, 1, "me")
-			table.insert(players, Players.LocalPlayer)
+			table.insert(names, 1, "me")
+			table.insert(instances, Players.LocalPlayer)
+		end
+		-- filter out lowerRank and ignoreSelf
+		local rank = _K.Auth.getRank(from)
+		for _, player in players do
+			if definition.ignoreSelf and player == Players.LocalPlayer then
+				continue
+			end
+			if definition.lowerRank and rank <= _K.Auth.getRank(player.UserId) then
+				continue
+			end
+			table.insert(names, player.Name)
+			table.insert(instances, player)
 		end
 		-- add prefix suggestions
 		for prefix, name in typeMultiple.prefixes do
-			table.insert(suggestions, prefix)
+			table.insert(names, prefix)
 		end
-		return _K.Util.querySuggestions(text, suggestions, players)
+		return _K.Util.querySuggestions(text, names, instances)
 	end,
 }
 
