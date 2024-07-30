@@ -44,6 +44,9 @@ return function(dialogOverride)
 		hide(self)
 	end
 
+	local userFrame = dialogOverride.UserFrame
+	dialogOverride.UserFrame = nil
+
 	local dialog = UI.new("Dialog")(_K.Util.mergeTable({
 		Close = close,
 		Duration = 30,
@@ -71,6 +74,22 @@ return function(dialogOverride)
 		Parent = dialog._instance,
 		MaxSize = Vector2.new(256, 9e9),
 	}
+
+	if userFrame then
+		userFrame = UserFrame(unpack(userFrame))
+		UI.edit(userFrame, {
+			Parent = dialog,
+			UI.new "Frame" {
+				LayoutOrder = 8,
+				Name = "Spacer",
+				BackgroundTransparency = 1,
+				UI.new "UIFlexItem" {
+					FlexMode = Enum.UIFlexMode.Fill,
+				},
+			},
+			dialog._exitButton,
+		})
+	end
 
 	self = { dialog._instance, visible, offset }
 	table.insert(existing, 1, self)

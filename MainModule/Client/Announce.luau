@@ -44,42 +44,14 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 		hide(self)
 	end
 
-	local exitButton = UI.new "Button" {
-		LayoutOrder = 9,
-		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
-		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarger, 0, UI.Theme.FontSizeLarger),
-		Icon = "rbxassetid://1476571006",
-		IconProperties = {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Size = UDim2.new(0, 10, 0, 10),
-			Position = UDim2.new(0.5, 0, 0.5, 0),
-			ResampleMode = Enum.ResamplerMode.Pixelated,
-		},
-		Text = "",
-		Activated = close,
-	}
-	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
-
 	local userFrame = UserFrame(from, name, image)
-
-	UI.edit(userFrame, {
-		UI.new "Frame" {
-			LayoutOrder = 8,
-			Name = "Spacer",
-			BackgroundTransparency = 1,
-			UI.new "UIFlexItem" {
-				FlexMode = Enum.UIFlexMode.Fill,
-			},
-		},
-
-		exitButton,
-	})
 
 	local dialog
 	dialog = UI.new "Dialog" {
 		Parent = UI.LayerTop,
-		Duration = delay,
 		Close = close,
+		Duration = delay,
+		ExitButton = true,
 
 		Size = UDim2.new(0.5),
 		AnchorPoint = UI.tween(
@@ -141,6 +113,18 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 		Parent = dialog._instance,
 		MaxSize = Vector2.new(512, 9e9),
 	}
+
+	UI.edit(userFrame, {
+		UI.new "Frame" {
+			LayoutOrder = 8,
+			Name = "Spacer",
+			BackgroundTransparency = 1,
+			UI.new "UIFlexItem" {
+				FlexMode = Enum.UIFlexMode.Fill,
+			},
+		},
+		dialog._exitButton,
+	})
 
 	self = { dialog._instance, visible, offset }
 	table.insert(existing, 1, self)

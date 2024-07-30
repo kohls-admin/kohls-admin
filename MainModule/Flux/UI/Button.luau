@@ -10,9 +10,9 @@ setmetatable(Button, BaseClass)
 function Button.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Icon = "",
-		Label = "Default Button Text",
 		IconProperties = {},
 		IconRightAlign = false,
+		Label = "Default Button Text",
 		TextSize = UI.Theme.FontSize,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
