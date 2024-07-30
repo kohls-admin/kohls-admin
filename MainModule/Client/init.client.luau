@@ -28,7 +28,13 @@ end)
 
 _K.Remote.Announce.OnClientEvent:Connect(Announce)
 _K.Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
+local requestingCommand = {}
 _K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
+	if requestingCommand[from.UserId] then
+		return
+	end
+	requestingCommand[from.UserId] = true
+
 	local actionSignal = _K.Util.SignalGood.new()
 	Notify({
 		Text = `\t<font transparency="0.5">{text}</font>`,
@@ -47,7 +53,9 @@ _K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
 		},
 	})
 
-	return actionSignal:Wait() == true
+	local action = actionSignal:Wait() == true
+	requestingCommand[from.UserId] = nil
+	return action
 end
 
 -- refresh command setup
