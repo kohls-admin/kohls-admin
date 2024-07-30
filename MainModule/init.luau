@@ -65,6 +65,8 @@ local _K = {
 	_lastUpdate = 0,
 	_dataUpdate = 0,
 
+	_serverLock = false,
+
 	bans = {
 		-- [UserId] = {Username, Reason, Timestamp}
 		-- Username is the last known username of the user when they were banned
@@ -345,6 +347,11 @@ end)
 local function playerAdded(player: Player)
 	if banHandler(player) then
 		return
+	end
+	if _K._serverLock and _K.Auth.getRank(player.UserId) < 2 then
+		player:Kick(`Server has been locked by {_K._serverLock}`)
+		return
+		-- allow those with higher than vip perms
 	end
 	player.Chatted:Connect(function(message: string)
 		_K.Process.runCommands(_K, player.UserId, message)

@@ -1,5 +1,7 @@
 -- dangerous admin commands reserved for the highest roles
 
+local safeTeleport = require(script.safeTeleport)
+
 return {
 	{
 		name = "role",
@@ -73,6 +75,47 @@ return {
 			for _, player in players do
 				context._K.Auth.members[tostring(player.UserId)] = nil
 			end
+		end,
+	},
+	{
+		name = "place",
+		aliases = { "pl" },
+		description = "Teleports one or more player(s) to a place.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to teleport to a place.",
+				shouldRequest = true,
+			},
+			{
+				type = "integer",
+				name = "Place ID",
+				description = "The identifier of the place.",
+			},
+		},
+		run = function(context, players, placeId)
+			safeTeleport(placeId, players)
+		end,
+	},
+	{
+		name = "serverlock",
+		aliases = { "slock" },
+		description = "Locks the server preventing new players from joining.",
+		args = {},
+		run = function(context)
+			if not context._K._serverLock then
+				context._K._serverLock = context.fromPlayer.Name
+			end
+		end,
+	},
+	{
+		name = "unserverlock",
+		aliases = { "unslock" },
+		description = "Unlocks the server allowing new players to join again.",
+		args = {},
+		run = function(context)
+			context._K._serverLock = nil
 		end,
 	},
 }
