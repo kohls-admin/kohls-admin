@@ -113,6 +113,7 @@ _K.Remote = {
 	Ban = _REMOTE,
 	Command = _REMOTE,
 	Noclip = _REMOTE,
+	Notify = _REMOTE,
 	Refresh = _REMOTE,
 	Spectate = _REMOTE,
 	SpectateSubject = _REMOTE,

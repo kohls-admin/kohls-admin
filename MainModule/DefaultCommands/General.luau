@@ -35,6 +35,29 @@ return {
 		end,
 	},
 	{
+		name = "notify",
+		aliases = { "n" },
+		description = "Sends a notification to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to notify.",
+			},
+			{
+				type = "stringGreedy",
+				name = "Message",
+				description = "The message to send.",
+			},
+		},
+
+		run = function(context, players, message)
+			for _, player in players do
+				context._K.Remote.Notify:FireClient(player, message, context.from)
+			end
+		end,
+	},
+	{
 		name = "privatemessage",
 		aliases = { "pm", "pmsg" },
 		description = "Sends a message to one or more player(s).",

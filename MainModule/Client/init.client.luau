@@ -28,6 +28,15 @@ end)
 
 _K.Remote.Announce.OnClientEvent:Connect(Announce)
 _K.Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
+_K.Remote.Notify.OnClientEvent:Connect(function(text: string, from: number)
+	Notify({
+		Text = text,
+		Duration = 4 + 0.125 * #text,
+		UserFrame = { from },
+		ExitButton = true,
+	})
+end)
+
 local requestingCommand = {}
 _K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
 	if requestingCommand[from.UserId] then
