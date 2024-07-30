@@ -83,10 +83,15 @@ return {
 				type = "player",
 				name = "Player",
 				description = "The player to spectate.",
+				ignoreSelf = true,
 			},
 		},
 
 		runClient = function(context, player)
+			if not workspace.CurrentCamera:GetAttribute("kCameraType") then
+				workspace.CurrentCamera:SetAttribute("kCameraType", workspace.CurrentCamera.CameraType)
+				workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+			end
 			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
 				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
 			end
@@ -113,6 +118,10 @@ return {
 		args = {},
 
 		runClient = function(context)
+			if workspace.CurrentCamera:GetAttribute("kCameraType") then
+				workspace.CurrentCamera.CameraType = workspace.CurrentCamera:GetAttribute("kCameraType")
+				workspace.CurrentCamera:SetAttribute("kCameraType", nil)
+			end
 			local character = context.fromPlayer.Character
 			if character then
 				workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")
