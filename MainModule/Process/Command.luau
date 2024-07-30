@@ -66,7 +66,7 @@ function Command:run()
 						if player == self.fromPlayer then
 							continue -- don't request self
 						end
-						if arg ~= Argument.OPTIONAL and rank <= self._K.Auth.getRank(arg.UserId) then
+						if arg ~= Argument.OPTIONAL and rank <= self._K.Auth.getRank(player.UserId) then
 							prepared[i] = nil
 							task.spawn(function()
 								local accepted =
