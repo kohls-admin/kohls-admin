@@ -234,10 +234,57 @@ local function parseIndividual(arg, self)
 	return
 end
 
+local prefixes = {
+	["~"] = "randomPlayers",
+	["!"] = "inversePlayers",
+	["$"] = "magicPlayers",
+	["@"] = "rolePlayers",
+	["%"] = "teamPlayers",
+}
+
+local function baseSuggestions(text, from, definition)
+	local players = Players:GetPlayers()
+	local names, instances = {}, {}
+	-- add me suggestion
+	if not definition.ignoreSelf then
+		table.insert(names, "me")
+		table.insert(instances, Players.LocalPlayer)
+	end
+	-- filter out lowerRank and ignoreSelf
+	local rank = _K.Auth.getRank(from)
+	for _, player in players do
+		if definition.ignoreSelf and player == Players.LocalPlayer then
+			continue
+		end
+		if definition.lowerRank and player ~= Players.LocalPlayer and rank <= _K.Auth.getRank(player.UserId) then
+			continue
+		end
+		table.insert(names, string.lower(player.Name))
+		table.insert(instances, player)
+	end
+
+	return names, instances
+end
+
 local typeMultiple = {
 	listable = true,
+	transform = string.lower,
+	validate = genValidate(function(arg, self)
+		if arg == "*" or arg == "all" then
+			return true
+		end
+		return parseIndividual(arg, self)
+	end),
 	preParse = function(transformedArgs)
-		return if table.find(transformedArgs, "*") then Players:GetPlayers() else nil
+		return if table.find(transformedArgs, "*") or table.find(transformedArgs, "all")
+			then Players:GetPlayers()
+			else nil
+	end,
+	parse = function(arg, self)
+		if type(arg) == "string" then
+			return parseIndividual(arg, self)
+		end
+		return arg
 	end,
 	postParse = function(parsedArgs)
 		local players = {}
@@ -251,6 +298,17 @@ local typeMultiple = {
 			end
 		end
 		return players
+	end,
+	suggestions = function(text, from, definition)
+		local names, instances = baseSuggestions(text, from, definition)
+		-- add all suggestion
+		table.insert(names, "all")
+		table.insert(names, "*")
+		-- add prefix suggestions
+		for prefix, name in prefixes do
+			table.insert(names, prefix)
+		end
+		return _K.Util.querySuggestions(text, names, instances)
 	end,
 	-- this will require parsing? lol
 	prefixes = {
@@ -266,32 +324,7 @@ local typeIndividual = {
 	transform = string.lower,
 	validate = genValidate(parseIndividual),
 	parse = parseIndividual,
-	suggestions = function(text, from, definition)
-		local players = Players:GetPlayers()
-		local names, instances = {}, {}
-		-- add me suggestion
-		if not definition.ignoreSelf then
-			table.insert(names, 1, "me")
-			table.insert(instances, Players.LocalPlayer)
-		end
-		-- filter out lowerRank and ignoreSelf
-		local rank = _K.Auth.getRank(from)
-		for _, player in players do
-			if definition.ignoreSelf and player == Players.LocalPlayer then
-				continue
-			end
-			if definition.lowerRank and rank <= _K.Auth.getRank(player.UserId) then
-				continue
-			end
-			table.insert(names, player.Name)
-			table.insert(instances, player)
-		end
-		-- add prefix suggestions
-		for prefix, name in typeMultiple.prefixes do
-			table.insert(names, prefix)
-		end
-		return _K.Util.querySuggestions(text, names, instances)
-	end,
+	suggestions = baseSuggestions,
 }
 
 local function parseId(arg)
@@ -319,7 +352,7 @@ return function(context)
 	_K.Registry.registerType("rolePlayers", typeRoles)
 	_K.Registry.registerType("randomPlayers", typeRandom)
 	_K.Registry.registerType("player", typeIndividual)
-	_K.Registry.registerType("players", typeMultiple, typeIndividual)
+	_K.Registry.registerType("players", typeMultiple)
 	_K.Registry.registerType("playerId", typeId)
 	_K.Registry.registerType("playerIds", typeIds, typeId)
 end
