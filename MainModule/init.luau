@@ -256,23 +256,20 @@ if _K.IsServer then
 			if addon:IsA("ModuleScript") then
 				if string.find(addon.Name, "Server$") then
 					addon.Parent = serverAddons
-					require(addon)(_K)
+					task.spawn(function()
+						require(addon)(_K)
+					end)
 				elseif not string.find(addon.Name, "Client$") then
-					require(addon)(_K)
+					task.spawn(function()
+						require(addon)(_K)
+					end)
 				end
 			end
 		end
 		addons.Parent = script
 	end
-elseif _K.IsClient then
-	local addons = script:FindFirstChild("Addons")
-	if addons then
-		for _, addon in addons:GetChildren() do
-			if addon:IsA("ModuleScript") then
-				require(addon)(_K)
-			end
-		end
-	end
+elseif _K.IsClient then -- load after client.luau instead lol
+	_K._addons = script:FindFirstChild("Addons")
 end
 
 if not _K.IsServer then

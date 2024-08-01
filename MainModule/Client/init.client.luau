@@ -141,12 +141,12 @@ UI.Scope.bans = Flux.state(_K.bans)
 UI.Scope.logs = Flux.state(_K.logs)
 UI.Scope.settings = Flux.state(_K.settings)
 
-local dashboardBans = Bans.new(_K)
-local dashboardMembers = Members.new(_K)
-local dashboardLogs = Logs.new(_K)
-local dashboardCommands = Commands.new(_K)
-local dashboardSettings = Settings.new(_K)
-local dashboardCredits = Credit.new(_K)
+_K.client.dashboardBans = Bans.new(_K)
+_K.client.dashboardMembers = Members.new(_K)
+_K.client.dashboardLogs = Logs.new(_K)
+_K.client.dashboardCommands = Commands.new(_K)
+_K.client.dashboardSettings = Settings.new(_K)
+_K.client.dashboardCredits = Credit.new(_K)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerDefault,
@@ -154,12 +154,12 @@ local dashboard = UI.new "Window" {
 	Visible = false,
 
 	UI.new "Tabs" {
-		dashboardCommands,
-		dashboardBans,
-		dashboardMembers,
-		dashboardLogs,
-		dashboardSettings,
-		dashboardCredits,
+		_K.client.dashboardCommands,
+		_K.client.dashboardBans,
+		_K.client.dashboardMembers,
+		_K.client.dashboardLogs,
+		_K.client.dashboardSettings,
+		_K.client.dashboardCredits,
 		-- UI.new "TextLabel" {
 		-- 	Name = "Credit",
 		-- 	BackgroundTransparency = 1,
@@ -281,7 +281,7 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, settin
 	for key, value in settings do
 		_K.settings[key]:set(UI.peek(value))
 	end
-	dashboardLogs:updateList()
+	_K.client.dashboardLogs:updateList()
 end)
 
 _K.Remote.Log.OnClientEvent:Connect(function(log)
@@ -295,116 +295,18 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 	if #_K.logs > 1e5 then
 		table.remove(_K.logs, 1)
 	end
-	dashboardLogs:updateList()
+	_K.client.dashboardLogs:updateList()
 end)
 
 _K.Remote.Init:FireServer()
 
-local loremIpsum = {
-	"Lorem",
-	"ipsum",
-	"dolor",
-	"sit",
-	"amet",
-	"consectetur",
-	"adipiscing",
-	"elit",
-	"sed",
-	"do",
-	"eiusmod",
-	"tempor",
-	"incididunt",
-	"ut",
-	"labore",
-	"et",
-	"dolore",
-	"magna",
-	"aliqua",
-	"Ut",
-	"enim",
-	"ad",
-	"minim",
-	"veniam",
-	"quis",
-	"nostrud",
-	"exercitation",
-	"ullamco",
-	"laboris",
-	"nisi",
-	"ut",
-	"aliquip",
-	"ex",
-	"ea",
-	"commodo",
-	"consequat",
-	"Duis",
-	"aute",
-	"irure",
-	"dolor",
-	"in",
-	"reprehenderit",
-	"in",
-	"voluptate",
-	"velit",
-	"esse",
-	"cillum",
-	"dolore",
-	"eu",
-	"fugiat",
-	"nulla",
-	"pariatur",
-	"Excepteur",
-	"sint",
-	"occaecat",
-	"cupidatat",
-	"non",
-	"proident",
-	"sunt",
-	"in",
-	"culpa",
-	"qui",
-	"officia",
-	"deserunt",
-	"mollit",
-	"anim",
-	"id",
-	"est",
-	"laborum",
-}
-
-local function generateLoremIpsum(wordCount: number): string
-	local result = {}
-	for i = 1, wordCount do
-		local randomIndex = math.random(1, #loremIpsum)
-		table.insert(result, loremIpsum[randomIndex])
+-- finally load client addons
+if _K._addons then
+	for _, addon in _K._addons:GetChildren() do
+		if addon:IsA("ModuleScript") then
+			task.spawn(function()
+				require(addon)(_K)
+			end)
+		end
 	end
-	return table.concat(result, " ")
 end
-
-local lines = {}
-for i = 1, 100 do
-	table.insert(lines, generateLoremIpsum(math.random(16, 32)))
-end
-
-local levels = {
-	"DEBUG",
-	"INFO",
-	"WARN",
-	"ERROR",
-	"CHAT",
-	"COMMAND",
-	"JOIN",
-	"LEAVE",
-	"KILL",
-	"DEATH",
-	"DAMAGE",
-	"PURCHASE",
-}
-
-_K.Util.deferTimerReset()
-for i = 1, 1_000_000 do
-	_K.logger:log("log #" .. i .. ": " .. lines[math.random(1, 100)], levels[math.random(1, #levels)])
-	_K.Util.deferWait()
-end
-
-dashboardLogs:updateList()
