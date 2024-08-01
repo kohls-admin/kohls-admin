@@ -122,6 +122,10 @@ function Dialog.new(definition)
 			Name = "Title",
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
+			Visible = UI.compute(function(use)
+				local title = use(new.Title)
+				return title and title ~= ""
+			end),
 
 			UI.new "UIListLayout" {
 				SortOrder = Enum.SortOrder.LayoutOrder,
@@ -138,18 +142,8 @@ function Dialog.new(definition)
 				TextXAlignment = "Left",
 				FontFace = UI.Theme.FontHeavy,
 				RichText = true,
-				Visible = UI.compute(function(use)
-					local title = use(new.Title)
-					return title and title ~= ""
-				end),
 
 				AutomaticSize = Enum.AutomaticSize.XY,
-			},
-
-			UI.new "Frame" {
-				LayoutOrder = 8,
-				Name = "Spacer",
-				BackgroundTransparency = 1,
 				UI.new "UIFlexItem" {
 					FlexMode = Enum.UIFlexMode.Fill,
 				},
