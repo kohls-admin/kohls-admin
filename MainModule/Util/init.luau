@@ -65,7 +65,11 @@ end
 
 function Util.mergeTable(to: Dict, from: Dict): Dict
 	for key, value in from do
-		to[key] = value
+		if to[key] and type(value) == "table" then
+			Util.mergeTable(to[key], value)
+		else
+			to[key] = value
+		end
 	end
 	return to
 end
@@ -138,17 +142,17 @@ function Util.throttle(delay: number, func: (...any) -> ...any)
 end
 
 do
-	local budget, expireTime = 1 / 120, 0
+	local defaultBudget, expireTime = 1 / 120, 0
 
 	-- Call at start of process to prevent unnecessarily waiting.
-	function Util.deferTimerReset()
-		expireTime = tick() + budget
+	function Util.deferTimerReset(budget: number?)
+		expireTime = tick() + (defaultBudget or budget)
 	end
 
-	function Util.deferWait()
+	function Util.deferWait(budget: number?)
 		if tick() >= expireTime then
 			task.wait()
-			Util.deferTimerReset()
+			Util.deferTimerReset(budget)
 		end
 	end
 end
