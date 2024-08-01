@@ -1,9 +1,27 @@
+local GroupService = game:GetService("GroupService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
 export type Role = "vip" | "mod" | "admin" | "superadmin" | "creator"
 
 --- @class Auth
 local Auth = {
+	async = {
+		gamepass = {},
+		-- NOTE: ASSET/SUBS REQUIRE A PLAYER FOR PERMISSIONS AND CAN STILL BE AFFECTED BY ID COMMANDS!
+		asset = {},
+		subscription = {},
+		-- TODO: need a way to define exact rank roles instead of >=
+		group = {
+			[451053] = {
+				{ rank = 1, roles = { "vip" } },
+				{ rank = 255, roles = { "creator", "mod" }, exactRank = true },
+			},
+		},
+		-- [groupId] = {
+		-- { rank = 200, roles = { "admin", "vip" }, rankAndAbove = true },
+		-- },
+	},
 	defaultRole = {
 		-- role "_rank" determines hierarchy
 		-- 0 is reserved for the default role
@@ -122,6 +140,7 @@ local function roleSort(a: Role, b: Role): boolean
 end
 
 --- Adds a role to a user if they don't already have it
+-- TODO: make a way to define permanent vs temporary roles
 function Auth.userRoleAdd(userId: number, role: Role)
 	local member = Auth.members[tostring(userId)]
 	if not member then
@@ -149,30 +168,82 @@ function Auth.userRoleRemove(userId: number, role: Role)
 	end
 end
 
---- Gets the role entry from a rank number
-function Auth.getRoleFromRank(rank: number): Role?
-	for _, roleData in Auth.roles do
-		if roleData._rank == rank then
-			return roleData
+local asyncRolesCache = {}
+function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
+	if asyncRolesCache[userId] and not flushCache then
+		return
+	end
+	asyncRolesCache[userId] = true
+
+	-- gamepass permissions
+	for gamePassId, roles in Auth.async.gamepass do
+		if MarketplaceService:UserOwnsGamePassAsync(userId, gamePassId) then
+			for _, role in roles do
+				Auth.userRoleAdd(userId, role)
+			end
 		end
 	end
-	return
+
+	-- group permissions
+	if next(Auth.async.group) then
+		local groups = GroupService:GetGroupsAsync(userId)
+		for _, group in groups do
+			local groupAuth = Auth.async.group[group.Id]
+			if groupAuth then
+				for _, auth in groupAuth do
+					if group.Rank == auth.rank or (not auth.exactRank and group.Rank >= auth.rank) then
+						for _, role in auth.roles do
+							Auth.userRoleAdd(userId, role)
+						end
+					end
+				end
+			end
+		end
+	end
+
+	-- the following requires a player instance
+	local player = Players:GetPlayerByUserId(userId)
+	if not player then
+		return
+	end
+
+	-- legacy asset permissions
+	for assetId, roles in Auth.async.asset do
+		if MarketplaceService:PlayerOwnsAsset(player, assetId) then
+			for _, role in roles do
+				Auth.userRoleAdd(userId, role)
+			end
+		end
+	end
+
+	-- subscription permissions
+	for subscriptionId, roles in Auth.async.subscription do
+		local ok, result =
+			pcall(MarketplaceService.GetUserSubscriptionStatusAsync, MarketplaceService, player, subscriptionId)
+		if ok and result.IsSubscribed then
+			for _, role in roles do
+				Auth.userRoleAdd(userId, role)
+			end
+		end
+	end
 end
 
 --- Checks the maximum role rank of the user, if permission is given it will fetch the highest rank of the roles with that permission
-function Auth.getRank(userId: number, permission: string?): number
+function Auth.getRank(userId: number, permission: string?): (number, Role)
+	Auth.userAsyncRoles(userId)
 	permission = permission or "_rank"
-	local rank = 0
+	local rank, rankRole = 0, Auth.defaultRole
 	local member = Auth.members[tostring(userId)]
 	if member then
 		for _, roleId in member.roles do
 			local role = Auth.roles[roleId]
 			if role and role[permission] then
 				rank = math.max(rank, role._rank)
+				rankRole = role
 			end
 		end
 	end
-	return rank
+	return rank, rankRole
 end
 
 --- Checks if a user has access to a command group

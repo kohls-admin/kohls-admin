@@ -343,6 +343,7 @@ end)
 
 -- handle player chatting
 local function playerAdded(player: Player)
+	_K.Auth.userAsyncRoles(player.UserId, true)
 	if banHandler(player) then
 		return
 	end

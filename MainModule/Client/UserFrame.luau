@@ -7,7 +7,7 @@ return function(from: number?, name: string?, image: string?)
 	name = name or "Kohl's Admin"
 	image = image or "rbxassetid://10650688076"
 
-	local userName = ""
+	local userName = "Scripth"
 	local badge = "system"
 	local color = "#fff"
 
@@ -18,7 +18,7 @@ return function(from: number?, name: string?, image: string?)
 		local info = _K.Util.getUserInfo(from)
 		name = info.DisplayName
 		userName = info.Username
-		local role = _K.Auth.getRoleFromRank(_K.Auth.getRank(from))
+		local rank, role = _K.Auth.getRank(from)
 		badge = if role then role.name else "Unknown"
 		color = role.color
 	end

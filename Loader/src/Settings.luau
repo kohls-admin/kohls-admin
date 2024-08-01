@@ -18,7 +18,7 @@ local gamePassRoles = {
 
 local groupRoles = {
 	-- [groupId] = {
-	-- { rank = 200, roles = { "admin", "vip" }, rankAndAbove = true },
+	-- { rank = 200, roles = { "admin", "vip" }, exactRank = true },
 	-- },
 }
 
@@ -40,6 +40,10 @@ return function(_K)
 		end
 	end
 
+	-- gamepass and group roles
+	_K.Util.mergeTable(_K.Auth.async.gamepass, gamePassRoles)
+	_K.Util.mergeTable(_K.Auth.async.group, groupRoles)
+
 	-- give roles on gamepass purchase
 	_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
 		if not purchaseSuccess then
@@ -60,29 +64,6 @@ return function(_K)
 		-- studio testing roles
 		if _K.Services.RunService:IsStudio() then
 			_K.Auth.userRoleAdd(player.UserId, "creator")
-		end
-		-- gamepass role giver
-		for id, roles in gamePassRoles do
-			if not _K.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, id) then
-				continue
-			end
-			for _, role in roles do
-				_K.Auth.userRoleAdd(player.UserId, role)
-			end
-		end
-		-- group roles giver
-		for groupId, groupRanks in groupRoles do
-			if not player:IsInGroup(groupId) then
-				continue
-			end
-			for index, rankDefinition in groupRanks do
-				local rank = player:GetRankInGroup(groupId)
-				if rank == rankDefinition.rank or (rankDefinition.rankAndAbove and rank >= rankDefinition.rank) then
-					for _, role in rankDefinition.roles do
-						_K.Auth.userRoleAdd(player.UserId, role)
-					end
-				end
-			end
 		end
 	end)
 end
