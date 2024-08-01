@@ -6,15 +6,16 @@ local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font trans
 local logTypeColors = {
 	DEBUG = "#888",
 	INFO = "#fff",
-	WARN = "#f80",
+	WARN = "#ff0",
 	ERROR = "#f00",
-	CHAT = "#0ff",
-	COMMAND = "#ff0",
-	JOIN = "#0f8",
-	LEAVE = "#80f",
-	KILL = "#800",
-	DEATH = "#880",
-	PURCHASE = "#0f0",
+	CHAT = "#0f8",
+	COMMAND = "#80f",
+	JOIN = "#0f0",
+	LEAVE = "#080",
+	KILL = "#a00",
+	DEATH = "#800",
+	DAMAGE = "#a80",
+	PURCHASE = "#0ff",
 }
 
 function Logs.new(_K)
