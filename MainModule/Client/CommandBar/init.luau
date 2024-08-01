@@ -203,25 +203,24 @@ local function completeSuggestion()
 	if not currentCompletion then
 		return
 	end
-
 	tabCompleting = true
-	local pos, text = unpack(currentCompletion)
 
+	local pos, text = unpack(currentCompletion)
 	if not string.find(text, " $") then
 		text = text .. " "
 		pos += 1
 	end
-
 	Input._input.Text = text
 	Input._input.CursorPosition = pos + 1
-	task.delay(0, function()
-		tabCompleting = false
-		Input._input.Text = text
-		Input._input.CursorPosition = pos + 1
-	end)
+	tabCompleting = false
 end
 
+local suggestionUpdating
 local function updateSuggestionLabels(data)
+	if suggestionUpdating then
+		return
+	end
+	suggestionUpdating = true
 	for _, label in suggestionLabels do
 		label:Destroy()
 	end
@@ -270,6 +269,7 @@ local function updateSuggestionLabels(data)
 		-- show highlight
 		table.insert(suggestionLabels, frame)
 	end
+	suggestionUpdating = false
 end
 
 local function clearCompletion()
@@ -440,9 +440,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if not Input._input:IsFocused() then
 			return
 		end
-		if input.KeyCode == Enum.KeyCode.Tab then
-			completeSuggestion()
-		elseif input.KeyCode == Enum.KeyCode.Up then
+		if input.KeyCode == Enum.KeyCode.Up then
 			suggestionIndex = math.max(1, suggestionIndex - 1)
 			updateCompletion()
 		elseif input.KeyCode == Enum.KeyCode.Down then
@@ -468,9 +466,6 @@ Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 			Input._input.CursorPosition = #UI.peek(_K.settings.prefix) + 1
 			return
 		end
-		-- if tabCompleting then
-		-- 	return -- don't show tab artifact
-		-- end
 		task.defer(updateCompletionData)
 	end
 end)
@@ -507,7 +502,8 @@ Input._input.FocusLost:Connect(function(enterPressed)
 end)
 -- FIX: make sure _K reliant connections aren't connected until init!
 Input._input:GetPropertyChangedSignal("Text"):Connect(function()
-	if tabCompleting then
+	if not tabCompleting and UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
+		completeSuggestion()
 		return
 	end
 	local prefix = UI.peek(_K.settings.prefix)
