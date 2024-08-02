@@ -6,6 +6,7 @@ local Logger = require(script.Logger)
 --- @class Util
 local Util = {
 	Logger = Logger,
+	Queue = require(script.Queue),
 	ReadableTime = require(script.ReadableTime),
 	Rollout = require(script.Rollout),
 	SignalFast = require(script.SignalFast),
