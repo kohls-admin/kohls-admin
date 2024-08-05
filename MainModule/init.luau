@@ -50,6 +50,7 @@ local _K = {
 	Auth = require(script:WaitForChild("Auth")),
 	Process = require(script:WaitForChild("Process")),
 	Registry = require(script:WaitForChild("Registry")),
+	Remote = require(script:WaitForChild("Remote")),
 	Util = Util,
 
 	logger = Util.Logger.new(),
@@ -98,38 +99,6 @@ _K.Services = _K.Util.Services
 _K.IsStudio = _K.Services.RunService:IsStudio()
 _K.IsServer = _K.Services.RunService:IsServer()
 _K.IsClient = _K.Services.RunService:IsClient()
-
--- initialize remote events
-local _REMOTE = Instance.new("RemoteEvent")
-local _REMOTECALL = Instance.new("RemoteFunction")
-local remoteFolder = if _K.IsServer then Instance.new("Folder", script) else script:WaitForChild("Remotes")
-remoteFolder.Name = "Remotes"
-
-_K.Remote = {
-	Init = _REMOTE,
-	Log = _REMOTE,
-	Prefix = _REMOTE,
-	Announce = _REMOTE,
-	Ban = _REMOTE,
-	Command = _REMOTE,
-	Noclip = _REMOTE,
-	Notify = _REMOTE,
-	Refresh = _REMOTE,
-	Spectate = _REMOTE,
-	SpectateSubject = _REMOTE,
-
-	RequestCommand = _REMOTECALL,
-}
-
-for name, base in _K.Remote do
-	if _K.IsServer then
-		local remote = Instance.new(base.ClassName, remoteFolder)
-		remote.Name = name
-		_K.Remote[name] = remote
-	else
-		_K.Remote[name] = remoteFolder:WaitForChild(name)
-	end
-end
 
 -- assign CreatorId
 if game.CreatorType == Enum.CreatorType.Group then
