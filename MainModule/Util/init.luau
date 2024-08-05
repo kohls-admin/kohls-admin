@@ -8,6 +8,7 @@ local Util = {
 	Logger = Logger,
 	Queue = require(script.Queue),
 	ReadableTime = require(script.ReadableTime),
+	Retry = require(script.Retry),
 	Rollout = require(script.Rollout),
 	SignalFast = require(script.SignalFast),
 	SignalGood = require(script.SignalGood),
