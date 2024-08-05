@@ -95,8 +95,8 @@ function Window.new(definition)
 
 		new.Position:set(
 			UDim2.fromOffset(
-				math.clamp(startOffset.X + delta.X, 0, maxPosition.X),
-				math.clamp(startOffset.Y + delta.Y, 0, maxPosition.Y)
+				math.clamp(math.round(startOffset.X + delta.X), 0, maxPosition.X),
+				math.clamp(math.round(startOffset.Y + delta.Y), 0, maxPosition.Y)
 			)
 		)
 	end
@@ -135,14 +135,14 @@ function Window.new(definition)
 		inputPosition:set(input.Position)
 		new.Size:set(
 			UDim2.fromOffset(
-				startSize.X + math.clamp(xSize * delta.X, resizeMin.X, resizeMax.X),
-				startSize.Y + math.clamp(ySize * delta.Y, resizeMin.Y, resizeMax.Y)
+				math.round(startSize.X + math.clamp(xSize * delta.X, resizeMin.X, resizeMax.X)),
+				math.round(startSize.Y + math.clamp(ySize * delta.Y, resizeMin.Y, resizeMax.Y))
 			)
 		)
 		new.Position:set(
 			UDim2.fromOffset(
-				startOffset.X - math.clamp(xPos * -delta.X, resizeMin.X, resizeMax.X),
-				startOffset.Y - math.clamp(yPos * -delta.Y, resizeMin.Y, resizeMax.Y)
+				math.round(startOffset.X - math.clamp(xPos * -delta.X, resizeMin.X, resizeMax.X)),
+				math.round(startOffset.Y - math.clamp(yPos * -delta.Y, resizeMin.Y, resizeMax.Y))
 			)
 		)
 	end
@@ -181,46 +181,12 @@ function Window.new(definition)
 		end
 	end
 
-	UI.UserInputService.InputBegan:Connect(resizeBegan)
-	UI.UserInputService.InputChanged:Connect(function(input)
-		if
-			input.UserInputType == Enum.UserInputType.MouseMovement
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
-			if resizing._value then
-				-- update resize
-				resizeUpdate(input)
-			elseif dragging._value then
-				dragUpdate(input)
-			elseif not new.Minimized._value then
-				local resize = getResizeIndex(
-					Vector2.new(input.Position.X, input.Position.Y),
-					new._instance.AbsoluteSize,
-					new._instance.AbsolutePosition,
-					resizeBuffer
-				)
-				if resize then
-					inputPosition:set(input.Position)
-					resizeHover:set(true)
-					resizeIconRectOffset:set(Vector2.new(resize[5]))
-					UI.UserInputService.MouseIconEnabled = false
-				else
-					resizeHover:set(false)
-					UI.UserInputService.MouseIconEnabled = true
-				end
-			end
-		end
-	end)
-
 	local exitButton = UI.new "Button" {
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
 		Size = UDim2.new(0, 32, 0, 32),
 		Icon = "rbxassetid://1476571006",
 		IconProperties = {
-			AnchorPoint = Vector2.new(0.5, 0.5),
 			Size = UDim2.new(0, 10, 0, 10),
-			Position = UDim2.new(0.5, 0, 0.5, 0),
-			ResampleMode = Enum.ResamplerMode.Pixelated,
 		},
 		Text = "",
 		Activated = function()
@@ -266,7 +232,6 @@ function Window.new(definition)
 		UI.new "ImageLabel" {
 			Name = "ResizeIcon",
 			ZIndex = 1e3,
-			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundTransparency = 1,
 			Image = "rbxassetid://2286551482",
 			ImageRectSize = Vector2.new(15, 15),
@@ -276,7 +241,7 @@ function Window.new(definition)
 			ResampleMode = Enum.ResamplerMode.Pixelated,
 			Position = UI.compute(function(use)
 				local inputPos = use(inputPosition)
-				return UDim2.fromOffset(inputPos.X, inputPos.Y + use(UI.TopbarInset).Height) - use(new.Position)
+				return UDim2.fromOffset(inputPos.X - 8, inputPos.Y - 8 + use(UI.TopbarInset).Height) - use(new.Position)
 			end),
 
 			[UI.Event] = {
@@ -343,6 +308,37 @@ function Window.new(definition)
 			new._content,
 		},
 	}
+
+	UI.UserInputService.InputBegan:Connect(resizeBegan)
+	UI.UserInputService.InputChanged:Connect(function(input)
+		if
+			input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
+			if resizing._value then
+				-- update resize
+				resizeUpdate(input)
+			elseif dragging._value then
+				dragUpdate(input)
+			elseif not new.Minimized._value then
+				local resize = getResizeIndex(
+					Vector2.new(input.Position.X, input.Position.Y),
+					new._instance.AbsoluteSize,
+					new._instance.AbsolutePosition,
+					resizeBuffer
+				)
+				if resize then
+					inputPosition:set(input.Position)
+					resizeHover:set(true)
+					resizeIconRectOffset:set(Vector2.new(resize[5]))
+					UI.UserInputService.MouseIconEnabled = false
+				else
+					resizeHover:set(false)
+					UI.UserInputService.MouseIconEnabled = true
+				end
+			end
+		end
+	end)
 
 	return setmetatable(new, Window)
 end
