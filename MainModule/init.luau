@@ -53,6 +53,7 @@ local _K = {
 	-- modules
 	Flux = require(script:WaitForChild("Flux")),
 	Auth = require(script:WaitForChild("Auth")),
+	Hook = require(script:WaitForChild("Hook")),
 	Process = require(script:WaitForChild("Process")),
 	Registry = require(script:WaitForChild("Registry")),
 	Remote = require(script:WaitForChild("Remote")),
@@ -60,11 +61,6 @@ local _K = {
 
 	logger = Util.Logger.new(),
 	client = nil,
-	hook = {
-		log = Util.SignalGood.new(),
-		preCommand = Util.SignalGood.new(),
-		postCommand = Util.SignalGood.new(),
-	},
 
 	-- key used to check when global data has been changed for a save cycle
 	-- TODO: account for race conditions... use a timestamp?
@@ -119,7 +115,7 @@ function _K.log(text: string, level: LogType, from: number?): Log
 
 	local log = _K.logger:log(text, level, from)
 
-	_K.hook.log:Fire(log)
+	_K.Hook.log:Fire(log)
 
 	if _K.IsServer then
 		if from then

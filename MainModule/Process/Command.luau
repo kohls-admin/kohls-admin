@@ -88,9 +88,9 @@ function Command:run()
 		end
 	end
 
-	self._K.hook.preCommand:Fire(self)
+	self._K.Hook.preCommand:Fire(self)
 	local ok, err = pcall(run, self, unpack(self.preparedArgs))
-	self._K.hook.postCommand:Fire(self)
+	self._K.Hook.postCommand:Fire(self)
 
 	return ok, err
 end
