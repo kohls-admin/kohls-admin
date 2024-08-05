@@ -69,13 +69,13 @@ function Process.rawParse(message: string, prefix: string, delimiter: string?): 
 	return commands
 end
 
-function Process.prepareCommands(context: any, from: number, rawText: string)
+function Process.prepareCommands(_K: any, from: number, rawText: string)
 	if not utf8.len(rawText) then
 		return false, "Invalid utf8 string"
 	end
 
 	local text = Util.trimStart(rawText)
-	local rawCommands = Process.rawParse(text, context.playerPrefix[from] or context.settings.prefix._value)
+	local rawCommands = Process.rawParse(text, _K.playerPrefix[from] or _K.Data.settings.prefix)
 	if not rawCommands then
 		return
 	end
@@ -94,7 +94,7 @@ function Process.prepareCommands(context: any, from: number, rawText: string)
 			return false, "Invalid permissions for command: " .. commandText
 		end
 
-		local command = Command.new(context, commandDefinition, commandArray, from, text)
+		local command = Command.new(_K, commandDefinition, commandArray, from, text)
 		local ok, result = command:validate()
 
 		table.insert(commands, command)
@@ -112,9 +112,9 @@ function Process.prepareCommands(context: any, from: number, rawText: string)
 	return true, commands
 end
 
-function Process.runCommands(context: any, from: number, rawText: string): boolean
+function Process.runCommands(_K: any, from: number, rawText: string): boolean
 	local commandRan, commandError
-	local ok, result = Process.prepareCommands(context, from, rawText)
+	local ok, result = Process.prepareCommands(_K, from, rawText)
 
 	if ok then
 		for _, command in result do
@@ -148,11 +148,11 @@ function Process.runCommands(context: any, from: number, rawText: string): boole
 		commandError = result
 	end
 
-	if not (commandRan or commandError or context.IsServer) then
+	if not (commandRan or commandError or _K.IsServer) then
 		-- skip logging on client if nothing happened
 		return commandRan
 	end
-	context.log(
+	_K.log(
 		if commandError then commandError else Util.trimStart(rawText),
 		if commandRan then "COMMAND" elseif commandError then "ERROR" else "CHAT",
 		from
