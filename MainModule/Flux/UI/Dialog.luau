@@ -86,10 +86,7 @@ function Dialog.new(definition)
 		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarger, 0, UI.Theme.FontSizeLarger),
 		Icon = "rbxassetid://1476571006",
 		IconProperties = {
-			AnchorPoint = Vector2.new(0.5, 0.5),
 			Size = UDim2.new(0, 10, 0, 10),
-			Position = UDim2.new(0.5, 0, 0.5, 0),
-			ResampleMode = Enum.ResamplerMode.Pixelated,
 		},
 		Text = "",
 		Activated = function()
