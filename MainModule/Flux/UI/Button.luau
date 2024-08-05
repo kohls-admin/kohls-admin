@@ -12,7 +12,7 @@ function Button.new(definition)
 		Icon = "",
 		IconProperties = {},
 		IconRightAlign = false,
-		Label = "Default Button Text",
+		Label = "",
 		TextSize = UI.Theme.FontSize,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
@@ -22,7 +22,8 @@ function Button.new(definition)
 	local hovering = UI.state(false)
 	new._hovering = hovering
 
-	local listFrame = UI.new "Frame" {
+	new._content = UI.new "Frame" {
+		Name = "UIContent",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 
@@ -82,6 +83,7 @@ function Button.new(definition)
 	}
 
 	local ripple = UI.new "Frame" {
+		Name = "Ripple",
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
 		BackgroundColor3 = UI.compute(function(use)
@@ -120,7 +122,7 @@ function Button.new(definition)
 			Color = UI.Theme.Border,
 		},
 
-		listFrame,
+		new._content,
 		ripple,
 
 		[UI.Event] = {
@@ -168,7 +170,7 @@ function Button.new(definition)
 
 	if definition.IconProperties then
 		-- TODO: whenever new.IconProperties is changed we need to update!
-		UI.edit(listFrame:FindFirstChild("IconFrame"):FindFirstChild("Icon"), definition.IconProperties)
+		UI.edit(new._content:FindFirstChild("IconFrame"):FindFirstChild("Icon"), definition.IconProperties)
 	end
 
 	return setmetatable(new, Button)
