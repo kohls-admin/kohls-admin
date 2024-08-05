@@ -56,7 +56,7 @@ function Bans.new(_K)
 		self._filter = filter
 		local new = {}
 		for _, userId in list do
-			local ban = _K.bans[userId]
+			local ban = _K.Data.bans[userId]
 			if not ban then
 				warn("no ban defined?")
 				continue

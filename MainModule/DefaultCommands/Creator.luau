@@ -41,7 +41,8 @@ return {
 		description = "Removes all Kohl's Admin logs.",
 		args = {},
 		run = function(context)
-			table.clear(context._K.logs._value)
+			table.clear(context._K.Data.logs)
+			-- network to clients
 		end,
 	},
 	{

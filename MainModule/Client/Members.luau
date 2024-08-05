@@ -45,7 +45,7 @@ function Members.new(_K)
 		self._filter = filter
 		local new = {}
 		for _, userId in list do
-			local member = _K.Auth.members[userId]
+			local member = _K.Data.members[userId]
 			if not member then
 				continue
 			end

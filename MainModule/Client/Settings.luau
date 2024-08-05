@@ -31,7 +31,7 @@ function Settings.new(_K)
 					Padding = UDim.new(0, 5),
 					Placeholder = ";",
 					MaxChars = 1,
-					Value = _K.settings.prefix,
+					Value = UI.Scope.settings.prefix,
 
 					[UI.Hook] = {
 						Value = function(value)

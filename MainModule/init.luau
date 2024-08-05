@@ -52,6 +52,7 @@ local _K = {
 
 	-- modules
 	Flux = require(script:WaitForChild("Flux")),
+	Data = require(script:WaitForChild("Data")),
 	Auth = require(script:WaitForChild("Auth")),
 	Hook = require(script:WaitForChild("Hook")),
 	Process = require(script:WaitForChild("Process")),
@@ -62,39 +63,14 @@ local _K = {
 	logger = Util.Logger.new(),
 	client = nil,
 
-	-- key used to check when global data has been changed for a save cycle
-	-- TODO: account for race conditions... use a timestamp?
-	_lastUpdate = 0,
-	_dataUpdate = 0,
-
-	_serverLock = false,
-
-	bans = {
-		-- [UserId] = {Username, Reason, Timestamp}
-		-- Username is the last known username of the user when they were banned
-		-- TODO: progressively parse and update each name!
-		-- if Timestamp is -1 the ban is permanent
-		-- if Timestamp is nil the ban is for the server session only
-		-- saves only if Timestamp isn't nil
-		["1"] = { "Roblox", "He noob.", -1, 44391621, "Scripth" },
-		["2"] = { "John Doe", "He been noob.", nil, 44391621, "Scripth" },
-		["3"] = { "Jane Doe", "She was a noob.", nil, 44391621, "Scripth" },
-		["5"] = { "Jack Doe", "Wow!", 1720922623, 44391621, "Scripth" },
-	},
-
 	playerPrefix = {},
-
-	-- configuration
-	settings = {
-		prefix = ":",
-		vip = true,
-		mutableHooks = false,
-	},
+	_serverLock = false,
 }
 
-_K.logs = _K.logger.logs
+-- use Data log table
+_K.logger.logs = _K.Data.logs
 
--- shorthand utility
+-- shorthand
 _K.Services = _K.Util.Services
 
 -- assign CreatorId
@@ -152,7 +128,7 @@ function _K.filterMessage(message: string, from: number, to: number): string
 		TextService,
 		message,
 		from,
-		Enum.TextFilterContext[if _K.Auth.defaultRole.logs then "PublicChat" else "PrivateChat"]
+		Enum.TextFilterContext[if _K.Data.defaultRole.logs then "PublicChat" else "PrivateChat"]
 	)
 	if ok then
 		ok, result = pcall(result.GetChatForUserAsync, result, to)
@@ -208,12 +184,20 @@ elseif _K.IsClient then -- TODO: load after client.luau instead lol
 	_K.loaderSettings = require(script:WaitForChild("Settings") :: any)
 end
 
+-- loader settings
+_K.Data.settings.prefix = _K.loaderSettings.prefix
+_K.Data.settings.vip = _K.loaderSettings.vip
+_K.Data.defaultRole.admin = _K.loaderSettings.freeAdmin
+
 if not _K.IsServer then
 	return _K
 end
 --------------------------
 -- START OF SERVER CODE --
 --------------------------
+
+-- TODO: warn creator and developers to change the datastore key if unchanged
+_K.Data.initialize(_K.loaderSettings.dataStoreKey)
 
 -- assign creator role
 if _K.creatorId > 0 then
@@ -226,6 +210,10 @@ for role, users in _K.loaderSettings.roles do
 		_K.Auth.userRoleAdd(userId, role)
 	end
 end
+
+-- gamepass and group roles
+_K.Util.deepMergeTable(_K.Data.async.gamepass, _K.loaderSettings.gamePassRoles)
+_K.Util.deepMergeTable(_K.Data.async.group, _K.loaderSettings.groupRoles)
 
 -- give roles on gamepass purchase
 _K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
@@ -249,17 +237,17 @@ _K.Remote.Init.OnServerEvent:Connect(function(player)
 	-- send their own player permissions always for clientside validation
 	-- TODO: make sure data is network safe!
 
-	local bans, logs = {}, table.create(#_K.logs)
-	for i, ban in _K.bans do
+	local bans, logs = {}, table.create(#_K.Data.logs)
+	for i, ban in _K.Data.bans do
 		local reason = if ban[4] then _K.filterMessage(ban[2], ban[4], player.UserId) else ban[2]
 		bans[i] = { ban[1], reason, ban[3], ban[4] }
 	end
-	for i, log in _K.logs do
+	for i, log in _K.Data.logs do
 		local text = if log.from then _K.filterMessage(log.text, log.from, player.UserId) else log.text
 		logs[i] = { text, log.level, log.time, log.from }
 	end
 
-	_K.Remote.Init:FireClient(player, _K.Auth, bans, logs, _K.settings)
+	_K.Remote.Init:FireClient(player, _K.Auth, bans, logs, _K.Data.members, _K.Data.settings)
 end)
 
 script.Parent = _K.Services.ReplicatedStorage

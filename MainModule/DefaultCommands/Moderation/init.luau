@@ -5,8 +5,8 @@ local teleportCharacter = require(script.teleportCharacter)
 
 return {
 	{
-		name = "ban",
-		description = "Bans one or more players.",
+		name = "tban",
+		description = "Bans one or more players for a certain duration.",
 		args = {
 			{
 				type = "players",
@@ -19,7 +19,6 @@ return {
 				type = "timeSimple",
 				name = "Duration",
 				description = "The duration for the ban.",
-				optional = true,
 			},
 			{
 				type = "string",
@@ -47,7 +46,7 @@ return {
 
 			local ids = table.create(#players)
 			for _, player in players do
-				context._K.banHandler(
+				context._K.Auth.userBan(
 					player.UserId,
 					player.Username,
 					reason,
@@ -124,7 +123,7 @@ return {
 					end
 				end
 
-				context._K.banHandler(
+				context._K.Auth.userBan(
 					userId,
 					userName,
 					reason,
@@ -137,7 +136,7 @@ return {
 				end
 				-- populate the username if not found
 				task.spawn(function()
-					context._K.bans[userId][1] = context._K.Util.getUserInfo(userId).Username
+					context._K.Data.bans[userId][1] = context._K.Util.getUserInfo(userId).Username
 					-- TODO: network ban name and update for clients
 				end)
 			end
@@ -169,7 +168,7 @@ return {
 		run = function(context, bans)
 			local ids = table.create(#bans)
 			for i, userId in bans do
-				context._K.bans[userId] = nil
+				context._K.Data.bans[userId] = nil
 				context._K.Remote.Ban:FireAllClients(userId)
 				-- trigger ban save
 				-- unbanasync

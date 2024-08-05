@@ -28,7 +28,7 @@ function Commands.new(_K)
 				local aliasText = if command.aliases and #command.aliases ~= 0
 					then "/" .. table.concat(command.aliases, "/")
 					else ""
-				local text = `{UI.peek(_K.settings.prefix)}{command.name}{aliasText} {command.description}`
+				local text = `{_K.Data.settings.prefix}{command.name}{aliasText} {command.description}`
 				local filterFound = string.find(text:lower(), self._filter)
 				return if filterFound
 					then string.format(
@@ -43,7 +43,7 @@ function Commands.new(_K)
 			return string.format(
 				commandRichFormat,
 				escape(
-					UI.peek(_K.settings.prefix)
+					_K.Data.settings.prefix
 						.. command.name
 						.. if command.aliases and #command.aliases ~= 0
 							then "/" .. table.concat(command.aliases, "/")
@@ -67,7 +67,7 @@ function Commands.new(_K)
 			local aliasText = if command.aliases and #command.aliases ~= 0
 				then "/" .. table.concat(command.aliases, "/")
 				else ""
-			local text = `{UI.peek(_K.settings.prefix)}{command.name}{aliasText} {command.description}`
+			local text = `{_K.Data.settings.prefix}{command.name}{aliasText} {command.description}`
 			if text:lower():find(filter, 1, true) then
 				table.insert(new, command)
 			end

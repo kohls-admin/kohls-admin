@@ -63,7 +63,6 @@ local Input = UI.new "Input" {
 				Visible = UI.compute(function(use)
 					return use(validState) == true
 				end),
-				-- ResampleMode = Enum.ResamplerMode.Pixelated
 			},
 
 			UI.new "ImageLabel" {
@@ -77,7 +76,6 @@ local Input = UI.new "Input" {
 				Visible = UI.compute(function(use)
 					return use(validState) == false
 				end),
-				-- ResampleMode = Enum.ResamplerMode.Pixelated
 			},
 		},
 	},
@@ -378,7 +376,7 @@ updateCompletion = function()
 	local suggestionText, suggestionValue = unpack(currentSuggestion)
 
 	if data.query ~= "" then
-		local reservedCharacters = { " ", _K.settings.prefix._value }
+		local reservedCharacters = { " ", _K.Data.settings.prefix }
 		for _, char in reservedCharacters do
 			if string.find(suggestionText, char) and not string.find(suggestionText, '^["`]') then
 				suggestionText = `"{suggestionText}"`
@@ -462,8 +460,8 @@ end)
 Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 	local cursorPosition = Input._input.CursorPosition
 	if cursorPosition ~= -1 then
-		if cursorPosition < #UI.peek(_K.settings.prefix) + 1 then
-			Input._input.CursorPosition = #UI.peek(_K.settings.prefix) + 1
+		if cursorPosition < #_K.Data.settings.prefix + 1 then
+			Input._input.CursorPosition = #_K.Data.settings.prefix + 1
 			return
 		end
 		task.defer(updateCompletionData)
@@ -479,7 +477,7 @@ Input._input.FocusLost:Connect(function(enterPressed)
 			return
 		end
 		-- ignore empty command strings
-		if Input._input.Text == UI.peek(_K.settings.prefix) then
+		if Input._input.Text == _K.Data.settings.prefix then
 			return
 		end
 		-- FIX: if validated lol
@@ -497,7 +495,7 @@ Input._input.FocusLost:Connect(function(enterPressed)
 				table.remove(commandHistory)
 			end
 		end
-		Input._input.Text = UI.peek(_K.settings.prefix)
+		Input._input.Text = _K.Data.settings.prefix
 	end
 end)
 -- FIX: make sure _K reliant connections aren't connected until init!
@@ -506,7 +504,7 @@ Input._input:GetPropertyChangedSignal("Text"):Connect(function()
 		completeSuggestion()
 		return
 	end
-	local prefix = UI.peek(_K.settings.prefix)
+	local prefix = _K.Data.settings.prefix
 	if string.find(Input._input.Text, prefix, 1, true) ~= 1 then
 		Input._input.CursorPosition += 1
 		Input._input.Text = prefix .. Input._input.Text
@@ -514,7 +512,7 @@ Input._input:GetPropertyChangedSignal("Text"):Connect(function()
 		return
 	end
 
-	if Input._input.Text == UI.peek(_K.settings.prefix) then
+	if Input._input.Text == _K.Data.settings.prefix then
 		Input.DisplayText:set(Input._input.Text .. "<font transparency='0.5'><i>command</i></font>")
 	else
 		Input.DisplayText:set(_K.Util.escapeRichText(Input._input.Text))
@@ -522,12 +520,12 @@ Input._input:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 return {
-	init = function(self, context)
-		Input._input.Text = UI.peek(context.settings.prefix)
+	init = function(self, _K)
+		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
-		CommandBar.Parent = context.client.UI.LayerTop
-		context.client.hotkeys.commandBar = { key = Enum.KeyCode.Semicolon, mods = {}, callback = self.show }
-		context.client.CommandBarState = { validState, indicatorColor }
+		CommandBar.Parent = _K.client.UI.LayerTop
+		_K.client.hotkeys.commandBar = { key = Enum.KeyCode.Semicolon, mods = {}, callback = self.show }
+		_K.client.CommandBarState = { validState, indicatorColor }
 	end,
 	show = function()
 		CommandBar.Visible = true

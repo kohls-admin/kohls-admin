@@ -20,12 +20,52 @@ return {
 				name = "Roles(s)",
 				description = "The roles(s) to assign.",
 			},
+			{
+				type = "boolean",
+				name = "Permanent",
+				description = "Saves the role to persist across all servers.",
+				optional = true,
+			},
 		},
 
-		run = function(context, players, roles)
+		run = function(context, players, roles, permanent)
+			print("role ran")
 			for _, player in players do
 				for _, role in roles do
-					context._K.Auth.userRoleAdd(player.UserId, role)
+					context._K.Auth.userRoleAdd(player.UserId, role, permanent)
+				end
+			end
+		end,
+	},
+	{
+		name = "roleid",
+		aliases = { "setroleid", "addroleid", "giveroleid" },
+		description = "Assigns role(s) to one or more users.",
+		-- asks players with the same or higher rank if the command should work on them
+		args = {
+			{
+				type = "integers",
+				name = "UserId(s)",
+				description = "The user(s) to assign roles.",
+			},
+			{
+				type = "roles",
+				name = "Roles(s)",
+				description = "The roles(s) to assign.",
+			},
+			{
+				type = "boolean",
+				name = "Permanent",
+				description = "Saves the role to persist across all servers.",
+				optional = true,
+			},
+		},
+
+		run = function(context, users, roles, permanent)
+			for _, userId in users do
+				-- FIX: verify that they have a lower rank than you
+				for _, role in roles do
+					context._K.Auth.userRoleAdd(userId, role, permanent)
 				end
 			end
 		end,
@@ -37,9 +77,9 @@ return {
 		-- asks players with the same or higher rank if the command should work on them
 		args = {
 			{
-				type = "players",
-				name = "Player(s)",
-				description = "The player(s) to remove roles from.",
+				type = "members",
+				name = "Member(s)",
+				description = "The member(s) to remove roles from.",
 				lowerRank = true,
 			},
 			{
@@ -49,10 +89,10 @@ return {
 			},
 		},
 
-		run = function(context, players, roles)
-			for _, player in players do
+		run = function(context, members, roles)
+			for _, member in members do
 				for _, role in roles do
-					context._K.Auth.userRoleRemove(player.UserId, role)
+					context._K.Auth.userRoleRemove(member, role)
 				end
 			end
 		end,
@@ -73,7 +113,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				context._K.Auth.members[tostring(player.UserId)] = nil
+				-- TODO: make sure this saves and networks...
+				context._K.Data.members[tostring(player.UserId)] = nil
 			end
 		end,
 	},
