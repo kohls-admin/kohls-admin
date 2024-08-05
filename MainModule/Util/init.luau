@@ -67,6 +67,13 @@ end
 
 function Util.mergeTable(to: Dict, from: Dict): Dict
 	for key, value in from do
+		to[key] = value
+	end
+	return to
+end
+
+function Util.deepMergeTable(to: Dict, from: Dict): Dict
+	for key, value in from do
 		if to[key] and type(value) == "table" then
 			Util.mergeTable(to[key], value)
 		else
