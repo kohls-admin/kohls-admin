@@ -1,7 +1,8 @@
 --------------------------
 -- START OF SHARED CODE --
 --------------------------
-local TextChatService = game:GetService("TextService")
+local RunService = game:GetService("RunService")
+local TextService = game:GetService("TextService")
 
 local Util = require(script:WaitForChild("Util"))
 
@@ -45,6 +46,10 @@ export type Hook = "log" | "preCommand" | "postCommand"
 
 --- @class _K
 local _K = {
+	IsClient = RunService:IsClient(),
+	IsServer = RunService:IsServer(),
+	IsStudio = RunService:IsStudio(),
+
 	-- modules
 	Flux = require(script:WaitForChild("Flux")),
 	Auth = require(script:WaitForChild("Auth")),
@@ -96,10 +101,6 @@ _K.logs = _K.logger.logs
 -- shorthand utility
 _K.Services = _K.Util.Services
 
-_K.IsStudio = _K.Services.RunService:IsStudio()
-_K.IsServer = _K.Services.RunService:IsServer()
-_K.IsClient = _K.Services.RunService:IsClient()
-
 -- assign CreatorId
 if game.CreatorType == Enum.CreatorType.Group then
 	local ok, result = pcall(_K.Services.GroupService.GetGroupInfoAsync, _K.Services.GroupService, game.CreatorId)
@@ -123,8 +124,8 @@ function _K.log(text: string, level: LogType, from: number?): Log
 	if _K.IsServer then
 		if from then
 			local ok, result = pcall(
-				TextChatService.FilterStringAsync,
-				TextChatService,
+				TextService.FilterStringAsync,
+				TextService,
 				text,
 				from,
 				Enum.TextFilterContext[if _K.Auth.defaultRole.logs then "PublicChat" else "PrivateChat"]
@@ -148,11 +149,11 @@ function _K.log(text: string, level: LogType, from: number?): Log
 	return log
 end
 
---- Filters a message with [TextChatService.FilterStringAsync]
+--- Filters a message with [TextService.FilterStringAsync]
 function _K.filterMessage(message: string, from: number, to: number): string
 	local ok, result = pcall(
-		TextChatService.FilterStringAsync,
-		TextChatService,
+		TextService.FilterStringAsync,
+		TextService,
 		message,
 		from,
 		Enum.TextFilterContext[if _K.Auth.defaultRole.logs then "PublicChat" else "PrivateChat"]
@@ -163,39 +164,7 @@ function _K.filterMessage(message: string, from: number, to: number): string
 			return result
 		end
 	end
-	return "TextChatService filtering failed."
-end
-
---- Generic ban handler
-function _K.handleBan(
-	userId: number,
-	name: string,
-	reason: string,
-	duration: number,
-	fromUserId: number,
-	fromName: string
-)
-	_K.bans[tostring(userId)] = { name, reason, duration, fromUserId, fromName }
-	-- network ban to all with filtered season?
-	-- _K.filterMessage(reason, fromUserId or game.CreatorId, )
-	local ok, result = pcall(
-		TextChatService.FilterStringAsync,
-		TextChatService,
-		reason,
-		fromUserId,
-		Enum.TextFilterContext.PrivateChat
-	)
-	if ok then
-		for _, player in _K.Services.Players:GetPlayers() do
-			local _, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
-			_K.Remote.Ban:FireClient(player, userId, { name, filtered, duration, fromUserId, fromName })
-		end
-	end
-end
-
--- Flux stateful settings
-for key, value in _K.settings do
-	_K.settings[key] = _K.Flux.state(value)
+	return "TextService filtering failed."
 end
 
 -- register types
@@ -208,16 +177,17 @@ for _, child in script.DefaultCommands:GetChildren() do
 	_K.Registry.registerCommandModule(_K, child)
 end
 
--- register addons
+-- register loader addons and settings
 if _K.IsServer then
 	local K_LOADER = shared._K_LOADER
 	local addons = K_LOADER:FindFirstChild("Addons")
 	local serverAddons = Instance.new("Folder", K_LOADER)
 	serverAddons.Name = "ServerAddons"
 
-	local settingsAddon = K_LOADER:FindFirstChild("Settings")
-	if settingsAddon then
-		settingsAddon.Parent = addons
+	local settings = K_LOADER:FindFirstChild("Settings")
+	if settings then
+		settings.Parent = script
+		_K.loaderSettings = require(settings)
 	end
 
 	if addons then
@@ -237,8 +207,9 @@ if _K.IsServer then
 		end
 		addons.Parent = script
 	end
-elseif _K.IsClient then -- load after client.luau instead lol
+elseif _K.IsClient then -- TODO: load after client.luau instead lol
 	_K._addons = script:FindFirstChild("Addons")
+	_K.loaderSettings = require(script:WaitForChild("Settings") :: any)
 end
 
 if not _K.IsServer then
@@ -247,6 +218,33 @@ end
 --------------------------
 -- START OF SERVER CODE --
 --------------------------
+
+-- assign creator role
+if _K.creatorId > 0 then
+	_K.Auth.userRoleAdd(_K.creatorId, "creator")
+end
+
+-- define main roles
+for role, users in _K.loaderSettings.roles do
+	for _, userId in users do
+		_K.Auth.userRoleAdd(userId, role)
+	end
+end
+
+-- give roles on gamepass purchase
+_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
+	if not purchaseSuccess then
+		return
+	end
+	for id, roles in _K.loaderSettings.gamePassRoles do
+		if gamePassId ~= id then
+			continue
+		end
+		for _, role in roles do
+			_K.Auth.userRoleAdd(player.UserId, role)
+		end
+	end
+end)
 
 -- TODO: include Loader settings then include datastore settings to override
 
@@ -274,37 +272,6 @@ script.Name = "Kohl's Admin Source"
 -- enable client
 script.Client.Enabled = true
 
-local function banHandler(player)
-	local banInfo = _K.bans[player.UserId]
-	-- TODO: should staff roles bypass bans? add a settings toggle
-	if not banInfo or player.UserId == _K.creatorId then
-		-- not banned
-		return
-	end
-
-	local reason, timeStamp = unpack(banInfo, 2)
-	local banMessage
-	if tonumber(timeStamp) then
-		if timeStamp > 0 then
-			local timeRemaining = timeStamp - os.time()
-			if timeRemaining > 0 then
-				banMessage = "You are banned from this experience for " .. _K.Util.ReadableTime(timeRemaining) .. "!"
-			else
-				-- unbanning
-				_K.bans[player.UserId] = nil
-				return
-			end
-		else
-			banMessage = "You are permanently banned from this experience!"
-		end
-	else
-		banMessage = "You are banned from this server!"
-	end
-
-	player:Kick(if reason then banMessage .. "\n Reason: " .. reason else banMessage)
-	return true
-end
-
 -- handle custom command prefix
 _K.Remote.Prefix.OnServerEvent:Connect(function(player, prefix)
 	_K.playerPrefix[player.UserId] = prefix
@@ -312,8 +279,13 @@ end)
 
 -- handle player chatting
 local function playerAdded(player: Player)
+	-- studio testing roles
+	if _K.Services.RunService:IsStudio() then
+		_K.Auth.userRoleAdd(player.UserId, "creator")
+	end
+
 	_K.Auth.userAsyncRoles(player.UserId, true)
-	if banHandler(player) then
+	if _K.Auth.banHandler(player) then
 		return
 	end
 	if _K._serverLock and _K.Auth.getRank(player.UserId) < 2 then

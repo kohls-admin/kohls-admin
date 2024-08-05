@@ -1,6 +1,11 @@
 local GroupService = game:GetService("GroupService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
+local TextService = game:GetService("TextService")
+
+local Data = require(script.Parent.Data)
+local Remote = require(script.Parent.Remote)
+local Util = require(script.Parent.Util)
 
 export type Role = "vip" | "mod" | "admin" | "superadmin" | "creator"
 
@@ -129,14 +134,57 @@ if game.CreatorId > 0 then
 	}
 end
 
-Auth.roles.defaultRole = Auth.defaultRole
+function Auth.banHandler(player)
+	local banInfo = Data.bans[player.UserId]
+	-- TODO: should staff roles bypass bans? add a settings toggle
+	if not banInfo or player.UserId == _K.creatorId then
+		-- not banned
+		return
+	end
 
--- for adding/removing roles only save staff roles
--- TODO: should probably not save roles to a player datastore otherwise those would need to be updated too ;(
--- TODO: instead let the game developer handle their own player save state and just give roles on join?
+	local reason, timeStamp = unpack(banInfo, 2)
+	local banMessage
+	if tonumber(timeStamp) then
+		if timeStamp > 0 then
+			local timeRemaining = timeStamp - os.time()
+			if timeRemaining > 0 then
+				banMessage = "You are banned from this experience for " .. Util.ReadableTime(timeRemaining) .. "!"
+			else
+				-- unbanning
+				Data.bans[player.UserId] = nil
+				return
+			end
+		else
+			banMessage = "You are permanently banned from this experience!"
+		end
+	else
+		banMessage = "You are banned from this server!"
+	end
 
-local function roleSort(a: Role, b: Role): boolean
-	return Auth.roles[a]._rank > Auth.roles[b]._rank
+	player:Kick(if reason then banMessage .. "\n Reason: " .. reason else banMessage)
+	return true
+end
+
+--- Generic ban handler
+function Auth.userBan(
+	userId: number,
+	name: string,
+	reason: string,
+	duration: number,
+	fromUserId: number,
+	fromName: string
+)
+	Data.bans[tostring(userId)] = { name, reason, duration, fromUserId, fromName }
+	-- network ban to all with filtered season?
+	-- _K.filterMessage(reason, fromUserId or game.CreatorId, )
+	local ok, result =
+		pcall(TextService.FilterStringAsync, TextService, reason, fromUserId, Enum.TextFilterContext.PrivateChat)
+	if ok then
+		for _, player in Players:GetPlayers() do
+			local _, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
+			Remote.Ban:FireClient(player, userId, { name, filtered, duration, fromUserId, fromName })
+		end
+	end
 end
 
 --- Adds a role to a user if they don't already have it
