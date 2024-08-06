@@ -256,7 +256,7 @@ local function updateSuggestionLabels(data)
 			thumb.SizeConstraint = Enum.SizeConstraint.RelativeYY
 		end
 
-		label.Text = string.format(suggestFormat, data.query, string.sub(name, #data.query + 1))
+		label.Text = string.format(suggestFormat, string.sub(name, 1, #data.query), string.sub(name, #data.query + 1))
 		frame.Activated:Connect(function()
 			Input._input:CaptureFocus()
 			suggestionIndex = i
