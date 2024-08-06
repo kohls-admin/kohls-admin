@@ -259,7 +259,7 @@ local function baseSuggestions(text, from, definition)
 		if definition.lowerRank and player ~= Players.LocalPlayer and rank <= _K.Auth.getRank(player.UserId) then
 			continue
 		end
-		table.insert(names, string.lower(player.Name))
+		table.insert(names, player.Name)
 		table.insert(instances, player)
 	end
 
