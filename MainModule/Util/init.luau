@@ -30,11 +30,11 @@ local userInfoCache =
 	{} :: { [number]: { Id: number, Username: string, DisplayName: string, HasVerifiedBadge: boolean } }
 
 function Util.getUserInfo(userId: number)
+	userId = tonumber(userId) :: number
+
 	if userInfoCache[userId] then
 		return userInfoCache[userId]
 	end
-
-	userId = tonumber(userId) :: number
 
 	local player = Util.Services.Players:GetPlayerByUserId(userId)
 	if player then
@@ -237,10 +237,6 @@ function Util.newSuggestions(setOrContainer: any): ({ string }, { any })
 		error("only accepts a table, Enum, or Instance.")
 	end
 
-	-- cache lowered names
-	for i, name in names do
-		names[i] = string.lower(name)
-	end
 	return names, instances
 end
 
