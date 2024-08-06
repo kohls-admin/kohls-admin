@@ -55,6 +55,7 @@ local _K = {
 	Data = require(script:WaitForChild("Data")),
 	Auth = require(script:WaitForChild("Auth")),
 	Hook = require(script:WaitForChild("Hook")),
+	Logger = require(script:WaitForChild("Logger")),
 	Process = require(script:WaitForChild("Process")),
 	Registry = require(script:WaitForChild("Registry")),
 	Remote = require(script:WaitForChild("Remote")),
@@ -67,10 +68,9 @@ local _K = {
 	_serverLock = false,
 }
 
--- use Data log table
-_K.logger.logs = _K.Data.logs
-
 -- shorthand
+_K.log = _K.Logger.log
+_K.logger = _K.Logger.logger
 _K.Services = _K.Util.Services
 
 -- assign CreatorId
@@ -81,44 +81,6 @@ if game.CreatorType == Enum.CreatorType.Group then
 	end
 else
 	_K.creatorId = game.CreatorId
-end
-
---- The core log function
-function _K.log(text: string, level: LogType, from: number?): Log
-	-- fire this log to all clients that are authorized!
-	-- TODO: make sure they pull logs on client init
-	-- make sure to sort by timestamp for new datastore entries
-
-	local log = _K.logger:log(text, level, from)
-
-	_K.Hook.log:Fire(log)
-
-	if _K.IsServer then
-		if from then
-			local ok, result = pcall(
-				TextService.FilterStringAsync,
-				TextService,
-				text,
-				from,
-				Enum.TextFilterContext[if _K.Auth.defaultRole.logs then "PublicChat" else "PrivateChat"]
-			)
-			if ok then
-				for _, player in _K.Services.Players:GetPlayers() do
-					local success, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
-					if success then
-						_K.Remote.Log:FireClient(player, { filtered, level, log.time, from })
-					else -- retry
-					end
-				end
-			else
-				-- TODO: if not ok, retry
-			end
-		else
-			_K.Remote.Log:FireAllClients({ log.text, log.level, log.time, log.from })
-		end
-	end
-
-	return log
 end
 
 --- Filters a message with [TextService.FilterStringAsync]
