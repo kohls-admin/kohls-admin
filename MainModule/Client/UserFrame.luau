@@ -48,7 +48,7 @@ return function(from: number?, name: string?, image: string?)
 			UI.new "UIStroke" {
 				Enabled = UI.Theme.StrokeEnabled,
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				Transparency = UI.Theme.Transparency,
+				Transparency = UI.Theme.TransparencyClamped,
 				Color = UI.Theme.Border,
 			},
 		},

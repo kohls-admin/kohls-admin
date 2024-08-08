@@ -43,7 +43,7 @@ function ColorPicker.new(definition)
 				Enabled = UI.Theme.StrokeEnabled,
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 				Color = UI.Theme.Border,
-				Transparency = UI.Theme.Transparency,
+				Transparency = UI.Theme.TransparencyClamped,
 				Thickness = 1,
 			},
 			UI.new "UIGradient" {
@@ -199,7 +199,7 @@ function ColorPicker.new(definition)
 			Enabled = UI.Theme.StrokeEnabled,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Color = UI.Theme.Border,
-			Transparency = UI.Theme.Transparency,
+			Transparency = UI.Theme.TransparencyClamped,
 			Thickness = 1,
 		},
 		UI.new "Frame" {

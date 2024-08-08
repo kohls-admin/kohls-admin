@@ -87,7 +87,7 @@ function Credit.new(_K)
 					UI.new "UIStroke" {
 						Enabled = UI.Theme.StrokeEnabled,
 						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-						Transparency = UI.Theme.Transparency,
+						Transparency = UI.Theme.TransparencyClamped,
 						Color = UI.Theme.Border,
 					},
 				},
@@ -100,18 +100,17 @@ function Credit.new(_K)
 					UI.new "UIListLayout" {
 						SortOrder = Enum.SortOrder.LayoutOrder,
 					},
-					
-	
+
 					UI.new "Frame" {
 						AutomaticSize = Enum.AutomaticSize.XY,
 						BackgroundTransparency = 1,
-	
+
 						UI.new "UIListLayout" {
 							SortOrder = Enum.SortOrder.LayoutOrder,
 							Padding = UI.Theme.PaddingHalf,
 							FillDirection = Enum.FillDirection.Horizontal,
 						},
-	
+
 						UI.new "TextLabel" {
 							Name = "From",
 							BackgroundTransparency = 1,
@@ -122,12 +121,12 @@ function Credit.new(_K)
 							TextXAlignment = "Left",
 							Font = UI.Theme.Font,
 							RichText = true,
-	
+
 							AutomaticSize = Enum.AutomaticSize.XY,
 							Size = UI.compute(UDim2.fromOffset, 0, UI.Theme.FontSizeLarge),
 						},
 					},
-	
+
 					UI.new "TextLabel" {
 						Name = "FromBottom",
 						BackgroundTransparency = 1,
@@ -138,13 +137,11 @@ function Credit.new(_K)
 						TextXAlignment = "Left",
 						Font = UI.Theme.Font,
 						RichText = true,
-	
+
 						AutomaticSize = Enum.AutomaticSize.XY,
 						Size = UI.compute(UDim2.fromOffset, 0, UI.Theme.FontSizeSmall),
 					},
 				},
-
-				
 			},
 
 			UI.new "TextLabel" {
@@ -155,15 +152,10 @@ function Credit.new(_K)
 				AutomaticSize = Enum.AutomaticSize.XY,
 				TextSize = UI.Theme.FontSizeLargest,
 				TextColor3 = UI.Theme.MutedText,
-				TextSize = UI.Theme.FontSizeSmall,
 				Text = "<sc>Design</sc>",
 				RichText = true,
 			},
-
-			
-			
-		}
-
+		},
 
 		-- frame list of user info
 	}

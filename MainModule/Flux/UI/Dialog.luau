@@ -181,7 +181,7 @@ function Dialog.new(definition)
 		UI.new "UIStroke" {
 			Enabled = UI.Theme.StrokeEnabled,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Transparency = UI.Theme.Transparency,
+			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,
 		},
 		UI.new "UIListLayout" {
@@ -254,7 +254,7 @@ function Dialog.new(definition)
 					UI.new "UIStroke" {
 						Enabled = UI.Theme.StrokeEnabled,
 						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-						Transparency = UI.Theme.Transparency,
+						Transparency = UI.Theme.TransparencyClamped,
 						Color = UI.Theme.Border,
 					},
 					UI.new "UIPadding" {
@@ -296,7 +296,7 @@ function Dialog.new(definition)
 					UI.new "UIStroke" {
 						Enabled = UI.Theme.StrokeEnabled,
 						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-						Transparency = UI.Theme.Transparency,
+						Transparency = UI.Theme.TransparencyClamped,
 						Color = UI.Theme.Border,
 					},
 					UI.new "UIPadding" {
