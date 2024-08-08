@@ -266,14 +266,14 @@ return {
 		end,
 	},
 	{
-		name = "kill",
-		aliases = { "unalive" },
-		description = "Kills one or more players.",
+		name = "breakjoints",
+		aliases = { "break", "kill" },
+		description = "Breaks the joints one or more players.",
 		args = {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) to kill.",
+				description = "The player(s) whose joints to break.",
 				lowerRank = true,
 			},
 		},
