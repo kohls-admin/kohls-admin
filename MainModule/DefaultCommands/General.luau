@@ -110,6 +110,26 @@ return {
 			},
 		},
 
+		envClient = function(_K)
+			local function spectateNetwork()
+				_K.Remote.SpectateSubject:FireServer(workspace.CurrentCamera.CFrame)
+			end
+
+			_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame)
+				workspace.CurrentCamera.CFrame = cframe
+			end)
+
+			local spectateConnection
+			_K.Remote.SpectateSubject.OnClientEvent:Connect(function(enabled: boolean)
+				if spectateConnection then
+					spectateConnection:Disconnect()
+				end
+				if enabled then
+					spectateConnection = _K.Services.RunService.Heartbeat:Connect(spectateNetwork)
+				end
+			end)
+		end,
+
 		runClient = function(context, player)
 			if not workspace.CurrentCamera:GetAttribute("kCameraType") then
 				workspace.CurrentCamera:SetAttribute("kCameraType", workspace.CurrentCamera.CameraType)

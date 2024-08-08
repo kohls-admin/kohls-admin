@@ -834,6 +834,20 @@ return {
 			},
 		},
 
+		envClient = function(_K)
+			local lastCameraCFrame
+			_K.Remote.Refresh.OnClientEvent:Connect(function()
+				if lastCameraCFrame then
+					workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Wait()
+					workspace.CurrentCamera.CFrame = lastCameraCFrame
+				end
+			end)
+
+			_K.Services.Players.LocalPlayer.CharacterRemoving:Connect(function()
+				lastCameraCFrame = workspace.CurrentCamera.CFrame
+			end)
+		end,
+
 		run = function(context, players)
 			for _, player in players do
 				if player and player.Character then

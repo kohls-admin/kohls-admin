@@ -107,9 +107,9 @@ return function(_K)
 		_K.logger:log("log #" .. i .. ": " .. lines[math.random(1, 100)], levels[math.random(1, #levels)])
 		_K.Util.deferWait()
 		if i % 100000 == 0 then
-			_K.client.dashboardLogs:updateList()
+			_K.client.UI.Scope.dashboard.Logs:updateList()
 		end
 	end
 
-	_K.client.dashboardLogs:updateList()
+	_K.client.UI.Scope.dashboard.Logs:updateList()
 end

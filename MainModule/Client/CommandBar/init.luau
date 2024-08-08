@@ -524,7 +524,7 @@ return {
 		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
 		CommandBar.Parent = _K.client.UI.LayerTop
-		_K.client.hotkeys.commandBar = { key = Enum.KeyCode.Semicolon, mods = {}, callback = self.show }
+		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
 	end,
 	show = function()

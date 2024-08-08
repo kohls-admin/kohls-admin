@@ -1,108 +1,41 @@
 local _K = require(script.Parent)
-local Announce = require(script.Announce)
-local Bans = require(script.Bans)
-local Commands = require(script.Commands)
-local Credit = require(script.Credit)
 local Flux = require(script.Parent.Flux)
-local Logs = require(script.Logs)
-local Members = require(script.Members)
-local Noclip = require(script.Noclip)
-local Notify = require(script.Notify)
-local Settings = require(script.Settings)
 local UI = require(script.Parent.Flux.UI).registerChildren()
-local UserFrame = require(script.UserFrame)
 
 _K.client = {}
 _K.client.UI = UI
-_K.client.dataStore = {}
 _K.client.hotkeys = {
 	dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
 }
 
+UI.Scope.members = Flux.state(_K.Data.members)
+UI.Scope.bans = Flux.state(_K.Data.bans)
+UI.Scope.logs = Flux.state(_K.Data.logs)
+
+-- Flux stateful settings
+for key, value in _K.Data.settings do
+	UI.Scope.settings[key] = _K.Flux.state(value)
+end
+
 local CommandBar = require(script.CommandBar)
 CommandBar:init(_K)
+
+local Announce = require(script.Announce)
+local Bans = require(script.Bans)
+local Commands = require(script.Commands)
+local Credit = require(script.Credit)
+local Dashboard = require(script.Dashboard)
+local Logs = require(script.Logs)
+local Members = require(script.Members)
+local Network = require(script.Network)
+local Noclip = require(script.Noclip)
+local Notify = require(script.Notify)
+local Settings = require(script.Settings)
+local UserFrame = require(script.UserFrame)
 
 UI.LocalPlayer.Chatted:Connect(function(message: string)
 	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, message)
 end)
-
-_K.Remote.Announce.OnClientEvent:Connect(Announce)
-_K.Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
-_K.Remote.Notify.OnClientEvent:Connect(function(text: string, from: number)
-	Notify({
-		Text = text,
-		Duration = 4 + 0.125 * #text,
-		UserFrame = { from },
-		ExitButton = true,
-	})
-end)
-
-local requestingCommand = {}
-_K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
-	if requestingCommand[from.UserId] then
-		return
-	end
-	requestingCommand[from.UserId] = true
-
-	local actionSignal = _K.Util.SignalGood.new()
-	Notify({
-		Text = `\t<font transparency="0.5">{text}</font>`,
-		ActionText = "Permit this action?",
-		Action = true,
-		LeftAction = true,
-		RightAction = true,
-		Duration = -1,
-
-		UserFrame(from.UserId, from.DisplayName),
-
-		[UI.Hook] = {
-			Action = function(v)
-				actionSignal:Fire(v)
-			end,
-		},
-	})
-
-	local action = actionSignal:Wait() == true
-	requestingCommand[from.UserId] = nil
-	return action
-end
-
--- refresh command setup
-local lastCameraCFrame
-_K.Remote.Refresh.OnClientEvent:Connect(function()
-	if lastCameraCFrame then
-		workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Wait()
-		workspace.CurrentCamera.CFrame = lastCameraCFrame
-	end
-end)
-
-UI.LocalPlayer.CharacterRemoving:Connect(function()
-	lastCameraCFrame = workspace.CurrentCamera.CFrame
-end)
-
--- spectate command setup
-local function spectateNetwork()
-	_K.Remote.SpectateSubject:FireServer(workspace.CurrentCamera.CFrame)
-end
-
-_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame)
-	workspace.CurrentCamera.CFrame = cframe
-end)
-
-local spectateConnection
-_K.Remote.SpectateSubject.OnClientEvent:Connect(function(enabled: boolean)
-	if spectateConnection then
-		spectateConnection:Disconnect()
-	end
-	if enabled then
-		spectateConnection = _K.Services.RunService.Heartbeat:Connect(spectateNetwork)
-	end
-end)
-
--- stateful hotkeys
-for _, data in _K.client.hotkeys do
-	data.key = Flux.state(data.key)
-end
 
 _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 	if gameProcessedEvent then
@@ -134,260 +67,6 @@ _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEve
 			end
 		end
 	end
-end)
-
-UI.Scope.members = Flux.state(_K.Data.members)
-UI.Scope.bans = Flux.state(_K.Data.bans)
-UI.Scope.logs = Flux.state(_K.Data.logs)
-
--- Flux stateful settings
-for key, value in _K.Data.settings do
-	UI.Scope.settings[key] = _K.Flux.state(value)
-end
-
-_K.client.dashboardBans = Bans.new(_K)
-_K.client.dashboardMembers = Members.new(_K)
-_K.client.dashboardLogs = Logs.new(_K)
-_K.client.dashboardCommands = Commands.new(_K)
-_K.client.dashboardSettings = Settings.new(_K)
-_K.client.dashboardCredits = Credit.new(_K)
-
-local dashboard = UI.new "Window" {
-	Parent = UI.LayerDefault,
-	Title = "Kohl's Admin Dashboard",
-	Visible = false,
-
-	UI.new "Tabs" {
-		_K.client.dashboardCommands,
-		_K.client.dashboardBans,
-		_K.client.dashboardMembers,
-		_K.client.dashboardLogs,
-		_K.client.dashboardSettings,
-		_K.client.dashboardCredits,
-		-- UI.new "TextLabel" {
-		-- 	Name = "Credit",
-		-- 	BackgroundTransparency = 1,
-		-- 	Font = UI.Theme.Font,
-		-- 	TextSize = UI.Theme.FontSize,
-		-- 	TextColor3 = UI.Theme.PrimaryText,
-		-- 	Size = UDim2.new(1, 0, 0, 32),
-		-- 	Text = "Kohl's Admin (Created by Scripth)",
-		-- },
-	},
-}
--- TopbarStandard.Holders.Left
-local holder = UI.PlayerGui:FindFirstChild("TopbarStandard")
-if holder and holder:FindFirstChild("Holders") and holder.Holders:FindFirstChild("Left") then
-	holder = holder.Holders.Left
-end
-
-local function dashboardToggle()
-	dashboard._instance.Visible = not dashboard._instance.Visible
-end
-_K.client.hotkeys.dashboard.callback = dashboardToggle
-
-local dasboardButtonPadding = UI.compute(function(use)
-	return UDim.new(0, if use(UI.LegacyTopBar) then 6 else 12)
-end)
-
-local dashboardButton
-dashboardButton = UI.new "TextButton" {
-	Parent = holder or UI.TopBarFrame,
-	LayoutOrder = -1,
-	Name = "kDashboard",
-	AnchorPoint = Vector2.new(0, 1),
-	AutoButtonColor = true,
-	BackgroundColor3 = Color3.new(),
-	BackgroundTransparency = UI.compute(function(use)
-		return if use(UI.LegacyTopBar) then 0.5 else 0.3
-	end),
-	BorderSizePixel = 0,
-	Size = UI.compute(function(use)
-		return if use(UI.LegacyTopBar) then UDim2.fromOffset(32, 32) else UDim2.fromOffset(44, 44)
-	end),
-	Position = UDim2.fromScale(0, 1),
-	Text = "",
-	TextTransparency = 1,
-
-	UI.new "UICorner" {
-		CornerRadius = UI.compute(function(use)
-			return if use(UI.LegacyTopBar) then UDim.new(0, 9) else UDim.new(1, 0)
-		end),
-	},
-	UI.new "UIPadding" {
-		PaddingLeft = dasboardButtonPadding,
-		PaddingRight = dasboardButtonPadding,
-		PaddingTop = dasboardButtonPadding,
-		PaddingBottom = dasboardButtonPadding,
-	},
-
-	UI.new "ImageLabel" {
-		BackgroundTransparency = 1,
-		Image = "rbxassetid://10650723871",
-		Size = UDim2.fromScale(1, 1),
-	},
-
-	[UI.Event] = {
-		Activated = dashboardToggle,
-		MouseEnter = function()
-			dashboardButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-		end,
-		MouseLeave = function()
-			dashboardButton.BackgroundColor3 = Color3.new()
-		end,
-	},
-}
-
-task.spawn(function()
-	local elapsed = 1
-	while dashboard and dashboardButton and dashboard._instance do
-		if not dashboard._instance.Visible then
-			elapsed = 1
-		end
-		local alpha = math.abs(elapsed % 2 - 1) * 0.7
-		dashboardButton.ImageLabel.ImageTransparency = -(math.cos(math.pi * alpha) - 1) / 2
-		elapsed += task.wait()
-	end
-end)
-
-local dashCon
-dashCon = UI.PlayerGui.ChildAdded:Connect(function(child)
-	if child.Name == "TopbarStandard" and child:FindFirstChild("Holders") and child.Holders:FindFirstChild("Left") then
-		dashCon:Disconnect()
-		dashboardButton.Parent = child.Holders.Left
-	end
-end)
-
-local greetings = {
-	morning = {
-		"Seize the day, %s! Make it yours.",
-		"Wake up and chase your dreams, %s!",
-		"Rise and grind, %s! Let's make this day epic!",
-		"Wake up, %s! It's time to level up your skills.",
-	},
-	afternoon = {
-		"Good afternoon, %s! You've got this.",
-		"How's your Roblox adventure going, %s? Hope it's awesome!",
-		"Howdy, %s! Let's make the afternoon awesome!",
-		"Afternoon, %s! Remember to take breaks and have some fun!",
-	},
-	evening = {
-		"Relax and unwind, %s. You've earned it.",
-		"You did great today, %s! Be proud of yourself.",
-		"Good evening, %s! You've got this.",
-		"Evenin', %s! It's time to relax and take a break.",
-	},
-	night = {
-		"Dream big dreams, %s. This night is yours.",
-		'Early bird gets the <font color="#0f0">Robux</font>, %s. Make sure to get some rest!',
-		"Even in the darkest hours, %s, remember that a new dawn is coming.",
-		"Burning the midnight oil, %s?",
-		"Still up, %s? Don't forget to rest!",
-	},
-}
-
-local initCon
-initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, members, settings)
-	initCon:Disconnect()
-	_K.Util.deepMergeTable(_K.Auth, auth)
-	_K.Util.mergeTable(_K.Data.members, members)
-	UI.Scope.members:set(_K.Data.members)
-
-	_K.Util.mergeTable(_K.Data.bans, bans)
-	UI.Scope.bans:set(_K.Data.bans)
-
-	for k, log in logs do
-		table.insert(_K.Data.logs, {
-			text = log[1],
-			level = log[2],
-			time = log[3],
-			from = log[4],
-		})
-		if #_K.Data.logs > 100_000 then
-			table.remove(_K.Data.logs, 1)
-		end
-	end
-	UI.Scope.logs:set(_K.Data.logs)
-
-	-- need to improve networking performance!
-	for key, value in settings do
-		value = UI.peek(value)
-		_K.Data.settings[key] = value
-		UI.Scope.settings[key]:set(value)
-	end
-	_K.client.dashboardLogs:updateList()
-
-	-- join notification
-
-	local greeting
-	local hour = tonumber(os.date("%H")) -- Get the current hour (0-23)
-	if hour >= 5 and hour < 12 then
-		greeting = greetings.morning
-	elseif hour >= 12 and hour < 17 then
-		greeting = greetings.afternoon
-	elseif hour >= 17 and hour < 22 then
-		greeting = greetings.evening
-	else
-		greeting = greetings.night
-	end
-	greeting = greeting[Random.new(tick()):NextInteger(1, #greeting)]
-	greeting = string.format(greeting, `<b>{UI.LocalPlayer.DisplayName}</b>`)
-
-	local member = _K.Data.members[tostring(UI.LocalPlayer.UserId)]
-	local roleText = ""
-	if member and member.roles then
-		for _, role in member.roles do
-			roleText ..= _K.Data.roles[role].name .. ", "
-		end
-	end
-	roleText ..= _K.Data.defaultRole.name
-
-	local commandBarKey = _K.client.hotkeys.commandBar
-	local commandBarKeyRaw = UI.UserInputService:GetStringForKeyCode(commandBarKey.key._value)
-	local commandBarKeyText =
-		`{commandBarKey.mods.Shift and "Shift+" or ""}{commandBarKey.mods.Alt and "Alt+" or ""}{commandBarKey.key._value.Name}`
-
-	local dashboardKey = _K.client.hotkeys.dashboard
-	local dashboardKeyRaw = UI.UserInputService:GetStringForKeyCode(dashboardKey.key._value)
-	local dashboardKeyText =
-		`{dashboardKey.mods.Shift and "Shift+" or ""}{dashboardKey.mods.Alt and "Alt+" or ""}{dashboardKey.key._value.Name}`
-
-	local lines = {
-		`<font family="{UI.Theme.FontMono._value.Name}">{greeting}\n`,
-		`<b>Commands</b>   <font color="#0f0">{commandBarKeyText} {commandBarKeyRaw}</font>`,
-		`<b>Dashboard</b>  <font color="#0f0">{dashboardKeyText} {dashboardKeyRaw}</font>`,
-		`<b>Roles</b>\t  <sc>{roleText}</sc>\n`,
-		`<b>Place</b>        <font transparency="0.5">{game.Name}</font>`,
-		`<b>Server Age</b>   <font transparency="0.5">{_K.Util.ReadableTime(workspace.DistributedGameTime)}</font>`,
-		`<b>Server Time</b>  <font transparency="0.5">{os.date("%X", _K.Data.logs[#_K.Data.logs].time)}</font></font>`,
-	}
-
-	-- TODO: settings flag for hiding join notification for rank 0
-	Notify({
-		Text = table.concat(lines, "\n"),
-		Duration = 30,
-		UserFrame = {},
-		ExitButton = true,
-	})
-end)
-
-_K.Remote.Log.OnClientEvent:Connect(function(log)
-	-- TODO: PERF: add to sorted list and filtered list directly
-	table.insert(_K.Data.logs, {
-		text = log[1],
-		level = log[2],
-		time = log[3],
-		from = log[4],
-	})
-	if #_K.Data.logs > 1e5 then
-		table.remove(_K.Data.logs, 1)
-	end
-	_K.client.dashboardLogs:updateList()
-end)
-
-_K.Remote.Members.OnClientEvent:Connect(function(members)
-	_K.Util.mergeTable(_K.Data.members, members)
-	UI.Scope.members:set(_K.Data.members)
 end)
 
 _K.Remote.Init:FireServer()

@@ -74,7 +74,8 @@ UI.Nil = newproxy()
 --- @within UI
 --- A scope object for organizing and cleaning up UI states
 --- @prop Scope Scope
-UI.Scope = UI.Scope.UI
+UI.Scope = setmetatable({}, Flux.scopeMetatable)
+Flux.Scope.UI = UI.Scope
 
 --- @within UI
 --- GuiService.TopbarInset as a Flux state
