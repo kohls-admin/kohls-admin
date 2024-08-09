@@ -69,19 +69,10 @@ local _K = {
 }
 
 -- shorthand
+_K.creatorId = _K.Data.creatorId
 _K.log = _K.Logger.log
 _K.logger = _K.Logger.logger
 _K.Services = _K.Util.Services
-
--- assign CreatorId
-if game.CreatorType == Enum.CreatorType.Group then
-	local ok, result = pcall(_K.Services.GroupService.GetGroupInfoAsync, _K.Services.GroupService, game.CreatorId)
-	if ok then
-		_K.creatorId = result.Owner.Id
-	end
-else
-	_K.creatorId = game.CreatorId
-end
 
 --- Filters a message with [TextService.FilterStringAsync]
 function _K.filterMessage(message: string, from: number, to: number): string
