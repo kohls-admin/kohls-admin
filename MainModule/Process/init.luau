@@ -74,7 +74,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 		return false, "Invalid utf8 string"
 	end
 
-	local text = Util.trimStart(rawText)
+	local text = Util.String.trimStart(rawText)
 	local rawCommands = Process.rawParse(text, _K.playerPrefix[from] or _K.Data.settings.prefix)
 	if not rawCommands then
 		return
@@ -153,7 +153,7 @@ function Process.runCommands(_K: any, from: number, rawText: string): boolean
 		return commandRan
 	end
 	_K.log(
-		if commandError then commandError else Util.trimStart(rawText),
+		if commandError then commandError else Util.String.trimStart(rawText),
 		if commandRan then "COMMAND" elseif commandError then "ERROR" else "CHAT",
 		from
 	)

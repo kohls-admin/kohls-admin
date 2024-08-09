@@ -47,8 +47,8 @@ return Settings
 -- 	end
 
 -- 	-- gamepass and group roles
--- 	_K.Util.deepMergeTable(_K.Data.async.gamepass, gamePassRoles)
--- 	_K.Util.deepMergeTable(_K.Data.async.group, groupRoles)
+-- 	_K.Util.Table.deepMerge(_K.Data.async.gamepass, gamePassRoles)
+-- 	_K.Util.Table.deepMerge(_K.Data.async.group, groupRoles)
 
 -- 	-- give roles on gamepass purchase
 -- 	_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)

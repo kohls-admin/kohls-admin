@@ -203,7 +203,7 @@ local typeRoles = {
 		for role in next, _K.Auth.roles do
 			table.insert(names, "@" .. role)
 		end
-		return _K.Util.querySuggestions(text, names)
+		return _K.Util.Suggest.query(text, names)
 	end,
 }
 
@@ -308,7 +308,7 @@ local typeMultiple = {
 		for prefix, name in prefixes do
 			table.insert(names, prefix)
 		end
-		return _K.Util.querySuggestions(text, names, instances)
+		return _K.Util.Suggest.query(text, names, instances)
 	end,
 	-- this will require parsing? lol
 	prefixes = {

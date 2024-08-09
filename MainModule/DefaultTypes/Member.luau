@@ -43,7 +43,7 @@ local typeMember = {
 					else userInfo.Username
 			end
 		end
-		return _K.Util.querySuggestions(text, names, _K.Data.members)
+		return _K.Util.Suggest.query(text, names, _K.Data.members)
 	end,
 }
 

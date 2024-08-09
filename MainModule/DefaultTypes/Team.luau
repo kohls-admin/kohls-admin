@@ -22,7 +22,7 @@ local typeTeam = {
 		error("Invalid team value")
 	end,
 	suggestions = function(text: string, from: number)
-		return context.Util.querySuggestions(text, context.Util.newSuggestions(Teams:GetTeams()))
+		return context.Util.Suggest.query(text, context.Util.Suggest.new(Teams:GetTeams()))
 	end,
 }
 

@@ -119,9 +119,9 @@ return function(_K)
 						names[i + 1] = number .. value
 					end
 				end
-				return _K.Util.querySuggestions(text, names)
+				return _K.Util.Suggest.query(text, names)
 			else
-				return _K.Util.querySuggestions(text, defaultSuggestions)
+				return _K.Util.Suggest.query(text, defaultSuggestions)
 			end
 		end,
 	})

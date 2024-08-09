@@ -60,13 +60,13 @@ _K.Remote.Ban.OnClientEvent:Connect(function(userId, ban)
 end)
 
 _K.Remote.Bans.OnClientEvent:Connect(function(bans)
-	_K.Util.mergeTable(_K.Data.bans, bans)
+	_K.Util.Table.merge(_K.Data.bans, bans)
 	UI.Scope.bans:set(_K.Data.bans)
 	-- Remote.Ban:FireClient(player, userId, { filtered, duration, fromUserId })
 end)
 
 _K.Remote.Members.OnClientEvent:Connect(function(members)
-	_K.Util.mergeTable(_K.Data.members, members)
+	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
 end)
 
@@ -117,11 +117,11 @@ local greetings = {
 local initCon
 initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, members, settings)
 	initCon:Disconnect()
-	_K.Util.deepMergeTable(_K.Auth, auth)
-	_K.Util.mergeTable(_K.Data.members, members)
+	_K.Util.Table.deepMerge(_K.Auth, auth)
+	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
 
-	_K.Util.mergeTable(_K.Data.bans, bans)
+	_K.Util.Table.merge(_K.Data.bans, bans)
 	UI.Scope.bans:set(_K.Data.bans)
 
 	for k, log in logs do

@@ -17,7 +17,7 @@ end
 
 function Commands.new(_K)
 	local UI = _K.client.UI
-	local escape = _K.Util.escapeRichText
+	local escape = _K.Util.String.escapeRichText
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Commands",

@@ -278,7 +278,7 @@ end
 
 local function clearCompletion()
 	TooltipFrame.Visible = false
-	Input.DisplayText:set(_K.Util.escapeRichText(Input._input.Text))
+	Input.DisplayText:set(_K.Util.String.escapeRichText(Input._input.Text))
 	for _, label in suggestionLabels do
 		label:Destroy()
 	end
@@ -308,17 +308,17 @@ updateCompletion = function()
 		local pos, text, err = unpack(invalid)
 		-- red text inlineFormat
 		Input.DisplayText:set(
-			`<font transparency="0.33">{_K.Util.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.escapeRichText(
+			`<font transparency="0.33">{_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.String.escapeRichText(
 				text
-			)}</b></font>{_K.Util.escapeRichText(string.sub(data.message, pos + #text))}</font>`
+			)}</b></font>{_K.Util.String.escapeRichText(string.sub(data.message, pos + #text))}</font>`
 		)
 		Tooltip.Text = if not data.argDefinition
 			then ""
 			else string.format(
 				argumentFormat,
-				_K.Util.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
-				_K.Util.escapeRichText(data.argDefinition.type),
-				_K.Util.escapeRichText(data.argDefinition.description)
+				_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
+				_K.Util.String.escapeRichText(data.argDefinition.type),
+				_K.Util.String.escapeRichText(data.argDefinition.description)
 			)
 		for _, label in suggestionLabels do
 			label:Destroy()
@@ -327,7 +327,7 @@ updateCompletion = function()
 		table.clear(suggestionLabels)
 		local frame = SuggestionFrame:Clone()
 		local label = frame:FindFirstChildOfClass("TextLabel")
-		label.Text = `<font color="#f00"><b>{_K.Util.escapeRichText(err)}</b></font>`
+		label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
 		frame.Parent = TooltipFrame
 		-- show highlight
 		table.insert(suggestionLabels, frame)
@@ -346,9 +346,9 @@ updateCompletion = function()
 	if data.argDefinition then
 		Tooltip.Text = string.format(
 			argumentFormat,
-			_K.Util.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
-			_K.Util.escapeRichText(data.argDefinition.type),
-			_K.Util.escapeRichText(data.argDefinition.description)
+			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
+			_K.Util.String.escapeRichText(data.argDefinition.type),
+			_K.Util.String.escapeRichText(data.argDefinition.description)
 		)
 		TooltipFrame.Visible = true
 		-- TODO: some types should show a widget for fast select e.g. color wheel
@@ -402,11 +402,11 @@ updateCompletion = function()
 	Input.DisplayText:set(
 		string.format(
 			inlineFormat,
-			_K.Util.escapeRichText(string.sub(data.message, 1, data.argPos - 1)),
-			_K.Util.escapeRichText(data.query),
-			_K.Util.escapeRichText(string.sub(data.rawArg, #data.query + 1)),
-			_K.Util.escapeRichText(string.sub(suggestionText, #data.rawArg + 1)),
-			_K.Util.escapeRichText(string.sub(data.message, endPos))
+			_K.Util.String.escapeRichText(string.sub(data.message, 1, data.argPos - 1)),
+			_K.Util.String.escapeRichText(data.query),
+			_K.Util.String.escapeRichText(string.sub(data.rawArg, #data.query + 1)),
+			_K.Util.String.escapeRichText(string.sub(suggestionText, #data.rawArg + 1)),
+			_K.Util.String.escapeRichText(string.sub(data.message, endPos))
 		)
 	)
 
@@ -416,9 +416,9 @@ updateCompletion = function()
 		-- show command aliases too!
 		Tooltip.Text = string.format(
 			argumentFormat,
-			_K.Util.escapeRichText(suggestionText),
+			_K.Util.String.escapeRichText(suggestionText),
 			"command",
-			_K.Util.escapeRichText(suggestionValue.description)
+			_K.Util.String.escapeRichText(suggestionValue.description)
 		)
 	end
 	if data.argDefinition or data.argIndex == 1 then
@@ -521,7 +521,7 @@ Input._input:GetPropertyChangedSignal("Text"):Connect(function()
 	if Input._input.Text == _K.Data.settings.prefix then
 		Input.DisplayText:set(Input._input.Text .. "<font transparency='0.5'><i>command</i></font>")
 	else
-		Input.DisplayText:set(_K.Util.escapeRichText(Input._input.Text))
+		Input.DisplayText:set(_K.Util.String.escapeRichText(Input._input.Text))
 	end
 end)
 

@@ -34,7 +34,7 @@ local typeBan = {
 			local name = userInfo.Username
 			names[userId] = if string.find(name, " ") then `"{name}"` else name
 		end
-		return context.Util.querySuggestions(text, names, context.Data.bans)
+		return context.Util.Suggest.query(text, names, context.Data.bans)
 	end,
 }
 

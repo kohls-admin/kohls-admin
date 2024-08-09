@@ -20,13 +20,13 @@ local logTypeColors = {
 
 function Logs.new(_K)
 	local UI = _K.client.UI
-	local escape = _K.Util.escapeRichText
+	local escape = _K.Util.String.escapeRichText
 
 	local function filterTest(self, list)
 		local filter = string.lower(self._input.Value._value)
 		self._filter = filter
 		local new = {}
-		_K.Util.deferTimerReset()
+		_K.Util.Defer.reset()
 		for i, log in list do
 			if not log.filterText then
 				local timestamp = os.date("%y-%m-%d %X", log.time)
@@ -57,7 +57,7 @@ function Logs.new(_K)
 				log.filterEnd = foundEnd
 				table.insert(new, log)
 			end
-			_K.Util.deferWait()
+			_K.Util.Defer.wait()
 		end
 		return new
 	end

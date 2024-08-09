@@ -14,7 +14,7 @@ return function(_K)
 			for alias in _K.Registry.commands do
 				names[alias] = alias
 			end
-			return _K.Util.querySuggestions(text, names, _K.Registry.commands)
+			return _K.Util.Suggest.query(text, names, _K.Registry.commands)
 		end,
 
 		parse = function(command)

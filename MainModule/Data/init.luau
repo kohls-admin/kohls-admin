@@ -23,7 +23,7 @@ local function syncMain(result)
 	-- TODO: need a way to clear SAVED session bans/settings for removal xD
 
 	-- ban sync
-	Util.mergeTable(Data.bans, bans)
+	Util.Table.merge(Data.bans, bans)
 
 	-- member sync
 	for key, data in members do
@@ -52,10 +52,10 @@ local function syncMain(result)
 			Data.members[key] = nil
 		end
 	end
-	Util.mergeTable(Data.members, members)
+	Util.Table.merge(Data.members, members)
 
 	-- settings sync
-	Util.mergeTable(Data.settings, settings)
+	Util.Table.merge(Data.settings, settings)
 
 	print(result)
 
@@ -83,7 +83,7 @@ local function updateMain()
 		Data.Store.mergeRemove(value[1], bans)
 		Data.Store.mergeRemove(value[2], members)
 
-		Util.mergeTable(value[3], settings)
+		Util.Table.merge(value[3], settings)
 
 		return value
 	end)
@@ -169,7 +169,7 @@ function Data.initialize(name)
 		-- if Data.pendingSaveLogs then
 		-- 	numThreadsRunning += 1
 		-- 	task.spawn(startSaveThread, "Logs", function(value)
-		-- 		return Util.mergeTable(value, Cache.logs)
+		-- 		return Util.Table.merge(value, Cache.logs)
 		-- 	end)
 		-- end
 

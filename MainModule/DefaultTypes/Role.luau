@@ -38,7 +38,7 @@ local typeRole = {
 				names[roleName] = roleName
 			end
 		end
-		return context.Util.querySuggestions(text, names, context.Data.roles)
+		return context.Util.Suggest.query(text, names, context.Data.roles)
 	end,
 }
 

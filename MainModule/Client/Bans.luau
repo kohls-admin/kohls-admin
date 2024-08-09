@@ -6,7 +6,7 @@ local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font trans
 
 function Bans.new(_K)
 	local UI = _K.client.UI
-	local escape = _K.Util.escapeRichText
+	local escape = _K.Util.String.escapeRichText
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Bans",

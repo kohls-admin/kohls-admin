@@ -47,7 +47,7 @@ return function(dialogOverride)
 	local userFrame = dialogOverride.UserFrame
 	dialogOverride.UserFrame = nil
 
-	local dialog = UI.new("Dialog")(_K.Util.mergeTable({
+	local dialog = UI.new("Dialog")(_K.Util.Table.merge({
 		Close = close,
 		Duration = 30,
 		Parent = UI.LayerTop,

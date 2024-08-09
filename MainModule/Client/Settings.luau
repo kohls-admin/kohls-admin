@@ -312,9 +312,9 @@ function Settings.new(_K)
 							local text = if found
 								then string.format(
 									filterRichFormat,
-									_K.Util.escapeRichText(string.sub(rawText, 1, found - 1)),
-									_K.Util.escapeRichText(string.sub(rawText, found, found + #filter - 1)),
-									_K.Util.escapeRichText(string.sub(rawText, found + #filter))
+									_K.Util.String.escapeRichText(string.sub(rawText, 1, found - 1)),
+									_K.Util.String.escapeRichText(string.sub(rawText, found, found + #filter - 1)),
+									_K.Util.String.escapeRichText(string.sub(rawText, found + #filter))
 								)
 								else rawText
 							lineItem.Text:set(text)
