@@ -1,5 +1,8 @@
 -- "non-abusive" commands for game members
 
+local Players = game:GetService("Players")
+local TextService = game:GetService("TextService")
+
 local noclipCache = {}
 
 local spectateConnection
@@ -31,7 +34,26 @@ return {
 		},
 
 		run = function(context, message)
-			context._K.Remote.Announce:FireAllClients(message, context.from)
+			local ok, result = pcall(
+				TextService.FilterStringAsync,
+				TextService,
+				message,
+				context.from,
+				Enum.TextFilterContext.PublicChat
+			)
+
+			if not ok then
+				return
+			end
+
+			for _, player in Players:GetPlayers() do
+				task.spawn(function()
+					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
+					if success then
+						context._K.Remote.Announce:FireClient(player, msg, context.from)
+					end
+				end)
+			end
 		end,
 	},
 	{
@@ -52,8 +74,25 @@ return {
 		},
 
 		run = function(context, players, message)
+			local ok, result = pcall(
+				TextService.FilterStringAsync,
+				TextService,
+				message,
+				context.from,
+				Enum.TextFilterContext.PublicChat
+			)
+
+			if not ok then
+				return
+			end
+
 			for _, player in players do
-				context._K.Remote.Notify:FireClient(player, message, context.from)
+				task.spawn(function()
+					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
+					if success then
+						context._K.Remote.Notify:FireClient(player, msg, context.from)
+					end
+				end)
 			end
 		end,
 	},
@@ -75,8 +114,25 @@ return {
 		},
 
 		run = function(context, message, players)
+			local ok, result = pcall(
+				TextService.FilterStringAsync,
+				TextService,
+				message,
+				context.from,
+				Enum.TextFilterContext.PublicChat
+			)
+
+			if not ok then
+				return
+			end
+
 			for _, player in players do
-				context._K.Remote.Announce:FireClient(player, message, context.from)
+				task.spawn(function()
+					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
+					if success then
+						context._K.Remote.Announce:FireClient(player, msg, context.from)
+					end
+				end)
 			end
 		end,
 	},

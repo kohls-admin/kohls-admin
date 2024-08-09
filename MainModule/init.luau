@@ -75,13 +75,13 @@ _K.logger = _K.Logger.logger
 _K.Services = _K.Util.Services
 
 --- Filters a message with [TextService.FilterStringAsync]
-function _K.filterMessage(message: string, from: number, to: number): string
+function _K.filterMessage(message: string, from: number, to: number, filterContext: Enum.TextFilterContext?): string
 	local ok, result = pcall(
 		TextService.FilterStringAsync,
 		TextService,
 		message,
 		from,
-		Enum.TextFilterContext[if _K.Data.defaultRole.logs then "PublicChat" else "PrivateChat"]
+		filterContext or Enum.TextFilterContext.PublicChat
 	)
 	if ok then
 		ok, result = pcall(result.GetChatForUserAsync, result, to)
