@@ -51,9 +51,10 @@ function Logs.new(_K)
 				)
 			end
 
-			local ok, found = pcall(string.find, log.filterText, filter)
+			local ok, found, foundEnd = string.find(log.filterText, filter, 1, true)
 			if ok and found then
 				log.filterIndex = found
+				log.filterEnd = foundEnd
 				table.insert(new, log)
 			end
 			_K.Util.deferWait()
@@ -63,13 +64,13 @@ function Logs.new(_K)
 
 	local function renderText(self, log)
 		if self._filter ~= "" then
-			local text, index = log.rawText, log.filterIndex
-			return if index
+			local text = log.rawText
+			return if log.filterIndex
 				then string.format(
 					filterRichFormat,
-					escape(string.sub(text, 1, index - 1)),
-					escape(string.sub(text, index, index + #self._filter - 1)),
-					escape(string.sub(text, index + #self._filter))
+					escape(string.sub(text, 1, log.filterIndex - 1)),
+					escape(string.sub(text, log.filterIndex, log.filterEnd)),
+					escape(string.sub(text, log.filterEnd + 1))
 				)
 				else text
 		end
