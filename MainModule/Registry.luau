@@ -1,7 +1,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
--- local Util = require(script.Parent.Util)
+local Util = require(script.Parent.Util)
 
 type Dict = { [any]: any }
 
@@ -103,6 +103,23 @@ local Registry = {
 	commands = {},
 	commandsList = {},
 }
+
+--- Makes an Enum command type definition
+function Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string })
+	local suggestions = Util.newSuggestions(enumItems)
+	return {
+		displayName = typeName,
+		validate = function(text)
+			return Util.querySuggestions(text, suggestions)[1] ~= nil, `Invalid {typeName}`
+		end,
+		parse = function(text)
+			return Util.querySuggestions(text, suggestions, enumItems)[1][2]
+		end,
+		suggestions = function(text)
+			return Util.querySuggestions(text, suggestions, enumItems)
+		end,
+	}
+end
 
 --- Registers a command type
 function Registry.registerType(name: string, typeObject: ArgumentType, override: Dict?)
