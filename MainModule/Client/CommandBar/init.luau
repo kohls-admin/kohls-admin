@@ -229,14 +229,16 @@ local function updateSuggestionLabels(data)
 
 	for i = start, start + amount do
 		local suggestion = data.suggestions[i]
-		local name, value = unpack(suggestion)
+		local name, value, displayName = unpack(suggestion)
 		local frame = SuggestionFrame:Clone()
 		local label = frame:FindFirstChildOfClass("TextLabel")
 		frame.LayoutOrder = i
 		frame.BackgroundTransparency = if i == suggestionIndex then 0.9 else 0.95
 
+		displayName = displayName or name
+
 		if typeof(value) == "Instance" and value:IsA("Player") then
-			name = `{name} ({value.DisplayName})`
+			displayName = `{name} ({value.DisplayName})`
 			local userId = value.UserId
 			local image = playerThumbs[tostring(userId)]
 			if not image then
@@ -256,7 +258,11 @@ local function updateSuggestionLabels(data)
 			thumb.SizeConstraint = Enum.SizeConstraint.RelativeYY
 		end
 
-		label.Text = string.format(suggestFormat, string.sub(name, 1, #data.query), string.sub(name, #data.query + 1))
+		label.Text = string.format(
+			suggestFormat,
+			string.sub(displayName, 1, #data.query),
+			string.sub(displayName, #data.query + 1)
+		)
 		frame.Activated:Connect(function()
 			Input._input:CaptureFocus()
 			suggestionIndex = i
