@@ -12,6 +12,7 @@ local Remote = {
 	Command = _REMOTE,
 	Init = _REMOTE,
 	Log = _REMOTE,
+	Logs = _REMOTE,
 	Members = _REMOTE,
 	Noclip = _REMOTE,
 	Notify = _REMOTE,

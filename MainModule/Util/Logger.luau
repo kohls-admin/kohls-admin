@@ -75,7 +75,7 @@ function Logger:log(text: string, level: LogType, userId: number?): Log?
 	local log = {
 		text = text,
 		level = encode[level],
-		time = os.time(),
+		time = workspace:GetServerTimeNow(),
 		from = userId,
 	}
 

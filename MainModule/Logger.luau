@@ -29,6 +29,12 @@ function module.log(text: string, level: LogType, from: number?): Log
 	Hook.log:Fire(log)
 
 	if IsServer then
+		if level == "COMMAND" then
+			-- TODO: should only persist commands if they are used by "staff", non VIP from?
+			table.insert(Data.Cache.logs, { log.text, log.level, log.time, from })
+			Data.pendingSaveLogs = true
+		end
+
 		if from then
 			local ok, result = pcall(
 				TextService.FilterStringAsync,
@@ -41,7 +47,7 @@ function module.log(text: string, level: LogType, from: number?): Log
 				for _, player in Players:GetPlayers() do
 					local success, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
 					if success then
-						Remote.Log:FireClient(player, { filtered, level, log.time, from })
+						Remote.Log:FireClient(player, { filtered, log.level, log.time, from })
 					else -- retry
 					end
 				end
@@ -49,7 +55,7 @@ function module.log(text: string, level: LogType, from: number?): Log
 				-- TODO: if not ok, retry
 			end
 		else
-			Remote.Log:FireAllClients({ log.text, log.level, log.time, log.from })
+			Remote.Log:FireAllClients({ log.text, log.level, log.time, from })
 		end
 	end
 

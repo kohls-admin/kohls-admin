@@ -158,6 +158,10 @@ local Data = {
 
 Data.roles.defaultRole = Data.defaultRole
 
+function Data.sortTime(a, b)
+	return a.time < b.time
+end
+
 -- assign CreatorId
 if game.CreatorType == Enum.CreatorType.Group then
 	local ok, result = pcall(GroupService.GetGroupInfoAsync, GroupService, game.CreatorId)

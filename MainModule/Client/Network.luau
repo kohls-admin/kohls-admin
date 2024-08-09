@@ -71,6 +71,9 @@ _K.Remote.Members.OnClientEvent:Connect(function(members)
 end)
 
 _K.Remote.Log.OnClientEvent:Connect(function(log)
+	if not _K.client.ready then
+		return
+	end
 	-- TODO: PERF: add to sorted list and filtered list directly
 	table.insert(_K.Data.logs, {
 		text = log[1],
@@ -81,6 +84,18 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 	if #_K.Data.logs > 1e5 then
 		table.remove(_K.Data.logs, 1)
 	end
+	UI.Scope.dashboard.Logs:updateList()
+end)
+
+_K.Remote.Logs.OnClientEvent:Connect(function(logs)
+	local dataLogs = _K.Data.logs
+
+	table.clear(dataLogs)
+	for k, log in logs do
+		dataLogs[k] = log
+	end
+
+	UI.Scope.logs:set(_K.Data.logs)
 	UI.Scope.dashboard.Logs:updateList()
 end)
 
@@ -136,6 +151,7 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, member
 		end
 	end
 	UI.Scope.logs:set(_K.Data.logs)
+	UI.Scope.dashboard.Logs:updateList()
 
 	-- need to improve networking performance!
 	for key, value in settings do
@@ -143,7 +159,6 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, member
 		_K.Data.settings[key] = value
 		UI.Scope.settings[key]:set(value)
 	end
-	UI.Scope.dashboard.Logs:updateList()
 
 	-- join notification
 
@@ -197,6 +212,8 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, member
 		UserFrame = {},
 		ExitButton = true,
 	})
+
+	_K.client.ready = true
 end)
 
 return true

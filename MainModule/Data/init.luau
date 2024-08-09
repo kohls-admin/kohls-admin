@@ -17,6 +17,8 @@ end
 
 Data.Store = require(script.Store)
 
+local updateAsyncInterval = 10
+
 local function syncMain(result)
 	local bans, members, settings = unpack(result)
 
@@ -57,14 +59,12 @@ local function syncMain(result)
 	-- settings sync
 	Util.Table.merge(Data.settings, settings)
 
-	print(result)
-
 	-- TODO: only send to clients authorized to view these data
 	Remote.Members:FireAllClients(Data.members)
 	-- replicate bans/settings to clients
 end
 
-local nextMainInterval = tick() + 10
+local nextMainInterval = tick() + updateAsyncInterval
 local function updateMain()
 	-- flush cache and hold onto references to make sure they are immutable!
 	local bans = Data.Cache.bans
@@ -75,7 +75,7 @@ local function updateMain()
 	Data.Cache.settings = {}
 
 	local ok, result = Data.Store.updateAsync("Main", function(value)
-		print("updateAsync", value, members)
+		print("updateAsyncMain", value, bans, members, settings)
 		if not value then
 			return Data.Store.filterRemove({ bans, members, settings })
 		end
@@ -90,10 +90,77 @@ local function updateMain()
 
 	if ok then
 		Data.pendingSaveMain = false
-		nextMainInterval = tick() + 10
+		nextMainInterval = tick() + updateAsyncInterval
 		syncMain(result)
 	else
 		warn(`[Kohl's Admin] Main Datastore UpdateAsync failed: {result}`)
+	end
+
+	return ok, result
+end
+
+local function syncLogs(logs)
+	-- TODO: add then sort logs not currently within Data.logs
+	for _, log in logs do
+		local text, level, time, from = unpack(log)
+		local exists
+		for _, existingLog in Data.logs do
+			if existingLog.text == text and existingLog.time == time then
+				exists = true
+				break
+			end
+		end
+		if exists then
+			continue
+		end
+
+		table.insert(Data.logs, { text = text, level = level, time = time, from = from })
+	end
+	table.sort(Data.logs, Data.sortTime)
+	Remote.Logs:FireAllClients(Data.logs)
+end
+
+local function rawSortTime(a, b)
+	return a[3] > b[3]
+end
+
+local nextLogsInterval = tick() + updateAsyncInterval
+local function updateLogs()
+	local logs = Data.Cache.logs
+	Data.Cache.logs = {}
+
+	local ok, result = Data.Store.updateAsync("Logs", function(value)
+		print("updateAsyncLog", value, logs)
+		if not value then
+			return logs
+		end
+
+		for _, log in logs do
+			table.insert(value, log)
+		end
+		table.sort(value, rawSortTime)
+
+		local excess = #value - 10_000
+		if excess > 0 then
+			-- trim
+			for i = 1, excess do
+				value[i] = nil
+			end
+			-- shift
+			for i = excess + 1, excess + 10_000 do
+				value[i - excess] = value[excess]
+			end
+		end
+
+		return value
+	end)
+
+	if ok then
+		Data.pendingSaveLogs = false
+		nextLogsInterval = tick() + updateAsyncInterval
+		syncLogs(result)
+	else
+		warn(`[Kohl's Admin] Logs Datastore UpdateAsync failed: {result}`)
 	end
 
 	return ok, result
@@ -119,15 +186,27 @@ function Data.initialize(name)
 
 	local okLogs, logs = Data.Store.getAsync("Logs")
 	if okLogs then
-		-- Data.logs = logs
 		print("LogsLoad", logs)
-		-- TODO: network data to existing clients
+		if logs then
+			syncLogs(logs)
+		end
 	end
 
 	if not RunService:IsStudio() then
 		-- Avoid writing studio data to production and stalling test session closing
 		return Data
 	end
+
+	task.spawn(function() -- logs save loop
+		repeat
+			task.wait(1)
+			if tick() > nextLogsInterval and Data.pendingSaveLogs then
+				print("attempting a logs save!", Data.Cache.logs)
+				updateLogs()
+			end
+		until Data.gameClosing
+		print("game closing?")
+	end)
 
 	task.spawn(function() -- main save loop
 		repeat

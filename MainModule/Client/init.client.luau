@@ -2,7 +2,7 @@ local _K = require(script.Parent)
 local Flux = require(script.Parent.Flux)
 local UI = require(script.Parent.Flux.UI).registerChildren()
 
-_K.client = {}
+_K.client = { ready = false }
 _K.client.UI = UI
 _K.client.hotkeys = {
 	dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
