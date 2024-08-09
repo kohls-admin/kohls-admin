@@ -8,13 +8,19 @@ setmetatable(ListItem, BaseClass)
 function ListItem.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Text = "ListItem Label",
+		ContentAutomaticSize = false,
 		ContentListLayout = true,
 	}, definition)
 
 	new._content = UI.new "Frame" {
 		Name = "UIContent",
 		AnchorPoint = Vector2.new(1, 0),
-		Size = UDim2.new(0.5, 0, 1, 0),
+		AutomaticSize = UI.compute(function(use)
+			return if use(new.ContentAutomaticSize) then Enum.AutomaticSize.X else Enum.AutomaticSize.None
+		end),
+		Size = UI.compute(function(use)
+			return UDim2.fromScale(if use(new.ContentAutomaticSize) then 0 else 0.5, 1)
+		end),
 		Position = UDim2.new(1, 0, 0, 0),
 		BackgroundTransparency = 1,
 
@@ -42,7 +48,7 @@ function ListItem.new(definition)
 
 		UI.new "TextLabel" {
 			Text = new.Text,
-			Size = UDim2.new(0.5, 0, 1, 0),
+			Size = UDim2.new(1, 0, 1, 0),
 			TextXAlignment = Enum.TextXAlignment.Left,
 			RichText = true,
 			Font = UI.Theme.Font,
@@ -50,6 +56,10 @@ function ListItem.new(definition)
 			TextColor3 = UI.Theme.PrimaryText,
 			TextTruncate = Enum.TextTruncate.SplitWord,
 			BackgroundTransparency = 1,
+
+			UI.new "UIFlexItem" {
+				FlexMode = Enum.UIFlexMode.Fill,
+			},
 		},
 
 		new._content,
