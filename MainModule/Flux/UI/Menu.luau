@@ -23,6 +23,7 @@ function Menu.new(definition)
 		Name = "Menu",
 		ZIndex = 100,
 		BackgroundTransparency = 1,
+		ClipsDescendants = false,
 		Size = UDim2.new(1, 0, 1, 0),
 		CanvasSize = UI.compute(function(use)
 			return UDim2.new(0, 0, 0, use(listContentSize).Y)
@@ -35,6 +36,7 @@ function Menu.new(definition)
 
 	-- if too close to viewport boundary top/botton flip menu direction
 	new._instance = UI.new "Frame" {
+		Name = "Menu",
 		ZIndex = 100,
 		Visible = false,
 		Parent = UI.LayerTop,
@@ -42,6 +44,7 @@ function Menu.new(definition)
 			return if use(new.RightAlign) then Vector2.new(1, 0) else Vector2.zero
 		end),
 		BackgroundColor3 = UI.Theme.Primary,
+		ClipsDescendants = true,
 
 		new._menu,
 		UI.new "UICorner" {
