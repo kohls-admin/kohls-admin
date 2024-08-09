@@ -7,8 +7,6 @@ local Data = require(script.Parent.Data)
 local Remote = require(script.Parent.Remote)
 local Util = require(script.Parent.Util)
 
-local Data = require(script.Parent.Data)
-
 export type Role = "vip" | "mod" | "admin" | "superadmin" | "creator"
 
 --- @class Auth
@@ -19,14 +17,15 @@ local function roleSort(a: Role, b: Role): boolean
 end
 
 function Auth.banHandler(player)
-	local banInfo = Data.bans[player.UserId]
+	local key = tostring(player.UserId)
+	local banInfo = Data.bans[key]
 	-- TODO: should staff roles bypass bans? add a settings toggle
-	if not banInfo or player.UserId == _K.creatorId then
+	if not banInfo or player.UserId == Data.creatorId then
 		-- not banned
 		return
 	end
 
-	local reason, timeStamp = unpack(banInfo, 2)
+	local reason, timeStamp = unpack(banInfo)
 	local banMessage
 	if tonumber(timeStamp) then
 		if timeStamp > 0 then
@@ -35,7 +34,8 @@ function Auth.banHandler(player)
 				banMessage = "You are banned from this experience for " .. Util.ReadableTime(timeRemaining) .. "!"
 			else
 				-- unbanning
-				Data.bans[player.UserId] = nil
+				Data.bans[key] = nil
+				Data.Cache.bans[key] = Data.Store.REMOVE
 				return
 			end
 		else
@@ -49,26 +49,47 @@ function Auth.banHandler(player)
 	return true
 end
 
---- Generic ban handler
-function Auth.userBan(
-	userId: number,
-	name: string,
-	reason: string,
-	duration: number,
-	fromUserId: number,
-	fromName: string
-)
-	Data.bans[tostring(userId)] = { name, reason, duration, fromUserId, fromName }
-	-- network ban to all with filtered season?
-	-- _K.filterMessage(reason, fromUserId or game.CreatorId, )
+function Auth.userBan(userId: number, reason: string, duration: number?, fromUserId: number)
+	print("userBan", userId)
+	local timestamp
+	if duration and duration ~= 0 then -- and canBan?
+		timestamp = if duration > 0 then os.time() + duration else -1
+	end
+
+	local key = tostring(userId)
+	Data.bans[key] = { reason, timestamp, fromUserId }
+	if tonumber(duration) and duration ~= 0 then
+		Data.Cache.bans[key] = Data.bans[key]
+		Data.pendingSaveMain = true
+	end
+
+	if not reason then
+		local ban = { "No reason.", timestamp, fromUserId }
+		for _, player in Players:GetPlayers() do
+			-- TODO: only send to authorized clients!
+			Remote.Ban:FireClient(player, key, ban)
+		end
+		return
+	end
+
 	local ok, result =
 		pcall(TextService.FilterStringAsync, TextService, reason, fromUserId, Enum.TextFilterContext.PrivateChat)
 	if ok then
 		for _, player in Players:GetPlayers() do
+			-- TODO: only send to authorized clients!
 			local _, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
-			Remote.Ban:FireClient(player, userId, { name, filtered, duration, fromUserId, fromName })
+			Remote.Ban:FireClient(player, key, { filtered, timestamp, fromUserId })
 		end
 	end
+end
+
+function Auth.userUnban(userId: number, fromUserId: number)
+	local key = tostring(userId)
+	Data.bans[key] = nil
+	Data.Cache.bans[key] = Data.Store.REMOVE
+	Data.pendingSaveMain = true
+	-- TODO: only send to authorized clients
+	Remote.Ban:FireAllClients(userId)
 end
 
 --- Adds a role to a user if they don't already have it

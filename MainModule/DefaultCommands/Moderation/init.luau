@@ -5,7 +5,7 @@ local teleportCharacter = require(script.teleportCharacter)
 
 return {
 	{
-		name = "tban",
+		name = "ban",
 		description = "Bans one or more players for a certain duration.",
 		args = {
 			{
@@ -18,53 +18,37 @@ return {
 			{
 				type = "timeSimple",
 				name = "Duration",
-				description = "The duration for the ban.",
+				description = "The duration for the ban.\n -1  Forever\n  0  Session",
 			},
 			{
-				type = "string",
+				type = "stringGreedy",
 				name = "Reason",
 				description = "The reason for the ban.",
 				optional = true,
 			},
-		},
-		permissions = {
-			kick = true,
 		},
 
 		run = function(context, players, duration: number?, reason: string?)
 			-- if lacking administrator command group only allow session banning?
 			-- need to somehow display only session bans in suggestions...
 			-- TODO: only show lower rank players in the suggestions if defined in argDef
-			local canBan = context._K.Auth.hasPermission(context.from, "ban")
-			local timestamp
-			if duration and canBan then
-				if duration > 0 then
-					timestamp = os.time() + duration
-				end
-				-- use new banasync
+			if type(reason) == "string" then
+				reason = string.sub(reason, 1, 400) -- banasync limit
 			end
-
 			local ids = table.create(#players)
 			for _, player in players do
-				context._K.Auth.userBan(
-					player.UserId,
-					player.Username,
-					reason,
-					timestamp,
-					context.from,
-					context.from.Name
-				)
+				context._K.Auth.userBan(player.UserId, reason, duration, context.from)
 				player:Kick(reason)
 			end
-			if canBan and duration and duration ~= 0 then
-				local ok = pcall(
-					context._K.Services.Players.BanAsync,
-					context._K.Services.Players,
-					{ UserIds = ids, PrivateReason = reason, Duration = duration }
-				)
-				if not ok then
-					-- TODO: retry banasync
-				end
+			if duration and duration ~= 0 then
+				context._K.Util.Retry(function()
+					context._K.Services.Players:BanAsync({
+						ApplyToUniverse = true,
+						UserIds = ids,
+						PrivateReason = reason,
+						Duration = duration,
+					})
+				end, 8, 4, 2)
 			end
 		end,
 	},
@@ -80,18 +64,15 @@ return {
 			{
 				type = "timeSimple",
 				name = "Duration",
-				description = "The duration for the ban.",
+				description = "The duration for the ban.\n -1  Forever\n  0  Session",
 				optional = true,
 			},
 			{
-				type = "string",
+				type = "stringGreedy",
 				name = "Reason",
 				description = "The reason for the ban.",
 				optional = true,
 			},
-		},
-		permissions = {
-			kick = true,
 		},
 
 		run = function(context, userIds, duration: number?, reason: string?)
@@ -101,54 +82,31 @@ return {
 			if type(reason) == "string" then
 				reason = string.sub(reason, 1, 400) -- banasync limit
 			end
-			local canBan = context._K.Auth.hasPermission(context.from, "ban")
+			print("banid", userIds, duration, reason)
 			local rank = context._K.Auth.getRank(context.from)
 			for _, userId in userIds do
 				-- only ban if rank is lower haha
 				if userId == context.from or rank <= context._K.Auth.getRank(userId) then
+					print("rank no auth")
 					continue
 				end
-				if duration and canBan then
-					if duration > 0 then
-						duration = os.time() + duration
-					end
-					-- use new banasync
-				end
-
-				local userName = ""
 				for _, player in context._K.Services.Players:GetPlayers() do
 					if player.UserId == tonumber(userId) then
-						userName = player.Name
-						player:Kick(reason)
+						player:Kick(reason or "Unspecified reason.")
 					end
 				end
 
-				context._K.Auth.userBan(
-					userId,
-					userName,
-					reason,
-					duration,
-					context.from,
-					context._K.Util.getUserInfo(context.from).Username
-				)
-				if userName ~= "" then
-					continue
-				end
-				-- populate the username if not found
-				task.spawn(function()
-					context._K.Data.bans[userId][1] = context._K.Util.getUserInfo(userId).Username
-					-- TODO: network ban name and update for clients
-				end)
+				context._K.Auth.userBan(userId, reason, duration, context.from)
 			end
-			if canBan and duration and duration ~= 0 then
-				local ok = pcall(
-					context._K.Services.Players.BanAsync,
-					context._K.Services.Players,
-					{ UserIds = userIds, PrivateReason = reason, Duration = duration }
-				)
-				if not ok then
-					-- TODO: retry banasync
-				end
+			if duration and duration ~= 0 then
+				context._K.Util.Retry(function()
+					context._K.Services.Players:BanAsync({
+						UserIds = userIds,
+						PrivateReason = reason,
+						Duration = duration,
+						ApplyToUniverse = true,
+					})
+				end, 8, 4, 2)
 			end
 		end,
 	},
@@ -162,19 +120,18 @@ return {
 				description = "The player(s) to unban.",
 			},
 		},
-		permissions = {
-			kick = true,
-		},
+
 		run = function(context, bans)
 			local ids = table.create(#bans)
+			-- TODO: check if authorized to actually unban, sessions vs persist, if persistCommands permission?!
 			for i, userId in bans do
 				context._K.Data.bans[userId] = nil
+				context._K.Data.Cache.bans[userId] = context._K.Data.Store.REMOVE
 				context._K.Remote.Ban:FireAllClients(userId)
-				-- trigger ban save
-				-- unbanasync
+				context._K.Data.pendingSaveMain = true
 				table.insert(ids, tonumber(userId))
 			end
-			context._K.Services.Players:UnbanAsync({ UserIds = ids })
+			context._K.Services.Players:UnbanAsync({ UserIds = ids, ApplyToUniverse = true })
 		end,
 	},
 	{

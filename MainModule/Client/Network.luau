@@ -54,11 +54,16 @@ end
 
 -- general data replication
 
--- _K.Remote.Bans.OnClientEvent:Connect(function(bans)
--- 	_K.Util.mergeTable(_K.Data.bans, bans)
--- 	UI.Scope.bans:set(_K.Data.bans)
--- 	-- Remote.Ban:FireClient(player, userId, { filtered, duration, fromUserId })
--- end)
+_K.Remote.Ban.OnClientEvent:Connect(function(userId, ban)
+	_K.Data.bans[userId] = ban
+	UI.Scope.bans:set(_K.Data.bans)
+end)
+
+_K.Remote.Bans.OnClientEvent:Connect(function(bans)
+	_K.Util.mergeTable(_K.Data.bans, bans)
+	UI.Scope.bans:set(_K.Data.bans)
+	-- Remote.Ban:FireClient(player, userId, { filtered, duration, fromUserId })
+end)
 
 _K.Remote.Members.OnClientEvent:Connect(function(members)
 	_K.Util.mergeTable(_K.Data.members, members)

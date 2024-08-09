@@ -3,8 +3,12 @@ local context
 local typeBan = {
 	validate = function(input: string): (boolean, string?)
 		local query = string.lower(input)
-		for userId, ban in context.bans do
-			if string.find(string.lower(ban[1]), query) == 1 or string.find(string.lower(userId), query) == 1 then
+		for userId, ban in context.Data.bans do
+			local userInfo = context.Util.getUserInfo(userId)
+			if
+				string.find(string.lower(userInfo.Username), query) == 1
+				or string.find(string.lower(userId), query) == 1
+			then
 				return true
 			end
 		end
@@ -12,8 +16,12 @@ local typeBan = {
 	end,
 	parse = function(input: string): string
 		local query = string.lower(input)
-		for userId, ban in context.bans do
-			if string.find(string.lower(ban[1]), query) == 1 or string.find(string.lower(userId), query) == 1 then
+		for userId, ban in context.Data.bans do
+			local userInfo = context.Util.getUserInfo(userId)
+			if
+				string.find(string.lower(userInfo.Username), query) == 1
+				or string.find(string.lower(userId), query) == 1
+			then
 				return userId
 			end
 		end
@@ -21,11 +29,12 @@ local typeBan = {
 	end,
 	suggestions = function(text)
 		local names = {}
-		for userId, bans in context.bans do
-			local name = bans[1]
+		for userId, bans in context.Data.bans do
+			local userInfo = context.Util.getUserInfo(userId)
+			local name = userInfo.Username
 			names[userId] = if string.find(name, " ") then `"{name}"` else name
 		end
-		return context.Util.querySuggestions(text, names, context.bans)
+		return context.Util.querySuggestions(text, names, context.Data.bans)
 	end,
 }
 

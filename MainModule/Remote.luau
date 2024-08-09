@@ -8,6 +8,7 @@ local _REMOTECALL = Instance.new("RemoteFunction")
 local Remote = {
 	Announce = _REMOTE,
 	Ban = _REMOTE,
+	Bans = _REMOTE,
 	Command = _REMOTE,
 	Init = _REMOTE,
 	Log = _REMOTE,
