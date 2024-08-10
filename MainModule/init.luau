@@ -245,6 +245,28 @@ _K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string
 	_K.Process.runCommands(_K, player.UserId, message)
 end)
 
+_K.Remote.Setting.OnServerEvent:Connect(function(player, key, value)
+	if not _K.Auth.hasPermission(player.UserId, "settings") then
+		return
+	end
+
+	_K.Data.settings[key] = value
+
+	local cacheValue = value
+	if typeof(value) == "Color3" then
+		cacheValue = { "color", value.R, value.G, value.B }
+	end
+
+	_K.Data.Cache.settings[key] = cacheValue
+	_K.Data.pendingSaveMain = true
+
+	for _, toPlayer in _K.Services.Players:GetPlayers() do
+		if toPlayer ~= player then
+			_K.Remote.Setting:FireClient(toPlayer, key, value)
+		end
+	end
+end)
+
 _K.spectators = {}
 _K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe: CFrame)
 	if not _K.spectators[player] then

@@ -99,6 +99,19 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logs)
 	UI.Scope.dashboard.Logs:updateList()
 end)
 
+_K.Remote.Setting.OnClientEvent:Connect(function(key, value)
+	_K.Data.settings[key] = value
+	UI.Scope.settings[key]:set(value)
+end)
+
+_K.Remote.Settings.OnClientEvent:Connect(function(settings)
+	for key, value in settings do
+		value = UI.peek(value)
+		_K.Data.settings[key] = value
+		UI.Scope.settings[key]:set(value)
+	end
+end)
+
 -- initial remote connection
 
 local greetings = {

@@ -1,5 +1,7 @@
 local GroupService = game:GetService("GroupService")
 
+local UI = require(script.Parent.Parent.Flux.UI)
+
 local Cache = {
 	-- Main
 	bans = {},
@@ -36,7 +38,9 @@ local Data = {
 		},
 	},
 	players = {},
+
 	settings = {
+		liveSettings = true,
 		prefix = ":",
 		vip = true,
 		mutableHooks = false,
@@ -160,6 +164,11 @@ Data.roles.defaultRole = Data.defaultRole
 
 function Data.sortTime(a, b)
 	return a.time < b.time
+end
+
+-- UI Theme initial settings
+for key, state in UI.Theme do
+	Data.settings["theme" .. key] = UI.peek(state)
 end
 
 -- assign CreatorId

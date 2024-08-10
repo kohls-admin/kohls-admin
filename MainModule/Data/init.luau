@@ -5,6 +5,7 @@
 
 -- TODO: make sure cache is valid json encoding by sanitizing key inputs as strings always
 
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local Data = require(script.Defaults)
@@ -16,6 +17,26 @@ if RunService:IsClient() then
 end
 
 Data.Store = require(script.Store)
+
+local function hasPermission(userId: number, permission: string): boolean
+	-- does everyone have the permission?
+	if Data.defaultRole[permission] or Data.defaultRole.admin then
+		return true
+	end
+	local member = Data.members[tostring(userId)]
+	if member then
+		if member.permissions and (member.permissions.admin or member.permissions[permission]) then
+			return true
+		end
+		for _, roleId in member.roles do
+			local role = Data.roles[roleId]
+			if role and (role.admin or role[permission]) then
+				return true
+			end
+		end
+	end
+	return false
+end
 
 local updateAsyncInterval = 10
 
@@ -56,11 +77,20 @@ local function syncMain(result)
 	end
 	Util.Table.merge(Data.members, members)
 
+	-- deserialize settings
+	for key, setting in settings do
+		if type(setting) == "table" and setting[1] == "color" then
+			settings[key] = Color3.new(unpack(setting, 2))
+		end
+	end
+
 	-- settings sync
 	Util.Table.merge(Data.settings, settings)
 
 	-- TODO: only send to clients authorized to view these data
 	Remote.Members:FireAllClients(Data.members)
+
+	Remote.Settings:FireAllClients(Data.settings)
 	-- replicate bans/settings to clients
 end
 

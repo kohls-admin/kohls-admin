@@ -22,6 +22,24 @@ function Settings.new(_K)
 		General = {
 			-- FIX: prevent selecting reserved characters (comma, space, !@#$%^&*)
 			-- TODO: consider allowing argument prefixes?
+			-- UI.new "ListItem" {
+			-- 	Text = "Local Command Prefix",
+			-- 	UI.new "Input" {
+			-- 		Font = UI.Theme.FontMono,
+			-- 		Size = UDim2.new(0, 24, 1, 0),
+			-- 		FontSize = 14,
+			-- 		Padding = UDim.new(0, 5),
+			-- 		Placeholder = ";",
+			-- 		MaxChars = 1,
+			-- 		Value = UI.Scope.settings.prefix,
+			--
+			-- 		[UI.Hook] = {
+			-- 			Value = function(value)
+			-- 				_K.Remote.Prefix:FireServer(value)
+			-- 			end,
+			-- 		},
+			-- 	},
+			-- },
 			UI.new "ListItem" {
 				Text = "Command Prefix",
 				UI.new "Input" {
@@ -35,7 +53,10 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Value = function(value)
-							_K.Remote.Prefix:FireServer(value)
+							if value == _K.Data.settings.prefix then
+								return
+							end
+							_K.Remote.Setting:FireServer("prefix", value)
 						end,
 					},
 				},
@@ -85,16 +106,19 @@ function Settings.new(_K)
 			},
 
 			UI.new "ListItem" {
-				Text = "Border Enabled Checkbox",
-				UI.new "Checkbox" {
-					Value = UI.Theme.StrokeEnabled,
-				},
-			},
-
-			UI.new "ListItem" {
 				Text = "Border Enabled",
 				UI.new "Switch" {
 					Value = UI.Theme.StrokeEnabled,
+
+					[UI.Hook] = {
+						Value = function(value)
+							if value == _K.Data.settings.themeStrokeEnabled then
+								return
+							end
+
+							_K.Remote.Setting:FireServer("themeStrokeEnabled", value)
+						end,
+					},
 				},
 			},
 			UI.new "ListItem" {
@@ -104,7 +128,11 @@ function Settings.new(_K)
 					Choices = Enum.Font:GetEnumItems(),
 					[UI.Hook] = {
 						Choice = function(value)
+							if Enum.Font[value] == _K.Data.settings.themeFont then
+								return
+							end
 							UI.Theme.Font:set(Enum.Font[value])
+							_K.Remote.Setting:FireServer("themeFont", value)
 						end,
 					},
 				},
@@ -116,7 +144,11 @@ function Settings.new(_K)
 					Choices = Enum.Font:GetEnumItems(),
 					[UI.Hook] = {
 						Choice = function(value)
+							if Enum.Font[value] == _K.Data.settings.themeFontMono then
+								return
+							end
 							UI.Theme.FontMono:set(Enum.Font[value])
+							_K.Remote.Setting:FireServer("themeFontMono", value)
 						end,
 					},
 				},
@@ -162,8 +194,11 @@ function Settings.new(_K)
 					if tonumber(slider.Value._value) == number - 7 then
 						return
 					end
-					print("font size input", number)
 					slider.Value:set(number - 7)
+					if value == _K.Data.settings.themeFontSize then
+						return
+					end
+					_K.Remote.Setting:FireServer("themeFontSize", value)
 				end,
 			},
 		}
@@ -216,6 +251,10 @@ function Settings.new(_K)
 						return
 					end
 					slider.Value:set(number + 1)
+					if value == _K.Data.settings["theme" .. key] then
+						return
+					end
+					_K.Remote.Setting:FireServer("theme" .. key, value)
 				end,
 			},
 		}
@@ -246,6 +285,11 @@ function Settings.new(_K)
 						return
 					end
 					UI.Theme.Transparency:set(number)
+
+					if value == _K.Data.settings.themeTransparency then
+						return
+					end
+					_K.Remote.Setting:FireServer("themeTransparency", value)
 				end,
 			},
 		}
@@ -281,6 +325,15 @@ function Settings.new(_K)
 				Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
 				UI.new "Color" {
 					Value = state,
+
+					[UI.Hook] = {
+						Value = function(value)
+							if value == _K.Data.settings["theme" .. key] then
+								return
+							end
+							_K.Remote.Setting:FireServer("theme" .. key, value)
+						end,
+					},
 				},
 			}
 		)

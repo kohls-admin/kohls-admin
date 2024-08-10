@@ -18,6 +18,8 @@ local Remote = {
 	Notify = _REMOTE,
 	Prefix = _REMOTE,
 	Refresh = _REMOTE,
+	Setting = _REMOTE,
+	Settings = _REMOTE,
 	Spectate = _REMOTE,
 	SpectateSubject = _REMOTE,
 

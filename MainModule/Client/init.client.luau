@@ -14,7 +14,16 @@ UI.Scope.logs = Flux.state(_K.Data.logs)
 
 -- Flux stateful settings
 for key, value in _K.Data.settings do
-	UI.Scope.settings[key] = _K.Flux.state(value)
+	local state = _K.Flux.state(value)
+	UI.Scope.settings[key] = state
+
+	-- UI.Theme connection to theme settings
+	if string.find(key, "theme", 1, true) == 1 then
+		key = string.sub(key, 6)
+		state:hook(function(value)
+			UI.Theme[key]:set(value)
+		end)
+	end
 end
 
 local CommandBar = require(script.CommandBar)
