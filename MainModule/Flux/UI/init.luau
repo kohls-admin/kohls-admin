@@ -15,7 +15,7 @@ export type Stateful<T> = Flux.Stateful<T>
 export type SpecialKey = Flux.SpecialKey
 export type SpecialDefinition = Flux.SpecialDefinition
 
-local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local playerGui = Players.LocalPlayer and Players.LocalPlayer:WaitForChild("PlayerGui")
 
 -- TODO: allow a way to easily override builtin theme binds with a new compute or whatever!
 
