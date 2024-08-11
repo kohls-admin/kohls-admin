@@ -68,7 +68,7 @@ function Color.new(definition)
 
 		[UI.Hook] = {
 			Value = function(value)
-				new.Value:set(value)
+				-- new.Value:set(value)
 			end,
 		},
 	}

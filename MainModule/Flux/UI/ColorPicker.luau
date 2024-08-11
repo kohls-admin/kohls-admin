@@ -59,7 +59,11 @@ function ColorPicker.new(definition)
 	local saturationState = UI.state(s)
 	local valueState = UI.state(v)
 	local hueColor = UI.computeFrom(Color3.fromHSV, hueSlider.Value, 1, 1)
-	new.Value = UI.computeFrom(Color3.fromHSV, hueSlider.Value, saturationState, valueState)
+
+	local colorState = UI.computeFrom(Color3.fromHSV, hueSlider.Value, saturationState, valueState)
+	colorState:hook(function(value)
+		new.Value:set(value)
+	end)
 
 	UI.edit(hueSlider._slider, {
 		BackgroundColor3 = hueColor,
@@ -120,7 +124,8 @@ function ColorPicker.new(definition)
 			IntegerOnly = true,
 			NumberRange = NumberRange.new(0, 255),
 			Value = UI.compute(function(use)
-				return math.round(use(new.Value).R * 255)
+				local value = use(new.Value)
+				return math.round(value.R * 255)
 			end),
 
 			[UI.Hook] = {
@@ -129,7 +134,7 @@ function ColorPicker.new(definition)
 					if math.round(oldColor.R * 255) == value then
 						return
 					end
-					new.Value:set(Color3.new(value / 255, oldColor.G, oldColor.B))
+					colorState:set(Color3.new(value / 255, oldColor.G, oldColor.B))
 				end,
 			},
 		},
@@ -153,7 +158,7 @@ function ColorPicker.new(definition)
 					if math.round(oldColor.G * 255) == value then
 						return
 					end
-					new.Value:set(Color3.new(oldColor.B, value / 255, oldColor.B))
+					colorState:set(Color3.new(oldColor.B, value / 255, oldColor.B))
 				end,
 			},
 		},
@@ -177,7 +182,7 @@ function ColorPicker.new(definition)
 					if math.round(oldColor.B * 255) == value then
 						return
 					end
-					new.Value:set(Color3.new(oldColor.R, oldColor.G, value / 255))
+					colorState:set(Color3.new(oldColor.R, oldColor.G, value / 255))
 				end,
 			},
 		},

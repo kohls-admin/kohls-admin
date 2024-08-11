@@ -81,6 +81,8 @@ local function syncMain(result)
 	for key, setting in settings do
 		if type(setting) == "table" and setting[1] == "color" then
 			settings[key] = Color3.new(unpack(setting, 2))
+		elseif key == "themeFont" or key == "themeFontMono" then
+			settings[key] = Enum.Font[setting]
 		end
 	end
 
@@ -271,7 +273,10 @@ function Data.initialize(name)
 
 		if Data.pendingSaveMain then
 			numThreadsRunning += 1
-			task.spawn(updateMain)
+			task.spawn(function()
+				updateMain()
+				coroutine.resume(mainThread)
+			end)
 		end
 
 		-- TODO: figure out log merge and sort, need to compress dem logs haha!
