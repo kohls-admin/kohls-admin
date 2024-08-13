@@ -1,3 +1,6 @@
+local CREDITS = require(script.Parent.Parent.Credits)
+local UserFrame = require(script.Parent.UserFrame)
+
 local Credit = {}
 Credit.__index = Credit
 
@@ -5,161 +8,71 @@ function Credit.new(_K)
 	local UI = _K.client.UI
 	local image = "rbxassetid://10650688076"
 
-	-- local userIds = []
-	-- https://create.roblox.com/docs/reference/engine/classes/Players#GetUserThumbnailAsync
-
-	-- local userInfo = log.from and _K.Util.getUserInfo(log.from)
-	-- local displayName = if userInfo and (userInfo.DisplayName ~= userInfo.Username)
-	-- 	then userInfo.DisplayName .. " "
-	-- 	else ""
-
-	-- local contributorFrame = UI.new "Frame" {
-	-- 	Name = "Contributor",
-	-- 	Size = UDim2.new(1, 0, 0, 36),
-	-- 	BackgroundColor3 = Color3.fromRGB(255, 144, 0),
-	-- }
-
 	local scroller = UI.new "Scroller" {
 		Name = "Credit",
+	}
 
-		-- Credit.TitleLabel
+	UI.edit(scroller._instance.UIListLayout, {
+		Padding = UI.Theme.PaddingDouble,
+		HorizontalAlignment = "Center",
+	})
+
+	local order = 1
+	for _, group in CREDITS do
 		UI.new "TextLabel" {
-			Name = "Credit",
+			Parent = scroller,
+			LayoutOrder = order,
+			Name = group.Title,
 			BackgroundTransparency = 1,
-			Font = UI.Theme.Font,
+			FontFace = UI.Theme.FontHeavy,
 			TextTruncate = Enum.TextTruncate.SplitWord,
-
 			TextSize = UI.Theme.FontSizeLargest,
 			TextColor3 = UI.Theme.PrimaryText,
 			Size = UDim2.new(1, 0, 0, 24),
-			Text = "<sc>contributors</sc>",
+			Text = `<sc>{string.lower(group.Title)}</sc>`,
+			TextTransparency = 0.5,
 			RichText = true,
-		},
-
-		UI.new "Frame" {
-			Name = "Contributor",
-			Size = UDim2.new(0.75, 0, 0, 48),
-			BackgroundColor3 = UI.Theme.Primary,
-			BackgroundTransparency = 0.75,
-
-			UI.new "UIFlexItem" {},
-
-			UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.PaddingDouble,
-				PaddingRight = UI.Theme.PaddingDouble,
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-			},
+		}
+		order += 1
+		local flexFrame = UI.new "Frame" {
+			Parent = scroller,
+			LayoutOrder = order,
+			BackgroundTransparency = 1,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			Size = UDim2.fromScale(1, 0),
 
 			UI.new "UIListLayout" {
 				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.PaddingHalf,
 				FillDirection = Enum.FillDirection.Horizontal,
-				HorizontalFlex = "SpaceBetween",
+				HorizontalFlex = Enum.UIFlexAlignment.SpaceEvenly,
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				Padding = UI.Theme.PaddingDouble,
+				Wraps = true,
 			},
+		}
+		order += 1
+		task.spawn(function()
+			for i, user in group.Users do
+				local userType = type(user)
+				if userType == "number" then
+					local userFrame = UserFrame(user, nil, nil, false)
+					userFrame.LayoutOrder = i
+					userFrame.Parent = flexFrame
+				elseif userType == "table" then
+					local userFrame = UserFrame(user.Id, nil, nil, false)
+					userFrame.LayoutOrder = i
+					userFrame.Parent = flexFrame
+					if user.Tooltip then
+						UI.new "Tooltip" {
+							Parent = userFrame,
+							Text = user.Tooltip,
+						}
+					end
+				end
+			end
+		end)
+	end
 
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
-			},
-
-			UI.new "Frame" {
-				Name = "UserDetails",
-				AutomaticSize = Enum.AutomaticSize.XY,
-				BackgroundTransparency = 1,
-
-				UI.new "UIListLayout" {
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UI.Theme.PaddingHalf,
-					FillDirection = Enum.FillDirection.Horizontal,
-				},
-
-				UI.new "ImageLabel" {
-					Name = "Icon",
-					BackgroundTransparency = 0.75,
-					BackgroundColor3 = UI.Theme.Border,
-					Size = UI.computeFrom(UDim2.fromOffset, UI.Theme.FontSizeDouble, UI.Theme.FontSizeDouble),
-					Image = image,
-
-					UI.new "UICorner" {
-						CornerRadius = UDim.new(1, 0),
-					},
-
-					UI.new "UIStroke" {
-						Enabled = UI.Theme.StrokeEnabled,
-						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-						Transparency = UI.Theme.TransparencyClamped,
-						Color = UI.Theme.Border,
-					},
-				},
-
-				UI.new "Frame" {
-					Name = "UserFrame",
-					AutomaticSize = Enum.AutomaticSize.XY,
-					BackgroundTransparency = 1,
-
-					UI.new "UIListLayout" {
-						SortOrder = Enum.SortOrder.LayoutOrder,
-					},
-
-					UI.new "Frame" {
-						AutomaticSize = Enum.AutomaticSize.XY,
-						BackgroundTransparency = 1,
-
-						UI.new "UIListLayout" {
-							SortOrder = Enum.SortOrder.LayoutOrder,
-							Padding = UI.Theme.PaddingHalf,
-							FillDirection = Enum.FillDirection.Horizontal,
-						},
-
-						UI.new "TextLabel" {
-							Name = "From",
-							BackgroundTransparency = 1,
-							TextColor3 = UI.Theme.PrimaryText,
-							Text = `<b>Username</b>`,
-							TextSize = UI.Theme.FontSizeLarge,
-							TextTruncate = Enum.TextTruncate.SplitWord,
-							TextXAlignment = "Left",
-							Font = UI.Theme.Font,
-							RichText = true,
-
-							AutomaticSize = Enum.AutomaticSize.XY,
-							Size = UI.compute(UDim2.fromOffset, 0, UI.Theme.FontSizeLarge),
-						},
-					},
-
-					UI.new "TextLabel" {
-						Name = "FromBottom",
-						BackgroundTransparency = 1,
-						TextColor3 = UI.Theme.PrimaryText,
-						Text = `<font transparency="0.5"><b>@Name</b></font>`,
-						TextSize = UI.Theme.FontSizeSmall,
-						TextTruncate = Enum.TextTruncate.SplitWord,
-						TextXAlignment = "Left",
-						Font = UI.Theme.Font,
-						RichText = true,
-
-						AutomaticSize = Enum.AutomaticSize.XY,
-						Size = UI.compute(UDim2.fromOffset, 0, UI.Theme.FontSizeSmall),
-					},
-				},
-			},
-
-			UI.new "TextLabel" {
-				Name = "Credit",
-				BackgroundTransparency = 1,
-				Font = UI.Theme.Font,
-				TextTruncate = Enum.TextTruncate.SplitWord,
-				AutomaticSize = Enum.AutomaticSize.XY,
-				TextSize = UI.Theme.FontSizeLargest,
-				TextColor3 = UI.Theme.MutedText,
-				Text = "<sc>Design</sc>",
-				RichText = true,
-			},
-		},
-
-		-- frame list of user info
-	}
-	scroller._instance.UIListLayout.HorizontalAlignment = "Center"
 	return scroller._instance
 end
 

@@ -27,15 +27,6 @@ local dashboard = UI.new "Window" {
 		UI.Scope.dashboard.Logs,
 		UI.Scope.dashboard.Settings,
 		UI.Scope.dashboard.Credits,
-		-- UI.new "TextLabel" {
-		-- 	Name = "Credit",
-		-- 	BackgroundTransparency = 1,
-		-- 	Font = UI.Theme.Font,
-		-- 	TextSize = UI.Theme.FontSize,
-		-- 	TextColor3 = UI.Theme.PrimaryText,
-		-- 	Size = UDim2.new(1, 0, 0, 32),
-		-- 	Text = "Kohl's Admin (Created by Scripth)",
-		-- },
 	},
 }
 UI.Scope.dashboard.Window = dashboard
