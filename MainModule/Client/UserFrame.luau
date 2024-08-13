@@ -4,7 +4,7 @@ local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.Parent.Flux.UI)
 
 return function(from: number?, name: string?, image: string?, badgeEnabled: boolean?)
-	name = name or "Kohl's Admin"
+	local displayName = name or "Kohl's Admin"
 	image = image or "rbxassetid://10650688076"
 
 	if badgeEnabled == nil then
@@ -20,7 +20,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			Players:GetUserThumbnailAsync(from, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
 		image = content or image
 		local info = _K.Util.getUserInfo(from)
-		name = info.DisplayName
+		displayName = name or info.DisplayName
 		userName = info.Username
 		local rank, role = _K.Auth.getRank(from)
 		badge = if role then role.name else "Unknown"
@@ -80,7 +80,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 					Name = "From",
 					BackgroundTransparency = 1,
 					TextColor3 = UI.Theme.PrimaryText,
-					Text = `<b>{name}</b>`,
+					Text = `<b>{displayName}</b>`,
 					TextSize = UI.Theme.FontSizeLarge,
 					TextTruncate = Enum.TextTruncate.SplitWord,
 					TextXAlignment = "Left",
