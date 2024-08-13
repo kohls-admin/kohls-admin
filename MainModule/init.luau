@@ -140,7 +140,6 @@ end
 -- loader settings
 _K.Data.settings.prefix = _K.loaderSettings.prefix
 _K.Data.settings.vip = _K.loaderSettings.vip
-_K.Data.defaultRole.admin = _K.loaderSettings.freeAdmin
 _K.Data.settings.vipGameCatalogEnabled = _K.loaderSettings.vipGameCatalogEnabled
 
 if not _K.IsServer then
@@ -157,6 +156,8 @@ _K.Data.initialize(_K.loaderSettings.dataStoreKey)
 if _K.creatorId > 0 then
 	_K.Auth.userRoleAdd(_K.creatorId, "creator")
 end
+
+-- loader settings cont.
 
 -- define main roles
 for role, users in _K.loaderSettings.roles do
@@ -215,22 +216,28 @@ _K.Remote.Prefix.OnServerEvent:Connect(function(player, prefix)
 	_K.playerPrefix[player.UserId] = prefix
 end)
 
--- handle player chatting
 local function playerAdded(player: Player)
-	-- studio testing roles
 	if _K.Services.RunService:IsStudio() then
 		_K.Auth.userRoleAdd(player.UserId, "creator")
 	end
 
+	for _, role in _K.loaderSettings.freeAdmin do
+		_K.Auth.userRoleAdd(player.UserId, role)
+	end
+
+	-- group admin and gamepass roles
 	_K.Auth.userAsyncRoles(player.UserId, true)
+
 	if _K.Auth.banHandler(player) then
 		return
 	end
+
 	if _K._serverLock and _K.Auth.getRank(player.UserId) < 2 then
 		player:Kick(`Server has been locked by {_K._serverLock}`)
 		return
-		-- allow those with higher than vip perms
+		-- allows those with higher than vip perms
 	end
+
 	player.Chatted:Connect(function(message: string)
 		_K.Process.runCommands(_K, player.UserId, message)
 	end)
