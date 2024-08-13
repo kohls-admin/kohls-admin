@@ -90,7 +90,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 			return false, "Invalid command: " .. commandText
 		end
 
-		if not Auth.hasCommandGroup(from, commandDefinition.group) then
+		if not Auth.hasCommand(from, commandDefinition) then
 			return false, "Invalid permissions for command: " .. commandText
 		end
 

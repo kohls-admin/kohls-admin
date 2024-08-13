@@ -45,7 +45,7 @@ return function(_K, text, cursorPosition)
 		local lastArg = commandArray[#commandArray]
 		local commandEnd = lastArg[1] + #lastArg[2]
 
-		if commandDefinition and not (greedy or _K.Auth.hasCommandGroup(from, commandDefinition.group)) then
+		if commandDefinition and not (greedy or _K.Auth.hasCommand(from, commandDefinition)) then
 			table.insert(data.invalid, { 2, string.sub(text, 2), "Invalid permissions" })
 			return data
 		end
@@ -109,7 +109,7 @@ return function(_K, text, cursorPosition)
 			data.suggestions = table.create(#data.suggestions)
 			for _, suggestionData in rawSuggestions do
 				local name, cmd = unpack(suggestionData)
-				if cmd and _K.Auth.hasCommandGroup(LocalPlayer.UserId, cmd.group) then
+				if cmd and _K.Auth.hasCommand(LocalPlayer.UserId, cmd) then
 					table.insert(data.suggestions, suggestionData)
 				end
 			end

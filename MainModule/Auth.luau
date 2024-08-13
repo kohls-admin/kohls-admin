@@ -7,7 +7,7 @@ local Data = require(script.Parent.Data)
 local Remote = require(script.Parent.Remote)
 local Util = require(script.Parent.Util)
 
-export type Role = "vip" | "mod" | "admin" | "superadmin" | "creator"
+export type Role = "defaultRole" | "vip" | "mod" | "admin" | "superadmin" | "creator"
 
 --- @class Auth
 local Auth = {}
@@ -267,12 +267,50 @@ function Auth.getRank(userId: number, permission: string?): (number, Role)
 	return rank, rankRole
 end
 
---- Checks if a user has access to a command group
-function Auth.hasCommandGroup(userId: number, group: string): boolean
-	group = string.lower(group)
-	if Data.defaultRole.admin or (Data.defaultRole.groups and table.find(Data.defaultRole.groups, group)) then
+function Auth.roleCommandFilter(roleData, command, boolean: boolean): boolean
+	if not roleData.filter then
+		return false
+	end
+	if roleData.filter[command.name] == boolean then
 		return true
 	end
+	if command.aliases then
+		for _, alias in command.aliases do
+			if roleData.filter[alias] == boolean then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+--- Checks if a role has access to a command group
+function Auth.roleCanUseCommand(role: Role, command): boolean
+	local roleData = Data.roles[role]
+	if not roleData then
+		print(role)
+		return false
+	end
+	if Auth.roleCommandFilter(roleData, command, false) then
+		return false
+	end
+	local group = string.lower(command.group)
+	if
+		roleData.admin
+		or Auth.roleCommandFilter(roleData, command, true)
+		or (roleData.groups and table.find(roleData.groups, group))
+	then
+		return true
+	end
+	return false
+end
+
+--- Checks if a user has access to a command
+function Auth.hasCommand(userId: number, command): boolean
+	if Auth.roleCanUseCommand("defaultRole", command) then
+		return true
+	end
+
 	local member = Data.members[tostring(userId)]
 	if member then
 		if member.permissions and member.permissions.admin then
@@ -284,7 +322,7 @@ function Auth.hasCommandGroup(userId: number, group: string): boolean
 				warn("undefined role?", role)
 				continue
 			end
-			if role.admin or (role.groups and table.find(role.groups, group)) then
+			if Auth.roleCanUseCommand(roleId, command) then
 				return true
 			end
 		end

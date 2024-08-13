@@ -33,8 +33,10 @@ local Data = {
 		["1"] = {
 			-- last known username? (update over time on init?)
 			name = "Roblox",
-			roles = { "admin", "vip" },
+			filter = {}, -- TODO: implement member filter for auth
+			permissions = {},
 			persist = {},
+			roles = { "admin", "vip" },
 		},
 	},
 	players = {},
