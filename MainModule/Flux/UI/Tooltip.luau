@@ -36,22 +36,24 @@ function Tooltip.new(definition)
 			return UDim2.fromOffset(position.X, yOffset)
 		end),
 
-		[UI.Children] = {
-			UICorner = UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
-			},
-
-			UIPadding = UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-			},
-
-			UISizeConstraint = UI.new "UISizeConstraint" {
-				MinSize = Vector2.new(8, 8),
-				MaxSize = Vector2.new(256, math.huge),
-			},
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerRadius,
+		},
+		UI.new "UIPadding" {
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+		},
+		UI.new "UISizeConstraint" {
+			MinSize = Vector2.new(8, 8),
+			MaxSize = Vector2.new(256, math.huge),
+		},
+		UI.new "UIStroke" {
+			Enabled = UI.Theme.StrokeEnabled,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Transparency = UI.Theme.TransparencyClamped,
+			Color = UI.Theme.Border,
 		},
 	}
 
