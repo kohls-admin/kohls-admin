@@ -37,9 +37,6 @@ function Tabs.new(definition)
 		-- TODO: keep current page visible when resizing down?
 	end)
 
-	-- local strokePadding = UI.compute(function(use)
-	-- 	return UDim.new(0, if use(UI.Theme.StrokeEnabled) then 1 else 0)
-	-- end)
 	local lastScroll
 
 	local pages = UI.new "UIPageLayout" {
@@ -191,12 +188,6 @@ function Tabs.new(definition)
 						PaddingBottom = UI.Theme.Padding,
 						PaddingLeft = UI.Theme.Padding,
 						PaddingRight = UI.Theme.Padding,
-					},
-					UI.new "Tooltip" {
-						Text = upperState,
-						Enabled = UI.compute(function(use)
-							return not use(textFits)
-						end),
 					},
 
 					[UI.Event] = {
