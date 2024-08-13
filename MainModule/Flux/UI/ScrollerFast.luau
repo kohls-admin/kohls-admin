@@ -1,19 +1,12 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent)
 
-local ScrollerFast = {
-	_lineHeight = UI.compute(function(use)
-		return use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
-	end),
-	_lineItemSize = UI.compute(function(use)
-		return UDim2.new(1, 0, 0, use(UI.Theme.FontSize))
-	end),
-}
+local ScrollerFast = {}
 ScrollerFast.__index = ScrollerFast
 setmetatable(ScrollerFast, BaseClass)
 
 function ScrollerFast:render()
-	local lineHeight = self._lineHeight._value
+	local lineHeight = self.ItemSize._value.Y.Offset
 	local startIndex = math.floor(self._scroller.CanvasPosition.Y / lineHeight) + 1
 	local endIndex =
 		math.min(startIndex + math.ceil(self._scroller.AbsoluteWindowSize.Y / lineHeight), #self._filteredList)
@@ -23,24 +16,30 @@ function ScrollerFast:render()
 	local cacheIndex = 1
 	for i = startIndex, endIndex do
 		local lineItem = self._lineItemCache[cacheIndex]
-		if not lineItem then
-			lineItem = UI.new "TextLabel" {
-				BackgroundTransparency = 1,
-				Size = self._lineItemSize,
-				RichText = true,
-				Font = UI.Theme.FontMono,
-				TextSize = UI.Theme.FontSize,
-				TextColor3 = UI.Theme.PrimaryText,
-				TextTruncate = Enum.TextTruncate.SplitWord,
-				TextXAlignment = Enum.TextXAlignment.Left,
-			}
-			table.insert(self._lineItemCache, lineItem)
-		end
 		local lineData = if self.ReverseOrder._value
 			then self._filteredList[#self._filteredList - i + 1]
 			else self._filteredList[i]
+		if not lineItem then
+			lineItem = if self.CreateItem
+				then self.CreateItem._value(self, lineData)
+				else UI.new "TextLabel" {
+					BackgroundTransparency = 1,
+					Size = self.ItemSize,
+					RichText = true,
+					Font = UI.Theme.FontMono,
+					TextSize = UI.Theme.FontSize,
+					TextColor3 = UI.Theme.PrimaryText,
+					TextTruncate = Enum.TextTruncate.SplitWord,
+					TextXAlignment = Enum.TextXAlignment.Left,
+				}
+			table.insert(self._lineItemCache, lineItem)
+		end
 		lineItem.Visible = true
-		lineItem.Text = if self.RenderText then self.RenderText._value(self, lineData) else lineData
+		if self.RenderItem then
+			self.RenderItem._value(self, lineItem, lineData)
+		else
+			lineItem.Text = if self.RenderText then self.RenderText._value(self, lineData) else lineData
+		end
 		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
 		lineItem.Parent = self._scroller
 
@@ -96,10 +95,15 @@ end
 -- if dictlist then convert List into an array
 function ScrollerFast.new(definition)
 	local self = UI.makeStatefulDefaults({
+		ItemSize = UI.compute(function(use)
+			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+		end),
 		List = {},
 		DictList = false,
 		FilterInput = false,
 		FilterInputDebounce = 0,
+		CreateItem = UI.Nil,
+		RenderItem = UI.Nil,
 		RenderText = UI.Nil,
 		ReverseOrder = false,
 	}, definition)
