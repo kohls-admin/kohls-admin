@@ -141,6 +141,7 @@ end
 _K.Data.settings.prefix = _K.loaderSettings.prefix
 _K.Data.settings.vip = _K.loaderSettings.vip
 _K.Data.defaultRole.admin = _K.loaderSettings.freeAdmin
+_K.Data.settings.vipGameCatalogEnabled = _K.loaderSettings.vipGameCatalogEnabled
 
 if not _K.IsServer then
 	return _K

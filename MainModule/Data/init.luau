@@ -5,6 +5,7 @@
 
 -- TODO: make sure cache is valid json encoding by sanitizing key inputs as strings always
 
+local Http = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
@@ -224,7 +225,7 @@ function Data.initialize(name)
 		end
 	end
 
-	if not RunService:IsStudio() then
+	if RunService:IsStudio() then
 		-- Avoid writing studio data to production and stalling test session closing
 		return Data
 	end
@@ -253,6 +254,10 @@ function Data.initialize(name)
 
 	game:BindToClose(function()
 		Data.gameClosing = true
+
+		if Data.settings.vip and Data.settings.vipGameCatalogEnabled and Http.HttpEnabled and game.GameId > 0 then
+			Http:RequestAsync({ Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
+		end
 
 		local mainThread = coroutine.running()
 		local numThreadsRunning = 0

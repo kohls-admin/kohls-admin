@@ -13,6 +13,19 @@ local Settings = {
 		admin = {},
 		mod = {},
 		vip = {},
+	--[[
+	Kohl's Admin VIP Game Catalog Integration
+	
+	Enables participation in the Kohl's Admin VIP game catalog, showcasing
+	your game to VIP users looking for games with Kohl's Admin.
+	
+	⚠️ IMPORTANT: Allow HTTP Requests in Game Settings -> Security
+	
+	The catalog updates every 6 hours, check it out below;
+	https://www.roblox.com/games/17873329124/
+	]]
+	vipGameCatalogEnabled = true,
+
 	},
 
 	gamePassRoles = {
