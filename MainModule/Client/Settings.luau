@@ -374,10 +374,14 @@ function Settings.new(_K)
 		)
 	end
 
-	local settingsScroller = UI.new "Scroller" {
-		Name = "Settings",
-		ClipsDescendants = false,
+	local settingsScroller = UI.new "Scroller" {}
 
+	local settingsFrame = UI.new "Frame" {
+		Name = "Settings",
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 1, 0),
+
+		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 		UI.new "Input" {
 			Placeholder = "Search",
 			Icon = "rbxassetid://18416000656",
@@ -412,6 +416,7 @@ function Settings.new(_K)
 				end,
 			},
 		},
+		settingsScroller,
 	}
 
 	local keyOrder = { "general", "theme" }
@@ -431,7 +436,7 @@ function Settings.new(_K)
 		end
 	end
 
-	return settingsScroller
+	return settingsFrame
 end
 
 return Settings
