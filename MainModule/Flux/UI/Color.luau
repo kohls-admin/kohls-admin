@@ -65,12 +65,6 @@ function Color.new(definition)
 			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,
 		},
-
-		[UI.Hook] = {
-			Value = function(value)
-				-- new.Value:set(value)
-			end,
-		},
 	}
 
 	UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
