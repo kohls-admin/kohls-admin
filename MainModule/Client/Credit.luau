@@ -52,6 +52,15 @@ function Credit.new(_K)
 		}
 		order += 1
 		task.spawn(function()
+			if string.lower(group.Title) == "special thanks" then
+				local userFrame = UserFrame(UI.LocalPlayer.UserId, "You", nil, false)
+				userFrame.LayoutOrder = 0
+				userFrame.Parent = flexFrame
+				UI.new "Tooltip" {
+					Parent = userFrame,
+					Text = "Thanks for using the admin!",
+				}
+			end
 			for i, user in group.Users do
 				local userType = type(user)
 				if userType == "number" then

@@ -4,7 +4,7 @@ return {
 		Users = {
 			{
 				Id = 44391621,
-				Tooltip = "The creator's tooltip sauce.",
+				Tooltip = "Thanks for using Kohl's Admin, if you have any issues feel free to contact me!",
 			},
 		},
 	},
@@ -41,6 +41,7 @@ return {
 			1299780523, -- erazias
 			1686847974, -- stone
 			93371639, -- 9_ine
+			800630, -- jason
 		},
 	},
 	{
