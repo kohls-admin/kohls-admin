@@ -32,7 +32,7 @@ end
 
 function Settings.new(_K)
 	Settings._K = _K
-	local UI = _K.client.UI
+	local UI = _K.UI
 
 	local settingsLineItems = {
 		General = {

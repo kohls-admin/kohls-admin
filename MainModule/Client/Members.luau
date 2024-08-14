@@ -5,7 +5,7 @@ local memberRichFormat = `<b>%s</b> %s\t<font transparency="0.5">%s</font>`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
 function Members.new(_K)
-	local UI = _K.client.UI
+	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
 
 	local scroller = UI.new "ScrollerFast" {

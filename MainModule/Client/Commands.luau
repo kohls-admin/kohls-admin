@@ -16,7 +16,7 @@ local function _argsString(command)
 end
 
 function Commands.new(_K)
-	local UI = _K.client.UI
+	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
 
 	-- TODO: sort by role rank

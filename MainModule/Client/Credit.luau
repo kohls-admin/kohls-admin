@@ -5,7 +5,7 @@ local Credit = {}
 Credit.__index = Credit
 
 function Credit.new(_K)
-	local UI = _K.client.UI
+	local UI = _K.UI
 	local image = "rbxassetid://10650688076"
 
 	local scroller = UI.new "Scroller" {

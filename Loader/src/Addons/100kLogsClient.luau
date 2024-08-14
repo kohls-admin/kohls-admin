@@ -102,14 +102,14 @@ local levels = {
 }
 
 return function(_K)
-	_K.Util.Defer.reset()
-	for i = 1, 100_000 do
-		_K.logger:log("log #" .. i .. ": " .. lines[math.random(1, 100)], levels[math.random(1, #levels)])
-		_K.Util.Defer.wait()
-		if i % 10000 == 0 then
-			_K.client.UI.Scope.dashboard.Logs:updateList()
-		end
-	end
-
-	_K.client.UI.Scope.dashboard.Logs:updateList()
+	-- _K.Util.Defer.reset()
+	-- for i = 1, 100_000 do
+	-- 	_K.logger:log("log #" .. i .. ": " .. lines[math.random(1, 100)], levels[math.random(1, #levels)])
+	-- 	_K.Util.Defer.wait()
+	-- 	if i % 10000 == 0 then
+	-- 		_K.UI.Scope.dashboard.Logs:updateList()
+	-- 	end
+	-- end
+	--
+	-- _K.UI.Scope.dashboard.Logs:updateList()
 end

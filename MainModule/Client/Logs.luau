@@ -25,7 +25,7 @@ for _, array in logTypes do
 end
 
 function Logs.new(_K)
-	local UI = _K.client.UI
+	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
 
 	local logTypeFilter = {}

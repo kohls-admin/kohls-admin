@@ -59,6 +59,7 @@ local _K = {
 	Process = require(script:WaitForChild("Process")),
 	Registry = require(script:WaitForChild("Registry")),
 	Remote = require(script:WaitForChild("Remote")),
+	UI = require(script:WaitForChild("Flux"):WaitForChild("UI")),
 	Util = Util,
 
 	logger = Util.Logger.new(),
@@ -73,6 +74,11 @@ _K.creatorId = _K.Data.creatorId
 _K.log = _K.Logger.log
 _K.logger = _K.Logger.logger
 _K.Services = _K.Util.Services
+
+-- register initial UI children
+if _K.IsClient then
+	_K.UI.registerChildren()
+end
 
 --- Filters a message with [TextService.FilterStringAsync]
 function _K.filterMessage(message: string, from: number, to: number, filterContext: Enum.TextFilterContext?): string

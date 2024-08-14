@@ -8,7 +8,7 @@ StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
 
-local UI = _K.client.UI
+local UI = _K.UI
 
 local validState = UI.state(nil)
 local indicatorColor = UI.compute(function(use)
@@ -529,7 +529,7 @@ return {
 	init = function(self, _K)
 		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
-		CommandBar.Parent = _K.client.UI.LayerTop
+		CommandBar.Parent = _K.UI.LayerTop
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
 	end,
