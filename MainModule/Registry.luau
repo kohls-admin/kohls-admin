@@ -161,7 +161,7 @@ function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 	if RunService:IsServer() and type(commandObject.env) == "function" then
 		commandObject.env = commandObject.env(_K)
 	elseif not RunService:IsServer() and type(commandObject.envClient) == "function" then
-		commandObject.envClient = commandObject.envClient(_K)
+		commandObject.env = commandObject.envClient(_K)
 	end
 
 	Registry.commands[string.lower(commandObject.name)] = commandObject
