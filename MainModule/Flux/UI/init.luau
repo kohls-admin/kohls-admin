@@ -191,7 +191,7 @@ UI.TopBarFrame = UI.new "Frame" {
 --- .ScrollBottomImage State<string>
 UI.Theme = {
 	ClackAll = state(true),
-	ClackEnabled = state(true),
+	ClackEnabled = state(false),
 	Transparency = state(0.3),
 
 	Primary = state(Color3.fromRGB(0, 0, 0)),

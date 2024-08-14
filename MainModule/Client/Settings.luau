@@ -109,6 +109,10 @@ function Settings.new(_K)
 				UI.new "Switch" {
 					Value = UI.Theme.ClackEnabled,
 				},
+				UI.new "Tooltip" {
+					Text = "<b>NOTE:</b> Requires taking the audios and adding permissions to your game!\n<font transparency='0.66'>Why does Roblox do this to me</font> 😔",
+					TextXAlignment = Enum.TextXAlignment.Left,
+				},
 			},
 
 			UI.new "ListItem" {
