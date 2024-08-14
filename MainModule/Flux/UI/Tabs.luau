@@ -123,6 +123,8 @@ function Tabs.new(definition)
 		return use(UI.Theme.FontSize) - 4
 	end)
 
+	local pageCache = {}
+
 	new._content = UI.new "Frame" {
 		LayoutOrder = 2,
 		Name = "UIContent",
@@ -146,6 +148,10 @@ function Tabs.new(definition)
 
 		[UI.Event] = {
 			ChildAdded = function(page)
+				if pageCache[page] then
+					return
+				end
+				pageCache[page] = true
 				local nameState = UI.state(page, "Name")
 				local upperState = UI.computeFrom(string.upper, nameState)
 				local hovering, textFits, button = UI.state(false), UI.state(false)
@@ -228,6 +234,12 @@ function Tabs.new(definition)
 				task.defer(function()
 					if pages.CurrentPage == page then
 						currentPage:set(page)
+					end
+				end)
+				page:GetPropertyChangedSignal("Parent"):Connect(function()
+					button.Visible = page.Parent == new._content
+					if page == currentPage._value and not button.Visible then
+						currentPage:set(pages.CurrentPage)
 					end
 				end)
 			end,

@@ -5,6 +5,75 @@ local teleportCharacter = require(script.teleportCharacter)
 
 return {
 	{
+		name = "bans",
+		aliases = {},
+		description = "Shows the bans in a separate window.",
+		args = {},
+		envClient = function(_K)
+			local window = _K.UI.new "Window" {
+				Parent = _K.UI.LayerDefault,
+				Title = "Kohl's Admin Bans",
+				Visible = false,
+			}
+			_K.UI.edit(window, {
+				[_K.UI.Event.Property] = {
+					Visible = function()
+						if not window._instance.Visible and #_K.UI.Scope.dashboard then
+							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
+								_K.UI.Scope.dashboard.Bans,
+							})
+						end
+					end,
+				},
+			})
+			return {
+				window = window,
+			}
+		end,
+
+		runClient = function(context)
+			context._K.UI.edit(context.env.window, {
+				Visible = true,
+				context._K.UI.Scope.dashboard.Bans,
+			})
+		end,
+	},
+	{
+		name = "members",
+		aliases = { "admins", "roles" },
+		description = "Shows the roled members in a separate window.",
+		args = {},
+		envClient = function(_K)
+			local window = _K.UI.new "Window" {
+				Parent = _K.UI.LayerDefault,
+				Title = "Kohl's Admin Members",
+				Visible = false,
+			}
+			_K.UI.edit(window, {
+				[_K.UI.Event.Property] = {
+					Visible = function()
+						if not window._instance.Visible and #_K.UI.Scope.dashboard then
+							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
+								_K.UI.Scope.dashboard.Members,
+							})
+						end
+					end,
+				},
+			})
+			return {
+				window = window,
+			}
+		end,
+
+		runClient = function(context)
+			context._K.UI.edit(context.env.window, {
+				Visible = true,
+				context._K.UI.Scope.dashboard.Members,
+			})
+		end,
+	},
+
+	{
 		name = "ban",
 		description = "Bans one or more players for a certain duration.",
 		args = {

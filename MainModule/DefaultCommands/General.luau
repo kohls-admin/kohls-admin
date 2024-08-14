@@ -21,6 +21,40 @@ local function spectateCleanup(context)
 end
 
 return {
+	{ -- TODO: need to set up a way to set public logs
+		name = "logs",
+		aliases = { "chatlogs" },
+		description = "Shows the logs in a separate window.",
+		args = {},
+		envClient = function(_K)
+			local window = _K.UI.new "Window" {
+				Parent = _K.UI.LayerDefault,
+				Title = "Kohl's Admin Logs",
+				Visible = false,
+			}
+			_K.UI.edit(window, {
+				[_K.UI.Event.Property] = {
+					Visible = function()
+						if not window._instance.Visible and #_K.UI.Scope.dashboard then
+							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
+								_K.UI.Scope.dashboard.Logs,
+							})
+						end
+					end,
+				},
+			})
+			return {
+				window = window,
+			}
+		end,
+
+		runClient = function(context)
+			context._K.UI.edit(context.env.window, {
+				Visible = true,
+				context._K.UI.Scope.dashboard.Logs,
+			})
+		end,
+	},
 	{
 		name = "message",
 		aliases = { "m", "msg" },

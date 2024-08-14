@@ -15,19 +15,21 @@ UI.Scope.dashboard.Commands = Commands.new(_K)
 UI.Scope.dashboard.Settings = Settings.new(_K)
 UI.Scope.dashboard.Credits = Credit.new(_K)
 
+UI.Scope.dashboard.Tabs = UI.new "Tabs" {
+	UI.Scope.dashboard.Commands,
+	UI.Scope.dashboard.Bans,
+	UI.Scope.dashboard.Members,
+	UI.Scope.dashboard.Logs,
+	UI.Scope.dashboard.Settings,
+	UI.Scope.dashboard.Credits,
+}
+
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerDefault,
 	Title = "Kohl's Admin Dashboard",
 	Visible = false,
 
-	UI.new "Tabs" {
-		UI.Scope.dashboard.Commands,
-		UI.Scope.dashboard.Bans,
-		UI.Scope.dashboard.Members,
-		UI.Scope.dashboard.Logs,
-		UI.Scope.dashboard.Settings,
-		UI.Scope.dashboard.Credits,
-	},
+	UI.Scope.dashboard.Tabs,
 }
 UI.Scope.dashboard.Window = dashboard
 
