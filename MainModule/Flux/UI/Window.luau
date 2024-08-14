@@ -62,6 +62,8 @@ local function getResizeIndex(point, size, position, buffer: number): number?
 	return
 end
 
+local windowCache = {}
+
 function Window.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Exitable = true,
@@ -77,6 +79,8 @@ function Window.new(definition)
 		Size = UDim2.new(0, 512, 0, 512),
 		SizeBounds = Rect.new(128, 128, 9e9, 9e9),
 	}, definition)
+
+	windowCache[new] = true
 
 	local dragInput, dragStart, startOffset
 	local inputPosition = UI.state(Vector2.new())
@@ -110,6 +114,11 @@ function Window.new(definition)
 			and not resizing._value
 			and not resizeHover._value
 		then
+			for window in windowCache do
+				window._instance.ZIndex = 1
+			end
+			new._instance.ZIndex = 2
+
 			startOffset = new._instance.AbsolutePosition - new._instance.Parent.AbsolutePosition
 			dragInput, dragStart = input, input.Position
 			dragging:set(true)
