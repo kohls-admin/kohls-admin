@@ -414,7 +414,7 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 			child = child._instance
 		end
 		if typeof(child) ~= "Instance" then
-			error("Invalid UI Instance")
+			error(`Invalid UI child Instance: {child}`)
 		end
 		if child:IsA("GuiObject") then
 			child.LayoutOrder = if child.LayoutOrder > 0 then child.LayoutOrder else index
