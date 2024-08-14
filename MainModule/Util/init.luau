@@ -8,19 +8,19 @@ export type Logger = Logger.Logger
 local Util = {
 	Logger = Logger,
 
-	Defer = require(script.Defer),
-	Function = require(script.Function),
-	getUserInfo = require(script.getUserInfo),
-	Queue = require(script.Queue),
-	ReadableTime = require(script.ReadableTime),
-	Retry = require(script.Retry),
-	Rollout = require(script.Rollout),
-	Services = require(script.Services),
-	SignalFast = require(script.SignalFast),
-	SignalGood = require(script.SignalGood),
-	String = require(script.String),
-	Suggest = require(script.Suggest),
-	Table = require(script.Table),
+	Defer = require(script:WaitForChild("Defer")),
+	Function = require(script:WaitForChild("Function")),
+	getUserInfo = require(script:WaitForChild("getUserInfo")),
+	Queue = require(script:WaitForChild("Queue")),
+	ReadableTime = require(script:WaitForChild("ReadableTime")),
+	Retry = require(script:WaitForChild("Retry")),
+	Rollout = require(script:WaitForChild("Rollout")),
+	Services = require(script:WaitForChild("Services")),
+	SignalFast = require(script:WaitForChild("SignalFast")),
+	SignalGood = require(script:WaitForChild("SignalGood")),
+	String = require(script:WaitForChild("String")),
+	Suggest = require(script:WaitForChild("Suggest")),
+	Table = require(script:WaitForChild("Table")),
 }
 
 return Util
