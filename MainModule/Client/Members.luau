@@ -5,8 +5,8 @@ local memberRichFormat = `<b>%s</b> %s\t<font transparency="0.5">%s</font>`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
 function Members.new(_K)
-	local UI = _K.client.UI
-	local escape = _K.Util.escapeRichText
+	local UI = _K.UI
+	local escape = _K.Util.String.escapeRichText
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Members",
@@ -45,7 +45,7 @@ function Members.new(_K)
 		self._filter = filter
 		local new = {}
 		for _, userId in list do
-			local member = _K.Auth.members[userId]
+			local member = _K.Data.members[userId]
 			if not member then
 				continue
 			end

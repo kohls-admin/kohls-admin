@@ -15,7 +15,7 @@ export type Stateful<T> = Flux.Stateful<T>
 export type SpecialKey = Flux.SpecialKey
 export type SpecialDefinition = Flux.SpecialDefinition
 
-local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local playerGui = Players.LocalPlayer and Players.LocalPlayer:WaitForChild("PlayerGui")
 
 -- TODO: allow a way to easily override builtin theme binds with a new compute or whatever!
 
@@ -74,7 +74,8 @@ UI.Nil = newproxy()
 --- @within UI
 --- A scope object for organizing and cleaning up UI states
 --- @prop Scope Scope
-UI.Scope = UI.Scope.UI
+UI.Scope = setmetatable({}, Flux.scopeMetatable)
+Flux.Scope.UI = UI.Scope
 
 --- @within UI
 --- GuiService.TopbarInset as a Flux state
@@ -190,7 +191,7 @@ UI.TopBarFrame = UI.new "Frame" {
 --- .ScrollBottomImage State<string>
 UI.Theme = {
 	ClackAll = state(true),
-	ClackEnabled = state(true),
+	ClackEnabled = state(false),
 	Transparency = state(0.3),
 
 	Primary = state(Color3.fromRGB(0, 0, 0)),
@@ -413,7 +414,7 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 			child = child._instance
 		end
 		if typeof(child) ~= "Instance" then
-			error("Invalid UI Instance")
+			error(`Invalid UI child Instance: {child}`)
 		end
 		if child:IsA("GuiObject") then
 			child.LayoutOrder = if child.LayoutOrder > 0 then child.LayoutOrder else index

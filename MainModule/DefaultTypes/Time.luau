@@ -36,7 +36,10 @@ end
 local function parseTime(input: string): (boolean, string | number)
 	if input == "" then
 		return true, ""
+	elseif string.find("-1", input, 1, true) then
+		return true, -1
 	end
+
 	if tonumber(input) then
 		-- no units specified, default to seconds?
 		return true, tonumber(input) :: number
@@ -89,6 +92,8 @@ for i, value in suggestedUnits do
 	end
 end
 
+table.insert(defaultSuggestions, { "-1", "-1 forever" })
+
 return function(_K)
 	_K.Registry.registerType("timeSimple", {
 		validate = function(v)
@@ -97,23 +102,26 @@ return function(_K)
 		parse = function(v)
 			local ok, result = parseTime(v)
 			if not ok then
-				error("Invalid time value")
+				error(result)
 			end
 			return result
 		end,
 		suggestions = function(text)
-			local number = string.match(text, "^%d+")
-			print("time suggestion", number, text)
+			local number = tonumber(string.match(text, "^%-?%d*"))
+			if #text > 0 and string.find("-1", text, 1, true) == 1 then
+				number = -1
+			end
 			if number then
-				print("time number match", number, text)
-				local names = {}
-				local original = if tonumber(number) > 1 then pluralUnits else suggestedUnits
-				for i, value in original do
-					names[i] = number .. value
+				local names = { { "-1", "-1 forever" } }
+				if number > 0 then
+					local original = if number > 1 then pluralUnits else suggestedUnits
+					for i, value in original do
+						names[i + 1] = number .. value
+					end
 				end
-				return _K.Util.querySuggestions(text, names, names)
+				return _K.Util.Suggest.query(text, names)
 			else
-				return _K.Util.querySuggestions(text, defaultSuggestions, defaultSuggestions)
+				return _K.Util.Suggest.query(text, defaultSuggestions)
 			end
 		end,
 	})

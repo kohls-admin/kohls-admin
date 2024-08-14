@@ -66,7 +66,7 @@ function Command:run()
 						if player == self.fromPlayer then
 							continue -- don't request self
 						end
-						if arg ~= Argument.OPTIONAL and rank <= self._K.Auth.getRank(arg.UserId) then
+						if arg ~= Argument.OPTIONAL and rank <= self._K.Auth.getRank(player.UserId) then
 							prepared[i] = nil
 							task.spawn(function()
 								local accepted =
@@ -88,9 +88,9 @@ function Command:run()
 		end
 	end
 
-	self._K.hook.preCommand:Fire(self)
+	self._K.Hook.preCommand:Fire(self)
 	local ok, err = pcall(run, self, unpack(self.preparedArgs))
-	self._K.hook.postCommand:Fire(self)
+	self._K.Hook.postCommand:Fire(self)
 
 	return ok, err
 end

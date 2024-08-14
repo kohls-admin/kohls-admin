@@ -124,7 +124,6 @@ function Slider.new(definition)
 		UI.new "Frame" {
 			Name = "Filled",
 			BackgroundColor3 = UI.Theme.Secondary,
-			BackgroundTransparency = UI.Theme.TransparencyClamped,
 			BorderSizePixel = 0,
 			Size = UI.tween(
 				UI.Theme.TweenOut,

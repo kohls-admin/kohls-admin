@@ -1,111 +1,81 @@
 -- dangerous moderation commands, but not the most dangerous of commands
 
-local Players = game:GetService("Players")
-
-local jailParts = {}
-local jailConnections = {}
-
-local function jailCharacter(character)
-	local player = Players:GetPlayerFromCharacter(character)
-	if not (player and character and character.PrimaryPart and character:FindFirstChildOfClass("Humanoid")) then
-		return
-	end
-
-	local existing = jailParts[player]
-	if existing then
-		task.defer(character.PivotTo, character, existing.CFrame)
-		return
-	end
-
-	local root = character.PrimaryPart
-	local groundPos = root.Position
-		- Vector3.new(0, character:FindFirstChildOfClass("Humanoid").HipHeight + root.Size.Y / 2, 0)
-
-	local _, size = character:GetBoundingBox()
-	local width = math.max(size.X, size.Y, size.Z) + 2
-	local position = groundPos + Vector3.new(0, width / 2, 0)
-	local offset = width / 2 - 0.5
-
-	local kJail = Instance.new("Part")
-	kJail.Name = "kJail"
-	kJail.Anchored = true
-	kJail.Size = Vector3.new(width, width, width)
-	kJail.CFrame = CFrame.new(position)
-	kJail.Color = Color3.new(0, 0, 0)
-	kJail.Transparency = 0.3
-	kJail.Material = Enum.Material.Neon
-	kJail.TopSurface = Enum.SurfaceType.Smooth
-	kJail.BottomSurface = Enum.SurfaceType.Smooth
-
-	jailParts[player] = kJail
-
-	local top = kJail:Clone()
-	top.Parent = kJail
-	top.Transparency = 1
-	top.Size = Vector3.new(width, 1, width)
-	top.Position = position + Vector3.new(0, offset, 0)
-
-	local bottom = top:Clone()
-	bottom.Parent = kJail
-	bottom.Position = position - Vector3.new(0, offset + 1, 0)
-
-	local left = top:Clone()
-	left.Parent = kJail
-	left.Size = Vector3.new(1, width, width)
-	left.Position = position - Vector3.new(offset, 0, 0)
-
-	local right = left:Clone()
-	right.Parent = kJail
-	right.Position = position + Vector3.new(offset, 0, 0)
-
-	local front = top:Clone()
-	front.Parent = kJail
-	front.Size = Vector3.new(width, width, 1)
-	front.Position = position - Vector3.new(0, 0, offset)
-
-	local back = front:Clone()
-	back.Parent = kJail
-	back.Position = position + Vector3.new(0, 0, offset)
-
-	kJail.CanCollide = false
-	kJail.Parent = workspace
-end
-
-local function teleportCharacter(from, to)
-	if not (from and to) then
-		return
-	end
-
-	-- prevent teleporting seats
-	local humanoid = from:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		if humanoid.SeatPart then
-			local weld = humanoid.SeatPart:FindFirstChild("SeatWeld")
-			if weld then
-				weld:Destroy()
-			end
-		end
-		humanoid.Sit = false
-	end
-
-	-- reset velocity on teleport
-	for _, v in from:GetDescendants() do
-		if v:IsA("BasePart") then
-			v.AssemblyLinearVelocity = Vector3.zero
-		end
-	end
-
-	-- add a small offset to prevent clipping
-	local offset =
-		Vector3.new((math.random(1, 2) - 1) * math.random(2, 4), 0, (math.random(1, 2) - 1) * math.random(2, 4))
-
-	from:PivotTo(to:GetPivot() + offset)
-end
+local Jail = require(script.Jail)
+local teleportCharacter = require(script.teleportCharacter)
 
 return {
 	{
+		name = "bans",
+		aliases = {},
+		description = "Shows the bans in a separate window.",
+		args = {},
+		envClient = function(_K)
+			local window = _K.UI.new "Window" {
+				Parent = _K.UI.LayerDefault,
+				Title = "Kohl's Admin Bans",
+				Visible = false,
+			}
+			_K.UI.edit(window, {
+				[_K.UI.Event.Property] = {
+					Visible = function()
+						if not window._instance.Visible and #_K.UI.Scope.dashboard then
+							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
+								_K.UI.Scope.dashboard.Bans,
+							})
+						end
+					end,
+				},
+			})
+			return {
+				window = window,
+			}
+		end,
+
+		runClient = function(context)
+			context._K.UI.edit(context.env.window, {
+				Visible = true,
+				context._K.UI.Scope.dashboard.Bans,
+			})
+		end,
+	},
+	{
+		name = "members",
+		aliases = { "admins", "roles" },
+		description = "Shows the roled members in a separate window.",
+		args = {},
+		envClient = function(_K)
+			local window = _K.UI.new "Window" {
+				Parent = _K.UI.LayerDefault,
+				Title = "Kohl's Admin Members",
+				Visible = false,
+			}
+			_K.UI.edit(window, {
+				[_K.UI.Event.Property] = {
+					Visible = function()
+						if not window._instance.Visible and #_K.UI.Scope.dashboard then
+							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
+								_K.UI.Scope.dashboard.Members,
+							})
+						end
+					end,
+				},
+			})
+			return {
+				window = window,
+			}
+		end,
+
+		runClient = function(context)
+			context._K.UI.edit(context.env.window, {
+				Visible = true,
+				context._K.UI.Scope.dashboard.Members,
+			})
+		end,
+	},
+
+	{
 		name = "ban",
-		description = "Bans one or more players.",
+		description = "Bans one or more players for a certain duration.",
 		args = {
 			{
 				type = "players",
@@ -117,54 +87,37 @@ return {
 			{
 				type = "timeSimple",
 				name = "Duration",
-				description = "The duration for the ban.",
-				optional = true,
+				description = "The duration for the ban.\n -1  Forever\n  0  Session",
 			},
 			{
-				type = "string",
+				type = "stringGreedy",
 				name = "Reason",
 				description = "The reason for the ban.",
 				optional = true,
 			},
-		},
-		permissions = {
-			kick = true,
 		},
 
 		run = function(context, players, duration: number?, reason: string?)
 			-- if lacking administrator command group only allow session banning?
 			-- need to somehow display only session bans in suggestions...
 			-- TODO: only show lower rank players in the suggestions if defined in argDef
-			local canBan = context._K.Auth.hasPermission(context.from, "ban")
-			local timestamp
-			if duration and canBan then
-				if duration > 0 then
-					timestamp = os.time() + duration
-				end
-				-- use new banasync
+			if type(reason) == "string" then
+				reason = string.sub(reason, 1, 400) -- banasync limit
 			end
-
 			local ids = table.create(#players)
 			for _, player in players do
-				context._K.banHandler(
-					player.UserId,
-					player.Username,
-					reason,
-					timestamp,
-					context.from,
-					context.from.Name
-				)
+				context._K.Auth.userBan(player.UserId, reason, duration, context.from)
 				player:Kick(reason)
 			end
-			if canBan and duration and duration ~= 0 then
-				local ok = pcall(
-					context._K.Services.Players.BanAsync,
-					context._K.Services.Players,
-					{ UserIds = ids, PrivateReason = reason, Duration = duration }
-				)
-				if not ok then
-					-- TODO: retry banasync
-				end
+			if duration and duration ~= 0 then
+				context._K.Util.Retry(function()
+					context._K.Services.Players:BanAsync({
+						ApplyToUniverse = true,
+						UserIds = ids,
+						PrivateReason = reason,
+						Duration = duration,
+					})
+				end, 8, 4, 2)
 			end
 		end,
 	},
@@ -180,18 +133,15 @@ return {
 			{
 				type = "timeSimple",
 				name = "Duration",
-				description = "The duration for the ban.",
+				description = "The duration for the ban.\n -1  Forever\n  0  Session",
 				optional = true,
 			},
 			{
-				type = "string",
+				type = "stringGreedy",
 				name = "Reason",
 				description = "The reason for the ban.",
 				optional = true,
 			},
-		},
-		permissions = {
-			kick = true,
 		},
 
 		run = function(context, userIds, duration: number?, reason: string?)
@@ -201,54 +151,31 @@ return {
 			if type(reason) == "string" then
 				reason = string.sub(reason, 1, 400) -- banasync limit
 			end
-			local canBan = context._K.Auth.hasPermission(context.from, "ban")
+			print("banid", userIds, duration, reason)
 			local rank = context._K.Auth.getRank(context.from)
 			for _, userId in userIds do
 				-- only ban if rank is lower haha
 				if userId == context.from or rank <= context._K.Auth.getRank(userId) then
+					print("rank no auth")
 					continue
 				end
-				if duration and canBan then
-					if duration > 0 then
-						duration = os.time() + duration
-					end
-					-- use new banasync
-				end
-
-				local userName = ""
 				for _, player in context._K.Services.Players:GetPlayers() do
 					if player.UserId == tonumber(userId) then
-						userName = player.Name
-						player:Kick(reason)
+						player:Kick(reason or "Unspecified reason.")
 					end
 				end
 
-				context._K.banHandler(
-					userId,
-					userName,
-					reason,
-					duration,
-					context.from,
-					context._K.Util.getUserInfo(context.from).Username
-				)
-				if userName ~= "" then
-					continue
-				end
-				-- populate the username if not found
-				task.spawn(function()
-					context._K.bans[userId][1] = context._K.Util.getUserInfo(userId).Username
-					-- TODO: network ban name and update for clients
-				end)
+				context._K.Auth.userBan(userId, reason, duration, context.from)
 			end
-			if canBan and duration and duration ~= 0 then
-				local ok = pcall(
-					context._K.Services.Players.BanAsync,
-					context._K.Services.Players,
-					{ UserIds = userIds, PrivateReason = reason, Duration = duration }
-				)
-				if not ok then
-					-- TODO: retry banasync
-				end
+			if duration and duration ~= 0 then
+				context._K.Util.Retry(function()
+					context._K.Services.Players:BanAsync({
+						UserIds = userIds,
+						PrivateReason = reason,
+						Duration = duration,
+						ApplyToUniverse = true,
+					})
+				end, 8, 4, 2)
 			end
 		end,
 	},
@@ -262,19 +189,18 @@ return {
 				description = "The player(s) to unban.",
 			},
 		},
-		permissions = {
-			kick = true,
-		},
+
 		run = function(context, bans)
 			local ids = table.create(#bans)
+			-- TODO: check if authorized to actually unban, sessions vs persist, if persistCommands permission?!
 			for i, userId in bans do
-				context._K.bans[userId] = nil
+				context._K.Data.bans[userId] = nil
+				context._K.Data.Cache.bans[userId] = context._K.Data.Store.REMOVE
 				context._K.Remote.Ban:FireAllClients(userId)
-				-- trigger ban save
-				-- unbanasync
+				context._K.Data.pendingSaveMain = true
 				table.insert(ids, tonumber(userId))
 			end
-			context._K.Services.Players:UnbanAsync({ UserIds = ids })
+			context._K.Services.Players:UnbanAsync({ UserIds = ids, ApplyToUniverse = true })
 		end,
 	},
 	{
@@ -356,6 +282,9 @@ return {
 					if force then
 						force:Destroy()
 					end
+					if player.Character.PrimaryPart then
+						player.Character.PrimaryPart.AssemblyLinearVelocity = Vector3.zero
+					end
 					player.Character:PivotTo(player.Character:GetAttribute("kPunish"))
 					player.Character:SetAttribute("kPunish", nil)
 				end
@@ -363,14 +292,14 @@ return {
 		end,
 	},
 	{
-		name = "kill",
-		aliases = { "unalive" },
-		description = "Kills one or more players.",
+		name = "breakjoints",
+		aliases = { "break", "kill" },
+		description = "Breaks the joints one or more players.",
 		args = {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) to kill.",
+				description = "The player(s) whose joints to break.",
 				lowerRank = true,
 			},
 		},
@@ -678,12 +607,12 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if jailParts[player] then
+				if Jail.Parts[player] then
 					continue
 				end
-				jailConnections[player] = player.CharacterAdded:Connect(jailCharacter)
+				Jail.Connections[player] = player.CharacterAdded:Connect(Jail.new)
 				if player.Character then
-					jailCharacter(player.Character)
+					Jail.new(player.Character)
 				end
 			end
 		end,
@@ -702,13 +631,13 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if jailConnections[player] then
-					jailConnections[player]:Disconnect()
-					jailConnections[player] = nil
+				if Jail.Connections[player] then
+					Jail.Connections[player]:Disconnect()
+					Jail.Connections[player] = nil
 				end
-				if jailParts[player] then
-					jailParts[player]:Destroy()
-					jailParts[player] = nil
+				if Jail.Parts[player] then
+					Jail.Parts[player]:Destroy()
+					Jail.Parts[player] = nil
 				end
 			end
 		end,
@@ -901,6 +830,7 @@ return {
 	},
 	{
 		name = "respawn",
+		aliases = { "spawn" },
 		description = "Respawns the character of one or more player(s).",
 		args = {
 			{
@@ -929,6 +859,20 @@ return {
 				shouldRequest = true,
 			},
 		},
+
+		envClient = function(_K)
+			local lastCameraCFrame
+			_K.Remote.Refresh.OnClientEvent:Connect(function()
+				if lastCameraCFrame then
+					workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Wait()
+					workspace.CurrentCamera.CFrame = lastCameraCFrame
+				end
+			end)
+
+			_K.Services.Players.LocalPlayer.CharacterRemoving:Connect(function()
+				lastCameraCFrame = workspace.CurrentCamera.CFrame
+			end)
+		end,
 
 		run = function(context, players)
 			for _, player in players do
@@ -1013,7 +957,6 @@ return {
 				description = "The value of the stat.",
 			},
 		},
-
 		run = function(context, players, stat, value)
 			stat = string.lower(stat)
 			for _, player in players do
@@ -1033,6 +976,79 @@ return {
 						end
 					end
 				end
+			end
+		end,
+	},
+	{
+		name = "resetstats",
+		description = "Resets the stats of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose stats to reset.",
+				shouldRequest = true,
+			},
+		},
+		run = function(context, players)
+			for _, player in players do
+				local leaderstats = player:FindFirstChild("leaderstats")
+				if not leaderstats then
+					continue
+				end
+				for _, child in leaderstats:GetChildren() do
+					if child:IsA("IntValue") or child:IsA("NumberValue") then
+						child.Value = 0
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "team",
+		aliases = { "tm" },
+		description = "Changes the team of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose teams to change.",
+			},
+			{
+				type = "team",
+				name = "Team",
+				description = "The team to assign.",
+			},
+		},
+		run = function(context, players, team)
+			for _, player in players do
+				player.Team = team
+			end
+		end,
+	},
+	{
+		name = "randomizeteams",
+		aliases = { "randomiseteams", "randomteams", "rteams", "rteam", "rt" },
+		description = "Randomizes the team of one or more player(s) from a list of teams.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose teams to randomize.",
+			},
+			{
+				type = "teams",
+				name = "Random Teams",
+				description = "The teams to randomly assign.",
+			},
+		},
+		run = function(context, players, teams)
+			local randomSort = {}
+			for _, player in players do
+				table.insert(randomSort, math.ceil(math.random(#randomSort + 1)), player)
+			end
+			for i, player in randomSort do
+				player.Team = teams[((i - 1) % #teams) + 1]
 			end
 		end,
 	},

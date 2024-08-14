@@ -9,12 +9,13 @@ local listable = {
 local booleanType = {
 	transform = string.lower,
 	validate = function(v)
-		return v == "true" or v == "false", "Only use true or false for booleans."
+		return string.find("true", v, 1, true) == 1 or string.find("false", v, 1, true) == 1,
+			"Only use true or false for booleans."
 	end,
 	parse = function(v)
-		if v == "true" then
+		if string.find("true", v, 1, true) == 1 then
 			return true
-		elseif v == "false" then
+		elseif string.find("false", v, 1, true) == 1 then
 			return false
 		else
 			error("Invalid boolean value.")

@@ -8,7 +8,7 @@ StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
 
-local UI = _K.client.UI
+local UI = _K.UI
 
 local validState = UI.state(nil)
 local indicatorColor = UI.compute(function(use)
@@ -63,7 +63,6 @@ local Input = UI.new "Input" {
 				Visible = UI.compute(function(use)
 					return use(validState) == true
 				end),
-				-- ResampleMode = Enum.ResamplerMode.Pixelated
 			},
 
 			UI.new "ImageLabel" {
@@ -77,7 +76,6 @@ local Input = UI.new "Input" {
 				Visible = UI.compute(function(use)
 					return use(validState) == false
 				end),
-				-- ResampleMode = Enum.ResamplerMode.Pixelated
 			},
 		},
 	},
@@ -203,50 +201,44 @@ local function completeSuggestion()
 	if not currentCompletion then
 		return
 	end
-
 	tabCompleting = true
-	local pos, text = unpack(currentCompletion)
 
+	local pos, text = unpack(currentCompletion)
 	if not string.find(text, " $") then
 		text = text .. " "
 		pos += 1
 	end
-
 	Input._input.Text = text
 	Input._input.CursorPosition = pos + 1
-	task.delay(0, function()
-		tabCompleting = false
-		Input._input.Text = text
-		Input._input.CursorPosition = pos + 1
-	end)
+	tabCompleting = false
 end
 
+local suggestionUpdating
 local function updateSuggestionLabels(data)
+	if suggestionUpdating then
+		return
+	end
+	suggestionUpdating = true
 	for _, label in suggestionLabels do
 		label:Destroy()
 	end
 	table.clear(suggestionLabels)
 
-	-- local argType
-	-- if data.argDefinition then
-	-- 	argType = data.argDefinition.type
-	-- 	if argType:find("player") == 1 then
-	-- 		argType = "player"
-	-- 	end
-	-- end
+	local amount = math.min(7, #data.suggestions - 1)
+	local start = math.max(1, suggestionIndex - 7)
 
-	for i, suggestion in data.suggestions do
-		if i >= 8 then -- limit to 8 suggestions?
-			break
-		end
-		local name, value = unpack(suggestion)
+	for i = start, start + amount do
+		local suggestion = data.suggestions[i]
+		local name, value, displayName = unpack(suggestion)
 		local frame = SuggestionFrame:Clone()
 		local label = frame:FindFirstChildOfClass("TextLabel")
 		frame.LayoutOrder = i
 		frame.BackgroundTransparency = if i == suggestionIndex then 0.9 else 0.95
 
+		displayName = displayName or name
+
 		if typeof(value) == "Instance" and value:IsA("Player") then
-			name = `{name} ({value.DisplayName})`
+			displayName = `{name} ({value.DisplayName})`
 			local userId = value.UserId
 			local image = playerThumbs[tostring(userId)]
 			if not image then
@@ -266,7 +258,11 @@ local function updateSuggestionLabels(data)
 			thumb.SizeConstraint = Enum.SizeConstraint.RelativeYY
 		end
 
-		label.Text = string.format(suggestFormat, data.query, string.sub(name, #data.query + 1))
+		label.Text = string.format(
+			suggestFormat,
+			string.sub(displayName, 1, #data.query),
+			string.sub(displayName, #data.query + 1)
+		)
 		frame.Activated:Connect(function()
 			Input._input:CaptureFocus()
 			suggestionIndex = i
@@ -277,11 +273,12 @@ local function updateSuggestionLabels(data)
 		-- show highlight
 		table.insert(suggestionLabels, frame)
 	end
+	suggestionUpdating = false
 end
 
 local function clearCompletion()
 	TooltipFrame.Visible = false
-	Input.DisplayText:set(_K.Util.escapeRichText(Input._input.Text))
+	Input.DisplayText:set(_K.Util.String.escapeRichText(Input._input.Text))
 	for _, label in suggestionLabels do
 		label:Destroy()
 	end
@@ -311,17 +308,17 @@ updateCompletion = function()
 		local pos, text, err = unpack(invalid)
 		-- red text inlineFormat
 		Input.DisplayText:set(
-			`<font transparency="0.33">{_K.Util.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.escapeRichText(
+			`<font transparency="0.33">{_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.String.escapeRichText(
 				text
-			)}</b></font>{_K.Util.escapeRichText(string.sub(data.message, pos + #text))}</font>`
+			)}</b></font>{_K.Util.String.escapeRichText(string.sub(data.message, pos + #text))}</font>`
 		)
 		Tooltip.Text = if not data.argDefinition
 			then ""
 			else string.format(
 				argumentFormat,
-				_K.Util.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
-				_K.Util.escapeRichText(data.argDefinition.type),
-				_K.Util.escapeRichText(data.argDefinition.description)
+				_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
+				_K.Util.String.escapeRichText(data.argDefinition.type),
+				_K.Util.String.escapeRichText(data.argDefinition.description)
 			)
 		for _, label in suggestionLabels do
 			label:Destroy()
@@ -330,7 +327,7 @@ updateCompletion = function()
 		table.clear(suggestionLabels)
 		local frame = SuggestionFrame:Clone()
 		local label = frame:FindFirstChildOfClass("TextLabel")
-		label.Text = `<font color="#f00"><b>{_K.Util.escapeRichText(err)}</b></font>`
+		label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
 		frame.Parent = TooltipFrame
 		-- show highlight
 		table.insert(suggestionLabels, frame)
@@ -349,9 +346,9 @@ updateCompletion = function()
 	if data.argDefinition then
 		Tooltip.Text = string.format(
 			argumentFormat,
-			_K.Util.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
-			_K.Util.escapeRichText(data.argDefinition.type),
-			_K.Util.escapeRichText(data.argDefinition.description)
+			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
+			_K.Util.String.escapeRichText(data.argDefinition.type),
+			_K.Util.String.escapeRichText(data.argDefinition.description)
 		)
 		TooltipFrame.Visible = true
 		-- TODO: some types should show a widget for fast select e.g. color wheel
@@ -385,7 +382,7 @@ updateCompletion = function()
 	local suggestionText, suggestionValue = unpack(currentSuggestion)
 
 	if data.query ~= "" then
-		local reservedCharacters = { " ", _K.settings.prefix._value }
+		local reservedCharacters = { " ", _K.Data.settings.prefix }
 		for _, char in reservedCharacters do
 			if string.find(suggestionText, char) and not string.find(suggestionText, '^["`]') then
 				suggestionText = `"{suggestionText}"`
@@ -405,11 +402,11 @@ updateCompletion = function()
 	Input.DisplayText:set(
 		string.format(
 			inlineFormat,
-			_K.Util.escapeRichText(string.sub(data.message, 1, data.argPos - 1)),
-			_K.Util.escapeRichText(data.query),
-			_K.Util.escapeRichText(string.sub(data.rawArg, #data.query + 1)),
-			_K.Util.escapeRichText(string.sub(suggestionText, #data.rawArg + 1)),
-			_K.Util.escapeRichText(string.sub(data.message, endPos))
+			_K.Util.String.escapeRichText(string.sub(data.message, 1, data.argPos - 1)),
+			_K.Util.String.escapeRichText(data.query),
+			_K.Util.String.escapeRichText(string.sub(data.rawArg, #data.query + 1)),
+			_K.Util.String.escapeRichText(string.sub(suggestionText, #data.rawArg + 1)),
+			_K.Util.String.escapeRichText(string.sub(data.message, endPos))
 		)
 	)
 
@@ -419,9 +416,9 @@ updateCompletion = function()
 		-- show command aliases too!
 		Tooltip.Text = string.format(
 			argumentFormat,
-			_K.Util.escapeRichText(suggestionText),
+			_K.Util.String.escapeRichText(suggestionText),
 			"command",
-			_K.Util.escapeRichText(suggestionValue.description)
+			_K.Util.String.escapeRichText(suggestionValue.description)
 		)
 	end
 	if data.argDefinition or data.argIndex == 1 then
@@ -447,9 +444,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if not Input._input:IsFocused() then
 			return
 		end
-		if input.KeyCode == Enum.KeyCode.Tab then
-			completeSuggestion()
-		elseif input.KeyCode == Enum.KeyCode.Up then
+		if input.KeyCode == Enum.KeyCode.Up then
 			suggestionIndex = math.max(1, suggestionIndex - 1)
 			updateCompletion()
 		elseif input.KeyCode == Enum.KeyCode.Down then
@@ -471,13 +466,10 @@ end)
 Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 	local cursorPosition = Input._input.CursorPosition
 	if cursorPosition ~= -1 then
-		if cursorPosition < #UI.peek(_K.settings.prefix) + 1 then
-			Input._input.CursorPosition = #UI.peek(_K.settings.prefix) + 1
+		if cursorPosition < #_K.Data.settings.prefix + 1 then
+			Input._input.CursorPosition = #_K.Data.settings.prefix + 1
 			return
 		end
-		-- if tabCompleting then
-		-- 	return -- don't show tab artifact
-		-- end
 		task.defer(updateCompletionData)
 	end
 end)
@@ -491,7 +483,7 @@ Input._input.FocusLost:Connect(function(enterPressed)
 			return
 		end
 		-- ignore empty command strings
-		if Input._input.Text == UI.peek(_K.settings.prefix) then
+		if Input._input.Text == _K.Data.settings.prefix then
 			return
 		end
 		-- FIX: if validated lol
@@ -509,15 +501,16 @@ Input._input.FocusLost:Connect(function(enterPressed)
 				table.remove(commandHistory)
 			end
 		end
-		Input._input.Text = UI.peek(_K.settings.prefix)
+		Input._input.Text = _K.Data.settings.prefix
 	end
 end)
 -- FIX: make sure _K reliant connections aren't connected until init!
 Input._input:GetPropertyChangedSignal("Text"):Connect(function()
-	if tabCompleting then
+	if not tabCompleting and UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
+		completeSuggestion()
 		return
 	end
-	local prefix = UI.peek(_K.settings.prefix)
+	local prefix = _K.Data.settings.prefix
 	if string.find(Input._input.Text, prefix, 1, true) ~= 1 then
 		Input._input.CursorPosition += 1
 		Input._input.Text = prefix .. Input._input.Text
@@ -525,20 +518,20 @@ Input._input:GetPropertyChangedSignal("Text"):Connect(function()
 		return
 	end
 
-	if Input._input.Text == UI.peek(_K.settings.prefix) then
+	if Input._input.Text == _K.Data.settings.prefix then
 		Input.DisplayText:set(Input._input.Text .. "<font transparency='0.5'><i>command</i></font>")
 	else
-		Input.DisplayText:set(_K.Util.escapeRichText(Input._input.Text))
+		Input.DisplayText:set(_K.Util.String.escapeRichText(Input._input.Text))
 	end
 end)
 
 return {
-	init = function(self, context)
-		Input._input.Text = UI.peek(context.settings.prefix)
+	init = function(self, _K)
+		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
-		CommandBar.Parent = context.client.UI.LayerTop
-		context.client.hotkeys.commandBar = { key = Enum.KeyCode.Semicolon, mods = {}, callback = self.show }
-		context.client.CommandBarState = { validState, indicatorColor }
+		CommandBar.Parent = _K.UI.LayerTop
+		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
+		_K.client.CommandBarState = { validState, indicatorColor }
 	end,
 	show = function()
 		CommandBar.Visible = true

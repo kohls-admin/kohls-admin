@@ -143,22 +143,6 @@ local function cleanupScope(scope: any)
 	print("cleanupScope", scope)
 end
 
---- @within Flux
---- @type Scope {[any] = Scope | any}
-local scopeMetatable = {
-	__index = function(self: any, key: string): any
-		if key == "cleanup" then
-			return function()
-				cleanupScope(self)
-			end
-		end
-		-- new scope
-		local new = setmetatable({}, getmetatable(self))
-		self[key] = new
-		return new
-	end,
-}
-
 --- A library for easily creating and managing reactive state.
 --- @class Flux
 local Flux = {
@@ -183,9 +167,25 @@ function Flux.specialKey(): SpecialKey
 end
 
 --- @within Flux
+--- @type Scope {[any] = Scope | any}
+Flux.scopeMetatable = {
+	__index = function(self: any, key: string): any
+		if key == "cleanup" then
+			return function()
+				cleanupScope(self)
+			end
+		end
+		-- new scope
+		local new = setmetatable({}, getmetatable(self))
+		self[key] = new
+		return new
+	end,
+}
+
+--- @within Flux
 --- A scope object for organizing and cleaning up Flux states
 --- @prop Scope Scope
-Flux.Scope = setmetatable({}, scopeMetatable)
+Flux.Scope = setmetatable({}, Flux.scopeMetatable)
 
 --- @within Flux
 --- A marker for defining Instance attributes in [Flux.edit]

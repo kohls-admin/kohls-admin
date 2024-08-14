@@ -75,10 +75,10 @@ local directMagic = {
 		return player ~= from
 	end,
 	admins = function(player)
-		return _K.Auth.members[player.UserId]
+		return _K.Data.members[player.UserId]
 	end,
 	nonadmins = function(player)
-		return not _K.Auth.members[player.UserId]
+		return not _K.Data.members[player.UserId]
 	end,
 	friends = function(player, from)
 		return player ~= from and player:IsFriendsWith(from)
@@ -183,7 +183,7 @@ local function roleParse(arg, self)
 		if string.find(string.lower(id), arg, 1, true) == 1 then
 			valid = true
 			for _, player in Players:GetPlayers() do
-				local userPermissions = _K.Auth.members[player.UserId]
+				local userPermissions = _K.Data.members[player.UserId]
 				if userPermissions and table.find(userPermissions.roles, id) then
 					table.insert(players, player)
 				end
@@ -203,7 +203,7 @@ local typeRoles = {
 		for role in next, _K.Auth.roles do
 			table.insert(names, "@" .. role)
 		end
-		return _K.Util.querySuggestions(text, names)
+		return _K.Util.Suggest.query(text, names)
 	end,
 }
 
@@ -234,10 +234,57 @@ local function parseIndividual(arg, self)
 	return
 end
 
+local prefixes = {
+	["~"] = "randomPlayers",
+	["!"] = "inversePlayers",
+	["$"] = "magicPlayers",
+	["@"] = "rolePlayers",
+	["%"] = "teamPlayers",
+}
+
+local function baseSuggestions(text, from, definition)
+	local players = Players:GetPlayers()
+	local names, instances = {}, {}
+	-- add me suggestion
+	if not definition.ignoreSelf then
+		table.insert(names, "me")
+		table.insert(instances, Players.LocalPlayer)
+	end
+	-- filter out lowerRank and ignoreSelf
+	local rank = _K.Auth.getRank(from)
+	for _, player in players do
+		if definition.ignoreSelf and player == Players.LocalPlayer then
+			continue
+		end
+		if definition.lowerRank and player ~= Players.LocalPlayer and rank <= _K.Auth.getRank(player.UserId) then
+			continue
+		end
+		table.insert(names, player.Name)
+		table.insert(instances, player)
+	end
+
+	return names, instances
+end
+
 local typeMultiple = {
 	listable = true,
+	transform = string.lower,
+	validate = genValidate(function(arg, self)
+		if arg == "*" or arg == "all" then
+			return true
+		end
+		return parseIndividual(arg, self)
+	end),
 	preParse = function(transformedArgs)
-		return if table.find(transformedArgs, "*") then Players:GetPlayers() else nil
+		return if table.find(transformedArgs, "*") or table.find(transformedArgs, "all")
+			then Players:GetPlayers()
+			else nil
+	end,
+	parse = function(arg, self)
+		if type(arg) == "string" then
+			return parseIndividual(arg, self)
+		end
+		return arg
 	end,
 	postParse = function(parsedArgs)
 		local players = {}
@@ -251,6 +298,17 @@ local typeMultiple = {
 			end
 		end
 		return players
+	end,
+	suggestions = function(text, from, definition)
+		local names, instances = baseSuggestions(text, from, definition)
+		-- add all suggestion
+		table.insert(names, "all")
+		table.insert(names, "*")
+		-- add prefix suggestions
+		for prefix, name in prefixes do
+			table.insert(names, prefix)
+		end
+		return _K.Util.Suggest.query(text, names, instances)
 	end,
 	-- this will require parsing? lol
 	prefixes = {
@@ -266,20 +324,7 @@ local typeIndividual = {
 	transform = string.lower,
 	validate = genValidate(parseIndividual),
 	parse = parseIndividual,
-	suggestions = function(text, from, definition)
-		local players = Players:GetPlayers()
-		local suggestions = _K.Util.newSuggestions(players)
-		-- add me suggestion
-		if not definition.ignoreSelf then
-			table.insert(suggestions, 1, "me")
-			table.insert(players, Players.LocalPlayer)
-		end
-		-- add prefix suggestions
-		for prefix, name in typeMultiple.prefixes do
-			table.insert(suggestions, prefix)
-		end
-		return _K.Util.querySuggestions(text, suggestions, players)
-	end,
+	suggestions = baseSuggestions,
 }
 
 local function parseId(arg)
@@ -307,7 +352,7 @@ return function(context)
 	_K.Registry.registerType("rolePlayers", typeRoles)
 	_K.Registry.registerType("randomPlayers", typeRandom)
 	_K.Registry.registerType("player", typeIndividual)
-	_K.Registry.registerType("players", typeMultiple, typeIndividual)
+	_K.Registry.registerType("players", typeMultiple)
 	_K.Registry.registerType("playerId", typeId)
 	_K.Registry.registerType("playerIds", typeIds, typeId)
 end

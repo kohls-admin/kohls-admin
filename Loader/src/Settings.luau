@@ -1,88 +1,57 @@
-local prefix = ":"
--- Enables Kohl's Admin VIP donation features
-local vip = true
-local freeAdmin = true
+local Settings = {
+	-- MAKE SURE TO CHANGE THIS FOR IMPROVED SECURITY!
+	-- Using Roblox secrets via HttpService:GetSecret recommended!
+	dataStoreKey = "CHANGE_THIS",
 
-local roles = {
-	-- accepts a list of userids
-	creator = {},
-	superadmin = {},
-	admin = {},
-	mod = {},
-	vip = {},
+	-- Changes the default command prefix
+	prefix = ":",
+
+	-- Enables Kohl's Admin VIP donation features
+	vip = true,
+
+	--[[
+	Kohl's Admin VIP Game Catalog Integration
+	
+	Enables participation in the Kohl's Admin VIP game catalog, showcasing
+	your game to VIP users looking for games with Kohl's Admin.
+	
+	⚠️ IMPORTANT: Allow HTTP Requests in Game Settings -> Security
+	
+	The catalog updates every 6 hours, check it out below;
+	https://www.roblox.com/games/17873329124/
+	]]
+	vipGameCatalogEnabled = true,
+
+	-- Gives everyone access to the uncommented roles
+	freeAdmin = {
+		-- "creator",
+		-- "superadmin",
+		-- "admin",
+		-- "mod",
+		-- "vip",
+	},
+
+	gamePassRoles = {
+		-- [gamePassId] = { "moderator", "vip" },
+	},
+
+	groupRoles = {
+		-- [groupId] = {
+		-- { rank = 200, roles = { "admin", "vip" }, exactRank = true },
+		-- },
+	},
+
+	roles = {
+		-- accepts a list of userids
+		creator = {},
+		superadmin = {},
+		admin = {},
+		mod = {},
+		vip = {},
+	},
+
+	-- TODO: theme configuration
+	-- TODO: command permissions and role definitions
 }
 
-local gamePassRoles = {
-	-- [gamePassId] = { "moderator", "vip" },
-}
-
-local groupRoles = {
-	-- [groupId] = {
-	-- { rank = 200, roles = { "admin", "vip" }, rankAndAbove = true },
-	-- },
-}
-
--- Careful! Easy configuration is above.
--- Only change the code below if you understand the consequences.
-return function(_K)
-	_K.settings.prefix:set(prefix)
-	_K.settings.vip:set(vip)
-	_K.Auth.defaultRole.admin = freeAdmin
-
-	if not _K.IsServer then
-		return
-	end
-
-	-- define main roles
-	for role, users in roles do
-		for _, userId in users do
-			_K.Auth.userRoleAdd(userId, role)
-		end
-	end
-
-	-- give roles on gamepass purchase
-	_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
-		if not purchaseSuccess then
-			return
-		end
-		for id, roles in gamePassRoles do
-			if gamePassId ~= id then
-				continue
-			end
-			for _, role in roles do
-				_K.Auth.userRoleAdd(player.UserId, role)
-			end
-		end
-	end)
-
-	-- handle on join role givers
-	_K.Services.Players.PlayerAdded:Connect(function(player)
-		-- studio testing roles
-		if _K.Services.RunService:IsStudio() then
-			_K.Auth.userRoleAdd(player.UserId, "creator")
-		end
-		-- gamepass role giver
-		for id, roles in gamePassRoles do
-			if not _K.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, id) then
-				continue
-			end
-			for _, role in roles do
-				_K.Auth.userRoleAdd(player.UserId, role)
-			end
-		end
-		-- group roles giver
-		for groupId, groupRanks in groupRoles do
-			if not player:IsInGroup(groupId) then
-				continue
-			end
-			for index, rankDefinition in groupRanks do
-				local rank = player:GetRankInGroup(groupId)
-				if rank == rankDefinition.rank or (rankDefinition.rankAndAbove and rank >= rankDefinition.rank) then
-					for _, role in rankDefinition.roles do
-						_K.Auth.userRoleAdd(player.UserId, role)
-					end
-				end
-			end
-		end
-	end)
-end
+return Settings

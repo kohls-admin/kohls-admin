@@ -22,7 +22,8 @@ function ColorPicker.new(definition)
 		Value = Color3.new(1, 0, 0),
 	}, definition)
 
-	-- TODO: create hue vertical slider
+	local dragging = UI.state(false)
+
 	local hueSlider = UI.new "Slider" {
 		Name = "HueSlider",
 		Size = UI.compute(function(use)
@@ -43,7 +44,7 @@ function ColorPicker.new(definition)
 				Enabled = UI.Theme.StrokeEnabled,
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 				Color = UI.Theme.Border,
-				Transparency = UI.Theme.Transparency,
+				Transparency = UI.Theme.TransparencyClamped,
 				Thickness = 1,
 			},
 			UI.new "UIGradient" {
@@ -53,14 +54,11 @@ function ColorPicker.new(definition)
 	}
 
 	local h, s, v = Color3.toHSV(UI.peek(new.Value))
-	hueSlider.Value:set(h)
-
-	local dragging = UI.state(false)
 	local saturationState = UI.state(s)
 	local valueState = UI.state(v)
 	local hueColor = UI.computeFrom(Color3.fromHSV, hueSlider.Value, 1, 1)
-	new.Value = UI.computeFrom(Color3.fromHSV, hueSlider.Value, saturationState, valueState)
 
+	hueSlider.Value:set(h)
 	UI.edit(hueSlider._slider, {
 		BackgroundColor3 = hueColor,
 		UI.new "UIStroke" {
@@ -71,15 +69,160 @@ function ColorPicker.new(definition)
 	})
 	hueSlider._instance:FindFirstChild("Filled"):Destroy()
 
+	local redIgnore, greenIgnore, blueIgnore, hueIgnore, svIgnore, newIgnore
+
+	local redInput = UI.new "Input" {
+		BackgroundColor3 = Color3.new(),
+		BackgroundTransparency = 0,
+		Size = UDim2.new(0, 36, 0, 24),
+		Font = UI.Theme.FontMono,
+		FontSize = 14,
+		TextColor3 = Color3.new(1, 0.3, 0.3),
+		Padding = UDim.new(0, 5),
+		IntegerOnly = true,
+		NumberRange = NumberRange.new(0, 255),
+		Value = math.round(new.Value._value.R * 255),
+
+		[UI.Hook] = {
+			Value = function(value)
+				if redIgnore then
+					redIgnore = nil
+					return
+				end
+				local number = tonumber(value)
+				if not number then
+					return
+				end
+				local oldColor = new.Value._value
+				local newColor = Color3.new(number / 255, oldColor.G, oldColor.B)
+				newIgnore = true
+				new.Value:set(newColor)
+				if math.round(oldColor.R * 255) == number then
+					return
+				end
+				local h, s, v = Color3.toHSV(UI.peek(new.Value))
+				hueIgnore, svIgnore = true, true
+				hueSlider.Value:set(h)
+				saturationState:set(s)
+				valueState:set(v)
+			end,
+		},
+	}
+
+	local greenInput = UI.new "Input" {
+		BackgroundColor3 = Color3.new(),
+		BackgroundTransparency = 0,
+		Size = UDim2.new(0, 36, 0, 24),
+		Font = UI.Theme.FontMono,
+		FontSize = 14,
+		TextColor3 = Color3.new(0.4, 1, 0.4),
+		Padding = UDim.new(0, 5),
+		IntegerOnly = true,
+		NumberRange = NumberRange.new(0, 255),
+		Value = math.round(new.Value._value.G * 255),
+
+		[UI.Hook] = {
+			Value = function(value)
+				if greenIgnore then
+					greenIgnore = nil
+					return
+				end
+				local number = tonumber(value)
+				if not number then
+					return
+				end
+				local oldColor = new.Value._value
+				local newColor = Color3.new(oldColor.R, number / 255, oldColor.B)
+				newIgnore = true
+				new.Value:set(newColor)
+				if math.round(oldColor.G * 255) == number then
+					return
+				end
+				local h, s, v = Color3.toHSV(UI.peek(new.Value))
+				hueIgnore, svIgnore = true, true
+				hueSlider.Value:set(h)
+				saturationState:set(s)
+				valueState:set(v)
+			end,
+		},
+	}
+
+	local blueInput = UI.new "Input" {
+		BackgroundColor3 = Color3.new(),
+		BackgroundTransparency = 0,
+		Size = UDim2.new(0, 36, 0, 24),
+		Font = UI.Theme.FontMono,
+		FontSize = 14,
+		TextColor3 = Color3.new(0.4, 0.8, 1),
+		Padding = UDim.new(0, 5),
+		IntegerOnly = true,
+		NumberRange = NumberRange.new(0, 255),
+		Value = math.round(new.Value._value.B * 255),
+
+		[UI.Hook] = {
+			Value = function(value)
+				if blueIgnore then
+					blueIgnore = nil
+					return
+				end
+				local number = tonumber(value)
+				if not number then
+					return
+				end
+				local oldColor = new.Value._value
+				local newColor = Color3.new(oldColor.R, oldColor.G, number / 255)
+				newIgnore = true
+				new.Value:set(newColor)
+				if math.round(oldColor.B * 255) == number then
+					return
+				end
+				local h, s, v = Color3.toHSV(UI.peek(new.Value))
+				hueIgnore, svIgnore = true, true
+				hueSlider.Value:set(h)
+				saturationState:set(s)
+				valueState:set(v)
+			end,
+		},
+	}
+
 	local sv, dragInput
 	local function update(input)
 		if not dragInput then
 			return
 		end
 		-- stylua: ignore
-		saturationState:set(math.clamp((input.Position.X - sv.AbsolutePosition.X - 8) / (sv.AbsoluteSize.X - 16), 0, 1))
-		valueState:set(1 - math.clamp((input.Position.Y - sv.AbsolutePosition.Y - 8) / (sv.AbsoluteSize.Y - 16), 0, 1))
+		local h = hueSlider._value
+		local s = math.clamp((input.Position.X - sv.AbsolutePosition.X - 8) / (sv.AbsoluteSize.X - 16), 0, 1)
+		local v = 1 - math.clamp((input.Position.Y - sv.AbsolutePosition.Y - 8) / (sv.AbsoluteSize.Y - 16), 0, 1)
+		saturationState:set(s)
+		valueState:set(v)
+
+		if svIgnore then
+			svIgnore = nil
+			return
+		end
+
+		local color = Color3.fromHSV(h, s, v)
+		redIgnore, greenIgnore, blueIgnore, newIgnore = true, true, true, true
+		redInput._input.Text = math.round(color.R * 255)
+		greenInput._input.Text = math.round(color.G * 255)
+		blueInput._input.Text = math.round(color.B * 255)
+		new.Value:set(color)
 	end
+
+	new.Value:hook(function(value)
+		if newIgnore then
+			newIgnore = nil
+			return
+		end
+		local h, s, v = Color3.toHSV(value)
+		hueSlider.Value:set(h)
+		saturationState:set(s)
+		valueState:set(v)
+		redInput._input.Text = math.round(value.R * 255)
+		greenInput._input.Text = math.round(value.G * 255)
+		blueInput._input.Text = math.round(value.B * 255)
+	end)
 
 	local function inputBegan(input)
 		if
@@ -104,83 +247,27 @@ function ColorPicker.new(definition)
 
 	UserInputService.InputChanged:Connect(update)
 
+	hueSlider.Value:hook(function(value)
+		if hueIgnore then
+			hueIgnore = nil
+			return
+		end
+		local color = Color3.fromHSV(value, saturationState._value, valueState._value)
+		redIgnore, greenIgnore, blueIgnore, newIgnore = true, true, true, true
+		redInput._input.Text = math.round(color.R * 255)
+		greenInput._input.Text = math.round(color.G * 255)
+		blueInput._input.Text = math.round(color.B * 255)
+		new.Value:set(color)
+	end)
+
 	local inputFrame = UI.new "Frame" {
 		BackgroundTransparency = 1,
 		Size = UDim2.fromOffset(36, 72),
 
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
-		UI.new "Input" {
-			BackgroundColor3 = Color3.new(),
-			BackgroundTransparency = 0,
-			Size = UDim2.new(0, 36, 0, 24),
-			Font = UI.Theme.FontMono,
-			FontSize = 14,
-			TextColor3 = Color3.new(1, 0.3, 0.3),
-			Padding = UDim.new(0, 5),
-			IntegerOnly = true,
-			NumberRange = NumberRange.new(0, 255),
-			Value = UI.compute(function(use)
-				return math.round(use(new.Value).R * 255)
-			end),
-
-			[UI.Hook] = {
-				Value = function(value)
-					local oldColor = new.Value._value
-					if math.round(oldColor.R * 255) == value then
-						return
-					end
-					new.Value:set(Color3.new(value / 255, oldColor.G, oldColor.B))
-				end,
-			},
-		},
-		UI.new "Input" {
-			BackgroundColor3 = Color3.new(),
-			BackgroundTransparency = 0,
-			Size = UDim2.new(0, 36, 0, 24),
-			Font = UI.Theme.FontMono,
-			FontSize = 14,
-			TextColor3 = Color3.new(0.4, 1, 0.4),
-			Padding = UDim.new(0, 5),
-			IntegerOnly = true,
-			NumberRange = NumberRange.new(0, 255),
-			Value = UI.compute(function(use)
-				return math.round(use(new.Value).G * 255)
-			end),
-
-			[UI.Hook] = {
-				Value = function(value)
-					local oldColor = new.Value._value
-					if math.round(oldColor.G * 255) == value then
-						return
-					end
-					new.Value:set(Color3.new(oldColor.B, value / 255, oldColor.B))
-				end,
-			},
-		},
-		UI.new "Input" {
-			BackgroundColor3 = Color3.new(),
-			BackgroundTransparency = 0,
-			Size = UDim2.new(0, 36, 0, 24),
-			Font = UI.Theme.FontMono,
-			FontSize = 14,
-			TextColor3 = Color3.new(0.4, 0.8, 1),
-			Padding = UDim.new(0, 5),
-			IntegerOnly = true,
-			NumberRange = NumberRange.new(0, 255),
-			Value = UI.compute(function(use)
-				return math.round(use(new.Value).B * 255)
-			end),
-
-			[UI.Hook] = {
-				Value = function(value)
-					local oldColor = new.Value._value
-					if math.round(oldColor.B * 255) == value then
-						return
-					end
-					new.Value:set(Color3.new(oldColor.R, oldColor.G, value / 255))
-				end,
-			},
-		},
+		redInput,
+		greenInput,
+		blueInput,
 	}
 
 	sv = UI.new "Frame" {
@@ -199,7 +286,7 @@ function ColorPicker.new(definition)
 			Enabled = UI.Theme.StrokeEnabled,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Color = UI.Theme.Border,
-			Transparency = UI.Theme.Transparency,
+			Transparency = UI.Theme.TransparencyClamped,
 			Thickness = 1,
 		},
 		UI.new "Frame" {

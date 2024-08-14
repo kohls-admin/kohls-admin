@@ -50,9 +50,9 @@ function Argument:transform()
 			end
 		end
 
-		local arg = self._K.Util.stripQuotes(rawArg)
+		local arg = self._K.Util.String.stripQuotes(rawArg)
 		arg = if argType.transform then argType.transform(rawArg) else rawArg
-		table.insert(self.transformedArgs, if type(arg) == "string" then self._K.Util.trim(arg) else arg)
+		table.insert(self.transformedArgs, if type(arg) == "string" then self._K.Util.String.trim(arg) else arg)
 		table.insert(self.transformedTypes, argType)
 	end
 end

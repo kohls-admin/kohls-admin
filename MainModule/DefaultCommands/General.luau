@@ -1,5 +1,8 @@
 -- "non-abusive" commands for game members
 
+local Players = game:GetService("Players")
+local TextService = game:GetService("TextService")
+
 local noclipCache = {}
 
 local spectateConnection
@@ -18,6 +21,40 @@ local function spectateCleanup(context)
 end
 
 return {
+	{ -- TODO: need to set up a way to set public logs
+		name = "logs",
+		aliases = { "chatlogs" },
+		description = "Shows the logs in a separate window.",
+		args = {},
+		envClient = function(_K)
+			local window = _K.UI.new "Window" {
+				Parent = _K.UI.LayerDefault,
+				Title = "Kohl's Admin Logs",
+				Visible = false,
+			}
+			_K.UI.edit(window, {
+				[_K.UI.Event.Property] = {
+					Visible = function()
+						if not window._instance.Visible and #_K.UI.Scope.dashboard then
+							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
+								_K.UI.Scope.dashboard.Logs,
+							})
+						end
+					end,
+				},
+			})
+			return {
+				window = window,
+			}
+		end,
+
+		runClient = function(context)
+			context._K.UI.edit(context.env.window, {
+				Visible = true,
+				context._K.UI.Scope.dashboard.Logs,
+			})
+		end,
+	},
 	{
 		name = "message",
 		aliases = { "m", "msg" },
@@ -31,7 +68,66 @@ return {
 		},
 
 		run = function(context, message)
-			context._K.Remote.Announce:FireAllClients(message, context.from)
+			local ok, result = pcall(
+				TextService.FilterStringAsync,
+				TextService,
+				message,
+				context.from,
+				Enum.TextFilterContext.PublicChat
+			)
+
+			if not ok then
+				return
+			end
+
+			for _, player in Players:GetPlayers() do
+				task.spawn(function()
+					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
+					if success then
+						context._K.Remote.Announce:FireClient(player, msg, context.from)
+					end
+				end)
+			end
+		end,
+	},
+	{
+		name = "notify",
+		aliases = { "n" },
+		description = "Sends a notification to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to notify.",
+			},
+			{
+				type = "stringGreedy",
+				name = "Message",
+				description = "The message to send.",
+			},
+		},
+
+		run = function(context, players, message)
+			local ok, result = pcall(
+				TextService.FilterStringAsync,
+				TextService,
+				message,
+				context.from,
+				Enum.TextFilterContext.PublicChat
+			)
+
+			if not ok then
+				return
+			end
+
+			for _, player in players do
+				task.spawn(function()
+					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
+					if success then
+						context._K.Remote.Notify:FireClient(player, msg, context.from)
+					end
+				end)
+			end
 		end,
 	},
 	{
@@ -52,8 +148,25 @@ return {
 		},
 
 		run = function(context, message, players)
+			local ok, result = pcall(
+				TextService.FilterStringAsync,
+				TextService,
+				message,
+				context.from,
+				Enum.TextFilterContext.PublicChat
+			)
+
+			if not ok then
+				return
+			end
+
 			for _, player in players do
-				context._K.Remote.Announce:FireClient(player, message, context.from)
+				task.spawn(function()
+					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
+					if success then
+						context._K.Remote.Announce:FireClient(player, msg, context.from)
+					end
+				end)
 			end
 		end,
 	},
@@ -83,10 +196,35 @@ return {
 				type = "player",
 				name = "Player",
 				description = "The player to spectate.",
+				ignoreSelf = true,
 			},
 		},
 
+		envClient = function(_K)
+			local function spectateNetwork()
+				_K.Remote.SpectateSubject:FireServer(workspace.CurrentCamera.CFrame)
+			end
+
+			_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame)
+				workspace.CurrentCamera.CFrame = cframe
+			end)
+
+			local spectateConnection
+			_K.Remote.SpectateSubject.OnClientEvent:Connect(function(enabled: boolean)
+				if spectateConnection then
+					spectateConnection:Disconnect()
+				end
+				if enabled then
+					spectateConnection = _K.Services.RunService.Heartbeat:Connect(spectateNetwork)
+				end
+			end)
+		end,
+
 		runClient = function(context, player)
+			if not workspace.CurrentCamera:GetAttribute("kCameraType") then
+				workspace.CurrentCamera:SetAttribute("kCameraType", workspace.CurrentCamera.CameraType)
+				workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+			end
 			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
 				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
 			end
@@ -113,6 +251,10 @@ return {
 		args = {},
 
 		runClient = function(context)
+			if workspace.CurrentCamera:GetAttribute("kCameraType") then
+				workspace.CurrentCamera.CameraType = workspace.CurrentCamera:GetAttribute("kCameraType")
+				workspace.CurrentCamera:SetAttribute("kCameraType", nil)
+			end
 			local character = context.fromPlayer.Character
 			if character then
 				workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")

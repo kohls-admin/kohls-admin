@@ -17,6 +17,7 @@ function Dialog.new(definition)
 		Duration = UI.Nil,
 		LeftAction = UI.Nil,
 		RightAction = UI.Nil,
+		ExitButton = UI.Nil,
 		Close = UI.Nil,
 		Width = 256,
 	}, definition)
@@ -79,6 +80,29 @@ function Dialog.new(definition)
 		end)
 	end
 
+	local exitButton = UI.new "Button" {
+		LayoutOrder = 9,
+		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
+		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarger, 0, UI.Theme.FontSizeLarger),
+		Icon = "rbxassetid://1476571006",
+		IconProperties = {
+			Size = UDim2.new(0, 10, 0, 10),
+		},
+		Text = "",
+		Activated = function()
+			if new.Close and type(new.Close._value) == "function" then
+				new.Close._value(new)
+			else
+				new:Destroy()
+			end
+		end,
+		Visible = UI.compute(function(use)
+			return if use(new.ExitButton) then true else false
+		end),
+	}
+	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+	new._exitButton = exitButton
+
 	new._content = UI.new "Frame" {
 		Name = "UIContent",
 		AutomaticSize = Enum.AutomaticSize.Y,
@@ -88,24 +112,41 @@ function Dialog.new(definition)
 		UI.new "UIListLayout" {
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Padding = UI.Theme.Padding,
+			HorizontalFlex = Enum.UIFlexAlignment.Fill,
 		},
 
-		UI.new "TextLabel" {
+		UI.new "Frame" {
 			Name = "Title",
+			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
-			TextColor3 = UI.Theme.PrimaryText,
-			Text = new.Title,
-			TextSize = UI.Theme.FontSizeLarge,
-			TextTruncate = Enum.TextTruncate.SplitWord,
-			TextXAlignment = "Left",
-			FontFace = UI.Theme.FontHeavy,
-			RichText = true,
 			Visible = UI.compute(function(use)
 				local title = use(new.Title)
 				return title and title ~= ""
 			end),
 
-			AutomaticSize = Enum.AutomaticSize.XY,
+			UI.new "UIListLayout" {
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UI.Theme.Padding,
+				FillDirection = Enum.FillDirection.Horizontal,
+			},
+
+			UI.new "TextLabel" {
+				BackgroundTransparency = 1,
+				TextColor3 = UI.Theme.PrimaryText,
+				Text = new.Title,
+				TextSize = UI.Theme.FontSizeLarge,
+				TextTruncate = Enum.TextTruncate.SplitWord,
+				TextXAlignment = "Left",
+				FontFace = UI.Theme.FontHeavy,
+				RichText = true,
+
+				AutomaticSize = Enum.AutomaticSize.XY,
+				UI.new "UIFlexItem" {
+					FlexMode = Enum.UIFlexMode.Fill,
+				},
+			},
+
+			exitButton,
 		},
 
 		UI.new "TextLabel" {
@@ -140,7 +181,7 @@ function Dialog.new(definition)
 		UI.new "UIStroke" {
 			Enabled = UI.Theme.StrokeEnabled,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Transparency = UI.Theme.Transparency,
+			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,
 		},
 		UI.new "UIListLayout" {
@@ -213,7 +254,7 @@ function Dialog.new(definition)
 					UI.new "UIStroke" {
 						Enabled = UI.Theme.StrokeEnabled,
 						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-						Transparency = UI.Theme.Transparency,
+						Transparency = UI.Theme.TransparencyClamped,
 						Color = UI.Theme.Border,
 					},
 					UI.new "UIPadding" {
@@ -255,7 +296,7 @@ function Dialog.new(definition)
 					UI.new "UIStroke" {
 						Enabled = UI.Theme.StrokeEnabled,
 						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-						Transparency = UI.Theme.Transparency,
+						Transparency = UI.Theme.TransparencyClamped,
 						Color = UI.Theme.Border,
 					},
 					UI.new "UIPadding" {
