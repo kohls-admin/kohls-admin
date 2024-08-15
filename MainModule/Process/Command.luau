@@ -99,8 +99,16 @@ function Command:validate()
 	if self.validated then
 		return true
 	end
-	-- start from 2 to skip the command name
+
 	local commandArray = self.array
+
+	-- always try first argument
+	if self.argLength > 0 and #commandArray < 2 then
+		self.text ..= " "
+		commandArray[2] = { #self.text, "" }
+	end
+
+	-- start from 2 to skip the command name
 	for i = 2, #commandArray do
 		local argPos, rawArg = unpack(commandArray[i])
 
