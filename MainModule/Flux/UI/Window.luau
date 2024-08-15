@@ -349,6 +349,26 @@ function Window.new(definition)
 		end
 	end)
 
+	local parentConn
+	new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
+		if parentConn then
+			parentConn:Disconnect()
+		end
+		local parent = new._instance.Parent
+		if parent and parent:IsA("GuiBase2d") then
+			parentConn = parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+				local maxPosition = new._instance.Parent.AbsoluteSize - new._instance.AbsoluteSize
+				local position = new._instance.Position
+				new.Position:set(
+					UDim2.fromOffset(
+						math.clamp(position.X.Offset, 0, math.max(0, maxPosition.X)),
+						math.clamp(position.Y.Offset, 0, math.max(0, maxPosition.Y))
+					)
+				)
+			end)
+		end
+	end)
+
 	return setmetatable(new, Window)
 end
 
