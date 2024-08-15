@@ -2,14 +2,48 @@
 
 return {
 	{
+		name = "about",
+		aliases = { "help", "credit", "credits", "info", "?" },
+		description = "Shows the about tab in a separate window.",
+		args = {},
+		envClient = function(_K)
+			local window = _K.UI.new "Window" {
+				Parent = _K.UI.LayerTop,
+				Title = "Kohl's Admin About",
+				Visible = false,
+			}
+			_K.UI.edit(window, {
+				[_K.UI.Event.Property] = {
+					Visible = function()
+						if not window._instance.Visible and #_K.UI.Scope.dashboard then
+							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
+								_K.UI.Scope.dashboard.About,
+							})
+						end
+					end,
+				},
+			})
+			return {
+				window = window,
+			}
+		end,
+
+		runClient = function(context)
+			context._K.UI.edit(context.env.window, {
+				Visible = true,
+				context._K.UI.Scope.dashboard.About,
+			})
+		end,
+	},
+	{
 		name = "commands",
 		aliases = { "cmds" },
 		description = "Shows the commands in a separate window.",
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Title = "Kohl's Admin Commands",
 				Parent = _K.UI.LayerTop,
+				Title = "Kohl's Admin Commands",
 				Visible = false,
 			}
 			_K.UI.edit(window, {
@@ -42,8 +76,8 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Title = "Kohl's Admin Settings",
 				Parent = _K.UI.LayerTop,
+				Title = "Kohl's Admin Settings",
 				Visible = false,
 			}
 			_K.UI.edit(window, {
@@ -66,40 +100,6 @@ return {
 			context._K.UI.edit(context.env.window, {
 				Visible = true,
 				context._K.UI.Scope.dashboard.Settings,
-			})
-		end,
-	},
-	{
-		name = "credits",
-		aliases = { "credit" },
-		description = "Shows the credits in a separate window.",
-		args = {},
-		envClient = function(_K)
-			local window = _K.UI.new "Window" {
-				Title = "Kohl's Admin Credits",
-				Parent = _K.UI.LayerTop,
-				Visible = false,
-			}
-			_K.UI.edit(window, {
-				[_K.UI.Event.Property] = {
-					Visible = function()
-						if not window._instance.Visible and #_K.UI.Scope.dashboard then
-							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
-								_K.UI.Scope.dashboard.Credits,
-							})
-						end
-					end,
-				},
-			})
-			return {
-				window = window,
-			}
-		end,
-
-		runClient = function(context)
-			context._K.UI.edit(context.env.window, {
-				Visible = true,
-				context._K.UI.Scope.dashboard.Credits,
 			})
 		end,
 	},
