@@ -86,6 +86,10 @@ local Data = {
 		-- can use commands that require VIP permission
 		vip = false,
 
+		-- when enabled only allows their player to be used with the player argument
+		-- WARN: doesn't affect commands that use userids!
+		onlyTargetSelf = false,
+
 		-- allowed command groups
 		groups = {
 			-- "creator",
@@ -107,12 +111,13 @@ local Data = {
 		},
 	},
 	roles = {
-		-- unique key should NEVER be changed or you may lose save data
+		-- WARN: unique key should NEVER be changed or you may lose save data
 		vip = {
 			_rank = 1,
 			name = "VIP",
 			vip = true,
 			color = "#0f8",
+			onlyTargetSelf = true,
 		},
 		mod = {
 			_rank = 2,
