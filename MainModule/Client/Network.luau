@@ -143,9 +143,8 @@ local greetings = {
 }
 
 local initCon
-initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, members, settings)
+initCon = _K.Remote.Init.OnClientEvent:Connect(function(bans, logs, members, settings)
 	initCon:Disconnect()
-	_K.Util.Table.deepMerge(_K.Auth, auth)
 	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
 

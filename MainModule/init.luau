@@ -208,7 +208,7 @@ _K.Remote.Init.OnServerEvent:Connect(function(player)
 		logs[i] = { text, log.level, log.time, log.from }
 	end
 
-	_K.Remote.Init:FireClient(player, _K.Auth, bans, logs, _K.Data.members, _K.Data.settings)
+	_K.Remote.Init:FireClient(player, bans, logs, _K.Data.members, _K.Data.settings)
 end)
 
 script.Parent = _K.Services.ReplicatedStorage
