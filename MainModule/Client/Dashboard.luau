@@ -1,19 +1,19 @@
 local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.Parent.Flux.UI)
 
+local About = require(script.Parent.About)
 local Bans = require(script.Parent.Bans)
 local Commands = require(script.Parent.Commands)
-local Credit = require(script.Parent.Credit)
 local Logs = require(script.Parent.Logs)
 local Members = require(script.Parent.Members)
 local Settings = require(script.Parent.Settings)
 
+UI.Scope.dashboard.About = About.new(_K)
+UI.Scope.dashboard.Commands = Commands.new(_K)
 UI.Scope.dashboard.Bans = Bans.new(_K)
 UI.Scope.dashboard.Members = Members.new(_K)
 UI.Scope.dashboard.Logs = Logs.new(_K)
-UI.Scope.dashboard.Commands = Commands.new(_K)
 UI.Scope.dashboard.Settings = Settings.new(_K)
-UI.Scope.dashboard.Credits = Credit.new(_K)
 
 UI.Scope.dashboard.Tabs = UI.new "Tabs" {
 	UI.Scope.dashboard.Commands,
@@ -21,7 +21,7 @@ UI.Scope.dashboard.Tabs = UI.new "Tabs" {
 	UI.Scope.dashboard.Members,
 	UI.Scope.dashboard.Logs,
 	UI.Scope.dashboard.Settings,
-	UI.Scope.dashboard.Credits,
+	UI.Scope.dashboard.About,
 }
 
 local dashboard = UI.new "Window" {
