@@ -55,12 +55,7 @@ local Data = {
 		asset = {},
 		subscription = {},
 		-- TODO: need a way to define exact rank roles instead of >=
-		group = {
-			[451053] = {
-				{ rank = 1, roles = { "vip" } },
-				{ rank = 255, roles = { "creator", "mod" }, exactRank = true },
-			},
-		},
+		group = {},
 		-- [groupId] = {
 		-- { rank = 200, roles = { "admin", "vip" }, rankAndAbove = true },
 		-- },
