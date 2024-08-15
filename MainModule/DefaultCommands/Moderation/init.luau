@@ -11,7 +11,7 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerDefault,
+				Parent = _K.UI.LayerTop,
 				Title = "Kohl's Admin Bans",
 				Visible = false,
 			}
@@ -45,7 +45,7 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerDefault,
+				Parent = _K.UI.LayerTop,
 				Title = "Kohl's Admin Members",
 				Visible = false,
 			}

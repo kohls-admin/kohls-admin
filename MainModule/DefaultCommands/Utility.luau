@@ -8,8 +8,8 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerDefault,
 				Title = "Kohl's Admin Commands",
+				Parent = _K.UI.LayerTop,
 				Visible = false,
 			}
 			_K.UI.edit(window, {
@@ -42,8 +42,8 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerDefault,
 				Title = "Kohl's Admin Settings",
+				Parent = _K.UI.LayerTop,
 				Visible = false,
 			}
 			_K.UI.edit(window, {
@@ -76,8 +76,8 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerDefault,
 				Title = "Kohl's Admin Credits",
+				Parent = _K.UI.LayerTop,
 				Visible = false,
 			}
 			_K.UI.edit(window, {

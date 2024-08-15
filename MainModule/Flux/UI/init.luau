@@ -99,7 +99,7 @@ UI.LayerBottom = Flux.new "ScreenGui" {
 --- @within UI
 --- The default ScreenGui for UI components
 --- @prop LayerDefault State<ScreenGui>
-UI.LayerDefault = Flux.new "ScreenGui" {
+UI.LayerTop = Flux.new "ScreenGui" {
 	Parent = playerGui,
 	Name = "FluxUILayerDefault",
 	DisplayOrder = 2,

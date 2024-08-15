@@ -29,7 +29,6 @@ return {
 		},
 
 		run = function(context, players, roles, permanent)
-			print("role ran")
 			for _, player in players do
 				for _, role in roles do
 					context._K.Auth.userRoleAdd(player.UserId, role, permanent)
