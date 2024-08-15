@@ -1,4 +1,4 @@
-local Logger = require(script.Logger)
+local Logger = require(script:WaitForChild("Logger"))
 
 export type Log = Logger.Log
 export type LogType = Logger.LogType
