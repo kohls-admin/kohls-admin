@@ -210,6 +210,7 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, member
 
 	local lines = {
 		`<font family="{UI.Theme.FontMono._value.Name}">{greeting}\n`,
+		`<b>Prefix</b>     <font color="#0f0">{UI.peek(UI.Scope.settings.prefix)}</font>`,
 		`<b>Commands</b>   <font color="#0f0">{commandBarKeyText} {commandBarKeyRaw}</font>`,
 		`<b>Dashboard</b>  <font color="#0f0">{dashboardKeyText} {dashboardKeyRaw}</font>`,
 		`<b>Roles</b>\t  <sc>{roleText}</sc>\n`,
