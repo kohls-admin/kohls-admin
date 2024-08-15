@@ -16,11 +16,12 @@ function Tooltip.new(definition)
 	local sizeState = UI.state(Vector2.zero)
 
 	new._instance = UI.new "TextLabel" {
+		Parent = UI.LayerTop,
 		Name = "Tooltip",
 		Visible = UI.compute(function(use)
 			return use(new.Enabled) and use(new.Visible)
 		end),
-		Parent = UI.LayerTop,
+		ZIndex = 100,
 		BackgroundColor3 = UI.tween(UI.Theme.TweenOut, UI.Theme.Primary),
 		Font = UI.Theme.Font,
 		TextSize = UI.Theme.FontSize,
