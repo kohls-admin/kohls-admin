@@ -219,13 +219,15 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(auth, bans, logs, member
 		`<b>Server Time</b>  <font transparency="0.5">{os.date("%X", _K.Data.logs[#_K.Data.logs].time)}</font></font>`,
 	}
 
-	-- TODO: settings flag for hiding join notification for rank 0
-	Notify({
-		Text = table.concat(lines, "\n"),
-		Duration = 30,
-		UserFrame = {},
-		ExitButton = true,
-	})
+	-- only show join notification to users with a role
+	if _K.Auth.getRank(Players.LocalPlayer.UserId) > 0 then
+		Notify({
+			Text = table.concat(lines, "\n"),
+			Duration = 30,
+			UserFrame = {},
+			ExitButton = true,
+		})
+	end
 
 	_K.client.ready = true
 end)
