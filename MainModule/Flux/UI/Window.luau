@@ -213,12 +213,6 @@ function Window.new(definition)
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
 		},
-		UI.new "UIPadding" {
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-		},
 	}
 
 	new._instance = UI.new "Frame" {
@@ -236,6 +230,12 @@ function Window.new(definition)
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,
+		},
+		UI.new "UIPadding" {
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
 		},
 
 		UI.new "ImageLabel" {
@@ -265,6 +265,7 @@ function Window.new(definition)
 
 			UI.new "UIListLayout" {
 				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UI.Theme.Padding,
 			},
 
 			UI.new "Frame" {
@@ -281,29 +282,25 @@ function Window.new(definition)
 					SortOrder = Enum.SortOrder.LayoutOrder,
 					Padding = UI.Theme.Padding,
 				},
-				UI.new "UIPadding" {
-					PaddingLeft = UI.Theme.Padding,
-				},
 
 				UI.new "TextLabel" {
 					Name = "Title",
 					BackgroundTransparency = 1,
 					AutomaticSize = Enum.AutomaticSize.Y,
-					Size = UDim2.new(1, 0, 0, 0),
+					Size = UDim2.new(1, 0, 0, 32),
 					Font = UI.Theme.Font,
 					Text = new.Title,
 					TextColor3 = UI.Theme.PrimaryText,
 					TextSize = UI.Theme.FontSizeLarger,
 					TextStrokeTransparency = 0.9,
 					TextXAlignment = "Left",
-					TextYAlignment = "Bottom",
 					TextTruncate = Enum.TextTruncate.SplitWord,
 
-					UI.new "UIPadding" {
-						PaddingTop = UI.Theme.Padding,
-					},
 					UI.new "UIFlexItem" {
 						FlexMode = Enum.UIFlexMode.Fill,
+					},
+					UI.new "UIPadding" {
+						PaddingLeft = UI.Theme.Padding,
 					},
 				},
 

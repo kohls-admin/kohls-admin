@@ -11,6 +11,12 @@ return {
 				Parent = _K.UI.LayerTop,
 				Title = "Kohl's Admin About",
 				Visible = false,
+				_K.UI.new "UIPadding" {
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+				},
 			}
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
@@ -45,6 +51,12 @@ return {
 				Parent = _K.UI.LayerTop,
 				Title = "Kohl's Admin Commands",
 				Visible = false,
+				_K.UI.new "UIPadding" {
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+				},
 			}
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
@@ -79,6 +91,12 @@ return {
 				Parent = _K.UI.LayerTop,
 				Title = "Kohl's Admin Settings",
 				Visible = false,
+				_K.UI.new "UIPadding" {
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+				},
 			}
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
