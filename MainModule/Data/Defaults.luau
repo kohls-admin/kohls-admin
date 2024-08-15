@@ -86,11 +86,15 @@ local Data = {
 		-- can use commands that require VIP permission
 		vip = false,
 
-		-- allowed command groups?
+		-- allowed command groups
 		groups = {
+			-- "creator",
 			-- "administration",
 			-- "moderation",
+			-- "environment",
 			-- "general",
+			-- "fun",
+			-- "vip",
 			"utility",
 		},
 
