@@ -2,6 +2,8 @@ local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent)
 local Clack = require(script.Clack).registerAll()
 
+Clack.enabled = UI.peek(UI.Theme.ClackEnabled)
+Clack.everyTextBox = UI.peek(UI.Theme.ClackAll)
 UI.Theme.ClackEnabled:hook(function(value)
 	Clack.enabled = value
 end)

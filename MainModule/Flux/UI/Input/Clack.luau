@@ -71,7 +71,7 @@ function module.registerAll()
 		then
 			return
 		end
-		if module.everyTextBox or textBoxFocused:HasTag("KeyClackSound") then
+		if module.everyTextBox or (textBoxFocused and textBoxFocused:HasTag("KeyClackSound")) then
 			task.spawn(module.sound, input.KeyCode)
 		end
 	end)
