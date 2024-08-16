@@ -36,7 +36,7 @@ return {
 			195261420, -- exobyte
 			34047620, -- wackiepirate
 			208790398, -- chan
-			330081213, -- delzi
+			2861326436, -- delzi
 			3357116228, -- lemon
 			1299780523, -- erazias
 			1686847974, -- stone
