@@ -18,6 +18,7 @@ local Util = {
 	Services = require(script:WaitForChild("Services")),
 	SignalFast = require(script:WaitForChild("SignalFast")),
 	SignalGood = require(script:WaitForChild("SignalGood")),
+	Sound = require(script:WaitForChild("Sound")),
 	String = require(script:WaitForChild("String")),
 	Suggest = require(script:WaitForChild("Suggest")),
 	Table = require(script:WaitForChild("Table")),
