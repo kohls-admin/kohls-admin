@@ -28,6 +28,8 @@ local function hide(info, height: number?)
 		return
 	end
 
+	_K.client.Sound.Hover01:Play()
+
 	table.remove(existing, found)
 	resetOffset(height)
 	announce.ZIndex = -1
@@ -100,6 +102,8 @@ return function(dialogOverride)
 	visible:set(true)
 
 	resetOffset(height)
+
+	_K.client.Sound.Notification_High:Play()
 
 	return dialog
 end
