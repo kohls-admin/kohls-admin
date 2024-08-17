@@ -39,5 +39,4 @@ else
 	_G.KAU = true
 	script.Name = "Kohl's Admin Infinite"
 	script.Parent = game:GetService("ServerScriptService")
-	require(1868400649)
 end
