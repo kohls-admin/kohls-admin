@@ -354,8 +354,17 @@ function Window.new(definition)
 		local parent = new._instance.Parent
 		if parent and parent:IsA("GuiBase2d") then
 			parentConn = parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-				local maxPosition = new._instance.Parent.AbsoluteSize - new._instance.AbsoluteSize
+				local parentSize = new._instance.Parent.AbsoluteSize
+				local windowSize = new._instance.AbsoluteSize
+				local maxPosition = parentSize - windowSize
 				local position = new._instance.Position
+
+				new.Size:set(
+					UDim2.fromOffset(
+						math.clamp(windowSize.X, 0, parentSize.X),
+						math.clamp(windowSize.Y, 0, parentSize.Y)
+					)
+				)
 				new.Position:set(
 					UDim2.fromOffset(
 						math.clamp(position.X.Offset, 0, math.max(0, maxPosition.X)),
