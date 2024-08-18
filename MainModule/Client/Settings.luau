@@ -378,7 +378,11 @@ function Settings.new(_K)
 		)
 	end
 
-	local settingsScroller = UI.new "Scroller" {}
+	local settingsScroller = UI.new "Scroller" {
+		UI.new "UIFlexItem" {
+			FlexMode = Enum.UIFlexMode.Fill,
+		},
+	}
 
 	local settingsFrame = UI.new "Frame" {
 		Name = "Settings",
