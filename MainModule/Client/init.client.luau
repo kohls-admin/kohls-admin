@@ -21,6 +21,8 @@ _K.client = {
 	},
 }
 
+_K.client.Notify = require(script.Notify)
+
 UI.Scope.members = Flux.state(_K.Data.members)
 UI.Scope.bans = Flux.state(_K.Data.bans)
 UI.Scope.logs = Flux.state(_K.Data.logs)
@@ -49,10 +51,25 @@ local Announce = require(script.Announce)
 local Dashboard = require(script.Dashboard)
 local Network = require(script.Network)
 local Noclip = require(script.Noclip)
-local Notify = require(script.Notify)
 
 UI.LocalPlayer.Chatted:Connect(function(message: string)
-	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, message)
+	local prefix = _K.playerPrefix[UI.LocalPlayer.UserId] or _K.Data.settings.prefix
+	if string.find(message, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
+		-- check for invalid prefix but valid command alias
+		local found = string.find(message, "%s")
+		local commandText = string.lower(string.sub(message, 2, if found then found - 1 else -1))
+		for alias in _K.Registry.commands do
+			if alias == commandText then
+				_K.Services.StarterGui:SetCore("ChatMakeSystemMessage", {
+					Text = `KA Error: Invalid command prefix, try "{_K.Data.settings.prefix}"`,
+					Color = Color3.fromRGB(255, 0, 0),
+				})
+				break
+			end
+		end
+		return
+	end
+	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, message, true)
 end)
 
 _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)

@@ -100,8 +100,8 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 		table.insert(commands, command)
 
 		if not ok then
-			command.Error = result
-			break
+			return false, result
+			-- break
 		end
 
 		if command.greedy then
@@ -112,18 +112,16 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 	return true, commands
 end
 
-function Process.runCommands(_K: any, from: number, rawText: string): boolean
+function Process.runCommands(_K: any, from: number, rawText: string, chatted: boolean?): boolean
 	local commandRan, commandError
 	local ok, result = Process.prepareCommands(_K, from, rawText)
 
 	if ok then
-		for _, command in result do
-			-- error during preparation
-			if command.Error then
-				commandError = command.Error
-				break
-			end
+		if chatted and _K.IsClient then
+			_K.Remote.Command:FireServer(rawText, chatted)
+		end
 
+		for _, command in result do
 			local success, err = command:run()
 
 			if success == nil then
@@ -146,6 +144,28 @@ function Process.runCommands(_K: any, from: number, rawText: string): boolean
 		end
 	else
 		commandError = result
+		if chatted then
+			-- check for invalid prefix
+		end
+	end
+
+	if commandError then
+		if _K.IsServer then
+			_K.Remote.Notify:FireClient(_K.Services.Players:GetPlayerByUserId(from), commandError)
+		else
+			if chatted then
+				_K.Services.StarterGui:SetCore(
+					"ChatMakeSystemMessage",
+					{ Text = `KA Error: {commandError}`, Color = Color3.fromRGB(255, 0, 0) }
+				)
+			else
+				task.spawn(_K.client.Notify, {
+					Text = commandError,
+					UserFrame = {},
+					ExitButton = true,
+				})
+			end
+		end
 	end
 
 	if not (commandRan or commandError or _K.IsServer) then

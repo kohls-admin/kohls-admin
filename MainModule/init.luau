@@ -243,10 +243,6 @@ local function playerAdded(player: Player)
 		return
 		-- allows those with higher than vip perms
 	end
-
-	player.Chatted:Connect(function(message: string)
-		_K.Process.runCommands(_K, player.UserId, message)
-	end)
 end
 
 _K.Services.Players.PlayerAdded:Connect(playerAdded)
@@ -255,8 +251,8 @@ for _, player in _K.Services.Players:GetPlayers() do
 	playerAdded(player)
 end
 
-_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string)
-	_K.Process.runCommands(_K, player.UserId, message)
+_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string, chatted: boolean?)
+	_K.Process.runCommands(_K, player.UserId, message, chatted)
 end)
 
 _K.Remote.Setting.OnServerEvent:Connect(function(player, key, value)
