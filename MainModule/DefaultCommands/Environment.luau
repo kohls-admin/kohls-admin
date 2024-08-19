@@ -22,11 +22,17 @@ return {
 			{
 				type = "number",
 				name = "Gravity",
-				description = `The gravity acceleration in stud/s, default is {workspace.Gravity}.`,
+				description = `The gravity acceleration in stud/s, default is {string.format("%.1f", workspace.Gravity)}.`,
+				optional = true,
 			},
 		},
+		env = function(_K)
+			return {
+				gravity = workspace.Gravity,
+			}
+		end,
 		run = function(context, gravity)
-			workspace.Gravity = gravity
+			workspace.Gravity = if gravity == context.OPTIONAL then context.env.gravity else gravity
 		end,
 	},
 	{
