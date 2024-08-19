@@ -52,7 +52,7 @@ local Dashboard = require(script.Dashboard)
 local Network = require(script.Network)
 local Noclip = require(script.Noclip)
 
-UI.LocalPlayer.Chatted:Connect(function(message: string)
+local function Chatted(message: string)
 	local prefix = _K.playerPrefix[UI.LocalPlayer.UserId] or _K.Data.settings.prefix
 	if string.find(message, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
 		-- check for invalid prefix but valid command alias
@@ -70,7 +70,15 @@ UI.LocalPlayer.Chatted:Connect(function(message: string)
 		return
 	end
 	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, message, true)
-end)
+end
+
+if _K.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+	_K.Services.TextChatService.SendingMessage:Connect(function(textChatMessage: TextChatMessage)
+		Chatted(textChatMessage.Text)
+	end)
+else
+	UI.LocalPlayer.Chatted:Connect(Chatted)
+end
 
 _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 	if gameProcessedEvent then
