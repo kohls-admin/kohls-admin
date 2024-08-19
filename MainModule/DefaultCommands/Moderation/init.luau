@@ -829,7 +829,7 @@ return {
 			},
 			{
 				type = "number",
-				name = "Walk Speed",
+				name = "Speed",
 				description = "The walkspeed to use.",
 			},
 		},
