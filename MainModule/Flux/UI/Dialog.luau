@@ -173,6 +173,7 @@ function Dialog.new(definition)
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
+		ClipsDescendants = true,
 		Size = UI.computeFrom(UDim2.fromOffset, new.Width, 0),
 
 		UI.new "UICorner" {
