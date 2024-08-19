@@ -1,4 +1,4 @@
 [tools]
-rojo = { source = "rojo-rbx/rojo", version = "7.4.1" }
+rojo = { source = "rojo-rbx/rojo", version = "7.4.3" }
 selene = { source = "kampfkarren/selene", version = "0.27.1" }
 stylua = { source = "johnnymorganz/stylua", version = "0.20.0" }
