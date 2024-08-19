@@ -55,9 +55,10 @@ return {
 		end,
 
 		runClient = function(context)
+			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = true,
-				context._K.UI.Scope.dashboard.Logs,
+				Visible = visible,
+				if visible then context._K.UI.Scope.dashboard.Logs else nil,
 			})
 		end,
 	},

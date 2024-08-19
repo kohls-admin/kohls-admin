@@ -35,9 +35,10 @@ return {
 		end,
 
 		runClient = function(context)
+			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = true,
-				context._K.UI.Scope.dashboard.About,
+				Visible = visible,
+				if visible then context._K.UI.Scope.dashboard.About else nil,
 			})
 		end,
 	},
@@ -75,9 +76,10 @@ return {
 		end,
 
 		runClient = function(context)
+			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = true,
-				context._K.UI.Scope.dashboard.Commands,
+				Visible = visible,
+				if visible then context._K.UI.Scope.dashboard.Commands else nil,
 			})
 		end,
 	},
@@ -115,9 +117,10 @@ return {
 		end,
 
 		runClient = function(context)
+			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = true,
-				context._K.UI.Scope.dashboard.Settings,
+				Visible = visible,
+				if visible then context._K.UI.Scope.dashboard.Settings else nil,
 			})
 		end,
 	},
