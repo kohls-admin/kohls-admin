@@ -401,7 +401,8 @@ return {
 		end,
 	},
 	{
-		name = "god",
+		name = "immortal",
+		aliases = { "god" },
 		description = "Makes one or more player(s) invincible.",
 		args = {
 			{
@@ -426,7 +427,8 @@ return {
 		end,
 	},
 	{
-		name = "ff",
+		name = "forcefield",
+		aliases = { "ff" },
 		description = "Gives a ForceField to one or more player(s).",
 		args = {
 			{
@@ -451,8 +453,8 @@ return {
 		end,
 	},
 	{
-		name = "unff",
-		aliases = { "ungod" },
+		name = "unforcefield",
+		aliases = { "unff", "ungod", "mortal" },
 		description = "Removes a ForceField from one or more player(s).",
 		args = {
 			{
