@@ -413,7 +413,13 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
+				if not player.Character then
+					continue
+				end
+				local ff = player.Character:FindFirstChildOfClass("ForceField")
+				if ff then
+					ff.Visible = false
+				else
 					Instance.new("ForceField", player.Character).Visible = false
 				end
 			end
@@ -432,7 +438,13 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
+				if not player.Character then
+					continue
+				end
+				local ff = player.Character:FindFirstChildOfClass("ForceField")
+				if ff then
+					ff.Visible = true
+				else
 					Instance.new("ForceField", player.Character)
 				end
 			end
