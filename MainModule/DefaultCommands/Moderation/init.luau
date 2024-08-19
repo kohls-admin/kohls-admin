@@ -1052,9 +1052,13 @@ return {
 				type = "teams",
 				name = "Random Teams",
 				description = "The teams to randomly assign.",
+				optional = true,
 			},
 		},
 		run = function(context, players, teams)
+			if teams == context.OPTIONAL then
+				teams = context._K.Services.Teams:GetTeams()
+			end
 			local randomSort = {}
 			for _, player in players do
 				table.insert(randomSort, math.ceil(math.random(#randomSort + 1)), player)
