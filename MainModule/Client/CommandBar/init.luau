@@ -532,6 +532,11 @@ return {
 		CommandBar.Parent = _K.UI.LayerTop
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
+		UI.Scope.settings.prefix:hook(function(value)
+			if value then
+				Input._input.Text = value .. string.sub(Input._input.Text, #value + 1)
+			end
+		end)
 	end,
 	show = function()
 		CommandBar.Visible = true
