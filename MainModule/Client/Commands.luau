@@ -67,12 +67,18 @@ function Commands.new(_K)
 	end
 
 	local function renderItem(self, item, command)
+		local argNames = table.create(#command.args)
+		for _, arg in command.args do
+			table.insert(argNames, arg.name)
+		end
+
+		local aliasText = if command.aliases and #command.aliases > 0
+			then `[{table.concat(command.aliases, ", ")}]`
+			else ""
+
 		if self._filter ~= "" then
-			local aliasText = if command.aliases and #command.aliases > 0
-				then "/" .. table.concat(command.aliases, "/")
-				else ""
-			local text = `{_K.Data.settings.prefix}{command.name}{aliasText} {command.description}`
-			local filterFound = string.find(text:lower(), self._filter)
+			local text = `{_K.Data.settings.prefix}{command.name} {table.concat(argNames, " ")} {aliasText}`
+			local filterFound = string.find(string.lower(text), self._filter)
 			item.Text = if filterFound
 				then string.format(
 					filterRichFormat,
@@ -80,19 +86,23 @@ function Commands.new(_K)
 					escape(string.sub(text, filterFound, filterFound + #self._filter - 1)),
 					escape(string.sub(text, filterFound + #self._filter))
 				)
-				else text
+				else `<font transparency="0.5">{text}</font>`
+			local descFound = string.find(string.lower(command.description), self._filter)
+			item.Description.Text = if descFound
+				then string.format(
+					filterRichFormat,
+					escape(string.sub(command.description, 1, descFound - 1)),
+					escape(string.sub(command.description, descFound, descFound + #self._filter - 1)),
+					escape(string.sub(command.description, descFound + #self._filter))
+				)
+				else `<font transparency="0.5">{command.description}</font>`
 			return
-		end
-
-		local argNames = table.create(#command.args)
-		for _, arg in command.args do
-			table.insert(argNames, arg.name)
 		end
 
 		item.Text = string.format(
 			commandRichFormat,
 			escape(_K.Data.settings.prefix .. command.name .. " " .. table.concat(argNames, " ")),
-			escape(if command.aliases and #command.aliases > 0 then `[{table.concat(command.aliases, ", ")}]` else "")
+			escape(aliasText)
 		)
 		item.Description.Text = `<font transparency="0.33">{escape(command.description)}</font>`
 		item.TooltipRef.Value.Text = "TODO show example usage, roles, and credit"
