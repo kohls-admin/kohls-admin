@@ -55,7 +55,7 @@ return {
 	},
 	{
 		name = "windspeed",
-		description = "Orients the wind direction along your camera.",
+		description = "Changes the gnobal wind speed.",
 		args = {
 			{
 				type = "number",
