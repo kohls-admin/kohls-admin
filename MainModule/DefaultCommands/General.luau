@@ -154,7 +154,7 @@ return {
 			},
 		},
 
-		run = function(context, message, players)
+		run = function(context, players, message)
 			local ok, result = pcall(
 				TextService.FilterStringAsync,
 				TextService,
