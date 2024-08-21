@@ -168,13 +168,13 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 		end
 	end
 
-	if not (commandRan or commandError or _K.IsServer) then
-		-- skip logging on client if nothing happened
+	if not (commandRan or commandError) then
+		-- skip logging if nothing happened
 		return commandRan
 	end
 	_K.log(
 		if commandError then commandError else Util.String.trimStart(rawText),
-		if commandRan then "COMMAND" elseif commandError then "ERROR" else "CHAT",
+		if commandRan then "COMMAND" else "ERROR",
 		from
 	)
 

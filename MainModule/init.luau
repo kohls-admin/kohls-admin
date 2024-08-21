@@ -243,6 +243,9 @@ local function playerAdded(player: Player)
 		return
 		-- allows those with higher than vip perms
 	end
+	player.Chatted:Connect(function(message: string)
+		_K.log(message, "CHAT", player.UserId)
+	end)
 end
 
 _K.Services.Players.PlayerAdded:Connect(playerAdded)
