@@ -7,7 +7,7 @@ setmetatable(ScrollerFast, BaseClass)
 
 function ScrollerFast:render()
 	local lineHeight = self.ItemSize._value.Y.Offset
-	local startIndex = math.floor(self._scroller.CanvasPosition.Y / lineHeight) + 1
+	local startIndex = math.max(0, math.floor(self._scroller.CanvasPosition.Y / lineHeight)) + 1
 	local endIndex =
 		math.min(startIndex + math.ceil(self._scroller.AbsoluteWindowSize.Y / lineHeight), #self._filteredList)
 
