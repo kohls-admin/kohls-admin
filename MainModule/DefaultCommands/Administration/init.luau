@@ -31,7 +31,15 @@ return {
 		run = function(context, players, roles, permanent)
 			for _, player in players do
 				for _, role in roles do
-					context._K.Auth.userRoleAdd(player.UserId, role, permanent)
+					local roleAdded = context._K.Auth.userRoleAdd(player.UserId, role, permanent)
+					if roleAdded then
+						local roleData = context._K.Data.roles[role]
+						context._K.Remote.Notify:FireClient(
+							player,
+							`Gave you the <b><font color="{roleData.color}">{roleData.name}</font></b> role!\nSay <b>{context._K.Data.settings.prefix}info</b> for details.`,
+							context.from
+						)
+					end
 				end
 			end
 		end,
