@@ -61,9 +61,14 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			Name = "From",
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
+			ClipsDescendants = true,
 
 			UI.new "UIListLayout" {
 				SortOrder = Enum.SortOrder.LayoutOrder,
+				HorizontalFlex = Enum.UIFlexAlignment.Fill,
+			},
+			UI.new "UIFlexItem" {
+				FlexMode = Enum.UIFlexMode.Shrink,
 			},
 
 			UI.new "Frame" {
