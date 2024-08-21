@@ -154,6 +154,7 @@ return {
 		run = function(context)
 			if not context._K._serverLock then
 				context._K._serverLock = context.fromPlayer.Name
+				context._K.Remote.Notify:FireAllClients("The server has been <b>locked</b>.", context.from)
 			end
 		end,
 	},
@@ -164,6 +165,7 @@ return {
 		args = {},
 		run = function(context)
 			context._K._serverLock = nil
+			context._K.Remote.Notify:FireAllClients("The server has been <b>unlocked</b>.", context.from)
 		end,
 	},
 }
