@@ -28,6 +28,7 @@ local Input = UI.new "Input" {
 	BackgroundColor3 = UI.Theme.Primary,
 	BackgroundTransparency = UI.Theme.Transparency,
 	Font = UI.Theme.FontMono,
+	Position = UDim2.fromScale(0, 0.5),
 
 	UI.new "Frame" {
 		Name = "CircleIndicator",
@@ -93,14 +94,15 @@ UI.edit(Input._instance.UICorner, {
 
 local CommandBar = UI.new "Frame" {
 	Name = "CommandBar",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Size = UDim2.new(0, 512, 0, 0),
-	Position = UDim2.new(0.5, 0, 0.5, 0),
+	AnchorPoint = Vector2.new(0.5, 0),
+	Size = if UI.Touch then UDim2.new(1, 0, 1, 0) else UDim2.new(0, 512, 0, 0),
+	Position = UDim2.fromScale(0.5, if UI.Touch then 0 else 0.5),
 	BackgroundTransparency = 1,
 	ZIndex = 100,
 	Visible = false,
 
 	Input,
+	if UI.Touch then UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } else nil,
 }
 
 local TooltipFrame = UI.new "Frame" {
@@ -366,7 +368,7 @@ updateCompletion = function()
 	TooltipFrame.Position = UDim2.new(
 		0,
 		math.floor(argX) + 14 + UI.Theme.Padding._value.Offset,
-		0,
+		0.5,
 		Input._input.AbsoluteSize.Y / 2 + UI.Theme.PaddingHalf._value.Offset
 	)
 
@@ -529,7 +531,7 @@ return {
 	init = function(self, _K)
 		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
-		CommandBar.Parent = _K.UI.LayerTopInset
+		CommandBar.Parent = if UserInputService.TouchEnabled then UI.TopBarFrame else UI.LayerTop
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
 		UI.Scope.settings.prefix:hook(function(value)
