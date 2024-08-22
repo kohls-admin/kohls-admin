@@ -61,6 +61,10 @@ function Tooltip.new(definition)
 
 	local hoverStart
 
+	UI.UserInputService.TouchMoved:Connect(function()
+		hovering:set(false)
+	end)
+
 	new._cleanup = {
 		hovering:hook(function(value)
 			if value then
