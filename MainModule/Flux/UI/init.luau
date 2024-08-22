@@ -67,6 +67,21 @@ UI.LocalPlayer = Players.LocalPlayer
 UI.PlayerGui = playerGui
 
 --- @within UI
+--- @type Platform "Console" | "Mobile" | "PC"
+export type Platform = "Console" | "Mobile" | "PC"
+
+--- @within UI
+--- @prop Touch boolean
+UI.Touch = UI.UserInputService.TouchEnabled
+
+--- @within UI
+--- @prop Platform Platform
+UI.Platform = if UI.UserInputService.KeyboardEnabled and UI.UserInputService.MouseEnabled
+	then "PC"
+	elseif UI.UserInputService.GamepadEnabled then "Console"
+	else "Mobile"
+
+--- @within UI
 --- A marker for defining Instance attributes in [UI.edit]
 --- @prop Attribute newproxy
 --- @readonly
