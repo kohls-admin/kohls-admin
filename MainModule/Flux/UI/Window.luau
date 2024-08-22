@@ -359,10 +359,24 @@ function Window.new(definition)
 				local maxPosition = parentSize - windowSize
 				local position = new._instance.Position
 
+				local padding = new._instance.Parent:FindFirstChildOfClass("UIPadding")
+				local paddingX = if padding
+					then padding.PaddingLeft.Offset
+						+ parentSize.X * padding.PaddingLeft.Scale
+						+ padding.PaddingRight.Offset
+						+ parentSize.X * padding.PaddingRight.Scale
+					else 0
+				local paddingY = if padding
+					then padding.PaddingTop.Offset
+						+ parentSize.Y * padding.PaddingTop.Scale
+						+ padding.PaddingBottom.Offset
+						+ parentSize.Y * padding.PaddingBottom.Scale
+					else 0
+
 				new.Size:set(
 					UDim2.fromOffset(
-						math.clamp(windowSize.X, 0, parentSize.X),
-						math.clamp(windowSize.Y, 0, parentSize.Y)
+						math.clamp(windowSize.X, 0, parentSize.X - paddingX),
+						math.clamp(windowSize.Y, 0, parentSize.Y - paddingY)
 					)
 				)
 				new.Position:set(
