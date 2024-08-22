@@ -50,7 +50,10 @@ function Commands.new(_K)
 				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				TextYAlignment = Enum.TextYAlignment.Top,
-				Size = UI.computeFrom(UDim2.new, 1, 0, 0, UI.Theme.FontSize),
+				Size = UI.compute(function(use)
+					local size = use(UI.Theme.FontSize)
+					return UDim2.new(1, -size, 0, size)
+				end),
 				Position = UI.compute(function(use)
 					local size = use(UI.Theme.FontSize)
 					return UDim2.new(0, size, 0, size)
