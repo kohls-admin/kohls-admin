@@ -11,9 +11,6 @@ local function resetOffset(height: number?)
 	for i, list in ipairs(existing) do
 		local card, _, offset = unpack(list)
 		offset:set(heightOffset)
-		if height and i == 1 then
-			heightOffset = height
-		end
 		heightOffset += card.AbsoluteSize.Y + UI.Theme.Padding._value.Offset
 	end
 	return heightOffset
@@ -49,7 +46,7 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 
 	local dialog
 	dialog = UI.new "Dialog" {
-		Parent = UI.LayerTop,
+		Parent = UI.LayerTopInset,
 		Close = close,
 		Duration = delay,
 		ExitButton = true,
@@ -67,7 +64,7 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 				local height = use(UI.TopbarInset).Height
 				local padding = use(UI.Theme.Padding).Offset
 				local offset = use(offset)
-				return UDim2.new(0.5, 0, 0, if use(visible) then height + padding + offset else 0)
+				return UDim2.new(0.5, 0, 0, if use(visible) then padding + offset else -height)
 			end)
 		),
 
@@ -134,7 +131,7 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 	local height =
 		TextService:GetTextSize(text, UI.Theme.FontSizeLarge._value, UI.Theme.Font._value, Vector2.new(512, 9e9)).Y
 
-	if resetOffset(height) > (UI.LayerTop.AbsoluteSize.Y - UI.TopbarInset._value.Height) / 2 then
+	if resetOffset(height) > UI.LayerTopInset.AbsoluteSize.Y / 2 then
 		hide(existing[#existing], height)
 	end
 

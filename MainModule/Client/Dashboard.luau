@@ -25,7 +25,7 @@ UI.Scope.dashboard.Tabs = UI.new "Tabs" {
 }
 
 local dashboard = UI.new "Window" {
-	Parent = UI.LayerTop,
+	Parent = UI.LayerTopInset,
 	Title = "Kohl's Admin Dashboard",
 	Visible = false,
 

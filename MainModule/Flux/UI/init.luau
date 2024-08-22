@@ -94,18 +94,20 @@ UI.LayerBottom = Flux.new "ScreenGui" {
 	ResetOnSpawn = false,
 	IgnoreGuiInset = true,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	ScreenInsets = Enum.ScreenInsets.None,
 }
 
 --- @within UI
 --- The default ScreenGui for UI components
 --- @prop LayerDefault State<ScreenGui>
-UI.LayerTop = Flux.new "ScreenGui" {
+UI.LayerDefault = Flux.new "ScreenGui" {
 	Parent = playerGui,
 	Name = "FluxUILayerDefault",
 	DisplayOrder = 2,
 	ResetOnSpawn = false,
 	IgnoreGuiInset = true,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	ScreenInsets = Enum.ScreenInsets.None,
 }
 
 --- @within UI
@@ -118,6 +120,18 @@ UI.LayerTop = Flux.new "ScreenGui" {
 	ResetOnSpawn = false,
 	IgnoreGuiInset = true,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	ScreenInsets = Enum.ScreenInsets.None,
+}
+
+UI.LayerTopInset = UI.new "Frame" {
+	Name = "TopbarInset",
+	Parent = UI.LayerTop,
+	BackgroundTransparency = 1,
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.fromScale(0, 1),
+	Size = UI.compute(function(use)
+		return UDim2.new(1, 0, 1, -use(UI.TopbarInset).Height)
+	end),
 }
 
 --- @within UI

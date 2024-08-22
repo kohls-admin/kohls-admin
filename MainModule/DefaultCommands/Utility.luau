@@ -8,7 +8,7 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTop,
+				Parent = _K.UI.LayerTopInset,
 				Title = "Kohl's Admin About",
 				Visible = false,
 				_K.UI.new "UIPadding" {
@@ -49,7 +49,7 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTop,
+				Parent = _K.UI.LayerTopInset,
 				Title = "Kohl's Admin Commands",
 				Visible = false,
 				_K.UI.new "UIPadding" {
@@ -90,7 +90,7 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTop,
+				Parent = _K.UI.LayerTopInset,
 				Title = "Kohl's Admin Settings",
 				Visible = false,
 				_K.UI.new "UIPadding" {

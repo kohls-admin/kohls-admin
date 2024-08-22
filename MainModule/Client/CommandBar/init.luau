@@ -529,7 +529,7 @@ return {
 	init = function(self, _K)
 		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
-		CommandBar.Parent = _K.UI.LayerTop
+		CommandBar.Parent = _K.UI.LayerTopInset
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
 		UI.Scope.settings.prefix:hook(function(value)

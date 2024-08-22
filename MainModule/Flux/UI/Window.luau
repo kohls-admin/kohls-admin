@@ -250,7 +250,7 @@ function Window.new(definition)
 			ResampleMode = Enum.ResamplerMode.Pixelated,
 			Position = UI.compute(function(use)
 				local inputPos = use(inputPosition)
-				return UDim2.fromOffset(inputPos.X - 8, inputPos.Y - 8 + use(UI.TopbarInset).Height) - use(new.Position)
+				return UDim2.fromOffset(inputPos.X - 8, inputPos.Y - 8) - use(new.Position)
 			end),
 
 			[UI.Event] = {

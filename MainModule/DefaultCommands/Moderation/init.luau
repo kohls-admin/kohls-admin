@@ -11,7 +11,7 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTop,
+				Parent = _K.UI.LayerTopInset,
 				Title = "Kohl's Admin Bans",
 				Visible = false,
 				_K.UI.new "UIPadding" {
@@ -52,7 +52,7 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTop,
+				Parent = _K.UI.LayerTopInset,
 				Title = "Kohl's Admin Members",
 				Visible = false,
 				_K.UI.new "UIPadding" {

@@ -39,7 +39,7 @@ function Menu.new(definition)
 		Name = "Menu",
 		ZIndex = 100,
 		Visible = false,
-		Parent = UI.LayerTop,
+		Parent = UI.LayerTopInset,
 		AnchorPoint = UI.compute(function(use)
 			return if use(new.RightAlign) then Vector2.new(1, 0) else Vector2.zero
 		end),

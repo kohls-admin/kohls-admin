@@ -41,7 +41,7 @@ function Color.new(definition)
 	new._dialog = UI.new "ColorPicker" {
 		ZIndex = 100,
 		Visible = false,
-		Parent = UI.LayerTop,
+		Parent = UI.LayerTopInset,
 		Value = new.Value,
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundColor3 = UI.Theme.Primary,
