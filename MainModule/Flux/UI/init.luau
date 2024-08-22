@@ -178,12 +178,15 @@ UI.TopBarFrame = UI.new "Frame" {
 	Size = UDim2.new(1, 0, 1, 0),
 
 	UI.new "UIListLayout" {
+		FillDirection = Enum.FillDirection.Horizontal,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		VerticalAlignment = Enum.VerticalAlignment.Bottom,
+		Padding = UDim.new(0, 12),
 	},
 	UI.new "UIPadding" {
 		PaddingLeft = UDim.new(0, 12),
 		PaddingRight = UDim.new(0, 12),
+		PaddingTop = UDim.new(0, 6),
 		PaddingBottom = Flux.compute(function(use)
 			return UDim.new(0, if use(UI.LegacyTopBar) then 0 else 2)
 		end),
