@@ -14,6 +14,7 @@ function Tooltip.new(definition)
 	local parentState = UI.state(nil)
 	local positionState = UI.state(Vector2.zero)
 	local sizeState = UI.state(Vector2.zero)
+	local hovering = UI.state(false)
 
 	new._instance = UI.new "TextLabel" {
 		Parent = UI.LayerTop,
@@ -58,7 +59,22 @@ function Tooltip.new(definition)
 		},
 	}
 
+	local hoverStart
+
 	new._cleanup = {
+		hovering:hook(function(value)
+			if value then
+				local start = tick()
+				hoverStart = start
+				task.delay(0.4, function()
+					if hoverStart == start and hovering._value then
+						new.Visible:set(true)
+					end
+				end)
+			else
+				new.Visible:set(false)
+			end
+		end),
 		new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
 			local parent = new._instance.Parent
 			if parent and parent ~= UI.LayerTop then
@@ -67,24 +83,16 @@ function Tooltip.new(definition)
 						v:Disconnect()
 					end
 				end
-				local hoverStart
 				table.insert(
 					new._cleanup,
 					parent.MouseEnter:Connect(function()
-						local start = tick()
-						hoverStart = start
-						task.delay(0.4, function()
-							if hoverStart == start then
-								new.Visible:set(true)
-							end
-						end)
+						UI.handleHover(hovering)
 					end)
 				)
 				table.insert(
 					new._cleanup,
 					parent.MouseLeave:Connect(function()
-						hoverStart = nil
-						new.Visible:set(false)
+						hovering:set(false)
 					end)
 				)
 				parentState:set(parent)
@@ -95,6 +103,10 @@ function Tooltip.new(definition)
 				end)
 			end
 		end),
+		parentState,
+		positionState,
+		sizeState,
+		hovering,
 	}
 
 	return setmetatable(new, Tooltip)
