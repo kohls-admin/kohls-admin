@@ -134,6 +134,10 @@ function ScrollerFast.new(definition)
 		BottomImage = UI.Theme.ScrollBottomImage,
 		VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
+		UI.new "UIPadding" {
+			PaddingRight = UI.Theme.Padding,
+		},
+
 		[UI.Event.Property] = {
 			AbsoluteWindowSize = render,
 			CanvasPosition = render,
