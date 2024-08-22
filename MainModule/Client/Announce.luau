@@ -22,7 +22,7 @@ local function hide(info, height: number?)
 	if not found then
 		return
 	end
-	_K.client.Sound.Hover01:Play()
+	UI.Sound.Hover01:Play()
 
 	table.remove(existing, found)
 	resetOffset(height)
@@ -135,5 +135,5 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 		hide(existing[#existing], height)
 	end
 
-	_K.client.Sound.Notification_Low:Play()
+	UI.Sound.Notification_Low:Play()
 end

@@ -2,20 +2,8 @@ local _K = require(script.Parent)
 local Flux = _K.Flux
 local UI = _K.UI
 
-local Sound = _K.Util.Sound
-
 _K.client = {
 	ready = false,
-	Sound = {
-		Notification_High = Sound.new("17208361335"),
-		Notification_Low = Sound.new("17208372272"),
-		Negative = Sound.new("17208353912"),
-		Call_Decline = Sound.new("17208214688"),
-		Call_Leave = Sound.new("17208295577"),
-		Hover01 = Sound.new("17208339919"),
-		Hover03 = Sound.new("17208348006"),
-		Back = Sound.new("10066914500"),
-	},
 	hotkeys = {
 		dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
 	},

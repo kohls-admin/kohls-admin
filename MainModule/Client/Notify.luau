@@ -28,7 +28,7 @@ local function hide(info, height: number?)
 		return
 	end
 
-	_K.client.Sound.Hover01:Play()
+	UI.Sound.Hover01:Play()
 
 	table.remove(existing, found)
 	resetOffset(height)
@@ -103,7 +103,7 @@ return function(dialogOverride)
 
 	resetOffset(height)
 
-	_K.client.Sound.Notification_High:Play()
+	UI.Sound.Notification_High:Play()
 
 	return dialog
 end

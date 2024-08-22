@@ -1,7 +1,29 @@
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
+local SoundService = game:GetService("SoundService")
 local TextService = game:GetService("TextService")
 local UserInputService = game:GetService("UserInputService")
+
+local Sound = {}
+Sound.__index = Sound
+
+export type Sound = typeof(setmetatable({} :: { sound: Instance }, Sound))
+
+function Sound.new(id: string): Sound
+	local self = {
+		sound = Instance.new("Sound"),
+	}
+	self.sound.PlayOnRemove = true
+	self.sound.SoundId = "rbxassetid://" .. id
+	return setmetatable(self, Sound)
+end
+
+--- Creates a copy of the sound and plays it
+function Sound:Play()
+	local sound = self.sound:Clone()
+	sound.Parent = SoundService
+	sound:Destroy()
+end
 
 local Flux = require(script.Parent)
 local state = Flux.state
@@ -321,6 +343,18 @@ end)
 UI.Theme.ScrollBottomImage = UI.compute(function(use)
 	return if use(UI.Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://18370271296"
 end)
+
+UI.Sound = {
+	Back = Sound.new("10066914500"),
+	Call_Decline = Sound.new("17208214688"),
+	Call_Leave = Sound.new("17208295577"),
+	Hover01 = Sound.new("17208339919"),
+	Hover02 = Sound.new("17208343514"),
+	Hover03 = Sound.new("17208348006"),
+	Negative = Sound.new("17208353912"),
+	Notification_High = Sound.new("17208361335"),
+	Notification_Low = Sound.new("17208372272"),
+}
 
 local _currentHover
 
