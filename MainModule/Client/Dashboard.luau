@@ -40,6 +40,11 @@ if holder and holder:FindFirstChild("Holders") and holder.Holders:FindFirstChild
 end
 
 local function dashboardToggle()
+	if dashboard._instance.Visible then
+		UI.Sound.Hover01:Play()
+	else
+		UI.Sound.Hover03:Play()
+	end
 	dashboard._instance.Visible = not dashboard._instance.Visible
 end
 _K.client.hotkeys.dashboard.callback = dashboardToggle
