@@ -11,6 +11,7 @@ setmetatable(Dialog, BaseClass)
 function Dialog.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Text = UI.Nil,
+		TextColor3 = UI.Theme.PrimaryText,
 		Title = UI.Nil,
 		ActionText = UI.Nil,
 		Action = UI.Nil,
@@ -153,7 +154,7 @@ function Dialog.new(definition)
 		UI.new "TextLabel" {
 			Name = "Text",
 			BackgroundTransparency = 1,
-			TextColor3 = UI.Theme.PrimaryText,
+			TextColor3 = new.TextColor3,
 			Text = new.Text,
 			TextSize = UI.Theme.FontSize,
 			TextWrapped = true,
