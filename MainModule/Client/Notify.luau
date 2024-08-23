@@ -28,7 +28,7 @@ local function hide(info, height: number?)
 		return
 	end
 
-	UI.Sound.Hover01:Play()
+	UI.Sound.PopSwipe:Play()
 
 	table.remove(existing, found)
 	resetOffset(height)
@@ -46,8 +46,10 @@ return function(dialogOverride)
 		hide(self)
 	end
 
+	local sound = dialogOverride.Sound
 	local userFrame = dialogOverride.UserFrame
 	dialogOverride.UserFrame = nil
+	dialogOverride.Sound = nil
 
 	local dialog = UI.new("Dialog")(_K.Util.Table.merge({
 		Close = close,
@@ -103,7 +105,7 @@ return function(dialogOverride)
 
 	resetOffset(height)
 
-	UI.Sound.Notification_High:Play()
+	UI.Sound[sound or "Notification_High"]:Play()
 
 	return dialog
 end

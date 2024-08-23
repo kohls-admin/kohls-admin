@@ -206,6 +206,7 @@ function Tabs.new(definition)
 						Activated = function()
 							UI.clearState("hover")
 							UI.clearState("floating")
+							UI.Sound.Tab:Play()
 							currentPage:set(page)
 							pages:JumpTo(page)
 							local absoluteStart = tabs.Parent.AbsolutePosition.X

@@ -85,6 +85,7 @@ function List.new(definition)
 					Activated = function()
 						if new.Collapsible._value then
 							collapsed:set(not collapsed._value)
+							UI.Sound.Swipe:Play()
 						end
 					end,
 				},

@@ -225,6 +225,7 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(bans, logs, members, set
 			Duration = 30,
 			UserFrame = {},
 			ExitButton = true,
+			Sound = "Hello",
 		})
 	end
 

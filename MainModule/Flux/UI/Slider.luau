@@ -11,6 +11,7 @@ function Slider.new(definition)
 	local new = UI.makeStatefulDefaults({
 		_instance = nil,
 		Snap = 0,
+		SnapSound = true,
 		Value = 1,
 		Vertical = false,
 	}, definition)
@@ -35,6 +36,10 @@ function Slider.new(definition)
 
 		if snap > 1 then
 			value = math.round(1 + value * (snap - 1))
+
+			if new.SnapSound._value and new.Value._value ~= value then
+				UI.Sound.Hover02:Play()
+			end
 		end
 
 		new.Value:set(value)
@@ -45,6 +50,7 @@ function Slider.new(definition)
 			input.UserInputType == Enum.UserInputType.MouseButton1
 			or input.UserInputType == Enum.UserInputType.Touch
 		then
+			UI.Sound.Hover03:Play()
 			dragInput = input
 			dragging:set(true)
 			local con
@@ -52,6 +58,7 @@ function Slider.new(definition)
 				if input.UserInputState == Enum.UserInputState.End then
 					con:Disconnect()
 					if dragInput == input then
+						UI.Sound.Hover01:Play()
 						dragInput = nil
 						dragging:set(false)
 					end

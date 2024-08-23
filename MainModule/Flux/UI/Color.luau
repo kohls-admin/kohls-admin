@@ -30,8 +30,14 @@ function Color.new(definition)
 		},
 
 		[UI.Event] = {
-			Activated = function(value)
+			Activated = function()
 				UI.toggleState(new._dialog.Visible, "floating")
+				local value = UI.peek(new._dialog.Visible)
+				if value then
+					UI.Sound.Hover03:Play()
+				else
+					UI.Sound.Hover01:Play()
+				end
 			end,
 		},
 	}

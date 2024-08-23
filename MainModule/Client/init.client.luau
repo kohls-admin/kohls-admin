@@ -42,7 +42,8 @@ local Noclip = require(script.Noclip)
 
 local function Chatted(message: string)
 	local prefix = _K.playerPrefix[UI.LocalPlayer.UserId] or _K.Data.settings.prefix
-	if string.find(message, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
+	local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
+	if not commandStart then
 		-- check for invalid prefix but valid command alias
 		local found = string.find(message, "%s")
 		local commandText = string.lower(string.sub(message, 2, if found then found - 1 else -1))
@@ -57,7 +58,7 @@ local function Chatted(message: string)
 		end
 		return
 	end
-	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, message, true)
+	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, string.sub(message, commandStart), true)
 end
 
 if _K.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then

@@ -166,6 +166,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 				TextColor3 = Color3.new(1, 0, 0),
 				UserFrame = {},
 				ExitButton = true,
+				Sound = "Call_Leave",
 			})
 		end
 	elseif chatted and _K.IsClient then

@@ -364,14 +364,23 @@ end)
 
 UI.Sound = {
 	Back = Sound.new("10066914500"),
+	Call_Accept = Sound.new("17208209318"),
 	Call_Decline = Sound.new("17208214688"),
+	Call_Hangup = Sound.new("17208220181"),
 	Call_Leave = Sound.new("17208295577"),
+	Hello = Sound.new("17208335138"),
 	Hover01 = Sound.new("17208339919"),
 	Hover02 = Sound.new("17208343514"),
 	Hover03 = Sound.new("17208348006"),
 	Negative = Sound.new("17208353912"),
 	Notification_High = Sound.new("17208361335"),
 	Notification_Low = Sound.new("17208372272"),
+	PopSwipe = Sound.new("10128766965"),
+	Select01 = Sound.new("10128760939"),
+	Select02 = Sound.new("10066968815"),
+	Select03 = Sound.new("17208396156"),
+	Swipe = Sound.new("17208405682"),
+	Tab = Sound.new("17208408337"),
 }
 
 -- generic floating/hover edge case handler

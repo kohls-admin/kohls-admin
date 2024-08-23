@@ -27,6 +27,7 @@ function ColorPicker.new(definition)
 
 	local hueSlider = UI.new "Slider" {
 		Name = "HueSlider",
+		SnapSound = false,
 		Size = UI.compute(function(use)
 			return UDim2.new(0, 36 + (24 + use(UI.Theme.Padding).Offset) * 3, 0, 24)
 		end),
@@ -230,6 +231,7 @@ function ColorPicker.new(definition)
 			input.UserInputType == Enum.UserInputType.MouseButton1
 			or input.UserInputType == Enum.UserInputType.Touch
 		then
+			UI.Sound.Hover03:Play()
 			dragInput = input
 			dragging:set(true)
 			local con
@@ -237,6 +239,7 @@ function ColorPicker.new(definition)
 				if input.UserInputState == Enum.UserInputState.End then
 					con:Disconnect()
 					if dragInput == input then
+						UI.Sound.Hover01:Play()
 						dragInput = nil
 						dragging:set(false)
 					end
