@@ -10,7 +10,7 @@ local function handleMissing(data, command)
 		if not arg and not argDefinition.optional then
 			local first = command.array[1]
 			local last = command.array[#command.array]
-			table.insert(data.missing, { first[1], last[1] + #last[2] })
+			table.insert(data.missing, { `Argument {i} missing: {argDefinition.name}`, first[1], last[1] + #last[2] })
 			return
 		end
 	end

@@ -526,8 +526,8 @@ Input._input.FocusLost:Connect(function(enterPressed)
 
 		for _, range in data.missing do
 			validState:set(false)
-			local start, last = unpack(range)
-			invalidSuggestion(data, "Missing argument", start, string.sub(data.message, start, last))
+			local text, start, last = unpack(range)
+			invalidSuggestion(data, text, start, string.sub(data.message, start, last))
 			return
 		end
 
