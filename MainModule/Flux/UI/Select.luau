@@ -34,7 +34,7 @@ function Select.new(definition)
 
 			[UI.Event] = {
 				Activated = function()
-					menu._instance.Visible = not menu._instance.Visible
+					UI.toggleState(menu.Visible, "floating")
 				end,
 			},
 		},

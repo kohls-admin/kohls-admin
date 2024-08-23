@@ -201,6 +201,8 @@ function Window.new(definition)
 		Activated = function()
 			UI.Sound.Hover01:Play()
 			new._instance.Visible = false
+			UI.clearState("hover")
+			UI.clearState("floating")
 		end,
 	}
 	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()

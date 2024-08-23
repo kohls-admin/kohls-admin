@@ -20,6 +20,7 @@ setmetatable(ColorPicker, BaseClass)
 function ColorPicker.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Value = Color3.new(1, 0, 0),
+		Visible = false,
 	}, definition)
 
 	local dragging = UI.state(false)
@@ -372,6 +373,7 @@ function ColorPicker.new(definition)
 		BackgroundTransparency = 1,
 		AutomaticSize = Enum.AutomaticSize.XY,
 		Size = UDim2.new(0, 88, 0, 72),
+		Visible = new.Visible,
 
 		UI.new "UIListLayout" {
 			SortOrder = Enum.SortOrder.LayoutOrder,

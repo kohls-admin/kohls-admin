@@ -122,7 +122,7 @@ function Logs.new(_K)
 
 		[UI.Event] = {
 			Activated = function()
-				filterMenu._instance.Visible = not filterMenu._instance.Visible
+				UI.toggleState(filterMenu.Visible, "floating")
 			end,
 		},
 	}

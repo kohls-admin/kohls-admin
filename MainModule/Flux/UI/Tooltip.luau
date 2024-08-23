@@ -90,13 +90,13 @@ function Tooltip.new(definition)
 				table.insert(
 					new._cleanup,
 					parent.MouseEnter:Connect(function()
-						UI.handleHover(hovering)
+						UI.activateState(hovering, "hover")
 					end)
 				)
 				table.insert(
 					new._cleanup,
 					parent.MouseLeave:Connect(function()
-						hovering:set(false)
+						UI.deactivateState(hovering, "hover")
 					end)
 				)
 				parentState:set(parent)

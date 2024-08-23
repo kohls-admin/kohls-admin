@@ -42,6 +42,8 @@ end
 local function dashboardToggle()
 	if dashboard._instance.Visible then
 		UI.Sound.Hover01:Play()
+		UI.clearState("hover")
+		UI.clearState("floating")
 	else
 		UI.Sound.Hover03:Play()
 	end

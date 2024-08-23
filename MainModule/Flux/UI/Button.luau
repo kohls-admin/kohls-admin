@@ -159,10 +159,10 @@ function Button.new(definition)
 				Tween:Create(ripple, UI.Theme.TweenOut._value, { BackgroundTransparency = 1 }):Play()
 			end,
 			MouseEnter = function()
-				UI.handleHover(hovering)
+				UI.activateState(hovering, "hover")
 			end,
 			MouseLeave = function()
-				hovering:set(false)
+				UI.deactivateState(hovering, "hover")
 			end,
 		},
 	}

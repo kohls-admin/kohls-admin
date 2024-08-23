@@ -31,7 +31,7 @@ function Color.new(definition)
 
 		[UI.Event] = {
 			Activated = function(value)
-				new._dialog._instance.Visible = not new._dialog._instance.Visible
+				UI.toggleState(new._dialog.Visible, "floating")
 			end,
 		},
 	}
@@ -40,8 +40,7 @@ function Color.new(definition)
 
 	new._dialog = UI.new "ColorPicker" {
 		ZIndex = 100,
-		Visible = false,
-		Parent = UI.LayerTopInset,
+		Parent = UI.LayerTop,
 		Value = new.Value,
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundColor3 = UI.Theme.Primary,

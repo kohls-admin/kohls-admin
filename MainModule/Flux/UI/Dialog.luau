@@ -19,6 +19,7 @@ function Dialog.new(definition)
 		RightAction = UI.Nil,
 		ExitButton = UI.Nil,
 		Close = UI.Nil,
+		Visible = true,
 		Width = 256,
 	}, definition)
 
@@ -175,6 +176,7 @@ function Dialog.new(definition)
 		BackgroundTransparency = UI.Theme.Transparency,
 		ClipsDescendants = true,
 		Size = UI.computeFrom(UDim2.fromOffset, new.Width, 0),
+		Visible = new.Visible,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,

@@ -374,18 +374,81 @@ UI.Sound = {
 	Notification_Low = Sound.new("17208372272"),
 }
 
-local _currentHover
+-- generic floating/hover edge case handler
 
---- Handles a global hovering state for specific edge-cases
-function UI.handleHover(hoverState: State<boolean>)
-	if not Flux.isState(hoverState) then
-		error("Invalid hovering state")
+UI._activeFloating = nil
+UI._activeHover = nil
+
+--- @within UI
+--- @type ActiveStateType "hover" | "floating"
+export type ActiveStateType = "hover" | "floating"
+
+--- A generalized function to handle activation/deactivation of both floating and hover states
+function UI.activateState(activeState: State<boolean>, stateType: ActiveStateType)
+	if not Flux.isState(activeState) then
+		error("Invalid active state")
 	end
-	if _currentHover and not rawequal(_currentHover, hoverState) then
-		_currentHover:set(false)
+
+	-- Clear the previous state if it's different
+	local previousState = stateType == "floating" and UI._activeFloating or UI._activeHover
+	if previousState and not rawequal(previousState, activeState) then
+		previousState:set(false)
 	end
-	_currentHover = hoverState
-	hoverState:set(true)
+
+	-- Set the new active state
+	if stateType == "floating" then
+		UI._activeFloating = activeState
+	else
+		UI._activeHover = activeState
+	end
+	activeState:set(true)
+end
+
+--- A generalized function to deactivate both floating and hover states
+function UI.deactivateState(activeState: State<boolean>, stateType: ActiveStateType)
+	if not Flux.isState(activeState) then
+		error("Invalid active state")
+	end
+
+	-- Clear the previous state if it matches
+	local previousState = stateType == "floating" and UI._activeFloating or UI._activeHover
+	if previousState and rawequal(previousState, activeState) then
+		if stateType == "floating" then
+			UI._activeFloating = nil
+		else
+			UI._activeHover = nil
+		end
+	end
+	activeState:set(false)
+end
+
+--- A generalized function to toggle both floating and hover states
+function UI.toggleState(activeState: State<boolean>, stateType: ActiveStateType)
+	if not Flux.isState(activeState) then
+		error("Invalid active state")
+	end
+	if activeState._value then
+		UI.deactivateState(activeState, stateType)
+	else
+		UI.activateState(activeState, stateType)
+	end
+end
+
+--- Function to clear a specific state type
+function UI.clearState(stateType: ActiveStateType)
+	if stateType == "floating" then
+		if Flux.isState(UI._activeFloating) then
+			UI._activeFloating:set(false)
+			UI._activeFloating = nil
+		end
+	elseif stateType == "hover" then
+		if Flux.isState(UI._activeHover) then
+			UI._activeHover:set(false)
+			UI._activeHover = nil
+		end
+	else
+		error("Invalid state type for clearing")
+	end
 end
 
 --- Gets the luminance of a [Color3]
