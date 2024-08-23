@@ -318,6 +318,10 @@ local function invalidSuggestion(data, err, pos, text)
 
 	TooltipFrame.Visible = true
 
+	if not data.suggestions or not data.suggestions[suggestionIndex] then
+		return
+	end
+
 	local currentSuggestion = data.suggestions[suggestionIndex]
 	local suggestionText, suggestionValue = unpack(currentSuggestion)
 	if data.argIndex == 1 then -- command
