@@ -117,10 +117,6 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 	local ok, result = Process.prepareCommands(_K, from, rawText)
 
 	if ok then
-		if chatted and _K.IsClient then
-			_K.Remote.Command:FireServer(rawText, chatted)
-		end
-
 		for _, command in result do
 			local missing
 			for i, argDefinition in command.definition.args do
@@ -159,28 +155,21 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 		end
 	else
 		commandError = result
-		if chatted then
-			-- check for invalid prefix
-		end
 	end
 
 	if commandError then
 		if _K.IsServer then
 			_K.Remote.Notify:FireClient(_K.Services.Players:GetPlayerByUserId(from), commandError)
 		else
-			if chatted then
-				_K.Services.StarterGui:SetCore(
-					"ChatMakeSystemMessage",
-					{ Text = `KA Error: {commandError}`, Color = Color3.fromRGB(255, 0, 0) }
-				)
-			else
-				task.spawn(_K.client.Notify, {
-					Text = commandError,
-					UserFrame = {},
-					ExitButton = true,
-				})
-			end
+			task.spawn(_K.client.Notify, {
+				Text = commandError,
+				TextColor3 = Color3.new(1, 0, 0),
+				UserFrame = {},
+				ExitButton = true,
+			})
 		end
+	elseif chatted and _K.IsClient then
+		_K.Remote.Command:FireServer(rawText, chatted)
 	end
 
 	if not (commandRan or commandError) then
