@@ -513,6 +513,13 @@ Input._input.FocusLost:Connect(function(enterPressed)
 			-- if not fully validated need to show feedback
 			return
 		end
+
+		if Input._input.Text ~= _K.Data.settings.prefix and #data.commands < 1 then
+			validState:set(false)
+			invalidSuggestion(data, "Invalid command", data.argPos, data.rawArg)
+			return
+		end
+
 		for _, range in data.missing do
 			validState:set(false)
 			local start, last = unpack(range)
