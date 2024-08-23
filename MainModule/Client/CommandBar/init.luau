@@ -287,6 +287,52 @@ local function clearCompletion()
 	table.clear(suggestionLabels)
 end
 
+local function invalidSuggestion(data, err, pos, text)
+	validState:set(false)
+	-- red text inlineFormat
+	Input.DisplayText:set(
+		`<font transparency="0.33">{_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.String.escapeRichText(
+			text
+		)}</b></font>{_K.Util.String.escapeRichText(string.sub(data.message, pos + #text))}</font>`
+	)
+	-- TODO: command definition
+	Tooltip.Text = if not data.argDefinition
+		then ""
+		else string.format(
+			argumentFormat,
+			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
+			_K.Util.String.escapeRichText(data.argDefinition.type),
+			_K.Util.String.escapeRichText(data.argDefinition.description)
+		)
+	for _, label in suggestionLabels do
+		label:Destroy()
+	end
+	-- FIX: inline all the invalids and only show tooltip for first
+	table.clear(suggestionLabels)
+	local frame = SuggestionFrame:Clone()
+	local label = frame:FindFirstChildOfClass("TextLabel")
+	label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
+	frame.Parent = TooltipFrame
+	-- show highlight
+	table.insert(suggestionLabels, frame)
+
+	TooltipFrame.Visible = true
+
+	local currentSuggestion = data.suggestions[suggestionIndex]
+	local suggestionText, suggestionValue = unpack(currentSuggestion)
+	if data.argIndex == 1 then -- command
+		-- TODO: inline argument types if command
+		-- show command aliases too!
+		Tooltip.Text = string.format(
+			argumentFormat,
+			_K.Util.String.escapeRichText(suggestionText),
+			"command",
+			_K.Util.String.escapeRichText(suggestionValue.description)
+		)
+	end
+	return
+end
+
 local commandHistory = {}
 local currentCompletionData
 updateCompletion = function()
@@ -307,34 +353,7 @@ updateCompletion = function()
 	-- TODO: somehow show validated arguments/text as green :)
 	for _, invalid in data.invalid do
 		validState:set(false)
-		local pos, text, err = unpack(invalid)
-		-- red text inlineFormat
-		Input.DisplayText:set(
-			`<font transparency="0.33">{_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.String.escapeRichText(
-				text
-			)}</b></font>{_K.Util.String.escapeRichText(string.sub(data.message, pos + #text))}</font>`
-		)
-		Tooltip.Text = if not data.argDefinition
-			then ""
-			else string.format(
-				argumentFormat,
-				_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
-				_K.Util.String.escapeRichText(data.argDefinition.type),
-				_K.Util.String.escapeRichText(data.argDefinition.description)
-			)
-		for _, label in suggestionLabels do
-			label:Destroy()
-		end
-		-- FIX: inline all the invalids and only show tooltip for first
-		table.clear(suggestionLabels)
-		local frame = SuggestionFrame:Clone()
-		local label = frame:FindFirstChildOfClass("TextLabel")
-		label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
-		frame.Parent = TooltipFrame
-		-- show highlight
-		table.insert(suggestionLabels, frame)
-
-		TooltipFrame.Visible = true
+		invalidSuggestion(data, unpack(invalid))
 		return
 	end
 
@@ -476,18 +495,38 @@ Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 	end
 end)
 
+Input._input.Focused:Connect(function()
+	-- prevent input hotkey from being captured
+	task.delay(0, function()
+		if CommandBar.Visible then
+			Input._input.TextEditable = true
+		end
+	end)
+end)
+
 Input._input.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
-		CommandBar.Visible = false
 		Input._input.TextEditable = false
-		if currentCompletionData and currentCompletionData.invalid and #currentCompletionData.invalid > 0 then
+
+		local data = currentCompletionData
+		if #data.invalid > 0 then
 			-- if not fully validated need to show feedback
 			return
 		end
+		for _, range in data.missing do
+			validState:set(false)
+			local start, last = unpack(range)
+			invalidSuggestion(data, "Missing argument", start, string.sub(data.message, start, last))
+			return
+		end
+
+		CommandBar.Visible = false
+
 		-- ignore empty command strings
 		if Input._input.Text == _K.Data.settings.prefix then
 			return
 		end
+
 		-- FIX: if validated lol
 		_K.Remote.Command:FireServer(Input._input.Text)
 		task.spawn(_K.Process.runCommands, _K, _K.Services.Players.LocalPlayer.UserId, Input._input.Text)
@@ -543,9 +582,5 @@ return {
 	show = function()
 		CommandBar.Visible = true
 		Input._input:CaptureFocus()
-		-- prevent input hotkey from being captured
-		task.delay(0, function()
-			Input._input.TextEditable = true
-		end)
 	end,
 }
