@@ -27,6 +27,13 @@ function Scroller.new(definition)
 		UI.new "UIPadding" {
 			PaddingRight = UI.Theme.Padding,
 		},
+
+		[UI.Event.Property] = {
+			CanvasPosition = function()
+				UI.clearState("hover")
+				UI.clearState("floating")
+			end,
+		},
 	}
 
 	return setmetatable(new, Scroller)

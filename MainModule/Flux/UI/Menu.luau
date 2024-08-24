@@ -33,6 +33,12 @@ function Menu.new(definition)
 		ScrollBarThickness = 0,
 
 		new._list,
+
+		[UI.Event.Property] = {
+			CanvasPosition = function()
+				UI.clearState("hover")
+			end,
+		},
 	}
 
 	-- if too close to viewport boundary top/botton flip menu direction
