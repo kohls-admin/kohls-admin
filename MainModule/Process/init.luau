@@ -118,21 +118,6 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 
 	if ok then
 		for _, command in result do
-			local missing
-			for i, argDefinition in command.definition.args do
-				local arg = command.args[i]
-				if not arg and not argDefinition.optional then
-					-- TODO: improve feedback to show what arguments are missing and an example?
-					commandError = `Argument {i} missing: {argDefinition.name}`
-					command.Error = commandError
-					missing = true
-					break
-				end
-			end
-			if missing then
-				continue
-			end
-
 			local success, err = command:run()
 
 			if success == nil then

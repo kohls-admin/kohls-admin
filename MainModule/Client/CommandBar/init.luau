@@ -535,11 +535,12 @@ Input._input.FocusLost:Connect(function(enterPressed)
 			return
 		end
 
-		for _, range in data.missing do
-			validState:set(false)
-			local text, start, last = unpack(range)
-			invalidSuggestion(data, text, start, string.sub(data.message, start, last))
-			return
+		for _, command in data.commands do
+			if command.argMissing then
+				validState:set(false)
+				invalidSuggestion(data, command.argMissing, command.invalidPos, command.invalidArg)
+				return
+			end
 		end
 
 		CommandBar.Visible = false

@@ -4,18 +4,6 @@ local Command = require(script.Parent.Parent.Parent.Process.Command)
 
 local LocalPlayer = Players.LocalPlayer
 
-local function handleMissing(data, command)
-	for i, argDefinition in command.definition.args do
-		local arg = command.args[i]
-		if not arg and not argDefinition.optional then
-			local first = command.array[1]
-			local last = command.array[#command.array]
-			table.insert(data.missing, { `Argument {i} missing: {argDefinition.name}`, first[1], last[1] + #last[2] })
-			return
-		end
-	end
-end
-
 return function(_K, text, cursorPosition)
 	local from = LocalPlayer.UserId
 	local data = {
@@ -25,7 +13,6 @@ return function(_K, text, cursorPosition)
 		invalid = {
 			-- {feedback, argPos, rawArg}
 		},
-		missing = {},
 	}
 
 	local prefix = _K.playerPrefix[from] or _K.Data.settings.prefix
@@ -78,6 +65,7 @@ return function(_K, text, cursorPosition)
 				return data
 			end
 		end
+
 		if cursorPosition < commandArray[1][1] or cursorPosition > commandEnd then
 			if not commandDefinition and not greedy then
 				data.argIndex = 1
@@ -95,8 +83,14 @@ return function(_K, text, cursorPosition)
 				data.rawArg = data.query
 				return data
 			end
+
+			if commandDefinition then
+				local command = Command.new(_K, commandDefinition, commandArray, from, text)
+				command:validate()
+				table.insert(data.commands, command)
+			end
+
 			continue -- cursor not within commandArray
-			-- FIX: need to still validate the command for a total valid state
 		end
 
 		-- within command
@@ -118,7 +112,7 @@ return function(_K, text, cursorPosition)
 			local rawSuggestions = data.suggestions
 			data.suggestions = table.create(#data.suggestions)
 			for _, suggestionData in rawSuggestions do
-				local name, cmd = unpack(suggestionData)
+				local _name, cmd = unpack(suggestionData)
 				if cmd and _K.Auth.hasCommand(LocalPlayer.UserId, cmd) then
 					table.insert(data.suggestions, suggestionData)
 				end
@@ -133,7 +127,6 @@ return function(_K, text, cursorPosition)
 				local command = Command.new(_K, commandDefinition, commandArray, from, text)
 				command:validate()
 				table.insert(data.commands, command)
-				handleMissing(data, command)
 			end
 
 			return data
@@ -149,7 +142,6 @@ return function(_K, text, cursorPosition)
 		local command = Command.new(_K, commandDefinition, commandArray, from, text)
 		local ok, result = command:validate()
 		table.insert(data.commands, command)
-		handleMissing(data, command)
 
 		-- argument suggestions
 		for i, arg in command.args do
@@ -190,7 +182,9 @@ return function(_K, text, cursorPosition)
 		if not ok and not (data.suggestionType and (data.rawArg == "" or #data.suggestions > 0)) then
 			command.Error = result
 			if command.invalidArg then
-				table.insert(data.invalid, { result, command.invalidPos, command.invalidArg })
+				if not command.argMissing then
+					table.insert(data.invalid, { result, command.invalidPos, command.invalidArg })
+				end
 			else
 				table.insert(data.invalid, { result, commandPos, string.sub(text, commandPos, commandEnd) })
 			end
