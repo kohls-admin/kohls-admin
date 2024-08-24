@@ -44,14 +44,16 @@ local function Chatted(message: string)
 	local prefix = _K.playerPrefix[UI.LocalPlayer.UserId] or _K.Data.settings.prefix
 	local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
 	if not commandStart then
-		-- check for invalid prefix but valid command alias
-		local found = string.find(message, "%s")
-		local commandText = string.lower(string.sub(message, 2, if found then found - 1 else -1))
+		-- checks for invalid prefix but valid command alias
+		local test = string.lower(message)
 		for alias in _K.Registry.commands do
-			if alias == commandText then
-				_K.Services.StarterGui:SetCore("ChatMakeSystemMessage", {
-					Text = `KA Error: Invalid command prefix, try "{_K.Data.settings.prefix}"`,
-					Color = Color3.fromRGB(255, 0, 0),
+			if string.find(test, `%S{alias}%s?`) then
+				task.spawn(_K.client.Notify, {
+					Text = `<b>Invalid command prefix, use "{_K.Data.settings.prefix}"</b>`,
+					TextColor3 = Color3.new(1, 0, 0),
+					UserFrame = {},
+					ExitButton = true,
+					Sound = "Call_Leave",
 				})
 				break
 			end
