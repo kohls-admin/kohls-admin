@@ -81,6 +81,12 @@ if _K.IsClient then
 	_K.UI.registerChildren()
 end
 
+function _K.filterMethod(from: number)
+	return if Util.Services.Players:GetPlayerByUserId(from)
+		then "GetChatForUserAsync"
+		else "GetNonChatStringForBroadcastAsync"
+end
+
 --- Filters a message with [TextService.FilterStringAsync]
 function _K.filterMessage(message: string, from: number, to: number, filterContext: Enum.TextFilterContext?): string
 	if from == to then
@@ -94,7 +100,7 @@ function _K.filterMessage(message: string, from: number, to: number, filterConte
 		filterContext or Enum.TextFilterContext.PublicChat
 	)
 	if ok then
-		ok, result = pcall(result.GetChatForUserAsync, result, to)
+		ok, result = pcall(result[_K.filterMethod(from)], result, to)
 		if ok then
 			return result
 		end
@@ -253,19 +259,7 @@ local function playerAdded(player: Player)
 
 	if _K.Data.settings.announcement then
 		local message, from = unpack(_K.Data.settings.announcement)
-		local ok, result =
-			pcall(TextService.FilterStringAsync, TextService, message, from, Enum.TextFilterContext.PublicChat)
-
-		if not ok then
-			return
-		end
-
-		task.spawn(function()
-			local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
-			if success then
-				_K.Remote.Announce:FireClient(player, msg, from)
-			end
-		end)
+		_K.Remote.Announce:FireClient(player, message, from)
 	end
 end
 
@@ -311,7 +305,32 @@ _K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe:
 	end
 end)
 
--- NOTE: probably shouldn't network system logs to other servers, ideally only command and error logs
+local subscribeSuccess, subscribeConnection = pcall(function()
+	return Util.Services.MessagingService:SubscribeAsync("KA_Announcement", function(message)
+		if type(message.Data) ~= "table" then
+			_K.Data.settings.announcement = false
+			return
+		end
+
+		local oldMsg, oldFrom
+		if _K.Data.settings.announcement then
+			oldMsg, oldFrom = unpack(_K.Data.settings.announcement)
+		end
+
+		local msg, from = unpack(message.Data)
+		if msg ~= oldMsg or from ~= oldFrom then
+			_K.Data.settings.announcement = message.Data
+			_K.Remote.Announce:FireAllClients(unpack(message.Data))
+		end
+	end)
+end)
+if subscribeSuccess then
+	game:BindToClose(function()
+		subscribeConnection:Disconnect()
+	end)
+end
+
+-- NOTE: shouldn't network system logs to other servers, ideally only command and error logs
 _K.log("Server initialized.", "INFO")
 
 return _K

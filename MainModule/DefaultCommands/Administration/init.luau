@@ -18,29 +18,27 @@ return {
 		},
 
 		run = function(context, message)
-			context._K.Data.Cache.settings.announcement = { message, context.from }
-			context._K.Data.pendingSaveMain = true
-			-- TODO: fire to all servers with messagingservice
-			local ok, result = pcall(
-				TextService.FilterStringAsync,
-				TextService,
-				message,
-				context.from,
-				Enum.TextFilterContext.PublicChat
-			)
+			local ok, result = context._K.Util.Retry(function()
+				return TextService:FilterStringAsync(message, context.from, Enum.TextFilterContext.PublicChat)
+			end, 5, 1)
 
 			if not ok then
 				return
 			end
 
-			for _, player in Players:GetPlayers() do
-				task.spawn(function()
-					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
-					if success then
-						context._K.Remote.Announce:FireClient(player, msg, context.from)
-					end
-				end)
-			end
+			task.spawn(function()
+				local success, filteredMsg = context._K.Util.Retry(function()
+					return result:GetNonChatStringForBroadcastAsync()
+				end, 5, 1)
+
+				if success then
+					context._K.Remote.Announce:FireAllClients(filteredMsg, context.from)
+					local announcement = { filteredMsg, context.from }
+					context._K.Data.Cache.settings.announcement = announcement
+					context._K.Data.pendingSaveMain = true
+					context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", announcement)
+				end
+			end)
 		end,
 	},
 	{
@@ -52,7 +50,7 @@ return {
 		run = function(context, message)
 			context._K.Data.Cache.settings.announcement = false
 			context._K.Data.pendingSaveMain = true
-			-- TODO: fire to all servers with messagingservice
+			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", nil)
 		end,
 	},
 	{
