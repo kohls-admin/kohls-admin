@@ -11,7 +11,7 @@ export type Log = Util.Log
 export type LogType = Util.LogType
 export type Logger = Util.Logger
 
-local IsServer = RunService:IsStudio()
+local IsServer = RunService:IsServer()
 
 local logger = Util.Logger.new()
 local module = { logger = logger }
@@ -45,7 +45,7 @@ function module.log(text: string, level: LogType, from: number?): Log
 			)
 			if ok then
 				for _, player in Players:GetPlayers() do
-					local success, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
+					local success, filtered = pcall(result.GetNonChatStringForUserAsync, result, player.UserId)
 					if success then
 						Remote.Log:FireClient(player, { filtered, log.level, log.time, from })
 					else -- retry
