@@ -13,12 +13,14 @@ local UserFrame = require(script.Parent.UserFrame)
 
 Remote.Announce.OnClientEvent:Connect(Announce)
 Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
-Remote.Notify.OnClientEvent:Connect(function(text: string, from: number)
+Remote.Notify.OnClientEvent:Connect(function(text: string, from: number?, noteType: string?)
 	Notify({
 		Text = text,
 		Duration = 4 + 0.125 * #text,
 		UserFrame = { from },
 		ExitButton = true,
+		TextColor3 = if noteType == "error" then Color3.new(1, 0, 0) else nil,
+		Sound = if noteType == "error" then "Call_Leave" else nil,
 	})
 end)
 

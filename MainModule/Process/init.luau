@@ -158,8 +158,9 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 	end
 
 	if commandError then
+		commandError = `<b>{commandError}</b>`
 		if _K.IsServer then
-			_K.Remote.Notify:FireClient(_K.Services.Players:GetPlayerByUserId(from), commandError)
+			_K.Remote.Notify:FireClient(_K.Services.Players:GetPlayerByUserId(from), commandError, nil, "error")
 		else
 			task.spawn(_K.client.Notify, {
 				Text = commandError,
