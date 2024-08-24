@@ -39,6 +39,9 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 	local self
 
 	local function close()
+		if not self then
+			return
+		end
 		hide(self)
 	end
 

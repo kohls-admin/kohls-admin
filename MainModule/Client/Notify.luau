@@ -43,6 +43,9 @@ return function(dialogOverride)
 	local self
 
 	local function close()
+		if not self then
+			return
+		end
 		hide(self)
 	end
 
