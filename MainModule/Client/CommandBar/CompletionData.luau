@@ -131,6 +131,7 @@ return function(_K, text, cursorPosition)
 
 			if commandDefinition then
 				local command = Command.new(_K, commandDefinition, commandArray, from, text)
+				command:validate()
 				table.insert(data.commands, command)
 				handleMissing(data, command)
 			end
@@ -148,7 +149,6 @@ return function(_K, text, cursorPosition)
 		local command = Command.new(_K, commandDefinition, commandArray, from, text)
 		local ok, result = command:validate()
 		table.insert(data.commands, command)
-
 		handleMissing(data, command)
 
 		-- argument suggestions

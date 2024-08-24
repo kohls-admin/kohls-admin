@@ -361,8 +361,19 @@ updateCompletion = function()
 		return
 	end
 
-	-- TODO: check if every argument for every command is valid somehow!
-	-- and then show valid icon and color :)
+	if #data.commands > 0 then
+		local valid = true
+		for _, command in data.commands do
+			if not command.validated then
+				valid = false
+				break
+			end
+		end
+
+		if valid then
+			validState:set(true)
+		end
+	end
 
 	if not data.suggestionType then
 		return clearCompletion() -- no suggestions without argument type
@@ -395,10 +406,10 @@ updateCompletion = function()
 		Input._input.AbsoluteSize.Y / 2 + UI.Theme.PaddingHalf._value.Offset
 	)
 
+	-- suggestion hints
 	if not (data.suggestions and #data.suggestions > 0) then
 		return
 	end
-	-- suggestion hints
 
 	-- local firstSuggestion = data.suggestions[1][1]
 	-- local firstValue = data.suggestions[1][2]
