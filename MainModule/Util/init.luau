@@ -11,6 +11,7 @@ local Util = {
 	Defer = require(script:WaitForChild("Defer")),
 	Function = require(script:WaitForChild("Function")),
 	getUserInfo = require(script:WaitForChild("getUserInfo")),
+	Promise = require(script:WaitForChild("Promise")),
 	Queue = require(script:WaitForChild("Queue")),
 	ReadableTime = require(script:WaitForChild("ReadableTime")),
 	Retry = require(script:WaitForChild("Retry")),
