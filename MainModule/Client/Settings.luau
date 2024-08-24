@@ -69,6 +69,9 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Value = function(value)
+							if _K.Data.settings.prefix == value then
+								return
+							end
 							Settings.network("prefix", value)
 						end,
 					},
@@ -129,6 +132,9 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Value = function(value)
+							if value == _K.Data.settings.themeStrokeEnabled then
+								return
+							end
 							Settings.network("themeStrokeEnabled", value)
 						end,
 					},
@@ -361,6 +367,7 @@ function Settings.new(_K)
 	-- Color options
 	for index, key in colors do
 		local state = UI.Theme[key]
+		local dataKey = "theme" .. key
 		table.insert(
 			settingsLineItems.Theme,
 			UI.new "ListItem" {
@@ -370,7 +377,10 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Value = function(value)
-							Settings.network("theme" .. key, value)
+							if value == _K.Data.settings[dataKey] then
+								return
+							end
+							Settings.network(dataKey, value)
 						end,
 					},
 				},
