@@ -494,7 +494,8 @@ end
 function UI.makeStatefulDefaults(default: Dict<any>, definition: SpecialDefinition?)
 	for key, value in default do
 		if definition then
-			value = definition[key] or value
+			local valueDef = definition[key]
+			value = if valueDef ~= nil then valueDef else value
 		end
 		if value == UI.Nil then
 			default[key] = nil
