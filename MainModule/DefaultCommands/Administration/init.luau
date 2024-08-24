@@ -1,8 +1,60 @@
--- dangerous admin commands reserved for the highest roles
+-- dangerous admin commands reserved for admin role or above
+
+local Players = game:GetService("Players")
+local TextService = game:GetService("TextService")
 
 local safeTeleport = require(script.safeTeleport)
 
 return {
+	{
+		name = "announce",
+		description = "Shows a message to everyone in the game, saves and shows to new users until it has been cleared.",
+		args = {
+			{
+				type = "stringGreedy",
+				name = "Message",
+				description = "The message to send.",
+			},
+		},
+
+		run = function(context, message)
+			context._K.Data.Cache.settings.announcement = { message, context.from }
+			context._K.Data.pendingSaveMain = true
+			-- TODO: fire to all servers with messagingservice
+			local ok, result = pcall(
+				TextService.FilterStringAsync,
+				TextService,
+				message,
+				context.from,
+				Enum.TextFilterContext.PublicChat
+			)
+
+			if not ok then
+				return
+			end
+
+			for _, player in Players:GetPlayers() do
+				task.spawn(function()
+					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
+					if success then
+						context._K.Remote.Announce:FireClient(player, msg, context.from)
+					end
+				end)
+			end
+		end,
+	},
+	{
+		name = "unannounce",
+		aliases = { "clearannounce" },
+		description = "Removes the pinned announcement.",
+		args = {},
+
+		run = function(context, message)
+			context._K.Data.Cache.settings.announcement = false
+			context._K.Data.pendingSaveMain = true
+			-- TODO: fire to all servers with messagingservice
+		end,
+	},
 	{
 		name = "role",
 		aliases = { "setrole", "addrole", "giverole" },

@@ -42,6 +42,7 @@ local Data = {
 	players = {},
 
 	settings = {
+		announcement = false,
 		liveSettings = true,
 		prefix = ":",
 		vip = true,

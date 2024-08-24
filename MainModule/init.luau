@@ -64,6 +64,7 @@ local _K = {
 
 	logger = Util.Logger.new(),
 	client = nil,
+	pinnedAnnouncement = nil,
 
 	playerPrefix = {},
 	_serverLock = false,
@@ -246,6 +247,23 @@ local function playerAdded(player: Player)
 	player.Chatted:Connect(function(message: string)
 		_K.log(message, "CHAT", player.UserId)
 	end)
+
+	if _K.Data.settings.announcement then
+		local message, from = unpack(_K.Data.settings.announcement)
+		local ok, result =
+			pcall(TextService.FilterStringAsync, TextService, message, from, Enum.TextFilterContext.PublicChat)
+
+		if not ok then
+			return
+		end
+
+		task.spawn(function()
+			local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
+			if success then
+				_K.Remote.Announce:FireClient(player, msg, from)
+			end
+		end)
+	end
 end
 
 _K.Services.Players.PlayerAdded:Connect(playerAdded)
