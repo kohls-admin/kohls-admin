@@ -1,5 +1,11 @@
 local String = {}
 
+--- Escape magic string pattern characters: % . ( ) [ ] + - * ? ^ $
+function String.escapePattern(s: string): string
+	return string.gsub(s, "([%%%.%(%)%[%]%+%-%*%?%^%$])", "%%%1")
+end
+
+--- Escape RichText tags
 function String.escapeRichText(s: string): string
 	s = string.gsub(s, "&", "&amp;") -- first because substitutes contain it
 	s = string.gsub(s, "<", "&lt;")
@@ -9,8 +15,8 @@ function String.escapeRichText(s: string): string
 	return s
 end
 
-function String.stripQuotes(text: string): string
-	return string.gsub(text, '["`]', "")
+function String.stripQuotes(s: string): string
+	return string.gsub(s, '["`]', "")
 end
 
 function String.trimStart(s: string): string
