@@ -83,6 +83,9 @@ end
 
 --- Filters a message with [TextService.FilterStringAsync]
 function _K.filterMessage(message: string, from: number, to: number, filterContext: Enum.TextFilterContext?): string
+	if from == to then
+		return message
+	end
 	local ok, result = pcall(
 		TextService.FilterStringAsync,
 		TextService,
@@ -96,7 +99,7 @@ function _K.filterMessage(message: string, from: number, to: number, filterConte
 			return result
 		end
 	end
-	return "TextService filtering failed."
+	return `TextService filtering failed: {result}`
 end
 
 -- register types
