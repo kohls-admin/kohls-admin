@@ -21,6 +21,7 @@ function Select.new(definition)
 
 		UI.new "Button" {
 			Name = "Header",
+			ActiveSound = false,
 			Icon = "rbxassetid://2374890977",
 			IconRightAlign = true,
 			IconProperties = {
@@ -78,7 +79,6 @@ function Select.new(definition)
 					Activated = function()
 						new.Choice:set(choice)
 						UI.deactivateState(menu.Visible, "floating")
-						UI.Sound.Select01:Play()
 					end,
 				},
 			}

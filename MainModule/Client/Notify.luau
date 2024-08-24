@@ -28,7 +28,7 @@ local function hide(info, height: number?)
 		return
 	end
 
-	UI.Sound.PopSwipe:Play()
+	UI.Sound.Swipe:Play()
 
 	table.remove(existing, found)
 	resetOffset(height)

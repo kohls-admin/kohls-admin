@@ -13,6 +13,7 @@ function Button.new(definition)
 		IconProperties = {},
 		IconRightAlign = false,
 		Label = "",
+		ActiveSound = true,
 		TextSize = UI.Theme.FontSize,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
@@ -126,6 +127,11 @@ function Button.new(definition)
 		ripple,
 
 		[UI.Event] = {
+			Activated = function()
+				if new.ActiveSound._value then
+					UI.Sound.Hover01:Play()
+				end
+			end,
 			InputBegan = function(input, processed)
 				if
 					processed

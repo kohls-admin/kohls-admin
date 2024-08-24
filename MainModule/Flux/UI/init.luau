@@ -380,7 +380,6 @@ UI.Sound = {
 	Select02 = Sound.new("10066968815"),
 	Select03 = Sound.new("17208396156"),
 	Swipe = Sound.new("17208405682"),
-	Tab = Sound.new("17208408337"),
 }
 
 -- generic floating/hover edge case handler

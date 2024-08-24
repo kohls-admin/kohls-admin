@@ -199,7 +199,6 @@ function Window.new(definition)
 		},
 		Text = "",
 		Activated = function()
-			UI.Sound.Hover01:Play()
 			new._instance.Visible = false
 			UI.clearState("hover")
 			UI.clearState("floating")

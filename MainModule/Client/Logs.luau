@@ -110,6 +110,7 @@ function Logs.new(_K)
 	local filterMenu
 	local filterButton = UI.new "Button" {
 		LayoutOrder = 3,
+		ActiveSound = false,
 		Icon = "rbxassetid://18854695275",
 		Size = UDim2.new(1, 0, 1, 0),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
@@ -123,6 +124,12 @@ function Logs.new(_K)
 		[UI.Event] = {
 			Activated = function()
 				UI.toggleState(filterMenu.Visible, "floating")
+				local value = UI.peek(filterMenu.Visible)
+				if value then
+					UI.Sound.Hover03:Play()
+				else
+					UI.Sound.Hover01:Play()
+				end
 			end,
 		},
 	}
