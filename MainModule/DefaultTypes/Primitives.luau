@@ -1,3 +1,5 @@
+local _K
+
 local function simpleValidate(v)
 	return v ~= nil
 end
@@ -46,7 +48,8 @@ local stringType = {
 	parse = tostring,
 }
 
-return function(_K)
+return function(context)
+	_K = context
 	_K.Registry.registerType("boolean", booleanType)
 	_K.Registry.registerType("booleans", listable, booleanType)
 	_K.Registry.registerType("integer", integerType)
