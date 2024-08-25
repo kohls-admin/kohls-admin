@@ -205,20 +205,48 @@ end)
 
 -- network test
 _K.Remote.Init.OnServerEvent:Connect(function(player)
-	-- send their own player permissions always for clientside validation
-	-- TODO: make sure data is network safe!
+	-- NOTE: send their own player permissions always for clientside validation, even if not authorized to view members!
+	-- TODO: make sure data is only sent to authorized clients!
+	-- TODO: sanitize network data
 
-	local bans, logs = {}, table.create(#_K.Data.logs)
-	for i, ban in _K.Data.bans do
-		local reason = if ban[4] then _K.filterMessage(ban[2], ban[4], player.UserId) else ban[2]
-		bans[i] = { ban[1], reason, ban[3], ban[4] }
-	end
-	for i, log in _K.Data.logs do
-		local text = if log.from then _K.filterMessage(log.text, log.from, player.UserId) else log.text
-		logs[i] = { text, log.level, log.time, log.from }
+	_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings)
+
+	if _K.Auth.hasCommand(player.UserId, _K.Registry.commands.ban) then
+		local bans, promises = {}, {}
+
+		for i, ban in _K.Data.bans do
+			table.insert(
+				promises,
+				Util.Promise.new(function(resolve)
+					local reason = if ban[4] then _K.filterMessage(ban[2], ban[4], player.UserId) else ban[2]
+					bans[i] = { ban[1], reason, ban[3], ban[4] }
+					resolve()
+				end)
+			)
+		end
+
+		Util.Promise.all(promises):andThen(function()
+			_K.Remote.Bans:FireClient(player, bans)
+		end)
 	end
 
-	_K.Remote.Init:FireClient(player, bans, logs, _K.Data.members, _K.Data.settings)
+	if _K.Auth.hasCommand(player.UserId, _K.Registry.commands.logs) then
+		local logs, promises = table.create(#_K.Data.logs), table.create(#_K.Data.logs)
+		for i, log in _K.Data.logs do
+			table.insert(
+				promises,
+				Util.Promise.new(function(resolve)
+					local text = if log.from then _K.filterMessage(log.text, log.from, player.UserId) else log.text
+					logs[i] = { text, log.level, log.time, log.from }
+					resolve()
+				end)
+			)
+		end
+
+		Util.Promise.all(promises):andThen(function()
+			_K.Remote.Logs:FireClient(player, logs)
+		end)
+	end
 end)
 
 script.Parent = _K.Services.ReplicatedStorage

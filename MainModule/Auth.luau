@@ -75,10 +75,14 @@ function Auth.userBan(userId: number, reason: string, duration: number?, fromUse
 	local ok, result =
 		pcall(TextService.FilterStringAsync, TextService, reason, fromUserId, Enum.TextFilterContext.PrivateChat)
 	if ok then
+		local _, filtered = Util.Retry(function()
+			return result:GetNonChatStringForBroadcastAsync()
+		end, 5, 1)
+		local ban = { filtered, timestamp, fromUserId }
 		for _, player in Players:GetPlayers() do
-			-- TODO: only send to authorized clients!
-			local _, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
-			Remote.Ban:FireClient(player, key, { filtered, timestamp, fromUserId })
+			if Auth.hasCommand(player.UserId, "ban") then
+				Remote.Ban:FireClient(player, key, ban)
+			end
 		end
 	end
 end

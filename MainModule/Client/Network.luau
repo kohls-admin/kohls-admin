@@ -94,10 +94,14 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logs)
 
 	table.clear(dataLogs)
 	for k, log in logs do
-		dataLogs[k] = log
+		dataLogs[k] = {
+			text = log[1],
+			level = log[2],
+			time = log[3],
+			from = log[4],
+		}
 	end
 
-	UI.Scope.logs:set(_K.Data.logs)
 	UI.Scope.dashboard.Logs:updateList()
 end)
 
@@ -145,27 +149,10 @@ local greetings = {
 }
 
 local initCon
-initCon = _K.Remote.Init.OnClientEvent:Connect(function(bans, logs, members, settings)
+initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings)
 	initCon:Disconnect()
 	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
-
-	_K.Util.Table.merge(_K.Data.bans, bans)
-	UI.Scope.bans:set(_K.Data.bans)
-
-	for k, log in logs do
-		table.insert(_K.Data.logs, {
-			text = log[1],
-			level = log[2],
-			time = log[3],
-			from = log[4],
-		})
-		if #_K.Data.logs > 100_000 then
-			table.remove(_K.Data.logs, 1)
-		end
-	end
-	UI.Scope.logs:set(_K.Data.logs)
-	UI.Scope.dashboard.Logs:updateList()
 
 	-- need to improve networking performance!
 	for key, value in settings do
@@ -217,7 +204,7 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(bans, logs, members, set
 		`<b>Roles</b>\t  <sc>{roleText}</sc>\n`,
 		`<b>Place</b>        <font transparency="0.5">{game.Name}</font>`,
 		`<b>Server Age</b>   <font transparency="0.5">{_K.Util.ReadableTime(workspace.DistributedGameTime)}</font>`,
-		`<b>Server Time</b>  <font transparency="0.5">{os.date("%X", _K.Data.logs[#_K.Data.logs].time)}</font></font>`,
+		`<b>Server Time</b>  <font transparency="0.5">{os.date("%X", workspace:GetServerTimeNow())}</font></font>`,
 	}
 
 	-- only show join notification to users with a role
