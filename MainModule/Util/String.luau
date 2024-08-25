@@ -1,3 +1,4 @@
+--- @class String
 local String = {}
 
 --- Escape magic string pattern characters: % . ( ) [ ] + - * ? ^ $

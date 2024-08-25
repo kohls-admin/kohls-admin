@@ -42,13 +42,6 @@ local function makeEnum(enumName, members)
 	})
 end
 
---[=[
-	An object to represent runtime errors that occur during execution.
-	Promises that experience an error like this will be rejected with
-	an instance of this object.
-
-	@class Error
-]=]
 local Error
 do
 	Error = {

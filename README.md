@@ -4,11 +4,9 @@
 	<a href="https://kohl.gg/docs"><img src="https://img.shields.io/badge/docs-kohl.gg-222" /></a>
 	<a href="https://discord.gg/bwCC7gV"><img src="https://img.shields.io/discord/694630328064671775" /></a>
 </div>
-
-<!--moonwave-hide-before-this-line-->
-
 <br/><br/>
 <h1 align="center">Embrace creativity, not chaos.</h1>
+<!--moonwave-hide-before-this-line-->
 <p align="center">Trusted by thousands of Roblox developers, <b>Kohl's Admin</b> is a powerful and versatile tool that empowers you to effortlessly manage your Roblox experiences. Streamline moderation, enhance gameplay, and foster a thriving community with a wide range of features designed to make your life easier.</p>
 <br/>
 

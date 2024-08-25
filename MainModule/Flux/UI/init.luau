@@ -18,7 +18,7 @@ function Sound.new(id: string): Sound
 	return setmetatable(self, Sound)
 end
 
---- Creates a copy of the sound and plays it
+-- Creates a copy of the sound and plays it
 function Sound:Play()
 	local sound = self.sound:Clone()
 	sound.Parent = SoundService

@@ -6,28 +6,30 @@ changelog = true
 
 [[classOrder]]
 section = "Core"
-classes = ["_K", "Auth", "Process", "Registry"]
+classes = ["_K", "Auth", "Hook", "Flux", "Process", "Registry", "Remote"]
 
 [[classOrder]]
-section = "State"
-classes = ["Flux", "UI", "Checkbox"]
+section = "Interface"
+classes = ["UI", "Checkbox"]
 
 [[classOrder]]
 section = "Utility"
-classes = ["Util", "Logger"]
+classes = ["Util", "Logger", "Promise", "String"]
 
 [docusaurus]
 onBrokenLinks = "throw"
 onBrokenMarkdownLinks = "warn"
 favicon = "/logo.svg"
-
-# From git:
 organizationName = "kohls-admin"
 projectName = "main"
 deploymentBranch = "gh-pages"
 tagline = "Embrace creativity, not chaos."
 url = "https://docs.kohl.gg"
 baseUrl = "/"
+
+[home]
+enabled = true
+includeReadme = true
 
 [navbar]
 title = ""

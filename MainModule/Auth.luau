@@ -274,7 +274,7 @@ function Auth.getRank(userId: number, permission: string?): (number, Role)
 	return rank, rankRole
 end
 
-function Auth.roleCommandFilter(roleData, command, boolean: boolean): boolean
+function Auth.roleCommandFilter(roleData, command: any, boolean: boolean): boolean
 	if not roleData.filter then
 		return false
 	end
@@ -292,7 +292,7 @@ function Auth.roleCommandFilter(roleData, command, boolean: boolean): boolean
 end
 
 --- Checks if a role has access to a command group
-function Auth.roleCanUseCommand(role: Role, command): boolean
+function Auth.roleCanUseCommand(role: Role, command: any): boolean
 	local roleData = Data.roles[role]
 	if not roleData then
 		print(role)
@@ -313,7 +313,7 @@ function Auth.roleCanUseCommand(role: Role, command): boolean
 end
 
 --- Checks if a user has access to a command
-function Auth.hasCommand(userId: number, command): boolean
+function Auth.hasCommand(userId: number, command: any): boolean
 	if Auth.roleCanUseCommand("defaultRole", command) then
 		return true
 	end
