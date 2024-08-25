@@ -29,10 +29,21 @@ baseUrl = "/"
 
 [home]
 enabled = true
-includeReadme = true
+includeReadme = false
 
 [navbar]
 title = ""
+
+[[navbar.items]]
+href = "https://kohl.gg"
+label = "Home"
+position = "right"
+
+[[navbar.items]]
+href = "/intro"
+label = "Issues"
+position = "left"
+order = 0
 
 [[navbar.items]]
 href = "https://discord.gg/kohl"
@@ -45,4 +56,4 @@ src = "/logo-load.svg"
 
 [footer]
 style = "dark"
-copyright = "Copyright © 2024 Kohl"
+copyright = "© 2024 Kohl"
