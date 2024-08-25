@@ -90,11 +90,19 @@ local function syncMain(result)
 	-- settings sync
 	Util.Table.merge(Data.settings, settings)
 
-	-- TODO: only send to clients authorized to view these data
-	Remote.Members:FireAllClients(Data.members)
+	for _, player in Players:GetPlayers() do
+		if hasPermission(player.UserId, "bans") then
+			Remote.Bans:FireClient(player, Data.bans)
+		end
 
-	Remote.Settings:FireAllClients(Data.settings)
-	-- replicate bans/settings to clients
+		if hasPermission(player.UserId, "members") then
+			Remote.Members:FireClient(player, Data.members)
+		end
+
+		if hasPermission(player.UserId, "settings") then
+			Remote.Settings:FireClient(player, Data.settings)
+		end
+	end
 end
 
 local nextMainInterval = tick() + updateAsyncInterval
@@ -133,7 +141,6 @@ local function updateMain()
 end
 
 local function syncLogs(logs)
-	-- TODO: add then sort logs not currently within Data.logs
 	for _, log in logs do
 		local text, level, time, from = unpack(log)
 		local exists
@@ -150,7 +157,11 @@ local function syncLogs(logs)
 		table.insert(Data.logs, { text = text, level = level, time = time, from = from })
 	end
 	table.sort(Data.logs, Data.sortTime)
-	Remote.Logs:FireAllClients(Data.logs)
+	for _, player in Players:GetPlayers() do
+		if hasPermission(player.UserId, "logs") then
+			Remote.Logs:FireClient(player, Data.logs)
+		end
+	end
 end
 
 local function rawSortTime(a, b)

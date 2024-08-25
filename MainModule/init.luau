@@ -178,17 +178,15 @@ end)
 
 -- network test
 _K.Remote.Init.OnServerEvent:Connect(function(player)
-	-- NOTE: send their own player permissions always for clientside validation, even if not authorized to view members!
-	-- TODO: make sure data is only sent to authorized clients!
 	-- TODO: sanitize network data
 
 	_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings)
 
-	if _K.Auth.hasCommand(player.UserId, _K.Registry.commands.ban) then
+	if _K.Auth.hasPermission(player.UserId, "ban") or _K.Auth.hasPermission(player.UserId, "kick") then
 		_K.Remote.Bans:FireClient(player, _K.Data.bans)
 	end
 
-	if _K.Auth.hasCommand(player.UserId, _K.Registry.commands.logs) then
+	if _K.Auth.hasPermission(player.UserId, "logs") then
 		_K.Remote.Logs:FireClient(player, _K.Data.logs)
 	end
 end)

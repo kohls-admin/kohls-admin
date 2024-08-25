@@ -70,7 +70,7 @@ function Auth.userBan(userId: number, reason: string, duration: number?, fromUse
 	end
 
 	for _, player in Players:GetPlayers() do
-		if Auth.hasCommand(player.UserId, "ban") then
+		if Auth.hasPermission(player.UserId, "ban") or Auth.hasPermission(player.UserId, "kick") then
 			Remote.Ban:FireClient(player, key, ban)
 		end
 	end
