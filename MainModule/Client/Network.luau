@@ -77,12 +77,7 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 		return
 	end
 	-- TODO: PERF: add to sorted list and filtered list directly
-	table.insert(_K.Data.logs, {
-		text = log[1],
-		level = log[2],
-		time = log[3],
-		from = log[4],
-	})
+	table.insert(_K.Data.logs, log)
 	if #_K.Data.logs > 1e5 then
 		table.remove(_K.Data.logs, 1)
 	end
@@ -94,12 +89,7 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logs)
 
 	table.clear(dataLogs)
 	for k, log in logs do
-		dataLogs[k] = {
-			text = log[1],
-			level = log[2],
-			time = log[3],
-			from = log[4],
-		}
+		dataLogs[k] = log
 	end
 
 	UI.Scope.dashboard.Logs:updateList()

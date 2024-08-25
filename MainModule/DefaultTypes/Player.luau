@@ -310,6 +310,9 @@ local typeMultiple = {
 		end
 		return _K.Util.Suggest.query(text, names, instances)
 	end,
+	log = function(arg)
+		return _K.Util.Table.concat(arg.parsedArgs, ",")
+	end,
 	-- this will require parsing? lol
 	prefixes = {
 		["~"] = "randomPlayers",

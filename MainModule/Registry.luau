@@ -118,6 +118,9 @@ function Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string 
 		suggestions = function(text)
 			return Util.Suggest.query(text, suggestions, enumItems)
 		end,
+		log = function(arg)
+			return Util.Table.concat(arg.parsedArgs, ",")
+		end,
 	}
 end
 

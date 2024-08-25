@@ -226,7 +226,7 @@ local function playerAdded(player: Player)
 		-- allows those with higher than vip perms
 	end
 	player.Chatted:Connect(function(message: string)
-		_K.log(message, "CHAT", player.UserId)
+		_K.log(Util.String.filterForBroadcast(message, player.UserId), "CHAT", player.UserId)
 	end)
 
 	if _K.Data.settings.announcement then

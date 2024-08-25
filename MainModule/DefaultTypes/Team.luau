@@ -24,6 +24,9 @@ local typeTeam = {
 	suggestions = function(text: string, from: number)
 		return _K.Util.Suggest.query(text, _K.Util.Suggest.new(Teams:GetTeams()))
 	end,
+	log = function(arg)
+		return _K.Util.Table.concat(arg.parsedArgs, ",")
+	end,
 }
 
 local typeTeams = {

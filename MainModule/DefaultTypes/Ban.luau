@@ -36,6 +36,9 @@ local typeBan = {
 		end
 		return _K.Util.Suggest.query(text, names, _K.Data.bans)
 	end,
+	log = function(arg)
+		return _K.Util.Table.concat(arg.parsedArgs, ",")
+	end,
 }
 
 local typeBans = {

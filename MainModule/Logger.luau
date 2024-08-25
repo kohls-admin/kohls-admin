@@ -44,8 +44,8 @@ function module.log(text: string, level: LogType, from: number?, filtered: boole
 		end
 
 		for _, player in Players:GetPlayers() do
-			if Auth.hasCommand(player.UserId, Registry.commands.logs) then
-				Remote.Log:FireAllClient(player, { log.text, log.level, log.time, from })
+			if Auth.hasPermission(player.UserId, "logs") then
+				Remote.Log:FireClient(player, log)
 			end
 		end
 	end

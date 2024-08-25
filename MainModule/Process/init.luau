@@ -116,6 +116,8 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 	local commandRan, commandError
 	local ok, result = Process.prepareCommands(_K, from, rawText)
 
+	local logText
+
 	if ok then
 		for _, command in result do
 			local success, err = command:run()
@@ -163,11 +165,44 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 		-- skip logging if nothing happened
 		return commandRan
 	end
-	_K.log(
-		if commandError then commandError else Util.String.trimStart(rawText),
-		if commandRan then "COMMAND" else "ERROR",
-		from
-	)
+
+	task.spawn(function()
+		local mainThread = coroutine.running()
+		local running = 0
+
+		if commandRan then
+			local log = {}
+			for _, command in result do
+				if command.Error then
+					table.insert(log, _K.Data.settings.prefix .. command.definition.name)
+				end
+				table.insert(log, _K.Data.settings.prefix .. command.definition.name)
+				for _, arg in command.args do
+					if arg.rawType.log then
+						table.insert(log, arg.rawType.log(arg))
+					else
+						running += 1
+						task.spawn(function()
+							table.insert(log, Util.String.filterForBroadcast(Util.String.trim(arg.rawArg), from))
+							running -= 1
+							if running == 0 then
+								coroutine.resume(mainThread)
+							end
+						end)
+					end
+				end
+			end
+			logText = table.concat(log, " ")
+		else -- filter entire rawText as broadcast
+			logText = Util.String.filterForBroadcast(Util.String.trim(rawText), from)
+		end
+
+		if running > 0 then
+			coroutine.yield()
+		end
+
+		_K.log(if commandError then commandError else logText, if commandRan then "COMMAND" else "ERROR", from, true)
+	end)
 
 	return commandRan
 end

@@ -23,6 +23,9 @@ local booleanType = {
 			error("Invalid boolean value.")
 		end
 	end,
+	log = function(arg)
+		return _K.Util.Table.concat(arg.parsedArgs, ",")
+	end,
 }
 
 local integerType = {
