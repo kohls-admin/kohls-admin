@@ -101,8 +101,7 @@ return function(_K, text, cursorPosition)
 			data.rawArg = commandText
 			data.query = string.sub(commandText, 1, cursorPosition - commandPos)
 			data.suggestionType = _K.Registry.types.command
-			data.suggestions = _K.Registry.types.command.suggestions(data.query, Players.LocalPlayer.UserId)
-			-- TODO: filter for authorized commands
+			data.suggestions = _K.Registry.types.command.suggestions(data.query, from)
 
 			if #data.suggestions < 1 then
 				table.insert(data.invalid, { "Invalid command3", commandPos, commandText })
@@ -113,7 +112,7 @@ return function(_K, text, cursorPosition)
 			data.suggestions = table.create(#data.suggestions)
 			for _, suggestionData in rawSuggestions do
 				local _name, cmd = unpack(suggestionData)
-				if cmd and _K.Auth.hasCommand(LocalPlayer.UserId, cmd) then
+				if cmd and _K.Auth.hasCommand(from, cmd) then
 					table.insert(data.suggestions, suggestionData)
 				end
 			end
@@ -175,7 +174,7 @@ return function(_K, text, cursorPosition)
 				data.rawArg = rawArg
 				data.transformedArg = transformedArg
 				data.query = string.sub(rawArg, 1, cursorPosition - pos)
-				data.suggestions = transformedType.suggestions(data.query, Players.LocalPlayer.UserId, arg.definition)
+				data.suggestions = transformedType.suggestions(data.query, from, arg.definition)
 			end
 		end
 
