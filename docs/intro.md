@@ -1,5 +1,5 @@
 --- 
-sidebar_positon: 1
+sidebar_position: 1
 ---
 
 # Getting Started
