@@ -18,27 +18,13 @@ return {
 		},
 
 		run = function(context, message)
-			local ok, result = context._K.Util.Retry(function()
-				return TextService:FilterStringAsync(message, context.from, Enum.TextFilterContext.PublicChat)
-			end, 5, 1)
+			local filteredMsg = context._K.Util.String.filterForBroadcast(message, context.from)
+			context._K.Remote.Announce:FireAllClients(filteredMsg, context.from)
 
-			if not ok then
-				return
-			end
-
-			task.spawn(function()
-				local success, filteredMsg = context._K.Util.Retry(function()
-					return result:GetNonChatStringForBroadcastAsync()
-				end, 5, 1)
-
-				if success then
-					context._K.Remote.Announce:FireAllClients(filteredMsg, context.from)
-					local announcement = { filteredMsg, context.from }
-					context._K.Data.Cache.settings.announcement = announcement
-					context._K.Data.pendingSaveMain = true
-					context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", announcement)
-				end
-			end)
+			local announcement = { filteredMsg, context.from }
+			context._K.Data.Cache.settings.announcement = announcement
+			context._K.Data.pendingSaveMain = true
+			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", announcement)
 		end,
 	},
 	{

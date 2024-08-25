@@ -81,33 +81,6 @@ if _K.IsClient then
 	_K.UI.registerChildren()
 end
 
-function _K.filterMethod(from: number)
-	return if Util.Services.Players:GetPlayerByUserId(from)
-		then "GetChatForUserAsync"
-		else "GetNonChatStringForBroadcastAsync"
-end
-
---- Filters a message with [TextService.FilterStringAsync]
-function _K.filterMessage(message: string, from: number, to: number, filterContext: Enum.TextFilterContext?): string
-	if from == to then
-		return message
-	end
-	local ok, result = pcall(
-		TextService.FilterStringAsync,
-		TextService,
-		message,
-		from,
-		filterContext or Enum.TextFilterContext.PublicChat
-	)
-	if ok then
-		ok, result = pcall(result[_K.filterMethod(from)], result, to)
-		if ok then
-			return result
-		end
-	end
-	return `TextService filtering failed: {result}`
-end
-
 -- register types
 for _, child in script.DefaultTypes:GetChildren() do
 	require(child)(_K)
@@ -212,40 +185,11 @@ _K.Remote.Init.OnServerEvent:Connect(function(player)
 	_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings)
 
 	if _K.Auth.hasCommand(player.UserId, _K.Registry.commands.ban) then
-		local bans, promises = {}, {}
-
-		for i, ban in _K.Data.bans do
-			table.insert(
-				promises,
-				Util.Promise.new(function(resolve)
-					local reason = if ban[4] then _K.filterMessage(ban[2], ban[4], player.UserId) else ban[2]
-					bans[i] = { ban[1], reason, ban[3], ban[4] }
-					resolve()
-				end)
-			)
-		end
-
-		Util.Promise.all(promises):andThen(function()
-			_K.Remote.Bans:FireClient(player, bans)
-		end)
+		_K.Remote.Bans:FireClient(player, _K.Data.bans)
 	end
 
 	if _K.Auth.hasCommand(player.UserId, _K.Registry.commands.logs) then
-		local logs, promises = table.create(#_K.Data.logs), table.create(#_K.Data.logs)
-		for i, log in _K.Data.logs do
-			table.insert(
-				promises,
-				Util.Promise.new(function(resolve)
-					local text = if log.from then _K.filterMessage(log.text, log.from, player.UserId) else log.text
-					logs[i] = { text, log.level, log.time, log.from }
-					resolve()
-				end)
-			)
-		end
-
-		Util.Promise.all(promises):andThen(function()
-			_K.Remote.Logs:FireClient(player, logs)
-		end)
+		_K.Remote.Logs:FireClient(player, _K.Data.logs)
 	end
 end)
 

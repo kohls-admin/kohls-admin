@@ -56,33 +56,22 @@ function Auth.userBan(userId: number, reason: string, duration: number?, fromUse
 		timestamp = if duration > 0 then os.time() + duration else -1
 	end
 
+	if reason and fromUserId then
+		reason = Util.String.filterForBroadcast(reason, fromUserId)
+	end
+
+	local ban = { reason, timestamp, fromUserId }
+
 	local key = tostring(userId)
-	Data.bans[key] = { reason, timestamp, fromUserId }
+	Data.bans[key] = ban
 	if tonumber(duration) and duration ~= 0 then
-		Data.Cache.bans[key] = Data.bans[key]
+		Data.Cache.bans[key] = ban
 		Data.pendingSaveMain = true
 	end
 
-	if not reason then
-		local ban = { "No reason.", timestamp, fromUserId }
-		for _, player in Players:GetPlayers() do
-			-- TODO: only send to authorized clients!
+	for _, player in Players:GetPlayers() do
+		if Auth.hasCommand(player.UserId, "ban") then
 			Remote.Ban:FireClient(player, key, ban)
-		end
-		return
-	end
-
-	local ok, result =
-		pcall(TextService.FilterStringAsync, TextService, reason, fromUserId, Enum.TextFilterContext.PrivateChat)
-	if ok then
-		local _, filtered = Util.Retry(function()
-			return result:GetNonChatStringForBroadcastAsync()
-		end, 5, 1)
-		local ban = { filtered, timestamp, fromUserId }
-		for _, player in Players:GetPlayers() do
-			if Auth.hasCommand(player.UserId, "ban") then
-				Remote.Ban:FireClient(player, key, ban)
-			end
 		end
 	end
 end
