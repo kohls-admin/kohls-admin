@@ -792,6 +792,30 @@ return {
 		end,
 	},
 	{
+		name = "jumppower",
+		description = "Changes the jump power of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose jump power to change.",
+			},
+			{
+				type = "number",
+				name = "JumpPower",
+				description = "The jump power to use.",
+			},
+		},
+
+		run = function(context, players, jumpPower)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").JumpPower = jumpPower
+				end
+			end
+		end,
+	},
+	{
 		name = "sit",
 		description = "Makes one or more player(s) sit.",
 		args = {
