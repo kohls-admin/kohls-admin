@@ -55,7 +55,7 @@ return {
 	},
 	{
 		name = "windspeed",
-		description = "Changes the gnobal wind speed.",
+		description = "Changes the global wind speed.",
 		args = {
 			{
 				type = "number",

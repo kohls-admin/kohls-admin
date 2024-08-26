@@ -27,6 +27,10 @@ return {
 				Id = 15303771, -- Fragility
 				Tooltip = "Design, planning, and quality assurance",
 			},
+			{
+				Id = 35818691, -- greeny
+				Tooltip = "Documentation and quality assurance",
+			},
 		},
 	},
 	{
@@ -50,7 +54,6 @@ return {
 		Title = "Testers",
 		Users = {
 			75214485, -- ericance
-			35818691, -- greeny
 			1560379748, -- mosha
 			107192912, -- britishtrainspotting
 			2258246, -- emp
@@ -63,6 +66,7 @@ return {
 			672360774, -- xaz
 			9345226, -- tomspell
 			3230955923, -- napiw
+			130170862, -- matsagor1
 		},
 	},
 	{

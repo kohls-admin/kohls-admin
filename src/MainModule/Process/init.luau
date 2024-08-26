@@ -173,17 +173,17 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 		if commandRan then
 			local log = {}
 			for _, command in result do
-				if command.Error then
-					table.insert(log, _K.Data.settings.prefix .. command.definition.name)
-				end
 				table.insert(log, _K.Data.settings.prefix .. command.definition.name)
+
 				for _, arg in command.args do
 					if arg.rawType.log then
 						table.insert(log, arg.rawType.log(arg))
 					else
 						running += 1
 						task.spawn(function()
-							table.insert(log, Util.String.filterForBroadcast(Util.String.trim(arg.rawArg), from))
+							local filtered =
+								Util.String.filterForBroadcast(Util.Table.concat(arg.parsedArgs, ","), from)
+							table.insert(log, filtered)
 							running -= 1
 							if running == 0 then
 								coroutine.resume(mainThread)
@@ -192,16 +192,23 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 					end
 				end
 			end
+
+			if running > 0 then
+				coroutine.yield()
+			end
+
 			logText = table.concat(log, " ")
 		else -- filter entire rawText as broadcast
-			logText = Util.String.filterForBroadcast(Util.String.trim(rawText), from)
+			local trimmed = Util.String.trim(rawText)
+			if #trimmed > 0 then
+				logText = Util.String.filterForBroadcast(Util.String.trim(rawText), from)
+			end
 		end
 
-		if running > 0 then
-			coroutine.yield()
+		_K.log(logText or "", "COMMAND", from, true)
+		if commandError then
+			_K.log(Util.String.filterForBroadcast(commandError, from), "ERROR", from, true)
 		end
-
-		_K.log(if commandError then commandError else logText, if commandRan then "COMMAND" else "ERROR", from, true)
 	end)
 
 	return commandRan

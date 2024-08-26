@@ -792,6 +792,30 @@ return {
 		end,
 	},
 	{
+		name = "jumppower",
+		description = "Changes the jump power of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose jump power to change.",
+			},
+			{
+				type = "number",
+				name = "JumpPower",
+				description = "The jump power to use.",
+			},
+		},
+
+		run = function(context, players, jumpPower)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").JumpPower = jumpPower
+				end
+			end
+		end,
+	},
+	{
 		name = "sit",
 		description = "Makes one or more player(s) sit.",
 		args = {
@@ -854,6 +878,47 @@ return {
 					player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed
 				end
 			end
+		end,
+	},
+	{
+		name = "slopeangle",
+		aliases = { "maxslopeangle" },
+		description = "Changes the max slope angle of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose max slope angle to change.",
+			},
+			{
+				type = "number",
+				name = "MaxSlopeAngle",
+				description = "The max slope angle to use.",
+			},
+		},
+
+		run = function(context, players, maxSlopeAngle)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+					player.Character:FindFirstChildOfClass("Humanoid").MaxSlopeAngle = math.clamp(maxSlopeAngle, 0, 89)
+				end
+			end
+		end,
+	},
+	{
+		name = "starterslopeangle",
+		aliases = { "startermaxslopeangle" },
+		description = "Changes the starting max slope angle of one or more player(s) when they spawn.",
+		args = {
+			{
+				type = "number",
+				name = "MaxSlopeAngle",
+				description = "The max slope angle to use.",
+			},
+		},
+
+		run = function(context, maxSlopeAngle)
+			context.Util.Services.StarterPlayer.CharacterMaxSlopeAngle = math.clamp(maxSlopeAngle, 0, 89)
 		end,
 	},
 	{

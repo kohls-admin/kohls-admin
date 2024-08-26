@@ -40,19 +40,15 @@ label = "Home"
 position = "right"
 
 [[navbar.items]]
-href = "/intro"
-label = "Issues"
-position = "left"
-order = 0
-
-[[navbar.items]]
 href = "https://discord.gg/kohl"
 label = "Discord"
 position = "right"
 
 [navbar.logo]
 alt = "Kohl's Admin"
+href = "https://kohl.gg"
 src = "/logo-load.svg"
+target = "_self"
 
 [footer]
 style = "dark"

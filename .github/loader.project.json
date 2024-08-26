@@ -2,13 +2,7 @@
 	"name": "Kohl's Admin",
 	"emitLegacyScripts": false,
 	"tree": {
-		"$path": "../Loader/src",
-		"Loader": {
-			"$path": "../Loader/Loader.server.luau",
-			"MainModule": {
-				"$path": "../MainModule"
-			}
-		},
+		"$path": "../src",
 		"LICENSE": {
 			"$path": "../LICENSE.txt"
 		}
