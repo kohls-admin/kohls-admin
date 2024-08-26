@@ -48,6 +48,7 @@ position = "right"
 alt = "Kohl's Admin"
 href = "https://kohl.gg"
 src = "/logo-load.svg"
+target = "_self"
 
 [footer]
 style = "dark"
