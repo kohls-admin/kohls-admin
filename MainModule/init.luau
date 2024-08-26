@@ -1,8 +1,11 @@
+if shared._K_INTERFACE then
+	return shared._K_INTERFACE
+end
+
 --------------------------
 -- START OF SHARED CODE --
 --------------------------
 local RunService = game:GetService("RunService")
-local TextService = game:GetService("TextService")
 
 local Util = require(script:WaitForChild("Util"))
 
@@ -46,6 +49,7 @@ export type Hook = "log" | "preCommand" | "postCommand"
 
 --- @class _K
 local _K = {
+	script = script,
 	IsClient = RunService:IsClient(),
 	IsServer = RunService:IsServer(),
 	IsStudio = RunService:IsStudio(),
@@ -69,6 +73,8 @@ local _K = {
 	playerPrefix = {},
 	_serverLock = false,
 }
+
+shared._K_INTERFACE = _K
 
 -- shorthand
 _K.creatorId = _K.Data.creatorId
@@ -121,12 +127,12 @@ if _K.IsServer then
 		end
 		addons.Parent = script
 	end
-elseif _K.IsClient then -- TODO: load after client.luau instead lol
+elseif _K.IsClient then
 	_K._addons = script:FindFirstChild("Addons")
 	_K.loaderSettings = require(script:WaitForChild("Settings") :: any)
 end
 
--- loader settings
+-- apply loader settings
 _K.Data.settings.prefix = _K.loaderSettings.prefix
 _K.Data.settings.vip = _K.loaderSettings.vip
 _K.Data.settings.vipGameCatalogEnabled = _K.loaderSettings.vipGameCatalogEnabled
@@ -221,8 +227,8 @@ local function playerAdded(player: Player)
 	if _K._serverLock and _K.Auth.getRank(player.UserId) < 2 then
 		player:Kick(`Server has been locked by {_K._serverLock}`)
 		return
-		-- allows those with higher than vip perms
 	end
+
 	player.Chatted:Connect(function(message: string)
 		_K.log(Util.String.filterForBroadcast(message, player.UserId), "CHAT", player.UserId)
 	end)
@@ -234,7 +240,6 @@ local function playerAdded(player: Player)
 end
 
 _K.Services.Players.PlayerAdded:Connect(playerAdded)
--- if any players join before PlayerAdded connection
 for _, player in _K.Services.Players:GetPlayers() do
 	playerAdded(player)
 end
@@ -300,7 +305,8 @@ if subscribeSuccess then
 	end)
 end
 
--- NOTE: shouldn't network system logs to other servers, ideally only command and error logs
-_K.log("Server initialized.", "INFO")
+task.spawn(_K.log, "Server initialized.", "INFO")
+
+export type _K = typeof(_K)
 
 return _K
