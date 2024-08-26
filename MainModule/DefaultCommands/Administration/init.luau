@@ -1,8 +1,44 @@
--- dangerous admin commands reserved for the highest roles
+-- dangerous admin commands reserved for admin role or above
+
+local Players = game:GetService("Players")
+local TextService = game:GetService("TextService")
 
 local safeTeleport = require(script.safeTeleport)
 
 return {
+	{
+		name = "announce",
+		description = "Shows a message to everyone in the game, saves and shows to new users until it has been cleared.",
+		args = {
+			{
+				type = "stringGreedy",
+				name = "Message",
+				description = "The message to send.",
+			},
+		},
+
+		run = function(context, message)
+			local filteredMsg = context._K.Util.String.filterForBroadcast(message, context.from)
+			context._K.Remote.Announce:FireAllClients(filteredMsg, context.from)
+
+			local announcement = { filteredMsg, context.from }
+			context._K.Data.Cache.settings.announcement = announcement
+			context._K.Data.pendingSaveMain = true
+			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", announcement)
+		end,
+	},
+	{
+		name = "unannounce",
+		aliases = { "clearannounce" },
+		description = "Removes the pinned announcement.",
+		args = {},
+
+		run = function(context, message)
+			context._K.Data.Cache.settings.announcement = false
+			context._K.Data.pendingSaveMain = true
+			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", nil)
+		end,
+	},
 	{
 		name = "role",
 		aliases = { "setrole", "addrole", "giverole" },
@@ -29,10 +65,17 @@ return {
 		},
 
 		run = function(context, players, roles, permanent)
-			print("role ran")
 			for _, player in players do
 				for _, role in roles do
-					context._K.Auth.userRoleAdd(player.UserId, role, permanent)
+					local roleAdded = context._K.Auth.userRoleAdd(player.UserId, role, permanent)
+					if roleAdded then
+						local roleData = context._K.Data.roles[role]
+						context._K.Remote.Notify:FireClient(
+							player,
+							`Gave you the <b><font color="{roleData.color}">{roleData.name}</font></b> role!\nSay <b>{context._K.Data.settings.prefix}info</b> for details.`,
+							context.from
+						)
+					end
 				end
 			end
 		end,
@@ -147,6 +190,7 @@ return {
 		run = function(context)
 			if not context._K._serverLock then
 				context._K._serverLock = context.fromPlayer.Name
+				context._K.Remote.Notify:FireAllClients("The server has been <b>locked</b>.", context.from)
 			end
 		end,
 	},
@@ -157,6 +201,7 @@ return {
 		args = {},
 		run = function(context)
 			context._K._serverLock = nil
+			context._K.Remote.Notify:FireAllClients("The server has been <b>unlocked</b>.", context.from)
 		end,
 	},
 }

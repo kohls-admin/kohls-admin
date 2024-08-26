@@ -5,6 +5,7 @@ local IsServer = RunService:IsServer()
 local _REMOTE = Instance.new("RemoteEvent")
 local _REMOTECALL = Instance.new("RemoteFunction")
 
+--- @class Remote
 local Remote = {
 	Announce = _REMOTE,
 	Ban = _REMOTE,

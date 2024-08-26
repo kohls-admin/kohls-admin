@@ -21,23 +21,7 @@ export type Dict<T> = { [T]: any }
 --[=[
 	Represents a reactive state object in the Flux system
 	@within Flux
-	@type State {
-		_update: (State<T>) -> boolean,
-		_dependencies: Set<State<T>>,
-		_dependents: Set<State<T>>,
-		_binds: { [T]: any, _cleanup: List<any> },
-		_hooks: Dict<Function>,
-		_value: T,
-		_stateful: boolean,
-		_operation: List<any>?,
-		_tweenInfo: TweenInfo | any,
-		set: (self: State<T>, new: T, force: boolean?, noTween: boolean?) -> State<T>,
-		get: (self: State<T>) -> T,
-		hook: (self: State<T>, callback: Function) -> Function,
-		Destroy: (self: State<T>) -> (),
-		bindToProperty: (self: State<T>, instance: Instance, property: string) -> (),
-		bindToAttribute: (self: State<T>, instance: Instance, attribute: string) -> (),
-	}
+	@type State { _update: (State<T>) -> boolean, _dependencies: Set<State<T>>, _dependents: Set<State<T>>, _binds: { [T]: any, _cleanup: List<any> }, _hooks: Dict<Function>, _value: T, _stateful: boolean, _operation: List<any>?, _tweenInfo: TweenInfo | any, set: (self: State<T>, new: T, force: boolean?, noTween: boolean?) -> State<T>, get: (self: State<T>) -> T, hook: (self: State<T>, callback: Function) -> Function, Destroy: (self: State<T>) -> (), bindToProperty: (self: State<T>, instance: Instanceproperty: string) -> (), bindToAttribute: (self: State<T>, instance: Instance, attribute: string) -> () }
 ]=]
 export type State<T> = {
 	_update: (State<T>) -> boolean,

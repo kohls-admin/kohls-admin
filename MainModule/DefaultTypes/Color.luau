@@ -1,8 +1,8 @@
-local context
+local _K
 
 local typeColor = {
 	transform = function(input: string)
-		input = context.Util.String.trim(input)
+		input = _K.Util.String.trim(input)
 		if string.find(input, "^#") then
 			if #input > 7 or string.find(input, "[^#a-fA-F%d]") then
 				return nil -- invalid hex input
@@ -45,11 +45,11 @@ local typeColor = {
 			table.insert(names, `{r or 255},{g or 255},{b or 255}`)
 		end
 
-		return context.Util.Suggest.query(text, names)
+		return _K.Util.Suggest.query(text, names)
 	end,
 }
 
-return function(_K)
-	context = _K
+return function(context)
+	_K = context
 	_K.Registry.registerType("color", typeColor)
 end

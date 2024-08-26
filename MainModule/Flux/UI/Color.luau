@@ -30,8 +30,14 @@ function Color.new(definition)
 		},
 
 		[UI.Event] = {
-			Activated = function(value)
-				new._dialog._instance.Visible = not new._dialog._instance.Visible
+			Activated = function()
+				UI.toggleState(new._dialog.Visible, "floating")
+				local value = UI.peek(new._dialog.Visible)
+				if value then
+					UI.Sound.Hover03:Play()
+				else
+					UI.Sound.Hover01:Play()
+				end
 			end,
 		},
 	}
@@ -40,7 +46,6 @@ function Color.new(definition)
 
 	new._dialog = UI.new "ColorPicker" {
 		ZIndex = 100,
-		Visible = false,
 		Parent = UI.LayerTop,
 		Value = new.Value,
 		AnchorPoint = Vector2.new(1, 0),

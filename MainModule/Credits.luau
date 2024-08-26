@@ -36,12 +36,14 @@ return {
 			195261420, -- exobyte
 			34047620, -- wackiepirate
 			208790398, -- chan
-			330081213, -- delzi
+			2861326436, -- delzi
 			3357116228, -- lemon
 			1299780523, -- erazias
 			1686847974, -- stone
 			93371639, -- 9_ine
 			800630, -- jason
+			3470429081, -- Mercury
+			1142396048, -- Franklin_Surten (H)
 		},
 	},
 	{
@@ -50,15 +52,17 @@ return {
 			75214485, -- ericance
 			35818691, -- greeny
 			1560379748, -- mosha
+			107192912, -- britishtrainspotting
 			2258246, -- emp
 			129134882, -- horracecat
 			146573772, -- metallochrome
-			496062049, -- packiswack
+			496062049, -- pachiswack
 			1279022258, -- arcane
 			77608258, -- icarus
 			2297254, -- min
 			672360774, -- xaz
 			9345226, -- tomspell
+			3230955923, -- napiw
 		},
 	},
 	{
@@ -66,15 +70,19 @@ return {
 		Users = {
 			{
 				Id = 1237666, -- Sceleratis
-				Tooltip = "For being spooky skeleton and having the best forks",
+				Tooltip = "Spooky skeleton and with the best forks",
 			},
 			{
 				Id = 648020, -- trick555
-				Tooltip = "For the introduction to clan development",
+				Tooltip = "Introduction to Roblox clan development",
 			},
 			{
 				Id = 214258, -- Person299
-				Tooltip = "For inspiring the original Kohl's Admin Commands",
+				Tooltip = "Inspired the original Kohl's Admin Commands",
+			},
+			{
+				Id = 70540486, -- reru
+				Tooltip = "Lord of the bytes",
 			},
 			{
 				Id = 1670764, -- Elttob
@@ -82,7 +90,11 @@ return {
 			},
 			{
 				Id = 92658764, -- evaera
-				Tooltip = "Cmdr & Moonwave",
+				Tooltip = "Cmdr & usage of Moonwave",
+			},
+			{
+				Id = 2722909519, -- sona
+				Tooltip = "Squash & cool research",
 			},
 		},
 	},

@@ -28,6 +28,7 @@ local Input = UI.new "Input" {
 	BackgroundColor3 = UI.Theme.Primary,
 	BackgroundTransparency = UI.Theme.Transparency,
 	Font = UI.Theme.FontMono,
+	Position = UDim2.fromScale(0, 0.5),
 
 	UI.new "Frame" {
 		Name = "CircleIndicator",
@@ -93,14 +94,15 @@ UI.edit(Input._instance.UICorner, {
 
 local CommandBar = UI.new "Frame" {
 	Name = "CommandBar",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Size = UDim2.new(0, 512, 0, 0),
-	Position = UDim2.new(0.5, 0, 0.5, 0),
+	AnchorPoint = Vector2.new(0.5, 0),
+	Size = if UI.Touch then UDim2.new(1, 0, 1, 0) else UDim2.new(0, 512, 0, 0),
+	Position = UDim2.fromScale(0.5, if UI.Touch then 0 else 0.5),
 	BackgroundTransparency = 1,
 	ZIndex = 100,
 	Visible = false,
 
 	Input,
+	if UI.Touch then UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } else nil,
 }
 
 local TooltipFrame = UI.new "Frame" {
@@ -285,6 +287,56 @@ local function clearCompletion()
 	table.clear(suggestionLabels)
 end
 
+local function invalidSuggestion(data, err, pos, text)
+	validState:set(false)
+	-- red text inlineFormat
+	Input.DisplayText:set(
+		`<font transparency="0.33">{_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.String.escapeRichText(
+			text
+		)}</b></font>{_K.Util.String.escapeRichText(string.sub(data.message, pos + #text))}</font>`
+	)
+	-- TODO: command definition
+	Tooltip.Text = if not data.argDefinition
+		then ""
+		else string.format(
+			argumentFormat,
+			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
+			_K.Util.String.escapeRichText(data.argDefinition.type),
+			_K.Util.String.escapeRichText(data.argDefinition.description)
+		)
+	for _, label in suggestionLabels do
+		label:Destroy()
+	end
+	-- FIX: inline all the invalids and only show tooltip for first
+	table.clear(suggestionLabels)
+	local frame = SuggestionFrame:Clone()
+	local label = frame:FindFirstChildOfClass("TextLabel")
+	label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
+	frame.Parent = TooltipFrame
+	-- show highlight
+	table.insert(suggestionLabels, frame)
+
+	TooltipFrame.Visible = true
+
+	if not data.suggestions or not data.suggestions[suggestionIndex] then
+		return
+	end
+
+	local currentSuggestion = data.suggestions[suggestionIndex]
+	local suggestionText, suggestionValue = unpack(currentSuggestion)
+	if data.argIndex == 1 then -- command
+		-- TODO: inline argument types if command
+		-- show command aliases too!
+		Tooltip.Text = string.format(
+			argumentFormat,
+			_K.Util.String.escapeRichText(suggestionText),
+			"command",
+			_K.Util.String.escapeRichText(suggestionValue.description)
+		)
+	end
+	return
+end
+
 local commandHistory = {}
 local currentCompletionData
 updateCompletion = function()
@@ -305,39 +357,23 @@ updateCompletion = function()
 	-- TODO: somehow show validated arguments/text as green :)
 	for _, invalid in data.invalid do
 		validState:set(false)
-		local pos, text, err = unpack(invalid)
-		-- red text inlineFormat
-		Input.DisplayText:set(
-			`<font transparency="0.33">{_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.String.escapeRichText(
-				text
-			)}</b></font>{_K.Util.String.escapeRichText(string.sub(data.message, pos + #text))}</font>`
-		)
-		Tooltip.Text = if not data.argDefinition
-			then ""
-			else string.format(
-				argumentFormat,
-				_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
-				_K.Util.String.escapeRichText(data.argDefinition.type),
-				_K.Util.String.escapeRichText(data.argDefinition.description)
-			)
-		for _, label in suggestionLabels do
-			label:Destroy()
-		end
-		-- FIX: inline all the invalids and only show tooltip for first
-		table.clear(suggestionLabels)
-		local frame = SuggestionFrame:Clone()
-		local label = frame:FindFirstChildOfClass("TextLabel")
-		label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
-		frame.Parent = TooltipFrame
-		-- show highlight
-		table.insert(suggestionLabels, frame)
-
-		TooltipFrame.Visible = true
+		invalidSuggestion(data, unpack(invalid))
 		return
 	end
 
-	-- TODO: check if every argument for every command is valid somehow!
-	-- and then show valid icon and color :)
+	if #data.commands > 0 then
+		local valid = true
+		for _, command in data.commands do
+			if not command.validated then
+				valid = false
+				break
+			end
+		end
+
+		if valid then
+			validState:set(true)
+		end
+	end
 
 	if not data.suggestionType then
 		return clearCompletion() -- no suggestions without argument type
@@ -366,14 +402,14 @@ updateCompletion = function()
 	TooltipFrame.Position = UDim2.new(
 		0,
 		math.floor(argX) + 14 + UI.Theme.Padding._value.Offset,
-		0,
+		0.5,
 		Input._input.AbsoluteSize.Y / 2 + UI.Theme.PaddingHalf._value.Offset
 	)
 
+	-- suggestion hints
 	if not (data.suggestions and #data.suggestions > 0) then
 		return
 	end
-	-- suggestion hints
 
 	-- local firstSuggestion = data.suggestions[1][1]
 	-- local firstValue = data.suggestions[1][2]
@@ -474,18 +510,46 @@ Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 	end
 end)
 
+Input._input.Focused:Connect(function()
+	-- prevent input hotkey from being captured
+	task.delay(0, function()
+		if CommandBar.Visible then
+			Input._input.TextEditable = true
+		end
+	end)
+end)
+
 Input._input.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
-		CommandBar.Visible = false
 		Input._input.TextEditable = false
-		if currentCompletionData and currentCompletionData.invalid and #currentCompletionData.invalid > 0 then
+
+		local data = currentCompletionData
+		if #data.invalid > 0 then
 			-- if not fully validated need to show feedback
 			return
 		end
+
+		if Input._input.Text ~= _K.Data.settings.prefix and #data.commands < 1 then
+			validState:set(false)
+			invalidSuggestion(data, "Invalid command", data.argPos, data.rawArg)
+			return
+		end
+
+		for _, command in data.commands do
+			if command.argMissing then
+				validState:set(false)
+				invalidSuggestion(data, command.argMissing, command.invalidPos, command.invalidArg)
+				return
+			end
+		end
+
+		CommandBar.Visible = false
+
 		-- ignore empty command strings
 		if Input._input.Text == _K.Data.settings.prefix then
 			return
 		end
+
 		-- FIX: if validated lol
 		_K.Remote.Command:FireServer(Input._input.Text)
 		task.spawn(_K.Process.runCommands, _K, _K.Services.Players.LocalPlayer.UserId, Input._input.Text)
@@ -529,16 +593,17 @@ return {
 	init = function(self, _K)
 		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
-		CommandBar.Parent = _K.UI.LayerTop
+		CommandBar.Parent = if UserInputService.TouchEnabled then UI.TopBarFrame else UI.LayerTop
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
+		UI.Scope.settings.prefix:hook(function(value)
+			if value then
+				Input._input.Text = value .. string.sub(Input._input.Text, #value + 1)
+			end
+		end)
 	end,
 	show = function()
 		CommandBar.Visible = true
 		Input._input:CaptureFocus()
-		-- prevent input hotkey from being captured
-		task.delay(0, function()
-			Input._input.TextEditable = true
-		end)
 	end,
 }

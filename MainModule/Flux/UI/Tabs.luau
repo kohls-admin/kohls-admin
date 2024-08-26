@@ -198,12 +198,15 @@ function Tabs.new(definition)
 
 					[UI.Event] = {
 						MouseEnter = function()
-							hovering:set(true)
+							UI.activateState(hovering, "hover")
 						end,
 						MouseLeave = function()
-							hovering:set(false)
+							UI.deactivateState(hovering, "hover")
 						end,
 						Activated = function()
+							UI.clearState("hover")
+							UI.clearState("floating")
+							UI.Sound.Hover03:Play()
 							currentPage:set(page)
 							pages:JumpTo(page)
 							local absoluteStart = tabs.Parent.AbsolutePosition.X

@@ -1,5 +1,6 @@
 {
 	"name": "Kohl's Admin",
+	"emitLegacyScripts": false,
 	"tree": {
 		"$path": "../Loader/src",
 		"Loader": {

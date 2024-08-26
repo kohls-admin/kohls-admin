@@ -14,13 +14,15 @@ function Tooltip.new(definition)
 	local parentState = UI.state(nil)
 	local positionState = UI.state(Vector2.zero)
 	local sizeState = UI.state(Vector2.zero)
+	local hovering = UI.state(false)
 
 	new._instance = UI.new "TextLabel" {
+		Parent = UI.LayerTop,
 		Name = "Tooltip",
 		Visible = UI.compute(function(use)
 			return use(new.Enabled) and use(new.Visible)
 		end),
-		Parent = UI.LayerTop,
+		ZIndex = 100,
 		BackgroundColor3 = UI.tween(UI.Theme.TweenOut, UI.Theme.Primary),
 		Font = UI.Theme.Font,
 		TextSize = UI.Theme.FontSize,
@@ -57,7 +59,26 @@ function Tooltip.new(definition)
 		},
 	}
 
+	local hoverStart
+
+	UI.UserInputService.TouchMoved:Connect(function()
+		hovering:set(false)
+	end)
+
 	new._cleanup = {
+		hovering:hook(function(value)
+			if value then
+				local start = tick()
+				hoverStart = start
+				task.delay(0.4, function()
+					if hoverStart == start and hovering._value then
+						new.Visible:set(true)
+					end
+				end)
+			else
+				new.Visible:set(false)
+			end
+		end),
 		new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
 			local parent = new._instance.Parent
 			if parent and parent ~= UI.LayerTop then
@@ -66,24 +87,16 @@ function Tooltip.new(definition)
 						v:Disconnect()
 					end
 				end
-				local hoverStart
 				table.insert(
 					new._cleanup,
 					parent.MouseEnter:Connect(function()
-						local start = tick()
-						hoverStart = start
-						task.delay(0.4, function()
-							if hoverStart == start then
-								new.Visible:set(true)
-							end
-						end)
+						UI.activateState(hovering, "hover")
 					end)
 				)
 				table.insert(
 					new._cleanup,
 					parent.MouseLeave:Connect(function()
-						hoverStart = nil
-						new.Visible:set(false)
+						UI.deactivateState(hovering, "hover")
 					end)
 				)
 				parentState:set(parent)
@@ -94,6 +107,10 @@ function Tooltip.new(definition)
 				end)
 			end
 		end),
+		parentState,
+		positionState,
+		sizeState,
+		hovering,
 	}
 
 	return setmetatable(new, Tooltip)

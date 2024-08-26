@@ -56,29 +56,22 @@ function Auth.userBan(userId: number, reason: string, duration: number?, fromUse
 		timestamp = if duration > 0 then os.time() + duration else -1
 	end
 
+	if reason and fromUserId then
+		reason = Util.String.filterForBroadcast(reason, fromUserId)
+	end
+
+	local ban = { reason, timestamp, fromUserId }
+
 	local key = tostring(userId)
-	Data.bans[key] = { reason, timestamp, fromUserId }
+	Data.bans[key] = ban
 	if tonumber(duration) and duration ~= 0 then
-		Data.Cache.bans[key] = Data.bans[key]
+		Data.Cache.bans[key] = ban
 		Data.pendingSaveMain = true
 	end
 
-	if not reason then
-		local ban = { "No reason.", timestamp, fromUserId }
-		for _, player in Players:GetPlayers() do
-			-- TODO: only send to authorized clients!
+	for _, player in Players:GetPlayers() do
+		if Auth.hasPermission(player.UserId, "ban") or Auth.hasPermission(player.UserId, "kick") then
 			Remote.Ban:FireClient(player, key, ban)
-		end
-		return
-	end
-
-	local ok, result =
-		pcall(TextService.FilterStringAsync, TextService, reason, fromUserId, Enum.TextFilterContext.PrivateChat)
-	if ok then
-		for _, player in Players:GetPlayers() do
-			-- TODO: only send to authorized clients!
-			local _, filtered = pcall(result.GetChatForUserAsync, result, player.UserId)
-			Remote.Ban:FireClient(player, key, { filtered, timestamp, fromUserId })
 		end
 	end
 end
@@ -100,7 +93,10 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	if not member then
 		local player = Players:GetPlayerByUserId(userId)
 		Data.members[tostring(userId)] = {
-			name = if player then player.Name else Players:GetNameFromUserIdAsync(userId),
+			name = if player
+				then player.Name
+				elseif userId > 0 then Players:GetNameFromUserIdAsync(userId)
+				else "Player",
 			roles = { role },
 			persist = { if persist then role else nil },
 		}
@@ -267,7 +263,7 @@ function Auth.getRank(userId: number, permission: string?): (number, Role)
 	return rank, rankRole
 end
 
-function Auth.roleCommandFilter(roleData, command, boolean: boolean): boolean
+function Auth.roleCommandFilter(roleData, command: any, boolean: boolean): boolean
 	if not roleData.filter then
 		return false
 	end
@@ -285,7 +281,7 @@ function Auth.roleCommandFilter(roleData, command, boolean: boolean): boolean
 end
 
 --- Checks if a role has access to a command group
-function Auth.roleCanUseCommand(role: Role, command): boolean
+function Auth.roleCanUseCommand(role: Role, command: any): boolean
 	local roleData = Data.roles[role]
 	if not roleData then
 		print(role)
@@ -306,7 +302,7 @@ function Auth.roleCanUseCommand(role: Role, command): boolean
 end
 
 --- Checks if a user has access to a command
-function Auth.hasCommand(userId: number, command): boolean
+function Auth.hasCommand(userId: number, command: any): boolean
 	if Auth.roleCanUseCommand("defaultRole", command) then
 		return true
 	end

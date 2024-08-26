@@ -1,6 +1,6 @@
 local Teams = game:GetService("Teams")
 
-local context
+local _K
 
 local typeTeam = {
 	validate = function(input: string, from: number): (boolean, string?)
@@ -22,7 +22,10 @@ local typeTeam = {
 		error("Invalid team value")
 	end,
 	suggestions = function(text: string, from: number)
-		return context.Util.Suggest.query(text, context.Util.Suggest.new(Teams:GetTeams()))
+		return _K.Util.Suggest.query(text, _K.Util.Suggest.new(Teams:GetTeams()))
+	end,
+	log = function(arg)
+		return _K.Util.Table.concat(arg.parsedArgs, ",")
 	end,
 }
 
@@ -30,8 +33,8 @@ local typeTeams = {
 	listable = true,
 }
 
-return function(_K)
-	context = _K
+return function(context)
+	_K = context
 	_K.Registry.registerType("team", typeTeam)
 	_K.Registry.registerType("teams", typeTeams, typeTeam)
 end

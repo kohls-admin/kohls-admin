@@ -3,6 +3,14 @@ export type List = { any }
 
 local Table = {}
 
+function Table.concat(array: List, delimiter: string): string
+	local strings = {}
+	for _, item in array do
+		table.insert(strings, tostring(item))
+	end
+	return table.concat(strings, delimiter)
+end
+
 function Table.toHashMap(array: List): Dict
 	local map = {}
 	for _, key in array do

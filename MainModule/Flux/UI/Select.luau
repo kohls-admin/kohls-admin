@@ -21,6 +21,7 @@ function Select.new(definition)
 
 		UI.new "Button" {
 			Name = "Header",
+			ActiveSound = false,
 			Icon = "rbxassetid://2374890977",
 			IconRightAlign = true,
 			IconProperties = {
@@ -34,7 +35,13 @@ function Select.new(definition)
 
 			[UI.Event] = {
 				Activated = function()
-					menu._instance.Visible = not menu._instance.Visible
+					UI.toggleState(menu.Visible, "floating")
+					local value = UI.peek(menu.Visible)
+					if value then
+						UI.Sound.Hover03:Play()
+					else
+						UI.Sound.Hover01:Play()
+					end
 				end,
 			},
 		},
@@ -71,7 +78,7 @@ function Select.new(definition)
 				[UI.Event] = {
 					Activated = function()
 						new.Choice:set(choice)
-						menu._instance.Visible = false
+						UI.deactivateState(menu.Visible, "floating")
 					end,
 				},
 			}
@@ -92,6 +99,11 @@ function Select.new(definition)
 						else 0
 				end),
 			})
+			choiceButton._hovering:hook(function(value)
+				if value then
+					UI.Sound.Hover02:Play()
+				end
+			end)
 		end
 	end
 

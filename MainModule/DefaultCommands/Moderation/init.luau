@@ -11,9 +11,15 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerDefault,
+				Parent = _K.UI.LayerTopInset,
 				Title = "Kohl's Admin Bans",
 				Visible = false,
+				_K.UI.new "UIPadding" {
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+				},
 			}
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
@@ -32,9 +38,10 @@ return {
 		end,
 
 		runClient = function(context)
+			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = true,
-				context._K.UI.Scope.dashboard.Bans,
+				Visible = visible,
+				if visible then context._K.UI.Scope.dashboard.Bans else nil,
 			})
 		end,
 	},
@@ -45,9 +52,15 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerDefault,
+				Parent = _K.UI.LayerTopInset,
 				Title = "Kohl's Admin Members",
 				Visible = false,
+				_K.UI.new "UIPadding" {
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+				},
 			}
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
@@ -66,9 +79,10 @@ return {
 		end,
 
 		runClient = function(context)
+			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = true,
-				context._K.UI.Scope.dashboard.Members,
+				Visible = visible,
+				if visible then context._K.UI.Scope.dashboard.Members else nil,
 			})
 		end,
 	},
@@ -387,7 +401,8 @@ return {
 		end,
 	},
 	{
-		name = "god",
+		name = "immortal",
+		aliases = { "god" },
 		description = "Makes one or more player(s) invincible.",
 		args = {
 			{
@@ -399,14 +414,21 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
+				if not player.Character then
+					continue
+				end
+				local ff = player.Character:FindFirstChildOfClass("ForceField")
+				if ff then
+					ff.Visible = false
+				else
 					Instance.new("ForceField", player.Character).Visible = false
 				end
 			end
 		end,
 	},
 	{
-		name = "ff",
+		name = "forcefield",
+		aliases = { "ff" },
 		description = "Gives a ForceField to one or more player(s).",
 		args = {
 			{
@@ -418,15 +440,21 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if player.Character and not player.Character:FindFirstChildOfClass("ForceField") then
+				if not player.Character then
+					continue
+				end
+				local ff = player.Character:FindFirstChildOfClass("ForceField")
+				if ff then
+					ff.Visible = true
+				else
 					Instance.new("ForceField", player.Character)
 				end
 			end
 		end,
 	},
 	{
-		name = "unff",
-		aliases = { "ungod" },
+		name = "unforcefield",
+		aliases = { "unff", "ungod", "mortal" },
 		description = "Removes a ForceField from one or more player(s).",
 		args = {
 			{
@@ -815,7 +843,7 @@ return {
 			},
 			{
 				type = "number",
-				name = "Walk Speed",
+				name = "Speed",
 				description = "The walkspeed to use.",
 			},
 		},
@@ -1040,9 +1068,13 @@ return {
 				type = "teams",
 				name = "Random Teams",
 				description = "The teams to randomly assign.",
+				optional = true,
 			},
 		},
 		run = function(context, players, teams)
+			if teams == context.OPTIONAL then
+				teams = context._K.Services.Teams:GetTeams()
+			end
 			local randomSort = {}
 			for _, player in players do
 				table.insert(randomSort, math.ceil(math.random(#randomSort + 1)), player)

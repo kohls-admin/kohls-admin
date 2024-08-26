@@ -1,3 +1,5 @@
+local _K
+
 local function simpleValidate(v)
 	return v ~= nil
 end
@@ -20,6 +22,9 @@ local booleanType = {
 		else
 			error("Invalid boolean value.")
 		end
+	end,
+	log = function(arg)
+		return _K.Util.Table.concat(arg.parsedArgs, ",")
 	end,
 }
 
@@ -46,7 +51,8 @@ local stringType = {
 	parse = tostring,
 }
 
-return function(_K)
+return function(context)
+	_K = context
 	_K.Registry.registerType("boolean", booleanType)
 	_K.Registry.registerType("booleans", listable, booleanType)
 	_K.Registry.registerType("integer", integerType)

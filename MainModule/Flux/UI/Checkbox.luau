@@ -79,7 +79,13 @@ function Checkbox.new(definition: CheckboxDefinition)
 
 		[UI.Event] = {
 			Activated = function()
-				new.Value:set(not UI.peek(new.Value))
+				local value = UI.peek(new.Value)
+				new.Value:set(not value)
+				if value then
+					UI.Sound.Hover01:Play()
+				else
+					UI.Sound.Hover03:Play()
+				end
 			end,
 		},
 	}

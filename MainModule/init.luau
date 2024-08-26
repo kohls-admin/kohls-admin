@@ -64,6 +64,7 @@ local _K = {
 
 	logger = Util.Logger.new(),
 	client = nil,
+	pinnedAnnouncement = nil,
 
 	playerPrefix = {},
 	_serverLock = false,
@@ -78,24 +79,6 @@ _K.Services = _K.Util.Services
 -- register initial UI children
 if _K.IsClient then
 	_K.UI.registerChildren()
-end
-
---- Filters a message with [TextService.FilterStringAsync]
-function _K.filterMessage(message: string, from: number, to: number, filterContext: Enum.TextFilterContext?): string
-	local ok, result = pcall(
-		TextService.FilterStringAsync,
-		TextService,
-		message,
-		from,
-		filterContext or Enum.TextFilterContext.PublicChat
-	)
-	if ok then
-		ok, result = pcall(result.GetChatForUserAsync, result, to)
-		if ok then
-			return result
-		end
-	end
-	return "TextService filtering failed."
 end
 
 -- register types
@@ -195,20 +178,17 @@ end)
 
 -- network test
 _K.Remote.Init.OnServerEvent:Connect(function(player)
-	-- send their own player permissions always for clientside validation
-	-- TODO: make sure data is network safe!
+	-- TODO: sanitize network data
 
-	local bans, logs = {}, table.create(#_K.Data.logs)
-	for i, ban in _K.Data.bans do
-		local reason = if ban[4] then _K.filterMessage(ban[2], ban[4], player.UserId) else ban[2]
-		bans[i] = { ban[1], reason, ban[3], ban[4] }
-	end
-	for i, log in _K.Data.logs do
-		local text = if log.from then _K.filterMessage(log.text, log.from, player.UserId) else log.text
-		logs[i] = { text, log.level, log.time, log.from }
+	_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings)
+
+	if _K.Auth.hasPermission(player.UserId, "ban") or _K.Auth.hasPermission(player.UserId, "kick") then
+		_K.Remote.Bans:FireClient(player, _K.Data.bans)
 	end
 
-	_K.Remote.Init:FireClient(player, _K.Auth, bans, logs, _K.Data.members, _K.Data.settings)
+	if _K.Auth.hasPermission(player.UserId, "logs") then
+		_K.Remote.Logs:FireClient(player, _K.Data.logs)
+	end
 end)
 
 script.Parent = _K.Services.ReplicatedStorage
@@ -243,10 +223,14 @@ local function playerAdded(player: Player)
 		return
 		-- allows those with higher than vip perms
 	end
-
 	player.Chatted:Connect(function(message: string)
-		_K.Process.runCommands(_K, player.UserId, message)
+		_K.log(Util.String.filterForBroadcast(message, player.UserId), "CHAT", player.UserId)
 	end)
+
+	if _K.Data.settings.announcement then
+		local message, from = unpack(_K.Data.settings.announcement)
+		_K.Remote.Announce:FireClient(player, message, from)
+	end
 end
 
 _K.Services.Players.PlayerAdded:Connect(playerAdded)
@@ -255,8 +239,8 @@ for _, player in _K.Services.Players:GetPlayers() do
 	playerAdded(player)
 end
 
-_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string)
-	_K.Process.runCommands(_K, player.UserId, message)
+_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string, chatted: boolean?)
+	_K.Process.runCommands(_K, player.UserId, message, chatted)
 end)
 
 _K.Remote.Setting.OnServerEvent:Connect(function(player, key, value)
@@ -291,7 +275,32 @@ _K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe:
 	end
 end)
 
--- NOTE: probably shouldn't network system logs to other servers, ideally only command and error logs
+local subscribeSuccess, subscribeConnection = pcall(function()
+	return Util.Services.MessagingService:SubscribeAsync("KA_Announcement", function(message)
+		if type(message.Data) ~= "table" then
+			_K.Data.settings.announcement = false
+			return
+		end
+
+		local oldMsg, oldFrom
+		if _K.Data.settings.announcement then
+			oldMsg, oldFrom = unpack(_K.Data.settings.announcement)
+		end
+
+		local msg, from = unpack(message.Data)
+		if msg ~= oldMsg or from ~= oldFrom then
+			_K.Data.settings.announcement = message.Data
+			_K.Remote.Announce:FireAllClients(unpack(message.Data))
+		end
+	end)
+end)
+if subscribeSuccess then
+	game:BindToClose(function()
+		subscribeConnection:Disconnect()
+	end)
+end
+
+-- NOTE: shouldn't network system logs to other servers, ideally only command and error logs
 _K.log("Server initialized.", "INFO")
 
 return _K

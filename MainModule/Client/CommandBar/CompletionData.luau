@@ -11,7 +11,7 @@ return function(_K, text, cursorPosition)
 		message = text,
 		cursorPosition = cursorPosition,
 		invalid = {
-			-- {argPos, rawArg, text}
+			-- {feedback, argPos, rawArg}
 		},
 	}
 
@@ -32,7 +32,7 @@ return function(_K, text, cursorPosition)
 
 	local rawCommands = _K.Process.rawParse(text, prefix)
 	if not rawCommands then
-		table.insert(data.invalid, { 2, string.sub(text, 2), "Invalid command1" })
+		table.insert(data.invalid, { "Invalid command1", 2, string.sub(text, 2) })
 		return data -- invalid command string, show valid example
 	end
 
@@ -46,22 +46,21 @@ return function(_K, text, cursorPosition)
 		local commandEnd = lastArg[1] + #lastArg[2]
 
 		if commandDefinition and not (greedy or _K.Auth.hasCommand(from, commandDefinition)) then
-			table.insert(data.invalid, { 2, string.sub(text, 2), "Invalid permissions" })
+			table.insert(data.invalid, { "Invalid permissions", 2, string.sub(text, 2) })
 			return data
 		end
 
 		if not greedy and lastArgDefinition and lastArgDefinition.type == "stringGreedy" then
 			greedy = true
 		end
-
 		if not greedy and commandDefinition and #commandArray - 1 > #commandDefinition.args then
 			local lastDefined = commandArray[#commandDefinition.args + 1] or lastArg
 			local finalText = string.sub(text, lastDefined[1] + #lastDefined[2])
 			if string.find(finalText, `[^%s{if prefix == "%" then "%%" else prefix}]`) then
 				table.insert(data.invalid, {
+					"Too many arguments",
 					lastDefined[1] + #lastDefined[2],
 					string.sub(text, lastDefined[1] + #lastDefined[2], lastArg[1] + #lastArg[2]),
-					"Too many arguments",
 				})
 				return data
 			end
@@ -73,7 +72,7 @@ return function(_K, text, cursorPosition)
 				data.argPos = commandPos
 				data.rawArg = commandText
 				data.query = commandText
-				table.insert(data.invalid, { commandPos, commandText, "Invalid command2" })
+				table.insert(data.invalid, { "Invalid command2", commandPos, commandText })
 				return data
 			end
 			if greedy and cursorPosition > commandEnd then
@@ -84,12 +83,17 @@ return function(_K, text, cursorPosition)
 				data.rawArg = data.query
 				return data
 			end
+
+			if commandDefinition then
+				local command = Command.new(_K, commandDefinition, commandArray, from, text)
+				command:validate()
+				table.insert(data.commands, command)
+			end
+
 			continue -- cursor not within commandArray
-			-- FIX: need to still validate the command for a total valid state
 		end
 
 		-- within command
-
 		-- command suggestions
 		if cursorPosition <= commandPos + #commandText then
 			data.argIndex = 1
@@ -97,33 +101,38 @@ return function(_K, text, cursorPosition)
 			data.rawArg = commandText
 			data.query = string.sub(commandText, 1, cursorPosition - commandPos)
 			data.suggestionType = _K.Registry.types.command
-			data.suggestions = _K.Registry.types.command.suggestions(data.query, Players.LocalPlayer.UserId)
-			-- TODO: filter for authorized commands
+			data.suggestions = _K.Registry.types.command.suggestions(data.query, from)
 
 			if #data.suggestions < 1 then
-				table.insert(data.invalid, { commandPos, commandText, "Invalid command3" })
+				table.insert(data.invalid, { "Invalid command3", commandPos, commandText })
 				return data
 			end
 
 			local rawSuggestions = data.suggestions
 			data.suggestions = table.create(#data.suggestions)
 			for _, suggestionData in rawSuggestions do
-				local name, cmd = unpack(suggestionData)
-				if cmd and _K.Auth.hasCommand(LocalPlayer.UserId, cmd) then
+				local _name, cmd = unpack(suggestionData)
+				if cmd and _K.Auth.hasCommand(from, cmd) then
 					table.insert(data.suggestions, suggestionData)
 				end
 			end
 
 			if #data.suggestions < 1 then
-				table.insert(data.invalid, { commandPos, commandText, "Invalid permissions" })
+				table.insert(data.invalid, { "Invalid permissions", commandPos, commandText })
 				return data
+			end
+
+			if commandDefinition then
+				local command = Command.new(_K, commandDefinition, commandArray, from, text)
+				command:validate()
+				table.insert(data.commands, command)
 			end
 
 			return data
 		end
 
 		if not commandDefinition then
-			table.insert(data.invalid, { commandPos, commandText, "Invalid command4" })
+			table.insert(data.invalid, { "Invalid command4", commandPos, commandText })
 			return data
 		end
 
@@ -165,16 +174,18 @@ return function(_K, text, cursorPosition)
 				data.rawArg = rawArg
 				data.transformedArg = transformedArg
 				data.query = string.sub(rawArg, 1, cursorPosition - pos)
-				data.suggestions = transformedType.suggestions(data.query, Players.LocalPlayer.UserId, arg.definition)
+				data.suggestions = transformedType.suggestions(data.query, from, arg.definition)
 			end
 		end
 
 		if not ok and not (data.suggestionType and (data.rawArg == "" or #data.suggestions > 0)) then
 			command.Error = result
 			if command.invalidArg then
-				table.insert(data.invalid, { command.invalidPos, command.invalidArg, result })
+				if not command.argMissing then
+					table.insert(data.invalid, { result, command.invalidPos, command.invalidArg })
+				end
 			else
-				table.insert(data.invalid, { commandPos, string.sub(text, commandPos, commandEnd), result })
+				table.insert(data.invalid, { result, commandPos, string.sub(text, commandPos, commandEnd) })
 			end
 			return data
 		end

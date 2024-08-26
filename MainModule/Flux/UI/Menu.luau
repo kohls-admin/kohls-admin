@@ -9,6 +9,7 @@ function Menu.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Adornee = false,
 		RightAlign = false,
+		Visible = false,
 	}, definition)
 
 	new._list = UI.new "UIListLayout" {
@@ -32,13 +33,19 @@ function Menu.new(definition)
 		ScrollBarThickness = 0,
 
 		new._list,
+
+		[UI.Event.Property] = {
+			CanvasPosition = function()
+				UI.clearState("hover")
+			end,
+		},
 	}
 
 	-- if too close to viewport boundary top/botton flip menu direction
 	new._instance = UI.new "Frame" {
 		Name = "Menu",
 		ZIndex = 100,
-		Visible = false,
+		Visible = new.Visible,
 		Parent = UI.LayerTop,
 		AnchorPoint = UI.compute(function(use)
 			return if use(new.RightAlign) then Vector2.new(1, 0) else Vector2.zero

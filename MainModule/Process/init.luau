@@ -100,8 +100,8 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 		table.insert(commands, command)
 
 		if not ok then
-			command.Error = result
-			break
+			return false, result
+			-- break
 		end
 
 		if command.greedy then
@@ -112,18 +112,14 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 	return true, commands
 end
 
-function Process.runCommands(_K: any, from: number, rawText: string): boolean
+function Process.runCommands(_K: any, from: number, rawText: string, chatted: boolean?): boolean
 	local commandRan, commandError
 	local ok, result = Process.prepareCommands(_K, from, rawText)
 
+	local logText
+
 	if ok then
 		for _, command in result do
-			-- error during preparation
-			if command.Error then
-				commandError = command.Error
-				break
-			end
-
 			local success, err = command:run()
 
 			if success == nil then
@@ -148,15 +144,65 @@ function Process.runCommands(_K: any, from: number, rawText: string): boolean
 		commandError = result
 	end
 
-	if not (commandRan or commandError or _K.IsServer) then
-		-- skip logging on client if nothing happened
+	if commandError then
+		commandError = `<b>{commandError}</b>`
+		if _K.IsServer then
+			_K.Remote.Notify:FireClient(_K.Services.Players:GetPlayerByUserId(from), commandError, nil, "error")
+		else
+			task.spawn(_K.client.Notify, {
+				Text = commandError,
+				TextColor3 = Color3.new(1, 0, 0),
+				UserFrame = {},
+				ExitButton = true,
+				Sound = "Call_Leave",
+			})
+		end
+	elseif chatted and _K.IsClient then
+		_K.Remote.Command:FireServer(rawText, chatted)
+	end
+
+	if not (commandRan or commandError) then
+		-- skip logging if nothing happened
 		return commandRan
 	end
-	_K.log(
-		if commandError then commandError else Util.String.trimStart(rawText),
-		if commandRan then "COMMAND" elseif commandError then "ERROR" else "CHAT",
-		from
-	)
+
+	task.spawn(function()
+		local mainThread = coroutine.running()
+		local running = 0
+
+		if commandRan then
+			local log = {}
+			for _, command in result do
+				if command.Error then
+					table.insert(log, _K.Data.settings.prefix .. command.definition.name)
+				end
+				table.insert(log, _K.Data.settings.prefix .. command.definition.name)
+				for _, arg in command.args do
+					if arg.rawType.log then
+						table.insert(log, arg.rawType.log(arg))
+					else
+						running += 1
+						task.spawn(function()
+							table.insert(log, Util.String.filterForBroadcast(Util.String.trim(arg.rawArg), from))
+							running -= 1
+							if running == 0 then
+								coroutine.resume(mainThread)
+							end
+						end)
+					end
+				end
+			end
+			logText = table.concat(log, " ")
+		else -- filter entire rawText as broadcast
+			logText = Util.String.filterForBroadcast(Util.String.trim(rawText), from)
+		end
+
+		if running > 0 then
+			coroutine.yield()
+		end
+
+		_K.log(if commandError then commandError else logText, if commandRan then "COMMAND" else "ERROR", from, true)
+	end)
 
 	return commandRan
 end

@@ -13,18 +13,7 @@ export type ArgumentFunction = (value: any, from: Player) -> ...any
 
 --[=[
 	@within Registry
-	@type ArgumentType = {
-		name: string,
-		displayName: string?,
-		listable: boolean?,
-		transform: ArgumentFunction?,
-		validate: ArgumentFunction,
-		parse: ArgumentFunction,
-		preParse: ArgumentFunction?,
-		postParse: ArgumentFunction?,
-		suggestions: ArgumentFunction?,
-		prefixes: { [string]: string }?,
-	}
+	@type ArgumentType {name: string, displayName: string?, listable: boolean?, transform: ArgumentFunction?, validate: ArgumentFunction, parse: ArgumentFunction, preParse: ArgumentFunction?, postParse: ArgumentFunction?, suggestions: ArgumentFunction?, prefixes: { [string]: string }? }
 ]=]
 export type ArgumentType = {
 	name: string,
@@ -41,15 +30,7 @@ export type ArgumentType = {
 
 --[=[
 	@within Registry
-	@type ArgumentDefinition = {
-		type: string,
-		name: string,
-		description: string,
-		optional: boolean?,
-		lowerRank: boolean?,
-		ignoreSelf: boolean?,
-		shouldRequest: boolean?,
-	}
+	@type ArgumentDefinition {type: string, name: string, description: string, optional: boolean?, lowerRank: boolean?, ignoreSelf: boolean?, shouldRequest: boolean? }
 ]=]
 export type ArgumentDefinition = {
 	type: string,
@@ -64,17 +45,7 @@ export type ArgumentDefinition = {
 
 --[=[
 	@within Registry
-	@type CommandDefinition = {
-		name: string,
-		aliases: { string }?,
-		description: string,
-		group: string,
-		args: { ArgumentDefinition },
-		envClient: {} | () -> {}?,
-		env: {} | () -> {}?,
-		runClient: (...any) -> ()?,
-		run: (...any) -> ()?,
-	}
+	@type CommandDefinition = {name: string, aliases: { string }?, description: string, group: string, args: { ArgumentDefinition }, envClient: {} | () -> {}?, env: {} | () -> {}?, runClient: (...any) -> ()?, run: (...any) -> ()? }
 ]=]
 export type CommandDefinition = {
 	name: string,
@@ -117,6 +88,9 @@ function Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string 
 		end,
 		suggestions = function(text)
 			return Util.Suggest.query(text, suggestions, enumItems)
+		end,
+		log = function(arg)
+			return Util.Table.concat(arg.parsedArgs, ",")
 		end,
 	}
 end

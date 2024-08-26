@@ -113,8 +113,11 @@ function Argument:parse()
 				table.remove(self.parsedArgs, found)
 			end
 		end
-		if self.definition.lowerRank and not self.definition.shouldRequest then
-			local rank = self._K.Auth.getRank(self.command.fromPlayer.UserId)
+
+		local rank, role = self._K.Auth.getRank(self.command.from)
+		if role.onlyTargetSelf then
+			self.parsedArgs = { self.command.fromPlayer }
+		elseif self.definition.lowerRank and not self.definition.shouldRequest then
 			local new = {}
 			for _, arg in self.parsedArgs do
 				if

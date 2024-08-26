@@ -42,6 +42,7 @@ local Data = {
 	players = {},
 
 	settings = {
+		announcement = false,
 		liveSettings = true,
 		prefix = ":",
 		vip = true,
@@ -55,12 +56,7 @@ local Data = {
 		asset = {},
 		subscription = {},
 		-- TODO: need a way to define exact rank roles instead of >=
-		group = {
-			[451053] = {
-				{ rank = 1, roles = { "vip" } },
-				{ rank = 255, roles = { "creator", "mod" }, exactRank = true },
-			},
-		},
+		group = {},
 		-- [groupId] = {
 		-- { rank = 200, roles = { "admin", "vip" }, rankAndAbove = true },
 		-- },
@@ -91,11 +87,19 @@ local Data = {
 		-- can use commands that require VIP permission
 		vip = false,
 
-		-- allowed command groups?
+		-- when enabled only allows their player to be used with the player argument
+		-- WARN: doesn't affect commands that use userids!
+		onlyTargetSelf = false,
+
+		-- allowed command groups
 		groups = {
+			-- "creator",
 			-- "administration",
 			-- "moderation",
+			-- "environment",
 			-- "general",
+			-- "fun",
+			-- "vip",
 			"utility",
 		},
 
@@ -108,12 +112,13 @@ local Data = {
 		},
 	},
 	roles = {
-		-- unique key should NEVER be changed or you may lose save data
+		-- WARN: unique key should NEVER be changed or you may lose save data
 		vip = {
 			_rank = 1,
 			name = "VIP",
 			vip = true,
 			color = "#0f8",
+			onlyTargetSelf = true,
 		},
 		mod = {
 			_rank = 2,

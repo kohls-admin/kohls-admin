@@ -15,12 +15,13 @@ return {
 				type = "integer",
 				name = "UserId",
 				description = "The UserId of the player to use.",
+				optional = true,
 			},
 		},
 
-		runClient = function(context, players, userId)
+		run = function(context, players, userId)
 			for _, player in players do
-				player.CharacterAppearanceId = userId
+				player.CharacterAppearanceId = if userId == context.OPTIONAL then player.UserId else userId
 				player:LoadCharacter()
 			end
 		end,
@@ -37,7 +38,7 @@ return {
 			},
 		},
 
-		runClient = function(context, players, userId)
+		run = function(context, players, userId)
 			for _, player in players do
 				player.CharacterAppearanceId = player.UserId
 				player:LoadCharacter()

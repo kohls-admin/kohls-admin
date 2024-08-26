@@ -35,7 +35,7 @@ end
 
 local function parseTime(input: string): (boolean, string | number)
 	if input == "" then
-		return true, ""
+		return true, 1
 	elseif string.find("-1", input, 1, true) then
 		return true, -1
 	end

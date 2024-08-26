@@ -1,10 +1,15 @@
 local _K = require(script.Parent)
 local Flux = _K.Flux
 local UI = _K.UI
-_K.client = { ready = false }
-_K.client.hotkeys = {
-	dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
+
+_K.client = {
+	ready = false,
+	hotkeys = {
+		dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
+	},
 }
+
+_K.client.Notify = require(script.Notify)
 
 UI.Scope.members = Flux.state(_K.Data.members)
 UI.Scope.bans = Flux.state(_K.Data.bans)
@@ -31,21 +36,40 @@ local CommandBar = require(script.CommandBar)
 CommandBar:init(_K)
 
 local Announce = require(script.Announce)
-local Bans = require(script.Bans)
-local Commands = require(script.Commands)
-local Credit = require(script.Credit)
 local Dashboard = require(script.Dashboard)
-local Logs = require(script.Logs)
-local Members = require(script.Members)
 local Network = require(script.Network)
 local Noclip = require(script.Noclip)
-local Notify = require(script.Notify)
-local Settings = require(script.Settings)
-local UserFrame = require(script.UserFrame)
 
-UI.LocalPlayer.Chatted:Connect(function(message: string)
-	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, message)
-end)
+local function Chatted(message: string)
+	local prefix = _K.playerPrefix[UI.LocalPlayer.UserId] or _K.Data.settings.prefix
+	local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
+	if not commandStart then
+		-- checks for invalid prefix but valid command alias
+		local test = string.lower(message)
+		for alias in _K.Registry.commands do
+			if string.find(test, `[^%s%w]{_K.Util.String.escapePattern(alias)}`) then
+				task.spawn(_K.client.Notify, {
+					Text = `<b>Invalid command prefix, use "{_K.Data.settings.prefix}"</b>`,
+					TextColor3 = Color3.new(1, 0, 0),
+					UserFrame = {},
+					ExitButton = true,
+					Sound = "Call_Leave",
+				})
+				break
+			end
+		end
+		return
+	end
+	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, string.sub(message, commandStart), true)
+end
+
+if _K.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+	_K.Services.TextChatService.SendingMessage:Connect(function(textChatMessage: TextChatMessage)
+		Chatted(textChatMessage.Text)
+	end)
+else
+	UI.LocalPlayer.Chatted:Connect(Chatted)
+end
 
 _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 	if gameProcessedEvent then

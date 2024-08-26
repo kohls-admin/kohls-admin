@@ -75,8 +75,8 @@ return {
 			local function kick(player)
 				player:Kick(`{from} has shutdown the server.`)
 			end
-			game:GetService("Players").PlayerAdded(kick)
-			for _, player in game:GetService("Players") do
+			game:GetService("Players").PlayerAdded:Connect(kick)
+			for _, player in game:GetService("Players"):GetPlayers() do
 				kick(player)
 			end
 		end,

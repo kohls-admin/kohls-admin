@@ -11,6 +11,7 @@ setmetatable(Dialog, BaseClass)
 function Dialog.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Text = UI.Nil,
+		TextColor3 = UI.Theme.PrimaryText,
 		Title = UI.Nil,
 		ActionText = UI.Nil,
 		Action = UI.Nil,
@@ -19,6 +20,7 @@ function Dialog.new(definition)
 		RightAction = UI.Nil,
 		ExitButton = UI.Nil,
 		Close = UI.Nil,
+		Visible = true,
 		Width = 256,
 	}, definition)
 
@@ -152,7 +154,7 @@ function Dialog.new(definition)
 		UI.new "TextLabel" {
 			Name = "Text",
 			BackgroundTransparency = 1,
-			TextColor3 = UI.Theme.PrimaryText,
+			TextColor3 = new.TextColor3,
 			Text = new.Text,
 			TextSize = UI.Theme.FontSize,
 			TextWrapped = true,
@@ -173,7 +175,9 @@ function Dialog.new(definition)
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
+		ClipsDescendants = true,
 		Size = UI.computeFrom(UDim2.fromOffset, new.Width, 0),
+		Visible = new.Visible,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,

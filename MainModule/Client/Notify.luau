@@ -28,6 +28,8 @@ local function hide(info, height: number?)
 		return
 	end
 
+	UI.Sound.Swipe:Play()
+
 	table.remove(existing, found)
 	resetOffset(height)
 	announce.ZIndex = -1
@@ -41,16 +43,21 @@ return function(dialogOverride)
 	local self
 
 	local function close()
+		if not self then
+			return
+		end
 		hide(self)
 	end
 
+	local sound = dialogOverride.Sound
 	local userFrame = dialogOverride.UserFrame
 	dialogOverride.UserFrame = nil
+	dialogOverride.Sound = nil
 
 	local dialog = UI.new("Dialog")(_K.Util.Table.merge({
 		Close = close,
-		Duration = 30,
-		Parent = UI.LayerTop,
+		Duration = 4 + 0.125 * #dialogOverride.Text,
+		Parent = UI.LayerTopInset,
 		Size = UDim2.new(0.5),
 		AnchorPoint = UI.tween(
 			UI.Theme.TweenInOut,
@@ -100,6 +107,8 @@ return function(dialogOverride)
 	visible:set(true)
 
 	resetOffset(height)
+
+	UI.Sound[sound or "Notification_High"]:Play()
 
 	return dialog
 end

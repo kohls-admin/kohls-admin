@@ -13,6 +13,7 @@ function Button.new(definition)
 		IconProperties = {},
 		IconRightAlign = false,
 		Label = "",
+		ActiveSound = true,
 		TextSize = UI.Theme.FontSize,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
@@ -126,6 +127,11 @@ function Button.new(definition)
 		ripple,
 
 		[UI.Event] = {
+			Activated = function()
+				if new.ActiveSound._value then
+					UI.Sound.Hover01:Play()
+				end
+			end,
 			InputBegan = function(input, processed)
 				if
 					processed
@@ -159,10 +165,10 @@ function Button.new(definition)
 				Tween:Create(ripple, UI.Theme.TweenOut._value, { BackgroundTransparency = 1 }):Play()
 			end,
 			MouseEnter = function()
-				UI.handleHover(hovering)
+				UI.activateState(hovering, "hover")
 			end,
 			MouseLeave = function()
-				hovering:set(false)
+				UI.deactivateState(hovering, "hover")
 			end,
 		},
 	}

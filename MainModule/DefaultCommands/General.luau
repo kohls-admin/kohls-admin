@@ -28,9 +28,15 @@ return {
 		args = {},
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerDefault,
+				Parent = _K.UI.LayerTopInset,
 				Title = "Kohl's Admin Logs",
 				Visible = false,
+				_K.UI.new "UIPadding" {
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+				},
 			}
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
@@ -49,9 +55,10 @@ return {
 		end,
 
 		runClient = function(context)
+			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = true,
-				context._K.UI.Scope.dashboard.Logs,
+				Visible = visible,
+				if visible then context._K.UI.Scope.dashboard.Logs else nil,
 			})
 		end,
 	},
@@ -147,7 +154,7 @@ return {
 			},
 		},
 
-		run = function(context, message, players)
+		run = function(context, players, message)
 			local ok, result = pcall(
 				TextService.FilterStringAsync,
 				TextService,

@@ -200,6 +200,8 @@ function Window.new(definition)
 		Text = "",
 		Activated = function()
 			new._instance.Visible = false
+			UI.clearState("hover")
+			UI.clearState("floating")
 		end,
 	}
 	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
@@ -212,12 +214,6 @@ function Window.new(definition)
 
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
-		},
-		UI.new "UIPadding" {
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
 		},
 	}
 
@@ -237,6 +233,12 @@ function Window.new(definition)
 			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,
 		},
+		UI.new "UIPadding" {
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+		},
 
 		UI.new "ImageLabel" {
 			Name = "ResizeIcon",
@@ -250,7 +252,7 @@ function Window.new(definition)
 			ResampleMode = Enum.ResamplerMode.Pixelated,
 			Position = UI.compute(function(use)
 				local inputPos = use(inputPosition)
-				return UDim2.fromOffset(inputPos.X - 8, inputPos.Y - 8 + use(UI.TopbarInset).Height) - use(new.Position)
+				return UDim2.fromOffset(inputPos.X - 8, inputPos.Y - 8) - use(new.Position)
 			end),
 
 			[UI.Event] = {
@@ -265,6 +267,7 @@ function Window.new(definition)
 
 			UI.new "UIListLayout" {
 				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UI.Theme.Padding,
 			},
 
 			UI.new "Frame" {
@@ -281,29 +284,25 @@ function Window.new(definition)
 					SortOrder = Enum.SortOrder.LayoutOrder,
 					Padding = UI.Theme.Padding,
 				},
-				UI.new "UIPadding" {
-					PaddingLeft = UI.Theme.Padding,
-				},
 
 				UI.new "TextLabel" {
 					Name = "Title",
 					BackgroundTransparency = 1,
 					AutomaticSize = Enum.AutomaticSize.Y,
-					Size = UDim2.new(1, 0, 0, 0),
+					Size = UDim2.new(1, 0, 0, 32),
 					Font = UI.Theme.Font,
 					Text = new.Title,
 					TextColor3 = UI.Theme.PrimaryText,
 					TextSize = UI.Theme.FontSizeLarger,
 					TextStrokeTransparency = 0.9,
 					TextXAlignment = "Left",
-					TextYAlignment = "Bottom",
 					TextTruncate = Enum.TextTruncate.SplitWord,
 
-					UI.new "UIPadding" {
-						PaddingTop = UI.Theme.Padding,
-					},
 					UI.new "UIFlexItem" {
 						FlexMode = Enum.UIFlexMode.Fill,
+					},
+					UI.new "UIPadding" {
+						PaddingLeft = UI.Theme.Padding,
 					},
 				},
 
@@ -346,6 +345,51 @@ function Window.new(definition)
 					UI.UserInputService.MouseIconEnabled = true
 				end
 			end
+		end
+	end)
+
+	local parentConn
+	new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
+		if parentConn then
+			parentConn:Disconnect()
+		end
+		local parent = new._instance.Parent
+		if parent and parent:IsA("GuiBase2d") then
+			local function updateSize()
+				local parentSize = new._instance.Parent.AbsoluteSize
+				local windowSize = new._instance.AbsoluteSize
+				local maxPosition = parentSize - windowSize
+				local position = new._instance.Position
+
+				local padding = new._instance.Parent:FindFirstChildOfClass("UIPadding")
+				local paddingX = if padding
+					then padding.PaddingLeft.Offset
+						+ parentSize.X * padding.PaddingLeft.Scale
+						+ padding.PaddingRight.Offset
+						+ parentSize.X * padding.PaddingRight.Scale
+					else 0
+				local paddingY = if padding
+					then padding.PaddingTop.Offset
+						+ parentSize.Y * padding.PaddingTop.Scale
+						+ padding.PaddingBottom.Offset
+						+ parentSize.Y * padding.PaddingBottom.Scale
+					else 0
+
+				new.Size:set(
+					UDim2.fromOffset(
+						math.clamp(windowSize.X, 0, parentSize.X - paddingX),
+						math.clamp(windowSize.Y, 0, parentSize.Y - paddingY)
+					)
+				)
+				new.Position:set(
+					UDim2.fromOffset(
+						math.clamp(position.X.Offset, 0, math.max(0, maxPosition.X)),
+						math.clamp(position.Y.Offset, 0, math.max(0, maxPosition.Y))
+					)
+				)
+			end
+			parentConn = parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSize)
+			updateSize()
 		end
 	end)
 

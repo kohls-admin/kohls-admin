@@ -99,8 +99,16 @@ function Command:validate()
 	if self.validated then
 		return true
 	end
-	-- start from 2 to skip the command name
+
 	local commandArray = self.array
+
+	-- always try first argument
+	if self.argLength > 0 and #commandArray < 2 then
+		self.text ..= " "
+		commandArray[2] = { #self.text, "" }
+	end
+
+	-- start from 2 to skip the command name
 	for i = 2, #commandArray do
 		local argPos, rawArg = unpack(commandArray[i])
 
@@ -140,7 +148,19 @@ function Command:validate()
 			self.argIndex += 1
 		end
 	end
-	-- TODO: verify that every defined non-optional argument is valid before full validation
+
+	for i, argDefinition in self.definition.args do
+		local arg = self.args[i]
+		if not arg and not argDefinition.optional then
+			local first = self.array[1]
+			local last = self.array[#self.array]
+			self.invalidArg = string.sub(self.text, first[1], last[1] + #last[2])
+			self.invalidPos = first[1]
+			self.argMissing = `Argument {i} missing: {argDefinition.name}`
+			return false, self.argMissing
+		end
+	end
+
 	self.validated = true
 	return true
 end
