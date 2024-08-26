@@ -137,8 +137,10 @@ function Logs.new(_K)
 	filterMenu = UI.new "Menu" {
 		Adornee = filterButton._instance,
 		RightAlign = true,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.fromOffset(128, 256),
+		Size = UI.compute(function(use)
+			local padding = use(UI.Theme.Padding).Offset
+			return UDim2.fromOffset(256 + padding * 3, (24 + padding) * 3.5 + padding / 2)
+		end),
 
 		UI.new "UIPadding" {
 			PaddingTop = UI.Theme.Padding,
@@ -148,10 +150,10 @@ function Logs.new(_K)
 		},
 	}
 
-	filterMenu._menu.AutomaticSize = Enum.AutomaticSize.Y
-
 	UI.edit(filterMenu._list, {
+		FillDirection = Enum.FillDirection.Horizontal,
 		Padding = UI.Theme.Padding,
+		Wraps = true,
 	})
 
 	for index, array in logTypes do
@@ -161,6 +163,7 @@ function Logs.new(_K)
 			LayoutOrder = index,
 			Text = logType,
 			ContentAutomaticSize = true,
+			Size = UDim2.fromOffset(128, 24),
 
 			UI.new "Checkbox" {
 				Value = logTypeFilter[logType],
