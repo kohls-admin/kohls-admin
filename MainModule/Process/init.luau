@@ -205,12 +205,10 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 			end
 		end
 
-		_K.log(
-			if commandError then commandError else logText or "",
-			if commandRan then "COMMAND" else "ERROR",
-			from,
-			true
-		)
+		_K.log(logText or "", "COMMAND", from, true)
+		if commandError then
+			_K.log(Util.String.filterForBroadcast(commandError, from), "ERROR", from, true)
+		end
 	end)
 
 	return commandRan
