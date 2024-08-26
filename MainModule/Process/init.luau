@@ -183,16 +183,18 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 					else
 						running += 1
 						task.spawn(function()
-							table.insert(log, Util.String.filterForBroadcast(Util.String.trim(arg.rawArg), from))
+							local filtered =
+								Util.String.filterForBroadcast(Util.Table.concat(arg.parsedArgs, ","), from)
+							table.insert(log, filtered)
 							running -= 1
 							if running == 0 then
+								logText = table.concat(log, " ")
 								coroutine.resume(mainThread)
 							end
 						end)
 					end
 				end
 			end
-			logText = table.concat(log, " ")
 		else -- filter entire rawText as broadcast
 			logText = Util.String.filterForBroadcast(Util.String.trim(rawText), from)
 		end
