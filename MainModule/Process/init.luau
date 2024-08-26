@@ -173,10 +173,8 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 		if commandRan then
 			local log = {}
 			for _, command in result do
-				if command.Error then
-					table.insert(log, _K.Data.settings.prefix .. command.definition.name)
-				end
 				table.insert(log, _K.Data.settings.prefix .. command.definition.name)
+
 				for _, arg in command.args do
 					if arg.rawType.log then
 						table.insert(log, arg.rawType.log(arg))
@@ -188,22 +186,31 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 							table.insert(log, filtered)
 							running -= 1
 							if running == 0 then
-								logText = table.concat(log, " ")
 								coroutine.resume(mainThread)
 							end
 						end)
 					end
 				end
 			end
+
+			if running > 0 then
+				coroutine.yield()
+			end
+
+			logText = table.concat(log, " ")
 		else -- filter entire rawText as broadcast
-			logText = Util.String.filterForBroadcast(Util.String.trim(rawText), from)
+			local trimmed = Util.String.trim(rawText)
+			if #trimmed > 0 then
+				logText = Util.String.filterForBroadcast(Util.String.trim(rawText), from)
+			end
 		end
 
-		if running > 0 then
-			coroutine.yield()
-		end
-
-		_K.log(if commandError then commandError else logText, if commandRan then "COMMAND" else "ERROR", from, true)
+		_K.log(
+			if commandError then commandError else logText or "",
+			if commandRan then "COMMAND" else "ERROR",
+			from,
+			true
+		)
 	end)
 
 	return commandRan

@@ -63,7 +63,7 @@ function Logs.new(_K)
 					if userInfo
 						then `{escape(displayName)}<font transparency="0.5">@{escape(userInfo.Username)}:</font> `
 						else "",
-					escape(log.text)
+					escape(log.text or "")
 				)
 			end
 
