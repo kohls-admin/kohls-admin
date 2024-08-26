@@ -40,12 +40,6 @@ label = "Home"
 position = "right"
 
 [[navbar.items]]
-href = "/intro"
-label = "Issues"
-position = "left"
-order = 0
-
-[[navbar.items]]
 href = "https://discord.gg/kohl"
 label = "Discord"
 position = "right"

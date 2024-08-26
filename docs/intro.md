@@ -45,5 +45,5 @@ Be aware of models impersonating Kohl's Admin. The model should be made by [@Scr
 2. Test some basic commands to make sure the admin commands are functioning as expected.
 
 :::tip
-Still need help? Feel free to join the [Kohl's Admin Discord](discord.gg/kohl)!
+Still need help? Feel free to join the [Kohl's Admin Discord](https://discord.gg/kohl)!
 :::
