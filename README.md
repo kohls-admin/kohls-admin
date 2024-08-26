@@ -23,16 +23,13 @@
 Meaningful contributions are highly appreciated and encouraged! <b>Contributors who wish to be credited will be recognized in the Kohl's Admin </b><code>About</code> <b>tab</b>.
 </p>
 
-
-
-
 # Features
 
 * **Automatic Updates:** Always have the latest features, fixes, and improvements from Kohl's Admin.
 * **Autocomplete Suggestions:** Modern suggestions to easily navigate through commands and arguments.
 * **Instant Command Validation:** Commands are validated instantly on the client, improving server performance for everyone!
 * **Comprehensive Moderation Tools:** Ban, kick, mute, teleport, and more – with over 200 commands at your disposal, you have the tools to maintain order and ensure a positive experience for everyone.
-* **Customizable User Interface**: Personalize the look and feel of your admin panel to match your game's aesthetics.
+* **Customizable User Interface:** Personalize the look and feel of your admin panel to match your game's aesthetics.
 * **Custom Commands & Extensions:** Easily design custom commands and extensions tailored to your experiences.
 * **Community Management:** Manage communication, roles, permissions, and more to foster a healthy and active community.
 * **Live Experience Settings:** Change settings and customize your Admin experience with ease from a live server.
