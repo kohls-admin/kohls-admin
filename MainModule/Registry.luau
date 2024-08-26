@@ -11,10 +11,8 @@ type Environment = {} | (_K: any) -> {}
 --- @type ArgumentFunction (value: any, from: Player) -> ...any
 export type ArgumentFunction = (value: any, from: Player) -> ...any
 
---[=[
-	@within Registry
-	@type ArgumentType {name: string, displayName: string?, listable: boolean?, transform: ArgumentFunction?, validate: ArgumentFunction, parse: ArgumentFunction, preParse: ArgumentFunction?, postParse: ArgumentFunction?, suggestions: ArgumentFunction?, prefixes: { [string]: string }? }
-]=]
+--- @within Registry
+--- @type ArgumentType {name: string, displayName: string?, listable: boolean?, transform: ArgumentFunction?, validate: ArgumentFunction, parse: ArgumentFunction, preParse: ArgumentFunction?, postParse: ArgumentFunction?, suggestions: ArgumentFunction?, prefixes: { [string]: string }? }
 export type ArgumentType = {
 	name: string,
 	displayName: string?,
@@ -28,10 +26,8 @@ export type ArgumentType = {
 	prefixes: { [string]: string }?,
 }
 
---[=[
-	@within Registry
-	@type ArgumentDefinition {type: string, name: string, description: string, optional: boolean?, lowerRank: boolean?, ignoreSelf: boolean?, shouldRequest: boolean? }
-]=]
+--- @within Registry
+--- @type ArgumentDefinition {type: string, name: string, description: string, optional: boolean?, lowerRank: boolean?, ignoreSelf: boolean?, shouldRequest: boolean? }
 export type ArgumentDefinition = {
 	type: string,
 	name: string,
@@ -43,10 +39,8 @@ export type ArgumentDefinition = {
 	shouldRequest: boolean?,
 }
 
---[=[
-	@within Registry
-	@type CommandDefinition = {name: string, aliases: { string }?, description: string, group: string, args: { ArgumentDefinition }, envClient: {} | () -> {}?, env: {} | () -> {}?, runClient: (...any) -> ()?, run: (...any) -> ()? }
-]=]
+--- @within Registry
+--- @type CommandDefinition {name: string, aliases: { string }?, description: string, group: string, args: { ArgumentDefinition }, envClient: {} | () -> {}?, env: {} | () -> {}?, runClient: (...any) -> ()?, run: (...any) -> ()? }
 export type CommandDefinition = {
 	name: string,
 	aliases: { string }?,
