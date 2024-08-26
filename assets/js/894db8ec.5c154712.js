@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[112],{63891:s=>{s.exports=JSON.parse('{"sourceUrl":"https://github.com/kohls-admin/main/blob/master","baseUrl":"/","classOrder":[],"apiCategories":[]}')}}]);

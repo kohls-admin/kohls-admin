@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[627],{48338:e=>{e.exports=JSON.parse('{"functions":[],"properties":[],"types":[],"name":"Hook","desc":"","source":{"line":4,"path":"MainModule/Hook.luau"}}')}}]);
