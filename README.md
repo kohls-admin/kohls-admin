@@ -71,7 +71,7 @@ The following assumes you have Moonwave installed, if not navigate to the [Getti
 2. Run the development server:
 
    ```bash
-   moonwave dev --code MainModule/
+   moonwave dev
    ```
 
 3. Navigate to the `docs/` folder to start contributing directly to the documentation.
