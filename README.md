@@ -39,18 +39,37 @@ Meaningful contributions are highly appreciated and encouraged! <b>Contributors 
 
 To get started with contributing to Kohl's Admin, follow these steps:
 
-1. **Fork the repository:** Create a fork of the repository.
+## Prerequisites
+* [Aftman](https://github.com/LPGhatguy/aftman)
+* [Roblox Studio](https://create.roblox.com/docs/studio/setting-up-roblox-studio)
+
+The following assumes you have aftman installed, if not navigate to the [Installation](https://github.com/LPGhatguy/aftman#installation) for Aftman.
+
+1. **Fork the repository:** Create a [fork](https://github.com/kohls-admin/main/fork) of the repository.
 2. **Clone the repository:** Clone your fork locally:
+	```bash
+	git clone https://github.com/your-username/main.git
+	```
+3. **Checkout the testing branch:** The development work is done on the testing branch, which is the most current and unstable version of the codebase. When contributing, make sure to switch to this branch to stay up-to-date:
+	```bash
+	git checkout testing
+	```
+4. **Install Aftman tools:**
+	```bash
+	aftman install
+	```
+5. **Install Roblox Studio [Rojo](https://rojo.space/) plugin:**
+	```bash
+	rojo plugin install
+	```
 
-   ```bash
-   git clone https://github.com/your-username/main.git
-   ```
+## Studio Testing
 
-3. **Checkout the testing branch**: The development work is done on the testing branch, which is the most current and unstable version of the codebase. When contributing, make sure to switch to this branch to stay up-to-date:
-
-   ```bash
-   git checkout testing
-   ```
+1. **Start the Rojo server:**
+	```bash
+	rojo serve
+	```
+2. **Connect to Rojo server:** in Roblox Studio using the [Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin).
 
 Congratulations! You are ready to start contributing to the codebase portion of the project!
 
@@ -58,7 +77,7 @@ Congratulations! You are ready to start contributing to the codebase portion of 
 
 This project utilizes [Moonwave](https://eryn.io/moonwave/) for managing our documentation.
 
-To contribute to the Kohl's Admin documentation, follow the steps outlined in the [Contributing (Codebase)](#contributing-codebase) section before moving forward.
+To contribute to the Kohl's Admin documentation, follow steps 1-3 outlined in the [Contributing (Codebase)](#contributing-codebase) section before moving forward.
 
 ## Prerequisites
 
@@ -69,10 +88,9 @@ The following assumes you have Moonwave installed, if not navigate to the [Getti
 
 1. Open your terminal and navigate to the your local project directory.
 2. Run the development server:
-
-   ```bash
-   moonwave dev
-   ```
+	```bash
+	moonwave dev
+	```
 
 3. Navigate to the `docs/` folder to start contributing directly to the documentation.
 
@@ -83,9 +101,9 @@ Congratulations! You are ready to start contributing to the documentation portio
 If you encounter any issues, don't hesitate to open an issue by clicking the button below or using the `Issues` tab at the top of the repository.
 
 <div align="center">
-  <a href="https://github.com/kohls-admin/main/issues/new" target="_blank">
-    <img src="https://img.shields.io/badge/Open_Issue-Click_Here-blue?style=for-the-badge" alt="Open Issue" />
-  </a>
+	<a href="https://github.com/kohls-admin/main/issues/new" target="_blank">
+		<img src="https://img.shields.io/badge/Open_Issue-Click_Here-blue?style=for-the-badge" alt="Open Issue" />
+	</a>
 </div>
 
 # License
