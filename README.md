@@ -1,5 +1,5 @@
 <div align="center">
-	<img src="assets/logo.svg" alt="Kohl's Admin" height="150" />
+	<img src=".moonwave/static/logo-load-dark.svg" alt="Kohl's Admin" height="150" />
 	<br/>
 	<a href="https://docs.kohl.gg/"><img src="https://img.shields.io/badge/docs-docs.kohl.gg-222" /></a>
 	<a href="https://discord.gg/bwCC7gV"><img src="https://img.shields.io/discord/694630328064671775" /></a>

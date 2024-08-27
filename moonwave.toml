@@ -19,7 +19,7 @@ classes = ["Util", "Logger", "Promise", "String"]
 [docusaurus]
 onBrokenLinks = "warn"
 onBrokenMarkdownLinks = "warn"
-favicon = "/logo.svg"
+favicon = "/logo-dark.svg"
 organizationName = "kohls-admin"
 projectName = "main"
 deploymentBranch = "gh-pages"
@@ -48,6 +48,7 @@ position = "right"
 alt = "Kohl's Admin"
 href = "https://kohl.gg"
 src = "/logo-load.svg"
+srcDark = "/logo-load-dark.svg"
 target = "_self"
 
 [footer]
