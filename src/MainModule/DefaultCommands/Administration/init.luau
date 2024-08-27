@@ -42,7 +42,7 @@ return {
 	{
 		name = "role",
 		aliases = { "setrole", "addrole", "giverole" },
-		description = "Assigns role(s) to one or more players.",
+		description = "Assigns role(s) to one or more player(s).",
 		-- asks players with the same or higher rank if the command should work on them
 		args = {
 			{
@@ -83,7 +83,7 @@ return {
 	{
 		name = "roleid",
 		aliases = { "setroleid", "addroleid", "giveroleid" },
-		description = "Assigns role(s) to one or more users.",
+		description = "Assigns role(s) to one or more user(s).",
 		-- asks players with the same or higher rank if the command should work on them
 		args = {
 			{
@@ -116,7 +116,7 @@ return {
 	{
 		name = "unrole",
 		aliases = { "removerole" },
-		description = "Removes role(s) from one or more players.",
+		description = "Removes role(s) from one or more player(s).",
 		-- asks players with the same or higher rank if the command should work on them
 		args = {
 			{
@@ -143,7 +143,7 @@ return {
 	{
 		name = "unadmin",
 		aliases = { "removepermissions" },
-		description = "Removes all roles and permissions from one or more players.",
+		description = "Removes all roles and permissions from one or more player(s).",
 		-- asks players with the same or higher rank if the command should work on them
 		args = {
 			{

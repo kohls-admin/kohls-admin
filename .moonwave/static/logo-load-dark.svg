@@ -1,0 +1,7 @@
+<svg viewBox="0 0 44.142 44.142" xmlns="http://www.w3.org/2000/svg"><rect width="44.142" height="44.142"/>
+	<path stroke="#fff" stroke-width="1" stroke-dasharray="1" stroke-dashoffset="1" pathLength="1" d="m37.0711 36.9711v-29.9l-30 30h5l21.464-21.464v16.464l-13.232-13.232 11.768-11.768h-5l-16.464 16.464v-16.464h-3.536v25l10.732-10.732 15.732 15.732h3.536z" fill="#000" paint-order="stroke">
+		<animate id="draw" attributeName="stroke-dashoffset" fill="freeze" to="0" dur="2s" begin="0s"/>
+		<animate attributeName="fill" fill="freeze" to="#fff" dur="0.2s" begin="draw.end"/>
+		<animate attributeName="stroke-width" fill="freeze" to="0" dur="0.2s" begin="draw.end"/>
+	</path>
+</svg>

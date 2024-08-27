@@ -17,9 +17,9 @@ section = "Utility"
 classes = ["Util", "Logger", "Promise", "String"]
 
 [docusaurus]
-onBrokenLinks = "throw"
+onBrokenLinks = "warn"
 onBrokenMarkdownLinks = "warn"
-favicon = "/logo.svg"
+favicon = "/logo-dark.svg"
 organizationName = "kohls-admin"
 projectName = "main"
 deploymentBranch = "gh-pages"
@@ -35,9 +35,11 @@ includeReadme = false
 title = ""
 
 [[navbar.items]]
-href = "https://kohl.gg"
-label = "Home"
-position = "right"
+href = "https://kohl.gg/faq"
+label = "FAQ"
+position = "left"
+target = "_self"
+className = "no-link-icon"
 
 [[navbar.items]]
 href = "https://discord.gg/kohl"
@@ -48,6 +50,7 @@ position = "right"
 alt = "Kohl's Admin"
 href = "https://kohl.gg"
 src = "/logo-load.svg"
+srcDark = "/logo-load-dark.svg"
 target = "_self"
 
 [footer]

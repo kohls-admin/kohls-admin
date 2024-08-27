@@ -89,7 +89,7 @@ return {
 
 	{
 		name = "ban",
-		description = "Bans one or more players for a certain duration.",
+		description = "Bans one or more player(s) for a certain duration.",
 		args = {
 			{
 				type = "players",
@@ -137,7 +137,7 @@ return {
 	},
 	{
 		name = "banid",
-		description = "Bans one or more players by userId.",
+		description = "Bans one or more player(s) by userId.",
 		args = {
 			{
 				type = "integers",
@@ -195,7 +195,7 @@ return {
 	},
 	{
 		name = "unban",
-		description = "Unbans one or more players.",
+		description = "Unbans one or more player(s).",
 		args = {
 			{
 				type = "bans",
@@ -219,7 +219,7 @@ return {
 	},
 	{
 		name = "kick",
-		description = "Kicks one or more players.",
+		description = "Kicks one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -238,9 +238,89 @@ return {
 		permissions = {
 			kick = true,
 		},
-		run = function(context, players, duration: number?, reason: string?)
+		run = function(context, players, reason: string?)
 			for _, player in players do
 				player:Kick(reason)
+			end
+		end,
+	},
+	{
+		name = "mute",
+		aliases = { "shh", "silence" },
+		description = "Mutes one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to mute.",
+				ignoreSelf = true,
+				lowerRank = true,
+			},
+		},
+		env = function(_K)
+			local muted = {}
+			_K.Util.Services.TextChatService.DescendantAdded:Connect(function(descendant)
+				if descendant:IsA("TextSource") then
+					if muted[descendant.UserId] then
+						descendant.CanSend = false
+					end
+				end
+			end)
+
+			_K.Data.muted = muted
+			return { muted = muted }
+		end,
+		run = function(context, players)
+			for _, player in players do
+				context._K.Remote.SetCore:FireClient(player, "ChatBarDisabled", true)
+				context._K.Remote.SetCore:FireClient(
+					player,
+					"ChatMakeSystemMessage",
+					{ Text = "You have been muted.", Color = Color3.new(1, 0, 0) }
+				)
+				context.env.muted[player.UserId] = true
+				for _, descendant in context._K.Util.Services.TextChatService:GetDescendants() do
+					if descendant:IsA("TextSource") and descendant.UserId == player.UserId and descendant.CanSend then
+						descendant:SetAttribute("_KCouldSend", true)
+						descendant.CanSend = false
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "unmute",
+		aliases = { "unshh", "unsilence" },
+		description = "Unmutes one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to unmute.",
+				ignoreSelf = true,
+				lowerRank = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				context._K.Remote.SetCore:FireClient(player, "ChatBarDisabled", false)
+				context._K.Remote.SetCore:FireClient(
+					player,
+					"ChatMakeSystemMessage",
+					{ Text = "You have been unmuted.", Color = Color3.new(0, 1, 0) }
+				)
+				context._K.Data.muted[player.UserId] = nil
+				for _, descendant in context._K.Util.Services.TextChatService:GetDescendants() do
+					if
+						descendant:IsA("TextSource")
+						and descendant.UserId == player.UserId
+						and descendant:GetAttribute("_KCouldSend")
+					then
+						descendant:SetAttribute("_KCouldSend", nil)
+						descendant.CanSend = true
+					end
+				end
 			end
 		end,
 	},
@@ -308,7 +388,7 @@ return {
 	{
 		name = "breakjoints",
 		aliases = { "break", "kill" },
-		description = "Breaks the joints one or more players.",
+		description = "Breaks the joints one or more player(s).",
 		args = {
 			{
 				type = "players",

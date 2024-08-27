@@ -5,6 +5,8 @@ local Menu = {}
 Menu.__index = Menu
 setmetatable(Menu, BaseClass)
 
+UI.Scope.LayerTopSize = UI.state(UI.LayerTop, "AbsoluteSize")
+
 function Menu.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Adornee = false,
@@ -65,6 +67,8 @@ function Menu.new(definition)
 		},
 	}
 
+	local menuSize = UI.state(new._instance, "AbsoluteSize")
+
 	local function onAdornee(adornee)
 		if not adornee then
 			return
@@ -75,12 +79,22 @@ function Menu.new(definition)
 
 		UI.edit(new._instance, {
 			Position = UI.compute(function(use)
-				local pos = use(absolutePosition)
-				local size = use(absoluteSize)
+				local size = use(menuSize)
+				local layerSize = use(UI.Scope.LayerTopSize)
+				local absolutePos = use(absolutePosition)
+				local absoluteSize = use(absoluteSize)
 				local rightAlign = use(new.RightAlign)
+				local padding = use(UI.Theme.Padding).Offset
+				local height = use(UI.TopbarInset).Height
+
+				local xPos = absolutePos.X + if rightAlign then absoluteSize.X else 0
+				local yPos = absolutePos.Y + absoluteSize.Y + padding + height
+
 				return UDim2.fromOffset(
-					pos.X + if rightAlign then size.X else 0,
-					pos.Y + size.Y + use(UI.Theme.Padding).Offset + use(UI.TopbarInset).Height
+					if rightAlign
+						then math.clamp(xPos, size.X, layerSize.X)
+						else math.clamp(xPos, 0, layerSize.X - size.X),
+					math.clamp(yPos, 0, layerSize.Y - size.Y)
 				)
 			end),
 		})

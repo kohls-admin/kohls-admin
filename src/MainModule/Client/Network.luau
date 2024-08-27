@@ -24,6 +24,10 @@ Remote.Notify.OnClientEvent:Connect(function(text: string, from: number?, noteTy
 	})
 end)
 
+Remote.SetCore.OnClientEvent:Connect(function(parameter: string, value: any)
+	Util.Services.StarterGui:SetCore(parameter, value)
+end)
+
 local requestingCommand = {}
 Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
 	if requestingCommand[from.UserId] then
