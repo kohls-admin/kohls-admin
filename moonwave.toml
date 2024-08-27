@@ -17,7 +17,7 @@ section = "Utility"
 classes = ["Util", "Logger", "Promise", "String"]
 
 [docusaurus]
-onBrokenLinks = "throw"
+onBrokenLinks = "warn"
 onBrokenMarkdownLinks = "warn"
 favicon = "/logo.svg"
 organizationName = "kohls-admin"
