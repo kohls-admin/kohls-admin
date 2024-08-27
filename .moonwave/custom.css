@@ -54,3 +54,7 @@
 .no-link-icon svg {
 	display: none;
 }
+
+.navbar__link {
+	font-weight: normal;
+}
