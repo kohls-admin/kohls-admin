@@ -89,7 +89,7 @@ return {
 
 	{
 		name = "ban",
-		description = "Bans one or more players for a certain duration.",
+		description = "Bans one or more player(s) for a certain duration.",
 		args = {
 			{
 				type = "players",
@@ -137,7 +137,7 @@ return {
 	},
 	{
 		name = "banid",
-		description = "Bans one or more players by userId.",
+		description = "Bans one or more player(s) by userId.",
 		args = {
 			{
 				type = "integers",
@@ -195,7 +195,7 @@ return {
 	},
 	{
 		name = "unban",
-		description = "Unbans one or more players.",
+		description = "Unbans one or more player(s).",
 		args = {
 			{
 				type = "bans",
@@ -219,7 +219,7 @@ return {
 	},
 	{
 		name = "kick",
-		description = "Kicks one or more players.",
+		description = "Kicks one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -238,7 +238,7 @@ return {
 		permissions = {
 			kick = true,
 		},
-		run = function(context, players, duration: number?, reason: string?)
+		run = function(context, players, reason: string?)
 			for _, player in players do
 				player:Kick(reason)
 			end
@@ -388,7 +388,7 @@ return {
 	{
 		name = "breakjoints",
 		aliases = { "break", "kill" },
-		description = "Breaks the joints one or more players.",
+		description = "Breaks the joints one or more player(s).",
 		args = {
 			{
 				type = "players",
