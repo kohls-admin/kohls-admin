@@ -50,3 +50,7 @@
 .footer--dark {
 	--ifm-footer-background-color: #000;
 }
+
+.no-link-icon svg {
+	display: none;
+}
