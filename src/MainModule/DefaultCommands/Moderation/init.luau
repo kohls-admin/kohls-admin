@@ -750,6 +750,49 @@ return {
 			end
 		end,
 	},
+	{
+		name = "lock",
+		description = "Locks the character of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to lock.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				for _, descendant in player.Character:GetDescendants() do
+					if descendant:IsA("BasePart") then
+						descendant.Locked = true
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "unlock",
+		description = "Unlocks the character of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to unlock.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				for _, descendant in player.Character:GetDescendants() do
+					if descendant:IsA("BasePart") then
+						descendant.Locked = false
+					end
+				end
+			end
+		end,
+	},
 
 	{
 		name = "stun",
