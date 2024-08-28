@@ -852,6 +852,50 @@ return {
 	},
 
 	{
+		name = "fov",
+		aliases = { "unfov", "resetfov" },
+		description = "Changes the field of view of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose field of view to change.",
+			},
+			{
+				type = "number",
+				name = "Degrees",
+				description = "The field of view in degrees.",
+				optional = true,
+			},
+		},
+		envClient = function(_K)
+			local last
+			_K.Remote.FOV.OnClientEvent:Connect(function(degrees)
+				if degrees and not last then
+					last = workspace.CurrentCamera.FieldOfView
+				end
+				if degrees or last then
+					workspace.CurrentCamera.FieldOfView = degrees or last
+					if not degrees then
+						last = nil
+					end
+				end
+			end)
+			return true
+		end,
+		env = function(_K)
+			return {
+				remote = _K.Remote.FOV,
+			}
+		end,
+
+		run = function(context, players, degrees)
+			for _, player in players do
+				context.env.remote:FireClient(player, if degrees == context.OPTIONAL then nil else degrees)
+			end
+		end,
+	},
+	{
 		name = "jump",
 		description = "Makes one or more player(s) jump.",
 		args = {
