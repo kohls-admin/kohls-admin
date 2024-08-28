@@ -42,15 +42,18 @@ end
 -- Dynamic remote creation for command enviroments
 return setmetatable(Remote, {
 	__index = function(self, key)
+		local remote
 		if IsServer then
-			local remote = Instance.new("RemoteEvent")
+			remote = Instance.new("RemoteEvent")
 			remote.Name = key
 			remote.Parent = script
 			self[key] = remote
+			return remote
 		else
-			self[key] = script:WaitForChild(key)
+			remote = script:FindFirstChild(key)
+			self[key] = remote
 		end
 
-		return self[key]
+		return remote
 	end,
 })
