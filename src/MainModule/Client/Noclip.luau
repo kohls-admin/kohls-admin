@@ -119,6 +119,14 @@ function Noclip.noclip(enabled: boolean)
 	if not enabled == not noclipping then
 		return
 	end
+
+	if noclipping then
+		if typeof(noclipping) == "RBXScriptConnection" then
+			noclipping:Disconnect()
+		end
+		noclipping = nil
+	end
+
 	noclipping = enabled
 	Noclip.fly(enabled)
 
@@ -129,12 +137,6 @@ function Noclip.noclip(enabled: boolean)
 	if enabled then
 		onCharacter(LocalPlayer.Character)
 	else
-		if noclipping then
-			if typeof(noclipping) == "RBXScriptConnection" then
-				noclipping:Disconnect()
-			end
-			noclipping = nil
-		end
 		Humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 		Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
 		Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)

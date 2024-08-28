@@ -305,7 +305,6 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to remove flight from.",
-				shouldRequest = true,
 			},
 		},
 
