@@ -633,6 +633,56 @@ return {
 	},
 
 	{
+		name = "blind",
+		description = "Blinds one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to blind.",
+			},
+		},
+		env = function(_K)
+			return { remote = _K.Remote.Blind }
+		end,
+		envClient = function(_K)
+			local blind = _K.UI.new "Frame" {
+				Parent = _K.UI.LayerTop,
+				BackgroundColor3 = Color3.new(),
+				Size = UDim2.fromScale(1, 1),
+				ZIndex = -100,
+				Visible = false,
+			}
+			_K.Remote.Blind.OnClientEvent:Connect(function(blinded)
+				blind.Visible = if blinded then true else false
+			end)
+			return { frame = blind }
+		end,
+
+		run = function(context, players)
+			for _, player in players do
+				context._K.Remote.Blind:FireClient(player, true)
+			end
+		end,
+	},
+	{
+		name = "unblind",
+		description = "Unblinds one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to unblind.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				context._K.Remote.Blind:FireClient(player)
+			end
+		end,
+	},
+	{
 		name = "freeze",
 		aliases = { "anchor" },
 		description = "Freezes one or more player(s).",
