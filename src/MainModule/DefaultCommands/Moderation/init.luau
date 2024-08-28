@@ -896,6 +896,21 @@ return {
 		end,
 	},
 	{
+		name = "starterjumppower",
+		description = "Changes the jump power of one or more player(s) when they spawn.",
+		args = {
+			{
+				type = "number",
+				name = "JumpPower",
+				description = "The jump power to use.",
+			},
+		},
+
+		run = function(context, walkSpeed: number)
+			context.Util.Services.StarterPlayer.CharacterJumpPower = walkSpeed
+		end,
+	},
+	{
 		name = "sit",
 		description = "Makes one or more player(s) sit.",
 		args = {
@@ -952,12 +967,28 @@ return {
 			},
 		},
 
-		run = function(context, players, walkSpeed)
+		run = function(context, players, walkSpeed: number)
 			for _, player in players do
 				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
 					player.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed
 				end
 			end
+		end,
+	},
+	{
+		name = "starterspeed",
+		aliases = { "starterwalkspeed" },
+		description = "Changes the walkspeed of one or more player(s) when they spawn.",
+		args = {
+			{
+				type = "number",
+				name = "Speed",
+				description = "The walkspeed to use.",
+			},
+		},
+
+		run = function(context, walkSpeed: number)
+			context.Util.Services.StarterPlayer.CharacterWalkSpeed = walkSpeed
 		end,
 	},
 	{
@@ -997,7 +1028,7 @@ return {
 			},
 		},
 
-		run = function(context, maxSlopeAngle)
+		run = function(context, maxSlopeAngle: number)
 			context.Util.Services.StarterPlayer.CharacterMaxSlopeAngle = math.clamp(maxSlopeAngle, 0, 89)
 		end,
 	},
