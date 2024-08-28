@@ -7,6 +7,7 @@ local _REMOTECALL = Instance.new("RemoteFunction")
 
 --- @class Remote
 local Remote = {
+	script = script,
 	Announce = _REMOTE,
 	Ban = _REMOTE,
 	Bans = _REMOTE,
@@ -38,4 +39,18 @@ for name, base in Remote do
 	end
 end
 
-return Remote
+-- Dynamic remote creation for command enviroments
+return setmetatable(Remote, {
+	__index = function(self, key)
+		if IsServer then
+			local remote = Instance.new("RemoteEvent")
+			remote.Name = key
+			remote.Parent = script
+			self[key] = remote
+		else
+			self[key] = script:WaitForChild(key)
+		end
+
+		return self[key]
+	end,
+})
