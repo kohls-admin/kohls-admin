@@ -14,7 +14,7 @@ local accelDuration = 16
 local lastStop = elapsedTime()
 
 local function FlyStep(delta)
-	if not (Character and Humanoid and Character.PrimaryPart) then
+	if not (Character and Humanoid and Character.PrimaryPart and not Character:FindFirstChild("kFreeze")) then
 		return
 	end
 	local cameraCFrame = workspace.CurrentCamera.CFrame
@@ -27,6 +27,7 @@ local function FlyStep(delta)
 	else
 		lastStop = elapsedTime()
 	end
+	Character.PrimaryPart.Anchored, Humanoid.PlatformStand = true, true
 	Character.PrimaryPart.CFrame = Character.PrimaryPart.CFrame:lerp(newCFrame, 0.25)
 end
 
