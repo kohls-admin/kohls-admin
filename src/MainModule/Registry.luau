@@ -14,12 +14,12 @@ export type ArgumentFunction = (value: any, from: Player) -> ...any
 --- @within Registry
 --- @type ArgumentType {name: string, displayName: string?, listable: boolean?, transform: ArgumentFunction?, validate: ArgumentFunction, parse: ArgumentFunction, preParse: ArgumentFunction?, postParse: ArgumentFunction?, suggestions: ArgumentFunction?, prefixes: { [string]: string }? }
 export type ArgumentType = {
-	name: string,
+	name: string?,
 	displayName: string?,
 	listable: boolean?,
 	transform: ArgumentFunction?,
-	validate: ArgumentFunction,
-	parse: ArgumentFunction,
+	validate: ArgumentFunction?,
+	parse: ArgumentFunction?,
 	preParse: ArgumentFunction?,
 	postParse: ArgumentFunction?,
 	suggestions: ArgumentFunction?,
@@ -92,7 +92,6 @@ end
 --- Registers a command type
 function Registry.registerType(name: string, typeObject: ArgumentType, override: Dict?)
 	assert(name and typeof(name) == "string", "Invalid type name: " .. typeof(name))
-	assert(string.find(name, "^%w*$"), 'Invalid type name: "' .. name .. '", type names must be alphanumeric!')
 	assert(Registry.types[name] == nil, 'Type "' .. name .. '" already exists!')
 
 	if override then
@@ -124,6 +123,15 @@ function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 		end
 	elseif not oldCommand then
 		table.insert(Registry.commandsList, commandObject)
+	end
+
+	for _, arg in commandObject.args do
+		if not Registry.types[arg.type] and string.find(arg.type, "Enum.", 1, true) == 1 then
+			local enum = (Enum :: any)[string.sub(arg.type, 6)]
+			local enumType = Registry.makeEnumType(arg.type, enum:GetEnumItems())
+			Registry.registerType(arg.type, enumType)
+			Registry.registerType(arg.type .. "s", { listable = true }, enumType)
+		end
 	end
 
 	if RunService:IsServer() and type(commandObject.env) == "function" then

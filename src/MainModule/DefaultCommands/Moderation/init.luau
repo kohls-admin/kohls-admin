@@ -1145,8 +1145,8 @@ return {
 				description = "The player(s) to prompt.",
 			},
 			{
-				type = "infoType",
-				name = "Info Type",
+				type = "Enum.InfoType",
+				name = "InfoType",
 				description = "The Enum.InfoType of the purchase.",
 				optional = true,
 			},
