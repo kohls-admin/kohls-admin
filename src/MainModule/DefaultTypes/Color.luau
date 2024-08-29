@@ -1,8 +1,37 @@
 local _K
 
+local COLORS = {
+	red = Color3.new(1, 0, 0),
+	orange = Color3.new(1, 0.5, 0),
+	yellow = Color3.new(1, 1, 0),
+	yellowgreen = Color3.new(0.5, 1, 0),
+	green = Color3.new(0, 1, 0),
+	aqua = Color3.new(0, 1, 1),
+	cyan = Color3.new(0, 1, 1),
+	blue = Color3.new(0, 0, 1),
+	purple = Color3.new(0.5, 0, 1),
+	violet = Color3.new(0.5, 0, 1),
+	pink = Color3.new(1, 0, 1),
+	magenta = Color3.new(1, 0, 0.5),
+
+	white = Color3.new(1, 1, 1),
+	black = Color3.new(0, 0, 0),
+	grey = Color3.new(0.5, 0.5, 0.5),
+	gray = Color3.new(0.5, 0.5, 0.5),
+}
+
+local colorNames = { "0,0,0", "255,255,255", "#000", "#fff" }
+for name in COLORS do
+	table.insert(colorNames, name)
+end
+table.sort(colorNames)
+
 local typeColor = {
 	transform = function(input: string)
 		input = _K.Util.String.trim(input)
+		if COLORS[input] then
+			return COLORS[input]
+		end
 		if string.find(input, "^#") then
 			if #input > 7 or string.find(input, "[^#a-fA-F%d]") then
 				return nil -- invalid hex input
@@ -31,7 +60,7 @@ local typeColor = {
 	end,
 
 	suggestions = function(text: string)
-		local names = { "0,0,0", "255,255,255", "#000", "#fff" }
+		local names = table.clone(colorNames)
 
 		if string.find(text, "^#") then
 			if #text < 4 then
