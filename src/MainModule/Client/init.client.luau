@@ -45,9 +45,9 @@ local function Chatted(message: string)
 	local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
 	if not commandStart then
 		-- checks for invalid prefix but valid command alias
-		local test = string.lower(message)
+		local test = " " .. string.lower(message)
 		for alias in _K.Registry.commands do
-			if string.find(test, `[^%s%w]{_K.Util.String.escapePattern(alias)}`) then
+			if string.find(test, `%s[^%s%w]{_K.Util.String.escapePattern(alias)}`) then
 				task.spawn(_K.client.Notify, {
 					Text = `<b>Invalid command prefix, use "{_K.Data.settings.prefix}"</b>`,
 					TextColor3 = Color3.new(1, 0, 0),
