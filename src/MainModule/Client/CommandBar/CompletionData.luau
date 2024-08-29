@@ -74,7 +74,12 @@ return function(_K, text, cursorPosition)
 				data.query = commandText
 				table.insert(data.invalid, { "Invalid command2", commandPos, commandText })
 				return data
+			elseif commandDefinition then
+				local command = Command.new(_K, commandDefinition, commandArray, from, text)
+				command:validate()
+				table.insert(data.commands, command)
 			end
+
 			if greedy and cursorPosition > commandEnd then
 				data.argIndex = #commandDefinition.args
 				data.argPos = commandArray[math.min(#commandArray, data.argIndex + 1)][1]
@@ -82,12 +87,6 @@ return function(_K, text, cursorPosition)
 				data.query = string.sub(text, data.argPos)
 				data.rawArg = data.query
 				return data
-			end
-
-			if commandDefinition then
-				local command = Command.new(_K, commandDefinition, commandArray, from, text)
-				command:validate()
-				table.insert(data.commands, command)
 			end
 
 			continue -- cursor not within commandArray
