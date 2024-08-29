@@ -91,12 +91,13 @@ function Commands.new(_K)
 				)
 				else `<font transparency="0.5">{text}</font>`
 			local descFound = string.find(string.lower(command.description), self._filter)
+			-- TODO: make something that remove richtext tags to prevent highlight filter
 			item.Description.Text = if descFound
 				then string.format(
 					filterRichFormat,
-					escape(string.sub(command.description, 1, descFound - 1)),
-					escape(string.sub(command.description, descFound, descFound + #self._filter - 1)),
-					escape(string.sub(command.description, descFound + #self._filter))
+					string.sub(command.description, 1, descFound - 1),
+					string.sub(command.description, descFound, descFound + #self._filter - 1),
+					string.sub(command.description, descFound + #self._filter)
 				)
 				else `<font transparency="0.5">{command.description}</font>`
 			return
@@ -107,7 +108,7 @@ function Commands.new(_K)
 			escape(_K.Data.settings.prefix .. command.name .. " " .. table.concat(argNames, " ")),
 			escape(aliasText)
 		)
-		item.Description.Text = `<font transparency="0.33">{escape(command.description)}</font>`
+		item.Description.Text = `<font transparency="0.33">{command.description}</font>`
 		item.TooltipRef.Value.Text = "TODO show example usage, roles, and credit"
 	end
 

@@ -302,7 +302,7 @@ local function invalidSuggestion(data, err, pos, text)
 			argumentFormat,
 			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
 			_K.Util.String.escapeRichText(data.argDefinition.type),
-			_K.Util.String.escapeRichText(data.argDefinition.description)
+			data.argDefinition.description
 		)
 	for _, label in suggestionLabels do
 		label:Destroy()
@@ -331,7 +331,7 @@ local function invalidSuggestion(data, err, pos, text)
 			argumentFormat,
 			_K.Util.String.escapeRichText(suggestionText),
 			"command",
-			_K.Util.String.escapeRichText(suggestionValue.description)
+			suggestionValue.description
 		)
 	end
 	return
@@ -384,7 +384,7 @@ updateCompletion = function()
 			argumentFormat,
 			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
 			_K.Util.String.escapeRichText(data.argDefinition.type),
-			_K.Util.String.escapeRichText(data.argDefinition.description)
+			data.argDefinition.description
 		)
 		TooltipFrame.Visible = true
 		-- TODO: some types should show a widget for fast select e.g. color wheel
@@ -454,7 +454,7 @@ updateCompletion = function()
 			argumentFormat,
 			_K.Util.String.escapeRichText(suggestionText),
 			"command",
-			_K.Util.String.escapeRichText(suggestionValue.description)
+			suggestionValue.description
 		)
 	end
 	if data.argDefinition or data.argIndex == 1 then
