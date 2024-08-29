@@ -451,6 +451,55 @@ return {
 		end,
 	},
 	{
+		name = "give",
+		description = "Gives a tool to one or more player(s).\nTools must be a descendant of <b>Lighting</b> or <b>ServerStorage</b>.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to give the tools.",
+			},
+			{
+				type = "tools",
+				name = "Tools",
+				description = "The tools to give.",
+			},
+		},
+
+		run = function(context, players, tools)
+			for _, player in players do
+				for _, tool in tools do
+					tool:Clone().Parent = player.Backpack
+				end
+			end
+		end,
+	},
+	{
+		name = "removetools",
+		aliases = { "rtools" },
+		description = "Removes all tools from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove tools from.",
+			},
+		},
+
+		run = function(context, players, tools)
+			for _, player in players do
+				for _, descendant in player.Backpack:GetDescendants() do
+					removeTool(descendant)
+				end
+				if player.Character then
+					for _, descendant in player.Character:GetDescendants() do
+						removeTool(descendant)
+					end
+				end
+			end
+		end,
+	},
+	{
 		name = "sword",
 		description = "Gives a sword to one or more player(s).",
 		args = {
