@@ -3,6 +3,12 @@
 local Jail = require(script.Jail)
 local teleportCharacter = require(script.teleportCharacter)
 
+local function removeTool(tool)
+	if tool:IsA("Tool") or tool:IsA("HopperBin") then
+		task.defer(tool.Destroy, tool)
+	end
+end
+
 return {
 	{
 		name = "bans",
@@ -381,6 +387,65 @@ return {
 					end
 					player.Character:PivotTo(player.Character:GetAttribute("kPunish"))
 					player.Character:SetAttribute("kPunish", nil)
+				end
+			end
+		end,
+	},
+	{
+		name = "toolban",
+		aliases = { "bantools" },
+		description = "Bans one or more player(s) from using tools.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to ban from using tools.",
+				lowerRank = true,
+			},
+		},
+		env = function(_K)
+			_K.Flux.Scope.toolBans = {}
+			return {
+				bans = _K.Flux.Scope.toolBans,
+			}
+		end,
+
+		run = function(context, players)
+			for _, player in players do
+				if context.env.bans[player] then
+					return
+				end
+				context.env.bans[player] = player.Backpack.ChildAdded:Connect(removeTool)
+				for _, tool in player.Backpack:GetDescendants() do
+					removeTool(tool)
+				end
+				if player.Character then
+					for _, tool in player.Character:GetDescendants() do
+						removeTool(tool)
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "untoolban",
+		aliases = { "unbantools" },
+		description = "Unbans one or more player(s) from using tools.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to unban from using tools.",
+				lowerRank = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local toolBan = context._K.Flux.Scope.toolBans[player]
+				if toolBan then
+					toolBan:Disconnect()
+					context._K.Flux.Scope.toolBans[player] = nil
 				end
 			end
 		end,
