@@ -386,6 +386,29 @@ return {
 		end,
 	},
 	{
+		name = "sword",
+		description = "Gives a sword to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to give a sword.",
+			},
+		},
+		env = function(_K)
+			return { sword = script.Sword:Clone() }
+		end,
+
+		run = function(context, players, tools)
+			for _, player in players do
+				if not (player.Character and player:FindFirstChild("Backpack")) then
+					continue
+				end
+				context.env.sword:Clone().Parent = player.Backpack
+			end
+		end,
+	},
+	{
 		name = "breakjoints",
 		aliases = { "break", "kill" },
 		description = "Breaks the joints one or more player(s).",
