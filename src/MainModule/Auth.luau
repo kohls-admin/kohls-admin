@@ -284,7 +284,7 @@ end
 function Auth.roleCanUseCommand(role: Role, command: any): boolean
 	local roleData = Data.roles[role]
 	if not roleData then
-		print(role)
+		print("ROLE DOESN'T EXIST?!", role)
 		return false
 	end
 	if Auth.roleCommandFilter(roleData, command, false) then
