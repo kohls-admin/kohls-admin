@@ -124,6 +124,25 @@ return {
 			})
 		end,
 	},
+	{
+		name = "wait",
+		aliases = { "delay" },
+		description = "Delays command execution for a period of time.",
+		args = {
+			{
+				type = "number",
+				name = "Seconds",
+				description = "How long to wait in seconds.",
+			},
+		},
+
+		runClient = function(context, delay: number)
+			task.wait(delay)
+		end,
+		run = function(context, delay: number)
+			task.wait(delay)
+		end,
+	},
 
 	-- {
 	-- 	name = "alias",
