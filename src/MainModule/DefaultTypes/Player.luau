@@ -23,7 +23,7 @@ local _K = nil
 		match displayname/username if no roles found?
 	$	- magic
 	%	- teamPlayers match
-	#	- id match for playerId
+	#	- id match for userId
 		have non prefix fallback to userid if no username matched?
 	$g=id=<>rank	- group/rank match
 	$d=<>10			- distance match
@@ -266,9 +266,36 @@ local function baseSuggestions(text, from, definition)
 	return names, instances
 end
 
+local typeIndividual = {
+	transform = string.lower,
+	validate = genValidate(parseIndividual),
+	parse = parseIndividual,
+	log = function(arg)
+		return _K.Util.Table.concat(arg.parsedArgs, ",")
+	end,
+	suggestions = function(text, from, definition)
+		local names, instances = baseSuggestions(text, from, definition)
+		-- add all suggestion
+		table.insert(names, "all")
+		table.insert(names, "*")
+		-- add prefix suggestions
+		for prefix, name in prefixes do
+			table.insert(names, prefix)
+		end
+		return _K.Util.Suggest.query(text, names, instances)
+	end,
+	-- TODO: make sure it only returns the first result?
+	prefixes = {
+		["~"] = "randomPlayers",
+		["!"] = "inversePlayers",
+		["$"] = "magicPlayers",
+		["@"] = "rolePlayers",
+		["%"] = "teamPlayers",
+	},
+}
+
 local typeMultiple = {
 	listable = true,
-	transform = string.lower,
 	validate = genValidate(function(arg, self)
 		if arg == "*" or arg == "all" then
 			return true
@@ -299,63 +326,36 @@ local typeMultiple = {
 		end
 		return players
 	end,
-	suggestions = function(text, from, definition)
-		local names, instances = baseSuggestions(text, from, definition)
-		-- add all suggestion
-		table.insert(names, "all")
-		table.insert(names, "*")
-		-- add prefix suggestions
-		for prefix, name in prefixes do
-			table.insert(names, prefix)
-		end
-		return _K.Util.Suggest.query(text, names, instances)
-	end,
-	log = function(arg)
-		return _K.Util.Table.concat(arg.parsedArgs, ",")
-	end,
-	-- this will require parsing? lol
-	prefixes = {
-		["~"] = "randomPlayers",
-		["!"] = "inversePlayers",
-		["$"] = "magicPlayers",
-		["@"] = "rolePlayers",
-		["%"] = "teamPlayers",
-	},
 }
 
-local typeIndividual = {
-	transform = string.lower,
-	validate = genValidate(parseIndividual),
-	parse = parseIndividual,
-	suggestions = baseSuggestions,
-}
-
-local function parseId(arg)
-	local player = parseIndividual(arg)
-	return tonumber(if player then player.UserId else arg)
+local function parseId(arg, self)
+	local player = parseIndividual(arg, self)
+	local userId = tonumber(if player then player.UserId else arg)
+	if userId and userId > 0 then
+		return userId
+	end
+	return nil, "Invalid user"
 end
 
 local typeId = {
-	prefixes = {
-		["#"] = "integer",
-	},
 	transform = string.lower,
 	validate = parseId,
 	parse = parseId,
+	suggestions = typeIndividual.suggestions,
+	prefixes = typeIndividual.prefixes,
+	log = typeIndividual.log,
 }
 
 return function(context)
 	_K = context
-
-	local typeIds = table.clone(typeMultiple)
-	typeIds.prefixes["#"] = "integer"
 
 	_K.Registry.registerType("inversePlayers", typeInverse, typeIndividual)
 	_K.Registry.registerType("magicPlayers", typeMagic)
 	_K.Registry.registerType("rolePlayers", typeRoles)
 	_K.Registry.registerType("randomPlayers", typeRandom)
 	_K.Registry.registerType("player", typeIndividual)
-	_K.Registry.registerType("players", typeMultiple)
-	_K.Registry.registerType("playerId", typeId)
-	_K.Registry.registerType("playerIds", typeIds, typeId)
+	_K.Registry.registerType("players", typeMultiple, typeIndividual)
+
+	_K.Registry.registerType("userId", typeId)
+	_K.Registry.registerType("userIds", { listable = true }, typeId)
 end
