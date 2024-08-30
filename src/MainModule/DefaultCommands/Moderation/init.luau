@@ -95,65 +95,19 @@ return {
 
 	{
 		name = "ban",
-		description = "Bans one or more player(s) for a certain duration.",
+		description = "Bans one or more user(s) by UserId.",
 		args = {
 			{
-				type = "players",
-				name = "Player(s)",
-				description = "The player(s) to ban.",
-				ignoreSelf = true,
+				type = "userIds",
+				name = "User(s)",
+				description = "The Player(s) or UserId(s) to ban.",
 				lowerRank = true,
+				ignoreSelf = true,
 			},
 			{
 				type = "timeSimple",
 				name = "Duration",
-				description = "The duration for the ban.\n -1  Forever\n  0  Session",
-			},
-			{
-				type = "stringGreedy",
-				name = "Reason",
-				description = "The reason for the ban.",
-				optional = true,
-			},
-		},
-
-		run = function(context, players, duration: number?, reason: string?)
-			-- if lacking administrator command group only allow session banning?
-			-- need to somehow display only session bans in suggestions...
-			-- TODO: only show lower rank players in the suggestions if defined in argDef
-			if type(reason) == "string" then
-				reason = string.sub(reason, 1, 400) -- banasync limit
-			end
-			local ids = table.create(#players)
-			for _, player in players do
-				context._K.Auth.userBan(player.UserId, reason, duration, context.from)
-				player:Kick(reason)
-			end
-			if duration and duration ~= 0 then
-				context._K.Util.Retry(function()
-					context._K.Services.Players:BanAsync({
-						ApplyToUniverse = true,
-						UserIds = ids,
-						PrivateReason = reason,
-						Duration = duration,
-					})
-				end, 8, 4, 2)
-			end
-		end,
-	},
-	{
-		name = "banid",
-		description = "Bans one or more player(s) by userId.",
-		args = {
-			{
-				type = "integers",
-				name = "UserId(s)",
-				description = "The userid(s) of the player(s) to ban.",
-			},
-			{
-				type = "timeSimple",
-				name = "Duration",
-				description = "The duration for the ban.\n -1  Forever\n  0  Session",
+				description = "The duration for the ban.",
 				optional = true,
 			},
 			{
