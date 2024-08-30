@@ -536,9 +536,14 @@ Input._input.FocusLost:Connect(function(enterPressed)
 		end
 
 		for _, command in data.commands do
-			if command.argMissing then
+			if command.invalidArg then
 				validState:set(false)
-				invalidSuggestion(data, command.argMissing, command.invalidPos, command.invalidArg)
+				invalidSuggestion(
+					data,
+					command.argMissing or command.invalidMessage,
+					command.invalidPos,
+					command.invalidArg
+				)
 				return
 			end
 		end

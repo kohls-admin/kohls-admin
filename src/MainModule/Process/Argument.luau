@@ -72,7 +72,8 @@ function Argument:validate()
 		if not ok then
 			self.command.invalidArg = rawArg
 			self.command.invalidPos = transformPos
-			return false, result or "Invalid argument: " .. arg
+			self.command.invalidMessage = result or "Invalid argument: " .. arg
+			return false, self.command.invalidMessage
 		end
 		transformPos += #rawArg + 1
 	end
