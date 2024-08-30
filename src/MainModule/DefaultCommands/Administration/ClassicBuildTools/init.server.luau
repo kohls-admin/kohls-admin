@@ -259,7 +259,6 @@ for toolName in pairs(DECLARED_BUILD_TOOLS) do
 	local BuildToolRemoved = CollectionService:GetInstanceRemovedSignal(toolName)
 
 	local function onBuildToolAdded(tool)
-		print(tool)
 		if tool:IsA("Tool") and not CollectionService:HasTag(tool, "_KBuildTool") then
 			tool.Name = toolName
 			tool.CanBeDropped = false
