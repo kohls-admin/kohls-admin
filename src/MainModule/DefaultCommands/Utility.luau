@@ -125,6 +125,26 @@ return {
 		end,
 	},
 	{
+		name = "ping",
+		description = "Displays the ping of a player.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to ping.",
+				lowerRank = true,
+			},
+		},
+
+		run = function(context, player: Player)
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				`<b>Ping:</b> {math.round(player:GetNetworkPing() * 1000)} ms`,
+				player.UserId
+			)
+		end,
+	},
+	{
 		name = "wait",
 		aliases = { "delay" },
 		description = "Delays command execution for a period of time.",
