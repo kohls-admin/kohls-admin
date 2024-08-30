@@ -177,7 +177,21 @@ return function(_K, text, cursorPosition)
 			end
 		end
 
-		if not ok and not (data.suggestionType and (data.rawArg == "" or #data.suggestions > 0)) then
+		if
+			not ok
+			and not (
+				data.suggestionType
+				and (
+					data.rawArg == ""
+					or (
+						#data.suggestions > 0
+						and if type(data.suggestions[1]) == "table"
+							then data.suggestions[1][1] ~= data.rawArg
+							else data.suggestions[1] ~= data.rawArg
+					)
+				)
+			)
+		then
 			command.Error = result
 			if command.invalidArg then
 				if not command.argMissing then
