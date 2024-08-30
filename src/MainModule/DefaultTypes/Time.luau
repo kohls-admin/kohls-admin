@@ -84,15 +84,14 @@ local suggestedUnits = {
 
 local pluralUnits = {}
 
-local defaultSuggestions = {}
+local defaultSuggestions = { { "0", "0 Session" }, { "-1", "-1 Forever" } }
 for i, value in suggestedUnits do
-	defaultSuggestions[i] = "1" .. value
+	local capitalized = if #value > 2 then string.upper(string.sub(value, 1, 1)) .. string.sub(value, 2) else value
+	defaultSuggestions[i + 2] = { "1" .. value, "1 " .. capitalized }
 	if #value > 1 then
-		pluralUnits[i] = value .. "s"
+		pluralUnits[i + 2] = value .. "s"
 	end
 end
-
-table.insert(defaultSuggestions, { "-1", "-1 forever" })
 
 return function(_K)
 	_K.Registry.registerType("timeSimple", {
@@ -112,11 +111,17 @@ return function(_K)
 				number = -1
 			end
 			if number then
-				local names = { { "-1", "-1 forever" } }
+				local names = { { "0", "0 Session" }, { "-1", "-1 Forever" } }
 				if number > 0 then
 					local original = if number > 1 then pluralUnits else suggestedUnits
 					for i, value in original do
-						names[i + 1] = number .. value
+						local capitalized = if #value > 2
+							then string.upper(string.sub(value, 1, 1)) .. string.sub(value, 2)
+							else value
+						names[i + 1] = {
+							number .. value,
+							number .. " " .. capitalized,
+						}
 					end
 				end
 				return _K.Util.Suggest.query(text, names)
