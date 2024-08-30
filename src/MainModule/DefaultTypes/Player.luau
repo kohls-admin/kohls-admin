@@ -1,10 +1,7 @@
 local Players = game:GetService("Players")
 local _Teams = game:GetService("Teams")
 
--- TODO: set up some nice errors for improper matching of various thingies?
--- TODO: convert lists to hashmaps to remove duplicates
 -- TODO: post random selector? "%blue team~5"
--- TODO: autocomplete this haha ;(
 -- TODO: add team types
 --
 -- FIX: add a default description for autocompleting prefixes!
@@ -38,8 +35,64 @@ local function genValidate(validate)
 	end
 end
 
+local function sanitizePlayer(self, player: Player)
+	if self.definition.ignoreSelf then
+		if player == self.command.fromPlayer then
+			return nil, "Can't target yourself"
+		end
+	else
+		if player == self.command.fromPlayer then
+			return player
+		end
+	end
+
+	local rank, role = _K.Auth.getRank(self.command.from)
+	if role.onlyTargetSelf then
+		if player == self.command.fromPlayer then
+			return self.command.fromPlayer
+		else
+			return nil, "Can only target yourself"
+		end
+	elseif self.definition.lowerRank and not self.definition.shouldRequest then
+		if _K.Auth.getRank(player.UserId) < rank then
+			return player
+		end
+		return nil, "Can only target lower ranks"
+	else
+		return player
+	end
+end
+
+local function sanitizeUser(self, user: number)
+	if self.definition.ignoreSelf then
+		if user == self.command.from then
+			return nil, "Can't target yourself"
+		end
+	else
+		if user == self.command.from then
+			return user
+		end
+	end
+
+	local rank, role = _K.Auth.getRank(self.command.from)
+	if role.onlyTargetSelf then
+		if user == self.command.from then
+			return self.command.from
+		else
+			return nil, "Can only target yourself"
+		end
+	elseif self.definition.lowerRank and not self.definition.shouldRequest then
+		if _K.Auth.getRank(user) < rank then
+			return user
+		end
+		return nil, "Can only target lower ranks"
+	else
+		return user
+	end
+end
+
 local typeInverse = {
-	postParse = function(arg)
+	postParse = function(arg, self)
 		local players = {}
 		if type(arg) == "table" then
 			for _, player in Players:GetPlayers() do
@@ -51,13 +104,19 @@ local typeInverse = {
 					end
 				end
 				if not matched then
-					table.insert(players, player)
+					player = sanitizePlayer(self, player)
+					if player then
+						table.insert(players, player)
+					end
 				end
 			end
 		elseif typeof(arg) == "Instance" then
 			for _, player in Players:GetPlayers() do
 				if player ~= arg then
-					table.insert(players, player)
+					player = sanitizePlayer(self, player)
+					if player then
+						table.insert(players, player)
+					end
 				end
 			end
 		end
@@ -69,6 +128,8 @@ local typeInverse = {
 		["%%"] = "teamPlayers",
 	},
 }
+
+-- FIX: make sure all player selectors are sanitized
 
 local directMagic = {
 	others = function(player, from)
@@ -158,14 +219,16 @@ local function partialMatch(arg)
 	return
 end
 
-local function magicParse(arg)
+local function magicParse(arg, self)
 	local players = {}
 	local check = directMagic[arg] or partialMatch(arg)
 	for _, player in Players:GetPlayers() do
-		-- TODO: handle feedback ;)
 		local success, _feedback = check(player, Players.LocalPlayer)
 		if success then
-			table.insert(players, player)
+			player = sanitizePlayer(self, player)
+			if player then
+				table.insert(players, player)
+			end
 		end
 	end
 	return #players > 0 and players
@@ -185,7 +248,10 @@ local function roleParse(arg, self)
 			for _, player in Players:GetPlayers() do
 				local userPermissions = _K.Data.members[player.UserId]
 				if userPermissions and table.find(userPermissions.roles, id) then
-					table.insert(players, player)
+					player = sanitizePlayer(self, player)
+					if player then
+						table.insert(players, player)
+					end
 				end
 			end
 			break
@@ -209,12 +275,25 @@ local typeRoles = {
 
 local typeRandom = {
 	transform = tonumber,
-	validate = function(arg)
-		return arg ~= nil and arg <= #Players:GetPlayers()
+	validate = function(arg, self)
+		local list = {}
+		for _, player in Players:GetPlayers() do
+			player = sanitizePlayer(self, player)
+			if player then
+				table.insert(list, player)
+			end
+		end
+		return arg ~= nil and arg <= #list
 	end,
-	parse = function(arg)
+	parse = function(arg, self)
 		local players = {}
-		local list = Players:GetPlayers()
+		local list = {}
+		for _, player in Players:GetPlayers() do
+			player = sanitizePlayer(self, player)
+			if player then
+				table.insert(list, player)
+			end
+		end
 		for _ = 1, arg do
 			table.insert(players, table.remove(list, math.random(#list)))
 		end
@@ -224,11 +303,11 @@ local typeRandom = {
 
 local function parseIndividual(arg, self)
 	if arg == "" or arg == "me" then
-		return self.command.fromPlayer
+		return sanitizePlayer(self, self.command.fromPlayer)
 	end
 	for _, player in Players:GetPlayers() do
 		if string.find(string.lower(player.Name), arg, 1, true) == 1 then
-			return player
+			return sanitizePlayer(self, player)
 		end
 	end
 	return
@@ -298,14 +377,29 @@ local typeMultiple = {
 	listable = true,
 	validate = genValidate(function(arg, self)
 		if arg == "*" or arg == "all" then
-			return true
+			local players = {}
+			for _, player in Players:GetPlayers() do
+				player = sanitizePlayer(self, player)
+				if player then
+					table.insert(players, player)
+				end
+			end
+			return #players > 0, "No valid player found"
 		end
 		return parseIndividual(arg, self)
 	end),
-	preParse = function(transformedArgs)
-		return if table.find(transformedArgs, "*") or table.find(transformedArgs, "all")
-			then Players:GetPlayers()
-			else nil
+	preParse = function(transformedArgs, self)
+		if table.find(transformedArgs, "*") or table.find(transformedArgs, "all") then
+			local players = {}
+			for _, player in Players:GetPlayers() do
+				player = sanitizePlayer(self, player)
+				if player then
+					table.insert(players, player)
+				end
+			end
+			return players
+		end
+		return
 	end,
 	parse = function(arg, self)
 		if type(arg) == "string" then
@@ -326,13 +420,16 @@ local typeMultiple = {
 		end
 		return players
 	end,
+	log = typeIndividual.log,
+	prefixes = typeIndividual.prefixes,
+	suggestions = typeIndividual.suggestions,
 }
 
 local function parseId(arg, self)
 	local player = parseIndividual(arg, self)
 	local userId = tonumber(if player then player.UserId else arg)
 	if userId and userId > 0 then
-		return userId
+		return sanitizeUser(self, userId)
 	end
 	return nil, "Invalid user"
 end
@@ -354,7 +451,7 @@ return function(context)
 	_K.Registry.registerType("rolePlayers", typeRoles)
 	_K.Registry.registerType("randomPlayers", typeRandom)
 	_K.Registry.registerType("player", typeIndividual)
-	_K.Registry.registerType("players", typeMultiple, typeIndividual)
+	_K.Registry.registerType("players", typeMultiple)
 
 	_K.Registry.registerType("userId", typeId)
 	_K.Registry.registerType("userIds", { listable = true }, typeId)
