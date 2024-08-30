@@ -51,7 +51,9 @@ function Argument:transform()
 		end
 
 		local arg = self._K.Util.String.stripQuotes(rawArg)
-		arg = if argType.transform then argType.transform(rawArg) else rawArg
+		if argType.transform then
+			arg = argType.transform(arg)
+		end
 		table.insert(self.transformedArgs, if type(arg) == "string" then self._K.Util.String.trim(arg) else arg)
 		table.insert(self.transformedTypes, argType)
 	end
