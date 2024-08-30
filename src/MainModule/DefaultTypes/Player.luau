@@ -375,6 +375,7 @@ local typeIndividual = {
 
 local typeMultiple = {
 	listable = true,
+	transform = string.lower,
 	validate = genValidate(function(arg, self)
 		if arg == "*" or arg == "all" then
 			local players = {}
