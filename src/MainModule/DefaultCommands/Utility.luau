@@ -163,6 +163,15 @@ return {
 			task.wait(delay)
 		end,
 	},
+	{
+		name = "rejoin",
+		description = "Rejoins the place.",
+		args = {},
+
+		run = function(context)
+			context._K.Util.SafeTeleport(game.PlaceId, { context.fromPlayer })
+		end,
+	},
 
 	-- {
 	-- 	name = "alias",
