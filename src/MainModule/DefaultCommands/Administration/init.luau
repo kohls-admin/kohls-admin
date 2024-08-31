@@ -1,10 +1,5 @@
 -- dangerous admin commands reserved for admin role or above
 
-local Players = game:GetService("Players")
-local TextService = game:GetService("TextService")
-
-local safeTeleport = require(script.safeTeleport)
-
 return {
 	{
 		name = "announce",
@@ -192,8 +187,8 @@ return {
 							MeshId = "rbxassetid://16884681",
 							TextureId = "rbxassetid://16884673",
 							Offset = Vector3.new(0.1, 0, 0),
-						}
-					}
+						},
+					},
 				}
 				move:AddTag("_KGameTool")
 				move.Parent = player.Backpack
@@ -210,8 +205,8 @@ return {
 							MeshId = "rbxasset://fonts/clonewand.mesh",
 							TextureId = "rbxasset://textures/CloneWandTexture.png",
 							Scale = Vector3.new(0.75, 0.75, 1),
-						}
-					}
+						},
+					},
 				}
 				clone:AddTag("_KClone")
 				clone.Parent = player.Backpack
@@ -227,8 +222,8 @@ return {
 						NEW "SpecialMesh" {
 							MeshId = "rbxasset://fonts/hammer.mesh",
 							TextureId = "rbxasset://textures/hammertex128.png",
-						}
-					}
+						},
+					},
 				}
 				delete:AddTag("_KHammer")
 				delete.Parent = player.Backpack
@@ -253,7 +248,7 @@ return {
 			},
 		},
 		run = function(context, players, placeId)
-			safeTeleport(placeId, players)
+			context._K.Util.SafeTeleport(placeId, players)
 		end,
 	},
 	{

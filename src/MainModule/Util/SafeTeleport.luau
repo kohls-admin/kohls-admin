@@ -4,7 +4,7 @@ local ATTEMPT_LIMIT = 5
 local RETRY_DELAY = 1
 local FLOOD_DELAY = 15
 
-local function safeTeleport(placeId, players, options)
+local function SafeTeleport(placeId, players, options)
 	local attemptIndex = 0
 	local success, result -- define pcall results outside of loop so results can be reported later on
 
@@ -35,9 +35,9 @@ local function handleFailedTeleport(player, teleportResult, errorMessage, target
 		error(("Invalid teleport [%s]: %s"):format(teleportResult.Name, errorMessage))
 	end
 
-	safeTeleport(targetPlaceId, { player }, teleportOptions)
+	SafeTeleport(targetPlaceId, { player }, teleportOptions)
 end
 
 TeleportService.TeleportInitFailed:Connect(handleFailedTeleport)
 
-return safeTeleport
+return SafeTeleport
