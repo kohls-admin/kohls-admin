@@ -20,6 +20,7 @@ local Util = {
 	ReadableTime = require(script:WaitForChild("ReadableTime")),
 	Retry = require(script:WaitForChild("Retry")),
 	Rollout = require(script:WaitForChild("Rollout")),
+	SafePlayerAdded = require(script:WaitForChild("SafePlayerAdded")),
 	SafeTeleport = require(script:WaitForChild("SafeTeleport")),
 	Services = require(script:WaitForChild("Services")),
 	SignalFast = require(script:WaitForChild("SignalFast")),
