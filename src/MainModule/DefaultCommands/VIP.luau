@@ -2,6 +2,278 @@
 
 return {
 	{
+		name = "fire",
+		aliases = {},
+		description = "Adds fire to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to add the fire to.",
+			},
+			{
+				type = "number",
+				name = "Size",
+				description = "The size of the fire.",
+				optional = true,
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The color of the fire.",
+				optional = true,
+			},
+			{
+				type = "color",
+				name = "SecondaryColor",
+				description = "The secondary color of the fire.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, size, color, secondaryColor)
+			for _, player in players do
+				local root = player.Character and player.Character.PrimaryPart
+				if not root then
+					continue
+				end
+				local existing = root:FindFirstChild("_KFire")
+				if existing then
+					existing:Destroy()
+				end
+				local fire = context._K.Flux.new "Fire" {
+					Parent = root,
+					Name = "_KFire",
+					Size = math.min(size or 5, if context._K.Auth.getRank(player.UserId) <= 1 then 5 else math.huge),
+				}
+				if color then
+					fire.Color = color
+					fire.SecondaryColor = secondaryColor or color
+				end
+			end
+		end,
+	},
+	{
+		name = "unfire",
+		aliases = {},
+		description = "Removes fire from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove the fire from.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local root = player.Character and player.Character.PrimaryPart
+				if not root then
+					continue
+				end
+				local existing = root:FindFirstChild("_KFire")
+				if existing then
+					existing:Destroy()
+				end
+			end
+		end,
+	},
+	{
+		name = "smoke",
+		aliases = {},
+		description = "Adds smoke to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to add the smoke to.",
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The color of the smoke.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, color, secondaryColor)
+			for _, player in players do
+				local root = player.Character and player.Character.PrimaryPart
+				if not root then
+					continue
+				end
+				local existing = root:FindFirstChild("_KSmoke")
+				if existing then
+					existing:Destroy()
+				end
+				local smoke = context._K.Flux.new "Smoke" {
+					Parent = root,
+					Name = "_KSmoke",
+					RiseVelocity = 0,
+				}
+				if color then
+					smoke.Color = color
+				end
+			end
+		end,
+	},
+	{
+		name = "unsmoke",
+		aliases = {},
+		description = "Removes smoke from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove the smoke from.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local root = player.Character and player.Character.PrimaryPart
+				if not root then
+					continue
+				end
+				local existing = root:FindFirstChild("_KSmoke")
+				if existing then
+					existing:Destroy()
+				end
+			end
+		end,
+	},
+	{
+		name = "sparkles",
+		aliases = {},
+		description = "Adds sparkles to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to add the sparkles to.",
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The color of the sparkles.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, color, secondaryColor)
+			for _, player in players do
+				local root = player.Character and player.Character.PrimaryPart
+				if not root then
+					continue
+				end
+				local existing = root:FindFirstChild("_KSparkles")
+				if existing then
+					existing:Destroy()
+				end
+				local sparkle = context._K.Flux.new "Sparkles" {
+					Parent = root,
+					Name = "_KSparkles",
+				}
+				if color then
+					sparkle.SparkleColor = color
+				end
+			end
+		end,
+	},
+	{
+		name = "unsparkles",
+		aliases = {},
+		description = "Removes sparkles from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove the sparkles from.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local root = player.Character and player.Character.PrimaryPart
+				if not root then
+					continue
+				end
+				local existing = root:FindFirstChild("_KSparkles")
+				if existing then
+					existing:Destroy()
+				end
+			end
+		end,
+	},
+	{
+		name = "light",
+		aliases = { "lamp", "lite" },
+		description = "Adds a light to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to add the light to.",
+			},
+			{
+				type = "number",
+				name = "Range",
+				description = "The range of the light.",
+				optional = true,
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The color of the light.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, range, color)
+			for _, player in players do
+				local root = player.Character and player.Character.PrimaryPart
+				if not root then
+					continue
+				end
+				local existing = root:FindFirstChild("_KLight")
+				if existing then
+					existing:Destroy()
+				end
+				context._K.Flux.new "PointLight" {
+					Parent = root,
+					Name = "_KLight",
+					Range = math.min(range or 8, if context._K.Auth.getRank(player.UserId) <= 1 then 10 else math.huge),
+					Color = color or Color3.new(1, 1, 1),
+				}
+			end
+		end,
+	},
+	{
+		name = "unlight",
+		aliases = { "unlamp", "unlite" },
+		description = "Removes a light from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove the light from.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local root = player.Character and player.Character.PrimaryPart
+				if not root then
+					continue
+				end
+				local existing = root:FindFirstChild("_KLight")
+				if existing then
+					existing:Destroy()
+				end
+			end
+		end,
+	},
+	{
 		name = "particle",
 		aliases = { "pe" },
 		description = "Adds a particle effect to one or more player(s).",
