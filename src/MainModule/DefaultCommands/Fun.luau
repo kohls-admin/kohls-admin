@@ -1,4 +1,4 @@
--- potentially abusive fun commands
+-- potentially abusive fun commands, moderator+ default
 
 return {
 	{
@@ -21,7 +21,7 @@ return {
 
 		run = function(context, players, userId)
 			for _, player in players do
-				player.CharacterAppearanceId = if userId == context.OPTIONAL then player.UserId else userId
+				player.CharacterAppearanceId = if userId == nil then player.UserId else userId
 				player:LoadCharacter()
 			end
 		end,

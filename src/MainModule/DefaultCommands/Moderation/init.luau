@@ -378,7 +378,7 @@ return {
 		end,
 
 		run = function(context, players, displayName)
-			displayName = if displayName == context.OPTIONAL then nil else displayName
+			displayName = if displayName == nil then nil else displayName
 			for _, player in players do
 				context.env[player.UserId] = displayName
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -1161,7 +1161,7 @@ return {
 
 		run = function(context, players, degrees)
 			for _, player in players do
-				context.env.remote:FireClient(player, if degrees == context.OPTIONAL then nil else degrees)
+				context.env.remote:FireClient(player, if degrees == nil then nil else degrees)
 			end
 		end,
 	},
@@ -1442,7 +1442,7 @@ return {
 		end,
 
 		run = function(context, players, infoType, id)
-			if infoType == context.OPTIONAL then
+			if infoType == nil then
 				infoType = Enum.InfoType.Asset
 			end
 			local method = context.env.method[infoType]
@@ -1562,7 +1562,7 @@ return {
 			},
 		},
 		run = function(context, players, teams)
-			if teams == context.OPTIONAL then
+			if teams == nil then
 				teams = context._K.Services.Teams:GetTeams()
 			end
 			local randomSort = {}

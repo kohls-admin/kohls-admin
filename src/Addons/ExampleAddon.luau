@@ -28,7 +28,7 @@ return function(_K)
 				type = "stringGreedy",
 				name = "Message",
 				description = "The message to send.", -- Description shown in command listings.
-				-- If the command is optional, make sure to check if it's context.OPTIONAL
+				-- If the command is optional, make sure to check if it's nil and not false!
 				optional = true,
 
 				lowerRank = false,

@@ -67,7 +67,7 @@ return {
 			},
 		},
 		run = function(context, delay)
-			if delay ~= context.OPTIONAL then
+			if delay ~= nil then
 				context._K.Remote.Announce:FireAllClients(`Server will shut down in {delay} seconds`)
 				task.wait(delay)
 			end

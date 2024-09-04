@@ -180,7 +180,7 @@ return {
 			return { defaultLatitude = Lighting.GeographicLatitude }
 		end,
 		run = function(context, degrees)
-			Lighting.GeographicLatitude = if degrees == context.OPTIONAL then context.env.defaultLatitude else degrees
+			Lighting.GeographicLatitude = if degrees == nil then context.env.defaultLatitude else degrees
 		end,
 	},
 	{
@@ -230,7 +230,7 @@ return {
 			}
 		end,
 		run = function(context, gravity)
-			workspace.Gravity = if gravity == context.OPTIONAL then context.env.gravity else gravity
+			workspace.Gravity = if gravity == nil then context.env.gravity else gravity
 		end,
 	},
 	{

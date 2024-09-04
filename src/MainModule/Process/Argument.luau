@@ -1,8 +1,6 @@
 -- TODO: need to refactor this to make autocomplete easier hahahahaha ;(
 
-local Argument = {
-	OPTIONAL = table.freeze({ type = "Optional" }),
-}
+local Argument = {}
 Argument.__index = Argument
 
 function Argument.new(command, definition, argPos, rawArg)
@@ -103,7 +101,7 @@ function Argument:parse()
 		if not ok then
 			warn("parseArg error", arg)
 		end
-		table.insert(self.parsedArgs, if ok then arg else Argument.OPTIONAL)
+		table.insert(self.parsedArgs, if ok then arg else nil)
 		if self.exit then
 			break
 		end

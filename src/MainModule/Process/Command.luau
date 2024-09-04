@@ -4,7 +4,6 @@ local Argument = require(script.Parent.Argument)
 
 local Command = {
 	Argument = Argument,
-	OPTIONAL = Argument.OPTIONAL,
 }
 Command.__index = Command
 
@@ -45,7 +44,7 @@ function Command:run()
 			if arg.definition.shouldRequest and string.find(string.lower(arg.rawType.name), "player", 1, true) then
 				-- use instead of lowerRank to request the command to those who aren't higher rank
 				local prepared = self.preparedArgs[argIndex]
-				if prepared == Argument.OPTIONAL then
+				if prepared == nil then
 					continue
 				end
 
@@ -66,7 +65,7 @@ function Command:run()
 						if player == self.fromPlayer then
 							continue -- don't request self
 						end
-						if arg ~= Argument.OPTIONAL and rank <= self._K.Auth.getRank(player.UserId) then
+						if rank <= self._K.Auth.getRank(player.UserId) then
 							prepared[i] = nil
 							task.spawn(function()
 								local accepted =
