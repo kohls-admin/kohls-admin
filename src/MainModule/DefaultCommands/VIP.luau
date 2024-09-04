@@ -1,5 +1,42 @@
 -- non abusive fun commands given to VIP role by default
 
+local Util = require(script.Parent.Parent.Util)
+
+local function updateHumanoidDescription(player, property, value)
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+	local description = humanoid:FindFirstChildOfClass("HumanoidDescription")
+	if not description then
+		return
+	end
+
+	local attribute = "_K" .. property
+	local original = attribute .. "Original"
+	if not player:GetAttribute(original) then
+		player:SetAttribute(original, description[property])
+	end
+	description[property] = value or player:GetAttribute(original)
+	player:SetAttribute(attribute, value)
+	humanoid:ApplyDescriptionReset(description)
+	humanoid:ApplyDescription(description)
+end
+
+local properties = { "Head", "Face", "Shirt", "Pants", "GraphicTShirt" }
+
+-- update humanoid description on respawn from _K attributes
+Util.SafePlayerAdded(function(player)
+	player.CharacterAppearanceLoaded:Connect(function(character)
+		for _, property in properties do
+			local value = player:GetAttribute("_K" .. property)
+			if value then
+				task.defer(updateHumanoidDescription, player, property, value)
+			end
+		end
+	end)
+end)
+
 return {
 	{
 		name = "fire",
@@ -375,6 +412,127 @@ return {
 				if existing then
 					existing:Destroy()
 				end
+			end
+		end,
+	},
+
+	{
+		name = "head",
+		aliases = { "unhead" },
+		description = "Changes the head of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose head to change.",
+			},
+			{
+				type = "integer",
+				name = "AssetId",
+				description = "The assetId of the head, or the original head if omitted.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, assetId)
+			for _, player in players do
+				updateHumanoidDescription(player, "Head", assetId)
+			end
+		end,
+	},
+	{
+		name = "face",
+		aliases = { "unface" },
+		description = "Changes the face of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose face to change.",
+			},
+			{
+				type = "integer",
+				name = "AssetId",
+				description = "The assetId of the face, or the original face if omitted.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, assetId)
+			for _, player in players do
+				updateHumanoidDescription(player, "Face", assetId)
+			end
+		end,
+	},
+	{
+		name = "shirt",
+		aliases = { "unshirt" },
+		description = "Changes the shirt of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose shirt to change.",
+			},
+			{
+				type = "integer",
+				name = "AssetId",
+				description = "The assetId of the shirt, or the original shirt if omitted.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, assetId)
+			for _, player in players do
+				updateHumanoidDescription(player, "Shirt", assetId)
+			end
+		end,
+	},
+	{
+		name = "pants",
+		aliases = { "unpants" },
+		description = "Changes the pants of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose pants to change.",
+			},
+			{
+				type = "integer",
+				name = "AssetId",
+				description = "The assetId of the pants, or the original pants if omitted.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, assetId)
+			for _, player in players do
+				updateHumanoidDescription(player, "Pants", assetId)
+			end
+		end,
+	},
+	{
+		name = "tshirt",
+		aliases = { "untshirt" },
+		description = "Changes the t-shirt of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose t-shirt to change.",
+			},
+			{
+				type = "integer",
+				name = "AssetId",
+				description = "The assetId of the t-shirt, or the original t-shirt if omitted.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, assetId)
+			for _, player in players do
+				updateHumanoidDescription(player, "GraphicTShirt", assetId)
 			end
 		end,
 	},
