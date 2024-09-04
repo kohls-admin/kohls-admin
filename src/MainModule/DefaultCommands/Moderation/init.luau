@@ -346,6 +346,92 @@ return {
 		end,
 	},
 	{
+		name = "name",
+		aliases = { "nickname", "displayname", "unname" },
+		description = "Changes the DisplayName of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose DisplayName to change.",
+			},
+			{
+				type = "stringGreedy",
+				name = "DisplayName",
+				description = "The DisplayName string to use.",
+				optional = true,
+			},
+		},
+		env = function(_K)
+			_K.Util.SafePlayerAdded(function(player)
+				player:SetAttribute("_KDisplayName", player.DisplayName)
+				player.CharacterAdded:Connect(function(character)
+					local name = _K.displayNames[player.UserId]
+					if not name then
+						return
+					end
+					character:FindFirstChildOfClass("Humanoid").DisplayName = name
+				end)
+			end)
+
+			return _K.displayNames
+		end,
+
+		run = function(context, players, displayName)
+			displayName = if displayName == context.OPTIONAL then nil else displayName
+			for _, player in players do
+				context.env[player.UserId] = displayName
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid.DisplayName = displayName or player:GetAttribute("_KDisplayName")
+					humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
+				end
+			end
+		end,
+	},
+	{
+		name = "hidename",
+		aliases = {},
+		description = "Hides the character name of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose name to hide.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+				end
+			end
+		end,
+	},
+	{
+		name = "showname",
+		aliases = {},
+		description = "Shows the character name of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose name to hide.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
+				end
+			end
+		end,
+	},
+	{
 		name = "toolban",
 		aliases = { "bantools" },
 		description = "Bans one or more player(s) from using tools.",

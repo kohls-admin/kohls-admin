@@ -70,6 +70,7 @@ local _K = {
 	client = nil,
 	pinnedAnnouncement = nil,
 
+	displayNames = {},
 	playerPrefix = {},
 	_serverLock = false,
 }
