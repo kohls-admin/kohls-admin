@@ -2,29 +2,77 @@
 
 local Util = require(script.Parent.Parent.Util)
 
-local function updateHumanoidDescription(player, property, value)
-	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	if not humanoid then
+local function getOutfitId(bundleId)
+	if bundleId <= 0 then
 		return
 	end
-	local description = humanoid:FindFirstChildOfClass("HumanoidDescription")
-	if not description then
+	local info = game.AssetService:GetBundleDetailsAsync(bundleId)
+	if not info then
 		return
+	end
+	for _, item in pairs(info.Items) do
+		if item.Type == "UserOutfit" then
+			return item.Id
+		end
 	end
 
+	return nil
+end
+
+local function getHumanoidDescriptionBundle(bundleId)
+	local itemId = getOutfitId(bundleId)
+	if itemId and itemId > 0 then
+		return Util.Services.Players:GetHumanoidDescriptionFromOutfitId(itemId)
+	end
+
+	return nil
+end
+
+local properties = { "Head", "Face", "Shirt", "Pants", "GraphicTShirt" }
+local particles = { "_KFire", "_KSmoke", "_KSparkles", "_KLight", "_KParticleEffect" }
+
+local function applyHumanoidDescription(humanoid, description)
+	humanoid:ApplyDescriptionReset(description)
+	humanoid:ApplyDescription(description)
+end
+
+local function updateHumanoidDescription(player, humanoid, description, property, value)
 	local attribute = "_K" .. property
 	local original = attribute .. "Original"
 	if not player:GetAttribute(original) then
 		player:SetAttribute(original, description[property])
 	end
 	description[property] = value or player:GetAttribute(original)
-	player:SetAttribute(attribute, value)
-	humanoid:ApplyDescriptionReset(description)
-	humanoid:ApplyDescription(description)
 end
 
-local properties = { "Head", "Face", "Shirt", "Pants", "GraphicTShirt" }
-local particles = { "_KFire", "_KSmoke", "_KSparkles", "_KLight", "_KParticleEffect" }
+local function reapplyHumanoidDescription(player)
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	local description = humanoid and humanoid:FindFirstChildOfClass("HumanoidDescription")
+	if not description then
+		return
+	end
+
+	for _, property in properties do
+		local value = player:GetAttribute("_K" .. property)
+		if value then
+			updateHumanoidDescription(player, humanoid, description, property, value)
+		end
+	end
+	applyHumanoidDescription(humanoid, description)
+end
+
+local function attributeHumanoidDescription(player, property, value)
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	local description = humanoid and humanoid:FindFirstChildOfClass("HumanoidDescription")
+	if not description then
+		return
+	end
+
+	updateHumanoidDescription(player, humanoid, description, property, value)
+	player:SetAttribute("_K" .. property, value)
+
+	applyHumanoidDescription(humanoid, description)
+end
 
 local function resetHumanoidDescription(player)
 	-- reset particles
@@ -41,6 +89,14 @@ local function resetHumanoidDescription(player)
 	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 	local description = humanoid and humanoid:FindFirstChildOfClass("HumanoidDescription")
 
+	local originalDescription = player:FindFirstChild("_KHumanoidDescription")
+	if originalDescription then
+		description:Destroy()
+		originalDescription.Name = "HumanoidDescription"
+		originalDescription.Parent = humanoid
+		description = originalDescription
+	end
+
 	-- reset properties
 	for _, property in properties do
 		local attribute = "_K" .. property
@@ -55,11 +111,10 @@ local function resetHumanoidDescription(player)
 		end
 	end
 
-	-- TODO: reset scale, accessories, bodycolor, bundles
+	-- TODO: reset scale, accessories, bodycolor
 
 	if humanoid and description then
-		humanoid:ApplyDescriptionReset(description)
-		humanoid:ApplyDescription(description)
+		applyHumanoidDescription(humanoid, description)
 	end
 
 	-- TODO: reset infect status, body colors, dog morph
@@ -68,12 +123,7 @@ end
 -- update humanoid description on respawn from _K attributes
 Util.SafePlayerAdded(function(player)
 	player.CharacterAppearanceLoaded:Connect(function(character)
-		for _, property in properties do
-			local value = player:GetAttribute("_K" .. property)
-			if value then
-				task.defer(updateHumanoidDescription, player, property, value)
-			end
-		end
+		task.defer(reapplyHumanoidDescription, player)
 	end)
 end)
 
@@ -475,6 +525,53 @@ return {
 	},
 
 	{
+		name = "bundle",
+		aliases = { "unbundle" },
+		description = "Changes the bundle of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose appearance to change.",
+			},
+			{
+				type = "integer",
+				name = "AssetId",
+				description = "The assetId of the bundle, or the original appearance if omitted.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, assetId)
+			local bundleDescription = if assetId then getHumanoidDescriptionBundle(assetId) else nil
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if not humanoid then
+					return
+				end
+				local description = humanoid:FindFirstChildOfClass("HumanoidDescription")
+				if not description then
+					return
+				end
+
+				local originalDescription = player:FindFirstChild("_KHumanoidDescription")
+				if not originalDescription then
+					originalDescription = description:Clone()
+					originalDescription.Name = "_KHumanoidDescription"
+					originalDescription.Parent = player
+				end
+
+				if bundleDescription then
+					humanoid:ApplyDescription(bundleDescription)
+				else
+					humanoid:ApplyDescription(originalDescription)
+				end
+				-- reapply other admin description changes
+				task.defer(reapplyHumanoidDescription, player)
+			end
+		end,
+	},
+	{
 		name = "head",
 		aliases = { "unhead" },
 		description = "Changes the head of one or more player(s).",
@@ -494,7 +591,7 @@ return {
 
 		run = function(context, players, assetId)
 			for _, player in players do
-				updateHumanoidDescription(player, "Head", assetId)
+				attributeHumanoidDescription(player, "Head", assetId)
 			end
 		end,
 	},
@@ -518,7 +615,7 @@ return {
 
 		run = function(context, players, assetId)
 			for _, player in players do
-				updateHumanoidDescription(player, "Face", assetId)
+				attributeHumanoidDescription(player, "Face", assetId)
 			end
 		end,
 	},
@@ -542,7 +639,7 @@ return {
 
 		run = function(context, players, assetId)
 			for _, player in players do
-				updateHumanoidDescription(player, "Shirt", assetId)
+				attributeHumanoidDescription(player, "Shirt", assetId)
 			end
 		end,
 	},
@@ -566,7 +663,7 @@ return {
 
 		run = function(context, players, assetId)
 			for _, player in players do
-				updateHumanoidDescription(player, "Pants", assetId)
+				attributeHumanoidDescription(player, "Pants", assetId)
 			end
 		end,
 	},
@@ -590,7 +687,7 @@ return {
 
 		run = function(context, players, assetId)
 			for _, player in players do
-				updateHumanoidDescription(player, "GraphicTShirt", assetId)
+				attributeHumanoidDescription(player, "GraphicTShirt", assetId)
 			end
 		end,
 	},
