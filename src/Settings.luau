@@ -36,7 +36,7 @@ local Settings = {
 	},
 
 	gamePassRoles = {
-		-- [gamePassId] = { "moderator", "vip" },
+		-- [gamePassId] = { "mod", "vip" },
 	},
 
 	groupRoles = {
