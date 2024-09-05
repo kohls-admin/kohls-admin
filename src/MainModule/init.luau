@@ -171,7 +171,7 @@ _K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(p
 	if not purchaseSuccess then
 		return
 	end
-	for id, roles in _K.loaderSettings.gamePassRoles do
+	for id, roles in _K.Data.async.gamepass do
 		if gamePassId ~= id then
 			continue
 		end
