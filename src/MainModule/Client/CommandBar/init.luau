@@ -187,8 +187,7 @@ local SuggestionFrame = UI.new "TextButton" {
 	},
 }
 
-local argumentFormat =
-	`<b><sc>%s</sc> <font transparency="0.66" size="15"><i>&lt;%s&gt;</i></font></b>\n<font size="14">%s</font>`
+local argumentFormat = `<b><sc>%s</sc> <font transparency="0.66"><i>&lt;%s&gt;</i></font></b>\n%s`
 local inlineFormat =
 	`<font transparency="0.33">%s</font>%s<font transparency="0.33">%s<font transparency="0.66">%s</font>%s</font>`
 local suggestFormat = `%s<font transparency="0.5">%s</font>`
