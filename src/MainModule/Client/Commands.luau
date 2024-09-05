@@ -19,15 +19,11 @@ function Commands.new(_K)
 	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
 
-	-- TODO: sort by role rank
-
-	-- command arg names [aliases]
-	-- description
-	-- roles with access
-
 	local function createItem(self, command)
 		local tooltip = UI.new "Tooltip" {
-			Text = "roles that can use this command :)",
+			Font = UI.Theme.FontMono,
+			Text = "Loading...",
+			TextXAlignment = Enum.TextXAlignment.Left,
 		}
 		return UI.new "TextLabel" {
 			BackgroundTransparency = 1,
@@ -71,13 +67,49 @@ function Commands.new(_K)
 
 	local function renderItem(self, item, command)
 		local argNames = table.create(#command.args)
-		for _, arg in command.args do
-			table.insert(argNames, arg.name)
+		local argTooltip = table.create(#command.args)
+		if #command.args > 0 then
+			table.insert(argTooltip, "")
 		end
+		for _, arg in command.args do
+			table.insert(argNames, if arg.optional then arg.name .. "?" else arg.name)
+			table.insert(
+				argTooltip,
+				`\n<b><sc>{arg.name}</sc> <font transparency="0.66"><i>&lt;{arg.type}&gt;</i></font></b>\n{arg.description}`
+			)
+			if arg.optional then
+				table.insert(argTooltip, `\t<font transparency="0.5"><b>optional:</b> true</font>`)
+			end
+			if arg.ignoreSelf then
+				table.insert(argTooltip, `\t<font transparency="0.5"><b>ignoreSelf:</b> true</font>`)
+			end
+			if arg.lowerRank then
+				table.insert(argTooltip, `\t<font transparency="0.5"><b>lowerRank:</b> true</font>`)
+			end
+			if arg.shouldRequest then
+				table.insert(argTooltip, `\t<font transparency="0.5"><b>shouldRequest:</b> true</font>`)
+			end
+		end
+
+		local roles = {}
+		for role in _K.Data.roles do
+			if _K.Auth.roleCanUseCommand(role, command) then
+				table.insert(roles, role)
+			end
+		end
+		table.sort(roles, function(a, b)
+			return _K.Data.roles[a]._rank < _K.Data.roles[b]._rank
+		end)
 
 		local aliasText = if command.aliases and #command.aliases > 0
 			then `[{table.concat(command.aliases, ", ")}]`
 			else ""
+
+		local color = if _K.Auth.hasCommand(UI.LocalPlayer, command)
+			then UI.peek(UI.Theme.PrimaryText)
+			else UI.peek(UI.Theme.MutedText)
+		item.TextColor3 = color
+		item.Description.TextColor3 = color
 
 		if self._filter ~= "" then
 			local text = `{_K.Data.settings.prefix}{command.name} {table.concat(argNames, " ")} {aliasText}`
@@ -109,7 +141,8 @@ function Commands.new(_K)
 			escape(aliasText)
 		)
 		item.Description.Text = `<font transparency="0.33">{command.description}</font>`
-		item.TooltipRef.Value.Text = "TODO show example usage, roles, and credit"
+		item.TooltipRef.Value.Text =
+			`<b>Restricted to:</b> {table.concat(roles, ", ")}{table.concat(argTooltip, "\n")}\n\n<font transparency="0.5"><b>Credit:</b> {command.credit or "Kohl @Scripth"}</font>`
 	end
 
 	local scroller = UI.new "ScrollerFast" {
@@ -146,6 +179,9 @@ function Commands.new(_K)
 	end
 
 	scroller:filter(filterTest)
+	scroller:sort(function(a, b)
+		return _K.Auth.hasCommand(UI.LocalPlayer, a) and not _K.Auth.hasCommand(UI.LocalPlayer, b)
+	end)
 
 	return scroller
 end
