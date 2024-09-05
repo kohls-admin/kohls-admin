@@ -398,7 +398,7 @@ local typeMultiple = {
 					table.insert(players, player)
 				end
 			end
-			return players
+			return { players }
 		end
 		return
 	end,
