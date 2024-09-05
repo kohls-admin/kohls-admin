@@ -24,6 +24,46 @@ local function updateHumanoidDescription(player, property, value)
 end
 
 local properties = { "Head", "Face", "Shirt", "Pants", "GraphicTShirt" }
+local particles = { "_KFire", "_KSmoke", "_KSparkles", "_KLight", "_KParticleEffect" }
+
+local function resetHumanoidDescription(player)
+	-- reset particles
+	local root = player.Character and player.Character.PrimaryPart
+	if root then
+		for _, particle in particles do
+			local existing = root:FindFirstChild(particle)
+			if existing then
+				existing:Destroy()
+			end
+		end
+	end
+
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	local description = humanoid and humanoid:FindFirstChildOfClass("HumanoidDescription")
+
+	-- reset properties
+	for _, property in properties do
+		local attribute = "_K" .. property
+		local original = attribute .. "Original"
+		local originalValue = player:GetAttribute(original)
+		if originalValue == nil then
+			continue
+		end
+		player:SetAttribute(original, nil)
+		if description then
+			description[property] = originalValue
+		end
+	end
+
+	-- TODO: reset scale, accessories, bodycolor, bundles
+
+	if humanoid and description then
+		humanoid:ApplyDescriptionReset(description)
+		humanoid:ApplyDescription(description)
+	end
+
+	-- TODO: reset infect status, body colors, dog morph
+end
 
 -- update humanoid description on respawn from _K attributes
 Util.SafePlayerAdded(function(player)
@@ -38,6 +78,24 @@ Util.SafePlayerAdded(function(player)
 end)
 
 return {
+	{
+		name = "normal",
+		aliases = {},
+		description = "Returns one or more player(s) to their normal appearance.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to return to normal.",
+			},
+		},
+
+		run = function(context, players, assetId)
+			for _, player in players do
+				resetHumanoidDescription(player)
+			end
+		end,
+	},
 	{
 		name = "fire",
 		aliases = {},
