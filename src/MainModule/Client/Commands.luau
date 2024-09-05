@@ -92,7 +92,7 @@ function Commands.new(_K)
 		end
 
 		local roles = {}
-		for role in _K.Data.roles do
+		for role, roleData in _K.Data.roles do
 			if _K.Auth.roleCanUseCommand(role, command) then
 				table.insert(roles, role)
 			end
@@ -100,14 +100,19 @@ function Commands.new(_K)
 		table.sort(roles, function(a, b)
 			return _K.Data.roles[a]._rank < _K.Data.roles[b]._rank
 		end)
+		local roleColor = Color3.fromHex(_K.Data.roles[roles[1]].color)
+		for i, role in roles do
+			local roleData = _K.Data.roles[role]
+			roles[i] = `<font color="{roleData.color}">{roleData.name}</font>`
+		end
 
 		local aliasText = if command.aliases and #command.aliases > 0
 			then `[{table.concat(command.aliases, ", ")}]`
 			else ""
 
 		local color = if _K.Auth.hasCommand(UI.LocalPlayer, command)
-			then UI.peek(UI.Theme.PrimaryText)
-			else UI.peek(UI.Theme.MutedText)
+			then roleColor
+			else roleColor:Lerp(UI.peek(UI.Theme.Primary), 0.5)
 		item.TextColor3 = color
 		item.Description.TextColor3 = color
 
@@ -180,7 +185,16 @@ function Commands.new(_K)
 
 	scroller:filter(filterTest)
 	scroller:sort(function(a, b)
-		return _K.Auth.hasCommand(UI.LocalPlayer, a) and not _K.Auth.hasCommand(UI.LocalPlayer, b)
+		local rankA, rankB = math.huge, math.huge
+		for role, roleData in _K.Data.roles do
+			if _K.Auth.roleCanUseCommand(role, a) and roleData._rank < rankA then
+				rankA = roleData._rank
+			end
+			if _K.Auth.roleCanUseCommand(role, b) and roleData._rank < rankB then
+				rankB = roleData._rank
+			end
+		end
+		return rankA < rankB
 	end)
 
 	return scroller
