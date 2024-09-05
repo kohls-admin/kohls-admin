@@ -117,6 +117,7 @@ local Data = {
 			_rank = 1,
 			name = "VIP",
 			vip = true,
+			groups = { "vip" },
 			color = "#0f8",
 			onlyTargetSelf = true,
 		},
