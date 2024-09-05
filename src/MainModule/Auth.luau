@@ -254,8 +254,8 @@ function Auth.getRank(userId: number, permission: string?): (number, Role)
 	if member then
 		for _, roleId in member.roles do
 			local role = Data.roles[roleId]
-			if role and role[permission] then
-				rank = math.max(rank, role._rank)
+			if role and role[permission] and role._rank > rank then
+				rank = role._rank
 				rankRole = role
 			end
 		end
