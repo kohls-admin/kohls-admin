@@ -126,7 +126,7 @@ local Data = {
 			name = "Moderator",
 			kick = true,
 			logs = true,
-			groups = { "moderation", "general", "environment", "fun" },
+			groups = { "moderation", "general", "environment", "fun", "vip" },
 			color = "#0f0",
 		},
 		admin = {
@@ -136,7 +136,7 @@ local Data = {
 			kick = true,
 			roles = true,
 			logs = true,
-			groups = { "administration", "moderation", "general", "environment", "fun" },
+			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
 			color = "#ff0",
 		},
 		superadmin = {
@@ -147,7 +147,7 @@ local Data = {
 			roles = true,
 			logs = true,
 			settings = true,
-			groups = { "creator", "administration", "moderation", "general", "environment", "fun" },
+			groups = { "creator", "administration", "moderation", "general", "environment", "fun", "vip" },
 			color = "#f80",
 		},
 		-- FIXME should this be defined and configurable? (or should it just be forced...)

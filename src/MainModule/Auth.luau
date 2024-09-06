@@ -92,7 +92,7 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	local roleAdded = false
 	if not member then
 		local player = Players:GetPlayerByUserId(userId)
-		Data.members[tostring(userId)] = {
+		member = {
 			name = if player
 				then player.Name
 				elseif userId > 0 then Players:GetNameFromUserIdAsync(userId)
@@ -100,6 +100,7 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 			roles = { role },
 			persist = { if persist then role else nil },
 		}
+		Data.members[tostring(userId)] = member
 		roleAdded = true
 	else
 		if not table.find(member.roles, role) then
@@ -115,7 +116,7 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 
 	if roleAdded then
 		-- TODO: only network to authorized clients and user client
-		Remote.Members:FireAllClients(Data.members)
+		Remote.Member:FireAllClients(tostring(userId), member)
 	end
 
 	if persist and roleAdded then

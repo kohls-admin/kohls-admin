@@ -196,6 +196,8 @@ _K.Remote.Init.OnServerEvent:Connect(function(player)
 	if _K.Auth.hasPermission(player.UserId, "logs") then
 		_K.Remote.Logs:FireClient(player, _K.Data.logs)
 	end
+
+	_K.Remote.Roles:FireClient(player, _K.Data.roles)
 end)
 
 script.Parent = _K.Services.ReplicatedStorage

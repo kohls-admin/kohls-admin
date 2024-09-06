@@ -71,6 +71,11 @@ _K.Remote.Bans.OnClientEvent:Connect(function(bans)
 	-- Remote.Ban:FireClient(player, userId, { filtered, duration, fromUserId })
 end)
 
+_K.Remote.Member.OnClientEvent:Connect(function(userId, member)
+	_K.Data.members[userId] = member
+	UI.Scope.members:set(_K.Data.members)
+end)
+
 _K.Remote.Members.OnClientEvent:Connect(function(members)
 	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
@@ -110,6 +115,16 @@ _K.Remote.Settings.OnClientEvent:Connect(function(settings)
 		_K.Data.settings[key] = value
 		UI.Scope.settings[key]:set(value)
 	end
+end)
+
+_K.Remote.Role.OnClientEvent:Connect(function(role, roleData)
+	_K.Data.roles[role] = roleData
+	UI.Scope.dashboard.Commands:updateList()
+end)
+
+_K.Remote.Roles.OnClientEvent:Connect(function(roles)
+	_K.Util.Table.merge(_K.Data.roles, roles)
+	UI.Scope.dashboard.Commands:updateList()
 end)
 
 -- initial remote connection

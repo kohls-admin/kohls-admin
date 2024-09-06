@@ -110,7 +110,7 @@ function Commands.new(_K)
 			then `[{table.concat(command.aliases, ", ")}]`
 			else ""
 
-		local color = if _K.Auth.hasCommand(UI.LocalPlayer, command)
+		local color = if _K.Auth.hasCommand(UI.LocalPlayer.UserId, command)
 			then roleColor
 			else roleColor:Lerp(UI.peek(UI.Theme.Primary), 0.5)
 		item.TextColor3 = color
