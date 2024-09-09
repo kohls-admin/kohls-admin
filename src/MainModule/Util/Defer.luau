@@ -1,4 +1,4 @@
-local defaultBudget, expireTime = 1 / 120, 0
+local defaultBudget, expireTime = 1 / 240, 0
 
 local Defer = {}
 
