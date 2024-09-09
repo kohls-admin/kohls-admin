@@ -418,7 +418,8 @@ return {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) whose name to hide.",
+				description = "The player(s) whose name to show.",
+				shouldRequest = true,
 			},
 		},
 
