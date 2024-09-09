@@ -239,7 +239,7 @@ local function updateSuggestionLabels(data)
 		displayName = displayName or name
 
 		if typeof(value) == "Instance" and value:IsA("Player") then
-			displayName = `{name} ({value.DisplayName})`
+			displayName = `{name} ({if name == value.DisplayName then "@" .. value.Name else value.DisplayName})`
 			local userId = value.UserId
 			local image = playerThumbs[tostring(userId)]
 			if not image then

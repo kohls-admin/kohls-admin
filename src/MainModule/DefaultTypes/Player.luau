@@ -310,6 +310,11 @@ local function parseIndividual(arg, self)
 			return sanitizePlayer(self, player)
 		end
 	end
+	for _, player in Players:GetPlayers() do
+		if string.find(string.lower(player.DisplayName), arg, 1, true) == 1 then
+			return sanitizePlayer(self, player)
+		end
+	end
 	return
 end
 
@@ -329,6 +334,7 @@ local function baseSuggestions(text, from, definition)
 		table.insert(names, "me")
 		table.insert(instances, Players.LocalPlayer)
 	end
+
 	-- filter out lowerRank and ignoreSelf
 	local rank = _K.Auth.getRank(from)
 	for _, player in players do
@@ -342,6 +348,31 @@ local function baseSuggestions(text, from, definition)
 		table.insert(instances, player)
 	end
 
+	-- diplayName suggestions
+	for index = 1, #instances do
+		local player = instances[index]
+		if player.Name == player.DisplayName then
+			continue
+		end
+		-- hide duplicate suggestions
+		if table.find(names, player.DisplayName) then
+			continue
+		end
+		table.insert(names, player.DisplayName)
+		table.insert(instances, player)
+	end
+
+	-- add all suggestion
+	table.insert(names, "all")
+	table.insert(names, "*")
+
+	-- others suggestion?
+
+	-- add prefix suggestions
+	for prefix, name in prefixes do
+		table.insert(names, prefix)
+	end
+
 	return names, instances
 end
 
@@ -353,15 +384,7 @@ local typeIndividual = {
 		return _K.Util.Table.concat(arg.parsedArgs, ",")
 	end,
 	suggestions = function(text, from, definition)
-		local names, instances = baseSuggestions(text, from, definition)
-		-- add all suggestion
-		table.insert(names, "all")
-		table.insert(names, "*")
-		-- add prefix suggestions
-		for prefix, name in prefixes do
-			table.insert(names, prefix)
-		end
-		return _K.Util.Suggest.query(text, names, instances)
+		return _K.Util.Suggest.query(text, baseSuggestions(text, from, definition))
 	end,
 	-- TODO: make sure it only returns the first result?
 	prefixes = {
