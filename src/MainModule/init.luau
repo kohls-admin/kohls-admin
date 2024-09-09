@@ -54,6 +54,7 @@ local _K = {
 	Remote = require(script:WaitForChild("Remote")),
 	UI = require(script:WaitForChild("Flux"):WaitForChild("UI")),
 	Util = Util,
+	VIP = require(script:WaitForChild("VIP")),
 
 	client = nil,
 	pinnedAnnouncement = nil,
