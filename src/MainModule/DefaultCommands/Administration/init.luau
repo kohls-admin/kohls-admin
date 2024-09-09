@@ -144,15 +144,18 @@ return {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) to kill.",
+				description = "The player(s) to remove all roles and permissions from.",
 				lowerRank = true,
 			},
 		},
 
 		run = function(context, players)
 			for _, player in players do
-				-- TODO: make sure this saves and networks...
-				context._K.Data.members[tostring(player.UserId)] = nil
+				local key = tostring(player.UserId)
+				context._K.Data.members[key] = nil
+				context._K.Data.Cache.members[key] = context._K.Data.Store.REMOVE
+				context._K.Data.pendingSaveMain = true
+				context._K.Remote.Member:FireAllClients(key)
 			end
 		end,
 	},
