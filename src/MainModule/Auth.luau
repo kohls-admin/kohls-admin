@@ -91,12 +91,7 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	local member = Data.members[tostring(userId)]
 	local roleAdded = false
 	if not member then
-		local player = Players:GetPlayerByUserId(userId)
 		member = {
-			name = if player
-				then player.Name
-				elseif userId > 0 then Players:GetNameFromUserIdAsync(userId)
-				else "Player",
 			roles = { role },
 			persist = { if persist then role else nil },
 		}

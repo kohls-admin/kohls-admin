@@ -14,8 +14,10 @@ function Members.new(_K)
 		DictList = true,
 		FilterInput = true,
 		RenderText = function(self, member)
+			local userInfo = _K.Util.getUserInfo(member.userId)
+
 			if self._filter ~= "" then
-				local text = `{member.name} {member.userId}\t{table.concat(member.roles, " | ")}`
+				local text = `{userInfo.Username} {member.userId}\t{table.concat(member.roles, " | ")}`
 				local filterFound = string.find(text:lower(), self._filter)
 				return if filterFound
 					then string.format(
@@ -29,7 +31,7 @@ function Members.new(_K)
 
 			return string.format(
 				memberRichFormat,
-				escape(member.name),
+				escape(userInfo.Username),
 				escape(member.userId),
 				escape(table.concat(member.roles, " | "))
 			)
