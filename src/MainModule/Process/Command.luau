@@ -88,7 +88,13 @@ function Command:run()
 	end
 
 	self._K.Hook.preCommand:Fire(self)
+	if not self.validated then
+		return false, self.commandError
+	end
+
 	local ok, err = pcall(run, self, unpack(self.preparedArgs))
+	self.commandRan = ok
+	self.commandError = err
 	self._K.Hook.postCommand:Fire(self)
 
 	return ok, err
