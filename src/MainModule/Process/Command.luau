@@ -16,6 +16,7 @@ function Command.new(_K, commandDefinition, commandArray, from, text)
 		env = commandDefinition and commandDefinition.env,
 		from = from,
 		fromPlayer = Players:GetPlayerByUserId(from),
+		fromRank = _K.Auth.getRank(from),
 		text = text,
 
 		argIndex = 1,
@@ -25,6 +26,44 @@ function Command.new(_K, commandDefinition, commandArray, from, text)
 		-- flags = {};
 		validated = false,
 	}, Command)
+end
+
+function Command:shouldRequest(player: Player)
+	if self._K._shouldRequestOverride then
+		local value = self._K._shouldRequestOverride(self, player)
+		if value ~= nil then
+			return value
+		end
+	end
+	return self.fromRank <= self._K.Auth.getRank(player.UserId)
+end
+
+function Command:requestCommand(player: Player)
+	if not self.validated then
+		return false
+	end
+
+	-- TODO: need to make this notification less annoying when mixed with non command requests?
+	-- only show if all the players are requested???
+	local userName = if player.Name == player.DisplayName then "" else " @" .. player.Name
+	self._K.Remote.Notify:FireClient(
+		self.fromPlayer,
+		`Requesting <b>{self.definition.name}</b> command on <b>{player.DisplayName}<font transparency="0.5">{userName}</font></b>.`
+	)
+
+	local accepted = self._K.Remote.RequestCommand:InvokeClient(player, self.fromPlayer, self.text)
+
+	local status = if accepted
+		then "<font color='#0f0'>accepted</font>"
+		elseif accepted == false then "<font color='#f00'>denied</font>"
+		else "<font transparency='0.5'>already in progress</font>"
+	self._K.Remote.Notify:FireClient(
+		self.fromPlayer,
+		`Command request for <b>{self.definition.name}</b> was <b>{status}</b>.`,
+		player.UserId
+	)
+
+	return accepted
 end
 
 function Command:run()
@@ -48,14 +87,12 @@ function Command:run()
 					continue
 				end
 
-				local rank = self._K.Auth.getRank(self.fromPlayer.UserId)
-
 				if typeof(prepared) == "Instance" then
 					if arg == self.fromPlayer then
 						continue -- don't request self
 					end
-					if rank <= self._K.Auth.getRank(arg.UserId) then
-						local accepted = self._K.Remote.RequestCommand:InvokeClient(arg, self.fromPlayer, self.text)
+					if self:shouldRequest(arg) then
+						local accepted = self:requestCommand(arg)
 						if not accepted then
 							return false, "Command request denied."
 						end
@@ -65,11 +102,10 @@ function Command:run()
 						if player == self.fromPlayer then
 							continue -- don't request self
 						end
-						if rank <= self._K.Auth.getRank(player.UserId) then
+						if self:shouldRequest(player) then
 							prepared[i] = nil
 							task.spawn(function()
-								local accepted =
-									self._K.Remote.RequestCommand:InvokeClient(player, self.fromPlayer, self.text)
+								local accepted = self:requestCommand(player)
 								if accepted then
 									-- these ignore hooks, clone self in the future to allow for hooks?
 									local soloPrepared = table.clone(self.preparedArgs)
@@ -78,9 +114,6 @@ function Command:run()
 								end
 							end)
 						end
-					end
-					if #prepared == 0 then
-						return true
 					end
 				end
 			end
