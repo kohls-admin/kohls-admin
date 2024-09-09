@@ -1,5 +1,6 @@
 local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.Parent.Flux.UI)
+local TopbarPlus = require(script.Parent.TopbarPlus)
 
 local About = require(script.Parent.About)
 local Bans = require(script.Parent.Bans)
@@ -51,74 +52,21 @@ local function dashboardToggle()
 end
 _K.client.hotkeys.dashboard.callback = dashboardToggle
 
-local dasboardButtonPadding = UI.compute(function(use)
-	return UDim.new(0, if use(UI.LegacyTopBar) then 6 else 12)
-end)
-
-UI.Scope.dashboard.Button = UI.new "TextButton" {
-	Parent = holder or UI.TopBarFrame,
-	LayoutOrder = -1,
-	Name = "kDashboard",
-	AnchorPoint = Vector2.new(0, 1),
-	AutoButtonColor = true,
-	BackgroundColor3 = Color3.new(),
-	BackgroundTransparency = UI.compute(function(use)
-		return if use(UI.LegacyTopBar) then 0.5 else 0.3
-	end),
-	BorderSizePixel = 0,
-	Size = UI.compute(function(use)
-		return if use(UI.LegacyTopBar) then UDim2.fromOffset(32, 32) else UDim2.fromOffset(44, 44)
-	end),
-	Position = UDim2.fromScale(0, 1),
-	Text = "",
-	TextTransparency = 1,
-
-	UI.new "UICorner" {
-		CornerRadius = UI.compute(function(use)
-			return if use(UI.LegacyTopBar) then UDim.new(0, 9) else UDim.new(1, 0)
-		end),
-	},
-	UI.new "UIPadding" {
-		PaddingLeft = dasboardButtonPadding,
-		PaddingRight = dasboardButtonPadding,
-		PaddingTop = dasboardButtonPadding,
-		PaddingBottom = dasboardButtonPadding,
-	},
-
-	UI.new "ImageLabel" {
-		BackgroundTransparency = 1,
-		Image = "rbxassetid://10650723871",
-		Size = UDim2.fromScale(1, 1),
-	},
-
-	[UI.Event] = {
-		Activated = dashboardToggle,
-		MouseEnter = function()
-			UI.Scope.dashboard.Button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-		end,
-		MouseLeave = function()
-			UI.Scope.dashboard.Button.BackgroundColor3 = Color3.new()
-		end,
-	},
-}
+local dashboardButton = TopbarPlus.new()
+	:setImage(10650723871)
+	:bindEvent("toggled", dashboardToggle)
+	:modifyTheme({ "Widget", "BorderSize", 0 })
+local dashboardButtonIcon = dashboardButton:getInstance("IconImage")
 
 task.spawn(function()
 	local elapsed = 1
-	while dashboard and UI.Scope.dashboard.Button and dashboard._instance do
+	while dashboard and dashboardButton and dashboard._instance do
 		if not dashboard._instance.Visible then
 			elapsed = 1
 		end
 		local alpha = math.abs(elapsed % 2 - 1) * 0.7
-		UI.Scope.dashboard.Button.ImageLabel.ImageTransparency = -(math.cos(math.pi * alpha) - 1) / 2
+		dashboardButtonIcon.ImageTransparency = -(math.cos(math.pi * alpha) - 1) / 2
 		elapsed += task.wait()
-	end
-end)
-
-local dashCon
-dashCon = UI.PlayerGui.ChildAdded:Connect(function(child)
-	if child.Name == "TopbarStandard" and child:FindFirstChild("Holders") and child.Holders:FindFirstChild("Left") then
-		dashCon:Disconnect()
-		UI.Scope.dashboard.Button.Parent = child.Holders.Left
 	end
 end)
 

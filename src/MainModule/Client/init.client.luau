@@ -3,6 +3,8 @@ local Flux = _K.Flux
 local UI = _K.UI
 
 _K.client = {
+	TopbarPlus = require(script:WaitForChild("TopbarPlus")),
+
 	ready = false,
 	hotkeys = {
 		dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
