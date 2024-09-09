@@ -2,32 +2,6 @@
 
 local Util = require(script.Parent.Parent.Util)
 
-local function getOutfitId(bundleId)
-	if bundleId <= 0 then
-		return
-	end
-	local info = game.AssetService:GetBundleDetailsAsync(bundleId)
-	if not info then
-		return
-	end
-	for _, item in pairs(info.Items) do
-		if item.Type == "UserOutfit" then
-			return item.Id
-		end
-	end
-
-	return nil
-end
-
-local function getHumanoidDescriptionBundle(bundleId)
-	local itemId = getOutfitId(bundleId)
-	if itemId and itemId > 0 then
-		return Util.Services.Players:GetHumanoidDescriptionFromOutfitId(itemId)
-	end
-
-	return nil
-end
-
 local properties = { "Head", "Face", "Shirt", "Pants", "GraphicTShirt" }
 local particles = { "_KFire", "_KSmoke", "_KSparkles", "_KLight", "_KParticleEffect" }
 
@@ -548,9 +522,39 @@ return {
 				optional = true,
 			},
 		},
+		env = function(_K)
+			local function getOutfitId(bundleId)
+				if bundleId <= 0 then
+					return
+				end
+				local info = game.AssetService:GetBundleDetailsAsync(bundleId)
+				if not info then
+					return
+				end
+				for _, item in pairs(info.Items) do
+					if item.Type == "UserOutfit" then
+						return item.Id
+					end
+				end
+
+				return nil
+			end
+
+			local function getHumanoidDescriptionBundle(bundleId)
+				local itemId = getOutfitId(bundleId)
+				if itemId and itemId > 0 then
+					return Util.Services.Players:GetHumanoidDescriptionFromOutfitId(itemId)
+				end
+
+				return nil
+			end
+			return {
+				getHumanoidDescriptionBundle,
+			}
+		end,
 
 		run = function(context, players, assetId)
-			local bundleDescription = if assetId then getHumanoidDescriptionBundle(assetId) else nil
+			local bundleDescription = if assetId then context.env.getHumanoidDescriptionBundle(assetId) else nil
 			for _, player in players do
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if not humanoid then
