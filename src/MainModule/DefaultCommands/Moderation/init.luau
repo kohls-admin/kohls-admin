@@ -571,7 +571,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) whose joints to break.",
-				lowerRank = true,
+				shouldRequest = true,
 			},
 		},
 		run = function(context, players)
