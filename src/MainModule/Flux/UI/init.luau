@@ -201,7 +201,9 @@ UI.TopBarFrame = UI.new "Frame" {
 	UI.new "UIPadding" {
 		PaddingLeft = UDim.new(0, 12),
 		PaddingRight = UDim.new(0, 12),
-		PaddingTop = UDim.new(0, 6),
+		PaddingTop = Flux.compute(function(use)
+			return UDim.new(0, if use(UI.LegacyTopBar) then 4 else 12)
+		end),
 		PaddingBottom = Flux.compute(function(use)
 			return UDim.new(0, if use(UI.LegacyTopBar) then 0 else 2)
 		end),
