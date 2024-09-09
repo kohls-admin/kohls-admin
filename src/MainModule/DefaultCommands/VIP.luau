@@ -125,12 +125,14 @@ local function resetHumanoidDescription(player)
 	-- TODO: reset infect status, body colors, dog morph
 end
 
--- update humanoid description on respawn from _K attributes
-Util.SafePlayerAdded(function(player)
-	player.CharacterAppearanceLoaded:Connect(function(character)
-		task.defer(reapplyHumanoidDescription, player)
+if Util.Services.RunService:IsServer() then
+	-- update humanoid description on respawn from _K attributes
+	Util.SafePlayerAdded(function(player)
+		player.CharacterAppearanceLoaded:Connect(function(character)
+			task.defer(reapplyHumanoidDescription, player)
+		end)
 	end)
-end)
+end
 
 return {
 	{
