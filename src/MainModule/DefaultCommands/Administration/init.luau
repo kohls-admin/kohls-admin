@@ -67,7 +67,7 @@ return {
 						local roleData = context._K.Data.roles[role]
 						context._K.Remote.Notify:FireClient(
 							player,
-							`Gave you the <b><font color="{roleData.color}">{roleData.name}</font></b> role!\nSay <b>{context._K.Data.settings.prefix}info</b> for details.`,
+							`Gave you the <b><font color="{roleData.color}">{roleData.name}</font></b> role!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
 							context.from
 						)
 					end
