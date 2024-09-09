@@ -1,3 +1,5 @@
+--- @class MainModule
+
 if shared._K_INTERFACE then
 	return shared._K_INTERFACE
 end
@@ -12,42 +14,29 @@ local Util = require(script:WaitForChild("Util"))
 export type Log = Util.Log
 export type LogType = Util.LogType
 export type Logger = Util.Logger
-
---- @within _K
---- @type Hook "log" | "preCommand" | "postCommand"
 export type Hook = "log" | "preCommand" | "postCommand"
 
---- @within _K
---- @prop Flux Flux
+--[=[
+	@within MainModule
+	@interface _K
+	.Flux Flux
 
---- @within _K
---- @prop Auth Auth
+	.Auth Auth
 
---- @within _K
---- @prop Process Process
+	.Process Process
+	.Registry Registry
+	.Util Util
+	.UI UI
 
---- @within _K
---- @prop Registry Registry
+	.client { [any]: any }?
+	.pinnedAnnouncement {}?
+	.playerPrefix { [Player]: string }
+	._serverLock boolean
 
---- @within _K
---- @prop Util Util
-
---- @within _K
---- @prop logger Logger
-
---- @within _K
---- @prop hook { [Hook]: RBXScriptSignal }
-
---- @within _K
---- @prop bans { [string]: {any} }
-
---- @within _K
---- @prop settings { [string]: {any} }
-
---- @within _K
---- @prop logs { Log }
-
---- @class _K
+	.creatorId number
+	.log Logger.log
+	.logger Logger.logger
+]=]
 local _K = {
 	script = script,
 	IsClient = RunService:IsClient(),
@@ -66,7 +55,6 @@ local _K = {
 	UI = require(script:WaitForChild("Flux"):WaitForChild("UI")),
 	Util = Util,
 
-	logger = Util.Logger.new(),
 	client = nil,
 	pinnedAnnouncement = nil,
 
