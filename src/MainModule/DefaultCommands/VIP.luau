@@ -52,13 +52,18 @@ local function reapplyHumanoidDescription(player)
 		return
 	end
 
+	local change
 	for _, property in properties do
 		local value = player:GetAttribute("_K" .. property)
 		if value then
+			change = true
 			updateHumanoidDescription(player, humanoid, description, property, value)
 		end
 	end
-	applyHumanoidDescription(humanoid, description)
+
+	if change then
+		applyHumanoidDescription(humanoid, description)
+	end
 end
 
 local function attributeHumanoidDescription(player, property, value)
