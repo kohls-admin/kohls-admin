@@ -2,9 +2,6 @@ local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
 local TextService = game:GetService("TextService")
 
--- disable CoreGui HealthBar for dashboard button consistency
-StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
-
 local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
 
@@ -28,17 +25,14 @@ local Input = UI.new "Input" {
 	BackgroundColor3 = UI.Theme.Primary,
 	BackgroundTransparency = UI.Theme.Transparency,
 	Font = UI.Theme.FontMono,
+	FontSize = 20,
 	Position = UDim2.fromScale(0, 0.5),
+	Size = UDim2.new(1, 0, 1, 0),
 
 	UI.new "Frame" {
 		Name = "CircleIndicator",
 		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 14, 1, 0),
-
-		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-		},
+		Size = UDim2.new(0, 20, 0, 20),
 
 		UI.new "Frame" {
 			BackgroundTransparency = 1,
@@ -89,20 +83,31 @@ local Input = UI.new "Input" {
 }
 
 UI.edit(Input._instance.UICorner, {
-	CornerRadius = UI.Theme.CornerDiameter,
+	CornerRadius = if UI.LegacyTopBar._value then UDim.new(0, 9) else UDim.new(1, 0),
+})
+
+UI.edit(Input._instance.UIListLayout, {
+	Padding = UDim.new(0, if UI.LegacyTopBar._value then 6 else 12),
+})
+
+UI.edit(Input._instance.UIPadding, {
+	PaddingLeft = UDim.new(0, if UI.LegacyTopBar._value then 6 else 12),
+	PaddingRight = UDim.new(0, if UI.LegacyTopBar._value then 6 else 12),
+	PaddingTop = UDim.new(0, 0),
+	PaddingBottom = UDim.new(0, 0),
 })
 
 local CommandBar = UI.new "Frame" {
 	Name = "CommandBar",
 	AnchorPoint = Vector2.new(0.5, 0),
-	Size = if UI.Touch then UDim2.new(1, 0, 1, 0) else UDim2.new(0, 512, 0, 0),
-	Position = UDim2.fromScale(0.5, if UI.Touch then 0 else 0.5),
+	Size = UDim2.new(1, 0, 1, 0),
+	Position = UDim2.fromScale(0.5, 0),
 	BackgroundTransparency = 1,
 	ZIndex = 100,
 	Visible = false,
 
 	Input,
-	if UI.Touch then UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } else nil,
+	UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
 }
 
 local TooltipFrame = UI.new "Frame" {
@@ -137,7 +142,7 @@ local Tooltip = UI.new "TextLabel" {
 	TextWrapped = true,
 	RichText = true,
 	Font = UI.Theme.FontMono,
-	TextSize = UI.Theme.FontSize,
+	TextSize = 20,
 	TextColor3 = UI.Theme.PrimaryText,
 	TextXAlignment = Enum.TextXAlignment.Left,
 
@@ -174,7 +179,7 @@ local SuggestionFrame = UI.new "TextButton" {
 		TextWrapped = true,
 		RichText = true,
 		Font = UI.Theme.FontMono,
-		TextSize = UI.Theme.FontSize,
+		TextSize = 20,
 		TextColor3 = UI.Theme.PrimaryText,
 		TextXAlignment = Enum.TextXAlignment.Left,
 
@@ -400,9 +405,12 @@ updateCompletion = function()
 	).X
 	TooltipFrame.Position = UDim2.new(
 		0,
-		math.floor(argX) + 14 + UI.Theme.Padding._value.Offset,
+		math.floor(argX)
+			+ Input._input.AbsolutePosition.X
+			- Input._instance.AbsolutePosition.X
+			- UI.Theme.Padding._value.Offset,
 		0.5,
-		Input._input.AbsoluteSize.Y / 2 + UI.Theme.PaddingHalf._value.Offset
+		Input._instance.AbsoluteSize.Y / 2 + 6
 	)
 
 	-- suggestion hints
@@ -474,6 +482,14 @@ local function updateCompletionData()
 	updateCompletion()
 end
 
+local function hideCommandBar()
+	Input._input.TextEditable = false
+	CommandBar.Visible = false
+	StarterGui:SetCore("TopbarEnabled", true)
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+	_K.client.TopbarPlus.setTopbarEnabled(true)
+end
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.UserInputType == Enum.UserInputType.Keyboard then
 		if not Input._input:IsFocused() then
@@ -493,8 +509,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then
 			return
 		end
-		CommandBar.Visible = false
-		Input._input.TextEditable = false
+		hideCommandBar()
 	end
 end)
 
@@ -547,7 +562,7 @@ Input._input.FocusLost:Connect(function(enterPressed)
 			end
 		end
 
-		CommandBar.Visible = false
+		hideCommandBar()
 
 		-- ignore empty command strings
 		if Input._input.Text == _K.Data.settings.prefix then
@@ -597,7 +612,7 @@ return {
 	init = function(self, _K)
 		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
-		CommandBar.Parent = if UserInputService.TouchEnabled then UI.TopBarFrame else UI.LayerTop
+		CommandBar.Parent = UI.TopBarFrame
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
 		UI.Scope.settings.prefix:hook(function(value)
@@ -607,6 +622,8 @@ return {
 		end)
 	end,
 	show = function()
+		_K.client.TopbarPlus.setTopbarEnabled(false)
+		StarterGui:SetCore("TopbarEnabled", false)
 		CommandBar.Visible = true
 		Input._input:CaptureFocus()
 	end,
