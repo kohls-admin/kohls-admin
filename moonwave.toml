@@ -6,7 +6,15 @@ changelog = true
 
 [[classOrder]]
 section = "Core"
-classes = ["_K", "Auth", "Hook", "Flux", "Process", "Registry", "Remote"]
+classes = [
+	"MainModule",
+	"Auth",
+	"Hook",
+	"Flux",
+	"Process",
+	"Registry",
+	"Remote",
+]
 
 [[classOrder]]
 section = "Interface"
