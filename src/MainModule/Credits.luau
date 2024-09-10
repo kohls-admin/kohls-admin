@@ -53,6 +53,7 @@ return {
 	{
 		Title = "Testers",
 		Users = {
+			130170862, -- matsagor1
 			75214485, -- ericance
 			1560379748, -- mosha
 			107192912, -- britishtrainspotting
@@ -66,7 +67,7 @@ return {
 			672360774, -- xaz
 			9345226, -- tomspell
 			3230955923, -- napiw
-			130170862, -- matsagor1
+			516417505, -- landon
 		},
 	},
 	{
