@@ -3,6 +3,14 @@
 	"emitLegacyScripts": false,
 	"tree": {
 		"$className": "DataModel",
+
+		"HttpService": {
+			"$className": "HttpService",
+			"$properties": {
+				"HttpEnabled": true
+			}
+		},
+
 		"ServerScriptService": {
 			"Kohl's Admin": {
 				"$path": "src",
