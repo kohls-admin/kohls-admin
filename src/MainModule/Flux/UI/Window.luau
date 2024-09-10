@@ -191,6 +191,7 @@ function Window.new(definition)
 	end
 
 	local exitButton = UI.new "Button" {
+		LayoutOrder = 9,
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
 		Size = UDim2.new(0, 32, 0, 32),
 		Icon = "rbxassetid://1476571006",

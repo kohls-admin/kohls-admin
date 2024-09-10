@@ -3,6 +3,7 @@ local Flux = _K.Flux
 local UI = _K.UI
 
 _K.client = {
+	CommandBar = require(script:WaitForChild("CommandBar")),
 	TopbarPlus = require(script:WaitForChild("TopbarPlus")),
 
 	ready = false,
@@ -34,8 +35,7 @@ for key, value in _K.Data.settings do
 	end
 end
 
-local CommandBar = require(script.CommandBar)
-CommandBar:init(_K)
+_K.client.CommandBar:init(_K)
 
 local Announce = require(script.Announce)
 local Dashboard = require(script.Dashboard)

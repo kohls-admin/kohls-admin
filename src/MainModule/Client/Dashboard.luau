@@ -34,6 +34,29 @@ local dashboard = UI.new "Window" {
 }
 UI.Scope.dashboard.Window = dashboard
 
+-- add a command bar toggle button next to the exit button
+local toggleCommandBar
+toggleCommandBar = UI.new "Button" {
+	Size = UDim2.new(0, 32, 0, 32),
+	Icon = "rbxassetid://85543506317447",
+	IconProperties = { ImageTransparency = 0.75 },
+	Text = "",
+	Parent = dashboard._instance.Frame.TitleBar,
+	LayoutOrder = 8,
+
+	Activated = function()
+		local hide = _K.client.CommandBar.Bar.Visible
+		if hide then
+			_K.client.CommandBar.hide()
+		else
+			_K.client.CommandBar.show()
+		end
+		toggleCommandBar._content.IconFrame.Icon.ImageTransparency = if hide then 0.75 else 0
+	end,
+}
+
+toggleCommandBar._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+
 -- TopbarStandard.Holders.Left
 local holder = UI.PlayerGui:FindFirstChild("TopbarStandard")
 if holder and holder:FindFirstChild("Holders") and holder.Holders:FindFirstChild("Left") then
@@ -53,7 +76,10 @@ end
 _K.client.hotkeys.dashboard.callback = dashboardToggle
 
 local dashboardButton = TopbarPlus.new()
+	:setName("KADashboardIcon")
+	:setCaption("Kohl's Admin Dashboard")
 	:setImage(10650723871)
+	:setOrder(-1)
 	:bindEvent("toggled", dashboardToggle)
 	:modifyTheme({ "Widget", "BorderSize", 0 })
 local dashboardButtonIcon = dashboardButton:getInstance("IconImage")

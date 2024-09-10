@@ -609,6 +609,8 @@ Input._input:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 return {
+	Bar = CommandBar,
+	Input = Input,
 	init = function(self, _K)
 		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
@@ -627,4 +629,5 @@ return {
 		CommandBar.Visible = true
 		Input._input:CaptureFocus()
 	end,
+	hide = hideCommandBar,
 }
