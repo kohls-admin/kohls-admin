@@ -19,7 +19,8 @@ local indicatorColor = UI.compute(function(use)
 	end
 end)
 
-local Input = UI.new "Input" {
+local Input
+Input = UI.new "Input" {
 	AnchorPoint = Vector2.new(0, 0.5),
 	Placeholder = "Search",
 	BackgroundColor3 = UI.Theme.Primary,
@@ -29,9 +30,10 @@ local Input = UI.new "Input" {
 	Position = UDim2.fromScale(0, 0.5),
 	Size = UDim2.new(1, 0, 1, 0),
 
-	UI.new "Frame" {
+	UI.new "TextButton" {
 		Name = "CircleIndicator",
 		BackgroundTransparency = 1,
+		TextTransparency = 1,
 		Size = UDim2.new(0, 20, 0, 20),
 
 		UI.new "Frame" {
@@ -72,6 +74,13 @@ local Input = UI.new "Input" {
 					return use(validState) == false
 				end),
 			},
+		},
+
+		[UI.Event] = {
+			Activated = function()
+				Input._input:CaptureFocus()
+				Input._input:ReleaseFocus(true)
+			end,
 		},
 	},
 
