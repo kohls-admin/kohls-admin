@@ -482,12 +482,42 @@ local function updateCompletionData()
 	updateCompletion()
 end
 
+-- hides and caches the state of core guis, toggles the cached state otherwise
+local coreGuiCache, coreChatActiveCache = {}, nil
+local function coreGuiEnabled(enabled: boolean)
+	if enabled then
+		StarterGui:SetCore("ChatActive", coreChatActiveCache)
+		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+		coreChatActiveCache = nil
+		for coreType, value in coreGuiCache do
+			coreGuiCache[coreType] = nil
+			StarterGui:SetCoreGuiEnabled(coreType, value)
+		end
+	else
+		if coreChatActiveCache == nil then
+			coreChatActiveCache = StarterGui:GetCore("ChatActive")
+		end
+		StarterGui:SetCore("ChatActive", false)
+		for _, coreType in Enum.CoreGuiType:GetEnumItems() do
+			if coreType ~= Enum.CoreGuiType.Chat and coreType ~= Enum.CoreGuiType.Captures then
+				continue
+			end
+			if coreGuiCache[coreType] == nil then
+				local value = StarterGui:GetCoreGuiEnabled(coreType)
+				StarterGui:SetCoreGuiEnabled(coreType, false)
+				if value == true then
+					coreGuiCache[coreType] = value
+				end
+			end
+		end
+	end
+end
+
 local function hideCommandBar()
 	Input._input.TextEditable = false
 	CommandBar.Visible = false
-	StarterGui:SetCore("TopbarEnabled", true)
-	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 	_K.client.TopbarPlus.setTopbarEnabled(true)
+	coreGuiEnabled(true)
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -625,7 +655,7 @@ return {
 	end,
 	show = function()
 		_K.client.TopbarPlus.setTopbarEnabled(false)
-		StarterGui:SetCore("TopbarEnabled", false)
+		coreGuiEnabled(false)
 		CommandBar.Visible = true
 		Input._input:CaptureFocus()
 	end,
