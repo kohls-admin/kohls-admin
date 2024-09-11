@@ -506,6 +506,38 @@ return {
 	},
 
 	{
+		name = "removehats",
+		aliases = { "rhats" },
+		description = "Removes the hats of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose hats to remove.",
+				shouldRequest = true,
+			},
+			{
+				type = "boolean",
+				name = "AdminHats",
+				description = "When true, only removes the hats given by the admin, defaults to false.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, adminHats)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				for _, instance in player.Character:GetChildren() do
+					if instance:IsA("Accoutrement") and (not adminHats or instance.Name == "KHat") then
+						instance:Destroy()
+					end
+				end
+			end
+		end,
+	},
+	{
 		name = "bundle",
 		aliases = { "unbundle" },
 		description = "Changes the bundle of one or more player(s).",

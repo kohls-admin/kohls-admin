@@ -1404,6 +1404,84 @@ return {
 			end
 		end,
 	},
+	{
+		name = "removelimbs",
+		aliases = { "rlimbs" },
+		description = "Removes the limbs of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose limbs to remove.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				for _, instance in player.Character:GetChildren() do
+					if string.find(instance.Name, "Arm$") or string.find(instance.Name, "Leg$") then
+						instance:Destroy()
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "removearms",
+		aliases = { "rarms" },
+		description = "Removes the arms of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose arms to remove.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				for _, instance in player.Character:GetChildren() do
+					if string.find(instance.Name, "Arm$") then
+						instance:Destroy()
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "removelegs",
+		aliases = { "rlegs" },
+		description = "Removes the legs of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose legs to remove.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				for _, instance in player.Character:GetChildren() do
+					if string.find(instance.Name, "Leg$") then
+						instance:Destroy()
+					end
+				end
+			end
+		end,
+	},
 
 	{
 		name = "buy",
