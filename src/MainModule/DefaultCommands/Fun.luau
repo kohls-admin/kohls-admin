@@ -10,6 +10,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) whose character to change.",
+				shouldRequest = true,
 			},
 			{
 				type = "integer",
@@ -40,6 +41,9 @@ return {
 
 		run = function(context, players, userId)
 			for _, player in players do
+				if player.CharacterAppearanceId == player.UserId then
+					continue
+				end
 				player.CharacterAppearanceId = player.UserId
 				player:LoadCharacter()
 			end
