@@ -337,6 +337,38 @@ return {
 		end,
 	},
 	{
+		name = "xray",
+		aliases = { "unxray", "wallhack", "walls" },
+		description = "Show players through walls.",
+		args = {},
+		envClient = function(_K)
+			local env = { xray = _K.Flux.state(false) }
+			local function xrayCharacter(character)
+				_K.Flux.new "Highlight" {
+					Parent = character,
+					Name = "_Kxray",
+					Enabled = env.xray,
+				}
+			end
+			local function xrayPlayer(player)
+				if player == _K.UI.LocalPlayer then
+					return
+				end
+				player.CharacterAdded:Connect(xrayCharacter)
+				if player.Character then
+					xrayCharacter(player.Character)
+				end
+			end
+			_K.Util.SafePlayerAdded(xrayPlayer)
+			return env
+		end,
+
+		runClient = function(context)
+			context.env.xray:set(if context.alias == "unxray" then false else not context.env.xray._value)
+		end,
+	},
+
+	{
 		name = "play",
 		aliases = { "music", "sound", "audio" },
 		description = "Plays a sound.",
