@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
 
 local noclipCache = {}
-
+local playingSound = nil
 local spectateConnection
 
 local function spectateCleanup(context)
@@ -333,6 +333,106 @@ return {
 				player.DevCameraOcclusionMode = noclipCache[player]
 				noclipCache[player] = nil
 				context._K.Remote.Noclip:FireClient(player)
+			end
+		end,
+	},
+	{
+		name = "play",
+		aliases = { "music", "sound", "audio" },
+		description = "Plays a sound.",
+		args = {
+			{
+				type = "integer",
+				name = "AssetId",
+				description = "The asset identifier of the sound.",
+			},
+		},
+
+		run = function(context, assetId)
+			if playingSound then
+				playingSound:Stop()
+				playingSound:Destroy()
+			end
+
+			local sound = Instance.new("Sound")
+			playingSound = sound
+			sound.Name = "_KPlaySound"
+			sound.SoundId = "rbxassetid://" .. assetId
+			sound.Looped = true
+			sound.Parent = workspace
+			sound:Play()
+		end,
+	},
+	{
+		name = "pause",
+		aliases = {},
+		description = "Pauses the current sound.",
+		args = {},
+
+		run = function(context)
+			if playingSound then
+				playingSound:Pause()
+			end
+		end,
+	},
+	{
+		name = "resume",
+		aliases = {},
+		description = "Resumes the current sound.",
+		args = {},
+
+		run = function(context)
+			if playingSound then
+				playingSound:Resume()
+			end
+		end,
+	},
+	{
+		name = "stop",
+		aliases = { "stopmusic" },
+		description = "Stops the currently playing sound.",
+		args = {},
+
+		run = function(context)
+			if playingSound then
+				playingSound:Stop()
+				playingSound:Destroy()
+			end
+		end,
+	},
+	{
+		name = "pitch",
+		aliases = {},
+		description = "Changes the pitch of the currently playing sound.",
+		args = {
+			{
+				type = "number",
+				name = "Value",
+				description = "The pitch value.",
+			},
+		},
+
+		run = function(context, pitch)
+			if playingSound then
+				playingSound.Pitch = pitch
+			end
+		end,
+	},
+	{
+		name = "volume",
+		aliases = {},
+		description = "Changes the volume of the currently playing sound.",
+		args = {
+			{
+				type = "number",
+				name = "Value",
+				description = "The volume value.",
+			},
+		},
+
+		run = function(context, volume)
+			if playingSound then
+				playingSound.Volume = volume
 			end
 		end,
 	},
