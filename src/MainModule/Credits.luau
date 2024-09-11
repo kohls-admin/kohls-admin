@@ -83,7 +83,7 @@ return {
 			},
 			{
 				Id = 214258, -- Person299
-				Tooltip = "Inspired the original Kohl's Admin Commands",
+				Tooltip = "Person299's Admin Commands V2",
 			},
 			{
 				Id = 70540486, -- reru
@@ -100,6 +100,10 @@ return {
 			{
 				Id = 2722909519, -- sona
 				Tooltip = "Squash & cool research",
+			},
+			{
+				Id = 82347291, -- ForeverHD
+				Tooltip = "HD Admin & usage of TopbarPlus",
 			},
 		},
 	},
