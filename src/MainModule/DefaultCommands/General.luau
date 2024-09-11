@@ -21,6 +21,23 @@ local function spectateCleanup(context)
 end
 
 return {
+	{
+		name = "clean",
+		aliases = { "clear" },
+		description = "Cleans up miscellaneous admin objects like cloned characters, looped commands, and scripts.",
+		args = {},
+
+		run = function(context)
+			for _, object in context._K.cleanupCommands do
+				local objectType = typeof(object)
+				if objectType == "Instance" then
+					object:Destroy()
+				elseif objectType == "function" then
+					object()
+				end
+			end
+		end,
+	},
 	{ -- TODO: need to set up a way to set public logs
 		name = "logs",
 		aliases = { "chatlogs" },

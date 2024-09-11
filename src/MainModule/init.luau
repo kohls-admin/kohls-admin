@@ -59,6 +59,7 @@ local _K = {
 	client = nil,
 	pinnedAnnouncement = nil,
 
+	cleanupCommands = {},
 	displayNames = {},
 	playerPrefix = {},
 	_serverLock = false,

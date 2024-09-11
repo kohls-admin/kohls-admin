@@ -87,6 +87,32 @@ return {
 			end
 		end,
 	},
+	{
+		name = "clone",
+		aliases = {},
+		description = "Clones the character of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose character to clone.",
+			},
+		},
+
+		run = function(context, players, userId)
+			for _, player in players do
+				if player.Character then
+					player.Character.Archivable = true
+					local clone = player.Character:Clone()
+					player.Character.Archivable = false
+					table.insert(context._K.cleanupCommands, clone)
+					clone.Parent = workspace
+					clone:MoveTo(player.Character:GetPivot().Position)
+					table.insert(context._K.cleanupCommands, clone)
+				end
+			end
+		end,
+	},
 
 	{
 		name = "fling",
