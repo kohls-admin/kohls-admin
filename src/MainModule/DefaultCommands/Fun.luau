@@ -341,6 +341,82 @@ return {
 			end
 		end,
 	},
+	{
+		name = "rocket",
+		aliases = {},
+		description = "Attaches a rocket to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to attach a rocket to.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players, speed)
+			for _, player in players do
+				if
+					player.Character
+					and player.Character.PrimaryPart
+					and player.Character:FindFirstChildOfClass("Humanoid")
+				then
+					local existing = player.Character:FindFirstChild("_KRocket")
+					if existing then
+						existing:Destroy()
+					end
+
+					player.Character:FindFirstChildOfClass("Humanoid").Jump = true
+
+					local attachment = Instance.new("Attachment")
+					attachment.Position = Vector3.new(0, -3, 0)
+					context._K.Flux.new "Fire" {
+						Parent = attachment,
+						Size = 2,
+					}
+
+					local rocket = context._K.Flux.new "Part" {
+						Parent = player.Character,
+						Name = "_KRocket",
+						Size = Vector3.new(1, 6, 1),
+						Anchored = false,
+						CanCollide = false,
+						Massless = true,
+						TopSurface = 0,
+						BottomSurface = 0,
+						Material = Enum.Material.Metal,
+
+						attachment,
+						context._K.Flux.new "VectorForce" {
+							ApplyAtCenterOfMass = true,
+							RelativeTo = Enum.ActuatorRelativeTo.World,
+							Force = Vector3.new(0, player.Character.PrimaryPart.AssemblyMass * workspace.Gravity + 800),
+							Attachment0 = attachment,
+						},
+					}
+
+					context._K.Flux.new "Weld" {
+						Parent = rocket,
+						Part0 = rocket,
+						Part1 = player.Character.PrimaryPart,
+						C1 = CFrame.new(0, 0, 1),
+					}
+
+					task.delay(5, function()
+						if player.Character then
+							player.Character:BreakJoints()
+							rocket:Destroy()
+							local explosion = Instance.new("Explosion")
+							explosion.ExplosionType = Enum.ExplosionType.NoCraters
+							explosion.Position = rocket.Position
+							explosion.DestroyJointRadiusPercent = 0
+							explosion.Parent = player.Character
+						end
+					end)
+				end
+			end
+		end,
+	},
 
 	{
 		name = "size",
