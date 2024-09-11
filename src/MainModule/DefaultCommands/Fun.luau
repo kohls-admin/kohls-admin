@@ -196,6 +196,32 @@ return {
 		end,
 	},
 	{
+		name = "skydive",
+		aliases = { "freefall" },
+		description = "Sends one or more player(s) into the sky.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to send into the sky.",
+				shouldRequest = true,
+			},
+			{
+				type = "number",
+				name = "Distance",
+				description = "The distance, in studs, that players are sent into the sky.",
+				optional = true,
+			},
+		},
+		run = function(context, players, distance)
+			for _, player in players do
+				if player.Character then
+					player.Character:TranslateBy(Vector3.new(0, distance or 8e3, 0))
+				end
+			end
+		end,
+	},
+	{
 		name = "trip",
 		aliases = {},
 		description = "Trips one or more player(s).",
