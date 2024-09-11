@@ -36,6 +36,7 @@ return {
 					object()
 				end
 			end
+			context._K.Flux.Scope.discoCleanup()
 		end,
 	},
 	{ -- TODO: need to set up a way to set public logs

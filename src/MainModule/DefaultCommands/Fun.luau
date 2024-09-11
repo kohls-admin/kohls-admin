@@ -40,6 +40,52 @@ end
 
 return {
 	{
+		name = "disco",
+		aliases = {},
+		description = "It's time to party! 🎉",
+		args = {},
+		env = function(_K)
+			_K.Flux.Scope.discoRestore = false
+			_K.Flux.Scope.discoCleanup = function()
+				if _K.Flux.Scope.discoRestore then
+					_K.Util.Services.Lighting.Ambient, _K.Util.Services.Lighting.FogColor =
+						unpack(_K.Flux.Scope.discoRestore)
+					_K.Flux.Scope.discoRestore = nil
+				end
+				_K.Flux.Scope.discoId = nil
+			end
+		end,
+
+		run = function(context)
+			if not context._K.Flux.Scope.discoRestore then
+				context._K.Flux.Scope.discoRestore =
+					{ context._K.Util.Services.Lighting.Ambient, context._K.Util.Services.Lighting.FogColor }
+			end
+
+			local t = time()
+			context._K.Flux.Scope.discoId = t
+			task.spawn(function()
+				repeat
+					local color = Color3.fromHSV((time() - t) % 1, 1, 1)
+					context._K.Util.Services.Lighting.Ambient = color
+					context._K.Util.Services.Lighting.FogColor = color
+					task.wait(math.pi / 10)
+				until context._K.Flux.Scope.discoId ~= t
+			end)
+		end,
+	},
+	{
+		name = "undisco",
+		aliases = {},
+		description = "Stop the party! ✋",
+		args = {},
+
+		run = function(context)
+			context._K.Flux.Scope.discoCleanup()
+		end,
+	},
+
+	{
 		name = "char",
 		aliases = { "character" },
 		description = "Changes the character of one or more player(s).",
