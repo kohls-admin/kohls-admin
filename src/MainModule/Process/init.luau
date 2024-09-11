@@ -84,7 +84,8 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 
 	for i, commandArray in rawCommands do
 		local commandText = commandArray[1][2]
-		local commandDefinition = Registry.commands[string.lower(commandText)]
+		local commandAlias = string.lower(commandText)
+		local commandDefinition = Registry.commands[commandAlias]
 
 		if not commandDefinition then
 			return false, "Invalid command: " .. commandText
@@ -94,7 +95,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 			return false, "Invalid permissions for command: " .. commandText
 		end
 
-		local command = Command.new(_K, commandDefinition, commandArray, from, text)
+		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
 		local ok, result = command:validate()
 
 		table.insert(commands, command)

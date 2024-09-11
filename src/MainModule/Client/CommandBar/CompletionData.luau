@@ -39,7 +39,8 @@ return function(_K, text, cursorPosition)
 	local greedy
 	for _, commandArray in rawCommands do
 		local commandPos, commandText = unpack(commandArray[1])
-		local commandDefinition = _K.Registry.commands[string.lower(commandText)]
+		local commandAlias = string.lower(commandText)
+		local commandDefinition = _K.Registry.commands[commandAlias]
 
 		local lastArgDefinition = commandDefinition and commandDefinition.args[#commandDefinition.args]
 		local lastArg = commandArray[#commandArray]
@@ -75,7 +76,7 @@ return function(_K, text, cursorPosition)
 				table.insert(data.invalid, { "Invalid command2", commandPos, commandText })
 				return data
 			elseif commandDefinition then
-				local command = Command.new(_K, commandDefinition, commandArray, from, text)
+				local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
 				command:validate()
 				table.insert(data.commands, command)
 			end
@@ -122,7 +123,7 @@ return function(_K, text, cursorPosition)
 			end
 
 			if commandDefinition then
-				local command = Command.new(_K, commandDefinition, commandArray, from, text)
+				local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
 				command:validate()
 				table.insert(data.commands, command)
 			end
@@ -137,7 +138,7 @@ return function(_K, text, cursorPosition)
 
 		data.commandDefinition = commandDefinition
 
-		local command = Command.new(_K, commandDefinition, commandArray, from, text)
+		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
 		local ok, result = command:validate()
 		table.insert(data.commands, command)
 

@@ -36,7 +36,7 @@ return {
 
 		runClient = function(context)
 			local about = context._K.UI.Scope.dashboard.About
-			local scrollY = if string.find(context.array[1][2], "credit", 1, true)
+			local scrollY = if string.find(context.alias, "credit", 1, true)
 				then about.CanvasPosition.Y + about.Credits.AbsolutePosition.Y - about.AbsolutePosition.Y
 				else 0
 			about.CanvasPosition = Vector2.new(0, scrollY)

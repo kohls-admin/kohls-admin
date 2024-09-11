@@ -270,10 +270,9 @@ return {
 
 		run = function(context, players, strength)
 			strength = strength or 1
-			local aliasUsed = string.lower(context.array[1][2])
-			if aliasUsed == "nograv" then
+			if context.alias == "nograv" then
 				strength = -1
-			elseif table.find(context.env.resetAlias, aliasUsed) then
+			elseif table.find(context.env.resetAlias, context.alias) then
 				strength = 1
 			end
 

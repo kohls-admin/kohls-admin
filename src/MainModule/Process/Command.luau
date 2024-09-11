@@ -7,9 +7,10 @@ local Command = {
 }
 Command.__index = Command
 
-function Command.new(_K, commandDefinition, commandArray, from, text)
+function Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
 	return setmetatable({
 		_K = _K,
+		alias = commandAlias,
 		array = commandArray,
 		definition = commandDefinition,
 		envClient = commandDefinition and commandDefinition.envClient,
