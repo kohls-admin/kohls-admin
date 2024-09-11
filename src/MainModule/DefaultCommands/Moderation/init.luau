@@ -565,7 +565,7 @@ return {
 	},
 	{
 		name = "breakjoints",
-		aliases = { "break", "kill" },
+		aliases = { "break", "kill", "💀" },
 		description = "Breaks the joints one or more player(s).",
 		args = {
 			{
