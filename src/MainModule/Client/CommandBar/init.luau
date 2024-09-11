@@ -535,11 +535,11 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.Up then
-			suggestionIndex = math.max(1, suggestionIndex - 1)
-			updateCompletion()
-		elseif input.KeyCode == Enum.KeyCode.Down then
 			local max = currentCompletionData.suggestions and #currentCompletionData.suggestions
 			suggestionIndex = math.min(math.max(1, max), suggestionIndex + 1)
+			updateCompletion()
+		elseif input.KeyCode == Enum.KeyCode.Down then
+			suggestionIndex = math.max(1, suggestionIndex - 1)
 			updateCompletion()
 		end
 	elseif
