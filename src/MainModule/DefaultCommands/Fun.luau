@@ -196,6 +196,63 @@ return {
 		end,
 	},
 	{
+		name = "setgravity",
+		aliases = { "setgrav", "nograv", "ungravity", "ungrav", "resetgravity", "resetgrav" },
+		description = "Sets the gravity of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose gravity to change.",
+				shouldRequest = true,
+			},
+			{
+				type = "number",
+				name = "Strength",
+				description = "The gravity strength, default is 1.",
+				optional = true,
+			},
+		},
+		env = function(_K)
+			return { resetAlias = { "ungravity", "ungrav", "resetgravity", "resetgrav" } }
+		end,
+
+		run = function(context, players, strength)
+			strength = strength or 1
+			local aliasUsed = string.lower(context.array[1][2])
+			if aliasUsed == "nograv" then
+				strength = -1
+			elseif table.find(context.env.resetAlias, aliasUsed) then
+				strength = 1
+			end
+
+			for _, player in players do
+				if
+					player.Character
+					and player.Character.PrimaryPart
+					and player.Character.PrimaryPart:FindFirstChildOfClass("Attachment")
+				then
+					local existing = player.Character:FindFirstChild("_KGravityForce")
+					if existing then
+						existing:Destroy()
+					end
+					if strength == 1 then
+						continue
+					end
+
+					local force = Instance.new("VectorForce")
+					force.Name = "_KGravityForce"
+					force.ApplyAtCenterOfMass = true
+					force.Attachment0 = player.Character.PrimaryPart:FindFirstChildOfClass("Attachment")
+					force.RelativeTo = Enum.ActuatorRelativeTo.World
+					force.Force =
+						Vector3.new(0, player.Character.PrimaryPart.AssemblyMass * -strength * workspace.Gravity)
+					force.Parent = player.Character
+				end
+			end
+		end,
+	},
+	{
 		name = "skydive",
 		aliases = { "freefall" },
 		description = "Sends one or more player(s) into the sky.",
