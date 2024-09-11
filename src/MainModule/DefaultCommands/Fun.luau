@@ -115,6 +115,31 @@ return {
 	},
 
 	{
+		name = "explode",
+		aliases = { "boom", "💥" },
+		description = "Explodes one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to explode.",
+				shouldRequest = true,
+			},
+		},
+		run = function(context, players, distance)
+			for _, player in players do
+				if player.Character then
+					player.Character:BreakJoints()
+					local explosion = Instance.new("Explosion")
+					explosion.ExplosionType = Enum.ExplosionType.NoCraters
+					explosion.Position = player.Character:GetPivot().Position
+					explosion.DestroyJointRadiusPercent = 0
+					explosion.Parent = player.Character
+				end
+			end
+		end,
+	},
+	{
 		name = "fling",
 		aliases = {},
 		description = "Flings one or more player(s).",
