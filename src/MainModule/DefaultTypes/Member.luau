@@ -38,9 +38,10 @@ local typeMember = {
 			local memberRank = _K.Auth.getRank(id)
 			local userInfo = _K.Util.getUserInfo(id)
 			if not definition.lowerRank or rank > memberRank then
-				names[id] = if userInfo.DisplayName ~= userInfo.Username
+				local display = if userInfo.DisplayName ~= userInfo.Username
 					then `{userInfo.Username} ({userInfo.DisplayName})`
 					else userInfo.Username
+				names[id] = { userInfo.Username, display }
 			end
 		end
 		return _K.Util.Suggest.query(text, names, _K.Data.members)
