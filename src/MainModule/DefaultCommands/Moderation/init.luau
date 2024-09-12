@@ -1307,6 +1307,66 @@ return {
 		end,
 	},
 	{
+		name = "vehiclespeed",
+		aliases = {},
+		description = "Changes the vehicle speed of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose vehicle speed to change.",
+			},
+			{
+				type = "number",
+				name = "Speed",
+				description = "The vehicle speed to use.",
+			},
+		},
+
+		run = function(context, players, speed: number)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				if not (humanoid and humanoid.SeatPart) then
+					continue
+				end
+				humanoid.SeatPart.MaxSpeed = speed
+			end
+		end,
+	},
+	{
+		name = "vehicletorque",
+		aliases = {},
+		description = "Changes the vehicle torque of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose vehicle torque to change.",
+			},
+			{
+				type = "number",
+				name = "Torque",
+				description = "The vehicle torque to use.",
+			},
+		},
+
+		run = function(context, players, torque: number)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				if not (humanoid and humanoid.SeatPart) then
+					continue
+				end
+				humanoid.SeatPart.Torque = torque
+			end
+		end,
+	},
+	{
 		name = "slopeangle",
 		aliases = { "maxslopeangle" },
 		description = "Changes the max slope angle of one or more player(s).",
