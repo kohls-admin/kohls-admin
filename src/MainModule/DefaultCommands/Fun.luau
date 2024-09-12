@@ -159,6 +159,84 @@ return {
 			end
 		end,
 	},
+	{
+		name = "control",
+		aliases = { "uncontrol" },
+		description = "Controls the character of a player.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to control.",
+				shouldRequest = true,
+				ignoreSelf = true,
+			},
+		},
+		envClient = function(_K)
+			_K.Remote.ControlSubject.OnClientEvent:Connect(function(subject)
+				workspace.CurrentCamera.CameraSubject = subject
+			end)
+		end,
+		env = function(_K)
+			local con = {}
+			local controllerCache = {}
+			local controlledCache = {}
+			local remote = _K.Remote.ControlSubject
+			return {
+				con = con,
+				controlled = controlledCache,
+				controller = controllerCache,
+				onCharacter = function(character)
+					local player = _K.Util.Services.Players:GetPlayerFromCharacter(character)
+					if not player then
+						return
+					end
+					while character and character.Parent == nil do
+						task.wait()
+					end
+					local controller = controllerCache[player]
+					for _, descendant in player.Character:GetDescendants() do
+						if descendant:IsA("BasePart") then
+							descendant:SetNetworkOwner(controller)
+						end
+					end
+					controller.Character = character
+					remote:FireClient(controller, character)
+				end,
+				reset = function(controller)
+					local controlled = controlledCache[controller]
+					local con = con[controlled]
+					if con then
+						con:Disconnect()
+					end
+					controlledCache[controller] = nil
+					controllerCache[controlled] = nil
+					if controlled.Character then
+						for _, descendant in controlled.Character:GetDescendants() do
+							if descendant:IsA("BasePart") then
+								descendant:SetNetworkOwner(controlled)
+							end
+						end
+					end
+					controller:LoadCharacter()
+				end,
+			}
+		end,
+
+		runClient = function(context, player)
+			workspace.CurrentCamera.CameraSubject = player.Character
+		end,
+		run = function(context, player)
+			if context.alias == "uncontrol" then
+				context.env.reset()
+				return
+			end
+			context.env.controller[player] = context.fromPlayer
+			context.env.controlled[context.fromPlayer] = player
+			context.env.con[player] = player.CharacterAppearanceLoaded:Connect(context.env.onCharacter)
+			context.env.onCharacter(player.Character)
+		end,
+	},
 
 	{
 		name = "explode",
