@@ -13,22 +13,27 @@ local maxSpeed = 512
 local accelDuration = 16
 local lastStop = elapsedTime()
 
+local flyCFrame = CFrame.new()
 local function FlyStep(delta)
 	if not (Character and Humanoid and Character.PrimaryPart and not Character:FindFirstChild("kFreeze")) then
 		return
 	end
+
 	local cameraCFrame = workspace.CurrentCamera.CFrame
-	local newCFrame = cameraCFrame.Rotation + Character.PrimaryPart.Position
+	local newCFrame = cameraCFrame.Rotation + flyCFrame.Position
 	local moveVector = cameraCFrame:VectorToWorldSpace(ControlModule:GetMoveVector())
 	local up = Humanoid.Jump and 1 or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and -1 or 0
+
 	if up ~= 0 or moveVector.x ~= 0 or moveVector.z ~= 0 then
 		local speed = minSpeed + (maxSpeed - minSpeed) * math.clamp((elapsedTime() - lastStop) / accelDuration, 0, 1)
 		newCFrame += Vector3.new(moveVector.X, moveVector.Y + up, moveVector.Z).Unit * (delta * speed) * 4
 	else
 		lastStop = elapsedTime()
 	end
-	Character.PrimaryPart.Anchored, Humanoid.PlatformStand = true, true
-	Character.PrimaryPart.CFrame = Character.PrimaryPart.CFrame:lerp(newCFrame, 0.25)
+	flyCFrame = flyCFrame:lerp(newCFrame, 0.25)
+	Character.PrimaryPart.CFrame = flyCFrame
+	Character.PrimaryPart.AssemblyLinearVelocity = Vector3.zero
+	Character.PrimaryPart.AssemblyAngularVelocity = Vector3.zero
 end
 
 local FlyEnabled, FlyConnection, flying
@@ -43,30 +48,13 @@ local function Fly(enable)
 	lastStop = elapsedTime()
 	if enable then
 		if FlyEnabled and not FlyConnection then
-			Character.PrimaryPart.Anchored, Humanoid.PlatformStand = true, true
+			flyCFrame = Character.PrimaryPart.CFrame
 			FlyConnection = RunService.Heartbeat:Connect(FlyStep)
 		end
 	else
-		Character.PrimaryPart.Anchored, Humanoid.PlatformStand = false, false
 		FlyConnection = nil
 	end
 end
-
-local lastJump, debounceJump = 0, nil
-UserInputService.JumpRequest:Connect(function()
-	if debounceJump then
-		return
-	end
-	local now = tick()
-	if now - lastJump <= 0.3 and FlyEnabled then
-		debounceJump = true
-		Fly(not flying)
-		task.wait(1)
-		debounceJump = nil
-		lastJump = 0
-	end
-	lastJump = now
-end)
 
 local collideCache = {}
 local function noCollide(model)
@@ -125,7 +113,6 @@ function Noclip.noclip(enabled: boolean)
 		if typeof(noclipping) == "RBXScriptConnection" then
 			noclipping:Disconnect()
 		end
-		noclipping = nil
 	end
 
 	noclipping = enabled
@@ -151,5 +138,46 @@ function Noclip.noclip(enabled: boolean)
 		end
 	end
 end
+
+local lastJump, debounceJump = 0, nil
+UserInputService.JumpRequest:Connect(function()
+	if debounceJump then
+		return
+	end
+	local now = tick()
+	if now - lastJump <= 0.3 and FlyEnabled then
+		debounceJump = true
+		if noclipping then
+			if typeof(noclipping) == "RBXScriptConnection" then
+				noclipping:Disconnect()
+			end
+		end
+		noclipping = not flying
+		Fly(noclipping)
+		if not LocalPlayer.Character then
+			return
+		end
+
+		if noclipping then
+			onCharacter(LocalPlayer.Character)
+		else
+			Humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+			Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+			Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+
+			for _, descendant in LocalPlayer.Character:GetDescendants() do
+				if descendant:IsA("BasePart") then
+					if collideCache[descendant] then
+						descendant.CanCollide = true
+					end
+				end
+			end
+		end
+		task.wait(1)
+		debounceJump = nil
+		lastJump = 0
+	end
+	lastJump = now
+end)
 
 return Noclip
