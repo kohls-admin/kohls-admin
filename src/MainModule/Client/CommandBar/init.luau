@@ -534,12 +534,20 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if not Input._input:IsFocused() then
 			return
 		end
+		local max = currentCompletionData.suggestions and #currentCompletionData.suggestions
 		if input.KeyCode == Enum.KeyCode.Up then
-			local max = currentCompletionData.suggestions and #currentCompletionData.suggestions
-			suggestionIndex = math.min(math.max(1, max), suggestionIndex + 1)
+			if currentCompletionData.suggestionType == "History" then
+				suggestionIndex = math.min(math.max(1, max), suggestionIndex + 1)
+			else
+				suggestionIndex = math.max(1, suggestionIndex - 1)
+			end
 			updateCompletion()
 		elseif input.KeyCode == Enum.KeyCode.Down then
-			suggestionIndex = math.max(1, suggestionIndex - 1)
+			if currentCompletionData.suggestionType == "History" then
+				suggestionIndex = math.max(1, suggestionIndex - 1)
+			else
+				suggestionIndex = math.min(math.max(1, max), suggestionIndex + 1)
+			end
 			updateCompletion()
 		end
 	elseif
