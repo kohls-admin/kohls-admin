@@ -111,7 +111,7 @@ return {
 	{
 		name = "unrole",
 		aliases = { "removerole" },
-		description = "Removes role(s) from one or more player(s).",
+		description = "Removes role(s) from one or more member(s).",
 		-- asks players with the same or higher rank if the command should work on them
 		args = {
 			{
