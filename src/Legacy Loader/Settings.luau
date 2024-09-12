@@ -34,7 +34,7 @@ local Settings = {
 	FreeAdmin = false, -- Set to 1-5 to grant admin powers to all, otherwise set to false
 	JoinMessage = true, -- Shows an admin message on join with the prefix and your current rank
 	PublicLogs = false, -- Allows all users to see the command & chat logs
-	Prefix = ":", -- Character to begin a command
+	Prefix = ";", -- Character to begin a command
 
 	--[[
 		Admin Powers
