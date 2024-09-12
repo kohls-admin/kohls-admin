@@ -10,6 +10,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local Data = require(script.Defaults)
+local Hook = require(script.Parent.Hook)
 local Util = require(script.Parent.Util)
 local Remote = require(script.Parent.Remote)
 
@@ -235,6 +236,8 @@ function Data.initialize(name)
 			syncLogs(logs)
 		end
 	end
+
+	Hook.initDataStore:Fire()
 
 	if RunService:IsStudio() then
 		-- Avoid writing studio data to production and stalling test session closing
