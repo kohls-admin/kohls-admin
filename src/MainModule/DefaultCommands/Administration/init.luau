@@ -38,7 +38,6 @@ return {
 		name = "role",
 		aliases = { "setrole", "addrole", "giverole" },
 		description = "Assigns role(s) to one or more player(s).",
-		-- asks players with the same or higher rank if the command should work on them
 		args = {
 			{
 				type = "players",
@@ -79,7 +78,6 @@ return {
 		name = "roleid",
 		aliases = { "setroleid", "addroleid", "giveroleid" },
 		description = "Assigns role(s) to one or more user(s).",
-		-- asks players with the same or higher rank if the command should work on them
 		args = {
 			{
 				type = "integers",
@@ -112,7 +110,6 @@ return {
 		name = "unrole",
 		aliases = { "removerole" },
 		description = "Removes role(s) from one or more member(s).",
-		-- asks players with the same or higher rank if the command should work on them
 		args = {
 			{
 				type = "members",
@@ -138,24 +135,22 @@ return {
 	{
 		name = "unadmin",
 		aliases = { "removepermissions" },
-		description = "Removes all roles and permissions from one or more player(s).",
-		-- asks players with the same or higher rank if the command should work on them
+		description = "Removes all roles and permissions from one or more member(s).",
 		args = {
 			{
-				type = "players",
-				name = "Player(s)",
-				description = "The player(s) to remove all roles and permissions from.",
+				type = "members",
+				name = "Members(s)",
+				description = "The member(s) to remove all roles and permissions from.",
 				lowerRank = true,
 			},
 		},
 
-		run = function(context, players)
-			for _, player in players do
-				local key = tostring(player.UserId)
-				context._K.Data.members[key] = nil
-				context._K.Data.Cache.members[key] = context._K.Data.Store.REMOVE
+		run = function(context, members)
+			for _, member in members do
+				context._K.Data.members[member] = nil
+				context._K.Data.Cache.members[member] = context._K.Data.Store.REMOVE
 				context._K.Data.pendingSaveMain = true
-				context._K.Remote.Member:FireAllClients(key)
+				context._K.Remote.Member:FireAllClients(member)
 			end
 		end,
 	},
