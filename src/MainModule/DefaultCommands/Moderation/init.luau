@@ -675,11 +675,14 @@ return {
 				if not player.Character then
 					continue
 				end
-				local ff = player.Character:FindFirstChildOfClass("ForceField")
-				if ff then
-					ff.Visible = false
+				local existing = player.Character:FindFirstChild("_Kff")
+				if existing then
+					existing.Visible = false
 				else
-					Instance.new("ForceField", player.Character).Visible = false
+					local ff = Instance.new("ForceField")
+					ff.Name = "_Kff"
+					ff.Visible = false
+					ff.Parent = player.Character
 				end
 			end
 		end,
@@ -701,11 +704,13 @@ return {
 				if not player.Character then
 					continue
 				end
-				local ff = player.Character:FindFirstChildOfClass("ForceField")
-				if ff then
-					ff.Visible = true
+				local existing = player.Character:FindFirstChild("_Kff")
+				if existing then
+					existing.Visible = true
 				else
-					Instance.new("ForceField", player.Character)
+					local ff = Instance.new("ForceField")
+					ff.Name = "_Kff"
+					ff.Parent = player.Character
 				end
 			end
 		end,
@@ -726,9 +731,10 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				if player.Character then
-					local ff = player.Character:FindFirstChildOfClass("ForceField")
-					if ff then
-						ff:Destroy()
+					for _, child in player.Character:GetChildren() do
+						if child:IsA("ForceField") then
+							child:Destroy()
+						end
 					end
 				end
 			end
