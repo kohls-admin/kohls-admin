@@ -20,6 +20,7 @@ handle.CanCollide = false
 handle.CanQuery = false
 handle.CanTouch = false
 handle.Massless = true
+handle.Locked = true
 handle.Material = Enum.Material.Neon
 -- handle.Size = Vector3.new(1.2, 0.2, 1.2)
 
