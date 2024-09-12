@@ -1067,12 +1067,12 @@ return {
 	{
 		name = "bring",
 		aliases = {},
-		description = "Teleports a player to you.",
+		description = "Teleports one or more player(s) to you.",
 		args = {
 			{
-				type = "player",
-				name = "Player",
-				description = "The player to bring.",
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to bring.",
 				shouldRequest = true,
 			},
 		},
@@ -1105,7 +1105,7 @@ return {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player to teleport.",
+				description = "The player(s) to teleport.",
 				shouldRequest = true,
 			},
 			{
