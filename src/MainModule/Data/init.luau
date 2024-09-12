@@ -43,6 +43,7 @@ end
 local updateAsyncInterval = 10
 
 local function syncMain(result)
+	Hook.preSyncMain:Fire(result)
 	local bans, members, settings = unpack(result)
 
 	-- TODO: need a way to clear SAVED session bans/settings for removal xD
@@ -104,6 +105,7 @@ local function syncMain(result)
 			Remote.Settings:FireClient(player, Data.settings)
 		end
 	end
+	Hook.postSyncMain:Fire(Data)
 end
 
 local nextMainInterval = tick() + updateAsyncInterval
@@ -142,6 +144,7 @@ local function updateMain()
 end
 
 local function syncLogs(logs)
+	Hook.preSyncLogs:Fire(logs)
 	for _, log in logs do
 		local text, level, time, from = unpack(log)
 		local exists
@@ -163,6 +166,7 @@ local function syncLogs(logs)
 			Remote.Logs:FireClient(player, Data.logs)
 		end
 	end
+	Hook.postSyncLogs:Fire(logs)
 end
 
 local function rawSortTime(a, b)
