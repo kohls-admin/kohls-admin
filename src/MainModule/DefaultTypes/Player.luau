@@ -302,6 +302,14 @@ local typeRandom = {
 }
 
 local function parseIndividual(arg, self)
+	if arg == "*" or arg == "all" or arg == "others" then
+		for _, player in Players:GetPlayers() do
+			if player ~= self.command.fromPlayer then
+				return sanitizePlayer(self, player)
+			end
+		end
+		return sanitizePlayer(self, self.command.fromPlayer)
+	end
 	if arg == "" or arg == "me" then
 		return sanitizePlayer(self, self.command.fromPlayer)
 	end
@@ -363,10 +371,9 @@ local function baseSuggestions(text, from, definition)
 	end
 
 	-- add all suggestion
-	table.insert(names, "all")
-	table.insert(names, "*")
-
-	-- others suggestion?
+	table.insert(names, { "*", "*    (Everyone)" } :: any)
+	table.insert(names, { "all", "all  (Everyone)" } :: any)
+	table.insert(names, "others")
 
 	-- add prefix suggestions
 	for prefix, name in prefixes do
@@ -400,11 +407,12 @@ local typeMultiple = {
 	listable = true,
 	transform = string.lower,
 	validate = genValidate(function(arg, self)
-		if arg == "*" or arg == "all" then
+		if arg == "*" or arg == "all" or arg == "others" then
+			local others = arg == "others"
 			local players = {}
 			for _, player in Players:GetPlayers() do
 				player = sanitizePlayer(self, player)
-				if player then
+				if player and not (others and player == self.command.fromPlayer) then
 					table.insert(players, player)
 				end
 			end
@@ -413,11 +421,16 @@ local typeMultiple = {
 		return parseIndividual(arg, self)
 	end),
 	preParse = function(transformedArgs, self)
-		if table.find(transformedArgs, "*") or table.find(transformedArgs, "all") then
+		if
+			table.find(transformedArgs, "*")
+			or table.find(transformedArgs, "all")
+			or table.find(transformedArgs, "others")
+		then
+			local others = table.find(transformedArgs, "others")
 			local players = {}
 			for _, player in Players:GetPlayers() do
 				player = sanitizePlayer(self, player)
-				if player then
+				if player and not (others and player == self.command.fromPlayer) then
 					table.insert(players, player)
 				end
 			end
