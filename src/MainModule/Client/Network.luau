@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local _K = require(script.Parent.Parent)
-local UI = require(script.Parent.Parent.Flux.UI)
+local UI = require(script.Parent.UI)
 local Remote = require(script.Parent.Parent.Remote)
 local Util = require(script.Parent.Parent.Util)
 

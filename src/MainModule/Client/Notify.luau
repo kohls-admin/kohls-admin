@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
 
 local _K = require(script.Parent.Parent)
-local UI = require(script.Parent.Parent.Flux.UI)
+local UI = require(script.Parent.UI)
 local UserFrame = require(script.Parent.UserFrame)
 
 local existing = {}

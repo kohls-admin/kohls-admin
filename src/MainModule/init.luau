@@ -10,6 +10,7 @@ end
 local RunService = game:GetService("RunService")
 
 local Util = require(script:WaitForChild("Util"))
+local Client = script:WaitForChild("Client")
 
 export type Log = Util.Log
 export type LogType = Util.LogType
@@ -52,7 +53,7 @@ local _K = {
 	Process = require(script:WaitForChild("Process")),
 	Registry = require(script:WaitForChild("Registry")),
 	Remote = require(script:WaitForChild("Remote")),
-	UI = require(script:WaitForChild("Flux"):WaitForChild("UI")),
+	UI = require(Client:WaitForChild("UI")),
 	Util = Util,
 	VIP = require(script:WaitForChild("VIP")),
 
@@ -194,7 +195,7 @@ script.Parent = _K.Services.ReplicatedStorage
 script.Name = "Kohl's Admin Source"
 
 -- enable client
-script.Client.Enabled = true
+Client.Enabled = true
 
 -- handle custom command prefix
 _K.Remote.Prefix.OnServerEvent:Connect(function(player, prefix)

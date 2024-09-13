@@ -25,7 +25,7 @@ function Sound:Play()
 	sound:Destroy()
 end
 
-local Flux = require(script.Parent)
+local Flux = require(script.Parent.Parent.Flux)
 local state = Flux.state
 
 export type Function = Flux.Function

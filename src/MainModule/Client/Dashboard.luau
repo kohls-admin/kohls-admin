@@ -1,5 +1,5 @@
 local _K = require(script.Parent.Parent)
-local UI = require(script.Parent.Parent.Flux.UI)
+local UI = require(script.Parent.UI)
 local TopbarPlus = require(script.Parent.TopbarPlus)
 
 local About = require(script.Parent.About)

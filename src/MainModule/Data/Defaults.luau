@@ -1,6 +1,6 @@
 local GroupService = game:GetService("GroupService")
 
-local UI = require(script.Parent.Parent.Flux.UI)
+local UI = require(script.Parent.Parent.Client.UI)
 
 local Cache = {
 	-- Main
