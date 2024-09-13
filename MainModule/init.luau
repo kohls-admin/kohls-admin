@@ -264,15 +264,6 @@ _K.Remote.Setting.OnServerEvent:Connect(function(player, key, value)
 	end
 end)
 
-_K.spectators = {}
-_K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe: CFrame)
-	if not _K.spectators[player] then
-		return
-	end
-	for _, player in _K.spectators[player] do
-		_K.Remote.Spectate:FireClient(player, cframe)
-	end
-end)
 
 local subscribeSuccess, subscribeConnection = pcall(function()
 	return Util.Services.MessagingService:SubscribeAsync("KA_Announcement", function(message)

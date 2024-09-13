@@ -5,15 +5,16 @@ local TextService = game:GetService("TextService")
 
 local noclipCache = {}
 local playingSound = nil
-local spectateConnection
 
+local spectateConnection
 local function spectateCleanup(context)
-	for subject, spectators in context._K.spectators do
+	local spectatorCache = context._K.Flux.Scope.spectatorsCache
+	for subject, spectators in spectatorCache do
 		local found = table.find(spectators, context.fromPlayer)
 		if found then
 			table.remove(spectators, found)
 			if #spectators == 0 then
-				context._K.spectators[subject] = nil
+				spectatorCache[subject] = nil
 				context._K.Remote.SpectateSubject:FireClient(subject)
 			end
 		end
@@ -196,13 +197,14 @@ return {
 		end,
 	},
 	{
-		name = "follow",
-		description = "Follows a player with your camera.",
+		name = "watch",
+		aliases = { "camera", "follow" },
+		description = "Watches a player with your camera.",
 		args = {
 			{
 				type = "player",
 				name = "Player",
-				description = "The player to follow.",
+				description = "The player to watch.",
 			},
 		},
 
@@ -214,8 +216,8 @@ return {
 	},
 	{
 		name = "spectate",
-		aliases = { "spy", "watch" },
-		description = "Spectate a player's point of view.",
+		aliases = { "spy" },
+		description = "Spectate a player's camera view.",
 		args = {
 			{
 				type = "player",
@@ -230,11 +232,6 @@ return {
 				_K.Remote.SpectateSubject:FireServer(workspace.CurrentCamera.CFrame)
 			end
 
-			_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame)
-				workspace.CurrentCamera.CFrame = cframe
-			end)
-
-			local spectateConnection
 			_K.Remote.SpectateSubject.OnClientEvent:Connect(function(enabled: boolean)
 				if spectateConnection then
 					spectateConnection:Disconnect()
@@ -243,12 +240,36 @@ return {
 					spectateConnection = _K.Services.RunService.Heartbeat:Connect(spectateNetwork)
 				end
 			end)
+
+			_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame)
+				_K.Util.Services.TweenService
+					:Create(workspace.CurrentCamera, TweenInfo.new(0.1), {
+						CFrame = cframe,
+					})
+					:Play()
+			end)
+		end,
+		env = function(_K)
+			local spectators = {}
+			local spectateRemote = _K.Remote.Spectate
+			_K.Flux.Scope.spectatorsCache = spectators
+			_K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe: CFrame)
+				if not spectators[player] then
+					return
+				end
+				for _, player in spectators[player] do
+					spectateRemote:FireClient(player, cframe)
+				end
+			end)
+			return {
+				spectators = _K.Flux.Scope.spectatorsCache,
+			}
 		end,
 
 		runClient = function(context, player)
 			if not workspace.CurrentCamera:GetAttribute("kCameraType") then
 				workspace.CurrentCamera:SetAttribute("kCameraType", workspace.CurrentCamera.CameraType)
-				workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+				workspace.CurrentCamera.CameraType = Enum.CameraType.Track
 			end
 			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
 				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
@@ -262,16 +283,16 @@ return {
 		end,
 		run = function(context, player)
 			spectateCleanup(context)
-			if not context._K.spectators[player] then
-				context._K.spectators[player] = {}
+			if not context.env.spectators[player] then
+				context.env.spectators[player] = {}
 			end
 			context._K.Remote.SpectateSubject:FireClient(player, true)
-			table.insert(context._K.spectators[player], context.fromPlayer)
+			table.insert(context.env.spectators[player], context.fromPlayer)
 		end,
 	},
 	{
 		name = "unspectate",
-		aliases = { "unspy", "unwatch", "unfollow" },
+		aliases = { "unspy", "unwatch", "uncamera", "unfollow" },
 		description = "Stop spectating.",
 		args = {},
 

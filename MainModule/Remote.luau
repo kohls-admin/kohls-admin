@@ -26,8 +26,6 @@ local Remote = {
 	SetCore = _REMOTE,
 	Setting = _REMOTE,
 	Settings = _REMOTE,
-	Spectate = _REMOTE,
-	SpectateSubject = _REMOTE,
 
 	RequestCommand = _REMOTECALL,
 }
