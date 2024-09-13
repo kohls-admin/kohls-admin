@@ -1,15 +1,10 @@
 local Package = script.Parent
+local Addons = Package:WaitForChild("Addons")
+local Settings = require(Package:WaitForChild("Settings"))
 
--- Prevents the loading of duplicates
-if shared._K_LOADER then
-	Package:Destroy()
+if false and Settings.autoUpdate and game.PlaceId ~= 18274376677 then
+	-- auto udating will be added when the model is more stable
 else
-	shared._K_LOADER = Package
-	local settings = require(Package.Settings)
-	--force the demo place to not auto update
-	if false and settings.autoUpdate and game.PlaceId ~= 18274376677 then
-		-- auto udating will be added when the model is more stable
-	else
-		require(Package.MainModule)
-	end
+	local _K = require(Package.MainModule)
+	_K.initialize(Settings, Addons, true)
 end

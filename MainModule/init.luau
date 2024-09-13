@@ -1,5 +1,4 @@
 --- @class MainModule
-
 if shared._K_INTERFACE then
 	return shared._K_INTERFACE
 end
@@ -89,46 +88,6 @@ for _, child in script.DefaultCommands:GetChildren() do
 	_K.Registry.registerCommandModule(_K, child)
 end
 
--- register loader addons and settings
-if _K.IsServer then
-	local K_LOADER = shared._K_LOADER
-	local addons = K_LOADER:FindFirstChild("Addons")
-	local serverAddons = Instance.new("Folder", K_LOADER)
-	serverAddons.Name = "ServerAddons"
-
-	local settings = K_LOADER:FindFirstChild("Settings")
-	if settings then
-		settings.Parent = script
-		_K.loaderSettings = require(settings)
-	end
-
-	if addons then
-		for _, addon in addons:GetChildren() do
-			if addon:IsA("ModuleScript") then
-				if string.find(addon.Name, "Server$") then
-					addon.Parent = serverAddons
-					task.spawn(function()
-						require(addon)(_K)
-					end)
-				elseif not string.find(addon.Name, "Client$") then
-					task.spawn(function()
-						require(addon)(_K)
-					end)
-				end
-			end
-		end
-		addons.Parent = script
-	end
-elseif _K.IsClient then
-	_K._addons = script:FindFirstChild("Addons")
-	_K.loaderSettings = require(script:WaitForChild("Settings") :: any)
-end
-
--- apply loader settings
-_K.Data.settings.prefix = _K.loaderSettings.prefix
-_K.Data.settings.vip = _K.loaderSettings.vip
-_K.Data.settings.vipGameCatalogEnabled = _K.loaderSettings.vipGameCatalogEnabled
-
 if not _K.IsServer then
 	return _K
 end
@@ -136,78 +95,12 @@ end
 -- START OF SERVER CODE --
 --------------------------
 
--- TODO: warn creator and developers to change the datastore key if unchanged
-_K.Data.initialize(_K.loaderSettings.dataStoreKey)
-
--- assign creator role
-if _K.creatorId > 0 then
-	_K.Auth.userRoleAdd(_K.creatorId, "creator")
-end
-
--- loader settings cont.
-
--- define main roles
-for role, users in _K.loaderSettings.roles do
-	for _, userId in users do
-		_K.Auth.userRoleAdd(userId, role)
-	end
-end
-
--- gamepass and group roles
-_K.Util.Table.deepMerge(_K.Data.async.gamepass, _K.loaderSettings.gamePassRoles)
-_K.Util.Table.deepMerge(_K.Data.async.group, _K.loaderSettings.groupRoles)
-
--- give roles on gamepass purchase
-_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
-	if not purchaseSuccess then
-		return
-	end
-	for id, roles in _K.Data.async.gamepass do
-		if gamePassId ~= id then
-			continue
-		end
-		for _, role in roles do
-			_K.Auth.userRoleAdd(player.UserId, role)
-		end
-	end
-end)
-
--- TODO: include Loader settings then include datastore settings to override
-
--- network test
-_K.Remote.Init.OnServerEvent:Connect(function(player)
-	-- TODO: sanitize network data
-
-	_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings)
-
-	if _K.Auth.hasPermission(player.UserId, "ban") or _K.Auth.hasPermission(player.UserId, "kick") then
-		_K.Remote.Bans:FireClient(player, _K.Data.bans)
-	end
-
-	if _K.Auth.hasPermission(player.UserId, "logs") then
-		_K.Remote.Logs:FireClient(player, _K.Data.logs)
-	end
-
-	_K.Remote.Roles:FireClient(player, _K.Data.roles)
-end)
-
-script.Parent = _K.Services.ReplicatedStorage
-script.Name = "Kohl's Admin Source"
-
--- enable client
-Client.Enabled = true
-
--- handle custom command prefix
-_K.Remote.Prefix.OnServerEvent:Connect(function(player, prefix)
-	_K.playerPrefix[player.UserId] = prefix
-end)
-
 local function playerAdded(player: Player)
 	if _K.Services.RunService:IsStudio() then
 		_K.Auth.userRoleAdd(player.UserId, "creator")
 	end
 
-	for _, role in _K.loaderSettings.freeAdmin do
+	for _, role in _K.Data.loaderSettings.freeAdmin do
 		_K.Auth.userRoleAdd(player.UserId, role)
 	end
 
@@ -233,64 +126,128 @@ local function playerAdded(player: Player)
 	end
 end
 
-_K.Services.Players.PlayerAdded:Connect(playerAdded)
-for _, player in _K.Services.Players:GetPlayers() do
-	playerAdded(player)
-end
+function _K.initialize(loaderSettings: { [string]: any }, addons: Folder, requireId: boolean?)
+	if loaderSettings then
+		loaderSettings.Parent = script
+		-- TODO: warn creator and developers to change the datastore key if unchanged
+		_K.Util.Table.merge(_K.Data.loaderSettings, loaderSettings)
+		_K.Data.settings.prefix = loaderSettings.prefix
+		_K.Data.settings.vip = loaderSettings.vip
+		_K.Data.settings.vipGameCatalogEnabled = loaderSettings.vipGameCatalogEnabled
 
-_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string, chatted: boolean?)
-	_K.Process.runCommands(_K, player.UserId, message, chatted)
-end)
+		_K.Data.initialize(loaderSettings.dataStoreKey)
 
-_K.Remote.Setting.OnServerEvent:Connect(function(player, key, value)
-	if not _K.Auth.hasPermission(player.UserId, "settings") then
-		return
+		-- assign creator role
+		if _K.creatorId > 0 then
+			_K.Auth.userRoleAdd(_K.creatorId, "creator")
+		end
+
+		-- define main roles
+		for role, users in loaderSettings.roles do
+			for _, userId in users do
+				_K.Auth.userRoleAdd(userId, role)
+			end
+		end
+
+		-- gamepass and group roles
+		_K.Util.Table.deepMerge(_K.Data.async.gamepass, loaderSettings.gamePassRoles)
+		_K.Util.Table.deepMerge(_K.Data.async.group, loaderSettings.groupRoles)
 	end
 
-	_K.Data.settings[key] = value
+	if addons then
+		local serverAddons = Instance.new("Folder", Util.Services.ServerStorage)
+		serverAddons.Name = "_KServerAddons"
 
-	local cacheValue = value
-	if typeof(value) == "Color3" then
-		cacheValue = { "color", value.R, value.G, value.B }
-	end
-
-	_K.Data.Cache.settings[key] = cacheValue
-	_K.Data.pendingSaveMain = true
-
-	for _, toPlayer in _K.Services.Players:GetPlayers() do
-		if toPlayer ~= player then
-			_K.Remote.Setting:FireClient(toPlayer, key, value)
+		if addons then
+			for _, addon in addons:GetChildren() do
+				if addon:IsA("ModuleScript") then
+					if string.find(addon.Name, "Server$") then
+						addon.Parent = serverAddons
+						task.spawn(function()
+							require(addon)(_K)
+						end)
+					elseif not string.find(addon.Name, "Client$") then
+						task.spawn(function()
+							require(addon)(_K)
+						end)
+					end
+				end
+			end
+			addons.Parent = script
 		end
 	end
-end)
 
+	if requireId then
+		script.Parent = _K.Services.ReplicatedStorage
+		script.Name = "Kohl's Admin Source"
+	end
 
-local subscribeSuccess, subscribeConnection = pcall(function()
-	return Util.Services.MessagingService:SubscribeAsync("KA_Announcement", function(message)
-		if type(message.Data) ~= "table" then
-			_K.Data.settings.announcement = false
+	-- enable client
+	Client.Enabled = true
+
+	-- events
+
+	_K.Remote.Init.OnServerEvent:Connect(function(player)
+		_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings)
+		_K.Remote.Roles:FireClient(player, _K.Data.roles)
+		if _K.Auth.hasPermission(player.UserId, "ban") or _K.Auth.hasPermission(player.UserId, "kick") then
+			_K.Remote.Bans:FireClient(player, _K.Data.bans)
+		end
+		if _K.Auth.hasPermission(player.UserId, "logs") then
+			_K.Remote.Logs:FireClient(player, _K.Data.logs)
+		end
+	end)
+
+	_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string, chatted: boolean?)
+		_K.Process.runCommands(_K, player.UserId, message, chatted)
+	end)
+
+	-- handle custom command prefix
+	_K.Remote.Prefix.OnServerEvent:Connect(function(player, prefix)
+		_K.playerPrefix[player.UserId] = prefix
+	end)
+
+	_K.Remote.Setting.OnServerEvent:Connect(function(player, key, value)
+		if not _K.Auth.hasPermission(player.UserId, "settings") then
 			return
 		end
 
-		local oldMsg, oldFrom
-		if _K.Data.settings.announcement then
-			oldMsg, oldFrom = unpack(_K.Data.settings.announcement)
+		_K.Data.settings[key] = value
+
+		local cacheValue = value
+		if typeof(value) == "Color3" then
+			cacheValue = { "color", value.R, value.G, value.B }
 		end
 
-		local msg, from = unpack(message.Data)
-		if msg ~= oldMsg or from ~= oldFrom then
-			_K.Data.settings.announcement = message.Data
-			_K.Remote.Announce:FireAllClients(unpack(message.Data))
+		_K.Data.Cache.settings[key] = cacheValue
+		_K.Data.pendingSaveMain = true
+
+		for _, toPlayer in _K.Services.Players:GetPlayers() do
+			if toPlayer ~= player then
+				_K.Remote.Setting:FireClient(toPlayer, key, value)
+			end
 		end
 	end)
-end)
-if subscribeSuccess then
-	game:BindToClose(function()
-		subscribeConnection:Disconnect()
+
+	-- gamepass roles
+	_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
+		if not purchaseSuccess then
+			return
+		end
+		for id, roles in _K.Data.async.gamepass do
+			if gamePassId ~= id then
+				continue
+			end
+			for _, role in roles do
+				_K.Auth.userRoleAdd(player.UserId, role)
+			end
+		end
 	end)
+
+	_K.Util.SafePlayerAdded(playerAdded)
+
+	task.spawn(_K.log, "Server initialized.", "INFO")
 end
-
-task.spawn(_K.log, "Server initialized.", "INFO")
 
 export type _K = typeof(_K)
 

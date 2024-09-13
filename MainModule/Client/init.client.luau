@@ -108,7 +108,8 @@ end)
 _K.Remote.Init:FireServer()
 
 -- finally load client addons
-if _K._addons then
+local addons = script:FindFirstChild("Addons")
+if addons then
 	for _, addon in _K._addons:GetChildren() do
 		if addon:IsA("ModuleScript") then
 			task.spawn(function()

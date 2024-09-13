@@ -41,6 +41,7 @@ local Data = {
 	},
 	players = {},
 
+	loaderSettings = {} :: { [string]: any },
 	settings = {
 		announcement = false,
 		liveSettings = true,
