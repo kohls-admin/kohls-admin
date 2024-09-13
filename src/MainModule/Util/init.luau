@@ -23,8 +23,7 @@ local Util = {
 	SafePlayerAdded = require(script:WaitForChild("SafePlayerAdded")),
 	SafeTeleport = require(script:WaitForChild("SafeTeleport")),
 	Services = require(script:WaitForChild("Services")),
-	SignalFast = require(script:WaitForChild("SignalFast")),
-	SignalGood = require(script:WaitForChild("SignalGood")),
+	Signal = require(script:WaitForChild("Signal")),
 	--- @within Util
 	--- @prop String String
 	String = require(script:WaitForChild("String")),

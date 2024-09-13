@@ -35,7 +35,7 @@ Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
 	end
 	requestingCommand[from.UserId] = true
 
-	local actionSignal = Util.SignalGood.new()
+	local actionSignal = Util.Signal.new()
 	Notify({
 		Text = `\t<font transparency="0.5">{text}</font>`,
 		ActionText = "Permit this action?",
