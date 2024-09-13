@@ -869,7 +869,7 @@ return {
 	},
 	{
 		name = "freeze",
-		aliases = { "anchor" },
+		aliases = { "anchor", "ice" },
 		description = "Freezes one or more player(s).",
 		args = {
 			{
@@ -908,7 +908,7 @@ return {
 	},
 	{
 		name = "thaw",
-		aliases = { "unfreeze", "unanchor" },
+		aliases = { "unfreeze", "unanchor", "unice" },
 		description = "Thaws one or more player(s).",
 		args = {
 			{
