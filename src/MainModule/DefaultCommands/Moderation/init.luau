@@ -542,6 +542,7 @@ return {
 	},
 	{
 		name = "sword",
+		credit = { "Sharksie", "Kohl @Scripth" },
 		description = "Gives a sword to one or more player(s).",
 		args = {
 			{

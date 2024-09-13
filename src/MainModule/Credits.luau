@@ -4,7 +4,7 @@ return {
 		Users = {
 			{
 				Id = 44391621,
-				Tooltip = "Thanks for using Kohl's Admin, if you have any issues feel free to contact me!",
+				Tooltip = "Thanks for using Kohl's Admin, if you have any issues please contact me!\nMy messages are open to everyone if you have your privacy settings set to people you follow.",
 			},
 		},
 	},
@@ -75,41 +75,53 @@ return {
 		Users = {
 			{
 				Id = 1237666, -- Sceleratis
-				Tooltip = "Spooky skeleton and with the best forks",
-			},
-			{
-				Id = 648020, -- trick555
-				Tooltip = "Introduction to Roblox clan development",
+				Tooltip = "The best forks with inspiration from Adonis & EISS",
 			},
 			{
 				Id = 214258, -- Person299
-				Tooltip = "Person299's Admin Commands V2",
-			},
-			{
-				Id = 70540486, -- reru
-				Tooltip = "Lord of the bytes",
-			},
-			{
-				Id = 1670764, -- Elttob
-				Tooltip = "Fusion",
+				Tooltip = "For inspiring the original Kohl's Admin Commands with Person299's Admin Commands V2",
 			},
 			{
 				Id = 92658764, -- evaera
-				Tooltip = "Cmdr & usage of Moonwave",
+				Tooltip = " Moonwave, Promises, & inspiration from Cmdr",
 			},
 			{
 				Id = 2722909519, -- sona
-				Tooltip = "Squash & cool research",
+				Tooltip = "Squash & inspiration from data-oriented magic",
+			},
+			{
+				Id = 80119, -- stravant
+				Tooltip = "Signal Class",
 			},
 			{
 				Id = 82347291, -- ForeverHD
-				Tooltip = "HD Admin & usage of TopbarPlus",
+				Tooltip = "TopbarPlus & inspiration from HD Admin",
+			},
+			{
+				Id = 2032622, -- CloneTrooper1019
+				Tooltip = "Classic Build Tools",
+			},
+			{
+				Id = 4812582, -- Sharksie
+				Tooltip = "Classic Sword",
+			},
+			{
+				Id = 648020, -- trick555
+				Tooltip = "For the introduction to Roblox group development",
+			},
+			{
+				Id = 1670764, -- Elttob
+				Tooltip = "Inspiring Flux with Fusion",
 			},
 		},
 	},
 	{
 		Title = "Special Thanks",
 		Users = {
+			{
+				Id = 70540486, -- reru
+				Tooltip = "Lord of the bytes",
+			},
 			{
 				Id = 46236725, -- Doroku
 				Tooltip = "CHAIR!",

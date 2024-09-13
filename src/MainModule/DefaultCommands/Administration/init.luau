@@ -157,6 +157,7 @@ return {
 	{
 		name = "btools",
 		aliases = { "build" },
+		credit = { "MaximumADHD", "Kohl @Scripth" },
 		description = "Gives building tools to one or more player(s).",
 		args = {
 			{

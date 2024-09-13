@@ -140,6 +140,14 @@ function Commands.new(_K)
 			return
 		end
 
+		local roleString = table.concat(roles, ", ")
+		argTooltip = table.concat(argTooltip, "\n")
+
+		local credit = command.credit or "Kohl @Scripth"
+		if type(credit) == "table" then
+			credit = table.concat(credit, ", ")
+		end
+
 		item.Text = string.format(
 			commandRichFormat,
 			escape(_K.Data.settings.prefix .. command.name .. " " .. table.concat(argNames, " ")),
@@ -147,7 +155,7 @@ function Commands.new(_K)
 		)
 		item.Description.Text = `<font transparency="0.33">{command.description}</font>`
 		item.TooltipRef.Value.Text =
-			`<b>Restricted to:</b> {table.concat(roles, ", ")}{table.concat(argTooltip, "\n")}\n\n<font transparency="0.5"><b>Credit:</b> {command.credit or "Kohl @Scripth"}</font>`
+			`<b>Restricted to:</b> {roleString}{argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {credit}</font>`
 	end
 
 	local scroller = UI.new "ScrollerFast" {
