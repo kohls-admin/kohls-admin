@@ -211,14 +211,35 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 		end
 	end
 
-	if shouldNetwork then
-		-- network the changes to roles
-	end
-
 	-- the following requires a player instance
 	local player = Players:GetPlayerByUserId(userId)
 	if not player then
+		if shouldNetwork then
+			-- network the changes to roles
+		end
 		return
+	end
+
+	do -- admin vip donations
+		local ok, result = pcall(
+			MarketplaceService.GetUserSubscriptionStatusAsync,
+			MarketplaceService,
+			player,
+			"EXP-6178947350651470068"
+		)
+		if ok and result.IsSubscribed then
+			Auth.userRoleAdd(userId, "vip")
+			shouldNetwork = true
+		end
+
+		-- legacy donations
+		local vip = { 5391359, 5391361, 5411126 }
+		for _, gamePassId in vip do
+			if MarketplaceService:UserOwnsGamePassAsync(userId, gamePassId) then
+				Auth.userRoleAdd(userId, "vip")
+				shouldNetwork = true
+			end
+		end
 	end
 
 	-- legacy asset permissions
@@ -226,6 +247,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 		if MarketplaceService:PlayerOwnsAsset(player, assetId) then
 			for _, role in roles do
 				Auth.userRoleAdd(userId, role)
+				shouldNetwork = true
 			end
 		end
 	end
@@ -237,8 +259,13 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 		if ok and result.IsSubscribed then
 			for _, role in roles do
 				Auth.userRoleAdd(userId, role)
+				shouldNetwork = true
 			end
 		end
+	end
+
+	if shouldNetwork then
+		-- network the changes to roles
 	end
 end
 
