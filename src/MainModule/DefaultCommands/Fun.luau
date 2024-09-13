@@ -161,80 +161,117 @@ return {
 	},
 	{
 		name = "control",
-		aliases = { "uncontrol" },
+		aliases = { "release", "uncontrol" },
 		description = "Controls the character of a player.",
 		args = {
 			{
 				type = "player",
 				name = "Player",
-				description = "The player to control.",
+				description = "The player to control or release.",
 				shouldRequest = true,
 				ignoreSelf = true,
+				optional = true,
 			},
 		},
-		envClient = function(_K)
-			_K.Remote.ControlSubject.OnClientEvent:Connect(function(subject)
-				workspace.CurrentCamera.CameraSubject = subject
-			end)
-		end,
 		env = function(_K)
-			local con = {}
-			local controllerCache = {}
-			local controlledCache = {}
-			local remote = _K.Remote.ControlSubject
 			return {
-				con = con,
-				controlled = controlledCache,
-				controller = controllerCache,
-				onCharacter = function(character)
-					local player = _K.Util.Services.Players:GetPlayerFromCharacter(character)
-					if not player then
+				control = function(controller, target)
+					if not target.Character then
 						return
 					end
-					while character and character.Parent == nil do
-						task.wait()
-					end
-					local controller = controllerCache[player]
-					for _, descendant in player.Character:GetDescendants() do
+					for _, descendant in target.Character:GetDescendants() do
 						if descendant:IsA("BasePart") then
 							descendant:SetNetworkOwner(controller)
 						end
 					end
-					controller.Character = character
-					remote:FireClient(controller, character)
+
+					local oldCharacter = controller.Character
+					local oldParent = oldCharacter.Parent
+					oldCharacter.Parent = nil
+					controller.Character = target.Character
+					oldCharacter.Parent = oldParent
+
+					if not controller:FindFirstChild("_KControlOriginal") then
+						_K.Flux.new "ObjectValue" {
+							Name = "_KControlOriginal",
+							Value = oldCharacter,
+							Parent = controller,
+						}
+					end
+
+					if not target.Character:FindFirstChild("_KOriginalController") then
+						_K.Flux.new "ObjectValue" {
+							Name = "_KOriginalController",
+							Value = target,
+							Parent = target.Character,
+						}
+					end
 				end,
 				reset = function(controller)
-					local controlled = controlledCache[controller]
-					local con = con[controlled]
-					if con then
-						con:Disconnect()
-					end
-					controlledCache[controller] = nil
-					controllerCache[controlled] = nil
-					if controlled.Character then
-						for _, descendant in controlled.Character:GetDescendants() do
+					local original = controller:FindFirstChild("_KControlOriginal")
+					if original then
+						local character = original.Value
+						for _, descendant in character:GetDescendants() do
 							if descendant:IsA("BasePart") then
-								descendant:SetNetworkOwner(controlled)
+								descendant:SetNetworkOwner(controller)
 							end
 						end
+						controller.Character = character
 					end
-					controller:LoadCharacter()
+				end,
+				release = function(controller)
+					local character = controller.Character
+					local original = character:FindFirstChild("_KOriginalController")
+					if original then
+						local player = original.Value
+						if player == controller then
+							return -- don't release self
+						end
+
+						for _, descendant in character:GetDescendants() do
+							if descendant:IsA("BasePart") then
+								descendant:SetNetworkOwner(player)
+							end
+						end
+
+						local oldParent = character.Parent
+						character.Parent = nil
+						controller.Character = nil
+						character.Parent = oldParent
+						player.Character = character
+					end
 				end,
 			}
 		end,
 
 		runClient = function(context, player)
-			workspace.CurrentCamera.CameraSubject = player.Character
+			if player and context.alias ~= "uncontrol" and context.alias ~= "release" then
+				workspace.CurrentCamera.CameraSubject = player.Character
+			else -- release control
+				local original = context.fromPlayer:FindFirstChild("_KControlOriginal")
+				if original then
+					local character = original.Value
+					workspace.CurrentCamera.CameraSubject = character
+					context.fromPlayer.CharacterAdded:Wait()
+					local function reactivate(script)
+						script.Enabled = true
+					end
+					for _, descendant in character:GetDescendants() do
+						if descendant:IsA("LocalScript") and descendant.Enabled then
+							descendant.Enabled = false
+							task.defer(reactivate, descendant)
+						end
+					end
+				end
+			end
 		end,
 		run = function(context, player)
-			if context.alias == "uncontrol" then
-				context.env.reset()
+			context.env.release(context.fromPlayer)
+			if not player or context.alias == "uncontrol" or context.alias == "release" then
+				context.env.reset(context.fromPlayer)
 				return
 			end
-			context.env.controller[player] = context.fromPlayer
-			context.env.controlled[context.fromPlayer] = player
-			context.env.con[player] = player.CharacterAppearanceLoaded:Connect(context.env.onCharacter)
-			context.env.onCharacter(player.Character)
+			context.env.control(context.fromPlayer, player)
 		end,
 	},
 
