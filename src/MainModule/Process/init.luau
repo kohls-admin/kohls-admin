@@ -174,7 +174,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 		if commandRan then
 			local log = {}
 			for _, command in result do
-				table.insert(log, _K.Data.settings.prefix .. command.definition.name)
+				table.insert(log, _K.Data.settings.prefix .. command.alias)
 
 				for _, arg in command.args do
 					if arg.rawType.log then
