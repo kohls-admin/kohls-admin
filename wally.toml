@@ -1,0 +1,18 @@
+[package]
+name = "kohltastrophe/kohls-admin"
+authors = ["Kohl <admin@kohl.gg>"]
+license = "MIT"
+version = "0.1.1"
+private = false
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "server"
+exclude = ["**"]
+include = [
+	"MainModule",
+	"MainModule/**",
+	"wally.project.json",
+	"wally.toml",
+	"LICENSE.txt",
+]
+
+[dependencies]
