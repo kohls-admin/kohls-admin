@@ -1,4 +1,5 @@
 local DataStoreService = game:GetService("DataStoreService")
+local RunService = game:GetService("RunService")
 
 local Util = require(script.Parent.Parent.Util)
 
@@ -55,9 +56,22 @@ function Store.loadStore(name)
 	end
 
 	print(`[Kohl's Admin] Initializing DataStore {name}...`)
-	local ok, store = Util.Retry(function()
-		return DataStoreService:GetDataStore(name, "Kohl's Admin Test")
-	end, RETRY_COUNT, 1, 1)
+	local ok, store = pcall(DataStoreService.GetDataStore, DataStoreService, name, "Kohl's Admin Test")
+	if not ok then
+		if RunService:IsStudio() and type(store) == "string" then
+			if string.find(store, "publish", 1, true) then
+				warn("Data failed to load, enable Studio access to API services in Game Settings.")
+				return
+			end
+			if string.find(store, "502", 1, true) then
+				warn("Data failed to load, enable Studio access to API services in Game Settings.")
+				return
+			end
+		end
+		ok, store = Util.Retry(function()
+			return DataStoreService:GetDataStore(name, "Kohl's Admin Test")
+		end, RETRY_COUNT, 1, 1)
+	end
 
 	if not ok then
 		error(store)

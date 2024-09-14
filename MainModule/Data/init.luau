@@ -216,7 +216,11 @@ local function updateLogs()
 end
 
 function Data.initialize(name)
-	Data.Store.loadStore(name)
+	local store = Data.Store.loadStore(name)
+	if store == nil then
+		Hook.initDataStore:Fire()
+		return Data
+	end
 
 	print("[Kohl's Admin] Loading data...")
 	local okMain, main = Data.Store.getAsync("Main")
@@ -225,12 +229,6 @@ function Data.initialize(name)
 		if main then
 			syncMain(main)
 		end
-	else
-		if RunService:IsStudio() and string.find(main, "502", 1, true) then
-			warn("Data failed to load, enable Studio access to API services in Game Settings.")
-			return Data
-		end
-		error(`Failed to load Kohl's Admin Main DataStore: {main}`)
 	end
 
 	local okLogs, logs = Data.Store.getAsync("Logs")
