@@ -51,6 +51,13 @@ function Argument:transform()
 		local arg = self._K.Util.String.stripQuotes(rawArg)
 		if argType.transform then
 			arg = argType.transform(arg)
+			if arg == nil then
+				self.command.invalidArg = rawArg
+				self.command.invalidPos = self.argPos
+				self.command.invalidMessage = "Invalid argument: "
+					.. if self._K.Util.String.trim(rawArg) == "" then "nil" else rawArg
+				break
+			end
 		end
 		table.insert(self.transformedArgs, if type(arg) == "string" then self._K.Util.String.trim(arg) else arg)
 		table.insert(self.transformedTypes, argType)
@@ -62,6 +69,10 @@ function Argument:validate()
 		return true
 	end
 
+	if self.command.invalidArg then
+		return false, self.command.invalidMessage
+	end
+
 	local transformPos = self.argPos
 	for i, arg in self.transformedArgs do
 		local rawArg = self.rawArgs[i]
@@ -70,7 +81,7 @@ function Argument:validate()
 		if not ok then
 			self.command.invalidArg = rawArg
 			self.command.invalidPos = transformPos
-			self.command.invalidMessage = result or "Invalid argument: " .. arg
+			self.command.invalidMessage = result or "Invalid argument: " .. rawArg
 			return false, self.command.invalidMessage
 		end
 		transformPos += #rawArg + 1
