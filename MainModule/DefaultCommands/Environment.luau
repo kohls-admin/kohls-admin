@@ -330,7 +330,10 @@ return {
 			{
 				type = "number",
 				name = "Speed",
-				description = `The wave speed of the water, default is {workspace.Terrain.WaterWaveSpeed}.`,
+				description = `The wave speed of the water, default is {string.format(
+					"%.1f",
+					workspace.Terrain.WaterWaveSpeed
+				)}.`,
 			},
 		},
 		run = function(context, speed)
