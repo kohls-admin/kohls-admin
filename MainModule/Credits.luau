@@ -31,6 +31,10 @@ return {
 				Id = 35818691, -- greeny
 				Tooltip = "Documentation and quality assurance",
 			},
+			{
+				Id = 83478451, -- stevendahfish
+				Tooltip = "Documentation and quality assurance",
+			},
 		},
 	},
 	{
