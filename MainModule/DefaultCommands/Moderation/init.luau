@@ -1138,6 +1138,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) whose field of view to change.",
+				shouldRequest = true,
 			},
 			{
 				type = "number",
@@ -1229,7 +1230,7 @@ return {
 		},
 
 		run = function(context, walkSpeed: number)
-			context.Util.Services.StarterPlayer.CharacterJumpPower = walkSpeed
+			context._K.Util.Services.StarterPlayer.CharacterJumpPower = walkSpeed
 		end,
 	},
 	{
@@ -1310,7 +1311,7 @@ return {
 		},
 
 		run = function(context, walkSpeed: number)
-			context.Util.Services.StarterPlayer.CharacterWalkSpeed = walkSpeed
+			context._K.Util.Services.StarterPlayer.CharacterWalkSpeed = walkSpeed
 		end,
 	},
 	{
@@ -1411,7 +1412,7 @@ return {
 		},
 
 		run = function(context, maxSlopeAngle: number)
-			context.Util.Services.StarterPlayer.CharacterMaxSlopeAngle = math.clamp(maxSlopeAngle, 0, 89)
+			context._K.Util.Services.StarterPlayer.CharacterMaxSlopeAngle = math.clamp(maxSlopeAngle, 0, 89)
 		end,
 	},
 	{
