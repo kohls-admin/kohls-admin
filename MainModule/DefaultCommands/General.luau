@@ -269,7 +269,7 @@ return {
 		runClient = function(context, player)
 			if not workspace.CurrentCamera:GetAttribute("kCameraType") then
 				workspace.CurrentCamera:SetAttribute("kCameraType", workspace.CurrentCamera.CameraType)
-				workspace.CurrentCamera.CameraType = Enum.CameraType.Track
+				workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
 			end
 			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
 				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
