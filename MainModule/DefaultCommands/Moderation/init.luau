@@ -947,15 +947,17 @@ return {
 				shouldRequest = true,
 			},
 		},
+		env = function(_K)
+			_K.Flux.Scope.Jail = Jail
+		end,
 
 		run = function(context, players)
 			for _, player in players do
-				if Jail.Parts[player] then
+				if Jail.Parts[player.UserId] then
 					continue
 				end
-				Jail.Connections[player] = player.CharacterAdded:Connect(Jail.new)
 				if player.Character then
-					Jail.new(player.Character)
+					Jail.new(player)
 				end
 			end
 		end,

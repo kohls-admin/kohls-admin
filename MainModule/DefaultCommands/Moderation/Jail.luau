@@ -1,28 +1,47 @@
 local Players = game:GetService("Players")
 
+local Util = require(script.Parent.Parent.Parent.Util)
+
 local jailParts = {}
-local jailConnections = {}
 
 local Jail = {
 	Parts = jailParts,
-	Connections = jailConnections,
 }
 
-function Jail.new(character)
+function Jail.recapture(character)
 	local player = Players:GetPlayerFromCharacter(character)
-	if not (player and character and character.PrimaryPart and character:FindFirstChildOfClass("Humanoid")) then
+	if not (player and character and character.PrimaryPart) then
+		return true
+	end
+	local existing = jailParts[player.UserId]
+	if existing then
+		task.defer(character.PivotTo, character, existing.CFrame)
+		return true
+	end
+	return
+end
+
+function Jail.new(player)
+	local character = player.Character
+
+	if Jail.recapture(character) then
 		return
 	end
 
-	local existing = jailParts[player]
+	local root = character and character.PrimaryPart
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not (player and root and humanoid) then
+		return
+	end
+
+	local existing = jailParts[player.UserId]
 	if existing then
 		task.defer(character.PivotTo, character, existing.CFrame)
 		return
 	end
 
-	local root = character.PrimaryPart
-	local groundPos = root.Position
-		- Vector3.new(0, character:FindFirstChildOfClass("Humanoid").HipHeight + root.Size.Y / 2, 0)
+	local rootCFrame = root.CFrame
+	local groundPos = rootCFrame.Position - Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0)
 
 	local _, size = character:GetBoundingBox()
 	local width = math.max(size.X, size.Y, size.Z) + 2
@@ -40,7 +59,7 @@ function Jail.new(character)
 	kJail.TopSurface = Enum.SurfaceType.Smooth
 	kJail.BottomSurface = Enum.SurfaceType.Smooth
 
-	jailParts[player] = kJail
+	jailParts[player.UserId] = kJail
 
 	local top = kJail:Clone()
 	top.Parent = kJail
@@ -72,6 +91,17 @@ function Jail.new(character)
 
 	kJail.CanCollide = false
 	kJail.Parent = workspace
+
+	root.CFrame = rootCFrame
+
+	return kJail
 end
+
+Util.SafePlayerAdded(function(player)
+	player.CharacterAdded:Connect(Jail.recapture)
+	if player.Character then
+		Jail.recapture(player.Character)
+	end
+end)
 
 return Jail
