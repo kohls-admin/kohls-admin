@@ -416,6 +416,13 @@ function Flux.edit(instance: Instance, definition): Instance
 	end
 
 	for property, value in definition do
+		if type(property) == "number" and property == math.floor(property) then
+			if typeof(value) == "Instance" then
+				value.Parent = instance
+			end
+			definition[property] = nil
+			continue
+		end
 		cleanBind(instance, value, property)
 		if isState(value) then
 			setupBind(instance, value, property)
