@@ -12,30 +12,32 @@ return {
 			},
 		},
 		env = function(_K)
-			local subscribeSuccess, subscribeConnection = pcall(function()
-				return _K.Util.Services.MessagingService:SubscribeAsync("KA_Announcement", function(message)
-					if type(message.Data) ~= "table" then
-						_K.Data.settings.announcement = false
-						return
-					end
+			task.defer(function()
+				local subscribeSuccess, subscribeConnection = pcall(function()
+					return _K.Util.Services.MessagingService:SubscribeAsync("KA_Announcement", function(message)
+						if type(message.Data) ~= "table" then
+							_K.Data.settings.announcement = false
+							return
+						end
 
-					local oldMsg, oldFrom
-					if _K.Data.settings.announcement then
-						oldMsg, oldFrom = unpack(_K.Data.settings.announcement)
-					end
+						local oldMsg, oldFrom
+						if _K.Data.settings.announcement then
+							oldMsg, oldFrom = unpack(_K.Data.settings.announcement)
+						end
 
-					local msg, from = unpack(message.Data)
-					if msg ~= oldMsg or from ~= oldFrom then
-						_K.Data.settings.announcement = message.Data
-						_K.Remote.Announce:FireAllClients(unpack(message.Data))
-					end
+						local msg, from = unpack(message.Data)
+						if msg ~= oldMsg or from ~= oldFrom then
+							_K.Data.settings.announcement = message.Data
+							_K.Remote.Announce:FireAllClients(unpack(message.Data))
+						end
+					end)
 				end)
+				if subscribeSuccess then
+					game:BindToClose(function()
+						subscribeConnection:Disconnect()
+					end)
+				end
 			end)
-			if subscribeSuccess then
-				game:BindToClose(function()
-					subscribeConnection:Disconnect()
-				end)
-			end
 		end,
 
 		run = function(context, message)
