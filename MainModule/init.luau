@@ -126,7 +126,7 @@ local function playerAdded(player: Player)
 	end
 end
 
-function _K.initialize(loaderSettings: { [string]: any }, addons: Folder, requireId: boolean?)
+function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requireId: boolean?)
 	if loaderSettings then
 		loaderSettings.Parent = script
 		-- TODO: warn creator and developers to change the datastore key if unchanged
@@ -184,6 +184,10 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder, requir
 
 	-- enable client
 	Client.Enabled = true
+	local wallyIsBroken = Client:FindFirstChild("kohls-admin")
+	if wallyIsBroken then
+		wallyIsBroken.Name = "TopbarPlus"
+	end
 
 	-- events
 
