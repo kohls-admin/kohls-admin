@@ -185,7 +185,8 @@ return function(_K, text, cursorPosition)
 				and (
 					data.rawArg == ""
 					or (
-						#data.suggestions > 0
+						data.suggestions
+						and #data.suggestions > 0
 						and if type(data.suggestions[1]) == "table"
 							then data.suggestions[1][1] ~= data.rawArg
 							else data.suggestions[1] ~= data.rawArg
