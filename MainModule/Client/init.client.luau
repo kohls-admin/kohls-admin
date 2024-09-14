@@ -87,11 +87,9 @@ _K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEve
 				)
 			then
 				local missingMod = false
-				for mod, value in data.mods do
-					if not value then
-						continue
-					end
-					if not input:IsModifierKeyDown(Enum.ModifierKey[mod]) then
+				for _, modifierKey in Enum.ModifierKey:GetEnumItems() do
+					local isDown = input:IsModifierKeyDown(modifierKey)
+					if isDown == not data.mods[modifierKey] then
 						missingMod = true
 						break
 					end
