@@ -1154,7 +1154,7 @@ return {
 					last = workspace.CurrentCamera.FieldOfView
 				end
 				if degrees or last then
-					workspace.CurrentCamera.FieldOfView = degrees or last
+					workspace.CurrentCamera.FieldOfView = math.clamp(degrees or last, 1, 120)
 					if not degrees then
 						last = nil
 					end
