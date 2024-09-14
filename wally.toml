@@ -2,7 +2,7 @@
 name = "kohltastrophe/kohls-admin"
 description = "Embrace creativity, not chaos. Used by millions of developers and players, take control of your experience and try Kohl's Admin today."
 authors = ["Kohl <admin@kohl.gg>"]
-version = "0.1.5"
+version = "0.1.6"
 license = "MIT"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
