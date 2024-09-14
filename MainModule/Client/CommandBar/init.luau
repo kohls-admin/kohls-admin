@@ -189,12 +189,12 @@ local SuggestionFrame = UI.new "TextButton" {
 		AutoLocalize = false,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
-		TextWrapped = true,
 		RichText = true,
 		Font = UI.Theme.FontMono,
 		TextSize = 20,
 		TextColor3 = UI.Theme.PrimaryText,
 		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.SplitWord,
 
 		UI.new "UIPadding" {
 			PaddingTop = UI.Theme.PaddingHalf,
