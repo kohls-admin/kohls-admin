@@ -37,6 +37,7 @@ function About.new(_K)
 
 		UserFrame(Players.LocalPlayer.UserId),
 		UI.new "TextLabel" {
+			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
 			Font = UI.Theme.FontMono,
@@ -63,6 +64,7 @@ function About.new(_K)
 		},
 		if discordInvite
 			then UI.new "TextLabel" {
+				AutoLocalize = false,
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				Font = UI.Theme.Font,
@@ -99,6 +101,7 @@ function About.new(_K)
 			}
 			else nil,
 		UI.new "TextLabel" {
+			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
 			Font = UI.Theme.Font,
@@ -158,6 +161,7 @@ function About.new(_K)
 	local order = 1
 	for _, group in CREDITS do
 		UI.new "TextLabel" {
+			AutoLocalize = false,
 			Parent = content,
 			LayoutOrder = order,
 			Name = group.Title,

@@ -47,6 +47,7 @@ function ListItem.new(definition)
 		Size = UDim2.new(1, 0, 0, 24),
 
 		UI.new "TextLabel" {
+			AutoLocalize = false,
 			Text = new.Text,
 			Size = UDim2.new(1, 0, 1, 0),
 			TextXAlignment = Enum.TextXAlignment.Left,

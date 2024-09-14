@@ -133,6 +133,7 @@ function Dialog.new(definition)
 			},
 
 			UI.new "TextLabel" {
+				AutoLocalize = false,
 				BackgroundTransparency = 1,
 				TextColor3 = UI.Theme.PrimaryText,
 				Text = new.Title,
@@ -152,6 +153,7 @@ function Dialog.new(definition)
 		},
 
 		UI.new "TextLabel" {
+			AutoLocalize = false,
 			Name = "Text",
 			BackgroundTransparency = 1,
 			TextColor3 = new.TextColor3,
@@ -228,6 +230,7 @@ function Dialog.new(definition)
 				},
 
 				UI.new "TextLabel" {
+					AutoLocalize = false,
 					Name = "Text",
 					BackgroundTransparency = 1,
 					TextColor3 = UI.Theme.PrimaryText,
@@ -246,6 +249,7 @@ function Dialog.new(definition)
 					AutomaticSize = Enum.AutomaticSize.XY,
 				},
 				UI.new "TextButton" {
+					AutoLocalize = false,
 					Name = "LeftAction",
 					AutomaticSize = Enum.AutomaticSize.XY,
 					BackgroundTransparency = 1,
@@ -288,6 +292,7 @@ function Dialog.new(definition)
 					},
 				},
 				UI.new "TextButton" {
+					AutoLocalize = false,
 					Name = "RightAction",
 					AutomaticSize = Enum.AutomaticSize.XY,
 					BackgroundTransparency = 1,

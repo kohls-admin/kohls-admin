@@ -40,6 +40,7 @@ function List.new(definition)
 
 		[UI.Children] = {
 			Header = UI.new "TextButton" {
+				AutoLocalize = false,
 				Name = "Header",
 				Active = true,
 				BackgroundTransparency = 1,
@@ -66,6 +67,7 @@ function List.new(definition)
 				},
 
 				UI.new "TextLabel" {
+					AutoLocalize = false,
 					Name = "Label",
 					BackgroundTransparency = 1,
 					Position = UI.compute(function(use)

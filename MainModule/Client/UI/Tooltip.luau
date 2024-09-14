@@ -17,6 +17,7 @@ function Tooltip.new(definition)
 	local hovering = UI.state(false)
 
 	new._instance = UI.new "TextLabel" {
+		AutoLocalize = false,
 		Parent = UI.LayerTop,
 		Name = "Tooltip",
 		Visible = UI.compute(function(use)

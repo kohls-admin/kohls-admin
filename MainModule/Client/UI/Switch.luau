@@ -22,6 +22,7 @@ function Switch.new(definition)
 	end)
 
 	new._instance = UI.new "TextButton" {
+		AutoLocalize = false,
 		Name = "Switch",
 		Active = true,
 		AutoButtonColor = false,

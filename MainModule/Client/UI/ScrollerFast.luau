@@ -23,6 +23,7 @@ function ScrollerFast:render()
 			lineItem = if self.CreateItem
 				then self.CreateItem._value(self, lineData)
 				else UI.new "TextLabel" {
+					AutoLocalize = false,
 					BackgroundTransparency = 1,
 					Size = self.ItemSize,
 					RichText = true,

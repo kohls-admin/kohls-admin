@@ -183,6 +183,7 @@ function Input.new(definition)
 
 	local cursor = UI.new "TextLabel" {
 		Name = "Cursor",
+		AutoLocalize = false,
 		AutomaticSize = Enum.AutomaticSize.X,
 		Size = UDim2.new(0, 0, 1, 0),
 		Position = UDim2.new(0, 0, 0, 0),

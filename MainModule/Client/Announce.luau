@@ -91,6 +91,7 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 
 			userFrame,
 			UI.new "TextLabel" {
+				AutoLocalize = false,
 				Name = "Message",
 				BackgroundTransparency = 1,
 				TextColor3 = UI.Theme.PrimaryText,

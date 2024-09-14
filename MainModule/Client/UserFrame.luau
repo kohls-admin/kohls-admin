@@ -82,6 +82,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 				},
 
 				UI.new "TextLabel" {
+					AutoLocalize = false,
 					Name = "From",
 					BackgroundTransparency = 1,
 					TextColor3 = UI.Theme.PrimaryText,
@@ -98,6 +99,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 
 				if badgeEnabled
 					then UI.new "TextLabel" {
+						AutoLocalize = false,
 						Name = "Badge",
 						BackgroundColor3 = Color3.fromHex(color),
 						TextColor3 = if UI.getLuminance(Color3.fromHex(color)) > 0.5
@@ -129,6 +131,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			},
 
 			UI.new "TextLabel" {
+				AutoLocalize = false,
 				Name = "FromBottom",
 				BackgroundTransparency = 1,
 				TextColor3 = UI.Theme.PrimaryText,

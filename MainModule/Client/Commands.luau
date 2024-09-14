@@ -26,6 +26,7 @@ function Commands.new(_K)
 			TextXAlignment = Enum.TextXAlignment.Left,
 		}
 		return UI.new "TextLabel" {
+			AutoLocalize = false,
 			BackgroundTransparency = 1,
 			Size = self.ItemSize,
 			RichText = true,
@@ -37,6 +38,7 @@ function Commands.new(_K)
 			TextYAlignment = Enum.TextYAlignment.Top,
 
 			UI.new "TextLabel" {
+				AutoLocalize = false,
 				BackgroundTransparency = 1,
 				Name = "Description",
 				RichText = true,

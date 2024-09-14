@@ -36,6 +36,7 @@ function Button.new(definition)
 
 			Label = UI.new "TextLabel" {
 				LayoutOrder = 2,
+				AutoLocalize = false,
 				BackgroundTransparency = 1,
 				Size = UDim2.new(1, 0, 1, 0),
 				Font = UI.Theme.Font,
@@ -97,6 +98,7 @@ function Button.new(definition)
 	}
 
 	new._instance = UI.new "TextButton" {
+		AutoLocalize = false,
 		Name = "Button",
 		Active = true,
 		AutoButtonColor = false,

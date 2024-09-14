@@ -31,6 +31,7 @@ Input = UI.new "Input" {
 	Size = UDim2.new(1, 0, 1, 0),
 
 	UI.new "TextButton" {
+		AutoLocalize = false,
 		Name = "CircleIndicator",
 		BackgroundTransparency = 1,
 		TextTransparency = 1,
@@ -145,6 +146,7 @@ local TooltipLayout = UI.new "UIListLayout" {
 local Tooltip = UI.new "TextLabel" {
 	Parent = TooltipFrame,
 	LayoutOrder = 0,
+	AutoLocalize = false,
 	Name = "Tooltip",
 	BackgroundTransparency = 1,
 	Size = UI.computeFrom(UDim2.new, 1, 0, 0, UI.Theme.FontSize),
@@ -172,6 +174,7 @@ TooltipLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 end)
 
 local SuggestionFrame = UI.new "TextButton" {
+	AutoLocalize = false,
 	Name = "Suggestion",
 	BackgroundTransparency = 0.9,
 	BackgroundColor3 = UI.Theme.Secondary,
@@ -183,6 +186,7 @@ local SuggestionFrame = UI.new "TextButton" {
 
 	UI.new "TextLabel" {
 		LayoutOrder = 0,
+		AutoLocalize = false,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 		TextWrapped = true,

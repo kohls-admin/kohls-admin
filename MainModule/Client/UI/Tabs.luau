@@ -156,6 +156,7 @@ function Tabs.new(definition)
 				local upperState = UI.computeFrom(string.upper, nameState)
 				local hovering, textFits, button = UI.state(false), UI.state(false)
 				button = UI.new "TextButton" {
+					AutoLocalize = false,
 					Parent = tabs,
 					Name = nameState,
 					LayoutOrder = page.LayoutOrder,

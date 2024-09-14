@@ -287,6 +287,7 @@ function Window.new(definition)
 				},
 
 				UI.new "TextLabel" {
+					AutoLocalize = false,
 					Name = "Title",
 					BackgroundTransparency = 1,
 					AutomaticSize = Enum.AutomaticSize.Y,

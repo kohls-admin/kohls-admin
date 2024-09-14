@@ -37,6 +37,7 @@ function Checkbox.new(definition: CheckboxDefinition)
 	}, definition)
 
 	new._instance = UI.new "TextButton" {
+		AutoLocalize = false,
 		Name = "Checkbox",
 		Active = true,
 		AnchorPoint = Vector2.new(1, 0.5),
