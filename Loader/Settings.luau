@@ -8,7 +8,7 @@ local Settings = {
 	dataStoreKey = "CHANGE_THIS",
 
 	-- Changes the default command prefix
-	prefix = ":",
+	prefix = ";",
 
 	-- Enables Kohl's Admin VIP donation features
 	vip = true,
