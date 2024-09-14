@@ -581,7 +581,7 @@ return {
 				return nil
 			end
 			return {
-				getHumanoidDescriptionBundle,
+				getHumanoidDescriptionBundle = getHumanoidDescriptionBundle,
 			}
 		end,
 
