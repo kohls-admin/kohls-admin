@@ -35,11 +35,16 @@ attachment.Name = "BodyBackAttachment"
 return {
 	MatchId = "rbxassetid://89119211625300",
 	Method = function(character: Model, accessory: Accessory)
+		local dark
 		if accessory then
+			dark = string.find(string.lower(accessory.Name), "dark")
 			accessory:Destroy()
 		end
 		if not character:FindFirstChild(hat.Name) then
 			local clone = hat:Clone()
+			if dark then
+				clone.Handle.Color = Color3.new()
+			end
 			clone.Parent = character
 			clone.Handle.Animate.Enabled = true
 		end
