@@ -13,39 +13,44 @@ while not humanoid do
 	task.wait()
 end
 
-local function flyingTimeScale()
-	local speed = part.Velocity.Y
-	if speed < 0 then -- falling
-		Animate.timeScale = 0.5 + (200 + math.max(-200, speed)) / 400
-	else -- flying
-		Animate.timeScale = 1 + math.min(200, speed) / 100
-	end
-end
-
-local falling
-humanoid.StateChanged:Connect(function(old, new)
-	if new == Enum.HumanoidStateType.Freefall or new == Enum.HumanoidStateType.Flying then
-		falling = true
-		Animate.timeScale = 1
-		Animate.play(part, fall, true)
-	elseif falling then
-		falling = false
-		Animate.timeScale = 0.5
-		Animate.play(part, idle, true)
-	end
+local animFalling, lastY
+local randomIdle = true
+task.delay(math.random(15, 30), function()
+	randomIdle = false
 end)
 
-local randomIdle
-game:GetService("RunService").PreSimulation:Connect(function()
+game:GetService("RunService").PreSimulation:Connect(function(step)
+	local falling = humanoid.FloorMaterial == Enum.Material.Air
+	local currentY = part.Position.Y
+	local speed = (if lastY then currentY - lastY else part.Velocity.Y) / step
+	lastY = currentY
+
 	if falling then
-		flyingTimeScale()
-	elseif not randomIdle then
-		randomIdle = true
-		task.delay(math.random(5, 15), function()
-			randomIdle = false
-		end)
-		Animate.play(part, idle2)
-		Animate.play(part, idle, true)
+		if speed < 0 then -- falling
+			Animate.timeScale = 0.5 + (200 + math.max(-200, speed)) / 400
+		else -- flying
+			Animate.timeScale = 1 + math.min(200, speed) / 100
+		end
+		if animFalling then
+			return
+		end
+		animFalling = true
+		Animate.play(part, fall, true)
+		animFalling = false
+	else
+		if animFalling then
+			animFalling = false
+			Animate.timeScale = 0.5
+			Animate.play(part, idle, true)
+		elseif not randomIdle then
+			randomIdle = true
+			task.delay(math.random(15, 30), function()
+				randomIdle = false
+			end)
+			Animate.timeScale = 0.5
+			Animate.play(part, idle2)
+			Animate.play(part, idle, true)
+		end
 	end
 end)
 

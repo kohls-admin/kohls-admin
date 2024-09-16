@@ -41,7 +41,7 @@ function Animate.play(rig: Instance, sequence: KeyframeSequence, loop: boolean?)
 				duration = (keyframe.Time - frames[i - 1].Time) / Animate.timeScale
 			elseif blend then
 				blend = false
-				duration = 0.1
+				duration = 0.5
 			end
 
 			for _, pose: Pose in keyframe:GetDescendants() do
