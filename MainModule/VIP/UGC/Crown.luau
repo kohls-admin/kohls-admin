@@ -66,11 +66,19 @@ end
 return {
 	MatchId = "rbxassetid://18966762965",
 	Method = function(character: Model, accessory: Accessory)
+		local dark
 		if accessory then
+			dark = string.find(string.lower(accessory.Name), "dark")
 			accessory:Destroy()
 		end
 		if not character:FindFirstChild(hat.Name) then
-			hat:Clone().Parent = character
+			local clone = hat:Clone()
+			if dark then
+				clone.Handle.Color = Color3.new()
+				clone.Handle.Fire.Color = Color3.new(1, 1, 1)
+				clone.Handle.Fire.SecondaryColor = Color3.new(1, 1, 1)
+			end
+			clone.Parent = character
 		end
 	end,
 }
