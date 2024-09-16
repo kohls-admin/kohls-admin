@@ -39,14 +39,16 @@ local function setDonationLevel(player)
 	player:SetAttribute("_KDonationLevel", getDonationLevel(player))
 end
 
-if Util.Services.RunService:IsServer() then
-	local adminUGCMap = {}
+local adminUGCMap = {}
 
-	for _, module in script:WaitForChild("UGC"):GetChildren() do
-		local result = require(module)
+for _, module in script:WaitForChild("UGC"):GetChildren() do
+	local result = require(module)
+	if result then
 		adminUGCMap[result.MatchId] = result
 	end
+end
 
+if Util.Services.RunService:IsServer() then
 	function VIP.UGCHandler(character)
 		for _, child in character:GetChildren() do
 			if not child:IsA("Accessory") then

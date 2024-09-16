@@ -1,3 +1,7 @@
+if game:GetService("RunService"):IsClient() then
+	return false
+end
+
 local InsertService = game:GetService("InsertService")
 
 local hat = Instance.new("Accessory")
