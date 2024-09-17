@@ -145,6 +145,7 @@ end
 
 local function syncLogs(logs)
 	Hook.preSyncLogs:Fire(logs)
+	local newLogs = {}
 	for _, log in logs do
 		local text, level, time, from = unpack(log)
 		local exists
@@ -158,12 +159,13 @@ local function syncLogs(logs)
 			continue
 		end
 
-		table.insert(Data.logs, { text = text, level = level, time = time, from = from })
+		table.insert(newLogs, { text = text, level = level, time = time, from = from })
 	end
+	table.move(newLogs, 1, #newLogs, #Data.logs + 1, Data.logs)
 	table.sort(Data.logs, Data.sortTime)
 	for _, player in Players:GetPlayers() do
 		if hasPermission(player.UserId, "logs") then
-			Remote.Logs:FireClient(player, Data.logs)
+			Remote.Logs:FireClient(player, newLogs)
 		end
 	end
 	Hook.postSyncLogs:Fire(logs)

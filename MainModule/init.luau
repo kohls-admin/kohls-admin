@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 
 local Util = require(script:WaitForChild("Util"))
 local Client = script:WaitForChild("Client")
+local requireStart = os.clock()
 
 export type Log = Util.Log
 export type LogType = Util.LogType
@@ -75,20 +76,31 @@ _K.Services = _K.Util.Services
 
 -- register initial UI children
 if _K.IsClient then
+	local uiRegisterStart = os.clock()
 	_K.UI.registerChildren()
+	task.spawn(_K.log, `UI classes registered in {math.round((os.clock() - uiRegisterStart) * 1000)} ms`, "DEBUG")
 end
 
+local typeRegisterStart = os.clock()
 -- register types
 for _, child in script.DefaultTypes:GetChildren() do
 	require(child)(_K)
 end
+task.spawn(_K.log, `Default Types registered in {math.round((os.clock() - typeRegisterStart) * 1000)} ms`, "DEBUG")
 
+local commandRegisterStart = os.clock()
 -- register commands
 for _, child in script.DefaultCommands:GetChildren() do
 	_K.Registry.registerCommandModule(_K, child)
 end
+task.spawn(
+	_K.log,
+	`Default Commands registered in {math.round((os.clock() - commandRegisterStart) * 1000)} ms`,
+	"DEBUG"
+)
 
 if not _K.IsServer then
+	task.spawn(_K.log, `Required in {math.round((os.clock() - requireStart) * 1000)} ms`, "DEBUG")
 	return _K
 end
 --------------------------
@@ -127,6 +139,8 @@ local function playerAdded(player: Player)
 end
 
 function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requireId: boolean?)
+	local initStart = os.clock()
+
 	if loaderSettings then
 		loaderSettings.Parent = script
 		-- TODO: warn creator and developers to change the datastore key if unchanged
@@ -233,6 +247,16 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		end
 	end)
 
+	-- server hooks
+
+	_K.Hook.logFiltered:Connect(function(log)
+		for _, player in _K.Util.Services.Players:GetPlayers() do
+			if _K.Auth.hasPermission(player.UserId, "logs") then
+				_K.Remote.Log:FireClient(player, log)
+			end
+		end
+	end)
+
 	-- gamepass roles
 	_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
 		if not purchaseSuccess then
@@ -250,9 +274,13 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 
 	_K.Util.SafePlayerAdded(playerAdded)
 
-	task.spawn(_K.log, "Server initialized.", "INFO")
+	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
+
+	return _K
 end
 
 export type _K = typeof(_K)
+
+task.spawn(_K.log, `Required in {math.round((os.clock() - requireStart) * 1000)} ms`, "DEBUG")
 
 return _K

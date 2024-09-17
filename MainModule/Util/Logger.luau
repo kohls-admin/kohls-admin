@@ -22,6 +22,7 @@ export type Log = {
 	level: LogType,
 	time: number,
 	from: number?,
+	client: boolean?,
 }
 
 --- @class Logger

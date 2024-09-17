@@ -9,6 +9,8 @@ local Logs = require(script.Parent.Logs)
 local Members = require(script.Parent.Members)
 local Settings = require(script.Parent.Settings)
 
+local clockStart = os.clock()
+
 UI.Scope.dashboard.About = About.new(_K)
 UI.Scope.dashboard.Commands = Commands.new(_K)
 UI.Scope.dashboard.Bans = Bans.new(_K)
@@ -95,5 +97,7 @@ task.spawn(function()
 		elapsed += task.wait()
 	end
 end)
+
+task.spawn(_K.log, `Dashboard loaded in {math.round((os.clock() - clockStart) * 1000)} ms`, "DEBUG")
 
 return UI.Scope.dashboard
