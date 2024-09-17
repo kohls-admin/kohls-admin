@@ -35,6 +35,10 @@ return {
 				Id = 83478451, -- stevendahfish
 				Tooltip = "Documentation and quality assurance",
 			},
+			{
+				Id = 41336494, -- Calculatous
+				Tooltip = "Contributor",
+			},
 		},
 	},
 	{
