@@ -87,10 +87,13 @@ end
 --- Adds a role to a user if they don't already have it
 -- TODO: make a way to define permanent vs temporary roles
 function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolean
+	local player = Players:GetPlayerByUserId(userId)
 	local member = Data.members[tostring(userId)]
 	local roleAdded = false
+
 	if not member then
 		member = {
+			name = if player then player.Name else Util.getUserInfo(userId).Username,
 			roles = { role },
 			persist = { if persist then role else nil },
 		}
@@ -116,9 +119,8 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	if persist and roleAdded then
 		local key = tostring(userId)
 		local cache = Data.Cache.members
-		local player = Players:GetPlayerByUserId(userId)
 
-		cache[key] = cache[key] or { if player then player.Name else Players:GetNameFromUserIdAsync(userId) }
+		cache[key] = cache[key] or { if player then player.Name else Util.getUserInfo(userId).Username }
 		cache[key][2] = Data.members[key].persist
 		Data.pendingSaveMain = true
 
@@ -157,7 +159,7 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 		local cache = Data.Cache.members
 		local player = Players:GetPlayerByUserId(userId)
 
-		cache[key] = cache[key] or { if player then player.Name else Players:GetNameFromUserIdAsync(userId) }
+		cache[key] = cache[key] or { if player then player.Name else Util.getUserInfo(userId).Username }
 		local persist = Data.members[key].persist
 		cache[key][2] = if #persist == 0 then Data.Store.REMOVE else persist
 		Data.pendingSaveMain = true
