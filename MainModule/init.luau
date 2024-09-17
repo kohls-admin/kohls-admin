@@ -8,9 +8,13 @@ end
 --------------------------
 local RunService = game:GetService("RunService")
 
-local Util = require(script:WaitForChild("Util"))
 local Client = script:WaitForChild("Client")
+local LoggerModule = script:WaitForChild("Logger")
+local UtilModule = script:WaitForChild("Util")
+
 local requireStart = os.clock()
+local Logger = require(LoggerModule)
+local Util = require(UtilModule)
 
 export type Log = Util.Log
 export type LogType = Util.LogType
@@ -45,16 +49,18 @@ local _K = {
 	IsStudio = RunService:IsStudio(),
 
 	-- modules
-	Flux = require(script:WaitForChild("Flux")),
+	Logger = Logger,
+	Util = Util,
 	Data = require(script:WaitForChild("Data")),
-	Auth = require(script:WaitForChild("Auth")),
+	Flux = require(script:WaitForChild("Flux")),
 	Hook = require(script:WaitForChild("Hook")),
-	Logger = require(script:WaitForChild("Logger")),
-	Process = require(script:WaitForChild("Process")),
-	Registry = require(script:WaitForChild("Registry")),
 	Remote = require(script:WaitForChild("Remote")),
 	UI = require(Client:WaitForChild("UI")),
-	Util = Util,
+
+	-- core modules
+	Auth = require(script:WaitForChild("Auth")),
+	Process = require(script:WaitForChild("Process")),
+	Registry = require(script:WaitForChild("Registry")),
 	VIP = require(script:WaitForChild("VIP")),
 
 	client = nil,
@@ -208,12 +214,14 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 
 	-- enable client
 	Client.Enabled = true
+
+	-- fix wally renaming nested default.project.json
 	local wallyIsBroken = Client:FindFirstChild("kohls-admin")
 	if wallyIsBroken then
 		wallyIsBroken.Name = "TopbarPlus"
 	end
 
-	-- events
+	-- server network events
 
 	_K.Remote.Init.OnServerEvent:Connect(function(player)
 		_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings)
