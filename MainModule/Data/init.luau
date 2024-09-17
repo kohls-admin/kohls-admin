@@ -20,7 +20,7 @@ end
 
 local function hasPermission(userId: number, permission: string): boolean
 	-- does everyone have the permission?
-	if Data.defaultRole[permission] or Data.defaultRole.admin then
+	if Data.defaultRole.permissions[permission] or Data.defaultRole.permissions.admin then
 		return true
 	end
 	local member = Data.members[tostring(userId)]
@@ -30,7 +30,7 @@ local function hasPermission(userId: number, permission: string): boolean
 		end
 		for _, roleId in member.roles do
 			local role = Data.roles[roleId]
-			if role and (role.admin or role[permission]) then
+			if role and (role.permissions.admin or role.permissions[permission]) then
 				return true
 			end
 		end

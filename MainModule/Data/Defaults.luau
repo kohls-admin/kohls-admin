@@ -69,28 +69,25 @@ local Data = {
 		name = "Player",
 		color = "#0ff",
 
-		-- STAFF PERMISSIONS (anyone with one of these permissions will be saved to the list of staff)
-
-		-- this permission bypasses all restrictions (danger!)
-		admin = false,
-		-- can PERMANENTLY ban users from the game
-		ban = false,
-		-- can kick or ban users from the current server session
-		kick = false,
-		-- allows the user to manage roles of other users with a lesser role
-		roles = false,
-		-- can configure the global admin settings
-		settings = false,
-		-- can view audit logs
-		logs = false,
-
-		-- COSMETIC PERMISSIONS
-		-- can use commands that require VIP permission
-		vip = false,
-
 		-- when enabled only allows their player to be used with the player argument
 		-- WARN: doesn't affect commands that use userids!
 		onlyTargetSelf = false,
+
+		permissions = {
+			-- this permission bypasses all restrictions (danger!)
+			admin = false,
+			-- can PERMANENTLY ban users from the game
+			ban = false,
+			-- can kick or ban users from the current server session
+			kick = false,
+			-- allows the user to manage roles of other users with a lesser role
+			roles = false,
+			saveRoles = false, -- if the user can also save the roles across sessions
+			-- can configure the global admin settings
+			settings = false,
+			-- can view audit logs
+			logs = false,
+		},
 
 		-- allowed command groups
 		groups = {
@@ -117,45 +114,37 @@ local Data = {
 		vip = {
 			_rank = 1,
 			name = "VIP",
-			vip = true,
 			groups = { "vip" },
+			permissions = {},
 			color = "#0f8",
 			onlyTargetSelf = true,
 		},
 		mod = {
 			_rank = 2,
 			name = "Moderator",
-			kick = true,
-			logs = true,
 			groups = { "moderation", "general", "environment", "fun", "vip" },
+			permissions = { kick = true, logs = true },
 			color = "#0f0",
 		},
 		admin = {
 			_rank = 3,
 			name = "Administrator",
-			ban = true,
-			kick = true,
-			roles = true,
-			logs = true,
 			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
+			permissions = { ban = true, kick = true, roles = true, logs = true },
 			color = "#ff0",
 		},
 		superadmin = {
 			_rank = 4,
 			name = "SuperAdmin",
-			ban = true,
-			kick = true,
-			roles = true,
-			logs = true,
-			settings = true,
 			groups = { "creator", "administration", "moderation", "general", "environment", "fun", "vip" },
+			permissions = { ban = true, kick = true, roles = true, logs = true, settings = true },
 			color = "#f80",
 		},
 		-- FIXME should this be defined and configurable? (or should it just be forced...)
 		creator = {
 			_rank = math.huge,
 			name = "Game Creator",
-			admin = true,
+			permissions = { admin = true },
 			color = "#f00",
 		},
 	},

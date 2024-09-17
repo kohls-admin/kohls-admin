@@ -1,7 +1,6 @@
 local GroupService = game:GetService("GroupService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
-local TextService = game:GetService("TextService")
 
 local Data = require(script.Parent.Data)
 local Remote = require(script.Parent.Remote)
@@ -271,13 +270,12 @@ end
 
 --- Checks the maximum role rank of the user, if permission is given it will fetch the highest rank of the roles with that permission
 function Auth.getRank(userId: number, permission: string?): (number, Role)
-	permission = permission or "_rank"
 	local rank, rankRole = 0, Data.defaultRole
 	local member = Data.members[tostring(userId)]
 	if member then
 		for _, roleId in member.roles do
 			local role = Data.roles[roleId]
-			if role and role[permission] and role._rank > rank then
+			if role and (not permission or role.permissions[permission]) and role._rank > rank then
 				rank = role._rank
 				rankRole = role
 			end
@@ -315,7 +313,7 @@ function Auth.roleCanUseCommand(role: Role, command: any): boolean
 	end
 	local group = string.lower(command.group)
 	if
-		roleData.admin
+		roleData.permissions.admin
 		or Auth.roleCommandFilter(roleData, command, true)
 		or (roleData.groups and table.find(roleData.groups, group))
 	then
@@ -352,7 +350,7 @@ end
 --- Checks if a user has access to a permission
 function Auth.hasPermission(userId: number, permission: string): boolean
 	-- does everyone have the permission?
-	if Data.defaultRole[permission] or Data.defaultRole.admin then
+	if Data.defaultRole.permissions[permission] or Data.defaultRole.permissions.admin then
 		return true
 	end
 	local member = Data.members[tostring(userId)]
@@ -362,7 +360,7 @@ function Auth.hasPermission(userId: number, permission: string): boolean
 		end
 		for _, roleId in member.roles do
 			local role = Data.roles[roleId]
-			if role and (role.admin or role[permission]) then
+			if role and (role.permissions.admin or role.permissions[permission]) then
 				return true
 			end
 		end
