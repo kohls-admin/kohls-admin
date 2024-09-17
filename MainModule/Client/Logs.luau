@@ -100,7 +100,7 @@ function Logs.new(_K)
 		return new
 	end
 
-	local function renderText(self, log)
+	local function renderText(self, lineItem, log)
 		if self._filter ~= "" then
 			local text = log.rawText
 

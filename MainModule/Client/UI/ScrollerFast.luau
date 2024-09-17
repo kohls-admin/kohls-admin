@@ -39,7 +39,7 @@ function ScrollerFast:render()
 		if self.RenderItem then
 			self.RenderItem._value(self, lineItem, lineData)
 		else
-			lineItem.Text = if self.RenderText then self.RenderText._value(self, lineData) else lineData
+			lineItem.Text = if self.RenderText then self.RenderText._value(self, lineItem, lineData) else lineData
 		end
 		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
 		lineItem.Parent = self._scroller

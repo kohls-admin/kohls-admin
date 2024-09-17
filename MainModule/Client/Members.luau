@@ -13,7 +13,7 @@ function Members.new(_K)
 		List = UI.Scope.members,
 		DictList = true,
 		FilterInput = true,
-		RenderText = function(self, member)
+		RenderText = function(self, lineItem, member)
 			local userInfo = _K.Util.getUserInfo(member.userId)
 
 			if self._filter ~= "" then

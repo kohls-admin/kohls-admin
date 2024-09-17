@@ -13,7 +13,7 @@ function Bans.new(_K)
 		List = UI.Scope.bans,
 		DictList = true,
 		FilterInput = true,
-		RenderText = function(self, ban)
+		RenderText = function(self, lineItem, ban)
 			local term = if ban[2]
 				then (if ban[2] > 0 then os.date("%y-%m-%d %X", ban[2]) else "Permanently")
 				else "Session"
