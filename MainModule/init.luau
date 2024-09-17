@@ -143,7 +143,12 @@ local function playerAdded(player: Player)
 	end
 end
 
+local _initialized
 function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requireId: boolean?)
+	if _initialized then
+		return _K
+	end
+	_initialized = true
 	local initStart = os.clock()
 
 	if loaderSettings then
