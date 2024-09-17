@@ -158,7 +158,8 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 		local player = Players:GetPlayerByUserId(userId)
 
 		cache[key] = cache[key] or { if player then player.Name else Players:GetNameFromUserIdAsync(userId) }
-		cache[key][2] = Data.members[key].persist
+		local persist = Data.members[key].persist
+		cache[key][2] = if #persist == 0 then Data.Store.REMOVE else persist
 		Data.pendingSaveMain = true
 	end
 
