@@ -64,7 +64,6 @@ function Logs.new(_K)
 					escape(log.text or "")
 				)
 
-				-- TODO: defer load the name with a placeholder
 				task.defer(function()
 					local userInfo = log.from and _K.Util.getUserInfo(log.from)
 					local displayName = if userInfo and (userInfo.DisplayName ~= userInfo.Username)
@@ -120,11 +119,14 @@ function Logs.new(_K)
 	scroller = UI.new "ScrollerFast" {
 		Name = "Logs",
 		List = UI.Scope.logs,
+		Enabled = false,
 		FilterInput = true,
 		-- FilterInputDebounce = 0.1,
 		ReverseOrder = true,
 		RenderText = renderText,
 	}
+
+	task.defer(scroller.filter, scroller, filterTest)
 
 	debounceScrollerUpdate = _K.Util.Function.debounce(0.5, scroller.refreshList)
 
@@ -230,8 +232,6 @@ function Logs.new(_K)
 			FlexMode = Enum.UIFlexMode.Fill,
 		},
 	})
-
-	scroller:filter(filterTest)
 
 	return scroller
 end

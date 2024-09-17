@@ -163,6 +163,7 @@ function Commands.new(_K)
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Commands",
 		List = _K.Registry.commandsList,
+		Enabled = false,
 		FilterInput = true,
 		ItemSize = UI.compute(function(use)
 			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) * 2)
@@ -193,18 +194,20 @@ function Commands.new(_K)
 		return new
 	end
 
-	scroller:filter(filterTest)
-	scroller:sort(function(a, b)
-		local rankA, rankB = math.huge, math.huge
-		for role, roleData in _K.Data.roles do
-			if _K.Auth.roleCanUseCommand(role, a) and roleData._rank < rankA then
-				rankA = roleData._rank
+	task.defer(function()
+		scroller:sort(function(a, b)
+			local rankA, rankB = math.huge, math.huge
+			for role, roleData in _K.Data.roles do
+				if _K.Auth.roleCanUseCommand(role, a) and roleData._rank < rankA then
+					rankA = roleData._rank
+				end
+				if _K.Auth.roleCanUseCommand(role, b) and roleData._rank < rankB then
+					rankB = roleData._rank
+				end
 			end
-			if _K.Auth.roleCanUseCommand(role, b) and roleData._rank < rankB then
-				rankB = roleData._rank
-			end
-		end
-		return rankA < rankB
+			return rankA < rankB
+		end)
+		scroller:filter(filterTest)
 	end)
 
 	return scroller

@@ -11,6 +11,7 @@ function Members.new(_K)
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Members",
 		List = UI.Scope.members,
+		Enabled = false,
 		DictList = true,
 		FilterInput = true,
 		RenderText = function(self, lineItem, member)
@@ -60,7 +61,7 @@ function Members.new(_K)
 		return new
 	end
 
-	scroller:filter(filterTest)
+	task.defer(scroller.filter, scroller, filterTest)
 
 	return scroller
 end

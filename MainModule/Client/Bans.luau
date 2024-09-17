@@ -11,6 +11,7 @@ function Bans.new(_K)
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Bans",
 		List = UI.Scope.bans,
+		Enabled = false,
 		DictList = true,
 		FilterInput = true,
 		RenderText = function(self, lineItem, ban)
@@ -77,7 +78,7 @@ function Bans.new(_K)
 		return new
 	end
 
-	scroller:filter(filterTest)
+	task.defer(scroller.filter, scroller, filterTest)
 
 	return scroller
 end
