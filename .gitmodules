@@ -1,0 +1,3 @@
+[submodule "src/MainModule/Client/TopbarPlus"]
+	path = MainModule/Client/TopbarPlus
+	url = https://github.com/kohls-admin/TopbarPlus.git

@@ -2,7 +2,10 @@
 	"name": "Kohl's Admin",
 	"emitLegacyScripts": false,
 	"tree": {
-		"$path": "../src",
+		"$path": "../Loader",
+		"MainModule": {
+			"$path": "../MainModule"
+		},
 		"LICENSE": {
 			"$path": "../LICENSE.txt"
 		}

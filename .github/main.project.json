@@ -1,7 +1,0 @@
-{
-	"name": "MainModule",
-	"emitLegacyScripts": false,
-	"tree": {
-		"$path": "../src/MainModule"
-	}
-}

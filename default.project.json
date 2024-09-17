@@ -2,26 +2,6 @@
 	"name": "kohls-admin",
 	"emitLegacyScripts": false,
 	"tree": {
-		"$className": "DataModel",
-		"ServerScriptService": {
-			"Kohl's Admin": {
-				"$path": "src",
-				"LICENSE": {
-					"$path": "LICENSE.txt"
-				}
-			}
-		},
-
-		"Workspace": {
-			"Baseplate": {
-				"$className": "Part",
-				"$properties": {
-					"Anchored": true,
-					"Locked": true,
-					"Position": [0, -10, 0],
-					"Size": [512, 20, 512]
-				}
-			}
-		}
+		"$path": "MainModule"
 	}
 }

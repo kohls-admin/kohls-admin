@@ -18,7 +18,7 @@ By default this folder will contain some example addons.
 ## Addon Setup
 
 <!-- TODO: make an addons page! -->
-All custom commands are part of an [Addon](Addons). For this section we will create addons that only create custom commands, but in later parts we will show the extent of what addons can do.
+All custom commands are part of an [Addon](/docs/addons). For this section we will create addons that only create custom commands, but in later parts we will show the extent of what addons can do.
 
 All addons are module scripts that return a function. To start, create a module script and inside of it write the following:
 
@@ -37,7 +37,7 @@ Appending "Client" or "Server" to the end of an addon file's name will make it o
 
 ## Creating a Custom Command
 
-To create a custom command, you must register it with the [Registry](../api/Registry), using [registerCommand()](../api/Registry#registerCommand).
+To create a custom command, you must register it with the [Registry](/api/Registry), using [registerCommand()](/api/Registry#registerCommand).
 
 Using this, our module becomes:
 
@@ -47,7 +47,7 @@ return function(_K)
 end
 ```
 
-`commandDefinition` is a placeholder for the real contents of our command! Commands require a lot of information, structured in a [commandDefinition](../api/Registry#CommandDefinition).
+`commandDefinition` is a placeholder for the real contents of our command! Commands require a lot of information, structured in a [commandDefinition](/api/Registry#CommandDefinition).
 
 ```lua
 type commandDefinition {

@@ -1,0 +1,38 @@
+{
+	"name": "kohls-admin",
+	"emitLegacyScripts": false,
+	"tree": {
+		"$className": "DataModel",
+
+		"HttpService": {
+			"$className": "HttpService",
+			"$properties": {
+				"HttpEnabled": true
+			}
+		},
+
+		"ServerScriptService": {
+			"Kohl's Admin": {
+				"$path": "Loader",
+				"MainModule": {
+					"$path": "MainModule"
+				},
+				"LICENSE": {
+					"$path": "LICENSE.txt"
+				}
+			}
+		},
+
+		"Workspace": {
+			"Baseplate": {
+				"$className": "Part",
+				"$properties": {
+					"Anchored": true,
+					"Locked": true,
+					"Position": [0, -10, 0],
+					"Size": [512, 20, 512]
+				}
+			}
+		}
+	}
+}
