@@ -6,6 +6,9 @@ ScrollerFast.__index = ScrollerFast
 setmetatable(ScrollerFast, BaseClass)
 
 function ScrollerFast:render()
+	if not self.Enabled._value then
+		return
+	end
 	local lineHeight = self.ItemSize._value.Y.Offset
 	local startIndex = math.max(0, math.floor(self._scroller.CanvasPosition.Y / lineHeight)) + 1
 	local endIndex =
@@ -68,6 +71,7 @@ end
 
 function ScrollerFast:filter(filterFunction: (...any) -> { any })
 	self._filterFunction = filterFunction
+	self.Enabled:set(true)
 	self:refreshList()
 end
 
@@ -93,9 +97,9 @@ function ScrollerFast:cloneRaw()
 	end
 end
 
--- if dictlist then convert List into an array
 function ScrollerFast.new(definition)
 	local self = UI.makeStatefulDefaults({
+		Enabled = true,
 		ItemSize = UI.compute(function(use)
 			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
 		end),
