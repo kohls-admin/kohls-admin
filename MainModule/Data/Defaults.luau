@@ -176,6 +176,10 @@ function Data.sortTime(a, b)
 	return a.time < b.time
 end
 
+if game:GetService("RunService"):IsServer() then
+	Data.Store = require(script.Parent.Store)
+end
+
 -- UI Theme initial settings
 for key, state in UI.Theme do
 	Data.settings["theme" .. key] = UI.peek(state)

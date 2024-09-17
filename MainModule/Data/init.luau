@@ -18,8 +18,6 @@ if RunService:IsClient() then
 	return Data
 end
 
-Data.Store = require(script.Store)
-
 local function hasPermission(userId: number, permission: string): boolean
 	-- does everyone have the permission?
 	if Data.defaultRole[permission] or Data.defaultRole.admin then
