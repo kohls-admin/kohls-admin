@@ -1,5 +1,3 @@
-local GroupService = game:GetService("GroupService")
-
 local UI = require(script.Parent.Parent.Client.UI)
 
 local Cache = {
@@ -15,6 +13,7 @@ local Cache = {
 
 local Data = {
 	Cache = Cache,
+	creatorId = game.CreatorId,
 	bans = {
 		-- [UserId] = {Reason, Timestamp, fromUserId}
 		-- Username is the last known username of the user when they were banned
@@ -172,16 +171,6 @@ end
 -- UI Theme initial settings
 for key, state in UI.Theme do
 	Data.settings["theme" .. key] = UI.peek(state)
-end
-
--- assign CreatorId
-if game.CreatorType == Enum.CreatorType.Group then
-	local ok, result = pcall(GroupService.GetGroupInfoAsync, GroupService, game.CreatorId)
-	if ok then
-		Data.creatorId = result.Owner.Id
-	end
-else
-	Data.creatorId = game.CreatorId
 end
 
 return Data

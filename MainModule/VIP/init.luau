@@ -42,10 +42,12 @@ end
 local adminUGCMap = {}
 
 for _, module in script:WaitForChild("UGC"):GetChildren() do
-	local result = require(module)
-	if result then
-		adminUGCMap[result.MatchId] = result
-	end
+	task.spawn(function()
+		local result = require(module)
+		if result then
+			adminUGCMap[result.MatchId] = result
+		end
+	end)
 end
 
 if Util.Services.RunService:IsServer() then

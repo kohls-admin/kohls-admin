@@ -36,7 +36,7 @@ local module = {
 for i, v in module.soundList do
 	module.soundList[i] = "rbxassetid://" .. v
 end
-ContentProvider:PreloadAsync(module.soundList)
+task.spawn(ContentProvider.PreloadAsync, ContentProvider, module.soundList)
 
 local lastHash, lastKey
 local clackRandom = Random.new()
