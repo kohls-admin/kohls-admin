@@ -18,6 +18,9 @@ local colors = {
 local debounceNetwork = {}
 
 function Settings.network(key, value)
+	if not Settings._K.client.ready then
+		return
+	end
 	local debounce = debounceNetwork[key]
 		or Settings._K.Util.Function.debounce(1, function(key, value)
 			Settings._K.Remote.Setting:FireServer(key, value)
