@@ -37,7 +37,7 @@ Meaningful contributions are highly appreciated and encouraged! <b>Contributors 
 
 # Contributors
 
-We welcome and appreciate contributions from the community! If you'd like to get involved, please check out our [Contributors Guidelines](CONTRIBUTORS.md) for details on how to contribute and the types of contributions we're looking for.
+We welcome and appreciate contributions from the community! If you'd like to get involved, please check out our [Contributors Guidelines](CONTRIBUTING.md) for details on how to contribute and the types of contributions we're looking for.
 
 **How Contributors Will Be Recognized:**
 
