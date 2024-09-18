@@ -15,6 +15,9 @@ function Bans.new(_K)
 		DictList = true,
 		FilterInput = true,
 		RenderText = function(self, lineItem, ban)
+			if not ban.userId then
+				return ""
+			end
 			local term = if ban[2]
 				then (if ban[2] > 0 then os.date("%y-%m-%d %X", ban[2]) else "Permanently")
 				else "Session"
