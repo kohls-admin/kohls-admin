@@ -4,6 +4,7 @@ To get started with contributing to Kohl's Admin, follow these steps:
 
 ## Prerequisites
 
+- [Git](https://git-scm.com/)
 - [Aftman](https://github.com/LPGhatguy/aftman)
 - [Roblox Studio](https://create.roblox.com/docs/studio/setting-up-roblox-studio)
 
@@ -13,7 +14,8 @@ The following assumes you have aftman installed, if not navigate to the [Install
 2. **Clone the repository:** Clone your fork locally:
 
 ```bash
-git clone https://github.com/your-username/main.git --recurse-submodules
+git config --global submodule.recurse true;
+git clone https://github.com/your-username/main.git;
 ```
 
 3. **Checkout the testing branch:** The development work is done on the testing branch, which is the most current and unstable version of the codebase. When contributing, make sure to switch to this branch to stay up-to-date:
