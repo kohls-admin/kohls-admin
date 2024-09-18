@@ -11,11 +11,12 @@ To get started with contributing to Kohl's Admin, follow these steps:
 The following assumes you have aftman installed, if not navigate to the [Installation](https://github.com/LPGhatguy/aftman#installation) for Aftman.
 
 1. **Fork the repository:** Create a [fork](https://github.com/kohls-admin/main/fork) of the repository.
-2. **Clone the repository:** Clone your fork locally:
+2. **Clone the repository:** Clone your fork locally and change the git config:
 
 ```bash
-git config --global submodule.recurse true;
-git clone https://github.com/your-username/main.git;
+git clone https://github.com/YOUR-USERNAME/main.git --recurse-submodules;
+git config submodule.recurse true;
+git config pull.rebase true;
 ```
 
 3. **Checkout the testing branch:** The development work is done on the testing branch, which is the most current and unstable version of the codebase. When contributing, make sure to switch to this branch to stay up-to-date:
@@ -68,7 +69,7 @@ The following assumes you have Moonwave installed, if not navigate to the [Getti
 moonwave dev
 ```
 
-3. Navigate to the `docs/` folder to start contributing directly to the documentation.
+3. Navigate to the `docs/` folder to create and edit markdown pages.
 
 Congratulations! You are ready to start contributing to the documentation portion of the project!
 
