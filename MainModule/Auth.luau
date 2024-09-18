@@ -19,7 +19,7 @@ function Auth.banHandler(player)
 	local key = tostring(player.UserId)
 	local banInfo = Data.bans[key]
 	-- TODO: should staff roles bypass bans? add a settings toggle
-	if not banInfo or player.UserId == Data.creatorId then
+	if not banInfo or player.UserId == Data.creatorId or player.UserId == 0 then
 		-- not banned
 		return
 	end

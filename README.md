@@ -40,6 +40,7 @@ Meaningful contributions are highly appreciated and encouraged! <b>Contributors 
 To get started with contributing to Kohl's Admin, follow these steps:
 
 ## Prerequisites
+
 * [Aftman](https://github.com/LPGhatguy/aftman)
 * [Roblox Studio](https://create.roblox.com/docs/studio/setting-up-roblox-studio)
 
@@ -47,28 +48,37 @@ The following assumes you have aftman installed, if not navigate to the [Install
 
 1. **Fork the repository:** Create a [fork](https://github.com/kohls-admin/main/fork) of the repository.
 2. **Clone the repository:** Clone your fork locally:
-	```bash
-	git clone https://github.com/your-username/main.git
-	```
+
+```bash
+git clone https://github.com/your-username/main.git --recurse-submodules
+```
+
 3. **Checkout the testing branch:** The development work is done on the testing branch, which is the most current and unstable version of the codebase. When contributing, make sure to switch to this branch to stay up-to-date:
-	```bash
-	git checkout testing
-	```
+
+```bash
+git checkout testing
+```
+
 4. **Install Aftman tools:**
-	```bash
-	aftman install
-	```
+
+```bash
+aftman install
+```
+
 5. **Install Roblox Studio [Rojo](https://rojo.space/) plugin:**
-	```bash
-	rojo plugin install
-	```
+
+```bash
+rojo plugin install
+```
 
 ## Studio Testing
 
 1. **Start the Rojo server:**
-	```bash
-	rojo serve
-	```
+
+```bash
+rojo serve
+```
+
 2. **Connect to Rojo server:** in Roblox Studio using the [Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin).
 
 Congratulations! You are ready to start contributing to the codebase portion of the project!
@@ -88,9 +98,10 @@ The following assumes you have Moonwave installed, if not navigate to the [Getti
 
 1. Open your terminal and navigate to the your local project directory.
 2. Run the development server:
-	```bash
-	moonwave dev
-	```
+
+```bash
+moonwave dev
+```
 
 3. Navigate to the `docs/` folder to start contributing directly to the documentation.
 

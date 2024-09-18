@@ -409,7 +409,7 @@ return {
 	},
 	{
 		name = "setgravity",
-		aliases = { "setgrav", "nograv", "ungravity", "ungrav", "resetgravity", "resetgrav" },
+		aliases = { "setgrav", "grav", "nograv", "ungravity", "ungrav", "resetgravity", "resetgrav" },
 		description = "Sets the gravity of one or more player(s).",
 		args = {
 			{
