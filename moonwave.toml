@@ -27,6 +27,7 @@ classes = ["Util", "Logger", "Promise", "String"]
 [docusaurus]
 onBrokenLinks = "warn"
 onBrokenMarkdownLinks = "warn"
+trailingSlash = false
 favicon = "/logo-dark.svg"
 organizationName = "kohls-admin"
 projectName = "main"
