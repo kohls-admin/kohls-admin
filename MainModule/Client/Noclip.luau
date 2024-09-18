@@ -141,12 +141,18 @@ end
 
 local lastJump, debounceJump = 0, nil
 UserInputService.JumpRequest:Connect(function()
+	local now = tick()
+	local duration = now - lastJump
 	if debounceJump then
 		return
 	end
-	local now = tick()
-	if now - lastJump <= 0.3 and FlyEnabled then
+	lastJump = now
+	if FlyEnabled and duration <= 0.25 then
 		debounceJump = true
+		task.delay(if not flying then 0.5 else 0.1, function()
+			debounceJump = nil
+			lastJump = 0
+		end)
 		if noclipping then
 			if typeof(noclipping) == "RBXScriptConnection" then
 				noclipping:Disconnect()
@@ -173,11 +179,7 @@ UserInputService.JumpRequest:Connect(function()
 				end
 			end
 		end
-		task.wait(1)
-		debounceJump = nil
-		lastJump = 0
 	end
-	lastJump = now
 end)
 
 return Noclip
