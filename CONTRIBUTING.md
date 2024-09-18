@@ -66,7 +66,7 @@ The following assumes you have Moonwave installed, if not navigate to the [Getti
 2. Run the development server:
 
 ```bash
-moonwave dev
+moonwave dev --code MainModule/
 ```
 
 3. Navigate to the `docs/` folder to create and edit markdown pages.
