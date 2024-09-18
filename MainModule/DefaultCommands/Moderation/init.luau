@@ -1418,6 +1418,39 @@ return {
 		end,
 	},
 	{
+		name = "r6",
+		aliases = { "r15" },
+		description = "Changes the rig type of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose rig type to change.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players)
+			local rigType = if context.alias == "r6" then Enum.HumanoidRigType.R6 else Enum.HumanoidRigType.R15
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				local description = humanoid and humanoid:FindFirstChildOfClass("HumanoidDescription")
+				if not description then
+					return
+				end
+
+				-- TODO: save rig type as an attribute for application on spawn
+
+				local rig = context._K.Util.Services.Players:CreateHumanoidModelFromDescription(description, rigType)
+				rig:PivotTo(player.Character:GetPivot())
+				rig.Name = player.Character.Name
+				player.Character = rig
+				context._K.VIP.UGCHandler(rig)
+				rig.Parent = workspace
+			end
+		end,
+	},
+	{
 		name = "respawn",
 		aliases = { "spawn" },
 		description = "Respawns the character of one or more player(s).",
