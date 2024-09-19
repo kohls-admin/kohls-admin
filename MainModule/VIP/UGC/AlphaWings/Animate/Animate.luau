@@ -20,8 +20,12 @@ end
 local tracks = {}
 
 function Animate.play(rig: Instance, sequence: KeyframeSequence, loop: boolean?)
-	local t = time()
-	tracks[rig] = t
+	if tracks[rig] then
+		pcall(task.cancel, tracks[rig])
+	end
+	local thread = coroutine.running()
+	tracks[rig] = thread
+
 	local frames = sequence:GetKeyframes()
 	table.sort(frames, function(a, b)
 		return a.Time < b.Time
@@ -31,10 +35,6 @@ function Animate.play(rig: Instance, sequence: KeyframeSequence, loop: boolean?)
 	local blend = true
 	repeat
 		for i, keyframe in frames do
-			if tracks[rig] ~= t then
-				break
-			end
-
 			local duration = 0
 
 			if frames[i - 1] then
@@ -70,17 +70,11 @@ function Animate.play(rig: Instance, sequence: KeyframeSequence, loop: boolean?)
 			end
 			task.wait(duration)
 		end
-	until not loop or tracks[rig] ~= t
-
-	if tracks[rig] ~= t then
-		return
-	end
+	until not loop
 
 	for bone in bones do
 		TweenService:Create(bone, TweenInfo.new(0.5), { CFrame = bone:GetAttribute("OriginalCFrame") }):Play()
 	end
-
-	tracks[rig] = nil
 end
 
 return Animate
