@@ -2,6 +2,15 @@
 
 return {
 	{
+		name = "version",
+		description = "Displays the version of Kohl's Admin in this game.",
+		args = {},
+
+		run = function(context)
+			context._K.Remote.Notify:FireClient(context.fromPlayer, `<sc>version</sc>:\t<b>{context._K.VERSION}</b>`)
+		end,
+	},
+	{
 		name = "about",
 		aliases = { "help", "credit", "credits", "info", "?" },
 		description = "Shows the about tab in a separate window.",

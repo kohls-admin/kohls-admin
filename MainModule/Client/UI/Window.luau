@@ -190,7 +190,7 @@ function Window.new(definition)
 		end
 	end
 
-	local exitButton = UI.new "Button" {
+	new._exitButton = UI.new "Button" {
 		LayoutOrder = 9,
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
 		Size = UDim2.new(0, 32, 0, 32),
@@ -205,7 +205,7 @@ function Window.new(definition)
 			UI.clearState("floating")
 		end,
 	}
-	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+	new._exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 
 	new._content = UI.new "Frame" {
 		Name = "UIContent",
@@ -244,6 +244,7 @@ function Window.new(definition)
 		UI.new "ImageLabel" {
 			Name = "ResizeIcon",
 			ZIndex = 1e3,
+			AnchorPoint = Vector2.new(1, 1),
 			BackgroundTransparency = 1,
 			Image = "rbxassetid://2286551482",
 			ImageRectSize = Vector2.new(15, 15),
@@ -253,7 +254,7 @@ function Window.new(definition)
 			ResampleMode = Enum.ResamplerMode.Pixelated,
 			Position = UI.compute(function(use)
 				local inputPos = use(inputPosition)
-				return UDim2.fromOffset(inputPos.X - 8, inputPos.Y - 8) - use(new.Position)
+				return UDim2.fromOffset(inputPos.X, inputPos.Y) - use(new.Position)
 			end),
 
 			[UI.Event] = {
@@ -308,7 +309,7 @@ function Window.new(definition)
 					},
 				},
 
-				exitButton,
+				new._exitButton,
 
 				[UI.Event] = {
 					InputBegan = dragInputBegan,

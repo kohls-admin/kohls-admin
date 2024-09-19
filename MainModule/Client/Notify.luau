@@ -56,7 +56,7 @@ return function(dialogOverride)
 
 	local dialog = UI.new("Dialog")(_K.Util.Table.merge({
 		Close = close,
-		Duration = 4 + 0.125 * #dialogOverride.Text,
+		Duration = dialogOverride.Duration or 4 + 0.125 * #dialogOverride.Text,
 		Parent = UI.LayerTopInset,
 		Size = UDim2.new(0.5),
 		AnchorPoint = UI.tween(

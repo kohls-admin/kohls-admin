@@ -269,7 +269,7 @@ function Data.initialize(name)
 	game:BindToClose(function()
 		Data.gameClosing = true
 
-		if Data.settings.vip and Data.settings.vipGameCatalogEnabled and Http.HttpEnabled and game.GameId > 0 then
+		if Data.settings.vip and Data.settings.gameHubEnabled and Http.HttpEnabled and game.GameId > 0 then
 			task.spawn(Http.RequestAsync, Http, { Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
 		end
 

@@ -204,6 +204,91 @@ return {
 		end,
 	},
 	{
+		name = "vote",
+		aliases = { "makevote", "startvote", "poll" },
+		description = "Starts a vote for one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to poll.",
+			},
+			{
+				type = "stringGreedy",
+				name = "Question",
+				description = "The question to poll.",
+			},
+		},
+		envClient = function(_K)
+			_K.Remote.Vote.OnClientInvoke = function(text: string, from: Player)
+				local actionSignal = _K.Util.Signal.new()
+				_K.client.Notify({
+					Text = text,
+					ActionText = "<b>VOTE</b>",
+					Action = true,
+					LeftAction = true,
+					RightAction = true,
+					Duration = 30,
+
+					_K.client.UserFrame(from.UserId, from.DisplayName),
+
+					[_K.UI.Hook] = {
+						Action = function(v)
+							actionSignal:Fire(v)
+						end,
+					},
+				})
+				return actionSignal:Wait() == true
+			end
+		end,
+
+		run = function(context, players, message)
+			local ok, result = context._K.Util.Retry(function()
+				return TextService:FilterStringAsync(message, context.from, Enum.TextFilterContext.PublicChat)
+			end, 5, 0.2, 1)
+
+			if not ok then
+				return
+			end
+
+			local mainThread = coroutine.running()
+
+			local yes, no, voting = 0, 0, 0
+			for _, player in players do
+				voting += 1
+				task.spawn(function()
+					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
+					if success then
+						local vote = context._K.Remote.Vote:InvokeClient(player, msg, context.fromPlayer)
+						if vote == true then
+							yes += 1
+						elseif vote == false then
+							no += 1
+						end
+					end
+					voting -= 1
+					if voting == 0 then
+						coroutine.resume(mainThread)
+					end
+				end)
+			end
+
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				`Created vote: <b>{message}</b>\n\n<font transparency="0.5"><i>The vote will end in 30 seconds or when every player has submitted their vote!</i></font>`
+			)
+
+			-- wait for timeout or all votes to be submitted
+			task.delay(30, coroutine.resume, mainThread)
+			coroutine.yield()
+
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				`<font transparency="0.5">The results are in!</font>\n\n<b>{message}</b>\n\t<font color="#0f0"><b><sc>yes</sc></b>\t{yes}</font>\n\t<font color="#f00"><b><sc>no</sc></b> \t{no}</font>`
+			)
+		end,
+	},
+	{
 		name = "watch",
 		aliases = { "camera", "follow" },
 		description = "Watches a player with your camera.",

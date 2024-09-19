@@ -5,6 +5,8 @@ local UI = _K.UI
 _K.client = {
 	CommandBar = require(script:WaitForChild("CommandBar")),
 	TopbarPlus = require(script:WaitForChild("TopbarPlus")),
+	UserFrame = require(script:WaitForChild("UserFrame")),
+	Noclip = require(script.Noclip),
 
 	ready = false,
 	hotkeys = {
@@ -40,7 +42,6 @@ _K.client.CommandBar:init(_K)
 local Announce = require(script.Announce)
 local Dashboard = require(script.Dashboard)
 local Network = require(script.Network)
-local Noclip = require(script.Noclip)
 
 local function Chatted(message: string)
 	local prefix = _K.playerPrefix[UI.LocalPlayer.UserId] or _K.Data.settings.prefix

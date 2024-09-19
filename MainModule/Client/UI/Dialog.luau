@@ -248,6 +248,13 @@ function Dialog.new(definition)
 
 					AutomaticSize = Enum.AutomaticSize.XY,
 				},
+				UI.new "Frame" {
+					Name = "Spacer",
+					BackgroundTransparency = 1,
+					UI.new "UIFlexItem" {
+						FlexMode = Enum.UIFlexMode.Fill,
+					},
+				},
 				UI.new "TextButton" {
 					AutoLocalize = false,
 					Name = "LeftAction",

@@ -26,8 +26,10 @@ local Remote = {
 	SetCore = _REMOTE,
 	Setting = _REMOTE,
 	Settings = _REMOTE,
+	Teleport = _REMOTE,
 
 	RequestCommand = _REMOTECALL,
+	Vote = _REMOTECALL,
 }
 
 for name, base in Remote do

@@ -35,6 +35,19 @@ function About.new(_K)
 	local scroller = UI.new "Scroller" {
 		Name = "About",
 
+		UI.new "TextLabel" {
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.XY,
+			BackgroundTransparency = 1,
+			Font = UI.Theme.FontMono,
+			TextSize = UI.Theme.FontSizeSmall,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextWrapped = true,
+			Size = UDim2.new(0, 0, 0, 16),
+			Text = `<b><font transparency="0.5">Version {_K.VERSION}</font></b>`,
+			Selectable = true,
+			RichText = true,
+		},
 		UserFrame(Players.LocalPlayer.UserId),
 		UI.new "TextLabel" {
 			AutoLocalize = false,

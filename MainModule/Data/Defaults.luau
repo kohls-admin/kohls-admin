@@ -47,7 +47,8 @@ local Data = {
 		prefix = ";",
 		vip = true,
 		mutableHooks = false,
-		vipGameCatalogEnabled = true,
+		gameHubEnabled = true,
+		dashboardButtonRank = 0,
 	},
 
 	async = {

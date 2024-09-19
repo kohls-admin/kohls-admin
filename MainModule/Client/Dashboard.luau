@@ -59,13 +59,7 @@ toggleCommandBar = UI.new "Button" {
 
 toggleCommandBar._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 
--- TopbarStandard.Holders.Left
-local holder = UI.PlayerGui:FindFirstChild("TopbarStandard")
-if holder and holder:FindFirstChild("Holders") and holder.Holders:FindFirstChild("Left") then
-	holder = holder.Holders.Left
-end
-
-local function dashboardToggle()
+local function dashboardToggle(button)
 	if dashboard._instance.Visible then
 		UI.Sound.Hover01:Play()
 		UI.clearState("hover")
@@ -73,18 +67,33 @@ local function dashboardToggle()
 	else
 		UI.Sound.Hover03:Play()
 	end
-	dashboard._instance.Visible = not dashboard._instance.Visible
+	dashboard._instance.Visible = button.isSelected
 end
-_K.client.hotkeys.dashboard.callback = dashboardToggle
 
+local buttonEnabled = _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
 local dashboardButton = TopbarPlus.new()
 	:setName("KADashboardIcon")
 	:setCaption("Kohl's Admin Dashboard")
 	:setImage(10650723871)
 	:setOrder(-1)
+	:setEnabled(buttonEnabled)
 	:bindEvent("toggled", dashboardToggle)
 	:modifyTheme({ "Widget", "BorderSize", 0 })
 local dashboardButtonIcon = dashboardButton:getInstance("IconImage")
+
+UI.Scope.dashboardButton = dashboardButton
+
+_K.client.hotkeys.dashboard.callback = function()
+	if dashboardButton.isSelected then
+		dashboardButton:deselect()
+	else
+		dashboardButton:select()
+	end
+end
+
+dashboard._exitButton._instance.Activated:Connect(function()
+	dashboardButton:deselect()
+end)
 
 task.spawn(function()
 	local elapsed = 1

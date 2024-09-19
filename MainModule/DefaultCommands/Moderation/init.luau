@@ -1123,6 +1123,15 @@ return {
 				description = "The player to teleport to.",
 			},
 		},
+		envClient = function(_K)
+			_K.Remote.Teleport.OnClientEvent:Connect(function(cframe)
+				_K.client.Noclip.flyCFrame = cframe
+				local character = _K.UI.LocalPlayer.Character
+				if character then
+					character:PivotTo(cframe)
+				end
+			end)
+		end,
 
 		run = function(context, players, target)
 			for _, player in players do

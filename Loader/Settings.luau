@@ -14,17 +14,13 @@ local Settings = {
 	vip = true,
 
 	--[[
-	Kohl's Admin VIP Game Catalog Integration
-
-	Enables participation in the Kohl's Admin VIP game catalog, showcasing
-	your game to VIP users looking for games with Kohl's Admin.
+	Enables participation in the Kohl's Admin Games Hub, showcasing
+	your game to users looking for games with benefits from Kohl's Admin.
+	https://www.roblox.com/games/17873329124/Kohls-Admin-Games-Hub
 
 	⚠️ IMPORTANT: Allow HTTP Requests in Game Settings -> Security
-
-	The catalog updates every 6 hours, check it out below;
-	https://www.roblox.com/games/17873329124/
 	]]
-	vipGameCatalogEnabled = true,
+	gameHubEnabled = true,
 
 	-- Gives everyone access to the uncommented roles
 	freeAdmin = {
@@ -45,17 +41,34 @@ local Settings = {
 		-- },
 	},
 
+	--[[
+	Accepts a list of UserIds, sourced from a Roblox profile
+		For example;
+			https://www.roblox.com/users/44391621/profile
+			Has a UserId of 44391621
+		Use "game.PrivateServerOwnerId" for private servers!
+	]]
 	roles = {
-		-- accepts a list of userids
 		creator = {},
 		superadmin = {},
 		admin = {},
 		mod = {},
-		vip = {},
+		vip = { 1, 156, game.PrivateServerOwnerId },
 	},
 
+	--[[
+	Toggles visibility of the Kohl's Admin Dashboard Button in the Topbar. Set it to math.huge to never show.
+		0	defaultRole
+		1	vip
+		2	mod
+		3	admin
+		4	superadmin
+		5	creator
+	]]
+	dashboardButtonRank = 0,
+
 	-- TODO: theme configuration
-	-- TODO: command permissions and role definitions
+	-- TODO: command/member permissions and role definitions
 }
 
 return Settings

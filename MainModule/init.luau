@@ -48,6 +48,8 @@ local _K = {
 	IsServer = RunService:IsServer(),
 	IsStudio = RunService:IsStudio(),
 
+	VERSION = script:WaitForChild("VERSION").Value,
+
 	-- modules
 	Logger = Logger,
 	Util = Util,
@@ -113,6 +115,7 @@ end
 --------------------------
 
 local function playerAdded(player: Player)
+	task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
 	if _K.Services.RunService:IsStudio() then
 		_K.Auth.userRoleAdd(player.UserId, "creator")
 	end
@@ -157,7 +160,8 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		_K.Util.Table.merge(_K.Data.loaderSettings, loaderSettings)
 		_K.Data.settings.prefix = loaderSettings.prefix
 		_K.Data.settings.vip = loaderSettings.vip
-		_K.Data.settings.vipGameCatalogEnabled = loaderSettings.vipGameCatalogEnabled
+		_K.Data.settings.gameHubEnabled = loaderSettings.gameHubEnabled
+		_K.Data.settings.dashboardButtonRank = loaderSettings.dashboardButtonRank
 
 		task.spawn(_K.Data.initialize, loaderSettings.dataStoreKey)
 
@@ -196,12 +200,12 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		if addons then
 			for _, addon in addons:GetChildren() do
 				if addon:IsA("ModuleScript") then
-					if string.find(addon.Name, "Server$") then
+					if string.find(addon.Name, "Server", 1, true) then
 						addon.Parent = serverAddons
 						task.spawn(function()
 							require(addon)(_K)
 						end)
-					elseif not string.find(addon.Name, "Client$") then
+					elseif not string.find(addon.Name, "Client", 1, true) then
 						task.spawn(function()
 							require(addon)(_K)
 						end)
@@ -229,14 +233,10 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 	-- server network events
 
 	_K.Remote.Init.OnServerEvent:Connect(function(player)
-		_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings)
-		_K.Remote.Roles:FireClient(player, _K.Data.roles)
-		if _K.Auth.hasPermission(player.UserId, "ban") or _K.Auth.hasPermission(player.UserId, "kick") then
-			_K.Remote.Bans:FireClient(player, _K.Data.bans)
-		end
-		if _K.Auth.hasPermission(player.UserId, "logs") then
-			_K.Remote.Logs:FireClient(player, _K.Data.logs)
-		end
+		local bans = (_K.Auth.hasPermission(player.UserId, "ban") or _K.Auth.hasPermission(player.UserId, "kick"))
+			and _K.Data.bans
+		local logs = _K.Auth.hasPermission(player.UserId, "logs") and _K.Data.logs
+		_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings, bans, logs, _K.Data.roles)
 	end)
 
 	_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string, chatted: boolean?)
@@ -296,6 +296,9 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 	end)
 
 	_K.Util.SafePlayerAdded(playerAdded)
+	_K.Util.Services.Players.PlayerRemoving:Connect(function(player)
+		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId)
+	end)
 
 	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
 
