@@ -2,8 +2,14 @@ local Suggest = {}
 
 function Suggest.getNames(objects: any): { string }
 	local names = {}
+	local existing = {}
 	for key, object in objects do
-		names[key] = object.Name or object.name or tostring(object)
+		local name = object.Name or object.name or tostring(object)
+		if existing[name] then
+			continue
+		end
+		existing[name] = true
+		names[key] = name
 	end
 	return names, objects
 end
