@@ -48,6 +48,8 @@ local _K = {
 	IsServer = RunService:IsServer(),
 	IsStudio = RunService:IsStudio(),
 
+	VERSION = script:WaitForChild("VERSION").Value,
+
 	-- modules
 	Logger = Logger,
 	Util = Util,

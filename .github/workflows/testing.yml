@@ -6,8 +6,8 @@ on:
       - testing
 
 jobs:
-  publish:
-    name: Publish changes to Roblox
+  deploy:
+    name: Publish changes to Roblox and bump version
     runs-on: ubuntu-latest
     environment: testing
 
@@ -15,6 +15,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+
+      - name: Modify VERSION.txt
+        run: echo "$(git rev-parse --short HEAD)" > VERSION.txt
+
+      - name: Bump version
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Bump version
+          file_pattern: VERSION.txt
 
       - uses: Roblox/setup-foreman@v1
         with:

@@ -2,6 +2,9 @@
 	"name": "kohls-admin",
 	"emitLegacyScripts": false,
 	"tree": {
-		"$path": "MainModule"
+		"$path": "MainModule",
+		"VERSION": {
+			"$path": "VERSION.txt"
+		}
 	}
 }
