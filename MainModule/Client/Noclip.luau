@@ -114,7 +114,7 @@ function Noclip.fly(enabled: boolean)
 end
 
 function Noclip.noclip(enabled: boolean)
-	if not enabled == not noclipping then
+	if not enabled == not FlyEnabled then
 		return
 	end
 
