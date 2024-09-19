@@ -91,6 +91,9 @@ _K.Remote.Members.OnClientEvent:Connect(function(members)
 end)
 
 _K.Remote.Log.OnClientEvent:Connect(function(log)
+	if not _K.client.ready then
+		return
+	end
 	-- TODO: PERF: add to sorted list and filtered list directly
 	table.insert(_K.Data.logs, log)
 	if #_K.Data.logs > 1e5 then
