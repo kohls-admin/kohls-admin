@@ -976,13 +976,9 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if Jail.Connections[player] then
-					Jail.Connections[player]:Disconnect()
-					Jail.Connections[player] = nil
-				end
-				if Jail.Parts[player] then
-					Jail.Parts[player]:Destroy()
-					Jail.Parts[player] = nil
+				if Jail.Parts[player.UserId] then
+					Jail.Parts[player.UserId]:Destroy()
+					Jail.Parts[player.UserId] = nil
 				end
 			end
 		end,
