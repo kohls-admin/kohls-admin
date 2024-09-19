@@ -21,5 +21,6 @@
 			"label": "Rojo"
 		}
 	},
-	"postCreateCommand": "aftman install --no-trust-check && npm i -g moonwave"
+	"postCreateCommand": "aftman install --no-trust-check && npm i -g moonwave",
+	"remoteUser": "root"
 }
