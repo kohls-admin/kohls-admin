@@ -13,14 +13,16 @@ local maxSpeed = 512
 local accelDuration = 16
 local lastStop = os.clock()
 
-local flyCFrame = CFrame.new()
+local Noclip = {
+	flyCFrame = CFrame.new(),
+}
 local function FlyStep(delta)
 	if not (Character and Humanoid and Character.PrimaryPart and not Character:FindFirstChild("kFreeze")) then
 		return
 	end
 
 	local cameraCFrame = workspace.CurrentCamera.CFrame
-	local newCFrame = cameraCFrame.Rotation + flyCFrame.Position
+	local newCFrame = cameraCFrame.Rotation + Noclip.flyCFrame.Position
 	local moveVector = cameraCFrame:VectorToWorldSpace(ControlModule:GetMoveVector())
 	local up = Humanoid.Jump and 1 or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and -1 or 0
 
@@ -30,8 +32,8 @@ local function FlyStep(delta)
 	else
 		lastStop = os.clock()
 	end
-	flyCFrame = flyCFrame:lerp(newCFrame, 0.25)
-	Character.PrimaryPart.CFrame = flyCFrame
+	Noclip.flyCFrame = Noclip.flyCFrame:lerp(newCFrame, 0.25)
+	Character.PrimaryPart.CFrame = Noclip.flyCFrame
 	Character.PrimaryPart.AssemblyLinearVelocity = Vector3.zero
 	Character.PrimaryPart.AssemblyAngularVelocity = Vector3.zero
 end
@@ -49,7 +51,7 @@ local function Fly(enable)
 	if enable then
 		Humanoid.PlatformStand = true
 		if FlyEnabled and not FlyConnection then
-			flyCFrame = Character.PrimaryPart.CFrame
+			Noclip.flyCFrame = Character.PrimaryPart.CFrame
 			FlyConnection = RunService.Heartbeat:Connect(FlyStep)
 		end
 	else
@@ -105,8 +107,6 @@ LocalPlayer.CharacterAdded:Connect(onCharacter)
 if LocalPlayer.Character then
 	onCharacter(LocalPlayer.Character)
 end
-
-local Noclip = {}
 
 function Noclip.fly(enabled: boolean)
 	FlyEnabled = enabled
