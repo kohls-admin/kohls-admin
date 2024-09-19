@@ -1,0 +1,26 @@
+{
+	"name": "Kohl's Admin",
+	"image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+	"features": {
+		"ghcr.io/ryanlua/features/rojo:0.2.0": {
+			"version": "latest",
+			"toolchainManager": "aftman"
+		},
+		"ghcr.io/devcontainers/features/node:1": {}
+	},
+	"forwardPorts": [
+		3000,
+		34872
+	],
+	"portsAttributes": {
+		"3000": {
+			"label": "Moonwave",
+			"onAutoForward": "openPreview"
+		},
+		"34872": {
+			"label": "Rojo"
+		}
+	},
+	"postCreateCommand": "aftman install --no-trust-check && npm i -g moonwave",
+	"remoteUser": "root"
+}
