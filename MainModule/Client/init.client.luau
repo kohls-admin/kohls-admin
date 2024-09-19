@@ -5,6 +5,7 @@ local UI = _K.UI
 _K.client = {
 	CommandBar = require(script:WaitForChild("CommandBar")),
 	TopbarPlus = require(script:WaitForChild("TopbarPlus")),
+	UserFrame = require(script:WaitForChild("UserFrame")),
 
 	ready = false,
 	hotkeys = {
