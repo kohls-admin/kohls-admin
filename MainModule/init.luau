@@ -115,6 +115,7 @@ end
 --------------------------
 
 local function playerAdded(player: Player)
+	task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
 	if _K.Services.RunService:IsStudio() then
 		_K.Auth.userRoleAdd(player.UserId, "creator")
 	end
@@ -295,6 +296,9 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 	end)
 
 	_K.Util.SafePlayerAdded(playerAdded)
+	_K.Util.Services.Players.PlayerRemoving:Connect(function(player)
+		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId)
+	end)
 
 	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
 
