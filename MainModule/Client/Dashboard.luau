@@ -77,11 +77,13 @@ local function dashboardToggle()
 end
 _K.client.hotkeys.dashboard.callback = dashboardToggle
 
+local buttonEnabled = _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
 local dashboardButton = TopbarPlus.new()
 	:setName("KADashboardIcon")
 	:setCaption("Kohl's Admin Dashboard")
 	:setImage(10650723871)
 	:setOrder(-1)
+	:setEnabled(buttonEnabled)
 	:bindEvent("toggled", dashboardToggle)
 	:modifyTheme({ "Widget", "BorderSize", 0 })
 local dashboardButtonIcon = dashboardButton:getInstance("IconImage")

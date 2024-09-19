@@ -11,6 +11,15 @@ local Noclip = require(script.Parent.Noclip)
 local Notify = require(script.Parent.Notify)
 local UserFrame = require(script.Parent.UserFrame)
 
+local function updateInterfaceAuth()
+	-- TODO: recheck visibility for all restricted UIs
+	local buttonEnabled = _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
+	print(_K.Data.settings.dashboardButtonRank, _K.Auth.getRank(UI.LocalPlayer.UserId), buttonEnabled)
+	UI.Scope.dashboardButton:setEnabled(buttonEnabled)
+	UI.Scope.dashboard.Commands:updateList()
+end
+UI.Scope.updateInterfaceAuth = updateInterfaceAuth
+
 Remote.Announce.OnClientEvent:Connect(Announce)
 Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
 Remote.Notify.OnClientEvent:Connect(function(text: string, from: number?, noteType: string?)
@@ -103,6 +112,9 @@ end)
 _K.Remote.Setting.OnClientEvent:Connect(function(key, value)
 	_K.Data.settings[key] = value
 	UI.Scope.settings[key]:set(value)
+	if key == "dashboardButtonRank" or key == "freeAdmin" then
+		updateInterfaceAuth()
+	end
 end)
 
 _K.Remote.Settings.OnClientEvent:Connect(function(settings)
@@ -115,12 +127,12 @@ end)
 
 _K.Remote.Role.OnClientEvent:Connect(function(role, roleData)
 	_K.Data.roles[role] = roleData
-	UI.Scope.dashboard.Commands:updateList()
+	updateInterfaceAuth()
 end)
 
 _K.Remote.Roles.OnClientEvent:Connect(function(roles)
 	_K.Util.Table.merge(_K.Data.roles, roles)
-	UI.Scope.dashboard.Commands:updateList()
+	updateInterfaceAuth()
 end)
 
 -- initial remote connection
@@ -154,7 +166,7 @@ local greetings = {
 }
 
 local initCon
-initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings)
+initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans, logs, roles)
 	initCon:Disconnect()
 	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
@@ -165,6 +177,21 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings)
 		_K.Data.settings[key] = value
 		UI.Scope.settings[key]:set(value)
 	end
+
+	if bans then
+		_K.Util.Table.merge(_K.Data.bans, bans)
+		UI.Scope.bans:set(_K.Data.bans)
+	end
+
+	if logs then
+		table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)
+		table.sort(_K.Data.logs, _K.Data.sortTime)
+		task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
+	end
+
+	_K.Util.Table.merge(_K.Data.roles, roles)
+
+	updateInterfaceAuth()
 
 	-- join notification
 

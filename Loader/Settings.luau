@@ -54,6 +54,17 @@ local Settings = {
 		vip = {},
 	},
 
+	--[[
+	Toggles visibility of the Kohl's Admin Dashboard Button in the Topbar. Set it to math.huge to never show.
+		0	defaultRole
+		1	vip
+		2	mod
+		3	admin
+		4	superadmin
+		5	creator
+	]]
+	dashboardButtonRank = 0,
+
 	-- TODO: theme configuration
 	-- TODO: command permissions and role definitions
 }

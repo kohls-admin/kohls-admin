@@ -48,6 +48,7 @@ local Data = {
 		vip = true,
 		mutableHooks = false,
 		vipGameCatalogEnabled = true,
+		dashboardButtonRank = 0,
 	},
 
 	async = {

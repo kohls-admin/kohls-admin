@@ -158,6 +158,7 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		_K.Data.settings.prefix = loaderSettings.prefix
 		_K.Data.settings.vip = loaderSettings.vip
 		_K.Data.settings.vipGameCatalogEnabled = loaderSettings.vipGameCatalogEnabled
+		_K.Data.settings.dashboardButtonRank = loaderSettings.dashboardButtonRank
 
 		task.spawn(_K.Data.initialize, loaderSettings.dataStoreKey)
 
@@ -229,14 +230,10 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 	-- server network events
 
 	_K.Remote.Init.OnServerEvent:Connect(function(player)
-		_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings)
-		_K.Remote.Roles:FireClient(player, _K.Data.roles)
-		if _K.Auth.hasPermission(player.UserId, "ban") or _K.Auth.hasPermission(player.UserId, "kick") then
-			_K.Remote.Bans:FireClient(player, _K.Data.bans)
-		end
-		if _K.Auth.hasPermission(player.UserId, "logs") then
-			_K.Remote.Logs:FireClient(player, _K.Data.logs)
-		end
+		local bans = (_K.Auth.hasPermission(player.UserId, "ban") or _K.Auth.hasPermission(player.UserId, "kick"))
+			and _K.Data.bans
+		local logs = _K.Auth.hasPermission(player.UserId, "logs") and _K.Data.logs
+		_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings, bans, logs, _K.Data.roles)
 	end)
 
 	_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string, chatted: boolean?)
