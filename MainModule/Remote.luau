@@ -28,6 +28,7 @@ local Remote = {
 	Settings = _REMOTE,
 
 	RequestCommand = _REMOTECALL,
+	Vote = _REMOTECALL,
 }
 
 for name, base in Remote do
