@@ -1,0 +1,45 @@
+name: Bug Report 🐛
+description: Report a problem you encountered with Kohl's Admin
+labels: ["bug"]
+body:
+  - type: checkboxes
+    attributes:
+      label: Have you searched for existing issues? 🔍
+      description: Please confirm that you've checked if this issue has already been reported.
+      options:
+        - label: I have searched the existing open and closed issues.
+          required: true
+
+  - type: textarea
+    id: ver
+    attributes:
+      label: Kohl's Admin Version 🔢
+      description: Include the version from the `;about` or `;version` commands.
+    validations:
+      required: true
+
+  - type: textarea
+    id: desc
+    attributes:
+      label: What Happened? 🤔
+      description: Describe what went wrong in detail.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to Reproduce 🪜
+      description: Provide clear steps so someone else can see the issue too.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Evidence (logs, errors, images, videos) 📎
+      description: |
+        Attach anything that helps explain the problem.
+        * **Logs:** Use the `;logs` command.
+        * **Errors:** Press `F9` or type `/console` in chat.
+        **Please ATTACH files, don't paste them directly.**"
