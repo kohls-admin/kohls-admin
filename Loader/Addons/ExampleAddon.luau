@@ -11,7 +11,7 @@ export type ArgumentDefinition = {
 
 -- addons not ending in "Client" or "Server" will run in both contexts
 return function(_K)
-	print("Hello World from ExampleAddon! IsServer:", _K.IsServer)
+	_K.log(`Hello World from ExampleAddon!`, "INFO")
 
 	_K.Registry.registerCommand(_K, {
 		name = "customcommand",
@@ -41,7 +41,7 @@ return function(_K)
 
 		env = function(_K)
 			-- This will only run once on each server
-			print("Hello world from ExampleAddon customcommand env! IsServer:", _K.IsServer)
+			_K.log(`Hello World from ExampleAddon customcommand env!`, "INFO")
 
 			-- This table is passed to the `run` function as `context.env`
 			return {
@@ -51,7 +51,7 @@ return function(_K)
 
 		envClient = function(_K)
 			-- This will only run once on each client
-			print("Hello world from ExampleAddon envClient! IsServer:", _K.IsServer)
+			_K.log(`Hello World from ExampleAddon customcommand envClient!`, "INFO")
 
 			-- This table is passed to the `runClient` function as `context.env`
 			return {
