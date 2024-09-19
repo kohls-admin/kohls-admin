@@ -11,7 +11,7 @@ local ControlModule = PlayerModule:GetControls()
 local minSpeed = 32
 local maxSpeed = 512
 local accelDuration = 16
-local lastStop = elapsedTime()
+local lastStop = os.clock()
 
 local flyCFrame = CFrame.new()
 local function FlyStep(delta)
@@ -25,10 +25,10 @@ local function FlyStep(delta)
 	local up = Humanoid.Jump and 1 or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and -1 or 0
 
 	if up ~= 0 or moveVector.x ~= 0 or moveVector.z ~= 0 then
-		local speed = minSpeed + (maxSpeed - minSpeed) * math.clamp((elapsedTime() - lastStop) / accelDuration, 0, 1)
+		local speed = minSpeed + (maxSpeed - minSpeed) * math.clamp((os.clock() - lastStop) / accelDuration, 0, 1)
 		newCFrame += Vector3.new(moveVector.X, moveVector.Y + up, moveVector.Z).Unit * (delta * speed) * 4
 	else
-		lastStop = elapsedTime()
+		lastStop = os.clock()
 	end
 	flyCFrame = flyCFrame:lerp(newCFrame, 0.25)
 	Character.PrimaryPart.CFrame = flyCFrame
@@ -45,13 +45,17 @@ local function Fly(enable)
 	if not (Character and Humanoid and Character.PrimaryPart) then
 		return
 	end
-	lastStop = elapsedTime()
+	lastStop = os.clock()
 	if enable then
+		Humanoid.PlatformStand = true
 		if FlyEnabled and not FlyConnection then
 			flyCFrame = Character.PrimaryPart.CFrame
 			FlyConnection = RunService.Heartbeat:Connect(FlyStep)
 		end
 	else
+		if Humanoid.PlatformStand then
+			Humanoid.PlatformStand = false
+		end
 		FlyConnection = nil
 	end
 end
@@ -80,7 +84,12 @@ local function onCharacter(character)
 	if not noclipping then
 		return
 	end
-
+	if not Humanoid:GetAttribute("_KStateEnabledJumping") then
+		Humanoid:SetAttribute("_KStateEnabledJumping", Humanoid:GetStateEnabled(Enum.HumanoidStateType.Jumping))
+		Humanoid:SetAttribute("_KStateEnabledFallingDown", Humanoid:GetStateEnabled(Enum.HumanoidStateType.FallingDown))
+		Humanoid:SetAttribute("_KStateEnabledRagdoll", Humanoid:GetStateEnabled(Enum.HumanoidStateType.Ragdoll))
+	end
+	Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 	Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
 	Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
 
@@ -126,8 +135,12 @@ function Noclip.noclip(enabled: boolean)
 		onCharacter(LocalPlayer.Character)
 	else
 		Humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-		Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-		Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+		Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, Humanoid:GetAttribute("_KStateEnabledJumping"))
+		Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, Humanoid:GetAttribute("_KStateEnabledFallingDown"))
+		Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, Humanoid:GetAttribute("_KStateEnabledRagdoll"))
+		Humanoid:SetAttribute("_KStateEnabledJumping", nil)
+		Humanoid:SetAttribute("_KStateEnabledFallingDown", nil)
+		Humanoid:SetAttribute("_KStateEnabledRagdoll", nil)
 
 		for _, descendant in LocalPlayer.Character:GetDescendants() do
 			if descendant:IsA("BasePart") then
@@ -147,9 +160,9 @@ UserInputService.JumpRequest:Connect(function()
 		return
 	end
 	lastJump = now
-	if FlyEnabled and duration <= 0.25 then
+	if FlyEnabled and (duration <= 0.25 or not flying) then
 		debounceJump = true
-		task.delay(if not flying then 0.5 else 0.1, function()
+		task.delay(if not flying then 1 else 0.1, function()
 			debounceJump = nil
 			lastJump = 0
 		end)
