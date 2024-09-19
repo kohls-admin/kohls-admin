@@ -39,6 +39,10 @@ return {
 				Id = 83478451, -- stevendahfish
 				Tooltip = "Documentation and quality assurance",
 			},
+			{
+				Id = 345072461, -- raenlua
+				Tooltip = "Development Containers",
+			},
 		},
 	},
 	{
@@ -64,6 +68,7 @@ return {
 			130170862, -- matsagor1
 			75214485, -- ericance
 			1560379748, -- mosha
+			200565345, -- easternbloxxer
 			107192912, -- britishtrainspotting
 			2258246, -- emp
 			129134882, -- horracecat
