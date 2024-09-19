@@ -197,12 +197,12 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		if addons then
 			for _, addon in addons:GetChildren() do
 				if addon:IsA("ModuleScript") then
-					if string.find(addon.Name, "Server$") then
+					if string.find(addon.Name, "Server", 1, true) then
 						addon.Parent = serverAddons
 						task.spawn(function()
 							require(addon)(_K)
 						end)
-					elseif not string.find(addon.Name, "Client$") then
+					elseif not string.find(addon.Name, "Client", 1, true) then
 						task.spawn(function()
 							require(addon)(_K)
 						end)
