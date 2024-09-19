@@ -157,7 +157,7 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		_K.Util.Table.merge(_K.Data.loaderSettings, loaderSettings)
 		_K.Data.settings.prefix = loaderSettings.prefix
 		_K.Data.settings.vip = loaderSettings.vip
-		_K.Data.settings.vipGameCatalogEnabled = loaderSettings.vipGameCatalogEnabled
+		_K.Data.settings.gameHubEnabled = loaderSettings.gameHubEnabled
 		_K.Data.settings.dashboardButtonRank = loaderSettings.dashboardButtonRank
 
 		task.spawn(_K.Data.initialize, loaderSettings.dataStoreKey)
