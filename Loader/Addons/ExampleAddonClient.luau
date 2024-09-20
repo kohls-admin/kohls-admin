@@ -1,4 +1,4 @@
--- addons ending with "Client" will only run on the player's computer!
+-- addons with "Client" in their name will only run on the player's computer!
 return function(_K)
 	-- _K.UI.new "TextLabel" {
 	-- 	Parent = _K.UI.LayerTop,

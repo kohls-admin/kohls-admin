@@ -1,5 +1,3 @@
--- addons ending with "Client" will only run on the player's computer!
-
 local loremIpsum = {
 	"Lorem",
 	"ipsum",
