@@ -45,6 +45,7 @@ return {
 			end
 			table.clear(jailParts)
 			context._K.Flux.Scope.discoCleanup()
+			context._K.Remote.StartCountdown:FireAllClients()
 		end,
 	},
 	{ -- TODO: need to set up a way to set public logs
@@ -200,6 +201,84 @@ return {
 						context._K.Remote.Announce:FireClient(player, msg, context.from)
 					end
 				end)
+			end
+		end,
+	},
+	{
+		name = "countdown",
+		aliases = { "cd" },
+		description = "Starts a countdown.",
+		args = {
+			{
+				type = "integer",
+				name = "Duration",
+				description = "The duration of the countdown, in seconds.",
+				optional = true,
+			},
+		},
+		envClient = function(_K)
+			local countdown, progress
+			_K.Remote.StartCountdown.OnClientEvent:Connect(function(start, duration)
+				if countdown then
+					countdown:Disconnect()
+				end
+				if progress then
+					progress:Destroy()
+				end
+				if not start then
+					return
+				end
+
+				local time = _K.UI.new "TextLabel" {
+					Name = "Time",
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Size = UDim2.new(1, 0, 1, 0),
+					BackgroundTransparency = 1,
+					Position = UDim2.new(0.5, 0, 0.5, 0),
+					Font = _K.UI.Theme.Font,
+					TextSize = 100,
+					TextColor3 = Color3.new(),
+					TextStrokeColor3 = Color3.new(1, 1, 1),
+					TextStrokeTransparency = 0.5,
+					Text = duration,
+					ZIndex = 2,
+				}
+				progress = _K.UI.new "CircleProgress" {
+					Parent = _K.UI.LayerTopInset,
+					Position = UDim2.fromOffset(math.floor(_K.UI.LayerTop.AbsoluteSize.X / 2) - 64, 0),
+					Size = UDim2.new(0, 128, 0, 128),
+					ZIndex = -1,
+					time,
+				}
+
+				_K.UI.Sound.Hover02:Play()
+
+				countdown = _K.Util.Services.RunService.Heartbeat:Connect(function()
+					local delta = workspace:GetServerTimeNow() - start
+					if delta > duration then
+						countdown:Disconnect()
+						progress:Destroy()
+						_K.UI.Sound.Notification_High:Play()
+						return
+					end
+					progress:setProgress(1 - math.clamp(delta / duration, 0, 1))
+					local newText = tostring(math.clamp(math.floor(duration - delta) + 1, 0, duration))
+					if newText ~= time.Text then
+						_K.UI.Sound.Hover02:Play()
+					end
+					time.Text = newText
+				end)
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.StartCountdown }
+		end,
+
+		run = function(context, duration)
+			if duration then
+				context.env.remote:FireAllClients(workspace:GetServerTimeNow(), math.min(duration, 120))
+			else
+				context.env.remote:FireAllClients()
 			end
 		end,
 	},
