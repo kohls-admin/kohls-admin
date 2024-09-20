@@ -5,7 +5,7 @@ BaseClass.__index = BaseClass
 
 function BaseClass:Destroy()
 	for key, value in self do
-		if UI.isState(value) or typeof(value) == "Instance" then
+		if typeof(value) == "Instance" then
 			value:Destroy()
 		end
 	end
