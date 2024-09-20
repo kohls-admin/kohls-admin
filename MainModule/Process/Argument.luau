@@ -50,11 +50,12 @@ function Argument:transform()
 
 		local arg = self._K.Util.String.stripQuotes(rawArg)
 		if argType.transform then
+			local optional = not string.find(arg, "%S") and self.definition.optional
 			arg = argType.transform(arg)
-			if arg == nil then
+			if arg == nil and not optional then
 				self.command.invalidArg = rawArg
 				self.command.invalidPos = self.argPos
-				self.command.invalidMessage = "Invalid argument: "
+				self.command.invalidMessage = "Invalid transform: "
 					.. if self._K.Util.String.trim(rawArg) == "" then "nil" else rawArg
 				break
 			end
