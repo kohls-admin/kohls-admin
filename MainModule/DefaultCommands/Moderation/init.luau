@@ -1021,7 +1021,7 @@ return {
 		end,
 
 		run = function(context, players, fps)
-			local undo = (not fps and context.alias == "fps") or string.find(context.alias, "un", 1, true) == 1
+			local undo = context.undo or (not fps and context.alias == "fps")
 			for _, player in players do
 				if undo then
 					player:SetAttribute("_KFPSLimit", nil)

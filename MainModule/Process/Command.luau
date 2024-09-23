@@ -19,6 +19,7 @@ function Command.new(_K, commandAlias, commandDefinition, commandArray, from, te
 		fromPlayer = Players:GetPlayerByUserId(from),
 		fromRank = _K.Auth.getRank(from),
 		text = text,
+		undo = string.find(commandAlias, "un", 1, true) == 1,
 
 		argIndex = 1,
 		argLength = #commandDefinition.args,
