@@ -46,6 +46,32 @@ return {
 		end,
 	},
 	{
+		name = "hidelogs",
+		aliases = { "unhidelogs" },
+		description = "Hides the Kohl's Admin logs of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose logs to hide.",
+				shouldRequest = true,
+			},
+		},
+		run = function(context, players)
+			if context.undo then -- defer to hide the "unhidelogs" command usage
+				task.defer(function()
+					for _, player in players do
+						context._K.Data.logsHidden[player.UserId] = not context.undo
+					end
+				end)
+			else
+				for _, player in players do
+					context._K.Data.logsHidden[player.UserId] = true
+				end
+			end
+		end,
+	},
+	{
 		name = "clearterrain",
 		aliases = { "cterrain" },
 		description = "Removes the terrain.",

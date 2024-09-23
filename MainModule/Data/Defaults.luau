@@ -149,6 +149,8 @@ local Data = {
 		},
 	},
 
+	logsHidden = {},
+
 	gameClosing = false,
 	pendingSaveMain = false,
 	pendingSaveLogs = false,
