@@ -503,6 +503,7 @@ return {
 				noclipCache[player] = player.DevCameraOcclusionMode
 				player.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
 				context._K.Remote.Noclip:FireClient(player, true)
+				context._K.Remote.Notify:FireClient(player, `Double tap <b>jump</b> to stop flying.`)
 			end
 		end,
 	},
