@@ -195,6 +195,9 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		-- define main roles
 		for role, users in loaderSettings.roles do
 			for _, userId in users do
+				if userId <= 0 then
+					continue
+				end
 				_K.Auth.userRoleAdd(userId, role)
 			end
 		end
