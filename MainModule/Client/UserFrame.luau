@@ -31,6 +31,12 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 	local badge = "system"
 	local color = "#fff"
 
+	if from then
+		displayName = "Loading..."
+		userName = "Unknown"
+		badge = "?"
+	end
+
 	local imageLabel = UI.new "ImageLabel" {
 		Name = "Icon",
 		BackgroundTransparency = 0.75,
@@ -56,13 +62,11 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		TextColor3 = UI.Theme.PrimaryText,
 		Text = `<b>{displayName}</b>`,
 		TextSize = UI.Theme.FontSizeLarge,
-		TextTruncate = Enum.TextTruncate.SplitWord,
 		TextXAlignment = "Left",
 		Font = UI.Theme.Font,
 		RichText = true,
 
 		AutomaticSize = Enum.AutomaticSize.XY,
-		Size = UI.compute(UDim2.fromOffset, 0, UI.Theme.FontSizeLarge),
 	}
 
 	local userNameLabel = UI.new "TextLabel" {
@@ -72,14 +76,15 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		TextColor3 = UI.Theme.PrimaryText,
 		Text = `<font transparency="0.5"><b>@{userName}</b></font>`,
 		TextSize = UI.Theme.FontSizeSmall,
-		TextTruncate = Enum.TextTruncate.SplitWord,
 		TextXAlignment = "Left",
 		Font = UI.Theme.Font,
 		RichText = true,
 
 		AutomaticSize = Enum.AutomaticSize.XY,
-		Size = UI.compute(UDim2.fromOffset, 0, UI.Theme.FontSizeSmall),
+		Position = UI.computeFrom(UDim2.fromOffset, 0, UI.Theme.FontSizeLarge),
 	}
+
+	local displaySize = UI.state(displayNameLabel, "AbsoluteSize")
 
 	local badgeLabel = if badgeEnabled
 		then UI.new "TextLabel" {
@@ -91,13 +96,15 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			TextSize = UI.compute(function(use)
 				return use(UI.Theme.FontSizeLarge) - 8
 			end),
-			TextTruncate = Enum.TextTruncate.SplitWord,
 			TextXAlignment = "Left",
 			Font = UI.Theme.FontMono,
 			RichText = true,
 
 			AutomaticSize = Enum.AutomaticSize.X,
 			Size = UI.computeFrom(UDim2.fromOffset, 0, UI.Theme.FontSizeLarge),
+			Position = UI.compute(function(use)
+				return UDim2.fromOffset(use(displaySize).X + 4, 0)
+			end),
 
 			UI.new "UICorner" {
 				CornerRadius = UI.Theme.CornerDiameter,
@@ -132,8 +139,8 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 
 		-- name
 		local info = _K.Util.getUserInfo(from)
-		displayNameLabel.Text = `<b>{name or info.DisplayName}</b>`
-		userNameLabel.Text = `<font transparency="0.5"><b>@{info.Username}</b></font>`
+		displayNameLabel.Text, userNameLabel.Text =
+			`<b>{name or info.DisplayName}</b>`, `<font transparency="0.5"><b>@{info.Username}</b></font>`
 	end)
 
 	return UI.new "Frame" {
@@ -142,43 +149,23 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		AutomaticSize = Enum.AutomaticSize.XY,
 		BackgroundTransparency = 1,
 
-		UI.new "UIListLayout" {
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UI.Theme.PaddingHalf,
-			FillDirection = Enum.FillDirection.Horizontal,
-		},
-
 		imageLabel,
-
 		UI.new "Frame" {
 			Name = "From",
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
+			Position = UI.compute(function(use)
+				return UDim2.fromOffset(use(UI.Theme.FontSizeDouble) + 4, 0)
+			end),
 
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				HorizontalFlex = Enum.UIFlexAlignment.Fill,
-			},
 			UI.new "UIFlexItem" {
 				FlexMode = Enum.UIFlexMode.Shrink,
 			},
 
-			UI.new "Frame" {
-				AutomaticSize = Enum.AutomaticSize.XY,
-				BackgroundTransparency = 1,
-
-				UI.new "UIListLayout" {
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UI.Theme.PaddingHalf,
-					FillDirection = Enum.FillDirection.Horizontal,
-				},
-
-				displayNameLabel,
-				badgeLabel,
-			},
-
+			displayNameLabel,
 			userNameLabel,
+			badgeLabel,
 		},
 	}
 end

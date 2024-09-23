@@ -117,6 +117,11 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 	}
 
 	UI.edit(userFrame, {
+		UI.new "UIListLayout" {
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 4),
+			FillDirection = Enum.FillDirection.Horizontal,
+		},
 		UI.new "Frame" {
 			LayoutOrder = 8,
 			Name = "Spacer",
