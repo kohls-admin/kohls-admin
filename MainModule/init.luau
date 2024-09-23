@@ -163,7 +163,18 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		_K.Data.settings.gameHubEnabled = loaderSettings.gameHubEnabled
 		_K.Data.settings.dashboardButtonRank = loaderSettings.dashboardButtonRank
 
-		task.spawn(_K.Data.initialize, loaderSettings.dataStoreKey)
+		-- private server datastore
+		local dataStoreKey = loaderSettings.dataStoreKey
+		if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+			for role, users in loaderSettings.roles do
+				if role ~= "creator" and table.find(users, game.PrivateServerOwnerId) then
+					dataStoreKey ..= game.PrivateServerOwnerId
+					break
+				end
+			end
+		end
+
+		task.spawn(_K.Data.initialize, dataStoreKey)
 
 		-- register creator
 		task.spawn(function()
