@@ -984,6 +984,55 @@ return {
 		end,
 	},
 	{
+		name = "fps",
+		aliases = { "lag", "unlag", "unfps" },
+		description = "Limits the frames per second of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose frames per second to limit.",
+				shouldRequest = true,
+			},
+			{
+				type = "number",
+				name = "FPS",
+				description = "The frames per second limit.",
+				optional = true,
+			},
+		},
+		envClient = function(_K)
+			local limitTime = 0
+			_K.Remote.FPS.OnClientEvent:Connect(function(fps: number?)
+				fps = fps or 32
+				local t = tick()
+				limitTime = t
+
+				while t == limitTime and _K.UI.LocalPlayer:GetAttribute("_KFPSLimit") do
+					local nextStep = tick() + (1 / fps :: number)
+					repeat
+					until tick() > nextStep
+					task.wait()
+				end
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.FPS }
+		end,
+
+		run = function(context, players, fps)
+			local undo = (not fps and context.alias == "fps") or string.find(context.alias, "un", 1, true) == 1
+			for _, player in players do
+				if undo then
+					player:SetAttribute("_KFPSLimit", nil)
+					continue
+				end
+				player:SetAttribute("_KFPSLimit", true)
+				context.env.remote:FireClient(player, fps)
+			end
+		end,
+	},
+	{
 		name = "lock",
 		description = "Locks the character of one or more player(s).",
 		args = {
