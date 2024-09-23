@@ -37,12 +37,30 @@ return {
 	},
 	{
 		name = "clearlogs",
-		aliases = {},
-		description = "Removes all Kohl's Admin logs.",
+		description = "Removes all Kohl's Admin server logs.",
 		args = {},
+		envClient = function(_K)
+			_K.Remote.ClearLogs.OnClientEvent:Connect(function()
+				local logs = _K.Data.logs
+				for index, log in logs do
+					if log.client then
+						continue
+					end
+					logs[index] = nil
+				end
+				_K.Util.Table.settle(logs)
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.ClearLogs }
+		end,
+
 		run = function(context)
 			table.clear(context._K.Data.logs)
-			-- network to clients
+			context._K.Data.Store.removeAsync("Logs")
+			for _, player in context._K.Util.Services.Players:GetPlayers() do
+				context._K.Remote.ClearLogs:FireClient(player)
+			end
 		end,
 	},
 	{
