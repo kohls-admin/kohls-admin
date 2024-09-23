@@ -127,7 +127,7 @@ function Command:run()
 		return false, self.commandError
 	end
 
-	local ok, err = pcall(run, self, unpack(self.preparedArgs))
+	local ok, err = xpcall(run, debug.traceback, self, unpack(self.preparedArgs))
 	self.commandRan = ok
 	self.commandError = err
 	self._K.Hook.postCommand:Fire(self)
