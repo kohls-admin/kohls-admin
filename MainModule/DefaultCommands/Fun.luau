@@ -548,7 +548,7 @@ return {
 				then
 					local existing = player.Character:FindFirstChild("_KRocket")
 					if existing then
-						existing:Destroy()
+						continue
 					end
 
 					player.Character:FindFirstChildOfClass("Humanoid").Jump = true
