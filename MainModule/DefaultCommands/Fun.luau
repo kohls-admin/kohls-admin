@@ -301,6 +301,139 @@ return {
 		end,
 	},
 	{
+		name = "nuke",
+		aliases = {},
+		description = "Nuke one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to nuke.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			local boomSound = _K.Flux.new "Sound" {
+				SoundId = "rbxassetid://9114224354",
+				EmitterSize = 512,
+				Volume = 2,
+			}
+			local sphere = _K.Util.Services.InsertService:CreateMeshPartAsync(
+				"rbxassetid://116325731356319",
+				Enum.CollisionFidelity.Box,
+				Enum.RenderFidelity.Precise
+			)
+			_K.Flux.edit(sphere, {
+				Name = "Sphere",
+				Color = Color3.new(1, 0, 0),
+				Material = Enum.Material.Neon,
+				Transparency = 0.75,
+				Anchored = true,
+				EnableFluidForces = false,
+				CastShadow = false,
+				CanCollide = false,
+				CanTouch = false,
+				CanQuery = false,
+				Massless = true,
+				Size = Vector3.zero,
+			})
+
+			local function explode(character, position)
+				if character:GetAttribute("_KNuked") then
+					return
+				end
+				character:SetAttribute("_KNuked", true)
+
+				character:BreakJoints()
+				local explosion = Instance.new("Explosion")
+				explosion.ExplosionType = Enum.ExplosionType.NoCraters
+				explosion.Position = position
+				explosion.DestroyJointRadiusPercent = 0
+				explosion.Parent = character
+			end
+
+			return {
+				explode = explode,
+				nuke = function(fromRank, position)
+					local part = sphere:Clone()
+					part.Position = position
+
+					local part2 = sphere:Clone()
+					part2.Color = Color3.new(1, 1, 0)
+					part2.Position = position + Vector3.new(0, 0.1, 0)
+					part2.Parent = part
+
+					local part3 = sphere:Clone()
+					part3.Color = Color3.new(1, 1, 1)
+					part3.Position = position - Vector3.new(0, 0.1, 0)
+					part3.Parent = part
+
+					part.Parent = workspace
+
+					local sound = boomSound:Clone()
+					sound.Parent = part
+					sound:Play()
+					task.delay(2, function()
+						local sound = boomSound:Clone()
+						sound.Volume = 1
+						sound.Parent = part
+						sound:Play()
+					end)
+
+					local start, alpha = tick(), 0
+					repeat
+						alpha = _K.Util.Services.TweenService:GetValue(
+							1 - (1 - math.clamp((tick() + 1 - start) / 8, 0, 1)) ^ 2,
+							Enum.EasingStyle.Bounce,
+							Enum.EasingDirection.In
+						)
+						local distance = alpha * 512
+						part.Size = Vector3.one * distance
+						part2.Size = part.Size * 0.9
+						part3.Size = part.Size * 0.5
+						for _, player in _K.Util.Services.Players:GetPlayers() do
+							local direction = (player.Character and not player.Character:GetAttribute("_KNuked"))
+								and position - player.Character:GetPivot().Position
+							if direction and direction.Magnitude <= distance / 2 then
+								explode(player.Character, player.Character:GetPivot().Position + direction.unit)
+							end
+						end
+						task.wait()
+					until alpha == 1
+
+					start, alpha = tick(), 0
+					repeat
+						alpha = _K.Util.Services.TweenService:GetValue(
+							math.clamp((tick() - start) / 1, 0, 1),
+							Enum.EasingStyle.Cubic,
+							Enum.EasingDirection.In
+						)
+						local distance = 512 - 512 * alpha
+						part.Transparency = 0.75 + 0.25 * alpha
+						part2.Transparency = part.Transparency
+						part3.Transparency = part.Transparency
+						part.Size = Vector3.one * distance
+						part2.Size = part.Size * 0.9
+						part3.Size = part.Size * 0.5
+						task.wait()
+					until alpha == 1
+
+					task.wait(4)
+					part:Destroy()
+				end,
+			}
+		end,
+		run = function(context, players, distance)
+			for _, player in players do
+				if player.Character then
+					local position = player.Character:GetPivot().Position
+					context.env.explode(player.Character, position)
+					task.spawn(context.env.nuke, context.fromRank, position)
+				end
+			end
+		end,
+	},
+	{
 		name = "fling",
 		aliases = {},
 		description = "Flings one or more player(s).",
