@@ -296,23 +296,18 @@ return {
 				shouldRequest = true,
 			},
 		},
+		env = function(_K)
+			local punished = {}
+			_K.Flux.Scope.commandPunished = punished
+			return { punished = punished }
+		end,
 
 		run = function(context, players)
 			for _, player in players do
-				if
-					player.Character
-					and not player.Character:GetAttribute("kPunish")
-					and player.Character.PrimaryPart
-					and player.Character.PrimaryPart:FindFirstChildOfClass("Attachment")
-				then
-					player.Character:SetAttribute("kPunish", player.Character:GetPivot())
-					local force = Instance.new("VectorForce")
-					force.Name = "kPunishForce"
-					force.Force = Vector3.new(0, 9e9, 0)
-					force.ApplyAtCenterOfMass = true
-					force.RelativeTo = Enum.ActuatorRelativeTo.World
-					force.Attachment0 = player.Character.PrimaryPart:FindFirstChildOfClass("Attachment")
-					force.Parent = player.Character
+				if player.Character then
+					context.env.punished[player.UserId] = player.Character
+					player.Character.Parent = nil
+					player.Character = nil
 				end
 			end
 		end,
@@ -328,19 +323,34 @@ return {
 				description = "The player(s) to forgive.",
 			},
 		},
+		envClient = function(_K)
+			local function reactivate(script)
+				script.Enabled = true
+			end
+			_K.Remote.RefreshLocalScripts.OnClientEvent:Connect(function(model: Model)
+				for _, descendant in model:GetDescendants() do
+					if descendant:IsA("LocalScript") and descendant.Enabled then
+						descendant.Enabled = false
+						task.defer(reactivate, descendant)
+					end
+				end
+			end)
+		end,
+		env = function(_K)
+			return {
+				remote = _K.Remote.RefreshLocalScripts,
+			}
+		end,
 
 		run = function(context, players)
+			local punished = context._K.Flux.Scope.commandPunished
 			for _, player in players do
-				if player.Character and player.Character:GetAttribute("kPunish") then
-					local force = player.Character:FindFirstChild("kPunishForce")
-					if force then
-						force:Destroy()
-					end
-					if player.Character.PrimaryPart then
-						player.Character.PrimaryPart.AssemblyLinearVelocity = Vector3.zero
-					end
-					player.Character:PivotTo(player.Character:GetAttribute("kPunish"))
-					player.Character:SetAttribute("kPunish", nil)
+				local character = punished[player.UserId]
+				if character then
+					punished[player.UserId] = nil
+					character.Parent = workspace
+					player.Character = character
+					context.env.remote:FireClient(player, character)
 				end
 			end
 		end,
