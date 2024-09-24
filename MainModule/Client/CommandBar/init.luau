@@ -529,7 +529,9 @@ end
 local function hideCommandBar()
 	Input._input.TextEditable = false
 	CommandBar.Visible = false
-	_K.client.TopbarPlus.setTopbarEnabled(true)
+	if _K.client then
+		_K.client.TopbarPlus.setTopbarEnabled(true)
+	end
 	coreGuiEnabled(true)
 end
 
