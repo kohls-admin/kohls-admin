@@ -1,5 +1,6 @@
 .*
 /build
+/dist
 sourcemap.json
 !.moonwave/
 !.devcontainer
