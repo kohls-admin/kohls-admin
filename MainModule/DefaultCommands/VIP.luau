@@ -55,7 +55,8 @@ end
 
 local function resetHumanoidDescription(player)
 	-- reset particles
-	local root = player.Character and player.Character.PrimaryPart
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		or player.Character.PrimaryPart
 	if root then
 		for _, particle in particles do
 			local existing = root:FindFirstChild(particle)
@@ -159,7 +160,8 @@ return {
 
 		run = function(context, players, size, color, secondaryColor)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -193,7 +195,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -224,7 +227,8 @@ return {
 
 		run = function(context, players, color, secondaryColor)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -257,7 +261,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -288,7 +293,8 @@ return {
 
 		run = function(context, players, color, secondaryColor)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -320,7 +326,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -357,7 +364,8 @@ return {
 
 		run = function(context, players, range, color)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -388,7 +396,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -459,7 +468,8 @@ return {
 
 		run = function(context, players, image, color)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -493,7 +503,8 @@ return {
 
 		run = function(context, players, userId)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end

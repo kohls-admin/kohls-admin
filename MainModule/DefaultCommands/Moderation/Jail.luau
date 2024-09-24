@@ -28,7 +28,7 @@ function Jail.new(player)
 		return
 	end
 
-	local root = character and character.PrimaryPart
+	local root = character and (character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart)
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if not (player and root and humanoid) then
 		return
