@@ -86,6 +86,163 @@ return {
 	},
 
 	{
+		name = "dog",
+		aliases = { "horse" },
+		description = "Turns one or more player(s) into dog",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to turn into a dog.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			return {
+				R6 = function(character)
+					if not (character and character.PrimaryPart) then
+						return
+					end
+
+					local torso = character:FindFirstChild("Torso")
+					if not torso then
+						return
+					end
+
+					torso.Transparency = 1
+
+					local neck = torso:FindFirstChild("Neck")
+					local rightShoulder = torso:FindFirstChild("Right Shoulder")
+					local leftShoulder = torso:FindFirstChild("Left Shoulder")
+					local rightHip = torso:FindFirstChild("Right Hip")
+					local leftHip = torso:FindFirstChild("Left Hip")
+
+					if neck then
+						neck.C0 = CFrame.new(0, -0.5, -2) * CFrame.Angles(math.rad(90), math.rad(180), 0)
+					end
+					if rightShoulder then
+						rightShoulder.C0 = CFrame.new(0.5, -1.5, -1.5) * CFrame.Angles(0, math.pi / 2, 0)
+					end
+					if leftShoulder then
+						leftShoulder.C0 = CFrame.new(-0.5, -1.5, -1.5) * CFrame.Angles(0, -math.pi / 2, 0)
+					end
+					if rightHip then
+						rightHip.C0 = CFrame.new(1.5, -1, 1.5) * CFrame.Angles(0, math.pi / 2, 0)
+					end
+					if leftHip then
+						leftHip.C0 = CFrame.new(-1.5, -1, 1.5) * CFrame.Angles(0, -math.pi / 2, 0)
+					end
+
+					local seat = _K.Flux.new "Seat" {
+						Name = "_KDogSeat",
+						Transparency = 0,
+						Color = torso.Color,
+						Material = torso.Material,
+						CFrame = torso.CFrame,
+						CastShadow = false,
+						CanQuery = false,
+						CanCollide = false,
+						Massless = true,
+						Size = Vector3.new(3, 1, 4),
+						TopSurface = 0,
+						BottomSurface = 0,
+					}
+
+					_K.Flux.new "Weld" {
+						Parent = seat,
+						Part0 = torso,
+						Part1 = seat,
+						C1 = CFrame.new(0, 0.5, 0),
+					}
+
+					seat.Parent = character
+				end,
+				R15 = function(character)
+					if not (character and character.PrimaryPart) then
+						return
+					end
+
+					local torso = character:FindFirstChild("UpperTorso")
+					if not torso then
+						return
+					end
+
+					local root = character:FindFirstChild("LowerTorso") and character:FindFirstChild("Root", true)
+					local neck = character:FindFirstChild("Neck", true)
+					local waist = character:FindFirstChild("Waist", true)
+					local rightShoulder = character:FindFirstChild("RightShoulder", true)
+					local leftShoulder = character:FindFirstChild("LeftShoulder", true)
+					local rightHip = character:FindFirstChild("RightHip", true)
+					local leftHip = character:FindFirstChild("LeftHip", true)
+
+					if root then
+						root.C0 *= CFrame.Angles(-math.rad(60), 0, 0) - Vector3.new(0, 0.5, 0)
+					end
+					if waist then
+						waist.C0 *= CFrame.Angles(-math.rad(30), 0, 0)
+					end
+					if neck then
+						neck.C0 *= CFrame.Angles(math.pi / 2, 0, 0)
+					end
+					if rightShoulder then
+						rightShoulder.C0 *= CFrame.Angles(math.pi / 4, 0, 0)
+					end
+					if leftShoulder then
+						leftShoulder.C0 *= CFrame.Angles(math.pi / 4, 0, 0)
+					end
+					if rightHip then
+						rightHip.C0 *= CFrame.Angles(-math.pi / 4, 0, 0)
+					end
+					if leftHip then
+						leftHip.C0 *= CFrame.Angles(-math.pi / 4, 0, 0)
+					end
+
+					local seat = _K.Flux.new "Seat" {
+						Name = "_KDogSeat",
+						Transparency = 1,
+						CastShadow = false,
+						CanQuery = false,
+						CanCollide = false,
+						Massless = true,
+						Size = Vector3.new(2, 1, 2),
+						CFrame = torso.CFrame,
+					}
+
+					_K.Flux.new "Weld" {
+						Parent = seat,
+						Part0 = torso,
+						Part1 = seat,
+						C1 = CFrame.new(0, 0.1, -0.7) * CFrame.Angles(-math.pi / 2, 0, 0),
+					}
+
+					seat.Parent = character
+				end,
+			}
+		end,
+
+		run = function(context, players)
+			for _, player in players do
+				if
+					player.Character
+					and player.Character.PrimaryPart
+					and player.Character:FindFirstChild("Humanoid")
+					and not player.Character:FindFirstChild("_KDogSeat")
+				then
+					local humanoid = player.Character:FindFirstChild("Humanoid")
+					if not humanoid then
+						return
+					end
+
+					if humanoid.RigType == Enum.HumanoidRigType.R6 then
+						context.env.R6(player.Character)
+					else
+						context.env.R15(player.Character)
+					end
+				end
+			end
+		end,
+	},
+	{
 		name = "char",
 		aliases = { "character" },
 		description = "Changes the character of one or more player(s).",
