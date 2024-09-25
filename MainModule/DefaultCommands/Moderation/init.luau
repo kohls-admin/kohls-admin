@@ -562,7 +562,11 @@ return {
 			},
 		},
 		env = function(_K)
-			return { sword = script.Sword:Clone() }
+			local sword = script:FindFirstChild("Sword")
+			if not sword then
+				warn(`Missing {script:GetFullName()}.Sword, sword command won't work!`)
+			end
+			return { sword = sword and sword:Clone() }
 		end,
 
 		run = function(context, players, tools)
