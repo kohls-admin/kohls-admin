@@ -1,5 +1,5 @@
 title = "Kohl's Admin"
-gitRepoUrl = "https://github.com/kohls-admin/main"
+gitRepoUrl = "https://github.com/kohls-admin/kohls-admin"
 gitSourceBranch = "master"
 
 changelog = true
