@@ -1,3 +1,27 @@
+# Contributing
+
+We immensely appreciate all contributions and suggestions from the community!
+
+How do you want to contribute?
+
+- [Codebase](#contributing-codebase)
+- [Documentation](#contributing-docs)
+- [Issues & Suggestions](#contributing-issues)
+- [Questions? (Discord)](https://discord.gg/kohl)
+
+# Contributing (Issues)
+
+Check existing open and **closed** issues to make sure someone else hasn't created one! **We close duplicate issues immediately!**
+
+_If an issue was closed after a fix, but the bug has returned or functionality was lost, please create a new issue!_
+
+- [**Create** Bug Issue](https://github.com/kohls-admin/kohls-admin/issues/new?assignees=&labels=bug&projects=&template=bug.yml)
+- [**Create** Feature Issue](https://github.com/kohls-admin/kohls-admin/issues/new?assignees=&labels=enhancement&projects=&template=feature.yml)
+
+_Please be patient while we address your issue!_
+
+We will close the issue when it is verified to work and merged to the [master](https://github.com/kohls-admin/kohls-admin/tree/master) branch of Kohl's Admin.
+
 # Contributing (Codebase)
 
 To get started with contributing to Kohl's Admin, follow these steps:
@@ -10,7 +34,7 @@ To get started with contributing to Kohl's Admin, follow these steps:
 
 The following assumes you have aftman installed, if not navigate to the [Installation](https://github.com/LPGhatguy/aftman#installation) for Aftman.
 
-1. **Fork the repository:** Create a [fork](https://github.com/kohls-admin/main/fork) of the repository.
+1. **Fork the repository:** Create a [fork](https://github.com/kohls-admin/kohls-admin/fork) of the repository.
 2. **Clone the repository:** Clone your fork locally and change the git config:
 
 ```bash
@@ -19,19 +43,13 @@ git config submodule.recurse true;
 git config pull.rebase true;
 ```
 
-3. **Checkout the testing branch:** The development work is done on the testing branch, which is the most current and unstable version of the codebase. When contributing, make sure to switch to this branch to stay up-to-date:
-
-```bash
-git checkout testing
-```
-
-4. **Install Aftman tools:**
+3. **Install Aftman tools:**
 
 ```bash
 aftman install
 ```
 
-5. **Install Roblox Studio [Rojo](https://rojo.space/) plugin:**
+4. **Install Roblox Studio [Rojo](https://rojo.space/) plugin:**
 
 ```bash
 rojo plugin install
@@ -49,11 +67,27 @@ rojo serve test.project.json
 
 Congratulations! You are ready to start contributing to the codebase portion of the project!
 
+We use the [Roblox Lua Style Guide](https://roblox.github.io/lua-style-guide/) to avoid style arguments.
+
+Here's a [list of issues](https://github.com/kohls-admin/kohls-admin/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to get started with!
+
+### Bug fixes
+
+Please create a corresponding [bug report](https://github.com/kohls-admin/kohls-admin/issues/new?assignees=&labels=bug&projects=&template=bug.yml) if one doesn't already exist. This ensures we have all the necessary information to track and understand the issue.
+
+### New Features
+
+Please create a [feature request](https://github.com/kohls-admin/kohls-admin/issues/new?assignees=&labels=enhancement&projects=&template=feature.yml) before implementing any new features. Pull requests are primarily intended for code review, not for introducing brand-new concepts.
+
+### Draft Pull Request Early
+
+Create a pull request as soon as possible. Mark it as a "draft" to signal that it's a work in progress. This enables us to provide real-time feedback and guidance, streamlining the review process.
+
 # Contributing (Docs)
 
 This project utilizes [Moonwave](https://eryn.io/moonwave/) for managing our documentation.
 
-To contribute to the Kohl's Admin documentation, follow steps 1-3 outlined in the [Contributing (Codebase)](#contributing-codebase) section before moving forward.
+To contribute to the Kohl's Admin documentation, follow steps 1-2 outlined in the [Contributing (Codebase)](#contributing-codebase) section before moving forward.
 
 ## Prerequisites
 
@@ -81,12 +115,6 @@ While we deeply appreciate all contributions, we also recognize that significant
 
 - **Exceptional Impact:** Contributions that significantly advance the project's core goals, introduce major features, or resolve critical issues may be eligible.
 - **Sustained Dedication:** Consistent, high-quality contributions over a prolonged period demonstrate commitment and will be more favorably considered.
-- **Critical Needs:** Contributions that directly address urgent or strategic project needs may also be prioritized.
-
-#### Compensation Structure:
-
-- **Discretionary:** The decision to offer compensation, and the specific amount, will be at the sole discretion of the project maintainers, taking into account the factors mentioned above and the project's available resources.
-- **Transparent Communication:** We will maintain open communication with potential candidates, discussing expectations and possibilities as contributions progress.
 
 #### How to Express Interest:
 

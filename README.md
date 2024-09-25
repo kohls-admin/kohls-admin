@@ -1,13 +1,13 @@
 <div align="center">
 	<img src=".moonwave/static/logo-load-dark.svg" alt="Kohl's Admin" height="150" />
 	<br/>
-	<a href="https://docs.kohl.gg/"><img src="https://img.shields.io/badge/docs-docs.kohl.gg-222" /></a>
-	<a href="https://discord.gg/bwCC7gV"><img src="https://img.shields.io/discord/694630328064671775" /></a>
-	<a href="https://github.com/kohls-admin/main/blob/main/LICENSE"><img src="https://img.shields.io/github/license/kohls-admin/main" alt="License"></a>
-	<a href="https://github.com/kohls-admin/main/graphs/contributors"><img src="https://img.shields.io/github/contributors/kohls-admin/main" alt="Contributors"></a>
-	<a href="https://github.com/kohls-admin/main/issues"><img src="https://img.shields.io/github/issues/kohls-admin/main" alt="GitHub issues"></a>
-	<a href="https://github.com/kohls-admin/main/stargazers"><img src="https://img.shields.io/github/stars/kohls-admin/main" alt="GitHub stars"></a>
-	<a href="https://github.com/kohls-admin/main/network/members"><img src="https://img.shields.io/github/forks/kohls-admin/main" alt="GitHub forks"></a>
+	<a href="https://docs.kohl.gg/"><img src="https://img.shields.io/badge/docs-docs.kohl.gg-222"></a>
+	<a href="https://discord.gg/kohl"><img src="https://img.shields.io/discord/694630328064671775"></a>
+	<a href="https://github.com/kohls-admin/kohls-admin/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/kohls-admin/kohls-admin" alt="License"></a>
+	<a href="https://github.com/kohls-admin/kohls-admin/graphs/contributors"><img src="https://img.shields.io/github/contributors/kohls-admin/kohls-admin" alt="Contributors"></a>
+	<a href="https://github.com/kohls-admin/kohls-admin/issues"><img src="https://img.shields.io/github/issues/kohls-admin/kohls-admin" alt="GitHub issues"></a>
+	<a href="https://github.com/kohls-admin/kohls-admin/stargazers"><img src="https://img.shields.io/github/stars/kohls-admin/kohls-admin" alt="GitHub stars"></a>
+	<a href="https://github.com/kohls-admin/kohls-admin/network/members"><img src="https://img.shields.io/github/forks/kohls-admin/kohls-admin" alt="GitHub forks"></a>
 </div>
 
 <br/><br/>
@@ -20,7 +20,7 @@
 <p align="center"> We are actively working to develop this project as a <b>fully open-source initiative.</b></p>
 
 <p align="center">
-Meaningful contributions are highly appreciated and encouraged! <b>Contributors who wish to be credited will be recognized in the Kohl's Admin </b><code>About</code> <b>tab</b>.
+Contributions are highly appreciated and encouraged! <b>Contributors who wish to be credited will be recognized in the Kohl's Admin </b><code>About</code> <b>tab</b>.
 </p>
 
 # Features
@@ -42,20 +42,20 @@ We welcome and appreciate contributions from the community! If you'd like to get
 **How Contributors Will Be Recognized:**
 
 - **In-Game Credits & Benefits:** Contributors will be credited in every game using Kohl's Admin via the `credits` command and receive special in-game benefits.
-- **Monetary Compensation:** Impactful contributions may also be eligible for monetary compensation. Please see the Contributors Guidelines for more details.
+- **Monetary Compensation:** Impactful contributions may also be eligible for monetary compensation. Please see the [Contributors Guidelines](CONTRIBUTING.md) for more details.
 
 Thank you to all our contributors for helping make this project a success! ❤️
 
-# Issues
+# Ideas & Issues
 
-If you encounter any issues, don't hesitate to open an issue by clicking the button below or using the `Issues` tab at the top of the repository.
+If you have any ideas or encounter any issues, don't hesitate to open an issue by clicking the button below!
 
 <div align="center">
-	<a href="https://github.com/kohls-admin/main/issues/new" target="_blank">
-		<img src="https://img.shields.io/badge/Open_Issue-Click_Here-blue?style=for-the-badge" alt="Open Issue" />
+	<a href="https://github.com/kohls-admin/kohls-admin/issues/new/choose" target="_blank">
+		<img src="https://img.shields.io/badge/Open_Issue-Click_Here-red?style=for-the-badge" alt="Open Issue" />
 	</a>
 </div>
 
 # License
 
-This project is licensed under the [MIT License](https://github.com/kohls-admin/main/blob/master/LICENSE.txt).
+This project is licensed under the [MIT License](https://github.com/kohls-admin/kohls-admin/blob/master/LICENSE.txt).
