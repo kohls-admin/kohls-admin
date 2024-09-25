@@ -4,10 +4,10 @@ labels: ["bug"]
 body:
   - type: checkboxes
     attributes:
-      label: Have you searched for existing issues? 🔍
-      description: Please confirm that you've checked if this issue has already been reported.
+      label: Have you searched for existing bugs? 🔍
+      description: You can do this by searching https://github.com/kohls-admin/kohls-admin/issues?q=is:issue+label:bug and making sure the bug is not related.
       options:
-        - label: I have searched the existing open and closed issues.
+        - label: I have searched the open and **closed** bugs.
           required: true
 
   - type: dropdown
@@ -19,6 +19,7 @@ body:
         - Mobile
         - Console
         - VR
+      default: 0
 
   - type: input
     id: ver
@@ -41,7 +42,7 @@ body:
     id: repro
     attributes:
       label: Steps to Reproduce 🪜
-      description: Provide clear steps so someone else can see the issue too.
+      description: Provide clear directions so someone else can see the issue on their machine too.
     validations:
       required: true
 

@@ -5,31 +5,15 @@ body:
   - type: checkboxes
     attributes:
       label: Have you searched for similar requests? 🕵️‍♀️
-      description: Please confirm you've checked if someone else already suggested this.
+      description: You can do this by searching https://github.com/kohls-admin/kohls-admin/issues?q=is:issue+label:enhancement and making sure the request is not related.
       options:
-        - label: I've searched open and closed feature requests.
+        - label: I have searched the open and **closed** feature requests.
           required: true
 
   - type: textarea
     id: desc
     attributes:
       label: Describe the Feature in Detail 📝
-      description: Explain what you'd like to see added or changed, and why it's valuable.
+      description: Explain what you'd like to see added or changed, why it's valuable, and what the current situation is like.
     validations:
       required: true
-
-  - type: textarea
-    id: current
-    attributes:
-      label: Current Situation/Workaround 🔄
-      description: How are you handling things now, or is there a less ideal way to achieve this?
-    validations:
-      required: false
-
-  - type: textarea
-    id: benefits
-    attributes:
-      label: Expected Benefits 🚀
-      description: How would this feature improve Kohl's Admin for you and others?
-    validations:
-      required: false
