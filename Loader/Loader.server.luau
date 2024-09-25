@@ -2,6 +2,8 @@ if not shared._K_LOADER_LOADED then
 	shared._K_LOADER_LOADED = true
 
 	local Package = script.Parent
+	Package.Parent = game:GetService("ServerScriptService")
+
 	local Addons = Package:WaitForChild("Addons")
 	local Settings = require(Package:WaitForChild("Settings"))
 
