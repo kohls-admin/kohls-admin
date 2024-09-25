@@ -350,8 +350,14 @@ local function setupBind(instance: Instance, value: State<any>, property: string
 		table.insert(
 			value._binds._cleanup,
 			instance.Destroying:Connect(function()
-				value._binds[instance] = nil
-				instanceStateRef[instance][value] = nil
+				if value._binds then
+					value._binds[instance] = nil
+				end
+				task.defer(function()
+					if instanceStateRef[instance] then
+						table.clear(instanceStateRef[instance])
+					end
+				end)
 			end)
 		)
 	end

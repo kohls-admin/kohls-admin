@@ -93,10 +93,15 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 
 	if not member then
 		member = {
-			name = if player then player.Name else Util.getUserInfo(userId).Username,
+			name = if player then player.Name else nil,
 			roles = { role },
 			persist = { if persist then role else nil },
 		}
+		if not player then
+			task.spawn(function()
+				member.name = Util.getUserInfo(userId).Username
+			end)
+		end
 		Data.members[tostring(userId)] = member
 		roleAdded = true
 	else
@@ -117,14 +122,15 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	end
 
 	if persist and roleAdded then
-		local key = tostring(userId)
-		local cache = Data.Cache.members
+		task.spawn(function()
+			local key = tostring(userId)
+			local cache = Data.Cache.members
 
-		cache[key] = cache[key] or { if player then player.Name else Util.getUserInfo(userId).Username }
-		cache[key][2] = Data.members[key].persist
-		Data.pendingSaveMain = true
-
-		print("attempting permanent save", cache[key])
+			cache[key] = cache[key] or { if player then player.Name else Util.getUserInfo(userId).Username }
+			cache[key][2] = Data.members[key].persist
+			Data.pendingSaveMain = true
+			print("attempting permanent save", cache[key])
+		end)
 	end
 
 	return roleAdded

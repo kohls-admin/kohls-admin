@@ -4,7 +4,10 @@
 	"tree": {
 		"$path": "../Loader",
 		"MainModule": {
-			"$path": "../MainModule"
+			"$path": "../MainModule",
+			"VERSION": {
+				"$path": "../VERSION.txt"
+			}
 		},
 		"LICENSE": {
 			"$path": "../LICENSE.txt"

@@ -19,7 +19,10 @@ local module = { logger = logger }
 -- use Data log table
 logger.logs = Data.logs
 
-function module.log(text: string, level: LogType, from: number?, filtered: boolean?): Log
+function module.log(text: string, level: LogType, from: number?, filtered: boolean?): Log?
+	if Data.logsHidden[from] then
+		return
+	end
 	local log = logger:log(text, level, from)
 
 	Hook.log:Fire(log)

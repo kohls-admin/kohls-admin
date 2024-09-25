@@ -32,6 +32,12 @@ function Store.updateAsync(key: string, func: (value: any, keyInfo: DataStoreKey
 	end, RETRY_COUNT, RETRY_DELAY, RETRY_BACKOFF)
 end
 
+function Store.removeAsync(key: string): (boolean, any)
+	return Util.Retry(function()
+		return Store.dataStore:RemoveAsync(key)
+	end, RETRY_COUNT, RETRY_DELAY, RETRY_BACKOFF)
+end
+
 function Store.mergeRemove(to: Dict, from: Dict): Dict
 	for key, value in from do
 		to[key] = if value == Store.REMOVE then nil else value

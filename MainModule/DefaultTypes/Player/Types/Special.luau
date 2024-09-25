@@ -1,0 +1,117 @@
+local Players = game:GetService("Players")
+
+local generateValidate = require(script.Parent.Parent:WaitForChild("generateValidate"))
+local sanitizePlayer = require(script.Parent.Parent:WaitForChild("sanitizePlayer"))
+
+return function(_K)
+	local specialReference = {
+		all = function(player, from)
+			return true
+		end,
+		others = function(player, from)
+			return player ~= from
+		end,
+		admins = function(player)
+			return _K.Data.members[tostring(player.UserId)]
+		end,
+		nonadmins = function(player)
+			return not _K.Data.members[tostring(player.UserId)]
+		end,
+		friends = function(player, from)
+			return player ~= from and player:IsFriendsWith(from)
+		end,
+		close = function(player, from)
+			return if player.Character and from.Character
+				then player:DistanceFromCharacter(from.Character.PrimaryPart.Position) <= 100
+				else false
+		end,
+		far = function(player, from)
+			return if player.Character and from.Character
+				then player:DistanceFromCharacter(from.Character.PrimaryPart.Position) > 100
+				else false
+		end,
+		-- distance = function(player: Player, from: Player, arg: string): (boolean, string?)
+		-- 	if player.Character and from.Character then
+		-- 		local sign, radiusMatch = string.match(arg, "=([><]?)=?(%d+)$")
+		-- 		local radius = tonumber(radiusMatch)
+		-- 		if not radius then
+		-- 			return false, "Invalid distance radius: " .. arg
+		-- 		end
+		-- 		local pivot = from.Character:GetPivot()
+		-- 		if not pivot then
+		-- 			return false, `Cannot calculate distance, you need a character`
+		-- 		end
+		-- 		if sign == ">" then
+		-- 			return player:DistanceFromCharacter(pivot.Position) > radius
+		-- 		else
+		-- 			return player:DistanceFromCharacter(pivot.Position) <= radius
+		-- 		end
+		-- 	end
+		-- 	return false
+		-- end,
+		-- group = function(player: Player, _, arg: string): (boolean, string?)
+		-- 	local idMatch, sign, equal, rankMatch = string.match(arg, "=(%d+)([>=<]?)(=?)(%d*)$")
+		-- 	local id, rank = tonumber(idMatch), tonumber(rankMatch)
+		-- 	if not id then
+		-- 		return false, "Invalid group: " .. arg
+		-- 	end
+		-- 	if player:IsInGroup(id) then
+		-- 		if not rank then
+		-- 			return true
+		-- 		end
+		-- 		local playerRank = player:GetRankInGroup(id)
+		-- 		if not playerRank then
+		-- 			return false
+		-- 		end
+		-- 		if sign == ">" then
+		-- 			return if equal then playerRank >= rank else playerRank > rank
+		-- 		elseif sign == "<" then
+		-- 			return if equal then playerRank <= rank else playerRank < rank
+		-- 		else
+		-- 			return playerRank == rank
+		-- 		end
+		-- 	end
+		-- 	return false
+		-- end,
+	}
+
+	local specialSuggestions = {}
+	for suggestion, check in specialReference do
+		table.insert(specialSuggestions, "$" .. suggestion)
+	end
+	table.sort(specialSuggestions)
+
+	local function specialParse(arg, self)
+		for match, check in specialReference do
+			if string.find(match, arg, 1, true) ~= 1 then
+				continue
+			end
+
+			local players = {}
+			for _, player in Players:GetPlayers() do
+				local ok, validPlayer, _feedback = pcall(check, player, self.command.fromPlayer)
+				if ok and validPlayer then
+					player = sanitizePlayer(self, player)
+					if player then
+						table.insert(players, player)
+					end
+				end
+			end
+
+			return #players > 0 and players, "No valid player found"
+		end
+
+		return false, "Invalid match"
+	end
+
+	local typeSpecial = {
+		transform = string.lower,
+		validate = generateValidate(specialParse),
+		parse = specialParse,
+		suggestions = function(text, self)
+			return _K.Util.Suggest.query(text, specialSuggestions)
+		end,
+	}
+
+	_K.Registry.registerType("specialPlayers", typeSpecial)
+end

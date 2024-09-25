@@ -10,11 +10,22 @@ body:
         - label: I have searched the existing open and closed issues.
           required: true
 
-  - type: textarea
+  - type: dropdown
+    id: platform
+    attributes:
+      label: What platform are you seeing the problem on?
+      options:
+        - PC
+        - Mobile
+        - Console
+        - VR
+
+  - type: input
     id: ver
     attributes:
       label: Kohl's Admin Version 🔢
       description: Include the version from the `;about` or `;version` commands.
+      placeholder: ex. 8aebbd4
     validations:
       required: true
 
@@ -42,4 +53,4 @@ body:
         Attach anything that helps explain the problem.
         * **Logs:** Use the `;logs` command.
         * **Errors:** Press `F9` or type `/console` in chat.
-        **Please ATTACH files, don't paste them directly.**"
+        **Please ATTACH files, don't paste them directly.**

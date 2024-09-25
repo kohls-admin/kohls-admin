@@ -47,15 +47,20 @@ function Table.deepCopy(original: Dict): Dict
 	return copy
 end
 
-function Table.fastRemove(t: { any }, index: number, indexEnd: number?)
-	for i = index, indexEnd or index do
-		t[i] = nil
-	end
+function Table.settle(t: { any })
 	local shift = 1
 	for i, v in t do
 		t[shift], t[i] = v, nil
 		shift += 1
 	end
+	return t
+end
+
+function Table.fastRemove(t: { any }, index: number, indexEnd: number?)
+	for i = index, indexEnd or index do
+		t[i] = nil
+	end
+	return Table.settle(t)
 end
 
 return Table

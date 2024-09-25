@@ -14,7 +14,6 @@ local UserFrame = require(script.Parent.UserFrame)
 local function updateInterfaceAuth()
 	-- TODO: recheck visibility for all restricted UIs
 	local buttonEnabled = _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
-	print(_K.Data.settings.dashboardButtonRank, _K.Auth.getRank(UI.LocalPlayer.UserId), buttonEnabled)
 	UI.Scope.dashboardButton:setEnabled(buttonEnabled)
 	UI.Scope.dashboard.Commands:updateList()
 end
@@ -26,7 +25,7 @@ Remote.Notify.OnClientEvent:Connect(function(text: string, from: number?, noteTy
 	Notify({
 		Text = text,
 		Duration = 4 + 0.125 * #text,
-		UserFrame = { from },
+		UserFrame = { if from then tonumber(from) else nil },
 		ExitButton = true,
 		TextColor3 = if noteType == "error" then Color3.new(1, 0, 0) else nil,
 		Sound = if noteType == "error" then "Call_Leave" else nil,

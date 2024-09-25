@@ -9,7 +9,7 @@ export type ArgumentDefinition = {
 	shouldRequest: boolean?,
 }
 
--- addons not ending in "Client" or "Server" will run in both contexts
+-- addons not containing in "Client" or "Server" will run in both contexts (shared)
 return function(_K)
 	_K.log(`Hello World from ExampleAddon!`, "INFO")
 

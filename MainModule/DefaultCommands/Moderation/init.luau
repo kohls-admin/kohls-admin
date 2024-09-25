@@ -296,23 +296,18 @@ return {
 				shouldRequest = true,
 			},
 		},
+		env = function(_K)
+			local punished = {}
+			_K.Flux.Scope.commandPunished = punished
+			return { punished = punished }
+		end,
 
 		run = function(context, players)
 			for _, player in players do
-				if
-					player.Character
-					and not player.Character:GetAttribute("kPunish")
-					and player.Character.PrimaryPart
-					and player.Character.PrimaryPart:FindFirstChildOfClass("Attachment")
-				then
-					player.Character:SetAttribute("kPunish", player.Character:GetPivot())
-					local force = Instance.new("VectorForce")
-					force.Name = "kPunishForce"
-					force.Force = Vector3.new(0, 9e9, 0)
-					force.ApplyAtCenterOfMass = true
-					force.RelativeTo = Enum.ActuatorRelativeTo.World
-					force.Attachment0 = player.Character.PrimaryPart:FindFirstChildOfClass("Attachment")
-					force.Parent = player.Character
+				if player.Character then
+					context.env.punished[player.UserId] = player.Character
+					player.Character.Parent = nil
+					player.Character = nil
 				end
 			end
 		end,
@@ -328,19 +323,34 @@ return {
 				description = "The player(s) to forgive.",
 			},
 		},
+		envClient = function(_K)
+			local function reactivate(script)
+				script.Enabled = true
+			end
+			_K.Remote.RefreshLocalScripts.OnClientEvent:Connect(function(model: Model)
+				for _, descendant in model:GetDescendants() do
+					if descendant:IsA("LocalScript") and descendant.Enabled then
+						descendant.Enabled = false
+						task.defer(reactivate, descendant)
+					end
+				end
+			end)
+		end,
+		env = function(_K)
+			return {
+				remote = _K.Remote.RefreshLocalScripts,
+			}
+		end,
 
 		run = function(context, players)
+			local punished = context._K.Flux.Scope.commandPunished
 			for _, player in players do
-				if player.Character and player.Character:GetAttribute("kPunish") then
-					local force = player.Character:FindFirstChild("kPunishForce")
-					if force then
-						force:Destroy()
-					end
-					if player.Character.PrimaryPart then
-						player.Character.PrimaryPart.AssemblyLinearVelocity = Vector3.zero
-					end
-					player.Character:PivotTo(player.Character:GetAttribute("kPunish"))
-					player.Character:SetAttribute("kPunish", nil)
+				local character = punished[player.UserId]
+				if character then
+					punished[player.UserId] = nil
+					character.Parent = workspace
+					player.Character = character
+					context.env.remote:FireClient(player, character)
 				end
 			end
 		end,
@@ -976,14 +986,59 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if Jail.Connections[player] then
-					Jail.Connections[player]:Disconnect()
-					Jail.Connections[player] = nil
+				if Jail.Parts[player.UserId] then
+					Jail.Parts[player.UserId]:Destroy()
+					Jail.Parts[player.UserId] = nil
 				end
-				if Jail.Parts[player] then
-					Jail.Parts[player]:Destroy()
-					Jail.Parts[player] = nil
+			end
+		end,
+	},
+	{
+		name = "fps",
+		aliases = { "lag", "unlag", "unfps" },
+		description = "Limits the frames per second of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose frames per second to limit.",
+				shouldRequest = true,
+			},
+			{
+				type = "number",
+				name = "FPS",
+				description = "The frames per second limit.",
+				optional = true,
+			},
+		},
+		envClient = function(_K)
+			local limitTime = 0
+			_K.Remote.FPS.OnClientEvent:Connect(function(fps: number?)
+				fps = fps or 32
+				local t = tick()
+				limitTime = t
+
+				while t == limitTime and _K.UI.LocalPlayer:GetAttribute("_KFPSLimit") do
+					local nextStep = tick() + (1 / fps :: number)
+					repeat
+					until tick() > nextStep
+					task.wait()
 				end
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.FPS }
+		end,
+
+		run = function(context, players, fps)
+			local undo = context.undo or (not fps and context.alias == "fps")
+			for _, player in players do
+				if undo then
+					player:SetAttribute("_KFPSLimit", nil)
+					continue
+				end
+				player:SetAttribute("_KFPSLimit", true)
+				context.env.remote:FireClient(player, fps)
 			end
 		end,
 	},

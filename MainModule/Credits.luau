@@ -1,16 +1,11 @@
 return {
 	{
-		Title = "Creator",
+		Title = "Core Contributors",
 		Users = {
 			{
-				Id = 44391621,
-				Tooltip = "Thanks for using Kohl's Admin, if you have any issues please contact me!\nMy messages are open to everyone if you have your privacy settings set to people you follow.",
+				Id = 44391621, -- kohl
+				Tooltip = "Thanks for using Kohl's Admin, if you have any issues please contact me!\nMy messages are open if your message privacy settings are set to people you follow.",
 			},
-		},
-	},
-	{
-		Title = "Contributors",
-		Users = {
 			{
 				Id = 521855368, -- rfov
 				Tooltip = "Design, planning, and expert advice",
@@ -19,6 +14,11 @@ return {
 				Id = 15554260, -- zeejaym
 				Tooltip = "Design, planning, website, and expert advice",
 			},
+		},
+	},
+	{
+		Title = "Major Contributors",
+		Users = {
 			{
 				Id = 1022854840, -- jjj
 				Tooltip = "Modeling, UGC, and design advice",
@@ -27,6 +27,11 @@ return {
 				Id = 15303771, -- Fragility
 				Tooltip = "Design, planning, and quality assurance",
 			},
+		},
+	},
+	{
+		Title = "Contributors",
+		Users = {
 			{
 				Id = 41336494, -- Calculatous
 				Tooltip = "Design, planning, and quality assurance",
@@ -38,6 +43,10 @@ return {
 			{
 				Id = 83478451, -- stevendahfish
 				Tooltip = "Documentation and quality assurance",
+			},
+			{
+				Id = 345072461, -- raenlua
+				Tooltip = "Development Containers",
 			},
 		},
 	},
@@ -64,6 +73,7 @@ return {
 			130170862, -- matsagor1
 			75214485, -- ericance
 			1560379748, -- mosha
+			200565345, -- easternbloxxer
 			107192912, -- britishtrainspotting
 			2258246, -- emp
 			129134882, -- horracecat

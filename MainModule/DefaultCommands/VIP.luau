@@ -55,7 +55,8 @@ end
 
 local function resetHumanoidDescription(player)
 	-- reset particles
-	local root = player.Character and player.Character.PrimaryPart
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		or player.Character.PrimaryPart
 	if root then
 		for _, particle in particles do
 			local existing = root:FindFirstChild(particle)
@@ -159,7 +160,8 @@ return {
 
 		run = function(context, players, size, color, secondaryColor)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -193,7 +195,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -224,7 +227,8 @@ return {
 
 		run = function(context, players, color, secondaryColor)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -257,7 +261,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -288,7 +293,8 @@ return {
 
 		run = function(context, players, color, secondaryColor)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -320,7 +326,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -357,7 +364,8 @@ return {
 
 		run = function(context, players, range, color)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -388,7 +396,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -459,7 +468,8 @@ return {
 
 		run = function(context, players, image, color)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -493,7 +503,8 @@ return {
 
 		run = function(context, players, userId)
 			for _, player in players do
-				local root = player.Character and player.Character.PrimaryPart
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
 					continue
 				end
@@ -635,6 +646,84 @@ return {
 		run = function(context, players, assetId)
 			for _, player in players do
 				attributeHumanoidDescription(player, "Head", assetId)
+			end
+		end,
+	},
+	{
+		name = "headsize",
+		aliases = { "bighead", "hugehead", "largehead", "tinyhead", "minihead", "smallhead", "normalhead" },
+		description = "Changes the head size of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose head size to change.",
+			},
+			{
+				type = "number",
+				name = "Size",
+				description = "The size of the head, or the original size if omitted.",
+				optional = true,
+			},
+		},
+		env = function(_K)
+			local function scaleHead(char, scale)
+				local human = char and char:FindFirstChildOfClass("Humanoid")
+				if not human then
+					return
+				end
+				if human.RigType == Enum.HumanoidRigType.R15 then
+					if human:FindFirstChild("HeadScale") then
+						local headScale = human:GetAttribute("_KHeadScale")
+						if not headScale then
+							headScale = human.HeadScale.Value
+							human:SetAttribute("_KHeadScale", headScale)
+						end
+						human.HeadScale.Value = headScale * scale
+					end
+				elseif human.RigType == Enum.HumanoidRigType.R6 then
+					if char:FindFirstChild("Head") and char:FindFirstChild("Torso") then
+						local meshScale = human:GetAttribute("_KMeshScale")
+						if not meshScale then
+							meshScale = char.Head.Mesh.Scale
+							human:SetAttribute("_KMeshScale", meshScale)
+						end
+						char.Head.Mesh.Scale = meshScale * scale
+
+						local headY = char.Head.Size.Y
+						char.Torso.Neck.C0 = CFrame.new(0, headY / 2 + (headY * scale / 2), 0)
+							* CFrame.Angles(math.pi / 2, math.pi, 0)
+					end
+				end
+				if scale == 1 then
+					human:SetAttribute("_KHeadScale", nil)
+					human:SetAttribute("_KMeshScale", nil)
+				end
+			end
+
+			_K.Flux.Scope.scaleHead = scaleHead
+			return {
+				scaleHead = scaleHead,
+				big = { "bighead", "largehead", "hugehead" },
+				small = { "smallhead", "minihead", "tinyhead" },
+			}
+		end,
+
+		run = function(context, players, size)
+			if context.alias == "normalhead" then
+				size = 1
+			elseif table.find(context.env.big, context.alias) then
+				size = 3
+			elseif table.find(context.env.small, context.alias) then
+				size = 0.5
+			end
+
+			size = size or 1
+			if context._K.Auth.getRank(context.from) <= 1 then
+				size = math.clamp(size, 0.5, 3)
+			end
+			for _, player in players do
+				context.env.scaleHead(player.Character, size)
 			end
 		end,
 	},

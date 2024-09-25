@@ -86,6 +86,163 @@ return {
 	},
 
 	{
+		name = "dog",
+		aliases = { "horse" },
+		description = "Turns one or more player(s) into dog",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to turn into a dog.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			return {
+				R6 = function(character)
+					if not (character and character.PrimaryPart) then
+						return
+					end
+
+					local torso = character:FindFirstChild("Torso")
+					if not torso then
+						return
+					end
+
+					torso.Transparency = 1
+
+					local neck = torso:FindFirstChild("Neck")
+					local rightShoulder = torso:FindFirstChild("Right Shoulder")
+					local leftShoulder = torso:FindFirstChild("Left Shoulder")
+					local rightHip = torso:FindFirstChild("Right Hip")
+					local leftHip = torso:FindFirstChild("Left Hip")
+
+					if neck then
+						neck.C0 = CFrame.new(0, -0.5, -2) * CFrame.Angles(math.rad(90), math.rad(180), 0)
+					end
+					if rightShoulder then
+						rightShoulder.C0 = CFrame.new(0.5, -1.5, -1.5) * CFrame.Angles(0, math.pi / 2, 0)
+					end
+					if leftShoulder then
+						leftShoulder.C0 = CFrame.new(-0.5, -1.5, -1.5) * CFrame.Angles(0, -math.pi / 2, 0)
+					end
+					if rightHip then
+						rightHip.C0 = CFrame.new(1.5, -1, 1.5) * CFrame.Angles(0, math.pi / 2, 0)
+					end
+					if leftHip then
+						leftHip.C0 = CFrame.new(-1.5, -1, 1.5) * CFrame.Angles(0, -math.pi / 2, 0)
+					end
+
+					local seat = _K.Flux.new "Seat" {
+						Name = "_KDogSeat",
+						Transparency = 0,
+						Color = torso.Color,
+						Material = torso.Material,
+						CFrame = torso.CFrame,
+						CastShadow = false,
+						CanQuery = false,
+						CanCollide = false,
+						Massless = true,
+						Size = Vector3.new(3, 1, 4),
+						TopSurface = 0,
+						BottomSurface = 0,
+					}
+
+					_K.Flux.new "Weld" {
+						Parent = seat,
+						Part0 = torso,
+						Part1 = seat,
+						C1 = CFrame.new(0, 0.5, 0),
+					}
+
+					seat.Parent = character
+				end,
+				R15 = function(character)
+					if not (character and character.PrimaryPart) then
+						return
+					end
+
+					local torso = character:FindFirstChild("UpperTorso")
+					if not torso then
+						return
+					end
+
+					local root = character:FindFirstChild("LowerTorso") and character:FindFirstChild("Root", true)
+					local neck = character:FindFirstChild("Neck", true)
+					local waist = character:FindFirstChild("Waist", true)
+					local rightShoulder = character:FindFirstChild("RightShoulder", true)
+					local leftShoulder = character:FindFirstChild("LeftShoulder", true)
+					local rightHip = character:FindFirstChild("RightHip", true)
+					local leftHip = character:FindFirstChild("LeftHip", true)
+
+					if root then
+						root.C0 *= CFrame.Angles(-math.rad(60), 0, 0) - Vector3.new(0, 0.5, 0)
+					end
+					if waist then
+						waist.C0 *= CFrame.Angles(-math.rad(30), 0, 0)
+					end
+					if neck then
+						neck.C0 *= CFrame.Angles(math.pi / 2, 0, 0)
+					end
+					if rightShoulder then
+						rightShoulder.C0 *= CFrame.Angles(math.pi / 4, 0, 0)
+					end
+					if leftShoulder then
+						leftShoulder.C0 *= CFrame.Angles(math.pi / 4, 0, 0)
+					end
+					if rightHip then
+						rightHip.C0 *= CFrame.Angles(-math.pi / 4, 0, 0)
+					end
+					if leftHip then
+						leftHip.C0 *= CFrame.Angles(-math.pi / 4, 0, 0)
+					end
+
+					local seat = _K.Flux.new "Seat" {
+						Name = "_KDogSeat",
+						Transparency = 1,
+						CastShadow = false,
+						CanQuery = false,
+						CanCollide = false,
+						Massless = true,
+						Size = Vector3.new(2, 1, 2),
+						CFrame = torso.CFrame,
+					}
+
+					_K.Flux.new "Weld" {
+						Parent = seat,
+						Part0 = torso,
+						Part1 = seat,
+						C1 = CFrame.new(0, 0.1, -0.7) * CFrame.Angles(-math.pi / 2, 0, 0),
+					}
+
+					seat.Parent = character
+				end,
+			}
+		end,
+
+		run = function(context, players)
+			for _, player in players do
+				if
+					player.Character
+					and player.Character.PrimaryPart
+					and player.Character:FindFirstChild("Humanoid")
+					and not player.Character:FindFirstChild("_KDogSeat")
+				then
+					local humanoid = player.Character:FindFirstChild("Humanoid")
+					if not humanoid then
+						return
+					end
+
+					if humanoid.RigType == Enum.HumanoidRigType.R6 then
+						context.env.R6(player.Character)
+					else
+						context.env.R15(player.Character)
+					end
+				end
+			end
+		end,
+	},
+	{
 		name = "char",
 		aliases = { "character" },
 		description = "Changes the character of one or more player(s).",
@@ -296,6 +453,139 @@ return {
 					explosion.Position = player.Character:GetPivot().Position
 					explosion.DestroyJointRadiusPercent = 0
 					explosion.Parent = player.Character
+				end
+			end
+		end,
+	},
+	{
+		name = "nuke",
+		aliases = {},
+		description = "Nuke one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to nuke.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			local boomSound = _K.Flux.new "Sound" {
+				SoundId = "rbxassetid://9114224354",
+				EmitterSize = 512,
+				Volume = 2,
+			}
+			local sphere = _K.Util.Services.InsertService:CreateMeshPartAsync(
+				"rbxassetid://116325731356319",
+				Enum.CollisionFidelity.Box,
+				Enum.RenderFidelity.Precise
+			)
+			_K.Flux.edit(sphere, {
+				Name = "Sphere",
+				Color = Color3.new(1, 0, 0),
+				Material = Enum.Material.Neon,
+				Transparency = 0.75,
+				Anchored = true,
+				EnableFluidForces = false,
+				CastShadow = false,
+				CanCollide = false,
+				CanTouch = false,
+				CanQuery = false,
+				Massless = true,
+				Size = Vector3.zero,
+			})
+
+			local function explode(character, position)
+				if character:GetAttribute("_KNuked") then
+					return
+				end
+				character:SetAttribute("_KNuked", true)
+
+				character:BreakJoints()
+				local explosion = Instance.new("Explosion")
+				explosion.ExplosionType = Enum.ExplosionType.NoCraters
+				explosion.Position = position
+				explosion.DestroyJointRadiusPercent = 0
+				explosion.Parent = character
+			end
+
+			return {
+				explode = explode,
+				nuke = function(fromRank, position)
+					local part = sphere:Clone()
+					part.Position = position
+
+					local part2 = sphere:Clone()
+					part2.Color = Color3.new(1, 1, 0)
+					part2.Position = position + Vector3.new(0, 0.1, 0)
+					part2.Parent = part
+
+					local part3 = sphere:Clone()
+					part3.Color = Color3.new(1, 1, 1)
+					part3.Position = position - Vector3.new(0, 0.1, 0)
+					part3.Parent = part
+
+					part.Parent = workspace
+
+					local sound = boomSound:Clone()
+					sound.Parent = part
+					sound:Play()
+					task.delay(2, function()
+						local sound = boomSound:Clone()
+						sound.Volume = 1
+						sound.Parent = part
+						sound:Play()
+					end)
+
+					local start, alpha = tick(), 0
+					repeat
+						alpha = _K.Util.Services.TweenService:GetValue(
+							1 - (1 - math.clamp((tick() + 1 - start) / 8, 0, 1)) ^ 2,
+							Enum.EasingStyle.Bounce,
+							Enum.EasingDirection.In
+						)
+						local distance = alpha * 512
+						part.Size = Vector3.one * distance
+						part2.Size = part.Size * 0.9
+						part3.Size = part.Size * 0.5
+						for _, player in _K.Util.Services.Players:GetPlayers() do
+							local direction = (player.Character and not player.Character:GetAttribute("_KNuked"))
+								and position - player.Character:GetPivot().Position
+							if direction and direction.Magnitude <= distance / 2 then
+								explode(player.Character, player.Character:GetPivot().Position + direction.unit)
+							end
+						end
+						task.wait()
+					until alpha == 1
+
+					start, alpha = tick(), 0
+					repeat
+						alpha = _K.Util.Services.TweenService:GetValue(
+							math.clamp((tick() - start) / 1, 0, 1),
+							Enum.EasingStyle.Cubic,
+							Enum.EasingDirection.In
+						)
+						local distance = 512 - 512 * alpha
+						part.Transparency = 0.75 + 0.25 * alpha
+						part2.Transparency = part.Transparency
+						part3.Transparency = part.Transparency
+						part.Size = Vector3.one * distance
+						part2.Size = part.Size * 0.9
+						part3.Size = part.Size * 0.5
+						task.wait()
+					until alpha == 1
+
+					task.wait(4)
+					part:Destroy()
+				end,
+			}
+		end,
+		run = function(context, players, distance)
+			for _, player in players do
+				if player.Character then
+					local position = player.Character:GetPivot().Position
+					context.env.explode(player.Character, position)
+					task.spawn(context.env.nuke, context.fromRank, position)
 				end
 			end
 		end,
@@ -548,7 +838,7 @@ return {
 				then
 					local existing = player.Character:FindFirstChild("_KRocket")
 					if existing then
-						existing:Destroy()
+						continue
 					end
 
 					player.Character:FindFirstChildOfClass("Humanoid").Jump = true

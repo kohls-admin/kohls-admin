@@ -86,6 +86,12 @@ return function(dialogOverride)
 		userFrame = UserFrame(unpack(userFrame))
 		UI.edit(userFrame, {
 			Parent = dialog,
+
+			UI.new "UIListLayout" {
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 4),
+				FillDirection = Enum.FillDirection.Horizontal,
+			},
 			UI.new "Frame" {
 				LayoutOrder = 8,
 				Name = "Spacer",

@@ -19,6 +19,7 @@ function Command.new(_K, commandAlias, commandDefinition, commandArray, from, te
 		fromPlayer = Players:GetPlayerByUserId(from),
 		fromRank = _K.Auth.getRank(from),
 		text = text,
+		undo = string.find(commandAlias, "un", 1, true) == 1,
 
 		argIndex = 1,
 		argLength = #commandDefinition.args,
@@ -126,7 +127,7 @@ function Command:run()
 		return false, self.commandError
 	end
 
-	local ok, err = pcall(run, self, unpack(self.preparedArgs))
+	local ok, err = xpcall(run, debug.traceback, self, unpack(self.preparedArgs))
 	self.commandRan = ok
 	self.commandError = err
 	self._K.Hook.postCommand:Fire(self)
