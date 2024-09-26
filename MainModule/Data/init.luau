@@ -40,6 +40,9 @@ end
 
 local updateAsyncInterval = 10
 
+-- DataStore value limit of 4,194,303 bytes
+local DATA_LIMIT = 2 ^ 22 - 1
+
 local function syncMain(result)
 	Hook.preSyncMain:Fire(result)
 	local bans, members, settings = unpack(result)
@@ -106,6 +109,7 @@ local function syncMain(result)
 	Hook.postSyncMain:Fire(Data)
 end
 
+local nextMainLimitWarning = 0
 local nextMainInterval = tick() + updateAsyncInterval
 local function updateMain()
 	-- flush cache and hold onto references to make sure they are immutable!
@@ -131,6 +135,28 @@ local function updateMain()
 	end)
 
 	if ok then
+		task.spawn(function()
+			Data.sizeMain = #Http:JSONEncode(result)
+			local ratio = Data.sizeMain / DATA_LIMIT
+			if ratio > 0.9 and tick() > nextMainLimitWarning then
+				nextMainLimitWarning = tick() + 300
+				for _, player in Players:GetPlayers() do
+					if
+						hasPermission(player.UserId, "ban")
+						or hasPermission(player.UserId, "roles")
+						or hasPermission(player.UserId, "settings")
+					then
+						Remote.Notify:FireClient(
+							player,
+							`<b><font color="#f00">You're approaching the limit of Roblox DataStores!</font>\n\tConsider removing some bans or members.</b>\n\n<b>Data Usage:</b> {string.format(
+								"%.01f",
+								ratio * 100
+							)}%`
+						)
+					end
+				end
+			end
+		end)
 		Data.pendingSaveMain = false
 		nextMainInterval = tick() + updateAsyncInterval
 		syncMain(result)
