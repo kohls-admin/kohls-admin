@@ -2,7 +2,7 @@
 
 We immensely appreciate all contributions and suggestions from the community!
 
-How do you want to contribute?
+**How would you like to contribute?**
 
 - [Codebase](#contributing-codebase)
 - [Documentation](#contributing-docs)
@@ -15,8 +15,8 @@ Check existing open and **closed** issues to make sure someone else hasn't creat
 
 _If an issue was closed after a fix, but the bug has returned or functionality was lost, please create a new issue!_
 
-- [**Create** Bug Issue](https://github.com/kohls-admin/kohls-admin/issues/new?assignees=&labels=bug&projects=&template=bug.yml)
-- [**Create** Feature Issue](https://github.com/kohls-admin/kohls-admin/issues/new?assignees=&labels=enhancement&projects=&template=feature.yml)
+- [**Create** Bug Report](https://github.com/kohls-admin/kohls-admin/issues/new?assignees=&labels=bug&projects=&template=bug.yml)
+- [**Create** Feature Request](https://github.com/kohls-admin/kohls-admin/issues/new?assignees=&labels=enhancement&projects=&template=feature.yml)
 
 _Please be patient while we address your issue!_
 
