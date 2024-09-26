@@ -112,6 +112,7 @@ end
 local nextMainLimitWarning = 0
 local nextMainInterval = tick() + updateAsyncInterval
 local function updateMain()
+	nextMainInterval = math.huge
 	-- flush cache and hold onto references to make sure they are immutable!
 	local bans = Data.Cache.bans
 	local members = Data.Cache.members
@@ -158,11 +159,12 @@ local function updateMain()
 			end
 		end)
 		Data.pendingSaveMain = false
-		nextMainInterval = tick() + updateAsyncInterval
 		syncMain(result)
 	else
 		warn(`[Kohl's Admin] Main Datastore UpdateAsync failed: {result}`)
 	end
+
+	nextMainInterval = tick() + updateAsyncInterval
 
 	return ok, result
 end
@@ -201,6 +203,8 @@ end
 
 local nextLogsInterval = tick() + updateAsyncInterval
 local function updateLogs()
+	nextLogsInterval = math.huge
+
 	local logs = Data.Cache.logs
 	Data.Cache.logs = {}
 
@@ -230,11 +234,12 @@ local function updateLogs()
 
 	if ok then
 		Data.pendingSaveLogs = false
-		nextLogsInterval = tick() + updateAsyncInterval
 		syncLogs(result)
 	else
 		warn(`[Kohl's Admin] Logs Datastore UpdateAsync failed: {result}`)
 	end
+
+	nextLogsInterval = tick() + updateAsyncInterval
 
 	return ok, result
 end
