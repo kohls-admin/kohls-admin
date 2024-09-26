@@ -155,6 +155,7 @@ local Data = {
 	pendingSaveMain = false,
 	pendingSaveLogs = false,
 	sizeMain = 0,
+	sizeLogs = 0,
 
 	banHandler = nil,
 	banUser = nil,

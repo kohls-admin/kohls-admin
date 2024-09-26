@@ -215,16 +215,14 @@ local function updateLogs()
 		end
 		table.sort(value, rawSortTime)
 
-		local excess = #value - 10_000
-		if excess > 0 then
-			-- trim
-			for i = 1, excess do
-				value[i] = nil
-			end
-			-- shift
-			for i = excess + 1, excess + 10_000 do
-				value[i - excess] = value[excess]
-			end
+		local logDataSize = #Http:JSONEncode(value)
+		local excess = logDataSize - DATA_LIMIT
+		local count = #value
+
+		while excess > 0 do
+			excess -= #Http:JSONEncode(value[count]) + 1
+			value[count] = nil
+			count -= 1
 		end
 
 		return value
