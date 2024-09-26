@@ -1,18 +1,18 @@
 --- @within Logger
---- @type LogType "DEBUG" | "INFO" | "WARN" | "ERROR" | "CHAT" | "COMMAND" | "JOIN" | "LEAVE" | "KILL" | "DEATH" | "DAMAGE" | "PURCHASE" | string
+--- @type LogType "INFO" | "WARN" | "ERROR" | "DEBUG" | "CHAT" | "COMMAND" | "PURCHASE" | "DAMAGE" | "DEATH" | "KILL" | "JOIN" | "LEAVE" | string
 export type LogType =
-	"DEBUG"
-	| "INFO"
+	"INFO"
 	| "WARN"
 	| "ERROR"
+	| "DEBUG"
 	| "CHAT"
 	| "COMMAND"
+	| "PURCHASE"
+	| "DAMAGE"
+	| "DEATH"
+	| "KILL"
 	| "JOIN"
 	| "LEAVE"
-	| "KILL"
-	| "DEATH"
-	| "DAMAGE"
-	| "PURCHASE"
 	| string
 
 --- @within Logger
@@ -34,38 +34,34 @@ Logger.__index = Logger
 export type Logger = typeof(setmetatable({} :: { logs: { Log }, debug: boolean? }, Logger))
 
 -- WARN: DO NOT CHANGE THE ARRAY ORDER WITHOUT A DATASTORE MIGRATION!
-local decode, encode = {}, {}
-for i, level in
-	{
-		"DEBUG",
-		"INFO",
-		"WARN",
-		"ERROR",
-		"CHAT",
-		"COMMAND",
-		"JOIN",
-		"LEAVE",
-		"KILL",
-		"DEATH",
-		"DAMAGE",
-		"PURCHASE",
-	}
-do
-	local key = string.char(31 + i)
-	decode[key] = level
-	encode[level] = key
-end
+local LEVELS = {
+	"INFO",
+	"WARN",
+	"ERROR",
+	"DEBUG",
+
+	"CHAT",
+	"COMMAND",
+	"PURCHASE",
+
+	"DAMAGE",
+	"DEATH",
+	"KILL",
+
+	"JOIN",
+	"LEAVE",
+}
 
 function Logger.new(debugEnabled: boolean?): Logger
 	return setmetatable({ logs = {}, debug = debugEnabled }, Logger)
 end
 
-function Logger:encode(level: LogType): string
-	return encode[level] or level
+function Logger:encode(level: LogType): number
+	return (table.find(LEVELS, level) or 1) - 1
 end
 
-function Logger:decode(key: string): LogType
-	return decode[key] or key
+function Logger:decode(index: number): LogType
+	return LEVELS[index + 1]
 end
 
 function Logger:log(text: string, level: LogType, userId: number?): Log?
@@ -75,7 +71,7 @@ function Logger:log(text: string, level: LogType, userId: number?): Log?
 
 	local log = {
 		text = text,
-		level = encode[level],
+		level = (table.find(LEVELS, level) or 1) - 1,
 		time = workspace:GetServerTimeNow(),
 		from = userId,
 	}
