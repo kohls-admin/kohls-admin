@@ -18,8 +18,9 @@ function Bans.new(_K)
 			if not ban.userId then
 				return ""
 			end
-			local term = if ban[2]
-				then (if ban[2] > 0 then os.date("%y-%m-%d %X", ban[2]) else "Permanently")
+			local term = ban[2]
+			term = if term
+				then (if term > 0 and term ~= math.huge then os.date("%y-%m-%d %X", ban[2]) else "Forever")
 				else "Session"
 
 			local userInfo = _K.Util.getUserInfo(ban.userId)
