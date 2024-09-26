@@ -3,8 +3,9 @@ description: Report a problem you encountered with Kohl's Admin
 labels: ["bug"]
 body:
   - type: checkboxes
+    id: existing
     attributes:
-      label: Have you searched for existing bugs? 🔍
+      label: Did you check for existing issues?
       description: You can do this by searching https://github.com/kohls-admin/kohls-admin/issues?q=is:issue+label:bug and making sure the bug is not related.
       options:
         - label: I have searched the open and **closed** bugs.
@@ -13,7 +14,8 @@ body:
   - type: dropdown
     id: platform
     attributes:
-      label: What platform are you seeing the problem on?
+      label: Platform
+      description: What platform are you seeing the problem on?
       options:
         - PC
         - Mobile
@@ -24,8 +26,8 @@ body:
   - type: input
     id: ver
     attributes:
-      label: Kohl's Admin Version 🔢
-      description: Include the version from the `;about` or `;version` commands.
+      label: Version
+      description: Include the version of Kohl's Admin from the `;about` or `;version` commands.
       placeholder: ex. 8aebbd4
     validations:
       required: true
@@ -33,23 +35,21 @@ body:
   - type: textarea
     id: desc
     attributes:
-      label: What Happened? 🤔
-      description: Describe what went wrong in detail.
+      label: Description
+      description: Describe what went wrong in detail. What do you expect to happen instead?
     validations:
       required: true
 
   - type: textarea
     id: repro
     attributes:
-      label: Steps to Reproduce 🪜
+      label: Repro
       description: Provide clear directions so someone else can see the issue on their machine too.
-    validations:
-      required: true
 
   - type: textarea
     id: logs
     attributes:
-      label: Evidence (logs, errors, images, videos) 📎
+      label: Details
       description: |
         Attach anything that helps explain the problem.
         * **Logs:** Use the `;logs` command.
