@@ -49,8 +49,8 @@ return {
 		end,
 	},
 	{ -- TODO: need to set up a way to set public logs
-		name = "logs",
-		aliases = { "chatlogs" },
+		name = "log",
+		aliases = { "logs", "chatlog", "chatlogs" },
 		description = "Shows the logs in a separate window.",
 		args = {},
 		envClient = function(_K)
