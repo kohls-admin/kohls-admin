@@ -67,9 +67,11 @@ rojo serve test.project.json
 
 Congratulations! You are ready to start contributing to the codebase portion of the project!
 
+We use the [GitLab Flow](https://about.gitlab.com/topics/version-control/what-is-gitlab-flow/) style of git development.
+
 We use the [Roblox Lua Style Guide](https://roblox.github.io/lua-style-guide/) to avoid style arguments.
 
-Here's a [list of issues](https://github.com/kohls-admin/kohls-admin/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to get started with!
+Here's a [list of issues](https://github.com/kohls-admin/kohls-admin/issues?q=is%3Aopen+is%3Aissue+no%3Aassignee+label%3A%22good+first+issue%22) to get started with!
 
 ### Bug fixes
 
