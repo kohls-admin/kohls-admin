@@ -171,12 +171,19 @@ end
 
 local function syncLogs(logs)
 	Hook.preSyncLogs:Fire(logs)
+	Util.Defer.reset()
 	local newLogs = {}
 	for _, log in logs do
+		Util.Defer.wait()
 		local text, level, time, from = unpack(log)
 		local exists
 		for _, existingLog in Data.logs do
-			if existingLog.text == text and existingLog.time == time then
+			if
+				existingLog.time == time
+				and existingLog.from == from
+				and existingLog.level == level
+				and existingLog.text == text
+			then
 				exists = true
 				break
 			end
