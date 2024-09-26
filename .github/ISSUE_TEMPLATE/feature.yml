@@ -4,7 +4,7 @@ labels: ["enhancement"]
 body:
   - type: checkboxes
     attributes:
-      label: Have you searched for similar requests? 🕵️‍♀️
+      label: Did you check for existing issues?
       description: You can do this by searching https://github.com/kohls-admin/kohls-admin/issues?q=is:issue+label:enhancement and making sure the request is not related.
       options:
         - label: I have searched the open and **closed** feature requests.
@@ -13,7 +13,7 @@ body:
   - type: textarea
     id: desc
     attributes:
-      label: Describe the Feature in Detail 📝
+      label: Description
       description: Explain what you'd like to see added or changed, why it's valuable, and what the current situation is like.
     validations:
       required: true
