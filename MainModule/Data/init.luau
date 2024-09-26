@@ -40,6 +40,9 @@ end
 
 local updateAsyncInterval = 10
 
+-- DataStore value limit of 4,194,303 bytes
+local DATA_LIMIT = 2 ^ 22 - 1
+
 local function syncMain(result)
 	Hook.preSyncMain:Fire(result)
 	local bans, members, settings = unpack(result)
@@ -106,8 +109,10 @@ local function syncMain(result)
 	Hook.postSyncMain:Fire(Data)
 end
 
+local nextMainLimitWarning = 0
 local nextMainInterval = tick() + updateAsyncInterval
 local function updateMain()
+	nextMainInterval = math.huge
 	-- flush cache and hold onto references to make sure they are immutable!
 	local bans = Data.Cache.bans
 	local members = Data.Cache.members
@@ -131,24 +136,54 @@ local function updateMain()
 	end)
 
 	if ok then
+		task.spawn(function()
+			Data.sizeMain = #Http:JSONEncode(result)
+			local ratio = Data.sizeMain / DATA_LIMIT
+			if ratio > 0.9 and tick() > nextMainLimitWarning then
+				nextMainLimitWarning = tick() + 300
+				for _, player in Players:GetPlayers() do
+					if
+						hasPermission(player.UserId, "ban")
+						or hasPermission(player.UserId, "roles")
+						or hasPermission(player.UserId, "settings")
+					then
+						Remote.Notify:FireClient(
+							player,
+							`<b><font color="#f00">You're approaching the limit of Roblox DataStores!</font>\n\tConsider removing some bans or members.</b>\n\n<b>Data Usage:</b> {string.format(
+								"%.01f",
+								ratio * 100
+							)}%`
+						)
+					end
+				end
+			end
+		end)
 		Data.pendingSaveMain = false
-		nextMainInterval = tick() + updateAsyncInterval
 		syncMain(result)
 	else
 		warn(`[Kohl's Admin] Main Datastore UpdateAsync failed: {result}`)
 	end
+
+	nextMainInterval = tick() + updateAsyncInterval
 
 	return ok, result
 end
 
 local function syncLogs(logs)
 	Hook.preSyncLogs:Fire(logs)
+	Util.Defer.reset()
 	local newLogs = {}
 	for _, log in logs do
+		Util.Defer.wait()
 		local text, level, time, from = unpack(log)
 		local exists
 		for _, existingLog in Data.logs do
-			if existingLog.text == text and existingLog.time == time then
+			if
+				existingLog.time == time
+				and existingLog.from == from
+				and existingLog.level == level
+				and existingLog.text == text
+			then
 				exists = true
 				break
 			end
@@ -175,6 +210,8 @@ end
 
 local nextLogsInterval = tick() + updateAsyncInterval
 local function updateLogs()
+	nextLogsInterval = math.huge
+
 	local logs = Data.Cache.logs
 	Data.Cache.logs = {}
 
@@ -189,16 +226,14 @@ local function updateLogs()
 		end
 		table.sort(value, rawSortTime)
 
-		local excess = #value - 10_000
-		if excess > 0 then
-			-- trim
-			for i = 1, excess do
-				value[i] = nil
-			end
-			-- shift
-			for i = excess + 1, excess + 10_000 do
-				value[i - excess] = value[excess]
-			end
+		local logDataSize = #Http:JSONEncode(value)
+		local excess = logDataSize - DATA_LIMIT
+		local count = #value
+
+		while excess > 0 do
+			excess -= #Http:JSONEncode(value[count]) + 1
+			value[count] = nil
+			count -= 1
 		end
 
 		return value
@@ -206,11 +241,12 @@ local function updateLogs()
 
 	if ok then
 		Data.pendingSaveLogs = false
-		nextLogsInterval = tick() + updateAsyncInterval
 		syncLogs(result)
 	else
 		warn(`[Kohl's Admin] Logs Datastore UpdateAsync failed: {result}`)
 	end
+
+	nextLogsInterval = tick() + updateAsyncInterval
 
 	return ok, result
 end

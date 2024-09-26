@@ -154,6 +154,8 @@ local Data = {
 	gameClosing = false,
 	pendingSaveMain = false,
 	pendingSaveLogs = false,
+	sizeMain = 0,
+	sizeLogs = 0,
 
 	banHandler = nil,
 	banUser = nil,
