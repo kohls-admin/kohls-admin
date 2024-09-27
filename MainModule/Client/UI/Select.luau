@@ -27,7 +27,11 @@ function Select.new(definition)
 			IconProperties = {
 				Size = UDim2.new(0, 18, 0, 18),
 			},
-			Label = new.Choice,
+			Label = UI.compute(function(use)
+				local choice = use(new.Choice)
+				local typeOf = typeof(choice)
+				return if typeOf == "EnumItem" or typeOf == "Instance" then choice.Name else choice
+			end),
 			TextSize = 16,
 			Padding = UDim.new(0, 8),
 			Size = UDim2.new(1, 0, 0, 24),
@@ -58,18 +62,22 @@ function Select.new(definition)
 
 	local function updateChoices()
 		for i, choice in new.Choices._value do
+			local name = choice
 			if typeof(choice) == "EnumItem" then
 				if choice.Name == "Unknown" then
 					continue
 				end
-				choice = choice.Name
+				name = choice.Name
+			elseif typeof(choice) == "Instance" then
+				name = choice.Name
 			end
+
 			local choiceButton = UI.new "Button" {
 				LayoutOrder = i,
 				ZIndex = 1e3,
 				Parent = menu._menu,
-				Name = choice,
-				Label = choice,
+				Name = tostring(name),
+				Label = name,
 				TextSize = 16,
 				Padding = UDim.new(0, 8),
 				TextXAlignment = Enum.TextXAlignment.Left,
