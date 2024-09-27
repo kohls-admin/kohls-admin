@@ -95,6 +95,7 @@ function Input.new(definition)
 		NumberOnly = false,
 		IntegerOnly = false,
 		NumberRange = NumberRange.new(0, 1),
+		Validate = UI.Nil,
 	}, definition)
 
 	new.Selected._value = UI.peek(new.Value)
@@ -110,8 +111,12 @@ function Input.new(definition)
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = UI.compute(function(use)
 			local display = use(new.DisplayText)
+			local placeholder = use(new.Placeholder)
 			local value = use(new.Value)
-			return if display ~= "" then display elseif value ~= "" then value else use(new.Placeholder)
+			local maxChars = use(new.MaxChars)
+
+			local text = if display ~= "" then display elseif value ~= "" then value else placeholder
+			return if maxChars ~= math.huge then string.sub(text, 1, maxChars) else text
 		end),
 		TextTransparency = UI.compute(function(use)
 			return if use(new.Value) == "" and use(new.DisplayText) == "" then 0.5 else 0
@@ -127,7 +132,7 @@ function Input.new(definition)
 		BackgroundTransparency = 1,
 		TextTransparency = 1,
 		TextSize = new.FontSize,
-		Text = new.Value._value,
+		Text = new.Value,
 		Font = new.Font,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
@@ -138,10 +143,43 @@ function Input.new(definition)
 		[UI.Event] = {
 			FocusLost = function()
 				local text = new._input.Text
-				if text == "" and (new.NumberOnly._value or new.IntegerOnly._value) then
+				local numberOnly = new.NumberOnly._value
+				local integerOnly = new.IntegerOnly._value
+
+				if text == "" and (numberOnly or integerOnly) then
 					new.Selected:set(new.NumberRange._value.Min, true)
 					new.Value:set(new.NumberRange._value.Min)
+					return
 				end
+
+				if (numberOnly or integerOnly) and text ~= "" then
+					local number = tonumber(text)
+					if not number or (integerOnly and string.find(text, "%D")) then
+						new._input.Text = new.Value._value
+						return
+					end
+					local numberClamped = math.clamp(number, new.NumberRange._value.Min, new.NumberRange._value.Max)
+					text = if number == numberClamped then new._input.Text else numberClamped
+					new._input.Text = text
+					local textLength = #tostring(text)
+					if new._input.CursorPosition - 1 > textLength then
+						new._input.CursorPosition = textLength + 1
+					end
+				end
+
+				if new.MaxChars._value ~= math.huge then
+					text = string.sub(text, 1, new.MaxChars._value)
+					new._input.CursorPosition = math.min(new.MaxChars._value + 1, new._input.CursorPosition)
+					new._input.Text = text
+				end
+				if new.Validate and not new.Validate._value(text) then
+					new._input.Text = if new.MaxChars._value ~= math.huge
+						then string.sub(new.Value._value, 1, new.MaxChars._value)
+						else new.Value._value
+					return
+				end
+				new.Selected:set(text, true)
+				new.Value:set(text)
 			end,
 		},
 	}
@@ -194,7 +232,6 @@ function Input.new(definition)
 		AutomaticSize = Enum.AutomaticSize.X,
 		Size = UDim2.new(0, 0, 1, 0),
 		Position = UDim2.new(0, 0, 0, 0),
-		AutoLocalize = false,
 		BackgroundTransparency = 1,
 		TextSize = new.FontSize,
 		TextColor3 = UI.Theme.PrimaryText,
@@ -230,28 +267,9 @@ function Input.new(definition)
 	new._bounds = UI.state(new._input, "TextBounds")
 
 	new._input:GetPropertyChangedSignal("Text"):Connect(function()
-		local text = new._input.Text
-		local integerOnly = new.IntegerOnly._value
-		if (new.NumberOnly._value or integerOnly) and text ~= "" then
-			local number = tonumber(text)
-			if not number or (integerOnly and string.find(text, "%D")) then
-				new._input.Text = new.Value._value
-				return
-			end
-			local numberClamped = math.clamp(number, new.NumberRange._value.Min, new.NumberRange._value.Max)
-			text = if number == numberClamped then new._input.Text else numberClamped
-			new._input.Text = text
-			local textLength = #tostring(text)
-			if new._input.CursorPosition - 1 > textLength then
-				new._input.CursorPosition = textLength + 1
-			end
-		end
-		if new.MaxChars._value ~= math.huge then
-			text = string.sub(text, 1, new.MaxChars._value)
-			new._input.CursorPosition = math.min(new.MaxChars._value + 1, new._input.CursorPosition)
-			new._input.Text = text
-		end
-		new.Value:set(text)
+		displayLabel.Text = if new.MaxChars._value ~= math.huge
+			then string.sub(new._input.Text, 1, new.MaxChars._value)
+			else new._input.Text
 	end)
 
 	UI.edit(new._input, {
