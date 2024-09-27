@@ -40,7 +40,7 @@ function Button.new(definition)
 				BackgroundTransparency = 1,
 				Size = UDim2.new(1, 0, 1, 0),
 				Font = UI.Theme.Font,
-				Text = new.Label,
+				Text = UI.computeFrom(tostring, new.Label),
 				TextSize = new.TextSize,
 				TextColor3 = UI.Theme.PrimaryText,
 				TextTransparency = 0,
