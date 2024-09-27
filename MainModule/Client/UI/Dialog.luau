@@ -13,6 +13,7 @@ function Dialog.new(definition)
 		Text = UI.Nil,
 		TextColor3 = UI.Theme.PrimaryText,
 		Title = UI.Nil,
+		Activated = false,
 		ActionText = UI.Nil,
 		Action = UI.Nil,
 		Duration = UI.Nil,
@@ -25,12 +26,11 @@ function Dialog.new(definition)
 	}, definition)
 
 	local con
-	local activated = false
 	local function activate(active)
-		if activated then
+		if UI.peek(new.Activated) then
 			return
 		end
-		activated = true
+		new.Activated:set(true)
 		new.Action:set(active, true)
 
 		if con then
@@ -215,7 +215,7 @@ function Dialog.new(definition)
 				Name = "Actions",
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
-				Visible = if new.Action then true else false,
+				Visible = if new.LeftAction or new.RightAction then true else false,
 
 				Size = UDim2.new(1, 0, 0, 0),
 
