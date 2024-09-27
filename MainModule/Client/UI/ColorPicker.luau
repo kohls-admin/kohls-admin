@@ -34,6 +34,10 @@ function ColorPicker.new(definition)
 		Size = UI.compute(function(use)
 			return UDim2.new(0, 36 + (24 + use(UI.Theme.Padding).Offset) * 3, 0, 24)
 		end),
+		Value = UI.compute(function(use)
+			local h = Color3.toHSV(use(new.Value))
+			return h
+		end),
 
 		UI.new "Frame" {
 			Name = "Rainbow",
@@ -56,14 +60,18 @@ function ColorPicker.new(definition)
 				Color = rainbowSequence,
 			},
 		},
+
+		[UI.Hook] = {
+			Selected = function(value)
+				local _, s, v = Color3.toHSV(new.Value._value)
+				local color = Color3.fromHSV(value, s, v)
+				new.Selected:set(color, true)
+				new.Value:set(color)
+			end,
+		},
 	}
 
-	local h, s, v = Color3.toHSV(UI.peek(new.Value))
-	local saturationState = UI.state(s)
-	local valueState = UI.state(v)
 	local hueColor = UI.computeFrom(Color3.fromHSV, hueSlider.Value, 1, 1)
-
-	hueSlider.Value:set(h)
 	UI.edit(hueSlider._slider, {
 		BackgroundColor3 = hueColor,
 		UI.new "UIStroke" {
@@ -73,8 +81,6 @@ function ColorPicker.new(definition)
 		},
 	})
 	hueSlider._instance:FindFirstChild("Filled"):Destroy()
-
-	local redIgnore, greenIgnore, blueIgnore, hueIgnore, svIgnore, newIgnore
 
 	local redInput = UI.new "Input" {
 		BackgroundColor3 = Color3.new(),
@@ -86,31 +92,20 @@ function ColorPicker.new(definition)
 		Padding = UDim.new(0, 5),
 		IntegerOnly = true,
 		NumberRange = NumberRange.new(0, 255),
-		Value = math.round(new.Value._value.R * 255),
+		Value = UI.compute(function(use)
+			return math.round(use(new.Value).R * 255)
+		end),
 
 		[UI.Hook] = {
-			Value = function(value)
-				if redIgnore then
-					redIgnore = nil
-					return
-				end
+			Selected = function(value)
 				local number = tonumber(value)
 				if not number then
 					return
 				end
 				local oldColor = new.Value._value
 				local newColor = Color3.new(number / 255, oldColor.G, oldColor.B)
-				newIgnore = true
 				new.Selected:set(newColor, true)
 				new.Value:set(newColor)
-				if math.round(oldColor.R * 255) == number then
-					return
-				end
-				local h, s, v = Color3.toHSV(UI.peek(new.Value))
-				hueIgnore, svIgnore = true, true
-				hueSlider.Value:set(h)
-				saturationState:set(s)
-				valueState:set(v)
 			end,
 		},
 	}
@@ -125,31 +120,20 @@ function ColorPicker.new(definition)
 		Padding = UDim.new(0, 5),
 		IntegerOnly = true,
 		NumberRange = NumberRange.new(0, 255),
-		Value = math.round(new.Value._value.G * 255),
+		Value = UI.compute(function(use)
+			return math.round(use(new.Value).G * 255)
+		end),
 
 		[UI.Hook] = {
-			Value = function(value)
-				if greenIgnore then
-					greenIgnore = nil
-					return
-				end
+			Selected = function(value)
 				local number = tonumber(value)
 				if not number then
 					return
 				end
 				local oldColor = new.Value._value
 				local newColor = Color3.new(oldColor.R, number / 255, oldColor.B)
-				newIgnore = true
 				new.Selected:set(newColor, true)
 				new.Value:set(newColor)
-				if math.round(oldColor.G * 255) == number then
-					return
-				end
-				local h, s, v = Color3.toHSV(UI.peek(new.Value))
-				hueIgnore, svIgnore = true, true
-				hueSlider.Value:set(h)
-				saturationState:set(s)
-				valueState:set(v)
 			end,
 		},
 	}
@@ -164,31 +148,20 @@ function ColorPicker.new(definition)
 		Padding = UDim.new(0, 5),
 		IntegerOnly = true,
 		NumberRange = NumberRange.new(0, 255),
-		Value = math.round(new.Value._value.B * 255),
+		Value = UI.compute(function(use)
+			return math.round(use(new.Value).B * 255)
+		end),
 
 		[UI.Hook] = {
-			Value = function(value)
-				if blueIgnore then
-					blueIgnore = nil
-					return
-				end
+			Selected = function(value)
 				local number = tonumber(value)
 				if not number then
 					return
 				end
 				local oldColor = new.Value._value
 				local newColor = Color3.new(oldColor.R, oldColor.G, number / 255)
-				newIgnore = true
 				new.Selected:set(newColor, true)
 				new.Value:set(newColor)
-				if math.round(oldColor.B * 255) == number then
-					return
-				end
-				local h, s, v = Color3.toHSV(UI.peek(new.Value))
-				hueIgnore, svIgnore = true, true
-				hueSlider.Value:set(h)
-				saturationState:set(s)
-				valueState:set(v)
 			end,
 		},
 	}
@@ -202,36 +175,11 @@ function ColorPicker.new(definition)
 		local h = hueSlider._value
 		local s = math.clamp((input.Position.X - sv.AbsolutePosition.X - 8) / (sv.AbsoluteSize.X - 16), 0, 1)
 		local v = 1 - math.clamp((input.Position.Y - sv.AbsolutePosition.Y - 8) / (sv.AbsoluteSize.Y - 16), 0, 1)
-		saturationState:set(s)
-		valueState:set(v)
-
-		if svIgnore then
-			svIgnore = nil
-			return
-		end
 
 		local color = Color3.fromHSV(h, s, v)
-		redIgnore, greenIgnore, blueIgnore, newIgnore = true, true, true, true
-		redInput._input.Text = math.round(color.R * 255)
-		greenInput._input.Text = math.round(color.G * 255)
-		blueInput._input.Text = math.round(color.B * 255)
 		new.Selected:set(color, true)
 		new.Value:set(color)
 	end
-
-	new.Value:hook(function(value)
-		if newIgnore then
-			newIgnore = nil
-			return
-		end
-		local h, s, v = Color3.toHSV(value)
-		hueSlider.Value:set(h)
-		saturationState:set(s)
-		valueState:set(v)
-		redInput._input.Text = math.round(value.R * 255)
-		greenInput._input.Text = math.round(value.G * 255)
-		blueInput._input.Text = math.round(value.B * 255)
-	end)
 
 	local function inputBegan(input)
 		if
@@ -257,20 +205,6 @@ function ColorPicker.new(definition)
 	end
 
 	UserInputService.InputChanged:Connect(update)
-
-	hueSlider.Value:hook(function(value)
-		if hueIgnore then
-			hueIgnore = nil
-			return
-		end
-		local color = Color3.fromHSV(value, saturationState._value, valueState._value)
-		redIgnore, greenIgnore, blueIgnore, newIgnore = true, true, true, true
-		redInput._input.Text = math.round(color.R * 255)
-		greenInput._input.Text = math.round(color.G * 255)
-		blueInput._input.Text = math.round(color.B * 255)
-		new.Selected:set(color, true)
-		new.Value:set(color)
-	end)
 
 	local inputFrame = UI.new "Frame" {
 		BackgroundTransparency = 1,
@@ -354,7 +288,8 @@ function ColorPicker.new(definition)
 				Position = UI.tween(
 					UI.Theme.TweenOut,
 					UI.compute(function(use)
-						return UDim2.new(use(saturationState), 0, 1 - use(valueState), 0)
+						local _, s, v = Color3.toHSV(use(new.Value))
+						return UDim2.new(s, 0, 1 - v, 0)
 					end)
 				),
 
