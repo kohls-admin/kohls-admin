@@ -181,10 +181,8 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 			if game.CreatorType == Enum.CreatorType.Group then
 				local ok, result = Util.Retry(function()
 					return Util.Services.GroupService:GetGroupInfoAsync(game.CreatorId)
-				end, 5, 0.2, 2)
-				if ok then
-					_K.creatorId = result.Owner.Id
-				end
+				end, 5, 1, 2)
+				_K.creatorId = if ok then result.Owner.Id else 0
 			else
 				_K.creatorId = game.CreatorId
 			end
