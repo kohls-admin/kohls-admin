@@ -83,10 +83,16 @@ local function syncMain(result)
 
 	-- deserialize settings
 	for key, setting in settings do
-		if type(setting) == "table" and setting[1] == "color" then
-			settings[key] = Color3.new(unpack(setting, 2))
-		elseif key == "themeFont" or key == "themeFontMono" then
-			settings[key] = Enum.Font[setting]
+		if type(setting) == "table" then
+			local itemType = setting[1]
+			if itemType == "color" then
+				settings[key] = Color3.new(unpack(setting, 2))
+			elseif itemType == "udim" then
+				settings[key] = UDim.new(unpack(setting, 2))
+				print("udim", settings[key])
+			elseif itemType == "enum" then
+				settings[key] = Enum[setting[2]][setting[3]]
+			end
 		end
 	end
 

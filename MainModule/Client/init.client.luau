@@ -29,9 +29,6 @@ for key, value in _K.Data.settings do
 	if string.find(key, "theme", 1, true) == 1 then
 		key = string.sub(key, 6)
 		state:hook(function(value)
-			if key == "CornerRadius" or key == "Padding" then
-				value = UDim.new(0, value)
-			end
 			UI.Theme[key]:set(value)
 		end)
 	end

@@ -260,24 +260,32 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		_K.playerPrefix[player.UserId] = prefix
 	end)
 
-	_K.Remote.Setting.OnServerEvent:Connect(function(player, key, value)
+	_K.Remote.Settings.OnServerEvent:Connect(function(player, changes)
 		if not _K.Auth.hasPermission(player.UserId, "settings") then
 			return
 		end
 
-		_K.Data.settings[key] = value
+		for key, value in changes do
+			if _K.Data.settings[key] == nil then
+				continue
+			end
+			_K.Data.settings[key] = value
 
-		local cacheValue = value
-		if typeof(value) == "Color3" then
-			cacheValue = { "color", value.R, value.G, value.B }
+			local cacheValue, valueType = value, typeof(value)
+			if valueType == "Color3" then
+				cacheValue = { "color", value.R, value.G, value.B }
+			elseif valueType == "EnumItem" then
+				cacheValue = { "enum", tostring(value.EnumType), value.Name }
+			elseif valueType == "UDim" then
+				cacheValue = { "udim", value.Scale, value.Offset }
+			end
+
+			_K.Data.Cache.settings[key] = cacheValue
+			_K.Data.pendingSaveMain = true
 		end
-
-		_K.Data.Cache.settings[key] = cacheValue
-		_K.Data.pendingSaveMain = true
-
 		for _, toPlayer in _K.Services.Players:GetPlayers() do
 			if toPlayer ~= player then
-				_K.Remote.Setting:FireClient(toPlayer, key, value)
+				_K.Remote.Settings:FireClient(toPlayer, changes)
 			end
 		end
 	end)

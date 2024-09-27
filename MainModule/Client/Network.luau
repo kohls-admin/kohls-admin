@@ -1,5 +1,4 @@
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 
 local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.UI)
@@ -111,19 +110,18 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logs)
 	task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
 end)
 
-_K.Remote.Setting.OnClientEvent:Connect(function(key, value)
-	_K.Data.settings[key] = value
-	UI.Scope.settings[key]:set(value)
-	if key == "dashboardButtonRank" or key == "freeAdmin" then
-		updateInterfaceAuth()
-	end
-end)
-
 _K.Remote.Settings.OnClientEvent:Connect(function(settings)
 	for key, value in settings do
 		value = UI.peek(value)
 		_K.Data.settings[key] = value
 		UI.Scope.settings[key]:set(value)
+		if string.find(key, "theme", 1, true) == 1 then
+			local themeKey = string.sub(key, 6)
+			UI.Theme[themeKey]:set(value)
+		end
+	end
+	if settings.dashboardButtonRank ~= nil or settings.freeAdmin ~= nil then
+		updateInterfaceAuth()
 	end
 end)
 
