@@ -11,7 +11,10 @@ function Color.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Text = "ListItem Label",
 		Value = Color3.new(1, 0, 0),
+		Selected = Color3.new(1, 0, 0),
 	}, definition)
+
+	new.Selected._value = UI.peek(new.Value)
 
 	new._instance = UI.new "TextButton" {
 		AutoLocalize = false,
@@ -49,6 +52,7 @@ function Color.new(definition)
 		ZIndex = 100,
 		Parent = UI.LayerTop,
 		Value = new.Value,
+		Selected = new.Selected,
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = 0,

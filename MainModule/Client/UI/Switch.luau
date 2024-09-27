@@ -8,7 +8,10 @@ setmetatable(Switch, BaseClass)
 function Switch.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Value = false,
+		Selected = false,
 	}, definition)
+
+	new.Selected._value = UI.peek(new.Value)
 
 	local backgroundTransparency = UI.tween(
 		UI.Theme.TweenOut,
@@ -76,12 +79,14 @@ function Switch.new(definition)
 
 		[UI.Event] = {
 			Activated = function()
-				local value = UI.peek(new.Value)
-				new.Value:set(not value)
+				local value = not UI.peek(new.Value)
+				new.Selected:set(value, true)
+				new.Value:set(value)
+
 				if value then
-					UI.Sound.Hover01:Play()
-				else
 					UI.Sound.Hover03:Play()
+				else
+					UI.Sound.Hover01:Play()
 				end
 			end,
 		},

@@ -19,9 +19,12 @@ setmetatable(ColorPicker, BaseClass)
 
 function ColorPicker.new(definition)
 	local new = UI.makeStatefulDefaults({
-		Value = Color3.new(1, 0, 0),
 		Visible = false,
+		Value = Color3.new(1, 0, 0),
+		Selected = Color3.new(1, 0, 0),
 	}, definition)
+
+	new.Selected._value = UI.peek(new.Value)
 
 	local dragging = UI.state(false)
 
@@ -98,6 +101,7 @@ function ColorPicker.new(definition)
 				local oldColor = new.Value._value
 				local newColor = Color3.new(number / 255, oldColor.G, oldColor.B)
 				newIgnore = true
+				new.Selected:set(newColor, true)
 				new.Value:set(newColor)
 				if math.round(oldColor.R * 255) == number then
 					return
@@ -136,6 +140,7 @@ function ColorPicker.new(definition)
 				local oldColor = new.Value._value
 				local newColor = Color3.new(oldColor.R, number / 255, oldColor.B)
 				newIgnore = true
+				new.Selected:set(newColor, true)
 				new.Value:set(newColor)
 				if math.round(oldColor.G * 255) == number then
 					return
@@ -174,6 +179,7 @@ function ColorPicker.new(definition)
 				local oldColor = new.Value._value
 				local newColor = Color3.new(oldColor.R, oldColor.G, number / 255)
 				newIgnore = true
+				new.Selected:set(newColor, true)
 				new.Value:set(newColor)
 				if math.round(oldColor.B * 255) == number then
 					return
@@ -209,6 +215,7 @@ function ColorPicker.new(definition)
 		redInput._input.Text = math.round(color.R * 255)
 		greenInput._input.Text = math.round(color.G * 255)
 		blueInput._input.Text = math.round(color.B * 255)
+		new.Selected:set(color, true)
 		new.Value:set(color)
 	end
 
@@ -261,6 +268,7 @@ function ColorPicker.new(definition)
 		redInput._input.Text = math.round(color.R * 255)
 		greenInput._input.Text = math.round(color.G * 255)
 		blueInput._input.Text = math.round(color.B * 255)
+		new.Selected:set(color, true)
 		new.Value:set(color)
 	end)
 

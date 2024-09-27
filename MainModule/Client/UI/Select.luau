@@ -9,7 +9,10 @@ function Select.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Choice = "Default",
 		Choices = { "Default", "Choice A", "Choice B", "Choice C" },
+		Selected = "Default",
 	}, definition)
+
+	new.Selected._value = UI.peek(new.Choice)
 
 	local menu
 
@@ -85,6 +88,7 @@ function Select.new(definition)
 
 				[UI.Event] = {
 					Activated = function()
+						new.Selected:set(choice, true)
 						new.Choice:set(choice)
 						UI.deactivateState(menu.Visible, "floating")
 					end,

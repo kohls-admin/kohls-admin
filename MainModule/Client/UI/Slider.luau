@@ -13,8 +13,11 @@ function Slider.new(definition)
 		Snap = 0,
 		SnapSound = true,
 		Value = 1,
+		Selected = 1,
 		Vertical = false,
 	}, definition)
+
+	new.Selected._value = UI.peek(new.Value)
 
 	local dragInput
 	local dragging = UI.state(false)
@@ -42,6 +45,7 @@ function Slider.new(definition)
 			end
 		end
 
+		new.Selected:set(value, true)
 		new.Value:set(value)
 	end
 

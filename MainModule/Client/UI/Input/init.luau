@@ -80,6 +80,7 @@ function Input.new(definition)
 		DisplayText = "",
 		Placeholder = "",
 		Value = "",
+		Selected = "",
 		Font = UI.Theme.Font,
 		FontSize = UI.Theme.FontSize,
 		TextColor3 = UI.Theme.PrimaryText,
@@ -95,6 +96,8 @@ function Input.new(definition)
 		IntegerOnly = false,
 		NumberRange = NumberRange.new(0, 1),
 	}, definition)
+
+	new.Selected._value = UI.peek(new.Value)
 
 	local displayLabel = UI.new "TextLabel" {
 		AutoLocalize = false,
@@ -136,6 +139,7 @@ function Input.new(definition)
 			FocusLost = function()
 				local text = new._input.Text
 				if text == "" and (new.NumberOnly._value or new.IntegerOnly._value) then
+					new.Selected:set(new.NumberRange._value.Min, true)
 					new.Value:set(new.NumberRange._value.Min)
 				end
 			end,
@@ -146,6 +150,7 @@ function Input.new(definition)
 	if new.HotkeyInput._value then
 		new._input.Focused:Connect(function()
 			table.clear(new.Modifiers._value)
+			new.Selected:set("", true)
 			new.Value:set("")
 		end)
 		UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -159,10 +164,12 @@ function Input.new(definition)
 
 				local hotkeyText = `{mods.Shift and "Shift+" or ""}{mods.Alt and "Alt+" or ""}`
 				if table.find(MODIFIERS, input.KeyCode) then
+					new.Selected:set(hotkeyText, true)
 					new.Value:set(hotkeyText)
 					return
 				end
 
+				new.Selected:set(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode), true)
 				new.Value:set(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
 				new.Hotkey:set(input.KeyCode)
 				new._input:ReleaseFocus(true)
