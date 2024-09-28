@@ -39,7 +39,7 @@ function Logs.new(_K)
 	local scroller, debounceScrollerUpdate
 
 	local function filterTest(self, list)
-		local filter = string.lower(self._input.Value._value)
+		local filter = string.lower(self._input._input.Text)
 		self._filter = filter
 		local new = {}
 		_K.Util.Defer.reset()

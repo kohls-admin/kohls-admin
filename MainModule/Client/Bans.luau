@@ -57,7 +57,7 @@ function Bans.new(_K)
 		},
 	})
 	local function filterTest(self, list)
-		local filter = scroller._input.Value._value:lower()
+		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
 		local new = {}
 		for _, userId in list do

@@ -180,11 +180,8 @@ function ScrollerFast.new(definition)
 			IconProperties = {
 				Size = UDim2.fromOffset(18, 18),
 			},
-
-			[UI.Hook] = {
-				Value = debounce,
-			},
 		}
+		self._input._input:GetPropertyChangedSignal("Text"):Connect(debounce)
 	end
 	return setmetatable(self, ScrollerFast)
 end
