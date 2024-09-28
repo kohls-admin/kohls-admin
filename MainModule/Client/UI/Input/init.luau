@@ -4,8 +4,11 @@ local Clack = require(script.Clack).registerAll()
 
 Clack.enabled = UI.peek(UI.Theme.ClackEnabled)
 Clack.everyTextBox = UI.peek(UI.Theme.ClackAll)
+UI.Theme.SoundEnabled:hook(function(value)
+	Clack.enabled = value and UI.Theme.ClackEnabled._value
+end)
 UI.Theme.ClackEnabled:hook(function(value)
-	Clack.enabled = value
+	Clack.enabled = value and UI.Theme.SoundEnabled._value
 end)
 UI.Theme.ClackAll:hook(function(value)
 	Clack.everyTextBox = value

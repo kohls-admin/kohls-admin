@@ -131,6 +131,7 @@ function Settings.new(_K)
 		-- switches
 		for _, data in
 			{
+				{ key = "SoundEnabled", text = "UI Sounds Enabled" },
 				{
 					key = "ClackEnabled",
 					text = "Enable typing sounds",

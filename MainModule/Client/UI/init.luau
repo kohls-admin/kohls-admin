@@ -18,13 +18,6 @@ function Sound.new(id: string): Sound
 	return setmetatable(self, Sound)
 end
 
--- Creates a copy of the sound and plays it
-function Sound:Play()
-	local sound = self.sound:Clone()
-	sound.Parent = SoundService
-	sound:Destroy()
-end
-
 local Flux = require(script.Parent.Parent.Flux)
 local state = Flux.state
 
@@ -45,6 +38,16 @@ local playerGui = Players.LocalPlayer and Players.LocalPlayer:WaitForChild("Play
 local UI = { Class = {} }
 UI.__index = UI
 setmetatable(UI, Flux)
+
+-- Creates a copy of the sound and plays it
+function Sound:Play()
+	if not UI.Theme.SoundEnabled._value then
+		return
+	end
+	local sound = self.sound:Clone()
+	sound.Parent = SoundService
+	sound:Destroy()
+end
 
 --- @within UI
 --- @prop GuiService GuiService
@@ -272,6 +275,7 @@ UI.Theme = {
 	CornerRadius = state(UDim.new(0, 8)),
 	Padding = state(UDim.new(0, 8)),
 	StrokeEnabled = state(true),
+	SoundEnabled = state(true),
 
 	TweenIn = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In)),
 	TweenOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)),
