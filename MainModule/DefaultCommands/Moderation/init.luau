@@ -1813,14 +1813,8 @@ return {
 			},
 		},
 		run = function(context, players, teams)
-			if teams == nil then
-				teams = context._K.Services.Teams:GetTeams()
-			end
-			local randomSort = {}
-			for _, player in players do
-				table.insert(randomSort, math.ceil(math.random(#randomSort + 1)), player)
-			end
-			for i, player in randomSort do
+			teams = context._K.Util.Table.shuffle(teams or context._K.Services.Teams:GetTeams())
+			for i, player in context._K.Util.Table.shuffle(players) do
 				player.Team = teams[((i - 1) % #teams) + 1]
 			end
 		end,
