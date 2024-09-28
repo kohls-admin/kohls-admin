@@ -42,12 +42,11 @@ local Data = {
 
 	loaderSettings = {} :: { [string]: any },
 	settings = {
+		prefix = ";",
 		announcement = false,
 		liveSettings = true,
-		prefix = ";",
-		vip = true,
-		mutableHooks = false,
 		gameHubEnabled = true,
+		vip = true,
 		dashboardButtonRank = 0,
 		joinNotificationRank = 1,
 	},

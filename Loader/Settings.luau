@@ -1,6 +1,7 @@
 local Settings = {
 
-	-- Auto updates via require, disable to use the included MainModule
+	-- Automatic updates from the latest official version of the MainModule
+	-- Disable to use the included MainModule
 	autoUpdate = true,
 
 	-- MAKE SURE TO CHANGE THIS FOR IMPROVED SECURITY!
@@ -10,9 +11,6 @@ local Settings = {
 	-- Changes the default command prefix
 	prefix = ";",
 
-	-- Enables Kohl's Admin VIP donation features
-	vip = true,
-
 	--[[
 	Enables participation in the Kohl's Admin Games Hub, showcasing
 	your game to users looking for games with benefits from Kohl's Admin.
@@ -21,6 +19,9 @@ local Settings = {
 	⚠️ IMPORTANT: Allow HTTP Requests in Game Settings -> Security
 	]]
 	gameHubEnabled = true,
+
+	-- Enables Kohl's Admin VIP donation features (required for games hub)
+	vip = true,
 
 	-- Gives everyone access to the uncommented roles
 	freeAdmin = {
@@ -48,7 +49,7 @@ local Settings = {
 			Has a UserId of 44391621
 		Use "game.PrivateServerOwnerId" for private servers!
 	]]
-	roles = {
+	userRoles = {
 		creator = {},
 		superadmin = {},
 		admin = {},
@@ -58,7 +59,7 @@ local Settings = {
 
 	--[[
 	Toggles visibility of the Kohl's Admin Dashboard Button in the Topbar.
-		0	default
+		0	defaultRole
 		1	vip
 		2	mod
 		3	admin
@@ -67,7 +68,6 @@ local Settings = {
 	]]
 	dashboardButtonRank = 0,
 
-	-- TODO: theme configuration
 	-- Toggles visibility of the Kohl's Admin Join Notification.
 	joinNotificationRank = 1,
 

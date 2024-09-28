@@ -158,10 +158,11 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		loaderSettings.Parent = script
 		-- TODO: warn creator and developers to change the datastore key if unchanged
 		_K.Util.Table.merge(_K.Data.loaderSettings, loaderSettings)
-		_K.Data.settings.prefix = loaderSettings.prefix
-		_K.Data.settings.vip = loaderSettings.vip
-		_K.Data.settings.gameHubEnabled = loaderSettings.gameHubEnabled
-		_K.Data.settings.dashboardButtonRank = loaderSettings.dashboardButtonRank
+		for key, value in loaderSettings do
+			if _K.Data.settings[key] then
+				_K.Data.settings[key] = value
+			end
+		end
 
 		-- private server datastore
 		local dataStoreKey = loaderSettings.dataStoreKey
@@ -190,13 +191,13 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 			_K.Auth.userRoleAdd(_K.creatorId, "creator")
 		end)
 
-		-- define main roles
-		for role, users in loaderSettings.roles do
+		-- define user roles
+		for role, users in loaderSettings.userRoles do
 			for _, userId in users do
 				if userId <= 0 then
 					continue
 				end
-				_K.Auth.userRoleAdd(userId, role)
+				task.spawn(_K.Auth.userRoleAdd, userId, role)
 			end
 		end
 
