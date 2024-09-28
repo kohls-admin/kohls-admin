@@ -60,34 +60,16 @@ function Settings.new(_K)
 		end
 	end
 
+	local settingsScroller = UI.new "Scroller" {
+		UI.new "UIFlexItem" {
+			FlexMode = Enum.UIFlexMode.Fill,
+		},
+	}
+
 	local settingsLineItems = {
 		General = {
 			-- FIX: prevent selecting reserved characters (comma, space, !@#$%^&*, `, ")
 			-- TODO: customizable listable/argument delimiter?
-			UI.new "ListItem" {
-				Text = "Command Prefix",
-				UI.new "Input" {
-					Font = UI.Theme.FontMono,
-					Size = UDim2.new(0, 24, 1, 0),
-					FontSize = 14,
-					Padding = UDim.new(0, 5),
-					Placeholder = ";",
-					MaxChars = 1,
-					Value = UI.compute(function(use)
-						return use(UI.Scope.settings.prefix)
-					end),
-					Validate = function(text)
-						return not (text == "" or table.find({ ",", " ", "`", '"' }, text))
-					end,
-
-					[UI.Hook] = {
-						Selected = function(value)
-							UI.Scope.settings.prefix._value = value
-							change("prefix", value)
-						end,
-					},
-				},
-			},
 			UI.new "ListItem" {
 				Text = "Command Bar Hotkey",
 				UI.new "Input" {
@@ -116,57 +98,179 @@ function Settings.new(_K)
 					Modifiers = _K.client.hotkeys.dashboard.mods,
 				},
 			},
+			UI.new "ListItem" {
+				Text = "Command Prefix",
+				UI.new "Input" {
+					Font = UI.Theme.FontMono,
+					Size = UDim2.new(0, 24, 1, 0),
+					FontSize = 14,
+					Padding = UDim.new(0, 5),
+					Placeholder = ";",
+					MaxChars = 1,
+					Value = UI.compute(function(use)
+						return use(UI.Scope.settings.prefix)
+					end),
+					Validate = function(text)
+						return not (text == "" or table.find({ ",", " ", "`", '"' }, text))
+					end,
+
+					[UI.Hook] = {
+						Selected = function(value)
+							UI.Scope.settings.prefix._value = value
+							change("prefix", value)
+						end,
+					},
+				},
+			},
 		},
 		Theme = {},
 	}
 
-	-- switches
-	for _, data in
-		{
+	task.defer(function()
+		_K.Util.Defer.reset()
+		-- switches
+		for _, data in
 			{
-				key = "ClackEnabled",
-				text = "Enable typing sounds",
-				tip = "<b>NOTE:</b> Requires taking the audios and adding permissions to your game!\n<font transparency='0.66'>Why does Roblox do this to me</font> 😔",
-			},
-			{ key = "ClackAll", text = "Sounds on every TextBox" },
-			{ key = "StrokeEnabled", text = "UI Borders Enabled" },
-		}
-	do
-		table.insert(
-			settingsLineItems.Theme,
-			UI.new "ListItem" {
-				Text = data.text,
-				UI.new "Switch" {
-					Value = UI.Theme[data.key],
-
-					[UI.Hook] = {
-						Selected = function(value)
-							change("theme" .. data.key, value)
-						end,
-					},
+				{
+					key = "ClackEnabled",
+					text = "Enable typing sounds",
+					tip = "<b>NOTE:</b> Requires taking the audios and adding permissions to your game!\n<font transparency='0.66'>Why does Roblox do this to me</font> 😔",
 				},
-				if data.tip
-					then UI.new "Tooltip" {
-						Text = data.tip,
-						TextXAlignment = Enum.TextXAlignment.Left,
-					}
-					else nil,
+				{ key = "ClackAll", text = "Sounds on every TextBox" },
+				{ key = "StrokeEnabled", text = "UI Borders Enabled" },
 			}
-		)
-	end
+		do
+			table.insert(
+				settingsLineItems.Theme,
+				UI.new "ListItem" {
+					Text = data.text,
+					UI.new "Switch" {
+						Value = UI.Theme[data.key],
 
-	-- font faces
-	do
-		for _, key in { "Font", "FontMono" } do
+						[UI.Hook] = {
+							Selected = function(value)
+								change("theme" .. data.key, value)
+							end,
+						},
+					},
+					if data.tip
+						then UI.new "Tooltip" {
+							Text = data.tip,
+							TextXAlignment = Enum.TextXAlignment.Left,
+						}
+						else nil,
+				}
+			)
+		end
+
+		-- font faces
+		do
+			for _, key in { "Font", "FontMono" } do
+				_K.Util.Defer.wait()
+				table.insert(
+					settingsLineItems.Theme,
+					UI.new "ListItem" {
+						Text = key:gsub("(.)(%u)", "%1 %2"),
+						UI.new "Select" {
+							Choice = UI.Theme[key],
+							Choices = Enum.Font:GetEnumItems(),
+							[UI.Hook] = {
+								Selected = function(value)
+									change("theme" .. key, value)
+								end,
+							},
+						},
+					}
+				)
+			end
+		end
+		_K.Util.Defer.wait()
+
+		do -- Font Size
+			table.insert(
+				settingsLineItems.Theme,
+				UI.new "ListItem" {
+					Text = "Font Size",
+					UI.new "Input" {
+						Font = UI.Theme.FontMono,
+						Size = UDim2.new(0, 32, 1, 0),
+						FontSize = 14,
+						Padding = UDim.new(0, 5),
+						NumberOnly = true,
+						NumberRange = NumberRange.new(8, 32),
+						Placeholder = "",
+						Value = UI.Theme.FontSize,
+						[UI.Hook] = {
+							Selected = function(value)
+								local number = tonumber(value)
+								if not number then
+									return
+								end
+								change("themeFontSize", number)
+							end,
+						},
+					},
+					UI.new "Slider" {
+						Snap = 25,
+						Value = UI.compute(function(use)
+							return math.clamp(use(UI.Theme.FontSize) - 7, 1, 25)
+						end),
+						UI.new "UIFlexItem" {
+							FlexMode = Enum.UIFlexMode.Fill,
+						},
+						[UI.Hook] = {
+							Selected = function(value)
+								UI.Theme.FontSize:set(value + 7)
+								change("themeFontSize", value + 7)
+							end,
+						},
+					},
+				}
+			)
+		end
+		_K.Util.Defer.wait()
+
+		-- UDim options
+		for i, key in { "CornerRadius", "Padding" } do
 			table.insert(
 				settingsLineItems.Theme,
 				UI.new "ListItem" {
 					Text = key:gsub("(.)(%u)", "%1 %2"),
-					UI.new "Select" {
-						Choice = UI.Theme[key],
-						Choices = Enum.Font:GetEnumItems(),
+					UI.new "Input" {
+						Font = UI.Theme.FontMono,
+						Size = UDim2.new(0, 32, 1, 0),
+						FontSize = 14,
+						Padding = UDim.new(0, 5),
+						NumberOnly = true,
+						NumberRange = NumberRange.new(0, 16),
+						Placeholder = "",
+						Value = UI.compute(function(use)
+							return use(UI.Theme[key]).Offset
+						end),
 						[UI.Hook] = {
 							Selected = function(value)
+								local number = tonumber(value)
+								if not number then
+									return
+								end
+								value = UDim.new(0, number)
+								UI.Theme[key]:set(value)
+								change("theme" .. key, value)
+							end,
+						},
+					},
+					UI.new "Slider" {
+						Snap = 17,
+						Value = UI.compute(function(use)
+							return math.clamp(use(UI.Theme[key]).Offset + 1, 1, 17)
+						end),
+						UI.new "UIFlexItem" {
+							FlexMode = Enum.UIFlexMode.Fill,
+						},
+						[UI.Hook] = {
+							Selected = function(value)
+								value = UDim.new(0, value - 1)
+								UI.Theme[key]:set(value)
 								change("theme" .. key, value)
 							end,
 						},
@@ -174,168 +278,89 @@ function Settings.new(_K)
 				}
 			)
 		end
-	end
+		_K.Util.Defer.wait()
 
-	do -- Font Size
-		table.insert(
-			settingsLineItems.Theme,
-			UI.new "ListItem" {
-				Text = "Font Size",
-				UI.new "Input" {
-					Font = UI.Theme.FontMono,
-					Size = UDim2.new(0, 32, 1, 0),
-					FontSize = 14,
-					Padding = UDim.new(0, 5),
-					NumberOnly = true,
-					NumberRange = NumberRange.new(8, 32),
-					Placeholder = "",
-					Value = UI.Theme.FontSize,
-					[UI.Hook] = {
-						Selected = function(value)
-							local number = tonumber(value)
-							if not number then
-								return
-							end
-							change("themeFontSize", number)
-						end,
+		do -- Background Transparency
+			table.insert(
+				settingsLineItems.Theme,
+				UI.new "ListItem" {
+					Text = "Background Transparency",
+					UI.new "Input" {
+						Font = UI.Theme.FontMono,
+						Size = UDim2.new(0, 32, 1, 0),
+						FontSize = 14,
+						Padding = UDim.new(0, 5),
+						MaxChars = 3,
+						NumberOnly = true,
+						NumberRange = NumberRange.new(0, 1),
+						Placeholder = "",
+						Value = UI.compute(function(use)
+							return use(UI.Theme.Transparency)
+						end),
+						[UI.Hook] = {
+							Selected = function(value)
+								local number = tonumber(value)
+								if not tonumber(value) then
+									return
+								end
+								UI.Theme.Transparency:set(number)
+								change("themeTransparency", number)
+							end,
+						},
 					},
-				},
-				UI.new "Slider" {
-					Snap = 25,
-					Value = UI.compute(function(use)
-						return math.clamp(use(UI.Theme.FontSize) - 7, 1, 25)
-					end),
-					UI.new "UIFlexItem" {
-						FlexMode = Enum.UIFlexMode.Fill,
+					UI.new "Slider" {
+						Value = UI.Theme.Transparency,
+						UI.new "UIFlexItem" {
+							FlexMode = Enum.UIFlexMode.Fill,
+						},
+						[UI.Hook] = {
+							Selected = function(value)
+								change("themeTransparency", value)
+							end,
+						},
 					},
-					[UI.Hook] = {
-						Selected = function(value)
-							UI.Theme.FontSize:set(value + 7)
-							change("themeFontSize", value + 7)
-						end,
+				}
+			)
+		end
+
+		-- Color options
+		for index, key in colors do
+			_K.Util.Defer.wait()
+			local state = UI.Theme[key]
+			local dataKey = "theme" .. key
+			table.insert(
+				settingsLineItems.Theme,
+				UI.new "ListItem" {
+					Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
+					UI.new "Color" {
+						Value = state,
+						[UI.Hook] = {
+							Selected = function(value)
+								change(dataKey, value)
+							end,
+						},
 					},
-				},
+				}
+			)
+		end
+
+		local keyOrder = { "general", "theme" }
+		for key, lineItems in settingsLineItems do
+			local list = UI.new "List" {
+				Parent = settingsScroller,
+				Name = key,
+				Label = key,
+				Collapsible = true,
+				LayoutOrder = table.find(keyOrder, string.lower(key)),
 			}
-		)
-	end
-
-	-- UDim options
-	for i, key in { "CornerRadius", "Padding" } do
-		table.insert(
-			settingsLineItems.Theme,
-			UI.new "ListItem" {
-				Text = key:gsub("(.)(%u)", "%1 %2"),
-				UI.new "Input" {
-					Font = UI.Theme.FontMono,
-					Size = UDim2.new(0, 32, 1, 0),
-					FontSize = 14,
-					Padding = UDim.new(0, 5),
-					NumberOnly = true,
-					NumberRange = NumberRange.new(0, 16),
-					Placeholder = "",
-					Value = UI.compute(function(use)
-						return use(UI.Theme[key]).Offset
-					end),
-					[UI.Hook] = {
-						Selected = function(value)
-							local number = tonumber(value)
-							if not number then
-								return
-							end
-							value = UDim.new(0, number)
-							UI.Theme[key]:set(value)
-							change("theme" .. key, value)
-						end,
-					},
-				},
-				UI.new "Slider" {
-					Snap = 17,
-					Value = UI.compute(function(use)
-						return math.clamp(use(UI.Theme[key]).Offset + 1, 1, 17)
-					end),
-					UI.new "UIFlexItem" {
-						FlexMode = Enum.UIFlexMode.Fill,
-					},
-					[UI.Hook] = {
-						Selected = function(value)
-							value = UDim.new(0, value - 1)
-							UI.Theme[key]:set(value)
-							change("theme" .. key, value)
-						end,
-					},
-				},
-			}
-		)
-	end
-
-	do -- Background Transparency
-		table.insert(
-			settingsLineItems.Theme,
-			UI.new "ListItem" {
-				Text = "Background Transparency",
-				UI.new "Input" {
-					Font = UI.Theme.FontMono,
-					Size = UDim2.new(0, 32, 1, 0),
-					FontSize = 14,
-					Padding = UDim.new(0, 5),
-					MaxChars = 3,
-					NumberOnly = true,
-					NumberRange = NumberRange.new(0, 1),
-					Placeholder = "",
-					Value = UI.compute(function(use)
-						return use(UI.Theme.Transparency)
-					end),
-					[UI.Hook] = {
-						Selected = function(value)
-							local number = tonumber(value)
-							if not tonumber(value) then
-								return
-							end
-							UI.Theme.Transparency:set(number)
-							change("themeTransparency", number)
-						end,
-					},
-				},
-				UI.new "Slider" {
-					Value = UI.Theme.Transparency,
-					UI.new "UIFlexItem" {
-						FlexMode = Enum.UIFlexMode.Fill,
-					},
-					[UI.Hook] = {
-						Selected = function(value)
-							change("themeTransparency", value)
-						end,
-					},
-				},
-			}
-		)
-	end
-
-	-- Color options
-	for index, key in colors do
-		local state = UI.Theme[key]
-		local dataKey = "theme" .. key
-		table.insert(
-			settingsLineItems.Theme,
-			UI.new "ListItem" {
-				Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
-				UI.new "Color" {
-					Value = state,
-					[UI.Hook] = {
-						Selected = function(value)
-							change(dataKey, value)
-						end,
-					},
-				},
-			}
-		)
-	end
-
-	local settingsScroller = UI.new "Scroller" {
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
-		},
-	}
+			for index, lineItem in ipairs(lineItems) do
+				UI.edit(lineItem, {
+					LayoutOrder = index,
+					Parent = list,
+				})
+			end
+		end
+	end)
 
 	settingsDialog = UI.new "Dialog" {
 		BackgroundTransparency = 0.875,
@@ -407,23 +432,6 @@ function Settings.new(_K)
 		settingsScroller,
 		settingsDialog,
 	}
-
-	local keyOrder = { "general", "theme" }
-	for key, lineItems in settingsLineItems do
-		local list = UI.new "List" {
-			Parent = settingsScroller,
-			Name = key,
-			Label = key,
-			Collapsible = true,
-			LayoutOrder = table.find(keyOrder, string.lower(key)),
-		}
-		for index, lineItem in ipairs(lineItems) do
-			UI.edit(lineItem, {
-				LayoutOrder = index,
-				Parent = list,
-			})
-		end
-	end
 
 	return settingsFrame
 end
