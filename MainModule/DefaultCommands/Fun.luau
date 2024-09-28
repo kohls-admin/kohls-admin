@@ -475,25 +475,28 @@ return {
 				EmitterSize = 512,
 				Volume = 2,
 			}
-			local sphere = _K.Util.Services.InsertService:CreateMeshPartAsync(
-				"rbxassetid://116325731356319",
-				Enum.CollisionFidelity.Box,
-				Enum.RenderFidelity.Precise
-			)
-			_K.Flux.edit(sphere, {
-				Name = "Sphere",
-				Color = Color3.new(1, 0, 0),
-				Material = Enum.Material.Neon,
-				Transparency = 0.75,
-				Anchored = true,
-				EnableFluidForces = false,
-				CastShadow = false,
-				CanCollide = false,
-				CanTouch = false,
-				CanQuery = false,
-				Massless = true,
-				Size = Vector3.zero,
-			})
+			local sphere
+			task.defer(function()
+				sphere = _K.Util.Services.InsertService:CreateMeshPartAsync(
+					"rbxassetid://116325731356319",
+					Enum.CollisionFidelity.Box,
+					Enum.RenderFidelity.Precise
+				)
+				_K.Flux.edit(sphere, {
+					Name = "Sphere",
+					Color = Color3.new(1, 0, 0),
+					Material = Enum.Material.Neon,
+					Transparency = 0.75,
+					Anchored = true,
+					EnableFluidForces = false,
+					CastShadow = false,
+					CanCollide = false,
+					CanTouch = false,
+					CanQuery = false,
+					Massless = true,
+					Size = Vector3.zero,
+				})
+			end)
 
 			local function explode(character, position)
 				if character:GetAttribute("_KNuked") then
