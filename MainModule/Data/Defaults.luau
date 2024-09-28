@@ -63,55 +63,55 @@ local Data = {
 		-- { rank = 200, roles = { "admin", "vip" }, rankAndAbove = true },
 		-- },
 	},
-	defaultRole = {
-		-- role "_rank" determines hierarchy
-		-- 0 is reserved for the default role
-		_rank = 0,
-		name = "Player",
-		color = "#0ff",
-
-		-- when enabled only allows their player to be used with the player argument
-		-- WARN: doesn't affect commands that use userids!
-		onlyTargetSelf = false,
-
-		permissions = {
-			-- this permission bypasses all restrictions (danger!)
-			admin = false,
-			-- can PERMANENTLY ban users from the game
-			ban = false,
-			-- can kick or ban users from the current server session
-			kick = false,
-			-- allows the user to manage roles of other users with a lesser role
-			roles = false,
-			saveRoles = false, -- if the user can also save the roles across sessions
-			-- can configure the global admin settings
-			settings = false,
-			-- can view audit logs
-			logs = false,
-		},
-
-		-- allowed command groups
-		groups = {
-			-- "creator",
-			-- "administration",
-			-- "moderation",
-			-- "environment",
-			-- "general",
-			-- "fun",
-			-- "vip",
-			"utility",
-		},
-
-		-- command name/alias filter
-		filter = {
-			-- allows the help command unless it's disabled
-			help = true,
-			-- prevents the use of the kill command
-			kill = false,
-		},
-	},
 	roles = {
 		-- WARN: unique key should NEVER be changed or you may lose save data
+		default = {
+			-- role "_rank" determines hierarchy
+			-- 0 is reserved for the default role
+			_rank = 0,
+			name = "Player",
+			color = "#0ff",
+
+			-- when enabled only allows their player to be used with the player argument
+			-- WARN: doesn't affect commands that use userids!
+			onlyTargetSelf = false,
+
+			permissions = {
+				-- this permission bypasses all restrictions (danger!)
+				admin = false,
+				-- can PERMANENTLY ban users from the game
+				ban = false,
+				-- can kick or ban users from the current server session
+				kick = false,
+				-- allows the user to manage roles of other users with a lesser role
+				roles = false,
+				saveRoles = false, -- if the user can also save the roles across sessions
+				-- can configure the global admin settings
+				settings = false,
+				-- can view audit logs
+				logs = false,
+			},
+
+			-- allowed command groups
+			groups = {
+				-- "creator",
+				-- "administration",
+				-- "moderation",
+				-- "environment",
+				-- "general",
+				-- "fun",
+				-- "vip",
+				"utility",
+			},
+
+			-- command name/alias filter
+			filter = {
+				-- allows the help command unless it's disabled
+				help = true,
+				-- prevents the use of the kill command
+				kill = false,
+			},
+		},
 		vip = {
 			_rank = 1,
 			name = "VIP",
@@ -163,8 +163,6 @@ local Data = {
 	initialize = nil,
 	Store = nil,
 }
-
-Data.roles.defaultRole = Data.defaultRole
 
 function Data.sortTime(a, b)
 	return a.time < b.time

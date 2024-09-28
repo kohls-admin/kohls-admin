@@ -216,7 +216,7 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans,
 			roleText ..= _K.Data.roles[role].name .. ", "
 		end
 	end
-	roleText ..= _K.Data.defaultRole.name
+	roleText ..= _K.Data.roles.default.name
 
 	local commandBarKey = _K.client.hotkeys.commandBar
 	local commandBarKeyRaw = UI.UserInputService:GetStringForKeyCode(commandBarKey.key._value)

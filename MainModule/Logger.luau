@@ -30,7 +30,7 @@ function module.log(text: string, level: LogType, from: number?, filtered: boole
 	if IsServer then
 		if from and not filtered then
 			local filterContext =
-				Enum.TextFilterContext[if Data.defaultRole.permissions.logs then "PublicChat" else "PrivateChat"]
+				Enum.TextFilterContext[if Data.roles.default.permissions.logs then "PublicChat" else "PrivateChat"]
 			log.text = Util.String.filterForBroadcast(text, from, filterContext)
 		end
 

@@ -57,8 +57,8 @@ local Settings = {
 	},
 
 	--[[
-	Toggles visibility of the Kohl's Admin Dashboard Button in the Topbar. Set it to math.huge to never show.
-		0	defaultRole
+	Toggles visibility of the Kohl's Admin Dashboard Button in the Topbar.
+		0	default
 		1	vip
 		2	mod
 		3	admin

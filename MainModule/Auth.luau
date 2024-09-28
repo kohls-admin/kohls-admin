@@ -6,7 +6,7 @@ local Data = require(script.Parent.Data)
 local Remote = require(script.Parent.Remote)
 local Util = require(script.Parent.Util)
 
-export type Role = "defaultRole" | "vip" | "mod" | "admin" | "superadmin" | "creator"
+export type Role = "default" | "vip" | "mod" | "admin" | "superadmin" | "creator"
 
 --- @class Auth
 local Auth = {}
@@ -279,7 +279,7 @@ end
 
 --- Checks the maximum role rank of the user, if permission is given it will fetch the highest rank of the roles with that permission
 function Auth.getRank(userId: number, permission: string?): (number, Role)
-	local rank, rankRole = 0, Data.defaultRole
+	local rank, rankRole = 0, Data.roles.default
 	local member = Data.members[tostring(userId)]
 	if member then
 		for _, roleId in member.roles do
@@ -333,7 +333,7 @@ end
 
 --- Checks if a user has access to a command
 function Auth.hasCommand(userId: number, command: any): boolean
-	if Auth.roleCanUseCommand("defaultRole", command) then
+	if Auth.roleCanUseCommand("default", command) then
 		return true
 	end
 
@@ -359,7 +359,7 @@ end
 --- Checks if a user has access to a permission
 function Auth.hasPermission(userId: number, permission: string): boolean
 	-- does everyone have the permission?
-	if Data.defaultRole.permissions[permission] or Data.defaultRole.permissions.admin then
+	if Data.roles.default.permissions[permission] or Data.roles.default.permissions.admin then
 		return true
 	end
 	local member = Data.members[tostring(userId)]
