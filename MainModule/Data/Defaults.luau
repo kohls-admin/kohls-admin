@@ -49,6 +49,7 @@ local Data = {
 		mutableHooks = false,
 		gameHubEnabled = true,
 		dashboardButtonRank = 0,
+		joinNotificationRank = 1,
 	},
 
 	async = {

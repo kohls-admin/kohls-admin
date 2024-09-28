@@ -68,6 +68,9 @@ local Settings = {
 	dashboardButtonRank = 0,
 
 	-- TODO: theme configuration
+	-- Toggles visibility of the Kohl's Admin Join Notification.
+	joinNotificationRank = 1,
+
 	-- TODO: command/member permissions and role definitions
 }
 

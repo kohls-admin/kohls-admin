@@ -239,8 +239,7 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans,
 		`<b>Server Time</b>  <font transparency="0.5">{os.date("%X", workspace:GetServerTimeNow())}</font></font>`,
 	}
 
-	-- only show join notification to users with a role
-	if _K.Auth.getRank(Players.LocalPlayer.UserId) > 0 then
+	if _K.Auth.getRank(Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank then
 		Notify({
 			Text = table.concat(lines, "\n"),
 			Duration = 30,
