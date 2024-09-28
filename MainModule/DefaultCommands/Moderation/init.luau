@@ -1786,6 +1786,7 @@ return {
 				type = "team",
 				name = "Team",
 				description = "The team to assign.",
+				optional = true,
 			},
 		},
 		run = function(context, players, team)
