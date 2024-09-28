@@ -63,4 +63,12 @@ function Table.fastRemove(t: { any }, index: number, indexEnd: number?)
 	return Table.settle(t)
 end
 
+function Table.shuffle(list: { any })
+	for i = #list, 2, -1 do
+		local j = math.random(i)
+		list[i], list[j] = list[j], list[i]
+	end
+	return list
+end
+
 return Table
