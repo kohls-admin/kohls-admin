@@ -537,7 +537,7 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 			if type(child) == "table" and child._instance then
 				child = child._instance
 			end
-			if type(name) == "number" then
+			if type(name) == "number" and child.LayoutOrder == 0 then
 				if child:IsA("GuiObject") then
 					child.LayoutOrder = name
 				end
@@ -557,7 +557,7 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 			error(`Invalid UI child Instance: {child}`)
 		end
 		if child:IsA("GuiObject") then
-			child.LayoutOrder = if child.LayoutOrder > 0 then child.LayoutOrder else index
+			child.LayoutOrder = if child.LayoutOrder ~= 0 then child.LayoutOrder else index
 		end
 		child.Parent = contentParent
 		definition[index] = nil
