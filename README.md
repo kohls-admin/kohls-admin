@@ -13,48 +13,44 @@
 <br/>
 <h1 align="center">Embrace creativity, not chaos.</h1>
 <!--moonwave-hide-before-this-line-->
-<p align="center"> Trusted by thousands of Roblox developers, <b>Kohl's Admin</b> is a powerful and versatile tool that empowers you to effortlessly manage your Roblox experiences. Streamline moderation, enhance gameplay, and foster a thriving community with a wide range of features designed to make your life easier.</p>
-<br/>
+<p align="center"><b>Trusted by thousands of Roblox developers</b>, Kohl's Admin is your all-in-one solution for effortless Roblox experience management. Streamline moderation, elevate gameplay, and nurture a thriving community — all with a powerful, versatile, and user-friendly tool.</p>
+<p align="center">🚧 <b>Actively Under Development as a Fully Open-Source Project</b> 🚧</p>
 
-<p align="center"> We are actively working to develop this project as a <b>fully open-source initiative.</b></p>
+# ✨ Key Features
 
-<p align="center">
-Contributions are highly appreciated and encouraged! <b>Contributors who wish to be credited will be recognized in the Kohl's Admin </b><code>About</code> <b>tab</b>.
-</p>
+- **Effortless Moderation:** Ban, kick, mute, teleport, and more — over 200 commands to keep your experiences safe and enjoyable.
+- **Community Building:** Manage roles, permissions, and communication to foster a thriving community.
+- **Enhanced Customization:** Customize your experiences with custom commands and addons.
+- **Seamless User Experience:**
+  - Automatic updates ensure you always have the latest features and improvements.
+  - Autocomplete suggestions make it easy to find and use commands.
+  - Instant command validation improves server performance.
+  - A customizable user interface lets you personalize the look and feel.
+- **Extensive Support:** Get started quickly with [detailed documentation](https://kohls-admin.github.io/kohls-admin/) and a [helpful community](https://discord.gg/kohl).
 
-# Features
+# 🙌 Contributing
 
-- **Automatic Updates:** Always have the latest features, fixes, and improvements from Kohl's Admin.
-- **Autocomplete Suggestions:** Modern suggestions to easily navigate through commands and arguments.
-- **Instant Command Validation:** Commands are validated instantly on the client, improving server performance for everyone!
-- **Comprehensive Moderation Tools:** Ban, kick, mute, teleport, and more – with over 200 commands at your disposal, you have the tools to maintain order and ensure a positive experience for everyone.
-- **Customizable User Interface:** Personalize the look and feel of your admin panel to match your game's aesthetics.
-- **Custom Commands & Extensions:** Easily design custom commands and extensions tailored to your experiences.
-- **Community Management:** Manage communication, roles, permissions, and more to foster a healthy and active community.
-- **Live Experience Settings:** Change settings and customize your Admin experience with ease from a live server.
-- **Extensive Documentation and Support:** Get started quickly with detailed documentation and a helpful community.
+We welcome and encourage contributions from the community! Check out our [Contribution Guidelines](CONTRIBUTING.md) to learn how you can get involved.
 
-# Contributors
+### 🙏 Recognition for Contributors
 
-We welcome and appreciate contributions from the community! If you'd like to get involved, please check out our [Contributors Guidelines](CONTRIBUTING.md) for details on how to contribute and the types of contributions we're looking for.
-
-**How Contributors Will Be Recognized:**
-
-- **In-Game Credits & Benefits:** Contributors will be credited in every game using Kohl's Admin via the `credits` command and receive special in-game benefits.
-- **Monetary Compensation:** Impactful contributions may also be eligible for monetary compensation. Please see the [Contributors Guidelines](CONTRIBUTING.md) for more details.
+- **In-Game Credits:** Your name will be featured in the `credits` command within Kohl's Admin.
+- **Inside Access:** Access to exclusive features, early previews, and private channels within the community.
+- **Special In-Game Benefits:** Enjoy exclusive perks within participating experiences that use Kohl's Admin.
+- **Monetary Compensation (For Exceptional Contributions):** We value your time and effort. See the [Contribution Guidelines](CONTRIBUTING.md#compensation) for details.
 
 Thank you to all our contributors for helping make this project a success! ❤️
 
-# Ideas & Issues
+# 💡 Ideas or Issues?
 
-If you have any ideas or encounter any issues, don't hesitate to open an issue by clicking the button below!
+Found a bug? Have a feature request? Let us know by opening an issue:
 
 <div align="center">
 	<a href="https://github.com/kohls-admin/kohls-admin/issues/new/choose" target="_blank">
-		<img src="https://img.shields.io/badge/Open_Issue-Click_Here-red?style=for-the-badge" alt="Open Issue" />
+		<img src="https://img.shields.io/badge/Open_Issue-Click_Here-blue?style=for-the-badge" alt="Open Issue" />
 	</a>
 </div>
 
-# License
+# 📄 License
 
-This project is licensed under the [MIT License](https://github.com/kohls-admin/kohls-admin/blob/master/LICENSE.txt).
+This project is licensed under the [MIT License](LICENSE.txt).
