@@ -1,34 +1,26 @@
 local Auth = require(script.Parent:WaitForChild("Auth"))
+local Remote = require(script.Parent:WaitForChild("Remote"))
 local Util = require(script.Parent:WaitForChild("Util"))
 
 local VIP = {}
 
-local vipDonations = { 5411126, 5391361, 5391359 }
-local smallDonations = { 5391356, 5391355 }
+-- premium, supervip, vip
+local legacyDonations = { 5411126, 5391361, 5391359 }
 
 local function getDonationLevel(player)
 	local ok, status = Util.Retry(function()
-		return Util.Services.MarketplaceService:GetUserSubscriptionStatusAsync(player, "EXP-6178947350651470068")
+		return Util.Services.MarketplaceService:GetUserSubscriptionStatusAsync(player, "EXP-7266962490056769807")
 	end, 5, 0.2, 1)
 	if ok and status.IsSubscribed then
 		return 4
 	end
 
-	for index, passId in vipDonations do
+	for index, passId in legacyDonations do
 		local success, result = Util.Retry(function()
 			return Util.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
 		end, 5, 0.2, 1)
 		if success and result then
 			return 4 - index
-		end
-	end
-
-	for index, passId in smallDonations do
-		local success, result = Util.Retry(function()
-			return Util.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
-		end, 5, 0.2, 1)
-		if success and result then
-			return 0
 		end
 	end
 
@@ -51,6 +43,30 @@ for _, module in script:WaitForChild("UGC"):GetChildren() do
 end
 
 if Util.Services.RunService:IsServer() then
+	Remote.VIPUGCMethod.OnServerEvent:Connect(function(player, assetId, match, equip, name)
+		local donationLevel = player:GetAttribute("_KDonationLevel") or 0
+		local ok, result = true, true
+		if donationLevel < 4 then -- confirm UGC ownership if not VIP sub
+			ok, result = Util.Retry(function()
+				return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetId)
+			end, 5, 1, 2)
+		end
+
+		if ok and result then
+			local ugcEffect = adminUGCMap[match]
+			if ugcEffect and player.Character then
+				if not equip then
+					local existing = player.Character:FindFirstChild(ugcEffect.Name)
+					if existing then
+						existing:Destroy()
+					end
+					return
+				end
+				ugcEffect.Method(player.Character, { Name = name, Destroy = tick })
+			end
+		end
+	end)
+
 	function VIP.UGCHandler(character)
 		for _, child in character:GetChildren() do
 			if not child:IsA("Accessory") then
@@ -100,14 +116,11 @@ if Util.Services.RunService:IsServer() then
 
 	Util.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
 		if purchased then
-			local level = player:GetAttribute("_KDonationLevel")
-			local vipIndex = table.find(vipDonations, passId)
+			local level = player:GetAttribute("_KDonationLevel") or 0
+			local vipIndex = table.find(legacyDonations, passId)
 			if vipIndex then
 				level = math.max(level, 4 - vipIndex)
-				Auth.userRoleAdd(player.UserId, "mod")
-			end
-			if table.find(smallDonations, passId) then
-				level = math.max(level, 0)
+				Auth.userRoleAdd(player.UserId, "vip")
 			end
 			player:SetAttribute("_KDonationLevel", level)
 		end

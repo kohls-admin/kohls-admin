@@ -37,6 +37,7 @@ attachment.Position = Vector3.new(0, 3, -1)
 attachment.Name = "BodyBackAttachment"
 
 return {
+	Name = hat.Name,
 	MatchId = "rbxassetid://89119211625300",
 	Method = function(character: Model, accessory: Accessory)
 		local dark
@@ -44,13 +45,15 @@ return {
 			dark = string.find(string.lower(accessory.Name), "dark")
 			accessory:Destroy()
 		end
-		if not character:FindFirstChild(hat.Name) then
-			local clone = hat:Clone()
-			if dark then
-				clone.Handle.Color = Color3.new()
-			end
-			clone.Parent = character
-			clone.Handle.Animate.Enabled = true
+		local existing = character:FindFirstChild(hat.Name)
+		if existing then
+			existing:Destroy()
 		end
+		local clone = hat:Clone()
+		if dark then
+			clone.Handle.Color = Color3.new()
+		end
+		clone.Parent = character
+		clone.Handle.Animate.Enabled = true
 	end,
 }
