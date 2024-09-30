@@ -120,6 +120,12 @@ local CommandBar = UI.new "Frame" {
 	UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
 }
 
+local invalidStroke = UI.edit(Input._instance.UIStroke, {
+	Thickness = 2,
+	Color = UI.Theme.Invalid,
+	Enabled = false,
+})
+
 local TooltipFrame = UI.new "Frame" {
 	Parent = CommandBar,
 	Name = "Tooltip",
@@ -578,6 +584,7 @@ Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 end)
 
 Input._input.Focused:Connect(function()
+	invalidStroke.Enabled = false
 	-- prevent input hotkey from being captured
 	task.delay(0, function()
 		if CommandBar.Visible then
@@ -588,16 +595,18 @@ end)
 
 Input._input.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
+		invalidStroke.Enabled = true
 		Input._input.TextEditable = false
 
 		local data = currentCompletionData
 		if #data.invalid > 0 then
-			-- if not fully validated need to show feedback
+			UI.Sound.Negative:Play()
 			return
 		end
 
 		if Input._input.Text ~= _K.Data.settings.prefix and #data.commands < 1 then
 			validState:set(false)
+			UI.Sound.Negative:Play()
 			invalidSuggestion(data, "Invalid command", data.argPos, data.rawArg)
 			return
 		end
@@ -605,6 +614,7 @@ Input._input.FocusLost:Connect(function(enterPressed)
 		for _, command in data.commands do
 			if command.invalidArg then
 				validState:set(false)
+				UI.Sound.Negative:Play()
 				invalidSuggestion(
 					data,
 					command.argMissing or command.invalidMessage,
