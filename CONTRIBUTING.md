@@ -13,6 +13,10 @@ Whether you're a seasoned developer or just starting out, there are ways for you
 
 ## Improve the Code
 
+### Setup
+
+#### Local Development
+
 1. Setup Your Environment
 
    - Install the Essentials
@@ -54,7 +58,34 @@ Whether you're a seasoned developer or just starting out, there are ways for you
      ```
    - **Connect Studio to Rojo:** Open Roblox and use the [Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin) to connect to the server you just started.
 
-5. Make Your Changes
+
+#### GitHub Codespaces
+
+1. Open this project in GitHub Codespaces
+
+   - Click the "Open in GitHub Codespaces" badge or the Code button, then click the Codespaces tab, and "Create codespace on main."
+   ![Create codespace on main](https://github.com/user-attachments/assets/229f37b8-9650-4809-b79a-37a565f6c855)
+
+3. Setup the Rojo plugin
+
+   - [Install the Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin) on Roblox Studio from [GitHub](https://github.com/rojo-rbx/rojo/releases) or [Roblox.com](https://www.roblox.com/library/13916111004/Rojo).
+
+
+4. Test Your Changes in Roblox Studio
+
+   - **Start the Rojo Server:**
+     ```bash
+     rojo serve test.project.json
+     ```
+   - **Change the port visibility to Public:** Open the terminal in your codespace. Click the **PORTS** tab. Right-click the port **Rojo (34872)**, click the **Port Visibility**, then click **Public**.
+      ![Screenshot of the pop-up menu for a forwarded port, with the "Port Visibility" option selected and "Private" selected in the submenu.](https://docs.github.com/assets/cb-59966/mw-1440/images/help/codespaces/make-public-option.webp)
+   - **Copy the forwarded port address:** To the right of the local address for the port, click the copy icon.
+      ![Screenshot of the "Ports" panel. The copy icon, which copies a forwarded port's URL, is highlighted with an orange outline.](https://docs.github.com/assets/cb-19922/mw-1440/images/help/codespaces/copy-icon-port-url.webp)
+   - **Connect Studio to Rojo:** Open Roblox and in the [Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin), paste the port address you copied. Remove the `https://` at the beginning and the `/` of the forwarded address. It should look something like this: `probable-memory-w44vgv9v4vpfjwj-34872.app.github.dev`, and set the port as `80`. Finally, connect to the server you just started.
+
+### Contributing
+
+1. Make Your Changes
 
    - **Choose an Issue:** Browse our [list of issues](https://github.com/kohls-admin/kohls-admin/issues?q=is%3Aopen+is%3Aissue+no%3Aassignee) and find one that interests you, or create your own. If you're new look at our [good first issues](https://github.com/kohls-admin/kohls-admin/issues?q=is%3Aopen+is%3Aissue+no%3Aassignee+label%3A%22good+first+issue%22).
    - **Create a New Branch:** Before making any changes, create a new branch for your work. This keeps your changes separate from the main codebase.
@@ -63,7 +94,7 @@ Whether you're a seasoned developer or just starting out, there are ways for you
      ```
    - **Make Your Changes:** Use your favorite code editor to modify the project files. Follow the [Roblox Lua Style Guide](https://roblox.github.io/lua-style-guide/) to maintain consistency.
 
-6. Save Your Changes
+2. Save Your Changes
 
    - **Commit Your Changes:** Once you're happy with your changes, commit them with a clear and descriptive message.
      ```bash
@@ -75,18 +106,18 @@ Whether you're a seasoned developer or just starting out, there are ways for you
      git push origin my-new-feature
      ```
 
-7. Create a Pull Request
+3. Create a Pull Request
 
    - **Open a Pull Request:** Go to [Kohl's Admin on GitHub](https://github.com/kohls-admin/kohls-admin) and click the `Compare & pull request` button.
    - **Provide Details:** Write a clear description of your changes, referencing any relevant issues.
    - **Submit Your Changes:** Click the `Create pull request` button.
 
-8. Review and Collaboration
+4. Review and Collaboration
 
    - **Address Feedback:** Our team will review your pull request and provide feedback, be prepared to make additional changes or clarifications.
    - **Collaborate:** Work with us to refine your code and ensure it meets our standards.
 
-9. Merge and Celebrate! 🎉
+5. Merge and Celebrate! 🎉
    - **Merge:** Once your pull request is approved, it will be merged into the [master](https://github.com/kohls-admin/kohls-admin/tree/master) branch.
    - **Celebrate:** You've made a valuable contribution to Kohl's Admin! Thank you!
 
