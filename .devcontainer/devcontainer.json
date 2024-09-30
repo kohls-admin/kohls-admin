@@ -4,7 +4,7 @@
 	"features": {
 		"ghcr.io/ryanlua/features/rojo:0.2.0": {
 			"version": "latest",
-			"toolchainManager": "aftman"
+			"toolchainManager": "rokit"
 		},
 		"ghcr.io/devcontainers/features/node:1": {}
 	},
@@ -31,6 +31,6 @@
 			"label": "Rojo"
 		}
 	},
-	"postCreateCommand": "git config submodule.recurse true && git config pull.rebase true && aftman install --no-trust-check && npm i -g moonwave",
+	"postCreateCommand": "git config submodule.recurse true && git config pull.rebase true && rokit install --no-trust-check && npm i -g moonwave",
 	"remoteUser": "root"
 }

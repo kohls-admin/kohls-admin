@@ -25,11 +25,11 @@ jobs:
           commit_message: Bump version
           file_pattern: VERSION.txt
 
-      - uses: Roblox/setup-foreman@v1
+      - uses: CompeyDev/setup-rokit@v0.1.2
         with:
           version: "*"
           token: ${{ secrets.GITHUB_TOKEN }}
-          allow-external-github-org: true
+
       - run: foreman --version
       - run: rojo --version
 
