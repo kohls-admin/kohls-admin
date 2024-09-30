@@ -30,7 +30,7 @@ jobs:
           version: "*"
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: foreman --version
+      - run: rokit --version
       - run: rojo --version
 
       - name: Publish Test Place
