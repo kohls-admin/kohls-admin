@@ -1,5 +1,0 @@
-[tools]
-rojo = "rojo-rbx/rojo@7.4.4"
-selene = "kampfkarren/selene@0.27.1"
-stylua = "johnnymorganz/stylua@0.20.0"
-luau-lsp = "johnnymorganz/luau-lsp@1.32.3"
