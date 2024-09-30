@@ -136,7 +136,7 @@ local Data = {
 		superadmin = {
 			_rank = 4,
 			name = "SuperAdmin",
-			groups = { "creator", "administration", "moderation", "general", "environment", "fun", "vip" },
+			groups = { "superadmin", "administration", "moderation", "general", "environment", "fun", "vip" },
 			permissions = { ban = true, kick = true, roles = true, logs = true, settings = true },
 			color = "#f80",
 		},
