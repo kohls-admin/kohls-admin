@@ -4,6 +4,13 @@ VIP.__index = VIP
 function VIP.new(_K)
 	local UI = _K.UI
 
+	local subscriptionText = "<font color='#fd0'>Roblox has disabled <b>Third Party Purchases</b> of subscriptions!</font>\n\n"
+		.. "<font transparency='0.5'>Copy the link below to purchase.</font>\n"
+		.. "<font color='#f00'><b>To receive perks, join a new server after your purchase!</b></font>"
+	local thirdPartyText = "<font color='#fd0'>The game developer has disabled <b>Third Party Purchases</b>!</font>\n\n"
+		.. "<font transparency='0.5'>Copy the link below to purchase.</font>\n"
+		.. "<font color='#f00'><b>To receive perks, join a new server after your purchase!</b></font>"
+
 	local equippedUGC = {}
 	local debounceEquip = _K.Util.Function.debounce(0.25, function(id, equip, equipped, name, button)
 		if equipped then
@@ -57,9 +64,7 @@ function VIP.new(_K)
 	purchaseDialog = UI.new "Dialog" {
 		Parent = UI.LayerTop,
 		Title = "Kohl's Admin Purchase",
-		Text = "<font color='#fd0'>The game developer has disabled <b>Third Party Purchases</b>!</font>\n\n"
-			.. "<font transparency='0.5'>Copy the link below to purchase.</font>\n"
-			.. "<font color='#f00'><b>To receive perks, join a new server after your purchase!</b></font>",
+		Text = thirdPartyText,
 		ExitButton = true,
 		Visible = false,
 		BackgroundTransparency = 0,
@@ -241,9 +246,11 @@ function VIP.new(_K)
 
 						UI.Scope.lastAttemptedPurchase = ugc.id
 						if UI.Scope.AllowThirdPartySales then
+							purchaseDialog.Visible:set(false)
 							_K.Util.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, ugc.id)
 						else
 							-- set textbox text
+							purchaseDialog.Text:set(thirdPartyText)
 							purchaseLink.Text = "https://roblox.com/catalog/" .. ugc.id
 							purchaseDialog.Visible:set(true)
 						end
@@ -332,9 +339,11 @@ function VIP.new(_K)
 					Activated = function()
 						UI.Scope.lastAttemptedPurchase = pass.id
 						if UI.Scope.AllowThirdPartySales then
+							purchaseDialog.Visible:set(false)
 							_K.Util.Services.MarketplaceService:PromptGamePassPurchase(_K.UI.LocalPlayer, pass.id)
 						else
 							-- set textbox text
+							purchaseDialog.Text:set(thirdPartyText)
 							purchaseLink.Text = "https://roblox.com/game-pass/" .. pass.id
 							purchaseDialog.Visible:set(true)
 						end
@@ -460,11 +469,13 @@ function VIP.new(_K)
 			[UI.Event] = {
 				Activated = function()
 					if game.GameId == 6475108624 then -- whenever Roblox allows cross game subscriptions...
+						purchaseDialog.Visible:set(false)
 						_K.Util.Services.MarketplaceService:PromptSubscriptionPurchase(
 							_K.UI.LocalPlayer,
 							"EXP-7266962490056769807"
 						)
 					else
+						purchaseDialog.Text:set(subscriptionText)
 						UI.Scope.lastAttemptedPurchase = true
 						purchaseLink.Text = "https://roblox.com/games/116852112089994#!/store"
 						purchaseDialog.Visible:set(true)
