@@ -6,3 +6,4 @@ sourcemap.json
 !.devcontainer
 !.gitignore
 !.github
+!.vscode

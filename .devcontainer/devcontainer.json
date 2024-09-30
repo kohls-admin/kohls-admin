@@ -8,6 +8,16 @@
 		},
 		"ghcr.io/devcontainers/features/node:1": {}
 	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"evaera.vscode-rojo",
+				"Kampfkarren.selene-vscode",
+				"JohnnyMorganz.stylua",
+				"JohnnyMorganz.luau-lsp"
+			]
+		}
+	},
 	"forwardPorts": [
 		3000,
 		34872
@@ -21,6 +31,6 @@
 			"label": "Rojo"
 		}
 	},
-	"postCreateCommand": "rokit install --no-trust-check && npm i -g moonwave",
+	"postCreateCommand": "git config submodule.recurse true && git config pull.rebase true && rokit install --no-trust-check && npm i -g moonwave",
 	"remoteUser": "root"
 }
