@@ -13,7 +13,11 @@ function Button.new(definition)
 		IconProperties = {},
 		IconRightAlign = false,
 		Label = "",
+		LabelProperties = {},
 		ActiveSound = true,
+		BackgroundColor3 = UI.Theme.Border,
+		BackgroundTransparency = 1,
+		HoverTransparency = 0,
 		TextSize = UI.Theme.FontSize,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
@@ -34,36 +38,40 @@ function Button.new(definition)
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			},
 
-			Label = UI.new "TextLabel" {
-				LayoutOrder = 2,
-				AutoLocalize = false,
-				BackgroundTransparency = 1,
-				Size = UDim2.new(1, 0, 1, 0),
-				Font = UI.Theme.Font,
-				Text = UI.computeFrom(tostring, new.Label),
-				TextSize = new.TextSize,
-				TextColor3 = UI.Theme.PrimaryText,
-				TextTransparency = 0,
-				TextStrokeTransparency = 0.9,
-				TextTruncate = Enum.TextTruncate.SplitWord,
-				TextXAlignment = new.TextXAlignment,
-				TextYAlignment = new.TextYAlignment,
-				Visible = UI.compute(function(use)
-					return use(new.Label) ~= ""
-				end),
+			Label = UI.edit(
+				UI.new "TextLabel" {
+					LayoutOrder = 2,
+					AutoLocalize = false,
+					BackgroundTransparency = 1,
+					Size = UDim2.new(1, 0, 1, 0),
+					Font = UI.Theme.Font,
+					RichText = true,
+					Text = UI.computeFrom(tostring, new.Label),
+					TextSize = new.TextSize,
+					TextColor3 = UI.Theme.PrimaryText,
+					TextTransparency = 0,
+					TextStrokeTransparency = 0.9,
+					TextTruncate = Enum.TextTruncate.SplitWord,
+					TextXAlignment = new.TextXAlignment,
+					TextYAlignment = new.TextYAlignment,
+					Visible = UI.compute(function(use)
+						return use(new.Label) ~= ""
+					end),
 
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
+					UI.new "UIFlexItem" {
+						FlexMode = Enum.UIFlexMode.Fill,
+					},
+					UI.new "UIPadding" {
+						PaddingLeft = new.Padding,
+						PaddingRight = new.Padding,
+					},
 				},
-				UI.new "UIPadding" {
-					PaddingLeft = new.Padding,
-					PaddingRight = new.Padding,
-				},
-			},
+				new.LabelProperties._value
+			),
 
 			IconFrame = UI.new "Frame" {
 				LayoutOrder = UI.compute(function(use)
-					return if use(new.IconRightAlign) then 3 else 1
+					return if use(new.IconRightAlign) then 9 else -9
 				end),
 				BackgroundTransparency = 1,
 				Size = UDim2.new(1, 0, 1, 0),
@@ -72,14 +80,17 @@ function Button.new(definition)
 					return use(new.Icon) ~= ""
 				end),
 
-				UI.new "ImageLabel" {
-					Name = "Icon",
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					Position = UDim2.new(0.5, 0, 0.5, 0),
-					BackgroundTransparency = 1,
-					Size = UDim2.new(1, 0, 1, 0),
-					Image = new.Icon,
-				},
+				UI.edit(
+					UI.new "ImageLabel" {
+						Name = "Icon",
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						Position = UDim2.new(0.5, 0, 0.5, 0),
+						BackgroundTransparency = 1,
+						Size = UDim2.new(1, 0, 1, 0),
+						Image = new.Icon,
+					},
+					new.IconProperties._value
+				),
 			},
 		},
 	}
@@ -89,7 +100,7 @@ function Button.new(definition)
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
 		BackgroundColor3 = UI.compute(function(use)
-			return if UI.getLuminance(use(UI.Theme.Border)) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
+			return if UI.getLuminance(use(new.BackgroundColor3)) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
 		end),
 
 		UI.new "UICorner" {
@@ -102,13 +113,9 @@ function Button.new(definition)
 		Name = "Button",
 		Active = true,
 		AutoButtonColor = false,
-		BackgroundColor3 = UI.compute(function(use)
-			return if use(hovering) or use(UI.Theme.Transparency) > 0
-				then use(UI.Theme.Border)
-				else use(UI.Theme.Primary)
-		end),
+		BackgroundColor3 = new.BackgroundColor3,
 		BackgroundTransparency = UI.compute(function(use)
-			return if not use(hovering) and use(UI.Theme.Transparency) > 0 then 1 else 0
+			return if use(hovering) then use(new.HoverTransparency) else use(new.BackgroundTransparency)
 		end),
 		ClipsDescendants = true,
 		Text = "",
@@ -119,7 +126,6 @@ function Button.new(definition)
 			CornerRadius = UI.Theme.CornerRadius,
 		},
 		UI.new "UIStroke" {
-			Enabled = UI.Theme.StrokeEnabled,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,
@@ -175,11 +181,6 @@ function Button.new(definition)
 		},
 	}
 	new.Activated = new._instance.Activated
-
-	if definition.IconProperties then
-		-- TODO: whenever new.IconProperties is changed we need to update!
-		UI.edit(new._content:FindFirstChild("IconFrame"):FindFirstChild("Icon"), definition.IconProperties)
-	end
 
 	return setmetatable(new, Button)
 end

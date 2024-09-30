@@ -29,7 +29,7 @@ function About.new(_K)
 
 		UI.new "TextBox" {
 			Name = "Version",
-			LayoutOrder = -9,
+			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundColor3 = UI.Theme.Secondary,
 			BackgroundTransparency = 0.875,
@@ -38,11 +38,12 @@ function About.new(_K)
 			TextColor3 = UI.Theme.PrimaryText,
 			Text = `Version {_K.VERSION}`,
 			TextTransparency = 0.125,
+			TextWrapped = true,
 			TextEditable = false,
 			ClearTextOnFocus = false,
 
 			UI.new "UICorner" {
-				CornerRadius = UDim.new(1, 0),
+				CornerRadius = UI.Theme.CornerRadius,
 			},
 			UI.new "UIPadding" {
 				PaddingLeft = UI.Theme.Padding,
@@ -78,42 +79,6 @@ function About.new(_K)
 			Selectable = true,
 			RichText = true,
 		},
-		UI.new "TextLabel" {
-			AutoLocalize = false,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
-			Font = UI.Theme.Font,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = UI.Theme.PrimaryText,
-			TextWrapped = true,
-			Size = UDim2.new(1, 0, 0, 24),
-			Text = "<b><sc>MONETIZATION MADE EASY</sc></b>\n"
-				.. "Get up to <font color='#0f0'><b>40%</b></font> of Kohl's Admin purchases when <font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in the Roblox Game Settings!\n\n"
-				.. "<b><sc>GAMES HUB</sc></b>\n"
-				.. "A catalog of games that use Kohl's Admin, check the Settings ModuleScript in Roblox Studio for more details!",
-			RichText = true,
-		},
-		UI.new "TextBox" {
-			Name = "CatalogLink",
-			AutomaticSize = Enum.AutomaticSize.XY,
-			BackgroundColor3 = UI.Theme.Secondary,
-			Font = UI.Theme.Font,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = UI.Theme.SecondaryText,
-			Text = "https://roblox.com/games/17873329124/",
-			TextEditable = false,
-			ClearTextOnFocus = false,
-
-			UI.new "UICorner" {
-				CornerRadius = UDim.new(1, 0),
-			},
-			UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-			},
-		},
 	}
 
 	UI.edit(scroller._instance.UIListLayout, {
@@ -148,7 +113,7 @@ function About.new(_K)
 		if discordInvite then
 			UI.new "TextLabel" {
 				Parent = scroller,
-				LayoutOrder = -8,
+				LayoutOrder = 4,
 				AutoLocalize = false,
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
@@ -157,25 +122,27 @@ function About.new(_K)
 				TextColor3 = UI.Theme.PrimaryText,
 				TextWrapped = true,
 				Size = UDim2.new(1, 0, 0, 24),
-				Text = `<b>Need help?</b>\n<font transparency="0.5">Join our Discord community!</font>`,
+				Text = `<b>Need help or want to contribute?</b>\n<font transparency="0.33">Join the <b>Kohl's Admin</b> Discord community!</font>`,
 				RichText = true,
 			}
 
 			UI.new "TextBox" {
 				Parent = scroller,
-				LayoutOrder = -7,
+				LayoutOrder = 5,
 				Name = "Invite",
+				AutoLocalize = false,
 				AutomaticSize = Enum.AutomaticSize.XY,
 				BackgroundColor3 = Color3.fromHex("#5865F2"),
-				Font = UI.Theme.Font,
+				Font = UI.Theme.FontMono,
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = Color3.new(1, 1, 1),
 				Text = "https://discord.gg/kohl",
+				TextWrapped = true,
 				TextEditable = false,
 				ClearTextOnFocus = false,
 
 				UI.new "UICorner" {
-					CornerRadius = UDim.new(1, 0),
+					CornerRadius = UI.Theme.CornerRadius,
 				},
 				UI.new "UIPadding" {
 					PaddingLeft = UI.Theme.Padding,

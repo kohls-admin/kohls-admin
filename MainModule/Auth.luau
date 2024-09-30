@@ -228,12 +228,12 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 		return
 	end
 
-	do -- admin vip donations
+	if Data.settings.vip then -- admin vip donations
 		local ok, result = pcall(
 			MarketplaceService.GetUserSubscriptionStatusAsync,
 			MarketplaceService,
 			player,
-			"EXP-6178947350651470068"
+			"EXP-7266962490056769807"
 		)
 		if ok and result.IsSubscribed then
 			Auth.userRoleAdd(userId, "vip")

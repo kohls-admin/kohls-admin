@@ -24,9 +24,6 @@ function Scroller.new(definition)
 		VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
-		UI.new "UIPadding" {
-			PaddingRight = UI.Theme.Padding,
-		},
 
 		[UI.Event.Property] = {
 			CanvasPosition = function()
@@ -34,6 +31,16 @@ function Scroller.new(definition)
 				UI.clearState("floating")
 			end,
 		},
+	}
+
+	local canvasAbsolute = UI.state(new._instance, "AbsoluteCanvasSize")
+	local windowAbsolute = UI.state(new._instance, "AbsoluteWindowSize")
+
+	UI.new "UIPadding" {
+		Parent = new._instance,
+		PaddingRight = UI.compute(function(use)
+			return if use(canvasAbsolute).Y > use(windowAbsolute).Y then use(UI.Theme.Padding) else UDim.new()
+		end),
 	}
 
 	return setmetatable(new, Scroller)

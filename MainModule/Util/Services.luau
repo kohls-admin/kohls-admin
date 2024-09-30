@@ -2,6 +2,7 @@ local Services = setmetatable({
 	Players = game:GetService("Players"),
 	ContextActionService = game:GetService("ContextActionService"),
 	Lighting = game:GetService("Lighting"),
+	MarketplaceService = game:GetService("MarketplaceService"),
 	PolicyService = game:GetService("PolicyService"),
 	ReplicatedStorage = game:GetService("ReplicatedStorage"),
 	RunService = game:GetService("RunService"),

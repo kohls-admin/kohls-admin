@@ -8,7 +8,7 @@ hat.AttachmentPoint = CFrame.new(0, -1, 0)
 hat:AddTag("_KSuperCrown")
 
 local handle = InsertService:CreateMeshPartAsync(
-	"rbxassetid://10282777453",
+	"rbxassetid://18966762965",
 	Enum.CollisionFidelity.Box,
 	Enum.RenderFidelity.Automatic
 )
@@ -64,6 +64,7 @@ if RunService:IsClient() then
 end
 
 return {
+	Name = hat.Name,
 	MatchId = "rbxassetid://18966762965",
 	Method = function(character: Model, accessory: Accessory)
 		local dark
@@ -71,14 +72,16 @@ return {
 			dark = string.find(string.lower(accessory.Name), "dark")
 			accessory:Destroy()
 		end
-		if not character:FindFirstChild(hat.Name) then
-			local clone = hat:Clone()
-			if dark then
-				clone.Handle.Color = Color3.new()
-				clone.Handle.Fire.Color = Color3.new(1, 1, 1)
-				clone.Handle.Fire.SecondaryColor = Color3.new(1, 1, 1)
-			end
-			clone.Parent = character
+		local existing = character:FindFirstChild(hat.Name)
+		if existing then
+			existing:Destroy()
 		end
+		local clone = hat:Clone()
+		if dark then
+			clone.Handle.Color = Color3.new()
+			clone.Handle.Fire.Color = Color3.new(1, 1, 1)
+			clone.Handle.Fire.SecondaryColor = Color3.new(1, 1, 1)
+		end
+		clone.Parent = character
 	end,
 }
