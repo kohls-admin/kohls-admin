@@ -10,6 +10,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local Data = require(script.Defaults)
+local Migrate = require(script.Migrate)
 local Hook = require(script.Parent.Hook)
 local Util = require(script.Parent.Util)
 local Remote = require(script.Parent.Remote)
@@ -270,6 +271,12 @@ function Data.initialize(name)
 		print("MainLoad", main)
 		if main then
 			syncMain(main)
+		else -- first time load
+			local migrateKAI = Migrate.KAI()
+			if migrateKAI then
+				print("[Kohl's Admin] Migrating Data from Kohl's Admin Infinite...")
+				syncMain(migrateKAI)
+			end
 		end
 	end
 
