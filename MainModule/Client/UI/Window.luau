@@ -193,7 +193,10 @@ function Window.new(definition)
 	new._exitButton = UI.new "Button" {
 		LayoutOrder = 9,
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
-		Size = UDim2.new(0, 32, 0, 32),
+		Size = UI.compute(function(use)
+			local size = use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset
+			return UDim2.new(0, size, 0, size)
+		end),
 		Icon = "rbxassetid://1476571006",
 		IconProperties = {
 			Size = UDim2.new(0, 10, 0, 10),

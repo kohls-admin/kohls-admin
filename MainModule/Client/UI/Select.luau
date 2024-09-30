@@ -16,11 +16,15 @@ function Select.new(definition)
 
 	local menu
 
+	local itemSize = UI.compute(function(use)
+		return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+	end)
+
 	new._instance = UI.new "Frame" {
 		ZIndex = 100,
 		Name = "Select",
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 24), -- TODO: use fontsize derivative for sizing
+		Size = itemSize,
 
 		UI.new "Button" {
 			Name = "Header",
@@ -35,9 +39,7 @@ function Select.new(definition)
 				local typeOf = typeof(choice)
 				return if typeOf == "EnumItem" or typeOf == "Instance" then choice.Name else choice
 			end),
-			TextSize = 16,
-			Padding = UDim.new(0, 8),
-			Size = UDim2.new(1, 0, 0, 24),
+			Size = itemSize,
 			TextXAlignment = Enum.TextXAlignment.Left,
 
 			[UI.Event] = {
@@ -81,10 +83,10 @@ function Select.new(definition)
 				Parent = menu._menu,
 				Name = tostring(name),
 				Label = name,
-				TextSize = 16,
+				TextSize = UI.Theme.FontSize,
 				Padding = UDim.new(0, 8),
 				TextXAlignment = Enum.TextXAlignment.Left,
-				Size = UDim2.new(1, 0, 0, 24),
+				Size = itemSize,
 
 				[UI.Event] = {
 					Activated = function()

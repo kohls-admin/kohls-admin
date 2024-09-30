@@ -8,7 +8,7 @@ setmetatable(ListItem, BaseClass)
 function ListItem.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Text = "ListItem Label",
-		ContentAutomaticSize = false,
+		ContentAutomaticSize = true,
 		ContentListLayout = true,
 	}, definition)
 
@@ -16,10 +16,10 @@ function ListItem.new(definition)
 		Name = "UIContent",
 		AnchorPoint = Vector2.new(1, 0),
 		AutomaticSize = UI.compute(function(use)
-			return if use(new.ContentAutomaticSize) then Enum.AutomaticSize.X else Enum.AutomaticSize.None
+			return if use(new.ContentAutomaticSize) then Enum.AutomaticSize.XY else Enum.AutomaticSize.Y
 		end),
 		Size = UI.compute(function(use)
-			return UDim2.fromScale(if use(new.ContentAutomaticSize) then 0 else 0.5, 1)
+			return UDim2.fromScale(if use(new.ContentAutomaticSize) then 0 else 0.5, 0)
 		end),
 		Position = UDim2.new(1, 0, 0, 0),
 		BackgroundTransparency = 1,
@@ -43,13 +43,24 @@ function ListItem.new(definition)
 
 	new._instance = UI.new "Frame" {
 		Name = new.Text._value,
+		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 24),
+		Size = UDim2.new(1, 0, 0, 0),
+
+		UI.new "UIListLayout" {
+			Parent = new._content,
+			HorizontalAlignment = Enum.HorizontalAlignment.Right,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			FillDirection = Enum.FillDirection.Horizontal,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UI.Theme.Padding,
+		},
 
 		UI.new "TextLabel" {
 			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.Y,
 			Text = new.Text,
-			Size = UDim2.new(1, 0, 1, 0),
+			Size = UDim2.new(1, 0, 0, 0),
 			TextXAlignment = Enum.TextXAlignment.Left,
 			RichText = true,
 			Font = UI.Theme.Font,

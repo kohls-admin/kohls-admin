@@ -21,7 +21,10 @@ function Color.new(definition)
 		Text = "",
 		BackgroundColor3 = new.Value,
 		AnchorPoint = Vector2.new(1, 0.5),
-		Size = UDim2.new(0, 24, 0, 24),
+		Size = UI.compute(function(use)
+			local height = use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
+			return UDim2.new(0, height, 0, height)
+		end),
 		Position = UDim2.new(1, 0, 0.5, 0),
 
 		UI.new "UICorner" {

@@ -89,7 +89,9 @@ function Slider.new(definition)
 		Size = UI.tween(
 			UI.Theme.TweenOut,
 			UI.compute(function(use)
-				return if use(dragging) then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
+				local size = use(UI.Theme.FontSize)
+				local half = size / 2
+				return if use(dragging) then UDim2.new(0, size, 0, size) else UDim2.new(0, half, 0, half)
 			end)
 		),
 
@@ -107,7 +109,8 @@ function Slider.new(definition)
 		Active = true,
 		BackgroundTransparency = 1,
 		Size = UI.compute(function(use)
-			return if use(new.Vertical) then UDim2.new(0, 24, 1, 0) else UDim2.new(1, 0, 0, 24)
+			local height = use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
+			return if use(new.Vertical) then UDim2.new(0, height, 1, 0) else UDim2.new(1, 0, 0, height)
 		end),
 
 		UI.new "UICorner" {

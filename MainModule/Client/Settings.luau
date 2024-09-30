@@ -66,16 +66,21 @@ function Settings.new(_K)
 		},
 	}
 
+	local lineItemHeight = UI.compute(function(use)
+		return use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
+	end)
+
 	local settingsLineItems = {
 		General = {
 			-- FIX: prevent selecting reserved characters (comma, space, !@#$%^&*, `, ")
 			-- TODO: customizable listable/argument delimiter?
 			UI.new "ListItem" {
+				ContentAutomaticSize = false,
 				Text = "Command Bar Hotkey",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
-					Size = UDim2.new(1, 0, 1, 0),
-					FontSize = 14,
+					Size = UI.computeFrom(UDim2.new, 1, 0, 0, lineItemHeight),
+					FontSize = UI.Theme.FontSize,
 					Padding = UDim.new(0, 5),
 					Placeholder = ";",
 					HotkeyInput = true,
@@ -85,10 +90,11 @@ function Settings.new(_K)
 				},
 			},
 			UI.new "ListItem" {
+				ContentAutomaticSize = false,
 				Text = "Dashboard Hotkey",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
-					Size = UDim2.new(1, 0, 1, 0),
+					Size = UI.computeFrom(UDim2.new, 1, 0, 0, lineItemHeight),
 					FontSize = 14,
 					Padding = UDim.new(0, 5),
 					Placeholder = "'",
@@ -99,10 +105,11 @@ function Settings.new(_K)
 				},
 			},
 			UI.new "ListItem" {
+				ContentAutomaticSize = false,
 				Text = "Command Prefix",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
-					Size = UDim2.new(0, 24, 1, 0),
+					Size = UI.computeFrom(UDim2.new, 0, 24, 0, lineItemHeight),
 					FontSize = 14,
 					Padding = UDim.new(0, 5),
 					Placeholder = ";",
@@ -171,6 +178,7 @@ function Settings.new(_K)
 				table.insert(
 					settingsLineItems.Theme,
 					UI.new "ListItem" {
+						ContentAutomaticSize = false,
 						Text = key:gsub("(.)(%u)", "%1 %2"),
 						UI.new "Select" {
 							Choice = UI.Theme[key],
@@ -187,14 +195,17 @@ function Settings.new(_K)
 		end
 		_K.Util.Defer.wait()
 
+		local sliderInputSize = UI.computeFrom(UDim2.new, 0, 32, 0, lineItemHeight)
+
 		do -- Font Size
 			table.insert(
 				settingsLineItems.Theme,
 				UI.new "ListItem" {
+					ContentAutomaticSize = false,
 					Text = "Font Size",
 					UI.new "Input" {
 						Font = UI.Theme.FontMono,
-						Size = UDim2.new(0, 32, 1, 0),
+						Size = sliderInputSize,
 						FontSize = 14,
 						Padding = UDim.new(0, 5),
 						NumberOnly = true,
@@ -236,10 +247,11 @@ function Settings.new(_K)
 			table.insert(
 				settingsLineItems.Theme,
 				UI.new "ListItem" {
+					ContentAutomaticSize = false,
 					Text = key:gsub("(.)(%u)", "%1 %2"),
 					UI.new "Input" {
 						Font = UI.Theme.FontMono,
-						Size = UDim2.new(0, 32, 1, 0),
+						Size = sliderInputSize,
 						FontSize = 14,
 						Padding = UDim.new(0, 5),
 						NumberOnly = true,
@@ -285,10 +297,11 @@ function Settings.new(_K)
 			table.insert(
 				settingsLineItems.Theme,
 				UI.new "ListItem" {
+					ContentAutomaticSize = false,
 					Text = "Background Transparency",
 					UI.new "Input" {
 						Font = UI.Theme.FontMono,
-						Size = UDim2.new(0, 32, 1, 0),
+						Size = sliderInputSize,
 						FontSize = 14,
 						Padding = UDim.new(0, 5),
 						MaxChars = 3,

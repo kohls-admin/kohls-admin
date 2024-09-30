@@ -42,7 +42,10 @@ UI.Scope.dashboard.Window = dashboard
 -- add a command bar toggle button next to the exit button
 local toggleCommandBar
 toggleCommandBar = UI.new "Button" {
-	Size = UDim2.new(0, 32, 0, 32),
+	Size = UI.compute(function(use)
+		local size = use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset
+		return UDim2.new(0, size, 0, size)
+	end),
 	Icon = "rbxassetid://85543506317447",
 	IconProperties = { ImageTransparency = 0.75 },
 	Text = "",
