@@ -18,7 +18,7 @@ Whether you're a seasoned developer or just starting out, there are ways for you
    - Install the Essentials
 
      - [Git](https://git-scm.com/)
-     - [Aftman](https://github.com/LPGhatguy/aftman)
+     - [Rokit](https://github.com/rojo-rbx/rokit)
      - [Roblox Studio](https://create.roblox.com/docs/studio/setting-up-roblox-studio)
 
 2. Fork and Clone the Repository
@@ -42,7 +42,7 @@ Whether you're a seasoned developer or just starting out, there are ways for you
      ```
    - **Install Project Dependencies:**
      ```bash
-     aftman install;
+     rokit install;
      rojo plugin install;
      ```
 
