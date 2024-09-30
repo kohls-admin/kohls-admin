@@ -1,4 +1,5 @@
 local Auth = require(script.Parent:WaitForChild("Auth"))
+local Data = require(script.Parent:WaitForChild("Data"))
 local Remote = require(script.Parent:WaitForChild("Remote"))
 local Util = require(script.Parent:WaitForChild("Util"))
 
@@ -44,6 +45,10 @@ end
 
 if Util.Services.RunService:IsServer() then
 	Remote.VIPUGCMethod.OnServerEvent:Connect(function(player, assetId, match, equip, name)
+		if not Data.settings.vip then
+			return
+		end
+
 		local donationLevel = player:GetAttribute("_KDonationLevel") or 0
 		local ok, result = true, true
 		if donationLevel < 4 then -- confirm UGC ownership if not VIP sub
@@ -68,6 +73,9 @@ if Util.Services.RunService:IsServer() then
 	end)
 
 	function VIP.UGCHandler(character)
+		if not Data.settings.vip then
+			return
+		end
 		for _, child in character:GetChildren() do
 			if not child:IsA("Accessory") then
 				continue
@@ -120,7 +128,9 @@ if Util.Services.RunService:IsServer() then
 			local vipIndex = table.find(legacyDonations, passId)
 			if vipIndex then
 				level = math.max(level, 4 - vipIndex)
-				Auth.userRoleAdd(player.UserId, "vip")
+				if Data.settings.vip then
+					Auth.userRoleAdd(player.UserId, "vip")
+				end
 			end
 			player:SetAttribute("_KDonationLevel", level)
 		end

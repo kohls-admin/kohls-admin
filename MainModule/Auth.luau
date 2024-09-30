@@ -228,7 +228,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 		return
 	end
 
-	do -- admin vip donations
+	if Data.settings.vip then -- admin vip donations
 		local ok, result = pcall(
 			MarketplaceService.GetUserSubscriptionStatusAsync,
 			MarketplaceService,
