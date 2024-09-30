@@ -1699,6 +1699,9 @@ return {
 			if not method then
 				return
 			end
+			if infoType == Enum.InfoType.Subscription then
+				id = "EXP-" .. id
+			end
 			for _, player in players do
 				pcall(method, context.env.market, player, id)
 			end
