@@ -8,6 +8,16 @@
 		},
 		"ghcr.io/devcontainers/features/node:1": {}
 	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"evaera.vscode-rojo",
+				"Kampfkarren.selene-vscode",
+				"JohnnyMorganz.stylua",
+				"JohnnyMorganz.luau-lsp"
+			]
+		}
+	},
 	"forwardPorts": [
 		3000,
 		34872
