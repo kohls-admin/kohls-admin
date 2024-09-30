@@ -424,7 +424,7 @@ function VIP.new(_K)
 			TextColor3 = UI.Theme.PrimaryText,
 			TextWrapped = true,
 			Size = UDim2.new(1, 0, 0, 0),
-			Text = "Get up to <font color='#0f0'><b>40%</b></font> of Kohl's Admin purchases when "
+			Text = "<b>For Game Developers:</b> Get up to <font color='#0f0'><b>40%</b></font> of Kohl's Admin purchases when "
 				.. "<font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in your Roblox Game Settings!",
 			RichText = true,
 		},
