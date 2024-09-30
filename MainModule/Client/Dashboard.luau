@@ -39,6 +39,8 @@ local dashboard = UI.new "Window" {
 }
 UI.Scope.dashboard.Window = dashboard
 
+UI.Scope.commandBarVisible = UI.state(_K.client.CommandBar.Bar, "Visible")
+
 -- add a command bar toggle button next to the exit button
 local toggleCommandBar
 toggleCommandBar = UI.new "Button" {
@@ -47,7 +49,11 @@ toggleCommandBar = UI.new "Button" {
 		return UDim2.new(0, size, 0, size)
 	end),
 	Icon = "rbxassetid://85543506317447",
-	IconProperties = { ImageTransparency = 0.75 },
+	IconProperties = {
+		ImageTransparency = UI.compute(function(use)
+			return if use(UI.Scope.commandBarVisible) then 0 else 0.75
+		end),
+	},
 	Text = "",
 	Parent = dashboard._instance.Frame.TitleBar,
 	LayoutOrder = 8,
@@ -59,7 +65,6 @@ toggleCommandBar = UI.new "Button" {
 		else
 			_K.client.CommandBar.show()
 		end
-		toggleCommandBar._content.IconFrame.Icon.ImageTransparency = if hide then 0.75 else 0
 	end,
 }
 
