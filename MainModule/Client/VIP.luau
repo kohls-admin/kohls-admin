@@ -1,12 +1,24 @@
 local VIP = {}
 VIP.__index = VIP
 
--- add button to get kohl's admin in about
-
 function VIP.new(_K)
 	local UI = _K.UI
 
-	local debounceEquip = _K.Util.Function.debounce(0.4, _K.Remote.VIPUGCMethod.FireServer)
+	local equippedUGC = {}
+	local debounceEquip = _K.Util.Function.debounce(0.25, function(id, equip, equipped, name, button)
+		if equipped then
+			local existing = equippedUGC[equip]
+			if existing then
+				existing.BackgroundColor3:set(Color3.new(0, 200, 0))
+				existing.Label:set("<b>EQUIP</b>")
+			end
+			equippedUGC[equip] = button
+		else
+			equippedUGC[equip] = nil
+		end
+
+		_K.Remote.VIPUGCMethod:FireServer(id, equip, equipped, name)
+	end)
 	local donationLevel = UI.state(_K.UI.LocalPlayer, "Attribute:_KDonationLevel")
 
 	-- THIRD PARTY PURCHASES HANDLING
@@ -223,7 +235,7 @@ function VIP.new(_K)
 								button.BackgroundColor3:set(Color3.new(0, 200, 0))
 								button.Label:set("<b>EQUIP</b>")
 							end
-							debounceEquip(_K.Remote.VIPUGCMethod, ugc.id, ugc.equip, equipped, ugc.name)
+							debounceEquip(ugc.id, ugc.equip, equipped, ugc.name, button)
 							return
 						end
 
