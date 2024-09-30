@@ -76,7 +76,7 @@ function Window.new(definition)
 			math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 256,
 			math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 256
 		),
-		Size = UDim2.new(0, 512, 0, 512),
+		Size = UDim2.new(0, 420, 0, 420),
 		SizeBounds = Rect.new(128, 128, 9e9, 9e9),
 	}, definition)
 
