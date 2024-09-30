@@ -90,7 +90,6 @@ local function syncMain(result)
 				settings[key] = Color3.new(unpack(setting, 2))
 			elseif itemType == "udim" then
 				settings[key] = UDim.new(unpack(setting, 2))
-				print("udim", settings[key])
 			elseif itemType == "enum" then
 				settings[key] = Enum[setting[2]][setting[3]]
 			end
