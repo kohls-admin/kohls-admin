@@ -64,7 +64,7 @@ function Logs.new(_K)
 					escape(log.text or "")
 				)
 
-				task.defer(function()
+				task.spawn(function()
 					local userInfo = log.from and _K.Util.getUserInfo(log.from)
 					local displayName = if userInfo and (userInfo.DisplayName ~= userInfo.Username)
 						then userInfo.DisplayName .. " "
@@ -99,11 +99,38 @@ function Logs.new(_K)
 		return new
 	end
 
-	local function renderText(self, lineItem, log)
-		if self._filter ~= "" then
-			local text = log.rawText
+	local function createItem(self, log)
+		local tooltip = UI.new "Tooltip" {
+			Font = UI.Theme.FontMono,
+			Text = "Loading...",
+			TextXAlignment = Enum.TextXAlignment.Left,
+		}
+		return UI.new "TextLabel" {
+			AutoLocalize = false,
+			BackgroundTransparency = 1,
+			Size = self.ItemSize,
+			RichText = true,
+			Font = UI.Theme.FontMono,
+			TextSize = UI.Theme.FontSize,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextTruncate = Enum.TextTruncate.SplitWord,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Top,
 
-			return if log.filterIndex
+			tooltip,
+
+			UI.new "ObjectValue" {
+				Name = "TooltipRef",
+				Value = tooltip._instance,
+			},
+		}
+	end
+
+	local function renderItem(self, item, log)
+		local text = log.richText
+		if self._filter ~= "" then
+			text = log.rawText
+			text = if log.filterIndex
 				then string.format(
 					filterRichFormat,
 					escape(string.sub(text, 1, log.filterIndex - 1)),
@@ -113,7 +140,8 @@ function Logs.new(_K)
 				else text
 		end
 
-		return log.richText
+		item.Text = text
+		item.TooltipRef.Value.Text = text
 	end
 
 	scroller = UI.new "ScrollerFast" {
@@ -123,7 +151,8 @@ function Logs.new(_K)
 		FilterInput = true,
 		-- FilterInputDebounce = 0.1,
 		ReverseOrder = true,
-		RenderText = renderText,
+		CreateItem = createItem,
+		RenderItem = renderItem,
 	}
 
 	task.defer(scroller.filter, scroller, filterTest)
