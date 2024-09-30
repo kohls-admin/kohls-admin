@@ -117,6 +117,7 @@ function VIP.new(_K)
 				id = 133292294488871,
 				equip = "rbxassetid://89119211625300",
 				name = "Light Wings",
+				level = 3,
 			},
 			{
 				tip = "👑 <sc><b>Light Crown</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
@@ -124,6 +125,7 @@ function VIP.new(_K)
 				id = 18966788838,
 				equip = "rbxassetid://18966762965",
 				name = "Light Crown",
+				level = 2,
 			},
 			{
 				tip = "🕊️ <sc><b>Dark Wings</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
@@ -131,6 +133,7 @@ function VIP.new(_K)
 				id = 110848154960799,
 				equip = "rbxassetid://89119211625300",
 				name = "Dark Wings",
+				level = 3,
 			},
 			{
 				tip = "👑 <sc><b>Dark Crown</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
@@ -138,6 +141,7 @@ function VIP.new(_K)
 				id = 106645613603989,
 				equip = "rbxassetid://18966762965",
 				name = "Dark Crown",
+				level = 2,
 			},
 		}
 	do
@@ -230,7 +234,7 @@ function VIP.new(_K)
 
 				[UI.Event] = {
 					Activated = function()
-						if owned or donationLevel._value >= 4 then
+						if owned or donationLevel._value >= (ugc.level or 4) then
 							equipped = not equipped
 							if equipped then
 								-- TODO: make other buttons with same .equip swap UNEQUIP text to EQUIP
