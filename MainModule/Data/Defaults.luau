@@ -84,7 +84,7 @@ local Data = {
 				kick = false,
 				-- allows the user to manage roles of other users with a lesser role
 				roles = false,
-				saveRoles = false, -- if the user can also save the roles across sessions
+				saveRoles = false, -- can save roles across sessions
 				-- can configure the global admin settings
 				settings = false,
 				-- can view audit logs
@@ -137,7 +137,7 @@ local Data = {
 			_rank = 4,
 			name = "SuperAdmin",
 			groups = { "superadmin", "administration", "moderation", "general", "environment", "fun", "vip" },
-			permissions = { ban = true, kick = true, roles = true, logs = true, settings = true },
+			permissions = { ban = true, kick = true, roles = true, saveRoles = true, logs = true, settings = true },
 			color = "#f80",
 		},
 		-- FIXME should this be defined and configurable? (or should it just be forced...)
