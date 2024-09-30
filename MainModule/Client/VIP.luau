@@ -13,15 +13,20 @@ function VIP.new(_K)
 
 	local equippedUGC = {}
 	local debounceEquip = _K.Util.Function.debounce(0.25, function(id, equip, equipped, name, button)
+		local existing = equippedUGC[equip]
+		if existing and existing ~= button then
+			existing.BackgroundColor3:set(Color3.new(0, 200, 0))
+			existing.Label:set("<b>EQUIP</b>")
+		end
+
 		if equipped then
-			local existing = equippedUGC[equip]
-			if existing then
-				existing.BackgroundColor3:set(Color3.new(0, 200, 0))
-				existing.Label:set("<b>EQUIP</b>")
-			end
 			equippedUGC[equip] = button
+			button.BackgroundColor3:set(Color3.new(200, 0, 0))
+			button.Label:set("<b>UNEQUIP</b>")
 		else
 			equippedUGC[equip] = nil
+			button.BackgroundColor3:set(Color3.new(0, 200, 0))
+			button.Label:set("<b>EQUIP</b>")
 		end
 
 		_K.Remote.VIPUGCMethod:FireServer(id, equip, equipped, name)
@@ -214,7 +219,6 @@ function VIP.new(_K)
 				},
 			}
 
-			local equipped
 			local button
 			button = UI.new "Button" {
 				Parent = frame,
@@ -235,16 +239,9 @@ function VIP.new(_K)
 				[UI.Event] = {
 					Activated = function()
 						if owned or donationLevel._value >= (ugc.level or 4) then
-							equipped = not equipped
-							if equipped then
-								-- TODO: make other buttons with same .equip swap UNEQUIP text to EQUIP
-								button.BackgroundColor3:set(Color3.new(200, 0, 0))
-								button.Label:set("<b>UNEQUIP</b>")
-							else
-								button.BackgroundColor3:set(Color3.new(0, 200, 0))
-								button.Label:set("<b>EQUIP</b>")
-							end
-							debounceEquip(ugc.id, ugc.equip, equipped, ugc.name, button)
+							local equipped = equippedUGC[ugc.equip]
+							equipped = equipped and equipped == button
+							debounceEquip(ugc.id, ugc.equip, not equipped, ugc.name, button)
 							return
 						end
 
