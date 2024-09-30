@@ -268,12 +268,12 @@ UI.Theme = {
 	Valid = state(Color3.fromRGB(0, 255, 0)),
 	Invalid = state(Color3.fromRGB(255, 0, 0)),
 
-	FontSize = state(16),
+	FontSize = state(14),
 	Font = state(Enum.Font.Roboto),
 	FontMono = state(Enum.Font.RobotoMono),
 
 	CornerRadius = state(UDim.new(0, 8)),
-	Padding = state(UDim.new(0, 8)),
+	Padding = state(UDim.new(0, 6)),
 	StrokeEnabled = state(true),
 	SoundEnabled = state(true),
 
