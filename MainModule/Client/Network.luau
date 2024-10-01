@@ -213,7 +213,9 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans,
 	local roleText = ""
 	if member and member.roles then
 		for _, role in member.roles do
-			roleText ..= _K.Data.roles[role].name .. ", "
+			if _K.Data.roles[role] then
+				roleText ..= _K.Data.roles[role].name .. ", "
+			end
 		end
 	end
 	roleText ..= _K.Data.roles.default.name
