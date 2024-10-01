@@ -293,16 +293,16 @@ function Auth.getRank(userId: number, permission: string?): (number, Role)
 	return rank, rankRole
 end
 
-function Auth.roleCommandFilter(roleData, command: any, boolean: boolean): boolean
-	if not roleData.filter then
+function Auth.roleCommandOverride(roleData, command: any, boolean: boolean): boolean
+	if not roleData.commands then
 		return false
 	end
-	if roleData.filter[command.name] == boolean then
+	if not roleData.commands[command.name] == not boolean then
 		return true
 	end
 	if command.aliases then
 		for _, alias in command.aliases do
-			if roleData.filter[alias] == boolean then
+			if not roleData.commands[alias] == not boolean then
 				return true
 			end
 		end
@@ -310,24 +310,44 @@ function Auth.roleCommandFilter(roleData, command: any, boolean: boolean): boole
 	return false
 end
 
---- Checks if a role has access to a command group
+--- Checks if a role has access to a command
 function Auth.roleCanUseCommand(role: Role, command: any): boolean
 	local roleData = Data.roles[role]
 	if not roleData then
-		print("ROLE DOESN'T EXIST?!", role)
+		warn("ROLE DOESN'T EXIST?!", role)
 		return false
 	end
-	if Auth.roleCommandFilter(roleData, command, false) then
-		return false
-	end
-	local group = string.lower(command.group)
-	if
-		roleData.permissions.admin
-		or Auth.roleCommandFilter(roleData, command, true)
-		or (roleData.groups and table.find(roleData.groups, group))
-	then
+	-- admins always have access
+	if roleData.permissions.admin then
 		return true
 	end
+
+	-- command definition permissions against role
+	if command.permissions then
+		for permission, value in command.permissions do
+			if roleData.permissions[permission] ~= value then
+				return false
+			end
+		end
+	end
+
+	-- command permission override
+	if roleData.commands then
+		-- explicitly enabled for role
+		if Auth.roleCommandOverride(roleData, command, true) then
+			return true
+		end
+		-- explicitly disabled for role
+		if Auth.roleCommandOverride(roleData, command, false) then
+			return false
+		end
+	end
+
+	-- role has command group
+	if roleData.groups and table.find(roleData.groups, string.lower(command.group)) then
+		return true
+	end
+
 	return false
 end
 
@@ -342,13 +362,13 @@ function Auth.hasCommand(userId: number, command: any): boolean
 		if member.permissions and member.permissions.admin then
 			return true
 		end
-		for _, roleId in member.roles do
-			local role = Data.roles[roleId]
-			if not role then
-				warn("undefined role?", role)
+		for _, role in member.roles do
+			local roleData = Data.roles[role]
+			if not roleData then
+				warn("undefined role?", roleData)
 				continue
 			end
-			if Auth.roleCanUseCommand(roleId, command) then
+			if Auth.roleCanUseCommand(role, command) then
 				return true
 			end
 		end

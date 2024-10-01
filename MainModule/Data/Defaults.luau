@@ -103,12 +103,12 @@ local Data = {
 				"utility",
 			},
 
-			-- command name/alias filter
-			filter = {
-				-- allows the help command unless it's disabled
+			-- command overrides
+			commands = {
+				-- allow the help command
 				help = true,
-				-- prevents the use of the kill command
-				kill = false,
+				-- disable the shutdown command if given to role by a command group
+				shutdown = false,
 			},
 		},
 		vip = {
