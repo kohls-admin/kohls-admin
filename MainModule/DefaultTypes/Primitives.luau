@@ -26,6 +26,9 @@ local booleanType = {
 	log = function(arg)
 		return _K.Util.Table.concat(arg.parsedArgs, ",")
 	end,
+	suggestions = function(text: string, from: number)
+		return _K.Util.Suggest.query(text, { "true", "false" })
+	end,
 }
 
 local integerType = {
