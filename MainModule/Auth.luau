@@ -293,23 +293,6 @@ function Auth.getRank(userId: number, permission: string?): (number, Role)
 	return rank, rankRole
 end
 
-function Auth.roleCommandOverride(roleData, command: any, boolean: boolean): boolean
-	if not roleData.commands then
-		return false
-	end
-	if not roleData.commands[command.name] == not boolean then
-		return true
-	end
-	if command.aliases then
-		for _, alias in command.aliases do
-			if not roleData.commands[alias] == not boolean then
-				return true
-			end
-		end
-	end
-	return false
-end
-
 --- Checks if a role has access to a command
 function Auth.roleCanUseCommand(role: Role, command: any): boolean
 	local roleData = Data.roles[role]
@@ -333,13 +316,17 @@ function Auth.roleCanUseCommand(role: Role, command: any): boolean
 
 	-- command permission override
 	if roleData.commands then
-		-- explicitly enabled for role
-		if Auth.roleCommandOverride(roleData, command, true) then
-			return true
+		local override = roleData.commands[command.name]
+		if override ~= nil then
+			return override
 		end
-		-- explicitly disabled for role
-		if Auth.roleCommandOverride(roleData, command, false) then
-			return false
+		if command.aliases then
+			for _, alias in command.aliases do
+				local aliasOverride = roleData.commands[alias]
+				if aliasOverride ~= nil then
+					return aliasOverride
+				end
+			end
 		end
 	end
 
