@@ -213,10 +213,35 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to mute.",
-				ignoreSelf = true,
+				ignoreSelf = false,
 				lowerRank = true,
 			},
 		},
+		envClient = function(_K)
+			_K.Remote.Mute.OnClientEvent:Connect(function(muted)
+				local muteText = if muted then "muted" else "unmuted"
+				if _K.Util.Services.TextChatService.ChatVersion == Enum.ChatVersion.LegacyChatService then
+					_K.Util.Services.StarterGui:SetCore("ChatBarDisabled", muted)
+					_K.Util.Services.StarterGui:SetCore("ChatMakeSystemMessage", {
+						Text = `You have been {muteText}!`,
+						Color = if muted then Color3.new(1, 0, 0) else Color3.new(0, 1, 0),
+					})
+				else
+					local chatbar = _K.Util.Services.TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
+					if chatbar then
+						chatbar.Enabled = not muted
+					end
+					local channels = _K.Util.Services.TextChatService:FindFirstChild("TextChannels")
+					if not channels then
+						return
+					end
+					local system = channels:FindFirstChild("RBXSystem")
+					system:DisplaySystemMessage(
+						`<font color="#{if muted then "f00" else "0f0"}"><b>You have been {muteText}!</b></font>`
+					)
+				end
+			end)
+		end,
 		env = function(_K)
 			local muted = {}
 			_K.Util.Services.TextChatService.DescendantAdded:Connect(function(descendant)
@@ -228,17 +253,25 @@ return {
 			end)
 
 			_K.Data.muted = muted
-			return { muted = muted }
+			return { muted = muted, remote = _K.Remote.Mute }
 		end,
 		run = function(context, players)
 			for _, player in players do
-				context._K.Remote.SetCore:FireClient(player, "ChatBarDisabled", true)
-				context._K.Remote.SetCore:FireClient(
-					player,
-					"ChatMakeSystemMessage",
-					{ Text = "You have been muted.", Color = Color3.new(1, 0, 0) }
+				context.env.remote:FireClient(player, true)
+
+				context.env.muted[player.UserId] = context._K.Util.Services.TextChatService.DescendantAdded:Connect(
+					function(descendant)
+						if
+							descendant:IsA("TextSource")
+							and descendant.UserId == player.UserId
+							and descendant.CanSend
+						then
+							descendant:SetAttribute("_KCouldSend", true)
+							descendant.CanSend = false
+						end
+					end
 				)
-				context.env.muted[player.UserId] = true
+
 				for _, descendant in context._K.Util.Services.TextChatService:GetDescendants() do
 					if descendant:IsA("TextSource") and descendant.UserId == player.UserId and descendant.CanSend then
 						descendant:SetAttribute("_KCouldSend", true)
@@ -257,20 +290,19 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to unmute.",
-				ignoreSelf = true,
+				ignoreSelf = false,
 				lowerRank = true,
 			},
 		},
 
 		run = function(context, players)
 			for _, player in players do
-				context._K.Remote.SetCore:FireClient(player, "ChatBarDisabled", false)
-				context._K.Remote.SetCore:FireClient(
-					player,
-					"ChatMakeSystemMessage",
-					{ Text = "You have been unmuted.", Color = Color3.new(0, 1, 0) }
-				)
+				local con = context._K.Data.muted[player.UserId]
+				if con then
+					con:Disconnect()
+				end
 				context._K.Data.muted[player.UserId] = nil
+
 				for _, descendant in context._K.Util.Services.TextChatService:GetDescendants() do
 					if
 						descendant:IsA("TextSource")
@@ -281,6 +313,8 @@ return {
 						descendant.CanSend = true
 					end
 				end
+
+				context._K.Remote.Mute:FireClient(player)
 			end
 		end,
 	},
