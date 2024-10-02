@@ -268,7 +268,7 @@ UI.Theme = {
 	Valid = state(Color3.fromRGB(0, 255, 0)),
 	Invalid = state(Color3.fromRGB(255, 0, 0)),
 
-	FontSize = state(14),
+	FontSize = state(15),
 	Font = state(Enum.Font.Roboto),
 	FontMono = state(Enum.Font.RobotoMono),
 
@@ -280,8 +280,6 @@ UI.Theme = {
 	TweenIn = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In)),
 	TweenOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)),
 	TweenInOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut)),
-
-	-- BasePixelHeight 32?
 }
 
 UI.Theme.TransparencyClamped = UI.compute(function(use)
