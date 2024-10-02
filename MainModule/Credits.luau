@@ -4,7 +4,7 @@ return {
 		Users = {
 			{
 				Id = 44391621, -- kohl
-				Tooltip = "Thanks for using Kohl's Admin, if you have any issues please contact me!\nMy messages are open if your message privacy settings are set to people you follow.",
+				Tooltip = "Thanks for using Kohl's Admin, if you have any issues please visit the Kohl's Admin Community Resource on the Roblox DevForums!",
 			},
 			{
 				Id = 521855368, -- rfov
@@ -30,6 +30,23 @@ return {
 		},
 	},
 	{
+		Title = "Support Team",
+		Users = {
+			4847574, -- mets
+			195261420, -- exobyte
+			34047620, -- wackiepirate
+			208790398, -- chan
+			2861326436, -- delzi
+			3357116228, -- lemon
+			1299780523, -- erazias
+			1686847974, -- stone
+			93371639, -- 9_ine
+			800630, -- jason
+			3470429081, -- Mercury
+			1142396048, -- Franklin_Surten (H)
+		},
+	},
+	{
 		Title = "Contributors",
 		Users = {
 			{
@@ -51,23 +68,6 @@ return {
 		},
 	},
 	{
-		Title = "Support Team",
-		Users = {
-			4847574, -- mets
-			195261420, -- exobyte
-			34047620, -- wackiepirate
-			208790398, -- chan
-			2861326436, -- delzi
-			3357116228, -- lemon
-			1299780523, -- erazias
-			1686847974, -- stone
-			93371639, -- 9_ine
-			800630, -- jason
-			3470429081, -- Mercury
-			1142396048, -- Franklin_Surten (H)
-		},
-	},
-	{
 		Title = "Testers",
 		Users = {
 			130170862, -- matsagor1
@@ -86,6 +86,9 @@ return {
 			9345226, -- tomspell
 			3230955923, -- napiw
 			516417505, -- landon
+			105503420, -- general_legendary
+			190022817, -- emblazes
+			1224156917, -- dalien
 		},
 	},
 	{
