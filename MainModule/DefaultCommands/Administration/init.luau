@@ -72,7 +72,6 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to assign roles.",
-				lowerRank = true,
 			},
 			{
 				type = "roles",
