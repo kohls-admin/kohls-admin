@@ -9,6 +9,7 @@ local Http = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
+local Auth = require(script.Parent.Auth)
 local Data = require(script.Defaults)
 local Migrate = require(script.Migrate)
 local Hook = require(script.Parent.Hook)
@@ -17,26 +18,6 @@ local Remote = require(script.Parent.Remote)
 
 if RunService:IsClient() then
 	return Data
-end
-
-local function hasPermission(userId: number, permission: string): boolean
-	-- does everyone have the permission?
-	if Data.roles.default.permissions[permission] or Data.roles.default.permissions.admin then
-		return true
-	end
-	local member = Data.members[tostring(userId)]
-	if member then
-		if member.permissions and (member.permissions.admin or member.permissions[permission]) then
-			return true
-		end
-		for _, roleId in member.roles do
-			local role = Data.roles[roleId]
-			if role and (role.permissions.admin or role.permissions[permission]) then
-				return true
-			end
-		end
-	end
-	return false
 end
 
 local updateAsyncInterval = 10
@@ -100,17 +81,15 @@ local function syncMain(result)
 	Util.Table.merge(Data.settings, settings)
 
 	for _, player in Players:GetPlayers() do
-		if hasPermission(player.UserId, "bans") then
+		if Auth.hasCommand(player.UserId, "ban") then
 			Remote.Bans:FireClient(player, Data.bans)
 		end
 
-		if hasPermission(player.UserId, "members") then
+		if Auth.hasCommand(player.UserId, "members") then
 			Remote.Members:FireClient(player, Data.members)
 		end
 
-		if hasPermission(player.UserId, "settings") then
-			Remote.Settings:FireClient(player, Data.settings)
-		end
+		Remote.Settings:FireClient(player, Data.settings)
 	end
 	Hook.postSyncMain:Fire(Data)
 end
@@ -149,9 +128,9 @@ local function updateMain()
 				nextMainLimitWarning = tick() + 300
 				for _, player in Players:GetPlayers() do
 					if
-						hasPermission(player.UserId, "ban")
-						or hasPermission(player.UserId, "roles")
-						or hasPermission(player.UserId, "settings")
+						Auth.hasCommand(player.UserId, "ban")
+						or Auth.hasCommand(player.UserId, "members")
+						or Auth.hasPermission(player.UserId, "settings")
 					then
 						Remote.Notify:FireClient(
 							player,
@@ -203,7 +182,7 @@ local function syncLogs(logs)
 	table.move(newLogs, 1, #newLogs, #Data.logs + 1, Data.logs)
 	table.sort(Data.logs, Data.sortTime)
 	for _, player in Players:GetPlayers() do
-		if hasPermission(player.UserId, "logs") then
+		if Auth.hasCommand(player.UserId, "logs") then
 			Remote.Logs:FireClient(player, newLogs)
 		end
 	end

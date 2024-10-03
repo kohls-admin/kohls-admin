@@ -246,9 +246,8 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 	-- server network events
 
 	_K.Remote.Init.OnServerEvent:Connect(function(player)
-		local bans = (_K.Auth.hasPermission(player.UserId, "ban") or _K.Auth.hasPermission(player.UserId, "kick"))
-			and _K.Data.bans
-		local logs = _K.Auth.hasPermission(player.UserId, "logs") and _K.Data.logs
+		local bans = _K.Auth.hasCommand(player.UserId, "ban") and _K.Data.bans
+		local logs = _K.Auth.hasCommand(player.UserId, "logs") and _K.Data.logs
 		_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings, bans, logs, _K.Data.roles)
 	end)
 
@@ -295,7 +294,7 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 
 	_K.Hook.logFiltered:Connect(function(log)
 		for _, player in _K.Util.Services.Players:GetPlayers() do
-			if _K.Auth.hasPermission(player.UserId, "logs") then
+			if _K.Auth.hasCommand(player.UserId, "logs") then
 				_K.Remote.Log:FireClient(player, log)
 			end
 		end
