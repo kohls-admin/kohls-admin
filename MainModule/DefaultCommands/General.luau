@@ -469,7 +469,8 @@ return {
 
 		runClient = function(context)
 			if workspace.CurrentCamera:GetAttribute("kCameraType") then
-				workspace.CurrentCamera.CameraType = workspace.CurrentCamera:GetAttribute("kCameraType")
+				workspace.CurrentCamera.CameraType =
+					workspace.CurrentCamera:GetAttribute("kCameraType") :: Enum.CameraType
 				workspace.CurrentCamera:SetAttribute("kCameraType", nil)
 			end
 			local character = context.fromPlayer.Character
