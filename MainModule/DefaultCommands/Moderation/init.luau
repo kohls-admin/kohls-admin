@@ -119,37 +119,35 @@ return {
 		},
 
 		run = function(context, userIds, duration: number?, reason: string?)
-			-- if lacking administrator command group only allow session banning?
-			-- need to somehow display only session bans in suggestions...
-			-- TODO: only show lower rank players in the suggestions if defined in argDef
 			if type(reason) == "string" then
 				reason = string.sub(reason, 1, 400) -- banasync limit
 			end
-			print("banid", userIds, duration, reason)
-			local rank = context._K.Auth.getRank(context.from)
+
+			if not context._K.Auth.hasPermission(context.from, "banasync") then
+				duration = 0
+			end
+
+			local players = context._K.Services.Players:GetPlayers()
 			for _, userId in userIds do
-				-- only ban if rank is lower haha
-				if userId == context.from or rank <= context._K.Auth.getRank(userId) then
-					print("rank no auth")
-					continue
-				end
-				for _, player in context._K.Services.Players:GetPlayers() do
+				for _, player in players do
 					if player.UserId == tonumber(userId) then
-						player:Kick(reason or "Unspecified reason.")
+						player:Kick(reason or "No reason.")
 					end
 				end
-
-				context._K.Auth.userBan(userId, reason, duration, context.from)
+				task.spawn(context._K.Auth.userBan, userId, reason, duration, context.from, nil, true)
 			end
+
 			if duration and duration ~= 0 then
-				context._K.Util.Retry(function()
-					context._K.Services.Players:BanAsync({
-						UserIds = userIds,
-						PrivateReason = reason,
-						Duration = duration,
-						ApplyToUniverse = true,
-					})
-				end, 8, 4, 2)
+				local ok, err = pcall(context._K.Services.Players.BanAsync, context._K.Services.Players, {
+					UserIds = userIds,
+					PrivateReason = reason or "No reason.",
+					DisplayReason = reason or "No reason.",
+					Duration = duration,
+					ApplyToUniverse = true,
+				})
+				if not ok and not string.find(err, "NOT_FOUND") then
+					error(err, 1)
+				end
 			end
 		end,
 	},
@@ -166,15 +164,27 @@ return {
 
 		run = function(context, bans)
 			local ids = table.create(#bans)
-			-- TODO: check if authorized to actually unban, sessions vs persist, if persistCommands permission?!
+			-- need to somehow display only session bans in suggestions...
+
 			for i, userId in bans do
 				context._K.Data.bans[userId] = nil
-				context._K.Data.Cache.bans[userId] = context._K.Data.Store.REMOVE
-				context._K.Remote.Ban:FireAllClients(userId)
-				context._K.Data.pendingSaveMain = true
-				table.insert(ids, tonumber(userId))
+
+				if context._K.Auth.hasPermission(context.from, "banasync") then
+					context._K.Auth.userUnban(userId, context.from, true)
+					table.insert(ids, tonumber(userId))
+				end
 			end
-			context._K.Services.Players:UnbanAsync({ UserIds = ids, ApplyToUniverse = true })
+
+			if #ids > 0 then
+				local ok, err = pcall(
+					context._K.Services.Players.UnbanAsync,
+					context._K.Services.Players,
+					{ UserIds = ids, ApplyToUniverse = true }
+				)
+				if not ok and not string.find(err, "NOT_FOUND") then
+					error(err, 1)
+				end
+			end
 		end,
 	},
 	{

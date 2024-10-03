@@ -21,9 +21,9 @@ local Data = {
 		-- if Timestamp is -1 the ban is permanent
 		-- if Timestamp is nil the ban is for the server session only
 		-- saves only if Timestamp isn't nil
-		["2"] = { "He been noob.", nil, 44391621 },
-		["3"] = { "She was a noob.", nil, 44391621 },
-		["5"] = { "Wow!", 1720922623, 44391621 },
+		["2"] = { "John Doe", "He been noob.", nil, 44391621 },
+		["3"] = { "Jane Doe", "She was a noob.", 1720922623, 44391621 },
+		["5"] = { nil, "Deleted account", -1, 44391621 },
 	},
 	logs = {},
 	members = {
@@ -78,17 +78,12 @@ local Data = {
 			permissions = {
 				-- this permission bypasses all restrictions (danger!)
 				admin = false,
-				-- can PERMANENTLY ban users from the game
-				ban = false,
-				-- can kick or ban users from the current server session
-				kick = false,
-				-- allows the user to manage roles of other users with a lesser role
-				roles = false,
-				saveRoles = false, -- can save roles across sessions
+				-- can ban users via banasync, otherwise only per server session if has ban command
+				banasync = false,
+				-- allows the user to manage saved roles of other users with a lesser role
+				saveRoles = false,
 				-- can configure the global admin settings
 				settings = false,
-				-- can view audit logs
-				logs = false,
 			},
 
 			-- allowed command groups
@@ -123,21 +118,21 @@ local Data = {
 			_rank = 2,
 			name = "Moderator",
 			groups = { "moderation", "general", "environment", "fun", "vip" },
-			permissions = { kick = true, logs = true },
+			permissions = {},
 			color = "#0f0",
 		},
 		admin = {
 			_rank = 3,
 			name = "Administrator",
 			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
-			permissions = { ban = true, kick = true, roles = true, logs = true },
+			permissions = { banasync = true },
 			color = "#ff0",
 		},
 		superadmin = {
 			_rank = 4,
 			name = "SuperAdmin",
 			groups = { "superadmin", "administration", "moderation", "general", "environment", "fun", "vip" },
-			permissions = { ban = true, kick = true, roles = true, saveRoles = true, logs = true, settings = true },
+			permissions = { banasync = true, saveRoles = true, settings = true },
 			color = "#f80",
 		},
 		-- FIXME should this be defined and configurable? (or should it just be forced...)

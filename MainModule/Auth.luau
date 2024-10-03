@@ -2,7 +2,8 @@ local GroupService = game:GetService("GroupService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
-local Data = require(script.Parent.Data)
+local Data = require(script.Parent.Data.Defaults)
+local Registry = require(script.Parent.Registry)
 local Remote = require(script.Parent.Remote)
 local Util = require(script.Parent.Util)
 
@@ -18,13 +19,29 @@ end
 function Auth.banHandler(player)
 	local key = tostring(player.UserId)
 	local banInfo = Data.bans[key]
-	-- TODO: should staff roles bypass bans? add a settings toggle
-	if not banInfo or player.UserId == Data.creatorId or player.UserId < 1 then
-		-- not banned
-		return
+
+	if player.UserId == Data.creatorId or player.UserId < 1 then
+		return -- not banned
 	end
 
-	local reason, timeStamp = unpack(banInfo)
+	if not Util.Services.RunService:IsStudio() then
+		local banHistory = Players:GetBanHistoryAsync(player.UserId)
+		if banHistory then
+			local items = banHistory:GetCurrentPage()
+			local last = items[1]
+
+			if last and not last.Ban and banInfo and banInfo[3] ~= 0 then
+				Auth.userUnban(player.UserId, nil, true)
+				return -- unbanned from site
+			end
+		end
+	end
+
+	if not banInfo then
+		return -- not banned
+	end
+
+	local _name, reason, timeStamp = unpack(banInfo)
 	local banMessage
 	if tonumber(timeStamp) then
 		if timeStamp > 0 then
@@ -32,10 +49,8 @@ function Auth.banHandler(player)
 			if timeRemaining > 0 then
 				banMessage = "You are banned from this experience for " .. Util.ReadableTime(timeRemaining) .. "!"
 			else
-				-- unbanning
-				Data.bans[key] = nil
-				Data.Cache.bans[key] = Data.Store.REMOVE
-				return
+				Auth.userUnban(player.UserId, nil, true)
+				return -- duration has passed, unbanned
 			end
 		else
 			banMessage = "You are permanently banned from this experience!"
@@ -48,40 +63,80 @@ function Auth.banHandler(player)
 	return true
 end
 
-function Auth.userBan(userId: number, reason: string, duration: number?, fromUserId: number)
-	print("userBan", userId)
+function Auth.userBan(
+	userId: number,
+	reason: string,
+	duration: number?,
+	fromUserId: number?,
+	startTime: number?,
+	noAsync
+)
+	local banAsync = not fromUserId or Auth.hasPermission(fromUserId, "banasync")
+	local banPlayer = Players:GetPlayerByUserId(userId)
+
+	if not banAsync then
+		duration = 0
+	end
+
 	local timestamp
-	if duration and duration ~= 0 then -- and canBan?
-		timestamp = if duration > 0 then os.time() + duration else -1
+	if duration and duration ~= 0 then
+		timestamp = if duration > 0 then (startTime or os.time()) + duration else -1
 	end
 
 	if reason and fromUserId then
 		reason = Util.String.filterForBroadcast(reason, fromUserId)
 	end
 
-	local ban = { reason, timestamp, fromUserId }
+	local ban = { if banPlayer then banPlayer.Name else nil, reason, timestamp, fromUserId }
+	if not banPlayer then
+		task.spawn(function()
+			ban[1] = Util.getUserInfo(userId).Username
+		end)
+	end
 
 	local key = tostring(userId)
 	Data.bans[key] = ban
-	if tonumber(duration) and duration ~= 0 then
+	if duration and duration ~= 0 then
 		Data.Cache.bans[key] = ban
 		Data.pendingSaveMain = true
 	end
 
 	for _, player in Players:GetPlayers() do
-		if Auth.hasPermission(player.UserId, "ban") or Auth.hasPermission(player.UserId, "kick") then
+		if Auth.hasCommand(player.UserId, "ban") then
 			Remote.Ban:FireClient(player, key, ban)
 		end
 	end
+
+	if not noAsync then -- for non command calls
+		Players:BanAsync({
+			UserIds = { userId },
+			PrivateReason = reason or "No reason.",
+			DisplayReason = reason or "No reason.",
+			Duration = duration,
+			ApplyToUniverse = true,
+		})
+	end
 end
 
-function Auth.userUnban(userId: number, fromUserId: number)
+function Auth.userUnban(userId: number, fromUserId: number?, noAsync: boolean?)
 	local key = tostring(userId)
 	Data.bans[key] = nil
-	Data.Cache.bans[key] = Data.Store.REMOVE
-	Data.pendingSaveMain = true
-	-- TODO: only send to authorized clients
-	Remote.Ban:FireAllClients(userId)
+
+	local banAsync = not fromUserId or Auth.hasPermission(fromUserId, "banasync")
+	if banAsync then
+		Data.Cache.bans[key] = Data.Store.REMOVE
+		Data.pendingSaveMain = true
+	end
+
+	for _, player in Players:GetPlayers() do
+		if Auth.hasCommand(player.UserId, "ban") then
+			Remote.Ban:FireClient(player, key)
+		end
+	end
+
+	if not noAsync then -- for non command calls
+		Players:UnbanAsync({ UserIds = { userId }, ApplyToUniverse = true })
+	end
 end
 
 --- Adds a role to a user if they don't already have it

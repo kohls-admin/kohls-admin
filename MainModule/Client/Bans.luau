@@ -18,9 +18,9 @@ function Bans.new(_K)
 			if not ban.userId then
 				return ""
 			end
-			local term = ban[2]
+			local term = ban[3]
 			term = if term
-				then (if term > 0 and term ~= math.huge then os.date("%y-%m-%d %X", ban[2]) else "Forever")
+				then (if term > 0 and term ~= math.huge then os.date("%y-%m-%d %X", ban[3]) else "Forever")
 				else "Session"
 
 			local userInfo = _K.Util.getUserInfo(ban.userId)
@@ -29,7 +29,7 @@ function Bans.new(_K)
 				else ""
 
 			if self._filter ~= "" then
-				local text = `@{userInfo.Username} {displayName}{ban.userId}\t{ban[1] or "No reason."}\t{term}`
+				local text = `@{userInfo.Username} {displayName}{ban.userId}\t{ban[2] or "No reason."}\t{term}`
 				local filterFound = string.find(text:lower(), self._filter)
 				return if filterFound
 					then string.format(
@@ -43,10 +43,13 @@ function Bans.new(_K)
 
 			return string.format(
 				banRichFormat,
-				escape(userInfo.Username),
-				escape(displayName),
+				if userInfo.Deleted
+					then "<s>DELETED</s>"
+					elseif userInfo.Unknown then "<s>UNKNOWN</s>"
+					else escape(userInfo.Username),
+				if userInfo.Deleted or userInfo.Unknown then "" else escape(displayName),
 				escape(ban.userId),
-				escape(ban[1] or "No reason."),
+				escape(ban[2] or "No reason."),
 				escape(term)
 			)
 		end,
@@ -67,14 +70,14 @@ function Bans.new(_K)
 				continue
 			end
 			ban.userId = userId
-			local term = if ban[2]
-				then (if ban[2] > 0 then os.date("%y-%m-%d %X", ban[2]) else "Permanently")
+			local term = if ban[3]
+				then (if ban[3] > 0 then os.date("%y-%m-%d %X", ban[3]) else "Permanently")
 				else "Session"
 			local userInfo = _K.Util.getUserInfo(ban.userId)
 			local displayName = if userInfo and (userInfo.DisplayName ~= userInfo.Username)
 				then userInfo.DisplayName .. " "
 				else ""
-			local text = `@{userInfo.Username} {displayName} {ban.userId}\t{ban[1] or "No reason."}\t{term}`
+			local text = `@{userInfo.Username} {displayName} {ban.userId}\t{ban[2] or "No reason."}\t{term}`
 			if text:lower():find(filter, 1, true) then
 				table.insert(new, ban)
 			end

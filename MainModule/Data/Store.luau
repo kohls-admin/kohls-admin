@@ -62,7 +62,7 @@ function Store.loadStore(name)
 	end
 
 	print(`[Kohl's Admin] Initializing DataStore {name}...`)
-	local ok, store = pcall(DataStoreService.GetDataStore, DataStoreService, name, "_K_Beta.1")
+	local ok, store = pcall(DataStoreService.GetDataStore, DataStoreService, name, "_K_Beta.2")
 	if not ok then
 		if RunService:IsStudio() and type(store) == "string" then
 			if string.find(store, "publish", 1, true) then
