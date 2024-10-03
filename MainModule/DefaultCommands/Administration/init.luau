@@ -170,6 +170,7 @@ return {
 				name = "Members(s)",
 				description = "The member(s) to remove all roles and permissions from.",
 				lowerRank = true,
+				ignoreSelf = true,
 			},
 		},
 
