@@ -4,11 +4,11 @@ local typeBan = {
 	validate = function(input: string): (boolean, string?)
 		local query = string.lower(input)
 		for userId, ban in _K.Data.bans do
-			local userInfo = _K.Util.getUserInfo(userId)
-			if
-				string.find(string.lower(userInfo.Username), query) == 1
-				or string.find(string.lower(userId), query) == 1
-			then
+			local name = ban[1] or _K.Util.getUserInfo(userId).Username
+			if not name then
+				continue
+			end
+			if string.find(string.lower(name), query) == 1 or string.find(string.lower(userId), query) == 1 then
 				return true
 			end
 		end
@@ -17,11 +17,11 @@ local typeBan = {
 	parse = function(input: string): string
 		local query = string.lower(input)
 		for userId, ban in _K.Data.bans do
-			local userInfo = _K.Util.getUserInfo(userId)
-			if
-				string.find(string.lower(userInfo.Username), query) == 1
-				or string.find(string.lower(userId), query) == 1
-			then
+			local name = ban[1] or _K.Util.getUserInfo(userId).Username
+			if not name then
+				continue
+			end
+			if string.find(string.lower(name), query) == 1 or string.find(string.lower(userId), query) == 1 then
 				return userId
 			end
 		end
@@ -29,12 +29,23 @@ local typeBan = {
 	end,
 	suggestions = function(text)
 		local names = {}
-		for userId, bans in _K.Data.bans do
-			local userInfo = _K.Util.getUserInfo(userId)
-			local name = userInfo.Username
-			names[userId] = if string.find(name, " ") then `"{name}"` else name
+		-- username suggestions
+		for userId, ban in _K.Data.bans do
+			local name = ban[1] or _K.Util.getUserInfo(userId).Username
+			if not name then
+				continue
+			end
+			if string.find(name, " ") then
+				name = `"{name}"`
+			end
+			table.insert(names, { name, `{name} ({userId})` })
 		end
-		return _K.Util.Suggest.query(text, names, _K.Data.bans)
+		-- userId suggestions
+		for userId, ban in _K.Data.bans do
+			local name = ban[1] or "UNKNOWN"
+			table.insert(names, { userId, `{userId} ({name})` })
+		end
+		return _K.Util.Suggest.query(text, names)
 	end,
 	log = function(arg)
 		return _K.Util.Table.concat(arg.parsedArgs, ",")
