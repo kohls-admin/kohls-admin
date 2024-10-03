@@ -98,6 +98,47 @@ return {
 		end,
 	},
 	{
+		name = "log",
+		aliases = { "logs", "chatlog", "chatlogs" },
+		description = "Shows the logs in a separate window.",
+		args = {},
+		envClient = function(_K)
+			local window = _K.UI.new "Window" {
+				Parent = _K.UI.LayerTopInset,
+				Title = "Kohl's Admin Logs",
+				Visible = false,
+				_K.UI.new "UIPadding" {
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+				},
+			}
+			_K.UI.edit(window, {
+				[_K.UI.Event.Property] = {
+					Visible = function()
+						if not window._instance.Visible and #_K.UI.Scope.dashboard then
+							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
+								_K.UI.Scope.dashboard.Logs,
+							})
+						end
+					end,
+				},
+			})
+			return {
+				window = window,
+			}
+		end,
+
+		runClient = function(context)
+			local visible = not context.env.window._instance.Visible
+			context._K.UI.edit(context.env.window, {
+				Visible = visible,
+				if visible then context._K.UI.Scope.dashboard.Logs else nil,
+			})
+		end,
+	},
+	{
 		name = "settings",
 		aliases = { "set" },
 		description = "Shows the settings in a separate window.",

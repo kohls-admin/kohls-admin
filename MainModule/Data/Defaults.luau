@@ -84,6 +84,8 @@ local Data = {
 				saveRoles = false,
 				-- can configure the global admin settings
 				settings = false,
+				-- can view server-side logs
+				serverlogs = false,
 			},
 
 			-- allowed command groups

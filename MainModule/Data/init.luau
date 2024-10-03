@@ -182,7 +182,7 @@ local function syncLogs(logs)
 	table.move(newLogs, 1, #newLogs, #Data.logs + 1, Data.logs)
 	table.sort(Data.logs, Data.sortTime)
 	for _, player in Players:GetPlayers() do
-		if Auth.hasCommand(player.UserId, "logs") then
+		if Auth.hasPermission(player.UserId, "serverlogs") then
 			Remote.Logs:FireClient(player, newLogs)
 		end
 	end
