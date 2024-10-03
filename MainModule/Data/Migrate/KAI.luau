@@ -32,6 +32,7 @@ local function migrateKAI()
 				end
 				new[1][tostring(userId)] = {
 					nil,
+					nil,
 					if duration == -1 then -1 else math.abs(duration),
 					nil,
 				}
