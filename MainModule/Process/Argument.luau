@@ -113,7 +113,21 @@ function Argument:parse()
 		if not ok then
 			warn("parseArg error", arg)
 		end
-		table.insert(self.parsedArgs, if ok then arg else nil)
+
+		if not ok then
+			table.insert(self.parsedArgs, nil)
+		else
+			if argType.listable and not self.rawType.listable then
+				table.insert(self.parsedArgs, arg[1])
+			elseif argType.listable and self.rawType.listable and argType ~= self.rawType then
+				for _, value in arg do
+					table.insert(self.parsedArgs, value)
+				end
+			else
+				table.insert(self.parsedArgs, arg)
+			end
+		end
+
 		if self.exit then
 			break
 		end

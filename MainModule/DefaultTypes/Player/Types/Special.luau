@@ -105,6 +105,7 @@ return function(_K)
 	end
 
 	local typeSpecial = {
+		listable = true,
 		transform = string.lower,
 		validate = generateValidate(specialParse),
 		parse = specialParse,

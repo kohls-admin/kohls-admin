@@ -15,6 +15,7 @@ local function allParse(arg, self)
 end
 
 local typeEveryone = {
+	listable = true,
 	transform = string.lower,
 	validate = generateValidate(allParse),
 	parse = allParse,

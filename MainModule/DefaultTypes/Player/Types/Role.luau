@@ -25,6 +25,7 @@ return function(_K)
 	end
 
 	local typeRoles = {
+		listable = true,
 		transform = string.lower,
 		validate = generateValidate(roleParse),
 		parse = roleParse,

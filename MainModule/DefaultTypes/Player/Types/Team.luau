@@ -22,6 +22,7 @@ local function teamParse(arg, self)
 end
 
 local typeTeam = {
+	listable = true,
 	transform = string.lower,
 	validate = generateValidate(teamParse),
 	parse = teamParse,

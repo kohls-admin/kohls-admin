@@ -33,6 +33,7 @@ local function parseRandom(arg, self)
 end
 
 local typeRandom = {
+	listable = true,
 	validate = generateValidate(parseRandom),
 	parse = parseRandom,
 }
