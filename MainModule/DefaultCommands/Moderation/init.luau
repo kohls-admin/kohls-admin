@@ -145,7 +145,12 @@ return {
 					Duration = duration,
 					ApplyToUniverse = true,
 				})
-				if not ok and not string.find(err, "NOT_FOUND") then
+				if ok then
+					context._K.Remote.Notify:FireClient(
+						context.fromPlayer,
+						`<b>Banned:</b> <i>{table.concat(userIds, ", ")}</i>`
+					)
+				elseif not string.find(err, "NOT_FOUND") then
 					error(err, 1)
 				end
 			end
@@ -185,6 +190,10 @@ return {
 					error(err, 1)
 				end
 			end
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				`<b>Unbanned:</b> <i>{table.concat(bans, ", ")}</i>`
+			)
 		end,
 	},
 	{
@@ -212,6 +221,8 @@ return {
 			for _, player in players do
 				player:Kick(reason)
 			end
+			local names = context._K.Util.Suggest.getNames(players)
+			context._K.Remote.Notify:FireClient(context.fromPlayer, `<b>Kicked:</b> <i>{table.concat(names, ", ")}</i>`)
 		end,
 	},
 	{
@@ -267,6 +278,11 @@ return {
 		end,
 		run = function(context, players)
 			for _, player in players do
+				local con = context._K.Data.muted[player.UserId]
+				if con then
+					con:Disconnect()
+				end
+
 				context.env.remote:FireClient(player, true)
 
 				context.env.muted[player.UserId] = context._K.Util.Services.TextChatService.DescendantAdded:Connect(
@@ -289,6 +305,8 @@ return {
 					end
 				end
 			end
+			local names = context._K.Util.Suggest.getNames(players)
+			context._K.Remote.Notify:FireClient(context.fromPlayer, `<b>Muted:</b> <i>{table.concat(names, ", ")}</i>`)
 		end,
 	},
 	{
@@ -326,6 +344,11 @@ return {
 
 				context._K.Remote.Mute:FireClient(player)
 			end
+			local names = context._K.Util.Suggest.getNames(players)
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				`<b>Unmuted:</b> <i>{table.concat(names, ", ")}</i>`
+			)
 		end,
 	},
 	{

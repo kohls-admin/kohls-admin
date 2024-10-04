@@ -100,6 +100,16 @@ return {
 					end
 				end
 			end
+			local roleString = {}
+			for _, role in roles do
+				local roleData = context._K.Data.roles[role]
+				table.insert(roleString, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
+			end
+			local names = context._K.Util.Suggest.getNames(players)
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				`<b>Gave Roles:</b> {table.concat(roleString, ", ")}\n<b>To:</b> <i>{table.concat(names, ", ")}</i>`
+			)
 		end,
 	},
 	{
@@ -158,6 +168,15 @@ return {
 					context._K.Auth.userRoleRemove(member, role)
 				end
 			end
+			local roleString = {}
+			for _, role in roles do
+				local roleData = context._K.Data.roles[role]
+				table.insert(roleString, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
+			end
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				`<b>Removed Roles:</b> {table.concat(roleString, ", ")}\n<b>From:</b> <i>{table.concat(members, ", ")}</i>`
+			)
 		end,
 	},
 	{
