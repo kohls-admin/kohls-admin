@@ -220,6 +220,28 @@ return {
 			})
 		end,
 	},
+
+	{
+		name = "age",
+		aliases = { "accountage" },
+		description = "Displays the account age of a player.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player whose account age to display.",
+				lowerRank = true,
+			},
+		},
+
+		run = function(context, player: Player)
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				`<b>Age:</b> {context._K.Util.ReadableTime(player.AccountAge * 86400)} days`,
+				player.UserId
+			)
+		end,
+	},
 	{
 		name = "ping",
 		description = "Displays the ping of a player.",
