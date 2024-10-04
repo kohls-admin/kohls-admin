@@ -215,10 +215,13 @@ function Tabs.new(definition)
 							local buttonStart = button.AbsolutePosition.X
 							local buttonEnd = buttonStart + button.AbsoluteSize.X + tabList.Padding.Offset
 
-							if absoluteEnd < buttonEnd + 32 then
+							if
+								tabList.AbsoluteContentSize.X >= tabs.AbsoluteSize.X
+								and absoluteEnd < buttonEnd + 32
+							then
 								tabOffset:set(
 									math.max(
-										-tabList.AbsoluteContentSize.X + tabs.AbsoluteSize.X,
+										tabs.AbsoluteSize.X - tabList.AbsoluteContentSize.X,
 										tabOffset._value - (32 + (buttonEnd - absoluteEnd))
 									)
 								)
@@ -229,7 +232,6 @@ function Tabs.new(definition)
 										tabOffset._value + (absoluteStart - buttonStart) + 32 + tabList.Padding.Offset
 									)
 								)
-								-- tabOffset:set(math.min(0, tabOffset._value + new.TabSize._value + tabList.Padding.Offset))
 							end
 						end,
 					},
