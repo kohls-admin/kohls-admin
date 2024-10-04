@@ -355,6 +355,16 @@ function Auth.roleCanUseCommand(role: Role, command: any): boolean
 		warn("ROLE DOESN'T EXIST?!", role)
 		return false
 	end
+
+	local rawCommand = command
+	if type(command) == "string" then
+		command = Registry.commands[string.lower(command)]
+	end
+
+	if type(command) ~= "table" then
+		error(`Invalid command: {tostring(rawCommand)}`, 2)
+	end
+
 	-- admins always have access
 	if roleData.permissions.admin then
 		return true
@@ -386,7 +396,7 @@ function Auth.roleCanUseCommand(role: Role, command: any): boolean
 	end
 
 	-- role has command group
-	if roleData.groups and table.find(roleData.groups, string.lower(command.group)) then
+	if command and roleData.groups and command.group and table.find(roleData.groups, string.lower(command.group)) then
 		return true
 	end
 
@@ -395,6 +405,10 @@ end
 
 --- Checks if a user has access to a command
 function Auth.hasCommand(userId: number, command: any): boolean
+	if type(command) == "string" then
+		command = Registry.commands[string.lower(command)]
+	end
+
 	if Auth.roleCanUseCommand("default", command) then
 		return true
 	end
