@@ -15,6 +15,9 @@ local function updateInterfaceAuth()
 	local buttonEnabled = _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
 	UI.Scope.dashboardButton:setEnabled(buttonEnabled)
 	UI.Scope.dashboard.Commands:updateList()
+	UI.Scope.dashboard.Bans._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "bans")
+	UI.Scope.dashboard.Members._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "members")
+	UI.Scope.dashboard.Settings.Visible = _K.Auth.hasPermission(UI.LocalPlayer.UserId, "settings")
 end
 UI.Scope.updateInterfaceAuth = updateInterfaceAuth
 
@@ -81,11 +84,13 @@ end)
 _K.Remote.Member.OnClientEvent:Connect(function(userId, member)
 	_K.Data.members[userId] = member
 	UI.Scope.members:set(_K.Data.members)
+	updateInterfaceAuth()
 end)
 
 _K.Remote.Members.OnClientEvent:Connect(function(members)
 	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
+	updateInterfaceAuth()
 end)
 
 _K.Remote.Log.OnClientEvent:Connect(function(log)

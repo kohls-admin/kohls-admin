@@ -240,12 +240,14 @@ function Tabs.new(definition)
 						currentPage:set(page)
 					end
 				end)
-				page:GetPropertyChangedSignal("Parent"):Connect(function()
-					button.Visible = page.Parent == new._content
+				local function hideButton()
+					button.Visible = page.Parent == new._content and page.Visible
 					if page == currentPage._value and not button.Visible then
 						currentPage:set(pages.CurrentPage)
 					end
-				end)
+				end
+				page:GetPropertyChangedSignal("Parent"):Connect(hideButton)
+				page:GetPropertyChangedSignal("Visible"):Connect(hideButton)
 			end,
 		},
 	}
