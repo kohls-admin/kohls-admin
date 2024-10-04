@@ -431,6 +431,91 @@ return {
 			context.env.control(context.fromPlayer, player)
 		end,
 	},
+	{
+		name = "infect",
+		aliases = { "zombie" },
+		description = "Infects of one or more player(s), starting a zombie outbreak!",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to infect.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			local env = { infected = {} }
+
+			_K.Flux.Scope.Infected = env.infected
+
+			function env.infect(player, character)
+				if not character then
+					return
+				end
+				local humanoid = character:FindFirstChildOfClass("Humanoid")
+				if not humanoid then
+					return
+				end
+
+				local face = character:FindFirstChild("Head") and character.Head:FindFirstChild("face")
+				if face then
+					if not face:GetAttribute("_KInfectOriginal") then
+						face:SetAttribute("_KInfectOriginal", face.Texture)
+					end
+					face.Texture = "rbxassetid://629946036"
+				end
+
+				local colors = character:FindFirstChildOfClass("BodyColors")
+				if colors then
+					colors.HeadColor3 = Color3.fromRGB(50, 100, 50)
+					colors.LeftArmColor3 = Color3.fromRGB(50, 100, 50)
+					colors.RightArmColor3 = Color3.fromRGB(50, 100, 50)
+					colors.TorsoColor3 = Color3.fromRGB(100, 50, 20)
+					colors.LeftLegColor3 = Color3.fromRGB(100, 50, 20)
+					colors.RightLegColor3 = Color3.fromRGB(100, 50, 20)
+				end
+
+				local shirt = character:FindFirstChildOfClass("Shirt")
+				if shirt then
+					shirt:Destroy()
+				end
+
+				local pants = character:FindFirstChildOfClass("Pants")
+				if pants then
+					pants:Destroy()
+				end
+
+				_K.Flux
+					.new "Sound" {
+					Parent = character.PrimaryPart,
+					PlayOnRemove = true,
+					SoundId = "rbxassetid://9114030073",
+				}
+					:Destroy()
+
+				env.infected[character] = humanoid.Touched:Connect(function(part)
+					if not part or not part.Parent or env.infected[part.Parent] then
+						return
+					end
+
+					local player = _K.Util.Services.Players:GetPlayerFromCharacter(part.Parent)
+					if not player then
+						return
+					end
+
+					env.infect(player, part.Parent)
+				end)
+			end
+
+			return env
+		end,
+
+		run = function(context, players)
+			for _, player in players do
+				context.env.infect(player, player.Character)
+			end
+		end,
+	},
 
 	{
 		name = "explode",

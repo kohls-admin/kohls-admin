@@ -13,6 +13,7 @@ local Util = {
 	Defer = require(script:WaitForChild("Defer")),
 	Function = require(script:WaitForChild("Function")),
 	getUserInfo = require(script:WaitForChild("getUserInfo")),
+	Humanoid = require(script:WaitForChild("Humanoid")),
 	--- @within Util
 	--- @prop Promise Promise
 	Promise = require(script:WaitForChild("Promise")),
