@@ -28,7 +28,7 @@ return {
 						local msg, from = unpack(message.Data)
 						if msg ~= oldMsg or from ~= oldFrom then
 							_K.Data.settings.announcement = message.Data
-							_K.Remote.Announce:FireAllClients(unpack(message.Data))
+							_K.Remote.Announce:FireAllClients(msg, from, 0)
 						end
 					end)
 				end)
@@ -42,7 +42,7 @@ return {
 
 		run = function(context, message)
 			if context._K.IsStudio then
-				context._K.Remote.Announce:FireAllClients(message, context.from)
+				context._K.Remote.Announce:FireAllClients(message, context.from, 0)
 			end
 			local filteredMsg = context._K.Util.String.filterForBroadcast(message, context.from)
 			local announcement = { filteredMsg, context.from }

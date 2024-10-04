@@ -142,7 +142,7 @@ local function playerAdded(player: Player)
 
 	if _K.Data.settings.announcement then
 		local message, from = unpack(_K.Data.settings.announcement)
-		_K.Remote.Announce:FireClient(player, message, from)
+		_K.Remote.Announce:FireClient(player, message, from, 0)
 	end
 end
 
