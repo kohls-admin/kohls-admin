@@ -249,6 +249,14 @@ function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requi
 		local bans = _K.Auth.hasCommand(player.UserId, "ban") and _K.Data.bans
 		local logs = _K.Auth.hasPermission(player.UserId, "serverlogs") and _K.Data.logs
 		_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings, bans, logs, _K.Data.roles)
+		if not Util.Services.HttpService.HttpEnabled and _K.Auth.hasPermission(player.UserId, "settings") then
+			task.delay(2, function()
+				_K.Remote.Notify:FireClient(
+					player,
+					`Your game is unable to participate in the <b>Kohl's Admin Games Hub</b> because <b><font color='#f00'>HTTP Requests are disabled in your game settings</font></b>.\n\n<i><font transparency='0.5'>Enable HTTP Requests in your Roblox game settings to avoid missing out on free advertising and other benefits!</font></i>`
+				)
+			end)
+		end
 	end)
 
 	_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string, chatted: boolean?)
