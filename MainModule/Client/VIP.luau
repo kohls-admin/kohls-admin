@@ -370,6 +370,56 @@ function VIP.new(_K)
 		end)
 	end
 
+	local subscriptionButton = UI.new "Button" {
+		Icon = "rbxasset://textures/ui/common/robux.png",
+		IconRightAlign = true,
+		Label = "<font color='#f04'><sc><b>VIP Subscription</b></sc></font>",
+		HoverTransparency = 0.5,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = UDim2.new(1, -2, 0, 32),
+
+		UI.new "TextLabel" {
+			LayoutOrder = 8,
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.XY,
+			BackgroundTransparency = 1,
+			Font = UI.Theme.FontMono,
+			TextSize = UI.Theme.FontSizeLarge,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextWrapped = true,
+			Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+			Text = UI.compute(function(use)
+				return if (use(donationLevel) or 0) < 4
+					then `<b>$2.99</b><font transparency="0.5">/month</font>`
+					else "<b>OWNED</b>"
+			end),
+			RichText = true,
+		},
+		[UI.Event] = {
+			Activated = function()
+				if game.GameId == 6475108624 then -- whenever Roblox allows cross game subscriptions...
+					purchaseDialog.Visible:set(false)
+					_K.Util.Services.MarketplaceService:PromptSubscriptionPurchase(
+						_K.UI.LocalPlayer,
+						"EXP-7266962490056769807"
+					)
+				else
+					purchaseDialog.Text:set(subscriptionText)
+					UI.Scope.lastAttemptedPurchase = true
+					purchaseLink.Text = "https://roblox.com/games/116852112089994#!/store"
+					purchaseDialog.Visible:set(true)
+				end
+			end,
+		},
+	}
+
+	UI.new "Tooltip" {
+		Parent = subscriptionButton,
+		Text = "✨ <b>Become a VIP</b>\nUnlock exclusive commands and flaunt your VIP status in tons of your favorite games.<i><font transparency='0.5'>*\n\n* Only in participating experiences.</font></i>",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Visible = subscriptionButton._hovering,
+	}
+
 	local scroller = UI.new "Scroller" {
 		Name = "VIP",
 
@@ -402,17 +452,6 @@ function VIP.new(_K)
 		},
 
 		UI.new "TextLabel" {
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
-			Font = UI.Theme.Font,
-			TextSize = UI.Theme.FontSizeLarge,
-			TextColor3 = UI.Theme.PrimaryText,
-			TextWrapped = true,
-			Size = UDim2.new(1, 0, 0, 0),
-			Text = "<sc><b>Monetization Made Easy</b></sc>",
-			RichText = true,
-		},
-		UI.new "TextLabel" {
 			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
@@ -426,64 +465,8 @@ function VIP.new(_K)
 			RichText = true,
 		},
 
-		UI.new "TextLabel" {
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
-			Font = UI.Theme.Font,
-			TextSize = UI.Theme.FontSizeLarge,
-			TextColor3 = UI.Theme.PrimaryText,
-			TextWrapped = true,
-			Size = UDim2.new(1, 0, 0, 0),
-			Text = "<sc><b>Support Kohl's Admin</b></sc>",
-			RichText = true,
-		},
 		customUGC,
-		UI.new "Button" {
-			Icon = "rbxasset://textures/ui/common/robux.png",
-			IconRightAlign = true,
-			Label = "<font color='#f04'><sc><b>VIP Subscription</b></sc></font>",
-			HoverTransparency = 0.5,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Size = UDim2.new(1, -2, 0, 32),
-
-			UI.new "TextLabel" {
-				LayoutOrder = 8,
-				AutoLocalize = false,
-				AutomaticSize = Enum.AutomaticSize.XY,
-				BackgroundTransparency = 1,
-				Font = UI.Theme.FontMono,
-				TextSize = UI.Theme.FontSizeLarge,
-				TextColor3 = UI.Theme.PrimaryText,
-				TextWrapped = true,
-				Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
-				Text = UI.compute(function(use)
-					return if (use(donationLevel) or 0) < 4
-						then `<b>$2.99</b><font transparency="0.5">/month</font>`
-						else "<b>OWNED</b>"
-				end),
-				RichText = true,
-			},
-			UI.new "Tooltip" {
-				Text = "Access to VIP commands in participating games with Kohl's Admin.",
-				TextXAlignment = Enum.TextXAlignment.Left,
-			},
-			[UI.Event] = {
-				Activated = function()
-					if game.GameId == 6475108624 then -- whenever Roblox allows cross game subscriptions...
-						purchaseDialog.Visible:set(false)
-						_K.Util.Services.MarketplaceService:PromptSubscriptionPurchase(
-							_K.UI.LocalPlayer,
-							"EXP-7266962490056769807"
-						)
-					else
-						purchaseDialog.Text:set(subscriptionText)
-						UI.Scope.lastAttemptedPurchase = true
-						purchaseLink.Text = "https://roblox.com/games/116852112089994#!/store"
-						purchaseDialog.Visible:set(true)
-					end
-				end,
-			},
-		},
+		subscriptionButton,
 		gamePasses,
 
 		UI.new "TextBox" {
