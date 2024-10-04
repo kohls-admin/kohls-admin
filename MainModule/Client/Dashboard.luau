@@ -30,6 +30,8 @@ UI.Scope.dashboard.Tabs = UI.new "Tabs" {
 	UI.Scope.dashboard.VIP,
 }
 
+UI.Scope.dashboard.Tabs._pages:JumpTo(UI.Scope.dashboard.VIP)
+
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
 	Title = "Kohl's Admin Dashboard",
