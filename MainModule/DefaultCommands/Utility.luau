@@ -237,7 +237,7 @@ return {
 		run = function(context, player: Player)
 			context._K.Remote.Notify:FireClient(
 				context.fromPlayer,
-				`<b>Age:</b> {context._K.Util.ReadableTime(player.AccountAge * 86400)} days`,
+				`<b>Age:</b> {context._K.Util.ReadableTime(player.AccountAge * 86400)}`,
 				player.UserId
 			)
 		end,
