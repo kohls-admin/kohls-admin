@@ -219,7 +219,14 @@ function VIP.new(_K)
 				},
 			}
 
-			local button
+			local button, try, trying
+			local function tryDone()
+				trying = nil
+				button.Label:set(`<b>{ugc.price}</b>`)
+				button._content.IconFrame.Visible = true
+				button._content.Label.TextXAlignment = Enum.TextXAlignment.Left
+			end
+
 			button = UI.new "Button" {
 				Parent = frame,
 				Icon = if owned then nil else "rbxasset://textures/ui/common/robux.png",
@@ -236,12 +243,46 @@ function VIP.new(_K)
 				Size = UDim2.new(0, 80, 0, 32),
 				Position = UDim2.fromOffset(0, 88),
 
+				[UI.Attribute] = {
+					Price = ugc.price,
+				},
+
 				[UI.Event] = {
 					Activated = function()
-						if owned or donationLevel._value >= (ugc.level or 4) then
-							local equipped = equippedUGC[ugc.equip]
+						if try then
+							try, trying = nil, true
+							local existing = equippedUGC[ugc.equip]
+							debounceEquip(ugc.id, ugc.equip, true, ugc.name, button)
+							task.delay(15, function()
+								if trying and equippedUGC[ugc.equip] == button then
+									debounceEquip(ugc.id, ugc.equip, false, ugc.name, button)
+								end
+								task.delay(0.25, tryDone)
+							end)
+							_K.client.Notify({
+								Text = `Trying <b>{ugc.name}</b>.`,
+								Duration = 15,
+								UserFrame = {},
+								ExitButton = true,
+							})
+
+							if existing and existing ~= button then
+								task.delay(0.25, function()
+									existing.Label:set(`<b>{existing._instance:GetAttribute("Price")}</b>`)
+									existing._content.IconFrame.Visible = true
+									existing._content.Label.TextXAlignment = Enum.TextXAlignment.Left
+								end)
+							end
+							return
+						end
+
+						local equipped = equippedUGC[ugc.equip]
+						if owned or donationLevel._value >= (ugc.level or 4) or (trying and equipped == button) then
 							equipped = equipped and equipped == button
 							debounceEquip(ugc.id, ugc.equip, not equipped, ugc.name, button)
+							if trying and equipped then
+								task.delay(0.25, tryDone)
+							end
 							return
 						end
 
@@ -258,6 +299,14 @@ function VIP.new(_K)
 					end,
 				},
 			}
+
+			if not owned then
+				try = true
+				button.Label:set("<b>TRY</b>")
+				button._content.IconFrame.Visible = false
+				button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
+			end
+
 			if ugc.tip then
 				UI.new "Tooltip" {
 					Parent = button._instance,

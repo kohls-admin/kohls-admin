@@ -25,7 +25,7 @@ local function getDonationLevel(player)
 		end
 	end
 
-	return
+	return 0
 end
 
 local function setDonationLevel(player)
@@ -44,8 +44,22 @@ for _, module in script:WaitForChild("UGC"):GetChildren() do
 end
 
 if Util.Services.RunService:IsServer() then
+	local cache = {}
 	Remote.VIPUGCMethod.OnServerEvent:Connect(function(player, assetId, match, equip, name)
 		if not Data.settings.vip then
+			return
+		end
+
+		local ugcEffect = adminUGCMap[match]
+		if not (ugcEffect and player.Character) then
+			return
+		end
+
+		if not equip then
+			local existing = player.Character:FindFirstChild(ugcEffect.Name)
+			if existing then
+				existing:Destroy()
+			end
 			return
 		end
 
@@ -57,18 +71,15 @@ if Util.Services.RunService:IsServer() then
 			end, 5, 1, 2)
 		end
 
-		if ok and result then
-			local ugcEffect = adminUGCMap[match]
-			if ugcEffect and player.Character then
-				if not equip then
-					local existing = player.Character:FindFirstChild(ugcEffect.Name)
-					if existing then
-						existing:Destroy()
-					end
-					return
-				end
-				ugcEffect.Method(player.Character, { Name = name, Destroy = tick })
-			end
+		local tried = cache[assetId]
+		if not tried then
+			tried = {}
+			cache[assetId] = tried
+		end
+
+		if (ok and result) or not tried[player.UserId] then
+			tried[player.UserId] = true
+			ugcEffect.Method(player.Character, { Name = name, Destroy = tick })
 		end
 	end)
 
