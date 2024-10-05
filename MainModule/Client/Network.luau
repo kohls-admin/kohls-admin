@@ -17,7 +17,7 @@ local function updateInterfaceAuth()
 	UI.Scope.dashboard.Commands:updateList()
 	UI.Scope.dashboard.Bans._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "bans")
 	UI.Scope.dashboard.Members._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "members")
-	UI.Scope.dashboard.Settings.Visible = _K.Auth.hasPermission(UI.LocalPlayer.UserId, "settings")
+	UI.Scope.dashboard.Settings.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "settings")
 end
 UI.Scope.updateInterfaceAuth = updateInterfaceAuth
 
