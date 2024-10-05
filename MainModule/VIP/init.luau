@@ -55,11 +55,12 @@ if Util.Services.RunService:IsServer() then
 			return
 		end
 
+		local existing = player.Character:FindFirstChild(ugcEffect.Name)
+		if existing then
+			existing:Destroy()
+		end
+
 		if not equip then
-			local existing = player.Character:FindFirstChild(ugcEffect.Name)
-			if existing then
-				existing:Destroy()
-			end
 			return
 		end
 
@@ -81,7 +82,7 @@ if Util.Services.RunService:IsServer() then
 			local try
 			if not tried[player.UserId] then
 				try = true
-			tried[player.UserId] = true
+				tried[player.UserId] = true
 			end
 
 			local ugc = ugcEffect.Method(player.Character, { Name = name, Destroy = tick })
