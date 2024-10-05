@@ -328,13 +328,16 @@ function Data.initialize(name)
 			end)
 		end
 
-		-- TODO: figure out log merge and sort, need to compress dem logs haha!
-		-- if Data.pendingSaveLogs then
-		-- 	numThreadsRunning += 1
-		-- 	task.spawn(startSaveThread, "Logs", function(value)
-		-- 		return Util.Table.merge(value, Cache.logs)
-		-- 	end)
-		-- end
+		if Data.pendingSaveLogs then
+			numThreadsRunning += 1
+			task.spawn(function()
+				updateLogs()
+				numThreadsRunning -= 1
+				if numThreadsRunning == 0 then
+					coroutine.resume(mainThread)
+				end
+			end)
+		end
 
 		-- TODO: prepare player data
 		-- for userId, sessionData in Cache.players do
