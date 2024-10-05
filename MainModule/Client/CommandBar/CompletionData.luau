@@ -144,7 +144,7 @@ return function(_K, text, cursorPosition)
 
 		-- argument suggestions
 		for i, arg in command.args do
-			if cursorPosition < arg.argPos or cursorPosition > arg.argPos + #arg.rawArg then
+			if cursorPosition < arg.argPos or cursorPosition > arg.argPos + #_K.Util.String.trimEnd(arg.rawArg) then
 				continue
 			end
 			data.argIndex = i + 1
