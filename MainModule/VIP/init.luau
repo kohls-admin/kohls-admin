@@ -78,8 +78,21 @@ if Util.Services.RunService:IsServer() then
 		end
 
 		if (ok and result) or not tried[player.UserId] then
+			local try
+			if not tried[player.UserId] then
+				try = true
 			tried[player.UserId] = true
-			ugcEffect.Method(player.Character, { Name = name, Destroy = tick })
+			end
+
+			local ugc = ugcEffect.Method(player.Character, { Name = name, Destroy = tick })
+
+			if try then
+				task.delay(15, function()
+					if ugc then
+						ugc:Destroy()
+					end
+				end)
+			end
 		end
 	end)
 

@@ -83,5 +83,7 @@ return {
 			clone.Handle.Fire.SecondaryColor = Color3.new(1, 1, 1)
 		end
 		clone.Parent = character
+
+		return clone
 	end,
 }

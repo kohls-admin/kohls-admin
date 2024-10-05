@@ -55,5 +55,7 @@ return {
 		end
 		clone.Parent = character
 		clone.Handle.Animate.Enabled = true
+
+		return clone
 	end,
 }
