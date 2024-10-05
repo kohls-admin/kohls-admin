@@ -32,6 +32,64 @@ return {
 		end,
 	},
 	{
+		name = "atmosphere",
+		description = "Changes the values of a Ligthing.Atmosphere.",
+		args = {
+			{
+				type = "number",
+				name = "Density",
+				description = "Defines the amount of particles in the air. "
+					.. "The higher the density, the more particles and the more in-game objects/terrain will be obscured by them.",
+			},
+			{
+				type = "number",
+				name = "Offset",
+				description = "Controls how light transmits between the camera and the sky background. "
+					.. "Increase this value to create a horizon silhouette against the sky or reduce it to blend distant objects into the sky for an endless and seamless open world.",
+				optional = true,
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "A Color3 value which changes the Atmosphere hue for subtle environmental moods. "
+					.. "This is best combined with increased Atmosphere.Haze to expand the visible effect.",
+				optional = true,
+			},
+			{
+				type = "color",
+				name = "DecayColor",
+				description = "Defines the hue of the Atmosphere away from the sun, gradually falling off from Atmosphere.Color towards this value. "
+					.. "Must be used with Atmosphere.Haze and Atmosphere.Glare levels higher than 0 to see any effect.",
+				optional = true,
+			},
+			{
+				type = "number",
+				name = "Glare",
+				description = "Specifies the glow/glare of the Atmosphere around the sun. More glare results in an increased effect of sunlight cast onto the sky and world. "
+					.. "Must be used with a Atmosphere.Haze level higher than 0 to see any effect.",
+				optional = true,
+			},
+			{
+				type = "number",
+				name = "Haze",
+				description = "Defines the haziness of the Atmosphere with a visible effect both above the horizon and into the distance. "
+					.. "This can be combined with Atmosphere.Color to create environmental moods, like a grey tint for a polluted alien planet.",
+				optional = true,
+			},
+		},
+		run = function(context, density, offset, color, decay, glare, haze)
+			local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+			if atmosphere then
+				atmosphere.Density = density
+				atmosphere.Offset = offset or atmosphere.Offset
+				atmosphere.Color = color or atmosphere.Color
+				atmosphere.Decay = decay or atmosphere.Decay
+				atmosphere.Glare = glare or atmosphere.Glare
+				atmosphere.Haze = haze or atmosphere.Haze
+			end
+		end,
+	},
+	{
 		name = "fogcolor",
 		description = "Changes the color of Lighting.FogColor.",
 		args = {
@@ -43,6 +101,11 @@ return {
 		},
 		run = function(context, fogColor)
 			Lighting.FogColor = fogColor
+			local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+			if atmosphere then
+				atmosphere.Color = fogColor
+				atmosphere.Haze = math.max(2 ^ -32, atmosphere.Haze)
+			end
 		end,
 	},
 	{
@@ -57,6 +120,11 @@ return {
 		},
 		run = function(context, studs)
 			Lighting.FogStart = studs
+			local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+			if atmosphere then
+				atmosphere.Density = (64 / studs) ^ 0.25
+				atmosphere.Haze = math.max(2 ^ -32, 5 / studs ^ 0.1)
+			end
 		end,
 	},
 	{
@@ -71,6 +139,11 @@ return {
 		},
 		run = function(context, studs)
 			Lighting.FogEnd = studs
+			local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+			if atmosphere then
+				atmosphere.Density = (64 / studs) ^ 0.25
+				atmosphere.Haze = math.max(2 ^ -32, 5 / studs ^ 0.1)
+			end
 		end,
 	},
 	{
