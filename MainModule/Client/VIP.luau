@@ -15,17 +15,17 @@ function VIP.new(_K)
 	local debounceEquip = _K.Util.Function.debounce(0.25, function(id, equip, equipped, name, button)
 		local existing = equippedUGC[equip]
 		if existing and existing ~= button then
-			existing.BackgroundColor3:set(Color3.new(0, 200, 0))
+			existing.BackgroundColor3:set(Color3.fromRGB(0, 200, 0))
 			existing.Label:set("<b>EQUIP</b>")
 		end
 
 		if equipped then
 			equippedUGC[equip] = button
-			button.BackgroundColor3:set(Color3.new(200, 0, 0))
+			button.BackgroundColor3:set(Color3.fromRGB(200, 0, 0))
 			button.Label:set("<b>UNEQUIP</b>")
 		else
 			equippedUGC[equip] = nil
-			button.BackgroundColor3:set(Color3.new(0, 200, 0))
+			button.BackgroundColor3:set(Color3.fromRGB(0, 200, 0))
 			button.Label:set("<b>EQUIP</b>")
 		end
 
