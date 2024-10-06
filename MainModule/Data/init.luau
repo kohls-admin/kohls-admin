@@ -296,10 +296,6 @@ function Data.initialize(name)
 	game:BindToClose(function()
 		Data.gameClosing = true
 
-		if Data.settings.vip and Data.settings.gameHubEnabled and Http.HttpEnabled and game.GameId > 0 then
-			task.spawn(Http.RequestAsync, Http, { Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
-		end
-
 		local mainThread = coroutine.running()
 		local numThreadsRunning = 0
 
@@ -315,6 +311,17 @@ function Data.initialize(name)
 			if numThreadsRunning == 0 then
 				coroutine.resume(mainThread)
 			end
+		end
+
+		if Data.settings.vip and Data.settings.gameHubEnabled and Http.HttpEnabled and game.GameId > 0 then
+			numThreadsRunning += 1
+			task.spawn(function()
+				Http:RequestAsync({ Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
+				numThreadsRunning -= 1
+				if numThreadsRunning == 0 then
+					coroutine.resume(mainThread)
+				end
+			end)
 		end
 
 		if Data.pendingSaveMain then
