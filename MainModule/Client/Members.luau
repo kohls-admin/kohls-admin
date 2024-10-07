@@ -1,11 +1,11 @@
 local Members = {}
 Members.__index = Members
 
-local memberRichFormat = `<b>%s</b> %s\t<font transparency="0.33"><b>%s</b></font><font transparency="0.66">%s</font>`
+local memberRichFormat = `<b>%s</b> [%s]\t<font transparency="0.33"><b>%s</b></font><font transparency="0.66">%s</font>`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
-local function filteredText(_K, escape, self, lineItem, member, persist, roles, name)
-	local text = `{name} {member.userId}\t{roles}`
+local function filteredText(_K, escape, self, lineItem, member, persist, roles)
+	local text = `{member.name or "UNKNOWN"} {member.userId}\t{roles}`
 	local filterFound = string.find(string.lower(text), self._filter)
 
 	return if filterFound
@@ -35,6 +35,7 @@ function Members.new(_K)
 					table.insert(roles, role)
 				end
 			end
+
 			local persist = table.concat(member.persist, " | ") or ""
 			local roleString = table.concat(roles, " | ") or ""
 			if #persist > 0 and #roleString > 0 then
@@ -42,37 +43,16 @@ function Members.new(_K)
 			end
 
 			if self._filter ~= "" then
-				local userInfo = _K.Util.getUserInfo(member.userId)
-
-				if not userInfo then
-					task.defer(function()
-						local info = _K.Util.getUserInfo(member.userId)
-						lineItem.Text =
-							filteredText(_K, escape, self, lineItem, member, persist, roleString, info.Username)
-					end)
-				end
-
-				local name = if userInfo then userInfo.Username else "LOADING"
-				return filteredText(_K, escape, self, lineItem, member, persist, roleString, name)
+				return filteredText(_K, escape, self, lineItem, member, persist, roleString)
 			end
 
-			local userInfo = _K.Util.getUserInfo(member.userId)
-
-			if not userInfo then
-				task.defer(function()
-					local info = _K.Util.getUserInfo(member.userId)
-					lineItem.Text = string.format(
-						memberRichFormat,
-						info.Username,
-						escape(member.userId),
-						escape(persist),
-						escape(roleString)
-					)
-				end)
-			end
-
-			local name = if userInfo then userInfo.Username else "LOADING"
-			return string.format(memberRichFormat, name, escape(member.userId), escape(persist), escape(roleString))
+			return string.format(
+				memberRichFormat,
+				member.name or "UNKNOWN",
+				member.userId,
+				escape(persist),
+				escape(roleString)
+			)
 		end,
 	}
 	UI.edit(scroller._scroller, {
