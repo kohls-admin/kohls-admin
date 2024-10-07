@@ -48,6 +48,15 @@ for _, module in script:WaitForChild("UGC"):GetChildren() do
 end
 
 if Util.Services.RunService:IsServer() then
+	local ugcAssetMatch = {
+		-- wings
+		[133292294488871] = "rbxassetid://89119211625300",
+		[110848154960799] = "rbxassetid://89119211625300",
+		-- crowns
+		[18966788838] = "rbxassetid://18966762965",
+		[106645613603989] = "rbxassetid://18966762965",
+	}
+
 	local cache = {}
 	Remote.VIPUGCMethod.OnServerEvent:Connect(function(player, assetId, match, equip, name)
 		if not Data.settings.vip then
@@ -65,6 +74,10 @@ if Util.Services.RunService:IsServer() then
 		end
 
 		if not equip then
+			return
+		end
+
+		if ugcAssetMatch[assetId] ~= match then
 			return
 		end
 
