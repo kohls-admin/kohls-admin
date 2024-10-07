@@ -652,6 +652,7 @@ function VIP.new(_K)
 		customUGC,
 		subscriptionButton,
 		gamePasses,
+		adminModelButton,
 
 		UI.new "TextBox" {
 			Name = "CatalogLink",
