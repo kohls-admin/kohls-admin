@@ -152,7 +152,8 @@ function VIP.new(_K)
 	do
 		-- TODO: equip button for donation level == 4 and if the own
 		task.defer(function()
-			local owned = _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
+			local owned = (donationLevel._value or 0) >= (ugc.level or 4)
+				or _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
 			ugc.price = "EQUIP"
 			if not owned then
 				local ok, result = _K.Util.Retry(function()
@@ -277,7 +278,7 @@ function VIP.new(_K)
 						end
 
 						local equipped = equippedUGC[ugc.equip]
-						if owned or donationLevel._value >= (ugc.level or 4) or (trying and equipped == button) then
+						if owned or (trying and equipped == button) then
 							equipped = equipped and equipped == button
 							debounceEquip(ugc.id, ugc.equip, not equipped, ugc.name, button)
 							if trying and equipped then
@@ -392,7 +393,6 @@ function VIP.new(_K)
 							purchaseDialog.Visible:set(false)
 							_K.Util.Services.MarketplaceService:PromptGamePassPurchase(_K.UI.LocalPlayer, pass.id)
 						else
-							-- set textbox text
 							purchaseDialog.Text:set(thirdPartyText)
 							purchaseLink.Text = "https://roblox.com/game-pass/" .. pass.id
 							purchaseDialog.Visible:set(true)
