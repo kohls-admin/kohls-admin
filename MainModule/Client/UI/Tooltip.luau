@@ -5,6 +5,8 @@ local Tooltip = {}
 Tooltip.__index = Tooltip
 setmetatable(Tooltip, BaseClass)
 
+local layerSizeState = UI.state(UI.LayerTop, "AbsoluteSize")
+
 function Tooltip.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Enabled = true,
@@ -15,6 +17,8 @@ function Tooltip.new(definition)
 	local positionState = UI.state(Vector2.zero)
 	local sizeState = UI.state(Vector2.zero)
 	local hovering = UI.state(false)
+
+	local tipSizeState = UI.state(Vector2.zero)
 
 	new._instance = UI.new "TextLabel" {
 		AutoLocalize = false,
@@ -33,10 +37,15 @@ function Tooltip.new(definition)
 		RichText = true,
 		AutomaticSize = Enum.AutomaticSize.XY,
 		Position = UI.compute(function(use)
+			local tipSize = use(tipSizeState)
+			local max = use(layerSizeState)
 			local position, size = use(positionState), use(sizeState)
 			local yOffset = position.Y + size.Y + use(UI.TopbarInset).Height + use(UI.Theme.PaddingHalf).Offset
-			-- TODO: flip at screen edges
-			return UDim2.fromOffset(position.X, yOffset)
+
+			return UDim2.fromOffset(
+				math.clamp(position.X, 0, math.max(0, max.X - tipSize.X)),
+				math.clamp(yOffset, 0, math.max(0, max.Y - tipSize.Y))
+			)
 		end),
 
 		UI.new "UICorner" {
@@ -59,6 +68,8 @@ function Tooltip.new(definition)
 			Color = UI.Theme.Border,
 		},
 	}
+
+	tipSizeState:bindToProperty(new._instance, "AbsoluteSize")
 
 	local hoverStart
 
