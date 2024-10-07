@@ -9,6 +9,10 @@ local VIP = {}
 local legacyDonations = { 5411126, 5391361, 5391359 }
 
 local function getDonationLevel(player)
+	if player:GetRankInGroup(3403354) > 1 then
+		return 5
+	end
+
 	local ok, status = Util.Retry(function()
 		return Util.Services.MarketplaceService:GetUserSubscriptionStatusAsync(player, "EXP-7266962490056769807")
 	end, 5, 0.2, 1)
