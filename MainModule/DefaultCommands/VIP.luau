@@ -14,7 +14,7 @@ end
 return {
 	{
 		name = "normal",
-		aliases = {},
+		aliases = { "undog", "unhorse", "uninfect" },
 		description = "Returns one or more player(s) to their normal appearance.",
 		args = {
 			{
@@ -27,7 +27,6 @@ return {
 		run = function(context, players, assetId)
 			for _, player in players do
 				Util.Humanoid.resetDescription(player)
-				-- TODO: reset dog command
 
 				local infected = context._K.Flux.Scope.Infected[player.Character]
 				if infected then
