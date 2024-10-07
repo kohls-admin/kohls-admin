@@ -41,14 +41,14 @@ local function getUserInfo(userId: number, check: boolean?)
 	end, 5, 0.2 + math.random() / 5, 2)
 	if ok and result then
 		if not result[1] then -- deleted account
-			result[1] = { Id = userId, Deleted = true }
+			result[1] = { Id = userId, Username = "Deleted", DisplayName = "Deleted", Deleted = true }
 		end
 		userInfoCache[userId] = result[1]
 		hook:Fire(result[1])
 		return result[1]
 	end
 
-	info = { Id = userId, Unknown = true }
+	info = { Id = userId, Username = "Unknown", DisplayName = "Unknown", Unknown = true }
 	userInfoCache[userId] = info
 
 	hook:Fire(info)
