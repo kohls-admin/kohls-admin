@@ -36,6 +36,7 @@ function Button.new(definition)
 			ListLayout = UI.new "UIListLayout" {
 				FillDirection = Enum.FillDirection.Horizontal,
 				SortOrder = Enum.SortOrder.LayoutOrder,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
 			},
 
 			Label = UI.edit(
