@@ -266,21 +266,28 @@ local function updateSuggestionLabels(data)
 			displayName = `{name} ({if name == value.DisplayName then "@" .. value.Name else value.DisplayName})`
 			local userId = value.UserId
 			local image = playerThumbs[tostring(userId)]
-			if not image then
-				image = _K.Util.Services.Players:GetUserThumbnailAsync(
-					userId,
-					Enum.ThumbnailType.HeadShot,
-					Enum.ThumbnailSize.Size48x48
-				)
-				playerThumbs[tostring(userId)] = image
-			end
 			local thumb = Instance.new("ImageLabel", frame)
 			thumb.AnchorPoint = Vector2.new(1, 0)
 			thumb.BackgroundTransparency = 1
 			thumb.Size = UDim2.new(1, 0, 1, 0)
 			thumb.Position = UDim2.new(1, 0, 0, 0)
-			thumb.Image = image
 			thumb.SizeConstraint = Enum.SizeConstraint.RelativeYY
+
+			if image then
+				thumb.Image = image
+			else
+				task.spawn(function()
+					image = _K.Util.Services.Players:GetUserThumbnailAsync(
+						userId,
+						Enum.ThumbnailType.HeadShot,
+						Enum.ThumbnailSize.Size48x48
+					)
+					playerThumbs[tostring(userId)] = image
+					if thumb then
+						thumb.Image = image
+					end
+				end)
+			end
 		end
 
 		label.Text = string.format(
