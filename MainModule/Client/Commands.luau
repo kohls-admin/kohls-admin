@@ -68,29 +68,49 @@ function Commands.new(_K)
 	end
 
 	local function renderItem(self, item, command)
-		local argNames = table.create(#command.args)
-		local argTooltip = table.create(#command.args)
-		if #command.args > 0 then
-			table.insert(argTooltip, "")
+		local aliasText = command.aliasText
+		local argNames = command.argNames
+		local argTooltip = command.argTooltip
+
+		if not aliasText then
+			aliasText = if command.aliases and #command.aliases > 0
+				then `[{table.concat(command.aliases, ", ")}]`
+				else ""
+			command.aliasText = aliasText
 		end
-		for _, arg in command.args do
-			table.insert(argNames, if arg.optional then arg.name .. "?" else arg.name)
-			table.insert(
-				argTooltip,
-				`\n<b><sc>{arg.name}</sc> <font transparency="0.66"><i>&lt;{arg.type}&gt;</i></font></b>\n{arg.description}`
-			)
-			if arg.optional then
-				table.insert(argTooltip, `\t<font transparency="0.5"><b>optional:</b> true</font>`)
+
+		if not argNames then
+			argNames = table.create(#command.args)
+			argTooltip = table.create(#command.args)
+
+			if #command.args > 0 then
+				table.insert(argTooltip, "")
 			end
-			if arg.ignoreSelf then
-				table.insert(argTooltip, `\t<font transparency="0.5"><b>ignoreSelf:</b> true</font>`)
+
+			for _, arg in command.args do
+				table.insert(argNames, if arg.optional then arg.name .. "?" else arg.name)
+				table.insert(
+					argTooltip,
+					`\n<b><sc>{arg.name}</sc> <font transparency="0.66"><i>&lt;{arg.type}&gt;</i></font></b>\n{arg.description}`
+				)
+				if arg.optional then
+					table.insert(argTooltip, `\t<font transparency="0.5"><b>optional:</b> true</font>`)
+				end
+				if arg.ignoreSelf then
+					table.insert(argTooltip, `\t<font transparency="0.5"><b>ignoreSelf:</b> true</font>`)
+				end
+				if arg.lowerRank then
+					table.insert(argTooltip, `\t<font transparency="0.5"><b>lowerRank:</b> true</font>`)
+				end
+				if arg.shouldRequest then
+					table.insert(argTooltip, `\t<font transparency="0.5"><b>shouldRequest:</b> true</font>`)
+				end
 			end
-			if arg.lowerRank then
-				table.insert(argTooltip, `\t<font transparency="0.5"><b>lowerRank:</b> true</font>`)
-			end
-			if arg.shouldRequest then
-				table.insert(argTooltip, `\t<font transparency="0.5"><b>shouldRequest:</b> true</font>`)
-			end
+
+			argNames = table.concat(argNames, " ")
+			argTooltip = table.concat(argTooltip, "\n")
+			command.argNames = argNames
+			command.argTooltip = argTooltip
 		end
 
 		local roles = {}
@@ -99,6 +119,7 @@ function Commands.new(_K)
 				table.insert(roles, role)
 			end
 		end
+
 		table.sort(roles, function(a, b)
 			return _K.Data.roles[a]._rank < _K.Data.roles[b]._rank
 		end)
@@ -108,10 +129,6 @@ function Commands.new(_K)
 			roles[i] = `<font color="{roleData.color}">{roleData.name}</font>`
 		end
 
-		local aliasText = if command.aliases and #command.aliases > 0
-			then `[{table.concat(command.aliases, ", ")}]`
-			else ""
-
 		local color = if _K.Auth.hasCommand(UI.LocalPlayer.UserId, command)
 			then roleColor
 			else roleColor:Lerp(UI.peek(UI.Theme.Primary), 0.5)
@@ -119,7 +136,7 @@ function Commands.new(_K)
 		item.Description.TextColor3 = color
 
 		if self._filter ~= "" then
-			local text = `{_K.Data.settings.prefix}{command.name} {table.concat(argNames, " ")} {aliasText}`
+			local text = `{_K.Data.settings.prefix}{command.name} {argNames} {aliasText}`
 			local filterFound = string.find(string.lower(text), self._filter)
 			item.Text = if filterFound
 				then string.format(
@@ -143,7 +160,6 @@ function Commands.new(_K)
 		end
 
 		local roleString = table.concat(roles, ", ")
-		argTooltip = table.concat(argTooltip, "\n")
 
 		local credit = command.credit or "Kohl @Scripth"
 		if type(credit) == "table" then
@@ -152,7 +168,7 @@ function Commands.new(_K)
 
 		item.Text = string.format(
 			commandRichFormat,
-			escape(_K.Data.settings.prefix .. command.name .. " " .. table.concat(argNames, " ")),
+			escape(_K.Data.settings.prefix .. command.name .. " " .. argNames),
 			escape(aliasText)
 		)
 		item.Description.Text = `<font transparency="0.33">{command.description}</font>`
@@ -181,16 +197,23 @@ function Commands.new(_K)
 	local function filterTest(self, list)
 		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
+
 		local new = {}
 		for _, command in list do
-			local aliasText = if command.aliases and #command.aliases ~= 0
-				then "/" .. table.concat(command.aliases, "/")
-				else ""
+			local aliasText = command.aliasText
+			if not aliasText then
+				aliasText = if command.aliases and #command.aliases ~= 0
+					then "/" .. table.concat(command.aliases, "/")
+					else ""
+				command.aliasText = aliasText
+			end
+
 			local text = `{_K.Data.settings.prefix}{command.name}{aliasText} {command.description}`
 			if text:lower():find(filter, 1, true) then
 				table.insert(new, command)
 			end
 		end
+
 		return new
 	end
 
