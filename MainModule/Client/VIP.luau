@@ -153,16 +153,15 @@ function VIP.new(_K)
 		-- TODO: equip button for donation level == 4 and if the own
 		task.defer(function()
 			local owned = (donationLevel._value or 0) >= (ugc.level or 4)
-				or _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
-			ugc.price = "EQUIP"
 			if not owned then
 				local ok, result = _K.Util.Retry(function()
-					return _K.Util.Services.MarketplaceService:GetProductInfo(ugc.id, Enum.InfoType.Asset).PriceInRobux
+					return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
 				end, 5, 1, 2)
-				if ok then
-					ugc.price = result or "?"
+				if ok and result then
+					owned = result
 				end
 			end
+			ugc.price = if owned then "EQUIP" else "?"
 
 			local frame = UI.new "Frame" {
 				Parent = customUGC,
@@ -223,9 +222,11 @@ function VIP.new(_K)
 			local button, try, trying
 			local function tryDone()
 				trying = nil
-				button.Label:set(`<b>{ugc.price}</b>`)
-				button._content.IconFrame.Visible = true
-				button._content.Label.TextXAlignment = Enum.TextXAlignment.Left
+				if not owned then
+					button.Label:set(`<b>{ugc.price}</b>`)
+					button._content.IconFrame.Visible = true
+					button._content.Label.TextXAlignment = Enum.TextXAlignment.Left
+				end
 			end
 
 			button = UI.new "Button" {
@@ -274,6 +275,7 @@ function VIP.new(_K)
 									existing._content.Label.TextXAlignment = Enum.TextXAlignment.Left
 								end)
 							end
+
 							return
 						end
 
@@ -306,6 +308,27 @@ function VIP.new(_K)
 				button.Label:set("<b>TRY</b>")
 				button._content.IconFrame.Visible = false
 				button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
+
+				local con
+				con = _K.Util.Services.MarketplaceService.PromptPurchaseFinished:Connect(
+					function(player, assetId, purchased)
+						if purchased and assetId == ugc.id and player == _K.UI.LocalPlayer then
+							con:Disconnect()
+							owned, try = true, nil
+							button.Label:set("<b>EQUIP</b>")
+							button._content.IconFrame.Visible = false
+							button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
+						end
+					end
+				)
+
+				local ok, result = _K.Util.Retry(function()
+					return _K.Util.Services.MarketplaceService:GetProductInfo(ugc.id, Enum.InfoType.Asset).PriceInRobux
+				end, 5, 1, 2)
+				if ok then
+					ugc.price = result or "?"
+					button._instance:SetAttribute("Price", ugc.price)
+				end
 			end
 
 			if ugc.tip then
@@ -340,26 +363,23 @@ function VIP.new(_K)
 	local passDefinition = {
 		{ name = "<font color='#bf0'><sc><b>Tip</b></sc></font>", id = 5391355 },
 		{ name = "<font color='#8f0'><sc><b>Donation</b></sc></font>", id = 5391356 },
-		{ name = "<font color='#0f0'><sc><b>Gift</b></sc></font>", id = 933582848 },
-		{ name = "<font color='#0f8'><sc><b>Tribute</b></sc></font>", id = 933980650 },
-		{ name = "<font color='#0ff'><sc><b>Patron</b></sc></font>", id = 5391359 },
-		{ name = "<font color='#0bf'><sc><b>Luminary</b></sc></font>", id = 5391361 },
-		{ name = "<font color='#fc0'><sc><b>Premium</b></sc></font>", id = 5411126 },
+		{ name = "<font color='#0f0'><sc><b>Gift</b></sc></font>", id = 933980650 },
+		{ name = "<font color='#0f8'><sc><b>Tribute</b></sc></font>", id = 933582848 },
+		{ name = "<font color='#0ff'><sc><b>Patron</b></sc></font>", id = 938480383 },
+		{ name = "<font color='#0bf'><sc><b>Benefactor</b></sc></font>", id = 939618404 },
+		{ name = "<font color='#80f'><sc><b>Luminary</b></sc></font>", id = 936146448 },
+		{ name = "<font color='#f0f'><sc><b>Epic</b></sc></font>", id = 941076536 },
+		{ name = "<font color='#f08'><sc><b>Hero</b></sc></font>", id = 941162509 },
+		{ name = "<font color='#f00'><sc><b>Legend</b></sc></font>", id = 941006661 },
 	}
 
 	for i, pass in passDefinition do
 		task.defer(function()
-			local owned = _K.Util.Services.MarketplaceService:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, pass.id)
+			local success, owned = _K.Util.Retry(function()
+				return _K.Util.Services.MarketplaceService:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, pass.id)
+			end, 5, 1, 2)
 
 			pass.price = "OWNED"
-			if not owned then
-				local ok, result = _K.Util.Retry(function()
-					return _K.Util.Services.MarketplaceService:GetProductInfo(pass.id, Enum.InfoType.GamePass).PriceInRobux
-				end, 5, 1, 2)
-				if ok then
-					pass.price = result or "?"
-				end
-			end
 
 			local button = UI.new "Button" {
 				Parent = gamePasses,
@@ -404,20 +424,122 @@ function VIP.new(_K)
 				Parent = button._instance,
 				FlexMode = Enum.UIFlexMode.Fill,
 			}
-			if not owned then
+			UI.new "Tooltip" {
+				Parent = button._instance,
+				Text = "❤️ Thanks for supporting Kohl's Admin!",
+				TextXAlignment = Enum.TextXAlignment.Left,
+				Visible = button._hovering,
+			}
+
+			if success and not owned then
 				local con
 				con = _K.Util.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(
-					function(passId, purchased)
-						if purchased and passId == pass.id then
+					function(userId, passId, purchased)
+						if purchased and passId == pass.id and userId == _K.UI.LocalPlayer.UserId then
 							con:Disconnect()
 							owned = true
 							button._content.Price.Text = "<b>OWNED</b>"
 						end
 					end
 				)
+
+				local ok, result = _K.Util.Retry(function()
+					return _K.Util.Services.MarketplaceService:GetProductInfo(pass.id, Enum.InfoType.GamePass).PriceInRobux
+				end, 5, 1, 2)
+				if ok then
+					pass.price = result or "?"
+					if not owned then
+						button._content.Price.Text = `<b>{pass.price}</b>`
+					end
+				end
 			end
 		end)
 	end
+
+	local adminModelId = 172732271
+	local adminModelButton = UI.new "Button" {
+		Name = "adminModelButton",
+		Icon = "rbxasset://textures/ui/common/robux.png",
+		IconRightAlign = true,
+		Label = "<sc><b>Get Kohl's Admin</b></sc>",
+		HoverTransparency = 0.5,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = UDim2.new(1, -2, 0, 32),
+
+		UI.new "Frame" {
+			BackgroundTransparency = 1,
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 0, 0.5, 0),
+			Size = UDim2.new(0, 28, 0, 28),
+			UI.new "ImageLabel" {
+				BackgroundTransparency = 1,
+				Size = UDim2.new(0, 28, 0, 28),
+				Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
+				ImageColor3 = Color3.new(0, 0, 0),
+				ImageTransparency = 0.875,
+			},
+			UI.new "ImageButton" {
+				BackgroundTransparency = 1,
+				Position = UDim2.new(0, 2, 0, 2),
+				Size = UDim2.new(0, 24, 0, 24),
+				Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
+				ImageColor3 = Color3.new(1, 0.8, 0),
+				[UI.Event] = {
+					Activated = function()
+						_K.Util.Services.AvatarEditorService:PromptSetFavorite(adminModelId, 1, true)
+					end,
+				},
+				UI.new "Tooltip" {
+					Text = "Add to Favorites",
+				},
+			},
+		},
+
+		UI.new "TextLabel" {
+			Name = "Price",
+			LayoutOrder = 8,
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.XY,
+			BackgroundTransparency = 1,
+			Font = UI.Theme.FontMono,
+			TextSize = UI.Theme.FontSizeLarge,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextWrapped = true,
+			Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+			Text = "<b>FREE</b>",
+			RichText = true,
+		},
+
+		[UI.Event] = {
+			Activated = function()
+				UI.Scope.lastAttemptedPurchase = adminModelId
+				if UI.Scope.AllowThirdPartySales then
+					purchaseDialog.Visible:set(false)
+					_K.Util.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
+				else
+					purchaseDialog.Text:set(thirdPartyText)
+					purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
+					purchaseDialog.Visible:set(true)
+				end
+			end,
+		},
+	}
+
+	UI.new "Tooltip" {
+		Parent = adminModelButton,
+		Text = "🚀 Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management.",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Visible = adminModelButton._hovering,
+	}
+
+	task.defer(function()
+		local ok, owned = _K.Util.Retry(function()
+			return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
+		end, 5, 1, 2)
+		if ok and owned then
+			adminModelButton._content.Price.Text = `<b>OWNED</b>`
+		end
+	end)
 
 	local subscriptionButton = UI.new "Button" {
 		Icon = "rbxasset://textures/ui/common/robux.png",
@@ -464,7 +586,7 @@ function VIP.new(_K)
 
 	UI.new "Tooltip" {
 		Parent = subscriptionButton,
-		Text = "✨ <b>Become a VIP</b>\nUnlock exclusive commands and flaunt your VIP status in tons of your favorite games.<i><font transparency='0.5'>*\n\n* Only in participating experiences.</font></i>",
+		Text = "✨ <b>Become a VIP</b>\nUnlock exclusive commands and hats to flaunt your VIP status in tons of your favorite games.<i><font transparency='0.5'>*\n\n* Only in participating experiences.</font></i>",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Visible = subscriptionButton._hovering,
 	}
@@ -509,8 +631,21 @@ function VIP.new(_K)
 			TextColor3 = UI.Theme.PrimaryText,
 			TextWrapped = true,
 			Size = UDim2.new(1, 0, 0, 0),
-			Text = "<b>For Game Developers:</b> Get up to <font color='#0f0'><b>40%</b></font> of Kohl's Admin purchases when "
-				.. "<font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in your Roblox Game Settings!",
+			Text = "<b>❤️ Kohl's Admin?</b>\n Donate for cool perks and to help us build amazing new features!",
+			RichText = true,
+		},
+
+		UI.new "TextLabel" {
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			Font = UI.Theme.Font,
+			TextSize = UI.Theme.FontSize,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextWrapped = true,
+			Size = UDim2.new(1, 0, 0, 0),
+			Text = "<b>Game Creators</b> get up to <font color='#0f0'><b>40%</b></font> when "
+				.. "<font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in their Roblox Game Settings!",
 			RichText = true,
 		},
 
