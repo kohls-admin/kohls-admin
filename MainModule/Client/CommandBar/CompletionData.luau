@@ -32,7 +32,7 @@ return function(_K, text, cursorPosition)
 
 	local rawCommands = _K.Process.rawParse(text, prefix)
 	if not rawCommands then
-		table.insert(data.invalid, { "Invalid command1", 2, string.sub(text, 2) })
+		table.insert(data.invalid, { "Invalid command", 2, string.sub(text, 2) })
 		return data -- invalid command string, show valid example
 	end
 
@@ -73,7 +73,7 @@ return function(_K, text, cursorPosition)
 				data.argPos = commandPos
 				data.rawArg = commandText
 				data.query = commandText
-				table.insert(data.invalid, { "Invalid command2", commandPos, commandText })
+				table.insert(data.invalid, { "Invalid command", commandPos, commandText })
 				return data
 			elseif commandDefinition then
 				local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
@@ -104,7 +104,7 @@ return function(_K, text, cursorPosition)
 			data.suggestions = _K.Registry.types.command.suggestions(data.query, from)
 
 			if #data.suggestions < 1 then
-				table.insert(data.invalid, { "Invalid command3", commandPos, commandText })
+				table.insert(data.invalid, { "Invalid command", commandPos, commandText })
 				return data
 			end
 
@@ -132,7 +132,7 @@ return function(_K, text, cursorPosition)
 		end
 
 		if not commandDefinition then
-			table.insert(data.invalid, { "Invalid command4", commandPos, commandText })
+			table.insert(data.invalid, { "Invalid command", commandPos, commandText })
 			return data
 		end
 
