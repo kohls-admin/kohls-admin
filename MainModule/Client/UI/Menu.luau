@@ -92,9 +92,9 @@ function Menu.new(definition)
 
 				return UDim2.fromOffset(
 					if rightAlign
-						then math.clamp(xPos, size.X, layerSize.X)
-						else math.clamp(xPos, 0, layerSize.X - size.X),
-					math.clamp(yPos, 0, layerSize.Y - size.Y)
+						then math.clamp(xPos, size.X, math.max(size.X, layerSize.X))
+						else math.clamp(xPos, 0, math.max(0, layerSize.X - size.X)),
+					math.clamp(yPos, 0, math.max(0, layerSize.Y - size.Y))
 				)
 			end),
 		})
