@@ -25,14 +25,77 @@ local updateAsyncInterval = 10
 -- DataStore value limit of 4,194,303 bytes
 local DATA_LIMIT = 2 ^ 22 - 1
 
+local nextDataLimitWarning = {}
+local function dataLimitWarning(size, dataType)
+	local ratio = Data.sizeBans / DATA_LIMIT
+	if ratio > 0.9 and tick() > (nextDataLimitWarning[dataType] or 0) then
+		nextDataLimitWarning[dataType] = tick() + 300
+		for _, player in Players:GetPlayers() do
+			if
+				Auth.hasCommand(player.UserId, "ban")
+				or Auth.hasCommand(player.UserId, "members")
+				or Auth.hasPermission(player.UserId, "settings")
+			then
+				Remote.Notify:FireClient(
+					player,
+					`<b><font color="#f00">You're approaching the limit of Roblox DataStores!</font>\n\tConsider removing some {dataType}s.</b>\n\n<b>Data Usage:</b> {string.format(
+						"%.01f",
+						ratio * 100
+					)}%`
+				)
+			end
+		end
+	end
+end
+
+-- BANS
+
+local function syncBans(bans)
+	Hook.preSyncBans:Fire(bans)
+	Util.Table.merge(Data.bans, bans)
+	Hook.postSyncBans:Fire(Data)
+
+	for _, player in Players:GetPlayers() do
+		if Auth.hasCommand(player.UserId, "ban") then
+			Remote.Bans:FireClient(player, Data.bans)
+		end
+	end
+end
+
+local nextBansInterval = tick() + updateAsyncInterval
+local function updateBans()
+	nextBansInterval = math.huge
+	-- flush cache and hold onto references to make sure they are immutable!
+	local bans = Data.Cache.bans
+	Data.Cache.bans = {}
+
+	local ok, result = Data.Store.updateAsync("Bans", function(value)
+		print("updateAsyncBans", value, bans)
+		if not value then
+			return Data.Store.filterRemove(bans)
+		end
+		return Data.Store.mergeRemove(value, bans)
+	end)
+
+	if ok then
+		task.spawn(function()
+			Data.sizeBans = #Http:JSONEncode(result)
+			dataLimitWarning(Data.sizeBans, "ban")
+		end)
+		Data.pendingSaveBans = false
+		syncBans(result)
+	else
+		warn(`[Kohl's Admin] Main Datastore UpdateAsync failed: {result}`)
+	end
+
+	nextBansInterval = tick() + updateAsyncInterval
+
+	return ok, result
+end
+
 local function syncMain(result)
 	Hook.preSyncMain:Fire(result)
-	local bans, members, settings = unpack(result)
-
-	-- TODO: need a way to clear SAVED session bans/settings for removal xD
-
-	-- ban sync
-	Util.Table.merge(Data.bans, bans)
+	local members, settings = unpack(result)
 
 	-- member sync
 	for key, data in members do
@@ -81,10 +144,6 @@ local function syncMain(result)
 	Util.Table.merge(Data.settings, settings)
 
 	for _, player in Players:GetPlayers() do
-		if Auth.hasCommand(player.UserId, "ban") then
-			Remote.Bans:FireClient(player, Data.bans)
-		end
-
 		if Auth.hasCommand(player.UserId, "members") then
 			Remote.Members:FireClient(player, Data.members)
 		end
@@ -94,28 +153,23 @@ local function syncMain(result)
 	Hook.postSyncMain:Fire(Data)
 end
 
-local nextMainLimitWarning = 0
 local nextMainInterval = tick() + updateAsyncInterval
 local function updateMain()
 	nextMainInterval = math.huge
 	-- flush cache and hold onto references to make sure they are immutable!
-	local bans = Data.Cache.bans
 	local members = Data.Cache.members
 	local settings = Data.Cache.settings
-	Data.Cache.bans = {}
 	Data.Cache.members = {}
 	Data.Cache.settings = {}
 
 	local ok, result = Data.Store.updateAsync("Main", function(value)
-		print("updateAsyncMain", value, bans, members, settings)
+		print("updateAsyncMain", value, members, settings)
 		if not value then
-			return Data.Store.filterRemove({ bans, members, settings })
+			return Data.Store.filterRemove({ members, settings })
 		end
 
-		Data.Store.mergeRemove(value[1], bans)
-		Data.Store.mergeRemove(value[2], members)
-
-		Util.Table.merge(value[3], settings)
+		Data.Store.mergeRemove(value[1], members)
+		Util.Table.merge(value[2], settings)
 
 		return value
 	end)
@@ -123,25 +177,7 @@ local function updateMain()
 	if ok then
 		task.spawn(function()
 			Data.sizeMain = #Http:JSONEncode(result)
-			local ratio = Data.sizeMain / DATA_LIMIT
-			if ratio > 0.9 and tick() > nextMainLimitWarning then
-				nextMainLimitWarning = tick() + 300
-				for _, player in Players:GetPlayers() do
-					if
-						Auth.hasCommand(player.UserId, "ban")
-						or Auth.hasCommand(player.UserId, "members")
-						or Auth.hasPermission(player.UserId, "settings")
-					then
-						Remote.Notify:FireClient(
-							player,
-							`<b><font color="#f00">You're approaching the limit of Roblox DataStores!</font>\n\tConsider removing some bans or members.</b>\n\n<b>Data Usage:</b> {string.format(
-								"%.01f",
-								ratio * 100
-							)}%`
-						)
-					end
-				end
-			end
+			dataLimitWarning(Data.sizeMain, "member")
 		end)
 		Data.pendingSaveMain = false
 		syncMain(result)
@@ -153,6 +189,8 @@ local function updateMain()
 
 	return ok, result
 end
+
+-- LOGS
 
 local function syncLogs(logs)
 	Hook.preSyncLogs:Fire(logs)
@@ -250,11 +288,26 @@ function Data.initialize(name)
 		if main then
 			syncMain(main)
 		else -- first time load
-			local migrateKAI = Migrate.KAI()
-			if migrateKAI then
+			local bansKAI, mainKAI = Migrate.KAI()
+			if bansKAI then
 				print("[Kohl's Admin] Migrating Data from Kohl's Admin Infinite...")
-				syncMain(migrateKAI)
+				Data.Cache.bans = bansKAI
+				Data.Cache.members = mainKAI[1]
+				Data.Cache.settings = mainKAI[2]
+				Data.pendingSaveBans = true
+				Data.pendingSaveMain = true
+
+				syncBans(bansKAI)
+				syncMain(Util.Table.deepCopy(mainKAI))
 			end
+		end
+	end
+
+	local okBans, bans = Data.Store.getAsync("Bans")
+	if okBans then
+		print("BansLoad", bans)
+		if bans then
+			syncBans(bans)
 		end
 	end
 
@@ -272,6 +325,16 @@ function Data.initialize(name)
 		-- Avoid writing studio data to production and stalling test session closing
 		return Data
 	end
+
+	task.spawn(function() -- bans save loop
+		repeat
+			task.wait(1)
+			if tick() > nextBansInterval and Data.pendingSaveBans then
+				print("attempting a bans save!", Data.Cache.bans)
+				updateBans()
+			end
+		until Data.gameClosing
+	end)
 
 	task.spawn(function() -- logs save loop
 		repeat
@@ -315,8 +378,19 @@ function Data.initialize(name)
 
 		if Data.settings.vip and Data.settings.gameHubEnabled and Http.HttpEnabled and game.GameId > 0 then
 			numThreadsRunning += 1
-			task.spawn(function()
+			task.defer(function()
 				Http:RequestAsync({ Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
+				numThreadsRunning -= 1
+				if numThreadsRunning == 0 then
+					coroutine.resume(mainThread)
+				end
+			end)
+		end
+
+		if Data.pendingSaveBans then
+			numThreadsRunning += 1
+			task.defer(function()
+				updateBans()
 				numThreadsRunning -= 1
 				if numThreadsRunning == 0 then
 					coroutine.resume(mainThread)
@@ -326,7 +400,7 @@ function Data.initialize(name)
 
 		if Data.pendingSaveMain then
 			numThreadsRunning += 1
-			task.spawn(function()
+			task.defer(function()
 				updateMain()
 				numThreadsRunning -= 1
 				if numThreadsRunning == 0 then
@@ -337,7 +411,7 @@ function Data.initialize(name)
 
 		if Data.pendingSaveLogs then
 			numThreadsRunning += 1
-			task.spawn(function()
+			task.defer(function()
 				updateLogs()
 				numThreadsRunning -= 1
 				if numThreadsRunning == 0 then

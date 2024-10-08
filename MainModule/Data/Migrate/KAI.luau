@@ -23,14 +23,14 @@ local function migrateKAI()
 	local dataKAI = GlobalDataStore:GetAsync("KSave")
 	if type(dataKAI) == "table" then
 		local admins, bans, settings = unpack(dataKAI)
-		local new = { {}, {}, {} }
+		local newBans, main = {}, { {}, {} }
 
 		if bans then
 			for userId, duration in deserializeItem(bans) do
 				if not (userId or duration) or duration >= 0 then
 					continue
 				end
-				new[1][tostring(userId)] = {
+				newBans[tostring(userId)] = {
 					nil,
 					nil,
 					if duration == -1 then -1 else math.abs(duration),
@@ -47,7 +47,7 @@ local function migrateKAI()
 				power = math.min(math.abs(power), 5)
 				for role, roleData in Data.roles do
 					if roleData._rank == power then
-						new[2][tostring(userId)] = {
+						main[1][tostring(userId)] = {
 							nil,
 							{ role },
 						}
@@ -62,14 +62,14 @@ local function migrateKAI()
 				key = string.lower(key)
 				for setting in Data.settings do
 					if string.lower(setting) == key then
-						new[3][key] = value
+						main[2][key] = value
 						break
 					end
 				end
 			end
 		end
 
-		return new
+		return newBans, main
 	end
 
 	return
