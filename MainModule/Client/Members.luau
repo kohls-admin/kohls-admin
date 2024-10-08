@@ -30,13 +30,15 @@ function Members.new(_K)
 		FilterInput = true,
 		RenderText = function(self, lineItem, member)
 			local roles = {}
-			for _, role in member.roles do
-				if not table.find(member.persist, role) then
-					table.insert(roles, role)
+			if member.roles then
+				for _, role in member.roles do
+					if not table.find(member.persist, role) then
+						table.insert(roles, role)
+					end
 				end
 			end
 
-			local persist = table.concat(member.persist, " | ") or ""
+			local persist = if member.persist then table.concat(member.persist, " | ") else ""
 			local roleString = table.concat(roles, " | ") or ""
 			if #persist > 0 and #roleString > 0 then
 				persist ..= " | "
@@ -71,7 +73,7 @@ function Members.new(_K)
 				continue
 			end
 			member.userId = userId
-			local text = `{member.name} {userId}\t{table.concat(member.roles, " | ")}`
+			local text = `{member.name} {userId}\t{if member.roles then table.concat(member.roles, " | ") else ""}`
 			if string.find(string.lower(text), filter, 1, true) then
 				table.insert(new, member)
 			end
