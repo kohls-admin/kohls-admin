@@ -48,6 +48,29 @@ for _, module in script:WaitForChild("UGC"):GetChildren() do
 end
 
 if Util.Services.RunService:IsServer() then
+	local ownedCache = {}
+	local function ownsAsset(player, assetId)
+		local ownedUGC = ownedCache[player.UserId]
+		if not ownedUGC then
+			ownedUGC = {}
+			ownedCache[player.UserId] = ownedUGC
+		end
+
+		if ownedUGC[assetId] then
+			return true
+		end
+
+		local ok, result = Util.Retry(function()
+			return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetId)
+		end, 5, 1, 2)
+		if ok then
+			ownedUGC[assetId] = result
+			return result
+		end
+
+		return
+	end
+
 	local ugcAssetMatch = {
 		-- wings
 		[133292294488871] = "rbxassetid://89119211625300",
@@ -89,12 +112,7 @@ if Util.Services.RunService:IsServer() then
 		end
 
 		local donationLevel = player:GetAttribute("_KDonationLevel") or 0
-		local ok, result = true, true
-		if donationLevel < 4 then -- confirm UGC ownership if not VIP sub
-			ok, result = Util.Retry(function()
-				return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetId)
-			end, 5, 1, 2)
-		end
+		local owned = donationLevel > 3 or ownsAsset(player, assetId)
 
 		local tried = cache[assetId]
 		if not tried then
@@ -102,7 +120,7 @@ if Util.Services.RunService:IsServer() then
 			cache[assetId] = tried
 		end
 
-		if (ok and result) or not tried[player.UserId] then
+		if owned or not tried[player.UserId] then
 			local try
 			if not tried[player.UserId] then
 				try = true
@@ -111,7 +129,7 @@ if Util.Services.RunService:IsServer() then
 
 			local ugc = ugcEffect.Method(player.Character, { Name = name, Destroy = tick })
 
-			if try and not (ok and result) then
+			if try and not owned then
 				task.delay(15, function()
 					if ugc then
 						ugc:Destroy()
@@ -183,6 +201,17 @@ if Util.Services.RunService:IsServer() then
 		player.CharacterAppearanceLoaded:Connect(VIP.UGCHandler)
 		if player.Character then
 			VIP.UGCHandler(player.Character)
+		end
+	end)
+
+	Util.Services.MarketplaceService.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
+		if purchased then
+			local ownedUGC = ownedCache[player.UserId]
+			if not ownedUGC then
+				ownedUGC = {}
+				ownedCache[player.UserId] = ownedUGC
+			end
+			ownedUGC[assetId] = true
 		end
 	end)
 
