@@ -123,7 +123,6 @@ function ScrollerFast.new(definition)
 
 	local function render()
 		UI.clearState("hover")
-		UI.clearState("floating")
 		ScrollerFast.render(self)
 	end
 
