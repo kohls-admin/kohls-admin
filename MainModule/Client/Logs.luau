@@ -195,7 +195,7 @@ function Logs.new(_K)
 		RightAlign = true,
 		Size = UI.compute(function(use)
 			local padding = use(UI.Theme.Padding).Offset
-			return UDim2.fromOffset(256 + padding * 3, (24 + padding) * 3.5 + padding / 2)
+			return UDim2.fromOffset(256 + padding * 3, (24 + padding) * math.ceil(#logTypes / 2) + padding)
 		end),
 
 		UI.new "UIPadding" {
