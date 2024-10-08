@@ -343,17 +343,21 @@ return {
 					end
 
 					local oldCharacter = controller.Character
-					local oldParent = oldCharacter.Parent
-					oldCharacter.Parent = nil
-					controller.Character = target.Character
-					oldCharacter.Parent = oldParent
+					if oldCharacter then
+						local oldParent = oldCharacter.Parent
+						oldCharacter.Parent = nil
+						controller.Character = target.Character
+						oldCharacter.Parent = oldParent
 
-					if not controller:FindFirstChild("_KControlOriginal") then
-						_K.Flux.new "ObjectValue" {
-							Name = "_KControlOriginal",
-							Value = oldCharacter,
-							Parent = controller,
-						}
+						if not controller:FindFirstChild("_KControlOriginal") then
+							_K.Flux.new "ObjectValue" {
+								Name = "_KControlOriginal",
+								Value = oldCharacter,
+								Parent = controller,
+							}
+						end
+					else
+						controller.Character = target.Character
 					end
 
 					if not target.Character:FindFirstChild("_KOriginalController") then
@@ -378,16 +382,24 @@ return {
 				end,
 				release = function(controller)
 					local character = controller.Character
-					local original = character:FindFirstChild("_KOriginalController")
+					local original = character and character:FindFirstChild("_KOriginalController")
 					if original then
-						local player = original.Value
-						if player == controller then
+						local originalController = original.Value
+						if originalController == controller then
 							return -- don't release self
+						end
+
+						local networkOwner = originalController
+						for _, player in _K.Util.Services.Players:GetPlayers() do
+							if player ~= networkOwner and player.Character == character then
+								networkOwner = player
+								break
+							end
 						end
 
 						for _, descendant in character:GetDescendants() do
 							if descendant:IsA("BasePart") then
-								descendant:SetNetworkOwner(player)
+								descendant:SetNetworkOwner(networkOwner)
 							end
 						end
 
@@ -395,7 +407,7 @@ return {
 						character.Parent = nil
 						controller.Character = nil
 						character.Parent = oldParent
-						player.Character = character
+						originalController.Character = character
 					end
 				end,
 			}
