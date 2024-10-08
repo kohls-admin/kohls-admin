@@ -483,17 +483,21 @@ return {
 				if bundleId <= 0 then
 					return
 				end
-				local info = _K.Util.Services.AssetService:GetBundleDetailsAsync(bundleId)
-				if not info then
+
+				local ok, info = pcall(function()
+					return _K.Util.Services.AssetService:GetBundleDetailsAsync(bundleId)
+				end)
+				if not ok or not info then
 					return
 				end
+
 				for _, item in pairs(info.Items) do
 					if item.Type == "UserOutfit" then
 						return item.Id
 					end
 				end
 
-				return nil
+				return
 			end
 
 			local function getHumanoidDescriptionBundle(bundleId)
@@ -511,6 +515,9 @@ return {
 
 		run = function(context, players, assetId)
 			local bundleDescription = if assetId then context.env.getHumanoidDescriptionBundle(assetId) else nil
+			if not bundleDescription then
+				context._K.Remote.Notify:FireClient(context.fromPlayer, `Failed to load bundle.`, nil, "error")
+			end
 			for _, player in players do
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if not humanoid then
