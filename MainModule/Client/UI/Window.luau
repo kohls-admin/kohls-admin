@@ -99,8 +99,8 @@ function Window.new(definition)
 
 		new.Position:set(
 			UDim2.fromOffset(
-				math.clamp(math.round(startOffset.X + delta.X), 0, maxPosition.X),
-				math.clamp(math.round(startOffset.Y + delta.Y), 0, maxPosition.Y)
+				math.clamp(math.round(startOffset.X + delta.X), 0, math.max(0, maxPosition.X)),
+				math.clamp(math.round(startOffset.Y + delta.Y), 0, math.max(0, maxPosition.Y))
 			)
 		)
 	end
@@ -144,14 +144,14 @@ function Window.new(definition)
 		inputPosition:set(input.Position)
 		new.Size:set(
 			UDim2.fromOffset(
-				math.round(startSize.X + math.clamp(xSize * delta.X, resizeMin.X, resizeMax.X)),
-				math.round(startSize.Y + math.clamp(ySize * delta.Y, resizeMin.Y, resizeMax.Y))
+				math.round(startSize.X + math.clamp(xSize * delta.X, resizeMin.X, math.max(resizeMin.X, resizeMax.X))),
+				math.round(startSize.Y + math.clamp(ySize * delta.Y, resizeMin.Y, math.max(resizeMin.Y, resizeMax.Y)))
 			)
 		)
 		new.Position:set(
 			UDim2.fromOffset(
-				math.round(startOffset.X - math.clamp(xPos * -delta.X, resizeMin.X, resizeMax.X)),
-				math.round(startOffset.Y - math.clamp(yPos * -delta.Y, resizeMin.Y, resizeMax.Y))
+				math.round(startOffset.X - math.clamp(xPos * -delta.X, resizeMin.X, math.max(resizeMin.X, resizeMax.X))),
+				math.round(startOffset.Y - math.clamp(yPos * -delta.Y, resizeMin.Y, math.max(resizeMin.Y, resizeMax.Y)))
 			)
 		)
 	end
@@ -383,8 +383,8 @@ function Window.new(definition)
 
 				new.Size:set(
 					UDim2.fromOffset(
-						math.clamp(windowSize.X, 0, parentSize.X - paddingX),
-						math.clamp(windowSize.Y, 0, parentSize.Y - paddingY)
+						math.clamp(windowSize.X, 0, math.max(0, parentSize.X - paddingX)),
+						math.clamp(windowSize.Y, 0, math.max(0, parentSize.Y - paddingY))
 					)
 				)
 				new.Position:set(
