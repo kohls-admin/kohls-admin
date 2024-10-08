@@ -57,7 +57,7 @@ if Util.Services.RunService:IsServer() then
 		[106645613603989] = "rbxassetid://18966762965",
 	}
 
-	local cache = {}
+	local cache, effects = {}, {}
 	Remote.VIPUGCMethod.OnServerEvent:Connect(function(player, assetId, match, equip, name)
 		if not Data.settings.vip then
 			return
@@ -68,12 +68,19 @@ if Util.Services.RunService:IsServer() then
 			return
 		end
 
+		local userEffects = effects[player.UserId]
+		if not userEffects then
+			userEffects = {}
+			effects[player.UserId] = userEffects
+		end
+
 		local existing = player.Character:FindFirstChild(ugcEffect.Name)
 		if existing then
 			existing:Destroy()
 		end
 
 		if not equip then
+			userEffects[match] = nil
 			return
 		end
 
@@ -104,12 +111,14 @@ if Util.Services.RunService:IsServer() then
 
 			local ugc = ugcEffect.Method(player.Character, { Name = name, Destroy = tick })
 
-			if try then
+			if try and not (ok and result) then
 				task.delay(15, function()
 					if ugc then
 						ugc:Destroy()
 					end
 				end)
+			else
+				userEffects[match] = { Method = ugcEffect.Method, name = name }
 			end
 		end
 	end)
@@ -118,6 +127,8 @@ if Util.Services.RunService:IsServer() then
 		if not Data.settings.vip then
 			return
 		end
+
+		-- ugc avatar effects
 		for _, child in character:GetChildren() do
 			if not child:IsA("Accessory") then
 				continue
@@ -140,8 +151,19 @@ if Util.Services.RunService:IsServer() then
 
 			local ugcEffect = adminUGCMap[mesh]
 			if ugcEffect then
-				ugcEffect.Method(character, child)
+				task.spawn(ugcEffect.Method, character, child)
 			end
+		end
+
+		-- vip equipped effects
+		local player = Util.Services.Players:GetPlayerFromCharacter(character)
+		local effects = player and effects[player.UserId]
+		if not effects then
+			return
+		end
+
+		for _, effect in effects do
+			task.spawn(effect.Method, character, { Name = effect.name, Destroy = tick })
 		end
 	end
 
