@@ -29,7 +29,7 @@ function Rollout:test(id)
 	if FFlags and FFlags[self.key] ~= nil then
 		return FFlags[self.key]
 	end
-	local alpha = math.clamp(0, 1, (os.time() - self.start) / self.duration)
+	local alpha = math.clamp(0, 1, math.max(1, (os.time() - self.start) / self.duration))
 	return Random.new(id + self.seed):NextNumber() <= alpha ^ self.curve
 end
 
