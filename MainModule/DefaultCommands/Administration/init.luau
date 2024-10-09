@@ -66,60 +66,11 @@ return {
 	{
 		name = "role",
 		aliases = { "setrole", "addrole", "giverole" },
-		description = "Assigns role(s) to one or more player(s).",
-		args = {
-			{
-				type = "players",
-				name = "Player(s)",
-				description = "The player(s) to assign roles.",
-			},
-			{
-				type = "roles",
-				name = "Roles(s)",
-				description = "The roles(s) to assign.",
-			},
-			{
-				type = "boolean",
-				name = "Permanent",
-				description = "Saves the role to persist across all servers.",
-				optional = true,
-			},
-		},
-
-		run = function(context, players, roles, permanent)
-			for _, player in players do
-				for _, role in roles do
-					local roleAdded = context._K.Auth.userRoleAdd(player.UserId, role, permanent)
-					if roleAdded then
-						local roleData = context._K.Data.roles[role]
-						context._K.Remote.Notify:FireClient(
-							player,
-							`Gave you the <b><font color="{roleData.color}">{roleData.name}</font></b> role!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
-							context.from
-						)
-					end
-				end
-			end
-			local roleString = {}
-			for _, role in roles do
-				local roleData = context._K.Data.roles[role]
-				table.insert(roleString, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
-			end
-			local names = context._K.Util.Suggest.getNames(players)
-			context._K.Remote.Notify:FireClient(
-				context.fromPlayer,
-				`<b>Gave Roles:</b> {table.concat(roleString, ", ")}\n<b>To:</b> <i>{table.concat(names, ", ")}</i>`
-			)
-		end,
-	},
-	{
-		name = "roleid",
-		aliases = { "setroleid", "addroleid", "giveroleid" },
 		description = "Assigns role(s) to one or more user(s).",
 		args = {
 			{
-				type = "integers",
-				name = "UserId(s)",
+				type = "userIds",
+				name = "Users(s)",
 				description = "The user(s) to assign roles.",
 			},
 			{
@@ -132,22 +83,54 @@ return {
 				name = "Permanent",
 				description = "Saves the role to persist across all servers.",
 				optional = true,
+				permissions = { saveRoles = true },
 			},
 		},
 
-		run = function(context, users, roles, permanent)
-			for _, userId in users do
-				-- FIX: verify that they have a lower rank than you
+		run = function(context, userIds, roles, permanent)
+			for _, userId in userIds do
+				local rolesAdded = {}
 				for _, role in roles do
-					context._K.Auth.userRoleAdd(userId, role, permanent)
+					local roleAdded = context._K.Auth.userRoleAdd(userId, role, permanent)
+					if roleAdded then
+						local roleData = context._K.Data.roles[role]
+						table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
+					end
+				end
+
+				local player = context._K.Util.Services.Players:GetPlayerByUserId(userId)
+				if player and #rolesAdded > 0 then
+					context._K.Remote.Notify:FireClient(
+						player,
+						`Gave you the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
+						context.from
+					)
 				end
 			end
+
+			task.spawn(function()
+				local roleString = {}
+				for _, role in roles do
+					local roleData = context._K.Data.roles[role]
+					table.insert(roleString, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
+				end
+
+				local names = {}
+				for _, userId in userIds do
+					table.insert(names, context._K.Util.getUserInfo(userId).DisplayName)
+				end
+
+				context._K.Remote.Notify:FireClient(
+					context.fromPlayer,
+					`<b>Gave Roles:</b> {table.concat(roleString, ", ")}\n<b>To:</b> <i>{table.concat(names, ", ")}</i>`
+				)
+			end)
 		end,
 	},
 	{
 		name = "unrole",
 		aliases = { "removerole" },
-		description = "Removes role(s) from one or more member(s).",
+		description = "Removes one or more role(s) from one or more member(s).",
 		args = {
 			{
 				type = "members",
@@ -180,8 +163,8 @@ return {
 		end,
 	},
 	{
-		name = "unadmin",
-		aliases = { "removepermissions" },
+		name = "removemember",
+		aliases = { "removepermissions", "unadmin" },
 		description = "Removes all roles and permissions from one or more member(s).",
 		args = {
 			{
