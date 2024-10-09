@@ -254,9 +254,9 @@ return {
 				shouldRequest = true,
 			},
 			{
-				type = "integer",
+				type = "userId",
 				name = "UserId",
-				description = "The UserId of the player to use.",
+				description = "The identifier of the Roblox user.",
 				optional = true,
 			},
 		},
