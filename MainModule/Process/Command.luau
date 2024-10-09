@@ -45,25 +45,38 @@ function Command:requestCommand(player: Player)
 		return false
 	end
 
-	-- TODO: need to make this notification less annoying when mixed with non command requests?
-	-- only show if all the players are requested???
 	local userName = if player.Name == player.DisplayName then "" else " @" .. player.Name
-	self._K.Remote.Notify:FireClient(
-		self.fromPlayer,
-		`Requesting <b>{self.definition.name}</b> command on <b>{player.DisplayName}<font transparency="0.5">{userName}</font></b>.`
-	)
 
-	local accepted = self._K.Remote.RequestCommand:InvokeClient(player, self.fromPlayer, self.text)
+	if not self.requested then
+		self.requested = {}
+	end
+	local requested = self.requested[player]
+	self.requested[player] = true
+	if not requested then
+		self._K.Remote.Notify:FireClient(
+			self.fromPlayer,
+			`Requesting <b>{self.alias}</b> command on <b>{player.DisplayName}<font transparency="0.5">{userName}</font></b>.`
+		)
+	end
+
+	local accepted = self._K.Remote.RequestCommand:InvokeClient(
+		player,
+		self.fromPlayer,
+		`{self._K.Data.settings.prefix}{self.alias} {player.Name}`
+	)
 
 	local status = if accepted
 		then "<font color='#0f0'>accepted</font>"
 		elseif accepted == false then "<font color='#f00'>denied</font>"
 		else "<font transparency='0.5'>already in progress</font>"
-	self._K.Remote.Notify:FireClient(
-		self.fromPlayer,
-		`Command request for <b>{self.definition.name}</b> was <b>{status}</b>.`,
-		player.UserId
-	)
+
+	if not requested then
+		self._K.Remote.Notify:FireClient(
+			self.fromPlayer,
+			`Command request for <b>{self.alias}</b> was <b>{status}</b>.`,
+			player.UserId
+		)
+	end
 
 	return accepted
 end
