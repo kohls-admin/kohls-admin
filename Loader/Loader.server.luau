@@ -5,7 +5,7 @@ if not shared._K_LOADER_LOADED then
 	Package.Parent = game:GetService("ServerScriptService")
 
 	local Addons = Package:WaitForChild("Addons")
-	local Settings = require(Package:WaitForChild("Settings"))
+	local Settings = Package:WaitForChild("Settings")
 
 	if false and Settings.autoUpdate and game.PlaceId ~= 18274376677 then
 		-- auto udating will be added when the model is more stable

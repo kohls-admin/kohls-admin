@@ -83,6 +83,8 @@ _K.Services = _K.Util.Services
 
 -- register initial UI children
 if _K.IsClient then
+	_K.Data.loaderSettings = require(script:WaitForChild("Settings"))
+	_K.Data.roles = _K.Data.loaderSettings.roles
 	local uiRegisterStart = os.clock()
 	_K.UI.registerChildren()
 	task.spawn(_K.log, `UI classes registered in {math.round((os.clock() - uiRegisterStart) * 1000)} ms`, "DEBUG")
@@ -115,6 +117,10 @@ end
 --------------------------
 
 local function playerAdded(player: Player)
+	repeat
+		task.wait()
+	until _K.Data.roles
+
 	task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
 	if _K.Services.RunService:IsStudio() then
 		_K.Auth.userRoleAdd(player.UserId, "creator")
@@ -147,64 +153,71 @@ local function playerAdded(player: Player)
 end
 
 local _initialized
-function _K.initialize(loaderSettings: { [string]: any }, addons: Folder?, requireId: boolean?)
+function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requireId: boolean?)
 	if _initialized then
 		return _K
 	end
 	_initialized = true
 	local initStart = os.clock()
 
-	if loaderSettings then
-		loaderSettings.Parent = script
-		-- TODO: warn creator and developers to change the datastore key if unchanged
-		_K.Util.Table.merge(_K.Data.loaderSettings, loaderSettings)
-		for key, value in loaderSettings do
-			if _K.Data.settings[key] then
-				_K.Data.settings[key] = value
-			end
-		end
-
-		-- private server datastore
-		local dataStoreKey = loaderSettings.dataStoreKey
-		if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
-			for role, users in loaderSettings.roles do
-				if role ~= "creator" and table.find(users, game.PrivateServerOwnerId) then
-					dataStoreKey ..= game.PrivateServerOwnerId
-					break
-				end
-			end
-		end
-
-		task.spawn(_K.Data.initialize, dataStoreKey)
-
-		-- register creator
-		task.spawn(function()
-			if game.CreatorType == Enum.CreatorType.Group then
-				local ok, result = Util.Retry(function()
-					return Util.Services.GroupService:GetGroupInfoAsync(game.CreatorId)
-				end, 5, 1, 2)
-				_K.creatorId = if ok then result.Owner.Id else 0
-			else
-				_K.creatorId = game.CreatorId
-			end
-			_K.Data.creatorId = _K.creatorId
-			_K.Auth.userRoleAdd(_K.creatorId, "creator")
-		end)
-
-		-- define user roles
-		for role, users in loaderSettings.userRoles do
-			for _, userId in users do
-				if userId <= 0 then
-					continue
-				end
-				task.spawn(_K.Auth.userRoleAdd, userId, role)
-			end
-		end
-
-		-- gamepass and group roles
-		_K.Util.Table.deepMerge(_K.Data.async.gamepass, loaderSettings.gamePassRoles)
-		_K.Util.Table.deepMerge(_K.Data.async.group, loaderSettings.groupRoles)
+	if not loaderSettingsModule then
+		error("Loader settings module must be provided!", 2)
 	end
+	loaderSettingsModule.Parent = script
+
+	local loaderSettings = require(loaderSettingsModule)
+	_K.Util.Table.merge(_K.Data.loaderSettings, loaderSettings)
+
+	_K.Data.bans = loaderSettings.bans
+	_K.Data.roles = loaderSettings.roles
+
+	-- settings
+	for key, value in loaderSettings do
+		if _K.Data.settings[key] then
+			_K.Data.settings[key] = value
+		end
+	end
+
+	-- private server datastore
+	local dataStoreKey = "_KData"
+	if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+		for role, users in loaderSettings.roles do
+			if role ~= "creator" and table.find(users, game.PrivateServerOwnerId) then
+				dataStoreKey ..= game.PrivateServerOwnerId
+				break
+			end
+		end
+	end
+
+	task.spawn(_K.Data.initialize, dataStoreKey)
+
+	-- register creator
+	task.spawn(function()
+		if game.CreatorType == Enum.CreatorType.Group then
+			local ok, result = Util.Retry(function()
+				return Util.Services.GroupService:GetGroupInfoAsync(game.CreatorId)
+			end, 5, 1, 2)
+			_K.creatorId = if ok then result.Owner.Id else 0
+		else
+			_K.creatorId = game.CreatorId
+		end
+		_K.Data.creatorId = _K.creatorId
+		_K.Auth.userRoleAdd(_K.creatorId, "creator")
+	end)
+
+	-- define user roles
+	for role, users in loaderSettings.userRoles do
+		for _, userId in users do
+			if userId <= 0 then
+				continue
+			end
+			task.spawn(_K.Auth.userRoleAdd, userId, role)
+		end
+	end
+
+	-- gamepass and group roles
+	_K.Util.Table.deepMerge(_K.Data.async.gamepass, loaderSettings.gamePassRoles)
+	_K.Util.Table.deepMerge(_K.Data.async.group, loaderSettings.groupRoles)
 
 	if addons then
 		local serverAddons = Instance.new("Folder", Util.Services.ServerStorage)
