@@ -25,7 +25,7 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 		end
 
 		local nameLower = string.lower(nameQuery)
-		local value = instances and instances[key] or name
+		local value = instances and (instances[key] or instances[name]) or name
 		-- Continue on checking for non-exact matches...
 		-- exact match goes to the start
 		if nameLower == textLower then
