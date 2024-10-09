@@ -260,7 +260,8 @@ local function updateSuggestionLabels(data)
 
 		displayName = displayName or name
 
-		if typeof(value) == "Instance" and value:IsA("Player") then
+		local valueType = typeof(value)
+		if valueType == "Instance" and value:IsA("Player") then
 			displayName = `{name} ({if name == value.DisplayName then "@" .. value.Name else value.DisplayName})`
 			UI.new "ImageLabel" {
 				Parent = frame,

@@ -1,6 +1,11 @@
 local _K
 
 local COLORS = {
+	["0,0,0"] = Color3.new(0, 0, 0),
+	["255,255,255"] = Color3.new(1, 1, 1),
+	["#000"] = Color3.new(0, 0, 0),
+	["#fff"] = Color3.new(1, 1, 1),
+
 	red = Color3.new(1, 0, 0),
 	orange = Color3.new(1, 0.5, 0),
 	yellow = Color3.new(1, 1, 0),
@@ -20,7 +25,7 @@ local COLORS = {
 	gray = Color3.new(0.5, 0.5, 0.5),
 }
 
-local colorNames = { "0,0,0", "255,255,255", "#000", "#fff" }
+local colorNames = {}
 for name in COLORS do
 	table.insert(colorNames, name)
 end
@@ -74,7 +79,7 @@ local typeColor = {
 			table.insert(names, `{r or 255},{g or 255},{b or 255}`)
 		end
 
-		return _K.Util.Suggest.query(text, names)
+		return _K.Util.Suggest.query(text, names, COLORS)
 	end,
 }
 
