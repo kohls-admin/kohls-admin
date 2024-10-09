@@ -9,22 +9,25 @@ local VIP = {}
 local legacyDonations = { 5411126, 5391361, 5391359 }
 
 local function getDonationLevel(player)
-	if player:GetRankInGroup(3403354) > 1 then
+	local okRank, rank = Util.Retry(function()
+		return player:GetRankInGroup(3403354)
+	end, 5, 0.2, 1)
+	if okRank and rank > 1 then
 		return 5
 	end
 
-	local ok, status = Util.Retry(function()
+	local okSubscription, status = Util.Retry(function()
 		return Util.Services.MarketplaceService:GetUserSubscriptionStatusAsync(player, "EXP-7266962490056769807")
 	end, 5, 0.2, 1)
-	if ok and status.IsSubscribed then
+	if okSubscription and status.IsSubscribed then
 		return 4
 	end
 
 	for index, passId in legacyDonations do
-		local success, result = Util.Retry(function()
+		local okGamePass, result = Util.Retry(function()
 			return Util.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
 		end, 5, 0.2, 1)
-		if success and result then
+		if okGamePass and result then
 			return 4 - index
 		end
 	end
