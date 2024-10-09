@@ -1,26 +1,127 @@
 local Bans = {}
 Bans.__index = Bans
 
-local banRichFormat = `<b>@%s</b><font transparency="0.5">%s</font> [%s]\t%s\t<font transparency="0.5">%s</font>`
+local banRichFormat = `<b>@%s</b><font transparency="0.5">%s</font> [%s]`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
 function Bans.new(_K)
 	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
 
-	local function createItem(self, log)
-		return UI.new "TextLabel" {
-			AutoLocalize = false,
+	local unbanDialog
+	unbanDialog = UI.new "Dialog" {
+		LayoutOrder = 9,
+		BackgroundTransparency = 0.875,
+		BackgroundColor3 = UI.Theme.Secondary,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.fromScale(1, 0),
+		ActionText = "Unban this user?",
+		Action = true,
+		LeftAction = true,
+		RightAction = true,
+		Visible = false,
+		Close = function(self)
+			task.defer(self.Activated.set, self.Activated, false)
+		end,
+
+		[UI.Hook] = {
+			Action = function(v)
+				unbanDialog._instance.Visible = false
+				if v and unbanDialog.userId then
+					_K.Remote.Unban:FireServer(tonumber(unbanDialog.userId))
+				end
+				unbanDialog.userId = nil
+			end,
+		},
+	}
+	unbanDialog._content:Destroy()
+
+	local function createItem(self)
+		local item
+		local unbanButton = UI.new "Button" {
+			LayoutOrder = 9,
+			BackgroundColor3 = Color3.fromRGB(200, 0, 0),
+			Size = UDim2.new(1, 0, 1, 0),
+			SizeConstraint = Enum.SizeConstraint.RelativeYY,
+			Icon = "rbxassetid://1476571006",
+			IconProperties = {
+				Size = UDim2.new(0, 10, 0, 10),
+			},
+			Text = "",
+			Activated = function()
+				local userId = item:GetAttribute("_KUserId")
+				unbanDialog.userId = userId
+				unbanDialog.ActionText:set(`Unban {item:GetAttribute("_KName")} [{userId}]?`)
+				unbanDialog._instance.Visible = true
+			end,
+		}
+
+		item = UI.new "Frame" {
 			BackgroundTransparency = 1,
 			Size = self.ItemSize,
-			RichText = true,
-			Font = UI.Theme.FontMono,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = UI.Theme.PrimaryText,
-			TextTruncate = Enum.TextTruncate.SplitWord,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextYAlignment = Enum.TextYAlignment.Top,
+
+			UI.new "UIPadding" {
+				PaddingTop = UI.Theme.PaddingHalf,
+				PaddingBottom = UI.Theme.PaddingHalf,
+			},
+
+			UI.new "UIListLayout" {
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+				FillDirection = Enum.FillDirection.Horizontal,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UI.Theme.Padding,
+			},
+
+			UI.new "ImageLabel" {
+				BackgroundTransparency = 0.75,
+				BackgroundColor3 = UI.Theme.Border,
+				Size = UDim2.new(1, 0, 1, 0),
+				SizeConstraint = Enum.SizeConstraint.RelativeYY,
+
+				UI.new "UICorner" {
+					CornerRadius = UDim.new(1, 0),
+				},
+				UI.new "UIStroke" {
+					Enabled = UI.Theme.StrokeEnabled,
+					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+					Transparency = UI.Theme.TransparencyClamped,
+					Color = UI.Theme.Border,
+				},
+			},
+
+			UI.new "TextLabel" {
+				Name = "Left",
+				AutoLocalize = false,
+				AutomaticSize = Enum.AutomaticSize.X,
+				BackgroundTransparency = 1,
+				Size = UDim2.new(0, 0, 1, 0),
+				RichText = true,
+				Font = UI.Theme.FontMono,
+				TextSize = UI.Theme.FontSize,
+				TextColor3 = UI.Theme.PrimaryText,
+				TextTruncate = Enum.TextTruncate.SplitWord,
+				TextXAlignment = Enum.TextXAlignment.Left,
+			},
+			UI.new "TextLabel" {
+				Name = "Right",
+				AutoLocalize = false,
+				AutomaticSize = Enum.AutomaticSize.X,
+				BackgroundTransparency = 1,
+				Size = UDim2.new(0, 0, 1, 0),
+				RichText = true,
+				Font = UI.Theme.FontMono,
+				TextSize = UI.Theme.FontSize,
+				TextColor3 = UI.Theme.PrimaryText,
+				TextTruncate = Enum.TextTruncate.SplitWord,
+				TextXAlignment = Enum.TextXAlignment.Right,
+
+				UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
+			},
+
+			unbanButton,
 		}
+
+		return item
 	end
 
 	local function renderItem(self, item, ban)
@@ -28,44 +129,66 @@ function Bans.new(_K)
 			return
 		end
 
+		item:SetAttribute("_KName", ban[1])
+		item:SetAttribute("_KUserId", ban.userId)
+
 		local reason = if ban[2] and _K.Util.String.trim(ban[2]) ~= "" then ban[2] else "No reason."
 		local term = ban[3]
 		term = if term
 			then (if term > 0 and term ~= math.huge then os.date("%y-%m-%d %X", ban[3]) else "Forever")
 			else "Session"
 
-		local text
+		local left, right
 		if self._filter ~= "" then
-			text = `@{ban[1] or "UNKNOWN"} [{ban.userId}]\t{reason}\t{term}`
-			local filterFound = string.find(string.lower(text), self._filter)
-			text = if filterFound
-				then string.format(
+			left = `@{ban[1] or "UNKNOWN"} [{ban.userId}]`
+			right = reason .. string.rep(" ", 18 - #term) .. term
+			local filterLeft = string.find(string.lower(left), self._filter)
+			if filterLeft then
+				right = string.format(filterRichFormat, right, "", "")
+				left = string.format(
 					filterRichFormat,
-					escape(string.sub(text, 1, filterFound - 1)),
-					escape(string.sub(text, filterFound, filterFound + #self._filter - 1)),
-					escape(string.sub(text, filterFound + #self._filter))
+					escape(string.sub(left, 1, filterLeft - 1)),
+					escape(string.sub(left, filterLeft, filterLeft + #self._filter - 1)),
+					escape(string.sub(left, filterLeft + #self._filter))
 				)
-				else text
+			else
+				local filterRight = string.find(string.lower(right), self._filter)
+				if filterRight then
+					left = string.format(filterRichFormat, left, "", "")
+					right = string.format(
+						filterRichFormat,
+						escape(string.sub(right, 1, filterRight - 1)),
+						escape(string.sub(right, filterRight, filterRight + #self._filter - 1)),
+						escape(string.sub(right, filterRight + #self._filter))
+					)
+				end
+			end
 		else
-			text = string.format(
-				banRichFormat,
-				if ban[1] then escape(ban[1]) else "UNKNOWN",
-				"",
-				ban.userId,
-				escape(reason),
-				escape(term)
-			)
+			left = string.format(banRichFormat, if ban[1] then escape(ban[1]) else "UNKNOWN", "", ban.userId)
+			right = `<font transparency="0.5">{term}</font>`
+			if #term < 18 then
+				right = reason .. string.rep(" ", 18 - #term) .. right
+			else
+				right = reason .. right
+			end
 		end
 
-		item.Text = text
+		item.Left.Text = left
+		item.Right.Text = right
+		if item:FindFirstChild("ImageLabel") then
+			item.ImageLabel.Image = `rbxthumb://type=AvatarHeadShot&id={ban.userId}&w=48&h=48`
+		end
+
 		task.spawn(function()
 			local userInfo = _K.Util.getUserInfo(ban.userId)
 			local displayName = if userInfo and (userInfo.DisplayName ~= userInfo.Username)
 				then userInfo.DisplayName .. " "
 				else ""
 
-			if item.Text == text and self._filter == "" then
-				item.Text = string.format(
+			if item.Left.Text == left and self._filter == "" then
+				item:SetAttribute("_KName", userInfo.Username)
+
+				item.Left.Text = string.format(
 					banRichFormat,
 					if not userInfo.Deleted and not userInfo.Unknown
 						then escape(userInfo.Username)
@@ -74,8 +197,7 @@ function Bans.new(_K)
 						else "<s>UNKNOWN</s>",
 					if userInfo.Deleted or userInfo.Unknown then "" else escape(displayName),
 					escape(ban.userId),
-					escape(reason),
-					escape(term)
+					escape(reason)
 				)
 			end
 		end)
@@ -89,6 +211,8 @@ function Bans.new(_K)
 		FilterInput = true,
 		CreateItem = createItem,
 		RenderItem = renderItem,
+
+		unbanDialog,
 	}
 	UI.edit(scroller._scroller, {
 		UI.new "UIFlexItem" {

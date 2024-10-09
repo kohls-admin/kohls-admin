@@ -27,6 +27,7 @@ local Remote = {
 	Setting = _REMOTE,
 	Settings = _REMOTE,
 	Teleport = _REMOTE,
+	Unban = _REMOTE,
 
 	RequestCommand = _REMOTECALL,
 	Vote = _REMOTECALL,

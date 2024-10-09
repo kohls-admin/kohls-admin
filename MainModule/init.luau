@@ -311,6 +311,15 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 		end
 	end)
 
+	-- handle unban events
+	_K.Remote.Unban.OnServerEvent:Connect(function(player, userId)
+		local ban = _K.Data.bans[tostring(userId)]
+		if ban and _K.Auth.hasCommand(player.UserId, "unban") then
+			_K.log(`{_K.Data.settings.prefix}unban {userId}`, "COMMAND", player.UserId)
+			_K.Auth.userUnban(userId, player.UserId)
+		end
+	end)
+
 	-- server hooks
 
 	_K.Hook.logFiltered:Connect(function(log)
