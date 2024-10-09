@@ -26,6 +26,3 @@ jobs:
 
       - name: Publish Test Place
         run: rojo upload --api_key "${{ secrets.PLACE_PUBLISHING_KEY }}" --universe_id ${{ secrets.TEST_UNIVERSE_ID }} --asset_id ${{ secrets.TEST_PLACE_ID }} test.project.json
-
-      - name: Publish Test Loader
-        run: rojo upload --asset_id ${{ secrets.TEST_LOADER_ID }} --cookie "${{ secrets.ROBLOSECURITY }}" .github/loader.project.json
