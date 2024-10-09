@@ -4,13 +4,10 @@ if not shared._K_LOADER_LOADED then
 	local Package = script.Parent
 	Package.Parent = game:GetService("ServerScriptService")
 
-	local Addons = Package:WaitForChild("Addons")
-	local Settings = Package:WaitForChild("Settings")
+	local AddonsFolder = Package:WaitForChild("Addons")
+	local SettingsModule = Package:WaitForChild("Settings")
+	local Settings = require(SettingsModule)
 
-	if false and Settings.autoUpdate and game.PlaceId ~= 18274376677 then
-		-- auto udating will be added when the model is more stable
-	else
-		local _K = require(Package.MainModule)
-		_K.initialize(Settings, Addons, true)
-	end
+	local module = if Settings.autoUpdate and game.PlaceId ~= 18274376677 then 1868400649 else Package.MainModule
+	require(module).initialize(SettingsModule, AddonsFolder, true)
 end
