@@ -261,6 +261,36 @@ return {
 		end,
 	},
 	{
+		name = "gear",
+		description = "Gives one or more player(s) a gear.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to give the gear.",
+			},
+			{
+				type = "integer",
+				name = "AssetId",
+				description = "The assetId of the gear.",
+			},
+		},
+
+		run = function(context, players, assetId)
+			local model = context._K.Util.Services.InsertService:LoadAsset(assetId)
+			local gear = model:FindFirstChildWhichIsA("BackpackItem")
+			gear = gear and gear:Clone()
+			model:Destroy()
+			if not gear then
+				return false, "Invalid gear id"
+			end
+			for _, player in players do
+				gear:Clone().Parent = player:FindFirstChild("Backpack") or player.Character
+			end
+			return
+		end,
+	},
+	{
 		name = "place",
 		aliases = { "pl" },
 		description = "Teleports one or more player(s) to a place.",
