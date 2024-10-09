@@ -426,7 +426,7 @@ function VIP.new(_K)
 			}
 			UI.new "Tooltip" {
 				Parent = button._instance,
-				Text = "❤️ Thanks for supporting Kohl's Admin!",
+				Text = "❤️ Thanks for supporting Kohl's Admin!\n<b>This doesn't provide any in-game benefits!</b>",
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Visible = button._hovering,
 			}
