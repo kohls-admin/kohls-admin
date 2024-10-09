@@ -216,8 +216,6 @@ local inlineFormat =
 	`<font transparency="0.33">%s</font>%s<font transparency="0.33">%s<font transparency="0.66">%s</font>%s</font>`
 local suggestFormat = `%s<font transparency="0.5">%s</font>`
 
-local playerThumbs = {}
-
 local suggestionIndex = 1
 local suggestionLabels = {}
 
@@ -264,30 +262,24 @@ local function updateSuggestionLabels(data)
 
 		if typeof(value) == "Instance" and value:IsA("Player") then
 			displayName = `{name} ({if name == value.DisplayName then "@" .. value.Name else value.DisplayName})`
-			local userId = value.UserId
-			local image = playerThumbs[tostring(userId)]
-			local thumb = Instance.new("ImageLabel", frame)
-			thumb.AnchorPoint = Vector2.new(1, 0)
-			thumb.BackgroundTransparency = 1
-			thumb.Size = UDim2.new(1, 0, 1, 0)
-			thumb.Position = UDim2.new(1, 0, 0, 0)
-			thumb.SizeConstraint = Enum.SizeConstraint.RelativeYY
-
-			if image then
-				thumb.Image = image
-			else
-				task.spawn(function()
-					image = _K.Util.Services.Players:GetUserThumbnailAsync(
-						userId,
-						Enum.ThumbnailType.HeadShot,
-						Enum.ThumbnailSize.Size48x48
-					)
-					playerThumbs[tostring(userId)] = image
-					if thumb then
-						thumb.Image = image
-					end
-				end)
-			end
+			UI.new "ImageLabel" {
+				Parent = frame,
+				BackgroundTransparency = 1,
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.new(1, 0, 1, 0),
+				SizeConstraint = Enum.SizeConstraint.RelativeYY,
+				Image = `rbxthumb://type=AvatarHeadShot&id={value.UserId}&w=48&h=48`,
+			}
+		elseif valueType == "Color3" or valueType == "BrickColor" then
+			UI.new "Frame" {
+				Parent = frame,
+				BackgroundColor3 = if valueType == "BrickColor" then value.Color else value,
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.new(1, 0, 1, 0),
+				SizeConstraint = Enum.SizeConstraint.RelativeYY,
+			}
 		end
 
 		label.Text = string.format(
