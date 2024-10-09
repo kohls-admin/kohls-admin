@@ -101,7 +101,7 @@ function ScrollerFast.new(definition)
 	local self = UI.makeStatefulDefaults({
 		Enabled = true,
 		ItemSize = UI.compute(function(use)
-			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset)
 		end),
 		List = {},
 		DictList = false,

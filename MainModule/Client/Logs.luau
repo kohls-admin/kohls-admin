@@ -153,6 +153,9 @@ function Logs.new(_K)
 		ReverseOrder = true,
 		CreateItem = createItem,
 		RenderItem = renderItem,
+		ItemSize = UI.compute(function(use)
+			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+		end),
 	}
 
 	task.defer(scroller.filter, scroller, filterTest)
