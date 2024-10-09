@@ -140,7 +140,6 @@ function Auth.userUnban(userId: number, fromUserId: number?, noAsync: boolean?)
 end
 
 --- Adds a role to a user if they don't already have it
--- TODO: make a way to define permanent vs temporary roles
 function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolean
 	local player = Players:GetPlayerByUserId(userId)
 	local member = Data.members[tostring(userId)]
@@ -353,6 +352,56 @@ function Auth.getRank(userId: number, permission: string?): (number, Role)
 		end
 	end
 	return rank, rankRole
+end
+
+--- Checks if a role has access to a command
+function Auth.roleCanUseArgument(role: Role, argument: any): boolean
+	local roleData = Data.roles[role]
+	if not roleData then
+		warn("ROLE DOESN'T EXIST?!", role)
+		return false
+	end
+
+	-- admins always have access
+	if roleData.permissions.admin then
+		return true
+	end
+
+	-- argument definition permissions against role
+	if argument.permissions then
+		for permission, value in argument.permissions do
+			if roleData.permissions[permission] ~= value then
+				return false
+			end
+		end
+	end
+
+	return true
+end
+
+--- Checks if a user has access to a command
+function Auth.hasArgument(userId: number, argument: any): boolean
+	if Auth.roleCanUseArgument("default", argument) then
+		return true
+	end
+
+	local member = Data.members[tostring(userId)]
+	if member then
+		if member.permissions and member.permissions.admin then
+			return true
+		end
+		for _, role in member.roles do
+			local roleData = Data.roles[role]
+			if not roleData then
+				warn("undefined role?", roleData)
+				continue
+			end
+			if Auth.roleCanUseArgument(role, argument) then
+				return true
+			end
+		end
+	end
+	return false
 end
 
 --- Checks if a role has access to a command

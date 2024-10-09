@@ -169,6 +169,12 @@ function Command:validate()
 			self.greedy = true
 		end
 
+		if argDefinition.permissions then
+			if not self._K.Auth.hasArgument(self.from, argDefinition) then
+				continue
+			end
+		end
+
 		local arg = Argument.new(self, argDefinition, argPos, rawArg)
 		table.insert(self.args, arg)
 
