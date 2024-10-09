@@ -291,6 +291,26 @@ return {
 		end,
 	},
 	{
+		name = "insert",
+		description = "Inserts a model at the player's position.",
+		args = {
+			{
+				type = "integer",
+				name = "AssetId",
+				description = "The assetId of the model.",
+			},
+		},
+
+		run = function(context, players, assetId)
+			local model = context._K.Util.Services.InsertService:LoadAsset(assetId)
+			model.Parent = workspace
+			model:MoveTo(context.fromPlayer.Character:GetPivot().Position)
+			model:MakeJoints()
+			table.insert(context._K.cleanupCommands, model)
+			return
+		end,
+	},
+	{
 		name = "place",
 		aliases = { "pl" },
 		description = "Teleports one or more player(s) to a place.",
