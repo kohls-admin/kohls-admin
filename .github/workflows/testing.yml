@@ -16,15 +16,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Modify VERSION.txt
-        run: echo "$(git rev-parse --short HEAD)" > VERSION.txt
-
-      - name: Bump version
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: Bump version
-          file_pattern: VERSION.txt
-
       - uses: CompeyDev/setup-rokit@v0.1.2
         with:
           version: "*"
