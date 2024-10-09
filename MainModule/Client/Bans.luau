@@ -36,8 +36,8 @@ function Bans.new(_K)
 
 		local text
 		if self._filter ~= "" then
-			text = `@{ban[1]} [{ban.userId}]\t{reason}\t{term}`
-			local filterFound = string.find(text:lower(), self._filter)
+			text = `@{ban[1] or "UNKNOWN"} [{ban.userId}]\t{reason}\t{term}`
+			local filterFound = string.find(string.lower(text), self._filter)
 			text = if filterFound
 				then string.format(
 					filterRichFormat,
@@ -49,7 +49,7 @@ function Bans.new(_K)
 		else
 			text = string.format(
 				banRichFormat,
-				if ban[1] then escape(ban[1]) else "",
+				if ban[1] then escape(ban[1]) else "UNKNOWN",
 				"",
 				ban.userId,
 				escape(reason),
@@ -67,10 +67,11 @@ function Bans.new(_K)
 			if item.Text == text and self._filter == "" then
 				item.Text = string.format(
 					banRichFormat,
-					if userInfo.Deleted
-						then "<s>DELETED</s>"
-						elseif userInfo.Unknown then "<s>UNKNOWN</s>"
-						else escape(userInfo.Username),
+					if not userInfo.Deleted and not userInfo.Unknown
+						then escape(userInfo.Username)
+						elseif ban[1] then escape(ban[1])
+						elseif userInfo.Deleted then "<s>DELETED</s>"
+						else "<s>UNKNOWN</s>",
 					if userInfo.Deleted or userInfo.Unknown then "" else escape(displayName),
 					escape(ban.userId),
 					escape(reason),
@@ -106,15 +107,15 @@ function Bans.new(_K)
 				continue
 			end
 			ban.userId = userId
-			local term = if ban[3]
-				then (if ban[3] > 0 then os.date("%y-%m-%d %X", ban[3]) else "Permanently")
+
+			local reason = if ban[2] and _K.Util.String.trim(ban[2]) ~= "" then ban[2] else "No reason."
+			local term = ban[3]
+			term = if term
+				then (if term > 0 and term ~= math.huge then os.date("%y-%m-%d %X", ban[3]) else "Forever")
 				else "Session"
-			local userInfo = _K.Util.getUserInfo(ban.userId)
-			local displayName = if userInfo and (userInfo.DisplayName ~= userInfo.Username)
-				then userInfo.DisplayName .. " "
-				else ""
-			local text = `@{userInfo.Username} {displayName} {ban.userId}\t{ban[2] or "No reason."}\t{term}`
-			if text:lower():find(filter, 1, true) then
+
+			local text = `@{ban[1] or "UNKNOWN"} [{ban.userId}]\t{reason}\t{term}`
+			if string.find(string.lower(text), filter, 1, true) then
 				table.insert(new, ban)
 			end
 		end
