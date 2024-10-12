@@ -474,6 +474,22 @@ function Auth.hasCommand(userId: number, command: any): boolean
 		if member.permissions and member.permissions.admin then
 			return true
 		end
+
+		if member.commands then
+			local override = member.commands[command.name]
+			if override ~= nil then
+				return override
+			end
+			if command.aliases then
+				for _, alias in command.aliases do
+					local aliasOverride = member.commands[alias]
+					if aliasOverride ~= nil then
+						return aliasOverride
+					end
+				end
+			end
+		end
+
 		for _, role in member.roles do
 			local roleData = Data.roles[role]
 			if not roleData then
