@@ -112,7 +112,6 @@ function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 	end
 	local oldCommand = Registry.commands[string.lower(commandObject.name)]
 	if oldCommand then
-		warn(`Kohl's Admin: Default command "{commandObject.name}" replaced by developer, did you mean to do that?`)
 		local index = table.find(Registry.commandsList, oldCommand)
 		if index then
 			Registry.commandsList[index] = commandObject
