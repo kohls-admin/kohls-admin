@@ -278,15 +278,16 @@ return {
 
 		run = function(context, players, assetId)
 			local model = context._K.Util.Services.InsertService:LoadAsset(assetId)
-			local gear = model:FindFirstChildWhichIsA("BackpackItem")
-			gear = gear and gear:Clone()
-			model:Destroy()
-			if not gear then
-				return false, "Invalid gear id"
-			end
+			for _, child in model:GetChildren() do
+				if child:IsA("BackpackItem") then
+					local gear = child:Clone()
 			for _, player in players do
 				gear:Clone().Parent = player:FindFirstChild("Backpack") or player.Character
 			end
+				end
+			end
+			model:Destroy()
+
 			return
 		end,
 	},
