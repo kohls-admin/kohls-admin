@@ -114,6 +114,9 @@ function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 	if oldCommand then
 		local index = table.find(Registry.commandsList, oldCommand)
 		if index then
+			if not commandObject.group then
+				commandObject.group = oldCommand.group
+			end
 			Registry.commandsList[index] = commandObject
 		end
 		if oldCommand.aliases then
