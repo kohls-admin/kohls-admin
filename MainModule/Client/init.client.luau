@@ -103,10 +103,10 @@ end)
 
 _K.Remote.Init:FireServer()
 
--- finally load client addons
-local addons = script:FindFirstChild("Addons")
+-- finally load client and shared addons
+local addons = _K.script:WaitForChild("Addons")
 if addons then
-	for _, addon in _K._addons:GetChildren() do
+	for _, addon in addons:GetChildren() do
 		if addon:IsA("ModuleScript") then
 			task.spawn(function()
 				require(addon)(_K)
