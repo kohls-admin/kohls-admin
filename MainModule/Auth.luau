@@ -422,7 +422,7 @@ function Auth.roleCanUseCommand(role: Role, command: any): boolean
 	end
 
 	-- admins always have access
-	if roleData.permissions.admin then
+	if roleData.permissions and roleData.permissions.admin then
 		return true
 	end
 
