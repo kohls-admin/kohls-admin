@@ -646,21 +646,26 @@ return {
 		end,
 	},
 	{
-		name = "breakjoints",
-		aliases = { "break", "kill", "💀" },
-		description = "Breaks the joints one or more player(s).",
+		name = "kill",
+		aliases = { "unalive", "💀" },
+		description = "Kills one or more player(s).",
 		args = {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) whose joints to break.",
+				description = "The player(s) to kill.",
 				shouldRequest = true,
 			},
 		},
 		run = function(context, players)
 			for _, player in players do
 				if player.Character then
-					player.Character:BreakJoints()
+					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+					if not humanoid then
+						continue
+					end
+					humanoid.MaxHealth = math.max(1, humanoid.MaxHealth)
+					humanoid.Health = 0
 				end
 			end
 		end,

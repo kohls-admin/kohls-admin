@@ -544,7 +544,14 @@ return {
 		run = function(context, players, distance)
 			for _, player in players do
 				if player.Character then
-					player.Character:BreakJoints()
+					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+					if not humanoid then
+						continue
+					end
+
+					humanoid.MaxHealth = math.max(1, humanoid.MaxHealth)
+					humanoid.Health = 0
+
 					local explosion = Instance.new("Explosion")
 					explosion.ExplosionType = Enum.ExplosionType.NoCraters
 					explosion.Position = player.Character:GetPivot().Position
@@ -601,12 +608,19 @@ return {
 				end
 				character:SetAttribute("_KNuked", true)
 
-				character:BreakJoints()
 				local explosion = Instance.new("Explosion")
 				explosion.ExplosionType = Enum.ExplosionType.NoCraters
 				explosion.Position = position
 				explosion.DestroyJointRadiusPercent = 0
 				explosion.Parent = character
+
+				local humanoid = character:FindFirstChildOfClass("Humanoid")
+				if not humanoid then
+					return
+				end
+
+				humanoid.MaxHealth = math.max(1, humanoid.MaxHealth)
+				humanoid.Health = 0
 			end
 
 			return {
