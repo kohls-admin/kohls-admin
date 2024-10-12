@@ -1212,8 +1212,13 @@ return {
 			},
 		},
 
-		run = function(context, player)
-			teleportCharacter(player.Character, context.fromPlayer.Character)
+		run = function(context, players)
+			for _, player in players do
+				if player == context.fromPlayer then
+					continue
+				end
+				teleportCharacter(player.Character, context.fromPlayer.Character)
+			end
 		end,
 	},
 	{
