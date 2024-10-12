@@ -705,6 +705,99 @@ return {
 		end,
 	},
 	{
+		name = "smite",
+		credit = { "@Yuruzuu", "Kohl @Scripth" },
+		description = "Smites one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to smite.",
+				shouldRequest = true,
+			},
+		},
+		run = function(context, players)
+			for _, player in players do
+				if player.Character then
+					local root = player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart
+					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+					if not (humanoid and root) then
+						continue
+					end
+
+					for _, descendant in player.Character:GetDescendants() do
+						if descendant:IsA("BasePart") then
+							task.delay(math.random(), function()
+								local effect = context._K.Flux.new "ParticleEmitter" {
+									Parent = descendant,
+									LockedToPart = true,
+									Brightness = 4,
+									Color = ColorSequence.new(Color3.new(1, 1, 0.5)),
+									Transparency = NumberSequence.new(0.5),
+									LightEmission = 1,
+									LightInfluence = 0,
+									Orientation = Enum.ParticleOrientation.FacingCamera,
+									Texture = "rbxassetid://11492870634",
+									ZOffset = 2,
+									Lifetime = NumberRange.new(0.5, 0.75),
+									Rate = 2,
+									Speed = NumberRange.new(0),
+									Rotation = NumberRange.new(-360, 360),
+									FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
+									FlipbookMode = Enum.ParticleFlipbookMode.OneShot,
+								}
+								effect:Emit(1)
+							end)
+						end
+					end
+
+					local sounds = { 9116282544, 9116282647, 9116282646, 9116282791, 9116282875 }
+					local sound = context._K.Flux.new "Sound" {
+						Parent = workspace,
+						SoundId = `rbxassetid://{sounds[math.random(4)]}`,
+						PlayOnRemove = true,
+						Volume = 1,
+					}
+					sound:Destroy()
+
+					task.delay(2.2, function()
+						local part = context._K.Flux.new "Part" {
+							Parent = workspace,
+							Transparency = 0.9,
+							Material = Enum.Material.Neon,
+							Color = Color3.new(1, 1, 1),
+							Anchored = true,
+							CanCollide = false,
+							CanQuery = false,
+							CanTouch = false,
+							CastShadow = false,
+							Size = Vector3.one,
+							CFrame = CFrame.new(
+								player.Character:GetPivot().Position
+									- Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0)
+							),
+
+							context._K.Flux.new "BlockMesh" {
+								Scale = Vector3.new(2, 1e4, 2),
+								Offset = Vector3.new(0, 5e3, 0),
+							},
+						}
+
+						for i = 1, 4 do
+							local outer = part:Clone()
+							outer.Mesh.Scale = Vector3.new(2 + i, 1e4, 2 + i)
+							outer.Parent = part
+						end
+
+						humanoid.MaxHealth = math.max(1, humanoid.MaxHealth)
+						humanoid.Health = 0
+						task.delay(0.4, part.Destroy, part)
+					end)
+				end
+			end
+		end,
+	},
+	{
 		name = "fling",
 		aliases = {},
 		description = "Flings one or more player(s).",
