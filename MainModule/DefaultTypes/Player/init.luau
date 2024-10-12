@@ -41,6 +41,15 @@ for prefixType, list in prefixSuggestions do
 	list[3] = nil
 end
 
+local function nameUsed(names, name)
+	for _, data in names do
+		local used = data[1]
+		if used == name or prefixes[name] then
+			return true
+		end
+	end
+end
+
 local function baseSuggestions(text, from, definition)
 	local players = Players:GetPlayers()
 	local names, instances = {}, {}
@@ -67,7 +76,7 @@ local function baseSuggestions(text, from, definition)
 	for index = 1, #instances do
 		local player = instances[index]
 		-- hide duplicate suggestions
-		if player.Name == player.DisplayName or table.find(names, player.DisplayName) then
+		if player.Name == player.DisplayName or nameUsed(names, player.DisplayName) then
 			continue
 		end
 		table.insert(names, player.DisplayName)
