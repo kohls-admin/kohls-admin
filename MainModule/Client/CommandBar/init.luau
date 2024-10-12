@@ -506,7 +506,6 @@ local coreGuiCache, coreChatActiveCache = {}, nil
 local function coreGuiEnabled(enabled: boolean)
 	if enabled then
 		StarterGui:SetCore("ChatActive", coreChatActiveCache)
-		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 		coreChatActiveCache = nil
 		for coreType, value in coreGuiCache do
 			coreGuiCache[coreType] = nil
@@ -518,7 +517,11 @@ local function coreGuiEnabled(enabled: boolean)
 		end
 		StarterGui:SetCore("ChatActive", false)
 		for _, coreType in Enum.CoreGuiType:GetEnumItems() do
-			if coreType ~= Enum.CoreGuiType.Chat and coreType ~= Enum.CoreGuiType.Captures then
+			if
+				coreType ~= Enum.CoreGuiType.Chat
+				and coreType ~= Enum.CoreGuiType.Captures
+				and coreType ~= Enum.CoreGuiType.Health
+			then
 				continue
 			end
 			if coreGuiCache[coreType] == nil then
