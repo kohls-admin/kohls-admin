@@ -577,7 +577,7 @@ return {
 			local boomSound = _K.Flux.new "Sound" {
 				SoundId = "rbxassetid://9114224354",
 				EmitterSize = 512,
-				Volume = 2,
+				Volume = 1,
 			}
 			local sphere
 			task.defer(function()
