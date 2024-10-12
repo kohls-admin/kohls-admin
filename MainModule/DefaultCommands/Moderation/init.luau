@@ -1824,6 +1824,7 @@ return {
 	},
 	{
 		name = "resetstats",
+		aliases = { "rs" },
 		description = "Resets the stats of one or more player(s).",
 		args = {
 			{
