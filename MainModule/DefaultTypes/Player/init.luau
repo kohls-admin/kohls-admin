@@ -31,6 +31,8 @@ local prefixSuggestions = {
 	{ "%", "%\t(Teams)", "teamPlayers" },
 	{ "~", "~\t(Random)", "randomPlayers" },
 	{ "$", "$\t(Special)", "specialPlayers" },
+	{ "all", "all  (Everyone)", "allPlayers" },
+	{ "others", "others (Everyone else)", "otherPlayers" },
 }
 
 local prefixes = {}
