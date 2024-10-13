@@ -519,7 +519,6 @@ local function coreGuiEnabled(enabled: boolean)
 		for _, coreType in Enum.CoreGuiType:GetEnumItems() do
 			if
 				coreType ~= Enum.CoreGuiType.Chat
-				and coreType ~= Enum.CoreGuiType.Captures
 				and coreType ~= Enum.CoreGuiType.Health
 			then
 				continue
