@@ -536,12 +536,14 @@ local function coreGuiEnabled(enabled: boolean)
 end
 
 local function hideCommandBar()
-	Input._input.TextEditable = false
-	CommandBar.Visible = false
-	if _K.client then
-		_K.client.TopbarPlus.setTopbarEnabled(true)
+	if CommandBar.Visible then
+		Input._input.TextEditable = false
+		CommandBar.Visible = false
+		if _K.client then
+			_K.client.TopbarPlus.setTopbarEnabled(true)
+		end
+		coreGuiEnabled(true)
 	end
-	coreGuiEnabled(true)
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
