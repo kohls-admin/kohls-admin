@@ -281,14 +281,12 @@ return {
 			for _, child in model:GetChildren() do
 				if child:IsA("BackpackItem") then
 					local gear = child:Clone()
-			for _, player in players do
-				gear:Clone().Parent = player:FindFirstChild("Backpack") or player.Character
-			end
+					for _, player in players do
+						gear:Clone().Parent = player:FindFirstChild("Backpack") or player.Character
+					end
 				end
 			end
 			model:Destroy()
-
-			return
 		end,
 	},
 	{
@@ -302,13 +300,12 @@ return {
 			},
 		},
 
-		run = function(context, players, assetId)
+		run = function(context, assetId)
 			local model = context._K.Util.Services.InsertService:LoadAsset(assetId)
 			model.Parent = workspace
 			model:MoveTo(context.fromPlayer.Character:GetPivot().Position)
 			model:MakeJoints()
 			table.insert(context._K.cleanupCommands, model)
-			return
 		end,
 	},
 	{
