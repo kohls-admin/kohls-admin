@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent.Client.UI)
+local UI = require(script.Parent.Parent.Client:WaitForChild("UI"))
 
 local Cache = {
 	-- Main
