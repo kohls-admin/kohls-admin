@@ -123,7 +123,11 @@ function Commands.new(_K)
 		table.sort(roles, function(a, b)
 			return _K.Data.roles[a]._rank < _K.Data.roles[b]._rank
 		end)
-		local roleColor = Color3.fromHex(_K.Data.roles[roles[1]].color)
+
+		local roleColor = if #roles > 0
+			then Color3.fromHex(_K.Data.roles[roles[1]].color)
+			else UI.peek(UI.Theme.Primary)
+
 		for i, role in roles do
 			local roleData = _K.Data.roles[role]
 			roles[i] = `<font color="{roleData.color}">{roleData.name}</font>`
