@@ -2,6 +2,7 @@
 	"name": "Kohl's Admin",
 	"emitLegacyScripts": false,
 	"tree": {
+		"$className": "Model",
 		"$path": "../Loader",
 		"MainModule": {
 			"$path": "../MainModule",

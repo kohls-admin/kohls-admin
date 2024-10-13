@@ -14,6 +14,7 @@
 		"ServerScriptService": {
 			"Kohl's Admin": {
 				"$path": "Loader",
+				"$className": "Model",
 				"MainModule": {
 					"$path": "MainModule",
 					"VERSION": {
