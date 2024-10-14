@@ -40,6 +40,8 @@ local Announce = require(script.Announce)
 local Dashboard = require(script.Dashboard)
 local Network = require(script.Network)
 
+local chatCommandThrottle
+
 local function Chatted(message: string)
 	local prefix = _K.playerPrefix[UI.LocalPlayer.UserId] or _K.Data.settings.prefix
 	local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
@@ -60,7 +62,13 @@ local function Chatted(message: string)
 		end
 		return
 	end
+	if not chatCommandThrottle then
+		chatCommandThrottle = true
 	_K.Process.runCommands(_K, UI.LocalPlayer.UserId, string.sub(message, commandStart), true)
+		task.delay(0.2, function()
+			chatCommandThrottle = nil
+		end)
+	end
 end
 
 if _K.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
