@@ -160,7 +160,7 @@ UserInputService.JumpRequest:Connect(function()
 		return
 	end
 	lastJump = now
-	if FlyEnabled and (duration <= 0.25 or not flying) then
+	if FlyEnabled and (duration <= 0.4 or not flying) then
 		debounceJump = true
 		task.delay(if not flying then 1 else 0.1, function()
 			debounceJump = nil
