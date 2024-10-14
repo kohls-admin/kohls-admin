@@ -158,8 +158,23 @@ local typeUser = {
 	transform = string.lower,
 	validate = parseUser,
 	parse = parseUser,
+	postParse = function(parsedArgs)
+		-- compile nested players from prefixes into one list, transform prefix results to userId
+		local players = {}
+		for _, arg in parsedArgs do
+			if type(arg) == "table" then
+				for _, player in arg do
+					table.insert(players, if typeof(player) == "Instance" then player.UserId else player)
+				end
+			else
+				table.insert(players, if typeof(arg) == "Instance" then arg.UserId else arg)
+			end
+		end
+		return players
+	end,
 	suggestions = typeIndividual.suggestions,
 	log = typeIndividual.log,
+	prefixes = prefixes,
 }
 
 return function(context)
