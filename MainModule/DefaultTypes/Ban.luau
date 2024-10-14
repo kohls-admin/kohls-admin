@@ -35,9 +35,6 @@ local typeBan = {
 			if not name then
 				continue
 			end
-			if string.find(name, " ") then
-				name = `"{name}"`
-			end
 			table.insert(names, { name, `{name} ({userId})` })
 		end
 		-- userId suggestions

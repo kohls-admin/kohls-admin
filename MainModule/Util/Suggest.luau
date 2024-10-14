@@ -24,6 +24,19 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 			nameQuery, nameDisplay = unpack(name)
 		end
 
+		if string.find(nameQuery, "%s") then
+			local quoted = `"{nameQuery}"`
+			
+			if nameDisplay then
+				local startIndex, endIndex = string.find(nameDisplay, nameQuery)
+				if startIndex then
+					nameDisplay = quoted .. string.sub(nameDisplay, endIndex + 1)
+				end
+			end
+
+			nameQuery = quoted
+		end
+
 		local nameLower = string.lower(nameQuery)
 		local value = instances and (instances[key] or instances[name]) or name
 		-- Continue on checking for non-exact matches...
