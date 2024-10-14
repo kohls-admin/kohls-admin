@@ -1,3 +1,5 @@
+local PRIVATE_SERVER_OWNER = if game:GetService("RunService"):IsServer() then game.PrivateServerOwnerId else nil
+
 local Settings = {
 
 	-- Automatic updates from the latest official version of the MainModule
@@ -12,7 +14,7 @@ local Settings = {
 	your game to users looking for games with benefits from Kohl's Admin.
 	https://www.roblox.com/games/17873329124/Kohls-Admin-Games-Hub
 
-	⚠️ IMPORTANT: Allow HTTP Requests in Game Settings -> Security
+	⚠️ Requires Allowing HTTP Requests in File > Game Settings > Security
 	]]
 	gameHubEnabled = true,
 
@@ -48,7 +50,7 @@ local Settings = {
 
 	groupRoles = {
 		-- [groupId] = {
-		-- { rank = 200, roles = { "admin", "vip" }, exactRank = true },
+		-- { rank = 200, roles = { "admin", "vip" }, exactRank = false },
 		-- },
 	},
 
@@ -64,7 +66,7 @@ local Settings = {
 		superadmin = {},
 		admin = {},
 		mod = {},
-		vip = { 1, 156, game.PrivateServerOwnerId },
+		vip = { 1, 156, PRIVATE_SERVER_OWNER },
 	},
 
 	--[[
