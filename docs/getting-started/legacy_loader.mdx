@@ -1,0 +1,77 @@
+--- 
+sidebar_position: 2
+---
+
+# Legacy Loader
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+:::note
+Kohl's Admin is currently in development. Everything in these docs is subject to change.
+:::
+
+This section explains the steps on how to revert back to the legacy loader from the new loader which is more stable.
+
+This shows the difference between KA New Loader vs the Legacy Loader.
+<Tabs>
+  <TabItem value="pros" label="KA New Loader" default>
+    KA New Loader is currently still in Beta which continues to improve over time reducing and increasing the number of bugs and features respectively.
+  </TabItem>
+  <TabItem value="cons" label="KA Legacy Loader">
+    KA Legacy Loader is no longer receiving updates towards the system, but will continue to receive security and large bugs fixes. 
+  </TabItem>
+</Tabs>
+
+## Prerequisites
+
+Make sure you already have KA installed in your game before continuing.
+
+- **KA Installation Guide**: Click [here](/docs/getting-started/installation) to go to the setup guide.
+
+Also ensure that you have both the **Explorer** and **Properties** tabs open.
+
+- You can do this by going to **View** on the menu of Roblox Studio, and toggle `Explorer` and `Properties` which is on the top left.
+
+:::warning
+There will be 2 `Settings` scripts, one inside the `Legacy_Loader` script and the other in the model, it is **DIFFERENT** and will not save with one another.
+:::
+
+## Changing to Legacy Loader
+
+### Step 1: Enabling the Legacy Loader
+
+1. Open the KA Model `(Kohl's Admin)`
+2. Click on `Legacy_Loader`.
+3. Go to the **Properties** tab, going to `Behaviour > Enabled` and toggling it to `true` (white check mark).
+
+### Step 2: Disabling the New Loader
+
+1. Open the KA Model `(Kohl's Admin)`
+2. Click on `Loader`.
+3. Go to the **Properties** tab, going to `Behaviour > Enabled` and toggling it to `false` (no check mark).
+
+## Changing back to New Loader
+
+### Step 1: Enabling the New Loader
+
+1. Open the KA Model `(Kohl's Admin)`
+2. Click on `Loader`.
+3. Go to the **Properties** tab, going to `Behaviour > Enabled` and toggling it to `true` (white check mark).
+
+### Step 2: Disabling the Legacy Loader
+
+1. Open the KA Model `(Kohl's Admin)`
+2. Click on `Legacy_Loader`.
+3. Go to the **Properties** tab, going to `Behaviour > Enabled` and toggling it to `false` (no check mark).
+
+## Verify Installation
+
+1. Open and play the experience that you've imported the model into.
+2. Test some basic commands to make sure the admin commands are functioning as expected.
+
+--- 
+
+:::tip
+Still need help? Feel free to join the [Kohl's Admin Discord](https://discord.gg/kohl)!
+:::
