@@ -759,6 +759,7 @@ return {
 				if not player.Character then
 					continue
 				end
+
 				local existing = player.Character:FindFirstChild("_Kff")
 				if existing then
 					existing.Visible = false
@@ -767,6 +768,15 @@ return {
 					ff.Name = "_Kff"
 					ff.Visible = false
 					ff.Parent = player.Character
+				end
+
+				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					if not humanoid:GetAttribute("_KMaxHealth") then
+						humanoid:SetAttribute("_KMaxHealth", humanoid.MaxHealth)
+					end
+					humanoid.MaxHealth = math.huge
+					humanoid.Health = math.huge
 				end
 			end
 		end,
@@ -813,11 +823,25 @@ return {
 		},
 
 		run = function(context, players)
+			local ungod = context.alias == "ungod" or context.alias == "mortal"
 			for _, player in players do
 				if player.Character then
 					for _, child in player.Character:GetChildren() do
 						if child:IsA("ForceField") then
 							child:Destroy()
+						end
+					end
+
+					if not ungod then
+						continue
+					end
+
+					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+					if humanoid then
+						local oldHealth = humanoid:GetAttribute("_KMaxHealth")
+						if oldHealth then
+							humanoid.MaxHealth = oldHealth
+							humanoid.Health = oldHealth
 						end
 					end
 				end
