@@ -515,17 +515,17 @@ return {
 	},
 	{
 		name = "hat",
-		description = "Gives one or more player(s) a hat.",
+		description = "Gives one or more player(s) one or more hats.",
 		args = {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) to give the hat.",
+				description = "The player(s) to give one or more hats.",
 			},
 			{
-				type = "integer",
-				name = "AssetId",
-				description = "The assetId of the hat.",
+				type = "integers",
+				name = "AssetIds",
+				description = "The asset identifiers of one or more hats.",
 			},
 		},
 		env = function()
@@ -537,7 +537,7 @@ return {
 					for _, child in character:GetChildren() do
 						if child:IsA("Accoutrement") and string.find(child.Name, "_KHat") == 1 then
 							hats += 1
-							if #hats >= 16 then
+							if hats >= 16 then
 								child:Destroy()
 							end
 						end
@@ -546,33 +546,35 @@ return {
 			}
 		end,
 
-		run = function(context, players, assetId)
-			local model = context._K.Util.Services.InsertService:LoadAsset(assetId)
-			-- clean up scripts if not a sound hat
-			if not table.find(context.env.allowed, assetId) then
-				for _, descendant in model:GetDescendants() do
-					if descendant:IsA("BaseScript") or descendant:IsA("ModuleScript") then
-						descendant:Destroy()
+		run = function(context, players, assetIds)
+			for _, assetId in assetIds do
+				local model = context._K.Util.Services.InsertService:LoadAsset(assetId)
+				-- clean up scripts if not a sound hat
+				if not table.find(context.env.allowed, assetId) then
+					for _, descendant in model:GetDescendants() do
+						if descendant:IsA("BaseScript") or descendant:IsA("ModuleScript") then
+							descendant:Destroy()
+						end
+					end
+				end
+
+				local hat = model:FindFirstChildWhichIsA("Accoutrement")
+				hat = hat and hat:Clone()
+				model:Destroy()
+				if not hat then
+					continue
+				end
+
+				local name = "_KHat" .. assetId
+				hat.Name = name
+
+				for _, player in players do
+					if player.Character and not player.Character:FindFirstChild(name) then
+						context.env.limit(player.Character)
+						hat:Clone().Parent = player.Character
 					end
 				end
 			end
-
-			local hat = model:FindFirstChildWhichIsA("Accoutrement")
-			hat = hat and hat:Clone()
-			model:Destroy()
-			if not hat then
-				return false, "Invalid hat id"
-			end
-			local name = "_KHat" .. assetId
-			hat.Name = name
-
-			for _, player in players do
-				if player.Character and not player.Character:FindFirstChild(name) then
-					context.env.limit(player.Character)
-					hat:Clone().Parent = player.Character
-				end
-			end
-			return
 		end,
 	},
 	{
