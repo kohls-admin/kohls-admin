@@ -208,7 +208,8 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 	-- define user roles
 	for role, users in loaderSettings.userRoles do
 		for _, userId in users do
-			if userId <= 0 then
+			userId = tonumber(userId)
+			if not userId or userId <= 0 then
 				continue
 			end
 			task.spawn(_K.Auth.userRoleAdd, userId, role)
