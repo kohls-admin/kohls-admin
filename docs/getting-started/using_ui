@@ -1,0 +1,132 @@
+--- 
+sidebar_position: 5
+---
+
+# Using UIs
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+:::note
+Kohl's Admin is currently in development. Everything in these docs is subject to change.
+:::
+
+This will guide you through on how to use the UIs made by the admin system.
+
+## Information
+You can change the prefix by the in-game settings UI, or in the `Settings` script which is shown in the [configuration guide](/docs/getting-started/configuration).
+
+
+## Prerequisites
+
+Make sure you already have KA installed in your game before continuing.
+
+- **KA Installation Guide**: Click [here](/docs/getting-started/installation) to go to the setup guide.
+
+## Legacy Loader's UIs
+
+### Opening/Closing the UIs
+
+- There is 6 total UIs in the legacy system which can be opened with commands.
+```lua
+;help -- overview of the system
+;credit -- credits
+;settings -- settings
+;bans -- user/s banned
+;tools -- tools in ServerStorage
+;admins -- people with admin ranks offline or currently in your game
+```
+- It can be closed by using the `X` button, or minimized by the `-` button.
+### Help UI
+
+- The help UI lists out the prefix, what you can do, how to change settings (for devs), how to ban people, and the options on using commands.
+- It also lists our server below, which you can join.
+
+### Credit UI
+
+- The Credit UI lists out the admin creator's username, the model, donation options, and our server.
+- You can get the model by using the `Get it Now!` button.
+- It also lists out our donation options which have different perks, listed in our server or FAQ.
+- It lists our server below, which you can join.
+
+### Settings UI
+
+- The Settings UI lists out the options which only the `Super Admin` can change.
+- This also can be found in the `Settings` script under `Legacy_Loader`
+
+### Bans UI
+
+- The Bans UI lists out the banned user's username, and the duration.
+- You cannot unban via the UI and must run `unban [player]` to unban them.
+
+### Tools UI
+
+- The Tools UI lists out the tools which can be found in `ServerStorage`.
+- You cannot give yourself tools via the UI and must run `give [player] [string]` in order to give someone tools.
+
+### Admins UI
+
+- The Admins UI lists out the players with admin ranks currently or offline in your game.
+- It lists out their username, and their rank.
+- You cannot rank someone from the UI and must run the commands: `vip [player]`, `mod [player]`, `admin [player]`, `superadmin [player]` in order to rank them. You can put `temp` in front of the command in order to give them a temporary rank which resets when they leave. You can also give ranks from the `Settings` script under `Legacy_Loader` which can only be removed via the script.
+- You cannot unrank someone from the UI and must run the commands: `unvip [player]`, `unmod [player]`, `unadmin [player]`, `unsuperadmin [player]` in order to unrank them.
+
+## New Loader's Dashboard
+
+### Opening/Closing the Dashboard
+
+- You can open the Dashboard at the top of your screen near the Roblox menu.
+- You can close the Dashboard by clicking on the `X` button on the UI or press on the `X` button on mobile.
+- There is also a commandbar button next to the `X` which you can use to run commands.
+
+### Commands Section
+
+- The commands section lists out all the commands that you can use.
+- It lists the default command, the alternatives, the required information and the description.
+- It also has an search feature to allow you to search for specific commands.
+- You can also hover your cursor (on pc) or hold your finger (on mobile) on a command to learn more about it.
+
+### Bans Section
+
+- The bans section lists out all the bans that has been done in your game.
+- It also has an search feature to allow you to search for specific users.
+- It lists out their username, userID, the reason, and the duration.
+- You can unban players by pressing `X` next to the duration, which will give you a prompt to unban them below, which you can `X` to cancel, or `✔` to unban.
+
+### Members Section
+
+- The members section lists out all the admins, or vips currently or offline (if saved) in your game.
+- It lists out their username, userID, and their rank.
+- It also has an search feature to allow you to search for specific users.
+
+### Logs Section
+
+- The logs section lists out all the developer logs, messages sent, commands ran, joins and leaves, kills and deaths, user damages, and purchases made in your game. It does not save throughout servers or the game.
+- It lists info like the date, time, type of logs, username and description.
+- It also has an search feature to allow you to search for specific informations.
+
+### Settings Section
+
+- The settings section lists out the options you can change for the game, or yourself.
+- It also has an search feature to allow you to search for specific options.
+- Super Admins may change settings throughout the game for everyone, which will save throughout servers.
+- Regular players may change settings for themselves locally, but will not save once they leave.
+
+### About Section
+
+- The about section lists out the version, yourself, the prefix, the commandbar hotkey, the dashboard hotkey, our server, and the credits.
+- Thank you to those who contributes to the admin system, and thank you for using the system.
+
+### VIP Section
+
+- The VIP section lists out the options to donate to us, to better improve the system. Thank you for supporting!
+- Our UGC avatar items is listed there which can help us to improve things better for you which has **perks**!
+- Our VIP subscription which allows you to have **VIP commands** in participating games!
+- Our donation items which doesn't have perks (sorry), but it lets us make things better for everyone!
+- Our model which is **free** for everyone to use for their own game!
+
+--- 
+
+:::tip
+Still need help? Feel free to join the [Kohl's Admin Discord](https://discord.gg/kohl)!
+:::
