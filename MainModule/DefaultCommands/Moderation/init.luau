@@ -127,6 +127,11 @@ return {
 				duration = 0
 			end
 
+			local term = if not duration or duration == 0
+				then "Session"
+				elseif duration == -1 then "Permanently"
+				else context._K.Util.ReadableTime(duration)
+
 			local players = context._K.Services.Players:GetPlayers()
 			for _, userId in userIds do
 				for _, player in players do
@@ -135,6 +140,12 @@ return {
 					end
 				end
 				task.spawn(context._K.Auth.userBan, userId, reason, duration, context.from, nil, true)
+				task.defer(function()
+					context._K.Remote.Notify:FireClient(
+						context.fromPlayer,
+						`Banned <b>{context._K.Util.getUserInfo(userId).Username}</b> for <b>{reason}</b>.\nDuration: <b>{term}</b>`
+					)
+				end)
 			end
 
 			if duration and duration ~= 0 then
@@ -145,12 +156,7 @@ return {
 					Duration = duration,
 					ApplyToUniverse = true,
 				})
-				if ok then
-					context._K.Remote.Notify:FireClient(
-						context.fromPlayer,
-						`<b>Banned:</b> <i>{table.concat(userIds, ", ")}</i>`
-					)
-				elseif not string.find(err, "NOT_FOUND") then
+				if not (ok or string.find(err, "NOT_FOUND")) then
 					error(err, 1)
 				end
 			end
