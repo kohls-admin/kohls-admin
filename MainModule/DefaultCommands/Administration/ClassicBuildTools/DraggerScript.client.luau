@@ -133,13 +133,13 @@ local function startDraggerAction(mPart)
 	local pointOnMousePart = mPart.CFrame:toObjectSpace(mouse.Hit).p
 	local canDrag,dragKey,mousePart = gateway:InvokeServer("GetKey",mPart,mode == "_KClone")
 
-	if canDrag then
+	if canDrag and mousePart then
 		selection.Adornee = mousePart
 		selection.Transparency = 0
-		down = true
 		currentKey = dragKey
 		mouse.Icon = getIcon("Grab")
 		Dragger:MouseDown(mousePart,pointOnMousePart,{mousePart})
+		down = true
 
 		local lastSubmit = 0
 		while down do
