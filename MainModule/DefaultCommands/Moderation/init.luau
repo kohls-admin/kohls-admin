@@ -214,9 +214,6 @@ return {
 				optional = true,
 			},
 		},
-		permissions = {
-			kick = true,
-		},
 		run = function(context, players, reason: string?)
 			for _, player in players do
 				player:Kick(reason)
