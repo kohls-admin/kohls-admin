@@ -4,10 +4,6 @@ local function simpleValidate(v)
 	return v ~= nil
 end
 
-local listable = {
-	listable = true,
-}
-
 local booleanType = {
 	transform = string.lower,
 	validate = function(v)
@@ -32,7 +28,9 @@ local booleanType = {
 }
 
 local integerType = {
-	transform = tonumber,
+	transform = function(v)
+		return if v == "" then 0 else tonumber(v)
+	end,
 	validate = function(v)
 		return v ~= nil and v == math.floor(v), "Only whole numbers are valid."
 	end,
@@ -42,7 +40,7 @@ local integerType = {
 }
 
 local numberType = {
-	transform = tonumber,
+	transform = integerType.transform,
 	validate = simpleValidate,
 	parse = function(v)
 		return v
@@ -57,13 +55,21 @@ local stringType = {
 return function(context)
 	_K = context
 	_K.Registry.registerType("boolean", booleanType)
-	_K.Registry.registerType("booleans", listable, booleanType)
+	_K.Registry.registerType("booleans", {
+		listable = true,
+	}, booleanType)
 	_K.Registry.registerType("integer", integerType)
-	_K.Registry.registerType("integers", listable, integerType)
+	_K.Registry.registerType("integers", {
+		listable = true,
+	}, integerType)
 	_K.Registry.registerType("number", numberType)
-	_K.Registry.registerType("numbers", listable, numberType)
+	_K.Registry.registerType("numbers", {
+		listable = true,
+	}, numberType)
 	_K.Registry.registerType("string", stringType)
-	_K.Registry.registerType("strings", listable, stringType)
+	_K.Registry.registerType("strings", {
+		listable = true,
+	}, stringType)
 	_K.Registry.registerType("stringGreedy", {
 		displayName = "string",
 		validate = simpleValidate,
