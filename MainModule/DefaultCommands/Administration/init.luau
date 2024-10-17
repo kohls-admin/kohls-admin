@@ -197,6 +197,12 @@ return {
 				description = "The player(s) to give building tools.",
 			},
 		},
+		env = function(_K)
+			local server = _K.script:FindFirstChild("ClassicBuildTools", true)
+			if server then
+				server.Enabled = true
+			end
+		end,
 
 		run = function(context, players)
 			local NEW = context._K.Flux.new
