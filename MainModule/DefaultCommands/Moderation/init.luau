@@ -1616,6 +1616,25 @@ return {
 				local rig = context._K.Util.Services.Players:CreateHumanoidModelFromDescription(description, rigType)
 				rig:PivotTo(player.Character:GetPivot())
 				rig.Name = player.Character.Name
+				local rigHumanoid = rig:FindFirstChildOfClass("Humanoid")
+				if rigHumanoid then
+					local properties = {
+						"CameraOffset",
+						"DisplayName",
+						"HealthDisplayDistance",
+						"NameDisplayDistance",
+						"UseJumpPower",
+						"JumpPower",
+						"WalkSpeed",
+						"MaxSlopeAngle",
+						"Health",
+						"MaxHealth",
+					}
+					for _, property in properties do
+						rigHumanoid[property] = humanoid[property]
+					end
+				end
+
 				player.Character = rig
 				context._K.VIP.UGCHandler(rig)
 				rig.Parent = workspace
