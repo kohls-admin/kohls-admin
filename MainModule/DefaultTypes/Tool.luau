@@ -12,7 +12,7 @@ local typeTool = {
 	validate = function(input: string, from: number): (boolean, string?)
 		local query = string.lower(input)
 		for _, tool in tools do
-			if string.find(string.lower(tool.Name), query) == 1 then
+			if query == "all" or string.find(string.lower(tool.Name), query) == 1 then
 				return true
 			end
 		end
@@ -21,7 +21,7 @@ local typeTool = {
 	parse = function(input: string, from: number): string
 		local query = string.lower(input)
 		for _, tool in tools do
-			if string.find(string.lower(tool.Name), query) == 1 then
+			if query == "all" or string.find(string.lower(tool.Name), query) == 1 then
 				return tool
 			end
 		end
@@ -33,6 +33,18 @@ local typeTool = {
 	log = function(arg)
 		return _K.Util.Table.concat(arg.parsedArgs, ",")
 	end,
+	prefixes = { all = "allTools" },
+}
+
+local function allParse()
+	return #tools > 1 and tools, "No valid tool found"
+end
+
+local typeAllTools = {
+	listable = true,
+	transform = string.lower,
+	validate = allParse,
+	parse = allParse,
 }
 
 return function(context)
@@ -58,10 +70,12 @@ return function(context)
 	else
 		_K.Remote.Tools.OnClientEvent:Connect(function(toolData)
 			tools = toolData
+			table.insert(tools, 1, { Name = "all" })
 		end)
 		_K.Remote.Tools:FireServer()
 	end
 
 	_K.Registry.registerType("tool", typeTool)
 	_K.Registry.registerType("tools", { listable = true }, typeTool)
+	_K.Registry.registerType("allTools", typeAllTools)
 end
