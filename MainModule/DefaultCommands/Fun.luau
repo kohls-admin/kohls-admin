@@ -167,9 +167,10 @@ return {
 						return
 					end
 
-					local root = character:FindFirstChild("LowerTorso") and character:FindFirstChild("Root", true)
-					local neck = character:FindFirstChild("Neck", true)
-					local waist = character:FindFirstChild("Waist", true)
+					local root = character:FindFirstChild("LowerTorso") and character.LowerTorso:FindFirstChild("Root")
+					local neck = character:FindFirstChild("Head") and character.Head:FindFirstChild("Neck")
+					local waist = character:FindFirstChild("UpperTorso")
+						and character.UpperTorso:FindFirstChild("Waist")
 					local rightShoulder = character:FindFirstChild("RightShoulder", true)
 					local leftShoulder = character:FindFirstChild("LeftShoulder", true)
 					local rightHip = character:FindFirstChild("RightHip", true)
