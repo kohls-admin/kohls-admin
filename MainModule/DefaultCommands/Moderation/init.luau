@@ -143,7 +143,7 @@ return {
 				task.defer(function()
 					context._K.Remote.Notify:FireClient(
 						context.fromPlayer,
-						`Banned <b>{context._K.Util.getUserInfo(userId).Username}</b> for <b>{reason}</b>.\nDuration: <b>{term}</b>`
+						`Banned <b>{context._K.Util.getUserInfo(userId).Username}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`
 					)
 				end)
 			end
