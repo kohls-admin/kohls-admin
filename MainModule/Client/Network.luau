@@ -246,7 +246,10 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans,
 		`<b>Server Time</b>  <font transparency="0.5">{os.date("%X", workspace:GetServerTimeNow())}</font></font>`,
 	}
 
-	if _K.Auth.getRank(Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank then
+	if
+		_K.Data.settings.joinNotificationRank
+		and _K.Auth.getRank(Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank
+	then
 		Notify({
 			Text = table.concat(lines, "\n"),
 			Duration = 30,
