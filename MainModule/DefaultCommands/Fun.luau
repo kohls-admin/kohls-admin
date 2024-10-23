@@ -50,9 +50,9 @@ return {
 				if _K.Flux.Scope.discoRestore then
 					_K.Util.Services.Lighting.Ambient, _K.Util.Services.Lighting.FogColor =
 						unpack(_K.Flux.Scope.discoRestore)
-					_K.Flux.Scope.discoRestore = nil
+					_K.Flux.Scope.discoRestore = false
 				end
-				_K.Flux.Scope.discoId = nil
+				_K.Flux.Scope.discoId = false
 			end
 		end,
 
