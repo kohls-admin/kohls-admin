@@ -58,7 +58,11 @@ return {
 		},
 		run = function(context, delay)
 			if delay ~= nil then
-				context._K.Remote.Announce:FireAllClients(`Server will shut down in {delay} seconds`)
+				context._K.Remote.Announce:FireAllClients(
+					`Server will shut down in {delay} seconds`,
+					context.from,
+					delay
+				)
 				task.wait(delay)
 			end
 			local from = tostring(context.fromPlayer or context.from)
