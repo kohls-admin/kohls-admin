@@ -3,6 +3,7 @@ local InsertService = game:GetService("InsertService")
 local RunService = game:GetService("RunService")
 
 local hat = Instance.new("Accessory")
+hat.AccessoryType = Enum.AccessoryType.Hat
 hat.Name = "SuperCrown"
 hat.AttachmentPoint = CFrame.new(0, -1, 0)
 hat:AddTag("_KSuperCrown")

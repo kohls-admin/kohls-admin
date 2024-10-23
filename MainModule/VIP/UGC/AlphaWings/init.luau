@@ -5,6 +5,7 @@ end
 local InsertService = game:GetService("InsertService")
 
 local hat = Instance.new("Accessory")
+hat.AccessoryType = Enum.AccessoryType.Back
 hat.Name = "_KAlphaWings"
 hat:AddTag("_KAlphaWings")
 
