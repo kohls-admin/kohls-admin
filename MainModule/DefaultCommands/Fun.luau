@@ -694,7 +694,7 @@ return {
 				end,
 			}
 		end,
-		run = function(context, players, distance)
+		run = function(context, players)
 			for _, player in players do
 				if player.Character then
 					local position = player.Character:GetPivot().Position
