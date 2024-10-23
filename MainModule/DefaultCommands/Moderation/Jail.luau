@@ -8,6 +8,17 @@ local Jail = {
 	Parts = jailParts,
 }
 
+local function pointInBounds(point, lower, upper)
+	return not (
+		point.X < lower.X
+		or point.Y < lower.Y
+		or point.Z < lower.Z
+		or point.X > upper.X
+		or point.Y > upper.Y
+		or point.Z > upper.Z
+	)
+end
+
 function Jail.recapture(character)
 	local player = Players:GetPlayerFromCharacter(character)
 	if not (player and character and character.PrimaryPart) then
@@ -43,15 +54,16 @@ function Jail.new(player)
 	local rootCFrame = root.CFrame
 	local groundPos = rootCFrame.Position - Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0)
 
-	local _, size = character:GetBoundingBox()
-	local width = math.max(size.X, size.Y, size.Z) + 2
+	local _, sizeChar = character:GetBoundingBox()
+	local width = math.max(sizeChar.X, sizeChar.Y, sizeChar.Z) + 2
 	local position = groundPos + Vector3.new(0, width / 2, 0)
 	local offset = width / 2 - 0.5
+	local size = Vector3.new(width, width, width)
 
 	local kJail = Instance.new("Part")
 	kJail.Name = "kJail"
 	kJail.Anchored = true
-	kJail.Size = Vector3.new(width, width, width)
+	kJail.Size = size
 	kJail.CFrame = CFrame.new(position)
 	kJail.Color = Color3.new(0, 0, 0)
 	kJail.Transparency = 0.3
@@ -93,6 +105,22 @@ function Jail.new(player)
 	kJail.Parent = workspace
 
 	root.CFrame = rootCFrame
+
+	local lowerBounds = position - size / 2
+	local upperBounds = position + size / 2
+
+	task.defer(function()
+		repeat
+			task.wait()
+			if
+				player
+				and player.Character
+				and not pointInBounds(player.Character:GetPivot().Position, lowerBounds, upperBounds)
+			then
+				Jail.recapture(player.Character)
+			end
+		until not player or jailParts[player.UserId] == nil
+	end)
 
 	return kJail
 end
