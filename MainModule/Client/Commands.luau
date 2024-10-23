@@ -139,6 +139,13 @@ function Commands.new(_K)
 		item.TextColor3 = color
 		item.Description.TextColor3 = color
 
+		local roleString = table.concat(roles, ", ")
+
+		local credit = command.credit or "Kohl @Scripth"
+		if type(credit) == "table" then
+			credit = table.concat(credit, ", ")
+		end
+
 		if self._filter ~= "" then
 			local text = `{_K.Data.settings.prefix}{command.name} {argNames} {aliasText}`
 			local filterFound = string.find(string.lower(text), self._filter)
@@ -160,14 +167,9 @@ function Commands.new(_K)
 					string.sub(command.description, descFound + #self._filter)
 				)
 				else `<font transparency="0.5">{command.description}</font>`
+			item.TooltipRef.Value.Text =
+				`<b>Restricted to:</b> {roleString}{argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {credit}</font>`
 			return
-		end
-
-		local roleString = table.concat(roles, ", ")
-
-		local credit = command.credit or "Kohl @Scripth"
-		if type(credit) == "table" then
-			credit = table.concat(credit, ", ")
 		end
 
 		item.Text = string.format(
