@@ -6,7 +6,8 @@ local Util = require(script.Parent:WaitForChild("Util"))
 local VIP = {}
 
 -- premium, supervip, vip
-local legacyDonations = { 5411126, 5391361, 5391359 }
+local legacyTShirtDonations = { 423601416, 313102724 }
+local legacyGamePassDonations = { 5411126, 5391361, 5391359 }
 
 local function getDonationLevel(player)
 	local okRank, rank = Util.Retry(function()
@@ -23,12 +24,21 @@ local function getDonationLevel(player)
 		return 4
 	end
 
-	for index, passId in legacyDonations do
+	for index, passId in legacyGamePassDonations do
 		local okGamePass, result = Util.Retry(function()
 			return Util.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
 		end, 5, 0.2, 1)
 		if okGamePass and result then
 			return 4 - index
+		end
+	end
+
+	for index, assetId in legacyTShirtDonations do
+		local okAsset, result = Util.Retry(function()
+			return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetId)
+		end, 5, 0.2, 1)
+		if okAsset and result then
+			return 3 - index
 		end
 	end
 
@@ -221,7 +231,7 @@ if Util.Services.RunService:IsServer() then
 	Util.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
 		if purchased then
 			local level = player:GetAttribute("_KDonationLevel") or 0
-			local vipIndex = table.find(legacyDonations, passId)
+			local vipIndex = table.find(legacyGamePassDonations, passId)
 			if vipIndex then
 				level = math.max(level, 4 - vipIndex)
 				if Data.settings.vip then
