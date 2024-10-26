@@ -458,65 +458,51 @@ return {
 		},
 		env = function(_K)
 			local env = { infected = {} }
-
 			_K.Flux.Scope.Infected = env.infected
 
 			function env.infect(player, character)
-				if not character then
-					return
-				end
+				if not character then return end
 				local humanoid = character:FindFirstChildOfClass("Humanoid")
-				if not humanoid then
-					return
-				end
+				if not humanoid then return end
 
 				local face = character:FindFirstChild("Head") and character.Head:FindFirstChild("face")
-				if face then
-					if not face:GetAttribute("_KInfectOriginal") then
-						face:SetAttribute("_KInfectOriginal", face.Texture)
-					end
+				if face and not face:GetAttribute("_KInfectOriginal") then
+					face:SetAttribute("_KInfectOriginal", face.Texture)
 					face.Texture = "rbxassetid://629946036"
 				end
 
 				local colors = character:FindFirstChildOfClass("BodyColors")
 				if colors then
-					colors.HeadColor3 = Color3.fromRGB(50, 100, 50)
-					colors.LeftArmColor3 = Color3.fromRGB(50, 100, 50)
-					colors.RightArmColor3 = Color3.fromRGB(50, 100, 50)
-					colors.TorsoColor3 = Color3.fromRGB(100, 50, 20)
-					colors.LeftLegColor3 = Color3.fromRGB(100, 50, 20)
-					colors.RightLegColor3 = Color3.fromRGB(100, 50, 20)
+					local infectedColor1 = Color3.fromRGB(50, 100, 50)
+					local infectedColor2 = Color3.fromRGB(100, 50, 20)
+					colors.HeadColor3 = infectedColor1
+					colors.LeftArmColor3 = infectedColor1
+					colors.RightArmColor3 = infectedColor1
+					colors.TorsoColor3 = infectedColor2
+					colors.LeftLegColor3 = infectedColor2
+					colors.RightLegColor3 = infectedColor2
 				end
 
-				local shirt = character:FindFirstChildOfClass("Shirt")
-				if shirt then
-					shirt:Destroy()
-				end
-
-				local pants = character:FindFirstChildOfClass("Pants")
-				if pants then
-					pants:Destroy()
+				for _, clothing in ipairs({"Shirt", "Pants"}) do
+					local item = character:FindFirstChildOfClass(clothing)
+					if item then item:Destroy() end
 				end
 
 				_K.Flux
 					.new "Sound" {
-					Parent = character.PrimaryPart,
-					PlayOnRemove = true,
-					SoundId = "rbxassetid://9114030073",
-				}
+						Parent = character.PrimaryPart,
+						PlayOnRemove = true,
+						SoundId = "rbxassetid://9114030073",
+					}
 					:Destroy()
 
 				env.infected[character] = humanoid.Touched:Connect(function(part)
-					if not part or not part.Parent or env.infected[part.Parent] then
-						return
-					end
+					if not part or not part.Parent or env.infected[part.Parent] then return end
 
-					local player = _K.Util.Services.Players:GetPlayerFromCharacter(part.Parent)
-					if not player then
-						return
-					end
+					local targetPlayer = _K.Util.Services.Players:GetPlayerFromCharacter(part.Parent)
+					if not targetPlayer then return end
 
-					env.infect(player, part.Parent)
+					env.infect(targetPlayer, part.Parent)
 				end)
 			end
 
@@ -524,8 +510,10 @@ return {
 		end,
 
 		run = function(context, players)
-			for _, player in players do
-				context.env.infect(player, player.Character)
+			for _, player in ipairs(players) do
+				if player.Character then
+					context.env.infect(player, player.Character)
+				end
 			end
 		end,
 	},
