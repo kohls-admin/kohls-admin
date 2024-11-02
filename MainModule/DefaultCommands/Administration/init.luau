@@ -41,6 +41,16 @@ return {
 		end,
 
 		run = function(context, message)
+			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+				context._K.Remote.Notify:FireClient(
+					context.fromPlayer,
+					`Announce is disabled in private servers.`,
+					nil,
+					"error"
+				)
+				return
+			end
+
 			if context._K.IsStudio then
 				context._K.Remote.Announce:FireAllClients(message, context.from, 0)
 			end
@@ -57,7 +67,17 @@ return {
 		description = "Removes the pinned announcement.",
 		args = {},
 
-		run = function(context, message)
+		run = function(context)
+			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+				context._K.Remote.Notify:FireClient(
+					context.fromPlayer,
+					`Announce is disabled in private servers.`,
+					nil,
+					"error"
+				)
+				return
+			end
+
 			context._K.Data.Cache.settings.announcement = false
 			context._K.Data.pendingSaveMain = true
 			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", nil)
