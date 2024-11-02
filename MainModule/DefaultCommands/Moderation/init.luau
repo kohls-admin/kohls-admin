@@ -674,6 +674,56 @@ return {
 		end,
 	},
 	{
+		name = "loopkill",
+		credit = {"SkellyLua"},
+		aliases = {"loopunalive","loop💀","unloopkill","unloopunalive","unloop💀"},
+		description = "Kills one or more player(s) repeatedly.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to kill repeatedly.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			local loopKillList = {}
+
+			local function loopKillCheck(player)
+				if loopKillList[player.UserId] and player.Character then
+					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+					if humanoid then
+						humanoid.MaxHealth = math.max(1, humanoid.MaxHealth)
+						humanoid.Health = 0
+					end
+				end
+			end
+
+			task.spawn(function()
+				repeat
+					task.wait(1)
+					for userId in loopKillList do
+						print('userId:'..userId)
+						local player = _K.Util.Services.Players:GetPlayerByUserId(userId)
+						if player and player.Character then
+							loopKillCheck(player)
+						end
+					end
+				until nil
+			end)
+
+			return {
+				loopKillList = loopKillList,
+				loopKillCheck = loopKillCheck
+			}
+		end,
+		run = function(context, players)
+			for _, player in players do
+				context.env.loopKillList[player.UserId] = if context.undo then nil else true
+			end
+		end,
+	},
+	{
 		name = "hurt",
 		aliases = { "damage" },
 		description = "Damages one or more player(s).",

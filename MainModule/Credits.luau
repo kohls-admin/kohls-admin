@@ -44,7 +44,7 @@ return {
 			800630, -- jason
 			3470429081, -- Mercury
 			1142396048, -- Franklin_Surten (H)
-                        483215789, -- seil
+			483215789, -- seil
 		},
 	},
 	{
@@ -66,6 +66,10 @@ return {
 				Id = 345072461, -- raenlua
 				Tooltip = "Development Containers",
 			},
+			{
+				Id = 2014793803, --SkellyLua
+				Tooltip = "Command Contributions",
+			}
 		},
 	},
 	{
