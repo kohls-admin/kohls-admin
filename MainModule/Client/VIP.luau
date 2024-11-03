@@ -148,6 +148,22 @@ function VIP.new(_K)
 				name = "Dark Crown",
 				level = 2,
 			},
+			{
+				tip = "🕊️ <sc><b>Gold Wings</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+					.. "\n - Flying Animations 💫\n - Neon Material ✨\n\n<font transparency='0.66'>Animator: <b>@LuhHorsie</b>\nModeler: <b>@HyperbolicHydra</b>\nScripter: <b>@Scripth</b></font>",
+				id = 92807314389236,
+				equip = "rbxassetid://89119211625300",
+				name = "Gold Wings",
+				level = 3,
+			},
+			{
+				tip = "👑 <sc><b>Gold Crown</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+					.. "\n - Fire Effect 🔥\n - Neon Material ✨\n - Spinning 💫",
+				id = 99317257118206,
+				equip = "rbxassetid://18966762965",
+				name = "Gold Crown",
+				level = 2,
+			},
 		}
 	do
 		-- TODO: equip button for donation level == 4 and if the own

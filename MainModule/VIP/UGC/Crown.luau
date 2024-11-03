@@ -64,25 +64,51 @@ if RunService:IsClient() then
 	end)
 end
 
+local COLORS = {
+	dark = { Color3.new(), Color3.new(1, 1, 1) },
+	gold = { Color3.fromRGB(170, 125, 0), Color3.new() },
+}
+
 return {
 	Name = hat.Name,
 	MatchId = "rbxassetid://18966762965",
 	Method = function(character: Model, accessory: Accessory)
-		local dark
+		local colors
 		if accessory then
-			dark = string.find(string.lower(accessory.Name), "dark")
+			if typeof(accessory) == "Instance" then
+				local part = accessory:FindFirstChild("Handle")
+				if part:IsA("MeshPart") then
+					if string.find(part.TextureID, "74391200400192") then
+						colors = COLORS.dark
+					elseif string.find(part.TextureID, "115319077247149") then
+						colors = COLORS.gold
+					end
+				end
+			elseif typeof(accessory) == "table" then
+				for key, value in COLORS do
+					if string.find(string.lower(accessory.Name), key) then
+						colors = value
+						break
+					end
+				end
+			end
 			accessory:Destroy()
 		end
+
 		local existing = character:FindFirstChild(hat.Name)
 		if existing then
 			existing:Destroy()
 		end
+
 		local clone = hat:Clone()
-		if dark then
-			clone.Handle.Color = Color3.new()
-			clone.Handle.Fire.Color = Color3.new(1, 1, 1)
-			clone.Handle.Fire.SecondaryColor = Color3.new(1, 1, 1)
+
+		if colors then
+			local primary, secondary = unpack(colors)
+			clone.Handle.Color = primary
+			clone.Handle.Fire.Color = secondary
+			clone.Handle.Fire.SecondaryColor = secondary
 		end
+
 		clone.Parent = character
 
 		return clone
