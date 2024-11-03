@@ -143,7 +143,10 @@ local function playerAdded(player: Player)
 	end
 
 	player.Chatted:Connect(function(message: string)
-		if Util.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService and string.find(message, "/e", 1, true) == 1 then
+		if
+			Util.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService
+			and string.find(message, "/e", 1, true) == 1
+		then
 			local prefix = _K.Data.settings.prefix
 			local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
 			if commandStart then
