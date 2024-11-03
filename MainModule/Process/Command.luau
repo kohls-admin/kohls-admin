@@ -13,7 +13,6 @@ function Command.new(_K, commandAlias, commandDefinition, commandArray, from, te
 		alias = commandAlias,
 		array = commandArray,
 		definition = commandDefinition,
-		envClient = commandDefinition and commandDefinition.envClient,
 		env = commandDefinition and commandDefinition.env,
 		from = from,
 		fromPlayer = Players:GetPlayerByUserId(from),
