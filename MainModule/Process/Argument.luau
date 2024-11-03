@@ -4,6 +4,10 @@ local Argument = {}
 Argument.__index = Argument
 
 function Argument.new(command, definition, argPos, rawArg)
+	local lastArg = command.array[#command.array]
+	local rawType = command._K.Registry.types[definition.type]
+	assert(rawType, `Invalid argument type {definition.type}, did it fail to register?`)
+
 	local object = {
 		_K = command._K,
 		command = command,
@@ -14,23 +18,17 @@ function Argument.new(command, definition, argPos, rawArg)
 		validated = false,
 
 		argPos = argPos,
-		rawArg = rawArg,
-		rawType = nil,
-		rawArgs = nil,
+		-- if it's the last argument use the rest of the argument string
+		-- only caveat would be irrelevant text after the command string (might as well make it explicit!)
+		rawArg = if command.argIndex == #command.definition.args
+			then string.sub(command.text, argPos, lastArg[1] + #lastArg[2])
+			else rawArg,
+		rawType = rawType,
+		rawArgs = if rawType.listable then string.split(rawArg) else { rawArg },
 		transformedArgs = {},
 		transformedTypes = {},
 		parsedArgs = {},
 	}
-
-	-- if it's the last argument use the rest of the argument string
-	-- only caveat would be irrelevant text after the command string (might as well make it explicit!)
-	if command.argIndex == #command.definition.args then
-		local lastArg = object.commandArray[#object.commandArray]
-		object.rawArg = string.sub(command.text, argPos, lastArg[1] + #lastArg[2])
-	end
-
-	object.rawType = object._K.Registry.types[definition.type]
-	object.rawArgs = if object.rawType.listable then string.split(rawArg) else { rawArg }
 
 	return setmetatable(object, Argument)
 end
