@@ -14,10 +14,15 @@ local function updateInterfaceAuth()
 	-- TODO: recheck visibility for all restricted UIs
 	local buttonEnabled = _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
 	UI.Scope.dashboardButton:setEnabled(buttonEnabled)
-	UI.Scope.dashboard.Commands:updateList()
+
 	UI.Scope.dashboard.Bans._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "bans")
 	UI.Scope.dashboard.Members._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "members")
 	UI.Scope.dashboard.Settings.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "settings")
+
+	for _, command in _K.Registry.commands do
+		command.LocalPlayerAuthorized = _K.Auth.hasCommand(UI.LocalPlayer.UserId, command)
+	end
+	UI.Scope.dashboard.Commands:updateList()
 end
 UI.Scope.updateInterfaceAuth = updateInterfaceAuth
 

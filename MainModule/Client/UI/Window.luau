@@ -69,8 +69,6 @@ function Window.new(definition)
 		Exitable = true,
 		Draggable = true,
 		Resizable = true,
-		Minimizable = true,
-		Minimized = false,
 		Title = "Window",
 		Position = UDim2.fromOffset(
 			math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 256,
@@ -162,7 +160,7 @@ function Window.new(definition)
 		end
 		if
 			(input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch)
-			and not new.Minimized._value
+			and new._instance.Visible
 		then
 			local resize = getResizeIndex(
 				Vector2.new(input.Position.X, input.Position.Y),
@@ -323,8 +321,20 @@ function Window.new(definition)
 		},
 	}
 
+	local mouseIconWasEnabled, mouseIconChanging = UI.UserInputService.MouseIconEnabled, nil
+	UI.UserInputService:GetPropertyChangedSignal("MouseIconEnabled"):Connect(function()
+		if mouseIconChanging then
+			return
+		end
+		mouseIconWasEnabled = UI.UserInputService.MouseIconEnabled
+	end)
+
 	UI.UserInputService.InputBegan:Connect(resizeBegan)
 	UI.UserInputService.InputChanged:Connect(function(input)
+		if not new._instance.Visible then
+			return
+		end
+
 		if
 			input.UserInputType == Enum.UserInputType.MouseMovement
 			or input.UserInputType == Enum.UserInputType.Touch
@@ -334,7 +344,7 @@ function Window.new(definition)
 				resizeUpdate(input)
 			elseif dragging._value then
 				dragUpdate(input)
-			elseif not new.Minimized._value then
+			else
 				local resize = getResizeIndex(
 					Vector2.new(input.Position.X, input.Position.Y),
 					new._instance.AbsoluteSize,
@@ -345,10 +355,18 @@ function Window.new(definition)
 					inputPosition:set(input.Position)
 					resizeHover:set(true)
 					resizeIconRectOffset:set(Vector2.new(resize[5]))
-					UI.UserInputService.MouseIconEnabled = false
-				else
+					if UI.UserInputService.MouseIconEnabled then
+						mouseIconChanging = true
+						UI.UserInputService.MouseIconEnabled = false
+						mouseIconChanging = false
+					end
+				elseif resizeHover._value then
 					resizeHover:set(false)
-					UI.UserInputService.MouseIconEnabled = true
+					if UI.UserInputService.MouseIconEnabled ~= mouseIconWasEnabled then
+						mouseIconChanging = true
+						UI.UserInputService.MouseIconEnabled = mouseIconWasEnabled
+						mouseIconChanging = false
+					end
 				end
 			end
 		end

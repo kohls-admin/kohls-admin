@@ -69,8 +69,6 @@ function Commands.new(_K)
 
 	local function renderItem(self, item, command)
 		local aliasText = command.aliasText
-		local argNames = command.argNames
-		local argTooltip = command.argTooltip
 
 		if not aliasText then
 			aliasText = if command.aliases and #command.aliases > 0
@@ -78,6 +76,9 @@ function Commands.new(_K)
 				else ""
 			command.aliasText = aliasText
 		end
+
+		local argNames = command.argNames
+		local argTooltip = command.argTooltip
 
 		if not argNames then
 			argNames = table.create(#command.args)
@@ -113,37 +114,53 @@ function Commands.new(_K)
 			command.argTooltip = argTooltip
 		end
 
-		local roles = {}
-		for role, roleData in _K.Data.roles do
-			if _K.Auth.roleCanUseCommand(role, command) then
-				table.insert(roles, role)
+		local roleString = command.roleString
+		local roleColor = command.roleColor
+
+		if not roleString then
+			local roles = {}
+			for role, _roleData in _K.Data.roles do
+				if _K.Auth.roleCanUseCommand(role, command) then
+					table.insert(roles, role)
+				end
 			end
+
+			table.sort(roles, function(a, b)
+				return _K.Data.roles[a]._rank < _K.Data.roles[b]._rank
+			end)
+
+			roleColor = if #roles > 0 then Color3.fromHex(_K.Data.roles[roles[1]].color) else UI.peek(UI.Theme.Primary)
+			command.roleColor = roleColor
+
+			for i, role in roles do
+				local roleData = _K.Data.roles[role]
+				roles[i] = `<font color="{roleData.color}">{roleData.name}</font>`
+			end
+
+			roleString = table.concat(roles, ", ")
+			command.roleString = roleString
 		end
 
-		table.sort(roles, function(a, b)
-			return _K.Data.roles[a]._rank < _K.Data.roles[b]._rank
-		end)
-
-		local roleColor = if #roles > 0
-			then Color3.fromHex(_K.Data.roles[roles[1]].color)
-			else UI.peek(UI.Theme.Primary)
-
-		for i, role in roles do
-			local roleData = _K.Data.roles[role]
-			roles[i] = `<font color="{roleData.color}">{roleData.name}</font>`
-		end
-
-		local color = if _K.Auth.hasCommand(UI.LocalPlayer.UserId, command)
+		local color = if command.LocalPlayerAuthorized
 			then roleColor
 			else roleColor:Lerp(UI.peek(UI.Theme.Primary), 0.5)
 		item.TextColor3 = color
 		item.Description.TextColor3 = color
 
-		local roleString = table.concat(roles, ", ")
+		local credit = command.creditString
+		if not credit then
+			credit = command.credit or "Kohl @Scripth"
+			if type(credit) == "table" then
+				credit = table.concat(credit, ", ")
+			end
+			command.creditString = credit
+		end
 
-		local credit = command.credit or "Kohl @Scripth"
-		if type(credit) == "table" then
-			credit = table.concat(credit, ", ")
+		local tipString = command.tipString
+		if not tipString then
+			tipString =
+				`<b>Restricted to:</b> {roleString}{argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {credit}</font>`
+			command.tipString = tipString
 		end
 
 		if self._filter ~= "" then
@@ -167,8 +184,7 @@ function Commands.new(_K)
 					string.sub(command.description, descFound + #self._filter)
 				)
 				else `<font transparency="0.5">{command.description}</font>`
-			item.TooltipRef.Value.Text =
-				`<b>Restricted to:</b> {roleString}{argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {credit}</font>`
+			item.TooltipRef.Value.Text = tipString
 			return
 		end
 
@@ -178,8 +194,7 @@ function Commands.new(_K)
 			escape(aliasText)
 		)
 		item.Description.Text = `<font transparency="0.33">{command.description}</font>`
-		item.TooltipRef.Value.Text =
-			`<b>Restricted to:</b> {roleString}{argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {credit}</font>`
+		item.TooltipRef.Value.Text = tipString
 	end
 
 	local scroller = UI.new "ScrollerFast" {

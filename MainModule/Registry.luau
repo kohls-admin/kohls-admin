@@ -130,10 +130,23 @@ function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 
 	for _, arg in commandObject.args do
 		if not Registry.types[arg.type] and string.find(arg.type, "Enum.", 1, true) == 1 then
-			local enum = (Enum :: any)[string.sub(arg.type, 6)]
-			local enumType = Registry.makeEnumType(arg.type, enum:GetEnumItems())
-			Registry.registerType(arg.type, enumType)
-			Registry.registerType(arg.type .. "s", { listable = true }, enumType)
+			local argType = arg.type
+			local ok, enum = pcall(function()
+				return (Enum :: any)[string.sub(argType, 6)]
+			end)
+
+			if not ok and string.find(argType, "s$") then
+				argType = string.sub(argType, -2)
+				ok, enum = pcall(function()
+					return (Enum :: any)[string.sub(argType, 6)]
+				end)
+			end
+
+			assert(ok, `Invalid Enum type: {arg.type}`)
+
+			local enumType = Registry.makeEnumType(argType, enum:GetEnumItems())
+			Registry.registerType(argType, enumType)
+			Registry.registerType(argType .. "s", { listable = true }, enumType)
 		end
 	end
 

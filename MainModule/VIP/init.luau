@@ -86,11 +86,13 @@ if Util.Services.RunService:IsServer() then
 
 	local ugcAssetMatch = {
 		-- wings
-		[133292294488871] = "rbxassetid://89119211625300",
-		[110848154960799] = "rbxassetid://89119211625300",
+		[133292294488871] = "rbxassetid://89119211625300", -- light
+		[110848154960799] = "rbxassetid://89119211625300", -- dark
+		[92807314389236] = "rbxassetid://89119211625300", -- gold
 		-- crowns
-		[18966788838] = "rbxassetid://18966762965",
-		[106645613603989] = "rbxassetid://18966762965",
+		[18966788838] = "rbxassetid://18966762965", -- light
+		[106645613603989] = "rbxassetid://18966762965", -- dark
+		[99317257118206] = "rbxassetid://18966762965", -- gold
 	}
 
 	local cache, effects = {}, {}

@@ -37,23 +37,48 @@ local attachment = Instance.new("Attachment", handle)
 attachment.Position = Vector3.new(0, 3, -1)
 attachment.Name = "BodyBackAttachment"
 
+local COLORS = {
+	dark = Color3.new(),
+	gold = Color3.fromRGB(170, 125, 0),
+}
+
 return {
 	Name = hat.Name,
 	MatchId = "rbxassetid://89119211625300",
 	Method = function(character: Model, accessory: Accessory)
-		local dark
+		local color
 		if accessory then
-			dark = string.find(string.lower(accessory.Name), "dark")
+			if typeof(accessory) == "Instance" then
+				local part = accessory:FindFirstChild("Handle")
+				if part:IsA("MeshPart") then
+					if string.find(part.TextureID, "74391200400192") then
+						color = COLORS.dark
+					elseif string.find(part.TextureID, "115319077247149") then
+						color = COLORS.gold
+					end
+				end
+			elseif typeof(accessory) == "table" then
+				for key, value in COLORS do
+					if string.find(string.lower(accessory.Name), key) then
+						color = value
+						break
+					end
+				end
+			end
 			accessory:Destroy()
 		end
+
 		local existing = character:FindFirstChild(hat.Name)
 		if existing then
 			existing:Destroy()
 		end
+
 		local clone = hat:Clone()
-		if dark then
-			clone.Handle.Color = Color3.new()
+
+		if color then
+			clone.Handle.Color = color
 		end
+
 		clone.Parent = character
 		clone.Handle.Animate.Enabled = true
 
