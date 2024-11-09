@@ -214,7 +214,7 @@ return {
 				lowerRank = true,
 			},
 			{
-				type = "string",
+				type = "stringGreedy",
 				name = "Reason",
 				description = "The reason for the kick.",
 				optional = true,
