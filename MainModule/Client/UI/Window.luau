@@ -273,7 +273,7 @@ function Window.new(definition)
 				Padding = UI.Theme.Padding,
 			},
 
-			UI.new "Frame" {
+			UI.new "TextButton" {
 				Name = "TitleBar",
 				Active = true,
 				LayoutOrder = -9e9,
