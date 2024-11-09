@@ -675,8 +675,8 @@ return {
 	},
 	{
 		name = "loopkill",
-		credit = {"SkellyLua"},
-		aliases = {"loopunalive","loop💀","unloopkill","unloopunalive","unloop💀"},
+		credit = { "SkellyLua" },
+		aliases = { "loopunalive", "loop💀", "unloopkill", "unloopunalive", "unloop💀" },
 		description = "Kills one or more player(s) repeatedly.",
 		args = {
 			{
@@ -703,7 +703,6 @@ return {
 				repeat
 					task.wait(1)
 					for userId in loopKillList do
-						print('userId:'..userId)
 						local player = _K.Util.Services.Players:GetPlayerByUserId(userId)
 						if player and player.Character then
 							loopKillCheck(player)
@@ -714,7 +713,7 @@ return {
 
 			return {
 				loopKillList = loopKillList,
-				loopKillCheck = loopKillCheck
+				loopKillCheck = loopKillCheck,
 			}
 		end,
 		run = function(context, players)
