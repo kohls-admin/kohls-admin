@@ -12,7 +12,8 @@ local UserFrame = require(script.Parent.UserFrame)
 
 local function updateInterfaceAuth()
 	-- TODO: recheck visibility for all restricted UIs
-	local buttonEnabled = _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
+	local buttonEnabled = _K.Data.settings.dashboardButtonRank
+		and _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
 	UI.Scope.dashboardButton:setEnabled(buttonEnabled)
 
 	UI.Scope.dashboard.Bans._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "bans")

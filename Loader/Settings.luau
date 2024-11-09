@@ -77,6 +77,8 @@ local Settings = {
 		3	admin
 		4	superadmin
 		5	creator
+
+		Set to false to disable entirely
 	]]
 	dashboardButtonRank = 0,
 
