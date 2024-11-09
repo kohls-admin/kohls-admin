@@ -1,43 +1,5 @@
 -- potentially abusive fun commands, moderator+ default
 
-local function resizeCharacter(char, scale)
-	local human = char and char:FindFirstChildOfClass("Humanoid")
-	if not human then
-		return
-	end
-
-	local diff = scale / (char:GetAttribute("_KCharacterScale") or 1)
-	local hipHeight = human.HipHeight + human.RootPart.Size.Y / 2
-
-	if human.RigType == Enum.HumanoidRigType.R15 then
-		for _, v in human:GetChildren() do
-			if v:IsA("NumberValue") and string.find(v.Name, "Scale") then
-				local base = v:GetAttribute("_KOriginalScale")
-				if not base then
-					base = v.Value
-					v:SetAttribute("_KOriginalScale", base)
-				end
-				v.Value = base * scale
-			end
-		end
-	elseif human.RigType == Enum.HumanoidRigType.R6 then
-		hipHeight = human.RootPart.Size.Y * 1.5
-		for _, v in char:GetDescendants() do
-			if v:IsA("BasePart") then
-				v.Size *= diff
-			elseif v:IsA("JointInstance") then
-				v.C0 -= v.C0.Position * (1 - diff)
-				v.C1 -= v.C1.Position * (1 - diff)
-			elseif v:IsA("SpecialMesh") and v.MeshType == Enum.MeshType.FileMesh then
-				v.Scale *= diff
-			end
-		end
-	end
-	-- reposition rootpart to prevent falling
-	human.RootPart.CFrame *= CFrame.new(0, hipHeight * (diff - 1), 0)
-	char:SetAttribute("_KCharacterScale", scale)
-end
-
 return {
 	{
 		name = "disco",
@@ -1103,7 +1065,7 @@ return {
 
 	{
 		name = "size",
-		aliases = { "resize", "scale" },
+		aliases = { "resize", "scale", "unsize", "unresize", "unscale" },
 		description = "Resizes one or more player(s).",
 		args = {
 			{
@@ -1122,28 +1084,7 @@ return {
 
 		run = function(context, players, scale)
 			for _, player in players do
-				resizeCharacter(player.Character, math.clamp(scale or 1, 0.2, 10))
-			end
-		end,
-	},
-	{
-		name = "unsize",
-		aliases = { "unresize", "unscale" },
-		description = "Resets the size of one or more player(s).",
-		args = {
-			{
-				type = "players",
-				name = "Player(s)",
-				description = "The player(s) whose size to reset.",
-				shouldRequest = true,
-			},
-		},
-
-		run = function(context, players)
-			for _, player in players do
-				if player.Character and player.Character:GetAttribute("_KCharacterScale") then
-					resizeCharacter(player.Character, 1)
-				end
+				player.Character:ScaleTo(scale or 1)
 			end
 		end,
 	},
