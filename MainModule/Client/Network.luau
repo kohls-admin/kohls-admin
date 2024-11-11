@@ -6,7 +6,6 @@ local Remote = require(script.Parent.Parent.Remote)
 local Util = require(script.Parent.Parent.Util)
 
 local Announce = require(script.Parent.Announce)
-local Noclip = require(script.Parent.Noclip)
 local Notify = require(script.Parent.Notify)
 local UserFrame = require(script.Parent.UserFrame)
 
@@ -28,7 +27,6 @@ end
 UI.Scope.updateInterfaceAuth = updateInterfaceAuth
 
 Remote.Announce.OnClientEvent:Connect(Announce)
-Remote.Noclip.OnClientEvent:Connect(Noclip.noclip)
 Remote.Notify.OnClientEvent:Connect(function(text: string, from: number?, noteType: string?)
 	Notify({
 		Text = text,

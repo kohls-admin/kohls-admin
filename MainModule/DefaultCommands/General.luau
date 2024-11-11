@@ -3,7 +3,6 @@
 local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
 
-local noclipCache = {}
 local playingSound = nil
 
 local spectateConnection
@@ -445,8 +444,7 @@ return {
 	},
 	{
 		name = "fly",
-		aliases = { "noclip" },
-		description = "Enables flight and disables collisions on one or more player(s).",
+		description = "Enables flight on one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -457,20 +455,16 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if noclipCache[player] then
-					continue
+				if not player:GetAttribute("_KFly") then
+					player:SetAttribute("_KFly", true)
+					context._K.Remote.Notify:FireClient(player, `Double tap <b>jump</b> to toggle fly.`)
 				end
-				noclipCache[player] = player.DevCameraOcclusionMode
-				player.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
-				context._K.Remote.Noclip:FireClient(player, true)
-				context._K.Remote.Notify:FireClient(player, `Double tap <b>jump</b> to stop flying.`)
 			end
 		end,
 	},
 	{
 		name = "unfly",
-		aliases = { "clip" },
-		description = "Disables flight and enables collisions on one or more player(s).",
+		description = "Disables flight on one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -481,12 +475,55 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if not noclipCache[player] then
-					continue
+				player:SetAttribute("_KFly", false)
+			end
+		end,
+	},
+
+	{
+		name = "noclip",
+		description = "Disables collisions on one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose collisions to disable.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				if not player:GetAttribute("_KDevCameraOcclusionMode") then
+					player:SetAttribute("_KDevCameraOcclusionMode", player.DevCameraOcclusionMode)
+					player.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
 				end
-				player.DevCameraOcclusionMode = noclipCache[player]
-				noclipCache[player] = nil
-				context._K.Remote.Noclip:FireClient(player)
+				if not player:GetAttribute("_KNoclip") then
+					player:SetAttribute("_KNoclip", true)
+					context._K.Remote.Notify:FireClient(player, `Double tap <b>jump</b> to toggle noclip.`)
+				end
+			end
+		end,
+	},
+	{
+		name = "clip",
+		aliases = { "unnoclip" },
+		description = "Disables noclip on one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove noclip from.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local initialCameraMode = player:GetAttribute("_KDevCameraOcclusionMode")
+				if initialCameraMode then
+					player.DevCameraOcclusionMode = initialCameraMode
+					player:SetAttribute("_KDevCameraOcclusionMode", nil)
+				end
+				player:SetAttribute("_KNoclip", false)
 			end
 		end,
 	},

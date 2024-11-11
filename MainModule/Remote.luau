@@ -17,7 +17,6 @@ local Remote = {
 	Logs = _REMOTE,
 	Member = _REMOTE,
 	Members = _REMOTE,
-	Noclip = _REMOTE,
 	Notify = _REMOTE,
 	Prefix = _REMOTE,
 	Refresh = _REMOTE,

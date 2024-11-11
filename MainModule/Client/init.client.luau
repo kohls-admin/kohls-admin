@@ -3,10 +3,10 @@ local Flux = _K.Flux
 local UI = _K.UI
 
 _K.client = {
+	Character = require(script:WaitForChild("Character")),
 	CommandBar = require(script:WaitForChild("CommandBar")),
 	TopbarPlus = require(script:WaitForChild("TopbarPlus")),
 	UserFrame = require(script:WaitForChild("UserFrame")),
-	Noclip = require(script.Noclip),
 
 	ready = false,
 	hotkeys = {

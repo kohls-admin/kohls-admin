@@ -1337,7 +1337,6 @@ return {
 		},
 		envClient = function(_K)
 			_K.Remote.Teleport.OnClientEvent:Connect(function(cframe)
-				_K.client.Noclip.flyCFrame = cframe
 				local character = _K.UI.LocalPlayer.Character
 				if character then
 					character:PivotTo(cframe)
