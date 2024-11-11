@@ -57,15 +57,23 @@ function Animate.play(rig: Instance, sequence: KeyframeSequence, loop: boolean?)
 					bone:SetAttribute("OriginalCFrame", originalCFrame)
 				end
 
+				local originalSize = rig:GetAttribute("OriginalSize")
+				if not originalSize then
+					originalSize = rig.Size
+					rig:SetAttribute("OriginalCFrame", originalSize)
+				end
+
+				local scale = rig.Size / originalSize
+
 				if bone and pose.CFrame ~= CFrame.identity then
 					local EasingStyle, EasingDirection =
 						Enum.EasingStyle[pose.EasingStyle.Name], Enum.EasingDirection[pose.EasingDirection.Name]
 
-					TweenService:Create(
-						bone,
-						TweenInfo.new(duration, EasingStyle, EasingDirection),
-						{ CFrame = originalCFrame * pose.CFrame }
-					):Play()
+					TweenService:Create(bone, TweenInfo.new(duration, EasingStyle, EasingDirection), {
+						CFrame = CFrame.new(originalCFrame.Position * scale.X)
+							* originalCFrame.Rotation
+							* pose.CFrame.Rotation,
+					}):Play()
 				end
 			end
 			task.wait(duration)

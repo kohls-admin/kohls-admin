@@ -9,33 +9,47 @@ hat.AccessoryType = Enum.AccessoryType.Back
 hat.Name = "_KAlphaWings"
 hat:AddTag("_KAlphaWings")
 
-local handle = InsertService:CreateMeshPartAsync(
-	"rbxassetid://135389107063517",
-	Enum.CollisionFidelity.Box,
-	Enum.RenderFidelity.Automatic
-)
-handle:AddTag("_KAlphaWings")
-handle.Parent = hat
+local handle = Instance.new("Part", hat)
 handle.Name = "Handle"
-handle.Color = Color3.fromRGB(170, 170, 170)
-handle.CastShadow = false
+handle.Transparency = 1
 handle.CanCollide = false
 handle.CanQuery = false
 handle.CanTouch = false
 handle.Massless = true
 handle.Locked = true
-handle.Material = Enum.Material.Neon
-
-local Bones = script:WaitForChild("Bones")
-for _, bone in Bones:GetChildren() do
-	bone.Parent = handle
-end
-
-script:WaitForChild("Animate").Parent = handle
 
 local attachment = Instance.new("Attachment", handle)
-attachment.Position = Vector3.new(0, 3, -1)
+attachment.CFrame = CFrame.new(0, 0, 0)
 attachment.Name = "BodyBackAttachment"
+
+local wingMesh = InsertService:CreateMeshPartAsync(
+	"rbxassetid://135389107063517",
+	Enum.CollisionFidelity.Box,
+	Enum.RenderFidelity.Precise
+)
+wingMesh:AddTag("_KAlphaWings")
+wingMesh.Parent = hat
+wingMesh.Name = "Wings"
+wingMesh.Color = Color3.fromRGB(170, 170, 170)
+wingMesh.CastShadow = false
+wingMesh.CanCollide = false
+wingMesh.CanQuery = false
+wingMesh.CanTouch = false
+wingMesh.Massless = true
+wingMesh.Locked = true
+wingMesh.Material = Enum.Material.Neon
+wingMesh:SetAttribute("OriginalSize", wingMesh.Size)
+
+local weld = Instance.new("Weld", wingMesh)
+weld.Part0 = handle
+weld.Part1 = wingMesh
+
+for _, bone in script:WaitForChild("Bones"):GetChildren() do
+	bone:SetAttribute("OriginalCFrame", bone.CFrame)
+	bone.Parent = wingMesh
+end
+
+script:WaitForChild("Animate").Parent = wingMesh
 
 local COLORS = {
 	dark = Color3.new(),
@@ -76,11 +90,11 @@ return {
 		local clone = hat:Clone()
 
 		if color then
-			clone.Handle.Color = color
+			clone.Wings.Color = color
 		end
 
 		clone.Parent = character
-		clone.Handle.Animate.Enabled = true
+		clone.Wings.Animate.Enabled = true
 
 		return clone
 	end,
