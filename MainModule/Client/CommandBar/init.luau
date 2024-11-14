@@ -93,16 +93,16 @@ Input = UI.new "Input" {
 }
 
 UI.edit(Input._instance.UICorner, {
-	CornerRadius = if UI.LegacyTopBar._value then UDim.new(0, 9) else UDim.new(1, 0),
+	CornerRadius = if UI.LegacyTopbar._value then UDim.new(0, 9) else UDim.new(1, 0),
 })
 
 UI.edit(Input._instance.UIListLayout, {
-	Padding = UDim.new(0, if UI.LegacyTopBar._value then 6 else 12),
+	Padding = UDim.new(0, if UI.LegacyTopbar._value then 6 else 12),
 })
 
 UI.edit(Input._instance.UIPadding, {
-	PaddingLeft = UDim.new(0, if UI.LegacyTopBar._value then 6 else 12),
-	PaddingRight = UDim.new(0, if UI.LegacyTopBar._value then 6 else 12),
+	PaddingLeft = UDim.new(0, if UI.LegacyTopbar._value then 6 else 12),
+	PaddingRight = UDim.new(0, if UI.LegacyTopbar._value then 6 else 12),
 	PaddingTop = UDim.new(0, 0),
 	PaddingBottom = UDim.new(0, 0),
 })
@@ -517,10 +517,7 @@ local function coreGuiEnabled(enabled: boolean)
 		end
 		StarterGui:SetCore("ChatActive", false)
 		for _, coreType in Enum.CoreGuiType:GetEnumItems() do
-			if
-				coreType ~= Enum.CoreGuiType.Chat
-				and coreType ~= Enum.CoreGuiType.Health
-			then
+			if coreType ~= Enum.CoreGuiType.Chat and coreType ~= Enum.CoreGuiType.Health then
 				continue
 			end
 			if coreGuiCache[coreType] == nil then
@@ -681,7 +678,7 @@ return {
 	init = function(self, _K)
 		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
-		CommandBar.Parent = UI.TopBarFrame
+		CommandBar.Parent = UI.TopbarFrame
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
 		UI.Scope.settings.prefix:hook(function(value)

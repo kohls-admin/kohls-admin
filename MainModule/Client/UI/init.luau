@@ -121,8 +121,17 @@ Flux.Scope.UI = UI.Scope
 --- GuiService.TopbarInset as a Flux state
 --- @prop TopbarInset State<Rect>
 UI.TopbarInset = state(GuiService, "TopbarInset")
-UI.LegacyTopBar = Flux.compute(function(use)
+UI.LegacyTopbar = Flux.compute(function(use)
 	return use(UI.TopbarInset).Height == 36
+end)
+UI.TopbarPadding = Flux.compute(function(use)
+	return UDim.new(
+		0,
+		if GuiService:IsTenFootInterface()
+			then 10
+			elseif use(UI.LegacyTopbar) then 12
+			else use(UI.TopbarInset).Height - 46
+	)
 end)
 
 --- @within UI
@@ -175,11 +184,11 @@ UI.LayerTopInset = UI.new "Frame" {
 }
 
 --- @within UI
---- The TopBar ScreenGui for UI components
---- @prop LayerTopBar State<ScreenGui>
-UI.LayerTopBar = Flux.new "ScreenGui" {
+--- The Topbar ScreenGui for UI components
+--- @prop LayerTopbar State<ScreenGui>
+UI.LayerTopbar = Flux.new "ScreenGui" {
 	Parent = playerGui,
-	Name = "FluxUILayerTopBar",
+	Name = "FluxUILayerTopbar",
 	DisplayOrder = 999999999,
 	ResetOnSpawn = false,
 	IgnoreGuiInset = true,
@@ -188,10 +197,10 @@ UI.LayerTopBar = Flux.new "ScreenGui" {
 }
 
 --- @within UI
---- A sorted TopBar Frame for UI components, parented under [UI.LayerTopBar]
---- @prop TopBarFrame State<Frame>
-UI.TopBarFrame = UI.new "Frame" {
-	Parent = UI.LayerTopBar,
+--- A sorted Topbar Frame for UI components, parented under [UI.LayerTopbar]
+--- @prop TopbarFrame State<Frame>
+UI.TopbarFrame = UI.new "Frame" {
+	Parent = UI.LayerTopbar,
 	BackgroundTransparency = 1,
 	Size = UDim2.new(1, 0, 1, 0),
 
@@ -199,16 +208,16 @@ UI.TopBarFrame = UI.new "Frame" {
 		FillDirection = Enum.FillDirection.Horizontal,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		VerticalAlignment = Enum.VerticalAlignment.Bottom,
-		Padding = UDim.new(0, 12),
+		Padding = UI.TopbarPadding,
 	},
 	UI.new "UIPadding" {
-		PaddingLeft = UDim.new(0, 12),
-		PaddingRight = UDim.new(0, 12),
+		PaddingLeft = UI.TopbarPadding,
+		PaddingRight = UI.TopbarPadding,
 		PaddingTop = Flux.compute(function(use)
-			return UDim.new(0, if use(UI.LegacyTopBar) then 4 else 12)
+			return UDim.new(0, if use(UI.LegacyTopbar) then 4 else use(UI.TopbarPadding).Offset)
 		end),
 		PaddingBottom = Flux.compute(function(use)
-			return UDim.new(0, if use(UI.LegacyTopBar) then 0 else 2)
+			return UDim.new(0, if use(UI.LegacyTopbar) then 0 else 2)
 		end),
 	},
 }
