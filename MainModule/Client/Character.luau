@@ -110,6 +110,7 @@ function Character.fly(enable)
 			hasDoubleJumped = false
 		end)
 		humanoid.PlatformStand = true
+		humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
 		if not FlyConnection then
 			flyAttachment.Parent = character.PrimaryPart
 			FlyConnection = RunService.Heartbeat:Connect(flyStep)
@@ -117,9 +118,7 @@ function Character.fly(enable)
 	else
 		flyAttachment.Parent = nil
 		linear.VectorVelocity = Vector3.zero
-		if humanoid.PlatformStand then
-			humanoid.PlatformStand = false
-		end
+		humanoid.PlatformStand = false
 		FlyConnection = nil
 	end
 end
