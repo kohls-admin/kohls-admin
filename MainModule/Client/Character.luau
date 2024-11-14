@@ -10,9 +10,7 @@ local ControlModule = PlayerModule:GetControls()
 local character
 local humanoid
 
-local minSpeed = 32
 local maxSpeed = 256
-local accelSpeed = 32
 
 local flyAttachment = Instance.new("Attachment")
 
@@ -33,9 +31,12 @@ local function flyStep(delta)
 
 	if controlVector ~= Vector3.zero then
 		local cameraCFrame = workspace.CurrentCamera.CFrame
+		local minSpeed = maxSpeed / 8
+		local accelSpeed = minSpeed
+
 		align.CFrame = cameraCFrame
 		linear.VectorVelocity = cameraCFrame:VectorToWorldSpace(controlVector.Unit)
-			* math.clamp(linear.VectorVelocity.Magnitude + delta * accelSpeed, minSpeed, maxSpeed)
+			* math.clamp(linear.VectorVelocity.Magnitude + delta * math.max(8, accelSpeed), minSpeed, maxSpeed)
 	else
 		linear.VectorVelocity = linear.VectorVelocity:Lerp(Vector3.zero, delta * 4)
 	end
@@ -124,6 +125,7 @@ function Character.fly(enable)
 end
 LocalPlayer:GetAttributeChangedSignal("_KFly"):Connect(function()
 	local fly = LocalPlayer:GetAttribute("_KFly")
+	maxSpeed = if fly then math.max(0, fly) else 256
 	if not fly ~= not flying then
 		Character.fly(fly)
 	end
@@ -140,6 +142,7 @@ function Character.noclip(noclip: boolean)
 end
 LocalPlayer:GetAttributeChangedSignal("_KNoclip"):Connect(function()
 	local noclip = LocalPlayer:GetAttribute("_KNoclip")
+	maxSpeed = if noclip then math.max(0, noclip) else 256
 	if not noclip ~= not noclipping then
 		Character.noclip(noclip)
 	end

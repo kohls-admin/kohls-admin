@@ -451,14 +451,21 @@ return {
 				name = "Player(s)",
 				description = "The player(s) to give flight.",
 			},
+			{
+				type = "number",
+				name = "Speed",
+				description = "The flight speed, defaults to 256.",
+				optional = true,
+			},
 		},
 
-		run = function(context, players)
+		run = function(context, players, speed)
 			for _, player in players do
 				if not player:GetAttribute("_KFly") then
-					player:SetAttribute("_KFly", true)
 					context._K.Remote.Notify:FireClient(player, `Double tap <b>jump</b> to toggle fly.`)
 				end
+				player:SetAttribute("_KNoclip", nil)
+				player:SetAttribute("_KFly", if speed then speed else 256)
 			end
 		end,
 	},
@@ -475,7 +482,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				player:SetAttribute("_KFly", false)
+				player:SetAttribute("_KFly", nil)
+				player:SetAttribute("_KNoclip", nil)
 			end
 		end,
 	},
@@ -489,18 +497,25 @@ return {
 				name = "Player(s)",
 				description = "The player(s) whose collisions to disable.",
 			},
+			{
+				type = "number",
+				name = "Speed",
+				description = "The flight speed, defaults to 256.",
+				optional = true,
+			},
 		},
 
-		run = function(context, players)
+		run = function(context, players, speed)
 			for _, player in players do
 				if not player:GetAttribute("_KDevCameraOcclusionMode") then
 					player:SetAttribute("_KDevCameraOcclusionMode", player.DevCameraOcclusionMode)
 					player.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
 				end
 				if not player:GetAttribute("_KNoclip") then
-					player:SetAttribute("_KNoclip", true)
 					context._K.Remote.Notify:FireClient(player, `Double tap <b>jump</b> to toggle noclip.`)
 				end
+				player:SetAttribute("_KFly", nil)
+				player:SetAttribute("_KNoclip", if speed then speed else 256)
 			end
 		end,
 	},
@@ -523,7 +538,8 @@ return {
 					player.DevCameraOcclusionMode = initialCameraMode
 					player:SetAttribute("_KDevCameraOcclusionMode", nil)
 				end
-				player:SetAttribute("_KNoclip", false)
+				player:SetAttribute("_KFly", nil)
+				player:SetAttribute("_KNoclip", nil)
 			end
 		end,
 	},
