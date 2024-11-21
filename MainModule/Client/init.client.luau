@@ -73,7 +73,7 @@ end
 
 if _K.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
 	_K.Services.TextChatService.SendingMessage:Connect(function(textChatMessage: TextChatMessage)
-		Chatted(textChatMessage.Text)
+		Chatted(_K.Util.String.unescapeRichText(textChatMessage.Text))
 	end)
 else
 	UI.LocalPlayer.Chatted:Connect(Chatted)
