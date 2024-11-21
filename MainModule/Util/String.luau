@@ -21,6 +21,16 @@ function String.escapeRichText(s: string): string
 	return s
 end
 
+--- Unescape RichText tags
+function String.unescapeRichText(s: string): string
+	s = string.gsub(s, "&apos;", "'")
+	s = string.gsub(s, "&quot;", '"')
+	s = string.gsub(s, "&gt;", ">")
+	s = string.gsub(s, "&lt;", "<")
+	s = string.gsub(s, "&amp;", "&")
+	return s
+end
+
 function String.stripQuotes(s: string): string
 	return string.gsub(s, '["`]', "")
 end
