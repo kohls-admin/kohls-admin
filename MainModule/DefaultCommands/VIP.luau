@@ -24,8 +24,11 @@ return {
 			},
 		},
 
-		run = function(context, players, assetId)
+		run = function(context, players)
 			for _, player in players do
+				if player.Character then
+					context._K.Registry.commands.crm.env.update(player.Character)
+				end
 				Util.Humanoid.resetDescription(player)
 
 				local infected = context._K.Flux.Scope.Infected[player.Character]
@@ -515,6 +518,7 @@ return {
 	},
 	{
 		name = "hat",
+		aliases = { "crmhat" },
 		description = "Gives one or more player(s) one or more hats.",
 		args = {
 			{
@@ -526,6 +530,24 @@ return {
 				type = "integers",
 				name = "AssetIds",
 				description = "The asset identifiers of one or more hats.",
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The color of a hat.",
+				optional = true,
+			},
+			{
+				type = "number",
+				name = "Reflectance",
+				description = "How much a hat reflects the skybox.",
+				optional = true,
+			},
+			{
+				type = "Enum.Material",
+				name = "Material",
+				description = "The texture of a hat.",
+				optional = true,
 			},
 		},
 		env = function()
@@ -546,30 +568,77 @@ return {
 			}
 		end,
 
-		run = function(context, players, assetIds)
-			for _, assetId in assetIds do
-				local model = context._K.Util.Services.InsertService:LoadAsset(assetId)
-				-- clean up scripts if not a sound hat
-				if not table.find(context.env.allowed, assetId) then
-					for _, descendant in model:GetDescendants() do
-						if descendant:IsA("BaseScript") or descendant:IsA("ModuleScript") then
-							descendant:Destroy()
-						end
-					end
+		run = function(context, players, assetIds, color, reflectance, material)
+			for i, assetId in assetIds do
+				if i >= 16 then
+					break
 				end
 
-				local hat = model:FindFirstChildWhichIsA("Accoutrement")
+				local hat, model
+
+				-- meshpart loading hack for crm neon compatibility
+				local accessoryTypes = {
+					[8] = "HatAccessory",
+					[41] = "HairAccessory",
+					[42] = "FaceAccessory",
+					[43] = "NeckAccessory",
+					[44] = "ShouldersAccessory",
+					[45] = "FrontAccessory",
+					[46] = "BackAccessory",
+					[47] = "WaistAccessory",
+				}
+				local ok, info = pcall(function()
+					return context._K.Util.Services.MarketplaceService:GetProductInfo(assetId)
+				end)
+				local accessoryType = ok and accessoryTypes[info.AssetTypeId]
+				local description = Instance.new("HumanoidDescription")
+				if accessoryType then
+					description[accessoryType] = assetId
+					model = context._K.Util.Services.Players:CreateHumanoidModelFromDescription(
+						description,
+						Enum.HumanoidRigType.R15
+					)
+					hat = model:FindFirstChildWhichIsA("Accoutrement")
+				end
+
+				-- fallback hat loading
+				if not hat then
+					model = context._K.Util.Services.InsertService:LoadAsset(assetId)
+					-- clean up scripts if not a sound hat
+					if not table.find(context.env.allowed, assetId) then
+						for _, descendant in model:GetDescendants() do
+							if descendant:IsA("BaseScript") or descendant:IsA("ModuleScript") then
+								descendant:Destroy()
+							end
+						end
+					end
+					hat = model:FindFirstChildWhichIsA("Accoutrement")
+				end
+
 				hat = hat and hat:Clone()
 				model:Destroy()
+
 				if not hat then
 					continue
+				end
+
+				if color then
+					for _, descendant in hat:GetDescendants() do
+						if descendant:IsA("BasePart") then
+							context._K.Registry.commands.crm.env.updatePart(descendant, color, reflectance, material)
+						end
+					end
 				end
 
 				local name = "_KHat" .. assetId
 				hat.Name = name
 
 				for _, player in players do
-					if player.Character and not player.Character:FindFirstChild(name) then
+					if player.Character then
+						local existing = player.Character:FindFirstChild(name)
+						if existing then
+							existing:Destroy()
+						end
 						context.env.limit(player.Character)
 						hat:Clone().Parent = player.Character
 					end
@@ -803,6 +872,115 @@ return {
 		run = function(context, players, assetId)
 			for _, player in players do
 				Util.Humanoid.attributeDescription(player, "GraphicTShirt", assetId)
+			end
+		end,
+	},
+	{
+		name = "crm",
+		aliases = { "uncrm" },
+		description = "Changes the color, reflectance, or material of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose characters to change.",
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The color of a character.",
+				optional = true,
+			},
+			{
+				type = "number",
+				name = "Reflectance",
+				description = "How much a character reflects the skybox.",
+				optional = true,
+			},
+			{
+				type = "Enum.Material",
+				name = "Material",
+				description = "The texture of a character.",
+				optional = true,
+			},
+		},
+		env = function(_K)
+			local deny = {
+				[Enum.Material.Water] = true,
+			}
+
+			local function updatePart(part: BasePart, color: Color3, reflectance: number, material: Enum.Material)
+				local apply = color or reflectance or material
+
+				if part:IsA("MeshPart") then
+					if not part:GetAttribute("_KTextureID") then
+						part:SetAttribute("_KTextureID", part.TextureID)
+					end
+					part.TextureID = if apply then "" else part:GetAttribute("_KTextureID")
+				end
+				local mesh = part:FindFirstChildOfClass("SpecialMesh")
+				if mesh then
+					if not mesh:GetAttribute("_KTextureId") then
+						mesh:SetAttribute("_KTextureId", mesh.TextureId)
+					end
+					mesh.TextureId = if apply then "" else mesh:GetAttribute("_KTextureId")
+				end
+				if not part:GetAttribute("_KColor") then
+					part:SetAttribute("_KColor", part.Color)
+					part:SetAttribute("_KReflectance", part.Reflectance)
+					part:SetAttribute("_KMaterial", part.Material)
+				end
+				part.Color = if color then color else part:GetAttribute("_KColor")
+				part.Reflectance = if reflectance then reflectance else part:GetAttribute("_KReflectance")
+				part.Material = if material then material else part:GetAttribute("_KMaterial")
+			end
+
+			return {
+				updatePart = updatePart,
+				update = function(character: Model, color: Color3, reflectance: number, material: Enum.Material)
+					if deny[material] then
+						return
+					end
+					local apply = color or reflectance or material
+					local checkParent = if apply then character else character.PrimaryPart
+					local setParent = if apply then character.PrimaryPart else character
+
+					local bodyColors = checkParent:FindFirstChildOfClass("BodyColors")
+					if bodyColors then
+						bodyColors.Parent = setParent
+					end
+
+					local shirt = checkParent:FindFirstChildOfClass("Shirt")
+					if shirt then
+						shirt.Parent = setParent
+					end
+
+					local pants = checkParent:FindFirstChildOfClass("Pants")
+					if pants then
+						pants.Parent = setParent
+					end
+
+					for _, child in character:GetChildren() do
+						if child:IsA("BasePart") and child.Name ~= "HumanoidRootPart" then
+							updatePart(child, color, reflectance, material)
+						elseif child:IsA("Accoutrement") then
+							for _, descendant in child:GetDescendants() do
+								if descendant:IsA("BasePart") then
+									updatePart(descendant, color, reflectance, material)
+								end
+							end
+						end
+					end
+				end,
+			}
+		end,
+
+		run = function(context, players, color, reflectance, material)
+			print(color, reflectance, material)
+			for _, player in players do
+				if player.Character then
+					context.env.update(player.Character, color, reflectance, material)
+				end
 			end
 		end,
 	},
