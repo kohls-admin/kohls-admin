@@ -35,7 +35,7 @@ function ColorPicker.new(definition)
 			return UDim2.new(0, 36 + (24 + use(UI.Theme.Padding).Offset) * 3, 0, 24)
 		end),
 		Value = UI.compute(function(use)
-			local h = Color3.toHSV(use(new.Value))
+			local h = use(new.Value):ToHSV()
 			return h
 		end),
 
@@ -63,7 +63,7 @@ function ColorPicker.new(definition)
 
 		[UI.Hook] = {
 			Selected = function(value)
-				local _, s, v = Color3.toHSV(new.Value._value)
+				local _, s, v = new.Value._value:ToHSV()
 				local color = Color3.fromHSV(value, s, v)
 				new.Selected:set(color, true)
 				new.Value:set(color)
@@ -288,7 +288,7 @@ function ColorPicker.new(definition)
 				Position = UI.tween(
 					UI.Theme.TweenOut,
 					UI.compute(function(use)
-						local _, s, v = Color3.toHSV(use(new.Value))
+						local _, s, v = use(new.Value):ToHSV()
 						return UDim2.new(s, 0, 1 - v, 0)
 					end)
 				),
