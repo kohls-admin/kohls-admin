@@ -225,6 +225,7 @@ function Window.new(definition)
 		BackgroundTransparency = UI.Theme.Transparency,
 		Size = new.Size,
 		Position = new.Position,
+		ZIndex = 2,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
