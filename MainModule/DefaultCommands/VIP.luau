@@ -976,7 +976,6 @@ return {
 		end,
 
 		run = function(context, players, color, reflectance, material)
-			print(color, reflectance, material)
 			for _, player in players do
 				if player.Character then
 					context.env.update(player.Character, color, reflectance, material)
