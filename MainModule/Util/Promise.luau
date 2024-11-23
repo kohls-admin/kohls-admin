@@ -311,7 +311,7 @@ end
 	```lua
 	local myFunction()
 		return Promise.new(function(resolve, reject, onCancel)
-			wait(1)
+			task.wait(1)
 			resolve("Hello world!")
 		end)
 	end
