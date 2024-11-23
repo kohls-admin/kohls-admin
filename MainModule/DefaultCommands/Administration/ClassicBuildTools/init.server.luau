@@ -227,7 +227,7 @@ function DraggerGateway.OnServerInvoke(player, request, ...)
 				part:Destroy()
 			end
 
-			wait(0.1)
+			task.wait(1/60)
 			deleteDebounce[player] = false
 		end
 	end
@@ -341,7 +341,7 @@ Players.PlayerRemoving:Connect(onPlayerRemoved)
 -- Garbage Collection
 ----------------------------------------------------------------------------------------------------------------------------
 
-while wait(1) do
+while task.wait(1) do
 	for part, key in pairs(partToKey) do
 		if not part:IsDescendantOf(workspace) then
 			removePartKey(key)
