@@ -6,9 +6,14 @@ local Util = require(script.Parent:WaitForChild("Util"))
 local VIP = {}
 
 -- premium, supervip, vip
-local legacyTShirtDonations = { 423601416, 313102724 }
 local legacyGamePassDonations = { 5411126, 5391361, 5391359 }
+local legacyTShirtDonations = { 423601416, 313102724 }
 
+-- 5 group member
+-- 4 subscriber
+-- 3 premium donor
+-- 2 super vip
+-- 1 vip
 local function getDonationLevel(player)
 	local okRank, rank = Util.Retry(function()
 		return player:GetRankInGroup(3403354)
@@ -128,7 +133,8 @@ if Util.Services.RunService:IsServer() then
 
 		local donationLevel = player:GetAttribute("_KDonationLevel") or 0
 		local owned = donationLevel > 3
-			or (match == "rbxassetid://18966762965" and donationLevel > 2)
+			or (match == "rbxassetid://18966762965" and donationLevel > 1)
+			or (match == "rbxassetid://89119211625300" and donationLevel > 2)
 			or ownsAsset(player, assetId)
 
 		local tried = cache[assetId]

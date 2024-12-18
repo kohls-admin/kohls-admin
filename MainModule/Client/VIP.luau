@@ -122,7 +122,7 @@ function VIP.new(_K)
 				id = 133292294488871,
 				equip = "rbxassetid://89119211625300",
 				name = "Light Wings",
-				level = 4,
+				level = 3,
 			},
 			{
 				tip = "👑 <sc><b>Light Crown</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
@@ -138,7 +138,7 @@ function VIP.new(_K)
 				id = 110848154960799,
 				equip = "rbxassetid://89119211625300",
 				name = "Dark Wings",
-				level = 4,
+				level = 3,
 			},
 			{
 				tip = "👑 <sc><b>Dark Crown</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
@@ -154,7 +154,7 @@ function VIP.new(_K)
 				id = 92807314389236,
 				equip = "rbxassetid://89119211625300",
 				name = "Gold Wings",
-				level = 4,
+				level = 3,
 			},
 			{
 				tip = "👑 <sc><b>Gold Crown</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
