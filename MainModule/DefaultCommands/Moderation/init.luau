@@ -622,7 +622,7 @@ return {
 	},
 	{
 		name = "sword",
-		credit = { "Sharksie", "Kohl @Scripth" },
+		credit = { "Luckymaxer", "EUROCOW", "StarWars", "TakeoHonorable", "Kohl @Scripth" },
 		description = "Gives a sword to one or more player(s).",
 		args = {
 			{
@@ -632,14 +632,20 @@ return {
 			},
 		},
 		env = function(_K)
-			local sword = script:FindFirstChild("Sword")
-			if not sword then
-				warn(`Missing {script:GetFullName()}.Sword, sword command won't work!`)
-			end
-			return { sword = sword and sword:Clone() }
+			local env = {}
+
+			task.defer(function()
+				local sword = _K.Services.InsertService:LoadAsset(47433):FindFirstChildOfClass("Tool")
+				if not sword then
+					warn(`Sword failed to load, sword command won't work!`)
+				end
+				env.sword = sword
+			end)
+
+			return env
 		end,
 
-		run = function(context, players, tools)
+		run = function(context, players)
 			for _, player in players do
 				if not (player.Character and player:FindFirstChild("Backpack")) then
 					continue
