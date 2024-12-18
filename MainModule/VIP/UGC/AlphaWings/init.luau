@@ -44,7 +44,8 @@ local weld = Instance.new("Weld", wingMesh)
 weld.Part0 = handle
 weld.Part1 = wingMesh
 
-for _, bone in script:WaitForChild("Bones"):GetChildren() do
+local Bones = require(script:WaitForChild("Bones"))
+for _, bone in Bones:GetChildren() do
 	bone:SetAttribute("OriginalCFrame", bone.CFrame)
 	bone.Parent = wingMesh
 end
