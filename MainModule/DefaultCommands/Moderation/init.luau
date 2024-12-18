@@ -607,7 +607,7 @@ return {
 			},
 		},
 
-		run = function(context, players, tools)
+		run = function(context, players)
 			for _, player in players do
 				for _, descendant in player.Backpack:GetDescendants() do
 					removeTool(descendant)
