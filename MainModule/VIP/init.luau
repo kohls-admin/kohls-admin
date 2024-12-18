@@ -127,7 +127,9 @@ if Util.Services.RunService:IsServer() then
 		end
 
 		local donationLevel = player:GetAttribute("_KDonationLevel") or 0
-		local owned = donationLevel > 3 or ownsAsset(player, assetId)
+		local owned = donationLevel > 3
+			or (match == "rbxassetid://18966762965" and donationLevel > 2)
+			or ownsAsset(player, assetId)
 
 		local tried = cache[assetId]
 		if not tried then
