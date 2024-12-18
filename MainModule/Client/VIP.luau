@@ -588,12 +588,12 @@ function VIP.new(_K)
 					purchaseDialog.Visible:set(false)
 					_K.Util.Services.MarketplaceService:PromptSubscriptionPurchase(
 						_K.UI.LocalPlayer,
-						"EXP-7266962490056769807"
+						"EXP-4118475727682928968"
 					)
 				else
 					purchaseDialog.Text:set(subscriptionText)
 					UI.Scope.lastAttemptedPurchase = true
-					purchaseLink.Text = "https://roblox.com/games/116852112089994#!/store"
+					purchaseLink.Text = "https://roblox.com/games/2569622788#!/store"
 					purchaseDialog.Visible:set(true)
 				end
 			end,

@@ -18,7 +18,7 @@ local function getDonationLevel(player)
 	end
 
 	local okSubscription, status = Util.Retry(function()
-		return Util.Services.MarketplaceService:GetUserSubscriptionStatusAsync(player, "EXP-7266962490056769807")
+		return Util.Services.MarketplaceService:GetUserSubscriptionStatusAsync(player, "EXP-4118475727682928968")
 	end, 5, 0.2, 1)
 	if okSubscription and status.IsSubscribed then
 		return 4

@@ -294,7 +294,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 			MarketplaceService.GetUserSubscriptionStatusAsync,
 			MarketplaceService,
 			player,
-			"EXP-7266962490056769807"
+			"EXP-4118475727682928968"
 		)
 		if ok and result.IsSubscribed then
 			Auth.userRoleAdd(userId, "vip")
