@@ -51,41 +51,39 @@ function Logs.new(_K)
 
 			if not log.filterText then
 				local timestamp = os.date("%y-%m-%d %X", log.time)
+				local short = os.date("%X", log.time)
+				local name = log.name or "LOADING"
 
-				log.rawText = `{timestamp} {string.upper(levelText)} LOADING: {log.text}`
+				log.rawText = `{timestamp} {string.upper(levelText)} {name}: {log.text}`
 				log.filterText = string.lower(log.rawText)
 				log.richText = string.format(
 					logRichFormat,
-					escape(timestamp),
+					escape(short),
 					logTypeColors[levelText] or "#fff",
 					levelText:upper(),
 					if log.client then clientTag elseif not log.from then serverTag else "",
-					"<font transparency='0.5'>LOADING:</font> ",
+					if log.from then `<font transparency='0.5'>{name}:</font> ` else "",
 					escape(log.text or "")
 				)
 
-				task.spawn(function()
-					local userInfo = log.from and _K.Util.getUserInfo(log.from)
-					local displayName = if userInfo and (userInfo.DisplayName ~= userInfo.Username)
-						then userInfo.DisplayName .. " "
-						else ""
-					local fromText = if userInfo then `{displayName}@{userInfo.Username}: ` else ""
+				if not log.name and log.from then
+					task.spawn(function()
+						local userInfo = _K.Util.getUserInfo(log.from)
 
-					log.rawText = `{timestamp} {string.upper(levelText)} {fromText}{log.text}`
-					log.filterText = string.lower(log.rawText)
-					log.richText = string.format(
-						logRichFormat,
-						escape(timestamp),
-						logTypeColors[levelText] or "#fff",
-						levelText:upper(),
-						if log.client then clientTag elseif not userInfo then serverTag else "",
-						if userInfo
-							then `{escape(displayName)}<font transparency="0.5">@{escape(userInfo.Username)}:</font> `
-							else "",
-						escape(log.text or "")
-					)
-					debounceScrollerUpdate(scroller)
-				end)
+						log.rawText = `{timestamp} {string.upper(levelText)} {userInfo.Username}: {log.text}`
+						log.filterText = string.lower(log.rawText)
+						log.richText = string.format(
+							logRichFormat,
+							escape(short),
+							logTypeColors[levelText] or "#fff",
+							levelText:upper(),
+							if log.client then clientTag elseif not userInfo then serverTag else "",
+							if userInfo then `<font transparency="0.5">{escape(userInfo.Username)}:</font> ` else "",
+							escape(log.text or "")
+						)
+						debounceScrollerUpdate(scroller)
+					end)
+				end
 			end
 
 			local found, foundEnd = string.find(log.filterText, filter, 1, true)
@@ -141,7 +139,7 @@ function Logs.new(_K)
 		end
 
 		item.Text = text
-		item.TooltipRef.Value.Text = text
+		item.TooltipRef.Value.Text = `<font transparency="0.5">{os.date("%y-%m-%d", log.time)} </font>` .. text
 	end
 
 	scroller = UI.new "ScrollerFast" {

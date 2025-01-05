@@ -24,6 +24,11 @@ function module.log(text: string, level: LogType, from: number?, filtered: boole
 		return
 	end
 	local log = logger:log(text, level, from)
+	if from then
+		task.spawn(function()
+			log.name = Util.getUserInfo(from).Username
+		end)
+	end
 
 	Hook.log:Fire(log)
 
@@ -36,7 +41,7 @@ function module.log(text: string, level: LogType, from: number?, filtered: boole
 
 		if level == "COMMAND" and (not from or Auth.getRank(from) > 1) then
 			-- save logs for roles above VIP (rank 1)
-			table.insert(Data.Cache.logs, { log.text, log.level, log.time, from })
+			table.insert(Data.Cache.logs, { log.text, log.level, log.time, from, log.name })
 			Data.pendingSaveLogs = true
 		end
 

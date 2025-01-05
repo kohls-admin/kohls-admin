@@ -198,7 +198,7 @@ local function syncLogs(logs)
 	local newLogs = {}
 	for _, log in logs do
 		Util.Defer.wait()
-		local text, level, time, from = unpack(log)
+		local text, level, time, from, name = unpack(log)
 		local exists
 		for _, existingLog in Data.logs do
 			if
@@ -215,7 +215,7 @@ local function syncLogs(logs)
 			continue
 		end
 
-		table.insert(newLogs, { text = text, level = level, time = time, from = from })
+		table.insert(newLogs, { text = text, level = level, time = time, from = from, name = name })
 	end
 	table.move(newLogs, 1, #newLogs, #Data.logs + 1, Data.logs)
 	table.sort(Data.logs, Data.sortTime)
