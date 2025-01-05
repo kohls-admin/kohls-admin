@@ -547,7 +547,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if not Input._input:IsFocused() then
 			return
 		end
-		local max = currentCompletionData.suggestions and #currentCompletionData.suggestions
+		local max = currentCompletionData.suggestions and #currentCompletionData.suggestions or 1
 		if input.KeyCode == Enum.KeyCode.Up then
 			if currentCompletionData.suggestionType == "History" then
 				suggestionIndex = math.min(math.max(1, max), suggestionIndex + 1)
