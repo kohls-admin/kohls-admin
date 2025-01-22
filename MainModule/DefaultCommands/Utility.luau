@@ -101,6 +101,13 @@ return {
 		end,
 	},
 	{
+		name = "dashboard",
+		description = "Shows the admin dashboard.",
+		runClient = function(context)
+			context._K.client.hotkeys.dashboard.callback()
+		end,
+	},
+	{
 		name = "log",
 		aliases = { "logs", "chatlog", "chatlogs" },
 		description = "Shows the logs in a separate window.",
