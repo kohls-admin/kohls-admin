@@ -59,7 +59,7 @@ local Settings = {
 		For example;
 			https://www.roblox.com/users/44391621/profile
 			Has a UserId of 44391621
-		Use "game.PrivateServerOwnerId" for private servers!
+		Use "PRIVATE_SERVER_OWNER" for private servers!
 	]]
 	userRoles = {
 		creator = {},
