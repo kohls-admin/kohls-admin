@@ -217,12 +217,16 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 
 	-- define user roles
 	for role, users in loaderSettings.userRoles do
-		for _, userId in users do
-			userId = tonumber(userId)
-			if not userId or userId <= 0 then
-				continue
-			end
-			task.spawn(_K.Auth.userRoleAdd, userId, role)
+		for _, user in users do
+			task.spawn(function()
+				local userId = if type(user) == "string"
+					then Util.Services.Players:GetUserIdFromNameAsync(user)
+					elseif (tonumber(user) or 0) > 0 then tonumber(user)
+					else nil
+				if userId then
+					task.spawn(_K.Auth.userRoleAdd, userId, role)
+				end
+			end)
 		end
 	end
 
