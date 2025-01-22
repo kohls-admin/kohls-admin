@@ -15,7 +15,7 @@ local typeMember = {
 			end
 			if
 				(not lowerRank or (fromString == id) or rank > memberRank)
-				and string.find(string.lower(userInfo.Username), query) == 1
+				and string.find(string.lower(userInfo.Username), query, 1, true) == 1
 			then
 				return true
 			end
@@ -37,7 +37,7 @@ local typeMember = {
 			end
 			if
 				(not lowerRank or (fromString == id) or rank > memberRank)
-				and string.find(string.lower(userInfo.Username), query) == 1
+				and string.find(string.lower(userInfo.Username), query, 1, true) == 1
 			then
 				return id
 			end

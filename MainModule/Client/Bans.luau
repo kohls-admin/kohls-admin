@@ -142,7 +142,7 @@ function Bans.new(_K)
 		if self._filter ~= "" then
 			left = `@{ban[1] or "UNKNOWN"} [{ban.userId}]`
 			right = reason .. string.rep(" ", 18 - #term) .. term
-			local filterLeft = string.find(string.lower(left), self._filter)
+			local filterLeft = string.find(string.lower(left), self._filter, 1, true)
 			if filterLeft then
 				right = string.format(filterRichFormat, right, "", "")
 				left = string.format(
@@ -152,7 +152,7 @@ function Bans.new(_K)
 					escape(string.sub(left, filterLeft + #self._filter))
 				)
 			else
-				local filterRight = string.find(string.lower(right), self._filter)
+				local filterRight = string.find(string.lower(right), self._filter, 1, true)
 				if filterRight then
 					left = string.format(filterRichFormat, left, "", "")
 					right = string.format(

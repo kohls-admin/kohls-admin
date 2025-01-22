@@ -74,7 +74,7 @@ return {
 				end
 			elseif typeof(accessory) == "table" then
 				for key, value in COLORS do
-					if string.find(string.lower(accessory.Name), key) then
+					if string.find(string.lower(accessory.Name), key, 1, true) then
 						color = value
 						break
 					end

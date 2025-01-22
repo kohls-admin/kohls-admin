@@ -8,7 +8,7 @@ local typeRole = {
 			if role == _K.Data.roles.default then
 				continue
 			end
-			if rank > role._rank and string.find(string.lower(roleName), query) == 1 then
+			if rank > role._rank and string.find(string.lower(roleName), query, 1, true) == 1 then
 				return true
 			end
 		end
@@ -21,7 +21,7 @@ local typeRole = {
 			if role == _K.Data.roles.default then
 				continue
 			end
-			if rank > role._rank and string.find(string.lower(roleName), query) == 1 then
+			if rank > role._rank and string.find(string.lower(roleName), query, 1, true) == 1 then
 				return roleName
 			end
 		end

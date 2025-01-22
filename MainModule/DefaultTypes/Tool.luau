@@ -12,7 +12,7 @@ local typeTool = {
 	validate = function(input: string, from: number): (boolean, string?)
 		local query = string.lower(input)
 		for _, tool in tools do
-			if query == "all" or string.find(string.lower(tool.Name), query) == 1 then
+			if query == "all" or string.find(string.lower(tool.Name), query, 1, true) == 1 then
 				return true
 			end
 		end
@@ -21,7 +21,7 @@ local typeTool = {
 	parse = function(input: string, from: number): string
 		local query = string.lower(input)
 		for _, tool in tools do
-			if query == "all" or string.find(string.lower(tool.Name), query) == 1 then
+			if query == "all" or string.find(string.lower(tool.Name), query, 1, true) == 1 then
 				return tool
 			end
 		end

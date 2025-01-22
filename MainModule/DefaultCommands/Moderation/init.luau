@@ -1913,7 +1913,7 @@ return {
 					continue
 				end
 				for _, child in leaderstats:GetChildren() do
-					if string.find(string.lower(child.Name), stat) == 1 then
+					if string.find(string.lower(child.Name), stat, 1, true) == 1 then
 						if child:IsA("IntValue") or child:IsA("NumberValue") then
 							child.Value = tonumber(value)
 						elseif child:IsA("BoolValue") then

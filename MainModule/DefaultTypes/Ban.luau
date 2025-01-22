@@ -8,7 +8,10 @@ local typeBan = {
 			if not name then
 				continue
 			end
-			if string.find(string.lower(name), query) == 1 or string.find(string.lower(userId), query) == 1 then
+			if
+				string.find(string.lower(name), query, 1, true) == 1
+				or string.find(string.lower(userId), query, 1, true) == 1
+			then
 				return true
 			end
 		end
@@ -21,7 +24,10 @@ local typeBan = {
 			if not name then
 				continue
 			end
-			if string.find(string.lower(name), query) == 1 or string.find(string.lower(userId), query) == 1 then
+			if
+				string.find(string.lower(name), query, 1, true) == 1
+				or string.find(string.lower(userId), query, 1, true) == 1
+			then
 				return userId
 			end
 		end

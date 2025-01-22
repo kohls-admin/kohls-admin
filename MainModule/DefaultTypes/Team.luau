@@ -6,7 +6,7 @@ local typeTeam = {
 	validate = function(input: string, from: number): (boolean, string?)
 		local query = string.lower(input)
 		for _, team in Teams:GetTeams() do
-			if string.find(string.lower(team.Name), query) == 1 then
+			if string.find(string.lower(team.Name), query, 1, true) == 1 then
 				return true
 			end
 		end
@@ -15,7 +15,7 @@ local typeTeam = {
 	parse = function(input: string, from: number): string
 		local query = string.lower(input)
 		for _, team in Teams:GetTeams() do
-			if string.find(string.lower(team.Name), query) == 1 then
+			if string.find(string.lower(team.Name), query, 1, true) == 1 then
 				return team
 			end
 		end

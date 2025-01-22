@@ -6,7 +6,7 @@ local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font trans
 
 local function filteredText(_K, escape, self, lineItem, member, persist, roles)
 	local text = `{member.name or "UNKNOWN"} {member.userId}\t{roles}`
-	local filterFound = string.find(string.lower(text), self._filter)
+	local filterFound = string.find(string.lower(text), self._filter, 1, true)
 
 	return if filterFound
 		then string.format(

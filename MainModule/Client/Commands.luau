@@ -165,7 +165,7 @@ function Commands.new(_K)
 
 		if self._filter ~= "" then
 			local text = `{_K.Data.settings.prefix}{command.name} {argNames} {aliasText}`
-			local filterFound = string.find(string.lower(text), self._filter)
+			local filterFound = string.find(string.lower(text), self._filter, 1, true)
 			item.Text = if filterFound
 				then string.format(
 					filterRichFormat,
@@ -174,7 +174,7 @@ function Commands.new(_K)
 					escape(string.sub(text, filterFound + #self._filter))
 				)
 				else `<font transparency="0.5">{text}</font>`
-			local descFound = string.find(string.lower(command.description), self._filter)
+			local descFound = string.find(string.lower(command.description), self._filter, 1, true)
 			-- TODO: make something that remove richtext tags to prevent highlight filter
 			item.Description.Text = if descFound
 				then string.format(

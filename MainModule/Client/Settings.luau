@@ -427,7 +427,7 @@ function Settings.new(_K)
 								continue
 							end
 							local rawText = lineItem._instance.Name
-							local found = string.find(string.lower(rawText), filter)
+							local found = string.find(string.lower(rawText), filter, 1, true)
 							local text = if found
 								then string.format(
 									filterRichFormat,
