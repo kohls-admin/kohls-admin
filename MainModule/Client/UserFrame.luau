@@ -131,6 +131,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		-- role badge
 		if badgeLabel then
 			local _rank, role = _K.Auth.getRank(from)
+			badgeLabel.BackgroundColor3 = Color3.fromHex(role.color)
 			badgeLabel.Text = `<b>{string.upper(if role then role.name else "Unknown")}</b>`
 			badgeLabel.TextColor3 = if UI.getLuminance(Color3.fromHex(role.color or Color3.new(1, 1, 1))) > 0.5
 				then Color3.new()
