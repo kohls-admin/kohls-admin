@@ -49,16 +49,19 @@ return function(dialogOverride)
 		hide(self)
 	end
 
+	local from = dialogOverride.From
 	local sound = dialogOverride.Sound
 	local userFrame = dialogOverride.UserFrame
+	dialogOverride.From = nil
 	dialogOverride.UserFrame = nil
 	dialogOverride.Sound = nil
 
 	local dialog = UI.new("Dialog")(_K.Util.Table.merge({
 		Close = close,
+		ExitButton = true,
 		Duration = dialogOverride.Duration or 4 + 0.125 * #dialogOverride.Text,
 		Parent = UI.LayerTopInset,
-		Size = UDim2.new(0.5),
+		Size = UDim2.fromScale(0.5, 0),
 		AnchorPoint = UI.tween(
 			UI.Theme.TweenInOut,
 			UI.compute(function(use)
@@ -69,9 +72,7 @@ return function(dialogOverride)
 			UI.Theme.TweenInOut,
 			UI.compute(function(use)
 				local padding = use(UI.Theme.Padding).Offset
-				local visible = use(visible)
-				local offset = use(offset)
-				return UDim2.new(1, if use(visible) then -padding else 0, 1, -(padding + offset))
+				return UDim2.new(1, if use(visible) then -padding else 0, 1, -(padding + use(offset)))
 			end)
 		),
 		Visible = false,
@@ -82,8 +83,8 @@ return function(dialogOverride)
 		MaxSize = Vector2.new(256, 9e9),
 	}
 
-	if userFrame then
-		userFrame = UserFrame(unpack(userFrame))
+	if userFrame or from then
+		userFrame = UserFrame(if userFrame then unpack(userFrame) elseif from ~= "_K" then from else nil)
 		UI.edit(userFrame, {
 			Parent = dialog,
 

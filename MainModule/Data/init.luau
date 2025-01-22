@@ -36,13 +36,13 @@ local function dataLimitWarning(size, dataType)
 				or Auth.hasCommand(player.UserId, "members")
 				or Auth.hasPermission(player.UserId, "settings")
 			then
-				Remote.Notify:FireClient(
-					player,
-					`<b><font color="#f00">You're approaching the limit of Roblox DataStores!</font>\n\tConsider removing some {dataType}s.</b>\n\n<b>Data Usage:</b> {string.format(
+				Remote.Notify:FireClient(player, {
+					From = "_K",
+					Text = `<b><font color="#f00">You're approaching the limit of Roblox DataStores!</font>\n\tConsider removing some {dataType}s.</b>\n\n<b>Data Usage:</b> {string.format(
 						"%.01f",
 						ratio * 100
-					)}%`
-				)
+					)}%`,
+				})
 			end
 		end
 	end

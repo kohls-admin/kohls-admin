@@ -141,10 +141,9 @@ return {
 				end
 				task.spawn(context._K.Auth.userBan, userId, reason, duration, context.from, nil, true)
 				task.defer(function()
-					context._K.Remote.Notify:FireClient(
-						context.fromPlayer,
-						`Banned <b>{context._K.Util.getUserInfo(userId).Username}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`
-					)
+					context._K.Remote.Notify:FireClient(context.fromPlayer, {
+						Text = `Banned <b>{context._K.Util.getUserInfo(userId).Username}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`,
+					})
 				end)
 			end
 
@@ -198,7 +197,7 @@ return {
 			end
 			context._K.Remote.Notify:FireClient(
 				context.fromPlayer,
-				`<b>Unbanned:</b> <i>{table.concat(bans, ", ")}</i>`
+				{ Text = `<b>Unbanned:</b> <i>{table.concat(bans, ", ")}</i>` }
 			)
 		end,
 	},
@@ -225,7 +224,10 @@ return {
 				player:Kick(reason)
 			end
 			local names = context._K.Util.Suggest.getNames(players)
-			context._K.Remote.Notify:FireClient(context.fromPlayer, `<b>Kicked:</b> <i>{table.concat(names, ", ")}</i>`)
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				{ Text = `<b>Kicked:</b> <i>{table.concat(names, ", ")}</i>` }
+			)
 		end,
 	},
 	{
@@ -309,7 +311,10 @@ return {
 				end
 			end
 			local names = context._K.Util.Suggest.getNames(players)
-			context._K.Remote.Notify:FireClient(context.fromPlayer, `<b>Muted:</b> <i>{table.concat(names, ", ")}</i>`)
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				{ Text = `<b>Muted:</b> <i>{table.concat(names, ", ")}</i>` }
+			)
 		end,
 	},
 	{
@@ -350,7 +355,7 @@ return {
 			local names = context._K.Util.Suggest.getNames(players)
 			context._K.Remote.Notify:FireClient(
 				context.fromPlayer,
-				`<b>Unmuted:</b> <i>{table.concat(names, ", ")}</i>`
+				{ Text = `<b>Unmuted:</b> <i>{table.concat(names, ", ")}</i>` }
 			)
 		end,
 	},

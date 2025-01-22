@@ -52,10 +52,9 @@ function Command:requestCommand(player: Player)
 	local requested = self.requested[player]
 	self.requested[player] = true
 	if not requested then
-		self._K.Remote.Notify:FireClient(
-			self.fromPlayer,
-			`Requesting <b>{self.alias}</b> command on <b>{player.DisplayName}<font transparency="0.5">{userName}</font></b>.`
-		)
+		self._K.Remote.Notify:FireClient(self.fromPlayer, {
+			Text = `Requesting <b>{self.alias}</b> command on <b>{player.DisplayName}<font transparency="0.5">{userName}</font></b>.`,
+		})
 	end
 
 	local accepted = self._K.Remote.RequestCommand:InvokeClient(
@@ -72,8 +71,7 @@ function Command:requestCommand(player: Player)
 	if not requested then
 		self._K.Remote.Notify:FireClient(
 			self.fromPlayer,
-			`Command request for <b>{self.alias}</b> was <b>{status}</b>.`,
-			player.UserId
+			{ Text = `Command request for <b>{self.alias}</b> was <b>{status}</b>.`, From = player.UserId }
 		)
 	end
 

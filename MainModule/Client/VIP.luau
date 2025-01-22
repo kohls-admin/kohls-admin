@@ -70,7 +70,6 @@ function VIP.new(_K)
 		Parent = UI.LayerTop,
 		Title = "Kohl's Admin Purchase",
 		Text = thirdPartyText,
-		ExitButton = true,
 		Visible = false,
 		BackgroundTransparency = 0,
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -281,7 +280,6 @@ function VIP.new(_K)
 								Text = `Trying <b>{ugc.name}</b>.`,
 								Duration = 15,
 								UserFrame = {},
-								ExitButton = true,
 							})
 
 							if existing and existing ~= button then

@@ -7,7 +7,10 @@ return {
 		args = {},
 
 		run = function(context)
-			context._K.Remote.Notify:FireClient(context.fromPlayer, `<sc>version</sc>:\t<b>{context._K.VERSION}</b>`)
+			context._K.Remote.Notify:FireClient(
+				context.fromPlayer,
+				{ From = "_K", Text = `<sc>version</sc>:\t<b>{context._K.VERSION}</b>` }
+			)
 		end,
 	},
 	{
@@ -237,8 +240,7 @@ return {
 		run = function(context, player: Player)
 			context._K.Remote.Notify:FireClient(
 				context.fromPlayer,
-				`<b>Age:</b> {context._K.Util.ReadableTime(player.AccountAge * 86400)}`,
-				player.UserId
+				{ Text = `<b>Age:</b> {context._K.Util.ReadableTime(player.AccountAge * 86400)}`, From = player.UserId }
 			)
 		end,
 	},
@@ -257,8 +259,7 @@ return {
 		run = function(context, player: Player)
 			context._K.Remote.Notify:FireClient(
 				context.fromPlayer,
-				`<b>Ping:</b> {math.round(player:GetNetworkPing() * 1000)} ms`,
-				player.UserId
+				{ Text = `<b>Ping:</b> {math.round(player:GetNetworkPing() * 1000)} ms`, From = player.UserId }
 			)
 		end,
 	},

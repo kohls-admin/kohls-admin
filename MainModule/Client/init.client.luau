@@ -54,7 +54,6 @@ local function Chatted(message: string)
 					Text = `<b>Invalid command prefix, use "{_K.Data.settings.prefix}"</b>`,
 					TextColor3 = Color3.new(1, 0, 0),
 					UserFrame = {},
-					ExitButton = true,
 					Sound = "Call_Leave",
 				})
 				break

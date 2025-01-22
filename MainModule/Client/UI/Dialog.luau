@@ -84,7 +84,9 @@ function Dialog.new(definition)
 
 	local exitButton = UI.new "Button" {
 		LayoutOrder = 9,
+		AnchorPoint = Vector2.new(1, 0),
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
+		Position = UDim2.new(1, 0, 0, 0),
 		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarger, 0, UI.Theme.FontSizeLarger),
 		Icon = "rbxassetid://1476571006",
 		IconProperties = {
@@ -149,7 +151,7 @@ function Dialog.new(definition)
 				},
 			},
 
-			exitButton,
+			if UI.peek(new.Title) then exitButton else nil,
 		},
 
 		UI.new "TextLabel" {
@@ -169,6 +171,8 @@ function Dialog.new(definition)
 			end),
 
 			AutomaticSize = Enum.AutomaticSize.XY,
+
+			if UI.peek(new.Title) then nil else exitButton,
 		},
 	}
 

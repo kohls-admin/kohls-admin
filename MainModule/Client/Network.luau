@@ -27,16 +27,7 @@ end
 UI.Scope.updateInterfaceAuth = updateInterfaceAuth
 
 Remote.Announce.OnClientEvent:Connect(Announce)
-Remote.Notify.OnClientEvent:Connect(function(text: string, from: number?, noteType: string?)
-	Notify({
-		Text = text,
-		Duration = 4 + 0.125 * #text,
-		UserFrame = { if from then tonumber(from) else nil },
-		ExitButton = true,
-		TextColor3 = if noteType == "error" then Color3.new(1, 0, 0) else nil,
-		Sound = if noteType == "error" then "Call_Leave" else nil,
-	})
-end)
+Remote.Notify.OnClientEvent:Connect(Notify)
 
 Remote.SetCore.OnClientEvent:Connect(function(parameter: string, value: any)
 	Util.Services.StarterGui:SetCore(parameter, value)
@@ -54,6 +45,7 @@ Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
 		Text = `\t<font transparency="0.5">{text}</font>`,
 		ActionText = "Permit this action?",
 		Action = true,
+		ExitButton = false,
 		LeftAction = true,
 		RightAction = true,
 		Duration = -1,
@@ -258,7 +250,6 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans,
 			Text = table.concat(lines, "\n"),
 			Duration = 30,
 			UserFrame = {},
-			ExitButton = true,
 			Sound = "Hello",
 		})
 	end

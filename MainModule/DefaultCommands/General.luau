@@ -116,7 +116,7 @@ return {
 				task.spawn(function()
 					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
 					if success then
-						context._K.Remote.Notify:FireClient(player, msg, context.from)
+						context._K.Remote.Notify:FireClient(player, { Text = msg, From = context.from })
 					end
 				end)
 			end
@@ -263,11 +263,12 @@ return {
 					Text = text,
 					ActionText = "<b>VOTE</b>",
 					Action = true,
+					ExitButton = false,
 					LeftAction = true,
 					RightAction = true,
 					Duration = 30,
 
-					_K.client.UserFrame(from.UserId, from.DisplayName),
+					UserFrame = { from.UserId },
 
 					[_K.UI.Hook] = {
 						Action = function(v)
@@ -310,19 +311,17 @@ return {
 				end)
 			end
 
-			context._K.Remote.Notify:FireClient(
-				context.fromPlayer,
-				`Created vote: <b>{message}</b>\n\n<font transparency="0.5"><i>The vote will end in 30 seconds or when every player has submitted their vote!</i></font>`
-			)
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				Text = `Created vote: <b>{message}</b>\n\n<font transparency="0.5"><i>The vote will end in 30 seconds or when every player has submitted their vote!</i></font>`,
+			})
 
 			-- wait for timeout or all votes to be submitted
 			task.delay(30, coroutine.resume, mainThread)
 			coroutine.yield()
 
-			context._K.Remote.Notify:FireClient(
-				context.fromPlayer,
-				`<font transparency="0.5">The results are in!</font>\n\n<b>{message}</b>\n\t<font color="#0f0"><b><sc>yes</sc></b>\t{yes}</font>\n\t<font color="#f00"><b><sc>no</sc></b> \t{no}</font>`
-			)
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				Text = `<font transparency="0.5">The results are in!</font>\n\n<b>{message}</b>\n\t<font color="#0f0"><b><sc>yes</sc></b>\t{yes}</font>\n\t<font color="#f00"><b><sc>no</sc></b> \t{no}</font>`,
+			})
 		end,
 	},
 	{
@@ -462,7 +461,7 @@ return {
 		run = function(context, players, speed)
 			for _, player in players do
 				if not player:GetAttribute("_KFly") then
-					context._K.Remote.Notify:FireClient(player, `Double tap <b>jump</b> to toggle fly.`)
+					context._K.Remote.Notify:FireClient(player, { Text = `Double tap <b>jump</b> to toggle fly.` })
 				end
 				player:SetAttribute("_KNoclip", nil)
 				player:SetAttribute("_KFly", if speed then speed else 256)
@@ -512,7 +511,7 @@ return {
 					player.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
 				end
 				if not player:GetAttribute("_KNoclip") then
-					context._K.Remote.Notify:FireClient(player, `Double tap <b>jump</b> to toggle noclip.`)
+					context._K.Remote.Notify:FireClient(player, { Text = `Double tap <b>jump</b> to toggle noclip.` })
 				end
 				player:SetAttribute("_KFly", nil)
 				player:SetAttribute("_KNoclip", if speed then speed else 256)
