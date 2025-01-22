@@ -128,6 +128,7 @@ function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 		table.insert(Registry.commandsList, commandObject)
 	end
 
+	commandObject.args = commandObject.args or {}
 	for _, arg in commandObject.args do
 		if not Registry.types[arg.type] and string.find(arg.type, "Enum.", 1, true) == 1 then
 			local argType = arg.type
