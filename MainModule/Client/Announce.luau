@@ -54,7 +54,7 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 		Duration = delay,
 		ExitButton = true,
 
-		Size = UDim2.new(0.5),
+		Size = UDim2.fromScale(0.5, 0),
 		AnchorPoint = UI.tween(
 			UI.Theme.TweenInOut,
 			UI.compute(function(use)
@@ -66,8 +66,7 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 			UI.compute(function(use)
 				local height = use(UI.TopbarInset).Height
 				local padding = use(UI.Theme.Padding).Offset
-				local offset = use(offset)
-				return UDim2.new(0.5, 0, 0, if use(visible) then padding + offset else -height)
+				return UDim2.new(0.5, 0, 0, if use(visible) then padding + use(offset) else -height)
 			end)
 		),
 
