@@ -602,14 +602,14 @@ Input._input.FocusLost:Connect(function(enterPressed)
 		local data = currentCompletionData
 		if #data.invalid > 0 then
 			UI.Sound.Negative:Play()
-			return
+			return Input._input:CaptureFocus()
 		end
 
 		if Input._input.Text ~= _K.Data.settings.prefix and #data.commands < 1 then
 			validState:set(false)
 			UI.Sound.Negative:Play()
 			invalidSuggestion(data, "Invalid command", data.argPos, data.rawArg)
-			return
+			return Input._input:CaptureFocus()
 		end
 
 		for _, command in data.commands do
@@ -622,7 +622,7 @@ Input._input.FocusLost:Connect(function(enterPressed)
 					command.invalidPos,
 					command.invalidArg
 				)
-				return
+				return Input._input:CaptureFocus()
 			end
 		end
 
@@ -650,6 +650,7 @@ Input._input.FocusLost:Connect(function(enterPressed)
 		end
 		Input._input.Text = _K.Data.settings.prefix
 	end
+	return
 end)
 -- FIX: make sure _K reliant connections aren't connected until init!
 Input._input:GetPropertyChangedSignal("Text"):Connect(function()
