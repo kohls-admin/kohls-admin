@@ -9,13 +9,13 @@ local typeMember = {
 
 		for id, member in _K.Data.members do
 			local memberRank = _K.Auth.getRank(id)
-			local userInfo = _K.Util.getUserInfo(id)
+			local username = member.name or _K.Util.getUserInfo(id).Username
 			if self.definition.ignoreSelf and id == fromString then
 				continue
 			end
 			if
 				(not lowerRank or (fromString == id) or rank > memberRank)
-				and string.find(string.lower(userInfo.Username), query, 1, true) == 1
+				and string.find(string.lower(username), query, 1, true) == 1
 			then
 				return true
 			end
@@ -31,13 +31,13 @@ local typeMember = {
 
 		for id, member in _K.Data.members do
 			local memberRank = _K.Auth.getRank(id)
-			local userInfo = _K.Util.getUserInfo(id)
+			local username = member.name or _K.Util.getUserInfo(id).Username
 			if self.definition.ignoreSelf and id == fromString then
 				continue
 			end
 			if
 				(not lowerRank or (fromString == id) or rank > memberRank)
-				and string.find(string.lower(userInfo.Username), query, 1, true) == 1
+				and string.find(string.lower(username), query, 1, true) == 1
 			then
 				return id
 			end
@@ -53,15 +53,12 @@ local typeMember = {
 
 		for id, member in _K.Data.members do
 			local memberRank = _K.Auth.getRank(id)
-			local userInfo = _K.Util.getUserInfo(id)
+			local username = member.name or _K.Util.getUserInfo(id).Username
 			if definition.ignoreSelf and id == fromString then
 				continue
 			end
 			if not lowerRank or (fromString == id) or rank > memberRank then
-				local display = if userInfo.DisplayName ~= userInfo.Username
-					then `{userInfo.Username} ({userInfo.DisplayName})`
-					else userInfo.Username
-				names[id] = { userInfo.Username, display }
+				names[id] = username
 			end
 		end
 
