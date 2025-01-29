@@ -359,8 +359,20 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 			if gamePassId ~= id then
 				continue
 			end
+			local rolesAdded = {}
 			for _, role in roles do
-				_K.Auth.userRoleAdd(player.UserId, role)
+				local roleAdded = _K.Auth.userRoleAdd(player.UserId, role)
+				if roleAdded then
+					local roleData = _K.Data.roles[role]
+					table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
+				end
+			end
+
+			if player and #rolesAdded > 0 then
+				_K.Remote.Notify:FireClient(player, {
+					Text = `You got the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{_K.Data.settings.prefix}cmds</b> or <b>{_K.Data.settings.prefix}info</b> for details.`,
+					From = "_K",
+				})
 			end
 		end
 	end)
