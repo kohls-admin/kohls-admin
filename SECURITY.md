@@ -1,4 +1,4 @@
-![Cool gif](https://github.com/user-attachments/assets/0689c1f3-6e3a-42a0-bd14-801a2d5deef1)
+![Cool gif](https://github.com/user-attachments/assets/66b2e76a-5b46-4b25-8421-f819d6f32f7b)
 # 🛡️ Kohl's Repository Security Policy
 
 At Kohl's Admin, we prioritize security and transparency. This document serves as a guide to understanding our commitment to safety, our update policies, and how to responsibly report security concerns.
