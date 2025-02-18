@@ -522,6 +522,123 @@ return {
 		end,
 	},
 	{
+		name = "cape",
+		description = "Gives one or more player(s) a cape.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to give a cape.",
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The color of the cape.",
+				optional = true,
+			},
+			{
+				type = "number",
+				name = "Reflectance",
+				description = "How much the cape reflects the skybox.",
+				optional = true,
+			},
+			{
+				type = "Enum.Material",
+				name = "Material",
+				description = "The part material of the cape.",
+				optional = true,
+			},
+			{
+				type = "integer",
+				name = "Decal",
+				description = "The image identifier for the cape decal.",
+				optional = true,
+			},
+		},
+		envClient = function(_K)
+			local CollectionService = game:GetService("CollectionService")
+
+			local capeMotors = {}
+			game:GetService("RunService").Heartbeat:Connect(function(step)
+				for motor, offset in capeMotors do
+					local root = motor.Part0
+					if not root then
+						capeMotors[motor] = nil
+						continue
+					end
+
+					local wave = (math.sin(offset) + 1) / 10
+					local velocity = root.Velocity - workspace.GlobalWind
+					local dot = math.max(0, root.CFrame.LookVector:Dot(velocity.Unit))
+					local magnitude = velocity.Magnitude + math.abs(root.Velocity.Y)
+					local angle = dot * magnitude / 32
+					motor.MaxVelocity = math.clamp(magnitude / 32, 0.02, 0.2)
+					motor.DesiredAngle = math.clamp(angle + wave + 0.1, 0.1, if velocity.Y < 0 then 2.5 else 2)
+
+					capeMotors[motor] += step * (math.clamp(dot * magnitude / 4 + 1, 1, 8))
+				end
+			end)
+
+			local function addCapeMotor(motor: Motor6D)
+				capeMotors[motor] = math.random() * 2 * math.pi
+			end
+
+			local function removeCapeMotor(motor: Motor6D)
+				capeMotors[motor] = nil
+			end
+
+			CollectionService:GetInstanceRemovedSignal("_KCapeMotor"):Connect(removeCapeMotor)
+			for _, tagged in CollectionService:GetTagged("_KCapeMotor") do
+				addCapeMotor(tagged)
+			end
+			CollectionService:GetInstanceAddedSignal("_KCapeMotor"):Connect(addCapeMotor)
+		end,
+
+		run = function(context, players, color, reflectance, material, decal)
+			for _, player in players do
+				local character = player.Character
+				local root = character and (character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
+				if not root then
+					continue
+				end
+
+				local existing = character:FindFirstChild("_KCape")
+				if existing then
+					existing:Destroy()
+				end
+
+				local cape = Instance.new("Part")
+				cape.Name = "_KCape"
+				cape.Color = color or Color3.new()
+				cape.Material = material or Enum.Material.SmoothPlastic
+				cape.Reflectance = reflectance or 0
+				cape.CanCollide = false
+				cape.CanQuery = false
+				cape.CanTouch = false
+				cape.Massless = true
+				cape.TopSurface = 0
+				cape.BottomSurface = 0
+				cape.Size = Vector3.new(1.9, 3.8, 0.2)
+
+				if decal then
+					Instance.new("Decal", cape).Texture = "rbxassetid://" .. decal
+				end
+
+				local motor = Instance.new("Motor6D")
+				motor.Part0 = root
+				motor.Part1 = cape
+				motor.C0 = CFrame.new(0, root.Size.Y / 2, root.Size.Z / 2) * CFrame.Angles(0, -math.pi / 2, 0)
+				motor.C1 = CFrame.new(0, cape.Size.Y / 2, 0) * CFrame.Angles(0, math.pi / 2, 0)
+				motor.DesiredAngle = 0.1
+				motor.MaxVelocity = 0.1
+				motor:AddTag("_KCapeMotor")
+				motor.Parent = cape
+
+				cape.Parent = character
+			end
+		end,
+	},
+	{
 		name = "hat",
 		aliases = { "crmhat" },
 		description = "Gives one or more player(s) one or more hats.",
