@@ -1,0 +1,10 @@
+{
+	"name": "Tools",
+	"emitLegacyScripts": false,
+	"tree": {
+		"$className": "SelectionBox",
+		"Building Tools": {
+			"$path": "../../../../../MainModule/DefaultCommands/Administration/F3X"
+		}
+	}
+}

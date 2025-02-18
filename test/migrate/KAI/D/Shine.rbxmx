@@ -1,0 +1,55 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+	<Meta name="ExplicitAutoJoints">true</Meta>
+	<External>null</External>
+	<External>nil</External>
+	<Item class="ParticleEmitter" referent="RBX0EE994E9701046E09C8C07858EE8E92F">
+		<Properties>
+			<Vector3 name="Acceleration">
+				<X>0</X>
+				<Y>0</Y>
+				<Z>0</Z>
+			</Vector3>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<float name="Brightness">1</float>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<ColorSequence name="Color">0 1 1 1 0 1 1 1 1 0 </ColorSequence>
+			<bool name="DefinesCapabilities">false</bool>
+			<float name="Drag">0</float>
+			<token name="EmissionDirection">1</token>
+			<bool name="Enabled">true</bool>
+			<NumberRange name="FlipbookFramerate">1 1 </NumberRange>
+			<string name="FlipbookIncompatible">Particle texture must be 1024 by 1024 to use flipbooks.</string>
+			<token name="FlipbookLayout">0</token>
+			<token name="FlipbookMode">0</token>
+			<bool name="FlipbookStartRandom">false</bool>
+			<NumberRange name="Lifetime">2 2 </NumberRange>
+			<float name="LightEmission">1</float>
+			<float name="LightInfluence">0</float>
+			<bool name="LockedToPart">true</bool>
+			<string name="Name">Shine</string>
+			<token name="Orientation">0</token>
+			<float name="Rate">2</float>
+			<NumberRange name="RotSpeed">-10 10 </NumberRange>
+			<NumberRange name="Rotation">-180 180 </NumberRange>
+			<token name="Shape">0</token>
+			<token name="ShapeInOut">0</token>
+			<float name="ShapePartial">1</float>
+			<token name="ShapeStyle">0</token>
+			<NumberSequence name="Size">0 5 0 1 5 0 </NumberSequence>
+			<int64 name="SourceAssetId">-1</int64>
+			<NumberRange name="Speed">0 0 </NumberRange>
+			<Vector2 name="SpreadAngle">
+				<X>0</X>
+				<Y>0</Y>
+			</Vector2>
+			<NumberSequence name="Squash">0 0 0 1 0 0 </NumberSequence>
+			<BinaryString name="Tags"></BinaryString>
+			<Content name="Texture"><url>rbxassetid://1085001473</url></Content>
+			<float name="TimeScale">1</float>
+			<NumberSequence name="Transparency">0 1 0 0.5 0.75 0 1 1 0 </NumberSequence>
+			<float name="VelocityInheritance">0</float>
+			<bool name="WindAffectsDrag">false</bool>
+			<float name="ZOffset">0</float>
+		</Properties>
+	</Item>
+</roblox>

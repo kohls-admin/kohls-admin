@@ -1,0 +1,66 @@
+{
+	"name": "kohls-admin",
+	"emitLegacyScripts": false,
+	"tree": {
+		"$className": "DataModel",
+		"HttpService": {
+			"$className": "HttpService",
+			"$properties": {
+				"HttpEnabled": true
+			}
+		},
+		"ReplicatedStorage": {
+			"$className": "ReplicatedStorage",
+			"Client": {
+				"$path": "client"
+			},
+			"Shared": {
+				"$path": "shared"
+			}
+		},
+		"ServerScriptService": {
+			"$path": "server",
+			"MainModule": {
+				"$path": "migrate"
+			},
+			"Kohl's Admin": {
+				"$path": "../Loader",
+				"$className": "Model",
+				"MainModule": {
+					"$path": "../MainModule",
+					"VERSION": {
+						"$path": "../VERSION.txt"
+					}
+				},
+				"LICENSE": {
+					"$path": "../LICENSE.txt"
+				}
+			}
+		},
+		"ServerStorage": {
+			"$className": "ServerStorage",
+			"MainModule": {
+				"$path": "migrate"
+			}
+		},
+		"Workspace": {
+			"Baseplate": {
+				"$className": "Part",
+				"$properties": {
+					"Anchored": true,
+					"Locked": true,
+					"Position": [
+						0,
+						-10,
+						0
+					],
+					"Size": [
+						512,
+						20,
+						512
+					]
+				}
+			}
+		}
+	}
+}

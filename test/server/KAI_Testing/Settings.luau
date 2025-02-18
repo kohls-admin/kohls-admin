@@ -22,6 +22,8 @@ local Settings = {
 	ForcedColor = false, -- Forces everyone to have set color & transparency
 	Color = Color3.new(0, 0, 0), -- Changes the Color of the user interface
 	ColorTransparency = 0.75, -- Changes the Transparency of the user interface
+	Chat = false, -- Enables the custom chat
+	BubbleChat = false, -- Enables the custom bubble chat
 
 	-- Basic Settings
 	AdminCredit = true, -- Enables the credit GUI for that appears in the bottom right

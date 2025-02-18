@@ -74,8 +74,6 @@ local _K = {
 	_serverLock = false,
 }
 
-shared._K_INTERFACE = _K
-
 -- shorthand
 _K.log = _K.Logger.log
 _K.logger = _K.Logger.logger
@@ -107,6 +105,8 @@ task.spawn(
 	`Default Commands registered in {math.round((os.clock() - commandRegisterStart) * 1000)} ms`,
 	"DEBUG"
 )
+
+shared._K_INTERFACE = _K
 
 if not _K.IsServer then
 	task.spawn(_K.log, `Required in {math.round((os.clock() - requireStart) * 1000)} ms`, "DEBUG")

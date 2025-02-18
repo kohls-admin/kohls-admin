@@ -1,0 +1,16 @@
+{
+	"name": "MainModule",
+	"emitLegacyScripts": false,
+	"tree": {
+		"$path": "MainModule.luau",
+		"KAI": {
+			"$path": "KAI"
+		},
+		"KA": {
+			"$path": "../../MainModule",
+			"VERSION": {
+				"$path": "../../VERSION.txt"
+			}
+		}
+	}
+}
