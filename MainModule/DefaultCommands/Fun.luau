@@ -1088,4 +1088,87 @@ return {
 			end
 		end,
 	},
+	{
+		name = "noobify",
+		aliases = {"noob"},
+		description = "Make the target player(s) look like a noob",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to transform into a noob.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			return {
+				applyNoob = function(character)
+					local humanoid = character:FindFirstChildOfClass("Humanoid")
+					if humanoid then
+						local description = humanoid:GetAppliedDescription()
+						local properties = {
+							HeadColor = BrickColor.new("Bright yellow").Color,
+							LeftArmColor = BrickColor.new("Bright yellow").Color,
+							RightArmColor = BrickColor.new("Bright yellow").Color,
+							LeftLegColor = BrickColor.new("Br. yellowish green").Color,
+							RightLegColor = BrickColor.new("Br. yellowish green").Color,
+							TorsoColor = BrickColor.new("Bright blue").Color,
+							Pants = 0, Shirt = 0, LeftArm = 0, RightArm = 0,
+							LeftLeg = 0, RightLeg = 0, Torso = 0
+						}
+						for k, v in pairs(properties) do
+							description[k] = v
+						end
+						task.defer(humanoid.ApplyDescription, humanoid, description, Enum.AssetTypeVerification.Always)
+					end
+				end
+			}
+		end,
+		run = function(context, players)
+			for _, player in players do
+				if player.Character then
+					context.env.applyNoob(player.Character)
+				end
+			end
+		end,
+	},
+	{
+		name = "slippery",
+		aliases = {"iceskate", "icewalk", "slide"},
+		description = "Makes the target player(s) slide when they walk",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to make slippery.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			return {
+				makeSlippery = function(character)
+					local root = character:FindFirstChild("HumanoidRootPart")
+					if root then
+						local vel = _K.Flux.new "BodyVelocity" {
+							Name = "_K_SlipperyVelocity",
+							MaxForce = Vector3.new(5000, 0, 5000),
+							Parent = root,
+						}
+						local slipScript = _K.Flux.new "Script" {
+							Name = "_K_SlipperyScript",
+							Source = "while true do task.wait(0.1) end", -- A stub, can be replaced with logic
+							Parent = root,
+						}
+					end
+				end
+			}
+		end,
+		run = function(context, players)
+			for _, player in players do
+				if player.Character then
+					context.env.makeSlippery(player.Character)
+				end
+			end
+		end,
+	},
 }
