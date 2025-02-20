@@ -1,3 +1,6 @@
-[submodule "src/MainModule/Client/TopbarPlus"]
+[submodule "F3X-Building-Tools"]
+	path = MainModule/DefaultCommands/Administration/F3X
+	url = https://github.com/kohls-admin/F3X-Building-Tools.git
+[submodule "TopbarPlus"]
 	path = MainModule/Client/TopbarPlus
 	url = https://github.com/kohls-admin/TopbarPlus.git

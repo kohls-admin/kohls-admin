@@ -211,14 +211,42 @@ return {
 	},
 	{
 		name = "btools",
-		aliases = { "build" },
-		credit = { "MaximumADHD", "Kohl @Scripth" },
-		description = "Gives building tools to one or more player(s).",
+		aliases = { "build", "f3x" },
+		credit = { "GigsD4X", "Kohl @Scripth" },
+		description = "Gives Building Tools by F3X to one or more player(s).",
 		args = {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) to give building tools.",
+				description = "The player(s) to give Building Tools by F3X.",
+			},
+		},
+		env = function()
+			return {
+				tool = script:WaitForChild("Building Tools"),
+			}
+		end,
+
+		run = function(context, players)
+			for _, player in players do
+				local backpack = player:FindFirstChildOfClass("Backpack")
+				if not backpack or backpack:FindFirstChild("Building Tools") then
+					continue
+				end
+				context.env.tool:Clone().Parent = backpack
+			end
+		end,
+	},
+	{
+		name = "classicbtools",
+		aliases = { "classicbuild" },
+		credit = { "MaximumADHD", "Kohl @Scripth" },
+		description = "Gives classic building tools to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to give classic building tools.",
 			},
 		},
 		env = function(_K)
