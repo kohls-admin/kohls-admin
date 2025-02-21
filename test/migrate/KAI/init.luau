@@ -136,7 +136,7 @@ do
 	if ok then
 		GlobalDataStore = result
 	else
-		if services.RunService:IsStudio() and type(result) == "string" then
+		if services.Run:IsStudio() and type(result) == "string" then
 			if string.find(result, "publish", 1, true) then
 				warn("Data failed to load, enable Studio access to API services in Game Settings.")
 				return
