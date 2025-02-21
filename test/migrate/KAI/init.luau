@@ -139,11 +139,9 @@ do
 		if services.Run:IsStudio() and type(result) == "string" then
 			if string.find(result, "publish", 1, true) then
 				warn("Data failed to load, enable Studio access to API services in Game Settings.")
-				return
 			end
 			if string.find(result, "502", 1, true) then
 				warn("Data failed to load, enable Studio access to API services in Game Settings.")
-				return
 			end
 		end
 	end
