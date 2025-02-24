@@ -108,6 +108,25 @@ local state: {
 	}
 
 local Dependencies = script.D:Clone()
+local BuildingTools
+do
+	BuildingTools = Dependencies.Tools["Building Tools"]:Clone()
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(0.8, 0.8, 0.8)
+	handle.CastShadow = false
+	handle.CanTouch = false
+	handle.CanQuery = false
+	handle.TopSurface = 0
+	handle.BottomSurface = 0
+	for _, face in Enum.NormalId:GetEnumItems() do
+		local decal = Instance.new("Decal")
+		decal.Face = face
+		decal.Texture = "rbxassetid://129748355"
+		decal.Parent = handle
+	end
+	handle.Parent = BuildingTools
+end
 local SuperCrown, Shine = require(Dependencies.SuperCrown):Clone(), new("Attachment")({ Name = "KShine" })
 Dependencies.Shine:Clone().Parent = Shine
 local Client = Dependencies.Client:Clone()
@@ -2642,7 +2661,7 @@ function LoadCommands()
 	f.addCommand({ "f3x" }, { "Gives a player F3X building tools.", "Kohl" }, 5, { "player" }, function(pl, args)
 		for i, plr in args[1] do
 			if plr and plr.Character and FindChild(plr, "Backpack") then
-				Dependencies.Tools["Building Tools"]:Clone().Parent = plr.Backpack
+				BuildingTools:Clone().Parent = plr.Backpack
 			end
 		end
 	end)
