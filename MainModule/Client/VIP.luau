@@ -71,6 +71,7 @@ function VIP.new(_K)
 		Title = "Kohl's Admin Purchase",
 		Text = thirdPartyText,
 		Visible = false,
+		ExitButton = true,
 		BackgroundTransparency = 0,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 0),
