@@ -222,8 +222,25 @@ return {
 			},
 		},
 		env = function()
+			local tool = script:WaitForChild("Building Tools")
+			local handle = Instance.new("Part")
+			handle.Name = "Handle"
+			handle.Size = Vector3.new(0.8, 0.8, 0.8)
+			handle.CastShadow = false
+			handle.CanTouch = false
+			handle.CanQuery = false
+			handle.TopSurface = 0
+			handle.BottomSurface = 0
+			for _, face in Enum.NormalId:GetEnumItems() do
+				local decal = Instance.new("Decal")
+				decal.Face = face
+				decal.Texture = "rbxassetid://129748355"
+				decal.Parent = handle
+			end
+			handle.Parent = tool
+
 			return {
-				tool = script:WaitForChild("Building Tools"),
+				tool = tool,
 			}
 		end,
 
