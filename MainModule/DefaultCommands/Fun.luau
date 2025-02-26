@@ -1171,4 +1171,72 @@ return {
 			end
 		end,
 	},
+	{
+		name = "breakdance",
+		aliases = {"fundance", "crazydance"},
+		description = "Make the target player(s) break dance",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to make break dance.",
+				shouldRequest = true,
+			},
+		},
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChild("Humanoid") then
+					local hum = player.Character:FindFirstChild("Humanoid")
+					local color = ({"Really blue", "Really red", "Magenta", "Lime green", "Hot pink", "New Yeller", "White"})[math.random(1, 7)]
+					context.Admin.RunCommand("sparkles", player.Name, color)
+					context.Admin.RunCommand("fire", player.Name, color)
+					context.Admin.RunCommand("nograv", player.Name)
+					context.Admin.RunCommand("smoke", player.Name, color)
+					context.Admin.RunCommand("spin", player.Name)
+					repeat
+						hum.PlatformStand = true
+						task.wait()
+					until not hum or hum.Parent == nil
+				end
+			end
+		end,
+	},
+	{
+		name = "hole",
+		aliases = {"sparta"},
+		description = "Sends the target player(s) down a hole",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to send down a hole.",
+				shouldRequest = true,
+			},
+		},
+		run = function(context, players)
+			for _, player in players do
+				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+					local torso = player.Character.HumanoidRootPart
+					local hole = Instance.new("Part")
+					hole.Anchored = true
+					hole.CanCollide = false
+					hole.Size = Vector3.new(10, 1, 10)
+					hole.CFrame = torso.CFrame * CFrame.new(0, -3.3, -3)
+					hole.BrickColor = BrickColor.new("Really black")
+					local holeM = Instance.new("CylinderMesh", hole)
+					torso.Anchored = true
+					local foot = torso.CFrame * CFrame.new(0, -3, 0)
+					for i = 1, 10 do
+						torso.CFrame = foot * CFrame.Angles(-(math.pi / 2) * i / 10, 0, 0) * CFrame.new(0, 3, 0)
+						task.wait(0.1)
+					end
+					for i = 1, 5, 0.2 do
+						torso.CFrame = foot * CFrame.new(0, -(i ^ 2), 0) * CFrame.Angles(-(math.pi / 2), 0, 0) * CFrame.new(0, 3, 0)
+						task.wait()
+					end
+					player.Character:BreakJoints()
+				end
+			end
+		end,
+	},
 }
