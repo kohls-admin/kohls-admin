@@ -1090,8 +1090,8 @@ return {
 	},
 	{
 		name = "noobify",
-		aliases = {"noob"},
-		description = "Make the target player(s) look like a noob",
+		aliases = { "noob" },
+		description = "Turn one or more player(s) into a noob",
 		args = {
 			{
 				type = "players",
@@ -1101,41 +1101,45 @@ return {
 			},
 		},
 		env = function(_K)
+			local blue = BrickColor.new("Bright blue").Color
+			local green = BrickColor.new("Br. yellowish green").Color
+			local yellow = BrickColor.new("Bright yellow").Color
+
 			return {
-				applyNoob = function(character)
-					local humanoid = character:FindFirstChildOfClass("Humanoid")
-					if humanoid then
-						local description = humanoid:GetAppliedDescription()
-						local properties = {
-							HeadColor = BrickColor.new("Bright yellow").Color,
-							LeftArmColor = BrickColor.new("Bright yellow").Color,
-							RightArmColor = BrickColor.new("Bright yellow").Color,
-							LeftLegColor = BrickColor.new("Br. yellowish green").Color,
-							RightLegColor = BrickColor.new("Br. yellowish green").Color,
-							TorsoColor = BrickColor.new("Bright blue").Color,
-							Pants = 0, Shirt = 0, LeftArm = 0, RightArm = 0,
-							LeftLeg = 0, RightLeg = 0, Torso = 0
-						}
-						for k, v in pairs(properties) do
-							description[k] = v
-						end
-						task.defer(humanoid.ApplyDescription, humanoid, description, Enum.AssetTypeVerification.Always)
-					end
-				end
+				properties = {
+					HeadColor = yellow,
+					LeftArmColor = yellow,
+					RightArmColor = yellow,
+					LeftLegColor = green,
+					RightLegColor = green,
+					TorsoColor = blue,
+					Pants = 0,
+					Shirt = 0,
+					LeftArm = 0,
+					RightArm = 0,
+					LeftLeg = 0,
+					RightLeg = 0,
+					Torso = 0,
+				},
 			}
 		end,
 		run = function(context, players)
 			for _, player in players do
-				if player.Character then
-					context.env.applyNoob(player.Character)
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					local description = humanoid:GetAppliedDescription()
+					for k, v in context.env.properties do
+						description[k] = v
+					end
+					task.defer(humanoid.ApplyDescription, humanoid, description, Enum.AssetTypeVerification.Always)
 				end
 			end
 		end,
 	},
 	{
 		name = "slippery",
-		aliases = {"iceskate", "icewalk", "slide"},
-		description = "Makes the target player(s) slide when they walk",
+		aliases = { "iceskate", "icewalk", "slide" },
+		description = "Makes one or more player(s) slide when they walk",
 		args = {
 			{
 				type = "players",
@@ -1144,30 +1148,53 @@ return {
 				shouldRequest = true,
 			},
 		},
+		envClient = function(_K)
+			local thread
+			_K.Remote.Slippery.OnClientEvent:Connect(function(bodyVelocity: BodyVelocity?)
+				if thread then
+					task.cancel(thread)
+					thread = nil
+				end
+				if bodyVelocity then
+					thread = task.spawn(function()
+						while bodyVelocity and bodyVelocity.Parent do
+							local velocity = (bodyVelocity.Parent :: Part).AssemblyLinearVelocity
+							bodyVelocity.Velocity = Vector3.new(velocity.X, 0, velocity.Z)
+							task.wait(0.1)
+						end
+					end)
+				end
+			end)
+		end,
 		env = function(_K)
 			return {
-				makeSlippery = function(character)
-					local root = character:FindFirstChild("HumanoidRootPart")
-					if root then
-						local vel = _K.Flux.new "BodyVelocity" {
-							Name = "_K_SlipperyVelocity",
-							MaxForce = Vector3.new(5000, 0, 5000),
-							Parent = root,
-						}
-						local slipScript = _K.Flux.new "Script" {
-							Name = "_K_SlipperyScript",
-							Source = "while true do task.wait(0.1) end", -- A stub, can be replaced with logic
-							Parent = root,
-						}
-					end
-				end
+				remote = _K.Remote.Slippery,
 			}
 		end,
 		run = function(context, players)
 			for _, player in players do
-				if player.Character then
-					context.env.makeSlippery(player.Character)
+				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if not root then
+					continue
 				end
+
+				local existing = root:FindFirstChild("_K_Slippery")
+				if existing then
+					existing:Destroy()
+				end
+
+				if context.undo then
+					continue
+				end
+
+				context.env.remote:FireClient(
+					player,
+					context._K.Flux.new "BodyVelocity" {
+						Name = "_K_Slippery",
+						MaxForce = Vector3.new(5000, 0, 5000),
+						Parent = root,
+					}
+				)
 			end
 		end,
 	},
