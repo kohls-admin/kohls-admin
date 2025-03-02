@@ -183,7 +183,6 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 			cache[key] = cache[key] or { if player then player.Name else Util.getUserInfo(userId).Username }
 			cache[key][2] = Data.members[key].persist
 			Data.pendingSaveMain = true
-			print("attempting permanent save", cache[key])
 		end)
 	end
 
@@ -237,7 +236,6 @@ end
 
 local asyncRolesCache = {}
 function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
-	print(asyncRolesCache[userId])
 	if asyncRolesCache[userId] and not flushCache then
 		return
 	end
@@ -358,7 +356,7 @@ end
 function Auth.roleCanUseArgument(role: Role, argument: any): boolean
 	local roleData = Data.roles[role]
 	if not roleData then
-		warn("ROLE DOESN'T EXIST?!", role)
+		warn(`undefined role "{role}"`)
 		return false
 	end
 
@@ -393,7 +391,7 @@ function Auth.hasArgument(userId: number, argument: any): boolean
 		for _, role in member.roles do
 			local roleData = Data.roles[role]
 			if not roleData then
-				warn("undefined role?", roleData)
+				warn(`undefined role "{role}"`)
 				continue
 			end
 			if Auth.roleCanUseArgument(role, argument) then
@@ -408,7 +406,7 @@ end
 function Auth.roleCanUseCommand(role: Role, command: any): boolean
 	local roleData = Data.roles[role]
 	if not roleData then
-		warn("ROLE DOESN'T EXIST?!", role)
+		warn(`undefined role "{role}"`)
 		return false
 	end
 
@@ -493,7 +491,7 @@ function Auth.hasCommand(userId: number, command: any): boolean
 		for _, role in member.roles do
 			local roleData = Data.roles[role]
 			if not roleData then
-				warn("undefined role?", roleData)
+				warn(`undefined role "{role}"`)
 				continue
 			end
 			if Auth.roleCanUseCommand(role, command) then
