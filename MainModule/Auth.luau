@@ -356,7 +356,7 @@ end
 function Auth.roleCanUseArgument(role: Role, argument: any): boolean
 	local roleData = Data.roles[role]
 	if not roleData then
-		("ROLE DOESN'T EXIST?!", role)
+		warn(`undefined role "{role}"`)
 		return false
 	end
 
@@ -391,7 +391,7 @@ function Auth.hasArgument(userId: number, argument: any): boolean
 		for _, role in member.roles do
 			local roleData = Data.roles[role]
 			if not roleData then
-				("undefined role?", roleData)
+				warn(`undefined role "{role}"`)
 				continue
 			end
 			if Auth.roleCanUseArgument(role, argument) then
