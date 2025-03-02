@@ -27,7 +27,7 @@ local DATA_LIMIT = 2 ^ 22 - 1
 
 local nextDataLimitWarning = {}
 local function dataLimitWarning(size, dataType)
-	local ratio = Data.sizeBans / DATA_LIMIT
+	local ratio = size / DATA_LIMIT
 	if ratio > 0.9 and tick() > (nextDataLimitWarning[dataType] or 0) then
 		nextDataLimitWarning[dataType] = tick() + 300
 		for _, player in Players:GetPlayers() do
