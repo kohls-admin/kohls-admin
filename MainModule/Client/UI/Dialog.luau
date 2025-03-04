@@ -176,13 +176,16 @@ function Dialog.new(definition)
 		},
 	}
 
-	new._instance = UI.new "Frame" {
+	new._instance = UI.new "TextButton" {
 		Name = "Dialog",
+		Active = false,
+		AutoButtonColor = false,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
 		ClipsDescendants = true,
 		Size = UI.computeFrom(UDim2.fromOffset, new.Width, 0),
+		Text = "",
 		Visible = new.Visible,
 
 		UI.new "UICorner" {
