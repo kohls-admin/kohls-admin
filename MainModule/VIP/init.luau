@@ -5,9 +5,9 @@ local Util = require(script.Parent:WaitForChild("Util"))
 
 local VIP = {}
 
--- premium, supervip, vip
-local legacyGamePassDonations = { 5411126, 5391361, 5391359 }
-local legacyTShirtDonations = { 423601416, 313102724 }
+-- vip, supervip, premium
+local gamePassDonations = { 5391359, 5391361, 5411126 }
+local assetDonations = { 313102724, 423601416, 128259181447764 }
 
 -- 5 group member
 -- 4 subscriber
@@ -29,21 +29,21 @@ local function getDonationLevel(player)
 		return 4
 	end
 
-	for index, passId in legacyGamePassDonations do
+	for index, passId in gamePassDonations do
 		local okGamePass, result = Util.Retry(function()
 			return Util.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
 		end, 5, 0.2, 1)
 		if okGamePass and result then
-			return 4 - index
+			return index
 		end
 	end
 
-	for index, assetId in legacyTShirtDonations do
+	for index, assetId in assetDonations do
 		local okAsset, result = Util.Retry(function()
 			return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetId)
 		end, 5, 0.2, 1)
 		if okAsset and result then
-			return 3 - index
+			return index
 		end
 	end
 
@@ -132,9 +132,8 @@ if Util.Services.RunService:IsServer() then
 		end
 
 		local donationLevel = player:GetAttribute("_KDonationLevel") or 0
-		local owned = donationLevel > 3
+		local owned = donationLevel > 2
 			or (match == "rbxassetid://18966762965" and donationLevel > 1)
-			or (match == "rbxassetid://89119211625300" and donationLevel > 2)
 			or ownsAsset(player, assetId)
 
 		local tried = cache[assetId]
@@ -241,9 +240,9 @@ if Util.Services.RunService:IsServer() then
 	Util.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
 		if purchased then
 			local level = player:GetAttribute("_KDonationLevel") or 0
-			local vipIndex = table.find(legacyGamePassDonations, passId)
+			local vipIndex = table.find(gamePassDonations, passId)
 			if vipIndex then
-				level = math.max(level, 4 - vipIndex)
+				level = math.max(level, vipIndex)
 				if Data.settings.vip then
 					Auth.userRoleAdd(player.UserId, "vip")
 				end

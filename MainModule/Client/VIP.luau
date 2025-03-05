@@ -4,9 +4,6 @@ VIP.__index = VIP
 function VIP.new(_K)
 	local UI = _K.UI
 
-	local subscriptionText = "<font color='#fd0'>Roblox has disabled <b>Third Party Purchases</b> of subscriptions!</font>\n\n"
-		.. "<font transparency='0.5'>Copy the link below to purchase.</font>\n"
-		.. "<font color='#f00'><b>To receive perks, join a new server after your purchase!</b></font>"
 	local thirdPartyText = "<font color='#fd0'>The game developer has disabled <b>Third Party Purchases</b>!</font>\n\n"
 		.. "<font transparency='0.5'>Copy the link below to purchase.</font>\n"
 		.. "<font color='#f00'><b>To receive perks, join a new server after your purchase!</b></font>"
@@ -84,6 +81,8 @@ function VIP.new(_K)
 
 		purchaseLink,
 	}
+	UI.Scope.purchaseDialog = purchaseDialog
+	UI.Scope.purchaseLink = purchaseLink
 
 	local con
 	con = _K.Util.Services.LogService.MessageOut:Connect(function(message, messageType)
@@ -168,7 +167,7 @@ function VIP.new(_K)
 	do
 		-- TODO: equip button for donation level == 4 and if the own
 		task.defer(function()
-			local owned = (donationLevel._value or 0) >= (ugc.level or 4)
+			local owned = (donationLevel._value or 0) >= (ugc.level or 3)
 			if not owned then
 				local ok, result = _K.Util.Retry(function()
 					return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
@@ -471,44 +470,67 @@ function VIP.new(_K)
 		end)
 	end
 
-	local adminModelId = 172732271
-	local adminModelButton = UI.new "Button" {
-		Name = "adminModelButton",
-		Icon = "rbxasset://textures/ui/common/robux.png",
-		IconRightAlign = true,
-		Label = "<sc><b>Get Kohl's Admin</b></sc>",
-		HoverTransparency = 0.5,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Size = UDim2.new(1, -2, 0, 32),
+	local vipList = UI.new "Frame" {
+		Name = "VIP",
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -2, 0, 0),
 
-		UI.new "Frame" {
-			BackgroundTransparency = 1,
-			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.new(0, 0, 0.5, 0),
-			Size = UDim2.new(0, 28, 0, 28),
-			UI.new "ImageLabel" {
+		UI.new "UIListLayout" {
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalFlex = Enum.UIFlexAlignment.Fill,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			Padding = UI.Theme.PaddingDouble,
+			Wraps = true,
+		},
+
+		UI.new "Button" {
+			Icon = "rbxasset://textures/ui/common/robux.png",
+			IconRightAlign = true,
+			Label = "<font color='#fc0'><sc><b>VIP</b></sc></font>",
+			HoverTransparency = 0.5,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Size = UDim2.new(0, 128, 0, 32),
+
+			UI.new "TextLabel" {
+				LayoutOrder = 8,
+				AutoLocalize = false,
+				AutomaticSize = Enum.AutomaticSize.XY,
 				BackgroundTransparency = 1,
-				Size = UDim2.new(0, 28, 0, 28),
-				Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
-				ImageColor3 = Color3.new(0, 0, 0),
-				ImageTransparency = 0.875,
+				Font = UI.Theme.FontMono,
+				TextSize = UI.Theme.FontSizeLarge,
+				TextColor3 = UI.Theme.PrimaryText,
+				TextWrapped = true,
+				Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+				Text = UI.compute(function(use)
+					return if (use(donationLevel) or 0) < 3 then `<b>$4.99</b>` else "<b>OWNED</b>"
+				end),
+				RichText = true,
 			},
-			UI.new "ImageButton" {
-				BackgroundTransparency = 1,
-				Position = UDim2.new(0, 2, 0, 2),
-				Size = UDim2.new(0, 24, 0, 24),
-				Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
-				ImageColor3 = Color3.new(1, 0.8, 0),
-				[UI.Event] = {
-					Activated = function()
-						_K.Util.Services.AvatarEditorService:PromptSetFavorite(adminModelId, 1, true)
-					end,
-				},
-				UI.new "Tooltip" {
-					Text = "Add to Favorites",
-				},
+			[UI.Event] = {
+				Activated = function()
+					purchaseDialog.Text:set(thirdPartyText)
+					UI.Scope.lastAttemptedPurchase = true
+					purchaseLink.Text = "https://create.roblox.com/store/asset/128259181447764"
+					purchaseDialog.Visible:set(true)
+				end,
 			},
 		},
+	}
+
+	local vipPassId = 5411126
+	local vipButton = UI.new "Button" {
+		Parent = vipList,
+		Icon = "rbxasset://textures/ui/common/robux.png",
+		IconRightAlign = true,
+		Label = "<font color='#fc0'><sc><b>VIP</b></sc></font>",
+		HoverTransparency = 0.5,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = UDim2.new(0, 128, 0, 32),
+		Visible = UI.compute(function(use)
+			return (use(donationLevel) or 0) < 3
+		end),
 
 		UI.new "TextLabel" {
 			Name = "Price",
@@ -521,90 +543,57 @@ function VIP.new(_K)
 			TextColor3 = UI.Theme.PrimaryText,
 			TextWrapped = true,
 			Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
-			Text = "<b>FREE</b>",
+			Text = "?",
 			RichText = true,
 		},
-
 		[UI.Event] = {
 			Activated = function()
-				UI.Scope.lastAttemptedPurchase = adminModelId
+				UI.Scope.lastAttemptedPurchase = vipPassId
 				if UI.Scope.AllowThirdPartySales then
 					purchaseDialog.Visible:set(false)
-					_K.Util.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
+					_K.Util.Services.MarketplaceService:PromptGamePassPurchase(_K.UI.LocalPlayer, vipPassId)
 				else
 					purchaseDialog.Text:set(thirdPartyText)
-					purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
+					purchaseLink.Text = "https://roblox.com/game-pass/" .. vipPassId
 					purchaseDialog.Visible:set(true)
 				end
 			end,
 		},
-	}
-
-	UI.new "Tooltip" {
-		Parent = adminModelButton,
-		Text = "🚀 Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management.",
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Visible = adminModelButton._hovering,
 	}
 
 	task.defer(function()
-		local ok, owned = _K.Util.Retry(function()
-			return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
+		local success, owned = _K.Util.Retry(function()
+			return _K.Util.Services.MarketplaceService:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, vipPassId)
 		end, 5, 1, 2)
-		if ok and owned then
-			adminModelButton._content.Price.Text = `<b>OWNED</b>`
+		print(success, owned)
+
+		if success then
+			if owned then
+				vipButton._content.Price.Text = "<b>OWNED</b>"
+				return
+			end
+
+			local conn
+			conn = _K.Util.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(
+				function(userId, passId, purchased)
+					if purchased and passId == vipPassId and userId == _K.UI.LocalPlayer.UserId then
+						conn:Disconnect()
+						owned = true
+						vipButton._content.Price.Text = "<b>OWNED</b>"
+					end
+				end
+			)
+
+			local ok, result = _K.Util.Retry(function()
+				return _K.Util.Services.MarketplaceService:GetProductInfo(vipPassId, Enum.InfoType.GamePass).PriceInRobux
+			end, 5, 1, 2)
+			if ok then
+				if not owned then
+					vipButton._content.Price.Text = `<b>{result or "?"}</b>`
+				end
+			end
 		end
 	end)
-
-	local subscriptionButton = UI.new "Button" {
-		Icon = "rbxasset://textures/ui/common/robux.png",
-		IconRightAlign = true,
-		Label = "<font color='#f04'><sc><b>VIP Subscription</b></sc></font>",
-		HoverTransparency = 0.5,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Size = UDim2.new(1, -2, 0, 32),
-
-		UI.new "TextLabel" {
-			LayoutOrder = 8,
-			AutoLocalize = false,
-			AutomaticSize = Enum.AutomaticSize.XY,
-			BackgroundTransparency = 1,
-			Font = UI.Theme.FontMono,
-			TextSize = UI.Theme.FontSizeLarge,
-			TextColor3 = UI.Theme.PrimaryText,
-			TextWrapped = true,
-			Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
-			Text = UI.compute(function(use)
-				return if (use(donationLevel) or 0) < 4
-					then `<b>$2.99</b><font transparency="0.5">/month</font>`
-					else "<b>OWNED</b>"
-			end),
-			RichText = true,
-		},
-		[UI.Event] = {
-			Activated = function()
-				if game.GameId == 6475108624 then -- whenever Roblox allows cross game subscriptions...
-					purchaseDialog.Visible:set(false)
-					_K.Util.Services.MarketplaceService:PromptSubscriptionPurchase(
-						_K.UI.LocalPlayer,
-						"EXP-4118475727682928968"
-					)
-				else
-					purchaseDialog.Text:set(subscriptionText)
-					UI.Scope.lastAttemptedPurchase = true
-					purchaseLink.Text = "https://roblox.com/games/2569622788#!/store"
-					purchaseDialog.Visible:set(true)
-				end
-			end,
-		},
-	}
-
-	UI.new "Tooltip" {
-		Parent = subscriptionButton,
-		Text = "✨ <b>Become a VIP</b>\nUnlock exclusive commands and hats to flaunt your VIP status in tons of your favorite games.<i><font transparency='0.5'>*\n\n* Only in participating experiences.</font></i>",
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Visible = subscriptionButton._hovering,
-	}
 
 	local scroller = UI.new "Scroller" {
 		Name = "VIP",
@@ -646,9 +635,27 @@ function VIP.new(_K)
 			TextColor3 = UI.Theme.PrimaryText,
 			TextWrapped = true,
 			Size = UDim2.new(1, 0, 0, 0),
-			Text = "<b>❤️ Kohl's Admin?</b>\n Donate for cool perks and to help us build amazing new features!",
+			Text = "✨ <b>Become a VIP</b>\n<font transparency='0.5'>Unlock exclusive commands in participating experiences.</font>",
 			RichText = true,
 		},
+
+		vipList,
+
+		UI.new "TextLabel" {
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			Font = UI.Theme.Font,
+			TextSize = UI.Theme.FontSize,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextWrapped = true,
+			Size = UDim2.new(1, 0, 0, 0),
+			Text = "<b>❤️ Kohl's Admin?</b>\n<font transparency='0.5'>Donate to help us build amazing new features!</font>",
+			RichText = true,
+		},
+
+		gamePasses,
+		customUGC,
 
 		UI.new "TextLabel" {
 			AutoLocalize = false,
@@ -663,11 +670,6 @@ function VIP.new(_K)
 				.. "<font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in their Roblox Game Settings!",
 			RichText = true,
 		},
-
-		customUGC,
-		subscriptionButton,
-		gamePasses,
-		adminModelButton,
 
 		UI.new "TextBox" {
 			Name = "CatalogLink",
