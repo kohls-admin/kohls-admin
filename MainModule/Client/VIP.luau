@@ -566,7 +566,6 @@ function VIP.new(_K)
 		local success, owned = _K.Util.Retry(function()
 			return _K.Util.Services.MarketplaceService:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, vipPassId)
 		end, 5, 1, 2)
-		print(success, owned)
 
 		if success then
 			if owned then

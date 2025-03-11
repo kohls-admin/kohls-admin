@@ -70,7 +70,6 @@ local function updateBans()
 	Data.Cache.bans = {}
 
 	local ok, result = Data.Store.updateAsync("Bans", function(value)
-		print("updateAsyncBans", value, bans)
 		if not value then
 			return Data.Store.filterRemove(bans)
 		end
@@ -163,7 +162,6 @@ local function updateMain()
 	Data.Cache.settings = {}
 
 	local ok, result = Data.Store.updateAsync("Main", function(value)
-		print("updateAsyncMain", value, members, settings)
 		if not value then
 			return Data.Store.filterRemove({ members, settings })
 		end
@@ -239,7 +237,6 @@ local function updateLogs()
 	Data.Cache.logs = {}
 
 	local ok, result = Data.Store.updateAsync("Logs", function(value)
-		print("updateAsyncLog", value, logs)
 		if not value then
 			return logs
 		end
@@ -330,7 +327,6 @@ function Data.initialize(name)
 		repeat
 			task.wait(1)
 			if tick() > nextBansInterval and Data.pendingSaveBans then
-				print("attempting a bans save!", Data.Cache.bans)
 				updateBans()
 			end
 		until Data.gameClosing
@@ -340,7 +336,6 @@ function Data.initialize(name)
 		repeat
 			task.wait(1)
 			if tick() > nextLogsInterval and Data.pendingSaveLogs then
-				print("attempting a logs save!", Data.Cache.logs)
 				updateLogs()
 			end
 		until Data.gameClosing
@@ -350,7 +345,6 @@ function Data.initialize(name)
 		repeat
 			task.wait(1)
 			if tick() > nextMainInterval and Data.pendingSaveMain then
-				print("attempting a main save!", Data.Cache)
 				updateMain()
 			end
 		until Data.gameClosing
