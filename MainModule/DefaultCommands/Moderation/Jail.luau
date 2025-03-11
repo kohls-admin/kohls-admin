@@ -52,7 +52,10 @@ function Jail.new(player)
 	end
 
 	local rootCFrame = root.CFrame
-	local groundPos = rootCFrame.Position - Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0)
+	local hipHeight = if humanoid.RigType == Enum.HumanoidRigType.R15
+		then humanoid.HipHeight + root.Size.Y / 2
+		else root.Size.Y * 1.5
+	local groundPos = rootCFrame.Position - Vector3.new(0, hipHeight, 0)
 
 	local _, sizeChar = character:GetBoundingBox()
 	local width = math.max(sizeChar.X, sizeChar.Y, sizeChar.Z) + 2
