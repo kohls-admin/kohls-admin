@@ -39,9 +39,10 @@ function Jail.new(player)
 		return
 	end
 
-	local root = character and (character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart)
+	local head = character and character:FindFirstChild("Head")
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not (player and root and humanoid) then
+	local root = character and (character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart)
+	if not (player and head and humanoid and root) then
 		return
 	end
 
@@ -57,11 +58,10 @@ function Jail.new(player)
 		else root.Size.Y * 1.5
 	local groundPos = rootCFrame.Position - Vector3.new(0, hipHeight, 0)
 
-	local _, sizeChar = character:GetBoundingBox()
-	local width = math.max(sizeChar.X, sizeChar.Y, sizeChar.Z) + 2
-	local position = groundPos + Vector3.new(0, width / 2, 0)
-	local offset = width / 2 - 0.5
-	local size = Vector3.new(width, width, width)
+	local width = math.max(root.Size.X, root.Size.Z) + 4
+	local size = Vector3.new(width, hipHeight + root.Size.Y / 2 + head.Size.Y + 3, width)
+	local position = groundPos + Vector3.new(0, size.Y / 2, 0)
+	local offset = (size - Vector3.one) / 2
 
 	local kJail = Instance.new("Part")
 	kJail.Name = "kJail"
@@ -80,29 +80,29 @@ function Jail.new(player)
 	top.Parent = kJail
 	top.Transparency = 1
 	top.Size = Vector3.new(width, 1, width)
-	top.Position = position + Vector3.new(0, offset, 0)
+	top.Position = position + Vector3.new(0, offset.Y, 0)
 
 	local bottom = top:Clone()
 	bottom.Parent = kJail
-	bottom.Position = position - Vector3.new(0, offset + 1, 0)
+	bottom.Position = position - Vector3.new(0, offset.Y, 0)
 
 	local left = top:Clone()
 	left.Parent = kJail
-	left.Size = Vector3.new(1, width, width)
-	left.Position = position - Vector3.new(offset, 0, 0)
+	left.Size = Vector3.new(1, size.Y, width)
+	left.Position = position - Vector3.new(offset.X, 0, 0)
 
 	local right = left:Clone()
 	right.Parent = kJail
-	right.Position = position + Vector3.new(offset, 0, 0)
+	right.Position = position + Vector3.new(offset.X, 0, 0)
 
 	local front = top:Clone()
 	front.Parent = kJail
-	front.Size = Vector3.new(width, width, 1)
-	front.Position = position - Vector3.new(0, 0, offset)
+	front.Size = Vector3.new(width, size.Y, 1)
+	front.Position = position - Vector3.new(0, 0, offset.Z)
 
 	local back = front:Clone()
 	back.Parent = kJail
-	back.Position = position + Vector3.new(0, 0, offset)
+	back.Position = position + Vector3.new(0, 0, offset.Z)
 
 	kJail.CanCollide = false
 	kJail.Parent = workspace
