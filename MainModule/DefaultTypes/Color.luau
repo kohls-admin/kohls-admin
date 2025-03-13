@@ -12,16 +12,14 @@ local COLORS = {
 	yellowgreen = Color3.new(0.5, 1, 0),
 	green = Color3.new(0, 1, 0),
 	aqua = Color3.new(0, 1, 1),
-	cyan = Color3.new(0, 1, 1),
 	blue = Color3.new(0, 0, 1),
 	purple = Color3.new(0.5, 0, 1),
-	violet = Color3.new(0.5, 0, 1),
 	pink = Color3.new(1, 0, 1),
 	magenta = Color3.new(1, 0, 0.5),
+        brown = Color3.new(0.6, 0.3, 0),
 
 	white = Color3.new(1, 1, 1),
 	black = Color3.new(0, 0, 0),
-	grey = Color3.new(0.5, 0.5, 0.5),
 	gray = Color3.new(0.5, 0.5, 0.5),
 }
 
