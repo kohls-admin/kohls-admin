@@ -7,4 +7,4 @@
 rojo = "rojo-rbx/rojo@7.4.4"
 selene = "Kampfkarren/selene@0.28.0"
 StyLua = "JohnnyMorganz/StyLua@2.0.2"
-luau-lsp = "JohnnyMorganz/luau-lsp@1.38.1"
+luau-lsp = "JohnnyMorganz/luau-lsp@1.40.0"
