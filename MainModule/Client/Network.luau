@@ -66,30 +66,30 @@ end
 
 -- general data replication
 
-_K.Remote.Ban.OnClientEvent:Connect(function(userId, ban)
+Remote.Ban.OnClientEvent:Connect(function(userId, ban)
 	_K.Data.bans[userId] = ban
 	UI.Scope.bans:set(_K.Data.bans)
 end)
 
-_K.Remote.Bans.OnClientEvent:Connect(function(bans)
+Remote.Bans.OnClientEvent:Connect(function(bans)
 	_K.Util.Table.merge(_K.Data.bans, bans)
 	UI.Scope.bans:set(_K.Data.bans)
 	-- Remote.Ban:FireClient(player, userId, { filtered, duration, fromUserId })
 end)
 
-_K.Remote.Member.OnClientEvent:Connect(function(userId, member)
+Remote.Member.OnClientEvent:Connect(function(userId, member)
 	_K.Data.members[userId] = member
 	UI.Scope.members:set(_K.Data.members)
 	updateInterfaceAuth()
 end)
 
-_K.Remote.Members.OnClientEvent:Connect(function(members)
+Remote.Members.OnClientEvent:Connect(function(members)
 	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
 	updateInterfaceAuth()
 end)
 
-_K.Remote.Log.OnClientEvent:Connect(function(log)
+Remote.Log.OnClientEvent:Connect(function(log)
 	if not _K.client.ready then
 		return
 	end
@@ -101,7 +101,7 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 	task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
 end)
 
-_K.Remote.Logs.OnClientEvent:Connect(function(logs)
+Remote.Logs.OnClientEvent:Connect(function(logs)
 	if not _K.client.ready then
 		return
 	end
@@ -111,7 +111,7 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logs)
 	task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
 end)
 
-_K.Remote.Settings.OnClientEvent:Connect(function(settings)
+Remote.Settings.OnClientEvent:Connect(function(settings)
 	for key, value in settings do
 		value = UI.peek(value)
 		_K.Data.settings[key] = value
@@ -126,12 +126,12 @@ _K.Remote.Settings.OnClientEvent:Connect(function(settings)
 	end
 end)
 
-_K.Remote.Role.OnClientEvent:Connect(function(role, roleData)
+Remote.Role.OnClientEvent:Connect(function(role, roleData)
 	_K.Data.roles[role] = roleData
 	updateInterfaceAuth()
 end)
 
-_K.Remote.Roles.OnClientEvent:Connect(function(roles)
+Remote.Roles.OnClientEvent:Connect(function(roles)
 	_K.Util.Table.merge(_K.Data.roles, roles)
 	updateInterfaceAuth()
 end)
@@ -167,7 +167,7 @@ local greetings = {
 }
 
 local initCon
-initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans, logs, roles)
+initCon = Remote.Init.OnClientEvent:Connect(function(members, settings, bans, logs, roles)
 	initCon:Disconnect()
 	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
