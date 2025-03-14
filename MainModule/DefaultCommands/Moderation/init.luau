@@ -1694,6 +1694,15 @@ return {
 					end
 				end
 
+				local StarterCharacterScripts =
+					context._K.Util.Services.StarterPlayer:FindFirstChild("StarterCharacterScripts")
+
+				if StarterCharacterScripts then
+					for _, child in StarterCharacterScripts:GetChildren() do
+						child:Clone().Parent = rig
+					end
+				end
+
 				player.Character = rig
 				context._K.VIP.UGCHandler(rig)
 				rig.Parent = workspace

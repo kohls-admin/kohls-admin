@@ -385,6 +385,7 @@ function VIP.new(_K)
 		{ name = "<font color='#f0f'><sc><b>Epic</b></sc></font>", id = 941076536 },
 		{ name = "<font color='#f08'><sc><b>Hero</b></sc></font>", id = 941162509 },
 		{ name = "<font color='#f00'><sc><b>Legend</b></sc></font>", id = 941006661 },
+		{ name = "<font color='#fff'><sc><b>Mythic</b></sc></font>", id = 983235767 },
 	}
 
 	for i, pass in passDefinition do
@@ -565,7 +566,6 @@ function VIP.new(_K)
 		local success, owned = _K.Util.Retry(function()
 			return _K.Util.Services.MarketplaceService:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, vipPassId)
 		end, 5, 1, 2)
-		print(success, owned)
 
 		if success then
 			if owned then
