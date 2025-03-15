@@ -85,6 +85,9 @@ local Settings = {
 	-- Toggles visibility of the Kohl's Admin Join Notification.
 	joinNotificationRank = 1,
 
+	-- EXPERIMENTAL: Save and sync logs between servers
+	saveLogs = false,
+
 	roles = {
 		default = {
 			-- role "_rank" determines hierarchy
