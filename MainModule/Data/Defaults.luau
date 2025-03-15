@@ -39,6 +39,7 @@ local Data = {
 		vip = true,
 		dashboardButtonRank = 0,
 		joinNotificationRank = 1,
+		saveLogs = false,
 	},
 
 	async = {

@@ -183,7 +183,7 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 
 	-- settings
 	for key, value in loaderSettings do
-		if _K.Data.settings[key] then
+		if _K.Data.settings[key] ~= nil then
 			_K.Data.settings[key] = value
 		end
 	end

@@ -485,39 +485,6 @@ function VIP.new(_K)
 			Padding = UI.Theme.PaddingDouble,
 			Wraps = true,
 		},
-
-		UI.new "Button" {
-			Icon = "rbxasset://textures/ui/common/robux.png",
-			IconRightAlign = true,
-			Label = "<font color='#fc0'><sc><b>VIP</b></sc></font>",
-			HoverTransparency = 0.5,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Size = UDim2.new(0, 128, 0, 32),
-
-			UI.new "TextLabel" {
-				LayoutOrder = 8,
-				AutoLocalize = false,
-				AutomaticSize = Enum.AutomaticSize.XY,
-				BackgroundTransparency = 1,
-				Font = UI.Theme.FontMono,
-				TextSize = UI.Theme.FontSizeLarge,
-				TextColor3 = UI.Theme.PrimaryText,
-				TextWrapped = true,
-				Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
-				Text = UI.compute(function(use)
-					return if (use(donationLevel) or 0) < 3 then `<b>$4.99</b>` else "<b>OWNED</b>"
-				end),
-				RichText = true,
-			},
-			[UI.Event] = {
-				Activated = function()
-					purchaseDialog.Text:set(thirdPartyText)
-					UI.Scope.lastAttemptedPurchase = true
-					purchaseLink.Text = "https://create.roblox.com/store/asset/128259181447764"
-					purchaseDialog.Visible:set(true)
-				end,
-			},
-		},
 	}
 
 	local vipPassId = 5411126
@@ -529,9 +496,6 @@ function VIP.new(_K)
 		HoverTransparency = 0.5,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Size = UDim2.new(0, 128, 0, 32),
-		Visible = UI.compute(function(use)
-			return (use(donationLevel) or 0) < 3
-		end),
 
 		UI.new "TextLabel" {
 			Name = "Price",

@@ -8,6 +8,6 @@ if not shared._K_LOADER_LOADED then
 	local SettingsModule = Package:WaitForChild("Settings")
 	local Settings = require(SettingsModule)
 
-	local module = if Settings.autoUpdate and game.PlaceId ~= 18274376677 then 1868400649 else Package.MainModule
+	local module = if Settings.autoUpdate and game.PlaceId ~= 2569622788 then 1868400649 else Package.MainModule
 	require(module).initialize(SettingsModule, AddonsFolder, true)
 end
