@@ -21,7 +21,13 @@
 		"ServerScriptService": {
 			"$path": "server",
 			"MainModule": {
-				"$path": "migrate"
+				"$path": "migrate",
+				"KA": {
+					"$path": "../MainModule",
+					"VERSION": {
+						"$path": "../VERSION.txt"
+					}
+				}
 			},
 			"Kohl's Admin": {
 				"$path": "../Loader",
@@ -37,28 +43,14 @@
 				}
 			}
 		},
-		"ServerStorage": {
-			"$className": "ServerStorage",
-			"MainModule": {
-				"$path": "migrate"
-			}
-		},
 		"Workspace": {
 			"Baseplate": {
 				"$className": "Part",
 				"$properties": {
 					"Anchored": true,
 					"Locked": true,
-					"Position": [
-						0,
-						-10,
-						0
-					],
-					"Size": [
-						512,
-						20,
-						512
-					]
+					"Position": [0, -10, 0],
+					"Size": [512, 20, 512]
 				}
 			}
 		}
