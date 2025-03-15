@@ -1,4 +1,5 @@
 local Auth = require(script.Parent.Auth)
+local Data = require(script.Parent.Data.Defaults)
 local Registry = require(script.Parent.Registry)
 local Util = require(script.Parent.Util)
 local Command = require(script.Command)
@@ -92,6 +93,19 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 		end
 
 		if not Auth.hasCommand(from, commandDefinition) then
+			local player = _K.Util.Services.Players:GetPlayerByUserId(from)
+			if player and _K.IsClient then
+				for role, roleData in Data.roles do
+					if (roleData.gamepass or role == "vip") and Auth.roleCanUseCommand(role, commandDefinition) then
+						if role == "vip" and _K.Data.settings.vip then
+							_K.promptPurchaseVIP()
+						else
+							_K.Util.Services.MarketplaceService:PromptGamePassPurchaseAsync(from, roleData.gamepass)
+						end
+					end
+				end
+			end
+
 			return false, "Invalid permissions for command: " .. commandText
 		end
 

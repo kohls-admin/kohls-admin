@@ -587,6 +587,39 @@ function About.new(_K)
 		task.defer(updatePassPriceText, vipButtonDeveloper._content.Price, vipDeveloperPassId)
 	end
 
+	local purchaseVIPDialog
+	purchaseVIPDialog = UI.new "Dialog" {
+		Parent = UI.LayerTop,
+		Title = "✨ <b>Become a VIP</b>",
+		Text = "<font transparency='0.5'>Unlock exclusive commands in participating experiences.</font>",
+		Visible = false,
+		ExitButton = true,
+		BackgroundTransparency = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		Size = UDim2.new(0, 320, 0, 0),
+		ZIndex = 999,
+		Close = function()
+			purchaseVIPDialog.Visible:set(false)
+			vipButtonDeveloper._instance.Parent = vipList
+			vipButtonGlobal._instance.Parent = vipList
+			vipList.Visible = true
+			vipLabel.Visible = true
+		end,
+	}
+
+	function _K.promptPurchaseVIP()
+		if _K.Data.roles.vip.gamepass then
+			vipLabel.Visible = false
+			vipList.Visible = false
+			vipButtonDeveloper._instance.Parent = purchaseVIPDialog._content
+			vipButtonGlobal._instance.Parent = purchaseVIPDialog._content
+			purchaseVIPDialog.Visible:set(true)
+		else
+			promptThirdPartyGamePassDialog(vipGlobalPassId)
+		end
+	end
+
 	local adminModelId = 172732271
 	local adminModelButton = UI.new "Button" {
 		Name = "adminModelButton",

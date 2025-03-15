@@ -112,8 +112,12 @@ return function(_K, text, cursorPosition)
 			data.suggestions = table.create(#data.suggestions)
 			for _, suggestionData in rawSuggestions do
 				local _name, cmd = unpack(suggestionData)
-				if cmd and _K.Auth.hasCommand(from, cmd) then
-					table.insert(data.suggestions, suggestionData)
+				if cmd then
+					if _K.Auth.hasCommand(from, cmd) then
+						table.insert(data.suggestions, suggestionData)
+					else
+						data.invalidPermissionsCommand = cmd
+					end
 				end
 			end
 
