@@ -15,7 +15,7 @@ return {
 	},
 	{
 		name = "about",
-		aliases = { "help", "credit", "credits", "info", "?" },
+		aliases = { "help", "credit", "credits", "info", "?", "donate", "support", "vip" },
 		description = "Shows the about tab in a separate window.",
 		args = {},
 		envClient = function(_K)
@@ -186,47 +186,6 @@ return {
 			context._K.UI.edit(context.env.window, {
 				Visible = visible,
 				if visible then context._K.UI.Scope.dashboard.Settings else nil,
-			})
-		end,
-	},
-	{
-		name = "vip",
-		aliases = { "donate", "support" },
-		description = "Shows the VIP tab in a separate window.",
-		args = {},
-		envClient = function(_K)
-			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTopInset,
-				Title = "Support Kohl's Admin",
-				Visible = false,
-				_K.UI.new "UIPadding" {
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-				},
-			}
-			_K.UI.edit(window, {
-				[_K.UI.Event.Property] = {
-					Visible = function()
-						if not window._instance.Visible and #_K.UI.Scope.dashboard then
-							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
-								_K.UI.Scope.dashboard.VIP,
-							})
-						end
-					end,
-				},
-			})
-			return {
-				window = window,
-			}
-		end,
-
-		runClient = function(context)
-			local visible = not context.env.window._instance.Visible
-			context._K.UI.edit(context.env.window, {
-				Visible = visible,
-				if visible then context._K.UI.Scope.dashboard.VIP else nil,
 			})
 		end,
 	},

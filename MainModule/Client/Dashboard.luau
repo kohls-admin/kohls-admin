@@ -8,7 +8,6 @@ local Commands = require(script.Parent.Commands)
 local Logs = require(script.Parent.Logs)
 local Members = require(script.Parent.Members)
 local Settings = require(script.Parent.Settings)
-local VIP = require(script.Parent.VIP)
 
 local clockStart = os.clock()
 
@@ -18,7 +17,6 @@ UI.Scope.dashboard.Bans = Bans.new(_K)
 UI.Scope.dashboard.Members = Members.new(_K)
 UI.Scope.dashboard.Logs = Logs.new(_K)
 UI.Scope.dashboard.Settings = Settings.new(_K)
-UI.Scope.dashboard.VIP = VIP.new(_K)
 
 UI.Scope.dashboard.Tabs = UI.new "Tabs" {
 	UI.Scope.dashboard.Commands,
@@ -27,10 +25,9 @@ UI.Scope.dashboard.Tabs = UI.new "Tabs" {
 	UI.Scope.dashboard.Logs,
 	UI.Scope.dashboard.Settings,
 	UI.Scope.dashboard.About,
-	UI.Scope.dashboard.VIP,
 }
 
-UI.Scope.dashboard.Tabs._pages:JumpTo(UI.Scope.dashboard.VIP)
+UI.Scope.dashboard.Tabs._pages:JumpTo(UI.Scope.dashboard.About)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
