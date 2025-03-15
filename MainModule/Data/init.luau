@@ -216,6 +216,7 @@ local function syncLogs(logs)
 		table.insert(newLogs, { text = text, level = level, time = time, from = from, name = name })
 	end
 	table.move(newLogs, 1, #newLogs, #Data.logs + 1, Data.logs)
+	Util.Defer.wait()
 	table.sort(Data.logs, Data.sortTime)
 	for _, player in Players:GetPlayers() do
 		if Auth.hasPermission(player.UserId, "serverlogs") then
@@ -232,6 +233,11 @@ end
 local nextLogsInterval = tick() + updateAsyncInterval
 local function updateLogs()
 	nextLogsInterval = math.huge
+
+	if Data.settings.saveLogs == false then
+		Data.pendingSaveLogs = false
+		return true
+	end
 
 	local logs = Data.Cache.logs
 	Data.Cache.logs = {}
@@ -268,7 +274,7 @@ local function updateLogs()
 
 	nextLogsInterval = tick() + updateAsyncInterval
 
-	return ok, result
+	return
 end
 
 function Data.initialize(name)
@@ -308,11 +314,13 @@ function Data.initialize(name)
 		end
 	end
 
-	local okLogs, logs = Data.Store.getAsync("Logs")
-	if okLogs then
-		print("LogsLoad", logs)
-		if logs then
-			syncLogs(logs)
+	if Data.settings.saveLogs ~= false then
+		local okLogs, logs = Data.Store.getAsync("Logs")
+		if okLogs then
+			print("LogsLoad", logs)
+			if logs then
+				syncLogs(logs)
+			end
 		end
 	end
 
