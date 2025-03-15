@@ -67,7 +67,7 @@ return {
 			{
 				Id = 2014793803, --SkellyLua
 				Tooltip = "Command Contributions",
-			}
+			},
 		},
 	},
 	{
