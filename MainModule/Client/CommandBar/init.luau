@@ -311,6 +311,21 @@ local function clearCompletion()
 end
 
 local function invalidSuggestion(data, err, pos, text)
+	-- TODO: add gamepass button if one exists for invalid perms
+	if data.invalidPermissionsCommand then
+		for role, roleData in _K.Data.roles do
+			if
+				(roleData.gamepass or role == "vip") and _K.Auth.roleCanUseCommand(role, data.invalidPermissionsCommand)
+			then
+				if role == "vip" and _K.Data.settings.vip then
+					_K.promptPurchaseVIP()
+				else
+					_K.Util.Services.MarketplaceService:PromptGamePassPurchaseAsync(UI.LocalPlayer, roleData.gamepass)
+				end
+			end
+		end
+	end
+
 	validState:set(false)
 	-- red text inlineFormat
 	Input.DisplayText:set(

@@ -115,4 +115,8 @@ return function(_K)
 			print("Custom command ran on the client!", message, context.env.countClient)
 		end,
 	})
+
+	if game.PlaceId == 2569622788 then -- ONLY FOR DEMO PLACE
+		_K.Data.settings.saveLogs = true
+	end
 end

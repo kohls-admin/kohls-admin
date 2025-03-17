@@ -44,10 +44,6 @@ local Settings = {
 		-- "vip",
 	},
 
-	gamePassRoles = {
-		-- [gamePassId] = { "mod", "vip" },
-	},
-
 	groupRoles = {
 		-- [groupId] = {
 		-- { rank = 200, roles = { "admin", "vip" }, exactRank = false },
@@ -89,7 +85,7 @@ local Settings = {
 	saveLogs = false,
 
 	roles = {
-		default = {
+		default = { -- This role is given to everyone by default!
 			-- role "_rank" determines hierarchy
 			-- 0 is reserved for the default role
 			_rank = 0,
@@ -132,6 +128,9 @@ local Settings = {
 				-- disable the shutdown command if given to role by a command group
 				shutdown = false,
 			},
+
+			-- Gives the role automatically if the user has the specified gamepass id
+			gamepass = nil,
 		},
 		vip = {
 			_rank = 1,
@@ -140,6 +139,7 @@ local Settings = {
 			permissions = {},
 			color = "#0f8",
 			onlyTargetSelf = true,
+			gamepass = nil,
 		},
 		mod = {
 			_rank = 2,
@@ -147,6 +147,7 @@ local Settings = {
 			groups = { "moderation", "general", "environment", "fun", "vip" },
 			permissions = { serverlogs = true },
 			color = "#0f0",
+			gamepass = nil,
 		},
 		admin = {
 			_rank = 3,

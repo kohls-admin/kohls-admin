@@ -231,8 +231,30 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 	end
 
 	-- gamepass and group roles
-	_K.Util.Table.deepMerge(_K.Data.async.gamepass, loaderSettings.gamePassRoles)
-	_K.Util.Table.deepMerge(_K.Data.async.group, loaderSettings.groupRoles)
+	if loaderSettings.gamePassRoles then
+		_K.Util.Table.deepMerge(_K.Data.async.gamepass, loaderSettings.gamePassRoles)
+	end
+	if loaderSettings.groupRoles then
+		_K.Util.Table.deepMerge(_K.Data.async.group, loaderSettings.groupRoles)
+	end
+
+	Util.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
+		if purchased then
+			local gamePassRoles = _K.Data.async.gamepass[passId]
+			if gamePassRoles then
+				for _, role in gamePassRoles do
+					_K.Auth.userRoleAdd(player.UserId, role)
+				end
+			end
+			for role, roleData in _K.Data.roles do
+				if roleData.gamepass == passId then
+					if gamePassRoles then
+						_K.Auth.userRoleAdd(player.UserId, role)
+					end
+				end
+			end
+		end
+	end)
 
 	if addons then
 		local serverAddons = Instance.new("Folder", Util.Services.ServerStorage)

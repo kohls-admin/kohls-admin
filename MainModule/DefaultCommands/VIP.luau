@@ -639,6 +639,26 @@ return {
 		end,
 	},
 	{
+		name = "uncape",
+		description = "Removes the cape from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose cape to remove.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local existing = player.Character and player.Character:FindFirstChild("_KCape")
+				if existing then
+					existing:Destroy()
+				end
+			end
+		end,
+	},
+	{
 		name = "hat",
 		aliases = { "crmhat" },
 		description = "Gives one or more player(s) one or more hats.",
