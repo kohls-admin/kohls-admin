@@ -17,18 +17,18 @@ local function resetOffset(height: number?)
 end
 
 local function hide(info, height: number?)
-	local announce, visible, _offset = unpack(info)
+	local card, visible, _offset, delay = unpack(info)
 	local found = table.find(existing, info)
-	if not found then
+	if not found or (delay == 0 and height) then
 		return
 	end
 	UI.Sound.Swipe:Play()
 
 	table.remove(existing, found)
 	resetOffset(height)
-	announce.ZIndex = -1
+	card.ZIndex = -1
 	visible:set(nil)
-	task.delay(1 + UI.Theme.TweenOut._value.Time, announce.Destroy, announce)
+	task.delay(1 + UI.Theme.TweenOut._value.Time, card.Destroy, card)
 end
 
 return function(text: string, from: number?, delay: number?, name: string?, image: string?)
@@ -133,7 +133,7 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 		dialog._exitButton,
 	})
 
-	self = { dialog._instance, visible, offset }
+	self = { dialog._instance, visible, offset, delay }
 	table.insert(existing, 1, self)
 	visible:set(true)
 
