@@ -4,20 +4,6 @@ local SoundService = game:GetService("SoundService")
 local TextService = game:GetService("TextService")
 local UserInputService = game:GetService("UserInputService")
 
-local Sound = {}
-Sound.__index = Sound
-
-export type Sound = typeof(setmetatable({} :: { sound: Instance }, Sound))
-
-function Sound.new(id: string): Sound
-	local self = {
-		sound = Instance.new("Sound"),
-	}
-	self.sound.PlayOnRemove = true
-	self.sound.SoundId = "rbxassetid://" .. id
-	return setmetatable(self, Sound)
-end
-
 local Flux = require(script.Parent.Parent.Flux)
 local state = Flux.state
 
@@ -41,15 +27,53 @@ setmetatable(UI, Flux)
 
 UI.Theme = require(script.Theme)
 
+local SoundGroup = Instance.new("SoundGroup")
+SoundGroup.Name = "KASounds"
+SoundGroup.Volume = 1
+SoundGroup.Parent = SoundService
+
+local Sound = {}
+Sound.__index = Sound
+
+export type Sound = typeof(setmetatable({} :: { sound: Instance }, Sound))
+
+function Sound.new(id: string): Sound
+	local self = {
+		sound = Instance.new("Sound"),
+	}
+	self.sound.PlayOnRemove = true
+	self.sound.SoundId = "rbxassetid://" .. id
+	self.sound.Parent = SoundGroup
+	return setmetatable(self, Sound)
+end
+
 -- Creates a copy of the sound and plays it
 function Sound:Play()
 	if not UI.Theme.SoundEnabled._value then
 		return
 	end
-	local sound = self.sound:Clone()
-	sound.Parent = SoundService
-	sound:Destroy()
+	self.sound:Play()
 end
+
+UI.Sound = {
+	Back = Sound.new("10066914500"),
+	Call_Accept = Sound.new("17208209318"),
+	Call_Decline = Sound.new("17208214688"),
+	Call_Hangup = Sound.new("17208220181"),
+	Call_Leave = Sound.new("17208295577"),
+	Hello = Sound.new("17208335138"),
+	Hover01 = Sound.new("17208339919"),
+	Hover02 = Sound.new("17208343514"),
+	Hover03 = Sound.new("17208348006"),
+	Negative = Sound.new("17208353912"),
+	Notification_High = Sound.new("17208361335"),
+	Notification_Low = Sound.new("17208372272"),
+	PopSwipe = Sound.new("10128766965"),
+	Select01 = Sound.new("10128760939"),
+	Select02 = Sound.new("10066968815"),
+	Select03 = Sound.new("17208396156"),
+	Swipe = Sound.new("17208405682"),
+}
 
 --- @within UI
 --- @prop GuiService GuiService
@@ -222,26 +246,6 @@ UI.TopbarFrame = UI.new "Frame" {
 			return UDim.new(0, if use(UI.LegacyTopbar) then 0 else 2)
 		end),
 	},
-}
-
-UI.Sound = {
-	Back = Sound.new("10066914500"),
-	Call_Accept = Sound.new("17208209318"),
-	Call_Decline = Sound.new("17208214688"),
-	Call_Hangup = Sound.new("17208220181"),
-	Call_Leave = Sound.new("17208295577"),
-	Hello = Sound.new("17208335138"),
-	Hover01 = Sound.new("17208339919"),
-	Hover02 = Sound.new("17208343514"),
-	Hover03 = Sound.new("17208348006"),
-	Negative = Sound.new("17208353912"),
-	Notification_High = Sound.new("17208361335"),
-	Notification_Low = Sound.new("17208372272"),
-	PopSwipe = Sound.new("10128766965"),
-	Select01 = Sound.new("10128760939"),
-	Select02 = Sound.new("10066968815"),
-	Select03 = Sound.new("17208396156"),
-	Swipe = Sound.new("17208405682"),
 }
 
 -- generic floating/hover edge case handler
