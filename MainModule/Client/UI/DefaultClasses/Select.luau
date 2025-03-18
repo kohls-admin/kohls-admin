@@ -65,7 +65,9 @@ function Select.new(definition)
 		end),
 	}
 
+	local selectedButton
 	local function updateChoices()
+		local selected = new.Selected._value
 		for i, choice in new.Choices._value do
 			local name = choice
 			if typeof(choice) == "EnumItem" then
@@ -77,7 +79,8 @@ function Select.new(definition)
 				name = choice.Name
 			end
 
-			local choiceButton = UI.new "Button" {
+			local choiceButton
+			choiceButton = UI.new "Button" {
 				LayoutOrder = i,
 				ZIndex = 1e3,
 				Parent = menu._menu,
@@ -90,6 +93,7 @@ function Select.new(definition)
 
 				[UI.Event] = {
 					Activated = function()
+						selectedButton = choiceButton._instance
 						new.Selected:set(choice, true)
 						new.Choice:set(choice)
 						UI.deactivateState(menu.Visible, "floating")
@@ -118,17 +122,32 @@ function Select.new(definition)
 					UI.Sound.Hover02:Play()
 				end
 			end)
+
+			if choice == selected then
+				selectedButton = choiceButton._instance
+			end
 		end
 	end
 
-	menu._instance.Destroying:Connect(new.Choices:hook(function(value)
+	menu.Visible:hook(function(value)
+		if selectedButton and value then
+			local buttonHeight = selectedButton.AbsoluteSize.Y
+			local buttonPosition = selectedButton.AbsolutePosition.Y + menu._menu.CanvasPosition.Y
+			local offset = math.round((menu._menu.AbsoluteSize.Y / 2) / buttonHeight) * buttonHeight
+			menu._menu.CanvasPosition = Vector2.new(0, buttonPosition - menu._menu.AbsolutePosition.Y - offset)
+		end
+	end)
+
+	local disconnectHook = new.Choices:hook(function(value)
 		for _, child in menu._menu:GetChildren() do
 			if not child:IsA("UIBase") then
 				child:Destroy()
 			end
 		end
 		updateChoices()
-	end))
+	end)
+
+	menu._instance.Destroying:Connect(disconnectHook)
 	updateChoices()
 
 	return setmetatable(new, Select)
