@@ -1,4 +1,3 @@
-local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
 
 local _K = require(script.Parent.Parent)
@@ -6,7 +5,7 @@ local UI = require(script.Parent.UI)
 local UserFrame = require(script.Parent.UserFrame)
 local existing = {}
 
-local function resetOffset(height: number?)
+local function resetOffset()
 	local heightOffset = 0
 	for i, list in ipairs(existing) do
 		local card, _, offset = unpack(list)
@@ -25,7 +24,7 @@ local function hide(info, height: number?)
 	UI.Sound.Swipe:Play()
 
 	table.remove(existing, found)
-	resetOffset(height)
+	resetOffset()
 	card.ZIndex = -1
 	visible:set(nil)
 	task.delay(1 + UI.Theme.TweenOut._value.Time, card.Destroy, card)
@@ -71,45 +70,21 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 			end)
 		),
 
-		UI.new "Frame" {
-			Name = "Content",
-			BackgroundTransparency = 1,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			Size = UDim2.fromScale(1, 0),
-
-			UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-			},
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.PaddingDouble,
-				HorizontalFlex = Enum.UIFlexAlignment.Fill,
-			},
-
-			userFrame,
-			UI.new "TextLabel" {
-				AutoLocalize = false,
-				Name = "Message",
-				BackgroundTransparency = 1,
-				TextColor3 = UI.Theme.PrimaryText,
-				Text = text,
-				TextSize = UI.Theme.FontSizeLarge,
-				TextXAlignment = "Left",
-				TextWrapped = true,
-				Font = UI.Theme.Font,
-				RichText = true,
-
-				AutomaticSize = Enum.AutomaticSize.XY,
-				Size = UDim2.new(),
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
-			},
+		UI.new "UIPadding" {
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
 		},
+
+		userFrame,
+		Text = text,
 	}
+
+	UI.edit(dialog._content.Text, {
+		TextSize = UI.Theme.FontSizeLarge,
+		RichText = true,
+	})
 
 	UI.new "UISizeConstraint" {
 		Parent = dialog._instance,
@@ -140,7 +115,7 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 	local height =
 		TextService:GetTextSize(text, UI.Theme.FontSizeLarge._value, UI.Theme.Font._value, Vector2.new(512, 9e9)).Y
 
-	if resetOffset(height) > UI.LayerTopInset.AbsoluteSize.Y / 2 then
+	if resetOffset() > UI.LayerTopInset.AbsoluteSize.Y / 2 then
 		hide(existing[#existing], height)
 	end
 
