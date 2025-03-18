@@ -58,10 +58,12 @@ return {
 				if visible then context._K.UI.Scope.dashboard.About else nil,
 			})
 			if not context.env.init then
-				context.env.window.Position:set(UDim2.fromOffset(
-					math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 256,
-					math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 256
-				))
+				context.env.window.Position:set(
+					UDim2.fromOffset(
+						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 210,
+						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 210
+					)
+				)
 				context.env.init = true
 			end
 		end,
@@ -106,10 +108,12 @@ return {
 				if visible then context._K.UI.Scope.dashboard.Commands else nil,
 			})
 			if not context.env.init then
-				context.env.window.Position:set(UDim2.fromOffset(
-					math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 256,
-					math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 256
-				))
+				context.env.window.Position:set(
+					UDim2.fromOffset(
+						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 210,
+						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 210
+					)
+				)
 				context.env.init = true
 			end
 		end,
@@ -161,10 +165,12 @@ return {
 				if visible then context._K.UI.Scope.dashboard.Logs else nil,
 			})
 			if not context.env.init then
-				context.env.window.Position:set(UDim2.fromOffset(
-					math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 256,
-					math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 256
-				))
+				context.env.window.Position:set(
+					UDim2.fromOffset(
+						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 210,
+						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 210
+					)
+				)
 				context.env.init = true
 			end
 		end,
@@ -209,10 +215,12 @@ return {
 				if visible then context._K.UI.Scope.dashboard.Settings else nil,
 			})
 			if not context.env.init then
-				context.env.window.Position:set(UDim2.fromOffset(
-					math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 256,
-					math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 256
-				))
+				context.env.window.Position:set(
+					UDim2.fromOffset(
+						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 210,
+						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 210
+					)
+				)
 				context.env.init = true
 			end
 		end,
