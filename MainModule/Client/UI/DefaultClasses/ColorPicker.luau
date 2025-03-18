@@ -1,6 +1,6 @@
 local UserInputService = game:GetService("UserInputService")
 
-local UI = require(script.Parent)
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent.BaseClass)
 
 local rainbowSequence = ColorSequence.new({

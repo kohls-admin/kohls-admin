@@ -1,5 +1,3 @@
-local UI = require(script.Parent)
-
 local BaseClass = {}
 BaseClass.__index = BaseClass
 

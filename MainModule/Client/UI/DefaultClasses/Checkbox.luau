@@ -1,5 +1,5 @@
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent)
+local UI = require(script.Parent.Parent)
 
 export type Function = UI.Function
 export type List<T> = UI.List<T>

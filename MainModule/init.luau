@@ -57,7 +57,7 @@ local _K = {
 	Flux = require(script:WaitForChild("Flux")),
 	Hook = require(script:WaitForChild("Hook")),
 	Remote = require(script:WaitForChild("Remote")),
-	UI = require(Client:WaitForChild("UI")),
+	UI = nil,
 
 	-- core modules
 	Auth = require(script:WaitForChild("Auth")),
@@ -81,10 +81,11 @@ _K.Services = _K.Util.Services
 
 -- register initial UI children
 if _K.IsClient then
+	_K.UI = require(Client:WaitForChild("UI"))
 	_K.Data.loaderSettings = require(script:WaitForChild("Settings"))
 	_K.Data.roles = _K.Data.loaderSettings.roles
 	local uiRegisterStart = os.clock()
-	_K.UI.registerChildren()
+	_K.UI.registerDefaultClasses()
 	task.spawn(_K.log, `UI classes registered in {math.round((os.clock() - uiRegisterStart) * 1000)} ms`, "DEBUG")
 end
 
