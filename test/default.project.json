@@ -43,6 +43,11 @@
 				}
 			}
 		},
+		"TextChatService": {
+			"$properties": {
+				"ChatVersion": { "Enum": 1 }
+			}
+		},
 		"Workspace": {
 			"Baseplate": {
 				"$className": "Part",
