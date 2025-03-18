@@ -281,6 +281,18 @@ local function updateSuggestionLabels(data)
 				Size = UDim2.new(1, 0, 1, 0),
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			}
+		elseif valueType == "table" then
+			if value.userId or value.UserId then
+				UI.new "ImageLabel" {
+					Parent = frame,
+					BackgroundTransparency = 1,
+					AnchorPoint = Vector2.new(1, 0),
+					Position = UDim2.new(1, 0, 0, 0),
+					Size = UDim2.new(1, 0, 1, 0),
+					SizeConstraint = Enum.SizeConstraint.RelativeYY,
+					Image = `rbxthumb://type=AvatarHeadShot&id={value.userId or value.UserId}&w=48&h=48`,
+				}
+			end
 		end
 
 		label.Text = string.format(
