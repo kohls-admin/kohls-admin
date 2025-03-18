@@ -66,7 +66,8 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 			UI.compute(function(use)
 				local height = use(UI.TopbarInset).Height
 				local padding = use(UI.Theme.Padding).Offset
-				return UDim2.new(0.5, 0, 0, if use(visible) then padding + use(offset) else -height)
+				local heightOffset = use(offset)
+				return UDim2.new(0.5, 0, 0, if use(visible) then padding + heightOffset else -height)
 			end)
 		),
 
