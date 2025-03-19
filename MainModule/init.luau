@@ -239,6 +239,16 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 		_K.Util.Table.deepMerge(_K.Data.async.group, loaderSettings.groupRoles)
 	end
 
+	for role, roleData in _K.Data.roles do
+		if roleData.gamepass then
+			if not _K.Data.async.gamepass[roleData.gamepass] then
+				_K.Data.async.gamepass[roleData.gamepass] = { role }
+			else
+				table.insert(_K.Data.async.gamepass[roleData.gamepass], role)
+			end
+		end
+	end
+
 	Util.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
 		if purchased then
 			local gamePassRoles = _K.Data.async.gamepass[passId]
@@ -249,9 +259,7 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 			end
 			for role, roleData in _K.Data.roles do
 				if roleData.gamepass == passId then
-					if gamePassRoles then
-						_K.Auth.userRoleAdd(player.UserId, role)
-					end
+					_K.Auth.userRoleAdd(player.UserId, role)
 				end
 			end
 		end
