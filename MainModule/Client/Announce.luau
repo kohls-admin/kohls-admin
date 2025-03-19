@@ -1,4 +1,3 @@
-local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
 
 local _K = require(script.Parent.Parent)
@@ -6,7 +5,7 @@ local UI = require(script.Parent.UI)
 local UserFrame = require(script.Parent.UserFrame)
 local existing = {}
 
-local function resetOffset(height: number?)
+local function resetOffset()
 	local heightOffset = 0
 	for i, list in ipairs(existing) do
 		local card, _, offset = unpack(list)
@@ -17,18 +16,18 @@ local function resetOffset(height: number?)
 end
 
 local function hide(info, height: number?)
-	local announce, visible, _offset = unpack(info)
+	local card, visible, _offset, delay = unpack(info)
 	local found = table.find(existing, info)
-	if not found then
+	if not found or (delay == 0 and height) then
 		return
 	end
 	UI.Sound.Swipe:Play()
 
 	table.remove(existing, found)
-	resetOffset(height)
-	announce.ZIndex = -1
+	resetOffset()
+	card.ZIndex = -1
 	visible:set(nil)
-	task.delay(1 + UI.Theme.TweenOut._value.Time, announce.Destroy, announce)
+	task.delay(1 + UI.Theme.TweenOut._value.Time, card.Destroy, card)
 end
 
 return function(text: string, from: number?, delay: number?, name: string?, image: string?)
@@ -66,49 +65,26 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 			UI.compute(function(use)
 				local height = use(UI.TopbarInset).Height
 				local padding = use(UI.Theme.Padding).Offset
-				return UDim2.new(0.5, 0, 0, if use(visible) then padding + use(offset) else -height)
+				local heightOffset = use(offset)
+				return UDim2.new(0.5, 0, 0, if use(visible) then padding + heightOffset else -height)
 			end)
 		),
 
-		UI.new "Frame" {
-			Name = "Content",
-			BackgroundTransparency = 1,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			Size = UDim2.fromScale(1, 0),
-
-			UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-			},
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.PaddingDouble,
-				HorizontalFlex = Enum.UIFlexAlignment.Fill,
-			},
-
-			userFrame,
-			UI.new "TextLabel" {
-				AutoLocalize = false,
-				Name = "Message",
-				BackgroundTransparency = 1,
-				TextColor3 = UI.Theme.PrimaryText,
-				Text = text,
-				TextSize = UI.Theme.FontSizeLarge,
-				TextXAlignment = "Left",
-				TextWrapped = true,
-				Font = UI.Theme.Font,
-				RichText = true,
-
-				AutomaticSize = Enum.AutomaticSize.XY,
-				Size = UDim2.new(),
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
-			},
+		UI.new "UIPadding" {
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
 		},
+
+		userFrame,
+		Text = text,
 	}
+
+	UI.edit(dialog._content.Text, {
+		TextSize = UI.Theme.FontSizeLarge,
+		RichText = true,
+	})
 
 	UI.new "UISizeConstraint" {
 		Parent = dialog._instance,
@@ -132,14 +108,14 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 		dialog._exitButton,
 	})
 
-	self = { dialog._instance, visible, offset }
+	self = { dialog._instance, visible, offset, delay }
 	table.insert(existing, 1, self)
 	visible:set(true)
 
 	local height =
 		TextService:GetTextSize(text, UI.Theme.FontSizeLarge._value, UI.Theme.Font._value, Vector2.new(512, 9e9)).Y
 
-	if resetOffset(height) > UI.LayerTopInset.AbsoluteSize.Y / 2 then
+	if resetOffset() > UI.LayerTopInset.AbsoluteSize.Y / 2 then
 		hide(existing[#existing], height)
 	end
 

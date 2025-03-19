@@ -281,6 +281,18 @@ local function updateSuggestionLabels(data)
 				Size = UDim2.new(1, 0, 1, 0),
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			}
+		elseif valueType == "table" then
+			if value.userId or value.UserId then
+				UI.new "ImageLabel" {
+					Parent = frame,
+					BackgroundTransparency = 1,
+					AnchorPoint = Vector2.new(1, 0),
+					Position = UDim2.new(1, 0, 0, 0),
+					Size = UDim2.new(1, 0, 1, 0),
+					SizeConstraint = Enum.SizeConstraint.RelativeYY,
+					Image = `rbxthumb://type=AvatarHeadShot&id={value.userId or value.UserId}&w=48&h=48`,
+				}
+			end
 		end
 
 		label.Text = string.format(
@@ -557,26 +569,42 @@ local function hideCommandBar()
 	end
 end
 
+local function suggestionUp()
+	if currentCompletionData.suggestionType == "History" then
+		suggestionIndex = math.min(
+			math.max(1, currentCompletionData.suggestions and #currentCompletionData.suggestions or 1),
+			suggestionIndex + 1
+		)
+	else
+		suggestionIndex = math.max(1, suggestionIndex - 1)
+	end
+	updateCompletion()
+end
+
+local function suggestionDown()
+	if currentCompletionData.suggestionType == "History" then
+		suggestionIndex = math.max(1, suggestionIndex - 1)
+	else
+		suggestionIndex = math.min(
+			math.max(1, currentCompletionData.suggestions and #currentCompletionData.suggestions or 1),
+			suggestionIndex + 1
+		)
+	end
+	updateCompletion()
+end
+
+TooltipFrame.MouseWheelForward:Connect(suggestionUp)
+TooltipFrame.MouseWheelBackward:Connect(suggestionDown)
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.UserInputType == Enum.UserInputType.Keyboard then
 		if not Input._input:IsFocused() then
 			return
 		end
-		local max = currentCompletionData.suggestions and #currentCompletionData.suggestions or 1
 		if input.KeyCode == Enum.KeyCode.Up then
-			if currentCompletionData.suggestionType == "History" then
-				suggestionIndex = math.min(math.max(1, max), suggestionIndex + 1)
-			else
-				suggestionIndex = math.max(1, suggestionIndex - 1)
-			end
-			updateCompletion()
+			suggestionUp()
 		elseif input.KeyCode == Enum.KeyCode.Down then
-			if currentCompletionData.suggestionType == "History" then
-				suggestionIndex = math.max(1, suggestionIndex - 1)
-			else
-				suggestionIndex = math.min(math.max(1, max), suggestionIndex + 1)
-			end
-			updateCompletion()
+			suggestionDown()
 		end
 	elseif
 		input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch

@@ -4,20 +4,6 @@ local SoundService = game:GetService("SoundService")
 local TextService = game:GetService("TextService")
 local UserInputService = game:GetService("UserInputService")
 
-local Sound = {}
-Sound.__index = Sound
-
-export type Sound = typeof(setmetatable({} :: { sound: Instance }, Sound))
-
-function Sound.new(id: string): Sound
-	local self = {
-		sound = Instance.new("Sound"),
-	}
-	self.sound.PlayOnRemove = true
-	self.sound.SoundId = "rbxassetid://" .. id
-	return setmetatable(self, Sound)
-end
-
 local Flux = require(script.Parent.Parent.Flux)
 local state = Flux.state
 
@@ -39,15 +25,55 @@ local UI = { Class = {} }
 UI.__index = UI
 setmetatable(UI, Flux)
 
+UI.Theme = require(script.Theme)
+
+local SoundGroup = Instance.new("SoundGroup")
+SoundGroup.Name = "KASounds"
+SoundGroup.Volume = 1
+SoundGroup.Parent = SoundService
+
+local Sound = {}
+Sound.__index = Sound
+
+export type Sound = typeof(setmetatable({} :: { sound: Instance }, Sound))
+
+function Sound.new(id: string): Sound
+	local self = {
+		sound = Instance.new("Sound"),
+	}
+	self.sound.PlayOnRemove = true
+	self.sound.SoundId = "rbxassetid://" .. id
+	self.sound.Parent = SoundGroup
+	return setmetatable(self, Sound)
+end
+
 -- Creates a copy of the sound and plays it
 function Sound:Play()
 	if not UI.Theme.SoundEnabled._value then
 		return
 	end
-	local sound = self.sound:Clone()
-	sound.Parent = SoundService
-	sound:Destroy()
+	self.sound:Play()
 end
+
+UI.Sound = {
+	Back = Sound.new("10066914500"),
+	Call_Accept = Sound.new("17208209318"),
+	Call_Decline = Sound.new("17208214688"),
+	Call_Hangup = Sound.new("17208220181"),
+	Call_Leave = Sound.new("17208295577"),
+	Hello = Sound.new("17208335138"),
+	Hover01 = Sound.new("17208339919"),
+	Hover02 = Sound.new("17208343514"),
+	Hover03 = Sound.new("17208348006"),
+	Negative = Sound.new("17208353912"),
+	Notification_High = Sound.new("17208361335"),
+	Notification_Low = Sound.new("17208372272"),
+	PopSwipe = Sound.new("10128766965"),
+	Select01 = Sound.new("10128760939"),
+	Select02 = Sound.new("10066968815"),
+	Select03 = Sound.new("17208396156"),
+	Swipe = Sound.new("17208405682"),
+}
 
 --- @within UI
 --- @prop GuiService GuiService
@@ -220,179 +246,6 @@ UI.TopbarFrame = UI.new "Frame" {
 			return UDim.new(0, if use(UI.LegacyTopbar) then 0 else 2)
 		end),
 	},
-}
-
---- @within UI
---- A directory of Flux state for UI components to use as theme variables
---- @interface Theme
---- .ClackAll State<boolean>
---- .ClackEnabled State<boolean>
---- .Transparency State<number>
---- .Primary State<Color3>
---- .PrimaryText State<Color3>
---- .Secondary State<Color3>
---- .SecondaryText State<Color3>
---- .Muted State<Color3>
---- .MutedText State<Color3>
---- .Border State<Color3>
---- .BorderMuted State<Color3>
---- .Valid State<Color3>
---- .Invalid State<Color3>
---- .FontSize State<number>
---- .Font State<Font>
---- .FontMono State<Font>
---- .FontHeavy State<Font>
---- .FontBold State<Font>
---- .FontSemiBold State<Font>
---- .FontLight State<Font>
---- .CornerRadius State<UDim>
---- .CornerHalf State<UDim>
---- .CornerDiameter State<UDim>
---- .Padding State<UDim>
---- .PaddingHalf State<UDim>
---- .PaddingDouble State<UDim>
---- .StrokeEnabled State<boolean>
---- .NormalTween State<TweenInfo>
---- .TransparencyClamped State<number>
---- .ScrollMidImage State<string>
---- .ScrollTopImage State<string>
---- .ScrollBottomImage State<string>
-UI.Theme = {
-	ClackAll = state(true),
-	ClackEnabled = state(false),
-	Transparency = state(0.3),
-
-	Primary = state(Color3.fromRGB(0, 0, 0)),
-	PrimaryText = state(Color3.fromRGB(255, 255, 255)),
-
-	Secondary = state(Color3.fromRGB(255, 255, 255)),
-	SecondaryText = state(Color3.fromRGB(0, 0, 0)),
-
-	Muted = state(Color3.fromRGB(200, 200, 200)),
-	MutedText = state(Color3.fromRGB(127, 127, 127)),
-
-	Border = state(Color3.fromRGB(100, 100, 100)),
-	BorderMuted = state(Color3.fromRGB(50, 50, 50)),
-
-	Valid = state(Color3.fromRGB(0, 255, 0)),
-	Invalid = state(Color3.fromRGB(255, 0, 0)),
-
-	FontSize = state(15),
-	Font = state(Enum.Font.Roboto),
-	FontMono = state(Enum.Font.RobotoMono),
-
-	CornerRadius = state(UDim.new(0, 8)),
-	Padding = state(UDim.new(0, 6)),
-	StrokeEnabled = state(true),
-	SoundEnabled = state(true),
-
-	TweenIn = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In)),
-	TweenOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)),
-	TweenInOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut)),
-}
-
-UI.Theme.TransparencyClamped = UI.compute(function(use)
-	return math.min(0.75, use(UI.Theme.Transparency))
-end)
-
-UI.Theme.FontHeavy = Flux.compute(function(use)
-	local font = Font.fromEnum(use(UI.Theme.Font))
-	font.Weight = Enum.FontWeight.Heavy
-	return font
-end)
-
-UI.Theme.FontBold = Flux.compute(function(use)
-	local font = Font.fromEnum(use(UI.Theme.Font))
-	font.Weight = Enum.FontWeight.Bold
-	return font
-end)
-
-UI.Theme.FontSemiBold = Flux.compute(function(use)
-	local font = Font.fromEnum(use(UI.Theme.Font))
-	font.Weight = Enum.FontWeight.SemiBold
-	return font
-end)
-
-UI.Theme.FontLight = Flux.compute(function(use)
-	local font = Font.fromEnum(use(UI.Theme.Font))
-	font.Weight = Enum.FontWeight.Light
-	return font
-end)
-
-UI.Theme.FontSizeDouble = Flux.compute(function(use)
-	return math.round(use(UI.Theme.FontSize) * 2)
-end)
-
-UI.Theme.FontSizeLargest = Flux.compute(function(use)
-	return math.round(use(UI.Theme.FontSize) * 1.75)
-end)
-
-UI.Theme.FontSizeLarger = Flux.compute(function(use)
-	return math.round(use(UI.Theme.FontSize) * 1.5)
-end)
-
-UI.Theme.FontSizeLarge = Flux.compute(function(use)
-	return math.round(use(UI.Theme.FontSize) * 1.25)
-end)
-
-UI.Theme.FontSizeSmall = Flux.compute(function(use)
-	return math.round(use(UI.Theme.FontSize) * 0.75)
-end)
-
-UI.Theme.FontSizeSmaller = Flux.compute(function(use)
-	return math.round(use(UI.Theme.FontSize) * 0.5)
-end)
-
-UI.Theme.FontSizeSmallest = Flux.compute(function(use)
-	return math.round(use(UI.Theme.FontSize) * 0.25)
-end)
-
-UI.Theme.PaddingHalf = UI.compute(function(use)
-	local padding = use(UI.Theme.Padding)
-	return UDim.new(padding.Scale / 2, padding.Offset / 2)
-end)
-
-UI.Theme.PaddingDouble = UI.compute(function(use)
-	local padding = use(UI.Theme.Padding)
-	return UDim.new(padding.Scale * 2, padding.Offset * 2)
-end)
-
-UI.Theme.CornerHalf = UI.compute(function(use)
-	local radius = use(UI.Theme.CornerRadius)
-	return UDim.new(radius.Scale / 2, radius.Offset / 2)
-end)
-
-UI.Theme.CornerDiameter = UI.compute(function(use)
-	local radius = use(UI.Theme.CornerRadius)
-	return UDim.new(radius.Scale * 2, radius.Offset * 2)
-end)
-
-UI.Theme.ScrollMidImage = UI.state("rbxassetid://18370268668")
-UI.Theme.ScrollTopImage = UI.compute(function(use)
-	return if use(UI.Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://18370266164"
-end)
-UI.Theme.ScrollBottomImage = UI.compute(function(use)
-	return if use(UI.Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://18370271296"
-end)
-
-UI.Sound = {
-	Back = Sound.new("10066914500"),
-	Call_Accept = Sound.new("17208209318"),
-	Call_Decline = Sound.new("17208214688"),
-	Call_Hangup = Sound.new("17208220181"),
-	Call_Leave = Sound.new("17208295577"),
-	Hello = Sound.new("17208335138"),
-	Hover01 = Sound.new("17208339919"),
-	Hover02 = Sound.new("17208343514"),
-	Hover03 = Sound.new("17208348006"),
-	Negative = Sound.new("17208353912"),
-	Notification_High = Sound.new("17208361335"),
-	Notification_Low = Sound.new("17208372272"),
-	PopSwipe = Sound.new("10128766965"),
-	Select01 = Sound.new("10128760939"),
-	Select02 = Sound.new("10066968815"),
-	Select03 = Sound.new("17208396156"),
-	Swipe = Sound.new("17208405682"),
 }
 
 -- generic floating/hover edge case handler
@@ -631,10 +484,10 @@ function UI.register(className: string, class: Dict<any>)
 	UI.Class[className] = class
 end
 
---- Run to register all default children in the UI module
-function UI.registerChildren(): typeof(UI)
-	UI.registerChildren = nil :: any
-	for _, child in script:GetChildren() do
+--- Run to register all default classes in the UI module
+function UI.registerDefaultClasses(): typeof(UI)
+	UI.registerDefaultClasses = nil :: any
+	for _, child in script.DefaultClasses:GetChildren() do
 		if child:IsA("ModuleScript") then
 			UI.register(child.Name, require(child))
 		end

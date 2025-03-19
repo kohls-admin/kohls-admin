@@ -4,13 +4,11 @@
 	"tree": {
 		"$className": "DataModel",
 		"HttpService": {
-			"$className": "HttpService",
 			"$properties": {
 				"HttpEnabled": true
 			}
 		},
 		"ReplicatedStorage": {
-			"$className": "ReplicatedStorage",
 			"Client": {
 				"$path": "client"
 			},
@@ -41,6 +39,11 @@
 				"LICENSE": {
 					"$path": "../LICENSE.txt"
 				}
+			}
+		},
+		"TextChatService": {
+			"$properties": {
+				"ChatVersion": { "Enum": 1 }
 			}
 		},
 		"Workspace": {

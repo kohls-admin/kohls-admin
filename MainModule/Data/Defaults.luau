@@ -1,4 +1,5 @@
-local UI = require(script.Parent.Parent.Client:WaitForChild("UI"))
+local Flux = require(script.Parent.Parent.Flux)
+local Theme = require(script.Parent.Parent.Client:WaitForChild("UI").Theme)
 
 local Cache = {
 	-- Main
@@ -79,8 +80,8 @@ if game:GetService("RunService"):IsServer() then
 end
 
 -- UI Theme initial settings
-for key, state in UI.Theme do
-	Data.settings["theme" .. key] = UI.peek(state)
+for key, state in Theme do
+	Data.settings["theme" .. key] = Flux.peek(state)
 end
 
 return Data

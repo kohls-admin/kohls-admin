@@ -1,5 +1,5 @@
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent)
+local UI = require(script.Parent.Parent)
 
 -- a simple color square, when clicked shows a color picker dialog
 
