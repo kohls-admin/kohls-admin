@@ -3,9 +3,9 @@
 	"emitLegacyScripts": false,
 	"tree": {
 		"$className": "Model",
-		"$path": "../Loader",
+		"$path": "../model",
 		"MainModule": {
-			"$path": "../MainModule",
+			"$path": "../src",
 			"VERSION": {
 				"$path": "../VERSION.txt"
 			}

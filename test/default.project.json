@@ -21,17 +21,17 @@
 			"MainModule": {
 				"$path": "migrate",
 				"KA": {
-					"$path": "../MainModule",
+					"$path": "../src",
 					"VERSION": {
 						"$path": "../VERSION.txt"
 					}
 				}
 			},
 			"Kohl's Admin": {
-				"$path": "../Loader",
+				"$path": "../model",
 				"$className": "Model",
 				"MainModule": {
-					"$path": "../MainModule",
+					"$path": "../src",
 					"VERSION": {
 						"$path": "../VERSION.txt"
 					}
