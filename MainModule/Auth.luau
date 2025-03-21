@@ -253,6 +253,32 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 	return roleRemoved
 end
 
+function Auth.playerHasGlobalVIP(player: Player): boolean
+	local userId = player.UserId
+	local ok, result =
+		pcall(MarketplaceService.GetUserSubscriptionStatusAsync, MarketplaceService, player, "EXP-4118475727682928968")
+	if ok and result.IsSubscribed then
+		return true
+	end
+
+	-- legacy donations
+	local vip = { 5391359, 5391361, 5411126 }
+	for _, gamePassId in vip do
+		if MarketplaceService:UserOwnsGamePassAsync(userId, gamePassId) then
+			return true
+		end
+	end
+
+	local assetDonations = { 313102724, 423601416 }
+	for _, assetId in assetDonations do
+		if MarketplaceService:PlayerOwnsAsset(player, assetId) then
+			return true
+		end
+	end
+
+	return false
+end
+
 local asyncRolesCache = {}
 function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	if asyncRolesCache[userId] and not flushCache then
@@ -306,25 +332,10 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 		return
 	end
 
-	if Data.settings.vip then -- admin vip donations
-		local ok, result = pcall(
-			MarketplaceService.GetUserSubscriptionStatusAsync,
-			MarketplaceService,
-			player,
-			"EXP-4118475727682928968"
-		)
-		if ok and result.IsSubscribed then
+	if Data.settings.vip then
+		if Auth.playerHasGlobalVIP(player) then
 			Auth.userRoleAdd(userId, "vip")
 			shouldNetwork = true
-		end
-
-		-- legacy donations
-		local vip = { 5391359, 5391361, 5411126 }
-		for _, gamePassId in vip do
-			if MarketplaceService:UserOwnsGamePassAsync(userId, gamePassId) then
-				Auth.userRoleAdd(userId, "vip")
-				shouldNetwork = true
-			end
 		end
 	end
 
