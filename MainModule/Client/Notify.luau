@@ -1,9 +1,5 @@
-local Players = game:GetService("Players")
-local TextService = game:GetService("TextService")
-
 local _K = require(script.Parent.Parent)
-local UI = require(script.Parent.UI)
-local UserFrame = require(script.Parent.UserFrame)
+local UI = _K.UI
 
 local existing = {}
 
@@ -84,7 +80,7 @@ return function(dialogOverride)
 	}
 
 	if userFrame or from then
-		userFrame = UserFrame(if userFrame then unpack(userFrame) elseif from ~= "_K" then from else nil)
+		userFrame = _K.client.UserFrame(if userFrame then unpack(userFrame) elseif from ~= "_K" then from else nil)
 		UI.edit(userFrame, {
 			Parent = dialog,
 

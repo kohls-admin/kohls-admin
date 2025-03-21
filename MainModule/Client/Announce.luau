@@ -1,8 +1,7 @@
 local TextService = game:GetService("TextService")
 
 local _K = require(script.Parent.Parent)
-local UI = require(script.Parent.UI)
-local UserFrame = require(script.Parent.UserFrame)
+local UI = _K.UI
 local existing = {}
 
 local function resetOffset()
@@ -44,7 +43,7 @@ return function(text: string, from: number?, delay: number?, name: string?, imag
 		hide(self)
 	end
 
-	local userFrame = UserFrame(from, name, image)
+	local userFrame = _K.client.UserFrame(from, name, image)
 
 	local dialog
 	dialog = UI.new "Dialog" {
