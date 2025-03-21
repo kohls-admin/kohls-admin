@@ -33,6 +33,10 @@ export type Hook = "log" | "preCommand" | "postCommand"
 	.Util Util
 	.UI UI
 
+	.IsClient boolean
+	.IsServer boolean
+	.IsStudio boolean
+
 	.client { [any]: any }?
 	.pinnedAnnouncement {}?
 	.playerPrefix { [Player]: string }
