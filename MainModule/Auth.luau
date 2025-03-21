@@ -139,6 +139,24 @@ function Auth.userUnban(userId: number, fromUserId: number?, noAsync: boolean?)
 	end
 end
 
+function Auth.networkMember(userId: number, removeMember: boolean?)
+	local userIdString = tostring(userId)
+	local member = Data.members[userIdString]
+	if not member then
+		return
+	end
+	for _, player in Players:GetPlayers() do
+		if player.UserId == userId or Auth.hasCommand(player.UserId, "members") then
+			Remote.Member:FireClient(player, userIdString, member)
+			if removeMember then
+				Remote.Members:FireClient(player, Data.members)
+			else
+				Remote.Member:FireClient(player, userIdString, member)
+			end
+		end
+	end
+end
+
 --- Adds a role to a user if they don't already have it
 function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolean
 	local player = Players:GetPlayerByUserId(userId)
@@ -171,8 +189,7 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	end
 
 	if roleAdded then
-		-- TODO: only network to authorized clients and user client
-		Remote.Member:FireAllClients(tostring(userId), member)
+		Auth.networkMember(userId)
 	end
 
 	if persist and roleAdded then
@@ -209,8 +226,10 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 	end
 
 	if roleRemoved then
-		-- TODO: only network to authorized clients and user client
-		Remote.Members:FireAllClients(Data.members)
+		if #member.roles == 0 and #member.persist == 0 then
+			Data.members[tostring(userId)] = nil
+		end
+		Auth.networkMember(userId)
 	end
 
 	if persistent then
@@ -282,7 +301,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	local player = Players:GetPlayerByUserId(userId)
 	if not player then
 		if shouldNetwork then
-			-- network the changes to roles
+			Auth.networkMember(userId)
 		end
 		return
 	end
@@ -332,7 +351,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	end
 
 	if shouldNetwork then
-		-- network the changes to roles
+		Auth.networkMember(userId)
 	end
 end
 
