@@ -68,6 +68,10 @@ return {
 				Id = 2014793803, --SkellyLua
 				Tooltip = "Command Contributions",
 			},
+			{
+				Id = 7981980152, -- meowhehex3 / whatsnewadore
+				Tooltip = "New Contributor",
+			},
 		},
 	},
 	{

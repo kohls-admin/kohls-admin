@@ -47,6 +47,7 @@ function String.trim(s: string): string
 	return if string.find(s, "^%s*$") then "" else (string.match(s, "^%s*(.*%S)") or "")
 end
 
+--- Filters a message with [TextService.FilterStringAsync] for broadcast messages
 function String.filterForBroadcast(message: string, fromUserId: number, filterContext: Enum.TextFilterContext?): string
 	local ok, result = Retry(function()
 		return TextService:FilterStringAsync(message, fromUserId, filterContext or Enum.TextFilterContext.PublicChat)

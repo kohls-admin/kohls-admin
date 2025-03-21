@@ -139,6 +139,24 @@ function Auth.userUnban(userId: number, fromUserId: number?, noAsync: boolean?)
 	end
 end
 
+function Auth.networkMember(userId: number, removeMember: boolean?)
+	local userIdString = tostring(userId)
+	local member = Data.members[userIdString]
+	if not member then
+		return
+	end
+	for _, player in Players:GetPlayers() do
+		if player.UserId == userId or Auth.hasCommand(player.UserId, "members") then
+			Remote.Member:FireClient(player, userIdString, member)
+			if removeMember then
+				Remote.Members:FireClient(player, Data.members)
+			else
+				Remote.Member:FireClient(player, userIdString, member)
+			end
+		end
+	end
+end
+
 --- Adds a role to a user if they don't already have it
 function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolean
 	local player = Players:GetPlayerByUserId(userId)
@@ -171,8 +189,7 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	end
 
 	if roleAdded then
-		-- TODO: only network to authorized clients and user client
-		Remote.Member:FireAllClients(tostring(userId), member)
+		Auth.networkMember(userId)
 	end
 
 	if persist and roleAdded then
@@ -209,8 +226,10 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 	end
 
 	if roleRemoved then
-		-- TODO: only network to authorized clients and user client
-		Remote.Members:FireAllClients(Data.members)
+		if #member.roles == 0 and #member.persist == 0 then
+			Data.members[tostring(userId)] = nil
+		end
+		Auth.networkMember(userId)
 	end
 
 	if persistent then
@@ -232,6 +251,32 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 	end
 
 	return roleRemoved
+end
+
+function Auth.playerHasGlobalVIP(player: Player): boolean
+	local userId = player.UserId
+	local ok, result =
+		pcall(MarketplaceService.GetUserSubscriptionStatusAsync, MarketplaceService, player, "EXP-4118475727682928968")
+	if ok and result.IsSubscribed then
+		return true
+	end
+
+	-- legacy donations
+	local vip = { 5391359, 5391361, 5411126 }
+	for _, gamePassId in vip do
+		if MarketplaceService:UserOwnsGamePassAsync(userId, gamePassId) then
+			return true
+		end
+	end
+
+	local assetDonations = { 313102724, 423601416 }
+	for _, assetId in assetDonations do
+		if MarketplaceService:PlayerOwnsAsset(player, assetId) then
+			return true
+		end
+	end
+
+	return false
 end
 
 local asyncRolesCache = {}
@@ -282,30 +327,15 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	local player = Players:GetPlayerByUserId(userId)
 	if not player then
 		if shouldNetwork then
-			-- network the changes to roles
+			Auth.networkMember(userId)
 		end
 		return
 	end
 
-	if Data.settings.vip then -- admin vip donations
-		local ok, result = pcall(
-			MarketplaceService.GetUserSubscriptionStatusAsync,
-			MarketplaceService,
-			player,
-			"EXP-4118475727682928968"
-		)
-		if ok and result.IsSubscribed then
+	if Data.settings.vip then
+		if Auth.playerHasGlobalVIP(player) then
 			Auth.userRoleAdd(userId, "vip")
 			shouldNetwork = true
-		end
-
-		-- legacy donations
-		local vip = { 5391359, 5391361, 5411126 }
-		for _, gamePassId in vip do
-			if MarketplaceService:UserOwnsGamePassAsync(userId, gamePassId) then
-				Auth.userRoleAdd(userId, "vip")
-				shouldNetwork = true
-			end
 		end
 	end
 
@@ -332,7 +362,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	end
 
 	if shouldNetwork then
-		-- network the changes to roles
+		Auth.networkMember(userId)
 	end
 end
 
