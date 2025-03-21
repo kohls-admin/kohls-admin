@@ -4,7 +4,7 @@
 	"tree": {
 		"$className": "SelectionBox",
 		"Building Tools": {
-			"$path": "../../../../../MainModule/DefaultCommands/Administration/F3X"
+			"$path": "../../../../../submodules/F3X"
 		}
 	}
 }
