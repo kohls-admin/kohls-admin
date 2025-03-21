@@ -1,6 +1,6 @@
 -- addons not containing in "Client" or "Server" will run in both contexts (shared)
 return function(_K)
-	if game.PlaceId == 2569622788 or game:GetService("RunService"):IsStudio() then -- ONLY FOR DEMO PLACE
+	if game.PlaceId == 2569622788 or _K.IsStudio then -- ONLY FOR DEMO PLACE
 		_K.log(`Hello World from ExampleAddon!`, "INFO")
 	end
 
@@ -59,7 +59,7 @@ return function(_K)
 
 		env = function(_K)
 			-- This will only run once on each server while in studio or in the demo place
-			if game.PlaceId == 2569622788 or game:GetService("RunService"):IsStudio() then
+			if game.PlaceId == 2569622788 or _K.IsStudio then
 				_K.log(`Hello World from ExampleAddon customcommand env!`, "INFO")
 			end
 
@@ -71,7 +71,7 @@ return function(_K)
 
 		envClient = function(_K)
 			-- This will only run once on each client while in studio or in the demo place
-			if game.PlaceId == 2569622788 or game:GetService("RunService"):IsStudio() then
+			if game.PlaceId == 2569622788 or _K.IsStudio then
 				_K.log(`Hello World from ExampleAddon customcommand envClient!`, "INFO")
 			end
 
