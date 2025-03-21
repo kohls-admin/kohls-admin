@@ -7,7 +7,7 @@ local VIP = {}
 
 -- vip, supervip, premium
 local gamePassDonations = { 5391359, 5391361, 5411126 }
-local assetDonations = { 313102724, 423601416, 128259181447764 }
+local assetDonations = { 313102724, 423601416 }
 
 -- 5 group member
 -- 4 subscriber
