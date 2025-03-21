@@ -36,8 +36,8 @@ for key, value in _K.Data.settings do
 end
 
 _K.client.CommandBar:init(_K)
-local Dashboard = require(script.Dashboard)
-local Network = require(script.Network)
+_K.client.Dashboard = require(script:WaitForChild("Dashboard")) -- relies on command bar
+require(script:WaitForChild("Network"))
 
 local chatCommandThrottle
 
