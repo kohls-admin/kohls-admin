@@ -1,6 +1,8 @@
 -- addons not containing in "Client" or "Server" will run in both contexts (shared)
 return function(_K)
-	_K.log(`Hello World from ExampleAddon!`, "INFO")
+	if game.PlaceId == 2569622788 or game:GetService("RunService"):IsStudio() then -- ONLY FOR DEMO PLACE
+		_K.log(`Hello World from ExampleAddon!`, "INFO")
+	end
 
 	_K.Registry.registerCommand(_K, {
 		name = "customcommand",
@@ -56,8 +58,10 @@ return function(_K)
 		-- Command environment
 
 		env = function(_K)
-			-- This will only run once on each server
-			_K.log(`Hello World from ExampleAddon customcommand env!`, "INFO")
+			-- This will only run once on each server while in studio or in the demo place
+			if game.PlaceId == 2569622788 or game:GetService("RunService"):IsStudio() then
+				_K.log(`Hello World from ExampleAddon customcommand env!`, "INFO")
+			end
 
 			-- This table is passed to the `run` function as `context.env`
 			return {
@@ -66,8 +70,10 @@ return function(_K)
 		end,
 
 		envClient = function(_K)
-			-- This will only run once on each client
-			_K.log(`Hello World from ExampleAddon customcommand envClient!`, "INFO")
+			-- This will only run once on each client while in studio or in the demo place
+			if game.PlaceId == 2569622788 or game:GetService("RunService"):IsStudio() then
+				_K.log(`Hello World from ExampleAddon customcommand envClient!`, "INFO")
+			end
 
 			-- This table is passed to the `runClient` function as `context.env`
 			return {
@@ -93,6 +99,11 @@ return function(_K)
 
 		-- Function that runs on the server when the command is called
 		run = function(context, message: string?)
+			-- Filtering the message before-hand with the String Utility API
+			-- You can see other Util API on the documentation: https://docs.kohl.gg/api/Util
+			
+			message = _K.Util.String.filterForBroadcast(message, context.from) or nil
+
 			-- Create a simple Roblox message object
 			local messageInstance = Instance.new("Message", workspace)
 
