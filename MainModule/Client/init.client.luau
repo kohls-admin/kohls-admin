@@ -2,6 +2,9 @@ local _K = require(script.Parent)
 local Flux = _K.Flux
 local UI = _K.UI
 
+_K.Announce = require(script:WaitForChild("Announce"))
+_K.Notify = require(script:WaitForChild("Notify"))
+
 _K.client = {
 	Character = require(script:WaitForChild("Character")),
 	CommandBar = require(script:WaitForChild("CommandBar")),
@@ -13,8 +16,6 @@ _K.client = {
 		dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
 	},
 }
-
-_K.client.Notify = require(script.Notify)
 
 UI.Scope.members = Flux.state(_K.Data.members)
 UI.Scope.bans = Flux.state(_K.Data.bans)
@@ -35,8 +36,6 @@ for key, value in _K.Data.settings do
 end
 
 _K.client.CommandBar:init(_K)
-
-local Announce = require(script.Announce)
 local Dashboard = require(script.Dashboard)
 local Network = require(script.Network)
 

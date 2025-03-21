@@ -1,15 +1,7 @@
-local Players = game:GetService("Players")
-
 local _K = require(script.Parent.Parent)
-local UI = require(script.Parent.UI)
-local Remote = require(script.Parent.Parent.Remote)
-local Util = require(script.Parent.Parent.Util)
+local UI = _K.UI
 
-local Announce = require(script.Parent.Announce)
-local Notify = require(script.Parent.Notify)
-local UserFrame = require(script.Parent.UserFrame)
-
-local function updateInterfaceAuth()
+function _K.client.updateInterfaceAuth()
 	-- TODO: recheck visibility for all restricted UIs
 	local buttonEnabled = _K.Data.settings.dashboardButtonRank
 		and _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
@@ -24,24 +16,23 @@ local function updateInterfaceAuth()
 	end
 	UI.Scope.dashboard.Commands:updateList()
 end
-UI.Scope.updateInterfaceAuth = updateInterfaceAuth
 
-Remote.Announce.OnClientEvent:Connect(Announce)
-Remote.Notify.OnClientEvent:Connect(Notify)
+_K.Remote.Announce.OnClientEvent:Connect(_K.Announce)
+_K.Remote.Notify.OnClientEvent:Connect(_K.Notify)
 
-Remote.SetCore.OnClientEvent:Connect(function(parameter: string, value: any)
-	Util.Services.StarterGui:SetCore(parameter, value)
+_K.Remote.SetCore.OnClientEvent:Connect(function(parameter: string, value: any)
+	_K.Util.Services.StarterGui:SetCore(parameter, value)
 end)
 
 local requestingCommand = {}
-Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
+_K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
 	if requestingCommand[from.UserId] then
 		return
 	end
 	requestingCommand[from.UserId] = true
 
-	local actionSignal = Util.Signal.new()
-	Notify({
+	local actionSignal = _K.Util.Signal.new()
+	_K.Notify({
 		Text = `\t<font transparency="0.5">{text}</font>`,
 		ActionText = "Permit this action?",
 		Action = true,
@@ -50,7 +41,7 @@ Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
 		RightAction = true,
 		Duration = -1,
 
-		UserFrame(from.UserId, from.DisplayName),
+		_K.client.UserFrame(from.UserId, from.DisplayName),
 
 		[UI.Hook] = {
 			Action = function(v)
@@ -66,30 +57,29 @@ end
 
 -- general data replication
 
-Remote.Ban.OnClientEvent:Connect(function(userId, ban)
+_K.Remote.Ban.OnClientEvent:Connect(function(userId, ban)
 	_K.Data.bans[userId] = ban
 	UI.Scope.bans:set(_K.Data.bans)
 end)
 
-Remote.Bans.OnClientEvent:Connect(function(bans)
+_K.Remote.Bans.OnClientEvent:Connect(function(bans)
 	_K.Util.Table.merge(_K.Data.bans, bans)
 	UI.Scope.bans:set(_K.Data.bans)
-	-- Remote.Ban:FireClient(player, userId, { filtered, duration, fromUserId })
 end)
 
-Remote.Member.OnClientEvent:Connect(function(userId, member)
+_K.Remote.Member.OnClientEvent:Connect(function(userId, member)
 	_K.Data.members[userId] = member
 	UI.Scope.members:set(_K.Data.members)
-	updateInterfaceAuth()
+	_K.client.updateInterfaceAuth()
 end)
 
-Remote.Members.OnClientEvent:Connect(function(members)
+_K.Remote.Members.OnClientEvent:Connect(function(members)
 	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
-	updateInterfaceAuth()
+	_K.client.updateInterfaceAuth()
 end)
 
-Remote.Log.OnClientEvent:Connect(function(log)
+_K.Remote.Log.OnClientEvent:Connect(function(log)
 	if not _K.client.ready then
 		return
 	end
@@ -101,7 +91,7 @@ Remote.Log.OnClientEvent:Connect(function(log)
 	task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
 end)
 
-Remote.Logs.OnClientEvent:Connect(function(logs)
+_K.Remote.Logs.OnClientEvent:Connect(function(logs)
 	if not _K.client.ready then
 		return
 	end
@@ -111,7 +101,7 @@ Remote.Logs.OnClientEvent:Connect(function(logs)
 	task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
 end)
 
-Remote.Settings.OnClientEvent:Connect(function(settings)
+_K.Remote.Settings.OnClientEvent:Connect(function(settings)
 	for key, value in settings do
 		value = UI.peek(value)
 		_K.Data.settings[key] = value
@@ -122,18 +112,18 @@ Remote.Settings.OnClientEvent:Connect(function(settings)
 		end
 	end
 	if settings.dashboardButtonRank ~= nil or settings.freeAdmin ~= nil then
-		updateInterfaceAuth()
+		_K.client.updateInterfaceAuth()
 	end
 end)
 
-Remote.Role.OnClientEvent:Connect(function(role, roleData)
+_K.Remote.Role.OnClientEvent:Connect(function(role, roleData)
 	_K.Data.roles[role] = roleData
-	updateInterfaceAuth()
+	_K.client.updateInterfaceAuth()
 end)
 
-Remote.Roles.OnClientEvent:Connect(function(roles)
+_K.Remote.Roles.OnClientEvent:Connect(function(roles)
 	_K.Util.Table.merge(_K.Data.roles, roles)
-	updateInterfaceAuth()
+	_K.client.updateInterfaceAuth()
 end)
 
 -- initial remote connection
@@ -167,7 +157,7 @@ local greetings = {
 }
 
 local initCon
-initCon = Remote.Init.OnClientEvent:Connect(function(members, settings, bans, logs, roles)
+initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans, logs, roles)
 	initCon:Disconnect()
 	_K.Util.Table.merge(_K.Data.members, members)
 	UI.Scope.members:set(_K.Data.members)
@@ -191,8 +181,7 @@ initCon = Remote.Init.OnClientEvent:Connect(function(members, settings, bans, lo
 	end
 
 	_K.Util.Table.merge(_K.Data.roles, roles)
-
-	updateInterfaceAuth()
+	_K.client.updateInterfaceAuth()
 
 	-- join notification
 
@@ -244,9 +233,9 @@ initCon = Remote.Init.OnClientEvent:Connect(function(members, settings, bans, lo
 
 	if
 		_K.Data.settings.joinNotificationRank
-		and _K.Auth.getRank(Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank
+		and _K.Auth.getRank(_K.Util.Services.Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank
 	then
-		Notify({
+		_K.Notify({
 			Text = table.concat(lines, "\n"),
 			Duration = 30,
 			UserFrame = {},
