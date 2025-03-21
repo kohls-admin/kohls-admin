@@ -9,6 +9,7 @@ local Hook = {
 	preCommand = Util.Signal.new(),
 	postCommand = Util.Signal.new(),
 
+	init = Util.Signal.new(),
 	initDataStore = Util.Signal.new(),
 	preSyncBans = Util.Signal.new(),
 	postSyncBans = Util.Signal.new(),

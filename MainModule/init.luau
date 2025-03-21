@@ -418,6 +418,7 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 	end)
 
 	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
+	_K.Hook.init:Fire()
 
 	return _K
 end

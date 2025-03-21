@@ -244,6 +244,7 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans,
 	end
 
 	_K.client.ready = true
+	_K.Hook.init:Fire()
 end)
 
 return true
