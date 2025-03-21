@@ -84,12 +84,6 @@ Input = UI.new "Input" {
 			end,
 		},
 	},
-
-	-- [UI.Hook] = {
-	-- 	Value = function(text)
-	-- 		-- TODO: do what it used to do on text changed?
-	-- 	end,
-	-- },
 }
 
 UI.edit(Input._instance.UICorner, {
@@ -593,133 +587,16 @@ local function suggestionDown()
 	updateCompletion()
 end
 
-TooltipFrame.MouseWheelForward:Connect(suggestionUp)
-TooltipFrame.MouseWheelBackward:Connect(suggestionDown)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if input.UserInputType == Enum.UserInputType.Keyboard then
-		if not Input._input:IsFocused() then
-			return
-		end
-		if input.KeyCode == Enum.KeyCode.Up then
-			suggestionUp()
-		elseif input.KeyCode == Enum.KeyCode.Down then
-			suggestionDown()
-		end
-	elseif
-		input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
-	then
-		if gameProcessed then
-			return
-		end
-		hideCommandBar()
-	end
-end)
-
-Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
-	local cursorPosition = Input._input.CursorPosition
-	if cursorPosition ~= -1 then
-		if cursorPosition < #_K.Data.settings.prefix + 1 then
-			Input._input.CursorPosition = #_K.Data.settings.prefix + 1
-			return
-		end
-		task.defer(updateCompletionData)
-	end
-end)
-
-Input._input.Focused:Connect(function()
-	invalidStroke.Enabled = false
-	-- prevent input hotkey from being captured
-	task.delay(0, function()
-		if CommandBar.Visible then
-			Input._input.TextEditable = true
-		end
-	end)
-end)
-
-Input._input.FocusLost:Connect(function(enterPressed)
-	if enterPressed then
-		invalidStroke.Enabled = true
-		Input._input.TextEditable = false
-
-		local data = currentCompletionData
-		if #data.invalid > 0 then
-			UI.Sound.Negative:Play()
-			return Input._input:CaptureFocus()
-		end
-
-		if Input._input.Text ~= _K.Data.settings.prefix and #data.commands < 1 then
-			validState:set(false)
-			UI.Sound.Negative:Play()
-			invalidSuggestion(data, "Invalid command", data.argPos, data.rawArg)
-			return Input._input:CaptureFocus()
-		end
-
-		for _, command in data.commands do
-			if command.invalidArg then
-				validState:set(false)
-				UI.Sound.Negative:Play()
-				invalidSuggestion(
-					data,
-					command.argMissing or command.invalidMessage,
-					command.invalidPos,
-					command.invalidArg
-				)
-				return Input._input:CaptureFocus()
-			end
-		end
-
-		hideCommandBar()
-
-		-- ignore empty command strings
-		if Input._input.Text == _K.Data.settings.prefix then
-			return
-		end
-
-		-- FIX: if validated lol
-		_K.Remote.Command:FireServer(Input._input.Text)
-		task.spawn(_K.Process.runCommands, _K, _K.Services.Players.LocalPlayer.UserId, Input._input.Text)
-		-- Find the command in the history (and remove if not the most recent)
-		local cmd = string.sub(Input._input.Text, 2)
-		local foundIndex = table.find(commandHistory, cmd)
-		if foundIndex ~= 1 then
-			if foundIndex then
-				table.remove(commandHistory, foundIndex)
-			end
-			table.insert(commandHistory, 1, cmd)
-			if #commandHistory > 32 then
-				table.remove(commandHistory)
-			end
-		end
-		Input._input.Text = _K.Data.settings.prefix
-	end
-	return
-end)
--- FIX: make sure _K reliant connections aren't connected until init!
-Input._input:GetPropertyChangedSignal("Text"):Connect(function()
-	if not tabCompleting and UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
-		completeSuggestion()
-		return
-	end
-	local prefix = _K.Data.settings.prefix
-	if string.find(Input._input.Text, prefix, 1, true) ~= 1 then
-		Input._input.CursorPosition += 1
-		Input._input.Text = prefix .. Input._input.Text
-		Input._input.CursorPosition += 1
-		return
-	end
-
-	if Input._input.Text == _K.Data.settings.prefix then
-		Input.DisplayText:set(Input._input.Text .. "<font transparency='0.5'><i>command</i></font>")
-	else
-		Input.DisplayText:set(_K.Util.String.escapeRichText(Input._input.Text))
-	end
-end)
-
+local initialized
 return {
 	Bar = CommandBar,
 	Input = Input,
 	init = function(self, _K)
+		if initialized then
+			return
+		end
+		initialized = true
+
 		Input._input.Text = _K.Data.settings.prefix
 		Input._input.TextEditable = false
 		CommandBar.Parent = UI.TopbarFrame
@@ -728,6 +605,130 @@ return {
 		UI.Scope.settings.prefix:hook(function(value)
 			if value then
 				Input._input.Text = value .. string.sub(Input._input.Text, #value + 1)
+			end
+		end)
+
+		TooltipFrame.MouseWheelForward:Connect(suggestionUp)
+		TooltipFrame.MouseWheelBackward:Connect(suggestionDown)
+
+		UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if input.UserInputType == Enum.UserInputType.Keyboard then
+				if not Input._input:IsFocused() then
+					return
+				end
+				if input.KeyCode == Enum.KeyCode.Up then
+					suggestionUp()
+				elseif input.KeyCode == Enum.KeyCode.Down then
+					suggestionDown()
+				end
+			elseif
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
+				if gameProcessed then
+					return
+				end
+				hideCommandBar()
+			end
+		end)
+
+		Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
+			local cursorPosition = Input._input.CursorPosition
+			if cursorPosition ~= -1 then
+				if cursorPosition < #_K.Data.settings.prefix + 1 then
+					Input._input.CursorPosition = #_K.Data.settings.prefix + 1
+					return
+				end
+				task.defer(updateCompletionData)
+			end
+		end)
+
+		Input._input.Focused:Connect(function()
+			invalidStroke.Enabled = false
+			-- prevent input hotkey from being captured
+			task.delay(0, function()
+				if CommandBar.Visible then
+					Input._input.TextEditable = true
+				end
+			end)
+		end)
+
+		Input._input.FocusLost:Connect(function(enterPressed)
+			if enterPressed then
+				invalidStroke.Enabled = true
+				Input._input.TextEditable = false
+
+				local data = currentCompletionData
+				if #data.invalid > 0 then
+					UI.Sound.Negative:Play()
+					return Input._input:CaptureFocus()
+				end
+
+				if Input._input.Text ~= _K.Data.settings.prefix and #data.commands < 1 then
+					validState:set(false)
+					UI.Sound.Negative:Play()
+					invalidSuggestion(data, "Invalid command", data.argPos, data.rawArg)
+					return Input._input:CaptureFocus()
+				end
+
+				for _, command in data.commands do
+					if command.invalidArg then
+						validState:set(false)
+						UI.Sound.Negative:Play()
+						invalidSuggestion(
+							data,
+							command.argMissing or command.invalidMessage,
+							command.invalidPos,
+							command.invalidArg
+						)
+						return Input._input:CaptureFocus()
+					end
+				end
+
+				hideCommandBar()
+
+				-- ignore empty command strings
+				if Input._input.Text == _K.Data.settings.prefix then
+					return
+				end
+
+				-- FIX: if validated lol
+				_K.Remote.Command:FireServer(Input._input.Text)
+				task.spawn(_K.Process.runCommands, _K, _K.Services.Players.LocalPlayer.UserId, Input._input.Text)
+				-- Find the command in the history (and remove if not the most recent)
+				local cmd = string.sub(Input._input.Text, 2)
+				local foundIndex = table.find(commandHistory, cmd)
+				if foundIndex ~= 1 then
+					if foundIndex then
+						table.remove(commandHistory, foundIndex)
+					end
+					table.insert(commandHistory, 1, cmd)
+					if #commandHistory > 32 then
+						table.remove(commandHistory)
+					end
+				end
+				Input._input.Text = _K.Data.settings.prefix
+			end
+			return
+		end)
+
+		Input._input:GetPropertyChangedSignal("Text"):Connect(function()
+			if not tabCompleting and UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
+				completeSuggestion()
+				return
+			end
+			local prefix = _K.Data.settings.prefix
+			if string.find(Input._input.Text, prefix, 1, true) ~= 1 then
+				Input._input.CursorPosition += 1
+				Input._input.Text = prefix .. Input._input.Text
+				Input._input.CursorPosition += 1
+				return
+			end
+
+			if Input._input.Text == _K.Data.settings.prefix then
+				Input.DisplayText:set(Input._input.Text .. "<font transparency='0.5'><i>command</i></font>")
+			else
+				Input.DisplayText:set(_K.Util.String.escapeRichText(Input._input.Text))
 			end
 		end)
 	end,
