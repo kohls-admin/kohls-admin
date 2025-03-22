@@ -137,7 +137,7 @@ Whether you're a seasoned developer or just starting out, there are ways for you
      ```
    - **Start the Server:**
      ```bash
-     moonwave dev --code MainModule/
+     moonwave dev
      ```
 
 3. Edit Documentation
