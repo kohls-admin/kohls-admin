@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[2588],{27332:s=>{s.exports=JSON.parse('{"functions":[],"properties":[],"types":[],"name":"Util","desc":"","source":{"line":8,"path":"src/Util/init.luau"}}')}}]);
