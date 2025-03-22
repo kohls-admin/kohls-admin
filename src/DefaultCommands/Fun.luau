@@ -300,7 +300,7 @@ return {
 						return
 					end
 					for _, descendant in target.Character:GetDescendants() do
-						if descendant:IsA("BasePart") then
+						if descendant:IsA("BasePart") and descendant:CanSetNetworkOwnership() then
 							descendant:SetNetworkOwner(controller)
 						end
 					end
@@ -335,12 +335,16 @@ return {
 					local original = controller:FindFirstChild("_KControlOriginal")
 					if original then
 						local character = original.Value
-						for _, descendant in character:GetDescendants() do
-							if descendant:IsA("BasePart") then
-								descendant:SetNetworkOwner(controller)
+						
+						if character then
+							for _, descendant in character:GetDescendants() do
+								if descendant:IsA("BasePart") and descendant:CanSetNetworkOwnership() then
+									descendant:SetNetworkOwner(controller)
+								end
 							end
+							
+							controller.Character = character
 						end
-						controller.Character = character
 					end
 				end,
 				release = function(controller)
@@ -360,17 +364,19 @@ return {
 							end
 						end
 
-						for _, descendant in character:GetDescendants() do
-							if descendant:IsA("BasePart") then
-								descendant:SetNetworkOwner(networkOwner)
+						if character and networkOwner then
+							for _, descendant in character:GetDescendants() do
+								if descendant:IsA("BasePart") and descendant:CanSetNetworkOwnership() then
+									descendant:SetNetworkOwner(networkOwner)
+								end
 							end
-						end
 
-						local oldParent = character.Parent
-						character.Parent = nil
-						controller.Character = nil
-						character.Parent = oldParent
-						originalController.Character = character
+							local oldParent = character.Parent
+							character.Parent = nil
+							controller.Character = nil
+							character.Parent = oldParent
+							originalController.Character = character
+						end
 					end
 				end,
 			}
@@ -378,7 +384,9 @@ return {
 
 		runClient = function(context, player)
 			if player and context.alias ~= "uncontrol" and context.alias ~= "release" then
-				workspace.CurrentCamera.CameraSubject = player.Character
+				if player.Character then
+					workspace.CurrentCamera.CameraSubject = player.Character
+				end
 			else -- release control
 				local original = context.fromPlayer:FindFirstChild("_KControlOriginal")
 				if original then

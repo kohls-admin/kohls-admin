@@ -64,7 +64,11 @@ function Argument:transform()
 end
 
 function Argument:validate()
-	if self.validated or self.definition.optional then
+	if self.validated then
+		return true
+	end
+
+	if self.definition.optional and string.len(self.rawArg) == 0 then
 		return true
 	end
 
