@@ -64,9 +64,9 @@ function Argument:transform()
 end
 
 function Argument:validate()
-	if self.validated or self.definition.optional then
-		return true
-	end
+	--if self.validated or self.definition.optional then
+	--	return true
+	--end
 
 	if self.command.invalidArg then
 		return false, self.command.invalidMessage
