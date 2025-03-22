@@ -28,9 +28,7 @@ body:
     attributes:
       label: Version
       description: Include the version of Kohl's Admin from the `;about` or `;version` commands.
-      placeholder: ex. 8aebbd4
-    validations:
-      required: true
+      placeholder: ex. 0.1.13
 
   - type: textarea
     id: desc
