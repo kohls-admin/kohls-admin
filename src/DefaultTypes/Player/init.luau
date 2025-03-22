@@ -48,6 +48,7 @@ local function nameUsed(names, name)
 			return true
 		end
 	end
+	return false
 end
 
 local function baseSuggestions(text, from, definition)
@@ -164,10 +165,13 @@ local typeUser = {
 		for _, arg in parsedArgs do
 			if type(arg) == "table" then
 				for _, player in arg do
-					table.insert(players, if typeof(player) == "Instance" then player.UserId else player)
+					table.insert(
+						players,
+						if typeof(player) == "Instance" and player:IsA("Player") then player.UserId else player
+					)
 				end
 			else
-				table.insert(players, if typeof(arg) == "Instance" then arg.UserId else arg)
+				table.insert(players, if typeof(arg) == "Instance" and arg:IsA("Player") then arg.UserId else arg)
 			end
 		end
 		return players
