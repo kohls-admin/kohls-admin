@@ -293,6 +293,49 @@ return {
 			context._K.Util.SafeTeleport(game.PlaceId, { context.fromPlayer })
 		end,
 	},
+	{
+		name = "join",
+		description = "Join a player in the same game.",
+		args = {
+			{
+				type = "userId",
+				name = "UserId",
+				description = "The UserId of the player to join.",
+			},
+		},
+
+		run = function(context, userId)
+			local ok, samePlace, errorMessage, placeId, jobId = pcall(
+				context._K.Util.Services.TeleportService.GetPlayerPlaceInstanceAsync,
+				context._K.Util.Services.TeleportService,
+				userId
+			)
+			if not ok then
+				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+					From = "_K",
+					Text = errorMessage or samePlace,
+					TextColor3 = Color3.new(1, 0, 0),
+					Sound = "Call_Leave",
+				})
+				return
+			end
+			if samePlace then
+				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+					From = "_K",
+					Text = "You're already in the same server!",
+					TextColor3 = Color3.new(1, 0, 0),
+					Sound = "Call_Leave",
+				})
+				return
+			end
+
+			if placeId and jobId then
+				local options = Instance.new("TeleportOptions")
+				options.ServerInstanceId = jobId
+				context._K.Util.SafeTeleport(placeId, { context.fromPlayer }, options)
+			end
+		end,
+	},
 
 	-- {
 	-- 	name = "alias",
