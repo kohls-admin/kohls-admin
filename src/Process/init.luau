@@ -167,7 +167,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 				{ Text = commandError, From = "_K", TextColor3 = Color3.new(1, 0, 0), Sound = "Call_Leave" }
 			)
 		else
-			task.spawn(_K.client.Notify, {
+			task.spawn(_K.Notify, {
 				Text = commandError,
 				TextColor3 = Color3.new(1, 0, 0),
 				UserFrame = {},

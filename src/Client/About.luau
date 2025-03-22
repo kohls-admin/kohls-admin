@@ -327,7 +327,7 @@ function About.new(_K)
 								end
 								task.delay(0.25, tryDone)
 							end)
-							_K.client.Notify({
+							_K.Notify({
 								Text = `Trying <b>{ugc.name}</b>.`,
 								Duration = 15,
 								UserFrame = {},
