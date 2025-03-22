@@ -38,42 +38,36 @@ return {
 			{
 				type = "number",
 				name = "Density",
-				description = "Defines the amount of particles in the air. "
-					.. "The higher the density, the more particles and the more in-game objects/terrain will be obscured by them.",
+				description = "How thick the air is, making it harder to see through.",
 			},
 			{
 				type = "number",
 				name = "Offset",
-				description = "Controls how light transmits between the camera and the sky background. "
-					.. "Increase this value to create a horizon silhouette against the sky or reduce it to blend distant objects into the sky for an endless and seamless open world.",
+				description = "Affects how the sky and distant objects blend. Higher values create a horizon line; lower values create a seamless sky.",
 				optional = true,
 			},
 			{
 				type = "color",
 				name = "Color",
-				description = "A Color3 value which changes the Atmosphere hue for subtle environmental moods. "
-					.. "This is best combined with increased Atmosphere.Haze to expand the visible effect.",
+				description = "The color of the sky. Combine with Haze for a more visible effect.",
 				optional = true,
 			},
 			{
 				type = "color",
 				name = "DecayColor",
-				description = "Defines the hue of the Atmosphere away from the sun, gradually falling off from Atmosphere.Color towards this value. "
-					.. "Must be used with Atmosphere.Haze and Atmosphere.Glare levels higher than 0 to see any effect.",
+				description = "The color of the sky far from the sun. Requires Glare and Haze for a visible effect.",
 				optional = true,
 			},
 			{
 				type = "number",
 				name = "Glare",
-				description = "Specifies the glow/glare of the Atmosphere around the sun. More glare results in an increased effect of sunlight cast onto the sky and world. "
-					.. "Must be used with a Atmosphere.Haze level higher than 0 to see any effect.",
+				description = "How much the sun glows. Higher values create stronger sunlight effects. Requires Haze for a visible effect.",
 				optional = true,
 			},
 			{
 				type = "number",
 				name = "Haze",
-				description = "Defines the haziness of the Atmosphere with a visible effect both above the horizon and into the distance. "
-					.. "This can be combined with Atmosphere.Color to create environmental moods, like a grey tint for a polluted alien planet.",
+				description = "How hazy the sky is. Affects both the sky and distant objects.",
 				optional = true,
 			},
 		},
