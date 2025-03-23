@@ -550,7 +550,7 @@ return {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) to remove noclip from.",
+				description = "The player(s) to highlight.",
 			},
 			{
 				type = "color",
