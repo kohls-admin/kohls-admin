@@ -4,20 +4,43 @@ return {
 	{
 		name = "version",
 		description = "Displays the version of Kohl's Admin in this game.",
-		args = {},
+		optionalPrefix = true,
+		runClient = function(context)
+			context._K.Notify({ From = "_K", Text = `<sc>version</sc>:\t<b>{context._K.prefix}</b>` })
+		end,
+	},
+	{
+		name = "help",
+		aliases = { "?", "prefix" },
+		description = "Displays a help notification for of Kohl's Admin in this game.",
+		optionalPrefix = true,
+		runClient = function(context)
+			local commandBarKey = context._K.client.hotkeys.commandBar
+			local commandBarKeyRaw = context._K.UI.UserInputService:GetStringForKeyCode(commandBarKey.key._value)
+			local commandBarKeyText =
+				`{commandBarKey.mods.Shift and "Shift+" or ""}{commandBarKey.mods.Alt and "Alt+" or ""}{commandBarKey.key._value.Name}`
 
-		run = function(context)
-			context._K.Remote.Notify:FireClient(
-				context.fromPlayer,
-				{ From = "_K", Text = `<sc>version</sc>:\t<b>{context._K.VERSION}</b>` }
-			)
+			local dashboardKey = context._K.client.hotkeys.dashboard
+			local dashboardKeyRaw = context._K.UI.UserInputService:GetStringForKeyCode(dashboardKey.key._value)
+			local dashboardKeyText =
+				`{dashboardKey.mods.Shift and "Shift+" or ""}{dashboardKey.mods.Alt and "Alt+" or ""}{dashboardKey.key._value.Name}`
+
+			context._K.Notify({
+				From = "_K",
+				Text = table.concat({
+					`<font family="{context._K.UI.Theme.FontMono._value.Name}">This game uses <b>Kohl's Admin</b>!\n`,
+					`<b>Prefix</b>     <font color="#0f0">{context._K.UI.peek(context._K.UI.Scope.settings.prefix)}</font>`,
+					`<b>Commands</b>   <font color="#0f0">{commandBarKeyText} {commandBarKeyRaw}</font>`,
+					`<b>Dashboard</b>  <font color="#0f0">{dashboardKeyText} {dashboardKeyRaw}</font></font>`,
+				}, "\n"),
+			})
 		end,
 	},
 	{
 		name = "about",
-		aliases = { "help", "credit", "credits", "info", "?", "donate", "support", "vip" },
+		aliases = { "credit", "credits", "info", "donate", "support", "vip" },
 		description = "Shows the about tab in a separate window.",
-		args = {},
+		optionalPrefix = true,
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
 				Parent = _K.UI.LayerTopInset,
@@ -72,7 +95,7 @@ return {
 		name = "commands",
 		aliases = { "cmds" },
 		description = "Shows the commands in a separate window.",
-		args = {},
+		optionalPrefix = true,
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
 				Parent = _K.UI.LayerTopInset,
@@ -121,6 +144,7 @@ return {
 	{
 		name = "dashboard",
 		description = "Shows the admin dashboard.",
+		optionalPrefix = true,
 		runClient = function(context)
 			context._K.client.hotkeys.dashboard.callback()
 		end,
@@ -129,7 +153,7 @@ return {
 		name = "log",
 		aliases = { "logs", "chatlog", "chatlogs" },
 		description = "Shows the logs in a separate window.",
-		args = {},
+		optionalPrefix = true,
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
 				Parent = _K.UI.LayerTopInset,
@@ -179,7 +203,7 @@ return {
 		name = "settings",
 		aliases = { "set" },
 		description = "Shows the settings in a separate window.",
-		args = {},
+		optionalPrefix = true,
 		envClient = function(_K)
 			local window = _K.UI.new "Window" {
 				Parent = _K.UI.LayerTopInset,
