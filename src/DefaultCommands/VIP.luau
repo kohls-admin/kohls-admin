@@ -431,6 +431,57 @@ return {
 			end
 		end,
 	},
+	{
+		name = "shine",
+		aliases = { "unshine" },
+		description = "Adds a shine effect from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to add the shine effect to.",
+			},
+		},
+		env = function(_K)
+			return {
+				effect = _K.Flux.new "ParticleEmitter" {
+					Name = "Shine",
+					LockedToPart = true,
+					LightEmission = 1,
+					Texture = "rbxassetid://1085001473",
+					Lifetime = NumberRange.new(2),
+					Size = NumberSequence.new(5),
+					Speed = NumberRange.new(0),
+					Rate = 2,
+					Rotation = NumberRange.new(-180, 180),
+					RotSpeed = NumberRange.new(-10, 10),
+					Transparency = NumberSequence.new({
+						NumberSequenceKeypoint.new(0, 1, 0),
+						NumberSequenceKeypoint.new(0.5, 0.75, 0),
+						NumberSequenceKeypoint.new(1, 1, 0),
+					}),
+				},
+			}
+		end,
+		run = function(context, players, userId)
+			for _, player in players do
+				local root = player.Character
+					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
+				if not root then
+					continue
+				end
+				local existing = root:FindFirstChild("_KShineEffect")
+				if existing then
+					existing:Destroy()
+				end
+				if context.undo then
+					continue
+				end
+				local shine = context.env.effect:Clone()
+				shine.Parent = root
+			end
+		end,
+	},
 
 	{
 		name = "bundle",
