@@ -24,9 +24,10 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 			nameQuery, nameDisplay = unpack(name)
 		end
 
+		local quoted
 		if string.find(nameQuery, "%s") then
-			local quoted = `"{nameQuery}"`
-			
+			quoted = `"{nameQuery}"`
+
 			if nameDisplay then
 				local startIndex, endIndex = string.find(nameDisplay, nameQuery)
 				if startIndex then
@@ -46,7 +47,7 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 		else
 			local found = string.find(nameLower, textLower, 1, true)
 			-- start matches are normal priority
-			if found == 1 then
+			if found == 1 or (quoted and found == 2) then
 				table.insert(results, { nameQuery, value, nameDisplay })
 			end
 		end

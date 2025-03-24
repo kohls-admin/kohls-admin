@@ -8,6 +8,14 @@ function Argument.new(command, definition, argPos, rawArg)
 	local rawType = command._K.Registry.types[definition.type]
 	assert(rawType, `Invalid argument type {definition.type}, did it fail to register?`)
 
+	rawArg = if command.argIndex == #command.definition.args
+		then string.sub(command.text, argPos, lastArg[1] + #lastArg[2])
+		else rawArg
+
+	if string.find(rawArg, '["`]', 1) then
+		rawArg = string.match(rawArg, '[^"`]+') or ""
+	end
+
 	local object = {
 		_K = command._K,
 		command = command,
@@ -20,9 +28,7 @@ function Argument.new(command, definition, argPos, rawArg)
 		argPos = argPos,
 		-- if it's the last argument use the rest of the argument string
 		-- only caveat would be irrelevant text after the command string (might as well make it explicit!)
-		rawArg = if command.argIndex == #command.definition.args
-			then string.sub(command.text, argPos, lastArg[1] + #lastArg[2])
-			else rawArg,
+		rawArg = rawArg,
 		rawType = rawType,
 		rawArgs = if rawType.listable then string.split(rawArg) else { rawArg },
 		transformedArgs = {},
