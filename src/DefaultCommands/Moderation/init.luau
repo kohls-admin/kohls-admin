@@ -1073,7 +1073,7 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if not player.Character or player.Character:FindFirstChild("kFreeze") then
+				if not player.Character then
 					continue
 				end
 				for _, descendant in player.Character:GetDescendants() do
@@ -1081,17 +1081,16 @@ return {
 						descendant.Anchored = true
 					end
 				end
-				local hideFreeze = context.alias == "anchor"
+				if context.alias == "anchor" or player.Character:FindFirstChild("kFreeze") then
+					continue
+				end
 				local orientation, size = player.Character:GetBoundingBox()
 				local kFreeze = Instance.new("Part")
 				kFreeze.Name = "kFreeze"
 				kFreeze.Anchored = true
-				kFreeze.CanCollide = hideFreeze
-				kFreeze.CanQuery = hideFreeze
-				kFreeze.CanTouch = hideFreeze
 				kFreeze.CFrame = orientation
 				kFreeze.Reflectance = 1
-				kFreeze.Transparency = if hideFreeze then 1 else 0.3
+				kFreeze.Transparency = 0.3
 				kFreeze.Size = size + Vector3.new(2, 2, 2)
 				kFreeze.Color = Color3.fromHex("#8bf")
 				kFreeze.Material = Enum.Material.Ice
