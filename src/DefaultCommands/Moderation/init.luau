@@ -3,12 +3,6 @@
 local Jail = require(script.Jail)
 local teleportCharacter = require(script.teleportCharacter)
 
-local function removeTool(tool)
-	if tool:IsA("Tool") or tool:IsA("HopperBin") then
-		task.defer(tool.Destroy, tool)
-	end
-end
-
 return {
 	{
 		name = "bans",
@@ -551,6 +545,11 @@ return {
 			_K.Flux.Scope.toolBans = {}
 			return {
 				bans = _K.Flux.Scope.toolBans,
+				removeTool = function(tool: Instance)
+					if tool:IsA("Tool") or tool:IsA("HopperBin") then
+						task.defer(tool.Destroy, tool)
+					end
+				end,
 			}
 		end,
 
@@ -559,15 +558,10 @@ return {
 				if context.env.bans[player] then
 					return
 				end
-				context.env.bans[player] = player.Backpack.ChildAdded:Connect(removeTool)
-				for _, tool in player.Backpack:GetDescendants() do
-					removeTool(tool)
-				end
-				if player.Character then
-					for _, tool in player.Character:GetDescendants() do
-						removeTool(tool)
-					end
-				end
+				context.env.bans[player] = player.Backpack.ChildAdded:Connect(context.env.removeTool)
+				local removeTools = context._K.Registry.removeTools.env.removeTools
+				removeTools(player:FindFirstChildOfClass("Backpack"))
+				removeTools(player.Character)
 			end
 		end,
 	},
@@ -678,17 +672,25 @@ return {
 				description = "The player(s) to remove tools from.",
 			},
 		},
+		env = function(_K)
+			return {
+				removeTools = function(source: Instance)
+					if not source then
+						return
+					end
+					for _, tool in source:GetChildren() do
+						if tool:IsA("Tool") or tool:IsA("HopperBin") then
+							task.spawn(tool.Destroy, tool)
+						end
+					end
+				end,
+			}
+		end,
 
 		run = function(context, players)
 			for _, player in players do
-				for _, descendant in player.Backpack:GetDescendants() do
-					removeTool(descendant)
-				end
-				if player.Character then
-					for _, descendant in player.Character:GetDescendants() do
-						removeTool(descendant)
-					end
-				end
+				context.env.removeTools(player:FindFirstChildOfClass("Backpack"))
+				context.env.removeTools(player.Character)
 			end
 		end,
 	},
