@@ -693,6 +693,37 @@ return {
 		end,
 	},
 	{
+		name = "tools",
+		aliases = { "toollist" },
+		description = "Views all tools usable with the give command.",
+
+		runClient = function(context, player)
+			if #context._K.tools == 0 then
+				context._K.Notify({ Text = `No tools found!` })
+				return
+			end
+			local toolNames = {}
+			for _, tool in context._K.tools do
+				if tool.Name == "all" then
+					continue
+				end
+				table.insert(toolNames, tool.Name)
+			end
+
+			context._K.UI.new "Dialog" {
+				Parent = context._K.UI.LayerTop,
+				Title = "Kohl's Admin Tools",
+				Text = table.concat(toolNames, "\n"),
+				ExitButton = true,
+				BackgroundTransparency = 0,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				Size = UDim2.new(0, 256, 0, 0),
+				ZIndex = 1000,
+			}
+		end,
+	},
+	{
 		name = "sword",
 		credit = { "Luckymaxer", "EUROCOW", "StarWars", "TakeoHonorable", "Kohl @Scripth" },
 		description = "Gives a sword to one or more player(s).",

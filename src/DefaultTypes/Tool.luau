@@ -70,6 +70,7 @@ return function(context)
 	else
 		_K.Remote.Tools.OnClientEvent:Connect(function(toolData)
 			tools = toolData
+			_K.tools = tools
 			table.insert(tools, 1, { Name = "all" })
 		end)
 		_K.Remote.Tools:FireServer()
