@@ -271,6 +271,36 @@ return {
 		end,
 	},
 	{
+		name = "showfps",
+		description = "Displays the frames per second of a player.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player whose frames per second to display.",
+				lowerRank = true,
+			},
+		},
+		envClient = function(_K)
+			local env = {
+				fps = 60,
+			}
+			function _K.Remote.ShowFPS.OnClientInvoke()
+				return env.fps
+			end
+			_K.Services.RunService.Heartbeat:Connect(function(dt: number)
+				env.fps = (env.fps + 1 / dt) / 2
+			end)
+			return env
+		end,
+		run = function(context, player: Player)
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				Text = `<b>FPS:</b> {math.round(context._K.Remote.ShowFPS:InvokeClient(player) or 0)}`,
+				From = player.UserId,
+			})
+		end,
+	},
+	{
 		name = "ping",
 		description = "Displays the ping of a player.",
 		args = {

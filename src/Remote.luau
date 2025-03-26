@@ -28,6 +28,7 @@ local Remote = {
 	Teleport = _REMOTE,
 	Unban = _REMOTE,
 
+	ShowFPS = _REMOTECALL,
 	RequestCommand = _REMOTECALL,
 	Vote = _REMOTECALL,
 }
