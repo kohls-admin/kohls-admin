@@ -724,6 +724,55 @@ return {
 		end,
 	},
 	{
+		name = "viewtools",
+		aliases = { "vtools" },
+		description = "Views all tools from a player.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player whose tools to view.",
+			},
+		},
+		envClient = function(_K)
+			return {
+				addTools = function(source: Instance, tools)
+					if not source then
+						return
+					end
+					for _, tool in source:GetChildren() do
+						if tool:IsA("Tool") or tool:IsA("HopperBin") then
+							table.insert(tools, tool.Name)
+						end
+					end
+				end,
+			}
+		end,
+
+		runClient = function(context, player)
+			local toolNames = {}
+			context.env.addTools(player:FindFirstChildOfClass("Backpack"), toolNames)
+			context.env.addTools(player.Character, toolNames)
+			if #toolNames == 0 then
+				context._K.Notify({ Text = `No tools found!` })
+				return
+			end
+			table.sort(toolNames)
+
+			context._K.UI.new "Dialog" {
+				Parent = context._K.UI.LayerTop,
+				Title = player.Name .. "'s Tools",
+				Text = table.concat(toolNames, "\n"),
+				ExitButton = true,
+				BackgroundTransparency = 0,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				Size = UDim2.new(0, 256, 0, 0),
+				ZIndex = 1000,
+			}
+		end,
+	},
+	{
 		name = "sword",
 		credit = { "Luckymaxer", "EUROCOW", "StarWars", "TakeoHonorable", "Kohl @Scripth" },
 		description = "Gives a sword to one or more player(s).",
