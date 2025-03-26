@@ -619,6 +619,55 @@ return {
 		end,
 	},
 	{
+		name = "copytools",
+		aliases = { "ctools" },
+		description = "Copies tools from one or more player(s) to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose tools to copy.",
+			},
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to give the copied tools.",
+			},
+		},
+
+		run = function(context, fromPlayers, toPlayers)
+			for _, fromPlayer in fromPlayers do
+				local tools = {}
+				local fromBackpack = fromPlayer:FindFirstChildOfClass("Backpack")
+				if fromBackpack then
+					for _, descendant in fromBackpack:GetChildren() do
+						if descendant:IsA("Tool") or descendant:IsA("HopperBin") then
+							table.insert(tools, descendant)
+						end
+					end
+				end
+				if fromPlayer.Character then
+					for _, descendant in fromPlayer.Character:GetChildren() do
+						if descendant:IsA("Tool") or descendant:IsA("HopperBin") then
+							table.insert(tools, descendant)
+						end
+					end
+				end
+				if #tools == 0 then
+					continue
+				end
+				for _, toPlayer in toPlayers do
+					local toBackpack = toPlayer:FindFirstChildOfClass("Backpack")
+					if toBackpack then
+						for _, tool in tools do
+							tool:Clone().Parent = toBackpack
+						end
+					end
+				end
+			end
+		end,
+	},
+	{
 		name = "removetools",
 		aliases = { "rtools" },
 		description = "Removes all tools from one or more player(s).",
