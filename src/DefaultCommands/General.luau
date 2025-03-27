@@ -5,21 +5,6 @@ local TextService = game:GetService("TextService")
 
 local playingSound = nil
 
-local spectateConnection
-local function spectateCleanup(context)
-	local spectatorCache = context._K.Flux.Scope.spectatorsCache
-	for subject, spectators in spectatorCache do
-		local found = table.find(spectators, context.fromPlayer)
-		if found then
-			table.remove(spectators, found)
-			if #spectators == 0 then
-				spectatorCache[subject] = nil
-				context._K.Remote.SpectateSubject:FireClient(subject)
-			end
-		end
-	end
-end
-
 return {
 	{
 		name = "clean",
@@ -356,16 +341,20 @@ return {
 		},
 
 		envClient = function(_K)
+			local env = {
+				spectateConnection = nil,
+			}
+
 			local function spectateNetwork()
 				_K.Remote.SpectateSubject:FireServer(workspace.CurrentCamera.CFrame)
 			end
 
 			_K.Remote.SpectateSubject.OnClientEvent:Connect(function(enabled: boolean)
-				if spectateConnection then
-					spectateConnection:Disconnect()
+				if env.spectateConnection then
+					env.spectateConnection:Disconnect()
 				end
 				if enabled then
-					spectateConnection = _K.Services.RunService.Heartbeat:Connect(spectateNetwork)
+					env.spectateConnection = _K.Services.RunService.Heartbeat:Connect(spectateNetwork)
 				end
 			end)
 
@@ -376,6 +365,8 @@ return {
 					})
 					:Play()
 			end)
+
+			return env
 		end,
 		env = function(_K)
 			local spectators = {}
@@ -389,8 +380,24 @@ return {
 					spectateRemote:FireClient(player, cframe)
 				end
 			end)
+
+			local function spectateCleanup(context)
+				local spectatorCache = context._K.Flux.Scope.spectatorsCache
+				for subject, spectators in spectatorCache do
+					local found = table.find(spectators, context.fromPlayer)
+					if found then
+						table.remove(spectators, found)
+						if #spectators == 0 then
+							spectatorCache[subject] = nil
+							context._K.Remote.SpectateSubject:FireClient(subject)
+						end
+					end
+				end
+			end
+
 			return {
 				spectators = _K.Flux.Scope.spectatorsCache,
+				spectateCleanup = spectateCleanup,
 			}
 		end,
 
@@ -402,15 +409,15 @@ return {
 			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
 				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
 			end
-			if spectateConnection then
-				spectateConnection:Disconnect()
+			if context.env.spectateConnection then
+				context.env.spectateConnection:Disconnect()
 			end
-			spectateConnection = player.CharacterAdded:Connect(function()
+			context.env.spectateConnection = player.CharacterAdded:Connect(function()
 				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
 			end)
 		end,
 		run = function(context, player)
-			spectateCleanup(context)
+			context.env.spectateCleanup(context)
 			if not context.env.spectators[player] then
 				context.env.spectators[player] = {}
 			end
@@ -434,12 +441,15 @@ return {
 			if character then
 				workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")
 			end
-			if spectateConnection then
-				spectateConnection:Disconnect()
-				spectateConnection = nil
+			local spectateEnv = context._K.Registry.commands.spectate.env
+			if spectateEnv.spectateConnection then
+				spectateEnv.spectateConnection:Disconnect()
+				spectateEnv.spectateConnection = nil
 			end
 		end,
-		run = spectateCleanup,
+		run = function(context)
+			context._K.Registry.commands.spectate.env.spectateCleanup(context)
+		end,
 	},
 	{
 		name = "fly",
