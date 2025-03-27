@@ -1,5 +1,6 @@
 local Auth = require(script.Parent.Auth)
 local Data = require(script.Parent.Data.Defaults)
+local Hook = require(script.Parent.Hook)
 local Registry = require(script.Parent.Registry)
 local Util = require(script.Parent.Util)
 local Command = require(script.Command)
@@ -155,6 +156,8 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 				break
 			end
 		end
+
+		Hook.runPreparedCommands:Fire(from, result, rawText, chatted)
 	else
 		commandError = result
 	end

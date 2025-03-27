@@ -8,6 +8,7 @@ local Hook = {
 	logFiltered = Util.Signal.new(),
 	preCommand = Util.Signal.new(),
 	postCommand = Util.Signal.new(),
+	runPreparedCommands = Util.Signal.new(),
 	roleAdded = Util.Signal.new(),
 	roleRemoved = Util.Signal.new(),
 
