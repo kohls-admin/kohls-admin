@@ -3,6 +3,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
 local Data = require(script.Parent.Data.Defaults)
+local Hook = require(script.Parent.Hook)
 local Registry = require(script.Parent.Registry)
 local Remote = require(script.Parent.Remote)
 local Util = require(script.Parent.Util)
@@ -189,6 +190,7 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	end
 
 	if roleAdded then
+		Hook.roleAdded:Fire(userId, role)
 		Auth.networkMember(userId)
 	end
 
@@ -229,6 +231,7 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 		if #member.roles == 0 and #member.persist == 0 then
 			Data.members[tostring(userId)] = nil
 		end
+		Hook.roleRemoved:Fire(userId, role)
 		Auth.networkMember(userId)
 	end
 
