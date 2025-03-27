@@ -96,6 +96,7 @@ return {
 			105503420, -- general_legendary
 			190022817, -- emblazes
 			1224156917, -- dalien
+			2017900712, -- skand
 		},
 	},
 	{

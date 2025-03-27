@@ -484,6 +484,11 @@ return {
 			end)
 		end,
 
+		runClient = function(context, players)
+			if table.find(players, context.fromPlayer) then
+				context._K.client.Character.tryFlyNoclip()
+			end
+		end,
 		run = function(context, players, speed)
 			for _, player in players do
 				if not player:GetAttribute("_KFly") then
@@ -530,6 +535,11 @@ return {
 			},
 		},
 
+		runClient = function(context, players)
+			if table.find(players, context.fromPlayer) then
+				context._K.client.Character.tryFlyNoclip()
+			end
+		end,
 		run = function(context, players, speed)
 			for _, player in players do
 				if not player:GetAttribute("_KDevCameraOcclusionMode") then

@@ -65,32 +65,12 @@ local function noCollide(model, reset: boolean?)
 	end
 end
 
-local canDoubleJump = false
-local hasDoubleJumped = false
-local function onCharacter(newCharacter)
-	character = newCharacter
-	humanoid = character:WaitForChild("Humanoid")
-
-	humanoid.StateChanged:Connect(function(_old, new)
-		noCollide(character)
-		if new == Enum.HumanoidStateType.Landed then
-			canDoubleJump = false
-			hasDoubleJumped = false
-		elseif new == Enum.HumanoidStateType.Freefall then
-			task.wait(0.2)
-			canDoubleJump = true
-		end
-	end)
-	noCollide(character)
-end
-LocalPlayer.CharacterAdded:Connect(onCharacter)
-if LocalPlayer.Character then
-	onCharacter(LocalPlayer.Character)
-end
-
 local Character = {}
 
+local canDoubleJump = false
+local hasDoubleJumped = false
 local FlyConnection, flying
+
 function Character.fly(enable)
 	if not enable == not flying then
 		return
@@ -99,6 +79,7 @@ function Character.fly(enable)
 	flying = enable
 	if typeof(FlyConnection) == "RBXScriptConnection" then
 		FlyConnection:Disconnect()
+		FlyConnection = nil
 	end
 
 	if not (humanoid and character.PrimaryPart) then
@@ -112,10 +93,8 @@ function Character.fly(enable)
 		end)
 		humanoid.PlatformStand = true
 		humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-		if not FlyConnection then
-			flyAttachment.Parent = character.PrimaryPart
-			FlyConnection = RunService.Heartbeat:Connect(flyStep)
-		end
+		flyAttachment.Parent = character.PrimaryPart
+		FlyConnection = RunService.Heartbeat:Connect(flyStep)
 	else
 		flyAttachment.Parent = nil
 		linear.VectorVelocity = Vector3.zero
@@ -148,6 +127,45 @@ LocalPlayer:GetAttributeChangedSignal("_KNoclip"):Connect(function()
 	end
 end)
 
+function Character.tryFlyNoclip()
+	local noclip = LocalPlayer:GetAttribute("_KNoclip")
+	local fly = LocalPlayer:GetAttribute("_KFly")
+	if noclip then
+		noclipping = true
+		noCollide(character)
+	end
+	if fly or noclip then
+		Character.fly(true)
+	end
+end
+
+local function onCharacter(newCharacter)
+	if noclipping then
+		noclipping = nil
+		noCollide(character, true)
+	end
+	Character.fly(false)
+
+	character = newCharacter
+	humanoid = character:WaitForChild("Humanoid")
+
+	humanoid.StateChanged:Connect(function(_old, new)
+		noCollide(character)
+		if new == Enum.HumanoidStateType.Landed then
+			canDoubleJump = false
+			hasDoubleJumped = false
+		elseif new == Enum.HumanoidStateType.Freefall then
+			task.wait(0.2)
+			canDoubleJump = true
+		end
+	end)
+	noCollide(character)
+end
+LocalPlayer.CharacterAdded:Connect(onCharacter)
+if LocalPlayer.Character then
+	task.spawn(onCharacter, LocalPlayer.Character)
+end
+
 local lastJump = 0
 local function onJumpRequest()
 	if
@@ -173,15 +191,7 @@ local function onJumpRequest()
 		end
 	elseif canDoubleJump and not hasDoubleJumped then
 		hasDoubleJumped = true
-		local noclip = LocalPlayer:GetAttribute("_KNoclip")
-		local fly = LocalPlayer:GetAttribute("_KFly")
-		if noclip then
-			noclipping = true
-			noCollide(character)
-		end
-		if fly or noclip then
-			Character.fly(true)
-		end
+		Character.tryFlyNoclip()
 	end
 end
 UserInputService.JumpRequest:Connect(onJumpRequest)
