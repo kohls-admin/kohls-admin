@@ -395,6 +395,13 @@ return {
 				end
 			end
 
+			_K.Hook.roleRemoved:Connect(function(userId: number, role: string)
+				local player = _K.Services.Players:GetPlayerByUserId(userId)
+				if player and not _K.Auth.hasCommand(userId, _K.Registry.commands.spectate) then
+					spectateCleanup({ _K = _K, fromPlayer = player })
+				end
+			end)
+
 			return {
 				spectators = _K.Flux.Scope.spectatorsCache,
 				spectateCleanup = spectateCleanup,
@@ -467,6 +474,15 @@ return {
 				optional = true,
 			},
 		},
+		env = function(_K)
+			_K.Hook.roleRemoved:Connect(function(userId: number, role: string)
+				local player = _K.Services.Players:GetPlayerByUserId(userId)
+				if player and not _K.Auth.hasCommand(userId, _K.Registry.commands.fly) then
+					player:SetAttribute("_KFly", nil)
+					player:SetAttribute("_KNoclip", nil)
+				end
+			end)
+		end,
 
 		run = function(context, players, speed)
 			for _, player in players do
