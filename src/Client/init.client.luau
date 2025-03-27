@@ -38,6 +38,7 @@ end
 _K.client.CommandBar:init(_K)
 _K.client.Dashboard = require(script:WaitForChild("Dashboard")) -- relies on command bar
 require(script:WaitForChild("Network"))
+require(script:WaitForChild("GetKA"))
 
 local chatCommandThrottle
 

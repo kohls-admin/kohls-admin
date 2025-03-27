@@ -13,6 +13,7 @@ function About.new(_K)
 	local thirdPartyText = "<font color='#fd0'>The game developer has disabled <b>Third Party Purchases</b>!</font>\n\n"
 		.. "<font transparency='0.5'>Copy the link below to purchase.</font>\n"
 		.. "<font color='#f00'><b>To receive perks, join a new server after your purchase!</b></font>"
+	UI.Scope.thirdPartyText = thirdPartyText
 
 	local equippedUGC = {}
 	local debounceEquip = _K.Util.Function.debounce(0.25, function(id, equip, equipped, name, button)

@@ -1,0 +1,107 @@
+local _K = require(script.Parent.Parent)
+local UI = _K.UI
+
+task.defer(function()
+	local adminModelId = 172732271
+	local ok, owned = _K.Util.Retry(function()
+		return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
+	end, 5, 1, 2)
+
+	if not ok or owned then
+		return
+	end
+
+	local adminModelButton = UI.new "Button" {
+		LayoutOrder = 10,
+		Name = "adminModelButton",
+		Icon = "rbxasset://textures/ui/common/robux.png",
+		IconRightAlign = true,
+		Label = "<sc><b>GET IT TODAY!</b></sc>",
+		HoverTransparency = 0.5,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = UDim2.new(0.75, 0, 0, 32),
+
+		UI.new "Frame" {
+			BackgroundTransparency = 1,
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 0, 0.5, 0),
+			Size = UDim2.new(0, 28, 0, 28),
+
+			UI.new "ImageLabel" {
+				BackgroundTransparency = 1,
+				Size = UDim2.new(0, 28, 0, 28),
+				Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
+				ImageColor3 = Color3.new(0, 0, 0),
+				ImageTransparency = 0.875,
+			},
+			UI.new "ImageButton" {
+				BackgroundTransparency = 1,
+				Position = UDim2.new(0, 2, 0, 2),
+				Size = UDim2.new(0, 24, 0, 24),
+				Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
+				ImageColor3 = Color3.new(1, 0.8, 0),
+				[UI.Event] = {
+					Activated = function()
+						_K.Services.AvatarEditorService:PromptSetFavorite(adminModelId, 1, true)
+					end,
+				},
+				UI.new "Tooltip" {
+					Text = "Add to Favorites",
+				},
+			},
+		},
+
+		UI.new "TextLabel" {
+			Name = "Price",
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.XY,
+			BackgroundTransparency = 1,
+			Font = UI.Theme.FontMono,
+			TextSize = UI.Theme.FontSizeLarge,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextWrapped = true,
+			Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+			Text = "<b>FREE</b>",
+			RichText = true,
+		},
+
+		[UI.Event] = {
+			Activated = function()
+				UI.Scope.lastAttemptedPurchase = adminModelId
+				if UI.Scope.AllowThirdPartySales then
+					_K.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
+				else
+					UI.Scope.purchaseDialog.Text:set(UI.Scope.thirdPartyText)
+					UI.Scope.purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
+					UI.Scope.purchaseDialog.Visible:set(true)
+				end
+			end,
+		},
+	}
+
+	local dialog = UI.new "Dialog" {
+		Parent = UI.LayerTop,
+		Title = "Enjoy Kohl's Admin?",
+		Text = "Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management.",
+		Visible = false,
+		ExitButton = true,
+		BackgroundTransparency = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		Size = UDim2.new(0, 320, 0, 0),
+		ZIndex = 1000,
+
+		adminModelButton,
+	}
+
+	local attempt, connection = 0, nil
+	connection = _K.Hook.runPreparedCommands:Connect(function()
+		attempt += 1
+		if attempt == 4 then
+			connection:Disconnect()
+			dialog.Visible:set(true)
+		end
+	end)
+end)
+
+return true
