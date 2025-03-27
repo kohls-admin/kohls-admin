@@ -69,11 +69,10 @@ function Window.new(definition)
 		Exitable = true,
 		Draggable = true,
 		Resizable = true,
+		RemoveOnClose = false,
+		Close = UI.Nil,
 		Title = "Window",
-		Position = UDim2.fromOffset(
-			math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 210,
-			math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 210
-		),
+		Position = UDim2.new(0.5, -210, 0.5, -210),
 		Size = UDim2.new(0, 420, 0, 420),
 		SizeBounds = Rect.new(128, 128, 9e9, 9e9),
 	}, definition)
@@ -204,6 +203,12 @@ function Window.new(definition)
 			new._instance.Visible = false
 			UI.clearState("hover")
 			UI.clearState("floating")
+
+			if new.Close and type(new.Close._value) == "function" then
+				new.Close._value(new)
+			elseif new.RemoveOnClose then
+				new:Destroy()
+			end
 		end,
 	}
 	new._exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
@@ -385,7 +390,7 @@ function Window.new(definition)
 				local parentSize = new._instance.Parent.AbsoluteSize
 				local windowSize = new._instance.AbsoluteSize
 				local maxPosition = parentSize - windowSize
-				local position = new._instance.Position
+				local position = new._instance.AbsolutePosition
 
 				local padding = new._instance.Parent:FindFirstChildOfClass("UIPadding")
 				local paddingX = if padding
@@ -409,8 +414,8 @@ function Window.new(definition)
 				)
 				new.Position:set(
 					UDim2.fromOffset(
-						math.clamp(position.X.Offset, 0, math.max(0, maxPosition.X)),
-						math.clamp(position.Y.Offset, 0, math.max(0, maxPosition.Y))
+						math.clamp(position.X, 0, math.max(0, maxPosition.X)),
+						math.clamp(position.Y, 0, math.max(0, maxPosition.Y))
 					)
 				)
 			end
