@@ -592,6 +592,7 @@ local initialized
 return {
 	Bar = CommandBar,
 	Input = Input,
+	updateCompletionData = updateCompletionData,
 	init = function(self, _K)
 		if initialized then
 			return

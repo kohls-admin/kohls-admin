@@ -15,6 +15,7 @@ function _K.client.updateInterfaceAuth()
 		command.LocalPlayerAuthorized = _K.Auth.hasCommand(UI.LocalPlayer.UserId, command)
 	end
 	UI.Scope.dashboard.Commands:updateList()
+	_K.client.CommandBar.updateCompletionData()
 end
 
 _K.Remote.Announce.OnClientEvent:Connect(_K.Announce)
