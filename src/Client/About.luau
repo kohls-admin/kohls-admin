@@ -80,6 +80,7 @@ function About.new(_K)
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 0),
 		Size = UDim2.new(0, 320, 0, 0),
+		Modal = true,
 		ZIndex = 1000,
 		Close = function()
 			UI.Scope.lastAttemptedPurchase = false

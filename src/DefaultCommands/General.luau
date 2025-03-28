@@ -251,6 +251,7 @@ return {
 					ExitButton = false,
 					LeftAction = true,
 					RightAction = true,
+					Modal = true,
 					Duration = 30,
 
 					UserFrame = { from.UserId },

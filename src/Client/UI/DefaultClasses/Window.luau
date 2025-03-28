@@ -282,6 +282,7 @@ function Window.new(definition)
 			UI.new "TextButton" {
 				Name = "TitleBar",
 				Active = true,
+				Modal = true,
 				LayoutOrder = -9e9,
 				BackgroundTransparency = 1,
 				ClipsDescendants = true,

@@ -184,7 +184,6 @@ function Dialog.new(definition)
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
 		ClipsDescendants = true,
-		Modal = true,
 		Size = UI.computeFrom(UDim2.fromOffset, new.Width, 0),
 		Text = "",
 		Visible = new.Visible,

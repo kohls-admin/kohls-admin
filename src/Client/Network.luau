@@ -39,6 +39,7 @@ _K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
 		ExitButton = false,
 		LeftAction = true,
 		RightAction = true,
+		Modal = true,
 		Duration = -1,
 
 		_K.client.UserFrame(from.UserId, from.DisplayName),
