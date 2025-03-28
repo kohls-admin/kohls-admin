@@ -459,29 +459,69 @@ return {
 				optional = true,
 			},
 		},
+		envClient = function(_K)
+			local display
+			_K.Remote.DisplayName.OnClientEvent:Connect(function(name)
+				local character = _K.UI.LocalPlayer.Character
+				local head = character and character:FindFirstChild("Head")
+				if head then
+					if not name then
+						if display then
+							display:Destroy()
+						end
+						return
+					end
+					if not display then
+						display = Instance.new("Model")
+						local humanoid = Instance.new("Humanoid")
+						humanoid.Parent = display
+						local fakeHead = Instance.new("Part")
+						fakeHead.Name = "Head"
+						fakeHead.CanQuery = false
+						fakeHead.CanTouch = false
+						fakeHead.Massless = true
+						fakeHead.Size = Vector3.zero
+						fakeHead.Parent = display
+						local mesh = Instance.new("SpecialMesh")
+						mesh.MeshType = Enum.MeshType.Brick
+						mesh.Scale = Vector3.zero
+						mesh.Parent = fakeHead
+						local weld = Instance.new("Weld")
+						weld.Part0 = head
+						weld.Part1 = fakeHead
+						weld.Parent = fakeHead
+						display.Parent = character
+					end
+					display.Name = name
+				end
+			end)
+		end,
 		env = function(_K)
+			local displayNames = {}
 			_K.Util.SafePlayerAdded(function(player)
-				player:SetAttribute("_KDisplayName", player.DisplayName)
 				player.CharacterAdded:Connect(function(character)
-					local name = _K.displayNames[player.UserId]
+					local name = displayNames[player.UserId]
 					if not name then
 						return
 					end
 					character:FindFirstChildOfClass("Humanoid").DisplayName = name
+					_K.Remote.DisplayName:FireClient(player, name)
 				end)
 			end)
 
-			return _K.displayNames
+			return {
+				displayNames = displayNames,
+				remote = _K.Remote.DisplayName,
+			}
 		end,
 
 		run = function(context, players, displayName)
-			displayName = if displayName == nil then nil else displayName
 			for _, player in players do
 				context.env[player.UserId] = displayName
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
-					humanoid.DisplayName = displayName or player:GetAttribute("_KDisplayName")
-					humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
+					humanoid.DisplayName = displayName or player.DisplayName
+					context._K.Remote.DisplayName:FireClient(player, displayName)
 				end
 			end
 		end,
