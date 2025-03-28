@@ -326,7 +326,7 @@ local function invalidSuggestion(data, err, pos, text)
 				if role == "vip" and _K.Data.settings.vip then
 					_K.promptPurchaseVIP()
 				else
-					_K.Util.Services.MarketplaceService:PromptGamePassPurchaseAsync(UI.LocalPlayer, roleData.gamepass)
+					_K.Util.Services.MarketplaceService:PromptGamePassPurchase(UI.LocalPlayer, roleData.gamepass)
 				end
 			end
 		end

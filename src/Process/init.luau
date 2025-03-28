@@ -101,7 +101,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 						if role == "vip" and _K.Data.settings.vip then
 							_K.promptPurchaseVIP()
 						else
-							_K.Util.Services.MarketplaceService:PromptGamePassPurchaseAsync(from, roleData.gamepass)
+							_K.Util.Services.MarketplaceService:PromptGamePassPurchase(from, roleData.gamepass)
 						end
 					end
 				end
