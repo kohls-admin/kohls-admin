@@ -340,11 +340,12 @@ return {
 	},
 	{
 		name = "rejoin",
-		description = "Rejoins the place.",
-		args = {},
+		description = "Rejoins the server.",
 
 		run = function(context)
-			context._K.Util.SafeTeleport(game.PlaceId, { context.fromPlayer })
+			local options = Instance.new("TeleportOptions")
+			options.ServerInstanceId = game.JobId
+			context._K.Util.SafeTeleport(game.PlaceId, { context.fromPlayer }, options)
 		end,
 	},
 	{
