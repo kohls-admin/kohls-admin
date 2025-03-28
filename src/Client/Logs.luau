@@ -139,7 +139,9 @@ function Logs.new(_K)
 		end
 
 		item.Text = text
-		item.TooltipRef.Value.Text = `<font transparency="0.5">{os.date("%y-%m-%d", log.time)} </font>` .. text
+		if item:FindFirstChild("TooltipRef") and item.TooltipRef.Value then
+			item.TooltipRef.Value.Text = `<font transparency="0.5">{os.date("%y-%m-%d", log.time)} </font>` .. text
+		end
 	end
 
 	scroller = UI.new "ScrollerFast" {

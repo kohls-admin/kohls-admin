@@ -163,6 +163,10 @@ function Commands.new(_K)
 			command.tipString = tipString
 		end
 
+		if item:FindFirstChild("TooltipRef") and item.TooltipRef.Value then
+			item.TooltipRef.Value.Text = tipString
+		end
+
 		if self._filter ~= "" then
 			local text = `{_K.Data.settings.prefix}{command.name} {argNames} {aliasText}`
 			local filterFound = string.find(string.lower(text), self._filter, 1, true)
@@ -184,7 +188,6 @@ function Commands.new(_K)
 					string.sub(command.description, descFound + #self._filter)
 				)
 				else `<font transparency="0.5">{command.description}</font>`
-			item.TooltipRef.Value.Text = tipString
 			return
 		end
 
@@ -194,7 +197,6 @@ function Commands.new(_K)
 			escape(aliasText)
 		)
 		item.Description.Text = `<font transparency="0.33">{command.description}</font>`
-		item.TooltipRef.Value.Text = tipString
 	end
 
 	local scroller = UI.new "ScrollerFast" {
