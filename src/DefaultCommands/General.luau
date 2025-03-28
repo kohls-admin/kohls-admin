@@ -244,7 +244,7 @@ return {
 		envClient = function(_K)
 			_K.Remote.Vote.OnClientInvoke = function(text: string, from: Player)
 				local actionSignal = _K.Util.Signal.new()
-				_K.client.Notify({
+				_K.Notify({
 					Text = text,
 					ActionText = "<b>VOTE</b>",
 					Action = true,
