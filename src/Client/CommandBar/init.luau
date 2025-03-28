@@ -323,6 +323,7 @@ local function invalidSuggestion(data, err, pos, text)
 			if
 				(roleData.gamepass or role == "vip") and _K.Auth.roleCanUseCommand(role, data.invalidPermissionsCommand)
 			then
+				err = `Purchase to unlock`
 				if role == "vip" and _K.Data.settings.vip then
 					_K.promptPurchaseVIP()
 				else

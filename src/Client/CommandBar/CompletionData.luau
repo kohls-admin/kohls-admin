@@ -48,6 +48,7 @@ return function(_K, text, cursorPosition)
 
 		if commandDefinition and not (greedy or _K.Auth.hasCommand(from, commandDefinition)) then
 			table.insert(data.invalid, { "Invalid permissions", 2, string.sub(text, 2) })
+			data.invalidPermissionsCommand = commandDefinition
 			return data
 		end
 
