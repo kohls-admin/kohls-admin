@@ -188,15 +188,14 @@ function Commands.new(_K)
 					string.sub(command.description, descFound + #self._filter)
 				)
 				else `<font transparency="0.5">{command.description}</font>`
-			return
+		else
+			item.Text = string.format(
+				commandRichFormat,
+				escape(_K.Data.settings.prefix .. command.name .. " " .. argNames),
+				escape(aliasText)
+			)
+			item.Description.Text = `<font transparency="0.33">{command.description}</font>`
 		end
-
-		item.Text = string.format(
-			commandRichFormat,
-			escape(_K.Data.settings.prefix .. command.name .. " " .. argNames),
-			escape(aliasText)
-		)
-		item.Description.Text = `<font transparency="0.33">{command.description}</font>`
 	end
 
 	local scroller = UI.new "ScrollerFast" {
