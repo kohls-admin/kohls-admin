@@ -228,8 +228,8 @@ function Window.new(definition)
 		Name = "Window",
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
-		Size = new.Size,
 		Position = new.Position,
+		Size = new.Size,
 		ZIndex = 2,
 
 		UI.new "UICorner" {
