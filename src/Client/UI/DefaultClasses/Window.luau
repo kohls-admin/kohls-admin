@@ -206,7 +206,7 @@ function Window.new(definition)
 
 			if new.Close and type(new.Close._value) == "function" then
 				new.Close._value(new)
-			elseif new.RemoveOnClose then
+			elseif new.RemoveOnClose._value then
 				new:Destroy()
 			end
 		end,
