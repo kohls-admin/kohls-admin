@@ -128,7 +128,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 	return true, commands
 end
 
-function Process.runCommands(_K: any, from: number, rawText: string): boolean
+function Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?): boolean
 	local commandRan, commandError
 	local ok, result = Process.prepareCommands(_K, from, rawText)
 
@@ -217,17 +217,21 @@ function Process.runCommands(_K: any, from: number, rawText: string): boolean
 				coroutine.yield()
 			end
 
-			logText = table.concat(log, " ")
-		else -- filter entire rawText as broadcast
+			if not noLog then
+				logText = table.concat(log, " ")
+			end
+		elseif not noLog then -- filter entire rawText as broadcast
 			local trimmed = Util.String.trim(rawText)
 			if #trimmed > 0 then
 				logText = Util.String.filterForBroadcast(Util.String.trim(rawText), from)
 			end
 		end
 
-		_K.log(logText or "", "COMMAND", from, true)
-		if commandError then
-			_K.log(Util.String.filterForBroadcast(commandError, from), "ERROR", from, true)
+		if not noLog then
+			_K.log(logText or "", "COMMAND", from, true)
+			if commandError then
+				_K.log(Util.String.filterForBroadcast(commandError, from), "ERROR", from, true)
+			end
 		end
 	end)
 
