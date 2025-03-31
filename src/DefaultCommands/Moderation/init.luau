@@ -821,16 +821,35 @@ return {
 			end
 			table.sort(toolNames)
 
-			context._K.UI.new "Dialog" {
-				Parent = context._K.UI.LayerTop,
+			local UI = context._K.UI
+			UI.new "Window" {
+				Parent = UI.LayerTopInset,
 				Title = player.Name .. "'s Tools",
-				Text = table.concat(toolNames, "\n"),
-				ExitButton = true,
-				BackgroundTransparency = 0,
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.new(0.5, 0, 0.5, 0),
-				Size = UDim2.new(0, 256, 0, 0),
-				ZIndex = 1000,
+				Exitable = true,
+				RemoveOnClose = true,
+				Position = UDim2.new(0.5, -128, 0.5, -128),
+				Size = UDim2.new(0, 256, 0, 256),
+
+				UI.new "Scroller" {
+					UI.new "UIFlexItem" {
+						FlexMode = Enum.UIFlexMode.Fill,
+					},
+					UI.new "TextLabel" {
+						AutoLocalize = false,
+						Name = "Text",
+						BackgroundTransparency = 1,
+						TextColor3 = UI.Theme.PrimaryText,
+						Text = table.concat(toolNames, "\n"),
+						TextSize = UI.Theme.FontSize,
+						TextWrapped = true,
+						TextXAlignment = "Left",
+						Font = UI.Theme.Font,
+						RichText = true,
+						Size = UDim2.new(1, 0, 0, 0),
+
+						AutomaticSize = Enum.AutomaticSize.Y,
+					},
+				},
 			}
 		end,
 	},
