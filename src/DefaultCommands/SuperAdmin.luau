@@ -75,4 +75,33 @@ return {
 			end
 		end,
 	},
+	{
+		name = "global",
+		description = "Runs a command string globally in all servers.",
+		args = {
+			{
+				type = "stringGreedy",
+				name = "Command string",
+				description = "The command string to run.",
+			},
+		},
+		env = function(_K)
+			_K.Util.Services.MessagingService:SubscribeAsync("KA_GlobalCommand", function(message)
+				local from, commandString = unpack(message.Data)
+				if from and commandString then
+					local prefix = _K.playerPrefix[from] or _K.Data.settings.prefix
+					if string.find(commandString, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
+						commandString = prefix .. commandString
+					end
+					_K.Process.runCommands(_K, from, commandString, true)
+				end
+			end)
+		end,
+		run = function(context, commandString: string)
+			if context._K.IsStudio then
+				task.defer(context._K.Process.runCommands, context._K, context.from, commandString)
+			end
+			context._K.Util.Services.MessagingService:PublishAsync("KA_GlobalCommand", { context.from, commandString })
+		end,
+	},
 }
