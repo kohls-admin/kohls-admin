@@ -1,7 +1,17 @@
 return function(_K)
 	local commandType = {
 		transform = function(text)
-			return _K.Registry.commands[string.lower(text)]
+			local query = string.lower(text)
+			local exactMatch = _K.Registry.commands[query]
+			if exactMatch then
+				return exactMatch
+			end
+			for key, command in _K.Registry.commands do
+				if string.find(key, query, 1, true) then
+					return command
+				end
+			end
+			return
 		end,
 
 		validate = function(command)
@@ -10,11 +20,7 @@ return function(_K)
 
 		suggestions = function(text)
 			-- TODO: create and cache command names every time a new command is added (debounced)
-			local names = {}
-			for alias in _K.Registry.commands do
-				names[alias] = alias
-			end
-			return _K.Util.Suggest.query(text, names, _K.Registry.commands)
+			return _K.Util.Suggest.query(text, _K.Util.Suggest.getNames(_K.Registry.commands))
 		end,
 
 		parse = function(command)
