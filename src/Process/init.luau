@@ -128,7 +128,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 	return true, commands
 end
 
-function Process.runCommands(_K: any, from: number, rawText: string, chatted: boolean?): boolean
+function Process.runCommands(_K: any, from: number, rawText: string): boolean
 	local commandRan, commandError
 	local ok, result = Process.prepareCommands(_K, from, rawText)
 
@@ -157,7 +157,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 			end
 		end
 
-		Hook.runPreparedCommands:Fire(from, result, rawText, chatted)
+		Hook.runPreparedCommands:Fire(from, result, rawText)
 	else
 		commandError = result
 	end
@@ -177,8 +177,8 @@ function Process.runCommands(_K: any, from: number, rawText: string, chatted: bo
 				Sound = "Call_Leave",
 			})
 		end
-	elseif chatted and _K.IsClient then
-		_K.Remote.Command:FireServer(rawText, chatted)
+	elseif _K.IsClient then
+		_K.Remote.Command:FireServer(rawText)
 	end
 
 	if not (commandRan or commandError) then

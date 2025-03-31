@@ -154,7 +154,7 @@ local function playerAdded(player: Player)
 			local prefix = _K.Data.settings.prefix
 			local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
 			if commandStart then
-				_K.Process.runCommands(_K, player.UserId, string.sub(message, commandStart), true)
+				_K.Process.runCommands(_K, player.UserId, string.sub(message, commandStart))
 			end
 		end
 		_K.log(Util.String.filterForBroadcast(message, player.UserId), "CHAT", player.UserId)
@@ -326,8 +326,8 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 		end
 	end)
 
-	_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string, chatted: boolean?)
-		_K.Process.runCommands(_K, player.UserId, message, chatted)
+	_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string)
+		_K.Process.runCommands(_K, player.UserId, message)
 	end)
 
 	-- handle custom command prefix

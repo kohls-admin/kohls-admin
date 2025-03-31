@@ -695,7 +695,6 @@ return {
 				end
 
 				-- FIX: if validated lol
-				_K.Remote.Command:FireServer(Input._input.Text)
 				task.spawn(_K.Process.runCommands, _K, _K.Services.Players.LocalPlayer.UserId, Input._input.Text)
 				-- Find the command in the history (and remove if not the most recent)
 				local cmd = string.sub(Input._input.Text, 2)

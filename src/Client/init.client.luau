@@ -70,7 +70,7 @@ local function Chatted(message: string)
 	end
 	if not chatCommandThrottle then
 		chatCommandThrottle = true
-		_K.Process.runCommands(_K, UI.LocalPlayer.UserId, string.sub(message, commandStart), true)
+		_K.Process.runCommands(_K, UI.LocalPlayer.UserId, string.sub(message, commandStart))
 		task.delay(0.2, function()
 			chatCommandThrottle = nil
 		end)
