@@ -51,9 +51,6 @@ return {
 				return
 			end
 
-			if context._K.IsStudio then
-				context._K.Remote.Announce:FireAllClients(message, context.from, 0)
-			end
 			local filteredMsg = context._K.Util.String.filterForBroadcast(message, context.from)
 			local announcement = { filteredMsg, context.from }
 			context._K.Data.Cache.settings.announcement = announcement
