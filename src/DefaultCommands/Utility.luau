@@ -6,7 +6,7 @@ return {
 		description = "Displays the version of Kohl's Admin in this game.",
 		optionalPrefix = true,
 		runClient = function(context)
-			context._K.Notify({ From = "_K", Text = `<sc>version</sc>:\t<b>{context._K.prefix}</b>` })
+			context._K.Notify({ From = "_K", Text = `<sc>version</sc>:\t<b>{context._K.VERSION}</b>` })
 		end,
 	},
 	{
