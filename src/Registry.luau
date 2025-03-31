@@ -46,7 +46,7 @@ export type CommandDefinition = {
 	aliases: { string }?,
 	description: string,
 	group: string,
-	args: { ArgumentDefinition },
+	args: { ArgumentDefinition }?,
 	envClient: Environment?,
 	env: Environment?,
 	runClient: (...any) -> ()?,
@@ -129,7 +129,7 @@ function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 	end
 
 	commandObject.args = commandObject.args or {}
-	for _, arg in commandObject.args do
+	for _, arg in commandObject.args :: any do
 		if not Registry.types[arg.type] and string.find(arg.type, "Enum.", 1, true) == 1 then
 			local argType = arg.type
 			local ok, enum = pcall(function()
