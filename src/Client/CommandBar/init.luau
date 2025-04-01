@@ -346,7 +346,7 @@ local function invalidSuggestion(data, err, pos, text)
 		else string.format(
 			argumentFormat,
 			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
-			_K.Util.String.escapeRichText(data.argDefinition.type),
+			_K.Util.String.escapeRichText(data.argDefinition.type) .. if data.argDefinition.optional then "?" else "",
 			data.argDefinition.description
 		)
 	for _, label in suggestionLabels do
@@ -428,7 +428,7 @@ updateCompletion = function()
 		Tooltip.Text = string.format(
 			argumentFormat,
 			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
-			_K.Util.String.escapeRichText(data.argDefinition.type),
+			_K.Util.String.escapeRichText(data.argDefinition.type) .. if data.argDefinition.optional then "?" else "",
 			data.argDefinition.description
 		)
 		TooltipFrame.Visible = true

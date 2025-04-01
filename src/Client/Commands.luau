@@ -92,11 +92,10 @@ function Commands.new(_K)
 				table.insert(argNames, if arg.optional then arg.name .. "?" else arg.name)
 				table.insert(
 					argTooltip,
-					`\n<b><sc>{arg.name}</sc> <font transparency="0.66"><i>&lt;{arg.type}&gt;</i></font></b>\n{arg.description}`
+					`\n<b><sc>{arg.name}</sc> <font transparency="0.66"><i>&lt;{arg.type}{if arg.optional
+						then `?`
+						else ""}&gt;</i></font></b>\n{arg.description}`
 				)
-				if arg.optional then
-					table.insert(argTooltip, `\t<font transparency="0.5"><b>optional:</b> true</font>`)
-				end
 				if arg.ignoreSelf then
 					table.insert(argTooltip, `\t<font transparency="0.5"><b>ignoreSelf:</b> true</font>`)
 				end
