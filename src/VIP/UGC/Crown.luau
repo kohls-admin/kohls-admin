@@ -44,7 +44,7 @@ if RunService:IsClient() then
 			local tpi = t % (math.pi * 2)
 			local AP = CFrame.new(0, math.sin(tpi) / 8, 0) * CFrame.Angles(0, tpi, 0)
 			for i, v in crowns do
-				if v and v.Parent then
+				if v and v.Parent and v:FindFirstChild("Handle") then
 					if v.Handle:FindFirstChild("AccessoryWeld") then
 						v.Handle.AccessoryWeld.C1 = AP
 					end
