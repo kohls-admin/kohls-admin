@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
+local Hook = require(script.Parent.Hook)
 local Util = require(script.Parent.Util)
 
 type Dict = { [any]: any }
@@ -158,6 +159,7 @@ function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 	end
 
 	Registry.commands[string.lower(commandObject.name)] = commandObject
+	_K.Hook.commandRegistered:Fire(commandObject)
 
 	if commandObject.aliases then
 		for _, alias in commandObject.aliases do

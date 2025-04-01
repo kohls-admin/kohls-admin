@@ -6,6 +6,7 @@ local Util = require(script.Parent:WaitForChild("Util"))
 local Hook = {
 	log = Util.Signal.new(),
 	logFiltered = Util.Signal.new(),
+	commandRegistered = Util.Signal.new(),
 	preCommand = Util.Signal.new(),
 	postCommand = Util.Signal.new(),
 	runPreparedCommands = Util.Signal.new(),
