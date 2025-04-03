@@ -109,7 +109,9 @@ return function(dialogOverride)
 	dialog._instance.Visible = true
 	visible:set(true)
 
-	resetOffset(height)
+	if resetOffset(height) > UI.LayerTopInset.AbsoluteSize.Y then
+		hide(existing[#existing], height)
+	end
 
 	UI.Sound[sound or "Notification_High"]:Play()
 
