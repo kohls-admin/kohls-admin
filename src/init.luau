@@ -252,18 +252,28 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 		end
 	end
 
-	Util.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
-		if purchased then
-			local gamePassRoles = _K.Data.async.gamepass[passId]
-			if gamePassRoles then
-				for _, role in gamePassRoles do
-					_K.Auth.userRoleAdd(player.UserId, role)
+	_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
+		if not purchaseSuccess then
+			return
+		end
+		for id, roles in _K.Data.async.gamepass do
+			if gamePassId ~= id then
+				continue
+			end
+			local rolesAdded = {}
+			for _, role in roles do
+				local roleAdded = _K.Auth.userRoleAdd(player.UserId, role)
+				if roleAdded then
+					local roleData = _K.Data.roles[role]
+					table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
 				end
 			end
-			for role, roleData in _K.Data.roles do
-				if roleData.gamepass == passId then
-					_K.Auth.userRoleAdd(player.UserId, role)
-				end
+
+			if player and #rolesAdded > 0 then
+				_K.Remote.Notify:FireClient(player, {
+					Text = `You got the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{_K.Data.settings.prefix}cmds</b> or <b>{_K.Data.settings.prefix}info</b> for details.`,
+					From = "_K",
+				})
 			end
 		end
 	end)
@@ -380,33 +390,6 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 		for _, player in _K.Util.Services.Players:GetPlayers() do
 			if _K.Auth.hasPermission(player.UserId, "serverlogs") then
 				_K.Remote.Log:FireClient(player, log)
-			end
-		end
-	end)
-
-	-- gamepass roles
-	_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
-		if not purchaseSuccess then
-			return
-		end
-		for id, roles in _K.Data.async.gamepass do
-			if gamePassId ~= id then
-				continue
-			end
-			local rolesAdded = {}
-			for _, role in roles do
-				local roleAdded = _K.Auth.userRoleAdd(player.UserId, role)
-				if roleAdded then
-					local roleData = _K.Data.roles[role]
-					table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
-				end
-			end
-
-			if player and #rolesAdded > 0 then
-				_K.Remote.Notify:FireClient(player, {
-					Text = `You got the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{_K.Data.settings.prefix}cmds</b> or <b>{_K.Data.settings.prefix}info</b> for details.`,
-					From = "_K",
-				})
 			end
 		end
 	end)
