@@ -120,6 +120,23 @@ end
 -- START OF SERVER CODE --
 --------------------------
 
+local function characterAdded(character: Model)
+	local player = _K.Services.Players:GetPlayerFromCharacter(character)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	humanoid.Died:Connect(function()
+		local tag = humanoid:FindFirstChild("creator")
+		local killer = tag and tag.Value
+		if killer then
+			_K.log(`died to {killer}.`, "DEATH", player.UserId)
+			if typeof(killer) == "Instance" and killer:IsA("Player") then
+				_K.log(`killed {player}.`, "KILL", killer.UserId)
+			end
+		else
+			_K.log(`died.`, "DEATH", player.UserId)
+		end
+	end)
+end
+
 local function playerAdded(player: Player)
 	repeat
 		task.wait()
@@ -146,6 +163,10 @@ local function playerAdded(player: Player)
 		return
 	end
 
+	if player.Character then
+		task.spawn(characterAdded, player.Character)
+	end
+	player.CharacterAdded:Connect(characterAdded)
 	player.Chatted:Connect(function(message: string)
 		if
 			Util.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService
