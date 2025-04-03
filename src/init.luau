@@ -256,6 +256,7 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 		if not purchaseSuccess then
 			return
 		end
+		_K.log(`bought gamepass {gamePassId}`, "PURCHASE", player.UserId)
 		for id, roles in _K.Data.async.gamepass do
 			if gamePassId ~= id then
 				continue
