@@ -185,7 +185,7 @@ return {
 	},
 	{
 		name = "removemember",
-		aliases = { "removepermissions", "unadmin" },
+		aliases = { "removepermissions" },
 		description = "Removes all roles and permissions from one or more member(s).",
 		args = {
 			{

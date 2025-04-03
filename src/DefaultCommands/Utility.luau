@@ -38,7 +38,7 @@ return {
 	},
 	{
 		name = "about",
-		aliases = { "credit", "credits", "info", "donate", "support", "vip" },
+		aliases = { "credit", "credits", "info", "donate", "support" },
 		description = "Shows the about tab in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
