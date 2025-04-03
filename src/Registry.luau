@@ -205,7 +205,9 @@ function Registry.registerCommandModule(_K: any, commandModule: ModuleScript)
 	local commandList = if moduleList then moduleResult else { moduleResult }
 
 	for _, commandObject in commandList do
-		commandObject.group = commandModule.Name
+		if not commandObject.group then
+			commandObject.group = commandModule.Name
+		end
 		Registry.registerCommand(_K, commandObject)
 	end
 end
