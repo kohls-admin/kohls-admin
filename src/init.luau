@@ -301,26 +301,32 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 	end)
 
 	if addons then
+		for _, child in script.DefaultAddons:GetChildren() do
+			child.Parent = addons
+		end
+	else
+		addons = script:WaitForChild("DefaultAddons")
+	end
+
+	if addons then
 		local serverAddons = Instance.new("Folder", Util.Services.ServerStorage)
 		serverAddons.Name = "_KServerAddons"
 
-		if addons then
-			for _, addon in addons:GetChildren() do
-				if addon:IsA("ModuleScript") then
-					if string.find(addon.Name, "Server", 1, true) then
-						addon.Parent = serverAddons
-						task.spawn(function()
-							require(addon)(_K)
-						end)
-					elseif not string.find(addon.Name, "Client", 1, true) then
-						task.spawn(function()
-							require(addon)(_K)
-						end)
-					end
+		for _, addon in addons:GetChildren() do
+			if addon:IsA("ModuleScript") then
+				if string.find(addon.Name, "Server", 1, true) then
+					addon.Parent = serverAddons
+					task.spawn(function()
+						require(addon)(_K)
+					end)
+				elseif not string.find(addon.Name, "Client", 1, true) then
+					task.spawn(function()
+						require(addon)(_K)
+					end)
 				end
 			end
-			addons.Parent = script
 		end
+		addons.Parent = script
 	end
 
 	if requireId then
