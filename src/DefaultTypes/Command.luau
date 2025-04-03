@@ -37,6 +37,15 @@ return function(_K)
 		local name = string.lower(command.name)
 		commandNames[name] = name
 
+		local oldCommand = _K.Registry.commands[name]
+		if oldCommand then
+			if oldCommand.aliases then
+				for _, alias in oldCommand.aliases do
+					commandNames[string.lower(alias)] = nil
+				end
+			end
+		end
+
 		if command.aliases then
 			for _, alias in command.aliases do
 				alias = string.lower(alias)
@@ -45,7 +54,7 @@ return function(_K)
 		end
 	end
 	_K.Hook.commandRegistered:Connect(cacheCommandNames)
-	for name, command in _K.Registry.commands do
+	for _, command in _K.Registry.commands do
 		cacheCommandNames(command)
 	end
 end

@@ -108,11 +108,13 @@ end
 
 --- Registers a command
 function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
+	local lowerName = string.lower(commandObject.name)
 	if not commandObject.name then
 		return -- invalid commandObject definition
 	end
-	local oldCommand = Registry.commands[string.lower(commandObject.name)]
-	if oldCommand then
+	local oldCommand = Registry.commands[lowerName]
+	if oldCommand and string.lower(oldCommand.name) == lowerName then
+		print("Overriding Kohl's Admin command: " .. lowerName)
 		local index = table.find(Registry.commandsList, oldCommand)
 		if index then
 			if not commandObject.group then
@@ -158,18 +160,19 @@ function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 		commandObject.env = commandObject.envClient(_K)
 	end
 
-	Registry.commands[string.lower(commandObject.name)] = commandObject
+	Registry.commands[lowerName] = commandObject
 	_K.Hook.commandRegistered:Fire(commandObject)
 
 	if commandObject.aliases then
 		for _, alias in commandObject.aliases do
+			alias = string.lower(alias)
 			-- error if alias conflicts
-			local conflict = Registry.commands[string.lower(alias)]
+			local conflict = Registry.commands[alias]
 			assert(
 				not conflict,
 				`"{commandObject.name}" command alias "{alias}" conflicts with "{conflict and conflict.name}" command`
 			)
-			Registry.commands[string.lower(alias)] = commandObject
+			Registry.commands[alias] = commandObject
 		end
 	end
 end
