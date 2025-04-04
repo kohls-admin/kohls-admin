@@ -21,7 +21,6 @@ function Command.new(_K, commandAlias, commandDefinition, commandArray, from, te
 		undo = string.find(commandAlias, "un", 1, true) == 1,
 
 		argIndex = 1,
-		argLength = #commandDefinition.args,
 		args = {},
 		preparedArgs = {},
 		-- flags = {};
@@ -153,7 +152,7 @@ function Command:validate()
 	local commandArray = self.array
 
 	-- always try first argument
-	if self.argLength > 0 and #commandArray < 2 then
+	if #self.definition.args > 0 and #commandArray < 2 then
 		self.text ..= " "
 		commandArray[2] = { #self.text, "" }
 	end
@@ -163,7 +162,7 @@ function Command:validate()
 		local argPos, rawArg = unpack(commandArray[i])
 
 		-- if last defined argument, concat the rest of the command's arguments
-		if self.argIndex == self.argLength then
+		if self.argIndex == #self.definition.args then
 			local lastArg = commandArray[#commandArray]
 			rawArg = string.sub(self.text, argPos, lastArg[1] + #lastArg[2])
 		end
