@@ -43,7 +43,7 @@ end
 
 local function nameUsed(names, name)
 	for _, data in names do
-		local used = data[1]
+		local used = if type(data) == "table" then data[1] else data
 		if used == name or prefixes[name] then
 			return true
 		end
