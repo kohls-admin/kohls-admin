@@ -77,7 +77,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 	end
 
 	local text = Util.String.trimStart(rawText)
-	local rawCommands = Process.rawParse(text, _K.playerPrefix[from] or _K.Data.settings.prefix)
+	local rawCommands = Process.rawParse(text, _K.getCommandPrefix(from))
 	if not rawCommands then
 		return
 	end

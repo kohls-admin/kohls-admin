@@ -89,7 +89,7 @@ return {
 			_K.Util.Services.MessagingService:SubscribeAsync("KA_GlobalCommand", function(message)
 				local from, commandString = unpack(message.Data)
 				if from and commandString then
-					local prefix = _K.playerPrefix[from] or _K.Data.settings.prefix
+					local prefix = _K.getCommandPrefix(from)
 					if string.find(commandString, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
 						commandString = prefix .. commandString
 					end

@@ -15,7 +15,7 @@ return function(_K, text, cursorPosition)
 		},
 	}
 
-	local prefix = _K.playerPrefix[from] or _K.Data.settings.prefix
+	local prefix = _K.getCommandPrefix(from)
 
 	if text == prefix then
 		data.argPos = 2

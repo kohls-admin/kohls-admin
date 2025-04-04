@@ -43,7 +43,7 @@ require(script:WaitForChild("GetKA"))
 local chatCommandThrottle
 
 local function Chatted(message: string)
-	local prefix = _K.playerPrefix[UI.LocalPlayer.UserId] or _K.Data.settings.prefix
+	local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
 	local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
 	if not commandStart then
 		-- check for optionalPrefix

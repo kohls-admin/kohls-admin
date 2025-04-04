@@ -81,6 +81,9 @@ local _K = {
 _K.log = _K.Logger.log
 _K.logger = _K.Logger.logger
 _K.Services = _K.Util.Services
+function _K.getCommandPrefix(from: number)
+	return _K.playerPrefix[from] or _K.Data.settings.prefix
+end
 
 -- Move tools to ServerStorage
 if _K.IsServer then
