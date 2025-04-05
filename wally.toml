@@ -8,8 +8,8 @@ registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 exclude = ["**"]
 include = [
-	"MainModule",
-	"MainModule/**",
+	"src",
+	"src/**",
 	"default.project.json",
 	"wally.toml",
 	"LICENSE.txt",
