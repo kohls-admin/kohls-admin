@@ -218,8 +218,8 @@ return {
 				description = "The player(s) to give Building Tools by F3X.",
 			},
 		},
-		env = function()
-			local tool = script:WaitForChild("Building Tools")
+		env = function(_K)
+			local tool = _K.DefaultTools:WaitForChild("Building Tools")
 			local handle = Instance.new("Part")
 			handle.Name = "Handle"
 			handle.Size = Vector3.new(0.8, 0.8, 0.8)
@@ -264,7 +264,7 @@ return {
 			},
 		},
 		env = function(_K)
-			local server = _K.script:FindFirstChild("ClassicBuildTools", true)
+			local server = _K.DefaultTools:WaitForChild("ClassicBuildTools")
 			if server then
 				server.Enabled = true
 			end

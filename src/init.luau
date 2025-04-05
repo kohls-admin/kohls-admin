@@ -82,6 +82,12 @@ _K.log = _K.Logger.log
 _K.logger = _K.Logger.logger
 _K.Services = _K.Util.Services
 
+-- Move tools to ServerStorage
+if _K.IsServer then
+	_K.DefaultTools = script:WaitForChild("DefaultTools")
+	_K.DefaultTools.Parent = _K.Services.ServerStorage
+end
+
 -- register initial UI children
 if _K.IsClient then
 	_K.UI = require(Client:WaitForChild("UI"))
