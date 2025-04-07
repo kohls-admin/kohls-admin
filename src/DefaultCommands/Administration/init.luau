@@ -265,12 +265,14 @@ return {
 		},
 		env = function(_K)
 			local server = _K.DefaultTools:WaitForChild("ClassicBuildTools")
-			if server then
-				server.Enabled = true
-			end
+			return { server = server }
 		end,
 
 		run = function(context, players)
+			if context.env.server and not context.env.server.Enabled then
+				context.env.server.Enabled = true
+			end
+
 			local NEW = context._K.Flux.new
 			for _, player in players do
 				if not player:FindFirstChild("Backpack") or player.Backpack:FindFirstChild("_KGameTool") then
