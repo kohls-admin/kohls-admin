@@ -445,7 +445,7 @@ return {
 		env = function(_K)
 			return {
 				effect = _K.Flux.new "ParticleEmitter" {
-					Name = "Shine",
+					Name = "_KShineEffect",
 					LockedToPart = true,
 					LightEmission = 1,
 					Texture = "rbxassetid://1085001473",
