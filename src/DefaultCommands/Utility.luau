@@ -288,8 +288,14 @@ return {
 			function _K.Remote.ShowFPS.OnClientInvoke()
 				return env.fps
 			end
-			_K.Services.RunService.Heartbeat:Connect(function(dt: number)
-				env.fps = (env.fps + 1 / dt) / 2
+			local frames, last = 0, tick()
+			_K.Services.RunService.Heartbeat:Connect(function()
+				frames += 1
+				local dt = tick() - last
+				if dt >= 1 then
+					env.fps = frames / dt
+					frames, last = 0, tick()
+				end
 			end)
 			return env
 		end,
