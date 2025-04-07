@@ -9,11 +9,8 @@
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local SoundService = game:GetService("SoundService")
-local Players = game:GetService("Players")
 local Dragger = Instance.new("Dragger")
 
-local player = Players.LocalPlayer
 local tool = script.Parent
 
 local selection = Instance.new("SelectionBox")
@@ -146,15 +143,15 @@ local function startDraggerAction(mPart)
 			local now = tick()
 			Dragger:MouseMove(mouse.UnitRay)
 
-			local mousePart = selection.Adornee
-			if mousePart and currentKey then
+			local selected = selection.Adornee
+			if selected and currentKey then
 				if isKeyDown('R') then
 					Dragger:AxisRotate('Z')
 				elseif isKeyDown('T') then
 					Dragger:AxisRotate('X')
 				end
 				if now - lastSubmit > 0.03 then
-					submitUpdate:FireServer(currentKey,mousePart.CFrame)
+					submitUpdate:FireServer(currentKey, selected.CFrame)
 					lastSubmit = now
 				end
 			end
