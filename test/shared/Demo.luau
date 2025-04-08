@@ -1,3 +1,5 @@
+shared._K_DEBUG = true
+
 repeat
 	task.wait()
 until shared._K_INTERFACE

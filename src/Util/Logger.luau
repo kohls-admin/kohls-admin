@@ -53,7 +53,7 @@ local LEVELS = {
 }
 
 function Logger.new(debugEnabled: boolean?): Logger
-	return setmetatable({ logs = {}, debug = debugEnabled }, Logger)
+	return setmetatable({ logs = {}, limit = 100_000, debug = debugEnabled }, Logger)
 end
 
 function Logger:encode(level: LogType): number
@@ -77,7 +77,7 @@ function Logger:log(text: string, level: LogType, userId: number?): Log?
 	}
 
 	table.insert(self.logs, log)
-	if #self.logs > 100_000 then
+	if #self.logs > self.limit then
 		table.remove(self.logs, 1)
 	end
 

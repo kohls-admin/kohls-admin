@@ -9,11 +9,9 @@ end
 local RunService = game:GetService("RunService")
 
 local Client = script:WaitForChild("Client")
-local LoggerModule = script:WaitForChild("Logger")
 local UtilModule = script:WaitForChild("Util")
 
 local requireStart = os.clock()
-local Logger = require(LoggerModule)
 local Util = require(UtilModule)
 
 export type Log = Util.Log
@@ -55,7 +53,7 @@ local _K = {
 	VERSION = Util.String.trim(script:WaitForChild("VERSION").Value),
 
 	-- modules
-	Logger = Logger,
+	Logger = Util.Logger.new(shared._K_DEBUG),
 	Util = Util,
 	Data = require(script:WaitForChild("Data")),
 	Flux = require(script:WaitForChild("Flux")),
@@ -69,6 +67,9 @@ local _K = {
 	Registry = require(script:WaitForChild("Registry")),
 	VIP = require(script:WaitForChild("VIP")),
 
+	-- shorthand
+	Services = Util.Services,
+
 	client = nil,
 	pinnedAnnouncement = nil,
 
@@ -77,13 +78,52 @@ local _K = {
 	_serverLock = false,
 }
 
--- shorthand
-_K.log = _K.Logger.log
-_K.logger = _K.Logger.logger
-_K.Services = _K.Util.Services
 function _K.getCommandPrefix(from: number)
 	return _K.playerPrefix[from] or _K.Data.settings.prefix
 end
+
+function _K.log(text: string, level: LogType, from: number?, filtered: boolean?): Log?
+	if _K.Data.logsHidden[from] then
+		return
+	end
+	local log = Util.Logger.log(_K.Logger, text, level, from)
+	if not log then
+		return -- DEBUG disabled
+	end
+	if from then
+		task.spawn(function()
+			log.name = Util.getUserInfo(from).Username
+		end)
+	end
+	if _K.IsClient then
+		log.client = true
+	end
+
+	_K.Hook.log:Fire(log)
+
+	if _K.IsServer then
+		if from and not filtered then
+			log.text = Util.String.filterForBroadcast(text, from, Enum.TextFilterContext.PublicChat)
+		end
+
+		if level == "COMMAND" and (not from or _K.Auth.getRank(from) > 1) then
+			-- save logs for roles above VIP (rank 1)
+			table.insert(_K.Data.Cache.logs, { log.text, log.level, log.time, from, log.name })
+			_K.Data.pendingSaveLogs = true
+		end
+
+		task.defer(function()
+			for _, player in _K.Services.Players:GetPlayers() do
+				if _K.Auth.hasPermission(player.UserId, "serverlogs") then
+					_K.Remote.Log:FireClient(player, log)
+				end
+			end
+		end)
+	end
+
+	return log
+end
+_K.Logger.logs = _K.Data.logs
 
 -- Move tools to ServerStorage
 if _K.IsServer then
@@ -422,14 +462,6 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 	end)
 
 	-- server hooks
-
-	_K.Hook.logFiltered:Connect(function(log)
-		for _, player in _K.Util.Services.Players:GetPlayers() do
-			if _K.Auth.hasPermission(player.UserId, "serverlogs") then
-				_K.Remote.Log:FireClient(player, log)
-			end
-		end
-	end)
 
 	_K.Util.SafePlayerAdded(playerAdded)
 	_K.Util.Services.Players.PlayerRemoving:Connect(function(player)
