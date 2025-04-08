@@ -226,7 +226,7 @@ if not loader then
 	script:Destroy()
 end
 local CUSTOM = FindChild(loader, "Custom Commands") or FindChild(loader, "Custom_Commands")
-local SETTINGS = FindChild(loader, "Settings")
+local SETTINGS = FindChild(loader, "Settings") or FindChild(loader, "Legacy_Settings")
 if SETTINGS then
 	if CUSTOM then
 		local b, e = wrap(function()
