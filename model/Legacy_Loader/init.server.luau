@@ -37,12 +37,13 @@ if _G.KAU then
 	script:Destroy()
 else
 	_G.KAU = true
+	shared._K_LOADER_LOADED = true
 	script.Name = "Kohl's Admin Infinite"
 	script.Parent = game:GetService("ServerScriptService")
 
 	local function loadModuleAsset(assetId: number)
 		local asset = game:GetService("InsertService"):LoadAsset(assetId)
-		local module = asset:FindFirstChild("KAIMainModule", true)
+		local module = asset:FindFirstChild("MainModuleKAI", true)
 		if module then
 			return assert(require(module), ":LoadAsset() module returned invalid values!")
 		end
@@ -57,7 +58,7 @@ else
 		ok, result = pcall(loadModuleAsset, loaderId)
 		if not ok then
 			warn("Kohl's Admin failed to auto-update from asset, attempting to load from local package\nReason:\t" .. result)
-			result = require(script:WaitForChild("KAIModule"))
+			result = require(script:WaitForChild("MainModuleKAI"))
 		end
 	end
 end
