@@ -12,6 +12,7 @@ local Util = {
 
 	Defer = require(script:WaitForChild("Defer")),
 	Function = require(script:WaitForChild("Function")),
+	getTexture = require(script:WaitForChild("getTexture")),
 	getUserInfo = require(script:WaitForChild("getUserInfo")),
 	Humanoid = require(script:WaitForChild("Humanoid")),
 	--- @within Util
