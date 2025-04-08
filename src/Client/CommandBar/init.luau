@@ -466,7 +466,7 @@ updateCompletion = function()
 	local suggestionText, suggestionValue = unpack(currentSuggestion)
 
 	if data.query ~= "" then
-		local reservedCharacters = { " ", _K.Data.settings.prefix }
+		local reservedCharacters = { " ", _K.getCommandPrefix(UI.LocalPlayer.UserId) }
 		for _, char in reservedCharacters do
 			if string.find(suggestionText, char) and not string.find(suggestionText, '^["`]') then
 				suggestionText = `"{suggestionText}"`
@@ -599,7 +599,7 @@ return {
 		end
 		initialized = true
 
-		Input._input.Text = _K.Data.settings.prefix
+		Input._input.Text = _K.getCommandPrefix(UI.LocalPlayer.UserId)
 		Input._input.TextEditable = false
 		CommandBar.Parent = UI.TopbarFrame
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
@@ -637,8 +637,9 @@ return {
 		Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 			local cursorPosition = Input._input.CursorPosition
 			if cursorPosition ~= -1 then
-				if cursorPosition < #_K.Data.settings.prefix + 1 then
-					Input._input.CursorPosition = #_K.Data.settings.prefix + 1
+				local prefixPosition = #_K.getCommandPrefix(UI.LocalPlayer.UserId) + 1
+				if cursorPosition < prefixPosition then
+					Input._input.CursorPosition = prefixPosition
 					return
 				end
 				task.defer(updateCompletionData)
@@ -657,6 +658,7 @@ return {
 
 		Input._input.FocusLost:Connect(function(enterPressed)
 			if enterPressed then
+				local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
 				invalidStroke.Enabled = true
 				Input._input.TextEditable = false
 
@@ -666,7 +668,7 @@ return {
 					return Input._input:CaptureFocus()
 				end
 
-				if Input._input.Text ~= _K.Data.settings.prefix and #data.commands < 1 then
+				if Input._input.Text ~= prefix and #data.commands < 1 then
 					validState:set(false)
 					UI.Sound.Negative:Play()
 					invalidSuggestion(data, "Invalid command", data.argPos, data.rawArg)
@@ -690,12 +692,12 @@ return {
 				hideCommandBar()
 
 				-- ignore empty command strings
-				if Input._input.Text == _K.Data.settings.prefix then
+				if Input._input.Text == prefix then
 					return
 				end
 
 				-- FIX: if validated lol
-				task.spawn(_K.Process.runCommands, _K, _K.Services.Players.LocalPlayer.UserId, Input._input.Text)
+				task.spawn(_K.Process.runCommands, _K, UI.LocalPlayer.UserId, Input._input.Text)
 				-- Find the command in the history (and remove if not the most recent)
 				local cmd = string.sub(Input._input.Text, 2)
 				local foundIndex = table.find(commandHistory, cmd)
@@ -708,7 +710,7 @@ return {
 						table.remove(commandHistory)
 					end
 				end
-				Input._input.Text = _K.Data.settings.prefix
+				Input._input.Text = prefix
 			end
 			return
 		end)
@@ -718,7 +720,7 @@ return {
 				completeSuggestion()
 				return
 			end
-			local prefix = _K.Data.settings.prefix
+			local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
 			if string.find(Input._input.Text, prefix, 1, true) ~= 1 then
 				Input._input.CursorPosition += 1
 				Input._input.Text = prefix .. Input._input.Text
@@ -727,7 +729,7 @@ return {
 				return
 			end
 
-			if Input._input.Text == _K.Data.settings.prefix then
+			if Input._input.Text == prefix then
 				Input.DisplayText:set(Input._input.Text .. "<font transparency='0.5'><i>command</i></font>")
 			else
 				Input.DisplayText:set(_K.Util.String.escapeRichText(text))
