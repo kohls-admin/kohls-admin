@@ -398,7 +398,7 @@ return {
 					pe.Color = ColorSequence.new(color)
 				end
 				if image then
-					pe.Texture = "rbxassetid://" .. image
+					pe.Texture = context._K.Util.getTexture(image)
 				end
 				pe.Enabled = true
 				pe.Parent = root
@@ -672,7 +672,7 @@ return {
 				cape.Size = Vector3.new(1.9, 3.8, 0.2)
 
 				if decal then
-					Instance.new("Decal", cape).Texture = "rbxassetid://" .. decal
+					Instance.new("Decal", cape).Texture = context._K.Util.getTexture(decal)
 				end
 
 				local motor = Instance.new("Motor6D")
@@ -992,7 +992,20 @@ return {
 
 		run = function(context, players, assetId)
 			for _, player in players do
-				Util.Humanoid.attributeDescription(player, "Face", assetId)
+				local head = player.Character and player.Character:FindFirstChild("Head")
+				if not head then
+					continue
+				end
+				local face = head:FindFirstChild("face")
+				if not face then
+					face = Instance.new("Decal")
+					face.Name = "face"
+					face.Parent = head
+				end
+				if not player.Character:GetAttribute("_KFace") then
+					player.Character:SetAttribute("_KFace", face.Texture)
+				end
+				face.Texture = if context.undo then player.Character:GetAttribute("_KFace") else context._K.Util.getTexture(assetId)
 			end
 		end,
 	},
@@ -1016,7 +1029,18 @@ return {
 
 		run = function(context, players, assetId)
 			for _, player in players do
-				Util.Humanoid.attributeDescription(player, "Shirt", assetId)
+				if not player.Character then
+					continue
+				end
+				local shirt = player.Character:FindFirstChildOfClass("Shirt")
+				if not shirt then
+					shirt = Instance.new("Shirt")
+					shirt.Parent = player.Character
+				end
+				if not player.Character:GetAttribute("_KShirt") then
+					player.Character:SetAttribute("_KShirt", shirt.ShirtTemplate)
+				end
+				shirt.ShirtTemplate = if context.undo then player.Character:GetAttribute("_KShirt") else context._K.Util.getTexture(assetId)
 			end
 		end,
 	},
@@ -1040,7 +1064,18 @@ return {
 
 		run = function(context, players, assetId)
 			for _, player in players do
-				Util.Humanoid.attributeDescription(player, "Pants", assetId)
+				if not player.Character then
+					continue
+				end
+				local existing = player.Character:FindFirstChildOfClass("Pants")
+				if not existing then
+					existing = Instance.new("Pants")
+					existing.Parent = player.Character
+				end
+				if not player.Character:GetAttribute("_KPants") then
+					player.Character:SetAttribute("_KPants", existing.PantsTemplate)
+				end
+				existing.PantsTemplate = if context.undo then player.Character:GetAttribute("_KPants") else context._K.Util.getTexture(assetId)
 			end
 		end,
 	},
@@ -1064,7 +1099,18 @@ return {
 
 		run = function(context, players, assetId)
 			for _, player in players do
-				Util.Humanoid.attributeDescription(player, "GraphicTShirt", assetId)
+				if not player.Character then
+					continue
+				end
+				local tshirt = player.Character:FindFirstChildOfClass("ShirtGraphic")
+				if not tshirt then
+					tshirt = Instance.new("ShirtGraphic")
+					tshirt.Parent = player.Character
+				end
+				if not player.Character:GetAttribute("_KTShirt") then
+					player.Character:SetAttribute("_KTShirt", tshirt.Graphic)
+				end
+				tshirt.Graphic = if context.undo then player.Character:GetAttribute("_KTShirt") else context._K.Util.getTexture(assetId)
 			end
 		end,
 	},
