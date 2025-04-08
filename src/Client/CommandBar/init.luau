@@ -734,6 +734,11 @@ return {
 			if text == prefix then
 				Input.DisplayText:set(text .. "<font transparency='0.5'><i>command</i></font>")
 			else
+				if string.find(text, prefix, prefixLen + 1, true) == prefixLen + 1 then
+					text = string.sub(text, prefixLen + 1)
+					Input._input.Text = text
+					return
+				end
 				Input.DisplayText:set(_K.Util.String.escapeRichText(text))
 			end
 		end)
