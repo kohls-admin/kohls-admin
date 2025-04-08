@@ -439,7 +439,7 @@ updateCompletion = function()
 	-- FIX: adjust with inputoffset
 	-- FIX: assign greedy pos that's used instead!
 	local argX = TextService:GetTextSize(
-		string.sub(data.message, 1, data.argPos - 1),
+		string.sub(string.gsub(data.message, "\n", " "), 1, data.argPos - 1),
 		Tooltip.TextSize,
 		Tooltip.Font,
 		Vector2.zero
@@ -723,13 +723,14 @@ return {
 				Input._input.CursorPosition += 1
 				Input._input.Text = prefix .. Input._input.Text
 				Input._input.CursorPosition += 1
+			local text = Input._input.Text
 				return
 			end
 
 			if Input._input.Text == _K.Data.settings.prefix then
 				Input.DisplayText:set(Input._input.Text .. "<font transparency='0.5'><i>command</i></font>")
 			else
-				Input.DisplayText:set(_K.Util.String.escapeRichText(Input._input.Text))
+				Input.DisplayText:set(_K.Util.String.escapeRichText(text))
 			end
 		end)
 	end,
