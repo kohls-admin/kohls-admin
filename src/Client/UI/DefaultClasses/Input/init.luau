@@ -25,27 +25,27 @@ local function bytePositionToWidth(text, size, font, bytePosition)
 	return bounds.X
 end
 
-local function updateSelection(selection, input, inputOffset, cursorWidth)
-	cursorWidth = cursorWidth or bytePositionToWidth(input.Text, input.TextSize, input.Font, input.CursorPosition)
-	local selectWidth = bytePositionToWidth(input.Text, input.TextSize, input.Font, input.SelectionStart)
+local function updateSelection(selection, display, input, inputOffset, cursorWidth)
+	cursorWidth = cursorWidth or bytePositionToWidth(display.Text, display.TextSize, display.Font, input.CursorPosition)
+	local selectWidth = bytePositionToWidth(display.Text, display.TextSize, display.Font, input.SelectionStart)
 	local deltaWidth = cursorWidth - selectWidth
-	selection.Size = UDim2.fromOffset(deltaWidth, input.TextSize)
+	selection.Size = UDim2.fromOffset(deltaWidth, display.TextSize)
 	selection.Position = UDim2.new(0, selectWidth - inputOffset._value, 0.5, 0)
 	selection.Visible = true
 end
 
-local function updateCursor(cursor, input, inputMask, inputOffset, selection)
-	local cursorWidth = bytePositionToWidth(input.Text, input.TextSize, input.Font, input.CursorPosition)
+local function updateCursor(cursor, display, input, inputMask, inputOffset, selection)
+	local cursorWidth = bytePositionToWidth(display.Text, display.TextSize, display.Font, input.CursorPosition)
 	local visibleWidth = inputMask.AbsoluteSize.X
 	local cursorOffset = cursorWidth - inputOffset._value
 
-	local margin = if (input.TextBounds.X > visibleWidth or inputOffset._value > 0) and cursorWidth > 32 then 32 else 0
+	local margin = if (display.TextBounds.X > visibleWidth or inputOffset._value > 0) and cursorWidth > 32 then 32 else 0
 	if cursorOffset > visibleWidth then
-		inputOffset:set(math.min(input.TextBounds.X, inputOffset._value + cursorOffset - visibleWidth))
+		inputOffset:set(math.min(display.TextBounds.X, inputOffset._value + cursorOffset - visibleWidth))
 		cursorOffset = visibleWidth
 	elseif cursorOffset < margin then
 		inputOffset:set(inputOffset._value + cursorOffset - margin)
-		if margin == 0 or inputOffset._value <= input.TextSize / 2 then
+		if margin == 0 or inputOffset._value <= display.TextSize / 2 then
 			inputOffset:set(math.min(0, inputOffset._value))
 		end
 		cursorOffset = margin
@@ -56,7 +56,7 @@ local function updateCursor(cursor, input, inputMask, inputOffset, selection)
 	cursor.Visible = true
 
 	if input.SelectionStart ~= -1 then
-		updateSelection(selection, input, inputOffset, cursorWidth)
+		updateSelection(selection, display, input, inputOffset, cursorWidth)
 	end
 end
 
@@ -346,7 +346,7 @@ function Input.new(definition)
 			if new._input.SelectionStart == -1 then
 				selection.Visible = false
 			else
-				updateSelection(selection, new._input, new._inputOffset)
+				updateSelection(selection, displayLabel, new._input, new._inputOffset)
 			end
 		end),
 
@@ -357,7 +357,7 @@ function Input.new(definition)
 				cursor.Visible = false
 			else
 				-- defer for text to register
-				task.defer(updateCursor, cursor, new._input, inputMask, new._inputOffset, selection)
+				task.defer(updateCursor, cursor, displayLabel, new._input, inputMask, new._inputOffset, selection)
 			end
 		end),
 	}
