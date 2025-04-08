@@ -721,16 +721,18 @@ return {
 				return
 			end
 			local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
-			if string.find(Input._input.Text, prefix, 1, true) ~= 1 then
-				Input._input.CursorPosition += 1
-				Input._input.Text = prefix .. Input._input.Text
-				Input._input.CursorPosition += 1
+			local prefixLen = #prefix
 			local text = Input._input.Text
+
+			if string.find(text, prefix, 1, true) ~= 1 then
+				Input._input.CursorPosition += prefixLen
+				Input._input.Text = prefix .. text
+				Input._input.CursorPosition += prefixLen
 				return
 			end
 
-			if Input._input.Text == prefix then
-				Input.DisplayText:set(Input._input.Text .. "<font transparency='0.5'><i>command</i></font>")
+			if text == prefix then
+				Input.DisplayText:set(text .. "<font transparency='0.5'><i>command</i></font>")
 			else
 				Input.DisplayText:set(_K.Util.String.escapeRichText(text))
 			end
