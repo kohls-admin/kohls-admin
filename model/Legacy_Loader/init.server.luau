@@ -40,33 +40,24 @@ else
 	script.Name = "Kohl's Admin Infinite"
 	script.Parent = game:GetService("ServerScriptService")
 
-	local function loadModuleAsset(moduleId: number)
-		local asset = game:GetService("InsertService"):LoadAsset(moduleId)
-
-		if asset.Name == "MainModule" then
-			return assert(require(asset), ":LoadAsset() module returned invalid values!")
-		elseif asset:FindFirstChild("MainModule") then
-			return assert(require(asset.MainModule), ":LoadAsset() module returned invalid values!")
-		elseif asset:IsA("ModuleScript") then
-			return assert(require(asset), ":LoadAsset() module returned invalid values!")
+	local function loadModuleAsset(assetId: number)
+		local asset = game:GetService("InsertService"):LoadAsset(assetId)
+		local module = asset:FindFirstChild("KAIMainModule", true)
+		if module then
+			return assert(require(module), ":LoadAsset() module returned invalid values!")
 		end
-
-		for _, v in asset:GetChildren() do
-			if v:IsA("ModuleScript") then
-				return assert(require(v), ":LoadAsset() module returned invalid values!")
-			end
-		end
-
-		error(`Failed to find any matching ModuleScripts for {moduleId}.`)
+		error(`Failed to find the source for {assetId}.`)
 	end
 
+	local loaderId = 172732271
 	local moduleId = 1868400649
 	local ok, result = pcall(require, moduleId)
 	if not ok then
 		warn("Kohl's Admin failed to auto-update from MainModule, attempting to load from asset\nReason:\t" .. result)
-		ok, result = pcall(loadModuleAsset, moduleId)
+		ok, result = pcall(loadModuleAsset, loaderId)
 		if not ok then
-			warn("Kohl's Admin failed to auto-update from asset\nReason:\t" .. result)
+			warn("Kohl's Admin failed to auto-update from asset, attempting to load from local package\nReason:\t" .. result)
+			result = require(script:WaitForChild("KAIModule"))
 		end
 	end
 end
