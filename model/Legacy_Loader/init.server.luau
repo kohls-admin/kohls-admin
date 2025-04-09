@@ -37,7 +37,6 @@ if _G.KAU then
 	script:Destroy()
 else
 	_G.KAU = true
-	shared._K_LOADER_LOADED = true
 	script.Name = "Kohl's Admin Infinite"
 	script.Parent = game:GetService("ServerScriptService")
 
