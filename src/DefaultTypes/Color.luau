@@ -25,20 +25,40 @@ local COLORS = {
 	gray = Color3.new(0.5, 0.5, 0.5),
 }
 
+local invalidColorId = BrickColor.new("").Number
+for i = 1, 1032 do
+	local color = BrickColor.new(i)
+	if i ~= invalidColorId and color.Number == invalidColorId then
+		continue
+	end
+	local name = string.lower(color.Name)
+	if COLORS[name] then
+		continue
+	end
+	COLORS[tostring(i)] = color.Color
+	COLORS[name] = color.Color
+end
+
 local colorNames = {}
 for name in COLORS do
 	table.insert(colorNames, name)
 end
 table.sort(colorNames)
 
+COLORS.random = Color3.new(math.random(), math.random(), math.random())
+table.insert(colorNames, 1, "random")
+
 local typeColor = {
 	transform = function(input: string)
-		input = _K.Util.String.trim(input)
+		input = _K.Util.String.trim(string.lower(input))
 		if COLORS[input] then
+			if input == "random" then
+				return Color3.new(math.random(), math.random(), math.random())
+			end
 			return COLORS[input]
 		end
 		if string.find(input, "^#") then
-			if #input > 7 or string.find(input, "[^#a-fA-F%d]") then
+			if #input > 7 or string.find(input, "[^#a-f%d]") then
 				return nil -- invalid hex input
 			end
 			if #input < 4 then
@@ -49,8 +69,16 @@ local typeColor = {
 			return Color3.fromHex(input)
 		else
 			local r, g, b = string.match(input, "^(%d*),?(%d*),?(%d*)$")
-			return Color3.fromRGB(r or 255, g or 255, b or 255)
+			if r then
+				return Color3.fromRGB(r or 255, g or 255, b or 255)
+			end
+			for name, color in COLORS do -- partial match
+				if string.find(name, input, 1, true) == 1 then
+					return color
+				end
+			end
 		end
+		return
 	end,
 
 	validate = function(color: Color3?): (boolean, string?)
@@ -75,6 +103,9 @@ local typeColor = {
 				table.insert(names, text .. string.rep("f", 7 - #text))
 			end
 		elseif text ~= "" then
+			if string.find("random", string.lower(text), 1, true) == 1 then
+				COLORS.random = Color3.new(math.random(), math.random(), math.random())
+			end
 			local r, g, b = string.match(text, "^(%d*),?(%d*),?(%d*)$")
 			table.insert(names, `{r or 255},{g or 255},{b or 255}`)
 		end
