@@ -632,7 +632,7 @@ return {
 	},
 	{
 		name = "cape",
-		description = "Gives one or more player(s) a cape.",
+		description = "Gives a cape to one or more player(s)",
 		args = {
 			{
 				type = "players",
@@ -785,19 +785,19 @@ return {
 			{
 				type = "color",
 				name = "Color",
-				description = "The color of a hat.",
+				description = "The color of the hat.",
 				optional = true,
 			},
 			{
 				type = "number",
 				name = "Reflectance",
-				description = "How much a hat reflects the skybox.",
+				description = "How much the hat reflects the skybox.",
 				optional = true,
 			},
 			{
 				type = "Enum.Material",
 				name = "Material",
-				description = "The texture of a hat.",
+				description = "The material of the hat.",
 				optional = true,
 			},
 		},
@@ -910,7 +910,7 @@ return {
 			{
 				type = "boolean",
 				name = "AdminHats",
-				description = "When true, only removes the hats given by the admin, defaults to false.",
+				description = "When true, only removes hats given via admin commands (defaults to false).",
 				optional = true,
 			},
 		},
