@@ -325,6 +325,64 @@ return {
 		end,
 	},
 	{
+		name = "highlight",
+		aliases = { "hl", "unhighlight", "unhl" },
+		description = "Highlights one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to highlight.",
+			},
+			{
+				type = "color",
+				name = "FillColor",
+				description = "The fill color of the highlight.",
+				optional = true,
+			},
+			{
+				type = "color",
+				name = "OutlineColor",
+				description = "The outline color of the highlight.",
+				optional = true,
+			},
+			{
+				type = "number",
+				name = "FillTransparency",
+				description = "The fill transparency of the highlight.",
+				optional = true,
+			},
+			{
+				type = "number",
+				name = "OutlineColor",
+				description = "The outline transparency of the highlight.",
+				optional = true,
+			},
+		},
+		run = function(context, players, fillColor, outlineColor, fillTransparency, outlineTransparency)
+			for _, player in players do
+				if player.Character then
+					local existing = player.Character:FindFirstChild("_KHighlight")
+					if existing then
+						existing:Destroy()
+					end
+
+					if context.undo then
+						continue
+					end
+					context._K.Flux.new "Highlight" {
+						Parent = player.Character,
+						Name = "_KHighlight",
+						FillColor = fillColor or Color3.new(1, 1, 1),
+						FillTransparency = fillTransparency or 0.5,
+						OutlineColor = outlineColor or Color3.new(1, 1, 1),
+						OutlineTransparency = outlineTransparency or 0,
+					}
+				end
+			end
+		end,
+	},
+	{
 		name = "particle",
 		aliases = { "pe" },
 		description = "Adds a particle effect to one or more player(s).",
