@@ -4,6 +4,72 @@ local Lighting = game:GetService("Lighting")
 
 return {
 	{
+		name = "fix",
+		description = "Reverts the environment to the original state.",
+		env = function(_K)
+			local env = {
+				[workspace] = {
+					"AirDensity",
+					"GlobalWind",
+					"Gravity",
+				},
+				[workspace.Terrain] = {
+					"WaterColor",
+					"WaterReflectance",
+					"WaterTransparency",
+					"WaterWaveSize",
+					"WaterWaveSpeed",
+				},
+				[_K.Services.Lighting] = {
+					"Ambient",
+					"Brightness",
+					"ColorShift_Bottom",
+					"ColorShift_Top",
+					"EnvironmentDiffuseScale",
+					"EnvironmentSpecularScale",
+					"ExposureCompensation",
+					"GeographicLatitude",
+					"GlobalShadows",
+					"OutdoorAmbient",
+					"ShadowColor",
+					"ClockTime",
+					"FogColor",
+					"FogEnd",
+					"FogStart",
+				},
+			}
+			local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+			if atmosphere then
+				env[atmosphere] = {
+					"Density",
+					"Offset",
+					"Color",
+					"Decay",
+					"Glare",
+					"Haze",
+				}
+			end
+
+			for object, properties in env do
+				for index = 1, #properties do
+					local property = properties[index]
+					properties[property] = object[property]
+					properties[index] = nil
+				end
+			end
+
+			return env
+		end,
+		run = function(context)
+			context._K.Registry.commands.disco.env.cleanup()
+			for object, original in context.env do
+				for property, originalValue in original do
+					object[property] = originalValue
+				end
+			end
+		end,
+	},
+	{
 		name = "ambient",
 		description = "Changes the color of Lighting.Ambient.",
 		args = {
