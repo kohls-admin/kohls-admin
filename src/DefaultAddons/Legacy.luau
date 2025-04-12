@@ -34,7 +34,7 @@ return function(_K)
 				{
 					type = "userIds",
 					name = "Users(s)",
-					description = `The user(s) to give the {role} role.`,
+					description = `The user(s) to give the {role} role to.`,
 				},
 				{
 					type = "boolean",
