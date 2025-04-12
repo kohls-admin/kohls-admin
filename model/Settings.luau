@@ -21,6 +21,25 @@ local Settings = {
 	-- Enables Kohl's Admin VIP donation features (required for games hub)
 	vip = true,
 
+	-- EXPERIMENTAL: Save and sync logs between servers
+	saveLogs = false,
+
+	--[[
+	Toggles visibility of the Kohl's Admin Dashboard Button in the Topbar.
+		0	defaultRole
+		1	vip
+		2	mod
+		3	admin
+		4	superadmin
+		5	creator
+
+		false	Disable for every rank
+	]]
+	dashboardButtonRank = 0,
+
+	-- Toggles visibility of the Kohl's Admin Join Notification.
+	joinNotificationRank = 1,
+
 	-- Toggles the "Enjoy Kohl's Admin?" popup
 	getKohlsAdminPopup = true,
 
@@ -67,25 +86,6 @@ local Settings = {
 		mod = {},
 		vip = { 1, 156, PRIVATE_SERVER_OWNER },
 	},
-
-	--[[
-	Toggles visibility of the Kohl's Admin Dashboard Button in the Topbar.
-		0	defaultRole
-		1	vip
-		2	mod
-		3	admin
-		4	superadmin
-		5	creator
-
-		Set to false to disable entirely
-	]]
-	dashboardButtonRank = 0,
-
-	-- Toggles visibility of the Kohl's Admin Join Notification.
-	joinNotificationRank = 1,
-
-	-- EXPERIMENTAL: Save and sync logs between servers
-	saveLogs = false,
 
 	roles = {
 		default = { -- This role is given to everyone by default!
