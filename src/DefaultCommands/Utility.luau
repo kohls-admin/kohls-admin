@@ -12,7 +12,7 @@ return {
 	{
 		name = "help",
 		aliases = { "?", "prefix" },
-		description = "Displays a help notification for of Kohl's Admin in this game.",
+		description = "Displays a help notification for Kohl's Admin in this game.",
 		optionalPrefix = true,
 		runClient = function(context)
 			local commandBarKey = context._K.client.hotkeys.commandBar
