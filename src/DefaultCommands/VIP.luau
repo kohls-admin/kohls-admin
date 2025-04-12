@@ -1063,7 +1063,9 @@ return {
 				if not player.Character:GetAttribute("_KFace") then
 					player.Character:SetAttribute("_KFace", face.Texture)
 				end
-				face.Texture = if context.undo then player.Character:GetAttribute("_KFace") else context._K.Util.getTexture(assetId)
+				face.Texture = if context.undo
+					then player.Character:GetAttribute("_KFace")
+					else context._K.Util.getTexture(assetId)
 			end
 		end,
 	},
@@ -1098,7 +1100,9 @@ return {
 				if not player.Character:GetAttribute("_KShirt") then
 					player.Character:SetAttribute("_KShirt", shirt.ShirtTemplate)
 				end
-				shirt.ShirtTemplate = if context.undo then player.Character:GetAttribute("_KShirt") else context._K.Util.getTexture(assetId)
+				shirt.ShirtTemplate = if context.undo
+					then player.Character:GetAttribute("_KShirt")
+					else context._K.Util.getTexture(assetId)
 			end
 		end,
 	},
@@ -1133,7 +1137,9 @@ return {
 				if not player.Character:GetAttribute("_KPants") then
 					player.Character:SetAttribute("_KPants", existing.PantsTemplate)
 				end
-				existing.PantsTemplate = if context.undo then player.Character:GetAttribute("_KPants") else context._K.Util.getTexture(assetId)
+				existing.PantsTemplate = if context.undo
+					then player.Character:GetAttribute("_KPants")
+					else context._K.Util.getTexture(assetId)
 			end
 		end,
 	},
@@ -1168,7 +1174,9 @@ return {
 				if not player.Character:GetAttribute("_KTShirt") then
 					player.Character:SetAttribute("_KTShirt", tshirt.Graphic)
 				end
-				tshirt.Graphic = if context.undo then player.Character:GetAttribute("_KTShirt") else context._K.Util.getTexture(assetId)
+				tshirt.Graphic = if context.undo
+					then player.Character:GetAttribute("_KTShirt")
+					else context._K.Util.getTexture(assetId)
 			end
 		end,
 	},
