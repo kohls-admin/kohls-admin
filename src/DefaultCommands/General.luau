@@ -28,7 +28,7 @@ return {
 				end
 			end
 			table.clear(jailParts)
-			context._K.Flux.Scope.discoCleanup()
+			context._K.Registry.commands.disco.env.cleanup()
 			context._K.Remote.StartCountdown:FireAllClients()
 		end,
 	},

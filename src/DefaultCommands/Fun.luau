@@ -3,50 +3,41 @@
 return {
 	{
 		name = "disco",
-		aliases = {},
+		aliases = { "undisco" },
 		description = "It's time to party! 🎉",
-		args = {},
 		env = function(_K)
-			_K.Flux.Scope.discoRestore = false
-			_K.Flux.Scope.discoCleanup = function()
-				if _K.Flux.Scope.discoRestore then
-					_K.Util.Services.Lighting.Ambient, _K.Util.Services.Lighting.FogColor =
-						unpack(_K.Flux.Scope.discoRestore)
-					_K.Flux.Scope.discoRestore = false
+			local env = { id = false, restore = false }
+			function env.cleanup()
+				if env.restore then
+					_K.Services.Lighting.Ambient, _K.Services.Lighting.FogColor = unpack(env.restore)
+					env.restore = false
 				end
-				_K.Flux.Scope.discoId = false
+				env.id = false
 			end
+			return env
 		end,
 
 		run = function(context)
-			if not context._K.Flux.Scope.discoRestore then
-				context._K.Flux.Scope.discoRestore =
-					{ context._K.Util.Services.Lighting.Ambient, context._K.Util.Services.Lighting.FogColor }
+			if context.undo then
+				context.env.cleanup()
+			end
+
+			if not context.env.restore then
+				context.env.restore = { context._K.Services.Lighting.Ambient, context._K.Services.Lighting.FogColor }
 			end
 
 			local t = time()
-			context._K.Flux.Scope.discoId = t
+			context.env.id = t
 			task.spawn(function()
 				repeat
 					local color = Color3.fromHSV((time() - t) % 1, 1, 1)
-					context._K.Util.Services.Lighting.Ambient = color
-					context._K.Util.Services.Lighting.FogColor = color
+					context._K.Services.Lighting.Ambient = color
+					context._K.Services.Lighting.FogColor = color
 					task.wait(math.pi / 10)
-				until context._K.Flux.Scope.discoId ~= t
+				until context.env.id ~= t
 			end)
 		end,
 	},
-	{
-		name = "undisco",
-		aliases = {},
-		description = "Stop the party! ✋",
-		args = {},
-
-		run = function(context)
-			context._K.Flux.Scope.discoCleanup()
-		end,
-	},
-
 	{
 		name = "dog",
 		aliases = { "horse" },
@@ -335,14 +326,14 @@ return {
 					local original = controller:FindFirstChild("_KControlOriginal")
 					if original then
 						local character = original.Value
-						
+
 						if character then
 							for _, descendant in character:GetDescendants() do
 								if descendant:IsA("BasePart") and descendant:CanSetNetworkOwnership() then
 									descendant:SetNetworkOwner(controller)
 								end
 							end
-							
+
 							controller.Character = character
 						end
 					end
