@@ -97,6 +97,11 @@ task.defer(function()
 
 	local attempt, connection = 0, nil
 	connection = _K.Hook.runPreparedCommands:Connect(function()
+		if not _K.Data.settings.getKohlsAdminPopup then
+			connection:Disconnect()
+			dialog:Destroy()
+		end
+
 		attempt += 1
 		if attempt == 4 then
 			connection:Disconnect()

@@ -40,6 +40,7 @@ local Data = {
 		vip = true,
 		dashboardButtonRank = 0,
 		joinNotificationRank = 1,
+		getKohlsAdminPopup = true,
 		saveLogs = false,
 	},
 

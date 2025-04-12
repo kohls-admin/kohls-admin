@@ -21,6 +21,9 @@ local Settings = {
 	-- Enables Kohl's Admin VIP donation features (required for games hub)
 	vip = true,
 
+	-- Toggles the "Enjoy Kohl's Admin?" popup
+	getKohlsAdminPopup = true,
+
 	--[[
 	[UserId] = {Username, Reason, Duration, fromUserId}
 
