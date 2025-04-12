@@ -365,6 +365,7 @@ return {
 	},
 	{
 		name = "insert",
+		aliases = { "ins" },
 		description = "Inserts a model at the player's position.",
 		args = {
 			{
