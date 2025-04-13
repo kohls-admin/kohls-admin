@@ -8,7 +8,7 @@ local playingSound = nil
 return {
 	{
 		name = "clean",
-		aliases = { "clear" },
+		aliases = { "clear", "clr" },
 		description = "Cleans up miscellaneous admin objects like cloned characters, looped commands, and scripts.",
 		args = {},
 
