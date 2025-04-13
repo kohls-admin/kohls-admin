@@ -94,12 +94,12 @@ function About.new(_K)
 
 	local function promptThirdPartyGamePassDialog(passId)
 		UI.Scope.lastAttemptedPurchase = passId
+		purchaseDialog.Text:set(thirdPartyText)
+		purchaseLink.Text = "https://roblox.com/game-pass/" .. passId
 		if UI.Scope.AllowThirdPartySales then
 			purchaseDialog.Visible:set(false)
 			_K.Util.Services.MarketplaceService:PromptGamePassPurchase(_K.UI.LocalPlayer, passId)
 		else
-			purchaseDialog.Text:set(thirdPartyText)
-			purchaseLink.Text = "https://roblox.com/game-pass/" .. passId
 			purchaseDialog.Visible:set(true)
 		end
 	end
@@ -144,7 +144,7 @@ function About.new(_K)
 			con:Disconnect()
 			UI.Scope.AllowThirdPartySales = false
 			if UI.Scope.lastAttemptedPurchase then
-				purchaseDialog._instance.Visible = true
+				purchaseDialog.Visible:set(true)
 			end
 		end
 	end)
