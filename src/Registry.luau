@@ -161,7 +161,7 @@ function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
 	end
 
 	Registry.commands[lowerName] = commandObject
-	_K.Hook.commandRegistered:Fire(commandObject)
+	Hook.commandRegistered:Fire(commandObject)
 
 	if commandObject.aliases then
 		for _, alias in commandObject.aliases do
