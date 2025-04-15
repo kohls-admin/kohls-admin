@@ -785,15 +785,15 @@ return {
 			local angularStrength = strength * 10
 
 			for _, player in players do
-				if player.Character and player.Character.PrimaryPart then
+				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
 					player.Character:PivotTo(player.Character:GetPivot() * CFrame.Angles(math.pi, 0, 0))
 
 					local direction = CFrame.Angles(0, math.random() * math.pi * 2, 0).LookVector
-					player.Character.PrimaryPart.AssemblyLinearVelocity = direction
+					player.Character.HumanoidRootPart.AssemblyLinearVelocity = direction
 							* math.random(strength * 160, strength * 200)
 						+ Vector3.new(0, math.random(strength * 160, strength * 200), 0)
 
-					player.Character.PrimaryPart.AssemblyAngularVelocity = Vector3.new(
+					player.Character.HumanoidRootPart.AssemblyAngularVelocity = Vector3.new(
 						math.random(-angularStrength, angularStrength),
 						math.random(-angularStrength, angularStrength),
 						math.random(-angularStrength, angularStrength)
