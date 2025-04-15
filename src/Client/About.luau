@@ -144,7 +144,7 @@ function About.new(_K)
 			con:Disconnect()
 			UI.Scope.AllowThirdPartySales = false
 			if UI.Scope.lastAttemptedPurchase then
-				purchaseDialog._instance.Visible = true
+				purchaseDialog.Visible:set(true)
 			end
 		end
 	end)
