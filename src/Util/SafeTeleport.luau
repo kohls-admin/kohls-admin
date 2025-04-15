@@ -30,9 +30,6 @@ local function handleFailedTeleport(player, teleportResult, errorMessage, target
 		task.wait(FLOOD_DELAY)
 	elseif teleportResult == Enum.TeleportResult.Failure then
 		task.wait(RETRY_DELAY)
-	else
-		-- if the teleport is invalid, report the error instead of retrying
-		error(("Invalid teleport [%s]: %s"):format(teleportResult.Name, errorMessage))
 	end
 
 	SafeTeleport(targetPlaceId, { player }, teleportOptions)
