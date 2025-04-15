@@ -1253,7 +1253,7 @@ function ClientEvent(a, b)
 					t.Parent = BL.List
 					BL.List.CanvasSize = UDim2.new(1, 0, 0, #BL.List:GetChildren() * 20)
 					if Bans[v.Id] < -1 then
-						local tb, tm = -v[2], nil
+						local tb, tm = -Bans[v.Id], nil
 						repeat
 							tm = math.floor(tb - os.time())
 							t2.Text = tm .. " seconds"
