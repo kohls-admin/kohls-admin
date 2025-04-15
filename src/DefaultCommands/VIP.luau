@@ -354,7 +354,7 @@ return {
 			},
 			{
 				type = "number",
-				name = "OutlineColor",
+				name = "OutlineTransparency",
 				description = "The outline transparency of the highlight.",
 				optional = true,
 			},
@@ -492,7 +492,7 @@ return {
 	{
 		name = "shine",
 		aliases = { "unshine" },
-		description = "Adds a shine effect from one or more player(s).",
+		description = "Adds a shine effect to one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -544,7 +544,7 @@ return {
 	{
 		name = "bundle",
 		aliases = { "unbundle" },
-		description = "Changes the bundle of one or more player(s).",
+		description = "Applies a bundle to one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -642,7 +642,7 @@ return {
 			{
 				type = "color",
 				name = "Color",
-				description = "The color of the cape.",
+				description = "The color to apply to the cape.",
 				optional = true,
 			},
 			{
@@ -654,13 +654,13 @@ return {
 			{
 				type = "Enum.Material",
 				name = "Material",
-				description = "The part material of the cape.",
+				description = "The material to apply to the cape.",
 				optional = true,
 			},
 			{
 				type = "integer",
 				name = "Decal",
-				description = "The image identifier for the cape decal.",
+				description = "The assetId of the decal to apply to the cape.",
 				optional = true,
 			},
 		},
@@ -770,7 +770,7 @@ return {
 	{
 		name = "hat",
 		aliases = { "crmhat" },
-		description = "Gives one or more player(s) one or more hats.",
+		description = "Gives one or more hats to one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -780,12 +780,12 @@ return {
 			{
 				type = "integers",
 				name = "AssetIds",
-				description = "The asset identifiers of one or more hats.",
+				description = "The assetId of one or more hats.",
 			},
 			{
 				type = "color",
 				name = "Color",
-				description = "The color of the hat.",
+				description = "The color to apply to the hat.",
 				optional = true,
 			},
 			{
@@ -797,7 +797,7 @@ return {
 			{
 				type = "Enum.Material",
 				name = "Material",
-				description = "The material of the hat.",
+				description = "The material to apply to the hat.",
 				optional = true,
 			},
 		},
@@ -1188,12 +1188,12 @@ return {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) whose characters to change.",
+				description = "The player(s) whose character appearance will be changed",
 			},
 			{
 				type = "color",
 				name = "Color",
-				description = "The color of a character.",
+				description = "The color to apply to the character.",
 				optional = true,
 			},
 			{
@@ -1205,7 +1205,7 @@ return {
 			{
 				type = "Enum.Material",
 				name = "Material",
-				description = "The texture of a character.",
+				description = "The material to apply to the character.",
 				optional = true,
 			},
 		},
