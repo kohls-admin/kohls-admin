@@ -284,10 +284,8 @@ function Data.initialize(name)
 		return Data
 	end
 
-	print("[Kohl's Admin] Loading data...")
 	local okMain, main = Data.Store.getAsync("Main")
 	if okMain then
-		print("MainLoad", main)
 		if main then
 			syncMain(main)
 		else -- first time load
@@ -308,7 +306,6 @@ function Data.initialize(name)
 
 	local okBans, bans = Data.Store.getAsync("Bans")
 	if okBans then
-		print("BansLoad", bans)
 		if bans then
 			syncBans(bans)
 		end
@@ -317,7 +314,6 @@ function Data.initialize(name)
 	if Data.settings.saveLogs ~= false then
 		local okLogs, logs = Data.Store.getAsync("Logs")
 		if okLogs then
-			print("LogsLoad", logs)
 			if logs then
 				syncLogs(logs)
 			end
