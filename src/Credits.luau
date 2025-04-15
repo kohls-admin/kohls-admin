@@ -14,6 +14,10 @@ return {
 				Id = 15554260, -- zeejaym
 				Tooltip = "Design, planning, website, and expert advice",
 			},
+			{
+				Id = 3286467, -- lejam7890
+				Tooltip = "Design, planning, and expert advice",
+			},
 		},
 	},
 	{
@@ -43,41 +47,30 @@ return {
 			3470429081, -- Mercury
 			1142396048, -- Franklin_Surten (H)
 			483215789, -- seil
+			345072461, -- raenlua
+			130170862, -- matsagor1
+			77608258, -- icarus
+			205690907, -- cinnamon
 		},
 	},
 	{
 		Title = "Contributors",
 		Users = {
-			{
-				Id = 41336494, -- Calculatous
-				Tooltip = "Design, planning, and quality assurance",
-			},
-			{
-				Id = 35818691, -- greeny
-				Tooltip = "Documentation and quality assurance",
-			},
-			{
-				Id = 83478451, -- stevendahfish
-				Tooltip = "Documentation and quality assurance",
-			},
-			{
-				Id = 345072461, -- raenlua
-				Tooltip = "Development Containers",
-			},
-			{
-				Id = 2014793803, --SkellyLua
-				Tooltip = "Command Contributions",
-			},
-			{
-				Id = 7981980152, -- meowhehex3 / whatsnewadore
-				Tooltip = "New Contributor",
-			},
+			41336494, -- Calculatous
+			448137594, -- lucastacos
+			345072461, -- raenlua
+			35818691, -- greeny
+			83478451, -- stevendahfish
+			2014793803, -- SkellyLua
+			7981980152, -- meowhehex3 / whatsnewadore
+			1219753275, -- DZIDZIO999
+			130170862, -- matsagor1
+			127757866, -- iam_danny
 		},
 	},
 	{
 		Title = "Testers",
 		Users = {
-			130170862, -- matsagor1
 			75214485, -- ericance
 			1560379748, -- mosha
 			200565345, -- easternbloxxer
@@ -154,10 +147,6 @@ return {
 			{
 				Id = 46236725, -- Doroku
 				Tooltip = "CHAIR!",
-			},
-			{
-				Id = 3286467, -- lejam7890
-				Tooltip = "For all the memes",
 			},
 			{
 				Id = 18486567, -- Kensai666
