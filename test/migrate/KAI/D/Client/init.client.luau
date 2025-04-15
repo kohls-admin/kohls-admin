@@ -69,6 +69,7 @@ local s = {
 	StarterGui = S("StarterGui"),
 	StarterPack = S("StarterPack"),
 	StarterPlayer = S("StarterPlayer"),
+	User = S("UserService"),
 }
 
 local TS, BT, IT, TT, TST, AP, AS, UIT = "Transparency", nil
@@ -382,6 +383,35 @@ function f.getNameFromId(a, b)
 	b = a and b or "???"
 	if b ~= "???" then
 		NameCache[a] = b
+	end
+	return b
+end
+function f.getNamesFromIds(a)
+	local b = {}
+	local c = {}
+	local function flush()
+		local success, infos = pcall(s.User.GetUserInfosByUserIdsAsync, s.User, c)
+		if success then
+			for i, v in infos do
+				NameCache[v.Id] = v.Username
+				table.insert(b, v)
+			end
+		end
+		table.clear(c)
+	end
+	for i, v in a do
+		local result = NameCache[v]
+		if result then
+			table.insert(b, { Id = v, Username = result })
+		else
+			table.insert(c, v)
+			if #c >= 200 then
+				flush()
+			end
+		end
+	end
+	if #c > 0 then
+		flush()
 	end
 	return b
 end
@@ -1144,24 +1174,32 @@ function ClientEvent(a, b)
 			end
 			for i, v in Admins do
 				if math.abs(v) ~= 1 or s.Players:GetPlayerByUserId(i) then
-					table.insert(a, { i, v })
+					table.insert(a, i)
 				end
 			end
+			a = f.getNamesFromIds(a)
 			table.sort(a, function(a, b)
-				return math.abs(a[2]) > math.abs(b[2])
+				local pa = math.abs(Admins[a.Id])
+				local pb = math.abs(Admins[b.Id])
+				if pa > pb then
+					return true
+				elseif pa < pb then
+					return false
+				else
+					return a.Username < b.Username
+				end
 			end)
 			for i, v in a do
+				local p = Admins[v.Id]
 				local t, t2 = baseText:Clone(), baseText:Clone()
 				t2.Text, t2.TextXAlignment, t2.Parent, t2.Size, t2.Position =
-					(v[2] < 0 and "P. " or "") .. f.getTitle(math.abs(v[2])),
+					(p < 0 and "P. " or "") .. f.getTitle(math.abs(p)),
 					"Right",
 					t,
 					UDim2.new(0.5, 0, 0, 20),
 					UDim2.new(0.5, 0, 0, 0)
-				wrap(function()
-					t.Parent, t.Text, t.Position = AL.List, f.getNameFromId(v[1]), UDim2.new(0, 5, 0, (i - 1) * 20)
-					AL.List.CanvasSize = UDim2.new(1, 0, 0, #AL.List:GetChildren() * 20)
-				end)
+				t.Parent, t.Text, t.Position = AL.List, v.Username, UDim2.new(0, 5, 0, (i - 1) * 20)
+				AL.List.CanvasSize = UDim2.new(1, 0, 0, #AL.List:GetChildren() * 20)
 			end
 		end
 		List()
@@ -1188,10 +1226,19 @@ function ClientEvent(a, b)
 				v:Destroy()
 			end
 			for i, v in Bans do
-				table.insert(a, { tonumber(i), v })
+				table.insert(a, tonumber(i))
 			end
+			a = f.getNamesFromIds(a)
 			table.sort(a, function(a, b)
-				return a[2] > b[2]
+				local ba = Bans[a.Id]
+				local bb = Bans[b.Id]
+				if ba > bb then
+					return true
+				elseif ba < bb then
+					return false
+				else
+					return a.Username < b.Username
+				end
 			end)
 			for i, v in a do
 				local t, t2 = baseText:Clone(), baseText:Clone()
@@ -1199,13 +1246,13 @@ function ClientEvent(a, b)
 					t2.TextXAlignment = "Right"
 					t2.Size = UDim2.new(0.5, 0, 0, 20)
 					t2.Position = UDim2.new(0.5, 0, 0, 0)
-					t2.Text = v[2] < 2 and "Permanently" or "From Server"
+					t2.Text = Bans[v.Id] < 2 and "Permanently" or "From Server"
 					t2.Parent = t
-					t.Text = f.getNameFromId(v[1])
+					t.Text = v.Username
 					t.Position = UDim2.new(0, 5, 0, (i - 1) * 20)
 					t.Parent = BL.List
 					BL.List.CanvasSize = UDim2.new(1, 0, 0, #BL.List:GetChildren() * 20)
-					if v[2] < -1 then
+					if Bans[v.Id] < -1 then
 						local tb, tm = -v[2], nil
 						repeat
 							tm = math.floor(tb - os.time())
