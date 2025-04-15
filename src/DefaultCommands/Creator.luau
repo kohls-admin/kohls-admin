@@ -3,6 +3,7 @@
 return {
 	{
 		name = "clearlogs",
+                aliases = { "clrlogs" },
 		description = "Removes all Kohl's Admin server logs.",
 		args = {},
 		envClient = function(_K)
