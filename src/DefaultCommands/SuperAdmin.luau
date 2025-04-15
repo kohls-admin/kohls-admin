@@ -5,7 +5,7 @@ local BadgeService = game:GetService("BadgeService")
 return {
 	{
 		name = "badge",
-		aliases = { "awardbadge" },
+		aliases = { "awardbadge", "givebadge" },
 		description = "Awards a badge to one or more player(s).",
 		args = {
 			{
@@ -16,7 +16,7 @@ return {
 			{
 				type = "integer",
 				name = "Badge ID",
-				description = "The badge identifier.",
+				description = "The badge ID.",
 			},
 		},
 
@@ -37,8 +37,8 @@ return {
 	},
 	{
 		name = "clearterrain",
-		aliases = { "cterrain" },
-		description = "Removes the terrain.",
+		aliases = { "cterrain", "clrterrain", "removeterrain" },
+		description = "Removes all terrain.",
 		args = {},
 		run = function(context)
 			workspace.Terrain:Clear()
@@ -46,7 +46,7 @@ return {
 	},
 	{
 		name = "shutdown",
-		aliases = {},
+		aliases = { "stopserver" },
 		description = "Shuts down the server.",
 		args = {
 			{
@@ -77,6 +77,7 @@ return {
 	},
 	{
 		name = "global",
+                aliases = { "gcmd" },
 		description = "Runs a command string globally in all servers.",
 		args = {
 			{
