@@ -37,7 +37,7 @@ return {
 	},
 	{
 		name = "clearterrain",
-		aliases = { "clrterrain", "removeterrain" },
+		aliases = { "cterrain", "clrterrain", "removeterrain" },
 		description = "Removes all terrain.",
 		args = {},
 		run = function(context)
