@@ -19,7 +19,7 @@ return {
 
 		run = function(context)
 			if context.undo then
-				context.env.cleanup()
+				return context.env.cleanup()
 			end
 
 			if not context.env.restore then
@@ -36,6 +36,7 @@ return {
 					task.wait(math.pi / 10)
 				until context.env.id ~= t
 			end)
+			return
 		end,
 	},
 	{
