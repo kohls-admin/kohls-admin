@@ -11,6 +11,7 @@ task.defer(function()
 		return
 	end
 
+	local dialog
 	local adminModelButton = UI.new "Button" {
 		LayoutOrder = 10,
 		Name = "adminModelButton",
@@ -68,18 +69,18 @@ task.defer(function()
 		[UI.Event] = {
 			Activated = function()
 				UI.Scope.lastAttemptedPurchase = adminModelId
+				UI.Scope.purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
 				if UI.Scope.AllowThirdPartySales then
 					_K.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
 				else
-					UI.Scope.purchaseDialog.Text:set(UI.Scope.thirdPartyText)
-					UI.Scope.purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
 					UI.Scope.purchaseDialog.Visible:set(true)
+					dialog.Visible:set(false)
 				end
 			end,
 		},
 	}
 
-	local dialog = UI.new "Dialog" {
+	dialog = UI.new "Dialog" {
 		Parent = UI.LayerTop,
 		Title = "Enjoy Kohl's Admin?",
 		Text = "Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management.",

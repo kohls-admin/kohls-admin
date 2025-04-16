@@ -94,12 +94,11 @@ function About.new(_K)
 
 	local function promptThirdPartyGamePassDialog(passId)
 		UI.Scope.lastAttemptedPurchase = passId
+		purchaseLink.Text = "https://roblox.com/game-pass/" .. passId
 		if UI.Scope.AllowThirdPartySales then
 			purchaseDialog.Visible:set(false)
 			_K.Util.Services.MarketplaceService:PromptGamePassPurchase(_K.UI.LocalPlayer, passId)
 		else
-			purchaseDialog.Text:set(thirdPartyText)
-			purchaseLink.Text = "https://roblox.com/game-pass/" .. passId
 			purchaseDialog.Visible:set(true)
 		end
 	end
@@ -357,13 +356,11 @@ function About.new(_K)
 						end
 
 						UI.Scope.lastAttemptedPurchase = ugc.id
+						purchaseLink.Text = "https://roblox.com/catalog/" .. ugc.id
 						if UI.Scope.AllowThirdPartySales then
 							purchaseDialog.Visible:set(false)
 							_K.Util.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, ugc.id)
 						else
-							-- set textbox text
-							purchaseDialog.Text:set(thirdPartyText)
-							purchaseLink.Text = "https://roblox.com/catalog/" .. ugc.id
 							purchaseDialog.Visible:set(true)
 						end
 					end,
@@ -678,13 +675,12 @@ function About.new(_K)
 		[UI.Event] = {
 			Activated = function()
 				UI.Scope.lastAttemptedPurchase = adminModelId
+				purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
 				if UI.Scope.AllowThirdPartySales then
-					UI.Scope.purchaseDialog.Visible:set(false)
+					purchaseDialog.Visible:set(false)
 					_K.Util.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
 				else
-					UI.Scope.purchaseDialog.Text:set(thirdPartyText)
-					UI.Scope.purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
-					UI.Scope.purchaseDialog.Visible:set(true)
+					purchaseDialog.Visible:set(true)
 				end
 			end,
 		},
