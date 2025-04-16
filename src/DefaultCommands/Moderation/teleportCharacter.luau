@@ -20,7 +20,7 @@ local function teleportCharacter(from, to)
 	end
 
 	-- reset velocity on teleport
-	for _, v in from:GetDescendants() do
+	for _, v in ipairs(from:GetDescendants()) do
 		if v:IsA("BasePart") then
 			v.AssemblyLinearVelocity = Vector3.zero
 		end
