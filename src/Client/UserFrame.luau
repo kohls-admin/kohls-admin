@@ -3,25 +3,8 @@ local Players = game:GetService("Players")
 local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.UI)
 
-local thumbCache = {}
-local function userThumb(userId: number)
-	if thumbCache[userId] then
-		return thumbCache[userId]
-	end
-
-	local ok, content = _K.Util.Retry(function()
-		return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
-	end, 5, 1, 2)
-
-	if ok then
-		thumbCache[userId] = content
-	end
-	return if ok then content else nil
-end
-
 return function(from: number?, name: string?, image: string?, badgeEnabled: boolean?)
 	local displayName = name or "Kohl's Admin"
-	image = image or "rbxassetid://10650688076"
 
 	if badgeEnabled == nil then
 		badgeEnabled = true
@@ -42,7 +25,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		BackgroundTransparency = 0.75,
 		BackgroundColor3 = UI.Theme.Border,
 		Size = UI.computeFrom(UDim2.fromOffset, UI.Theme.FontSizeDouble, UI.Theme.FontSizeDouble),
-		Image = image,
+		Image = if image then image elseif from then `rbxthumb://type=AvatarHeadShot&id={from}&w=48&h=48` else "rbxassetid://10650688076",
 
 		UI.new "UICorner" {
 			CornerRadius = UDim.new(1, 0),
@@ -122,11 +105,6 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		if not from then
 			return
 		end
-
-		-- avatar
-		task.spawn(function()
-			imageLabel.Image = userThumb(from) or image
-		end)
 
 		-- role badge
 		if badgeLabel then
