@@ -2,30 +2,30 @@ local PRIVATE_SERVER_OWNER = if game:GetService("RunService"):IsServer() then ga
 
 local Settings = {
 
-	-- Automatic updates from the latest official version of the MainModule
-	-- Disable to use the included MainModule
+	-- Automatically updates from the latest official MainModule version.
+        -- Set to false to use the locally included MainModule instead.
 	autoUpdate = true,
 
-	-- Changes the default command prefix
+	-- Sets the prefix used to run commands in chat (e.g., ";cmd").
 	prefix = ";",
 
 	--[[
-	Enables participation in the Kohl's Admin Games Hub, showcasing
-	your game to users looking for games with benefits from Kohl's Admin.
-	https://www.roblox.com/games/17873329124/Kohls-Admin-Games-Hub
+	Enables participation in the Kohl's Admin Games Hub.
+        Promotes your game to players looking for games that support Kohl's Admin features.
+	https://www.roblox.com/games/17873329124/Games-Hub-Kohls-Admin
 
-	⚠️ Requires Allowing HTTP Requests in File > Game Settings > Security
+	⚠️ Requires "Allow HTTP Requests" to be enabled in Game Settings > Security
 	]]
 	gameHubEnabled = true,
 
 	-- Enables Kohl's Admin VIP donation features (required for games hub)
 	vip = true,
 
-	-- EXPERIMENTAL: Save and sync logs between servers
+	-- EXPERIMENTAL: Enables saving and syncing logs across servers.
 	saveLogs = false,
 
 	--[[
-	Toggles visibility of the Kohl's Admin Dashboard Button in the Topbar.
+	Sets the minimum role required to see the Kohl's Admin Dashboard button in the Topbar.
 		0	defaultRole
 		1	vip
 		2	mod
@@ -37,10 +37,10 @@ local Settings = {
 	]]
 	dashboardButtonRank = 0,
 
-	-- Toggles visibility of the Kohl's Admin Join Notification.
+	-- Sets the minimum role required to trigger the Kohl's Admin join notification.
 	joinNotificationRank = 1,
 
-	-- Toggles the "Enjoy Kohl's Admin?" popup
+	-- Shows the "Enjoy Kohl's Admin?" popup to users.
 	getKohlsAdminPopup = true,
 
 	--[[
@@ -87,6 +87,7 @@ local Settings = {
 		vip = { 1, 156, PRIVATE_SERVER_OWNER },
 	},
 
+        -- Role definitions with hierarchy, permissions, colors, and available command groups.
 	roles = {
 		default = { -- This role is given to everyone by default!
 			-- role "_rank" determines hierarchy
@@ -95,8 +96,8 @@ local Settings = {
 			name = "Player",
 			color = "#0ff",
 
-			-- when enabled only allows their player to be used with the player argument
-			-- WARN: doesn't affect commands that use userids!
+			-- When enabled, users can only target themselves with player arguments.
+                        -- ⚠️ This does not affect commands that use UserIds directly!
 			onlyTargetSelf = true,
 
 			permissions = {
