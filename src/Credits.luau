@@ -57,7 +57,7 @@ return {
 		Title = "Contributors",
 		Users = {
 			41336494, -- Calculatous
-			448137594, -- lucastacos
+			448137594, -- Lucatacos
 			345072461, -- raenlua
 			35818691, -- greeny
 			83478451, -- stevendahfish
