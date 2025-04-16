@@ -11,7 +11,7 @@ local function userThumb(userId: number)
 
 	local ok, content = _K.Util.Retry(function()
 		return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
-	end, 5, 1, 2)
+	end, 3, 1, 2)
 
 	if ok then
 		thumbCache[userId] = content
