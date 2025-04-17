@@ -14,7 +14,7 @@ end
 return {
 	{
 		name = "normal",
-		aliases = { "undog", "unhorse", "uninfect" },
+		aliases = { "uninfect" },
 		description = "Returns one or more player(s) to their normal appearance.",
 		args = {
 			{
@@ -28,7 +28,24 @@ return {
 			for _, player in players do
 				if player.Character then
 					context._K.Registry.commands.crm.env.update(player.Character)
+
+				local dogSeat = player.Character:FindFirstChild("_KDogSeat")
+				if dogSeat then
+					dogSeat:Destroy()
+					local undogCommand = context._K.Registry.commands.undog
+					if undogCommand then
+						local humanoid = player.Character:FindFirstChild("Humanoid")
+						if not humanoid then
+							continue
+						end
+						if humanoid.RigType == Enum.HumanoidRigType.R6 then
+							undogCommand.env.R6(player.Character)
+						else
+							undogCommand.env.R15(player.Character)
+						end
+					end
 				end
+
 				Util.Humanoid.resetDescription(player)
 
 				local infected = context._K.Flux.Scope.Infected[player.Character]

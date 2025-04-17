@@ -185,9 +185,122 @@ return {
 				then
 					local humanoid = player.Character:FindFirstChild("Humanoid")
 					if not humanoid then
+						continue
+					end
+
+					if humanoid.RigType == Enum.HumanoidRigType.R6 then
+						context.env.R6(player.Character)
+					else
+						context.env.R15(player.Character)
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "undog",
+		aliases = { "unhorse" },
+		description = "Reverts one or more player(s) from dog",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to revert dog from.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			return {
+				R6 = function(character)
+					if not (character and character.PrimaryPart) then
 						return
 					end
 
+					local torso = character:FindFirstChild("Torso")
+					if not torso then
+						return
+					end
+
+					torso.Transparency = 0
+
+					local neck = torso:FindFirstChild("Neck")
+					local rightShoulder = torso:FindFirstChild("Right Shoulder")
+					local leftShoulder = torso:FindFirstChild("Left Shoulder")
+					local rightHip = torso:FindFirstChild("Right Hip")
+					local leftHip = torso:FindFirstChild("Left Hip")
+
+					if neck then
+						neck.C0 = CFrame.new(0, 1, 0) * CFrame.Angles(math.rad(90), math.rad(180), 0)
+					end
+					if rightShoulder then
+						rightShoulder.C0 = CFrame.new(1, 0.5, 0) * CFrame.Angles(0, math.rad(90), 0)
+					end
+					if leftShoulder then
+						leftShoulder.C0 = CFrame.new(-1, 0.5, 0) * CFrame.Angles(0, math.rad(-90), 0)
+					end
+					if rightHip then
+						rightHip.C0 = CFrame.new(1, -1, 0) * CFrame.Angles(0, math.rad(90), 0)
+					end
+					if leftHip then
+						leftHip.C0 = CFrame.new(-1, -1, 0) * CFrame.Angles(0, math.rad(-90), 0)
+					end
+				end,
+				R15 = function(character)
+					if not (character and character.PrimaryPart) then
+						return
+					end
+
+					local torso = character:FindFirstChild("UpperTorso")
+					if not torso then
+						return
+					end
+
+					local root = character:FindFirstChild("LowerTorso") and character.LowerTorso:FindFirstChild("Root")
+					local neck = character:FindFirstChild("Head") and character.Head:FindFirstChild("Neck")
+					local waist = character:FindFirstChild("UpperTorso")
+						and character.UpperTorso:FindFirstChild("Waist")
+					local rightShoulder = character:FindFirstChild("RightShoulder", true)
+					local leftShoulder = character:FindFirstChild("LeftShoulder", true)
+					local rightHip = character:FindFirstChild("RightHip", true)
+					local leftHip = character:FindFirstChild("LeftHip", true)
+
+					if root then
+						root.C0 *= CFrame.Angles(math.rad(60), 0, 0) + Vector3.new(0, 0.5, 0)
+					end
+					if waist then
+						waist.C0 *= CFrame.Angles(math.rad(30), 0, 0)
+					end
+					if neck then
+						neck.C0 *= CFrame.Angles(-math.pi / 2, 0, 0)
+					end
+					if rightShoulder then
+						rightShoulder.C0 *= CFrame.Angles(-math.pi / 4, 0, 0)
+					end
+					if leftShoulder then
+						leftShoulder.C0 *= CFrame.Angles(-math.pi / 4, 0, 0)
+					end
+					if rightHip then
+						rightHip.C0 *= CFrame.Angles(math.pi / 4, 0, 0)
+					end
+					if leftHip then
+						leftHip.C0 *= CFrame.Angles(math.pi / 4, 0, 0)
+					end
+				end,
+			}
+		end,
+
+		run = function(context, players, userId)
+			for _, player in players do
+				if not player.Character then
+					continue
+				end
+				local seat = player.Character:FindFirstChild("_KDogSeat")
+				if seat then
+					seat:Destroy()
+					local humanoid = player.Character:FindFirstChild("Humanoid")
+					if not humanoid then
+						continue
+					end
 					if humanoid.RigType == Enum.HumanoidRigType.R6 then
 						context.env.R6(player.Character)
 					else
