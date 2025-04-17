@@ -1352,12 +1352,12 @@ return {
 			},
 		},
 		env = function(_K)
-			_K.Flux.Scope.Jail = Jail
+			return Jail
 		end,
 
 		run = function(context, players)
 			for _, player in players do
-				if Jail.Parts[player.UserId] then
+				if Jail.parts[player.UserId] then
 					continue
 				end
 				if player.Character then
@@ -1380,9 +1380,11 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if Jail.Parts[player.UserId] then
-					Jail.Parts[player.UserId]:Destroy()
-					Jail.Parts[player.UserId] = nil
+				Jail.users[player.UserId] = nil
+				local jail = Jail.parts[player.UserId]
+				if jail then
+					Jail.parts[player.UserId] = nil
+					jail:Destroy()
 				end
 			end
 		end,

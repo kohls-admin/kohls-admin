@@ -2,10 +2,9 @@ local Players = game:GetService("Players")
 
 local Util = require(script.Parent.Parent.Parent.Util)
 
-local jailParts = {}
-
 local Jail = {
-	Parts = jailParts,
+	parts = {},
+	users = {},
 }
 
 local function pointInBounds(point, lower, upper)
@@ -19,36 +18,32 @@ local function pointInBounds(point, lower, upper)
 	)
 end
 
-function Jail.recapture(character)
-	local player = Players:GetPlayerFromCharacter(character)
-	if not (player and character and character.PrimaryPart) then
+function Jail.recapture(player)
+	if not (player and player.Character and player.Character.PrimaryPart) then
 		return true
 	end
-	local existing = jailParts[player.UserId]
+	local existing = Jail.parts[player.UserId]
 	if existing then
-		task.defer(character.PivotTo, character, existing.CFrame)
+		task.defer(player.Character.PivotTo, player.Character, existing.CFrame)
 		return true
 	end
 	return
 end
 
-function Jail.new(player)
+function Jail.recaptureCharacter(character)
+	return Jail.recapture(Players:GetPlayerFromCharacter(character))
+end
+
+function Jail.new(player: Player, oldPosition: Vector3?)
+	if Jail.recapture(player) then
+		return
+	end
+
 	local character = player.Character
-
-	if Jail.recapture(character) then
-		return
-	end
-
-	local head = character and character:FindFirstChild("Head")
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	local root = character and (character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart)
+	local head = character:FindFirstChild("Head")
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local root = character:FindFirstChild("HumanoidRootPart")
 	if not (player and head and humanoid and root) then
-		return
-	end
-
-	local existing = jailParts[player.UserId]
-	if existing then
-		task.defer(character.PivotTo, character, existing.CFrame)
 		return
 	end
 
@@ -56,7 +51,7 @@ function Jail.new(player)
 	local hipHeight = if humanoid.RigType == Enum.HumanoidRigType.R15
 		then humanoid.HipHeight + root.Size.Y / 2
 		else root.Size.Y * 1.5
-	local groundPos = rootCFrame.Position - Vector3.new(0, hipHeight, 0)
+	local groundPos = oldPosition or rootCFrame.Position - Vector3.new(0, hipHeight, 0)
 
 	local width = math.max(root.Size.X, root.Size.Z) + 4
 	local size = Vector3.new(width, hipHeight + root.Size.Y / 2 + head.Size.Y + 3, width)
@@ -74,7 +69,10 @@ function Jail.new(player)
 	kJail.TopSurface = Enum.SurfaceType.Smooth
 	kJail.BottomSurface = Enum.SurfaceType.Smooth
 
-	jailParts[player.UserId] = kJail
+	Jail.parts[player.UserId] = kJail
+	if not Jail.users[player.UserId] then
+		Jail.users[player.UserId] = groundPos
+	end
 
 	local top = kJail:Clone()
 	top.Parent = kJail
@@ -120,18 +118,31 @@ function Jail.new(player)
 				and player.Character
 				and not pointInBounds(player.Character:GetPivot().Position, lowerBounds, upperBounds)
 			then
-				Jail.recapture(player.Character)
+				Jail.recapture(player)
 			end
-		until not player or jailParts[player.UserId] == nil
+		until not player or Jail.parts[player.UserId] == nil
 	end)
 
 	return kJail
 end
 
 Util.SafePlayerAdded(function(player)
-	player.CharacterAdded:Connect(Jail.recapture)
-	if player.Character then
-		Jail.recapture(player.Character)
+	player.CharacterAdded:Connect(Jail.recaptureCharacter)
+	local jailPos = Jail.users[player.UserId]
+	if jailPos then
+		if not player.Character then
+			player.CharacterAppearanceLoaded:Wait()
+		end
+		Jail.new(player, jailPos)
+		Jail.recapture(player)
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	local jail = Jail.parts[player.UserId]
+	if jail then
+		jail:Destroy()
+		Jail.parts[player.UserId] = nil
 	end
 end)
 

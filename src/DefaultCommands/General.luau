@@ -21,13 +21,6 @@ return {
 					object()
 				end
 			end
-			local jailParts = context._K.Flux.Scope.Jail.Parts
-			for index, jail in jailParts do
-				if jail then
-					jail:Destroy()
-				end
-			end
-			table.clear(jailParts)
 			context._K.Registry.commands.disco.env.cleanup()
 			context._K.Remote.StartCountdown:FireAllClients()
 		end,
