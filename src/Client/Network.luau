@@ -76,7 +76,7 @@ _K.Remote.Member.OnClientEvent:Connect(function(userId, member)
 end)
 
 _K.Remote.Members.OnClientEvent:Connect(function(members)
-	_K.Util.Table.merge(_K.Data.members, members)
+	_K.Data.members = members
 	UI.Scope.members:set(_K.Data.members)
 	_K.client.updateInterfaceAuth()
 end)
