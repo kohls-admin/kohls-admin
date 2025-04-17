@@ -4,7 +4,7 @@ function Function.debounce(delay: number, func: (...any) -> ...any)
 	local thread
 	return function(...)
 		if thread then
-			task.cancel(thread)
+			pcall(task.cancel, thread)
 		end
 		thread = task.delay(delay, func, ...)
 	end
