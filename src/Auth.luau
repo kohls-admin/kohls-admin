@@ -138,20 +138,12 @@ function Auth.userUnban(userId: number, fromUserId: number?, noAsync: boolean?)
 	end
 end
 
-function Auth.networkMember(userId: number, removeMember: boolean?)
+function Auth.networkMember(userId: number)
 	local userIdString = tostring(userId)
 	local member = Data.members[userIdString]
-	if not member then
-		return
-	end
 	for _, player in Players:GetPlayers() do
 		if player.UserId == userId or Auth.hasCommand(player.UserId, "members") then
 			Remote.Member:FireClient(player, userIdString, member)
-			if removeMember then
-				Remote.Members:FireClient(player, Data.members)
-			else
-				Remote.Member:FireClient(player, userIdString, member)
-			end
 		end
 	end
 end
