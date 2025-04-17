@@ -271,26 +271,22 @@ return {
 				return
 			end
 
-			local mainThread = coroutine.running()
+			local yes, no = 0, 0
+			local function voteTask(player)
+				local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
+				if success then
+					local vote = context._K.Remote.Vote:InvokeClient(player, msg, context.fromPlayer)
+					if vote == true then
+						yes += 1
+					elseif vote == false then
+						no += 1
+					end
+				end
+			end
 
-			local yes, no, voting = 0, 0, 0
+			local tasks = context._K.Util.TaskGroup.new()
 			for _, player in players do
-				voting += 1
-				task.spawn(function()
-					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
-					if success then
-						local vote = context._K.Remote.Vote:InvokeClient(player, msg, context.fromPlayer)
-						if vote == true then
-							yes += 1
-						elseif vote == false then
-							no += 1
-						end
-					end
-					voting -= 1
-					if voting == 0 then
-						coroutine.resume(mainThread)
-					end
-				end)
+				tasks:add(voteTask, player)
 			end
 
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
@@ -298,8 +294,8 @@ return {
 			})
 
 			-- wait for timeout or all votes to be submitted
-			task.delay(30, coroutine.resume, mainThread)
-			coroutine.yield()
+			task.delay(30, coroutine.resume, tasks.running)
+			tasks:wait()
 
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
 				Text = `<font transparency="0.5">The results are in!</font>\n\n<b>{message}</b>\n\t<font color="#0f0"><b><sc>yes</sc></b>\t{yes}</font>\n\t<font color="#f00"><b><sc>no</sc></b> \t{no}</font>`,
