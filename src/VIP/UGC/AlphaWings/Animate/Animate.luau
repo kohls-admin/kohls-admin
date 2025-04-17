@@ -23,8 +23,7 @@ function Animate.play(rig: Instance, sequence: KeyframeSequence, loop: boolean?)
 	if tracks[rig] then
 		pcall(task.cancel, tracks[rig])
 	end
-	local thread = coroutine.running()
-	tracks[rig] = thread
+	tracks[rig] = coroutine.running()
 
 	local frames = sequence:GetKeyframes()
 	table.sort(frames, function(a, b)
