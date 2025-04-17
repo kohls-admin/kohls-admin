@@ -187,35 +187,25 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 	end
 
 	task.spawn(function()
-		local mainThread = coroutine.running()
-		local running = 0
-
 		if commandRan then
+			local tasks = Util.TaskGroup.new()
 			local log = {}
+
 			for _, command in result do
 				table.insert(log, _K.Data.settings.prefix .. command.alias)
-
 				for _, arg in command.args do
 					if arg.rawType.log then
 						table.insert(log, arg.rawType.log(arg))
 					else
-						running += 1
-						task.spawn(function()
-							local filtered =
-								Util.String.filterForBroadcast(Util.Table.concat(arg.parsedArgs, ","), from)
-							table.insert(log, filtered)
-							running -= 1
-							if running == 0 then
-								coroutine.resume(mainThread)
-							end
+						tasks:add(function()
+							local argString = Util.Table.concat(arg.parsedArgs, ",")
+							table.insert(log, Util.String.filterForBroadcast(argString, from))
 						end)
 					end
 				end
 			end
 
-			if running > 0 then
-				coroutine.yield()
-			end
+			tasks:wait()
 
 			if not noLog then
 				logText = table.concat(log, " ")
