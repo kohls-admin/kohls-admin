@@ -235,16 +235,17 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 	if persistent then
 		local key = tostring(userId)
 		local cache = Data.Cache.members
-		local player = Players:GetPlayerByUserId(userId)
 		local persist = Data.members[key].persist
 
 		if #persist == 0 then
 			cache[key] = Data.Store.REMOVE
 		else
-			if not cache[key] then
-				cache[key] = { if player then player.Name else Util.getUserInfo(userId).Username }
-			end
-			cache[key][2] = persist
+			task.spawn(function()
+				if not cache[key] then
+					cache[key] = { member and member.name or Util.getUserInfo(userId).Username }
+				end
+				cache[key][2] = persist
+			end)
 		end
 	end
 
