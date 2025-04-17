@@ -99,7 +99,6 @@ function Auth.userBan(
 	Data.bans[key] = ban
 	if duration and duration ~= 0 then
 		Data.Cache.bans[key] = ban
-		Data.pendingSaveBans = true
 	end
 
 	for _, player in Players:GetPlayers() do
@@ -126,7 +125,6 @@ function Auth.userUnban(userId: number, fromUserId: number?, noAsync: boolean?)
 	local banAsync = not fromUserId or Auth.hasPermission(fromUserId, "banasync")
 	if banAsync then
 		Data.Cache.bans[key] = Data.Store.REMOVE
-		Data.pendingSaveBans = true
 	end
 
 	for _, player in Players:GetPlayers() do
@@ -201,7 +199,6 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 
 			cache[key] = cache[key] or { if player then player.Name else Util.getUserInfo(userId).Username }
 			cache[key][2] = Data.members[key].persist
-			Data.pendingSaveMain = true
 		end)
 	end
 
@@ -249,8 +246,6 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 			end
 			cache[key][2] = persist
 		end
-
-		Data.pendingSaveMain = true
 	end
 
 	return roleRemoved

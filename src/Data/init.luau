@@ -2,7 +2,6 @@
 -- use queues?
 -- debounce update async
 -- eventually save player profiles as well as two main global datastores
-
 -- TODO: make sure cache is valid json encoding by sanitizing key inputs as strings always
 
 local Http = game:GetService("HttpService")
@@ -66,23 +65,33 @@ local nextBansInterval = tick() + updateAsyncInterval
 local function updateBans()
 	nextBansInterval = math.huge
 	-- flush cache and hold onto references to make sure they are immutable!
+	local save = false
 	local bans = Data.Cache.bans
-	Data.Cache.bans = {}
+	if next(bans) then
+		save = true
+		Data.Cache.bans = {}
+	end
 
+	local sync
 	local ok, result = Data.Store.updateAsync("Bans", function(value)
 		if not value then
 			return Data.Store.filterRemove(bans)
+		end
+		sync = value
+		if not save then
+			return
 		end
 		return Data.Store.mergeRemove(value, bans)
 	end)
 
 	if ok then
+		if sync then
+			task.spawn(syncBans, sync)
+		end
 		task.spawn(function()
-			Data.sizeBans = #Http:JSONEncode(result)
+			Data.sizeBans = #Http:JSONEncode(sync or result)
 			dataLimitWarning(Data.sizeBans, "ban")
 		end)
-		Data.pendingSaveBans = false
-		syncBans(result)
 	else
 		warn(`[Kohl's Admin] Main Datastore UpdateAsync failed: {result}`)
 	end
@@ -155,15 +164,24 @@ end
 local nextMainInterval = tick() + updateAsyncInterval
 local function updateMain()
 	nextMainInterval = math.huge
-	-- flush cache and hold onto references to make sure they are immutable!
+	local save = false
 	local members = Data.Cache.members
 	local settings = Data.Cache.settings
-	Data.Cache.members = {}
-	Data.Cache.settings = {}
+	if next(members) or next(settings) then
+		save = true
+		Data.Cache.members = {}
+		Data.Cache.settings = {}
+	end
 
+	local sync
 	local ok, result = Data.Store.updateAsync("Main", function(value)
 		if not value then
 			return Data.Store.filterRemove({ members, settings })
+		end
+
+		sync = value
+		if not save then
+			return
 		end
 
 		Data.Store.mergeRemove(value[1], members)
@@ -173,19 +191,20 @@ local function updateMain()
 	end)
 
 	if ok then
+		if sync then
+			task.spawn(syncMain, sync)
+		end
 		task.spawn(function()
-			Data.sizeMain = #Http:JSONEncode(result)
+			Data.sizeMain = #Http:JSONEncode(sync or result)
 			dataLimitWarning(Data.sizeMain, "member")
 		end)
-		Data.pendingSaveMain = false
-		syncMain(result)
 	else
 		warn(`[Kohl's Admin] Main Datastore UpdateAsync failed: {result}`)
+		Data.Cache.members = Util.Table.merge(members, Data.Cache.members)
+		Data.Cache.settings = Util.Table.merge(settings, Data.Cache.settings)
 	end
 
 	nextMainInterval = tick() + updateAsyncInterval
-
-	return ok, result
 end
 
 -- LOGS
@@ -233,18 +252,26 @@ end
 local nextLogsInterval = tick() + updateAsyncInterval
 local function updateLogs()
 	nextLogsInterval = math.huge
-
 	if Data.settings.saveLogs == false then
-		Data.pendingSaveLogs = false
 		return true
 	end
 
+	local save = false
 	local logs = Data.Cache.logs
-	Data.Cache.logs = {}
+	if next(logs) then
+		save = true
+		Data.Cache.logs = {}
+	end
 
+	local sync
 	local ok, result = Data.Store.updateAsync("Logs", function(value)
 		if not value then
 			return logs
+		end
+
+		sync = value
+		if not save then
+			return
 		end
 
 		for _, log in logs do
@@ -266,10 +293,16 @@ local function updateLogs()
 	end)
 
 	if ok then
-		Data.pendingSaveLogs = false
-		syncLogs(result)
+		if sync then
+			task.spawn(syncLogs, sync)
+		end
 	else
 		warn(`[Kohl's Admin] Logs Datastore UpdateAsync failed: {result}`)
+		for _, log in Data.Cache.logs do
+			table.insert(logs, log)
+		end
+		table.sort(logs, rawSortTime)
+		Data.Cache.logs = logs
 	end
 
 	nextLogsInterval = tick() + updateAsyncInterval
@@ -295,8 +328,6 @@ function Data.initialize(name)
 				Data.Cache.bans = bansKAI
 				Data.Cache.members = mainKAI[1]
 				Data.Cache.settings = mainKAI[2]
-				Data.pendingSaveBans = true
-				Data.pendingSaveMain = true
 
 				syncBans(bansKAI)
 				syncMain(Util.Table.deepCopy(mainKAI))
@@ -327,29 +358,17 @@ function Data.initialize(name)
 		return Data
 	end
 
-	task.spawn(function() -- bans save loop
+	task.spawn(function()
 		repeat
 			task.wait(1)
-			if tick() > nextBansInterval and Data.pendingSaveBans then
-				updateBans()
+			if tick() > nextMainInterval then
+				task.spawn(updateMain)
 			end
-		until Data.gameClosing
-	end)
-
-	task.spawn(function() -- logs save loop
-		repeat
-			task.wait(1)
-			if tick() > nextLogsInterval and Data.pendingSaveLogs then
-				updateLogs()
+			if tick() > nextBansInterval then
+				task.spawn(updateBans)
 			end
-		until Data.gameClosing
-	end)
-
-	task.spawn(function() -- main save loop
-		repeat
-			task.wait(1)
-			if tick() > nextMainInterval and Data.pendingSaveMain then
-				updateMain()
+			if tick() > nextLogsInterval then
+				task.spawn(updateLogs)
 			end
 		until Data.gameClosing
 	end)
@@ -357,78 +376,31 @@ function Data.initialize(name)
 	game:BindToClose(function()
 		Data.gameClosing = true
 
-		local mainThread = coroutine.running()
-		local numThreadsRunning = 0
-
-		local function startSaveThread(key, func)
-			local success, result = Data.Store.updateAsync(key, func)
-
-			if not success then
-				warn(string.format("Failed to save %d's data: %s", key, result))
-			end
-
-			numThreadsRunning -= 1
-
-			if numThreadsRunning == 0 then
-				coroutine.resume(mainThread)
-			end
-		end
+		local tasks = Util.TaskGroup.new()
 
 		if Data.settings.vip and Data.settings.gameHubEnabled and Http.HttpEnabled and game.GameId > 0 then
-			numThreadsRunning += 1
-			task.defer(function()
-				Http:RequestAsync({ Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
-				numThreadsRunning -= 1
-				if numThreadsRunning == 0 then
-					coroutine.resume(mainThread)
-				end
-			end)
+			tasks:add(Http.RequestAsync, Http, { Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
 		end
 
-		if Data.pendingSaveBans then
-			numThreadsRunning += 1
-			task.defer(function()
-				updateBans()
-				numThreadsRunning -= 1
-				if numThreadsRunning == 0 then
-					coroutine.resume(mainThread)
-				end
-			end)
-		end
+		tasks:add(updateBans)
+		tasks:add(updateMain)
+		tasks:add(updateLogs)
 
-		if Data.pendingSaveMain then
-			numThreadsRunning += 1
-			task.defer(function()
-				updateMain()
-				numThreadsRunning -= 1
-				if numThreadsRunning == 0 then
-					coroutine.resume(mainThread)
-				end
-			end)
-		end
-
-		if Data.pendingSaveLogs then
-			numThreadsRunning += 1
-			task.defer(function()
-				updateLogs()
-				numThreadsRunning -= 1
-				if numThreadsRunning == 0 then
-					coroutine.resume(mainThread)
-				end
-			end)
-		end
+		-- local function userSave(key, func)
+		-- 	local success, result = Data.Store.updateAsync(key, func)
+		-- 	if not success then
+		-- 		warn(string.format("Failed to save %d's data: %s", key, result))
+		-- 	end
+		-- end
 
 		-- TODO: prepare player data
 		-- for userId, sessionData in Cache.players do
-		-- 	numThreadsRunning += 1
-		-- 	task.spawn(startSaveThread, userId, function(value)
+		--  tasks:add(userSave, userId, function(value)
 		-- 		return sessionData
 		-- 	end)
 		-- end
 
-		if numThreadsRunning > 0 then
-			coroutine.yield()
-		end
+		tasks:wait()
 	end)
 
 	return Data

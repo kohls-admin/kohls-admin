@@ -109,7 +109,6 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 		if level == "COMMAND" and (not from or _K.Auth.getRank(from) > 1) then
 			-- save logs for roles above VIP (rank 1)
 			table.insert(_K.Data.Cache.logs, { log.text, log.level, log.time, from, log.name })
-			_K.Data.pendingSaveLogs = true
 		end
 
 		task.defer(function()
@@ -443,7 +442,6 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 			end
 
 			_K.Data.Cache.settings[key] = cacheValue
-			_K.Data.pendingSaveMain = true
 		end
 		for _, toPlayer in _K.Services.Players:GetPlayers() do
 			if toPlayer ~= player then

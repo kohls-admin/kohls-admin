@@ -54,7 +54,6 @@ return {
 			local filteredMsg = context._K.Util.String.filterForBroadcast(message, context.from)
 			local announcement = { filteredMsg, context.from }
 			context._K.Data.Cache.settings.announcement = announcement
-			context._K.Data.pendingSaveMain = true
 			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", announcement)
 		end,
 	},
@@ -76,7 +75,6 @@ return {
 			end
 
 			context._K.Data.Cache.settings.announcement = false
-			context._K.Data.pendingSaveMain = true
 			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", nil)
 		end,
 	},
@@ -201,7 +199,6 @@ return {
 			for _, member in members do
 				context._K.Data.members[member] = nil
 				context._K.Data.Cache.members[member] = context._K.Data.Store.REMOVE
-				context._K.Data.pendingSaveMain = true
 				context._K.Remote.Member:FireAllClients(member)
 			end
 		end,

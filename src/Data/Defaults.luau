@@ -59,9 +59,6 @@ local Data = {
 	logsHidden = {},
 
 	gameClosing = false,
-	pendingSaveBans = false,
-	pendingSaveMain = false,
-	pendingSaveLogs = false,
 	sizeBans = 0,
 	sizeMain = 0,
 	sizeLogs = 0,
