@@ -163,11 +163,20 @@ return {
 		},
 
 		run = function(context, members, roles)
-			for _, member in members do
+			local membersUnroled = {}
+			for _, userId in members do
+				local member = context._K.Data.members[tostring(userId)]
 				for _, role in roles do
-					context._K.Auth.userRoleRemove(member, role)
+					if context._K.Auth.userRoleRemove(userId, role) then
+						table.insert(membersUnroled, member and member.name or userId)
+					end
 				end
 			end
+
+			if #membersUnroled == 0 then
+				return
+			end
+
 			local roleString = {}
 			for _, role in roles do
 				local roleData = context._K.Data.roles[role]
@@ -175,7 +184,7 @@ return {
 			end
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
 				Text = `<b>Removed Roles:</b> {table.concat(roleString, ", ")}\n<b>From:</b> <i>{table.concat(
-					members,
+					membersUnroled,
 					", "
 				)}</i>`,
 			})

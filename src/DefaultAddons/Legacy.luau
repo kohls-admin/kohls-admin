@@ -98,9 +98,10 @@ return function(_K)
 
 			run = function(context, members)
 				local membersUnroled = {}
-				for _, member in members do
-					if context._K.Auth.userRoleRemove(member, role) then
-						table.insert(membersUnroled, member)
+				for _, userId in members do
+					local member = context._K.Data.members[tostring(userId)]
+					if context._K.Auth.userRoleRemove(userId, role) then
+						table.insert(membersUnroled, member and member.name or userId)
 					end
 				end
 
