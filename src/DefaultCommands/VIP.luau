@@ -27,7 +27,11 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				if player.Character then
-					context._K.Registry.commands.crm.env.update(player.Character)
+					local crmCommand = context._K.Registry.commands.crm
+					if crmCommand then
+						crmCommand.env.update(player.Character)
+					end
+				end
 
 				local dogSeat = player.Character:FindFirstChild("_KDogSeat")
 				if dogSeat then
@@ -48,14 +52,17 @@ return {
 
 				Util.Humanoid.resetDescription(player)
 
-				local infected = context._K.Flux.Scope.Infected[player.Character]
-				if infected then
-					infected:Disconnect()
-					local face = player.Character:FindFirstChild("Head")
-						and player.Character.Head:FindFirstChild("face")
-					if face then
-						face.Texture = face:GetAttribute("_KInfectOriginal")
-						face:SetAttribute("_KInfectOriginal")
+				local infectedCommand = context._K.Registry.commands.infect
+				if infectedCommand then
+					local infected = infectedCommand.env.infected[player.Character]
+					if infected then
+						infected:Disconnect()
+						local face = player.Character:FindFirstChild("Head")
+							and player.Character.Head:FindFirstChild("face")
+						if face then
+							face.Texture = face:GetAttribute("_KInfectOriginal")
+							face:SetAttribute("_KInfectOriginal")
+						end
 					end
 				end
 			end

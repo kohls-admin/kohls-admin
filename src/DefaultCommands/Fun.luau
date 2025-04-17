@@ -534,8 +534,6 @@ return {
 		env = function(_K)
 			local env = { infected = {} }
 
-			_K.Flux.Scope.Infected = env.infected
-
 			function env.infect(player, character)
 				if not character then
 					return
