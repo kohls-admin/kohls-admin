@@ -61,7 +61,10 @@ return {
 			return env
 		end,
 		run = function(context)
-			context._K.Registry.commands.disco.env.cleanup()
+			local discoCommand = context._K.Registry.commands.disco
+			if discoCommand then
+				task.spawn(discoCommand.env.cleanup)
+			end
 			for object, original in context.env do
 				for property, originalValue in original do
 					object[property] = originalValue

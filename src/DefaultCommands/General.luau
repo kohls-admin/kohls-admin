@@ -21,7 +21,10 @@ return {
 					object()
 				end
 			end
-			context._K.Registry.commands.disco.env.cleanup()
+			local discoCommand = context._K.Registry.commands.disco
+			if discoCommand then
+				task.spawn(discoCommand.env.cleanup)
+			end
 			context._K.Remote.StartCountdown:FireAllClients()
 		end,
 	},
