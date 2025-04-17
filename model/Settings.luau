@@ -3,7 +3,7 @@ local PRIVATE_SERVER_OWNER = if game:GetService("RunService"):IsServer() then ga
 local Settings = {
 
 	-- Automatically updates from the latest official MainModule version.
-        -- Set to false to use the locally included MainModule instead.
+	-- Set to false to use the locally included MainModule instead.
 	autoUpdate = true,
 
 	-- Sets the prefix used to run commands in chat (e.g., ";cmd").
@@ -11,7 +11,7 @@ local Settings = {
 
 	--[[
 	Enables participation in the Kohl's Admin Games Hub.
-        Promotes your game to players looking for games that support Kohl's Admin features.
+	Promotes your game to players looking for games that support Kohl's Admin features.
 	https://www.roblox.com/games/17873329124/Games-Hub-Kohls-Admin
 
 	⚠️ Requires "Allow HTTP Requests" to be enabled in Game Settings > Security
@@ -87,7 +87,7 @@ local Settings = {
 		vip = { 1, 156, PRIVATE_SERVER_OWNER },
 	},
 
-        -- Role definitions with hierarchy, permissions, colors, and available command groups.
+	-- Role definitions with hierarchy, permissions, colors, and available command groups.
 	roles = {
 		default = { -- This role is given to everyone by default!
 			-- role "_rank" determines hierarchy
@@ -97,7 +97,7 @@ local Settings = {
 			color = "#0ff",
 
 			-- When enabled, users can only target themselves with player arguments.
-                        -- ⚠️ This does not affect commands that use UserIds directly!
+			-- ⚠️ This does not affect commands that use UserIds directly!
 			onlyTargetSelf = true,
 
 			permissions = {
