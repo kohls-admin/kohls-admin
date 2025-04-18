@@ -4,8 +4,9 @@ local TaskGroup = {}
 TaskGroup.__index = TaskGroup
 
 export type TaskGroup = {
-	running: thread,
 	numTasks: number,
+	running: thread,
+	yielding: boolean?,
 	new: () -> TaskGroup,
 	add: (self: TaskGroup, callback: (...any) -> ...any, ...any) -> (),
 }
@@ -13,8 +14,9 @@ export type TaskGroup = {
 --- Creates a new TaskGroup instance.
 function TaskGroup.new(): TaskGroup
 	return setmetatable({
-		running = coroutine.running(),
 		numTasks = 0,
+		running = coroutine.running(),
+		yielding = false,
 	}, TaskGroup) :: any
 end
 
@@ -31,8 +33,9 @@ function TaskGroup:add(callback: (...any) -> ...any, ...: any)
 			warn("TaskGroup: Task failed with error:", err)
 		end
 
-		if self.numTasks == 0 then
-			coroutine.resume(self.running)
+		if self.yielding and self.numTasks == 0 then
+			self.yielding = false
+			task.spawn(self.running)
 		end
 	end, ...)
 end
@@ -40,6 +43,7 @@ end
 --- Waits for all tasks to complete.
 function TaskGroup:wait()
 	if self.numTasks > 0 then
+		self.yielding = true
 		coroutine.yield()
 	end
 end
