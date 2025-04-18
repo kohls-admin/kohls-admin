@@ -316,23 +316,55 @@ local function clearCompletion()
 	table.clear(suggestionLabels)
 end
 
-local function invalidSuggestion(data, err, pos, text)
-	-- TODO: add gamepass button if one exists for invalid perms
-	if data.invalidPermissionsCommand then
-		for role, roleData in _K.Data.roles do
-			if
-				(roleData.gamepass or role == "vip") and _K.Auth.roleCanUseCommand(role, data.invalidPermissionsCommand)
-			then
-				err = `Purchase to unlock`
-				if role == "vip" and _K.Data.settings.vip then
-					_K.promptPurchaseVIP()
-				else
-					_K.Util.Services.MarketplaceService:PromptGamePassPurchase(UI.LocalPlayer, roleData.gamepass)
-				end
-			end
-		end
-	end
+local suggestionPurchase = {
+	role = nil,
+	gamepass = nil,
+}
+local suggestionPurchaseButton = UI.new "Button" {
+	LayoutOrder = math.huge,
+	Label = "Loading...",
+	HoverTransparency = 0.5,
+	Icon = "rbxasset://textures/ui/common/robux.png",
+	IconRightAlign = true,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	Size = UDim2.new(1, 0, 0, 32),
 
+	UI.new "TextLabel" {
+		Name = "Price",
+		LayoutOrder = 8,
+		AutoLocalize = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		BackgroundTransparency = 1,
+		Font = UI.Theme.FontMono,
+		TextSize = UI.Theme.FontSizeLarge,
+		TextColor3 = UI.Theme.PrimaryText,
+		TextWrapped = true,
+		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+		Text = `<b>?</b>`,
+		RichText = true,
+	},
+
+	[UI.Event] = {
+		Activated = function()
+			if suggestionPurchase.role == "vip" and _K.Data.settings.vip then
+				_K.promptPurchaseVIP()
+			elseif suggestionPurchase.gamepass then
+				_K.Util.Services.MarketplaceService:PromptGamePassPurchase(UI.LocalPlayer, suggestionPurchase.gamepass)
+			end
+		end,
+	},
+}
+
+local function updateSuggestionPurchasePrice()
+	local ok, result = pcall(function()
+		return _K.Util.Services.MarketplaceService:GetProductInfo(suggestionPurchase.gamepass, Enum.InfoType.GamePass).PriceInRobux
+	end)
+	if ok then
+		suggestionPurchaseButton._content.Price.Text = `<b>{result or "?"}</b>`
+	end
+end
+
+local function invalidSuggestion(data, err, pos, text)
 	validState:set(false)
 	-- red text inlineFormat
 	Input.DisplayText:set(
@@ -355,6 +387,26 @@ local function invalidSuggestion(data, err, pos, text)
 	end
 	-- FIX: inline all the invalids and only show tooltip for first
 	table.clear(suggestionLabels)
+
+	if data.invalidPermissionsCommand then
+		for role, roleData in _K.Data.roles do
+			if
+				(roleData.gamepass or role == "vip") and _K.Auth.roleCanUseCommand(role, data.invalidPermissionsCommand)
+			then
+				suggestionPurchase.role = role
+				suggestionPurchase.gamepass = if role == "vip" then 5411126 else roleData.gamepass
+				suggestionPurchaseButton._instance.Parent = TooltipFrame
+				suggestionPurchaseButton.Label:set(
+					`<sc>Purchase <font color="{roleData.color}">{roleData.name or role}</font></sc>`
+				)
+				task.spawn(updateSuggestionPurchasePrice)
+				break
+			end
+		end
+	else
+		suggestionPurchaseButton._instance.Parent = nil
+	end
+
 	local frame = SuggestionFrame:Clone()
 	local label = frame:FindFirstChildOfClass("TextLabel")
 	label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
