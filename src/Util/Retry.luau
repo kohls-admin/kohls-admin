@@ -15,12 +15,12 @@ local function Retry(
 	local feedback
 
 	for attempt = 0, maxAttempts - 1 do
-		local success, result = pcall(callback)
+		local results = { pcall(callback) }
 
-		if success then
-			return success, result
+		if results[1] then
+			return unpack(results)
 		elseif not feedback then
-			feedback = result
+			feedback = results[2]
 		end
 
 		if attempt < maxAttempts then
