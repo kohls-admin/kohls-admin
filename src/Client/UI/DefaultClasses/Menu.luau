@@ -5,7 +5,7 @@ local Menu = {}
 Menu.__index = Menu
 setmetatable(Menu, BaseClass)
 
-UI.Scope.LayerTopSize = UI.state(UI.LayerTop, "AbsoluteSize")
+local LayerTopSize = UI.state(UI.LayerTop, "AbsoluteSize")
 
 function Menu.new(definition)
 	local new = UI.makeStatefulDefaults({
@@ -80,7 +80,7 @@ function Menu.new(definition)
 		UI.edit(new._instance, {
 			Position = UI.compute(function(use)
 				local size = use(menuSize)
-				local layerSize = use(UI.Scope.LayerTopSize)
+				local layerSize = use(LayerTopSize)
 				local absolutePos = use(absolutePosition)
 				local absoluteSize = use(absoluteSize)
 				local rightAlign = use(new.RightAlign)

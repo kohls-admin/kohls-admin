@@ -68,12 +68,12 @@ task.defer(function()
 
 		[UI.Event] = {
 			Activated = function()
-				UI.Scope.lastAttemptedPurchase = adminModelId
-				UI.Scope.purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
-				if UI.Scope.AllowThirdPartySales then
+				_K.client.lastAttemptedPurchase = adminModelId
+				_K.client.purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
+				if _K.client.AllowThirdPartySales then
 					_K.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
 				else
-					UI.Scope.purchaseDialog.Visible:set(true)
+					_K.client.purchaseDialog.Visible:set(true)
 					dialog.Visible:set(false)
 				end
 			end,

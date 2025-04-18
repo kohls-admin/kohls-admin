@@ -24,9 +24,9 @@ return {
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
 					Visible = function()
-						if not window._instance.Visible and #_K.UI.Scope.dashboard then
-							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
-								_K.UI.Scope.dashboard.Bans,
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs, {
+								_K.client.dashboard.Bans,
 							})
 						end
 					end,
@@ -41,7 +41,7 @@ return {
 			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
 				Visible = visible,
-				if visible then context._K.UI.Scope.dashboard.Bans else nil,
+				if visible then context._K.client.dashboard.Bans else nil,
 			})
 			if not context.env.init then
 				context.env.window.Position:set(
@@ -74,9 +74,9 @@ return {
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
 					Visible = function()
-						if not window._instance.Visible and #_K.UI.Scope.dashboard then
-							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
-								_K.UI.Scope.dashboard.Members,
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs, {
+								_K.client.dashboard.Members,
 							})
 						end
 					end,
@@ -91,7 +91,7 @@ return {
 			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
 				Visible = visible,
-				if visible then context._K.UI.Scope.dashboard.Members else nil,
+				if visible then context._K.client.dashboard.Members else nil,
 			})
 			if not context.env.init then
 				context.env.window.Position:set(

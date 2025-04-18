@@ -36,7 +36,7 @@ function Settings.new(_K)
 		Settings._K.Remote.Settings:FireServer(pendingChanges)
 		for key, value in pendingChanges do
 			_K.Data.settings[key] = value
-			UI.Scope.settings[key]:set(value, key == "prefix")
+			_K.client.settings[key]:set(value, key == "prefix")
 		end
 		table.clear(pendingChanges)
 	end
@@ -115,7 +115,7 @@ function Settings.new(_K)
 					Placeholder = ";",
 					MaxChars = 1,
 					Value = UI.compute(function(use)
-						return use(UI.Scope.settings.prefix)
+						return use(_K.client.settings.prefix)
 					end),
 					Validate = function(text)
 						return not (text == "" or table.find({ ",", " ", "`", '"' }, text))
@@ -123,7 +123,7 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Selected = function(value)
-							UI.Scope.settings.prefix._value = value
+							_K.client.settings.prefix._value = value
 							change("prefix", value)
 						end,
 					},

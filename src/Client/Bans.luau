@@ -205,7 +205,7 @@ function Bans.new(_K)
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Bans",
-		List = UI.Scope.bans,
+		List = _K.client.bans,
 		Enabled = false,
 		DictList = true,
 		FilterInput = true,

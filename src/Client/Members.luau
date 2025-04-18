@@ -108,7 +108,7 @@ function Members.new(_K)
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Members",
-		List = UI.Scope.members,
+		List = _K.client.members,
 		Enabled = false,
 		DictList = true,
 		FilterInput = true,

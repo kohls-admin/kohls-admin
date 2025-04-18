@@ -15,16 +15,17 @@ _K.client = {
 	hotkeys = {
 		dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
 	},
+	settings = {},
 }
 
-UI.Scope.members = Flux.state(_K.Data.members)
-UI.Scope.bans = Flux.state(_K.Data.bans)
-UI.Scope.logs = Flux.state(_K.Data.logs)
+_K.client.members = Flux.state(_K.Data.members)
+_K.client.bans = Flux.state(_K.Data.bans)
+_K.client.logs = Flux.state(_K.Data.logs)
 
 -- Flux stateful settings
 for key, value in _K.Data.settings do
 	local state = _K.Flux.state(value)
-	UI.Scope.settings[key] = state
+	_K.client.settings[key] = state
 
 	-- UI.Theme connection to theme settings
 	if string.find(key, "theme", 1, true) == 1 then

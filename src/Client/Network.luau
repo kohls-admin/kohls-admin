@@ -5,16 +5,16 @@ function _K.client.updateInterfaceAuth()
 	-- TODO: recheck visibility for all restricted UIs
 	local buttonEnabled = _K.Data.settings.dashboardButtonRank
 		and _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
-	UI.Scope.dashboardButton:setEnabled(buttonEnabled)
+	_K.client.dashboardButton:setEnabled(buttonEnabled)
 
-	UI.Scope.dashboard.Bans._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "bans")
-	UI.Scope.dashboard.Members._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "members")
-	UI.Scope.dashboard.Settings.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "settings")
+	_K.client.dashboard.Bans._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "bans")
+	_K.client.dashboard.Members._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "members")
+	_K.client.dashboard.Settings.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "settings")
 
 	for _, command in _K.Registry.commands do
 		command.LocalPlayerAuthorized = _K.Auth.hasCommand(UI.LocalPlayer.UserId, command)
 	end
-	UI.Scope.dashboard.Commands:updateList()
+	_K.client.dashboard.Commands:updateList()
 	_K.client.CommandBar.updateCompletionData()
 end
 
@@ -61,23 +61,23 @@ end
 
 _K.Remote.Ban.OnClientEvent:Connect(function(userId, ban)
 	_K.Data.bans[userId] = ban
-	UI.Scope.bans:set(_K.Data.bans)
+	_K.client.bans:set(_K.Data.bans)
 end)
 
 _K.Remote.Bans.OnClientEvent:Connect(function(bans)
 	_K.Util.Table.merge(_K.Data.bans, bans)
-	UI.Scope.bans:set(_K.Data.bans)
+	_K.client.bans:set(_K.Data.bans)
 end)
 
 _K.Remote.Member.OnClientEvent:Connect(function(userId, member)
 	_K.Data.members[userId] = member
-	UI.Scope.members:set(_K.Data.members)
+	_K.client.members:set(_K.Data.members)
 	_K.client.updateInterfaceAuth()
 end)
 
 _K.Remote.Members.OnClientEvent:Connect(function(members)
 	_K.Data.members = members
-	UI.Scope.members:set(_K.Data.members)
+	_K.client.members:set(_K.Data.members)
 	_K.client.updateInterfaceAuth()
 end)
 
@@ -94,7 +94,7 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 		_K.Util.Defer.wait()
 	end
 
-	task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
+	task.defer(_K.client.dashboard.Logs.updateList, _K.client.dashboard.Logs)
 end)
 
 _K.Remote.Logs.OnClientEvent:Connect(function(logs)
@@ -118,14 +118,14 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logs)
 		_K.Util.Defer.wait()
 	end
 
-	task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
+	task.defer(_K.client.dashboard.Logs.updateList, _K.client.dashboard.Logs)
 end)
 
 _K.Remote.Settings.OnClientEvent:Connect(function(settings)
 	for key, value in settings do
 		value = UI.peek(value)
 		_K.Data.settings[key] = value
-		UI.Scope.settings[key]:set(value)
+		_K.client.settings[key]:set(value)
 		if string.find(key, "theme", 1, true) == 1 then
 			local themeKey = string.sub(key, 6)
 			UI.Theme[themeKey]:set(value)
@@ -180,24 +180,24 @@ local initCon
 initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans, logs, roles)
 	initCon:Disconnect()
 	_K.Util.Table.merge(_K.Data.members, members)
-	UI.Scope.members:set(_K.Data.members)
+	_K.client.members:set(_K.Data.members)
 
 	-- need to improve networking performance!
 	for key, value in settings do
 		value = UI.peek(value)
 		_K.Data.settings[key] = value
-		UI.Scope.settings[key]:set(value)
+		_K.client.settings[key]:set(value)
 	end
 
 	if bans then
 		_K.Util.Table.merge(_K.Data.bans, bans)
-		UI.Scope.bans:set(_K.Data.bans)
+		_K.client.bans:set(_K.Data.bans)
 	end
 
 	if logs then
 		table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)
 		table.sort(_K.Data.logs, _K.Data.sortTime)
-		task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
+		task.defer(_K.client.dashboard.Logs.updateList, _K.client.dashboard.Logs)
 	end
 
 	_K.Util.Table.merge(_K.Data.roles, roles)
@@ -242,7 +242,7 @@ initCon = _K.Remote.Init.OnClientEvent:Connect(function(members, settings, bans,
 
 	local lines = {
 		`<font family="{UI.Theme.FontMono._value.Name}">{greeting}\n`,
-		`<b>Prefix</b>     <font color="#0f0">{UI.peek(UI.Scope.settings.prefix)}</font>`,
+		`<b>Prefix</b>     <font color="#0f0">{UI.peek(_K.client.settings.prefix)}</font>`,
 		`<b>Commands</b>   <font color="#0f0">{commandBarKeyText} {commandBarKeyRaw}</font>`,
 		`<b>Dashboard</b>  <font color="#0f0">{dashboardKeyText} {dashboardKeyRaw}</font>`,
 		`<b>Roles</b>\t  <sc>{roleText}</sc>\n`,

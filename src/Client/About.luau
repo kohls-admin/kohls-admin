@@ -13,7 +13,6 @@ function About.new(_K)
 	local thirdPartyText = "<font color='#fd0'>The game developer has disabled <b>Third Party Purchases</b>!</font>\n\n"
 		.. "<font transparency='0.5'>Copy the link below to purchase.</font>\n"
 		.. "<font color='#f00'><b>To receive perks, join a new server after your purchase!</b></font>"
-	UI.Scope.thirdPartyText = thirdPartyText
 
 	local equippedUGC = {}
 	local debounceEquip = _K.Util.Function.debounce(0.25, function(id, equip, equipped, name, button)
@@ -39,8 +38,8 @@ function About.new(_K)
 
 	-- THIRD PARTY PURCHASES HANDLING
 
-	UI.Scope.AllowThirdPartySales = true
-	UI.Scope.lastAttemptedPurchase = false
+	_K.client.AllowThirdPartySales = true
+	_K.client.lastAttemptedPurchase = false
 
 	local purchaseLink = UI.new "TextBox" {
 		Name = "Link",
@@ -56,7 +55,7 @@ function About.new(_K)
 		TextWrapped = true,
 		TextEditable = false,
 		ClearTextOnFocus = false,
-		Visible = UI.Scope.settings.gameHubEnabled,
+		Visible = _K.client.settings.gameHubEnabled,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
@@ -83,26 +82,26 @@ function About.new(_K)
 		Modal = true,
 		ZIndex = 1000,
 		Close = function()
-			UI.Scope.lastAttemptedPurchase = false
+			_K.client.lastAttemptedPurchase = false
 			purchaseDialog.Visible:set(false)
 		end,
 
 		purchaseLink,
 	}
-	UI.Scope.purchaseDialog = purchaseDialog
-	UI.Scope.purchaseLink = purchaseLink
+	_K.client.purchaseDialog = purchaseDialog
+	_K.client.purchaseLink = purchaseLink
 
 	local function promptThirdPartyGamePassDialog(passId)
-		UI.Scope.lastAttemptedPurchase = passId
+		_K.client.lastAttemptedPurchase = passId
 		purchaseLink.Text = "https://roblox.com/game-pass/" .. passId
-		if UI.Scope.AllowThirdPartySales then
+		if _K.client.AllowThirdPartySales then
 			purchaseDialog.Visible:set(false)
 			_K.Util.Services.MarketplaceService:PromptGamePassPurchase(_K.UI.LocalPlayer, passId)
 		else
 			purchaseDialog.Visible:set(true)
 		end
 	end
-	UI.Scope.promptThirdPartyGamePassDialog = promptThirdPartyGamePassDialog
+	_K.client.promptThirdPartyGamePassDialog = promptThirdPartyGamePassDialog
 
 	local function updatePassPriceText(label, gamePassId)
 		local success, owned = _K.Util.Retry(function()
@@ -141,8 +140,8 @@ function About.new(_K)
 	con = _K.Util.Services.LogService.MessageOut:Connect(function(message, messageType)
 		if messageType == Enum.MessageType.MessageWarning and string.find(message, "AllowThirdPartySales") then
 			con:Disconnect()
-			UI.Scope.AllowThirdPartySales = false
-			if UI.Scope.lastAttemptedPurchase then
+			_K.client.AllowThirdPartySales = false
+			if _K.client.lastAttemptedPurchase then
 				purchaseDialog.Visible:set(true)
 			end
 		end
@@ -355,9 +354,9 @@ function About.new(_K)
 							return
 						end
 
-						UI.Scope.lastAttemptedPurchase = ugc.id
+						_K.client.lastAttemptedPurchase = ugc.id
 						purchaseLink.Text = "https://roblox.com/catalog/" .. ugc.id
-						if UI.Scope.AllowThirdPartySales then
+						if _K.client.AllowThirdPartySales then
 							purchaseDialog.Visible:set(false)
 							_K.Util.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, ugc.id)
 						else
@@ -674,9 +673,9 @@ function About.new(_K)
 
 		[UI.Event] = {
 			Activated = function()
-				UI.Scope.lastAttemptedPurchase = adminModelId
+				_K.client.lastAttemptedPurchase = adminModelId
 				purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
-				if UI.Scope.AllowThirdPartySales then
+				if _K.client.AllowThirdPartySales then
 					purchaseDialog.Visible:set(false)
 					_K.Util.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
 				else
@@ -763,7 +762,7 @@ function About.new(_K)
 			TextWrapped = true,
 			RichText = true,
 			Visible = UI.compute(function(use)
-				return not use(UI.Scope.settings.vip)
+				return not use(_K.client.settings.vip)
 			end),
 
 			UI.new "UICorner" {
@@ -825,7 +824,7 @@ function About.new(_K)
 			TextWrapped = true,
 			TextEditable = false,
 			ClearTextOnFocus = false,
-			Visible = UI.Scope.settings.gameHubEnabled,
+			Visible = _K.client.settings.gameHubEnabled,
 
 			UI.new "UICorner" {
 				CornerRadius = UI.Theme.CornerRadius,

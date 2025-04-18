@@ -146,7 +146,7 @@ function Logs.new(_K)
 
 	scroller = UI.new "ScrollerFast" {
 		Name = "Logs",
-		List = UI.Scope.logs,
+		List = _K.client.logs,
 		Enabled = false,
 		FilterInput = true,
 		-- FilterInputDebounce = 0.1,

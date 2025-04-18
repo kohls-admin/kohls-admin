@@ -11,34 +11,35 @@ local Settings = require(script.Parent.Settings)
 
 local clockStart = os.clock()
 
-UI.Scope.dashboard.About = About.new(_K)
-UI.Scope.dashboard.Commands = Commands.new(_K)
-UI.Scope.dashboard.Bans = Bans.new(_K)
-UI.Scope.dashboard.Members = Members.new(_K)
-UI.Scope.dashboard.Logs = Logs.new(_K)
-UI.Scope.dashboard.Settings = Settings.new(_K)
+_K.client.dashboard = {}
+_K.client.dashboard.About = About.new(_K)
+_K.client.dashboard.Commands = Commands.new(_K)
+_K.client.dashboard.Bans = Bans.new(_K)
+_K.client.dashboard.Members = Members.new(_K)
+_K.client.dashboard.Logs = Logs.new(_K)
+_K.client.dashboard.Settings = Settings.new(_K)
 
-UI.Scope.dashboard.Tabs = UI.new "Tabs" {
-	UI.Scope.dashboard.Commands,
-	UI.Scope.dashboard.Bans,
-	UI.Scope.dashboard.Members,
-	UI.Scope.dashboard.Logs,
-	UI.Scope.dashboard.Settings,
-	UI.Scope.dashboard.About,
+_K.client.dashboard.Tabs = UI.new "Tabs" {
+	_K.client.dashboard.Commands,
+	_K.client.dashboard.Bans,
+	_K.client.dashboard.Members,
+	_K.client.dashboard.Logs,
+	_K.client.dashboard.Settings,
+	_K.client.dashboard.About,
 }
 
-UI.Scope.dashboard.Tabs._pages:JumpTo(UI.Scope.dashboard.About)
+_K.client.dashboard.Tabs._pages:JumpTo(_K.client.dashboard.About)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
 	Title = "Kohl's Admin Dashboard",
 	Visible = false,
 
-	UI.Scope.dashboard.Tabs,
+	_K.client.dashboard.Tabs,
 }
-UI.Scope.dashboard.Window = dashboard
+_K.client.dashboard.Window = dashboard
 
-UI.Scope.commandBarVisible = UI.state(_K.client.CommandBar.Bar, "Visible")
+_K.client.commandBarVisible = UI.state(_K.client.CommandBar.Bar, "Visible")
 
 -- add a command bar toggle button next to the exit button
 local toggleCommandBar
@@ -50,7 +51,7 @@ toggleCommandBar = UI.new "Button" {
 	Icon = "rbxassetid://85543506317447",
 	IconProperties = {
 		ImageTransparency = UI.compute(function(use)
-			return if use(UI.Scope.commandBarVisible) then 0 else 0.75
+			return if use(_K.client.commandBarVisible) then 0 else 0.75
 		end),
 	},
 	Text = "",
@@ -91,7 +92,7 @@ local dashboardButton = TopbarPlus.new()
 	:modifyTheme({ "Widget", "BorderSize", 0 })
 local dashboardButtonIcon = dashboardButton:getInstance("IconImage")
 
-UI.Scope.dashboardButton = dashboardButton
+_K.client.dashboardButton = dashboardButton
 
 _K.client.hotkeys.dashboard.callback = function()
 	if dashboardButton.isSelected then
@@ -119,4 +120,4 @@ end)
 
 task.spawn(_K.log, `Dashboard loaded in {math.round((os.clock() - clockStart) * 1000)} ms`, "DEBUG")
 
-return UI.Scope.dashboard
+return _K.client.dashboard

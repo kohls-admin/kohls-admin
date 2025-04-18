@@ -29,7 +29,7 @@ return {
 				From = "_K",
 				Text = table.concat({
 					`<font family="{context._K.UI.Theme.FontMono._value.Name}">This game uses <b>Kohl's Admin</b>!\n`,
-					`<b>Prefix</b>     <font color="#0f0">{context._K.UI.peek(context._K.UI.Scope.settings.prefix)}</font>`,
+					`<b>Prefix</b>     <font color="#0f0">{context._K.UI.peek(context._K.client.settings.prefix)}</font>`,
 					`<b>Commands</b>   <font color="#0f0">{commandBarKeyText} {commandBarKeyRaw}</font>`,
 					`<b>Dashboard</b>  <font color="#0f0">{dashboardKeyText} {dashboardKeyRaw}</font></font>`,
 				}, "\n"),
@@ -56,9 +56,9 @@ return {
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
 					Visible = function()
-						if not window._instance.Visible and #_K.UI.Scope.dashboard then
-							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
-								_K.UI.Scope.dashboard.About,
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs, {
+								_K.client.dashboard.About,
 							})
 						end
 					end,
@@ -70,7 +70,7 @@ return {
 		end,
 
 		runClient = function(context)
-			local about = context._K.UI.Scope.dashboard.About
+			local about = context._K.client.dashboard.About
 			local scrollY = if string.find(context.alias, "credit", 1, true)
 				then about.CanvasPosition.Y + about.Credits.AbsolutePosition.Y - about.AbsolutePosition.Y
 				else 0
@@ -78,7 +78,7 @@ return {
 			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
 				Visible = visible,
-				if visible then context._K.UI.Scope.dashboard.About else nil,
+				if visible then context._K.client.dashboard.About else nil,
 			})
 			if not context.env.init then
 				context.env.window.Position:set(
@@ -111,9 +111,9 @@ return {
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
 					Visible = function()
-						if not window._instance.Visible and #_K.UI.Scope.dashboard then
-							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
-								_K.UI.Scope.dashboard.Commands,
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs, {
+								_K.client.dashboard.Commands,
 							})
 						end
 					end,
@@ -128,7 +128,7 @@ return {
 			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
 				Visible = visible,
-				if visible then context._K.UI.Scope.dashboard.Commands else nil,
+				if visible then context._K.client.dashboard.Commands else nil,
 			})
 			if not context.env.init then
 				context.env.window.Position:set(
@@ -169,9 +169,9 @@ return {
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
 					Visible = function()
-						if not window._instance.Visible and #_K.UI.Scope.dashboard then
-							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
-								_K.UI.Scope.dashboard.Logs,
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs, {
+								_K.client.dashboard.Logs,
 							})
 						end
 					end,
@@ -186,7 +186,7 @@ return {
 			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
 				Visible = visible,
-				if visible then context._K.UI.Scope.dashboard.Logs else nil,
+				if visible then context._K.client.dashboard.Logs else nil,
 			})
 			if not context.env.init then
 				context.env.window.Position:set(
@@ -219,9 +219,9 @@ return {
 			_K.UI.edit(window, {
 				[_K.UI.Event.Property] = {
 					Visible = function()
-						if not window._instance.Visible and #_K.UI.Scope.dashboard then
-							_K.UI.edit(_K.UI.Scope.dashboard.Tabs, {
-								_K.UI.Scope.dashboard.Settings,
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs, {
+								_K.client.dashboard.Settings,
 							})
 						end
 					end,
@@ -236,7 +236,7 @@ return {
 			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
 				Visible = visible,
-				if visible then context._K.UI.Scope.dashboard.Settings else nil,
+				if visible then context._K.client.dashboard.Settings else nil,
 			})
 			if not context.env.init then
 				context.env.window.Position:set(
