@@ -87,9 +87,13 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 	end
 	-- TODO: PERF: add to sorted list and filtered list directly
 	table.insert(_K.Data.logs, log)
-	if #_K.Data.logs > 1e5 then
+
+	_K.Util.Defer.reset()
+	while #_K.Data.logs > 1e5 do
 		table.remove(_K.Data.logs, 1)
+		_K.Util.Defer.wait()
 	end
+
 	task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
 end)
 
@@ -97,9 +101,23 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logs)
 	if not _K.client.ready then
 		return
 	end
-	-- this sometimes updates before Logs updateList is ready to call?
+
+	_K.Util.Defer.reset()
+	for _, log in logs do
+		log.text, log.level, log.time, log.from, log.name = unpack(log)
+		log[1], log[2], log[3], log[4], log[5] = nil
+		_K.Util.Defer.wait()
+	end
+
 	table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)
+	_K.Util.Defer.wait()
 	table.sort(_K.Data.logs, _K.Data.sortTime)
+
+	while #_K.Data.logs > 1e5 do
+		table.remove(_K.Data.logs, 1)
+		_K.Util.Defer.wait()
+	end
+
 	task.defer(UI.Scope.dashboard.Logs.updateList, UI.Scope.dashboard.Logs)
 end)
 

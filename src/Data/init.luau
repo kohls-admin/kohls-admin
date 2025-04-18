@@ -223,6 +223,7 @@ local function syncLogs(logs)
 	Hook.preSyncLogs:Fire(logs)
 	Util.Defer.reset()
 	local newLogs = {}
+	local newLogsRaw = {}
 	for _, log in logs do
 		Util.Defer.wait()
 		local text, level, time, from, name = unpack(log)
@@ -243,13 +244,14 @@ local function syncLogs(logs)
 		end
 
 		table.insert(newLogs, { text = text, level = level, time = time, from = from, name = name })
+		table.insert(newLogsRaw, { text, level, time, from, name })
 	end
 	table.move(newLogs, 1, #newLogs, #Data.logs + 1, Data.logs)
 	Util.Defer.wait()
 	table.sort(Data.logs, Data.sortTime)
 	for _, player in Players:GetPlayers() do
 		if Auth.hasPermission(player.UserId, "serverlogs") then
-			Remote.Logs:FireClient(player, newLogs)
+			Remote.Logs:FireClient(player, newLogsRaw)
 		end
 	end
 	Hook.postSyncLogs:Fire(logs)
