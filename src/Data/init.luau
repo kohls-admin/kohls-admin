@@ -353,11 +353,6 @@ function Data.initialize(name)
 
 	Hook.initDataStore:Fire()
 
-	if RunService:IsStudio() then
-		-- Avoid writing studio data to production and stalling test session closing
-		return Data
-	end
-
 	task.spawn(function()
 		repeat
 			task.wait(1)
