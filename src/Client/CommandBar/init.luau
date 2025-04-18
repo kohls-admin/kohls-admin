@@ -341,6 +341,7 @@ local function invalidSuggestion(data, err, pos, text)
 		)}</b></font>{_K.Util.String.escapeRichText(string.sub(data.message, pos + #text))}</font>`
 	)
 	-- TODO: command definition
+	Tooltip.Visible = data.argDefinition ~= nil
 	Tooltip.Text = if not data.argDefinition
 		then ""
 		else string.format(
@@ -431,6 +432,7 @@ updateCompletion = function()
 			_K.Util.String.escapeRichText(data.argDefinition.type) .. if data.argDefinition.optional then "?" else "",
 			data.argDefinition.description
 		)
+		Tooltip.Visible = true
 		TooltipFrame.Visible = true
 		-- TODO: some types should show a widget for fast select e.g. color wheel
 	end
@@ -507,6 +509,7 @@ updateCompletion = function()
 	end
 	if data.argDefinition or data.argIndex == 1 then
 		updateSuggestionLabels(data)
+		Tooltip.Visible = true
 		TooltipFrame.Visible = true
 	end
 
