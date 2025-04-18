@@ -65,6 +65,7 @@ local Data = {
 	updatedTimeBans = 0,
 	updatedTimeMain = 0,
 	updatedTimeLogs = 0,
+	updateAsyncInterval = 15,
 
 	banHandler = nil,
 	banUser = nil,

@@ -19,8 +19,6 @@ if RunService:IsClient() then
 	return Data
 end
 
-local updateAsyncInterval = 30
-
 -- DataStore value limit of 4,194,303 bytes
 local DATA_LIMIT = 2 ^ 22 - 1
 
@@ -61,7 +59,7 @@ local function syncBans(bans)
 	end
 end
 
-local nextBansInterval = tick() + updateAsyncInterval
+local nextBansInterval = tick() + Data.updateAsyncInterval
 local function updateBans()
 	nextBansInterval = math.huge
 	-- flush cache and hold onto references to make sure they are immutable!
@@ -101,7 +99,7 @@ local function updateBans()
 		warn(`[Kohl's Admin] Main Datastore UpdateAsync failed: {result}`)
 	end
 
-	nextBansInterval = tick() + updateAsyncInterval
+	nextBansInterval = tick() + Data.updateAsyncInterval
 
 	return ok, result
 end
@@ -166,7 +164,7 @@ local function syncMain(result)
 	Hook.postSyncMain:Fire(Data)
 end
 
-local nextMainInterval = tick() + updateAsyncInterval
+local nextMainInterval = tick() + Data.updateAsyncInterval
 local function updateMain()
 	nextMainInterval = math.huge
 	local save = false
@@ -214,7 +212,7 @@ local function updateMain()
 		Data.Cache.settings = Util.Table.merge(settings, Data.Cache.settings)
 	end
 
-	nextMainInterval = tick() + updateAsyncInterval
+	nextMainInterval = tick() + Data.updateAsyncInterval
 end
 
 -- LOGS
@@ -261,7 +259,7 @@ local function rawSortTime(a, b)
 	return a[3] > b[3]
 end
 
-local nextLogsInterval = tick() + updateAsyncInterval
+local nextLogsInterval = tick() + Data.updateAsyncInterval
 local function updateLogs()
 	nextLogsInterval = math.huge
 	if Data.settings.saveLogs == false then
@@ -321,7 +319,7 @@ local function updateLogs()
 		Data.Cache.logs = logs
 	end
 
-	nextLogsInterval = tick() + updateAsyncInterval
+	nextLogsInterval = tick() + Data.updateAsyncInterval
 
 	return
 end
