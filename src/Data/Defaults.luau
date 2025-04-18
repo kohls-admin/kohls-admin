@@ -62,6 +62,9 @@ local Data = {
 	sizeBans = 0,
 	sizeMain = 0,
 	sizeLogs = 0,
+	updatedTimeBans = 0,
+	updatedTimeMain = 0,
+	updatedTimeLogs = 0,
 
 	banHandler = nil,
 	banUser = nil,

@@ -73,11 +73,13 @@ local function updateBans()
 	end
 
 	local sync
-	local ok, result = Data.Store.updateAsync("Bans", function(value)
+	local ok, result, metaData = Data.Store.updateAsync("Bans", function(value, metaData)
 		if not value then
 			return Data.Store.filterRemove(bans)
 		end
-		sync = value
+		if metaData.UpdatedTime > Data.updatedTimeBans then
+			sync = value
+		end
 		if not save then
 			return
 		end
@@ -85,11 +87,14 @@ local function updateBans()
 	end)
 
 	if ok then
+		if metaData and (save or sync) then
+			Data.updatedTimeBans = metaData.UpdatedTime
+		end
 		if sync then
-			task.spawn(syncBans, sync)
+			task.spawn(syncBans, result or sync)
 		end
 		task.spawn(function()
-			Data.sizeBans = #Http:JSONEncode(sync or result)
+			Data.sizeBans = #Http:JSONEncode(result or sync)
 			dataLimitWarning(Data.sizeBans, "ban")
 		end)
 	else
@@ -174,12 +179,14 @@ local function updateMain()
 	end
 
 	local sync
-	local ok, result = Data.Store.updateAsync("Main", function(value)
+	local ok, result, metaData = Data.Store.updateAsync("Main", function(value, metaData)
 		if not value then
 			return Data.Store.filterRemove({ members, settings })
 		end
 
-		sync = value
+		if metaData.UpdatedTime > Data.updatedTimeMain then
+			sync = value
+		end
 		if not save then
 			return
 		end
@@ -191,11 +198,14 @@ local function updateMain()
 	end)
 
 	if ok then
+		if metaData and (save or sync) then
+			Data.updatedTimeMain = metaData.UpdatedTime
+		end
 		if sync then
-			task.spawn(syncMain, sync)
+			task.spawn(syncMain, result or sync)
 		end
 		task.spawn(function()
-			Data.sizeMain = #Http:JSONEncode(sync or result)
+			Data.sizeMain = #Http:JSONEncode(result or sync)
 			dataLimitWarning(Data.sizeMain, "member")
 		end)
 	else
@@ -264,12 +274,13 @@ local function updateLogs()
 	end
 
 	local sync
-	local ok, result = Data.Store.updateAsync("Logs", function(value)
+	local ok, result, metaData = Data.Store.updateAsync("Logs", function(value, metaData)
 		if not value then
 			return logs
 		end
-
-		sync = value
+		if metaData.UpdatedTime > Data.updatedTimeLogs then
+			sync = value
+		end
 		if not save then
 			return
 		end
@@ -293,6 +304,9 @@ local function updateLogs()
 	end)
 
 	if ok then
+		if metaData and (save or sync) then
+			Data.updatedTimeLogs = metaData.UpdatedTime
+		end
 		if sync then
 			task.spawn(syncLogs, sync)
 		end
@@ -317,9 +331,10 @@ function Data.initialize(name)
 		return Data
 	end
 
-	local okMain, main = Data.Store.getAsync("Main")
+	local okMain, main, mainMetaData = Data.Store.getAsync("Main")
 	if okMain then
 		if main then
+			Data.updatedTimeMain = mainMetaData.UpdatedTime
 			syncMain(main)
 		else -- first time load
 			local bansKAI, mainKAI = Migrate.KAI()
@@ -335,17 +350,19 @@ function Data.initialize(name)
 		end
 	end
 
-	local okBans, bans = Data.Store.getAsync("Bans")
+	local okBans, bans, bansMetaData = Data.Store.getAsync("Bans")
 	if okBans then
 		if bans then
+			Data.updatedTimeBans = bansMetaData.UpdatedTime
 			syncBans(bans)
 		end
 	end
 
 	if Data.settings.saveLogs ~= false then
-		local okLogs, logs = Data.Store.getAsync("Logs")
+		local okLogs, logs, logsMetaData = Data.Store.getAsync("Logs")
 		if okLogs then
 			if logs then
+				Data.updatedTimeLogs = logsMetaData.UpdatedTime
 				syncLogs(logs)
 			end
 		end
