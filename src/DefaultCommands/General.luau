@@ -364,7 +364,6 @@ return {
 		env = function(_K)
 			local spectators = {}
 			local spectateRemote = _K.Remote.Spectate
-			_K.Flux.Scope.spectatorsCache = spectators
 			_K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe: CFrame)
 				if not spectators[player] then
 					return
@@ -375,7 +374,7 @@ return {
 			end)
 
 			local function spectateCleanup(context)
-				local spectatorCache = context._K.Flux.Scope.spectatorsCache
+				local spectatorCache = spectators
 				for subject, spectators in spectatorCache do
 					local found = table.find(spectators, context.fromPlayer)
 					if found then
@@ -396,7 +395,7 @@ return {
 			end)
 
 			return {
-				spectators = _K.Flux.Scope.spectatorsCache,
+				spectators = spectators,
 				spectateCleanup = spectateCleanup,
 			}
 		end,

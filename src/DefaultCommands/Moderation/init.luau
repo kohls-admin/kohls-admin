@@ -384,9 +384,7 @@ return {
 			},
 		},
 		env = function(_K)
-			local punished = {}
-			_K.Flux.Scope.commandPunished = punished
-			return { punished = punished }
+			return { punished = {} }
 		end,
 
 		run = function(context, players)
@@ -430,7 +428,7 @@ return {
 		end,
 
 		run = function(context, players)
-			local punished = context._K.Flux.Scope.commandPunished
+			local punished = context._K.Registry.commands.punish.env.punished
 			for _, player in players do
 				local character = punished[player.UserId]
 				if character then
@@ -582,9 +580,8 @@ return {
 			},
 		},
 		env = function(_K)
-			_K.Flux.Scope.toolBans = {}
 			return {
-				bans = _K.Flux.Scope.toolBans,
+				bans = {},
 				removeTool = function(tool: Instance)
 					if tool:IsA("Tool") or tool:IsA("HopperBin") then
 						task.defer(tool.Destroy, tool)
@@ -619,11 +616,12 @@ return {
 		},
 
 		run = function(context, players)
+			local toolBans = context._K.Registry.commands.toolban.env.bans
 			for _, player in players do
-				local toolBan = context._K.Flux.Scope.toolBans[player]
+				local toolBan = toolBans[player]
 				if toolBan then
 					toolBan:Disconnect()
-					context._K.Flux.Scope.toolBans[player] = nil
+					toolBans[player] = nil
 				end
 			end
 		end,

@@ -1028,7 +1028,6 @@ return {
 				end
 			end
 
-			_K.Flux.Scope.scaleHead = scaleHead
 			return {
 				scaleHead = scaleHead,
 				big = { "bighead", "largehead", "hugehead" },

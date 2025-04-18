@@ -151,27 +151,6 @@ function Flux.specialKey(): SpecialKey
 end
 
 --- @within Flux
---- @type Scope {[any] = Scope | any}
-Flux.scopeMetatable = {
-	__index = function(self: any, key: string): any
-		if key == "cleanup" then
-			return function()
-				cleanupScope(self)
-			end
-		end
-		-- new scope
-		local new = setmetatable({}, getmetatable(self))
-		self[key] = new
-		return new
-	end,
-}
-
---- @within Flux
---- A scope object for organizing and cleaning up Flux states
---- @prop Scope Scope
-Flux.Scope = setmetatable({}, Flux.scopeMetatable)
-
---- @within Flux
 --- A marker for defining Instance attributes in [Flux.edit]
 --- @prop Attribute SpecialKey
 --- @readonly
