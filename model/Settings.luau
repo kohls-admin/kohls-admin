@@ -1,29 +1,36 @@
+-- Private server owner ID detection
 local PRIVATE_SERVER_OWNER = if game:GetService("RunService"):IsServer() then game.PrivateServerOwnerId else nil
 
 local Settings = {
 
+	-- 🛠️ AUTOMATIC UPDATES
 	-- Automatically updates from the latest official MainModule version.
-        -- Set to false to use the locally included MainModule instead.
+	-- Set to false to use the locally included MainModule instead.
 	autoUpdate = true,
 
+	-- 🔧 COMMAND PREFIX
 	-- Sets the prefix used to run commands in chat (e.g., ";cmd").
 	prefix = ";",
 
+	-- 📊 GAME HUB INTEGRATION
 	--[[
 	Enables participation in the Kohl's Admin Games Hub.
-        Promotes your game to players looking for games that support Kohl's Admin features.
+	Promotes your game to players looking for games that support Kohl's Admin features.
 	https://www.roblox.com/games/17873329124/Games-Hub-Kohls-Admin
 
 	⚠️ Requires "Allow HTTP Requests" to be enabled in Game Settings > Security
 	]]
 	gameHubEnabled = true,
 
+	-- 💎 VIP DONATION FEATURES
 	-- Enables Kohl's Admin VIP donation features (required for games hub)
 	vip = true,
 
+	-- 🗃️ LOG SAVING
 	-- EXPERIMENTAL: Enables saving and syncing logs across servers.
 	saveLogs = false,
 
+	-- 🎮 DASHBOARD BUTTON VISIBILITY
 	--[[
 	Sets the minimum role required to see the Kohl's Admin Dashboard button in the Topbar.
 		0	defaultRole
@@ -32,17 +39,19 @@ local Settings = {
 		3	admin
 		4	superadmin
 		5	creator
-
 		false	Disable for every rank
 	]]
 	dashboardButtonRank = 0,
 
+	-- 🛎️ JOIN NOTIFICATION
 	-- Sets the minimum role required to trigger the Kohl's Admin join notification.
 	joinNotificationRank = 1,
 
+	-- 💬 POPUP DISPLAY
 	-- Shows the "Enjoy Kohl's Admin?" popup to users.
 	getKohlsAdminPopup = true,
 
+	-- ⛔ BANS
 	--[[
 	[UserId] = {Username, Reason, Duration, fromUserId}
 
@@ -57,6 +66,7 @@ local Settings = {
 		["5"] = { nil, "Deleted account", -1, 44391621 },
 	},
 
+	-- 💼 FREE ADMIN ROLES
 	-- Gives everyone access to the uncommented roles
 	freeAdmin = {
 		-- "creator",
@@ -66,12 +76,15 @@ local Settings = {
 		-- "vip",
 	},
 
+	-- 🏢 GROUP ROLES
+	-- Set group-specific roles and ranks
 	groupRoles = {
 		-- [groupId] = {
 		-- { rank = 200, roles = { "admin", "vip" }, exactRank = false },
 		-- },
 	},
 
+	-- 👤 USER ROLES
 	--[[
 	Accepts a list of UserIds, sourced from a Roblox profile
 		For example;
@@ -87,7 +100,8 @@ local Settings = {
 		vip = { 1, 156, PRIVATE_SERVER_OWNER },
 	},
 
-        -- Role definitions with hierarchy, permissions, colors, and available command groups.
+	-- 🏅 ROLE DEFINITIONS
+	-- Role definitions with hierarchy, permissions, colors, and available command groups.
 	roles = {
 		default = { -- This role is given to everyone by default!
 			-- role "_rank" determines hierarchy
@@ -97,7 +111,7 @@ local Settings = {
 			color = "#0ff",
 
 			-- When enabled, users can only target themselves with player arguments.
-                        -- ⚠️ This does not affect commands that use UserIds directly!
+			-- ⚠️ This does not affect commands that use UserIds directly!
 			onlyTargetSelf = true,
 
 			permissions = {
@@ -136,6 +150,8 @@ local Settings = {
 			-- Gives the role automatically if the user has the specified gamepass id
 			gamepass = nil,
 		},
+
+		-- VIP role
 		vip = {
 			_rank = 1,
 			name = "VIP",
@@ -145,6 +161,8 @@ local Settings = {
 			onlyTargetSelf = true,
 			gamepass = nil,
 		},
+
+		-- Moderator role
 		mod = {
 			_rank = 2,
 			name = "Moderator",
@@ -153,6 +171,8 @@ local Settings = {
 			color = "#0f0",
 			gamepass = nil,
 		},
+
+		-- Administrator role
 		admin = {
 			_rank = 3,
 			name = "Administrator",
@@ -160,6 +180,8 @@ local Settings = {
 			permissions = { banasync = true, serverlogs = true },
 			color = "#ff0",
 		},
+
+		-- SuperAdmin role
 		superadmin = {
 			_rank = 4,
 			name = "SuperAdmin",
@@ -167,6 +189,8 @@ local Settings = {
 			permissions = { banasync = true, saveRoles = true, settings = true, serverlogs = true },
 			color = "#f80",
 		},
+
+		-- Creator role (max permissions)
 		creator = {
 			_rank = math.huge,
 			name = "Game Creator",
