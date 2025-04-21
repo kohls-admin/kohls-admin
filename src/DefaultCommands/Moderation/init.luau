@@ -666,6 +666,65 @@ return {
 		end,
 	},
 	{
+		name = "startergive",
+		aliases = { "sgive" },
+		description = "Permanently gives a tool to one or more player(s).\nTools must be a descendant of <b>Lighting</b> or <b>ServerStorage</b>.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to give the tools.",
+			},
+			{
+				type = "tools",
+				name = "Tools",
+				description = "The tools to give.",
+			},
+		},
+
+		run = function(context, players, tools)
+			for _, player in players do
+				local destination = player:FindFirstChildOfClass("StarterGear")
+				if destination then
+					for _, tool in tools do
+						tool:Clone().Parent = destination
+					end
+				end
+			end
+		end,
+	},
+	{
+		name = "starterremove",
+		aliases = { "sremove", "unstartergive", "unsgive" },
+		description = "Permanently removes a tool from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove the tools from.",
+			},
+			{
+				type = "tools",
+				name = "Tools",
+				description = "The tools to remove.",
+			},
+		},
+
+		run = function(context, players, tools)
+			for _, player in players do
+				local source = player:FindFirstChildOfClass("StarterGear")
+				if source then
+					for _, tool in tools do
+						local existing = source:FindFirstChild(tool.Name)
+						if existing then
+							task.spawn(game.Destroy, existing)
+						end
+					end
+				end
+			end
+		end,
+	},
+	{
 		name = "copytools",
 		aliases = { "ctools" },
 		description = "Copies tools from one or more player(s) to one or more player(s).",
