@@ -303,6 +303,107 @@ return {
 		end,
 	},
 	{
+		name = "link",
+		aliases = { "connect", "track" },
+		description = "Links one or more player(s) to your character.",
+		args = {
+			{
+				type = "players",
+				name = "Players",
+				description = "The player(s) to link.",
+				ignoreSelf = true,
+			},
+			{
+				type = "boolean",
+				name = "Persistent",
+				description = "If the link persists through respawn.",
+				optional = true,
+			},
+		},
+		envClient = function(_K)
+			local localPlayer = _K.Services.Players.LocalPlayer
+			local persist, link = {}, nil
+
+			local function characterAddedHandler(character)
+				task.defer(link, _K.Services.Players:GetPlayerFromCharacter(character))
+			end
+
+			link = function(player, persistent)
+				if persistent and not persist[player] then
+					persist[player] = player.CharacterAdded:Connect(characterAddedHandler)
+				end
+
+				local playerRoot = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				local localRoot = localPlayer
+					and localPlayer.Character
+					and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+				local playerAttachment = playerRoot and playerRoot:FindFirstChildOfClass("Attachment")
+				local localAttachment = localRoot and localRoot:FindFirstChildOfClass("Attachment")
+				if playerAttachment and localAttachment then
+					local beam = playerRoot:FindFirstChild("_KBeamLink")
+					if not beam then
+						beam = Instance.new("Beam")
+						beam.Name = "_KBeamLink"
+						beam.Color = ColorSequence.new(Color3.fromHSV(math.random(), 1, math.random()))
+						beam.FaceCamera = true
+						beam.Segments = 1
+						beam.Transparency = NumberSequence.new(0)
+						beam.Width0 = 0.2
+						beam.Width1 = 0.2
+						beam.Parent = playerRoot
+					end
+					beam.Attachment0 = playerAttachment
+					beam.Attachment1 = localAttachment
+				end
+			end
+
+			localPlayer.CharacterAdded:Connect(function()
+				for player in persist do
+					task.defer(link, player)
+				end
+			end)
+
+			return {
+				persist = persist,
+				link = link,
+			}
+		end,
+
+		runClient = function(context, players, persistent)
+			for _, player in players do
+				context.env.link(player, persistent)
+			end
+		end,
+	},
+	{
+		name = "unlink",
+		aliases = { "unconnect", "untrack" },
+		description = "Removes a link from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Players",
+				description = "The player(s) to unlink.",
+				ignoreSelf = true,
+			},
+		},
+
+		runClient = function(context, players)
+			for _, player in players do
+				local connection = context._K.Registry.commands.link.env.persist[player]
+				if connection then
+					connection:Disconnect()
+					context._K.Registry.commands.link.env.persist[player] = nil
+				end
+				local playerRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				local link = playerRoot and playerRoot:FindFirstChild("_KBeamLink")
+				if link then
+					link:Destroy()
+				end
+			end
+		end,
+	},
+	{
 		name = "watch",
 		aliases = { "camera", "follow" },
 		description = "Watches a player with your camera.",
