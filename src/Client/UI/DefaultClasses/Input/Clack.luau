@@ -1,6 +1,7 @@
 local ContentProvider = game:GetService("ContentProvider")
 local TextChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
+local SoundService = game:GetService("SoundService")
 
 local ChatInputBarConfiguration = TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
 
@@ -49,7 +50,7 @@ function module.sound(keycode)
 		sound.Pitch = clackRandom:NextNumber(0.9, 1.1)
 	end
 	sound.SoundId = module.soundList[keyHash + 1]
-	sound.Parent = workspace
+	sound.Parent = SoundService
 	sound:Play()
 	task.delay(2, sound.Destroy, sound)
 	lastHash, lastKey = keyHash, keycode
