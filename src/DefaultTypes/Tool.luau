@@ -2,7 +2,7 @@ local _K
 local tools = {}
 
 local function addTool(tool)
-	if not (tool:IsA("Tool") or tool:IsA("HopperBin")) then
+	if not (tool:IsA("Tool") or tool:IsA("HopperBin")) or tool:HasTag("_K_Ignore") then
 		return
 	end
 	table.insert(tools, tool)
@@ -57,9 +57,15 @@ return function(context)
 
 	if _K.IsServer then
 		for _, tool in _K.Util.Services.Lighting:GetDescendants() do
+			if tool.Parent:HasTag("_K_Ignore") then
+				continue
+			end
 			addTool(tool)
 		end
 		for _, tool in _K.Util.Services.ServerStorage:GetDescendants() do
+			if tool.Parent:HasTag("_K_Ignore") then
+				continue
+			end
 			addTool(tool)
 		end
 		_K.Util.Services.ServerStorage.DescendantAdded:Connect(addTool)
