@@ -605,8 +605,11 @@ return {
 				if context.env.bans[player] then
 					return
 				end
-				context.env.bans[player] = player.Backpack.ChildAdded:Connect(context.env.removeTool)
-				context.env.removeTools(player:FindFirstChildOfClass("Backpack"))
+				local backpack = player:FindFirstChildOfClass("Backpack")
+				if backpack then
+					context.env.bans[player] = backpack.ChildAdded:Connect(context.env.removeTool)
+					context.env.removeTools(backpack)
+				end
 				context.env.removeTools(player.Character)
 			end
 		end,
