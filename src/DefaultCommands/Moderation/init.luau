@@ -728,6 +728,7 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				context.env.removeTools(player:FindFirstChildOfClass("Backpack"))
+				context.env.removeTools(player:FindFirstChildOfClass("StarterGear"))
 				context.env.removeTools(player.Character)
 			end
 		end,
