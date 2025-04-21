@@ -945,6 +945,7 @@ return {
 				if not sword then
 					warn(`Sword failed to load, sword command won't work!`)
 				end
+				sword.Parent = _K.Services.ServerStorage
 				env.sword = sword
 			end)
 
