@@ -62,6 +62,7 @@ return function(context)
 		for _, tool in _K.Util.Services.ServerStorage:GetDescendants() do
 			addTool(tool)
 		end
+		_K.Util.Services.ServerStorage.DescendantAdded:Connect(addTool)
 		table.sort(tools, function(a, b)
 			return a.Name > b.Name
 		end)
