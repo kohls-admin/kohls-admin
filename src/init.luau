@@ -126,8 +126,8 @@ _K.Logger.logs = _K.Data.logs
 
 -- Move tools to ServerStorage
 if _K.IsServer then
-	_K.DefaultTools = script:WaitForChild("DefaultTools")
-	_K.DefaultTools.Parent = _K.Services.ServerStorage
+	_K.Tools = script:WaitForChild("Tools")
+	_K.Tools.Parent = _K.Services.ServerScriptService
 end
 
 -- register initial UI children

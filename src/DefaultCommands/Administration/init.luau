@@ -224,7 +224,7 @@ return {
 			},
 		},
 		env = function(_K)
-			local tool = _K.DefaultTools:WaitForChild("Building Tools")
+			local tool = _K.Tools:WaitForChild("Building Tools")
 			local handle = Instance.new("Part")
 			handle.Name = "Handle"
 			handle.Size = Vector3.new(0.8, 0.8, 0.8)
@@ -269,7 +269,7 @@ return {
 			},
 		},
 		env = function(_K)
-			local server = _K.DefaultTools:WaitForChild("ClassicBuildTools")
+			local server = _K.Tools:WaitForChild("ClassicBuildTools")
 			return { server = server }
 		end,
 
