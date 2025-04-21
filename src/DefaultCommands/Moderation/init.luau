@@ -653,8 +653,11 @@ return {
 
 		run = function(context, players, tools)
 			for _, player in players do
-				for _, tool in tools do
-					tool:Clone().Parent = player.Backpack
+				local destination = player:FindFirstChildOfClass("Backpack")
+				if destination then
+					for _, tool in tools do
+						tool:Clone().Parent = destination
+					end
 				end
 			end
 		end,
