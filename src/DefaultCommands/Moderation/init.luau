@@ -587,6 +587,16 @@ return {
 						task.defer(tool.Destroy, tool)
 					end
 				end,
+				removeTools = function(source: Instance)
+					if not source then
+						return
+					end
+					for _, tool in source:GetChildren() do
+						if tool:IsA("Tool") or tool:IsA("HopperBin") then
+							task.spawn(tool.Destroy, tool)
+						end
+					end
+				end,
 			}
 		end,
 
@@ -596,9 +606,8 @@ return {
 					return
 				end
 				context.env.bans[player] = player.Backpack.ChildAdded:Connect(context.env.removeTool)
-				local removeTools = context._K.Registry.removeTools.env.removeTools
-				removeTools(player:FindFirstChildOfClass("Backpack"))
-				removeTools(player.Character)
+				context.env.removeTools(player:FindFirstChildOfClass("Backpack"))
+				context.env.removeTools(player.Character)
 			end
 		end,
 	},
