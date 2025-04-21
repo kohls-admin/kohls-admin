@@ -246,23 +246,26 @@ end
 
 function Auth.playerHasGlobalVIP(player: Player): boolean
 	local userId = player.UserId
-	local ok, result =
+
+	local success, statusResult =
 		pcall(MarketplaceService.GetUserSubscriptionStatusAsync, MarketplaceService, player, "EXP-4118475727682928968")
-	if ok and result.IsSubscribed then
+	if success and statusResult.IsSubscribed then
 		return true
 	end
 
 	-- legacy donations
 	local vip = { 5391359, 5391361, 5411126 }
 	for _, gamePassId in vip do
-		if MarketplaceService:UserOwnsGamePassAsync(userId, gamePassId) then
+		local ok, result = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, userId, gamePassId)
+		if ok and result then
 			return true
 		end
 	end
 
 	local assetDonations = { 313102724, 423601416 }
 	for _, assetId in assetDonations do
-		if MarketplaceService:PlayerOwnsAsset(player, assetId) then
+		local ok, result = pcall(MarketplaceService.PlayerOwnsAsset, MarketplaceService, player, assetId)
+		if ok and result then
 			return true
 		end
 	end
