@@ -894,10 +894,10 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if not (player.Character and player:FindFirstChild("Backpack")) then
-					continue
+				local backpack = player:FindFirstChildOfClass("Backpack")
+				if backpack then
+					context.env.sword:Clone().Parent = backpack
 				end
-				context.env.sword:Clone().Parent = player.Backpack
 			end
 		end,
 	},
