@@ -31,7 +31,6 @@ local Data = {
 	players = {},
 	roles = nil,
 
-	loaderSettings = {} :: { [string]: any },
 	settings = {
 		prefix = ";",
 		announcement = false,
@@ -42,6 +41,8 @@ local Data = {
 		joinNotificationRank = 1,
 		getKohlsAdminPopup = true,
 		saveLogs = false,
+
+		freeAdmin = {},
 	},
 
 	async = {

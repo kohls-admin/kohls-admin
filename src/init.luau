@@ -193,7 +193,7 @@ local function playerAdded(player: Player)
 		_K.Auth.userRoleAdd(player.UserId, "creator")
 	end
 
-	for _, role in _K.Data.loaderSettings.freeAdmin do
+	for _, role in _K.Data.settings.freeAdmin do
 		_K.Auth.userRoleAdd(player.UserId, role)
 	end
 
@@ -234,26 +234,22 @@ local function playerAdded(player: Player)
 end
 
 local _initialized
-function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requireId: boolean?)
+function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons: Folder?)
 	if _initialized then
 		return _K
 	end
 	_initialized = true
 	local initStart = os.clock()
 
-	if not loaderSettingsModule then
-		error("Loader settings module must be provided!", 2)
+	if typeof(settingsObject) == "Instance" and settingsObject:IsA("ModuleScript") then
+		settingsObject = require(settingsObject)
 	end
-	loaderSettingsModule.Parent = script
 
-	local loaderSettings = require(loaderSettingsModule)
-	_K.Util.Table.merge(_K.Data.loaderSettings, loaderSettings)
+	local settings = settingsObject :: { [string]: any }
 
-	_K.Data.bans = loaderSettings.bans
-	_K.Data.roles = loaderSettings.roles
-
-	-- settings
-	for key, value in loaderSettings do
+	_K.Data.bans = settings.bans
+	_K.Data.roles = settings.roles
+	for key, value in settings do
 		if _K.Data.settings[key] ~= nil then
 			_K.Data.settings[key] = value
 		end
@@ -262,7 +258,7 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 	-- private server datastore
 	local dataStoreKey = "_KData"
 	if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
-		for role, users in loaderSettings.roles do
+		for role, users in settings.roles do
 			if role ~= "creator" and table.find(users, game.PrivateServerOwnerId) then
 				dataStoreKey ..= game.PrivateServerOwnerId
 				break
@@ -287,7 +283,7 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 	end)
 
 	-- define user roles
-	for role, users in loaderSettings.userRoles do
+	for role, users in settings.userRoles do
 		for _, user in users do
 			task.spawn(function()
 				local userId = if type(user) == "string"
@@ -302,11 +298,11 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 	end
 
 	-- gamepass and group roles
-	if loaderSettings.gamePassRoles then
-		_K.Util.Table.deepMerge(_K.Data.async.gamepass, loaderSettings.gamePassRoles)
+	if settings.gamePassRoles then
+		_K.Util.Table.deepMerge(_K.Data.async.gamepass, settings.gamePassRoles)
 	end
-	if loaderSettings.groupRoles then
-		_K.Util.Table.deepMerge(_K.Data.async.group, loaderSettings.groupRoles)
+	if settings.groupRoles then
+		_K.Util.Table.deepMerge(_K.Data.async.group, settings.groupRoles)
 	end
 
 	for role, roleData in _K.Data.roles do
@@ -375,10 +371,8 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 		addons.Parent = script
 	end
 
-	if requireId then
-		script.Parent = _K.Services.ReplicatedStorage
-		script.Name = "Kohl's Admin Source"
-	end
+	script.Name = "Kohl's Admin Source"
+	script.Parent = _K.Services.ReplicatedStorage
 
 	-- enable client
 	Client.Enabled = true
@@ -394,10 +388,17 @@ function _K.initialize(loaderSettingsModule: ModuleScript, addons: Folder?, requ
 	_K.Remote.Init.OnServerEvent:Connect(function(player)
 		local bans = _K.Auth.hasCommand(player.UserId, "ban") and _K.Data.bans
 		local logs = _K.Auth.hasPermission(player.UserId, "serverlogs") and _K.Data.logs
-		_K.Remote.Init:FireClient(player, _K.Data.members, _K.Data.settings, bans, logs, _K.Data.roles)
+		local members = if _K.Auth.hasCommand(player.UserId, "members")
+			then _K.Data.members
+			else {
+				[tostring(player.UserId)] = _K.Data.members[tostring(player.UserId)],
+			}
+
+		_K.Remote.Init:FireClient(player, bans, logs, members, _K.Data.roles, _K.Data.settings)
+
 		if
-			loaderSettings.vip
-			and loaderSettings.gameHubEnabled
+			settings.vip
+			and settings.gameHubEnabled
 			and not Util.Services.HttpService.HttpEnabled
 			and _K.Auth.hasPermission(player.UserId, "settings")
 		then
