@@ -129,7 +129,9 @@ do
 	handle.Parent = BuildingTools
 end
 local SuperCrown, Shine = require(Dependencies.SuperCrown):Clone(), new("Attachment")({ Name = "KShine" })
-Dependencies.Shine:Clone().Parent = Shine
+local shineParticle = Dependencies.Shine:Clone()
+shineParticle.Enabled = true
+shineParticle.Parent = Shine
 local Client = Dependencies.Client:Clone()
 Client.Name = "\n\a\n"
 while FindChild(services.ReplicatedStorage, "\n\a\n") do
