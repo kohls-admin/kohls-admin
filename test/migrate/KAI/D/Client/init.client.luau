@@ -342,7 +342,7 @@ function f.PredictCmds(a, b)
 	a, b = a:lower():gsub(Set.Prefix, ""), {}
 	for i, v in Cmds do
 		for i, c in v[1] do
-			if c:lower():find("^" .. a) and (Admins[plr.userId] or 0) >= (v[3] or 0) then
+			if c:lower():find("^" .. a) and math.abs(Admins[plr.userId] or 0) >= (v[3] or 0) then
 				table.insert(
 					b,
 					(v[2][2] and c .. " " .. (v[2][2] or "") .. "\t" or "")
