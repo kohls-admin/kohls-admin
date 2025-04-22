@@ -376,10 +376,9 @@ return {
 					player.Character.Archivable = true
 					local clone = player.Character:Clone()
 					player.Character.Archivable = false
-					table.insert(context._K.cleanupCommands, clone)
 					clone.Parent = workspace
-					clone:MoveTo(player.Character:GetPivot().Position)
 					table.insert(context._K.cleanupCommands, clone)
+					clone:MoveTo(player.Character:GetPivot().Position)
 				end
 			end
 		end,
