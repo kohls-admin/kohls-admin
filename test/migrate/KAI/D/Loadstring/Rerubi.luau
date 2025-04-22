@@ -807,6 +807,6 @@ end;
 
 return function(BCode, Env) -- lua_function LoadBytecode (string BCode, table Env)
 	local Buffer	= GetMeaning(BCode);
-	
-	return Wrap(Buffer, Env or getfenv(0)), Buffer;
+
+	return Wrap(Buffer, Env or getfenv(debug.info(0, "f"))), Buffer;
 end;
