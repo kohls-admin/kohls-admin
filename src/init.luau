@@ -247,6 +247,15 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 
 	local settings = settingsObject :: { [string]: any }
 
+	-- format array role hierarchy
+	for rank, definition in settings.roles do
+		if type(rank) == "number" then
+			definition._rank = rank
+			settings.roles[definition._key] = definition
+			settings.roles[rank] = nil
+		end
+	end
+
 	_K.Data.bans = settings.bans
 	_K.Data.roles = settings.roles
 	for key, value in settings do

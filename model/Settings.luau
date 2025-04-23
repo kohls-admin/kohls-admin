@@ -103,10 +103,9 @@ local Settings = {
 	-- 🏅 ROLE DEFINITIONS
 	-- Role definitions with hierarchy, permissions, colors, and available command groups.
 	roles = {
-		default = { -- This role is given to everyone by default!
-			-- role "_rank" determines hierarchy
-			-- 0 is reserved for the default role
-			_rank = 0,
+		{ -- Default Role (Base permissions for all users)
+			_key = "default", -- DO NOT CHANGE: System identifier
+
 			name = "Player",
 			color = "#0ff",
 
@@ -151,9 +150,8 @@ local Settings = {
 			gamepass = nil,
 		},
 
-		-- VIP role
-		vip = {
-			_rank = 1,
+		{ -- VIP Role
+			_key = "vip", -- DO NOT CHANGE: System identifier
 			name = "VIP",
 			groups = { "vip" },
 			permissions = {},
@@ -162,9 +160,8 @@ local Settings = {
 			gamepass = nil,
 		},
 
-		-- Moderator role
-		mod = {
-			_rank = 2,
+		{ -- Moderator Role
+			_key = "mod", -- DO NOT CHANGE: System identifier
 			name = "Moderator",
 			groups = { "moderation", "general", "environment", "fun", "vip" },
 			permissions = { serverlogs = true },
@@ -172,27 +169,24 @@ local Settings = {
 			gamepass = nil,
 		},
 
-		-- Administrator role
-		admin = {
-			_rank = 3,
+		{ -- Administrator Role
+			_key = "admin", -- DO NOT CHANGE: System identifier
 			name = "Administrator",
 			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
 			permissions = { banasync = true, serverlogs = true },
 			color = "#ff0",
 		},
 
-		-- SuperAdmin role
-		superadmin = {
-			_rank = 4,
+		{ -- SuperAdmin Role
+			_key = "superadmin", -- DO NOT CHANGE: System identifier
 			name = "SuperAdmin",
 			groups = { "superadmin", "administration", "moderation", "general", "environment", "fun", "vip" },
 			permissions = { banasync = true, saveRoles = true, settings = true, serverlogs = true },
 			color = "#f80",
 		},
 
-		-- Creator role (max permissions)
-		creator = {
-			_rank = math.huge,
+		[math.huge] = { -- Creator Role (Highest Authority)
+			_key = "creator", -- DO NOT CHANGE: System identifier
 			name = "Game Creator",
 			permissions = { admin = true },
 			color = "#f00",
