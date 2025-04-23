@@ -1,5 +1,4 @@
 local _K = require(script.Parent)
-local Flux = _K.Flux
 local UI = _K.UI
 
 _K.Announce = require(script:WaitForChild("Announce"))
@@ -13,14 +12,14 @@ _K.client = {
 
 	ready = false,
 	hotkeys = {
-		dashboard = { key = Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
+		dashboard = { key = _K.Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
 	},
 	settings = {},
 }
 
-_K.client.members = Flux.state(_K.Data.members)
-_K.client.bans = Flux.state(_K.Data.bans)
-_K.client.logs = Flux.state(_K.Data.logs)
+_K.client.members = _K.Flux.state(_K.Data.members)
+_K.client.bans = _K.Flux.state(_K.Data.bans)
+_K.client.logs = _K.Flux.state(_K.Data.logs)
 
 -- Flux stateful settings
 for key, value in _K.Data.settings do
