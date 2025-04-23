@@ -8,7 +8,7 @@ local Registry = require(script.Parent.Registry)
 local Remote = require(script.Parent.Remote)
 local Util = require(script.Parent.Util)
 
-export type Role = "default" | "vip" | "mod" | "admin" | "superadmin" | "creator"
+export type Role = "default" | "vip" | "mod" | "admin" | "superadmin" | "creator" | string
 
 --- @class Auth
 local Auth = {}
@@ -148,25 +148,30 @@ function Auth.networkMember(userId: number)
 	end
 end
 
+local function cacheMember(key, userId)
+	Data.Cache.members[key] = { Util.getUserInfo(userId).Username, Data.members[key].persist }
+end
+
+local function updateMemberName(member, userId)
+	member.name = Util.getUserInfo(userId).Username
+end
+
 --- Adds a role to a user if they don't already have it
 function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolean
-	local player = Players:GetPlayerByUserId(userId)
-	local member = Data.members[tostring(userId)]
+	local key = tostring(userId)
+	local member = Data.members[key]
 	local roleAdded = false
 
 	if not member then
 		member = {
-			name = if player then player.Name else nil,
+			name = nil,
 			roles = { role },
 			persist = { if persist then role else nil },
 		}
-		if not player then
-			task.spawn(function()
-				member.name = Util.getUserInfo(userId).Username
-			end)
-		end
-		Data.members[tostring(userId)] = member
+		Data.members[key] = member
 		roleAdded = true
+
+		task.spawn(updateMemberName, member, userId)
 	else
 		if not table.find(member.roles, role) then
 			table.insert(member.roles, role)
@@ -180,18 +185,12 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	end
 
 	if roleAdded then
+		if persist then
+			task.spawn(cacheMember, key, userId)
+		end
+
 		Hook.roleAdded:Fire(userId, role)
 		Auth.networkMember(userId)
-	end
-
-	if persist and roleAdded then
-		task.spawn(function()
-			local key = tostring(userId)
-			local cache = Data.Cache.members
-
-			cache[key] = cache[key] or { if player then player.Name else Util.getUserInfo(userId).Username }
-			cache[key][2] = Data.members[key].persist
-		end)
 	end
 
 	return roleAdded
@@ -199,9 +198,11 @@ end
 
 --- Removes a role from a user if it exists
 function Auth.userRoleRemove(userId: number, role: Role): boolean
-	local member = Data.members[tostring(userId)]
+	local key = tostring(userId)
+	local member = Data.members[key]
 	local roleRemoved = false
 	local persistent = false
+
 	if member then
 		local index = table.find(member.roles, role)
 		if index then
@@ -218,27 +219,19 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 
 	if roleRemoved then
 		if #member.roles == 0 and #member.persist == 0 then
-			Data.members[tostring(userId)] = nil
+			Data.members[key] = nil
 		end
+
+		if persistent then
+			if #member.persist == 0 then
+				Data.Cache.members[key] = Data.Store.REMOVE
+			else
+				task.spawn(cacheMember, key, userId)
+			end
+		end
+
 		Hook.roleRemoved:Fire(userId, role)
 		Auth.networkMember(userId)
-	end
-
-	if persistent then
-		local key = tostring(userId)
-		local cache = Data.Cache.members
-		local persist = Data.members[key].persist
-
-		if #persist == 0 then
-			cache[key] = Data.Store.REMOVE
-		else
-			task.spawn(function()
-				if not cache[key] then
-					cache[key] = { member and member.name or Util.getUserInfo(userId).Username }
-				end
-				cache[key][2] = persist
-			end)
-		end
 	end
 
 	return roleRemoved
