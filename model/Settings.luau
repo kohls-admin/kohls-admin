@@ -1,64 +1,69 @@
--- Private server owner ID detection
+--[[
+	Kohl's Admin Settings
+	This file contains all the configuration options for the Kohl's Admin system.
+]]
+
+-- Detect private server owner ID
 local PRIVATE_SERVER_OWNER = if game:GetService("RunService"):IsServer() then game.PrivateServerOwnerId else nil
 
 local Settings = {
 
-	-- 🛠️ AUTOMATIC UPDATES
-	-- Automatically updates from the latest official MainModule version.
-	-- Set to false to use the locally included MainModule instead.
+	-- 🛠️ Auto-Update Configuration
+	-- When true: Automatically fetches and uses the latest official MainModule version
+	-- When false: Uses the locally included MainModule version instead
 	autoUpdate = true,
 
-	-- 🔧 COMMAND PREFIX
-	-- Sets the prefix used to run commands in chat (e.g., ";cmd").
+	-- 🔧 Command Configuration
+	-- The prefix character used to trigger commands (e.g., ";kick player")
 	prefix = ";",
 
-	-- 📊 GAME HUB INTEGRATION
-	--[[
-	Enables participation in the Kohl's Admin Games Hub.
-	Promotes your game to players looking for games that support Kohl's Admin features.
-	https://www.roblox.com/games/17873329124/Games-Hub-Kohls-Admin
-
-	⚠️ Requires "Allow HTTP Requests" to be enabled in Game Settings > Security
-	]]
+	-- 📊 Game Hub Integration
+	-- Enables integration with the Kohl's Admin Games Hub:
+	-- Lists your game in the hub's directory, making it discoverable by players seeking Kohl's Admin games
+	-- Hub URL: https://www.roblox.com/games/17873329124/Games-Hub-Kohls-Admin
+	-- ⚠️ Important: Requires "Allow HTTP Requests" in Game Settings > Security
 	gameHubEnabled = true,
 
-	-- 💎 VIP DONATION FEATURES
-	-- Enables Kohl's Admin VIP donation features (required for games hub)
+	-- 💎 VIP Features
+	-- Enables VIP-specific features and donation support
+	-- Note: Required if gameHubEnabled is true
 	vip = true,
 
-	-- 🗃️ LOG SAVING
-	-- EXPERIMENTAL: Enables saving and syncing logs across servers.
+	-- 🗃️ Log Management
+	-- Experimental: When enabled, saves and syncs admin logs across multiple servers
 	saveLogs = false,
 
-	-- 🎮 DASHBOARD BUTTON VISIBILITY
+	-- 🎮 Dashboard Access Control
 	--[[
-	Sets the minimum role required to see the Kohl's Admin Dashboard button in the Topbar.
-		0	defaultRole
-		1	vip
-		2	mod
-		3	admin
-		4	superadmin
-		5	creator
-		false	Disable for every rank
+	Controls visibility of the Kohl's Admin Dashboard button in the Topbar
+	Rank values:
+		0: Default role (everyone)
+		1: VIP
+		2: Moderator
+		3: Administrator
+		4: SuperAdmin
+		5: Creator
+		false: Hidden from all ranks
 	]]
 	dashboardButtonRank = 0,
 
-	-- 🛎️ JOIN NOTIFICATION
-	-- Sets the minimum role required to trigger the Kohl's Admin join notification.
+	-- 🛎️ Join Notifications
+	-- Minimum rank required to trigger join notifications
+	-- Uses same rank values as dashboardButtonRank
 	joinNotificationRank = 1,
 
-	-- 💬 POPUP DISPLAY
-	-- Shows the "Enjoy Kohl's Admin?" popup to users.
+	-- 💬 Feedback System
+	-- When true, shows the "Enjoy Kohl's Admin?" feedback popup to users
 	getKohlsAdminPopup = true,
 
-	-- ⛔ BANS
+	-- ⛔ Ban Database
 	--[[
-	[UserId] = {Username, Reason, Duration, fromUserId}
+	Stores active bans in format: [UserId] = {Username, Reason, Duration, BannedByUserId}
 
-	Ban duration
-		-1 forever
-		0 server session
-		>0 UTC time in seconds
+	Duration values:
+		-1: Permanent ban
+		0:  Server-session ban (until server restart)
+		>0: Temporary ban (UTC timestamp in seconds for ban expiry)
 	]]
 	bans = {
 		["2"] = { "John Doe", "He been noob.", nil, 44391621 },
@@ -66,88 +71,87 @@ local Settings = {
 		["5"] = { nil, "Deleted account", -1, 44391621 },
 	},
 
-	-- 💼 FREE ADMIN ROLES
-	-- Gives everyone access to the uncommented roles
+	-- 💼 Universal Roles
+	-- When uncommented, grants specified roles to all players
+	-- Warning: Use with caution as this affects everyone who joins
 	freeAdmin = {
-		-- "creator",
-		-- "superadmin",
-		-- "admin",
-		-- "mod",
-		-- "vip",
+		-- "creator",     -- Highest authority
+		-- "superadmin",  -- Full control except core settings
+		-- "admin",       -- General administration
+		-- "mod",         -- Basic moderation
+		-- "vip",         -- Special features
 	},
 
-	-- 🏢 GROUP ROLES
-	-- Set group-specific roles and ranks
+	-- 🏢 Group-Based Roles
+	-- Automatically assigns roles based on Roblox group membership and rank
 	groupRoles = {
 		-- [groupId] = {
-		-- { rank = 200, roles = { "admin", "vip" }, exactRank = false },
+		-- 	{ rank = 200, roles = { "admin", "vip" }, exactRank = false },
 		-- },
 	},
 
-	-- 👤 USER ROLES
+	-- 👤 User-Specific Roles
 	--[[
-	Accepts a list of UserIds, sourced from a Roblox profile
-		For example;
-			https://www.roblox.com/users/44391621/profile
-			Has a UserId of 44391621
-		Use "PRIVATE_SERVER_OWNER" for private servers!
+	Assigns roles to specific Roblox users by their UserID
+
+	To find a UserID:
+	1. Visit a user's profile (e.g., https://www.roblox.com/users/44391621/profile)
+	2. The number in the URL is their UserID (44391621 in this example)
+
+	Special values:
+	- PRIVATE_SERVER_OWNER: Automatically targets private server owner
 	]]
 	userRoles = {
-		creator = {},
-		superadmin = {},
-		admin = {},
-		mod = {},
-		vip = { 1, 156, PRIVATE_SERVER_OWNER },
+		creator = {}, -- Highest level access
+		superadmin = {}, -- Extended administrative access
+		admin = {}, -- Standard administrative access
+		mod = {}, -- Moderation access
+		vip = { 1, 156, PRIVATE_SERVER_OWNER }, -- Special features access
 	},
 
-	-- 🏅 ROLE DEFINITIONS
-	-- Role definitions with hierarchy, permissions, colors, and available command groups.
+	-- 🏅 Role Configuration
+	-- Defines the hierarchy, permissions, and capabilities of each role
 	roles = {
 		{ -- Default Role (Base permissions for all users)
 			_key = "default", -- DO NOT CHANGE: System identifier
 
-			name = "Player",
-			color = "#0ff",
+			name = "Player", -- Display name
+			color = "#0ff", -- Role color, hex only!
 
-			-- When enabled, users can only target themselves with player arguments.
-			-- ⚠️ This does not affect commands that use UserIds directly!
+			-- Target Restriction
+			-- When true: Users can only use commands on themselves
+			-- ⚠️ Note: Does not restrict commands using direct UserIDs
 			onlyTargetSelf = true,
 
+			-- Permission Flags
 			permissions = {
-				-- this permission bypasses all restrictions (danger!)
-				admin = false,
-				-- can ban users via banasync, otherwise only per server session if has ban command
-				banasync = false,
-				-- allows the user to manage saved roles of other users with a lesser role
-				saveRoles = false,
-				-- can configure the global admin settings
-				settings = false,
-				-- can view server-side logs
-				serverlogs = false,
+				admin = false, -- ⚠️ Complete bypass of all restrictions
+				banasync = false, -- Permanent ban capability
+				saveRoles = false, -- Role management for lower ranks
+				settings = false, -- Global admin settings access
+				serverlogs = false, -- Server-side log access
 			},
 
-			-- allowed command groups
+			-- Command Access Groups
 			groups = {
-				-- "creator",
-				-- "administration",
-				-- "moderation",
-				-- "environment",
-				-- "general",
-				-- "fun",
-				-- "vip",
-				"utility",
+				-- "creator",        -- System-level commands
+				-- "administration", -- Administrative tools
+				-- "moderation",     -- Moderation tools
+				-- "environment",    -- World manipulation
+				-- "general",        -- Staff utilities
+				-- "fun",            -- Entertainment commands
+				-- "vip",            -- Special features
+				"utility", -- Common utilities
 			},
 
-			-- command overrides
+			-- Command-Specific Overrides
 			commands = {
-				-- allow the help command
-				help = true,
-				-- disable the shutdown command if given to role by a command group
-				shutdown = false,
+				help = true, -- Enable help command
+				shutdown = false, -- Disable shutdown capability
 			},
 
-			-- Gives the role automatically if the user has the specified gamepass id
-			gamepass = nil,
+			-- Auto-Role Assignment
+			gamepass = nil, -- GamePass ID for automatic role granting
 		},
 
 		{ -- VIP Role
@@ -157,7 +161,7 @@ local Settings = {
 			permissions = {},
 			color = "#0f8",
 			onlyTargetSelf = true,
-			gamepass = nil,
+			gamepass = nil, -- Set to your VIP GamePass ID
 		},
 
 		{ -- Moderator Role
@@ -166,7 +170,7 @@ local Settings = {
 			groups = { "moderation", "general", "environment", "fun", "vip" },
 			permissions = { serverlogs = true },
 			color = "#0f0",
-			gamepass = nil,
+			gamepass = nil, -- Set to your Moderator GamePass ID
 		},
 
 		{ -- Administrator Role
@@ -188,7 +192,7 @@ local Settings = {
 		[math.huge] = { -- Creator Role (Highest Authority)
 			_key = "creator", -- DO NOT CHANGE: System identifier
 			name = "Game Creator",
-			permissions = { admin = true },
+			permissions = { admin = true }, -- Full system access
 			color = "#f00",
 		},
 	},
