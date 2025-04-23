@@ -40,19 +40,14 @@ local function migrateKAI()
 		end
 
 		if admins then
+			local defaultRoles = { "vip", "mod", "admin", "superadmin", "creator" }
 			for userId, power in deserializeItem(admins) do
 				if not (userId or power) or power >= 0 then
 					continue
 				end
-				power = math.min(math.abs(power), 5)
-				for role, roleData in Data.roles do
-					if roleData._rank == power then
-						main[1][tostring(userId)] = {
-							nil,
-							{ role },
-						}
-						break
-					end
+				local role = defaultRoles[math.min(math.abs(power), 5)]
+				if role then
+					main[1][tostring(userId)] = { nil, { role } }
 				end
 			end
 		end
