@@ -18,10 +18,10 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 	local results = {}
 	local textLower = string.lower(text)
 
-	for key, name in names do
-		local nameQuery, nameDisplay = name, nil
+	for index, name in names do
+		local nameQuery, nameDisplay, key = name, nil, index
 		if type(name) == "table" then
-			nameQuery, nameDisplay = unpack(name)
+			nameQuery, nameDisplay, key = unpack(name)
 		end
 
 		local quoted
