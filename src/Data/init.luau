@@ -104,6 +104,12 @@ local function updateBans()
 	return ok, result
 end
 
+local function fillMemberName(key, data)
+	local userId = tonumber(key)
+	data.name = Util.getUserInfo(userId).Username
+	Data.Cache.members[key] = { data.name, data.persist }
+end
+
 local function syncMain(result)
 	Hook.preSyncMain:Fire(result)
 	local members, settings = unpack(result)
@@ -136,6 +142,13 @@ local function syncMain(result)
 		end
 	end
 	Util.Table.merge(Data.members, members)
+
+	-- fill missing names
+	for key, data in Data.members do
+		if not data.name and #data.persist > 0 then
+			task.spawn(fillMemberName, key, data)
+		end
+	end
 
 	-- deserialize settings
 	for key, setting in settings do
