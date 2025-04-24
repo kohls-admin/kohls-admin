@@ -224,7 +224,7 @@ local function playerAdded(player: Player)
 				_K.Process.runCommands(_K, player.UserId, string.sub(message, commandStart))
 			end
 		end
-		_K.log(Util.String.filterForBroadcast(message, player.UserId), "CHAT", player.UserId)
+		_K.log(message, "CHAT", player.UserId)
 	end)
 
 	if _K.Data.settings.announcement then
