@@ -81,7 +81,8 @@ local function dashboardToggle(button)
 	dashboard._instance.Visible = button.isSelected
 end
 
-local buttonEnabled = _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
+local buttonEnabled = _K.Data.settings.dashboardButtonRank
+	and _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
 local dashboardButton = TopbarPlus.new()
 	:setName("KADashboardIcon")
 	:setCaption("Kohl's Admin Dashboard")
