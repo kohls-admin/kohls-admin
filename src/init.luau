@@ -173,12 +173,12 @@ local function characterAdded(character: Model)
 		local tag = humanoid:FindFirstChild("creator")
 		local killer = tag and tag.Value
 		if killer then
-			_K.log(`died to {killer}.`, "DEATH", player.UserId)
+			_K.log(`died to {killer}.`, "DEATH", player.UserId, true)
 			if typeof(killer) == "Instance" and killer:IsA("Player") then
-				_K.log(`killed {player}.`, "KILL", killer.UserId)
+				_K.log(`killed {player}.`, "KILL", killer.UserId, true)
 			end
 		else
-			_K.log(`died.`, "DEATH", player.UserId)
+			_K.log(`died.`, "DEATH", player.UserId, true)
 		end
 	end)
 end
@@ -188,7 +188,7 @@ local function playerAdded(player: Player)
 		task.wait()
 	until _K.Data.roles
 
-	task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
+	task.spawn(_K.log, "joined the server.", "JOIN", player.UserId, true)
 	if _K.Services.RunService:IsStudio() then
 		_K.Auth.userRoleAdd(player.UserId, "creator")
 	end
@@ -328,7 +328,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		if not purchaseSuccess then
 			return
 		end
-		_K.log(`bought gamepass {gamePassId}`, "PURCHASE", player.UserId)
+		_K.log(`bought gamepass {gamePassId}`, "PURCHASE", player.UserId, true)
 		for id, roles in _K.Data.async.gamepass do
 			if gamePassId ~= id then
 				continue
@@ -462,7 +462,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	_K.Remote.Unban.OnServerEvent:Connect(function(player, userId)
 		local ban = _K.Data.bans[tostring(userId)]
 		if ban and _K.Auth.hasCommand(player.UserId, "unban") then
-			_K.log(`{_K.Data.settings.prefix}unban {userId}`, "COMMAND", player.UserId)
+			_K.log(`{_K.Data.settings.prefix}unban {userId}`, "COMMAND", player.UserId, true)
 			_K.Auth.userUnban(userId, player.UserId)
 		end
 	end)
@@ -471,7 +471,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 
 	_K.Util.SafePlayerAdded(playerAdded)
 	_K.Util.Services.Players.PlayerRemoving:Connect(function(player)
-		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId)
+		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId, true)
 	end)
 
 	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
