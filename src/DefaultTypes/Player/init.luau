@@ -82,6 +82,12 @@ local function baseSuggestions(text, from, definition)
 		end
 		table.insert(names, player.DisplayName)
 		table.insert(instances, player)
+
+		local kDisplay = player:GetAttribute("_KDisplayName")
+		if kDisplay and not nameUsed(names, kDisplay) then
+			table.insert(names, kDisplay)
+			table.insert(instances, player)
+		end
 	end
 
 	-- add prefix suggestions
@@ -96,17 +102,37 @@ local function parseIndividual(arg, self)
 	if arg == "" or arg == "me" then
 		return sanitizePlayer(self, self.command.fromPlayer)
 	end
+
+	local partial
 	for _, player in Players:GetPlayers() do
-		if string.find(string.lower(player.Name), arg, 1, true) == 1 then
+		local name = string.lower(player.Name)
+		if name == arg then
 			return sanitizePlayer(self, player)
 		end
-	end
-	for _, player in Players:GetPlayers() do
-		if string.find(string.lower(player.DisplayName), arg, 1, true) == 1 then
-			return sanitizePlayer(self, player)
+		if not partial and string.find(name, arg, 1, true) == 1 then
+			partial = player
 		end
 	end
-	return
+
+	for _, player in Players:GetPlayers() do
+		local displayName = string.lower(player.DisplayName)
+		local kDisplay = player:GetAttribute("_KDisplayName")
+		kDisplay = if type(kDisplay) == "string" then string.lower(kDisplay) else ""
+		if displayName == arg or kDisplay == arg then
+			return sanitizePlayer(self, player)
+		end
+		if
+			not partial and (string.find(displayName, arg, 1, true) == 1 or (string.find(kDisplay, arg, 1, true) == 1))
+		then
+			partial = player
+		end
+	end
+
+	if partial then
+		return sanitizePlayer(self, partial)
+	end
+
+	return nil, "Invalid player"
 end
 
 local typeIndividual = {

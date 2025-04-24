@@ -514,8 +514,13 @@ return {
 		end,
 
 		run = function(context, players, displayName)
+			if context.undo then
+				displayName = nil
+			end
+
 			for _, player in players do
 				context.env[player.UserId] = displayName
+				player:SetAttribute("_KDisplayName", displayName)
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
 					humanoid.DisplayName = displayName or player.DisplayName
