@@ -1,13 +1,6 @@
 local _K
 local tools = {}
 
-local function addTool(tool)
-	if not (tool:IsA("Tool") or tool:IsA("HopperBin")) or tool:HasTag("_K_Ignore") then
-		return
-	end
-	table.insert(tools, tool)
-end
-
 local typeTool = {
 	validate = function(input: string, from: number): (boolean, string?)
 		local query = string.lower(input)
@@ -56,22 +49,37 @@ return function(context)
 	_K = context
 
 	if _K.IsServer then
-		for _, tool in _K.Util.Services.Lighting:GetDescendants() do
-			if tool.Parent:HasTag("_K_Ignore") then
-				continue
-			end
-			addTool(tool)
-		end
-		for _, tool in _K.Util.Services.ServerStorage:GetDescendants() do
-			if tool.Parent:HasTag("_K_Ignore") then
-				continue
-			end
-			addTool(tool)
-		end
-		_K.Util.Services.ServerStorage.DescendantAdded:Connect(addTool)
-		table.sort(tools, function(a, b)
+		local function sortName(a, b)
 			return a.Name > b.Name
+		end
+		local debounceSort = _K.Util.Function.debounce(0.2, function()
+			table.sort(tools, sortName)
 		end)
+
+		local function addTool(tool)
+			if
+				not (tool:IsA("Tool") or tool:IsA("HopperBin"))
+				or tool:HasTag("_K_Ignore")
+				or tool.Parent:HasTag("_K_Ignore")
+			then
+				return
+			end
+			table.insert(tools, tool)
+			debounceSort()
+		end
+
+		local function registerSource(source)
+			for _, tool in source:GetDescendants() do
+				addTool(tool)
+			end
+			source.DescendantAdded:Connect(addTool)
+		end
+
+		registerSource(_K.Util.Services.Lighting)
+		registerSource(_K.Util.Services.ReplicatedStorage)
+		registerSource(_K.Util.Services.ServerStorage)
+		registerSource(_K.Util.Services.StarterPack)
+
 		_K.Remote.Tools.OnServerEvent:Connect(function(player)
 			local toolData = table.create(#tools)
 			for i, tool in tools do
@@ -79,7 +87,7 @@ return function(context)
 			end
 			_K.Remote.Tools:FireClient(player, toolData)
 		end)
-	else
+	else -- Client
 		_K.Remote.Tools.OnClientEvent:Connect(function(toolData)
 			tools = toolData
 			_K.tools = tools
