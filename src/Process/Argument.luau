@@ -44,7 +44,7 @@ function Argument:transform()
 		local argType = self.rawType
 		if argType.prefixes then
 			for prefix, prefixType in argType.prefixes do
-				if string.find(rawArg, prefix, 1, true) == 1 then
+				if string.find(rawArg, prefix) == 1 then
 					argType = self._K.Registry.types[prefixType]
 					rawArg = string.sub(rawArg, #prefix + 1)
 					break

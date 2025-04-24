@@ -26,19 +26,19 @@ local _K = nil
 ]]
 
 local prefixSuggestions = {
-	{ "*", "*\t(Everyone)", "allPlayers" },
-	{ "@", "@\t(Roles)", "rolePlayers" },
-	{ "%", "%\t(Teams)", "teamPlayers" },
-	{ "~", "~\t(Random)", "randomPlayers" },
-	{ "$", "$\t(Special)", "specialPlayers" },
-	{ "all", "all  (Everyone)", "allPlayers" },
-	{ "others", "others (Everyone else)", "otherPlayers" },
+	{ "*", "*\t(Everyone)", "allPlayers", "^%*$" },
+	{ "@", "@\t(Roles)", "rolePlayers", "@" },
+	{ "%", "%\t(Teams)", "teamPlayers", "%%" },
+	{ "~", "~\t(Random)", "randomPlayers", "~" },
+	{ "$", "$\t(Special)", "specialPlayers", "%$" },
+	{ "all", "all  (Everyone)", "allPlayers", "^all$" },
+	{ "others", "others (Everyone else)", "otherPlayers", "^others$" },
 }
 
 local prefixes = {}
 for prefixType, list in prefixSuggestions do
-	prefixes[list[1]] = list[3]
-	list[3] = nil
+	prefixes[list[4]] = list[3]
+	list[3], list[4] = nil, nil
 end
 
 local function nameUsed(names, name)

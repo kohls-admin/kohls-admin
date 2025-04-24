@@ -31,7 +31,7 @@ local typeTool = {
 	log = function(arg)
 		return _K.Util.Table.concat(arg.parsedArgs, ",")
 	end,
-	prefixes = { all = "allTools" },
+	prefixes = { ["^all$"] = "allTools" },
 }
 
 local function allParse()
