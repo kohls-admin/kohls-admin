@@ -18,6 +18,9 @@ local typeEveryone = {
 	listable = true,
 	transform = string.lower,
 	validate = generateValidate(allParse),
+	suggestions = function(text, self)
+		return { { text, nil, text .. string.rep(" ", 5 - #text) .. "(Everyone)" } }
+	end,
 	parse = allParse,
 }
 
