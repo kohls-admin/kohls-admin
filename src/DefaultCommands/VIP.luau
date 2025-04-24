@@ -99,6 +99,7 @@ return {
 		},
 
 		run = function(context, players, size, color, secondaryColor)
+			size = math.min(size or 5, if context._K.Auth.getRank(context.from) <= 1 then 5 else math.huge)
 			for _, player in players do
 				local root = player.Character
 					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
@@ -112,7 +113,7 @@ return {
 				local fire = context._K.Flux.new "Fire" {
 					Parent = root,
 					Name = "_KFire",
-					Size = math.min(size or 5, if context._K.Auth.getRank(player.UserId) <= 1 then 5 else math.huge),
+					Size = size,
 				}
 				if color then
 					fire.Color = color
@@ -303,6 +304,7 @@ return {
 		},
 
 		run = function(context, players, range, color)
+			range = math.min(range or 8, if context._K.Auth.getRank(context.from) <= 1 then 10 else math.huge)
 			for _, player in players do
 				local root = player.Character
 					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
@@ -316,7 +318,7 @@ return {
 				context._K.Flux.new "PointLight" {
 					Parent = root,
 					Name = "_KLight",
-					Range = math.min(range or 8, if context._K.Auth.getRank(player.UserId) <= 1 then 10 else math.huge),
+					Range = range,
 					Color = color or Color3.new(1, 1, 1),
 				}
 			end
