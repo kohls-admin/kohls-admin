@@ -12,6 +12,7 @@
 				"Anchored": true,
 				"CanCollide": false,
 				"CastShadow": false,
+				"Color": [0, 0, 0],
 				"Size": [4, 4, 0.001],
 				"Transparency": 0,
 				"Material": "SmoothPlastic"
