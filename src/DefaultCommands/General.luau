@@ -41,24 +41,14 @@ return {
 		},
 
 		run = function(context, message)
-			local ok, result = pcall(
-				TextService.FilterStringAsync,
-				TextService,
-				message,
-				context.from,
-				Enum.TextFilterContext.PublicChat
-			)
-
+			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return
 			end
-
 			for _, player in Players:GetPlayers() do
 				task.spawn(function()
-					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
-					if success then
-						context._K.Remote.Announce:FireClient(player, msg, context.from)
-					end
+					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
+					context._K.Remote.Announce:FireClient(player, msg, context.from)
 				end)
 			end
 		end,
@@ -81,24 +71,14 @@ return {
 		},
 
 		run = function(context, players, message)
-			local ok, result = pcall(
-				TextService.FilterStringAsync,
-				TextService,
-				message,
-				context.from,
-				Enum.TextFilterContext.PublicChat
-			)
-
+			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return
 			end
-
 			for _, player in players do
 				task.spawn(function()
-					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
-					if success then
-						context._K.Remote.Notify:FireClient(player, { Text = msg, From = context.from })
-					end
+					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
+					context._K.Remote.Notify:FireClient(player, { Text = msg, From = context.from })
 				end)
 			end
 		end,
@@ -121,24 +101,14 @@ return {
 		},
 
 		run = function(context, players, message)
-			local ok, result = pcall(
-				TextService.FilterStringAsync,
-				TextService,
-				message,
-				context.from,
-				Enum.TextFilterContext.PublicChat
-			)
-
+			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return
 			end
-
 			for _, player in players do
 				task.spawn(function()
-					local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
-					if success then
-						context._K.Remote.Announce:FireClient(player, msg, context.from)
-					end
+					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
+					context._K.Remote.Announce:FireClient(player, msg, context.from)
 				end)
 			end
 		end,
@@ -263,24 +233,19 @@ return {
 		end,
 
 		run = function(context, players, message)
-			local ok, result = context._K.Util.Retry(function()
-				return TextService:FilterStringAsync(message, context.from, Enum.TextFilterContext.PublicChat)
-			end, 5, 0.2, 1)
-
+			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return
 			end
 
 			local yes, no = 0, 0
 			local function voteTask(player)
-				local success, msg = pcall(result.GetChatForUserAsync, result, player.UserId)
-				if success then
-					local vote = context._K.Remote.Vote:InvokeClient(player, msg, context.fromPlayer)
-					if vote == true then
-						yes += 1
-					elseif vote == false then
-						no += 1
-					end
+				local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
+				local vote = context._K.Remote.Vote:InvokeClient(player, msg, context.fromPlayer)
+				if vote == true then
+					yes += 1
+				elseif vote == false then
+					no += 1
 				end
 			end
 
