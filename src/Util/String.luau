@@ -31,18 +31,22 @@ function String.unescapeRichText(s: string): string
 	return s
 end
 
+--- Strip quotes from a string
 function String.stripQuotes(s: string): string
 	return string.gsub(s, '["`]', "")
 end
 
+--- Strip whitespace from the start of a string
 function String.trimStart(s: string): string
 	return if string.find(s, "^%s*$") then "" else (string.match(s, "^%s*(.*)") or "")
 end
 
+--- Strip whitespace from the end of a string
 function String.trimEnd(s: string): string
 	return if string.find(s, "^%s*$") then "" else (string.match(s, "(.-)%s*$") or "")
 end
 
+--- Strip whitespace from both ends of a string
 function String.trim(s: string): string
 	return if string.find(s, "^%s*$") then "" else (string.match(s, "^%s*(.*%S)") or "")
 end
