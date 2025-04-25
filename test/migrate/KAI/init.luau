@@ -303,16 +303,26 @@ local function getTextObject(stringToFilter: string, fromUserId: number): TextFi
 	end
 end
 
-local function getFilteredMessage(textObject: TextFilterResult, toPlayerId: number?): string
-	local filteredMessage
-	local success, errorMessage = pcall(function()
-		filteredMessage = toPlayerId and textObject:GetChatForUserAsync(toPlayerId)
-			or textObject:GetNonChatStringForBroadcastAsync()
+local function getFilteredMessage(textObject: TextFilterResult, fromUserId: number, toUserId: number?): string
+	local success, message = pcall(function()
+		if toUserId and services.Players:GetPlayerByUserId(fromUserId) then
+			if services.TextChat:CanUsersChatAsync(fromUserId, toUserId) then
+				return textObject:GetChatForUserAsync(toUserId)
+			else
+				return "User cannot chat"
+			end
+		else
+			if services.TextChat:CanUserChatAsync(fromUserId) then
+				return textObject:GetNonChatStringForBroadcastAsync()
+			else
+				return "User cannot chat"
+			end
+		end
 	end)
 	if success then
-		return filteredMessage
-	elseif errorMessage then
-		print("Error filtering message:", errorMessage)
+		return message
+	else
+		print("Error filtering message:", message)
 	end
 	return ""
 end
@@ -989,22 +999,23 @@ function f.Msg(player: Player, a, b)
 	end
 end
 function f.filteredMsg(player: Player, a, b)
-	local textObject = getTextObject(a[3], player.UserId)
+	local fromId = player.UserId
+	local textObject = getTextObject(a[3], fromId)
 	if b then
-		RemoteEvent:FireClient(b, "KMsg", { a[1], a[2], getFilteredMessage(textObject, b.UserId), player.UserId })
+		RemoteEvent:FireClient(b, "KMsg", { a[1], a[2], getFilteredMessage(textObject, fromId, b.UserId), fromId })
 	else
 		for i, b in f.Players() do
-			RemoteEvent:FireClient(b, "KMsg", { a[1], a[2], getFilteredMessage(textObject, b.UserId), player.UserId })
+			RemoteEvent:FireClient(b, "KMsg", { a[1], a[2], getFilteredMessage(textObject, fromId, b.UserId), fromId })
 		end
 	end
 end
 function f.Hint(playerFrom: Player, message: string, playerTo: Player?)
 	local textObject = getTextObject(message, playerFrom.UserId)
 	if playerTo then
-		RemoteEvent:FireClient(playerTo, "KHint", getFilteredMessage(textObject, playerTo.UserId))
+		RemoteEvent:FireClient(playerTo, "KHint", getFilteredMessage(textObject, playerFrom.UserId, playerTo.UserId))
 	else
 		for _, player in f.Players() do
-			RemoteEvent:FireClient(player, "KHint", getFilteredMessage(textObject, player.UserId))
+			RemoteEvent:FireClient(player, "KHint", getFilteredMessage(textObject, playerFrom.UserId, player.UserId))
 		end
 	end
 end
@@ -1287,7 +1298,7 @@ function f.Chatted(plr: Player | serverContext, msg: string, cmdbar: boolean?)
 	end
 	local filteredMessage = if server
 		then msg:gsub("\n", "\t")
-		else getFilteredMessage(getTextObject(msg:gsub("\n", "\t"), plr.UserId))
+		else getFilteredMessage(getTextObject(msg:gsub("\n", "\t"), plr.UserId), plr.UserId)
 	local CLog: Log = { os.time(), string.sub(`{plr.DisplayName} [@{plr.Name}]:\t{filteredMessage}`, 1, 99) }
 	local Logs, CMD
 	local success, result = wrap(function()
@@ -1674,7 +1685,7 @@ function ServerEvent(plr: Player, event, arguments, uID)
 		local textObject = getTextObject(arguments[2], plr.UserId)
 		for _, v in f.Players() do
 			if v ~= plr then
-				RemoteEvent:FireClient(v, event, { arguments[1], getFilteredMessage(textObject, v.UserId) })
+				RemoteEvent:FireClient(v, event, { arguments[1], getFilteredMessage(textObject, plr.UserId, v.UserId) })
 			end
 		end
 	elseif event == "KCClr" and FindChild(plr, "KCClr") then
@@ -2529,9 +2540,7 @@ function LoadCommands()
 		local textObject = getTextObject(args[2], pl.UserId)
 		for i, plr in args[1] do
 			if plr and f.Auth(pl, plr, 0) then
-				if not pcall(function()
-					plr:Kick(getFilteredMessage(textObject, plr.UserId))
-				end) then
+				if not pcall(plr.Kick, plr, getFilteredMessage(textObject, pl.UserId, plr.UserId)) then
 					RemoteEvent:FireClient(plr, "KCrash")
 				end
 			end
@@ -3116,7 +3125,7 @@ function LoadCommands()
 			local textObject = getTextObject(args[2], pl.UserId)
 			for i, plr in args[1] do
 				if plr then
-					RemoteEvent:FireClient(plr, "KVote", getFilteredMessage(textObject, plr.UserId))
+					RemoteEvent:FireClient(plr, "KVote", getFilteredMessage(textObject, pl.UserId, plr.UserId))
 				end
 			end
 			task.delay(10, function()
@@ -3193,7 +3202,7 @@ function LoadCommands()
 	f.addCommand({ "notify", "n" }, { "Places a permanent message.", "I'm afk." }, 2, { "string" }, function(pl, args)
 		local a = FindChild(RemoteEvent, "KNotify") or new("StringValue")({ Parent = RemoteEvent, Name = "KNotify" })
 		local textObject = getTextObject(args[1], pl.UserId)
-		a.Value = getFilteredMessage(textObject)
+		a.Value = getFilteredMessage(textObject, pl.UserId)
 		RemoteEvent:FireAllClients("KNotify", a.Value)
 	end)
 	f.addCommand({ "rnotify", "rn" }, { "Removes a permanent message." }, 2, {}, function(a)
@@ -3221,7 +3230,7 @@ function LoadCommands()
 		2,
 		{ "player", "string" },
 		function(pl, args)
-			local filtered = getFilteredMessage(getTextObject(args[2], pl.UserId))
+			local filtered = getFilteredMessage(getTextObject(args[2], pl.UserId), pl.UserId)
 			for i, plr in args[1] do
 				if
 					args[2]
@@ -3545,7 +3554,7 @@ function LoadCommands()
 		2,
 		{ "player", "word", "string" },
 		function(pl, args)
-			local filtered = getFilteredMessage(getTextObject(args[3], pl.UserId))
+			local filtered = getFilteredMessage(getTextObject(args[3], pl.UserId), pl.UserId)
 			for i, plr in args[1] do
 				if plr and FindChild(plr, "leaderstats") then
 					for i2, v in plr.leaderstats:GetChildren() do

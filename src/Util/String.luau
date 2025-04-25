@@ -1,4 +1,5 @@
 local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
 local TextService = game:GetService("TextService")
 
 local Retry = require(script.Parent:WaitForChild("Retry"))
@@ -51,23 +52,62 @@ function String.trim(s: string): string
 	return if string.find(s, "^%s*$") then "" else (string.match(s, "^%s*(.*%S)") or "")
 end
 
---- Filters a message with [TextService.FilterStringAsync] for broadcast messages
-function String.filterForBroadcast(message: string, fromUserId: number, filterContext: Enum.TextFilterContext?): string
-	local ok, result = Retry(function()
+--- Returns a [TextFilterResult] with [TextService.FilterStringAsync] to be used with [String.filterForBroadcast] or [String.filterForUser]
+function String.filterResult(
+	message: string,
+	fromUserId: number,
+	filterContext: Enum.TextFilterContext?
+): (boolean, TextFilterResult | string)
+	return pcall(function()
 		return TextService:FilterStringAsync(message, fromUserId, filterContext or Enum.TextFilterContext.PublicChat)
-	end, 5, 1)
-	if ok then
-		ok, result = Retry(function()
-			return result:GetNonChatStringForBroadcastAsync()
-		end, 5, 1)
-		if ok then
-			return result
-		end
-	end
-	return `TextService filtering failed: {result}`
+	end)
 end
 
---- Filters a message with [TextService.FilterStringAsync]
+--- Filters a [TextFilterResult] for broadcast messages with [TextService.FilterStringAsync]
+function String.filterResultForBroadcast(filterResult: TextFilterResult | string, fromUserId: number)
+	if type(filterResult) == "string" then
+		return filterResult
+	end
+	local _, result = pcall(function()
+		if TextChatService:CanUserChatAsync(fromUserId) then
+			return filterResult:GetNonChatStringForBroadcastAsync()
+		else
+			return "User cannot chat"
+		end
+	end)
+	return result
+end
+
+--- Filters a [TextFilterResult] for chat messages chat with [TextService.FilterStringAsync]
+function String.filterResultForUser(filterResult: TextFilterResult | string, fromUserId: number, toUserId: number)
+	if type(filterResult) == "string" then
+		return filterResult
+	end
+	local _, result = pcall(function()
+		if Players:GetPlayerByUserId(fromUserId) then
+			if TextChatService:CanUsersChatAsync(fromUserId, toUserId) then
+				return filterResult:GetChatForUserAsync(toUserId)
+			else
+				return "User cannot chat"
+			end
+		else
+			if TextChatService:CanUserChatAsync(fromUserId) then
+				return filterResult:GetNonChatStringForBroadcastAsync()
+			else
+				return "User cannot chat"
+			end
+		end
+	end)
+	return result
+end
+
+--- Filters a broadcast message with [TextService.FilterStringAsync]
+function String.filterForBroadcast(message: string, fromUserId: number, filterContext: Enum.TextFilterContext?): string
+	local _, result = String.filterResult(message, fromUserId)
+	return String.filterResultForBroadcast(result, fromUserId)
+end
+
+--- Filters a chat message with [TextService.FilterStringAsync]
 function String.filterForUser(
 	message: string,
 	fromUserId: number,
@@ -77,22 +117,8 @@ function String.filterForUser(
 	if fromUserId == toUserId then
 		return message
 	end
-	local ok, result = Retry(function()
-		return TextService:FilterStringAsync(message, fromUserId, filterContext or Enum.TextFilterContext.PublicChat)
-	end, 5, 1)
-	if ok then
-		ok, result = Retry(function()
-			if Players:GetPlayerByUserId(fromUserId) then
-				return result:GetChatForUserAsync(toUserId)
-			else
-				return result:GetNonChatStringForBroadcastAsync()
-			end
-		end, 5, 1)
-		if ok then
-			return result
-		end
-	end
-	return `TextService filtering failed: {result}`
+	local _, result = String.filterResult(message, fromUserId)
+	return String.filterResultForUser(result, fromUserId, toUserId)
 end
 
 return String
