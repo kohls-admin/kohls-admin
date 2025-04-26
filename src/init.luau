@@ -90,35 +90,29 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 	if not log then
 		return -- DEBUG disabled
 	end
-	if from then
-		task.spawn(function()
-			log.name = Util.getUserInfo(from).Username
-		end)
-	end
 	if _K.IsClient then
 		log.client = true
 	end
 
-	_K.Hook.log:Fire(log)
-
-	if _K.IsServer then
-		if from and not filtered then
-			log.text = Util.String.filterForBroadcast(text, from, Enum.TextFilterContext.PublicChat)
+	task.defer(function()
+		if from then
+			log.name = Util.getUserInfo(from).Username
 		end
-
-		if level == "COMMAND" and (not from or _K.Auth.getRank(from) > 1) then
-			-- save logs for roles above VIP (rank 1)
-			table.insert(_K.Data.Cache.logs, { log.text, log.level, log.time, from, log.name })
-		end
-
-		task.defer(function()
+		if _K.IsServer then
+			if from and not filtered then
+				log.text = Util.String.filterForBroadcast(text, from)
+			end
+			if level == "COMMAND" and (not from or _K.Auth.getRank(from) > 1) then
+				table.insert(_K.Data.Cache.logs, { log.text, log.level, log.time, from, log.name })
+			end
 			for _, player in _K.Services.Players:GetPlayers() do
 				if _K.Auth.hasPermission(player.UserId, "serverlogs") then
 					_K.Remote.Log:FireClient(player, log)
 				end
 			end
-		end)
-	end
+		end
+		_K.Hook.log:Fire(log)
+	end)
 
 	return log
 end
