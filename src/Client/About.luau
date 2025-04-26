@@ -106,7 +106,7 @@ function About.new(_K)
 	local function updatePassPriceText(label, gamePassId)
 		local success, owned = _K.Util.Retry(function()
 			return _K.Util.Services.MarketplaceService:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, gamePassId)
-		end, 5, 1, 2)
+		end, 3, 0.5, 1.5)
 
 		if success then
 			if owned then
@@ -127,7 +127,7 @@ function About.new(_K)
 
 			local ok, result = _K.Util.Retry(function()
 				return _K.Util.Services.MarketplaceService:GetProductInfo(gamePassId, Enum.InfoType.GamePass).PriceInRobux
-			end, 5, 1, 2)
+			end, 3, 0.5, 1.5)
 			if ok then
 				if not owned then
 					label.Text = `<b>{result or "?"}</b>`
@@ -222,7 +222,7 @@ function About.new(_K)
 			if not owned then
 				local ok, result = _K.Util.Retry(function()
 					return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
-				end, 5, 1, 2)
+				end, 3, 0.5, 1.5)
 				if ok and result then
 					owned = result
 				end
@@ -321,11 +321,11 @@ function About.new(_K)
 							try, trying = nil, true
 							local existing = equippedUGC[ugc.equip]
 							debounceEquip(ugc.id, ugc.equip, true, ugc.name, button)
-							task.delay(15, function()
+							task.delay(5, function()
 								if trying and equippedUGC[ugc.equip] == button then
 									debounceEquip(ugc.id, ugc.equip, false, ugc.name, button)
 								end
-								task.delay(0.25, tryDone)
+								task.delay(0.1, tryDone)
 							end)
 							_K.Notify({
 								Text = `Trying <b>{ugc.name}</b>.`,
@@ -334,7 +334,7 @@ function About.new(_K)
 							})
 
 							if existing and existing ~= button then
-								task.delay(0.25, function()
+								task.delay(0.1, function()
 									existing.Label:set(`<b>{existing._instance:GetAttribute("Price")}</b>`)
 									existing._content.IconFrame.Visible = true
 									existing._content.Label.TextXAlignment = Enum.TextXAlignment.Left
@@ -349,7 +349,7 @@ function About.new(_K)
 							equipped = equipped and equipped == button
 							debounceEquip(ugc.id, ugc.equip, not equipped, ugc.name, button)
 							if trying and equipped then
-								task.delay(0.25, tryDone)
+								task.delay(0.1, tryDone)
 							end
 							return
 						end
@@ -387,7 +387,7 @@ function About.new(_K)
 
 				local ok, result = _K.Util.Retry(function()
 					return _K.Util.Services.MarketplaceService:GetProductInfo(ugc.id, Enum.InfoType.Asset).PriceInRobux
-				end, 5, 1, 2)
+				end, 3, 0.5, 1.5)
 				if ok then
 					ugc.price = result or "?"
 					button._instance:SetAttribute("Price", ugc.price)
@@ -695,7 +695,7 @@ function About.new(_K)
 	task.defer(function()
 		local ok, owned = _K.Util.Retry(function()
 			return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
-		end, 5, 1, 2)
+		end, 3, 0.5, 1.5)
 		if ok and owned then
 			adminModelButton._content.Price.Text = `<b>OWNED</b>`
 		end
