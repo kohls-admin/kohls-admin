@@ -40,7 +40,7 @@ local Data = {
 		dashboardButtonRank = 0,
 		joinNotificationRank = 1,
 		getKohlsAdminPopup = true,
-		saveLogs = false,
+		saveLogs = true,
 
 		freeAdmin = {},
 	},

@@ -31,7 +31,7 @@ local Settings = {
 
 	-- 🗃️ Log Management
 	-- Experimental: When enabled, saves and syncs admin logs across multiple servers
-	saveLogs = false,
+	saveLogs = true,
 
 	-- 🎮 Dashboard Access Control
 	--[[
