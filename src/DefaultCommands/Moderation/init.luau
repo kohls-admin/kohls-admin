@@ -518,6 +518,12 @@ return {
 				displayName = nil
 			end
 
+			local ok, result = context._K.Util.String.filterResult(displayName, context.from)
+			if not ok then
+				return
+			end
+			displayName = context._K.Util.String.filterResultForBroadcast(result, context.from)
+
 			for _, player in players do
 				context.env[player.UserId] = displayName
 				player:SetAttribute("_KDisplayName", displayName)
