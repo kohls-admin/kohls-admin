@@ -110,12 +110,14 @@ end)
 task.spawn(function()
 	local elapsed = 1
 	while dashboard and dashboardButton and dashboard._instance do
-		if not dashboard._instance.Visible then
+		if dashboard._instance.Visible then
+			local alpha = math.abs(elapsed % 2 - 1) * 0.7
+			dashboardButtonIcon.ImageTransparency = -(math.cos(math.pi * alpha) - 1) / 2
+			elapsed += task.wait()
+		elseif elapsed ~= 1 then
+			dashboardButtonIcon.ImageTransparency = 0
 			elapsed = 1
 		end
-		local alpha = math.abs(elapsed % 2 - 1) * 0.7
-		dashboardButtonIcon.ImageTransparency = -(math.cos(math.pi * alpha) - 1) / 2
-		elapsed += task.wait()
 	end
 end)
 
