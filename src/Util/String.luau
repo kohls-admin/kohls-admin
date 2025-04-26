@@ -52,7 +52,7 @@ function String.trim(s: string): string
 	return if string.find(s, "^%s*$") then "" else (string.match(s, "^%s*(.*%S)") or "")
 end
 
---- Returns a [TextFilterResult] with [TextService.FilterStringAsync] to be used with [String.filterForBroadcast] or [String.filterForUser]
+--- Returns a [TextFilterResult] with [TextService.FilterStringAsync] to be used with [String.filterResultForBroadcast] or [String.filterResultForUser]
 function String.filterResult(
 	message: string,
 	fromUserId: number,
