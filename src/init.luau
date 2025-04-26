@@ -245,6 +245,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	for rank, definition in settings.roles do
 		if type(rank) == "number" then
 			definition._rank = rank
+			definition._rank = rank - 1
 			settings.roles[definition._key] = definition
 			settings.roles[rank] = nil
 		end
