@@ -73,7 +73,6 @@ function Auth.userBan(
 	noAsync
 )
 	local banAsync = not fromUserId or Auth.hasPermission(fromUserId, "banasync")
-	local banPlayer = Players:GetPlayerByUserId(userId)
 
 	if not banAsync then
 		duration = 0
@@ -88,12 +87,7 @@ function Auth.userBan(
 		reason = Util.String.filterForBroadcast(reason, fromUserId)
 	end
 
-	local ban = { if banPlayer then banPlayer.Name else nil, reason, timestamp, fromUserId }
-	if not banPlayer then
-		task.spawn(function()
-			ban[1] = Util.getUserInfo(userId).Username
-		end)
-	end
+	local ban = { Util.getUserInfo(userId).Username, reason, timestamp, fromUserId }
 
 	local key = tostring(userId)
 	Data.bans[key] = ban
