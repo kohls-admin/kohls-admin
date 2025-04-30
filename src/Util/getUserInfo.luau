@@ -16,16 +16,19 @@ local userInfoCache =
 	{} :: { [number]: { Id: number, Username: string, DisplayName: string, HasVerifiedBadge: boolean } }
 
 local loading = {}
+local attempting = {}
 local debounceGetUserInfos
 debounceGetUserInfos = Function.debounce(0.2, function()
-	local userIds = {}
 	for userId in loading do
-		table.insert(userIds, userId)
+		table.insert(attempting, userId)
+		if #attempting == 200 then
+			break
+		end
 	end
 
 	local ok, result = Retry(function()
-		return UserService:GetUserInfosByUserIdsAsync(userIds)
-	end, 5, 0.2, 2)
+		return UserService:GetUserInfosByUserIdsAsync(attempting)
+	end, 5, 0.5, 2)
 
 	if ok and result then
 		for _, info in result do
@@ -37,7 +40,7 @@ debounceGetUserInfos = Function.debounce(0.2, function()
 			end
 			loading[info.Id] = nil
 		end
-		for _, userId in userIds do
+		for _, userId in attempting do
 			if not userInfoCache[userId] then
 				local info = { Id = userId, Username = "Deleted", DisplayName = "Deleted", Deleted = true }
 				userInfoCache[userId] = info
@@ -46,11 +49,18 @@ debounceGetUserInfos = Function.debounce(0.2, function()
 					hook:Fire(info)
 					hook:DisconnectAll()
 				end
-				loading[userId] = nil
 			end
+			loading[userId] = nil
+		end
+
+		table.clear(attempting)
+		if next(loading) then
+			task.defer(debounceGetUserInfos)
 		end
 		return
 	end
+
+	warn(`getUserInfo failed: {result}`)
 
 	task.delay(5, debounceGetUserInfos)
 end)
