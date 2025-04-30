@@ -2,6 +2,7 @@ local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
 
 local Data = require(script.Parent.Parent.Defaults)
+local Util = require(script.Parent.Parent.Parent.Util)
 
 local function deserializeItem(data: string)
 	local result = {}
@@ -10,6 +11,10 @@ local function deserializeItem(data: string)
 		result[tonumber(c)] = tonumber(d)
 	end
 	return result
+end
+
+local function fillName(userId, data)
+	data[1] = Util.getUserInfo(userId).Username
 end
 
 local function migrateKAI()
@@ -30,12 +35,14 @@ local function migrateKAI()
 				if not (userId or duration) or duration >= 0 then
 					continue
 				end
-				newBans[tostring(userId)] = {
+				local ban = {
 					nil,
 					nil,
 					if duration == -1 then -1 else math.abs(duration),
 					nil,
 				}
+				newBans[tostring(userId)] = ban
+				task.spawn(fillName, userId, ban)
 			end
 		end
 
@@ -47,7 +54,9 @@ local function migrateKAI()
 				end
 				local role = defaultRoles[math.min(math.abs(power), 5)]
 				if role then
-					main[1][tostring(userId)] = { nil, { role } }
+					local member = { nil, { role } }
+					main[1][tostring(userId)] = member
+					task.spawn(fillName, userId, member)
 				end
 			end
 		end
