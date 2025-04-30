@@ -204,11 +204,28 @@ return {
 		},
 
 		run = function(context, members)
-			for _, member in members do
-				context._K.Data.members[member] = nil
-				context._K.Data.Cache.members[member] = context._K.Data.Store.REMOVE
-				context._K.Remote.Member:FireAllClients(member)
+			local membersUnroled = {}
+			for _, userId in members do
+				local key = tostring(userId)
+				local member = context._K.Data.members[key]
+				if member then
+					context._K.Data.members[key] = nil
+					context._K.Data.Cache.members[key] = context._K.Data.Store.REMOVE
+					context._K.Remote.Member:FireAllClients(key)
+					table.insert(membersUnroled, member and member.name or key)
+				end
 			end
+
+			if #membersUnroled == 0 then
+				return
+			end
+
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				Text = `<b>Removed member{#membersUnroled > 1 and "s" or ""}:</b> <i>{table.concat(
+					membersUnroled,
+					", "
+				)}</i>`,
+			})
 		end,
 	},
 	{
