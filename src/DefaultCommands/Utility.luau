@@ -271,6 +271,17 @@ return {
 		end,
 	},
 	{
+		name = "serverage",
+		aliases = {},
+		description = "Displays the age of the server.",
+		runClient = function(context, volume)
+			context._K.Notify({
+				From = "_K",
+				Text = `<b>Server Age:</b> {context._K.Util.ReadableTime(workspace.DistributedGameTime)}`,
+			})
+		end,
+	},
+	{
 		name = "showfps",
 		description = "Displays the frames per second of a player.",
 		args = {
