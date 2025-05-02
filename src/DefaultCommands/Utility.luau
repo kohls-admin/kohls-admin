@@ -263,11 +263,11 @@ return {
 			},
 		},
 
-		run = function(context, player: Player)
-			context._K.Remote.Notify:FireClient(
-				context.fromPlayer,
-				{ Text = `<b>Age:</b> {context._K.Util.ReadableTime(player.AccountAge * 86400)}`, From = player.UserId }
-			)
+		runClient = function(context, player: Player)
+			context._K.Notify({
+				From = player.UserId,
+				Text = `<b>Account Age:</b> {context._K.Util.ReadableTime(player.AccountAge * 86400)}`,
+			})
 		end,
 	},
 	{
