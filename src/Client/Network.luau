@@ -125,10 +125,14 @@ _K.Remote.Settings.OnClientEvent:Connect(function(settings)
 	for key, value in settings do
 		value = UI.peek(value)
 		_K.Data.settings[key] = value
-		_K.client.settings[key]:set(value)
+		if _K.client.settings[key] then
+			_K.client.settings[key]:set(value)
+		end
 		if string.find(key, "theme", 1, true) == 1 then
 			local themeKey = string.sub(key, 6)
-			UI.Theme[themeKey]:set(value)
+			if UI.Theme[themeKey] then
+				UI.Theme[themeKey]:set(value)
+			end
 		end
 	end
 	if settings.dashboardButtonRank ~= nil or settings.freeAdmin ~= nil then
