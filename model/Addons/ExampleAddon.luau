@@ -101,7 +101,6 @@ return function(_K)
 		run = function(context, message: string?)
 			-- Filtering the message before-hand with the String Utility API
 			-- You can see other Util API on the documentation: https://docs.kohl.gg/api/Util
-			
 			message = _K.Util.String.filterForBroadcast(message, context.from) or nil
 
 			-- Create a simple Roblox message object

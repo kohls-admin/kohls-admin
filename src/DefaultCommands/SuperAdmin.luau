@@ -77,7 +77,7 @@ return {
 	},
 	{
 		name = "global",
-                aliases = { "gcmd" },
+		aliases = { "gcmd" },
 		description = "Runs a command string globally in all servers.",
 		args = {
 			{

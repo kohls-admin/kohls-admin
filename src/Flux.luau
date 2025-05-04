@@ -123,7 +123,7 @@ local function setProperty(instance: Instance, property: string, value: any)
 	end
 end
 
-local function cleanupScope(scope: any)
+local function _cleanupScope(scope: any)
 	print("cleanupScope", scope)
 end
 

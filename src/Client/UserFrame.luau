@@ -25,7 +25,10 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		BackgroundTransparency = 0.75,
 		BackgroundColor3 = UI.Theme.Border,
 		Size = UI.computeFrom(UDim2.fromOffset, UI.Theme.FontSizeDouble, UI.Theme.FontSizeDouble),
-		Image = if image then image elseif from then `rbxthumb://type=AvatarHeadShot&id={from}&w=48&h=48` else "rbxassetid://10650688076",
+		Image = if image
+			then image
+			elseif from then `rbxthumb://type=AvatarHeadShot&id={from}&w=48&h=48`
+			else "rbxassetid://10650688076",
 
 		UI.new "UICorner" {
 			CornerRadius = UDim.new(1, 0),

@@ -56,7 +56,10 @@ else
 		warn("Kohl's Admin failed to auto-update from MainModule, attempting to load from asset\nReason:\t" .. result)
 		ok, result = pcall(loadModuleAsset, loaderId)
 		if not ok then
-			warn("Kohl's Admin failed to auto-update from asset, attempting to load from local package\nReason:\t" .. result)
+			warn(
+				"Kohl's Admin failed to auto-update from asset, attempting to load from local package\nReason:\t"
+					.. result
+			)
 			result = require(script:WaitForChild("MainModuleKAI"))
 		end
 	end
