@@ -259,7 +259,7 @@ return {
 			})
 
 			-- wait for timeout or all votes to be submitted
-			task.delay(30, tasks.running)
+			task.delay(30, coroutine.resume, tasks.running)
 			tasks:wait()
 
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
