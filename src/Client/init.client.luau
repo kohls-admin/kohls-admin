@@ -228,7 +228,6 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 		`<b>Dashboard</b>  <font color="#0f0">{dashboardKeyText} {dashboardKeyRaw}</font>`,
 		`<b>Roles</b>\t  <sc>{roleText}</sc>\n`,
 		`<b>Place</b>        <font transparency="0.5">{game.Name}</font>`,
-		`<b>Server Age</b>   <font transparency="0.5">{_K.Util.ReadableTime(workspace.DistributedGameTime)}</font>`,
 		`<b>Server Time</b>  <font transparency="0.5">{os.date("%X", workspace:GetServerTimeNow())}</font></font>`,
 	}
 
