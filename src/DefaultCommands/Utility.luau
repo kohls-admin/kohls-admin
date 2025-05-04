@@ -274,8 +274,8 @@ return {
 		name = "serverage",
 		aliases = {},
 		description = "Displays the age of the server.",
-		runClient = function(context, volume)
-			context._K.Notify({
+		run = function(context, volume)
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
 				From = "_K",
 				Text = `<b>Server Age:</b> {context._K.Util.ReadableTime(workspace.DistributedGameTime)}`,
 			})
