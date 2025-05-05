@@ -1246,7 +1246,7 @@ return {
 					if not part:GetAttribute("_KTextureID") then
 						part:SetAttribute("_KTextureID", part.TextureID)
 					end
-					part.TextureID = if apply then "" else part:GetAttribute("_KTextureID")
+					part.TextureID = if apply then "" else part:GetAttribute("_KTextureID") :: string
 				end
 				local mesh = part:FindFirstChildOfClass("SpecialMesh")
 				if mesh then
@@ -1260,9 +1260,9 @@ return {
 					part:SetAttribute("_KReflectance", part.Reflectance)
 					part:SetAttribute("_KMaterial", part.Material)
 				end
-				part.Color = if color then color else part:GetAttribute("_KColor")
-				part.Reflectance = if reflectance then reflectance else part:GetAttribute("_KReflectance")
-				part.Material = if material then material else part:GetAttribute("_KMaterial")
+				part.Color = if color then color else part:GetAttribute("_KColor") :: Color3
+				part.Reflectance = if reflectance then reflectance else part:GetAttribute("_KReflectance") :: number
+				part.Material = if material then material else part:GetAttribute("_KMaterial") :: Enum.Material
 			end
 
 			return {
