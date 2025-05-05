@@ -2,8 +2,6 @@ local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
 local TextService = game:GetService("TextService")
 
-local Retry = require(script.Parent:WaitForChild("Retry"))
-
 --- @class String
 local String = {}
 
