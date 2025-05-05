@@ -133,6 +133,7 @@ return {
 		run = function(context, userIds, duration: number?, reason: string?)
 			if type(reason) == "string" then
 				reason = string.sub(reason, 1, 400) -- banasync limit
+				reason = context._K.Util.String.filterForBroadcast(reason, context.from)
 			end
 
 			if not context._K.Auth.hasPermission(context.from, "banasync") then
@@ -232,6 +233,9 @@ return {
 			},
 		},
 		run = function(context, players, reason: string?)
+			if type(reason) == "string" then
+				reason = context._K.Util.String.filterForBroadcast(reason, context.from)
+			end
 			for _, player in players do
 				player:Kick(reason)
 			end

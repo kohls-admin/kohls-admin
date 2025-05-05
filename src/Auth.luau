@@ -83,10 +83,6 @@ function Auth.userBan(
 		timestamp = if duration > 0 then (startTime or os.time()) + duration else -1
 	end
 
-	if reason and fromUserId then
-		reason = Util.String.filterForBroadcast(reason, fromUserId)
-	end
-
 	local ban = { Util.getUserInfo(userId).Username, reason, timestamp, fromUserId }
 
 	local key = tostring(userId)
