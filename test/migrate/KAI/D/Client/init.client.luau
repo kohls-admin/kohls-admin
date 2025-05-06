@@ -1230,14 +1230,14 @@ function ClientEvent(a, b)
 			end
 			a = f.getNamesFromIds(a)
 			table.sort(a, function(a, b)
-				local ba = Bans[a.Id]
-				local bb = Bans[b.Id]
+				local ba = string.lower(Bans[a.Id])
+				local bb = string.lower(Bans[b.Id])
 				if ba > bb then
 					return true
 				elseif ba < bb then
 					return false
 				else
-					return a.Username < b.Username
+					return string.lower(a.Username) < string.lower(b.Username)
 				end
 			end)
 			for i, v in a do
