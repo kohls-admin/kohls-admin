@@ -36,7 +36,9 @@ function Settings.new(_K)
 		Settings._K.Remote.Settings:FireServer(pendingChanges)
 		for key, value in pendingChanges do
 			_K.Data.settings[key] = value
-			_K.client.settings[key]:set(value, key == "prefix")
+			if _K.client.settings[key] then
+				_K.client.settings[key]:set(value, key == "prefix")
+			end
 		end
 		table.clear(pendingChanges)
 	end

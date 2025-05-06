@@ -28,9 +28,11 @@ for key, value in _K.Data.settings do
 	-- UI.Theme connection to theme settings
 	if string.find(key, "theme", 1, true) == 1 then
 		key = string.sub(key, 6)
-		state:hook(function(value)
-			UI.Theme[key]:set(value)
-		end)
+		if UI.Theme[key] then
+			state:hook(function(value)
+				UI.Theme[key]:set(value)
+			end)
+		end
 	end
 end
 
@@ -158,7 +160,9 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 	for key, value in settings do
 		value = UI.peek(value)
 		_K.Data.settings[key] = value
-		_K.client.settings[key]:set(value)
+		if _K.client.settings[key] then
+			_K.client.settings[key]:set(value)
+		end
 	end
 
 	_K.client.CommandBar = require(script:WaitForChild("CommandBar"))
