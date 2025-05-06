@@ -420,7 +420,7 @@ return {
 	-- 			description = "The name of the command alias.",
 	-- 		},
 	-- 		{
-	-- 			type = "stringGreedy",
+	-- 			type = "string",
 	-- 			name = "Command string",
 	-- 			description = "The command string to alias.",
 	-- 		},

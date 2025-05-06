@@ -43,7 +43,7 @@ return function(_K)
 		]]
 		args = {
 			{
-				type = "stringGreedy",
+				type = "string",
 				name = "Message",
 				description = "The message to send.", -- Description shown in command list.
 				-- If the command is optional, make sure to check if it's nil and not false!

@@ -6,7 +6,7 @@ return {
 		description = "Shows a message to everyone in the game, saves and shows to new users until it has been cleared.",
 		args = {
 			{
-				type = "stringGreedy",
+				type = "string",
 				name = "Message",
 				description = "The message to send.",
 			},

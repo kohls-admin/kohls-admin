@@ -4,13 +4,8 @@ local Argument = {}
 Argument.__index = Argument
 
 function Argument.new(command, definition, argPos, rawArg)
-	local lastArg = command.array[#command.array]
 	local rawType = command._K.Registry.types[definition.type]
 	assert(rawType, `Invalid argument type {definition.type}, did it fail to register?`)
-
-	rawArg = if command.argIndex == #command.definition.args
-		then string.sub(command.text, argPos, lastArg[1] + #lastArg[2])
-		else rawArg
 
 	if string.find(rawArg, '["`]', 1) then
 		rawArg = string.match(rawArg, '[^"`]+') or ""
@@ -21,13 +16,9 @@ function Argument.new(command, definition, argPos, rawArg)
 		command = command,
 		commandArray = command.array,
 		definition = definition,
-		-- special case for argTypes like StringGreedy which use the rest of the input message
-		exit = false,
 		validated = false,
 
 		argPos = argPos,
-		-- if it's the last argument use the rest of the argument string
-		-- only caveat would be irrelevant text after the command string (might as well make it explicit!)
 		rawArg = rawArg,
 		rawType = rawType,
 		rawArgs = if rawType.listable then string.split(rawArg) else { rawArg },
@@ -108,17 +99,16 @@ function Argument:parse()
 
 	local parseArgs = self.transformedArgs
 	if self.rawType.preParse then
-		local ok, arg, exit = pcall(self.rawType.preParse, self.transformedArgs, self)
+		local ok, arg = pcall(self.rawType.preParse, self.transformedArgs, self)
 		if not ok then
 			warn("preParseArg error", arg)
 		end
-		self.exit = self.exit or exit
 		parseArgs = arg or parseArgs
 	end
 
-	for i, arg in parseArgs do
-		local argType, ok = self.transformedTypes[i], nil
-		ok, arg, self.exit = pcall(argType.parse, arg, self)
+	for i, parseArg in parseArgs do
+		local argType = self.transformedTypes[i]
+		local ok, arg = pcall(argType.parse, parseArg, self)
 		if not ok then
 			warn("parseArg error", arg)
 		end
@@ -135,10 +125,6 @@ function Argument:parse()
 			else
 				table.insert(self.parsedArgs, arg)
 			end
-		end
-
-		if self.exit then
-			break
 		end
 	end
 

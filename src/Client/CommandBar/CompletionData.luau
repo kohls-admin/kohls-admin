@@ -23,10 +23,6 @@ return function(_K, text, cursorPosition)
 		data.query = ""
 		data.rawArg = ""
 		data.suggestionType = "History"
-		-- data.suggestions = {}
-		-- for alias, value in _K.Registry.commands do
-		-- 	table.insert(data.suggestions, { alias, value })
-		-- end
 		return data
 	end
 
@@ -36,7 +32,6 @@ return function(_K, text, cursorPosition)
 		return data -- invalid command string, show valid example
 	end
 
-	local greedy
 	for _, commandArray in rawCommands do
 		local commandPos, commandText = unpack(commandArray[1])
 		local commandAlias = string.lower(commandText)
@@ -45,27 +40,12 @@ return function(_K, text, cursorPosition)
 		local lastArgDefinition = commandDefinition and commandDefinition.args[#commandDefinition.args]
 		local lastArg = commandArray[#commandArray]
 		local commandEnd = lastArg[1] + #lastArg[2]
+		local greedy = lastArgDefinition and (lastArgDefinition.type == "string" or lastArgDefinition.type == "strings")
 
-		if commandDefinition and not (greedy or _K.Auth.hasCommand(from, commandDefinition)) then
+		if commandDefinition and not _K.Auth.hasCommand(from, commandDefinition) then
 			table.insert(data.invalid, { "Invalid permissions", 2, string.sub(text, 2) })
 			data.invalidPermissionsCommand = commandDefinition
 			return data
-		end
-
-		if not greedy and lastArgDefinition and lastArgDefinition.type == "stringGreedy" then
-			greedy = true
-		end
-		if not greedy and commandDefinition and #commandArray - 1 > #commandDefinition.args then
-			local lastDefined = commandArray[#commandDefinition.args + 1] or lastArg
-			local finalText = string.sub(text, lastDefined[1] + #lastDefined[2])
-			if string.find(finalText, `[^%s{if prefix == "%" then "%%" else prefix}]`) then
-				table.insert(data.invalid, {
-					"Too many arguments",
-					lastDefined[1] + #lastDefined[2],
-					string.sub(text, lastDefined[1] + #lastDefined[2], lastArg[1] + #lastArg[2]),
-				})
-				return data
-			end
 		end
 
 		if cursorPosition < commandArray[1][1] or cursorPosition > commandEnd then
@@ -81,16 +61,6 @@ return function(_K, text, cursorPosition)
 				command:validate()
 				table.insert(data.commands, command)
 			end
-
-			if greedy and cursorPosition > commandEnd then
-				data.argIndex = #commandDefinition.args
-				data.argPos = commandArray[math.min(#commandArray, data.argIndex + 1)][1]
-				data.suggestionType = _K.Registry.types.stringGreedy
-				data.query = string.sub(text, data.argPos)
-				data.rawArg = data.query
-				return data
-			end
-
 			continue -- cursor not within commandArray
 		end
 
@@ -149,7 +119,8 @@ return function(_K, text, cursorPosition)
 
 		-- argument suggestions
 		for i, arg in command.args do
-			if cursorPosition < arg.argPos or cursorPosition > arg.argPos + #_K.Util.String.trimEnd(arg.rawArg) then
+			local isGreedy = greedy and i == #commandDefinition.args
+			if cursorPosition < arg.argPos or (not isGreedy and cursorPosition > arg.argPos + #arg.rawArg) then
 				continue
 			end
 			data.argIndex = i + 1
@@ -166,7 +137,7 @@ return function(_K, text, cursorPosition)
 				local pos = transformPos
 				transformPos += #rawArg + 1
 
-				if cursorPosition < pos or (not greedy and cursorPosition > transformPos) then
+				if cursorPosition < pos or (not isGreedy and cursorPosition > transformPos) then
 					continue
 				end
 

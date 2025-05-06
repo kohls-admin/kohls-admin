@@ -44,6 +44,7 @@ function Process.rawParse(message: string, prefix: string, delimiter: string?): 
 			table.insert(commands, command)
 		elseif char == "\\" and not escaped then
 			escaped = true
+			table.insert(argument, char)
 		else
 			escaped = nil
 			if not quoted and string.find(char, argDelimiter) and not string.find(lastChar, argDelimiter) then
@@ -119,10 +120,6 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 			return false, result
 			-- break
 		end
-
-		if command.greedy then
-			break
-		end
 	end
 
 	return true, commands
@@ -137,11 +134,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 	if ok then
 		for _, command in result do
 			local success, err = command:run()
-
 			if success == nil then
-				if command.greedy then
-					break
-				end
 				continue
 			elseif success == true then
 				commandRan = true
@@ -150,10 +143,6 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 				commandError = err
 				command.Error = err
 				warn("commandError", err)
-			end
-
-			if command.greedy then
-				break
 			end
 		end
 

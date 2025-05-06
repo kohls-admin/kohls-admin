@@ -123,7 +123,7 @@ return {
 				optional = true,
 			},
 			{
-				type = "stringGreedy",
+				type = "string",
 				name = "Reason",
 				description = "The reason for the ban.",
 				optional = true,
@@ -226,7 +226,7 @@ return {
 				lowerRank = true,
 			},
 			{
-				type = "stringGreedy",
+				type = "string",
 				name = "Reason",
 				description = "The reason for the kick.",
 				optional = true,
@@ -455,7 +455,7 @@ return {
 				description = "The player(s) whose DisplayName to change.",
 			},
 			{
-				type = "stringGreedy",
+				type = "string",
 				name = "DisplayName",
 				description = "The DisplayName string to use.",
 				optional = true,
@@ -2236,7 +2236,7 @@ return {
 				description = "The stat to change.",
 			},
 			{
-				type = "stringGreedy",
+				type = "string",
 				name = "Value",
 				description = "The value of the stat.",
 			},

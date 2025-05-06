@@ -20,7 +20,6 @@ function Command.new(_K, commandAlias, commandDefinition, commandArray, from, te
 		text = text,
 		undo = string.find(commandAlias, "un", 1, true) == 1,
 
-		argIndex = 1,
 		args = {},
 		preparedArgs = {},
 		-- flags = {};
@@ -159,29 +158,30 @@ function Command:validate()
 
 	-- start from 2 to skip the command name
 	for i = 2, #commandArray do
+		local argIndex = #self.preparedArgs + 1
 		local argPos, rawArg = unpack(commandArray[i])
 
-		-- if last defined argument, concat the rest of the command's arguments
-		if self.argIndex == #self.definition.args then
-			local lastArg = commandArray[#commandArray]
-			rawArg = string.sub(self.text, argPos, lastArg[1] + #lastArg[2])
-		end
-
-		local argDefinition = self.definition.args[self.argIndex]
+		local argDefinition = self.definition.args[argIndex]
 		if not argDefinition then
 			-- end of defined positional arguments
 			break
-		end
-
-		if argDefinition.type == "stringGreedy" then
-			rawArg = string.sub(self.text, argPos)
-			self.greedy = true
 		end
 
 		if argDefinition.permissions then
 			if not self._K.Auth.hasArgument(self.from, argDefinition) then
 				continue
 			end
+		end
+
+		-- if last defined argument, concatenate the rest of the command's arguments
+		local isLastArgument = argIndex == #self.definition.args
+		if isLastArgument then
+			local buffer = { rawArg }
+			for x = i + 1, #commandArray do
+				local _, arg = unpack(commandArray[x])
+				table.insert(buffer, arg)
+			end
+			rawArg = table.concat(buffer, " ")
 		end
 
 		local arg = Argument.new(self, argDefinition, argPos, rawArg)
@@ -193,14 +193,9 @@ function Command:validate()
 		end
 		table.insert(self.preparedArgs, result)
 
-		if arg.exit == true or self.greedy then
-			-- exit with immediate execution
+		if isLastArgument then
 			self.validated = true
 			return true
-		else
-			-- TODO: need to step only if the argument is successful or optional
-			-- how to handle optional arguments?!
-			self.argIndex += 1
 		end
 	end
 

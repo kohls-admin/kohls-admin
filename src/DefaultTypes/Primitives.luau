@@ -70,9 +70,4 @@ return function(context)
 	_K.Registry.registerType("strings", {
 		listable = true,
 	}, stringType)
-	_K.Registry.registerType("stringGreedy", {
-		displayName = "string",
-		validate = simpleValidate,
-		parse = tostring,
-	})
 end
