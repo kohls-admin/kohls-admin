@@ -5,10 +5,6 @@ local Util = require(script.Parent.Parent.Util)
 
 type Dict = { [any]: any }
 
-local RETRY_COUNT = 5
-local RETRY_DELAY = 5
-local RETRY_BACKOFF = 1
-
 local Store = {
 	REMOVE = table.freeze({ type = "Remove" }),
 	dataStore = nil,
@@ -17,25 +13,25 @@ local Store = {
 function Store.getAsync(key: string, options: DataStoreSetOptions?): (boolean, any)
 	return Util.Retry(function()
 		return Store.dataStore:GetAsync(key, options)
-	end, RETRY_COUNT, RETRY_DELAY, RETRY_BACKOFF)
+	end)
 end
 
 function Store.setAsync(key: string, value: any, userIds: { number }?, options: DataStoreSetOptions?): (boolean, any)
 	return Util.Retry(function()
 		return Store.dataStore:SetAsync(key, value, userIds, options)
-	end, RETRY_COUNT, RETRY_DELAY, RETRY_BACKOFF)
+	end)
 end
 
 function Store.updateAsync(key: string, func: (value: any, keyInfo: DataStoreKeyInfo) -> any): (boolean, any)
 	return Util.Retry(function()
 		return Store.dataStore:UpdateAsync(key, func)
-	end, RETRY_COUNT, RETRY_DELAY, RETRY_BACKOFF)
+	end)
 end
 
 function Store.removeAsync(key: string): (boolean, any)
 	return Util.Retry(function()
 		return Store.dataStore:RemoveAsync(key)
-	end, RETRY_COUNT, RETRY_DELAY, RETRY_BACKOFF)
+	end)
 end
 
 function Store.mergeRemove(to: Dict, from: Dict): Dict
@@ -77,7 +73,7 @@ function Store.loadStore(name)
 		end
 		ok, store = Util.Retry(function()
 			return DataStoreService:GetDataStore(name, "Kohl's Admin Test")
-		end, RETRY_COUNT, 1, 1)
+		end)
 	end
 
 	if not ok then

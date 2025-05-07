@@ -28,7 +28,7 @@ debounceGetUserInfos = Function.debounce(0.2, function()
 
 	local ok, result = Retry(function()
 		return UserService:GetUserInfosByUserIdsAsync(attempting)
-	end, 5, 0.5, 2)
+	end)
 
 	if ok and result then
 		for _, info in result do

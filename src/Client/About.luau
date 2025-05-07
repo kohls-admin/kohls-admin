@@ -106,7 +106,7 @@ function About.new(_K)
 	local function updatePassPriceText(label, gamePassId)
 		local success, owned = _K.Util.Retry(function()
 			return _K.Util.Services.MarketplaceService:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, gamePassId)
-		end, 5, 0.5, 2)
+		end)
 
 		if success then
 			if owned then
@@ -127,7 +127,7 @@ function About.new(_K)
 
 			local ok, result = _K.Util.Retry(function()
 				return _K.Util.Services.MarketplaceService:GetProductInfo(gamePassId, Enum.InfoType.GamePass).PriceInRobux
-			end, 5, 0.5, 2)
+			end)
 			if ok then
 				if not owned then
 					label.Text = `<b>{result or "?"}</b>`
@@ -222,7 +222,7 @@ function About.new(_K)
 			if not owned then
 				local ok, result = _K.Util.Retry(function()
 					return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
-				end, 5, 0.5, 2)
+				end)
 				if ok and result then
 					owned = result
 				end
@@ -387,7 +387,7 @@ function About.new(_K)
 
 				local ok, result = _K.Util.Retry(function()
 					return _K.Util.Services.MarketplaceService:GetProductInfo(ugc.id, Enum.InfoType.Asset).PriceInRobux
-				end, 5, 0.5, 2)
+				end)
 				if ok then
 					ugc.price = result or "?"
 					button._instance:SetAttribute("Price", ugc.price)
@@ -695,7 +695,7 @@ function About.new(_K)
 	task.defer(function()
 		local ok, owned = _K.Util.Retry(function()
 			return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
-		end, 5, 0.5, 2)
+		end)
 		if ok and owned then
 			adminModelButton._content.Price.Text = `<b>OWNED</b>`
 		end
@@ -850,7 +850,7 @@ function About.new(_K)
 	task.defer(function()
 		local success, result = _K.Util.Retry(function()
 			return PolicyService:GetPolicyInfoForPlayerAsync(Players.LocalPlayer)
-		end, 5, 0.2, 2)
+		end)
 
 		local discordInvite = success
 			and result.AllowedExternalLinkReferences

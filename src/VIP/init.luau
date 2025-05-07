@@ -17,14 +17,14 @@ local assetDonations = { 313102724, 423601416 }
 local function getDonationLevel(player)
 	local okRank, rank = Util.Retry(function()
 		return player:GetRankInGroup(3403354)
-	end, 5, 0.2, 1)
+	end)
 	if okRank and rank > 1 then
 		return 5
 	end
 
 	local okSubscription, status = Util.Retry(function()
 		return Util.Services.MarketplaceService:GetUserSubscriptionStatusAsync(player, "EXP-4118475727682928968")
-	end, 5, 0.2, 1)
+	end)
 	if okSubscription and status.IsSubscribed then
 		return 4
 	end
@@ -32,7 +32,7 @@ local function getDonationLevel(player)
 	for index, passId in gamePassDonations do
 		local okGamePass, result = Util.Retry(function()
 			return Util.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
-		end, 5, 0.2, 1)
+		end)
 		if okGamePass and result then
 			return index
 		end
@@ -41,7 +41,7 @@ local function getDonationLevel(player)
 	for index, assetId in assetDonations do
 		local okAsset, result = Util.Retry(function()
 			return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetId)
-		end, 5, 0.2, 1)
+		end)
 		if okAsset and result then
 			return index
 		end
@@ -80,7 +80,7 @@ if Util.Services.RunService:IsServer() then
 
 		local ok, result = Util.Retry(function()
 			return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetId)
-		end, 5, 1, 2)
+		end)
 		if ok then
 			ownedUGC[assetId] = result
 			return result

@@ -5,7 +5,7 @@ task.defer(function()
 	local adminModelId = 172732271
 	local ok, owned = _K.Util.Retry(function()
 		return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
-	end, 3, 0.5, 1.5)
+	end)
 
 	if not ok or owned then
 		return
