@@ -229,12 +229,11 @@ end
 
 local asyncRolesCache = {}
 function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
+	local success = true
 	if asyncRolesCache[userId] and not flushCache then
 		return
 	end
 	asyncRolesCache[userId] = true
-
-	-- FIX: prevent banid/unroleid on higher rank users who are still loading their roles
 
 	-- gamepass permissions
 	for gamePassId, roles in Data.async.gamepass do
@@ -245,6 +244,9 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 			for _, role in roles do
 				Auth.userRoleAdd(userId, role)
 			end
+		end
+		if not ok then
+			success = false
 		end
 	end
 
@@ -266,6 +268,9 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 					end
 				end
 			end
+		end
+		if not ok then
+			success = false
 		end
 	end
 
@@ -296,6 +301,9 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 				Auth.userRoleAdd(userId, role)
 			end
 		end
+		if not ok then
+			success = false
+		end
 	end
 
 	-- subscription permissions
@@ -308,7 +316,12 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 				Auth.userRoleAdd(userId, role)
 			end
 		end
+		if not ok then
+			success = false
+		end
 	end
+
+	return success
 end
 
 --- Checks the maximum role rank of the user, if permission is given it will fetch the highest rank of the roles with that permission

@@ -17,6 +17,9 @@ local function sanitizePlayer(self, player: Player)
 			return nil, "Can only target yourself"
 		end
 	elseif self.definition.lowerRank and not self.definition.shouldRequest then
+		if player:GetAttribute("_KRolesLoaded") ~= true then
+			return nil, "Can't target loading player"
+		end
 		if self._K.Auth.getRank(player.UserId) < rank then
 			return player
 		end

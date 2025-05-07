@@ -183,6 +183,11 @@ local function playerAdded(player: Player)
 	until _K.Data.roles
 
 	task.spawn(_K.log, "joined the server.", "JOIN", player.UserId, true)
+
+	if _K.Auth.banHandler(player) then
+		return
+	end
+
 	if _K.Services.RunService:IsStudio() then
 		_K.Auth.userRoleAdd(player.UserId, "creator")
 	end
@@ -192,11 +197,8 @@ local function playerAdded(player: Player)
 	end
 
 	-- group admin and gamepass roles
-	_K.Auth.userAsyncRoles(player.UserId, true)
-
-	if _K.Auth.banHandler(player) then
-		return
-	end
+	local success = _K.Auth.userAsyncRoles(player.UserId, true)
+	player:SetAttribute("_KRolesLoaded", success)
 
 	if _K._serverLock and _K.Auth.getRank(player.UserId) < 2 then
 		player:Kick(`Server has been locked by {_K._serverLock}`)
