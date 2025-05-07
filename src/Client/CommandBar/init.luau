@@ -491,7 +491,6 @@ updateCompletion = function()
 
 	-- move tooltip to start of query
 	-- FIX: adjust with inputoffset
-	-- FIX: assign greedy pos that's used instead!
 	local argX = TextService:GetTextSize(
 		string.sub(string.gsub(data.message, "\n", " "), 1, data.argPos - 1),
 		Tooltip.TextSize,
@@ -513,26 +512,25 @@ updateCompletion = function()
 		return
 	end
 
-	-- local firstSuggestion = data.suggestions[1][1]
-	-- local firstValue = data.suggestions[1][2]
-	local endPos = data.argPos + #data.rawArg
+	local arg = _K.Util.String.trim(data.rawArg)
+	local endPos = data.argPos + #arg
 	local currentSuggestion = data.suggestions[suggestionIndex]
 	local suggestionText, suggestionValue = unpack(currentSuggestion)
 
-	if data.query ~= "" then
-		local reservedCharacters = { " ", _K.getCommandPrefix(UI.LocalPlayer.UserId) }
-		for _, char in reservedCharacters do
-			if string.find(suggestionText, char) and not string.find(suggestionText, '^["`]') then
-				suggestionText = `"{suggestionText}"`
-				break
-			end
-		end
+	local completion = suggestionText
+	local preCompletion = string.sub(data.message, 1, data.argPos - 1)
+	local postCompletion = string.sub(data.message, endPos)
+	local quote = string.match(preCompletion, '(["`])$')
+	if quote and not string.match(postCompletion, '^["`]') then
+		completion ..= quote
+	elseif
+		not quote
+		and string.find(completion, `[ {_K.Util.String.escapePattern(_K.getCommandPrefix(UI.LocalPlayer.UserId))}]`)
+	then
+		completion = `"{completion}"`
 	end
 
-	currentCompletion = {
-		data.argPos + #suggestionText,
-		string.sub(data.message, 1, data.argPos - 1) .. suggestionText .. string.sub(data.message, endPos),
-	}
+	currentCompletion = { data.argPos + #suggestionText, preCompletion .. completion .. postCompletion }
 
 	-- inline format (preceding message, query, post query arg, suggestion, post query message)
 	-- FIX: how to not escape invalid/valid rich text coloring?
@@ -540,11 +538,11 @@ updateCompletion = function()
 	Input.DisplayText:set(
 		string.format(
 			inlineFormat,
-			_K.Util.String.escapeRichText(string.sub(data.message, 1, data.argPos - 1)),
+			_K.Util.String.escapeRichText(preCompletion),
 			_K.Util.String.escapeRichText(data.query),
-			_K.Util.String.escapeRichText(string.sub(data.rawArg, #data.query + 1)),
-			_K.Util.String.escapeRichText(string.sub(suggestionText, #data.rawArg + 1)),
-			_K.Util.String.escapeRichText(string.sub(data.message, endPos))
+			_K.Util.String.escapeRichText(string.sub(arg, #data.query + 1)),
+			_K.Util.String.escapeRichText(string.sub(suggestionText, #arg + 1)),
+			_K.Util.String.escapeRichText(postCompletion)
 		)
 	)
 

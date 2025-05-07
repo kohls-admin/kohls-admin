@@ -7,10 +7,6 @@ function Argument.new(command, definition, argPos, rawArg)
 	local rawType = command._K.Registry.types[definition.type]
 	assert(rawType, `Invalid argument type {definition.type}, did it fail to register?`)
 
-	if string.find(rawArg, '["`]', 1) then
-		rawArg = string.match(rawArg, '[^"`]+') or ""
-	end
-
 	local object = {
 		_K = command._K,
 		command = command,
@@ -32,19 +28,19 @@ end
 
 function Argument:transform()
 	for _, rawArg in self.rawArgs do
+		local arg = self._K.Util.String.trim(rawArg)
 		local argType = self.rawType
 		if argType.prefixes then
 			for prefix, prefixType in argType.prefixes do
-				local startIndex, endIndex = string.find(rawArg, prefix)
+				local startIndex, endIndex = string.find(arg, prefix)
 				if startIndex == 1 then
 					argType = self._K.Registry.types[prefixType]
-					rawArg = string.sub(rawArg, endIndex + 1)
+					arg = string.sub(arg, endIndex + 1)
 					break
 				end
 			end
 		end
 
-		local arg = self._K.Util.String.stripQuotes(rawArg)
 		if argType.transform then
 			local optional = not string.find(arg, "%S") and self.definition.optional
 			arg = argType.transform(arg)
@@ -56,7 +52,7 @@ function Argument:transform()
 				break
 			end
 		end
-		table.insert(self.transformedArgs, if type(arg) == "string" then self._K.Util.String.trim(arg) else arg)
+		table.insert(self.transformedArgs, arg)
 		table.insert(self.transformedTypes, argType)
 	end
 end
