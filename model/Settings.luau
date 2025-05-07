@@ -58,7 +58,7 @@ local Settings = {
 
 	-- ⛔ Ban Database
 	--[[
-	Stores active bans in format: [UserId] = {Username, Reason, Duration, BannedByUserId}
+	Stores active bans in format: [UserId] = {Username, Reason, Time, BannedByUserId}
 
 	Duration values:
 		-1: Permanent ban
@@ -76,7 +76,7 @@ local Settings = {
 	-- Warning: Use with caution as this affects everyone who joins
 	freeAdmin = {
 		-- "creator",     -- Highest authority
-		-- "superadmin",  -- Full control except core settings
+		-- "superadmin",  -- Extended administration
 		-- "admin",       -- General administration
 		-- "mod",         -- Basic moderation
 		-- "vip",         -- Special features
@@ -102,11 +102,11 @@ local Settings = {
 	- PRIVATE_SERVER_OWNER: Automatically targets private server owner
 	]]
 	userRoles = {
-		creator = {}, -- Highest level access
-		superadmin = {}, -- Extended administrative access
-		admin = {}, -- Standard administrative access
-		mod = {}, -- Moderation access
-		vip = { 1, 156, PRIVATE_SERVER_OWNER }, -- Special features access
+		creator = {}, -- Highest authority
+		superadmin = {}, -- Extended administration
+		admin = {}, -- General administration
+		mod = {}, -- Basic moderation
+		vip = { 1, 156, PRIVATE_SERVER_OWNER }, -- Special features
 	},
 
 	-- 🏅 Role Configuration
@@ -118,18 +118,13 @@ local Settings = {
 			name = "Player", -- Display name
 			color = "#0ff", -- Role color, hex only!
 
-			-- Target Restriction
-			-- When true: Users can only use commands on themselves
-			-- ⚠️ Note: Does not restrict commands using direct UserIDs
-			onlyTargetSelf = true,
+			-- Auto-Role Assignment
+			gamepass = nil, -- GamePass ID for automatic role granting
 
-			-- Permission Flags
-			permissions = {
-				admin = false, -- ⚠️ Complete bypass of all restrictions
-				banasync = false, -- Permanent ban capability
-				saveRoles = false, -- Role management for lower ranks
-				settings = false, -- Global admin settings access
-				serverlogs = false, -- Server-side log access
+			-- Command Access
+			commands = {
+				help = true, -- Enable help command
+				shutdown = false, -- Disable shutdown capability
 			},
 
 			-- Command Access Groups
@@ -144,22 +139,28 @@ local Settings = {
 				"utility", -- Common utilities
 			},
 
-			-- Command-Specific Overrides
-			commands = {
-				help = true, -- Enable help command
-				shutdown = false, -- Disable shutdown capability
+			-- Permission Flags
+			permissions = {
+				admin = false, -- ⚠️ Complete bypass of all restrictions
+				banasync = false, -- Permanent ban capability
+				saveRoles = false, -- Role management for lower ranks
+				settings = false, -- Global admin settings access
+				serverlogs = false, -- Server-side log access
 			},
 
-			-- Auto-Role Assignment
-			gamepass = nil, -- GamePass ID for automatic role granting
+			-- Target Restriction
+			-- When true: Users can only use commands on themselves
+			-- ⚠️ Note: Does not restrict commands using direct UserIDs
+			onlyTargetSelf = true,
 		},
 
 		{ -- VIP Role
 			_key = "vip", -- DO NOT CHANGE: System identifier
 			name = "VIP",
+			color = "#0f8",
+			commands = {}, -- Command-Specific Overrides
 			groups = { "vip" },
 			permissions = {},
-			color = "#0f8",
 			onlyTargetSelf = true,
 			gamepass = nil, -- Set to your VIP GamePass ID
 		},
@@ -167,33 +168,36 @@ local Settings = {
 		{ -- Moderator Role
 			_key = "mod", -- DO NOT CHANGE: System identifier
 			name = "Moderator",
+			color = "#0f0",
+			commands = {}, -- Command-Specific Overrides
 			groups = { "moderation", "general", "environment", "fun", "vip" },
 			permissions = { serverlogs = true },
-			color = "#0f0",
 			gamepass = nil, -- Set to your Moderator GamePass ID
 		},
 
 		{ -- Administrator Role
 			_key = "admin", -- DO NOT CHANGE: System identifier
 			name = "Administrator",
+			color = "#ff0",
+			commands = {}, -- Command-Specific Overrides
 			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
 			permissions = { banasync = true, serverlogs = true },
-			color = "#ff0",
 		},
 
 		{ -- SuperAdmin Role
 			_key = "superadmin", -- DO NOT CHANGE: System identifier
 			name = "SuperAdmin",
+			color = "#f80",
+			commands = {}, -- Command-Specific Overrides
 			groups = { "superadmin", "administration", "moderation", "general", "environment", "fun", "vip" },
 			permissions = { banasync = true, saveRoles = true, settings = true, serverlogs = true },
-			color = "#f80",
 		},
 
 		[math.huge] = { -- Creator Role (Highest Authority)
 			_key = "creator", -- DO NOT CHANGE: System identifier
 			name = "Game Creator",
-			permissions = { admin = true }, -- Full system access
 			color = "#f00",
+			permissions = { admin = true }, -- Full system access
 		},
 	},
 }
