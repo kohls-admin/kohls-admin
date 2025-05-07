@@ -227,35 +227,6 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 	return roleRemoved
 end
 
-function Auth.playerHasGlobalVIP(player: Player): boolean
-	local userId = player.UserId
-
-	local success, statusResult =
-		pcall(MarketplaceService.GetUserSubscriptionStatusAsync, MarketplaceService, player, "EXP-4118475727682928968")
-	if success and statusResult.IsSubscribed then
-		return true
-	end
-
-	-- legacy donations
-	local vip = { 5391359, 5391361, 5411126 }
-	for _, gamePassId in vip do
-		local ok, result = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, userId, gamePassId)
-		if ok and result then
-			return true
-		end
-	end
-
-	local assetDonations = { 313102724, 423601416 }
-	for _, assetId in assetDonations do
-		local ok, result = pcall(MarketplaceService.PlayerOwnsAsset, MarketplaceService, player, assetId)
-		if ok and result then
-			return true
-		end
-	end
-
-	return false
-end
-
 local asyncRolesCache = {}
 function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	if asyncRolesCache[userId] and not flushCache then
@@ -263,36 +234,34 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	end
 	asyncRolesCache[userId] = true
 
-	-- FIX: need to silently remove players who failed to have roles properly checked to prevent banid/unroleid on higher rank users
-
-	local shouldNetwork
+	-- FIX: prevent banid/unroleid on higher rank users who are still loading their roles
 
 	-- gamepass permissions
 	for gamePassId, roles in Data.async.gamepass do
-		if MarketplaceService:UserOwnsGamePassAsync(userId, gamePassId) then
+		local ok, result = Util.Retry(function()
+			return MarketplaceService:UserOwnsGamePassAsync(userId, gamePassId)
+		end)
+		if ok and result then
 			for _, role in roles do
 				Auth.userRoleAdd(userId, role)
-				shouldNetwork = true
 			end
 		end
 	end
 
 	-- group permissions
 	if next(Data.async.group) then
-		local ok, groups = pcall(function()
+		local ok, groups = Util.Retry(function()
 			return GroupService:GetGroupsAsync(userId)
 		end)
-		if not ok then
-			-- return false
-		end
-		for _, group in groups do
-			local groupAuth = Data.async.group[group.Id]
-			if groupAuth then
-				for _, auth in groupAuth do
-					if group.Rank == auth.rank or (not auth.exactRank and group.Rank >= auth.rank) then
-						for _, role in auth.roles do
-							Auth.userRoleAdd(userId, role)
-							shouldNetwork = true
+		if ok then
+			for _, group in groups do
+				local groupAuth = Data.async.group[group.Id]
+				if groupAuth then
+					for _, auth in groupAuth do
+						if group.Rank == auth.rank or (not auth.exactRank and group.Rank >= auth.rank) then
+							for _, role in auth.roles do
+								Auth.userRoleAdd(userId, role)
+							end
 						end
 					end
 				end
@@ -303,43 +272,42 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	-- the following requires a player instance
 	local player = Players:GetPlayerByUserId(userId)
 	if not player then
-		if shouldNetwork then
-			Auth.networkMember(userId)
-		end
 		return
 	end
 
 	if Data.settings.vip then
-		if Auth.playerHasGlobalVIP(player) then
+		local level = player:GetAttribute("_KDonationLevel")
+		if not level then
+			player:GetAttributeChangedSignal("_KDonationLevel"):Wait()
+			level = player:GetAttribute("_KDonationLevel")
+		end
+		if level > 0 then
 			Auth.userRoleAdd(userId, "vip")
-			shouldNetwork = true
 		end
 	end
 
 	-- legacy asset permissions
 	for assetId, roles in Data.async.asset do
-		if MarketplaceService:PlayerOwnsAsset(player, assetId) then
+		local ok, result = Util.Retry(function()
+			return MarketplaceService:PlayerOwnsAsset(player, assetId)
+		end)
+		if ok and result then
 			for _, role in roles do
 				Auth.userRoleAdd(userId, role)
-				shouldNetwork = true
 			end
 		end
 	end
 
 	-- subscription permissions
 	for subscriptionId, roles in Data.async.subscription do
-		local ok, result =
-			pcall(MarketplaceService.GetUserSubscriptionStatusAsync, MarketplaceService, player, subscriptionId)
+		local ok, result = Util.Retry(function()
+			return MarketplaceService:GetUserSubscriptionStatusAsync(player, subscriptionId)
+		end)
 		if ok and result.IsSubscribed then
 			for _, role in roles do
 				Auth.userRoleAdd(userId, role)
-				shouldNetwork = true
 			end
 		end
-	end
-
-	if shouldNetwork then
-		Auth.networkMember(userId)
 	end
 end
 
