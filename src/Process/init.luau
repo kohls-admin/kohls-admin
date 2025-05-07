@@ -12,14 +12,12 @@ type ArgumentDefinition = Registry.ArgumentDefinition
 local Process = {}
 
 --- Parses a string into a raw command format.
-function Process.rawParse(message: string, prefix: string, delimiter: string?): { any }?
-	local argDelimiter: string = delimiter or "%s"
+function Process.rawParse(message: string, prefix: string): { any }?
 	-- is there a command prefix?
 	if string.find(message, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
 		return
 	end
-	local prefixLen = #prefix
-	message = string.sub(message, prefixLen + 1)
+	message = string.sub(message, #prefix + 1)
 
 	local argument = { 1 }
 	local command = { argument }
@@ -29,13 +27,16 @@ function Process.rawParse(message: string, prefix: string, delimiter: string?): 
 	for first, last in utf8.graphemes(message) do
 		local char: string = string.sub(message, first, last)
 		if string.find(char, '["`]') and not escaped and (not quoted or quoted == char) then
-			table.insert(argument, char)
-			if not quoted and not string.find(lastChar, argDelimiter) then
-				argument = { first }
-				table.insert(command, argument)
+			if not quoted and lastChar == " " then
+				if #argument == 1 then
+					argument[1] = first + 1
+				else
+					argument = { first + 1 }
+					table.insert(command, argument)
+				end
 			end
 			quoted = not quoted and char or nil
-		elseif not (quoted or escaped) and char == prefix and string.find(lastChar, argDelimiter) then
+		elseif not (quoted or escaped) and char == prefix and lastChar == " " then
 			if #argument == 1 then
 				table.remove(command)
 			end
@@ -44,27 +45,25 @@ function Process.rawParse(message: string, prefix: string, delimiter: string?): 
 			table.insert(commands, command)
 		elseif char == "\\" and not escaped then
 			escaped = true
-			table.insert(argument, char)
 		else
 			escaped = nil
-			if not quoted and string.find(char, argDelimiter) and not string.find(lastChar, argDelimiter) then
+			if not quoted and char == " " and lastChar ~= " " then
 				argument = { first + 1 }
 				table.insert(command, argument)
-			elseif quoted or not string.find(char, argDelimiter) then
+			elseif quoted or char ~= " " then
 				table.insert(argument, char)
 			end
 		end
 		lastChar = char
 	end
 
-	-- TODO: can this be improved?
 	-- compiles arg char list into a string
 	for _, cmd in commands do
-		for _, arg in cmd do
+		for argIndex, arg in cmd do
 			local position = arg[1]
 			local text = table.concat(arg, nil, 2)
 			table.clear(arg)
-			arg[1] = position + prefixLen -- offset position by prefix :)
+			arg[1] = position + #prefix
 			arg[2] = text
 		end
 	end
