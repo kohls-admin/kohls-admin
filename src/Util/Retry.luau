@@ -7,14 +7,16 @@
 ]]
 local function Retry(
 	callback: () -> any | nil,
-	maxAttempts: number,
-	initialDelay: number,
+	maxAttempts: number?,
+	initialDelay: number?,
 	backoffBase: number?
 ): (boolean, any)
-	local backoff = backoffBase or 0
+	maxAttempts = maxAttempts or 5
+	initialDelay = initialDelay or 0.2
+	local backoff = backoffBase or 2
 	local feedback
 
-	for attempt = 0, maxAttempts - 1 do
+	for attempt = 0, maxAttempts :: number - 1 do
 		local results = { pcall(callback) }
 
 		if results[1] then
