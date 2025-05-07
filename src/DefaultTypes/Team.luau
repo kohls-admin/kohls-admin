@@ -5,7 +5,11 @@ local _K
 local typeTeam = {
 	validate = function(input: string, from: number): (boolean, string?)
 		local query = string.lower(input)
-		for _, team in Teams:GetTeams() do
+		local teams = Teams:GetTeams()
+		if #teams == 0 then
+			return false, "No teams available"
+		end
+		for _, team in teams do
 			if string.find(string.lower(team.Name), query, 1, true) == 1 then
 				return true
 			end
