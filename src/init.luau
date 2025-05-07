@@ -222,11 +222,6 @@ local function playerAdded(player: Player)
 		end
 		_K.log(message, "CHAT", player.UserId)
 	end)
-
-	if _K.Data.settings.announcement then
-		local message, from = unpack(_K.Data.settings.announcement)
-		_K.Remote.Announce:FireClient(player, message, from, 0)
-	end
 end
 
 local _initialized

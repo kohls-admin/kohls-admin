@@ -39,6 +39,21 @@ return {
 				end
 			end)
 		end,
+		envClient = function(_K)
+			task.spawn(function()
+				repeat
+					task.wait()
+				until _K.client and _K.client.settings and _K.client.settings.announcement
+				local disconnect
+				disconnect = _K.client.settings.announcement:hook(function(data)
+					disconnect()
+					if data then
+						local message, from = unpack(data)
+						_K.Announce(message, from, 0)
+					end
+				end)
+			end)
+		end,
 
 		run = function(context, message)
 			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
