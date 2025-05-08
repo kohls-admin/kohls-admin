@@ -180,6 +180,9 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			local log = {}
 
 			for _, command in result do
+				if command.definition.noLog then
+					continue
+				end
 				table.insert(log, _K.Data.settings.prefix .. command.alias)
 				for _, arg in command.args do
 					if arg.rawType.log then

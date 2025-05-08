@@ -41,12 +41,13 @@ export type ArgumentDefinition = {
 }
 
 --- @within Registry
---- @type CommandDefinition {name: string, aliases: { string }?, description: string, group: string, args: { ArgumentDefinition }, envClient: {} | () -> {}?, env: {} | () -> {}?, runClient: (...any) -> ()?, run: (...any) -> ()? }
+--- @type CommandDefinition {name: string, aliases: { string }?, description: string, group: string, noLog: boolean?, args: { ArgumentDefinition }, envClient: {} | () -> {}?, env: {} | () -> {}?, runClient: (...any) -> ()?, run: (...any) -> ()? }
 export type CommandDefinition = {
 	name: string,
 	aliases: { string }?,
 	description: string,
 	group: string,
+	noLog: boolean?,
 	args: { ArgumentDefinition }?,
 	envClient: Environment?,
 	env: Environment?,
