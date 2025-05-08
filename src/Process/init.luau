@@ -175,6 +175,10 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 	end
 
 	task.spawn(function()
+		if noLog then
+			return
+		end
+
 		if commandRan then
 			local tasks = Util.TaskGroup.new()
 			local log = {}
@@ -185,34 +189,33 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 				end
 				table.insert(log, _K.Data.settings.prefix .. command.alias)
 				for _, arg in command.args do
-					if arg.rawType.log then
-						table.insert(log, arg.rawType.log(arg))
-					else
-						tasks:add(function()
-							local argString = Util.Table.concat(arg.parsedArgs, ",")
-							table.insert(log, Util.String.filterForBroadcast(argString, from))
-						end)
-					end
+					tasks:add(function()
+						local argString = Util.Table.concat(arg.parsedArgs, ",")
+						if arg.rawType.filterLog then
+							argString = Util.String.filterForBroadcast(argString, from)
+						end
+						table.insert(log, argString)
+					end)
 				end
 			end
 
 			tasks:wait()
 
-			if not noLog then
-				logText = table.concat(log, " ")
+			if #log == 0 then
+				return
 			end
-		elseif not noLog then -- filter entire rawText as broadcast
+
+			logText = table.concat(log, " ")
+		else -- filter entire rawText as broadcast
 			local trimmed = Util.String.trim(rawText)
 			if #trimmed > 0 then
 				logText = Util.String.filterForBroadcast(Util.String.trim(rawText), from)
 			end
 		end
 
-		if not noLog then
-			_K.log(logText or "", "COMMAND", from, true)
-			if commandError then
-				_K.log(Util.String.filterForBroadcast(commandError, from), "ERROR", from, true)
-			end
+		_K.log(logText or "", "COMMAND", from, true)
+		if commandError then
+			_K.log(Util.String.filterForBroadcast(commandError, from), "ERROR", from, true)
 		end
 	end)
 

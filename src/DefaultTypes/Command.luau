@@ -26,9 +26,6 @@ return function(_K)
 		parse = function(command)
 			return command
 		end,
-		log = function(arg)
-			return _K.Util.Table.concat(arg.parsedArgs, ",")
-		end,
 	}
 
 	_K.Registry.registerType("command", commandType)

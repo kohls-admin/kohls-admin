@@ -95,6 +95,7 @@ end
 
 return function(_K)
 	_K.Registry.registerType("timeSimple", {
+		filterLog = true,
 		validate = function(v)
 			return parseTime(v)
 		end,

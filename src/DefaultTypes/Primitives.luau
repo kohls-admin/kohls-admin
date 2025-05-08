@@ -19,15 +19,13 @@ local booleanType = {
 			error("Invalid boolean value.")
 		end
 	end,
-	log = function(arg)
-		return _K.Util.Table.concat(arg.parsedArgs, ",")
-	end,
 	suggestions = function(text: string, from: number)
 		return _K.Util.Suggest.query(text, { "true", "false" })
 	end,
 }
 
 local integerType = {
+	filterLog = true,
 	transform = function(v)
 		return if v == "" then 0 else tonumber(v)
 	end,
@@ -40,6 +38,7 @@ local integerType = {
 }
 
 local numberType = {
+	filterLog = true,
 	transform = integerType.transform,
 	validate = simpleValidate,
 	parse = function(v)
@@ -48,6 +47,7 @@ local numberType = {
 }
 
 local stringType = {
+	filterLog = true,
 	validate = simpleValidate,
 	parse = tostring,
 }

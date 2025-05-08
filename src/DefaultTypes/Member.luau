@@ -93,9 +93,6 @@ local typeMember = {
 
 		return _K.Util.Suggest.query(text, names)
 	end,
-	log = function(arg)
-		return _K.Util.Table.concat(arg.parsedArgs, ",")
-	end,
 }
 
 local typeMembers = {

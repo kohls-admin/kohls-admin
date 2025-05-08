@@ -139,9 +139,6 @@ local typeIndividual = {
 	transform = string.lower,
 	validate = generateValidate(parseIndividual),
 	parse = parseIndividual,
-	log = function(arg)
-		return _K.Util.Table.concat(arg.parsedArgs, ",")
-	end,
 	suggestions = function(text, from, definition)
 		return _K.Util.Suggest.query(text, baseSuggestions(text, from, definition))
 	end,
@@ -167,7 +164,6 @@ local typeMultiple = {
 		end
 		return players
 	end,
-	log = typeIndividual.log,
 	prefixes = prefixes,
 	suggestions = typeIndividual.suggestions,
 }
@@ -203,7 +199,6 @@ local typeUser = {
 		return players
 	end,
 	suggestions = typeIndividual.suggestions,
-	log = typeIndividual.log,
 	prefixes = prefixes,
 }
 

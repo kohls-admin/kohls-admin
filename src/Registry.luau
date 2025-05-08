@@ -13,11 +13,12 @@ type Environment = {} | (_K: any) -> {}
 export type ArgumentFunction = (value: any, from: Player) -> ...any
 
 --- @within Registry
---- @type ArgumentType {name: string, displayName: string?, listable: boolean?, transform: ArgumentFunction?, validate: ArgumentFunction, parse: ArgumentFunction, preParse: ArgumentFunction?, postParse: ArgumentFunction?, suggestions: ArgumentFunction?, prefixes: { [string]: string }? }
+--- @type ArgumentType {name: string, displayName: string?, listable: boolean?, filterLog: boolean?, transform: ArgumentFunction?, validate: ArgumentFunction, parse: ArgumentFunction, preParse: ArgumentFunction?, postParse: ArgumentFunction?, suggestions: ArgumentFunction?, prefixes: { [string]: string }? }
 export type ArgumentType = {
 	name: string?,
 	displayName: string?,
 	listable: boolean?,
+	filterLog: boolean?,
 	transform: ArgumentFunction?,
 	validate: ArgumentFunction?,
 	parse: ArgumentFunction?,
@@ -84,9 +85,6 @@ function Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string 
 		end,
 		suggestions = function(text)
 			return Util.Suggest.query(text, suggestions, enumItems)
-		end,
-		log = function(arg)
-			return Util.Table.concat(arg.parsedArgs, ",")
 		end,
 	}
 end
