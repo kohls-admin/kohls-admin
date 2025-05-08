@@ -66,8 +66,7 @@ return {
 				return
 			end
 
-			local filteredMsg = context._K.Util.String.filterForBroadcast(message, context.from)
-			local announcement = { filteredMsg, context.from }
+			local announcement = { message, context.from }
 			context._K.Data.Cache.settings.announcement = announcement
 			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", announcement)
 		end,

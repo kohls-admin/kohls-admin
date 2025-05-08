@@ -133,7 +133,6 @@ return {
 		run = function(context, userIds, duration: number?, reason: string?)
 			if type(reason) == "string" then
 				reason = string.sub(reason, 1, 400) -- banasync limit
-				reason = context._K.Util.String.filterForBroadcast(reason, context.from)
 			end
 
 			if not context._K.Auth.hasPermission(context.from, "banasync") then
@@ -233,9 +232,6 @@ return {
 			},
 		},
 		run = function(context, players, reason: string?)
-			if type(reason) == "string" then
-				reason = context._K.Util.String.filterForBroadcast(reason, context.from)
-			end
 			for _, player in players do
 				player:Kick(reason)
 			end
@@ -521,12 +517,6 @@ return {
 			if context.undo then
 				displayName = nil
 			end
-
-			local ok, result = context._K.Util.String.filterResult(displayName, context.from)
-			if not ok then
-				return
-			end
-			displayName = context._K.Util.String.filterResultForBroadcast(result, context.from)
 
 			for _, player in players do
 				context.env[player.UserId] = displayName
@@ -2231,12 +2221,12 @@ return {
 				description = "The player(s) whose leaderstat to change.",
 			},
 			{
-				type = "string",
+				type = "rawString",
 				name = "Stat",
 				description = "The stat to change.",
 			},
 			{
-				type = "string",
+				type = "rawString",
 				name = "Value",
 				description = "The value of the stat.",
 			},
@@ -2256,7 +2246,7 @@ return {
 							local v = string.lower(value)
 							child.Value = v ~= "false" and v ~= "nil" and v ~= "0" and v ~= "off"
 						elseif child:IsA("StringValue") then
-							child.Value = value
+							child.Value = context._K.Util.String.filterForBroadcast(value, context.from)
 						end
 					end
 				end

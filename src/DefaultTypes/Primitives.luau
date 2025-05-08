@@ -46,10 +46,14 @@ local numberType = {
 	end,
 }
 
-local stringType = {
+local rawStringType = {
 	filterLog = true,
 	validate = simpleValidate,
 	parse = tostring,
+}
+
+local stringType = {
+	validate = simpleValidate,
 }
 
 return function(context)
@@ -66,6 +70,13 @@ return function(context)
 	_K.Registry.registerType("numbers", {
 		listable = true,
 	}, numberType)
+	_K.Registry.registerType("rawString", rawStringType)
+	_K.Registry.registerType("rawStrings", {
+		listable = true,
+	}, rawStringType)
+	function stringType.parse(v, self)
+		return _K.Util.String.filterForBroadcast(v, self.command.from)
+	end
 	_K.Registry.registerType("string", stringType)
 	_K.Registry.registerType("strings", {
 		listable = true,

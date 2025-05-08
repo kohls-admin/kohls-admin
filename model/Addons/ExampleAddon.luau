@@ -20,8 +20,8 @@ return function(_K)
 			"boolean" "booleans"
 			"integer" "integers"
 			"number" "numbers"
-			"string" "strings"
-			"stringGreedy" Uses ALL text after the argument position, this argument should always be last!
+			"string" "strings"        - normal strings are filtered by default!
+			"rawString", "rawStrings" - use rawStrings for commands that require an unfiltered input
 
 			"ban" "bans"
 			"color"
@@ -100,10 +100,6 @@ return function(_K)
 
 		-- Function that runs on the server when the command is called
 		run = function(context, message: string?)
-			-- Filtering the message before-hand with the String Utility API
-			-- You can see other Util API on the documentation: https://docs.kohl.gg/api/Util
-			message = _K.Util.String.filterForBroadcast(message, context.from) or nil
-
 			-- Create a simple Roblox message object
 			local messageInstance = Instance.new("Message", workspace)
 

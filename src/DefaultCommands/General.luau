@@ -34,7 +34,7 @@ return {
 		description = "Sends a message to everyone in the server.",
 		args = {
 			{
-				type = "string",
+				type = "rawString",
 				name = "Message",
 				description = "The message to send.",
 			},
@@ -64,7 +64,7 @@ return {
 				description = "The player(s) to notify.",
 			},
 			{
-				type = "string",
+				type = "rawString",
 				name = "Message",
 				description = "The message to send.",
 			},
@@ -94,7 +94,7 @@ return {
 				description = "The player(s) to message.",
 			},
 			{
-				type = "string",
+				type = "rawString",
 				name = "Message",
 				description = "The message to send.",
 			},
@@ -202,7 +202,7 @@ return {
 				description = "The player(s) to poll.",
 			},
 			{
-				type = "string",
+				type = "rawString",
 				name = "Question",
 				description = "The question to poll.",
 			},

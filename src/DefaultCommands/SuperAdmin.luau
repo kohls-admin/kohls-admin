@@ -81,7 +81,7 @@ return {
 		description = "Runs a command string globally in all servers.",
 		args = {
 			{
-				type = "string",
+				type = "rawString",
 				name = "Command string",
 				description = "The command string to run.",
 			},
