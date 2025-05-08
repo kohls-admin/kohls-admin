@@ -29,21 +29,21 @@ local function getDonationLevel(player)
 		return 4
 	end
 
-	for index, passId in gamePassDonations do
+	for level = #gamePassDonations, 1, -1 do
 		local okGamePass, result = Util.Retry(function()
-			return Util.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
+			return Util.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, gamePassDonations[level])
 		end)
 		if okGamePass and result then
-			return index
+			return level
 		end
 	end
 
-	for index, assetId in assetDonations do
+	for level = #assetDonations, 1, -1 do
 		local okAsset, result = Util.Retry(function()
-			return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetId)
+			return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetDonations[level])
 		end)
 		if okAsset and result then
-			return index
+			return level
 		end
 	end
 
