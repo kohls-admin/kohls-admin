@@ -14,6 +14,12 @@ function About.new(_K)
 		.. "<font transparency='0.5'>Copy the link below to purchase.</font>\n"
 		.. "<font color='#f00'><b>To receive perks, join a new server after your purchase!</b></font>"
 
+	local donationLevel = _K.UI.LocalPlayer:GetAttribute("_KDonationLevel")
+	if not donationLevel then
+		_K.UI.LocalPlayer:GetAttributeChangedSignal("_KDonationLevel"):Wait()
+		donationLevel = _K.UI.LocalPlayer:GetAttribute("_KDonationLevel")
+	end
+
 	local equippedUGC = {}
 	local debounceEquip = _K.Util.Function.debounce(0.25, function(id, equip, equipped, name, button)
 		local existing = equippedUGC[equip]
@@ -34,7 +40,6 @@ function About.new(_K)
 
 		_K.Remote.VIPUGCMethod:FireServer(id, equip, equipped, name)
 	end)
-	local donationLevel = UI.state(_K.UI.LocalPlayer, "Attribute:_KDonationLevel")
 
 	-- THIRD PARTY PURCHASES HANDLING
 
@@ -218,7 +223,7 @@ function About.new(_K)
 		}
 	do
 		task.defer(function()
-			local owned = (donationLevel._value or 0) >= (ugc.level or 3)
+			local owned = (donationLevel or 0) >= (ugc.level or 3)
 			if not owned then
 				local ok, result = _K.Util.Retry(function()
 					return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
