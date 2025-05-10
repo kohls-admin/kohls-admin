@@ -104,6 +104,8 @@ local function updateBans()
 	return ok, result
 end
 
+-- MAIN
+
 local function fillMemberName(key, data)
 	local userId = tonumber(key)
 	data.name = Util.getUserInfo(userId).Username
@@ -230,32 +232,34 @@ end
 
 -- LOGS
 
-local function syncLogs(logs)
-	Hook.preSyncLogs:Fire(logs)
+local function syncLogs(logsData)
+	Hook.preSyncLogs:Fire(unpack(logsData))
 	Util.Defer.reset()
 	local newLogs = {}
 	local newLogsRaw = {}
-	for _, log in logs do
-		Util.Defer.wait()
-		local text, level, time, from, name = unpack(log)
-		local exists
-		for _, existingLog in Data.logs do
-			if
-				existingLog.time == time
-				and existingLog.from == from
-				and existingLog.level == level
-				and existingLog.text == text
-			then
-				exists = true
-				break
+	for _, logData in logsData do
+		for _, log in logData do
+			Util.Defer.wait()
+			local text, level, time, from, name = unpack(log)
+			local exists
+			for _, existingLog in Data.logs do
+				if
+					existingLog.time == time
+					and existingLog.from == from
+					and existingLog.level == level
+					and existingLog.text == text
+				then
+					exists = true
+					break
+				end
 			end
-		end
-		if exists then
-			continue
-		end
+			if exists then
+				continue
+			end
 
-		table.insert(newLogs, { text = text, level = level, time = time, from = from, name = name })
-		table.insert(newLogsRaw, { text, level, time, from, name })
+			table.insert(newLogs, { text = text, level = level, time = time, from = from, name = name })
+			table.insert(newLogsRaw, { text, level, time, from, name })
+		end
 	end
 	table.move(newLogs, 1, #newLogs, #Data.logs + 1, Data.logs)
 	Util.Defer.wait()
@@ -265,11 +269,11 @@ local function syncLogs(logs)
 			Remote.Logs:FireClient(player, newLogsRaw)
 		end
 	end
-	Hook.postSyncLogs:Fire(logs)
+	Hook.postSyncLogs:Fire(unpack(logsData))
 end
 
 local function rawSortTime(a, b)
-	return a[3] > b[3]
+	return a[3] > b[3] -- reverse sort
 end
 
 local nextLogsInterval = tick() + Data.updateAsyncInterval
@@ -280,16 +284,16 @@ local function updateLogs()
 	end
 
 	local save = false
-	local logs = Data.Cache.logs
-	if next(logs) then
+	local chatLogs, logs = Data.Cache.chatLogs, Data.Cache.logs
+	if next(chatLogs) or next(logs) then
 		save = true
-		Data.Cache.logs = {}
+		Data.Cache.chatLogs, Data.Cache.logs = {}, {}
 	end
 
 	local sync
-	local ok, result, metaData = Data.Store.updateAsync("Logs", function(value, metaData)
+	local ok, result, metaData = Data.Store.updateAsync("LogsV2", function(value, metaData)
 		if not value then
-			return logs
+			return { chatLogs, logs }
 		end
 		if metaData.UpdatedTime > Data.updatedTimeLogs then
 			sync = value
@@ -298,19 +302,22 @@ local function updateLogs()
 			return
 		end
 
-		for _, log in logs do
-			table.insert(value, log)
-		end
-		table.sort(value, rawSortTime)
+		local savedChatLogs, savedLogs = unpack(value)
+		for logData, savedlogData in { [chatLogs] = savedChatLogs, [logs] = savedLogs } do
+			for _, log in logData do
+				table.insert(savedlogData, log)
+			end
+			table.sort(savedlogData, rawSortTime)
 
-		local logDataSize = #Http:JSONEncode(value)
-		local excess = logDataSize - DATA_LIMIT
-		local count = #value
+			local logDataSize = #Http:JSONEncode(logData)
+			local excess = logDataSize - math.ceil(DATA_LIMIT / 2)
+			local count = #logData
 
-		while excess > 0 do
-			excess -= #Http:JSONEncode(value[count]) + 1
-			value[count] = nil
-			count -= 1
+			while excess > 0 do
+				excess -= #Http:JSONEncode(logData[count]) + 1
+				logData[count] = nil
+				count -= 1
+			end
 		end
 
 		return value
@@ -325,11 +332,12 @@ local function updateLogs()
 		end
 	else
 		warn(`[Kohl's Admin] Logs Datastore UpdateAsync failed: {result}`)
-		for _, log in Data.Cache.logs do
-			table.insert(logs, log)
+		for logData, logCache in { [chatLogs] = Data.Cache.chatLogs, [logs] = Data.Cache.logs } do
+			for _, log in logData do
+				table.insert(logCache, log)
+			end
+			table.sort(logCache, rawSortTime)
 		end
-		table.sort(logs, rawSortTime)
-		Data.Cache.logs = logs
 	end
 
 	nextLogsInterval = tick() + Data.updateAsyncInterval
@@ -372,7 +380,7 @@ function Data.initialize(name)
 	end
 
 	if Data.settings.saveLogs ~= false then
-		local okLogs, logs, logsMetaData = Data.Store.getAsync("Logs")
+		local okLogs, logs, logsMetaData = Data.Store.getAsync("LogsV2")
 		if okLogs then
 			if logs then
 				Data.updatedTimeLogs = logsMetaData.UpdatedTime

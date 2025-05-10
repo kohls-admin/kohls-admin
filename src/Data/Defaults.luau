@@ -7,6 +7,7 @@ local Cache = {
 	members = {},
 	settings = {},
 	-- Logs
+	chatLogs = {},
 	logs = {},
 	-- userId
 	players = {},

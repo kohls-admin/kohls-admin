@@ -105,6 +105,9 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 			if level == "COMMAND" and (not from or _K.Auth.getRank(from) > 1) then
 				table.insert(_K.Data.Cache.logs, { log.text, log.level, log.time, from, log.name })
 			end
+			if level == "CHAT" then
+				table.insert(_K.Data.Cache.chatLogs, { log.text, log.level, log.time, from, log.name })
+			end
 			for _, player in _K.Services.Players:GetPlayers() do
 				if _K.Auth.hasPermission(player.UserId, "serverlogs") then
 					_K.Remote.Log:FireClient(player, log)
