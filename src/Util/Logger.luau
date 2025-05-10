@@ -77,7 +77,7 @@ function Logger:log(text: string, level: LogType, userId: number?): Log?
 	}
 
 	table.insert(self.logs, log)
-	if #self.logs > self.limit then
+	while #self.logs > self.limit do
 		table.remove(self.logs, 1)
 	end
 
