@@ -12,46 +12,39 @@ return {
 			},
 		},
 		env = function(_K)
-			task.defer(function()
-				local subscribeSuccess, subscribeConnection = pcall(function()
-					return _K.Util.Services.MessagingService:SubscribeAsync("KA_Announcement", function(message)
-						if type(message.Data) ~= "table" then
-							_K.Data.settings.announcement = false
-							return
-						end
+			task.spawn(function()
+				_K.Util.Services.MessagingService:SubscribeAsync("KA_Announcement", function(message)
+					if type(message.Data) ~= "table" then
+						_K.Data.settings.announcement = false
+						return
+					end
 
-						local oldMsg, oldFrom
-						if _K.Data.settings.announcement then
-							oldMsg, oldFrom = unpack(_K.Data.settings.announcement)
-						end
+					local oldMsg, oldFrom
+					if _K.Data.settings.announcement then
+						oldMsg, oldFrom = unpack(_K.Data.settings.announcement)
+					end
 
-						local msg, from = unpack(message.Data)
-						if msg ~= oldMsg or from ~= oldFrom then
-							_K.Data.settings.announcement = message.Data
-							_K.Remote.Announce:FireAllClients(msg, from, 0)
-						end
-					end)
+					local msg, from = unpack(message.Data)
+					if msg ~= oldMsg or from ~= oldFrom then
+						_K.Data.settings.announcement = message.Data
+						_K.Remote.Announce:FireAllClients(msg, from, 0)
+					end
 				end)
-				if subscribeSuccess then
-					game:BindToClose(function()
-						subscribeConnection:Disconnect()
-					end)
-				end
 			end)
 		end,
 		envClient = function(_K)
 			task.spawn(function()
 				repeat
 					task.wait()
-				until _K.client and _K.client.settings and _K.client.settings.announcement
-				local disconnect
-				disconnect = _K.client.settings.announcement:hook(function(data)
-					disconnect()
-					if data then
-						local message, from = unpack(data)
-						_K.Announce(message, from, 0)
-					end
-				end)
+				until _K.client and _K.client.ready
+
+				local announcement = _K.client.settings.announcement._value
+				if not announcement then
+					return
+				end
+
+				local message, from = unpack(announcement)
+				_K.Announce(message, from, 0)
 			end)
 		end,
 
