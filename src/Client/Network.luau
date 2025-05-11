@@ -97,16 +97,37 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 	task.defer(_K.client.dashboard.Logs.updateList, _K.client.dashboard.Logs)
 end)
 
-_K.Remote.Logs.OnClientEvent:Connect(function(logs)
+_K.Remote.Logs.OnClientEvent:Connect(function(rawLogs)
 	if not _K.client.ready then
 		return
 	end
 
 	_K.Util.Defer.reset()
-	for _, log in logs do
+
+	local logs = {}
+	for _, log in rawLogs do
+		_K.Util.Defer.wait()
 		log.text, log.level, log.time, log.from, log.name = unpack(log)
 		log[1], log[2], log[3], log[4], log[5] = nil
-		_K.Util.Defer.wait()
+
+		local exists
+		for _, existingLog in _K.Data.logs do
+			if
+				existingLog.time == log.time
+				and existingLog.from == log.from
+				and existingLog.level == log.level
+				and existingLog.text == log.text
+			then
+				exists = true
+				break
+			end
+		end
+
+		if exists then
+			continue
+		end
+
+		table.insert(logs, log)
 	end
 
 	table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)
