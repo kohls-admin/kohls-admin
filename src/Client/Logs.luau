@@ -138,6 +138,7 @@ function Logs.new(_K)
 				else text
 		end
 
+		text = text or "LOADING..."
 		item.Text = text
 		if item:FindFirstChild("TooltipRef") and item.TooltipRef.Value then
 			item.TooltipRef.Value.Text = `<font transparency="0.5">{os.date("%y-%m-%d", log.time)} </font>` .. text
