@@ -87,8 +87,7 @@ return {
 	},
 	{
 		name = "role",
-		aliases = { "setrole", "addrole", "giverole" },
-		description = "Assigns role(s) to one or more user(s).",
+		description = "Assigns a permanent role(s) to one or more user(s).",
 		args = {
 			{
 				type = "userIds",
@@ -100,20 +99,71 @@ return {
 				name = "Roles(s)",
 				description = "The roles(s) to assign.",
 			},
-			{
-				type = "boolean",
-				name = "Permanent",
-				description = "Saves the role to persist across all servers.",
-				optional = true,
-				permissions = { saveRoles = true },
-			},
 		},
+		permissions = { saveRoles = true },
 
-		run = function(context, userIds, roles, permanent)
+		run = function(context, userIds, roles)
 			for _, userId in userIds do
 				local rolesAdded = {}
 				for _, role in roles do
-					if context._K.Auth.userRoleAdd(userId, role, permanent) then
+					if context._K.Auth.userRoleAdd(userId, role, true) then
+						local roleData = context._K.Data.roles[role]
+						table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
+					end
+				end
+
+				local player = context._K.Util.Services.Players:GetPlayerByUserId(userId)
+				if player and #rolesAdded > 0 then
+					context._K.Remote.Notify:FireClient(player, {
+						Text = `Gave you the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
+						From = context.from,
+					})
+				end
+			end
+
+			task.spawn(function()
+				local roleString = {}
+				for _, role in roles do
+					local roleData = context._K.Data.roles[role]
+					table.insert(roleString, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
+				end
+
+				local names = {}
+				for _, userId in userIds do
+					table.insert(names, context._K.Util.getUserInfo(userId).DisplayName)
+				end
+
+				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+					From = "_K",
+					Text = `<b>Gave Roles:</b> {table.concat(roleString, ", ")}\n<b>To:</b> <i>{table.concat(
+						names,
+						", "
+					)}</i>`,
+				})
+			end)
+		end,
+	},
+	{
+		name = "temprole",
+		description = "Assigns a temporary role(s) to one or more user(s).",
+		args = {
+			{
+				type = "userIds",
+				name = "Users(s)",
+				description = "The user(s) to assign roles.",
+			},
+			{
+				type = "roles",
+				name = "Roles(s)",
+				description = "The roles(s) to assign.",
+			},
+		},
+
+		run = function(context, userIds, roles)
+			for _, userId in userIds do
+				local rolesAdded = {}
+				for _, role in roles do
+					if context._K.Auth.userRoleAdd(userId, role) then
 						local roleData = context._K.Data.roles[role]
 						table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
 					end

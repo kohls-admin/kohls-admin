@@ -20,67 +20,78 @@ local legacyRoles = {
 return function(_K)
 	for index, definition in legacyRoles do
 		local role = definition.role
+		local roleData = _K.Data.roles[role]
 
 		-- skip registering command if role doesn't exist
-		if not _K.Data.roles[role] then
+		if not roleData then
 			continue
+		end
+
+		local function run(context, userIds)
+			local usersRoled = {}
+			local roleData = context._K.Data.roles[role]
+			for _, userId in userIds do
+				if context._K.Auth.userRoleAdd(userId, role, context.definition.permissions.saveRoles) then
+					table.insert(usersRoled, userId)
+					local player = context._K.Util.Services.Players:GetPlayerByUserId(userId)
+					if not player then
+						continue
+					end
+					context._K.Remote.Notify:FireClient(player, {
+						Text = `Gave you the <b><font color="{roleData.color}">{roleData.name}</font></b> role!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
+						From = context.from,
+					})
+				end
+			end
+
+			if #usersRoled == 0 then
+				return
+			end
+
+			task.spawn(function()
+				local names = {}
+				for _, userId in usersRoled do
+					table.insert(names, context._K.Util.getUserInfo(userId).DisplayName)
+				end
+
+				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+					From = "_K",
+					Text = `<b>Gave Role:</b> <b><font color="{roleData.color}">{roleData.name}</font></b>\n<b>To:</b> <i>{table.concat(
+						names,
+						", "
+					)}</i>`,
+				})
+			end)
 		end
 
 		_K.Registry.registerCommand(_K, {
 			name = role,
 			description = `Gives the {role} role to one or more user(s).`,
 			group = definition.group,
+			permissions = { saveRoles = true },
 			args = {
 				{
 					type = "userIds",
 					name = "Users(s)",
 					description = `The user(s) to give the {role} role to.`,
 				},
+			},
+			run = run,
+		})
+
+		_K.Registry.registerCommand(_K, {
+			name = "temp" .. role,
+			description = `Gives the {role} role temporarily to one or more user(s).`,
+			group = definition.group,
+			permissions = {},
+			args = {
 				{
-					type = "boolean",
-					name = "Permanent",
-					description = "Saves the role to persist across all servers.",
-					optional = true,
-					permissions = { saveRoles = true },
+					type = "userIds",
+					name = "Users(s)",
+					description = `The user(s) to give the {role} role to.`,
 				},
 			},
-
-			run = function(context, userIds, permanent)
-				local usersRoled = {}
-				local roleData = context._K.Data.roles[role]
-				for _, userId in userIds do
-					if context._K.Auth.userRoleAdd(userId, role, permanent) then
-						table.insert(usersRoled, userId)
-						local player = context._K.Util.Services.Players:GetPlayerByUserId(userId)
-						if not player then
-							continue
-						end
-						context._K.Remote.Notify:FireClient(player, {
-							Text = `Gave you the <b><font color="{roleData.color}">{roleData.name}</font></b> role!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
-							From = context.from,
-						})
-					end
-				end
-
-				if #usersRoled == 0 then
-					return
-				end
-
-				task.spawn(function()
-					local names = {}
-					for _, userId in usersRoled do
-						table.insert(names, context._K.Util.getUserInfo(userId).DisplayName)
-					end
-
-					context._K.Remote.Notify:FireClient(context.fromPlayer, {
-						From = "_K",
-						Text = `<b>Gave Role:</b> <b><font color="{roleData.color}">{roleData.name}</font></b>\n<b>To:</b> <i>{table.concat(
-							names,
-							", "
-						)}</i>`,
-					})
-				end)
-			end,
+			run = run,
 		})
 
 		_K.Registry.registerCommand(_K, {
