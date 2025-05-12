@@ -262,8 +262,8 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	-- private server datastore
 	local dataStoreKey = "_KData"
 	if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
-		for role, users in settings.roles do
-			if role ~= "creator" and table.find(users, game.PrivateServerOwnerId) then
+		for role, users in settings.userRoles do
+			if table.find(users, game.PrivateServerOwnerId) then
 				dataStoreKey ..= game.PrivateServerOwnerId
 				break
 			end
