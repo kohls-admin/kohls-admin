@@ -3,9 +3,6 @@
 	This file contains all the configuration options for the Kohl's Admin system.
 ]]
 
--- Detect private server owner ID
-local PRIVATE_SERVER_OWNER = if game:GetService("RunService"):IsServer() then game.PrivateServerOwnerId else nil
-
 local Settings = {
 
 	-- 🛠️ Auto-Update Configuration
@@ -106,7 +103,7 @@ local Settings = {
 		superadmin = {}, -- Extended administration
 		admin = {}, -- General administration
 		mod = {}, -- Basic moderation
-		vip = { 1, 156, PRIVATE_SERVER_OWNER }, -- Special features
+		vip = { 1, 156, game.PrivateServerOwnerId }, -- Special features
 	},
 
 	-- 🏅 Role Configuration
