@@ -1,8 +1,6 @@
 -- addons not containing in "Client" or "Server" will run in both contexts (shared)
 return function(_K)
-	if game.PlaceId == 2569622788 or _K.IsStudio then -- ONLY FOR DEMO PLACE
-		_K.log(`Hello World from ExampleAddon!`, "INFO")
-	end
+	-- _K.log(`Hello World from ExampleAddon!`, "INFO")
 
 	_K.Registry.registerCommand(_K, {
 		name = "customcommand",
