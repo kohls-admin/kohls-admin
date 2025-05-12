@@ -56,7 +56,9 @@ name: string, -- Name of the command.
 aliases: { string }?, -- Table of aliases.
 description: string, -- Description of what the command does.
 group: string, -- What group the command belongs to.
-args: { ArgumentDefinition }, -- A table of argument definitions.
+noLog: boolean?, -- If the command should be hidden from logs.
+args: { ArgumentDefinition }?, -- A table of argument definitions.
+permissions: { [string]: boolean }? -- A table of role permissions required to run the command.
 envClient: {} | () -> {}?, -- Sets up an environment for the command.
 env: {} | () -> {}?, -- Sets up an environment for the command.
 runClient: (...any) -> ()?, -- What runs on the client of the player that ran the command.
@@ -69,6 +71,8 @@ To give an example, this is the code from the `ExampleAddon`:
 ```lua
 -- addons not containing in "Client" or "Server" will run in both contexts (shared)
 return function(_K)
+	-- _K.log(`Hello World from ExampleAddon!`, "INFO")
+
 	_K.Registry.registerCommand(_K, {
 		name = "customcommand",
 		aliases = { "customcommandalias", "customcommandalias2" },
@@ -115,11 +119,17 @@ return function(_K)
 				-- If the command is optional, make sure to check if it's nil and not false!
 				optional = true,
 
-				lowerRank = false,
-				ignoreSelf = false,
-				shouldRequest = false,
+				-- Argument role permission restrictions
+				permissions = {},
+
+				-- player type options
+				lowerRank = false, -- Only allows selecting players of a lower rank
+				ignoreSelf = false, -- Ignores self
+				shouldRequest = false, -- If the command should be requested on same rank or higher
 			},
 		},
+		-- Command permission restrictions
+		permissions = {},
 
 		-- Command environment
 
@@ -192,7 +202,6 @@ return function(_K)
 		_K.Data.settings.saveLogs = true
 	end
 end
-
 ```
 
 This command creates a `Message` instance and populates it with the player provided message. As you can see, the command is registered with a dictionary that lists all information about the command.

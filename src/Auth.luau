@@ -340,7 +340,7 @@ function Auth.getRank(userId: number, permission: string?): (number, Role)
 	return rank, rankRole
 end
 
---- Checks if a role has access to a command
+--- Checks if a role has access to a command argument
 function Auth.roleCanUseArgument(role: Role, argument: any): boolean
 	local roleData = Data.roles[role]
 	if not roleData then
@@ -365,7 +365,7 @@ function Auth.roleCanUseArgument(role: Role, argument: any): boolean
 	return true
 end
 
---- Checks if a user has access to a command
+--- Checks if a user has access to a command argument
 function Auth.hasArgument(userId: number, argument: any): boolean
 	if Auth.roleCanUseArgument("default", argument) then
 		return true

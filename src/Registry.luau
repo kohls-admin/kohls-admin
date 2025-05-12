@@ -29,12 +29,13 @@ export type ArgumentType = {
 }
 
 --- @within Registry
---- @type ArgumentDefinition {type: string, name: string, description: string, optional: boolean?, lowerRank: boolean?, ignoreSelf: boolean?, shouldRequest: boolean? }
+--- @type ArgumentDefinition {type: string, name: string, description: string, optional: boolean?, permissions: { [string]: boolean }?, lowerRank: boolean?, ignoreSelf: boolean?, shouldRequest: boolean? }
 export type ArgumentDefinition = {
 	type: string,
 	name: string,
 	description: string,
 	optional: boolean?,
+	permissions: { [string]: boolean }?,
 	-- player type options
 	lowerRank: boolean?,
 	ignoreSelf: boolean?,
@@ -42,7 +43,7 @@ export type ArgumentDefinition = {
 }
 
 --- @within Registry
---- @type CommandDefinition {name: string, aliases: { string }?, description: string, group: string, noLog: boolean?, args: { ArgumentDefinition }, envClient: {} | () -> {}?, env: {} | () -> {}?, runClient: (...any) -> ()?, run: (...any) -> ()? }
+--- @type CommandDefinition {name: string, aliases: { string }?, description: string, group: string, noLog: boolean?, args: { ArgumentDefinition }, permissions: { [string]: boolean }?, envClient: {} | () -> {}?, env: {} | () -> {}?, runClient: (...any) -> ()?, run: (...any) -> ()? }
 export type CommandDefinition = {
 	name: string,
 	aliases: { string }?,
@@ -50,6 +51,7 @@ export type CommandDefinition = {
 	group: string,
 	noLog: boolean?,
 	args: { ArgumentDefinition }?,
+	permissions: { [string]: boolean }?,
 	envClient: Environment?,
 	env: Environment?,
 	runClient: (...any) -> ()?,

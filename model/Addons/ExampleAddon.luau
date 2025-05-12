@@ -48,11 +48,17 @@ return function(_K)
 				-- If the command is optional, make sure to check if it's nil and not false!
 				optional = true,
 
-				lowerRank = false,
-				ignoreSelf = false,
-				shouldRequest = false,
+				-- Argument role permission restrictions
+				permissions = {},
+
+				-- player type options
+				lowerRank = false, -- Only allows selecting players of a lower rank
+				ignoreSelf = false, -- Ignores self
+				shouldRequest = false, -- If the command should be requested on same rank or higher
 			},
 		},
+		-- Command permission restrictions
+		permissions = {},
 
 		-- Command environment
 
