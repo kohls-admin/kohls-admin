@@ -207,8 +207,9 @@ local SuggestionFrame = UI.new "TextButton" {
 
 local argumentFormat = `<b><sc>%s</sc> <font transparency="0.66"><i>&lt;%s&gt;</i></font></b>\n%s`
 local inlineFormat =
-	`<font transparency="0.33">%s</font>%s<font transparency="0.33">%s<font transparency="0.66">%s</font>%s</font>`
-local suggestFormat = `%s<font transparency="0.5">%s</font>`
+	`<font transparency="0.33">%s<font transparency="0.66">%s<font transparency="0">%s</font>%s</font>%s</font>`
+local suggestFormat = `<font transparency="0.5">%s</font>%s<font transparency="0.5">%s</font>`
+local invalidSuggestFormat = `<font color="#f00">{suggestFormat}</font>`
 
 local suggestionIndex = 1
 local suggestionLabels = {}
@@ -236,6 +237,8 @@ local function updateSuggestionLabels(data)
 		return
 	end
 	suggestionUpdating = true
+
+	local query = string.lower(data.query)
 	for _, label in suggestionLabels do
 		label:Destroy()
 	end
@@ -289,11 +292,15 @@ local function updateSuggestionLabels(data)
 			end
 		end
 
+		local startIndex, endIndex = string.find(string.lower(displayName), query)
+
 		label.Text = string.format(
-			suggestFormat,
-			string.sub(displayName, 1, #data.query),
-			string.sub(displayName, #data.query + 1)
+			if suggestion.invalid then invalidSuggestFormat else suggestFormat,
+			if startIndex > 1 then string.sub(displayName, 1, startIndex - 1) else "",
+			string.sub(displayName, startIndex, endIndex),
+			string.sub(displayName, endIndex + 1)
 		)
+
 		frame.Activated:Connect(function()
 			Input._input:CaptureFocus()
 			suggestionIndex = i
@@ -388,25 +395,6 @@ local function invalidSuggestion(data, err, pos, text)
 	-- FIX: inline all the invalids and only show tooltip for first
 	table.clear(suggestionLabels)
 
-	if data.invalidPermissionsCommand then
-		for role, roleData in _K.Data.roles do
-			if
-				(roleData.gamepass or role == "vip") and _K.Auth.roleCanUseCommand(role, data.invalidPermissionsCommand)
-			then
-				suggestionPurchase.role = role
-				suggestionPurchase.gamepass = if role == "vip" then 5411126 else roleData.gamepass
-				suggestionPurchaseButton._instance.Parent = TooltipFrame
-				suggestionPurchaseButton.Label:set(
-					`<sc>Purchase <font color="{roleData.color}">{roleData.name or role}</font></sc>`
-				)
-				task.spawn(updateSuggestionPurchasePrice)
-				break
-			end
-		end
-	else
-		suggestionPurchaseButton._instance.Parent = nil
-	end
-
 	local frame = SuggestionFrame:Clone()
 	local label = frame:FindFirstChildOfClass("TextLabel")
 	label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
@@ -459,6 +447,25 @@ updateCompletion = function()
 		return
 	end
 
+	if data.invalidPermissionsCommand and not data.validSuggestion then
+		for role, roleData in _K.Data.roles do
+			if
+				(roleData.gamepass or role == "vip") and _K.Auth.roleCanUseCommand(role, data.invalidPermissionsCommand)
+			then
+				suggestionPurchase.role = role
+				suggestionPurchase.gamepass = if role == "vip" then 5411126 else roleData.gamepass
+				suggestionPurchaseButton._instance.Parent = TooltipFrame
+				suggestionPurchaseButton.Label:set(
+					`<sc>Purchase <font color="{roleData.color}">{roleData.name or role}</font></sc>`
+				)
+				task.spawn(updateSuggestionPurchasePrice)
+				break
+			end
+		end
+	else
+		suggestionPurchaseButton._instance.Parent = nil
+	end
+
 	if #data.commands > 0 then
 		local valid = true
 		for _, command in data.commands do
@@ -476,6 +483,7 @@ updateCompletion = function()
 	if not data.suggestionType then
 		return clearCompletion() -- no suggestions without argument type
 	end
+
 	-- show normal argument type hints here!
 	if data.argDefinition then
 		Tooltip.Text = string.format(
@@ -532,16 +540,18 @@ updateCompletion = function()
 
 	currentCompletion = { data.argPos + #suggestionText, preCompletion .. completion .. postCompletion }
 
-	-- inline format (preceding message, query, post query arg, suggestion, post query message)
+	-- inline format (preceding message, pre query suggestion, query, post query suggestion, post query message)
 	-- FIX: how to not escape invalid/valid rich text coloring?
 	-- need a way to merge it somehow? (or don't use richtext maybe red underline instead! with a button you can hover to show error tooltip :)
+	local startIndex, endIndex = string.find(string.lower(suggestionText), string.lower(data.query))
+
 	Input.DisplayText:set(
 		string.format(
 			inlineFormat,
 			_K.Util.String.escapeRichText(preCompletion),
+			if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(suggestionText, 1, startIndex - 1)) else "",
 			_K.Util.String.escapeRichText(data.query),
-			_K.Util.String.escapeRichText(string.sub(arg, #data.query + 1)),
-			_K.Util.String.escapeRichText(string.sub(suggestionText, #arg + 1)),
+			_K.Util.String.escapeRichText(string.sub(suggestionText, endIndex + 1)),
 			_K.Util.String.escapeRichText(postCompletion)
 		)
 	)
@@ -557,6 +567,7 @@ updateCompletion = function()
 			suggestionValue.description
 		)
 	end
+
 	if data.argDefinition or data.argIndex == 1 then
 		updateSuggestionLabels(data)
 		Tooltip.Visible = true

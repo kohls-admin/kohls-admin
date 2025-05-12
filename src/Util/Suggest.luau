@@ -15,7 +15,7 @@ function Suggest.getNames(objects: any): { string }
 end
 
 function Suggest.query(text: string, names: { string | { string } }, instances: { any }?)
-	local results = {}
+	local results, partial = {}, {}
 	local textLower = string.lower(text)
 
 	for index, name in names do
@@ -35,8 +35,14 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 			-- start matches are normal priority
 			if found == 1 then
 				table.insert(results, { nameQuery, value, nameDisplay })
+			elseif found then -- partial matches are added after everything else
+				table.insert(partial, { nameQuery, value, nameDisplay })
 			end
 		end
+	end
+
+	if #partial > 0 then
+		table.move(partial, 1, #partial, #results + 1, results)
 	end
 
 	return results

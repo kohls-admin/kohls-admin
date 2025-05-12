@@ -36,6 +36,7 @@ return function(_K, text, cursorPosition)
 		local commandPos, commandText = unpack(commandArray[1])
 		local commandAlias = string.lower(commandText)
 		local commandDefinition = _K.Registry.commands[commandAlias]
+		local invalidPermissions = false
 
 		local lastArgDefinition = commandDefinition and commandDefinition.args[#commandDefinition.args]
 		local lastArg = commandArray[#commandArray]
@@ -43,9 +44,8 @@ return function(_K, text, cursorPosition)
 		local greedy = lastArgDefinition and (lastArgDefinition.type == "string" or lastArgDefinition.type == "strings")
 
 		if commandDefinition and not _K.Auth.hasCommand(from, commandDefinition) then
-			table.insert(data.invalid, { "Invalid permissions", 2, string.sub(text, 2) })
 			data.invalidPermissionsCommand = commandDefinition
-			return data
+			invalidPermissions = true
 		end
 
 		if cursorPosition < commandArray[1][1] or cursorPosition > commandEnd then
@@ -81,15 +81,23 @@ return function(_K, text, cursorPosition)
 
 			local rawSuggestions = data.suggestions
 			data.suggestions = table.create(#data.suggestions)
+			local invalidSuggestions = {}
 			for _, suggestionData in rawSuggestions do
-				local _name, cmd = unpack(suggestionData)
+				local _, cmd = unpack(suggestionData)
 				if cmd then
 					if _K.Auth.hasCommand(from, cmd) then
 						table.insert(data.suggestions, suggestionData)
+						data.validSuggestion = true
 					else
+						suggestionData.invalid = true
+						table.insert(invalidSuggestions, suggestionData)
 						data.invalidPermissionsCommand = cmd
 					end
 				end
+			end
+
+			if #invalidSuggestions > 0 then
+				table.move(invalidSuggestions, 1, #invalidSuggestions, #data.suggestions + 1, data.suggestions)
 			end
 
 			if #data.suggestions < 1 then
@@ -108,6 +116,9 @@ return function(_K, text, cursorPosition)
 
 		if not commandDefinition then
 			table.insert(data.invalid, { "Invalid command", commandPos, commandText })
+			return data
+		elseif invalidPermissions then
+			table.insert(data.invalid, { "Invalid permissions", commandPos, commandText })
 			return data
 		end
 
