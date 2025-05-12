@@ -72,7 +72,7 @@ function Store.loadStore(name)
 			end
 		end
 		ok, store = Util.Retry(function()
-			return DataStoreService:GetDataStore(name, "Kohl's Admin Test")
+			return DataStoreService:GetDataStore(name, version)
 		end)
 	end
 
