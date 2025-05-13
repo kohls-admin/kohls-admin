@@ -145,32 +145,30 @@ return {
 				else context._K.Util.ReadableTime(duration)
 
 			local players = context._K.Services.Players:GetPlayers()
+			local bannedNames, getNames = {}, {}
 			for _, userId in userIds do
+				local skip
 				for _, player in players do
 					if player.UserId == tonumber(userId) then
 						player:Kick(reason or "No reason.")
+						table.insert(bannedNames, player.Name)
+						skip = true
+						break
 					end
 				end
-				task.spawn(context._K.Auth.userBan, userId, reason, duration, context.from, nil, true)
-				task.defer(function()
-					context._K.Remote.Notify:FireClient(context.fromPlayer, {
-						Text = `Banned <b>{context._K.Util.getUserInfo(userId).Username}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`,
-					})
-				end)
+				if skip then
+					continue
+				end
+				table.insert(getNames, userId)
 			end
 
-			if duration and duration ~= 0 then
-				local ok, err = pcall(context._K.Services.Players.BanAsync, context._K.Services.Players, {
-					UserIds = userIds,
-					PrivateReason = reason or "No reason.",
-					DisplayReason = reason or "No reason.",
-					Duration = duration,
-					ApplyToUniverse = true,
-				})
-				if not (ok or string.find(err, "NOT_FOUND")) then
-					error(err, 1)
-				end
+			context._K.Auth.banUsers(userIds, reason, duration, context.from)
+			for _, userId in getNames do
+				table.insert(bannedNames, context._K.Util.getUserInfo(userId).Username)
 			end
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				Text = `Banned <b>{table.concat(bannedNames, ", ")}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`,
+			})
 		end,
 	},
 	{
@@ -185,28 +183,15 @@ return {
 		},
 
 		run = function(context, bans)
-			local ids = table.create(#bans)
-			-- need to somehow display only session bans in suggestions...
-
+			local unbannedNames = {}
 			for i, userId in bans do
+				local ban = context._K.Data.bans[userId]
+				if ban then
+					table.insert(unbannedNames, ban[1] or userId)
+				end
 				context._K.Data.bans[userId] = nil
-
-				if context._K.Auth.hasPermission(context.from, "banasync") then
-					context._K.Auth.userUnban(userId, context.from, true)
-					table.insert(ids, tonumber(userId))
-				end
 			end
-
-			if #ids > 0 then
-				local ok, err = pcall(
-					context._K.Services.Players.UnbanAsync,
-					context._K.Services.Players,
-					{ UserIds = ids, ApplyToUniverse = true }
-				)
-				if not ok and not string.find(err, "NOT_FOUND") then
-					error(err, 1)
-				end
-			end
+			context._K.Auth.unbanUsers(bans, context.from)
 			context._K.Remote.Notify:FireClient(
 				context.fromPlayer,
 				{ Text = `<b>Unbanned:</b> <i>{table.concat(bans, ", ")}</i>` }

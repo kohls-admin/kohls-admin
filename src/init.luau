@@ -458,7 +458,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		local ban = _K.Data.bans[tostring(userId)]
 		if ban and _K.Auth.hasCommand(player.UserId, "unban") then
 			_K.log(`{_K.Data.settings.prefix}unban {userId}`, "COMMAND", player.UserId, true)
-			_K.Auth.userUnban(userId, player.UserId)
+			_K.Auth.unbanUsers({ userId }, player.UserId)
 		end
 	end)
 

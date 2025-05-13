@@ -32,7 +32,7 @@ function Auth.banHandler(player)
 			local last = items[1]
 
 			if last and not last.Ban and banInfo and banInfo[3] ~= 0 then
-				Auth.userUnban(player.UserId, nil, true)
+				Auth.unbanUsers({ player.UserId }, nil, true)
 				return -- unbanned from site
 			end
 		end
@@ -50,7 +50,7 @@ function Auth.banHandler(player)
 			if timeRemaining > 0 then
 				banMessage = "You are banned from this experience for " .. Util.ReadableTime(timeRemaining) .. "!"
 			else
-				Auth.userUnban(player.UserId, nil, true)
+				Auth.unbanUsers({ player.UserId }, nil, true)
 				return -- duration has passed, unbanned
 			end
 		else
@@ -64,15 +64,14 @@ function Auth.banHandler(player)
 	return true
 end
 
-function Auth.userBan(
-	userId: number,
+function Auth.banUsers(
+	userIds: { number },
 	reason: string,
 	duration: number?,
 	fromUserId: number?,
-	startTime: number?,
-	noAsync
+	forceBanAsync: boolean?
 )
-	local banAsync = not fromUserId or Auth.hasPermission(fromUserId, "banasync")
+	local banAsync = forceBanAsync or not fromUserId or Auth.hasPermission(fromUserId, "banasync")
 
 	if not banAsync then
 		duration = 0
@@ -80,26 +79,28 @@ function Auth.userBan(
 
 	local timestamp
 	if duration and duration ~= 0 then
-		timestamp = if duration > 0 then (startTime or os.time()) + duration else -1
+		timestamp = if duration > 0 then os.time() + duration else -1
 	end
 
-	local ban = { Util.getUserInfo(userId).Username, reason, timestamp, fromUserId }
+	for _, userId in userIds do
+		local ban = { Util.getUserInfo(userId).Username, reason, timestamp, fromUserId }
 
-	local key = tostring(userId)
-	Data.bans[key] = ban
-	if duration and duration ~= 0 then
-		Data.Cache.bans[key] = ban
-	end
+		local key = tostring(userId)
+		Data.bans[key] = ban
+		if timestamp then
+			Data.Cache.bans[key] = ban
+		end
 
-	for _, player in Players:GetPlayers() do
-		if Auth.hasCommand(player.UserId, "ban") then
-			Remote.Ban:FireClient(player, key, ban)
+		for _, player in Players:GetPlayers() do
+			if Auth.hasCommand(player.UserId, "ban") then
+				Remote.Ban:FireClient(player, key, ban)
+			end
 		end
 	end
 
-	if not noAsync then -- for non command calls
+	if banAsync and timestamp then
 		Players:BanAsync({
-			UserIds = { userId },
+			UserIds = userIds,
 			PrivateReason = reason or "No reason.",
 			DisplayReason = reason or "No reason.",
 			Duration = duration,
@@ -108,25 +109,29 @@ function Auth.userBan(
 	end
 end
 
-function Auth.userUnban(userId: number, fromUserId: number?, noAsync: boolean?)
-	local key = tostring(userId)
-	Data.bans[key] = nil
+function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync: boolean?)
+	local banAsync = forceBanAsync or not fromUserId or Auth.hasPermission(fromUserId, "banasync")
 
-	local banAsync = not fromUserId or Auth.hasPermission(fromUserId, "banasync")
-	if banAsync then
-		Data.Cache.bans[key] = Data.Store.REMOVE
-	end
+	for _, userId in userIds do
+		local key = tostring(userId)
+		Data.bans[key] = nil
 
-	for _, player in Players:GetPlayers() do
-		if Auth.hasCommand(player.UserId, "ban") then
-			Remote.Ban:FireClient(player, key)
+		if banAsync then
+			Data.Cache.bans[key] = false
+		end
+
+		for _, player in Players:GetPlayers() do
+			if Auth.hasCommand(player.UserId, "ban") then
+				Remote.Ban:FireClient(player, key)
+			end
 		end
 	end
 
-	if not noAsync then -- for non command calls
-		Players:UnbanAsync({ UserIds = { userId }, ApplyToUniverse = true })
+	if forceBanAsync then -- for non command calls
+		Players:UnbanAsync({ UserIds = userIds, ApplyToUniverse = true })
 	end
 end
+
 
 function Auth.networkMember(userId: number)
 	local userIdString = tostring(userId)
