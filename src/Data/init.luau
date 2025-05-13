@@ -318,13 +318,13 @@ local function updateLogs()
 		Data.Cache.chatLogs, Data.Cache.logs = {}, {}
 	end
 
-	local sync
-	local ok, result, metaData = Data.Store.updateAsync("LogsV2", function(value, metaData)
+	local sync, updatedTime
+	local ok, result = Data.Store.updateAsync("LogsV2", function(value, metaData)
 		if not value then
 			return { chatLogs, logs }
 		end
 		if metaData.UpdatedTime > Data.updatedTimeLogs then
-			sync = value
+			sync, updatedTime = value, metaData.UpdatedTime
 		end
 		if not save then
 			return
@@ -352,10 +352,8 @@ local function updateLogs()
 	end)
 
 	if ok then
-		if metaData and (save or sync) then
-			Data.updatedTimeLogs = metaData.UpdatedTime
-		end
 		if sync then
+			Data.updatedTimeLogs = updatedTime
 			task.spawn(syncLogs, sync)
 		end
 	else
