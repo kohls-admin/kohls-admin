@@ -49,8 +49,26 @@ end
 
 local function syncBans(bans)
 	Hook.preSyncBans:Fire(bans)
+
+	local mergeBans = {}
+	-- merge settings bans
+	for key, ban in Data.settingsModuleData.bans do
+		if Data.bans[key] then
+			mergeBans[key] = ban
+		end
+	end
+	-- merge server bans
+	for key, ban in Data.bans do
+		if ban and ban[3] == nil then
+			mergeBans[key] = ban
+		end
+	end
+
+	table.clear(Data.bans)
+	Util.Table.merge(Data.bans, mergeBans)
 	Util.Table.merge(Data.bans, bans)
-	Hook.postSyncBans:Fire(Data)
+	Util.Table.merge(Data.bans, Data.Cache.bans)
+	Hook.postSyncBans:Fire(Data.bans)
 
 	for _, player in Players:GetPlayers() do
 		if Auth.hasCommand(player.UserId, "ban") then
@@ -70,13 +88,13 @@ local function updateBans()
 		Data.Cache.bans = {}
 	end
 
-	local sync
-	local ok, result, metaData = Data.Store.updateAsync("Bans", function(value, metaData)
+	local sync, updatedTime
+	local ok, result = Data.Store.updateAsync("Bans", function(value, metaData)
 		if not value then
 			return Data.filterRemove(bans)
 		end
 		if metaData.UpdatedTime > Data.updatedTimeBans then
-			sync = value
+			sync, updatedTime = value, metaData.UpdatedTime
 		end
 		if not save then
 			return
@@ -85,10 +103,8 @@ local function updateBans()
 	end)
 
 	if ok then
-		if metaData and (save or sync) then
-			Data.updatedTimeBans = metaData.UpdatedTime
-		end
 		if sync then
+			Data.updatedTimeBans = updatedTime
 			task.spawn(syncBans, result or sync)
 		end
 		task.spawn(function()

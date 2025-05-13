@@ -65,7 +65,7 @@ _K.Remote.Ban.OnClientEvent:Connect(function(userId, ban)
 end)
 
 _K.Remote.Bans.OnClientEvent:Connect(function(bans)
-	_K.Util.Table.merge(_K.Data.bans, bans)
+	_K.Data.bans = bans
 	_K.client.bans:set(_K.Data.bans)
 end)
 
