@@ -535,6 +535,7 @@ updateCompletion = function()
 		completion ..= quote
 	elseif
 		not quote
+		and data.suggestionType ~= "History"
 		and string.find(completion, `[ {_K.Util.String.escapePattern(_K.getCommandPrefix(UI.LocalPlayer.UserId))}]`)
 	then
 		completion = `"{completion}"`
