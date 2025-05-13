@@ -214,21 +214,23 @@ local invalidSuggestFormat = `<font color="#f00">{suggestFormat}</font>`
 local suggestionIndex = 1
 local suggestionLabels = {}
 
-local updateCompletion, currentCompletion, tabCompleting
+local updateCompletion, currentCompletion
 local function completeSuggestion()
 	if not currentCompletion then
 		return
 	end
-	tabCompleting = true
 
 	local pos, text = unpack(currentCompletion)
 	if not string.find(text, " $") then
 		text = text .. " "
 		pos += 1
 	end
-	Input._input.Text = text
-	Input._input.CursorPosition = pos + 1
-	tabCompleting = false
+	currentCompletion = nil
+
+	task.defer(function()
+		Input._input.Text = text
+		Input._input.CursorPosition = pos + 1
+	end)
 end
 
 local suggestionUpdating
@@ -780,10 +782,14 @@ return {
 		end)
 
 		Input._input:GetPropertyChangedSignal("Text"):Connect(function()
-			if not tabCompleting and UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
+			if
+				currentCompletion
+				and (UserInputService:IsKeyDown(Enum.KeyCode.Space) or UserInputService:IsKeyDown(Enum.KeyCode.Tab))
+			then
 				completeSuggestion()
 				return
 			end
+
 			local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
 			local prefixLen = #prefix
 			local text = Input._input.Text
