@@ -132,7 +132,7 @@ _K.Remote.Logs.OnClientEvent:Connect(function(rawLogs)
 
 	table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)
 	_K.Util.Defer.wait()
-	table.sort(_K.Data.logs, _K.Data.sortTime)
+	table.sort(_K.Data.logs, _K.Logger.sortTime)
 
 	while #_K.Data.logs > 1e5 do
 		table.remove(_K.Data.logs, 1)

@@ -264,7 +264,7 @@ local function syncLogs(logsData)
 	end
 	table.move(newLogs, 1, #newLogs, #Data.logs + 1, Data.logs)
 	Util.Defer.wait()
-	table.sort(Data.logs, Data.sortTime)
+	table.sort(Data.logs, Util.Logger.sortTime)
 	for _, player in Players:GetPlayers() do
 		if Auth.hasPermission(player.UserId, "serverlogs") then
 			Remote.Logs:FireClient(player, newLogsRaw)

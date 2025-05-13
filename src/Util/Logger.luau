@@ -56,6 +56,10 @@ function Logger.new(debugEnabled: boolean?): Logger
 	return setmetatable({ logs = {}, limit = 100_000, debug = debugEnabled }, Logger)
 end
 
+function Logger.sortTime(a, b)
+	return a.time < b.time
+end
+
 function Logger:encode(level: LogType): number
 	return (table.find(LEVELS, level) or 1) - 1
 end

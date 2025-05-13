@@ -149,7 +149,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 
 	if logs then
 		table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)
-		table.sort(_K.Data.logs, _K.Data.sortTime)
+		table.sort(_K.Data.logs, _K.Logger.sortTime)
 	end
 
 	_K.Util.Table.merge(_K.Data.members, members)
