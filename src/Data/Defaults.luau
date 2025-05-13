@@ -32,6 +32,7 @@ local Data = {
 	players = {},
 	roles = nil,
 
+	settingsModuleData = nil,
 	settings = {
 		prefix = ";",
 		announcement = false,

@@ -240,6 +240,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	end
 
 	local settings = settingsObject :: { [string]: any }
+	_K.Data.settingsModuleData = settings
 
 	-- format array role hierarchy
 	for rank, definition in settings.roles do
