@@ -212,7 +212,7 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 	end
 
 	if roleRemoved then
-		if #member.roles == 0 and #member.persist == 0 then
+		if #member.roles == 0 then
 			Data.members[key] = nil
 		end
 
