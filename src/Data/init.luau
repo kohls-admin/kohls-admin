@@ -132,8 +132,13 @@ local function syncMain(result)
 	Hook.preSyncMain:Fire(result)
 	local members, settings = unpack(result)
 
-	-- member sync
+	-- deserialize and add roles
 	for key, data in members do
+		local cache = Data.Cache.members[key]
+		if cache then -- don't overwrite pending save!
+			members[key] = nil
+			continue
+		end
 		data.name, data[1] = data[1], nil
 		data.persist, data[2] = data[2], nil
 		data.roles = if Data.members[key] then Data.members[key].roles else data.persist
@@ -143,21 +148,29 @@ local function syncMain(result)
 					table.insert(data.roles, role)
 				end
 			end
-			table.sort(data.persist, Auth.roleSort)
+		else
+			data.roles = table.clone(data.roles)
 		end
+		table.sort(data.persist, Auth.roleSort)
 		table.sort(data.roles, Auth.roleSort)
 	end
+
+	-- remove all saved roles when no saved member
 	for key, data in Data.members do
 		local cache = Data.Cache.members[key]
-		if not cache and #data.persist > 0 and not members[key] then
-			for _, role in data.persist do
-				-- remove from data.roles
-				local index = table.find(data.roles, role)
-				if index then
-					table.remove(data.roles, index)
+		if cache then -- don't overwrite pending save!
+			members[key] = nil
+		elseif not members[key] and #data.persist > 0 then
+			for _, role in data.roles do
+				if table.find(data.persist, role) then
+					table.remove(data.roles, table.find(data.roles, role))
 				end
 			end
-			Data.members[key] = nil
+			if #data.roles == 0 then
+				Data.members[key] = nil
+				continue
+			end
+			table.clear(data.persist)
 		end
 	end
 	Util.Table.merge(Data.members, members)
@@ -208,14 +221,14 @@ local function updateMain()
 		Data.Cache.settings = {}
 	end
 
-	local sync
-	local ok, result, metaData = Data.Store.updateAsync("Main", function(value, metaData)
+	local sync, updatedTime
+	local ok, result = Data.Store.updateAsync("Main", function(value, metaData)
 		if not value then
 			return Data.filterRemove({ members, settings })
 		end
 
 		if metaData.UpdatedTime > Data.updatedTimeMain then
-			sync = value
+			sync, updatedTime = value, metaData.UpdatedTime
 		end
 		if not save then
 			return
@@ -228,10 +241,8 @@ local function updateMain()
 	end)
 
 	if ok then
-		if metaData and (save or sync) then
-			Data.updatedTimeMain = metaData.UpdatedTime
-		end
 		if sync then
+			Data.updatedTimeMain = updatedTime
 			task.spawn(syncMain, result or sync)
 		end
 		task.spawn(function()

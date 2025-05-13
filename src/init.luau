@@ -252,8 +252,8 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end
 	end
 
-	_K.Data.roles = settings.roles
 	_K.Data.bans = table.clone(settings.bans)
+	_K.Data.roles = table.clone(settings.roles)
 	for key, value in settings do
 		if _K.Data.settings[key] ~= nil then
 			_K.Data.settings[key] = value
