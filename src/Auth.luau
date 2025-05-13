@@ -13,7 +13,7 @@ export type Role = "default" | "vip" | "mod" | "admin" | "superadmin" | "creator
 --- @class Auth
 local Auth = {}
 
-local function roleSort(a: Role, b: Role): boolean
+function Auth.roleSort(a: Role, b: Role): boolean
 	return Data.roles[a]._rank > Data.roles[b]._rank
 end
 
@@ -132,7 +132,6 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 	end
 end
 
-
 function Auth.networkMember(userId: number)
 	local userIdString = tostring(userId)
 	local member = Data.members[userIdString]
@@ -170,10 +169,10 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	else
 		if not table.find(member.roles, role) then
 			table.insert(member.roles, role)
-			table.sort(member.roles, roleSort)
+			table.sort(member.roles, Auth.roleSort)
 			if persist then
 				table.insert(member.persist, role)
-				table.sort(member.persist, roleSort)
+				table.sort(member.persist, Auth.roleSort)
 			end
 			roleAdded = true
 		end

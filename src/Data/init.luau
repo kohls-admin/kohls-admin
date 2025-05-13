@@ -127,8 +127,9 @@ local function syncMain(result)
 					table.insert(data.roles, role)
 				end
 			end
-			-- TODO: sort roles
+			table.sort(data.persist, Auth.roleSort)
 		end
+		table.sort(data.roles, Auth.roleSort)
 	end
 	for key, data in Data.members do
 		local cache = Data.Cache.members[key]
