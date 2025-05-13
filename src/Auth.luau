@@ -218,7 +218,7 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 
 		if persistent then
 			if #member.persist == 0 then
-				Data.Cache.members[key] = Data.Store.REMOVE
+				Data.Cache.members[key] = false
 			else
 				task.spawn(cacheMember, key, userId)
 			end

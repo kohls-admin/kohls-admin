@@ -1,5 +1,6 @@
-local Flux = require(script.Parent.Parent.Flux)
 local Theme = require(script.Parent.Parent.Client:WaitForChild("UI").Theme)
+
+type Dict = { [any]: any }
 
 local Cache = {
 	-- Main
@@ -71,16 +72,34 @@ local Data = {
 	updateAsyncInterval = 15,
 
 	initialize = nil,
-	Store = nil,
 }
 
-if game:GetService("RunService"):IsServer() then
-	Data.Store = require(script.Parent.Store)
+function Data.filterRemove(source: Dict): Dict
+	for key, value in source do
+		if value == false then
+			source[key] = nil
+		elseif type(value) == "table" then
+			Data.filterRemove(value)
+		end
+	end
+	return source
+end
+
+function Data.mergeRemove(to: Dict, from: Dict): Dict
+	for key, value in from do
+		to[key] = if value == false then nil else value
+	end
+	return to
+end
+
+Data.Store = require(script.Parent.Store)
+if game:GetService("RunService"):IsClient() then
+	Data.Store = nil
 end
 
 -- UI Theme initial settings
 for key, state in Theme do
-	Data.settings["theme" .. key] = Flux.peek(state)
+	Data.settings["theme" .. key] = state._value
 end
 
 return Data

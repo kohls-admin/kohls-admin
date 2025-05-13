@@ -3,11 +3,10 @@ local RunService = game:GetService("RunService")
 
 local Util = require(script.Parent.Parent.Util)
 
-type Dict = { [any]: any }
-
 local Store = {
-	REMOVE = table.freeze({ type = "Remove" }),
 	dataStore = nil,
+} :: {
+	dataStore: DataStore?,
 }
 
 function Store.getAsync(key: string, options: DataStoreSetOptions?): (boolean, any)
@@ -32,24 +31,6 @@ function Store.removeAsync(key: string): (boolean, any)
 	return Util.Retry(function()
 		return Store.dataStore:RemoveAsync(key)
 	end)
-end
-
-function Store.mergeRemove(to: Dict, from: Dict): Dict
-	for key, value in from do
-		to[key] = if value == Store.REMOVE then nil else value
-	end
-	return to
-end
-
-function Store.filterRemove(source: Dict): Dict
-	for key, value in source do
-		if value == Store.REMOVE then
-			source[key] = nil
-		elseif type(value) == "table" then
-			Store.filterRemove(value)
-		end
-	end
-	return source
 end
 
 function Store.loadStore(name)

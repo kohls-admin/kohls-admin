@@ -267,7 +267,7 @@ return {
 				local member = context._K.Data.members[key]
 				if member then
 					context._K.Data.members[key] = nil
-					context._K.Data.Cache.members[key] = context._K.Data.Store.REMOVE
+					context._K.Data.Cache.members[key] = false
 					context._K.Remote.Member:FireAllClients(key)
 					table.insert(membersUnroled, member and member.name or key)
 				end

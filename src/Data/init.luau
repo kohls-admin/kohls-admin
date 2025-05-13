@@ -73,7 +73,7 @@ local function updateBans()
 	local sync
 	local ok, result, metaData = Data.Store.updateAsync("Bans", function(value, metaData)
 		if not value then
-			return Data.Store.filterRemove(bans)
+			return Data.filterRemove(bans)
 		end
 		if metaData.UpdatedTime > Data.updatedTimeBans then
 			sync = value
@@ -81,7 +81,7 @@ local function updateBans()
 		if not save then
 			return
 		end
-		return Data.Store.mergeRemove(value, bans)
+		return Data.mergeRemove(value, bans)
 	end)
 
 	if ok then
@@ -195,7 +195,7 @@ local function updateMain()
 	local sync
 	local ok, result, metaData = Data.Store.updateAsync("Main", function(value, metaData)
 		if not value then
-			return Data.Store.filterRemove({ members, settings })
+			return Data.filterRemove({ members, settings })
 		end
 
 		if metaData.UpdatedTime > Data.updatedTimeMain then
@@ -205,7 +205,7 @@ local function updateMain()
 			return
 		end
 
-		Data.Store.mergeRemove(value[1], members)
+		Data.mergeRemove(value[1], members)
 		Util.Table.merge(value[2], settings)
 
 		return value
