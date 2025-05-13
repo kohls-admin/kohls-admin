@@ -86,7 +86,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 	if _K.Data.logsHidden[from] then
 		return
 	end
-	local log = Util.Logger.log(_K.Logger, text, level, from)
+	local log = _K.Logger:log(text, level, from)
 	if not log then
 		return -- DEBUG disabled
 	end
