@@ -120,10 +120,6 @@ return {
 				Tooltip = "TopbarPlus & inspiration from HD Admin",
 			},
 			{
-				Id = 2032622, -- CloneTrooper1019
-				Tooltip = "Classic Build Tools",
-			},
-			{
 				Id = 4812582, -- Sharksie
 				Tooltip = "Classic Sword",
 			},
