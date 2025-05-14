@@ -250,6 +250,7 @@ function Tabs.new(definition)
 				end
 				page:GetPropertyChangedSignal("Parent"):Connect(hideButton)
 				page:GetPropertyChangedSignal("Visible"):Connect(hideButton)
+				hideButton()
 			end,
 		},
 	}
