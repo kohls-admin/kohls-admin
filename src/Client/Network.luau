@@ -8,6 +8,7 @@ function _K.client.updateInterfaceAuth()
 	_K.client.dashboardButton:setEnabled(buttonEnabled)
 
 	_K.client.dashboard.Bans._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "bans")
+	_K.client.dashboard.Logs._instance.Visible = _K.Auth.hasPermission(UI.LocalPlayer.UserId, "serverlogs")
 	_K.client.dashboard.Members._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "members")
 	_K.client.dashboard.Settings.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "settings")
 
