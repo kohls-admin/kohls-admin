@@ -229,7 +229,7 @@ local function playerAdded(player: Player)
 end
 
 local _initialized
-function _K.initialize(settingsObject: ModuleScript | { [string]: any })
+function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons: Folder?)
 	if _initialized then
 		return _K
 	end
@@ -378,6 +378,9 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any })
 	end
 
 	loadAddons(_K.Services.CollectionService:GetTagged(_K._addonTag))
+	if addons and not addons:HasTag(_K._addonTag) then
+		loadAddons(addons:GetChildren())
+	end
 
 	script.Name = "Kohl's Admin Source"
 	script.Parent = _K.Services.ReplicatedStorage
