@@ -10,31 +10,33 @@ return {
 		description = "Shows the bans in a separate window.",
 		args = {},
 		envClient = function(_K)
-			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTopInset,
-				Title = "Kohl's Admin Bans",
-				Visible = false,
-				_K.UI.new "UIPadding" {
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-				},
-			}
-			_K.UI.edit(window, {
-				[_K.UI.Event.Property] = {
-					Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.Bans,
-							})
-						end
-					end,
-				},
-			})
-			return {
-				window = window,
-			}
+			local env = {}
+			task.defer(function()
+				local window = _K.UI.new "Window" {
+					Parent = _K.UI.LayerTopInset,
+					Title = "Kohl's Admin Bans",
+					Visible = false,
+					_K.UI.new "UIPadding" {
+						PaddingLeft = UDim.new(0, 1),
+						PaddingRight = UDim.new(0, 1),
+						PaddingTop = UDim.new(0, 1),
+						PaddingBottom = UDim.new(0, 1),
+					},
+				}
+				_K.UI.edit(window, {
+					[_K.UI.Event.Property] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Bans,
+								})
+							end
+						end,
+					},
+				})
+				env.window = window
+			end)
+			return env
 		end,
 
 		runClient = function(context)
@@ -60,31 +62,33 @@ return {
 		description = "Shows the roled members in a separate window.",
 		args = {},
 		envClient = function(_K)
-			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTopInset,
-				Title = "Kohl's Admin Members",
-				Visible = false,
-				_K.UI.new "UIPadding" {
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-				},
-			}
-			_K.UI.edit(window, {
-				[_K.UI.Event.Property] = {
-					Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.Members,
-							})
-						end
-					end,
-				},
-			})
-			return {
-				window = window,
-			}
+			local env = {}
+			task.defer(function()
+				local window = _K.UI.new "Window" {
+					Parent = _K.UI.LayerTopInset,
+					Title = "Kohl's Admin Members",
+					Visible = false,
+					_K.UI.new "UIPadding" {
+						PaddingLeft = UDim.new(0, 1),
+						PaddingRight = UDim.new(0, 1),
+						PaddingTop = UDim.new(0, 1),
+						PaddingBottom = UDim.new(0, 1),
+					},
+				}
+				_K.UI.edit(window, {
+					[_K.UI.Event.Property] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Members,
+								})
+							end
+						end,
+					},
+				})
+				env.window = window
+			end)
+			return env
 		end,
 
 		runClient = function(context)

@@ -42,31 +42,33 @@ return {
 		description = "Shows the about tab in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
-			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTopInset,
-				Title = "Kohl's Admin About",
-				Visible = false,
-				_K.UI.new "UIPadding" {
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-				},
-			}
-			_K.UI.edit(window, {
-				[_K.UI.Event.Property] = {
-					Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.About,
-							})
-						end
-					end,
-				},
-			})
-			return {
-				window = window,
-			}
+			local env = {}
+			task.defer(function()
+				local window = _K.UI.new "Window" {
+					Parent = _K.UI.LayerTopInset,
+					Title = "Kohl's Admin About",
+					Visible = false,
+					_K.UI.new "UIPadding" {
+						PaddingLeft = UDim.new(0, 1),
+						PaddingRight = UDim.new(0, 1),
+						PaddingTop = UDim.new(0, 1),
+						PaddingBottom = UDim.new(0, 1),
+					},
+				}
+				_K.UI.edit(window, {
+					[_K.UI.Event.Property] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.About,
+								})
+							end
+						end,
+					},
+				})
+				env.window = window
+			end)
+			return env
 		end,
 
 		runClient = function(context)
@@ -97,31 +99,33 @@ return {
 		description = "Shows the commands in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
-			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTopInset,
-				Title = "Kohl's Admin Commands",
-				Visible = false,
-				_K.UI.new "UIPadding" {
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-				},
-			}
-			_K.UI.edit(window, {
-				[_K.UI.Event.Property] = {
-					Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.Commands,
-							})
-						end
-					end,
-				},
-			})
-			return {
-				window = window,
-			}
+			local env = {}
+			task.defer(function()
+				local window = _K.UI.new "Window" {
+					Parent = _K.UI.LayerTopInset,
+					Title = "Kohl's Admin Commands",
+					Visible = false,
+					_K.UI.new "UIPadding" {
+						PaddingLeft = UDim.new(0, 1),
+						PaddingRight = UDim.new(0, 1),
+						PaddingTop = UDim.new(0, 1),
+						PaddingBottom = UDim.new(0, 1),
+					},
+				}
+				_K.UI.edit(window, {
+					[_K.UI.Event.Property] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Commands,
+								})
+							end
+						end,
+					},
+				})
+				env.window = window
+			end)
+			return env
 		end,
 
 		runClient = function(context)
@@ -155,31 +159,33 @@ return {
 		description = "Shows the logs in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
-			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTopInset,
-				Title = "Kohl's Admin Logs",
-				Visible = false,
-				_K.UI.new "UIPadding" {
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-				},
-			}
-			_K.UI.edit(window, {
-				[_K.UI.Event.Property] = {
-					Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.Logs,
-							})
-						end
-					end,
-				},
-			})
-			return {
-				window = window,
-			}
+			local env = {}
+			task.defer(function()
+				local window = _K.UI.new "Window" {
+					Parent = _K.UI.LayerTopInset,
+					Title = "Kohl's Admin Logs",
+					Visible = false,
+					_K.UI.new "UIPadding" {
+						PaddingLeft = UDim.new(0, 1),
+						PaddingRight = UDim.new(0, 1),
+						PaddingTop = UDim.new(0, 1),
+						PaddingBottom = UDim.new(0, 1),
+					},
+				}
+				_K.UI.edit(window, {
+					[_K.UI.Event.Property] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Logs,
+								})
+							end
+						end,
+					},
+				})
+				env.window = window
+			end)
+			return env
 		end,
 
 		runClient = function(context)
@@ -205,31 +211,33 @@ return {
 		description = "Shows the settings in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
-			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTopInset,
-				Title = "Kohl's Admin Settings",
-				Visible = false,
-				_K.UI.new "UIPadding" {
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-				},
-			}
-			_K.UI.edit(window, {
-				[_K.UI.Event.Property] = {
-					Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.Settings,
-							})
-						end
-					end,
-				},
-			})
-			return {
-				window = window,
-			}
+			local env = {}
+			task.defer(function()
+				local window = _K.UI.new "Window" {
+					Parent = _K.UI.LayerTopInset,
+					Title = "Kohl's Admin Settings",
+					Visible = false,
+					_K.UI.new "UIPadding" {
+						PaddingLeft = UDim.new(0, 1),
+						PaddingRight = UDim.new(0, 1),
+						PaddingTop = UDim.new(0, 1),
+						PaddingBottom = UDim.new(0, 1),
+					},
+				}
+				_K.UI.edit(window, {
+					[_K.UI.Event.Property] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Settings,
+								})
+							end
+						end,
+					},
+				})
+				env.window = window
+			end)
+			return env
 		end,
 
 		runClient = function(context)
