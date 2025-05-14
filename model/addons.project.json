@@ -1,0 +1,10 @@
+{
+	"name": "Addons",
+	"emitLegacyScripts": false,
+	"tree": {
+		"$path": "../addons",
+		"$properties": {
+			"Tags": ["Kohl's Admin Addon"]
+		}
+	}
+}

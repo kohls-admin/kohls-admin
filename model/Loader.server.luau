@@ -27,5 +27,5 @@ if not shared._K_LOADER_LOADED then
 		end
 	end
 
-	result.initialize(Settings, Package:WaitForChild("Addons", 2))
+	result.initialize(Settings)
 end

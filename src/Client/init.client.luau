@@ -174,16 +174,20 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 	_K.client.updateInterfaceAuth()
 
 	-- finally load client and shared addons
-	local addons = _K.script:WaitForChild("Addons")
-	if addons then
-		for _, addon in addons:GetChildren() do
-			if addon:IsA("ModuleScript") then
+	local function loadAddons(list)
+		for _, object in list do
+			if object:IsA("ModuleScript") then
 				task.spawn(function()
-					require(addon)(_K)
+					require(object)(_K)
 				end)
+			else
+				loadAddons(object:GetChildren())
 			end
 		end
 	end
+
+	loadAddons(_K.script:WaitForChild("Addons"):GetChildren())
+	loadAddons(_K.Services.CollectionService:GetTagged(_K._addonTag))
 
 	_K.client.ready = true
 	_K.Hook.init:Fire()

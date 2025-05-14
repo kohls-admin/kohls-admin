@@ -76,6 +76,7 @@ local _K = {
 	cleanupCommands = {},
 	playerPrefix = {},
 	_serverLock = false,
+	_addonTag = "Kohl's Admin Addon",
 }
 
 function _K.getCommandPrefix(from: number)
@@ -228,7 +229,7 @@ local function playerAdded(player: Player)
 end
 
 local _initialized
-function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons: Folder?)
+function _K.initialize(settingsObject: ModuleScript | { [string]: any })
 	if _initialized then
 		return _K
 	end
@@ -347,34 +348,36 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end
 	end)
 
-	if addons then
-		for _, child in script.DefaultAddons:GetChildren() do
-			child.Parent = addons
-		end
-	else
-		addons = script:WaitForChild("DefaultAddons")
-	end
+	-- addons
+	local serverAddons = Instance.new("Folder", Util.Services.ServerStorage)
+	serverAddons.Name = "_KServerAddons"
 
-	if addons then
-		local serverAddons = Instance.new("Folder", Util.Services.ServerStorage)
-		serverAddons.Name = "_KServerAddons"
+	local sharedAddons = Instance.new("Folder", script)
+	sharedAddons.Name = "Addons"
 
-		for _, addon in addons:GetChildren() do
-			if addon:IsA("ModuleScript") then
-				if string.find(addon.Name, "Server", 1, true) then
-					addon.Parent = serverAddons
+	local function loadAddons(list)
+		for _, object in list do
+			if object:IsA("ModuleScript") then
+				if string.find(object.Name, "Server", 1, true) then
+					object.Parent = serverAddons
 					task.spawn(function()
-						require(addon)(_K)
+						require(object)(_K)
 					end)
-				elseif not string.find(addon.Name, "Client", 1, true) then
+				elseif not string.find(object.Name, "Client", 1, true) then
+					object.Parent = sharedAddons
 					task.spawn(function()
-						require(addon)(_K)
+						require(object)(_K)
 					end)
+				else
+					object.Parent = sharedAddons
 				end
+			else
+				loadAddons(object:GetChildren())
 			end
 		end
-		addons.Parent = script
 	end
+
+	loadAddons(_K.Services.CollectionService:GetTagged(_K._addonTag))
 
 	script.Name = "Kohl's Admin Source"
 	script.Parent = _K.Services.ReplicatedStorage
