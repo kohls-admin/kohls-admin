@@ -53,13 +53,24 @@ return function(context)
 			table.sort(tools, sortName)
 		end)
 
-		local function addTool(tool)
-			if
-				not (tool:IsA("Tool") or tool:IsA("HopperBin"))
-				or tool:HasTag("_K_Ignore")
-				or tool.Parent:HasTag("_K_Ignore")
-			then
+		local function shouldIgnore(object)
+			if object == nil then
 				return
+			end
+			if object:HasTag("_K_Ignore") then
+				return true
+			end
+			return shouldIgnore(object.Parent)
+		end
+
+		local function addTool(tool)
+			if not (tool:IsA("Tool") or tool:IsA("HopperBin")) or shouldIgnore(tool) then
+				return
+			end
+			for _, existingTool in tools do
+				if existingTool.Name == tool.Name then
+					return
+				end
 			end
 			table.insert(tools, tool)
 			debounceSort()
