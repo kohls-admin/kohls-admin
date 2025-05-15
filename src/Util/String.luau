@@ -84,7 +84,7 @@ function String.filterResultForUser(filterResult: TextFilterResult | string, fro
 	local _, result = pcall(function()
 		if Players:GetPlayerByUserId(fromUserId) then
 			if TextChatService:CanUsersChatAsync(fromUserId, toUserId) then
-				return filterResult:GetChatForUserAsync(toUserId)
+				return filterResult:GetNonChatStringForUserAsync(toUserId)
 			else
 				return "User cannot chat"
 			end

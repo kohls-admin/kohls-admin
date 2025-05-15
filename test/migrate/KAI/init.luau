@@ -307,7 +307,7 @@ local function getFilteredMessage(textObject: TextFilterResult, fromUserId: numb
 	local success, message = pcall(function()
 		if toUserId and services.Players:GetPlayerByUserId(fromUserId) then
 			if services.TextChat:CanUsersChatAsync(fromUserId, toUserId) then
-				return textObject:GetChatForUserAsync(toUserId)
+				return textObject:GetNonChatStringForUserAsync(toUserId)
 			else
 				return "User cannot chat"
 			end
