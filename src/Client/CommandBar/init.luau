@@ -228,7 +228,7 @@ local function completeSuggestion()
 	currentCompletion = nil
 
 	task.defer(function()
-		Input._input.Text = text
+		Input.Value:set(text, true)
 		Input._input.CursorPosition = pos + 1
 	end)
 end
@@ -666,14 +666,14 @@ return {
 		end
 		initialized = true
 
-		Input._input.Text = _K.getCommandPrefix(UI.LocalPlayer.UserId)
+		Input.Value:set(_K.getCommandPrefix(UI.LocalPlayer.UserId), true)
 		Input._input.TextEditable = false
 		CommandBar.Parent = UI.TopbarFrame
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
 		_K.client.settings.prefix:hook(function(value)
 			if value then
-				Input._input.Text = value .. string.sub(Input._input.Text, #value + 1)
+				Input.Value:set(value .. string.sub(Input._input.Text, #value + 1), true)
 			end
 		end)
 
@@ -777,7 +777,7 @@ return {
 						table.remove(commandHistory)
 					end
 				end
-				Input._input.Text = prefix
+				Input.Value:set(prefix, true)
 			end
 			return
 		end)
@@ -797,20 +797,18 @@ return {
 
 			if string.find(text, prefix, 1, true) ~= 1 then
 				Input._input.CursorPosition += prefixLen
-				Input._input.Text = prefix .. text
+				Input.Value:set(prefix .. text, true)
 				Input._input.CursorPosition += prefixLen
 				return
 			end
 
-			if text == prefix then
-				Input.DisplayText:set(text .. "<font transparency='0.5'><i>command</i></font>")
-			else
+			if text ~= prefix then
 				if string.find(text, prefix, prefixLen + 1, true) == prefixLen + 1 then
 					text = string.sub(text, prefixLen + 1)
-					Input._input.Text = text
+					Input.Value:set(text, true)
 					return
 				end
-				Input.DisplayText:set(_K.Util.String.escapeRichText(text))
+				Input.DisplayText:set(_K.Util.String.escapeRichText(text), true)
 			end
 		end)
 	end,
