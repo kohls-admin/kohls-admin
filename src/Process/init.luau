@@ -23,37 +23,39 @@ function Process.rawParse(message: string, prefix: string, argSeparator: string?
 	local argument = { 1 }
 	local command = { argument }
 	local commands = { command }
-	local lastChar, escaped, quoted = "", nil, nil
+	local lastChar, quote = "", nil
 
 	for first, last in utf8.graphemes(message) do
 		local char: string = string.sub(message, first, last)
-		if string.find(char, '["`]') and not escaped and (not quoted or quoted == char) then
-			if not quoted and string.find(lastChar, delimiter) then
-				if #argument == 1 then
-					argument[1] = first + 1
-				else
-					argument = { first + 1 }
-					table.insert(command, argument)
-				end
+		if quote then
+			table.insert(argument, char)
+			if char == quote then
+				quote = nil
 			end
-			quoted = not quoted and char or nil
-		elseif not (quoted or escaped) and char == prefix and string.find(lastChar, delimiter) then
+		elseif char == prefix and string.find(lastChar, delimiter) then
 			if #argument == 1 then
 				table.remove(command)
 			end
 			argument = { first + 1 }
 			command = { argument }
 			table.insert(commands, command)
-		elseif char == "\\" and not escaped then
-			escaped = true
-		else
-			escaped = nil
-			if not quoted and string.find(char, delimiter) and not string.find(lastChar, delimiter) then
-				argument = { first + 1 }
-				table.insert(command, argument)
-			elseif quoted or not string.find(char, delimiter) then
+		elseif char == "`" or char == '"' then
+			quote = char
+			if string.find(lastChar, delimiter) then
+				if #argument == 1 then
+					argument[1], argument[2] = first, char
+				else
+					argument = { first, char }
+					table.insert(command, argument)
+				end
+			else
 				table.insert(argument, char)
 			end
+		elseif string.find(char, delimiter) and not string.find(lastChar, delimiter) then
+			argument = { first + 1 }
+			table.insert(command, argument)
+		else
+			table.insert(argument, char)
 		end
 		lastChar = char
 	end
