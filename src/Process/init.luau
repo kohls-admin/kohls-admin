@@ -208,19 +208,23 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			local tasks = Util.TaskGroup.new()
 			local log = {}
 
-			for _, command in result do
+			local index = 1
+			for _, command in commandsRan do
 				if command.definition.noLog then
 					continue
 				end
-				table.insert(log, _K.Data.settings.prefix .. command.alias)
+				log[index] = _K.Data.settings.prefix .. command.alias
+				index += 1
 				for _, arg in command.args do
+					local position = index
 					tasks:add(function()
 						local argString = Util.Table.concat(arg.parsedArgs, ",")
 						if arg.rawType.filterLog then
 							argString = Util.String.filterForBroadcast(argString, from)
 						end
-						table.insert(log, argString)
+						log[position] = argString
 					end)
+					index += 1
 				end
 			end
 
