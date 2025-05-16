@@ -50,18 +50,13 @@ return {
 
 		run = function(context, message)
 			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
-					From = "_K",
-					Text = `Announce is disabled in private servers.`,
-					TextColor3 = Color3.new(1, 0, 0),
-					Sound = "Call_Leave",
-				})
-				return
+				return `Announce are disabled in private servers.`
 			end
 
 			local announcement = { message, context.from }
 			context._K.Data.Cache.settings.announcement = announcement
 			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", announcement)
+			return
 		end,
 	},
 	{
@@ -72,17 +67,12 @@ return {
 
 		run = function(context)
 			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
-					From = "_K",
-					Text = `Announce is disabled in private servers.`,
-					TextColor3 = Color3.new(1, 0, 0),
-					Sound = "Call_Leave",
-				})
-				return
+				return `Announcements are disabled in private servers.`
 			end
 
 			context._K.Data.Cache.settings.announcement = false
 			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", nil)
+			return
 		end,
 	},
 	{
