@@ -12,13 +12,14 @@ type ArgumentDefinition = Registry.ArgumentDefinition
 local Process = {}
 
 --- Parses a string into a raw command format.
-function Process.rawParse(message: string, prefix: string): { any }?
+function Process.rawParse(message: string, prefix: string, argSeparator: string?): { any }?
 	-- is there a command prefix?
 	if string.find(message, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
 		return
 	end
 	message = string.sub(message, #prefix + 1)
 
+	local delimiter = argSeparator or "%s"
 	local argument = { 1 }
 	local command = { argument }
 	local commands = { command }
@@ -27,7 +28,7 @@ function Process.rawParse(message: string, prefix: string): { any }?
 	for first, last in utf8.graphemes(message) do
 		local char: string = string.sub(message, first, last)
 		if string.find(char, '["`]') and not escaped and (not quoted or quoted == char) then
-			if not quoted and lastChar == " " then
+			if not quoted and string.find(lastChar, delimiter) then
 				if #argument == 1 then
 					argument[1] = first + 1
 				else
@@ -36,7 +37,7 @@ function Process.rawParse(message: string, prefix: string): { any }?
 				end
 			end
 			quoted = not quoted and char or nil
-		elseif not (quoted or escaped) and char == prefix and lastChar == " " then
+		elseif not (quoted or escaped) and char == prefix and string.find(lastChar, delimiter) then
 			if #argument == 1 then
 				table.remove(command)
 			end
@@ -47,10 +48,10 @@ function Process.rawParse(message: string, prefix: string): { any }?
 			escaped = true
 		else
 			escaped = nil
-			if not quoted and char == " " and lastChar ~= " " then
+			if not quoted and string.find(char, delimiter) and not string.find(lastChar, delimiter) then
 				argument = { first + 1 }
 				table.insert(command, argument)
-			elseif quoted or char ~= " " then
+			elseif quoted or not string.find(char, delimiter) then
 				table.insert(argument, char)
 			end
 		end
