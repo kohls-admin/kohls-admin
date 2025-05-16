@@ -119,8 +119,8 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 		table.insert(commands, command)
 
 		if not ok then
+			command.Error = result
 			return false, result
-			-- break
 		end
 	end
 
@@ -128,38 +128,47 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 end
 
 function Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?): boolean
-	local commandRan, commandError
+	from = from or _K.CreatorId
 	local ok, result = Process.prepareCommands(_K, from, rawText)
 
-	local logText
+	local commandsRan = {}
+	local commandErrors = {}
 
 	if ok then
 		for _, command in result do
 			local success, err = command:run()
-			if success == nil then
-				continue
-			elseif success == true then
-				commandRan = true
-				command.Ran = true
-			elseif success == false then
-				commandError = err
-				command.Error = err
-				warn("commandError", err)
+			if success == false or err then
+				table.insert(commandErrors, `<b>"{command.alias}" command failed:</b> {err}`)
+			else
+				table.insert(commandsRan, command)
 			end
 		end
 
 		Hook.runPreparedCommands:Fire(from, result, rawText)
 	else
-		commandError = result
+		table.insert(commandErrors, result)
+		warn("commandError", result)
 	end
 
-	if commandError then
-		commandError = `<b>{commandError}</b>`
+	if #commandErrors > 0 then
+		local commandError = `{table.concat(commandErrors, "\n")}`
 		if _K.IsServer then
-			_K.Remote.Notify:FireClient(
-				_K.Services.Players:GetPlayerByUserId(from),
-				{ Text = commandError, From = "_K", TextColor3 = Color3.new(1, 0, 0), Sound = "Call_Leave" }
-			)
+			local player = _K.Services.Players:GetPlayerByUserId(from)
+			if player then
+				_K.Remote.Notify:FireClient(
+					_K.Services.Players:GetPlayerByUserId(from),
+					{ Text = commandError, From = "_K", TextColor3 = Color3.new(1, 0, 0), Sound = "Call_Leave" }
+				)
+				for _, err in commandErrors do
+					_K.Remote.Log:FireClient(player, {
+						text = err,
+						level = _K.Logger:encode("ERROR"),
+						time = workspace:GetServerTimeNow(),
+						from = from,
+						name = player.Name,
+					})
+				end
+			end
 		else
 			task.spawn(_K.Notify, {
 				Text = commandError,
@@ -167,14 +176,25 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 				UserFrame = {},
 				Sound = "Call_Leave",
 			})
+			for _, err in commandErrors do
+				_K.log(err, "ERROR", from, true)
+			end
 		end
-	elseif _K.IsClient then
-		_K.Remote.Command:FireServer(rawText)
 	end
 
-	if not (commandRan or commandError) then
+	if _K.IsClient and #commandsRan > 0 then
+		local prefix = _K.getCommandPrefix(from)
+		local commandStrings = {}
+		for _, command in commandsRan do
+			local last = command.array[#command.array]
+			table.insert(commandStrings, string.sub(rawText, command.array[1][1], last[1] + #last[2] - 1))
+		end
+		_K.Remote.Command:FireServer(`{prefix}{table.concat(commandStrings, " " .. prefix)}`)
+	end
+
+	if #commandsRan == 0 and #commandErrors == 0 then
 		-- skip logging if nothing happened
-		return commandRan
+		return true
 	end
 
 	task.spawn(function()
@@ -182,7 +202,9 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			return
 		end
 
-		if commandRan then
+		local logText
+
+		if #commandsRan > 0 then
 			local tasks = Util.TaskGroup.new()
 			local log = {}
 
@@ -217,12 +239,9 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		end
 
 		_K.log(logText or "", "COMMAND", from, true)
-		if commandError then
-			_K.log(Util.String.filterForBroadcast(commandError, from), "ERROR", from, true)
-		end
 	end)
 
-	return commandRan
+	return #commandErrors == 0
 end
 
 return Process

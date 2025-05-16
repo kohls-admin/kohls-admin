@@ -132,12 +132,12 @@ function Command:run()
 
 	self._K.Hook.preCommand:Fire(self)
 	if not self.validated then
-		return false, self.commandError
+		return false, self.Error
 	end
 
 	local ok, err = xpcall(run, debug.traceback, self, unpack(self.preparedArgs))
-	self.commandRan = ok
-	self.commandError = err
+	self.Ran = ok
+	self.Error = err
 	self._K.Hook.postCommand:Fire(self)
 
 	return ok, err
