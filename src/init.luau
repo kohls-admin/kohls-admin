@@ -50,6 +50,7 @@ local _K = {
 	IsServer = RunService:IsServer(),
 	IsStudio = RunService:IsStudio(),
 
+	DEBUG = shared._K_DEBUG,
 	VERSION = Util.String.trim(script:WaitForChild("VERSION").Value),
 
 	-- modules

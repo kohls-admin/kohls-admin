@@ -1,6 +1,8 @@
 -- addons not containing in "Client" or "Server" will run in both contexts (shared)
 return function(_K)
-	-- _K.log(`Hello World from ExampleAddon!`, "INFO")
+	if _K.DEBUG then
+		_K.log(`Hello World from ExampleAddon!`, "INFO")
+	end
 
 	_K.Registry.registerCommand(_K, {
 		name = "customcommand",
@@ -64,7 +66,7 @@ return function(_K)
 
 		env = function(_K)
 			-- This will only run once on each server while in studio or in the demo place
-			if game.PlaceId == 2569622788 or _K.IsStudio then
+			if _K.DEBUG or _K.IsStudio then
 				_K.log(`Hello World from ExampleAddon customcommand env!`, "INFO")
 			end
 
@@ -76,7 +78,7 @@ return function(_K)
 
 		envClient = function(_K)
 			-- This will only run once on each client while in studio or in the demo place
-			if game.PlaceId == 2569622788 or _K.IsStudio then
+			if _K.DEBUG or _K.IsStudio then
 				_K.log(`Hello World from ExampleAddon customcommand envClient!`, "INFO")
 			end
 
@@ -126,8 +128,4 @@ return function(_K)
 			print("Custom command ran on the client!", message, context.env.countClient)
 		end,
 	})
-
-	if game.PlaceId == 2569622788 then -- ONLY FOR DEMO PLACE
-		_K.Data.settings.saveLogs = true
-	end
 end
