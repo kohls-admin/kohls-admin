@@ -214,8 +214,18 @@ local invalidSuggestFormat = `<font color="#f00">{suggestFormat}</font>`
 local suggestionIndex = 1
 local suggestionLabels = {}
 
-local updateCompletion, currentCompletion
-local function completeSuggestion()
+local updateCompletion, currentCompletion, currentCompletionData
+local function updateCompletionData()
+	for _, label in suggestionLabels do
+		label:Destroy()
+	end
+	table.clear(suggestionLabels)
+	suggestionIndex = 1
+	currentCompletionData = CompletionData(_K, Input._input.Text, Input._input.CursorPosition)
+	updateCompletion()
+end
+
+local completeSuggestion = _K.Util.Function.throttle(0.1, function()
 	if not currentCompletion then
 		return
 	end
@@ -230,8 +240,9 @@ local function completeSuggestion()
 	task.defer(function()
 		Input.Value:set(text, true)
 		Input._input.CursorPosition = pos + 1
+		updateCompletionData()
 	end)
-end
+end)
 
 local suggestionUpdating
 local function updateSuggestionLabels(data)
@@ -426,7 +437,6 @@ local function invalidSuggestion(data, err, pos, text)
 end
 
 local commandHistory = {}
-local currentCompletionData
 updateCompletion = function()
 	local data = currentCompletionData
 	currentCompletion = nil
@@ -580,16 +590,6 @@ updateCompletion = function()
 	return
 end
 
-local function updateCompletionData()
-	for _, label in suggestionLabels do
-		label:Destroy()
-	end
-	table.clear(suggestionLabels)
-	suggestionIndex = 1
-	currentCompletionData = CompletionData(_K, Input._input.Text, Input._input.CursorPosition)
-	updateCompletion()
-end
-
 -- hides and caches the state of core guis, toggles the cached state otherwise
 local coreGuiCache, coreChatActiveCache = {}, nil
 local function coreGuiEnabled(enabled: boolean)
@@ -709,7 +709,9 @@ return {
 					Input._input.CursorPosition = prefixPosition
 					return
 				end
-				task.defer(updateCompletionData)
+				if not UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
+					task.defer(updateCompletionData)
+				end
 			end
 		end)
 
