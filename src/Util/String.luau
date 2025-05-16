@@ -30,6 +30,45 @@ function String.unescapeRichText(s: string): string
 	return s
 end
 
+--- Splits a string by a specified delimiter, but does not split within quoted sequences.
+function String.splitOutsideQuotes(text: string, delimiter: string?): { string }?
+	if not text then
+		return {}
+	end
+
+	local segment = { "" } :: { string }
+	local segments = { segment }
+	local quote
+
+	if delimiter == nil or delimiter == "" then
+		delimiter = ","
+	end
+
+	for first, last in utf8.graphemes(text) do
+		local char: string = string.sub(text, first, last)
+		if quote then
+			table.insert(segment, char)
+			if char == quote then
+				quote = nil
+			end
+		elseif char == "`" or char == '"' then
+			table.insert(segment, char)
+			quote = char
+		elseif char == delimiter then
+			segment = { "" }
+			table.insert(segments, segment)
+		else
+			table.insert(segment, char)
+		end
+	end
+
+	for index, chars in segments do
+		segments[index] = table.concat(chars)
+	end
+
+	return segments
+end
+
 --- Strip enclosing quotes from a string
 function String.stripQuotes(s: string): string
 	if string.find(s, '[`"]') == 1 then
