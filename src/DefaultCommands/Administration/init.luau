@@ -372,11 +372,21 @@ return {
 		},
 
 		run = function(context, assetId)
-			local model = context._K.Util.Services.InsertService:LoadAsset(assetId)
-			model.Parent = workspace
-			model:MoveTo(context.fromPlayer.Character:GetPivot().Position)
-			model:MakeJoints()
-			table.insert(context._K.cleanupCommands, model)
+			local ok, result = pcall(function()
+				return context._K.Util.Services.InsertService:LoadAsset(assetId)
+			end)
+			if not ok then
+				if string.find(result, "authorized") then
+					return `{result} It must be added to the Game Creator's inventory!`
+				else
+					return result
+				end
+			end
+			result.Parent = workspace
+			result:MoveTo(context.fromPlayer.Character:GetPivot().Position)
+			result:MakeJoints()
+			table.insert(context._K.cleanupCommands, result)
+			return
 		end,
 	},
 	{
