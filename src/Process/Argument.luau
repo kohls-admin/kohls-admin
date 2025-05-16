@@ -7,6 +7,8 @@ function Argument.new(command, definition, argPos, rawArg)
 	local rawType = command._K.Registry.types[definition.type]
 	assert(rawType, `Invalid argument type {definition.type}, did it fail to register?`)
 
+	local rawArgs = if rawType.listable then command._K.Util.String.splitOutsideQuotes(rawArg) else { rawArg }
+
 	local object = {
 		_K = command._K,
 		command = command,
@@ -17,7 +19,7 @@ function Argument.new(command, definition, argPos, rawArg)
 		argPos = argPos,
 		rawArg = rawArg,
 		rawType = rawType,
-		rawArgs = if rawType.listable then string.split(rawArg) else { rawArg },
+		rawArgs = rawArgs,
 		transformedArgs = {},
 		transformedTypes = {},
 		parsedArgs = {},
@@ -28,7 +30,7 @@ end
 
 function Argument:transform()
 	for _, rawArg in self.rawArgs do
-		local arg = self._K.Util.String.trim(rawArg)
+		local arg = self._K.Util.String.stripQuotes(self._K.Util.String.trim(rawArg))
 		local argType = self.rawType
 		if argType.prefixes then
 			for prefix, prefixType in argType.prefixes do

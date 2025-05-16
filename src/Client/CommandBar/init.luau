@@ -541,7 +541,7 @@ updateCompletion = function()
 		completion = `"{completion}"`
 	end
 
-	currentCompletion = { data.argPos + #suggestionText, preCompletion .. completion .. postCompletion }
+	currentCompletion = { data.argPos + #completion, preCompletion .. completion .. postCompletion }
 
 	-- inline format (preceding message, pre query suggestion, query, post query suggestion, post query message)
 	-- FIX: how to not escape invalid/valid rich text coloring?
@@ -553,7 +553,7 @@ updateCompletion = function()
 			inlineFormat,
 			_K.Util.String.escapeRichText(preCompletion),
 			if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(suggestionText, 1, startIndex - 1)) else "",
-			_K.Util.String.escapeRichText(data.query),
+			_K.Util.String.escapeRichText(data.rawQuery or data.query),
 			_K.Util.String.escapeRichText(string.sub(suggestionText, endIndex + 1)),
 			_K.Util.String.escapeRichText(postCompletion)
 		)

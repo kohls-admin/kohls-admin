@@ -20,8 +20,8 @@ return function(_K, text, cursorPosition)
 	if text == prefix then
 		data.argPos = 2
 		data.argIndex = 0
-		data.query = ""
 		data.rawArg = ""
+		data.query = ""
 		data.suggestionType = "History"
 		return data
 	end
@@ -137,7 +137,8 @@ return function(_K, text, cursorPosition)
 			data.argIndex = i + 1
 			data.argPos = arg.argPos
 			data.rawArg = arg.rawArg
-			data.query = string.sub(arg.rawArg, 1, cursorPosition - arg.argPos)
+			data.rawQuery = string.sub(arg.rawArg, 1, cursorPosition - arg.argPos)
+			data.query = _K.Util.String.stripQuotes(data.rawQuery)
 			data.argDefinition = arg.definition
 			data.suggestionType = arg.rawType
 
@@ -159,8 +160,9 @@ return function(_K, text, cursorPosition)
 				data.suggestionType = transformedType
 				data.argPos = pos
 				data.rawArg = rawArg
+				data.rawQuery = string.sub(rawArg, 1, cursorPosition - pos)
 				data.transformedArg = transformedArg
-				data.query = string.sub(rawArg, 1, cursorPosition - pos)
+				data.query = _K.Util.String.stripQuotes(data.rawQuery)
 				data.suggestions = transformedType.suggestions(data.query, from, arg.definition)
 			end
 		end
