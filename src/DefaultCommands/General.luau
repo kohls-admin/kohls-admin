@@ -192,6 +192,52 @@ return {
 		end,
 	},
 	{
+		name = "title",
+		aliases = { "tag", "untag", "untitle" },
+		description = "Changes the title of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose title to change.",
+			},
+			{
+				type = "string",
+				name = "Title",
+				description = "The title text to use.",
+				optional = true,
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The title color to use.",
+				optional = true,
+			},
+			{
+				type = "color",
+				name = "SecondaryColor",
+				description = "The secondary title color to use.",
+				optional = true,
+			},
+			{
+				type = "Enum.Font",
+				name = "Font",
+				description = "The title font to use.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players, title: string?, color: Color3?, secondaryColor: Color3?, font: Enum.Font?)
+			for _, player in players do
+				if context.undo then
+					task.spawn(context._K.VIP.Title, player)
+				else
+					task.spawn(context._K.VIP.Title, player, title, color, secondaryColor, font)
+				end
+			end
+		end,
+	},
+	{
 		name = "vote",
 		aliases = { "makevote", "startvote", "poll" },
 		description = "Starts a vote for one or more player(s).",
