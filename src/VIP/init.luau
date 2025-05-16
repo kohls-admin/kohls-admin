@@ -3,7 +3,8 @@ local Data = require(script.Parent:WaitForChild("Data"))
 local Remote = require(script.Parent:WaitForChild("Remote"))
 local Util = require(script.Parent:WaitForChild("Util"))
 
-local VIP = {}
+
+local VIP = { effects = {} }
 
 -- vip, supervip, premium
 local gamePassDonations = { 5391359, 5391361, 5411126 }
@@ -100,7 +101,7 @@ if Util.Services.RunService:IsServer() then
 		[99317257118206] = "rbxassetid://18966762965", -- gold
 	}
 
-	local cache, effects = {}, {}
+	local cache = {}
 	Remote.VIPUGCMethod.OnServerEvent:Connect(function(player, assetId, match, equip, name)
 		if not Data.settings.vip then
 			return
@@ -111,10 +112,10 @@ if Util.Services.RunService:IsServer() then
 			return
 		end
 
-		local userEffects = effects[player.UserId]
+		local userEffects = VIP.effects[player.UserId]
 		if not userEffects then
 			userEffects = {}
-			effects[player.UserId] = userEffects
+			VIP.effects[player.UserId] = userEffects
 		end
 
 		local existing = player.Character:FindFirstChild(ugcEffect.Name)
@@ -149,7 +150,7 @@ if Util.Services.RunService:IsServer() then
 				tried[player.UserId] = true
 			end
 
-			local ugc = ugcEffect.Method(player.Character, { Name = name, Destroy = tick })
+			local ugc = ugcEffect.Method(player.Character, name)
 
 			if try and not owned then
 				task.delay(15, function()
@@ -158,12 +159,12 @@ if Util.Services.RunService:IsServer() then
 					end
 				end)
 			else
-				userEffects[match] = { Method = ugcEffect.Method, name = name }
+				userEffects[match] = { Method = ugcEffect.Method, Params = { name } }
 			end
 		end
 	end)
 
-	function VIP.UGCHandler(character)
+	function VIP.EffectHandler(character)
 		if not Data.settings.vip then
 			return
 		end
@@ -197,13 +198,13 @@ if Util.Services.RunService:IsServer() then
 
 		-- vip equipped effects
 		local player = Util.Services.Players:GetPlayerFromCharacter(character)
-		local effects = player and effects[player.UserId]
+		local effects = player and VIP.effects[player.UserId]
 		if not effects then
 			return
 		end
 
 		for _, effect in effects do
-			task.spawn(effect.Method, character, { Name = effect.name, Destroy = tick })
+			task.spawn(effect.Method, character, unpack(effect.Params))
 		end
 	end
 
@@ -213,16 +214,16 @@ if Util.Services.RunService:IsServer() then
 			return
 		end
 		humanoid.ApplyDescriptionFinished:Connect(function()
-			VIP.UGCHandler(character)
+			VIP.EffectHandler(character)
 		end)
 	end
 
 	Util.SafePlayerAdded(function(player)
 		task.spawn(setDonationLevel, player)
 		player.CharacterAdded:Connect(VIP.CharacterAdded)
-		player.CharacterAppearanceLoaded:Connect(VIP.UGCHandler)
+		player.CharacterAppearanceLoaded:Connect(VIP.EffectHandler)
 		if player.Character then
-			VIP.UGCHandler(player.Character)
+			VIP.EffectHandler(player.Character)
 		end
 	end)
 

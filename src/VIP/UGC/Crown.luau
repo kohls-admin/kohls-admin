@@ -84,15 +84,15 @@ return {
 						colors = COLORS.gold
 					end
 				end
-			elseif typeof(accessory) == "table" then
+				accessory:Destroy()
+			elseif typeof(accessory) == "string" then
 				for key, value in COLORS do
-					if string.find(string.lower(accessory.Name), key, 1, true) then
+					if string.find(string.lower(accessory), key, 1, true) then
 						colors = value
 						break
 					end
 				end
 			end
-			accessory:Destroy()
 		end
 
 		local existing = character:FindFirstChild(hat.Name)
