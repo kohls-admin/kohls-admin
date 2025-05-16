@@ -370,7 +370,11 @@ return {
 		run = function(context)
 			local options = Instance.new("TeleportOptions")
 			options.ServerInstanceId = game.JobId
-			context._K.Util.SafeTeleport(game.PlaceId, { context.fromPlayer }, options)
+			context._K.Util.SafeTeleport(
+				game.PlaceId,
+				{ context.fromPlayer },
+				#context._K.Services.Players:GetPlayers() > 1 and options
+			)
 		end,
 	},
 	{
