@@ -108,14 +108,14 @@ function About.new(_K)
 	end
 	_K.client.promptThirdPartyGamePassDialog = promptThirdPartyGamePassDialog
 
-	local function updatePassPriceText(label, gamePassId)
+	local function updatePassPriceText(label: TextLabel, gamePassId: number, ownedText: string?)
 		local success, owned = _K.Util.Retry(function()
 			return _K.Util.Services.MarketplaceService:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, gamePassId)
 		end)
 
 		if success then
 			if owned then
-				label.Text = "<b>OWNED</b>"
+				label.Text = ownedText or "<b>OWNED</b>"
 				return
 			end
 
@@ -125,7 +125,7 @@ function About.new(_K)
 					if purchased and passId == gamePassId and userId == _K.UI.LocalPlayer.UserId then
 						conn:Disconnect()
 						owned = true
-						label.Text = "<b>OWNED</b>"
+						label.Text = ownedText or "<b>OWNED</b>"
 					end
 				end
 			)
@@ -429,26 +429,29 @@ function About.new(_K)
 	}
 
 	local passDefinition = {
-		{ name = "<font color='#bf0'><sc><b>Tip</b></sc></font>", id = 5391355 },
-		{ name = "<font color='#8f0'><sc><b>Donation</b></sc></font>", id = 5391356 },
-		{ name = "<font color='#0f0'><sc><b>Gift</b></sc></font>", id = 933980650 },
-		{ name = "<font color='#0f8'><sc><b>Tribute</b></sc></font>", id = 933582848 },
-		{ name = "<font color='#0ff'><sc><b>Patron</b></sc></font>", id = 938480383 },
-		{ name = "<font color='#0bf'><sc><b>Benefactor</b></sc></font>", id = 939618404 },
-		{ name = "<font color='#80f'><sc><b>Luminary</b></sc></font>", id = 936146448 },
-		{ name = "<font color='#f0f'><sc><b>Epic</b></sc></font>", id = 941076536 },
-		{ name = "<font color='#f08'><sc><b>Hero</b></sc></font>", id = 941162509 },
-		{ name = "<font color='#f00'><sc><b>Legend</b></sc></font>", id = 941006661 },
-		{ name = "<font color='#fff'><sc><b>Mythic</b></sc></font>", id = 983235767 },
+		{ name = "Tip", color = "#bf0", id = 5391355 },
+		{ name = "Donation", color = "#8f0", id = 5391356 },
+		{ name = "Gift", color = "#0f0", id = 933980650 },
+		{ name = "Tribute", color = "#0f8", id = 933582848 },
+		{ name = "Patron", color = "#0ff", id = 938480383 },
+		{ name = "Benefactor", color = "#0bf", id = 939618404 },
+		{ name = "Luminary", color = "#80f", id = 936146448 },
+		{ name = "Epic", color = "#f0f", id = 941076536 },
+		{ name = "Hero", color = "#f08", id = 941162509 },
+		{ name = "Legend", color = "#f00", id = 941006661 },
+		{ name = "Mythic", color = "#fff", id = 983235767 },
 	}
 
+	local titleEquipped
 	for i, pass in passDefinition do
-		local button = UI.new "Button" {
+		local isTitle = _K.Data.settings.vip and i > 4
+		local button
+		button = UI.new "Button" {
 			Parent = gamePasses,
 			LayoutOrder = i,
 			Icon = "rbxasset://textures/ui/common/robux.png",
 			IconRightAlign = true,
-			Label = pass.name,
+			Label = `<font color='{pass.color}'><sc><b>{pass.name}</b></sc></font>`,
 			HoverTransparency = 0.5,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Size = UDim2.new(0, 128, 0, 32),
@@ -464,13 +467,33 @@ function About.new(_K)
 				TextColor3 = UI.Theme.PrimaryText,
 				TextWrapped = true,
 				Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
-				Text = `<b>OWNED</b>`,
+				Text = `?`,
 				RichText = true,
 			},
 
 			[UI.Event] = {
 				Activated = function()
-					promptThirdPartyGamePassDialog(pass.id)
+					if
+						isTitle
+						and (
+							button._content.Price.Text == `<b>EQUIP</b>`
+							or button._content.Price.Text == `<b>UNEQUIP</b>`
+						)
+					then
+						if titleEquipped then
+							titleEquipped._content.Price.Text = `<b>EQUIP</b>`
+						end
+						if titleEquipped ~= button then
+							titleEquipped = button
+							button._content.Price.Text = `<b>UNEQUIP</b>`
+							_K.Remote.Title:FireServer(pass.name)
+						else
+							titleEquipped = nil
+							_K.Remote.Title:FireServer()
+						end
+					else
+						promptThirdPartyGamePassDialog(pass.id)
+					end
 				end,
 			},
 		}
@@ -480,12 +503,14 @@ function About.new(_K)
 		}
 		UI.new "Tooltip" {
 			Parent = button._instance,
-			Text = "❤️ Thanks for supporting Kohl's Admin!\n<b>This doesn't provide any in-game benefits!</b>",
+			Text = `❤️ Thanks for supporting Kohl's Admin!\n<b>{if i > 4
+				then "Gives a title in participating experiences!"
+				else "This doesn't provide any in-game benefits!"}</b>`,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Visible = button._hovering,
 		}
 
-		task.defer(updatePassPriceText, button._content.Price, pass.id)
+		task.spawn(updatePassPriceText, button._content.Price, pass.id, if isTitle then `<b>EQUIP</b>` else nil)
 	end
 
 	local vipLabel = UI.new "TextLabel" {
@@ -522,7 +547,8 @@ function About.new(_K)
 
 	local vipDeveloperPassId = _K.Data.roles.vip.gamepass
 	local vipGlobalPassId = 5411126
-	local vipButtonGlobal = UI.new "Button" {
+	local vipButtonGlobal
+	vipButtonGlobal = UI.new "Button" {
 		Parent = vipList,
 		LayoutOrder = 3,
 		Icon = "rbxasset://textures/ui/common/robux.png",
@@ -548,7 +574,24 @@ function About.new(_K)
 		},
 		[UI.Event] = {
 			Activated = function()
-				promptThirdPartyGamePassDialog(vipGlobalPassId)
+				if
+					vipButtonGlobal._content.Price.Text == `<b>EQUIP</b>`
+					or vipButtonGlobal._content.Price.Text == `<b>UNEQUIP</b>`
+				then
+					if titleEquipped then
+						titleEquipped._content.Price.Text = `<b>EQUIP</b>`
+					end
+					if titleEquipped ~= vipButtonGlobal then
+						titleEquipped = vipButtonGlobal
+						vipButtonGlobal._content.Price.Text = `<b>UNEQUIP</b>`
+						_K.Remote.Title:FireServer("VIP")
+					else
+						titleEquipped = nil
+						_K.Remote.Title:FireServer()
+					end
+				else
+					promptThirdPartyGamePassDialog(vipGlobalPassId)
+				end
 			end,
 		},
 	}
@@ -585,7 +628,7 @@ function About.new(_K)
 		},
 	}
 
-	task.defer(updatePassPriceText, vipButtonGlobal._content.Price, vipGlobalPassId)
+	task.defer(updatePassPriceText, vipButtonGlobal._content.Price, vipGlobalPassId, `<b>EQUIP</b>`)
 	if vipDeveloperPassId then
 		task.defer(updatePassPriceText, vipButtonDeveloper._content.Price, vipDeveloperPassId)
 	end

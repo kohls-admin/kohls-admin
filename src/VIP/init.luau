@@ -3,6 +3,7 @@ local Data = require(script.Parent:WaitForChild("Data"))
 local Remote = require(script.Parent:WaitForChild("Remote"))
 local Util = require(script.Parent:WaitForChild("Util"))
 
+local Title = require(script:WaitForChild("Title"))
 
 local VIP = { effects = {} }
 
@@ -56,7 +57,6 @@ local function setDonationLevel(player)
 end
 
 local adminUGCMap = {}
-
 for _, module in script:WaitForChild("UGC"):GetChildren() do
 	task.spawn(function()
 		local result = require(module)
@@ -161,6 +161,44 @@ if Util.Services.RunService:IsServer() then
 			else
 				userEffects[match] = { Method = ugcEffect.Method, Params = { name } }
 			end
+		end
+	end)
+
+	function VIP.Title(player: Player, ...)
+		local userEffects = VIP.effects[player.UserId]
+		if not userEffects then
+			userEffects = {}
+			VIP.effects[player.UserId] = userEffects
+		end
+
+		userEffects.Title = if select("#", ...) > 0 then { Method = Title.Method, Params = { ... } } else nil
+
+		if player.Character then
+			Title.Method(player.Character, ...)
+		end
+	end
+
+	Remote.Title.OnServerEvent:Connect(function(player: Player, title: string?)
+		if not Data.settings.vip then
+			return
+		end
+
+		local titleDefinition = Title.definition[title and string.lower(title)]
+		if titleDefinition then
+			if titleDefinition.gamepass then
+				local okGamePass, result = Util.Retry(function()
+					return Util.Services.MarketplaceService:UserOwnsGamePassAsync(
+						player.UserId,
+						titleDefinition.gamepass
+					)
+				end)
+				if not (okGamePass and result) then
+					return
+				end
+			end
+			VIP.Title(player, title)
+		else
+			VIP.Title(player)
 		end
 	end)
 
