@@ -30,9 +30,13 @@ function String.unescapeRichText(s: string): string
 	return s
 end
 
---- Strip quotes from a string
+--- Strip enclosing quotes from a string
 function String.stripQuotes(s: string): string
-	return string.gsub(s, '["`]', "")
+	if string.find(s, '[`"]') == 1 then
+		return string.sub(s, 2, if string.find(s, '[`"]', #s) == #s then #s - 1 else #s)
+	else
+		return s
+	end
 end
 
 --- Strip whitespace from the start of a string
