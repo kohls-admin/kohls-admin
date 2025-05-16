@@ -391,22 +391,10 @@ return {
 				userId
 			)
 			if not ok then
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
-					From = "_K",
-					Text = errorMessage or samePlace,
-					TextColor3 = Color3.new(1, 0, 0),
-					Sound = "Call_Leave",
-				})
-				return
+				return errorMessage or samePlace
 			end
 			if samePlace then
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
-					From = "_K",
-					Text = "You're already in the same server!",
-					TextColor3 = Color3.new(1, 0, 0),
-					Sound = "Call_Leave",
-				})
-				return
+				return "You're already in the same server!"
 			end
 
 			if placeId and jobId then
@@ -414,6 +402,7 @@ return {
 				options.ServerInstanceId = jobId
 				context._K.Util.SafeTeleport(placeId, { context.fromPlayer }, options)
 			end
+			return
 		end,
 	},
 
