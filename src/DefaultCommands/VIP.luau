@@ -622,12 +622,7 @@ return {
 		run = function(context, players, assetId)
 			local bundleDescription = if assetId then context.env.getHumanoidDescriptionBundle(assetId) else nil
 			if not bundleDescription then
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
-					Text = `Failed to load bundle.`,
-					From = "_K",
-					TextColor3 = Color3.new(1, 0, 0),
-					Sound = "Call_Leave",
-				})
+				return `Failed to load bundle.`
 			end
 			for _, player in players do
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -654,6 +649,7 @@ return {
 				-- reapply other admin description changes
 				task.defer(Util.Humanoid.reapplyDescription, player)
 			end
+			return
 		end,
 	},
 	{
