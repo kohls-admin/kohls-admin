@@ -783,10 +783,7 @@ return {
 		end)
 
 		Input._input:GetPropertyChangedSignal("Text"):Connect(function()
-			if
-				currentCompletion
-				and (UserInputService:IsKeyDown(Enum.KeyCode.Space) or UserInputService:IsKeyDown(Enum.KeyCode.Tab))
-			then
+			if currentCompletion and UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
 				completeSuggestion()
 				return
 			end
