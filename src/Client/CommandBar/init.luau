@@ -291,6 +291,10 @@ local function updateSuggestionLabels(data)
 				Size = UDim2.new(1, 0, 1, 0),
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			}
+		elseif valueType == "EnumItem" then
+			if value.EnumType == Enum.Font then
+				frame.TextLabel.Font = value
+			end
 		elseif valueType == "table" then
 			if value.userId or value.UserId then
 				UI.new "ImageLabel" {
