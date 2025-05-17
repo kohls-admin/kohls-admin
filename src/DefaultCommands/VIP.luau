@@ -619,9 +619,9 @@ return {
 			}
 		end,
 
-		run = function(context, players, assetId)
+		run = function(context, players, assetId: number?)
 			local bundleDescription = if assetId then context.env.getHumanoidDescriptionBundle(assetId) else nil
-			if not bundleDescription then
+			if assetId and not bundleDescription then
 				return `Failed to load bundle.`
 			end
 			for _, player in players do
