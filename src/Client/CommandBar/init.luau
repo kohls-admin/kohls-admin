@@ -425,6 +425,10 @@ local function invalidSuggestion(data, err, pos, text)
 	local frame = SuggestionFrame:Clone()
 	local label = frame:FindFirstChildOfClass("TextLabel")
 	label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
+	label.TextWrapped = true
+	label.TextTruncate = Enum.TextTruncate.None
+	label.AutomaticSize = Enum.AutomaticSize.Y
+	frame.AutomaticSize = Enum.AutomaticSize.Y
 	frame.Parent = TooltipFrame
 	-- show highlight
 	table.insert(suggestionLabels, frame)
