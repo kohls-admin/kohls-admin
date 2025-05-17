@@ -72,8 +72,9 @@ function Settings.new(_K)
 		return use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
 	end)
 
+	local reservedPrefixes = { ",", " ", "`", '"', "@", "$", "%", "*", "~" }
 	local settingsLineItems = {
-		General = {
+		Local = {
 			-- FIX: prevent selecting reserved characters (comma, space, !@#$%^&*, `, ")
 			-- TODO: customizable listable/argument delimiter?
 			UI.new "ListItem" {
@@ -117,10 +118,39 @@ function Settings.new(_K)
 					Placeholder = ";",
 					MaxChars = 1,
 					Value = UI.compute(function(use)
+						return use(_K.client.settings.playerPrefix)[UI.LocalPlayer.UserId]
+							or use(_K.client.settings.prefix)
+					end),
+					Validate = function(text)
+						return not (text == "" or table.find(reservedPrefixes, text))
+					end,
+
+					[UI.Hook] = {
+						Selected = function(value)
+							_K.Data.settings.playerPrefix[UI.LocalPlayer.UserId] = value
+							_K.client.settings.playerPrefix:set(_K.Data.settings.playerPrefix, true)
+							_K.Remote.PlayerPrefix:FireServer(value)
+						end,
+					},
+				},
+			},
+		},
+		General = {
+			UI.new "ListItem" {
+				ContentAutomaticSize = false,
+				Text = "Default Command Prefix",
+				UI.new "Input" {
+					Font = UI.Theme.FontMono,
+					Size = UI.computeFrom(UDim2.new, 0, 24, 0, lineItemHeight),
+					FontSize = 14,
+					Padding = UDim.new(0, 5),
+					Placeholder = ";",
+					MaxChars = 1,
+					Value = UI.compute(function(use)
 						return use(_K.client.settings.prefix)
 					end),
 					Validate = function(text)
-						return not (text == "" or table.find({ ",", " ", "`", '"' }, text))
+						return not (text == "" or table.find(reservedPrefixes, text))
 					end,
 
 					[UI.Hook] = {

@@ -670,16 +670,20 @@ return {
 		end
 		initialized = true
 
-		Input.Value:set(_K.getCommandPrefix(UI.LocalPlayer.UserId), true)
+		local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
+		Input.Value:set(prefix, true)
 		Input._input.TextEditable = false
 		CommandBar.Parent = UI.TopbarFrame
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
-		_K.client.settings.prefix:hook(function(value)
-			if value then
-				Input.Value:set(value .. string.sub(Input._input.Text, #value + 1), true)
-			end
-		end)
+
+		local function updatePrefix()
+			local value = _K.getCommandPrefix(UI.LocalPlayer.UserId)
+			Input.Value:set(value .. string.sub(Input._input.Text, #prefix + 1), true)
+			prefix = value
+		end
+		_K.client.settings.prefix:hook(updatePrefix)
+		_K.client.settings.playerPrefix:hook(updatePrefix)
 
 		TooltipFrame.MouseWheelForward:Connect(suggestionUp)
 		TooltipFrame.MouseWheelBackward:Connect(suggestionDown)
