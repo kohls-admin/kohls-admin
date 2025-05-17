@@ -309,7 +309,7 @@ local function updateSuggestionLabels(data)
 			end
 		end
 
-		local startIndex, endIndex = string.find(string.lower(displayName), query)
+		local startIndex, endIndex = string.find(string.lower(displayName), query, 1, true)
 
 		label.Text = string.format(
 			if suggestion.invalid then invalidSuggestFormat else suggestFormat,
@@ -560,7 +560,7 @@ updateCompletion = function()
 	-- inline format (preceding message, pre query suggestion, query, post query suggestion, post query message)
 	-- FIX: how to not escape invalid/valid rich text coloring?
 	-- need a way to merge it somehow? (or don't use richtext maybe red underline instead! with a button you can hover to show error tooltip :)
-	local startIndex, endIndex = string.find(string.lower(suggestionText), string.lower(data.query))
+	local startIndex, endIndex = string.find(string.lower(suggestionText), string.lower(data.query), 1, true)
 
 	Input.DisplayText:set(
 		string.format(
