@@ -83,10 +83,10 @@ function Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string 
 			return Util.Suggest.query(text, suggestions)[1] ~= nil, `Invalid {typeName}`
 		end,
 		parse = function(text)
-			return Util.Suggest.query(text, suggestions, enumItems)[1][2]
+			return Util.Suggest.query(text, suggestions, enumItems)[1][3]
 		end,
 		suggestions = function(text)
-			return Util.Suggest.query(text, suggestions, enumItems)
+			return suggestions, enumItems
 		end,
 	}
 end
