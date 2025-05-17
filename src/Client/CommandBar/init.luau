@@ -307,6 +307,16 @@ local function updateSuggestionLabels(data)
 					Image = `rbxthumb://type=AvatarHeadShot&id={value.userId or value.UserId}&w=48&h=48`,
 				}
 			end
+		elseif data.suggestionType.name == "image" or data.suggestionType.name == "images" and data.arg then
+			UI.new "ImageLabel" {
+				Parent = frame,
+				BackgroundTransparency = 1,
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.new(1, 0, 1, 0),
+				SizeConstraint = Enum.SizeConstraint.RelativeYY,
+				Image = data.arg.parsedArgs[1],
+			}
 		end
 
 		local startIndex, endIndex = string.find(string.lower(displayName), query, 1, true)

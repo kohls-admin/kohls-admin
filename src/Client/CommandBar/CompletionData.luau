@@ -135,6 +135,7 @@ return function(_K, text, cursorPosition)
 			if cursorPosition < arg.argPos or (not isGreedy and cursorPosition > arg.argPos + #arg.rawArg) then
 				continue
 			end
+			data.arg = arg
 			data.argIndex = i + 1
 			data.argPos = arg.argPos
 			data.rawArg = arg.rawArg

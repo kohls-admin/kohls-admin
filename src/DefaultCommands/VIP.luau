@@ -680,9 +680,9 @@ return {
 				optional = true,
 			},
 			{
-				type = "integer",
-				name = "Decal",
-				description = "The assetId of the decal to apply to the cape.",
+				type = "image",
+				name = "AssetId",
+				description = "The assetId of the image to apply to the cape.",
 				optional = true,
 			},
 		},
@@ -725,7 +725,7 @@ return {
 			CollectionService:GetInstanceAddedSignal("_KCapeMotor"):Connect(addCapeMotor)
 		end,
 
-		run = function(context, players, color, reflectance, material, decal)
+		run = function(context, players, color, reflectance, material, image)
 			for _, player in players do
 				local character = player.Character
 				local root = character and (character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
@@ -751,8 +751,8 @@ return {
 				cape.BottomSurface = 0
 				cape.Size = Vector3.new(1.9, 3.8, 0.2)
 
-				if decal then
-					Instance.new("Decal", cape).Texture = context._K.Util.getTexture(decal)
+				if image then
+					Instance.new("Decal", cape).Texture = image
 				end
 
 				local motor = Instance.new("Motor6D")
@@ -1062,14 +1062,14 @@ return {
 				description = "The player(s) whose face to change.",
 			},
 			{
-				type = "integer",
+				type = "image",
 				name = "AssetId",
 				description = "The assetId of the face, or the original face if omitted.",
 				optional = true,
 			},
 		},
 
-		run = function(context, players, assetId)
+		run = function(context, players, image)
 			for _, player in players do
 				local head = player.Character and player.Character:FindFirstChild("Head")
 				if not head then
@@ -1084,9 +1084,7 @@ return {
 				if not player.Character:GetAttribute("_KFace") then
 					player.Character:SetAttribute("_KFace", face.Texture)
 				end
-				face.Texture = if context.undo
-					then player.Character:GetAttribute("_KFace")
-					else context._K.Util.getTexture(assetId)
+				face.Texture = if context.undo then player.Character:GetAttribute("_KFace") else image
 			end
 		end,
 	},
@@ -1101,14 +1099,14 @@ return {
 				description = "The player(s) whose shirt to change.",
 			},
 			{
-				type = "integer",
+				type = "image",
 				name = "AssetId",
 				description = "The assetId of the shirt, or the original shirt if omitted.",
 				optional = true,
 			},
 		},
 
-		run = function(context, players, assetId)
+		run = function(context, players, image)
 			for _, player in players do
 				if not player.Character then
 					continue
@@ -1121,9 +1119,7 @@ return {
 				if not player.Character:GetAttribute("_KShirt") then
 					player.Character:SetAttribute("_KShirt", shirt.ShirtTemplate)
 				end
-				shirt.ShirtTemplate = if context.undo
-					then player.Character:GetAttribute("_KShirt")
-					else context._K.Util.getTexture(assetId)
+				shirt.ShirtTemplate = if context.undo then player.Character:GetAttribute("_KShirt") else image
 			end
 		end,
 	},
@@ -1138,14 +1134,14 @@ return {
 				description = "The player(s) whose pants to change.",
 			},
 			{
-				type = "integer",
+				type = "image",
 				name = "AssetId",
 				description = "The assetId of the pants, or the original pants if omitted.",
 				optional = true,
 			},
 		},
 
-		run = function(context, players, assetId)
+		run = function(context, players, image)
 			for _, player in players do
 				if not player.Character then
 					continue
@@ -1158,9 +1154,7 @@ return {
 				if not player.Character:GetAttribute("_KPants") then
 					player.Character:SetAttribute("_KPants", existing.PantsTemplate)
 				end
-				existing.PantsTemplate = if context.undo
-					then player.Character:GetAttribute("_KPants")
-					else context._K.Util.getTexture(assetId)
+				existing.PantsTemplate = if context.undo then player.Character:GetAttribute("_KPants") else image
 			end
 		end,
 	},
@@ -1175,14 +1169,14 @@ return {
 				description = "The player(s) whose t-shirt to change.",
 			},
 			{
-				type = "integer",
+				type = "image",
 				name = "AssetId",
 				description = "The assetId of the t-shirt, or the original t-shirt if omitted.",
 				optional = true,
 			},
 		},
 
-		run = function(context, players, assetId)
+		run = function(context, players, image)
 			for _, player in players do
 				if not player.Character then
 					continue
@@ -1195,9 +1189,7 @@ return {
 				if not player.Character:GetAttribute("_KTShirt") then
 					player.Character:SetAttribute("_KTShirt", tshirt.Graphic)
 				end
-				tshirt.Graphic = if context.undo
-					then player.Character:GetAttribute("_KTShirt")
-					else context._K.Util.getTexture(assetId)
+				tshirt.Graphic = if context.undo then player.Character:GetAttribute("_KTShirt") else image
 			end
 		end,
 	},
