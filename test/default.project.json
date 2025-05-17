@@ -46,14 +46,95 @@
 				"ChatVersion": { "Enum": 1 }
 			}
 		},
+		"Lighting": {
+			"$properties": {
+				"Ambient": [0.28, 0.28, 0.28],
+				"OutdoorAmbient": [0.28, 0.28, 0.28],
+				"Brightness": 3,
+				"EnvironmentDiffuseScale": 1,
+				"EnvironmentSpecularScale": 1,
+				"ClockTime": 14.5,
+				"GeographicLatitude": 0,
+				"GlobalShadows": true
+			},
+			"Atmosphere": {
+				"$className": "Atmosphere",
+				"$properties": {
+					"Color": [0.78, 0.78, 0.78],
+					"Decay": [0.42, 0.44, 0.49],
+					"Density": 0.3,
+					"Offset": 0
+				}
+			},
+			"Bloom": {
+				"$className": "BloomEffect",
+				"$properties": {
+					"Intensity": 1,
+					"Size": 24,
+					"Threshold": 2
+				}
+			},
+			"Sky": {
+				"$className": "Sky",
+				"$properties": {
+					"StarCount": 3000,
+					"MoonAngularSize": 11,
+					"SunAngularSize": 11,
+					"SkyboxBk": "rbxassetid://6444884337",
+					"SkyboxDn": "rbxassetid://6444884785",
+					"SkyboxFt": "rbxassetid://6444884337",
+					"SkyboxLf": "rbxassetid://6444884337",
+					"SkyboxRt": "rbxassetid://6444884337",
+					"SkyboxUp": "rbxassetid://6412503613",
+					"MoonTextureId": "rbxassetid://6444320592",
+					"SunTextureId": "rbxassetid://6196665106"
+				}
+			},
+			"SunRays": {
+				"$className": "SunRaysEffect",
+				"$properties": {
+					"Intensity": 0.01,
+					"Spread": 0.1
+				}
+			}
+		},
 		"Workspace": {
 			"Baseplate": {
 				"$className": "Part",
 				"$properties": {
 					"Anchored": true,
 					"Locked": true,
-					"Position": [0, -10, 0],
-					"Size": [512, 20, 512]
+					"Position": [0, -8, 0],
+					"Size": [2048, 16, 2048],
+					"Transparency": 1
+				},
+				"Texture": {
+					"$className": "Texture",
+					"$properties": {
+						"Face": "Top",
+						"Color3": [0, 0, 0],
+						"Texture": "rbxassetid://6372755229",
+						"Transparency": 0.8,
+						"StudsPerTileU": 8,
+						"StudsPerTileV": 8
+					}
+				}
+			},
+			"BaseplateMesh": {
+				"$className": "Part",
+				"$properties": {
+					"Color": [0.36, 0.36, 0.36],
+					"Anchored": true,
+					"Locked": true,
+					"Position": [0, -8, 0],
+					"Size": [2048, 16, 2048],
+					"TopSurface": "Smooth"
+				},
+				"BlockMesh": {
+					"$className": "BlockMesh",
+					"$properties": {
+						"Scale": [16, 1, 16]
+					}
 				}
 			}
 		}
