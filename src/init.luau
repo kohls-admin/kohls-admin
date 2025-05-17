@@ -278,6 +278,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	-- register creator
 	task.spawn(function()
 		if game.CreatorType == Enum.CreatorType.Group then
+			_K.groupId = game.CreatorId
 			local ok, result = Util.Retry(function()
 				return Util.Services.GroupService:GetGroupInfoAsync(game.CreatorId)
 			end)
