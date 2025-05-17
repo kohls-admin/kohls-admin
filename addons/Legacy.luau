@@ -37,8 +37,9 @@ return function(_K)
 					if not player then
 						continue
 					end
+					local prefix = context._K.getCommandPrefix(userId)
 					context._K.Remote.Notify:FireClient(player, {
-						Text = `Gave you the <b><font color="{roleData.color}">{roleData.name}</font></b> role!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
+						Text = `Gave you the <b><font color="{roleData.color}">{roleData.name}</font></b> role!\nSay <b>{prefix}cmds</b> or <b>{prefix}info</b> for details.`,
 						From = context.from,
 					})
 				end
