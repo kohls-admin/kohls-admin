@@ -230,16 +230,16 @@ if not loader then
 end
 local CUSTOM = FindChild(loader, "Custom Commands") or FindChild(loader, "Custom_Commands")
 local SETTINGS = FindChild(loader, "Settings") or FindChild(loader, "Legacy_Settings")
-if SETTINGS then
-	if CUSTOM then
-		local b, e = wrap(function()
-			CUSTOM = require(CUSTOM)
-		end)
-		if not b then
-			print(ScriptName .. " Custom Command Error:\t" .. e)
-			CUSTOM = {}
-		end
+if CUSTOM then
+	local b, e = pcall(function()
+		CUSTOM = require(CUSTOM)
+	end)
+	if not b then
+		print(ScriptName .. " Custom Command Error:\t" .. e)
+		CUSTOM = {}
 	end
+end
+if SETTINGS then
 	SETTINGS = require(SETTINGS)
 	for k, v in SETTINGS[1] do
 		StudioSet[k] = v
