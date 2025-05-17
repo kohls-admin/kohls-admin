@@ -40,30 +40,32 @@ function Store.loadStore(name)
 
 	print(`[Kohl's Admin] Initializing DataStore {name}...`)
 	local version = "_K_0.1"
-	local ok, store = pcall(DataStoreService.GetDataStore, DataStoreService, name, version)
+	local ok, result = pcall(DataStoreService.GetDataStore, DataStoreService, name, version)
 	if not ok then
-		if RunService:IsStudio() and type(store) == "string" then
-			if string.find(store, "publish", 1, true) then
-				warn("Data failed to load, enable Studio access to API services in Game Settings.")
-				return
-			end
-			if string.find(store, "502", 1, true) then
-				warn("Data failed to load, enable Studio access to API services in Game Settings.")
-				return
+		if RunService:IsStudio() and type(result) == "string" then
+			if string.find(result, "publish", 1, true) then
+				return warn("Kohl's Admin Data failed to load, you must publish this game to Roblox.")
 			end
 		end
-		ok, store = Util.Retry(function()
+		ok, result = Util.Retry(function()
 			return DataStoreService:GetDataStore(name, version)
 		end)
 	end
 
 	if not ok then
-		error(store)
+		error(result)
 	end
 
-	Store.dataStore = store
+	local success, err = pcall(result.GetAsync, result, "__TEST")
+	if not success then
+		if string.find(err, "Studio access", 1, true) then
+			return warn("Kohl's Admin Data failed to load, enable Studio access to API services in Game Settings.")
+		end
+	end
 
-	return store
+	Store.dataStore = result
+
+	return result
 end
 
 return Store
