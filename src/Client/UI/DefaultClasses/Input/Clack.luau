@@ -8,51 +8,27 @@ local ChatInputBarConfiguration = TextChatService:FindFirstChildOfClass("ChatInp
 local module = {
 	enabled = true,
 	everyTextBox = true,
-	soundList = { -- custom keyboard
-		"18215153828",
-		"18215155563",
-		"18215157567",
-		"18215159165",
-		"18215160827",
-		"18215161601",
-		"18215163477",
-		"18215169084",
-	},
-	-- soundList = { -- roblox keyboard
-	-- 	"9113874853",
-	-- 	"9113871833",
-	-- 	"9113872152",
-	-- 	"9113869916",
-	-- 	"9113874492",
-	-- 	"9113868645",
-	-- 	"9113874782",
-	-- 	"9113869802",
-	-- 	"9113871708",
-	-- 	"9113868855",
-	-- 	"9113868958",
-	-- 	"9113868950",
-	-- },
 }
 
-for i, v in module.soundList do
-	module.soundList[i] = "rbxassetid://" .. v
-end
-task.spawn(ContentProvider.PreloadAsync, ContentProvider, module.soundList)
+local clacks = "rbxassetid://136112106699293"
+task.spawn(ContentProvider.PreloadAsync, ContentProvider, { clacks })
 
 local lastHash, lastKey
-local clackRandom = Random.new()
+local random = Random.new()
 
 function module.sound(keycode)
-	local keyHash = keycode.Value % #module.soundList
+	local keyHash = keycode.Value % 8
 	local sound = Instance.new("Sound")
-	sound.Volume = clackRandom:NextNumber(1.5, 2)
+	sound.Volume = random:NextNumber(1.5, 2)
 	if keyHash == lastHash and keycode ~= lastKey then
-		sound.Pitch = clackRandom:NextNumber(0.9, 1.1)
+		sound.Pitch = random:NextNumber(0.9, 1.1)
 	end
-	sound.SoundId = module.soundList[keyHash + 1]
+	sound.SoundId = clacks
+	sound.PlaybackRegionsEnabled = true
+	sound.PlaybackRegion = NumberRange.new(keyHash * 0.3, keyHash * 0.3 + 0.15)
 	sound.Parent = SoundService
 	sound:Play()
-	task.delay(2, sound.Destroy, sound)
+	task.delay(1, sound.Destroy, sound)
 	lastHash, lastKey = keyHash, keycode
 end
 
