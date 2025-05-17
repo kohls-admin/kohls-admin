@@ -313,9 +313,9 @@ local function updateSuggestionLabels(data)
 
 		label.Text = string.format(
 			if suggestion.invalid then invalidSuggestFormat else suggestFormat,
-			if startIndex > 1 then string.sub(displayName, 1, startIndex - 1) else "",
-			string.sub(displayName, startIndex, endIndex),
-			string.sub(displayName, endIndex + 1)
+			if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(displayName, 1, startIndex - 1)) else "",
+			_K.Util.String.escapeRichText(string.sub(displayName, startIndex, endIndex)),
+			_K.Util.String.escapeRichText(string.sub(displayName, endIndex + 1))
 		)
 
 		frame.Activated:Connect(function()
