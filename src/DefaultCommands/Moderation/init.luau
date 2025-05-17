@@ -2005,7 +2005,7 @@ return {
 				end
 
 				player.Character = rig
-				context._K.VIP.UGCHandler(rig)
+				context._K.VIP.EffectHandler(rig)
 				rig.Parent = workspace
 			end
 		end,
