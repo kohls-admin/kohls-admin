@@ -37,7 +37,6 @@ export type Hook = "log" | "preCommand" | "postCommand"
 
 	.client { [any]: any }?
 	.pinnedAnnouncement {}?
-	.playerPrefix { [Player]: string }
 	._serverLock boolean
 
 	.creatorId number
@@ -75,13 +74,12 @@ local _K = {
 	pinnedAnnouncement = nil,
 
 	cleanupCommands = {},
-	playerPrefix = {},
 	_serverLock = false,
 	_addonTag = "Kohl's Admin Addon",
 }
 
 function _K.getCommandPrefix(from: number)
-	return _K.playerPrefix[from] or _K.Data.settings.prefix
+	return _K.Data.settings.playerPrefix[from] or _K.Data.settings.prefix
 end
 
 function _K.log(text: string, level: LogType, from: number?, filtered: boolean?): Log?
@@ -429,8 +427,8 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	end)
 
 	-- handle custom command prefix
-	_K.Remote.Prefix.OnServerEvent:Connect(function(player, prefix)
-		_K.playerPrefix[player.UserId] = prefix
+	_K.Remote.PlayerPrefix.OnServerEvent:Connect(function(player, prefix)
+		_K.Data.settings.playerPrefix[player.UserId] = prefix
 	end)
 
 	_K.Remote.Settings.OnServerEvent:Connect(function(player, changes)

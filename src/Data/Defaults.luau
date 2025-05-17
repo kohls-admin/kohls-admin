@@ -46,6 +46,7 @@ local Data = {
 		saveLogs = true,
 
 		freeAdmin = {},
+		playerPrefix = {},
 	},
 
 	async = {
