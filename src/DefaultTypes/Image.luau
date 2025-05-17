@@ -1,3 +1,5 @@
+local MarketplaceService = game:GetService("MarketplaceService")
+
 local _K
 
 local imageType = {
@@ -10,10 +12,16 @@ local imageType = {
 	end,
 	parse = function(v)
 		if _K.IsClient then
-			return "rbxthumb://type=Asset&id=" .. v .. "&w=150&h=150"
+			if pcall(MarketplaceService.GetProductInfo, MarketplaceService, v) then
+				return "rbxthumb://type=Asset&id=" .. v .. "&w=150&h=150"
+			end
+		else
+			local ok, result = pcall(_K.Util.getTexture, v)
+			if ok then
+				return result
+			end
 		end
-		local ok, result = pcall(_K.Util.getTexture, v)
-		return ok and result
+		return nil, "Invalid image"
 	end,
 	suggestions = function(text)
 		return { if tonumber(text) then text else nil }
