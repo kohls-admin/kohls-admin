@@ -28,7 +28,15 @@ function Argument.new(command, definition, argPos, rawArg)
 	return setmetatable(object, Argument)
 end
 
+function Argument:invalidate(rawArg, argPos, message)
+	self.command.invalidArg = rawArg
+	self.command.invalidPos = argPos
+	self.command.invalidMessage = message
+	return false, self.command.invalidMessage
+end
+
 function Argument:transform()
+	local argPos = self.argPos
 	for _, rawArg in self.rawArgs do
 		local arg = self._K.Util.String.stripQuotes(self._K.Util.String.trim(rawArg))
 		local argType = self.rawType
@@ -47,16 +55,16 @@ function Argument:transform()
 			local optional = not string.find(arg, "%S") and self.definition.optional
 			arg = argType.transform(arg)
 			if arg == nil and not optional then
-				self.command.invalidArg = rawArg
-				self.command.invalidPos = self.argPos
-				self.command.invalidMessage = "Invalid transform: "
+				local message = "Invalid transform: "
 					.. if self._K.Util.String.trim(rawArg) == "" then "nil" else rawArg
-				break
+				return self:invalidate(rawArg, argPos, message)
 			end
 		end
 		table.insert(self.transformedArgs, arg)
 		table.insert(self.transformedTypes, argType)
+		argPos += #rawArg + 1
 	end
+	return true
 end
 
 function Argument:validate()
@@ -78,15 +86,12 @@ function Argument:validate()
 		local argType = self.transformedTypes[i]
 		local ok, result = argType.validate(arg, self)
 		if not ok then
-			self.command.invalidArg = rawArg
-			self.command.invalidPos = transformPos
-			self.command.invalidMessage = result or "Invalid argument: " .. rawArg
-			return false, self.command.invalidMessage
+			return self:invalidate(rawArg, transformPos, result or "Invalid argument: " .. rawArg)
 		end
 		transformPos += #rawArg + 1
 	end
-	self.validated = true
 
+	self.validated = true
 	return true
 end
 
@@ -95,42 +100,42 @@ function Argument:parse()
 		return false, "Argument must be validated before parsing"
 	end
 
+	local parsePos = self.argPos
 	local parseArgs = self.transformedArgs
 	if self.rawType.preParse then
-		local ok, arg = pcall(self.rawType.preParse, self.transformedArgs, self)
-		if not ok then
-			warn("preParseArg error", arg)
+		local ok, arg, feedback = pcall(self.rawType.preParse, self.transformedArgs, self)
+		if not ok or arg == nil then
+			return self:invalidate(self.rawArg, parsePos, feedback or arg or "Invalid argument: " .. self.rawArg)
 		end
 		parseArgs = arg or parseArgs
 	end
 
 	for i, parseArg in parseArgs do
+		local rawArg = self.rawArgs[i]
 		local argType = self.transformedTypes[i]
-		local ok, arg = pcall(argType.parse, parseArg, self)
-		if not ok then
-			warn("parseArg error", arg)
+		local ok, arg, feedback = pcall(argType.parse, parseArg, self)
+		if not ok or arg == nil then
+			return self:invalidate(rawArg, parsePos, feedback or arg or "Invalid argument: " .. rawArg)
 		end
 
-		if not ok then
-			table.insert(self.parsedArgs, nil)
-		else
-			if argType.listable and not self.rawType.listable then
-				table.insert(self.parsedArgs, arg[1])
-			elseif argType.listable and self.rawType.listable and argType ~= self.rawType then
-				for _, value in arg do
-					table.insert(self.parsedArgs, value)
-				end
-			else
-				table.insert(self.parsedArgs, arg)
+		if argType.listable and not self.rawType.listable then
+			table.insert(self.parsedArgs, arg[1])
+		elseif argType.listable and self.rawType.listable and argType ~= self.rawType then
+			for _, value in arg do
+				table.insert(self.parsedArgs, value)
 			end
+		else
+			table.insert(self.parsedArgs, arg)
 		end
+
+		parsePos += #rawArg + 1
 	end
 
 	if self.rawType.postParse then
 		_, self.parsedArgs = pcall(self.rawType.postParse, self.parsedArgs, self)
 	end
 
-	return if self.rawType.listable then self.parsedArgs else self.parsedArgs[1]
+	return true, if self.rawType.listable then self.parsedArgs else self.parsedArgs[1]
 end
 
 function Argument:prepare()
@@ -138,13 +143,17 @@ function Argument:prepare()
 		return true, if self.rawType.listable then self.parsedArgs else self.parsedArgs[1]
 	end
 
-	self:transform()
+	local ok, result = self:transform()
+	if not ok then
+		return false, result
+	end
+
 	local success, feedback = self:validate()
 	if not success then
 		return false, feedback
 	end
 
-	return true, self:parse()
+	return self:parse()
 end
 
 return Argument
