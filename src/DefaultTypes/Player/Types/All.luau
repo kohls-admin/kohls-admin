@@ -19,7 +19,7 @@ local typeEveryone = {
 	transform = string.lower,
 	validate = generateValidate(allParse),
 	suggestions = function(text, self)
-		return { { text, nil, text .. string.rep(" ", 5 - #text) .. "(Everyone)" } }
+		return { { "*", "*" .. string.rep(" ", 5) .. "(Everyone)" } }
 	end,
 	parse = allParse,
 }

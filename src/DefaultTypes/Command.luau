@@ -20,7 +20,7 @@ return function(_K)
 		end,
 
 		suggestions = function(text)
-			return _K.Util.Suggest.query(text, commandNames, _K.Registry.commands)
+			return commandNames, _K.Registry.commands
 		end,
 
 		parse = function(command)

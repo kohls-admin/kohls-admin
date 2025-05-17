@@ -91,7 +91,7 @@ local typeMember = {
 			table.insert(names, 1, { "me", `me ({fromMember.name})` })
 		end
 
-		return _K.Util.Suggest.query(text, names)
+		return names
 	end,
 }
 

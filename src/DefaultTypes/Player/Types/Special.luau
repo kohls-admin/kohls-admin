@@ -122,7 +122,7 @@ return function(_K)
 		validate = generateValidate(specialParse),
 		parse = specialParse,
 		suggestions = function(text, self)
-			return _K.Util.Suggest.query(text, specialSuggestions)
+			return specialSuggestions
 		end,
 	}
 

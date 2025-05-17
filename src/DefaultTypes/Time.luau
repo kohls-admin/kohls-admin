@@ -125,9 +125,9 @@ return function(_K)
 						}
 					end
 				end
-				return _K.Util.Suggest.query(text, names)
+				return names
 			else
-				return _K.Util.Suggest.query(text, defaultSuggestions)
+				return defaultSuggestions
 			end
 		end,
 	})

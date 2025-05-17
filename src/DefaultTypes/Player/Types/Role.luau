@@ -34,7 +34,7 @@ return function(_K)
 			for role in next, _K.Data.roles do
 				table.insert(names, "@" .. role)
 			end
-			return _K.Util.Suggest.query(text, names)
+			return names
 		end,
 	}
 

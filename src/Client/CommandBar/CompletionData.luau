@@ -72,7 +72,8 @@ return function(_K, text, cursorPosition)
 			data.rawArg = commandText
 			data.query = string.sub(commandText, 1, cursorPosition - commandPos)
 			data.suggestionType = _K.Registry.types.command
-			data.suggestions = _K.Registry.types.command.suggestions(data.query, from)
+			data.suggestions =
+				_K.Util.Suggest.query(data.query, _K.Registry.types.command.suggestions(data.query, from))
 
 			if #data.suggestions < 1 then
 				table.insert(data.invalid, { "Invalid command", commandPos, commandText })
@@ -83,7 +84,7 @@ return function(_K, text, cursorPosition)
 			data.suggestions = table.create(#data.suggestions)
 			local invalidSuggestions = {}
 			for _, suggestionData in rawSuggestions do
-				local _, cmd = unpack(suggestionData)
+				local _name, _display, cmd = unpack(suggestionData)
 				if cmd then
 					if _K.Auth.hasCommand(from, cmd) then
 						table.insert(data.suggestions, suggestionData)
@@ -163,7 +164,8 @@ return function(_K, text, cursorPosition)
 				data.rawQuery = string.sub(rawArg, 1, cursorPosition - pos)
 				data.transformedArg = transformedArg
 				data.query = _K.Util.String.stripQuotes(data.rawQuery)
-				data.suggestions = transformedType.suggestions(data.query, from, arg.definition)
+				data.suggestions =
+					_K.Util.Suggest.query(data.query, transformedType.suggestions(data.query, from, arg.definition))
 			end
 		end
 

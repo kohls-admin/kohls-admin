@@ -140,7 +140,7 @@ local typeIndividual = {
 	validate = generateValidate(parseIndividual),
 	parse = parseIndividual,
 	suggestions = function(text, from, definition)
-		return _K.Util.Suggest.query(text, baseSuggestions(text, from, definition))
+		return baseSuggestions(text, from, definition)
 	end,
 	prefixes = prefixes,
 }

@@ -38,7 +38,7 @@ local typeRole = {
 				names[roleName] = roleName
 			end
 		end
-		return _K.Util.Suggest.query(text, names, _K.Data.roles)
+		return names, _K.Data.roles
 	end,
 }
 

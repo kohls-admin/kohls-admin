@@ -48,7 +48,7 @@ local typeBan = {
 			local name = ban[1] or "UNKNOWN"
 			table.insert(names, { userId, `{userId} ({name})` })
 		end
-		return _K.Util.Suggest.query(text, names)
+		return names
 	end,
 }
 

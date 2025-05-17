@@ -110,7 +110,7 @@ local typeColor = {
 			table.insert(names, `{r or 255},{g or 255},{b or 255}`)
 		end
 
-		return _K.Util.Suggest.query(text, names, COLORS)
+		return names, COLORS
 	end,
 }
 

@@ -26,7 +26,7 @@ local typeTool = {
 		error("Invalid tool value")
 	end,
 	suggestions = function(text: string, from: number)
-		return _K.Util.Suggest.query(text, _K.Util.Suggest.new(tools))
+		return _K.Util.Suggest.new(tools)
 	end,
 	prefixes = { ["^all$"] = "allTools" },
 }

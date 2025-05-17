@@ -26,7 +26,7 @@ local typeTeam = {
 		error("Invalid team value")
 	end,
 	suggestions = function(text: string, from: number)
-		return _K.Util.Suggest.query(text, _K.Util.Suggest.new(Teams:GetTeams()))
+		return _K.Util.Suggest.new(Teams:GetTeams())
 	end,
 }
 

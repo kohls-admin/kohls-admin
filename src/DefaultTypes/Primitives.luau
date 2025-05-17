@@ -20,7 +20,7 @@ local booleanType = {
 		end
 	end,
 	suggestions = function(text: string, from: number)
-		return _K.Util.Suggest.query(text, { "true", "false" })
+		return { "true", "false" }
 	end,
 }
 

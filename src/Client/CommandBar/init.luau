@@ -262,7 +262,7 @@ local function updateSuggestionLabels(data)
 
 	for i = start, start + amount do
 		local suggestion = data.suggestions[i]
-		local name, value, displayName = unpack(suggestion)
+		local name, displayName, value = unpack(suggestion)
 		local frame = SuggestionFrame:Clone()
 		local label = frame:FindFirstChildOfClass("TextLabel")
 		frame.LayoutOrder = i
@@ -426,7 +426,7 @@ local function invalidSuggestion(data, err, pos, text)
 	end
 
 	local currentSuggestion = data.suggestions[suggestionIndex]
-	local suggestionText, suggestionValue = unpack(currentSuggestion)
+	local suggestionText, _suggestionDisplay, suggestionValue = unpack(currentSuggestion)
 	if data.argIndex == 1 then -- command
 		-- TODO: inline argument types if command
 		-- show command aliases too!
@@ -539,7 +539,7 @@ updateCompletion = function()
 	local arg = _K.Util.String.trim(data.rawArg)
 	local endPos = data.argPos + #arg
 	local currentSuggestion = data.suggestions[suggestionIndex]
-	local suggestionText, suggestionValue = unpack(currentSuggestion)
+	local suggestionText, _suggestionDisplay, suggestionValue = unpack(currentSuggestion)
 
 	local completion = suggestionText
 	local preCompletion = string.sub(data.message, 1, data.argPos - 1)

@@ -31,7 +31,7 @@ return function(_K)
 			for _, team in next, Teams:GetTeams() do
 				table.insert(names, "%" .. team.Name)
 			end
-			return _K.Util.Suggest.query(text, names)
+			return names
 		end,
 	}
 
