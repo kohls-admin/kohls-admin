@@ -26,8 +26,8 @@ local function bytePositionToWidth(text, size, font, bytePosition)
 end
 
 local function updateSelection(selection, display, input, inputOffset, cursorWidth)
-	cursorWidth = cursorWidth or bytePositionToWidth(display.Text, display.TextSize, display.Font, input.CursorPosition)
-	local selectWidth = bytePositionToWidth(display.Text, display.TextSize, display.Font, input.SelectionStart)
+	cursorWidth = cursorWidth or bytePositionToWidth(input.Text, display.TextSize, display.Font, input.CursorPosition)
+	local selectWidth = bytePositionToWidth(input.Text, display.TextSize, display.Font, input.SelectionStart)
 	local deltaWidth = cursorWidth - selectWidth
 	selection.Size = UDim2.fromOffset(deltaWidth, display.TextSize)
 	selection.Position = UDim2.new(0, selectWidth - inputOffset._value, 0.5, 0)
@@ -35,7 +35,7 @@ local function updateSelection(selection, display, input, inputOffset, cursorWid
 end
 
 local function updateCursor(cursor, display, input, inputMask, inputOffset, selection)
-	local cursorWidth = bytePositionToWidth(display.Text, display.TextSize, display.Font, input.CursorPosition)
+	local cursorWidth = bytePositionToWidth(input.Text, display.TextSize, display.Font, input.CursorPosition)
 	local visibleWidth = inputMask.AbsoluteSize.X
 	local cursorOffset = cursorWidth - inputOffset._value
 
