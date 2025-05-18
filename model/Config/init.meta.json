@@ -1,0 +1,9 @@
+{
+	"className": "Configuration",
+	"properties": {
+		"Attributes": {
+			"AutoUpdate": { "Bool": true },
+			"Legacy": { "Bool": false }
+		}
+	}
+}

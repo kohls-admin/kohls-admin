@@ -1,6 +1,0 @@
-{
-	"emitLegacyScripts": false,
-	"tree": {
-		"$path": "../../../test/migrate/KAI"
-	}
-}

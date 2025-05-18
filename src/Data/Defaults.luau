@@ -54,10 +54,9 @@ local Data = {
 		-- NOTE: ASSET/SUBS REQUIRE A PLAYER FOR PERMISSIONS AND CAN STILL BE AFFECTED BY ID COMMANDS!
 		asset = {},
 		subscription = {},
-		-- TODO: need a way to define exact rank roles instead of >=
 		group = {},
 		-- [groupId] = {
-		-- { rank = 200, roles = { "admin", "vip" }, rankAndAbove = true },
+		-- { rank = 200, roles = { "vip", "admin" }, exactRank = true },
 		-- },
 	},
 

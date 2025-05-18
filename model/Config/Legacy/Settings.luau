@@ -1,5 +1,3 @@
--- IMPORTANT: ONLY USE ONE LOADER OR THE OTHER!
-
 -- Use usernames or userIds to add a user to a list
 -- For example;	Admins = {'MyBestFriend', 'Telamon', 261}
 

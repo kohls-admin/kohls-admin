@@ -28,16 +28,27 @@
 				}
 			},
 			"Kohl's Admin": {
-				"$path": "../model",
-				"$className": "Model",
-				"MainModule": {
-					"$path": "../src",
-					"VERSION": {
-						"$path": "../VERSION.txt"
+				"$className": "Folder",
+				"ThumbnailCamera": {
+					"$path": "../model/ThumbnailCamera.model.json"
+				},
+				"Loader": {
+					"$path": "../model/Loader.server.luau",
+					"MainModule": {
+						"$path": "../src",
+						"VERSION": {
+							"$path": "../VERSION.txt"
+						}
+					},
+					"MainModuleLegacy": {
+						"$path": "migrate/KAI"
 					}
 				},
-				"LICENSE": {
-					"$path": "../LICENSE.txt"
+				"READ_ME": {
+					"$path": "../model/README.luau"
+				},
+				"Config": {
+					"$path": "../model/Config"
 				}
 			}
 		},

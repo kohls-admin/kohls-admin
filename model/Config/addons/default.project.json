@@ -2,7 +2,7 @@
 	"name": "Addons",
 	"emitLegacyScripts": false,
 	"tree": {
-		"$path": "../addons",
+		"$path": "src",
 		"$properties": {
 			"Tags": ["Kohl's Admin Addon"]
 		}
