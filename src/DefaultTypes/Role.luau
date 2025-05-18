@@ -5,7 +5,7 @@ local typeRole = {
 		local query = string.lower(input)
 		local rank = _K.Auth.getRank(self.command.from)
 		for roleName, role in _K.Data.roles do
-			if role == _K.Data.roles.default then
+			if role == _K.Data.roles.everyone then
 				continue
 			end
 			if rank > role._rank and string.find(string.lower(roleName), query, 1, true) == 1 then
@@ -18,7 +18,7 @@ local typeRole = {
 		local query = string.lower(input)
 		local rank = _K.Auth.getRank(self.command.from)
 		for roleName, role in _K.Data.roles do
-			if role == _K.Data.roles.default then
+			if role == _K.Data.roles.everyone then
 				continue
 			end
 			if rank > role._rank and string.find(string.lower(roleName), query, 1, true) == 1 then
@@ -31,7 +31,7 @@ local typeRole = {
 		local names = {}
 		local rank = _K.Auth.getRank(from)
 		for roleName, role in _K.Data.roles do
-			if role == _K.Data.roles.default then
+			if role == _K.Data.roles.everyone then
 				continue
 			end
 			if rank > role._rank then

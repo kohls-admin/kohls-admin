@@ -8,7 +8,7 @@ local Registry = require(script.Parent.Registry)
 local Remote = require(script.Parent.Remote)
 local Util = require(script.Parent.Util)
 
-export type Role = "default" | "vip" | "mod" | "admin" | "superadmin" | "creator" | string
+export type Role = "everyone" | "vip" | "mod" | "admin" | "superadmin" | "creator" | string
 
 --- @class Auth
 local Auth = {}
@@ -330,7 +330,7 @@ end
 
 --- Checks the maximum role rank of the user, if permission is given it will fetch the highest rank of the roles with that permission
 function Auth.getRank(userId: number, permission: string?): (number, Role)
-	local rank, rankRole = 0, Data.roles.default
+	local rank, rankRole = 0, Data.roles.everyone
 	local member = Data.members[tostring(userId)]
 	if member then
 		for _, roleId in member.roles do
@@ -371,7 +371,7 @@ end
 
 --- Checks if a user has access to a command argument
 function Auth.hasArgument(userId: number, argument: any): boolean
-	if Auth.roleCanUseArgument("default", argument) then
+	if Auth.roleCanUseArgument("everyone", argument) then
 		return true
 	end
 
@@ -455,7 +455,7 @@ function Auth.hasCommand(userId: number, command: any): boolean
 		command = Registry.commands[string.lower(command)]
 	end
 
-	if Auth.roleCanUseCommand("default", command) then
+	if Auth.roleCanUseCommand("everyone", command) then
 		return true
 	end
 
@@ -497,7 +497,7 @@ end
 --- Checks if a user has access to a permission
 function Auth.hasPermission(userId: number, permission: string): boolean
 	-- does everyone have the permission?
-	if Data.roles.default.permissions[permission] or Data.roles.default.permissions.admin then
+	if Data.roles.everyone.permissions[permission] or Data.roles.everyone.permissions.admin then
 		return true
 	end
 	local member = Data.members[tostring(userId)]

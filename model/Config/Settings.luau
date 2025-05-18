@@ -71,7 +71,7 @@ return {
 	-- Defines the hierarchy, permissions, and capabilities of each role, you can create as many custom roles as you want!
 	roles = {
 		{ -- Default Role (Base permissions for all users)
-			_key = "default", -- DO NOT CHANGE: System identifier
+			_key = "everyone", -- DO NOT CHANGE: System identifier
 
 			name = "Player", -- Display name
 			color = "#0ff", -- Role color, hex only!

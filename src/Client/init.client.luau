@@ -178,7 +178,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 			end
 		end
 	end
-	roleText ..= _K.Data.roles.default.name
+	roleText ..= _K.Data.roles.everyone.name
 
 	if
 		_K.Data.settings.joinNotificationRank

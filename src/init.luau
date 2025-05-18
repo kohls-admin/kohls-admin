@@ -244,7 +244,15 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 
 	-- format array role hierarchy
 	for rank, definition in settings.roles do
+		if rank == "default" then
+			settings.roles.everyone = definition
+			settings.roles.default = nil
+			rank = "everyone"
+		end
 		if type(rank) == "number" then
+			if definition._key == "default" then
+				definition._key = "everyone"
+			end
 			definition._rank = rank
 			definition._rank = rank - 1
 			settings.roles[definition._key] = definition
