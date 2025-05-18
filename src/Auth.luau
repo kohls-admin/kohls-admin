@@ -17,6 +17,10 @@ function Auth.roleSort(a: Role, b: Role): boolean
 	return Data.roles[a]._rank > Data.roles[b]._rank
 end
 
+function Auth.roleSortAscending(a: Role, b: Role): boolean
+	return Data.roles[a]._rank < Data.roles[b]._rank
+end
+
 function Auth.banHandler(player)
 	local key = tostring(player.UserId)
 	local banInfo = Data.bans[key]
