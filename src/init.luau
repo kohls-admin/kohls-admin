@@ -377,6 +377,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end
 	end
 
+	loadAddons(script.DefaultAddons:GetChildren())
 	loadAddons(_K.Services.CollectionService:GetTagged(_K._addonTag))
 	if addons and not addons:HasTag(_K._addonTag) then
 		loadAddons(addons:GetChildren())
