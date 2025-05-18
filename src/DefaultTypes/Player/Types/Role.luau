@@ -24,19 +24,30 @@ return function(_K)
 		return if valid then players else false, `Invalid role`
 	end
 
+	local roles = {}
 	local typeRoles = {
 		listable = true,
 		transform = string.lower,
 		validate = generateValidate(roleParse),
 		parse = roleParse,
 		suggestions = function(text, self)
-			local names = {}
-			for role in next, _K.Data.roles do
-				table.insert(names, "@" .. role)
-			end
-			return names
+			return roles
 		end,
 	}
 
 	_K.Registry.registerType("rolePlayers", typeRoles)
+
+	task.defer(function()
+		repeat
+			task.wait()
+		until _K.Data.roles
+
+		for role in _K.Data.roles do
+			table.insert(roles, role)
+		end
+		table.sort(roles, _K.Auth.roleSortAscending)
+		for index, role in next, roles do
+			roles[index] = "@" .. role
+		end
+	end)
 end

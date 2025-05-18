@@ -1,5 +1,9 @@
 local _K
 
+local function roleSort(a, b)
+	return _K.Data.roles[a[1]]._rank > _K.Data.roles[b[1]]._rank
+end
+
 local typeRole = {
 	validate = function(input: string, self: any): (boolean, string?)
 		local query = string.lower(input)
@@ -28,17 +32,18 @@ local typeRole = {
 		error("Invalid role value")
 	end,
 	suggestions = function(text: string, from: number)
-		local names = {}
+		local roles = {}
 		local rank = _K.Auth.getRank(from)
 		for roleName, role in _K.Data.roles do
 			if role == _K.Data.roles.everyone then
 				continue
 			end
 			if rank > role._rank then
-				names[roleName] = roleName
+				table.insert(roles, { roleName, nil, role })
 			end
 		end
-		return names, _K.Data.roles
+		table.sort(roles, roleSort)
+		return roles, _K.Data.roles
 	end,
 }
 
