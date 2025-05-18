@@ -1579,15 +1579,17 @@ function f.LoadCheck(plr: Player)
 		end
 	end
 
-	if f.isGroupAdmin(plr) or f.isVIPAdmin(plr) or f.getPower(plr.UserId) ~= 0 then
-		-- fix
-	elseif LocalSet.SLock then
+	f.isGroupAdmin(plr)
+
+	if LocalSet.SLock and f.getPower(plr.UserId) < 2 then
 		-- kick non-admins when server locked
 		f.Kick(plr, "This server is locked!")
 	elseif (Set.FreeAdmin or 0) > math.abs(Admins[plr.UserId] or 0) then
 		-- give free admin if enabled in settings
 		f.setPower(plr.UserId, (Set.FreeAdmin or 0))
 	end
+
+	f.isVIPAdmin(plr)
 end
 function f.Load(plr: Player)
 	if not plr then
