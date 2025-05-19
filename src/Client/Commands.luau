@@ -224,6 +224,7 @@ function Commands.new(_K)
 	end
 	_K.client.settings.onlyShowUsableCommands:hook(updateCommandsList)
 	_K.client.rank:hook(updateCommandsList)
+	updateCommandsList()
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Commands",
