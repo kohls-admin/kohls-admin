@@ -200,7 +200,6 @@ function Commands.new(_K)
 	local commandsList = UI.state(_K.Registry.commandsList)
 	local function updateCommandsList()
 		if _K.client.settings.onlyShowUsableCommands._value then
-			print("onlyusable?!")
 			local list = {}
 			for _, command in _K.Registry.commandsList do
 				local added
