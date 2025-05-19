@@ -49,6 +49,11 @@ return {
 		-- },
 	},
 
+	-- 👥 FRIEND ROLES
+	friendRoles = {
+		-- "vip",
+	},
+
 	-- 👑 FREE ADMIN ROLES
 	freeAdmin = { -- ⚠️ Use with caution as this affects everyone who joins
 		-- "vip",

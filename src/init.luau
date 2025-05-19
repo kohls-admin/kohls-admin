@@ -323,6 +323,19 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		_K.Util.Table.deepMerge(_K.Data.async.group, settings.groupRoles)
 	end
 
+	if settings.friendRoles and #settings.friendRoles > 0 then
+		task.spawn(function()
+			local friendPages = Util.Services.Players:GetFriendsAsync(_K.creatorId)
+			for item, _pageNo in Util.iterPageItems(friendPages) do
+				if item.Id then
+					for _, role in settings.friendRoles do
+						_K.Auth.userRoleAdd(item.Id, role)
+					end
+				end
+			end
+		end)
+	end
+
 	if settings.subscriptionRoles then
 		_K.Util.Table.deepMerge(_K.Data.async.subscription, settings.subscriptionRoles)
 	end
