@@ -415,6 +415,20 @@ function Data.initialize(name)
 		end
 	end
 
+	local okServers, servers = Data.Store.getAsync("Servers")
+	if okServers then
+		if servers then
+			Util.Table.merge(Data.reservedServers, servers)
+			for _, player in Util.Service.Players:GetPlayers() do
+				task.spawn(function()
+					if Auth.hasCommand(player.UserId, "place") or Auth.hasCommand(player.UserId, "unreserve") then
+						Remote.ReservedServers:FireClient(player, servers)
+					end
+				end)
+			end
+		end
+	end
+
 	Hook.initDataStore:Fire()
 
 	task.spawn(function()

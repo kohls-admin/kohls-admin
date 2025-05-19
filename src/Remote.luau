@@ -19,6 +19,7 @@ local Remote = {
 	Members = _REMOTE,
 	Notify = _REMOTE,
 	Prefix = _REMOTE,
+	ReservedServers = _REMOTE,
 	Refresh = _REMOTE,
 	Role = _REMOTE,
 	Roles = _REMOTE,

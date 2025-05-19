@@ -118,7 +118,7 @@ end)
 
 -- initial remote connection
 
-_K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
+_K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings, servers)
 	-- need to improve networking performance!
 	if bans then
 		_K.Util.Table.merge(_K.Data.bans, bans)
@@ -128,6 +128,10 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 	if logs then
 		table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)
 		table.sort(_K.Data.logs, _K.Logger.sortTime)
+	end
+
+	if servers then
+		_K.Util.Table.merge(_K.Data.reservedServers, servers)
 	end
 
 	_K.Util.Table.merge(_K.Data.members, members)

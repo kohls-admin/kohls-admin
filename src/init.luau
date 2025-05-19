@@ -461,8 +461,10 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 			else {
 				[tostring(player.UserId)] = _K.Data.members[tostring(player.UserId)],
 			}
+		local servers = (_K.Auth.hasCommand(player.UserId, "place") or _K.Auth.hasCommand(player.UserId, "unreserve"))
+			and _K.Data.reservedServers
 
-		_K.Remote.Init:FireClient(player, bans, logs, members, _K.Data.roles, _K.Data.settings)
+		_K.Remote.Init:FireClient(player, bans, logs, members, _K.Data.roles, _K.Data.settings, servers)
 
 		if
 			settings.vip

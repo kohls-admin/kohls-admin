@@ -399,13 +399,28 @@ return {
 				shouldRequest = true,
 			},
 			{
-				type = "integer",
-				name = "Place ID",
-				description = "The identifier of the place.",
+				type = "integer @ reservedServer",
+				name = "PlaceId",
+				description = "The identifier of the place or reserved server.",
 			},
 		},
-		run = function(context, players, placeId)
-			context._K.Util.SafeTeleport(placeId, players)
+		run = function(context, players, id)
+			if type(id) == "number" then
+				context._K.Util.SafeTeleport(id, players)
+			else
+				local code, placeId = unpack(id)
+				local options = Instance.new("TeleportOptions")
+				options.ReservedServerAccessCode = code
+				context._K.Util.SafeTeleport(placeId, players, options)
+			end
+			for _, player in players do
+				context._K.Remote.Notify:FireClient(player, {
+					{
+						From = "_K",
+						Text = "Teleport initiated...",
+					},
+				})
+			end
 		end,
 	},
 	{

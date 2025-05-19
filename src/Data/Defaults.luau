@@ -31,6 +31,7 @@ local Data = {
 		-- },
 	},
 	players = {},
+	reservedServers = {},
 	roles = nil,
 
 	settingsModuleData = nil,

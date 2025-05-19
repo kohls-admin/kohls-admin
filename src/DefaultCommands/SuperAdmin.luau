@@ -47,6 +47,113 @@ return {
 		end,
 	},
 	{
+		name = "reserve",
+		aliases = {},
+		description = "Reserves a private server.",
+		args = {
+			{
+				type = "rawString",
+				name = "AccessCode",
+				description = "The access code for joining the reserved server.",
+			},
+			{
+				type = "integer",
+				name = "PlaceId",
+				description = "The place identifier, omit for the current place.",
+				optional = true,
+			},
+		},
+		env = function(_K)
+			task.spawn(
+				_K.Service.Messaging.SubscribeAsync,
+				_K.Service.Messaging,
+				"_K_ReservedServers",
+				function(message)
+					local data = message.Data
+					if data then
+						_K.Data.reservedServers[data[1]] = { unpack(data, 2) }
+						for _, player in _K.Service.Players:GetPlayers() do
+							if
+								_K.Auth.hasCommand(player.UserId, "place")
+								or _K.Auth.hasCommand(player.UserId, "unreserve")
+							then
+								_K.Remote.ReservedServers:FireClient(player, {
+									[data[1]] = { unpack(data, 2) },
+								})
+							end
+						end
+					end
+				end
+			)
+			return
+		end,
+		envClient = function(_K)
+			_K.Remote.ReservedServers.OnClientEvent:Connect(function(data)
+				if data then
+					_K.Util.Table.merge(_K.Data.reservedServers, data)
+				end
+			end)
+		end,
+		run = function(context, code: string, placeId: string?)
+			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+				return `Reserve command is disabled in private servers.`
+			end
+
+			placeId = placeId or game.PlaceId
+			local data = { context._K.Service.Teleport:ReserveServer(placeId), placeId }
+			context._K.Data.Store.updateAsync("Servers", function(store)
+				if store == nil then
+					store = {}
+				end
+				store[code] = data
+				return store
+			end)
+
+			context._K.Service.Messaging:PublishAsync("_K_ReservedServers", { code, unpack(data, 2) })
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				Text = `Server "<b>{code}</b>" has been reserved, use <b>{context._K.getCommandPrefix(context.from)}place me @{code}</b> to join it!`,
+			})
+
+			return
+		end,
+	},
+	{
+		name = "unreserve",
+		aliases = {},
+		description = "Removes a reserved server.",
+		args = {
+			{
+				type = "reservedServer",
+				name = "AccessCode",
+				description = "The access code of the reserved server.",
+			},
+		},
+		run = function(context, code: string)
+			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+				return `Unreserve command is disabled in private servers.`
+			end
+
+			local removed
+			context._K.Data.Store.updateAsync("Servers", function(store)
+				if store == nil then
+					store = {}
+				end
+				if store[code] then
+					removed = true
+				end
+				store[code] = nil
+				return store
+			end)
+
+			context._K.Service.Message:PublishAsync("_K_ReservedServers", { code })
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				Text = `Server "<b>{code}</b>" {if removed then "has been removed" else "was NOT found"}!`,
+			})
+
+			return
+		end,
+	},
+	{
 		name = "shutdown",
 		aliases = { "stopserver" },
 		description = "Shuts down the server.",
