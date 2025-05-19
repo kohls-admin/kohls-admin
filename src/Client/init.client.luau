@@ -52,7 +52,7 @@ local function Chatted(message: string)
 			commandStart = 1
 			message = prefix .. message
 		else
-			if _K.Data.settings.wrongPrefixWarning then
+			if _K.Data.settings.wrongPrefixWarning ~= false then
 				local test = " " .. string.lower(message)
 				for alias in _K.Registry.commands do
 					if string.find(test, `[;:]{_K.Util.String.escapePattern(alias)}`) then
