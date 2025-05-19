@@ -46,6 +46,7 @@ local Data = {
 		joinNotificationRank = 1,
 		onlyShowUsableCommands = false,
 		wrongPrefixWarning = true,
+		welcomeBadgeId = 0,
 		getKohlsAdminPopup = true,
 
 		gameHubEnabled = true,

@@ -180,7 +180,17 @@ local function characterAdded(character: Model)
 	end)
 end
 
+local function welcomeBadge(userId)
+	if not Util.Services.BadgeService:UserHasBadgeAsync(userId, _K.Data.settings.welcomeBadgeId) then
+		Util.Services.BadgeService:AwardBadge(userId, _K.Data.settings.welcomeBadgeId)
+	end
+end
+
 local function playerAdded(player: Player)
+	if (_K.Data.settings.welcomeBadgeId or 0) > 0 then
+		task.spawn(welcomeBadge, player.UserId)
+	end
+
 	repeat
 		task.wait()
 	until _K.Data.roles

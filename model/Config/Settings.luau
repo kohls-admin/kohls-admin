@@ -81,6 +81,7 @@ return {
 
 	onlyShowUsableCommands = false, -- Only displays commands the player can purchase or use
 	wrongPrefixWarning = true, --      Warns users when they use the wrong command prefix
+	welcomeBadgeId = 0, --             Awards a badge to new players, set to 0 for no badge
 	getKohlsAdminPopup = true, --      Enables the "Enjoy Kohl's Admin?" feedback popup to users
 
 	gameHubEnabled = true, -- Adds your to a list of games with Kohl's Admin | ⚠️ Requires "Allow HTTP Requests" in File > Game Settings > Security | https://www.roblox.com/games/17873329124/Kohls-Admin-Games-Hub
