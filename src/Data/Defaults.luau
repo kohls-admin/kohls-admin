@@ -45,6 +45,7 @@ local Data = {
 		dashboardButtonRank = 0,
 		joinNotificationRank = 1,
 		onlyShowUsableCommands = false,
+		wrongPrefixWarning = true,
 		getKohlsAdminPopup = true,
 
 		gameHubEnabled = true,

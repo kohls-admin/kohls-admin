@@ -52,17 +52,18 @@ local function Chatted(message: string)
 			commandStart = 1
 			message = prefix .. message
 		else
-			-- checks for invalid prefix but valid command alias
-			local test = " " .. string.lower(message)
-			for alias in _K.Registry.commands do
-				if string.find(test, `[;:]{_K.Util.String.escapePattern(alias)}`) then
-					task.spawn(_K.Notify, {
-						Text = `<b>Invalid command prefix, use "{_K.Data.settings.prefix}"</b>`,
-						TextColor3 = Color3.new(1, 0, 0),
-						UserFrame = {},
-						Sound = "Call_Leave",
-					})
-					break
+			if _K.Data.settings.wrongPrefixWarning then
+				local test = " " .. string.lower(message)
+				for alias in _K.Registry.commands do
+					if string.find(test, `[;:]{_K.Util.String.escapePattern(alias)}`) then
+						task.spawn(_K.Notify, {
+							Text = `<b>Invalid command prefix, try "{prefix}{alias}"</b>`,
+							TextColor3 = Color3.new(1, 0, 0),
+							UserFrame = {},
+							Sound = "Call_Leave",
+						})
+						break
+					end
 				end
 			end
 			return
