@@ -27,10 +27,16 @@ local function teleportCharacter(from, to)
 	end
 
 	-- add a small offset to prevent clipping
-	local offset =
-		Vector3.new((math.random(1, 2) - 1) * math.random(2, 4), 0, (math.random(1, 2) - 1) * math.random(2, 4))
-	local cframe = to:GetPivot() + offset
+	local cframe
+	if typeof(to) == "Vector3" then
+		cframe = CFrame.new(to) * from:GetPivot().Rotation
+	else
+		local offset =
+			Vector3.new((math.random(1, 2) - 1) * math.random(2, 4), 0, (math.random(1, 2) - 1) * math.random(2, 4))
+		cframe = to:GetPivot() + offset
+	end
 	from:PivotTo(cframe)
+
 	local player = Players:GetPlayerFromCharacter(from)
 	if player then
 		Remote.Teleport:FireClient(player, cframe)

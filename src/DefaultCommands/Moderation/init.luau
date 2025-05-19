@@ -1620,14 +1620,15 @@ return {
 		description = "Teleports to a player.",
 		args = {
 			{
-				type = "player",
-				name = "Player",
-				description = "The player to teleport to.",
+				type = "player # vector3",
+				name = "Destination",
+				description = "The player or position to teleport to.",
 			},
 		},
 
-		run = function(context, player)
-			teleportCharacter(context.fromPlayer.Character, player.Character)
+		run = function(context, target)
+			local destination = if typeof(target) == "Vector3" then target else target.Character
+			teleportCharacter(context.fromPlayer.Character, destination)
 		end,
 	},
 	{
@@ -1642,9 +1643,9 @@ return {
 				shouldRequest = true,
 			},
 			{
-				type = "player",
-				name = "Player",
-				description = "The player to teleport to.",
+				type = "player # vector3",
+				name = "Destination",
+				description = "The player or position to teleport to.",
 			},
 		},
 		envClient = function(_K)
@@ -1656,9 +1657,10 @@ return {
 			end)
 		end,
 
-		run = function(context, players, target)
+		run = function(context, players, target: Player | Vector3)
+			local destination = if typeof(target) == "Vector3" then target else target.Character
 			for _, player in players do
-				teleportCharacter(player.Character, target.Character)
+				teleportCharacter(player.Character, destination)
 			end
 		end,
 	},
