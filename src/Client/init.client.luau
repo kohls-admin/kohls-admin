@@ -149,28 +149,6 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 	require(script:WaitForChild("GetKA"))
 	require(script:WaitForChild("Network"))
 
-	_K.client.updateInterfaceAuth()
-
-	-- finally load client and shared addons
-	local function loadAddons(list)
-		for _, object in list do
-			if object:IsA("ModuleScript") then
-				task.spawn(function()
-					require(object)(_K)
-				end)
-			else
-				loadAddons(object:GetChildren())
-			end
-		end
-	end
-
-	loadAddons(_K.script.DefaultAddons:GetChildren())
-	loadAddons(_K.script:WaitForChild("Addons"):GetChildren())
-	loadAddons(_K.Services.Collection:GetTagged(_K._addonTag))
-
-	_K.client.ready = true
-	_K.Hook.init:Fire()
-
 	if
 		_K.Data.settings.joinNotificationRank
 		and _K.Auth.getRank(_K.Service.Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank
@@ -206,6 +184,32 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 			_K.Notify(notification)
 		end
 	end
+
+	if not game:IsLoaded() then
+		game.Loaded:Wait()
+	end
+
+	-- finally load client and shared addons
+	local function loadAddons(list)
+		for _, object in list do
+			if object:IsA("ModuleScript") then
+				task.spawn(function()
+					require(object)(_K)
+				end)
+			else
+				loadAddons(object:GetChildren())
+			end
+		end
+	end
+
+	loadAddons(_K.script:WaitForChild("DefaultAddons"):GetChildren())
+	loadAddons(_K.script:WaitForChild("Addons"):GetChildren())
+	loadAddons(_K.Service.Collection:GetTagged(_K._addonTag))
+
+	_K.client.updateInterfaceAuth()
+
+	_K.client.ready = true
+	_K.Hook.init:Fire()
 end)
 
 _K.Remote.Init:FireServer()
