@@ -102,13 +102,6 @@ function Argument:parse()
 
 	local parsePos = self.argPos
 	local parseArgs = self.transformedArgs
-	if self.rawType.preParse then
-		local ok, arg, feedback = pcall(self.rawType.preParse, self.transformedArgs, self)
-		if not ok or arg == nil then
-			return self:invalidate(self.rawArg, parsePos, feedback or arg or "Invalid argument: " .. self.rawArg)
-		end
-		parseArgs = arg or parseArgs
-	end
 
 	for i, parseArg in parseArgs do
 		local rawArg = self.rawArgs[i]
