@@ -254,21 +254,23 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	_K.Data.settingsModuleData = settings
 
 	-- format array role hierarchy
-	for rank, definition in settings.roles do
-		if rank == "default" then
-			settings.roles.everyone = definition
+	do
+		if settings.roles.default then
+			settings.roles.everyone = settings.roles.default
 			settings.roles.default = nil
-			rank = "everyone"
 		end
-		if type(rank) == "number" then
-			if definition._key == "default" then
-				definition._key = "everyone"
+		local roles = {}
+		for rank, definition in settings.roles do
+			if type(rank) == "number" then
+				if definition._key == "default" then
+					definition._key = "everyone"
+				end
+				settings.roles[rank] = nil
+				definition._rank = rank - 1
+				roles[definition._key] = definition
 			end
-			definition._rank = rank
-			definition._rank = rank - 1
-			settings.roles[definition._key] = definition
-			settings.roles[rank] = nil
 		end
+		Util.Table.merge(settings.roles, roles)
 	end
 
 	_K.Data.bans = table.clone(settings.bans)
