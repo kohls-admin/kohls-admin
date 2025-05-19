@@ -58,12 +58,13 @@ return {
 	-- 🔧 SYSTEM SETTINGS
 	prefix = ";", -- The prefix character used to trigger commands (e.g., ";kick")
 
-	chatCommands = true, --       Enables command execution via the Chat
-	commandBarRank = 0, --        Minimum rank required to view the Command Bar       (Set to false to disable for everyone)
-	dashboardRank = 0, --         Minimum rank required to view the Dashboard         (Set to false to disable for everyone)
-	dashboardButtonRank = 0, --   Minimum rank required to view the Dashboard button  (Set to false to disable for everyone)
-	joinNotificationRank = 1, --  Minimum rank required to trigger join notifications (Set to false to disable for everyone)
-	getKohlsAdminPopup = true, -- Enables the "Enjoy Kohl's Admin?" feedback popup to users
+	chatCommands = true, --        Enables command execution via the Chat
+	commandBarRank = 0, --         Minimum rank required to view the Command Bar       (Set to false to disable for everyone)
+	dashboardRank = 0, --          Minimum rank required to view the Dashboard         (Set to false to disable for everyone)
+	dashboardButtonRank = 0, --    Minimum rank required to view the Dashboard button  (Set to false to disable for everyone)
+	joinNotificationRank = 1, --   Minimum rank required to show the join notification (Set to false to disable for everyone)
+
+	getKohlsAdminPopup = true, --      Enables the "Enjoy Kohl's Admin?" feedback popup to users
 
 	gameHubEnabled = true, -- Adds your to a list of games with Kohl's Admin | ⚠️ Requires "Allow HTTP Requests" in File > Game Settings > Security | https://www.roblox.com/games/17873329124/Kohls-Admin-Games-Hub
 	vip = true, --            Enables VIP-specific features and donation support | ⚠️ Required if gameHubEnabled is true
