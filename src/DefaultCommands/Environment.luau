@@ -20,7 +20,7 @@ return {
 					"WaterWaveSize",
 					"WaterWaveSpeed",
 				},
-				[_K.Services.Lighting] = {
+				[_K.Service.Lighting] = {
 					"Ambient",
 					"Brightness",
 					"ColorShift_Bottom",

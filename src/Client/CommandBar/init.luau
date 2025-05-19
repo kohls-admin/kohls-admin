@@ -383,7 +383,7 @@ local suggestionPurchaseButton = UI.new "Button" {
 			if suggestionPurchase.role == "vip" and _K.Data.settings.vip then
 				_K.promptPurchaseVIP()
 			elseif suggestionPurchase.gamepass then
-				_K.Util.Services.MarketplaceService:PromptGamePassPurchase(UI.LocalPlayer, suggestionPurchase.gamepass)
+				_K.Service.Marketplace:PromptGamePassPurchase(UI.LocalPlayer, suggestionPurchase.gamepass)
 			end
 		end,
 	},
@@ -391,7 +391,7 @@ local suggestionPurchaseButton = UI.new "Button" {
 
 local function updateSuggestionPurchasePrice()
 	local ok, result = pcall(function()
-		return _K.Util.Services.MarketplaceService:GetProductInfo(suggestionPurchase.gamepass, Enum.InfoType.GamePass).PriceInRobux
+		return _K.Service.Marketplace:GetProductInfo(suggestionPurchase.gamepass, Enum.InfoType.GamePass).PriceInRobux
 	end)
 	if ok then
 		suggestionPurchaseButton._content.Price.Text = `<b>{result or "?"}</b>`

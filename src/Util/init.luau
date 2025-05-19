@@ -25,7 +25,7 @@ local Util = {
 	Rollout = require(script:WaitForChild("Rollout")),
 	SafePlayerAdded = require(script:WaitForChild("SafePlayerAdded")),
 	SafeTeleport = require(script:WaitForChild("SafeTeleport")),
-	Services = require(script:WaitForChild("Services")),
+	Service = require(script:WaitForChild("Service")),
 	Signal = require(script:WaitForChild("Signal")),
 	--- @within Util
 	--- @prop String String

@@ -2,7 +2,7 @@
 
 local Util = require(script.Parent.Parent.Util)
 
-if Util.Services.RunService:IsServer() then
+if Util.Service.Run:IsServer() then
 	-- update humanoid description on respawn from _K attributes
 	Util.SafePlayerAdded(function(player)
 		player.CharacterAppearanceLoaded:Connect(function(character)
@@ -591,7 +591,7 @@ return {
 				end
 
 				local ok, info = pcall(function()
-					return _K.Util.Services.AssetService:GetBundleDetailsAsync(bundleId)
+					return _K.Service.Asset:GetBundleDetailsAsync(bundleId)
 				end)
 				if not ok or not info then
 					return
@@ -609,7 +609,7 @@ return {
 			local function getHumanoidDescriptionBundle(bundleId)
 				local itemId = getOutfitId(bundleId)
 				if itemId and itemId > 0 then
-					return Util.Services.Players:GetHumanoidDescriptionFromOutfitId(itemId)
+					return Util.Service.Players:GetHumanoidDescriptionFromOutfitId(itemId)
 				end
 
 				return nil
@@ -861,13 +861,13 @@ return {
 					[47] = "WaistAccessory",
 				}
 				local ok, info = pcall(function()
-					return context._K.Util.Services.MarketplaceService:GetProductInfo(assetId)
+					return context._K.Service.Marketplace:GetProductInfo(assetId)
 				end)
 				local accessoryType = ok and accessoryTypes[info.AssetTypeId]
 				local description = Instance.new("HumanoidDescription")
 				if accessoryType then
 					description[accessoryType] = assetId
-					model = context._K.Util.Services.Players:CreateHumanoidModelFromDescription(
+					model = context._K.Service.Players:CreateHumanoidModelFromDescription(
 						description,
 						Enum.HumanoidRigType.R15
 					)
@@ -876,7 +876,7 @@ return {
 
 				-- fallback hat loading
 				if not hat then
-					model = context._K.Util.Services.InsertService:LoadAsset(assetId)
+					model = context._K.Service.Insert:LoadAsset(assetId)
 					-- clean up scripts if not a sound hat
 					if not table.find(context.env.allowed, assetId) then
 						for _, descendant in model:GetDescendants() do

@@ -9,7 +9,7 @@ return {
 			local env = { id = false, restore = false }
 			function env.cleanup()
 				if env.restore then
-					_K.Services.Lighting.Ambient, _K.Services.Lighting.FogColor = unpack(env.restore)
+					_K.Service.Lighting.Ambient, _K.Service.Lighting.FogColor = unpack(env.restore)
 					env.restore = false
 				end
 				env.id = false
@@ -23,7 +23,7 @@ return {
 			end
 
 			if not context.env.restore then
-				context.env.restore = { context._K.Services.Lighting.Ambient, context._K.Services.Lighting.FogColor }
+				context.env.restore = { context._K.Service.Lighting.Ambient, context._K.Service.Lighting.FogColor }
 			end
 
 			local t = time()
@@ -31,8 +31,8 @@ return {
 			task.spawn(function()
 				repeat
 					local color = Color3.fromHSV((time() - t) % 1, 1, 1)
-					context._K.Services.Lighting.Ambient = color
-					context._K.Services.Lighting.FogColor = color
+					context._K.Service.Lighting.Ambient = color
+					context._K.Service.Lighting.FogColor = color
 					task.wait(math.pi / 10)
 				until context.env.id ~= t
 			end)
@@ -462,7 +462,7 @@ return {
 						end
 
 						local networkOwner = originalController
-						for _, player in _K.Util.Services.Players:GetPlayers() do
+						for _, player in _K.Service.Players:GetPlayers() do
 							if player ~= networkOwner and player.Character == character then
 								networkOwner = player
 								break
@@ -584,7 +584,7 @@ return {
 						return
 					end
 
-					local player = _K.Util.Services.Players:GetPlayerFromCharacter(part.Parent)
+					local player = _K.Service.Players:GetPlayerFromCharacter(part.Parent)
 					if not player then
 						return
 					end
@@ -655,7 +655,7 @@ return {
 			}
 			local sphere
 			task.defer(function()
-				sphere = _K.Util.Services.InsertService:CreateMeshPartAsync(
+				sphere = _K.Service.Insert:CreateMeshPartAsync(
 					"rbxassetid://116325731356319",
 					Enum.CollisionFidelity.Box,
 					Enum.RenderFidelity.Precise
@@ -727,7 +727,7 @@ return {
 
 					local start, alpha = tick(), 0
 					repeat
-						alpha = _K.Util.Services.TweenService:GetValue(
+						alpha = _K.Service.Tween:GetValue(
 							1 - (1 - math.clamp((tick() + 1 - start) / 8, 0, 1)) ^ 2,
 							Enum.EasingStyle.Bounce,
 							Enum.EasingDirection.In
@@ -736,7 +736,7 @@ return {
 						part.Size = Vector3.one * distance
 						part2.Size = part.Size * 0.9
 						part3.Size = part.Size * 0.5
-						for _, player in _K.Util.Services.Players:GetPlayers() do
+						for _, player in _K.Service.Players:GetPlayers() do
 							local direction = (player.Character and not player.Character:GetAttribute("_KNuked"))
 								and position - player.Character:GetPivot().Position
 							if direction and direction.Magnitude <= distance / 2 then
@@ -748,7 +748,7 @@ return {
 
 					start, alpha = tick(), 0
 					repeat
-						alpha = _K.Util.Services.TweenService:GetValue(
+						alpha = _K.Service.Tween:GetValue(
 							math.clamp((tick() - start) / 1, 0, 1),
 							Enum.EasingStyle.Cubic,
 							Enum.EasingDirection.In

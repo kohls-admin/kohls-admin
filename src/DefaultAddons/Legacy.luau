@@ -33,7 +33,7 @@ return function(_K)
 			for _, userId in userIds do
 				if context._K.Auth.userRoleAdd(userId, role, context.definition.permissions.saveRoles) then
 					table.insert(usersRoled, userId)
-					local player = context._K.Util.Services.Players:GetPlayerByUserId(userId)
+					local player = context._K.Service.Players:GetPlayerByUserId(userId)
 					if not player then
 						continue
 					end

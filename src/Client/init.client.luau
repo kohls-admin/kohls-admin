@@ -78,15 +78,15 @@ local function Chatted(message: string)
 	end
 end
 
-if _K.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-	_K.Services.TextChatService.SendingMessage:Connect(function(textChatMessage: TextChatMessage)
+if _K.Service.TextChat.ChatVersion == Enum.ChatVersion.TextChatService then
+	_K.Service.TextChat.SendingMessage:Connect(function(textChatMessage: TextChatMessage)
 		Chatted(_K.Util.String.unescapeRichText(textChatMessage.Text))
 	end)
 else
 	UI.LocalPlayer.Chatted:Connect(Chatted)
 end
 
-_K.Services.UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+_K.Service.UserInput.InputBegan:Connect(function(input, gameProcessedEvent)
 	if gameProcessedEvent then
 		return
 	end
@@ -166,7 +166,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 
 	loadAddons(_K.script.DefaultAddons:GetChildren())
 	loadAddons(_K.script:WaitForChild("Addons"):GetChildren())
-	loadAddons(_K.Services.CollectionService:GetTagged(_K._addonTag))
+	loadAddons(_K.Services.Collection:GetTagged(_K._addonTag))
 
 	_K.client.ready = true
 	_K.Hook.init:Fire()
@@ -187,7 +187,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 
 	if
 		_K.Data.settings.joinNotificationRank
-		and _K.Auth.getRank(_K.Util.Services.Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank
+		and _K.Auth.getRank(_K.Service.Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank
 	then
 		_K.Notify({
 			Text = `<font family="{UI.Theme.FontMono._value.Name}"><b>Role{if #member.roles > 1 then "s" else ""}:</b>\n<sc>{roleText}</sc></font>`,

@@ -97,14 +97,14 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 		end
 
 		if not Auth.hasCommand(from, commandDefinition) then
-			local player = _K.Util.Services.Players:GetPlayerByUserId(from)
+			local player = _K.Service.Players:GetPlayerByUserId(from)
 			if player and _K.IsClient then
 				for role, roleData in Data.roles do
 					if (roleData.gamepasses or role == "vip") and Auth.roleCanUseCommand(role, commandDefinition) then
 						if role == "vip" and _K.Data.settings.vip then
 							_K.promptPurchaseVIP()
 						else
-							_K.Util.Services.MarketplaceService:PromptGamePassPurchase(from, roleData.gamepasses[1])
+							_K.Service.Marketplace:PromptGamePassPurchase(from, roleData.gamepasses[1])
 						end
 					end
 				end
@@ -153,10 +153,10 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 	if #commandErrors > 0 then
 		local commandError = `{table.concat(commandErrors, "\n")}`
 		if _K.IsServer then
-			local player = _K.Services.Players:GetPlayerByUserId(from)
+			local player = _K.Service.Players:GetPlayerByUserId(from)
 			if player then
 				_K.Remote.Notify:FireClient(
-					_K.Services.Players:GetPlayerByUserId(from),
+					_K.Service.Players:GetPlayerByUserId(from),
 					{ Text = commandError, From = "_K", TextColor3 = Color3.new(1, 0, 0), Sound = "Call_Leave" }
 				)
 				for _, err in commandErrors do

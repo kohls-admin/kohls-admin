@@ -1,7 +1,3 @@
-local GroupService = game:GetService("GroupService")
-local MarketplaceService = game:GetService("MarketplaceService")
-local Players = game:GetService("Players")
-
 local Data = require(script.Parent.Data.Defaults)
 local Hook = require(script.Parent.Hook)
 local Registry = require(script.Parent.Registry)
@@ -29,8 +25,8 @@ function Auth.banHandler(player)
 		return -- not banned
 	end
 
-	if not Util.Services.RunService:IsStudio() then
-		local banHistory = Players:GetBanHistoryAsync(player.UserId)
+	if not Util.Service.Run:IsStudio() then
+		local banHistory = Util.Service.Players:GetBanHistoryAsync(player.UserId)
 		if banHistory then
 			local items = banHistory:GetCurrentPage()
 			local last = items[1]
@@ -95,7 +91,7 @@ function Auth.banUsers(
 			Data.Cache.bans[key] = ban
 		end
 
-		for _, player in Players:GetPlayers() do
+		for _, player in Util.Service.Players:GetPlayers() do
 			if Auth.hasCommand(player.UserId, "ban") then
 				Remote.Ban:FireClient(player, key, ban)
 			end
@@ -103,7 +99,7 @@ function Auth.banUsers(
 	end
 
 	if banAsync and timestamp then
-		Players:BanAsync({
+		Util.Service.Players:BanAsync({
 			UserIds = userIds,
 			PrivateReason = reason or "No reason.",
 			DisplayReason = reason or "No reason.",
@@ -124,7 +120,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 			Data.Cache.bans[key] = false
 		end
 
-		for _, player in Players:GetPlayers() do
+		for _, player in Util.Service.Players:GetPlayers() do
 			if Auth.hasCommand(player.UserId, "ban") then
 				Remote.Ban:FireClient(player, key)
 			end
@@ -132,14 +128,14 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 	end
 
 	if forceBanAsync then -- for non command calls
-		Players:UnbanAsync({ UserIds = userIds, ApplyToUniverse = true })
+		Util.Service.Players:UnbanAsync({ UserIds = userIds, ApplyToUniverse = true })
 	end
 end
 
 function Auth.networkMember(userId: number)
 	local userIdString = tostring(userId)
 	local member = Data.members[userIdString]
-	for _, player in Players:GetPlayers() do
+	for _, player in Util.Service.Players:GetPlayers() do
 		if player.UserId == userId or Auth.hasCommand(player.UserId, "members") then
 			Remote.Member:FireClient(player, userIdString, member)
 		end
@@ -246,7 +242,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	-- gamepass permissions
 	for gamePassId, roles in Data.async.gamepass do
 		local ok, result = Util.Retry(function()
-			return MarketplaceService:UserOwnsGamePassAsync(userId, gamePassId)
+			return Util.Service.Marketplace:UserOwnsGamePassAsync(userId, gamePassId)
 		end)
 		if ok and result then
 			for _, role in roles do
@@ -261,7 +257,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	-- group permissions
 	if next(Data.async.group) then
 		local ok, groups = Util.Retry(function()
-			return GroupService:GetGroupsAsync(userId)
+			return Util.Service.Group:GetGroupsAsync(userId)
 		end)
 		if ok then
 			for _, group in groups do
@@ -283,7 +279,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	end
 
 	-- the following requires a player instance
-	local player = Players:GetPlayerByUserId(userId)
+	local player = Util.Service.Players:GetPlayerByUserId(userId)
 	if not player then
 		return
 	end
@@ -302,7 +298,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	-- legacy asset permissions
 	for assetId, roles in Data.async.asset do
 		local ok, result = Util.Retry(function()
-			return MarketplaceService:PlayerOwnsAsset(player, assetId)
+			return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
 		end)
 		if ok and result then
 			for _, role in roles do
@@ -317,7 +313,7 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	-- subscription permissions
 	for subscriptionId, roles in Data.async.subscription do
 		local ok, result = Util.Retry(function()
-			return MarketplaceService:GetUserSubscriptionStatusAsync(player, subscriptionId)
+			return Util.Service.Marketplace:GetUserSubscriptionStatusAsync(player, subscriptionId)
 		end)
 		if ok and result.IsSubscribed then
 			for _, role in roles do

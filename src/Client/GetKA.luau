@@ -4,7 +4,7 @@ local UI = _K.UI
 task.defer(function()
 	local adminModelId = 172732271
 	local ok, owned = _K.Util.Retry(function()
-		return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
+		return _K.Service.Marketplace:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
 	end)
 
 	if not ok or owned then
@@ -43,7 +43,7 @@ task.defer(function()
 				ImageColor3 = Color3.new(1, 0.8, 0),
 				[UI.Event] = {
 					Activated = function()
-						_K.Services.AvatarEditorService:PromptSetFavorite(adminModelId, 1, true)
+						_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
 					end,
 				},
 				UI.new "Tooltip" {
@@ -71,7 +71,7 @@ task.defer(function()
 				_K.client.lastAttemptedPurchase = adminModelId
 				_K.client.purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
 				if _K.client.AllowThirdPartySales then
-					_K.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
+					_K.Service.Marketplace:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
 				else
 					_K.client.purchaseDialog.Visible:set(true)
 					dialog.Visible:set(false)

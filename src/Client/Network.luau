@@ -44,7 +44,7 @@ _K.Remote.Announce.OnClientEvent:Connect(_K.Announce)
 _K.Remote.Notify.OnClientEvent:Connect(_K.Notify)
 
 _K.Remote.SetCore.OnClientEvent:Connect(function(parameter: string, value: any)
-	_K.Util.Services.StarterGui:SetCore(parameter, value)
+	_K.Service.StarterGui:SetCore(parameter, value)
 end)
 
 local requestingCommand = {}

@@ -308,7 +308,7 @@ return {
 				return env.fps
 			end
 			local frames, last = 0, tick()
-			_K.Services.RunService.Heartbeat:Connect(function()
+			_K.Service.Run.Heartbeat:Connect(function()
 				frames += 1
 				local dt = tick() - last
 				if dt >= 1 then
@@ -373,7 +373,7 @@ return {
 			context._K.Util.SafeTeleport(
 				game.PlaceId,
 				{ context.fromPlayer },
-				#context._K.Services.Players:GetPlayers() > 1 and options
+				#context._K.Service.Players:GetPlayers() > 1 and options
 			)
 		end,
 	},
@@ -389,11 +389,8 @@ return {
 		},
 
 		run = function(context, userId)
-			local ok, samePlace, errorMessage, placeId, jobId = pcall(
-				context._K.Util.Services.TeleportService.GetPlayerPlaceInstanceAsync,
-				context._K.Util.Services.TeleportService,
-				userId
-			)
+			local ok, samePlace, errorMessage, placeId, jobId =
+				pcall(context._K.Service.Teleport.GetPlayerPlaceInstanceAsync, context._K.Service.Teleport, userId)
 			if not ok then
 				return errorMessage or samePlace
 			end

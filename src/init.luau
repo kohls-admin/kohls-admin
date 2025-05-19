@@ -68,7 +68,7 @@ local _K = {
 	VIP = require(script:WaitForChild("VIP")),
 
 	-- shorthand
-	Services = Util.Services,
+	Service = Util.Service,
 
 	client = nil,
 	pinnedAnnouncement = nil,
@@ -108,7 +108,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 			if level == "CHAT" then
 				table.insert(_K.Data.Cache.chatLogs, { log.text, log.level, log.time, from, log.name })
 			end
-			for _, player in _K.Services.Players:GetPlayers() do
+			for _, player in _K.Service.Players:GetPlayers() do
 				if _K.Auth.hasPermission(player.UserId, "serverlogs") then
 					_K.Remote.Log:FireClient(player, log)
 				end
@@ -124,7 +124,7 @@ _K.Logger.logs = _K.Data.logs
 -- Move tools to ServerStorage
 if _K.IsServer then
 	_K.Tools = script:WaitForChild("Tools")
-	_K.Tools.Parent = _K.Services.ServerScriptService
+	_K.Tools.Parent = _K.Service.ServerScript
 end
 
 -- register initial UI children
@@ -164,7 +164,7 @@ end
 --------------------------
 
 local function characterAdded(character: Model)
-	local player = _K.Services.Players:GetPlayerFromCharacter(character)
+	local player = _K.Service.Players:GetPlayerFromCharacter(character)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	humanoid.Died:Connect(function()
 		local tag = humanoid:FindFirstChild("creator")
@@ -181,8 +181,8 @@ local function characterAdded(character: Model)
 end
 
 local function welcomeBadge(userId)
-	if not Util.Services.BadgeService:UserHasBadgeAsync(userId, _K.Data.settings.welcomeBadgeId) then
-		Util.Services.BadgeService:AwardBadge(userId, _K.Data.settings.welcomeBadgeId)
+	if not _K.Service.Badge:UserHasBadgeAsync(userId, _K.Data.settings.welcomeBadgeId) then
+		_K.Service.Badge:AwardBadge(userId, _K.Data.settings.welcomeBadgeId)
 	end
 end
 
@@ -201,7 +201,7 @@ local function playerAdded(player: Player)
 		return
 	end
 
-	if _K.Services.RunService:IsStudio() then
+	if _K.Service.Run:IsStudio() then
 		_K.Auth.userRoleAdd(player.UserId, "creator")
 	end
 
@@ -224,7 +224,7 @@ local function playerAdded(player: Player)
 	player.CharacterAdded:Connect(characterAdded)
 	player.Chatted:Connect(function(message: string)
 		if
-			Util.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService
+			_K.Service.TextChat.ChatVersion == Enum.ChatVersion.TextChatService
 			and string.find(message, "/e", 1, true) == 1
 			and _K.Data.settings.chatCommands ~= false
 		then
@@ -312,7 +312,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		if game.CreatorType == Enum.CreatorType.Group then
 			_K.groupId = game.CreatorId
 			local ok, result = Util.Retry(function()
-				return Util.Services.GroupService:GetGroupInfoAsync(game.CreatorId)
+				return _K.Service.Group:GetGroupInfoAsync(game.CreatorId)
 			end)
 			_K.creatorId = if ok then result.Owner.Id else 0
 		else
@@ -327,7 +327,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		for _, user in users do
 			task.spawn(function()
 				local userId = if type(user) == "string"
-					then Util.Services.Players:GetUserIdFromNameAsync(user)
+					then _K.Service.Players:GetUserIdFromNameAsync(user)
 					elseif (tonumber(user) or 0) > 0 then tonumber(user)
 					else nil
 				if userId then
@@ -366,7 +366,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 
 	if settings.friendRoles and #settings.friendRoles > 0 then
 		task.spawn(function()
-			local friendPages = Util.Services.Players:GetFriendsAsync(_K.creatorId)
+			local friendPages = _K.Service.Players:GetFriendsAsync(_K.creatorId)
 			for item, _pageNo in Util.iterPageItems(friendPages) do
 				if item.Id then
 					for _, role in settings.friendRoles do
@@ -377,7 +377,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end)
 	end
 
-	_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
+	_K.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
 		if not purchaseSuccess then
 			return
 		end
@@ -405,7 +405,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	end)
 
 	-- addons
-	local serverAddons = Instance.new("Folder", Util.Services.ServerStorage)
+	local serverAddons = Instance.new("Folder", _K.Service.ServerStorage)
 	serverAddons.Name = "_KServerAddons"
 
 	local sharedAddons = Instance.new("Folder", script)
@@ -434,13 +434,13 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	end
 
 	loadAddons(script.DefaultAddons:GetChildren())
-	loadAddons(_K.Services.CollectionService:GetTagged(_K._addonTag))
+	loadAddons(_K.Service.Collection:GetTagged(_K._addonTag))
 	if addons and not addons:HasTag(_K._addonTag) then
 		loadAddons(addons:GetChildren())
 	end
 
 	script.Name = "Kohl's Admin Source"
-	script.Parent = _K.Services.ReplicatedStorage
+	script.Parent = _K.Service.ReplicatedStorage
 
 	-- enable client
 	Client.Enabled = true
@@ -467,7 +467,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		if
 			settings.vip
 			and settings.gameHubEnabled
-			and not Util.Services.HttpService.HttpEnabled
+			and not _K.Service.Http.HttpEnabled
 			and _K.Auth.hasPermission(player.UserId, "settings")
 		then
 			task.delay(2, function()
@@ -510,7 +510,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 
 			_K.Data.Cache.settings[key] = cacheValue
 		end
-		for _, toPlayer in _K.Services.Players:GetPlayers() do
+		for _, toPlayer in _K.Service.Players:GetPlayers() do
 			if toPlayer ~= player then
 				_K.Remote.Settings:FireClient(toPlayer, changes)
 			end
@@ -529,7 +529,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	-- server hooks
 
 	_K.Util.SafePlayerAdded(playerAdded)
-	_K.Util.Services.Players.PlayerRemoving:Connect(function(player)
+	_K.Service.Players.PlayerRemoving:Connect(function(player)
 		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId, true)
 	end)
 

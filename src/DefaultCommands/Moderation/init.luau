@@ -148,7 +148,7 @@ return {
 				elseif duration == -1 then "Permanently"
 				else context._K.Util.ReadableTime(duration)
 
-			local players = context._K.Services.Players:GetPlayers()
+			local players = context._K.Service.Players:GetPlayers()
 			local bannedNames, getNames = {}, {}
 			for _, userId in userIds do
 				local skip
@@ -247,18 +247,18 @@ return {
 		envClient = function(_K)
 			_K.Remote.Mute.OnClientEvent:Connect(function(muted)
 				local muteText = if muted then "muted" else "unmuted"
-				if _K.Util.Services.TextChatService.ChatVersion == Enum.ChatVersion.LegacyChatService then
-					_K.Util.Services.StarterGui:SetCore("ChatBarDisabled", muted)
-					_K.Util.Services.StarterGui:SetCore("ChatMakeSystemMessage", {
+				if _K.Service.TextChat.ChatVersion == Enum.ChatVersion.LegacyChatService then
+					_K.Service.StarterGui:SetCore("ChatBarDisabled", muted)
+					_K.Service.StarterGui:SetCore("ChatMakeSystemMessage", {
 						Text = `You have been {muteText}!`,
 						Color = if muted then Color3.new(1, 0, 0) else Color3.new(0, 1, 0),
 					})
 				else
-					local chatbar = _K.Util.Services.TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
+					local chatbar = _K.Service.TextChat:FindFirstChildOfClass("ChatInputBarConfiguration")
 					if chatbar then
 						chatbar.Enabled = not muted
 					end
-					local channels = _K.Util.Services.TextChatService:FindFirstChild("TextChannels")
+					local channels = _K.Service.TextChat:FindFirstChild("TextChannels")
 					if not channels then
 						return
 					end
@@ -271,7 +271,7 @@ return {
 		end,
 		env = function(_K)
 			local muted = {}
-			_K.Util.Services.TextChatService.DescendantAdded:Connect(function(descendant)
+			_K.Service.TextChat.DescendantAdded:Connect(function(descendant)
 				if descendant:IsA("TextSource") then
 					if muted[descendant.UserId] then
 						descendant.CanSend = false
@@ -291,7 +291,7 @@ return {
 
 				context.env.remote:FireClient(player, true)
 
-				context.env.muted[player.UserId] = context._K.Util.Services.TextChatService.DescendantAdded:Connect(
+				context.env.muted[player.UserId] = context._K.Service.TextChat.DescendantAdded:Connect(
 					function(descendant)
 						if
 							descendant:IsA("TextSource")
@@ -304,7 +304,7 @@ return {
 					end
 				)
 
-				for _, descendant in context._K.Util.Services.TextChatService:GetDescendants() do
+				for _, descendant in context._K.Service.TextChat:GetDescendants() do
 					if descendant:IsA("TextSource") and descendant.UserId == player.UserId and descendant.CanSend then
 						descendant:SetAttribute("_KCouldSend", true)
 						descendant.CanSend = false
@@ -340,7 +340,7 @@ return {
 				end
 				context._K.Data.muted[player.UserId] = nil
 
-				for _, descendant in context._K.Util.Services.TextChatService:GetDescendants() do
+				for _, descendant in context._K.Service.TextChat:GetDescendants() do
 					if
 						descendant:IsA("TextSource")
 						and descendant.UserId == player.UserId
@@ -935,11 +935,11 @@ return {
 			local env = {}
 
 			task.defer(function()
-				local sword = _K.Services.InsertService:LoadAsset(47433):FindFirstChildOfClass("Tool")
+				local sword = _K.Service.Insert:LoadAsset(47433):FindFirstChildOfClass("Tool")
 				if not sword then
 					warn(`Sword failed to load, sword command won't work!`)
 				end
-				sword.Parent = _K.Services.ServerStorage
+				sword.Parent = _K.Service.ServerStorage
 				env.sword = sword
 			end)
 
@@ -1010,7 +1010,7 @@ return {
 				repeat
 					task.wait(1)
 					for userId in loopKillList do
-						local player = _K.Util.Services.Players:GetPlayerByUserId(userId)
+						local player = _K.Service.Players:GetPlayerByUserId(userId)
 						if player and player.Character then
 							loopKillCheck(player)
 						end
@@ -1764,7 +1764,7 @@ return {
 		},
 
 		run = function(context, walkSpeed: number)
-			context._K.Util.Services.StarterPlayer.CharacterJumpPower = walkSpeed
+			context._K.Service.StarterPlayer.CharacterJumpPower = walkSpeed
 		end,
 	},
 	{
@@ -1845,7 +1845,7 @@ return {
 		},
 
 		run = function(context, walkSpeed: number)
-			context._K.Util.Services.StarterPlayer.CharacterWalkSpeed = walkSpeed
+			context._K.Service.StarterPlayer.CharacterWalkSpeed = walkSpeed
 		end,
 	},
 	{
@@ -1946,7 +1946,7 @@ return {
 		},
 
 		run = function(context, maxSlopeAngle: number)
-			context._K.Util.Services.StarterPlayer.CharacterMaxSlopeAngle = math.clamp(maxSlopeAngle, 0, 89)
+			context._K.Service.StarterPlayer.CharacterMaxSlopeAngle = math.clamp(maxSlopeAngle, 0, 89)
 		end,
 	},
 	{
@@ -1973,7 +1973,7 @@ return {
 
 				-- TODO: save rig type as an attribute for application on spawn
 
-				local rig = context._K.Util.Services.Players:CreateHumanoidModelFromDescription(description, rigType)
+				local rig = context._K.Service.Players:CreateHumanoidModelFromDescription(description, rigType)
 				rig:PivotTo(player.Character:GetPivot())
 				rig.Name = player.Character.Name
 				local rigHumanoid = rig:FindFirstChildOfClass("Humanoid")
@@ -1996,7 +1996,7 @@ return {
 				end
 
 				local StarterCharacterScripts =
-					context._K.Util.Services.StarterPlayer:FindFirstChild("StarterCharacterScripts")
+					context._K.Service.StarterPlayer:FindFirstChild("StarterCharacterScripts")
 
 				if StarterCharacterScripts then
 					for _, child in StarterCharacterScripts:GetChildren() do
@@ -2051,7 +2051,7 @@ return {
 				end
 			end)
 
-			_K.Services.Players.LocalPlayer.CharacterRemoving:Connect(function()
+			_K.Service.Players.LocalPlayer.CharacterRemoving:Connect(function()
 				lastCameraCFrame = workspace.CurrentCamera.CFrame
 			end)
 		end,
@@ -2309,7 +2309,7 @@ return {
 			},
 		},
 		run = function(context, players, teams)
-			teams = context._K.Util.Table.shuffle(teams or context._K.Services.Teams:GetTeams())
+			teams = context._K.Util.Table.shuffle(teams or context._K.Service.Teams:GetTeams())
 			for i, player in context._K.Util.Table.shuffle(players) do
 				player.Team = teams[((i - 1) % #teams) + 1]
 			end

@@ -25,7 +25,7 @@ local function getDonationLevel(player)
 	end
 
 	local okSubscription, status = Util.Retry(function()
-		return Util.Services.MarketplaceService:GetUserSubscriptionStatusAsync(player, "EXP-4118475727682928968")
+		return Util.Service.Marketplace:GetUserSubscriptionStatusAsync(player, "EXP-4118475727682928968")
 	end)
 	if okSubscription and status.IsSubscribed then
 		return 4
@@ -33,7 +33,7 @@ local function getDonationLevel(player)
 
 	for level = #gamePassDonations, 1, -1 do
 		local okGamePass, result = Util.Retry(function()
-			return Util.Services.MarketplaceService:UserOwnsGamePassAsync(player.UserId, gamePassDonations[level])
+			return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, gamePassDonations[level])
 		end)
 		if okGamePass and result then
 			return level
@@ -43,7 +43,7 @@ local function getDonationLevel(player)
 	for level = #assetDonations, 1, -1 do
 		for _, assetId in assetDonations[level] do
 			local okAsset, result = Util.Retry(function()
-				return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetId)
+				return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
 			end)
 			if okAsset and result then
 				return level
@@ -68,7 +68,7 @@ for _, module in script:WaitForChild("UGC"):GetChildren() do
 	end)
 end
 
-if Util.Services.RunService:IsServer() then
+if Util.Service.Run:IsServer() then
 	local ownedCache = {}
 	local function ownsAsset(player, assetId)
 		local ownedUGC = ownedCache[player.UserId]
@@ -82,7 +82,7 @@ if Util.Services.RunService:IsServer() then
 		end
 
 		local ok, result = Util.Retry(function()
-			return Util.Services.MarketplaceService:PlayerOwnsAsset(player, assetId)
+			return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
 		end)
 		if ok then
 			ownedUGC[assetId] = result
@@ -189,10 +189,7 @@ if Util.Services.RunService:IsServer() then
 		if titleDefinition then
 			if titleDefinition.gamepass then
 				local okGamePass, result = Util.Retry(function()
-					return Util.Services.MarketplaceService:UserOwnsGamePassAsync(
-						player.UserId,
-						titleDefinition.gamepass
-					)
+					return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, titleDefinition.gamepass)
 				end)
 				if not (okGamePass and result) then
 					return
@@ -237,7 +234,7 @@ if Util.Services.RunService:IsServer() then
 		end
 
 		-- vip equipped effects
-		local player = Util.Services.Players:GetPlayerFromCharacter(character)
+		local player = Util.Service.Players:GetPlayerFromCharacter(character)
 		local effects = player and VIP.effects[player.UserId]
 		if not effects then
 			return
@@ -267,7 +264,7 @@ if Util.Services.RunService:IsServer() then
 		end
 	end)
 
-	Util.Services.MarketplaceService.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
+	Util.Service.Marketplace.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
 		if purchased then
 			local ownedUGC = ownedCache[player.UserId]
 			if not ownedUGC then
@@ -278,7 +275,7 @@ if Util.Services.RunService:IsServer() then
 		end
 	end)
 
-	Util.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
+	Util.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
 		if purchased then
 			local level = player:GetAttribute("_KDonationLevel") or 0
 			local vipIndex = table.find(gamePassDonations, passId)

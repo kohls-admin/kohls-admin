@@ -101,7 +101,7 @@ function About.new(_K)
 		purchaseLink.Text = "https://roblox.com/game-pass/" .. passId
 		if _K.client.AllowThirdPartySales then
 			purchaseDialog.Visible:set(false)
-			_K.Util.Services.MarketplaceService:PromptGamePassPurchase(_K.UI.LocalPlayer, passId)
+			_K.Service.Marketplace:PromptGamePassPurchase(_K.UI.LocalPlayer, passId)
 		else
 			purchaseDialog.Visible:set(true)
 		end
@@ -110,7 +110,7 @@ function About.new(_K)
 
 	local function updatePassPriceText(label: TextLabel, gamePassId: number, ownedText: string?)
 		local success, owned = _K.Util.Retry(function()
-			return _K.Util.Services.MarketplaceService:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, gamePassId)
+			return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, gamePassId)
 		end)
 
 		if success then
@@ -120,18 +120,16 @@ function About.new(_K)
 			end
 
 			local conn
-			conn = _K.Util.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(
-				function(userId, passId, purchased)
-					if purchased and passId == gamePassId and userId == _K.UI.LocalPlayer.UserId then
-						conn:Disconnect()
-						owned = true
-						label.Text = ownedText or "<b>OWNED</b>"
-					end
+			conn = _K.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(function(userId, passId, purchased)
+				if purchased and passId == gamePassId and userId == _K.UI.LocalPlayer.UserId then
+					conn:Disconnect()
+					owned = true
+					label.Text = ownedText or "<b>OWNED</b>"
 				end
-			)
+			end)
 
 			local ok, result = _K.Util.Retry(function()
-				return _K.Util.Services.MarketplaceService:GetProductInfo(gamePassId, Enum.InfoType.GamePass).PriceInRobux
+				return _K.Service.Marketplace:GetProductInfo(gamePassId, Enum.InfoType.GamePass).PriceInRobux
 			end)
 			if ok then
 				if not owned then
@@ -142,7 +140,7 @@ function About.new(_K)
 	end
 
 	local con
-	con = _K.Util.Services.LogService.MessageOut:Connect(function(message, messageType)
+	con = _K.Service.Log.MessageOut:Connect(function(message, messageType)
 		if messageType == Enum.MessageType.MessageWarning and string.find(message, "AllowThirdPartySales") then
 			con:Disconnect()
 			_K.client.AllowThirdPartySales = false
@@ -226,7 +224,7 @@ function About.new(_K)
 			local owned = (donationLevel or 0) >= (ugc.level or 3)
 			if not owned then
 				local ok, result = _K.Util.Retry(function()
-					return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
+					return _K.Service.Marketplace:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
 				end)
 				if ok and result then
 					owned = result
@@ -279,7 +277,7 @@ function About.new(_K)
 							ImageColor3 = Color3.new(1, 0.8, 0),
 							[UI.Event] = {
 								Activated = function()
-									_K.Util.Services.AvatarEditorService:PromptSetFavorite(ugc.id, 1, true)
+									_K.Service.AvatarEditor:PromptSetFavorite(ugc.id, 1, true)
 								end,
 							},
 							UI.new "Tooltip" {
@@ -363,7 +361,7 @@ function About.new(_K)
 						purchaseLink.Text = "https://roblox.com/catalog/" .. ugc.id
 						if _K.client.AllowThirdPartySales then
 							purchaseDialog.Visible:set(false)
-							_K.Util.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, ugc.id)
+							_K.Service.Marketplace:PromptPurchase(_K.UI.LocalPlayer, ugc.id)
 						else
 							purchaseDialog.Visible:set(true)
 						end
@@ -378,20 +376,18 @@ function About.new(_K)
 				button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
 
 				local con
-				con = _K.Util.Services.MarketplaceService.PromptPurchaseFinished:Connect(
-					function(player, assetId, purchased)
-						if purchased and assetId == ugc.id and player == _K.UI.LocalPlayer then
-							con:Disconnect()
-							owned, try = true, nil
-							button.Label:set("<b>EQUIP</b>")
-							button._content.IconFrame.Visible = false
-							button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
-						end
+				con = _K.Service.Marketplace.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
+					if purchased and assetId == ugc.id and player == _K.UI.LocalPlayer then
+						con:Disconnect()
+						owned, try = true, nil
+						button.Label:set("<b>EQUIP</b>")
+						button._content.IconFrame.Visible = false
+						button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
 					end
-				)
+				end)
 
 				local ok, result = _K.Util.Retry(function()
-					return _K.Util.Services.MarketplaceService:GetProductInfo(ugc.id, Enum.InfoType.Asset).PriceInRobux
+					return _K.Service.Marketplace:GetProductInfo(ugc.id, Enum.InfoType.Asset).PriceInRobux
 				end)
 				if ok then
 					ugc.price = result or "?"
@@ -696,7 +692,7 @@ function About.new(_K)
 				ImageColor3 = Color3.new(1, 0.8, 0),
 				[UI.Event] = {
 					Activated = function()
-						_K.Util.Services.AvatarEditorService:PromptSetFavorite(adminModelId, 1, true)
+						_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
 					end,
 				},
 				UI.new "Tooltip" {
@@ -725,7 +721,7 @@ function About.new(_K)
 				purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
 				if _K.client.AllowThirdPartySales then
 					purchaseDialog.Visible:set(false)
-					_K.Util.Services.MarketplaceService:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
+					_K.Service.Marketplace:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
 				else
 					purchaseDialog.Visible:set(true)
 				end
@@ -742,7 +738,7 @@ function About.new(_K)
 
 	task.defer(function()
 		local ok, owned = _K.Util.Retry(function()
-			return _K.Util.Services.MarketplaceService:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
+			return _K.Service.Marketplace:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
 		end)
 		if ok and owned then
 			adminModelButton._content.Price.Text = `<b>OWNED</b>`

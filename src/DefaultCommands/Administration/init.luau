@@ -13,7 +13,7 @@ return {
 		},
 		env = function(_K)
 			task.spawn(function()
-				_K.Util.Services.MessagingService:SubscribeAsync("KA_Announcement", function(message)
+				_K.Service.Messaging:SubscribeAsync("KA_Announcement", function(message)
 					if type(message.Data) ~= "table" then
 						_K.Data.settings.announcement = false
 						return
@@ -63,7 +63,7 @@ return {
 
 			local announcement = { message, context.from }
 			context._K.Data.Cache.settings.announcement = announcement
-			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", announcement)
+			context._K.Service.Messaging:PublishAsync("KA_Announcement", announcement)
 			return
 		end,
 	},
@@ -79,7 +79,7 @@ return {
 			end
 
 			context._K.Data.Cache.settings.announcement = false
-			context._K.Util.Services.MessagingService:PublishAsync("KA_Announcement", nil)
+			context._K.Service.Messaging:PublishAsync("KA_Announcement", nil)
 			return
 		end,
 	},
@@ -110,7 +110,7 @@ return {
 					end
 				end
 
-				local player = context._K.Util.Services.Players:GetPlayerByUserId(userId)
+				local player = context._K.Service.Players:GetPlayerByUserId(userId)
 				if player and #rolesAdded > 0 then
 					context._K.Remote.Notify:FireClient(player, {
 						Text = `Gave you the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
@@ -167,7 +167,7 @@ return {
 					end
 				end
 
-				local player = context._K.Util.Services.Players:GetPlayerByUserId(userId)
+				local player = context._K.Service.Players:GetPlayerByUserId(userId)
 				if player and #rolesAdded > 0 then
 					context._K.Remote.Notify:FireClient(player, {
 						Text = `Gave you the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
@@ -345,7 +345,7 @@ return {
 		},
 
 		run = function(context, players, assetId)
-			local model = context._K.Util.Services.InsertService:LoadAsset(assetId)
+			local model = context._K.Service.Insert:LoadAsset(assetId)
 			for _, child in model:GetChildren() do
 				if child:IsA("BackpackItem") then
 					local gear = child:Clone()
@@ -371,7 +371,7 @@ return {
 
 		run = function(context, assetId)
 			local ok, result = pcall(function()
-				return context._K.Util.Services.InsertService:LoadAsset(assetId)
+				return context._K.Service.Insert:LoadAsset(assetId)
 			end)
 			if not ok then
 				if string.find(result, "authorized") then

@@ -28,15 +28,15 @@ return {
 				end,
 			}
 			task.spawn(function()
-				_K.Util.Services.MessagingService:SubscribeAsync("KA_ClearLogs", env.clearLogs)
+				_K.Service.Messaging:SubscribeAsync("KA_ClearLogs", env.clearLogs)
 			end)
 			return env
 		end,
 
 		run = function(context)
 			task.spawn(context._K.Data.Store.removeAsync, "LogsV2")
-			context._K.Util.Services.MessagingService:PublishAsync("KA_ClearLogs")
-			for _, player in context._K.Util.Services.Players:GetPlayers() do
+			context._K.Service.Messaging:PublishAsync("KA_ClearLogs")
+			for _, player in context._K.Service.Players:GetPlayers() do
 				context._K.Remote.ClearLogs:FireClient(player)
 			end
 		end,

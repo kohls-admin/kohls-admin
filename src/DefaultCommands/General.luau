@@ -168,7 +168,7 @@ return {
 
 				_K.UI.Sound.Hover02:Play()
 
-				countdown = _K.Util.Services.RunService.Heartbeat:Connect(function()
+				countdown = _K.Service.Run.Heartbeat:Connect(function()
 					local delta = workspace:GetServerTimeNow() - start
 					if delta > duration then
 						countdown:Disconnect()
@@ -338,11 +338,11 @@ return {
 			},
 		},
 		envClient = function(_K)
-			local localPlayer = _K.Services.Players.LocalPlayer
+			local localPlayer = _K.Service.Players.LocalPlayer
 			local persist, link = {}, nil
 
 			local function characterAddedHandler(character)
-				task.defer(link, _K.Services.Players:GetPlayerFromCharacter(character))
+				task.defer(link, _K.Service.Players:GetPlayerFromCharacter(character))
 			end
 
 			link = function(player, persistent)
@@ -465,12 +465,12 @@ return {
 					env.spectateConnection:Disconnect()
 				end
 				if enabled then
-					env.spectateConnection = _K.Services.RunService.Heartbeat:Connect(spectateNetwork)
+					env.spectateConnection = _K.Service.Run.Heartbeat:Connect(spectateNetwork)
 				end
 			end)
 
 			_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame)
-				_K.Util.Services.TweenService
+				_K.Service.Tween
 					:Create(workspace.CurrentCamera, TweenInfo.new(0.1), {
 						CFrame = cframe,
 					})
@@ -506,7 +506,7 @@ return {
 			end
 
 			_K.Hook.roleRemoved:Connect(function(userId: number, role: string)
-				local player = _K.Services.Players:GetPlayerByUserId(userId)
+				local player = _K.Service.Players:GetPlayerByUserId(userId)
 				if player and not _K.Auth.hasCommand(userId, _K.Registry.commands.spectate) then
 					spectateCleanup({ _K = _K, fromPlayer = player })
 				end
@@ -586,7 +586,7 @@ return {
 		},
 		env = function(_K)
 			_K.Hook.roleRemoved:Connect(function(userId: number, role: string)
-				local player = _K.Services.Players:GetPlayerByUserId(userId)
+				local player = _K.Service.Players:GetPlayerByUserId(userId)
 				if player and not _K.Auth.hasCommand(userId, _K.Registry.commands.fly) then
 					player:SetAttribute("_KFly", nil)
 					player:SetAttribute("_KNoclip", nil)

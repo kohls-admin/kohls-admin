@@ -17,7 +17,7 @@ local function sanitizeUser(self, user: number)
 			return nil, "Can only target yourself"
 		end
 	elseif self.definition.lowerRank and not self.definition.shouldRequest then
-		local player = self._K.Services.Players:GetPlayerByUserId(user)
+		local player = self._K.Service.Players:GetPlayerByUserId(user)
 		if player and player:GetAttribute("_KRolesLoaded") ~= true then
 			return nil, "Can't target loading user"
 		end

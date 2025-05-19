@@ -83,10 +83,10 @@ return function(context)
 			source.DescendantAdded:Connect(addTool)
 		end
 
-		registerSource(_K.Util.Services.Lighting)
-		registerSource(_K.Util.Services.ReplicatedStorage)
-		registerSource(_K.Util.Services.ServerStorage)
-		registerSource(_K.Util.Services.StarterPack)
+		registerSource(_K.Service.Lighting)
+		registerSource(_K.Service.ReplicatedStorage)
+		registerSource(_K.Service.ServerStorage)
+		registerSource(_K.Service.StarterPack)
 
 		_K.Remote.Tools.OnServerEvent:Connect(function(player)
 			local toolData = table.create(#tools)

@@ -90,7 +90,7 @@ return {
 		},
 		env = function(_K)
 			task.spawn(function()
-				_K.Util.Services.MessagingService:SubscribeAsync("KA_GlobalCommand", function(message)
+				_K.Service.Messaging:SubscribeAsync("KA_GlobalCommand", function(message)
 					local from, commandString = unpack(message.Data)
 					if from and commandString then
 						local prefix = _K.getCommandPrefix(from)
@@ -103,7 +103,7 @@ return {
 			end)
 		end,
 		run = function(context, commandString: string)
-			context._K.Util.Services.MessagingService:PublishAsync("KA_GlobalCommand", { context.from, commandString })
+			context._K.Service.Messaging:PublishAsync("KA_GlobalCommand", { context.from, commandString })
 		end,
 	},
 }
