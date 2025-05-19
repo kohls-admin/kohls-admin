@@ -58,6 +58,7 @@ return {
 	-- 🔧 SYSTEM SETTINGS
 	prefix = ";", -- The prefix character used to trigger commands (e.g., ";kick")
 
+	commandBarRank = 0, --        Minimum rank required to view the Command Bar       (Set to false to disable for everyone)
 	dashboardButtonRank = 0, --   Minimum rank required to view the Dashboard button  (Set to false to disable for everyone)
 	joinNotificationRank = 1, --  Minimum rank required to trigger join notifications (Set to false to disable for everyone)
 	getKohlsAdminPopup = true, -- Enables the "Enjoy Kohl's Admin?" feedback popup to users

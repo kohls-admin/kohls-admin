@@ -834,10 +834,12 @@ return {
 		end)
 	end,
 	show = function()
-		_K.client.TopbarPlus.setTopbarEnabled(false)
-		coreGuiEnabled(false)
-		CommandBar.Visible = true
-		Input._input:CaptureFocus()
+		if _K.client.toggleCommandBar._instance.Visible then
+			_K.client.TopbarPlus.setTopbarEnabled(false)
+			coreGuiEnabled(false)
+			CommandBar.Visible = true
+			Input._input:CaptureFocus()
+		end
 	end,
 	hide = hideCommandBar,
 }

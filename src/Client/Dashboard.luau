@@ -42,8 +42,7 @@ _K.client.dashboard.Window = dashboard
 _K.client.commandBarVisible = UI.state(_K.client.CommandBar.Bar, "Visible")
 
 -- add a command bar toggle button next to the exit button
-local toggleCommandBar
-toggleCommandBar = UI.new "Button" {
+_K.client.toggleCommandBar = UI.new "Button" {
 	Size = UI.compute(function(use)
 		local size = use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset
 		return UDim2.new(0, size, 0, size)
@@ -67,8 +66,7 @@ toggleCommandBar = UI.new "Button" {
 		end
 	end,
 }
-
-toggleCommandBar._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+_K.client.toggleCommandBar._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 
 local function dashboardToggle(button)
 	if dashboard._instance.Visible then
