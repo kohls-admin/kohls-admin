@@ -21,7 +21,7 @@ local Registry = {
 	commandsList = {},
 }
 
---- Makes an Enum command type definition
+--- Makes an Enum argument type definition
 function Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string })
 	local suggestions = Util.Suggest.new(enumItems)
 	return {
