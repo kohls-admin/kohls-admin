@@ -171,26 +171,25 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 	_K.client.ready = true
 	_K.Hook.init:Fire()
 
-	-- join notification
-
-	local member = _K.Data.members[tostring(UI.LocalPlayer.UserId)]
-	local roleText = ""
-	if member and member.roles then
-		for _, role in member.roles do
-			local roleData = _K.Data.roles[role]
-			if _K.Data.roles[role] then
-				roleText ..= `<font color="{roleData.color}">{roleData.name}</font>, `
-			end
-		end
-	end
-	roleText ..= _K.Data.roles.everyone.name
-
 	if
 		_K.Data.settings.joinNotificationRank
 		and _K.Auth.getRank(_K.Service.Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank
 	then
+		local member = _K.Data.members[tostring(UI.LocalPlayer.UserId)]
+		local roleStrings = {}
+		if member and member.roles then
+			for _, role in member.roles do
+				local roleData = _K.Data.roles[role]
+				if _K.Data.roles[role] then
+					table.insert(roleStrings, `<font color="{roleData.color}">{roleData.name}</font>`)
+				end
+			end
+		end
+		table.insert(roleStrings, `<font color="{_K.Data.roles.everyone.color}">{_K.Data.roles.everyone.name}</font>`)
+		local roleString = table.concat(roleStrings, ", ")
+
 		_K.Notify({
-			Text = `<font family="{UI.Theme.FontMono._value.Name}"><b>Role{if #member.roles > 1 then "s" else ""}:</b>\n<sc>{roleText}</sc></font>`,
+			Text = `<font family="{UI.Theme.FontMono._value.Name}"><b>Role{if #member.roles > 1 then "s" else ""}:</b>\n<sc>{roleString}</sc></font>`,
 			Duration = 15,
 			UserFrame = {},
 		})
