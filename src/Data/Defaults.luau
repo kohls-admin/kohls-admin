@@ -55,6 +55,8 @@ local Data = {
 
 		commands = {},
 		freeAdmin = {},
+		announcements = {},
+		notifications = {},
 
 		announcement = false,
 		playerPrefix = {},

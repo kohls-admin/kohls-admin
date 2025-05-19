@@ -195,6 +195,18 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings)
 			UserFrame = {},
 		})
 	end
+
+	if _K.Data.settings.announcements then
+		for _, announcement in _K.Data.settings.announcements do
+			_K.Announce(announcement)
+		end
+	end
+
+	if _K.Data.settings.notifications then
+		for _, notification in _K.Data.settings.notifications do
+			_K.Notify(notification)
+		end
+	end
 end)
 
 _K.Remote.Init:FireServer()

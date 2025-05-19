@@ -101,6 +101,22 @@ return {
 		creator = {},
 	},
 
+	announcements = {
+		-- {
+		-- 	From = "_K", --    Set to a userId or "_K"
+		-- 	Duration = 30, --  Duration in seconds until the announcement is hidden, set to 0 to not automatically hide
+		-- 	Text = "Hi!",
+		-- },
+	},
+
+	notifications = {
+		-- {
+		-- 	From = "_K", --    Set to a userId or "_K"
+		-- 	Duration = 30, --  Duration in seconds until the notification is hidden, set to 0 to not automatically hide
+		-- 	Text = "Hi!",
+		-- },
+	},
+
 	-- 🎭 ROLE CONFIGURATION
 	-- Defines the hierarchy, permissions, and capabilities of each role, you can create as many custom roles as you want!
 	roles = {
