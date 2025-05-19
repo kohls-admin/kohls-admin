@@ -38,9 +38,19 @@ function Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string 
 	}
 end
 
+--- @within Registry
+--- @type SequenceDefinition { constructor: (...any) -> any, parse: (...any) -> any, transform: (string) -> any, validate: (any) -> boolean, prefixes: { [string]: string } }
+export type SequenceDefinition = {
+	constructor: (...any) -> any,
+	parse: (...any) -> any,
+	transform: (string) -> any,
+	validate: (any) -> boolean,
+	prefixes: { [string]: string },
+}
+
 --- Makes an sequence argument type definition, useful for Color3, Vector3, etc
-function Registry.makeSequenceType(options)
-	options = options or {}
+function Registry.makeSequenceType(definition: SequenceDefinition?)
+	local options = definition or {}
 	assert(options.parse ~= nil or options.constructor ~= nil, "Must provide one of: constructor, parse")
 
 	options.transform = options.transform or function(...)
