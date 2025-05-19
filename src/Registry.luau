@@ -3,60 +3,7 @@ local RunService = game:GetService("RunService")
 
 local Hook = require(script.Parent.Hook)
 local Util = require(script.Parent.Util)
-
-type Dict = { [any]: any }
-
-type Environment = {} | (_K: any) -> {}
-
---- @within Registry
---- @type ArgumentFunction (value: any, from: Player) -> ...any
-export type ArgumentFunction = (value: any, from: Player) -> ...any
-
---- @within Registry
---- @type ArgumentType {name: string, displayName: string?, listable: boolean?, filterLog: boolean?, transform: ArgumentFunction?, validate: ArgumentFunction, parse: ArgumentFunction, preParse: ArgumentFunction?, postParse: ArgumentFunction?, suggestions: ArgumentFunction?, prefixes: { [string]: string }? }
-export type ArgumentType = {
-	name: string?,
-	displayName: string?,
-	listable: boolean?,
-	filterLog: boolean?,
-	transform: ArgumentFunction?,
-	validate: ArgumentFunction?,
-	parse: ArgumentFunction?,
-	preParse: ArgumentFunction?,
-	postParse: ArgumentFunction?,
-	suggestions: ArgumentFunction?,
-	prefixes: { [string]: string }?,
-}
-
---- @within Registry
---- @type ArgumentDefinition {type: string, name: string, description: string, optional: boolean?, permissions: { [string]: boolean }?, lowerRank: boolean?, ignoreSelf: boolean?, shouldRequest: boolean? }
-export type ArgumentDefinition = {
-	type: string,
-	name: string,
-	description: string,
-	optional: boolean?,
-	permissions: { [string]: boolean }?,
-	-- player type options
-	lowerRank: boolean?,
-	ignoreSelf: boolean?,
-	shouldRequest: boolean?,
-}
-
---- @within Registry
---- @type CommandDefinition {name: string, aliases: { string }?, description: string, group: string, noLog: boolean?, args: { ArgumentDefinition }, permissions: { [string]: boolean }?, envClient: {} | () -> {}?, env: {} | () -> {}?, runClient: (...any) -> ()?, run: (...any) -> ()? }
-export type CommandDefinition = {
-	name: string,
-	aliases: { string }?,
-	description: string,
-	group: string,
-	noLog: boolean?,
-	args: { ArgumentDefinition }?,
-	permissions: { [string]: boolean }?,
-	envClient: Environment?,
-	env: Environment?,
-	runClient: (...any) -> ()?,
-	run: (...any) -> ()?,
-}
+local Type = require(script.Parent.Type)
 
 --- @within Registry
 --- @prop types { [string]: ArgumentType }
@@ -69,7 +16,7 @@ export type CommandDefinition = {
 
 --- @class Registry
 local Registry = {
-	types = {} :: { [string]: ArgumentType },
+	types = {} :: { [string]: Type.ArgumentType },
 	commands = {},
 	commandsList = {},
 }
@@ -91,8 +38,8 @@ function Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string 
 	}
 end
 
---- Registers a command type
-function Registry.registerType(name: string, typeObject: ArgumentType, override: Dict?)
+--- Registers an argument type
+function Registry.registerType(name: string, typeObject: Type.ArgumentType, override: Type.Dict?)
 	assert(name and typeof(name) == "string", "Invalid type name: " .. typeof(name))
 	assert(Registry.types[name] == nil, 'Type "' .. name .. '" already exists!')
 
@@ -108,7 +55,7 @@ function Registry.registerType(name: string, typeObject: ArgumentType, override:
 end
 
 --- Registers a command
-function Registry.registerCommand(_K: any, commandObject: CommandDefinition)
+function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition)
 	local lowerName = string.lower(commandObject.name)
 	if not commandObject.name then
 		return -- invalid commandObject definition

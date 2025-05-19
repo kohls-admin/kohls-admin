@@ -1,13 +1,14 @@
 local Players = game:GetService("Players")
 
 local Argument = require(script.Parent.Argument)
+local Type = require(script.Parent.Parent.Type)
 
 local Command = {
 	Argument = Argument,
 }
 Command.__index = Command
 
-function Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
+function Command.new(_K, commandAlias, commandDefinition: Type.CommandDefinition, commandArray, from, text)
 	return setmetatable({
 		_K = _K,
 		alias = commandAlias,
