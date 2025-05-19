@@ -37,6 +37,11 @@ return {
 		-- [gamepassId] = { "vip", "mod" },
 	},
 
+	-- 💳 SUBSCRIPTION ROLES
+	subscriptionRoles = {
+		-- [subscriptionId] = { "vip", "mod" },
+	},
+
 	-- 🏢 GROUP ROLES
 	groupRoles = {
 		-- [groupId] = {

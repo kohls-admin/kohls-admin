@@ -323,6 +323,10 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		_K.Util.Table.deepMerge(_K.Data.async.group, settings.groupRoles)
 	end
 
+	if settings.subscriptionRoles then
+		_K.Util.Table.deepMerge(_K.Data.async.subscription, settings.subscriptionRoles)
+	end
+
 	for role, roleData in _K.Data.roles do
 		if roleData.gamepass then
 			if not _K.Data.async.gamepass[roleData.gamepass] then
