@@ -3,9 +3,14 @@ local UI = _K.UI
 
 function _K.client.updateInterfaceAuth()
 	-- TODO: recheck visibility for all restricted UIs
-	local buttonEnabled = _K.Data.settings.dashboardButtonRank
-		and _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(UI.LocalPlayer.UserId)
-	_K.client.dashboardButton:setEnabled(buttonEnabled)
+	local userRank = _K.Auth.getRank(UI.LocalPlayer.UserId)
+	local dashboardButtonRank = _K.Data.settings.dashboardButtonRank
+
+	if dashboardButtonRank == nil then
+		dashboardButtonRank = 0
+	end
+
+	_K.client.dashboardButton:setEnabled(dashboardButtonRank and userRank >= dashboardButtonRank)
 
 	_K.client.dashboard.Bans._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "bans")
 	_K.client.dashboard.Logs._instance.Visible = _K.Auth.hasPermission(UI.LocalPlayer.UserId, "serverlogs")
