@@ -63,14 +63,10 @@ local Data = {
 	},
 
 	async = {
-		gamepass = {},
-		-- NOTE: ASSET/SUBS REQUIRE A PLAYER FOR PERMISSIONS AND CAN STILL BE AFFECTED BY ID COMMANDS!
 		asset = {},
-		subscription = {},
+		gamepass = {},
 		group = {},
-		-- [groupId] = {
-		-- { rank = 200, roles = { "vip", "admin" }, exactRank = true },
-		-- },
+		subscription = {},
 	},
 
 	logsHidden = {},
