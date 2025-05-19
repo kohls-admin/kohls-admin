@@ -44,7 +44,7 @@ Using this, our module becomes:
 
 ```lua
 return function(_K)
-    _K.Registry.registerCommand(_K, commandDefinition)
+	_K.Registry.registerCommand(_K, commandDefinition)
 end
 ```
 
@@ -52,17 +52,17 @@ end
 
 ```lua
 type commandDefinition {
-name: string, -- Name of the command.
-aliases: { string }?, -- Table of aliases.
-description: string, -- Description of what the command does.
-group: string, -- What group the command belongs to.
-noLog: boolean?, -- If the command should be hidden from logs.
-args: { ArgumentDefinition }?, -- A table of argument definitions.
-permissions: { [string]: boolean }? -- A table of role permissions required to run the command.
-envClient: {} | () -> {}?, -- Sets up an environment for the command.
-env: {} | () -> {}?, -- Sets up an environment for the command.
-runClient: (...any) -> ()?, -- What runs on the client of the player that ran the command.
-run: (...any) -> ()? -- What the command runs on the server.
+	name: string,                       -- Name of the command.
+	aliases: { string }?,               -- Table of aliases.
+	description: string,                -- Description of what the command does.
+	group: string,                      -- What group the command belongs to.
+	noLog: boolean?,                    -- If the command should be hidden from logs.
+	args: { ArgumentDefinition }?,      -- A table of argument definitions.
+	permissions: { [string]: boolean }? -- A table of role permissions required to run the command.
+	envClient: {} | () -> {}?,          -- Sets up an environment for the command.
+	env: {} | () -> {}?,                -- Sets up an environment for the command.
+	runClient: (...any) -> ()?,         -- What runs on the client of the player that ran the command.
+	run: (...any) -> ()?                -- What the command runs on the server.
 }
 ```
 
@@ -135,7 +135,7 @@ return function(_K)
 
 		env = function(_K)
 			-- This will only run once on each server while in studio or in the demo place
-			if game.PlaceId == 2569622788 or _K.IsStudio then
+			if _K.DEBUG or _K.IsStudio then
 				_K.log(`Hello World from ExampleAddon customcommand env!`, "INFO")
 			end
 
@@ -147,7 +147,7 @@ return function(_K)
 
 		envClient = function(_K)
 			-- This will only run once on each client while in studio or in the demo place
-			if game.PlaceId == 2569622788 or _K.IsStudio then
+			if _K.DEBUG or _K.IsStudio then
 				_K.log(`Hello World from ExampleAddon customcommand envClient!`, "INFO")
 			end
 
@@ -198,9 +198,6 @@ return function(_K)
 		end,
 	})
 
-	if game.PlaceId == 2569622788 then -- ONLY FOR DEMO PLACE
-		_K.Data.settings.saveLogs = true
-	end
 end
 ```
 
