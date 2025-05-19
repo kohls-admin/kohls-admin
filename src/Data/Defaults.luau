@@ -53,6 +53,7 @@ local Data = {
 		vip = true,
 		saveLogs = true,
 
+		commands = {},
 		freeAdmin = {},
 
 		announcement = false,

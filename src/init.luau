@@ -279,6 +279,19 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end
 	end
 
+	if settings.commands and #settings.commands > 0 then
+		for role, commands in settings.commands do
+			local roleData = _K.Data.roles[role]
+			if roleData then
+				if roleData.commands then
+					_K.Util.Table.merge(roleData.commands, commands)
+				else
+					roleData.commands = commands
+				end
+			end
+		end
+	end
+
 	-- private server datastore
 	local dataStoreKey = "_KData"
 	if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then

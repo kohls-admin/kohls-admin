@@ -89,6 +89,18 @@ return {
 
 	saveLogs = true, -- Saves and syncs admin logs across multiple servers
 
+	commands = { -- Configure command access per role
+		everyone = {
+			help = true, --      Enable help command
+			shutdown = false, -- Disable shutdown capability
+		},
+		vip = {},
+		mod = {},
+		admin = {},
+		superadmin = {},
+		creator = {},
+	},
+
 	-- 🎭 ROLE CONFIGURATION
 	-- Defines the hierarchy, permissions, and capabilities of each role, you can create as many custom roles as you want!
 	roles = {
@@ -97,11 +109,6 @@ return {
 
 			name = "Player", -- Display name
 			color = "#0ff", -- Role color, hex only!
-
-			commands = {
-				help = true, -- Enable help command
-				shutdown = false, -- Disable shutdown capability
-			},
 
 			-- Command Access Groups
 			groups = {
@@ -131,7 +138,6 @@ return {
 			_key = "vip", -- DO NOT CHANGE: System identifier
 			name = "VIP",
 			color = "#0f8",
-			commands = {}, -- Command-Specific Overrides
 			groups = { "vip" },
 			permissions = {},
 			onlyTargetSelf = true,
@@ -141,7 +147,6 @@ return {
 			_key = "mod", -- DO NOT CHANGE: System identifier
 			name = "Moderator",
 			color = "#0f0",
-			commands = {}, -- Command-Specific Overrides
 			groups = { "moderation", "general", "environment", "fun", "vip" },
 			permissions = { serverlogs = true },
 		},
@@ -150,7 +155,6 @@ return {
 			_key = "admin", -- DO NOT CHANGE: System identifier
 			name = "Administrator",
 			color = "#ff0",
-			commands = {}, -- Command-Specific Overrides
 			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
 			permissions = { banasync = true, serverlogs = true },
 		},
@@ -159,7 +163,6 @@ return {
 			_key = "superadmin", -- DO NOT CHANGE: System identifier
 			name = "SuperAdmin",
 			color = "#f80",
-			commands = {}, -- Command-Specific Overrides
 			groups = { "superadmin", "administration", "moderation", "general", "environment", "fun", "vip" },
 			permissions = { banasync = true, saveRoles = true, settings = true, serverlogs = true },
 		},
