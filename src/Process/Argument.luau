@@ -3,11 +3,36 @@
 local Argument = {}
 Argument.__index = Argument
 
-function Argument.new(command, definition, argPos, rawArg)
-	local rawType = command._K.Registry.types[definition.type]
-	assert(rawType, `Invalid argument type {definition.type}, did it fail to register?`)
+function Argument.parseTypeUnion(rawType: string, rawArg: string)
+	local split = string.split(rawType, " ")
 
-	local rawArgs = if rawType.listable then command._K.Util.String.splitOutsideQuotes(rawArg) else { rawArg }
+	-- Check prefixes in order from longest to shortest
+	local types = {}
+	for i = 1, #split, 2 do
+		types[#types + 1] = {
+			prefix = split[i - 1] or "",
+			type = split[i],
+		}
+	end
+
+	table.sort(types, function(a, b)
+		return #a.prefix > #b.prefix
+	end)
+
+	for i, t in types do
+		if string.sub(rawArg, 1, #t.prefix) == t.prefix then
+			return t.type, rawArg:sub(#t.prefix + 1), t.prefix
+		end
+	end
+	return
+end
+
+function Argument.new(command, definition, argPos, rawArg)
+	local unionType, unionArg, prefix = Argument.parseTypeUnion(definition.type, rawArg)
+	local rawType = command._K.Registry.types[unionType]
+	assert(rawType, `Invalid argument type {unionType}, did it fail to register?`)
+
+	local rawArgs = if rawType.listable then command._K.Util.String.splitOutsideQuotes(unionArg) else { unionArg }
 
 	local object = {
 		_K = command._K,
@@ -17,6 +42,7 @@ function Argument.new(command, definition, argPos, rawArg)
 		validated = false,
 
 		argPos = argPos,
+		prefix = prefix,
 		rawArg = rawArg,
 		rawType = rawType,
 		rawArgs = rawArgs,

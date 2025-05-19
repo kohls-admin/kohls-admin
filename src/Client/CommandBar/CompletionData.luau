@@ -160,7 +160,7 @@ return function(_K, text, cursorPosition)
 				end
 
 				data.suggestionType = transformedType
-				data.argPos = pos
+				data.argPos = if arg.prefix then pos + #arg.prefix else pos
 				data.rawArg = rawArg
 				data.rawQuery = string.sub(rawArg, 1, cursorPosition - pos)
 				data.transformedArg = transformedArg
