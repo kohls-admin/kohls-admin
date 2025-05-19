@@ -27,7 +27,11 @@ return {
 					local msg, from = unpack(message.Data)
 					if msg ~= oldMsg or from ~= oldFrom then
 						_K.Data.settings.announcement = message.Data
-						_K.Remote.Announce:FireAllClients(msg, from, 0)
+						_K.Remote.Announce:FireAllClients({
+							From = from,
+							Text = msg,
+							Duration = 0,
+						})
 					end
 				end)
 			end)
@@ -44,7 +48,11 @@ return {
 				end
 
 				local message, from = unpack(announcement)
-				_K.Announce(message, from, 0)
+				_K.Announce({
+					From = from,
+					Text = message,
+					Duration = 0,
+				})
 			end)
 		end,
 

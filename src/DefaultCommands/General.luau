@@ -48,7 +48,10 @@ return {
 			for _, player in Players:GetPlayers() do
 				task.spawn(function()
 					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context._K.Remote.Announce:FireClient(player, msg, context.from)
+					context._K.Remote.Announce:FireClient(player, {
+						From = context.from,
+						Text = msg,
+					})
 				end)
 			end
 		end,
@@ -108,7 +111,10 @@ return {
 			for _, player in players do
 				task.spawn(function()
 					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context._K.Remote.Announce:FireClient(player, msg, context.from)
+					context._K.Remote.Announce:FireClient(player, {
+						From = context.from,
+						Text = msg,
+					})
 				end)
 			end
 		end,

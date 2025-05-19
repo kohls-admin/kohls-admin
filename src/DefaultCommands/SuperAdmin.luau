@@ -23,13 +23,15 @@ return {
 		run = function(context, players, badge)
 			for _, player in players do
 				if BadgeService:UserHasBadgeAsync(player.UserId, badge) then
-					context._K.Remote.Announce:FireClient(context.fromPlayer, `{player.Name} already has the badge!`)
+					context._K.Remote.Notify:FireClient(context.fromPlayer, {
+						Text = `{player.Name} already has the badge!`,
+					})
 				else
 					local success, err = BadgeService:AwardBadge(player.UserId, badge)
 
-					context._K.Remote.Announce:FireClient(
+					context._K.Remote.Notify:FireClient(
 						context.fromPlayer,
-						if success then "Badge awarded!" else `Failed to award badge: {err}`
+						{ Text = if success then "Badge awarded!" else `Failed to award badge: {err}` }
 					)
 				end
 			end
@@ -58,11 +60,11 @@ return {
 		},
 		run = function(context, delay)
 			if delay ~= nil then
-				context._K.Remote.Announce:FireAllClients(
-					`Server will shut down in {delay} seconds`,
-					context.from,
-					delay
-				)
+				context._K.Remote.Announce:FireAllClients({
+					Text = `Server will shut down in {delay} seconds`,
+					From = context.from,
+					Duration = delay,
+				})
 				task.wait(delay)
 			end
 			local from = tostring(context.fromPlayer or context.from)
