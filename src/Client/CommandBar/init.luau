@@ -413,7 +413,7 @@ local function invalidSuggestion(data, err, pos, text)
 		else string.format(
 			argumentFormat,
 			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
-			_K.Util.String.escapeRichText(data.argDefinition.type) .. if data.argDefinition.optional then "?" else "",
+			_K.Util.String.escapeRichText(data.suggestionType.name) .. if data.argDefinition.optional then "?" else "",
 			data.argDefinition.description
 		)
 	for _, label in suggestionLabels do
@@ -520,7 +520,7 @@ updateCompletion = function()
 		Tooltip.Text = string.format(
 			argumentFormat,
 			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
-			_K.Util.String.escapeRichText(data.argDefinition.type) .. if data.argDefinition.optional then "?" else "",
+			_K.Util.String.escapeRichText(data.suggestionType.name) .. if data.argDefinition.optional then "?" else "",
 			data.argDefinition.description
 		)
 		Tooltip.Visible = true
@@ -590,8 +590,6 @@ updateCompletion = function()
 
 	-- show completion tooltip
 	if data.argIndex == 1 then -- command
-		-- TODO: inline argument types if command
-		-- show command aliases too!
 		Tooltip.Text = string.format(
 			argumentFormat,
 			_K.Util.String.escapeRichText(suggestionText),
