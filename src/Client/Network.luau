@@ -4,6 +4,8 @@ local UI = _K.UI
 function _K.client.updateInterfaceAuth()
 	-- TODO: recheck visibility for all restricted UIs
 	local userRank = _K.Auth.getRank(UI.LocalPlayer.UserId)
+	_K.client.rank:set(userRank)
+
 	local commandBarRank = _K.Data.settings.commandBarRank
 	local dashboardRank = _K.Data.settings.dashboardRank
 	local dashboardButtonRank = _K.Data.settings.dashboardButtonRank

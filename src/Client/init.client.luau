@@ -12,6 +12,7 @@ _K.client = {
 	bans = _K.Flux.state(_K.Data.bans),
 	logs = _K.Flux.state(_K.Data.logs),
 	members = _K.Flux.state(_K.Data.members),
+	rank = _K.Flux.state(0),
 
 	ready = false,
 	hotkeys = {

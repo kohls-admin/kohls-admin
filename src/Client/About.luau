@@ -545,7 +545,7 @@ function About.new(_K)
 		return UDim2.new(0.5, -use(UI.Theme.Padding).Offset, 0, 32)
 	end)
 
-	local vipDeveloperPassId = _K.Data.roles.vip.gamepass
+	local vipDeveloperPassId = _K.Data.roles.vip.gamepasses and _K.Data.roles.vip.gamepasses[1]
 	local vipGlobalPassId = 5411126
 	local vipButtonGlobal
 	vipButtonGlobal = UI.new "Button" {
@@ -655,7 +655,7 @@ function About.new(_K)
 	}
 
 	function _K.promptPurchaseVIP()
-		if _K.Data.roles.vip.gamepass then
+		if vipDeveloperPassId then
 			vipLabel.Visible = false
 			vipList.Visible = false
 			vipButtonDeveloper._instance.Parent = purchaseVIPDialog._content

@@ -312,13 +312,29 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end
 	end
 
-	-- asset, gamepass, and group roles
+	local function setupPurchasables(purchasables, roleKey)
+		for id, role in purchasables do
+			local roleData = _K.Data.roles[role]
+			if roleData then
+				roleData[roleKey] = roleData[roleKey] or {}
+				table.insert(roleData[roleKey], id)
+			end
+		end
+	end
+
 	if settings.assetRoles then
 		_K.Util.Table.deepMerge(_K.Data.async.asset, settings.assetRoles)
+		setupPurchasables(settings.assetRoles, "assets")
 	end
 	if settings.gamePassRoles then
 		_K.Util.Table.deepMerge(_K.Data.async.gamepass, settings.gamePassRoles)
+		setupPurchasables(settings.gamePassRoles, "gamepasses")
 	end
+	if settings.subscriptionRoles then
+		_K.Util.Table.deepMerge(_K.Data.async.subscription, settings.subscriptionRoles)
+		setupPurchasables(settings.subscriptionRoles, "subscriptions")
+	end
+
 	if settings.groupRoles then
 		_K.Util.Table.deepMerge(_K.Data.async.group, settings.groupRoles)
 	end
@@ -334,20 +350,6 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 				end
 			end
 		end)
-	end
-
-	if settings.subscriptionRoles then
-		_K.Util.Table.deepMerge(_K.Data.async.subscription, settings.subscriptionRoles)
-	end
-
-	for role, roleData in _K.Data.roles do
-		if roleData.gamepass then
-			if not _K.Data.async.gamepass[roleData.gamepass] then
-				_K.Data.async.gamepass[roleData.gamepass] = { role }
-			else
-				table.insert(_K.Data.async.gamepass[roleData.gamepass], role)
-			end
-		end
 	end
 
 	_K.Services.MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)

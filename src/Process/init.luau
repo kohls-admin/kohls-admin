@@ -100,11 +100,11 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 			local player = _K.Util.Services.Players:GetPlayerByUserId(from)
 			if player and _K.IsClient then
 				for role, roleData in Data.roles do
-					if (roleData.gamepass or role == "vip") and Auth.roleCanUseCommand(role, commandDefinition) then
+					if (roleData.gamepasses or role == "vip") and Auth.roleCanUseCommand(role, commandDefinition) then
 						if role == "vip" and _K.Data.settings.vip then
 							_K.promptPurchaseVIP()
 						else
-							_K.Util.Services.MarketplaceService:PromptGamePassPurchase(from, roleData.gamepass)
+							_K.Util.Services.MarketplaceService:PromptGamePassPurchase(from, roleData.gamepasses[1])
 						end
 					end
 				end

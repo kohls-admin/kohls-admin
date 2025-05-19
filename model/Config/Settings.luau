@@ -79,6 +79,7 @@ return {
 	dashboardButtonRank = 0, --    Minimum rank required to view the Dashboard button  (Set to false to disable for everyone)
 	joinNotificationRank = 1, --   Minimum rank required to show the join notification (Set to false to disable for everyone)
 
+	onlyShowUsableCommands = false, -- Only displays commands the player can purchase or use
 	getKohlsAdminPopup = true, --      Enables the "Enjoy Kohl's Admin?" feedback popup to users
 
 	gameHubEnabled = true, -- Adds your to a list of games with Kohl's Admin | ⚠️ Requires "Allow HTTP Requests" in File > Game Settings > Security | https://www.roblox.com/games/17873329124/Kohls-Admin-Games-Hub

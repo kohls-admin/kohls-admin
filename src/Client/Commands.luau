@@ -197,9 +197,37 @@ function Commands.new(_K)
 		end
 	end
 
+	local commandsList = UI.state(_K.Registry.commandsList)
+	local function updateCommandsList()
+		if _K.client.settings.onlyShowUsableCommands._value then
+			local list = {}
+			for _, command in _K.Registry.commandsList do
+				local added
+				for role, roleData in _K.Data.roles do
+					if
+						(roleData.assets or roleData.gamepasses or roleData.subscriptions)
+						and _K.Auth.roleCanUseCommand(role, command)
+					then
+						table.insert(list, command)
+						added = true
+						break
+					end
+				end
+				if not added and _K.Auth.hasCommand(UI.LocalPlayer.UserId, command) then
+					table.insert(list, command)
+				end
+			end
+			commandsList:set(list)
+		else
+			commandsList:set(_K.Registry.commandsList)
+		end
+	end
+	_K.client.settings.onlyShowUsableCommands:hook(updateCommandsList)
+	_K.client.rank:hook(updateCommandsList)
+
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Commands",
-		List = _K.Registry.commandsList,
+		List = commandsList,
 		Enabled = false,
 		FilterInput = true,
 		ItemSize = UI.compute(function(use)

@@ -480,10 +480,11 @@ updateCompletion = function()
 	if data.invalidPermissionsCommand and not data.validSuggestion then
 		for role, roleData in _K.Data.roles do
 			if
-				(roleData.gamepass or role == "vip") and _K.Auth.roleCanUseCommand(role, data.invalidPermissionsCommand)
+				(roleData.gamepasses or role == "vip")
+				and _K.Auth.roleCanUseCommand(role, data.invalidPermissionsCommand)
 			then
 				suggestionPurchase.role = role
-				suggestionPurchase.gamepass = if role == "vip" then 5411126 else roleData.gamepass
+				suggestionPurchase.gamepass = if role == "vip" then 5411126 else roleData.gamepasses[1]
 				suggestionPurchaseButton._instance.Parent = TooltipFrame
 				suggestionPurchaseButton.Label:set(
 					`<sc>Purchase <font color="{roleData.color}">{roleData.name or role}</font></sc>`
