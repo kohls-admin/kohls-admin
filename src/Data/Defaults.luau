@@ -35,18 +35,24 @@ local Data = {
 
 	settingsModuleData = nil,
 	settings = {
-		prefix = ";",
-		announcement = false,
 		liveSettings = true,
-		gameHubEnabled = true,
-		vip = true,
+
+		prefix = ";",
+
+		chatCommands = true,
+		commandBarRank = 0,
 		dashboardRank = 0,
 		dashboardButtonRank = 0,
 		joinNotificationRank = 1,
 		getKohlsAdminPopup = true,
+
+		gameHubEnabled = true,
+		vip = true,
 		saveLogs = true,
 
 		freeAdmin = {},
+
+		announcement = false,
 		playerPrefix = {},
 	},
 
