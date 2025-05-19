@@ -27,6 +27,11 @@ return {
 		["5"] = { nil, "Deleted account", -1, 44391621 },
 	},
 
+	-- 📦 ASSET ROLES
+	assetRoles = {
+		-- [assetId] = { "vip", "mod" },
+	},
+
 	-- 💵 GAMEPASS ROLES
 	gamepassRoles = {
 		-- [gamepassId] = { "vip", "mod" },

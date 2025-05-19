@@ -312,7 +312,10 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end
 	end
 
-	-- gamepass and group roles
+	-- asset, gamepass, and group roles
+	if settings.assetRoles then
+		_K.Util.Table.deepMerge(_K.Data.async.asset, settings.assetRoles)
+	end
 	if settings.gamePassRoles then
 		_K.Util.Table.deepMerge(_K.Data.async.gamepass, settings.gamePassRoles)
 	end
