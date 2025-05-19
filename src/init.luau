@@ -216,6 +216,7 @@ local function playerAdded(player: Player)
 		if
 			Util.Services.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService
 			and string.find(message, "/e", 1, true) == 1
+			and _K.Data.settings.chatCommands ~= false
 		then
 			local prefix = _K.Data.settings.prefix
 			local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))

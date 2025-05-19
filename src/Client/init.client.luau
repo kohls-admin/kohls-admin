@@ -39,6 +39,9 @@ end
 local chatCommandThrottle
 
 local function Chatted(message: string)
+	if _K.Data.settings.chatCommands == false then
+		return
+	end
 	local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
 	local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
 	if not commandStart then

@@ -58,6 +58,7 @@ return {
 	-- 🔧 SYSTEM SETTINGS
 	prefix = ";", -- The prefix character used to trigger commands (e.g., ";kick")
 
+	chatCommands = true, --       Enables command execution via the Chat
 	commandBarRank = 0, --        Minimum rank required to view the Command Bar       (Set to false to disable for everyone)
 	dashboardRank = 0, --         Minimum rank required to view the Dashboard         (Set to false to disable for everyone)
 	dashboardButtonRank = 0, --   Minimum rank required to view the Dashboard button  (Set to false to disable for everyone)
