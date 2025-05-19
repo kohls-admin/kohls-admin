@@ -40,6 +40,7 @@ local Data = {
 		liveSettings = true,
 		gameHubEnabled = true,
 		vip = true,
+		dashboardRank = 0,
 		dashboardButtonRank = 0,
 		joinNotificationRank = 1,
 		getKohlsAdminPopup = true,

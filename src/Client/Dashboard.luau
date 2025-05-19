@@ -94,10 +94,12 @@ local dashboardButtonIcon = dashboardButton:getInstance("IconImage")
 _K.client.dashboardButton = dashboardButton
 
 _K.client.hotkeys.dashboard.callback = function()
-	if dashboardButton.isSelected then
-		dashboardButton:deselect()
-	else
-		dashboardButton:select()
+	if _K.client.dashboardEnabled then
+		if dashboardButton.isSelected then
+			dashboardButton:deselect()
+		else
+			dashboardButton:select()
+		end
 	end
 end
 
