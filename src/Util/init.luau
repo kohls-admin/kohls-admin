@@ -15,6 +15,7 @@ local Util = {
 	getTexture = require(script:WaitForChild("getTexture")),
 	getUserInfo = require(script:WaitForChild("getUserInfo")),
 	Humanoid = require(script:WaitForChild("Humanoid")),
+	iterPageItems = require(script:WaitForChild("iterPageItems")),
 	--- @within Util
 	--- @prop Promise Promise
 	Promise = require(script:WaitForChild("Promise")),
