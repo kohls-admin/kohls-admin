@@ -38,6 +38,43 @@ function Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string 
 	}
 end
 
+--- Makes an sequence argument type definition, useful for Color3, Vector3, etc
+function Registry.makeSequenceType(options)
+	options = options or {}
+	assert(options.parse ~= nil or options.constructor ~= nil, "Must provide one of: constructor, parse")
+
+	options.transform = options.transform or function(...)
+		return ...
+	end
+	options.validate = options.validate or function()
+		return true
+	end
+
+	return {
+		prefixes = options.prefixes,
+		transform = function(text)
+			return Util.Table.map(string.split(text, ","), function(text)
+				return options.transform(text)
+			end)
+		end,
+		validate = function(components)
+			if options.length and #components > options.length then
+				return false, `Maximum of {options.length} values allowed in sequence`
+			end
+			for i = 1, options.Length or #components do
+				local valid, reason = options.validate(components[i], i)
+				if not valid then
+					return false, reason
+				end
+			end
+			return true
+		end,
+		parse = options.parse or function(components)
+			return options.constructor(unpack(components))
+		end,
+	}
+end
+
 --- Registers an argument type
 function Registry.registerType(name: string, typeObject: Type.ArgumentType, override: Type.Dict?)
 	assert(name and typeof(name) == "string", "Invalid type name: " .. typeof(name))

@@ -19,6 +19,13 @@ function Table.toHashMap(array: List): Dict
 	return map
 end
 
+function Table.map(array: List, callback: (any, any) -> any)
+	for i, v in array do
+		array[i] = callback(v, i)
+	end
+	return array
+end
+
 function Table.merge(to: Dict, from: Dict): Dict
 	for key, value in from do
 		to[key] = value
