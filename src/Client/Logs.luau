@@ -45,7 +45,7 @@ function Logs.new(_K)
 		_K.Util.Defer.reset()
 		for i, log in list do
 			local levelText = _K.Logger:decode(log.level)
-			if not UI.peek(logTypeFilter[levelText]) then
+			if not logTypeFilter[levelText]._value then
 				continue
 			end
 
