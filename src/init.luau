@@ -284,12 +284,13 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end
 		local roles = {}
 		for rank, definition in settings.roles do
+			if definition.permissions.targetOthers == nil then
+				definition.permissions.targetOthers = not definition.onlyTargetSelf
+			end
 			if type(rank) == "number" then
 				if definition._key == "default" then
 					definition._key = "everyone"
 				end
-				definition.permissions.targetOthers = definition.permissions.targetOthers
-					or not definition.onlyTargetSelf
 				settings.roles[rank] = nil
 				definition._rank = rank - 1
 				roles[definition._key] = definition
