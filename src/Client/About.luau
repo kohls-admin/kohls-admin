@@ -10,9 +10,9 @@ About.__index = About
 function About.new(_K)
 	local UI = _K.UI
 
-	local thirdPartyText = "<font color='#fd0'>The game developer has disabled <b>Third Party Purchases</b>!</font>\n\n"
-		.. "<font transparency='0.5'>Copy the link below to purchase.</font>\n"
-		.. "<font color='#f00'><b>To receive perks, join a new server after your purchase!</b></font>"
+	local thirdPartyText = "<font color='#f00'>A developer has disabled <b>Third Party Purchases</b>!</font>\n\n"
+		.. "<font transparency='0.5'>Copy the link below to continue.</font>"
+	local perksText = "\n<font color='#fc0'><b>To get perks, rejoin after your purchase!</b></font>"
 
 	local donationLevel = _K.UI.LocalPlayer:GetAttribute("_KDonationLevel")
 	if not donationLevel then
@@ -95,8 +95,10 @@ function About.new(_K)
 	_K.client.purchaseDialog = purchaseDialog
 	_K.client.purchaseLink = purchaseLink
 
-	local function promptThirdPartyGamePassDialog(passId)
+	local function promptThirdPartyGamePassDialog(passId, passName)
 		_K.client.lastAttemptedPurchase = passId
+		purchaseDialog.Title:set("Buy " .. passName)
+		purchaseDialog.Text:set(thirdPartyText .. perksText)
 		purchaseLink.Text = "https://roblox.com/game-pass/" .. passId
 		if _K.client.AllowThirdPartySales then
 			purchaseDialog.Visible:set(false)
@@ -357,6 +359,8 @@ function About.new(_K)
 						end
 
 						_K.client.lastAttemptedPurchase = ugc.id
+						purchaseDialog.Title:set("Buy" .. ugc.name)
+						purchaseDialog.Text:set(thirdPartyText .. perksText)
 						purchaseLink.Text = "https://roblox.com/catalog/" .. ugc.id
 						if _K.client.AllowThirdPartySales then
 							purchaseDialog.Visible:set(false)
@@ -487,7 +491,7 @@ function About.new(_K)
 							_K.Remote.Title:FireServer()
 						end
 					else
-						promptThirdPartyGamePassDialog(pass.id)
+						promptThirdPartyGamePassDialog(pass.id, pass.name)
 					end
 				end,
 			},
@@ -585,7 +589,7 @@ function About.new(_K)
 						_K.Remote.Title:FireServer()
 					end
 				else
-					promptThirdPartyGamePassDialog(vipGlobalPassId)
+					promptThirdPartyGamePassDialog(vipGlobalPassId, "VIP (Global)")
 				end
 			end,
 		},
@@ -657,7 +661,7 @@ function About.new(_K)
 			vipButtonGlobal._instance.Parent = purchaseVIPDialog._content
 			purchaseVIPDialog.Visible:set(true)
 		else
-			promptThirdPartyGamePassDialog(vipGlobalPassId)
+			promptThirdPartyGamePassDialog(vipGlobalPassId, "VIP (Global)")
 		end
 	end
 
@@ -717,6 +721,8 @@ function About.new(_K)
 		[UI.Event] = {
 			Activated = function()
 				_K.client.lastAttemptedPurchase = adminModelId
+				purchaseDialog.Title:set("Get Kohl's Admin")
+				purchaseDialog.Text:set(thirdPartyText)
 				purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
 				if _K.client.AllowThirdPartySales then
 					purchaseDialog.Visible:set(false)
