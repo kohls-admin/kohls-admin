@@ -55,7 +55,7 @@ local _K = {
 	VERSION = Util.String.trim(script:WaitForChild("VERSION").Value),
 
 	-- modules
-	Logger = Util.Logger.new(shared._K_DEBUG),
+	Logger = Util.Logger.new(true),
 	Util = Util,
 	Data = require(script:WaitForChild("Data")),
 	Flux = require(script:WaitForChild("Flux")),
