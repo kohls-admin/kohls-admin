@@ -150,7 +150,6 @@ function Logs.new(_K)
 		List = _K.client.logs,
 		Enabled = false,
 		FilterInput = true,
-		-- FilterInputDebounce = 0.1,
 		ReverseOrder = true,
 		Visible = false,
 		CreateItem = createItem,
@@ -162,11 +161,7 @@ function Logs.new(_K)
 
 	task.defer(scroller.filter, scroller, filterTest)
 
-	debounceScrollerUpdate = _K.Util.Function.debounce(0.5, scroller.refreshList)
-
-	-- create a listitem checkbox per log type
-	-- use the checkbox state for filtering
-	-- refilter on checkbox Activated
+	debounceScrollerUpdate = _K.Util.Function.debounce(0.25, scroller.refreshList)
 
 	local filterMenu
 	local filterButton = UI.new "Button" {
