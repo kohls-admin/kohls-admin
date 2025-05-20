@@ -57,7 +57,6 @@ function About.new(_K)
 		TextSize = UI.Theme.FontSizeSmall,
 		TextColor3 = UI.Theme.SecondaryText,
 		Text = "https://roblox.com/game-pass/5391355/",
-		TextWrapped = true,
 		TextEditable = false,
 		ClearTextOnFocus = false,
 		Visible = _K.client.settings.gameHubEnabled,
@@ -776,7 +775,6 @@ function About.new(_K)
 			TextColor3 = UI.Theme.PrimaryText,
 			Text = `Version {_K.VERSION}`,
 			TextTransparency = 0.125,
-			TextWrapped = true,
 			TextEditable = false,
 			ClearTextOnFocus = false,
 
