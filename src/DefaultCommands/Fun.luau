@@ -1201,6 +1201,54 @@ return {
 		end,
 	},
 	{
+		name = "slim",
+		aliases = { "unslim" },
+		description = "Makes one or more player(s) slim.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to resize.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			return {
+				slim = function(object, property, undo)
+					local originalValue = object:GetAttribute("_KSlimOriginal")
+					if undo or not originalValue then
+						object:SetAttribute("_KSlimOriginal", if undo then nil else object[property].Z)
+					end
+					local value = object[property]
+					object[property] = Vector3.new(value.X, value.Y, if undo then originalValue or value else 0.2)
+				end,
+			}
+		end,
+
+		run = function(context, players)
+			for _, player in players do
+				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				if not humanoid then
+					continue
+				end
+				for _, object in player.Character:GetChildren() do
+					if object:IsA("BasePart") then
+						context.env.slim(object, "Size", context.undo)
+					elseif object:IsA("Accessory") then
+						local part = object:FindFirstChildWhichIsA("BasePart")
+						if part then
+							context.env.slim(part, "Size", context.undo)
+							local mesh = part:FindFirstChildOfClass("SpecialMesh")
+							if mesh then
+								context.env.slim(mesh, "Scale", context.undo)
+							end
+						end
+					end
+				end
+			end
+		end,
+	},
+	{
 		name = "noobify",
 		aliases = { "noob" },
 		description = "Turn one or more player(s) into a noob",
