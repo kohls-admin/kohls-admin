@@ -19,6 +19,8 @@ export type LogType = Util.LogType
 export type Logger = Util.Logger
 export type Hook = "log" | "preCommand" | "postCommand"
 
+local IS_DEMO_PLACE = game.PlaceId == 2569622788
+
 --[=[
 	@within MainModule
 	@interface _K
@@ -49,7 +51,7 @@ local _K = {
 	IsServer = RunService:IsServer(),
 	IsStudio = RunService:IsStudio(),
 
-	DEBUG = shared._K_DEBUG,
+	DEBUG = IS_DEMO_PLACE,
 	VERSION = Util.String.trim(script:WaitForChild("VERSION").Value),
 
 	-- modules
@@ -574,7 +576,7 @@ export type _K = typeof(_K)
 
 task.spawn(_K.log, `Required in {math.round((os.clock() - requireStart) * 1000)} ms`, "DEBUG")
 
-if not _K.IsStudio then
+if not _K.IsStudio or IS_DEMO_PLACE then
 	print(`🛡️ Running Kohl's Admin v{_K.VERSION} by @Scripth`)
 end
 
