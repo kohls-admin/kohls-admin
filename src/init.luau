@@ -518,11 +518,13 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 			return
 		end
 
+		local changeStrings = {}
 		for key, value in changes do
 			if _K.Data.settings[key] == nil then
 				continue
 			end
 			_K.Data.settings[key] = value
+			table.insert(changeStrings, `[{key}]: {value}`)
 
 			local cacheValue, valueType = value, typeof(value)
 			if valueType == "Color3" then
@@ -540,6 +542,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 				_K.Remote.Settings:FireClient(toPlayer, changes)
 			end
 		end
+		_K.log(`changed settings: {table.concat(changeStrings, " ")}`, "COMMAND", player.UserId)
 	end)
 
 	-- handle unban events
