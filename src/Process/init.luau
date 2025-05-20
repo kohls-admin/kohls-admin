@@ -177,7 +177,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 				Sound = "Call_Leave",
 			})
 			for _, err in commandErrors do
-				_K.log(err, "ERROR", from, true)
+				_K.log(err, "ERROR", from)
 			end
 		end
 	end

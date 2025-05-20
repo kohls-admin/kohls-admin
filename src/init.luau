@@ -172,12 +172,12 @@ local function characterAdded(character: Model)
 		local tag = humanoid:FindFirstChild("creator")
 		local killer = tag and tag.Value
 		if killer then
-			_K.log(`died to {killer}.`, "DEATH", player.UserId, true)
 			if typeof(killer) == "Instance" and killer:IsA("Player") then
-				_K.log(`killed {player}.`, "KILL", killer.UserId, true)
+			_K.log(`died to {from}.`, "DEATH", player.UserId)
+				_K.log(`killed {player}.`, "KILL", killer.UserId)
 			end
 		else
-			_K.log(`died.`, "DEATH", player.UserId, true)
+			_K.log(`died.`, "DEATH", player.UserId)
 		end
 	end)
 end
@@ -383,7 +383,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		if not purchaseSuccess then
 			return
 		end
-		_K.log(`bought gamepass {gamePassId}`, "PURCHASE", player.UserId, true)
+		_K.log(`bought gamepass {gamePassId}`, "PURCHASE", player.UserId)
 		for id, roles in _K.Data.async.gamepass do
 			if gamePassId ~= id then
 				continue
@@ -525,7 +525,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	_K.Remote.Unban.OnServerEvent:Connect(function(player, userId)
 		local ban = _K.Data.bans[tostring(userId)]
 		if ban and _K.Auth.hasCommand(player.UserId, "unban") then
-			_K.log(`{_K.Data.settings.prefix}unban {userId}`, "COMMAND", player.UserId, true)
+			_K.log(`{_K.Data.settings.prefix}unban {userId}`, "COMMAND", player.UserId)
 			_K.Auth.unbanUsers({ userId }, player.UserId)
 		end
 	end)
