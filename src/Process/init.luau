@@ -211,12 +211,9 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		local logText
 
 		if #commandsRan > 0 then
-			local tasks = Util.TaskGroup.new()
-			local log = {}
-
-			local index = 1
+			local index, log, tasks = 1, {}, Util.TaskGroup.new()
 			for _, command in commandsRan do
-				if command.definition.noLog then
+				if command.definition.noLog or (_K.IsClient and not command.definition.runClient) then
 					continue
 				end
 				log[index] = _K.Data.settings.prefix .. command.alias
@@ -225,7 +222,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 					local position = index
 					tasks:add(function()
 						local argString = Util.Table.concat(arg.parsedArgs, ",")
-						if arg.rawType.filterLog then
+						if arg.rawType.filterLog and _K.IsServer then
 							argString = Util.String.filterForBroadcast(argString, from)
 						end
 						log[position] = argString
@@ -243,9 +240,10 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			logText = table.concat(log, " ")
 		else -- filter entire rawText as broadcast
 			local trimmed = Util.String.trim(rawText)
-			if #trimmed > 0 then
-				logText = Util.String.filterForBroadcast(Util.String.trim(rawText), from)
+			if #trimmed == 0 then
+				return
 			end
+			logText = if _K.IsServer then Util.String.filterForBroadcast(trimmed, from) else trimmed
 		end
 
 		_K.log(logText or "", "COMMAND", from, true)
