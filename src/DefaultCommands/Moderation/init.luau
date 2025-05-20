@@ -46,10 +46,11 @@ return {
 				if visible then context._K.client.dashboard.Bans else nil,
 			})
 			if not context.env.init then
+				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(
 					UDim2.fromOffset(
-						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 210,
-						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 210
+						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - size.X / 2,
+						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - size.Y / 2
 					)
 				)
 				context.env.init = true
@@ -98,10 +99,11 @@ return {
 				if visible then context._K.client.dashboard.Members else nil,
 			})
 			if not context.env.init then
+				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(
 					UDim2.fromOffset(
-						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 210,
-						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 210
+						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - size.X / 2,
+						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - size.Y / 2
 					)
 				)
 				context.env.init = true
