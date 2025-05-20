@@ -4,9 +4,10 @@ local Hook = require(script.Parent.Hook)
 local Registry = require(script.Parent.Registry)
 local Util = require(script.Parent.Util)
 local Command = require(script.Command)
+local Type = require(script.Parent.Type)
 
-type ArgumentType = Registry.ArgumentType
-type ArgumentDefinition = Registry.ArgumentDefinition
+type ArgumentType = Type.ArgumentType
+type ArgumentDefinition = Type.ArgumentDefinition
 
 --- @class Process
 local Process = {}
