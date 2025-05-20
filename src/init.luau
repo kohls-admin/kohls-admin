@@ -168,7 +168,27 @@ end
 local function characterAdded(character: Model)
 	local player = _K.Service.Players:GetPlayerFromCharacter(character)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+	-- damage logs
+	local alive, lastHealth = true, humanoid.Health
+	humanoid.HealthChanged:Connect(function(health)
+		if alive then
+			local tag = humanoid:FindFirstChild("creator")
+			local from = tag and tag.Value
+			local damage = lastHealth - health
+			lastHealth = health
+			if damage > 0 then
+				if from then
+					_K.log(`damaged {player} for {damage} damage.`, "DAMAGE", from.UserId)
+				else
+					_K.log(`{player} took {damage} damage.`, "DAMAGE", player.UserId)
+				end
+			end
+		end
+	end)
+
 	humanoid.Died:Connect(function()
+		alive = false
 		local tag = humanoid:FindFirstChild("creator")
 		local killer = tag and tag.Value
 		if killer then
