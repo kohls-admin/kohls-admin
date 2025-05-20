@@ -1,6 +1,10 @@
 return function(context)
 	local _K = context
 
+	local function roleIdSort(a, b)
+		return _K.Data.roles[a[1]]._rank > _K.Data.roles[b[1]]._rank
+	end
+
 	local typeRole = {
 		validate = function(input: string, self: any): (boolean, string?)
 			local query = string.lower(input)
@@ -39,7 +43,7 @@ return function(context)
 					table.insert(roles, { roleId, nil, role })
 				end
 			end
-			table.sort(roles, _K.Auth.roleIdSort)
+			table.sort(roles, roleIdSort)
 			return roles, _K.Data.roles
 		end,
 	}
