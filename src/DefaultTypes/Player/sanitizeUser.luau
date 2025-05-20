@@ -1,32 +1,32 @@
-local function sanitizeUser(self, user: number)
-	if self.definition.ignoreSelf then
-		if user == self.command.from then
+local function sanitizeUser(self, userId: number, value: Player | number | string)
+	local from = self.command.from
+	if userId == from then
+		if self.definition.ignoreSelf then
 			return nil, "Can't target yourself"
 		end
-	else
-		if user == self.command.from then
-			return user
-		end
+		return value
 	end
-
-	local rank, role = self._K.Auth.getRank(self.command.from)
-	if role.onlyTargetSelf then
-		if user == self.command.from then
-			return self.command.from
-		else
-			return nil, "Can only target yourself"
+	if self._K.Auth.hasPermission(from, "admin") then
+		return value
+	end
+	if self._K.Auth.hasPermission(from, "targetOthers") ~= true then
+		return nil, "Can only target yourself"
+	end
+	if self.definition.lowerRank and not self.definition.shouldRequest then
+		local rank = self._K.Auth.hasCommand(from, self.command.definition)
+		if not rank then
+			return nil, "Can't access this command"
 		end
-	elseif self.definition.lowerRank and not self.definition.shouldRequest then
-		local player = self._K.Service.Players:GetPlayerByUserId(user)
+		local player = self._K.Service.Players:GetPlayerByUserId(userId)
 		if player and player:GetAttribute("_KRolesLoaded") ~= true then
 			return nil, "Can't target loading user"
 		end
-		if self._K.Auth.getRank(user) < rank then
-			return user
+		if self._K.Auth.getRank(userId) < rank then
+			return value
 		end
 		return nil, "Can only target lower ranks"
 	else
-		return user
+		return value
 	end
 end
 

@@ -1,46 +1,20 @@
 local _K = nil
 
-local function sanitizeMember(self, memberId: string)
-	if self.definition.ignoreSelf then
-		if memberId == tostring(self.command.from) then
-			return nil, "Can't target yourself"
-		end
-	else
-		if memberId == tostring(self.command.from) then
-			return memberId
-		end
-	end
-
-	local rank, role = self._K.Auth.getRank(self.command.from)
-	if role.onlyTargetSelf then
-		if memberId == tostring(self.command.from) then
-			return memberId
-		else
-			return nil, "Can only target yourself"
-		end
-	elseif self.definition.lowerRank or self.definition.shouldRequest then
-		if self._K.Auth.getRank(memberId) < rank then
-			return memberId
-		end
-		return nil, "Can only target lower ranks"
-	else
-		return memberId
-	end
-end
+local sanitizeUser = require(script.Parent:WaitForChild("Player"):WaitForChild("sanitizeUser"))
 
 local function parseMember(input: string, self: any): string?
 	local query = string.lower(input)
 	local fromString = tostring(self.command.from)
 
 	if input == "" or input == "me" and _K.Data.members[fromString] then
-		return sanitizeMember(self, fromString)
+		return sanitizeUser(self, self.command.from, fromString)
 	end
 
 	local partial
 	for id, member in _K.Data.members do
 		local name = string.lower(member.name)
 		if id == query or name == query then
-			return sanitizeMember(self, id)
+			return sanitizeUser(self, tonumber(id) :: number, id)
 		end
 		if not partial and string.find(name, query, 1, true) == 1 then
 			partial = id
@@ -48,7 +22,7 @@ local function parseMember(input: string, self: any): string?
 	end
 
 	if partial then
-		return sanitizeMember(self, partial)
+		return sanitizeUser(self, tonumber(partial) :: number, partial)
 	end
 
 	return nil, "Invalid member"

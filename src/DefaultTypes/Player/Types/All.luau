@@ -1,12 +1,12 @@
 local Players = game:GetService("Players")
 
 local generateValidate = require(script.Parent.Parent:WaitForChild("generateValidate"))
-local sanitizePlayer = require(script.Parent.Parent:WaitForChild("sanitizePlayer"))
+local sanitizeUser = require(script.Parent.Parent:WaitForChild("sanitizeUser"))
 
 local function allParse(arg, self)
 	local players = {}
 	for _, player in Players:GetPlayers() do
-		player = sanitizePlayer(self, player)
+		player = sanitizeUser(self, player.UserId, player)
 		if player then
 			table.insert(players, player)
 		end

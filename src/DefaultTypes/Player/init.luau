@@ -1,7 +1,6 @@
 local Players = game:GetService("Players")
 
 local generateValidate = require(script:WaitForChild("generateValidate"))
-local sanitizePlayer = require(script:WaitForChild("sanitizePlayer"))
 local sanitizeUser = require(script:WaitForChild("sanitizeUser"))
 
 local Types = script:WaitForChild("Types")
@@ -100,14 +99,14 @@ end
 
 local function parseIndividual(arg, self)
 	if arg == "" or arg == "me" then
-		return sanitizePlayer(self, self.command.fromPlayer)
+		return sanitizeUser(self, self.command.from, self.command.fromPlayer)
 	end
 
 	local partial
 	for _, player in Players:GetPlayers() do
 		local name = string.lower(player.Name)
 		if name == arg then
-			return sanitizePlayer(self, player)
+			return sanitizeUser(self, player.UserId, player)
 		end
 		if not partial and string.find(name, arg, 1, true) == 1 then
 			partial = player
@@ -119,7 +118,7 @@ local function parseIndividual(arg, self)
 		local kDisplay = player:GetAttribute("_KDisplayName")
 		kDisplay = if type(kDisplay) == "string" then string.lower(kDisplay) else ""
 		if displayName == arg or kDisplay == arg then
-			return sanitizePlayer(self, player)
+			return sanitizeUser(self, player.UserId, player)
 		end
 		if
 			not partial and (string.find(displayName, arg, 1, true) == 1 or (string.find(kDisplay, arg, 1, true) == 1))
@@ -129,7 +128,7 @@ local function parseIndividual(arg, self)
 	end
 
 	if partial then
-		return sanitizePlayer(self, partial)
+		return sanitizeUser(self, partial.UserId, partial)
 	end
 
 	return nil, "Invalid player"
@@ -172,7 +171,7 @@ local function parseUser(arg, self)
 	local player = parseIndividual(arg, self)
 	local userId = tonumber(if player then player.UserId else arg)
 	if userId and userId > 0 then
-		return sanitizeUser(self, userId)
+		return sanitizeUser(self, userId, userId)
 	end
 	return nil, "Invalid user"
 end
