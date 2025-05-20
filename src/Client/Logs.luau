@@ -32,7 +32,7 @@ function Logs.new(_K)
 
 	local logTypeFilter = {}
 	for _, array in logTypes do
-		logTypeFilter[array[1]] = UI.state(true)
+		logTypeFilter[array[1]] = UI.state(array[1] ~= "DEBUG" or _K.DEBUG)
 	end
 	-- TODO: load filter options from client datastore profile
 
