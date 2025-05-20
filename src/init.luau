@@ -187,14 +187,15 @@ local function characterAdded(character: Model)
 		end
 	end)
 
+	-- kill logs
 	humanoid.Died:Connect(function()
 		alive = false
 		local tag = humanoid:FindFirstChild("creator")
-		local killer = tag and tag.Value
-		if killer then
-			if typeof(killer) == "Instance" and killer:IsA("Player") then
+		local from = tag and tag.Value
+		if from then
 			_K.log(`died to {from}.`, "DEATH", player.UserId)
-				_K.log(`killed {player}.`, "KILL", killer.UserId)
+			if typeof(from) == "Instance" and from:IsA("Player") then
+				_K.log(`killed {player}.`, "KILL", from.UserId)
 			end
 		else
 			_K.log(`died.`, "DEATH", player.UserId)
