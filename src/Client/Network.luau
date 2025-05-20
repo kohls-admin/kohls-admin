@@ -3,7 +3,8 @@ local UI = _K.UI
 
 function _K.client.updateInterfaceAuth()
 	-- TODO: recheck visibility for all restricted UIs
-	local userRank = _K.Auth.getRank(UI.LocalPlayer.UserId)
+	local userId = UI.LocalPlayer.UserId
+	local userRank = _K.Auth.getRank(userId)
 	_K.client.rank:set(userRank)
 
 	local commandBarRank = _K.Data.settings.commandBarRank
@@ -28,13 +29,13 @@ function _K.client.updateInterfaceAuth()
 		_K.client.dashboard.Window._instance.Visible = false
 	end
 
-	_K.client.dashboard.Bans._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "bans")
-	_K.client.dashboard.Logs._instance.Visible = _K.Auth.hasPermission(UI.LocalPlayer.UserId, "serverlogs")
-	_K.client.dashboard.Members._instance.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "members")
-	_K.client.dashboard.Settings.Visible = _K.Auth.hasCommand(UI.LocalPlayer.UserId, "settings")
+	_K.client.dashboard.Bans._instance:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "bans"))
+	_K.client.dashboard.Logs._instance:SetAttribute("Enabled", _K.Auth.hasPermission(userId, "serverlogs"))
+	_K.client.dashboard.Members._instance:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "members"))
+	_K.client.dashboard.Settings:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "settings"))
 
 	for _, command in _K.Registry.commands do
-		command.LocalPlayerAuthorized = _K.Auth.hasCommand(UI.LocalPlayer.UserId, command)
+		command.LocalPlayerAuthorized = _K.Auth.hasCommand(userId, command)
 	end
 	_K.client.dashboard.Commands:updateList()
 	_K.client.CommandBar.updateCompletionData()

@@ -40,11 +40,11 @@ return {
 		end,
 
 		runClient = function(context)
-			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = visible,
-				if visible then context._K.client.dashboard.Bans else nil,
+				Visible = true,
+				context._K.client.dashboard.Bans,
 			})
+			context._K.UI.edit(context._K.client.dashboard.Bans, { Visible = true })
 			if not context.env.init then
 				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(
@@ -93,11 +93,11 @@ return {
 		end,
 
 		runClient = function(context)
-			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = visible,
-				if visible then context._K.client.dashboard.Members else nil,
+				Visible = true,
+				context._K.client.dashboard.Members,
 			})
+			context._K.UI.edit(context._K.client.dashboard.Members, { Visible = true })
 			if not context.env.init then
 				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(

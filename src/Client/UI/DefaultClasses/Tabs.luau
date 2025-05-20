@@ -38,6 +38,8 @@ function Tabs.new(definition)
 	end)
 
 	local lastScroll
+	local containerCache, pageCache = {}, {}
+	local currentPage = UI.state(nil)
 
 	local pages = UI.new "UIPageLayout" {
 		Animated = true,
@@ -48,6 +50,40 @@ function Tabs.new(definition)
 		Padding = UI.Theme.Padding,
 	}
 	new._pages = pages
+
+	pages.PageEnter:Connect(function(page)
+		currentPage:set(page)
+		if not containerCache[page] then
+			return
+		end
+		for _, child: GuiObject | Instance in page:GetChildren() do
+			if child:IsA("GuiObject") then
+				child.Visible = true
+			end
+		end
+	end)
+
+	pages.PageLeave:Connect(function(page)
+		if not containerCache[page] then
+			return
+		end
+		task.delay(pages.TweenTime, function()
+			if pages.CurrentPage ~= page then
+				for _, child: GuiObject | Instance in page:GetChildren() do
+					if child:IsA("GuiObject") then
+						child.Visible = false
+					end
+				end
+			end
+		end)
+	end)
+
+	new.JumpTo = function(page)
+		page = pageCache[page] or page
+		currentPage:set(page)
+		pages:JumpTo(page)
+	end
+
 	new._instance = UI.new "Frame" {
 		Name = "TabController",
 		BackgroundTransparency = 1,
@@ -118,12 +154,9 @@ function Tabs.new(definition)
 		},
 	}
 
-	local currentPage = UI.state(nil)
 	local tabFontSize = UI.compute(function(use)
 		return use(UI.Theme.FontSize) - 4
 	end)
-
-	local pageCache = {}
 
 	new._content = UI.new "Frame" {
 		LayoutOrder = 2,
@@ -148,10 +181,27 @@ function Tabs.new(definition)
 
 		[UI.Event] = {
 			ChildAdded = function(page)
-				if pageCache[page] then
+				if containerCache[page] then
 					return
 				end
-				pageCache[page] = true
+
+				local container = pageCache[page]
+				task.defer(function()
+					page.Parent = container
+				end)
+				if container then
+					return
+				end
+
+				container = UI.new "Frame" {
+					Name = page.Name,
+					BackgroundTransparency = 1,
+					Size = UDim2.fromScale(1, 1),
+				}
+				containerCache[container] = true
+				pageCache[page] = container
+				container.Parent = new._content
+
 				local nameState = UI.state(page, "Name")
 				local upperState = UI.computeFrom(string.upper, nameState)
 				local hovering, textFits, button = UI.state(false), UI.state(false)
@@ -167,7 +217,7 @@ function Tabs.new(definition)
 					BackgroundTransparency = UI.tween(
 						UI.Theme.TweenOut,
 						UI.compute(function(use)
-							return if use(currentPage) == page then use(UI.Theme.Transparency) else 1
+							return if use(currentPage) == container then use(UI.Theme.Transparency) else 1
 						end)
 					),
 					Font = UI.Theme.Font,
@@ -177,7 +227,7 @@ function Tabs.new(definition)
 					TextTransparency = UI.tween(
 						UI.Theme.TweenOut,
 						UI.compute(function(use)
-							return if use(hovering) or use(currentPage) == page then 0 else 0.5
+							return if use(hovering) or use(currentPage) == container then 0 else 0.5
 						end)
 					),
 
@@ -208,8 +258,8 @@ function Tabs.new(definition)
 							UI.clearState("hover")
 							UI.clearState("floating")
 							UI.Sound.Hover03:Play()
-							currentPage:set(page)
-							pages:JumpTo(page)
+							currentPage:set(container)
+							pages:JumpTo(container)
 							local absoluteStart = tabs.Parent.AbsolutePosition.X
 							local absoluteEnd = absoluteStart + tabs.Parent.AbsoluteSize.X
 							local buttonStart = button.AbsolutePosition.X
@@ -237,20 +287,18 @@ function Tabs.new(definition)
 					},
 				}
 				textFits:bindToProperty(button, "TextFits")
-				task.defer(function()
-					if pages.CurrentPage == page then
-						currentPage:set(page)
-					end
-				end)
 				local function hideButton()
-					button.Visible = page.Parent == new._content and page.Visible
-					if page == currentPage._value and not button.Visible then
-						currentPage:set(pages.CurrentPage)
-					end
+					button.Visible = page.Parent == container and page:GetAttribute("Enabled") ~= false
+					container.Visible = button.Visible
 				end
 				page:GetPropertyChangedSignal("Parent"):Connect(hideButton)
-				page:GetPropertyChangedSignal("Visible"):Connect(hideButton)
+				page:GetAttributeChangedSignal("Enabled"):Connect(hideButton)
 				hideButton()
+				task.defer(function()
+					if pages.CurrentPage == container then
+						currentPage:set(container)
+					end
+				end)
 			end,
 		},
 	}

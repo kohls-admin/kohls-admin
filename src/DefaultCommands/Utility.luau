@@ -77,11 +77,11 @@ return {
 				then about.CanvasPosition.Y + about.Credits.AbsolutePosition.Y - about.AbsolutePosition.Y
 				else 0
 			about.CanvasPosition = Vector2.new(0, scrollY)
-			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = visible,
-				if visible then context._K.client.dashboard.About else nil,
+				Visible = true,
+				context._K.client.dashboard.About,
 			})
+			context._K.UI.edit(context._K.client.dashboard.About, { Visible = true })
 			if not context.env.init then
 				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(
@@ -130,11 +130,11 @@ return {
 		end,
 
 		runClient = function(context)
-			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = visible,
-				if visible then context._K.client.dashboard.Commands else nil,
+				Visible = true,
+				context._K.client.dashboard.Commands,
 			})
+			context._K.UI.edit(context._K.client.dashboard.Commands, { Visible = true })
 			if not context.env.init then
 				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(
@@ -152,7 +152,9 @@ return {
 		description = "Shows the admin dashboard.",
 		optionalPrefix = true,
 		runClient = function(context)
-			context._K.client.hotkeys.dashboard.callback()
+			if not context._K.client.dashboard.Commands.window.Visible then
+				context._K.client.hotkeys.dashboard.callback()
+			end
 		end,
 	},
 	{
@@ -234,6 +236,7 @@ return {
 				Visible = true,
 				context._K.client.dashboard.Logs,
 			})
+			context._K.UI.edit(context._K.client.dashboard.Logs, { Visible = true })
 
 			if not context.env.originalFilter then
 				context.env.originalFilter = {}
@@ -306,11 +309,11 @@ return {
 		end,
 
 		runClient = function(context)
-			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = visible,
-				if visible then context._K.client.dashboard.Settings else nil,
+				Visible = true,
+				context._K.client.dashboard.Settings,
 			})
+			context._K.UI.edit(context._K.client.dashboard.Settings, { Visible = true })
 			if not context.env.init then
 				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(

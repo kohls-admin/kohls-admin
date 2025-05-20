@@ -28,7 +28,7 @@ _K.client.dashboard.Tabs = UI.new "Tabs" {
 	_K.client.dashboard.About,
 }
 
-_K.client.dashboard.Tabs._pages:JumpTo(_K.client.dashboard.About)
+task.defer(_K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
@@ -75,6 +75,11 @@ local function dashboardToggle(button)
 		UI.clearState("floating")
 	else
 		UI.Sound.Hover03:Play()
+	end
+	local container = _K.client.dashboard.Tabs._pages.CurrentPage
+	local page = container and container:FindFirstChildWhichIsA("GuiObject")
+	if page then
+		page.Visible = button.isSelected
 	end
 	dashboard._instance.Visible = button.isSelected
 end
