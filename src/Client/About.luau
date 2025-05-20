@@ -622,7 +622,7 @@ function About.new(_K)
 		},
 		[UI.Event] = {
 			Activated = function()
-				promptThirdPartyGamePassDialog(vipGlobalPassId)
+				_K.Service.Marketplace:PromptGamePassPurchase(_K.UI.LocalPlayer, vipDeveloperPassId)
 			end,
 		},
 	}
