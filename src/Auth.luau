@@ -9,13 +9,7 @@ export type Role = "everyone" | "vip" | "mod" | "admin" | "superadmin" | "creato
 --- @class Auth
 local Auth = {}
 
-function Auth.roleSort(a: Role, b: Role): boolean
-	return Data.roles[a]._rank > Data.roles[b]._rank
-end
-
-function Auth.roleSortAscending(a: Role, b: Role): boolean
-	return Data.roles[a]._rank < Data.roles[b]._rank
-end
+-- BAN FUNCTIONS
 
 function Auth.banHandler(player)
 	local key = tostring(player.UserId)
@@ -84,13 +78,11 @@ function Auth.banUsers(
 
 	for _, userId in userIds do
 		local ban = { Util.getUserInfo(userId).Username, reason, timestamp, fromUserId }
-
 		local key = tostring(userId)
 		Data.bans[key] = ban
 		if timestamp then
 			Data.Cache.bans[key] = ban
 		end
-
 		for _, player in Util.Service.Players:GetPlayers() do
 			if Auth.hasCommand(player.UserId, "ban") then
 				Remote.Ban:FireClient(player, key, ban)
@@ -115,11 +107,9 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 	for _, userId in userIds do
 		local key = tostring(userId)
 		Data.bans[key] = nil
-
 		if banAsync then
 			Data.Cache.bans[key] = false
 		end
-
 		for _, player in Util.Service.Players:GetPlayers() do
 			if Auth.hasCommand(player.UserId, "ban") then
 				Remote.Ban:FireClient(player, key)
@@ -132,7 +122,17 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 	end
 end
 
-function Auth.networkMember(userId: number)
+-- ROLE FUNCTIONS
+
+local function updateMemberName(member, userId)
+	member.name = Util.getUserInfo(userId).Username
+end
+
+local function saveMember(key, userId)
+	Data.Cache.members[key] = { Util.getUserInfo(userId).Username, Data.members[key].persist }
+end
+
+local function networkMember(userId: number)
 	local userIdString = tostring(userId)
 	local member = Data.members[userIdString]
 	for _, player in Util.Service.Players:GetPlayers() do
@@ -142,16 +142,18 @@ function Auth.networkMember(userId: number)
 	end
 end
 
-local function cacheMember(key, userId)
-	Data.Cache.members[key] = { Util.getUserInfo(userId).Username, Data.members[key].persist }
+--- Sorts roleIds by highest to lowest
+function Auth.roleIdSort(a: Role, b: Role): boolean
+	return Data.roles[a]._rank > Data.roles[b]._rank
 end
 
-local function updateMemberName(member, userId)
-	member.name = Util.getUserInfo(userId).Username
+--- Sorts roleIds by lowest to highest
+function Auth.roleIdSortAscending(a: Role, b: Role): boolean
+	return Data.roles[a]._rank < Data.roles[b]._rank
 end
 
 --- Adds a role to a user if they don't already have it
-function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolean
+function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?): boolean
 	local key = tostring(userId)
 	local member = Data.members[key]
 	local roleAdded = false
@@ -159,20 +161,19 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 	if not member then
 		member = {
 			name = nil,
-			roles = { role },
-			persist = { if persist then role else nil },
+			roles = { roleId },
+			persist = { if persist then roleId else nil },
 		}
 		Data.members[key] = member
 		roleAdded = true
-
 		task.spawn(updateMemberName, member, userId)
 	else
-		if not table.find(member.roles, role) then
-			table.insert(member.roles, role)
-			table.sort(member.roles, Auth.roleSort)
+		if not table.find(member.roles, roleId) then
+			table.insert(member.roles, roleId)
+			table.sort(member.roles, Auth.roleIdSort)
 			if persist then
-				table.insert(member.persist, role)
-				table.sort(member.persist, Auth.roleSort)
+				table.insert(member.persist, roleId)
+				table.sort(member.persist, Auth.roleIdSort)
 			end
 			roleAdded = true
 		end
@@ -180,30 +181,29 @@ function Auth.userRoleAdd(userId: number, role: Role, persist: boolean?): boolea
 
 	if roleAdded then
 		if persist then
-			task.spawn(cacheMember, key, userId)
+			task.spawn(saveMember, key, userId)
 		end
-
-		Hook.roleAdded:Fire(userId, role)
-		Auth.networkMember(userId)
+		Hook.roleAdded:Fire(userId, roleId)
+		networkMember(userId)
 	end
 
 	return roleAdded
 end
 
 --- Removes a role from a user if it exists
-function Auth.userRoleRemove(userId: number, role: Role): boolean
+function Auth.userRoleRemove(userId: number, roleId: Role): boolean
 	local key = tostring(userId)
 	local member = Data.members[key]
 	local roleRemoved = false
 	local persistent = false
 
 	if member then
-		local index = table.find(member.roles, role)
+		local index = table.find(member.roles, roleId)
 		if index then
 			table.remove(member.roles, index)
 			roleRemoved = true
 		end
-		index = table.find(member.persist, role)
+		index = table.find(member.persist, roleId)
 		if index then
 			table.remove(member.persist, index)
 			roleRemoved = true
@@ -215,38 +215,35 @@ function Auth.userRoleRemove(userId: number, role: Role): boolean
 		if #member.roles == 0 then
 			Data.members[key] = nil
 		end
-
 		if persistent then
 			if #member.persist == 0 then
 				Data.Cache.members[key] = false
 			else
-				task.spawn(cacheMember, key, userId)
+				task.spawn(saveMember, key, userId)
 			end
 		end
-
-		Hook.roleRemoved:Fire(userId, role)
-		Auth.networkMember(userId)
+		Hook.roleRemoved:Fire(userId, roleId)
+		networkMember(userId)
 	end
 
 	return roleRemoved
 end
 
 local asyncRolesCache = {}
-function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
+function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 	local success = true
-	if asyncRolesCache[userId] and not flushCache then
+	if asyncRolesCache[userId] and not bustCache then
 		return
 	end
 	asyncRolesCache[userId] = true
 
-	-- gamepass permissions
-	for gamePassId, roles in Data.async.gamepass do
+	for gamePassId, roleIds in Data.async.gamepass do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:UserOwnsGamePassAsync(userId, gamePassId)
 		end)
 		if ok and result then
-			for _, role in roles do
-				Auth.userRoleAdd(userId, role)
+			for _, roleId in roleIds do
+				Auth.userRoleAdd(userId, roleId)
 			end
 		end
 		if not ok then
@@ -254,7 +251,6 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 		end
 	end
 
-	-- group permissions
 	if next(Data.async.group) then
 		local ok, groups = Util.Retry(function()
 			return Util.Service.Group:GetGroupsAsync(userId)
@@ -265,8 +261,8 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 				if groupAuth then
 					for _, auth in groupAuth do
 						if group.Rank == auth.rank or (not auth.exactRank and group.Rank >= auth.rank) then
-							for _, role in auth.roles do
-								Auth.userRoleAdd(userId, role)
+							for _, roleId in auth.roles do
+								Auth.userRoleAdd(userId, roleId)
 							end
 						end
 					end
@@ -278,7 +274,6 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 		end
 	end
 
-	-- the following requires a player instance
 	local player = Util.Service.Players:GetPlayerByUserId(userId)
 	if not player then
 		return
@@ -295,14 +290,13 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 		end
 	end
 
-	-- legacy asset permissions
-	for assetId, roles in Data.async.asset do
+	for assetId, roleIds in Data.async.asset do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
 		end)
 		if ok and result then
-			for _, role in roles do
-				Auth.userRoleAdd(userId, role)
+			for _, roleId in roleIds do
+				Auth.userRoleAdd(userId, roleId)
 			end
 		end
 		if not ok then
@@ -310,14 +304,13 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 		end
 	end
 
-	-- subscription permissions
-	for subscriptionId, roles in Data.async.subscription do
+	for subscriptionId, roleIds in Data.async.subscription do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:GetUserSubscriptionStatusAsync(player, subscriptionId)
 		end)
 		if ok and result.IsSubscribed then
-			for _, role in roles do
-				Auth.userRoleAdd(userId, role)
+			for _, roleId in roleIds do
+				Auth.userRoleAdd(userId, roleId)
 			end
 		end
 		if not ok then
@@ -328,39 +321,23 @@ function Auth.userAsyncRoles(userId: number, flushCache: boolean?)
 	return success
 end
 
---- Checks the maximum role rank of the user, if permission is given it will fetch the highest rank of the roles with that permission
-function Auth.getRank(userId: number, permission: string?): (number, Role)
-	local rank, rankRole = 0, Data.roles.everyone
-	local member = Data.members[tostring(userId)]
-	if member then
-		for _, roleId in member.roles do
-			local role = Data.roles[roleId]
-			if role and (not permission or role.permissions[permission]) and role._rank > rank then
-				rank = role._rank
-				rankRole = role
-			end
-		end
-	end
-	return rank, rankRole
-end
+-- PERMISSION FUNCTIONS
 
 --- Checks if a role has access to a command argument
-function Auth.roleCanUseArgument(role: Role, argument: any): boolean
-	local roleData = Data.roles[role]
-	if not roleData then
-		warn(`undefined role "{role}"`)
+function Auth.roleCanUseArgument(roleId: Role, argument: any): boolean
+	local role = Data.roles[roleId]
+	if not role then
+		warn(`undefined role "{roleId}"`)
 		return false
 	end
 
-	-- admins always have access
-	if roleData.permissions.admin then
+	if role.permissions.admin then
 		return true
 	end
 
-	-- argument definition permissions against role
 	if argument.permissions then
 		for permission, value in argument.permissions do
-			if roleData.permissions[permission] ~= value then
+			if role.permissions[permission] ~= value then
 				return false
 			end
 		end
@@ -369,23 +346,64 @@ function Auth.roleCanUseArgument(role: Role, argument: any): boolean
 	return true
 end
 
+--- Checks if a role has access to a command
+function Auth.roleCanUseCommand(roleId: Role, command: any): boolean
+	local role = Data.roles[roleId]
+	if not role then
+		warn(`undefined role "{roleId}"`)
+		return false
+	end
+
+	local rawCommand = command
+	if type(command) == "string" then
+		command = Registry.commands[string.lower(command)]
+	end
+	if type(command) ~= "table" then
+		error(`Invalid command: {tostring(rawCommand)}`, 2)
+	end
+
+	if role.permissions and role.permissions.admin then
+		return true
+	end
+
+	if role.commands then
+		local override = role.commands[command.name]
+		if override ~= nil then
+			return override
+		end
+		if command.aliases then
+			for _, alias in command.aliases do
+				local aliasOverride = role.commands[alias]
+				if aliasOverride ~= nil then
+					return aliasOverride
+				end
+			end
+		end
+	end
+
+	if command.permissions then
+		for permission, value in command.permissions do
+			if role.permissions[permission] ~= value then
+				return false
+			end
+		end
+	end
+
+	if command and role.groups and command.group and table.find(role.groups, string.lower(command.group)) then
+		return true
+	end
+
+	return false
+end
+
 --- Checks if a user has access to a command argument
 function Auth.hasArgument(userId: number, argument: any): boolean
 	if Auth.roleCanUseArgument("everyone", argument) then
 		return true
 	end
-
 	local member = Data.members[tostring(userId)]
 	if member then
-		if member.permissions and member.permissions.admin then
-			return true
-		end
 		for _, role in member.roles do
-			local roleData = Data.roles[role]
-			if not roleData then
-				warn(`undefined role "{role}"`)
-				continue
-			end
 			if Auth.roleCanUseArgument(role, argument) then
 				return true
 			end
@@ -394,117 +412,29 @@ function Auth.hasArgument(userId: number, argument: any): boolean
 	return false
 end
 
---- Checks if a role has access to a command
-function Auth.roleCanUseCommand(role: Role, command: any): boolean
-	local roleData = Data.roles[role]
-	if not roleData then
-		warn(`undefined role "{role}"`)
-		return false
-	end
-
-	local rawCommand = command
-	if type(command) == "string" then
-		command = Registry.commands[string.lower(command)]
-	end
-
-	if type(command) ~= "table" then
-		error(`Invalid command: {tostring(rawCommand)}`, 2)
-	end
-
-	-- admins always have access
-	if roleData.permissions and roleData.permissions.admin then
-		return true
-	end
-
-	-- command definition permissions against role
-	if command.permissions then
-		for permission, value in command.permissions do
-			if roleData.permissions[permission] ~= value then
-				return false
-			end
-		end
-	end
-
-	-- command permission override
-	if roleData.commands then
-		local override = roleData.commands[command.name]
-		if override ~= nil then
-			return override
-		end
-		if command.aliases then
-			for _, alias in command.aliases do
-				local aliasOverride = roleData.commands[alias]
-				if aliasOverride ~= nil then
-					return aliasOverride
-				end
-			end
-		end
-	end
-
-	-- role has command group
-	if command and roleData.groups and command.group and table.find(roleData.groups, string.lower(command.group)) then
-		return true
-	end
-
-	return false
-end
-
---- Checks if a user has access to a command
-function Auth.hasCommand(userId: number, command: any): boolean
-	if type(command) == "string" then
-		command = Registry.commands[string.lower(command)]
-	end
-
-	if Auth.roleCanUseCommand("everyone", command) then
-		return true
-	end
-
+--- Checks if a user has access to a command, returns their rank if they do
+function Auth.hasCommand(userId: number, command: any): boolean | number
 	local member = Data.members[tostring(userId)]
 	if member then
-		if member.permissions and member.permissions.admin then
-			return true
-		end
-
-		if member.commands then
-			local override = member.commands[command.name]
-			if override ~= nil then
-				return override
-			end
-			if command.aliases then
-				for _, alias in command.aliases do
-					local aliasOverride = member.commands[alias]
-					if aliasOverride ~= nil then
-						return aliasOverride
-					end
-				end
+		for _, roleId in member.roles do
+			if Auth.roleCanUseCommand(roleId, command) then
+				return Data.roles[roleId]._rank
 			end
 		end
-
-		for _, role in member.roles do
-			local roleData = Data.roles[role]
-			if not roleData then
-				warn(`undefined role "{role}"`)
-				continue
-			end
-			if Auth.roleCanUseCommand(role, command) then
-				return true
-			end
-		end
+	end
+	if Auth.roleCanUseCommand("everyone", command) then
+		return 0
 	end
 	return false
 end
 
 --- Checks if a user has access to a permission
 function Auth.hasPermission(userId: number, permission: string): boolean
-	-- does everyone have the permission?
-	if Data.roles.everyone.permissions[permission] or Data.roles.everyone.permissions.admin then
+	if Data.roles.everyone.permissions.admin or Data.roles.everyone.permissions[permission] then
 		return true
 	end
 	local member = Data.members[tostring(userId)]
 	if member then
-		if member.permissions and (member.permissions.admin or member.permissions[permission]) then
-			return true
-		end
 		for _, roleId in member.roles do
 			local role = Data.roles[roleId]
 			if role and (role.permissions.admin or role.permissions[permission]) then
@@ -515,9 +445,18 @@ function Auth.hasPermission(userId: number, permission: string): boolean
 	return false
 end
 
---- Gets the difference of two users' ranks, with an optional permission parameter
-function Auth.rankDiff(userIdFrom: number, userIdTo: number, permission: string?)
-	return Auth.getRank(userIdFrom, permission) - Auth.getRank(userIdTo, permission)
+--- Checks the maximum role rank of the user
+function Auth.getRank(userId: number): (number, Role)
+	local member = Data.members[tostring(userId)]
+	if member then
+		for _, roleId in member.roles do -- roles are descending by rank
+			local role = Data.roles[roleId]
+			if role then
+				return role._rank, role
+			end
+		end
+	end
+	return 0, Data.roles.everyone
 end
 
 return Auth

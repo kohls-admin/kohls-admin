@@ -45,7 +45,7 @@ return function(_K)
 		for roleId in _K.Data.roles do
 			table.insert(roleIds, roleId)
 		end
-		table.sort(roles, _K.Auth.roleSortAscending)
+		table.sort(roleIds, _K.Auth.roleIdSortAscending)
 		for index, roleId in next, roleIds do
 			roleIds[index] = "@" .. roleId
 		end

@@ -151,8 +151,8 @@ local function syncMain(result)
 		else
 			data.roles = table.clone(data.roles)
 		end
-		table.sort(data.persist, Auth.roleSort)
-		table.sort(data.roles, Auth.roleSort)
+		table.sort(data.persist, Auth.roleIdSort)
+		table.sort(data.roles, Auth.roleIdSort)
 	end
 
 	-- remove all saved roles when no saved member

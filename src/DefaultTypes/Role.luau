@@ -39,7 +39,7 @@ return function(context)
 					table.insert(roles, { roleId, nil, role })
 				end
 			end
-			table.sort(roles, _K.Auth.roleSort)
+			table.sort(roles, _K.Auth.roleIdSort)
 			return roles, _K.Data.roles
 		end,
 	}
