@@ -113,6 +113,8 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 					_K.Remote.Log:FireClient(player, log)
 				end
 			end
+		elseif _K.client then
+			_K.client.dashboard.Logs:updateList()
 		end
 		_K.Hook.log:Fire(log)
 	end)

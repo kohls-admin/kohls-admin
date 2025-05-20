@@ -161,7 +161,7 @@ _K.Remote.Logs.OnClientEvent:Connect(function(rawLogs)
 		_K.Util.Defer.wait()
 	end
 
-	task.defer(_K.client.dashboard.Logs.updateList, _K.client.dashboard.Logs)
+	_K.client.dashboard.Logs:updateList()
 end)
 
 _K.Remote.Settings.OnClientEvent:Connect(function(settings)
