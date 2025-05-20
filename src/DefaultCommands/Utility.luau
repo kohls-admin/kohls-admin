@@ -155,11 +155,44 @@ return {
 	},
 	{
 		name = "log",
-		aliases = { "logs", "chatlog", "chatlogs" },
+		aliases = {
+			"logs",
+			"debuglogs",
+			"errorlogs",
+			"chatlogs",
+			"commandlogs",
+			"joinlogs",
+			"damagelogs",
+			"killlogs",
+			"purchaselogs",
+			"clogs",
+			"cmdlogs",
+			"dmglogs",
+			"buylogs",
+		},
 		description = "Shows the logs in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
-			local env = {}
+			local env = {
+				aliasMap = {
+					clogs = "chatlogs",
+					cmdlogs = "commandlogs",
+					dmglogs = "damagelogs",
+					buylogs = "purchaselogs",
+				},
+				typeMap = {
+					DEBUG = { "DEBUG", "INFO", "WARN", "ERROR" },
+					ERROR = { "WARN", "ERROR" },
+					CHAT = { "CHAT" },
+					COMMAND = { "COMMAND" },
+					JOIN = { "JOIN", "LEAVE" },
+					KILL = { "KILL", "DEATH", "DAMAGE" },
+					DAMAGE = { "KILL", "DEATH", "DAMAGE" },
+					PURCHASE = { "PURCHASE" },
+				},
+				originalFilter = nil,
+			}
+
 			task.defer(function()
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
@@ -175,10 +208,16 @@ return {
 				_K.UI.edit(window, {
 					[_K.UI.Event.Property] = {
 						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
+							if not window._instance.Visible then
 								_K.UI.edit(_K.client.dashboard.Tabs, {
 									_K.client.dashboard.Logs,
 								})
+								if env.originalFilter then
+									for logType, value in env.originalFilter do
+										_K.client.dashboard.Logs.logTypeFilter[logType]:set(value)
+									end
+									env.originalFilter = nil
+								end
 							end
 						end,
 					},
@@ -189,16 +228,40 @@ return {
 		end,
 
 		runClient = function(context)
-			local visible = not context.env.window._instance.Visible
 			context._K.UI.edit(context.env.window, {
-				Visible = visible,
-				if visible then context._K.client.dashboard.Logs else nil,
+				Visible = true,
+				context._K.client.dashboard.Logs,
 			})
+
+			if not context.env.originalFilter then
+				context.env.originalFilter = {}
+				for logType, state in context._K.client.dashboard.Logs.logTypeFilter do
+					context.env.originalFilter[logType] = state._value
+				end
+			end
+
+			if context.alias == "log" or context.alias == "logs" then
+				for _, state in context._K.client.dashboard.Logs.logTypeFilter do
+					state:set(true)
+				end
+			else
+				for _, state in context._K.client.dashboard.Logs.logTypeFilter do
+					state:set(false)
+				end
+				local alias = string.lower(context.alias)
+				local match = context.env.aliasMap[alias] or alias
+				match = string.upper(string.match(match, "(%w+)logs?$") :: string)
+				for _, logType in context.env.typeMap[match] do
+					context._K.client.dashboard.Logs.logTypeFilter[logType]:set(true)
+				end
+			end
+
 			if not context.env.init then
+				local size = context.env.window._instance.Size
 				context.env.window.Position:set(
 					UDim2.fromOffset(
-						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - 210,
-						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - 210
+						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - size.X.Offset / 2,
+						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - size.Y.Offset / 2
 					)
 				)
 				context.env.init = true

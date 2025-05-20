@@ -32,7 +32,7 @@ function Logs.new(_K)
 
 	local logTypeFilter = {}
 	for _, array in logTypes do
-		logTypeFilter[array[1]] = true
+		logTypeFilter[array[1]] = UI.state(true)
 	end
 	-- TODO: load filter options from client datastore profile
 
@@ -45,7 +45,7 @@ function Logs.new(_K)
 		_K.Util.Defer.reset()
 		for i, log in list do
 			local levelText = _K.Logger:decode(log.level)
-			if not logTypeFilter[levelText] then
+			if not UI.peek(logTypeFilter[levelText]) then
 				continue
 			end
 
@@ -230,7 +230,7 @@ function Logs.new(_K)
 
 				[UI.Hook] = {
 					Value = function(value)
-						logTypeFilter[logType] = value
+						logTypeFilter[logType]:set(value)
 						scroller:refreshList()
 					end,
 				},
@@ -265,6 +265,8 @@ function Logs.new(_K)
 			FlexMode = Enum.UIFlexMode.Fill,
 		},
 	})
+
+	scroller.logTypeFilter = logTypeFilter
 
 	return scroller
 end
