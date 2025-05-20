@@ -6,12 +6,12 @@ local sanitizePlayer = require(script.Parent.Parent:WaitForChild("sanitizePlayer
 return function(_K)
 	local function roleParse(arg, self)
 		local players, valid = {}, false
-		for id in _K.Data.roles do
-			if string.find(string.lower(id), arg, 1, true) == 1 then
+		for roleId in _K.Data.roles do
+			if string.find(string.lower(roleId), arg, 1, true) == 1 then
 				valid = true
 				for _, player in Players:GetPlayers() do
 					local userPermissions = _K.Data.members[tostring(player.UserId)]
-					if userPermissions and table.find(userPermissions.roles, id) then
+					if userPermissions and table.find(userPermissions.roles, roleId) then
 						player = sanitizePlayer(self, player)
 						if player then
 							table.insert(players, player)
@@ -24,14 +24,14 @@ return function(_K)
 		return if valid then players else false, `Invalid role`
 	end
 
-	local roles = {}
+	local roleIds = {}
 	local typeRoles = {
 		listable = true,
 		transform = string.lower,
 		validate = generateValidate(roleParse),
 		parse = roleParse,
 		suggestions = function(text, self)
-			return roles
+			return roleIds
 		end,
 	}
 
@@ -42,12 +42,12 @@ return function(_K)
 			task.wait()
 		until _K.Data.roles
 
-		for role in _K.Data.roles do
-			table.insert(roles, role)
+		for roleId in _K.Data.roles do
+			table.insert(roleIds, roleId)
 		end
 		table.sort(roles, _K.Auth.roleSortAscending)
-		for index, role in next, roles do
-			roles[index] = "@" .. role
+		for index, roleId in next, roleIds do
+			roleIds[index] = "@" .. roleId
 		end
 	end)
 end
