@@ -152,6 +152,7 @@ function Logs.new(_K)
 		FilterInput = true,
 		-- FilterInputDebounce = 0.1,
 		ReverseOrder = true,
+		Visible = false,
 		CreateItem = createItem,
 		RenderItem = renderItem,
 		ItemSize = UI.compute(function(use)

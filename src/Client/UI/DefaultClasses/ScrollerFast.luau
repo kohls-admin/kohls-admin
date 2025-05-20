@@ -6,7 +6,7 @@ ScrollerFast.__index = ScrollerFast
 setmetatable(ScrollerFast, BaseClass)
 
 function ScrollerFast:render()
-	if not self.Enabled._value then
+	if not (self.Enabled._value and self._instance.Visible) then
 		return
 	end
 	local lineHeight = self.ItemSize._value.Y.Offset
@@ -57,16 +57,24 @@ end
 
 -- Used to render changes from the _rawList
 function ScrollerFast:updateList()
-	self:cloneRaw()
-	if self._sortFunction then
-		table.sort(self._sortedList, self._sortFunction)
+	if self._instance.Visible then
+		self:cloneRaw()
+		if self._sortFunction then
+			table.sort(self._sortedList, self._sortFunction)
+		end
+		self:refreshList()
 	end
-	self:refreshList()
+	self.pendingUpdate = not self._instance.Visible
 end
 
 function ScrollerFast:refreshList()
-	self._filteredList = if self._filterFunction then self._filterFunction(self, self._sortedList) else self._sortedList
-	self:render()
+	if self._instance.Visible then
+		self._filteredList = if self._filterFunction
+			then self._filterFunction(self, self._sortedList)
+			else self._sortedList
+		self:render()
+	end
+	self.pendingRefresh = not self._instance.Visible
 end
 
 function ScrollerFast:filter(filterFunction: (...any) -> { any })
@@ -77,12 +85,15 @@ end
 
 function ScrollerFast:sort(sortFunction: (...any) -> any)
 	self._sortFunction = sortFunction
-	if sortFunction then
-		table.sort(self._sortedList, sortFunction)
-	else -- unsort
-		self:cloneRaw()
+	if self._instance.Visible then
+		if sortFunction then
+			table.sort(self._sortedList, sortFunction)
+		else -- unsort
+			self:cloneRaw()
+		end
+		self:refreshList()
 	end
-	self:refreshList()
+	self.pendingUpdate = not self._instance.Visible
 end
 
 function ScrollerFast:cloneRaw()
@@ -111,6 +122,7 @@ function ScrollerFast.new(definition)
 		RenderItem = UI.Nil,
 		RenderText = UI.Nil,
 		ReverseOrder = false,
+		Visible = true,
 	}, definition)
 
 	ScrollerFast.cloneRaw(self)
@@ -121,9 +133,16 @@ function ScrollerFast.new(definition)
 		self:updateList()
 	end)
 
+	local lastSizeY = 0
+	local lastScrollY = 0
 	local function render()
 		UI.clearState("hover")
-		ScrollerFast.render(self)
+		local sizeY = self._scroller.AbsoluteWindowSize.Y
+		local scrollY = self._scroller.CanvasPosition.Y
+		if sizeY ~= lastSizeY or scrollY ~= lastScrollY then
+			lastSizeY, lastScrollY = lastSizeY, lastScrollY
+			ScrollerFast.render(self)
+		end
 	end
 
 	self._scroller = UI.new "ScrollingFrame" {
@@ -154,12 +173,22 @@ function ScrollerFast.new(definition)
 		Name = "ScrollerFast",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
+		Visible = self.Visible,
 
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 		self._scroller,
 
 		[UI.Event.Property] = {
 			Parent = render,
+			Visible = function()
+				if self._instance.Visible then
+					if self.pendingUpdate then
+						self:updateList()
+					elseif self.pendingRefresh then
+						self:refreshList()
+					end
+				end
+			end,
 		},
 	}
 

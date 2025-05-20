@@ -231,6 +231,7 @@ function Commands.new(_K)
 		List = commandsList,
 		Enabled = false,
 		FilterInput = true,
+		Visible = false,
 		ItemSize = UI.compute(function(use)
 			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) * 2)
 		end),

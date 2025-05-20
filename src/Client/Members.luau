@@ -112,6 +112,7 @@ function Members.new(_K)
 		Enabled = false,
 		DictList = true,
 		FilterInput = true,
+		Visible = false,
 		CreateItem = createItem,
 		RenderItem = renderItem,
 	}
