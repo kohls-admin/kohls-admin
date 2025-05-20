@@ -288,6 +288,8 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 				if definition._key == "default" then
 					definition._key = "everyone"
 				end
+				definition.permissions.targetOthers = definition.permissions.targetOthers
+					or not definition.onlyTargetSelf
 				settings.roles[rank] = nil
 				definition._rank = rank - 1
 				roles[definition._key] = definition
