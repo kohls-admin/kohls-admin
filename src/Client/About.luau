@@ -15,10 +15,6 @@ function About.new(_K)
 	local perksText = "\n<font color='#fc0'><b>To get perks, rejoin after your purchase!</b></font>"
 
 	local donationLevel = _K.UI.LocalPlayer:GetAttribute("_KDonationLevel")
-	if not donationLevel then
-		_K.UI.LocalPlayer:GetAttributeChangedSignal("_KDonationLevel"):Wait()
-		donationLevel = _K.UI.LocalPlayer:GetAttribute("_KDonationLevel")
-	end
 
 	local equippedUGC = {}
 	local debounceEquip = _K.Util.Function.debounce(0.25, function(id, equip, equipped, name, button)
@@ -223,14 +219,6 @@ function About.new(_K)
 	do
 		task.defer(function()
 			local owned = (donationLevel or 0) >= (ugc.level or 3)
-			if not owned then
-				local ok, result = _K.Util.Retry(function()
-					return _K.Service.Marketplace:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
-				end)
-				if ok and result then
-					owned = result
-				end
-			end
 			ugc.price = if owned then "EQUIP" else "?"
 
 			local frame = UI.new "Frame" {
@@ -378,14 +366,44 @@ function About.new(_K)
 				button._content.IconFrame.Visible = false
 				button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
 
-				local con
+				local con, con2
+				local function setOwned()
+					if con then
+						con:Disconnect()
+						con = nil
+					end
+					if con2 then
+						con2()
+						con2 = nil
+					end
+					owned, try = true, nil
+					button.Label:set("<b>EQUIP</b>")
+					button._content.IconFrame.Visible = false
+					button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
+				end
+
 				con = _K.Service.Marketplace.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
 					if purchased and assetId == ugc.id and player == _K.UI.LocalPlayer then
-						con:Disconnect()
-						owned, try = true, nil
-						button.Label:set("<b>EQUIP</b>")
-						button._content.IconFrame.Visible = false
-						button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
+						setOwned()
+					end
+				end)
+
+				con2 = UI.LocalPlayer:GetAttributeChangedSignal("_KDonationLevel"):Connect(function()
+					donationLevel = math.max(donationLevel or 0, UI.LocalPlayer:GetAttribute("_KDonationLevel"))
+					if (donationLevel or 0) >= (ugc.level or 3) then
+						setOwned()
+					end
+				end)
+
+				task.spawn(function()
+					local ok, result = _K.Util.Retry(function()
+						if owned then
+							return true
+						end
+						return _K.Service.Marketplace:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
+					end)
+					if ok and result then
+						setOwned()
 					end
 				end)
 
