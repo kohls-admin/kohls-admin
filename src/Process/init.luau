@@ -184,12 +184,18 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 
 	if _K.IsClient and #commandsRan > 0 then
 		local prefix = _K.getCommandPrefix(from)
-		local commandStrings = {}
+		local commandStrings, runOnServer = {}, false
 		for _, command in commandsRan do
+			if not command.definition.run then
+				continue
+			end
+			runOnServer = true
 			local last = command.array[#command.array]
 			table.insert(commandStrings, string.sub(rawText, command.array[1][1], last[1] + #last[2] - 1))
 		end
-		_K.Remote.Command:FireServer(`{prefix}{table.concat(commandStrings, " " .. prefix)}`)
+		if runOnServer then
+			_K.Remote.Command:FireServer(`{prefix}{table.concat(commandStrings, " " .. prefix)}`)
+		end
 	end
 
 	if #commandsRan == 0 and #commandErrors == 0 then
