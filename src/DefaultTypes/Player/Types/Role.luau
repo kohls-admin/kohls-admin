@@ -21,7 +21,10 @@ return function(_K)
 				break
 			end
 		end
-		return if valid then players else false, `Invalid role`
+		if not valid then
+			return false, "Invalid role"
+		end
+		return #players > 0 and players, "No valid player found"
 	end
 
 	local roleIds = {}
