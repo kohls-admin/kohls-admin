@@ -573,4 +573,8 @@ export type _K = typeof(_K)
 
 task.spawn(_K.log, `Required in {math.round((os.clock() - requireStart) * 1000)} ms`, "DEBUG")
 
+if not _K.IsStudio then
+	print(`🛡️ Running Kohl's Admin v{_K.VERSION} by @Scripth`)
+end
+
 return _K
