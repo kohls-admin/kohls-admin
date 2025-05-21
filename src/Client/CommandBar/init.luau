@@ -507,7 +507,7 @@ updateCompletion = function()
 			end
 		end
 
-		if valid then
+		if valid and not data.skipped then
 			validState:set(true)
 		end
 	end
@@ -758,7 +758,7 @@ return {
 				Input._input.TextEditable = false
 
 				local data = currentCompletionData
-				if #data.invalid > 0 then
+				if #data.invalid > 0 or data.skipped then
 					UI.Sound.Negative:Play()
 					return Input._input:CaptureFocus()
 				end

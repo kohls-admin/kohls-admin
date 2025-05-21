@@ -144,6 +144,21 @@ return function(_K, text, cursorPosition)
 			data.argDefinition = arg.definition
 			data.suggestionType = arg.rawType
 
+			if
+				arg.skipped
+				and cursorPosition >= arg.argPos
+				and (isGreedy or cursorPosition < arg.argPos + #arg.rawArg)
+			then
+				data.skipped = true
+				data.rawQuery = string.sub(arg.skipped, 1, cursorPosition - arg.argPos)
+				data.query = _K.Util.String.stripQuotes(data.rawQuery)
+				data.suggestions = arg.rawType.suggestions
+					and _K.Util.Suggest.query(data.query, arg.rawType.suggestions(data.query, from, arg.definition))
+				if #data.suggestions > 0 then
+					break
+				end
+			end
+
 			local transformPos = arg.argPos
 			for k, rawArg in arg.rawArgs do
 				local transformedArg = arg.transformedArgs[k]

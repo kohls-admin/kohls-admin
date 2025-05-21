@@ -218,6 +218,9 @@ function Command:validate()
 			ok, result = arg:prepare()
 			arrayIndex -= 1
 			filledSelf = true
+			arg.skipped = rawArg
+		elseif filledSelf and shouldFillWithSelf then
+			arg.skipped = rawArg
 		end
 
 		self.args[index] = arg
@@ -225,7 +228,11 @@ function Command:validate()
 		if ok then
 			arrayIndex += 1
 			self.preparedArgs[index] = result
-		elseif not definition.optional or index == #self.definition.args then
+		else
+			if definition.optional and index < #self.definition.args then
+				arg.skipped = rawArg
+				continue
+			end
 			if result then
 				self.invalidArg = result.arg
 				self.invalidPos = result.pos
