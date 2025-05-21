@@ -78,7 +78,7 @@ local typeColor = {
 				end
 			end
 		end
-		return
+		return nil, "Invalid Color."
 	end,
 
 	validate = function(color: Color3?): (boolean, string?)
