@@ -194,7 +194,7 @@ function Command:validate()
 		if ok then
 			arrayIndex += 1
 			self.preparedArgs[index] = result
-		else
+		elseif not definition.optional or index == #self.definition.args then
 			if result then
 				self.invalidArg = result.arg
 				self.invalidPos = result.pos
