@@ -99,7 +99,7 @@ function Argument:validate()
 		return true
 	end
 
-	if self.definition.optional and string.len(self.rawArg) == 0 then
+	if self.definition.optional and #self.rawArg == 0 then
 		return true
 	end
 
@@ -127,15 +127,13 @@ function Argument:parse()
 		return false, "Argument must be validated before parsing"
 	end
 
-	local parsePos = self.argPos
-	local parseArgs = self.transformedArgs
-
-	for i, parseArg in parseArgs do
+	local argPos = self.argPos
+	for i, transformedArg in self.transformedArgs do
 		local rawArg = self.rawArgs[i]
 		local argType = self.transformedTypes[i]
-		local ok, arg, feedback = pcall(argType.parse, parseArg, self)
+		local ok, arg, feedback = pcall(argType.parse, transformedArg, self)
 		if not ok or arg == nil then
-			return self:invalidate(rawArg, parsePos, feedback or arg or "Invalid argument: " .. rawArg)
+			return self:invalidate(rawArg, argPos, feedback or arg or "Invalid argument: " .. rawArg)
 		end
 
 		if argType.listable and not self.rawType.listable then
@@ -148,7 +146,7 @@ function Argument:parse()
 			table.insert(self.parsedArgs, arg)
 		end
 
-		parsePos += #rawArg + 1
+		argPos += #rawArg + 1
 	end
 
 	if self.rawType.postParse then
