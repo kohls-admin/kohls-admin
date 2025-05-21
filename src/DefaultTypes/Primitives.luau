@@ -42,7 +42,7 @@ local booleanType = {
 local integerType = {
 	filterLog = true,
 	transform = function(v)
-		return if v == "" then 0 else tonumber(v)
+		return if v == "" then 0 else tonumber(v), "Invalid number."
 	end,
 	validate = function(v)
 		return v ~= nil and v == math.floor(v), "Only whole numbers are valid."
