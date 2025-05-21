@@ -1,26 +1,19 @@
 on:
   push:
     branches:
-      - master
+      - "master"
     paths:
       - "model/**"
       - "src/**"
       - "submodules/**"
       - "test/**"
-  pull_request:
-    branches:
-      - master
-    paths:
-      - "model/**"
-      - "src/**"
-      - "submodules/**"
-      - "test/**"
-
-name: Test
+      - "VERSION.txt"
 
 jobs:
-  test:
+  upload:
+    name: Publish test place
     runs-on: ubuntu-latest
+    environment: testing
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,11 +22,8 @@ jobs:
         with:
           version: "*"
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check tool versions
+      - name: Publish
         run: |
           rokit --version
-          stylua --version
-
-      - name: Format
-        run: stylua --check src/ model/
+          rojo --version
+          rojo upload --api_key "${{ secrets.PLACE_PUBLISHING_KEY }}" --universe_id ${{ secrets.TEST_UNIVERSE_ID }} --asset_id ${{ secrets.TEST_PLACE_ID }} test

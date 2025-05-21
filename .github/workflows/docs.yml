@@ -2,8 +2,12 @@ on:
   push:
     branches:
       - "master"
-
-name: CD
+    paths:
+      - ".moonwave/**"
+      - "docs/**"
+      - "model/**"
+      - "src/**"
+      - "moonwave.toml"
 
 jobs:
   docs:
@@ -23,21 +27,3 @@ jobs:
           moonwave build --publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  upload:
-    name: Publish test place
-    runs-on: ubuntu-latest
-    environment: testing
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - uses: CompeyDev/setup-rokit@v0.1.2
-        with:
-          version: "*"
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish
-        run: |
-          rokit --version
-          rojo --version
-          rojo upload --api_key "${{ secrets.PLACE_PUBLISHING_KEY }}" --universe_id ${{ secrets.TEST_UNIVERSE_ID }} --asset_id ${{ secrets.TEST_PLACE_ID }} test

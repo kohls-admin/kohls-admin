@@ -2,6 +2,9 @@ on:
   push:
     branches:
       - master
+    paths:
+      - "model/**"
+      - "src/**"
 
 permissions:
   contents: write
