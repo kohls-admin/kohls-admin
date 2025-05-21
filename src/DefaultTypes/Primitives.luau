@@ -4,23 +4,38 @@ local function simpleValidate(v)
 	return v ~= nil
 end
 
+local function startMatch(list, v)
+	for _, match in list do
+		local vStart, vEnd = string.find(match, v, 1, true)
+		if vStart == 1 and vEnd > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+local yes, no = { "+", "true", "yes", "enabled" }, { "-", "false", "no", "disabled" }
+local booleanSuggestions = {}
+for i, v in yes do
+	table.insert(booleanSuggestions, v)
+	table.insert(booleanSuggestions, no[i])
+end
+
 local booleanType = {
 	transform = string.lower,
 	validate = function(v)
-		return string.find("true", v, 1, true) == 1 or string.find("false", v, 1, true) == 1,
-			"Only use true or false for booleans."
+		return startMatch(yes, v) or startMatch(no, v), "Invalid boolean."
 	end,
 	parse = function(v)
-		if string.find("true", v, 1, true) == 1 then
+		if startMatch(yes, v) then
 			return true
-		elseif string.find("false", v, 1, true) == 1 then
+		elseif startMatch(no, v) then
 			return false
-		else
-			error("Invalid boolean value.")
 		end
+		return nil, "Invalid boolean value."
 	end,
 	suggestions = function(text: string, from: number)
-		return { "true", "false" }
+		return booleanSuggestions
 	end,
 }
 
