@@ -44,7 +44,7 @@ return {
 				Visible = true,
 				context._K.client.dashboard.Bans,
 			})
-			context._K.UI.edit(context._K.client.dashboard.Bans, { Visible = true })
+			context._K.client.dashboard.Bans._instance.Visible = true
 			if not context.env.init then
 				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(
@@ -97,7 +97,7 @@ return {
 				Visible = true,
 				context._K.client.dashboard.Members,
 			})
-			context._K.UI.edit(context._K.client.dashboard.Members, { Visible = true })
+			context._K.client.dashboard.Members._instance.Visible = true
 			if not context.env.init then
 				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(

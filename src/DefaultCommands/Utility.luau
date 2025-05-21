@@ -81,7 +81,7 @@ return {
 				Visible = true,
 				context._K.client.dashboard.About,
 			})
-			context._K.UI.edit(context._K.client.dashboard.About, { Visible = true })
+			context._K.client.dashboard.About.Visible = true
 			if not context.env.init then
 				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(
@@ -134,7 +134,7 @@ return {
 				Visible = true,
 				context._K.client.dashboard.Commands,
 			})
-			context._K.UI.edit(context._K.client.dashboard.Commands, { Visible = true })
+			context._K.client.dashboard.Commands._instance.Visible = true
 			if not context.env.init then
 				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(
@@ -236,7 +236,7 @@ return {
 				Visible = true,
 				context._K.client.dashboard.Logs,
 			})
-			context._K.UI.edit(context._K.client.dashboard.Logs, { Visible = true })
+			context._K.client.dashboard.Logs._instance.Visible = true
 
 			if not context.env.originalFilter then
 				context.env.originalFilter = {}
@@ -313,7 +313,7 @@ return {
 				Visible = true,
 				context._K.client.dashboard.Settings,
 			})
-			context._K.UI.edit(context._K.client.dashboard.Settings, { Visible = true })
+			context._K.client.dashboard.Settings.Visible = true
 			if not context.env.init then
 				local size = context.env.window._instance.AbsoluteSize
 				context.env.window.Position:set(
