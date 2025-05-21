@@ -1,8 +1,8 @@
 [package]
 name = "kohltastrophe/kohls-admin"
-description = "Embrace creativity, not chaos. Used by millions of developers and players, take control of your experience and try Kohl's Admin today."
+description = "Embrace creativity, not chaos. Used by millions of developers, take control of your experience and try Kohl's Admin today."
 authors = ["Kohl <admin@kohl.gg>"]
-version = "0.1.9"
+version = "0.2.3"
 license = "MIT"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
@@ -13,6 +13,7 @@ include = [
 	"default.project.json",
 	"wally.toml",
 	"LICENSE.txt",
+	"VERSION.txt",
 ]
 
 [dependencies]
