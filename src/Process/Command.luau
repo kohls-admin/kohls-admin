@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 
+local Auth = require(script.Parent.Parent.Auth)
 local Argument = require(script.Parent.Argument)
 local Type = require(script.Parent.Parent.Type)
 
@@ -8,22 +9,21 @@ local Command = {
 }
 Command.__index = Command
 
-function Command.new(_K, commandAlias, commandDefinition: Type.CommandDefinition, commandArray, from, text)
+function Command.new(_K, alias, definition: Type.CommandDefinition, array, from, text)
 	return setmetatable({
 		_K = _K,
-		alias = commandAlias,
-		array = commandArray,
-		definition = commandDefinition,
-		env = commandDefinition and commandDefinition.env,
+		alias = alias,
+		array = array,
+		definition = definition,
+		env = definition.env,
 		from = from,
 		fromPlayer = Players:GetPlayerByUserId(from),
-		fromRank = _K.Auth.getRank(from),
+		fromRank = Auth.getRank(from),
 		text = text,
-		undo = string.find(commandAlias, "un", 1, true) == 1,
+		undo = string.find(alias, "un", 1, true) == 1,
 
-		args = {},
-		preparedArgs = {},
-		-- flags = {};
+		args = definition.args and table.create(#definition.args) or {},
+		preparedArgs = definition.args and table.create(#definition.args) or {},
 		validated = false,
 	}, Command)
 end
@@ -35,7 +35,7 @@ function Command:shouldRequest(player: Player)
 			return value
 		end
 	end
-	return self.fromRank <= self._K.Auth.getRank(player.UserId)
+	return self.fromRank <= Auth.getRank(player.UserId)
 end
 
 function Command:requestCommand(player: Player)
@@ -149,66 +149,58 @@ function Command:validate()
 		return true
 	end
 
-	local commandArray = self.array
-
 	-- always try first argument
-	if #self.definition.args > 0 and #commandArray < 2 then
+	if #self.definition.args > 0 and #self.array < 2 then
 		self.text ..= " "
-		commandArray[2] = { #self.text, "" }
+		self.array[2] = { #self.text, "" }
 	end
 
-	-- start from 2 to skip the command name
-	for i = 2, #commandArray do
-		local argIndex = #self.preparedArgs + 1
-		local argPos, rawArg = unpack(commandArray[i])
+	local arrayIndex = 2
+	for index, definition in self.definition.args do
+		local data = self.array[arrayIndex]
+		local hasArgument = self._K.Auth.hasArgument(self.from, definition)
 
-		local argDefinition = self.definition.args[argIndex]
-		if not argDefinition then
-			-- end of defined positional arguments
-			break
-		end
-
-		if argDefinition.permissions then
-			if not self._K.Auth.hasArgument(self.from, argDefinition) then
+		if not data then
+			if definition.optional or not hasArgument then
 				continue
 			end
+			local start = self.array[1][1]
+			self.invalidPos = start
+			self.invalidArg = string.sub(self.text, start, start + #self.text)
+			self.argMissing = `Argument {index} missing: {definition.name}`
+			return false, self.argMissing
 		end
 
-		-- if last defined argument, concatenate the rest of the command's arguments
-		local isLastArgument = argIndex == #self.definition.args
-		if isLastArgument then
-			local buffer = { rawArg }
-			for x = i + 1, #commandArray do
-				local _, arg = unpack(commandArray[x])
-				table.insert(buffer, arg)
+		if not hasArgument then
+			continue
+		end
+
+		local argPos, rawArg = unpack(data)
+
+		if index == #self.definition.args then
+			local buffer = table.create(#self.array - arrayIndex)
+			for i = arrayIndex, #self.array do
+				table.insert(buffer, self.array[i][2])
 			end
 			rawArg = table.concat(buffer, " ")
 		end
 
-		local arg = Argument.new(self, argDefinition, argPos, rawArg)
-		table.insert(self.args, arg)
 
+		local arg = Argument.new(self, definition, argPos, rawArg)
 		local ok, result = arg:prepare()
-		if not ok then
-			return false, result or "Argument failed to prepare"
-		end
-		table.insert(self.preparedArgs, result)
 
-		if isLastArgument then
-			self.validated = true
-			return true
-		end
-	end
+		self.args[index] = arg
 
-	for i, argDefinition in self.definition.args do
-		local arg = self.args[i]
-		if not arg and not argDefinition.optional then
-			local first = self.array[1]
-			local last = self.array[#self.array]
-			self.invalidArg = string.sub(self.text, first[1], last[1] + #last[2])
-			self.invalidPos = first[1]
-			self.argMissing = `Argument {i} missing: {argDefinition.name}`
-			return false, self.argMissing
+		if ok then
+			arrayIndex += 1
+			self.preparedArgs[index] = result
+		else
+			if result then
+				self.invalidArg = result.arg
+				self.invalidPos = result.pos
+				self.invalidMessage = result.message
+			end
+			return false, result.message or "Argument failed to prepare"
 		end
 	end
 

@@ -55,10 +55,8 @@ function Argument.new(command, definition, argPos, rawArg)
 end
 
 function Argument:invalidate(rawArg, argPos, message)
-	self.command.invalidArg = rawArg
-	self.command.invalidPos = argPos
-	self.command.invalidMessage = message
-	return false, self.command.invalidMessage
+	self.invalid = { arg = rawArg, pos = argPos, message = message }
+	return false, self.invalid
 end
 
 function Argument:transform()
@@ -103,8 +101,8 @@ function Argument:validate()
 		return true
 	end
 
-	if self.command.invalidArg then
-		return false, self.command.invalidMessage
+	if self.invalid then
+		return false, self.invalid.message
 	end
 
 	local transformPos = self.argPos
