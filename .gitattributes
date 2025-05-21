@@ -1,0 +1,16 @@
+*.lua text=auto
+*.lua eol=lf
+*.luau text=auto
+*.luau eol=lf
+*.json text=auto
+*.json eol=lf
+*.rbxmx text=auto
+*.rbxmx eol=lf
+*.md text=auto
+*.md eol=lf
+*.toml text=auto
+*.toml eol=lf
+*.yml text=auto
+*.yml eol=lf
+*.txt text=auto
+*.txt eol=lf
