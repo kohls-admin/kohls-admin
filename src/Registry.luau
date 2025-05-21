@@ -128,7 +128,10 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 
 	commandObject.args = commandObject.args or {}
 	for _, arg in commandObject.args :: any do
-		if not Registry.types[arg.type] and string.find(arg.type, "Enum.", 1, true) == 1 then
+		if Registry.types[arg.type] then
+			continue
+		end
+		if string.find(arg.type, "Enum.", 1, true) == 1 then
 			local argType = arg.type
 			local ok, enum = pcall(function()
 				return (Enum :: any)[string.sub(argType, 6)]
