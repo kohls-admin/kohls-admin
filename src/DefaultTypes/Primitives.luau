@@ -1,6 +1,6 @@
 local _K
 
-local function simpleValidate(v)
+local function notNil(v)
 	return v ~= nil
 end
 
@@ -55,7 +55,7 @@ local integerType = {
 local numberType = {
 	filterLog = true,
 	transform = integerType.transform,
-	validate = simpleValidate,
+	validate = notNil,
 	parse = function(v)
 		return v
 	end,
@@ -63,12 +63,12 @@ local numberType = {
 
 local rawStringType = {
 	filterLog = true,
-	validate = simpleValidate,
+	validate = notNil,
 	parse = tostring,
 }
 
 local stringType = {
-	validate = simpleValidate,
+	validate = notNil,
 }
 
 return function(context)
