@@ -1,7 +1,6 @@
 local Players = game:GetService("Players")
 
 local generateValidate = require(script.Parent.Parent:WaitForChild("generateValidate"))
-local sanitizeUser = require(script.Parent.Parent:WaitForChild("sanitizeUser"))
 
 local function parseRandom(arg, self)
 	arg = if arg == "" then 1 else tonumber(arg)
@@ -12,7 +11,7 @@ local function parseRandom(arg, self)
 	local players = {}
 	local list = {}
 	for _, player in Players:GetPlayers() do
-		player = sanitizeUser(self, player.UserId, player)
+		player = self._K.Auth.targetUserArgument(self, player.UserId, player)
 		if player then
 			table.insert(list, player)
 		end

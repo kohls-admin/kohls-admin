@@ -1,7 +1,6 @@
 local Players = game:GetService("Players")
 
 local generateValidate = require(script:WaitForChild("generateValidate"))
-local sanitizeUser = require(script:WaitForChild("sanitizeUser"))
 
 local Types = script:WaitForChild("Types")
 
@@ -99,14 +98,14 @@ end
 
 local function parseIndividual(arg, self)
 	if arg == "" or arg == "me" then
-		return sanitizeUser(self, self.command.from, self.command.fromPlayer)
+		return self._K.Auth.targetUserArgument(self, self.command.from, self.command.fromPlayer)
 	end
 
 	local partial
 	for _, player in Players:GetPlayers() do
 		local name = string.lower(player.Name)
 		if name == arg then
-			return sanitizeUser(self, player.UserId, player)
+			return self._K.Auth.targetUserArgument(self, player.UserId, player)
 		end
 		if not partial and string.find(name, arg, 1, true) == 1 then
 			partial = player
@@ -118,7 +117,7 @@ local function parseIndividual(arg, self)
 		local kDisplay = player:GetAttribute("_KDisplayName")
 		kDisplay = if type(kDisplay) == "string" then string.lower(kDisplay) else ""
 		if displayName == arg or kDisplay == arg then
-			return sanitizeUser(self, player.UserId, player)
+			return self._K.Auth.targetUserArgument(self, player.UserId, player)
 		end
 		if
 			not partial and (string.find(displayName, arg, 1, true) == 1 or (string.find(kDisplay, arg, 1, true) == 1))
@@ -128,7 +127,7 @@ local function parseIndividual(arg, self)
 	end
 
 	if partial then
-		return sanitizeUser(self, partial.UserId, partial)
+		return self._K.Auth.targetUserArgument(self, partial.UserId, partial)
 	end
 
 	return nil, "Invalid player"
@@ -171,7 +170,7 @@ local function parseUser(arg, self)
 	local player = parseIndividual(arg, self)
 	local userId = tonumber(if player then player.UserId else arg)
 	if userId and userId > 0 then
-		return sanitizeUser(self, userId, userId)
+		return self._K.Auth.targetUserArgument(self, userId, userId)
 	end
 	return nil, "Invalid user"
 end

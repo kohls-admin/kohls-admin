@@ -1,7 +1,5 @@
 local Players = game:GetService("Players")
 
-local sanitizeUser = require(script.Parent.Parent:WaitForChild("sanitizeUser"))
-
 -- TODO: finish inverse type
 
 local typeInverse = {
@@ -17,7 +15,7 @@ local typeInverse = {
 					end
 				end
 				if not matched then
-					player = sanitizeUser(self, player.UserId, player)
+					player = self._K.Auth.targetUserArgument(self, player.UserId, player)
 					if player then
 						table.insert(players, player)
 					end
@@ -26,7 +24,7 @@ local typeInverse = {
 		elseif typeof(arg) == "Instance" then
 			for _, player in Players:GetPlayers() do
 				if player ~= arg then
-					player = sanitizeUser(self, player.UserId, player)
+					player = self._K.Auth.targetUserArgument(self, player.UserId, player)
 					if player then
 						table.insert(players, player)
 					end

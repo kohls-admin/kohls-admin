@@ -1,20 +1,18 @@
 local _K = nil
 
-local sanitizeUser = require(script.Parent:WaitForChild("Player"):WaitForChild("sanitizeUser"))
-
 local function parseMember(input: string, self: any): string?
 	local query = string.lower(input)
 	local fromString = tostring(self.command.from)
 
 	if input == "" or input == "me" and _K.Data.members[fromString] then
-		return sanitizeUser(self, self.command.from, fromString)
+		return self._K.Auth.targetUserArgument(self, self.command.from, fromString)
 	end
 
 	local partial
 	for id, member in _K.Data.members do
 		local name = string.lower(member.name)
 		if id == query or name == query then
-			return sanitizeUser(self, tonumber(id) :: number, id)
+			return self._K.Auth.targetUserArgument(self, tonumber(id) :: number, id)
 		end
 		if not partial and string.find(name, query, 1, true) == 1 then
 			partial = id
@@ -22,7 +20,7 @@ local function parseMember(input: string, self: any): string?
 	end
 
 	if partial then
-		return sanitizeUser(self, tonumber(partial) :: number, partial)
+		return self._K.Auth.targetUserArgument(self, tonumber(partial) :: number, partial)
 	end
 
 	return nil, "Invalid member"

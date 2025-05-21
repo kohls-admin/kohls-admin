@@ -1,7 +1,6 @@
 local Players = game:GetService("Players")
 
 local generateValidate = require(script.Parent.Parent:WaitForChild("generateValidate"))
-local sanitizeUser = require(script.Parent.Parent:WaitForChild("sanitizeUser"))
 
 return function(_K)
 	local function roleParse(arg, self)
@@ -12,7 +11,7 @@ return function(_K)
 				for _, player in Players:GetPlayers() do
 					local userPermissions = _K.Data.members[tostring(player.UserId)]
 					if userPermissions and table.find(userPermissions.roles, roleId) then
-						player = sanitizeUser(self, player.UserId, player)
+						player = self._K.Auth.targetUserArgument(self, player.UserId, player)
 						if player then
 							table.insert(players, player)
 						end

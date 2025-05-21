@@ -462,4 +462,35 @@ function Auth.getRank(userId: number): (number, Role)
 	return 0, Data.roles.everyone
 end
 
+function Auth.targetUserArgument(arg, userId: number, value: Player | number | string)
+	local from = arg.command.from
+	if userId == from then
+		if arg.definition.ignoreSelf then
+			return nil, "Can't target yourself"
+		end
+		return value
+	end
+	if Auth.hasPermission(from, "admin") then
+		return value
+	end
+	if Auth.hasPermission(from, "targetOthers") ~= true then
+		return nil, "Can only target yourself"
+	end
+	if arg.definition.lowerRank and not arg.definition.shouldRequest then
+		local player = Util.Service.Players:GetPlayerByUserId(userId)
+		if player and player:GetAttribute("_KRolesLoaded") ~= true then
+			return nil, "Can't target loading user"
+		end
+		if
+			(Auth.hasCommand(userId, arg.command.definition) or 0)
+			< (Auth.hasCommand(from, arg.command.definition) or 0)
+		then
+			return value
+		end
+		return nil, "Can only target lower ranks"
+	else
+		return value
+	end
+end
+
 return Auth

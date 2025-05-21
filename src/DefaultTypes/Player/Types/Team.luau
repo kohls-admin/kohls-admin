@@ -1,7 +1,6 @@
 local Teams = game:GetService("Teams")
 
 local generateValidate = require(script.Parent.Parent:WaitForChild("generateValidate"))
-local sanitizeUser = require(script.Parent.Parent:WaitForChild("sanitizeUser"))
 
 return function(_K)
 	local function teamParse(arg, self)
@@ -10,7 +9,7 @@ return function(_K)
 			if string.find(string.lower(team.Name), arg, 1, true) == 1 then
 				valid = true
 				for _, player in team:GetPlayers() do
-					player = sanitizeUser(self, player.UserId, player)
+					player = self._K.Auth.targetUserArgument(self, player.UserId, player)
 					if player then
 						table.insert(players, player)
 					end
