@@ -14,14 +14,16 @@ return function(_K)
 		group = "General", -- Command group to use.
 		noLog = false, -- If the command is not logged when used.
 
-		--[[ Argument definitions
+		--[[ ARGUMENT DEFINITIONS
 
 		Default Argument Types
 			"boolean" "booleans"
 			"integer" "integers"
 			"number" "numbers"
 			"string" "strings"        - normal strings are filtered by default!
-			"rawString", "rawStrings" - use rawStrings for commands that require an unfiltered input
+			"rawString" "rawStrings" - use rawStrings for commands that require an unfiltered input
+			"vector2"
+			"vector3"
 
 			"ban" "bans"
 			"color"
@@ -38,8 +40,14 @@ return function(_K)
 			"Enum.Font" for a single Font enum
 			"Enum.Fonts" for a list of Font enums
 
+		Custom Enum Types: Create your own Enum types, for example:
+			"Sunny,Rainy,Foggy" --IMPORTANT: NO SPACES
+
+		Types can be unioned with a prefix, for example:
+			"player # vector3" --IMPORTANT: MUST HAVE SPACES | Usage: "me" = Player, "#0,1,0" = Vector3
+
 		Creating Custom Types:
-			Check Kohl's Admin > MainModule > DefaultTypes for examples
+			Check Kohl's Admin > Loader > MainModule > DefaultTypes for examples
 
 		]]
 		args = {
@@ -47,22 +55,19 @@ return function(_K)
 				type = "string",
 				name = "Message",
 				description = "The message to send.", -- Description shown in command list.
-				-- If the command is optional, make sure to check if it's nil and not false!
-				optional = true,
+				optional = true, -- If the command is optional, make sure to check if it's nil and not false!
 
-				-- Argument role permission restrictions
-				permissions = {},
+				permissions = {}, -- Permission restrictions, hidden from users without the permissions and returns nil, see Kohl's Admin > Config > Settings for every permission
 
 				-- player type options
 				lowerRank = false, -- Only allows selecting players of a lower rank
-				ignoreSelf = false, -- Ignores self
+				ignoreSelf = false, -- Only allows selecting other players
 				shouldRequest = false, -- If the command should be requested on same rank or higher
 			},
 		},
-		-- Command permission restrictions
-		permissions = {},
+		permissions = {}, -- Command permission restrictions, see Kohl's Admin > Config > Settings for every permission
 
-		-- Command environment
+		-- COMMAND ENVIRONMENTS
 
 		env = function(_K)
 			-- This will only run once on each server while in studio or in the demo place
@@ -88,7 +93,7 @@ return function(_K)
 			}
 		end,
 
-		--[[ Command execution
+		--[[ COMMAND EXECUTION
 
 		Command context fields:
 			_K         - reference to _K toplevel API
