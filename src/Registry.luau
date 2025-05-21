@@ -149,6 +149,10 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 			local enumType = Registry.makeEnumType(argType, enum:GetEnumItems())
 			Registry.registerType(argType, enumType)
 			Registry.registerType(argType .. "s", { listable = true }, enumType)
+		elseif string.find(arg.type, "%S,%S") then
+			local enumType = Registry.makeEnumType(arg.type, string.split(arg.type))
+			Registry.registerType(arg.type, enumType)
+			Registry.registerType(arg.type .. "s", { listable = true }, enumType)
 		end
 	end
 
