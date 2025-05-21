@@ -145,8 +145,8 @@ return function(_K, text, cursorPosition)
 			data.suggestionType = arg.rawType
 
 			local transformPos = arg.argPos
-			for k, transformedArg in arg.transformedArgs do
-				local rawArg = arg.rawArgs[k]
+			for k, rawArg in arg.rawArgs do
+				local transformedArg = arg.transformedArgs[k]
 				local transformedType = arg.transformedTypes[k]
 				local pos = transformPos
 				transformPos += #rawArg + 1
@@ -155,18 +155,15 @@ return function(_K, text, cursorPosition)
 					continue
 				end
 
-				if not transformedType.suggestions then
-					continue
-				end
-
-				data.suggestionType = transformedType
 				data.argPos = if arg.prefix then pos + #arg.prefix else pos
 				data.rawArg = rawArg
 				data.rawQuery = string.sub(rawArg, 1, cursorPosition - pos)
-				data.transformedArg = transformedArg
 				data.query = _K.Util.String.stripQuotes(data.rawQuery)
-				data.suggestions =
-					_K.Util.Suggest.query(data.query, transformedType.suggestions(data.query, from, arg.definition))
+				data.transformedArg = transformedArg
+				data.suggestionType = transformedType or data.suggestionType
+				data.suggestions = transformedType
+					and transformedType.suggestions
+					and _K.Util.Suggest.query(data.query, transformedType.suggestions(data.query, from, arg.definition))
 			end
 		end
 
