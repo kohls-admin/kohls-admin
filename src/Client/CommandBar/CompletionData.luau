@@ -90,7 +90,7 @@ return function(_K, text, cursorPosition)
 						table.insert(data.suggestions, suggestionData)
 						data.validSuggestion = true
 					else
-						suggestionData.invalid = true
+						suggestionData[4] = true -- invalid
 						table.insert(invalidSuggestions, suggestionData)
 						data.invalidPermissionsCommand = cmd
 					end

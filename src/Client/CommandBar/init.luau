@@ -208,6 +208,8 @@ local SuggestionFrame = UI.new "TextButton" {
 local argumentFormat = `<b><sc>%s</sc> <font transparency="0.66"><i>&lt;%s&gt;</i></font></b>\n%s`
 local inlineFormat =
 	`<font transparency="0.33">%s<font transparency="0.66">%s<font transparency="0">%s</font>%s</font>%s</font>`
+local invalidInlineFormat =
+	`<font transparency="0.33">%s<b><font color="#f00" transparency="0.66">%s<font transparency="0">%s</font>%s</font></b>%s</font>`
 local suggestFormat = `<font transparency="0.5">%s</font>%s<font transparency="0.5">%s</font>`
 local invalidSuggestFormat = `<font color="#f00">{suggestFormat}</font>`
 
@@ -262,7 +264,7 @@ local function updateSuggestionLabels(data)
 
 	for i = start, start + amount do
 		local suggestion = data.suggestions[i]
-		local name, displayName, value = unpack(suggestion)
+		local name, displayName, value, invalid = unpack(suggestion)
 		local frame = SuggestionFrame:Clone()
 		local label = frame:FindFirstChildOfClass("TextLabel")
 		frame.LayoutOrder = i
@@ -322,7 +324,7 @@ local function updateSuggestionLabels(data)
 		local startIndex, endIndex = string.find(string.lower(displayName), query, 1, true)
 
 		label.Text = string.format(
-			if suggestion.invalid then invalidSuggestFormat else suggestFormat,
+			if invalid then invalidSuggestFormat else suggestFormat,
 			if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(displayName, 1, startIndex - 1)) else "",
 			_K.Util.String.escapeRichText(string.sub(displayName, startIndex, endIndex)),
 			_K.Util.String.escapeRichText(string.sub(displayName, endIndex + 1))
@@ -400,7 +402,6 @@ end
 
 local function invalidSuggestion(data, err, pos, text)
 	validState:set(false)
-	-- red text inlineFormat
 	Input.DisplayText:set(
 		`<font transparency="0.33">{_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.String.escapeRichText(
 			text
@@ -554,7 +555,11 @@ updateCompletion = function()
 	local arg = _K.Util.String.trim(data.rawArg)
 	local endPos = data.argPos + #arg
 	local currentSuggestion = data.suggestions[suggestionIndex]
-	local suggestionText, _suggestionDisplay, suggestionValue = unpack(currentSuggestion)
+	local suggestionText, _suggestionDisplay, suggestionValue, suggestionInvalid = unpack(currentSuggestion)
+
+	if suggestionInvalid and not data.validSuggestion then
+		validState:set(false)
+	end
 
 	local completion = suggestionText
 	local preCompletion = string.sub(data.message, 1, data.argPos - 1)
@@ -579,7 +584,7 @@ updateCompletion = function()
 
 	Input.DisplayText:set(
 		string.format(
-			inlineFormat,
+			if suggestionInvalid then invalidInlineFormat else inlineFormat,
 			_K.Util.String.escapeRichText(preCompletion),
 			if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(suggestionText, 1, startIndex - 1)) else "",
 			_K.Util.String.escapeRichText(data.rawQuery or data.query),
