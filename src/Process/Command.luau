@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 
 local Auth = require(script.Parent.Parent.Auth)
 local Argument = require(script.Parent.Argument)
+local Util = require(script.Parent.Parent.Util)
 local Type = require(script.Parent.Parent.Type)
 
 local Command = {
@@ -155,6 +156,7 @@ function Command:validate()
 		self.array[2] = { #self.text, "" }
 	end
 
+	local filledSelf
 	local arrayIndex = 2
 	for index, definition in self.definition.args do
 		local data = self.array[arrayIndex]
@@ -185,9 +187,38 @@ function Command:validate()
 			rawArg = table.concat(buffer, " ")
 		end
 
+		local shouldFillWithSelf = not filledSelf
+			and index ~= #self.definition.args
+			and string.find(string.lower(definition.type), "player", 1, true)
+
+		if shouldFillWithSelf and self._K.IsClient then
+			local argType = self._K.Registry.types[definition.type]
+			if argType and argType.suggestions then
+				local suggestions = Util.Suggest.query(rawArg, argType.suggestions(rawArg, self.from, definition))
+				if #suggestions > 0 then
+					shouldFillWithSelf = false
+				end
+			end
+		end
+
+		if shouldFillWithSelf and arrayIndex == #self.array then
+			local arg = self.definition.args[index + 1]
+			if arg and string.find(string.lower(arg.type), "player", 1, true) then
+				rawArg = "me"
+				arrayIndex -= 1
+				filledSelf = true
+			end
+		end
 
 		local arg = Argument.new(self, definition, argPos, rawArg)
 		local ok, result = arg:prepare()
+
+		if not (ok or filledSelf) and shouldFillWithSelf then
+			arg = Argument.new(self, definition, argPos, "me")
+			ok, result = arg:prepare()
+			arrayIndex -= 1
+			filledSelf = true
+		end
 
 		self.args[index] = arg
 
