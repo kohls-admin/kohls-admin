@@ -79,10 +79,11 @@ function Argument:transform()
 
 		if argType.transform then
 			local optional = not string.find(arg, "%S") and self.definition.optional
-			arg = argType.transform(arg)
-			if arg == nil and not optional then
-				local message = "Invalid transform: "
-					.. if self._K.Util.String.trim(rawArg) == "" then "nil" else rawArg
+			local value, feedback = argType.transform(arg)
+			arg = value
+			if value == nil and not optional then
+				local message = feedback
+					or "Invalid transform: " .. if string.find(rawArg, "^%s*$") then "nil" else rawArg
 				return self:invalidate(rawArg, argPos, message)
 			end
 		end
