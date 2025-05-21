@@ -15,7 +15,7 @@
 <br/>
 <h1 align="center">Embrace creativity, not chaos.</h1>
 <!--moonwave-hide-before-this-line-->
-<p align="center"><b>Trusted by thousands of Roblox developers</b>, Kohl's Admin is your all-in-one solution for effortless Roblox experience management. Streamline moderation, elevate gameplay, and nurture a thriving community — all with a powerful, versatile, and user-friendly tool.</p>
+<p align="center"><b>Trusted by millions of Roblox developers</b>, Kohl's Admin is your all-in-one solution for effortless Roblox experience management. Streamline moderation, elevate gameplay, and nurture a thriving community — all with a powerful, versatile, and user-friendly tool.</p>
 <p align="center">🚧 <b>Actively Under Development as a Fully Open-Source Project</b> 🚧</p>
 
 # ✨ Key Features
@@ -32,14 +32,14 @@
 
 # 🙌 Contributing
 
-We welcome and encourage contributions from the community! Check out our [Contribution Guidelines](CONTRIBUTING.md) to learn how you can get involved.
+We welcome and encourage contributions from the community! Check out our [Contributor Guidelines](CONTRIBUTING.md) to learn how you can get involved.
 
 ### 🙏 Recognition for Contributors
 
 - **In-Game Credits:** Your name will be featured in the `credits` command within Kohl's Admin.
 - **Inside Access:** Access to exclusive features, early previews, and private channels within the community.
 - **Special In-Game Benefits:** Enjoy exclusive perks within participating experiences that use Kohl's Admin.
-- **Monetary Compensation (For Exceptional Contributions):** We value your time and effort. See the [Contribution Guidelines](CONTRIBUTING.md#compensation) for details.
+- **Monetary Compensation (For Exceptional Contributions):** We value your time and effort. See the [Contributor Guidelines](CONTRIBUTING.md#compensation) for details.
 
 Thank you to all our contributors for helping make this project a success! ❤️
 
