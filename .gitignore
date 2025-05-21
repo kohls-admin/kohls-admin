@@ -1,9 +1,4 @@
-.*
-/build
-/dist
+.meta/
+build/
+dist/
 sourcemap.json
-!.moonwave/
-!.devcontainer
-!.gitignore
-!.github
-!.vscode
