@@ -25,7 +25,7 @@ local COLORS = {
 	gray = Color3.new(0.5, 0.5, 0.5),
 }
 
-local invalidColorId = BrickColor.new("").Number
+local invalidColorId = BrickColor.new(-1).Number
 for i = 1, 1032 do
 	local color = BrickColor.new(i)
 	if i ~= invalidColorId and color.Number == invalidColorId then
