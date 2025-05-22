@@ -178,6 +178,7 @@ return function(_K)
 					end
 					table.insert(args, {
 						type = legacyArgToNew[arg],
+						name = legacyArgToNew[arg],
 						optional = optional,
 						description = "Migrated from Legacy custom commands.",
 					})
