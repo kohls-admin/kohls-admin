@@ -5,6 +5,40 @@ local ScrollerFast = {}
 ScrollerFast.__index = ScrollerFast
 setmetatable(ScrollerFast, BaseClass)
 
+local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
+local function defaultFilter(self, list)
+	local filter = string.lower(self._input._input.Text)
+	self._filter = filter
+	if string.find(filter, "^%s*$") then
+		return list
+	end
+	local new = {}
+	for k, text in list do
+		local filterIndex, filterEnd = string.find(string.lower(text), filter, 1, true)
+		if filterIndex then
+			table.insert(
+				new,
+				string.format(
+					filterRichFormat,
+					ScrollerFast.escapeRichText(string.sub(text, 1, filterIndex - 1)),
+					ScrollerFast.escapeRichText(string.sub(text, filterIndex, filterEnd)),
+					ScrollerFast.escapeRichText(string.sub(text, filterEnd + 1))
+				)
+			)
+		end
+	end
+	return new
+end
+
+function ScrollerFast.escapeRichText(s: string): string
+	s = string.gsub(s, "&", "&amp;") -- first because substitutes contain it
+	s = string.gsub(s, "<", "&lt;")
+	s = string.gsub(s, ">", "&gt;")
+	s = string.gsub(s, '"', "&quot;")
+	s = string.gsub(s, "'", "&apos;")
+	return s
+end
+
 function ScrollerFast:render()
 	if not (self.Enabled._value and self._instance.Visible) then
 		return
@@ -192,6 +226,7 @@ function ScrollerFast.new(definition)
 		},
 	}
 
+	self = setmetatable(self, ScrollerFast)
 	if self.FilterInput._value then
 		local thread = false
 		local function debounce()
@@ -210,8 +245,9 @@ function ScrollerFast.new(definition)
 			},
 		}
 		self._input._input:GetPropertyChangedSignal("Text"):Connect(debounce)
+		self:filter(defaultFilter)
 	end
-	return setmetatable(self, ScrollerFast)
+	return self
 end
 
 return ScrollerFast
