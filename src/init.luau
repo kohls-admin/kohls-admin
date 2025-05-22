@@ -376,20 +376,20 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	end
 
 	if settings.assetRoles then
-		_K.Util.Table.deepMerge(_K.Data.async.asset, settings.assetRoles)
+		Util.Table.deepMerge(_K.Data.async.asset, settings.assetRoles, true)
 		_K.setupPurchasables(settings.assetRoles, "assets")
 	end
 	if settings.gamePassRoles then
-		_K.Util.Table.deepMerge(_K.Data.async.gamepass, settings.gamePassRoles)
+		Util.Table.deepMerge(_K.Data.async.gamepass, settings.gamePassRoles, true)
 		_K.setupPurchasables(settings.gamePassRoles, "gamepasses")
 	end
 	if settings.subscriptionRoles then
-		_K.Util.Table.deepMerge(_K.Data.async.subscription, settings.subscriptionRoles)
+		Util.Table.deepMerge(_K.Data.async.subscription, settings.subscriptionRoles, true)
 		_K.setupPurchasables(settings.subscriptionRoles, "subscriptions")
 	end
 
 	if settings.groupRoles then
-		_K.Util.Table.deepMerge(_K.Data.async.group, settings.groupRoles)
+		_K.Util.Table.deepMerge(_K.Data.async.group, settings.groupRoles, true)
 	end
 
 	if settings.friendRoles and #settings.friendRoles > 0 then

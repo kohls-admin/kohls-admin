@@ -26,6 +26,17 @@ function Table.map(array: List, callback: (any, any) -> any)
 	return array
 end
 
+function Table.isArray(object: Dict)
+	local index = 1
+	for _ in object do
+		if object[index] == nil then
+			return false
+		end
+		index += 1
+	end
+	return true
+end
+
 function Table.merge(to: Dict, from: Dict): Dict
 	for key, value in from do
 		to[key] = value
@@ -33,12 +44,26 @@ function Table.merge(to: Dict, from: Dict): Dict
 	return to
 end
 
-function Table.deepMerge(to: Dict, from: Dict): Dict
-	for key, value in from do
-		if to[key] and type(value) == "table" then
-			Table.deepMerge(to[key], value)
+function Table.mergeList(to: List, from: List)
+	table.move(from, 1, #from, #to + 1, to)
+end
+
+function Table.deepMerge(to: Dict, from: Dict, appendArrays: boolean?): Dict
+	if appendArrays and Table.isArray(from) then
+		if Table.isArray(to) then
+			Table.mergeList(to, from)
 		else
-			to[key] = value
+			for _, v in from do
+				table.insert(to, v)
+			end
+		end
+	else
+		for key, value in from do
+			if to[key] and type(value) == "table" then
+				Table.deepMerge(to[key], value, appendArrays)
+			else
+				to[key] = value
+			end
 		end
 	end
 	return to
