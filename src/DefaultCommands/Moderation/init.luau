@@ -808,6 +808,49 @@ return {
 		aliases = { "toollist" },
 		description = "Views all tools usable with the give command.",
 
+		envClient = function(_K)
+			local UI = _K.UI
+
+			local scroller = UI.new "ScrollerFast" {
+				List = {},
+				Enabled = true,
+				FilterInput = true,
+				ReverseOrder = true,
+				Visible = true,
+				ItemSize = UI.compute(function(use)
+					return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+				end),
+			}
+
+			UI.edit(scroller._scroller, {
+				UI.new "UIFlexItem" {
+					FlexMode = Enum.UIFlexMode.Fill,
+				},
+			})
+
+			UI.edit(scroller._instance, {
+				UI.new "UIPadding" {
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+				},
+			})
+
+			return {
+				scroller = scroller,
+				window = UI.new "Window" {
+					Parent = UI.LayerTopInset,
+					Title = "Kohl's Admin Tools",
+					Exitable = true,
+					Position = UDim2.new(0.5, -128, 0.5, -128),
+					Size = UDim2.new(0, 256, 0, 256),
+					Visible = false,
+
+					scroller,
+				},
+			}
+		end,
 		runClient = function(context, player)
 			if #context._K.tools <= 1 then
 				context._K.Notify({ Text = `No tools found!` })
@@ -822,36 +865,8 @@ return {
 			end
 			table.sort(toolNames)
 
-			local UI = context._K.UI
-			UI.new "Window" {
-				Parent = UI.LayerTopInset,
-				Title = "Kohl's Admin Tools",
-				Exitable = true,
-				RemoveOnClose = true,
-				Position = UDim2.new(0.5, -128, 0.5, -128),
-				Size = UDim2.new(0, 256, 0, 256),
-
-				UI.new "Scroller" {
-					UI.new "UIFlexItem" {
-						FlexMode = Enum.UIFlexMode.Fill,
-					},
-					UI.new "TextLabel" {
-						AutoLocalize = false,
-						Name = "Text",
-						BackgroundTransparency = 1,
-						TextColor3 = UI.Theme.PrimaryText,
-						Text = table.concat(toolNames, "\n"),
-						TextSize = UI.Theme.FontSize,
-						TextWrapped = true,
-						TextXAlignment = "Left",
-						Font = UI.Theme.Font,
-						RichText = true,
-						Size = UDim2.new(1, 0, 0, 0),
-
-						AutomaticSize = Enum.AutomaticSize.Y,
-					},
-				},
-			}
+			context.env.scroller.List:set(toolNames)
+			context.env.window._instance.Visible = true
 		end,
 	},
 	{
@@ -866,7 +881,47 @@ return {
 			},
 		},
 		envClient = function(_K)
+			local UI = _K.UI
+
+			local scroller = UI.new "ScrollerFast" {
+				List = {},
+				Enabled = true,
+				FilterInput = true,
+				ReverseOrder = true,
+				Visible = true,
+				ItemSize = UI.compute(function(use)
+					return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+				end),
+			}
+
+			UI.edit(scroller._scroller, {
+				UI.new "UIFlexItem" {
+					FlexMode = Enum.UIFlexMode.Fill,
+				},
+			})
+
+			UI.edit(scroller._instance, {
+				UI.new "UIPadding" {
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+				},
+			})
+
 			return {
+				scroller = scroller,
+				window = UI.new "Window" {
+					Parent = UI.LayerTopInset,
+					Title = "Kohl's Admin Tools",
+					Exitable = true,
+					Position = UDim2.new(0.5, -128, 0.5, -128),
+					Size = UDim2.new(0, 256, 0, 256),
+					Visible = false,
+
+					scroller,
+				},
+
 				addTools = function(source: Instance, tools)
 					if not source then
 						return
@@ -890,36 +945,9 @@ return {
 			end
 			table.sort(toolNames)
 
-			local UI = context._K.UI
-			UI.new "Window" {
-				Parent = UI.LayerTopInset,
-				Title = player.Name .. "'s Tools",
-				Exitable = true,
-				RemoveOnClose = true,
-				Position = UDim2.new(0.5, -128, 0.5, -128),
-				Size = UDim2.new(0, 256, 0, 256),
-
-				UI.new "Scroller" {
-					UI.new "UIFlexItem" {
-						FlexMode = Enum.UIFlexMode.Fill,
-					},
-					UI.new "TextLabel" {
-						AutoLocalize = false,
-						Name = "Text",
-						BackgroundTransparency = 1,
-						TextColor3 = UI.Theme.PrimaryText,
-						Text = table.concat(toolNames, "\n"),
-						TextSize = UI.Theme.FontSize,
-						TextWrapped = true,
-						TextXAlignment = "Left",
-						Font = UI.Theme.Font,
-						RichText = true,
-						Size = UDim2.new(1, 0, 0, 0),
-
-						AutomaticSize = Enum.AutomaticSize.Y,
-					},
-				},
-			}
+			context.env.scroller.List:set(toolNames)
+			context.env.window.Title:set(player.Name .. "'s Tools")
+			context.env.window._instance.Visible = true
 		end,
 	},
 	{
