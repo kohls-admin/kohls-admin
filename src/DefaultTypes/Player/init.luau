@@ -49,7 +49,30 @@ local function nameUsed(names, name)
 	return false
 end
 
-local function baseSuggestions(text, from, definition)
+local userCache = {}
+local function memoizeUser(player: Player)
+	if userCache[player.UserId] then
+		return
+	end
+	userCache[player.UserId] = {
+		Name = player.Name,
+		DisplayName = player.DisplayName,
+		UserId = player.UserId,
+	}
+end
+local function freeUser(userId: number)
+	userCache[userId] = nil
+end
+
+Players.PlayerAdded:Connect(memoizeUser)
+Players.PlayerRemoving:Connect(function(player)
+	task.delay(120, freeUser, player.UserId)
+end)
+for _, player in Players:GetPlayers() do
+	memoizeUser(player)
+end
+
+local function baseSuggestions(text, from, definition, userType: boolean?)
 	local players = Players:GetPlayers()
 	local names, instances = {}, {}
 
@@ -70,6 +93,23 @@ local function baseSuggestions(text, from, definition)
 		table.insert(instances, player)
 	end
 
+	if userType then
+		for userId, user in userCache do
+			if Players:GetPlayerByUserId(userId) then
+				continue
+			end
+			if
+				(definition.ignoreSelf and userId == from)
+				or (definition.lowerRank and userId ~= from and rank <= _K.Auth.getRank(userId))
+			then
+				continue
+			end
+
+			table.insert(names, user.Name)
+			table.insert(instances, user)
+		end
+	end
+
 	-- diplayName suggestions
 	for index = 1, #instances do
 		local player = instances[index]
@@ -79,10 +119,12 @@ local function baseSuggestions(text, from, definition)
 		table.insert(names, player.DisplayName)
 		table.insert(instances, player)
 
-		local kDisplay = player:GetAttribute("_KDisplayName")
-		if kDisplay and not nameUsed(names, kDisplay) then
-			table.insert(names, kDisplay)
-			table.insert(instances, player)
+		if typeof(player) == "Instance" then
+			local kDisplay = player:GetAttribute("_KDisplayName")
+			if kDisplay and not nameUsed(names, kDisplay) then
+				table.insert(names, kDisplay)
+				table.insert(instances, player)
+			end
 		end
 	end
 
@@ -94,7 +136,7 @@ local function baseSuggestions(text, from, definition)
 	return names, instances
 end
 
-local function parseIndividual(arg, self)
+local function parseIndividual(arg, self, userType)
 	if arg == "" or arg == "me" then
 		return self._K.Auth.targetUserArgument(self, self.command.from, self.command.fromPlayer)
 	end
@@ -110,6 +152,19 @@ local function parseIndividual(arg, self)
 		end
 	end
 
+	if userType then
+		print(userCache)
+		for userId, user in userCache do
+			local name = string.lower(user.Name)
+			if name == arg then
+				return self._K.Auth.targetUserArgument(self, userId, user)
+			end
+			if not partial and string.find(name, arg, 1, true) == 1 then
+				partial = user
+			end
+		end
+	end
+
 	for _, player in Players:GetPlayers() do
 		local displayName = string.lower(player.DisplayName)
 		local kDisplay = player:GetAttribute("_KDisplayName")
@@ -121,6 +176,18 @@ local function parseIndividual(arg, self)
 			not partial and (string.find(displayName, arg, 1, true) == 1 or (string.find(kDisplay, arg, 1, true) == 1))
 		then
 			partial = player
+		end
+	end
+
+	if userType then
+		for userId, user in userCache do
+			local displayName = string.lower(user.DisplayName)
+			if displayName == arg then
+				return self._K.Auth.targetUserArgument(self, userId, user)
+			end
+			if not partial and string.find(displayName, arg, 1, true) == 1 then
+				partial = user
+			end
 		end
 	end
 
@@ -140,7 +207,7 @@ local typeIndividual = {
 }
 
 local function parseUser(arg, self)
-	local player = parseIndividual(arg, self)
+	local player = parseIndividual(arg, self, true)
 	local userId = tonumber(if player then player.UserId else arg)
 	if userId and userId > 0 then
 		return self._K.Auth.targetUserArgument(self, userId, userId)
@@ -154,22 +221,27 @@ local typeUser = {
 	parse = parseUser,
 	postParse = function(parsedArgs)
 		-- compile nested players from prefixes into one list, transform prefix results to userId
-		local players = {}
+		local users = {}
 		for _, arg in parsedArgs do
 			if type(arg) == "table" then
-				for _, player in arg do
-					table.insert(
-						players,
-						if typeof(player) == "Instance" and player:IsA("Player") then player.UserId else player
-					)
+				for _, user in arg do
+					local userId = if type(user) == "table" or (typeof(user) == "Instance" and user:IsA("Player"))
+						then user.UserId
+						else user
+					table.insert(users, userId)
 				end
 			else
-				table.insert(players, if typeof(arg) == "Instance" and arg:IsA("Player") then arg.UserId else arg)
+				local userId = if type(arg) == "table" or (typeof(arg) == "Instance" and arg:IsA("Player"))
+					then arg.UserId
+					else arg
+				table.insert(users, userId)
 			end
 		end
-		return players
+		return users
 	end,
-	suggestions = typeIndividual.suggestions,
+	suggestions = function(text, from, definition)
+		return baseSuggestions(text, from, definition, true)
+	end,
 	prefixes = prefixes,
 }
 
