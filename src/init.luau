@@ -115,7 +115,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 				table.insert(_K.Data.Cache.chatLogs, { log.text, log.level, log.time, from, log.name })
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
-				if player:SetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
+				if player:GetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
 					_K.Remote.Log:FireClient(player, log)
 				end
 			end
