@@ -194,7 +194,7 @@ function Window.new(definition)
 			local size = use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset
 			return UDim2.new(0, size, 0, size)
 		end),
-		Icon = "rbxassetid://1476571006",
+		Icon = UI.Theme.Image.Close,
 		IconProperties = {
 			Size = UDim2.new(0, 10, 0, 10),
 		},

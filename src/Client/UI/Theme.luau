@@ -69,6 +69,11 @@ local Theme = {
 	TweenIn = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In)),
 	TweenOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)),
 	TweenInOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut)),
+
+	Image = {
+		Check = "rbxassetid://2340153468",
+		Close = "rbxassetid://1476571006",
+	},
 }
 
 Theme.TransparencyClamped = compute(function(use)

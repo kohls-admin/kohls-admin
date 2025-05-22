@@ -43,7 +43,7 @@ function Bans.new(_K)
 			BackgroundColor3 = Color3.fromRGB(200, 0, 0),
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
-			Icon = "rbxassetid://1476571006",
+			Icon = UI.Theme.Image.Close,
 			IconProperties = {
 				Size = UDim2.new(0, 10, 0, 10),
 			},

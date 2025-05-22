@@ -76,7 +76,7 @@ function Checkbox.new(definition: CheckboxDefinition)
 				BackgroundTransparency = 1,
 				Position = UDim2.new(0, 5, 0.5, 0),
 				Size = UDim2.new(0, 14, 0, 14),
-				Image = "rbxassetid://2340153468",
+				Image = UI.Theme.Image.Check,
 				ImageColor3 = UI.Theme.Secondary,
 			},
 		},

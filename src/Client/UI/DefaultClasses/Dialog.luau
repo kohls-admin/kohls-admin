@@ -91,7 +91,7 @@ function Dialog.new(definition)
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
 		Position = UDim2.new(1, 0, 0, 0),
 		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarger, 0, UI.Theme.FontSizeLarger),
-		Icon = "rbxassetid://1476571006",
+		Icon = UI.Theme.Image.Close,
 		IconProperties = {
 			Size = UDim2.new(0, 10, 0, 10),
 		},
@@ -298,7 +298,7 @@ function Dialog.new(definition)
 						BackgroundTransparency = 1,
 						Position = UDim2.fromScale(0.5, 0.5),
 						Size = UDim2.new(0, 10, 0, 10),
-						Image = "rbxassetid://1476571006",
+						Image = UI.Theme.Image.Close,
 						ImageColor3 = UI.Theme.Invalid,
 					},
 
@@ -341,7 +341,7 @@ function Dialog.new(definition)
 						BackgroundTransparency = 1,
 						Position = UDim2.fromScale(0.5, 0.5),
 						Size = UDim2.new(0, 14, 0, 14),
-						Image = "rbxassetid://2340153468",
+						Image = UI.Theme.Image.Check,
 						ImageColor3 = UI.Theme.Valid,
 					},
 

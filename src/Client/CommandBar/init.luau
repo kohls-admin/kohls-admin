@@ -58,7 +58,7 @@ Input = UI.new "Input" {
 				Position = UDim2.new(0.5, 0, 0.5, 0),
 				Size = UDim2.new(0, 14, 0, 14),
 				ImageColor3 = Color3.new(0, 1, 0),
-				Image = "rbxassetid://2340153468",
+				Image = UI.Theme.Image.Check,
 				Visible = UI.compute(function(use)
 					return use(validState) == true
 				end),
@@ -71,7 +71,7 @@ Input = UI.new "Input" {
 				Position = UDim2.new(0.5, 0, 0.5, 0),
 				Size = UDim2.new(0, 10, 0, 10),
 				ImageColor3 = Color3.new(1, 0, 0),
-				Image = "rbxassetid://1476571006",
+				Image = UI.Theme.Image.Close,
 				Visible = UI.compute(function(use)
 					return use(validState) == false
 				end),
