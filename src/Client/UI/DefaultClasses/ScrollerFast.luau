@@ -1,6 +1,25 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
 
+local Defer = {}
+do
+	local defaultBudget, expireTime = 1 / 240, 0
+	-- Call at start of process to prevent unnecessarily waiting.
+	function Defer.reset(budget: number?)
+		local now = os.clock()
+		if now >= expireTime then
+			expireTime = os.clock() + (defaultBudget or budget)
+		end
+	end
+
+	function Defer.wait(budget: number?)
+		if os.clock() >= expireTime then
+			task.wait()
+			Defer.reset(budget)
+		end
+	end
+end
+
 local ScrollerFast = {}
 ScrollerFast.__index = ScrollerFast
 setmetatable(ScrollerFast, BaseClass)
@@ -50,6 +69,8 @@ function ScrollerFast:render()
 
 	self._scroller.CanvasSize = UDim2.new(0, 0, 0, #self._filteredList * lineHeight)
 
+	Defer.reset()
+
 	local cacheIndex = 1
 	for i = startIndex, endIndex do
 		local lineItem = self._lineItemCache[cacheIndex]
@@ -72,27 +93,32 @@ function ScrollerFast:render()
 				}
 			table.insert(self._lineItemCache, lineItem)
 		end
-		lineItem.Visible = true
 		if self.RenderItem then
 			self.RenderItem._value(self, lineItem, lineData)
 		else
 			lineItem.Text = if self.RenderText then self.RenderText._value(self, lineItem, lineData) else lineData
 		end
 		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
+		lineItem.Visible = true
 		lineItem.Parent = self._scroller
 
 		cacheIndex = cacheIndex + 1
+		Defer.wait()
 	end
 
 	for i = cacheIndex, #self._lineItemCache do
 		self._lineItemCache[i].Visible = false
+		self._lineItemCache[i].Parent = nil
 	end
 end
 
 -- Used to render changes from the _rawList
 function ScrollerFast:updateList()
 	if self._instance.Visible then
+		Defer.reset()
+		Defer.wait()
 		self:cloneRaw()
+		Defer.wait()
 		if self._sortFunction then
 			table.sort(self._sortedList, self._sortFunction)
 		end
@@ -103,9 +129,12 @@ end
 
 function ScrollerFast:refreshList()
 	if self._instance.Visible then
+		Defer.reset()
+		Defer.wait()
 		self._filteredList = if self._filterFunction
 			then self._filterFunction(self, self._sortedList)
 			else self._sortedList
+		Defer.wait()
 		self:render()
 	end
 	self.pendingRefresh = not self._instance.Visible
@@ -120,6 +149,8 @@ end
 function ScrollerFast:sort(sortFunction: (...any) -> any)
 	self._sortFunction = sortFunction
 	if self._instance.Visible then
+		Defer.reset()
+		Defer.wait()
 		if sortFunction then
 			table.sort(self._sortedList, sortFunction)
 		else -- unsort
@@ -132,9 +163,10 @@ end
 
 function ScrollerFast:cloneRaw()
 	if self.DictList._value then
-		local list = {}
+		local list, index = {}, 1
 		for key in self.List._value do
-			table.insert(list, key)
+			list[index] = key
+			index += 1
 		end
 		self._sortedList = list
 	else
