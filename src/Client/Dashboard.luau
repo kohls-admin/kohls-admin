@@ -28,7 +28,7 @@ _K.client.dashboard.Tabs = UI.new "Tabs" {
 	_K.client.dashboard.About,
 }
 
-task.defer(_K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
+task.delay(0.2, _K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
