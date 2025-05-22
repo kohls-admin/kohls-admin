@@ -26,7 +26,7 @@ return function(_K, text, cursorPosition)
 		return data
 	end
 
-	local rawCommands = _K.Process.rawParse(text, prefix)
+	local rawCommands = _K.Process.rawParse(text, { prefix, unpack(_K.Data.settings.prefix) })
 	if not rawCommands then
 		table.insert(data.invalid, { "Invalid command", 2, string.sub(text, 2) })
 		return data -- invalid command string, show valid example

@@ -43,8 +43,14 @@ local function Chatted(message: string)
 	if _K.Data.settings.chatCommands == false then
 		return
 	end
-	local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
-	local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
+	local prefix = _K.getCommandPrefix()
+	local commandStart
+	for _, value in { prefix, unpack(_K.Data.settings.prefix) } do
+		commandStart = string.find(message, string.format('%s[^%s"`,%%s]', value, value))
+		if commandStart then
+			break
+		end
+	end
 	if not commandStart then
 		-- check for optionalPrefix
 		local directCommand = _K.Registry.commands[string.lower(message)]

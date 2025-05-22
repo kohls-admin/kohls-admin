@@ -119,7 +119,7 @@ function Settings.new(_K)
 					MaxChars = 1,
 					Value = UI.compute(function(use)
 						return use(_K.client.settings.playerPrefix)[UI.LocalPlayer.UserId]
-							or use(_K.client.settings.prefix)
+							or use(_K.client.settings.prefix)[1]
 					end),
 					Validate = function(text)
 						return not (text == "" or table.find(reservedPrefixes, text))
@@ -147,7 +147,7 @@ function Settings.new(_K)
 					Placeholder = ";",
 					MaxChars = 1,
 					Value = UI.compute(function(use)
-						return use(_K.client.settings.prefix)
+						return use(_K.client.settings.prefix)[1]
 					end),
 					Validate = function(text)
 						return not (text == "" or table.find(reservedPrefixes, text))
@@ -155,8 +155,8 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Selected = function(value)
-							_K.client.settings.prefix._value = value
-							change("prefix", value)
+							_K.client.settings.prefix._value[1] = value
+							change("prefix", _K.client.settings.prefix._value)
 						end,
 					},
 				},

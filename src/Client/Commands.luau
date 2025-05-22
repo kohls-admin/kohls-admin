@@ -167,7 +167,7 @@ function Commands.new(_K)
 		end
 
 		if self._filter ~= "" then
-			local text = `{_K.Data.settings.prefix}{command.name} {argNames} {aliasText}`
+			local text = `{_K.getCommandPrefix()}{command.name} {argNames} {aliasText}`
 			local filterFound = string.find(string.lower(text), self._filter, 1, true)
 			item.Text = if filterFound
 				then string.format(
@@ -190,7 +190,7 @@ function Commands.new(_K)
 		else
 			item.Text = string.format(
 				commandRichFormat,
-				escape(_K.Data.settings.prefix .. command.name .. " " .. argNames),
+				escape(_K.getCommandPrefix() .. command.name .. " " .. argNames),
 				escape(aliasText)
 			)
 			item.Description.Text = `<font transparency="0.33">{command.description}</font>`
@@ -259,7 +259,7 @@ function Commands.new(_K)
 				command.aliasText = aliasText
 			end
 
-			local text = `{_K.Data.settings.prefix}{command.name}{aliasText} {command.description}`
+			local text = `{_K.getCommandPrefix()}{command.name}{aliasText} {command.description}`
 			if text:lower():find(filter, 1, true) then
 				table.insert(new, command)
 			end

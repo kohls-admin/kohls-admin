@@ -112,8 +112,9 @@ return {
 
 				local player = context._K.Service.Players:GetPlayerByUserId(userId)
 				if player and #rolesAdded > 0 then
+					local prefix = context._K.getCommandPrefix(player.UserId)
 					context._K.Remote.Notify:FireClient(player, {
-						Text = `Gave you the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
+						Text = `Gave you the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{prefix}cmds</b> or <b>{prefix}info</b> for details.`,
 						From = context.from,
 					})
 				end
@@ -169,8 +170,9 @@ return {
 
 				local player = context._K.Service.Players:GetPlayerByUserId(userId)
 				if player and #rolesAdded > 0 then
+					local prefix = context._K.getCommandPrefix(player.UserId)
 					context._K.Remote.Notify:FireClient(player, {
-						Text = `Gave you the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{context._K.Data.settings.prefix}cmds</b> or <b>{context._K.Data.settings.prefix}info</b> for details.`,
+						Text = `Gave you the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{prefix}cmds</b> or <b>{prefix}info</b> for details.`,
 						From = context.from,
 					})
 				end

@@ -38,7 +38,7 @@ local Data = {
 	settings = {
 		liveSettings = true,
 
-		prefix = ";",
+		prefix = { ";", ":" },
 
 		chatCommands = true,
 		commandBarRank = 0,

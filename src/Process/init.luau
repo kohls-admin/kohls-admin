@@ -13,11 +13,17 @@ type ArgumentDefinition = Type.ArgumentDefinition
 local Process = {}
 
 --- Parses a string into a raw command format.
-function Process.rawParse(message: string, prefix: string, argSeparator: string?): { any }?
-	-- is there a command prefix?
-	if string.find(message, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
+function Process.rawParse(message: string, prefixes: { string }, argSeparator: string?): { any }?
+	local prefix
+	for _, value in prefixes do
+		if string.find(message, string.format('^%s[^%s"`,%%s]', value, value)) ~= 1 then
+			prefix = value
+		end
+	end
+	if not prefix then
 		return
 	end
+
 	message = string.sub(message, #prefix + 1)
 
 	local delimiter = argSeparator or "%s"
@@ -81,7 +87,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 	end
 
 	local text = Util.String.trimStart(rawText)
-	local rawCommands = Process.rawParse(text, _K.getCommandPrefix(from))
+	local rawCommands = Process.rawParse(text, { _K.getCommandPrefix(from), unpack(_K.Data.settings.prefix) })
 	if not rawCommands then
 		return
 	end
@@ -213,11 +219,12 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 
 		if #commandsRan > 0 then
 			local index, log, tasks = 1, {}, Util.TaskGroup.new()
+			local prefix = _K.getCommandPrefix()
 			for _, command in commandsRan do
 				if command.definition.noLog or (_K.IsClient and not command.definition.runClient) then
 					continue
 				end
-				log[index] = _K.Data.settings.prefix .. command.alias
+				log[index] = prefix .. command.alias
 				index += 1
 				for _, arg in command.args do
 					local position = index

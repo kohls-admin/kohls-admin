@@ -6,6 +6,7 @@ local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
 
 local UI = _K.UI
+local prefix = _K.getCommandPrefix()
 
 local validState = UI.state(nil)
 local indicatorColor = UI.compute(function(use)
@@ -570,7 +571,7 @@ updateCompletion = function()
 	elseif
 		not quote
 		and data.suggestionType ~= "History"
-		and string.find(completion, `[ {_K.Util.String.escapePattern(_K.getCommandPrefix(UI.LocalPlayer.UserId))}]`)
+		and string.find(completion, `[ {_K.Util.String.escapePattern(prefix)}]`)
 	then
 		completion = `"{completion}"`
 	end
@@ -688,7 +689,7 @@ return {
 		end
 		initialized = true
 
-		local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
+		prefix = _K.getCommandPrefix()
 		Input.Value:set(prefix, true)
 		Input._input.TextEditable = false
 		CommandBar.Parent = UI.TopbarFrame
@@ -696,7 +697,7 @@ return {
 		_K.client.CommandBarState = { validState, indicatorColor }
 
 		local function updatePrefix()
-			local value = _K.getCommandPrefix(UI.LocalPlayer.UserId)
+			local value = _K.getCommandPrefix()
 			Input.Value:set(value .. string.sub(Input._input.Text, #prefix + 1), true)
 			prefix = value
 		end
@@ -730,7 +731,7 @@ return {
 		Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 			local cursorPosition = Input._input.CursorPosition
 			if cursorPosition ~= -1 then
-				local prefixPosition = #_K.getCommandPrefix(UI.LocalPlayer.UserId) + 1
+				local prefixPosition = #prefix + 1
 				if cursorPosition < prefixPosition then
 					Input._input.CursorPosition = prefixPosition
 					return
@@ -753,7 +754,6 @@ return {
 
 		Input._input.FocusLost:Connect(function(enterPressed)
 			if enterPressed then
-				local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
 				invalidStroke.Enabled = true
 				Input._input.TextEditable = false
 
@@ -816,7 +816,6 @@ return {
 				return
 			end
 
-			local prefix = _K.getCommandPrefix(UI.LocalPlayer.UserId)
 			local prefixLen = #prefix
 			local text = Input._input.Text
 

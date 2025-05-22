@@ -80,8 +80,12 @@ local _K = {
 	_addonTag = "Kohl's Admin Addon",
 }
 
-function _K.getCommandPrefix(from: number)
-	return _K.Data.settings.playerPrefix[from] or _K.Data.settings.prefix
+function _K.getCommandPrefix(from: number?)
+	if not from and _K.IsClient then
+		from = Util.Service.Players.LocalPlayer.UserId
+	end
+	return _K.Data.settings.playerPrefix[from]
+		or (if type(_K.Data.settings.prefix) == "table" then _K.Data.settings.prefix[1] else _K.Data.settings.prefix)
 end
 
 function _K.log(text: string, level: LogType, from: number?, filtered: boolean?): Log?
@@ -282,6 +286,10 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	local settings = settingsObject :: { [string]: any }
 	_K.Data.settingsModuleData = settings
 
+	if type(settings.prefix) == "string" then
+		settings.prefix = { settings.prefix }
+	end
+
 	-- format array role hierarchy
 	do
 		if settings.roles.default then
@@ -428,8 +436,9 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 			end
 
 			if player and #rolesAdded > 0 then
+				local prefix = _K.getCommandPrefix(player.UserId)
 				_K.Remote.Notify:FireClient(player, {
-					Text = `You got the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{_K.Data.settings.prefix}cmds</b> or <b>{_K.Data.settings.prefix}info</b> for details.`,
+					Text = `You got the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{prefix}cmds</b> or <b>{prefix}info</b> for details.`,
 					From = "_K",
 				})
 			end
@@ -558,7 +567,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	_K.Remote.Unban.OnServerEvent:Connect(function(player, userId)
 		local ban = _K.Data.bans[tostring(userId)]
 		if ban and _K.Auth.hasCommand(player.UserId, "unban") then
-			_K.log(`{_K.Data.settings.prefix}unban {userId}`, "COMMAND", player.UserId)
+			_K.log(`{_K.getCommandPrefix()}unban {userId}`, "COMMAND", player.UserId)
 			_K.Auth.unbanUsers({ userId }, player.UserId)
 		end
 	end)

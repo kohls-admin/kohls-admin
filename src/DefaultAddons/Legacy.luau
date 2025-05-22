@@ -298,7 +298,7 @@ return function(_K)
 		end
 
 		if settings.Prefix ~= ";" then
-			_K.Data.settings.prefix = settings.Prefix
+			_K.Data.settings.prefix = { settings.Prefix }
 		end
 
 		if tonumber(settings.FreeAdmin) then

@@ -60,7 +60,7 @@ function Command:requestCommand(player: Player)
 	local accepted = self._K.Remote.RequestCommand:InvokeClient(
 		player,
 		self.fromPlayer,
-		`{self._K.Data.settings.prefix}{self.alias} {player.Name}`
+		`{self._K.getCommandPrefix()}{self.alias} {player.Name}`
 	)
 
 	local status = if accepted
