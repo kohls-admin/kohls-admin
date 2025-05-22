@@ -82,9 +82,9 @@ if _K.Service.TextChat.ChatVersion == Enum.ChatVersion.TextChatService then
 	_K.Service.TextChat.SendingMessage:Connect(function(textChatMessage: TextChatMessage)
 		Chatted(_K.Util.String.unescapeRichText(textChatMessage.Text))
 	end)
-else
-	UI.LocalPlayer.Chatted:Connect(Chatted)
 end
+
+_K.Remote.Command.OnClientEvent:Connect(Chatted)
 
 _K.Service.UserInput.InputBegan:Connect(function(input, gameProcessedEvent)
 	if gameProcessedEvent then

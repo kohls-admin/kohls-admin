@@ -248,16 +248,16 @@ local function playerAdded(player: Player)
 	end
 	player.CharacterAdded:Connect(characterAdded)
 	player.Chatted:Connect(function(message: string)
+		local emote = string.find(message, "/e", 1, true) == 1
+		local v = _K.Service.TextChat.ChatVersion
 		if
-			_K.Service.TextChat.ChatVersion == Enum.ChatVersion.TextChatService
-			and string.find(message, "/e", 1, true) == 1
-			and _K.Data.settings.chatCommands ~= false
+			_K.Data.settings.chatCommands ~= false
+			and ((v == Enum.ChatVersion.TextChatService and emote) or v == Enum.ChatVersion.LegacyChatService)
 		then
-			local prefix = _K.Data.settings.prefix
-			local commandStart = string.find(message, string.format('%s[^%s"`,%%s]', prefix, prefix))
-			if commandStart then
-				_K.Process.runCommands(_K, player.UserId, string.sub(message, commandStart))
-			end
+			_K.Remote.Command:FireClient(player, message)
+		end
+		if emote then
+			return
 		end
 		_K.log(message, "CHAT", player.UserId)
 	end)
