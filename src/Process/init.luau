@@ -16,7 +16,7 @@ local Process = {}
 function Process.rawParse(message: string, prefixes: { string }, argSeparator: string?): { any }?
 	local prefix
 	for _, value in prefixes do
-		if string.find(message, string.format('^%s[^%s"`,%%s]', value, value)) ~= 1 then
+		if string.find(message, string.format('^%s[^%s"`,%%s]', value, value)) == 1 then
 			prefix = value
 		end
 	end
