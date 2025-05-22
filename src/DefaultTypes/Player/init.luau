@@ -52,13 +52,12 @@ end
 local function baseSuggestions(text, from, definition)
 	local players = Players:GetPlayers()
 	local names, instances = {}, {}
-	-- add me suggestion
+
 	if not definition.ignoreSelf then
 		table.insert(names, "me")
 		table.insert(instances, Players.LocalPlayer)
 	end
 
-	-- filter out lowerRank and ignoreSelf
 	local rank = _K.Auth.getRank(from)
 	for _, player in players do
 		if
@@ -74,7 +73,6 @@ local function baseSuggestions(text, from, definition)
 	-- diplayName suggestions
 	for index = 1, #instances do
 		local player = instances[index]
-		-- hide duplicate suggestions
 		if player.Name == player.DisplayName or nameUsed(names, player.DisplayName) then
 			continue
 		end
@@ -137,33 +135,8 @@ local typeIndividual = {
 	transform = string.lower,
 	validate = generateValidate(parseIndividual),
 	parse = parseIndividual,
-	suggestions = function(text, from, definition)
-		return baseSuggestions(text, from, definition)
-	end,
+	suggestions = baseSuggestions,
 	prefixes = prefixes,
-}
-
-local typeMultiple = {
-	listable = true,
-	transform = string.lower,
-	validate = typeIndividual.validate,
-	parse = parseIndividual,
-	postParse = function(parsedArgs)
-		-- compile nested players from prefixes into one list
-		local players = {}
-		for _, arg in parsedArgs do
-			if type(arg) == "table" then
-				for _, player in arg do
-					table.insert(players, player)
-				end
-			else
-				table.insert(players, arg)
-			end
-		end
-		return players
-	end,
-	prefixes = prefixes,
-	suggestions = typeIndividual.suggestions,
 }
 
 local function parseUser(arg, self)
@@ -204,7 +177,23 @@ return function(context)
 	_K = context
 
 	_K.Registry.registerType("player", typeIndividual)
-	_K.Registry.registerType("players", typeMultiple)
+	_K.Registry.registerType("players", {
+		listable = true,
+		postParse = function(parsedArgs)
+			-- compile nested players from prefixes into one list
+			local players = {}
+			for _, arg in parsedArgs do
+				if type(arg) == "table" then
+					for _, player in arg do
+						table.insert(players, player)
+					end
+				else
+					table.insert(players, arg)
+				end
+			end
+			return players
+		end,
+	}, typeIndividual)
 
 	_K.Registry.registerType("userId", typeUser)
 	_K.Registry.registerType("userIds", { listable = true }, typeUser)
