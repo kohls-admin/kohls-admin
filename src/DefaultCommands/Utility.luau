@@ -442,7 +442,7 @@ return {
 			context._K.Util.SafeTeleport(
 				game.PlaceId,
 				{ context.fromPlayer },
-				#context._K.Service.Players:GetPlayers() > 1 and options
+				if #context._K.Service.Players:GetPlayers() > 1 then options else nil
 			)
 		end,
 	},
