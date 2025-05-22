@@ -42,11 +42,14 @@ function Logs.new(_K)
 		local filter = string.lower(self._input._input.Text)
 		self._filter = filter
 		local new = {}
-		_K.Util.Defer.reset()
 		for i, log in list do
 			local levelText = _K.Logger:decode(log.level)
 			if not logTypeFilter[levelText]._value then
 				continue
+			end
+
+			if not log.dateTime then
+				log.dateTime = os.date("%y-%m-%d", log.time)
 			end
 
 			if not log.filterText then
@@ -92,7 +95,6 @@ function Logs.new(_K)
 				log.filterEnd = foundEnd
 				table.insert(new, log)
 			end
-			_K.Util.Defer.wait()
 		end
 		return new
 	end
@@ -138,10 +140,9 @@ function Logs.new(_K)
 				else text
 		end
 
-		text = text or "LOADING..."
-		item.Text = text
+		item.Text = text or "LOADING..."
 		if item:FindFirstChild("TooltipRef") and item.TooltipRef.Value then
-			item.TooltipRef.Value.Text = `<font transparency="0.5">{os.date("%y-%m-%d", log.time)} </font>` .. text
+			item.TooltipRef.Value.Text = `<font transparency="0.5">{log.dateTime} </font>{item.Text}`
 		end
 	end
 
