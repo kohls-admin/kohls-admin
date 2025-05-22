@@ -38,6 +38,7 @@ for key, value in _K.Data.settings do
 end
 
 local chatCommandThrottle
+local warnPrefixes = _K.Util.String.escapePattern(";:!$~.")
 
 local function Chatted(message: string)
 	if _K.Data.settings.chatCommands == false then
@@ -58,10 +59,13 @@ local function Chatted(message: string)
 			commandStart = 1
 			message = prefix .. message
 		else
-			if _K.Data.settings.wrongPrefixWarning ~= false then
+			if _K.Data.settings.wrongPrefixWarning ~= false and #warnPrefixes > 0 then
 				local test = " " .. string.lower(message)
 				for alias in _K.Registry.commands do
-					if string.find(test, `[;:]{_K.Util.String.escapePattern(alias)}`) then
+					local i = string.find(test, `[{warnPrefixes}]{_K.Util.String.escapePattern(alias)}`)
+					if i then
+						warnPrefixes =
+							_K.Util.String.escapePattern(warnPrefixes:gsub("%%", ""):gsub(test:sub(i, i + 1), ""))
 						task.spawn(_K.Notify, {
 							Text = `<b>Invalid command prefix, try "{prefix}{alias}"</b>`,
 							TextColor3 = Color3.new(1, 0, 0),
@@ -70,6 +74,7 @@ local function Chatted(message: string)
 						})
 						break
 					end
+					_K.Util.Defer.wait()
 				end
 			end
 			return
