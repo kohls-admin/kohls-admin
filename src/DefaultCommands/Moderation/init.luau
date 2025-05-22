@@ -815,7 +815,7 @@ return {
 			end
 			local toolNames = {}
 			for _, tool in context._K.tools do
-				if tool.Name == "all" then
+				if tool.Name == "all" or table.find(toolNames, tool.Name) then
 					continue
 				end
 				table.insert(toolNames, tool.Name)
@@ -872,7 +872,7 @@ return {
 						return
 					end
 					for _, tool in source:GetChildren() do
-						if tool:IsA("Tool") or tool:IsA("HopperBin") then
+						if (tool:IsA("Tool") or tool:IsA("HopperBin")) and not table.find(tools, tool.Name) then
 							table.insert(tools, tool.Name)
 						end
 					end
