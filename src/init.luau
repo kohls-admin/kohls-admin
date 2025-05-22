@@ -365,7 +365,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end
 	end
 
-	local function setupPurchasables(purchasables, roleKey)
+	function _K.setupPurchasables(purchasables, roleKey)
 		for id, role in purchasables do
 			local roleData = _K.Data.roles[role]
 			if roleData then
@@ -377,15 +377,15 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 
 	if settings.assetRoles then
 		_K.Util.Table.deepMerge(_K.Data.async.asset, settings.assetRoles)
-		setupPurchasables(settings.assetRoles, "assets")
+		_K.setupPurchasables(settings.assetRoles, "assets")
 	end
 	if settings.gamePassRoles then
 		_K.Util.Table.deepMerge(_K.Data.async.gamepass, settings.gamePassRoles)
-		setupPurchasables(settings.gamePassRoles, "gamepasses")
+		_K.setupPurchasables(settings.gamePassRoles, "gamepasses")
 	end
 	if settings.subscriptionRoles then
 		_K.Util.Table.deepMerge(_K.Data.async.subscription, settings.subscriptionRoles)
-		setupPurchasables(settings.subscriptionRoles, "subscriptions")
+		_K.setupPurchasables(settings.subscriptionRoles, "subscriptions")
 	end
 
 	if settings.groupRoles then
