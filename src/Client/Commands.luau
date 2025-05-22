@@ -68,107 +68,16 @@ function Commands.new(_K)
 	end
 
 	local function renderItem(self, item, command)
-		local aliasText = command.aliasText
-
-		if not aliasText then
-			aliasText = if command.aliases and #command.aliases > 0
-				then `[{table.concat(command.aliases, ", ")}]`
-				else ""
-			command.aliasText = aliasText
-		end
-
-		local argNames = command.argNames
-		local argTooltip = command.argTooltip
-
-		if not argNames then
-			argNames = table.create(#command.args)
-			argTooltip = table.create(#command.args)
-
-			if #command.args > 0 then
-				table.insert(argTooltip, "")
-			end
-
-			for _, arg in command.args do
-				table.insert(argNames, if arg.optional then arg.name .. "?" else arg.name)
-				table.insert(
-					argTooltip,
-					`\n<b><sc>{arg.name}</sc> <font transparency="0.66"><i>&lt;{arg.type}{if arg.optional
-						then `?`
-						else ""}&gt;</i></font></b>\n{arg.description}`
-				)
-				if arg.ignoreSelf then
-					table.insert(argTooltip, `\t<font transparency="0.5"><b>ignoreSelf:</b> true</font>`)
-				end
-				if arg.lowerRank then
-					table.insert(argTooltip, `\t<font transparency="0.5"><b>lowerRank:</b> true</font>`)
-				end
-				if arg.shouldRequest then
-					table.insert(argTooltip, `\t<font transparency="0.5"><b>shouldRequest:</b> true</font>`)
-				end
-			end
-
-			argNames = table.concat(argNames, " ")
-			argTooltip = table.concat(argTooltip, "\n")
-			command.argNames = argNames
-			command.argTooltip = argTooltip
-		end
-
-		local roleString = command.roleString
-		local roleColor = command.roleColor
-
-		if not roleString then
-			local roles = {}
-			for role, _roleData in _K.Data.roles do
-				if _K.Auth.roleCanUseCommand(role, command) then
-					table.insert(roles, role)
-				end
-			end
-
-			table.sort(roles, function(a, b)
-				return _K.Data.roles[a]._rank < _K.Data.roles[b]._rank
-			end)
-
-			roleColor = if #roles > 0 then Color3.fromHex(_K.Data.roles[roles[1]].color) else UI.peek(UI.Theme.Primary)
-			command.roleColor = roleColor
-
-			for i, role in roles do
-				local roleData = _K.Data.roles[role]
-				roles[i] = `<font color="{roleData.color}">{roleData.name}</font>`
-			end
-
-			roleString = table.concat(roles, ", ")
-			command.roleString = roleString
-		end
-
-		local color = if command.LocalPlayerAuthorized
-			then roleColor
-			else roleColor:Lerp(UI.peek(UI.Theme.Primary), 0.5)
-		item.TextColor3 = color
-		item.Description.TextColor3 = color
-
-		local credit = command.creditString
-		if not credit then
-			credit = command.credit or "Kohl @Scripth"
-			if type(credit) == "table" then
-				credit = table.concat(credit, ", ")
-			end
-			command.creditString = credit
-		end
-
-		local tipString = command.tipString
-		if not tipString then
-			tipString =
-				`<b>Restricted to:</b> {roleString}{argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {credit}</font>`
-			command.tipString = tipString
-		end
+		item.TextColor3 = command.roleColorAuth
+		item.Description.TextColor3 = command.roleColorAuth
 
 		if item:FindFirstChild("TooltipRef") and item.TooltipRef.Value then
-			item.TooltipRef.Value.Text = tipString
+			item.TooltipRef.Value.Text = command.tipString
 		end
 
 		if self._filter ~= "" then
-			local text = `{_K.getCommandPrefix()}{command.name} {argNames} {aliasText}`
-			local filterFound = string.find(string.lower(text), self._filter, 1, true)
+			local text = command.rawText
+			local filterFound = string.find(command.filterText, self._filter, 1, true)
 			item.Text = if filterFound
 				then string.format(
 					filterRichFormat,
@@ -177,22 +86,18 @@ function Commands.new(_K)
 					escape(string.sub(text, filterFound + #self._filter))
 				)
 				else `<font transparency="0.5">{text}</font>`
-			local descFound = string.find(string.lower(command.description), self._filter, 1, true)
-			-- TODO: make something that remove richtext tags to prevent highlight filter
+
+			local descFound = string.find(command.filterDesc, self._filter, 1, true)
 			item.Description.Text = if descFound
 				then string.format(
 					filterRichFormat,
-					string.sub(command.description, 1, descFound - 1),
-					string.sub(command.description, descFound, descFound + #self._filter - 1),
-					string.sub(command.description, descFound + #self._filter)
+					escape(string.sub(command.description, 1, descFound - 1)),
+					escape(string.sub(command.description, descFound, descFound + #self._filter - 1)),
+					escape(string.sub(command.description, descFound + #self._filter))
 				)
 				else `<font transparency="0.5">{command.description}</font>`
 		else
-			item.Text = string.format(
-				commandRichFormat,
-				escape(_K.getCommandPrefix() .. command.name .. " " .. argNames),
-				escape(aliasText)
-			)
+			item.Text = string.format(commandRichFormat, escape(command.rawTextNoAlias), escape(command.aliasText))
 			item.Description.Text = `<font transparency="0.33">{command.description}</font>`
 		end
 	end
@@ -245,21 +150,101 @@ function Commands.new(_K)
 		},
 	})
 
+	local function updateRenderParameters(command)
+		if not command.aliasText then
+			command.aliasText = if command.aliases and #command.aliases ~= 0
+				then "/" .. table.concat(command.aliases, "/")
+				else ""
+		end
+
+		if not command.filterText then
+			command.rawTextNoAlias = `{_K.getCommandPrefix()}{command.name} {command.argNames}`
+			command.rawText = `{command.rawTextNoAlias} {command.aliasText}`
+			command.filterText = string.lower(command.rawText)
+			command.filterDesc = string.lower(command.description)
+		end
+
+		if not command.roleString then
+			local roles = {}
+			for role, _roleData in _K.Data.roles do
+				if _K.Auth.roleCanUseCommand(role, command) then
+					table.insert(roles, role)
+				end
+			end
+
+			table.sort(roles, function(a, b)
+				return _K.Data.roles[a]._rank < _K.Data.roles[b]._rank
+			end)
+
+			command.roleColor = if #roles > 0
+				then Color3.fromHex(_K.Data.roles[roles[1]].color)
+				else UI.peek(UI.Theme.Primary)
+
+			for i, role in roles do
+				local roleData = _K.Data.roles[role]
+				roles[i] = `<font color="{roleData.color}">{roleData.name}</font>`
+			end
+
+			command.roleString = table.concat(roles, ", ")
+		end
+
+		command.roleColorAuth = if command.LocalPlayerAuthorized
+			then command.roleColor
+			else command.roleColor:Lerp(UI.peek(UI.Theme.Primary), 0.5)
+
+		if not command.creditString then
+			local credit = command.credit or "Kohl @Scripth"
+			if type(credit) == "table" then
+				credit = table.concat(credit, ", ")
+			end
+			command.creditString = credit
+		end
+
+		if not command.tipString then
+			command.tipString =
+				`<b>Restricted to:</b> {command.roleString}{command.argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {command.creditString}</font>`
+		end
+
+		if not command.argNames then
+			command.argNames = table.create(#command.args)
+			command.argTooltip = table.create(#command.args)
+
+			if #command.args > 0 then
+				table.insert(command.argTooltip, "")
+			end
+
+			for _, arg in command.args do
+				table.insert(command.argNames, if arg.optional then arg.name .. "?" else arg.name)
+				table.insert(
+					command.argTooltip,
+					`\n<b><sc>{arg.name}</sc> <font transparency="0.66"><i>&lt;{arg.type}{if arg.optional
+						then `?`
+						else ""}&gt;</i></font></b>\n{arg.description}`
+				)
+				if arg.ignoreSelf then
+					table.insert(command.argTooltip, `\t<font transparency="0.5"><b>ignoreSelf:</b> true</font>`)
+				end
+				if arg.lowerRank then
+					table.insert(command.argTooltip, `\t<font transparency="0.5"><b>lowerRank:</b> true</font>`)
+				end
+				if arg.shouldRequest then
+					table.insert(command.argTooltip, `\t<font transparency="0.5"><b>shouldRequest:</b> true</font>`)
+				end
+			end
+
+			command.argNames = table.concat(command.argNames, " ")
+			command.argTooltip = table.concat(command.argTooltip, "\n")
+		end
+	end
+
 	local function filterTest(self, list)
 		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
 
 		local new = {}
 		for _, command in list do
-			local aliasText = command.aliasText
-			if not aliasText then
-				aliasText = if command.aliases and #command.aliases ~= 0
-					then "/" .. table.concat(command.aliases, "/")
-					else ""
-				command.aliasText = aliasText
-			end
-
-			local text = `{_K.getCommandPrefix()}{command.name}{aliasText} {command.description}`
+			updateRenderParameters(command)
+			local text = `{_K.getCommandPrefix()}{command.name}{command.aliasText} {command.description}`
 			if text:lower():find(filter, 1, true) then
 				table.insert(new, command)
 			end
