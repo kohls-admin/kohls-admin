@@ -1,3 +1,7 @@
+NOTE = [[
+	Legacy custom commands are automatically registered in the new admin!
+]]
+
 --[[
 
 ADMIN POWERS

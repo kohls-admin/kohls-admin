@@ -131,4 +131,193 @@ return function(_K)
 			end,
 		})
 	end
+
+	task.spawn(function()
+		local LEGACY_CONFIG = script.Parent.Parent:WaitForChild("LegacyConfig", 5)
+		if not LEGACY_CONFIG then
+			return
+		end
+
+		local CUSTOM_COMMANDS = require(LEGACY_CONFIG:WaitForChild("Custom_Commands"))
+		local SETTINGS = require(LEGACY_CONFIG:WaitForChild("Settings"))
+
+		-- MIGRATE CUSTOM COMMANDS
+
+		if type(CUSTOM_COMMANDS) == "table" then
+			local legacyCommandRankToGroup = {
+				[0] = "Utility", -- Player
+				[1] = "VIP",
+				[2] = "Moderation",
+				[3] = "Administration",
+				[4] = "SuperAdmin",
+				[5] = "Creator", -- above 5 is clamped
+			}
+
+			local legacyArgToNew = {
+				player = "players",
+				userid = "userIds",
+				boolean = "boolean",
+				color = "color",
+				number = "number",
+				string = "rawString",
+				word = "rawString",
+				time = "timeSimple",
+				banned = "ban",
+				admin = "member",
+			}
+
+			for _, definition in CUSTOM_COMMANDS do
+				local aliases, desc, rank, argList, run = unpack(definition)
+
+				local args = {}
+				for _, arg in argList do
+					arg = string.lower(arg)
+					local optional = string.find(arg, "/$")
+					if optional then
+						arg = string.sub(arg, 1, -2)
+					end
+					table.insert(args, {
+						type = legacyArgToNew[arg],
+						optional = optional,
+						description = "Migrated from Legacy custom commands.",
+					})
+				end
+
+				_K.Registry.registerCommand(_K, {
+					name = aliases[1],
+					aliases = { unpack(aliases, 2) },
+					description = tostring(desc[1]) .. "\nMigrated from Legacy config.",
+					group = legacyCommandRankToGroup[math.clamp(rank, 0, 5)],
+					args = args,
+					run = function(context, ...)
+						run(context.fromPlayer, { ... })
+					end,
+				})
+			end
+		end
+
+		-- MIGRATE SETTINGS
+
+		if not (_K.IsServer and type(SETTINGS) == "table") then
+			return
+		end
+
+		local settings, ranks = unpack(SETTINGS)
+		local owners, superAdmins, admins, mods, vip, banned = unpack(ranks)
+
+		-- BANS
+
+		local function banUser(nameOrUserId)
+			if type(nameOrUserId) == "string" then
+				nameOrUserId = _K.Service.Players:GetUserIdFromNameAsync(nameOrUserId)
+			end
+			_K.Auth.banUsers({ nameOrUserId }, "Migrated from Legacy bans.", 0, _K.creatorId)
+		end
+
+		for index, nameOrUserId in banned do
+			task.spawn(banUser, nameOrUserId)
+		end
+
+		-- ROLES
+
+		local function getRoleFromRank(rank)
+			rank = tonumber(rank)
+			if rank then
+				rank = math.clamp(rank, 1, 5)
+				for roleId, role in _K.Data.roles do
+					if role._rank == rank then
+						return roleId, role
+					end
+				end
+			end
+			return
+		end
+
+		local function roleUser(nameOrUserId, rank)
+			local roleId = getRoleFromRank(rank)
+			if roleId then
+				if type(nameOrUserId) == "string" then
+					nameOrUserId = _K.Service.Players:GetUserIdFromNameAsync(nameOrUserId)
+				end
+				_K.Auth.userRoleAdd(nameOrUserId, roleId)
+			end
+		end
+
+		for rank, list in { vip, mods, admins, superAdmins, owners } do
+			for _, nameOrUserId in list do
+				task.spawn(roleUser, nameOrUserId, rank)
+			end
+		end
+
+		if type(settings.GroupAdmin) == "table" then
+			local group = {}
+			for groupId, groupRanks in settings.GroupAdmin do
+				local definition = {}
+				for groupRank, powerRank in groupRanks do
+					groupRank = tonumber(groupRank)
+					local roleId = getRoleFromRank(powerRank)
+					if roleId and groupRank then
+						table.insert(definition, { rank = groupRank, roles = { roleId } })
+					end
+				end
+				group[groupId] = definition
+			end
+			_K.Util.Table.deepMerge(_K.Data.async.group, group, true)
+		end
+
+		if type(settings.VIPAdmin) == "table" then
+			local asset, gamepass = {}, {}
+			for itemId, rank in settings.VIPAdmin do
+				local roleId = getRoleFromRank(rank)
+				if roleId and tonumber(itemId) then
+					(if itemId > 0 then asset else gamepass)[itemId] = { roleId }
+				end
+			end
+			_K.Util.Table.deepMerge(_K.Data.async.asset, asset, true)
+			_K.Util.Table.deepMerge(_K.Data.async.gamepass, gamepass, true)
+			_K.setupPurchasables(asset, "assets")
+			_K.setupPurchasables(gamepass, "gamepasses")
+		end
+
+		-- SETTINGS
+
+		if settings.AdminCredit == false then
+			_K.Data.settings.dashboardButtonRank = false
+		end
+
+		if settings.CommandBar == false then
+			_K.Data.settings.commandBarRank = false
+		end
+
+		if settings.JoinMessage == false then
+			_K.Data.settings.joinNotificationRank = false
+		end
+
+		if settings.PublicLogs == true then
+			_K.Data.roles.everyone.permissions.serverlogs = true
+		end
+
+		if settings.Prefix ~= ";" then
+			_K.Data.settings.prefix = settings.Prefix
+		end
+
+		if tonumber(settings.FreeAdmin) then
+			local role = getRoleFromRank(settings.FreeAdmin)
+			if role and not table.find(_K.Data.settings.freeAdmin, role) then
+				table.insert(_K.Data.settings.freeAdmin, role)
+			end
+		end
+
+		if type(settings.Permissions) == "table" then
+			for alias, rank in settings.Permissions do
+				rank = tonumber(rank)
+				if alias and rank then
+					rank = math.clamp(rank, 0, math.huge)
+					for roleId, role in _K.Data.roles do
+						role.commands[alias] = role._rank >= rank
+					end
+				end
+			end
+		end
+	end)
 end

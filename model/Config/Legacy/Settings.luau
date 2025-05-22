@@ -1,3 +1,7 @@
+NOTE = [[
+	Most settings are automatically registered in the new admin!
+]]
+
 -- Use usernames or userIds to add a user to a list
 -- For example;	Admins = {'MyBestFriend', 'Telamon', 261}
 

@@ -15,11 +15,11 @@ end
 
 if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 	local Settings
+	local legacyConfig = CONFIG:FindFirstChild("Legacy")
 
 	if LEGACY then
 		_G.KAU = true
 		MAIN_MODULE_NAME = "MainModuleLegacy"
-		local legacyConfig = CONFIG:FindFirstChild("Legacy")
 		for _, child in legacyConfig:GetChildren() do
 			child.Parent = script
 		end
@@ -27,6 +27,7 @@ if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 		script.Parent = game:GetService("ServerScriptService")
 	else
 		shared._K_LOADER_LOADED = true
+		legacyConfig.Name = "LegacyConfig"
 		Package.Parent = game:GetService("ServerScriptService")
 		local settingsModule = CONFIG:FindFirstChild("Settings")
 		if settingsModule then
@@ -61,6 +62,6 @@ if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 	end
 
 	if not LEGACY then
-		result.initialize(Settings)
+		result.initialize(Settings, nil, legacyConfig)
 	end
 end

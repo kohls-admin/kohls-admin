@@ -264,12 +264,16 @@ local function playerAdded(player: Player)
 end
 
 local _initialized
-function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons: Folder?)
+function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons: Folder?, legacyConfig: Folder?)
 	if _initialized then
 		return _K
 	end
 	_initialized = true
 	local initStart = os.clock()
+
+	if typeof(legacyConfig) == "Instance" then
+		legacyConfig.Parent = script
+	end
 
 	if typeof(settingsObject) == "Instance" and settingsObject:IsA("ModuleScript") then
 		settingsObject = require(settingsObject)
