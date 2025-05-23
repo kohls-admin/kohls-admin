@@ -23,21 +23,24 @@ local _K = nil
 	TODO: fallback matching for most prefixes? (in case of accidental typing)
 ]]
 
-local prefixSuggestions = {
-	{ "*", "*\t(Everyone)", "allPlayers", "^%*$" },
-	{ "@", "@\t(Roles)", "rolePlayers", "@" },
-	{ "%", "%\t(Teams)", "teamPlayers", "%%" },
-	{ "~", "~\t(Random)", "randomPlayers", "~" },
-	{ "$", "$\t(Special)", "specialPlayers", "%$" },
-	{ "all", "all  (Everyone)", "allPlayers", "^all$" },
-	{ "others", "others (Everyone else)", "otherPlayers", "^others$" },
+local prefixes = {
+	["^%*$"] = "allPlayers",
+	["^all$"] = "allPlayers",
+	["@"] = "rolePlayers",
+	["%%"] = "teamPlayers",
+	["~"] = "randomPlayers",
+	["%$"] = "specialPlayers",
+	["^others$"] = "otherPlayers",
 }
 
-local prefixes = {}
-for prefixType, list in prefixSuggestions do
-	prefixes[list[4]] = list[3]
-	list[3], list[4] = nil, nil
-end
+local prefixSuggestions = {
+	{ "*", nil, nil, "*  [all] (Everyone)", "allPlayers", "^%*$" },
+	{ "@", "@\t\t(Roles)" },
+	{ "%", "%\t\t(Teams)" },
+	{ "~", "~\t\t(Random)" },
+	{ "$", "$\t\t(Special)" },
+	{ "others", "others   (Everyone else)" },
+}
 
 local userCache = {}
 local function memoizeUser(player: Player)
