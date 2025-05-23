@@ -1211,7 +1211,7 @@ return {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) to resize.",
+				description = "The player(s) to make slim.",
 				shouldRequest = true,
 			},
 		},
