@@ -254,7 +254,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			logText = if _K.IsServer then Util.String.filterForBroadcast(trimmed, from) else trimmed
 		end
 
-		_K.log(logText or "", "COMMAND", from, true)
+		_K.log(logText or "", "COMMAND", from)
 	end)
 
 	return #commandErrors == 0

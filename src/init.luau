@@ -105,7 +105,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 			log.name = Util.getUserInfo(from).Username
 		end
 		if _K.IsServer then
-			if from and not filtered then
+			if from and filtered then
 				log.text = Util.String.filterForBroadcast(text, from)
 			end
 			if level == "COMMAND" and (not from or _K.Auth.getRank(from) > 1) then
@@ -224,7 +224,7 @@ local function playerAdded(player: Player)
 		task.wait()
 	until _K.Data.roles
 
-	task.spawn(_K.log, "joined the server.", "JOIN", player.UserId, true)
+	task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
 
 	if _K.Auth.banHandler(player) then
 		return
@@ -263,7 +263,7 @@ local function playerAdded(player: Player)
 		if emote then
 			return
 		end
-		_K.log(message, "CHAT", player.UserId)
+		_K.log(message, "CHAT", player.UserId, true)
 	end)
 end
 
@@ -577,7 +577,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 
 	_K.Util.SafePlayerAdded(playerAdded)
 	_K.Service.Players.PlayerRemoving:Connect(function(player)
-		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId, true)
+		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId)
 	end)
 
 	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
