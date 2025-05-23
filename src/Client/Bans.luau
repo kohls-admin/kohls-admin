@@ -1,9 +1,6 @@
 local Bans = {}
 Bans.__index = Bans
 
-local banRichFormat = `<b>@%s</b><font transparency="0.5">%s</font> [%s]`
-local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
-
 function Bans.new(_K)
 	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
@@ -36,6 +33,9 @@ function Bans.new(_K)
 	}
 	unbanDialog._content:Destroy()
 
+	local nameRef = {}
+	local userIdRef = {}
+
 	local function createItem(self)
 		local item
 		local unbanButton = UI.new "Button" {
@@ -49,9 +49,8 @@ function Bans.new(_K)
 			},
 			Text = "",
 			Activated = function()
-				local userId = item:GetAttribute("_KUserId")
-				unbanDialog.userId = userId
-				unbanDialog.ActionText:set(`Unban {item:GetAttribute("_KName")} [{userId}]?`)
+				unbanDialog.userId = userIdRef[item]
+				unbanDialog.ActionText:set(`Unban {nameRef[item]} [{userIdRef[item]}]?`)
 				unbanDialog._instance.Visible = true
 			end,
 		}
@@ -129,78 +128,20 @@ function Bans.new(_K)
 			return
 		end
 
-		item:SetAttribute("_KName", ban[1])
-		item:SetAttribute("_KUserId", ban.userId)
+		nameRef[item] = ban[1]
+		userIdRef[item] = ban.userId
 
-		local reason = if ban[2] and _K.Util.String.trim(ban[2]) ~= "" then ban[2] else "No reason."
-		local term = ban[3]
-		term = if term
-			then (if term > 0 and term ~= math.huge then os.date("%y-%m-%d %X", ban[3]) else "Forever")
-			else "Session"
-
-		local left, right
 		if self._filter ~= "" then
-			left = `@{ban[1] or "UNKNOWN"} [{ban.userId}]`
-			right = reason .. string.rep(" ", 18 - #term) .. term
-			local filterLeft = string.find(string.lower(left), self._filter, 1, true)
-			if filterLeft then
-				right = string.format(filterRichFormat, right, "", "")
-				left = string.format(
-					filterRichFormat,
-					escape(string.sub(left, 1, filterLeft - 1)),
-					escape(string.sub(left, filterLeft, filterLeft + #self._filter - 1)),
-					escape(string.sub(left, filterLeft + #self._filter))
-				)
-			else
-				local filterRight = string.find(string.lower(right), self._filter, 1, true)
-				if filterRight then
-					left = string.format(filterRichFormat, left, "", "")
-					right = string.format(
-						filterRichFormat,
-						escape(string.sub(right, 1, filterRight - 1)),
-						escape(string.sub(right, filterRight, filterRight + #self._filter - 1)),
-						escape(string.sub(right, filterRight + #self._filter))
-					)
-				end
-			end
+			item.Left.Text = ban.richFilterTextLeft
+			item.Right.Text = ban.richFilterTextRight
 		else
-			left = string.format(banRichFormat, if ban[1] then escape(ban[1]) else "UNKNOWN", "", ban.userId)
-			right = `<font transparency="0.5">{term}</font>`
-			if #term < 18 then
-				right = reason .. string.rep(" ", 18 - #term) .. right
-			else
-				right = reason .. right
-			end
+			item.Left.Text = ban.richTextLeft
+			item.Right.Text = ban.richTextRight
 		end
 
-		item.Left.Text = left
-		item.Right.Text = right
 		if item:FindFirstChild("ImageLabel") then
 			item.ImageLabel.Image = `rbxthumb://type=AvatarHeadShot&id={ban.userId}&w=48&h=48`
 		end
-
-		task.spawn(function()
-			local userInfo = _K.Util.getUserInfo(ban.userId)
-			local displayName = if userInfo and (userInfo.DisplayName ~= userInfo.Username)
-				then userInfo.DisplayName .. " "
-				else ""
-
-			if item.Left.Text == left and self._filter == "" then
-				item:SetAttribute("_KName", userInfo.Username)
-
-				item.Left.Text = string.format(
-					banRichFormat,
-					if not userInfo.Deleted and not userInfo.Unknown
-						then escape(userInfo.Username)
-						elseif ban[1] then escape(ban[1])
-						elseif userInfo.Deleted then "<s>DELETED</s>"
-						else "<s>UNKNOWN</s>",
-					if userInfo.Deleted or userInfo.Unknown then "" else escape(displayName),
-					escape(ban.userId),
-					escape(reason)
-				)
-			end
-		end)
 	end
 
 	local scroller = UI.new "ScrollerFast" {
@@ -231,16 +172,53 @@ function Bans.new(_K)
 				warn("no ban defined?")
 				continue
 			end
-			ban.userId = userId
 
-			local reason = if ban[2] and _K.Util.String.trim(ban[2]) ~= "" then ban[2] else "No reason."
-			local term = ban[3]
-			term = if term
-				then (if term > 0 and term ~= math.huge then os.date("%y-%m-%d %X", ban[3]) else "Forever")
-				else "Session"
+			if not ban.filterText then
+				ban.userId = userId
+				ban.reason = if ban[2] and _K.Util.String.trim(ban[2]) ~= "" then ban[2] else "No reason."
+				ban.term = if ban[3]
+					then (if ban[3] > 0 and ban[3] ~= math.huge then os.date("%y-%m-%d %X", ban[3]) else "Forever")
+					else "Session"
 
-			local text = `@{ban[1] or "UNKNOWN"} [{ban.userId}]\t{reason}\t{term}`
-			if string.find(string.lower(text), filter, 1, true) then
+				local termPadding = if #ban.term < 18 then string.rep(" ", 18 - #ban.term) else ""
+				ban.rawTextLeft = `@{ban[1] or "UNKNOWN"} [{ban.userId}]`
+				ban.rawTextRight = `{ban.reason}{termPadding}{ban.term}`
+
+				ban.richTextLeft = `<b>@{if ban[1] then escape(ban[1]) else "UNKNOWN"}</b> [{escape(userId)}]`
+				ban.richTextRight =
+					`{escape(ban.reason)}{escape(termPadding)}<font transparency="0.5">{escape(ban.term)}</font>`
+
+				ban.filterTextLeft = string.lower(ban.rawTextLeft)
+				ban.filterTextRight = string.lower(ban.rawTextRight)
+				ban.filterText = `{ban.filterTextLeft}\t{ban.filterTextRight}`
+			end
+
+			if string.find(ban.filterText, filter, 1, true) then
+				local filterLeft = string.find(ban.filterTextLeft, self._filter, 1, true)
+				local filterRight = string.find(ban.filterTextRight, self._filter, 1, true)
+
+				if filterLeft then
+					local pre = escape(string.sub(ban.rawTextLeft, 1, filterLeft - 1))
+					local query = escape(string.sub(ban.rawTextLeft, filterLeft, filterLeft + #self._filter - 1))
+					local post = escape(string.sub(ban.rawTextLeft, filterLeft + #self._filter))
+
+					ban.richFilterTextLeft =
+						`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
+				else
+					ban.richFilterTextLeft = `<font transparency="0.5">{ban.rawTextLeft}</font>`
+				end
+
+				if filterRight then
+					local pre = escape(string.sub(ban.rawTextRight, 1, filterRight - 1))
+					local query = escape(string.sub(ban.rawTextRight, filterRight, filterRight + #self._filter - 1))
+					local post = escape(string.sub(ban.rawTextRight, filterRight + #self._filter))
+
+					ban.richFilterTextRight =
+						`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
+				else
+					ban.richFilterTextRight = `<font transparency="0.5">{ban.rawTextRight}</font>`
+				end
+
 				table.insert(new, ban)
 			end
 		end
