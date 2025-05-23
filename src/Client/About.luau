@@ -39,7 +39,7 @@ function About.new(_K)
 
 	-- THIRD PARTY PURCHASES HANDLING
 
-	_K.client.AllowThirdPartySales = if _K.DEBUG then false else true
+	_K.client.AllowThirdPartySales = if _K.DEBUG and _K.IsStudio then false else true
 	_K.client.lastAttemptedPurchase = false
 
 	local purchaseLink = UI.new "TextBox" {
