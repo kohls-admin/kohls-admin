@@ -52,6 +52,7 @@ local Data = {
 
 		gameHubEnabled = true,
 		vip = true,
+		commandRequests = true,
 		saveLogs = true,
 
 		commands = {},

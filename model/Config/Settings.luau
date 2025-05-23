@@ -87,7 +87,8 @@ return {
 	gameHubEnabled = true, -- Adds your to a list of games with Kohl's Admin | ⚠️ Requires "Allow HTTP Requests" in File > Game Settings > Security | https://www.roblox.com/games/17873329124/Kohls-Admin-Games-Hub
 	vip = true, --            Enables VIP-specific features and donation support | ⚠️ Required if gameHubEnabled is true
 
-	saveLogs = true, -- Saves and syncs admin logs across multiple servers
+	saveLogs = true, --        Saves and syncs admin logs across multiple servers
+	commandRequests = true, -- If commands should be requested on same rank or higher
 
 	commands = { -- Configure command access per role
 		everyone = {

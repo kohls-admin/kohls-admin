@@ -158,7 +158,7 @@ function Commands.new(_K)
 				if arg.lowerRank then
 					table.insert(command.argTooltip, `\t<font transparency="0.5"><b>lowerRank:</b> true</font>`)
 				end
-				if arg.shouldRequest then
+				if arg.shouldRequest and _K.Data.settings.commandRequests ~= false then
 					table.insert(command.argTooltip, `\t<font transparency="0.5"><b>shouldRequest:</b> true</font>`)
 				end
 			end

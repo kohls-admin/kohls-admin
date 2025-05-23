@@ -30,11 +30,11 @@ function Command.new(_K, alias, definition: Type.CommandDefinition, array, from,
 end
 
 function Command:shouldRequest(player: Player)
+	if self._K.Data.settings.commandRequests == false then
+		return false
+	end
 	if self._K._shouldRequestOverride then
-		local value = self._K._shouldRequestOverride(self, player)
-		if value ~= nil then
-			return value
-		end
+		return self._K._shouldRequestOverride(self, player)
 	end
 	return self.fromRank <= Auth.getRank(player.UserId)
 end
@@ -90,7 +90,7 @@ function Command:run()
 
 	-- filter args for shouldRequest
 	-- TODO: silently fail for userids of lowerRank/shouldRequest
-	if self._K.IsServer then
+	if self._K.IsServer and self._K.Data.settings.commandRequests ~= false then
 		for argIndex, arg in self.args do
 			if arg.definition.shouldRequest and string.find(string.lower(arg.rawType.name), "player", 1, true) then
 				-- use instead of lowerRank to request the command to those who aren't higher rank

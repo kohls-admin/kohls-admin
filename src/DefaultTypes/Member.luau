@@ -41,7 +41,8 @@ local typeMember = {
 		local names, ids = {}, {}
 		local fromString = tostring(from)
 		local rank = _K.Auth.getRank(from)
-		local lowerRank = definition.lowerRank or definition.shouldRequest
+		local lowerRank = definition.lowerRank
+			or (definition.shouldRequest and _K.Data.settings.commandRequests ~= false)
 
 		for id, member in _K.Data.members do
 			local memberRank = _K.Auth.getRank(id)
