@@ -377,8 +377,8 @@ local function updateLogs()
 	return
 end
 
-function Data.initialize(name)
-	local store = Data.Store.loadStore(name)
+function Data.initialize(scope)
+	local store = Data.Store.loadStore("_KData", scope)
 	if store == nil then
 		Hook.initDataStore:Fire()
 		return Data

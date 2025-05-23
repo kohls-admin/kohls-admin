@@ -337,18 +337,17 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end
 	end
 
-	-- private server datastore
-	local dataStoreKey = "_KData"
+	local dataStoreScope = "_K_0.1" -- WARN: REQUIRES DATA MIGRATION WHEN CHANGED
 	if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
 		for role, users in settings.userRoles do
 			if table.find(users, game.PrivateServerOwnerId) then
-				dataStoreKey ..= game.PrivateServerOwnerId
+				dataStoreScope ..= game.PrivateServerOwnerId
 				break
 			end
 		end
 	end
 
-	task.spawn(_K.Data.initialize, dataStoreKey)
+	task.spawn(_K.Data.initialize, dataStoreScope)
 
 	-- register creator
 	task.spawn(function()

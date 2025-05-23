@@ -33,14 +33,13 @@ function Store.removeAsync(key: string): (boolean, any)
 	end)
 end
 
-function Store.loadStore(name)
+function Store.loadStore(name, scope)
 	if Store.dataStore then
 		return Store.dataStore
 	end
 
 	print(`[Kohl's Admin] Initializing DataStore {name}...`)
-	local version = "_K_0.1"
-	local ok, result = pcall(DataStoreService.GetDataStore, DataStoreService, name, version)
+	local ok, result = pcall(DataStoreService.GetDataStore, DataStoreService, name, scope)
 	if not ok then
 		if RunService:IsStudio() and type(result) == "string" then
 			if string.find(result, "publish", 1, true) then
@@ -48,7 +47,7 @@ function Store.loadStore(name)
 			end
 		end
 		ok, result = Util.Retry(function()
-			return DataStoreService:GetDataStore(name, version)
+			return DataStoreService:GetDataStore(name, scope)
 		end)
 	end
 
