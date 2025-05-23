@@ -108,6 +108,10 @@ return {
 				Tooltip = "Moonwave, Promises, & inspiration from Cmdr",
 			},
 			{
+				Id = 484140, -- GigsD4x
+				Tooltip = "Building Tools by F3X",
+			},
+			{
 				Id = 2722909519, -- sona
 				Tooltip = "Squash & inspiration from data-oriented magic",
 			},
