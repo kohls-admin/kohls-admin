@@ -71,7 +71,7 @@ local function syncBans(bans)
 	Hook.postSyncBans:Fire(Data.bans)
 
 	for _, player in Players:GetPlayers() do
-		if Auth.hasCommand(player.UserId, "ban") then
+		if player:GetAttribute("_K_READY") and Auth.hasCommand(player.UserId, "ban") then
 			Remote.Bans:FireClient(player, Data.bans)
 		end
 	end
@@ -126,6 +126,7 @@ local function fillMemberName(key, data)
 	local userId = tonumber(key)
 	data.name = Util.getUserInfo(userId).Username
 	Data.Cache.members[key] = { data.name, data.persist }
+	Auth.networkMember(key)
 end
 
 local function syncMain(result)
@@ -173,6 +174,7 @@ local function syncMain(result)
 			table.clear(data.persist)
 		end
 	end
+
 	Util.Table.merge(Data.members, members)
 
 	-- fill missing names
@@ -204,7 +206,7 @@ local function syncMain(result)
 	Util.Table.merge(Data.settings, settings)
 
 	for _, player in Players:GetPlayers() do
-		if Auth.hasCommand(player.UserId, "members") then
+		if player:GetAttribute("_K_READY") and Auth.hasCommand(player.UserId, "members") then
 			Remote.Members:FireClient(player, Data.members)
 		end
 

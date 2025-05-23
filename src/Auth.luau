@@ -124,15 +124,11 @@ end
 
 -- ROLE FUNCTIONS
 
-local function updateMemberName(member, userId)
-	member.name = Util.getUserInfo(userId).Username
-end
-
 local function saveMember(key, userId)
 	Data.Cache.members[key] = { Util.getUserInfo(userId).Username, Data.members[key].persist }
 end
 
-local function networkMember(userId: number)
+function Auth.networkMember(userId: number)
 	local userIdString = tostring(userId)
 	local member = Data.members[userIdString]
 	for _, player in Util.Service.Players:GetPlayers() do
@@ -140,6 +136,11 @@ local function networkMember(userId: number)
 			Remote.Member:FireClient(player, userIdString, member)
 		end
 	end
+end
+
+local function updateMemberName(member, userId)
+	member.name = Util.getUserInfo(userId).Username
+	Auth.networkMember(userId)
 end
 
 --- Sorts roleIds by highest to lowest
@@ -184,7 +185,11 @@ function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?): bool
 			task.spawn(saveMember, key, userId)
 		end
 		Hook.roleAdded:Fire(userId, roleId)
-		networkMember(userId)
+		if not member.name then
+			task.spawn(updateMemberName, member, userId)
+		else
+			Auth.networkMember(userId)
+		end
 	end
 
 	return roleAdded
@@ -223,7 +228,7 @@ function Auth.userRoleRemove(userId: number, roleId: Role): boolean
 			end
 		end
 		Hook.roleRemoved:Fire(userId, roleId)
-		networkMember(userId)
+		Auth.networkMember(userId)
 	end
 
 	return roleRemoved
