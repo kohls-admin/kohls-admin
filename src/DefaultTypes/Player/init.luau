@@ -77,7 +77,7 @@ end
 local function playerSuggestion(player, suggestion)
 	suggestion = suggestion or player.Name
 	local displayName = if player.Name ~= player.DisplayName then ` [{player.DisplayName}]` else ""
-	local kDisplay = player:GetAttribute("_KDisplayName")
+	local kDisplay = if player.GetAttribute then player:GetAttribute("_KDisplayName") else nil
 	kDisplay = if kDisplay and kDisplay ~= player.Name and kDisplay ~= player.DisplayName then ` [{kDisplay}]` else ""
 	return { suggestion, nil, nil, `{suggestion} [@{player.Name}]{displayName}{kDisplay}` }
 end
@@ -145,7 +145,7 @@ local function parseIndividual(arg, self, userType)
 
 	for _, player in players do
 		local displayName = string.lower(player.DisplayName)
-		local kDisplay = string.lower(player:GetAttribute("_KDisplayName") or "")
+		local kDisplay = if userType then "" else string.lower(player:GetAttribute("_KDisplayName") or "")
 		if displayName == arg or kDisplay == arg then
 			return self._K.Auth.targetUserArgument(self, player.UserId, player)
 		end
