@@ -284,20 +284,6 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 		return
 	end
 
-	if Data.settings.vip then
-		local level = player:GetAttribute("_KDonationLevel") or 0
-		if not level then
-			player:GetAttributeChangedSignal("_KDonationLevel"):Once(function()
-				if Data.settings.vip and player:GetAttribute("_KDonationLevel") > 0 then
-					Auth.userRoleAdd(userId, "vip")
-				end
-			end)
-		end
-		if level > 0 then
-			Auth.userRoleAdd(userId, "vip")
-		end
-	end
-
 	for assetId, roleIds in Data.async.asset do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)

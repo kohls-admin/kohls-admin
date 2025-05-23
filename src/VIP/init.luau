@@ -55,7 +55,12 @@ local function getDonationLevel(player)
 end
 
 local function setDonationLevel(player)
-	player:SetAttribute("_KDonationLevel", getDonationLevel(player))
+	local level = getDonationLevel(player)
+	player:SetAttribute("_KDonationLevel", level)
+
+	if Data.settings.vip and level > 0 then
+		Auth.userRoleAdd(player.UserId, "vip")
+	end
 end
 
 local adminUGCMap = {}
