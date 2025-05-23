@@ -15,7 +15,6 @@ return {
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
 					Title = "Kohl's Admin Bans",
-					Visible = false,
 					_K.UI.new "UIPadding" {
 						PaddingLeft = UDim.new(0, 1),
 						PaddingRight = UDim.new(0, 1),
@@ -45,16 +44,6 @@ return {
 				context._K.client.dashboard.Bans,
 			})
 			context._K.client.dashboard.Bans._instance.Visible = true
-			if not context.env.init then
-				local size = context.env.window._instance.AbsoluteSize
-				context.env.window.Position:set(
-					UDim2.fromOffset(
-						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - size.X / 2,
-						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - size.Y / 2
-					)
-				)
-				context.env.init = true
-			end
 		end,
 	},
 	{
@@ -68,7 +57,6 @@ return {
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
 					Title = "Kohl's Admin Members",
-					Visible = false,
 					_K.UI.new "UIPadding" {
 						PaddingLeft = UDim.new(0, 1),
 						PaddingRight = UDim.new(0, 1),
@@ -98,16 +86,6 @@ return {
 				context._K.client.dashboard.Members,
 			})
 			context._K.client.dashboard.Members._instance.Visible = true
-			if not context.env.init then
-				local size = context.env.window._instance.AbsoluteSize
-				context.env.window.Position:set(
-					UDim2.fromOffset(
-						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - size.X / 2,
-						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - size.Y / 2
-					)
-				)
-				context.env.init = true
-			end
 		end,
 	},
 
@@ -845,7 +823,6 @@ return {
 					Exitable = true,
 					Position = UDim2.new(0.5, -128, 0.5, -128),
 					Size = UDim2.new(0, 256, 0, 256),
-					Visible = false,
 
 					scroller,
 				},
@@ -917,7 +894,6 @@ return {
 					Exitable = true,
 					Position = UDim2.new(0.5, -128, 0.5, -128),
 					Size = UDim2.new(0, 256, 0, 256),
-					Visible = false,
 
 					scroller,
 				},

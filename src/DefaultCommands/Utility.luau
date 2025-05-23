@@ -47,7 +47,6 @@ return {
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
 					Title = "Kohl's Admin About",
-					Visible = false,
 					_K.UI.new "UIPadding" {
 						PaddingLeft = UDim.new(0, 1),
 						PaddingRight = UDim.new(0, 1),
@@ -82,16 +81,6 @@ return {
 				context._K.client.dashboard.About,
 			})
 			context._K.client.dashboard.About.Visible = true
-			if not context.env.init then
-				local size = context.env.window._instance.AbsoluteSize
-				context.env.window.Position:set(
-					UDim2.fromOffset(
-						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - size.X / 2,
-						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - size.Y / 2
-					)
-				)
-				context.env.init = true
-			end
 		end,
 	},
 	{
@@ -105,7 +94,6 @@ return {
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
 					Title = "Kohl's Admin Commands",
-					Visible = false,
 					_K.UI.new "UIPadding" {
 						PaddingLeft = UDim.new(0, 1),
 						PaddingRight = UDim.new(0, 1),
@@ -135,16 +123,6 @@ return {
 				context._K.client.dashboard.Commands,
 			})
 			context._K.client.dashboard.Commands._instance.Visible = true
-			if not context.env.init then
-				local size = context.env.window._instance.AbsoluteSize
-				context.env.window.Position:set(
-					UDim2.fromOffset(
-						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - size.X / 2,
-						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - size.Y / 2
-					)
-				)
-				context.env.init = true
-			end
 		end,
 	},
 	{
@@ -201,7 +179,6 @@ return {
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
 					Title = "Kohl's Admin Logs",
-					Visible = false,
 					_K.UI.new "UIPadding" {
 						PaddingLeft = UDim.new(0, 1),
 						PaddingRight = UDim.new(0, 1),
@@ -260,17 +237,6 @@ return {
 					context._K.client.dashboard.Logs.logTypeFilter[logType]:set(true)
 				end
 			end
-
-			if not context.env.init then
-				local size = context.env.window._instance.AbsoluteSize
-				context.env.window.Position:set(
-					UDim2.fromOffset(
-						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - size.X / 2,
-						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - size.Y / 2
-					)
-				)
-				context.env.init = true
-			end
 		end,
 	},
 	{
@@ -284,7 +250,6 @@ return {
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
 					Title = "Kohl's Admin Settings",
-					Visible = false,
 					_K.UI.new "UIPadding" {
 						PaddingLeft = UDim.new(0, 1),
 						PaddingRight = UDim.new(0, 1),
@@ -314,16 +279,6 @@ return {
 				context._K.client.dashboard.Settings,
 			})
 			context._K.client.dashboard.Settings.Visible = true
-			if not context.env.init then
-				local size = context.env.window._instance.AbsoluteSize
-				context.env.window.Position:set(
-					UDim2.fromOffset(
-						math.floor(workspace.CurrentCamera.ViewportSize.X / 2) - size.X / 2,
-						math.floor(workspace.CurrentCamera.ViewportSize.Y / 2) - size.Y / 2
-					)
-				)
-				context.env.init = true
-			end
 		end,
 	},
 

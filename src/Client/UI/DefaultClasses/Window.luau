@@ -272,7 +272,7 @@ function Window.new(definition)
 		BackgroundTransparency = UI.Theme.Transparency,
 		Position = new.Position,
 		Size = new.Size,
-		ZIndex = 2,
+		Visible = false,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
@@ -439,6 +439,10 @@ function Window.new(definition)
 		local parent = new._instance.Parent
 		if parent and parent:IsA("GuiBase2d") then
 			local function updateSize()
+				if not new._instance.Visible then
+					return
+				end
+
 				local parentSize = new._instance.Parent.AbsoluteSize
 				local windowSize = new._instance.AbsoluteSize
 				local maxPosition = parentSize - windowSize
@@ -472,7 +476,10 @@ function Window.new(definition)
 				)
 			end
 			parentConn = parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSize)
-			updateSize()
+			new._instance:GetPropertyChangedSignal("Visible"):Connect(updateSize)
+			if new._instance.Visible then
+				updateSize()
+			end
 		end
 	end)
 
