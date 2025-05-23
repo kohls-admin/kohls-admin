@@ -51,29 +51,25 @@ function Tabs.new(definition)
 	}
 	new._pages = pages
 
-	pages.PageEnter:Connect(function(page)
-		currentPage:set(page)
-		if not containerCache[page] then
+	pages.PageEnter:Connect(function(container)
+		currentPage:set(container)
+		local page = containerCache[container]
+		if not page then
 			return
 		end
-		for _, child: GuiObject | Instance in page:GetChildren() do
-			if child:IsA("GuiObject") then
-				child.Visible = true
-			end
-		end
+		page.Visible = true
+		page.Parent = container
 	end)
 
-	pages.PageLeave:Connect(function(page)
-		if not containerCache[page] then
+	pages.PageLeave:Connect(function(container)
+		local page = containerCache[container]
+		if not page then
 			return
 		end
 		task.delay(pages.TweenTime, function()
-			if pages.CurrentPage ~= page then
-				for _, child: GuiObject | Instance in page:GetChildren() do
-					if child:IsA("GuiObject") then
-						child.Visible = false
-					end
-				end
+			if pages.CurrentPage ~= container then
+				page.Parent = nil
+				page.Visible = false
 			end
 		end)
 	end)
@@ -198,7 +194,7 @@ function Tabs.new(definition)
 					BackgroundTransparency = 1,
 					Size = UDim2.fromScale(1, 1),
 				}
-				containerCache[container] = true
+				containerCache[container] = page
 				pageCache[page] = container
 				container.Parent = new._content
 
@@ -288,7 +284,8 @@ function Tabs.new(definition)
 				}
 				textFits:bindToProperty(button, "TextFits")
 				local function hideButton()
-					button.Visible = page.Parent == container and page:GetAttribute("Enabled") ~= false
+					button.Visible = (page.Parent == container or page.Parent == nil)
+						and page:GetAttribute("Enabled") ~= false
 					container.Visible = button.Visible
 				end
 				page:GetPropertyChangedSignal("Parent"):Connect(hideButton)
