@@ -19,21 +19,22 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 	local textLower = string.lower(text)
 
 	for index, name in names do
-		local nameQuery, nameDisplay, key = name, nil
+		local suggestion, display, key, query = name, nil
 		if type(name) == "table" then
-			nameQuery, nameDisplay, key = unpack(name)
+			suggestion, display, key, query = unpack(name)
 		end
 
-		local nameLower = string.lower(nameQuery)
+		local suggestionLower = string.lower(suggestion)
+		local queryLower = string.lower(query or suggestion)
 		local value = instances and (instances[key] or instances[index] or instances[name]) or key or name
-		if nameLower == textLower then
-			table.insert(results, 1, { nameQuery, nameDisplay, value })
+		if suggestionLower == textLower or queryLower == textLower then
+			table.insert(results, 1, { suggestion, display, value, query })
 		else
-			local found = string.find(nameLower, textLower, 1, true)
+			local found = string.find(queryLower, textLower, 1, true)
 			if found == 1 then
-				table.insert(results, { nameQuery, nameDisplay, value })
+				table.insert(results, { suggestion, display, value, query })
 			elseif found then -- partial matches are added after everything else
-				table.insert(partial, { nameQuery, nameDisplay, value })
+				table.insert(partial, { suggestion, display, value, query })
 			end
 		end
 	end

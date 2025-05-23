@@ -84,13 +84,13 @@ return function(_K, text, cursorPosition)
 			data.suggestions = table.create(#data.suggestions)
 			local invalidSuggestions = {}
 			for _, suggestionData in rawSuggestions do
-				local _name, _display, cmd = unpack(suggestionData)
+				local __name, _display, cmd, _query = unpack(suggestionData)
 				if cmd then
 					if _K.Auth.hasCommand(from, cmd) then
 						table.insert(data.suggestions, suggestionData)
 						data.validSuggestion = true
 					else
-						suggestionData[4] = true -- invalid
+						suggestionData[5] = true -- invalid
 						table.insert(invalidSuggestions, suggestionData)
 						data.invalidPermissionsCommand = cmd
 					end

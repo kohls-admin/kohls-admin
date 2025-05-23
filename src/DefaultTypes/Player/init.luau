@@ -39,16 +39,6 @@ for prefixType, list in prefixSuggestions do
 	list[3], list[4] = nil, nil
 end
 
-local function nameUsed(names, name)
-	for _, data in names do
-		local used = if type(data) == "table" then data[1] else data
-		if used == name or prefixes[name] then
-			return true
-		end
-	end
-	return false
-end
-
 local userCache = {}
 local function memoizeUser(player: Player)
 	if userCache[player.UserId] then
@@ -72,63 +62,40 @@ for _, player in Players:GetPlayers() do
 	memoizeUser(player)
 end
 
+local function playerSuggestion(player, suggestion)
+	suggestion = suggestion or player.Name
+	local displayName = if player.Name ~= player.DisplayName then ` [{player.DisplayName}]` else ""
+	local kDisplay = player:GetAttribute("_KDisplayName")
+	kDisplay = if kDisplay and kDisplay ~= player.Name and kDisplay ~= player.DisplayName then ` [{kDisplay}]` else ""
+	return { suggestion, nil, nil, `{suggestion} [@{player.Name}]{displayName}{kDisplay}` }
+end
+
 local function baseSuggestions(text, from, definition, userType: boolean?)
 	local players = Players:GetPlayers()
 	local names, instances = {}, {}
 
+	if userType then
+		for userId, user in userCache do
+			table.insert(players, user)
+		end
+	end
+
 	if not definition.ignoreSelf then
-		table.insert(names, "me")
+		table.insert(names, playerSuggestion(Players.LocalPlayer, "me"))
 		table.insert(instances, Players.LocalPlayer)
 	end
 
 	local rank = _K.Auth.getRank(from)
 	for _, player in players do
 		if
-			(definition.ignoreSelf and player == Players.LocalPlayer)
-			or (definition.lowerRank and player ~= Players.LocalPlayer and rank <= _K.Auth.getRank(player.UserId))
+			player.UserId ~= Players.LocalPlayer.UserId
+			and (not definition.lowerRank or rank > _K.Auth.getRank(player.UserId))
 		then
-			continue
-		end
-		table.insert(names, player.Name)
-		table.insert(instances, player)
-	end
-
-	if userType then
-		for userId, user in userCache do
-			if Players:GetPlayerByUserId(userId) then
-				continue
-			end
-			if
-				(definition.ignoreSelf and userId == from)
-				or (definition.lowerRank and userId ~= from and rank <= _K.Auth.getRank(userId))
-			then
-				continue
-			end
-
-			table.insert(names, user.Name)
-			table.insert(instances, user)
+			table.insert(names, playerSuggestion(player))
+			table.insert(instances, player)
 		end
 	end
 
-	-- diplayName suggestions
-	for index = 1, #instances do
-		local player = instances[index]
-		if player.Name == player.DisplayName or nameUsed(names, player.DisplayName) then
-			continue
-		end
-		table.insert(names, player.DisplayName)
-		table.insert(instances, player)
-
-		if typeof(player) == "Instance" then
-			local kDisplay = player:GetAttribute("_KDisplayName")
-			if kDisplay and not nameUsed(names, kDisplay) then
-				table.insert(names, kDisplay)
-				table.insert(instances, player)
-			end
-		end
-	end
-
-	-- add prefix suggestions
 	for _, suggestion in prefixSuggestions do
 		table.insert(names, suggestion)
 	end
@@ -141,8 +108,16 @@ local function parseIndividual(arg, self, userType)
 		return self._K.Auth.targetUserArgument(self, self.command.from, self.command.fromPlayer)
 	end
 
+	local players = Players:GetPlayers()
+
+	if userType then
+		for userId, user in userCache do
+			table.insert(players, user)
+		end
+	end
+
 	local partial
-	for _, player in Players:GetPlayers() do
+	for _, player in players do
 		local name = string.lower(player.Name)
 		if name == arg then
 			return self._K.Auth.targetUserArgument(self, player.UserId, player)
@@ -152,22 +127,9 @@ local function parseIndividual(arg, self, userType)
 		end
 	end
 
-	if userType then
-		for userId, user in userCache do
-			local name = string.lower(user.Name)
-			if name == arg then
-				return self._K.Auth.targetUserArgument(self, userId, user)
-			end
-			if not partial and string.find(name, arg, 1, true) == 1 then
-				partial = user
-			end
-		end
-	end
-
-	for _, player in Players:GetPlayers() do
+	for _, player in players do
 		local displayName = string.lower(player.DisplayName)
-		local kDisplay = player:GetAttribute("_KDisplayName")
-		kDisplay = if type(kDisplay) == "string" then string.lower(kDisplay) else ""
+		local kDisplay = string.lower(player:GetAttribute("_KDisplayName") or "")
 		if displayName == arg or kDisplay == arg then
 			return self._K.Auth.targetUserArgument(self, player.UserId, player)
 		end
@@ -175,18 +137,6 @@ local function parseIndividual(arg, self, userType)
 			not partial and (string.find(displayName, arg, 1, true) == 1 or (string.find(kDisplay, arg, 1, true) == 1))
 		then
 			partial = player
-		end
-	end
-
-	if userType then
-		for userId, user in userCache do
-			local displayName = string.lower(user.DisplayName)
-			if displayName == arg then
-				return self._K.Auth.targetUserArgument(self, userId, user)
-			end
-			if not partial and string.find(displayName, arg, 1, true) == 1 then
-				partial = user
-			end
 		end
 	end
 

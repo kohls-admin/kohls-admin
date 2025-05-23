@@ -265,17 +265,15 @@ local function updateSuggestionLabels(data)
 
 	for i = start, start + amount do
 		local suggestion = data.suggestions[i]
-		local name, displayName, value, invalid = unpack(suggestion)
+		local text, display, value, suggestQuery, invalid = unpack(suggestion)
 		local frame = SuggestionFrame:Clone()
 		local label = frame:FindFirstChildOfClass("TextLabel")
 		frame.LayoutOrder = i
 		frame.BackgroundTransparency = if i == suggestionIndex then 0.9 else 0.95
-
-		displayName = displayName or name
+		display = display or suggestQuery or text
 
 		local valueType = typeof(value)
 		if valueType == "Instance" and value:IsA("Player") then
-			displayName = `{name} ({if name == value.DisplayName then "@" .. value.Name else value.DisplayName})`
 			UI.new "ImageLabel" {
 				Parent = frame,
 				BackgroundTransparency = 1,
@@ -322,13 +320,13 @@ local function updateSuggestionLabels(data)
 			}
 		end
 
-		local startIndex, endIndex = string.find(string.lower(displayName), query, 1, true)
+		local startIndex, endIndex = string.find(string.lower(display), query, 1, true)
 
 		label.Text = string.format(
 			if invalid then invalidSuggestFormat else suggestFormat,
-			if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(displayName, 1, startIndex - 1)) else "",
-			_K.Util.String.escapeRichText(string.sub(displayName, startIndex, endIndex)),
-			_K.Util.String.escapeRichText(string.sub(displayName, endIndex + 1))
+			if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(display, 1, startIndex - 1)) else "",
+			_K.Util.String.escapeRichText(string.sub(display, startIndex, endIndex)),
+			_K.Util.String.escapeRichText(string.sub(display, endIndex + 1))
 		)
 
 		frame.Activated:Connect(function()
@@ -442,13 +440,13 @@ local function invalidSuggestion(data, err, pos, text)
 	end
 
 	local currentSuggestion = data.suggestions[suggestionIndex]
-	local suggestionText, _suggestionDisplay, suggestionValue = unpack(currentSuggestion)
+	local suggestionText, _suggestionDisplay, suggestionValue, suggestionQuery = unpack(currentSuggestion)
 	if data.argIndex == 1 then -- command
 		-- TODO: inline argument types if command
 		-- show command aliases too!
 		Tooltip.Text = string.format(
 			argumentFormat,
-			_K.Util.String.escapeRichText(suggestionText),
+			_K.Util.String.escapeRichText(suggestionQuery or suggestionText),
 			"command",
 			suggestionValue.description
 		)
@@ -556,7 +554,9 @@ updateCompletion = function()
 	local arg = _K.Util.String.trim(data.rawArg)
 	local endPos = data.argPos + #arg
 	local currentSuggestion = data.suggestions[suggestionIndex]
-	local suggestionText, _suggestionDisplay, suggestionValue, suggestionInvalid = unpack(currentSuggestion)
+	local suggestionText, _suggestionDisplay, suggestionValue, suggestionQuery, suggestionInvalid =
+		unpack(currentSuggestion)
+	suggestionQuery = suggestionQuery or suggestionText
 
 	if suggestionInvalid and not data.validSuggestion then
 		validState:set(false)
@@ -581,15 +581,15 @@ updateCompletion = function()
 	-- inline format (preceding message, pre query suggestion, query, post query suggestion, post query message)
 	-- FIX: how to not escape invalid/valid rich text coloring?
 	-- need a way to merge it somehow? (or don't use richtext maybe red underline instead! with a button you can hover to show error tooltip :)
-	local startIndex, endIndex = string.find(string.lower(suggestionText), string.lower(data.query), 1, true)
+	local startIndex, endIndex = string.find(string.lower(suggestionQuery), string.lower(data.query), 1, true)
 
 	Input.DisplayText:set(
 		string.format(
 			if suggestionInvalid then invalidInlineFormat else inlineFormat,
 			_K.Util.String.escapeRichText(preCompletion),
-			if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(suggestionText, 1, startIndex - 1)) else "",
+			if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(suggestionQuery, 1, startIndex - 1)) else "",
 			_K.Util.String.escapeRichText(data.rawQuery or data.query),
-			_K.Util.String.escapeRichText(string.sub(suggestionText, endIndex + 1)),
+			_K.Util.String.escapeRichText(string.sub(suggestionQuery, endIndex + 1)),
 			_K.Util.String.escapeRichText(postCompletion)
 		)
 	)
@@ -598,7 +598,7 @@ updateCompletion = function()
 	if data.argIndex == 1 then -- command
 		Tooltip.Text = string.format(
 			argumentFormat,
-			_K.Util.String.escapeRichText(suggestionText),
+			_K.Util.String.escapeRichText(suggestionQuery),
 			"command",
 			suggestionValue.description
 		)
