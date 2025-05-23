@@ -127,7 +127,7 @@ local TooltipFrame = UI.new "Frame" {
 	Active = true,
 	BackgroundColor3 = UI.Theme.Primary,
 	BackgroundTransparency = UI.Theme.Transparency,
-	Size = UDim2.fromOffset(200, 32),
+	Size = UDim2.fromOffset(256, 32),
 	Visible = false,
 
 	UI.new "UICorner" {
@@ -150,7 +150,6 @@ local Tooltip = UI.new "TextLabel" {
 	AutoLocalize = false,
 	Name = "Tooltip",
 	BackgroundTransparency = 1,
-	Size = UI.computeFrom(UDim2.new, 1, 0, 0, UI.Theme.FontSize),
 	TextWrapped = true,
 	RichText = true,
 	Font = UI.Theme.FontMono,
@@ -166,16 +165,23 @@ local Tooltip = UI.new "TextLabel" {
 	},
 }
 
-Tooltip:GetPropertyChangedSignal("TextBounds"):Connect(function()
-	Tooltip.Size = UDim2.new(1, 0, 0, Tooltip.TextBounds.Y + UI.Theme.Padding._value.Offset * 2)
-end)
+local TooltipTextBounds = UI.state(Tooltip, "TextBounds")
+UI.edit(Tooltip, {
+	Size = UI.compute(function(use)
+		local height = use(TooltipTextBounds).Y
+		local padding = use(UI.Theme.PaddingDouble).Offset
+		return UDim2.new(1, 0, 0, math.max(32, height + padding))
+	end),
+})
 
 TooltipLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	TooltipFrame.Size = UDim2.fromOffset(256, TooltipLayout.AbsoluteContentSize.Y + UI.Theme.Padding._value.Offset / 2)
+	local size = TooltipLayout.AbsoluteContentSize
+	TooltipFrame.Size = UDim2.fromOffset(math.max(256, size.X), size.Y)
 end)
 
 local SuggestionFrame = UI.new "TextButton" {
 	AutoLocalize = false,
+	AutomaticSize = Enum.AutomaticSize.X,
 	Name = "Suggestion",
 	BackgroundTransparency = 0.9,
 	BackgroundColor3 = UI.Theme.Secondary,
@@ -188,14 +194,14 @@ local SuggestionFrame = UI.new "TextButton" {
 	UI.new "TextLabel" {
 		LayoutOrder = 0,
 		AutoLocalize = false,
+		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = UDim2.new(0, 0, 1, 0),
 		RichText = true,
 		Font = UI.Theme.FontMono,
-		TextSize = 20,
+		TextSize = Tooltip.TextSize,
 		TextColor3 = UI.Theme.PrimaryText,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		TextTruncate = Enum.TextTruncate.SplitWord,
 
 		UI.new "UIPadding" {
 			PaddingTop = UI.Theme.PaddingHalf,
@@ -336,7 +342,6 @@ local function updateSuggestionLabels(data)
 			completeSuggestion()
 		end)
 		frame.Parent = TooltipFrame
-		-- show highlight
 		table.insert(suggestionLabels, frame)
 	end
 	suggestionUpdating = false
@@ -425,10 +430,6 @@ local function invalidSuggestion(data, err, pos, text)
 	local frame = SuggestionFrame:Clone()
 	local label = frame:FindFirstChildOfClass("TextLabel")
 	label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
-	label.TextWrapped = true
-	label.TextTruncate = Enum.TextTruncate.None
-	label.AutomaticSize = Enum.AutomaticSize.Y
-	frame.AutomaticSize = Enum.AutomaticSize.Y
 	frame.Parent = TooltipFrame
 	-- show highlight
 	table.insert(suggestionLabels, frame)
