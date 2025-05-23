@@ -1,7 +1,6 @@
 local Logs = {}
 Logs.__index = Logs
 
-local logRichFormat = `<font transparency="0.5">%s</font> <font color="%s"><b>%s</b></font><b>%s</b> %s%s`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 local clientTag = " <font color='#0bb'><b>CLIENT</b></font>"
 local serverTag = " <font color='#b60'><b>SERVER</b></font>"
@@ -36,7 +35,7 @@ function Logs.new(_K)
 	end
 	-- TODO: load filter options from client datastore profile
 
-	local scroller, debounceScrollerUpdate
+	local scroller
 
 	local function filterTest(self, list)
 		local filter = string.lower(self._input._input.Text)
@@ -48,51 +47,30 @@ function Logs.new(_K)
 				continue
 			end
 
-			if not log.dateTime then
-				log.dateTime = os.date("%y-%m-%d", log.time)
-			end
-
 			if not log.filterText then
-				local timestamp = os.date("%y-%m-%d %X", log.time)
-				local short = os.date("%X", log.time)
-				local name = log.name or "LOADING"
+				local date = os.date("%y-%m-%d", log.time)
+				local timeOfDay = os.date("%X", log.time)
 
-				log.rawText = `{timestamp} {string.upper(levelText)} {name}: {log.text}`
+				log.rawText = `{date} {timeOfDay} {levelText} {log.name}: {log.text}`
 				log.filterText = string.lower(log.rawText)
-				log.richText = string.format(
-					logRichFormat,
-					escape(short),
-					logTypeColors[levelText] or "#fff",
-					levelText:upper(),
-					if log.client then clientTag elseif not log.from then serverTag else "",
-					if log.from then `<font transparency='0.5'>{name}:</font> ` else "",
-					escape(log.text or "")
-				)
-
-				if not log.name and log.from then
-					task.spawn(function()
-						local userInfo = _K.Util.getUserInfo(log.from)
-
-						log.rawText = `{timestamp} {string.upper(levelText)} {userInfo.Username}: {log.text}`
-						log.filterText = string.lower(log.rawText)
-						log.richText = string.format(
-							logRichFormat,
-							escape(short),
-							logTypeColors[levelText] or "#fff",
-							levelText:upper(),
-							if log.client then clientTag elseif not userInfo then serverTag else "",
-							if userInfo then `<font transparency="0.5">{escape(userInfo.Username)}:</font> ` else "",
-							escape(log.text or "")
-						)
-						debounceScrollerUpdate(scroller)
-					end)
-				end
+				log.richText =
+					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[levelText] or "#fff"}"><b>{levelText}</b></font><b>{if log.client
+						then clientTag
+						elseif not log.from then serverTag
+						else ""}</b> {if log.from then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(
+						log.text or ""
+					)}`
+				log.tipText = `<font transparency="0.5">{date}</font> {log.richText}`
 			end
 
-			local found, foundEnd = string.find(log.filterText, filter, 1, true)
-			if found then
-				log.filterIndex = found
-				log.filterEnd = foundEnd
+			local filterIndex, filterEnd = string.find(log.filterText, filter, 1, true)
+			log.filterRichText = if filterIndex
+				then `<font transparency="0.5">{escape(string.sub(log.filterText, 1, filterIndex - 1))}</font><b>{escape(
+					string.sub(log.filterText, filterIndex, filterEnd)
+				)}</b><font transparency="0.5">{escape(string.sub(log.filterText, filterEnd + 1))}</font>`
+				else `<font transparency="0.5">{log.rawText}</font>`
+
+			if filterIndex then
 				table.insert(new, log)
 			end
 		end
@@ -127,22 +105,9 @@ function Logs.new(_K)
 	end
 
 	local function renderItem(self, item, log)
-		local text = log.richText
-		if self._filter ~= "" then
-			text = log.rawText
-			text = if log.filterIndex
-				then string.format(
-					filterRichFormat,
-					escape(string.sub(text, 1, log.filterIndex - 1)),
-					escape(string.sub(text, log.filterIndex, log.filterEnd)),
-					escape(string.sub(text, log.filterEnd + 1))
-				)
-				else text
-		end
-
-		item.Text = text or "LOADING..."
+		item.Text = if self._filter ~= "" then log.filterRichText else log.richText
 		if item:FindFirstChild("TooltipRef") and item.TooltipRef.Value then
-			item.TooltipRef.Value.Text = `<font transparency="0.5">{log.dateTime} </font>{item.Text}`
+			item.TooltipRef.Value.Text = log.tipText
 		end
 	end
 
@@ -161,8 +126,6 @@ function Logs.new(_K)
 	}
 
 	task.defer(scroller.filter, scroller, filterTest)
-
-	debounceScrollerUpdate = _K.Util.Function.debounce(0.25, scroller.refreshList)
 
 	local filterMenu
 	local filterButton = UI.new "Button" {
