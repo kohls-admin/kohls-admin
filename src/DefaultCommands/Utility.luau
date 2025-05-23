@@ -152,7 +152,7 @@ return {
 		description = "Shows the admin dashboard.",
 		optionalPrefix = true,
 		runClient = function(context)
-			if not context._K.client.dashboard.Commands.window.Visible then
+			if not context._K.client.dashboard.Window.Visible then
 				context._K.client.hotkeys.dashboard.callback()
 			end
 		end,
