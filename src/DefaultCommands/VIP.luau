@@ -70,7 +70,7 @@ return {
 	},
 	{
 		name = "fire",
-		aliases = {},
+		aliases = { "🔥" },
 		description = "Adds fire to one or more player(s).",
 		args = {
 			{
@@ -124,7 +124,7 @@ return {
 	},
 	{
 		name = "unfire",
-		aliases = {},
+		aliases = { "un🔥" },
 		description = "Removes fire from one or more player(s).",
 		args = {
 			{
@@ -150,7 +150,7 @@ return {
 	},
 	{
 		name = "smoke",
-		aliases = {},
+		aliases = { "💨" },
 		description = "Adds smoke to one or more player(s).",
 		args = {
 			{
@@ -190,7 +190,7 @@ return {
 	},
 	{
 		name = "unsmoke",
-		aliases = {},
+		aliases = { "un💨" },
 		description = "Removes smoke from one or more player(s).",
 		args = {
 			{
@@ -216,7 +216,7 @@ return {
 	},
 	{
 		name = "sparkles",
-		aliases = {},
+		aliases = { "✨" },
 		description = "Adds sparkles to one or more player(s).",
 		args = {
 			{
@@ -255,7 +255,7 @@ return {
 	},
 	{
 		name = "unsparkles",
-		aliases = {},
+		aliases = { "un✨" },
 		description = "Removes sparkles from one or more player(s).",
 		args = {
 			{
@@ -281,7 +281,7 @@ return {
 	},
 	{
 		name = "light",
-		aliases = { "lamp", "lite" },
+		aliases = { "💡", "lamp", "lite" },
 		description = "Adds a light to one or more player(s).",
 		args = {
 			{
@@ -326,7 +326,7 @@ return {
 	},
 	{
 		name = "unlight",
-		aliases = { "unlamp", "unlite" },
+		aliases = { "un💡", "unlamp", "unlite" },
 		description = "Removes a light from one or more player(s).",
 		args = {
 			{
@@ -410,7 +410,7 @@ return {
 	},
 	{
 		name = "particle",
-		aliases = { "pe" },
+		aliases = { "💫", "pe" },
 		description = "Adds a particle effect to one or more player(s).",
 		args = {
 			{
@@ -491,7 +491,7 @@ return {
 	},
 	{
 		name = "unparticle",
-		aliases = { "unpe" },
+		aliases = { "un💫", "unpe" },
 		description = "Removes a particle effect from one or more player(s).",
 		args = {
 			{
@@ -517,7 +517,7 @@ return {
 	},
 	{
 		name = "shine",
-		aliases = { "unshine" },
+		aliases = { "🌟", "un🌟", "unshine" },
 		description = "Adds a shine effect to one or more player(s).",
 		args = {
 			{
@@ -569,7 +569,7 @@ return {
 
 	{
 		name = "bundle",
-		aliases = { "unbundle" },
+		aliases = { "📦", "un📦", "unbundle" },
 		description = "Applies a bundle to one or more player(s).",
 		args = {
 			{
@@ -791,7 +791,7 @@ return {
 	},
 	{
 		name = "hat",
-		aliases = { "crmhat" },
+		aliases = { "🎩", "crmhat" },
 		description = "Gives one or more hats to one or more player(s).",
 		args = {
 			{
@@ -921,7 +921,7 @@ return {
 	},
 	{
 		name = "removehats",
-		aliases = { "rhats" },
+		aliases = { "remove🎩", "r🎩", "rhats" },
 		description = "Removes the hats of one or more player(s).",
 		args = {
 			{
@@ -952,7 +952,7 @@ return {
 	},
 	{
 		name = "head",
-		aliases = { "unhead" },
+		aliases = { "🗿", "unhead" },
 		description = "Changes the head of one or more player(s).",
 		args = {
 			{
@@ -1053,7 +1053,7 @@ return {
 	},
 	{
 		name = "face",
-		aliases = { "unface" },
+		aliases = { "🙂", "un🙂", "unface" },
 		description = "Changes the face of one or more player(s).",
 		args = {
 			{
@@ -1090,7 +1090,7 @@ return {
 	},
 	{
 		name = "shirt",
-		aliases = { "unshirt" },
+		aliases = { "👕", "un👕", "unshirt" },
 		description = "Changes the shirt of one or more player(s).",
 		args = {
 			{
@@ -1125,7 +1125,7 @@ return {
 	},
 	{
 		name = "pants",
-		aliases = { "unpants" },
+		aliases = { "👖", "un👖", "unpants" },
 		description = "Changes the pants of one or more player(s).",
 		args = {
 			{

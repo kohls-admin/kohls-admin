@@ -3,7 +3,7 @@
 return {
 	{
 		name = "disco",
-		aliases = { "undisco" },
+		aliases = { "🪩", "un🪩", "undisco" },
 		description = "It's time to party! 🎉",
 		env = function(_K)
 			local env = { id = false, restore = false }
@@ -41,7 +41,7 @@ return {
 	},
 	{
 		name = "dog",
-		aliases = { "horse" },
+		aliases = { "🐶", "🐎", "horse" },
 		description = "Turns one or more player(s) into dog",
 		args = {
 			{
@@ -199,7 +199,7 @@ return {
 	},
 	{
 		name = "undog",
-		aliases = { "unhorse" },
+		aliases = { "un🐶", "un🐎", "unhorse" },
 		description = "Reverts one or more player(s) from dog",
 		args = {
 			{
@@ -1100,7 +1100,7 @@ return {
 	},
 	{
 		name = "rocket",
-		aliases = {},
+		aliases = { "🚀" },
 		description = "Attaches a rocket to one or more player(s).",
 		args = {
 			{
