@@ -64,7 +64,7 @@ _K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
 		LeftAction = true,
 		RightAction = true,
 		Modal = true,
-		Duration = -1,
+		Duration = 30,
 
 		_K.client.UserFrame(from.UserId, from.DisplayName),
 
@@ -74,6 +74,8 @@ _K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
 			end,
 		},
 	})
+
+	task.delay(30, actionSignal.Fire, actionSignal, false)
 
 	local action = actionSignal:Wait() == true
 	requestingCommand[from.UserId] = nil
