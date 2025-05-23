@@ -62,6 +62,15 @@ for _, player in Players:GetPlayers() do
 	memoizeUser(player)
 end
 
+local function sortPlayers(a, b)
+	if a == Players.LocalPlayer then
+		return true
+	elseif b == Players.LocalPlayer then
+		return false
+	end
+	return a.Name < b.Name
+end
+
 local function playerSuggestion(player, suggestion)
 	suggestion = suggestion or player.Name
 	local displayName = if player.Name ~= player.DisplayName then ` [{player.DisplayName}]` else ""
@@ -79,6 +88,8 @@ local function baseSuggestions(text, from, definition, userType: boolean?)
 			table.insert(players, user)
 		end
 	end
+
+	table.sort(players, sortPlayers)
 
 	if not definition.ignoreSelf then
 		table.insert(names, playerSuggestion(Players.LocalPlayer, "me"))
@@ -115,6 +126,8 @@ local function parseIndividual(arg, self, userType)
 			table.insert(players, user)
 		end
 	end
+
+	table.sort(players, sortPlayers)
 
 	local partial
 	for _, player in players do
