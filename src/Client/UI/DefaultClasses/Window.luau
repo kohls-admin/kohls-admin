@@ -64,6 +64,22 @@ end
 
 local windowCache = {}
 
+local function sortZIndex(a, b)
+	return a.ZIndex < b.ZIndex
+end
+
+function Window.bringToFront(self)
+	local windows = {}
+	for window in windowCache do
+		table.insert(windows, window._instance)
+	end
+	table.sort(windows, sortZIndex)
+	table.insert(windows, self._instance)
+	for index, window in windows do
+		window.ZIndex = index
+	end
+end
+
 function Window.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Exitable = true,
@@ -111,10 +127,7 @@ function Window.new(definition)
 			and not resizing._value
 			and not resizeHover._value
 		then
-			for window in windowCache do
-				window._instance.ZIndex = 1
-			end
-			new._instance.ZIndex = 2
+			Window.bringToFront(new)
 
 			startOffset = new._instance.AbsolutePosition - new._instance.Parent.AbsolutePosition
 			dragInput, dragStart = input, input.Position
@@ -326,6 +339,14 @@ function Window.new(definition)
 			},
 
 			new._content,
+		},
+
+		[UI.Event.Property] = {
+			Visible = function()
+				if new._instance.Visible then
+					Window.bringToFront(new)
+				end
+			end,
 		},
 	}
 
