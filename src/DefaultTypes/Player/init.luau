@@ -153,7 +153,6 @@ local function parseIndividual(arg, self, userType)
 	end
 
 	if userType then
-		print(userCache)
 		for userId, user in userCache do
 			local name = string.lower(user.Name)
 			if name == arg then
