@@ -80,6 +80,35 @@ function Window.bringToFront(self)
 	end
 end
 
+function Window.nudge(self)
+	local nudgeAmount = 32
+	local maxAttempts = 16
+	local position = self._instance.AbsolutePosition
+	local size = self._instance.AbsoluteSize
+	local parentSize = self._instance.Parent.AbsoluteSize
+
+	for i = 1, maxAttempts do
+		local nudged
+		for window in windowCache do
+			if not window._instance.Visible or window == self then
+				continue
+			end
+			if (position - window._instance.AbsolutePosition).Magnitude < 16 then
+				local newX = math.clamp(position.X + nudgeAmount, 0, math.max(0, parentSize.X - size.X))
+				local newY = math.clamp(position.Y + nudgeAmount, 0, math.max(0, parentSize.Y - size.Y))
+
+				position += Vector2.new(nudgeAmount, nudgeAmount)
+				self.Position:set(UDim2.fromOffset(newX, newY))
+				nudged = true
+				break
+			end
+		end
+		if not nudged then
+			break
+		end
+	end
+end
+
 function Window.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Exitable = true,
@@ -345,6 +374,7 @@ function Window.new(definition)
 			Visible = function()
 				if new._instance.Visible then
 					Window.bringToFront(new)
+					Window.nudge(new)
 				end
 			end,
 		},
