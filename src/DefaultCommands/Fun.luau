@@ -699,7 +699,7 @@ return {
 
 			return {
 				explode = explode,
-				nuke = function(fromRank, position)
+				nuke = function(from: Player, fromRank, position)
 					local part = sphere:Clone()
 					part.Position = position
 
@@ -737,6 +737,9 @@ return {
 						part2.Size = part.Size * 0.9
 						part3.Size = part.Size * 0.5
 						for _, player in _K.Service.Players:GetPlayers() do
+							if player ~= from and _K.Auth.getRank(player.UserId) >= fromRank then
+								continue
+							end
 							local direction = (player.Character and not player.Character:GetAttribute("_KNuked"))
 								and position - player.Character:GetPivot().Position
 							if direction and direction.Magnitude <= distance / 2 then
@@ -773,7 +776,7 @@ return {
 				if player.Character then
 					local position = player.Character:GetPivot().Position
 					context.env.explode(player.Character, position)
-					task.spawn(context.env.nuke, context.fromRank, position)
+					task.spawn(context.env.nuke, context.fromPlayer, context.fromRank, position)
 				end
 			end
 		end,
