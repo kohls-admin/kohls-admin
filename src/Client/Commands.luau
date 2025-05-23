@@ -1,7 +1,6 @@
 local Commands = {}
 Commands.__index = Commands
 
-local commandRichFormat = `<b>%s</b> <font transparency="0.66">%s</font>`
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
 local function _argsString(command)
@@ -76,29 +75,11 @@ function Commands.new(_K)
 		end
 
 		if self._filter ~= "" then
-			local text = command.renderText
-			local filterFound = string.find(command.filterText, self._filter, 1, true)
-			item.Text = if filterFound
-				then string.format(
-					filterRichFormat,
-					escape(string.sub(text, 1, filterFound - 1)),
-					escape(string.sub(text, filterFound, filterFound + #self._filter - 1)),
-					escape(string.sub(text, filterFound + #self._filter))
-				)
-				else `<font transparency="0.5">{text}</font>`
-
-			local descFound = string.find(command.filterDesc, self._filter, 1, true)
-			item.Description.Text = if descFound
-				then string.format(
-					filterRichFormat,
-					escape(string.sub(command.description, 1, descFound - 1)),
-					escape(string.sub(command.description, descFound, descFound + #self._filter - 1)),
-					escape(string.sub(command.description, descFound + #self._filter))
-				)
-				else `<font transparency="0.5">{command.description}</font>`
+			item.Text = command.filterRichText
+			item.Description.Text = command.filterRichDesc
 		else
-			item.Text = string.format(commandRichFormat, escape(command.renderTextNoAlias), escape(command.aliasText))
-			item.Description.Text = `<font transparency="0.33">{command.description}</font>`
+			item.Text = command.richText
+			item.Description.Text = command.richDesc
 		end
 	end
 
@@ -212,11 +193,15 @@ function Commands.new(_K)
 			command.tipString =
 				`<b>Restricted to:</b> {command.roleString}{command.argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {command.creditString}</font>`
 
-			command.renderTextNoAlias = `{_K.getCommandPrefix()}{command.name} {command.argNames}`
-			command.renderText = `{command.renderTextNoAlias} {command.aliasText}`
+			command.rawTextNoAlias = `{_K.getCommandPrefix()}{command.name} {command.argNames}`
+			command.rawText = `{command.rawTextNoAlias} {command.aliasText}`
 
-			command.filterTest = string.lower(`{command.renderText} {command.description}`)
-			command.filterText = string.lower(command.renderText)
+			command.richText =
+				`<b>{escape(command.rawTextNoAlias)}</b> <font transparency="0.66">{escape(command.aliasText)}</font>`
+			command.richDesc = `<font transparency="0.33">{command.description}</font>`
+
+			command.filterTest = string.lower(`{command.rawText} {command.description}`)
+			command.filterText = string.lower(command.rawText)
 			command.filterDesc = string.lower(command.description)
 		end
 
@@ -233,6 +218,26 @@ function Commands.new(_K)
 		for _, command in list do
 			updateRenderParameters(command)
 			if string.find(command.filterTest, filter, 1, true) then
+				local filterFound = string.find(command.filterText, self._filter, 1, true)
+				command.filterRichText = if filterFound
+					then string.format(
+						filterRichFormat,
+						escape(string.sub(command.rawText, 1, filterFound - 1)),
+						escape(string.sub(command.rawText, filterFound, filterFound + #self._filter - 1)),
+						escape(string.sub(command.rawText, filterFound + #self._filter))
+					)
+					else `<font transparency="0.5">{command.rawText}</font>`
+
+				local descFound = string.find(command.filterDesc, self._filter, 1, true)
+				command.filterRichDesc = if descFound
+					then string.format(
+						filterRichFormat,
+						escape(string.sub(command.description, 1, descFound - 1)),
+						escape(string.sub(command.description, descFound, descFound + #self._filter - 1)),
+						escape(string.sub(command.description, descFound + #self._filter))
+					)
+					else `<font transparency="0.5">{command.description}</font>`
+
 				table.insert(new, command)
 			end
 		end
@@ -251,7 +256,11 @@ function Commands.new(_K)
 					rankB = roleData._rank
 				end
 			end
-			return rankA < rankB
+			if rankA == rankB then
+				return a._listIndex < b._listIndex
+			else
+				return rankA < rankB
+			end
 		end)
 		scroller:filter(filterTest)
 	end)

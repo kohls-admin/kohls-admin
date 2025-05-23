@@ -123,6 +123,7 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 			end
 		end
 	elseif not oldCommand then
+		commandObject._listIndex = #Registry.commandsList
 		table.insert(Registry.commandsList, commandObject)
 	end
 

@@ -49,6 +49,7 @@ export type CommandDefinition = {
 	env: Environment?,
 	runClient: (...any) -> ()?,
 	run: (...any) -> ()?,
+	_listIndex: number?,
 }
 
 return {}
