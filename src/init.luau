@@ -164,6 +164,9 @@ task.spawn(
 shared._K_INTERFACE = _K
 
 if not _K.IsServer then
+	if not _K.IsStudio or IS_DEMO_PLACE then
+		print(`🛡️ Running Kohl's Admin v{_K.VERSION} by @Scripth`)
+	end
 	task.spawn(_K.log, `Required in {math.round((os.clock() - requireStart) * 1000)} ms`, "DEBUG")
 	return _K
 end
@@ -589,9 +592,5 @@ end
 export type _K = typeof(_K)
 
 task.spawn(_K.log, `Required in {math.round((os.clock() - requireStart) * 1000)} ms`, "DEBUG")
-
-if not _K.IsStudio or IS_DEMO_PLACE then
-	print(`🛡️ Running Kohl's Admin v{_K.VERSION} by @Scripth`)
-end
 
 return _K
