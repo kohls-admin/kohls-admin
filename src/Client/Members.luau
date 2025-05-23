@@ -1,23 +1,6 @@
 local Members = {}
 Members.__index = Members
 
-local memberRichFormat = `<b>%s</b> [%s]\t<font transparency="0.33"><b>%s</b></font><font transparency="0.66">%s</font>`
-local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
-
-local function filteredText(_K, escape, self, lineItem, member, persist, roles)
-	local text = `{member.name or "UNKNOWN"} {member.userId}\t{roles}`
-	local filterFound = string.find(string.lower(text), self._filter, 1, true)
-
-	return if filterFound
-		then string.format(
-			filterRichFormat,
-			escape(string.sub(text, 1, filterFound - 1)),
-			escape(string.sub(text, filterFound, filterFound + #self._filter - 1)),
-			escape(string.sub(text, filterFound + #self._filter))
-		)
-		else text
-end
-
 function Members.new(_K)
 	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
@@ -74,35 +57,20 @@ function Members.new(_K)
 	end
 
 	local function renderItem(self, item, member)
-		local roles = {}
-		if member.roles then
-			for _, role in member.roles do
-				if not table.find(member.persist, role) then
-					table.insert(roles, role)
-				end
-			end
-		end
-
-		local persist = if member.persist then table.concat(member.persist, " | ") else ""
-		local roleString = table.concat(roles, " | ") or ""
-		if #persist > 0 and #roleString > 0 then
-			persist ..= " | "
-		end
-
-		local text
 		if self._filter ~= "" then
-			text = filteredText(_K, escape, self, item, member, persist, roleString)
+			local filterFound = string.find(member.filterText, self._filter, 1, true)
+			if filterFound then
+				local pre = escape(string.sub(member.rawText, 1, filterFound - 1))
+				local query = escape(string.sub(member.rawText, filterFound, filterFound + #self._filter - 1))
+				local post = escape(string.sub(member.rawText, filterFound + #self._filter))
+				item.TextLabel.Text =
+					`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
+			else
+				item.TextLabel.Text = `<font transparency="0.5">{member.rawText}</font>`
+			end
 		else
-			text = string.format(
-				memberRichFormat,
-				member.name or "UNKNOWN",
-				member.userId,
-				escape(persist),
-				escape(roleString)
-			)
+			item.TextLabel.Text = member.richText
 		end
-
-		item.TextLabel.Text = text
 		item.ImageLabel.Image = `rbxthumb://type=AvatarHeadShot&id={member.userId}&w=48&h=48`
 	end
 
@@ -122,7 +90,48 @@ function Members.new(_K)
 		},
 	})
 
-	local debounceScrollerUpdate = _K.Util.Function.debounce(0.2, scroller.refreshList)
+	local function isDifferent(a: { string? }?, b: { string? }?)
+		if not a ~= not b then
+			return true
+		end
+		if a and b then
+			if #a ~= #b then
+				return true
+			end
+			for k, v in a do
+				if b[k] ~= v then
+					return true
+				end
+			end
+		end
+		return false
+	end
+
+	local function updateCache(member)
+		if member.roles then
+			local roles = {}
+			for _, role in member.roles do
+				if not table.find(member.persist, role) then
+					table.insert(roles, role)
+				end
+			end
+
+			member.persistString = if member.persist then table.concat(member.persist, " | ") else ""
+			member.roleString = table.concat(roles, " | ") or ""
+			if #member.persistString > 0 and #member.roleString > 0 then
+				member.roleString = " | " .. member.roleString
+			end
+		else
+			member.roleString = ""
+		end
+
+		member.richText = `<b>{member.name or "UNKNOWN"}</b> [{member.userId}]\t<font transparency="0.33"><b>{escape(
+			member.persistString
+		)}</b></font><font transparency="0.66">{escape(member.roleString)}</font>`
+
+		member.rawText = `{member.name or "UNKNOWN"} {member.userId}\t{member.persistString}{member.roleString}`
+		member.filterText = string.lower(member.rawText)
+	end
 
 	local function filterTest(self, list)
 		local filter = string.lower(scroller._input._input.Text)
@@ -133,17 +142,22 @@ function Members.new(_K)
 			if not member then
 				continue
 			end
-			member.userId = userId
-			local text = `{member.name} {userId}\t{if member.roles then table.concat(member.roles, " | ") else ""}`
-			if string.find(string.lower(text), filter, 1, true) then
-				table.insert(new, member)
+
+			if
+				member.name ~= member.nameCache
+				or isDifferent(member.roles, member.rolesCache)
+				or isDifferent(member.persist, member.persistCache)
+			then
+				member.nameCache = member.name
+				member.rolesCache = if member.roles then table.clone(member.roles) else nil
+				member.persistCache = if member.persist then table.clone(member.persist) else nil
+
+				member.userId = userId
+				updateCache(member)
 			end
-			if not member.name then
-				task.spawn(function()
-					local info = _K.Util.getUserInfo(member.userId)
-					member.name = info.Username
-					debounceScrollerUpdate(scroller)
-				end)
+
+			if string.find(member.filterText, filter, 1, true) then
+				table.insert(new, member)
 			end
 		end
 		return new
