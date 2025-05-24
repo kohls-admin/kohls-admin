@@ -5,33 +5,23 @@ return function(context)
 		return _K.Data.roles[a[1]]._rank > _K.Data.roles[b[1]]._rank
 	end
 
+	local function roleParse(input: string, self: any)
+		local query = string.lower(input)
+		local rank = _K.Auth.getRank(self.command.from)
+		for roleId, role in _K.Data.roles do
+			if role == _K.Data.roles.everyone then
+				continue
+			end
+			if rank > role._rank and string.find(string.lower(roleId), query, 1, true) == 1 then
+				return roleId
+			end
+		end
+		return nil, "Invalid role."
+	end
+
 	local typeRole = {
-		validate = function(input: string, self: any): (boolean, string?)
-			local query = string.lower(input)
-			local rank = _K.Auth.getRank(self.command.from)
-			for roleId, role in _K.Data.roles do
-				if role == _K.Data.roles.everyone then
-					continue
-				end
-				if rank > role._rank and string.find(string.lower(roleId), query, 1, true) == 1 then
-					return true
-				end
-			end
-			return false, "Invalid role."
-		end,
-		parse = function(input: string, self: any): string
-			local query = string.lower(input)
-			local rank = _K.Auth.getRank(self.command.from)
-			for roleId, role in _K.Data.roles do
-				if role == _K.Data.roles.everyone then
-					continue
-				end
-				if rank > role._rank and string.find(string.lower(roleId), query, 1, true) == 1 then
-					return roleId
-				end
-			end
-			error("Invalid role value")
-		end,
+		validate = roleParse,
+		parse = roleParse,
 		suggestions = function(text: string, from: number)
 			local roles = {}
 			local rank = _K.Auth.getRank(from)
