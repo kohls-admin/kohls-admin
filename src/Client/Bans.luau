@@ -33,9 +33,6 @@ function Bans.new(_K)
 	}
 	unbanDialog._content:Destroy()
 
-	local nameRef = {}
-	local userIdRef = {}
-
 	local function createItem(self)
 		local tooltip = UI.new "Tooltip" {
 			Font = UI.Theme.FontMono,
