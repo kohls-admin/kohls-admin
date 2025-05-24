@@ -197,7 +197,7 @@ function Command:validate()
 				local suggestions = Util.Suggest.query(rawArg, argType.suggestions(rawArg, self.from, definition))
 				local input = string.lower(rawArg)
 				local text, _, _, query = unpack(suggestions[1])
-				print(text, query, input)
+
 				if
 					#suggestions > 0
 					and (
