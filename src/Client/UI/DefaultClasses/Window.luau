@@ -177,7 +177,12 @@ function Window.new(definition)
 	local resizeBuffer = 4
 	local startSize, xSize, xPos, ySize, yPos
 	local function resizeUpdate(input)
-		local delta = input.Position - dragStart
+		local parentSize = new._instance.Parent.AbsoluteSize
+		local delta = Vector3.new(
+			math.clamp(input.Position.X, 0, parentSize.X),
+			math.clamp(input.Position.Y, 0, parentSize.Y),
+			0
+		) - dragStart
 		local resizeMin = new.SizeBounds._value.Min - startSize
 		local resizeMax = new.SizeBounds._value.Max - startSize
 		inputPosition:set(input.Position)
@@ -187,6 +192,7 @@ function Window.new(definition)
 				math.round(startSize.Y + math.clamp(ySize * delta.Y, resizeMin.Y, math.max(resizeMin.Y, resizeMax.Y)))
 			)
 		)
+
 		new.Position:set(
 			UDim2.fromOffset(
 				math.round(startOffset.X - math.clamp(xPos * -delta.X, resizeMin.X, math.max(resizeMin.X, resizeMax.X))),
