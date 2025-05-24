@@ -73,9 +73,9 @@ function Logs.new(_K)
 			local filterIndex, filterEnd = string.find(log.filterText, filter, 1, true)
 			if filterIndex then
 				log.filterRichText =
-					`<font transparency="0.5">{escape(string.sub(log.filterText, 1, filterIndex - 1))}</font><b>{escape(
-						string.sub(log.filterText, filterIndex, filterEnd)
-					)}</b><font transparency="0.5">{escape(string.sub(log.filterText, filterEnd + 1))}</font>`
+					`<font transparency="0.5">{escape(string.sub(log.rawText, 1, filterIndex - 1))}</font><b>{escape(
+						string.sub(log.rawText, filterIndex, filterEnd)
+					)}</b><font transparency="0.5">{escape(string.sub(log.rawText, filterEnd + 1))}</font>`
 				table.insert(new, log)
 			end
 		end
