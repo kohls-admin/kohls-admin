@@ -56,8 +56,9 @@ function Members.new(_K)
 		}
 	end
 
-	local function renderItem(self, item, member)
-		if not member.userId then
+	local function renderItem(self, item, userId)
+		local member = _K.Data.members[userId]
+		if not (member and member.userId) then
 			return
 		end
 		if self._filter ~= "" then
@@ -130,6 +131,9 @@ function Members.new(_K)
 	local function filterTest(self, list)
 		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
+
+		local noFilter = filter == ""
+
 		local new = {}
 		for _, userId in list do
 			local member = _K.Data.members[userId]
@@ -150,9 +154,13 @@ function Members.new(_K)
 				updateCache(member)
 			end
 
+			if noFilter then
+				continue
+			end
+
 			local filterFound = string.find(member.filterText, filter, 1, true)
 			if filterFound then
-				table.insert(new, member)
+				table.insert(new, userId)
 				local pre = escape(string.sub(member.rawText, 1, filterFound - 1))
 				local query = escape(string.sub(member.rawText, filterFound, filterFound + #filter - 1))
 				local post = escape(string.sub(member.rawText, filterFound + #filter))
@@ -162,7 +170,7 @@ function Members.new(_K)
 				member.filterRichText = `<font transparency="0.5">{member.rawText}</font>`
 			end
 		end
-		return new
+		return noFilter and list or new
 	end
 
 	task.defer(scroller.filter, scroller, filterTest)

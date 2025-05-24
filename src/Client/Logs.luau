@@ -40,6 +40,9 @@ function Logs.new(_K)
 	local function filterTest(self, list)
 		local filter = string.lower(self._input._input.Text)
 		self._filter = filter
+
+		local noFilter = filter == ""
+
 		local new = {}
 		for i, log in list do
 			local levelText = _K.Logger:decode(log.level)
@@ -63,18 +66,20 @@ function Logs.new(_K)
 				log.tipText = `<font transparency="0.5">{date}</font> {log.richText}`
 			end
 
-			local filterIndex, filterEnd = string.find(log.filterText, filter, 1, true)
-			log.filterRichText = if filterIndex
-				then `<font transparency="0.5">{escape(string.sub(log.filterText, 1, filterIndex - 1))}</font><b>{escape(
-					string.sub(log.filterText, filterIndex, filterEnd)
-				)}</b><font transparency="0.5">{escape(string.sub(log.filterText, filterEnd + 1))}</font>`
-				else `<font transparency="0.5">{log.rawText}</font>`
+			if noFilter then
+				continue
+			end
 
+			local filterIndex, filterEnd = string.find(log.filterText, filter, 1, true)
 			if filterIndex then
+				log.filterRichText =
+					`<font transparency="0.5">{escape(string.sub(log.filterText, 1, filterIndex - 1))}</font><b>{escape(
+						string.sub(log.filterText, filterIndex, filterEnd)
+					)}</b><font transparency="0.5">{escape(string.sub(log.filterText, filterEnd + 1))}</font>`
 				table.insert(new, log)
 			end
 		end
-		return new
+		return noFilter and list or new
 	end
 
 	local function createItem(self, log)

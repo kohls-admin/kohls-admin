@@ -222,9 +222,16 @@ function Commands.new(_K)
 		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
 
+		local noFilter = filter == ""
+
 		local new = {}
 		for _, command in list do
 			updateRenderParameters(command)
+
+			if noFilter then
+				continue
+			end
+
 			if string.find(command.filterTest, filter, 1, true) then
 				local filterFound = string.find(command.filterText, self._filter, 1, true)
 				command.filterRichText = if filterFound
@@ -250,7 +257,7 @@ function Commands.new(_K)
 			end
 		end
 
-		return new
+		return noFilter and list or new
 	end
 
 	task.defer(function()

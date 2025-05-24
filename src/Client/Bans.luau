@@ -140,8 +140,9 @@ function Bans.new(_K)
 		return itemRef
 	end
 
-	local function renderItem(self, itemData, ban)
-		if not ban.userId then
+	local function renderItem(self, itemData, userId)
+		local ban = _K.Data.bans[userId]
+		if not (ban and ban.userId) then
 			return
 		end
 
@@ -187,6 +188,9 @@ function Bans.new(_K)
 	local function filterTest(self, list)
 		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
+
+		local noFilter = filter == ""
+
 		local new = {}
 		for _, userId in list do
 			local ban = _K.Data.bans[userId]
@@ -220,6 +224,10 @@ function Bans.new(_K)
 				end)
 			end
 
+			if noFilter then
+				continue
+			end
+
 			if string.find(ban.filterText, filter, 1, true) then
 				local filterLeft = string.find(ban.filterTextLeft, self._filter, 1, true)
 				local filterRight = string.find(ban.filterTextRight, self._filter, 1, true)
@@ -246,10 +254,10 @@ function Bans.new(_K)
 					ban.richFilterTextRight = `<font transparency="0.5">{ban.rawTextRight}</font>`
 				end
 
-				table.insert(new, ban)
+				table.insert(new, userId)
 			end
 		end
-		return new
+		return noFilter and list or new
 	end
 
 	task.defer(scroller.filter, scroller, filterTest)
