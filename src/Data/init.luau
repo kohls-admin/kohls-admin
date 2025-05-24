@@ -8,16 +8,17 @@ local Http = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
-local Auth = require(script.Parent.Auth)
 local Data = require(script.Defaults)
-local Migrate = require(script.Migrate)
-local Hook = require(script.Parent.Hook)
-local Util = require(script.Parent.Util)
-local Remote = require(script.Parent.Remote)
 
 if RunService:IsClient() then
 	return Data
 end
+
+local Auth = require(script.Parent.Auth)
+local Migrate = require(script.Migrate)
+local Hook = require(script.Parent.Hook)
+local Util = require(script.Parent.Util)
+local Remote = require(script.Parent.Remote)
 
 -- DataStore value limit of 4,194,303 bytes
 local DATA_LIMIT = 2 ^ 22 - 1
