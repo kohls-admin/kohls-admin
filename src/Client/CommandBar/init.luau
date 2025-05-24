@@ -234,11 +234,7 @@ local function updateCompletionData()
 	updateCompletion()
 end
 
-local completeSuggestion = _K.Util.Function.throttle(0.1, function()
-	if not currentCompletion then
-		return
-	end
-
+local function fillSuggestion()
 	local pos, text = unpack(currentCompletion)
 	if not string.find(text, " $") then
 		text = text .. " "
@@ -246,11 +242,17 @@ local completeSuggestion = _K.Util.Function.throttle(0.1, function()
 	end
 	currentCompletion = nil
 
-	task.defer(function()
-		Input.Value:set(text, true)
-		Input._input.CursorPosition = pos + 1
-		updateCompletionData()
-	end)
+	Input.Value:set(text, true)
+	Input._input.CursorPosition = pos + 1
+end
+
+local completeSuggestion = _K.Util.Function.throttle(0.1, function()
+	if not currentCompletion then
+		return
+	end
+
+	fillSuggestion()
+	task.defer(updateCompletionData)
 end)
 
 local suggestionUpdating
@@ -796,10 +798,16 @@ return {
 					return
 				end
 
+				if currentCompletion and data.suggestionType ~= "History" then
+					fillSuggestion()
+					task.defer(Input._input.ReleaseFocus, Input._input)
+				end
+
 				-- FIX: if validated lol
-				task.spawn(_K.Process.runCommands, _K, UI.LocalPlayer.UserId, Input._input.Text)
+				local trimmed = _K.Util.String.trimEnd(Input._input.Text)
+				task.spawn(_K.Process.runCommands, _K, UI.LocalPlayer.UserId, trimmed)
 				-- Find the command in the history (and remove if not the most recent)
-				local cmd = string.sub(Input._input.Text, 2)
+				local cmd = string.sub(trimmed, 2)
 				local foundIndex = table.find(commandHistory, cmd)
 				if foundIndex ~= 1 then
 					if foundIndex then
