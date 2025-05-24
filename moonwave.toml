@@ -22,7 +22,7 @@ classes = ["UI", "Checkbox"]
 
 [[classOrder]]
 section = "Utility"
-classes = ["Util", "Logger", "Promise", "String"]
+classes = ["Util", "Logger", "String"]
 
 [docusaurus]
 onBrokenLinks = "warn"

@@ -16,9 +16,6 @@ local Util = {
 	getUserInfo = require(script:WaitForChild("getUserInfo")),
 	Humanoid = require(script:WaitForChild("Humanoid")),
 	iterPageItems = require(script:WaitForChild("iterPageItems")),
-	--- @within Util
-	--- @prop Promise Promise
-	Promise = require(script:WaitForChild("Promise")),
 	Queue = require(script:WaitForChild("Queue")),
 	ReadableTime = require(script:WaitForChild("ReadableTime")),
 	Retry = require(script:WaitForChild("Retry")),

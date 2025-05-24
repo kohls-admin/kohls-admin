@@ -106,7 +106,7 @@ return {
 			},
 			{
 				Id = 92658764, -- evaera
-				Tooltip = "Moonwave, Promises, & inspiration from Cmdr",
+				Tooltip = "Moonwave & inspiration from Cmdr",
 			},
 			{
 				Id = 484140, -- GigsD4x
