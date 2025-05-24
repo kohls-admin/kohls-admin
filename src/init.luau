@@ -129,12 +129,6 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 end
 _K.Logger.logs = _K.Data.logs
 
--- Move tools to ServerStorage
-if _K.IsServer then
-	_K.Tools = script:WaitForChild("Tools")
-	_K.Tools.Parent = _K.Service.ServerScript
-end
-
 -- register initial UI children
 if _K.IsClient then
 	_K.UI = require(Client:WaitForChild("UI"))
@@ -143,23 +137,25 @@ if _K.IsClient then
 	task.spawn(_K.log, `UI classes registered in {math.round((os.clock() - uiRegisterStart) * 1000)} ms`, "DEBUG")
 end
 
-local typeRegisterStart = os.clock()
--- register types
-for _, child in script.DefaultTypes:GetChildren() do
-	require(child)(_K)
-end
-task.spawn(_K.log, `Default Types registered in {math.round((os.clock() - typeRegisterStart) * 1000)} ms`, "DEBUG")
+task.defer(function()
+	local typeRegisterStart = os.clock()
+	-- register types
+	for _, child in script.DefaultTypes:GetChildren() do
+		require(child)(_K)
+	end
+	task.spawn(_K.log, `Default Types registered in {math.round((os.clock() - typeRegisterStart) * 1000)} ms`, "DEBUG")
 
-local commandRegisterStart = os.clock()
--- register commands
-for _, child in script.DefaultCommands:GetChildren() do
-	_K.Registry.registerCommandModule(_K, child)
-end
-task.spawn(
-	_K.log,
-	`Default Commands registered in {math.round((os.clock() - commandRegisterStart) * 1000)} ms`,
-	"DEBUG"
-)
+	local commandRegisterStart = os.clock()
+	-- register commands
+	for _, child in script.DefaultCommands:GetChildren() do
+		_K.Registry.registerCommandModule(_K, child)
+	end
+	task.spawn(
+		_K.log,
+		`Default Commands registered in {math.round((os.clock() - commandRegisterStart) * 1000)} ms`,
+		"DEBUG"
+	)
+end)
 
 shared._K_INTERFACE = _K
 
@@ -173,6 +169,9 @@ end
 --------------------------
 -- START OF SERVER CODE --
 --------------------------
+
+_K.Tools = script:WaitForChild("Tools")
+_K.Tools.Parent = _K.Service.ServerScript
 
 local function characterAdded(character: Model)
 	local player = _K.Service.Players:GetPlayerFromCharacter(character)
