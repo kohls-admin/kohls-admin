@@ -40,9 +40,9 @@ local state = Flux.state
 local Theme = {
 	ClackAll = state(true),
 	ClackEnabled = state(false),
-	Transparency = state(0.3),
+	Transparency = state(0.08),
 
-	Primary = state(Color3.fromRGB(0, 0, 0)),
+	Primary = state(Color3.fromRGB(18, 18, 21)),
 	PrimaryText = state(Color3.fromRGB(255, 255, 255)),
 
 	Secondary = state(Color3.fromRGB(255, 255, 255)),
@@ -63,7 +63,7 @@ local Theme = {
 
 	CornerRadius = state(UDim.new(0, 8)),
 	Padding = state(UDim.new(0, 6)),
-	StrokeEnabled = state(true),
+	StrokeEnabled = state(false),
 	SoundEnabled = state(true),
 
 	TweenIn = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In)),
