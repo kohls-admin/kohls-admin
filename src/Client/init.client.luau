@@ -155,6 +155,12 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 		if _K.client.settings[key] then
 			_K.client.settings[key]:set(value)
 		end
+		if string.find(key, "theme", 1, true) == 1 then
+			local themeKey = string.sub(key, 6)
+			if UI.Theme[themeKey] then
+				UI.Theme[themeKey]:set(value)
+			end
+		end
 	end
 
 	_K.client.CommandBar = require(script:WaitForChild("CommandBar"))
