@@ -385,12 +385,12 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		end
 	end
 
-	function _K.setupPurchasables(purchasables, roleKey)
+	function _K.setupPurchasables(purchasables, key)
 		for id, role in purchasables do
 			local roleData = _K.Data.roles[role]
 			if roleData then
-				roleData[roleKey] = roleData[roleKey] or {}
-				table.insert(roleData[roleKey], id)
+				roleData[key] = roleData[key] or {}
+				table.insert(roleData[key], id)
 			end
 		end
 	end
@@ -423,6 +423,23 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 				end
 			end
 		end)
+	end
+
+	for role, roleData in _K.Data.roles do
+		for _, key in { "asset", "gamepass", "subscription" } do
+			local id = roleData[key]
+			if id then
+				local listKey = key .. if string.find(key, "s$", 1, true) then "es" else "s"
+				roleData[listKey] = roleData[listKey] or {}
+				table.insert(roleData[listKey], id)
+
+				if not _K.Data.async[key][id] then
+					_K.Data.async[key][id] = { role }
+				else
+					table.insert(_K.Data.async[key][id], role)
+				end
+			end
+		end
 	end
 
 	_K.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
