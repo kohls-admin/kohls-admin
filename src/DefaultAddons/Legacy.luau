@@ -210,9 +210,16 @@ return function(_K)
 
 		local function banUser(nameOrUserId)
 			if type(nameOrUserId) == "string" then
-				nameOrUserId = _K.Service.Players:GetUserIdFromNameAsync(nameOrUserId)
+				local ok, result = _K.Util.Retry(function()
+					return _K.Service.Players:GetUserIdFromNameAsync(nameOrUserId)
+				end)
+				if ok then
+					nameOrUserId = result
+				end
 			end
-			_K.Auth.banUsers({ nameOrUserId }, "Migrated from Legacy bans.", 0, _K.creatorId)
+			if nameOrUserId then
+				_K.Auth.banUsers({ nameOrUserId }, "Migrated from Legacy bans.", 0, _K.creatorId)
+			end
 		end
 
 		for index, nameOrUserId in banned do
@@ -237,10 +244,15 @@ return function(_K)
 		local function roleUser(nameOrUserId, rank)
 			local roleId = getRoleFromRank(rank)
 			if roleId then
-				if type(nameOrUserId) == "string" then
-					nameOrUserId = _K.Service.Players:GetUserIdFromNameAsync(nameOrUserId)
+				local ok, result = _K.Util.Retry(function()
+					return _K.Service.Players:GetUserIdFromNameAsync(nameOrUserId)
+				end)
+				if ok then
+					nameOrUserId = result
 				end
-				_K.Auth.userRoleAdd(nameOrUserId, roleId)
+				if nameOrUserId then
+					_K.Auth.userRoleAdd(nameOrUserId, roleId)
+				end
 			end
 		end
 

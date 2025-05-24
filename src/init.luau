@@ -367,10 +367,17 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	for role, users in settings.userRoles do
 		for _, user in users do
 			task.spawn(function()
-				local userId = if type(user) == "string"
-					then _K.Service.Players:GetUserIdFromNameAsync(user)
-					elseif (tonumber(user) or 0) > 0 then tonumber(user)
-					else nil
+				local userId
+				if type(user) == "string" then
+					local ok, result = _K.Util.Retry(function()
+						return _K.Service.Players:GetUserIdFromNameAsync(user)
+					end)
+					if ok then
+						userId = result
+					end
+				elseif (tonumber(user) or 0) > 0 then
+					tonumber(user)
+				end
 				if userId then
 					task.spawn(_K.Auth.userRoleAdd, userId, role)
 				end
