@@ -84,6 +84,7 @@ task.defer(function()
 		Title = "Enjoy Kohl's Admin?",
 		Text = "Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management.",
 		Visible = false,
+		Draggable = true,
 		ExitButton = true,
 		BackgroundTransparency = 0,
 		AnchorPoint = Vector2.new(0.5, 0.5),

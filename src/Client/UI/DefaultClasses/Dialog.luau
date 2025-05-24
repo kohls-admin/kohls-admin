@@ -10,6 +10,8 @@ setmetatable(Dialog, BaseClass)
 -- maximum of 2 actions
 function Dialog.new(definition)
 	local new = UI.makeStatefulDefaults({
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
 		Text = UI.Nil,
 		TextSize = UI.Theme.FontSize,
 		TextColor3 = UI.Theme.PrimaryText,
@@ -20,6 +22,7 @@ function Dialog.new(definition)
 		ActionTextSize = UI.Theme.FontSize,
 		Action = UI.Nil,
 		Duration = UI.Nil,
+		Draggable = false,
 		LeftAction = UI.Nil,
 		RightAction = UI.Nil,
 		ExitButton = UI.Nil,
@@ -27,6 +30,67 @@ function Dialog.new(definition)
 		Visible = true,
 		Width = 256,
 	}, definition)
+
+	local dragInput, dragStart, startOffset
+	local dragging = UI.state(false)
+
+	local function dragUpdate(input)
+		if not dragInput then
+			return
+		end
+
+		local delta = input.Position - dragStart
+		local size = new._instance.AbsoluteSize
+		local anchorOffset = size * new._instance.AnchorPoint
+		local minPosition = new._instance.Parent.AbsolutePosition + anchorOffset
+		local maxPosition = new._instance.Parent.AbsoluteSize - (size - anchorOffset)
+
+		new.Position:set(
+			UDim2.fromOffset(
+				math.clamp(math.round(startOffset.X + delta.X), minPosition.X, math.max(0, maxPosition.X)),
+				math.clamp(math.round(startOffset.Y + delta.Y), minPosition.Y, math.max(0, maxPosition.Y))
+			)
+		)
+	end
+
+	local function dragInputBegan(input, gameProcessed)
+		if gameProcessed or not new.Draggable._value then
+			return
+		end
+		if
+			input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
+			startOffset = (new._instance.AbsolutePosition + new._instance.AbsoluteSize * new._instance.AnchorPoint)
+				- new._instance.Parent.AbsolutePosition
+			dragInput, dragStart = input, input.Position
+			dragging:set(true)
+			local con
+			con = input:GetPropertyChangedSignal("UserInputState"):Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					con:Disconnect()
+					if dragInput == input then
+						dragInput = nil
+						dragging:set(false)
+					end
+				end
+			end)
+		end
+	end
+
+	UI.UserInputService.InputChanged:Connect(function(input)
+		if not (new.Draggable._value and new._instance.Visible) then
+			return
+		end
+		if
+			input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
+			if dragging._value then
+				dragUpdate(input)
+			end
+		end
+	end)
 
 	local con
 	local function activate(active)
@@ -124,10 +188,11 @@ function Dialog.new(definition)
 			HorizontalFlex = Enum.UIFlexAlignment.Fill,
 		},
 
-		UI.new "Frame" {
+		UI.new "TextButton" {
 			Name = "Title",
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
+			Text = "",
 			Visible = UI.compute(function(use)
 				local title = use(new.Title)
 				return title and title ~= ""
@@ -157,6 +222,10 @@ function Dialog.new(definition)
 			},
 
 			if UI.peek(new.Title) then exitButton else nil,
+
+			[UI.Event] = {
+				InputBegan = dragInputBegan,
+			},
 		},
 
 		UI.new "TextLabel" {
@@ -189,6 +258,8 @@ function Dialog.new(definition)
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
 		ClipsDescendants = true,
+		AnchorPoint = new.AnchorPoint,
+		Position = new.Position,
 		Size = UI.computeFrom(UDim2.fromOffset, new.Width, 0),
 		Text = "",
 		Visible = new.Visible,
