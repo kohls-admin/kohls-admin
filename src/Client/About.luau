@@ -1,6 +1,3 @@
-local Players = game:GetService("Players")
-local PolicyService = game:GetService("PolicyService")
-
 local CREDITS = require(script.Parent.Parent.Credits)
 local UserFrame = require(script.Parent.UserFrame)
 
@@ -766,22 +763,6 @@ function About.new(_K)
 		end
 	end)
 
-	local social = UI.new "Frame" {
-		Name = "Social",
-		AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, -2, 0, 0),
-		Visible = false,
-
-		UI.new "UIListLayout" {
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			FillDirection = Enum.FillDirection.Horizontal,
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			Padding = UI.Theme.PaddingDouble,
-			Wraps = true,
-		},
-	}
-
 	local scroller = UI.new "Scroller" {
 		Name = "About",
 
@@ -814,8 +795,6 @@ function About.new(_K)
 
 		vipLabel,
 		vipList,
-
-		social,
 
 		UI.new "TextLabel" {
 			AutoLocalize = false,
@@ -886,59 +865,6 @@ function About.new(_K)
 	})
 
 	task.defer(function()
-		local success, result = _K.Util.Retry(function()
-			return PolicyService:GetPolicyInfoForPlayerAsync(Players.LocalPlayer)
-		end)
-
-		local discordInvite = success
-			and result.AllowedExternalLinkReferences
-			and table.find(result.AllowedExternalLinkReferences, "Discord")
-
-		if discordInvite then
-			social.Visible = true
-
-			UI.new "TextLabel" {
-				Parent = social,
-				LayoutOrder = -2,
-				AutoLocalize = false,
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				Font = UI.Theme.Font,
-				TextSize = UI.Theme.FontSize,
-				TextColor3 = UI.Theme.PrimaryText,
-				TextWrapped = true,
-				Size = UDim2.new(1, 0, 0, 24),
-				Text = `<b>Need help or want to contribute?</b>\n<font transparency="0.33">Join the <b>Kohl's Admin</b> Discord community!</font>`,
-				RichText = true,
-			}
-
-			UI.new "TextBox" {
-				Parent = social,
-				LayoutOrder = -1,
-				Name = "Invite",
-				AutoLocalize = false,
-				AutomaticSize = Enum.AutomaticSize.XY,
-				BackgroundColor3 = Color3.fromHex("#5865F2"),
-				Font = UI.Theme.FontMono,
-				TextSize = UI.Theme.FontSize,
-				TextColor3 = Color3.new(1, 1, 1),
-				Text = "https://discord.gg/kohl",
-				TextWrapped = true,
-				TextEditable = false,
-				ClearTextOnFocus = false,
-
-				UI.new "UICorner" {
-					CornerRadius = UI.Theme.CornerRadius,
-				},
-				UI.new "UIPadding" {
-					PaddingLeft = UI.Theme.Padding,
-					PaddingRight = UI.Theme.Padding,
-					PaddingTop = UI.Theme.Padding,
-					PaddingBottom = UI.Theme.Padding,
-				},
-			}
-		end
-
 		local credits = UI.new "Frame" {
 			Name = "Credits",
 			Parent = scroller,

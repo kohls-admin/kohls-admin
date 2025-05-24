@@ -74,6 +74,130 @@ _K.client.toggleCommandBar = UI.new "Button" {
 }
 _K.client.toggleCommandBar._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 
+task.defer(function()
+	local success, result = _K.Util.Retry(function()
+		return _K.Util.Service.PolicyService:GetPolicyInfoForPlayerAsync(_K.Util.Service.Players.LocalPlayer)
+	end)
+
+	local socialInvite = success
+		and result.AllowedExternalLinkReferences
+		and table.find(result.AllowedExternalLinkReferences, "Discord")
+
+	if socialInvite then
+		local social = UI.new "Frame" {
+			Name = "Social",
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -2, 0, 0),
+			LayoutOrder = 2,
+
+			UI.new "UIListLayout" {
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				FillDirection = Enum.FillDirection.Horizontal,
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				Padding = UI.Theme.PaddingDouble,
+				Wraps = true,
+			},
+		}
+
+		UI.new "TextLabel" {
+			Parent = social,
+			LayoutOrder = -2,
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			Font = UI.Theme.Font,
+			TextSize = UI.Theme.FontSize,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextWrapped = true,
+			Size = UDim2.new(1, 0, 0, 24),
+			Text = `<font transparency="0.33">Join the <b>Kohl's Admin</b> Discord server!</font>\n\n<font color="#f00"><b>We are not associated with this game!</b></font>`,
+			RichText = true,
+		}
+
+		UI.new "TextBox" {
+			Parent = social,
+			LayoutOrder = -1,
+			Name = "Invite",
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.XY,
+			BackgroundColor3 = Color3.fromHex("#5865F2"),
+			Font = UI.Theme.FontMono,
+			TextSize = UI.Theme.FontSize,
+			TextColor3 = Color3.new(1, 1, 1),
+			Text = "discord.gg/kohl",
+			TextWrapped = true,
+			TextEditable = false,
+			ClearTextOnFocus = false,
+
+			UI.new "UICorner" {
+				CornerRadius = UI.Theme.CornerRadius,
+			},
+			UI.new "UIPadding" {
+				PaddingLeft = UI.Theme.Padding,
+				PaddingRight = UI.Theme.Padding,
+				PaddingTop = UI.Theme.Padding,
+				PaddingBottom = UI.Theme.Padding,
+			},
+		}
+
+		local socialDialog
+		socialDialog = UI.new "Dialog" {
+			Parent = UI.LayerTop,
+			Title = "Kohl's Admin Discord",
+			Text = "",
+			Visible = false,
+			ExitButton = true,
+			BackgroundTransparency = 0,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			Size = UDim2.new(0, 256, 0, 0),
+			Modal = true,
+			ZIndex = 1000,
+			Close = function()
+				_K.client.lastAttemptedPurchase = false
+				socialDialog.Visible:set(false)
+			end,
+
+			social,
+		}
+		local socialButton = UI.new "Button" {
+			BackgroundTransparency = 1,
+			Size = titleBarButtonSize,
+			Icon = "rbxassetid://128691342988958",
+			IconProperties = {
+				Size = UDim2.new(0.75, 0, 40 / 52.8 * 0.75, 0),
+				ImageTransparency = UI.compute(function(use)
+					return if use(socialDialog.Visible) then 0 else 0.75
+				end),
+			},
+			Text = "",
+			Parent = dashboard._instance.Frame.TitleBar,
+			LayoutOrder = 7,
+
+			Activated = function()
+				socialDialog.Visible:set(not socialDialog.Visible._value)
+			end,
+		}
+		socialButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+
+		local function updateDialogPosition()
+			if socialDialog.Visible._value then
+				local position = socialButton._instance.AbsolutePosition
+					+ socialDialog._instance.AbsoluteSize * socialDialog._instance.AnchorPoint
+				socialDialog.Position:set(
+					UDim2.fromOffset(
+						position.X,
+						position.Y + UI.TopbarInset._value.Height + socialButton._instance.AbsoluteSize.Y
+					)
+				)
+			end
+		end
+		socialDialog.Visible:hook(updateDialogPosition)
+		socialButton._instance:GetPropertyChangedSignal("AbsolutePosition"):Connect(updateDialogPosition)
+	end
+end)
+
 local function dashboardToggle(button)
 	if dashboard._instance.Visible then
 		UI.Sound.Hover01:Play()
