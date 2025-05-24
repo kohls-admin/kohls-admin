@@ -18,17 +18,17 @@ function About.new(_K)
 		local existing = equippedUGC[equip]
 		if existing and existing ~= button then
 			existing.BackgroundColor3:set(Color3.fromRGB(0, 200, 0))
-			existing.Label:set("<b>EQUIP</b>")
+			existing.Label:set("<b>WEAR</b>")
 		end
 
 		if equipped then
 			equippedUGC[equip] = button
 			button.BackgroundColor3:set(Color3.fromRGB(200, 0, 0))
-			button.Label:set("<b>UNEQUIP</b>")
+			button.Label:set("<b>HIDE</b>")
 		else
 			equippedUGC[equip] = nil
 			button.BackgroundColor3:set(Color3.fromRGB(0, 200, 0))
-			button.Label:set("<b>EQUIP</b>")
+			button.Label:set("<b>WEAR</b>")
 		end
 
 		_K.Remote.VIPUGCMethod:FireServer(id, equip, equipped, name)
@@ -217,7 +217,7 @@ function About.new(_K)
 	do
 		task.defer(function()
 			local owned = (donationLevel or 0) >= (ugc.level or 3)
-			ugc.price = if owned then "EQUIP" else "?"
+			ugc.price = if owned then "WEAR" else "?"
 
 			local frame = UI.new "Frame" {
 				Parent = customUGC,
@@ -375,7 +375,7 @@ function About.new(_K)
 						con2 = nil
 					end
 					owned, try = true, nil
-					button.Label:set("<b>EQUIP</b>")
+					button.Label:set("<b>WEAR</b>")
 					button._content.IconFrame.Visible = false
 					button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
 				end
@@ -489,17 +489,14 @@ function About.new(_K)
 				Activated = function()
 					if
 						isTitle
-						and (
-							button._content.Price.Text == `<b>EQUIP</b>`
-							or button._content.Price.Text == `<b>UNEQUIP</b>`
-						)
+						and (button._content.Price.Text == `<b>SHOW</b>` or button._content.Price.Text == `<b>HIDE</b>`)
 					then
 						if titleEquipped then
-							titleEquipped._content.Price.Text = `<b>EQUIP</b>`
+							titleEquipped._content.Price.Text = `<b>SHOW</b>`
 						end
 						if titleEquipped ~= button then
 							titleEquipped = button
-							button._content.Price.Text = `<b>UNEQUIP</b>`
+							button._content.Price.Text = `<b>HIDE</b>`
 							_K.Remote.Title:FireServer(pass.name)
 						else
 							titleEquipped = nil
@@ -524,7 +521,6 @@ function About.new(_K)
 			Visible = button._hovering,
 		}
 
-		task.spawn(updatePassPriceText, button._content.Price, pass.id, if isTitle then `<b>EQUIP</b>` else nil)
 	end
 
 	local vipLabel = UI.new "TextLabel" {
@@ -539,6 +535,7 @@ function About.new(_K)
 		Text = "✨ <b>Become a VIP</b>\n<font transparency='0.5'>Unlock exclusive commands in participating experiences.</font>",
 		RichText = true,
 	}
+		task.spawn(updatePassPriceText, button._content.Price, pass.id, if isTitle then `<b>SHOW</b>` else nil)
 
 	local vipList = UI.new "Frame" {
 		Name = "VIP",
@@ -588,15 +585,15 @@ function About.new(_K)
 		[UI.Event] = {
 			Activated = function()
 				if
-					vipButtonGlobal._content.Price.Text == `<b>EQUIP</b>`
-					or vipButtonGlobal._content.Price.Text == `<b>UNEQUIP</b>`
+					vipButtonGlobal._content.Price.Text == `<b>SHOW</b>`
+					or vipButtonGlobal._content.Price.Text == `<b>HIDE</b>`
 				then
 					if titleEquipped then
-						titleEquipped._content.Price.Text = `<b>EQUIP</b>`
+						titleEquipped._content.Price.Text = `<b>SHOW</b>`
 					end
 					if titleEquipped ~= vipButtonGlobal then
 						titleEquipped = vipButtonGlobal
-						vipButtonGlobal._content.Price.Text = `<b>UNEQUIP</b>`
+						vipButtonGlobal._content.Price.Text = `<b>HIDE</b>`
 						_K.Remote.Title:FireServer("VIP")
 					else
 						titleEquipped = nil
@@ -640,7 +637,7 @@ function About.new(_K)
 		},
 	}
 
-	task.defer(updatePassPriceText, vipButtonGlobal._content.Price, vipGlobalPassId, `<b>EQUIP</b>`)
+	task.defer(updatePassPriceText, vipButtonGlobal._content.Price, vipGlobalPassId, `<b>SHOW</b>`)
 	if vipDeveloperPassId then
 		task.defer(updatePassPriceText, vipButtonDeveloper._content.Price, vipDeveloperPassId)
 	end
