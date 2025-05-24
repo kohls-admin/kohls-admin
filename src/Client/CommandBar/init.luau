@@ -560,7 +560,11 @@ updateCompletion = function()
 		unpack(currentSuggestion)
 	suggestionQuery = suggestionQuery or suggestionText
 
-	if not string.find(suggestionText, arg, 1, true) then
+	print(suggestionQuery, suggestionText, arg)
+	if
+		not string.find(string.lower(suggestionText), `{string.lower(arg)}`, 1, true)
+		and not (suggestionQuery and string.find(string.lower(suggestionQuery), `[{string.lower(arg)}`, 1, true))
+	then
 		suggestionInvalid = true
 		data.validSuggestion = false
 	end
