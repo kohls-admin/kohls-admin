@@ -171,17 +171,34 @@ if Util.Service.Run:IsServer() then
 		end
 	end)
 
-	function VIP.Title(player: Player, ...)
+	function VIP.Title(player: Player, title, ...)
+		local definition = Title.definition[title and string.lower(title)]
+		if definition and definition.gamepass then
+			if definition.ownerCache[player.UserId] == false then
+				return
+			else
+				local okGamePass, result = Util.Retry(function()
+					return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, definition.gamepass)
+				end)
+				if okGamePass then
+					definition.ownerCache[player.UserId] = result
+				end
+				if not (okGamePass and result) then
+					return
+				end
+			end
+		end
+
 		local userEffects = VIP.effects[player.UserId]
 		if not userEffects then
 			userEffects = {}
 			VIP.effects[player.UserId] = userEffects
 		end
 
-		userEffects.Title = if select("#", ...) > 0 then { Method = Title.Method, Params = { ... } } else nil
+		userEffects.Title = if title then { Method = Title.Method, Params = { title, ... } } else nil
 
 		if player.Character then
-			Title.Method(player.Character, ...)
+			Title.Method(player.Character, title, ...)
 		end
 	end
 
@@ -189,17 +206,8 @@ if Util.Service.Run:IsServer() then
 		if not Data.settings.vip then
 			return
 		end
-
 		local titleDefinition = Title.definition[title and string.lower(title)]
 		if titleDefinition then
-			if titleDefinition.gamepass then
-				local okGamePass, result = Util.Retry(function()
-					return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, titleDefinition.gamepass)
-				end)
-				if not (okGamePass and result) then
-					return
-				end
-			end
 			VIP.Title(player, title)
 		else
 			VIP.Title(player)
@@ -291,6 +299,12 @@ if Util.Service.Run:IsServer() then
 				end
 			end
 			player:SetAttribute("_KDonationLevel", level)
+
+			for title, definition in Title do
+				if definition.gamepass == passId then
+					definition.ownerCache[player.UserId] = true
+				end
+			end
 		end
 	end)
 end

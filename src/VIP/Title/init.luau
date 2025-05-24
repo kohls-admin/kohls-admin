@@ -11,12 +11,11 @@ local Title = {
 			color = Color3.fromHex("#0ff"),
 			gamepass = 938480383,
 		},
-		benefactor = {
+		elite = {
 			color = Color3.fromHex("#0bf"),
 			gamepass = 939618404,
 		},
-		luminary = {
-			color = Color3.fromHex("#80f"),
+		epic = {
 			gamepass = 936146448,
 			rotation = 0,
 			getValue = function(elapsed: number)
@@ -33,8 +32,7 @@ local Title = {
 				object.Title.UIGradient.Color = value
 			end,
 		},
-		epic = {
-			color = Color3.fromHex("#f0f"),
+		hero = {
 			gamepass = 941076536,
 			getValue = function(elapsed: number)
 				elapsed /= 2
@@ -50,8 +48,7 @@ local Title = {
 				object.Title.UIGradient.Color = value
 			end,
 		},
-		hero = {
-			color = Color3.fromHex("#f08"),
+		legend = {
 			gamepass = 941162509,
 			getValue = function(elapsed: number)
 				elapsed /= 2
@@ -67,8 +64,7 @@ local Title = {
 				object.Title.UIGradient.Color = value
 			end,
 		},
-		legend = {
-			color = Color3.fromHex("#f00"),
+		mythic = {
 			gamepass = 941006661,
 			getValue = function(elapsed: number)
 				return ColorSequence.new(Color3.fromHSV((elapsed / 8) % 1, 0.75, 1))
@@ -77,8 +73,7 @@ local Title = {
 				object.Title.UIGradient.Color = value
 			end,
 		},
-		mythic = {
-			color = Color3.fromHex("#fff"),
+		eternal = {
 			gamepass = 983235767,
 			rotation = 30,
 			getValue = function(elapsed: number)
@@ -96,6 +91,11 @@ local Title = {
 		},
 	},
 }
+
+for _, definition in Title.definition do
+	definition.ownerCache = {}
+end
+
 shared._KVIPTitle = Title
 
 local gui = Instance.new("BillboardGui")
