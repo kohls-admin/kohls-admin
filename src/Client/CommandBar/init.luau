@@ -558,6 +558,11 @@ updateCompletion = function()
 		unpack(currentSuggestion)
 	suggestionQuery = suggestionQuery or suggestionText
 
+	if not string.find(suggestionText, arg, 1, true) then
+		suggestionInvalid = true
+		data.validSuggestion = false
+	end
+
 	if suggestionInvalid and not data.validSuggestion then
 		validState:set(false)
 	end
