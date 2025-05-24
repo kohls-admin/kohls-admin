@@ -110,13 +110,8 @@ return function(dialogOverride)
 				Padding = UDim.new(0, 4),
 				FillDirection = Enum.FillDirection.Horizontal,
 			},
-			UI.new "Frame" {
+			UI.new "Spacer" {
 				LayoutOrder = 8,
-				Name = "Spacer",
-				BackgroundTransparency = 1,
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
 			},
 			dialog._exitButton,
 		})
