@@ -76,6 +76,10 @@ local Theme = {
 	},
 }
 
+Theme.TransparencyOverlay = compute(function(use)
+	return use(Theme.Transparency) * 0.125 + 0.875
+end)
+
 Theme.TransparencyClamped = compute(function(use)
 	return math.min(0.75, use(Theme.Transparency))
 end)

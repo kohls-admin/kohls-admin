@@ -16,6 +16,13 @@ function Switch.new(definition)
 	local backgroundTransparency = UI.tween(
 		UI.Theme.TweenOut,
 		UI.compute(function(use)
+			return if use(new.Value) then 0 else use(UI.Theme.TransparencyOverlay)
+		end)
+	)
+
+	local backgroundTransparencyClamped = UI.tween(
+		UI.Theme.TweenOut,
+		UI.compute(function(use)
 			return if use(new.Value) then 0 else use(UI.Theme.TransparencyClamped)
 		end)
 	)
@@ -34,13 +41,7 @@ function Switch.new(definition)
 		Active = true,
 		AutoButtonColor = false,
 		AnchorPoint = Vector2.new(1, 0),
-		BackgroundColor3 = UI.tween(
-			UI.Theme.TweenOut,
-			UI.compute(function(use)
-				local border, secondary = use(UI.Theme.Border), use(UI.Theme.Secondary)
-				return if use(new.Value) then secondary else border
-			end)
-		),
+		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = backgroundTransparency,
 		Position = UDim2.new(1, 0, 0, 0),
 		Text = "",
@@ -69,7 +70,7 @@ function Switch.new(definition)
 		UI.new "Frame" {
 			Name = "Circle",
 			BackgroundColor3 = UI.Theme.SecondaryText,
-			BackgroundTransparency = backgroundTransparency,
+			BackgroundTransparency = backgroundTransparencyClamped,
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			Position = UI.tween(

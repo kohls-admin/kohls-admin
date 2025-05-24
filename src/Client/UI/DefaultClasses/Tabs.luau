@@ -199,7 +199,9 @@ function Tabs.new(definition)
 				container.Parent = new._content
 
 				local nameState = UI.state(page, "Name")
-				local upperState = UI.computeFrom(string.upper, nameState)
+				local boldState = UI.compute(function(use)
+					return `<b>{use(nameState)}</b>`
+				end)
 				local hovering, textFits, button = UI.state(false), UI.state(false)
 				button = UI.new "TextButton" {
 					AutoLocalize = false,
@@ -209,16 +211,17 @@ function Tabs.new(definition)
 					AutoButtonColor = false,
 					AutomaticSize = Enum.AutomaticSize.XY,
 					Size = UDim2.new(0, 0, 0, 0), --UI.computeFrom(UDim2.new, 0, strokeTabSize, 1, 0),
-					BackgroundColor3 = UI.Theme.Border,
+					BackgroundColor3 = UI.Theme.Secondary,
 					BackgroundTransparency = UI.tween(
 						UI.Theme.TweenOut,
 						UI.compute(function(use)
-							return if use(currentPage) == container then use(UI.Theme.Transparency) else 1
+							return if use(currentPage) == container then use(UI.Theme.TransparencyOverlay) else 1
 						end)
 					),
 					Font = UI.Theme.Font,
-					Text = upperState,
-					TextSize = tabFontSize,
+					RichText = true,
+					Text = boldState,
+					TextSize = UI.Theme.FontSize,
 					TextColor3 = UI.Theme.PrimaryText,
 					TextTransparency = UI.tween(
 						UI.Theme.TweenOut,

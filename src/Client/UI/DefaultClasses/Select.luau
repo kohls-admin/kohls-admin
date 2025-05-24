@@ -29,6 +29,8 @@ function Select.new(definition)
 		UI.new "Button" {
 			Name = "Header",
 			ActiveSound = false,
+			BackgroundColor3 = UI.Theme.Secondary,
+			BackgroundTransparency = UI.Theme.TransparencyOverlay,
 			Icon = "rbxassetid://2374890977",
 			IconRightAlign = true,
 			IconProperties = {
@@ -105,8 +107,8 @@ function Select.new(definition)
 				BackgroundColor3 = UI.compute(function(use)
 					local hovering = use(choiceButton._hovering)
 					return if use(new.Choice) == choice and not hovering
-						then use(UI.Theme.BorderMuted)
-						elseif hovering or use(UI.Theme.Transparency) > 0 then use(UI.Theme.Border)
+						then use(UI.Theme.Secondary)
+						elseif hovering or use(UI.Theme.Transparency) > 0 then use(UI.Theme.Secondary)
 						else use(UI.Theme.Primary)
 				end),
 				BackgroundTransparency = UI.compute(function(use)
@@ -114,7 +116,7 @@ function Select.new(definition)
 							and use(UI.Theme.Transparency) > 0
 							and use(new.Choice) ~= choice
 						then 1
-						else 0
+						else use(UI.Theme.TransparencyOverlay)
 				end),
 			})
 			choiceButton._hovering:hook(function(value)

@@ -44,7 +44,8 @@ function Checkbox.new(definition: CheckboxDefinition)
 		Name = "Checkbox",
 		Active = true,
 		AnchorPoint = Vector2.new(1, 0.5),
-		BackgroundTransparency = 1,
+		BackgroundColor3 = UI.Theme.Secondary,
+		BackgroundTransparency = UI.Theme.TransparencyOverlay,
 		Position = UDim2.new(1, 0, 0.5, 0),
 		Text = "",
 		TextTransparency = 1,
@@ -55,6 +56,7 @@ function Checkbox.new(definition: CheckboxDefinition)
 		},
 
 		UI.new "UIStroke" {
+			Enabled = UI.Theme.StrokeEnabled,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,

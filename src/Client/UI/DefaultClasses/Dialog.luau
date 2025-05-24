@@ -89,8 +89,10 @@ function Dialog.new(definition)
 		LayoutOrder = 9,
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
+		BackgroundTransparency = 1,
+		HoverTransparency = 0,
 		Position = UDim2.new(1, 0, 0, 0),
-		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarger, 0, UI.Theme.FontSizeLarger),
+		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLargest, 0, UI.Theme.FontSizeLargest),
 		Icon = UI.Theme.Image.Close,
 		IconProperties = {
 			Size = UDim2.new(0, 10, 0, 10),

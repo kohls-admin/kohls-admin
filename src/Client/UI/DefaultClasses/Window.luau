@@ -229,13 +229,16 @@ function Window.new(definition)
 		end
 	end
 
+	local titleBarHeight = UI.compute(function(use)
+		return use(UI.Theme.FontSizeLarger) + use(UI.Theme.Padding).Offset
+	end)
+
 	new._exitButton = UI.new "Button" {
 		LayoutOrder = 9,
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
-		Size = UI.compute(function(use)
-			local size = use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset
-			return UDim2.new(0, size, 0, size)
-		end),
+		BackgroundTransparency = 1,
+		HoverTransparency = 0,
+		Size = UI.computeFrom(UDim2.fromOffset, titleBarHeight, titleBarHeight),
 		Icon = UI.Theme.Image.Close,
 		IconProperties = {
 			Size = UDim2.new(0, 10, 0, 10),
@@ -343,9 +346,12 @@ function Window.new(definition)
 					Name = "Title",
 					BackgroundTransparency = 1,
 					AutomaticSize = Enum.AutomaticSize.Y,
-					Size = UDim2.new(1, 0, 0, 32),
+					Size = UI.computeFrom(UDim2.new, 1, 0, 0, titleBarHeight),
 					Font = UI.Theme.Font,
-					Text = new.Title,
+					RichText = true,
+					Text = UI.compute(function(use)
+						return `<b>{use(new.Title)}</b>`
+					end),
 					TextColor3 = UI.Theme.PrimaryText,
 					TextSize = UI.Theme.FontSizeLarger,
 					TextStrokeTransparency = 0.9,

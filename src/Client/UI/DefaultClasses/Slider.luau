@@ -107,7 +107,8 @@ function Slider.new(definition)
 	new._instance = UI.new "Frame" {
 		Name = "Slider",
 		Active = true,
-		BackgroundTransparency = 1,
+		BackgroundColor3 = UI.Theme.Secondary,
+		BackgroundTransparency = UI.Theme.TransparencyOverlay,
 		Size = UI.compute(function(use)
 			local height = use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
 			return if use(new.Vertical) then UDim2.new(0, height, 1, 0) else UDim2.new(1, 0, 0, height)
@@ -117,6 +118,7 @@ function Slider.new(definition)
 			CornerRadius = UI.Theme.CornerDiameter,
 		},
 		UI.new "UIStroke" {
+			Enabled = UI.Theme.StrokeEnabled,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,

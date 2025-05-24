@@ -409,7 +409,7 @@ function Settings.new(_K)
 	end)
 
 	settingsDialog = UI.new "Dialog" {
-		BackgroundTransparency = 0.875,
+		BackgroundTransparency = UI.Theme.TransparencyOverlay,
 		BackgroundColor3 = UI.Theme.Secondary,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.fromScale(1, 0),

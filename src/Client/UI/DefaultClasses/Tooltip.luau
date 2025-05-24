@@ -28,7 +28,7 @@ function Tooltip.new(definition)
 			return use(new.Enabled) and use(new.Visible)
 		end),
 		ZIndex = 100,
-		BackgroundColor3 = UI.tween(UI.Theme.TweenOut, UI.Theme.Primary),
+		BackgroundColor3 = UI.Theme.Primary,
 		Font = UI.Theme.Font,
 		TextSize = UI.Theme.FontSize,
 		Text = "Example tooltip text.",

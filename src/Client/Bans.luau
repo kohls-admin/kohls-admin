@@ -41,6 +41,8 @@ function Bans.new(_K)
 		local unbanButton = UI.new "Button" {
 			LayoutOrder = 9,
 			BackgroundColor3 = Color3.fromRGB(200, 0, 0),
+			BackgroundTransparency = 1,
+			HoverTransparency = 0,
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			Icon = UI.Theme.Image.Close,

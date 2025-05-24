@@ -304,7 +304,8 @@ function Input.new(definition)
 	new._instance = UI.new "Frame" {
 		Name = "Input",
 		ClipsDescendants = true,
-		BackgroundTransparency = 1,
+		BackgroundColor3 = UI.Theme.Secondary,
+		BackgroundTransparency = UI.Theme.TransparencyOverlay,
 		Size = UI.compute(function(use)
 			return UDim2.new(1, 0, 0, use(new.FontSize) + use(new.Padding).Offset * 2)
 		end),
@@ -313,6 +314,7 @@ function Input.new(definition)
 			CornerRadius = UI.Theme.CornerRadius,
 		},
 		UI.new "UIStroke" {
+			Enabled = UI.Theme.StrokeEnabled,
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,

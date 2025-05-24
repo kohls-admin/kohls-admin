@@ -52,7 +52,7 @@ function About.new(_K)
 		Font = UI.Theme.FontMono,
 		TextSize = UI.Theme.FontSizeSmall,
 		TextColor3 = UI.Theme.SecondaryText,
-		Text = "https://roblox.com/game-pass/5391355/",
+		Text = "roblox.com/game-pass/5391355/",
 		TextEditable = false,
 		ClearTextOnFocus = false,
 		Visible = _K.client.settings.gameHubEnabled,
@@ -95,7 +95,7 @@ function About.new(_K)
 		_K.client.lastAttemptedPurchase = passId
 		purchaseDialog.Title:set("Buy " .. passName)
 		purchaseDialog.Text:set(thirdPartyText .. perksText)
-		purchaseLink.Text = "https://roblox.com/game-pass/" .. passId
+		purchaseLink.Text = "roblox.com/game-pass/" .. passId
 		if _K.client.AllowThirdPartySales then
 			purchaseDialog.Visible:set(false)
 			_K.Service.Marketplace:PromptGamePassPurchase(_K.UI.LocalPlayer, passId)
@@ -168,7 +168,7 @@ function About.new(_K)
 	for i, ugc in
 		{
 			{
-				tip = "🕊️ <sc><b>Light Wings</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+				tip = "🕊️ <b>Light Wings</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
 					.. "\n - Flying Animations 💫\n - Neon Material ✨\n\n<font transparency='0.66'>Animator: <b>@LuhHorsie</b>\nModeler: <b>@HyperbolicHydra</b>\nScripter: <b>@Scripth</b></font>",
 				id = 133292294488871,
 				equip = "rbxassetid://89119211625300",
@@ -176,7 +176,7 @@ function About.new(_K)
 				level = 3,
 			},
 			{
-				tip = "👑 <sc><b>Light Crown</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+				tip = "👑 <b>Light Crown</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
 					.. "\n - Fire Effect 🔥\n - Neon Material ✨\n - Spinning 💫",
 				id = 18966788838,
 				equip = "rbxassetid://18966762965",
@@ -184,7 +184,7 @@ function About.new(_K)
 				level = 2,
 			},
 			{
-				tip = "🕊️ <sc><b>Dark Wings</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+				tip = "🕊️ <b>Dark Wings</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
 					.. "\n - Flying Animations 💫\n - Neon Material ✨\n\n<font transparency='0.66'>Animator: <b>@LuhHorsie</b>\nModeler: <b>@HyperbolicHydra</b>\nScripter: <b>@Scripth</b></font>",
 				id = 110848154960799,
 				equip = "rbxassetid://89119211625300",
@@ -192,7 +192,7 @@ function About.new(_K)
 				level = 3,
 			},
 			{
-				tip = "👑 <sc><b>Dark Crown</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+				tip = "👑 <b>Dark Crown</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
 					.. "\n - Fire Effect 🔥\n - Neon Material ✨\n - Spinning 💫",
 				id = 106645613603989,
 				equip = "rbxassetid://18966762965",
@@ -200,7 +200,7 @@ function About.new(_K)
 				level = 2,
 			},
 			{
-				tip = "🕊️ <sc><b>Gold Wings</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+				tip = "🕊️ <b>Gold Wings</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
 					.. "\n - Flying Animations 💫\n - Neon Material ✨\n\n<font transparency='0.66'>Animator: <b>@LuhHorsie</b>\nModeler: <b>@HyperbolicHydra</b>\nScripter: <b>@Scripth</b></font>",
 				id = 92807314389236,
 				equip = "rbxassetid://89119211625300",
@@ -208,7 +208,7 @@ function About.new(_K)
 				level = 3,
 			},
 			{
-				tip = "👑 <sc><b>Gold Crown</b></sc>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+				tip = "👑 <b>Gold Crown</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
 					.. "\n - Fire Effect 🔥\n - Neon Material ✨\n - Spinning 💫",
 				id = 99317257118206,
 				equip = "rbxassetid://18966762965",
@@ -349,7 +349,7 @@ function About.new(_K)
 						_K.client.lastAttemptedPurchase = ugc.id
 						purchaseDialog.Title:set("Buy" .. ugc.name)
 						purchaseDialog.Text:set(thirdPartyText .. perksText)
-						purchaseLink.Text = "https://roblox.com/catalog/" .. ugc.id
+						purchaseLink.Text = "roblox.com/catalog/" .. ugc.id
 						if _K.client.AllowThirdPartySales then
 							purchaseDialog.Visible:set(false)
 							_K.Service.Marketplace:PromptPurchase(_K.UI.LocalPlayer, ugc.id)
@@ -468,8 +468,7 @@ function About.new(_K)
 			LayoutOrder = i,
 			Icon = "rbxasset://textures/ui/common/robux.png",
 			IconRightAlign = true,
-			Label = `<font color='{pass.color}'><sc><b>{pass.name}</b></sc></font>`,
-			HoverTransparency = 0.5,
+			Label = `<font color='{pass.color}'><b>{pass.name}</b></font>`,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Size = UDim2.new(0, 128, 0, 32),
 
@@ -570,8 +569,7 @@ function About.new(_K)
 		LayoutOrder = 3,
 		Icon = "rbxasset://textures/ui/common/robux.png",
 		IconRightAlign = true,
-		Label = "<font color='#fc0'><sc><b>VIP</b></sc></font> <font transparency='0.5'>(Global)</font>",
-		HoverTransparency = 0.5,
+		Label = "<font color='#fc0'><b>VIP</b></font> <font transparency='0.5'>(Global)</font>",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Size = halfButtonSize,
 
@@ -618,8 +616,7 @@ function About.new(_K)
 		LayoutOrder = 4,
 		Icon = "rbxasset://textures/ui/common/robux.png",
 		IconRightAlign = true,
-		Label = "<font color='#fc0'><sc><b>VIP</b></sc></font> <font transparency='0.5'>(Game)</font>",
-		HoverTransparency = 0.5,
+		Label = "<font color='#fc0'><b>VIP</b></font> <font transparency='0.5'>(Game)</font>",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Size = halfButtonSize,
 		Visible = if vipDeveloperPassId then true else false,
@@ -688,8 +685,7 @@ function About.new(_K)
 		Name = "adminModelButton",
 		Icon = "rbxasset://textures/ui/common/robux.png",
 		IconRightAlign = true,
-		Label = "<sc><b>Get Kohl's Admin</b></sc>",
-		HoverTransparency = 0.5,
+		Label = "<b>Get Kohl's Admin</b>",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Size = UDim2.new(0.75, 0, 0, 32),
 
@@ -741,7 +737,7 @@ function About.new(_K)
 				_K.client.lastAttemptedPurchase = adminModelId
 				purchaseDialog.Title:set("Get Kohl's Admin")
 				purchaseDialog.Text:set(thirdPartyText)
-				purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
+				purchaseLink.Text = "create.roblox.com/store/asset/" .. adminModelId
 				if _K.client.AllowThirdPartySales then
 					purchaseDialog.Visible:set(false)
 					_K.Service.Marketplace:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
@@ -786,34 +782,6 @@ function About.new(_K)
 
 	local scroller = UI.new "Scroller" {
 		Name = "About",
-
-		UI.new "TextBox" {
-			Name = "Version",
-			LayoutOrder = -9,
-			AutoLocalize = false,
-			AutomaticSize = Enum.AutomaticSize.XY,
-			BackgroundColor3 = UI.Theme.Secondary,
-			BackgroundTransparency = 0.875,
-			Font = UI.Theme.FontMono,
-			TextSize = UI.Theme.FontSizeSmall,
-			TextColor3 = UI.Theme.PrimaryText,
-			Text = `Version {_K.VERSION}`,
-			TextTransparency = 0.125,
-			TextEditable = false,
-			ClearTextOnFocus = false,
-
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
-			},
-			UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.PaddingHalf,
-				PaddingBottom = UI.Theme.PaddingHalf,
-			},
-		},
-
-		adminModelButton,
 
 		UI.new "TextLabel" {
 			Name = "Status",
@@ -877,6 +845,8 @@ function About.new(_K)
 			RichText = true,
 		},
 
+		adminModelButton,
+
 		UI.new "TextBox" {
 			Name = "CatalogLink",
 			AutoLocalize = false,
@@ -886,7 +856,7 @@ function About.new(_K)
 			Font = UI.Theme.FontMono,
 			TextSize = UI.Theme.FontSize,
 			TextColor3 = UI.Theme.SecondaryText,
-			Text = "https://roblox.com/games/17873329124/",
+			Text = "roblox.com/games/17873329124/",
 			TextWrapped = true,
 			TextEditable = false,
 			ClearTextOnFocus = false,

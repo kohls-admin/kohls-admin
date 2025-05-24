@@ -32,7 +32,9 @@ task.delay(0.2, _K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
-	Title = "Kohl's Admin Dashboard",
+	Title = UI.compute(function(use)
+		return `Kohl's Admin Dashboard  <font transparency="0.75" size = "{use(UI.Theme.FontSize)}">v{_K.VERSION}</font>`
+	end),
 	Visible = false,
 
 	_K.client.dashboard.Tabs,
@@ -41,14 +43,18 @@ _K.client.dashboard.Window = dashboard
 
 _K.client.commandBarVisible = UI.state(_K.client.CommandBar.Bar, "Visible")
 
+local titleBarButtonSize = UI.compute(function(use)
+	local size = use(UI.Theme.FontSizeLarger) + use(UI.Theme.Padding).Offset
+	return UDim2.new(0, size, 0, size)
+end)
+
 -- add a command bar toggle button next to the exit button
 _K.client.toggleCommandBar = UI.new "Button" {
-	Size = UI.compute(function(use)
-		local size = use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset
-		return UDim2.new(0, size, 0, size)
-	end),
+	BackgroundTransparency = 1,
+	Size = titleBarButtonSize,
 	Icon = "rbxassetid://85543506317447",
 	IconProperties = {
+		Size = UDim2.new(0.875, 0, 0.875, 0),
 		ImageTransparency = UI.compute(function(use)
 			return if use(_K.client.commandBarVisible) then 0 else 0.75
 		end),

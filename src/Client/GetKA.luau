@@ -18,7 +18,6 @@ task.defer(function()
 		Icon = "rbxasset://textures/ui/common/robux.png",
 		IconRightAlign = true,
 		Label = "<sc><b>GET IT TODAY!</b></sc>",
-		HoverTransparency = 0.5,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Size = UDim2.new(0.75, 0, 0, 32),
 
@@ -69,7 +68,7 @@ task.defer(function()
 		[UI.Event] = {
 			Activated = function()
 				_K.client.lastAttemptedPurchase = adminModelId
-				_K.client.purchaseLink.Text = "https://create.roblox.com/store/asset/" .. adminModelId
+				_K.client.purchaseLink.Text = "create.roblox.com/store/asset/" .. adminModelId
 				if _K.client.AllowThirdPartySales then
 					_K.Service.Marketplace:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
 				else

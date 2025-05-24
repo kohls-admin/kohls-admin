@@ -363,7 +363,6 @@ local suggestionPurchase = {
 local suggestionPurchaseButton = UI.new "Button" {
 	LayoutOrder = math.huge,
 	Label = "Loading...",
-	HoverTransparency = 0.5,
 	Icon = "rbxasset://textures/ui/common/robux.png",
 	IconRightAlign = true,
 	TextXAlignment = Enum.TextXAlignment.Left,
