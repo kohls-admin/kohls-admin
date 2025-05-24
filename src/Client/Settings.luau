@@ -227,7 +227,7 @@ function Settings.new(_K)
 		end
 		_K.Util.Defer.wait()
 
-		local sliderInputSize = UI.computeFrom(UDim2.new, 0, 32, 0, lineItemHeight)
+		local sliderInputSize = UI.computeFrom(UDim2.new, 0, 37, 0, lineItemHeight)
 
 		do -- Font Size
 			table.insert(
@@ -336,7 +336,7 @@ function Settings.new(_K)
 						Size = sliderInputSize,
 						FontSize = 14,
 						Padding = UDim.new(0, 5),
-						MaxChars = 3,
+						MaxChars = 4,
 						NumberOnly = true,
 						NumberRange = NumberRange.new(0, 1),
 						Placeholder = "",
