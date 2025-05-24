@@ -206,10 +206,12 @@ local function syncMain(result)
 	Util.Table.merge(Data.settings, settings)
 
 	for _, player in Players:GetPlayers() do
-		if player:GetAttribute("_K_READY") and Auth.hasCommand(player.UserId, "members") then
+		if not player:GetAttribute("_K_READY") then
+			continue
+		end
+		if Auth.hasCommand(player.UserId, "members") then
 			Remote.Members:FireClient(player, Data.members)
 		end
-
 		Remote.Settings:FireClient(player, Data.settings)
 	end
 	Hook.postSyncMain:Fire(Data)
