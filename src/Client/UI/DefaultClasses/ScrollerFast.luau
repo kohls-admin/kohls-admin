@@ -98,6 +98,10 @@ function ScrollerFast:render()
 		else
 			lineItem.Text = if self.RenderText then self.RenderText._value(self, lineItem, lineData) else lineData
 		end
+
+		if type(lineItem) == "table" then
+			lineItem = lineItem._instance
+		end
 		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
 		lineItem.Visible = true
 		lineItem.Parent = self._scroller
@@ -107,8 +111,12 @@ function ScrollerFast:render()
 	end
 
 	for i = cacheIndex, #self._lineItemCache do
-		self._lineItemCache[i].Visible = false
-		self._lineItemCache[i].Parent = nil
+		local item = self._lineItemCache[i]
+		if type(item) == "table" then
+			item = item._instance
+		end
+		item.Visible = false
+		item.Parent = nil
 	end
 end
 

@@ -83,32 +83,42 @@ function Logs.new(_K)
 			Text = "Loading...",
 			TextXAlignment = Enum.TextXAlignment.Left,
 		}
-		return UI.new "TextLabel" {
-			AutoLocalize = false,
-			BackgroundTransparency = 1,
-			Size = self.ItemSize,
-			RichText = true,
-			Font = UI.Theme.FontMono,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = UI.Theme.PrimaryText,
-			TextTruncate = Enum.TextTruncate.SplitWord,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextYAlignment = Enum.TextYAlignment.Top,
 
-			tooltip,
+		local itemRef = {
+			_instance = UI.new "TextLabel" {
+				AutoLocalize = false,
+				BackgroundTransparency = 1,
+				Size = self.ItemSize,
+				RichText = true,
+				Font = UI.Theme.FontMono,
+				TextSize = UI.Theme.FontSize,
+				TextColor3 = UI.Theme.PrimaryText,
+				TextTruncate = Enum.TextTruncate.SplitWord,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextYAlignment = Enum.TextYAlignment.Top,
 
-			UI.new "ObjectValue" {
-				Name = "TooltipRef",
-				Value = tooltip._instance,
+				tooltip,
 			},
+
+			tipText = "",
 		}
+
+		tooltip.Visible:hook(function()
+			if tooltip.Visible._value then
+				tooltip._instance.Text = itemRef.tipText
+			end
+		end)
+
+		return itemRef
 	end
 
-	local function renderItem(self, item, log)
-		item.Text = if self._filter ~= "" then log.filterRichText else log.richText
-		if item:FindFirstChild("TooltipRef") and item.TooltipRef.Value then
-			item.TooltipRef.Value.Text = log.tipText
+	local function renderItem(self, itemData, log)
+		if not log.richText then
+			return
 		end
+		itemData.tipText = log.tipText
+		local item = itemData._instance
+		item.Text = if self._filter ~= "" then log.filterRichText else log.richText
 	end
 
 	scroller = UI.new "ScrollerFast" {

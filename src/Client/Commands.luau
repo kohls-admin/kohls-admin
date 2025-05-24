@@ -24,22 +24,11 @@ function Commands.new(_K)
 			Text = "Loading...",
 			TextXAlignment = Enum.TextXAlignment.Left,
 		}
-		return UI.new "TextLabel" {
-			AutoLocalize = false,
-			BackgroundTransparency = 1,
-			Size = self.ItemSize,
-			RichText = true,
-			Font = UI.Theme.FontMono,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = UI.Theme.PrimaryText,
-			TextTruncate = Enum.TextTruncate.SplitWord,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextYAlignment = Enum.TextYAlignment.Top,
-
-			UI.new "TextLabel" {
+		local itemRef = {
+			_instance = UI.new "TextLabel" {
 				AutoLocalize = false,
 				BackgroundTransparency = 1,
-				Name = "Description",
+				Size = self.ItemSize,
 				RichText = true,
 				Font = UI.Theme.FontMono,
 				TextSize = UI.Theme.FontSize,
@@ -47,32 +36,51 @@ function Commands.new(_K)
 				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				TextYAlignment = Enum.TextYAlignment.Top,
-				Size = UI.compute(function(use)
-					local size = use(UI.Theme.FontSize)
-					return UDim2.new(1, -size, 0, size)
-				end),
-				Position = UI.compute(function(use)
-					local size = use(UI.Theme.FontSize)
-					return UDim2.new(0, size, 0, size)
-				end),
-			},
 
-			tooltip,
+				UI.new "TextLabel" {
+					AutoLocalize = false,
+					BackgroundTransparency = 1,
+					Name = "Description",
+					RichText = true,
+					Font = UI.Theme.FontMono,
+					TextSize = UI.Theme.FontSize,
+					TextColor3 = UI.Theme.PrimaryText,
+					TextTruncate = Enum.TextTruncate.SplitWord,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Top,
+					Size = UI.compute(function(use)
+						local size = use(UI.Theme.FontSize)
+						return UDim2.new(1, -size, 0, size)
+					end),
+					Position = UI.compute(function(use)
+						local size = use(UI.Theme.FontSize)
+						return UDim2.new(0, size, 0, size)
+					end),
+				},
 
-			UI.new "ObjectValue" {
-				Name = "TooltipRef",
-				Value = tooltip._instance,
+				tooltip,
 			},
+			tipText = "",
 		}
+
+		tooltip.Visible:hook(function()
+			if tooltip.Visible._value then
+				tooltip._instance.Text = itemRef.tipText
+			end
+		end)
+
+		return itemRef
 	end
 
-	local function renderItem(self, item, command)
+	local function renderItem(self, itemData, command)
+		if not command.richText then
+			return
+		end
+
+		itemData.tipText = command.tipText
+		local item = itemData._instance
 		item.TextColor3 = command.roleColorAuth
 		item.Description.TextColor3 = command.roleColorAuth
-
-		if item:FindFirstChild("TooltipRef") and item.TooltipRef.Value then
-			item.TooltipRef.Value.Text = command.tipString
-		end
 
 		if self._filter ~= "" then
 			item.Text = command.filterRichText
@@ -186,12 +194,12 @@ function Commands.new(_K)
 				roles[i] = `<font color="{roleData.color}">{roleData.name}</font>`
 			end
 
-			command.roleString = table.concat(roles, ", ")
+			command.roleText = table.concat(roles, ", ")
 
 			local credit = command.credit or "Kohl @Scripth"
-			command.creditString = if type(credit) == "table" then table.concat(credit, ", ") else credit
-			command.tipString =
-				`<b>Restricted to:</b> {command.roleString}{command.argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {command.creditString}</font>`
+			command.creditText = if type(credit) == "table" then table.concat(credit, ", ") else credit
+			command.tipText =
+				`<b>Restricted to:</b> {command.roleText}{command.argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {command.creditText}</font>`
 
 			command.rawTextNoAlias = `{_K.getCommandPrefix()}{command.name} {command.argNames}`
 			command.rawText = `{command.rawTextNoAlias} {command.aliasText}`

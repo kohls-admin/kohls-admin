@@ -37,7 +37,18 @@ function Bans.new(_K)
 	local userIdRef = {}
 
 	local function createItem(self)
-		local item
+		local tooltip = UI.new "Tooltip" {
+			Font = UI.Theme.FontMono,
+			Text = "Loading...",
+			TextXAlignment = Enum.TextXAlignment.Left,
+		}
+
+		local itemRef = {
+			userId = 0,
+			name = "",
+			tipText = "",
+		}
+
 		local unbanButton = UI.new "Button" {
 			LayoutOrder = 9,
 			BackgroundColor3 = Color3.fromRGB(200, 0, 0),
@@ -51,13 +62,13 @@ function Bans.new(_K)
 			},
 			Text = "",
 			Activated = function()
-				unbanDialog.userId = userIdRef[item]
-				unbanDialog.ActionText:set(`Unban {nameRef[item]} [{userIdRef[item]}]?`)
+				unbanDialog.userId = itemRef.userId
+				unbanDialog.ActionText:set(`Unban {itemRef.name} [{itemRef.userId}]?`)
 				unbanDialog._instance.Visible = true
 			end,
 		}
 
-		item = UI.new "Frame" {
+		itemRef._instance = UI.new "Frame" {
 			BackgroundTransparency = 1,
 			Size = self.ItemSize,
 
@@ -120,18 +131,28 @@ function Bans.new(_K)
 			},
 
 			unbanButton,
+			tooltip,
 		}
 
-		return item
+		tooltip.Visible:hook(function()
+			if tooltip.Visible._value then
+				tooltip._instance.Text = itemRef.tipText
+			end
+		end)
+
+		return itemRef
 	end
 
-	local function renderItem(self, item, ban)
+	local function renderItem(self, itemData, ban)
 		if not ban.userId then
 			return
 		end
 
-		nameRef[item] = ban[1]
-		userIdRef[item] = ban.userId
+		itemData.tipText = ban.tipText
+		itemData.name = ban[1]
+		itemData.userId = ban.userId
+
+		local item = itemData._instance
 
 		if self._filter ~= "" then
 			item.Left.Text = ban.richFilterTextLeft
@@ -164,6 +185,8 @@ function Bans.new(_K)
 		},
 	})
 
+	local debounceRender = _K.Util.Function.debounce(0.2, scroller.render)
+
 	local function filterTest(self, list)
 		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
@@ -171,7 +194,6 @@ function Bans.new(_K)
 		for _, userId in list do
 			local ban = _K.Data.bans[userId]
 			if not ban then
-				warn("no ban defined?")
 				continue
 			end
 
@@ -182,17 +204,23 @@ function Bans.new(_K)
 					then (if ban[3] > 0 and ban[3] ~= math.huge then os.date("%y-%m-%d %X", ban[3]) else "Forever")
 					else "Session"
 
-				local termPadding = if #ban.term < 18 then string.rep(" ", 18 - #ban.term) else ""
-				ban.rawTextLeft = `@{ban[1] or "UNKNOWN"} [{ban.userId}]`
-				ban.rawTextRight = `{ban.reason}{termPadding}{ban.term}`
+				ban.rawTextLeft = `@{ban[1] or "UNKNOWN"} [{ban.userId}]}`
+				ban.rawTextRight = `{ban.term}`
 
-				ban.richTextLeft = `<b>@{if ban[1] then escape(ban[1]) else "UNKNOWN"}</b> [{escape(userId)}]`
-				ban.richTextRight =
-					`{escape(ban.reason)}{escape(termPadding)}<font transparency="0.5">{escape(ban.term)}</font>`
+				ban.richTextLeft = `<b>@{if ban[1] then escape(ban[1]) else "UNKNOWN"}</b> [{userId}]`
+				ban.richTextRight = `<font transparency="0.5">{ban.term}</font>`
 
 				ban.filterTextLeft = string.lower(ban.rawTextLeft)
 				ban.filterTextRight = string.lower(ban.rawTextRight)
 				ban.filterText = `{ban.filterTextLeft}\t{ban.filterTextRight}`
+
+				ban.tipText = `<b>Reason:</b>    {escape(ban.reason)}`
+
+				task.spawn(function()
+					local name = if ban[4] then _K.Util.getUserInfo(ban[4]).Username else "SYSTEM"
+					ban.tipText = `<b>Banned by:</b> @{name}\n{ban.tipText}`
+					debounceRender(scroller)
+				end)
 			end
 
 			if string.find(ban.filterText, filter, 1, true) then
