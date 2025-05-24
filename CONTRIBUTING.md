@@ -54,33 +54,31 @@ Whether you're a seasoned developer or just starting out, there are ways for you
 
    - **Start the Rojo Server:**
      ```bash
-     rojo serve test.project.json
+     rojo serve test
      ```
    - **Connect Studio to Rojo:** Open Roblox and use the [Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin) to connect to the server you just started.
-
 
 #### GitHub Codespaces
 
 1. Open this project in GitHub Codespaces
 
    - Click the "Open in GitHub Codespaces" badge or the Code button, then click the Codespaces tab, and "Create codespace on main."
-   ![Create codespace on main](https://github.com/user-attachments/assets/229f37b8-9650-4809-b79a-37a565f6c855)
+     ![Create codespace on main](https://github.com/user-attachments/assets/229f37b8-9650-4809-b79a-37a565f6c855)
 
-3. Setup the Rojo plugin
+2. Setup the Rojo plugin
 
    - [Install the Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin) on Roblox Studio from [GitHub](https://github.com/rojo-rbx/rojo/releases) or [Roblox.com](https://www.roblox.com/library/13916111004/Rojo).
 
-
-4. Test Your Changes in Roblox Studio
+3. Test Your Changes in Roblox Studio
 
    - **Start the Rojo Server:**
      ```bash
-     rojo serve test.project.json
+     rojo serve test
      ```
    - **Change the port visibility to Public:** Open the terminal in your codespace. Click the **PORTS** tab. Right-click the port **Rojo (34872)**, click the **Port Visibility**, then click **Public**.
-      ![Screenshot of the pop-up menu for a forwarded port, with the "Port Visibility" option selected and "Private" selected in the submenu.](https://docs.github.com/assets/cb-59966/mw-1440/images/help/codespaces/make-public-option.webp)
+     ![Screenshot of the pop-up menu for a forwarded port, with the "Port Visibility" option selected and "Private" selected in the submenu.](https://docs.github.com/assets/cb-59966/mw-1440/images/help/codespaces/make-public-option.webp)
    - **Copy the forwarded port address:** To the right of the local address for the port, click the copy icon.
-      ![Screenshot of the "Ports" panel. The copy icon, which copies a forwarded port's URL, is highlighted with an orange outline.](https://docs.github.com/assets/cb-19922/mw-1440/images/help/codespaces/copy-icon-port-url.webp)
+     ![Screenshot of the "Ports" panel. The copy icon, which copies a forwarded port's URL, is highlighted with an orange outline.](https://docs.github.com/assets/cb-19922/mw-1440/images/help/codespaces/copy-icon-port-url.webp)
    - **Connect Studio to Rojo:** Open Roblox and in the [Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin), paste the port address you copied. Remove the `https://` at the beginning and the `/` of the forwarded address. It should look something like this: `probable-memory-w44vgv9v4vpfjwj-34872.app.github.dev`, and set the port as `80`. Finally, connect to the server you just started.
 
 ### Contributing
