@@ -57,17 +57,11 @@ function Members.new(_K)
 	end
 
 	local function renderItem(self, item, member)
+		if not member.userId then
+			return
+		end
 		if self._filter ~= "" then
-			local filterFound = string.find(member.filterText, self._filter, 1, true)
-			if filterFound then
-				local pre = escape(string.sub(member.rawText, 1, filterFound - 1))
-				local query = escape(string.sub(member.rawText, filterFound, filterFound + #self._filter - 1))
-				local post = escape(string.sub(member.rawText, filterFound + #self._filter))
-				item.TextLabel.Text =
-					`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
-			else
-				item.TextLabel.Text = `<font transparency="0.5">{member.rawText}</font>`
-			end
+			item.TextLabel.Text = member.filterRichText
 		else
 			item.TextLabel.Text = member.richText
 		end
@@ -156,8 +150,16 @@ function Members.new(_K)
 				updateCache(member)
 			end
 
-			if string.find(member.filterText, filter, 1, true) then
+			local filterFound = string.find(member.filterText, filter, 1, true)
+			if filterFound then
 				table.insert(new, member)
+				local pre = escape(string.sub(member.rawText, 1, filterFound - 1))
+				local query = escape(string.sub(member.rawText, filterFound, filterFound + #filter - 1))
+				local post = escape(string.sub(member.rawText, filterFound + #filter))
+				member.filterRichText =
+					`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
+			else
+				member.filterRichText = `<font transparency="0.5">{member.rawText}</font>`
 			end
 		end
 		return new
