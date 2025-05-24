@@ -174,7 +174,7 @@ function Window.new(definition)
 		end
 	end
 
-	local resizeBuffer = 4
+	local resizeBuffer = 5
 	local startSize, xSize, xPos, ySize, yPos
 	local function resizeUpdate(input)
 		local parentSize = new._instance.Parent.AbsoluteSize
