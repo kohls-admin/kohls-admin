@@ -515,7 +515,7 @@ function About.new(_K)
 		UI.new "Tooltip" {
 			Parent = button._instance,
 			Text = `❤️ Thanks for supporting Kohl's Admin!\n<b>{if i > 4
-				then "Gives a title in participating experiences!"
+				then "Gives a title in participating games!"
 				else "This doesn't provide any in-game benefits!"}</b>`,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Visible = button._hovering,
@@ -523,18 +523,6 @@ function About.new(_K)
 
 	end
 
-	local vipLabel = UI.new "TextLabel" {
-		AutoLocalize = false,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundTransparency = 1,
-		Font = UI.Theme.Font,
-		TextSize = UI.Theme.FontSize,
-		TextColor3 = UI.Theme.PrimaryText,
-		TextWrapped = true,
-		Size = UDim2.new(1, 0, 0, 0),
-		Text = "✨ <b>Become a VIP</b>\n<font transparency='0.5'>Unlock exclusive commands in participating experiences.</font>",
-		RichText = true,
-	}
 		task.spawn(updatePassPriceText, button._content.Price, pass.id, if isTitle then `<b>SHOW</b>` else nil)
 
 	local vipList = UI.new "Frame" {
@@ -606,6 +594,13 @@ function About.new(_K)
 		},
 	}
 
+	UI.new "Tooltip" {
+		Parent = vipButtonGlobal,
+		Text = "✨ <b>Become a VIP</b>\n<font transparency='0.5'>Unlock exclusive commands in participating games.</font>",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Visible = vipButtonGlobal._hovering,
+	}
+
 	local vipButtonDeveloper = UI.new "Button" {
 		Parent = vipList,
 		LayoutOrder = 4,
@@ -646,7 +641,7 @@ function About.new(_K)
 	purchaseVIPDialog = UI.new "Dialog" {
 		Parent = UI.LayerTop,
 		Title = "✨ <b>Become a VIP</b>",
-		Text = "<font transparency='0.5'>Unlock exclusive commands in participating experiences.</font>",
+		Text = "<font transparency='0.5'>Unlock exclusive commands in participating games.</font>",
 		Visible = false,
 		Draggable = true,
 		ExitButton = true,
@@ -660,13 +655,11 @@ function About.new(_K)
 			vipButtonDeveloper._instance.Parent = vipList
 			vipButtonGlobal._instance.Parent = vipList
 			vipList.Visible = true
-			vipLabel.Visible = true
 		end,
 	}
 
 	function _K.promptPurchaseVIP()
 		if vipDeveloperPassId then
-			vipLabel.Visible = false
 			vipList.Visible = false
 			vipButtonDeveloper._instance.Parent = purchaseVIPDialog._content
 			vipButtonGlobal._instance.Parent = purchaseVIPDialog._content
@@ -790,9 +783,6 @@ function About.new(_K)
 			},
 		},
 
-		vipLabel,
-		vipList,
-
 		UI.new "TextLabel" {
 			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.Y,
@@ -806,6 +796,7 @@ function About.new(_K)
 			RichText = true,
 		},
 
+		vipList,
 		gamePasses,
 		customUGC,
 
