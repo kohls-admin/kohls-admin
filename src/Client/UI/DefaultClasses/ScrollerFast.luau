@@ -26,12 +26,87 @@ local ScrollerFast = {}
 ScrollerFast.__index = ScrollerFast
 setmetatable(ScrollerFast, BaseClass)
 
+local queueBudget = 1 / 90
+local updateQueue = {}
+local cloneQueue = {}
+local refreshQueue = {}
 local renderQueue = {}
 RunService.Heartbeat:connect(function()
-	local queue = renderQueue
+	local start = os.clock()
+
+	-- UPDATE
+	local queue = updateQueue
+	updateQueue = {}
+	for scroller in queue do
+		if not scroller._instance.Visible or os.clock() - start > queueBudget then
+			scroller:updateList()
+			continue
+		end
+		scroller:cloneRaw()
+		scroller:refreshList()
+	end
+
+	if os.clock() - start > queueBudget then
+		return
+	end
+
+	-- CLONE
+	queue = cloneQueue
+	cloneQueue = {}
+	for scroller in queue do
+		if not scroller._instance.Visible or os.clock() - start > queueBudget then
+			scroller:cloneRaw()
+			continue
+		end
+		if scroller.DictList._value then
+			local list, index = scroller._sortedList ~= scroller.List._value and scroller._sortedList or {}, 1
+			table.clear(list)
+			for key in scroller.List._value do
+				list[index] = key
+				index += 1
+			end
+			scroller._sortedList = list
+		elseif scroller._sortFunction then
+			scroller._sortedList = table.clone(scroller.List._value)
+		else
+			scroller._sortedList = scroller.List._value
+		end
+		if scroller._sortFunction then
+			table.sort(scroller._sortedList, scroller._sortFunction)
+		end
+	end
+
+	if os.clock() - start > queueBudget then
+		return
+	end
+
+	-- REFRESH
+	queue = refreshQueue
+	refreshQueue = {}
+	for scroller in queue do
+		if not scroller._instance.Visible or os.clock() - start > queueBudget then
+			scroller:refreshList()
+			continue
+		end
+		scroller._filteredList = if scroller._filterFunction
+			then scroller._filterFunction(scroller, scroller._sortedList)
+			else scroller._sortedList
+		scroller:queueRender()
+	end
+
+	if os.clock() - start > queueBudget then
+		return
+	end
+
+	-- RENDER
+	queue = renderQueue
 	renderQueue = {}
 	for scroller in queue do
-		scroller.render(scroller)
+		if not scroller._instance.Visible or os.clock() - start > queueBudget then
+			scroller:queueRender()
+			continue
+		end
+		scroller:render()
 	end
 end)
 
@@ -70,7 +145,7 @@ function ScrollerFast.escapeRichText(s: string): string
 end
 
 function ScrollerFast:render()
-	if not (self.Enabled._value and self._instance.Visible) then
+	if not (self.Enabled._value and self._instance.Visible and self._filteredList) then
 		return
 	end
 	local length = #self._filteredList
@@ -128,34 +203,19 @@ end
 
 -- Used to render changes from the _rawList
 function ScrollerFast:updateList()
-	if self._instance.Visible then
-		Defer.reset()
-		Defer.wait()
-		self:cloneRaw()
-		Defer.wait()
-		if self._sortFunction then
-			table.sort(self._sortedList, self._sortFunction)
-		end
-		self:refreshList()
-	end
-	self.pendingUpdate = not self._instance.Visible
+	updateQueue[self] = true
+end
+
+function ScrollerFast:cloneRaw()
+	cloneQueue[self] = true
+end
+
+function ScrollerFast:refreshList()
+	refreshQueue[self] = true
 end
 
 function ScrollerFast:queueRender(delta)
 	renderQueue[self] = true
-end
-
-function ScrollerFast:refreshList()
-	if self._instance.Visible then
-		Defer.reset()
-		Defer.wait()
-		self._filteredList = if self._filterFunction
-			then self._filterFunction(self, self._sortedList)
-			else self._sortedList
-		Defer.wait()
-		self:queueRender()
-	end
-	self.pendingRefresh = not self._instance.Visible
 end
 
 function ScrollerFast:filter(filterFunction: (...any) -> { any })
@@ -167,28 +227,12 @@ end
 function ScrollerFast:sort(sortFunction: (...any) -> any)
 	self._sortFunction = sortFunction
 	if self._instance.Visible then
-		Defer.reset()
-		Defer.wait()
 		if sortFunction then
 			table.sort(self._sortedList, sortFunction)
 		else -- unsort
 			self:cloneRaw()
 		end
 		self:refreshList()
-	end
-	self.pendingUpdate = not self._instance.Visible
-end
-
-function ScrollerFast:cloneRaw()
-	if self.DictList._value then
-		local list, index = {}, 1
-		for key in self.List._value do
-			list[index] = key
-			index += 1
-		end
-		self._sortedList = list
-	else
-		self._sortedList = table.clone(self.List._value)
 	end
 end
 
@@ -209,13 +253,7 @@ function ScrollerFast.new(definition)
 		Visible = true,
 	}, definition)
 
-	ScrollerFast.cloneRaw(self)
-	self._filteredList = self._sortedList
 	self._lineItemCache = {}
-
-	self.List:hook(function()
-		self:updateList()
-	end)
 
 	local lastSizeY = 0
 	local lastScrollY = 0
@@ -268,19 +306,16 @@ function ScrollerFast.new(definition)
 
 		[UI.Event.Property] = {
 			Parent = render,
-			Visible = function()
-				if self._instance.Visible then
-					if self.pendingUpdate then
-						self:updateList()
-					elseif self.pendingRefresh then
-						self:refreshList()
-					end
-				end
-			end,
 		},
 	}
 
 	self = setmetatable(self, ScrollerFast)
+
+	self.List:hook(function()
+		self:updateList()
+	end)
+	self:updateList()
+
 	if self.FilterInput._value then
 		local thread = false
 		local function debounce()
@@ -301,6 +336,7 @@ function ScrollerFast.new(definition)
 		self._input._input:GetPropertyChangedSignal("Text"):Connect(debounce)
 		self:filter(defaultFilter)
 	end
+
 	return self
 end
 
