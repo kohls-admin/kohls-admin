@@ -56,6 +56,7 @@ return {
 	{
 		Title = "Contributors",
 		Users = {
+			131233603, -- Geed
 			41336494, -- Calculatous
 			448137594, -- Lucatacos
 			345072461, -- raenlua
@@ -71,7 +72,6 @@ return {
 	{
 		Title = "Testers",
 		Users = {
-			131233603, -- geed
 			75214485, -- ericance
 			1560379748, -- mosha
 			200565345, -- easternbloxxer
