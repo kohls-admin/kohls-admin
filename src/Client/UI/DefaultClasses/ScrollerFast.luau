@@ -1,3 +1,5 @@
+local RunService = game:GetService("RunService")
+
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
 
@@ -23,6 +25,15 @@ end
 local ScrollerFast = {}
 ScrollerFast.__index = ScrollerFast
 setmetatable(ScrollerFast, BaseClass)
+
+local renderQueue = {}
+RunService.Heartbeat:connect(function()
+	local queue = renderQueue
+	renderQueue = {}
+	for scroller in queue do
+		scroller.render(scroller)
+	end
+end)
 
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 local function defaultFilter(self, list)
@@ -62,21 +73,17 @@ function ScrollerFast:render()
 	if not (self.Enabled._value and self._instance.Visible) then
 		return
 	end
+	local length = #self._filteredList
 	local lineHeight = self.ItemSize._value.Y.Offset
 	local startIndex = math.max(0, math.floor(self._scroller.CanvasPosition.Y / lineHeight)) + 1
-	local endIndex =
-		math.min(startIndex + math.ceil(self._scroller.AbsoluteWindowSize.Y / lineHeight), #self._filteredList)
+	local endIndex = math.min(startIndex + math.ceil(self._scroller.AbsoluteWindowSize.Y / lineHeight), length)
 
-	self._scroller.CanvasSize = UDim2.new(0, 0, 0, #self._filteredList * lineHeight)
-
-	Defer.reset()
+	self._scroller.CanvasSize = UDim2.new(0, 0, 0, length * lineHeight)
 
 	local cacheIndex = 1
-	for i = startIndex, endIndex do
+	for i = math.max(1, startIndex - 4), math.min(length, endIndex + 4) do
 		local lineItem = self._lineItemCache[cacheIndex]
-		local lineData = if self.ReverseOrder._value
-			then self._filteredList[#self._filteredList - i + 1]
-			else self._filteredList[i]
+		local lineData = if self.ReverseOrder._value then self._filteredList[length - i + 1] else self._filteredList[i]
 		if not lineItem then
 			lineItem = if self.CreateItem
 				then self.CreateItem._value(self, lineData)
@@ -102,12 +109,11 @@ function ScrollerFast:render()
 		if type(lineItem) == "table" then
 			lineItem = lineItem._instance
 		end
-		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
 		lineItem.Visible = true
+		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
 		lineItem.Parent = self._scroller
 
 		cacheIndex = cacheIndex + 1
-		Defer.wait()
 	end
 
 	for i = cacheIndex, #self._lineItemCache do
@@ -135,6 +141,10 @@ function ScrollerFast:updateList()
 	self.pendingUpdate = not self._instance.Visible
 end
 
+function ScrollerFast:queueRender(delta)
+	renderQueue[self] = true
+end
+
 function ScrollerFast:refreshList()
 	if self._instance.Visible then
 		Defer.reset()
@@ -143,7 +153,7 @@ function ScrollerFast:refreshList()
 			then self._filterFunction(self, self._sortedList)
 			else self._sortedList
 		Defer.wait()
-		self:render()
+		self:queueRender()
 	end
 	self.pendingRefresh = not self._instance.Visible
 end
@@ -214,8 +224,12 @@ function ScrollerFast.new(definition)
 		local sizeY = self._scroller.AbsoluteWindowSize.Y
 		local scrollY = self._scroller.CanvasPosition.Y
 		if sizeY ~= lastSizeY or scrollY ~= lastScrollY then
-			lastSizeY, lastScrollY = lastSizeY, lastScrollY
-			ScrollerFast.render(self)
+			if math.abs(scrollY - lastScrollY) >= sizeY then
+				self:render()
+			else
+				self:queueRender()
+			end
+			lastSizeY, lastScrollY = sizeY, scrollY
 		end
 	end
 
