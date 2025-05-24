@@ -142,7 +142,7 @@ function Commands.new(_K)
 	local function updateRenderParameters(command)
 		if not command.aliasText then
 			command.aliasText = if command.aliases and #command.aliases ~= 0
-				then "/" .. table.concat(command.aliases, "/")
+				then table.concat(command.aliases, ", ")
 				else ""
 
 			command.argNames = table.create(#command.args)
