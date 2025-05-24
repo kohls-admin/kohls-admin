@@ -443,6 +443,45 @@ function About.new(_K)
 		},
 	}
 
+	local function updateTitleLabel(button, name: string, display: string?)
+		local titleRef = string.lower(name)
+		local definition = shared._KVIPTitle.definition[titleRef]
+		local label = button._content.Label
+
+		UI.new "Spacer" {
+			Parent = button._content,
+			LayoutOrder = 2,
+		}
+		UI.edit(label, {
+			AutomaticSize = Enum.AutomaticSize.X,
+			Size = UDim2.new(0, 0, 1, 0),
+			Font = Enum.Font.FredokaOne,
+			TextSize = UI.Theme.FontSizeLarge,
+			TextColor3 = Color3.new(1, 1, 1),
+		})
+		label.UIFlexItem.FlexMode = Enum.UIFlexMode.Shrink
+
+		if definition then
+			label.Name = "Title"
+			label.Text = `<stroke thickness="1">{name}</stroke>{display or ""}`
+
+			UI.new "UIGradient" {
+				Parent = label,
+				Color = ColorSequence.new(
+					definition.topColor or Color3.new(1, 1, 1),
+					definition.color or Color3.new(1, 1, 1)
+				),
+				Rotation = definition.rotation or 90,
+			}
+			button._content:AddTag("_K" .. titleRef)
+		else
+			UI.new "UIStroke" {
+				Parent = label,
+				Thickness = 1,
+			}
+		end
+	end
+
 	local passDefinition = {
 		{ name = "Tip", color = "#bf0", id = 5391355 },
 		{ name = "Donation", color = "#8f0", id = 5391356 },
@@ -521,9 +560,10 @@ function About.new(_K)
 			Visible = button._hovering,
 		}
 
-	end
+		updateTitleLabel(button, pass.name)
 
 		task.spawn(updatePassPriceText, button._content.Price, pass.id, if isTitle then `<b>SHOW</b>` else nil)
+	end
 
 	local vipList = UI.new "Frame" {
 		Name = "VIP",
@@ -552,7 +592,7 @@ function About.new(_K)
 		LayoutOrder = 3,
 		Icon = "rbxasset://textures/ui/common/robux.png",
 		IconRightAlign = true,
-		Label = "<font color='#fc0'><b>VIP</b></font> <font transparency='0.5'>(Global)</font>",
+		Label = "VIP",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Size = halfButtonSize,
 
@@ -601,12 +641,18 @@ function About.new(_K)
 		Visible = vipButtonGlobal._hovering,
 	}
 
+	updateTitleLabel(
+		vipButtonGlobal,
+		"VIP",
+		`  <font transparency="0.75"><stroke thickness="1" transparency="0.75">(Global)</stroke></font>`
+	)
+
 	local vipButtonDeveloper = UI.new "Button" {
 		Parent = vipList,
 		LayoutOrder = 4,
 		Icon = "rbxasset://textures/ui/common/robux.png",
 		IconRightAlign = true,
-		Label = "<font color='#fc0'><b>VIP</b></font> <font transparency='0.5'>(Game)</font>",
+		Label = "VIP",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Size = halfButtonSize,
 		Visible = if vipDeveloperPassId then true else false,
@@ -631,6 +677,12 @@ function About.new(_K)
 			end,
 		},
 	}
+
+	updateTitleLabel(
+		vipButtonDeveloper,
+		"VIP",
+		`  <font transparency="0.75"><stroke thickness="1" transparency="0.75">(Game)</font>`
+	)
 
 	task.defer(updatePassPriceText, vipButtonGlobal._content.Price, vipGlobalPassId, `<b>SHOW</b>`)
 	if vipDeveloperPassId then

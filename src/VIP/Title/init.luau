@@ -1,3 +1,6 @@
+local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
+
 local Title = {
 	definition = {
 		vip = {
@@ -15,31 +18,91 @@ local Title = {
 		luminary = {
 			color = Color3.fromHex("#80f"),
 			gamepass = 936146448,
+			rotation = 0,
+			getValue = function(elapsed: number)
+				elapsed /= 2
+				local keypoints = {}
+				for i = 0, 2 do
+					local step = i / 2
+					local oscillate = math.abs(((elapsed + step) % 2) - 1) * 1 / 7
+					table.insert(keypoints, ColorSequenceKeypoint.new(step, Color3.fromHSV(3 / 7 + oscillate, 1, 1)))
+				end
+				return ColorSequence.new(keypoints)
+			end,
+			update = function(object, value)
+				object.Title.UIGradient.Color = value
+			end,
 		},
 		epic = {
 			color = Color3.fromHex("#f0f"),
 			gamepass = 941076536,
+			getValue = function(elapsed: number)
+				elapsed /= 2
+				local keypoints = {}
+				for i = 0, 2 do
+					local step = i / 2
+					local oscillate = math.abs(((elapsed + step) % 2) - 1) * 1 / 7
+					table.insert(keypoints, ColorSequenceKeypoint.new(step, Color3.fromHSV(5 / 7 + oscillate, 1, 1)))
+				end
+				return ColorSequence.new(keypoints)
+			end,
+			update = function(object, value)
+				object.Title.UIGradient.Color = value
+			end,
 		},
 		hero = {
 			color = Color3.fromHex("#f08"),
 			gamepass = 941162509,
+			getValue = function(elapsed: number)
+				elapsed /= 2
+				local keypoints = {}
+				for i = 0, 2 do
+					local step = i / 2
+					local oscillate = math.abs(((elapsed + step) % 2) - 1) * 1 / 7
+					table.insert(keypoints, ColorSequenceKeypoint.new(step, Color3.fromHSV(6 / 7 + oscillate, 1, 1)))
+				end
+				return ColorSequence.new(keypoints)
+			end,
+			update = function(object, value)
+				object.Title.UIGradient.Color = value
+			end,
 		},
 		legend = {
 			color = Color3.fromHex("#f00"),
 			gamepass = 941006661,
+			getValue = function(elapsed: number)
+				return ColorSequence.new(Color3.fromHSV((elapsed / 8) % 1, 0.75, 1))
+			end,
+			update = function(object, value)
+				object.Title.UIGradient.Color = value
+			end,
 		},
 		mythic = {
 			color = Color3.fromHex("#fff"),
-			topColor = Color3.fromHex("#000"),
 			gamepass = 983235767,
+			rotation = 30,
+			getValue = function(elapsed: number)
+				elapsed /= 4
+				local keypoints = {}
+				for i = 0, 6 do
+					local step = i / 6
+					table.insert(keypoints, ColorSequenceKeypoint.new(step, Color3.fromHSV((elapsed + step) % 1, 1, 1)))
+				end
+				return ColorSequence.new(keypoints)
+			end,
+			update = function(object, value)
+				object.Title.UIGradient.Color = value
+			end,
 		},
 	},
 }
+shared._KVIPTitle = Title
 
 local gui = Instance.new("BillboardGui")
 gui.Name = "_K_Title"
+gui.MaxDistance = 256
 gui.Size = UDim2.new(4, 0, 1, 0)
-gui.StudsOffset = Vector3.new(0, 3, 1)
+gui.StudsOffset = Vector3.new(0, 3, 0)
 gui.ResetOnSpawn = false
 gui.LightInfluence = 0
 
@@ -58,35 +121,70 @@ stroke.Thickness = 1
 stroke.Parent = title
 
 local gradient = Instance.new("UIGradient")
-gradient.Rotation = 90
 gradient.Parent = title
 
 function Title.Method(character: Model, title: string?, color: Color3?, topColor: Color3?, font: Enum.Font?)
 	local titleGui = character:FindFirstChild("_K_Title")
+	if titleGui then
+		titleGui:Destroy()
+	end
 	if title == nil then
-		if titleGui then
-			titleGui:Destroy()
-		end
 		return
 	end
 
-	local titleDefinition = Title.definition[string.lower(title)]
+	local titleRef = string.lower(title)
+	local titleDefinition = Title.definition[titleRef]
 	if titleDefinition then
 		color = color or titleDefinition.color
 		topColor = topColor or titleDefinition.topColor
 	end
 
-	if not titleGui then
-		titleGui = gui:Clone()
-		titleGui.Parent = character
-		titleGui.Adornee = character:FindFirstChild("Head")
-	end
+	titleGui = gui:Clone()
+	titleGui.Parent = character
+	titleGui.Adornee = character:FindFirstChild("Head")
+	titleGui:AddTag("_K" .. titleRef)
 
 	titleGui.Title.Text = title
 	titleGui.Title.UIGradient.Color = ColorSequence.new(topColor or Color3.new(1, 1, 1), color or Color3.new(1, 1, 1))
+	titleGui.Title.UIGradient.Rotation = titleDefinition.rotation or 90
 	if font then
 		titleGui.Title.Font = font
 	end
+end
+
+if RunService:IsClient() then
+	local titleCache = {}
+	for titleRef, definition in Title.definition do
+		if not definition.update then
+			continue
+		end
+		local tag = "_K" .. titleRef
+		local cache = { getValue = definition.getValue, update = definition.update, objects = {} }
+		titleCache[tag] = cache
+		CollectionService:GetInstanceAddedSignal(tag):Connect(function(obj)
+			cache.objects[obj] = true
+		end)
+		CollectionService:GetInstanceRemovedSignal(tag):Connect(function(obj)
+			cache.objects[obj] = nil
+		end)
+	end
+
+	local start = os.clock()
+	RunService.Heartbeat:Connect(function()
+		local elapsed = os.clock() - start
+		for tag, cache in titleCache do
+			if not next(cache.objects) then
+				continue
+			end
+			local value = cache.getValue(elapsed)
+			for object in cache.objects do
+				if object.AbsoluteSize.Y <= 2 then
+					continue
+				end
+				cache.update(object, value)
+			end
+		end
+	end)
 end
 
 return Title
