@@ -304,26 +304,28 @@ return {
 			},
 		},
 		env = function(_K)
-			local tool = _K.Tools:WaitForChild("Building Tools")
-			local handle = Instance.new("Part")
-			handle.Name = "Handle"
-			handle.Size = Vector3.new(0.8, 0.8, 0.8)
-			handle.CastShadow = false
-			handle.CanTouch = false
-			handle.CanQuery = false
-			handle.TopSurface = 0
-			handle.BottomSurface = 0
-			for _, face in Enum.NormalId:GetEnumItems() do
-				local decal = Instance.new("Decal")
-				decal.Face = face
-				decal.Texture = "rbxassetid://129748355"
-				decal.Parent = handle
-			end
-			handle.Parent = tool
+			local env = {}
 
-			return {
-				tool = tool,
-			}
+			task.defer(function()
+				env.tool = _K.Tools:WaitForChild("Building Tools")
+				local handle = Instance.new("Part")
+				handle.Name = "Handle"
+				handle.Size = Vector3.new(0.8, 0.8, 0.8)
+				handle.CastShadow = false
+				handle.CanTouch = false
+				handle.CanQuery = false
+				handle.TopSurface = 0
+				handle.BottomSurface = 0
+				for _, face in Enum.NormalId:GetEnumItems() do
+					local decal = Instance.new("Decal")
+					decal.Face = face
+					decal.Texture = "rbxassetid://129748355"
+					decal.Parent = handle
+				end
+				handle.Parent = env.tool
+			end)
+
+			return env
 		end,
 
 		run = function(context, players)
