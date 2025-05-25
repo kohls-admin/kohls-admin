@@ -173,7 +173,6 @@ return {
 				if ban then
 					table.insert(unbannedNames, ban[1] or userId)
 				end
-				context._K.Data.bans[userId] = nil
 			end
 			context._K.Auth.unbanUsers(bans, context.from)
 			context._K.Remote.Notify:FireClient(

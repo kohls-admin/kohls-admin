@@ -117,7 +117,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 		end
 	end
 
-	if banAsync and not Data.IS_PRIVATE_SERVER then -- for non command calls
+	if banAsync and not Data.IS_PRIVATE_SERVER then
 		Util.Service.Players:UnbanAsync({ UserIds = userIds, ApplyToUniverse = true })
 	end
 end
