@@ -30,7 +30,7 @@ function _K.client.updateInterfaceAuth()
 	end
 
 	_K.client.dashboard.Bans._instance:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "bans"))
-	_K.client.dashboard.Logs._instance:SetAttribute("Enabled", _K.Auth.hasPermission(userId, "serverlogs"))
+	_K.client.dashboard.Logs._instance:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "logs"))
 	_K.client.dashboard.Members._instance:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "members"))
 	_K.client.dashboard.Settings:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "settings"))
 
