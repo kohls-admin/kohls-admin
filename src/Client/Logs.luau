@@ -110,17 +110,12 @@ function Logs.new(_K)
 	end
 	-- TODO: load filter options from client datastore profile
 
-	scroller._filterUpdate = true
 	local escape = _K.Util.String.escapeRichText
 	local function filterTest(self, list)
 		local filter = string.lower(self._input._input.Text)
 		self._filter = filter
 
 		local emptyFilter = string.find(filter, "^%s*$")
-		if emptyFilter and not scroller._filterUpdate then
-			return list
-		end
-		scroller._filterUpdate = nil
 
 		local new = {}
 		for i, log in list do

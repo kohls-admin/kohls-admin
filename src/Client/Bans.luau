@@ -189,10 +189,6 @@ function Bans.new(_K)
 		self._filter = filter
 
 		local emptyFilter = string.find(filter, "^%s*$")
-		if emptyFilter and not scroller._filterUpdate then
-			return list
-		end
-		scroller._filterUpdate = nil
 
 		local new = {}
 		for _, userId in list do
