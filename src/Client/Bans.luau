@@ -183,13 +183,16 @@ function Bans.new(_K)
 		},
 	})
 
-	local debounceRender = _K.Util.Function.debounce(0.2, scroller.render)
-
+	scroller._filterUpdate = true
 	local function filterTest(self, list)
 		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
 
-		local noFilter = filter == ""
+		local emptyFilter = string.find(filter, "^%s*$")
+		if emptyFilter and not scroller._filterUpdate then
+			return list
+		end
+		scroller._filterUpdate = nil
 
 		local new = {}
 		for _, userId in list do
@@ -220,15 +223,13 @@ function Bans.new(_K)
 				task.spawn(function()
 					local name = if ban[4] then _K.Util.getUserInfo(ban[4]).Username else "SYSTEM"
 					ban.tipText = `<b>Banned by:</b> @{name}\n{ban.tipText}`
-					debounceRender(scroller)
+					scroller:queueRender()
 				end)
 			end
 
-			if noFilter then
-				continue
-			end
-
-			if string.find(ban.filterText, filter, 1, true) then
+			if emptyFilter then
+				table.insert(new, userId)
+			elseif string.find(ban.filterText, filter, 1, true) then
 				local filterLeft = string.find(ban.filterTextLeft, self._filter, 1, true)
 				local filterRight = string.find(ban.filterTextRight, self._filter, 1, true)
 
@@ -257,7 +258,7 @@ function Bans.new(_K)
 				table.insert(new, userId)
 			end
 		end
-		return noFilter and list or new
+		return new
 	end
 
 	task.defer(scroller.filter, scroller, filterTest)
