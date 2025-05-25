@@ -13,20 +13,24 @@ type ArgumentDefinition = Type.ArgumentDefinition
 local Process = {}
 
 --- Parses a string into a raw command format.
-function Process.rawParse(message: string, prefixes: { string }, argSeparator: string?): { any }?
-	local prefix
+function Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?
+	local escapedSplit = Util.String.escapePattern(delimiter)
+	local commandFormat = `%s[^%s"\`,{escapedSplit}]`
+	local commandStart, prefix
 	for _, value in prefixes do
-		if string.find(message, string.format('^%s[^%s"`,%%s]', value, value)) == 1 then
+		local escapedPrefix = Util.String.escapePattern(value)
+		commandStart = string.find(message, string.format(commandFormat, escapedPrefix, escapedPrefix))
+		if commandStart then
 			prefix = value
+			break
 		end
 	end
 	if not prefix then
 		return
 	end
 
-	message = string.sub(message, #prefix + 1)
+	message = string.sub(message, commandStart + #prefix)
 
-	local delimiter = argSeparator or "%s"
 	local argument = { 1 }
 	local command = { argument }
 	local commands = { command }
@@ -87,7 +91,11 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 	end
 
 	local text = Util.String.trimStart(rawText)
-	local rawCommands = Process.rawParse(text, { _K.getCommandPrefix(from), unpack(_K.Data.settings.prefix) })
+	local rawCommands = Process.rawParse(
+		text,
+		{ _K.getCommandPrefix(from), unpack(_K.Data.settings.prefix) },
+		_K.Data.settings.splitKey or "%s"
+	)
 	if not rawCommands then
 		return
 	end

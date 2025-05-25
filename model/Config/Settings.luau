@@ -71,7 +71,8 @@ return {
 	},
 
 	-- 🔧 SYSTEM SETTINGS
-	prefix = { ";", ":" }, -- The prefix character used to trigger commands (e.g., ";kick")
+	prefix = { ";", ":" }, -- The prefix character used to trigger and separate commands (e.g., ";kick noob ;ff me")
+	splitKey = "%s", --       The key to split commands and arguments  (e.g., Change to "/" for ";kick/noob/;ff/me")
 
 	chatCommands = true, --        Enables command execution via the Chat
 	commandBarRank = 0, --         Minimum rank required to view the Command Bar       (Set to false to disable for everyone)
