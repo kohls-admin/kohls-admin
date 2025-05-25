@@ -35,13 +35,15 @@ function Logs.new(_K)
 	end
 	-- TODO: load filter options from client datastore profile
 
-	local scroller
+	local scroller, filterUpdate
 
 	local function filterTest(self, list)
 		local filter = string.lower(self._input._input.Text)
 		self._filter = filter
 
-		local noFilter = filter == ""
+		local emptyFilter = filter == ""
+		local noFilter = emptyFilter and not filterUpdate
+		filterUpdate = nil
 
 		local new = {}
 		for i, log in list do
@@ -66,19 +68,20 @@ function Logs.new(_K)
 				log.tipText = `<font transparency="0.5">{date}</font> {log.richText}`
 			end
 
-			if noFilter then
-				continue
-			end
-
-			local filterIndex, filterEnd = string.find(log.filterText, filter, 1, true)
-			if filterIndex then
-				log.filterRichText =
-					`<font transparency="0.5">{escape(string.sub(log.rawText, 1, filterIndex - 1))}</font><b>{escape(
-						string.sub(log.rawText, filterIndex, filterEnd)
-					)}</b><font transparency="0.5">{escape(string.sub(log.rawText, filterEnd + 1))}</font>`
+			if emptyFilter then
 				table.insert(new, log)
+			else
+				local filterIndex, filterEnd = string.find(log.filterText, filter, 1, true)
+				if filterIndex then
+					log.filterRichText =
+						`<font transparency="0.5">{escape(string.sub(log.rawText, 1, filterIndex - 1))}</font><b>{escape(
+							string.sub(log.rawText, filterIndex, filterEnd)
+						)}</b><font transparency="0.5">{escape(string.sub(log.rawText, filterEnd + 1))}</font>`
+					table.insert(new, log)
+				end
 			end
 		end
+
 		return noFilter and list or new
 	end
 
@@ -205,6 +208,7 @@ function Logs.new(_K)
 
 				[UI.Hook] = {
 					Value = function(value)
+						filterUpdate = true
 						logTypeFilter[logType]:set(value)
 						scroller:refreshList()
 					end,
