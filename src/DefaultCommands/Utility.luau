@@ -126,6 +126,15 @@ return {
 		end,
 	},
 	{
+		name = "commandbar",
+		aliases = { "cmdbar" },
+		description = "Shows the command bar.",
+		optionalPrefix = true,
+		runClient = function(context)
+			task.defer(context._K.client.CommandBar.show)
+		end,
+	},
+	{
 		name = "dashboard",
 		description = "Shows the admin dashboard.",
 		optionalPrefix = true,
