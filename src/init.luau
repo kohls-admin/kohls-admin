@@ -129,6 +129,11 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 end
 _K.Logger.logs = _K.Data.logs
 
+if _K.IsServer then
+	_K.Tools = script:WaitForChild("Tools")
+	_K.Tools.Parent = _K.Service.ServerScript
+end
+
 -- register initial UI children
 if _K.IsClient then
 	_K.UI = require(Client:WaitForChild("UI"))
@@ -169,9 +174,6 @@ end
 --------------------------
 -- START OF SERVER CODE --
 --------------------------
-
-_K.Tools = script:WaitForChild("Tools")
-_K.Tools.Parent = _K.Service.ServerScript
 
 local function characterAdded(character: Model)
 	local player = _K.Service.Players:GetPlayerFromCharacter(character)
