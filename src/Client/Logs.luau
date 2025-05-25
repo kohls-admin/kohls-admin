@@ -109,6 +109,7 @@ function Logs.new(_K)
 				TextEditable = false,
 				ClearTextOnFocus = false,
 				Font = UI.Theme.FontMono,
+				Text = "",
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = Color3.new(0, 0, 0),
 				TextTransparency = 0.5,
@@ -124,6 +125,7 @@ function Logs.new(_K)
 					Size = self.ItemSize,
 					RichText = true,
 					Font = UI.Theme.FontMono,
+					Text = "Log failed to render."
 					TextSize = UI.Theme.FontSize,
 					TextColor3 = UI.Theme.PrimaryText,
 					TextTransparency = 0,
