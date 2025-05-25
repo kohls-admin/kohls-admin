@@ -214,20 +214,8 @@ function ScrollerFast:refreshList()
 	refreshQueue[self] = true
 end
 
-function ScrollerFast:render(delta)
-	UI.clearState("hover")
-
-	local sizeY = self._scroller.AbsoluteWindowSize.Y
-	local scrollY = self._scroller.CanvasPosition.Y
-
-	if sizeY ~= self._lastSizeY or scrollY ~= self._lastScrollY then
-		if math.abs(scrollY - self._lastScrollY) >= sizeY then
-			self:forceRender()
-		else
-			renderQueue[self] = true
-		end
-		self._lastSizeY, self._lastScrollY = sizeY, scrollY
-	end
+function ScrollerFast:render()
+	renderQueue[self] = true
 end
 
 function ScrollerFast:filter(filterFunction: (...any) -> { any })
@@ -270,7 +258,19 @@ function ScrollerFast.new(definition)
 	self._lastScrollY = 0
 
 	local function render()
-		self:render()
+		UI.clearState("hover")
+
+		local sizeY = self._scroller.AbsoluteWindowSize.Y
+		local scrollY = self._scroller.CanvasPosition.Y
+
+		if sizeY ~= self._lastSizeY or scrollY ~= self._lastScrollY then
+			if math.abs(scrollY - self._lastScrollY) >= sizeY then
+				self:forceRender()
+			else
+				self:render()
+			end
+			self._lastSizeY, self._lastScrollY = sizeY, scrollY
+		end
 	end
 
 	self._scroller = UI.new "ScrollingFrame" {
