@@ -337,7 +337,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	end
 
 	local dataStoreScope = "_K_0.1" -- WARN: REQUIRES DATA MIGRATION WHEN CHANGED
-	if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+	if _K.Data.IS_PRIVATE_SERVER then
 		for role, users in settings.userRoles do
 			if table.find(users, game.PrivateServerOwnerId) then
 				dataStoreScope ..= game.PrivateServerOwnerId

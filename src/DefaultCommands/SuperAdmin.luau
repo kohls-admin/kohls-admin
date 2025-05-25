@@ -95,7 +95,7 @@ return {
 			end)
 		end,
 		run = function(context, code: string, placeId: string?)
-			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+			if context._K.Data.IS_PRIVATE_SERVER then
 				return `Reserve command is disabled in private servers.`
 			end
 
@@ -129,7 +129,7 @@ return {
 			},
 		},
 		run = function(context, code: string)
-			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+			if context._K.Data.IS_PRIVATE_SERVER then
 				return `Unreserve command is disabled in private servers.`
 			end
 

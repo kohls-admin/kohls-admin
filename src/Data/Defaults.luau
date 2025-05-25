@@ -15,6 +15,8 @@ local Cache = {
 }
 
 local Data = {
+	IS_PRIVATE_SERVER = game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0,
+
 	Cache = Cache,
 	creatorId = game.CreatorId,
 	bans = {},

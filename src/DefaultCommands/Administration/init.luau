@@ -57,7 +57,7 @@ return {
 		end,
 
 		run = function(context, message)
-			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+			if context._K.Data.IS_PRIVATE_SERVER then
 				return `Announce are disabled in private servers.`
 			end
 
@@ -74,7 +74,7 @@ return {
 		args = {},
 
 		run = function(context)
-			if game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0 then
+			if context._K.Data.IS_PRIVATE_SERVER then
 				return `Announcements are disabled in private servers.`
 			end
 
