@@ -1187,7 +1187,6 @@ return {
 		},
 
 		run = function(context, players)
-			local ungod = context.alias == "ungod" or context.alias == "mortal"
 			for _, player in players do
 				if player.Character then
 					for _, child in player.Character:GetChildren() do
@@ -1196,14 +1195,11 @@ return {
 						end
 					end
 
-					if not ungod then
-						continue
-					end
-
 					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 					if humanoid then
 						local oldHealth = humanoid:GetAttribute("_KMaxHealth")
 						if oldHealth then
+							humanoid:SetAttribute("_KMaxHealth", nil)
 							humanoid.MaxHealth = oldHealth
 							humanoid.Health = oldHealth
 						end
