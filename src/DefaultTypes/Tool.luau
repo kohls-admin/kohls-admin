@@ -102,11 +102,17 @@ return function(context)
 		for i, tool in tools do
 			toolData[i] = { Name = tool.Name }
 		end
-		for _, player in _K.Service.Players:GetPlayers() do
-			if _K.Auth.hasCommand(player.UserId, "tools") then
-				_K.Remote.Tools:FireClient(player, toolData)
+
+		task.spawn(function()
+			if not _K.ready then
+				_K.Hook.init:Wait()
 			end
-		end
+			for _, player in _K.Service.Players:GetPlayers() do
+				if _K.Auth.hasCommand(player.UserId, "tools") then
+					_K.Remote.Tools:FireClient(player, toolData)
+				end
+			end
+		end)
 	else -- Client
 		_K.Remote.Tools.OnClientEvent:Connect(function(toolData)
 			tools = toolData
