@@ -56,13 +56,22 @@ function Logs.new(_K)
 				local date = os.date("%y-%m-%d", log.time)
 				local timeOfDay = os.date("%X", log.time)
 
-				log.rawText = `{date} {timeOfDay} {levelText} {log.name}: {log.text}`
+				log.rawText = `{date} {timeOfDay} {levelText}{if log.client
+					then "CLIENT"
+					elseif not log.from then "SERVER"
+					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
+
+				log.textBoxText = `{timeOfDay} {levelText}{if log.client
+					then " CLIENT"
+					elseif not log.from then " SERVER"
+					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
+
 				log.filterText = string.lower(log.rawText)
 				log.richText =
 					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[levelText] or "#fff"}"><b>{levelText}</b></font><b>{if log.client
 						then clientTag
 						elseif not log.from then serverTag
-						else ""}</b> {if log.from then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(
+						else ""}</b> {if log.name then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(
 						log.text or ""
 					)}`
 				log.tipText = `<font transparency="0.5">{date}</font> {log.richText}`
@@ -93,19 +102,35 @@ function Logs.new(_K)
 		}
 
 		local itemRef = {
-			_instance = UI.new "TextLabel" {
+			_instance = UI.new "TextBox" {
 				AutoLocalize = false,
 				BackgroundTransparency = 1,
 				Size = self.ItemSize,
-				RichText = true,
+				TextEditable = false,
+				ClearTextOnFocus = false,
 				Font = UI.Theme.FontMono,
 				TextSize = UI.Theme.FontSize,
-				TextColor3 = UI.Theme.PrimaryText,
+				TextColor3 = Color3.new(0, 0, 0),
+				TextTransparency = 0.5,
 				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = Enum.TextXAlignment.Left,
-				TextYAlignment = Enum.TextYAlignment.Top,
+				TextYAlignment = Enum.TextYAlignment.Center,
 
 				tooltip,
+
+				UI.new "TextLabel" {
+					AutoLocalize = false,
+					BackgroundTransparency = 1,
+					Size = self.ItemSize,
+					RichText = true,
+					Font = UI.Theme.FontMono,
+					TextSize = UI.Theme.FontSize,
+					TextColor3 = UI.Theme.PrimaryText,
+					TextTransparency = 0,
+					TextTruncate = Enum.TextTruncate.SplitWord,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Center,
+				},
 			},
 
 			tipText = "",
@@ -126,7 +151,8 @@ function Logs.new(_K)
 		end
 		itemData.tipText = log.tipText
 		local item = itemData._instance
-		item.Text = if self._filter ~= "" then log.filterRichText else log.richText
+		item.Text = log.textBoxText
+		item.TextLabel.Text = if self._filter ~= "" then log.filterRichText else log.richText
 	end
 
 	scroller = UI.new "ScrollerFast" {
