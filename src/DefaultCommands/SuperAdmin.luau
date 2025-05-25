@@ -48,7 +48,7 @@ return {
 	},
 	{
 		name = "reserve",
-		aliases = {},
+		aliases = { "privateserver" },
 		description = "Reserves a private server.",
 		args = {
 			{
@@ -119,7 +119,7 @@ return {
 	},
 	{
 		name = "unreserve",
-		aliases = {},
+		aliases = { "delreserve", "removereserve" },
 		description = "Removes a reserved server.",
 		args = {
 			{
