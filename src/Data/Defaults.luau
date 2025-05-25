@@ -1,3 +1,5 @@
+local RunService = game:GetService("RunService")
+
 local Theme = require(script.Parent.Parent.Client:WaitForChild("UI").Theme)
 
 type Dict = { [any]: any }
@@ -15,7 +17,7 @@ local Cache = {
 }
 
 local Data = {
-	IS_PRIVATE_SERVER = game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0,
+	IS_PRIVATE_SERVER = RunService:IsServer() and game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0,
 
 	Cache = Cache,
 	creatorId = game.CreatorId,
