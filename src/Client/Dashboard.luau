@@ -195,6 +195,11 @@ task.defer(function()
 		end
 		socialDialog.Visible:hook(updateDialogPosition)
 		socialButton._instance:GetPropertyChangedSignal("AbsolutePosition"):Connect(updateDialogPosition)
+		dashboard._instance:GetPropertyChangedSignal("Visible"):Connect(function()
+			if not dashboard._instance.Visible then
+				socialDialog.Visible:set(false)
+			end
+		end)
 	end
 end)
 
