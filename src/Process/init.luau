@@ -151,7 +151,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 end
 
 function Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?): boolean
-	from = from or _K.CreatorId
+	from = from or _K.creatorId
 	local ok, result = Process.prepareCommands(_K, from, rawText)
 
 	local commandsRan = {}

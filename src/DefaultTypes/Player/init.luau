@@ -103,7 +103,7 @@ local function baseSuggestions(text, from, definition, userType: boolean?)
 	for _, player in players do
 		if
 			player.UserId ~= Players.LocalPlayer.UserId
-			and (not definition.lowerRank or rank > _K.Auth.getRank(player.UserId))
+			and (from == _K.creatorId or not definition.lowerRank or rank > _K.Auth.getRank(player.UserId))
 		then
 			table.insert(names, playerSuggestion(player))
 			table.insert(instances, player)

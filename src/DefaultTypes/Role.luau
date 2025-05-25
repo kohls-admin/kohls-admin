@@ -12,7 +12,10 @@ return function(context)
 			if role == _K.Data.roles.everyone then
 				continue
 			end
-			if rank > role._rank and string.find(string.lower(roleId), query, 1, true) == 1 then
+			if
+				(self.command.from == _K.creatorId or rank > role._rank)
+				and string.find(string.lower(roleId), query, 1, true) == 1
+			then
 				return roleId
 			end
 		end
@@ -29,7 +32,7 @@ return function(context)
 				if role == _K.Data.roles.everyone then
 					continue
 				end
-				if rank > role._rank then
+				if from == _K.creatorId or rank > role._rank then
 					table.insert(roles, { roleId, nil, role })
 				end
 			end

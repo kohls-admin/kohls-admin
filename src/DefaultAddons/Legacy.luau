@@ -1,5 +1,9 @@
 local legacyRoles = {
 	{
+		group = "GameCreator",
+		role = "creator",
+	},
+	{
 		group = "Creator",
 		role = "superadmin",
 	},

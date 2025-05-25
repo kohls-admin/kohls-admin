@@ -392,7 +392,7 @@ end
 
 --- Checks if a user has access to a command argument
 function Auth.hasArgument(userId: number, argument: any): boolean
-	if Auth.roleCanUseArgument("everyone", argument) then
+	if userId == Data.creatorId or Auth.roleCanUseArgument("everyone", argument) then
 		return true
 	end
 	local member = Data.members[tostring(userId)]
@@ -408,6 +408,9 @@ end
 
 --- Checks if a user has access to a command, returns their rank if they do
 function Auth.hasCommand(userId: number, command: any): boolean | number
+	if userId == Data.creatorId then
+		return math.huge
+	end
 	local member = Data.members[tostring(userId)]
 	if member then
 		for _, roleId in member.roles do
@@ -424,7 +427,11 @@ end
 
 --- Checks if a user has access to a permission
 function Auth.hasPermission(userId: number, permission: string): boolean
-	if Data.roles.everyone.permissions.admin or Data.roles.everyone.permissions[permission] then
+	if
+		userId == Data.creatorId
+		or Data.roles.everyone.permissions.admin
+		or Data.roles.everyone.permissions[permission]
+	then
 		return true
 	end
 	local member = Data.members[tostring(userId)]
@@ -441,6 +448,9 @@ end
 
 --- Checks the maximum role rank of the user
 function Auth.getRank(userId: number): (number, Role)
+	if userId == Data.creatorId then
+		return math.huge, Data.roles.creator
+	end
 	local member = Data.members[tostring(userId)]
 	if member then
 		for _, roleId in member.roles do -- roles are descending by rank
@@ -461,10 +471,10 @@ function Auth.targetUserArgument(arg, userId: number, value: Player | number | s
 		end
 		return value
 	end
-	if Auth.hasPermission(from, "admin") then
+	if from == Data.creatorId then
 		return value
 	end
-	if Auth.hasPermission(from, "targetOthers") ~= true then
+	if Auth.hasPermission(from, "targetOthers") ~= true and not Auth.hasPermission(from, "admin") then
 		return nil, "Can only target yourself"
 	end
 	if

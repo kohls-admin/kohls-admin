@@ -737,7 +737,7 @@ return {
 						part2.Size = part.Size * 0.9
 						part3.Size = part.Size * 0.5
 						for _, player in _K.Service.Players:GetPlayers() do
-							if player ~= from and _K.Auth.getRank(player.UserId) >= fromRank then
+							if from.UserId ~= _K.creatorId and _K.Auth.getRank(player.UserId) >= fromRank then
 								continue
 							end
 							local direction = (player.Character and not player.Character:GetAttribute("_KNuked"))

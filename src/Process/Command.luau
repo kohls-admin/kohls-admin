@@ -36,7 +36,7 @@ function Command:shouldRequest(player: Player)
 	if self._K._shouldRequestOverride then
 		return self._K._shouldRequestOverride(self, player)
 	end
-	return self.fromRank <= Auth.getRank(player.UserId)
+	return self.from ~= self._K.creatorId and self.fromRank <= Auth.getRank(player.UserId)
 end
 
 function Command:requestCommand(player: Player)

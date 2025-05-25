@@ -49,7 +49,7 @@ local typeMember = {
 			if definition.ignoreSelf and id == fromString then
 				continue
 			end
-			if not lowerRank or (fromString == id) or rank > memberRank then
+			if from == _K.creatorId or not lowerRank or (fromString == id) or rank > memberRank then
 				table.insert(ids, { id, `{id} ({member.name})` })
 				table.insert(names, { member.name, nil })
 			end
