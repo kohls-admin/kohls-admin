@@ -392,6 +392,19 @@ function Settings.new(_K)
 
 		local keyOrder = { "general", "theme" }
 		for key, lineItems in settingsLineItems do
+			if key == "Theme" then -- don't show Theme if user isn't able to modify them.
+				print(Settings._K.Data.settings.dashboardThemeAuthority)
+				if Settings._K.Data.settings.dashboardThemeAuthority == "Server" then
+					continue
+				end
+				if
+					Settings._K.Data.settings.dashboardThemeAuthority == "Shared"
+					and not (Settings._K.Auth.hasPermission(Settings._K.Service.Players.LocalPlayer.UserId, "settings"))
+				then
+					continue
+				end
+			end
+
 			local list = UI.new "List" {
 				Parent = settingsScroller,
 				Name = key,
