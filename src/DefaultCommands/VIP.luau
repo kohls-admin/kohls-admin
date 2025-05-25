@@ -1302,4 +1302,205 @@ return {
 			end
 		end,
 	},
+	{
+		name = "goldify",
+		aliases = { "gold" },
+		description = "Glimmer like gold!",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to turn to gold.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K): { onGoldify: (characterToGoldify: Model & { Humanoid: Humanoid }) -> () }
+			return {
+				onGoldify = function(characterToGoldify: Model & { Humanoid: Humanoid }): ()
+					for index: number, descendant: Instance in characterToGoldify:GetDescendants() do
+						if descendant:IsA("BasePart") then
+							-- Preserve the original settings, so that we don't respawn the char
+							if descendant:GetAttribute("_KBrickColor") == nil then
+								descendant:SetAttribute("_KBrickColor", descendant.BrickColor)
+							end
+
+							if descendant:GetAttribute("_KReflectance") == nil then
+								descendant:SetAttribute("_KReflectance", descendant.Reflectance)
+							end
+
+							if descendant:GetAttribute("_KMaterial") == nil then
+								descendant:SetAttribute("_KMaterial", descendant.Material)
+							end
+
+							-- Set the descendant to match that of legacy KAI settings.
+							descendant.BrickColor = BrickColor.new("Gold")
+							descendant.Reflectance = 0.4
+							descendant.Material = Enum.Material.Metal
+
+							if descendant:IsA("MeshPart") and descendant:GetAttribute("_KTexture") == nil then
+								descendant:SetAttribute("_KTexture", descendant.TextureID)
+								descendant.TextureID = ""
+							end
+						elseif descendant:IsA("SurfaceAppearance") then
+							-- this isn't neat, or fun, but UGC creators love their SurfaceAppearances!
+							if descendant:FindFirstChild("_KParent") == nil then
+								local _KParent = Instance.new("ObjectValue")
+								_KParent.Name = "_KParent"
+								_KParent.Value = descendant.Parent
+								_KParent.Parent = descendant
+								descendant.Parent = characterToGoldify.Humanoid
+							end
+						elseif descendant:IsA("Shirt") or descendant:IsA("Pants") then
+							-- cursed cast because Luau LSP can't interpret Shirts or Pants as instances.
+							(descendant :: Instance).Parent = characterToGoldify.Humanoid
+						end
+					end
+				end,
+			}
+		end,
+
+		run = function(context, players: { Player })
+			for index: number, player: Player in players do
+				if
+					player.Character
+					and player.Character.PrimaryPart
+					and player.Character:FindFirstChildWhichIsA("Humanoid")
+				then
+					context.env.onGoldify(player.Character)
+				end
+			end
+		end,
+	},
+	{
+		name = "silverify",
+		aliases = { "silver", "metalify", "metal" },
+		description = "Shine bright as a silver statue!",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to turn to silver.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K): { onSilverify: (characterToSilverify: Model & { Humanoid: Humanoid }) -> () }
+			return {
+				onSilverify = function(characterToSilverify: Model & { Humanoid: Humanoid }): ()
+					for index: number, descendant: Instance in characterToSilverify:GetDescendants() do
+						if descendant:IsA("BasePart") then
+							-- Preserve the original settings, so that we don't respawn the char
+							if descendant:GetAttribute("_KBrickColor") == nil then
+								descendant:SetAttribute("_KBrickColor", descendant.BrickColor)
+							end
+
+							if descendant:GetAttribute("_KReflectance") == nil then
+								descendant:SetAttribute("_KReflectance", descendant.Reflectance)
+							end
+
+							if descendant:GetAttribute("_KMaterial") == nil then
+								descendant:SetAttribute("_KMaterial", descendant.Material)
+							end
+
+							-- Set the descendant to match that of legacy KAI settings.
+							descendant.BrickColor = BrickColor.new("Silver")
+							descendant.Reflectance = 0.4
+							descendant.Material = Enum.Material.Metal
+
+							if descendant:IsA("MeshPart") and descendant:GetAttribute("_KTexture") == nil then
+								descendant:SetAttribute("_KTexture", descendant.TextureID)
+								descendant.TextureID = ""
+							end
+						elseif descendant:IsA("SurfaceAppearance") then
+							-- this isn't neat, or fun, but UGC creators love their SurfaceAppearances!
+							if descendant:FindFirstChild("_KParent") == nil then
+								local _KParent = Instance.new("ObjectValue")
+								_KParent.Name = "_KParent"
+								_KParent.Value = descendant.Parent
+								_KParent.Parent = descendant
+								descendant.Parent = characterToSilverify.Humanoid
+							end
+						elseif descendant:IsA("Shirt") or descendant:IsA("Pants") then
+							-- cursed cast because Luau LSP can't interpret Shirts or Pants as instances.
+							(descendant :: Instance).Parent = characterToSilverify.Humanoid
+						end
+					end
+				end,
+			}
+		end,
+
+		run = function(context, players: { Player })
+			for index: number, player: Player in players do
+				if
+					player.Character
+					and player.Character.PrimaryPart
+					and player.Character:FindFirstChildWhichIsA("Humanoid")
+				then
+					context.env.onSilverify(player.Character)
+				end
+			end
+		end,
+	},
+	{
+		name = "ungoldify",
+		aliases = { "ungold", "unsilverify", "unsilver", "unmetalify", "unmetal" },
+		description = "Restores the character of one or more player(s) from goldify.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to turn to gold.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K): { onUngoldify: (characterToRevert: Model & { Humanoid: Humanoid }) -> () }
+			return {
+				onUngoldify = function(characterToRevert: Model & { Humanoid: Humanoid }): ()
+					for index: number, descendant: Instance in characterToRevert:GetDescendants() do
+						if descendant:IsA("BasePart") then
+							-- need to check if every attribute exists before doing anything, otherwise we'll mess with the charcacter if the player(s) died between when ;goldify was called and now.
+							if descendant:GetAttribute("_KBrickColor") ~= nil then
+								descendant.BrickColor = descendant:GetAttribute("_KBrickColor") :: BrickColor
+								descendant:SetAttribute("_KBrickColor", nil)
+							end
+
+							if descendant:GetAttribute("_KReflectance") ~= nil then
+								descendant.Reflectance = descendant:GetAttribute("_KReflectance") :: number
+								descendant:SetAttribute("_KReflectance", nil)
+							end
+
+							if descendant:GetAttribute("_KMaterial") ~= nil then
+								descendant.Material = descendant:GetAttribute("_KMaterial") :: Enum.Material
+								descendant:SetAttribute("_KMaterial", nil)
+							end
+
+							if descendant:GetAttribute("_KTexture") ~= nil and descendant:IsA("MeshPart") then
+								descendant.TextureID = descendant:GetAttribute("_KTexture") :: string
+								descendant:SetAttribute("_KTexture", nil)
+							end
+						elseif descendant:IsA("SurfaceAppearance") then
+							if descendant:FindFirstChild("_KParent") ~= nil then
+								-- yes this is cursed, but Luau error 1013 demands a semicolon.
+								descendant.Parent = (descendant :: SurfaceAppearance & { _KParent: ObjectValue })._KParent.Value;
+								(descendant :: SurfaceAppearance & { _KParent: ObjectValue })._KParent:Destroy()
+							end
+						elseif descendant:IsA("Shirt") or descendant:IsA("Pants") then
+							-- cursed cast because Luau LSP can't interpret Shirts or Pants as instances.
+							(descendant :: Instance).Parent = characterToRevert
+						end
+					end
+				end,
+			}
+		end,
+		run = function(context, players: { Player })
+			for index: number, player: Player in players do
+				if
+					player.Character
+					and player.Character.PrimaryPart
+					and player.Character:FindFirstChildWhichIsA("Humanoid")
+				then
+					context.env.onUngoldify(player.Character)
+				end
+			end
+		end,
+	},
 }
