@@ -23,6 +23,7 @@ local function teleportCharacter(from, to)
 	for _, v in from:GetDescendants() do
 		if v:IsA("BasePart") then
 			v.AssemblyLinearVelocity = Vector3.zero
+			v.AssemblyAngularVelocity = Vector3.zero
 		end
 	end
 
