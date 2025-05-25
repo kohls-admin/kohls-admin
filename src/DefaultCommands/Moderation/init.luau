@@ -657,8 +657,9 @@ return {
 
 		run = function(context, players, tools)
 			for _, player in players do
-				local destination = player:FindFirstChildOfClass("StarterGear")
-				if destination then
+				local destinations =
+					{ player:FindFirstChildOfClass("Backpack"), player:FindFirstChildOfClass("StarterGear") }
+				for _, destination in destinations do
 					for _, tool in tools do
 						tool:Clone().Parent = destination
 					end
@@ -685,11 +686,15 @@ return {
 
 		run = function(context, players, tools)
 			for _, player in players do
-				local source = player:FindFirstChildOfClass("StarterGear")
-				if source then
+				local sources = {
+					player:FindFirstChildOfClass("Backpack"),
+					player:FindFirstChildOfClass("StarterGear"),
+					player.Character,
+				}
+				for _, source in sources do
 					for _, tool in tools do
 						local existing = source:FindFirstChild(tool.Name)
-						if existing then
+						if existing and existing:IsA("Tool") or existing:IsA("Hopperbin") then
 							task.spawn(game.Destroy, existing)
 						end
 					end
@@ -717,18 +722,11 @@ return {
 		run = function(context, fromPlayers, toPlayers)
 			for _, fromPlayer in fromPlayers do
 				local tools = {}
-				local fromBackpack = fromPlayer:FindFirstChildOfClass("Backpack")
-				if fromBackpack then
-					for _, descendant in fromBackpack:GetChildren() do
-						if descendant:IsA("Tool") or descendant:IsA("HopperBin") then
-							table.insert(tools, descendant)
-						end
-					end
-				end
-				if fromPlayer.Character then
-					for _, descendant in fromPlayer.Character:GetChildren() do
-						if descendant:IsA("Tool") or descendant:IsA("HopperBin") then
-							table.insert(tools, descendant)
+				local sources = { fromPlayer:FindFirstChildOfClass("Backpack"), fromPlayer.Character }
+				for _, source in sources do
+					for _, child in source:GetChildren() do
+						if child:IsA("Tool") or child:IsA("HopperBin") then
+							table.insert(tools, child)
 						end
 					end
 				end
@@ -775,7 +773,6 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				context.env.removeTools(player:FindFirstChildOfClass("Backpack"))
-				context.env.removeTools(player:FindFirstChildOfClass("StarterGear"))
 				context.env.removeTools(player.Character)
 			end
 		end,
