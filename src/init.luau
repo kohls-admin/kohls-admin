@@ -81,6 +81,24 @@ local _K = {
 	_addonTag = "Kohl's Admin Addon",
 }
 
+-- register creator
+task.spawn(function()
+	if game.CreatorType == Enum.CreatorType.Group then
+		_K.groupId = game.CreatorId
+		local ok, result = Util.Retry(function()
+			return _K.Service.Group:GetGroupInfoAsync(game.CreatorId)
+		end)
+		_K.creatorId = if ok then result.Owner.Id else 0
+	else
+		_K.creatorId = game.CreatorId
+	end
+	_K.Data.creatorId = _K.creatorId
+
+	if _K.IsServer then
+		_K.Auth.userRoleAdd(_K.creatorId, "creator")
+	end
+end)
+
 function _K.getCommandPrefix(from: number?)
 	if not from and _K.IsClient then
 		from = Util.Service.Players.LocalPlayer.UserId
@@ -348,21 +366,6 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	end
 
 	task.spawn(_K.Data.initialize, dataStoreScope)
-
-	-- register creator
-	task.spawn(function()
-		if game.CreatorType == Enum.CreatorType.Group then
-			_K.groupId = game.CreatorId
-			local ok, result = Util.Retry(function()
-				return _K.Service.Group:GetGroupInfoAsync(game.CreatorId)
-			end)
-			_K.creatorId = if ok then result.Owner.Id else 0
-		else
-			_K.creatorId = game.CreatorId
-		end
-		_K.Data.creatorId = _K.creatorId
-		_K.Auth.userRoleAdd(_K.creatorId, "creator")
-	end)
 
 	-- define user roles
 	for role, users in settings.userRoles do
