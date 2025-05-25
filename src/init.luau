@@ -376,7 +376,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 						userId = result
 					end
 				elseif (tonumber(user) or 0) > 0 then
-					tonumber(user)
+					userId = tonumber(user)
 				end
 				if userId then
 					task.spawn(_K.Auth.userRoleAdd, userId, role)
