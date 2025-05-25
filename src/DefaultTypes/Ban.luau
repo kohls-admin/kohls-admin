@@ -1,38 +1,30 @@
 local _K
 
+local function parseBan(input)
+	local query = string.lower(input)
+	for userId, ban in _K.Data.bans do
+		local name = ban[1] or _K.Util.getUserInfo(userId).Username
+		if not name then
+			continue
+		end
+		if
+			string.find(string.lower(name), query, 1, true) == 1
+			or string.find(string.lower(userId), query, 1, true) == 1
+		then
+			return userId
+		end
+	end
+
+	if tonumber(input) then
+		return tonumber(input)
+	end
+
+	return nil, "Invalid ban."
+end
+
 local typeBan = {
-	validate = function(input: string): (boolean, string?)
-		local query = string.lower(input)
-		for userId, ban in _K.Data.bans do
-			local name = ban[1] or _K.Util.getUserInfo(userId).Username
-			if not name then
-				continue
-			end
-			if
-				string.find(string.lower(name), query, 1, true) == 1
-				or string.find(string.lower(userId), query, 1, true) == 1
-			then
-				return true
-			end
-		end
-		return false, "Invalid ban."
-	end,
-	parse = function(input: string): string
-		local query = string.lower(input)
-		for userId, ban in _K.Data.bans do
-			local name = ban[1] or _K.Util.getUserInfo(userId).Username
-			if not name then
-				continue
-			end
-			if
-				string.find(string.lower(name), query, 1, true) == 1
-				or string.find(string.lower(userId), query, 1, true) == 1
-			then
-				return userId
-			end
-		end
-		error("Invalid ban value.")
-	end,
+	validate = parseBan,
+	parse = parseBan,
 	suggestions = function(text)
 		local names = {}
 		-- username suggestions
