@@ -52,7 +52,7 @@ function About.new(_K)
 			BackgroundColor3 = UI.Theme.Secondary,
 			BackgroundTransparency = 0.25,
 			Font = UI.Theme.FontMono,
-			TextSize = UI.Theme.FontSizeSmall,
+			TextSize = UI.Theme.FontSize,
 			TextColor3 = UI.Theme.SecondaryText,
 			Text = "roblox.com/game-pass/5391355/",
 			TextEditable = false,
