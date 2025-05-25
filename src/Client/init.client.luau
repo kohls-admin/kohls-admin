@@ -45,13 +45,18 @@ local function Chatted(message: string)
 		return
 	end
 	local prefix = _K.getCommandPrefix()
+
+	local commandFormat =
+		`%s[^%s{_K.Process.ignoreFormat}{_K.Util.String.escapePattern(_K.Data.settings.splitKey or "%s")}]`
 	local commandStart
 	for _, value in { prefix, unpack(_K.Data.settings.prefix) } do
-		commandStart = string.find(message, string.format('%s[^%s"`,%%s]', value, value))
+		local escapedPrefix = _K.Util.String.escapePattern(value)
+		commandStart = string.find(message, string.format(commandFormat, escapedPrefix, escapedPrefix))
 		if commandStart then
 			break
 		end
 	end
+
 	if not commandStart then
 		-- check for optionalPrefix
 		local directCommand = _K.Registry.commands[string.lower(message)]

@@ -10,7 +10,9 @@ type ArgumentType = Type.ArgumentType
 type ArgumentDefinition = Type.ArgumentDefinition
 
 --- @class Process
-local Process = {}
+local Process = {
+	ignoreFormat = `"\`%%$%%%%^%%*%%.%%+%%-%%(%%)%%[%%]\{\}%%p`,
+}
 
 --- Parses a string into a raw command format.
 function Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?
@@ -29,6 +31,7 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 		return
 	end
 
+	local batchIgnore = string.format(`[%s{Process.ignoreFormat}{escapedSplit}]`, Util.String.escapePattern(prefix))
 	message = string.sub(message, commandStart + #prefix)
 
 	local argument = { 1 }
@@ -43,6 +46,11 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 			if char == quote then
 				quote = nil
 			end
+		elseif lastChar == prefix and #argument == 1 and string.find(char, batchIgnore) then
+			table.remove(commands)
+			command = commands[#commands]
+			argument = { first - 1, prefix, char }
+			table.insert(command, argument)
 		elseif char == prefix and string.find(lastChar, delimiter) then
 			if #argument == 1 then
 				table.remove(command)
