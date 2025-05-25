@@ -403,6 +403,7 @@ return {
 						FillTransparency = fillTransparency or 0.5,
 						OutlineColor = outlineColor or Color3.new(1, 1, 1),
 						OutlineTransparency = outlineTransparency or 0,
+						DepthMode = Enum.HighlightDepthMode.Occluded,
 					}
 				end
 			end
