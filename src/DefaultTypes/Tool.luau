@@ -95,6 +95,12 @@ return function(context)
 			end
 			_K.Remote.Tools:FireClient(player, toolData)
 		end)
+
+		local toolData = table.create(#tools)
+		for i, tool in tools do
+			toolData[i] = { Name = tool.Name }
+		end
+		_K.Remote.Tools:FireAllClients(toolData)
 	else -- Client
 		_K.Remote.Tools.OnClientEvent:Connect(function(toolData)
 			tools = toolData
