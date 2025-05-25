@@ -392,6 +392,18 @@ function Settings.new(_K)
 
 		local keyOrder = { "general", "theme" }
 		for key, lineItems in settingsLineItems do
+			if key == "Theme" then -- don't show Theme if user isn't able to modify them.
+				if Settings._K.Data.settings.dashboardThemeAuthority == "Server" then
+					continue
+				end
+				if
+					Settings._K.Data.settings.dashboardThemeAuthority == "Shared"
+					and not (Settings._K.Auth.hasPermission(Settings._K.Service.Players.LocalPlayer.UserId, "settings"))
+				then
+					continue
+				end
+			end
+
 			local list = UI.new "List" {
 				Parent = settingsScroller,
 				Name = key,
@@ -413,7 +425,8 @@ function Settings.new(_K)
 		BackgroundColor3 = UI.Theme.Secondary,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.fromScale(1, 0),
-		ActionText = "Save changes and update for everyone?",
+		ActionText = "Save changes"
+			.. (_K.Data.settings.themeAuthority == "Server" and " and update for everyone?" or "?"),
 		Action = true,
 		LeftAction = true,
 		RightAction = true,
