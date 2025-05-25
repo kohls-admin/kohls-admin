@@ -142,25 +142,23 @@ if _K.IsClient then
 	task.spawn(_K.log, `UI classes registered in {math.round((os.clock() - uiRegisterStart) * 1000)} ms`, "DEBUG")
 end
 
-task.defer(function()
-	local typeRegisterStart = os.clock()
-	-- register types
-	for _, child in script.DefaultTypes:GetChildren() do
-		require(child)(_K)
-	end
-	task.spawn(_K.log, `Default Types registered in {math.round((os.clock() - typeRegisterStart) * 1000)} ms`, "DEBUG")
+local typeRegisterStart = os.clock()
+-- register types
+for _, child in script.DefaultTypes:GetChildren() do
+	require(child)(_K)
+end
+task.spawn(_K.log, `Default Types registered in {math.round((os.clock() - typeRegisterStart) * 1000)} ms`, "DEBUG")
 
-	local commandRegisterStart = os.clock()
-	-- register commands
-	for _, child in script.DefaultCommands:GetChildren() do
-		_K.Registry.registerCommandModule(_K, child)
-	end
-	task.spawn(
-		_K.log,
-		`Default Commands registered in {math.round((os.clock() - commandRegisterStart) * 1000)} ms`,
-		"DEBUG"
-	)
-end)
+local commandRegisterStart = os.clock()
+-- register commands
+for _, child in script.DefaultCommands:GetChildren() do
+	_K.Registry.registerCommandModule(_K, child)
+end
+task.spawn(
+	_K.log,
+	`Default Commands registered in {math.round((os.clock() - commandRegisterStart) * 1000)} ms`,
+	"DEBUG"
+)
 
 shared._K_INTERFACE = _K
 
