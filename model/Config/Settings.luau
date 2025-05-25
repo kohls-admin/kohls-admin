@@ -85,7 +85,7 @@ return {
 	welcomeBadgeId = 0, --             Awards a badge to new players, set to 0 for no badge
 	getKohlsAdminPopup = true, --      Enables the "Enjoy Kohl's Admin?" feedback popup to users
 
-	dashboardThemeAuthority = "Server", -- Describes the behavior of chaning Theme settings.
+	dashboardThemeAuthority = "Shared", -- Describes the behavior of chaning Theme settings.
 	--[[
 	VALID OPTIONS:
 	"Server" - Disables clients modifying the theme. Dashboard theme is dictated by x.

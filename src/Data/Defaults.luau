@@ -54,7 +54,7 @@ local Data = {
 		welcomeBadgeId = 0,
 		getKohlsAdminPopup = true,
 
-		dashboardThemeAuthority = "Server",
+		dashboardThemeAuthority = "Shared",
 
 		gameHubEnabled = true,
 		vip = true,
