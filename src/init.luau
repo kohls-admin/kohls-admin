@@ -74,6 +74,7 @@ local _K = {
 
 	client = nil,
 	pinnedAnnouncement = nil,
+	ready = false,
 
 	cleanupCommands = {},
 	_serverLock = false,
@@ -606,6 +607,7 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	end)
 
 	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
+	_K.ready = true
 	_K.Hook.init:Fire()
 
 	return _K
