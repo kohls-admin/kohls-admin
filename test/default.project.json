@@ -11,9 +11,6 @@
 		"ReplicatedStorage": {
 			"Client": {
 				"$path": "client"
-			},
-			"Shared": {
-				"$path": "shared"
 			}
 		},
 		"ServerScriptService": {
