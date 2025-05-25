@@ -172,10 +172,11 @@ function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?): bool
 		if not table.find(member.roles, roleId) then
 			table.insert(member.roles, roleId)
 			table.sort(member.roles, Auth.roleIdSort)
-			if persist then
-				table.insert(member.persist, roleId)
-				table.sort(member.persist, Auth.roleIdSort)
-			end
+			roleAdded = true
+		end
+		if persist and not table.find(member.persist, roleId) then
+			table.insert(member.persist, roleId)
+			table.sort(member.persist, Auth.roleIdSort)
 			roleAdded = true
 		end
 	end
