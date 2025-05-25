@@ -8,7 +8,7 @@ return function(_K)
 			return true
 		end,
 		others = function(player, from)
-			return player ~= from
+			return player ~= from, "Can't target yourself"
 		end,
 		admins = function(player)
 			return _K.Data.members[tostring(player.UserId)]
@@ -98,18 +98,25 @@ return function(_K)
 				end
 			end
 
+			local feedback = {}
 			local players = {}
 			for _, player in Players:GetPlayers() do
-				local ok, validPlayer, _feedback = pcall(check, player, self.command.fromPlayer, arg)
+				local ok, validPlayer, specialFeedback = pcall(check, player, self.command.fromPlayer, arg)
 				if ok and validPlayer then
-					player = self._K.Auth.targetUserArgument(self, player.UserId, player)
+					local message
+					player, message = self._K.Auth.targetUserArgument(self, player.UserId, player)
 					if player then
 						table.insert(players, player)
+					elseif not table.find(feedback, message) then
+						table.insert(feedback, message)
 					end
+				elseif not table.find(feedback, specialFeedback) then
+					table.insert(feedback, specialFeedback)
 				end
 			end
 
-			return #players > 0 and players, "No valid player found"
+			return #players > 0 and players,
+				#feedback > 0 and table.concat(feedback, "\n") or "No targetable player found"
 		end
 
 		return false, "Invalid match"

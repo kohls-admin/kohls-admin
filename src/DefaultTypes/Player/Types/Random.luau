@@ -8,17 +8,21 @@ local function parseRandom(arg, self)
 		return nil, "Invalid integer"
 	end
 
+	local feedback = {}
 	local players = {}
 	local list = {}
 	for _, player in Players:GetPlayers() do
-		player = self._K.Auth.targetUserArgument(self, player.UserId, player)
+		local message
+		player, message = self._K.Auth.targetUserArgument(self, player.UserId, player)
 		if player then
-			table.insert(list, player)
+			table.insert(players, player)
+		elseif not table.find(feedback, message) then
+			table.insert(feedback, message)
 		end
 	end
 
 	if #list == 0 then
-		return nil, "No valid player found"
+		return nil, #feedback > 0 and table.concat(feedback, "\n") or "No targetable player found"
 	end
 
 	for _ = 1, arg do

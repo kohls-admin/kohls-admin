@@ -4,6 +4,7 @@ local generateValidate = require(script.Parent.Parent:WaitForChild("generateVali
 
 return function(_K)
 	local function roleParse(arg, self)
+		local feedback = {}
 		local players, valid = {}, false
 		for roleId in _K.Data.roles do
 			if string.find(string.lower(roleId), arg, 1, true) == 1 then
@@ -11,19 +12,24 @@ return function(_K)
 				for _, player in Players:GetPlayers() do
 					local userPermissions = _K.Data.members[tostring(player.UserId)]
 					if userPermissions and table.find(userPermissions.roles, roleId) then
-						player = self._K.Auth.targetUserArgument(self, player.UserId, player)
+						local message
+						player, message = self._K.Auth.targetUserArgument(self, player.UserId, player)
 						if player then
 							table.insert(players, player)
+						elseif not table.find(feedback, message) then
+							table.insert(feedback, message)
 						end
 					end
 				end
 				break
 			end
 		end
+
 		if not valid then
 			return false, "Invalid role"
 		end
-		return #players > 0 and players, "No valid player found"
+
+		return #players > 0 and players, #feedback > 0 and table.concat(feedback, "\n") or "No targetable player found"
 	end
 
 	local roleIds = {}
