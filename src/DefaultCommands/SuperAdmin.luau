@@ -164,8 +164,14 @@ return {
 				description = "The delay before shutting down.",
 				optional = true,
 			},
+			{
+				type = "string",
+				name = "Reason",
+				description = "The reason for the shutdown.",
+				optional = true,
+			},
 		},
-		run = function(context, delay)
+		run = function(context, delay: number?, reason: string?)
 			if delay ~= nil then
 				context._K.Remote.Announce:FireAllClients({
 					Text = `Server will shut down in {delay} seconds`,
@@ -176,7 +182,7 @@ return {
 			end
 			local from = tostring(context.fromPlayer or context.from)
 			local function kick(player)
-				player:Kick(`{from} has shutdown the server.`)
+				player:Kick(`{from} has shutdown the server.{if reason then `\nReason: {reason}}` else ""}`)
 			end
 			game:GetService("Players").PlayerAdded:Connect(kick)
 			for _, player in game:GetService("Players"):GetPlayers() do
