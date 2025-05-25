@@ -39,6 +39,10 @@ function _K.client.updateInterfaceAuth()
 	end
 	_K.client.dashboard.Commands:updateList()
 	_K.client.CommandBar.updateCompletionData()
+
+	if _K.Registry.commands.tools and _K.Registry.commands.tools.LocalPlayerAuthorized then
+		_K.Remote.Tools:FireServer()
+	end
 end
 
 _K.Remote.Announce.OnClientEvent:Connect(_K.Announce)
