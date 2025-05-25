@@ -26,75 +26,6 @@ end
 
 function Logs.new(_K)
 	local UI = _K.UI
-	local escape = _K.Util.String.escapeRichText
-
-	local logTypeFilter = {}
-	for _, array in logTypes do
-		logTypeFilter[array[1]] = UI.state(array[1] ~= "DEBUG" or _K.DEBUG)
-	end
-	-- TODO: load filter options from client datastore profile
-
-	local scroller
-	local filterUpdate = true
-	local function filterTest(self, list)
-		local filter = string.lower(self._input._input.Text)
-		self._filter = filter
-
-		local emptyFilter = string.find(filter, "^%s*$")
-		if emptyFilter and not filterUpdate then
-			return list
-		end
-		filterUpdate = nil
-
-		local new = {}
-		for i, log in list do
-			if not log.filterText then
-				local date = os.date("%y-%m-%d", log.time)
-				local timeOfDay = os.date("%X", log.time)
-
-				log.levelText = _K.Logger:decode(log.level)
-
-				log.rawText = `{date} {timeOfDay} {log.levelText}{if log.client
-					then "CLIENT"
-					elseif not log.from then "SERVER"
-					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
-
-				log.textBoxText = `{timeOfDay} {log.levelText}{if log.client
-					then " CLIENT"
-					elseif not log.from then " SERVER"
-					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
-
-				log.filterText = string.lower(log.rawText)
-				log.richText =
-					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[log.levelText] or "#fff"}"><b>{log.levelText}</b></font><b>{if log.client
-						then clientTag
-						elseif not log.from then serverTag
-						else ""}</b> {if log.name then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(
-						log.text or ""
-					)}`
-				log.tipText = `<font transparency="0.5">{date}</font> {log.richText}`
-			end
-
-			if not logTypeFilter[log.levelText]._value then
-				continue
-			end
-
-			if emptyFilter then
-				table.insert(new, log)
-			else
-				local filterIndex, filterEnd = string.find(log.filterText, filter, 1, true)
-				if filterIndex then
-					log.filterRichText =
-						`<font transparency="0.5">{escape(string.sub(log.rawText, 1, filterIndex - 1))}</font><b>{escape(
-							string.sub(log.rawText, filterIndex, filterEnd)
-						)}</b><font transparency="0.5">{escape(string.sub(log.rawText, filterEnd + 1))}</font>`
-					table.insert(new, log)
-				end
-			end
-		end
-
-		return new
-	end
 
 	local function createItem(self, log)
 		local tooltip = UI.new "Tooltip" {
@@ -159,7 +90,7 @@ function Logs.new(_K)
 		item.TextLabel.Text = if self._filter ~= "" then log.filterRichText else log.richText
 	end
 
-	scroller = UI.new "ScrollerFast" {
+	local scroller = UI.new "ScrollerFast" {
 		Name = "Logs",
 		List = _K.client.logs,
 		Enabled = false,
@@ -172,6 +103,74 @@ function Logs.new(_K)
 			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
 		end),
 	}
+
+	local logTypeFilter = {}
+	for _, array in logTypes do
+		logTypeFilter[array[1]] = UI.state(array[1] ~= "DEBUG" or _K.DEBUG)
+	end
+	-- TODO: load filter options from client datastore profile
+
+	scroller._filterUpdate = true
+	local escape = _K.Util.String.escapeRichText
+	local function filterTest(self, list)
+		local filter = string.lower(self._input._input.Text)
+		self._filter = filter
+
+		local emptyFilter = string.find(filter, "^%s*$")
+		if emptyFilter and not scroller._filterUpdate then
+			return list
+		end
+		scroller._filterUpdate = nil
+
+		local new = {}
+		for i, log in list do
+			if not log.filterText then
+				local date = os.date("%y-%m-%d", log.time)
+				local timeOfDay = os.date("%X", log.time)
+
+				log.levelText = _K.Logger:decode(log.level)
+
+				log.rawText = `{date} {timeOfDay} {log.levelText}{if log.client
+					then "CLIENT"
+					elseif not log.from then "SERVER"
+					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
+
+				log.textBoxText = `{timeOfDay} {log.levelText}{if log.client
+					then " CLIENT"
+					elseif not log.from then " SERVER"
+					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
+
+				log.filterText = string.lower(log.rawText)
+				log.richText =
+					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[log.levelText] or "#fff"}"><b>{log.levelText}</b></font><b>{if log.client
+						then clientTag
+						elseif not log.from then serverTag
+						else ""}</b> {if log.name then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(
+						log.text or ""
+					)}`
+				log.tipText = `<font transparency="0.5">{date}</font> {log.richText}`
+			end
+
+			if not logTypeFilter[log.levelText]._value then
+				continue
+			end
+
+			if emptyFilter then
+				table.insert(new, log)
+			else
+				local filterIndex, filterEnd = string.find(log.filterText, filter, 1, true)
+				if filterIndex then
+					log.filterRichText =
+						`<font transparency="0.5">{escape(string.sub(log.rawText, 1, filterIndex - 1))}</font><b>{escape(
+							string.sub(log.rawText, filterIndex, filterEnd)
+						)}</b><font transparency="0.5">{escape(string.sub(log.rawText, filterEnd + 1))}</font>`
+					table.insert(new, log)
+				end
+			end
+		end
+
+		return new
+	end
 
 	task.defer(scroller.filter, scroller, filterTest)
 
@@ -238,7 +237,7 @@ function Logs.new(_K)
 
 				[UI.Hook] = {
 					Value = function(value)
-						filterUpdate = true
+						scroller._filterUpdate = true
 						logTypeFilter[logType]:set(value)
 						scroller:refreshList()
 					end,
