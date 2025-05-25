@@ -232,13 +232,18 @@ return function(_K)
 
 		-- ROLES
 
+		local defaultRoles = { "vip", "mod", "admin", "superadmin", "creator" }
 		local function getRoleFromRank(rank)
 			rank = tonumber(rank)
 			if rank then
-				rank = math.clamp(rank, 1, 5)
+				rank = math.clamp(math.abs(rank), 1, 5)
+				local defaultRoleId = defaultRoles[rank]
+				if _K.Data.roles[defaultRoleId] then
+					return defaultRoleId
+				end
 				for roleId, role in _K.Data.roles do
 					if role._rank == rank then
-						return roleId, role
+						return roleId
 					end
 				end
 			end
@@ -248,11 +253,13 @@ return function(_K)
 		local function roleUser(nameOrUserId, rank)
 			local roleId = getRoleFromRank(rank)
 			if roleId then
-				local ok, result = _K.Util.Retry(function()
-					return _K.Service.Players:GetUserIdFromNameAsync(nameOrUserId)
-				end)
-				if ok then
-					nameOrUserId = result
+				if type(nameOrUserId) == "string" then
+					local ok, result = _K.Util.Retry(function()
+						return _K.Service.Players:GetUserIdFromNameAsync(nameOrUserId)
+					end)
+					if ok then
+						nameOrUserId = result
+					end
 				end
 				if nameOrUserId then
 					_K.Auth.userRoleAdd(nameOrUserId, roleId)
@@ -319,9 +326,9 @@ return function(_K)
 		end
 
 		if tonumber(settings.FreeAdmin) then
-			local role = getRoleFromRank(settings.FreeAdmin)
-			if role and not table.find(_K.Data.settings.freeAdmin, role) then
-				table.insert(_K.Data.settings.freeAdmin, role)
+			local roleId = getRoleFromRank(settings.FreeAdmin)
+			if roleId and not table.find(_K.Data.settings.freeAdmin, roleId) then
+				table.insert(_K.Data.settings.freeAdmin, roleId)
 			end
 		end
 

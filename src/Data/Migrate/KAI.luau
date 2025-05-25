@@ -17,6 +17,24 @@ local function fillName(userId, data)
 	data[1] = Util.getUserInfo(userId).Username
 end
 
+local defaultRoles = { "vip", "mod", "admin", "superadmin", "creator" }
+local function getRoleFromRank(rank)
+	rank = tonumber(rank)
+	if rank then
+		rank = math.clamp(math.abs(rank), 1, 5)
+		local defaultRoleId = defaultRoles[rank]
+		if Data.roles[defaultRoleId] then
+			return defaultRoleId
+		end
+		for roleId, role in Data.roles do
+			if role._rank == rank then
+				return roleId
+			end
+		end
+	end
+	return
+end
+
 local function migrateKAI()
 	local ok, GlobalDataStore = pcall(function()
 		return DataStoreService:GetGlobalDataStore()
@@ -47,12 +65,11 @@ local function migrateKAI()
 		end
 
 		if admins then
-			local defaultRoles = { "vip", "mod", "admin", "superadmin", "creator" }
 			for userId, power in deserializeItem(admins) do
 				if not (userId or power) or power >= 0 then
 					continue
 				end
-				local role = defaultRoles[math.min(math.abs(power), 5)]
+				local role = getRoleFromRank(math.clamp(math.abs(power), 1, 5))
 				if role then
 					local member = { nil, { role } }
 					main[1][tostring(userId)] = member
