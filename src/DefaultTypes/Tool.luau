@@ -32,7 +32,7 @@ local typeTool = {
 }
 
 local function allParse()
-	return #tools > 1 and tools, "No valid tool found"
+	return #tools > 0 and tools, "No valid tool found"
 end
 
 local typeAllTools = {
