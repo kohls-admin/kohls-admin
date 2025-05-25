@@ -1,7 +1,6 @@
 local Logs = {}
 Logs.__index = Logs
 
-local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 local clientTag = " <font color='#0bb'><b>CLIENT</b></font>"
 local serverTag = " <font color='#b60'><b>SERVER</b></font>"
 local logTypes = {
@@ -35,46 +34,49 @@ function Logs.new(_K)
 	end
 	-- TODO: load filter options from client datastore profile
 
-	local scroller, filterUpdate
-
+	local scroller
+	local filterUpdate = true
 	local function filterTest(self, list)
 		local filter = string.lower(self._input._input.Text)
 		self._filter = filter
 
-		local emptyFilter = filter == ""
-		local noFilter = emptyFilter and not filterUpdate
+		local emptyFilter = string.find(filter, "^%s*$")
+		if emptyFilter and not filterUpdate then
+			return list
+		end
 		filterUpdate = nil
 
 		local new = {}
 		for i, log in list do
-			local levelText = _K.Logger:decode(log.level)
-			if not logTypeFilter[levelText]._value then
-				continue
-			end
-
 			if not log.filterText then
 				local date = os.date("%y-%m-%d", log.time)
 				local timeOfDay = os.date("%X", log.time)
 
-				log.rawText = `{date} {timeOfDay} {levelText}{if log.client
+				log.levelText = _K.Logger:decode(log.level)
+
+				log.rawText = `{date} {timeOfDay} {log.levelText}{if log.client
 					then "CLIENT"
 					elseif not log.from then "SERVER"
 					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
 
-				log.textBoxText = `{timeOfDay} {levelText}{if log.client
+				log.textBoxText = `{timeOfDay} {log.levelText}{if log.client
 					then " CLIENT"
 					elseif not log.from then " SERVER"
 					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
 
 				log.filterText = string.lower(log.rawText)
 				log.richText =
-					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[levelText] or "#fff"}"><b>{levelText}</b></font><b>{if log.client
+					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[log.levelText] or "#fff"}"><b>{log.levelText}</b></font><b>{if log.client
 						then clientTag
 						elseif not log.from then serverTag
 						else ""}</b> {if log.name then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(
 						log.text or ""
 					)}`
 				log.tipText = `<font transparency="0.5">{date}</font> {log.richText}`
+			end
+
+			if not logTypeFilter[log.levelText]._value then
+				continue
 			end
 
 			if emptyFilter then
@@ -91,7 +93,7 @@ function Logs.new(_K)
 			end
 		end
 
-		return noFilter and list or new
+		return new
 	end
 
 	local function createItem(self, log)
@@ -125,7 +127,7 @@ function Logs.new(_K)
 					Size = self.ItemSize,
 					RichText = true,
 					Font = UI.Theme.FontMono,
-					Text = "Log failed to render."
+					Text = "Log failed to render.",
 					TextSize = UI.Theme.FontSize,
 					TextColor3 = UI.Theme.PrimaryText,
 					TextTransparency = 0,
