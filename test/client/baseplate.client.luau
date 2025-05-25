@@ -5,7 +5,6 @@ local LocalPlayer = Players.LocalPlayer
 local gridSize = 8
 
 local baseplate = workspace:WaitForChild("Baseplate")
-local baseplateMesh = workspace:WaitForChild("BaseplateMesh")
 
 function UpdatePosition()
 	local char = LocalPlayer.Character
@@ -17,8 +16,7 @@ function UpdatePosition()
 			-baseplate.Size.Y / 2,
 			(primary.Position.Z // gridSize) * gridSize
 		)
-		baseplateMesh.CFrame = baseplate.CFrame
 	end
 end
 
-RunService.PreRender:Connect(UpdatePosition)
+RunService.Heartbeat:Connect(UpdatePosition)

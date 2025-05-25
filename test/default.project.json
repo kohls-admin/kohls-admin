@@ -118,34 +118,6 @@
 					"Position": [0, -8, 0],
 					"Size": [2048, 16, 2048],
 					"Transparency": 1
-				},
-				"Texture": {
-					"$className": "Texture",
-					"$properties": {
-						"Face": "Top",
-						"Color3": [0, 0, 0],
-						"Texture": "rbxassetid://6372755229",
-						"Transparency": 0.8,
-						"StudsPerTileU": 8,
-						"StudsPerTileV": 8
-					}
-				}
-			},
-			"BaseplateMesh": {
-				"$className": "Part",
-				"$properties": {
-					"Color": [0.36, 0.36, 0.36],
-					"Anchored": true,
-					"Locked": true,
-					"Position": [0, -8, 0],
-					"Size": [2048, 16, 2048],
-					"TopSurface": "Smooth"
-				},
-				"BlockMesh": {
-					"$className": "BlockMesh",
-					"$properties": {
-						"Scale": [16, 1, 16]
-					}
 				}
 			}
 		}
