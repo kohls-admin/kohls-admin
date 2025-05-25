@@ -64,8 +64,7 @@ _K.client.toggleCommandBar = UI.new "Button" {
 	LayoutOrder = 8,
 
 	Activated = function()
-		local hide = _K.client.CommandBar.Bar.Visible
-		if hide then
+		if _K.client.CommandBar.Bar.Visible then
 			_K.client.CommandBar.hide()
 		else
 			_K.client.CommandBar.show()
