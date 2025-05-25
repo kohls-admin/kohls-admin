@@ -426,7 +426,7 @@ function Settings.new(_K)
 		BackgroundColor3 = UI.Theme.Secondary,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.fromScale(1, 0),
-		ActionText = "Save changes and update for everyone?",
+		ActionText = "Save changes" .. Settings._K.Data.settings.dashboardThemeAuthority == "Shared" and " and update for everyone?" or "?",
 		Action = true,
 		LeftAction = true,
 		RightAction = true,
