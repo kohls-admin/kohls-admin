@@ -223,7 +223,7 @@ function Bans.new(_K)
 				task.spawn(function()
 					local name = if ban[4] then _K.Util.getUserInfo(ban[4]).Username else "SYSTEM"
 					ban.tipText = `<b>Banned by:</b> @{name}\n{ban.tipText}`
-					scroller:queueRender()
+					scroller:render()
 				end)
 			end
 

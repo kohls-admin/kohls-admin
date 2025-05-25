@@ -26,6 +26,40 @@ local ScrollerFast = {}
 ScrollerFast.__index = ScrollerFast
 setmetatable(ScrollerFast, BaseClass)
 
+local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
+local function defaultFilter(self, list)
+	local filter = string.lower(self._input._input.Text)
+	self._filter = filter
+	if string.find(filter, "^%s*$") then
+		return list
+	end
+	local new = {}
+	for k, text in list do
+		local filterIndex, filterEnd = string.find(string.lower(text), filter, 1, true)
+		if filterIndex then
+			table.insert(
+				new,
+				string.format(
+					filterRichFormat,
+					ScrollerFast.escapeRichText(string.sub(text, 1, filterIndex - 1)),
+					ScrollerFast.escapeRichText(string.sub(text, filterIndex, filterEnd)),
+					ScrollerFast.escapeRichText(string.sub(text, filterEnd + 1))
+				)
+			)
+		end
+	end
+	return new
+end
+
+function ScrollerFast.escapeRichText(s: string): string
+	s = string.gsub(s, "&", "&amp;") -- first because substitutes contain it
+	s = string.gsub(s, "<", "&lt;")
+	s = string.gsub(s, ">", "&gt;")
+	s = string.gsub(s, '"', "&quot;")
+	s = string.gsub(s, "'", "&apos;")
+	return s
+end
+
 local queueBudget = 1 / 90
 local updateQueue = {}
 local cloneQueue = {}
@@ -91,7 +125,7 @@ RunService.Heartbeat:connect(function()
 		scroller._filteredList = if scroller._filterFunction
 			then scroller._filterFunction(scroller, scroller._sortedList)
 			else scroller._sortedList
-		scroller:queueRender()
+		scroller:render()
 	end
 
 	if os.clock() - start > queueBudget then
@@ -103,48 +137,14 @@ RunService.Heartbeat:connect(function()
 	renderQueue = {}
 	for scroller in queue do
 		if not scroller._instance.Visible or os.clock() - start > queueBudget then
-			scroller:queueRender()
+			scroller:render()
 			continue
 		end
-		scroller:render()
+		scroller:forceRender()
 	end
 end)
 
-local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
-local function defaultFilter(self, list)
-	local filter = string.lower(self._input._input.Text)
-	self._filter = filter
-	if string.find(filter, "^%s*$") then
-		return list
-	end
-	local new = {}
-	for k, text in list do
-		local filterIndex, filterEnd = string.find(string.lower(text), filter, 1, true)
-		if filterIndex then
-			table.insert(
-				new,
-				string.format(
-					filterRichFormat,
-					ScrollerFast.escapeRichText(string.sub(text, 1, filterIndex - 1)),
-					ScrollerFast.escapeRichText(string.sub(text, filterIndex, filterEnd)),
-					ScrollerFast.escapeRichText(string.sub(text, filterEnd + 1))
-				)
-			)
-		end
-	end
-	return new
-end
-
-function ScrollerFast.escapeRichText(s: string): string
-	s = string.gsub(s, "&", "&amp;") -- first because substitutes contain it
-	s = string.gsub(s, "<", "&lt;")
-	s = string.gsub(s, ">", "&gt;")
-	s = string.gsub(s, '"', "&quot;")
-	s = string.gsub(s, "'", "&apos;")
-	return s
-end
-
-function ScrollerFast:render()
+function ScrollerFast:forceRender()
 	if not (self.Enabled._value and self._instance.Visible and self._filteredList) then
 		return
 	end
@@ -214,8 +214,20 @@ function ScrollerFast:refreshList()
 	refreshQueue[self] = true
 end
 
-function ScrollerFast:queueRender(delta)
-	renderQueue[self] = true
+function ScrollerFast:render(delta)
+	UI.clearState("hover")
+
+	local sizeY = self._scroller.AbsoluteWindowSize.Y
+	local scrollY = self._scroller.CanvasPosition.Y
+
+	if sizeY ~= self._lastSizeY or scrollY ~= self._lastScrollY then
+		if math.abs(scrollY - self._lastScrollY) >= sizeY then
+			self:forceRender()
+		else
+			renderQueue[self] = true
+		end
+		self._lastSizeY, self._lastScrollY = sizeY, scrollY
+	end
 end
 
 function ScrollerFast:filter(filterFunction: (...any) -> { any })
@@ -254,21 +266,11 @@ function ScrollerFast.new(definition)
 	}, definition)
 
 	self._lineItemCache = {}
+	self._lastSizeY = 0
+	self._lastScrollY = 0
 
-	local lastSizeY = 0
-	local lastScrollY = 0
 	local function render()
-		UI.clearState("hover")
-		local sizeY = self._scroller.AbsoluteWindowSize.Y
-		local scrollY = self._scroller.CanvasPosition.Y
-		if sizeY ~= lastSizeY or scrollY ~= lastScrollY then
-			if math.abs(scrollY - lastScrollY) >= sizeY then
-				self:render()
-			else
-				self:queueRender()
-			end
-			lastSizeY, lastScrollY = sizeY, scrollY
-		end
+		self:render()
 	end
 
 	self._scroller = UI.new "ScrollingFrame" {
