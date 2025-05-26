@@ -70,7 +70,7 @@ local function Chatted(message: string)
 					local i = string.find(test, `[{warnPrefixes}]{_K.Util.String.escapePattern(alias)}`)
 					if i then
 						warnPrefixes =
-							_K.Util.String.escapePattern(warnPrefixes:gsub("%%", ""):gsub(test:sub(i, i + 1), ""))
+							_K.Util.String.escapePattern(warnPrefixes:gsub("%%", ""):gsub(test:sub(i, i), ""))
 						task.spawn(_K.Notify, {
 							From = "_K",
 							Text = `<b>Invalid command prefix, try "{prefix}{alias}"</b>`,
