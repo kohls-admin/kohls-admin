@@ -324,9 +324,9 @@ function About.new(_K)
 									task.delay(0.25, tryDone)
 								end)
 								_K.Notify({
+									From = "_K",
 									Text = `Trying <b>{ugc.name}</b>.`,
 									Duration = 15,
-									UserFrame = {},
 								})
 
 								if existing and existing ~= button then

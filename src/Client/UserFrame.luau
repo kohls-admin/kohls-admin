@@ -1,17 +1,14 @@
-local Players = game:GetService("Players")
-
 local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.UI)
 
 return function(from: number?, name: string?, image: string?, badgeEnabled: boolean?)
-	local displayName = name or "Kohl's Admin"
+	local displayName = name or "System"
 
 	if badgeEnabled == nil then
 		badgeEnabled = true
 	end
 
-	local userName = "Scripth"
-	local badge = "system"
+	local userName, badge
 	local color = "#fff"
 
 	if from then
@@ -47,7 +44,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		BackgroundTransparency = 1,
 		TextColor3 = UI.Theme.PrimaryText,
 		Text = `<b>{displayName}</b>`,
-		TextSize = UI.Theme.FontSizeLarge,
+		TextSize = if from then UI.Theme.FontSizeLarge else UI.Theme.FontSizeLarger,
 		TextXAlignment = "Left",
 		Font = UI.Theme.Font,
 		RichText = true,
@@ -72,7 +69,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 
 	local displaySize = UI.state(displayNameLabel, "AbsoluteSize")
 
-	local badgeLabel = if badgeEnabled
+	local badgeLabel = if badgeEnabled and badge
 		then UI.new "TextLabel" {
 			AutoLocalize = false,
 			Name = "Badge",
@@ -131,7 +128,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		AutomaticSize = Enum.AutomaticSize.XY,
 		BackgroundTransparency = 1,
 
-		imageLabel,
+		if from then imageLabel else nil,
 		UI.new "Frame" {
 			Name = "From",
 			AutomaticSize = Enum.AutomaticSize.XY,
@@ -146,8 +143,8 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			},
 
 			displayNameLabel,
-			userNameLabel,
-			badgeLabel,
+			if userName then userNameLabel else nil,
+			if badge then badgeLabel else nil,
 		},
 	}
 end

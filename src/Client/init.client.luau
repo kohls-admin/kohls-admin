@@ -72,9 +72,9 @@ local function Chatted(message: string)
 						warnPrefixes =
 							_K.Util.String.escapePattern(warnPrefixes:gsub("%%", ""):gsub(test:sub(i, i + 1), ""))
 						task.spawn(_K.Notify, {
+							From = "_K",
 							Text = `<b>Invalid command prefix, try "{prefix}{alias}"</b>`,
 							TextColor3 = Color3.new(1, 0, 0),
-							UserFrame = {},
 							Sound = "Call_Leave",
 						})
 						break
@@ -192,9 +192,9 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 		local roleString = table.concat(roleStrings, ", ")
 
 		_K.Notify({
+			From = "_K",
 			Text = `<font family="{UI.Theme.FontMono._value.Name}"><b>Role{if #member.roles > 1 then "s" else ""}:</b>\n<sc>{roleString}</sc></font>`,
 			Duration = 15,
-			UserFrame = {},
 		})
 	end
 

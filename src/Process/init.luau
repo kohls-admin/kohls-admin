@@ -194,9 +194,9 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			end
 		else
 			task.spawn(_K.Notify, {
+				From = "_K",
 				Text = commandError,
 				TextColor3 = Color3.new(1, 0, 0),
-				UserFrame = {},
 				Sound = "Call_Leave",
 			})
 			for _, err in commandErrors do
