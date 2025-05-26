@@ -512,9 +512,6 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 	script.Name = "Kohl's Admin Source"
 	script.Parent = _K.Service.ReplicatedStorage
 
-	-- enable client
-	Client.Enabled = true
-
 	-- fix wally renaming nested default.project.json
 	local wallyIsBroken = Client:FindFirstChild("kohls-admin")
 	if wallyIsBroken then
@@ -551,6 +548,9 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 			end)
 		end
 	end)
+
+	-- enable client
+	Client.Enabled = true
 
 	_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string)
 		_K.Process.runCommands(_K, player.UserId, message)
