@@ -81,13 +81,12 @@ function Logs.new(_K)
 	end
 
 	local function renderItem(self, itemData, log)
-		if not log.richText then
-			return
+		if log.renderText then
+			local item = itemData._instance
+			item.Text = log.textBoxText
+			item.TextLabel.Text = log.renderText
+			itemData.tipText = log.tipText
 		end
-		itemData.tipText = log.tipText
-		local item = itemData._instance
-		item.Text = log.textBoxText
-		item.TextLabel.Text = if self._filter ~= "" then log.filterRichText else log.richText
 	end
 
 	local scroller = UI.new "ScrollerFast" {
@@ -115,7 +114,7 @@ function Logs.new(_K)
 		local filter = string.lower(self._input._input.Text)
 		self._filter = filter
 
-		local emptyFilter = string.find(filter, "^%s*$")
+		local noFilter = string.find(filter, "^%s*$")
 
 		local new = {}
 		for i, log in list do
@@ -150,12 +149,13 @@ function Logs.new(_K)
 				continue
 			end
 
-			if emptyFilter then
+			if noFilter then
+				log.renderText = log.richText
 				table.insert(new, log)
 			else
 				local filterIndex, filterEnd = string.find(log.filterText, filter, 1, true)
 				if filterIndex then
-					log.filterRichText =
+					log.renderText =
 						`<font transparency="0.5">{escape(string.sub(log.rawText, 1, filterIndex - 1))}</font><b>{escape(
 							string.sub(log.rawText, filterIndex, filterEnd)
 						)}</b><font transparency="0.5">{escape(string.sub(log.rawText, filterEnd + 1))}</font>`

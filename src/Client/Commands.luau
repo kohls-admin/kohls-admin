@@ -73,21 +73,14 @@ function Commands.new(_K)
 	end
 
 	local function renderItem(self, itemData, command)
-		if not command.richText then
-			return
-		end
+		if command.renderText then
+			local item = itemData._instance
+			item.Text = command.renderText
+			item.Description.Text = command.renderDesc
+			item.TextColor3 = command.roleColorAuth
+			item.Description.TextColor3 = command.roleColorAuth
 
-		itemData.tipText = command.tipText
-		local item = itemData._instance
-		item.TextColor3 = command.roleColorAuth
-		item.Description.TextColor3 = command.roleColorAuth
-
-		if self._filter ~= "" then
-			item.Text = command.filterRichText
-			item.Description.Text = command.filterRichDesc
-		else
-			item.Text = command.richText
-			item.Description.Text = command.richDesc
+			itemData.tipText = command.tipText
 		end
 	end
 
@@ -222,42 +215,44 @@ function Commands.new(_K)
 		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
 
-		local noFilter = filter == ""
+		local noFilter = string.find(self._filter, "^%s*$")
 
 		local new = {}
 		for _, command in list do
 			updateRenderParameters(command)
 
 			if noFilter then
-				continue
-			end
-
-			if string.find(command.filterTest, filter, 1, true) then
-				local filterFound = string.find(command.filterText, self._filter, 1, true)
-				command.filterRichText = if filterFound
-					then string.format(
-						filterRichFormat,
-						escape(string.sub(command.rawText, 1, filterFound - 1)),
-						escape(string.sub(command.rawText, filterFound, filterFound + #self._filter - 1)),
-						escape(string.sub(command.rawText, filterFound + #self._filter))
-					)
-					else `<font transparency="0.5">{command.rawText}</font>`
-
-				local descFound = string.find(command.filterDesc, self._filter, 1, true)
-				command.filterRichDesc = if descFound
-					then string.format(
-						filterRichFormat,
-						escape(string.sub(command.description, 1, descFound - 1)),
-						escape(string.sub(command.description, descFound, descFound + #self._filter - 1)),
-						escape(string.sub(command.description, descFound + #self._filter))
-					)
-					else `<font transparency="0.5">{command.description}</font>`
-
+				command.renderText = command.richText
+				command.renderDesc = command.richDesc
 				table.insert(new, command)
+			else
+				if string.find(command.filterTest, filter, 1, true) then
+					local filterFound = string.find(command.filterText, self._filter, 1, true)
+					command.renderText = if filterFound
+						then string.format(
+							filterRichFormat,
+							escape(string.sub(command.rawText, 1, filterFound - 1)),
+							escape(string.sub(command.rawText, filterFound, filterFound + #self._filter - 1)),
+							escape(string.sub(command.rawText, filterFound + #self._filter))
+						)
+						else `<font transparency="0.5">{command.rawText}</font>`
+
+					local descFound = string.find(command.filterDesc, self._filter, 1, true)
+					command.renderDesc = if descFound
+						then string.format(
+							filterRichFormat,
+							escape(string.sub(command.description, 1, descFound - 1)),
+							escape(string.sub(command.description, descFound, descFound + #self._filter - 1)),
+							escape(string.sub(command.description, descFound + #self._filter))
+						)
+						else `<font transparency="0.5">{command.description}</font>`
+
+					table.insert(new, command)
+				end
 			end
 		end
 
-		return noFilter and list or new
+		return new
 	end
 
 	task.defer(function()

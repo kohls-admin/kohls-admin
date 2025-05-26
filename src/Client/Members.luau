@@ -58,15 +58,10 @@ function Members.new(_K)
 
 	local function renderItem(self, item, userId)
 		local member = _K.Data.members[userId]
-		if not (member and member.userId) then
-			return
+		if member and member.renderText then
+			item.TextLabel.Text = member.renderText
+			item.ImageLabel.Image = `rbxthumb://type=AvatarHeadShot&id={member.userId}&w=48&h=48`
 		end
-		if self._filter ~= "" then
-			item.TextLabel.Text = member.filterRichText
-		else
-			item.TextLabel.Text = member.richText
-		end
-		item.ImageLabel.Image = `rbxthumb://type=AvatarHeadShot&id={member.userId}&w=48&h=48`
 	end
 
 	local scroller = UI.new "ScrollerFast" {
@@ -103,6 +98,10 @@ function Members.new(_K)
 	end
 
 	local function updateCache(member)
+		member.nameCache = member.name
+		member.rolesCache = if member.roles then table.clone(member.roles) else nil
+		member.persistCache = if member.persist then table.clone(member.persist) else nil
+
 		if member.roles then
 			local roles = {}
 			for _, role in member.roles do
@@ -132,7 +131,7 @@ function Members.new(_K)
 		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
 
-		local noFilter = filter == ""
+		local noFilter = string.find(self._filter, "^%s*$")
 
 		local new = {}
 		for _, userId in list do
@@ -146,31 +145,26 @@ function Members.new(_K)
 				or isDifferent(member.roles, member.rolesCache)
 				or isDifferent(member.persist, member.persistCache)
 			then
-				member.nameCache = member.name
-				member.rolesCache = if member.roles then table.clone(member.roles) else nil
-				member.persistCache = if member.persist then table.clone(member.persist) else nil
-
 				member.userId = userId
 				updateCache(member)
 			end
 
 			if noFilter then
-				continue
-			end
-
-			local filterFound = string.find(member.filterText, filter, 1, true)
-			if filterFound then
+				member.renderText = member.richText
 				table.insert(new, userId)
-				local pre = escape(string.sub(member.rawText, 1, filterFound - 1))
-				local query = escape(string.sub(member.rawText, filterFound, filterFound + #filter - 1))
-				local post = escape(string.sub(member.rawText, filterFound + #filter))
-				member.filterRichText =
-					`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
 			else
-				member.filterRichText = `<font transparency="0.5">{member.rawText}</font>`
+				local filterFound = string.find(member.filterText, filter, 1, true)
+				if filterFound then
+					local pre = escape(string.sub(member.rawText, 1, filterFound - 1))
+					local query = escape(string.sub(member.rawText, filterFound, filterFound + #filter - 1))
+					local post = escape(string.sub(member.rawText, filterFound + #filter))
+					member.renderText =
+						`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
+					table.insert(new, userId)
+				end
 			end
 		end
-		return noFilter and list or new
+		return new
 	end
 
 	task.defer(scroller.filter, scroller, filterTest)

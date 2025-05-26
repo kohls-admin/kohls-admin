@@ -142,26 +142,15 @@ function Bans.new(_K)
 
 	local function renderItem(self, itemData, userId)
 		local ban = _K.Data.bans[userId]
-		if not (ban and ban.userId) then
-			return
-		end
-
-		itemData.tipText = ban.tipText
-		itemData.name = ban[1]
-		itemData.userId = ban.userId
-
-		local item = itemData._instance
-
-		if self._filter ~= "" then
-			item.Left.Text = ban.richFilterTextLeft
-			item.Right.Text = ban.richFilterTextRight
-		else
-			item.Left.Text = ban.richTextLeft
-			item.Right.Text = ban.richTextRight
-		end
-
-		if item:FindFirstChild("ImageLabel") then
+		if ban and ban.renderTextLeft then
+			local item = itemData._instance
+			item.Left.Text = ban.renderTextLeft
+			item.Right.Text = ban.renderTextRight
 			item.ImageLabel.Image = `rbxthumb://type=AvatarHeadShot&id={ban.userId}&w=48&h=48`
+
+			itemData.name = ban[1]
+			itemData.tipText = ban.tipText
+			itemData.userId = ban.userId
 		end
 	end
 
@@ -188,7 +177,7 @@ function Bans.new(_K)
 		local filter = string.lower(scroller._input._input.Text)
 		self._filter = filter
 
-		local emptyFilter = string.find(filter, "^%s*$")
+		local noFilter = string.find(filter, "^%s*$")
 
 		local new = {}
 		for _, userId in list do
@@ -223,7 +212,9 @@ function Bans.new(_K)
 				end)
 			end
 
-			if emptyFilter then
+			if noFilter then
+				ban.renderTextLeft = ban.richTextLeft
+				ban.renderTextRight = ban.richTextRight
 				table.insert(new, userId)
 			elseif string.find(ban.filterText, filter, 1, true) then
 				local filterLeft = string.find(ban.filterTextLeft, self._filter, 1, true)
@@ -234,10 +225,10 @@ function Bans.new(_K)
 					local query = escape(string.sub(ban.rawTextLeft, filterLeft, filterLeft + #self._filter - 1))
 					local post = escape(string.sub(ban.rawTextLeft, filterLeft + #self._filter))
 
-					ban.richFilterTextLeft =
+					ban.renderTextLeft =
 						`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
 				else
-					ban.richFilterTextLeft = `<font transparency="0.5">{ban.rawTextLeft}</font>`
+					ban.renderTextLeft = `<font transparency="0.5">{ban.rawTextLeft}</font>`
 				end
 
 				if filterRight then
@@ -245,10 +236,10 @@ function Bans.new(_K)
 					local query = escape(string.sub(ban.rawTextRight, filterRight, filterRight + #self._filter - 1))
 					local post = escape(string.sub(ban.rawTextRight, filterRight + #self._filter))
 
-					ban.richFilterTextRight =
+					ban.renderTextLeft =
 						`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
 				else
-					ban.richFilterTextRight = `<font transparency="0.5">{ban.rawTextRight}</font>`
+					ban.renderTextLeft = `<font transparency="0.5">{ban.rawTextRight}</font>`
 				end
 
 				table.insert(new, userId)
