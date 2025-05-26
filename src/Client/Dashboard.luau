@@ -44,8 +44,8 @@ _K.client.dashboard.Window = dashboard
 _K.client.commandBarVisible = UI.state(_K.client.CommandBar.Bar, "Visible")
 
 local titleBarButtonSize = UI.compute(function(use)
-	local size = use(UI.Theme.FontSizeLarger) + use(UI.Theme.Padding).Offset
-	return UDim2.new(0, size, 0, size)
+	local size = use(UI.Theme.FontSizeLargest)
+	return UDim2.fromOffset(size, size)
 end)
 
 -- add a command bar toggle button next to the exit button

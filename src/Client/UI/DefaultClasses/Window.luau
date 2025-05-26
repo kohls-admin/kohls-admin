@@ -236,7 +236,7 @@ function Window.new(definition)
 	end
 
 	local titleBarHeight = UI.compute(function(use)
-		return use(UI.Theme.FontSizeLarger) + use(UI.Theme.Padding).Offset
+		return use(UI.Theme.FontSizeLargest)
 	end)
 
 	new._exitButton = UI.new "Button" {
@@ -359,9 +359,10 @@ function Window.new(definition)
 						return `<b>{use(new.Title)}</b>`
 					end),
 					TextColor3 = UI.Theme.PrimaryText,
-					TextSize = UI.Theme.FontSizeLarger,
+					TextSize = UI.Theme.FontSizeLargest,
 					TextStrokeTransparency = 0.9,
-					TextXAlignment = "Left",
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Bottom,
 					TextTruncate = Enum.TextTruncate.SplitWord,
 
 					UI.new "UIFlexItem" {
