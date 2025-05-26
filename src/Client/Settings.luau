@@ -404,6 +404,13 @@ function Settings.new(_K)
 				end
 			end
 
+			if
+				key == "General"
+				and not (_K.Auth.hasPermission(Settings._K.Service.Players.LocalPlayer.UserId, "settings"))
+			then
+				continue
+			end
+
 			local list = UI.new "List" {
 				Parent = settingsScroller,
 				Name = key,
