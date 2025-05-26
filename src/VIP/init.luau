@@ -300,7 +300,7 @@ if Util.Service.Run:IsServer() then
 			end
 			player:SetAttribute("_KDonationLevel", level)
 
-			for title, definition in Title do
+			for title, definition in Title.definition do
 				if definition.gamepass == passId then
 					definition.ownerCache[player.UserId] = true
 				end
