@@ -43,8 +43,7 @@ function Menu.new(definition)
 		},
 	}
 
-	-- if too close to viewport boundary top/botton flip menu direction
-	new._instance = UI.new "Frame" {
+	new._instance = UI.new "TextButton" {
 		Name = "Menu",
 		ZIndex = 100,
 		Visible = new.Visible,
@@ -54,6 +53,9 @@ function Menu.new(definition)
 		end),
 		BackgroundColor3 = UI.Theme.Primary,
 		ClipsDescendants = true,
+
+		AutoButtonColor = false,
+		Text = "",
 
 		new._menu,
 		UI.new "UICorner" {
