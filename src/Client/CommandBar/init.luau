@@ -53,12 +53,11 @@ Input = UI.new "Input" {
 
 			UI.new "ImageLabel" {
 				Name = "Valid",
-				AnchorPoint = Vector2.new(0.5, 0.5),
+				AnchorPoint = Vector2.new(0.55, 0.45),
 				BackgroundTransparency = 1,
 				Position = UDim2.new(0.5, 0, 0.5, 0),
-				Size = UDim2.new(0, 14, 0, 14),
-				ImageColor3 = Color3.new(0, 1, 0),
-				Image = UI.Theme.Image.Check,
+				Size = UDim2.fromScale(0.75, 0.75),
+				ImageColor3 = UI.Theme.Valid,
 				Image = UI.Theme.Image.Check_Bold,
 				Visible = UI.compute(function(use)
 					return use(validState) == true
@@ -70,9 +69,8 @@ Input = UI.new "Input" {
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				BackgroundTransparency = 1,
 				Position = UDim2.new(0.5, 0, 0.5, 0),
-				Size = UDim2.new(0, 10, 0, 10),
-				ImageColor3 = Color3.new(1, 0, 0),
-				Image = UI.Theme.Image.Close,
+				Size = UDim2.fromScale(0.5, 0.5),
+				ImageColor3 = UI.Theme.Invalid,
 				Image = UI.Theme.Image.Close_Bold,
 				Visible = UI.compute(function(use)
 					return use(validState) == false
@@ -94,7 +92,7 @@ UI.edit(Input._instance.UICorner, {
 })
 
 UI.edit(Input._instance.UIListLayout, {
-	Padding = UDim.new(0, 9),
+	Padding = UDim.new(0, 8),
 })
 
 UI.edit(Input._instance.UIPadding, {
@@ -117,10 +115,12 @@ local CommandBar = UI.new "Frame" {
 	UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
 }
 
-local invalidStroke = UI.edit(Input._instance.UIStroke, {
+UI.edit(Input._instance.UIStroke, {
 	Thickness = 2,
 	Color = UI.Theme.Invalid,
-	Enabled = false,
+	Enabled = UI.compute(function(use)
+		return use(validState) == false
+	end),
 })
 
 local TooltipFrame = UI.new "Frame" {
@@ -755,7 +755,6 @@ return {
 		end)
 
 		Input._input.Focused:Connect(function()
-			invalidStroke.Enabled = false
 			-- prevent input hotkey from being captured
 			task.delay(0, function()
 				if CommandBar.Visible then
@@ -766,7 +765,6 @@ return {
 
 		Input._input.FocusLost:Connect(function(enterPressed)
 			if enterPressed then
-				invalidStroke.Enabled = true
 				Input._input.TextEditable = false
 
 				local data = currentCompletionData
