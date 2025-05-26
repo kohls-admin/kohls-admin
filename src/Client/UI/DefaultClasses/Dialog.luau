@@ -149,6 +149,8 @@ function Dialog.new(definition)
 		end)
 	end
 
+	local buttonSize = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLargest, 0, UI.Theme.FontSizeLargest)
+
 	local exitButton = UI.new "Button" {
 		LayoutOrder = 9,
 		AnchorPoint = Vector2.new(1, 0),
@@ -156,10 +158,10 @@ function Dialog.new(definition)
 		BackgroundTransparency = 1,
 		HoverTransparency = 0,
 		Position = UDim2.new(1, 0, 0, 0),
-		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLargest, 0, UI.Theme.FontSizeLargest),
+		Size = buttonSize,
 		Icon = UI.Theme.Image.Close,
 		IconProperties = {
-			Size = UDim2.new(0, 10, 0, 10),
+			Size = UDim2.fromScale(0.5, 0.5),
 		},
 		Text = "",
 		Activated = function()
@@ -307,7 +309,6 @@ function Dialog.new(definition)
 					FillDirection = Enum.FillDirection.Horizontal,
 					HorizontalAlignment = Enum.HorizontalAlignment.Right,
 					VerticalAlignment = Enum.VerticalAlignment.Center,
-					HorizontalFlex = Enum.UIFlexAlignment.Fill,
 					VerticalFlex = Enum.UIFlexAlignment.Fill,
 					Padding = UI.Theme.Padding,
 				},
@@ -332,91 +333,35 @@ function Dialog.new(definition)
 					AutomaticSize = Enum.AutomaticSize.XY,
 				},
 				UI.new "Spacer" {},
-				UI.new "TextButton" {
-					AutoLocalize = false,
+				UI.new "Button" {
 					Name = "LeftAction",
-					AutomaticSize = Enum.AutomaticSize.XY,
+					AutomaticSize = Enum.AutomaticSize.None,
 					BackgroundTransparency = 1,
-					Visible = if new.LeftAction then true else false,
-					Text = "",
-
-					UI.new "UICorner" {
-						CornerRadius = UI.Theme.CornerRadius,
-					},
-					UI.new "UIStroke" {
-						Enabled = UI.Theme.StrokeEnabled,
-						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-						Transparency = UI.Theme.TransparencyClamped,
-						Color = UI.Theme.Border,
-					},
-					UI.new "UIPadding" {
-						PaddingLeft = UI.Theme.Padding,
-						PaddingRight = UI.Theme.Padding,
-						PaddingTop = UI.Theme.Padding,
-						PaddingBottom = UI.Theme.Padding,
-					},
-					UI.new "UIAspectRatioConstraint" {
-						DominantAxis = Enum.DominantAxis.Height,
-						AspectType = Enum.AspectType.ScaleWithParentSize,
-					},
-
-					UI.new "ImageLabel" {
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundTransparency = 1,
-						Position = UDim2.fromScale(0.5, 0.5),
-						Size = UDim2.new(0, 10, 0, 10),
-						Image = UI.Theme.Image.Close,
+					Size = buttonSize,
+					Icon = UI.Theme.Image.Close,
+					IconProperties = {
 						ImageColor3 = UI.Theme.Invalid,
+						Size = UDim2.fromScale(0.5, 0.5),
 					},
-
-					[UI.Event] = {
-						Activated = function()
-							activate(false)
-						end,
-					},
-				},
-				UI.new "TextButton" {
-					AutoLocalize = false,
-					Name = "RightAction",
-					AutomaticSize = Enum.AutomaticSize.XY,
-					BackgroundTransparency = 1,
-					Visible = if new.RightAction then true else false,
 					Text = "",
-
-					UI.new "UICorner" {
-						CornerRadius = UI.Theme.CornerRadius,
-					},
-					UI.new "UIStroke" {
-						Enabled = UI.Theme.StrokeEnabled,
-						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-						Transparency = UI.Theme.TransparencyClamped,
-						Color = UI.Theme.Border,
-					},
-					UI.new "UIPadding" {
-						PaddingLeft = UI.Theme.Padding,
-						PaddingRight = UI.Theme.Padding,
-						PaddingTop = UI.Theme.Padding,
-						PaddingBottom = UI.Theme.Padding,
-					},
-					UI.new "UIAspectRatioConstraint" {
-						DominantAxis = Enum.DominantAxis.Height,
-						AspectType = Enum.AspectType.ScaleWithParentSize,
-					},
-
-					UI.new "ImageLabel" {
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundTransparency = 1,
-						Position = UDim2.fromScale(0.5, 0.5),
-						Size = UDim2.new(0, 14, 0, 14),
-						Image = UI.Theme.Image.Check,
+					Activated = function()
+						activate(false)
+					end,
+				},
+				UI.new "Button" {
+					Name = "RightAction",
+					AutomaticSize = Enum.AutomaticSize.None,
+					BackgroundTransparency = 1,
+					Size = buttonSize,
+					Icon = UI.Theme.Image.Check_Bold,
+					IconProperties = {
 						ImageColor3 = UI.Theme.Valid,
+						Size = UDim2.fromScale(0.5, 0.5),
 					},
-
-					[UI.Event] = {
-						Activated = function()
-							activate(true)
-						end,
-					},
+					Text = "",
+					Activated = function()
+						activate(true)
+					end,
 				},
 			},
 		},
