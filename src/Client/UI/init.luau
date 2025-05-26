@@ -142,12 +142,7 @@ UI.Nil = newproxy()
 --- @prop TopbarInset State<Rect>
 UI.TopbarInset = state(GuiService, "TopbarInset")
 UI.TopbarPadding = Flux.compute(function(use)
-	return UDim.new(
-		0,
-		if GuiService:IsTenFootInterface()
-			then 10
-			else use(UI.TopbarInset).Height - 46
-	)
+	return UDim.new(0, if GuiService:IsTenFootInterface() then 10 else use(UI.TopbarInset).Height - 46)
 end)
 
 --- @within UI
