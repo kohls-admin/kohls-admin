@@ -36,6 +36,7 @@ return {
 	{
 		Title = "Support Team",
 		Users = {
+			{ Id = 131233603, Tooltip = "Dedicated Support Team Member - Making a positive difference! ✨" }, -- Geed
 			{ Id = 1224156917, Tooltip = "Dedicated Support Team Member - Always ready to help! 🤝" }, -- dalien
 			{ Id = 4847574, Tooltip = "Dedicated Support Team Member - Providing excellent assistance! 🛡️" }, -- mets
 			{ Id = 195261420, Tooltip = "Dedicated Support Team Member - Ensuring user satisfaction! 😊" }, -- exobyte
@@ -55,7 +56,6 @@ return {
 	{
 		Title = "Contributors",
 		Users = {
-			{ Id = 131233603, Tooltip = "Valued Contributor - Making a difference! ✨" }, -- Geed
 			{ Id = 41336494, Tooltip = "Valued Contributor - Calculating improvements! 🧮" }, -- Calculatous
 			{ Id = 448137594, Tooltip = "Valued Contributor - Serving up great ideas! 🌮" }, -- Lucatacos
 			{ Id = 345072461, Tooltip = "Valued Contributor - Shining with contributions! 🌟" }, -- raenlua
