@@ -33,7 +33,7 @@ task.delay(0.2, _K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
 	Title = UI.compute(function(use)
-		return `Kohl's Admin Dashboard  <font transparency="0.75" size = "{use(UI.Theme.FontSize)}">v{_K.VERSION}</font>`
+		return `Kohl's Admin  <font transparency="0.75" size = "{use(UI.Theme.FontSize)}">v{_K.VERSION}</font>`
 	end),
 	Visible = false,
 
