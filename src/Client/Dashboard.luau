@@ -209,7 +209,7 @@ local buttonEnabled = _K.Data.settings.dashboardButtonRank
 local dashboardButton = TopbarPlus.new()
 	:setName("KADashboardIcon")
 	:setCaption("Kohl's Admin Dashboard")
-	:setImage(10650723871)
+	:setImage(71961243872230)
 	:setOrder(-1)
 	:setEnabled(buttonEnabled)
 	:bindEvent("toggled", dashboardToggle)
