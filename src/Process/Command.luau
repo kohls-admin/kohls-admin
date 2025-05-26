@@ -195,17 +195,15 @@ function Command:validate()
 			local argType = self._K.Registry.types[definition.type]
 			if argType and argType.suggestions then
 				local suggestions = Util.Suggest.query(rawArg, argType.suggestions(rawArg, self.from, definition))
-				local input = string.lower(rawArg)
-				local text, _, _, query = unpack(suggestions[1])
-
-				if
-					#suggestions > 0
-					and (
+				if #suggestions > 0 then
+					local input = string.lower(rawArg)
+					local text, _, _, query = unpack(suggestions[1])
+					if
 						string.find(string.lower(text), input, 1, true)
 						or (query and string.find(string.lower(query), `[{input}`, 1, true))
-					)
-				then
-					shouldFillWithSelf = false
+					then
+						shouldFillWithSelf = false
+					end
 				end
 			end
 		end
