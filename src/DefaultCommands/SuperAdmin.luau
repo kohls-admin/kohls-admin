@@ -182,7 +182,7 @@ return {
 			end
 			local from = tostring(context.fromPlayer or context.from)
 			local function kick(player)
-				player:Kick(`{from} has shutdown the server.{if reason then `\nReason: {reason}}` else ""}`)
+				player:Kick(`{from} has shutdown the server.{if reason then `\nReason: {reason}` else ""}`)
 			end
 			game:GetService("Players").PlayerAdded:Connect(kick)
 			for _, player in game:GetService("Players"):GetPlayers() do
