@@ -236,10 +236,10 @@ function Bans.new(_K)
 					local query = escape(string.sub(ban.rawTextRight, filterRight, filterRight + #self._filter - 1))
 					local post = escape(string.sub(ban.rawTextRight, filterRight + #self._filter))
 
-					ban.renderTextLeft =
+					ban.renderTextRight =
 						`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
 				else
-					ban.renderTextLeft = `<font transparency="0.5">{ban.rawTextRight}</font>`
+					ban.renderTextRight = `<font transparency="0.5">{ban.rawTextRight}</font>`
 				end
 
 				table.insert(new, userId)
