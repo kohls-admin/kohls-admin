@@ -150,10 +150,6 @@ function Tabs.new(definition)
 		},
 	}
 
-	local tabFontSize = UI.compute(function(use)
-		return use(UI.Theme.FontSize) - 4
-	end)
-
 	new._content = UI.new "Frame" {
 		LayoutOrder = 2,
 		Name = "UIContent",
@@ -210,7 +206,7 @@ function Tabs.new(definition)
 					LayoutOrder = page.LayoutOrder,
 					AutoButtonColor = false,
 					AutomaticSize = Enum.AutomaticSize.XY,
-					Size = UDim2.new(0, 0, 0, 0), --UI.computeFrom(UDim2.new, 0, strokeTabSize, 1, 0),
+					Size = UDim2.new(0, 0, 0, 0),
 					BackgroundColor3 = UI.Theme.Secondary,
 					BackgroundTransparency = UI.tween(
 						UI.Theme.TweenOut,
