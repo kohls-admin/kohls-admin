@@ -79,7 +79,7 @@ local function playerSuggestion(player, suggestion)
 	local displayName = if player.Name ~= player.DisplayName then ` [{player.DisplayName}]` else ""
 	local kDisplay = if player.GetAttribute then player:GetAttribute("_KDisplayName") else nil
 	kDisplay = if kDisplay and kDisplay ~= player.Name and kDisplay ~= player.DisplayName then ` [{kDisplay}]` else ""
-	return { suggestion, nil, nil, `{suggestion} [@{player.Name}]{displayName}{kDisplay}` }
+	return { suggestion, nil, nil, `{suggestion} [{player.Name}]{displayName}{kDisplay}` }
 end
 
 local function baseSuggestions(text, from, definition, userType: boolean?)
