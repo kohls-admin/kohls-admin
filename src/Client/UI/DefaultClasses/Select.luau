@@ -10,6 +10,7 @@ function Select.new(definition)
 		Choice = "Default",
 		Choices = { "Default", "Choice A", "Choice B", "Choice C" },
 		Selected = "Default",
+		Font = UI.Theme.Font,
 	}, definition)
 
 	new.Selected._value = UI.peek(new.Choice)
@@ -42,6 +43,7 @@ function Select.new(definition)
 				return if typeOf == "EnumItem" or typeOf == "Instance" then choice.Name else choice
 			end),
 			Size = itemSize,
+			Font = new.Font,
 			TextXAlignment = Enum.TextXAlignment.Left,
 
 			[UI.Event] = {
@@ -72,9 +74,13 @@ function Select.new(definition)
 		local selected = new.Selected._value
 		for i, choice in new.Choices._value do
 			local name = choice
+			local font
 			if typeof(choice) == "EnumItem" then
 				if choice.Name == "Unknown" then
 					continue
+				end
+				if choice.EnumType == Enum.Font then
+					font = choice
 				end
 				name = choice.Name
 			elseif typeof(choice) == "Instance" then
@@ -88,6 +94,7 @@ function Select.new(definition)
 				Parent = menu._menu,
 				Name = tostring(name),
 				Label = name,
+				Font = font,
 				TextSize = UI.Theme.FontSize,
 				Padding = UDim.new(0, 8),
 				TextXAlignment = Enum.TextXAlignment.Left,

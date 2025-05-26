@@ -205,6 +205,10 @@ function Settings.new(_K)
 
 		-- font faces
 		do
+			local fonts = Enum.Font:GetEnumItems()
+			table.sort(fonts, function(a, b)
+				return a.Name < b.Name
+			end)
 			for _, key in { "Font", "FontMono" } do
 				_K.Util.Defer.wait()
 				table.insert(
@@ -213,8 +217,9 @@ function Settings.new(_K)
 						ContentAutomaticSize = false,
 						Text = key:gsub("(.)(%u)", "%1 %2"),
 						UI.new "Select" {
+							Font = UI.Theme[key],
 							Choice = UI.Theme[key],
-							Choices = Enum.Font:GetEnumItems(),
+							Choices = fonts,
 							[UI.Hook] = {
 								Selected = function(value)
 									change("theme" .. key, value)
