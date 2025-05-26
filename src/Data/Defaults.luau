@@ -84,7 +84,7 @@ local Data = {
 	updatedTimeBans = 0,
 	updatedTimeMain = 0,
 	updatedTimeLogs = 0,
-	updateAsyncInterval = 15,
+	updateAsyncInterval = 60,
 
 	initialize = nil,
 }
