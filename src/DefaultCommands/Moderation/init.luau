@@ -115,6 +115,30 @@ return {
 		},
 
 		run = function(context, userIds, duration: number?, reason: string?)
+			local maxFreeAdminRank = 0
+			for _, roleId in context._K.Data.settings.freeAdmin do
+				local role = context._K.Data.roles[roleId]
+				if role and role._rank > maxFreeAdminRank then
+					maxFreeAdminRank = role._rank
+				end
+			end
+			if context._K.Auth.getRank(context.from) <= maxFreeAdminRank then
+				local authorized
+				local member = context._K.Data.members[tostring(context.from)]
+				if member then
+					for _, roleId in member.persist do
+						local role = context._K.Data.roles[roleId]
+						if role and role.permissions and role.permissions.banasync then
+							authorized = true
+							break
+						end
+					end
+				end
+				if not authorized then
+					return `Disabled for free admins!`
+				end
+			end
+
 			if type(reason) == "string" then
 				reason = string.sub(reason, 1, 400) -- banasync limit
 			end
@@ -153,6 +177,8 @@ return {
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
 				Text = `Banned <b>{table.concat(bannedNames, ", ")}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`,
 			})
+
+			return
 		end,
 	},
 	{
