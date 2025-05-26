@@ -164,9 +164,9 @@ task.defer(function()
 		local socialButton = UI.new "Button" {
 			BackgroundTransparency = 1,
 			Size = titleBarButtonSize,
-			Icon = "rbxassetid://128691342988958",
+			Icon = "rbxassetid://129281087731453",
 			IconProperties = {
-				Size = UDim2.new(0.75, 0, 40 / 52.8 * 0.75, 0),
+				Size = UDim2.new(0.75, 0, 50 / 66 * 0.75, 0),
 				ImageTransparency = UI.compute(function(use)
 					return if use(socialDialog.Visible) then 0 else 0.75
 				end),
