@@ -141,15 +141,11 @@ UI.Nil = newproxy()
 --- GuiService.TopbarInset as a Flux state
 --- @prop TopbarInset State<Rect>
 UI.TopbarInset = state(GuiService, "TopbarInset")
-UI.LegacyTopbar = Flux.compute(function(use)
-	return use(UI.TopbarInset).Height == 36
-end)
 UI.TopbarPadding = Flux.compute(function(use)
 	return UDim.new(
 		0,
 		if GuiService:IsTenFootInterface()
 			then 10
-			elseif use(UI.LegacyTopbar) then 12
 			else use(UI.TopbarInset).Height - 46
 	)
 end)
@@ -234,10 +230,10 @@ UI.TopbarFrame = UI.new "Frame" {
 		PaddingLeft = UI.TopbarPadding,
 		PaddingRight = UI.TopbarPadding,
 		PaddingTop = Flux.compute(function(use)
-			return UDim.new(0, if use(UI.LegacyTopbar) then 4 else use(UI.TopbarPadding).Offset)
+			return UDim.new(0, use(UI.TopbarPadding).Offset)
 		end),
 		PaddingBottom = Flux.compute(function(use)
-			return UDim.new(0, if use(UI.LegacyTopbar) then 0 else 2)
+			return UDim.new(0, 2)
 		end),
 	},
 }

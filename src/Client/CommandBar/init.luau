@@ -88,16 +88,16 @@ Input = UI.new "Input" {
 }
 
 UI.edit(Input._instance.UICorner, {
-	CornerRadius = if UI.LegacyTopbar._value then UDim.new(0, 9) else UDim.new(1, 0),
+	CornerRadius = UDim.new(1, 0),
 })
 
 UI.edit(Input._instance.UIListLayout, {
-	Padding = UDim.new(0, if UI.LegacyTopbar._value then 6 else 12),
+	Padding = UDim.new(0, 9),
 })
 
 UI.edit(Input._instance.UIPadding, {
-	PaddingLeft = UDim.new(0, if UI.LegacyTopbar._value then 6 else 12),
-	PaddingRight = UDim.new(0, if UI.LegacyTopbar._value then 6 else 12),
+	PaddingLeft = UDim.new(0, 14),
+	PaddingRight = UDim.new(0, 12),
 	PaddingTop = UDim.new(0, 0),
 	PaddingBottom = UDim.new(0, 0),
 })
