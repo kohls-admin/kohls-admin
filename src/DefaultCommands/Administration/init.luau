@@ -254,7 +254,7 @@ return {
 	},
 	{
 		name = "removemember",
-		aliases = { "removepermissions" },
+		aliases = { "removepermissions", "removeroles" },
 		description = "Removes all roles and permissions from one or more member(s).",
 		args = {
 			{
