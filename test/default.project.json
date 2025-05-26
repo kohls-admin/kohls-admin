@@ -15,6 +15,9 @@
 		},
 		"ServerScriptService": {
 			"$path": "server",
+			"Addons": {
+				"$path": "addons"
+			},
 			"MainModule": {
 				"$path": "migrate",
 				"KA": {
