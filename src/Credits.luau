@@ -43,14 +43,12 @@ return {
 			{ Id = 208790398, Tooltip = "Dedicated Support Team Member - Here for your questions! ❓" }, -- chan
 			{ Id = 3357116228, Tooltip = "Dedicated Support Team Member - Offering valuable support! 🌟" }, -- lemon
 			{ Id = 1686847974, Tooltip = "Dedicated Support Team Member - Helping the community thrive! 🌱" }, -- stone
-			{ Id = 93371639, Tooltip = "Dedicated Support Team Member - Committed to assistance! 💡" }, -- 9_ine
 			{ Id = 3470429081, Tooltip = "Dedicated Support Team Member - Guiding users with expertise! 🧭" }, -- Mercury
 			{ Id = 1142396048, Tooltip = "Dedicated Support Team Member - A pillar of support! 🏛️" }, -- Franklin_Surten (H)
 			{ Id = 483215789, Tooltip = "Dedicated Support Team Member - Ensuring smooth experiences! ⚙️" }, -- seil
 			{ Id = 345072461, Tooltip = "Dedicated Support Team Member - Assisting with dedication! 🎖️" }, -- raenlua
 			{ Id = 130170862, Tooltip = "Dedicated Support Team Member - Always helpful and friendly! 👋" }, -- matsagor1
 			{ Id = 77608258, Tooltip = "Dedicated Support Team Member - Soaring to provide support! 🕊️" }, -- icarus
-			{ Id = 205690907, Tooltip = "Dedicated Support Team Member - Adding a sweet touch to support! 🍰" }, -- cinnamon
 		},
 	},
 	{
