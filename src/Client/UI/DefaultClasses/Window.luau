@@ -247,7 +247,7 @@ function Window.new(definition)
 		Size = UI.computeFrom(UDim2.fromOffset, titleBarHeight, titleBarHeight),
 		Icon = UI.Theme.Image.Close,
 		IconProperties = {
-			Size = UDim2.new(0, 10, 0, 10),
+			Size = UDim2.fromScale(0.5, 0.5),
 		},
 		Text = "",
 		Activated = function()

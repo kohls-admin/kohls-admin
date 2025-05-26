@@ -8,7 +8,7 @@ setmetatable(List, BaseClass)
 function List.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Collapsible = false,
-		Label = "NEW LIST New List",
+		Label = "New List",
 		Padding = UI.Theme.Padding,
 	}, definition)
 
@@ -53,8 +53,8 @@ function List.new(definition)
 					BackgroundTransparency = 1,
 					AnchorPoint = Vector2.new(0, 0.5),
 					Position = UDim2.new(0, 0, 0.5, 0),
-					Size = UDim2.new(0, 18, 0, 18),
-					Image = "rbxassetid://2374890977",
+					Size = UDim2.new(0.5, 0, 0.5, 0),
+					Image = UI.Theme.Image.Down,
 					ImageColor3 = UI.Theme.PrimaryText,
 					ImageTransparency = 0.5,
 					Visible = new.Collapsible,
@@ -64,6 +64,8 @@ function List.new(definition)
 							return if use(collapsed) then -90 else 0
 						end)
 					),
+
+					UI.new "UIAspectRatioConstraint" {},
 				},
 
 				UI.new "TextLabel" {

@@ -338,7 +338,7 @@ function Dialog.new(definition)
 					AutomaticSize = Enum.AutomaticSize.None,
 					BackgroundTransparency = 1,
 					Size = buttonSize,
-					Icon = UI.Theme.Image.Close,
+					Icon = UI.Theme.Image.Close_Bold,
 					IconProperties = {
 						ImageColor3 = UI.Theme.Invalid,
 						Size = UDim2.fromScale(0.5, 0.5),
@@ -356,7 +356,7 @@ function Dialog.new(definition)
 					Icon = UI.Theme.Image.Check_Bold,
 					IconProperties = {
 						ImageColor3 = UI.Theme.Valid,
-						Size = UDim2.fromScale(0.5, 0.5),
+						Size = UDim2.fromScale(0.625, 0.625),
 					},
 					Text = "",
 					Activated = function()

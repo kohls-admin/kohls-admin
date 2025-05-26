@@ -443,7 +443,7 @@ function Settings.new(_K)
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 		UI.new "Input" {
 			Placeholder = "Search",
-			Icon = "rbxassetid://18416000656",
+			Icon = UI.Theme.Image.Search,
 			IconProperties = {
 				Size = UDim2.fromOffset(18, 18),
 			},

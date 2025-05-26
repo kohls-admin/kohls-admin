@@ -52,12 +52,13 @@ end)
 _K.client.toggleCommandBar = UI.new "Button" {
 	BackgroundTransparency = 1,
 	Size = titleBarButtonSize,
-	Icon = "rbxassetid://85543506317447",
+	Icon = UI.Theme.Image.Terminal,
 	IconProperties = {
 		Size = UDim2.new(0.875, 0, 0.875, 0),
 		ImageTransparency = UI.compute(function(use)
 			return if use(_K.client.commandBarVisible) then 0 else 0.75
 		end),
+		Size = UDim2.new(0.75, 0, 0.75, 0),
 	},
 	Text = "",
 	Parent = dashboard._instance.Frame.TitleBar,

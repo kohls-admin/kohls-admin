@@ -1,3 +1,5 @@
+local ContentProvider = game:GetService("ContentProvider")
+
 local Flux = require(script.Parent.Parent.Parent.Flux)
 local compute = Flux.compute
 local state = Flux.state
@@ -71,10 +73,28 @@ local Theme = {
 	TweenInOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut)),
 
 	Image = {
-		Check = "rbxassetid://2340153468",
-		Close = "rbxassetid://1476571006",
+		Check = "rbxassetid://125053493387464",
+		Close = "rbxassetid://117385134461283",
+		Check_Bold = "rbxassetid://73008384795860",
+		Close_Bold = "rbxassetid://74789968601408",
+		Filter = "rbxassetid://93483633020282",
+		Search = "rbxassetid://82890781874034",
+		Terminal = "rbxassetid://108121111850606",
+
+		Down = "rbxassetid://116491276097788",
+
+		Play = "rbxassetid://113952858544170",
+		Stop = "rbxassetid://94423843228984",
 	},
 }
+
+do
+	local content = {}
+	for _, image in Theme.Image do
+		table.insert(content, image)
+	end
+	task.spawn(ContentProvider.PreloadAsync, ContentProvider, content)
+end
 
 Theme.TransparencyOverlay = compute(function(use)
 	return use(Theme.Transparency) * 0.125 + 0.875

@@ -59,6 +59,7 @@ Input = UI.new "Input" {
 				Size = UDim2.new(0, 14, 0, 14),
 				ImageColor3 = Color3.new(0, 1, 0),
 				Image = UI.Theme.Image.Check,
+				Image = UI.Theme.Image.Check_Bold,
 				Visible = UI.compute(function(use)
 					return use(validState) == true
 				end),
@@ -72,6 +73,7 @@ Input = UI.new "Input" {
 				Size = UDim2.new(0, 10, 0, 10),
 				ImageColor3 = Color3.new(1, 0, 0),
 				Image = UI.Theme.Image.Close,
+				Image = UI.Theme.Image.Close_Bold,
 				Visible = UI.compute(function(use)
 					return use(validState) == false
 				end),

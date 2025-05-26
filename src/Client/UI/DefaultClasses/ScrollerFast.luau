@@ -330,7 +330,7 @@ function ScrollerFast.new(definition)
 			LayoutOrder = -1,
 			Parent = self._instance,
 			Placeholder = "Search",
-			Icon = "rbxassetid://18416000656",
+			Icon = UI.Theme.Image.Search,
 			IconProperties = {
 				Size = UDim2.fromOffset(18, 18),
 			},

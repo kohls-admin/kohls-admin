@@ -173,7 +173,10 @@ function Logs.new(_K)
 	local filterButton = UI.new "Button" {
 		LayoutOrder = 3,
 		ActiveSound = false,
-		Icon = "rbxassetid://18854695275",
+		Icon = UI.Theme.Image.Filter,
+		IconProperties = {
+			Size = UDim2.fromScale(0.75, 0.75),
+		},
 		Size = UDim2.new(1, 0, 1, 0),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 		UI.new "UIPadding" {
