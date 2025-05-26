@@ -147,65 +147,44 @@ task.defer(function()
 			},
 		}
 
-		local socialDialog
-		socialDialog = UI.new "Dialog" {
-			Parent = UI.LayerTop,
-			Title = "Kohl's Admin Discord",
-			Text = "",
-			Visible = false,
-			ExitButton = true,
-			BackgroundTransparency = 0,
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, 0, 0.5, 0),
-			Size = UDim2.new(0, 256, 0, 0),
-			Modal = true,
-			ZIndex = 1000,
-			Close = function()
-				_K.client.lastAttemptedPurchase = false
-				socialDialog.Visible:set(false)
-			end,
-
-			social,
-		}
+		local socialMenu
 		local socialButton = UI.new "Button" {
 			BackgroundTransparency = 1,
+			HoverTransparency = 1,
 			Size = titleBarButtonSize,
 			Icon = "rbxassetid://129281087731453",
 			IconProperties = {
 				Size = UDim2.new(0.75, 0, 50 / 66 * 0.75, 0),
-				ImageTransparency = UI.compute(function(use)
-					return if use(socialDialog.Visible) then 0 else 0.75
-				end),
 			},
 			Text = "",
 			Parent = dashboard._instance.Frame.TitleBar,
 			LayoutOrder = 7,
-
 			Activated = function()
-				socialDialog.Visible:set(not socialDialog.Visible._value)
+				UI.toggleState(socialMenu.Visible, "floating")
 			end,
 		}
 		socialButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 
-		local function updateDialogPosition()
-			if socialDialog.Visible._value then
-				local position = socialButton._instance.AbsolutePosition
-					+ socialDialog._instance.AbsoluteSize * socialDialog._instance.AnchorPoint
-				socialDialog.Position:set(
-					UDim2.fromOffset(
-						position.X,
-						position.Y + UI.TopbarInset._value.Height + socialButton._instance.AbsoluteSize.Y
-					)
-				)
-			end
-		end
-		socialDialog.Visible:hook(updateDialogPosition)
-		socialButton._instance:GetPropertyChangedSignal("AbsolutePosition"):Connect(updateDialogPosition)
-		dashboard._instance:GetPropertyChangedSignal("Visible"):Connect(function()
-			if not dashboard._instance.Visible then
-				socialDialog.Visible:set(false)
-			end
-		end)
+		socialMenu = UI.new "Menu" {
+			Adornee = socialButton._instance,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			Size = UDim2.fromOffset(256, 0),
+
+			UI.new "UIPadding" {
+				PaddingTop = UI.Theme.Padding,
+				PaddingBottom = UI.Theme.Padding,
+				PaddingLeft = UI.Theme.Padding,
+				PaddingRight = UI.Theme.Padding,
+			},
+
+			social,
+		}
+
+		UI.edit(socialButton._content.IconFrame.Icon, {
+			ImageTransparency = UI.compute(function(use)
+				return if use(socialMenu.Visible) then 0 elseif use(socialButton._hovering) then 0.5 else 0.75
+			end),
+		})
 	end
 end)
 
