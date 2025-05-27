@@ -234,7 +234,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		local logText
 
 		if #commandsRan > 0 then
-			local index, log, tasks = 1, {}, Util.TaskGroup.new()
+			local index, log, tasks = 1, {}, Util.Tasks.new()
 			local prefix = _K.getCommandPrefix()
 			for _, command in commandsRan do
 				if command.definition.noLog or (_K.IsClient and not command.definition.runClient) then

@@ -458,7 +458,7 @@ function Data.initialize(scope)
 	game:BindToClose(function()
 		Data.gameClosing = true
 
-		local tasks = Util.TaskGroup.new()
+		local tasks = Util.Tasks.new()
 
 		if Data.settings.vip and Data.settings.gameHubEnabled and Http.HttpEnabled and game.GameId > 0 then
 			tasks:add(Http.RequestAsync, Http, { Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })

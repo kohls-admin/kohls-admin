@@ -29,7 +29,7 @@ local Util = {
 	String = require(script:WaitForChild("String")),
 	Suggest = require(script:WaitForChild("Suggest")),
 	Table = require(script:WaitForChild("Table")),
-	TaskGroup = require(script:WaitForChild("TaskGroup")),
+	Tasks = require(script:WaitForChild("Tasks")),
 }
 
 return Util

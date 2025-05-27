@@ -301,7 +301,7 @@ return {
 				end
 			end
 
-			local tasks = context._K.Util.TaskGroup.new()
+			local tasks = context._K.Util.Tasks.new()
 			for _, player in players do
 				tasks:add(voteTask, player)
 			end
