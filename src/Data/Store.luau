@@ -9,6 +9,10 @@ local Store = {
 	dataStore: DataStore?,
 }
 
+function Store.getBudget(requestType: Enum.DataStoreRequestType)
+	return DataStoreService:GetRequestBudgetForRequestType(requestType)
+end
+
 function Store.getAsync(key: string, options: DataStoreSetOptions?): (boolean, any)
 	return Util.Retry(function()
 		return Store.dataStore:GetAsync(key, options)

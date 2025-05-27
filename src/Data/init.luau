@@ -443,6 +443,9 @@ function Data.initialize(scope)
 	task.spawn(function()
 		repeat
 			task.wait(1)
+			if Data.Store.getBudget(Enum.DataStoreRequestType.UpdateAsync) <= 3 then
+				continue
+			end
 			if tick() > nextMainInterval then
 				task.spawn(updateMain)
 			end
