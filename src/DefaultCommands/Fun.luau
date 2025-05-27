@@ -332,7 +332,10 @@ return {
 		run = function(context, players, userId)
 			for _, player in players do
 				player.CharacterAppearanceId = if userId == nil then player.UserId else userId
+				local old = player.Character:GetPivot()
 				player:LoadCharacter()
+				player.Character:PivotTo(old)
+				context._K.Remote.Refresh:FireClient(player)
 			end
 		end,
 	},
@@ -354,7 +357,10 @@ return {
 					continue
 				end
 				player.CharacterAppearanceId = player.UserId
+				local old = player.Character:GetPivot()
 				player:LoadCharacter()
+				player.Character:PivotTo(old)
+				context._K.Remote.Refresh:FireClient(player)
 			end
 		end,
 	},
@@ -438,7 +444,11 @@ return {
 						context.env.connections[player]:Disconnect()
 						context.env.connections[player] = nil
 						if humanoid and humanoid.Health > 0 then
+							local old = character:GetPivot()
 							player:LoadCharacter()
+							local newCharacter = player.Character
+							newCharacter:PivotTo(old)
+							context._K.Remote.Refresh:FireClient(player)
 						end
 					end)
 			end
