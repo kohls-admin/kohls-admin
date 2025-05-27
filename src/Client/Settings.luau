@@ -16,7 +16,6 @@ local colors = {
 }
 
 function Settings.new(_K)
-	Settings._K = _K
 	local UI = _K.UI
 
 	local settingsDialog
@@ -33,7 +32,7 @@ function Settings.new(_K)
 	end
 
 	local function confirmChanges()
-		Settings._K.Remote.Settings:FireServer(pendingChanges)
+		_K.Remote.Settings:FireServer(pendingChanges)
 		for key, value in pendingChanges do
 			_K.Data.settings[key] = value
 			if _K.client.settings[key] then
@@ -44,7 +43,7 @@ function Settings.new(_K)
 	end
 
 	local function change(key, value)
-		if not Settings._K.client.ready then
+		if not _K.client.ready then
 			return
 		end
 		pendingChanges[key] = value
