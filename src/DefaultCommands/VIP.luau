@@ -1286,14 +1286,20 @@ return {
 					end
 
 					if material ~= Enum.Material.ForceField then
-						local shirt = checkParent:FindFirstChildOfClass("Shirt")
+						local shirt = character:FindFirstChildOfClass("Shirt")
 						if shirt then
-							shirt.Parent = setParent
+							if not character:GetAttribute("_KShirt") then
+								character:SetAttribute("_KShirt", shirt.ShirtTemplate)
+							end
+							shirt.ShirtTemplate = if apply then "" else character:GetAttribute("_KShirt")
 						end
 
-						local pants = checkParent:FindFirstChildOfClass("Pants")
+						local pants = character:FindFirstChildOfClass("Pants")
 						if pants then
-							pants.Parent = setParent
+							if not character:GetAttribute("_KPants") then
+								character:SetAttribute("_KPants", pants.PantsTemplate)
+							end
+							pants.PantsTemplate = if apply then "" else character:GetAttribute("_KPants")
 						end
 					end
 
