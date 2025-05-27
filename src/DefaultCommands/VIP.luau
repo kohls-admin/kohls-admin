@@ -33,6 +33,11 @@ return {
 					end
 				end
 
+				local existing = player.Character and player.Character:FindFirstChild("_KCape")
+				if existing then
+					existing:Destroy()
+				end
+
 				local dogSeat = player.Character:FindFirstChild("_KDogSeat")
 				if dogSeat then
 					dogSeat:Destroy()
