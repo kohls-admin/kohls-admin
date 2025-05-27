@@ -19,7 +19,7 @@ handle.Massless = true
 handle.Locked = true
 
 local attachment = Instance.new("Attachment", handle)
-attachment.CFrame = CFrame.new(0, 0, 0)
+attachment.CFrame = CFrame.new(0, -0.5, 0)
 attachment.Name = "BodyBackAttachment"
 
 local wingMesh = InsertService:CreateMeshPartAsync(
