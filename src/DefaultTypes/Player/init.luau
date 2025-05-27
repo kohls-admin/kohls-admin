@@ -45,21 +45,35 @@ local prefixSuggestions = {
 local userCache = {}
 local function memoizeUser(player: Player)
 	if userCache[player.UserId] then
+		local freeThread = userCache[player.UserId].freeThread
+		if freeThread then
+			task.cancel(freeThread)
+		end
 		return
 	end
 	userCache[player.UserId] = {
 		Name = player.Name,
 		DisplayName = player.DisplayName,
 		UserId = player.UserId,
+		freeThread = nil,
 	}
 end
 local function freeUser(userId: number)
+	if userCache[userId] then
+		local freeThread = userCache[userId].freeThread
+		if freeThread then
+			task.cancel(freeThread)
+		end
+	end
 	userCache[userId] = nil
 end
 
+Players.PlayerAdded:Connect(function(player)
+	freeUser(player.UserId)
+end)
 Players.PlayerRemoving:Connect(function(player)
 	memoizeUser(player)
-	task.delay(120, freeUser, player.UserId)
+	userCache[player.UserId].freeThread = task.delay(120, freeUser, player.UserId)
 end)
 
 local function sortPlayers(a, b)
