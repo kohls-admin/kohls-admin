@@ -386,137 +386,64 @@ return {
 	},
 	{
 		name = "control",
-		aliases = { "release", "uncontrol" },
+		aliases = { "takeover" },
 		description = "Controls the character of a player.",
 		args = {
 			{
 				type = "player",
 				name = "Player",
-				description = "The player to control or release.",
+				description = "The player to control.",
 				shouldRequest = true,
 				ignoreSelf = true,
-				optional = true,
 			},
 		},
+		envClient = function(_K)
+			_K.Remote.ControlCommand.OnClientEvent:Connect(function(target: Humanoid | Model)
+				if target then
+					workspace.CurrentCamera.CameraSubject = target
+				end
+			end)
+		end,
 		env = function(_K)
 			return {
-				control = function(controller, target)
-					if not target.Character then
-						return
-					end
-					for _, descendant in target.Character:GetDescendants() do
-						if descendant:IsA("BasePart") and descendant:CanSetNetworkOwnership() then
-							descendant:SetNetworkOwner(controller)
-						end
-					end
-
-					local oldCharacter = controller.Character
-					if oldCharacter then
-						local oldParent = oldCharacter.Parent
-						oldCharacter.Parent = nil
-						controller.Character = target.Character
-						oldCharacter.Parent = oldParent
-
-						if not controller:FindFirstChild("_KControlOriginal") then
-							_K.Flux.new "ObjectValue" {
-								Name = "_KControlOriginal",
-								Value = oldCharacter,
-								Parent = controller,
-							}
-						end
-					else
-						controller.Character = target.Character
-					end
-
-					if not target.Character:FindFirstChild("_KOriginalController") then
-						_K.Flux.new "ObjectValue" {
-							Name = "_KOriginalController",
-							Value = target,
-							Parent = target.Character,
-						}
-					end
-				end,
-				reset = function(controller)
-					local original = controller:FindFirstChild("_KControlOriginal")
-					if original then
-						local character = original.Value
-
-						if character then
-							for _, descendant in character:GetDescendants() do
-								if descendant:IsA("BasePart") and descendant:CanSetNetworkOwnership() then
-									descendant:SetNetworkOwner(controller)
-								end
-							end
-
-							controller.Character = character
-						end
-					end
-				end,
-				release = function(controller)
-					local character = controller.Character
-					local original = character and character:FindFirstChild("_KOriginalController")
-					if original then
-						local originalController = original.Value
-						if originalController == controller then
-							return -- don't release self
-						end
-
-						local networkOwner = originalController
-						for _, player in _K.Service.Players:GetPlayers() do
-							if player ~= networkOwner and player.Character == character then
-								networkOwner = player
-								break
-							end
-						end
-
-						if character and networkOwner then
-							for _, descendant in character:GetDescendants() do
-								if descendant:IsA("BasePart") and descendant:CanSetNetworkOwnership() then
-									descendant:SetNetworkOwner(networkOwner)
-								end
-							end
-
-							local oldParent = character.Parent
-							character.Parent = nil
-							controller.Character = nil
-							character.Parent = oldParent
-							originalController.Character = character
-						end
-					end
-				end,
+				connections = {},
+				remote = _K.Remote.ControlCommand,
 			}
 		end,
+		run = function(context, player: Player)
+			local character = player and player.Character
+			if not character then
+				return `{player} doesn't have a character!`
+			end
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if not humanoid then
+				return `{player} doesn't have a humanoid!`
+			end
 
-		runClient = function(context, player)
-			if player and context.alias ~= "uncontrol" and context.alias ~= "release" then
-				if player.Character then
-					workspace.CurrentCamera.CameraSubject = player.Character
+			context.fromPlayer.Character = character
+			context.env.remote:FireClient(context.fromPlayer, humanoid)
+			context.env.remote:FireClient(player, humanoid)
+
+			for _, descendant in character:GetDescendants() do
+				if descendant:IsA("BasePart") and descendant:CanSetNetworkOwnership() then
+					descendant:SetNetworkOwner(context.fromPlayer)
 				end
-			else -- release control
-				local original = context.fromPlayer:FindFirstChild("_KControlOriginal")
-				if original then
-					local character = original.Value
-					workspace.CurrentCamera.CameraSubject = character
-					context.fromPlayer.CharacterAdded:Wait()
-					local function reactivate(script)
-						script.Enabled = true
-					end
-					for _, descendant in character:GetDescendants() do
-						if descendant:IsA("LocalScript") and descendant.Enabled then
-							descendant.Enabled = false
-							task.defer(reactivate, descendant)
+			end
+
+			if not context.env.connections[player] then
+				context.env.connections[player] = context.fromPlayer
+					:GetPropertyChangedSignal("Character")
+					:Connect(function()
+						print("character removing", humanoid.Health)
+						context.env.connections[player]:Disconnect()
+						context.env.connections[player] = nil
+						if humanoid and humanoid.Health > 0 then
+							player:LoadCharacter()
 						end
-					end
-				end
+					end)
 			end
-		end,
-		run = function(context, player)
-			context.env.release(context.fromPlayer)
-			if not player or context.alias == "uncontrol" or context.alias == "release" then
-				context.env.reset(context.fromPlayer)
-				return
-			end
-			context.env.control(context.fromPlayer, player)
+
+			return
 		end,
 	},
 	{
