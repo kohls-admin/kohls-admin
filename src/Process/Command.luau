@@ -39,48 +39,50 @@ function Command:shouldRequest(player: Player)
 	return self.from ~= self._K.creatorId and self.fromRank <= Auth.getRank(player.UserId)
 end
 
-function Command:requestCommand(player: Player)
+function Command:requestCommand(targetPlayer: Player, args, run)
 	if not self.validated then
-		return false
+		return false, self.Error or "Command must be validated before it is run!"
 	end
 
-	local userName = if player.Name == player.DisplayName then "" else " @" .. player.Name
+	local userName = if targetPlayer.Name == targetPlayer.DisplayName then "" else " @" .. targetPlayer.Name
 
-	if not self.requested then
-		self.requested = {}
-	end
-	local requested = self.requested[player]
-	self.requested[player] = true
-	if not requested then
-		self._K.Remote.Notify:FireClient(self.fromPlayer, {
-			Text = `Requesting <b>{self.alias}</b> command on <b>{player.DisplayName}<font transparency="0.5">{userName}</font></b>.`,
-		})
-	end
+	self._K.Remote.Notify:FireClient(self.fromPlayer, {
+		Text = `Requesting <b>{self.alias}</b> command on <b>{targetPlayer.DisplayName}<font transparency="0.5">{userName}</font></b>.`,
+	})
 
 	local accepted = self._K.Remote.RequestCommand:InvokeClient(
-		player,
+		targetPlayer,
 		self.fromPlayer,
-		`{self._K.getCommandPrefix()}{self.alias} {player.Name}`
+		`{self._K.getCommandPrefix()}{self.alias} {targetPlayer.Name}`
 	)
 
-	local status = if accepted
-		then "<font color='#0f0'>accepted</font>"
-		elseif accepted == false then "<font color='#f00'>denied</font>"
-		else "<font transparency='0.5'>already in progress</font>"
+	local status = if accepted then "<font color='#0f0'>accepted</font>" else "<font color='#f00'>denied</font>"
+	self._K.Remote.Notify:FireClient(
+		self.fromPlayer,
+		{ Text = `Command request for <b>{self.alias}</b> was <b>{status}</b>.`, From = targetPlayer.UserId }
+	)
 
-	if not requested then
-		self._K.Remote.Notify:FireClient(
-			self.fromPlayer,
-			{ Text = `Command request for <b>{self.alias}</b> was <b>{status}</b>.`, From = player.UserId }
-		)
+	if accepted then
+		self._K.Hook.preCommand:Fire(self)
+		local _ok, err = pcall(run, self, unpack(args))
+		if err then
+			self._K.Remote.Notify:FireClient(self.fromPlayer, {
+				Text = `<b>"{self.alias}" command failed:</b> {err}`,
+				From = "_K",
+				TextColor3 = Color3.new(1, 0, 0),
+				Sound = "Call_Leave",
+			})
+		end
+		-- TODO: log the command request!
+		self._K.Hook.postCommand:Fire(self)
 	end
 
-	return accepted
+	return
 end
 
 function Command:run()
 	if not self.validated then
-		return false, "Command must be validated before it is run!"
+		return false, self.Error or "Command must be validated before it is run!"
 	end
 
 	local run = self.definition[if self._K.IsServer then "run" else "runClient"]
@@ -88,43 +90,32 @@ function Command:run()
 		return
 	end
 
-	-- filter args for shouldRequest
-	-- TODO: silently fail for userids of lowerRank/shouldRequest
 	if self._K.IsServer and self._K.Data.settings.commandRequests ~= false then
 		for argIndex, arg in self.args do
 			if arg.definition.shouldRequest and string.find(string.lower(arg.rawType.name), "player", 1, true) then
-				-- use instead of lowerRank to request the command to those who aren't higher rank
 				local prepared = self.preparedArgs[argIndex]
 				if prepared == nil then
 					continue
 				end
 
 				if typeof(prepared) == "Instance" then
-					if arg == self.fromPlayer then
+					if prepared == self.fromPlayer then
 						continue -- don't request self
 					end
-					if self:shouldRequest(arg) then
-						local accepted = self:requestCommand(arg)
-						if not accepted then
-							return false, "Command request denied."
-						end
+					if self:shouldRequest(prepared) then
+						task.spawn(self.requestCommand, self, prepared, self.preparedArgs, run)
+						return true -- skip running initial command
 					end
-				else -- table?
+				else -- list of players
 					for i, player in prepared do
 						if player == self.fromPlayer then
 							continue -- don't request self
 						end
 						if self:shouldRequest(player) then
-							prepared[i] = nil
-							task.spawn(function()
-								local accepted = self:requestCommand(player)
-								if accepted then
-									-- these ignore hooks, clone self in the future to allow for hooks?
-									local soloPrepared = table.clone(self.preparedArgs)
-									soloPrepared[argIndex] = { player }
-									pcall(run, self, unpack(soloPrepared))
-								end
-							end)
+							prepared[i] = nil -- strip player
+							local soloPrepared = table.clone(self.preparedArgs)
+							soloPrepared[argIndex] = { player }
+							task.spawn(self.requestCommand, self, player, soloPrepared, run)
 						end
 					end
 				end
@@ -133,13 +124,7 @@ function Command:run()
 	end
 
 	self._K.Hook.preCommand:Fire(self)
-	if not self.validated then
-		return false, self.Error
-	end
-
 	local ok, err = pcall(run, self, unpack(self.preparedArgs))
-	self.Ran = ok
-	self.Error = err
 	self._K.Hook.postCommand:Fire(self)
 
 	return ok, err
