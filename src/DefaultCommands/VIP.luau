@@ -1231,14 +1231,14 @@ return {
 			local function updatePart(part: BasePart, color: Color3, reflectance: number, material: Enum.Material)
 				local apply = color or reflectance or material
 
-				if part:IsA("MeshPart") then
+				if part:IsA("MeshPart") and material ~= Enum.Material.ForceField then
 					if not part:GetAttribute("_KTextureID") then
 						part:SetAttribute("_KTextureID", part.TextureID)
 					end
 					part.TextureID = if apply then "" else part:GetAttribute("_KTextureID") :: string
 				end
 				local mesh = part:FindFirstChildOfClass("SpecialMesh")
-				if mesh then
+				if mesh and material ~= Enum.Material.ForceField then
 					if not mesh:GetAttribute("_KTextureId") then
 						mesh:SetAttribute("_KTextureId", mesh.TextureId)
 					end
@@ -1274,14 +1274,16 @@ return {
 						bodyColors.Parent = setParent
 					end
 
-					local shirt = checkParent:FindFirstChildOfClass("Shirt")
-					if shirt then
-						shirt.Parent = setParent
-					end
+					if material ~= Enum.Material.ForceField then
+						local shirt = checkParent:FindFirstChildOfClass("Shirt")
+						if shirt then
+							shirt.Parent = setParent
+						end
 
-					local pants = checkParent:FindFirstChildOfClass("Pants")
-					if pants then
-						pants.Parent = setParent
+						local pants = checkParent:FindFirstChildOfClass("Pants")
+						if pants then
+							pants.Parent = setParent
+						end
 					end
 
 					for _, descendant in character:GetDescendants() do
