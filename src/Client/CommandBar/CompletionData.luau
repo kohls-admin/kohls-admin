@@ -44,7 +44,7 @@ return function(_K, text, cursorPosition)
 		local commandEnd = lastArg[1] + #lastArg[2]
 		local greedy = lastArgDefinition and (lastArgDefinition.type == "string" or lastArgDefinition.type == "strings")
 
-		if commandDefinition and not _K.Auth.hasCommand(from, commandDefinition) then
+		if commandDefinition and not commandDefinition.LocalPlayerAuthorized then
 			data.invalidPermissionsCommand = commandDefinition
 			invalidPermissions = true
 		end
@@ -57,7 +57,7 @@ return function(_K, text, cursorPosition)
 				data.query = commandText
 				table.insert(data.invalid, { "Invalid command", commandPos, commandText })
 				return data
-			elseif commandDefinition then
+			elseif commandDefinition and commandDefinition.LocalPlayerAuthorized then
 				local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
 				command:validate()
 				table.insert(data.commands, command)
@@ -87,7 +87,7 @@ return function(_K, text, cursorPosition)
 			for _, suggestionData in rawSuggestions do
 				local __name, _display, cmd, _query = unpack(suggestionData)
 				if cmd then
-					if _K.Auth.hasCommand(from, cmd) then
+					if cmd.LocalPlayerAuthorized then
 						table.insert(data.suggestions, suggestionData)
 						data.validSuggestion = true
 					else
@@ -107,7 +107,7 @@ return function(_K, text, cursorPosition)
 				return data
 			end
 
-			if commandDefinition then
+			if commandDefinition and commandDefinition.LocalPlayerAuthorized then
 				local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
 				command:validate()
 				table.insert(data.commands, command)
