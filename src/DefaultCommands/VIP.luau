@@ -705,9 +705,11 @@ return {
 					end
 
 					local wave = (math.sin(offset) + 1) / 10
-					local velocity = root.Velocity - workspace.GlobalWind
+					local velocity = root.AssemblyLinearVelocity - workspace.GlobalWind
 					local dot = math.max(0, root.CFrame.LookVector:Dot(velocity.Unit))
-					local magnitude = velocity.Magnitude + math.abs(root.Velocity.Y)
+					local magnitude = velocity.Magnitude
+						+ root.AssemblyAngularVelocity.Magnitude
+						+ math.abs(root.AssemblyLinearVelocity.Y)
 					local angle = dot * magnitude / 32
 					motor.MaxVelocity = math.clamp(magnitude / 32, 0.02, 0.2)
 					motor.DesiredAngle = math.clamp(angle + wave + 0.1, 0.1, if velocity.Y < 0 then 2.5 else 2)
