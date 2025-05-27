@@ -4,10 +4,13 @@ return function(_K)
 		transform = function(text)
 			local query = string.lower(text)
 			local exactMatch = _K.Registry.commands[query]
-			if exactMatch then
+			if exactMatch and exactMatch.LocalPlayerAuthorized then
 				return exactMatch
 			end
 			for key, command in _K.Registry.commands do
+				if not command.LocalPlayerAuthorized then
+					continue
+				end
 				if string.find(string.lower(key), query, 1, true) then
 					return command
 				end
@@ -28,7 +31,14 @@ return function(_K)
 		end,
 
 		suggestions = function(text)
-			return commandNames, _K.Registry.commands
+			local filtered = {}
+			for _, name in commandNames do
+				local command = _K.Registry.commands[name]
+				if command and command.LocalPlayerAuthorized then
+					table.insert(filtered, name)
+				end
+			end
+			return filtered, _K.Registry.commands
 		end,
 
 		parse = function(command)
