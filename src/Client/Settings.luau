@@ -16,7 +16,6 @@ local colors = {
 }
 
 function Settings.new(_K)
-	Settings._K = _K
 	local UI = _K.UI
 
 	local settingsDialog
@@ -33,7 +32,7 @@ function Settings.new(_K)
 	end
 
 	local function confirmChanges()
-		Settings._K.Remote.Settings:FireServer(pendingChanges)
+		_K.Remote.Settings:FireServer(pendingChanges)
 		for key, value in pendingChanges do
 			_K.Data.settings[key] = value
 			if _K.client.settings[key] then
@@ -44,7 +43,7 @@ function Settings.new(_K)
 	end
 
 	local function change(key, value)
-		if not Settings._K.client.ready then
+		if not _K.client.ready then
 			return
 		end
 		pendingChanges[key] = value
@@ -411,6 +410,16 @@ function Settings.new(_K)
 				})
 			end
 		end
+
+		local function updateSettingsAuth()
+			local settingsAuth = _K.Auth.hasPermission(UI.LocalPlayer.UserId, "settings")
+			local themeAuthority = _K.Data.settings.changeThemeAuthority
+			settingsScroller._instance.Theme.Visible = themeAuthority == "Client"
+				or (themeAuthority == "Server" and settingsAuth)
+			settingsScroller._instance.General.Visible = settingsAuth
+		end
+		_K.Hook.authChanged:Connect(updateSettingsAuth)
+		updateSettingsAuth()
 	end)
 
 	settingsDialog = UI.new "Dialog" {
@@ -418,7 +427,8 @@ function Settings.new(_K)
 		BackgroundColor3 = UI.Theme.Secondary,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.fromScale(1, 0),
-		ActionText = "Save changes and update for everyone?",
+		ActionText = "Save changes"
+			.. (_K.Data.settings.changeThemeAuthority == "Server" and " and update for everyone?" or "?"),
 		Action = true,
 		LeftAction = true,
 		RightAction = true,

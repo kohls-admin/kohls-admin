@@ -561,7 +561,11 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 		_K.Data.settings.playerPrefix[player.UserId] = prefix
 	end)
 
+	-- handle changing of settings
 	_K.Remote.Settings.OnServerEvent:Connect(function(player, changes)
+		local themeAuthority = _K.Data.settings.changeThemeAuthority
+		--TODO: make the Client authority save each players' theming
+
 		if not _K.Auth.hasPermission(player.UserId, "settings") then
 			return
 		end
@@ -571,6 +575,11 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 			if _K.Data.settings[key] == nil then
 				continue
 			end
+
+			if string.find(key, "theme", 1, true) and (themeAuthority ~= "Server") then
+				continue
+			end
+
 			_K.Data.settings[key] = value
 			table.insert(changeStrings, `[{key}]: {value}`)
 

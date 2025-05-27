@@ -11,6 +11,7 @@ local Hook = {
 	runPreparedCommands = Util.Signal.new(),
 	roleAdded = Util.Signal.new(),
 	roleRemoved = Util.Signal.new(),
+	authChanged = Util.Signal.new(),
 
 	init = Util.Signal.new(),
 	initDataStore = Util.Signal.new(),

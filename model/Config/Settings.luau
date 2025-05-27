@@ -85,6 +85,14 @@ return {
 	welcomeBadgeId = 0, --             Awards a badge to new players, set to 0 for no badge
 	getKohlsAdminPopup = true, --      Enables the "Enjoy Kohl's Admin?" feedback popup to users
 
+	--[[
+	VALID OPTIONS:
+		"Client" - Clients can change their theme, which will save for future sessions.
+		"Server" - Roles with the `settings` permission can change the theme, SuperAdmin+ default.
+		"Studio" - Disables changing the theme in-game.
+	]]
+	changeThemeAuthority = "Client", -- Describes the behavior of changing Theme settings.
+
 	gameHubEnabled = true, -- Adds your to a list of games with Kohl's Admin | ⚠️ Requires "Allow HTTP Requests" in File > Game Settings > Security | https://www.roblox.com/games/17873329124/Kohls-Admin-Games-Hub
 	vip = true, --            Enables VIP-specific features and donation support | ⚠️ Required if gameHubEnabled is true
 
