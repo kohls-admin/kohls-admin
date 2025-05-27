@@ -769,6 +769,7 @@ return {
 
 				local data = currentCompletionData
 				if #data.invalid > 0 then
+					validState:set(false)
 					UI.Sound.Negative:Play()
 					return Input._input:CaptureFocus()
 				end
