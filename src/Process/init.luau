@@ -159,8 +159,8 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 
 	if ok then
 		for _, command in result do
-			local success, err = command:run()
-			if success == false or err then
+			local _ok, err = command:run()
+			if err then
 				table.insert(commandErrors, `<b>"{command.alias}" command failed:</b> {err}`)
 			else
 				table.insert(commandsRan, command)
