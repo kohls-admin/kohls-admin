@@ -378,13 +378,21 @@ return {
 			},
 		},
 		env = function(_K)
-			return { punished = {} }
+			local punished = {}
+			_K.Service.Players.PlayerRemoving:Connect(function(player)
+				local character = punished[player]
+				if character then
+					character:Destroy()
+					punished[player] = nil
+				end
+			end)
+			return { punished = punished }
 		end,
 
 		run = function(context, players)
 			for _, player in players do
 				if player.Character then
-					context.env.punished[player.UserId] = player.Character
+					context.env.punished[player] = player.Character
 					player.Character.Parent = nil
 					player.Character = nil
 				end
@@ -424,12 +432,12 @@ return {
 		run = function(context, players)
 			local punished = context._K.Registry.commands.punish.env.punished
 			for _, player in players do
-				local character = punished[player.UserId]
+				local character = punished[player]
 				if character then
-					punished[player.UserId] = nil
 					character.Parent = workspace
 					player.Character = character
 					context.env.remote:FireClient(player, character)
+					punished[player] = nil
 				end
 			end
 		end,
