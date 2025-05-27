@@ -1398,4 +1398,79 @@ return {
 			end
 		end,
 	},
+	{
+		name = "swagify",
+		aliases = { "swag" },
+		description = "Makes one or more player(s) swaggy. 😎",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to swagify.",
+			},
+		},
+		run = function(context, players: { Player })
+			for index: number, player: Player in players do
+				if player.Character and player.Character.PrimaryPart then
+					local shirt = player.Character:FindFirstChildOfClass("Shirt")
+					if not shirt then
+						shirt = Instance.new("Shirt")
+						shirt.Parent = player.Character
+					end
+					if not player.Character:GetAttribute("_KShirt") then
+						player.Character:SetAttribute("_KShirt", shirt.ShirtTemplate)
+					end
+					shirt.ShirtTemplate = "rbxassetid://109163376"
+
+					local pants = player.Character:FindFirstChildOfClass("Pants")
+					if not pants then
+						pants = Instance.new("Pants")
+						pants.Parent = player.Character
+					end
+					if not player.Character:GetAttribute("_KPants") then
+						player.Character:SetAttribute("_KPants", pants.PantsTemplate)
+					end
+					pants.PantsTemplate = "rbxassetid://109163376"
+
+					context._K.Registry.commands.cape.env.add(
+						player.Character,
+						Color3.new(1, 0, 1),
+						nil,
+						nil,
+						"rbxassetid://109301474"
+					)
+				end
+			end
+		end,
+	},
+	{
+		name = "unswagify",
+		aliases = { "unswag" },
+		description = "Removes swag from one or more player(s). 👎",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove swag from.",
+			},
+		},
+		run = function(context, players: { Player })
+			for index: number, player: Player in players do
+				if player.Character and player.Character.PrimaryPart then
+					local existing = player.Character and player.Character:FindFirstChild("_KCape")
+					if existing then
+						existing:Destroy()
+					end
+					local shirt = player.Character:FindFirstChildOfClass("Shirt")
+					if shirt then
+						shirt.ShirtTemplate = player.Character:GetAttribute("_KShirt") or shirt.ShirtTemplate
+					end
+					local pants = player.Character:FindFirstChildOfClass("Pants")
+					if pants then
+						pants.PantsTemplate = player.Character:GetAttribute("_KPants") or pants.PantsTemplate
+					end
+				end
+			end
+		end,
+	},
 }
