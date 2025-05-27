@@ -426,6 +426,9 @@ return {
 		env = function(_K)
 			return {
 				remote = _K.Remote.RefreshLocalScripts,
+				reparent = function(character)
+					character.Parent = workspace
+				end,
 			}
 		end,
 
@@ -434,10 +437,19 @@ return {
 			for _, player in players do
 				local character = punished[player]
 				if character then
-					character.Parent = workspace
-					player.Character = character
-					context.env.remote:FireClient(player, character)
 					punished[player] = nil
+					local ok = pcall(context.env.reparent, character)
+					if ok then
+						player.Character = character
+						context.env.remote:FireClient(player, character)
+					else -- fix for PlayerCharacterDestroyBehaviour
+						local old = character:GetPivot()
+						player:LoadCharacter()
+						player.Character:PivotTo(old)
+						context._K.Remote.Refresh:FireClient(player)
+						character:Destroy()
+						continue
+					end
 				end
 			end
 		end,
