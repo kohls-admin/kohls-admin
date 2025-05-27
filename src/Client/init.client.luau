@@ -4,6 +4,8 @@ local UI = _K.UI
 _K.Announce = require(script:WaitForChild("Announce"))
 _K.Notify = require(script:WaitForChild("Notify"))
 
+_K.LocalPlayer = _K.Service.Players.LocalPlayer
+
 _K.client = {
 	Character = require(script:WaitForChild("Character")),
 	TopbarPlus = require(script:WaitForChild("TopbarPlus")),
@@ -87,7 +89,7 @@ local function Chatted(message: string)
 	end
 	if not chatCommandThrottle then
 		chatCommandThrottle = true
-		_K.Process.runCommands(_K, UI.LocalPlayer.UserId, string.sub(message, commandStart))
+		_K.Process.runCommands(_K, _K.LocalPlayer.UserId, string.sub(message, commandStart))
 		task.wait(0.2)
 		chatCommandThrottle = nil
 	end
@@ -178,7 +180,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 		_K.Data.settings.joinNotificationRank
 		and _K.Auth.getRank(_K.Service.Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank
 	then
-		local member = _K.Data.members[tostring(UI.LocalPlayer.UserId)]
+		local member = _K.Data.members[tostring(_K.LocalPlayer.UserId)]
 		local roleStrings = {}
 		if member and member.roles then
 			for _, role in member.roles do

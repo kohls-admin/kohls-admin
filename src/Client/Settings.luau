@@ -118,7 +118,7 @@ function Settings.new(_K)
 					Placeholder = ";",
 					MaxChars = 1,
 					Value = UI.compute(function(use)
-						return use(_K.client.settings.playerPrefix)[UI.LocalPlayer.UserId]
+						return use(_K.client.settings.playerPrefix)[_K.LocalPlayer.UserId]
 							or use(_K.client.settings.prefix)[1]
 					end),
 					Validate = function(text)
@@ -127,7 +127,7 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Selected = function(value)
-							_K.Data.settings.playerPrefix[UI.LocalPlayer.UserId] = value
+							_K.Data.settings.playerPrefix[_K.LocalPlayer.UserId] = value
 							_K.client.settings.playerPrefix:set(_K.Data.settings.playerPrefix, true)
 							_K.Remote.PlayerPrefix:FireServer(value)
 						end,

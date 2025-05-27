@@ -392,7 +392,7 @@ local suggestionPurchaseButton = UI.new "Button" {
 			if suggestionPurchase.role == "vip" and _K.Data.settings.vip then
 				_K.promptPurchaseVIP()
 			elseif suggestionPurchase.gamepass then
-				_K.Service.Marketplace:PromptGamePassPurchase(UI.LocalPlayer, suggestionPurchase.gamepass)
+				_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, suggestionPurchase.gamepass)
 			end
 		end,
 	},
@@ -808,7 +808,7 @@ return {
 
 				-- FIX: if validated lol
 				local trimmed = _K.Util.String.trimEnd(Input._input.Text)
-				task.spawn(_K.Process.runCommands, _K, UI.LocalPlayer.UserId, trimmed)
+				task.spawn(_K.Process.runCommands, _K, _K.LocalPlayer.UserId, trimmed)
 				-- Find the command in the history (and remove if not the most recent)
 				local cmd = string.sub(trimmed, 2)
 				local foundIndex = table.find(commandHistory, cmd)

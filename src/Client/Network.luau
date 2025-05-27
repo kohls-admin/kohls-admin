@@ -3,7 +3,7 @@ local UI = _K.UI
 
 function _K.client.updateInterfaceAuth()
 	-- TODO: recheck visibility for all restricted UIs
-	local userId = UI.LocalPlayer.UserId
+	local userId = _K.LocalPlayer.UserId
 	local userRank = _K.Auth.getRank(userId)
 	_K.client.rank:set(userRank)
 

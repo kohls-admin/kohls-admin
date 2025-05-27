@@ -703,7 +703,7 @@ return {
 				}
 			end
 			local function xrayPlayer(player)
-				if player == _K.UI.LocalPlayer then
+				if player == _K.LocalPlayer then
 					return
 				end
 				player.CharacterAdded:Connect(xrayCharacter)

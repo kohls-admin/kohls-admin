@@ -16,7 +16,7 @@ function About.new(_K)
 			.. "<font transparency='0.5'>Copy the link below to continue.</font>"
 		local perksText = "\n<font color='#fc0'><b>To get perks, rejoin after your purchase!</b></font>"
 
-		local donationLevel = _K.UI.LocalPlayer:GetAttribute("_KDonationLevel")
+		local donationLevel = _K.LocalPlayer:GetAttribute("_KDonationLevel")
 
 		local equippedUGC = {}
 		local debounceEquip = _K.Util.Function.debounce(0.25, function(id, equip, equipped, name, button)
@@ -102,7 +102,7 @@ function About.new(_K)
 			purchaseLink.Text = "roblox.com/game-pass/" .. passId
 			if _K.client.AllowThirdPartySales then
 				purchaseDialog.Visible:set(false)
-				_K.Service.Marketplace:PromptGamePassPurchase(_K.UI.LocalPlayer, passId)
+				_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, passId)
 			else
 				purchaseDialog.Visible:set(true)
 			end
@@ -111,7 +111,7 @@ function About.new(_K)
 
 		local function updatePassPriceText(label: TextLabel, gamePassId: number, ownedText: string?)
 			local success, owned = _K.Util.Retry(function()
-				return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.UI.LocalPlayer.UserId, gamePassId)
+				return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.LocalPlayer.UserId, gamePassId)
 			end)
 
 			if success then
@@ -122,7 +122,7 @@ function About.new(_K)
 
 				local conn
 				conn = _K.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(function(userId, passId, purchased)
-					if purchased and passId == gamePassId and userId == _K.UI.LocalPlayer.UserId then
+					if purchased and passId == gamePassId and userId == _K.LocalPlayer.UserId then
 						conn:Disconnect()
 						owned = true
 						label.Text = ownedText or "<b>OWNED</b>"
@@ -356,7 +356,7 @@ function About.new(_K)
 							purchaseLink.Text = "roblox.com/catalog/" .. ugc.id
 							if _K.client.AllowThirdPartySales then
 								purchaseDialog.Visible:set(false)
-								_K.Service.Marketplace:PromptPurchase(_K.UI.LocalPlayer, ugc.id)
+								_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, ugc.id)
 							else
 								purchaseDialog.Visible:set(true)
 							end
@@ -387,13 +387,13 @@ function About.new(_K)
 					end
 
 					con = _K.Service.Marketplace.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
-						if purchased and assetId == ugc.id and player == _K.UI.LocalPlayer then
+						if purchased and assetId == ugc.id and player == _K.LocalPlayer then
 							setOwned()
 						end
 					end)
 
-					con2 = UI.LocalPlayer:GetAttributeChangedSignal("_KDonationLevel"):Connect(function()
-						donationLevel = math.max(donationLevel or 0, UI.LocalPlayer:GetAttribute("_KDonationLevel"))
+					con2 = _K.LocalPlayer:GetAttributeChangedSignal("_KDonationLevel"):Connect(function()
+						donationLevel = math.max(donationLevel or 0, _K.LocalPlayer:GetAttribute("_KDonationLevel"))
 						if (donationLevel or 0) >= (ugc.level or 3) then
 							setOwned()
 						end
@@ -404,7 +404,7 @@ function About.new(_K)
 							if owned then
 								return true
 							end
-							return _K.Service.Marketplace:PlayerOwnsAsset(_K.UI.LocalPlayer, ugc.id)
+							return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, ugc.id)
 						end)
 						if ok and result then
 							setOwned()
@@ -682,7 +682,7 @@ function About.new(_K)
 			},
 			[UI.Event] = {
 				Activated = function()
-					_K.Service.Marketplace:PromptGamePassPurchase(_K.UI.LocalPlayer, vipDeveloperPassId)
+					_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, vipDeveloperPassId)
 				end,
 			},
 		}
@@ -790,7 +790,7 @@ function About.new(_K)
 					purchaseLink.Text = "create.roblox.com/store/asset/" .. adminModelId
 					if _K.client.AllowThirdPartySales then
 						purchaseDialog.Visible:set(false)
-						_K.Service.Marketplace:PromptPurchase(_K.UI.LocalPlayer, adminModelId)
+						_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, adminModelId)
 					else
 						purchaseDialog.Visible:set(true)
 					end
@@ -807,7 +807,7 @@ function About.new(_K)
 
 		task.defer(function()
 			local ok, owned = _K.Util.Retry(function()
-				return _K.Service.Marketplace:PlayerOwnsAsset(_K.UI.LocalPlayer, adminModelId)
+				return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, adminModelId)
 			end)
 			if ok and owned then
 				adminModelButton._content.Price.Text = `<b>OWNED</b>`
@@ -965,7 +965,7 @@ function About.new(_K)
 				order += 1
 				task.defer(function()
 					if string.lower(group.Title) == "special thanks" then
-						local userFrame = UserFrame(UI.LocalPlayer.UserId, "You", nil, false)
+						local userFrame = UserFrame(_K.LocalPlayer.UserId, "You", nil, false)
 						userFrame.LayoutOrder = 0
 						userFrame.Parent = flexFrame
 						UI.new "Tooltip" {

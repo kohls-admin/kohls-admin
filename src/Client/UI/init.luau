@@ -88,10 +88,6 @@ UI.TextService = TextService
 UI.UserInputService = UserInputService
 
 --- @within UI
---- @prop LocalPlayer Player
-UI.LocalPlayer = Players.LocalPlayer
-
---- @within UI
 --- @prop PlayerGui PlayerGui
 UI.PlayerGui = playerGui
 

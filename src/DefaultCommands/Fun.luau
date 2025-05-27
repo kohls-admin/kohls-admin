@@ -1078,7 +1078,7 @@ return {
 		},
 		envClient = function(_K)
 			_K.Remote.Trip.OnClientEvent:Connect(function()
-				local character = _K.UI.LocalPlayer.Character
+				local character = _K.LocalPlayer.Character
 				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
 					humanoid:ChangeState(Enum.HumanoidStateType.FallingDown)

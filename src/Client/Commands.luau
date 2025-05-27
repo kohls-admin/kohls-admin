@@ -100,7 +100,7 @@ function Commands.new(_K)
 						break
 					end
 				end
-				if not added and _K.Auth.hasCommand(UI.LocalPlayer.UserId, command) then
+				if not added and _K.Auth.hasCommand(_K.LocalPlayer.UserId, command) then
 					table.insert(list, command)
 				end
 			end

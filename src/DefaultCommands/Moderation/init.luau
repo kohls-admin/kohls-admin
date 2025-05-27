@@ -454,7 +454,7 @@ return {
 		envClient = function(_K)
 			local display
 			_K.Remote.DisplayName.OnClientEvent:Connect(function(name)
-				local character = _K.UI.LocalPlayer.Character
+				local character = _K.LocalPlayer.Character
 				local head = character and character:FindFirstChild("Head")
 				if head then
 					if not name then
@@ -1506,7 +1506,7 @@ return {
 				local t = tick()
 				limitTime = t
 
-				while t == limitTime and _K.UI.LocalPlayer:GetAttribute("_KFPSLimit") do
+				while t == limitTime and _K.LocalPlayer:GetAttribute("_KFPSLimit") do
 					local nextStep = tick() + (1 / fps :: number)
 					repeat
 					until tick() > nextStep
@@ -1674,7 +1674,7 @@ return {
 		},
 		envClient = function(_K)
 			_K.Remote.Teleport.OnClientEvent:Connect(function(cframe)
-				local character = _K.UI.LocalPlayer.Character
+				local character = _K.LocalPlayer.Character
 				if character then
 					character:PivotTo(cframe)
 				end
