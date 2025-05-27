@@ -267,7 +267,7 @@ function Commands.new(_K)
 				end
 			end
 			if rankA == rankB then
-				return a._listIndex < b._listIndex
+				return a.name < b.name
 			else
 				return rankA < rankB
 			end
