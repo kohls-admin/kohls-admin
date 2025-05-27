@@ -284,7 +284,7 @@ local function playerAdded(player: Player)
 		if emote then
 			return
 		end
-		_K.log(message, "CHAT", player.UserId, true)
+		_K.log(_K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
 	end)
 end
 
