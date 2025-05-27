@@ -24,15 +24,21 @@ end
 local booleanType = {
 	transform = string.lower,
 	validate = function(v)
+		if v == "" then
+			return true
+		end
 		return startMatch(yes, v) or startMatch(no, v), "Invalid boolean."
 	end,
 	parse = function(v)
+		if v == "" then
+			return true
+		end
 		if startMatch(yes, v) then
 			return true
 		elseif startMatch(no, v) then
 			return false
 		end
-		return nil, "Invalid boolean value."
+		return nil, "Invalid boolean."
 	end,
 	suggestions = function(text: string, from: number)
 		return booleanSuggestions
