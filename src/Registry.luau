@@ -115,7 +115,6 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 			if not commandObject.group then
 				commandObject.group = oldCommand.group
 			end
-			commandObject._listIndex = index
 			Registry.commandsList[index] = commandObject
 		end
 		if oldCommand.aliases then
@@ -124,7 +123,6 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 			end
 		end
 	elseif not oldCommand then
-		commandObject._listIndex = #Registry.commandsList
 		table.insert(Registry.commandsList, commandObject)
 	end
 
