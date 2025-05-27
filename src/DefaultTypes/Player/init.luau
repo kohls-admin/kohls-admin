@@ -57,13 +57,10 @@ local function freeUser(userId: number)
 	userCache[userId] = nil
 end
 
-Players.PlayerAdded:Connect(memoizeUser)
 Players.PlayerRemoving:Connect(function(player)
+	memoizeUser(player)
 	task.delay(120, freeUser, player.UserId)
 end)
-for _, player in Players:GetPlayers() do
-	memoizeUser(player)
-end
 
 local function sortPlayers(a, b)
 	if a == Players.LocalPlayer then
