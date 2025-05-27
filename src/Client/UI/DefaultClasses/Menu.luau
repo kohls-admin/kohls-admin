@@ -1,5 +1,6 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
+local UIS = game:GetService("UserInputService")
 
 local Menu = {}
 Menu.__index = Menu
@@ -101,6 +102,40 @@ function Menu.new(definition)
 			end),
 		})
 	end
+
+	local connection = nil
+	local function makeConnection()
+		connection = UIS.InputBegan:Connect(function(Input: InputObject, GPE: boolean)
+			if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+				return
+			end
+
+			local mouse = UIS:GetMouseLocation() :: Vector2
+			local boundsTL, boundsBR =
+				(UI.peek(new._instance.AbsolutePosition) + Vector2.new(0, UI.peek(UI.TopbarInset).Height)), --calculate bounds, inlcuding top bar inset because roblox is hell
+				(UI.peek(new._instance.AbsolutePosition) + UI.peek(new._instance.AbsoluteSize) + Vector2.new(
+					0,
+					UI.peek(UI.TopbarInset).Height
+				))
+
+			if
+				(mouse.X < boundsTL.X and mouse.Y < boundsTL.Y) --box bounds check, ty random dev forum post
+				and (mouse.X > boundsBR.X and mouse.Y > boundsBR.Y)
+			then
+				UI.deactivateState(new.Visible, "floating")
+			end
+		end)
+	end
+
+	new._compute = UI.compute(function(use)
+		if use(new.Visible) then
+			makeConnection()
+		else
+			if connection :: RBXScriptSignal then
+				connection:Disconnect()
+			end
+		end
+	end)
 
 	new.Adornee:hook(onAdornee)
 	onAdornee(UI.peek(new.Adornee))
