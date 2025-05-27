@@ -43,6 +43,8 @@ function _K.client.updateInterfaceAuth()
 	if _K.Registry.commands.tools and _K.Registry.commands.tools.LocalPlayerAuthorized then
 		_K.Remote.Tools:FireServer()
 	end
+
+	_K.Hook.authChanged:Fire()
 end
 
 _K.Remote.Announce.OnClientEvent:Connect(_K.Announce)
