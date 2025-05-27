@@ -1246,7 +1246,11 @@ return {
 				end
 				if not part:GetAttribute("_KColor") then
 					part:SetAttribute("_KColor", part.Color)
+				end
+				if not part:GetAttribute("_KReflectance") then
 					part:SetAttribute("_KReflectance", part.Reflectance)
+				end
+				if not part:GetAttribute("_KMaterial") then
 					part:SetAttribute("_KMaterial", part.Material)
 				end
 				part.Color = if color then color else part:GetAttribute("_KColor") :: Color3
@@ -1263,6 +1267,7 @@ return {
 					local apply = color or reflectance or material
 					local checkParent = if apply then character else character.PrimaryPart
 					local setParent = if apply then character.PrimaryPart else character
+					local humanoid = character:FindFirstChildOfClass("Humanoid")
 
 					local bodyColors = checkParent:FindFirstChildOfClass("BodyColors")
 					if bodyColors then
@@ -1279,13 +1284,21 @@ return {
 						pants.Parent = setParent
 					end
 
-					for _, child in character:GetChildren() do
-						if child:IsA("BasePart") and child.Name ~= "HumanoidRootPart" then
-							updatePart(child, color, reflectance, material)
-						elseif child:IsA("Accoutrement") then
-							for _, descendant in child:GetDescendants() do
-								if descendant:IsA("BasePart") then
-									updatePart(descendant, color, reflectance, material)
+					for _, descendant in character:GetDescendants() do
+						if descendant:IsA("BasePart") and descendant.Name ~= "HumanoidRootPart" then
+							updatePart(descendant, color, reflectance, material)
+						elseif descendant:IsA("SurfaceAppearance") then
+							if apply and not descendant:FindFirstChild("_KParent") and humanoid then
+								local _KParent = Instance.new("ObjectValue")
+								_KParent.Name = "_KParent"
+								_KParent.Value = descendant.Parent
+								_KParent.Parent = descendant
+								descendant.Parent = humanoid
+							elseif not apply and descendant:FindFirstChild("_KParent") then
+								if descendant:FindFirstChild("_KParent") ~= nil then
+									-- yes this is cursed, but Luau error 1013 demands a semicolon.
+									descendant.Parent = (descendant :: SurfaceAppearance & { _KParent: ObjectValue })._KParent.Value;
+									(descendant :: SurfaceAppearance & { _KParent: ObjectValue })._KParent:Destroy()
 								end
 							end
 						end
@@ -1296,8 +1309,80 @@ return {
 
 		run = function(context, players, color, reflectance, material)
 			for _, player in players do
-				if player.Character then
+				if player.Character and player.Character.PrimaryPart then
 					context.env.update(player.Character, color, reflectance, material)
+				end
+			end
+		end,
+	},
+	{
+		name = "goldify",
+		aliases = { "gold" },
+		description = "Glimmer like gold!",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to turn to gold.",
+			},
+		},
+		run = function(context, players: { Player })
+			for _: number, player: Player in players do
+				if
+					player.Character
+					and player.Character.PrimaryPart
+					and player.Character:FindFirstChildWhichIsA("Humanoid")
+				then
+					context._K.Registry.commands.crm.env.update(
+						player.Character,
+						BrickColor.new("Gold").Color,
+						0.4,
+						Enum.Material.Metal
+					)
+				end
+			end
+		end,
+	},
+	{
+		name = "silverify",
+		aliases = { "silver", "metalify", "metal" },
+		description = "Shine bright as a silver statue!",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to turn to silver.",
+			},
+		},
+
+		run = function(context, players: { Player })
+			for index: number, player: Player in players do
+				if player.Character and player.Character.PrimaryPart then
+					context._K.Registry.commands.crm.env.update(
+						player.Character,
+						BrickColor.new("Silver").Color,
+						0.4,
+						Enum.Material.Metal
+					)
+				end
+			end
+		end,
+	},
+	{
+		name = "ungoldify",
+		aliases = { "ungold", "unsilverify", "unsilver", "unmetalify", "unmetal" },
+		description = "Restores the character of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to restore.",
+			},
+		},
+		run = function(context, players: { Player })
+			for index: number, player: Player in players do
+				if player.Character and player.Character.PrimaryPart then
+					context._K.Registry.commands.crm.env.update(player.Character)
 				end
 			end
 		end,
