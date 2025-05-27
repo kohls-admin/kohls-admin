@@ -1295,11 +1295,9 @@ return {
 								_KParent.Parent = descendant
 								descendant.Parent = humanoid
 							elseif not apply and descendant:FindFirstChild("_KParent") then
-								if descendant:FindFirstChild("_KParent") ~= nil then
-									-- yes this is cursed, but Luau error 1013 demands a semicolon.
-									descendant.Parent = (descendant :: SurfaceAppearance & { _KParent: ObjectValue })._KParent.Value;
-									(descendant :: SurfaceAppearance & { _KParent: ObjectValue })._KParent:Destroy()
-								end
+								-- yes this is cursed, but Luau error 1013 demands a semicolon.
+								descendant.Parent = (descendant :: SurfaceAppearance & { _KParent: ObjectValue })._KParent.Value;
+								(descendant :: SurfaceAppearance & { _KParent: ObjectValue })._KParent:Destroy()
 							end
 						end
 					end
