@@ -391,25 +391,6 @@ function Settings.new(_K)
 
 		local keyOrder = { "general", "theme" }
 		for key, lineItems in settingsLineItems do
-			if key == "Theme" then -- don't show Theme if user isn't able to modify them.
-				if Settings._K.Data.settings.dashboardThemeAuthority == "Server" then
-					continue
-				end
-				if
-					Settings._K.Data.settings.dashboardThemeAuthority == "Shared"
-					and not (Settings._K.Auth.hasPermission(Settings._K.Service.Players.LocalPlayer.UserId, "settings"))
-				then
-					continue
-				end
-			end
-
-			if
-				key == "General"
-				and not (_K.Auth.hasPermission(Settings._K.Service.Players.LocalPlayer.UserId, "settings"))
-			then
-				continue
-			end
-
 			local list = UI.new "List" {
 				Parent = settingsScroller,
 				Name = key,
@@ -424,6 +405,16 @@ function Settings.new(_K)
 				})
 			end
 		end
+
+		local function updateSettingsAuth()
+			local settingsAuth = _K.Auth.hasPermission(UI.LocalPlayer.UserId, "settings")
+			local themeAuthority = _K.Data.settings.changeThemeAuthority
+			settingsScroller._instance.Theme.Visible = themeAuthority == "Client"
+				or (themeAuthority == "Server" and settingsAuth)
+			settingsScroller._instance.General.Visible = settingsAuth
+		end
+		_K.Hook.authChanged:Connect(updateSettingsAuth)
+		updateSettingsAuth()
 	end)
 
 	settingsDialog = UI.new "Dialog" {
@@ -432,7 +423,7 @@ function Settings.new(_K)
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.fromScale(1, 0),
 		ActionText = "Save changes"
-			.. (_K.Data.settings.themeAuthority == "Server" and " and update for everyone?" or "?"),
+			.. (_K.Data.settings.changeThemeAuthority == "Server" and " and update for everyone?" or "?"),
 		Action = true,
 		LeftAction = true,
 		RightAction = true,
