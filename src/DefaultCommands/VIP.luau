@@ -725,48 +725,54 @@ return {
 			end
 			CollectionService:GetInstanceAddedSignal("_KCapeMotor"):Connect(addCapeMotor)
 		end,
+		env = function(_K)
+			return {
+				add = function(character, color, material, reflectance, image)
+					local root = character
+						and (character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
+					if not root then
+						return
+					end
 
+					local existing = character:FindFirstChild("_KCape")
+					if existing then
+						existing:Destroy()
+					end
+
+					local cape = Instance.new("Part")
+					cape.Name = "_KCape"
+					cape.Color = color or Color3.new()
+					cape.Material = material or Enum.Material.SmoothPlastic
+					cape.Reflectance = reflectance or 0
+					cape.CanCollide = false
+					cape.CanQuery = false
+					cape.CanTouch = false
+					cape.Massless = true
+					cape.TopSurface = 0
+					cape.BottomSurface = 0
+					cape.Size = Vector3.new(1.9, 3.8, 0.2)
+
+					if image then
+						Instance.new("Decal", cape).Texture = image
+					end
+
+					local motor = Instance.new("Motor6D")
+					motor.Part0 = root
+					motor.Part1 = cape
+					motor.C0 = CFrame.new(0, root.Size.Y / 2, root.Size.Z / 2) * CFrame.Angles(0, -math.pi / 2, 0)
+					motor.C1 = CFrame.new(0, cape.Size.Y / 2, 0) * CFrame.Angles(0, math.pi / 2, 0)
+					motor.DesiredAngle = 0.1
+					motor.MaxVelocity = 0.1
+					motor:AddTag("_KCapeMotor")
+					motor.Parent = cape
+
+					cape.Parent = character
+				end,
+			}
+		end,
 		run = function(context, players, color, reflectance, material, image)
 			for _, player in players do
-				local character = player.Character
-				local root = character and (character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
-				if not root then
-					continue
-				end
-
-				local existing = character:FindFirstChild("_KCape")
-				if existing then
-					existing:Destroy()
-				end
-
-				local cape = Instance.new("Part")
-				cape.Name = "_KCape"
-				cape.Color = color or Color3.new()
-				cape.Material = material or Enum.Material.SmoothPlastic
-				cape.Reflectance = reflectance or 0
-				cape.CanCollide = false
-				cape.CanQuery = false
-				cape.CanTouch = false
-				cape.Massless = true
-				cape.TopSurface = 0
-				cape.BottomSurface = 0
-				cape.Size = Vector3.new(1.9, 3.8, 0.2)
-
-				if image then
-					Instance.new("Decal", cape).Texture = image
-				end
-
-				local motor = Instance.new("Motor6D")
-				motor.Part0 = root
-				motor.Part1 = cape
-				motor.C0 = CFrame.new(0, root.Size.Y / 2, root.Size.Z / 2) * CFrame.Angles(0, -math.pi / 2, 0)
-				motor.C1 = CFrame.new(0, cape.Size.Y / 2, 0) * CFrame.Angles(0, math.pi / 2, 0)
-				motor.DesiredAngle = 0.1
-				motor.MaxVelocity = 0.1
-				motor:AddTag("_KCapeMotor")
-				motor.Parent = cape
-
-				cape.Parent = character
+				context.env.add(player.Character, color, reflectance, material, image)
 			end
 		end,
 	},
