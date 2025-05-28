@@ -18,7 +18,7 @@ function Dialog.new(definition)
 		TextStrokeColor3 = UI.Theme.Primary,
 		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 		Title = UI.Nil,
-		TitleSize = UI.Theme.FontSizeLarge,
+		TitleSize = UI.Theme.FontSizeLargest,
 		Activated = false,
 		ActionText = UI.Nil,
 		ActionTextSize = UI.Theme.FontSize,
