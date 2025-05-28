@@ -130,8 +130,8 @@ function Logs.new(_K)
 				log.levelText = _K.Logger:decode(log.level)
 
 				log.rawText = `{date} {timeOfDay} {log.levelText}{if log.client
-					then "CLIENT"
-					elseif not log.from then "SERVER"
+					then " CLIENT"
+					elseif not log.from then " SERVER"
 					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
 
 				log.textBoxText = `{timeOfDay} {log.levelText}{if log.client
