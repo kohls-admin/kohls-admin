@@ -27,6 +27,15 @@ return {
 		["5"] = { nil, "Deleted account", -1, 44391621 },
 	},
 
+	-- 👤 USER ROLES - Add roles to users by their UserID or Username
+	userRoles = {
+		vip = { "Roblox", 156, game.PrivateServerOwnerId },
+		mod = {},
+		admin = {},
+		superadmin = {},
+		creator = {},
+	},
+
 	-- 📦 ASSET ROLES
 	assetRoles = {
 		-- [assetId] = { "vip", "mod" },
@@ -59,15 +68,6 @@ return {
 		-- "vip",
 		-- "mod",
 		-- "admin",
-	},
-
-	-- 👤 USER ROLES - Add roles to users by their UserID or Username
-	userRoles = {
-		vip = { "Roblox", 156, game.PrivateServerOwnerId },
-		mod = {},
-		admin = {},
-		superadmin = {},
-		creator = {},
 	},
 
 	-- 🔧 SYSTEM SETTINGS
