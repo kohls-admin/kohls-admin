@@ -197,12 +197,12 @@ task.defer(function()
 end)
 
 local function dashboardToggle(button)
-	if dashboard._instance.Visible then
+	if button.isSelected then
+		UI.Sound.Hover03:Play()
+	else
 		UI.Sound.Hover01:Play()
 		UI.clearState("hover")
 		UI.clearState("floating")
-	else
-		UI.Sound.Hover03:Play()
 	end
 	local container = _K.client.dashboard.Tabs._pages.CurrentPage
 	local page = container and container:FindFirstChildWhichIsA("GuiObject")
@@ -226,18 +226,26 @@ local dashboardButtonIcon = dashboardButton:getInstance("IconImage")
 
 _K.client.dashboardButton = dashboardButton
 
+local fakeButton = { isSelected = false }
 _K.client.hotkeys.dashboard.callback = function()
-	if _K.client.dashboardEnabled then
+	if not _K.client.dashboardEnabled then
+		return
+	end
+	if _K.client.dashboardButtonEnabled then
 		if dashboardButton.isSelected then
 			dashboardButton:deselect()
 		else
 			dashboardButton:select()
 		end
+	else
+		fakeButton.isSelected = not fakeButton.isSelected
+		dashboardToggle(fakeButton)
 	end
 end
 
 dashboard._exitButton._instance.Activated:Connect(function()
 	dashboardButton:deselect()
+	fakeButton.isSelected = false
 end)
 
 task.spawn(function()
