@@ -146,7 +146,7 @@ function Title.Method(character: Model, title: string?, color: Color3?, topColor
 
 	titleGui.Title.Text = title
 	titleGui.Title.UIGradient.Color = ColorSequence.new(topColor or Color3.new(1, 1, 1), color or Color3.new(1, 1, 1))
-	titleGui.Title.UIGradient.Rotation = if titleDefinition then titleDefinition.rotation else 90
+	titleGui.Title.UIGradient.Rotation = titleDefinition and titleDefinition.rotation or 90
 	if font then
 		titleGui.Title.Font = font
 	end
