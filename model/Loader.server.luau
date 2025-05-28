@@ -14,7 +14,6 @@ if CONFIG then
 end
 
 if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
-	local Settings
 	local legacyConfig = CONFIG:FindFirstChild("Legacy")
 
 	if LEGACY then
@@ -29,10 +28,6 @@ if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 		shared._K_LOADER_LOADED = true
 		legacyConfig.Name = "LegacyConfig"
 		Package.Parent = game:GetService("ServerScriptService")
-		local settingsModule = CONFIG:FindFirstChild("Settings")
-		if settingsModule then
-			Settings = require(settingsModule)
-		end
 		AUTO_UPDATE = AUTO_UPDATE and game.PlaceId ~= DEMO_PLACE
 	end
 
@@ -62,6 +57,6 @@ if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 	end
 
 	if not LEGACY then
-		result.initialize(Settings, nil, legacyConfig)
+		result.initialize(CONFIG)
 	end
 end

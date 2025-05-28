@@ -289,22 +289,35 @@ local function playerAdded(player: Player)
 end
 
 local _initialized
-function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons: Folder?, legacyConfig: Folder?)
+function _K.initialize(config: Configuration | ModuleScript | { [string]: any }, oldAddonStructure: Folder?)
 	if _initialized then
 		return _K
 	end
 	_initialized = true
 	local initStart = os.clock()
 
-	if typeof(legacyConfig) == "Instance" then
-		legacyConfig.Parent = script
+	local settings: { [string]: any } = {}
+	if typeof(config) == "Instance" then
+		if config:IsA("ModuleScript") then
+			settings = require(config)
+		elseif config:IsA("Configuration") then
+			config.Parent = script
+			local settingsModule = config:FindFirstChild("Settings")
+			if settingsModule and settingsModule:IsA("ModuleScript") then
+				settings = require(settingsModule)
+			end
+			local studioThemes = config:FindFirstChild("Themes")
+			if studioThemes then
+				Client.UI.Theme.Themes:ClearAllChildren()
+				for _, child in studioThemes:GetChildren() do
+					child.Parent = Client.UI.Theme.Themes
+				end
+			end
+		end
+	elseif type(config) == "table" then
+		settings = config
 	end
 
-	if typeof(settingsObject) == "Instance" and settingsObject:IsA("ModuleScript") then
-		settingsObject = require(settingsObject)
-	end
-
-	local settings = settingsObject :: { [string]: any }
 	_K.Data.settingsModuleData = settings
 
 	if type(settings.prefix) == "string" then
@@ -505,8 +518,8 @@ function _K.initialize(settingsObject: ModuleScript | { [string]: any }, addons:
 
 	loadAddons(script.DefaultAddons:GetChildren())
 	loadAddons(_K.Service.Collection:GetTagged(_K._addonTag))
-	if addons and not addons:HasTag(_K._addonTag) then
-		loadAddons(addons:GetChildren())
+	if oldAddonStructure and not oldAddonStructure:HasTag(_K._addonTag) then
+		loadAddons(oldAddonStructure:GetChildren())
 	end
 
 	script.Name = "Kohl's Admin Source"
