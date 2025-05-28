@@ -4,7 +4,7 @@ return [[
 ├┤ │││├┴┐├┬┘├─┤│  ├┤   │  ├┬┘├┤ ├─┤ │ │└┐┌┘│ │ └┬┘   ││││ │ │   │  ├─┤├─┤│ │└─┐
 └─┘┴ ┴└─┘┴└─┴ ┴└─┘└─┘  └─┘┴└─└─┘┴ ┴ ┴ ┴ └┘ ┴ ┴  ┴ ┘  ┘└┘└─┘ ┴   └─┘┴ ┴┴ ┴└─┘└─┘o
 
-Trusted by millions of Roblox developers, Kohl's Admin is your all-in-one solution for effortless experience management.
+Trusted by millions of developers, Kohl's Admin is your all-in-one solution for effortless experience management.
 Streamline moderation, elevate gameplay, and nurture a thriving community — all with a powerful, versatile, and user-friendly tool.
 
 Use Kohl's Admin to:
