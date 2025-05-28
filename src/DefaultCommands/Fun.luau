@@ -314,6 +314,7 @@ return {
 		name = "char",
 		aliases = { "character" },
 		description = "Changes the character of one or more player(s).",
+		credit = { "Kohl @Scripth", "@AlanDev09" },
 		args = {
 			{
 				type = "players",
@@ -328,21 +329,27 @@ return {
 				optional = true,
 			},
 		},
-
 		run = function(context, players, userId)
+			local appearance = context._K.Service.Players:GetHumanoidDescriptionFromUserId(userId)
+			if not appearance then
+				return "Invalid character appearance!"
+			end
 			for _, player in players do
 				player.CharacterAppearanceId = if userId == nil then player.UserId else userId
-				local old = player.Character:GetPivot()
-				player:LoadCharacter()
-				player.Character:PivotTo(old)
-				context._K.Remote.Refresh:FireClient(player)
+				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				if not humanoid then
+					continue
+				end
+				task.spawn(humanoid.ApplyDescription, humanoid, appearance)
 			end
+			return
 		end,
 	},
 	{
 		name = "unchar",
 		aliases = { "uncharacter" },
 		description = "Restores the character of one or more player(s).",
+		credit = { "Kohl @Scripth", "@AlanDev09" },
 		args = {
 			{
 				type = "players",
@@ -350,17 +357,27 @@ return {
 				description = "The player(s) whose character to restore.",
 			},
 		},
-
-		run = function(context, players, userId)
+		env = function(_K)
+			return {
+				apply = function(player, humanoid)
+					local appearance = _K.Service.Players:GetHumanoidDescriptionFromUserId(player.UserId)
+					if appearance then
+						humanoid:ApplyDescription(appearance)
+					end
+				end,
+			}
+		end,
+		run = function(context, players)
 			for _, player in players do
 				if player.CharacterAppearanceId == player.UserId then
 					continue
 				end
 				player.CharacterAppearanceId = player.UserId
-				local old = player.Character:GetPivot()
-				player:LoadCharacter()
-				player.Character:PivotTo(old)
-				context._K.Remote.Refresh:FireClient(player)
+				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				if not humanoid then
+					continue
+				end
+				task.spawn(context.env.apply, player, humanoid)
 			end
 		end,
 	},
