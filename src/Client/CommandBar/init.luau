@@ -717,8 +717,9 @@ return {
 
 		local function updatePrefix()
 			local value = _K.getCommandPrefix()
-			Input.Value:set(value .. string.sub(Input._input.Text, #prefix + 1), true)
+			local oldPrefix = prefix
 			prefix = value
+			Input.Value:set(value .. string.sub(Input._input.Text, #oldPrefix + 1), true)
 		end
 		_K.client.settings.prefix:hook(updatePrefix)
 		_K.client.settings.playerPrefix:hook(updatePrefix)

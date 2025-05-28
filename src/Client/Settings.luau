@@ -168,7 +168,7 @@ function Settings.new(_K)
 					[UI.Hook] = {
 						Selected = function(value)
 							_K.client.settings.prefix._value[1] = value
-							change("prefix", _K.client.settings.prefix._value)
+							change("prefix", { value, unpack(_K.client.settings.prefix._value, 2) })
 						end,
 					},
 				},
