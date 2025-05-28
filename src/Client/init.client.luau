@@ -21,7 +21,53 @@ _K.client = {
 		dashboard = { key = _K.Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
 	},
 	settings = {},
+	themes = UI.state({}),
 }
+
+-- Initialize themes
+local themeFolder = script:WaitForChild("UI"):WaitForChild("Theme"):WaitForChild("Themes")
+for _, themeModule: ModuleScript in themeFolder:GetChildren() do
+	if themeModule:IsA("ModuleScript") then
+		if _K.client.themes._value[themeModule.Name] then
+			warn("[Kohl's Admin]: Duplicate theme found! Make sure they have different names.")
+		end
+		local theme = require(themeModule)
+		local content = {}
+		for _, definition in { theme.Image, theme.Sound } do
+			for key, value in definition do
+				if UI.isState(definition[key]) then
+					definition[key]:set("rbxassetid://" .. UI.peek(value))
+				else
+					definition[key] = "rbxassetid://" .. UI.peek(value)
+				end
+			end
+		end
+		_K.client.themes._value[themeModule.Name] = theme
+		task.spawn(_K.Service.ContentProvider.PreloadAsync, _K.Service.ContentProvider, content)
+	end
+end
+_K.client.themes:set(_K.client.themes._value, true)
+
+local function deepMergeTheme(from, to, prefix: string?)
+	for key, value in from do
+		value = UI.peek(value)
+		if UI.isState(to[key]) then
+			if prefix then
+				key = prefix .. key
+				_K.Data.settings[key] = value
+				_K.client.settings[key]:set(value)
+			else
+				to[key]:set(value)
+			end
+		elseif type(value) == "table" then
+			deepMergeTheme(value, to[key])
+		end
+	end
+end
+
+function UI.changeTheme(new)
+	deepMergeTheme(new, UI.Theme, "theme")
+end
 
 -- Flux stateful settings
 for key, value in _K.Data.settings do
@@ -29,12 +75,36 @@ for key, value in _K.Data.settings do
 	_K.client.settings[key] = state
 
 	-- UI.Theme connection to theme settings
-	if string.find(key, "theme", 1, true) == 1 then
+	if key == "defaultTheme" then
+		state:hook(function(value)
+			local theme = _K.client.themes._value[value]
+			if theme then
+				UI.changeTheme(theme)
+			end
+		end)
+	elseif string.find(key, "theme", 1, true) == 1 then
 		key = string.sub(key, 6)
 		if UI.Theme[key] then
 			state:hook(function(value)
 				UI.Theme[key]:set(value)
 			end)
+		end
+	end
+end
+
+function _K.client.syncSettings(settings)
+	for key, value in settings do
+		value = UI.peek(value)
+		if
+			string.find(key, "theme", 1, true) ~= 1
+			or _K.Data.settings.changeThemeAuthority == "Studio"
+			or settings.defaultTheme ~= "Custom (DataStore)"
+		then
+			continue
+		end
+		_K.Data.settings[key] = value
+		if _K.client.settings[key] then
+			_K.client.settings[key]:set(value)
 		end
 	end
 end
@@ -156,19 +226,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 
 	_K.Data.roles = roles
 
-	for key, value in settings do
-		value = UI.peek(value)
-		_K.Data.settings[key] = value
-		if _K.client.settings[key] then
-			_K.client.settings[key]:set(value)
-		end
-		if string.find(key, "theme", 1, true) == 1 then
-			local themeKey = string.sub(key, 6)
-			if UI.Theme[themeKey] then
-				UI.Theme[themeKey]:set(value)
-			end
-		end
-	end
+	_K.client.syncSettings(settings)
 
 	_K.client.CommandBar = require(script:WaitForChild("CommandBar"))
 	_K.client.CommandBar:init(_K)

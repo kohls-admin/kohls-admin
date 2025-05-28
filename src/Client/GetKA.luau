@@ -16,6 +16,7 @@ task.defer(function()
 		LayoutOrder = 10,
 		Name = "adminModelButton",
 		Icon = "rbxasset://textures/ui/common/robux.png",
+		IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
 		IconRightAlign = true,
 		Label = "<sc><b>GET IT TODAY!</b></sc>",
 		TextXAlignment = Enum.TextXAlignment.Left,

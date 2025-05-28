@@ -1,6 +1,6 @@
 local RunService = game:GetService("RunService")
 
-local Theme = require(script.Parent.Parent.Client:WaitForChild("UI").Theme)
+local Theme = require(script.Parent.Parent.Client:WaitForChild("UI"):WaitForChild("Theme"))
 
 type Dict = { [any]: any }
 
@@ -55,6 +55,7 @@ local Data = {
 		getKohlsAdminPopup = true,
 
 		changeThemeAuthority = "Client",
+		defaultTheme = "Default",
 
 		gameHubEnabled = true,
 		vip = true,
@@ -116,7 +117,9 @@ end
 
 -- UI Theme initial settings
 for key, state in Theme do
-	Data.settings["theme" .. key] = state._value
+	if state._value ~= nil then
+		Data.settings["theme" .. key] = state._value
+	end
 end
 
 return Data

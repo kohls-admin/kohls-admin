@@ -232,7 +232,8 @@ function About.new(_K)
 					BackgroundTransparency = 1,
 
 					UI.new "ImageLabel" {
-						BackgroundTransparency = 1,
+						BackgroundColor3 = Color3.new(0, 0, 0),
+						BackgroundTransparency = 0.875,
 						Size = UDim2.new(0, 80, 0, 80),
 						Image = "rbxasset://textures/meshPartFallback.png",
 						ImageTransparency = 0.75,
@@ -294,6 +295,7 @@ function About.new(_K)
 				button = UI.new "Button" {
 					Parent = frame,
 					Icon = if owned then nil else "rbxasset://textures/ui/common/robux.png",
+					IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
 					IconRightAlign = not owned,
 					Label = `<b>{ugc.price}</b>`,
 					LabelProperties = {
@@ -510,6 +512,7 @@ function About.new(_K)
 				Parent = gamePasses,
 				LayoutOrder = i,
 				Icon = "rbxasset://textures/ui/common/robux.png",
+				IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
 				IconRightAlign = true,
 				Label = `<font color='{pass.color}'><b>{pass.name}</b></font>`,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -600,6 +603,7 @@ function About.new(_K)
 			Parent = vipList,
 			LayoutOrder = 3,
 			Icon = "rbxasset://textures/ui/common/robux.png",
+			IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
 			IconRightAlign = true,
 			Label = "VIP",
 			TextXAlignment = Enum.TextXAlignment.Left,
@@ -660,6 +664,7 @@ function About.new(_K)
 			Parent = vipList,
 			LayoutOrder = 4,
 			Icon = "rbxasset://textures/ui/common/robux.png",
+			IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
 			IconRightAlign = true,
 			Label = "VIP",
 			TextXAlignment = Enum.TextXAlignment.Left,
@@ -734,6 +739,7 @@ function About.new(_K)
 		local adminModelButton = UI.new "Button" {
 			Name = "adminModelButton",
 			Icon = "rbxasset://textures/ui/common/robux.png",
+			IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
 			IconRightAlign = true,
 			Label = "<b>Get Kohl's Admin</b>",
 			TextXAlignment = Enum.TextXAlignment.Left,

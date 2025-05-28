@@ -1,23 +1,18 @@
-local ContentProvider = game:GetService("ContentProvider")
+local Flux = require(script.Parent.Parent.Parent:WaitForChild("Flux"))
+local Default = require(script:WaitForChild("Themes"):WaitForChild("Default"))
 
-local Flux = require(script.Parent.Parent.Parent.Flux)
 local compute = Flux.compute
 local state = Flux.state
 
 --- @within UI
 --- A directory of Flux state for UI components to use as theme variables
 --- @interface Theme
---- .ClackAll State<boolean>
---- .ClackEnabled State<boolean>
 --- .Transparency State<number>
 --- .Primary State<Color3>
 --- .PrimaryText State<Color3>
 --- .Secondary State<Color3>
 --- .SecondaryText State<Color3>
---- .Muted State<Color3>
---- .MutedText State<Color3>
 --- .Border State<Color3>
---- .BorderMuted State<Color3>
 --- .Valid State<Color3>
 --- .Invalid State<Color3>
 --- .FontSize State<number>
@@ -39,62 +34,32 @@ local state = Flux.state
 --- .ScrollMidImage State<string>
 --- .ScrollTopImage State<string>
 --- .ScrollBottomImage State<string>
-local Theme = {
-	ClackAll = state(true),
-	ClackEnabled = state(false),
-	Transparency = state(0.08),
-
-	Primary = state(Color3.fromRGB(18, 18, 21)),
-	PrimaryText = state(Color3.fromRGB(255, 255, 255)),
-
-	Secondary = state(Color3.fromRGB(255, 255, 255)),
-	SecondaryText = state(Color3.fromRGB(0, 0, 0)),
-
-	Muted = state(Color3.fromRGB(200, 200, 200)),
-	MutedText = state(Color3.fromRGB(127, 127, 127)),
-
-	Border = state(Color3.fromRGB(100, 100, 100)),
-	BorderMuted = state(Color3.fromRGB(50, 50, 50)),
-
-	Valid = state(Color3.fromRGB(0, 255, 0)),
-	Invalid = state(Color3.fromRGB(255, 0, 0)),
-
-	FontSize = state(15),
-	Font = state(Enum.Font.Roboto),
-	FontMono = state(Enum.Font.RobotoMono),
-
-	CornerRadius = state(UDim.new(0, 8)),
-	Padding = state(UDim.new(0, 6)),
-	StrokeEnabled = state(false),
-	SoundEnabled = state(true),
-
-	TweenIn = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In)),
-	TweenOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)),
-	TweenInOut = state(TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut)),
-
-	Image = {
-		Check = "rbxassetid://125053493387464",
-		Close = "rbxassetid://117385134461283",
-		Check_Bold = "rbxassetid://73008384795860",
-		Close_Bold = "rbxassetid://74789968601408",
-		Filter = "rbxassetid://93483633020282",
-		Search = "rbxassetid://82890781874034",
-		Terminal = "rbxassetid://108121111850606",
-
-		Down = "rbxassetid://116491276097788",
-
-		Play = "rbxassetid://113952858544170",
-		Stop = "rbxassetid://94423843228984",
-	},
-}
-
-do
-	local content = {}
-	for _, image in Theme.Image do
-		table.insert(content, image)
-	end
-	task.spawn(ContentProvider.PreloadAsync, ContentProvider, content)
+--- .SoundsEnabled State<boolean>
+--- .TypingSounds State<boolean>
+--- .TypingSoundsOnEveryTextBox State<boolean>
+--- .Volume State<number>
+local Theme = {}
+for key, value in Default do
+	Theme[key] = if type(value) == "table" then table.clone(value) else value
 end
+
+-- import values from default studio theme
+for key, value in Default do
+	Theme[key] = value
+end
+
+local function makeStateful(source: { [string]: any })
+	for key, value in source do
+		if type(value) == "table" then
+			makeStateful(value)
+		else
+			source[key] = state(value)
+		end
+	end
+end
+makeStateful(Theme)
+
+-- COMPUTED THEME VALUES
 
 Theme.TransparencyOverlay = compute(function(use)
 	return use(Theme.Transparency) * 0.125 + 0.875
@@ -178,10 +143,10 @@ end)
 
 Theme.ScrollMidImage = state("rbxassetid://18370268668")
 Theme.ScrollTopImage = compute(function(use)
-	return if use(Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://18370266164"
+	return if use(Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://84803790508027"
 end)
 Theme.ScrollBottomImage = compute(function(use)
-	return if use(Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://18370271296"
+	return if use(Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://104819278516997"
 end)
 
 return Theme

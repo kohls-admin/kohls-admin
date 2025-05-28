@@ -7,10 +7,7 @@ local colors = {
 	"PrimaryText",
 	"Secondary",
 	"SecondaryText",
-	"Muted",
-	"MutedText",
 	"Border",
-	"BorderMuted",
 	"Valid",
 	"Invalid",
 }
@@ -25,8 +22,14 @@ function Settings.new(_K)
 		table.clear(pendingChanges)
 		for key, value in _K.Data.settings do
 			if string.find(key, "theme", 1, true) == 1 then
-				local themeKey = string.sub(key, 6)
-				UI.Theme[themeKey]:set(value)
+				local themeState = UI.Theme[string.sub(key, 6)]
+				if themeState then
+					themeState:set(value)
+				elseif _K.DEBUG then
+					warn("DEBUG: Invalid themeState", key, value)
+				end
+			elseif key == "defaultTheme" then
+				_K.client.settings.defaultTheme:set(value)
 			end
 		end
 	end
@@ -49,11 +52,21 @@ function Settings.new(_K)
 		pendingChanges[key] = value
 
 		local different = false
+		local differentTheme = false
 		for key, value in pendingChanges do
 			if value ~= _K.Data.settings[key] then
+				if string.find(key, "theme", 1, true) == 1 then
+					differentTheme = true
+				end
 				different = true
 				break
 			end
+		end
+
+		if string.find(key, "theme", 1, true) == 1 then
+			local theme = if differentTheme then "Custom (DataStore)" else _K.Data.settings.defaultTheme
+			_K.client.settings.defaultTheme:set(theme)
+			task.defer(change, "defaultTheme", theme)
 		end
 
 		if settingsDialog then
@@ -166,16 +179,42 @@ function Settings.new(_K)
 
 	task.defer(function()
 		_K.Util.Defer.reset()
+		-- Theme select
+		local themeList = UI.compute(function(use)
+			local themes = {}
+			for key in use(_K.client.themes) do
+				table.insert(themes, key)
+			end
+			table.sort(themes)
+			table.insert(themes, "Custom (DataStore)")
+			return themes
+		end)
+		table.insert(
+			settingsLineItems.Theme,
+			UI.new "ListItem" {
+				ContentAutomaticSize = false,
+				Text = "Theme",
+				UI.new "Select" {
+					Choice = _K.client.settings.defaultTheme,
+					Choices = themeList,
+					[UI.Hook] = {
+						Selected = function(value)
+							change("defaultTheme", value)
+						end,
+					},
+				},
+			}
+		)
 		-- switches
 		for _, data in
 			{
 				{ key = "SoundEnabled", text = "UI Sounds Enabled" },
 				{
-					key = "ClackEnabled",
+					key = "TypingSounds",
 					text = "Enable typing sounds",
 					tip = "<b>NOTE:</b> Requires taking the audios and adding permissions to your game!\n<font transparency='0.66'>Why does Roblox do this to me</font> 😔",
 				},
-				{ key = "ClackAll", text = "Sounds on every TextBox" },
+				{ key = "TypingSoundsOnEveryTextBox", text = "Sounds on every TextBox" },
 				{ key = "StrokeEnabled", text = "UI Borders Enabled" },
 			}
 		do
@@ -412,7 +451,7 @@ function Settings.new(_K)
 		end
 
 		local function updateSettingsAuth()
-			local settingsAuth = _K.Auth.hasPermission(UI.LocalPlayer.UserId, "settings")
+			local settingsAuth = _K.Auth.hasPermission(_K.LocalPlayer.UserId, "settings")
 			local themeAuthority = _K.Data.settings.changeThemeAuthority
 			settingsScroller._instance.Theme.Visible = themeAuthority == "Client"
 				or (themeAuthority == "Server" and settingsAuth)

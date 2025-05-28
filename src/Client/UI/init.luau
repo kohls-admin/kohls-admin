@@ -1,7 +1,7 @@
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
-local SoundService = game:GetService("SoundService")
 local TextService = game:GetService("TextService")
+local SoundService = game:GetService("SoundService")
 local UserInputService = game:GetService("UserInputService")
 
 local Flux = require(script.Parent.Parent.Flux)
@@ -26,54 +26,24 @@ UI.__index = UI
 setmetatable(UI, Flux)
 
 UI.Theme = require(script.Theme)
+UI.Sound = {}
 
 local SoundGroup = Instance.new("SoundGroup")
-SoundGroup.Name = "KASounds"
-SoundGroup.Volume = 1
+SoundGroup.Name = "_KASounds"
 SoundGroup.Parent = SoundService
 
-local Sound = {}
-Sound.__index = Sound
+Flux.edit(SoundGroup, {
+	Volume = Flux.compute(function(use)
+		return if use(UI.Theme.SoundEnabled) then use(UI.Theme.Volume) else 0
+	end),
+})
 
-export type Sound = typeof(setmetatable({} :: { sound: Instance }, Sound))
-
-function Sound.new(id: string): Sound
-	local self = {
-		sound = Instance.new("Sound"),
+for key, soundIdState in UI.Theme.Sound do
+	UI.Sound[key] = Flux.new "Sound" {
+		Parent = SoundGroup,
+		SoundId = soundIdState,
 	}
-	self.sound.PlayOnRemove = true
-	self.sound.SoundId = "rbxassetid://" .. id
-	self.sound.Parent = SoundGroup
-	return setmetatable(self, Sound)
 end
-
--- Creates a copy of the sound and plays it
-function Sound:Play()
-	if not UI.Theme.SoundEnabled._value then
-		return
-	end
-	self.sound:Play()
-end
-
-UI.Sound = {
-	Back = Sound.new("10066914500"),
-	Call_Accept = Sound.new("17208209318"),
-	Call_Decline = Sound.new("17208214688"),
-	Call_Hangup = Sound.new("17208220181"),
-	Call_Leave = Sound.new("17208295577"),
-	Hello = Sound.new("17208335138"),
-	Hover01 = Sound.new("17208339919"),
-	Hover02 = Sound.new("17208343514"),
-	Hover03 = Sound.new("17208348006"),
-	Negative = Sound.new("17208353912"),
-	Notification_High = Sound.new("17208361335"),
-	Notification_Low = Sound.new("17208372272"),
-	PopSwipe = Sound.new("10128766965"),
-	Select01 = Sound.new("10128760939"),
-	Select02 = Sound.new("10066968815"),
-	Select03 = Sound.new("17208396156"),
-	Swipe = Sound.new("17208405682"),
-}
 
 --- @within UI
 --- @prop GuiService GuiService

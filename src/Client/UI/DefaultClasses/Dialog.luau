@@ -161,6 +161,7 @@ function Dialog.new(definition)
 		Size = buttonSize,
 		Icon = UI.Theme.Image.Close,
 		IconProperties = {
+			ImageColor3 = UI.Theme.PrimaryText,
 			Size = UDim2.fromScale(0.5, 0.5),
 		},
 		Text = "",

@@ -92,6 +92,7 @@ return {
 		"Studio" - Disables changing the theme in-game.
 	]]
 	changeThemeAuthority = "Client", -- Describes the behavior of changing Theme settings.
+	defaultTheme = "Default",
 
 	gameHubEnabled = true, -- Adds your to a list of games with Kohl's Admin | ⚠️ Requires "Allow HTTP Requests" in File > Game Settings > Security | https://www.roblox.com/games/17873329124/Kohls-Admin-Games-Hub
 	vip = true, --            Enables VIP-specific features and donation support | ⚠️ Required if gameHubEnabled is true

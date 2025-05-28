@@ -53,8 +53,6 @@ function Button.new(definition)
 					TextSize = new.TextSize,
 					TextScaled = new.TextScaled,
 					TextColor3 = UI.Theme.PrimaryText,
-					TextTransparency = 0,
-					TextStrokeTransparency = 0.9,
 					TextTruncate = Enum.TextTruncate.SplitWord,
 					TextXAlignment = new.TextXAlignment,
 					TextYAlignment = new.TextYAlignment,

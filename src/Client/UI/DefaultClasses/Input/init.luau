@@ -2,15 +2,15 @@ local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
 local Clack = require(script.Clack).registerAll()
 
-Clack.enabled = UI.peek(UI.Theme.ClackEnabled)
-Clack.everyTextBox = UI.peek(UI.Theme.ClackAll)
+Clack.enabled = UI.peek(UI.Theme.TypingSounds)
+Clack.everyTextBox = UI.peek(UI.Theme.TypingSoundsOnEveryTextBox)
 UI.Theme.SoundEnabled:hook(function(value)
-	Clack.enabled = value and UI.Theme.ClackEnabled._value
+	Clack.enabled = value and UI.Theme.TypingSounds._value
 end)
-UI.Theme.ClackEnabled:hook(function(value)
+UI.Theme.TypingSounds:hook(function(value)
 	Clack.enabled = value and UI.Theme.SoundEnabled._value
 end)
-UI.Theme.ClackAll:hook(function(value)
+UI.Theme.TypingSoundsOnEveryTextBox:hook(function(value)
 	Clack.everyTextBox = value
 end)
 

@@ -33,7 +33,7 @@ task.delay(0.2, _K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
 	Title = UI.compute(function(use)
-		return `Kohl's Admin  <font transparency="0.75" size = "{use(UI.Theme.FontSize)}">v{_K.VERSION}</font>`
+		return `Kohl's Admin  <font transparency="0.75" size="{use(UI.Theme.FontSize)}">v{_K.VERSION}</font>`
 	end),
 	Visible = false,
 
@@ -55,6 +55,7 @@ _K.client.toggleCommandBar = UI.new "Button" {
 	Size = titleBarButtonSize,
 	Icon = UI.Theme.Image.Terminal,
 	IconProperties = {
+		ImageColor3 = UI.Theme.PrimaryText,
 		Size = UDim2.new(0.75, 0, 0.75, 0),
 	},
 	Text = "",
@@ -154,6 +155,7 @@ task.defer(function()
 			Size = titleBarButtonSize,
 			Icon = "rbxassetid://129281087731453",
 			IconProperties = {
+				ImageColor3 = UI.Theme.PrimaryText,
 				Size = UDim2.new(0.75, 0, 50 / 66 * 0.75, 0),
 			},
 			Text = "",

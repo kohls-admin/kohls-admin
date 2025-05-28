@@ -16,7 +16,7 @@ local indicatorColor = UI.compute(function(use)
 	elseif valid == false then
 		return use(UI.Theme.Invalid)
 	else
-		return Color3.new(1, 1, 1)
+		return use(UI.Theme.PrimaryText)
 	end
 end)
 
@@ -368,6 +368,7 @@ local suggestionPurchaseButton = UI.new "Button" {
 	LayoutOrder = math.huge,
 	Label = "Loading...",
 	Icon = "rbxasset://textures/ui/common/robux.png",
+	IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
 	IconRightAlign = true,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	Size = UDim2.new(1, 0, 0, 32),

@@ -37,6 +37,7 @@ function Logs.new(_K)
 		local itemRef = {
 			_instance = UI.new "TextBox" {
 				AutoLocalize = false,
+				BackgroundColor3 = UI.Theme.PrimaryText,
 				BackgroundTransparency = 1,
 				Size = self.ItemSize,
 				TextEditable = false,
@@ -83,9 +84,10 @@ function Logs.new(_K)
 	local function renderItem(self, itemData, log)
 		if log.renderText then
 			local item = itemData._instance
-			item.Text = log.textBoxText
+			item.Text = if string.find(self._filter, "^%s*$") then log.textBoxText else log.rawText
 			item.TextLabel.Text = log.renderText
 			itemData.tipText = log.tipText
+			item.BackgroundTransparency = if log.isEven then 0.9375 else 1
 		end
 	end
 
@@ -118,6 +120,7 @@ function Logs.new(_K)
 
 		local new = {}
 		for i, log in list do
+			log.isEven = #new % 2 == 0
 			if not log.filterText then
 				local date = os.date("%y-%m-%d", log.time)
 				local timeOfDay = os.date("%X", log.time)
@@ -136,7 +139,7 @@ function Logs.new(_K)
 
 				log.filterText = string.lower(log.rawText)
 				log.richText =
-					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[log.levelText] or "#fff"}"><b>{log.levelText}</b></font><b>{if log.client
+					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[log.levelText] or "#fff"}"><b><stroke transparency="0.75">{log.levelText}</stroke></b></font><b>{if log.client
 						then clientTag
 						elseif not log.from then serverTag
 						else ""}</b> {if log.name then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(
@@ -175,6 +178,7 @@ function Logs.new(_K)
 		ActiveSound = false,
 		Icon = UI.Theme.Image.Filter,
 		IconProperties = {
+			ImageColor3 = UI.Theme.PrimaryText,
 			Size = UDim2.fromScale(0.75, 0.75),
 		},
 		Size = UDim2.new(1, 0, 1, 0),

@@ -247,6 +247,7 @@ function Window.new(definition)
 		Size = UI.computeFrom(UDim2.fromOffset, titleBarHeight, titleBarHeight),
 		Icon = UI.Theme.Image.Close,
 		IconProperties = {
+			ImageColor3 = UI.Theme.PrimaryText,
 			Size = UDim2.fromScale(0.5, 0.5),
 		},
 		Text = "",
@@ -360,7 +361,6 @@ function Window.new(definition)
 					end),
 					TextColor3 = UI.Theme.PrimaryText,
 					TextSize = UI.Theme.FontSizeLargest,
-					TextStrokeTransparency = 0.9,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Bottom,
 					TextTruncate = Enum.TextTruncate.SplitWord,
