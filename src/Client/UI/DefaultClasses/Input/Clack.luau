@@ -36,7 +36,7 @@ function module.registerAll()
 	module.registerAll = nil :: any
 	local focused, textBoxFocused = {}, false
 	UserInputService.TextBoxFocused:Connect(function(textbox)
-		if not textbox then
+		if not (textbox and textbox.TextEditable) then
 			return
 		end
 		focused[textbox] = true
@@ -44,7 +44,7 @@ function module.registerAll()
 	end)
 
 	UserInputService.TextBoxFocusReleased:Connect(function(textbox)
-		if not textbox then
+		if not (textbox and textbox.TextEditable) then
 			return
 		end
 		focused[textbox] = nil
