@@ -48,6 +48,8 @@ function Members.new(_K)
 				Font = UI.Theme.FontMono,
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = UI.Theme.PrimaryText,
+				TextStrokeColor3 = UI.Theme.Primary,
+				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = Enum.TextXAlignment.Left,
 

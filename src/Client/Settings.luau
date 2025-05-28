@@ -368,48 +368,55 @@ function Settings.new(_K)
 		end
 		_K.Util.Defer.wait()
 
-		do -- Background Transparency
-			table.insert(
-				settingsLineItems.Theme,
-				UI.new "ListItem" {
-					ContentAutomaticSize = false,
-					Text = "Background Transparency",
-					UI.new "Input" {
-						Font = UI.Theme.FontMono,
-						Size = sliderInputSize,
-						FontSize = 14,
-						Padding = UDim.new(0, 5),
-						MaxChars = 4,
-						NumberOnly = true,
-						NumberRange = NumberRange.new(0, 1),
-						Placeholder = "",
-						Value = UI.compute(function(use)
-							return use(UI.Theme.Transparency)
-						end),
-						[UI.Hook] = {
-							Selected = function(value)
-								local number = tonumber(value)
-								if not tonumber(value) then
-									return
-								end
-								UI.Theme.Transparency:set(number)
-								change("themeTransparency", number)
-							end,
-						},
-					},
-					UI.new "Slider" {
-						Value = UI.Theme.Transparency,
-						UI.new "UIFlexItem" {
-							FlexMode = Enum.UIFlexMode.Fill,
-						},
-						[UI.Hook] = {
-							Selected = function(value)
-								change("themeTransparency", value)
-							end,
-						},
-					},
+		do -- Transparency
+			for _, data in
+				{
+					{ key = "Transparency", text = "Background Transparency" },
+					{ key = "TextStrokeTransparency", text = "Text Stroke Transparency" },
 				}
-			)
+			do
+				table.insert(
+					settingsLineItems.Theme,
+					UI.new "ListItem" {
+						ContentAutomaticSize = false,
+						Text = data.text,
+						UI.new "Input" {
+							Font = UI.Theme.FontMono,
+							Size = sliderInputSize,
+							FontSize = 14,
+							Padding = UDim.new(0, 5),
+							MaxChars = 4,
+							NumberOnly = true,
+							NumberRange = NumberRange.new(0, 1),
+							Placeholder = "",
+							Value = UI.compute(function(use)
+								return use(UI.Theme[data.key])
+							end),
+							[UI.Hook] = {
+								Selected = function(value)
+									local number = tonumber(value)
+									if not tonumber(value) then
+										return
+									end
+									UI.Theme[data.key]:set(number)
+									change("theme" .. data.key, number)
+								end,
+							},
+						},
+						UI.new "Slider" {
+							Value = UI.Theme[data.key],
+							UI.new "UIFlexItem" {
+								FlexMode = Enum.UIFlexMode.Fill,
+							},
+							[UI.Hook] = {
+								Selected = function(value)
+									change("theme" .. data.key, value)
+								end,
+							},
+						},
+					}
+				)
+			end
 		end
 
 		-- Color options

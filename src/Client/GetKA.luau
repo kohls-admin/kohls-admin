@@ -60,6 +60,8 @@ task.defer(function()
 			Font = UI.Theme.FontMono,
 			TextSize = UI.Theme.FontSizeLarge,
 			TextColor3 = UI.Theme.PrimaryText,
+			TextStrokeColor3 = UI.Theme.Primary,
+			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 			TextWrapped = true,
 			Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
 			Text = "<b>FREE</b>",

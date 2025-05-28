@@ -45,7 +45,7 @@ function Logs.new(_K)
 				Font = UI.Theme.FontMono,
 				Text = "",
 				TextSize = UI.Theme.FontSize,
-				TextColor3 = Color3.new(0, 0, 0),
+				TextColor3 = UI.Theme.Primary,
 				TextTransparency = 0.5,
 				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -62,6 +62,8 @@ function Logs.new(_K)
 					Text = "Log failed to render.",
 					TextSize = UI.Theme.FontSize,
 					TextColor3 = UI.Theme.PrimaryText,
+					TextStrokeColor3 = UI.Theme.Primary,
+					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 					TextTransparency = 0,
 					TextTruncate = Enum.TextTruncate.SplitWord,
 					TextXAlignment = Enum.TextXAlignment.Left,
@@ -139,7 +141,7 @@ function Logs.new(_K)
 
 				log.filterText = string.lower(log.rawText)
 				log.richText =
-					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[log.levelText] or "#fff"}"><b><stroke transparency="0.75">{log.levelText}</stroke></b></font><b>{if log.client
+					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[log.levelText] or "#fff"}"><b>{log.levelText}</b></font><b>{if log.client
 						then clientTag
 						elseif not log.from then serverTag
 						else ""}</b> {if log.name then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(

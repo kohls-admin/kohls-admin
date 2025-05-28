@@ -360,6 +360,8 @@ function Window.new(definition)
 						return `<b>{use(new.Title)}</b>`
 					end),
 					TextColor3 = UI.Theme.PrimaryText,
+					TextStrokeColor3 = UI.Theme.Primary,
+					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 					TextSize = UI.Theme.FontSizeLargest,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Bottom,

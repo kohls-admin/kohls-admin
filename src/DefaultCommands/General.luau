@@ -152,8 +152,8 @@ return {
 					Position = UDim2.new(0.5, 0, 0.5, 0),
 					Font = _K.UI.Theme.Font,
 					TextSize = 100,
-					TextColor3 = Color3.new(),
-					TextStrokeColor3 = Color3.new(1, 1, 1),
+					TextColor3 = _K.UI.Theme.SecondaryText,
+					TextStrokeColor3 = _K.UI.Theme.PrimaryText,
 					TextStrokeTransparency = 0.5,
 					Text = duration,
 					ZIndex = 2,
@@ -166,7 +166,7 @@ return {
 					time,
 				}
 
-				_K.UI.Sound.Hover02:Play()
+				_K.UI.Sound.Hover03:Play()
 
 				countdown = _K.Service.Run.Heartbeat:Connect(function()
 					local delta = workspace:GetServerTimeNow() - start
@@ -179,7 +179,7 @@ return {
 					progress:setProgress(1 - math.clamp(delta / duration, 0, 1))
 					local newText = tostring(math.clamp(math.floor(duration - delta) + 1, 0, duration))
 					if newText ~= time.Text then
-						_K.UI.Sound.Hover02:Play()
+						_K.UI.Sound.Hover03:Play()
 					end
 					time.Text = newText
 				end)

@@ -33,6 +33,8 @@ function Tooltip.new(definition)
 		TextSize = UI.Theme.FontSize,
 		Text = "Example tooltip text.",
 		TextColor3 = UI.Theme.PrimaryText,
+		TextStrokeColor3 = UI.Theme.Primary,
+		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 		TextWrapped = true,
 		RichText = true,
 		AutomaticSize = Enum.AutomaticSize.XY,

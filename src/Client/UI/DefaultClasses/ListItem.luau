@@ -66,6 +66,8 @@ function ListItem.new(definition)
 			Font = UI.Theme.Font,
 			TextSize = UI.Theme.FontSize,
 			TextColor3 = UI.Theme.PrimaryText,
+			TextStrokeColor3 = UI.Theme.Primary,
+			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 			TextTruncate = Enum.TextTruncate.SplitWord,
 			BackgroundTransparency = 1,
 

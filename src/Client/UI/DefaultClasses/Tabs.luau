@@ -219,6 +219,8 @@ function Tabs.new(definition)
 					Text = boldState,
 					TextSize = UI.Theme.FontSize,
 					TextColor3 = UI.Theme.PrimaryText,
+					TextStrokeColor3 = UI.Theme.Primary,
+					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 					TextTransparency = UI.tween(
 						UI.Theme.TweenOut,
 						UI.compute(function(use)

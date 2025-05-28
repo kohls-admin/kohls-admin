@@ -33,7 +33,7 @@ task.delay(0.2, _K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
 	Title = UI.compute(function(use)
-		return `Kohl's Admin  <font transparency="0.75" size="{use(UI.Theme.FontSize)}">v{_K.VERSION}</font>`
+		return `Kohl's Admin  <stroke transparency="1"><font transparency="0.75" size="{use(UI.Theme.FontSize)}">v{_K.VERSION}</font></stroke>`
 	end),
 	Visible = false,
 
@@ -119,6 +119,8 @@ task.defer(function()
 			Font = UI.Theme.Font,
 			TextSize = UI.Theme.FontSize,
 			TextColor3 = UI.Theme.PrimaryText,
+			TextStrokeColor3 = UI.Theme.Primary,
+			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 			TextWrapped = true,
 			Size = UDim2.new(1, 0, 0, 24),
 			Text = `<font transparency="0.33">Join the <b>Kohl's Admin</b> Discord server!</font>{socialWarning}`,

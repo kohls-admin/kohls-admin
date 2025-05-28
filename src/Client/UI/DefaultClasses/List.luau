@@ -80,6 +80,8 @@ function List.new(definition)
 					Text = UI.computeFrom(string.upper, new.Label),
 					TextSize = UI.Theme.FontSize,
 					TextColor3 = UI.Theme.PrimaryText,
+					TextStrokeColor3 = UI.Theme.Primary,
+					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 					TextTransparency = 0.5,
 					TextTruncate = Enum.TextTruncate.SplitWord,
 					TextXAlignment = "Left",

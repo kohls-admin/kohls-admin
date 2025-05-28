@@ -1,5 +1,6 @@
 return {
 	Transparency = 0.08,
+	TextStrokeTransparency = 0.875,
 
 	Primary = Color3.fromRGB(18, 18, 21),
 	PrimaryText = Color3.fromRGB(255, 255, 255),
