@@ -42,7 +42,17 @@ for _, themeModule: ModuleScript in themeFolder:GetChildren() do
 				end
 			end
 		end
-		_K.client.themes._value[themeModule.Name] = theme
+		if themeModule.Name == "Default" then
+			-- clone the default theme to allow for intellisense without overwriting the values
+			local default = {}
+			for key, value in theme do
+				default[key] = if type(value) == "table" then table.clone(value) else value
+			end
+			_K.client.themes._value[themeModule.Name] = default
+		else
+			_K.client.themes._value[themeModule.Name] = theme
+		end
+
 		task.spawn(_K.Service.ContentProvider.PreloadAsync, _K.Service.ContentProvider, content)
 	end
 end

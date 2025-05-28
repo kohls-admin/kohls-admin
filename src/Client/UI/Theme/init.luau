@@ -38,10 +38,7 @@ local state = Flux.state
 --- .TypingSounds State<boolean>
 --- .TypingSoundsOnEveryTextBox State<boolean>
 --- .Volume State<number>
-local Theme = {}
-for key, value in Default do
-	Theme[key] = if type(value) == "table" then table.clone(value) else value
-end
+local Theme = Default
 
 -- import values from default studio theme
 for key, value in Default do
