@@ -18,7 +18,7 @@ task.defer(function()
 		Icon = "rbxasset://textures/ui/common/robux.png",
 		IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
 		IconRightAlign = true,
-		Label = "<sc><b>GET IT TODAY!</b></sc>",
+		Label = "<b>Get Kohl's Admin</b>",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Size = UDim2.new(0.75, 0, 0, 32),
 
@@ -84,9 +84,9 @@ task.defer(function()
 
 	dialog = UI.new "Dialog" {
 		Parent = UI.LayerTop,
-		Title = "Enjoy Kohl's Admin?",
-		Text = "Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management.",
-		Visible = false,
+		Title = "❤️ Kohl's Admin?",
+		Text = "Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management. 🚀",
+		Visible = true,
 		Draggable = true,
 		ExitButton = true,
 		BackgroundTransparency = 0,

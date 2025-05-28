@@ -174,7 +174,7 @@ function About.new(_K)
 		for i, ugc in
 			{
 				{
-					tip = "🕊️ <b>Light Wings</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+					tip = "🕊️ <b>Light Wings</b>\n<font transparency='0.33'>Provides the following special effects in games using Kohl's Admin:</font>"
 						.. "\n - Flying Animations 💫\n - Neon Material ✨\n\n<font transparency='0.66'>Animator: <b>@LuhHorsie</b>\nModeler: <b>@HyperbolicHydra</b>\nScripter: <b>@Scripth</b></font>",
 					id = 133292294488871,
 					equip = "rbxassetid://89119211625300",
@@ -182,7 +182,7 @@ function About.new(_K)
 					level = 3,
 				},
 				{
-					tip = "👑 <b>Light Crown</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+					tip = "👑 <b>Light Crown</b>\n<font transparency='0.33'>Provides the following special effects in games using Kohl's Admin:</font>"
 						.. "\n - Fire Effect 🔥\n - Neon Material ✨\n - Spinning 💫",
 					id = 18966788838,
 					equip = "rbxassetid://18966762965",
@@ -190,7 +190,7 @@ function About.new(_K)
 					level = 2,
 				},
 				{
-					tip = "🕊️ <b>Dark Wings</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+					tip = "🕊️ <b>Dark Wings</b>\n<font transparency='0.33'>Provides the following special effects in games using Kohl's Admin:</font>"
 						.. "\n - Flying Animations 💫\n - Neon Material ✨\n\n<font transparency='0.66'>Animator: <b>@LuhHorsie</b>\nModeler: <b>@HyperbolicHydra</b>\nScripter: <b>@Scripth</b></font>",
 					id = 110848154960799,
 					equip = "rbxassetid://89119211625300",
@@ -198,7 +198,7 @@ function About.new(_K)
 					level = 3,
 				},
 				{
-					tip = "👑 <b>Dark Crown</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+					tip = "👑 <b>Dark Crown</b>\n<font transparency='0.33'>Provides the following special effects in games using Kohl's Admin:</font>"
 						.. "\n - Fire Effect 🔥\n - Neon Material ✨\n - Spinning 💫",
 					id = 106645613603989,
 					equip = "rbxassetid://18966762965",
@@ -206,7 +206,7 @@ function About.new(_K)
 					level = 2,
 				},
 				{
-					tip = "🕊️ <b>Gold Wings</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+					tip = "🕊️ <b>Gold Wings</b>\n<font transparency='0.33'>Provides the following special effects in games using Kohl's Admin:</font>"
 						.. "\n - Flying Animations 💫\n - Neon Material ✨\n\n<font transparency='0.66'>Animator: <b>@LuhHorsie</b>\nModeler: <b>@HyperbolicHydra</b>\nScripter: <b>@Scripth</b></font>",
 					id = 92807314389236,
 					equip = "rbxassetid://89119211625300",
@@ -214,7 +214,7 @@ function About.new(_K)
 					level = 3,
 				},
 				{
-					tip = "👑 <b>Gold Crown</b>\n<font transparency='0.33'>Provides the following special effects in participating experiences using Kohl's Admin:</font>"
+					tip = "👑 <b>Gold Crown</b>\n<font transparency='0.33'>Provides the following special effects in games using Kohl's Admin:</font>"
 						.. "\n - Fire Effect 🔥\n - Neon Material ✨\n - Spinning 💫",
 					id = 99317257118206,
 					equip = "rbxassetid://18966762965",
@@ -569,9 +569,10 @@ function About.new(_K)
 			}
 			UI.new "Tooltip" {
 				Parent = button._instance,
-				Text = `❤️ Thanks for supporting Kohl's Admin!\n<b>{if i > 4
-					then "Gives a title in participating games!"
-					else "This doesn't provide any in-game benefits!"}</b>`,
+				Text = `We've poured thousands of hours into Kohl's Admin.\nIf you enjoy it, please donate! ❤️\n\n<b>{if i
+						> 4
+					then "<font color='#0f0'>Gives a title!"
+					else "<font transparency='0.5'>This doesn't give any perks!"}</font></b>`,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Visible = button._hovering,
 			}
@@ -655,8 +656,7 @@ function About.new(_K)
 
 		UI.new "Tooltip" {
 			Parent = vipButtonGlobal,
-			Text = "✨ <b>Become a VIP</b>\n<font transparency='0.5'>Unlock exclusive commands in participating games.</font>",
-			TextXAlignment = Enum.TextXAlignment.Left,
+			Text = "✨ <b>Become a VIP</b>\n\n<font color='#0f0'>Unlock <b>VIP commands</b> globally!</font>",
 			Visible = vipButtonGlobal._hovering,
 		}
 
@@ -715,7 +715,7 @@ function About.new(_K)
 		purchaseVIPDialog = UI.new "Dialog" {
 			Parent = UI.LayerTop,
 			Title = "✨ <b>Become a VIP</b>",
-			Text = "<font transparency='0.5'>Unlock exclusive commands in participating games.</font>",
+			Text = "<font color='#0f0'>Unlock <b>VIP commands</b> globally!</font>",
 			Visible = false,
 			Draggable = true,
 			ExitButton = true,
@@ -816,7 +816,7 @@ function About.new(_K)
 
 		UI.new "Tooltip" {
 			Parent = adminModelButton,
-			Text = "🚀 Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management.",
+			Text = "Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management. 🚀",
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Visible = adminModelButton._hovering,
 		}
@@ -870,10 +870,11 @@ function About.new(_K)
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
 				Size = UDim2.new(1, 0, 0, 0),
-				Text = "<b>❤️ Kohl's Admin?</b>\n<font transparency='0.5'>Donate to help us build amazing new features!</font>",
+				Text = "<b>❤️ Kohl's Admin?</b>\n<font transparency='0.5'>Donate and rate it for cool features!</font>",
 				RichText = true,
 			},
 
+			adminModelButton,
 			vipList,
 			gamePasses,
 			customUGC,
@@ -889,12 +890,9 @@ function About.new(_K)
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
 				Size = UDim2.new(1, 0, 0, 0),
-				Text = "<b>Game Creators</b> get up to <font color='#0f0'><b>40%</b></font> when "
-					.. "<font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in their Roblox Game Settings!",
+				Text = "<b>Looking for more games with Kohl's Admin?</b>",
 				RichText = true,
 			},
-
-			adminModelButton,
 
 			UI.new "TextBox" {
 				Name = "CatalogLink",
@@ -923,7 +921,10 @@ function About.new(_K)
 					PaddingBottom = UI.Theme.Padding,
 				},
 				UI.new "Tooltip" {
-					Text = "The hub for games using Kohl's Admin!\n\n<font transparency='0.5'>Check the <i>Kohl's Admin</i> <b>Settings</b> script in Roblox Studio for more information.</font>",
+					Text = "A list of games using Kohl's Admin!\n\n"
+						.. "<font transparency='0.5'>Check the Kohl's Admin <b>Settings</b> script in Studio to add your game to the list.</font>\n\n"
+						.. "<b>Game Creators</b> get up to <font color='#0f0'><b>40%</b></font> when "
+						.. "<font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in their Roblox Game Settings!",
 					TextXAlignment = Enum.TextXAlignment.Left,
 				},
 			},
