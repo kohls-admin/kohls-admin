@@ -86,7 +86,7 @@ task.defer(function()
 		Parent = UI.LayerTop,
 		Title = "❤️ Kohl's Admin?",
 		Text = "Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management. 🚀",
-		Visible = true,
+		Visible = false,
 		Draggable = true,
 		ExitButton = true,
 		BackgroundTransparency = 0,
