@@ -334,6 +334,7 @@ function ScrollerFast.new(definition)
 			Placeholder = "Search",
 			Icon = UI.Theme.Image.Search,
 			IconProperties = {
+				ImageColor3 = UI.Theme.PrimaryText,
 				Size = UDim2.fromOffset(18, 18),
 			},
 		}

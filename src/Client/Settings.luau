@@ -506,6 +506,7 @@ function Settings.new(_K)
 			Placeholder = "Search",
 			Icon = UI.Theme.Image.Search,
 			IconProperties = {
+				ImageColor3 = UI.Theme.PrimaryText,
 				Size = UDim2.fromOffset(18, 18),
 			},
 			[UI.Hook] = {

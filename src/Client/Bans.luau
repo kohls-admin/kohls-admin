@@ -55,6 +55,7 @@ function Bans.new(_K)
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			Icon = UI.Theme.Image.Close_Bold,
 			IconProperties = {
+				ImageColor3 = UI.Theme.PrimaryText,
 				Size = UDim2.fromScale(0.5, 0.5),
 			},
 			Text = "",
