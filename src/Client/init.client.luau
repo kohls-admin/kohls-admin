@@ -106,9 +106,8 @@ function _K.client.syncSettings(settings)
 	for key, value in settings do
 		value = UI.peek(value)
 		if
-			string.find(key, "theme", 1, true) ~= 1
-			or _K.Data.settings.changeThemeAuthority == "Studio"
-			or settings.defaultTheme ~= "Custom (DataStore)"
+			string.find(key, "theme", 1, true) == 1
+			and (_K.Data.settings.changeThemeAuthority == "Studio" or settings.defaultTheme ~= "Custom (DataStore)")
 		then
 			continue
 		end
