@@ -109,7 +109,7 @@ if Util.Service.Run:IsServer() then
 	}
 
 	local cache = {}
-	Remote.VIPUGCMethod.OnServerEvent:Connect(function(player, assetId, match, equip, name)
+	function VIP.Effect(player, assetId, match, equip, name)
 		if not Data.settings.vip then
 			return
 		end
@@ -169,7 +169,9 @@ if Util.Service.Run:IsServer() then
 				userEffects[match] = { Method = ugcEffect.Method, Params = { name } }
 			end
 		end
-	end)
+	end
+
+	Remote.VIPUGCMethod.OnServerEvent:Connect(VIP.Effect)
 
 	function VIP.Title(player: Player, title, ...)
 		local definition = Title.definition[title and string.lower(title)]
