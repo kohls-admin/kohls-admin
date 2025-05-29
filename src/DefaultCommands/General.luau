@@ -778,31 +778,74 @@ return {
 		name = "xray",
 		aliases = { "wallhack", "walls", "unxray", "unwallhack", "unwalls" },
 		description = "Show players through walls.",
-		args = {},
+		args = {
+			{
+				type = "color",
+				name = "FillColor",
+				description = "The fill color of the xray.",
+				optional = true,
+			},
+			{
+				type = "color",
+				name = "OutlineColor",
+				description = "The outline color of the xray.",
+				optional = true,
+			},
+		},
 		envClient = function(_K)
-			local env = { xray = _K.Flux.state(false) }
-			local function xrayCharacter(character)
-				_K.Flux.new "Highlight" {
-					Parent = character,
-					Name = "_Kxray",
-					Enabled = env.xray,
-				}
+			local xray = _K.Flux.state(false)
+			local xrayModel = _K.Flux.new "Model" {
+				Parent = workspace,
+				Name = "_K_XRay",
+			}
+			local highlight = _K.Flux.new "Highlight" {
+				Parent = xrayModel,
+				Name = "_Kxray",
+				Enabled = xray,
+				FillColor = Color3.new(),
+			}
+			local characterConnections = {}
+			local function cleanup(character)
+				local con = characterConnections[character]
+				if con then
+					con()
+				end
+				characterConnections[character] = nil
 			end
-			local function xrayPlayer(player)
+			local function xrayCharacter(character: Model)
+				local oldParent = character.Parent
+				characterConnections[character] = xray:hook(function(value)
+					character.Parent = if value then xrayModel else oldParent
+				end)
+				character:GetPropertyChangedSignal("Parent"):Connect(function()
+					if character.Parent ~= xrayModel then
+						oldParent = character.Parent
+					end
+				end)
+			end
+			local function xrayPlayer(player: Player)
 				if player == _K.LocalPlayer then
 					return
 				end
 				player.CharacterAdded:Connect(xrayCharacter)
+				player.CharacterRemoving:Connect(cleanup)
 				if player.Character then
 					xrayCharacter(player.Character)
 				end
 			end
 			_K.Util.SafePlayerAdded(xrayPlayer)
-			return env
+			return {
+				xray = xray,
+				xrayModel = xrayModel,
+				highlight = highlight,
+			}
 		end,
 
-		runClient = function(context)
-			context.env.xray:set(if context.undo then false else not context.env.xray._value)
+		runClient = function(context, fillColor: Color3?, outlineColor: Color3?)
+			context.env.xray:set(if context.undo then false else true)
+			context.env.xrayModel.Parent = if context.undo then nil else workspace
+			context.env.hightlight.FillColor = fillColor or Color3.new(0, 1, 1)
+			context.env.hightlight.OutlineColor = outlineColor or Color3.new(1, 1, 1)
 		end,
 	},
 
