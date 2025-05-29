@@ -19,7 +19,7 @@ end
 
 local tracks = {}
 
-function Animate.play(rig: Instance, sequence: KeyframeSequence, loop: boolean?)
+function Animate.play(rig: MeshPart, sequence: KeyframeSequence, loop: boolean?)
 	if tracks[rig] then
 		pcall(task.cancel, tracks[rig])
 	end
