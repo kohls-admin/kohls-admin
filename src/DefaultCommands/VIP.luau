@@ -1482,6 +1482,42 @@ return {
 		end,
 	},
 	{
+		name = "wingscolor",
+		description = "Changes the VIP wings color.",
+		args = {
+			{
+				type = "color",
+				name = "Wings Color",
+				description = "The color of the wings.",
+				optional = true,
+			},
+		},
+
+		runClient = function(context)
+			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
+				context._K.promptPurchaseVIP(true)
+				return
+			end
+		end,
+		run = function(context, wingsColor: Color3?)
+			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
+				return
+			end
+			if not context.fromPlayer.Character then
+				return "You have no character!"
+			end
+			local wings = context.fromPlayer.Character:FindFirstChild("_KAlphaWings")
+			if not wings then
+				return "You don't have VIP wings equipped!"
+			end
+			wingsColor = wingsColor or wings:GetAttribute("_KWingsColor")
+			task.defer(function()
+				wings.Wings.Color = wingsColor
+			end)
+			return
+		end,
+	},
+	{
 		name = "crowncolor",
 		description = "Changes the VIP crown color.",
 		args = {

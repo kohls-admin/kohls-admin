@@ -91,6 +91,7 @@ return {
 		local clone = hat:Clone()
 
 		if color then
+			clone:SetAttribute("_KWingsColor", color)
 			clone.Wings.Color = color
 		end
 
