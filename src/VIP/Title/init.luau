@@ -67,7 +67,7 @@ local Title = {
 		mythic = {
 			gamepass = 941006661,
 			getValue = function(elapsed: number)
-				return ColorSequence.new(Color3.fromHSV((elapsed / 8) % 1, 0.75, 1))
+				return ColorSequence.new(Color3.fromHSV((time() / 10) % 1, 0.75, 1))
 			end,
 			update = function(object, value)
 				object.Title.UIGradient.Color = value
