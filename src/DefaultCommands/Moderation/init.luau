@@ -1005,7 +1005,7 @@ return {
 	},
 	{
 		name = "kill",
-		aliases = { "unalive", "💀" },
+		aliases = { "slay", "unalive", "💀" },
 		description = "Kills one or more player(s).",
 		args = {
 			{
@@ -1031,7 +1031,7 @@ return {
 	{
 		name = "loopkill",
 		credit = { "SkellyLua" },
-		aliases = { "loopunalive", "loop💀", "unloopkill", "unloopunalive", "unloop💀" },
+		aliases = { "loopslay", "loopunalive", "loop💀", "unloopkill", "unloopslay", "unloopunalive", "unloop💀" },
 		description = "Kills one or more player(s) repeatedly.",
 		args = {
 			{
@@ -1042,38 +1042,29 @@ return {
 			},
 		},
 		env = function(_K)
-			local loopKillList = {}
-
-			local function loopKillCheck(player)
-				if loopKillList[player.UserId] and player.Character then
-					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-					if humanoid then
+			local killing = {}
+			task.spawn(function()
+				repeat
+					for userId in killing do
+						local player = _K.Service.Players:GetPlayerByUserId(userId)
+						if not (player and player.Character) then
+							continue
+						end
+						local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+						if not humanoid then
+							continue
+						end
 						humanoid.MaxHealth = math.max(1, humanoid.MaxHealth)
 						humanoid.Health = 0
 					end
-				end
-			end
-
-			task.spawn(function()
-				repeat
 					task.wait(1)
-					for userId in loopKillList do
-						local player = _K.Service.Players:GetPlayerByUserId(userId)
-						if player and player.Character then
-							loopKillCheck(player)
-						end
-					end
-				until nil
+				until _K.Data.gameClosing
 			end)
-
-			return {
-				loopKillList = loopKillList,
-				loopKillCheck = loopKillCheck,
-			}
+			return { killing = killing }
 		end,
 		run = function(context, players)
 			for _, player in players do
-				context.env.loopKillList[player.UserId] = if context.undo then nil else true
+				context.env.killing[player.UserId] = if context.undo then nil else true
 			end
 		end,
 	},
