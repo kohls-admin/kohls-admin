@@ -1518,6 +1518,38 @@ return {
 		end,
 	},
 	{
+		name = "rainbowwings",
+		aliases = { "wingsrainbow" },
+		description = "Toggles the VIP wings rainbow.",
+		runClient = function(context)
+			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
+				context._K.promptPurchaseVIP(true)
+				return
+			end
+		end,
+		run = function(context)
+			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
+				return
+			end
+			if not context.fromPlayer.Character then
+				return "You have no character!"
+			end
+			local wings = context.fromPlayer.Character:FindFirstChild("_KAlphaWings")
+			if not wings then
+				return "You don't have VIP wings equipped!"
+			end
+			if wings:HasTag("_KAlphaWingsRainbow") then
+				wings:RemoveTag("_KAlphaWingsRainbow")
+				task.defer(function()
+					wings.Wings.Color = wings:GetAttribute("_KWingsColor") or Color3.new(1, 1, 1)
+				end)
+			else
+				wings:AddTag("_KAlphaWingsRainbow")
+			end
+			return
+		end,
+	},
+	{
 		name = "crowncolor",
 		description = "Changes the VIP crown color.",
 		args = {

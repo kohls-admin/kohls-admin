@@ -1,8 +1,6 @@
-if game:GetService("RunService"):IsClient() then
-	return false
-end
-
+local CollectionService = game:GetService("CollectionService")
 local InsertService = game:GetService("InsertService")
+local RunService = game:GetService("RunService")
 
 local hat = Instance.new("Accessory")
 hat.AccessoryType = Enum.AccessoryType.Back
@@ -50,7 +48,33 @@ for _, bone in Bones:GetChildren() do
 	bone.Parent = wingMesh
 end
 
-script:WaitForChild("Animate").Parent = wingMesh
+script:WaitForChild("Animate"):Clone().Parent = wingMesh
+
+if RunService:IsClient() then
+	local rainbow = {}
+	RunService.Heartbeat:Connect(function()
+		if next(rainbow) then
+			local color = Color3.fromHSV((time() / 10) % 1, 1, 1)
+			for wings in rainbow do
+				if wings and wings.Parent and wings:FindFirstChild("Handle") then
+					wings.Wings.Color = color
+				else
+					rainbow[wings] = nil
+				end
+			end
+		end
+	end)
+
+	CollectionService:GetInstanceAddedSignal("_KAlphaWingsRainbow"):Connect(function(obj)
+		rainbow[obj] = true
+	end)
+	CollectionService:GetInstanceRemovedSignal("_KAlphaWingsRainbow"):Connect(function(obj)
+		rainbow[obj] = nil
+	end)
+	for _, obj in CollectionService:GetTagged("_KAlphaWingsRainbow") do
+		rainbow[obj] = true
+	end
+end
 
 local COLORS = {
 	dark = Color3.new(),
