@@ -29,6 +29,92 @@ return {
 		end,
 	},
 	{
+		name = "hint",
+		aliases = { "h" },
+		description = "Sends a hint to everyone in the server.",
+		args = {
+			{
+				type = "rawString",
+				name = "Message",
+				description = "The message to send.",
+			},
+		},
+		envClient = function(_K)
+			local existing
+			_K.Remote.Hint.OnClientEvent:Connect(function(message: string, duration: number?)
+				if existing then
+					existing:Destroy()
+				end
+				local hint = _K.UI.new "TextLabel" {
+					Name = "Hint",
+					Parent = _K.UI.LayerTop,
+					AutomaticSize = Enum.AutomaticSize.Y,
+					Size = UDim2.new(1, 0, 0, 0),
+					BackgroundColor3 = _K.UI.Theme.Primary,
+					BackgroundTransparency = _K.UI.Theme.Transparency,
+					Font = _K.UI.Theme.Font,
+					TextSize = _K.UI.Theme.FontSize,
+					TextColor3 = _K.UI.Theme.PrimaryText,
+					TextStrokeColor3 = _K.UI.Theme.Primary,
+					TextStrokeTransparency = _K.UI.Theme.TextStrokeTransparency,
+					Text = message,
+					RichText = true,
+
+					_K.UI.new "UIPadding" {
+						PaddingTop = _K.UI.Theme.Padding,
+						PaddingBottom = _K.UI.Theme.Padding,
+					},
+				}
+				existing = hint
+				task.delay(duration or 4 + 0.125 * #message, game.Destroy, hint)
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.Hint }
+		end,
+		run = function(context, message: string)
+			local ok, result = context._K.Util.String.filterResult(message, context.from)
+			if not ok then
+				return
+			end
+			for _, player in Players:GetPlayers() do
+				task.spawn(function()
+					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
+					context.env.remote:FireClient(player, `<b>{context.fromPlayer}:</b> {msg}`)
+				end)
+			end
+		end,
+	},
+	{
+		name = "privatehint",
+		aliases = { "phint", "ph" },
+		description = "Sends a private hint to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to hint.",
+			},
+			{
+				type = "rawString",
+				name = "Message",
+				description = "The message to send.",
+			},
+		},
+		run = function(context, players: { Player }, message: string)
+			local ok, result = context._K.Util.String.filterResult(message, context.from)
+			if not ok then
+				return
+			end
+			for _, player in players do
+				task.spawn(function()
+					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
+					context._K.Remote.Hint:FireClient(player, `<b>{context.fromPlayer}:</b> {msg}`)
+				end)
+			end
+		end,
+	},
+	{
 		name = "message",
 		aliases = { "m", "msg" },
 		description = "Sends a message to everyone in the server.",
