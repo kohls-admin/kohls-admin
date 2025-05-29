@@ -89,7 +89,6 @@ function Logs.new(_K)
 			item.Text = if string.find(self._filter, "^%s*$") then log.textBoxText else log.rawText
 			item.TextLabel.Text = log.renderText
 			itemData.tipText = log.tipText
-			item.BackgroundTransparency = if log.isEven then 0.9375 else 1
 		end
 	end
 
@@ -122,7 +121,6 @@ function Logs.new(_K)
 
 		local new = {}
 		for i, log in list do
-			log.isEven = #new % 2 == 0
 			if not log.filterText then
 				local date = os.date("%y-%m-%d", log.time)
 				local timeOfDay = os.date("%X", log.time)
