@@ -1,6 +1,6 @@
 {
 	"name": "Building Tools",
 	"tree": {
-		"$path": "../../../submodules/F3X"
+		"$path": "../../../../submodules/F3X"
 	}
 }

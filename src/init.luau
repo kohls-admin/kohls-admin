@@ -8,11 +8,12 @@ end
 --------------------------
 local RunService = game:GetService("RunService")
 
-local Client = script:WaitForChild("Client")
-local UtilModule = script:WaitForChild("Util")
-
 local requireStart = os.clock()
-local Util = require(UtilModule)
+
+local Client = script:WaitForChild("Client")
+local Server = RunService:IsServer() and script:WaitForChild("Server")
+
+local Util = require(script:WaitForChild("Util"))
 
 export type Log = Util.Log
 export type LogType = Util.LogType
@@ -20,6 +21,10 @@ export type Logger = Util.Logger
 export type Hook = "log" | "preCommand" | "postCommand"
 
 local IS_DEMO_PLACE = game.PlaceId == 2569622788
+
+if Server then
+	Server.Parent = Util.Service.ServerStorage
+end
 
 --[=[
 	@within MainModule
@@ -71,6 +76,8 @@ local _K = {
 
 	-- shorthand
 	Service = Util.Service,
+	Server = Server,
+	Tools = Server and Server:WaitForChild("Tools"),
 
 	client = nil,
 	pinnedAnnouncement = nil,
@@ -147,11 +154,6 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 	return log
 end
 _K.Logger.logs = _K.Data.logs
-
-if _K.IsServer then
-	_K.Tools = script:WaitForChild("Tools")
-	_K.Tools.Parent = _K.Service.ServerScript
-end
 
 -- register initial UI children
 if _K.IsClient then
