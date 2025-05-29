@@ -104,6 +104,8 @@ return {
 
 		if colors then
 			local primary, secondary = unpack(colors)
+			clone:SetAttribute("_KCrownColor", primary)
+			clone:SetAttribute("_KCrownFireColor", secondary)
 			clone.Handle.Color = primary
 			clone.Handle.Fire.Color = secondary
 			clone.Handle.Fire.SecondaryColor = secondary

@@ -1481,4 +1481,50 @@ return {
 			end
 		end,
 	},
+	{
+		name = "crowncolor",
+		description = "Changes the VIP crown color.",
+		args = {
+			{
+				type = "color",
+				name = "Crown Color",
+				description = "The color of the crown.",
+				optional = true,
+			},
+			{
+				type = "color",
+				name = "Fire Color",
+				description = "The color of the crown's fire.",
+				optional = true,
+			},
+		},
+
+		runClient = function(context)
+			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 2 then
+				context._K.promptPurchaseVIP(true)
+				return
+			end
+		end,
+		run = function(context, crownColor: Color3?, fireColor: Color3?)
+			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 2 then
+				return
+			end
+			if not context.fromPlayer.Character then
+				return "You have no character!"
+			end
+			local crown = context.fromPlayer.Character:FindFirstChild("SuperCrown")
+			if not crown then
+				return "You don't have a VIP crown equipped!"
+			end
+			crownColor = crownColor or crown:GetAttribute("_KCrownColor")
+			fireColor = fireColor or crown:GetAttribute("_KCrownFireColor")
+			crown:RemoveTag("_KSuperCrownRainbow")
+			task.defer(function()
+				crown.Handle.Color = crownColor
+				crown.Handle.Fire.Color = fireColor
+				crown.Handle.Fire.SecondaryColor = crownColor
+			end)
+			return
+		end,
+	},
 }
