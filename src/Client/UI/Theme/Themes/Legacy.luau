@@ -15,13 +15,7 @@ return {
 
 	FontSize = 18,
 	Font = Enum.Font.SourceSans,
-	FontMono = Enum.Font.RobotoMono,
 
 	CornerRadius = UDim.new(0, 0),
 	Padding = UDim.new(0, 4),
-	StrokeEnabled = false,
-
-	TweenIn = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In),
-	TweenOut = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out),
-	TweenInOut = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut),
 }
