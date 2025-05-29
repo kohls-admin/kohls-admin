@@ -847,26 +847,70 @@ return {
 				optional = true,
 			},
 		},
+		env = function(_K)
+			return {
+				apply = function(character, strength)
+					local angularStrength = strength * 10
+					if character and character:FindFirstChild("HumanoidRootPart") then
+						character:PivotTo(character:GetPivot() * CFrame.Angles(math.pi, 0, 0))
 
-		run = function(context, players, strength)
-			strength = strength or 1
-			local angularStrength = strength * 10
+						local direction = CFrame.Angles(0, math.random() * math.pi * 2, 0).LookVector
+						character.HumanoidRootPart.AssemblyLinearVelocity = direction
+								* math.random(strength * 160, strength * 200)
+							+ Vector3.new(0, math.random(strength * 160, strength * 200), 0)
 
+						character.HumanoidRootPart.AssemblyAngularVelocity = Vector3.new(
+							math.random(-angularStrength, angularStrength),
+							math.random(-angularStrength, angularStrength),
+							math.random(-angularStrength, angularStrength)
+						)
+					end
+				end,
+			}
+		end,
+		run = function(context, players: { Player }, strength: number?)
 			for _, player in players do
-				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-					player.Character:PivotTo(player.Character:GetPivot() * CFrame.Angles(math.pi, 0, 0))
-
-					local direction = CFrame.Angles(0, math.random() * math.pi * 2, 0).LookVector
-					player.Character.HumanoidRootPart.AssemblyLinearVelocity = direction
-							* math.random(strength * 160, strength * 200)
-						+ Vector3.new(0, math.random(strength * 160, strength * 200), 0)
-
-					player.Character.HumanoidRootPart.AssemblyAngularVelocity = Vector3.new(
-						math.random(-angularStrength, angularStrength),
-						math.random(-angularStrength, angularStrength),
-						math.random(-angularStrength, angularStrength)
-					)
-				end
+				context.env.apply(player.Character, strength or 1)
+			end
+		end,
+	},
+	{
+		name = "loopfling",
+		aliases = { "unloopfling" },
+		description = "Flings one or more player(s) repeatedly.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to fling repeatedly.",
+				shouldRequest = true,
+			},
+			{
+				type = "number",
+				name = "Strength",
+				description = "The strength of the fling, 1 is default.",
+				optional = true,
+			},
+		},
+		env = function(_K)
+			local flinging = {}
+			task.spawn(function()
+				repeat
+					for userId, strength in flinging do
+						local player = _K.Service.Players:GetPlayerByUserId(userId)
+						if not (player and player.Character) then
+							continue
+						end
+						_K.Registry.commands.fling.env.apply(player.Character, strength)
+					end
+					task.wait(2)
+				until _K.Data.gameClosing
+			end)
+			return { flinging = flinging }
+		end,
+		run = function(context, players: { Player }, strength: number?)
+			for _, player in players do
+				context.env.flinging[player.UserId] = if context.undo then nil else (strength or 1)
 			end
 		end,
 	},
