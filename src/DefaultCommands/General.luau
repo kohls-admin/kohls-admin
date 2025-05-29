@@ -1,7 +1,6 @@
 -- "non-abusive" commands for game staff members
 
 local Players = game:GetService("Players")
-local TextService = game:GetService("TextService")
 
 local playingSound = nil
 
