@@ -36,32 +36,48 @@ fire.Heat = 4
 fire.Size = 2
 
 if RunService:IsClient() then
-	-- handle spinning logic
-	local crowns = CollectionService:GetTagged("_KSuperCrown")
+	-- handle crown animations
+	local crowns, rainbowCrowns = {}, {}
 	RunService.Heartbeat:Connect(function()
-		if #crowns > 0 then
+		if next(crowns) then
 			local t = time()
 			local tpi = t % (math.pi * 2)
-			local AP = CFrame.new(0, math.sin(tpi) / 8, 0) * CFrame.Angles(0, tpi, 0)
-			for i, v in crowns do
-				if v and v.Parent and v:FindFirstChild("Handle") then
-					if v.Handle:FindFirstChild("AccessoryWeld") then
-						v.Handle.AccessoryWeld.C1 = AP
+			local cframe = CFrame.new(0, math.sin(tpi) / 8, 0) * CFrame.Angles(0, tpi, 0)
+			for crown in crowns do
+				if crown and crown.Parent and crown:FindFirstChild("Handle") then
+					if crown.Handle:FindFirstChild("AccessoryWeld") then
+						crown.Handle.AccessoryWeld.C1 = cframe
 					end
 				else
-					table.remove(crowns, i)
+					crowns[crown] = nil
 				end
 			end
 			-- rainbow crowns
-			-- local color = Color3.fromHSV((t / 10) % 1, 1, 1)
+			local color = Color3.fromHSV((t / 10) % 1, 1, 1)
+			for crown in rainbowCrowns do
+				if crown and crown.Parent and crown:FindFirstChild("Handle") then
+					crown.Handle.Color = color
+					local fire = crown.Handle:FindFirstChild("Fire")
+					if fire then
+						fire.SecondaryColor = color
+					end
+				else
+					crowns[crown] = nil
+				end
+			end
 		end
 	end)
-	CollectionService:GetInstanceAddedSignal("_KSuperCrown"):Connect(function(obj)
-		table.insert(crowns, obj)
-	end)
-	CollectionService:GetInstanceRemovedSignal("_KSuperCrown"):Connect(function(obj)
-		table.remove(crowns, table.find(crowns, obj))
-	end)
+	for tag, cache in { _KSuperCrown = crowns, _KSuperCrownRainbow = rainbowCrowns } do
+		CollectionService:GetInstanceAddedSignal(tag):Connect(function(obj)
+			cache[obj] = true
+		end)
+		CollectionService:GetInstanceRemovedSignal(tag):Connect(function(obj)
+			cache[obj] = nil
+		end)
+		for _, obj in CollectionService:GetTagged(tag) do
+			cache[obj] = true
+		end
+	end
 end
 
 local COLORS = {

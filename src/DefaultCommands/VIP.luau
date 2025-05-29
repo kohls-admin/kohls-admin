@@ -1527,4 +1527,40 @@ return {
 			return
 		end,
 	},
+	{
+		name = "rainbowcrown",
+		aliases = { "crownrainbow" },
+		description = "Toggles the VIP crown rainbow.",
+		runClient = function(context)
+			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
+				context._K.promptPurchaseVIP(true)
+				return
+			end
+		end,
+		run = function(context)
+			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
+				return
+			end
+			if not context.fromPlayer.Character then
+				return "You have no character!"
+			end
+			local crown = context.fromPlayer.Character:FindFirstChild("SuperCrown")
+			if not crown then
+				return "You don't have a VIP crown equipped!"
+			end
+			if crown:HasTag("_KSuperCrownRainbow") then
+				crown:RemoveTag("_KSuperCrownRainbow")
+				task.defer(function()
+					local primary = crown:GetAttribute("_KCrownColor") or Color3.new(1, 1, 1)
+					local secondary = crown:GetAttribute("_KCrownFireColor") or Color3.new()
+					crown.Handle.Color = primary
+					crown.Handle.Fire.Color = secondary
+					crown.Handle.Fire.SecondaryColor = primary
+				end)
+			else
+				crown:AddTag("_KSuperCrownRainbow")
+			end
+			return
+		end,
+	},
 }
