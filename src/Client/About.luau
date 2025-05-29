@@ -732,8 +732,8 @@ function About.new(_K)
 			end,
 		}
 
-		function _K.promptPurchaseVIP()
-			if vipDeveloperPassId then
+		function _K.promptPurchaseVIP(global: boolean?)
+			if not global and vipDeveloperPassId then
 				vipList.Visible = false
 				vipButtonDeveloper._instance.Parent = purchaseVIPDialog._content
 				vipButtonGlobal._instance.Parent = purchaseVIPDialog._content
