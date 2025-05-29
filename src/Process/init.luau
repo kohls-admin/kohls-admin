@@ -160,7 +160,8 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		for _, command in result do
 			local _ok, err = command:run()
 			if err then
-				table.insert(commandErrors, `<b>"{command.alias}" command failed:</b> {err}`)
+				local escapedError = _K.Util.String.escapeRichText(err)
+				table.insert(commandErrors, `<b>"{command.alias}" command failed:</b> {escapedError}`)
 			else
 				table.insert(commandsRan, command)
 			end

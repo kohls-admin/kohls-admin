@@ -297,6 +297,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 	end
 	_initialized = true
 	local initStart = os.clock()
+	_K.LoadScript = require(Server.LoadScript)
 
 	local settings: { [string]: any } = {}
 	if typeof(config) == "Instance" then
