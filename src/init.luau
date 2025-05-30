@@ -427,9 +427,9 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		Util.Table.deepMerge(_K.Data.async.asset, settings.assetRoles, true)
 		_K.setupPurchasables(settings.assetRoles, "assets")
 	end
-	if settings.gamePassRoles then
-		Util.Table.deepMerge(_K.Data.async.gamepass, settings.gamePassRoles, true)
-		_K.setupPurchasables(settings.gamePassRoles, "gamepasses")
+	if settings.gamepassRoles then
+		Util.Table.deepMerge(_K.Data.async.gamepass, settings.gamepassRoles, true)
+		_K.setupPurchasables(settings.gamepassRoles, "gamepasses")
 	end
 	if settings.subscriptionRoles then
 		Util.Table.deepMerge(_K.Data.async.subscription, settings.subscriptionRoles, true)
