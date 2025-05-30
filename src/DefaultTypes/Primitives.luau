@@ -97,6 +97,9 @@ return function(context)
 	}, rawStringType)
 	_K.Registry.registerType("stringGreedy", rawStringType)
 	function stringType.parse(v, self)
+		if _K.Service.RunService:IsClient() then
+			return v
+		end
 		return _K.Util.String.filterForBroadcast(v, self.command.from)
 	end
 	_K.Registry.registerType("string", stringType)
