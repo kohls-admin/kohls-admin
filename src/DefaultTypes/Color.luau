@@ -50,6 +50,9 @@ table.insert(colorNames, 1, "random")
 
 local typeColor = {
 	transform = function(input: string)
+		if input == "" then
+			return ""
+		end
 		input = _K.Util.String.trim(string.lower(input))
 		if COLORS[input] then
 			if input == "random" then
@@ -68,7 +71,7 @@ local typeColor = {
 			end
 			return Color3.fromHex(input)
 		else
-			local r, g, b = string.match(input, "^(%d*),?(%d*),?(%d*)$")
+			local r, g, b = string.match(input, "^(%d+),?(%d*),?(%d*)$")
 			if r then
 				return Color3.fromRGB(r or 255, g or 255, b or 255)
 			end
@@ -106,7 +109,7 @@ local typeColor = {
 			if string.find("random", string.lower(text), 1, true) == 1 then
 				COLORS.random = Color3.new(math.random(), math.random(), math.random())
 			end
-			local r, g, b = string.match(text, "^(%d*),?(%d*),?(%d*)$")
+			local r, g, b = string.match(text, "^(%d+),?(%d*),?(%d*)$")
 			table.insert(names, `{r or 255},{g or 255},{b or 255}`)
 		end
 
