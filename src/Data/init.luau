@@ -218,7 +218,7 @@ local function syncMain(result)
 	Hook.postSyncMain:Fire(Data)
 end
 
-local nextMainInterval = tick() + Data.updateAsyncInterval
+local nextMainInterval = tick() + Data.updateAsyncInterval * 4 / 3
 local function updateMain()
 	nextMainInterval = math.huge
 	local save = false
@@ -315,7 +315,7 @@ local function rawSortTime(a, b)
 	return a[3] > b[3] -- reverse sort
 end
 
-local nextLogsInterval = tick() + Data.updateAsyncInterval
+local nextLogsInterval = tick() + Data.updateAsyncInterval * 5 / 3
 local function updateLogs()
 	nextLogsInterval = math.huge
 	if Data.settings.saveLogs == false then
