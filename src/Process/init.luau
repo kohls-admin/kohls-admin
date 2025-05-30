@@ -170,7 +170,6 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		Hook.runPreparedCommands:Fire(from, result, rawText)
 	else
 		table.insert(commandErrors, result)
-		warn("commandError", result)
 	end
 
 	if #commandErrors > 0 then

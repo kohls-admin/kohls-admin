@@ -127,6 +127,10 @@ function Command:run()
 	local ok, err = pcall(run, self, unpack(self.preparedArgs))
 	self._K.Hook.postCommand:Fire(self)
 
+	if not ok then
+		warn("Kohl's Admin Command Error:", err)
+	end
+
 	return ok, err
 end
 
