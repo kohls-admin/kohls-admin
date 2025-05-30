@@ -125,7 +125,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 	if _K.IsClient then
 		log.client = true
 	elseif level == "CHAT" or level == "COMMAND" then
-		log.fingerprint = table.concat({ text, log.level, log.time, from }, "|")
+		log.fingerprint = table.concat({ text, log.level, log.time, from :: any }, "|")
 		_K.Data.logFingerprints[log.fingerprint] = true
 	end
 
