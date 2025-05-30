@@ -104,7 +104,11 @@ end
 function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync: boolean?)
 	local banAsync = forceBanAsync or not fromUserId or Auth.hasPermission(fromUserId, "banasync")
 
-	for _, userId in userIds do
+	for index, userId in userIds do
+		local number = tonumber(userId)
+		if number then
+			userIds[index] = number
+		end
 		local key = tostring(userId)
 		Data.bans[key] = nil
 		if banAsync then
