@@ -95,6 +95,7 @@ return function(context)
 	_K.Registry.registerType("rawStrings", {
 		listable = true,
 	}, rawStringType)
+	_K.Registry.registerType("stringGreedy", rawStringType)
 	function stringType.parse(v, self)
 		return _K.Util.String.filterForBroadcast(v, self.command.from)
 	end
