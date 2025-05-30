@@ -47,7 +47,7 @@ local function memoizeUser(player: Player)
 	if userCache[player.UserId] then
 		local freeThread = userCache[player.UserId].freeThread
 		if freeThread then
-			task.cancel(freeThread)
+			pcall(task.cancel, freeThread)
 		end
 		return
 	end
@@ -62,7 +62,7 @@ local function freeUser(userId: number)
 	if userCache[userId] then
 		local freeThread = userCache[userId].freeThread
 		if freeThread then
-			task.cancel(freeThread)
+			pcall(task.cancel, freeThread)
 		end
 	end
 	userCache[userId] = nil
