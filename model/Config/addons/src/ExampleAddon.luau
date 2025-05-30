@@ -127,7 +127,7 @@ return function(_K)
 		end,
 
 		-- Function that runs on the player's client when the command is called
-		runClient = function(context, message)
+		runClient = function(context, message: string?)
 			-- Number of times the command has been used on this client
 			context.env.countClient += 1
 			print("Custom command ran on the client!", message, context.env.countClient)
