@@ -278,32 +278,31 @@ local function syncLogs(logsData)
 		for _, log in logData do
 			Util.Defer.wait()
 			local text, level, time, from, name = unpack(log)
-			local exists
-			for _, existingLog in Data.logs do
-				if
-					existingLog.time == time
-					and existingLog.from == from
-					and existingLog.level == level
-					and existingLog.text == text
-				then
-					exists = true
-					break
-				end
-			end
-			if exists then
+			local fingerprint = table.concat({ text, level, time, from }, "|")
+			if Data.logFingerprints[fingerprint] then
 				continue
 			end
-
-			table.insert(newLogs, { text = text, level = level, time = time, from = from, name = name })
+			Data.logFingerprints[fingerprint] = true
+			table.insert(
+				newLogs,
+				{ text = text, level = level, time = time, from = from, name = name, fingerprint = fingerprint }
+			)
 			table.insert(newLogsRaw, { text, level, time, from, name })
 		end
 	end
-	table.move(newLogs, 1, #newLogs, #Data.logs + 1, Data.logs)
-	Util.Defer.wait()
-	table.sort(Data.logs, Util.Logger.sortTime)
-	for _, player in Players:GetPlayers() do
-		if player:GetAttribute("_K_READY") and Auth.hasPermission(player.UserId, "serverlogs") then
-			Remote.Logs:FireClient(player, newLogsRaw)
+	if #newLogs > 0 then
+		Util.Table.mergeList(Data.logs, newLogs)
+		while #Data.logs > Util.Logger.limit do
+			local removedLog = table.remove(Data.logs, 1)
+			Data.logFingerprints[removedLog.fingerprint] = nil
+			Util.Defer.wait()
+		end
+		table.sort(Data.logs, Util.Logger.sortTime)
+
+		for _, player in Players:GetPlayers() do
+			if player:GetAttribute("_K_READY") and Auth.hasPermission(player.UserId, "serverlogs") then
+				Remote.Logs:FireClient(player, newLogsRaw)
+			end
 		end
 	end
 	Hook.postSyncLogs:Fire(unpack(logsData))

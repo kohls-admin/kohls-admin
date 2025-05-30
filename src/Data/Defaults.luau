@@ -23,6 +23,7 @@ local Data = {
 	creatorId = game.CreatorId,
 	bans = {},
 	logs = {},
+	logFingerprints = {},
 	members = {},
 	players = {},
 	reservedServers = {},

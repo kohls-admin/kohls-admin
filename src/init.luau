@@ -124,6 +124,9 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 	end
 	if _K.IsClient then
 		log.client = true
+	elseif level == "CHAT" or level == "COMMAND" then
+		log.fingerprint = table.concat({ text, log.level, log.time, from }, "|")
+		_K.Data.logFingerprints[log.fingerprint] = true
 	end
 
 	task.defer(function()
@@ -149,6 +152,11 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 			_K.client.dashboard.Logs:updateList()
 		end
 		_K.Hook.log:Fire(log)
+		while #_K.Data.logs > _K.Logger.limit do
+			local removedLog = table.remove(_K.Data.logs, 1)
+			_K.Data.logFingerprints[removedLog.fingerprint] = nil
+			Util.Defer.wait()
+		end
 	end)
 
 	return log
