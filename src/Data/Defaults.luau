@@ -23,17 +23,7 @@ local Data = {
 	creatorId = game.CreatorId,
 	bans = {},
 	logs = {},
-	members = {
-		-- example role data structure
-		-- [userid] = {data}
-		-- ["1"] = {
-		-- 	name = "Roblox",
-		-- 	commands = {},
-		-- 	permissions = {},
-		-- 	persist = {},
-		-- 	roles = { "admin", "vip" },
-		-- },
-	},
+	members = {},
 	players = {},
 	reservedServers = {},
 	roles = nil,
