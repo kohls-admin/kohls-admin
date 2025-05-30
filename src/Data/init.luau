@@ -106,9 +106,9 @@ local function updateBans()
 	if ok then
 		if sync then
 			Data.updatedTimeBans = updatedTime
-			task.spawn(syncBans, result or sync)
+			task.defer(syncBans, result or sync)
 		end
-		task.spawn(function()
+		task.defer(function()
 			Data.sizeBans = #Http:JSONEncode(result or sync)
 			dataLimitWarning(Data.sizeBans, "ban")
 		end)
@@ -181,7 +181,7 @@ local function syncMain(result)
 	-- fill missing names
 	for key, data in Data.members do
 		if not data.name and #data.persist > 0 then
-			task.spawn(fillMemberName, key, data)
+			task.defer(fillMemberName, key, data)
 		end
 	end
 
@@ -252,9 +252,9 @@ local function updateMain()
 	if ok then
 		if sync then
 			Data.updatedTimeMain = updatedTime
-			task.spawn(syncMain, result or sync)
+			task.defer(syncMain, result or sync)
 		end
-		task.spawn(function()
+		task.defer(function()
 			Data.sizeMain = #Http:JSONEncode(result or sync)
 			dataLimitWarning(Data.sizeMain, "member")
 		end)
@@ -377,7 +377,7 @@ local function updateLogs()
 	if ok then
 		if sync then
 			Data.updatedTimeLogs = updatedTime
-			task.spawn(syncLogs, sync)
+			task.defer(syncLogs, sync)
 		end
 	else
 		warn(`[Kohl's Admin] Logs Datastore UpdateAsync failed: {result}`)
@@ -461,13 +461,13 @@ function Data.initialize(scope)
 				continue
 			end
 			if tick() > nextMainInterval then
-				task.spawn(updateMain)
+				task.defer(updateMain)
 			end
 			if tick() > nextBansInterval then
-				task.spawn(updateBans)
+				task.defer(updateBans)
 			end
 			if tick() > nextLogsInterval then
-				task.spawn(updateLogs)
+				task.defer(updateLogs)
 			end
 		until Data.gameClosing
 	end)
