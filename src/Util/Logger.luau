@@ -26,7 +26,7 @@ export type Log = {
 }
 
 --- @class Logger
-local Logger = {}
+local Logger = { limit = 100_000 }
 Logger.__index = Logger
 
 --- @within Logger
@@ -53,7 +53,7 @@ local LEVELS = {
 }
 
 function Logger.new(debugEnabled: boolean?): Logger
-	return setmetatable({ logs = {}, limit = 100_000, debug = debugEnabled }, Logger)
+	return setmetatable({ logs = {}, debug = debugEnabled }, Logger)
 end
 
 function Logger.sortTime(a, b)
@@ -81,9 +81,6 @@ function Logger:log(text: string, level: LogType, userId: number?): Log?
 	}
 
 	table.insert(self.logs, log)
-	while #self.logs > self.limit do
-		table.remove(self.logs, 1)
-	end
 
 	return log
 end

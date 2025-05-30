@@ -121,7 +121,7 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 	table.insert(_K.Data.logs, log)
 
 	_K.Util.Defer.reset()
-	while #_K.Data.logs > 1e5 do
+	while #_K.Data.logs > _K.Logger.limit do
 		table.remove(_K.Data.logs, 1)
 		_K.Util.Defer.wait()
 	end
@@ -148,7 +148,7 @@ _K.Remote.Logs.OnClientEvent:Connect(function(rawLogs)
 	_K.Util.Defer.wait()
 	table.sort(_K.Data.logs, _K.Logger.sortTime)
 
-	while #_K.Data.logs > 1e5 do
+	while #_K.Data.logs > _K.Logger.limit do
 		table.remove(_K.Data.logs, 1)
 		_K.Util.Defer.wait()
 	end
