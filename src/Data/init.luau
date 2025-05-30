@@ -275,6 +275,9 @@ local function syncLogs(logsData)
 	local newLogs = {}
 	local newLogsRaw = {}
 	for _, logData in logsData do
+		if type(logData) ~= "table" then -- skip the size cache
+			continue
+		end
 		for _, log in logData do
 			Util.Defer.wait()
 			local text, level, time, from, name = unpack(log)
@@ -325,11 +328,13 @@ local function updateLogs()
 		save = true
 		Data.Cache.chatLogs, Data.Cache.logs = {}, {}
 	end
+	local chatSize, logsSize = #Http:JSONEncode(chatLogs), #Http:JSONEncode(logs)
+	local dataStructureSize = #Http:JSONEncode({ {}, {}, math.ceil(DATA_LIMIT / 2), math.ceil(DATA_LIMIT / 2) })
 
 	local sync, updatedTime
 	local ok, result = Data.Store.updateAsync("LogsV2", function(value, metaData)
 		if not value then
-			return { chatLogs, logs }
+			return { chatLogs, logs, chatSize, logsSize }
 		end
 		if metaData.UpdatedTime > Data.updatedTimeLogs then
 			sync, updatedTime = value, metaData.UpdatedTime
@@ -338,22 +343,32 @@ local function updateLogs()
 			return
 		end
 
-		local savedChatLogs, savedLogs = unpack(value)
-		for logData, savedlogData in { [chatLogs] = savedChatLogs, [logs] = savedLogs } do
-			for _, log in logData do
-				table.insert(savedlogData, log)
-			end
-			table.sort(savedlogData, rawSortTime)
+		local savedChatLogs, savedLogs, savedChatSize, savedLogsSize = unpack(value)
+		if not savedChatSize then
+			savedChatSize = #Http:JSONEncode(savedChatLogs)
+		end
+		if not savedLogsSize then
+			savedLogsSize = #Http:JSONEncode(savedLogs)
+		end
+		for index, data in
+			{ { savedChatLogs, chatLogs, savedChatSize, chatSize }, { savedLogs, logs, savedLogsSize, logsSize } }
+		do
+			local savedData, newData, savedSize, newSize = unpack(data)
+			Util.Table.mergeList(savedData, newData)
+			table.sort(savedData, rawSortTime)
 
-			local logDataSize = #Http:JSONEncode(logData)
-			local excess = logDataSize - math.ceil(DATA_LIMIT / 2)
-			local count = #logData
+			local totalSize = savedSize + newSize
+			local excess = totalSize - (math.ceil(DATA_LIMIT / 2) + dataStructureSize)
+			local count = #savedData
 
 			while excess > 0 do
-				excess -= #Http:JSONEncode(logData[count]) + 1
-				logData[count] = nil
+				local logSize = #Http:JSONEncode(savedData[count]) + 1
+				excess -= logSize
+				totalSize -= logSize
+				savedData[count] = nil
 				count -= 1
 			end
+			value[index + 2] = totalSize
 		end
 
 		return value
