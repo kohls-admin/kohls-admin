@@ -155,7 +155,7 @@ return function(_K, text, cursorPosition)
 				data.query = _K.Util.String.stripQuotes(data.rawQuery)
 				data.suggestions = arg.rawType.suggestions
 					and _K.Util.Suggest.query(data.query, arg.rawType.suggestions(data.query, from, arg.definition))
-				if #data.suggestions > 0 then
+				if data.suggestions and #data.suggestions > 0 then
 					break
 				end
 			end
