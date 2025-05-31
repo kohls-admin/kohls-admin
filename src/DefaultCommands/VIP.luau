@@ -734,7 +734,7 @@ return {
 		end,
 		env = function(_K)
 			return {
-				add = function(character, color, material, reflectance, image)
+				add = function(character, color, reflectance, material, image)
 					local root = character
 						and (character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
 					if not root then
