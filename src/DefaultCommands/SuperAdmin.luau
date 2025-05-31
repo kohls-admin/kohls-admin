@@ -219,4 +219,45 @@ return {
 			context._K.Service.Messaging:PublishAsync("KA_GlobalCommand", { context.from, commandString })
 		end,
 	},
+	{
+		name = "chatcolor",
+		aliases = { "ccolor" },
+		description = "Changes a user's name color in chat.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to change the chat color of.",
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "Color to change the user's nametag to.",
+			},
+		},
+
+		run = function(context, players: { Player }, color: Color3)
+			for _, player in players do
+				player:SetAttribute("_Kchatcolor", color)
+			end
+		end,
+	},
+	{
+		name = "unchatcolor",
+		aliases = { "unccolor" },
+		description = "Removes a user's name color in chat.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to change the chat color of.",
+			},
+		},
+
+		run = function(context, players: { Player }, color: Color3)
+			for _, player in players do
+				player:SetAttribute("_Kchatcolor", nil)
+			end
+		end,
+	},
 }
