@@ -307,7 +307,8 @@ return {
 			local env = {}
 
 			task.defer(function()
-				env.tool = _K.Tools:WaitForChild("Building Tools")
+				env.tool = _K.Tools:WaitForChild("Building Tools") :: Tool
+				env.tool.CanBeDropped = false
 				local handle = Instance.new("Part")
 				handle.Name = "Handle"
 				handle.Size = Vector3.new(0.8, 0.8, 0.8)
