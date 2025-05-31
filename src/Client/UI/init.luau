@@ -40,6 +40,7 @@ Flux.edit(SoundGroup, {
 
 for key, soundIdState in UI.Theme.Sound do
 	UI.Sound[key] = Flux.new "Sound" {
+		Name = key,
 		Parent = SoundGroup,
 		SoundId = soundIdState,
 	}
