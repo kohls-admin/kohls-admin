@@ -117,13 +117,13 @@ function Menu.new(definition)
 					0,
 					UI.peek(UI.TopbarInset).Height
 				))
-
 			if
-				(mouse.X < boundsTL.X and mouse.Y < boundsTL.Y) --box bounds check, ty random dev forum post
-				and (mouse.X > boundsBR.X and mouse.Y > boundsBR.Y)
+				(mouse.X > boundsTL.X and mouse.Y > boundsTL.Y) --box bounds check, ty random dev forum post
+				and (mouse.X < boundsBR.X and mouse.Y < boundsBR.Y)
 			then
-				UI.deactivateState(new.Visible, "floating")
+				return --mouse is within bounds
 			end
+			UI.deactivateState(new.Visible, "floating")
 		end)
 	end
 
