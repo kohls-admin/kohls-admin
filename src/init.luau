@@ -313,6 +313,8 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 			settings = require(config)
 		elseif config:IsA("Configuration") then
 			config.Parent = script
+			local addons = config:FindFirstChild("Addons")
+			addons.Parent = Server
 			local settingsModule = config:FindFirstChild("Settings")
 			if settingsModule and settingsModule:IsA("ModuleScript") then
 				settings = require(settingsModule)
