@@ -43,6 +43,7 @@ for key, soundIdState in UI.Theme.Sound do
 		Name = key,
 		Parent = SoundGroup,
 		SoundId = soundIdState,
+		SoundGroup = SoundGroup,
 	}
 end
 
