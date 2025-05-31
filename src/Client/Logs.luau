@@ -225,6 +225,52 @@ function Logs.new(_K)
 		Wraps = true,
 	})
 
+	UI.new "ListItem" {
+		Parent = filterMenu._menu,
+		LayoutOrder = 1,
+		Text = "SELECT",
+		ContentAutomaticSize = true,
+		Size = UDim2.fromOffset(128, 24),
+
+		UI.new "Button" {
+			Label = "SELECT ALL",
+
+			[UI.Event] = {
+				Activated = function(value)
+					scroller._filterUpdate = true
+					for index, array in logTypes do
+						local logType = array[1]
+						logTypeFilter[logType]:set(true)
+						scroller:refreshList()
+					end
+				end,
+			},
+		},
+	}
+
+	UI.new "ListItem" {
+		Parent = filterMenu._menu,
+		LayoutOrder = 1,
+		Text = "DESELECT",
+		ContentAutomaticSize = true,
+		Size = UDim2.fromOffset(128, 24),
+
+		UI.new "Button" {
+			Label = "DESELECT ALL",
+
+			[UI.Event] = {
+				Activated = function(value)
+					scroller._filterUpdate = true
+					for index, array in logTypes do
+						local logType = array[1]
+						logTypeFilter[logType]:set(false)
+						scroller:refreshList()
+					end
+				end,
+			},
+		},
+	}
+
 	for index, array in logTypes do
 		local logType = array[1]
 		UI.new "ListItem" {
