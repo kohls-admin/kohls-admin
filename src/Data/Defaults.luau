@@ -9,6 +9,7 @@ local Cache = {
 	bans = {},
 	members = {},
 	settings = {},
+	warnings = {}, -- Added for warnings
 	-- Logs
 	chatLogs = {},
 	logs = {},
