@@ -575,9 +575,10 @@ return {
 			ctx._K.UI.edit(ctx.env.window, {
 				Visible = true,
 			})
+			print(ctx.env.window._instance:GetFullName(), "opened for", player.Name)
 			-- Remove old children and add the new TextLabel
-			for _, child in ipairs(ctx.env.window._instance:GetChildren()) do
-				if child:IsA("TextLabel") then
+			for _, child in ipairs(ctx.env.window._instance:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("Frame"):GetChildren()) do
+				if child:IsA("ScrollingFrame") then
 					child:Destroy()
 				end
 			end
