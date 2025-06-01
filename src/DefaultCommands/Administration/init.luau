@@ -510,10 +510,10 @@ return {
 				})
 			end)
 		end,
-		runClient = function(ctx, players, message)
+		runClient = function(context, players, message)
 			-- Store warning on the client for each player warned (for UI viewing)
 			--? probably a better way to do this, but i cant figure it out w/o breaking stuff
-			local warnings = ctx._K.Data.Cache.warnings or {}
+			local warnings = context._K.Data.Cache.warnings or {}
 			local now = os.time()
 			for _, player in ipairs(players) do
 				local userId = player.UserId
@@ -522,7 +522,7 @@ return {
 				end
 				table.insert(warnings[userId], {
 					message = message,
-					from = ctx.from,
+					from = context.from,
 					timestamp = now,
 				})
 			end
@@ -568,24 +568,23 @@ return {
 			end)
 			return env
 		end,
-		runClient = function(ctx, player)
-			local warnings = ctx._K.Data.Cache.warnings or {}
+		runClient = function(context, player)
+			local warnings = context._K.Data.Cache.warnings or {}
 			local playerId = player.UserId
 			local playerWarnings = warnings[playerId] or {}
-			ctx._K.UI.edit(ctx.env.window, {
+			context._K.UI.edit(context.env.window, {
 				Visible = true,
 			})
-			print(ctx.env.window._instance:GetFullName(), "opened for", player.Name)
 			-- Remove old children and add the new TextLabel
-			for _, child in ipairs(ctx.env.window._instance:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("Frame"):GetChildren()) do
+			for _, child in ipairs(context.env.window._instance:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("Frame"):GetChildren()) do
 				if child:IsA("ScrollingFrame") then
 					child:Destroy()
 				end
 			end
 
 			-- Add a scrolling frame for warnings, similar to Logs UI
-			local scrollingFrame = ctx._K.UI.new "ScrollingFrame" {
-				Parent = ctx.env.window,
+			local scrollingFrame = context._K.UI.new "ScrollingFrame" {
+				Parent = context.env.window,
 				BackgroundTransparency = 1,
 				BorderSizePixel = 0,
 				Size = UDim2.new(1, -8, 1, -8),
@@ -595,7 +594,7 @@ return {
 				AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			}
 
-			ctx._K.UI.new "UIListLayout" {
+			context._K.UI.new "UIListLayout" {
 				Parent = scrollingFrame,
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				Padding = UDim.new(0, 4),
@@ -603,7 +602,7 @@ return {
 
 			-- If no warnings, show a message
 			if #playerWarnings == 0 then
-				ctx._K.UI.new "TextLabel" {
+				context._K.UI.new "TextLabel" {
 					Parent = scrollingFrame,
 					Text = "No warnings found for this player.",
 					TextColor3 = Color3.fromRGB(200, 200, 200),
@@ -620,7 +619,7 @@ return {
 
 			-- Display each warning in a uniform, log-like style
 			for i, warning in ipairs(playerWarnings) do
-				local label = ctx._K.UI.new "TextLabel" {
+				local label = context._K.UI.new "TextLabel" {
 					Parent = scrollingFrame,
 					Text = `<b>{os.date("!%Y-%m-%d %H:%M:%S", warning.timestamp)}</b>  <font color="#ffb347">{warning.from}</font>\n{warning.message}`,
 					TextColor3 = Color3.fromRGB(230, 230, 230),
@@ -637,7 +636,7 @@ return {
 					LayoutOrder = i,
 				}
 
-				ctx._K.UI.new "UIPadding" {
+				context._K.UI.new "UIPadding" {
 					Parent = label,
 					PaddingLeft = UDim.new(0, 8),
 					PaddingRight = UDim.new(0, 8),
