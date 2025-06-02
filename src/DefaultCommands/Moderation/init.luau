@@ -2366,8 +2366,9 @@ return {
 				description = "The name of the new team.",
 			},
 			{
-				type = "color?",
+				type = "color",
 				name = "Color",
+				optional = true,
 				description = "The color of the new team.",
 			},
 		},
@@ -2411,8 +2412,7 @@ return {
 					Text = `<b>Removed team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
 				})
 			else
-				context._K.log("Could not delete team: " .. team.Name, "ERROR")
-				-- noyify the player
+				-- notify the player
 				context._K.Remote.Notify:FireClient(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Failed to remove team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
