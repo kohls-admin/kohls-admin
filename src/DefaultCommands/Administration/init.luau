@@ -576,7 +576,14 @@ return {
 				Visible = true,
 			})
 			-- Remove old children and add the new TextLabel
-			for _, child in ipairs(context.env.window._instance:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("Frame"):GetChildren()) do
+			for _, child in
+				ipairs(
+					context.env.window._instance
+						:FindFirstChildOfClass("Frame")
+						:FindFirstChildOfClass("Frame")
+						:GetChildren()
+				)
+			do
 				if child:IsA("ScrollingFrame") then
 					child:Destroy()
 				end
