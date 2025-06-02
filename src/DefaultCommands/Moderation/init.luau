@@ -2366,13 +2366,16 @@ return {
 				description = "The name of the new team.",
 			},
 			{
-				type = "color",
+				type = "color?",
 				name = "Color",
 				description = "The color of the new team.",
 			},
 		},
 		run = function(context, name, color)
 			local team = Instance.new("Team")
+			if not color then
+				color = BrickColor.random()
+			end
 			team.Name = name
 			team.TeamColor = BrickColor.new(color)
 			team.AutoAssignable = true
