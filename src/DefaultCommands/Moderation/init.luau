@@ -2352,4 +2352,88 @@ return {
 			end
 		end,
 	},
+	{
+		name = "createteam",
+		aliases = { "cteam", "newteam" },
+		description = "Creates a new team with the given name and color.",
+		credit = {
+			"Realistic @iiRealistic_Dev",
+		},
+		args = {
+			{
+				type = "string",
+				name = "Name",
+				description = "The name of the new team.",
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The color of the new team.",
+			},
+		},
+		run = function(context, name, color)
+			local team = Instance.new("Team")
+			team.Name = name
+			team.TeamColor = BrickColor.new(color)
+			team.AutoAssignable = true
+			team.Parent = context._K.Service.Teams
+
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				From = "_K",
+				Text = `<b>Created team:</b> <font color="#{color:ToHex()}">{name}</font>`,
+			})
+		end,
+	},
+	{
+		name = "removeteam",
+		aliases = { "delteam", "deleteteam" },
+		description = "Removes a team with the given name.",
+		credit = {
+			"Realistic @iiRealistic_Dev",
+		},
+		args = {
+			{
+				type = "team",
+				name = "Team",
+				description = "The team to remove.",
+			},
+		},
+
+		run = function(context, team)
+			if team and context._K.Service.Teams:FindFirstChild(team.Name) then
+				team:Destroy()
+				-- notify the player
+				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+					From = "_K",
+					Text = `<b>Removed team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
+				})
+			else
+				context._K.log("Could not delete team: " .. team.Name, "ERROR")
+				-- noyify the player
+				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+					From = "_K",
+					Text = `<b>Failed to remove team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
+				})
+			end
+		end,
+	},
+	{
+		name = "clearteams",
+		aliases = { "ctm", "cleartm" },
+		description = "Clears all teams.",
+		credit = {
+			"Realistic @iiRealistic_Dev",
+		},
+		run = function(context)
+			for _, team in context._K.Service.Teams:GetTeams() do
+				if team.Name ~= "Neutral" then
+					team:Destroy()
+				end
+			end
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				From = "_K",
+				Text = "<b>Cleared all teams.</b>",
+			})
+		end,
+	},
 }
