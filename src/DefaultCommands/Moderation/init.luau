@@ -2375,7 +2375,7 @@ return {
 		run = function(context, name, color)
 			local team = Instance.new("Team")
 			if not color then
-				color = BrickColor.random()
+				color = BrickColor.random().Color
 			end
 			team.Name = name
 			team.TeamColor = BrickColor.new(color)
