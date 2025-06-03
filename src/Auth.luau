@@ -468,6 +468,20 @@ function Auth.getRank(userId: number): (number, Role)
 	return 0, Data.roles.everyone
 end
 
+--- Gets the closest role equal to or above a given rank
+function Auth.getRoleFromRank(rank: number): Role
+	local roleResult = Data.roles.creator
+	for roleId, role in Data.roles do
+		if role._rank == rank then
+			return role
+		end
+		if role._rank >= rank and role._rank < roleResult._rank then
+			roleResult = role
+		end
+	end
+	return roleResult
+end
+
 function Auth.targetUserArgument(arg, userId: number, value: Player | number | string)
 	local from = arg.command.from
 	if userId == from then
