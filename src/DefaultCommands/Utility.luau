@@ -131,7 +131,15 @@ return {
 		description = "Shows the command bar.",
 		optionalPrefix = true,
 		runClient = function(context)
+			if context._K.Data.settings.commandBarRank == false then
+				return "Command bar has been disabled."
+			end
+			if context._K.Data.settings.commandBarRank > context.fromRank then
+				local role = context._K.Auth.getRoleFromRank(context._K.Data.settings.dashboardRank)
+				return `Command bar has been restricted to {role.name}+.`
+			end
 			task.defer(context._K.client.CommandBar.show)
+			return
 		end,
 	},
 	{
@@ -139,9 +147,17 @@ return {
 		description = "Shows the admin dashboard.",
 		optionalPrefix = true,
 		runClient = function(context)
+			if context._K.Data.settings.dashboardRank == false then
+				return `Dashboard has been disabled.`
+			end
+			if context._K.Data.settings.dashboardRank > context.fromRank then
+				local role = context._K.Auth.getRoleFromRank(context._K.Data.settings.dashboardRank)
+				return `Dashboard has been restricted to {role.name}+.`
+			end
 			if not context._K.client.dashboard.Window.Visible then
 				context._K.client.hotkeys.dashboard.callback()
 			end
+			return
 		end,
 	},
 	{
