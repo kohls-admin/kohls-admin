@@ -74,7 +74,7 @@ return {
 		run = function(context, message: string)
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
-				return
+				return result
 			end
 			for _, player in Players:GetPlayers() do
 				task.spawn(function()
@@ -82,6 +82,7 @@ return {
 					context.env.remote:FireClient(player, `<b>{context.fromPlayer}:</b> {msg}`)
 				end)
 			end
+			return
 		end,
 	},
 	{
@@ -103,7 +104,7 @@ return {
 		run = function(context, players: { Player }, message: string)
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
-				return
+				return result
 			end
 			for _, player in players do
 				task.spawn(function()
@@ -111,6 +112,7 @@ return {
 					context._K.Remote.Hint:FireClient(player, `<b>{context.fromPlayer}:</b> {msg}`)
 				end)
 			end
+			return
 		end,
 	},
 	{
@@ -128,7 +130,7 @@ return {
 		run = function(context, message)
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
-				return
+				return result
 			end
 			for _, player in Players:GetPlayers() do
 				task.spawn(function()
@@ -139,6 +141,7 @@ return {
 					})
 				end)
 			end
+			return
 		end,
 	},
 	{
@@ -161,7 +164,7 @@ return {
 		run = function(context, players, message)
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
-				return
+				return result
 			end
 			for _, player in players do
 				task.spawn(function()
@@ -169,6 +172,7 @@ return {
 					context._K.Remote.Notify:FireClient(player, { Text = msg, From = context.from })
 				end)
 			end
+			return
 		end,
 	},
 	{
@@ -191,7 +195,7 @@ return {
 		run = function(context, players, message)
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
-				return
+				return result
 			end
 			for _, player in players do
 				task.spawn(function()
@@ -202,6 +206,7 @@ return {
 					})
 				end)
 			end
+			return
 		end,
 	},
 	{
