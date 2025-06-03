@@ -2496,4 +2496,85 @@ return {
 			})
 		end,
 	},
+	{
+		name = "collide",
+		aliases = { "collision", "collisions" },
+		description = "Toggles collisions for one or more player(s) or team(s).",
+		args = {
+			{
+				type = "players",
+				name = "Players/Teams",
+				description = "The player(s) or team(s) whose collisions to toggle.",
+			},
+			{
+				type = "boolean",
+				name = "Enabled",
+				description = "Whether collisions should be enabled.",
+			},
+		},
+		env = function(_K)
+			local PhysicsService = _K.Service.PhysicsService
+			local COLLISION_GROUP = "_KNoCollide"
+			local initialized = false
+
+			local function ensureGroup()
+				if initialized then
+					return
+				end
+				initialized = true
+				pcall(function()
+					PhysicsService:RegisterCollisionGroup(COLLISION_GROUP)
+				end)
+				PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP, COLLISION_GROUP, false)
+			end
+
+			local function setCollision(character, enabled)
+				if not character then
+					return
+				end
+				for _, part in character:GetDescendants() do
+					if part:IsA("BasePart") then
+						if enabled then
+							part.CollisionGroup = "Default"
+						else
+							part.CollisionGroup = COLLISION_GROUP
+						end
+					end
+				end
+			end
+
+			return {
+				ensureGroup = ensureGroup,
+				setCollision = setCollision,
+			}
+		end,
+		run = function(context, targets, enabled)
+			context.env.ensureGroup()
+			local players = {}
+
+			for _, target in targets do
+				if typeof(target) == "Instance" and target:IsA("Player") then
+					table.insert(players, target)
+				elseif typeof(target) == "Instance" and target:IsA("Team") then
+					for _, player in context._K.Service.Players:GetPlayers() do
+						if player.Team == target then
+							table.insert(players, player)
+						end
+					end
+				end
+			end
+
+			for _, player in players do
+				if player.Character then
+					context.env.setCollision(player.Character, enabled)
+				end
+			end
+
+			-- Notify the command executor that collisions have been changed
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				From = "_K",
+				Text = `<b>Collisions {enabled and "enabled" or "disabled"} for the given player(s) or team(s).</b>`,
+			})
+		end,
+	},
 }
