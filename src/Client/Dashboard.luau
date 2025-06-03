@@ -199,6 +199,9 @@ task.defer(function()
 end)
 
 local function dashboardToggle(button)
+	if not _K.client.dashboardEnabled then
+		return
+	end
 	if button.isSelected then
 		UI.Sound.Hover03:Play()
 	else

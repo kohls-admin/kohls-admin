@@ -23,7 +23,9 @@ function _K.client.updateInterfaceAuth()
 
 	_K.client.toggleCommandBar._instance.Visible = commandBarRank and userRank >= commandBarRank
 	_K.client.dashboardEnabled = dashboardRank and userRank >= dashboardRank
-	_K.client.dashboardButtonEnabled = dashboardButtonRank and userRank >= dashboardButtonRank
+	_K.client.dashboardButtonEnabled = _K.client.dashboardEnabled
+		and dashboardButtonRank
+		and userRank >= dashboardButtonRank
 	_K.client.dashboardButton:setEnabled(_K.client.dashboardButtonEnabled)
 
 	if not _K.client.dashboardEnabled then
