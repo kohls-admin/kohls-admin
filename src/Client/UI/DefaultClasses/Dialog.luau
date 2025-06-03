@@ -80,20 +80,6 @@ function Dialog.new(definition)
 		end
 	end
 
-	UI.UserInputService.InputChanged:Connect(function(input)
-		if not (new.Draggable._value and new._instance.Visible) then
-			return
-		end
-		if
-			input.UserInputType == Enum.UserInputType.MouseMovement
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
-			if dragging._value then
-				dragUpdate(input)
-			end
-		end
-	end)
-
 	local con
 	local function activate(active)
 		if UI.peek(new.Activated) then
@@ -373,6 +359,22 @@ function Dialog.new(definition)
 			},
 		},
 		progress,
+
+		[UI.Clean] = {
+			UI.UserInputService.InputChanged:Connect(function(input)
+				if not (new.Draggable._value and new._instance.Visible) then
+					return
+				end
+				if
+					input.UserInputType == Enum.UserInputType.MouseMovement
+					or input.UserInputType == Enum.UserInputType.Touch
+				then
+					if dragging._value then
+						dragUpdate(input)
+					end
+				end
+			end),
+		},
 	}
 
 	local sizeState = UI.state(new._instance, "AbsoluteSize")
