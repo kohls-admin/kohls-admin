@@ -208,14 +208,14 @@ function Settings.new(_K)
 		-- switches
 		for _, data in
 			{
-				{ key = "SoundEnabled", text = "UI Sounds Enabled" },
+				{ key = "SoundEnabled", text = "UI Sounds" },
 				{
 					key = "TypingSounds",
-					text = "Enable typing sounds",
+					text = "Typing sounds",
 					tip = "<b>NOTE:</b> Requires taking the audios and adding permissions to your game!\n<font transparency='0.66'>Why does Roblox do this to me</font> 😔",
 				},
 				{ key = "TypingSoundsOnEveryTextBox", text = "Sounds on every TextBox" },
-				{ key = "StrokeEnabled", text = "UI Borders Enabled" },
+				{ key = "StrokeEnabled", text = "UI Borders" },
 			}
 		do
 			table.insert(
