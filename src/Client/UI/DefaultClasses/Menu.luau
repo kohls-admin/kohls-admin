@@ -137,7 +137,11 @@ function Menu.new(definition)
 		end
 	end)
 
-	new.Adornee:hook(onAdornee)
+	UI.edit(new._instance, {
+		[UI.Clean] = {
+			new.Adornee:hook(onAdornee),
+		},
+	})
 	onAdornee(UI.peek(new.Adornee))
 
 	return setmetatable(new, Menu)
