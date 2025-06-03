@@ -340,6 +340,7 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 	local contentParent = instance
 	local children = definition[UI.Children]
 	local parent = definition.Parent
+	local cleanup = {}
 
 	if type(new) == "table" then
 		instance = new._instance
@@ -390,8 +391,7 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 					error(`Invalid UI State Hook {key}`)
 				end
 				if type(hook) == "function" then
-					-- FIX: add a way to clean it up with the class:Destroy() method
-					local _cleanup = classMember:hook(hook)
+					table.insert(cleanup, classMember:hook(hook))
 				end
 			end
 		end
@@ -406,6 +406,14 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 				classMember:Connect(value)
 			end
 		end
+	end
+
+	if not definition[Flux.Clean] then
+		definition[Flux.Clean] = {}
+	end
+
+	for _, v in cleanup do
+		table.insert(definition[Flux.Clean], v)
 	end
 
 	definition.Parent = nil

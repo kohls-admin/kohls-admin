@@ -21,13 +21,13 @@ export type Dict<T> = { [T]: any }
 --[=[
 	Represents a reactive state object in the Flux system
 	@within Flux
-	@type State { _update: (State<T>) -> boolean, _dependencies: Set<State<T>>, _dependents: Set<State<T>>, _binds: { [T]: any, _cleanup: List<any> }, _hooks: Dict<Function>, _value: T, _stateful: boolean, _operation: List<any>?, _tweenInfo: TweenInfo | any, set: (self: State<T>, new: T, force: boolean?, noTween: boolean?) -> State<T>, get: (self: State<T>) -> T, hook: (self: State<T>, callback: Function) -> Function, Destroy: (self: State<T>) -> (), bindToProperty: (self: State<T>, instance: Instanceproperty: string) -> (), bindToAttribute: (self: State<T>, instance: Instance, attribute: string) -> () }
+	@type State { _update: (State<T>) -> boolean, _dependencies: Set<State<T>>, _dependents: Set<State<T>>, _binds: { [T]: any }, _hooks: Dict<Function>, _value: T, _stateful: boolean, _operation: List<any>?, _tweenInfo: TweenInfo | any, set: (self: State<T>, new: T, force: boolean?, noTween: boolean?) -> State<T>, get: (self: State<T>) -> T, hook: (self: State<T>, callback: Function) -> Function, Destroy: (self: State<T>) -> (), bindToProperty: (self: State<T>, instance: Instanceproperty: string) -> (), bindToAttribute: (self: State<T>, instance: Instance, attribute: string) -> () }
 ]=]
 export type State<T> = {
 	_update: (State<T>) -> boolean,
 	_dependencies: Set<State<T>>,
 	_dependents: Set<State<T>>,
-	_binds: { [T]: any, _cleanup: List<any> },
+	_binds: { [T]: any },
 	_hooks: Dict<Function>,
 	_value: T,
 	_stateful: boolean,
@@ -123,13 +123,35 @@ local function setProperty(instance: Instance, property: string, value: any)
 	end
 end
 
-local function _cleanupScope(scope: any)
-	print("cleanupScope", scope)
+local function cleanup(task: any)
+	local taskType = typeof(task)
+	if taskType == "Instance" then
+		task:Destroy()
+	elseif taskType == "RBXScriptConnection" then
+		task:Disconnect()
+	elseif taskType == "function" then
+		task()
+	elseif taskType == "table" then
+		if typeof(task.destroy) == "function" then
+			task:destroy()
+		elseif typeof(task.Destroy) == "function" then
+			task:Destroy()
+		elseif task[1] ~= nil then
+			for _, subtask in ipairs(task) do
+				cleanup(subtask)
+			end
+		elseif typeof(task._cleanup) == "table" then
+			for _, subtask in ipairs(task._cleanup) do
+				cleanup(subtask)
+			end
+		end
+	end
 end
 
 --- A library for easily creating and managing reactive state.
 --- @class Flux
 local Flux = {
+	cleanup = cleanup,
 	peek = peek,
 	peekVariadic = peekVariadic,
 	isState = isState,
@@ -167,6 +189,12 @@ Flux.Children = Flux.specialKey()
 --- @prop Event SpecialKey & { Attribute = SpecialKey, Property = SpecialKey }
 --- @readonly
 Flux.Event = table.freeze({ type = "SpecialKey", Attribute = newproxy(), Property = newproxy() })
+
+--- @within Flux
+--- A marker for defining cleanup in [Flux.edit]
+--- @prop Attribute SpecialKey
+--- @readonly
+Flux.Clean = Flux.specialKey()
 
 --- Adds a dependency to the current state
 function Flux:_addDependency<T>(dependency: State<T>)
@@ -249,11 +277,6 @@ function Flux:Destroy()
 		self._bindConnection:Disconnect()
 	end
 	if self.binds then
-		for _, disconnect in self._binds._cleanup do
-			if disconnect then
-				disconnect()
-			end
-		end
 		table.clear(self._binds)
 	end
 	table.clear(self._dependents)
@@ -322,23 +345,21 @@ local instanceStateRef: { [Instance]: { [string | State<any>]: string | State<an
 
 local function setupBind(instance: Instance, value: State<any>, property: string)
 	if not value._binds then
-		value._binds = { _cleanup = {} }
+		value._binds = {}
 	end
 	if not value._binds[instance] then
 		value._binds[instance] = {}
-		table.insert(
-			value._binds._cleanup,
-			instance.Destroying:Connect(function()
-				if value._binds then
-					value._binds[instance] = nil
+		instance.Destroying:Once(function()
+			if value._binds then
+				value._binds[instance] = nil
+			end
+			task.defer(function()
+				if instanceStateRef[instance] then
+					table.clear(instanceStateRef[instance])
+					instanceStateRef[instance] = nil
 				end
-				task.defer(function()
-					if instanceStateRef[instance] then
-						table.clear(instanceStateRef[instance])
-					end
-				end)
 			end)
-		)
+		end)
 	end
 	-- strong reference
 	if not instanceStateRef[instance] then
@@ -382,12 +403,14 @@ function Flux.edit(instance: Instance, definition): Instance
 
 	local attributes = definition[Flux.Attribute]
 	local children = definition[Flux.Children]
+	local clean = definition[Flux.Clean] or {}
 	local events = definition[Flux.Event]
 	local eventAttributes = definition[Flux.Event.Attribute]
 	local eventProperties = definition[Flux.Event.Property]
 
 	definition[Flux.Attribute] = nil
 	definition[Flux.Children] = nil
+	definition[Flux.Clean] = nil
 	definition[Flux.Event] = nil
 	definition[Flux.Event.Attribute] = nil
 	definition[Flux.Event.Property] = nil
@@ -467,9 +490,16 @@ function Flux.edit(instance: Instance, definition): Instance
 		end
 	end
 
+	if #clean > 0 or next(clean) then
+		instance.Destroying:Once(function()
+			cleanup(clean)
+		end)
+	end
+
 	if typeof(parent) == "Instance" then
 		instance.Parent = parent
 	end
+
 	return instance
 end
 
