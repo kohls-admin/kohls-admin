@@ -213,7 +213,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			end
 			runOnServer = true
 			local last = command.array[#command.array]
-			table.insert(commandStrings, string.sub(rawText, command.array[1][1], last[1] + #last[2] - 1))
+			table.insert(commandStrings, string.sub(rawText, command.array[1][1], last[1] + #last[2]))
 		end
 		if runOnServer then
 			_K.Remote.Command:FireServer(`{prefix}{table.concat(commandStrings, " " .. prefix)}`)

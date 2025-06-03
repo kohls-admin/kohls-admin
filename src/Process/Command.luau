@@ -141,8 +141,8 @@ function Command:validate()
 
 	-- always try first argument
 	if #self.definition.args > 0 and #self.array < 2 then
-		self.text ..= " "
-		self.array[2] = { #self.text, "" }
+		local start, text = unpack(self.array[1])
+		self.array[2] = { start + #text + 1, "" }
 	end
 
 	local filledSelf
