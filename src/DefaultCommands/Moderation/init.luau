@@ -2435,9 +2435,7 @@ return {
 		},
 		run = function(context)
 			for _, team in context._K.Service.Teams:GetTeams() do
-				if team.Name ~= "Neutral" then
-					team:Destroy()
-				end
+				team:Destroy()
 			end
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
 				From = "_K",
