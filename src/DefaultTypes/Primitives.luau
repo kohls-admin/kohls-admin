@@ -91,11 +91,11 @@ return function(context)
 	_K.Registry.registerType("numbers", {
 		listable = true,
 	}, numberType)
+	_K.Registry.registerType("stringGreedy", rawStringType)
 	_K.Registry.registerType("rawString", rawStringType)
 	_K.Registry.registerType("rawStrings", {
 		listable = true,
 	}, rawStringType)
-	_K.Registry.registerType("stringGreedy", rawStringType)
 	function stringType.parse(v, self)
 		if _K.Service.RunService:IsClient() then
 			return v
