@@ -2371,15 +2371,21 @@ return {
 				optional = true,
 				description = "The color of the new team.",
 			},
+			{
+				type = "boolean",
+				name = "AutoAssignable",
+				optional = true,
+				description = "If the new team is AutoAssignable.",
+			},
 		},
-		run = function(context, name, color)
+		run = function(context, name, color, autoAssignable)
 			local team = Instance.new("Team")
 			if not color then
 				color = BrickColor.random().Color
 			end
 			team.Name = name
 			team.TeamColor = BrickColor.new(color)
-			team.AutoAssignable = true
+			team.AutoAssignable = autoAssignable
 			team.Parent = context._K.Service.Teams
 
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
