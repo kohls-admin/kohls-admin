@@ -2442,7 +2442,6 @@ return {
 					Text = `<b>Edited team:</b> <font color="#{oldColor:ToHex()}">{oldName}</font> to <font color="#{color:ToHex()}">{name}</font>`,
 				})
 			else
-				-- notify the player
 				context._K.Remote.Notify:FireClient(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Failed to edit team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
@@ -2468,13 +2467,11 @@ return {
 		run = function(context, team)
 			if team and context._K.Service.Teams:FindFirstChild(team.Name) then
 				team:Destroy()
-				-- notify the player
 				context._K.Remote.Notify:FireClient(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Removed team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
 				})
 			else
-				-- notify the player
 				context._K.Remote.Notify:FireClient(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Failed to remove team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
