@@ -15,7 +15,7 @@ local function parseRandom(arg, self)
 		local message
 		player, message = self._K.Auth.targetUserArgument(self, player.UserId, player)
 		if player then
-			table.insert(players, player)
+			table.insert(list, player)
 		elseif not table.find(feedback, message) then
 			table.insert(feedback, message)
 		end
