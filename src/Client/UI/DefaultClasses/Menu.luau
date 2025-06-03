@@ -1,6 +1,6 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
-local UIS = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService")
 
 local Menu = {}
 Menu.__index = Menu
@@ -105,34 +105,30 @@ function Menu.new(definition)
 
 	local connection = nil
 	local function makeConnection()
-		connection = UIS.InputBegan:Connect(function(Input: InputObject, GPE: boolean)
-			if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+		connection = UserInputService.InputEnded:Connect(function(Input: InputObject, GPE: boolean)
+			if
+				Input.UserInputType ~= Enum.UserInputType.MouseButton1
+				and Input.UserInputType ~= Enum.UserInputType.Touch
+			then
 				return
 			end
 
-			local mouse = UIS:GetMouseLocation() :: Vector2
-			local boundsTL, boundsBR =
-				(UI.peek(new._instance.AbsolutePosition) + Vector2.new(0, UI.peek(UI.TopbarInset).Height)), --calculate bounds, inlcuding top bar inset because roblox is hell
-				(UI.peek(new._instance.AbsolutePosition) + UI.peek(new._instance.AbsoluteSize) + Vector2.new(
-					0,
-					UI.peek(UI.TopbarInset).Height
-				))
-			if
-				(mouse.X > boundsTL.X and mouse.Y > boundsTL.Y) --box bounds check, ty random dev forum post
-				and (mouse.X < boundsBR.X and mouse.Y < boundsBR.Y)
-			then
-				return --mouse is within bounds
+			local mouse: Vector2 = UserInputService:GetMouseLocation()
+			local boundsTL: Vector2 = new._instance.AbsolutePosition + Vector2.new(0, UI.peek(UI.TopbarInset).Height)
+			local boundsBR: Vector2 = boundsTL + new._instance.AbsoluteSize
+			if (mouse.X < boundsTL.X or mouse.Y < boundsTL.Y) or (mouse.X > boundsBR.X or mouse.Y > boundsBR.Y) then
+				UI.deactivateState(new.Visible, "floating")
 			end
-			UI.deactivateState(new.Visible, "floating")
 		end)
 	end
 
 	new._compute = UI.compute(function(use)
 		if use(new.Visible) then
-			makeConnection()
+			task.delay(0.2, makeConnection)
 		else
 			if connection :: RBXScriptSignal then
 				connection:Disconnect()
+				connection = nil
 			end
 		end
 	end)
