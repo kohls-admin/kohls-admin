@@ -2395,6 +2395,62 @@ return {
 		end,
 	},
 	{
+		name = "editteam",
+		aliases = { "eteam" },
+		description = "Edits a team with the given name and color.",
+		credit = {
+			"Realistic @iiRealistic_Dev",
+			"Kohl @Scripth",
+		},
+		args = {
+			{
+				type = "team",
+				name = "Team",
+				description = "The team to edit.",
+			},
+			{
+				type = "string",
+				name = "Name",
+				description = "The new name of the team.",
+			},
+			{
+				type = "color",
+				name = "Color",
+				optional = true,
+				description = "The new color of the team.",
+			},
+			{
+				type = "boolean",
+				name = "AutoAssignable",
+				optional = true,
+				description = "If the team is AutoAssignable.",
+			},
+		},
+
+		run = function(context, team, name, color, autoAssignable)
+			if team and context._K.Service.Teams:FindFirstChild(team.Name) then
+				local oldColor, oldName = team.TeamColor.Color, team.Name
+				if not color then
+					color = BrickColor.random().Color
+				end
+				team.Name = name
+				team.TeamColor = BrickColor.new(color)
+				team.AutoAssignable = autoAssignable
+
+				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+					From = "_K",
+					Text = `<b>Edited team:</b> <font color="#{oldColor:ToHex()}">{oldName}</font> to <font color="#{color:ToHex()}">{name}</font>`,
+				})
+			else
+				-- notify the player
+				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+					From = "_K",
+					Text = `<b>Failed to edit team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
+				})
+			end
+		end,
+	},
+	{
 		name = "removeteam",
 		aliases = { "delteam", "deleteteam" },
 		description = "Removes a team with the given name.",
