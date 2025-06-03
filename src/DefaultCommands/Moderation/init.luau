@@ -2550,21 +2550,8 @@ return {
 		end,
 		run = function(context, targets, enabled)
 			context.env.ensureGroup()
-			local players = {}
 
-			for _, target in targets do
-				if typeof(target) == "Instance" and target:IsA("Player") then
-					table.insert(players, target)
-				elseif typeof(target) == "Instance" and target:IsA("Team") then
-					for _, player in context._K.Service.Players:GetPlayers() do
-						if player.Team == target then
-							table.insert(players, player)
-						end
-					end
-				end
-			end
-
-			for _, player in players do
+			for _, player in targets do
 				if player.Character then
 					context.env.setCollision(player.Character, enabled)
 				end
