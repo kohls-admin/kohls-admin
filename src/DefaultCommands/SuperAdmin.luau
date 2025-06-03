@@ -216,7 +216,12 @@ return {
 			end)
 		end,
 		run = function(context, commandString: string)
+			if context._K.Data.IS_PRIVATE_SERVER then
+				return `Global commands are disabled in private servers.`
+			end
+
 			context._K.Service.Messaging:PublishAsync("KA_GlobalCommand", { context.from, commandString })
+			return
 		end,
 	},
 }
