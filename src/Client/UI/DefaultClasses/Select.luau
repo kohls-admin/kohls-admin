@@ -65,7 +65,7 @@ function Select.new(definition)
 	menu = UI.new "Menu" {
 		Adornee = new._instance,
 		Size = UI.compute(function(use)
-			return UDim2.new(0, use(absoluteSize).X, 0, math.min(#use(new.Choices), 7.5) * 24)
+			return UDim2.new(0, use(absoluteSize).X, 0, math.min(#use(new.Choices), 7.5) * use(itemSize).Y.Offset)
 		end),
 	}
 
