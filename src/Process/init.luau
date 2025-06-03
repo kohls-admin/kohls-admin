@@ -178,7 +178,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			local player = _K.Service.Players:GetPlayerByUserId(from)
 			if player then
 				_K.Remote.Notify:FireClient(
-					_K.Service.Players:GetPlayerByUserId(from),
+					player,
 					{ Text = commandError, From = "_K", TextColor3 = Color3.new(1, 0, 0), Sound = "Call_Leave" }
 				)
 				for _, err in commandErrors do
