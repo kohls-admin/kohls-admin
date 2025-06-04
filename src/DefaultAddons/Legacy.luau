@@ -137,7 +137,7 @@ return function(_K)
 	end
 
 	task.spawn(function()
-		local LEGACY_CONFIG = script.Parent.Parent:WaitForChild("LegacyConfig", 5)
+		local LEGACY_CONFIG = script.Parent.Parent:WaitForChild("Config", 5):WaitForChild("LegacyConfig", 5)
 		if not LEGACY_CONFIG then
 			return
 		end
