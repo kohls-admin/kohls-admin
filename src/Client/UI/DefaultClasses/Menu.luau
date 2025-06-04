@@ -105,6 +105,9 @@ function Menu.new(definition)
 
 	local connection = nil
 	local function makeConnection()
+		if not UI.peek(new.Visible) then
+			return
+		end
 		connection = UserInputService.InputEnded:Connect(function(Input: InputObject, GPE: boolean)
 			if
 				Input.UserInputType ~= Enum.UserInputType.MouseButton1
