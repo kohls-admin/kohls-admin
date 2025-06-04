@@ -226,8 +226,11 @@ local dashboardButton = TopbarPlus.new()
 	:setOrder(-1)
 	:setEnabled(buttonEnabled)
 	:bindEvent("toggled", dashboardToggle)
-	:modifyTheme({ "Widget", "BorderSize", 0 })
 local dashboardButtonIcon = dashboardButton:getInstance("IconImage")
+
+if dashboardButton.modifyTheme then
+	dashboardButton:modifyTheme({ "Widget", "BorderSize", 0 })
+end
 
 _K.client.dashboardButton = dashboardButton
 
