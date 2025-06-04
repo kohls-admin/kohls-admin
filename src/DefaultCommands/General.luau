@@ -145,6 +145,81 @@ return {
 		end,
 	},
 	{
+		name = "fullmessage",
+		aliases = { "fm", "fmsg" },
+		description = "Sends a full screen message to everyone in the server.",
+		args = {
+			{
+				type = "rawString",
+				name = "Message",
+				description = "The message to send.",
+			},
+		},
+		envClient = function(_K)
+			local existing
+			_K.Remote.FullScreenMessage.OnClientEvent:Connect(function(from: number, message: string, duration: number?)
+				if existing then
+					existing:Destroy()
+				end
+				local msg = _K.UI.new "TextLabel" {
+					Name = "Message",
+					Parent = _K.UI.LayerTop,
+					AutomaticSize = Enum.AutomaticSize.Y,
+					Size = UDim2.new(1, 0, 1, 0),
+					BackgroundColor3 = _K.UI.Theme.Primary,
+					BackgroundTransparency = _K.UI.Theme.Transparency,
+					Font = _K.UI.Theme.Font,
+					TextSize = _K.UI.Theme.FontSizeDouble,
+					TextColor3 = _K.UI.Theme.PrimaryText,
+					TextStrokeColor3 = _K.UI.Theme.Primary,
+					TextStrokeTransparency = _K.UI.Theme.TextStrokeTransparency,
+					Text = message,
+					TextWrapped = true,
+					RichText = true,
+
+					_K.UI.new "UIPadding" {
+						PaddingLeft = _K.UI.Theme.PaddingDouble,
+						PaddingRight = _K.UI.Theme.PaddingDouble,
+					},
+				}
+				local userFrame = _K.client.UserFrame(from)
+				userFrame.Icon.Image = `rbxthumb://type=AvatarHeadShot&id={from}&w=150&h=150`
+				_K.UI.edit(userFrame, {
+					Parent = msg,
+					AnchorPoint = Vector2.new(0.5, 0),
+					Position = UDim2.new(0.5, 0, 0.05, 0),
+					_K.UI.new "UIScale" {
+						Scale = 2,
+					},
+				})
+				local displaySize = _K.UI.state(userFrame.From.From, "AbsoluteSize")
+				_K.UI.edit(userFrame.From.Badge, {
+					Position = _K.UI.compute(function(use)
+						return UDim2.fromOffset(use(displaySize).X / 2 + 4, 0)
+					end),
+				})
+				existing = msg
+				task.delay(duration or 4 + 0.0625 * #message, game.Destroy, msg)
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.FullScreenMessage }
+		end,
+		run = function(context, message)
+			local ok, result = context._K.Util.String.filterResult(message, context.from)
+			if not ok then
+				return result
+			end
+			for _, player in Players:GetPlayers() do
+				task.spawn(function()
+					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
+					context.env.remote:FireClient(player, context.from, msg)
+				end)
+			end
+			return
+		end,
+	},
+	{
 		name = "notify",
 		aliases = { "n" },
 		description = "Sends a notification to one or more player(s).",
