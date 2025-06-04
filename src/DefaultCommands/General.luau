@@ -65,7 +65,7 @@ return {
 					},
 				}
 				existing = hint
-				task.delay(duration or 4 + 0.125 * #message, game.Destroy, hint)
+				task.delay(duration or 4 + 0.0625 * #message, game.Destroy, hint)
 			end)
 		end,
 		env = function(_K)
