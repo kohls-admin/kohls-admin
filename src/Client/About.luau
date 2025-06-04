@@ -506,9 +506,24 @@ function About.new(_K)
 			{ name = "Eternal", color = "#000", id = 983235767 },
 		}
 
-		local titleEquipped
+		local remoteEquipped = {}
+		local function donorEquip(pass, button, remote)
+			local equipped = remoteEquipped[remote]
+			if equipped then
+				equipped._content.Price.Text = `<b>SHOW</b>`
+			end
+			if equipped ~= button then
+				remoteEquipped[remote] = button
+				button._content.Price.Text = `<b>HIDE</b>`
+				remote:FireServer(pass.name)
+			else
+				remoteEquipped[remote] = nil
+				remote:FireServer()
+			end
+		end
 		for i, pass in passDefinition do
 			local isTitle = _K.Data.settings.vip and i > 4
+			local remote = if isTitle then _K.Remote.Title else _K.Remote.DonorTrail
 			local button
 			button = UI.new "Button" {
 				Parent = gamePasses,
@@ -540,23 +555,10 @@ function About.new(_K)
 				[UI.Event] = {
 					Activated = function()
 						if
-							isTitle
-							and (
-								button._content.Price.Text == `<b>SHOW</b>`
-								or button._content.Price.Text == `<b>HIDE</b>`
-							)
+							button._content.Price.Text == `<b>SHOW</b>`
+							or button._content.Price.Text == `<b>HIDE</b>`
 						then
-							if titleEquipped then
-								titleEquipped._content.Price.Text = `<b>SHOW</b>`
-							end
-							if titleEquipped ~= button then
-								titleEquipped = button
-								button._content.Price.Text = `<b>HIDE</b>`
-								_K.Remote.Title:FireServer(pass.name)
-							else
-								titleEquipped = nil
-								_K.Remote.Title:FireServer()
-							end
+							donorEquip(pass, button, remote)
 						else
 							promptThirdPartyGamePassDialog(pass.id, pass.name)
 						end
@@ -572,14 +574,14 @@ function About.new(_K)
 				Text = `We've poured thousands of hours into Kohl's Admin.\nIf you enjoy it, please donate! ❤️\n\n<b>{if i
 						> 4
 					then "<font color='#0f0'>Gives a title!"
-					else "<font transparency='0.5'>This doesn't give any perks!"}</font></b>`,
+					else "<font color='#0f0'>Gives a particle effect!"}</font></b>`,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Visible = button._hovering,
 			}
 
 			updateTitleLabel(button, pass.name)
 
-			task.spawn(updatePassPriceText, button._content.Price, pass.id, if isTitle then `<b>SHOW</b>` else nil)
+			task.spawn(updatePassPriceText, button._content.Price, pass.id, `<b>SHOW</b>`)
 		end
 
 		local vipList = UI.new "Frame" {

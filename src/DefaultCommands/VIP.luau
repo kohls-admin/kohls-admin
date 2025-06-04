@@ -438,10 +438,10 @@ return {
 			},
 		},
 		env = function(_K)
-			local infiniteEffect = _K.Flux.new "ParticleEmitter" {
+			local particle = _K.Flux.new "ParticleEmitter" {
 				Enabled = false,
 				Name = "_KParticleEffect",
-				Texture = "rbxassetid://3021790960",
+				Texture = "rbxassetid://73860257495735",
 				Size = NumberSequence.new({
 					NumberSequenceKeypoint.new(0, 0),
 					NumberSequenceKeypoint.new(0.1, 0.25, 0.25),
@@ -469,29 +469,41 @@ return {
 				Rate = 11,
 				VelocitySpread = 180,
 			}
-			return { effect = infiniteEffect }
-		end,
 
-		run = function(context, players, image, color)
-			for _, player in players do
+			local function apply(fromPlayer, player, image, color)
 				local root = player.Character
 					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
-					continue
+					return
 				end
 				local existing = root:FindFirstChild("_KParticleEffect")
 				if existing then
 					existing:Destroy()
 				end
-				local pe = context.env.effect:Clone()
+				local pe = particle:Clone()
+				if fromPlayer and (fromPlayer:GetAttribute("_KDonationLevel") < 3) then
+					color = color or Color3.new()
+				end
 				if color then
 					pe.Color = ColorSequence.new(color)
 				end
 				if image then
-					pe.Texture = context._K.Util.getTexture(image)
+					pe.Texture = _K.Util.getTexture(image)
 				end
 				pe.Enabled = true
 				pe.Parent = root
+			end
+
+			_K.Remote.DonorTrail.OnServerEvent:Connect(function(player)
+				apply(player, player, nil, nil)
+			end)
+
+			return { apply = apply }
+		end,
+
+		run = function(context, players, image, color)
+			for _, player in players do
+				context.env.apply(context.fromPlayer, player, image, color)
 			end
 		end,
 	},
