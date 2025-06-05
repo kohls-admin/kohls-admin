@@ -288,16 +288,59 @@ return {
 	{
 		name = "time",
 		aliases = { "clocktime" },
-		description = "Changes the value of Lighting.ClockTime.",
+		description = "Changes the value of Lighting.ClockTime. Optionally supports minutes and smooth tweening.",
 		args = {
 			{
+				type = "string",
+				name = "Time",
+				description = "The time of the day to set to. Can be HH, HH:MM or HH:MM:SS.",
+			},
+			{
+				type = "boolean",
+				name = "Smooth",
+				description = "If true, the time change will be animated smoothly over a short period of time.",
+				optional = true,
+			},
+			{
 				type = "number",
-				name = "Hours",
-				description = "A numerical representation (in hours) of the current time of day used by Lighting.",
+				name = "Speed",
+				description = "The speed of the smooth transition in seconds. Defaults to 1 second if not specified.",
+				optional = true,
 			},
 		},
-		run = function(context, hours)
-			Lighting.ClockTime = hours
+		run = function(context, time, smooth, smoothSpeed)
+			-- Parse "time" as HH, HH:MM, or HH:MM:SS
+			local hours, minutes, seconds = 0, 0, 0
+			if time then
+				local parts = string.split(time, ":")
+				hours = tonumber(parts[1]) or 0
+				minutes = tonumber(parts[2]) or 0
+				seconds = tonumber(parts[3]) or 0
+			end
+
+			-- Clamp values to valid ranges
+			hours = math.clamp(hours, 0, 23)
+			minutes = math.clamp(minutes, 0, 59)
+			seconds = math.clamp(seconds, 0, 59)
+
+			-- Calculate total clock time in hours
+			local clockTime = hours + minutes / 60 + seconds / 3600
+
+			-- Format TimeOfDay as HH:MM:SS
+			local timeOfDay = string.format("%02d:%02d:%02d", hours, minutes, seconds)
+
+			if smooth then
+				local tween = context._K.Service.TweenService:Create(
+					Lighting,
+					TweenInfo.new(smoothSpeed or 1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut),
+					{ ClockTime = clockTime }
+				)
+				tween:Play()
+				tween.Completed:Wait()
+			else
+				Lighting.ClockTime = clockTime
+			end
+			Lighting.TimeOfDay = timeOfDay
 		end,
 	},
 	{
