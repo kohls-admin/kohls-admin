@@ -2513,43 +2513,20 @@ return {
 			},
 		},
 		env = function(_K)
-			local PhysicsService = _K.Service.PhysicsService
 			local COLLISION_GROUP = "_KNoCollide"
-			local initialized = false
-
-			local function ensureGroup()
-				if initialized then
-					return
-				end
-				initialized = true
-				pcall(function()
-					PhysicsService:RegisterCollisionGroup(COLLISION_GROUP)
-				end)
-				PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP, COLLISION_GROUP, false)
-			end
-
-			local function setCollision(character, enabled)
-				if not character then
-					return
-				end
-				for _, part in character:GetDescendants() do
-					if part:IsA("BasePart") then
-						if enabled then
-							part.CollisionGroup = "Default"
-						else
-							part.CollisionGroup = COLLISION_GROUP
-						end
-					end
-				end
-			end
+			_K.Service.PhysicsService:RegisterCollisionGroup(COLLISION_GROUP)
+			_K.Service.PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP, COLLISION_GROUP, false)
 
 			return {
-				ensureGroup = ensureGroup,
-				setCollision = setCollision,
+				setCollision = function(character: Model, collide: boolean)
+					for _, descendant in character:GetDescendants() do
+						if descendant:IsA("BasePart") then
+							descendant.CollisionGroup = if collide then "Default" else COLLISION_GROUP
+						end
+					end
+				end,
 			}
 		end,
-			context.env.ensureGroup()
-
 		run = function(context, players: { Player }, enabled: boolean?)
 			for _, player in players do
 				if player.Character then
