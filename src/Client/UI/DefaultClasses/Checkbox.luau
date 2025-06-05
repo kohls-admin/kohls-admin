@@ -30,6 +30,8 @@ local Checkbox = {} :: CheckboxClass
 Checkbox.__index = Checkbox
 setmetatable(Checkbox, BaseClass)
 
+local boxSize = UI.computeFrom(UDim2.fromOffset, UI.Theme.FontSizeLarger, UI.Theme.FontSizeLarger)
+
 --- Creates a new checkbox.
 function Checkbox.new(definition: CheckboxDefinition)
 	local new = UI.makeStatefulDefaults({
@@ -49,7 +51,7 @@ function Checkbox.new(definition: CheckboxDefinition)
 		Position = UDim2.new(1, 0, 0.5, 0),
 		Text = "",
 		TextTransparency = 1,
-		Size = UDim2.new(0, 24, 0, 24),
+		Size = boxSize,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
@@ -60,6 +62,13 @@ function Checkbox.new(definition: CheckboxDefinition)
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,
+		},
+
+		UI.new "UIPadding" {
+			PaddingTop = UI.Theme.PaddingHalf,
+			PaddingRight = UI.Theme.PaddingHalf,
+			PaddingBottom = UI.Theme.PaddingHalf,
+			PaddingLeft = UI.Theme.PaddingHalf,
 		},
 
 		UI.new "Frame" {
@@ -76,8 +85,9 @@ function Checkbox.new(definition: CheckboxDefinition)
 			UI.new "ImageLabel" {
 				AnchorPoint = Vector2.new(0, 0.5),
 				BackgroundTransparency = 1,
-				Position = UDim2.new(0, 5, 0.5, 0),
-				Size = UDim2.new(0, 14, 0, 14),
+				Position = UDim2.new(0, 0, 0.5, 0),
+				Size = UDim2.fromScale(1, 1),
+				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 				Image = UI.Theme.Image.Check,
 				ImageColor3 = UI.Theme.Secondary,
 			},
