@@ -2516,7 +2516,15 @@ return {
 				setCollision = function(character: Model, collide: boolean)
 					for _, descendant in character:GetDescendants() do
 						if descendant:IsA("BasePart") then
-							descendant.CollisionGroup = if collide then "Default" else COLLISION_GROUP
+							if not descendant:GetAttribute("_KCollisionGroup") then
+								descendant:SetAttribute("_KCollisionGroup", descendant.CollisionGroup)
+							end
+							descendant.CollisionGroup = if collide
+								then descendant:GetAttribute("_KCollisionGroup")
+								else COLLISION_GROUP
+							if collide then
+								descendant:SetAttribute("_KCollisionGroup", nil)
+							end
 						end
 					end
 				end,
