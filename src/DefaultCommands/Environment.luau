@@ -303,12 +303,12 @@ return {
 			},
 			{
 				type = "number",
-				name = "Speed",
-				description = "The speed of the smooth transition in seconds. Defaults to 1 second if not specified.",
+				name = "Length",
+				description = "The length of the smooth transition in seconds. Defaults to 1 second if not specified.",
 				optional = true,
 			},
 		},
-		run = function(context, time, smooth, smoothSpeed)
+		run = function(context, time, smooth, smoothLength)
 			-- Parse "time" as HH, HH:MM, or HH:MM:SS
 			local hours, minutes, seconds = 0, 0, 0
 			if time then
@@ -332,7 +332,7 @@ return {
 			if smooth then
 				local tween = context._K.Service.TweenService:Create(
 					Lighting,
-					TweenInfo.new(smoothSpeed or 1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut),
+					TweenInfo.new(smoothLength or 1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut),
 					{ ClockTime = clockTime }
 				)
 				tween:Play()
