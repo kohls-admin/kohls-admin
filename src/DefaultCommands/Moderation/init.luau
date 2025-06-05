@@ -2499,12 +2499,12 @@ return {
 	{
 		name = "collide",
 		aliases = { "collision", "collisions" },
-		description = "Toggles collisions for one or more player(s) or team(s).",
+		description = "Toggles collisions for one or more player(s) against other player(s).",
 		args = {
 			{
 				type = "players",
-				name = "Players/Teams",
-				description = "The player(s) or team(s) whose collisions to toggle.",
+				name = "Player(s)",
+				description = "The player(s) whose collisions to toggle.",
 			},
 			{
 				type = "boolean",
@@ -2548,10 +2548,10 @@ return {
 				setCollision = setCollision,
 			}
 		end,
-		run = function(context, targets, enabled)
 			context.env.ensureGroup()
 
-			for _, player in targets do
+		run = function(context, players: { Player }, enabled: boolean?)
+			for _, player in players do
 				if player.Character then
 					context.env.setCollision(player.Character, enabled)
 				end
