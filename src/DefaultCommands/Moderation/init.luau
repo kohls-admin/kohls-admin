@@ -2496,4 +2496,51 @@ return {
 			})
 		end,
 	},
+	{
+		name = "collide",
+		aliases = { "nocollide", "uncollide" },
+		description = "Toggles collisions for one or more player(s) against other player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose collisions to toggle.",
+			},
+		},
+		env = function(_K)
+			local COLLISION_GROUP = "_KNoCollide"
+			_K.Service.PhysicsService:RegisterCollisionGroup(COLLISION_GROUP)
+			_K.Service.PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP, COLLISION_GROUP, false)
+
+			return {
+				setCollision = function(character: Model, collide: boolean)
+					for _, descendant in character:GetDescendants() do
+						if descendant:IsA("BasePart") then
+							if not descendant:GetAttribute("_KCollisionGroup") then
+								descendant:SetAttribute("_KCollisionGroup", descendant.CollisionGroup)
+							end
+							descendant.CollisionGroup = if collide
+								then descendant:GetAttribute("_KCollisionGroup")
+								else COLLISION_GROUP
+							if collide then
+								descendant:SetAttribute("_KCollisionGroup", nil)
+							end
+						end
+					end
+				end,
+			}
+		end,
+		run = function(context, players: { Player })
+			local collide = context.alias == "collide"
+			for _, player in players do
+				if player.Character then
+					context.env.setCollision(player.Character, collide)
+				end
+			end
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				From = "_K",
+				Text = `<b>Collisions {collide and "enabled" or "disabled"} for the given player(s) or team(s).</b>`,
+			})
+		end,
+	},
 }
