@@ -205,10 +205,11 @@ function Logs.new(_K)
 
 	filterMenu = UI.new "Menu" {
 		Adornee = filterButton._instance,
+		AutomaticSize = Enum.AutomaticSize.Y,
 		RightAlign = true,
 		Size = UI.compute(function(use)
 			local padding = use(UI.Theme.Padding).Offset
-			return UDim2.fromOffset(256 + padding * 3, (24 + padding) * math.ceil(#logTypes / 2) + padding)
+			return UDim2.fromOffset(256 + padding * 3, 0)
 		end),
 
 		UI.new "UIPadding" {
@@ -219,11 +220,17 @@ function Logs.new(_K)
 		},
 	}
 
+	filterMenu._menu.AutomaticSize = Enum.AutomaticSize.Y
+
 	UI.edit(filterMenu._list, {
 		FillDirection = Enum.FillDirection.Horizontal,
 		Padding = UI.Theme.Padding,
 		Wraps = true,
 	})
+
+	local lineItemSize = UI.compute(function(use)
+		return UDim2.fromOffset(128, use(UI.Theme.FontSizeLarger))
+	end)
 
 	for index, array in logTypes do
 		local logType = array[1]
@@ -232,7 +239,7 @@ function Logs.new(_K)
 			LayoutOrder = index,
 			Text = logType,
 			ContentAutomaticSize = true,
-			Size = UDim2.fromOffset(128, 24),
+			Size = lineItemSize,
 
 			UI.new "Checkbox" {
 				Value = logTypeFilter[logType],
@@ -244,6 +251,26 @@ function Logs.new(_K)
 						scroller:refreshList()
 					end,
 				},
+			},
+		}
+	end
+
+	for label, value in { SELECT = true, DESELECT = false } do
+		UI.new "Button" {
+			Parent = filterMenu._menu,
+			LayoutOrder = #logTypes + 1,
+			Label = `<b>{label} ALL</b>`,
+			Size = lineItemSize,
+
+			[UI.Event] = {
+				Activated = function()
+					scroller._filterUpdate = true
+					for index, array in logTypes do
+						local logType = array[1]
+						logTypeFilter[logType]:set(value)
+						scroller:refreshList()
+					end
+				end,
 			},
 		}
 	end
