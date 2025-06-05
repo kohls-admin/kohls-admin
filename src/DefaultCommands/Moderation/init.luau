@@ -2498,18 +2498,13 @@ return {
 	},
 	{
 		name = "collide",
-		aliases = { "collision", "collisions" },
+		aliases = { "nocollide", "uncollide" },
 		description = "Toggles collisions for one or more player(s) against other player(s).",
 		args = {
 			{
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) whose collisions to toggle.",
-			},
-			{
-				type = "boolean",
-				name = "Enabled",
-				description = "Whether collisions should be enabled.",
 			},
 		},
 		env = function(_K)
@@ -2527,17 +2522,16 @@ return {
 				end,
 			}
 		end,
-		run = function(context, players: { Player }, enabled: boolean?)
+		run = function(context, players: { Player })
+			local collide = context.alias == "collide"
 			for _, player in players do
 				if player.Character then
-					context.env.setCollision(player.Character, enabled)
+					context.env.setCollision(player.Character, collide)
 				end
 			end
-
-			-- Notify the command executor that collisions have been changed
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
 				From = "_K",
-				Text = `<b>Collisions {enabled and "enabled" or "disabled"} for the given player(s) or team(s).</b>`,
+				Text = `<b>Collisions {collide and "enabled" or "disabled"} for the given player(s) or team(s).</b>`,
 			})
 		end,
 	},
