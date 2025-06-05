@@ -58,7 +58,7 @@ return {
 
 		run = function(context, message)
 			if context._K.Data.IS_PRIVATE_SERVER then
-				return `Announce are disabled in private servers.`
+				return `Announcements are disabled in private servers.`
 			end
 
 			local announcement = { message, context.from }
