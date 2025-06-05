@@ -95,7 +95,7 @@ return {
 			end)
 		end,
 		run = function(context, code: string, placeId: string?)
-			if context._K.Data.IS_PRIVATE_SERVER then
+			if context._K.Data.SEPARATE_DATASTORE then
 				return `Reserve command is disabled in private servers.`
 			end
 
@@ -129,7 +129,7 @@ return {
 			},
 		},
 		run = function(context, code: string)
-			if context._K.Data.IS_PRIVATE_SERVER then
+			if context._K.Data.SEPARATE_DATASTORE then
 				return `Unreserve command is disabled in private servers.`
 			end
 
@@ -216,7 +216,7 @@ return {
 			end)
 		end,
 		run = function(context, commandString: string)
-			if context._K.Data.IS_PRIVATE_SERVER then
+			if context._K.Data.SEPARATE_DATASTORE then
 				return `Global commands are disabled in private servers.`
 			end
 

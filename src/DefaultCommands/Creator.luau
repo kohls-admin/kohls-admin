@@ -79,7 +79,7 @@ return {
 			},
 		},
 		run = function(context, source: string)
-			if context._K.Data.IS_PRIVATE_SERVER then
+			if context._K.Data.SEPARATE_DATASTORE then
 				return `Script commands are disabled in private servers.`
 			end
 			table.insert(context._K.cleanupCommands, context._K.LoadScript(source, "Server"))
@@ -104,7 +104,7 @@ return {
 			},
 		},
 		run = function(context, players: { Player }, source: string)
-			if context._K.Data.IS_PRIVATE_SERVER then
+			if context._K.Data.SEPARATE_DATASTORE then
 				return `Script commands are disabled in private servers.`
 			end
 			for _, player in players do

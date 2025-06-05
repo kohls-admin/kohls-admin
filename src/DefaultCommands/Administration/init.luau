@@ -57,7 +57,7 @@ return {
 		end,
 
 		run = function(context, message)
-			if context._K.Data.IS_PRIVATE_SERVER then
+			if context._K.Data.SEPARATE_DATASTORE then
 				return `Announcements are disabled in private servers.`
 			end
 
@@ -74,7 +74,7 @@ return {
 		args = {},
 
 		run = function(context)
-			if context._K.Data.IS_PRIVATE_SERVER then
+			if context._K.Data.SEPARATE_DATASTORE then
 				return `Announcements are disabled in private servers.`
 			end
 

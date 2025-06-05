@@ -381,17 +381,25 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		end
 	end
 
-	local dataStoreScope = "_K_0.1" -- WARN: REQUIRES DATA MIGRATION WHEN CHANGED
-	if _K.Data.IS_PRIVATE_SERVER then
-		for role, users in settings.userRoles do
-			if table.find(users, game.PrivateServerOwnerId) then
-				dataStoreScope ..= game.PrivateServerOwnerId
-				break
+	task.spawn(function()
+		repeat
+			task.wait()
+		until _K.creatorId
+
+		_K.Data.SEPARATE_DATASTORE = _K.Data.IS_PRIVATE_SERVER and game.PrivateServerOwnerId ~= _K.creatorId
+
+		local dataStoreScope = "_K_0.1" -- WARN: REQUIRES DATA MIGRATION WHEN CHANGED
+		if _K.Data.SEPARATE_DATASTORE then
+			for role, users in settings.userRoles do
+				if table.find(users, game.PrivateServerOwnerId) then
+					dataStoreScope ..= game.PrivateServerOwnerId
+					break
+				end
 			end
 		end
-	end
 
-	task.spawn(_K.Data.initialize, dataStoreScope)
+		_K.Data.initialize(dataStoreScope)
+	end)
 
 	-- define user roles
 	for role, users in settings.userRoles do

@@ -18,6 +18,7 @@ local Cache = {
 
 local Data = {
 	IS_PRIVATE_SERVER = RunService:IsServer() and game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0,
+	SEPARATE_DATASTORE = false,
 
 	Cache = Cache,
 	creatorId = game.CreatorId,

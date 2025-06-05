@@ -90,7 +90,7 @@ function Auth.banUsers(
 		end
 	end
 
-	if banAsync and timestamp and not Data.IS_PRIVATE_SERVER then
+	if banAsync and timestamp and not Data.SEPARATE_DATASTORE then
 		Util.Service.Players:BanAsync({
 			UserIds = userIds,
 			PrivateReason = reason or "No reason.",
@@ -121,7 +121,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 		end
 	end
 
-	if banAsync and not Data.IS_PRIVATE_SERVER then
+	if banAsync and not Data.SEPARATE_DATASTORE then
 		Util.Service.Players:UnbanAsync({ UserIds = userIds, ApplyToUniverse = true })
 	end
 end
