@@ -380,7 +380,15 @@ return {
 			},
 		},
 
+		env = function(_K)
+			return {
+				blocked = { 59524079, 59524162, 59524102, 59524044, 59524124, 59524006 },
+			}
+		end,
 		run = function(context, assetId)
+			if table.find(context.env.blocked, assetId) then
+				return "Model has been blocked."
+			end
 			local ok, result = pcall(function()
 				return context._K.Service.Insert:LoadAsset(assetId)
 			end)
@@ -390,6 +398,11 @@ return {
 				else
 					return result
 				end
+			end
+			local packageRef = result:FindFirstChild("packageRef", true)
+			if packageRef and packageRef:FindFirstChildOfClass("ObjectValue") then
+				result:Destroy()
+				return "Model has been blocked."
 			end
 			result.Parent = workspace
 			result:MoveTo(context.fromPlayer.Character:GetPivot().Position)

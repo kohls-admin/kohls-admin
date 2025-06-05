@@ -4475,7 +4475,16 @@ function LoadCommands()
 			3,
 			{ "number" },
 			function(pl, args)
+				local blocked = { 59524079, 59524162, 59524102, 59524044, 59524124, 59524006 }
+				if table.find(blocked, tonumber(args[1])) then
+					return -- block dispensers
+				end
 				local imod = services.Insert:LoadAsset(args[1])
+				local packageRef = imod:FindFirstChild("packageRef", true)
+				if packageRef and packageRef:FindFirstChildOfClass("ObjectValue") then
+					imod:Destroy()
+					return -- block dev modules
+				end
 				imod.Parent = game.Workspace
 				imod:MoveTo(pl.Character:GetModelCFrame().Position)
 				imod:MakeJoints()
