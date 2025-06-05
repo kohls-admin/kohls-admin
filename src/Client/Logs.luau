@@ -205,10 +205,11 @@ function Logs.new(_K)
 
 	filterMenu = UI.new "Menu" {
 		Adornee = filterButton._instance,
+		AutomaticSize = Enum.AutomaticSize.Y,
 		RightAlign = true,
 		Size = UI.compute(function(use)
 			local padding = use(UI.Theme.Padding).Offset
-			return UDim2.fromOffset(256 + padding * 3, (24 + padding) * math.ceil(#logTypes / 2) + padding)
+			return UDim2.fromOffset(256 + padding * 3, 0)
 		end),
 
 		UI.new "UIPadding" {
@@ -218,6 +219,8 @@ function Logs.new(_K)
 			PaddingRight = UI.Theme.Padding,
 		},
 	}
+
+	filterMenu._menu.AutomaticSize = Enum.AutomaticSize.Y
 
 	UI.edit(filterMenu._list, {
 		FillDirection = Enum.FillDirection.Horizontal,
