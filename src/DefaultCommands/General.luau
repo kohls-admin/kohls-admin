@@ -735,7 +735,7 @@ return {
 	},
 	{
 		name = "fly",
-		description = "Enables flight on one or more player(s).",
+		description = "Enables flight for one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -754,29 +754,23 @@ return {
 				local player = _K.Service.Players:GetPlayerByUserId(userId)
 				if player and not _K.Auth.hasCommand(userId, _K.Registry.commands.fly) then
 					player:SetAttribute("_KFly", nil)
-					player:SetAttribute("_KNoclip", nil)
+					player:SetAttribute("_KNoClip", nil)
 				end
 			end)
-		end,
-
-		runClient = function(context, players)
-			if table.find(players, context.fromPlayer) then
-				context._K.client.Character.tryFlyNoclip()
-			end
 		end,
 		run = function(context, players, speed)
 			for _, player in players do
 				if not player:GetAttribute("_KFly") then
 					context._K.Remote.Notify:FireClient(player, { Text = `Double tap <b>jump</b> to toggle fly.` })
 				end
-				player:SetAttribute("_KNoclip", nil)
-				player:SetAttribute("_KFly", if speed then speed else 256)
+				player:SetAttribute("_KFly", speed or 128)
+				player:SetAttribute("_KNoClip", true)
 			end
 		end,
 	},
 	{
 		name = "unfly",
-		description = "Disables flight on one or more player(s).",
+		description = "Disables flight for one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -788,19 +782,24 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				player:SetAttribute("_KFly", nil)
-				player:SetAttribute("_KNoclip", nil)
+				player:SetAttribute("_KNoClip", nil)
 			end
 		end,
 	},
-
 	{
 		name = "noclip",
-		description = "Disables collisions on one or more player(s).",
+		description = "Enables noclip for one or more player(s).",
 		args = {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) whose collisions to disable.",
+				description = "The player(s) to noclip.",
+			},
+			{
+				type = "boolean",
+				name = "Flight",
+				description = "If flight should be enabled, defaults to enabled.",
+				optional = true,
 			},
 			{
 				type = "number",
@@ -809,30 +808,24 @@ return {
 				optional = true,
 			},
 		},
-
-		runClient = function(context, players)
-			if table.find(players, context.fromPlayer) then
-				context._K.client.Character.tryFlyNoclip()
-			end
-		end,
-		run = function(context, players, speed)
+		run = function(context, players, flying: boolean?, speed: number?)
 			for _, player in players do
 				if not player:GetAttribute("_KDevCameraOcclusionMode") then
 					player:SetAttribute("_KDevCameraOcclusionMode", player.DevCameraOcclusionMode)
 					player.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
 				end
-				if not player:GetAttribute("_KNoclip") then
+				if not player:GetAttribute("_KNoClip") then
 					context._K.Remote.Notify:FireClient(player, { Text = `Double tap <b>jump</b> to toggle noclip.` })
 				end
-				player:SetAttribute("_KFly", nil)
-				player:SetAttribute("_KNoclip", if speed then speed else 256)
+				player:SetAttribute("_KFly", if flying == false then nil else speed or 128)
+				player:SetAttribute("_KNoClip", true)
 			end
 		end,
 	},
 	{
 		name = "clip",
 		aliases = { "unnoclip" },
-		description = "Disables noclip on one or more player(s).",
+		description = "Disables noclip for one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -849,7 +842,7 @@ return {
 					player:SetAttribute("_KDevCameraOcclusionMode", nil)
 				end
 				player:SetAttribute("_KFly", nil)
-				player:SetAttribute("_KNoclip", nil)
+				player:SetAttribute("_KNoClip", nil)
 			end
 		end,
 	},
