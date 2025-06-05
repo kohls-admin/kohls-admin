@@ -228,51 +228,9 @@ function Logs.new(_K)
 		Wraps = true,
 	})
 
-	UI.new "ListItem" {
-		Parent = filterMenu._menu,
-		LayoutOrder = 1,
-		Text = "SELECT",
-		ContentAutomaticSize = true,
-		Size = UDim2.fromOffset(128, 24),
-
-		UI.new "Button" {
-			Label = "SELECT ALL",
-
-			[UI.Event] = {
-				Activated = function(value)
-					scroller._filterUpdate = true
-					for index, array in logTypes do
-						local logType = array[1]
-						logTypeFilter[logType]:set(true)
-						scroller:refreshList()
-					end
-				end,
-			},
-		},
-	}
-
-	UI.new "ListItem" {
-		Parent = filterMenu._menu,
-		LayoutOrder = 1,
-		Text = "DESELECT",
-		ContentAutomaticSize = true,
-		Size = UDim2.fromOffset(128, 24),
-
-		UI.new "Button" {
-			Label = "DESELECT ALL",
-
-			[UI.Event] = {
-				Activated = function(value)
-					scroller._filterUpdate = true
-					for index, array in logTypes do
-						local logType = array[1]
-						logTypeFilter[logType]:set(false)
-						scroller:refreshList()
-					end
-				end,
-			},
-		},
-	}
+	local lineItemSize = UI.compute(function(use)
+		return UDim2.fromOffset(128, use(UI.Theme.FontSizeLarger))
+	end)
 
 	for index, array in logTypes do
 		local logType = array[1]
@@ -281,7 +239,7 @@ function Logs.new(_K)
 			LayoutOrder = index,
 			Text = logType,
 			ContentAutomaticSize = true,
-			Size = UDim2.fromOffset(128, 24),
+			Size = lineItemSize,
 
 			UI.new "Checkbox" {
 				Value = logTypeFilter[logType],
@@ -293,6 +251,26 @@ function Logs.new(_K)
 						scroller:refreshList()
 					end,
 				},
+			},
+		}
+	end
+
+	for label, value in { SELECT = true, DESELECT = false } do
+		UI.new "Button" {
+			Parent = filterMenu._menu,
+			LayoutOrder = #logTypes + 1,
+			Label = `<b>{label} ALL</b>`,
+			Size = lineItemSize,
+
+			[UI.Event] = {
+				Activated = function()
+					scroller._filterUpdate = true
+					for index, array in logTypes do
+						local logType = array[1]
+						logTypeFilter[logType]:set(value)
+						scroller:refreshList()
+					end
+				end,
 			},
 		}
 	end
