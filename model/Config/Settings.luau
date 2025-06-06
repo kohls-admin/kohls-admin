@@ -132,7 +132,7 @@ return {
 	-- Defines the hierarchy, permissions, and capabilities of each role, you can create as many custom roles as you want!
 	roles = {
 		{ -- Default Role (Base permissions for all users)
-			_key = "everyone", -- DO NOT CHANGE: System identifier
+			_key = "everyone", -- DO NOT CHANGE: Breaks admin system
 
 			name = "Player", -- Display name
 			color = "#0ff", -- Role color, hex only!
@@ -162,7 +162,7 @@ return {
 		},
 
 		{ -- VIP Role
-			_key = "vip", -- DO NOT CHANGE: System identifier
+			_key = "vip", -- DO NOT CHANGE: Breaks admin system
 			name = "VIP",
 			color = "#0f8",
 			groups = { "vip" },
@@ -171,7 +171,7 @@ return {
 		},
 
 		{ -- Moderator Role
-			_key = "mod", -- DO NOT CHANGE: System identifier
+			_key = "mod", -- DO NOT CHANGE: Resets saved user roles
 			name = "Moderator",
 			color = "#0f0",
 			groups = { "moderation", "general", "environment", "fun", "vip" },
@@ -179,7 +179,7 @@ return {
 		},
 
 		{ -- Administrator Role
-			_key = "admin", -- DO NOT CHANGE: System identifier
+			_key = "admin", -- DO NOT CHANGE: Resets saved user roles
 			name = "Administrator",
 			color = "#ff0",
 			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
@@ -187,7 +187,7 @@ return {
 		},
 
 		{ -- SuperAdmin Role
-			_key = "superadmin", -- DO NOT CHANGE: System identifier
+			_key = "superadmin", -- DO NOT CHANGE: Resets saved user roles
 			name = "SuperAdmin",
 			color = "#f80",
 			groups = { "superadmin", "administration", "moderation", "general", "environment", "fun", "vip" },
@@ -195,7 +195,7 @@ return {
 		},
 
 		[math.huge] = { -- Creator Role (Highest Authority)
-			_key = "creator", -- DO NOT CHANGE: System identifier
+			_key = "creator", -- DO NOT CHANGE: Breaks admin system
 			name = "Game Creator",
 			color = "#f00",
 			permissions = { admin = true }, -- Full system access
