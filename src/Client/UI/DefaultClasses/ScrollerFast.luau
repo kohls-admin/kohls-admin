@@ -125,6 +125,13 @@ RunService.Heartbeat:connect(function()
 		scroller._filteredList = if scroller._filterFunction
 			then scroller._filterFunction(scroller, scroller._sortedList)
 			else scroller._sortedList
+		-- reset cache
+		for data, item in scroller._lineItemCache do
+			scroller._lineItemCache[data] = nil
+			table.insert(scroller._lineItemFree, item)
+			local instance = if type(item) == "table" then item._instance else item
+			instance.Parent = nil
+		end
 		scroller:render()
 	end
 
@@ -155,51 +162,51 @@ function ScrollerFast:forceRender()
 
 	self._scroller.CanvasSize = UDim2.new(0, 0, 0, length * lineHeight)
 
-	local cacheIndex = 1
+	local usedItems = {}
 	for i = math.max(1, startIndex - 4), math.min(length, endIndex + 4) do
-		local lineItem = self._lineItemCache[cacheIndex]
 		local lineData = if self.ReverseOrder._value then self._filteredList[length - i + 1] else self._filteredList[i]
+		local lineItem = self._lineItemCache[lineData]
 		if not lineItem then
-			lineItem = if self.CreateItem
-				then self.CreateItem._value(self, lineData)
-				else UI.new "TextLabel" {
-					AutoLocalize = false,
-					BackgroundTransparency = 1,
-					Size = self.ItemSize,
-					RichText = true,
-					Font = UI.Theme.FontMono,
-					TextSize = UI.Theme.FontSize,
-					TextColor3 = UI.Theme.PrimaryText,
-					TextStrokeColor3 = UI.Theme.Primary,
-					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-					TextTruncate = Enum.TextTruncate.SplitWord,
-					TextXAlignment = Enum.TextXAlignment.Left,
-				}
-			table.insert(self._lineItemCache, lineItem)
-		end
-		if self.RenderItem then
-			self.RenderItem._value(self, lineItem, lineData)
-		else
-			lineItem.Text = if self.RenderText then self.RenderText._value(self, lineItem, lineData) else lineData
+			lineItem = table.remove(self._lineItemFree)
+				or if self.CreateItem
+					then self.CreateItem._value(self, lineData)
+					else UI.new "TextLabel" {
+						AutoLocalize = false,
+						BackgroundTransparency = 1,
+						Size = self.ItemSize,
+						RichText = true,
+						Font = UI.Theme.FontMono,
+						TextSize = UI.Theme.FontSize,
+						TextColor3 = UI.Theme.PrimaryText,
+						TextStrokeColor3 = UI.Theme.Primary,
+						TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+						TextTruncate = Enum.TextTruncate.SplitWord,
+						TextXAlignment = Enum.TextXAlignment.Left,
+					}
+			self._lineItemCache[lineData] = lineItem
+
+			if self.RenderItem then
+				self.RenderItem._value(self, lineItem, lineData)
+			else
+				lineItem.Text = if self.RenderText then self.RenderText._value(self, lineItem, lineData) else lineData
+			end
+
+			local instance = if type(lineItem) == "table" then lineItem._instance else lineItem
+			instance.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
+			instance.Parent = self._scroller
 		end
 
-		if type(lineItem) == "table" then
-			lineItem = lineItem._instance
-		end
-		lineItem.Visible = true
-		lineItem.Position = UDim2.new(0, 0, 0, (i - 1) * lineHeight)
-		lineItem.Parent = self._scroller
-
-		cacheIndex = cacheIndex + 1
+		usedItems[lineData] = lineItem
 	end
 
-	for i = cacheIndex, #self._lineItemCache do
-		local item = self._lineItemCache[i]
-		if type(item) == "table" then
-			item = item._instance
+	for data, item in self._lineItemCache do
+		if usedItems[data] then
+			continue
 		end
-		item.Visible = false
-		item.Parent = nil
+		self._lineItemCache[data] = nil
+		table.insert(self._lineItemFree, item)
+		local instance = if type(item) == "table" then item._instance else item
+		instance.Parent = nil
 	end
 end
 
@@ -256,6 +263,7 @@ function ScrollerFast.new(definition)
 	}, definition)
 
 	self._lineItemCache = {}
+	self._lineItemFree = {}
 	self._lastSizeY = 0
 	self._lastScrollY = 0
 
