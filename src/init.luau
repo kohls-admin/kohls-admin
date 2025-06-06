@@ -208,18 +208,29 @@ local function characterAdded(character: Model)
 
 	-- damage logs
 	local alive, lastHealth = true, humanoid.Health
+	local damageBatch = {}
+	local function logDamage(from)
+		local damage = damageBatch[from]
+		damageBatch[from] = nil
+		if not damage then
+			return
+		end
+		if from and from ~= game then
+			_K.log(`damaged {player} for {damage} damage.`, "DAMAGE", from.UserId)
+		else
+			_K.log(`{player} took {damage} damage.`, "DAMAGE", player.UserId)
+		end
+	end
+	local logDamageDebounce = _K.Util.Function.debounce(1, logDamage)
 	humanoid.HealthChanged:Connect(function(health)
 		if alive then
 			local tag = humanoid:FindFirstChild("creator")
-			local from = tag and tag.Value
+			local from = (tag and tag.Value) or game
 			local damage = lastHealth - health
 			lastHealth = health
-			if damage > 0 then
-				if from then
-					_K.log(`damaged {player} for {damage} damage.`, "DAMAGE", from.UserId)
-				else
-					_K.log(`{player} took {damage} damage.`, "DAMAGE", player.UserId)
-				end
+			if damage > 0 and health >= 0 then
+				damageBatch[from] = (damageBatch[from] or 0) + damage
+				logDamageDebounce(from)
 			end
 		end
 	end)
@@ -229,6 +240,9 @@ local function characterAdded(character: Model)
 		alive = false
 		local tag = humanoid:FindFirstChild("creator")
 		local from = tag and tag.Value
+		for attacker in damageBatch do
+			logDamage(attacker)
+		end
 		if from then
 			_K.log(`died to {from}.`, "DEATH", player.UserId)
 			if typeof(from) == "Instance" and from:IsA("Player") then
