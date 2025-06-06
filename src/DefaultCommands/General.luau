@@ -764,7 +764,7 @@ return {
 					context._K.Remote.Notify:FireClient(player, { Text = `Double tap <b>jump</b> to toggle fly.` })
 				end
 				player:SetAttribute("_KFly", speed or 128)
-				player:SetAttribute("_KNoClip", true)
+				player:SetAttribute("_KNoClip", nil)
 			end
 		end,
 	},
