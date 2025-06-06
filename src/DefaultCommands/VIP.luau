@@ -1289,15 +1289,12 @@ return {
 					if deny[material] then
 						return
 					end
-					local apply = color or reflectance or material
-					local checkParent = if apply then character else character.PrimaryPart
-					local setParent = if apply then character.PrimaryPart else character
 					local humanoid = character:FindFirstChildOfClass("Humanoid")
-
-					local bodyColors = checkParent:FindFirstChildOfClass("BodyColors")
-					if bodyColors then
-						bodyColors.Parent = setParent
+					if not humanoid then
+						return
 					end
+
+					local apply = color or reflectance or material
 
 					if material ~= Enum.Material.ForceField then
 						local shirt = character:FindFirstChildOfClass("Shirt")
@@ -1321,16 +1318,15 @@ return {
 						if descendant:IsA("BasePart") and descendant.Name ~= "HumanoidRootPart" then
 							updatePart(descendant, color, reflectance, material)
 						elseif descendant:IsA("SurfaceAppearance") then
-							if apply and not descendant:FindFirstChild("_KParent") and humanoid then
+							if apply and not descendant:FindFirstChild("_KParent") then
 								local _KParent = Instance.new("ObjectValue")
 								_KParent.Name = "_KParent"
 								_KParent.Value = descendant.Parent
 								_KParent.Parent = descendant
 								descendant.Parent = humanoid
 							elseif not apply and descendant:FindFirstChild("_KParent") then
-								-- yes this is cursed, but Luau error 1013 demands a semicolon.
-								descendant.Parent = (descendant :: SurfaceAppearance & { _KParent: ObjectValue })._KParent.Value;
-								(descendant :: SurfaceAppearance & { _KParent: ObjectValue })._KParent:Destroy()
+								descendant.Parent = descendant._KParent.Value
+								descendant._KParent:Destroy()
 							end
 						end
 					end
