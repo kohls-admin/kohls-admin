@@ -140,10 +140,10 @@ end)
 
 Theme.ScrollMidImage = state("rbxassetid://18370268668")
 Theme.ScrollTopImage = compute(function(use)
-	return if use(Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://84803790508027"
+	return if use(Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://105141456035522"
 end)
 Theme.ScrollBottomImage = compute(function(use)
-	return if use(Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://104819278516997"
+	return if use(Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://110012579042362"
 end)
 
 return Theme
