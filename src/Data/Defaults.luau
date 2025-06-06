@@ -28,6 +28,7 @@ local Data = {
 	members = {},
 	players = {},
 	reservedServers = {},
+	targetLimits = {},
 	roles = nil,
 
 	settingsModuleData = nil,

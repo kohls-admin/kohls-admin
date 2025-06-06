@@ -137,6 +137,12 @@ return {
 				"utility", --           help, version, info, logs, etc. (safe basics)
 			},
 
+			limits = {
+				cooldown = 4, -- Cooldown period in seconds
+				commands = 4, -- Max commands per cooldown
+				targets = 1, --  Max targets per command
+			},
+
 			permissions = {
 				admin = false, --   ⚠️ Bypasses all permissions
 				banasync = false, --   Saved bans
@@ -153,6 +159,7 @@ return {
 			name = "VIP",
 			color = "#0f8",
 			groups = { "vip" },
+			limits = { cooldown = 4, commands = 16, targets = 1 },
 			permissions = {},
 			onlyTargetSelf = true,
 		},
@@ -175,6 +182,7 @@ return {
 			name = "Moderator",
 			color = "#0f0",
 			groups = { "moderation", "general", "environment", "fun", "vip" },
+			limits = { cooldown = 4, commands = 32, targets = math.huge },
 			permissions = { serverlogs = true },
 		},
 
@@ -183,6 +191,7 @@ return {
 			name = "Administrator",
 			color = "#ff0",
 			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
+			limits = { cooldown = 4, commands = 64, targets = math.huge },
 			permissions = { banasync = true, serverlogs = true },
 		},
 

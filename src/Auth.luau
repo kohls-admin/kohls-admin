@@ -484,6 +484,13 @@ end
 
 function Auth.targetUserArgument(arg, userId: number, value: Player | number | string)
 	local from = arg.command.from
+	local limits = arg.command.fromRole.limits
+	local targetLimits = arg._K.Data.targetLimits
+	targetLimits[from] = targetLimits[from] or 0
+	if limits and targetLimits[from] > (limits.targets or math.huge) then
+		return nil, `Can only target {limits.targets} user{if limits.targets == 1 then "" else "s"}`
+	end
+	targetLimits[from] += 1
 	if userId == from then
 		if arg.definition.ignoreSelf then
 			return nil, "Can't target yourself"
