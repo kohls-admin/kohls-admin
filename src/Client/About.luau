@@ -507,7 +507,7 @@ function About.new(_K)
 		}
 
 		local remoteEquipped = {}
-		local function donorEquip(pass, button, remote)
+		local function donorEquip(name, button, remote)
 			local equipped = remoteEquipped[remote]
 			if equipped then
 				equipped._content.Price.Text = `<b>SHOW</b>`
@@ -515,7 +515,7 @@ function About.new(_K)
 			if equipped ~= button then
 				remoteEquipped[remote] = button
 				button._content.Price.Text = `<b>HIDE</b>`
-				remote:FireServer(pass.name)
+				remote:FireServer(name)
 			else
 				remoteEquipped[remote] = nil
 				remote:FireServer()
@@ -558,7 +558,7 @@ function About.new(_K)
 							button._content.Price.Text == `<b>SHOW</b>`
 							or button._content.Price.Text == `<b>HIDE</b>`
 						then
-							donorEquip(pass, button, remote)
+							donorEquip(pass.name, button, remote)
 						else
 							promptThirdPartyGamePassDialog(pass.id, pass.name)
 						end
@@ -638,17 +638,7 @@ function About.new(_K)
 						vipButtonGlobal._content.Price.Text == `<b>SHOW</b>`
 						or vipButtonGlobal._content.Price.Text == `<b>HIDE</b>`
 					then
-						if titleEquipped then
-							titleEquipped._content.Price.Text = `<b>SHOW</b>`
-						end
-						if titleEquipped ~= vipButtonGlobal then
-							titleEquipped = vipButtonGlobal
-							vipButtonGlobal._content.Price.Text = `<b>HIDE</b>`
-							_K.Remote.Title:FireServer("VIP")
-						else
-							titleEquipped = nil
-							_K.Remote.Title:FireServer()
-						end
+						donorEquip("VIP", vipButtonGlobal, _K.Remote.Title)
 					else
 						promptThirdPartyGamePassDialog(vipGlobalPassId, "VIP (Global)")
 					end
