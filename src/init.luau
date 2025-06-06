@@ -82,6 +82,7 @@ local _K = {
 	client = nil,
 	pinnedAnnouncement = nil,
 	ready = false,
+	Notify = nil,
 
 	cleanupCommands = {},
 	_serverLock = false,
@@ -162,6 +163,24 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 	return log
 end
 _K.Logger.logs = _K.Data.logs
+
+function _K.systemNotify(to: number | Player, text: string, isError: boolean?)
+	if type(to) == "number" then
+		to = _K.Service.Players:GetPlayerByUserId(to)
+	end
+	if to then
+		local props = { Text = text, From = "_K" }
+		if isError then
+			props.TextColor3 = Color3.new(1, 0, 0)
+			props.Sound = "Call_Leave"
+		end
+		if _K.IsServer then
+			_K.Remote.Notify:FireClient(to, props)
+		else
+			_K.Notify:FireClient(props)
+		end
+	end
+end
 
 -- register initial UI children
 if _K.IsClient then
