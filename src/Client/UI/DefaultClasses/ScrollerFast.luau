@@ -132,6 +132,19 @@ RunService.Heartbeat:connect(function()
 			local instance = if type(item) == "table" then item._instance else item
 			instance.Parent = nil
 		end
+		-- pause canvas
+		if not scroller.DictList._value then
+			local lineHeight = scroller.ItemSize._value.Y.Offset
+			if scroller._lastValue and scroller._scroller.CanvasPosition.Y > lineHeight then
+				local change = #scroller._filteredList - scroller._lastLength
+				if change == 0 then
+					change = (table.find(scroller._filteredList, scroller._lastValue) or 1) - 1
+				end
+				scroller._scroller.CanvasPosition += Vector2.new(0, change * lineHeight)
+			end
+			scroller._lastLength = #scroller._filteredList
+			scroller._lastValue = scroller._filteredList[1]
+		end
 		scroller:render()
 	end
 
