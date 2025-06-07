@@ -17,8 +17,14 @@ local ColorPicker = {}
 ColorPicker.__index = ColorPicker
 setmetatable(ColorPicker, BaseClass)
 
+local menuCornerRadius = UI.compute(function(use)
+	return UDim.new(0, use(UI.Theme.CornerRadius).Offset + use(UI.Theme.Padding).Offset)
+end)
+
 function ColorPicker.new(definition)
 	local new = UI.makeStatefulDefaults({
+		Adornee = false,
+		RightAlign = false,
 		Visible = false,
 		Value = Color3.new(1, 0, 0),
 		Selected = Color3.new(1, 0, 0),
@@ -313,18 +319,14 @@ function ColorPicker.new(definition)
 		},
 	}
 
-	new._instance = UI.new "Frame" {
+	new._menu = UI.new "Menu" {
 		Name = "ColorPicker",
-		Active = true,
-		BackgroundTransparency = 1,
+		Adornee = new.Adornee,
+		RightAlign = new.RightAlign,
 		AutomaticSize = Enum.AutomaticSize.XY,
 		Size = UDim2.new(0, 88, 0, 72),
 		Visible = new.Visible,
 
-		UI.new "UIListLayout" {
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UI.Theme.Padding,
-		},
 		UI.new "UIPadding" {
 			PaddingLeft = UI.Theme.Padding,
 			PaddingRight = UI.Theme.Padding,
@@ -347,6 +349,10 @@ function ColorPicker.new(definition)
 		},
 		hueSlider,
 	}
+	new._menu._content.AutomaticSize = Enum.AutomaticSize.XY
+	UI.edit(new._menu._list, { Padding = UI.Theme.Padding })
+	new._instance = new._menu._instance
+	UI.edit(new._instance.UICorner, { CornerRadius = menuCornerRadius })
 
 	return setmetatable(new, ColorPicker)
 end
