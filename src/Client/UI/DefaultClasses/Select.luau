@@ -91,7 +91,7 @@ function Select.new(definition)
 			choiceButton = UI.new "Button" {
 				LayoutOrder = i,
 				ZIndex = 1e3,
-				Parent = menu._menu,
+				Parent = menu._content,
 				Name = tostring(name),
 				Label = name,
 				Font = font,
@@ -141,14 +141,14 @@ function Select.new(definition)
 	menu.Visible:hook(function(value)
 		if selectedButton and value then
 			local buttonHeight = selectedButton.AbsoluteSize.Y
-			local buttonPosition = selectedButton.AbsolutePosition.Y + menu._menu.CanvasPosition.Y
-			local offset = math.round((menu._menu.AbsoluteSize.Y / 2) / buttonHeight) * buttonHeight
-			menu._menu.CanvasPosition = Vector2.new(0, buttonPosition - menu._menu.AbsolutePosition.Y - offset)
+			local buttonPosition = selectedButton.AbsolutePosition.Y + menu._content.CanvasPosition.Y
+			local offset = math.round((menu._content.AbsoluteSize.Y / 2) / buttonHeight) * buttonHeight
+			menu._content.CanvasPosition = Vector2.new(0, buttonPosition - menu._content.AbsolutePosition.Y - offset)
 		end
 	end)
 
 	local disconnectHook = new.Choices:hook(function(value)
-		for _, child in menu._menu:GetChildren() do
+		for _, child in menu._content:GetChildren() do
 			if not child:IsA("UIBase") then
 				child:Destroy()
 			end

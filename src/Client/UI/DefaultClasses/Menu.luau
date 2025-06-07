@@ -23,7 +23,7 @@ function Menu.new(definition)
 
 	local listContentSize = UI.state(new._list, "AbsoluteContentSize")
 
-	new._menu = UI.new "ScrollingFrame" {
+	new._content = UI.new "ScrollingFrame" {
 		Name = "Menu",
 		ZIndex = 100,
 		BackgroundTransparency = 1,
@@ -58,7 +58,7 @@ function Menu.new(definition)
 		AutoButtonColor = false,
 		Text = "",
 
-		new._menu,
+		new._content,
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
 		},

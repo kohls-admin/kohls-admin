@@ -220,7 +220,7 @@ function Logs.new(_K)
 		},
 	}
 
-	filterMenu._menu.AutomaticSize = Enum.AutomaticSize.Y
+	filterMenu._content.AutomaticSize = Enum.AutomaticSize.Y
 
 	UI.edit(filterMenu._list, {
 		FillDirection = Enum.FillDirection.Horizontal,
@@ -235,7 +235,7 @@ function Logs.new(_K)
 	for index, array in logTypes do
 		local logType = array[1]
 		UI.new "ListItem" {
-			Parent = filterMenu._menu,
+			Parent = filterMenu._content,
 			LayoutOrder = index,
 			Text = logType,
 			ContentAutomaticSize = true,
@@ -257,7 +257,7 @@ function Logs.new(_K)
 
 	for label, value in { SELECT = true, DESELECT = false } do
 		UI.new "Button" {
-			Parent = filterMenu._menu,
+			Parent = filterMenu._content,
 			LayoutOrder = #logTypes + 1,
 			Label = `<b>{label} ALL</b>`,
 			Size = lineItemSize,
