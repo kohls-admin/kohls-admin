@@ -23,6 +23,7 @@ function Command.new(_K, alias, definition: Type.CommandDefinition, array, from,
 		fromPlayer = Players:GetPlayerByUserId(from),
 		fromRank = rank,
 		fromRole = role,
+		rank = Auth.hasCommand(from, definition) or 0,
 		text = text,
 		undo = string.find(alias, "un", 1, true) == 1,
 
@@ -39,7 +40,7 @@ function Command:shouldRequest(player: Player)
 	if self._K._shouldRequestOverride then
 		return self._K._shouldRequestOverride(self, player)
 	end
-	return self.from ~= self._K.creatorId and self.fromRank <= Auth.getRank(player.UserId)
+	return self.from ~= self._K.creatorId and self.rank <= Auth.getRank(player.UserId)
 end
 
 function Command:requestCommand(targetPlayer: Player, args, run)

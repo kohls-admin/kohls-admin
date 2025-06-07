@@ -511,7 +511,7 @@ function Auth.targetUserArgument(arg, userId: number, value: Player | number | s
 		if player and player:GetAttribute("_KRolesLoaded") ~= true then
 			return nil, "Can't target loading user"
 		end
-		if Auth.getRank(userId) < Auth.getRank(from) then
+		if Auth.getRank(userId) < arg.command.rank then
 			return value
 		end
 		return nil, "Can only target lower ranks"
