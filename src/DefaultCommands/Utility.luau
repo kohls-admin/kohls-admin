@@ -340,7 +340,7 @@ return {
 	},
 	{
 		name = "showfps",
-		aliases = { "getfps", "checkfps", "playerfps" }
+		aliases = { "getfps", "checkfps", "playerfps" },
 		description = "Displays the frames per second of a player.",
 		args = {
 			{
@@ -377,7 +377,7 @@ return {
 	},
 	{
 		name = "ping",
-		aliases = { "getping", "checkping", "latency" }
+		aliases = { "getping", "checkping", "latency" },
 		description = "Displays the ping of a player.",
 		args = {
 			{
