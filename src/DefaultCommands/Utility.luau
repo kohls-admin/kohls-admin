@@ -38,7 +38,7 @@ return {
 	},
 	{
 		name = "about",
-		aliases = { "credit", "credits", "info", "donate", "support" },
+		aliases = { "credits", "info", "donate", "support" },
 		description = "Shows the about tab in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
@@ -329,7 +329,7 @@ return {
 	},
 	{
 		name = "serverage",
-		aliases = {},
+		aliases = { "uptime" },
 		description = "Displays the age of the server.",
 		run = function(context, volume)
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
@@ -340,6 +340,7 @@ return {
 	},
 	{
 		name = "showfps",
+		aliases = { "getfps", "checkfps", "playerfps" },
 		description = "Displays the frames per second of a player.",
 		args = {
 			{
@@ -376,6 +377,7 @@ return {
 	},
 	{
 		name = "ping",
+		aliases = { "getping", "checkping", "latency" },
 		description = "Displays the ping of a player.",
 		args = {
 			{
