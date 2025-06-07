@@ -341,6 +341,12 @@ function ScrollerFast.new(definition)
 	end)
 	self:updateList()
 
+	local function refresh()
+		self:refreshList()
+	end
+	UI.Theme.FontSize:hook(refresh)
+	UI.Theme.Padding:hook(refresh)
+
 	if self.FilterInput._value then
 		local thread = false
 		local function debounce()
