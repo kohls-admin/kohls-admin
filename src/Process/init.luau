@@ -52,7 +52,7 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 			argument = { first - 1, prefix, char }
 			table.insert(command, argument)
 		elseif char == prefix and string.find(lastChar, delimiter) then
-			if #argument == 1 then
+			if #argument == 1 or string.find(argument[2], `^{delimiter}*$`) then
 				table.remove(command)
 			end
 			argument = { first + 1 }
