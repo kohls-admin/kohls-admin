@@ -189,6 +189,7 @@ task.defer(function()
 
 			social,
 		}
+		socialMenu._content.AutomaticSize = Enum.AutomaticSize.Y
 
 		UI.edit(socialButton._content.IconFrame.Icon, {
 			ImageTransparency = UI.compute(function(use)
