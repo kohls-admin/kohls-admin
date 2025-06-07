@@ -130,10 +130,11 @@ function Slider.new(definition)
 			ZIndex = 2,
 
 			UI.new "UIPadding" {
+				PaddingTop = UDim.new(0, 12),
+				PaddingBottom = UDim.new(0, 12),
 				PaddingLeft = UDim.new(0, 12),
 				PaddingRight = UDim.new(0, 12),
 			},
-
 			new._slider,
 		},
 
