@@ -1120,6 +1120,10 @@ wrap(function()
 		Closing = true
 		Client:Destroy()
 		RemoteEvent:Destroy()
+		if services.HTTP.HttpEnabled and game.GameId > 0 then
+			-- stylua: ignore
+			pcall(services.HTTP.RequestAsync, services.HTTP, { Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
+		end
 		repeat
 			task.wait()
 		until (not SaveData and not SaveLogs) or not GlobalDataStore
