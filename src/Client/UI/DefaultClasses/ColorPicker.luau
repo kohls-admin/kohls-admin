@@ -34,6 +34,7 @@ function ColorPicker.new(definition)
 
 	local dragging = UI.state(false)
 
+	local hue = 0
 	local hueSlider = UI.new "Slider" {
 		Name = "HueSlider",
 		SnapSound = false,
@@ -41,8 +42,12 @@ function ColorPicker.new(definition)
 			return UDim2.new(0, 36 + (24 + use(UI.Theme.Padding).Offset) * 3, 0, 24)
 		end),
 		Value = UI.compute(function(use)
-			local h = use(new.Value):ToHSV()
-			return h
+			local h, s, v = use(new.Value):ToHSV()
+			if h == 1 and hue == 0 then
+				h = 0
+			end
+			hue = if s > 0 and v > 0 then h else hue
+			return hue
 		end),
 
 		UI.new "Frame" {
@@ -71,6 +76,7 @@ function ColorPicker.new(definition)
 			Selected = function(value)
 				local _, s, v = new.Value._value:ToHSV()
 				local color = Color3.fromHSV(value, s, v)
+				hue = value
 				new.Selected:set(color, true)
 				new.Value:set(color)
 			end,
@@ -173,16 +179,17 @@ function ColorPicker.new(definition)
 	}
 
 	local sv, dragInput
+	local sX = UI.state(0)
 	local function update(input)
 		if not dragInput then
 			return
 		end
-		-- stylua: ignore
-		local h = hueSlider._value
-		local s = math.clamp((input.Position.X - sv.AbsolutePosition.X - 8) / (sv.AbsoluteSize.X - 16), 0, 1)
-		local v = 1 - math.clamp((input.Position.Y - sv.AbsolutePosition.Y - 8) / (sv.AbsoluteSize.Y - 16), 0, 1)
 
-		local color = Color3.fromHSV(h, s, v)
+		local x = math.clamp((input.Position.X - sv.AbsolutePosition.X - 8) / (sv.AbsoluteSize.X - 16), 0, 1)
+		local y = 1 - math.clamp((input.Position.Y - sv.AbsolutePosition.Y - 8) / (sv.AbsoluteSize.Y - 16), 0, 1)
+		sX:set(x)
+
+		local color = Color3.fromHSV(hue, x, y)
 		new.Selected:set(color, true)
 		new.Value:set(color)
 	end
@@ -295,7 +302,8 @@ function ColorPicker.new(definition)
 					UI.Theme.TweenOut,
 					UI.compute(function(use)
 						local _, s, v = use(new.Value):ToHSV()
-						return UDim2.new(s, 0, 1 - v, 0)
+						local x = use(sX)
+						return UDim2.new(if v == 0 then x else s, 0, 1 - v, 0)
 					end)
 				),
 
