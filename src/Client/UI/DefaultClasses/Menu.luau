@@ -103,42 +103,22 @@ function Menu.new(definition)
 		})
 	end
 
-	local connection = nil
-	local function makeConnection()
-		if not UI.peek(new.Visible) then
-			return
-		end
-		connection = UserInputService.InputEnded:Connect(function(Input: InputObject, GPE: boolean)
-			if
-				Input.UserInputType ~= Enum.UserInputType.MouseButton1
-				and Input.UserInputType ~= Enum.UserInputType.Touch
-			then
-				return
-			end
-
-			local mouse: Vector2 = UserInputService:GetMouseLocation()
-			local boundsTL: Vector2 = new._instance.AbsolutePosition + Vector2.new(0, UI.peek(UI.TopbarInset).Height)
-			local boundsBR: Vector2 = boundsTL + new._instance.AbsoluteSize
-			if (mouse.X < boundsTL.X or mouse.Y < boundsTL.Y) or (mouse.X > boundsBR.X or mouse.Y > boundsBR.Y) then
-				UI.deactivateState(new.Visible, "floating")
-			end
-		end)
-	end
-
-	new._compute = UI.compute(function(use)
-		if use(new.Visible) then
-			task.delay(0.2, makeConnection)
-		else
-			if connection :: RBXScriptSignal then
-				connection:Disconnect()
-				connection = nil
-			end
-		end
-	end)
-
 	UI.edit(new._instance, {
 		[UI.Clean] = {
 			new.Adornee:hook(onAdornee),
+			UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
+				if
+					(
+						input.UserInputType == Enum.UserInputType.MouseButton1
+						or input.UserInputType == Enum.UserInputType.Touch
+					)
+					and new.Visible._value
+					and not UI.pointInGuiObject(input.Position.X, input.Position.Y, new.Adornee._value)
+					and not UI.pointInGuiObject(input.Position.X, input.Position.Y, new._instance)
+				then
+					UI.deactivateState(new.Visible, "floating")
+				end
+			end),
 		},
 	})
 	onAdornee(UI.peek(new.Adornee))
