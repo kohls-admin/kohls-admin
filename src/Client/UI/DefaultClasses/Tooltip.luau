@@ -86,6 +86,12 @@ function Tooltip.new(definition)
 	}
 
 	local hoverConnections = {}
+	local function hoverEnter()
+		UI.activateState(hovering, "hover")
+	end
+	local function hoverLeave()
+		UI.deactivateState(hovering, "hover")
+	end
 
 	UI.edit(new._instance, {
 		[UI.Clean] = {
@@ -101,18 +107,11 @@ function Tooltip.new(definition)
 							v:Disconnect()
 						end
 					end
-					table.insert(
-						hoverConnections,
-						parent.MouseEnter:Connect(function()
-							UI.activateState(hovering, "hover")
-						end)
-					)
-					table.insert(
-						hoverConnections,
-						parent.MouseLeave:Connect(function()
-							UI.deactivateState(hovering, "hover")
-						end)
-					)
+
+					table.insert(hoverConnections, parent.MouseEnter:Connect(hoverEnter))
+					table.insert(hoverConnections, parent.MouseLeave:Connect(hoverLeave))
+					table.insert(hoverConnections, parent.SelectionGained:Connect(hoverEnter))
+					table.insert(hoverConnections, parent.SelectionLost:Connect(hoverLeave))
 					parentState:set(parent)
 					positionState:bindToProperty(parent, "AbsolutePosition")
 					sizeState:bindToProperty(parent, "AbsoluteSize")
