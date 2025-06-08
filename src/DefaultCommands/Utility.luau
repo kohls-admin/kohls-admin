@@ -407,9 +407,6 @@ return {
 			},
 		},
 
-		runClient = function(context, delay: number)
-			task.wait(delay)
-		end,
 		run = function(context, delay: number)
 			task.wait(delay)
 		end,
