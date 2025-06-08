@@ -13,12 +13,26 @@ function Tooltip.new(definition)
 		Visible = false,
 	}, definition)
 
+	local hoverStart
+	local hovering = UI.state(false)
 	local parentState = UI.state(nil)
 	local positionState = UI.state(Vector2.zero)
 	local sizeState = UI.state(Vector2.zero)
-	local hovering = UI.state(false)
-
 	local tipSizeState = UI.state(Vector2.zero)
+
+	local function hover(value)
+		if value then
+			local start = tick()
+			hoverStart = start
+			task.delay(0.4, function()
+				if hoverStart == start and hovering._value then
+					new.Visible:set(true)
+				end
+			end)
+		else
+			new.Visible:set(false)
+		end
+	end
 
 	new._instance = UI.new "TextLabel" {
 		AutoLocalize = false,
@@ -71,61 +85,49 @@ function Tooltip.new(definition)
 		},
 	}
 
-	tipSizeState:bindToProperty(new._instance, "AbsoluteSize")
+	local hoverConnections = {}
 
-	local hoverStart
-
-	UI.UserInputService.TouchMoved:Connect(function()
-		hovering:set(false)
-	end)
-
-	new._cleanup = {
-		hovering:hook(function(value)
-			if value then
-				local start = tick()
-				hoverStart = start
-				task.delay(0.4, function()
-					if hoverStart == start and hovering._value then
-						new.Visible:set(true)
+	UI.edit(new._instance, {
+		[UI.Clean] = {
+			UI.UserInputService.TouchMoved:Connect(function()
+				hovering:set(false)
+			end),
+			hovering:hook(hover),
+			new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
+				local parent = new._instance.Parent
+				if parent and parent ~= UI.LayerTop then
+					if parentState._value then
+						for _, v in hoverConnections do
+							v:Disconnect()
+						end
 					end
-				end)
-			else
-				new.Visible:set(false)
-			end
-		end),
-		new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
-			local parent = new._instance.Parent
-			if parent and parent ~= UI.LayerTop then
-				if parentState._value then
-					for _, v in new._cleanup do
-						v:Disconnect()
-					end
-				end
-				table.insert(
-					new._cleanup,
-					parent.MouseEnter:Connect(function()
-						UI.activateState(hovering, "hover")
-					end)
-				)
-				table.insert(
-					new._cleanup,
-					parent.MouseLeave:Connect(function()
-						UI.deactivateState(hovering, "hover")
-					end)
-				)
-				parentState:set(parent)
-				positionState:bindToProperty(parent, "AbsolutePosition")
-				sizeState:bindToProperty(parent, "AbsoluteSize")
-				task.defer(function()
+					table.insert(
+						hoverConnections,
+						parent.MouseEnter:Connect(function()
+							UI.activateState(hovering, "hover")
+						end)
+					)
+					table.insert(
+						hoverConnections,
+						parent.MouseLeave:Connect(function()
+							UI.deactivateState(hovering, "hover")
+						end)
+					)
+					parentState:set(parent)
+					positionState:bindToProperty(parent, "AbsolutePosition")
+					sizeState:bindToProperty(parent, "AbsoluteSize")
+					task.wait()
 					new._instance.Parent = UI.LayerTop
-				end)
-			end
-		end),
-		parentState,
-		positionState,
-		sizeState,
-		hovering,
-	}
+				end
+			end),
+			parentState,
+			positionState,
+			sizeState,
+			hovering,
+		},
+	})
+
+	tipSizeState:bindToProperty(new._instance, "AbsoluteSize")
 
 	return setmetatable(new, Tooltip)
 end
