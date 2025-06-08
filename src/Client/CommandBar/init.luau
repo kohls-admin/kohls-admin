@@ -674,7 +674,6 @@ end
 
 local function hideCommandBar()
 	if CommandBar.Visible then
-		Input._input.TextEditable = false
 		CommandBar.Visible = false
 		if _K.client then
 			_K.client.TopbarPlus.setTopbarEnabled(true)
@@ -720,7 +719,6 @@ return {
 
 		prefix = _K.getCommandPrefix()
 		Input.Value:set(prefix, true)
-		Input._input.TextEditable = false
 		CommandBar.Parent = UI.TopbarFrame
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
@@ -772,19 +770,8 @@ return {
 			end
 		end)
 
-		Input._input.Focused:Connect(function()
-			-- prevent input hotkey from being captured
-			task.delay(0, function()
-				if CommandBar.Visible then
-					Input._input.TextEditable = true
-				end
-			end)
-		end)
-
 		Input._input.FocusLost:Connect(function(enterPressed)
 			if enterPressed then
-				Input._input.TextEditable = false
-
 				local data = currentCompletionData
 				if #data.invalid > 0 then
 					validState:set(false)
