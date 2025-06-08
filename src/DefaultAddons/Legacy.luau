@@ -137,8 +137,11 @@ return function(_K)
 	end
 
 	task.spawn(function()
-		local LEGACY_CONFIG = script.Parent.Parent:WaitForChild("Config", 5):WaitForChild("LegacyConfig", 5)
+		local Package = script.Parent.Parent
+		local Config = Package and Package:WaitForChild("Config", 5)
+		local LEGACY_CONFIG = Config and (Config:FindFirstChild("Legacy") or Config:FindFirstChild("LegacyConfig"))
 		if not LEGACY_CONFIG then
+			warn("LegacyConfig was not found", Package ~= nil, Config ~= nil)
 			return
 		end
 

@@ -26,7 +26,6 @@ if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 		script.Parent = game:GetService("ServerScriptService")
 	else
 		shared._K_LOADER_LOADED = true
-		legacyConfig.Name = "LegacyConfig"
 		Package.Parent = game:GetService("ServerScriptService")
 		AUTO_UPDATE = AUTO_UPDATE and game.PlaceId ~= DEMO_PLACE
 	end
