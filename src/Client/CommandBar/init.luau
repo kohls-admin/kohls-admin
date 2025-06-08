@@ -770,6 +770,10 @@ return {
 			end
 		end)
 
+		Input._input.Focused:Connect(function()
+			Input.Value:set(_K.Util.String.trimEnd(Input._input.Text), true)
+		end)
+
 		Input._input.FocusLost:Connect(function(enterPressed)
 			if enterPressed then
 				local data = currentCompletionData
