@@ -110,6 +110,7 @@ function Menu.new(definition)
 					(
 						input.UserInputType == Enum.UserInputType.MouseButton1
 						or input.UserInputType == Enum.UserInputType.Touch
+						or input.UserInputType == Enum.UserInputType.TextInput
 					)
 					and new.Visible._value
 					and not UI.pointInGuiObject(input.Position.X, input.Position.Y, new.Adornee._value)
