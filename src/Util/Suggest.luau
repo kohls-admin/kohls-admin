@@ -1,3 +1,5 @@
+local String = require("./String")
+
 local Suggest = {}
 
 function Suggest.getNames(objects: any): { string }
@@ -15,7 +17,7 @@ function Suggest.getNames(objects: any): { string }
 end
 
 function Suggest.query(text: string, names: { string | { string } }, instances: { any }?)
-	local results, partial = {}, {}
+	local results, levenshtein, partial = {}, {}, {}
 	local textLower = string.lower(text)
 
 	for index, name in names do
@@ -35,7 +37,27 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 				table.insert(results, { suggestion, display, value, query })
 			elseif found then -- partial matches are added after everything else
 				table.insert(partial, { suggestion, display, value, query })
+			else
+				table.insert(levenshtein, { queryLower, suggestion, display, value, query })
 			end
+		end
+	end
+
+	if #levenshtein > 0 then
+		local suggestionData = nil
+		local lowestDistance = math.huge
+		for _, data in levenshtein do
+			local distance = String.levenshteinDistance(data[1], textLower)
+			if distance < lowestDistance then
+				lowestDistance = distance
+				suggestionData = data
+			end
+			if distance == 0 then
+				break
+			end
+		end
+		if suggestionData then
+			table.insert(partial, { suggestionData[2], suggestionData[3], suggestionData[4], suggestionData[5] })
 		end
 	end
 

@@ -78,11 +78,6 @@ return function(_K, text, cursorPosition)
 			data.suggestions =
 				_K.Util.Suggest.query(data.query, _K.Registry.types.command.suggestions(data.query, from))
 
-			if #data.suggestions < 1 then
-				table.insert(data.invalid, { "Invalid command", commandPos, commandText })
-				return data
-			end
-
 			local rawSuggestions = data.suggestions
 			data.suggestions = table.create(#data.suggestions)
 			local invalidSuggestions = {}
