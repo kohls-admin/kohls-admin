@@ -24,6 +24,9 @@ linear.Enabled = true
 
 local function updateFly(delta: number)
 	local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
 	local up = humanoid.Jump and 1 or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and -1 or 0
 	local controlVector = ControlModule:GetMoveVector()
 	if up ~= 0 or controlVector ~= Vector3.zero then
