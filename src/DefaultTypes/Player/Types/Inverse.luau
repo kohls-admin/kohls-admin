@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 
 -- TODO: finish inverse type
 
-local typeInverse = {
+local _typeInverse = {
 	postParse = function(arg, self)
 		local players = {}
 		if type(arg) == "table" then
