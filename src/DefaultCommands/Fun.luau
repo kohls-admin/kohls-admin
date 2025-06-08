@@ -915,6 +915,62 @@ return {
 		end,
 	},
 	{
+		name = "poison",
+		description = "Damages one or more player(s) over time.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to poison.",
+				shouldRequest = true,
+			},
+			{
+				type = "number",
+				name = "Damage",
+				description = "The damage to deal to their health.",
+			},
+			{
+				type = "number",
+				name = "Duration",
+				description = "The duration of the poison effect in seconds, defaults to 8.",
+				optional = true,
+			},
+		},
+
+		env = function(_K)
+			local function removeEffect(effect: Smoke)
+				effect.Enabled = false
+				task.wait(5)
+				effect:Destroy()
+			end
+			return {
+				apply = function(humanoid: Humanoid, damage: number, duration: number?)
+					local effect = Instance.new("Smoke")
+					effect.Name = "_KPoisonEffect"
+					effect.Color = Color3.new(0.5, 0, 1)
+					effect.Opacity = 0.1
+					effect.RiseVelocity = 0
+					effect.Parent = humanoid.RootPart
+					task.delay(duration or 8, removeEffect, effect)
+					local dealt = 0
+					repeat
+						local hit = math.min(damage / (duration or 8) * task.wait(0.8), damage - dealt)
+						dealt += hit
+						humanoid:TakeDamage(hit)
+					until dealt >= damage
+				end,
+			}
+		end,
+		run = function(context, players, damage, duration)
+			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					task.spawn(context.env.apply, humanoid, damage, duration)
+				end
+			end
+		end,
+	},
+	{
 		name = "spin",
 		aliases = {},
 		description = "Spins one or more player(s).",
