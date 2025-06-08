@@ -279,8 +279,8 @@ function Input.new(definition)
 	new._bounds = UI.state(new._input, "TextBounds")
 
 	new._input:GetPropertyChangedSignal("Text"):Connect(function()
-		local text = string.gsub(new._input.Text, "\n", " ")
-		displayLabel.Text = if new.MaxChars._value ~= math.huge then string.sub(text, 1, new.MaxChars._value) else text
+		local text = new._input.Text
+		new.DisplayText:set(if new.MaxChars._value ~= math.huge then string.sub(text, 1, new.MaxChars._value) else text)
 	end)
 
 	UI.edit(new._input, {
