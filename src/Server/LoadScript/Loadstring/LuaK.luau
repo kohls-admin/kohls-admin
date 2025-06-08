@@ -127,7 +127,7 @@ function luaK:numunm(a)
 	return -a
 end
 function luaK:numisnan(a)
-	return not a == a
+	return (not a) == a
 end
 -- a NaN cannot equal another NaN
 

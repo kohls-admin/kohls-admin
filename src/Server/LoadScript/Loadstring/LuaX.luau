@@ -1,3 +1,4 @@
+--!nocheck
 --# selene: allow(incorrect_standard_library_use, multiple_statements, shadowing, unused_variable, empty_if, divide_by_zero, unbalanced_assignments)
 --[[--------------------------------------------------------------------
 
@@ -297,7 +298,7 @@ function luaX:lexerror(ls, msg, token)
 		end
 	end
 	local buff = self:chunkid(ls.source, self.MAXSRC)
-	local msg = string.format("%s:%d: %s", buff, ls.linenumber, msg)
+	msg = string.format("%s:%d: %s", buff, ls.linenumber, msg)
 	if token then
 		msg = string.format("%s near " .. self.LUA_QS, msg, txtToken(ls, token))
 	end
@@ -707,12 +708,12 @@ function luaX:read_string(ls, del, Token)
 						self:save(ls, string.char(tonumber(hexNum, 16)))
 					end
 				elseif string.lower(c) == "z" then -- Support \z string literal. I'm not sure why you would want to use this
-					local c = luaX:nextc(ls)
+					local nextC = luaX:nextc(ls)
 
-					if c == del then
+					if nextC == del then
 						break
 					else
-						self:save(ls, c)
+						self:save(ls, nextC)
 					end
 				elseif not string.find(c, "%d") then
 					self:save_and_next(ls) -- handles \\, \", \', and \?

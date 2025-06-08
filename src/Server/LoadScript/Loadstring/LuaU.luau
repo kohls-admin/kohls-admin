@@ -166,7 +166,7 @@ function luaU:from_double(x)
 		mantissa = (mantissa * 2 - 1) * math.ldexp(0.5, 53)
 		exponent = exponent + 1022
 	end
-	local v, byte = "" -- convert to bytes
+	local v, byte = "", nil -- convert to bytes
 	x = math.floor(mantissa)
 	for i = 1, 6 do
 		x, byte = grab_byte(x)

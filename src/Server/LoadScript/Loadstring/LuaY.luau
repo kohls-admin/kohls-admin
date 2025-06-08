@@ -1,3 +1,4 @@
+--!nocheck
 --# selene: allow(incorrect_standard_library_use, multiple_statements, shadowing, unused_variable, empty_if, divide_by_zero, unbalanced_assignments)
 --[[--------------------------------------------------------------------
 
@@ -674,7 +675,7 @@ end
 -- closing of a function
 ------------------------------------------------------------------------
 function luaY:close_func(ls)
-	local L = ls.L
+	-- local L = ls.L
 	local fs = ls.fs
 	local f = fs.f
 	self:removevars(ls, 0)
