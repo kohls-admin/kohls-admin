@@ -8,7 +8,7 @@ local imageType = {
 		return if v == "" then 0 else tonumber(v)
 	end,
 	validate = function(v)
-		return v ~= nil and v == math.floor(v), "Only whole numbers are valid."
+		return v ~= nil and v == math.floor(v), "Only whole numbers are valid"
 	end,
 	parse = function(v, self)
 		if _K.IsClient then

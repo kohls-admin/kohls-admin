@@ -27,7 +27,7 @@ local booleanType = {
 		if v == "" then
 			return true
 		end
-		return startMatch(yes, v) or startMatch(no, v), "Invalid boolean."
+		return startMatch(yes, v) or startMatch(no, v), "Invalid boolean"
 	end,
 	parse = function(v)
 		if v == "" then
@@ -38,7 +38,7 @@ local booleanType = {
 		elseif startMatch(no, v) then
 			return false
 		end
-		return nil, "Invalid boolean."
+		return nil, "Invalid boolean"
 	end,
 	suggestions = function(text: string, from: number)
 		return booleanSuggestions
@@ -48,10 +48,10 @@ local booleanType = {
 local integerType = {
 	filterLog = true,
 	transform = function(v)
-		return if v == "" then 0 else tonumber(v), "Invalid number."
+		return if v == "" then 0 else tonumber(v), "Invalid number"
 	end,
 	validate = function(v)
-		return v ~= nil and v == math.floor(v), "Only whole numbers are valid."
+		return v ~= nil and v == math.floor(v), "Only whole numbers are valid"
 	end,
 	parse = function(v)
 		return v

@@ -9,7 +9,7 @@ local typeTool = {
 				return true
 			end
 		end
-		return false, "Invalid tool."
+		return false, "Invalid tool"
 	end,
 	parse = function(input: string, from: number): Tool
 		local query = string.lower(input)

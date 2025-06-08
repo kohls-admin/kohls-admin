@@ -45,14 +45,14 @@ local function parseTime(input: string): (boolean, string | number)
 		return true, tonumber(input) :: number
 	end
 	if string.find(input, TIME_PATTERN) == nil then
-		return false, "Invalid time format."
+		return false, "Invalid time format"
 	end
 
 	local seconds = 0
 	for amount, unit in string.gmatch(string.lower(input), TIME_PATTERN) do
 		local duration: number? = unitDuration(unit)
 		if duration == nil then
-			return false, "Invalid time format."
+			return false, "Invalid time format"
 		else
 			seconds += amount * duration
 		end

@@ -91,14 +91,14 @@ local typeColor = {
 				end
 			end
 		end
-		return nil, "Invalid Color."
+		return nil, "Invalid Color"
 	end,
 
 	validate = function(color: Color3?): (boolean, string?)
 		if typeof(color) == "Color3" then
 			return true
 		end
-		return false, "Invalid Color3."
+		return false, "Invalid Color3"
 	end,
 
 	parse = function(color: Color3): Color3

@@ -19,7 +19,7 @@ return function(context)
 				return roleId
 			end
 		end
-		return nil, "Invalid role."
+		return nil, "Invalid role"
 	end
 
 	local typeRole = {

@@ -14,7 +14,7 @@ local typeTeam = {
 				return true
 			end
 		end
-		return false, "Invalid team."
+		return false, "Invalid team"
 	end,
 	parse = function(input: string, from: number): string
 		local query = string.lower(input)
