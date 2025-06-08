@@ -234,6 +234,7 @@ local function characterAdded(character: Model)
 		if not damage then
 			return
 		end
+		damage = math.round(damage)
 		if from and from ~= game then
 			_K.log(`damaged {player} for {damage} damage.`, "DAMAGE", from.UserId)
 		else
