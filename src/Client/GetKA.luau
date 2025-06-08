@@ -107,7 +107,7 @@ task.defer(function()
 		end
 
 		attempt += 1
-		if attempt == 4 then
+		if attempt == 5 then
 			connection:Disconnect()
 			dialog.Visible:set(true)
 		end
