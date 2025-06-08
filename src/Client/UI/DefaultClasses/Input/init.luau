@@ -122,10 +122,9 @@ function Input.new(definition)
 			local value = use(new.Value)
 			local maxChars = use(new.MaxChars)
 
-			local text = if display ~= ""
-				then string.gsub(display, "\n", " ")
-				elseif value ~= "" then value
-				else placeholder
+			local text = if display ~= "" then display elseif value ~= "" then value else placeholder
+			text = string.gsub(string.gsub(text, "\n", " "), "\r", " ")
+
 			return if maxChars ~= math.huge then string.sub(text, 1, maxChars) else text
 		end),
 		TextTransparency = UI.compute(function(use)

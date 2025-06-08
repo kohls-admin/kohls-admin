@@ -549,7 +549,7 @@ updateCompletion = function()
 	-- move tooltip to start of query
 	-- FIX: adjust with inputoffset
 	local argX = TextService:GetTextSize(
-		string.sub(string.gsub(data.message, "\n", " "), 1, data.argPos - 1),
+		string.sub(string.gsub(string.gsub(data.message, "\n", " "), "\r", " "), 1, data.argPos - 1),
 		Tooltip.TextSize,
 		Tooltip.Font,
 		Vector2.zero
