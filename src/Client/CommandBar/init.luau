@@ -180,7 +180,7 @@ UI.edit(Tooltip, {
 
 TooltipLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	local size = TooltipLayout.AbsoluteContentSize
-	TooltipFrame.Size = UDim2.fromOffset(math.max(256, size.X), size.Y)
+	TooltipFrame.Size = UDim2.fromOffset(size.X, size.Y + UI.Theme.PaddingHalf._value.Offset)
 end)
 
 local SuggestionFrame = UI.new "TextButton" {
@@ -277,6 +277,7 @@ local function updateSuggestionLabels(data)
 	local amount = math.min(7, #data.suggestions - 1)
 	local start = math.max(1, suggestionIndex - 7)
 
+	local suggestionWidth = 256
 	for i = start, start + amount do
 		local suggestion = data.suggestions[i]
 		local text, display, value, suggestQuery, invalid = unpack(suggestion)
@@ -345,6 +346,7 @@ local function updateSuggestionLabels(data)
 			_K.Util.String.escapeRichText(string.sub(display, startIndex, endIndex)),
 			_K.Util.String.escapeRichText(string.sub(display, endIndex + 1))
 		)
+		suggestionWidth = math.max(suggestionWidth, label.TextBounds.X)
 
 		frame.Activated:Connect(function()
 			Input._input:CaptureFocus()
@@ -355,6 +357,9 @@ local function updateSuggestionLabels(data)
 		frame.Parent = TooltipFrame
 		table.insert(suggestionLabels, frame)
 	end
+
+	TooltipFrame.Size = UDim2.fromOffset(suggestionWidth, TooltipLayout.AbsoluteContentSize.Y)
+
 	suggestionUpdating = false
 end
 
