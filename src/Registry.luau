@@ -85,7 +85,7 @@ end
 function Registry.suggestCommandAlias(alias)
 	local suggestedAlias = ""
 	local lowestDistance = math.huge
-	for commandAlias in Registry.commands do
+	for _, commandAlias in Registry.commandNames do
 		local distance = Util.String.levenshteinDistance(alias, commandAlias)
 		if distance < lowestDistance then
 			lowestDistance = distance
