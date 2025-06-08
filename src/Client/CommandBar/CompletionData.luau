@@ -99,9 +99,14 @@ return function(_K, text, cursorPosition)
 				table.move(invalidSuggestions, 1, #invalidSuggestions, #data.suggestions + 1, data.suggestions)
 			end
 
-			if #data.suggestions < 1 then
-				table.insert(data.invalid, { "Invalid permissions", commandPos, commandText })
-				return data
+			if invalidPermissions then
+				if
+					#data.suggestions == 0
+					or not string.find(string.lower(data.suggestions[1][1]), string.lower(data.query), 1, true)
+				then
+					table.insert(data.invalid, { "Invalid permissions", commandPos, commandText })
+					return data
+				end
 			end
 
 			if commandDefinition and commandDefinition.LocalPlayerAuthorized then
