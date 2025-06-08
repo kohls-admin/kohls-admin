@@ -49,7 +49,7 @@ return function(_K, text, cursorPosition)
 			invalidPermissions = true
 		end
 
-		if cursorPosition < commandArray[1][1] or cursorPosition > commandEnd then
+		if cursorPosition < commandArray[1][1] or cursorPosition > commandEnd then --outside current query
 			if not commandDefinition and not greedy then
 				data.argIndex = 1
 				data.argPos = commandPos
@@ -67,9 +67,7 @@ return function(_K, text, cursorPosition)
 			continue -- cursor not within commandArray
 		end
 
-		-- within command
-		-- command suggestions
-		if cursorPosition <= commandPos + #commandText then
+		if cursorPosition <= commandPos + #commandText then -- within command
 			data.argIndex = 1
 			data.argPos = commandPos
 			data.rawArg = commandText
