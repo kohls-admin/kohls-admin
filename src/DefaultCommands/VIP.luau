@@ -425,9 +425,9 @@ return {
 				description = "The player(s) to add the particle effect to.",
 			},
 			{
-				type = "integer",
-				name = "ImageId",
-				description = "The image id of the particle.",
+				type = "image",
+				name = "AssetId",
+				description = "The image assetId of the particle.",
 				optional = true,
 			},
 			{
