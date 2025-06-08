@@ -1,6 +1,5 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
-local UserInputService = game:GetService("UserInputService")
 
 local Menu = {}
 Menu.__index = Menu
