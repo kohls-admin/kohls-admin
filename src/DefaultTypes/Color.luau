@@ -73,7 +73,17 @@ local typeColor = {
 		else
 			local r, g, b = string.match(input, "^(%d+),?(%d*),?(%d*)$")
 			if r then
-				return Color3.fromRGB(r or 255, g or 255, b or 255)
+				local validRGB = true
+				for _, channel in { r, g, b } do
+					local value = tonumber(channel)
+					if value and (#channel > 3 or value < 0 or value > 255) then
+						validRGB = false
+						break
+					end
+				end
+				if validRGB then
+					return Color3.fromRGB(r or 255, g or 255, b or 255)
+				end
 			end
 			for name, color in COLORS do -- partial match
 				if string.find(name, input, 1, true) == 1 then
