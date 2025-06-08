@@ -534,6 +534,77 @@ return {
 		end,
 	},
 	{
+		name = "trail",
+		aliases = { "☄️" },
+		description = "Adds a trail to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to add the trail to.",
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The color of the trail.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players: { Player }, color: Color3?)
+			for _, player in players do
+				local torso = player.Character
+					and (player.Character:FindFirstChild("Torso") or player.Character:FindFirstChild("UpperTorso"))
+				if not torso then
+					continue
+				end
+				local existing = torso:FindFirstChild("_KTrailEffect")
+				if existing then
+					existing:Destroy()
+				end
+				local trail = Instance.new("Trail")
+				trail.Name = "_KTrailEffect"
+				trail.Attachment0 = torso:FindFirstChild("WaistRigAttachment")
+					or torso:FindFirstChild("WaistCenterAttachment")
+				trail.Attachment1 = torso:FindFirstChild("NeckAttachment")
+				trail.FaceCamera = true
+				trail.Lifetime = 0.5
+				trail.LightEmission = 1
+				trail.LightInfluence = 0
+				trail.WidthScale = NumberSequence.new(1, 0)
+				trail.Transparency = NumberSequence.new(0, 1)
+				trail.Color = color or trail.Color
+				trail.Parent = torso
+			end
+		end,
+	},
+	{
+		name = "untrail",
+		aliases = { "un☄️" },
+		description = "Removers a trail from one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to remove the trail from.",
+			},
+		},
+
+		run = function(context, players)
+			for _, player in players do
+				local torso = player.Character
+					and (player.Character:FindFirstChild("Torso") or player.Characer:FindFirstChild("UpperTorso"))
+				if not torso then
+					continue
+				end
+				local existing = torso:FindFirstChild("_KTrailEffect")
+				if existing then
+					existing:Destroy()
+				end
+			end
+		end,
+	},
+	{
 		name = "shine",
 		aliases = { "🌟", "un🌟", "unshine" },
 		description = "Adds a shine effect to one or more player(s).",
