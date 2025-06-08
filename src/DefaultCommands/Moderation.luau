@@ -1083,11 +1083,11 @@ return {
 			},
 		},
 
-		run = function(context, players, health)
+		run = function(context, players, damage)
 			for _, player in players do
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
-					humanoid:TakeDamage(health)
+					humanoid:TakeDamage(damage)
 				end
 			end
 		end,
