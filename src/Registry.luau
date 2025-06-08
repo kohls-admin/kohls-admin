@@ -19,6 +19,7 @@ local Registry = {
 	types = {} :: { [string]: Type.ArgumentType },
 	commands = {},
 	commandsList = {},
+	commandNames = {},
 }
 
 --- Makes an Enum argument type definition
@@ -47,6 +48,38 @@ export type SequenceDefinition = {
 	validate: (any) -> boolean,
 	prefixes: { [string]: string },
 }
+
+local function commandSort(a, b)
+	if #a == #b then
+		return a < b
+	end
+	return #a < #b
+end
+
+local debounceSort = Util.Function.debounce(0.2, table.sort)
+
+local function cacheCommandNames(command)
+	local name = string.lower(command.name)
+	local oldCommand = table.find(Registry.commandNames, name)
+	if oldCommand then
+		oldCommand = Registry.commands[name]
+		if oldCommand.aliases then
+			for _, alias in oldCommand.aliases do
+				table.remove(Registry.commandNames, table.find(Registry.commandNames, alias))
+			end
+		end
+	else
+		table.insert(Registry.commandNames, name)
+	end
+
+	if command.aliases then
+		for _, alias in command.aliases do
+			alias = string.lower(alias)
+			table.insert(Registry.commandNames, alias)
+		end
+	end
+	debounceSort(Registry.commandNames, commandSort)
+end
 
 --- Finds the command alias with the lowest Levenshtein distance to the provided alias.
 function Registry.suggestCommandAlias(alias)
@@ -182,6 +215,7 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 
 	Registry.commands[lowerName] = commandObject
 	Hook.commandRegistered:Fire(commandObject)
+	task.defer(cacheCommandNames, commandObject)
 
 	if commandObject.aliases then
 		for _, alias in commandObject.aliases do
