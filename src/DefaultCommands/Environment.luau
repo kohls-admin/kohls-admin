@@ -291,13 +291,32 @@ return {
 		description = "Changes the value of Lighting.ClockTime.",
 		args = {
 			{
+				type = "string",
+				name = "Time",
+				description = "The time of day, can be HH, HH:MM, or HH:MM:SS.",
+			},
+			{
 				type = "number",
-				name = "Hours",
-				description = "A numerical representation (in hours) of the current time of day used by Lighting.",
+				name = "Duration",
+				description = "Transition duration to the new time of day. Defaults to instant.",
+				optional = true,
 			},
 		},
-		run = function(context, hours)
-			Lighting.ClockTime = hours
+		run = function(context, time: string, duration: number?)
+			local hours, minutes, seconds = unpack(string.split(time, ":"))
+			hours = math.clamp(tonumber(hours) or 0, 0, 23)
+			minutes = math.clamp(tonumber(minutes) or 0, 0, 59)
+			seconds = math.clamp(tonumber(seconds) or 0, 0, 59)
+
+			local clockTime = hours + minutes / 60 + seconds / 3600
+
+			if duration then
+				context._K.Service.TweenService
+					:Create(Lighting, TweenInfo.new(duration, Enum.EasingStyle.Linear), { ClockTime = clockTime })
+					:Play()
+			else
+				Lighting.ClockTime = clockTime
+			end
 		end,
 	},
 	{
