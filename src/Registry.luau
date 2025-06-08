@@ -82,7 +82,7 @@ local function cacheCommandNames(command)
 end
 
 --- Finds the command alias with the lowest Levenshtein distance to the provided alias.
-function Registry.suggestCommandAlias(alias)
+function Registry.suggestCommandAlias(alias: string): string
 	local suggestedAlias = ""
 	local lowestDistance = math.huge
 	for _, commandAlias in Registry.commandNames do

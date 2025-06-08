@@ -32,7 +32,7 @@ end
 
 local levenshteinCache = {}
 --- Calculates the Levenshtein distance between two strings.
-function String.levenshteinDistance(s1, s2)
+function String.levenshteinDistance(s1: string, s2: string): number
 	-- Ensure consistent key order to avoid duplicate calculations (e.g., dist(a,b) vs dist(b,a))
 	if s1 > s2 then
 		s1, s2 = s2, s1
