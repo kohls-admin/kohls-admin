@@ -16,22 +16,18 @@ function Settings.new(_K)
 	local UI = _K.UI
 
 	local settingsDialog
+	local originalValues = {}
 	local pendingChanges = {}
 
 	local function resetChanges()
-		table.clear(pendingChanges)
-		for key, value in _K.Data.settings do
-			if string.find(key, "theme", 1, true) == 1 then
-				local themeState = UI.Theme[string.sub(key, 6)]
-				if themeState then
-					themeState:set(value)
-				elseif _K.DEBUG then
-					warn("DEBUG: Invalid themeState", key, value)
-				end
-			elseif key == "defaultTheme" then
-				_K.client.settings.defaultTheme:set(value)
+		for key, value in originalValues do
+			_K.Data.settings[key] = value
+			if _K.client.settings[key] then
+				_K.client.settings[key]:set(value, true)
 			end
 		end
+		table.clear(originalValues)
+		table.clear(pendingChanges)
 	end
 
 	local function confirmChanges()
@@ -42,6 +38,7 @@ function Settings.new(_K)
 				_K.client.settings[key]:set(value, key == "prefix")
 			end
 		end
+		table.clear(originalValues)
 		table.clear(pendingChanges)
 	end
 
@@ -50,6 +47,7 @@ function Settings.new(_K)
 			return
 		end
 		pendingChanges[key] = value
+		originalValues[key] = _K.Data.settings[key]
 
 		local different = false
 		local differentTheme = false
