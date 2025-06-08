@@ -486,7 +486,6 @@ updateCompletion = function()
 	-- handle validation hints
 	-- TODO: somehow show validated arguments/text as green :)
 	for _, invalid in data.invalid do
-		validState:set(false)
 		invalidSuggestion(data, unpack(invalid))
 		return
 	end
@@ -789,7 +788,6 @@ return {
 				end
 
 				if Input._input.Text ~= prefix and #data.commands < 1 then
-					validState:set(false)
 					UI.Sound.Negative:Play()
 					invalidSuggestion(data, "Invalid command", data.argPos, data.rawArg)
 					return Input._input:CaptureFocus()
@@ -797,7 +795,6 @@ return {
 
 				for _, command in data.commands do
 					if command.invalidArg then
-						validState:set(false)
 						UI.Sound.Negative:Play()
 						invalidSuggestion(
 							data,
