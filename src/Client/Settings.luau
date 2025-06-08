@@ -64,7 +64,24 @@ function Settings.new(_K)
 		if string.find(key, "theme", 1, true) == 1 then
 			local theme = if differentTheme then "Custom (DataStore)" else _K.Data.settings.defaultTheme
 			_K.client.settings.defaultTheme:set(theme)
-			task.defer(change, "defaultTheme", theme)
+			change("defaultTheme", theme)
+		elseif
+			key == "defaultTheme"
+			and value ~= "Custom (DataStore)"
+			and _K.client.settings.defaultTheme._value == "Custom (DataStore)"
+		then
+			local themeModule = _K.client.themes._value[value]
+			if themeModule then
+				-- FIX: update images and sounds
+				for key, value in themeModule do
+					local dataKey = "theme" .. key
+					local existing = _K.Data.settings[dataKey]
+					if existing ~= nil and existing ~= UI.peek(value) then
+						UI.Theme[key]:set(value)
+						change(dataKey, value)
+					end
+				end
+			end
 		end
 
 		if settingsDialog then
@@ -193,11 +210,14 @@ function Settings.new(_K)
 				ContentAutomaticSize = false,
 				Text = "Theme",
 				UI.new "Select" {
-					Choice = _K.client.settings.defaultTheme,
+					Choice = UI.compute(function(use)
+						return use(_K.client.settings.defaultTheme)
+					end),
 					Choices = themeList,
 					[UI.Hook] = {
 						Selected = function(value)
 							change("defaultTheme", value)
+							_K.client.settings.defaultTheme:set(value)
 						end,
 					},
 				},
