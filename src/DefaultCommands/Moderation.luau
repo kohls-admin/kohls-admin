@@ -1451,7 +1451,17 @@ return {
 				shouldRequest = true,
 			},
 		},
+		envClient = function(_K)
+			_K.Remote.JailCollide.OnClientEvent:Connect(function(jail: Part)
+				for _, child in jail:GetChildren() do
+					if child:IsA("BasePart") then
+						child.CanCollide = true
+					end
+				end
+			end)
+		end,
 		env = function(_K)
+			local JailCollide = _K.Remote.JailCollide
 			local Jail = {
 				parts = {},
 				users = {},
@@ -1512,6 +1522,7 @@ return {
 				kJail.Name = "kJail"
 				kJail.Anchored = true
 				kJail.Size = size
+				kJail.CanCollide = false
 				kJail.CFrame = CFrame.new(position)
 				kJail.Color = Color3.new(0, 0, 0)
 				kJail.Transparency = 0.3
@@ -1552,8 +1563,9 @@ return {
 				back.Parent = kJail
 				back.Position = position + Vector3.new(0, 0, offset.Z)
 
-				kJail.CanCollide = false
 				kJail.Parent = workspace
+
+				JailCollide:FireClient(player, kJail)
 
 				root.CFrame = rootCFrame
 
