@@ -576,9 +576,10 @@ updateCompletion = function()
 		unpack(currentSuggestion)
 	suggestionQuery = suggestionQuery or suggestionText
 
+	local strippedArg = string.lower(_K.Util.String.stripQuotes(arg))
 	if
-		not string.find(string.lower(suggestionText), `{string.lower(arg)}`, 1, true)
-		and not (suggestionQuery and string.find(string.lower(suggestionQuery), `[{string.lower(arg)}`, 1, true))
+		not string.find(string.lower(suggestionText), `{strippedArg}`, 1, true)
+		and not (suggestionQuery and string.find(string.lower(suggestionQuery), `[{strippedArg}`, 1, true))
 	then
 		suggestionInvalid = true
 		data.validSuggestion = false
