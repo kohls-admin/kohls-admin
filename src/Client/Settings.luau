@@ -35,7 +35,7 @@ function Settings.new(_K)
 		for key, value in pendingChanges do
 			_K.Data.settings[key] = value
 			if _K.client.settings[key] then
-				_K.client.settings[key]:set(value, key == "prefix")
+				_K.client.settings[key]:set(value, true)
 			end
 		end
 		table.clear(originalValues)
@@ -62,14 +62,14 @@ function Settings.new(_K)
 		end
 
 		if string.find(key, "theme", 1, true) == 1 then
-			local theme = if differentTheme then "Custom (DataStore)" else _K.Data.settings.defaultTheme
+			local theme = if differentTheme
+				then "Custom (DataStore)"
+				else if pendingChanges.defaultTheme ~= "Custom (DataStore)"
+					then pendingChanges.defaultTheme
+					else _K.Data.settings.defaultTheme
 			_K.client.settings.defaultTheme:set(theme)
 			change("defaultTheme", theme)
-		elseif
-			key == "defaultTheme"
-			and value ~= "Custom (DataStore)"
-			and _K.client.settings.defaultTheme._value == "Custom (DataStore)"
-		then
+		elseif key == "defaultTheme" and value ~= "Custom (DataStore)" then
 			local themeModule = _K.client.themes._value[value]
 			if themeModule then
 				-- FIX: update images and sounds
@@ -77,8 +77,7 @@ function Settings.new(_K)
 					local dataKey = "theme" .. key
 					local existing = _K.Data.settings[dataKey]
 					if existing ~= nil and existing ~= UI.peek(value) then
-						UI.Theme[key]:set(value)
-						change(dataKey, value)
+						change(dataKey, UI.peek(value))
 					end
 				end
 			end
