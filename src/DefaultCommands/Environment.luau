@@ -288,6 +288,10 @@ return {
 	{
 		name = "time",
 		aliases = { "clocktime" },
+		credit = {
+			"Realistic @iiRealistic_Dev",
+			"Kohl @Scripth",
+		},
 		description = "Changes the value of Lighting.ClockTime.",
 		args = {
 			{
