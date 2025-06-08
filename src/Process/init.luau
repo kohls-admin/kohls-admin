@@ -116,7 +116,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 		local commandDefinition = Registry.commands[commandAlias]
 
 		if not commandDefinition then
-			return false, "Invalid command: " .. commandText
+			return false, `Invalid command: {commandText}, did you mean "{Registry.suggestCommandAlias(commandAlias)}"?`
 		end
 
 		if not Auth.hasCommand(from, commandDefinition) then

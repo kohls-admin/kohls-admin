@@ -55,7 +55,9 @@ return function(_K, text, cursorPosition)
 				data.argPos = commandPos
 				data.rawArg = commandText
 				data.query = commandText
-				table.insert(data.invalid, { "Invalid command", commandPos, commandText })
+				local feedback =
+					`Invalid command: {commandText}, did you mean "{_K.Registry.suggestCommandAlias(commandAlias)}"?`
+				table.insert(data.invalid, { feedback, commandPos, commandText })
 				return data
 			elseif commandDefinition and commandDefinition.LocalPlayerAuthorized then
 				local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
@@ -117,7 +119,9 @@ return function(_K, text, cursorPosition)
 		end
 
 		if not commandDefinition then
-			table.insert(data.invalid, { "Invalid command", commandPos, commandText })
+			local feedback =
+				`Invalid command: {commandText}, did you mean "{_K.Registry.suggestCommandAlias(commandAlias)}"?`
+			table.insert(data.invalid, { feedback, commandPos, commandText })
 			return data
 		elseif invalidPermissions then
 			table.insert(data.invalid, { "Invalid permissions", commandPos, commandText })

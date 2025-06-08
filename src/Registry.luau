@@ -48,6 +48,24 @@ export type SequenceDefinition = {
 	prefixes: { [string]: string },
 }
 
+--- Finds the command alias with the lowest Levenshtein distance to the provided alias.
+function Registry.suggestCommandAlias(alias)
+	local suggestedAlias = ""
+	local lowestDistance = math.huge
+	for commandAlias in Registry.commands do
+		local distance = Util.String.levenshteinDistance(alias, commandAlias)
+		if distance < lowestDistance then
+			lowestDistance = distance
+			suggestedAlias = commandAlias
+		end
+		if distance == 0 then
+			break
+		end
+	end
+
+	return suggestedAlias
+end
+
 --- Makes an sequence argument type definition, useful for Color3, Vector3, etc
 function Registry.makeSequenceType(definition: SequenceDefinition?)
 	local options = definition or {}
