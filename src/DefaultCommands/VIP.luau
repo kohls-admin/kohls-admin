@@ -519,7 +519,7 @@ return {
 			},
 		},
 
-		run = function(context, players, userId)
+		run = function(context, players)
 			for _, player in players do
 				local root = player.Character
 					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
@@ -565,7 +565,7 @@ return {
 				},
 			}
 		end,
-		run = function(context, players, userId)
+		run = function(context, players)
 			for _, player in players do
 				local root = player.Character
 					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
