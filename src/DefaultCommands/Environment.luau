@@ -65,6 +65,7 @@ return {
 			if discoCommand then
 				task.spawn(discoCommand.env.cleanup)
 			end
+			pcall(game.Destroy, context._K.Service.Lighting:FindFirstChild("_KSky"))
 			for object, original in context.env do
 				for property, originalValue in original do
 					object[property] = originalValue
@@ -355,6 +356,67 @@ return {
 		},
 		run = function(context, enabled)
 			Lighting.GlobalShadows = enabled
+		end,
+	},
+	{
+		name = "skybox",
+		aliases = { "sky", "unskybox", "unsky" },
+		description = "Changes the skybox.",
+		args = {
+			{
+				type = "image",
+				name = "Bottom",
+				description = "The bottom image.",
+				optional = true,
+			},
+			{
+				type = "image",
+				name = "Back",
+				description = "The back image.",
+				optional = true,
+			},
+			{
+				type = "image",
+				name = "Left",
+				description = "The left image.",
+				optional = true,
+			},
+			{
+				type = "image",
+				name = "Top",
+				description = "The top image.",
+				optional = true,
+			},
+			{
+				type = "image",
+				name = "Front",
+				description = "The front image.",
+				optional = true,
+			},
+			{
+				type = "image",
+				name = "Right",
+				description = "The right image.",
+				optional = true,
+			},
+		},
+		run = function(context, bottom, back, left, top, front, right)
+			if not bottom or context.undo then
+				pcall(game.Destroy, context._K.Service.Lighting:FindFirstChild("_KSky"))
+				return
+			end
+			local existing = context._K.Service.Lighting:FindFirstChildOfClass("Sky")
+			if not existing or existing.Name ~= "_KSky" then
+				existing = Instance.new("Sky")
+				existing.Name = "_KSky"
+			end
+			existing.SkyboxDn = bottom
+			existing.SkyboxBk = back or bottom
+			existing.SkyboxLf = left or bottom
+			existing.SkyboxUp = top or bottom
+			existing.SkyboxFt = front or back or bottom
+			existing.SkyboxRt = right or left or bottom
+			existing.Parent = context._K.Service.Lighting
 		end,
 	},
 
