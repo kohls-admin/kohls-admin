@@ -902,6 +902,12 @@ return {
 				description = "The assetId of one or more hats.",
 			},
 			{
+				type = "image",
+				name = "Texture",
+				description = "The assetId of the hat texture.",
+				optional = true,
+			},
+			{
 				type = "color",
 				name = "Color",
 				description = "The color to apply to the hat.",
@@ -938,7 +944,7 @@ return {
 			}
 		end,
 
-		run = function(context, players, assetIds, color, reflectance, material)
+		run = function(context, players, assetIds, texture, color, reflectance, material)
 			for i, assetId in assetIds do
 				if i >= 16 then
 					break
@@ -990,6 +996,17 @@ return {
 
 				if not hat then
 					continue
+				end
+
+				if texture and hat:FindFirstChild("Handle") then
+					if hat.Handle:IsA("MeshPart") then
+						hat.Handle.TextureID = texture
+					else
+						local mesh = hat.Handle:FindFirstChildWhichIsA("FileMesh")
+						if mesh then
+							mesh.TextureId = texture
+						end
+					end
 				end
 
 				if color then
