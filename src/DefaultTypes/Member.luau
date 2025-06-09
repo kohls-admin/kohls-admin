@@ -27,18 +27,14 @@ local function parseMember(input: string, self: any): string?
 end
 
 local function nameSort(a, b)
-	return string.lower(a[1]) < string.lower(b[1])
-end
-
-local function idSort(a, b)
-	return a[1] < b[1]
+	return string.lower(a[1][1]) < string.lower(b[1][1])
 end
 
 local typeMember = {
 	validate = parseMember,
 	parse = parseMember,
 	suggestions = function(text: string, from: number, definition)
-		local names, ids = {}, {}
+		local names = {}
 		local fromString = tostring(from)
 		local rank = _K.Auth.getRank(from)
 		local lowerRank = definition.lowerRank
@@ -46,22 +42,19 @@ local typeMember = {
 
 		for id, member in _K.Data.members do
 			local memberRank = _K.Auth.getRank(id)
-			if definition.ignoreSelf and id == fromString then
+			if id == fromString then
 				continue
 			end
 			if from == _K.creatorId or not lowerRank or (fromString == id) or rank > memberRank then
-				table.insert(ids, { id, `{id} ({member.name})` })
-				table.insert(names, { member.name, nil })
+				table.insert(names, { { member.name, id }, `{member.name} [{id}]` })
 			end
 		end
 
 		table.sort(names, nameSort)
-		table.sort(ids, idSort)
-		table.move(ids, 1, #ids, #names + 1, names)
 
 		local fromMember = _K.Data.members[fromString]
 		if fromMember and not definition.ignoreSelf then
-			table.insert(names, 1, { "me", `me ({fromMember.name})` })
+			table.insert(names, 1, { { "me", fromMember.name, from }, `me [{fromMember.name}] [{from}]` })
 		end
 
 		return names
