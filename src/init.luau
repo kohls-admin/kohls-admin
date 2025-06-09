@@ -402,6 +402,14 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		end
 	end
 
+	task.spawn(function() -- populate ban names
+		for userId, ban in _K.Data.bans do
+			if not ban[1] then
+				ban[1] = Util.getUserInfo(userId).Username
+			end
+		end
+	end)
+
 	if settings.commands and #settings.commands > 0 then
 		for role, commands in settings.commands do
 			local roleData = _K.Data.roles[role]
