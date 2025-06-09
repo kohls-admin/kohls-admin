@@ -287,6 +287,7 @@ local function updateSuggestionLabels(data)
 		frame.BackgroundTransparency = if i == suggestionIndex then 0.9 else 0.95
 		display = display or suggestQuery or text
 
+		local widthOffset = 0
 		local valueType = typeof(value)
 		if valueType == "Instance" and value:IsA("Player") then
 			UI.new "ImageLabel" {
@@ -298,6 +299,7 @@ local function updateSuggestionLabels(data)
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 				Image = `rbxthumb://type=AvatarHeadShot&id={value.UserId}&w=48&h=48`,
 			}
+			widthOffset = label.AbsoluteSize.Y
 		elseif valueType == "Color3" or valueType == "BrickColor" then
 			UI.new "Frame" {
 				Parent = frame,
@@ -307,6 +309,7 @@ local function updateSuggestionLabels(data)
 				Size = UDim2.new(1, 0, 1, 0),
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			}
+			widthOffset = label.AbsoluteSize.Y
 		elseif valueType == "EnumItem" then
 			if value.EnumType == Enum.Font then
 				frame.TextLabel.Font = value
@@ -322,6 +325,7 @@ local function updateSuggestionLabels(data)
 					SizeConstraint = Enum.SizeConstraint.RelativeYY,
 					Image = `rbxthumb://type=AvatarHeadShot&id={value.userId or value.UserId}&w=48&h=48`,
 				}
+				widthOffset = label.AbsoluteSize.Y
 			end
 		elseif data.suggestionType.name == "image" or data.suggestionType.name == "images" and data.arg then
 			UI.new "ImageLabel" {
@@ -333,6 +337,7 @@ local function updateSuggestionLabels(data)
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 				Image = data.arg.parsedArgs[1],
 			}
+			widthOffset = label.AbsoluteSize.Y
 		end
 
 		local startIndex, endIndex = string.find(string.lower(display), query, 1, true)
@@ -346,7 +351,9 @@ local function updateSuggestionLabels(data)
 			_K.Util.String.escapeRichText(string.sub(display, startIndex, endIndex)),
 			_K.Util.String.escapeRichText(string.sub(display, endIndex + 1))
 		)
-		suggestionWidth = math.max(suggestionWidth, label.TextBounds.X)
+
+		local textWidth = TextService:GetTextSize(display, label.TextSize, label.Font, Vector2.zero).X
+		suggestionWidth = math.max(suggestionWidth, textWidth + widthOffset)
 
 		frame.Activated:Connect(function()
 			Input._input:CaptureFocus()
