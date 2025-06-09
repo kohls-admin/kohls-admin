@@ -86,8 +86,8 @@ local function sortPlayers(a, b)
 end
 
 local function playerSuggestion(player, suggestion)
-	local displayName = player.Name ~= player.DisplayName and player.DisplayName
-	local kName = player.GetAttribute and player:GetAttribute("_KDisplayName")
+	local displayName = if player.Name ~= player.DisplayName then player.DisplayName else nil
+	local kName = if player.GetAttribute then player:GetAttribute("_KDisplayName") else nil
 
 	if kName == player.Name or kName == displayName then
 		kName = nil
