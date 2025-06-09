@@ -180,7 +180,7 @@ UI.edit(Tooltip, {
 
 TooltipLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	local size = TooltipLayout.AbsoluteContentSize
-	TooltipFrame.Size = UDim2.fromOffset(size.X, size.Y + UI.Theme.PaddingHalf._value.Offset)
+	TooltipFrame.Size = UDim2.fromOffset(TooltipFrame.AbsoluteSize.X, size.Y + UI.Theme.PaddingHalf._value.Offset)
 end)
 
 local SuggestionFrame = UI.new "TextButton" {
