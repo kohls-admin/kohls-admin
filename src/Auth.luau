@@ -112,7 +112,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 		local key = tostring(userId)
 		Data.bans[key] = nil
 		if banAsync then
-			Data.Cache.bans[key] = false
+			Data.Cache.bans[key] = Data.REMOVE
 		end
 		for _, player in Util.Service.Players:GetPlayers() do
 			if Auth.hasCommand(player.UserId, "ban") then
@@ -227,7 +227,7 @@ function Auth.userRoleRemove(userId: number, roleId: Role): boolean
 		end
 		if persistent then
 			if #member.persist == 0 then
-				Data.Cache.members[key] = false
+				Data.Cache.members[key] = Data.REMOVE
 			else
 				task.spawn(saveMember, key, userId)
 			end
