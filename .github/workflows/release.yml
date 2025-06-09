@@ -3,8 +3,9 @@ on:
     branches:
       - master
     paths:
-      - "model/**"
-      - "src/**"
+      - model/**
+      - src/**
+      - test/**
 
 permissions:
   contents: write
