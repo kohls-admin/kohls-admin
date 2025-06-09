@@ -36,20 +36,13 @@ return {
 						return
 					end
 
-					local oldMsg, oldFrom
-					if _K.Data.settings.announcement then
-						oldMsg, oldFrom = unpack(_K.Data.settings.announcement)
-					end
-
 					local msg, from = unpack(message.Data)
-					if msg ~= oldMsg or from ~= oldFrom then
-						_K.Data.settings.announcement = message.Data
-						_K.Remote.Announce:FireAllClients({
-							From = from,
-							Text = msg,
-							Duration = 0,
-						})
-					end
+					_K.Data.settings.announcement = message.Data
+					_K.Remote.Announce:FireAllClients({
+						From = from,
+						Text = msg,
+						Duration = 0,
+					})
 				end)
 			end)
 		end,
