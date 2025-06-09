@@ -231,10 +231,6 @@ local suggestionLabels = {}
 
 local updateCompletion, currentCompletion, currentCompletionData
 local function updateCompletionData()
-	for _, label in suggestionLabels do
-		label:Destroy()
-	end
-	table.clear(suggestionLabels)
 	suggestionIndex = 1
 	currentCompletionData = CompletionData(_K, Input._input.Text, Input._input.CursorPosition)
 	updateCompletion()
@@ -269,10 +265,6 @@ local function updateSuggestionLabels(data)
 	suggestionUpdating = true
 
 	local query = string.lower(_K.Util.String.trim(data.query))
-	for _, label in suggestionLabels do
-		label:Destroy()
-	end
-	table.clear(suggestionLabels)
 
 	local amount = math.min(7, #data.suggestions - 1)
 	local start = math.max(1, suggestionIndex - 7)
@@ -430,6 +422,11 @@ local function updateSuggestionPurchasePrice()
 end
 
 local function invalidSuggestion(data, err, pos, text)
+	for _, label in suggestionLabels do
+		label:Destroy()
+	end
+	table.clear(suggestionLabels)
+
 	validState:set(false)
 	Input.DisplayText:set(
 		`<font transparency="0.33">{_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.String.escapeRichText(
@@ -446,11 +443,6 @@ local function invalidSuggestion(data, err, pos, text)
 			_K.Util.String.escapeRichText(data.suggestionType.name) .. if data.argDefinition.optional then "?" else "",
 			data.argDefinition.description
 		)
-	for _, label in suggestionLabels do
-		label:Destroy()
-	end
-	-- FIX: inline all the invalids and only show tooltip for first
-	table.clear(suggestionLabels)
 
 	local frame = SuggestionFrame:Clone()
 	local label = frame:FindFirstChildOfClass("TextLabel")
@@ -479,6 +471,11 @@ local commandHistory = {}
 updateCompletion = function()
 	local data = currentCompletionData
 	currentCompletion = nil
+
+	for _, label in suggestionLabels do
+		label:Destroy()
+	end
+	table.clear(suggestionLabels)
 
 	if data.suggestionType == "History" then
 		TooltipFrame.Visible = false
