@@ -231,6 +231,9 @@ local suggestionLabels = {}
 
 local updateCompletion, currentCompletion, currentCompletionData
 local function updateCompletionData()
+	if Input._input.SelectionStart ~= -1 then
+		return
+	end
 	suggestionIndex = 1
 	currentCompletionData = CompletionData(_K, Input._input.Text, Input._input.CursorPosition)
 	updateCompletion()
@@ -472,6 +475,7 @@ updateCompletion = function()
 	local data = currentCompletionData
 	currentCompletion = nil
 
+	Input.DisplayText:set(_K.Util.String.escapeRichText(Input._input.Text))
 	for _, label in suggestionLabels do
 		label:Destroy()
 	end
@@ -759,6 +763,17 @@ return {
 				if not UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
 					task.defer(updateCompletionData)
 				end
+			else
+			end
+		end)
+		Input._input:GetPropertyChangedSignal("SelectionStart"):Connect(function()
+			if Input._input.SelectionStart ~= -1 then
+				if validState._value == false then
+					validState:set(nil)
+				end
+				clearCompletion()
+			else
+				updateCompletionData()
 			end
 		end)
 
