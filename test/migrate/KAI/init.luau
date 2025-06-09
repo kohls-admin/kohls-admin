@@ -40,9 +40,9 @@ local function FindChild(parent: Instance, childName: string, recursive: boolean
 	end
 	if recursive then
 		for _, descendant in parent:GetChildren() do
-			local childInstance = FindChild(descendant, childName, true)
-			if childInstance then
-				return childInstance
+			local child = FindChild(descendant, childName, true)
+			if child then
+				return child
 			end
 		end
 	end
@@ -269,27 +269,6 @@ local creatorId = game.CreatorType == Enum.CreatorType.Group
 		and FindChild(services.Group:GetGroupInfoAsync(game.CreatorId).Owner, "Id")
 	or game.CreatorId
 Admins[creatorId] = 7
-
-function incrementKey(t, k, v)
-	t[tostring(k)] = (t[tostring(k)] or 0) + v
-end
-
-function incrementGroup(t, k, v)
-	for _, set in t do
-		local found = true
-		for i, ki in k do
-			if set[1][i] ~= ki then
-				found = false
-				break
-			end
-		end
-		if found then
-			set[2] += v
-			return
-		end
-	end
-	table.insert(t, { k, v })
-end
 
 local function getTextObject(stringToFilter: string, fromUserId: number): TextFilterResult | false
 	local success, result = pcall(function()
@@ -656,6 +635,7 @@ function f.hatPlayer(player, id, isVIP)
 		end
 		return hats
 	end
+	return
 end
 function f.MatchClr(colorName: string): Color3
 	local brickColor = BrickColor.new(colorName:sub(1, 1):upper() .. colorName:sub(2))
@@ -683,7 +663,7 @@ function f.Kick(player: Player, reason: string?)
 	end
 end
 function f.setBan(player: number | string, value: number?)
-	local value = value or 0
+	value = value or 0
 	if type(player) == "string" then
 		local success, result = pcall(function()
 			return services.Players:GetUserIdFromNameAsync(player)
@@ -776,7 +756,7 @@ function f.getNameFromId(userId: number): string
 	return result
 end
 function f.getIdFromName(name: string)
-	local success, result = pcall(function()
+	local _success, result = pcall(function()
 		return services.Players:GetUserIdFromNameAsync(name)
 	end)
 	return result
@@ -798,7 +778,7 @@ function f.addCommand(
 	table.insert(state.Commands, { names, description, power, argumentTypes, func })
 end
 function f.Has(player: Player, assetId: number): boolean
-	local success, result = pcall(function()
+	local _success, result = pcall(function()
 		return services.Marketplace:PlayerOwnsAsset(player, assetId)
 	end)
 	return result
@@ -815,7 +795,7 @@ function f.Auth(from, subject, danger): boolean?
 	-- require higher power for danger execution
 	return if danger then difference > 0 else difference >= 0
 end
-local groupAuthCache = {}
+
 function f.GroupAdminAuth(from, to, diff): boolean?
 	diff = diff and from == to
 	if diff then
@@ -1305,7 +1285,7 @@ function f.Chatted(plr: Player | serverContext, msg: string, cmdbar: boolean?)
 		else getFilteredMessage(getTextObject(msg:gsub("\n", "\t"), plr.UserId), plr.UserId)
 	local CLog: Log = { os.time(), string.sub(`{plr.DisplayName} [@{plr.Name}]:\t{filteredMessage}`, 1, 99) }
 	local Logs, CMD
-	local success, result = wrap(function()
+	local success, _result = wrap(function()
 		if not server then
 			f.isReal(plr)
 		end
@@ -2647,7 +2627,7 @@ function LoadCommands()
 		4,
 		{ "word" },
 		function(pl, args)
-			local ok = pcall(function()
+			pcall(function()
 				GlobalDataStore:UpdateAsync(dataKey.servers, function(data)
 					data = data or {}
 					if data[args[1]] then
@@ -3776,7 +3756,6 @@ function LoadCommands()
 		1,
 		{ "player", "boolean/" },
 		function(pl, args)
-			local adminHat = args[2]
 			for i, plr in args[1] do
 				if plr and f.Auth(pl, plr) and plr.Character then
 					for i, v in plr.Character:GetChildren() do
@@ -4379,7 +4358,7 @@ function LoadCommands()
 							[46] = "BackAccessory",
 							[47] = "WaistAccessory",
 						}
-						local ok, info = pcall(services.Marketplace.GetProductInfo, services.Marketplace, args[2])
+						local _ok, info = pcall(services.Marketplace.GetProductInfo, services.Marketplace, args[2])
 						local accessoryType = accessoryTypes[info.AssetTypeId]
 						local description = Instance.new("HumanoidDescription")
 						if accessoryType then

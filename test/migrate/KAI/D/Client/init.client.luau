@@ -82,8 +82,8 @@ BT, IT, TT, TST, AP, AS, UIT =
 	"AbsoluteSize",
 	"UserInputType"
 
-local plr, NameCache, Admins, Bans, Logs, CLogs, Cmds, Set, RS =
-	game.Players.LocalPlayer, {}, {}, {}, {}, {}, {}, {}, {
+local plr, NameCache, Admins, Bans, Logs, CLogs, Cmds, Set =
+	game.Players.LocalPlayer, {}, {}, {}, {}, {}, {}, {
 		Color = Color3.new(),
 		ColorTransparency = 0.8,
 		AdminCredit = true,
@@ -93,6 +93,7 @@ local plr, NameCache, Admins, Bans, Logs, CLogs, Cmds, Set, RS =
 		Prefix = ":",
 		GroupAdmin = {},
 		VIPAdmin = {},
+		ForcedColor = false,
 	}
 
 for i, v in { 313101943, 305266753, 305291549, 305807605, 305807572, 305807549, 313321271, 306774746 } do
@@ -102,10 +103,9 @@ repeat
 	task.wait()
 until plr:GetMouse() and workspace.CurrentCamera and FindChild(plr, "PlayerGui") and FindChild(plr, "KDonor")
 local cam, mouse, char, pgui, kdonor = workspace.CurrentCamera, plr:GetMouse(), plr.Character, plr.PlayerGui, plr.KDonor
-local server, SN, RS, f, admstr, banstr, logb, clogb =
+local server, SN, f, admstr, banstr, logb, clogb =
 	WaitForChild(s.RStorage, "b\a\n\a\n\a"),
 	"Kohl's Admin Infinite",
-	s.Run.RenderStepped,
 	{ s = script, template = require(script:WaitForChild("Templates")), uID = "" },
 	nil
 admstr, banstr, logb, clogb =
@@ -318,7 +318,7 @@ function f.MatchPlr(a, b, c)
 end
 function f.MatchClr(a, b)
 	b = BrickColor.new(a:sub(1, 1):upper() .. a:sub(2))
-	b = b ~= BrickColor.new("") and b or nil
+	b = b ~= BrickColor.new(0) and b or nil
 	if not b then
 		for i, v in { "New Yeller", "Pastel Blue", "Dusty Rose", "CGA brown" } do
 			if a:lower():find("^" .. v) then
@@ -460,7 +460,7 @@ local baseText = new("TextBox")({
 	ClearTextOnFocus = false,
 	ZIndex = 7,
 })
-local Curr = { LastSpace = 0 }
+local Curr = { LastSpace = 0, Fly = nil, Noclip = nil, Note = nil }
 local isTyping
 s.UIS.TextBoxFocused:connect(function()
 	isTyping = true
@@ -475,9 +475,6 @@ end)
 f.UpdateAdmins()
 Bans = f.unCache(banstr.Value)
 char = plr.Character or plr.CharacterAdded:Wait()
-
---|  Chat Setup  |--
-local LocalPlayerCanChat = game:GetService("Chat"):CanUserChatAsync(plr.userId)
 
 local cmdHistory = {}
 local cmdHistoryOffset = -1
@@ -971,16 +968,16 @@ function ClientEvent(a, b)
 	elseif a == "KBuyProduct" then
 		s.Market:PromptProductPurchase(plr, b)
 	elseif a == "KHelp" then
-		a = FindChild(CoreUI, "Help")
-		if a then
-			wrap(f.Hide, a, true)
+		local existing = FindChild(CoreUI, "Help")
+		if existing then
+			wrap(f.Hide, existing, true)
 		end
-		local a = f.template.Help:Clone()
-		a.List.Prefix.Text = 'The prefix is "' .. Set.Prefix .. '"'
-		a.Parent = CoreUI
-		f.HookList(a)
-		f.Drag(a, 300, 300)
-		f.Show(a)
+		local new = f.template.Help:Clone()
+		new.List.Prefix.Text = 'The prefix is "' .. Set.Prefix .. '"'
+		new.Parent = CoreUI
+		f.HookList(new)
+		f.Drag(new, 300, 300)
+		f.Show(new)
 	elseif a == "KTools" then
 		if FindChild(CoreUI, "Tools") then
 			wrap(f.Hide, CoreUI.Tools, true)
@@ -1107,11 +1104,11 @@ function ClientEvent(a, b)
 		f.Drag(SL, 200, 220)
 		f.Show(SL)
 	elseif a == "KCmds" then
-		a = FindChild(CoreUI, "Commands")
-		if a then
-			wrap(f.Hide, a, true)
+		local existing = FindChild(CoreUI, "Commands")
+		if existing then
+			wrap(f.Hide, existing, true)
 		end
-		a = {}
+		local list = {}
 		local CL, nl, ol = f.CreateList("Commands"), f.template.Blank:Clone()
 		ol = CL.List
 		nl.Parent, nl.Name, ol.Parent = CL, "List", nl
@@ -1120,10 +1117,10 @@ function ClientEvent(a, b)
 		CL.BG.Size = UDim2.new(1, 0, 0, 260)
 		for i, v in b[1] do
 			if v[3] <= b[2] or b[3][v[1][1]] then
-				table.insert(a, v)
+				table.insert(list, v)
 			end
 		end
-		table.sort(a, function(a, b)
+		table.sort(list, function(a, b)
 			return a[1][1] < b[1][1]
 		end)
 		local SetList = function(a)
@@ -1162,23 +1159,23 @@ function ClientEvent(a, b)
 		f.Drag(CL, 300, 300)
 		f.Show(CL)
 	elseif a == "KAdmins" then
-		a = FindChild(CoreUI, "Admins")
-		if a then
-			wrap(f.Hide, a, true)
+		local existing = FindChild(CoreUI, "Admins")
+		if existing then
+			wrap(f.Hide, existing, true)
 		end
 		local AL = f.CreateList("Admins")
 		local function List()
-			a = {}
+			local list = {}
 			for i, v in AL.List:GetChildren() do
 				v:Destroy()
 			end
 			for i, v in Admins do
 				if math.abs(v) ~= 1 or s.Players:GetPlayerByUserId(i) then
-					table.insert(a, i)
+					table.insert(list, i)
 				end
 			end
-			a = f.getNamesFromIds(a)
-			table.sort(a, function(a, b)
+			local names = f.getNamesFromIds(list)
+			table.sort(names, function(a, b)
 				local pa = math.abs(Admins[a.Id])
 				local pb = math.abs(Admins[b.Id])
 				if pa > pb then
@@ -1189,7 +1186,7 @@ function ClientEvent(a, b)
 					return a.Username < b.Username
 				end
 			end)
-			for i, v in a do
+			for i, v in names do
 				local p = Admins[v.Id]
 				local t, t2 = baseText:Clone(), baseText:Clone()
 				t2.Text, t2.TextXAlignment, t2.Parent, t2.Size, t2.Position =
@@ -1221,15 +1218,15 @@ function ClientEvent(a, b)
 		end
 		local BL = f.CreateList("Bans")
 		local function List()
-			a = {}
+			local list = {}
 			for i, v in BL.List:GetChildren() do
 				v:Destroy()
 			end
 			for i, v in Bans do
-				table.insert(a, tonumber(i))
+				table.insert(list, tonumber(i))
 			end
-			a = f.getNamesFromIds(a)
-			table.sort(a, function(a, b)
+			local names = f.getNamesFromIds(list)
+			table.sort(names, function(a, b)
 				local ba = string.lower(Bans[a.Id])
 				local bb = string.lower(Bans[b.Id])
 				if ba > bb then
@@ -1240,7 +1237,7 @@ function ClientEvent(a, b)
 					return string.lower(a.Username) < string.lower(b.Username)
 				end
 			end)
-			for i, v in a do
+			for i, v in names do
 				local t, t2 = baseText:Clone(), baseText:Clone()
 				wrap(function()
 					t2.TextXAlignment = "Right"
@@ -1426,68 +1423,68 @@ function ClientEvent(a, b)
 		if a then
 			wrap(f.Hide, a, true)
 		end
-		local a = f.template.Msg:Clone()
+		local new = f.template.Msg:Clone()
 		local content = b[4]
 			and Players:GetUserThumbnailAsync(b[4], Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
-		a.Parent, a.Owner.Text, a.Title.Text, a.Msg.Text = CoreUI, b[1], b[2], b[3]
+		new.Parent, new.Owner.Text, new.Title.Text, new.Msg.Text = CoreUI, b[1], b[2], b[3]
 		local c1 = b[1] == SN
 		if c1 or content then
-			a.User.Image = c1 and "rbxassetid://314925538" or content
-			a.User.Position =
-				UDim2.new(0.5, -80 - a.Owner.TextBounds.X / 2, a.User.Position.Y.Scale, a.User.Position.Y.Offset)
-			a.User.Visible = true
+			new.User.Image = c1 and "rbxassetid://314925538" or content
+			new.User.Position =
+				UDim2.new(0.5, -80 - new.Owner.TextBounds.X / 2, new.User.Position.Y.Scale, new.User.Position.Y.Offset)
+			new.User.Visible = true
 		end
-		f.Show(a)
+		f.Show(new)
 		task.wait(math.sqrt(#tostring(b[3])) + 0.5)
-		f.Hide(a, true)
+		f.Hide(new, true)
 	elseif a == "KHint" then
-		a = FindChild(CoreUI, "Hint")
-		if a then
-			wrap(f.Hide, a, true)
+		local existing = FindChild(CoreUI, "Hint")
+		if existing then
+			wrap(f.Hide, existing, true)
 		end
-		a = f.template.Hint:Clone()
-		a.Parent, a.BG.Text = CoreUI, b
-		f.Show(a)
+		local new = f.template.Hint:Clone()
+		new.Parent, new.BG.Text = CoreUI, b
+		f.Show(new)
 		task.wait(math.sqrt(#b) + 0.5)
-		f.Hide(a, true)
+		f.Hide(new, true)
 	elseif a == "KNotify" then
-		a = FindChild(CoreUI, "Notify")
-		if a then
-			wrap(f.Hide, a, true)
+		local existing = FindChild(CoreUI, "Notify")
+		if existing then
+			wrap(f.Hide, existing, true)
 		end
 		if b then
-			a = f.template.Hint:Clone()
-			a.Name, a.Parent, a.BG.Text = "Notify", CoreUI, b
-			f.Show(a)
+			local new = f.template.Hint:Clone()
+			new.Name, new.Parent, new.BG.Text = "Notify", CoreUI, b
+			f.Show(new)
 		end
 	elseif a == "KError" then
-		a = FindChild(CoreUI, "Error")
-		if a then
-			wrap(f.Hide, a, true)
+		local existing = FindChild(CoreUI, "Error")
+		if existing then
+			wrap(f.Hide, existing, true)
 		end
 		if b then
-			a = f.template.Error:Clone()
-			a.Msg.Text, a.Parent = b, CoreUI
-			f.Show(a)
+			local new = f.template.Error:Clone()
+			new.Msg.Text, new.Parent = b, CoreUI
+			f.Show(new)
 			task.wait(math.max(2, math.sqrt(#b) / 2 + 1))
-			f.Hide(a, true)
+			f.Hide(new, true)
 		end
 	elseif a == "KWatch" then
 		cam.CameraSubject = b or plr.Character
 	elseif a == "KBlind" then
-		a = FindChild(CoreUI, "Blind")
-		if a then
-			wrap(f.Hide, a, true)
+		local existing = FindChild(CoreUI, "Blind")
+		if existing then
+			wrap(f.Hide, existing, true)
 		end
 		if b then
-			local b = f.template.Blind:Clone()
-			b.Parent = CoreUI
-			f.Show(b)
+			local new = f.template.Blind:Clone()
+			new.Parent = CoreUI
+			f.Show(new)
 		end
 	elseif a == "KLag" then
 		while FindChild(plr, "KLag") do
 			for i = 1, 999 do
-				print((Vector3.new() - Vector3.new()).magnitude)
+				print((Vector3.new() - Vector3.new()).Magnitude)
 			end
 			task.wait()
 		end
@@ -1497,16 +1494,16 @@ function ClientEvent(a, b)
 		s.StarterGui:SetCore("ChatBarDisabled", b)
 		s.StarterGui:SetCore("ChatMakeSystemMessage", { Text = a, Color = Color3.new(1, 0, 0) })
 	elseif a == "KRefresh" then
-		a = { cam.CFrame, cam.Focus, char.HumanoidRootPart.CFrame }
+		local list = { cam.CFrame, cam.Focus, char.HumanoidRootPart.CFrame }
 		wrap(function()
 			local c
 			c = plr.CharacterAdded:connect(function(chr)
 				chr = WaitForChild(chr, "HumanoidRootPart")
 				repeat
-					chr.CFrame = a[3]
+					chr.CFrame = list[3]
 					task.wait()
-				until (chr.Position - a[3].p).magnitude < 1
-				cam.CoordinateFrame, cam.Focus = a[1], a[2]
+				until (chr.Position - list[3].p).magnitude < 1
+				cam.CoordinateFrame, cam.Focus = list[1], list[2]
 				c:disconnect()
 			end)
 		end)
@@ -1515,12 +1512,12 @@ function ClientEvent(a, b)
 		char.Parent = char.Parent == cam and workspace or cam
 		char:MakeJoints()
 	elseif a == "KFly" then
-		a = Curr.Fly
-		if a then
-			a.Value = nil
-			a.Parent.BodyVelocity:Destroy()
-			a.Parent.BodyGyro:Destroy()
-			a:Destroy()
+		local fly = Curr.Fly
+		if fly then
+			fly.Value = nil
+			fly.Parent.BodyVelocity:Destroy()
+			fly.Parent.BodyGyro:Destroy()
+			fly:Destroy()
 			Curr.Fly = nil
 		end
 		local hum, root = FindChild(char, "Humanoid"), FindChild(char, "HumanoidRootPart")
@@ -1573,10 +1570,10 @@ function ClientEvent(a, b)
 			hum.PlatformStand = false
 		end
 	elseif a == "KNoclip" then
-		a = Curr.Noclip
-		if a then
-			a.Value = nil
-			a:Destroy()
+		local noclip = Curr.Noclip
+		if noclip then
+			noclip.Value = nil
+			noclip:Destroy()
 			Curr.Noclip = nil
 		end
 		local hum, humroot = FindChild(char, "Humanoid"), FindChild(char, "HumanoidRootPart")
@@ -1654,9 +1651,9 @@ function ClientEvent(a, b)
 			Cape(b[1], b[2], b[3])
 		end
 	elseif a == "KGlitch" then
-		a = FindChild(char, "KGlitch")
-		if a then
-			a:Destroy()
+		local existing = FindChild(char, "KGlitch")
+		if existing then
+			existing:Destroy()
 		end
 		if b then
 			local v, t, c =
@@ -1668,9 +1665,9 @@ function ClientEvent(a, b)
 			end
 		end
 	elseif a == "KGlitch2" then
-		a = FindChild(char, "KGlitch")
-		if a then
-			a:Destroy()
+		local existing = FindChild(char, "KGlitch")
+		if existing then
+			existing:Destroy()
 		end
 		if b then
 			local v, t, c =
@@ -1682,9 +1679,9 @@ function ClientEvent(a, b)
 			end
 		end
 	elseif a == "KVibrate" then
-		a = FindChild(char, "KGlitch")
-		if a then
-			a:Destroy()
+		local existing = FindChild(char, "KGlitch")
+		if existing then
+			existing:Destroy()
 		end
 		if b then
 			local v, t, c, ncf =
@@ -1719,7 +1716,7 @@ function ClientEvent(a, b)
 		v.Msg.Text = b
 		v.Parent = CoreUI
 		local c1, c2
-		a = function(c)
+		local cleanup = function(c)
 			c1:disconnect()
 			c2:disconnect()
 			c1, c2 = nil, nil
@@ -1727,10 +1724,10 @@ function ClientEvent(a, b)
 			server:FireServer(f.uID .. "KVote", c)
 		end
 		c1 = v.Y.MouseButton1Click:connect(function()
-			a(true)
+			cleanup(true)
 		end)
 		c2 = v.N.MouseButton1Click:connect(function()
-			a(false)
+			cleanup(false)
 		end)
 		delay(9, function()
 			if v.Parent == CoreUI and c1 then
