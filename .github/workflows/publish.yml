@@ -1,3 +1,4 @@
+name: Publish
 on:
   push:
     branches:
@@ -10,8 +11,7 @@ on:
       - VERSION.txt
 
 jobs:
-  upload:
-    name: Publish
+  demo:
     runs-on: ubuntu-latest
     environment: testing
     steps:

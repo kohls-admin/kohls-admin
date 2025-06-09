@@ -1,3 +1,5 @@
+name: Docs
+
 on:
   push:
     branches:
@@ -10,8 +12,7 @@ on:
       - moonwave.toml
 
 jobs:
-  docs:
-    name: Docs
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

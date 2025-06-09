@@ -1,3 +1,4 @@
+name: Lint
 on:
   push:
     branches:
@@ -16,10 +17,8 @@ on:
       - submodules/**
       - test/**
 
-name: Lint
-
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
