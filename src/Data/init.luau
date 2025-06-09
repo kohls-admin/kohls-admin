@@ -157,7 +157,7 @@ local function syncMain(result)
 		data.persist = persist
 
 		-- append saved roles to cached roles
-		data.roles = if Data.members[key] then Data.members[key].roles else data.persist
+		data.roles = if Data.members[key] then Data.members[key].roles else table.clone(data.persist)
 		if data.persist ~= data.roles then
 			for _, roleId in data.persist do
 				if data.persist ~= data.roles and not table.find(data.roles, roleId) then
