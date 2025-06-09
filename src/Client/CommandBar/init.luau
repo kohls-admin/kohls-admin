@@ -872,6 +872,7 @@ return {
 			_K.client.TopbarPlus.setTopbarEnabled(false)
 			coreGuiEnabled(false)
 			CommandBar.Visible = true
+			task.wait()
 			Input._input:CaptureFocus()
 		end
 	end,
