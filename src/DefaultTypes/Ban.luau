@@ -27,18 +27,12 @@ local typeBan = {
 	parse = parseBan,
 	suggestions = function(text)
 		local names = {}
-		-- username suggestions
 		for userId, ban in _K.Data.bans do
 			local name = ban[1] or _K.Util.getUserInfo(userId).Username
 			if not name then
 				continue
 			end
-			table.insert(names, { name, `{name} ({userId})` })
-		end
-		-- userId suggestions
-		for userId, ban in _K.Data.bans do
-			local name = ban[1] or "UNKNOWN"
-			table.insert(names, { userId, `{userId} ({name})` })
+			table.insert(names, { { name, userId }, `{name} [{userId}]` })
 		end
 		return names
 	end,

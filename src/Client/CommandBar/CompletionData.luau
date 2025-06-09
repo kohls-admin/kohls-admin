@@ -86,7 +86,7 @@ return function(_K, text, cursorPosition)
 						table.insert(data.suggestions, suggestionData)
 						data.validSuggestion = true
 					else
-						suggestionData[5] = true -- invalid
+						suggestionData[4] = true -- invalid
 						table.insert(invalidSuggestions, suggestionData)
 						data.invalidPermissionsCommand = cmd
 					end
@@ -193,7 +193,7 @@ return function(_K, text, cursorPosition)
 					data.rawArg == ""
 					or (
 						data.suggestions
-						and #data.suggestions > 0
+						and #data.suggestions > 1
 						and if type(data.suggestions[1]) == "table"
 							then data.suggestions[1][1] ~= data.rawArg
 							else data.suggestions[1] ~= data.rawArg

@@ -1,4 +1,8 @@
+--!optimize 2
+--!native
+
 local String = require("./String")
+local Table = require("./Table")
 
 local Suggest = {}
 
@@ -17,52 +21,70 @@ function Suggest.getNames(objects: any): { string }
 end
 
 function Suggest.query(text: string, names: { string | { string } }, instances: { any }?)
-	local results, levenshtein, partial = {}, {}, {}
-	local textLower = string.lower(text)
+	local results, starts, contains, levenshtein = {}, {}, {}, {}
+	local query = string.lower(text)
 
 	for index, name in names do
-		local suggestion, display, key, query = name, nil
+		local suggestions, display, key = name, nil
 		if type(name) == "table" then
-			suggestion, display, key, query = unpack(name)
+			suggestions, display, key = unpack(name)
 		end
-
-		local suggestionLower = string.lower(suggestion)
-		local queryLower = string.lower(query or suggestion)
+		if type(suggestions) ~= "table" then
+			suggestions = { suggestions }
+		end
 		local value = instances and (instances[key] or instances[index] or instances[name]) or key or name
-		if suggestionLower == textLower or queryLower == textLower then
-			table.insert(results, 1, { suggestion, display, value, query })
-		else
-			local found = string.find(queryLower, textLower, 1, true)
-			if found == 1 then
-				table.insert(results, { suggestion, display, value, query })
-			elseif found then -- partial matches are added after everything else
-				table.insert(partial, { suggestion, display, value, query })
-			else
-				table.insert(levenshtein, { queryLower, suggestion, display, value, query })
+
+		local matched = false
+		for _, target in suggestions do
+			if string.lower(target) == query then
+				table.insert(results, 1, { target, display, value })
+				matched = true
+				break
+			end
+		end
+		if not matched then
+			local length, suggestion, partial = 0, nil, nil
+			for _, target in suggestions do
+				local startIndex, endIndex = string.find(string.lower(target), query, 1, true)
+				if startIndex then
+					if startIndex == 1 and endIndex > length then -- starts
+						length, suggestion = endIndex, target
+					elseif length == 0 and not partial then -- contains
+						partial = target
+					end
+				end
+			end
+			if suggestion or partial then
+				table.insert(if suggestion then starts else contains, { suggestion or partial, display, value })
+				matched = true
+			end
+		end
+		if not matched then
+			for _, target in suggestions do
+				table.insert(levenshtein, { target, display, value })
 			end
 		end
 	end
 
 	if #levenshtein > 0 then
-		local suggestionData = nil
-		local lowestDistance = math.huge
+		local lowestDistance, suggestionData = math.huge, nil
 		for _, data in levenshtein do
-			local distance = String.levenshteinDistance(data[1], textLower)
+			local distance = String.levenshteinDistance(string.lower(data[1]), query)
 			if distance < lowestDistance then
 				lowestDistance = distance
 				suggestionData = data
 			end
-			if distance == 0 then
-				break
-			end
 		end
 		if suggestionData then
-			table.insert(partial, { suggestionData[2], suggestionData[3], suggestionData[4], suggestionData[5] })
+			table.insert(contains, suggestionData)
 		end
 	end
 
-	if #partial > 0 then
-		table.move(partial, 1, #partial, #results + 1, results)
+	if #starts > 0 then
+		Table.mergeList(results, starts)
+	end
+	if #contains > 0 then
+		Table.mergeList(results, contains)
 	end
 
 	return results

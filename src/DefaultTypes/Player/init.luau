@@ -34,7 +34,7 @@ local prefixes = {
 }
 
 local prefixSuggestions = {
-	{ "*", nil, nil, "*  [all] (Everyone)", "allPlayers", "^%*$" },
+	{ { "*", "all" }, "*  [all] (Everyone)" },
 	{ "@", "@\t\t(Roles)" },
 	{ "%", "%\t\t(Teams)" },
 	{ "~", "~\t\t(Random)" },
@@ -86,11 +86,26 @@ local function sortPlayers(a, b)
 end
 
 local function playerSuggestion(player, suggestion)
-	suggestion = suggestion or player.Name
-	local displayName = if player.Name ~= player.DisplayName then ` [{player.DisplayName}]` else ""
-	local kDisplay = if player.GetAttribute then player:GetAttribute("_KDisplayName") else nil
-	kDisplay = if kDisplay and kDisplay ~= player.Name and kDisplay ~= player.DisplayName then ` [{kDisplay}]` else ""
-	return { suggestion, nil, nil, `{suggestion} [{player.Name}]{displayName}{kDisplay}` }
+	local displayName = player.Name ~= player.DisplayName and player.DisplayName
+	local kName = player.GetAttribute and player:GetAttribute("_KDisplayName")
+
+	if kName == player.Name or kName == displayName then
+		kName = nil
+	end
+
+	local suggestions = { suggestion }
+	table.insert(suggestions, player.Name)
+	table.insert(suggestions, displayName)
+	table.insert(suggestions, kName)
+
+	displayName = if displayName then ` [{displayName}]` else ""
+	kName = if kName then ` [{kName}]` else ""
+
+	local suggestionDisplay = if suggestion
+		then `{suggestion} [{player.Name}]{displayName}{kName}`
+		else `{player.Name} {displayName}{kName}`
+
+	return { suggestions, suggestionDisplay }
 end
 
 local function baseSuggestions(text, from, definition, userType: boolean?)
