@@ -499,7 +499,9 @@ updateCompletion = function()
 	-- TODO: somehow show validated arguments/text as green :)
 	for _, invalid in data.invalid do
 		invalidSuggestion(data, unpack(invalid))
-		return
+		if not data.suggestionType then
+			return
+		end
 	end
 
 	if data.invalidPermissionsCommand and not data.validSuggestion then
