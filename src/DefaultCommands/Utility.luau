@@ -25,11 +25,20 @@ return {
 			local dashboardKeyText =
 				`{dashboardKey.mods.Shift and "Shift+" or ""}{dashboardKey.mods.Alt and "Alt+" or ""}{dashboardKey.key._value.Name}`
 
+			local prefix = context._K.UI.peek(context._K.client.settings.prefix)[1]
+			local prefixKeyText = string.byte(prefix)
+			for i, keyCode in Enum.KeyCode:GetEnumItems() do
+				if keyCode.Value == prefixKeyText then
+					prefixKeyText = keyCode.Name
+					break
+				end
+			end
+
 			context._K.Notify({
 				From = "_K",
 				Text = table.concat({
 					`<font family="{context._K.UI.Theme.FontMono._value.Name}">This game uses <b>Kohl's Admin</b>!\n`,
-					`<b>Prefix</b>     <font color="#0f0">{context._K.UI.peek(context._K.client.settings.prefix)[1]}</font>`,
+					`<b>Prefix</b>     <font color="#0f0">{prefixKeyText} {prefix}</font>`,
 					`<b>Commands</b>   <font color="#0f0">{commandBarKeyText} {commandBarKeyRaw}</font>`,
 					`<b>Dashboard</b>  <font color="#0f0">{dashboardKeyText} {dashboardKeyRaw}</font></font>`,
 				}, "\n"),
