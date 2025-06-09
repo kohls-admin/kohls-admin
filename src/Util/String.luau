@@ -1,3 +1,6 @@
+--!optimize 2
+--!native
+
 local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
 local TextService = game:GetService("TextService")
@@ -32,34 +35,35 @@ end
 
 --- Calculates the Levenshtein distance between two strings.
 function String.levenshteinDistance(s1: string, s2: string): number
-	local len1 = string.len(s1)
-	local len2 = string.len(s2)
-	local matrix = {}
-
-	-- Initialize the matrix
-	for i = 0, len1 do
-		matrix[i] = {}
-		matrix[i][0] = i
+	local len1, len2 = #s1, #s2
+	if len1 < len2 then
+		s1, s2, len1, len2 = s2, s1, len2, len1
 	end
+
+	if len2 == 0 then
+		return len1
+	end
+
+	local row = table.create(len2 + 1)
 	for j = 0, len2 do
-		matrix[0][j] = j
+		row[j] = j
 	end
 
-	-- Fill the matrix
 	for i = 1, len1 do
+		local previous = row[0]
+		row[0] = i
 		for j = 1, len2 do
-			local cost = (string.sub(s1, i, i) == string.sub(s2, j, j)) and 0 or 1
-			matrix[i][j] = math.min(
-				matrix[i - 1][j] + 1, -- Deletion
-				matrix[i][j - 1] + 1, -- Insertion
-				matrix[i - 1][j - 1] + cost -- Substitution
+			local column = row[j]
+			row[j] = math.min(
+				column + 1, -- Deletion
+				row[j - 1] + 1, -- Insertion
+				previous + if string.sub(s1, i, i) == string.sub(s2, j, j) then 0 else 1 -- Substitution
 			)
+			previous = column
 		end
 	end
 
-	local distance = matrix[len1][len2]
-
-	return distance
+	return row[len2]
 end
 
 --- Splits a string by a specified delimiter, but does not split within quoted sequences.
