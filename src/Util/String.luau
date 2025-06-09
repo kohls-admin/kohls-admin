@@ -30,20 +30,8 @@ function String.unescapeRichText(s: string): string
 	return s
 end
 
-local levenshteinCache = {}
 --- Calculates the Levenshtein distance between two strings.
 function String.levenshteinDistance(s1: string, s2: string): number
-	-- Ensure consistent key order to avoid duplicate calculations (e.g., dist(a,b) vs dist(b,a))
-	if s1 > s2 then
-		s1, s2 = s2, s1
-	end
-	local cacheKey = s1 .. "::" .. s2
-
-	-- Check if the result is already cached
-	if levenshteinCache[cacheKey] then
-		return levenshteinCache[cacheKey]
-	end
-
 	local len1 = string.len(s1)
 	local len2 = string.len(s2)
 	local matrix = {}
@@ -70,7 +58,6 @@ function String.levenshteinDistance(s1: string, s2: string): number
 	end
 
 	local distance = matrix[len1][len2]
-	levenshteinCache[cacheKey] = distance
 
 	return distance
 end
