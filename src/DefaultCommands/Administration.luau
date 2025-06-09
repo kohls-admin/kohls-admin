@@ -76,6 +76,7 @@ return {
 	},
 	{
 		name = "role",
+		aliases = { "rank" },
 		description = "Assigns a role(s) to one or more user(s).",
 		args = {
 			{
@@ -141,6 +142,7 @@ return {
 	},
 	{
 		name = "temprole",
+		aliases = { "temprank" },
 		description = "Assigns a temporary role(s) to one or more user(s).",
 		args = {
 			{
@@ -199,7 +201,7 @@ return {
 	},
 	{
 		name = "unrole",
-		aliases = { "removerole" },
+		aliases = { "removerole", "unrank", "removerank" },
 		description = "Removes one or more role(s) from one or more member(s).",
 		args = {
 			{
