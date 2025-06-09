@@ -1,0 +1,47 @@
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - model/**
+      - src/**
+      - submodules/**
+      - test/**
+  pull_request:
+    branches:
+      - master
+    paths:
+      - model/**
+      - src/**
+      - submodules/**
+      - test/**
+
+name: Lint
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: "*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check tool versions
+        run: |
+          rokit --version
+          luau-lsp --version
+          rojo --version
+          stylua --version
+
+      - name: Generate sourcemap
+        run: rojo sourcemap --output sourcemap.json --include-non-scripts
+
+      - name: Analyze
+        run: luau-lsp analyze --defs=<(curl -s https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/master/scripts/globalTypes.d.luau) --sourcemap sourcemap.json model/ src/ test/
+
+      - name: Format
+        run: stylua --check model/ src/ test/
