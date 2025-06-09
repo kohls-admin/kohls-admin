@@ -200,7 +200,7 @@ return {
 			context._K.Auth.unbanUsers(bans, context.from)
 			context._K.Remote.Notify:FireClient(
 				context.fromPlayer,
-				{ Text = `<b>Unbanned:</b> <i>{table.concat(bans, ", ")}</i>` }
+				{ Text = `<b>Unbanned:</b> <i>{table.concat(unbannedNames, ", ")}</i>` }
 			)
 		end,
 	},
