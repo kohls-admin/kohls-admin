@@ -22,6 +22,7 @@ linear.Attachment0 = flyAttachment
 linear.ForceLimitsEnabled = false
 linear.Enabled = true
 
+local speed = 0
 local function updateFly(delta: number)
 	local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 	if not humanoid then
@@ -31,8 +32,10 @@ local function updateFly(delta: number)
 	local up = humanoid.Jump and 1 or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and -1 or 0
 	local controlVector = ControlModule:GetMoveVector()
 	if up ~= 0 or controlVector ~= Vector3.zero then
-		linear.VectorVelocity = (align.CFrame:VectorToWorldSpace(controlVector) + Vector3.new(0, up, 0)) * maxSpeed
+		speed = math.clamp(speed + delta * maxSpeed / 4, math.min(humanoid.WalkSpeed, maxSpeed), maxSpeed)
+		linear.VectorVelocity = (align.CFrame:VectorToWorldSpace(controlVector) + Vector3.new(0, up, 0)) * speed
 	else
+		speed = math.clamp(speed - delta * maxSpeed / 2, math.min(humanoid.WalkSpeed, maxSpeed), maxSpeed)
 		linear.VectorVelocity = Vector3.zero
 	end
 end

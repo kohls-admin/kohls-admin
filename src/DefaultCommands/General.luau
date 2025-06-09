@@ -745,7 +745,7 @@ return {
 			{
 				type = "number",
 				name = "Speed",
-				description = "The flight speed, defaults to 256.",
+				description = "The maximum flight speed, defaults to 128.",
 				optional = true,
 			},
 		},
@@ -804,7 +804,7 @@ return {
 			{
 				type = "number",
 				name = "Speed",
-				description = "The flight speed, defaults to 256.",
+				description = "The maximum flight speed, defaults to 128.",
 				optional = true,
 			},
 		},
