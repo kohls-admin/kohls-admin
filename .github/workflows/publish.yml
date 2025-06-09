@@ -1,17 +1,17 @@
 on:
   push:
     branches:
-      - "master"
+      - master
     paths:
-      - "model/**"
-      - "src/**"
-      - "submodules/**"
-      - "test/**"
-      - "VERSION.txt"
+      - model/**
+      - src/**
+      - submodules/**
+      - test/**
+      - VERSION.txt
 
 jobs:
   upload:
-    name: Publish test place
+    name: Publish
     runs-on: ubuntu-latest
     environment: testing
     steps:
@@ -22,7 +22,7 @@ jobs:
         with:
           version: "*"
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish
+      - name: Publish demo place
         run: |
           rokit --version
           rojo --version
