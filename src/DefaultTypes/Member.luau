@@ -26,6 +26,37 @@ local function parseMember(input: string, self: any): string?
 	return nil, "Invalid member"
 end
 
+local function parseAll(arg, self)
+	local feedback = {}
+	local members = {}
+	for id, member in _K.Data.members do
+		local message
+		member, message = self._K.Auth.targetUserArgument(self, tonumber(id) :: number, id)
+		if member then
+			table.insert(members, member)
+		elseif not table.find(feedback, message) then
+			table.insert(feedback, message)
+		end
+	end
+
+	if #members > 0 then
+		return members
+	end
+
+	return nil, #feedback > 0 and table.concat(feedback, "\n") or "No targetable member found"
+end
+
+local typeAll = {
+	listable = true,
+	transform = string.lower,
+	validate = function(v, self)
+		local ok, feedback = parseAll(v, self)
+		return ok, feedback or "Invalid member"
+	end,
+	suggestions = { { { "*", "all" }, "*  [all] (Everyone)" } },
+	parse = parseAll,
+}
+
 local function nameSort(a, b)
 	return string.lower(a[1][1]) < string.lower(b[1][1])
 end
@@ -33,8 +64,12 @@ end
 local typeMember = {
 	validate = parseMember,
 	parse = parseMember,
+	prefixes = {
+		["^%*$"] = "allMembers",
+		["^all$"] = "allMembers",
+	},
 	suggestions = function(text: string, from: number, definition)
-		local names = {}
+		local names = { { { "*", "all" }, "*  [all] (Everyone)" } }
 		local fromString = tostring(from)
 		local rank = _K.Auth.getRank(from)
 		local lowerRank = definition.lowerRank
@@ -69,4 +104,5 @@ return function(context)
 	_K = context
 	_K.Registry.registerType("member", typeMember)
 	_K.Registry.registerType("members", typeMembers, typeMember)
+	_K.Registry.registerType("allMembers", typeAll)
 end
