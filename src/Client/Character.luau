@@ -27,10 +27,10 @@ local function updateFly(delta: number)
 	if not humanoid then
 		return
 	end
+	align.CFrame = workspace.CurrentCamera.CFrame
 	local up = humanoid.Jump and 1 or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and -1 or 0
 	local controlVector = ControlModule:GetMoveVector()
 	if up ~= 0 or controlVector ~= Vector3.zero then
-		align.CFrame = workspace.CurrentCamera.CFrame
 		linear.VectorVelocity = (align.CFrame:VectorToWorldSpace(controlVector) + Vector3.new(0, up, 0)) * maxSpeed
 	else
 		linear.VectorVelocity = Vector3.zero
