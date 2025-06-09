@@ -27,8 +27,8 @@ if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 	else
 		shared._K_LOADER_LOADED = true
 		Package.Parent = game:GetService("ServerScriptService")
-		AUTO_UPDATE = AUTO_UPDATE and game.PlaceId ~= DEMO_PLACE
 	end
+	AUTO_UPDATE = AUTO_UPDATE and game.PlaceId ~= DEMO_PLACE
 
 	local localMainModule = script:FindFirstChild(MAIN_MODULE_NAME) or MAIN_MODULE_ID
 	local ok, result = pcall(require, if AUTO_UPDATE then MAIN_MODULE_ID else localMainModule)
