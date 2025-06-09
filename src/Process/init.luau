@@ -1,3 +1,6 @@
+--!optimize 2
+--!native
+
 local Auth = require(script.Parent.Auth)
 local Data = require(script.Parent.Data.Defaults)
 local Hook = require(script.Parent.Hook)
