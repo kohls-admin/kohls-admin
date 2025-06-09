@@ -155,8 +155,11 @@ return function(_K, text, cursorPosition)
 				data.skipped = true
 				data.rawQuery = string.sub(arg.skipped, 1, cursorPosition - arg.argPos)
 				data.query = _K.Util.String.stripQuotes(data.rawQuery)
-				data.suggestions = arg.rawType.suggestions
-					and _K.Util.Suggest.query(data.query, arg.rawType.suggestions(data.query, from, arg.definition))
+				local suggestions = arg.rawType.suggestions
+				if type(suggestions) == "function" then
+					suggestions = arg.rawType.suggestions(data.query, from, arg.definition)
+				end
+				data.suggestions = suggestions and _K.Util.Suggest.query(data.query, suggestions)
 				if data.suggestions and #data.suggestions > 0 then
 					break
 				end
@@ -179,9 +182,11 @@ return function(_K, text, cursorPosition)
 				data.query = _K.Util.String.stripQuotes(data.rawQuery)
 				data.transformedArg = transformedArg
 				data.suggestionType = transformedType or data.suggestionType
-				data.suggestions = transformedType
-					and transformedType.suggestions
-					and _K.Util.Suggest.query(data.query, transformedType.suggestions(data.query, from, arg.definition))
+				local suggestions = transformedType and transformedType.suggestions
+				if type(suggestions) == "function" then
+					suggestions = transformedType.suggestions(data.query, from, arg.definition)
+				end
+				data.suggestions = suggestions and _K.Util.Suggest.query(data.query, suggestions)
 			end
 		end
 
