@@ -1,17 +1,17 @@
 on:
   push:
     branches:
-      - "master"
+      - master
     paths:
-      - ".moonwave/**"
-      - "docs/**"
-      - "model/**"
-      - "src/**"
-      - "moonwave.toml"
+      - .moonwave/**
+      - docs/**
+      - model/**
+      - src/**
+      - moonwave.toml
 
 jobs:
   docs:
-    name: Publish docs to GitHub Pages
+    name: Docs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
