@@ -274,6 +274,7 @@ local function formatSuggestionLabel(label, display, query, invalid)
 	)
 
 	return TextService:GetTextSize(display, label.TextSize, label.Font, Vector2.zero).X
+		+ UI.Theme.PaddingDouble._value.Offset
 end
 
 local suggestionUpdating
@@ -465,6 +466,10 @@ local function invalidSuggestion(data, err, pos, text)
 	-- show highlight
 	table.insert(suggestionLabels, frame)
 
+	TooltipFrame.Size = UDim2.fromOffset(
+		math.max(TooltipFrame.AbsoluteSize.X, label.AbsoluteSize.X),
+		TooltipLayout.AbsoluteContentSize.Y
+	)
 	TooltipFrame.Visible = true
 
 	if not data.suggestions or not data.suggestions[suggestionIndex] then
