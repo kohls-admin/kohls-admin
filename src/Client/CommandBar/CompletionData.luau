@@ -80,7 +80,7 @@ return function(_K, text, cursorPosition)
 			data.suggestions = table.create(#data.suggestions)
 			local invalidSuggestions = {}
 			for _, suggestionData in rawSuggestions do
-				local __name, _display, cmd, _query = unpack(suggestionData)
+				local _name, _display, cmd = unpack(suggestionData)
 				if cmd then
 					if cmd.LocalPlayerAuthorized then
 						table.insert(data.suggestions, suggestionData)
