@@ -105,12 +105,12 @@ local function playerSuggestion(player, suggestion)
 		then `{suggestion} [{player.Name}]{displayName}{kName}`
 		else `{player.Name} {displayName}{kName}`
 
-	return { suggestions, suggestionDisplay }
+	return { suggestions, suggestionDisplay, player }
 end
 
 local function baseSuggestions(text, from, definition, userType: boolean?)
 	local players = Players:GetPlayers()
-	local names, instances = {}, {}
+	local names = {}
 
 	if userType then
 		for userId, user in userCache do
@@ -122,7 +122,6 @@ local function baseSuggestions(text, from, definition, userType: boolean?)
 
 	if not definition.ignoreSelf then
 		table.insert(names, playerSuggestion(Players.LocalPlayer, "me"))
-		table.insert(instances, Players.LocalPlayer)
 	end
 
 	local rank = _K.Auth.getRank(from)
@@ -132,7 +131,6 @@ local function baseSuggestions(text, from, definition, userType: boolean?)
 			and (from == _K.creatorId or not definition.lowerRank or rank > _K.Auth.getRank(player.UserId))
 		then
 			table.insert(names, playerSuggestion(player))
-			table.insert(instances, player)
 		end
 	end
 
@@ -140,7 +138,7 @@ local function baseSuggestions(text, from, definition, userType: boolean?)
 		table.insert(names, suggestion)
 	end
 
-	return names, instances
+	return names
 end
 
 local function parseIndividual(arg, self, userType)
