@@ -859,6 +859,12 @@ return {
 				Input.Value:set(prefix .. text, true)
 				Input._input.CursorPosition += prefixLen
 				return
+			else -- trim whitespace after prefix
+				local trimmed = prefix .. _K.Util.String.trimStart(string.sub(text, prefixLen + 1))
+				if trimmed ~= Input._input.Text then
+					Input.Value:set(trimmed, true)
+					return
+				end
 			end
 
 			if text ~= prefix then
