@@ -613,7 +613,7 @@ updateCompletion = function()
 		completion = `"{completion}"`
 	end
 
-	currentCompletion = { data.argPos + #completion, preCompletion .. completion .. postCompletion }
+	currentCompletion = { data.argPos + #completion, preCompletion .. completion .. postCompletion, invalid }
 
 	-- inline format (preceding message, pre query suggestion, query, post query suggestion, post query message)
 	-- FIX: how to not escape invalid/valid rich text coloring?
@@ -820,7 +820,12 @@ return {
 					return
 				end
 
-				if currentCompletion and data.suggestionType ~= "History" and #data.suggestions > 1 then
+				if
+					currentCompletion
+					and not currentCompletion[4]
+					and data.suggestionType ~= "History"
+					and #data.suggestions > 1
+				then
 					fillSuggestion()
 					task.defer(Input._input.ReleaseFocus, Input._input)
 				end
