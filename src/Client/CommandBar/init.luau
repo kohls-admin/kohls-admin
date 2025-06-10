@@ -260,6 +260,22 @@ local completeSuggestion = _K.Util.Function.throttle(0.1, function()
 	task.defer(updateCompletionData)
 end)
 
+local function formatSuggestionLabel(label, display, query, invalid)
+	local startIndex, endIndex = string.find(string.lower(display), query, 1, true)
+	if not startIndex then
+		startIndex, endIndex = 0, 0
+	end
+
+	label.Text = string.format(
+		if invalid then invalidSuggestFormat else suggestFormat,
+		if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(display, 1, startIndex - 1)) else "",
+		_K.Util.String.escapeRichText(string.sub(display, startIndex, endIndex)),
+		_K.Util.String.escapeRichText(string.sub(display, endIndex + 1))
+	)
+
+	return TextService:GetTextSize(display, label.TextSize, label.Font, Vector2.zero).X
+end
+
 local suggestionUpdating
 local function updateSuggestionLabels(data)
 	if suggestionUpdating then
@@ -321,6 +337,13 @@ local function updateSuggestionLabels(data)
 					Image = `rbxthumb://type=AvatarHeadShot&id={value.userId or value.UserId}&w=48&h=48`,
 				}
 				widthOffset = label.AbsoluteSize.Y
+				task.spawn(function()
+					display ..= ` ({value.Name or _K.Util.getUserInfo(value.UserId).Username})`
+
+					local textWidth = formatSuggestionLabel(label, display, query, invalid)
+					suggestionWidth = math.max(suggestionWidth, textWidth + widthOffset)
+					TooltipFrame.Size = UDim2.fromOffset(suggestionWidth, TooltipLayout.AbsoluteContentSize.Y)
+				end)
 			end
 		elseif data.suggestionType.name == "image" or data.suggestionType.name == "images" and data.arg then
 			UI.new "ImageLabel" {
@@ -335,19 +358,7 @@ local function updateSuggestionLabels(data)
 			widthOffset = label.AbsoluteSize.Y
 		end
 
-		local startIndex, endIndex = string.find(string.lower(display), query, 1, true)
-		if not startIndex then
-			startIndex, endIndex = 0, 0
-		end
-
-		label.Text = string.format(
-			if invalid then invalidSuggestFormat else suggestFormat,
-			if startIndex > 1 then _K.Util.String.escapeRichText(string.sub(display, 1, startIndex - 1)) else "",
-			_K.Util.String.escapeRichText(string.sub(display, startIndex, endIndex)),
-			_K.Util.String.escapeRichText(string.sub(display, endIndex + 1))
-		)
-
-		local textWidth = TextService:GetTextSize(display, label.TextSize, label.Font, Vector2.zero).X
+		local textWidth = formatSuggestionLabel(label, display, query, invalid)
 		suggestionWidth = math.max(suggestionWidth, textWidth + widthOffset)
 
 		frame.Activated:Connect(function()
