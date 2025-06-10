@@ -63,6 +63,13 @@ return function(_K, text, cursorPosition)
 				local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
 				command:validate()
 				table.insert(data.commands, command)
+				if command.invalidArg then
+					table.insert(
+						data.invalid,
+						{ command.argMissing or command.invalidMessage, command.invalidPos, command.invalidArg }
+					)
+					return data
+				end
 			end
 			continue -- cursor not within commandArray
 		end

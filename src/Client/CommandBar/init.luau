@@ -437,11 +437,6 @@ local function updateSuggestionPurchasePrice()
 end
 
 local function invalidSuggestion(data, err, pos, text)
-	for _, label in suggestionLabels do
-		label:Destroy()
-	end
-	table.clear(suggestionLabels)
-
 	validState:set(false)
 	Input.DisplayText:set(
 		`<font transparency="0.33">{_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.String.escapeRichText(
@@ -511,9 +506,10 @@ updateCompletion = function()
 	-- TODO: somehow show validated arguments/text as green :)
 	for _, invalid in data.invalid do
 		invalidSuggestion(data, unpack(invalid))
-		if not data.suggestionType then
-			return
-		end
+	end
+
+	if not data.suggestionType then
+		return
 	end
 
 	if data.invalidPermissionsCommand and not data.validSuggestion then
@@ -801,26 +797,18 @@ return {
 			if enterPressed then
 				local data = currentCompletionData
 				if #data.invalid > 0 then
-					validState:set(false)
 					UI.Sound.Negative:Play()
 					return Input._input:CaptureFocus()
 				end
 
 				if Input._input.Text ~= prefix and #data.commands < 1 then
 					UI.Sound.Negative:Play()
-					invalidSuggestion(data, "Invalid command", data.argPos, data.rawArg)
 					return Input._input:CaptureFocus()
 				end
 
 				for _, command in data.commands do
 					if command.invalidArg then
 						UI.Sound.Negative:Play()
-						invalidSuggestion(
-							data,
-							command.argMissing or command.invalidMessage,
-							command.invalidPos,
-							command.invalidArg
-						)
 						return Input._input:CaptureFocus()
 					end
 				end
