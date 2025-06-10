@@ -816,7 +816,7 @@ return {
 					return
 				end
 
-				if currentCompletion and data.suggestionType ~= "History" then
+				if currentCompletion and data.suggestionType ~= "History" and #data.suggestions > 1 then
 					fillSuggestion()
 					task.defer(Input._input.ReleaseFocus, Input._input)
 				end
