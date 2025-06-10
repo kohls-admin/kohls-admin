@@ -229,7 +229,11 @@ local typeUser = {
 		return users
 	end,
 	suggestions = function(text, from, definition)
-		return baseSuggestions(text, from, definition, true)
+		local names = baseSuggestions(text, from, definition, true)
+		if tonumber(text) then
+			table.insert(names, 1, { text, nil, { UserId = tonumber(text) } })
+		end
+		return names
 	end,
 	prefixes = prefixes,
 }
