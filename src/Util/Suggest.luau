@@ -32,12 +32,12 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 		if type(suggestions) ~= "table" then
 			suggestions = { suggestions }
 		end
-		local value = instances and (instances[key] or instances[index] or instances[name]) or key or name
+		local value = instances and (instances[key] or instances[index] or instances[name]) or key
 
 		local matched = false
 		for _, target in suggestions do
 			if string.lower(target) == query then
-				table.insert(results, 1, { target, display, value })
+				table.insert(results, 1, { target, display, value or target })
 				matched = true
 				break
 			end
@@ -54,14 +54,15 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 					end
 				end
 			end
-			if suggestion or partial then
-				table.insert(if suggestion then starts else contains, { suggestion or partial, display, value })
+			local target = suggestion or partial
+			if target then
+				table.insert(if suggestion then starts else contains, { target, display, value or target })
 				matched = true
 			end
 		end
 		if not matched then
 			for _, target in suggestions do
-				table.insert(levenshtein, { target, display, value })
+				table.insert(levenshtein, { target, display, value or target })
 			end
 		end
 	end
