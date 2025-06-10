@@ -295,10 +295,6 @@ local function playerAdded(player: Player)
 		return
 	end
 
-	if _K.Service.Run:IsStudio() then
-		_K.Auth.userRoleAdd(player.UserId, "creator")
-	end
-
 	for _, role in _K.Data.settings.freeAdmin do
 		_K.Auth.userRoleAdd(player.UserId, role)
 	end
