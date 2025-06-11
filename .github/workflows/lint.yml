@@ -40,7 +40,7 @@ jobs:
         run: rojo sourcemap --output sourcemap.json --include-non-scripts
 
       - name: Analyze
-        run: luau-lsp analyze --defs=<(curl -s https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/master/scripts/globalTypes.d.luau) --sourcemap sourcemap.json model/ src/ test/
+        run: curl -sO https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau && luau-lsp analyze --defs=globalTypes.d.luau --sourcemap sourcemap.json model/ src/ test/ && rm globalTypes.d.luau
 
       - name: Format
         run: stylua --check model/ src/ test/
