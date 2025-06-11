@@ -60,7 +60,11 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 		`{self._K.getCommandPrefix()}{self.alias} {targetPlayer.Name}`
 	)
 
-	local status = if accepted then "<font color='#0f0'>accepted</font>" else "<font color='#f00'>denied</font>"
+	local validColor = self._K.Data.settings.themeValid:ToHex()
+	local invalidColor = self._K.Data.settings.themeInvalid:ToHex()
+	local status = if accepted
+		then `<font color='#{validColor}'>accepted</font>`
+		else `<font color='#{invalidColor}'>denied</font>`
 	self._K.Remote.Notify:FireClient(
 		self.fromPlayer,
 		{ Text = `Command request for <b>{self.alias}</b> was <b>{status}</b>.`, From = targetPlayer.UserId }

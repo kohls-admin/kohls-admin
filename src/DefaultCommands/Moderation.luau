@@ -266,7 +266,7 @@ return {
 					end
 					local system = channels:FindFirstChild("RBXSystem")
 					system:DisplaySystemMessage(
-						`<font color="#{if muted then "f00" else "0f0"}"><b>You have been {muteText}!</b></font>`
+						`<font color="#{_K.UI.Theme[if muted then "Invalid" else "Valid"]._value:ToHex()}"><b>You have been {muteText}!</b></font>`
 					)
 				end
 			end)

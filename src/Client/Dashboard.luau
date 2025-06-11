@@ -108,10 +108,6 @@ task.defer(function()
 			},
 		}
 
-		local socialWarning = if game.CreatorId ~= 3403354
-			then `\n\n<font color="#f00"><b>This game wasn't made by us!</b></font>`
-			else ""
-
 		UI.new "TextLabel" {
 			Parent = social,
 			LayoutOrder = -2,
@@ -125,7 +121,13 @@ task.defer(function()
 			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 			TextWrapped = true,
 			Size = UDim2.new(1, 0, 0, 24),
-			Text = `<font transparency="0.33">Join the <b>Kohl's Admin</b> Discord server!</font>{socialWarning}`,
+			Text = UI.compute(function(use)
+				local invalidColor = use(UI.Theme.Invalid):ToHex()
+				local socialWarning = if true or game.CreatorId ~= 3403354
+					then `\n\n<font color="#{invalidColor}"><b>This game wasn't made by us!</b></font>`
+					else ""
+				return `<font transparency="0.33">Join the <b>Kohl's Admin</b> Discord server!</font>{socialWarning}`
+			end),
 			RichText = true,
 		}
 

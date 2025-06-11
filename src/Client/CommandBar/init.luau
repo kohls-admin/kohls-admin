@@ -226,6 +226,15 @@ local invalidInlineFormat =
 local suggestFormat = `<font transparency="0.5">%s</font>%s<font transparency="0.5">%s</font>`
 local invalidSuggestFormat = `<font color="#f00">{suggestFormat}</font>`
 
+local function updateInvalidColor(invalidColor)
+	invalidColor = invalidColor:ToHex()
+	invalidInlineFormat =
+		`<font transparency="0.33">%s<b><font color="#{invalidColor}" transparency="0.66">%s<font transparency="0">%s</font>%s</font></b>%s</font>`
+	invalidSuggestFormat = `<font color="#{invalidColor}">{suggestFormat}</font>`
+end
+UI.Theme.Invalid:hook(updateInvalidColor)
+updateInvalidColor(UI.Theme.Invalid._value)
+
 local suggestionIndex = 1
 local suggestionLabels = {}
 
@@ -459,7 +468,7 @@ local function invalidSuggestion(data, err, pos, text)
 
 	local frame = SuggestionFrame:Clone()
 	local label = frame:FindFirstChildOfClass("TextLabel")
-	label.Text = `<font color="#f00"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
+	label.Text = `<font color="#{UI.Theme.Invalid._value:ToHex()}"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
 	frame.Parent = TooltipFrame
 	-- show highlight
 	table.insert(suggestionLabels, frame)

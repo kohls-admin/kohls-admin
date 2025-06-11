@@ -479,8 +479,10 @@ return {
 			task.delay(30, coroutine.resume, tasks.running)
 			tasks:wait()
 
+			local validColor = context._K.Data.settings.themeValid:ToHex()
+			local invalidColor = context._K.Data.settings.themeInvalid:ToHex()
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
-				Text = `<font transparency="0.5">The results are in!</font>\n\n<b>{message}</b>\n\t<font color="#0f0"><b><sc>yes</sc></b>\t{yes}</font>\n\t<font color="#f00"><b><sc>no</sc></b> \t{no}</font>`,
+				Text = `<font transparency="0.5">The results are in!</font>\n\n<b>{message}</b>\n\t<font color="#{validColor}"><b><sc>yes</sc></b>\t{yes}</font>\n\t<font color="#{invalidColor}"><b><sc>no</sc></b> \t{no}</font>`,
 			})
 		end,
 	},

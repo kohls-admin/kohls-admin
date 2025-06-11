@@ -615,7 +615,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 			task.delay(2, function()
 				_K.Remote.Notify:FireClient(player, {
 					From = "_K",
-					Text = `Your game is unable to participate in the <b>Kohl's Admin Games Hub</b> because <b><font color='#f00'>HTTP Requests are disabled in your game settings</font></b>.\n\n<i><font transparency='0.5'>Enable HTTP Requests in your Roblox game settings to avoid missing out on free advertising and other benefits!</font></i>`,
+					Text = `Your game is unable to participate in the <b>Kohl's Admin Games Hub</b> because <b><font color='#{_K.Data.settings.themeInvalid:ToHex()}'>HTTP Requests are disabled in your game settings</font></b>.\n\n<i><font transparency='0.5'>Enable HTTP Requests in your Roblox game settings to avoid missing out on free advertising and other benefits!</font></i>`,
 				})
 			end)
 		end
