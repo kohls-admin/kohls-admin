@@ -120,7 +120,7 @@ local function onCharacter(character)
 			canDoubleJump = false
 			hasDoubleJumped = false
 		elseif new == Enum.HumanoidStateType.Freefall then
-			task.wait(0.1)
+			task.wait(0.15)
 			canDoubleJump = true
 		end
 	end)
