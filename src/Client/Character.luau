@@ -2,6 +2,9 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+local Notify = require(script.Parent.Notify)
+local UI = require(script.Parent.UI)
+
 local LocalPlayer = Players.LocalPlayer
 
 local PlayerModule = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule") :: ModuleScript)
@@ -149,6 +152,12 @@ local function onJumpRequest()
 			local fly = LocalPlayer:GetAttribute("_KFly")
 			if noclip then
 				Character.noclip(if fly then true else not noclipping)
+				if not fly then
+					local status = if noclipping
+						then `<font color="#{UI.Theme.Valid._value:ToHex()}">enabled`
+						else `<font color="#{UI.Theme.Invalid._value:ToHex()}">disabled`
+					Notify({ Text = `<b>Noclip {status}</font>.</b>\nDouble tap <b>jump</b> to toggle.` })
+				end
 			end
 			if fly then
 				Character.fly(true)
@@ -159,13 +168,24 @@ end
 
 LocalPlayer:GetAttributeChangedSignal("_KFly"):Connect(function()
 	local fly = LocalPlayer:GetAttribute("_KFly")
+	local noclip = LocalPlayer:GetAttribute("_KNoClip")
 	maxSpeed = math.max(0, fly or 128)
 	Character.fly(fly)
+	if not flying and not noclip and fly then
+		Notify({
+			Text = `Double tap <b>jump</b> to toggle fly.`,
+		})
+	end
 end)
 
 LocalPlayer:GetAttributeChangedSignal("_KNoClip"):Connect(function()
 	local noclip = LocalPlayer:GetAttribute("_KNoClip")
 	Character.noclip(noclip)
+	if noclip then
+		Notify({
+			Text = `Double tap <b>jump</b> to toggle noclip.`,
+		})
+	end
 end)
 
 if LocalPlayer.Character then

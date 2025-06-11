@@ -762,9 +762,6 @@ return {
 		end,
 		run = function(context, players, speed)
 			for _, player in players do
-				if not player:GetAttribute("_KFly") then
-					context._K.Remote.Notify:FireClient(player, { Text = `Double tap <b>jump</b> to toggle fly.` })
-				end
 				player:SetAttribute("_KFly", speed or 128)
 				player:SetAttribute("_KNoClip", nil)
 			end
@@ -815,9 +812,6 @@ return {
 				if not player:GetAttribute("_KDevCameraOcclusionMode") then
 					player:SetAttribute("_KDevCameraOcclusionMode", player.DevCameraOcclusionMode)
 					player.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
-				end
-				if not player:GetAttribute("_KNoClip") then
-					context._K.Remote.Notify:FireClient(player, { Text = `Double tap <b>jump</b> to toggle noclip.` })
 				end
 				player:SetAttribute("_KFly", if flying == false then nil else speed or 128)
 				player:SetAttribute("_KNoClip", true)
