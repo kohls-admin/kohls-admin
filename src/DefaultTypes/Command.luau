@@ -30,14 +30,17 @@ return function(_K)
 		end,
 
 		suggestions = function(text)
-			local filtered = {}
-			for _, name in _K.Registry.commandNames do
-				local command = _K.Registry.commands[name]
-				if command and command.LocalPlayerAuthorized then
-					table.insert(filtered, name)
+			if _K.client.settings.onlyShowUsableCommands._value then
+				local filtered = {}
+				for _, name in _K.Registry.commandNames do
+					local command = _K.Registry.commands[name]
+					if command and command.LocalPlayerAuthorized then
+						table.insert(filtered, name)
+					end
 				end
+				return filtered, _K.Registry.commands
 			end
-			return filtered, _K.Registry.commands
+			return _K.Registry.commandNames, _K.Registry.commands
 		end,
 
 		parse = function(command)
