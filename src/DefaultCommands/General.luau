@@ -918,8 +918,8 @@ return {
 		runClient = function(context, fillColor: Color3?, outlineColor: Color3?)
 			context.env.xray:set(if context.undo then false else true)
 			context.env.xrayModel.Parent = if context.undo then nil else workspace
-			context.env.hightlight.FillColor = fillColor or Color3.new(0, 1, 1)
-			context.env.hightlight.OutlineColor = outlineColor or Color3.new(1, 1, 1)
+			context.env.highlight.FillColor = fillColor or Color3.new(0, 1, 1)
+			context.env.highlight.OutlineColor = outlineColor or Color3.new(1, 1, 1)
 		end,
 	},
 	{
