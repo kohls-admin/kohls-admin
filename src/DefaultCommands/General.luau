@@ -843,6 +843,42 @@ return {
 		end,
 	},
 	{
+		name = "notrip",
+		aliases = { "unnotrip" },
+		description = "Prevents one or more player(s) from tripping.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to prevent from tripping.",
+			},
+		},
+		envClient = function(_K)
+			_K.Remote.Notrip.OnClientEvent:Connect(function(enable)
+				local player = _K.Service.Players.LocalPlayer
+				local humanoid: Humanoid? = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, not enable)
+					humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, not enable)
+					humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, enable)
+					humanoid.StateChanged:Connect(function(old: Enum.HumanoidStateType, state: Enum.HumanoidStateType)
+						if state == Enum.HumanoidStateType.FallingDown or state == Enum.HumanoidStateType.Ragdoll then
+							humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+						end
+					end)
+				end
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.Notrip }
+		end,
+		run = function(context, players: { Player })
+			for _, player in players do
+				context.env.remote:FireClient(player, not context.undo)
+			end
+		end,
+	},
+	{
 		name = "xray",
 		aliases = { "wallhack", "walls", "unxray", "unwallhack", "unwalls" },
 		description = "Show players through walls.",
