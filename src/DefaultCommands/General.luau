@@ -922,6 +922,74 @@ return {
 			context.env.hightlight.OutlineColor = outlineColor or Color3.new(1, 1, 1)
 		end,
 	},
+	{
+		name = "whois",
+		aliases = { "userinfo" },
+		description = "Displays detailed information about a player.",
+		group = "moderation",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to get information about.",
+				shouldRequest = true,
+			},
+		},
+		run = function(context, player: Player)
+			local fps = math.min(999, math.round(context._K.Remote.ShowFPS:InvokeClient(player)) or 0)
+			local ping = math.min(9999, math.ceil(player:GetNetworkPing() * 1000))
+			local teamColor = player.Team and "#" .. player.Team.TeamColor.Color:ToHex() or "#16a085"
+			local locale = context._K.Service.LocalizationService:GetCountryRegionForPlayerAsync(player)
+			local platform = player:GetAttribute("_KPlatform")
+			local platformEmoji = {
+				Console = "🎮",
+				Mobile = "📱",
+				PC = "🖥️",
+				VR = "🥽",
+			}
+
+			-- stylua: ignore
+			local info = {
+				`<b>Account Age:</b> {context._K.Util.ReadableTime(player.AccountAge * 86400) or "?"}`,
+				`<b>FPS:</b> {fps}   <b>Ping:</b> {ping} ms   <b>Locale:</b> {context._K.Util.String.toFlag(locale)} {locale}`,
+				`<b>Muted:</b> {if context._K.Data.muted[player.UserId] then "✅" else "❌"}\t<b>Verified:</b> {if player:IsVerified() then "✅" else "❌"}`,
+				`<b>Platform:</b> {platformEmoji[platform]} {platform}`,
+				`<b>Session:</b> {context._K.Util.ReadableTime(workspace:GetServerTimeNow() - player:GetAttribute("_KSessionStart"))}`,
+				`<b>Team:</b> <font color="{teamColor}">{player.Team and player.Team.Name or "None"}</font>`,
+				`<b>UserId:</b> {player.UserId}`,
+			}
+
+			if (player:GetAttribute("_KIdleTime") or 0) > 0 then
+				table.insert(info, `<b>Idle Time:</b> {player:GetAttribute("_KIdleTime")}`)
+			end
+
+			if player.FollowUserId > 0 then
+				local followInfo = context._K.Util.getUserInfo(player.FollowUserId)
+				local displayName = if followInfo.DisplayName ~= followInfo.Username
+					then " " .. followInfo.DisplayName
+					else ""
+				table.insert(info, `<b>Joined:</b>{displayName} @{followInfo.Username}`)
+			end
+
+			local joinedBy = {}
+			for _, v in context._K.Service.Players:GetPlayers() do
+				if v.FollowUserId == player.UserId then
+					local displayName = if v.DisplayName ~= v.Name then v.DisplayName .. " " else ""
+					table.insert(joinedBy, `{displayName}@{v.Name}`)
+				end
+			end
+			if #joinedBy > 0 then
+				table.insert(info, `<b>Joined them:</b> {table.concat(joinedBy, ", ")}`)
+			end
+
+			table.sort(info)
+
+			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				Text = table.concat(info, "\n"),
+				From = player.UserId,
+			})
+		end,
+	},
 
 	{
 		name = "play",
