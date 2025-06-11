@@ -4,7 +4,7 @@ local TextService = game:GetService("TextService")
 local SoundService = game:GetService("SoundService")
 local UserInputService = game:GetService("UserInputService")
 
-local Flux = require(script.Parent.Parent.Flux)
+local Flux = require(script.Parent.Flux)
 local state = Flux.state
 
 export type Function = Flux.Function

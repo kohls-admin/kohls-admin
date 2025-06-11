@@ -1,4 +1,4 @@
-local Flux = require(script.Parent.Parent.Parent:WaitForChild("Flux"))
+local Flux = require(script.Parent.Parent:WaitForChild("Flux"))
 local Default = require(script:WaitForChild("Themes"):WaitForChild("Default"))
 
 local compute = Flux.compute
