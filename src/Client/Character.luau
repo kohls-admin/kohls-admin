@@ -92,9 +92,9 @@ function Character.fly(enable: boolean)
 			canDoubleJump, hasDoubleJumped = false, false
 		end)
 		humanoid.PlatformStand = true
-		humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
 		flyAttachment.Parent = primaryPart
 		flyConnection = RunService.Heartbeat:Connect(updateFly)
+		task.defer(humanoid.ChangeState, humanoid, Enum.HumanoidStateType.Freefall)
 	else
 		flyAttachment.Parent = nil
 		linear.VectorVelocity = Vector3.zero
