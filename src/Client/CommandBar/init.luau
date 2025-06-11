@@ -439,9 +439,12 @@ end
 local function invalidSuggestion(data, err, pos, text)
 	validState:set(false)
 	Input.DisplayText:set(
-		`<font transparency="0.33">{_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1))}<font color="#f00" transparency="0"><b>{_K.Util.String.escapeRichText(
-			text
-		)}</b></font>{_K.Util.String.escapeRichText(string.sub(data.message, pos + #text))}</font>`
+		string.format(
+			invalidSuggestFormat,
+			_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1)),
+			_K.Util.String.escapeRichText(text),
+			_K.Util.String.escapeRichText(string.sub(data.message, pos + #text))
+		)
 	)
 	-- TODO: command definition
 	Tooltip.Visible = data.argDefinition ~= nil
