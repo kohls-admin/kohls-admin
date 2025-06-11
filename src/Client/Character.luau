@@ -100,7 +100,7 @@ function Character.fly(enable: boolean)
 		linear.VectorVelocity = Vector3.zero
 		humanoid.PlatformStand = false
 		flyConnection = nil
-		primaryPart.CFrame = CFrame.new(primaryPart.Position) * CFrame.Angles(0, math.rad(primaryPart.Orientation.Y), 0)
+		humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 	end
 end
 
