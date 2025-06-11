@@ -198,7 +198,7 @@ function String.filterForUser(
 	return String.filterResultForUser(result, fromUserId, toUserId)
 end
 
--- Converts a locale string (e.g., "en-US") to a flag emoji representation, or an empty string if the locale is invalid.
+--- Converts a locale string (e.g., "US") to a flag emoji representation, or an empty string if the locale is invalid.
 function String.toFlag(locale: string): string
 	if not locale or #locale < 2 then
 		return ""
