@@ -120,11 +120,19 @@ function Dialog.new(definition)
 		},
 	}
 
+	local hovering = UI.state(false)
+	new._hovering = hovering
+
 	if new.Duration and new.Duration._value > 0 then
 		local duration = new.Duration._value
-		local start = tick()
-		con = game:GetService("RunService").PreRender:Connect(function()
-			local alpha = (tick() - start) / duration
+		local elapsed = 0
+		con = game:GetService("RunService").PreRender:Connect(function(dt: number)
+			if hovering._value then
+				return
+			end
+
+			elapsed += dt
+			local alpha = elapsed / duration
 			progress.Size = UDim2.new(math.clamp(1 - alpha, 0, 1), 0, 0, 4)
 			if alpha >= 1 then
 				con:Disconnect()
@@ -356,6 +364,15 @@ function Dialog.new(definition)
 						activate(true)
 					end,
 				},
+			},
+
+			[UI.Event] = {
+				MouseEnter = function()
+					UI.activateState(hovering, "hover")
+				end,
+				MouseLeave = function()
+					UI.deactivateState(hovering, "hover")
+				end,
 			},
 		},
 		progress,
