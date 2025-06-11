@@ -64,18 +64,19 @@ UI.UserInputService = UserInputService
 UI.PlayerGui = playerGui
 
 --- @within UI
---- @type Platform "Console" | "Mobile" | "PC"
-export type Platform = "Console" | "Mobile" | "PC"
+--- @type Platform "Console" | "Mobile" | "PC" | "VR"
+export type Platform = "Console" | "Mobile" | "PC" | "VR"
 
 --- @within UI
 --- @prop Touch boolean
-UI.Touch = UI.UserInputService.TouchEnabled
+UI.Touch = UserInputService.TouchEnabled
 
 --- @within UI
 --- @prop Platform Platform
-UI.Platform = if UI.UserInputService.KeyboardEnabled and UI.UserInputService.MouseEnabled
-	then "PC"
-	elseif UI.UserInputService.GamepadEnabled then "Console"
+UI.Platform = if UserInputService.VREnabled
+	then "VR"
+	elseif GuiService:IsTenFootInterface() then "Console"
+	elseif UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then "PC"
 	else "Mobile"
 
 --- @within UI
