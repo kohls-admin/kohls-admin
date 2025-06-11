@@ -306,4 +306,17 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 	_K.Hook.init:Fire()
 end)
 
-_K.Remote.Init:FireServer()
+_K.Remote.Init:FireServer({ Attributes = { Platform = UI.Platform, SessionStart = workspace:GetServerTimeNow() } })
+
+local lastIdle = time()
+local function resetIdle()
+	if time() - 30 > lastIdle then
+		_K.Remote.Idled:FireServer(0)
+	end
+end
+
+_K.Service.Players.LocalPlayer.Idled:Connect(function(idleTime)
+	lastIdle = time()
+	_K.Remote.Idled:FireServer(idleTime)
+	task.delay(35, resetIdle)
+end)

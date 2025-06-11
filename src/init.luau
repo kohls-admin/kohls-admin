@@ -592,7 +592,13 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 	-- server network events
 
-	_K.Remote.Init.OnServerEvent:Connect(function(player)
+	_K.Remote.Init.OnServerEvent:Connect(function(player, initData)
+		if initData.Attributes then
+			for attribute, value in initData.Attributes do
+				player:SetAttribute("_K" .. attribute, value)
+			end
+		end
+
 		local bans = _K.Auth.hasCommand(player.UserId, "ban") and _K.Data.bans
 		local logs = _K.Auth.hasPermission(player.UserId, "serverlogs") and _K.Data.logs
 		local members = if _K.Auth.hasCommand(player.UserId, "members")
@@ -681,6 +687,10 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 			_K.log(`{_K.getCommandPrefix()}unban {userId}`, "COMMAND", player.UserId)
 			_K.Auth.unbanUsers({ userId }, player.UserId)
 		end
+	end)
+
+	_K.Remote.Idled.OnServerEvent:Connect(function(player, idleTime)
+		player:SetAttribute("_KIdleTime", idleTime)
 	end)
 
 	-- server hooks
