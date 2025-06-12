@@ -166,7 +166,7 @@ function Command:validate()
 			local start = self.array[1][1]
 			self.invalidPos = start
 			self.invalidArg = string.sub(self.text, start, start + #self.text)
-			self.argMissing = `Argument {index} missing: {definition.name}`
+			self.argMissing = `Command "{self.definition.name}" failed, argument {index} missing: {definition.name}`
 			return false, self.argMissing
 		end
 
