@@ -470,7 +470,7 @@ return {
 				VelocitySpread = 180,
 			}
 
-			local function apply(fromPlayer, player, image, color)
+			local function apply(fromPlayer: Player, player: Player, image: string?, color: Color3?)
 				local root = player.Character
 					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
 				if not root then
@@ -481,7 +481,7 @@ return {
 					existing:Destroy()
 				end
 				local pe = particle:Clone()
-				if fromPlayer and (fromPlayer:GetAttribute("_KDonationLevel") < 3) then
+				if fromPlayer and ((fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3) then
 					color = color or Color3.new()
 				end
 				if color then
@@ -501,7 +501,7 @@ return {
 			return { apply = apply }
 		end,
 
-		run = function(context, players, image, color)
+		run = function(context, players: { Player }, image: string?, color: Color3?)
 			for _, player in players do
 				context.env.apply(context.fromPlayer, player, image, color)
 			end
