@@ -461,7 +461,7 @@ function Window.new(definition)
 				local parentSize = new._instance.Parent.AbsoluteSize
 				local windowSize = new._instance.AbsoluteSize
 				local maxPosition = parentSize - windowSize
-				local position = new._instance.AbsolutePosition
+				local position = new._instance.AbsolutePosition - new._instance.Parent.AbsolutePosition
 
 				local padding = new._instance.Parent:FindFirstChildOfClass("UIPadding")
 				local paddingX = if padding
