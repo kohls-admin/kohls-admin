@@ -2533,7 +2533,7 @@ function LoadCommands()
 		end
 	end)
 
-	f.addCommand({ "mute", "silence", "stfu" }, { "Mutes players.", "Kohl" }, 2, { "player" }, function(pl, args)
+	f.addCommand({ "mute", "silence", "shush", "shh" }, { "Mutes players.", "Kohl" }, 2, { "player" }, function(pl, args)
 		for _, plr in args[1] do
 			if plr and f.Auth(pl, plr) then
 				RemoteEvent:FireClient(plr, "KMute", true)
@@ -2548,26 +2548,20 @@ function LoadCommands()
 			end
 		end
 	end)
-	f.addCommand(
-		{ "unmute", "unsilence", "unstfu" },
-		{ "Unmutes players.", "Kohl" },
-		2,
-		{ "player" },
-		function(pl, args)
-			for _, plr in args[1] do
-				if plr and f.Auth(pl, plr) then
-					RemoteEvent:FireClient(plr, "KMute", false)
-					if services.TextChat:FindFirstChild("TextChannels") then
-						for _, v in services.TextChat.TextChannels:GetDescendants() do
-							if v.ClassName == "TextSource" and v.Name == plr.Name and v:GetAttribute("CouldSend") then
-								v.CanSend = true
-							end
+	f.addCommand({ "unmute", "unsilence", "unshush", "unshh" }, { "Unmutes players.", "Kohl" }, 2, { "player" }, function(pl, args)
+		for _, plr in args[1] do
+			if plr and f.Auth(pl, plr) then
+				RemoteEvent:FireClient(plr, "KMute", false)
+				if services.TextChat:FindFirstChild("TextChannels") then
+					for _, v in services.TextChat.TextChannels:GetDescendants() do
+						if v.ClassName == "TextSource" and v.Name == plr.Name and v:GetAttribute("CouldSend") then
+							v.CanSend = true
 						end
 					end
 				end
 			end
 		end
-	)
+	end)
 
 	f.addCommand({ "serverlock", "slock" }, { "Prevents nonadmins from joining." }, 3, {}, function(pl, args)
 		f.Hint(pl, "SERVERLOCK: ON")

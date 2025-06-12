@@ -262,7 +262,7 @@ return {
 	},
 	{
 		name = "mute",
-		aliases = { "shh", "silence" },
+		aliases = { "silence", "shush", "shh" },
 		description = "Mutes one or more player(s).",
 		args = {
 			{
@@ -349,7 +349,7 @@ return {
 	},
 	{
 		name = "unmute",
-		aliases = { "unshh", "unsilence" },
+		aliases = { "unsilence", "unshush", "unshh" },
 		description = "Unmutes one or more player(s).",
 		args = {
 			{
