@@ -830,6 +830,43 @@ return {
 		end,
 	},
 	{
+		name = "confuse",
+		aliases = { "reverse", "unconfuse", "unreverse" },
+		description = "Inverts the controls of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to confuse.",
+				shouldRequest = true,
+			},
+		},
+		envClient = function(_K)
+			task.spawn(function()
+				local function invertControls(player, direction, relative)
+					player.Move(player, -direction, relative)
+				end
+				_K.Remote.Confuse.OnClientEvent:Connect(function(enable)
+					local player = _K.Service.Players.LocalPlayer
+					local playerScripts = player:WaitForChild("PlayerScripts")
+					local playerModule = require(playerScripts:WaitForChild("PlayerModule"))
+					playerModule:GetControls().moveFunction = if enable then invertControls else player.Move
+				end)
+			end)
+		end,
+		env = function(_K)
+			return {
+				remote = _K.Remote.Confuse,
+			}
+		end,
+
+		run = function(context, players)
+			for _, player in players do
+				context.env.remote:FireClient(player, not context.undo)
+			end
+		end,
+	},
+	{
 		name = "fling",
 		aliases = {},
 		description = "Flings one or more player(s).",
