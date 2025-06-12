@@ -26,51 +26,53 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				local existing = player.Character and player.Character:FindFirstChild("_KCape")
+				local character = player.Character
+				local existing = character and character:FindFirstChild("_KCape")
 				if existing then
 					existing:Destroy()
 				end
 
-				if player.Character:GetAttribute("_KCreeper") then
+				if character and character:GetAttribute("_KCreeper") then
 					local uncreeperCommand = context._K.Registry.commands.uncreeper
 					if uncreeperCommand then
 						uncreeperCommand.env.apply(player)
 					end
 				end
 
-				local dogSeat = player.Character:FindFirstChild("_KDogSeat")
+				local dogSeat = character and character:FindFirstChild("_KDogSeat")
 				if dogSeat then
 					dogSeat:Destroy()
 					local undogCommand = context._K.Registry.commands.undog
 					if undogCommand then
-						local humanoid = player.Character:FindFirstChild("Humanoid")
+						local humanoid = character:FindFirstChild("Humanoid")
 						if not humanoid then
 							continue
 						end
 						if humanoid.RigType == Enum.HumanoidRigType.R6 then
-							undogCommand.env.R6(player.Character)
+							undogCommand.env.R6(character)
 						else
-							undogCommand.env.R15(player.Character)
+							undogCommand.env.R15(character)
 						end
 					end
 				end
 
 				task.spawn(Util.Humanoid.resetDescription, player)
 
-				if player.Character then
+				if character then
 					local crmCommand = context._K.Registry.commands.crm
 					if crmCommand then
-						task.spawn(crmCommand.env.update, player.Character)
+						task.spawn(crmCommand.env.update, character)
 					end
 				end
 
 				local infectedCommand = context._K.Registry.commands.infect
 				if infectedCommand then
-					local infected = infectedCommand.env.infected[player.Character]
+					local infected = infectedCommand.env.infected[character]
 					if infected then
 						infected:Disconnect()
-						local face = player.Character:FindFirstChild("Head")
-							and player.Character.Head:FindFirstChild("face")
+						local face = character
+							and character:FindFirstChild("Head")
+							and character.Head:FindFirstChild("face")
 						if face then
 							face.Texture = face:GetAttribute("_KInfectOriginal")
 							face:SetAttribute("_KInfectOriginal")
