@@ -1822,6 +1822,9 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
+				if not player.Character then
+					continue
+				end
 				for _, descendant in player.Character:GetDescendants() do
 					if descendant:IsA("BasePart") then
 						descendant.Locked = false
