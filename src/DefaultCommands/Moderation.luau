@@ -416,6 +416,7 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				if player.Character then
+					pcall(game.Destroy, context.env.punished[player])
 					context.env.punished[player] = player.Character
 					player.Character.Parent = nil
 					player.Character = nil
@@ -462,6 +463,10 @@ return {
 				local character = punished[player]
 				if character then
 					punished[player] = nil
+					if player.Character then
+						character:Destroy()
+						return
+					end
 					local ok = pcall(context.env.reparent, character)
 					if ok then
 						player.Character = character
