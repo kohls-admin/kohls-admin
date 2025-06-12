@@ -28,15 +28,16 @@ local function _run(self: Tasks, callback: (...any) -> ...any, ...: any)
 	local result = { pcall(callback, ...) }
 	self._numTasks -= 1
 
-	if not result[1] then
-		warn("Tasks: Task failed with error:", result[2])
-	end
-
 	if self._waiting then
+		if not result[1] then
+			warn("Tasks: Task failed with error:", result[2])
+		end
 		table.insert(self._results, result)
 		if self._returnFirstResult or self._numTasks == 0 then
 			self._waiting = false
-			task.spawn(self._running, if self._returnFirstResult then result else self._results)
+			if coroutine.status(self._running) == "suspended" then
+				task.spawn(self._running, if self._returnFirstResult then result else self._results)
+			end
 		end
 	end
 end
