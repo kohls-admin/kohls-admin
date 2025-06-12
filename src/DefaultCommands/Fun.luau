@@ -476,7 +476,7 @@ return {
 			end
 			for _, player in players do
 				player.CharacterAppearanceId = if userId == nil then player.UserId else userId
-				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if not humanoid then
 					continue
 				end
