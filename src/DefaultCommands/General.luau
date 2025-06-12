@@ -1,7 +1,5 @@
 -- "non-abusive" commands for game staff members
 
-local playingSound = nil
-
 return {
 	{
 		name = "clean",
@@ -1065,14 +1063,17 @@ return {
 			},
 		},
 
+		env = function(_K)
+			return { playing = nil }
+		end,
 		run = function(context, assetId)
-			if playingSound then
-				playingSound:Stop()
-				playingSound:Destroy()
+			if context.env.playing then
+				context.env.playing:Stop()
+				context.env.playing:Destroy()
 			end
 
 			local sound = Instance.new("Sound")
-			playingSound = sound
+			context.env.playing = sound
 			sound.Name = "_KPlaySound"
 			sound.SoundId = "rbxassetid://" .. assetId
 			sound.Looped = true
@@ -1087,6 +1088,7 @@ return {
 		args = {},
 
 		run = function(context)
+			local playingSound = context._K.Registry.commands.play.env.playing
 			if playingSound then
 				playingSound:Pause()
 			end
@@ -1099,6 +1101,7 @@ return {
 		args = {},
 
 		run = function(context)
+			local playingSound = context._K.Registry.commands.play.env.playing
 			if playingSound then
 				playingSound:Resume()
 			end
@@ -1111,6 +1114,7 @@ return {
 		args = {},
 
 		run = function(context)
+			local playingSound = context._K.Registry.commands.play.env.playing
 			if playingSound then
 				playingSound:Stop()
 				playingSound:Destroy()
@@ -1130,6 +1134,7 @@ return {
 		},
 
 		run = function(context, pitch)
+			local playingSound = context._K.Registry.commands.play.env.playing
 			if playingSound then
 				playingSound.Pitch = pitch
 			end
@@ -1148,6 +1153,7 @@ return {
 		},
 
 		run = function(context, volume)
+			local playingSound = context._K.Registry.commands.play.env.playing
 			if playingSound then
 				playingSound.Volume = volume
 			end
