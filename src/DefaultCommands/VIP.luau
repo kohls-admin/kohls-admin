@@ -488,7 +488,7 @@ return {
 					pe.Color = ColorSequence.new(color)
 				end
 				if image then
-					pe.Texture = _K.Util.getTexture(image)
+					pe.Texture = image
 				end
 				pe.Enabled = true
 				pe.Parent = root
