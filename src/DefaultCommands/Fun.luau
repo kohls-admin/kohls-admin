@@ -474,6 +474,53 @@ return {
 		end,
 	},
 	{
+		name = "glitch",
+		aliases = { "unglitch" },
+		description = "Makes one or more player(s) start glitching.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to glitch.",
+				shouldRequest = true,
+			},
+			{
+				type = "number",
+				name = "Distance",
+				description = "The glitch distance.",
+				optional = true,
+			},
+		},
+
+		envClient = function(_K)
+			local connection
+			_K.Remote.Glitch.OnClientEvent:Connect(function(enable: boolean?, distance: number?)
+				if connection then
+					connection:Disconnect()
+				end
+				local character = _K.LocalPlayer.Character
+				if enable and character then
+					local d = distance or 1
+					local switch = false
+					connection = _K.Service.RunService.preRender:Connect(function()
+						switch = not switch
+						character:PivotTo(character:GetPivot() * CFrame.new(0, 0, if switch then -d else d))
+					end)
+				end
+			end)
+		end,
+		env = function(_K)
+			return {
+				remote = _K.Remote.Glitch,
+			}
+		end,
+		run = function(context, players: { Player }, distance: number)
+			for _, player in players do
+				context.env.remote:FireClient(player, not context.undo, distance)
+			end
+		end,
+	},
+	{
 		name = "infect",
 		aliases = { "zombie" },
 		description = "Infects of one or more player(s), starting a zombie outbreak!",
