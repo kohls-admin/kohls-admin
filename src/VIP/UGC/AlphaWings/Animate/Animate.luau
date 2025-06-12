@@ -75,6 +75,9 @@ function Animate.play(rig: MeshPart, sequence: KeyframeSequence, loop: boolean?)
 					}):Play()
 				end
 			end
+			while rig.Anchored do
+				task.wait()
+			end
 			task.wait(duration)
 		end
 	until not loop
