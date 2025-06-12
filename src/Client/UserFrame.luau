@@ -45,10 +45,10 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		TextColor3 = UI.Theme.PrimaryText,
 		TextStrokeColor3 = UI.Theme.Primary,
 		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-		Text = `<b>{displayName}</b>`,
+		Text = displayName,
 		TextSize = if from then UI.Theme.FontSizeLarge else UI.Theme.FontSizeLarger,
 		TextXAlignment = "Left",
-		Font = UI.Theme.Font,
+		FontFace = UI.Theme.FontHeavy,
 		RichText = true,
 
 		AutomaticSize = Enum.AutomaticSize.XY,
