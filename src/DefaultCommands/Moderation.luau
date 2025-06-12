@@ -913,6 +913,71 @@ return {
 		end,
 	},
 	{
+		name = "startertools",
+		aliases = { "starttools", "stools" },
+		description = "Views all tools in the StarterPack.",
+
+		envClient = function(_K)
+			local UI = _K.UI
+
+			local scroller = UI.new "ScrollerFast" {
+				List = {},
+				Enabled = true,
+				FilterInput = true,
+				ReverseOrder = true,
+				Visible = true,
+				ItemSize = UI.compute(function(use)
+					return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+				end),
+			}
+
+			UI.edit(scroller._scroller, {
+				UI.new "UIFlexItem" {
+					FlexMode = Enum.UIFlexMode.Fill,
+				},
+			})
+
+			UI.edit(scroller._instance, {
+				UI.new "UIPadding" {
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+				},
+			})
+
+			return {
+				scroller = scroller,
+				window = UI.new "Window" {
+					Parent = UI.LayerTopInset,
+					Title = "Starter Tools",
+					Exitable = true,
+					Position = UDim2.new(0.5, -128, 0.5, -128),
+					Size = UDim2.new(0, 256, 0, 256),
+
+					scroller,
+				},
+			}
+		end,
+		runClient = function(context, player)
+			local tools = context._K.Service.StarterPack:GetChildren()
+			if #tools <= 1 then
+				context._K.Notify({ Text = `No starter tools found!` })
+				return
+			end
+			local toolNames = {}
+			for _, tool in tools do
+				if tool:IsA("Tool") or tool:IsA("HopperBin") then
+					table.insert(toolNames, tool.Name)
+				end
+			end
+			table.sort(toolNames)
+
+			context.env.scroller.List:set(toolNames)
+			context.env.window._instance.Visible = true
+		end,
+	},
+	{
 		name = "viewtools",
 		aliases = { "vtools" },
 		description = "Views all tools from a player.",
