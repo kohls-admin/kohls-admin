@@ -2438,6 +2438,72 @@ return {
 		end,
 	},
 	{
+		name = "has",
+		aliases = { "owns" },
+		description = "Checks if a player(s) owns an item.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to check ownership.",
+			},
+			{
+				type = "Enum.InfoType",
+				name = "InfoType",
+				description = "The Enum.InfoType of the purchase.",
+				optional = true,
+			},
+			{
+				type = "integer",
+				name = "Identifier",
+				description = "The identifier of the item to purchase.",
+			},
+		},
+
+		env = function(_K)
+			local MarketplaceService = game:GetService("MarketplaceService")
+			return {
+				market = MarketplaceService,
+				method = {
+					[Enum.InfoType.Asset] = MarketplaceService.PlayerOwnsAsset,
+					[Enum.InfoType.Bundle] = MarketplaceService.PlayerOwnsBundle,
+					[Enum.InfoType.GamePass] = MarketplaceService.UserOwnsGamePassAsync,
+					[Enum.InfoType.Subscription] = MarketplaceService.GetUserSubscriptionStatusAsync,
+				},
+			}
+		end,
+
+		run = function(context, player, infoType, id)
+			if infoType == nil then
+				infoType = Enum.InfoType.Asset
+			end
+			local method = context.env.method[infoType]
+			if not method then
+				return
+			end
+			if infoType == Enum.InfoType.Subscription then
+				id = "EXP-" .. id
+			end
+			local target = player
+			if infoType == Enum.InfoType.GamePass then
+				target = player.UserId
+			end
+			local ok, result = pcall(method, context.env.market, target, id)
+			if infoType == Enum.InfoType.Subscription and result then
+				result = result.IsSubscribed
+			end
+			if ok then
+				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+					From = player.UserId,
+					Text = `<b>{if result
+						then `<font color="#{context._K.Data.settings.themeValid:ToHex()}">Owns`
+						else `<font color="#{context._K.Data.settings.themeInvalid:ToHex()}">DOES NOT own`}</font></b> {infoType.Name} {id}`,
+				})
+			end
+			return
+		end,
+	},
+	{
 		name = "change",
 		aliases = {},
 		description = "Changes a leaderstat of one or more player(s).",
