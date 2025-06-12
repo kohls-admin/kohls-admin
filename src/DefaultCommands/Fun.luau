@@ -573,6 +573,68 @@ return {
 		end,
 	},
 	{
+		name = "seizure",
+		aliases = { "seize" },
+		description = "Makes one or more player(s) start seizing.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to seize.",
+				shouldRequest = true,
+			},
+		},
+
+		env = function(_K)
+			return {
+				apply = function(character: Model)
+					character:SetAttribute("_KSeizure", true)
+					character:PivotTo(character:GetPivot() * CFrame.Angles(math.pi / 2, 0, 0))
+					local humanoid = character:FindFirstChildOfClass("Humanoid")
+					while character and character.PrimaryPart and humanoid and character:GetAttribute("_KSeizure") do
+						humanoid.PlatformStand = true
+						character.PrimaryPart.AssemblyLinearVelocity =
+							Vector3.new(math.random(-10, 10), math.random(-5, 1), math.random(-10, 10))
+						character.PrimaryPart.AssemblyAngularVelocity =
+							Vector3.new(math.random(-5, 5), math.random(-5, 5), math.random(-5, 5))
+						task.wait()
+					end
+					if humanoid then
+						humanoid.PlatformStand = false
+					end
+				end,
+			}
+		end,
+		run = function(context, players: { Player })
+			for _, player in players do
+				if player.Character then
+					context.env.apply(player.Character)
+				end
+			end
+		end,
+	},
+	{
+		name = "unseizure",
+		aliases = { "unseize" },
+		description = "Saves one or more player(s) from seizing.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to save.",
+				shouldRequest = true,
+			},
+		},
+
+		run = function(context, players: { Player })
+			for _, player in players do
+				if player.Character then
+					player.Character:SetAttribute("_KSeizure", nil)
+				end
+			end
+		end,
+	},
+	{
 		name = "infect",
 		aliases = { "zombie" },
 		description = "Infects of one or more player(s), starting a zombie outbreak!",
