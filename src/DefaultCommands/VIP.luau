@@ -1341,7 +1341,7 @@ return {
 				[Enum.Material.Water] = true,
 			}
 
-			local function updatePart(part: BasePart, color: Color3, reflectance: number, material: Enum.Material)
+			local function updatePart(part: BasePart, color: Color3?, reflectance: number?, material: Enum.Material?)
 				local apply = color or reflectance or material
 
 				if part:IsA("MeshPart") and material ~= Enum.Material.ForceField then
@@ -1373,7 +1373,7 @@ return {
 
 			return {
 				updatePart = updatePart,
-				update = function(character: Model, color: Color3, reflectance: number, material: Enum.Material)
+				update = function(character: Model, color: Color3?, reflectance: number?, material: Enum.Material?)
 					if deny[material] then
 						return
 					end
@@ -1422,7 +1422,7 @@ return {
 			}
 		end,
 
-		run = function(context, players, color, reflectance, material)
+		run = function(context, players, color: Color3?, reflectance: number?, material: Enum.Material?)
 			for _, player in players do
 				if player.Character and player.Character.PrimaryPart then
 					context.env.update(player.Character, color, reflectance, material)
