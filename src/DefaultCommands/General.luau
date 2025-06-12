@@ -1,7 +1,5 @@
 -- "non-abusive" commands for game staff members
 
-local Players = game:GetService("Players")
-
 local playingSound = nil
 
 return {
@@ -76,7 +74,7 @@ return {
 			if not ok then
 				return result
 			end
-			for _, player in Players:GetPlayers() do
+			for _, player in context._K.Service.Players:GetPlayers() do
 				task.spawn(function()
 					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
 					context.env.remote:FireClient(player, `<b>{context.fromPlayer}:</b> {msg}`)
@@ -132,7 +130,7 @@ return {
 			if not ok then
 				return result
 			end
-			for _, player in Players:GetPlayers() do
+			for _, player in context._K.Service.Players:GetPlayers() do
 				task.spawn(function()
 					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
 					context._K.Remote.Announce:FireClient(player, {
@@ -210,7 +208,7 @@ return {
 			if not ok then
 				return result
 			end
-			for _, player in Players:GetPlayers() do
+			for _, player in context._K.Service.Players:GetPlayers() do
 				task.spawn(function()
 					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
 					context.env.remote:FireClient(player, context.from, msg)
