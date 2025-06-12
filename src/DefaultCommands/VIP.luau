@@ -26,13 +26,6 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				if player.Character then
-					local crmCommand = context._K.Registry.commands.crm
-					if crmCommand then
-						crmCommand.env.update(player.Character)
-					end
-				end
-
 				local existing = player.Character and player.Character:FindFirstChild("_KCape")
 				if existing then
 					existing:Destroy()
@@ -55,7 +48,14 @@ return {
 					end
 				end
 
-				Util.Humanoid.resetDescription(player)
+				task.spawn(Util.Humanoid.resetDescription, player)
+
+				if player.Character then
+					local crmCommand = context._K.Registry.commands.crm
+					if crmCommand then
+						task.spawn(crmCommand.env.update, player.Character)
+					end
+				end
 
 				local infectedCommand = context._K.Registry.commands.infect
 				if infectedCommand then
