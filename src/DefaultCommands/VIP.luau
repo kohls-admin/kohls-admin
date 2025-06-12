@@ -580,7 +580,7 @@ return {
 				trail.LightInfluence = 0
 				trail.WidthScale = NumberSequence.new(1, 0)
 				trail.Transparency = NumberSequence.new(0, 1)
-				trail.Color = color or trail.Color
+				trail.Color = if color then ColorSequence.new(color) else trail.Color
 				trail.Parent = torso
 			end
 		end,
@@ -600,7 +600,7 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				local torso = player.Character
-					and (player.Character:FindFirstChild("Torso") or player.Characer:FindFirstChild("UpperTorso"))
+					and (player.Character:FindFirstChild("Torso") or player.Character:FindFirstChild("UpperTorso"))
 				if not torso then
 					continue
 				end
