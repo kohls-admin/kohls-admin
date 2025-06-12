@@ -234,6 +234,33 @@ return {
 		end,
 	},
 	{
+		name = "crash",
+		description = "Crashes one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to crash.",
+				ignoreSelf = true,
+				lowerRank = true,
+			},
+		},
+		envClient = function(_K)
+			_K.Remote.Crash.OnClientEvent:Connect(function()
+				repeat
+				until nil
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.Crash }
+		end,
+		run = function(context, players, reason: string?)
+			for _, player in players do
+				context.env.remote:FireClient(player)
+			end
+		end,
+	},
+	{
 		name = "mute",
 		aliases = { "shh", "silence" },
 		description = "Mutes one or more player(s).",
