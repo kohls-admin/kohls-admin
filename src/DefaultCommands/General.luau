@@ -1020,6 +1020,17 @@ return {
 			})
 		end,
 	},
+	{
+		name = "playercount",
+		aliases = { "plrcount", "countplayers", "countplrs" },
+		description = "Counts the number of players in-game.",
+
+		runClient = function(context)
+			context._K.Notify({
+				Text = `<b>Player Count:</b> {#context._K.Service.Players:GetPlayers()}`,
+			})
+		end,
+	},
 
 	{
 		name = "play",
