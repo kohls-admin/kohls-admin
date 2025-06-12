@@ -2292,51 +2292,61 @@ return {
 			},
 		},
 
+		env = function(_K)
+			return {
+				apply = function(player: Player, rigType: Enum.HumanoidRigType)
+					local character = player.Character
+					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+					local description = humanoid and humanoid:FindFirstChildOfClass("HumanoidDescription")
+					if not description then
+						return
+					end
+
+					-- TODO: save rig type as an attribute for application on spawn
+
+					local rig = _K.Service.Players:CreateHumanoidModelFromDescription(description, rigType)
+					rig:PivotTo(character:GetPivot())
+					rig.Name = character.Name
+					local rigHumanoid = rig:FindFirstChildOfClass("Humanoid")
+					if rigHumanoid then
+						local properties = {
+							"CameraOffset",
+							"DisplayName",
+							"HealthDisplayDistance",
+							"NameDisplayDistance",
+							"UseJumpPower",
+							"JumpPower",
+							"WalkSpeed",
+							"MaxSlopeAngle",
+							"Health",
+							"MaxHealth",
+						}
+						for _, property in properties do
+							rigHumanoid[property] = humanoid[property]
+						end
+					end
+
+					local StarterCharacterScripts = _K.Service.StarterPlayer:FindFirstChild("StarterCharacterScripts")
+
+					if StarterCharacterScripts then
+						for _, child in StarterCharacterScripts:GetChildren() do
+							child:Clone().Parent = rig
+						end
+					end
+
+					player.Character = rig
+					_K.VIP.EffectHandler(rig)
+					rig.Parent = workspace
+					_K.Remote.Refresh:FireClient(player)
+
+					return rig
+				end,
+			}
+		end,
 		run = function(context, players)
 			local rigType = if context.alias == "r6" then Enum.HumanoidRigType.R6 else Enum.HumanoidRigType.R15
 			for _, player in players do
-				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-				local description = humanoid and humanoid:FindFirstChildOfClass("HumanoidDescription")
-				if not description then
-					return
-				end
-
-				-- TODO: save rig type as an attribute for application on spawn
-
-				local rig = context._K.Service.Players:CreateHumanoidModelFromDescription(description, rigType)
-				rig:PivotTo(player.Character:GetPivot())
-				rig.Name = player.Character.Name
-				local rigHumanoid = rig:FindFirstChildOfClass("Humanoid")
-				if rigHumanoid then
-					local properties = {
-						"CameraOffset",
-						"DisplayName",
-						"HealthDisplayDistance",
-						"NameDisplayDistance",
-						"UseJumpPower",
-						"JumpPower",
-						"WalkSpeed",
-						"MaxSlopeAngle",
-						"Health",
-						"MaxHealth",
-					}
-					for _, property in properties do
-						rigHumanoid[property] = humanoid[property]
-					end
-				end
-
-				local StarterCharacterScripts =
-					context._K.Service.StarterPlayer:FindFirstChild("StarterCharacterScripts")
-
-				if StarterCharacterScripts then
-					for _, child in StarterCharacterScripts:GetChildren() do
-						child:Clone().Parent = rig
-					end
-				end
-
-				player.Character = rig
-				context._K.VIP.EffectHandler(rig)
-				rig.Parent = workspace
+				context.env.apply(player, rigType)
 			end
 		end,
 	},
