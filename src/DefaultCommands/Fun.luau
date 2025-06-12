@@ -1622,12 +1622,13 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				local character = player.Character
+				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 				if not humanoid or (context.undo and not humanoid:GetAttribute("_KSlim")) then
 					continue
 				end
 				humanoid:SetAttribute("_KSlim", not context.undo)
-				for _, object in player.Character:GetChildren() do
+				for _, object in character:GetChildren() do
 					if object:IsA("BasePart") then
 						context.env.slim(object, "Size", context.undo)
 					elseif object:IsA("Accessory") then
