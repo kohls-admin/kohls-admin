@@ -31,6 +31,13 @@ return {
 					existing:Destroy()
 				end
 
+				if player.Character:GetAttribute("_KCreeper") then
+					local uncreeperCommand = context._K.Registry.commands.uncreeper
+					if uncreeperCommand then
+						uncreeperCommand.env.apply(player)
+					end
+				end
+
 				local dogSeat = player.Character:FindFirstChild("_KDogSeat")
 				if dogSeat then
 					dogSeat:Destroy()

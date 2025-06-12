@@ -40,6 +40,146 @@ return {
 		end,
 	},
 	{
+		name = "creeper",
+		description = "Turns one or more player(s) into a creeper? Aww, man...",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to turn into a creeper.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			return {
+				apply = function(player)
+					local character = player.Character
+					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+					if not (humanoid and character.PrimaryPart) or character:GetAttribute("_KCreeper") then
+						return
+					end
+
+					local oldRigType = humanoid.RigType
+					if humanoid.RigType == Enum.HumanoidRigType.R15 then
+						character = _K.Registry.commands.r6.env.apply(player, Enum.HumanoidRigType.R6)
+					end
+
+					character:SetAttribute("_KCreeper", oldRigType)
+
+					local torso = character:FindFirstChild("Torso")
+					if not torso then
+						return
+					end
+
+					torso.Transparency = 0
+
+					local neck = torso:FindFirstChild("Neck")
+					local rightShoulder = torso:FindFirstChild("Right Shoulder")
+					local leftShoulder = torso:FindFirstChild("Left Shoulder")
+					local rightHip = torso:FindFirstChild("Right Hip")
+					local leftHip = torso:FindFirstChild("Left Hip")
+
+					if neck then
+						neck.C0 = CFrame.new(0, 1, 0) * CFrame.Angles(math.rad(90), math.rad(180), 0)
+					end
+					if rightShoulder then
+						rightShoulder.C0 = CFrame.new(0, -1.5, -0.5) * CFrame.Angles(0, math.pi / 2, 0)
+					end
+					if leftShoulder then
+						leftShoulder.C0 = CFrame.new(0, -1.5, -0.5) * CFrame.Angles(0, -math.pi / 2, 0)
+					end
+					if rightHip then
+						rightHip.C0 = CFrame.new(0, -1, 0.5) * CFrame.Angles(0, math.pi / 2, 0)
+					end
+					if leftHip then
+						leftHip.C0 = CFrame.new(0, -1, 0.5) * CFrame.Angles(0, -math.pi / 2, 0)
+					end
+
+					_K.Registry.commands.crm.env.update(
+						character,
+						Color3.new(0, 0.5, 0),
+						0,
+						Enum.Material.SmoothPlastic
+					)
+				end,
+			}
+		end,
+
+		run = function(context, players: { Player })
+			for _, player in players do
+				context.env.apply(player)
+			end
+		end,
+	},
+	{
+		name = "uncreeper",
+		description = "Reverts one or more player(s) from a creeper",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to revert from a creeper.",
+				shouldRequest = true,
+			},
+		},
+		env = function(_K)
+			return {
+				apply = function(player)
+					local character = player.Character
+					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+					local oldRigType = character and character:GetAttribute("_KCreeper")
+					if not (humanoid and character.PrimaryPart) or not oldRigType then
+						return
+					end
+
+					character:SetAttribute("_KCreeper", nil)
+
+					if oldRigType == Enum.HumanoidRigType.R15 then
+						_K.Registry.commands.r15.env.apply(player, Enum.HumanoidRigType.R15)
+						return
+					end
+
+					local torso = character:FindFirstChild("Torso")
+					if not torso then
+						return
+					end
+
+					torso.Transparency = 0
+
+					local neck = torso:FindFirstChild("Neck")
+					local rightShoulder = torso:FindFirstChild("Right Shoulder")
+					local leftShoulder = torso:FindFirstChild("Left Shoulder")
+					local rightHip = torso:FindFirstChild("Right Hip")
+					local leftHip = torso:FindFirstChild("Left Hip")
+
+					if neck then
+						neck.C0 = CFrame.new(0, 1, 0) * CFrame.Angles(math.rad(90), math.rad(180), 0)
+					end
+					if rightShoulder then
+						rightShoulder.C0 = CFrame.new(1, 0.5, 0) * CFrame.Angles(0, math.rad(90), 0)
+					end
+					if leftShoulder then
+						leftShoulder.C0 = CFrame.new(-1, 0.5, 0) * CFrame.Angles(0, math.rad(-90), 0)
+					end
+					if rightHip then
+						rightHip.C0 = CFrame.new(1, -1, 0) * CFrame.Angles(0, math.rad(90), 0)
+					end
+					if leftHip then
+						leftHip.C0 = CFrame.new(-1, -1, 0) * CFrame.Angles(0, math.rad(-90), 0)
+					end
+
+					_K.Registry.commands.crm.env.update(character)
+				end,
+			}
+		end,
+
+		run = function(context, players: { Player })
+			for _, player in players do
+				context.env.apply(player)
+			end
+		end,
+	},
+	{
 		name = "dog",
 		aliases = { "🐶", "🐎", "horse" },
 		description = "Turns one or more player(s) into dog",
