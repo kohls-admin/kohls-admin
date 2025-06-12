@@ -1382,6 +1382,16 @@ return {
 						return
 					end
 
+					local bodyColors = character:FindFirstChildOfClass("BodyColors")
+					if bodyColors then
+						for _, key in { "Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg" } do
+							if not bodyColors:GetAttribute("_KColor" .. key) then
+								bodyColors:SetAttribute("_KColor" .. key, bodyColors[key .. "Color3"])
+							end
+							bodyColors[key .. "Color3"] = color or bodyColors:GetAttribute("_KColor" .. key)
+						end
+					end
+
 					local apply = color or reflectance or material
 
 					if material ~= Enum.Material.ForceField then
