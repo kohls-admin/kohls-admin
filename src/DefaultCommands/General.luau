@@ -472,8 +472,9 @@ return {
 			})
 
 			-- wait for timeout or all votes to be submitted
-			task.delay(30, coroutine.resume, tasks.running)
+			task.delay(30, coroutine.resume, tasks._running)
 			tasks:wait()
+			tasks._waiting = false
 
 			local validColor = context._K.Data.settings.themeValid:ToHex()
 			local invalidColor = context._K.Data.settings.themeInvalid:ToHex()
