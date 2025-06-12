@@ -1459,6 +1459,30 @@ return {
 		end,
 	},
 	{
+		name = "shiny",
+		description = "Shine like a diamond!",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to make shiny.",
+			},
+		},
+
+		run = function(context, players: { Player })
+			for index: number, player: Player in players do
+				if player.Character and player.Character.PrimaryPart then
+					context._K.Registry.commands.crm.env.update(
+						player.Character,
+						Color3.new(1, 1, 1),
+						1,
+						Enum.Material.SmoothPlastic
+					)
+				end
+			end
+		end,
+	},
+	{
 		name = "silverify",
 		aliases = { "silver", "metalify", "metal" },
 		description = "Shine bright as a silver statue!",
