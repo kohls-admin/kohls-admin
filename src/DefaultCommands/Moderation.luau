@@ -764,7 +764,7 @@ return {
 				for _, source in sources do
 					for _, tool in tools do
 						local existing = source:FindFirstChild(tool.Name)
-						if existing and existing:IsA("Tool") or existing:IsA("Hopperbin") then
+						if existing and (existing:IsA("Tool") or existing:IsA("Hopperbin")) then
 							task.spawn(game.Destroy, existing)
 						end
 					end
