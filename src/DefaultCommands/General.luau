@@ -1021,10 +1021,33 @@ return {
 		end,
 	},
 	{
+		name = "grouprank",
+		aliases = { "grouprole" },
+		description = "Gets a player's rank and role in a group.",
+		args = {
+			{
+				type = "player",
+				name = "Player",
+				description = "The player to check.",
+			},
+			{
+				type = "integer",
+				name = "GroupId",
+				description = "The group to check against.",
+			},
+		},
+
+		runClient = function(context, player: Player, groupId: number)
+			context._K.Notify({
+				From = player.UserId,
+				Text = `<b>Group Rank:</b> [{player:GetRankInGroup(groupId)}] {player:GetRoleInGroup(groupId)}`,
+			})
+		end,
+	},
+	{
 		name = "playercount",
 		aliases = { "plrcount", "countplayers", "countplrs" },
 		description = "Counts the number of players in-game.",
-
 		runClient = function(context)
 			context._K.Notify({
 				Text = `<b>Player Count:</b> {#context._K.Service.Players:GetPlayers()}`,
