@@ -406,7 +406,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		end
 	end)
 
-	if settings.commands and #settings.commands > 0 then
+	if settings.commands then
 		for role, commands in settings.commands do
 			local roleData = _K.Data.roles[role]
 			if roleData then
