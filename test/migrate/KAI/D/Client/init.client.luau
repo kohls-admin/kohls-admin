@@ -1145,7 +1145,7 @@ function ClientEvent(a, b)
 		S.Parent.Position = UDim2.new(0, 0, 0, 282)
 		S.Changed:connect(function(p)
 			if p == "Text" then
-				SetList(f.Search(a, S.Text, function(a, b, c)
+				SetList(f.Search(list, S.Text, function(a, b, c)
 					for i, v in a[1] do
 						if v:lower():find(b:lower()) then
 							c = true
@@ -1155,7 +1155,7 @@ function ClientEvent(a, b)
 				end))
 			end
 		end)
-		SetList(a)
+		SetList(list)
 		f.Drag(CL, 300, 300)
 		f.Show(CL)
 	elseif a == "KAdmins" then
