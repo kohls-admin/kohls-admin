@@ -71,11 +71,13 @@ export type Platform = "Console" | "Mobile" | "PC" | "VR"
 --- @prop Touch boolean
 UI.Touch = UserInputService.TouchEnabled
 
+UI.IsConsoleScreen = GuiService:IsTenFootInterface()
+
 --- @within UI
 --- @prop Platform Platform
 UI.Platform = if UserInputService.VREnabled
 	then "VR"
-	elseif GuiService:IsTenFootInterface() then "Console"
+	elseif UI.IsConsoleScreen then "Console"
 	elseif UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then "PC"
 	else "Mobile"
 
@@ -111,7 +113,7 @@ UI.Nil = newproxy()
 --- @prop TopbarInset State<Rect>
 UI.TopbarInset = state(GuiService, "TopbarInset")
 UI.TopbarPadding = Flux.compute(function(use)
-	return UDim.new(0, if GuiService:IsTenFootInterface() then 10 else use(UI.TopbarInset).Height - 46)
+	return UDim.new(0, if UI.IsConsoleScreen then 10 else use(UI.TopbarInset).Height - 46)
 end)
 
 --- @within UI
@@ -158,9 +160,11 @@ UI.LayerTopInset = UI.new "Frame" {
 	BackgroundTransparency = 1,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.fromScale(0, 1),
-	Size = UI.compute(function(use)
-		return UDim2.new(1, 0, 1, -use(UI.TopbarInset).Height)
-	end),
+	Size = if UI.IsConsoleScreen
+		then UDim2.new(1, 0, 1, -54)
+		else UI.compute(function(use)
+			return UDim2.new(1, 0, 1, -use(UI.TopbarInset).Height)
+		end),
 }
 
 --- @within UI
@@ -182,7 +186,8 @@ UI.LayerTopbar = Flux.new "ScreenGui" {
 UI.TopbarFrame = UI.new "Frame" {
 	Parent = UI.LayerTopbar,
 	BackgroundTransparency = 1,
-	Size = UDim2.new(1, 0, 1, 0),
+	Position = UDim2.new(0, 0, 0, if UI.IsConsoleScreen then 4 else 0),
+	Size = UDim2.new(1, 0, 1, if UI.IsConsoleScreen then 50 else 0),
 
 	UI.new "UIListLayout" {
 		FillDirection = Enum.FillDirection.Horizontal,
@@ -193,12 +198,12 @@ UI.TopbarFrame = UI.new "Frame" {
 	UI.new "UIPadding" {
 		PaddingLeft = UI.TopbarPadding,
 		PaddingRight = UI.TopbarPadding,
-		PaddingTop = Flux.compute(function(use)
-			return UDim.new(0, use(UI.TopbarPadding).Offset)
-		end),
-		PaddingBottom = Flux.compute(function(use)
-			return UDim.new(0, 2)
-		end),
+		PaddingTop = if UI.IsConsoleScreen
+			then UDim.new(0, 6)
+			else Flux.compute(function(use)
+				return UDim.new(0, use(UI.TopbarPadding).Offset)
+			end),
+		PaddingBottom = UDim.new(0, if UI.IsConsoleScreen then 0 else 2),
 	},
 }
 
