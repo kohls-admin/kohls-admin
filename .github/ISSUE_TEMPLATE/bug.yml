@@ -27,14 +27,14 @@ body:
     id: ver
     attributes:
       label: Version
-      description: Include the version of Kohl's Admin from the `;about` or `;version` commands.
+      description: Include the version of Kohl's Admin shown in the dashboard title or by running `;version` command.
       placeholder: ex. 0.1.13
 
   - type: textarea
     id: desc
     attributes:
       label: Description
-      description: Describe what went wrong in detail. What do you expect to happen instead?
+      description: Describe in detail what went wrong and what you expected to happen instead.
     validations:
       required: true
 
