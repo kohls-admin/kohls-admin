@@ -279,7 +279,9 @@ function Input.new(definition)
 
 	new._input:GetPropertyChangedSignal("Text"):Connect(function()
 		local text = new._input.Text
-		new.DisplayText:set(if new.MaxChars._value ~= math.huge then string.sub(text, 1, new.MaxChars._value) else text)
+		text = if new.MaxChars._value ~= math.huge then string.sub(text, 1, new.MaxChars._value) else text
+		new._input.Text = text
+		new.DisplayText:set(text)
 	end)
 
 	UI.edit(new._input, {
