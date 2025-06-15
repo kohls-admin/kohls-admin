@@ -86,6 +86,7 @@ function Input.new(definition)
 		Placeholder = "",
 		Value = "",
 		Selected = "",
+		Fill = true,
 		Font = UI.Theme.Font,
 		FontSize = UI.Theme.FontSize,
 		TextColor3 = UI.Theme.PrimaryText,
@@ -108,8 +109,9 @@ function Input.new(definition)
 	new.Selected._value = UI.peek(new.Value)
 
 	local displayLabel = UI.new "TextLabel" {
+		AutomaticSize = Enum.AutomaticSize.X,
 		AutoLocalize = false,
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = UDim2.new(0, 0, 1, 0),
 		BackgroundTransparency = 1,
 		TextSize = new.FontSize,
 		TextColor3 = new.TextColor3,
@@ -137,7 +139,7 @@ function Input.new(definition)
 		AutomaticSize = Enum.AutomaticSize.X,
 		AutoLocalize = false,
 		ClearTextOnFocus = false,
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = UDim2.new(0, 0, 1, 0),
 		BackgroundTransparency = 1,
 		TextTransparency = 1,
 		TextSize = new.FontSize,
@@ -264,10 +266,11 @@ function Input.new(definition)
 
 	local inputMask = UI.new "Frame" {
 		Name = "InputMask",
+		AutomaticSize = Enum.AutomaticSize.X,
 		ClipsDescendants = true,
 		BackgroundTransparency = 1,
 		Position = UDim2.new(0, 0, 0, 0),
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = UDim2.new(0, 0, 1, 0),
 
 		new._input,
 		selection,
@@ -308,6 +311,9 @@ function Input.new(definition)
 
 	new._instance = UI.new "Frame" {
 		Name = "Input",
+		AutomaticSize = UI.compute(function(use)
+			return if use(new.Fill) then Enum.AutomaticSize.None else Enum.AutomaticSize.X
+		end),
 		ClipsDescendants = true,
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyOverlay,
@@ -339,9 +345,10 @@ function Input.new(definition)
 
 		UI.new "Frame" {
 			LayoutOrder = 2,
+			AutomaticSize = Enum.AutomaticSize.X,
 			Name = "InputFrame",
 			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 1, 0),
+			Size = UDim2.new(0, 0, 1, 0),
 
 			cursor,
 			inputMask,

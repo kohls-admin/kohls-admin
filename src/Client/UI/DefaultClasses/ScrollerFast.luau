@@ -358,6 +358,7 @@ function ScrollerFast.new(definition)
 		self._input = UI.new "Input" {
 			LayoutOrder = -1,
 			Parent = self._instance,
+			Fill = true,
 			Placeholder = "Search",
 			Icon = UI.Theme.Image.Search,
 			IconProperties = {
