@@ -30,6 +30,7 @@ local Util = {
 	Suggest = require(script:WaitForChild("Suggest")),
 	Table = require(script:WaitForChild("Table")),
 	Tasks = require(script:WaitForChild("Tasks")),
+	UnitTime = require(script:WaitForChild("UnitTime")),
 }
 
 return Util
