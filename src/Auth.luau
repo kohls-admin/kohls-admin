@@ -60,7 +60,7 @@ end
 
 function Auth.banUsers(
 	userIds: { number },
-	reason: string,
+	reason: string?,
 	duration: number?,
 	fromUserId: number?,
 	forceBanAsync: boolean?
