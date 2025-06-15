@@ -177,7 +177,10 @@ function Button.new(definition)
 				end
 				Tween:Create(ripple, UI.Theme.TweenOut._value, { BackgroundTransparency = 1 }):Play()
 			end,
-			MouseEnter = function()
+			MouseEnter = function(x, y)
+				if UI.sinkInput(x, y - UI.TopbarInset._value.Height, new._instance) then
+					return
+				end
 				UI.activateState(hovering, "hover")
 			end,
 			MouseLeave = function()
