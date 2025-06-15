@@ -282,7 +282,7 @@ function Input.new(definition)
 		local text = new._input.Text
 		text = if new.MaxChars._value ~= math.huge then string.sub(text, 1, new.MaxChars._value) else text
 		new._input.Text = text
-		new.DisplayText:set(text)
+		new.Value:set(text)
 	end)
 
 	UI.edit(new._input, {
