@@ -196,7 +196,7 @@ function Bans.new(_K)
 				ban.reason = if ban[2] and _K.Util.String.trim(ban[2]) ~= "" then ban[2] else "No reason."
 				ban.term = if ban[3] and ban[3] ~= 0
 					then (if ban[3] > 0 and ban[3] ~= math.huge then os.date("%y-%m-%d %X", ban[3]) else "Forever")
-					else "Session"
+					else "Server"
 
 				ban.rawTextLeft = `@{ban[1] or "UNKNOWN"} [{ban.userId}]}`
 				ban.rawTextRight = `{ban.term}`

@@ -145,7 +145,7 @@ return {
 			end
 
 			local term = if not duration or duration == 0
-				then "Session"
+				then "Server"
 				elseif duration == -1 then "Permanently"
 				else context._K.Util.ReadableTime(duration)
 
