@@ -46,22 +46,22 @@ export type State<T> = {
 --- @type Stateful<T> T | State<T>
 export type Stateful<T> = T | State<T>
 
---- A type for state or raw values
+--- A type unique keys
 --- @within Flux
---- @type SpecialKey { type: "SpecialKey" }
-export type SpecialKey = {
-	type: "SpecialKey",
+--- @type Symbol { type: "Symbol" }
+export type Symbol = {
+	type: "Symbol",
 }
 
 --- Represents the definition used in [Flux.new] and [Flux.edit]
 --- @within Flux
---- @type SpecialDefinition { [number | string | SpecialKey]: unknown }
+--- @type SpecialDefinition { [number | string | Symbol]: unknown }
 export type SpecialDefinition = { [any]: unknown }
 
 local TweenService = game:GetService("TweenService")
 
 local WEAK_KEYS_METATABLE = { __mode = "k" }
-local ATTRIBUTE_PREFIX = "Attribute:"
+local ATTRIBUTE_PREFIX = "Attribute_"
 
 --- Checks if an object is a Flux state
 --- @within Flux
@@ -168,33 +168,15 @@ local Flux = {
 }
 Flux.__index = Flux
 
-function Flux.specialKey(): SpecialKey
-	return table.freeze({ type = "SpecialKey" })
+function Flux.Symbol(): Symbol
+	return table.freeze({ type = "Symbol" })
 end
 
 --- @within Flux
---- A marker for defining Instance attributes in [Flux.edit]
---- @prop Attribute SpecialKey
+--- A symbol for defining cleanup in [Flux.edit]
+--- @prop Clean Symbol
 --- @readonly
-Flux.Attribute = Flux.specialKey()
-
---- @within Flux
---- A marker for defining Instance children in [Flux.edit]
---- @prop Children SpecialKey
---- @readonly
-Flux.Children = Flux.specialKey()
-
---- @within Flux
---- Markers for defining events in [Flux.edit]
---- @prop Event SpecialKey & { Attribute = SpecialKey, Property = SpecialKey }
---- @readonly
-Flux.Event = table.freeze({ type = "SpecialKey", Attribute = newproxy(), Property = newproxy() })
-
---- @within Flux
---- A marker for defining cleanup in [Flux.edit]
---- @prop Attribute SpecialKey
---- @readonly
-Flux.Clean = Flux.specialKey()
+Flux.Clean = Flux.Symbol()
 
 --- Adds a dependency to the current state
 function Flux:_addDependency<T>(dependency: State<T>)
@@ -361,6 +343,14 @@ local function setupBind(instance: Instance, value: State<any>, property: string
 			end)
 		end)
 	end
+
+	local isAttribute = string.find(property, ATTRIBUTE_PREFIX, 1, true) == 1
+	if isAttribute then
+		value._binds[instance][string.sub(property, #ATTRIBUTE_PREFIX + 1)] = true
+	else
+		table.insert(value._binds[instance], property)
+	end
+
 	-- strong reference
 	if not instanceStateRef[instance] then
 		instanceStateRef[instance] = {
@@ -383,110 +373,70 @@ local function cleanBind(instance: Instance, value: State<any>, property: string
 		return
 	end
 
-	local bind = existing._binds[instance]
-	if string.find(property, ".", 1, true) == 1 then -- attribute
-		bind[string.sub(property, 2)] = nil
+	local binds = existing._binds[instance]
+	local isAttribute = string.find(property, ATTRIBUTE_PREFIX, 1, true) == 1
+	if isAttribute then -- attribute
+		binds[string.sub(property, #ATTRIBUTE_PREFIX + 1)] = nil
 	else -- property
-		local foundIndex = table.find(bind, property)
+		local foundIndex = table.find(binds, property)
 		if foundIndex then
-			table.remove(bind, foundIndex)
+			table.remove(binds, foundIndex)
 		end
 	end
 end
+
+Flux._implicitComputeds = {}
 
 --- Edits an existing Instance with Flux state bindings and other properties
 --- @param definition SpecialDefinition & Instance
 function Flux.edit(instance: Instance, definition): Instance
 	definition = definition :: SpecialDefinition & Instance
+
+	local clean = definition[Flux.Clean] or {}
 	local parent = definition.Parent
+	definition[Flux.Clean] = nil
 	definition.Parent = nil
 
-	local attributes = definition[Flux.Attribute]
-	local children = definition[Flux.Children]
-	local clean = definition[Flux.Clean] or {}
-	local events = definition[Flux.Event]
-	local eventAttributes = definition[Flux.Event.Attribute]
-	local eventProperties = definition[Flux.Event.Property]
-
-	definition[Flux.Attribute] = nil
-	definition[Flux.Children] = nil
-	definition[Flux.Clean] = nil
-	definition[Flux.Event] = nil
-	definition[Flux.Event.Attribute] = nil
-	definition[Flux.Event.Property] = nil
-
-	-- numeric index child definition
-	for index, child in ipairs(definition) do
-		if typeof(child) == "Instance" then
-			child.Parent = instance
-		end
-		definition[index] = nil
-	end
-
 	for property, value in definition do
+		-- numeric index child definition
 		if type(property) == "number" and property == math.floor(property) then
 			if typeof(value) == "Instance" then
 				value.Parent = instance
 			end
-			definition[property] = nil
 			continue
 		end
+
+		local isAttribute = string.find(property, ATTRIBUTE_PREFIX, 1, true) == 1
+		local changed = string.find(property, "_Changed$")
+
+		if type(value) == "function" then
+			if isAttribute and changed then
+				local attribute = string.sub(property, #ATTRIBUTE_PREFIX + 1, changed - 1)
+				instance:GetAttributeChangedSignal(attribute):Connect(value)
+				continue
+			end
+			if changed then
+				instance:GetPropertyChangedSignal(string.sub(property, 1, changed - 1)):Connect(value)
+				continue
+			end
+			if typeof(instance[property]) == "RBXScriptSignal" then
+				(instance[property] :: RBXScriptSignal):Connect(value)
+				continue
+			end
+			local computed = Flux._implicitComputeds[value] or Flux.compute(value)
+			Flux._implicitComputeds[value] = computed
+			value = computed
+		end
+
 		cleanBind(instance, value, property)
 		if isState(value) then
 			setupBind(instance, value, property)
-			table.insert(value._binds[instance], property)
 		end
-		setProperty(instance, property, peek(value))
-	end
 
-	if attributes then
-		if typeof(attributes) ~= "table" then
-			error("Invalid Flux.Attribute definition")
-		end
-		for attribute, value in attributes do
-			cleanBind(instance, value, "." .. attribute)
-			if isState(value) then
-				setupBind(instance, value, "." .. attribute)
-				value._binds[instance][attribute] = true
-			end
-			instance:SetAttribute(attribute, peek(value))
-		end
-	end
-
-	if children then
-		if typeof(children) ~= "table" then
-			error("Invalid Flux.Children definition")
-		end
-		for name, child in children do
-			child.Name = name or child.Name
-			child.Parent = instance
-		end
-	end
-
-	if events then
-		if typeof(events) ~= "table" then
-			error("Invalid Flux.Event definition")
-		end
-		for event, callback in events do
-			(instance[event] :: RBXScriptSignal):Connect(callback)
-		end
-	end
-
-	if eventAttributes then
-		if typeof(eventAttributes) ~= "table" then
-			error("Invalid Flux.Event.Attribute definition")
-		end
-		for attribute, callback in eventAttributes do
-			instance:GetAttributeChangedSignal(attribute):Connect(callback)
-		end
-	end
-
-	if eventProperties then
-		if typeof(eventProperties) ~= "table" then
-			error("Invalid Flux.Event.Property definition")
-		end
-		for property, callback in eventProperties do
-			instance:GetPropertyChangedSignal(property):Connect(callback)
+		if isAttribute then
+			instance:SetAttribute(string.sub(property, #ATTRIBUTE_PREFIX + 1), peek(value))
+		else
+			setProperty(instance, property, peek(value))
 		end
 	end
 
