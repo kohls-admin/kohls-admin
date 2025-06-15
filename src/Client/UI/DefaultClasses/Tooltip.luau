@@ -15,7 +15,6 @@ function Tooltip.new(definition)
 
 	local hoverStart
 	local hovering = UI.state(false)
-	local parentState = UI.state(nil)
 	local positionState = UI.state(Vector2.zero)
 	local sizeState = UI.state(Vector2.zero)
 	local tipSizeState = UI.state(Vector2.zero)
@@ -85,6 +84,7 @@ function Tooltip.new(definition)
 		},
 	}
 
+	local parent
 	local hoverConnections = {}
 	local function hoverEnter()
 		UI.activateState(hovering, "hover")
@@ -100,26 +100,25 @@ function Tooltip.new(definition)
 			end),
 			hovering:hook(hover),
 			new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
-				local parent = new._instance.Parent
-				if parent and parent ~= UI.LayerTop then
-					if parentState._value then
+				local newParent = new._instance.Parent
+				if newParent and newParent ~= UI.LayerTop then
+					if parent then
 						for _, v in hoverConnections do
 							v:Disconnect()
 						end
 					end
 
+					parent = newParent
 					table.insert(hoverConnections, parent.MouseEnter:Connect(hoverEnter))
 					table.insert(hoverConnections, parent.MouseLeave:Connect(hoverLeave))
 					table.insert(hoverConnections, parent.SelectionGained:Connect(hoverEnter))
 					table.insert(hoverConnections, parent.SelectionLost:Connect(hoverLeave))
-					parentState:set(parent)
 					positionState:bindToProperty(parent, "AbsolutePosition")
 					sizeState:bindToProperty(parent, "AbsoluteSize")
 					task.wait()
 					new._instance.Parent = UI.LayerTop
 				end
 			end),
-			parentState,
 			positionState,
 			sizeState,
 			hovering,
