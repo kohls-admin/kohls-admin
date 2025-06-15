@@ -516,4 +516,12 @@ function Auth.targetUserArgument(arg, userId: number, value: Player | number | s
 	end
 end
 
+if Util.Service.Run:IsServer() then
+	Remote.Ban.OnServerEvent:Connect(function(player, userId, reason, duration)
+		if Auth.hasCommand(player.UserId, "ban") then
+			Auth.banUsers({ userId }, reason, duration, player.UserId)
+		end
+	end)
+end
+
 return Auth

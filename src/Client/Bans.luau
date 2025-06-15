@@ -5,7 +5,7 @@ function Bans.new(_K)
 	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
 
-	local unbanDialog
+	local newBanDialog, unbanDialog
 	unbanDialog = UI.new "Dialog" {
 		LayoutOrder = 9,
 		BackgroundTransparency = 0.875,
@@ -33,6 +33,58 @@ function Bans.new(_K)
 	}
 	unbanDialog._content:Destroy()
 
+	local inputSize = function(use)
+		local size = use(UI.Theme.FontSize)
+		local padding = use(UI.Theme.Padding).Offset
+		return UDim2.fromOffset(0, size + padding)
+	end
+
+	local banType = UI.state("Server")
+	local banTypes = UI.state({ "Server", "Timed" })
+	local banTarget = UI.state()
+	local banReason = nil
+	local banDuration = 1
+	local banDurationUnit = UI.new "Select" {
+		AutomaticSize = Enum.AutomaticSize.X,
+		Choice = "Hour",
+		Choices = { "Hour", "Day", "Week", "Month", "Year" },
+	}
+
+	local banTargetInput = UI.new "Input" {
+		AutomaticSize = Enum.AutomaticSize.X,
+		Font = UI.Theme.FontMono,
+		FontSize = UI.Theme.FontSize,
+		MaxChars = 20,
+		Placeholder = "UserId or Username",
+		Size = inputSize,
+		Value = "",
+		[UI.Hook] = {
+			Selected = function(value)
+				if tonumber(value) then
+					banTarget:set(tonumber(value))
+				else
+					local ok, result = pcall(_K.Service.Players.GetUserIdFromNameAsync, _K.Service.Players, value)
+					banTarget:set(ok and result)
+				end
+			end,
+		},
+	}
+
+	local banReasonInput = UI.new "Input" {
+		AutomaticSize = Enum.AutomaticSize.X,
+		Font = UI.Theme.FontMono,
+		FontSize = UI.Theme.FontSize,
+		MaxChars = 20,
+		Placeholder = "No reason.",
+		Size = inputSize,
+		Value = "",
+		[UI.Hook] = {
+			Selected = function(value)
+				banReason = value ~= "" and value
+			end,
+		},
+	}
+
 	local function createItem(self)
 		local tooltip = UI.new "Tooltip" {
 			Font = UI.Theme.FontMono,
@@ -42,8 +94,33 @@ function Bans.new(_K)
 
 		local itemRef = {
 			userId = 0,
+			reason = nil,
+			term = nil,
 			name = "",
 			tipText = "",
+		}
+
+		local editBanButton = UI.new "Button" {
+			LayoutOrder = 9,
+			BackgroundTransparency = 1,
+			-- HoverTransparency = 0,
+			Size = UDim2.new(1, 0, 1, 0),
+			SizeConstraint = Enum.SizeConstraint.RelativeYY,
+			Icon = UI.Theme.Image.Edit,
+			IconProperties = {
+				ImageColor3 = UI.Theme.PrimaryText,
+				Size = UDim2.fromScale(0.625, 0.625),
+			},
+			Text = "",
+			Activated = function()
+				banType:set(if itemRef.term == "Server" or itemRef.term == "Forever" then itemRef.term else "Timed")
+				banTarget:set(itemRef.userId)
+				banTargetInput.Value:set(itemRef.userId)
+				banReason = itemRef.reason
+				banReasonInput.Value:set(itemRef.reason or "")
+				newBanDialog.Title:set("Edit Ban")
+				newBanDialog.Visible:set(true)
+			end,
 		}
 
 		local unbanButton = UI.new "Button" {
@@ -62,7 +139,7 @@ function Bans.new(_K)
 			Activated = function()
 				unbanDialog.userId = itemRef.userId
 				unbanDialog.ActionText:set(`Unban {itemRef.name} [{itemRef.userId}]?`)
-				unbanDialog._instance.Visible = true
+				unbanDialog.Visible:set(true)
 			end,
 		}
 
@@ -132,6 +209,7 @@ function Bans.new(_K)
 				UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
 			},
 
+			editBanButton,
 			unbanButton,
 			tooltip,
 		}
@@ -156,6 +234,8 @@ function Bans.new(_K)
 			itemData.name = ban[1]
 			itemData.tipText = ban.tipText
 			itemData.userId = ban.userId
+			itemData.reason = ban.reason
+			itemData.term = ban.term
 		end
 	end
 
@@ -254,6 +334,165 @@ function Bans.new(_K)
 	end
 
 	task.defer(scroller.filter, scroller, filterTest)
+
+	local function updateAuth()
+		if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "banasync") then
+			banType:set("Forever")
+			banTypes:set({ "Forever", "Server", "Timed" })
+		else
+			banTypes:set({ "Server", "Timed" })
+		end
+	end
+	_K.Hook.authChanged:Connect(updateAuth)
+	updateAuth()
+
+	newBanDialog = UI.new "Dialog" {
+		Parent = UI.LayerTop,
+		BackgroundTransparency = 0,
+		Title = "New Ban",
+		Visible = false,
+		ExitButton = true,
+		Modal = true,
+		Close = function()
+			newBanDialog.Visible:set(false)
+		end,
+
+		UI.new "UIPadding" {
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+		},
+
+		UI.new "ListItem" {
+			ContentAutomaticSize = false,
+			Text = "Type",
+			UI.new "Select" {
+				Choice = banType,
+				Choices = banTypes,
+				[UI.Hook] = {
+					Selected = function(value)
+						banType:set(value)
+					end,
+				},
+			},
+		},
+
+		UI.new "ListItem" {
+			ContentAutomaticSize = false,
+			Text = "Duration",
+			Visible = function(use)
+				return use(banType) == "Timed"
+			end,
+			UI.new "Input" {
+				AutomaticSize = Enum.AutomaticSize.X,
+				Font = UI.Theme.FontMono,
+				FontSize = UI.Theme.FontSize,
+				MaxChars = 3,
+				NumberOnly = true,
+				NumberRange = NumberRange.new(1, 999),
+				Placeholder = "",
+				Size = inputSize,
+				Value = 1,
+				[UI.Hook] = {
+					Selected = function(value)
+						banDuration = value
+					end,
+				},
+			},
+			banDurationUnit,
+		},
+
+		UI.new "ListItem" {
+			ContentAutomaticSize = true,
+			Text = "User",
+			UI.new "ImageLabel" {
+				BackgroundTransparency = UI.Theme.TransparencyOverlay,
+				BackgroundColor3 = UI.Theme.PrimaryText,
+				Size = inputSize,
+				Image = function(use)
+					return `rbxthumb://type=AvatarHeadShot&id={use(banTarget)}&w=48&h=48`
+				end,
+				UI.new "UIAspectRatioConstraint" {
+					AspectType = Enum.AspectType.ScaleWithParentSize,
+					DominantAxis = Enum.DominantAxis.Height,
+				},
+				UI.new "UICorner" {
+					CornerRadius = UDim.new(1, 0),
+				},
+			},
+			banTargetInput,
+		},
+		UI.new "ListItem" {
+			ContentAutomaticSize = true,
+			Text = "Reason",
+			banReasonInput,
+		},
+
+		UI.new "Button" {
+			Label = "Ban",
+			Activated = function()
+				if banTarget._value then
+					newBanDialog.Visible:set(false)
+				end
+				local duration: number = if banType._value == "Server"
+					then 0
+					elseif banType._value == "Forever" then -1
+					else banDuration * _K.Util.UnitTime(banDurationUnit.Choice._value)
+				_K.Remote.Ban:FireServer(banTarget._value, banReason, duration)
+			end,
+		},
+	}
+
+	local newBanButton = UI.new "Button" {
+		LayoutOrder = 3,
+		ActiveSound = false,
+		Icon = UI.Theme.Image.Add,
+		IconProperties = {
+			ImageColor3 = UI.Theme.PrimaryText,
+			Size = UDim2.fromScale(0.75, 0.75),
+		},
+		Size = UDim2.new(1, 0, 1, 0),
+		SizeConstraint = Enum.SizeConstraint.RelativeYY,
+		UI.new "UIPadding" {
+			PaddingTop = UI.Theme.PaddingHalf,
+			PaddingBottom = UI.Theme.PaddingHalf,
+			PaddingLeft = UI.Theme.PaddingHalf,
+			PaddingRight = UI.Theme.PaddingHalf,
+		},
+
+		Activated = function()
+			banTarget:set(nil)
+			banTargetInput.Value:set("")
+			banReason = nil
+			banReasonInput.Value:set("")
+			newBanDialog.Title:set("New Ban")
+			newBanDialog.Visible:set(true)
+			UI.Sound.Hover03:Play()
+		end,
+	}
+
+	UI.new "Frame" {
+		Parent = scroller,
+		Name = "FilterInput",
+
+		BackgroundTransparency = 1,
+		Size = UI.compute(function(use)
+			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset)
+		end),
+
+		UI.new "UIListLayout" {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UI.Theme.Padding,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		},
+		UI.edit(scroller._input, {
+			UI.new "UIFlexItem" {
+				FlexMode = Enum.UIFlexMode.Fill,
+			},
+		}),
+		newBanButton,
+	}
 
 	return scroller
 end
