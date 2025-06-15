@@ -303,6 +303,18 @@ function UI.pointInGuiObject(x: number, y: number, object: GuiObject): boolean
 	return x >= position.X and x <= position.X + size.X and y >= position.Y and y <= position.Y + size.Y
 end
 
+function UI.sinkInput(x: number, y: number, object: GuiObject): boolean
+	for _, gui in UI.PlayerGui:GetGuiObjectsAtPosition(x, y) do
+		if gui == object then
+			break
+		end
+		if gui.Active or gui:IsA("GuiButton") then
+			return true
+		end
+	end
+	return false
+end
+
 --- Helper function for defining Flux state defaults
 function UI.makeStatefulDefaults(default: Dict<any>, definition: SpecialDefinition?)
 	for key, value in default do
