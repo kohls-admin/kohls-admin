@@ -86,7 +86,10 @@ function Tooltip.new(definition)
 
 	local parent
 	local hoverConnections = {}
-	local function hoverEnter()
+	local function hoverEnter(x, y)
+		if UI.sinkInput(x, y - UI.TopbarInset._value.Height, parent) then
+			return
+		end
 		UI.activateState(hovering, "hover")
 	end
 	local function hoverLeave()
