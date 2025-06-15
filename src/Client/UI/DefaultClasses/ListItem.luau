@@ -31,7 +31,11 @@ function ListItem.new(definition)
 
 	local layout = UI.new "UIListLayout" {
 		Parent = new._content,
-		HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		HorizontalAlignment = function(use)
+			return if use(new.ContentAutomaticSize)
+				then Enum.HorizontalAlignment.Left
+				else Enum.HorizontalAlignment.Right
+		end,
 		VerticalAlignment = Enum.VerticalAlignment.Center,
 		FillDirection = Enum.FillDirection.Horizontal,
 		SortOrder = Enum.SortOrder.LayoutOrder,
