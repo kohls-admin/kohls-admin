@@ -245,7 +245,10 @@ function Tabs.new(definition)
 					},
 
 					[UI.Event] = {
-						MouseEnter = function()
+						MouseEnter = function(x, y)
+							if UI.sinkInput(x, y - UI.TopbarInset._value.Height, new._instance) then
+								return
+							end
 							UI.activateState(hovering, "hover")
 						end,
 						MouseLeave = function()
