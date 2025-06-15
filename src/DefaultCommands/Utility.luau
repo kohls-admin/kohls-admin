@@ -64,15 +64,13 @@ return {
 					},
 				}
 				_K.UI.edit(window, {
-					[_K.UI.Event.Property] = {
-						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.About,
-								})
-							end
-						end,
-					},
+					Visible_Changed = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs, {
+								_K.client.dashboard.About,
+							})
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -111,15 +109,13 @@ return {
 					},
 				}
 				_K.UI.edit(window, {
-					[_K.UI.Event.Property] = {
-						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.Commands,
-								})
-							end
-						end,
-					},
+					Visible_Changed = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs, {
+								_K.client.dashboard.Commands,
+							})
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -221,21 +217,19 @@ return {
 					},
 				}
 				_K.UI.edit(window, {
-					[_K.UI.Event.Property] = {
-						Visible = function()
-							if not window._instance.Visible then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.Logs,
-								})
-								if env.originalFilter then
-									for logType, value in env.originalFilter do
-										_K.client.dashboard.Logs.logTypeFilter[logType]:set(value)
-									end
-									env.originalFilter = nil
+					Visible_Changed = function()
+						if not window._instance.Visible then
+							_K.UI.edit(_K.client.dashboard.Tabs, {
+								_K.client.dashboard.Logs,
+							})
+							if env.originalFilter then
+								for logType, value in env.originalFilter do
+									_K.client.dashboard.Logs.logTypeFilter[logType]:set(value)
 								end
+								env.originalFilter = nil
 							end
-						end,
-					},
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -292,15 +286,13 @@ return {
 					},
 				}
 				_K.UI.edit(window, {
-					[_K.UI.Event.Property] = {
-						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.Settings,
-								})
-							end
-						end,
-					},
+					Visible_Changed = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs, {
+								_K.client.dashboard.Settings,
+							})
+						end
+					end,
 				})
 				env.window = window
 			end)

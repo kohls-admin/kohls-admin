@@ -46,10 +46,10 @@ function Switch.new(definition)
 		Position = UDim2.new(1, 0, 0, 0),
 		Text = "",
 		TextTransparency = 1,
-		Size = UI.compute(function(use)
+		Size = function(use)
 			local height = use(itemHeight)
 			return UDim2.new(0, height * 2, 0, height)
-		end),
+		end,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerDiameter,
@@ -85,19 +85,17 @@ function Switch.new(definition)
 			},
 		},
 
-		[UI.Event] = {
-			Activated = function()
-				local value = not UI.peek(new.Value)
-				new.Selected:set(value, true)
-				new.Value:set(value)
+		Activated = function()
+			local value = not UI.peek(new.Value)
+			new.Selected:set(value, true)
+			new.Value:set(value)
 
-				if value then
-					UI.Sound.Hover03:Play()
-				else
-					UI.Sound.Hover01:Play()
-				end
-			end,
-		},
+			if value then
+				UI.Sound.Hover03:Play()
+			else
+				UI.Sound.Hover01:Play()
+			end
+		end,
 	}
 
 	return setmetatable(new, Switch)

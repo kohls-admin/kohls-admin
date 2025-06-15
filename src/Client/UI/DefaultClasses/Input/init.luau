@@ -118,7 +118,7 @@ function Input.new(definition)
 		Font = new.Font,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Text = UI.compute(function(use)
+		Text = function(use)
 			local display = use(new.DisplayText)
 			local placeholder = use(new.Placeholder)
 			local value = use(new.Value)
@@ -128,10 +128,10 @@ function Input.new(definition)
 			text = string.gsub(string.gsub(text, "\n", " "), "\r", " ")
 
 			return if maxChars ~= math.huge then string.sub(text, 1, maxChars) else text
-		end),
-		TextTransparency = UI.compute(function(use)
+		end,
+		TextTransparency = function(use)
 			return if use(new.Value) == "" and use(new.DisplayText) == "" then 0.5 else 0
-		end),
+		end,
 	}
 	new._displayLabel = displayLabel
 
@@ -151,48 +151,46 @@ function Input.new(definition)
 
 		displayLabel,
 
-		[UI.Event] = {
-			FocusLost = function()
-				local text = new._input.Text
-				local numberOnly = new.NumberOnly._value
-				local integerOnly = new.IntegerOnly._value
+		FocusLost = function()
+			local text = new._input.Text
+			local numberOnly = new.NumberOnly._value
+			local integerOnly = new.IntegerOnly._value
 
-				if text == "" and (numberOnly or integerOnly) then
-					new.Selected:set(new.NumberRange._value.Min, true)
-					new.Value:set(new.NumberRange._value.Min)
+			if text == "" and (numberOnly or integerOnly) then
+				new.Selected:set(new.NumberRange._value.Min, true)
+				new.Value:set(new.NumberRange._value.Min)
+				return
+			end
+
+			if (numberOnly or integerOnly) and text ~= "" then
+				local number = tonumber(text)
+				if not number or (integerOnly and string.find(text, "%D")) then
+					new._input.Text = new.Value._value
 					return
 				end
+				local numberClamped = math.clamp(number, new.NumberRange._value.Min, new.NumberRange._value.Max)
+				text = if number == numberClamped then new._input.Text else numberClamped
+				new._input.Text = text
+				local textLength = #tostring(text)
+				if new._input.CursorPosition - 1 > textLength then
+					new._input.CursorPosition = textLength + 1
+				end
+			end
 
-				if (numberOnly or integerOnly) and text ~= "" then
-					local number = tonumber(text)
-					if not number or (integerOnly and string.find(text, "%D")) then
-						new._input.Text = new.Value._value
-						return
-					end
-					local numberClamped = math.clamp(number, new.NumberRange._value.Min, new.NumberRange._value.Max)
-					text = if number == numberClamped then new._input.Text else numberClamped
-					new._input.Text = text
-					local textLength = #tostring(text)
-					if new._input.CursorPosition - 1 > textLength then
-						new._input.CursorPosition = textLength + 1
-					end
-				end
-
-				if new.MaxChars._value ~= math.huge then
-					text = string.sub(text, 1, new.MaxChars._value)
-					new._input.CursorPosition = math.min(new.MaxChars._value + 1, new._input.CursorPosition)
-					new._input.Text = text
-				end
-				if new.Validate and not new.Validate._value(text) then
-					new._input.Text = if new.MaxChars._value ~= math.huge
-						then string.sub(new.Value._value, 1, new.MaxChars._value)
-						else new.Value._value
-					return
-				end
-				new.Selected:set(text, true)
-				new.Value:set(text)
-			end,
-		},
+			if new.MaxChars._value ~= math.huge then
+				text = string.sub(text, 1, new.MaxChars._value)
+				new._input.CursorPosition = math.min(new.MaxChars._value + 1, new._input.CursorPosition)
+				new._input.Text = text
+			end
+			if new.Validate and not new.Validate._value(text) then
+				new._input.Text = if new.MaxChars._value ~= math.huge
+					then string.sub(new.Value._value, 1, new.MaxChars._value)
+					else new.Value._value
+				return
+			end
+			new.Selected:set(text, true)
+			new.Value:set(text)
+		end,
 	}
 	new._input:AddTag("KeyClackSound")
 
@@ -288,10 +286,10 @@ function Input.new(definition)
 	end)
 
 	UI.edit(new._input, {
-		Position = UI.compute(function(use)
+		Position = function(use)
 			local xOffset = if use(new._bounds).X > use(new._maskSize).X then -use(new._inputOffset) else 0
 			return UDim2.fromOffset(xOffset, 0)
-		end),
+		end,
 	})
 
 	local icon = UI.new "ImageLabel" {
@@ -301,9 +299,9 @@ function Input.new(definition)
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 		Image = new.Icon,
 		ImageColor3 = UI.Theme.Secondary,
-		Visible = UI.compute(function(use)
+		Visible = function(use)
 			return use(new.Icon) ~= ""
-		end),
+		end,
 	}
 	if definition.IconProperties then
 		UI.edit(icon, definition.IconProperties)
@@ -311,15 +309,15 @@ function Input.new(definition)
 
 	new._instance = UI.new "Frame" {
 		Name = "Input",
-		AutomaticSize = UI.compute(function(use)
+		AutomaticSize = function(use)
 			return if use(new.Fill) then Enum.AutomaticSize.None else Enum.AutomaticSize.X
-		end),
+		end,
 		ClipsDescendants = true,
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyOverlay,
-		Size = UI.compute(function(use)
+		Size = function(use)
 			return UDim2.new(1, 0, 0, use(new.FontSize) + use(new.Padding).Offset * 2)
-		end),
+		end,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,

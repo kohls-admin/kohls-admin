@@ -101,9 +101,9 @@ function Logs.new(_K)
 		Visible = false,
 		CreateItem = createItem,
 		RenderItem = renderItem,
-		ItemSize = UI.compute(function(use)
+		ItemSize = function(use)
 			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
-		end),
+		end,
 	}
 
 	local logTypeFilter = {}
@@ -190,27 +190,25 @@ function Logs.new(_K)
 			PaddingRight = UI.Theme.PaddingHalf,
 		},
 
-		[UI.Event] = {
-			Activated = function()
-				UI.toggleState(filterMenu.Visible, "floating")
-				local value = UI.peek(filterMenu.Visible)
-				if value then
-					UI.Sound.Hover03:Play()
-				else
-					UI.Sound.Hover01:Play()
-				end
-			end,
-		},
+		Activated = function()
+			UI.toggleState(filterMenu.Visible, "floating")
+			local value = UI.peek(filterMenu.Visible)
+			if value then
+				UI.Sound.Hover03:Play()
+			else
+				UI.Sound.Hover01:Play()
+			end
+		end,
 	}
 
 	filterMenu = UI.new "Menu" {
 		Adornee = filterButton._instance,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		RightAlign = true,
-		Size = UI.compute(function(use)
+		Size = function(use)
 			local padding = use(UI.Theme.Padding).Offset
 			return UDim2.fromOffset(256 + padding * 3, 0)
-		end),
+		end,
 
 		UI.new "UIPadding" {
 			PaddingTop = UI.Theme.Padding,
@@ -262,16 +260,14 @@ function Logs.new(_K)
 			Label = `<b>{label} ALL</b>`,
 			Size = lineItemSize,
 
-			[UI.Event] = {
-				Activated = function()
-					scroller._filterUpdate = true
-					for index, array in logTypes do
-						local logType = array[1]
-						logTypeFilter[logType]:set(value)
-						scroller:refreshList()
-					end
-				end,
-			},
+			Activated = function()
+				scroller._filterUpdate = true
+				for index, array in logTypes do
+					local logType = array[1]
+					logTypeFilter[logType]:set(value)
+					scroller:refreshList()
+				end
+			end,
 		}
 	end
 
@@ -280,9 +276,9 @@ function Logs.new(_K)
 		Name = "FilterInput",
 
 		BackgroundTransparency = 1,
-		Size = UI.compute(function(use)
+		Size = function(use)
 			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset)
-		end),
+		end,
 
 		UI.new "UIListLayout" {
 			FillDirection = Enum.FillDirection.Horizontal,

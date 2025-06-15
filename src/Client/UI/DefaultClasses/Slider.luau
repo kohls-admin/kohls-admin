@@ -99,9 +99,7 @@ function Slider.new(definition)
 			CornerRadius = UI.Theme.CornerDiameter,
 		},
 
-		[UI.Event] = {
-			InputBegan = inputBegan,
-		},
+		InputBegan = inputBegan,
 	}
 
 	new._instance = UI.new "Frame" {
@@ -109,10 +107,10 @@ function Slider.new(definition)
 		Active = true,
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyOverlay,
-		Size = UI.compute(function(use)
+		Size = function(use)
 			local height = use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
 			return if use(new.Vertical) then UDim2.new(0, height, 1, 0) else UDim2.new(1, 0, 0, height)
-		end),
+		end,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerDiameter,
@@ -156,9 +154,7 @@ function Slider.new(definition)
 			},
 		},
 
-		[UI.Event] = {
-			InputBegan = inputBegan,
-		},
+		InputBegan = inputBegan,
 	}
 
 	return setmetatable(new, Slider)

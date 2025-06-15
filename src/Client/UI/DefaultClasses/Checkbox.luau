@@ -7,7 +7,7 @@ export type Set<T> = UI.Set<T>
 export type Dict<T> = UI.Dict<T>
 export type State<T> = UI.State<T>
 export type Stateful<T> = UI.Stateful<T>
-export type SpecialKey = UI.SpecialKey
+export type Symbol = UI.Symbol
 export type SpecialDefinition = UI.SpecialDefinition
 
 --- A generic function type
@@ -93,19 +93,17 @@ function Checkbox.new(definition: CheckboxDefinition)
 			},
 		},
 
-		[UI.Event] = {
-			Activated = function()
-				local value = not UI.peek(new.Value)
-				new.Selected:set(value, true)
-				new.Value:set(value)
+		Activated = function()
+			local value = not UI.peek(new.Value)
+			new.Selected:set(value, true)
+			new.Value:set(value)
 
-				if value then
-					UI.Sound.Hover03:Play()
-				else
-					UI.Sound.Hover01:Play()
-				end
-			end,
-		},
+			if value then
+				UI.Sound.Hover03:Play()
+			else
+				UI.Sound.Hover01:Play()
+			end
+		end,
 	}
 
 	return setmetatable(new, Checkbox)

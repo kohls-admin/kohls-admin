@@ -38,64 +38,60 @@ function List.new(definition)
 			end)
 		),
 
-		[UI.Children] = {
-			Header = UI.new "TextButton" {
-				AutoLocalize = false,
-				Name = "Header",
-				Active = true,
+		UI.new "TextButton" {
+			AutoLocalize = false,
+			Name = "Header",
+			Active = true,
+			BackgroundTransparency = 1,
+			TextTransparency = 1,
+			Text = "",
+			Size = UDim2.new(1, 0, 0, 24), -- TODO: use fontsize offset
+
+			UI.new "ImageLabel" {
+				Name = "Arrow",
 				BackgroundTransparency = 1,
-				TextTransparency = 1,
-				Text = "",
-				Size = UDim2.new(1, 0, 0, 24), -- TODO: use fontsize offset
+				AnchorPoint = Vector2.new(0, 0.5),
+				Position = UDim2.new(0, 0, 0.5, 0),
+				Size = UDim2.new(0.5, 0, 0.5, 0),
+				Image = UI.Theme.Image.Down,
+				ImageColor3 = UI.Theme.PrimaryText,
+				ImageTransparency = 0.5,
+				Visible = new.Collapsible,
+				Rotation = UI.tween(
+					UI.Theme.TweenOut,
+					UI.compute(function(use)
+						return if use(collapsed) then -90 else 0
+					end)
+				),
 
-				UI.new "ImageLabel" {
-					Name = "Arrow",
-					BackgroundTransparency = 1,
-					AnchorPoint = Vector2.new(0, 0.5),
-					Position = UDim2.new(0, 0, 0.5, 0),
-					Size = UDim2.new(0.5, 0, 0.5, 0),
-					Image = UI.Theme.Image.Down,
-					ImageColor3 = UI.Theme.PrimaryText,
-					ImageTransparency = 0.5,
-					Visible = new.Collapsible,
-					Rotation = UI.tween(
-						UI.Theme.TweenOut,
-						UI.compute(function(use)
-							return if use(collapsed) then -90 else 0
-						end)
-					),
-
-					UI.new "UIAspectRatioConstraint" {},
-				},
-
-				UI.new "TextLabel" {
-					AutoLocalize = false,
-					Name = "Label",
-					BackgroundTransparency = 1,
-					Position = UI.compute(function(use)
-						return UDim2.new(0, if use(new.Collapsible) then 18 else 12, 0, 0)
-					end),
-					Size = UDim2.new(1, -18, 1, 0),
-					FontFace = UI.Theme.FontBold,
-					Text = UI.computeFrom(string.upper, new.Label),
-					TextSize = UI.Theme.FontSize,
-					TextColor3 = UI.Theme.PrimaryText,
-					TextStrokeColor3 = UI.Theme.Primary,
-					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-					TextTransparency = 0.5,
-					TextTruncate = Enum.TextTruncate.SplitWord,
-					TextXAlignment = "Left",
-				},
-
-				[UI.Event] = {
-					Activated = function()
-						if new.Collapsible._value then
-							collapsed:set(not collapsed._value)
-							UI.Sound.Swipe:Play()
-						end
-					end,
-				},
+				UI.new "UIAspectRatioConstraint" {},
 			},
+
+			UI.new "TextLabel" {
+				AutoLocalize = false,
+				Name = "Label",
+				BackgroundTransparency = 1,
+				Position = function(use)
+					return UDim2.new(0, if use(new.Collapsible) then 18 else 12, 0, 0)
+				end,
+				Size = UDim2.new(1, -18, 1, 0),
+				FontFace = UI.Theme.FontBold,
+				Text = UI.computeFrom(string.upper, new.Label),
+				TextSize = UI.Theme.FontSize,
+				TextColor3 = UI.Theme.PrimaryText,
+				TextStrokeColor3 = UI.Theme.Primary,
+				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+				TextTransparency = 0.5,
+				TextTruncate = Enum.TextTruncate.SplitWord,
+				TextXAlignment = "Left",
+			},
+
+			Activated = function()
+				if new.Collapsible._value then
+					collapsed:set(not collapsed._value)
+					UI.Sound.Swipe:Play()
+				end
+			end,
 		},
 	}
 

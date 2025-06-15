@@ -50,14 +50,14 @@ function Commands.new(_K)
 					TextTruncate = Enum.TextTruncate.SplitWord,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Top,
-					Size = UI.compute(function(use)
+					Size = function(use)
 						local size = use(UI.Theme.FontSize)
 						return UDim2.new(1, -size, 0, size)
-					end),
-					Position = UI.compute(function(use)
+					end,
+					Position = function(use)
 						local size = use(UI.Theme.FontSize)
 						return UDim2.new(0, size, 0, size)
-					end),
+					end,
 				},
 
 				tooltip,
@@ -121,9 +121,9 @@ function Commands.new(_K)
 		Enabled = false,
 		FilterInput = true,
 		Visible = false,
-		ItemSize = UI.compute(function(use)
+		ItemSize = function(use)
 			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) * 2)
-		end),
+		end,
 		CreateItem = createItem,
 		RenderItem = renderItem,
 	}

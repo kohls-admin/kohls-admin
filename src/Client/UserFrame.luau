@@ -80,18 +80,18 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			BackgroundColor3 = Color3.fromHex(color),
 			TextColor3 = if UI.getLuminance(Color3.fromHex(color)) > 0.5 then Color3.new() else Color3.new(1, 1, 1),
 			Text = `<b>{string.upper(badge)}</b>`,
-			TextSize = UI.compute(function(use)
+			TextSize = function(use)
 				return use(UI.Theme.FontSizeLarge) - 8
-			end),
+			end,
 			TextXAlignment = "Left",
 			Font = UI.Theme.FontMono,
 			RichText = true,
 
 			AutomaticSize = Enum.AutomaticSize.X,
 			Size = UI.computeFrom(UDim2.fromOffset, 0, UI.Theme.FontSizeLarge),
-			Position = UI.compute(function(use)
+			Position = function(use)
 				return UDim2.fromOffset(use(displaySize).X + 4, 0)
-			end),
+			end,
 
 			UI.new "UICorner" {
 				CornerRadius = UI.Theme.CornerDiameter,
@@ -138,9 +138,9 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
-			Position = UI.compute(function(use)
+			Position = function(use)
 				return UDim2.fromOffset(use(UI.Theme.FontSizeDouble) + 4, 0)
-			end),
+			end,
 
 			UI.new "UIFlexItem" {
 				FlexMode = Enum.UIFlexMode.Shrink,

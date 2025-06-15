@@ -102,51 +102,49 @@ function Tabs.new(definition)
 				PaddingRight = UDim.new(0, 1),
 			},
 
-			[UI.Event] = {
-				-- TODO: Figure out next/previous tab size
-				MouseWheelForward = function()
-					local absoluteStart = new._instance.AbsolutePosition.X
-					local closest, closestChild = math.huge, nil
-					for _, child in tabs:GetChildren() do
-						if child:IsA("GuiObject") then
-							local childStart = child.AbsolutePosition.X
-							if childStart < absoluteStart - 2 and absoluteStart - childStart < closest then
-								closest = math.floor(absoluteStart - childStart)
-								closestChild = child
-							end
+			-- TODO: Figure out next/previous tab size
+			MouseWheelForward = function()
+				local absoluteStart = new._instance.AbsolutePosition.X
+				local closest, closestChild = math.huge, nil
+				for _, child in tabs:GetChildren() do
+					if child:IsA("GuiObject") then
+						local childStart = child.AbsolutePosition.X
+						if childStart < absoluteStart - 2 and absoluteStart - childStart < closest then
+							closest = math.floor(absoluteStart - childStart)
+							closestChild = child
 						end
 					end
-					if closest == math.huge or lastScroll == closestChild then
-						return
-					end
-					lastScroll = closestChild
-					tabOffset:set(math.min(0, -(closestChild.AbsolutePosition.X - tabs.AbsolutePosition.X)))
-				end,
-				MouseWheelBackward = function()
-					local absoluteStart = new._instance.AbsolutePosition.X
-					local closest, closestChild = 9e9, nil
-					for _, child in tabs:GetChildren() do
-						if child:IsA("GuiObject") then
-							local childStart = child.AbsolutePosition.X
-							if childStart > absoluteStart + 2 and childStart - absoluteStart < closest then
-								closest = math.floor(childStart - absoluteStart)
-								closestChild = child
-							end
+				end
+				if closest == math.huge or lastScroll == closestChild then
+					return
+				end
+				lastScroll = closestChild
+				tabOffset:set(math.min(0, -(closestChild.AbsolutePosition.X - tabs.AbsolutePosition.X)))
+			end,
+			MouseWheelBackward = function()
+				local absoluteStart = new._instance.AbsolutePosition.X
+				local closest, closestChild = 9e9, nil
+				for _, child in tabs:GetChildren() do
+					if child:IsA("GuiObject") then
+						local childStart = child.AbsolutePosition.X
+						if childStart > absoluteStart + 2 and childStart - absoluteStart < closest then
+							closest = math.floor(childStart - absoluteStart)
+							closestChild = child
 						end
 					end
-					if closest == math.huge or lastScroll == closestChild then
-						return
-					end
-					local maxOffset = tabList.AbsoluteContentSize.X - tabs.AbsoluteSize.X
+				end
+				if closest == math.huge or lastScroll == closestChild then
+					return
+				end
+				local maxOffset = tabList.AbsoluteContentSize.X - tabs.AbsoluteSize.X
 
-					if maxOffset > 0 then
-						lastScroll = closestChild
-					end
-					tabOffset:set(
-						math.max(math.min(0, -maxOffset), -(closestChild.AbsolutePosition.X - tabs.AbsolutePosition.X))
-					)
-				end,
-			},
+				if maxOffset > 0 then
+					lastScroll = closestChild
+				end
+				tabOffset:set(
+					math.max(math.min(0, -maxOffset), -(closestChild.AbsolutePosition.X - tabs.AbsolutePosition.X))
+				)
+			end,
 		},
 	}
 
@@ -171,136 +169,126 @@ function Tabs.new(definition)
 			PaddingRight = UDim.new(0, 1),
 		},
 
-		[UI.Event] = {
-			ChildAdded = function(page)
-				if containerCache[page] then
-					return
-				end
+		ChildAdded = function(page)
+			if containerCache[page] then
+				return
+			end
 
-				local container = pageCache[page]
-				task.defer(function()
-					page.Parent = container
-				end)
-				if container then
-					return
-				end
+			local container = pageCache[page]
+			task.defer(function()
+				page.Parent = container
+			end)
+			if container then
+				return
+			end
 
-				container = UI.new "Frame" {
-					Name = page.Name,
-					BackgroundTransparency = 1,
-					Size = UDim2.fromScale(1, 1),
-				}
-				containerCache[container] = page
-				pageCache[page] = container
-				container.Parent = new._content
+			container = UI.new "Frame" {
+				Name = page.Name,
+				BackgroundTransparency = 1,
+				Size = UDim2.fromScale(1, 1),
+			}
+			containerCache[container] = page
+			pageCache[page] = container
+			container.Parent = new._content
 
-				local nameState = UI.state(page, "Name")
-				local boldState = UI.compute(function(use)
-					return `<b>{use(nameState)}</b>`
-				end)
-				local hovering, textFits, button = UI.state(false), UI.state(false)
-				button = UI.new "TextButton" {
-					AutoLocalize = false,
-					Parent = tabs,
-					Name = nameState,
-					LayoutOrder = page.LayoutOrder,
-					AutoButtonColor = false,
-					AutomaticSize = Enum.AutomaticSize.XY,
-					Size = UDim2.new(0, 0, 0, 0),
-					BackgroundColor3 = UI.Theme.Secondary,
-					BackgroundTransparency = UI.tween(
-						UI.Theme.TweenOut,
-						UI.compute(function(use)
-							return if use(currentPage) == container then use(UI.Theme.TransparencyOverlay) else 1
-						end)
-					),
-					Font = UI.Theme.Font,
-					RichText = true,
-					Text = boldState,
-					TextSize = UI.Theme.FontSize,
-					TextColor3 = UI.Theme.PrimaryText,
-					TextStrokeColor3 = UI.Theme.Primary,
-					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-					TextTransparency = UI.tween(
-						UI.Theme.TweenOut,
-						UI.compute(function(use)
-							return if use(hovering) or use(currentPage) == container then 0 else 0.5
-						end)
-					),
+			local nameState = UI.state(page, "Name")
+			local boldState = function(use)
+				return `<b>{use(nameState)}</b>`
+			end
+			local hovering, textFits, button = UI.state(false), UI.state(false)
+			button = UI.new "TextButton" {
+				AutoLocalize = false,
+				Parent = tabs,
+				Name = nameState,
+				LayoutOrder = page.LayoutOrder,
+				AutoButtonColor = false,
+				AutomaticSize = Enum.AutomaticSize.XY,
+				Size = UDim2.new(0, 0, 0, 0),
+				BackgroundColor3 = UI.Theme.Secondary,
+				BackgroundTransparency = UI.tween(
+					UI.Theme.TweenOut,
+					UI.compute(function(use)
+						return if use(currentPage) == container then use(UI.Theme.TransparencyOverlay) else 1
+					end)
+				),
+				Font = UI.Theme.Font,
+				RichText = true,
+				Text = boldState,
+				TextSize = UI.Theme.FontSize,
+				TextColor3 = UI.Theme.PrimaryText,
+				TextStrokeColor3 = UI.Theme.Primary,
+				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+				TextTransparency = UI.tween(
+					UI.Theme.TweenOut,
+					UI.compute(function(use)
+						return if use(hovering) or use(currentPage) == container then 0 else 0.5
+					end)
+				),
 
-					UI.new "UICorner" {
-						CornerRadius = UI.Theme.CornerDiameter,
-					},
-					UI.new "UIStroke" {
-						Enabled = UI.Theme.StrokeEnabled,
-						ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-						Transparency = UI.Theme.TransparencyClamped,
-						Color = UI.Theme.Border,
-					},
-					UI.new "UIPadding" {
-						PaddingTop = UI.Theme.Padding,
-						PaddingBottom = UI.Theme.Padding,
-						PaddingLeft = UI.Theme.Padding,
-						PaddingRight = UI.Theme.Padding,
-					},
+				UI.new "UICorner" {
+					CornerRadius = UI.Theme.CornerDiameter,
+				},
+				UI.new "UIStroke" {
+					Enabled = UI.Theme.StrokeEnabled,
+					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+					Transparency = UI.Theme.TransparencyClamped,
+					Color = UI.Theme.Border,
+				},
+				UI.new "UIPadding" {
+					PaddingTop = UI.Theme.Padding,
+					PaddingBottom = UI.Theme.Padding,
+					PaddingLeft = UI.Theme.Padding,
+					PaddingRight = UI.Theme.Padding,
+				},
 
-					[UI.Event] = {
-						MouseEnter = function(x, y)
-							if UI.sinkInput(x, y - UI.TopbarInset._value.Height, new._instance) then
-								return
-							end
-							UI.activateState(hovering, "hover")
-						end,
-						MouseLeave = function()
-							UI.deactivateState(hovering, "hover")
-						end,
-						Activated = function()
-							UI.clearActiveStates()
-							UI.Sound.Hover03:Play()
-							currentPage:set(container)
-							pages:JumpTo(container)
-							local absoluteStart = tabs.Parent.AbsolutePosition.X
-							local absoluteEnd = absoluteStart + tabs.Parent.AbsoluteSize.X
-							local buttonStart = button.AbsolutePosition.X
-							local buttonEnd = buttonStart + button.AbsoluteSize.X + tabList.Padding.Offset
-
-							if
-								tabList.AbsoluteContentSize.X >= tabs.AbsoluteSize.X
-								and absoluteEnd < buttonEnd + 32
-							then
-								tabOffset:set(
-									math.max(
-										tabs.AbsoluteSize.X - tabList.AbsoluteContentSize.X,
-										tabOffset._value - (32 + (buttonEnd - absoluteEnd))
-									)
-								)
-							elseif buttonStart - 32 < absoluteStart then
-								tabOffset:set(
-									math.min(
-										0,
-										tabOffset._value + (absoluteStart - buttonStart) + 32 + tabList.Padding.Offset
-									)
-								)
-							end
-						end,
-					},
-				}
-				textFits:bindToProperty(button, "TextFits")
-				local function hideButton()
-					button.Visible = (page.Parent == container or page.Parent == nil)
-						and page:GetAttribute("Enabled") ~= false
-					container.Visible = button.Visible
-				end
-				page:GetPropertyChangedSignal("Parent"):Connect(hideButton)
-				page:GetAttributeChangedSignal("Enabled"):Connect(hideButton)
-				hideButton()
-				task.defer(function()
-					if pages.CurrentPage == container then
-						currentPage:set(container)
+				MouseEnter = function(x, y)
+					if UI.sinkInput(x, y - UI.TopbarInset._value.Height, new._instance) then
+						return
 					end
-				end)
-			end,
-		},
+					UI.activateState(hovering, "hover")
+				end,
+				MouseLeave = function()
+					UI.deactivateState(hovering, "hover")
+				end,
+				Activated = function()
+					UI.clearActiveStates()
+					UI.Sound.Hover03:Play()
+					currentPage:set(container)
+					pages:JumpTo(container)
+					local absoluteStart = tabs.Parent.AbsolutePosition.X
+					local absoluteEnd = absoluteStart + tabs.Parent.AbsoluteSize.X
+					local buttonStart = button.AbsolutePosition.X
+					local buttonEnd = buttonStart + button.AbsoluteSize.X + tabList.Padding.Offset
+
+					if tabList.AbsoluteContentSize.X >= tabs.AbsoluteSize.X and absoluteEnd < buttonEnd + 32 then
+						tabOffset:set(
+							math.max(
+								tabs.AbsoluteSize.X - tabList.AbsoluteContentSize.X,
+								tabOffset._value - (32 + (buttonEnd - absoluteEnd))
+							)
+						)
+					elseif buttonStart - 32 < absoluteStart then
+						tabOffset:set(
+							math.min(0, tabOffset._value + (absoluteStart - buttonStart) + 32 + tabList.Padding.Offset)
+						)
+					end
+				end,
+			}
+			textFits:bindToProperty(button, "TextFits")
+			local function hideButton()
+				button.Visible = (page.Parent == container or page.Parent == nil)
+					and page:GetAttribute("Enabled") ~= false
+				container.Visible = button.Visible
+			end
+			page:GetPropertyChangedSignal("Parent"):Connect(hideButton)
+			page:GetAttributeChangedSignal("Enabled"):Connect(hideButton)
+			hideButton()
+			task.defer(function()
+				if pages.CurrentPage == container then
+					currentPage:set(container)
+				end
+			end)
+		end,
 	}
 
 	return setmetatable(new, Tabs)

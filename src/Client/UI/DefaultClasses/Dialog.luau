@@ -28,7 +28,7 @@ function Dialog.new(definition)
 		LeftAction = UI.Nil,
 		RightAction = UI.Nil,
 		ExitButton = UI.Nil,
-		Close = UI.Nil,
+		Close = UI.Function,
 		Visible = true,
 		Width = 256,
 	}, definition)
@@ -168,9 +168,9 @@ function Dialog.new(definition)
 				new:Destroy()
 			end
 		end,
-		Visible = UI.compute(function(use)
+		Visible = function(use)
 			return if use(new.ExitButton) then true else false
-		end),
+		end,
 	}
 	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 	new._exitButton = exitButton
@@ -192,10 +192,10 @@ function Dialog.new(definition)
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
 			Text = "",
-			Visible = UI.compute(function(use)
+			Visible = function(use)
 				local title = use(new.Title)
 				return title and title ~= ""
-			end),
+			end,
 
 			UI.new "UIListLayout" {
 				SortOrder = Enum.SortOrder.LayoutOrder,
@@ -224,9 +224,7 @@ function Dialog.new(definition)
 
 			if UI.peek(new.Title) then exitButton else nil,
 
-			[UI.Event] = {
-				InputBegan = dragInputBegan,
-			},
+			InputBegan = dragInputBegan,
 		},
 
 		UI.new "TextLabel" {
@@ -240,10 +238,10 @@ function Dialog.new(definition)
 			TextXAlignment = "Left",
 			Font = UI.Theme.Font,
 			RichText = true,
-			Visible = UI.compute(function(use)
+			Visible = function(use)
 				local text = use(new.Text)
 				return text and text ~= ""
-			end),
+			end,
 
 			AutomaticSize = Enum.AutomaticSize.XY,
 
@@ -326,10 +324,10 @@ function Dialog.new(definition)
 					TextXAlignment = "Left",
 					FontFace = UI.Theme.FontBold,
 					RichText = true,
-					Visible = UI.compute(function(use)
+					Visible = function(use)
 						local text = use(new.ActionText)
 						return text and text ~= ""
-					end),
+					end,
 
 					AutomaticSize = Enum.AutomaticSize.XY,
 				},
@@ -368,14 +366,12 @@ function Dialog.new(definition)
 		},
 		progress,
 
-		[UI.Event] = {
-			MouseEnter = function()
-				hovering:set(true)
-			end,
-			MouseLeave = function()
-				hovering:set(false)
-			end,
-		},
+		MouseEnter = function()
+			hovering:set(true)
+		end,
+		MouseLeave = function()
+			hovering:set(false)
+		end,
 
 		[UI.Clean] = {
 			UI.UserInputService.InputChanged:Connect(function(input)
@@ -398,10 +394,10 @@ function Dialog.new(definition)
 	local sizeState = UI.state(new._instance, "AbsoluteSize")
 
 	UI.edit(progress.Bar, {
-		Size = UI.compute(function(use)
+		Size = function(use)
 			local size = use(sizeState)
 			return UDim2.fromOffset(size.X, size.Y)
-		end),
+		end,
 	})
 
 	return setmetatable(new, Dialog)

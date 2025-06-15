@@ -37,9 +37,9 @@ function Tooltip.new(definition)
 		AutoLocalize = false,
 		Parent = UI.LayerTop,
 		Name = "Tooltip",
-		Visible = UI.compute(function(use)
+		Visible = function(use)
 			return use(new.Enabled) and use(new.Visible)
-		end),
+		end,
 		ZIndex = 100,
 		BackgroundColor3 = UI.Theme.Primary,
 		Font = UI.Theme.Font,
@@ -51,7 +51,7 @@ function Tooltip.new(definition)
 		TextWrapped = true,
 		RichText = true,
 		AutomaticSize = Enum.AutomaticSize.XY,
-		Position = UI.compute(function(use)
+		Position = function(use)
 			local tipSize = use(tipSizeState)
 			local max = use(layerSizeState)
 			local position, size = use(positionState), use(sizeState)
@@ -61,7 +61,7 @@ function Tooltip.new(definition)
 				math.clamp(position.X, 0, math.max(0, max.X - tipSize.X)),
 				math.clamp(yOffset, 0, math.max(0, max.Y - tipSize.Y))
 			)
-		end),
+		end,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,

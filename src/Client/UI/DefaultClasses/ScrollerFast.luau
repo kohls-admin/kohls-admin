@@ -261,16 +261,16 @@ end
 function ScrollerFast.new(definition)
 	local self = UI.makeStatefulDefaults({
 		Enabled = true,
-		ItemSize = UI.compute(function(use)
+		ItemSize = function(use)
 			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset)
-		end),
+		end,
 		List = {},
 		DictList = false,
 		FilterInput = false,
 		FilterInputDebounce = 0,
-		CreateItem = UI.Nil,
-		RenderItem = UI.Nil,
-		RenderText = UI.Nil,
+		CreateItem = UI.Function,
+		RenderItem = UI.Function,
+		RenderText = UI.Function,
 		ReverseOrder = false,
 		Visible = true,
 	}, definition)
@@ -314,10 +314,8 @@ function ScrollerFast.new(definition)
 			PaddingRight = UI.Theme.Padding,
 		},
 
-		[UI.Event.Property] = {
-			AbsoluteWindowSize = render,
-			CanvasPosition = render,
-		},
+		AbsoluteWindowSize_Changed = render,
+		CanvasPosition_Changed = render,
 	}
 
 	self._instance = UI.new "Frame" {
@@ -329,9 +327,7 @@ function ScrollerFast.new(definition)
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 		self._scroller,
 
-		[UI.Event.Property] = {
-			Parent = render,
-		},
+		Parent_Changed = render,
 	}
 
 	self = setmetatable(self, ScrollerFast)

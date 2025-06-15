@@ -15,12 +15,12 @@ function ListItem.new(definition)
 	new._content = UI.new "Frame" {
 		Name = "UIContent",
 		AnchorPoint = Vector2.new(1, 0),
-		AutomaticSize = UI.compute(function(use)
+		AutomaticSize = function(use)
 			return if use(new.ContentAutomaticSize) then Enum.AutomaticSize.XY else Enum.AutomaticSize.Y
-		end),
-		Size = UI.compute(function(use)
+		end,
+		Size = function(use)
 			return UDim2.fromScale(if use(new.ContentAutomaticSize) then 0 else 0.5, 0)
-		end),
+		end,
 		Position = UDim2.new(1, 0, 0, 0),
 		BackgroundTransparency = 1,
 

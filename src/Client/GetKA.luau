@@ -41,11 +41,9 @@ task.defer(function()
 				Size = UDim2.new(0, 24, 0, 24),
 				Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 				ImageColor3 = Color3.new(1, 0.8, 0),
-				[UI.Event] = {
-					Activated = function()
-						_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
-					end,
-				},
+				Activated = function()
+					_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
+				end,
 				UI.new "Tooltip" {
 					Text = "Add to Favorites",
 				},
@@ -68,18 +66,16 @@ task.defer(function()
 			RichText = true,
 		},
 
-		[UI.Event] = {
-			Activated = function()
-				_K.client.lastAttemptedPurchase = adminModelId
-				_K.client.purchaseLink.Text = "create.roblox.com/store/asset/" .. adminModelId
-				if _K.client.AllowThirdPartySales then
-					_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, adminModelId)
-				else
-					_K.client.purchaseDialog.Visible:set(true)
-					dialog.Visible:set(false)
-				end
-			end,
-		},
+		Activated = function()
+			_K.client.lastAttemptedPurchase = adminModelId
+			_K.client.purchaseLink.Text = "create.roblox.com/store/asset/" .. adminModelId
+			if _K.client.AllowThirdPartySales then
+				_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, adminModelId)
+			else
+				_K.client.purchaseDialog.Visible:set(true)
+				dialog.Visible:set(false)
+			end
+		end,
 	}
 
 	dialog = UI.new "Dialog" {

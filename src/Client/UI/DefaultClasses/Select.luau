@@ -51,26 +51,24 @@ function Select.new(definition)
 		IconProperties = {
 			Size = UDim2.fromScale(0.875, 0.875),
 		},
-		Label = UI.compute(function(use)
+		Label = function(use)
 			local choice = use(new.Choice)
 			local typeOf = typeof(choice)
 			return if typeOf == "EnumItem" or typeOf == "Instance" then choice.Name else choice
-		end),
+		end,
 		Size = itemSize,
 		Font = new.Font,
 		TextXAlignment = Enum.TextXAlignment.Left,
 
-		[UI.Event] = {
-			Activated = function()
-				UI.toggleState(menu.Visible, "floating")
-				local value = UI.peek(menu.Visible)
-				if value then
-					UI.Sound.Hover03:Play()
-				else
-					UI.Sound.Hover01:Play()
-				end
-			end,
-		},
+		Activated = function()
+			UI.toggleState(menu.Visible, "floating")
+			local value = UI.peek(menu.Visible)
+			if value then
+				UI.Sound.Hover03:Play()
+			else
+				UI.Sound.Hover01:Play()
+			end
+		end,
 	}
 
 	headerButton._content.Label.UIPadding.PaddingRight = UDim.new()
@@ -87,9 +85,9 @@ function Select.new(definition)
 
 	menu = UI.new "Menu" {
 		Adornee = new._instance,
-		Size = UI.compute(function(use)
+		Size = function(use)
 			return UDim2.new(0, use(absoluteSize).X, 0, math.min(#use(new.Choices), 7.5) * use(itemSize).Y.Offset)
-		end),
+		end,
 	}
 
 	local selectedButton
@@ -122,31 +120,29 @@ function Select.new(definition)
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Size = itemSize,
 
-				[UI.Event] = {
-					Activated = function()
-						selectedButton = choiceButton._instance
-						new.Selected:set(choice, true)
-						new.Choice:set(choice)
-						UI.deactivateState(menu.Visible, "floating")
-					end,
-				},
+				Activated = function()
+					selectedButton = choiceButton._instance
+					new.Selected:set(choice, true)
+					new.Choice:set(choice)
+					UI.deactivateState(menu.Visible, "floating")
+				end,
 			}
 			choiceButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 			UI.edit(choiceButton._instance, {
-				BackgroundColor3 = UI.compute(function(use)
+				BackgroundColor3 = function(use)
 					local hovering = use(choiceButton._hovering)
 					return if use(new.Choice) == choice and not hovering
 						then use(UI.Theme.Secondary)
 						elseif hovering or use(UI.Theme.Transparency) > 0 then use(UI.Theme.Secondary)
 						else use(UI.Theme.Primary)
-				end),
-				BackgroundTransparency = UI.compute(function(use)
+				end,
+				BackgroundTransparency = function(use)
 					return if not use(choiceButton._hovering)
 							and use(UI.Theme.Transparency) > 0
 							and use(new.Choice) ~= choice
 						then 1
 						else use(UI.Theme.TransparencyOverlay)
-				end),
+				end,
 			})
 			choiceButton._hovering:hook(function(value)
 				if value then

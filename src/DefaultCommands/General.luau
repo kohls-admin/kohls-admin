@@ -190,9 +190,9 @@ return {
 				})
 				local displaySize = _K.UI.state(userFrame.From.From, "AbsoluteSize")
 				_K.UI.edit(userFrame.From.Badge, {
-					Position = _K.UI.compute(function(use)
+					Position = function(use)
 						return UDim2.fromOffset(use(displaySize).X / 2 + 4, 0)
-					end),
+					end,
 				})
 				existing = msg
 				task.delay(duration or 4 + 0.0625 * #message, game.Destroy, msg)

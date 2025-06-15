@@ -143,10 +143,10 @@ function Settings.new(_K)
 					Padding = UDim.new(0, 5),
 					Placeholder = ";",
 					MaxChars = 1,
-					Value = UI.compute(function(use)
+					Value = function(use)
 						return use(_K.client.settings.playerPrefix)[_K.LocalPlayer.UserId]
 							or use(_K.client.settings.prefix)[1]
-					end),
+					end,
 					Validate = function(text)
 						return not (text == "" or table.find(reservedPrefixes, text))
 					end,
@@ -172,9 +172,9 @@ function Settings.new(_K)
 					Padding = UDim.new(0, 5),
 					Placeholder = ";",
 					MaxChars = 1,
-					Value = UI.compute(function(use)
+					Value = function(use)
 						return use(_K.client.settings.prefix)[1]
-					end),
+					end,
 					Validate = function(text)
 						return not (text == "" or table.find(reservedPrefixes, text))
 					end,
@@ -209,9 +209,9 @@ function Settings.new(_K)
 				ContentAutomaticSize = false,
 				Text = "Theme",
 				UI.new "Select" {
-					Choice = UI.compute(function(use)
+					Choice = function(use)
 						return use(_K.client.settings.defaultTheme)
-					end),
+					end,
 					Choices = themeList,
 					[UI.Hook] = {
 						Selected = function(value)
@@ -315,9 +315,9 @@ function Settings.new(_K)
 					},
 					UI.new "Slider" {
 						Snap = 25,
-						Value = UI.compute(function(use)
+						Value = function(use)
 							return math.clamp(use(UI.Theme.FontSize) - 7, 1, 25)
-						end),
+						end,
 						UI.new "UIFlexItem" {
 							FlexMode = Enum.UIFlexMode.Fill,
 						},
@@ -348,9 +348,9 @@ function Settings.new(_K)
 						NumberOnly = true,
 						NumberRange = NumberRange.new(0, 16),
 						Placeholder = "",
-						Value = UI.compute(function(use)
+						Value = function(use)
 							return use(UI.Theme[key]).Offset
-						end),
+						end,
 						[UI.Hook] = {
 							Selected = function(value)
 								local number = tonumber(value)
@@ -365,9 +365,9 @@ function Settings.new(_K)
 					},
 					UI.new "Slider" {
 						Snap = 17,
-						Value = UI.compute(function(use)
+						Value = function(use)
 							return math.clamp(use(UI.Theme[key]).Offset + 1, 1, 17)
-						end),
+						end,
 						UI.new "UIFlexItem" {
 							FlexMode = Enum.UIFlexMode.Fill,
 						},
@@ -405,9 +405,9 @@ function Settings.new(_K)
 							NumberOnly = true,
 							NumberRange = NumberRange.new(0, 1),
 							Placeholder = "",
-							Value = UI.compute(function(use)
+							Value = function(use)
 								return use(UI.Theme[data.key])
-							end),
+							end,
 							[UI.Hook] = {
 								Selected = function(value)
 									local number = tonumber(value)

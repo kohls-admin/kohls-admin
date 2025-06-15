@@ -271,11 +271,9 @@ function About.new(_K)
 								Size = UDim2.new(0, 24, 0, 24),
 								Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 								ImageColor3 = Color3.new(1, 0.8, 0),
-								[UI.Event] = {
-									Activated = function()
-										_K.Service.AvatarEditor:PromptSetFavorite(ugc.id, 1, true)
-									end,
-								},
+								Activated = function()
+									_K.Service.AvatarEditor:PromptSetFavorite(ugc.id, 1, true)
+								end,
 								UI.new "Tooltip" {
 									Text = "Add to Favorites",
 								},
@@ -311,61 +309,57 @@ function About.new(_K)
 					Size = UDim2.new(0, 80, 0, 32),
 					Position = UDim2.fromOffset(0, 88),
 
-					[UI.Attribute] = {
-						Price = ugc.price,
-					},
+					Attribute_Price = ugc.price,
 
-					[UI.Event] = {
-						Activated = function()
-							if try then
-								try, trying = nil, true
-								local existing = equippedUGC[ugc.equip]
-								debounceEquip(ugc.id, ugc.equip, true, ugc.name, button)
-								task.delay(15, function()
-									if trying and equippedUGC[ugc.equip] == button then
-										debounceEquip(ugc.id, ugc.equip, false, ugc.name, button)
-									end
-									task.delay(0.25, tryDone)
+					Activated = function()
+						if try then
+							try, trying = nil, true
+							local existing = equippedUGC[ugc.equip]
+							debounceEquip(ugc.id, ugc.equip, true, ugc.name, button)
+							task.delay(15, function()
+								if trying and equippedUGC[ugc.equip] == button then
+									debounceEquip(ugc.id, ugc.equip, false, ugc.name, button)
+								end
+								task.delay(0.25, tryDone)
+							end)
+							_K.Notify({
+								From = "_K",
+								Text = `Trying <b>{ugc.name}</b>.`,
+								Duration = 15,
+							})
+
+							if existing and existing ~= button then
+								task.delay(0.25, function()
+									existing.Label:set(`<b>{existing._instance:GetAttribute("Price")}</b>`)
+									existing._content.IconFrame.Visible = true
+									existing._content.Label.TextXAlignment = Enum.TextXAlignment.Left
 								end)
-								_K.Notify({
-									From = "_K",
-									Text = `Trying <b>{ugc.name}</b>.`,
-									Duration = 15,
-								})
-
-								if existing and existing ~= button then
-									task.delay(0.25, function()
-										existing.Label:set(`<b>{existing._instance:GetAttribute("Price")}</b>`)
-										existing._content.IconFrame.Visible = true
-										existing._content.Label.TextXAlignment = Enum.TextXAlignment.Left
-									end)
-								end
-
-								return
 							end
 
-							local equipped = equippedUGC[ugc.equip]
-							if owned or (trying and equipped == button) then
-								equipped = equipped and equipped == button
-								debounceEquip(ugc.id, ugc.equip, not equipped, ugc.name, button)
-								if trying and equipped then
-									task.delay(0.25, tryDone)
-								end
-								return
-							end
+							return
+						end
 
-							_K.client.lastAttemptedPurchase = ugc.id
-							purchaseDialog.Title:set("Buy" .. ugc.name)
-							purchaseDialog.Text:set(thirdPartyText .. perksText)
-							purchaseLink.Text = "roblox.com/catalog/" .. ugc.id
-							if _K.client.AllowThirdPartySales then
-								purchaseDialog.Visible:set(false)
-								_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, ugc.id)
-							else
-								purchaseDialog.Visible:set(true)
+						local equipped = equippedUGC[ugc.equip]
+						if owned or (trying and equipped == button) then
+							equipped = equipped and equipped == button
+							debounceEquip(ugc.id, ugc.equip, not equipped, ugc.name, button)
+							if trying and equipped then
+								task.delay(0.25, tryDone)
 							end
-						end,
-					},
+							return
+						end
+
+						_K.client.lastAttemptedPurchase = ugc.id
+						purchaseDialog.Title:set("Buy" .. ugc.name)
+						purchaseDialog.Text:set(thirdPartyText .. perksText)
+						purchaseLink.Text = "roblox.com/catalog/" .. ugc.id
+						if _K.client.AllowThirdPartySales then
+							purchaseDialog.Visible:set(false)
+							_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, ugc.id)
+						else
+							purchaseDialog.Visible:set(true)
+						end
+					end,
 				}
 
 				if not owned then
@@ -552,18 +546,13 @@ function About.new(_K)
 					RichText = true,
 				},
 
-				[UI.Event] = {
-					Activated = function()
-						if
-							button._content.Price.Text == `<b>SHOW</b>`
-							or button._content.Price.Text == `<b>HIDE</b>`
-						then
-							donorEquip(pass.name, button, remote)
-						else
-							promptThirdPartyGamePassDialog(pass.id, pass.name)
-						end
-					end,
-				},
+				Activated = function()
+					if button._content.Price.Text == `<b>SHOW</b>` or button._content.Price.Text == `<b>HIDE</b>` then
+						donorEquip(pass.name, button, remote)
+					else
+						promptThirdPartyGamePassDialog(pass.id, pass.name)
+					end
+				end,
 			}
 			UI.new "UIFlexItem" {
 				Parent = button._instance,
@@ -632,18 +621,16 @@ function About.new(_K)
 				Text = "?",
 				RichText = true,
 			},
-			[UI.Event] = {
-				Activated = function()
-					if
-						vipButtonGlobal._content.Price.Text == `<b>SHOW</b>`
-						or vipButtonGlobal._content.Price.Text == `<b>HIDE</b>`
-					then
-						donorEquip("VIP", vipButtonGlobal, _K.Remote.Title)
-					else
-						promptThirdPartyGamePassDialog(vipGlobalPassId, "VIP (Global)")
-					end
-				end,
-			},
+			Activated = function()
+				if
+					vipButtonGlobal._content.Price.Text == `<b>SHOW</b>`
+					or vipButtonGlobal._content.Price.Text == `<b>HIDE</b>`
+				then
+					donorEquip("VIP", vipButtonGlobal, _K.Remote.Title)
+				else
+					promptThirdPartyGamePassDialog(vipGlobalPassId, "VIP (Global)")
+				end
+			end,
 		}
 
 		UI.new "Tooltip" {
@@ -685,11 +672,9 @@ function About.new(_K)
 				Text = "?",
 				RichText = true,
 			},
-			[UI.Event] = {
-				Activated = function()
-					_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, vipDeveloperPassId)
-				end,
-			},
+			Activated = function()
+				_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, vipDeveloperPassId)
+			end,
 		}
 
 		updateTitleLabel(
@@ -763,11 +748,9 @@ function About.new(_K)
 					Size = UDim2.new(0, 24, 0, 24),
 					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 					ImageColor3 = Color3.new(1, 0.8, 0),
-					[UI.Event] = {
-						Activated = function()
-							_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
-						end,
-					},
+					Activated = function()
+						_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
+					end,
 					UI.new "Tooltip" {
 						Text = "Add to Favorites",
 					},
@@ -790,20 +773,18 @@ function About.new(_K)
 				RichText = true,
 			},
 
-			[UI.Event] = {
-				Activated = function()
-					_K.client.lastAttemptedPurchase = adminModelId
-					purchaseDialog.Title:set("Get Kohl's Admin")
-					purchaseDialog.Text:set(thirdPartyText)
-					purchaseLink.Text = "create.roblox.com/store/asset/" .. adminModelId
-					if _K.client.AllowThirdPartySales then
-						purchaseDialog.Visible:set(false)
-						_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, adminModelId)
-					else
-						purchaseDialog.Visible:set(true)
-					end
-				end,
-			},
+			Activated = function()
+				_K.client.lastAttemptedPurchase = adminModelId
+				purchaseDialog.Title:set("Get Kohl's Admin")
+				purchaseDialog.Text:set(thirdPartyText)
+				purchaseLink.Text = "create.roblox.com/store/asset/" .. adminModelId
+				if _K.client.AllowThirdPartySales then
+					purchaseDialog.Visible:set(false)
+					_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, adminModelId)
+				else
+					purchaseDialog.Visible:set(true)
+				end
+			end,
 		}
 
 		UI.new "Tooltip" {
@@ -836,9 +817,9 @@ function About.new(_K)
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
 				RichText = true,
-				Visible = UI.compute(function(use)
+				Visible = function(use)
 					return not use(_K.client.settings.vip)
-				end),
+				end,
 
 				UI.new "UICorner" {
 					CornerRadius = UI.Theme.CornerRadius,

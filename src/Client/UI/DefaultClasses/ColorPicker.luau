@@ -60,14 +60,14 @@ function ColorPicker.new(definition)
 		Name = "HueSlider",
 		Vertical = true,
 		Size = hueSliderSize,
-		Value = UI.compute(function(use)
+		Value = function(use)
 			local h, s, v = use(new.Value):ToHSV()
 			if h == 1 and hue == 0 then
 				h = 0
 			end
 			hue = if s > 0 and v > 0 then h else hue
 			return hue
-		end),
+		end,
 
 		UI.new "Frame" {
 			Name = "Rainbow",
@@ -122,9 +122,9 @@ function ColorPicker.new(definition)
 		Validate = function(value)
 			return pcall(Color3.fromHex, value)
 		end,
-		Value = UI.compute(function(use)
+		Value = function(use)
 			return `#{use(new.Value):ToHex()}`
-		end),
+		end,
 
 		[UI.Hook] = {
 			Selected = function(value)
@@ -260,15 +260,11 @@ function ColorPicker.new(definition)
 					Thickness = 1.5,
 				},
 
-				[UI.Event] = {
-					InputBegan = inputBegan,
-				},
+				InputBegan = inputBegan,
 			},
 		},
 
-		[UI.Event] = {
-			InputBegan = inputBegan,
-		},
+		InputBegan = inputBegan,
 	}
 
 	new._menu = UI.new "Menu" {

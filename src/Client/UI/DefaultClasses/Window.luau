@@ -115,7 +115,7 @@ function Window.new(definition)
 		Draggable = true,
 		Resizable = true,
 		RemoveOnClose = false,
-		Close = UI.Nil,
+		Close = UI.Function,
 		Title = "Window",
 		Position = UDim2.new(0.5, -210, 0.5, -210),
 		Size = UDim2.new(0, 420, 0, 420),
@@ -310,14 +310,12 @@ function Window.new(definition)
 			Size = UDim2.new(0, 15, 0, 15),
 			Visible = resizeHover,
 			ResampleMode = Enum.ResamplerMode.Pixelated,
-			Position = UI.compute(function(use)
+			Position = function(use)
 				local inputPos = use(inputPosition)
 				return UDim2.fromOffset(inputPos.X, inputPos.Y) - use(new.Position)
-			end),
+			end,
 
-			[UI.Event] = {
-				InputBegan = resizeBegan,
-			},
+			InputBegan = resizeBegan,
 		},
 
 		UI.new "Frame" {
@@ -355,9 +353,9 @@ function Window.new(definition)
 					Size = UI.computeFrom(UDim2.new, 1, 0, 0, titleBarHeight),
 					Font = UI.Theme.Font,
 					RichText = true,
-					Text = UI.compute(function(use)
+					Text = function(use)
 						return `<b>{use(new.Title)}</b>`
-					end),
+					end,
 					TextColor3 = UI.Theme.PrimaryText,
 					TextStrokeColor3 = UI.Theme.Primary,
 					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
@@ -376,22 +374,18 @@ function Window.new(definition)
 
 				new._exitButton,
 
-				[UI.Event] = {
-					InputBegan = dragInputBegan,
-				},
+				InputBegan = dragInputBegan,
 			},
 
 			new._content,
 		},
 
-		[UI.Event.Property] = {
-			Visible = function()
-				if new._instance.Visible then
-					Window.bringToFront(new)
-					Window.nudge(new)
-				end
-			end,
-		},
+		Visible_Changed = function()
+			if new._instance.Visible then
+				Window.bringToFront(new)
+				Window.nudge(new)
+			end
+		end,
 	}
 
 	local mouseIconWasEnabled, mouseIconChanging = UI.UserInputService.MouseIconEnabled, nil

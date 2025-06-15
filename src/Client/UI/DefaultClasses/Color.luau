@@ -21,10 +21,10 @@ function Color.new(definition)
 		Text = "",
 		BackgroundColor3 = new.Value,
 		AnchorPoint = Vector2.new(1, 0.5),
-		Size = UI.compute(function(use)
+		Size = function(use)
 			local height = use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
 			return UDim2.new(0, height, 0, height)
-		end),
+		end,
 		Position = UDim2.new(1, 0, 0.5, 0),
 
 		UI.new "UICorner" {
@@ -36,17 +36,15 @@ function Color.new(definition)
 			Color = UI.Theme.Border,
 		},
 
-		[UI.Event] = {
-			Activated = function()
-				UI.toggleState(new._dialog.Visible, "floating")
-				local value = UI.peek(new._dialog.Visible)
-				if value then
-					UI.Sound.Hover03:Play()
-				else
-					UI.Sound.Hover01:Play()
-				end
-			end,
-		},
+		Activated = function()
+			UI.toggleState(new._dialog.Visible, "floating")
+			local value = UI.peek(new._dialog.Visible)
+			if value then
+				UI.Sound.Hover03:Play()
+			else
+				UI.Sound.Hover01:Play()
+			end
+		end,
 	}
 
 	new._dialog = UI.new "ColorPicker" {

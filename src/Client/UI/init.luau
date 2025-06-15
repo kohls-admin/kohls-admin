@@ -13,7 +13,7 @@ export type Set<T> = Flux.Set<T>
 export type Dict<T> = Flux.Dict<T>
 export type State<T> = Flux.State<T>
 export type Stateful<T> = Flux.Stateful<T>
-export type SpecialKey = Flux.SpecialKey
+export type Symbol = Flux.Symbol
 export type SpecialDefinition = Flux.SpecialDefinition
 
 local playerGui = Players.LocalPlayer and Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -82,31 +82,22 @@ UI.Platform = if UserInputService.VREnabled
 	else "Mobile"
 
 --- @within UI
---- A marker for defining Instance attributes in [UI.edit]
---- @prop Attribute newproxy
---- @readonly
-
---- @within UI
---- A marker for defining Instance children in [UI.edit]
---- @prop Children newproxy
---- @readonly
-
---- @within UI
---- Markers for defining events in [UI.edit]
---- @prop Event { Attribute = newproxy, Property = newproxy }
---- @readonly
-
---- @within UI
 --- A marker for defining UI state hooks in [UI.edit]
---- @prop Hook newproxy
+--- @prop Hook Flux.Symbol
 --- @readonly
-UI.Hook = newproxy()
+UI.Hook = Flux.Symbol()
+
+--- @within UI
+--- A marker for defining function defaultState in [UI.makeStatefulDefaults]
+--- @prop Function Flux.Symbol
+--- @readonly
+UI.Function = Flux.Symbol()
 
 --- @within UI
 --- A marker for defining Nil defaultState in [UI.makeStatefulDefaults]
---- @prop Nil newproxy
+--- @prop Nil Flux.Symbol
 --- @readonly
-UI.Nil = newproxy()
+UI.Nil = Flux.Symbol()
 
 --- @within UI
 --- GuiService.TopbarInset as a Flux state
@@ -162,9 +153,9 @@ UI.LayerTopInset = UI.new "Frame" {
 	Position = UDim2.fromScale(0, 1),
 	Size = if UI.IsConsoleScreen
 		then UDim2.new(1, 0, 1, -54)
-		else UI.compute(function(use)
+		else function(use)
 			return UDim2.new(1, 0, 1, -use(UI.TopbarInset).Height)
-		end),
+		end,
 }
 
 --- @within UI
@@ -319,12 +310,16 @@ end
 function UI.makeStatefulDefaults(default: Dict<any>, definition: SpecialDefinition?)
 	for key, value in default do
 		if definition then
-			local valueDef = definition[key]
-			value = if valueDef ~= nil then valueDef else value
+			value = if definition[key] ~= nil then definition[key] else value
 		end
 		if value == UI.Nil then
 			default[key] = nil
 			continue
+		end
+		if typeof(value) == "function" and default[key] ~= UI.Function then
+			local computed = Flux._implicitComputeds[value] or Flux.compute(value)
+			Flux._implicitComputeds[value] = computed
+			value = computed
 		end
 		if not Flux.isState(value) then
 			value = Flux.state(value)
@@ -344,7 +339,6 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 
 	local instance = new
 	local contentParent = instance
-	local children = definition[UI.Children]
 	local parent = definition.Parent
 	local cleanup = {}
 
@@ -353,27 +347,11 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 		contentParent = new._content or new._instance
 	end
 
-	if children then
-		if typeof(children) ~= "table" then
-			error("Invalid Children definition")
-		end
-		for name, child in children do
-			if type(child) == "table" and child._instance then
-				child = child._instance
-			end
-			if type(name) == "number" and child.LayoutOrder == 0 then
-				if child:IsA("GuiObject") then
-					child.LayoutOrder = name
-				end
-			else
-				child.Name = name or child.Name
-			end
-			child.Parent = contentParent
-		end
-		definition[UI.Children] = nil
-	end
 	-- numeric index child definition
-	for index, child in ipairs(definition) do
+	for index, child in definition do
+		if type(index) ~= "number" or index ~= math.floor(index) then
+			continue
+		end
 		if type(child) == "table" and child._instance then
 			child = child._instance
 		end

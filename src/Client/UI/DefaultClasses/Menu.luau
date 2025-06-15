@@ -28,19 +28,17 @@ function Menu.new(definition)
 		BackgroundTransparency = 1,
 		ClipsDescendants = false,
 		Size = UDim2.new(1, 0, 1, 0),
-		CanvasSize = UI.compute(function(use)
+		CanvasSize = function(use)
 			return UDim2.new(0, 0, 0, use(listContentSize).Y)
-		end),
+		end,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 0,
 
 		new._list,
 
-		[UI.Event.Property] = {
-			CanvasPosition = function()
-				UI.clearState("hover")
-			end,
-		},
+		CanvasPosition_Changed = function()
+			UI.clearState("hover")
+		end,
 	}
 
 	new._instance = UI.new "TextButton" {
@@ -48,9 +46,9 @@ function Menu.new(definition)
 		ZIndex = 100,
 		Visible = new.Visible,
 		Parent = UI.LayerTop,
-		AnchorPoint = UI.compute(function(use)
+		AnchorPoint = function(use)
 			return if use(new.RightAlign) then Vector2.new(1, 0) else Vector2.zero
-		end),
+		end,
 		BackgroundColor3 = UI.Theme.Primary,
 		ClipsDescendants = true,
 
@@ -80,7 +78,7 @@ function Menu.new(definition)
 		local absoluteSize = UI.state(adornee, "AbsoluteSize")
 
 		UI.edit(new._instance, {
-			Position = UI.compute(function(use)
+			Position = function(use)
 				local size = use(menuSize)
 				local layerSize = use(LayerTopSize)
 				local absolutePos = use(absolutePosition)
@@ -98,7 +96,7 @@ function Menu.new(definition)
 						else math.clamp(xPos, 0, math.max(0, layerSize.X - size.X)),
 					math.clamp(yPos, 0, math.max(0, layerSize.Y - size.Y))
 				)
-			end),
+			end,
 		})
 	end
 

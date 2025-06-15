@@ -59,9 +59,9 @@ Input = UI.new "Input" {
 				Size = UDim2.fromScale(0.75, 0.75),
 				ImageColor3 = UI.Theme.Valid,
 				Image = UI.Theme.Image.Check_Bold,
-				Visible = UI.compute(function(use)
+				Visible = function(use)
 					return use(validState) == true
-				end),
+				end,
 			},
 
 			UI.new "ImageLabel" {
@@ -72,18 +72,16 @@ Input = UI.new "Input" {
 				Size = UDim2.fromScale(0.5, 0.5),
 				ImageColor3 = UI.Theme.Invalid,
 				Image = UI.Theme.Image.Close_Bold,
-				Visible = UI.compute(function(use)
+				Visible = function(use)
 					return use(validState) == false
-				end),
+				end,
 			},
 		},
 
-		[UI.Event] = {
-			Activated = function()
-				Input._input:CaptureFocus()
-				Input._input:ReleaseFocus(true)
-			end,
-		},
+		Activated = function()
+			Input._input:CaptureFocus()
+			Input._input:ReleaseFocus(true)
+		end,
 	},
 }
 
@@ -118,9 +116,9 @@ local CommandBar = UI.new "Frame" {
 UI.edit(Input._instance.UIStroke, {
 	Thickness = 2,
 	Color = UI.Theme.Invalid,
-	Enabled = UI.compute(function(use)
+	Enabled = function(use)
 		return use(validState) == false
-	end),
+	end,
 })
 
 local TooltipFrame = UI.new "Frame" {
@@ -171,11 +169,11 @@ local Tooltip = UI.new "TextLabel" {
 
 local TooltipTextBounds = UI.state(Tooltip, "TextBounds")
 UI.edit(Tooltip, {
-	Size = UI.compute(function(use)
+	Size = function(use)
 		local height = use(TooltipTextBounds).Y
 		local padding = use(UI.Theme.PaddingDouble).Offset
 		return UDim2.new(1, 0, 0, math.max(32, height + padding))
-	end),
+	end,
 })
 
 TooltipLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -189,9 +187,9 @@ local SuggestionFrame = UI.new "TextButton" {
 	Name = "Suggestion",
 	BackgroundTransparency = 0.9,
 	BackgroundColor3 = UI.Theme.Secondary,
-	Size = UI.compute(function(use)
+	Size = function(use)
 		return UDim2.new(1, 0, 0, Tooltip.TextSize + use(UI.Theme.Padding).Offset)
-	end),
+	end,
 	Text = "",
 	TextTransparency = 1,
 
@@ -425,15 +423,13 @@ local suggestionPurchaseButton = UI.new "Button" {
 		RichText = true,
 	},
 
-	[UI.Event] = {
-		Activated = function()
-			if suggestionPurchase.role == "vip" and _K.Data.settings.vip then
-				_K.promptPurchaseVIP()
-			elseif suggestionPurchase.gamepass then
-				_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, suggestionPurchase.gamepass)
-			end
-		end,
-	},
+	Activated = function()
+		if suggestionPurchase.role == "vip" and _K.Data.settings.vip then
+			_K.promptPurchaseVIP()
+		elseif suggestionPurchase.gamepass then
+			_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, suggestionPurchase.gamepass)
+		end
+	end,
 }
 
 local function updateSuggestionPurchasePrice()

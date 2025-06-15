@@ -32,11 +32,11 @@ task.delay(0.2, _K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
-	Title = UI.compute(function(use)
+	Title = function(use)
 		return `Kohl's Admin  <stroke transparency="1"><font transparency="0.75" size="{math.round(
 			use(UI.Theme.FontSize)
 		)}">v{_K.VERSION}</font></stroke>`
-	end),
+	end,
 	Visible = false,
 
 	_K.client.dashboard.Tabs,
@@ -74,12 +74,12 @@ _K.client.toggleCommandBar = UI.new "Button" {
 }
 _K.client.toggleCommandBar._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 UI.edit(_K.client.toggleCommandBar._content.IconFrame.Icon, {
-	ImageTransparency = UI.compute(function(use)
+	ImageTransparency = function(use)
 		return if use(_K.client.commandBarVisible)
 			then 0
 			elseif use(_K.client.toggleCommandBar._hovering) then 0.5
 			else 0.75
-	end),
+	end,
 })
 
 task.defer(function()
@@ -121,13 +121,13 @@ task.defer(function()
 			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 			TextWrapped = true,
 			Size = UDim2.new(1, 0, 0, 24),
-			Text = UI.compute(function(use)
+			Text = function(use)
 				local invalidColor = use(UI.Theme.Invalid):ToHex()
 				local socialWarning = if true or game.CreatorId ~= 3403354
 					then `\n\n<font color="#{invalidColor}"><b>This game wasn't made by us!</b></font>`
 					else ""
 				return `<font transparency="0.33">Join the <b>Kohl's Admin</b> Discord server!</font>{socialWarning}`
-			end),
+			end,
 			RichText = true,
 		}
 
@@ -194,9 +194,9 @@ task.defer(function()
 		socialMenu._content.AutomaticSize = Enum.AutomaticSize.Y
 
 		UI.edit(socialButton._content.IconFrame.Icon, {
-			ImageTransparency = UI.compute(function(use)
+			ImageTransparency = function(use)
 				return if use(socialMenu.Visible) then 0 elseif use(socialButton._hovering) then 0.5 else 0.75
-			end),
+			end,
 		})
 	end
 end)
