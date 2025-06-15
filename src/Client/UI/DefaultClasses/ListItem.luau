@@ -32,6 +32,7 @@ function ListItem.new(definition)
 	local layout = UI.new "UIListLayout" {
 		Parent = new._content,
 		HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
 		FillDirection = Enum.FillDirection.Horizontal,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Padding = UI.Theme.Padding,
@@ -46,15 +47,6 @@ function ListItem.new(definition)
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 0),
-
-		UI.new "UIListLayout" {
-			Parent = new._content,
-			HorizontalAlignment = Enum.HorizontalAlignment.Right,
-			VerticalAlignment = Enum.VerticalAlignment.Center,
-			FillDirection = Enum.FillDirection.Horizontal,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UI.Theme.Padding,
-		},
 
 		UI.new "TextLabel" {
 			AutoLocalize = false,
