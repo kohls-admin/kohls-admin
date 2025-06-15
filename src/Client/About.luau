@@ -166,7 +166,7 @@ function About.new(_K)
 				FillDirection = Enum.FillDirection.Horizontal,
 				HorizontalFlex = Enum.UIFlexAlignment.SpaceEvenly,
 				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.PaddingDouble,
+				Padding = UI.Theme.Padding,
 				Wraps = true,
 			},
 		}
@@ -448,7 +448,7 @@ function About.new(_K)
 				FillDirection = Enum.FillDirection.Horizontal,
 				HorizontalFlex = Enum.UIFlexAlignment.SpaceEvenly,
 				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.PaddingDouble,
+				Padding = UI.Theme.Padding,
 				Wraps = true,
 			},
 		}
@@ -594,7 +594,7 @@ function About.new(_K)
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				FillDirection = Enum.FillDirection.Horizontal,
 				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.PaddingDouble,
+				Padding = UI.Theme.Padding,
 				Wraps = true,
 			},
 		}
@@ -923,7 +923,7 @@ function About.new(_K)
 		})
 
 		UI.edit(scroller._instance.UIListLayout, {
-			Padding = UI.Theme.PaddingDouble,
+			Padding = UI.Theme.Padding,
 			HorizontalAlignment = "Center",
 		})
 
