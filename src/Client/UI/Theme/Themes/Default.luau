@@ -26,6 +26,7 @@ return {
 	TweenInOut = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut),
 
 	Image = {
+		Add = "75463072948156",
 		Check = "125053493387464",
 		Close = "117385134461283",
 		Check_Bold = "73008384795860",
