@@ -207,14 +207,11 @@ UI.TopbarFrame = UI.new "Frame" {
 	},
 }
 
--- generic floating/hover edge case handler
-
-UI._activeFloating = nil
-UI._activeHover = nil
-
 --- @within UI
---- @type ActiveStateType "hover" | "floating"
-export type ActiveStateType = "hover" | "floating"
+--- @type ActiveStateType "hover" | "floating" | "dialog"
+export type ActiveStateType = "hover" | "floating" | "dialog"
+
+UI._activeState = {}
 
 --- A generalized function to handle activation/deactivation of both floating and hover states
 function UI.activateState(activeState: State<boolean>, stateType: ActiveStateType)
@@ -223,17 +220,13 @@ function UI.activateState(activeState: State<boolean>, stateType: ActiveStateTyp
 	end
 
 	-- Clear the previous state if it's different
-	local previousState = stateType == "floating" and UI._activeFloating or UI._activeHover
+	local previousState = UI._activeState[stateType]
 	if previousState and not rawequal(previousState, activeState) then
 		previousState:set(false)
 	end
 
 	-- Set the new active state
-	if stateType == "floating" then
-		UI._activeFloating = activeState
-	else
-		UI._activeHover = activeState
-	end
+	UI._activeState[stateType] = activeState
 	activeState:set(true)
 end
 
@@ -244,13 +237,9 @@ function UI.deactivateState(activeState: State<boolean>, stateType: ActiveStateT
 	end
 
 	-- Clear the previous state if it matches
-	local previousState = stateType == "floating" and UI._activeFloating or UI._activeHover
+	local previousState = UI._activeState[stateType]
 	if previousState and rawequal(previousState, activeState) then
-		if stateType == "floating" then
-			UI._activeFloating = nil
-		else
-			UI._activeHover = nil
-		end
+		UI._activeState[stateType] = nil
 	end
 	activeState:set(false)
 end
@@ -269,18 +258,17 @@ end
 
 --- Function to clear a specific state type
 function UI.clearState(stateType: ActiveStateType)
-	if stateType == "floating" then
-		if Flux.isState(UI._activeFloating) then
-			UI._activeFloating:set(false)
-			UI._activeFloating = nil
-		end
-	elseif stateType == "hover" then
-		if Flux.isState(UI._activeHover) then
-			UI._activeHover:set(false)
-			UI._activeHover = nil
-		end
-	else
-		error("Invalid state type for clearing")
+	local activeState = UI._activeState[stateType]
+	if Flux.isState(activeState) then
+		activeState:set(false)
+		UI._activeState[stateType] = nil
+	end
+end
+
+--- Function to clear all active state types
+function UI.clearActiveStates()
+	for stateType in UI._activeState do
+		UI.clearState(stateType)
 	end
 end
 

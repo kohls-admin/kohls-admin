@@ -209,8 +209,7 @@ local function dashboardToggle(button)
 		UI.Sound.Hover03:Play()
 	else
 		UI.Sound.Hover01:Play()
-		UI.clearState("hover")
-		UI.clearState("floating")
+		UI.clearActiveStates()
 	end
 	local container = _K.client.dashboard.Tabs._pages.CurrentPage
 	local page = container and container:FindFirstChildWhichIsA("GuiObject")

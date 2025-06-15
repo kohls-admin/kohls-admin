@@ -27,8 +27,7 @@ function Scroller.new(definition)
 
 		[UI.Event.Property] = {
 			CanvasPosition = function()
-				UI.clearState("hover")
-				UI.clearState("floating")
+				UI.clearActiveStates()
 			end,
 		},
 	}

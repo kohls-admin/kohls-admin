@@ -253,8 +253,7 @@ function Window.new(definition)
 		Text = "",
 		Activated = function()
 			new._instance.Visible = false
-			UI.clearState("hover")
-			UI.clearState("floating")
+			UI.clearActiveStates()
 
 			if new.Close and type(new.Close._value) == "function" then
 				new.Close._value(new)
