@@ -96,7 +96,6 @@ function Select.new(definition)
 				Label = name,
 				Font = font,
 				TextSize = UI.Theme.FontSize,
-				Padding = UDim.new(0, 8),
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Size = itemSize,
 
