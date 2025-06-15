@@ -297,7 +297,7 @@ function UI.invertLuminance(color: Color3, amount: number): Color3
 end
 
 --- Checks if x, y is within the absolute bounds of the GuiObject
-function UI.pointInGuiObject(x: number, y: number, object: GuiObject)
+function UI.pointInGuiObject(x: number, y: number, object: GuiObject): boolean
 	local size = object.AbsoluteSize
 	local position = object.AbsolutePosition
 	return x >= position.X and x <= position.X + size.X and y >= position.Y and y <= position.Y + size.Y
