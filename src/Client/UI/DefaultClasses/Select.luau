@@ -18,46 +18,69 @@ function Select.new(definition)
 	local menu
 
 	local itemSize = UI.compute(function(use)
-		return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+		local choices = use(new.Choices)
+		local font = use(new.Font)
+		local size = use(UI.Theme.FontSize)
+		local padding = use(UI.Theme.Padding).Offset
+		local maxWidth = size
+		for _, choice in choices do
+			if typeof(choice) == "EnumItem" then
+				if choice.Name == "Unknown" then
+					continue
+				end
+				if choice.EnumType == Enum.Font then
+					font = choice
+				end
+				choice = choice.Name
+			elseif typeof(choice) == "Instance" then
+				choice = choice.Name
+			end
+			maxWidth = math.max(maxWidth, UI.TextService:GetTextSize(choice, size, font, Vector2.zero).X)
+		end
+
+		return UDim2.fromOffset(maxWidth + padding * 2 + size, size + padding)
 	end)
+
+	local headerButton = UI.new "Button" {
+		Name = "Header",
+		ActiveSound = false,
+		BackgroundColor3 = UI.Theme.Secondary,
+		BackgroundTransparency = UI.Theme.TransparencyOverlay,
+		Icon = "rbxassetid://2374890977",
+		IconRightAlign = true,
+		IconProperties = {
+			Size = UDim2.fromScale(0.875, 0.875),
+		},
+		Label = UI.compute(function(use)
+			local choice = use(new.Choice)
+			local typeOf = typeof(choice)
+			return if typeOf == "EnumItem" or typeOf == "Instance" then choice.Name else choice
+		end),
+		Size = itemSize,
+		Font = new.Font,
+		TextXAlignment = Enum.TextXAlignment.Left,
+
+		[UI.Event] = {
+			Activated = function()
+				UI.toggleState(menu.Visible, "floating")
+				local value = UI.peek(menu.Visible)
+				if value then
+					UI.Sound.Hover03:Play()
+				else
+					UI.Sound.Hover01:Play()
+				end
+			end,
+		},
+	}
+
+	headerButton._content.Label.UIPadding.PaddingRight = UDim.new()
 
 	new._instance = UI.new "Frame" {
 		ZIndex = 100,
 		Name = "Select",
 		BackgroundTransparency = 1,
 		Size = itemSize,
-
-		UI.new "Button" {
-			Name = "Header",
-			ActiveSound = false,
-			BackgroundColor3 = UI.Theme.Secondary,
-			BackgroundTransparency = UI.Theme.TransparencyOverlay,
-			Icon = "rbxassetid://2374890977",
-			IconRightAlign = true,
-			IconProperties = {
-				Size = UDim2.new(0, 18, 0, 18),
-			},
-			Label = UI.compute(function(use)
-				local choice = use(new.Choice)
-				local typeOf = typeof(choice)
-				return if typeOf == "EnumItem" or typeOf == "Instance" then choice.Name else choice
-			end),
-			Size = itemSize,
-			Font = new.Font,
-			TextXAlignment = Enum.TextXAlignment.Left,
-
-			[UI.Event] = {
-				Activated = function()
-					UI.toggleState(menu.Visible, "floating")
-					local value = UI.peek(menu.Visible)
-					if value then
-						UI.Sound.Hover03:Play()
-					else
-						UI.Sound.Hover01:Play()
-					end
-				end,
-			},
-		},
+		headerButton,
 	}
 
 	local absoluteSize = UI.state(new._instance, "AbsoluteSize")
