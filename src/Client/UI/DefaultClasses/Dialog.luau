@@ -365,17 +365,17 @@ function Dialog.new(definition)
 					end,
 				},
 			},
-
-			[UI.Event] = {
-				MouseEnter = function()
-					UI.activateState(hovering, "hover")
-				end,
-				MouseLeave = function()
-					UI.deactivateState(hovering, "hover")
-				end,
-			},
 		},
 		progress,
+
+		[UI.Event] = {
+			MouseEnter = function()
+				hovering:set(true)
+			end,
+			MouseLeave = function()
+				hovering:set(false)
+			end,
+		},
 
 		[UI.Clean] = {
 			UI.UserInputService.InputChanged:Connect(function(input)
@@ -391,6 +391,7 @@ function Dialog.new(definition)
 					end
 				end
 			end),
+			hovering,
 		},
 	}
 
