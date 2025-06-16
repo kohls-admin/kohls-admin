@@ -98,6 +98,8 @@ function Settings.new(_K)
 		return use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
 	end)
 
+	local inputSize = UI.computeFrom(UDim2.new, 0, 0, 0, lineItemHeight)
+
 	local reservedPrefixes = { ",", " ", "`", '"', "@", "$", "%", "*", "~" }
 	local settingsLineItems = {
 		Local = {
@@ -108,9 +110,8 @@ function Settings.new(_K)
 				Text = "Command Bar Hotkey",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
-					Size = UI.computeFrom(UDim2.new, 1, 0, 0, lineItemHeight),
 					FontSize = UI.Theme.FontSize,
-					Padding = UDim.new(0, 5),
+					Size = inputSize,
 					Placeholder = ";",
 					HotkeyInput = true,
 					Value = UI.UserInputService:GetStringForKeyCode(_K.client.hotkeys.commandBar.key._value),
@@ -123,9 +124,8 @@ function Settings.new(_K)
 				Text = "Dashboard Hotkey",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
-					Size = UI.computeFrom(UDim2.new, 1, 0, 0, lineItemHeight),
-					FontSize = 14,
-					Padding = UDim.new(0, 5),
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
 					Placeholder = "'",
 					HotkeyInput = true,
 					Value = UI.UserInputService:GetStringForKeyCode(_K.client.hotkeys.dashboard.key._value),
@@ -138,9 +138,8 @@ function Settings.new(_K)
 				Text = "Command Prefix",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
-					Size = UI.computeFrom(UDim2.new, 0, 24, 0, lineItemHeight),
-					FontSize = 14,
-					Padding = UDim.new(0, 5),
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
 					Placeholder = ";",
 					MaxChars = 1,
 					Value = function(use)
@@ -167,9 +166,8 @@ function Settings.new(_K)
 				Text = "Default Command Prefix",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
-					Size = UI.computeFrom(UDim2.new, 0, 24, 0, lineItemHeight),
-					FontSize = 14,
-					Padding = UDim.new(0, 5),
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
 					Placeholder = ";",
 					MaxChars = 1,
 					Value = function(use)
@@ -286,8 +284,6 @@ function Settings.new(_K)
 		end
 		_K.Util.Defer.wait()
 
-		local sliderInputSize = UI.computeFrom(UDim2.new, 0, 37, 0, lineItemHeight)
-
 		do -- Font Size
 			table.insert(
 				settingsLineItems.Theme,
@@ -296,9 +292,8 @@ function Settings.new(_K)
 					Text = "Font Size",
 					UI.new "Input" {
 						Font = UI.Theme.FontMono,
-						Size = sliderInputSize,
-						FontSize = 14,
-						Padding = UDim.new(0, 5),
+						FontSize = UI.Theme.FontSize,
+						Size = inputSize,
 						NumberOnly = true,
 						NumberRange = NumberRange.new(8, 32),
 						Placeholder = "",
@@ -342,9 +337,8 @@ function Settings.new(_K)
 					Text = key:gsub("(.)(%u)", "%1 %2"),
 					UI.new "Input" {
 						Font = UI.Theme.FontMono,
-						Size = sliderInputSize,
-						FontSize = 14,
-						Padding = UDim.new(0, 5),
+						FontSize = UI.Theme.FontSize,
+						Size = inputSize,
 						NumberOnly = true,
 						NumberRange = NumberRange.new(0, 16),
 						Placeholder = "",
@@ -398,10 +392,9 @@ function Settings.new(_K)
 						Text = data.text,
 						UI.new "Input" {
 							Font = UI.Theme.FontMono,
-							Size = sliderInputSize,
-							FontSize = 14,
-							Padding = UDim.new(0, 5),
-							MaxChars = 4,
+							FontSize = UI.Theme.FontSize,
+							Size = inputSize,
+							MaxChars = 5,
 							NumberOnly = true,
 							NumberRange = NumberRange.new(0, 1),
 							Placeholder = "",
@@ -519,6 +512,7 @@ function Settings.new(_K)
 
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 		UI.new "Input" {
+			Fill = true,
 			Placeholder = "Search",
 			Icon = UI.Theme.Image.Search,
 			IconProperties = {
