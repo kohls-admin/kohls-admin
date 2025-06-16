@@ -86,7 +86,7 @@ function Input.new(definition)
 		Placeholder = "",
 		Value = "",
 		Selected = "",
-		Fill = true,
+		Fill = false,
 		Font = UI.Theme.Font,
 		FontSize = UI.Theme.FontSize,
 		TextColor3 = UI.Theme.PrimaryText,
