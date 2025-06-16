@@ -106,7 +106,6 @@ function Settings.new(_K)
 			-- FIX: prevent selecting reserved characters (comma, space, !@#$%^&*, `, ")
 			-- TODO: customizable listable/argument delimiter?
 			UI.new "ListItem" {
-				ContentAutomaticSize = false,
 				Text = "Command Bar Hotkey",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
@@ -120,7 +119,6 @@ function Settings.new(_K)
 				},
 			},
 			UI.new "ListItem" {
-				ContentAutomaticSize = false,
 				Text = "Dashboard Hotkey",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
@@ -134,7 +132,6 @@ function Settings.new(_K)
 				},
 			},
 			UI.new "ListItem" {
-				ContentAutomaticSize = false,
 				Text = "Command Prefix",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
@@ -162,7 +159,6 @@ function Settings.new(_K)
 		},
 		General = {
 			UI.new "ListItem" {
-				ContentAutomaticSize = false,
 				Text = "Default Command Prefix",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
@@ -204,7 +200,6 @@ function Settings.new(_K)
 		table.insert(
 			settingsLineItems.Theme,
 			UI.new "ListItem" {
-				ContentAutomaticSize = false,
 				Text = "Theme",
 				UI.new "Select" {
 					Choice = function(use)
@@ -266,7 +261,6 @@ function Settings.new(_K)
 				table.insert(
 					settingsLineItems.Theme,
 					UI.new "ListItem" {
-						ContentAutomaticSize = false,
 						Text = key:gsub("(.)(%u)", "%1 %2"),
 						UI.new "Select" {
 							Font = UI.Theme[key],
@@ -288,7 +282,6 @@ function Settings.new(_K)
 			table.insert(
 				settingsLineItems.Theme,
 				UI.new "ListItem" {
-					ContentAutomaticSize = false,
 					Text = "Font Size",
 					UI.new "Input" {
 						Font = UI.Theme.FontMono,
@@ -333,7 +326,6 @@ function Settings.new(_K)
 			table.insert(
 				settingsLineItems.Theme,
 				UI.new "ListItem" {
-					ContentAutomaticSize = false,
 					Text = key:gsub("(.)(%u)", "%1 %2"),
 					UI.new "Input" {
 						Font = UI.Theme.FontMono,
@@ -388,7 +380,6 @@ function Settings.new(_K)
 				table.insert(
 					settingsLineItems.Theme,
 					UI.new "ListItem" {
-						ContentAutomaticSize = false,
 						Text = data.text,
 						UI.new "Input" {
 							Font = UI.Theme.FontMono,

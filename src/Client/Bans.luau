@@ -365,7 +365,6 @@ function Bans.new(_K)
 		},
 
 		UI.new "ListItem" {
-			ContentAutomaticSize = false,
 			Text = "Type",
 			UI.new "Select" {
 				Choice = banType,
@@ -379,7 +378,6 @@ function Bans.new(_K)
 		},
 
 		UI.new "ListItem" {
-			ContentAutomaticSize = false,
 			Text = "Duration",
 			Visible = function(use)
 				return use(banType) == "Timed"
@@ -404,7 +402,6 @@ function Bans.new(_K)
 		},
 
 		UI.new "ListItem" {
-			ContentAutomaticSize = true,
 			Text = "User",
 			UI.new "ImageLabel" {
 				BackgroundTransparency = UI.Theme.TransparencyOverlay,
@@ -424,7 +421,6 @@ function Bans.new(_K)
 			banTargetInput,
 		},
 		UI.new "ListItem" {
-			ContentAutomaticSize = true,
 			Text = "Reason",
 			banReasonInput,
 		},

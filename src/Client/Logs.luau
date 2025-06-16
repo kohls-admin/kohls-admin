@@ -236,7 +236,6 @@ function Logs.new(_K)
 			Parent = filterMenu._content,
 			LayoutOrder = index,
 			Text = logType,
-			ContentAutomaticSize = true,
 			Size = lineItemSize,
 
 			UI.new "Checkbox" {
