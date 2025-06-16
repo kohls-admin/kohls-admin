@@ -140,7 +140,9 @@ function Input.new(definition)
 		AutomaticSize = Enum.AutomaticSize.X,
 		AutoLocalize = false,
 		ClearTextOnFocus = false,
-		Size = UDim2.new(0, 0, 1, 0),
+		Size = function(use)
+			return UDim2.new(if use(new.Fill) then 1 else 0, 0, 1, 0)
+		end,
 		BackgroundTransparency = 1,
 		TextTransparency = 1,
 		TextSize = new.FontSize,
@@ -265,13 +267,17 @@ function Input.new(definition)
 		end
 	end)
 
+	local automaticFill = function(use)
+		return if use(new.Fill) then Enum.AutomaticSize.None else Enum.AutomaticSize.X
+	end
+
 	local inputMask = UI.new "Frame" {
 		Name = "InputMask",
-		AutomaticSize = Enum.AutomaticSize.X,
+		AutomaticSize = automaticFill,
 		ClipsDescendants = true,
 		BackgroundTransparency = 1,
 		Position = UDim2.new(0, 0, 0, 0),
-		Size = UDim2.new(0, 0, 1, 0),
+		Size = UDim2.new(1, 0, 1, 0),
 
 		new._input,
 		selection,
@@ -312,9 +318,7 @@ function Input.new(definition)
 
 	new._instance = UI.new "Frame" {
 		Name = "Input",
-		AutomaticSize = function(use)
-			return if use(new.Fill) then Enum.AutomaticSize.None else Enum.AutomaticSize.X
-		end,
+		AutomaticSize = automaticFill,
 		ClipsDescendants = true,
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyOverlay,
