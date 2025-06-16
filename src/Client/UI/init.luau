@@ -312,14 +312,14 @@ function UI.makeStatefulDefaults(default: Dict<any>, definition: SpecialDefiniti
 		if definition then
 			value = if definition[key] ~= nil then definition[key] else value
 		end
-		if value == UI.Nil then
-			default[key] = nil
-			continue
-		end
 		if typeof(value) == "function" and default[key] ~= UI.Function then
 			local computed = Flux._implicitComputeds[value] or Flux.compute(value)
 			Flux._implicitComputeds[value] = computed
 			value = computed
+		end
+		if value == UI.Nil or value == UI.Function then
+			default[key] = nil
+			continue
 		end
 		if not Flux.isState(value) then
 			value = Flux.state(value)
