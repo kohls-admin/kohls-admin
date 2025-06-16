@@ -114,7 +114,7 @@ function Bans.new(_K)
 			Text = "",
 			Activated = function()
 				banType:set(if itemRef.term == "Server" or itemRef.term == "Forever" then itemRef.term else "Timed")
-				banTarget:set(itemRef.userId)
+				banTarget:set(tonumber(itemRef.userId))
 				banTargetInput.Value:set(itemRef.userId)
 				banReason = itemRef.reason
 				banReasonInput.Value:set(itemRef.reason or "")
