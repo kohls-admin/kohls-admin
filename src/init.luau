@@ -680,8 +680,15 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		_K.log(`changed settings: {table.concat(changeStrings, " ")}`, "COMMAND", player.UserId)
 	end)
 
-	-- handle unban events
-	_K.Remote.Unban.OnServerEvent:Connect(function(player, userId)
+	-- handle ban events
+	_K.Remote.Ban.OnServerEvent:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
+		if _K.Auth.hasCommand(player.UserId, "ban") then
+			_K.log(`{_K.getCommandPrefix()}ban {userId} {duration} {reason}`, "COMMAND", player.UserId)
+			_K.Auth.banUsers({ userId }, reason, duration, player.UserId)
+		end
+	end)
+
+	_K.Remote.Unban.OnServerEvent:Connect(function(player: Player, userId: number)
 		local ban = _K.Data.bans[tostring(userId)]
 		if ban and _K.Auth.hasCommand(player.UserId, "unban") then
 			_K.log(`{_K.getCommandPrefix()}unban {userId}`, "COMMAND", player.UserId)
