@@ -107,6 +107,7 @@ function Input.new(definition)
 	}, definition)
 
 	new.Selected._value = UI.peek(new.Value)
+	local textState = UI.state(UI.peek(new.Value))
 
 	local displayLabel = UI.new "TextLabel" {
 		AutomaticSize = Enum.AutomaticSize.X,
@@ -121,10 +122,10 @@ function Input.new(definition)
 		Text = function(use)
 			local display = use(new.DisplayText)
 			local placeholder = use(new.Placeholder)
-			local value = use(new.Value)
+			local input = use(textState)
 			local maxChars = use(new.MaxChars)
 
-			local text = if display ~= "" then display elseif value ~= "" then value else placeholder
+			local text = if display ~= "" then display elseif input ~= "" then input else placeholder
 			text = string.gsub(string.gsub(text, "\n", " "), "\r", " ")
 
 			return if maxChars ~= math.huge then string.sub(text, 1, maxChars) else text
@@ -284,7 +285,7 @@ function Input.new(definition)
 		local text = new._input.Text
 		text = if new.MaxChars._value ~= math.huge then string.sub(text, 1, new.MaxChars._value) else text
 		new._input.Text = text
-		new.Value:set(text)
+		textState:set(text)
 	end)
 
 	UI.edit(new._input, {
