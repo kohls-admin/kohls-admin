@@ -103,7 +103,7 @@ function Input.new(definition)
 		NumberOnly = false,
 		IntegerOnly = false,
 		NumberRange = NumberRange.new(0, 1),
-		Validate = UI.Nil,
+		Validate = UI.Function,
 	}, definition)
 
 	new.Selected._value = UI.peek(new.Value)
