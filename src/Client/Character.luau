@@ -7,9 +7,6 @@ local UI = require(script.Parent.UI)
 
 local LocalPlayer = Players.LocalPlayer
 
-local PlayerModule = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule") :: ModuleScript)
-local ControlModule = PlayerModule:GetControls()
-
 local maxSpeed = 128
 
 local flyAttachment = Instance.new("Attachment")
@@ -33,8 +30,10 @@ local function updateFly(delta: number)
 	end
 	align.CFrame = workspace.CurrentCamera.CFrame
 	local up = humanoid.Jump and 1 or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and -1 or 0
-	local controlVector = ControlModule:GetMoveVector()
-	if up ~= 0 or controlVector ~= Vector3.zero then
+	if up ~= 0 or humanoid.MoveDirection ~= Vector3.zero then
+		local look = align.CFrame.LookVector
+		local reference = CFrame.lookAlong(align.CFrame.Position, Vector3.new(look.X, 0, look.Z), Vector3.yAxis)
+		local controlVector = reference:VectorToObjectSpace(humanoid.MoveDirection).Unit
 		speed = math.clamp(speed + delta * maxSpeed / 4, math.min(humanoid.WalkSpeed, maxSpeed), maxSpeed)
 		linear.VectorVelocity = (align.CFrame:VectorToWorldSpace(controlVector) + Vector3.new(0, up, 0)) * speed
 	else
