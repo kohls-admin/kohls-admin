@@ -157,7 +157,7 @@ function Input.new(definition)
 			local integerOnly = new.IntegerOnly._value
 
 			if text == "" and (numberOnly or integerOnly) then
-				new.Selected:set(new.NumberRange._value.Min, true)
+				new.Selected:set(new.NumberRange._value.Min)
 				new.Value:set(new.NumberRange._value.Min)
 				return
 			end
@@ -182,13 +182,15 @@ function Input.new(definition)
 				new._input.CursorPosition = math.min(new.MaxChars._value + 1, new._input.CursorPosition)
 				new._input.Text = text
 			end
+
 			if new.Validate and not new.Validate._value(text) then
 				new._input.Text = if new.MaxChars._value ~= math.huge
 					then string.sub(new.Value._value, 1, new.MaxChars._value)
 					else new.Value._value
 				return
 			end
-			new.Selected:set(text, true)
+
+			new.Selected:set(text)
 			new.Value:set(text)
 		end,
 	}
@@ -197,7 +199,7 @@ function Input.new(definition)
 	if new.HotkeyInput._value then
 		new._input.Focused:Connect(function()
 			table.clear(new.Modifiers._value)
-			new.Selected:set("", true)
+			new.Selected:set("")
 			new.Value:set("")
 		end)
 		UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -211,12 +213,12 @@ function Input.new(definition)
 
 				local hotkeyText = `{mods.Shift and "Shift+" or ""}{mods.Alt and "Alt+" or ""}`
 				if table.find(MODIFIERS, input.KeyCode) then
-					new.Selected:set(hotkeyText, true)
+					new.Selected:set(hotkeyText)
 					new.Value:set(hotkeyText)
 					return
 				end
 
-				new.Selected:set(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode), true)
+				new.Selected:set(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
 				new.Value:set(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
 				new.Hotkey:set(input.KeyCode)
 				new._input:ReleaseFocus(true)
