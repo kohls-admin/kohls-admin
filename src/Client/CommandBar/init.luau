@@ -26,6 +26,7 @@ Input = UI.new "Input" {
 	Placeholder = "Search",
 	BackgroundColor3 = UI.Theme.Primary,
 	BackgroundTransparency = UI.Theme.Transparency,
+	Fill = true,
 	Font = UI.Theme.FontMono,
 	FontSize = 20,
 	Position = UDim2.fromScale(0, 0.5),
