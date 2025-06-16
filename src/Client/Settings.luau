@@ -253,6 +253,7 @@ function Settings.new(_K)
 		-- font faces
 		do
 			local fonts = Enum.Font:GetEnumItems()
+			local mono = { Enum.Font.Code, Enum.Font.RobotoMono }
 			table.sort(fonts, function(a, b)
 				return a.Name < b.Name
 			end)
@@ -265,7 +266,7 @@ function Settings.new(_K)
 						UI.new "Select" {
 							Font = UI.Theme[key],
 							Choice = UI.Theme[key],
-							Choices = fonts,
+							Choices = if key == "Font" then fonts else mono,
 							[UI.Hook] = {
 								Selected = function(value)
 									change("theme" .. key, value)
