@@ -19,8 +19,8 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 
 	local imageLabel = UI.new "ImageLabel" {
 		Name = "Icon",
-		BackgroundTransparency = 0.75,
-		BackgroundColor3 = UI.Theme.Border,
+		BackgroundTransparency = UI.Theme.TransparencyOverlay,
+		BackgroundColor3 = UI.Theme.PrimaryText,
 		Size = UI.computeFrom(UDim2.fromOffset, UI.Theme.FontSizeDouble, UI.Theme.FontSizeDouble),
 		Image = if image
 			then image
