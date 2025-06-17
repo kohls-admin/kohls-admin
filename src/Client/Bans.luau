@@ -288,11 +288,11 @@ function Bans.new(_K)
 				ban.filterTextRight = string.lower(ban.rawTextRight)
 				ban.filterText = `{ban.filterTextLeft}\t{ban.filterTextRight}`
 
-				ban.tipText = `<b>Reason:</b>    {escape(ban.reason)}`
+				ban.tipText = `<b>Reason:</b> {escape(ban.reason)}`
 
 				task.spawn(function()
 					local name = if ban[4] then _K.Util.getUserInfo(ban[4]).Username else "SYSTEM"
-					ban.tipText = `<b>Banned by:</b> @{name}\n{ban.tipText}`
+					ban.tipText = `<b>Author:</b> @{name}\n{ban.tipText}`
 					scroller:render(true)
 				end)
 			end
