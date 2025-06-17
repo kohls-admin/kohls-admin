@@ -121,8 +121,6 @@ local function updateBans()
 	end
 
 	nextBansInterval = tick() + Data.updateAsyncInterval
-
-	return ok, result
 end
 
 -- MAIN
@@ -339,7 +337,7 @@ local nextLogsInterval = tick() + Data.updateAsyncInterval * 5 / 3
 local function updateLogs()
 	nextLogsInterval = math.huge
 	if Data.settings.saveLogs == false then
-		return true
+		return
 	end
 
 	local save = false
@@ -413,8 +411,6 @@ local function updateLogs()
 	end
 
 	nextLogsInterval = tick() + Data.updateAsyncInterval
-
-	return
 end
 
 function Data.initialize(scope)
