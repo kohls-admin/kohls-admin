@@ -125,13 +125,6 @@ RunService.Heartbeat:connect(function()
 		scroller._filteredList = if scroller._filterFunction
 			then scroller._filterFunction(scroller, scroller._sortedList)
 			else scroller._sortedList
-		-- reset cache
-		for data, item in scroller._lineItemCache do
-			scroller._lineItemCache[data] = nil
-			table.insert(scroller._lineItemFree, item)
-			local instance = if type(item) == "table" then item._instance else item
-			instance.Parent = nil
-		end
 		-- pause canvas
 		if not scroller.DictList._value then
 			local lineHeight = scroller.ItemSize._value.Y.Offset
@@ -145,7 +138,7 @@ RunService.Heartbeat:connect(function()
 			scroller._lastLength = #scroller._filteredList
 			scroller._lastValue = scroller._filteredList[1]
 		end
-		scroller:render()
+		scroller:render(true)
 	end
 
 	if os.clock() - start > queueBudget then
@@ -212,8 +205,12 @@ function ScrollerFast:forceRender()
 		usedItems[lineData] = lineItem
 	end
 
+	self:freeCache(usedItems)
+end
+
+function ScrollerFast:freeCache(usedItems: { [any]: any }?)
 	for data, item in self._lineItemCache do
-		if usedItems[data] then
+		if usedItems and usedItems[data] then
 			continue
 		end
 		self._lineItemCache[data] = nil
@@ -236,7 +233,10 @@ function ScrollerFast:refreshList()
 	refreshQueue[self] = true
 end
 
-function ScrollerFast:render()
+function ScrollerFast:render(bustCache: boolean?)
+	if bustCache then
+		self:freeCache()
+	end
 	renderQueue[self] = true
 end
 
