@@ -14,6 +14,10 @@ UI.Theme.TypingSoundsOnEveryTextBox:hook(function(value)
 	Clack.everyTextBox = value
 end)
 
+local function stripNewLines(text: string)
+	return string.gsub(string.gsub(text, "\n", " "), "\r", " ")
+end
+
 -- NOTE: only works for single line inputs
 -- TODO: fallback for multiline
 local function bytePositionToWidth(text, size, font, bytePosition)
@@ -126,7 +130,7 @@ function Input.new(definition)
 			local maxChars = use(new.MaxChars)
 
 			local text = if display ~= "" then display elseif input ~= "" then input else placeholder
-			text = string.gsub(string.gsub(text, "\n", " "), "\r", " ")
+			text = stripNewLines(text)
 
 			return if maxChars ~= math.huge then string.sub(text, 1, maxChars) else text
 		end,
