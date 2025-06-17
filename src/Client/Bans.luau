@@ -447,7 +447,7 @@ function Bans.new(_K)
 		Icon = UI.Theme.Image.Add,
 		IconProperties = {
 			ImageColor3 = UI.Theme.PrimaryText,
-			Size = UDim2.fromScale(0.75, 0.75),
+			Size = UDim2.fromScale(0.625, 0.625),
 		},
 		Size = UDim2.new(1, 0, 1, 0),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
