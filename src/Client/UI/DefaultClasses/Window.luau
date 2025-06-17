@@ -292,12 +292,6 @@ function Window.new(definition)
 			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,
 		},
-		UI.new "UIPadding" {
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-		},
 
 		UI.new "ImageLabel" {
 			Name = "ResizeIcon",
@@ -326,6 +320,13 @@ function Window.new(definition)
 			UI.new "UIListLayout" {
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				Padding = UI.Theme.Padding,
+			},
+
+			UI.new "UIPadding" {
+				PaddingLeft = UI.Theme.Padding,
+				PaddingRight = UI.Theme.Padding,
+				PaddingTop = UI.Theme.Padding,
+				PaddingBottom = UI.Theme.Padding,
 			},
 
 			UI.new "TextButton" {
