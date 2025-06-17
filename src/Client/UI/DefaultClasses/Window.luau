@@ -6,14 +6,14 @@ Window.__index = Window
 setmetatable(Window, BaseClass)
 
 local resizeReference = {
-	{ -1, 1, 0, 0, 30 }, -- left
-	{ 1, 0, 0, 0, 30 }, -- right
+	{ -1, 1, 0, 0, 48 }, -- left
+	{ 1, 0, 0, 0, 48 }, -- right
 	{ 0, 0, -1, 1, 0 }, -- top
 	{ 0, 0, 1, 0, 0 }, -- bottom
-	{ -1, 1, -1, 1, 45 }, -- top left
-	{ 1, 0, -1, 1, 15 }, -- top right
-	{ 1, 0, 1, 0, 45 }, -- bottom right
-	{ -1, 1, 1, 0, 15 }, -- bottom left
+	{ -1, 1, -1, 1, 72 }, -- top left
+	{ 1, 0, -1, 1, 24 }, -- top right
+	{ 1, 0, 1, 0, 72 }, -- bottom right
+	{ -1, 1, 1, 0, 24 }, -- bottom left
 }
 
 -- TODO: account for anchorpoint...
@@ -296,17 +296,15 @@ function Window.new(definition)
 		UI.new "ImageLabel" {
 			Name = "ResizeIcon",
 			ZIndex = 1e3,
-			AnchorPoint = Vector2.new(1, 1),
 			BackgroundTransparency = 1,
-			Image = "rbxassetid://2286551482",
-			ImageRectSize = Vector2.new(15, 15),
+			Image = "rbxassetid://72264604015628",
+			ImageRectSize = Vector2.new(24, 24),
 			ImageRectOffset = resizeIconRectOffset,
-			Size = UDim2.new(0, 15, 0, 15),
+			Size = UDim2.new(0, 24, 0, 24),
 			Visible = resizeHover,
-			ResampleMode = Enum.ResamplerMode.Pixelated,
 			Position = function(use)
 				local inputPos = use(inputPosition)
-				return UDim2.fromOffset(inputPos.X, inputPos.Y) - use(new.Position)
+				return UDim2.fromOffset(inputPos.X - 12, inputPos.Y - 12) - use(new.Position)
 			end,
 
 			InputBegan = resizeBegan,
