@@ -33,7 +33,9 @@ function List.new(definition)
 					1,
 					0,
 					0,
-					if use(collapsed) then 24 else use(contentSize).Y + 24 + use(UI.Theme.Padding).Offset * 2
+					if use(collapsed)
+						then use(UI.Theme.FontSize)
+						else use(contentSize).Y + use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
 				)
 			end)
 		),
@@ -42,17 +44,18 @@ function List.new(definition)
 			AutoLocalize = false,
 			Name = "Header",
 			Active = true,
+			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
 			TextTransparency = 1,
 			Text = "",
-			Size = UDim2.new(1, 0, 0, 24), -- TODO: use fontsize offset
+			Size = UDim2.new(1, 0, 0, 0),
 
 			UI.new "ImageLabel" {
 				Name = "Arrow",
 				BackgroundTransparency = 1,
 				AnchorPoint = Vector2.new(0, 0.5),
 				Position = UDim2.new(0, 0, 0.5, 0),
-				Size = UDim2.new(0.5, 0, 0.5, 0),
+				Size = UDim2.new(0.75, 0, 0.75, 0),
 				Image = UI.Theme.Image.Down,
 				ImageColor3 = UI.Theme.PrimaryText,
 				ImageTransparency = 0.5,
@@ -70,11 +73,19 @@ function List.new(definition)
 			UI.new "TextLabel" {
 				AutoLocalize = false,
 				Name = "Label",
+				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				Position = function(use)
-					return UDim2.new(0, if use(new.Collapsible) then 18 else 12, 0, 0)
+					return UDim2.new(
+						0,
+						if use(new.Collapsible) then use(UI.Theme.FontSize) else use(UI.Theme.Padding),
+						0,
+						0
+					)
 				end,
-				Size = UDim2.new(1, -18, 1, 0),
+				Size = function(use)
+					return UDim2.new(1, -use(UI.Theme.FontSize), 0, 0)
+				end,
 				FontFace = UI.Theme.FontBold,
 				Text = UI.computeFrom(string.upper, new.Label),
 				TextSize = UI.Theme.FontSize,
@@ -99,17 +110,14 @@ function List.new(definition)
 		Name = "UIContent",
 		Parent = new._instance,
 		BackgroundTransparency = 1,
-		Position = UDim2.new(0, 0, 0, 24),
+		Position = function(use)
+			return UDim2.new(0, 0, 0, use(UI.Theme.FontSize))
+		end,
 		Size = UI.tween(
 			UI.Theme.TweenOut,
 			UI.compute(function(use)
 				local collapse = use(collapsed)
-				return UDim2.new(
-					1,
-					0,
-					if collapse then 0 else 1,
-					if collapse then 0 else -24 + use(UI.Theme.Padding).Offset * 2
-				)
+				return UDim2.new(1, 0, if collapse then 0 else 1, if collapse then 0 else -use(UI.Theme.FontSize))
 			end)
 		),
 		ClipsDescendants = true,
