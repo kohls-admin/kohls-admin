@@ -46,10 +46,11 @@ function Select.new(definition)
 		ActiveSound = false,
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyOverlay,
-		Icon = "rbxassetid://2374890977",
+		Icon = UI.Theme.Image.Down,
 		IconRightAlign = true,
 		IconProperties = {
-			Size = UDim2.fromScale(0.875, 0.875),
+			Position = UDim2.new(0.5, 0, 0.5, 1),
+			Size = UDim2.fromScale(0.5, 0.5),
 		},
 		Label = function(use)
 			local choice = use(new.Choice)
