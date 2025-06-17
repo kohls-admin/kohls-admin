@@ -40,7 +40,7 @@ function Bans.new(_K)
 	end
 
 	local banType = UI.state("Server")
-	local banTypes = UI.state({ "Server", "Timed" })
+	local banTypes = UI.state({ "Forever", "Timed", "Server" })
 	local banTarget = UI.state()
 	local banReason = nil
 	local banDuration = 1
@@ -335,13 +335,27 @@ function Bans.new(_K)
 
 	task.defer(scroller.filter, scroller, filterTest)
 
+	local banTypeListItem = UI.new "ListItem" {
+		Text = "Type",
+		UI.new "Select" {
+			Choice = banType,
+			Choices = banTypes,
+			[UI.Hook] = {
+				Selected = function(value)
+					banType:set(value)
+				end,
+			},
+		},
+	}
+
 	local function updateAuth()
-		if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "banasync") then
+		local savedBans = _K.Auth.hasPermission(_K.LocalPlayer.UserId, "banasync")
+		if savedBans then
 			banType:set("Forever")
-			banTypes:set({ "Forever", "Server", "Timed" })
 		else
-			banTypes:set({ "Server", "Timed" })
+			banType:set("Server")
 		end
+		banTypeListItem._instance.Visible = savedBans
 	end
 	_K.Hook.authChanged:Connect(updateAuth)
 	updateAuth()
@@ -365,18 +379,7 @@ function Bans.new(_K)
 			PaddingRight = UI.Theme.Padding,
 		},
 
-		UI.new "ListItem" {
-			Text = "Type",
-			UI.new "Select" {
-				Choice = banType,
-				Choices = banTypes,
-				[UI.Hook] = {
-					Selected = function(value)
-						banType:set(value)
-					end,
-				},
-			},
-		},
+		banTypeListItem,
 
 		UI.new "ListItem" {
 			Text = "Duration",
