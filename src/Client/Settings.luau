@@ -279,51 +279,92 @@ function Settings.new(_K)
 		end
 		_K.Util.Defer.wait()
 
+		local sliderMaxSize = UI.state(Vector2.new(math.huge, math.huge))
+
+		local sliders = {}
+		local function updateSliderSize()
+			local minimumWidth = math.huge
+			for _, slider in sliders do
+				minimumWidth = math.min(slider.AbsoluteSize.X, minimumWidth)
+			end
+			sliderMaxSize:set(Vector2.new(minimumWidth, math.huge))
+		end
+
+		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(function()
+			sliderMaxSize:set(Vector2.new(math.huge, math.huge))
+			updateSliderSize()
+			task.defer(updateSliderSize)
+		end)
+
 		do -- Font Size
-			table.insert(
-				settingsLineItems.Theme,
-				UI.new "ListItem" {
-					Text = "Font Size",
-					UI.new "Input" {
-						Font = UI.Theme.FontMono,
-						FontSize = UI.Theme.FontSize,
-						Size = inputSize,
-						NumberOnly = true,
-						NumberRange = NumberRange.new(8, 32),
-						Placeholder = "",
-						Value = UI.Theme.FontSize,
-						[UI.Hook] = {
-							Selected = function(value)
-								local number = tonumber(value)
-								if not number then
-									return
-								end
-								change("themeFontSize", number)
-							end,
-						},
-					},
-					UI.new "Slider" {
-						Snap = 25,
-						Value = function(use)
-							return math.clamp(use(UI.Theme.FontSize) - 7, 1, 25)
+			local slider
+			slider = UI.new "Slider" {
+				Snap = 25,
+				Value = function(use)
+					return math.clamp(use(UI.Theme.FontSize) - 7, 1, 25)
+				end,
+				UI.new "UIFlexItem" {
+					FlexMode = Enum.UIFlexMode.Fill,
+				},
+				[UI.Hook] = {
+					Selected = function(value)
+						UI.Theme.FontSize:set(value + 7)
+						change("themeFontSize", value + 7)
+					end,
+				},
+			}
+			local listItem = UI.new "ListItem" {
+				Text = "Font Size",
+				UI.new "Input" {
+					Font = UI.Theme.FontMono,
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
+					NumberOnly = true,
+					NumberRange = NumberRange.new(8, 32),
+					Placeholder = "",
+					Value = UI.Theme.FontSize,
+					[UI.Hook] = {
+						Selected = function(value)
+							local number = tonumber(value)
+							if not number then
+								return
+							end
+							change("themeFontSize", number)
 						end,
-						UI.new "UIFlexItem" {
-							FlexMode = Enum.UIFlexMode.Fill,
-						},
-						[UI.Hook] = {
-							Selected = function(value)
-								UI.Theme.FontSize:set(value + 7)
-								change("themeFontSize", value + 7)
-							end,
-						},
 					},
-				}
-			)
+				},
+				slider,
+			}
+
+			listItem._label.Size = UDim2.new(0.5, 0, 0, 0)
+			table.insert(sliders, slider._instance)
+			table.insert(settingsLineItems.Theme, listItem)
 		end
 		_K.Util.Defer.wait()
 
 		-- UDim options
 		for i, key in { "CornerRadius", "Padding" } do
+			local slider
+			slider = UI.new "Slider" {
+				Snap = 17,
+				UI.new "UISizeConstraint" {
+					MaxSize = sliderMaxSize,
+				},
+				Value = function(use)
+					return math.clamp(use(UI.Theme[key]).Offset + 1, 1, 17)
+				end,
+				UI.new "UIFlexItem" {
+					FlexMode = Enum.UIFlexMode.Fill,
+				},
+				[UI.Hook] = {
+					Selected = function(value)
+						value = UDim.new(0, value - 1)
+						UI.Theme[key]:set(value)
+						change("theme" .. key, value)
+					end,
+				},
+			}
+			table.insert(sliders, slider._instance)
 			table.insert(
 				settingsLineItems.Theme,
 				UI.new "ListItem" {
@@ -350,22 +391,7 @@ function Settings.new(_K)
 							end,
 						},
 					},
-					UI.new "Slider" {
-						Snap = 17,
-						Value = function(use)
-							return math.clamp(use(UI.Theme[key]).Offset + 1, 1, 17)
-						end,
-						UI.new "UIFlexItem" {
-							FlexMode = Enum.UIFlexMode.Fill,
-						},
-						[UI.Hook] = {
-							Selected = function(value)
-								value = UDim.new(0, value - 1)
-								UI.Theme[key]:set(value)
-								change("theme" .. key, value)
-							end,
-						},
-					},
+					slider,
 				}
 			)
 		end
@@ -378,6 +404,22 @@ function Settings.new(_K)
 					{ key = "TextStrokeTransparency", text = "Text Stroke Transparency" },
 				}
 			do
+				local slider
+				slider = UI.new "Slider" {
+					UI.new "UISizeConstraint" {
+						MaxSize = sliderMaxSize,
+					},
+					Value = UI.Theme[data.key],
+					UI.new "UIFlexItem" {
+						FlexMode = Enum.UIFlexMode.Fill,
+					},
+					[UI.Hook] = {
+						Selected = function(value)
+							change("theme" .. data.key, value)
+						end,
+					},
+				}
+				table.insert(sliders, slider._instance)
 				table.insert(
 					settingsLineItems.Theme,
 					UI.new "ListItem" {
@@ -404,17 +446,7 @@ function Settings.new(_K)
 								end,
 							},
 						},
-						UI.new "Slider" {
-							Value = UI.Theme[data.key],
-							UI.new "UIFlexItem" {
-								FlexMode = Enum.UIFlexMode.Fill,
-							},
-							[UI.Hook] = {
-								Selected = function(value)
-									change("theme" .. data.key, value)
-								end,
-							},
-						},
+						slider,
 					}
 				)
 			end
