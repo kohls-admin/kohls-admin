@@ -1100,7 +1100,7 @@ wrap(function()
 		Closing = true
 		Client:Destroy()
 		RemoteEvent:Destroy()
-		if services.HTTP.HttpEnabled and game.GameId > 0 then
+		if services.HTTP.HttpEnabled and game.GameId > 0 and not services.Run:IsStudio() then
 			-- stylua: ignore
 			pcall(services.HTTP.RequestAsync, services.HTTP, { Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
 		end
