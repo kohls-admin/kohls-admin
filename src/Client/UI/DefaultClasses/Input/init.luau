@@ -40,7 +40,7 @@ end
 
 local function updateCursor(cursor, display, input, inputMask, inputOffset, selection)
 	local cursorWidth = bytePositionToWidth(input.Text, display.TextSize, display.Font, input.CursorPosition)
-	local visibleWidth = inputMask.AbsoluteSize.X
+	local visibleWidth = cursor.Parent.AbsoluteSize.X
 	local cursorOffset = cursorWidth - inputOffset._value
 
 	local margin = if (display.TextBounds.X > visibleWidth or inputOffset._value > 0) and cursorWidth > 32
@@ -113,10 +113,14 @@ function Input.new(definition)
 	new.Selected._value = UI.peek(new.Value)
 	local textState = UI.state(UI.peek(new.Value))
 
+	local inputSize = function(use)
+		return UDim2.new(if use(new.Fill) then 1 else 0, 0, 1, 0)
+	end
+
 	local displayLabel = UI.new "TextLabel" {
 		AutomaticSize = Enum.AutomaticSize.X,
 		AutoLocalize = false,
-		Size = UDim2.new(0, 0, 1, 0),
+		Size = inputSize,
 		BackgroundTransparency = 1,
 		TextSize = new.FontSize,
 		TextColor3 = new.TextColor3,
@@ -144,9 +148,7 @@ function Input.new(definition)
 		AutomaticSize = Enum.AutomaticSize.X,
 		AutoLocalize = false,
 		ClearTextOnFocus = false,
-		Size = function(use)
-			return UDim2.new(if use(new.Fill) then 1 else 0, 0, 1, 0)
-		end,
+		Size = inputSize,
 		BackgroundTransparency = 1,
 		TextTransparency = 1,
 		TextSize = new.FontSize,
