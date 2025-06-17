@@ -293,76 +293,77 @@ function Dialog.new(definition)
 			},
 
 			new._content,
-			UI.new "Frame" {
-				Name = "Actions",
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
-				Visible = if new.LeftAction or new.RightAction then true else false,
-
-				Size = UDim2.new(1, 0, 0, 0),
-
-				UI.new "UIListLayout" {
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					FillDirection = Enum.FillDirection.Horizontal,
-					HorizontalAlignment = Enum.HorizontalAlignment.Right,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
-					VerticalFlex = Enum.UIFlexAlignment.Fill,
-					Padding = UI.Theme.Padding,
-				},
-
-				UI.new "TextLabel" {
-					AutoLocalize = false,
-					Name = "Text",
+			if new.LeftAction or new.RightAction
+				then UI.new "Frame" {
+					Name = "Actions",
+					AutomaticSize = Enum.AutomaticSize.Y,
 					BackgroundTransparency = 1,
-					TextColor3 = UI.Theme.PrimaryText,
-					TextStrokeColor3 = UI.Theme.Primary,
-					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-					Text = new.ActionText,
-					TextSize = new.ActionTextSize,
-					TextWrapped = true,
-					TextTruncate = Enum.TextTruncate.SplitWord,
-					TextXAlignment = "Left",
-					FontFace = UI.Theme.FontBold,
-					RichText = true,
-					Visible = function(use)
-						local text = use(new.ActionText)
-						return text and text ~= ""
-					end,
 
-					AutomaticSize = Enum.AutomaticSize.XY,
-				},
-				UI.new "Spacer" {},
-				UI.new "Button" {
-					Name = "LeftAction",
-					AutomaticSize = Enum.AutomaticSize.None,
-					BackgroundTransparency = 1,
-					Size = buttonSize,
-					Icon = UI.Theme.Image.Close_Bold,
-					IconProperties = {
-						ImageColor3 = UI.Theme.Invalid,
-						Size = UDim2.fromScale(0.5, 0.5),
+					Size = UDim2.new(1, 0, 0, 0),
+
+					UI.new "UIListLayout" {
+						SortOrder = Enum.SortOrder.LayoutOrder,
+						FillDirection = Enum.FillDirection.Horizontal,
+						HorizontalAlignment = Enum.HorizontalAlignment.Right,
+						VerticalAlignment = Enum.VerticalAlignment.Center,
+						VerticalFlex = Enum.UIFlexAlignment.Fill,
+						Padding = UI.Theme.Padding,
 					},
-					Text = "",
-					Activated = function()
-						activate(false)
-					end,
-				},
-				UI.new "Button" {
-					Name = "RightAction",
-					AutomaticSize = Enum.AutomaticSize.None,
-					BackgroundTransparency = 1,
-					Size = buttonSize,
-					Icon = UI.Theme.Image.Check_Bold,
-					IconProperties = {
-						ImageColor3 = UI.Theme.Valid,
-						Size = UDim2.fromScale(0.625, 0.625),
+
+					UI.new "TextLabel" {
+						AutoLocalize = false,
+						Name = "Text",
+						BackgroundTransparency = 1,
+						TextColor3 = UI.Theme.PrimaryText,
+						TextStrokeColor3 = UI.Theme.Primary,
+						TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+						Text = new.ActionText,
+						TextSize = new.ActionTextSize,
+						TextWrapped = true,
+						TextTruncate = Enum.TextTruncate.SplitWord,
+						TextXAlignment = "Left",
+						FontFace = UI.Theme.FontBold,
+						RichText = true,
+						Visible = function(use)
+							local text = use(new.ActionText)
+							return text and text ~= ""
+						end,
+
+						AutomaticSize = Enum.AutomaticSize.XY,
 					},
-					Text = "",
-					Activated = function()
-						activate(true)
-					end,
-				},
-			},
+					UI.new "Spacer" {},
+					UI.new "Button" {
+						Name = "LeftAction",
+						AutomaticSize = Enum.AutomaticSize.None,
+						BackgroundTransparency = 1,
+						Size = buttonSize,
+						Icon = UI.Theme.Image.Close_Bold,
+						IconProperties = {
+							ImageColor3 = UI.Theme.Invalid,
+							Size = UDim2.fromScale(0.5, 0.5),
+						},
+						Text = "",
+						Activated = function()
+							activate(false)
+						end,
+					},
+					UI.new "Button" {
+						Name = "RightAction",
+						AutomaticSize = Enum.AutomaticSize.None,
+						BackgroundTransparency = 1,
+						Size = buttonSize,
+						Icon = UI.Theme.Image.Check_Bold,
+						IconProperties = {
+							ImageColor3 = UI.Theme.Valid,
+							Size = UDim2.fromScale(0.625, 0.625),
+						},
+						Text = "",
+						Activated = function()
+							activate(true)
+						end,
+					},
+				}
+				else nil,
 		},
 		progress,
 
