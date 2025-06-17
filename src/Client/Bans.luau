@@ -74,7 +74,7 @@ function Bans.new(_K)
 		AutomaticSize = Enum.AutomaticSize.X,
 		Font = UI.Theme.FontMono,
 		FontSize = UI.Theme.FontSize,
-		MaxChars = 20,
+		MaxChars = 400,
 		Placeholder = "No reason.",
 		Size = inputSize,
 		Value = "",
@@ -349,6 +349,7 @@ function Bans.new(_K)
 	newBanDialog = UI.new "Dialog" {
 		Parent = UI.LayerTop,
 		BackgroundTransparency = 0,
+		Draggable = true,
 		Title = "New Ban",
 		Visible = false,
 		ExitButton = true,
