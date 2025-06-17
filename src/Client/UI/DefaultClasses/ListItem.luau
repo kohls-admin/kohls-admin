@@ -12,14 +12,32 @@ function ListItem.new(definition)
 		ContentListLayout = true,
 	}, definition)
 
+	new._label = UI.new "TextLabel" {
+		AutoLocalize = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		AnchorPoint = Vector2.new(0, 0.5),
+		Text = new.Text,
+		Size = UDim2.new(0, 0, 0, 0),
+		Position = UDim2.fromScale(0, 0.5),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		RichText = true,
+		Font = UI.Theme.Font,
+		TextSize = UI.Theme.FontSize,
+		TextColor3 = UI.Theme.PrimaryText,
+		TextStrokeColor3 = UI.Theme.Primary,
+		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+		TextTruncate = Enum.TextTruncate.SplitWord,
+		BackgroundTransparency = 1,
+	}
+
+	local labelSize = UI.state(new._label, "AbsoluteSize")
+
 	new._content = UI.new "Frame" {
 		Name = "UIContent",
 		AnchorPoint = Vector2.new(1, 0),
-		AutomaticSize = function(use)
-			return if use(new.ContentAutomaticSize) then Enum.AutomaticSize.XY else Enum.AutomaticSize.Y
-		end,
+		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = function(use)
-			return UDim2.fromScale(if use(new.ContentAutomaticSize) then 0 else 0.5, 0)
+			return UDim2.new(1, -use(labelSize).X - use(UI.Theme.Padding).Offset, 0, 0)
 		end,
 		Position = UDim2.new(1, 0, 0, 0),
 		BackgroundTransparency = 1,
@@ -31,11 +49,7 @@ function ListItem.new(definition)
 
 	local layout = UI.new "UIListLayout" {
 		Parent = new._content,
-		HorizontalAlignment = function(use)
-			return if use(new.ContentAutomaticSize)
-				then Enum.HorizontalAlignment.Left
-				else Enum.HorizontalAlignment.Right
-		end,
+		HorizontalAlignment = Enum.HorizontalAlignment.Right,
 		VerticalAlignment = Enum.VerticalAlignment.Center,
 		FillDirection = Enum.FillDirection.Horizontal,
 		SortOrder = Enum.SortOrder.LayoutOrder,
@@ -51,29 +65,7 @@ function ListItem.new(definition)
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 0),
-
-		UI.new "TextLabel" {
-			AutoLocalize = false,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			AnchorPoint = Vector2.new(0, 0.5),
-			Text = new.Text,
-			Size = UDim2.new(1, 0, 0, 0),
-			Position = UDim2.fromScale(0, 0.5),
-			TextXAlignment = Enum.TextXAlignment.Left,
-			RichText = true,
-			Font = UI.Theme.Font,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = UI.Theme.PrimaryText,
-			TextStrokeColor3 = UI.Theme.Primary,
-			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-			TextTruncate = Enum.TextTruncate.SplitWord,
-			BackgroundTransparency = 1,
-
-			UI.new "UIFlexItem" {
-				FlexMode = Enum.UIFlexMode.Fill,
-			},
-		},
-
+		new._label,
 		new._content,
 	}
 
