@@ -397,6 +397,8 @@ function Flux.edit(instance: Instance, definition): Instance
 	definition[Flux.Clean] = nil
 	definition.Parent = nil
 
+	local signals = { attribute = {}, property = {}, rbx = {} }
+
 	for property, value in definition do
 		-- numeric index child definition
 		if type(property) == "number" and property == math.floor(property) then
@@ -411,16 +413,15 @@ function Flux.edit(instance: Instance, definition): Instance
 
 		if type(value) == "function" then
 			if isAttribute and changed then
-				local attribute = string.sub(property, #ATTRIBUTE_PREFIX + 1, changed - 1)
-				instance:GetAttributeChangedSignal(attribute):Connect(value)
+				signals.attribute[string.sub(property, #ATTRIBUTE_PREFIX + 1, changed - 1)] = value
 				continue
 			end
 			if changed then
-				instance:GetPropertyChangedSignal(string.sub(property, 1, changed - 1)):Connect(value)
+				signals.property[string.sub(property, 1, changed - 1)] = value
 				continue
 			end
 			if typeof(instance[property]) == "RBXScriptSignal" then
-				(instance[property] :: RBXScriptSignal):Connect(value)
+				signals.rbx[instance[property]] = value
 				continue
 			end
 			local computed = Flux._implicitComputeds[value] or Flux.compute(value)
@@ -438,6 +439,16 @@ function Flux.edit(instance: Instance, definition): Instance
 		else
 			setProperty(instance, property, peek(value))
 		end
+	end
+
+	for attribute, callback in signals.attribute do
+		instance:GetAttributeChangedSignal(attribute):Connect(callback)
+	end
+	for property, callback in signals.property do
+		instance:GetPropertyChangedSignal(property):Connect(callback)
+	end
+	for signal, callback in signals.rbx do
+		signal:Connect(callback)
 	end
 
 	if #clean > 0 or next(clean) then
