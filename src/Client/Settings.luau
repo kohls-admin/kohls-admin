@@ -296,6 +296,20 @@ function Settings.new(_K)
 			task.defer(updateSliderSize)
 		end)
 
+		local lastSelected
+		local lastSelectedY = 0
+		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(function()
+			if not lastSelected then
+				return
+			end
+			local change, selectedY = 0, lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
+			if settingsScroller._instance.CanvasPosition.Y > 0 then
+				change = selectedY - lastSelectedY
+				settingsScroller._instance.CanvasPosition += Vector2.new(0, change)
+			end
+			lastSelectedY = selectedY - change
+		end)
+
 		do -- Font Size
 			local slider
 			slider = UI.new "Slider" {
@@ -308,6 +322,8 @@ function Settings.new(_K)
 				},
 				[UI.Hook] = {
 					Selected = function(value)
+						lastSelected = slider._instance
+						lastSelectedY = lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
 						UI.Theme.FontSize:set(value + 7)
 						change("themeFontSize", value + 7)
 					end,
@@ -358,6 +374,8 @@ function Settings.new(_K)
 				},
 				[UI.Hook] = {
 					Selected = function(value)
+						lastSelected = slider._instance
+						lastSelectedY = lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
 						value = UDim.new(0, value - 1)
 						UI.Theme[key]:set(value)
 						change("theme" .. key, value)
