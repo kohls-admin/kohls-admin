@@ -241,14 +241,28 @@ function Tabs.new(definition)
 					PaddingRight = UI.Theme.Padding,
 				},
 
-				MouseEnter = function(x, y)
-					if UI.sinkInput(x, y - UI.TopbarInset._value.Height, new._instance) then
+				InputChanged = function(input, processed)
+					if processed then
 						return
 					end
-					UI.activateState(hovering, "hover")
+					if
+						input.UserInputType == Enum.UserInputType.MouseMovement
+						or input.UserInputType == Enum.UserInputType.Touch
+					then
+						if UI.sinkInput(input.Position.X, input.Position.Y, new._instance) then
+							UI.deactivateState(hovering, "hover")
+							return
+						end
+						UI.activateState(hovering, "hover")
+					end
 				end,
-				MouseLeave = function()
-					UI.deactivateState(hovering, "hover")
+				inputEnded = function(input)
+					if
+						input.UserInputType == Enum.UserInputType.MouseMovement
+						or input.UserInputType == Enum.UserInputType.Touch
+					then
+						UI.deactivateState(hovering, "hover")
+					end
 				end,
 				Activated = function()
 					UI.clearActiveStates()

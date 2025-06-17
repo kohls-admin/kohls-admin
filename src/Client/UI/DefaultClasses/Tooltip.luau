@@ -86,14 +86,36 @@ function Tooltip.new(definition)
 
 	local parent
 	local hoverConnections = {}
-	local function hoverEnter(x, y)
-		if UI.sinkInput(x, y - UI.TopbarInset._value.Height, parent) then
-			return
-		end
+	local function hoverEnter()
 		UI.activateState(hovering, "hover")
 	end
 	local function hoverLeave()
 		UI.deactivateState(hovering, "hover")
+	end
+
+	local function inputChanged(input, processed)
+		if processed then
+			return
+		end
+		if
+			input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
+			if UI.sinkInput(input.Position.X, input.Position.Y, parent) then
+				hoverLeave()
+				return
+			end
+			hoverEnter()
+		end
+	end
+
+	local function inputEnded(input)
+		if
+			input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
+			hoverLeave()
+		end
 	end
 
 	UI.edit(new._instance, {
@@ -112,8 +134,8 @@ function Tooltip.new(definition)
 					end
 
 					parent = newParent
-					table.insert(hoverConnections, parent.MouseEnter:Connect(hoverEnter))
-					table.insert(hoverConnections, parent.MouseLeave:Connect(hoverLeave))
+					table.insert(hoverConnections, parent.InputChanged:Connect(inputChanged))
+					table.insert(hoverConnections, parent.InputEnded:Connect(inputEnded))
 					table.insert(hoverConnections, parent.SelectionGained:Connect(hoverEnter))
 					table.insert(hoverConnections, parent.SelectionLost:Connect(hoverLeave))
 					positionState:bindToProperty(parent, "AbsolutePosition")

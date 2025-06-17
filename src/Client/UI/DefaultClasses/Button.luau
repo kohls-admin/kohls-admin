@@ -164,26 +164,31 @@ function Button.new(definition)
 				Position = UDim2.new(0.5, 0, 0, 0),
 			}):Play()
 		end,
+		InputChanged = function(input, processed)
+			if processed then
+				return
+			end
+			if
+				input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
+				if UI.sinkInput(input.Position.X, input.Position.Y, new._instance) then
+					UI.deactivateState(hovering, "hover")
+					return
+				end
+				UI.activateState(hovering, "hover")
+			end
+		end,
 		InputEnded = function(input)
 			if
-				not (
-					input.UserInputType == Enum.UserInputType.MouseButton1
-					or input.UserInputType == Enum.UserInputType.MouseMovement
-					or input.UserInputType == Enum.UserInputType.Touch
-				)
+
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
 			then
-				return
+				UI.deactivateState(hovering, "hover")
+				Tween:Create(ripple, UI.Theme.TweenOut._value, { BackgroundTransparency = 1 }):Play()
 			end
-			Tween:Create(ripple, UI.Theme.TweenOut._value, { BackgroundTransparency = 1 }):Play()
-		end,
-		MouseEnter = function(x, y)
-			if UI.sinkInput(x, y - UI.TopbarInset._value.Height, new._instance) then
-				return
-			end
-			UI.activateState(hovering, "hover")
-		end,
-		MouseLeave = function()
-			UI.deactivateState(hovering, "hover")
 		end,
 	}
 	new.Activated = new._instance.Activated

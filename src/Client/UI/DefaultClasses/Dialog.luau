@@ -367,11 +367,24 @@ function Dialog.new(definition)
 		},
 		progress,
 
-		MouseEnter = function()
-			hovering:set(true)
+		InputChanged = function(input, processed)
+			if processed then
+				return
+			end
+			if
+				input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
+				hovering:set(true)
+			end
 		end,
-		MouseLeave = function()
-			hovering:set(false)
+		inputEnded = function(input)
+			if
+				input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
+				hovering:set(false)
+			end
 		end,
 
 		[UI.Clean] = {
