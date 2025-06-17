@@ -89,6 +89,9 @@ local function updateBans()
 		save = true
 		Data.Cache.bans = {}
 	end
+	if Data.gameClosing and not save then
+		return
+	end
 
 	local sync, updatedTime
 	local ok, result = Data.Store.updateAsync("Bans", function(value, metaData)
@@ -105,7 +108,7 @@ local function updateBans()
 	end)
 
 	if ok then
-		if sync then
+		if sync and not Data.gameClosing then
 			Data.updatedTimeBans = updatedTime
 			task.defer(syncBans, result or sync)
 		end
@@ -243,6 +246,9 @@ local function updateMain()
 		Data.Cache.members = {}
 		Data.Cache.settings = {}
 	end
+	if Data.gameClosing and not save then
+		return
+	end
 
 	local sync, updatedTime
 	local ok, result = Data.Store.updateAsync("Main", function(value, metaData)
@@ -264,7 +270,7 @@ local function updateMain()
 	end)
 
 	if ok then
-		if sync then
+		if sync and not Data.gameClosing then
 			Data.updatedTimeMain = updatedTime
 			task.defer(syncMain, result or sync)
 		end
@@ -342,6 +348,9 @@ local function updateLogs()
 		save = true
 		Data.Cache.chatLogs, Data.Cache.logs = {}, {}
 	end
+	if Data.gameClosing and not save then
+		return
+	end
 	local chatSize, logsSize = #Http:JSONEncode(chatLogs), #Http:JSONEncode(logs)
 	local dataStructureSize = #Http:JSONEncode({ {}, {}, math.ceil(DATA_LIMIT / 2), math.ceil(DATA_LIMIT / 2) })
 
@@ -389,7 +398,7 @@ local function updateLogs()
 	end)
 
 	if ok then
-		if sync then
+		if sync and not Data.gameClosing then
 			Data.updatedTimeLogs = updatedTime
 			task.defer(syncLogs, sync)
 		end
@@ -495,9 +504,16 @@ function Data.initialize(scope)
 			tasks:add(Http.RequestAsync, Http, { Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
 		end
 
-		tasks:add(updateBans)
-		tasks:add(updateMain)
-		tasks:add(updateLogs)
+		local bans = Data.Cache.bans
+		if next(bans) then
+			tasks:add(updateBans)
+		end
+		if next(Data.Cache.members) or next(Data.Cache.settings) then
+			tasks:add(updateMain)
+		end
+		if next(Data.Cache.chatLogs) or next(Data.Cache.logs) then
+			tasks:add(updateLogs)
+		end
 
 		-- local function userSave(key, func)
 		-- 	local success, result = Data.Store.updateAsync(key, func)
