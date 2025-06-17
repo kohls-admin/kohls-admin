@@ -5,6 +5,10 @@ local Switch = {}
 Switch.__index = Switch
 setmetatable(Switch, BaseClass)
 
+local itemHeight = UI.compute(function(use)
+	return use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
+end)
+
 function Switch.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Value = false,
@@ -26,14 +30,6 @@ function Switch.new(definition)
 			return if use(new.Value) then 0 else use(UI.Theme.TransparencyClamped)
 		end)
 	)
-
-	local cappedPadding = UI.compute(function(use)
-		return UDim.new(0, math.min(use(UI.Theme.PaddingHalf).Offset, 4))
-	end)
-
-	local itemHeight = UI.compute(function(use)
-		return use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
-	end)
 
 	new._instance = UI.new "TextButton" {
 		AutoLocalize = false,
@@ -60,23 +56,17 @@ function Switch.new(definition)
 			Transparency = UI.Theme.TransparencyClamped,
 			Color = UI.Theme.Border,
 		},
-		UI.new "UIPadding" {
-			PaddingLeft = cappedPadding,
-			PaddingRight = cappedPadding,
-			PaddingTop = cappedPadding,
-			PaddingBottom = cappedPadding,
-		},
 
 		UI.new "Frame" {
 			Name = "Circle",
 			BackgroundColor3 = UI.Theme.SecondaryText,
 			BackgroundTransparency = backgroundTransparencyClamped,
-			Size = UDim2.new(1, 0, 1, 0),
+			Size = UDim2.new(1, -2, 1, -2),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			Position = UI.tween(
 				UI.Theme.TweenOut,
 				UI.compute(function(use)
-					return UDim2.new(0, if use(new.Value) then use(itemHeight) else 0, 0, 0)
+					return UDim2.new(0, if use(new.Value) then use(itemHeight) + 1 else 1, 0, 1)
 				end)
 			),
 
