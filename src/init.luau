@@ -119,7 +119,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 	if _K.Data.logsHidden[from] then
 		return
 	end
-	local log = _K.Logger:log(text, level, from)
+	local log = _K.Logger:log(text, level, from, true)
 	if not log then
 		return -- DEBUG disabled
 	end
@@ -152,6 +152,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 		elseif _K.client and _K.client.dashboard then
 			_K.client.dashboard.Logs:updateList()
 		end
+		table.insert(_K.Logger.logs, log)
 		_K.Hook.log:Fire(log)
 		while #_K.Data.logs > _K.Logger.limit do
 			local removedLog = table.remove(_K.Data.logs, 1)

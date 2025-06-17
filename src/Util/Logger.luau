@@ -68,7 +68,7 @@ function Logger:decode(index: number): LogType
 	return LEVELS[index + 1]
 end
 
-function Logger:log(text: string, level: LogType, userId: number?): Log?
+function Logger:log(text: string, level: LogType, userId: number?, noAppend: boolean?): Log?
 	if level == "DEBUG" and not self.debug then
 		return
 	end
@@ -80,7 +80,9 @@ function Logger:log(text: string, level: LogType, userId: number?): Log?
 		from = userId,
 	}
 
-	table.insert(self.logs, log)
+	if not noAppend then
+		table.insert(self.logs, log)
+	end
 
 	return log
 end
