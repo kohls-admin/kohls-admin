@@ -71,7 +71,7 @@ function Select.new(definition)
 		end,
 	}
 
-	headerButton._content.Label.UIPadding.PaddingRight = UDim.new()
+	UI.edit(headerButton._content.Label.UIPadding, { PaddingRight = UDim.new() })
 
 	new._instance = UI.new "Frame" {
 		ZIndex = 100,
