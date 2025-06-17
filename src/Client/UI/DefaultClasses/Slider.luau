@@ -102,6 +102,10 @@ function Slider.new(definition)
 		InputBegan = inputBegan,
 	}
 
+	local padding = function(use)
+		return UDim.new(0, use(UI.Theme.FontSizeSmaller) + use(UI.Theme.PaddingHalf).Offset)
+	end
+
 	new._instance = UI.new "Frame" {
 		Name = "Slider",
 		Active = true,
@@ -128,10 +132,10 @@ function Slider.new(definition)
 			ZIndex = 2,
 
 			UI.new "UIPadding" {
-				PaddingTop = UDim.new(0, 12),
-				PaddingBottom = UDim.new(0, 12),
-				PaddingLeft = UDim.new(0, 12),
-				PaddingRight = UDim.new(0, 12),
+				PaddingTop = padding,
+				PaddingBottom = padding,
+				PaddingLeft = padding,
+				PaddingRight = padding,
 			},
 			new._slider,
 		},
@@ -144,7 +148,7 @@ function Slider.new(definition)
 				UI.Theme.TweenOut,
 				UI.compute(function(use)
 					local alpha = use(valueAlpha)
-					local buffer = 24 * (1 - alpha)
+					local buffer = (use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset) * (1 - alpha)
 					return if use(new.Vertical) then UDim2.new(1, 0, alpha, buffer) else UDim2.new(alpha, buffer, 1, 0)
 				end)
 			),
