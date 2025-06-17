@@ -20,35 +20,37 @@ local attachment = Instance.new("Attachment", handle)
 attachment.CFrame = CFrame.new(0, -0.5, 0)
 attachment.Name = "BodyBackAttachment"
 
-local wingMesh = InsertService:CreateMeshPartAsync(
-	"rbxassetid://135389107063517",
-	Enum.CollisionFidelity.Box,
-	Enum.RenderFidelity.Precise
-)
-wingMesh:AddTag("_KAlphaWings")
-wingMesh.Parent = hat
-wingMesh.Name = "Wings"
-wingMesh.Color = Color3.fromRGB(170, 170, 170)
-wingMesh.CastShadow = false
-wingMesh.CanCollide = false
-wingMesh.CanQuery = false
-wingMesh.CanTouch = false
-wingMesh.Massless = true
-wingMesh.Locked = true
-wingMesh.Material = Enum.Material.Neon
-wingMesh:SetAttribute("OriginalSize", wingMesh.Size)
+task.spawn(function()
+	local wingMesh = InsertService:CreateMeshPartAsync(
+		"rbxassetid://135389107063517",
+		Enum.CollisionFidelity.Box,
+		Enum.RenderFidelity.Precise
+	)
+	wingMesh:AddTag("_KAlphaWings")
+	wingMesh.Parent = hat
+	wingMesh.Name = "Wings"
+	wingMesh.Color = Color3.fromRGB(170, 170, 170)
+	wingMesh.CastShadow = false
+	wingMesh.CanCollide = false
+	wingMesh.CanQuery = false
+	wingMesh.CanTouch = false
+	wingMesh.Massless = true
+	wingMesh.Locked = true
+	wingMesh.Material = Enum.Material.Neon
+	wingMesh:SetAttribute("OriginalSize", wingMesh.Size)
 
-local weld = Instance.new("Weld", wingMesh)
-weld.Part0 = handle
-weld.Part1 = wingMesh
+	local weld = Instance.new("Weld", wingMesh)
+	weld.Part0 = handle
+	weld.Part1 = wingMesh
 
-local Bones = require(script:WaitForChild("Bones"))
-for _, bone in Bones:GetChildren() do
-	bone:SetAttribute("OriginalCFrame", bone.CFrame)
-	bone.Parent = wingMesh
-end
+	local Bones = require(script:WaitForChild("Bones"))
+	for _, bone in Bones:GetChildren() do
+		bone:SetAttribute("OriginalCFrame", bone.CFrame)
+		bone.Parent = wingMesh
+	end
 
-script:WaitForChild("Animate"):Clone().Parent = wingMesh
+	script:WaitForChild("Animate"):Clone().Parent = wingMesh
+end)
 
 if RunService:IsClient() then
 	local rainbow = {}
