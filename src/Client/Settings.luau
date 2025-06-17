@@ -433,7 +433,7 @@ function Settings.new(_K)
 							NumberRange = NumberRange.new(0, 1),
 							Placeholder = "",
 							Value = function(use)
-								return use(UI.Theme[data.key])
+								return string.sub(use(UI.Theme[data.key]), 1, 5)
 							end,
 							[UI.Hook] = {
 								Selected = function(value)
