@@ -50,7 +50,7 @@ return function(_K)
 
 		local seconds = 0
 		for amount, unit in string.gmatch(string.lower(input), TIME_PATTERN) do
-			local duration: number? = _K.Util.UnitTime(unit)
+			local duration: number? = _K.Util.Time.fromUnit(unit)
 			if duration == nil then
 				return false, "Invalid time format"
 			else

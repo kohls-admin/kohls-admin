@@ -42,7 +42,7 @@ function Auth.banHandler(player)
 		if timeStamp > 0 then
 			local timeRemaining = timeStamp - os.time()
 			if timeRemaining > 0 then
-				banMessage = "You are banned from this experience for " .. Util.ReadableTime(timeRemaining) .. "!"
+				banMessage = "You are banned from this experience for " .. Util.Time.readable(timeRemaining) .. "!"
 			else
 				Auth.unbanUsers({ player.UserId }, nil, true)
 				return -- duration has passed, unbanned

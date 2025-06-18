@@ -324,7 +324,7 @@ return {
 		runClient = function(context, player: Player)
 			context._K.Notify({
 				From = player.UserId,
-				Text = `<b>Account Age:</b> {context._K.Util.ReadableTime(player.AccountAge * 86400)}`,
+				Text = `<b>Account Age:</b> {context._K.Util.Time.readable(player.AccountAge * 86400)}`,
 			})
 		end,
 	},
@@ -335,7 +335,7 @@ return {
 		run = function(context, volume)
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
 				From = "_K",
-				Text = `<b>Server Age:</b> {context._K.Util.ReadableTime(workspace.DistributedGameTime)}`,
+				Text = `<b>Server Age:</b> {context._K.Util.Time.readable(workspace.DistributedGameTime)}`,
 			})
 		end,
 	},

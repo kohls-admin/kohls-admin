@@ -143,7 +143,7 @@ return {
 			local term = if not duration or duration == 0
 				then "Server"
 				elseif duration == -1 then "Permanently"
-				else context._K.Util.ReadableTime(duration)
+				else context._K.Util.Time.readable(duration)
 
 			local players = context._K.Service.Players:GetPlayers()
 			local bannedNames, getNames = {}, {}

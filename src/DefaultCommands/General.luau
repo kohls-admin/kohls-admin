@@ -977,11 +977,11 @@ return {
 
 			-- stylua: ignore
 			local info = {
-				`<b>Account Age:</b> {context._K.Util.ReadableTime(player.AccountAge * 86400) or "?"}`,
+				`<b>Account Age:</b> {context._K.Util.Time.readable(player.AccountAge * 86400) or "?"}`,
 				`<b>FPS:</b> {fps}   <b>Ping:</b> {ping} ms   <b>Locale:</b> {context._K.Util.String.toFlag(locale)} {locale}`,
 				`<b>Muted:</b> {if context._K.Data.muted[player.UserId] then "✅" else "❌"}\t<b>Verified:</b> {if player:IsVerified() then "✅" else "❌"}`,
 				`<b>Platform:</b> {platformEmoji[platform]} {platform}`,
-				`<b>Session:</b> {context._K.Util.ReadableTime(workspace:GetServerTimeNow() - player:GetAttribute("_KSessionStart"))}`,
+				`<b>Session:</b> {context._K.Util.Time.readable(workspace:GetServerTimeNow() - player:GetAttribute("_KSessionStart"))}`,
 				`<b>Team:</b> <font color="{teamColor}">{player.Team and player.Team.Name or "None"}</font>`,
 				`<b>UserId:</b> {player.UserId}`,
 			}

@@ -17,7 +17,6 @@ local Util = {
 	Humanoid = require(script:WaitForChild("Humanoid")),
 	iterPageItems = require(script:WaitForChild("iterPageItems")),
 	Queue = require(script:WaitForChild("Queue")),
-	ReadableTime = require(script:WaitForChild("ReadableTime")),
 	Retry = require(script:WaitForChild("Retry")),
 	Rollout = require(script:WaitForChild("Rollout")),
 	SafePlayerAdded = require(script:WaitForChild("SafePlayerAdded")),
@@ -30,7 +29,7 @@ local Util = {
 	Suggest = require(script:WaitForChild("Suggest")),
 	Table = require(script:WaitForChild("Table")),
 	Tasks = require(script:WaitForChild("Tasks")),
-	UnitTime = require(script:WaitForChild("UnitTime")),
+	Time = require(script:WaitForChild("Time")),
 }
 
 return Util
