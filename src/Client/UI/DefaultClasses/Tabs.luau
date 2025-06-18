@@ -195,7 +195,7 @@ function Tabs.new(definition)
 			local boldState = function(use)
 				return `<b>{use(nameState)}</b>`
 			end
-			local hovering, textFits, button = UI.state(false), UI.state(false)
+			local hovering, button = UI.state(false)
 			button = UI.new "TextButton" {
 				AutoLocalize = false,
 				Parent = tabs,
@@ -288,7 +288,6 @@ function Tabs.new(definition)
 					end
 				end,
 			}
-			textFits:bindToProperty(button, "TextFits")
 			local function hideButton()
 				button.Visible = (page.Parent == container or page.Parent == nil)
 					and page:GetAttribute("Enabled") ~= false
