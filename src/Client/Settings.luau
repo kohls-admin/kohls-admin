@@ -547,48 +547,50 @@ function Settings.new(_K)
 	}
 	settingsDialog._content:Destroy()
 
+	local filterInput = UI.new "Input" {
+		Fill = true,
+		Placeholder = "Search",
+		Icon = UI.Theme.Image.Search,
+		IconProperties = {
+			ImageColor3 = UI.Theme.PrimaryText,
+			Size = UDim2.fromOffset(18, 18),
+		},
+	}
+
+	local function filterSettings()
+		local filter = string.lower(filterInput._input.Text)
+		for _, lineItems in settingsLineItems do
+			for _, lineItem in lineItems do
+				if filter == "" then
+					lineItem.Text:set(lineItem._instance.Name)
+					lineItem._instance.Visible = true
+					continue
+				end
+				local rawText = lineItem._instance.Name
+				local found = string.find(string.lower(rawText), filter, 1, true)
+				local text = if found
+					then string.format(
+						filterRichFormat,
+						_K.Util.String.escapeRichText(string.sub(rawText, 1, found - 1)),
+						_K.Util.String.escapeRichText(string.sub(rawText, found, found + #filter - 1)),
+						_K.Util.String.escapeRichText(string.sub(rawText, found + #filter))
+					)
+					else rawText
+				lineItem.Text:set(text)
+				lineItem._instance.Visible = found
+			end
+		end
+	end
+
+	filterInput._input:GetPropertyChangedSignal("Text"):Connect(filterSettings)
+
 	local settingsFrame = UI.new "Frame" {
 		Name = "Settings",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
-		UI.new "Input" {
-			Fill = true,
-			Placeholder = "Search",
-			Icon = UI.Theme.Image.Search,
-			IconProperties = {
-				ImageColor3 = UI.Theme.PrimaryText,
-				Size = UDim2.fromOffset(18, 18),
-			},
-			[UI.Hook] = {
-				Value = function(value)
-					-- filter settings
-					local filter = string.lower(value)
-					for _, lineItems in settingsLineItems do
-						for _, lineItem in lineItems do
-							if value == "" then
-								lineItem.Text:set(lineItem._instance.Name)
-								lineItem._instance.Visible = true
-								continue
-							end
-							local rawText = lineItem._instance.Name
-							local found = string.find(string.lower(rawText), filter, 1, true)
-							local text = if found
-								then string.format(
-									filterRichFormat,
-									_K.Util.String.escapeRichText(string.sub(rawText, 1, found - 1)),
-									_K.Util.String.escapeRichText(string.sub(rawText, found, found + #filter - 1)),
-									_K.Util.String.escapeRichText(string.sub(rawText, found + #filter))
-								)
-								else rawText
-							lineItem.Text:set(text)
-							lineItem._instance.Visible = found
-						end
-					end
-				end,
-			},
-		},
+		filterInput,
 		settingsScroller,
 		settingsDialog,
 	}
