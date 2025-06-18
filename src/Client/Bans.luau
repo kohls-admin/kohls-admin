@@ -23,7 +23,7 @@ function Bans.new(_K)
 
 		[UI.Hook] = {
 			Action = function(v)
-				unbanDialog._instance.Visible = false
+				unbanDialog.Visible:set(false)
 				if v and unbanDialog.userId then
 					_K.Remote.Unban:FireServer(tonumber(unbanDialog.userId))
 				end
