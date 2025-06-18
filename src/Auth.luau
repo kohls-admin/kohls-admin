@@ -501,7 +501,7 @@ function Auth.targetUserArgument(arg, userId: number, value: Player | number | s
 	end
 	if
 		arg.definition.lowerRank
-		and (not arg.definition.shouldRequest or arg.command._K.Data.settings.commandRequests == false)
+		and (not arg.definition.shouldRequest or arg._K.Data.settings.commandRequests == false)
 	then
 		local player = Util.Service.Players:GetPlayerByUserId(userId)
 		if player and player:GetAttribute("_KRolesLoaded") ~= true then
