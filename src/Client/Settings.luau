@@ -46,30 +46,42 @@ function Settings.new(_K)
 		if not _K.client.ready then
 			return
 		end
-		pendingChanges[key] = value
-		if not originalValues[key] then
-			originalValues[key] = _K.Data.settings[key]
+
+		if originalValues[key] == value then
+			pendingChanges[key] = nil
+		else
+			pendingChanges[key] = value
+			if not originalValues[key] then
+				originalValues[key] = _K.Data.settings[key]
+			end
 		end
+
+		local theme = _K.Data.settings.defaultTheme
+		local themeModule = _K.client.themes._value[theme]
 
 		local different = false
 		local differentTheme = false
 		for key, value in pendingChanges do
-			if string.find(key, "theme", 1, true) == 1 then
-				local themeModule = _K.client.themes._value[_K.Data.settings.defaultTheme]
-				if themeModule and UI.peek(themeModule[string.sub(key, 6)]) ~= value then
-					differentTheme = true
-				end
+			if
+				themeModule
+				and string.find(key, "theme", 1, true) == 1
+				and UI.peek(themeModule[string.sub(key, 6)]) ~= value
+			then
+				differentTheme = true
 			end
-			if value ~= _K.Data.settings[key] and (key ~= "defaultTheme" or value ~= "Custom (DataStore)") then
+			if value ~= originalValues[key] and (key ~= "defaultTheme" or value ~= "Custom (DataStore)") then
 				different = true
 			end
 		end
 
-		if string.find(key, "theme", 1, true) == 1 and _K.Data.settings.defaultTheme ~= "Custom (DataStore)" then
-			local theme = if differentTheme then "Custom (DataStore)" else _K.Data.settings.defaultTheme
-			change("defaultTheme", theme)
+		if
+			string.find(key, "theme", 1, true) == 1
+			and theme ~= "Custom (DataStore)"
+			and pendingChanges.defaultTheme ~= theme
+		then
+			change("defaultTheme", if differentTheme then "Custom (DataStore)" else theme)
 		elseif key == "defaultTheme" then
-			local themeModule = _K.client.themes._value[value]
+			themeModule = _K.client.themes._value[value]
 			if themeModule then
 				-- FIX: update images and sounds
 				for key, value in themeModule do
