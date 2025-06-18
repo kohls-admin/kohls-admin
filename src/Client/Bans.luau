@@ -50,7 +50,13 @@ function Bans.new(_K)
 		Choices = { "Hour", "Day", "Week", "Month", "Year" },
 	}
 
-	local banTargetInput = UI.new "Input" {
+	local banTargetInput
+	local function resetbanTargetInput()
+		banTargetInput.Value:set("")
+		banTargetInput.Selected:set("")
+	end
+
+	banTargetInput = UI.new "Input" {
 		AutomaticSize = Enum.AutomaticSize.X,
 		Font = UI.Theme.FontMono,
 		FontSize = UI.Theme.FontSize,
@@ -60,12 +66,30 @@ function Bans.new(_K)
 		Value = "",
 		[UI.Hook] = {
 			Selected = function(value)
+				local userId
 				if tonumber(value) then
-					banTarget:set(tonumber(value))
+					userId = tonumber(value)
 				else
 					local ok, result = pcall(_K.Service.Players.GetUserIdFromNameAsync, _K.Service.Players, value)
-					banTarget:set(ok and result)
+					userId = ok and result
 				end
+
+				local fauxArg = {
+					_K = _K,
+					definition = _K.Registry.commands.ban.args[1],
+					command = {
+						from = _K.LocalPlayer.UserId,
+						fromRank = _K.Auth.getRank(_K.LocalPlayer.UserId),
+						fromRole = {},
+						rank = _K.Auth.hasCommand(_K.LocalPlayer.UserId, "ban") or 0,
+					},
+				}
+
+				if userId and not _K.Auth.targetUserArgument(fauxArg, userId, userId) then
+					userId = nil
+					task.defer(resetbanTargetInput)
+				end
+				banTarget:set(userId)
 			end,
 		},
 	}

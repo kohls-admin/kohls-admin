@@ -683,7 +683,22 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 	-- handle ban events
 	_K.Remote.Ban.OnServerEvent:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
-		if tonumber(userId) and _K.Auth.hasCommand(player.UserId, "ban") then
+		local fauxArg = {
+			_K = _K,
+			definition = _K.Registry.commands.ban.args[1],
+			command = {
+				from = player.UserId,
+				fromRank = _K.Auth.getRank(player.UserId),
+				fromRole = {},
+				rank = _K.Auth.hasCommand(player.UserId, "ban") or 0,
+			},
+		}
+
+		if
+			tonumber(userId)
+			and _K.Auth.targetUserArgument(fauxArg, userId, userId)
+			and _K.Auth.hasCommand(player.UserId, "ban")
+		then
 			if not _K.Auth.hasPermission(player.UserId, "banasync") then
 				duration = 0
 			end
