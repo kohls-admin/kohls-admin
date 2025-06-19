@@ -291,10 +291,12 @@ function Settings.new(_K)
 		end
 		_K.Util.Defer.wait()
 
-		local sliderMaxSize = UI.state(Vector2.new(math.huge, math.huge))
+		local vector2Huge = Vector2.new(math.huge, math.huge)
+		local sliderMaxSize = UI.state(vector2Huge)
 
 		local sliders = {}
 		local function updateSliderSize()
+			sliderMaxSize:set(vector2Huge)
 			local minimumWidth = math.huge
 			for _, slider in sliders do
 				minimumWidth = math.min(slider.AbsoluteSize.X, minimumWidth)
@@ -302,15 +304,12 @@ function Settings.new(_K)
 			sliderMaxSize:set(Vector2.new(minimumWidth, math.huge))
 		end
 
-		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(function()
-			sliderMaxSize:set(Vector2.new(math.huge, math.huge))
-			updateSliderSize()
-			task.defer(updateSliderSize)
-		end)
+		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updateSliderSize)
 
 		local lastSelected
 		local lastSelectedY = 0
 		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(function()
+			updateSliderSize()
 			if not lastSelected then
 				return
 			end
