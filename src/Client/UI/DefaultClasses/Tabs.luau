@@ -148,6 +148,16 @@ function Tabs.new(definition)
 		},
 	}
 
+	local PagesFrame = UI.new "Frame" {
+		Name = "PagesFrame",
+		AnchorPoint = Vector2.new(0, 1),
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 1, 0),
+		Position = UDim2.new(0, 0, 1, 0),
+
+		pages,
+	}
+
 	new._content = UI.new "Frame" {
 		LayoutOrder = 2,
 		Name = "UIContent",
@@ -158,7 +168,6 @@ function Tabs.new(definition)
 		Position = UDim2.new(0, 0, 1, 0),
 		ClipsDescendants = true,
 
-		pages,
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
 		},
@@ -168,12 +177,9 @@ function Tabs.new(definition)
 			PaddingLeft = UDim.new(0, 1),
 			PaddingRight = UDim.new(0, 1),
 		},
+		PagesFrame,
 
 		ChildAdded = function(page)
-			if containerCache[page] then
-				return
-			end
-
 			local container = containerCache[page]
 			task.defer(function()
 				page.Parent = container
@@ -183,11 +189,11 @@ function Tabs.new(definition)
 			end
 
 			container = UI.new "Frame" {
+				Parent = PagesFrame,
 				Name = page.Name,
 				BackgroundTransparency = 1,
 				Size = UDim2.fromScale(1, 1),
 			}
-			container.Parent = new._content
 			pageCache[container] = page
 			containerCache[page] = container
 
