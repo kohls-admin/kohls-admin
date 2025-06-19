@@ -73,7 +73,6 @@ function Character.fly(enable: boolean)
 		return
 	end
 
-	flying = enable
 	if typeof(flyConnection) == "RBXScriptConnection" then
 		flyConnection:Disconnect()
 		flyConnection = nil
@@ -81,17 +80,18 @@ function Character.fly(enable: boolean)
 
 	local character = LocalPlayer.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	local primaryPart = character and character.PrimaryPart
-	if not (humanoid and primaryPart) then
+	if not (humanoid and humanoid.RootPart) then
 		return
 	end
+
+	flying = enable
 
 	if flying then
 		task.delay(1, function()
 			canDoubleJump, hasDoubleJumped = false, false
 		end)
 		humanoid.PlatformStand = true
-		flyAttachment.Parent = primaryPart
+		flyAttachment.Parent = humanoid.RootPart
 		flyConnection = RunService.Heartbeat:Connect(updateFly)
 		task.defer(humanoid.ChangeState, humanoid, Enum.HumanoidStateType.Freefall)
 	else
