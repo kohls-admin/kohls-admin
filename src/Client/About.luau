@@ -12,9 +12,8 @@ function About.new(_K)
 	}
 
 	task.defer(function()
-		local thirdPartyText = "<font color='#f00'>A developer has disabled <b>Third Party Purchases</b>!</font>\n\n"
-			.. "<font transparency='0.5'>Copy the link below to continue.</font>"
-		local perksText = "\n<font color='#fc0'><b>To get perks, rejoin after your purchase!</b></font>"
+		local thirdPartyText = "Copy the link below to continue."
+			.. "\n<font transparency='0.5'>Rejoin after your purchase to get your perks!</font>"
 
 		local donationLevel = _K.LocalPlayer:GetAttribute("_KDonationLevel")
 
@@ -100,7 +99,7 @@ function About.new(_K)
 		local function promptThirdPartyGamePassDialog(passId, passName)
 			_K.client.lastAttemptedPurchase = passId
 			purchaseDialog.Title:set("Buy " .. passName)
-			purchaseDialog.Text:set(thirdPartyText .. perksText)
+			purchaseDialog.Text:set(thirdPartyText)
 			purchaseLink.Text = "roblox.com/game-pass/" .. passId
 			if _K.client.AllowThirdPartySales then
 				purchaseDialog.Visible:set(false)
@@ -351,7 +350,7 @@ function About.new(_K)
 
 						_K.client.lastAttemptedPurchase = ugc.id
 						purchaseDialog.Title:set("Buy" .. ugc.name)
-						purchaseDialog.Text:set(thirdPartyText .. perksText)
+						purchaseDialog.Text:set(thirdPartyText)
 						purchaseLink.Text = "roblox.com/catalog/" .. ugc.id
 						if _K.client.AllowThirdPartySales then
 							purchaseDialog.Visible:set(false)
