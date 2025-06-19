@@ -812,7 +812,7 @@ function About.new(_K)
 				Font = UI.Theme.FontMono,
 				TextSize = UI.Theme.FontSizeSmall,
 				TextColor3 = Color3.new(1, 1, 1),
-				Text = `<sc>VIP benefits have been <b>disabled</b> by a developer!</sc>`,
+				Text = `<sc>VIP benefits are <b>disabled</b> in this game!</sc>`,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
 				RichText = true,
