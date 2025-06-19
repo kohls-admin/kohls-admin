@@ -20,7 +20,7 @@ setmetatable(ColorPicker, BaseClass)
 local hexInputSize = UI.compute(function(use)
 	local fontSize = use(UI.Theme.FontSize)
 	local padding = use(UI.Theme.Padding).Offset
-	return UDim2.fromOffset(3.5 * fontSize + padding, fontSize + padding)
+	return UDim2.fromOffset(math.max(80, 3.5 * fontSize + padding), fontSize + padding)
 end)
 
 local hueSliderSize = UI.compute(function(use)
