@@ -5,21 +5,27 @@ function Function.debounce(delay: number, func: (...any) -> ...any)
 	return function(...)
 		if thread then
 			pcall(task.cancel, thread)
+			thread = nil
 		end
 		thread = task.delay(delay, func, ...)
 	end
 end
 
 function Function.throttle(delay: number, func: (...any) -> ...any)
-	local throttled
+	local thread, throttled
 	local function reset()
 		throttled = nil
 	end
 	return function(...)
+		if thread then
+			pcall(task.cancel, thread)
+			thread = nil
+		end
 		if throttled then
+			thread = task.delay(throttled - tick(), func, ...)
 			return
 		end
-		throttled = true
+		throttled = tick() + delay
 		task.delay(delay, reset)
 		func(...)
 	end
