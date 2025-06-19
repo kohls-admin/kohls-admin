@@ -189,6 +189,7 @@ function Dialog.new(definition)
 
 		UI.new "TextButton" {
 			Name = "Title",
+			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
 			Text = "",

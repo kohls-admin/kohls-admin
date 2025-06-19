@@ -107,6 +107,7 @@ gui.ResetOnSpawn = false
 gui.LightInfluence = 0
 
 local title = Instance.new("TextLabel")
+title.AutoLocalize = false
 title.Name = "Title"
 title.BackgroundTransparency = 1
 title.Size = UDim2.fromScale(1, 1)

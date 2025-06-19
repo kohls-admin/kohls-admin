@@ -43,6 +43,7 @@ return {
 				local hint = _K.UI.new "TextLabel" {
 					Name = "Hint",
 					Parent = _K.UI.LayerTop,
+					AutoLocalize = false,
 					AutomaticSize = Enum.AutomaticSize.Y,
 					Size = UDim2.new(1, 0, 0, 0),
 					BackgroundColor3 = _K.UI.Theme.Primary,
@@ -160,6 +161,7 @@ return {
 				local msg = _K.UI.new "TextLabel" {
 					Name = "Message",
 					Parent = _K.UI.LayerTop,
+					AutoLocalize = false,
 					AutomaticSize = Enum.AutomaticSize.Y,
 					Size = UDim2.new(1, 0, 1, 0),
 					BackgroundColor3 = _K.UI.Theme.Primary,
@@ -307,6 +309,7 @@ return {
 
 				local time = _K.UI.new "TextLabel" {
 					Name = "Time",
+					AutoLocalize = false,
 					AnchorPoint = Vector2.new(0.5, 0.5),
 					Size = UDim2.new(1, 0, 1, 0),
 					BackgroundTransparency = 1,
