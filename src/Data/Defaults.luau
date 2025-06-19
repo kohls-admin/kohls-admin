@@ -31,6 +31,7 @@ local Data = {
 	reservedServers = {},
 	targetLimits = {},
 	roles = nil,
+	rolesList = {},
 
 	settingsModuleData = nil,
 	settings = {

@@ -399,6 +399,10 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		end
 	end
 
+	for role, roleData in _K.Data.roles do
+		_K.Data.rolesList[roleData._rank] = roleData
+	end
+
 	task.spawn(function() -- populate ban names
 		for userId, ban in _K.Data.bans do
 			if not ban[1] then

@@ -234,6 +234,9 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 	_K.client.members:set(_K.Data.members)
 
 	_K.Data.roles = roles
+	for role, roleData in roles do
+		_K.Data.rolesList[roleData._rank] = roleData
+	end
 
 	_K.client.syncSettings(settings)
 
