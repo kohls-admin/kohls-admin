@@ -53,8 +53,14 @@ return function(_K, text, cursorPosition)
 					`Invalid command: {commandText}, did you mean "{_K.Registry.suggestCommandAlias(commandAlias)}"?`
 				table.insert(data.invalid, { feedback, commandPos, commandText })
 				return data
-			elseif commandDefinition and commandDefinition.LocalPlayerAuthorized then
+			elseif commandDefinition then
 				local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
+				table.insert(data.commands, command)
+				if not commandDefinition.LocalPlayerAuthorized then
+					local message = `"{commandText}" command restricted to {commandDefinition.RestrictedToRole.name}`
+					table.insert(data.invalid, { message, commandPos, commandText })
+					continue
+				end
 				command:validate()
 				table.insert(data.commands, command)
 				if command.invalidArg then
@@ -68,7 +74,7 @@ return function(_K, text, cursorPosition)
 			continue -- cursor not within commandArray
 		end
 
-		if cursorPosition <= commandPos + #commandText then -- within command
+		if cursorPosition <= commandPos + #commandText then -- within command suggestion
 			data.argIndex = 1
 			data.argPos = commandPos
 			data.rawArg = commandText
@@ -97,20 +103,18 @@ return function(_K, text, cursorPosition)
 				table.move(invalidSuggestions, 1, #invalidSuggestions, #data.suggestions + 1, data.suggestions)
 			end
 
-			if commandDefinition and not commandDefinition.LocalPlayerAuthorized then
-				if
+			if commandDefinition then
+				if commandDefinition.LocalPlayerAuthorized then
+					local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
+					command:validate()
+					table.insert(data.commands, command)
+				elseif
 					#data.suggestions == 0
 					or not string.find(string.lower(data.suggestions[1][1]), string.lower(data.query), 1, true)
 				then
-					table.insert(data.invalid, { "Invalid permissions", commandPos, commandText })
-					return data
+					local message = `"{commandText}" command restricted to {commandDefinition.RestrictedToRole.name}`
+					table.insert(data.invalid, { message, commandPos, commandText })
 				end
-			end
-
-			if commandDefinition and commandDefinition.LocalPlayerAuthorized then
-				local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
-				command:validate()
-				table.insert(data.commands, command)
 			end
 
 			return data
@@ -122,7 +126,8 @@ return function(_K, text, cursorPosition)
 			table.insert(data.invalid, { feedback, commandPos, commandText })
 			return data
 		elseif not commandDefinition.LocalPlayerAuthorized then
-			table.insert(data.invalid, { "Invalid permissions", commandPos, commandText })
+			local message = `"{commandText}" command restricted to {commandDefinition.RestrictedToRole.name}`
+			table.insert(data.invalid, { message, commandPos, commandText })
 			return data
 		end
 

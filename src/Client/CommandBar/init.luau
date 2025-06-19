@@ -519,7 +519,7 @@ updateCompletion = function()
 		invalidSuggestion(data, unpack(invalid))
 	end
 
-	if not data.suggestionType then
+	if not data.suggestionType or #data.invalid > 0 then
 		return
 	end
 
