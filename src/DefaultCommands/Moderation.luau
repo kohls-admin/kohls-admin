@@ -1474,18 +1474,27 @@ return {
 			},
 		},
 
-		run = function(context, players)
-			for _, player in players do
+		env = function(_K)
+			local env = {
+				anchorPos = {},
+				frozen = {},
+			}
+
+			function env.anchor(player: Player)
 				if not player.Character then
-					continue
+					return
 				end
 				for _, descendant in player.Character:GetDescendants() do
 					if descendant:IsA("BasePart") then
 						descendant.Anchored = true
 					end
 				end
-				if context.alias == "anchor" or player.Character:FindFirstChild("kFreeze") then
-					continue
+				env.anchorPos[player.UserId] = player.Character:GetBoundingBox()
+			end
+
+			function env.freeze(player: Player)
+				if not player.Character then
+					return
 				end
 				local orientation, size = player.Character:GetBoundingBox()
 				local kFreeze = Instance.new("Part")
@@ -1500,6 +1509,44 @@ return {
 				kFreeze.TopSurface = Enum.SurfaceType.Smooth
 				kFreeze.BottomSurface = Enum.SurfaceType.Smooth
 				kFreeze.Parent = player.Character
+
+				env.frozen[player.UserId] = true
+			end
+
+			local function reapply(player: Player)
+				local anchorPos = env.anchorPos[player.UserId]
+				if anchorPos then
+					if not player.Character then
+						player.CharacterAdded:Wait()
+					end
+					player.CharacterAppearanceLoaded:Wait()
+					task.wait()
+					player.Character:PivotTo(anchorPos)
+					env.anchor(player)
+					if env.frozen[player.UserId] then
+						env.freeze(player)
+					end
+				end
+			end
+
+			local function reapplyCharacter(character: Model)
+				reapply(_K.Service.Players:GetPlayerFromCharacter(character))
+			end
+
+			_K.Util.SafePlayerAdded(function(player: Player)
+				player.CharacterAdded:Connect(reapplyCharacter)
+				reapply(player)
+			end)
+
+			return env
+		end,
+		run = function(context, players)
+			for _, player in players do
+				context.env.anchor(player)
+				if context.alias == "anchor" or context.env.frozen[player.UserId] then
+					continue
+				end
+				context.env.freeze(player)
 			end
 		end,
 	},
@@ -1529,6 +1576,9 @@ return {
 						descendant.Anchored = false
 					end
 				end
+				local freezeEnv = context._K.Registry.commands.freeze.env
+				freezeEnv.anchorPos[player.UserId] = nil
+				freezeEnv.frozen[player.UserId] = nil
 			end
 		end,
 	},
