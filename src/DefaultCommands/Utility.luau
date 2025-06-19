@@ -459,6 +459,81 @@ return {
 		end,
 	},
 
+	{
+		name = "viewas",
+		aliases = { "unviewas" },
+		description = "Views the admin system as one or more role(s).",
+		args = {
+			{
+				type = "roles",
+				name = "Roles(s)",
+				description = "The roles(s) to test.",
+				optional = true,
+			},
+		},
+
+		envClient = function(_K)
+			return {
+				originalCreatorId = nil,
+				originalMember = nil,
+			}
+		end,
+		runClient = function(context, roles)
+			local key = tostring(context.from)
+			if context.undo then
+				if not context.env.originalMember then
+					return
+				end
+				context._K.Data.members[key] = context.env.originalMember
+				if context.env.originalCreatorId then
+					context._K.creatorId = context.env.originalCreatorId
+					context._K.Data.creatorId = context._K.creatorId
+				end
+				context.env.originalMember = nil
+				context.env.originalCreatorId = nil
+				context._K.Notify({
+					From = "_K",
+					Text = `View returned to original permissions.`,
+				})
+			else
+				if not context.env.originalMember then
+					context.env.originalMember = context._K.Data.members[key]
+					if context.from == context._K.creatorId then
+						context.env.originalCreatorId = context._K.creatorId
+						context._K.creatorId = 0
+						context._K.Data.creatorId = 0
+					end
+				end
+				context._K.Data.members[key] = {
+					name = context.fromPlayer.Name,
+					roles = roles or {},
+					persist = {},
+				}
+
+				local roleStrings = {}
+				if roles then
+					for _, role in roles do
+						local roleData = context._K.Data.roles[role]
+						if roleData then
+							table.insert(roleStrings, `<font color="{roleData.color}">{roleData.name}</font>`)
+						end
+					end
+				end
+				local everyoneRole = context._K.Data.roles.everyone
+				table.insert(roleStrings, `<font color="{everyoneRole.color}">{everyoneRole.name}</font>`)
+				local roleString = table.concat(roleStrings, ", ")
+
+				context._K.Notify({
+					From = "_K",
+					Text = `Viewing the system as <sc>{roleString}</sc>`
+						.. `\n\nUse <b>{context._K.getCommandPrefix(context.from)}unviewas</b> to return to normal.`,
+				})
+			end
+			context._K.client.members:set(context._K.Data.members)
+			context._K.client.updateInterfaceAuth()
+		end,
+	},
+
 	-- {
 	-- 	name = "alias",
 	-- 	aliases = {},

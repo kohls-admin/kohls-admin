@@ -104,12 +104,30 @@ _K.Remote.Bans.OnClientEvent:Connect(function(bans)
 end)
 
 _K.Remote.Member.OnClientEvent:Connect(function(userId, member)
+	local viewas = _K.Registry.commands.viewas
+	if viewas.env.originalMember then
+		viewas.env.originalMember = member
+		member = _K.Data.members[userId]
+	end
+
 	_K.Data.members[userId] = member
 	_K.client.members:set(_K.Data.members)
 	_K.client.updateInterfaceAuth()
 end)
 
 _K.Remote.Members.OnClientEvent:Connect(function(members)
+	local viewas = _K.Registry.commands.viewas
+	if viewas.env.originalMember then
+		local key = tostring(_K.LocalPlayer.UserId)
+		for userId, member in members do
+			if userId == key then
+				viewas.env.originalMember = member
+				members[userId] = _K.Data.members[userId]
+				break
+			end
+		end
+	end
+
 	_K.Data.members = members
 	_K.client.members:set(_K.Data.members)
 	_K.client.updateInterfaceAuth()
