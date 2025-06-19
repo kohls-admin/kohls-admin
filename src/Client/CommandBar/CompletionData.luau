@@ -37,17 +37,11 @@ return function(_K, text, cursorPosition)
 		local commandPos, commandText = unpack(commandArray[1])
 		local commandAlias = string.lower(commandText)
 		local commandDefinition = _K.Registry.commands[commandAlias]
-		local invalidPermissions = false
 
 		local lastArgDefinition = commandDefinition and commandDefinition.args[#commandDefinition.args]
 		local lastArg = commandArray[#commandArray]
 		local commandEnd = lastArg[1] + #lastArg[2]
 		local greedy = lastArgDefinition and (lastArgDefinition.type == "string" or lastArgDefinition.type == "strings")
-
-		if commandDefinition and not commandDefinition.LocalPlayerAuthorized then
-			data.invalidPermissionsCommand = commandDefinition
-			invalidPermissions = true
-		end
 
 		if cursorPosition < commandArray[1][1] or cursorPosition > commandEnd then --outside current query
 			if not commandDefinition and not greedy then
@@ -95,7 +89,6 @@ return function(_K, text, cursorPosition)
 					else
 						suggestionData[4] = true -- invalid
 						table.insert(invalidSuggestions, suggestionData)
-						data.invalidPermissionsCommand = cmd
 					end
 				end
 			end
@@ -104,7 +97,7 @@ return function(_K, text, cursorPosition)
 				table.move(invalidSuggestions, 1, #invalidSuggestions, #data.suggestions + 1, data.suggestions)
 			end
 
-			if invalidPermissions then
+			if commandDefinition and not commandDefinition.LocalPlayerAuthorized then
 				if
 					#data.suggestions == 0
 					or not string.find(string.lower(data.suggestions[1][1]), string.lower(data.query), 1, true)
@@ -128,7 +121,7 @@ return function(_K, text, cursorPosition)
 				`Invalid command: {commandText}, did you mean "{_K.Registry.suggestCommandAlias(commandAlias)}"?`
 			table.insert(data.invalid, { feedback, commandPos, commandText })
 			return data
-		elseif invalidPermissions then
+		elseif not commandDefinition.LocalPlayerAuthorized then
 			table.insert(data.invalid, { "Invalid permissions", commandPos, commandText })
 			return data
 		end

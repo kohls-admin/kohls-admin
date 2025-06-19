@@ -147,7 +147,7 @@ local TooltipLayout = UI.new "UIListLayout" {
 
 local Tooltip = UI.new "TextLabel" {
 	Parent = TooltipFrame,
-	LayoutOrder = 0,
+	LayoutOrder = -1,
 	AutoLocalize = false,
 	Name = "Tooltip",
 	BackgroundTransparency = 1,
@@ -218,18 +218,21 @@ local SuggestionFrame = UI.new "TextButton" {
 }
 
 local argumentFormat = `<b><sc>%s</sc> <font transparency="0.66"><i>&lt;%s&gt;</i></font></b>\n%s`
+local suggestFormat = `<font transparency="0.5">%s</font>%s<font transparency="0.5">%s</font>`
 local inlineFormat =
 	`<font transparency="0.33">%s<font transparency="0.66">%s<font transparency="0">%s</font>%s</font>%s</font>`
+
+local invalidFormat = `<font color="#f00">%s</font>`
+local invalidSuggestFormat = string.format(invalidFormat, suggestFormat)
 local invalidInlineFormat =
 	`<font transparency="0.33">%s<b><font color="#f00" transparency="0.66">%s<font transparency="0">%s</font>%s</font></b>%s</font>`
-local suggestFormat = `<font transparency="0.5">%s</font>%s<font transparency="0.5">%s</font>`
-local invalidSuggestFormat = `<font color="#f00">{suggestFormat}</font>`
 
 local function updateInvalidColor(invalidColor)
 	invalidColor = invalidColor:ToHex()
+	invalidFormat = `<font color="#{invalidColor}">%s</font>`
+	invalidSuggestFormat = string.format(invalidFormat, suggestFormat)
 	invalidInlineFormat =
 		`<font transparency="0.33">%s<b><font color="#{invalidColor}" transparency="0.66">%s<font transparency="0">%s</font>%s</font></b>%s</font>`
-	invalidSuggestFormat = `<font color="#{invalidColor}">{suggestFormat}</font>`
 end
 UI.Theme.Invalid:hook(updateInvalidColor)
 updateInvalidColor(UI.Theme.Invalid._value)
@@ -399,7 +402,6 @@ local suggestionPurchase = {
 	gamepass = nil,
 }
 local suggestionPurchaseButton = UI.new "Button" {
-	LayoutOrder = math.huge,
 	Label = "Loading...",
 	Icon = "rbxasset://textures/ui/common/robux.png",
 	IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
@@ -521,26 +523,6 @@ updateCompletion = function()
 		return
 	end
 
-	if data.invalidPermissionsCommand and not data.validSuggestion then
-		for role, roleData in _K.Data.roles do
-			if
-				(roleData.gamepasses or role == "vip")
-				and _K.Auth.roleCanUseCommand(role, data.invalidPermissionsCommand)
-			then
-				suggestionPurchase.role = role
-				suggestionPurchase.gamepass = if role == "vip" then 5411126 else roleData.gamepasses[1]
-				suggestionPurchaseButton._instance.Parent = TooltipFrame
-				suggestionPurchaseButton.Label:set(
-					`<sc>Purchase <font color="{roleData.color}">{roleData.name or role}</font></sc>`
-				)
-				task.spawn(updateSuggestionPurchasePrice)
-				break
-			end
-		end
-	else
-		suggestionPurchaseButton._instance.Parent = nil
-	end
-
 	if #data.commands > 0 then
 		local valid = true
 		for _, command in data.commands do
@@ -553,10 +535,6 @@ updateCompletion = function()
 		if valid then
 			validState:set(true)
 		end
-	end
-
-	if not data.suggestionType then
-		return clearCompletion() -- no suggestions without argument type
 	end
 
 	-- show normal argument type hints here!
@@ -598,6 +576,28 @@ updateCompletion = function()
 	local arg = _K.Util.String.trim(data.rawArg)
 	local endPos = data.argPos + #arg
 	local suggestion, _, value, invalid = unpack(data.suggestions[suggestionIndex])
+
+	suggestionPurchaseButton._instance.Parent = nil
+	if data.argIndex == 1 then -- command
+		Tooltip.Text =
+			string.format(argumentFormat, _K.Util.String.escapeRichText(suggestion), "command", value.description)
+		if invalid then
+			Tooltip.Text ..= string.format(invalidFormat, `\n<b>Restricted to {value.RestrictedToRole.name}</b>`)
+			for rank, roleData in _K.Data.rolesList do
+				local roleId = roleData._key
+				if (roleId == "vip" or roleData.gamepasses) and _K.Auth.roleCanUseCommand(roleId, value) then
+					suggestionPurchase.role = roleId
+					suggestionPurchase.gamepass = if roleId == "vip" then 5411126 else roleData.gamepasses[1]
+					suggestionPurchaseButton._instance.Parent = TooltipFrame
+					suggestionPurchaseButton.Label:set(
+						`<sc>Purchase <font color="{roleData.color}">{roleData.name or roleId}</font></sc>`
+					)
+					task.spawn(updateSuggestionPurchasePrice)
+					break
+				end
+			end
+		end
+	end
 
 	if not string.find(string.lower(suggestion), `{string.lower(_K.Util.String.stripQuotes(arg))}`, 1, true) then
 		invalid = true
@@ -643,12 +643,6 @@ updateCompletion = function()
 			_K.Util.String.escapeRichText(postCompletion)
 		)
 	)
-
-	-- show completion tooltip
-	if data.argIndex == 1 then -- command
-		Tooltip.Text =
-			string.format(argumentFormat, _K.Util.String.escapeRichText(suggestion), "command", value.description)
-	end
 
 	if data.argDefinition or data.argIndex == 1 then
 		updateSuggestionLabels(data)
