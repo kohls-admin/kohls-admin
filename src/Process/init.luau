@@ -133,9 +133,10 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 						end
 					end
 				end
+				return false,
+					`"<b>{commandText}</b>" command restricted to <b>{commandDefinition.RestrictedToRole.name}</b>`
 			end
-
-			return false, "Invalid permissions for command: " .. commandText
+			return false, `"<b>{commandText}</b>" command restricted`
 		end
 
 		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
