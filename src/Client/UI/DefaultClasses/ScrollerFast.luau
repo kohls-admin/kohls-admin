@@ -310,12 +310,17 @@ function ScrollerFast.new(definition)
 		BottomImage = UI.Theme.ScrollBottomImage,
 		VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
-		UI.new "UIPadding" {
-			PaddingRight = UI.Theme.Padding,
-		},
-
 		AbsoluteWindowSize_Changed = render,
 		CanvasPosition_Changed = render,
+	}
+
+	local canvasAbsolute = UI.state(self._scroller, "AbsoluteCanvasSize")
+	local windowAbsolute = UI.state(self._scroller, "AbsoluteWindowSize")
+	UI.new "UIPadding" {
+		Parent = self._scroller,
+		PaddingRight = function(use)
+			return if use(canvasAbsolute).Y > use(windowAbsolute).Y then use(UI.Theme.Padding) else UDim.new()
+		end,
 	}
 
 	self._instance = UI.new "Frame" {
