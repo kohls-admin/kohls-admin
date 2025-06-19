@@ -38,7 +38,7 @@ function Tabs.new(definition)
 	end)
 
 	local lastScroll
-	local containerCache, pageCache = {}, {}
+	local pageCache, containerCache = {}, {}
 	local currentPage = UI.state(nil)
 
 	local pages = UI.new "UIPageLayout" {
@@ -53,7 +53,7 @@ function Tabs.new(definition)
 
 	pages.PageEnter:Connect(function(container)
 		currentPage:set(container)
-		local page = containerCache[container]
+		local page = pageCache[container]
 		if not page then
 			return
 		end
@@ -62,7 +62,7 @@ function Tabs.new(definition)
 	end)
 
 	pages.PageLeave:Connect(function(container)
-		local page = containerCache[container]
+		local page = pageCache[container]
 		if not page then
 			return
 		end
@@ -75,7 +75,7 @@ function Tabs.new(definition)
 	end)
 
 	new.JumpTo = function(page)
-		page = pageCache[page] or page
+		page = containerCache[page] or page
 		currentPage:set(page)
 		pages:JumpTo(page)
 	end
@@ -174,7 +174,7 @@ function Tabs.new(definition)
 				return
 			end
 
-			local container = pageCache[page]
+			local container = containerCache[page]
 			task.defer(function()
 				page.Parent = container
 			end)
@@ -187,9 +187,9 @@ function Tabs.new(definition)
 				BackgroundTransparency = 1,
 				Size = UDim2.fromScale(1, 1),
 			}
-			containerCache[container] = page
-			pageCache[page] = container
 			container.Parent = new._content
+			pageCache[container] = page
+			containerCache[page] = container
 
 			local nameState = UI.state(page, "Name")
 			local boldState = function(use)
