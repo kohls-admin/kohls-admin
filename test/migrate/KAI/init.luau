@@ -109,9 +109,8 @@ local state: {
 	}
 
 local Dependencies = script.D:Clone()
-local BuildingTools
+local BuildingTools = script.Tools["Building Tools"]:Clone()
 do
-	BuildingTools = Dependencies.Tools["Building Tools"]:Clone()
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
 	handle.Size = Vector3.new(0.8, 0.8, 0.8)

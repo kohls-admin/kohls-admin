@@ -1,5 +1,10 @@
+local MainModule
 if shared._K_LOADER_LOADED and not _G.KAU then
-	return require(script:WaitForChild("KA"))
+	MainModule = script:WaitForChild("KA")
 else
-	return require(script:WaitForChild("KAI"))
+	MainModule = script:WaitForChild("KAI")
 end
+
+script:WaitForChild("Tools").Parent = MainModule
+
+require(MainModule)

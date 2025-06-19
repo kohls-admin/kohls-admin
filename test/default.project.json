@@ -25,6 +25,12 @@
 					"VERSION": {
 						"$path": "../VERSION.txt"
 					}
+				},
+				"Tools": {
+					"$className": "Folder",
+					"Building Tools": {
+						"$path": "../submodules/F3X"
+					}
 				}
 			},
 			"Kohl's Admin": {
@@ -42,6 +48,12 @@
 					},
 					"MainModuleLegacy": {
 						"$path": "migrate/KAI"
+					},
+					"Tools": {
+						"$className": "Folder",
+						"Building Tools": {
+							"$path": "../submodules/F3X"
+						}
 					}
 				},
 				"READ_ME": {
