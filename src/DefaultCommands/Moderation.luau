@@ -2070,6 +2070,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) whose jump power to change.",
+				shouldRequest = true,
 			},
 			{
 				type = "number",
@@ -2094,6 +2095,7 @@ return {
 				type = "number",
 				name = "JumpPower",
 				description = "The jump power to use.",
+				shouldRequest = true,
 			},
 		},
 
@@ -2150,6 +2152,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) whose walkspeed to change.",
+				shouldRequest = true,
 			},
 			{
 				type = "number",
@@ -2175,6 +2178,7 @@ return {
 				type = "number",
 				name = "Speed",
 				description = "The walkspeed to use.",
+				shouldRequest = true,
 			},
 		},
 
@@ -2191,6 +2195,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) whose vehicle speed to change.",
+				shouldRequest = true,
 			},
 			{
 				type = "number",
@@ -2221,6 +2226,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) whose vehicle torque to change.",
+				shouldRequest = true,
 			},
 			{
 				type = "number",
