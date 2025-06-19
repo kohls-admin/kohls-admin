@@ -116,6 +116,7 @@ function ColorPicker.new(definition)
 
 	local hexInput = UI.new "Input" {
 		Font = UI.Theme.FontMono,
+		BackgroundColor3 = inputColor,
 		TextColor3 = inputColor,
 		Size = hexInputSize,
 		Padding = UDim.new(0, 5),
