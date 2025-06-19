@@ -225,9 +225,7 @@ local function syncMain(result)
 		if not player:GetAttribute("_K_READY") then
 			continue
 		end
-		if Auth.hasCommand(player.UserId, "members") then
-			Remote.Members:FireClient(player, Data.members)
-		end
+		Remote.Members:FireClient(player, Data.members)
 		Remote.Settings:FireClient(player, Data.settings)
 	end
 	Hook.postSyncMain:Fire(Data)

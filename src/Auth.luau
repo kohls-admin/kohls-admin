@@ -132,9 +132,10 @@ function Auth.networkMember(userId: number)
 	local userIdString = tostring(userId)
 	local member = Data.members[userIdString]
 	for _, player in Util.Service.Players:GetPlayers() do
-		if player.UserId == userId or Auth.hasCommand(player.UserId, "members") then
-			Remote.Member:FireClient(player, userIdString, member)
+		if not player:GetAttribute("_K_READY") then
+			continue
 		end
+		Remote.Member:FireClient(player, userIdString, member)
 	end
 end
 
