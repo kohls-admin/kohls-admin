@@ -255,7 +255,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 		if member and member.roles then
 			for _, role in member.roles do
 				local roleData = _K.Data.roles[role]
-				if _K.Data.roles[role] then
+				if roleData then
 					table.insert(roleStrings, `<font color="{roleData.color}">{roleData.name}</font>`)
 				end
 			end
