@@ -7,4 +7,4 @@ end
 
 script:WaitForChild("Tools").Parent = MainModule
 
-require(MainModule)
+return require(MainModule)
