@@ -194,7 +194,7 @@ function ScrollerFast:forceRender()
 			if self.RenderItem then
 				self.RenderItem._value(self, lineItem, lineData)
 			else
-				lineItem.Text = if self.RenderText then self.RenderText._value(self, lineItem, lineData) else lineData
+				lineItem.Text = lineData
 			end
 
 			local instance = if type(lineItem) == "table" then lineItem._instance else lineItem
@@ -270,7 +270,6 @@ function ScrollerFast.new(definition)
 		FilterInputDebounce = 0,
 		CreateItem = UI.Function,
 		RenderItem = UI.Function,
-		RenderText = UI.Function,
 		ReverseOrder = false,
 		Visible = true,
 	}, definition)
