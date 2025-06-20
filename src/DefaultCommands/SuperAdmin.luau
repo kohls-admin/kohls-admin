@@ -47,6 +47,234 @@ return {
 		end,
 	},
 	{
+		name = "incognito",
+		description = "Hides one or more player(s) from lower rank players. (Persists until rejoin)",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to hide.",
+				shouldRequest = true,
+			},
+			{
+				type = "boolean",
+				name = "Hide Character",
+				description = "Hides the character, defaults to true.",
+				optional = true,
+			},
+		},
+
+		envClient = function(_K)
+			local env = {
+				hidden = _K.UI.state({}),
+			}
+
+			local function removeCharacter(name: string)
+				local character = workspace:WaitForChild(name)
+				if not (character and character:FindFirstChildOfClass("Humanoid")) then
+					character = nil
+					for _, child in workspace:GetChildren() do
+						if child.Name == name and child:IsA("Model") and child:FindFirstChildOfClass("Humanoid") then
+							character = child
+							break
+						end
+					end
+				end
+				if character then
+					character:Destroy()
+				end
+			end
+
+			_K.Remote.Incognito.OnClientEvent:Connect(
+				function(userIdOrName: number | string, hiddenRank: number, hideCharacter: boolean?)
+					if type(userIdOrName) == "number" then
+						if hideCharacter == nil then -- remove from hidden list
+							env.hidden._value[userIdOrName] = nil
+							env.hidden:set(env.hidden._value)
+						else
+							local player = _K.Service.Players:GetPlayerByUserId(userIdOrName)
+							if player then
+								env.hidden._value[userIdOrName] = player.Name
+								env.hidden:set(env.hidden._value)
+								if hiddenRank > _K.client.rank._value then
+									if hideCharacter then
+										pcall(game.Destroy, player.Character)
+									end
+									player:Destroy()
+								end
+							end
+						end
+					elseif type(userIdOrName) == "string" and hiddenRank > _K.client.rank._value then
+						removeCharacter(userIdOrName)
+					end
+				end
+			)
+
+			return env
+		end,
+
+		env = function(_K)
+			local env = {
+				hidden = {},
+				remote = _K.Remote.Incognito :: RemoteEvent,
+			}
+
+			function env.apply(hiddenPlayer: Player, hideCharacter: boolean?)
+				local hiddenRank = _K.Auth.getRank(hiddenPlayer.UserId)
+				if env.hidden[hiddenPlayer] == false and hideCharacter then
+					env.remote:FireAllClients(hiddenPlayer.Name, hiddenRank, hideCharacter)
+				else
+					env.remote:FireAllClients(hiddenPlayer.UserId, hiddenRank, hideCharacter)
+				end
+				env.hidden[hiddenPlayer] = hideCharacter
+			end
+
+			local function characterAdded(character)
+				local player = _K.Service.Players:GetPlayerFromCharacter(character)
+				if env.hidden[player] ~= nil then
+					local hiddenRank = _K.Auth.getRank(player.UserId)
+					env.remote:FireAllClients(character.Name, hiddenRank)
+				end
+			end
+
+			_K.Util.SafePlayerAdded(function(player: Player)
+				for hiddenPlayer, hideCharacter in env.hidden do
+					local hiddenRank = _K.Auth.getRank(hiddenPlayer.UserId)
+					env.remote:FireAllClients(hiddenPlayer.UserId, hiddenRank, hideCharacter)
+				end
+				if player.Character then
+					characterAdded(player.Character)
+				end
+				player.CharacterAdded:Connect(characterAdded)
+			end)
+
+			_K.Service.Players.PlayerRemoving:Connect(function(player)
+				if env.hidden[player] ~= nil then
+					env.hidden[player] = nil
+					env.remote:FireAllClients(player.UserId)
+				end
+			end)
+
+			return env
+		end,
+
+		run = function(context, players: { Player }, hideCharacter: boolean?)
+			if hideCharacter == nil then
+				hideCharacter = true
+			end
+			for _, player in players do
+				context.env.apply(player, hideCharacter)
+			end
+		end,
+	},
+	{
+		name = "incognitolist",
+		description = "Views all incognito players in the server.",
+
+		envClient = function(_K)
+			local UI = _K.UI
+
+			local hidden = _K.Registry.commands.incognito.env.hidden
+
+			local scroller = UI.new "ScrollerFast" {
+				List = hidden,
+				Enabled = true,
+				DictList = true,
+				FilterInput = true,
+				ReverseOrder = true,
+				Visible = true,
+				CreateItem = function(self, lineData)
+					return UI.new "Frame" {
+						BackgroundTransparency = 1,
+						Size = self.ItemSize,
+
+						UI.new "UIPadding" {
+							PaddingTop = UI.Theme.PaddingHalf,
+							PaddingBottom = UI.Theme.PaddingHalf,
+						},
+
+						UI.new "UIListLayout" {
+							VerticalAlignment = Enum.VerticalAlignment.Center,
+							FillDirection = Enum.FillDirection.Horizontal,
+							SortOrder = Enum.SortOrder.LayoutOrder,
+							Padding = UI.Theme.Padding,
+						},
+
+						UI.new "ImageLabel" {
+							BackgroundTransparency = UI.Theme.TransparencyOverlay,
+							BackgroundColor3 = UI.Theme.PrimaryText,
+							Size = UDim2.new(1, 0, 1, 0),
+							SizeConstraint = Enum.SizeConstraint.RelativeYY,
+
+							UI.new "UICorner" {
+								CornerRadius = UDim.new(1, 0),
+							},
+							UI.new "UIStroke" {
+								Enabled = UI.Theme.StrokeEnabled,
+								ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+								Transparency = UI.Theme.TransparencyClamped,
+								Color = UI.Theme.Border,
+							},
+						},
+
+						UI.new "TextLabel" {
+							AutoLocalize = false,
+							AutomaticSize = Enum.AutomaticSize.X,
+							BackgroundTransparency = 1,
+							Size = UDim2.new(0, 0, 1, 0),
+							RichText = true,
+							Font = UI.Theme.FontMono,
+							TextSize = UI.Theme.FontSize,
+							TextColor3 = UI.Theme.PrimaryText,
+							TextStrokeColor3 = UI.Theme.Primary,
+							TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+							TextTruncate = Enum.TextTruncate.SplitWord,
+							TextXAlignment = Enum.TextXAlignment.Left,
+
+							UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
+						},
+					}
+				end,
+				RenderItem = function(self, lineItem, lineData)
+					lineItem.ImageLabel.Image = `rbxthumb://type=AvatarHeadShot&id={lineData}&w=48&h=48`
+					lineItem.TextLabel.Text =
+						`<b>{hidden._value[lineData]}</b> <font transparency="0.5">[{lineData}]</font>`
+				end,
+			}
+
+			UI.edit(scroller._scroller, {
+				UI.new "UIFlexItem" {
+					FlexMode = Enum.UIFlexMode.Fill,
+				},
+			})
+
+			UI.edit(scroller._instance, {
+				UI.new "UIPadding" {
+					PaddingTop = UDim.new(0, 1),
+					PaddingBottom = UDim.new(0, 1),
+					PaddingLeft = UDim.new(0, 1),
+					PaddingRight = UDim.new(0, 1),
+				},
+			})
+
+			return {
+				scroller = scroller,
+				window = UI.new "Window" {
+					Parent = UI.LayerTopInset,
+					Title = "Incognito Players",
+					Exitable = true,
+					Position = UDim2.new(0.5, -128, 0.5, -128),
+					Size = UDim2.new(0, 256, 0, 256),
+
+					scroller,
+				},
+			}
+		end,
+		runClient = function(context, player)
+			context.env.window._instance.Visible = true
+		end,
+	},
+	{
 		name = "reserve",
 		aliases = { "privateserver" },
 		description = "Reserves a private server.",
