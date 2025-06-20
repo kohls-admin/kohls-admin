@@ -184,8 +184,8 @@ function Bans.new(_K)
 			},
 
 			UI.new "ImageLabel" {
-				BackgroundTransparency = 0.75,
-				BackgroundColor3 = UI.Theme.Border,
+				BackgroundTransparency = UI.Theme.TransparencyOverlay,
+				BackgroundColor3 = UI.Theme.PrimaryText,
 				Size = UDim2.new(1, 0, 1, 0),
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
