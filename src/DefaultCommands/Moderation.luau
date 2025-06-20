@@ -1521,7 +1521,9 @@ return {
 					end
 					player.CharacterAppearanceLoaded:Wait()
 					task.wait()
-					player.Character:PivotTo(anchorPos)
+					if player.Character then
+						player.Character:PivotTo(anchorPos)
+					end
 					env.anchor(player)
 					if env.frozen[player.UserId] then
 						env.freeze(player)
