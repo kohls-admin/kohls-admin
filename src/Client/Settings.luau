@@ -298,12 +298,12 @@ function Settings.new(_K)
 
 		local sliders = {}
 		local function updateSliderSize()
-			sliderMaxSize(vector2Huge)
+			sliderMaxSize(vector2Huge, true)
 			local minimumWidth = math.huge
 			for _, slider in sliders do
 				minimumWidth = math.min(slider.AbsoluteSize.X, minimumWidth)
 			end
-			sliderMaxSize(Vector2.new(minimumWidth, math.huge))
+			sliderMaxSize(Vector2.new(minimumWidth, math.huge), true)
 		end
 
 		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updateSliderSize)
