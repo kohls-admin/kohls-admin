@@ -3,6 +3,11 @@
 	"emitLegacyScripts": false,
 	"tree": {
 		"$path": "src",
+		"TopbarPlus": { "$path": "submodules/TopbarPlus" },
+		"Tools": {
+			"$className": "Folder",
+			"Building Tools": { "$path": "submodules/F3X" }
+		},
 		"VERSION": {
 			"$path": "VERSION.txt"
 		}

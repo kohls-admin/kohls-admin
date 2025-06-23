@@ -22,9 +22,8 @@
 				"$path": "migrate",
 				"KA": {
 					"$path": "../src",
-					"VERSION": {
-						"$path": "../VERSION.txt"
-					}
+					"TopbarPlus": { "$path": "../submodules/TopbarPlus" },
+					"VERSION": { "$path": "../VERSION.txt" }
 				},
 				"Tools": {
 					"$className": "Folder",
@@ -42,12 +41,8 @@
 					"$path": "../model/Loader.server.luau",
 					"MainModule": {
 						"$path": "../src",
-						"VERSION": {
-							"$path": "../VERSION.txt"
-						}
-					},
-					"MainModuleLegacy": {
-						"$path": "migrate/KAI"
+						"TopbarPlus": { "$path": "../submodules/TopbarPlus" },
+						"VERSION": { "$path": "../VERSION.txt" }
 					},
 					"Tools": {
 						"$className": "Folder",

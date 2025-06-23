@@ -8,7 +8,7 @@ _K.LocalPlayer = _K.Service.Players.LocalPlayer
 
 _K.client = {
 	Character = require(script:WaitForChild("Character")),
-	TopbarPlus = require(script:WaitForChild("TopbarPlus")),
+	TopbarPlus = require(script.Parent:WaitForChild("TopbarPlus")),
 	UserFrame = require(script:WaitForChild("UserFrame")),
 
 	bans = _K.Flux.state(_K.Data.bans),

@@ -1,6 +1,6 @@
 local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.UI)
-local TopbarPlus = require(script.Parent.TopbarPlus)
+local TopbarPlus = require(script.Parent.Parent.TopbarPlus)
 
 local About = require(script.Parent.About)
 local Bans = require(script.Parent.Bans)
