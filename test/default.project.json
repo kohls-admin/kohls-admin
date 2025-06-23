@@ -22,6 +22,7 @@
 				"$path": "migrate",
 				"KA": {
 					"$path": "../src",
+					"Flux": { "$path": "../submodules/Flux" },
 					"TopbarPlus": { "$path": "../submodules/TopbarPlus" },
 					"VERSION": { "$path": "../VERSION.txt" }
 				},
@@ -41,6 +42,7 @@
 					"$path": "../model/Loader.server.luau",
 					"MainModule": {
 						"$path": "../src",
+						"Flux": { "$path": "../submodules/Flux" },
 						"TopbarPlus": { "$path": "../submodules/TopbarPlus" },
 						"VERSION": { "$path": "../VERSION.txt" }
 					},

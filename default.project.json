@@ -3,6 +3,7 @@
 	"emitLegacyScripts": false,
 	"tree": {
 		"$path": "src",
+		"Flux": { "$path": "submodules/Flux" },
 		"TopbarPlus": { "$path": "submodules/TopbarPlus" },
 		"Tools": {
 			"$className": "Folder",

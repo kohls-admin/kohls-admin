@@ -4,3 +4,6 @@
 [submodule "TopbarPlus"]
 	path = submodules/TopbarPlus
 	url = https://github.com/kohls-admin/TopbarPlus.git
+[submodule "Flux"]
+	path = submodules/Flux
+	url = git@github.com:kohltastrophe/flux.git
