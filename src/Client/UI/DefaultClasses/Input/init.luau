@@ -2,15 +2,15 @@ local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
 local Clack = require(script.Clack).registerAll()
 
-Clack.enabled = UI.peek(UI.Theme.TypingSounds)
-Clack.everyTextBox = UI.peek(UI.Theme.TypingSoundsOnEveryTextBox)
-UI.Theme.SoundEnabled:hook(function(value)
+Clack.enabled = UI.raw(UI.Theme.TypingSounds)
+Clack.everyTextBox = UI.raw(UI.Theme.TypingSoundsOnEveryTextBox)
+UI.Theme.SoundEnabled:Connect(function(value)
 	Clack.enabled = value and UI.Theme.TypingSounds._value
 end)
-UI.Theme.TypingSounds:hook(function(value)
+UI.Theme.TypingSounds:Connect(function(value)
 	Clack.enabled = value and UI.Theme.SoundEnabled._value
 end)
-UI.Theme.TypingSoundsOnEveryTextBox:hook(function(value)
+UI.Theme.TypingSoundsOnEveryTextBox:Connect(function(value)
 	Clack.everyTextBox = value
 end)
 
@@ -47,12 +47,12 @@ local function updateCursor(cursor, display, input, inputMask, inputOffset, sele
 		then 32
 		else 0
 	if cursorOffset > visibleWidth then
-		inputOffset:set(math.min(display.TextBounds.X, inputOffset._value + cursorOffset - visibleWidth))
+		inputOffset(math.min(display.TextBounds.X, inputOffset._value + cursorOffset - visibleWidth))
 		cursorOffset = visibleWidth
 	elseif cursorOffset < margin then
-		inputOffset:set(inputOffset._value + cursorOffset - margin)
+		inputOffset(inputOffset._value + cursorOffset - margin)
 		if margin == 0 or inputOffset._value <= display.TextSize / 2 then
-			inputOffset:set(math.min(0, inputOffset._value))
+			inputOffset(math.min(0, inputOffset._value))
 		end
 		cursorOffset = margin
 	end
@@ -110,11 +110,11 @@ function Input.new(definition)
 		Validate = UI.Function,
 	}, definition)
 
-	new.Selected._value = UI.peek(new.Value)
-	local textState = UI.state(UI.peek(new.Value))
+	new.Selected._value = UI.raw(new.Value)
+	local textState = UI.state(UI.raw(new.Value))
 
-	local inputSize = function(use)
-		return UDim2.new(if use(new.Fill) then 1 else 0, 0, 1, 0)
+	local inputSize = function()
+		return UDim2.new(if new.Fill() then 1 else 0, 0, 1, 0)
 	end
 
 	local displayLabel = UI.new "TextLabel" {
@@ -127,19 +127,19 @@ function Input.new(definition)
 		Font = new.Font,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Text = function(use)
-			local display = use(new.DisplayText)
-			local placeholder = use(new.Placeholder)
-			local input = use(textState)
-			local maxChars = use(new.MaxChars)
+		Text = function()
+			local display = new.DisplayText()
+			local placeholder = new.Placeholder()
+			local input = textState()
+			local maxChars = new.MaxChars()
 
 			local text = if display ~= "" then display elseif input ~= "" then input else placeholder
 			text = stripNewLines(text)
 
 			return if maxChars ~= math.huge then string.sub(text, 1, maxChars) else text
 		end,
-		TextTransparency = function(use)
-			return if use(new.Value) == "" and use(new.DisplayText) == "" then 0.5 else 0
+		TextTransparency = function()
+			return if new.Value() == "" and new.DisplayText() == "" then 0.5 else 0
 		end,
 	}
 	new._displayLabel = displayLabel
@@ -166,8 +166,8 @@ function Input.new(definition)
 			local integerOnly = new.IntegerOnly._value
 
 			if text == "" and (numberOnly or integerOnly) then
-				new.Selected:set(new.NumberRange._value.Min)
-				new.Value:set(new.NumberRange._value.Min)
+				new.Selected(new.NumberRange._value.Min)
+				new.Value(new.NumberRange._value.Min)
 				return
 			end
 
@@ -199,8 +199,8 @@ function Input.new(definition)
 				return
 			end
 
-			new.Selected:set(text)
-			new.Value:set(text)
+			new.Selected(text)
+			new.Value(text)
 		end,
 	}
 	new._input:AddTag("KeyClackSound")
@@ -208,8 +208,8 @@ function Input.new(definition)
 	if new.HotkeyInput._value then
 		new._input.Focused:Connect(function()
 			table.clear(new.Modifiers._value)
-			new.Selected:set("")
-			new.Value:set("")
+			new.Selected("")
+			new.Value("")
 		end)
 		UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			if not new._input:IsFocused() then
@@ -222,14 +222,14 @@ function Input.new(definition)
 
 				local hotkeyText = `{mods.Shift and "Shift+" or ""}{mods.Alt and "Alt+" or ""}`
 				if table.find(MODIFIERS, input.KeyCode) then
-					new.Selected:set(hotkeyText)
-					new.Value:set(hotkeyText)
+					new.Selected(hotkeyText)
+					new.Value(hotkeyText)
 					return
 				end
 
-				new.Selected:set(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
-				new.Value:set(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
-				new.Hotkey:set(input.KeyCode)
+				new.Selected(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
+				new.Value(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
+				new.Hotkey(input.KeyCode)
 				new._input:ReleaseFocus(true)
 			end
 		end)
@@ -273,8 +273,8 @@ function Input.new(definition)
 		end
 	end)
 
-	local automaticFill = function(use)
-		return if use(new.Fill) then Enum.AutomaticSize.None else Enum.AutomaticSize.X
+	local automaticFill = function()
+		return if new.Fill() then Enum.AutomaticSize.None else Enum.AutomaticSize.X
 	end
 
 	local inputMask = UI.new "Frame" {
@@ -297,12 +297,12 @@ function Input.new(definition)
 		local text = new._input.Text
 		text = if new.MaxChars._value ~= math.huge then string.sub(text, 1, new.MaxChars._value) else text
 		new._input.Text = text
-		textState:set(text)
+		textState(text)
 	end)
 
 	UI.edit(new._input, {
-		Position = function(use)
-			local xOffset = if use(new._bounds).X > use(new._maskSize).X then -use(new._inputOffset) else 0
+		Position = function()
+			local xOffset = if new._bounds().X > new._maskSize().X then -new._inputOffset() else 0
 			return UDim2.fromOffset(xOffset, 0)
 		end,
 	})
@@ -314,8 +314,8 @@ function Input.new(definition)
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 		Image = new.Icon,
 		ImageColor3 = UI.Theme.Secondary,
-		Visible = function(use)
-			return use(new.Icon) ~= ""
+		Visible = function()
+			return new.Icon() ~= ""
 		end,
 	}
 	if definition.IconProperties then
@@ -328,8 +328,8 @@ function Input.new(definition)
 		ClipsDescendants = true,
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyOverlay,
-		Size = function(use)
-			return UDim2.new(1, 0, 0, use(new.FontSize) + use(new.Padding).Offset * 2)
+		Size = function()
+			return UDim2.new(1, 0, 0, new.FontSize() + new.Padding().Offset * 2)
 		end,
 
 		UI.new "UICorner" {

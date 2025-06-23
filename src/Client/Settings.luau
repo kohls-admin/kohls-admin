@@ -23,7 +23,7 @@ function Settings.new(_K)
 		for key, value in originalValues do
 			_K.Data.settings[key] = value
 			if _K.client.settings[key] then
-				_K.client.settings[key]:set(value, true)
+				_K.client.settings[key](value, true)
 			end
 		end
 		table.clear(originalValues)
@@ -35,7 +35,7 @@ function Settings.new(_K)
 		for key, value in pendingChanges do
 			_K.Data.settings[key] = value
 			if _K.client.settings[key] then
-				_K.client.settings[key]:set(value, true)
+				_K.client.settings[key](value, true)
 			end
 		end
 		table.clear(originalValues)
@@ -65,7 +65,7 @@ function Settings.new(_K)
 			if
 				themeModule
 				and string.find(key, "theme", 1, true) == 1
-				and UI.peek(themeModule[string.sub(key, 6)]) ~= value
+				and UI.raw(themeModule[string.sub(key, 6)]) ~= value
 			then
 				differentTheme = true
 			end
@@ -87,12 +87,12 @@ function Settings.new(_K)
 				for key, value in themeModule do
 					local dataKey = "theme" .. key
 					local existing = _K.Data.settings[dataKey]
-					if existing ~= nil and existing ~= UI.peek(value) then
-						change(dataKey, UI.peek(value))
+					if existing ~= nil and existing ~= UI.raw(value) then
+						change(dataKey, UI.raw(value))
 					end
 				end
 			end
-			_K.client.settings.defaultTheme:set(value)
+			_K.client.settings.defaultTheme(value)
 		end
 
 		if settingsDialog then
@@ -106,11 +106,13 @@ function Settings.new(_K)
 		},
 	}
 
-	local lineItemHeight = UI.compute(function(use)
-		return use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
+	local lineItemHeight = UI.compute(function()
+		return UI.Theme.FontSize() + UI.Theme.Padding().Offset
 	end)
 
-	local inputSize = UI.computeFrom(UDim2.new, 0, 0, 0, lineItemHeight)
+	local inputSize = UI.compute(function()
+		return UDim2.new(0, 0, 0, lineItemHeight())
+	end)
 
 	local reservedPrefixes = { ",", " ", "`", '"', "@", "$", "%", "*", "~" }
 	local settingsLineItems = {
@@ -151,9 +153,9 @@ function Settings.new(_K)
 					Size = inputSize,
 					Placeholder = ";",
 					MaxChars = 1,
-					Value = function(use)
-						return use(_K.client.settings.playerPrefix)[_K.LocalPlayer.UserId]
-							or use(_K.client.settings.prefix)[1]
+					Value = function()
+						return _K.client.settings.playerPrefix()[_K.LocalPlayer.UserId]
+							or _K.client.settings.prefix()[1]
 					end,
 					Validate = function(text)
 						return not (text == "" or table.find(reservedPrefixes, text))
@@ -162,7 +164,7 @@ function Settings.new(_K)
 					[UI.Hook] = {
 						Selected = function(value)
 							_K.Data.settings.playerPrefix[_K.LocalPlayer.UserId] = value
-							_K.client.settings.playerPrefix:set(_K.Data.settings.playerPrefix, true)
+							_K.client.settings.playerPrefix(_K.Data.settings.playerPrefix, true)
 							_K.Remote.PlayerPrefix:FireServer(value)
 						end,
 					},
@@ -178,8 +180,8 @@ function Settings.new(_K)
 					Size = inputSize,
 					Placeholder = ";",
 					MaxChars = 1,
-					Value = function(use)
-						return use(_K.client.settings.prefix)[1]
+					Value = function()
+						return _K.client.settings.prefix()[1]
 					end,
 					Validate = function(text)
 						return not (text == "" or table.find(reservedPrefixes, text))
@@ -200,9 +202,9 @@ function Settings.new(_K)
 	task.defer(function()
 		_K.Util.Defer.reset()
 		-- Theme select
-		local themeList = UI.compute(function(use)
+		local themeList = UI.compute(function()
 			local themes = {}
-			for key in use(_K.client.themes) do
+			for key in _K.client.themes() do
 				table.insert(themes, key)
 			end
 			table.sort(themes)
@@ -214,8 +216,8 @@ function Settings.new(_K)
 			UI.new "ListItem" {
 				Text = "Theme",
 				UI.new "Select" {
-					Choice = function(use)
-						return use(_K.client.settings.defaultTheme)
+					Choice = function()
+						return _K.client.settings.defaultTheme()
 					end,
 					Choices = themeList,
 					[UI.Hook] = {
@@ -296,12 +298,12 @@ function Settings.new(_K)
 
 		local sliders = {}
 		local function updateSliderSize()
-			sliderMaxSize:set(vector2Huge)
+			sliderMaxSize(vector2Huge)
 			local minimumWidth = math.huge
 			for _, slider in sliders do
 				minimumWidth = math.min(slider.AbsoluteSize.X, minimumWidth)
 			end
-			sliderMaxSize:set(Vector2.new(minimumWidth, math.huge))
+			sliderMaxSize(Vector2.new(minimumWidth, math.huge))
 		end
 
 		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updateSliderSize)
@@ -325,8 +327,8 @@ function Settings.new(_K)
 			local slider
 			slider = UI.new "Slider" {
 				Snap = 25,
-				Value = function(use)
-					return math.clamp(use(UI.Theme.FontSize) - 7, 1, 25)
+				Value = function()
+					return math.clamp(UI.Theme.FontSize() - 7, 1, 25)
 				end,
 				UI.new "UIFlexItem" {
 					FlexMode = Enum.UIFlexMode.Fill,
@@ -335,7 +337,7 @@ function Settings.new(_K)
 					Selected = function(value)
 						lastSelected = slider._instance
 						lastSelectedY = lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
-						UI.Theme.FontSize:set(value + 7)
+						UI.Theme.FontSize(value + 7)
 						change("themeFontSize", value + 7)
 					end,
 				},
@@ -377,8 +379,8 @@ function Settings.new(_K)
 				UI.new "UISizeConstraint" {
 					MaxSize = sliderMaxSize,
 				},
-				Value = function(use)
-					return math.clamp(use(UI.Theme[key]).Offset + 1, 1, 17)
+				Value = function()
+					return math.clamp(UI.Theme[key]().Offset + 1, 1, 17)
 				end,
 				UI.new "UIFlexItem" {
 					FlexMode = Enum.UIFlexMode.Fill,
@@ -388,7 +390,7 @@ function Settings.new(_K)
 						lastSelected = slider._instance
 						lastSelectedY = lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
 						value = UDim.new(0, value - 1)
-						UI.Theme[key]:set(value)
+						UI.Theme[key](value)
 						change("theme" .. key, value)
 					end,
 				},
@@ -405,8 +407,8 @@ function Settings.new(_K)
 						NumberOnly = true,
 						NumberRange = NumberRange.new(0, 16),
 						Placeholder = "",
-						Value = function(use)
-							return use(UI.Theme[key]).Offset
+						Value = function()
+							return UI.Theme[key]().Offset
 						end,
 						[UI.Hook] = {
 							Selected = function(value)
@@ -415,7 +417,7 @@ function Settings.new(_K)
 									return
 								end
 								value = UDim.new(0, number)
-								UI.Theme[key]:set(value)
+								UI.Theme[key](value)
 								change("theme" .. key, value)
 							end,
 						},
@@ -461,8 +463,8 @@ function Settings.new(_K)
 							NumberOnly = true,
 							NumberRange = NumberRange.new(0, 1),
 							Placeholder = "",
-							Value = function(use)
-								return string.sub(use(UI.Theme[data.key]), 1, 5)
+							Value = function()
+								return string.sub(UI.Theme[data.key](), 1, 5)
 							end,
 							[UI.Hook] = {
 								Selected = function(value)
@@ -470,7 +472,7 @@ function Settings.new(_K)
 									if not tonumber(value) then
 										return
 									end
-									UI.Theme[data.key]:set(number)
+									UI.Theme[data.key](number)
 									change("theme" .. data.key, number)
 								end,
 							},
@@ -530,6 +532,10 @@ function Settings.new(_K)
 		updateSettingsAuth()
 	end)
 
+	local function close(self)
+		self.Activated(false)
+	end
+
 	settingsDialog = UI.new "Dialog" {
 		BackgroundTransparency = UI.Theme.TransparencyOverlay,
 		BackgroundColor3 = UI.Theme.Secondary,
@@ -542,7 +548,7 @@ function Settings.new(_K)
 		RightAction = true,
 		Visible = false,
 		Close = function(self)
-			task.defer(self.Activated.set, self.Activated, false)
+			task.defer(close, self)
 		end,
 
 		[UI.Hook] = {
@@ -573,7 +579,7 @@ function Settings.new(_K)
 		for _, lineItems in settingsLineItems do
 			for _, lineItem in lineItems do
 				if filter == "" then
-					lineItem.Text:set(lineItem._instance.Name)
+					lineItem.Text(lineItem._instance.Name)
 					lineItem._instance.Visible = true
 					continue
 				end
@@ -587,7 +593,7 @@ function Settings.new(_K)
 						_K.Util.String.escapeRichText(string.sub(rawText, found + #filter))
 					)
 					else rawText
-				lineItem.Text:set(text)
+				lineItem.Text(text)
 				lineItem._instance.Visible = found
 			end
 		end

@@ -21,7 +21,9 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		Name = "Icon",
 		BackgroundTransparency = UI.Theme.TransparencyOverlay,
 		BackgroundColor3 = UI.Theme.PrimaryText,
-		Size = UI.computeFrom(UDim2.fromOffset, UI.Theme.FontSizeDouble, UI.Theme.FontSizeDouble),
+		Size = function()
+			return UDim2.fromOffset(UI.Theme.FontSizeDouble(), UI.Theme.FontSizeDouble())
+		end,
 		Image = if image
 			then image
 			elseif from then `rbxthumb://type=AvatarHeadShot&id={from}&w=48&h=48`
@@ -68,7 +70,9 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		RichText = true,
 
 		AutomaticSize = Enum.AutomaticSize.XY,
-		Position = UI.computeFrom(UDim2.fromOffset, 0, UI.Theme.FontSizeLarge),
+		Position = function()
+			return UDim2.fromOffset(0, UI.Theme.FontSizeLarge())
+		end,
 	}
 
 	local displaySize = UI.state(displayNameLabel, "AbsoluteSize")
@@ -80,17 +84,19 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			BackgroundColor3 = Color3.fromHex(color),
 			TextColor3 = if UI.getLuminance(Color3.fromHex(color)) > 0.5 then Color3.new() else Color3.new(1, 1, 1),
 			Text = `<b>{string.upper(badge)}</b>`,
-			TextSize = function(use)
-				return use(UI.Theme.FontSizeLarge) - 8
+			TextSize = function()
+				return UI.Theme.FontSizeLarge() - 8
 			end,
 			TextXAlignment = "Left",
 			Font = UI.Theme.FontMono,
 			RichText = true,
 
 			AutomaticSize = Enum.AutomaticSize.X,
-			Size = UI.computeFrom(UDim2.fromOffset, 0, UI.Theme.FontSizeLarge),
-			Position = function(use)
-				return UDim2.fromOffset(use(displaySize).X + 4, 0)
+			Size = function()
+				return UDim2.fromOffset(0, UI.Theme.FontSizeLarge())
+			end,
+			Position = function()
+				return UDim2.fromOffset(displaySize().X + 4, 0)
 			end,
 
 			UI.new "UICorner" {
@@ -138,8 +144,8 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
-			Position = function(use)
-				return UDim2.fromOffset(use(UI.Theme.FontSizeDouble) + 4, 0)
+			Position = function()
+				return UDim2.fromOffset(UI.Theme.FontSizeDouble() + 4, 0)
 			end,
 
 			UI.new "UIFlexItem" {

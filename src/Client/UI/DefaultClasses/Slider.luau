@@ -17,13 +17,13 @@ function Slider.new(definition)
 		Vertical = false,
 	}, definition)
 
-	new.Selected._value = UI.peek(new.Value)
+	new.Selected._value = UI.raw(new.Value)
 
 	local dragInput
 	local dragging = UI.state(false)
-	local valueAlpha = UI.compute(function(use)
-		local snap = use(new.Snap)
-		local value = use(new.Value)
+	local valueAlpha = UI.compute(function()
+		local snap = new.Snap()
+		local value = new.Value()
 		return if snap > 1 then math.max(0, value - 1) / (snap - 1) else value
 	end)
 
@@ -45,8 +45,8 @@ function Slider.new(definition)
 			end
 		end
 
-		new.Selected:set(value, true)
-		new.Value:set(value)
+		new.Selected(value, true)
+		new.Value(value)
 	end
 
 	local function inputBegan(input)
@@ -56,7 +56,7 @@ function Slider.new(definition)
 		then
 			UI.Sound.Hover03:Play()
 			dragInput = input
-			dragging:set(true)
+			dragging(true)
 			local con
 			con = input:GetPropertyChangedSignal("UserInputState"):Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
@@ -64,7 +64,7 @@ function Slider.new(definition)
 					if dragInput == input then
 						UI.Sound.Hover01:Play()
 						dragInput = nil
-						dragging:set(false)
+						dragging(false)
 					end
 				end
 			end)
@@ -78,22 +78,14 @@ function Slider.new(definition)
 		Name = "Slider",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		BackgroundColor3 = UI.Theme.SecondaryText,
-		Position = UI.tween(
-			UI.Theme.TweenOut,
-			UI.compute(function(use)
-				return if use(new.Vertical)
-					then UDim2.new(0.5, 0, use(valueAlpha), 0)
-					else UDim2.new(use(valueAlpha), 0, 0.5, 0)
-			end)
-		),
-		Size = UI.tween(
-			UI.Theme.TweenOut,
-			UI.compute(function(use)
-				local size = use(UI.Theme.FontSize)
-				local half = size / 2
-				return if use(dragging) then UDim2.new(0, size, 0, size) else UDim2.new(0, half, 0, half)
-			end)
-		),
+		Position = UI.tween(function()
+			return if new.Vertical() then UDim2.new(0.5, 0, valueAlpha(), 0) else UDim2.new(valueAlpha(), 0, 0.5, 0)
+		end, UI.Theme.TweenOut),
+		Size = UI.tween(function()
+			local size = UI.Theme.FontSize()
+			local half = size / 2
+			return if dragging() then UDim2.new(0, size, 0, size) else UDim2.new(0, half, 0, half)
+		end, UI.Theme.TweenOut),
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerDiameter,
@@ -102,8 +94,8 @@ function Slider.new(definition)
 		InputBegan = inputBegan,
 	}
 
-	local padding = function(use)
-		return UDim.new(0, use(UI.Theme.FontSizeSmaller) + use(UI.Theme.PaddingHalf).Offset)
+	local padding = function()
+		return UDim.new(0, UI.Theme.FontSizeSmaller() + UI.Theme.PaddingHalf().Offset)
 	end
 
 	new._instance = UI.new "Frame" {
@@ -111,9 +103,9 @@ function Slider.new(definition)
 		Active = true,
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyOverlay,
-		Size = function(use)
-			local height = use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
-			return if use(new.Vertical) then UDim2.new(0, height, 1, 0) else UDim2.new(1, 0, 0, height)
+		Size = function()
+			local height = UI.Theme.FontSize() + UI.Theme.Padding().Offset
+			return if new.Vertical() then UDim2.new(0, height, 1, 0) else UDim2.new(1, 0, 0, height)
 		end,
 
 		UI.new "UICorner" {
@@ -144,14 +136,11 @@ function Slider.new(definition)
 			Name = "Filled",
 			BackgroundColor3 = UI.Theme.Secondary,
 			BorderSizePixel = 0,
-			Size = UI.tween(
-				UI.Theme.TweenOut,
-				UI.compute(function(use)
-					local alpha = use(valueAlpha)
-					local buffer = (use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset) * (1 - alpha)
-					return if use(new.Vertical) then UDim2.new(1, 0, alpha, buffer) else UDim2.new(alpha, buffer, 1, 0)
-				end)
-			),
+			Size = UI.tween(function()
+				local alpha = valueAlpha()
+				local buffer = (UI.Theme.FontSize() + UI.Theme.Padding().Offset) * (1 - alpha)
+				return if new.Vertical() then UDim2.new(1, 0, alpha, buffer) else UDim2.new(alpha, buffer, 1, 0)
+			end, UI.Theme.TweenOut),
 
 			UI.new "UICorner" {
 				CornerRadius = UI.Theme.CornerDiameter,

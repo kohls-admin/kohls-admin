@@ -13,15 +13,15 @@ function Select.new(definition)
 		Font = UI.Theme.Font,
 	}, definition)
 
-	new.Selected._value = UI.peek(new.Choice)
+	new.Selected._value = UI.raw(new.Choice)
 
 	local menu
 
-	local itemSize = UI.compute(function(use)
-		local choices = use(new.Choices)
-		local font = use(new.Font)
-		local size = use(UI.Theme.FontSize)
-		local padding = use(UI.Theme.Padding).Offset
+	local itemSize = UI.compute(function()
+		local choices = new.Choices()
+		local font = new.Font()
+		local size = UI.Theme.FontSize()
+		local padding = UI.Theme.Padding().Offset
 		local maxWidth = size
 		for _, choice in choices do
 			if typeof(choice) == "EnumItem" then
@@ -52,8 +52,8 @@ function Select.new(definition)
 			Position = UDim2.new(0.5, 0, 0.5, 1),
 			Size = UDim2.fromScale(0.5, 0.5),
 		},
-		Label = function(use)
-			local choice = use(new.Choice)
+		Label = function()
+			local choice = new.Choice()
 			local typeOf = typeof(choice)
 			return if typeOf == "EnumItem" or typeOf == "Instance" then choice.Name else choice
 		end,
@@ -63,7 +63,7 @@ function Select.new(definition)
 
 		Activated = function()
 			UI.toggleState(menu.Visible, "floating")
-			local value = UI.peek(menu.Visible)
+			local value = UI.raw(menu.Visible)
 			if value then
 				UI.Sound.Hover03:Play()
 			else
@@ -86,8 +86,8 @@ function Select.new(definition)
 
 	menu = UI.new "Menu" {
 		Adornee = new._instance,
-		Size = function(use)
-			return UDim2.new(0, use(absoluteSize).X, 0, math.min(#use(new.Choices), 7.5) * use(itemSize).Y.Offset)
+		Size = function()
+			return UDim2.new(0, absoluteSize().X, 0, math.min(#new.Choices(), 7.5) * itemSize().Y.Offset)
 		end,
 	}
 
@@ -123,29 +123,29 @@ function Select.new(definition)
 
 				Activated = function()
 					selectedButton = choiceButton._instance
-					new.Selected:set(choice, true)
-					new.Choice:set(choice)
+					new.Selected(choice, true)
+					new.Choice(choice)
 					UI.deactivateState(menu.Visible, "floating")
 				end,
 			}
 			choiceButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 			UI.edit(choiceButton._instance, {
-				BackgroundColor3 = function(use)
-					local hovering = use(choiceButton._hovering)
-					return if use(new.Choice) == choice and not hovering
-						then use(UI.Theme.Secondary)
-						elseif hovering or use(UI.Theme.Transparency) > 0 then use(UI.Theme.Secondary)
-						else use(UI.Theme.Primary)
+				BackgroundColor3 = function()
+					local hovering = choiceButton._hovering()
+					return if new.Choice() == choice and not hovering
+						then UI.Theme.Secondary()
+						elseif hovering or UI.Theme.Transparency() > 0 then UI.Theme.Secondary()
+						else UI.Theme.Primary()
 				end,
-				BackgroundTransparency = function(use)
-					return if not use(choiceButton._hovering)
-							and use(UI.Theme.Transparency) > 0
-							and use(new.Choice) ~= choice
+				BackgroundTransparency = function()
+					return if not choiceButton._hovering()
+							and UI.Theme.Transparency() > 0
+							and new.Choice() ~= choice
 						then 1
-						else use(UI.Theme.TransparencyOverlay)
+						else UI.Theme.TransparencyOverlay()
 				end,
 			})
-			choiceButton._hovering:hook(function(value)
+			choiceButton._hovering:Connect(function(value)
 				if value then
 					UI.Sound.Hover02:Play()
 				end
@@ -157,7 +157,7 @@ function Select.new(definition)
 		end
 	end
 
-	menu.Visible:hook(function(value)
+	menu.Visible:Connect(function(value)
 		if selectedButton and value then
 			local buttonHeight = selectedButton.AbsoluteSize.Y
 			local buttonPosition = selectedButton.AbsolutePosition.Y + menu._content.CanvasPosition.Y
@@ -166,7 +166,7 @@ function Select.new(definition)
 		end
 	end)
 
-	local disconnectHook = new.Choices:hook(function(value)
+	local disconnectHook = new.Choices:Connect(function(value)
 		for _, child in menu._content:GetChildren() do
 			if not child:IsA("UIBase") then
 				child:Destroy()

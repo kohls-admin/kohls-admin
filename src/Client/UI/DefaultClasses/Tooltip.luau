@@ -25,11 +25,11 @@ function Tooltip.new(definition)
 			hoverStart = start
 			task.delay(0.4, function()
 				if hoverStart == start and hovering._value then
-					new.Visible:set(true)
+					new.Visible(true)
 				end
 			end)
 		else
-			new.Visible:set(false)
+			new.Visible(false)
 		end
 	end
 
@@ -37,8 +37,8 @@ function Tooltip.new(definition)
 		AutoLocalize = false,
 		Parent = UI.LayerTop,
 		Name = "Tooltip",
-		Visible = function(use)
-			return use(new.Enabled) and use(new.Visible)
+		Visible = function()
+			return new.Enabled() and new.Visible()
 		end,
 		ZIndex = 100,
 		BackgroundColor3 = UI.Theme.Primary,
@@ -51,11 +51,11 @@ function Tooltip.new(definition)
 		TextWrapped = true,
 		RichText = true,
 		AutomaticSize = Enum.AutomaticSize.XY,
-		Position = function(use)
-			local tipSize = use(tipSizeState)
-			local max = use(layerSizeState)
-			local position, size = use(positionState), use(sizeState)
-			local yOffset = position.Y + size.Y + use(UI.TopbarInset).Height + use(UI.Theme.PaddingHalf).Offset
+		Position = function()
+			local tipSize = tipSizeState()
+			local max = layerSizeState()
+			local position, size = positionState(), sizeState()
+			local yOffset = position.Y + size.Y + UI.TopbarInset().Height + UI.Theme.PaddingHalf().Offset
 
 			return UDim2.fromOffset(
 				math.clamp(position.X, 0, math.max(0, max.X - tipSize.X)),
@@ -121,9 +121,9 @@ function Tooltip.new(definition)
 	UI.edit(new._instance, {
 		[UI.Clean] = {
 			UI.UserInputService.TouchMoved:Connect(function()
-				hovering:set(false)
+				hovering(false)
 			end),
-			hovering:hook(hover),
+			hovering:Connect(hover),
 			new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
 				local newParent = new._instance.Parent
 				if newParent and newParent ~= UI.LayerTop then
@@ -138,8 +138,8 @@ function Tooltip.new(definition)
 					table.insert(hoverConnections, parent.InputEnded:Connect(inputEnded))
 					table.insert(hoverConnections, parent.SelectionGained:Connect(hoverEnter))
 					table.insert(hoverConnections, parent.SelectionLost:Connect(hoverLeave))
-					positionState:bindToProperty(parent, "AbsolutePosition")
-					sizeState:bindToProperty(parent, "AbsoluteSize")
+					positionState:_bindToProperty(parent, "AbsolutePosition")
+					sizeState:_bindToProperty(parent, "AbsoluteSize")
 					task.wait()
 					new._instance.Parent = UI.LayerTop
 				end
@@ -150,7 +150,7 @@ function Tooltip.new(definition)
 		},
 	})
 
-	tipSizeState:bindToProperty(new._instance, "AbsoluteSize")
+	tipSizeState:_bindToProperty(new._instance, "AbsoluteSize")
 
 	return setmetatable(new, Tooltip)
 end

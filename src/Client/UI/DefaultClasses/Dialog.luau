@@ -12,12 +12,12 @@ function Dialog.new(definition)
 	local new = UI.makeStatefulDefaults({
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Text = UI.Nil,
+		Text = "",
 		TextSize = UI.Theme.FontSize,
 		TextColor3 = UI.Theme.PrimaryText,
 		TextStrokeColor3 = UI.Theme.Primary,
 		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-		Title = UI.Nil,
+		Title = "",
 		TitleSize = UI.Theme.FontSizeLargest,
 		Activated = false,
 		ActionText = UI.Nil,
@@ -27,7 +27,7 @@ function Dialog.new(definition)
 		Draggable = false,
 		LeftAction = UI.Nil,
 		RightAction = UI.Nil,
-		ExitButton = UI.Nil,
+		ExitButton = false,
 		Close = UI.Function,
 		Visible = true,
 		Width = 256,
@@ -47,7 +47,7 @@ function Dialog.new(definition)
 		local minPosition = new._instance.Parent.AbsolutePosition + anchorOffset
 		local maxPosition = new._instance.Parent.AbsoluteSize - (size - anchorOffset)
 
-		new.Position:set(
+		new.Position(
 			UDim2.fromOffset(
 				math.clamp(math.round(startOffset.X + delta.X), minPosition.X, math.max(0, maxPosition.X)),
 				math.clamp(math.round(startOffset.Y + delta.Y), minPosition.Y, math.max(0, maxPosition.Y))
@@ -66,14 +66,14 @@ function Dialog.new(definition)
 			startOffset = (new._instance.AbsolutePosition + new._instance.AbsoluteSize * new._instance.AnchorPoint)
 				- new._instance.Parent.AbsolutePosition
 			dragInput, dragStart = input, input.Position
-			dragging:set(true)
+			dragging(true)
 			local con
 			con = input:GetPropertyChangedSignal("UserInputState"):Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
 					con:Disconnect()
 					if dragInput == input then
 						dragInput = nil
-						dragging:set(false)
+						dragging(false)
 					end
 				end
 			end)
@@ -82,11 +82,11 @@ function Dialog.new(definition)
 
 	local con
 	local function activate(active)
-		if UI.peek(new.Activated) then
+		if UI.raw(new.Activated) then
 			return
 		end
-		new.Activated:set(true)
-		new.Action:set(active, true)
+		new.Activated(true)
+		new.Action(active, true)
 
 		if con then
 			con:Disconnect()
@@ -145,7 +145,9 @@ function Dialog.new(definition)
 		end)
 	end
 
-	local buttonSize = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLargest, 0, UI.Theme.FontSizeLargest)
+	local buttonSize = UI.compute(function()
+		return UDim2.new(0, UI.Theme.FontSizeLargest(), 0, UI.Theme.FontSizeLargest())
+	end)
 
 	local exitButton = UI.new "Button" {
 		LayoutOrder = 9,
@@ -168,8 +170,8 @@ function Dialog.new(definition)
 				new:Destroy()
 			end
 		end,
-		Visible = function(use)
-			return if use(new.ExitButton) then true else false
+		Visible = function()
+			return if new.ExitButton() then true else false
 		end,
 	}
 	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
@@ -193,8 +195,8 @@ function Dialog.new(definition)
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
 			Text = "",
-			Visible = function(use)
-				local title = use(new.Title)
+			Visible = function()
+				local title = new.Title()
 				return title and title ~= ""
 			end,
 
@@ -223,7 +225,7 @@ function Dialog.new(definition)
 				},
 			},
 
-			if UI.peek(new.Title) then exitButton else nil,
+			if UI.raw(new.Title) then exitButton else nil,
 
 			InputBegan = dragInputBegan,
 		},
@@ -239,14 +241,14 @@ function Dialog.new(definition)
 			TextXAlignment = "Left",
 			Font = UI.Theme.Font,
 			RichText = true,
-			Visible = function(use)
-				local text = use(new.Text)
+			Visible = function()
+				local text = new.Text()
 				return text and text ~= ""
 			end,
 
 			AutomaticSize = Enum.AutomaticSize.XY,
 
-			if UI.peek(new.Title) then nil else exitButton,
+			if UI.raw(new.Title) then nil else exitButton,
 		},
 	}
 
@@ -260,7 +262,9 @@ function Dialog.new(definition)
 		ClipsDescendants = true,
 		AnchorPoint = new.AnchorPoint,
 		Position = new.Position,
-		Size = UI.computeFrom(UDim2.fromOffset, new.Width, 0),
+		Size = function()
+			return UDim2.fromOffset(new.Width(), 0)
+		end,
 		Text = "",
 		Visible = new.Visible,
 
@@ -325,8 +329,8 @@ function Dialog.new(definition)
 						TextXAlignment = "Left",
 						FontFace = UI.Theme.FontBold,
 						RichText = true,
-						Visible = function(use)
-							local text = use(new.ActionText)
+						Visible = function()
+							local text = new.ActionText()
 							return text and text ~= ""
 						end,
 
@@ -376,7 +380,7 @@ function Dialog.new(definition)
 				input.UserInputType == Enum.UserInputType.MouseMovement
 				or input.UserInputType == Enum.UserInputType.Touch
 			then
-				hovering:set(true)
+				hovering(true)
 			end
 		end,
 		inputEnded = function(input)
@@ -384,7 +388,7 @@ function Dialog.new(definition)
 				input.UserInputType == Enum.UserInputType.MouseMovement
 				or input.UserInputType == Enum.UserInputType.Touch
 			then
-				hovering:set(false)
+				hovering(false)
 			end
 		end,
 
@@ -409,8 +413,8 @@ function Dialog.new(definition)
 	local sizeState = UI.state(new._instance, "AbsoluteSize")
 
 	UI.edit(progress.Bar, {
-		Size = function(use)
-			local size = use(sizeState)
+		Size = function()
+			local size = sizeState()
 			return UDim2.fromOffset(size.X, size.Y)
 		end,
 	})

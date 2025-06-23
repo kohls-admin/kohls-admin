@@ -49,7 +49,9 @@ function Button.new(definition)
 				Size = UDim2.new(1, 0, 1, 0),
 				Font = new.Font,
 				RichText = true,
-				Text = UI.computeFrom(tostring, new.Label),
+				Text = function()
+					return tostring(new.Label)
+				end,
 				TextSize = new.TextSize,
 				TextScaled = new.TextScaled,
 				TextColor3 = UI.Theme.PrimaryText,
@@ -58,8 +60,8 @@ function Button.new(definition)
 				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = new.TextXAlignment,
 				TextYAlignment = new.TextYAlignment,
-				Visible = function(use)
-					return use(new.Label) ~= ""
+				Visible = function()
+					return new.Label() ~= ""
 				end,
 
 				UI.new "UIFlexItem" {
@@ -75,14 +77,14 @@ function Button.new(definition)
 
 		UI.new "Frame" {
 			Name = "IconFrame",
-			LayoutOrder = function(use)
-				return if use(new.IconRightAlign) then 9 else -9
+			LayoutOrder = function()
+				return if new.IconRightAlign() then 9 else -9
 			end,
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
-			Visible = function(use)
-				return use(new.Icon) ~= ""
+			Visible = function()
+				return new.Icon() ~= ""
 			end,
 
 			UI.edit(
@@ -103,8 +105,8 @@ function Button.new(definition)
 		Name = "Ripple",
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
-		BackgroundColor3 = function(use)
-			return if UI.getLuminance(use(new.BackgroundColor3)) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
+		BackgroundColor3 = function()
+			return if UI.getLuminance(new.BackgroundColor3()) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
 		end,
 
 		UI.new "UICorner" {
@@ -118,8 +120,8 @@ function Button.new(definition)
 		Active = true,
 		AutoButtonColor = false,
 		BackgroundColor3 = new.BackgroundColor3,
-		BackgroundTransparency = function(use)
-			return if use(hovering) then use(new.HoverTransparency) else use(new.BackgroundTransparency)
+		BackgroundTransparency = function()
+			return if hovering() then new.HoverTransparency() else new.BackgroundTransparency()
 		end,
 		ClipsDescendants = true,
 		Text = "",

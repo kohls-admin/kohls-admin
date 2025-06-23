@@ -98,7 +98,7 @@ function Window.nudge(self)
 				local newY = math.clamp(position.Y + nudgeAmount, 0, math.max(0, parentSize.Y - size.Y))
 
 				position += Vector2.new(nudgeAmount, nudgeAmount)
-				self.Position:set(UDim2.fromOffset(newX, newY))
+				self.Position(UDim2.fromOffset(newX, newY))
 				nudged = true
 				break
 			end
@@ -139,7 +139,7 @@ function Window.new(definition)
 		local delta = input.Position - dragStart
 		local maxPosition = new._instance.Parent.AbsoluteSize - new._instance.AbsoluteSize
 
-		new.Position:set(
+		new.Position(
 			UDim2.fromOffset(
 				math.clamp(math.round(startOffset.X + delta.X), 0, math.max(0, maxPosition.X)),
 				math.clamp(math.round(startOffset.Y + delta.Y), 0, math.max(0, maxPosition.Y))
@@ -160,14 +160,14 @@ function Window.new(definition)
 
 			startOffset = new._instance.AbsolutePosition - new._instance.Parent.AbsolutePosition
 			dragInput, dragStart = input, input.Position
-			dragging:set(true)
+			dragging(true)
 			local con
 			con = input:GetPropertyChangedSignal("UserInputState"):Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
 					con:Disconnect()
 					if dragInput == input then
 						dragInput = nil
-						dragging:set(false)
+						dragging(false)
 					end
 				end
 			end)
@@ -185,15 +185,15 @@ function Window.new(definition)
 		) - dragStart
 		local resizeMin = new.SizeBounds._value.Min - startSize
 		local resizeMax = new.SizeBounds._value.Max - startSize
-		inputPosition:set(input.Position)
-		new.Size:set(
+		inputPosition(input.Position)
+		new.Size(
 			UDim2.fromOffset(
 				math.round(startSize.X + math.clamp(xSize * delta.X, resizeMin.X, math.max(resizeMin.X, resizeMax.X))),
 				math.round(startSize.Y + math.clamp(ySize * delta.Y, resizeMin.Y, math.max(resizeMin.Y, resizeMax.Y)))
 			)
 		)
 
-		new.Position:set(
+		new.Position(
 			UDim2.fromOffset(
 				math.round(startOffset.X - math.clamp(xPos * -delta.X, resizeMin.X, math.max(resizeMin.X, resizeMax.X))),
 				math.round(startOffset.Y - math.clamp(yPos * -delta.Y, resizeMin.Y, math.max(resizeMin.Y, resizeMax.Y)))
@@ -220,14 +220,14 @@ function Window.new(definition)
 				dragInput, dragStart = input, input.Position
 				startOffset = new._instance.AbsolutePosition - new._instance.Parent.AbsolutePosition
 				startSize = new._instance.AbsoluteSize
-				resizing:set(true)
+				resizing(true)
 				local con
 				con = input:GetPropertyChangedSignal("UserInputState"):Connect(function()
 					if input.UserInputState == Enum.UserInputState.End then
 						con:Disconnect()
 						if dragInput == input then
 							dragInput = nil
-							resizing:set(false)
+							resizing(false)
 						end
 					end
 				end)
@@ -235,8 +235,8 @@ function Window.new(definition)
 		end
 	end
 
-	local titleBarHeight = UI.compute(function(use)
-		return use(UI.Theme.FontSizeLargest)
+	local titleBarHeight = UI.compute(function()
+		return UI.Theme.FontSizeLargest()
 	end)
 
 	new._exitButton = UI.new "Button" {
@@ -244,7 +244,9 @@ function Window.new(definition)
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
 		BackgroundTransparency = 1,
 		HoverTransparency = 0,
-		Size = UI.computeFrom(UDim2.fromOffset, titleBarHeight, titleBarHeight),
+		Size = function()
+			return UDim2.fromOffset(titleBarHeight(), titleBarHeight())
+		end,
 		Icon = UI.Theme.Image.Close,
 		IconProperties = {
 			ImageColor3 = UI.Theme.PrimaryText,
@@ -302,9 +304,9 @@ function Window.new(definition)
 			ImageRectOffset = resizeIconRectOffset,
 			Size = UDim2.new(0, 24, 0, 24),
 			Visible = resizeHover,
-			Position = function(use)
-				local inputPos = use(inputPosition)
-				return UDim2.fromOffset(inputPos.X - 12, inputPos.Y - 12) - use(new.Position)
+			Position = function()
+				local inputPos = inputPosition()
+				return UDim2.fromOffset(inputPos.X - 12, inputPos.Y - 12) - new.Position()
 			end,
 
 			InputBegan = resizeBegan,
@@ -349,11 +351,13 @@ function Window.new(definition)
 					Name = "Title",
 					BackgroundTransparency = 1,
 					AutomaticSize = Enum.AutomaticSize.Y,
-					Size = UI.computeFrom(UDim2.new, 1, 0, 0, titleBarHeight),
+					Size = function()
+						return UDim2.new(1, 0, 0, titleBarHeight())
+					end,
 					Font = UI.Theme.Font,
 					RichText = true,
-					Text = function(use)
-						return `<b>{use(new.Title)}</b>`
+					Text = function()
+						return `<b>{new.Title()}</b>`
 					end,
 					TextColor3 = UI.Theme.PrimaryText,
 					TextStrokeColor3 = UI.Theme.Primary,
@@ -379,12 +383,14 @@ function Window.new(definition)
 			new._content,
 		},
 
-		Visible_Changed = function()
-			if new._instance.Visible then
-				Window.bringToFront(new)
-				Window.nudge(new)
-			end
-		end,
+		[UI.Event] = {
+			Visible = function()
+				if new._instance.Visible then
+					Window.bringToFront(new)
+					Window.nudge(new)
+				end
+			end,
+		},
 	}
 
 	local mouseIconWasEnabled, mouseIconChanging = UI.UserInputService.MouseIconEnabled, nil
@@ -418,16 +424,16 @@ function Window.new(definition)
 					resizeBuffer
 				)
 				if resize then
-					inputPosition:set(input.Position)
-					resizeHover:set(true)
-					resizeIconRectOffset:set(Vector2.new(resize[5]))
+					inputPosition(input.Position)
+					resizeHover(true)
+					resizeIconRectOffset(Vector2.new(resize[5]))
 					if UI.UserInputService.MouseIconEnabled then
 						mouseIconChanging = true
 						UI.UserInputService.MouseIconEnabled = false
 						mouseIconChanging = false
 					end
 				elseif resizeHover._value then
-					resizeHover:set(false)
+					resizeHover(false)
 					if UI.UserInputService.MouseIconEnabled ~= mouseIconWasEnabled then
 						mouseIconChanging = true
 						UI.UserInputService.MouseIconEnabled = mouseIconWasEnabled
@@ -469,13 +475,13 @@ function Window.new(definition)
 						+ parentSize.Y * padding.PaddingBottom.Scale
 					else 0
 
-				new.Size:set(
+				new.Size(
 					UDim2.fromOffset(
 						math.clamp(windowSize.X, 0, math.max(0, parentSize.X - paddingX)),
 						math.clamp(windowSize.Y, 0, math.max(0, parentSize.Y - paddingY))
 					)
 				)
-				new.Position:set(
+				new.Position(
 					UDim2.fromOffset(
 						math.clamp(position.X, 0, math.max(0, maxPosition.X)),
 						math.clamp(position.Y, 0, math.max(0, maxPosition.Y))

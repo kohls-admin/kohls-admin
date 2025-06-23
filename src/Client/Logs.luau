@@ -74,7 +74,7 @@ function Logs.new(_K)
 			tipText = "",
 		}
 
-		tooltip.Visible:hook(function()
+		tooltip.Visible:Connect(function()
 			if tooltip.Visible._value then
 				tooltip._instance.Text = itemRef.tipText
 			end
@@ -101,8 +101,8 @@ function Logs.new(_K)
 		Visible = false,
 		CreateItem = createItem,
 		RenderItem = renderItem,
-		ItemSize = function(use)
-			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+		ItemSize = function()
+			return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset)
 		end,
 	}
 
@@ -192,7 +192,7 @@ function Logs.new(_K)
 
 		Activated = function()
 			UI.toggleState(filterMenu.Visible, "floating")
-			local value = UI.peek(filterMenu.Visible)
+			local value = UI.raw(filterMenu.Visible)
 			if value then
 				UI.Sound.Hover03:Play()
 			else
@@ -205,8 +205,8 @@ function Logs.new(_K)
 		Adornee = filterButton._instance,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		RightAlign = true,
-		Size = function(use)
-			local padding = use(UI.Theme.Padding).Offset
+		Size = function()
+			local padding = UI.Theme.Padding().Offset
 			return UDim2.fromOffset(256 + padding * 3, 0)
 		end,
 
@@ -226,8 +226,8 @@ function Logs.new(_K)
 		Wraps = true,
 	})
 
-	local lineItemSize = UI.compute(function(use)
-		return UDim2.fromOffset(128, use(UI.Theme.FontSizeLarger))
+	local lineItemSize = UI.compute(function()
+		return UDim2.fromOffset(128, UI.Theme.FontSizeLarger())
 	end)
 
 	for index, array in logTypes do
@@ -244,7 +244,7 @@ function Logs.new(_K)
 				[UI.Hook] = {
 					Value = function(value)
 						scroller._filterUpdate = true
-						logTypeFilter[logType]:set(value)
+						logTypeFilter[logType](value)
 						scroller:refreshList()
 					end,
 				},
@@ -263,7 +263,7 @@ function Logs.new(_K)
 				scroller._filterUpdate = true
 				for index, array in logTypes do
 					local logType = array[1]
-					logTypeFilter[logType]:set(value)
+					logTypeFilter[logType](value)
 					scroller:refreshList()
 				end
 			end,
@@ -275,8 +275,8 @@ function Logs.new(_K)
 		Name = "FilterInput",
 
 		BackgroundTransparency = 1,
-		Size = function(use)
-			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset)
+		Size = function()
+			return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
 		end,
 
 		UI.new "UIListLayout" {

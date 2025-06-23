@@ -21,18 +21,18 @@ function About.new(_K)
 		local debounceEquip = _K.Util.Function.debounce(0.25, function(id, equip, equipped, name, button)
 			local existing = equippedUGC[equip]
 			if existing and existing ~= button then
-				existing.BackgroundColor3:set(Color3.fromRGB(0, 200, 0))
-				existing.Label:set("<b>WEAR</b>")
+				existing.BackgroundColor3(Color3.fromRGB(0, 200, 0))
+				existing.Label("<b>WEAR</b>")
 			end
 
 			if equipped then
 				equippedUGC[equip] = button
-				button.BackgroundColor3:set(Color3.fromRGB(200, 0, 0))
-				button.Label:set("<b>HIDE</b>")
+				button.BackgroundColor3(Color3.fromRGB(200, 0, 0))
+				button.Label("<b>HIDE</b>")
 			else
 				equippedUGC[equip] = nil
-				button.BackgroundColor3:set(Color3.fromRGB(0, 200, 0))
-				button.Label:set("<b>WEAR</b>")
+				button.BackgroundColor3(Color3.fromRGB(0, 200, 0))
+				button.Label("<b>WEAR</b>")
 			end
 
 			_K.Remote.VIPUGCMethod:FireServer(id, equip, equipped, name)
@@ -88,7 +88,7 @@ function About.new(_K)
 			ZIndex = 1000,
 			Close = function()
 				_K.client.lastAttemptedPurchase = false
-				purchaseDialog.Visible:set(false)
+				purchaseDialog.Visible(false)
 			end,
 
 			purchaseLink,
@@ -98,14 +98,14 @@ function About.new(_K)
 
 		local function promptThirdPartyGamePassDialog(passId, passName)
 			_K.client.lastAttemptedPurchase = passId
-			purchaseDialog.Title:set("Buy " .. passName)
-			purchaseDialog.Text:set(thirdPartyText)
+			purchaseDialog.Title("Buy " .. passName)
+			purchaseDialog.Text(thirdPartyText)
 			purchaseLink.Text = "roblox.com/game-pass/" .. passId
 			if _K.client.AllowThirdPartySales then
-				purchaseDialog.Visible:set(false)
+				purchaseDialog.Visible(false)
 				_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, passId)
 			else
-				purchaseDialog.Visible:set(true)
+				purchaseDialog.Visible(true)
 			end
 		end
 		_K.client.promptThirdPartyGamePassDialog = promptThirdPartyGamePassDialog
@@ -147,7 +147,7 @@ function About.new(_K)
 				con:Disconnect()
 				_K.client.AllowThirdPartySales = false
 				if _K.client.lastAttemptedPurchase then
-					purchaseDialog.Visible:set(true)
+					purchaseDialog.Visible(true)
 				end
 			end
 		end)
@@ -285,7 +285,7 @@ function About.new(_K)
 				local function tryDone()
 					trying = nil
 					if not owned then
-						button.Label:set(`<b>{ugc.price}</b>`)
+						button.Label(`<b>{ugc.price}</b>`)
 						button._content.IconFrame.Visible = true
 						button._content.Label.TextXAlignment = Enum.TextXAlignment.Left
 					end
@@ -308,7 +308,9 @@ function About.new(_K)
 					Size = UDim2.new(0, 80, 0, 32),
 					Position = UDim2.fromOffset(0, 88),
 
-					Attribute_Price = ugc.price,
+					[UI.Attribute] = {
+						Price = ugc.price,
+					},
 
 					Activated = function()
 						if try then
@@ -329,7 +331,7 @@ function About.new(_K)
 
 							if existing and existing ~= button then
 								task.delay(0.25, function()
-									existing.Label:set(`<b>{existing._instance:GetAttribute("Price")}</b>`)
+									existing.Label(`<b>{existing._instance:GetAttribute("Price")}</b>`)
 									existing._content.IconFrame.Visible = true
 									existing._content.Label.TextXAlignment = Enum.TextXAlignment.Left
 								end)
@@ -349,21 +351,21 @@ function About.new(_K)
 						end
 
 						_K.client.lastAttemptedPurchase = ugc.id
-						purchaseDialog.Title:set("Buy" .. ugc.name)
-						purchaseDialog.Text:set(thirdPartyText)
+						purchaseDialog.Title("Buy" .. ugc.name)
+						purchaseDialog.Text(thirdPartyText)
 						purchaseLink.Text = "roblox.com/catalog/" .. ugc.id
 						if _K.client.AllowThirdPartySales then
-							purchaseDialog.Visible:set(false)
+							purchaseDialog.Visible(false)
 							_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, ugc.id)
 						else
-							purchaseDialog.Visible:set(true)
+							purchaseDialog.Visible(true)
 						end
 					end,
 				}
 
 				if not owned then
 					try = true
-					button.Label:set("<b>TRY</b>")
+					button.Label("<b>TRY</b>")
 					button._content.IconFrame.Visible = false
 					button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
 
@@ -378,7 +380,7 @@ function About.new(_K)
 							con2 = nil
 						end
 						owned, try = true, nil
-						button.Label:set("<b>WEAR</b>")
+						button.Label("<b>WEAR</b>")
 						button._content.IconFrame.Visible = false
 						button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
 					end
@@ -540,7 +542,9 @@ function About.new(_K)
 					TextStrokeColor3 = UI.Theme.Primary,
 					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 					TextWrapped = true,
-					Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+					Size = function()
+						return UDim2.new(0, UI.Theme.FontSizeLarge(), 0, 32)
+					end,
 					Text = `?`,
 					RichText = true,
 				},
@@ -587,8 +591,8 @@ function About.new(_K)
 			},
 		}
 
-		local halfButtonSize = UI.compute(function(use)
-			return UDim2.new(0.5, -use(UI.Theme.Padding).Offset, 0, 32)
+		local halfButtonSize = UI.compute(function()
+			return UDim2.new(0.5, -UI.Theme.Padding().Offset, 0, 32)
 		end)
 
 		local vipDeveloperPassId = _K.Data.roles.vip.gamepasses and _K.Data.roles.vip.gamepasses[1]
@@ -616,7 +620,9 @@ function About.new(_K)
 				TextStrokeColor3 = UI.Theme.Primary,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
-				Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+				Size = function()
+					return UDim2.new(0, UI.Theme.FontSizeLarge(), 0, 32)
+				end,
 				Text = "?",
 				RichText = true,
 			},
@@ -667,7 +673,9 @@ function About.new(_K)
 				TextStrokeColor3 = UI.Theme.Primary,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
-				Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+				Size = function()
+					return UDim2.new(0, UI.Theme.FontSizeLarge(), 0, 32)
+				end,
 				Text = "?",
 				RichText = true,
 			},
@@ -701,7 +709,7 @@ function About.new(_K)
 			Size = UDim2.new(0, 320, 0, 0),
 			ZIndex = 999,
 			Close = function()
-				purchaseVIPDialog.Visible:set(false)
+				purchaseVIPDialog.Visible(false)
 				vipButtonDeveloper._instance.Parent = vipList
 				vipButtonGlobal._instance.Parent = vipList
 				vipList.Visible = true
@@ -713,7 +721,7 @@ function About.new(_K)
 				vipList.Visible = false
 				vipButtonDeveloper._instance.Parent = purchaseVIPDialog._content
 				vipButtonGlobal._instance.Parent = purchaseVIPDialog._content
-				purchaseVIPDialog.Visible:set(true)
+				purchaseVIPDialog.Visible(true)
 			else
 				promptThirdPartyGamePassDialog(vipGlobalPassId, "VIP (Global)")
 			end
@@ -767,21 +775,23 @@ function About.new(_K)
 				TextStrokeColor3 = UI.Theme.Primary,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
-				Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+				Size = function()
+					return UDim2.new(0, UI.Theme.FontSizeLarge(), 0, 32)
+				end,
 				Text = "<b>FREE</b>",
 				RichText = true,
 			},
 
 			Activated = function()
 				_K.client.lastAttemptedPurchase = adminModelId
-				purchaseDialog.Title:set("Get Kohl's Admin")
-				purchaseDialog.Text:set(thirdPartyText)
+				purchaseDialog.Title("Get Kohl's Admin")
+				purchaseDialog.Text(thirdPartyText)
 				purchaseLink.Text = "create.roblox.com/store/asset/" .. adminModelId
 				if _K.client.AllowThirdPartySales then
-					purchaseDialog.Visible:set(false)
+					purchaseDialog.Visible(false)
 					_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, adminModelId)
 				else
-					purchaseDialog.Visible:set(true)
+					purchaseDialog.Visible(true)
 				end
 			end,
 		}
@@ -816,8 +826,8 @@ function About.new(_K)
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
 				RichText = true,
-				Visible = function(use)
-					return not use(_K.client.settings.vip)
+				Visible = function()
+					return not _K.client.settings.vip()
 				end,
 
 				UI.new "UICorner" {

@@ -61,7 +61,9 @@ task.defer(function()
 			TextStrokeColor3 = UI.Theme.Primary,
 			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 			TextWrapped = true,
-			Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+			Size = function()
+				return UDim2.new(0, UI.Theme.FontSizeLarge(), 0, 32)
+			end,
 			Text = "<b>FREE</b>",
 			RichText = true,
 		},
@@ -72,8 +74,8 @@ task.defer(function()
 			if _K.client.AllowThirdPartySales then
 				_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, adminModelId)
 			else
-				_K.client.purchaseDialog.Visible:set(true)
-				dialog.Visible:set(false)
+				_K.client.purchaseDialog.Visible(true)
+				dialog.Visible(false)
 			end
 		end,
 	}
@@ -105,7 +107,7 @@ task.defer(function()
 		attempt += 1
 		if attempt == 5 then
 			connection:Disconnect()
-			dialog.Visible:set(true)
+			dialog.Visible(true)
 		end
 	end)
 end)

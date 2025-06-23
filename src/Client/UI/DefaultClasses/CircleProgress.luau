@@ -2,18 +2,16 @@ local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
 
 export type Function = UI.Function
-export type List<T> = UI.List<T>
 export type Set<T> = UI.Set<T>
 export type Dict<T> = UI.Dict<T>
 export type State<T> = UI.State<T>
 export type Stateful<T> = UI.Stateful<T>
 export type Symbol = UI.Symbol
-export type SpecialDefinition = UI.SpecialDefinition
 
 --- A circular progress indicator type
 --- @within CircleProgress
 --- @type CircleProgressDefinition { Value: Types.Stateful<boolean>,Padding: UDim, Size: UDim2, _instance: TextButton }
-type CircleProgressDefinition = SpecialDefinition & {
+type CircleProgressDefinition = Dict<any> & {
 	Value: Stateful<boolean>,
 	Padding: UDim,
 	Size: UDim2,
@@ -56,8 +54,8 @@ function CircleProgress.new(definition: CircleProgressDefinition)
 		Size = UDim2.new(0, 64, 0, 64),
 	}, definition)
 
-	local halfSize = UI.compute(function(use)
-		local size = math.round(use(new.Size).X.Offset / 2)
+	local halfSize = UI.compute(function()
+		local size = math.round(new.Size().X.Offset / 2)
 		return UDim2.fromOffset(size, size)
 	end)
 
@@ -120,8 +118,8 @@ function CircleProgress.new(definition: CircleProgressDefinition)
 			BackgroundColor3 = UI.Theme.Primary,
 			BackgroundTransparency = UI.Theme.Transparency,
 			Position = UDim2.new(0.5, 0, 0.5, 0),
-			Size = function(use)
-				local padding = use(new.Padding).Offset * 2
+			Size = function()
+				local padding = new.Padding().Offset * 2
 				return UDim2.new(1, padding, 1, padding)
 			end,
 

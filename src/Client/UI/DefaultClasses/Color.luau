@@ -14,15 +14,15 @@ function Color.new(definition)
 		Selected = Color3.new(1, 0, 0),
 	}, definition)
 
-	new.Selected._value = UI.peek(new.Value)
+	new.Selected._value = UI.raw(new.Value)
 
 	new._instance = UI.new "TextButton" {
 		AutoLocalize = false,
 		Text = "",
 		BackgroundColor3 = new.Value,
 		AnchorPoint = Vector2.new(1, 0.5),
-		Size = function(use)
-			local height = use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
+		Size = function()
+			local height = UI.Theme.FontSize() + UI.Theme.Padding().Offset
 			return UDim2.new(0, height, 0, height)
 		end,
 		Position = UDim2.new(1, 0, 0.5, 0),
@@ -38,7 +38,7 @@ function Color.new(definition)
 
 		Activated = function()
 			UI.toggleState(new._dialog.Visible, "floating")
-			local value = UI.peek(new._dialog.Visible)
+			local value = UI.raw(new._dialog.Visible)
 			if value then
 				UI.Sound.Hover03:Play()
 			else

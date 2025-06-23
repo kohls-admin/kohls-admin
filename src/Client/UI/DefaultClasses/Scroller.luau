@@ -25,7 +25,9 @@ function Scroller.new(definition)
 
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 
-		CanvasPosition_Changed = UI.clearActiveStates,
+		[UI.Event] = {
+			CanvasPosition = UI.clearActiveStates,
+		},
 	}
 
 	local canvasAbsolute = UI.state(new._instance, "AbsoluteCanvasSize")
@@ -33,8 +35,8 @@ function Scroller.new(definition)
 
 	UI.new "UIPadding" {
 		Parent = new._instance,
-		PaddingRight = function(use)
-			return if use(canvasAbsolute).Y > use(windowAbsolute).Y then use(UI.Theme.Padding) else UDim.new()
+		PaddingRight = function()
+			return if canvasAbsolute().Y > windowAbsolute().Y then UI.Theme.Padding() else UDim.new()
 		end,
 	}
 

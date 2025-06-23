@@ -50,12 +50,12 @@ function Commands.new(_K)
 					TextTruncate = Enum.TextTruncate.SplitWord,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Top,
-					Size = function(use)
-						local size = use(UI.Theme.FontSize)
+					Size = function()
+						local size = UI.Theme.FontSize()
 						return UDim2.new(1, -size, 0, size)
 					end,
-					Position = function(use)
-						local size = use(UI.Theme.FontSize)
+					Position = function()
+						local size = UI.Theme.FontSize()
 						return UDim2.new(0, size, 0, size)
 					end,
 				},
@@ -65,7 +65,7 @@ function Commands.new(_K)
 			tipText = "",
 		}
 
-		tooltip.Visible:hook(function()
+		tooltip.Visible:Connect(function()
 			if tooltip.Visible._value then
 				tooltip._instance.Text = itemRef.tipText
 			end
@@ -106,13 +106,13 @@ function Commands.new(_K)
 					table.insert(list, command)
 				end
 			end
-			commandsList:set(list)
+			commandsList(list)
 		else
-			commandsList:set(_K.Registry.commandsList)
+			commandsList(_K.Registry.commandsList)
 		end
 	end
-	_K.client.settings.onlyShowUsableCommands:hook(updateCommandsList)
-	_K.client.rank:hook(updateCommandsList)
+	_K.client.settings.onlyShowUsableCommands:Connect(updateCommandsList)
+	_K.client.rank:Connect(updateCommandsList)
 	updateCommandsList()
 
 	local scroller = UI.new "ScrollerFast" {
@@ -121,8 +121,8 @@ function Commands.new(_K)
 		Enabled = false,
 		FilterInput = true,
 		Visible = false,
-		ItemSize = function(use)
-			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) * 2)
+		ItemSize = function()
+			return UDim2.new(1, 0, 0, UI.Theme.FontSize * 2)
 		end,
 		CreateItem = createItem,
 		RenderItem = renderItem,
@@ -182,7 +182,7 @@ function Commands.new(_K)
 
 			command.roleColor = if #roles > 0
 				then Color3.fromHex(_K.Data.roles[roles[1]].color)
-				else UI.peek(UI.Theme.Primary)
+				else UI.raw(UI.Theme.Primary)
 
 			for i, role in roles do
 				local roleData = _K.Data.roles[role]
@@ -210,7 +210,7 @@ function Commands.new(_K)
 
 		command.roleColorAuth = if command.LocalPlayerAuthorized
 			then command.roleColor
-			else command.roleColor:Lerp(UI.peek(UI.Theme.Primary), 0.5)
+			else command.roleColor:Lerp(UI.raw(UI.Theme.Primary), 0.5)
 	end
 
 	local function filterTest(self, list)

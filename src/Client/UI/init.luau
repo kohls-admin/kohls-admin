@@ -4,17 +4,15 @@ local TextService = game:GetService("TextService")
 local SoundService = game:GetService("SoundService")
 local UserInputService = game:GetService("UserInputService")
 
-local Flux = require(script.Parent.Flux)
+local Flux = require(script.Parent.Parent.Flux)
 local state = Flux.state
 
 export type Function = Flux.Function
-export type List<T> = Flux.List<T>
 export type Set<T> = Flux.Set<T>
 export type Dict<T> = Flux.Dict<T>
 export type State<T> = Flux.State<T>
 export type Stateful<T> = Flux.Stateful<T>
 export type Symbol = Flux.Symbol
-export type SpecialDefinition = Flux.SpecialDefinition
 
 local playerGui = Players.LocalPlayer and Players.LocalPlayer:WaitForChild("PlayerGui")
 
@@ -33,8 +31,8 @@ SoundGroup.Name = "_KASounds"
 SoundGroup.Parent = SoundService
 
 Flux.edit(SoundGroup, {
-	Volume = Flux.compute(function(use)
-		return if use(UI.Theme.SoundEnabled) then use(UI.Theme.Volume) else 0
+	Volume = Flux.compute(function()
+		return if UI.Theme.SoundEnabled() then UI.Theme.Volume() else 0
 	end),
 })
 
@@ -85,26 +83,26 @@ UI.Platform = if UserInputService.VREnabled
 --- A marker for defining UI state hooks in [UI.edit]
 --- @prop Hook Flux.Symbol
 --- @readonly
-UI.Hook = Flux.Symbol()
+UI.Hook = table.freeze({ type = "Symbol" }) :: Symbol
 
 --- @within UI
 --- A marker for defining function defaultState in [UI.makeStatefulDefaults]
 --- @prop Function Flux.Symbol
 --- @readonly
-UI.Function = Flux.Symbol()
+UI.Function = table.freeze({ type = "Symbol" }) :: Symbol
 
 --- @within UI
 --- A marker for defining Nil defaultState in [UI.makeStatefulDefaults]
 --- @prop Nil Flux.Symbol
 --- @readonly
-UI.Nil = Flux.Symbol()
+UI.Nil = table.freeze({ type = "Symbol" }) :: Symbol
 
 --- @within UI
 --- GuiService.TopbarInset as a Flux state
 --- @prop TopbarInset State<Rect>
 UI.TopbarInset = state(GuiService, "TopbarInset")
-UI.TopbarPadding = Flux.compute(function(use)
-	return UDim.new(0, if UI.IsConsoleScreen then 10 else use(UI.TopbarInset).Height - 46)
+UI.TopbarPadding = Flux.compute(function()
+	return UDim.new(0, if UI.IsConsoleScreen then 10 else UI.TopbarInset().Height - 46)
 end)
 
 --- @within UI
@@ -153,8 +151,8 @@ UI.LayerTopInset = UI.new "Frame" {
 	Position = UDim2.fromScale(0, 1),
 	Size = if UI.IsConsoleScreen
 		then UDim2.new(1, 0, 1, -54)
-		else function(use)
-			return UDim2.new(1, 0, 1, -use(UI.TopbarInset).Height)
+		else function()
+			return UDim2.new(1, 0, 1, -UI.TopbarInset().Height)
 		end,
 }
 
@@ -191,8 +189,8 @@ UI.TopbarFrame = UI.new "Frame" {
 		PaddingRight = UI.TopbarPadding,
 		PaddingTop = if UI.IsConsoleScreen
 			then UDim.new(0, 6)
-			else Flux.compute(function(use)
-				return UDim.new(0, use(UI.TopbarPadding).Offset)
+			else Flux.compute(function()
+				return UDim.new(0, UI.TopbarPadding().Offset)
 			end),
 		PaddingBottom = UDim.new(0, if UI.IsConsoleScreen then 0 else 2),
 	},
@@ -205,7 +203,7 @@ export type ActiveStateType = "hover" | "floating" | "dialog"
 UI._activeState = {}
 
 --- A generalized function to handle activation/deactivation of both floating and hover states
-function UI.activateState(activeState: State<boolean>, stateType: ActiveStateType)
+function UI.activateState(activeState, stateType: ActiveStateType)
 	if not Flux.isState(activeState) then
 		error("Invalid active state")
 	end
@@ -213,16 +211,16 @@ function UI.activateState(activeState: State<boolean>, stateType: ActiveStateTyp
 	-- Clear the previous state if it's different
 	local previousState = UI._activeState[stateType]
 	if previousState and not rawequal(previousState, activeState) then
-		previousState:set(false)
+		previousState(false)
 	end
 
 	-- Set the new active state
 	UI._activeState[stateType] = activeState
-	activeState:set(true)
+	activeState(true)
 end
 
 --- A generalized function to deactivate both floating and hover states
-function UI.deactivateState(activeState: State<boolean>, stateType: ActiveStateType)
+function UI.deactivateState(activeState, stateType: ActiveStateType)
 	if not Flux.isState(activeState) then
 		error("Invalid active state")
 	end
@@ -232,7 +230,7 @@ function UI.deactivateState(activeState: State<boolean>, stateType: ActiveStateT
 	if previousState and rawequal(previousState, activeState) then
 		UI._activeState[stateType] = nil
 	end
-	activeState:set(false)
+	activeState(false)
 end
 
 --- A generalized function to toggle both floating and hover states
@@ -251,7 +249,7 @@ end
 function UI.clearState(stateType: ActiveStateType)
 	local activeState = UI._activeState[stateType]
 	if Flux.isState(activeState) then
-		activeState:set(false)
+		activeState(false)
 		UI._activeState[stateType] = nil
 	end
 end
@@ -307,15 +305,13 @@ function UI.sinkInput(x: number, y: number, object: GuiObject): boolean
 end
 
 --- Helper function for defining Flux state defaults
-function UI.makeStatefulDefaults(default: Dict<any>, definition: SpecialDefinition?)
+function UI.makeStatefulDefaults(default: Dict<any>, definition: Dict<any>?)
 	for key, value in default do
 		if definition then
 			value = if definition[key] ~= nil then definition[key] else value
 		end
 		if typeof(value) == "function" and default[key] ~= UI.Function then
-			local computed = Flux._implicitComputeds[value] or Flux.compute(value)
-			Flux._implicitComputeds[value] = computed
-			value = computed
+			value = Flux.compute(value)
 		end
 		if value == UI.Nil or value == UI.Function then
 			default[key] = nil
@@ -333,13 +329,12 @@ end
 --- * Parents children to the ._content variable of a UI component if one exists
 --- * Numeric indicies are defined as children with [GuiObject.LayoutOrder] set to the index
 --- * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
---- @param definition SpecialDefinition | GuiObject
-function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
-	definition = definition :: SpecialDefinition & GuiObject
+function UI.edit(new: Instance | Dict<any>, properties): Instance | Dict<any>
+	properties = properties :: Dict<any> & GuiObject
 
 	local instance = new
 	local contentParent = instance
-	local parent = definition.Parent
+	local parent = properties.Parent
 	local cleanup = {}
 
 	if type(new) == "table" then
@@ -348,7 +343,7 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 	end
 
 	-- numeric index child definition
-	for index, child in definition do
+	for index, child in properties do
 		if type(index) ~= "number" or index ~= math.floor(index) then
 			continue
 		end
@@ -362,12 +357,12 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 			child.LayoutOrder = if child.LayoutOrder ~= 0 then child.LayoutOrder else index
 		end
 		child.Parent = contentParent
-		definition[index] = nil
+		properties[index] = nil
 	end
 
 	if type(new) == "table" then
-		local hooks = definition[UI.Hook]
-		definition[UI.Hook] = nil
+		local hooks = properties[UI.Hook]
+		properties[UI.Hook] = nil
 		if hooks then
 			for key, hook in hooks do
 				local classMember = new[key]
@@ -375,16 +370,16 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 					error(`Invalid UI State Hook {key}`)
 				end
 				if type(hook) == "function" then
-					table.insert(cleanup, classMember:hook(hook))
+					table.insert(cleanup, classMember:Connect(hook))
 				end
 			end
 		end
-		for key, value in definition do
+		for key, value in properties do
 			local classMember = new[key]
 			if classMember == nil then
 				continue
 			end
-			definition[key] = nil -- strip class members
+			properties[key] = nil -- strip class members
 			-- connect alias signals
 			if typeof(classMember) == "RBXScriptSignal" then
 				classMember:Connect(value)
@@ -392,22 +387,43 @@ function UI.edit(new: Instance | Dict<any>, definition): Instance | Dict<any>
 		end
 	end
 
-	if not definition[Flux.Clean] then
-		definition[Flux.Clean] = {}
+	if not properties[Flux.Clean] then
+		properties[Flux.Clean] = {}
 	end
 
 	for _, v in cleanup do
-		table.insert(definition[Flux.Clean], v)
+		table.insert(properties[Flux.Clean], v)
 	end
 
-	definition.Parent = nil
+	properties.Parent = nil
 	if parent then
 		instance.Parent = if type(parent) == "table" then (parent._content or parent._instance) else parent
 	end
 	-- apply non class members to the root instance with Flux.edit
-	Flux.edit(instance, definition)
+	Flux.edit(instance, properties)
 	return new
 end
+
+local constructors: { [string]: () -> Instance } = {}
+setmetatable(constructors, {
+	__index = function(self, className: string)
+		local class = UI.Class[className]
+		local new
+
+		if class then
+			new = function(properties: Dict<any>): Instance | Dict<any>
+				return UI.edit(class.new(properties), properties)
+			end
+		else
+			new = function(properties: Dict<any>): Instance | Dict<any>
+				return UI.edit(Instance.new(class), properties)
+			end
+		end
+
+		self[class] = new
+		return new
+	end,
+})
 
 --- Creates a new Instance with [UI.edit]
 --- @within UI
@@ -419,7 +435,7 @@ UI.new = function(className)
 	return function(definition)
 		return UI.edit(if class then class.new(definition) else Instance.new(className), definition)
 	end
-end :: ((className: string) -> (properties: GuiObject & SpecialDefinition) -> Instance | Dict<any>) & typeof(Instance.new)
+end :: Flux.Constructor
 
 --- Registers a new UI component class
 function UI.register(className: string, class: Dict<any>)

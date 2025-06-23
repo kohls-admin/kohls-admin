@@ -25,7 +25,7 @@ return {
 			local dashboardKeyText =
 				`{dashboardKey.mods.Shift and "Shift+" or ""}{dashboardKey.mods.Alt and "Alt+" or ""}{dashboardKey.key._value.Name}`
 
-			local prefix = context._K.UI.peek(context._K.client.settings.prefix)[1]
+			local prefix = context._K.UI.raw(context._K.client.settings.prefix)[1]
 			local prefixKeyText = string.byte(prefix)
 			for i, keyCode in Enum.KeyCode:GetEnumItems() do
 				if keyCode.Value == prefixKeyText then
@@ -64,13 +64,15 @@ return {
 					},
 				}
 				_K.UI.edit(window, {
-					Visible_Changed = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.About,
-							})
-						end
-					end,
+					[_K.UI.Event] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.About,
+								})
+							end
+						end,
+					},
 				})
 				env.window = window
 			end)
@@ -109,13 +111,15 @@ return {
 					},
 				}
 				_K.UI.edit(window, {
-					Visible_Changed = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.Commands,
-							})
-						end
-					end,
+					[_K.UI.Event] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Commands,
+								})
+							end
+						end,
+					},
 				})
 				env.window = window
 			end)
@@ -217,19 +221,21 @@ return {
 					},
 				}
 				_K.UI.edit(window, {
-					Visible_Changed = function()
-						if not window._instance.Visible then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.Logs,
-							})
-							if env.originalFilter then
-								for logType, value in env.originalFilter do
-									_K.client.dashboard.Logs.logTypeFilter[logType]:set(value)
+					[_K.UI.Event] = {
+						Visible = function()
+							if not window._instance.Visible then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Logs,
+								})
+								if env.originalFilter then
+									for logType, value in env.originalFilter do
+										_K.client.dashboard.Logs.logTypeFilter[logType](value)
+									end
+									env.originalFilter = nil
 								end
-								env.originalFilter = nil
 							end
-						end
-					end,
+						end,
+					},
 				})
 				env.window = window
 			end)
@@ -252,17 +258,17 @@ return {
 
 			if context.alias == "log" or context.alias == "logs" then
 				for _, state in context._K.client.dashboard.Logs.logTypeFilter do
-					state:set(true)
+					state(true)
 				end
 			else
 				for _, state in context._K.client.dashboard.Logs.logTypeFilter do
-					state:set(false)
+					state(false)
 				end
 				local alias = string.lower(context.alias)
 				local match = context.env.aliasMap[alias] or alias
 				match = string.upper(string.match(match, "(%w+)logs?$") :: string)
 				for _, logType in context.env.typeMap[match] do
-					context._K.client.dashboard.Logs.logTypeFilter[logType]:set(true)
+					context._K.client.dashboard.Logs.logTypeFilter[logType](true)
 				end
 			end
 		end,
@@ -286,13 +292,15 @@ return {
 					},
 				}
 				_K.UI.edit(window, {
-					Visible_Changed = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.Settings,
-							})
-						end
-					end,
+					[_K.UI.Event] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Settings,
+								})
+							end
+						end,
+					},
 				})
 				env.window = window
 			end)
@@ -529,7 +537,7 @@ return {
 						.. `\n\nUse <b>{context._K.getCommandPrefix(context.from)}unviewas</b> to return to normal.`,
 				})
 			end
-			context._K.client.members:set(context._K.Data.members)
+			context._K.client.members(context._K.Data.members)
 			context._K.client.updateInterfaceAuth()
 		end,
 	},

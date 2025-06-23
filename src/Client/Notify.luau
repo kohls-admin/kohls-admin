@@ -7,7 +7,7 @@ local function resetOffset(announce: boolean?)
 	local heightOffset = 0
 	for i, list in ipairs(if announce then announcements else notifications) do
 		local card, _, offset = unpack(list)
-		offset:set(heightOffset, true)
+		offset(heightOffset, true)
 		heightOffset += card.AbsoluteSize.Y + UI.Theme.Padding._value.Offset
 	end
 	return heightOffset
@@ -25,7 +25,7 @@ local function hide(info, announce: boolean?)
 	table.remove(list, found)
 	resetOffset(announce)
 	card.ZIndex = -1
-	visible:set(nil)
+	visible(nil)
 	task.delay(1 + UI.Theme.TweenOut._value.Time, card.Destroy, card)
 end
 
@@ -62,27 +62,21 @@ return function(dialogOverride)
 		ExitButton = true,
 
 		Size = UDim2.fromScale(0.5, 0),
-		AnchorPoint = UI.tween(
-			UI.Theme.TweenInOut,
-			UI.compute(function(use)
-				return if announce
-					then Vector2.new(0.5, if use(visible) then 0 else 1)
-					else Vector2.new(if use(visible) then 1 else 0, 1)
-			end)
-		),
-		Position = UI.tween(
-			UI.Theme.TweenInOut,
-			UI.compute(function(use)
-				local padding = use(UI.Theme.Padding).Offset
-				if announce then
-					local height = use(UI.TopbarInset).Height
-					local heightOffset = use(offset)
-					return UDim2.new(0.5, 0, 0, if use(visible) then padding + heightOffset else -height)
-				else
-					return UDim2.new(1, if use(visible) then -padding else 0, 1, -(padding + use(offset)))
-				end
-			end)
-		),
+		AnchorPoint = UI.tween(function()
+			return if announce
+				then Vector2.new(0.5, if visible() then 0 else 1)
+				else Vector2.new(if visible() then 1 else 0, 1)
+		end, UI.Theme.TweenInOut),
+		Position = UI.tween(function()
+			local padding = UI.Theme.Padding().Offset
+			if announce then
+				local height = UI.TopbarInset().Height
+				local heightOffset = offset()
+				return UDim2.new(0.5, 0, 0, if visible() then padding + heightOffset else -height)
+			else
+				return UDim2.new(1, if visible() then -padding else 0, 1, -(padding + offset()))
+			end
+		end, UI.Theme.TweenInOut),
 		if announce
 			then UI.new "UIPadding" {
 				PaddingLeft = UI.Theme.Padding,
@@ -121,7 +115,7 @@ return function(dialogOverride)
 
 	self = { dialog._instance, visible, offset, duration }
 	table.insert(list, 1, self)
-	visible:set(true)
+	visible(true)
 
 	if resetOffset(announce) > UI.LayerTopInset.AbsoluteSize.Y / (if announce then 2 else 1) then
 		for index = #list, 1, -1 do

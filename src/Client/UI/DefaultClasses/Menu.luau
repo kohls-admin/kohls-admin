@@ -28,17 +28,19 @@ function Menu.new(definition)
 		BackgroundTransparency = 1,
 		ClipsDescendants = false,
 		Size = UDim2.new(1, 0, 1, 0),
-		CanvasSize = function(use)
-			return UDim2.new(0, 0, 0, use(listContentSize).Y)
+		CanvasSize = function()
+			return UDim2.new(0, 0, 0, listContentSize().Y)
 		end,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 0,
 
 		new._list,
 
-		CanvasPosition_Changed = function()
-			UI.clearState("hover")
-		end,
+		[UI.Event] = {
+			CanvasPosition = function()
+				UI.clearState("hover")
+			end,
+		},
 	}
 
 	new._instance = UI.new "TextButton" {
@@ -46,8 +48,8 @@ function Menu.new(definition)
 		ZIndex = 100,
 		Visible = new.Visible,
 		Parent = UI.LayerTop,
-		AnchorPoint = function(use)
-			return if use(new.RightAlign) then Vector2.new(1, 0) else Vector2.zero
+		AnchorPoint = function()
+			return if new.RightAlign() then Vector2.new(1, 0) else Vector2.zero
 		end,
 		BackgroundColor3 = UI.Theme.Primary,
 		ClipsDescendants = true,
@@ -78,14 +80,14 @@ function Menu.new(definition)
 		local absoluteSize = UI.state(adornee, "AbsoluteSize")
 
 		UI.edit(new._instance, {
-			Position = function(use)
-				local size = use(menuSize)
-				local layerSize = use(LayerTopSize)
-				local absolutePos = use(absolutePosition)
-				local absoluteSize = use(absoluteSize)
-				local rightAlign = use(new.RightAlign)
-				local padding = use(UI.Theme.Padding).Offset
-				local height = use(UI.TopbarInset).Height
+			Position = function()
+				local size = menuSize()
+				local layerSize = LayerTopSize()
+				local absolutePos = absolutePosition()
+				local absoluteSize = absoluteSize()
+				local rightAlign = new.RightAlign()
+				local padding = UI.Theme.Padding().Offset
+				local height = UI.TopbarInset().Height
 
 				local xPos = absolutePos.X + if rightAlign then absoluteSize.X else 0
 				local yPos = absolutePos.Y + absoluteSize.Y + padding + height
@@ -102,7 +104,7 @@ function Menu.new(definition)
 
 	UI.edit(new._instance, {
 		[UI.Clean] = {
-			new.Adornee:hook(onAdornee),
+			new.Adornee:Connect(onAdornee),
 			UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
 				if
 					(
@@ -119,7 +121,7 @@ function Menu.new(definition)
 			end),
 		},
 	})
-	onAdornee(UI.peek(new.Adornee))
+	onAdornee(UI.raw(new.Adornee))
 
 	return setmetatable(new, Menu)
 end

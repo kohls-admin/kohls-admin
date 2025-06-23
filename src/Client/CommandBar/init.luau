@@ -9,14 +9,14 @@ local UI = _K.UI
 local prefix = _K.getCommandPrefix()
 
 local validState = UI.state(nil)
-local indicatorColor = UI.compute(function(use)
-	local valid = use(validState)
+local indicatorColor = UI.compute(function()
+	local valid = validState()
 	if valid == true then
-		return use(UI.Theme.Valid)
+		return UI.Theme.Valid()
 	elseif valid == false then
-		return use(UI.Theme.Invalid)
+		return UI.Theme.Invalid()
 	else
-		return use(UI.Theme.PrimaryText)
+		return UI.Theme.PrimaryText()
 	end
 end)
 
@@ -60,8 +60,8 @@ Input = UI.new "Input" {
 				Size = UDim2.fromScale(0.75, 0.75),
 				ImageColor3 = UI.Theme.Valid,
 				Image = UI.Theme.Image.Check_Bold,
-				Visible = function(use)
-					return use(validState) == true
+				Visible = function()
+					return validState() == true
 				end,
 			},
 
@@ -73,8 +73,8 @@ Input = UI.new "Input" {
 				Size = UDim2.fromScale(0.5, 0.5),
 				ImageColor3 = UI.Theme.Invalid,
 				Image = UI.Theme.Image.Close_Bold,
-				Visible = function(use)
-					return use(validState) == false
+				Visible = function()
+					return validState() == false
 				end,
 			},
 		},
@@ -117,8 +117,8 @@ local CommandBar = UI.new "Frame" {
 UI.edit(Input._instance.UIStroke, {
 	Thickness = 2,
 	Color = UI.Theme.Invalid,
-	Enabled = function(use)
-		return use(validState) == false
+	Enabled = function()
+		return validState() == false
 	end,
 })
 
@@ -170,9 +170,9 @@ local Tooltip = UI.new "TextLabel" {
 
 local TooltipTextBounds = UI.state(Tooltip, "TextBounds")
 UI.edit(Tooltip, {
-	Size = function(use)
-		local height = use(TooltipTextBounds).Y
-		local padding = use(UI.Theme.PaddingDouble).Offset
+	Size = function()
+		local height = TooltipTextBounds().Y
+		local padding = UI.Theme.PaddingDouble().Offset
 		return UDim2.new(1, 0, 0, math.max(32, height + padding))
 	end,
 })
@@ -188,8 +188,8 @@ local SuggestionFrame = UI.new "TextButton" {
 	Name = "Suggestion",
 	BackgroundTransparency = 0.9,
 	BackgroundColor3 = UI.Theme.Secondary,
-	Size = function(use)
-		return UDim2.new(1, 0, 0, Tooltip.TextSize + use(UI.Theme.Padding).Offset)
+	Size = function()
+		return UDim2.new(1, 0, 0, Tooltip.TextSize + UI.Theme.Padding().Offset)
 	end,
 	Text = "",
 	TextTransparency = 1,
@@ -234,7 +234,7 @@ local function updateInvalidColor(invalidColor)
 	invalidInlineFormat =
 		`<font transparency="0.33">%s<b><font color="#{invalidColor}" transparency="0.66">%s<font transparency="0">%s</font>%s</font></b>%s</font>`
 end
-UI.Theme.Invalid:hook(updateInvalidColor)
+UI.Theme.Invalid:Connect(updateInvalidColor)
 updateInvalidColor(UI.Theme.Invalid._value)
 
 local suggestionIndex = 1
@@ -258,7 +258,7 @@ local function fillSuggestion()
 	end
 	currentCompletion = nil
 
-	Input.Value:set(text, true)
+	Input.Value(text, true)
 	Input._input.CursorPosition = pos + 1
 end
 
@@ -390,7 +390,7 @@ end
 
 local function clearCompletion()
 	TooltipFrame.Visible = false
-	Input.DisplayText:set(_K.Util.String.escapeRichText(Input._input.Text))
+	Input.DisplayText(_K.Util.String.escapeRichText(Input._input.Text))
 	for _, label in suggestionLabels do
 		label:Destroy()
 	end
@@ -421,7 +421,9 @@ local suggestionPurchaseButton = UI.new "Button" {
 		TextStrokeColor3 = UI.Theme.Primary,
 		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 		TextWrapped = true,
-		Size = UI.computeFrom(UDim2.new, 0, UI.Theme.FontSizeLarge, 0, 32),
+		Size = function()
+			return UDim2.new(0, UI.Theme.FontSizeLarge(), 0, 32)
+		end,
 		Text = `<b>?</b>`,
 		RichText = true,
 	},
@@ -445,8 +447,8 @@ local function updateSuggestionPurchasePrice()
 end
 
 local function invalidSuggestion(data, err, pos, text)
-	validState:set(false)
-	Input.DisplayText:set(
+	validState(false)
+	Input.DisplayText(
 		string.format(
 			invalidSuggestFormat,
 			_K.Util.String.escapeRichText(string.sub(data.message, 1, pos - 1)),
@@ -497,7 +499,7 @@ updateCompletion = function()
 	local data = currentCompletionData
 	currentCompletion = nil
 
-	Input.DisplayText:set(_K.Util.String.escapeRichText(Input._input.Text))
+	Input.DisplayText(_K.Util.String.escapeRichText(Input._input.Text))
 	for _, label in suggestionLabels do
 		label:Destroy()
 	end
@@ -511,7 +513,7 @@ updateCompletion = function()
 		end
 	end
 
-	validState:set(nil)
+	validState(nil)
 
 	-- handle validation hints
 	-- TODO: somehow show validated arguments/text as green :)
@@ -533,7 +535,7 @@ updateCompletion = function()
 		end
 
 		if valid then
-			validState:set(true)
+			validState(true)
 		end
 	end
 
@@ -589,7 +591,7 @@ updateCompletion = function()
 					suggestionPurchase.role = roleId
 					suggestionPurchase.gamepass = if roleId == "vip" then 5411126 else roleData.gamepasses[1]
 					suggestionPurchaseButton._instance.Parent = TooltipFrame
-					suggestionPurchaseButton.Label:set(
+					suggestionPurchaseButton.Label(
 						`<sc>Purchase <font color="{roleData.color}">{roleData.name or roleId}</font></sc>`
 					)
 					task.spawn(updateSuggestionPurchasePrice)
@@ -605,7 +607,7 @@ updateCompletion = function()
 	end
 
 	if invalid and not data.validSuggestion then
-		validState:set(false)
+		validState(false)
 	end
 
 	local completion = suggestion
@@ -633,7 +635,7 @@ updateCompletion = function()
 		startIndex, endIndex = 1, #suggestion
 	end
 
-	Input.DisplayText:set(
+	Input.DisplayText(
 		string.format(
 			if invalid then invalidInlineFormat else inlineFormat,
 			_K.Util.String.escapeRichText(preCompletion),
@@ -729,7 +731,7 @@ return {
 		initialized = true
 
 		prefix = _K.getCommandPrefix()
-		Input.Value:set(prefix, true)
+		Input.Value(prefix, true)
 		CommandBar.Parent = UI.TopbarFrame
 		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
@@ -738,10 +740,10 @@ return {
 			local value = _K.getCommandPrefix()
 			local oldPrefix = prefix
 			prefix = value
-			Input.Value:set(value .. string.sub(Input._input.Text, #oldPrefix + 1), true)
+			Input.Value(value .. string.sub(Input._input.Text, #oldPrefix + 1), true)
 		end
-		_K.client.settings.prefix:hook(updatePrefix)
-		_K.client.settings.playerPrefix:hook(updatePrefix)
+		_K.client.settings.prefix:Connect(updatePrefix)
+		_K.client.settings.playerPrefix:Connect(updatePrefix)
 
 		TooltipFrame.MouseWheelForward:Connect(suggestionUp)
 		TooltipFrame.MouseWheelBackward:Connect(suggestionDown)
@@ -784,7 +786,7 @@ return {
 		Input._input:GetPropertyChangedSignal("SelectionStart"):Connect(function()
 			if Input._input.SelectionStart ~= -1 then
 				if validState._value == false then
-					validState:set(nil)
+					validState(nil)
 				end
 				clearCompletion()
 			else
@@ -793,7 +795,7 @@ return {
 		end)
 
 		Input._input.Focused:Connect(function()
-			Input.Value:set(_K.Util.String.trimEnd(Input._input.Text), true)
+			Input.Value(_K.Util.String.trimEnd(Input._input.Text), true)
 		end)
 
 		Input._input.FocusLost:Connect(function(enterPressed)
@@ -848,7 +850,7 @@ return {
 						table.remove(commandHistory)
 					end
 				end
-				Input.Value:set(prefix, true)
+				Input.Value(prefix, true)
 			end
 			return
 		end)
@@ -864,13 +866,13 @@ return {
 
 			if string.find(text, prefix, 1, true) ~= 1 then
 				Input._input.CursorPosition += prefixLen
-				Input.Value:set(prefix .. text, true)
+				Input.Value(prefix .. text, true)
 				Input._input.CursorPosition += prefixLen
 				return
 			else -- trim whitespace after prefix
 				local trimmed = prefix .. _K.Util.String.trimStart(string.sub(text, prefixLen + 1))
 				if trimmed ~= Input._input.Text then
-					Input.Value:set(trimmed, true)
+					Input.Value(trimmed, true)
 					return
 				end
 			end
@@ -878,10 +880,10 @@ return {
 			if text ~= prefix then
 				if string.find(text, prefix, prefixLen + 1, true) == prefixLen + 1 then
 					text = string.sub(text, prefixLen + 1)
-					Input.Value:set(text, true)
+					Input.Value(text, true)
 					return
 				end
-				Input.DisplayText:set(_K.Util.String.escapeRichText(text), true)
+				Input.DisplayText(_K.Util.String.escapeRichText(text), true)
 			end
 		end)
 	end,

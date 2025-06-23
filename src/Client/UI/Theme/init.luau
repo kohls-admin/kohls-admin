@@ -1,4 +1,4 @@
-local Flux = require(script.Parent.Parent:WaitForChild("Flux"))
+local Flux = require(script.Parent.Parent.Parent:WaitForChild("Flux"))
 local Default = require(script:WaitForChild("Themes"):WaitForChild("Default"))
 
 local compute = Flux.compute
@@ -58,92 +58,92 @@ makeStateful(Theme)
 
 -- COMPUTED THEME VALUES
 
-Theme.TransparencyOverlay = compute(function(use)
-	return use(Theme.Transparency) * 0.125 + 0.875
+Theme.TransparencyOverlay = compute(function()
+	return Theme.Transparency() * 0.125 + 0.875
 end)
 
-Theme.TransparencyClamped = compute(function(use)
-	return math.min(0.75, use(Theme.Transparency))
+Theme.TransparencyClamped = compute(function()
+	return math.min(0.75, Theme.Transparency())
 end)
 
-Theme.FontHeavy = compute(function(use)
-	local font = Font.fromEnum(use(Theme.Font))
+Theme.FontHeavy = compute(function()
+	local font = Font.fromEnum(Theme.Font())
 	font.Weight = Enum.FontWeight.Heavy
 	return font
 end)
 
-Theme.FontBold = compute(function(use)
-	local font = Font.fromEnum(use(Theme.Font))
+Theme.FontBold = compute(function()
+	local font = Font.fromEnum(Theme.Font())
 	font.Weight = Enum.FontWeight.Bold
 	return font
 end)
 
-Theme.FontSemiBold = compute(function(use)
-	local font = Font.fromEnum(use(Theme.Font))
+Theme.FontSemiBold = compute(function()
+	local font = Font.fromEnum(Theme.Font())
 	font.Weight = Enum.FontWeight.SemiBold
 	return font
 end)
 
-Theme.FontLight = compute(function(use)
-	local font = Font.fromEnum(use(Theme.Font))
+Theme.FontLight = compute(function()
+	local font = Font.fromEnum(Theme.Font())
 	font.Weight = Enum.FontWeight.Light
 	return font
 end)
 
-Theme.FontSizeDouble = compute(function(use)
-	return math.round(use(Theme.FontSize) * 2)
+Theme.FontSizeDouble = compute(function()
+	return math.round(Theme.FontSize() * 2)
 end)
 
-Theme.FontSizeLargest = compute(function(use)
-	return math.round(use(Theme.FontSize) * 1.75)
+Theme.FontSizeLargest = compute(function()
+	return math.round(Theme.FontSize() * 1.75)
 end)
 
-Theme.FontSizeLarger = compute(function(use)
-	return math.round(use(Theme.FontSize) * 1.5)
+Theme.FontSizeLarger = compute(function()
+	return math.round(Theme.FontSize() * 1.5)
 end)
 
-Theme.FontSizeLarge = compute(function(use)
-	return math.round(use(Theme.FontSize) * 1.25)
+Theme.FontSizeLarge = compute(function()
+	return math.round(Theme.FontSize() * 1.25)
 end)
 
-Theme.FontSizeSmall = compute(function(use)
-	return math.round(use(Theme.FontSize) * 0.75)
+Theme.FontSizeSmall = compute(function()
+	return math.round(Theme.FontSize() * 0.75)
 end)
 
-Theme.FontSizeSmaller = compute(function(use)
-	return math.round(use(Theme.FontSize) * 0.5)
+Theme.FontSizeSmaller = compute(function()
+	return math.round(Theme.FontSize() * 0.5)
 end)
 
-Theme.FontSizeSmallest = compute(function(use)
-	return math.round(use(Theme.FontSize) * 0.25)
+Theme.FontSizeSmallest = compute(function()
+	return math.round(Theme.FontSize() * 0.25)
 end)
 
-Theme.PaddingHalf = compute(function(use)
-	local padding = use(Theme.Padding)
+Theme.PaddingHalf = compute(function()
+	local padding = Theme.Padding()
 	return UDim.new(padding.Scale / 2, padding.Offset / 2)
 end)
 
-Theme.PaddingDouble = compute(function(use)
-	local padding = use(Theme.Padding)
+Theme.PaddingDouble = compute(function()
+	local padding = Theme.Padding()
 	return UDim.new(padding.Scale * 2, padding.Offset * 2)
 end)
 
-Theme.CornerHalf = compute(function(use)
-	local radius = use(Theme.CornerRadius)
+Theme.CornerHalf = compute(function()
+	local radius = Theme.CornerRadius()
 	return UDim.new(radius.Scale / 2, radius.Offset / 2)
 end)
 
-Theme.CornerDiameter = compute(function(use)
-	local radius = use(Theme.CornerRadius)
+Theme.CornerDiameter = compute(function()
+	local radius = Theme.CornerRadius()
 	return UDim.new(radius.Scale * 2, radius.Offset * 2)
 end)
 
 Theme.ScrollMidImage = state("rbxassetid://18370268668")
-Theme.ScrollTopImage = compute(function(use)
-	return if use(Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://105141456035522"
+Theme.ScrollTopImage = compute(function()
+	return if Theme.CornerRadius().Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://105141456035522"
 end)
-Theme.ScrollBottomImage = compute(function(use)
-	return if use(Theme.CornerRadius).Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://110012579042362"
+Theme.ScrollBottomImage = compute(function()
+	return if Theme.CornerRadius().Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://110012579042362"
 end)
 
 return Theme

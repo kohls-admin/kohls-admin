@@ -36,8 +36,8 @@ function ListItem.new(definition)
 		Name = "UIContent",
 		AnchorPoint = Vector2.new(1, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = function(use)
-			return UDim2.new(1, -use(labelSize).X - use(UI.Theme.Padding).Offset, 0, 0)
+		Size = function()
+			return UDim2.new(1, -labelSize().X - UI.Theme.Padding().Offset, 0, 0)
 		end,
 		Position = UDim2.new(1, 0, 0, 0),
 		BackgroundTransparency = 1,
@@ -56,8 +56,8 @@ function ListItem.new(definition)
 		Padding = UI.Theme.Padding,
 	}
 
-	new._layoutParentCompute = UI.compute(function(use)
-		layout.Parent = if use(new.ContentListLayout) then new._content else nil
+	new._layoutParentCompute = UI.compute(function()
+		layout.Parent = if new.ContentListLayout() then new._content else nil
 	end)
 
 	new._instance = UI.new "Frame" {

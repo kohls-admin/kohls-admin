@@ -5,7 +5,7 @@ function _K.client.updateInterfaceAuth()
 	-- TODO: recheck visibility for all restricted UIs
 	local userId = _K.LocalPlayer.UserId
 	local userRank = _K.Auth.getRank(userId)
-	_K.client.rank:set(userRank)
+	_K.client.rank(userRank)
 
 	local commandBarRank = _K.Data.settings.commandBarRank
 	local dashboardRank = _K.Data.settings.dashboardRank
@@ -103,12 +103,12 @@ end
 
 _K.Remote.Ban.OnClientEvent:Connect(function(userId, ban)
 	_K.Data.bans[userId] = ban
-	_K.client.bans:set(_K.Data.bans)
+	_K.client.bans(_K.Data.bans)
 end)
 
 _K.Remote.Bans.OnClientEvent:Connect(function(bans)
 	_K.Data.bans = bans
-	_K.client.bans:set(_K.Data.bans)
+	_K.client.bans(_K.Data.bans)
 end)
 
 _K.Remote.Member.OnClientEvent:Connect(function(userId, member)
@@ -119,7 +119,7 @@ _K.Remote.Member.OnClientEvent:Connect(function(userId, member)
 	end
 
 	_K.Data.members[userId] = member
-	_K.client.members:set(_K.Data.members)
+	_K.client.members(_K.Data.members)
 	_K.client.updateInterfaceAuth()
 end)
 
@@ -137,7 +137,7 @@ _K.Remote.Members.OnClientEvent:Connect(function(members)
 	end
 
 	_K.Data.members = members
-	_K.client.members:set(_K.Data.members)
+	_K.client.members(_K.Data.members)
 	_K.client.updateInterfaceAuth()
 end)
 

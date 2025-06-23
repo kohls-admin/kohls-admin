@@ -5,8 +5,8 @@ local Switch = {}
 Switch.__index = Switch
 setmetatable(Switch, BaseClass)
 
-local itemHeight = UI.compute(function(use)
-	return use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
+local itemHeight = UI.compute(function()
+	return UI.Theme.FontSize() + UI.Theme.Padding().Offset
 end)
 
 function Switch.new(definition)
@@ -15,21 +15,15 @@ function Switch.new(definition)
 		Selected = false,
 	}, definition)
 
-	new.Selected._value = UI.peek(new.Value)
+	new.Selected._value = UI.raw(new.Value)
 
-	local backgroundTransparency = UI.tween(
-		UI.Theme.TweenOut,
-		UI.compute(function(use)
-			return if use(new.Value) then 0 else use(UI.Theme.TransparencyOverlay)
-		end)
-	)
+	local backgroundTransparency = UI.tween(function()
+		return if new.Value() then 0 else UI.Theme.TransparencyOverlay()
+	end, UI.Theme.TweenOut)
 
-	local backgroundTransparencyClamped = UI.tween(
-		UI.Theme.TweenOut,
-		UI.compute(function(use)
-			return if use(new.Value) then 0 else use(UI.Theme.TransparencyClamped)
-		end)
-	)
+	local backgroundTransparencyClamped = UI.tween(function()
+		return if new.Value() then 0 else UI.Theme.TransparencyClamped()
+	end, UI.Theme.TweenOut)
 
 	new._instance = UI.new "TextButton" {
 		AutoLocalize = false,
@@ -42,8 +36,8 @@ function Switch.new(definition)
 		Position = UDim2.new(1, 0, 0, 0),
 		Text = "",
 		TextTransparency = 1,
-		Size = function(use)
-			local height = use(itemHeight)
+		Size = function()
+			local height = itemHeight()
 			return UDim2.new(0, height * 2, 0, height)
 		end,
 
@@ -63,12 +57,9 @@ function Switch.new(definition)
 			BackgroundTransparency = backgroundTransparencyClamped,
 			Size = UDim2.new(1, -2, 1, -2),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
-			Position = UI.tween(
-				UI.Theme.TweenOut,
-				UI.compute(function(use)
-					return UDim2.new(0, if use(new.Value) then use(itemHeight) + 1 else 1, 0, 1)
-				end)
-			),
+			Position = UI.tween(function()
+				return UDim2.new(0, if new.Value() then itemHeight() + 1 else 1, 0, 1)
+			end, UI.Theme.TweenOut),
 
 			UI.new "UICorner" {
 				CornerRadius = UI.Theme.CornerDiameter,
@@ -76,9 +67,9 @@ function Switch.new(definition)
 		},
 
 		Activated = function()
-			local value = not UI.peek(new.Value)
-			new.Selected:set(value, true)
-			new.Value:set(value)
+			local value = not UI.raw(new.Value)
+			new.Selected(value, true)
+			new.Value(value)
 
 			if value then
 				UI.Sound.Hover03:Play()

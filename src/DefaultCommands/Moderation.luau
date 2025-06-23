@@ -20,13 +20,15 @@ return {
 					},
 				}
 				_K.UI.edit(window, {
-					Visible_Changed = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.Bans,
-							})
-						end
-					end,
+					[_K.UI.Event] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Bans,
+								})
+							end
+						end,
+					},
 				})
 				env.window = window
 			end)
@@ -60,13 +62,15 @@ return {
 					},
 				}
 				_K.UI.edit(window, {
-					Visible_Changed = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs, {
-								_K.client.dashboard.Members,
-							})
-						end
-					end,
+					[_K.UI.Event] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Members,
+								})
+							end
+						end,
+					},
 				})
 				env.window = window
 			end)
@@ -862,8 +866,8 @@ return {
 				FilterInput = true,
 				ReverseOrder = true,
 				Visible = true,
-				ItemSize = function(use)
-					return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+				ItemSize = function()
+					return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset)
 				end,
 			}
 
@@ -909,7 +913,7 @@ return {
 			end
 			table.sort(toolNames)
 
-			context.env.scroller.List:set(toolNames)
+			context.env.scroller.List(toolNames)
 			context.env.window._instance.Visible = true
 		end,
 	},
@@ -927,8 +931,8 @@ return {
 				FilterInput = true,
 				ReverseOrder = true,
 				Visible = true,
-				ItemSize = function(use)
-					return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+				ItemSize = function()
+					return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset)
 				end,
 			}
 
@@ -974,7 +978,7 @@ return {
 			end
 			table.sort(toolNames)
 
-			context.env.scroller.List:set(toolNames)
+			context.env.scroller.List(toolNames)
 			context.env.window._instance.Visible = true
 		end,
 	},
@@ -998,8 +1002,8 @@ return {
 				FilterInput = true,
 				ReverseOrder = true,
 				Visible = true,
-				ItemSize = function(use)
-					return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset)
+				ItemSize = function()
+					return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset)
 				end,
 			}
 
@@ -1053,8 +1057,8 @@ return {
 			end
 			table.sort(toolNames)
 
-			context.env.scroller.List:set(toolNames)
-			context.env.window.Title:set(player.Name .. "'s Tools")
+			context.env.scroller.List(toolNames)
+			context.env.window.Title(player.Name .. "'s Tools")
 			context.env.window._instance.Visible = true
 		end,
 	},

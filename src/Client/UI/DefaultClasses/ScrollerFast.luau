@@ -242,7 +242,7 @@ end
 
 function ScrollerFast:filter(filterFunction: (...any) -> { any })
 	self._filterFunction = filterFunction
-	self.Enabled:set(true)
+	self.Enabled(true)
 	self:refreshList()
 end
 
@@ -261,8 +261,8 @@ end
 function ScrollerFast.new(definition)
 	local self = UI.makeStatefulDefaults({
 		Enabled = true,
-		ItemSize = function(use)
-			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset)
+		ItemSize = function()
+			return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
 		end,
 		List = {},
 		DictList = false,
@@ -309,16 +309,18 @@ function ScrollerFast.new(definition)
 		BottomImage = UI.Theme.ScrollBottomImage,
 		VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
-		AbsoluteWindowSize_Changed = render,
-		CanvasPosition_Changed = render,
+		[UI.Event] = {
+			AbsoluteWindowSize = render,
+			CanvasPosition = render,
+		},
 	}
 
 	local canvasAbsolute = UI.state(self._scroller, "AbsoluteCanvasSize")
 	local windowAbsolute = UI.state(self._scroller, "AbsoluteWindowSize")
 	UI.new "UIPadding" {
 		Parent = self._scroller,
-		PaddingRight = function(use)
-			return if use(canvasAbsolute).Y > use(windowAbsolute).Y then use(UI.Theme.Padding) else UDim.new()
+		PaddingRight = function()
+			return if canvasAbsolute().Y > windowAbsolute().Y then UI.Theme.Padding() else UDim.new()
 		end,
 	}
 
@@ -331,12 +333,14 @@ function ScrollerFast.new(definition)
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 		self._scroller,
 
-		Parent_Changed = render,
+		[UI.Event] = {
+			Parent = render,
+		},
 	}
 
 	self = setmetatable(self, ScrollerFast)
 
-	self.List:hook(function()
+	self.List:Connect(function()
 		self:updateList()
 	end)
 	self:updateList()
@@ -344,8 +348,8 @@ function ScrollerFast.new(definition)
 	local function refresh()
 		self:refreshList()
 	end
-	UI.Theme.FontSize:hook(refresh)
-	UI.Theme.Padding:hook(refresh)
+	UI.Theme.FontSize:Connect(refresh)
+	UI.Theme.Padding:Connect(refresh)
 
 	if self.FilterInput._value then
 		local thread = false

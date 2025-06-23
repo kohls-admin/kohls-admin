@@ -26,19 +26,16 @@ function List.new(definition)
 		Name = "List",
 		BackgroundTransparency = 1,
 		ClipsDescendants = true,
-		Size = UI.tween(
-			UI.Theme.TweenOut,
-			UI.compute(function(use)
-				return UDim2.new(
-					1,
-					0,
-					0,
-					if use(collapsed)
-						then use(UI.Theme.FontSize)
-						else use(contentSize).Y + use(UI.Theme.FontSize) + use(UI.Theme.Padding).Offset
-				)
-			end)
-		),
+		Size = UI.tween(function()
+			return UDim2.new(
+				1,
+				0,
+				0,
+				if collapsed()
+					then UI.Theme.FontSize()
+					else contentSize().Y + UI.Theme.FontSize() + UI.Theme.Padding().Offset
+			)
+		end, UI.Theme.TweenOut),
 
 		UI.new "TextButton" {
 			AutoLocalize = false,
@@ -60,12 +57,9 @@ function List.new(definition)
 				ImageColor3 = UI.Theme.PrimaryText,
 				ImageTransparency = 0.5,
 				Visible = new.Collapsible,
-				Rotation = UI.tween(
-					UI.Theme.TweenOut,
-					UI.compute(function(use)
-						return if use(collapsed) then -90 else 0
-					end)
-				),
+				Rotation = UI.tween(function()
+					return if collapsed() then -90 else 0
+				end, UI.Theme.TweenOut),
 
 				UI.new "UIAspectRatioConstraint" {},
 			},
@@ -75,19 +69,16 @@ function List.new(definition)
 				Name = "Label",
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
-				Position = function(use)
-					return UDim2.new(
-						0,
-						if use(new.Collapsible) then use(UI.Theme.FontSize) else use(UI.Theme.Padding),
-						0,
-						0
-					)
+				Position = function()
+					return UDim2.new(0, if new.Collapsible() then UI.Theme.FontSize() else UI.Theme.Padding(), 0, 0)
 				end,
-				Size = function(use)
-					return UDim2.new(1, -use(UI.Theme.FontSize), 0, 0)
+				Size = function()
+					return UDim2.new(1, -UI.Theme.FontSize(), 0, 0)
 				end,
 				FontFace = UI.Theme.FontBold,
-				Text = UI.computeFrom(string.upper, new.Label),
+				Text = function()
+					return string.upper(new.Label())
+				end,
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = UI.Theme.PrimaryText,
 				TextStrokeColor3 = UI.Theme.Primary,
@@ -99,7 +90,7 @@ function List.new(definition)
 
 			Activated = function()
 				if new.Collapsible._value then
-					collapsed:set(not collapsed._value)
+					collapsed(not collapsed._value)
 					UI.Sound.Swipe:Play()
 				end
 			end,
@@ -110,16 +101,13 @@ function List.new(definition)
 		Name = "UIContent",
 		Parent = new._instance,
 		BackgroundTransparency = 1,
-		Position = function(use)
-			return UDim2.new(0, 0, 0, use(UI.Theme.FontSize))
+		Position = function()
+			return UDim2.new(0, 0, 0, UI.Theme.FontSize())
 		end,
-		Size = UI.tween(
-			UI.Theme.TweenOut,
-			UI.compute(function(use)
-				local collapse = use(collapsed)
-				return UDim2.new(1, 0, if collapse then 0 else 1, if collapse then 0 else -use(UI.Theme.FontSize))
-			end)
-		),
+		Size = UI.tween(function()
+			local collapse = collapsed()
+			return UDim2.new(1, 0, if collapse then 0 else 1, if collapse then 0 else -UI.Theme.FontSize())
+		end, UI.Theme.TweenOut),
 		ClipsDescendants = true,
 
 		listLayout,

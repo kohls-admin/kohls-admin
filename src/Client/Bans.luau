@@ -5,6 +5,10 @@ function Bans.new(_K)
 	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
 
+	local function close(self)
+		self.Activated(false)
+	end
+
 	local newBanDialog, unbanDialog
 	unbanDialog = UI.new "Dialog" {
 		LayoutOrder = 9,
@@ -18,12 +22,12 @@ function Bans.new(_K)
 		RightAction = true,
 		Visible = false,
 		Close = function(self)
-			task.defer(self.Activated.set, self.Activated, false)
+			task.defer(close, self)
 		end,
 
 		[UI.Hook] = {
 			Action = function(v)
-				unbanDialog.Visible:set(false)
+				unbanDialog.Visible(false)
 				if v and unbanDialog.userId then
 					_K.Remote.Unban:FireServer(tonumber(unbanDialog.userId))
 				end
@@ -33,9 +37,9 @@ function Bans.new(_K)
 	}
 	unbanDialog._content:Destroy()
 
-	local inputSize = function(use)
-		local size = use(UI.Theme.FontSize)
-		local padding = use(UI.Theme.Padding).Offset
+	local inputSize = function()
+		local size = UI.Theme.FontSize()
+		local padding = UI.Theme.Padding().Offset
 		return UDim2.fromOffset(0, size + padding)
 	end
 
@@ -52,8 +56,8 @@ function Bans.new(_K)
 
 	local banTargetInput
 	local function resetbanTargetInput()
-		banTargetInput.Value:set("")
-		banTargetInput.Selected:set("")
+		banTargetInput.Value("")
+		banTargetInput.Selected("")
 	end
 
 	banTargetInput = UI.new "Input" {
@@ -89,7 +93,7 @@ function Bans.new(_K)
 					userId = nil
 					task.defer(resetbanTargetInput)
 				end
-				banTarget:set(userId)
+				banTarget(userId)
 			end,
 		},
 	}
@@ -137,13 +141,13 @@ function Bans.new(_K)
 			},
 			Text = "",
 			Activated = function()
-				banType:set(if itemRef.term == "Server" or itemRef.term == "Forever" then itemRef.term else "Timed")
-				banTarget:set(tonumber(itemRef.userId))
-				banTargetInput.Value:set(itemRef.userId)
+				banType(if itemRef.term == "Server" or itemRef.term == "Forever" then itemRef.term else "Timed")
+				banTarget(tonumber(itemRef.userId))
+				banTargetInput.Value(itemRef.userId)
 				banReason = itemRef.reason
-				banReasonInput.Value:set(itemRef.reason or "")
-				newBanDialog.Title:set("Edit Ban")
-				newBanDialog.Visible:set(true)
+				banReasonInput.Value(itemRef.reason or "")
+				newBanDialog.Title("Edit Ban")
+				newBanDialog.Visible(true)
 			end,
 		}
 
@@ -162,8 +166,8 @@ function Bans.new(_K)
 			Text = "",
 			Activated = function()
 				unbanDialog.userId = itemRef.userId
-				unbanDialog.ActionText:set(`Unban {itemRef.name} [{itemRef.userId}]?`)
-				unbanDialog.Visible:set(true)
+				unbanDialog.ActionText(`Unban {itemRef.name} [{itemRef.userId}]?`)
+				unbanDialog.Visible(true)
 			end,
 		}
 
@@ -238,7 +242,7 @@ function Bans.new(_K)
 			tooltip,
 		}
 
-		tooltip.Visible:hook(function()
+		tooltip.Visible:Connect(function()
 			if tooltip.Visible._value then
 				tooltip._instance.Text = itemRef.tipText
 			end
@@ -366,7 +370,7 @@ function Bans.new(_K)
 			Choices = banTypes,
 			[UI.Hook] = {
 				Selected = function(value)
-					banType:set(value)
+					banType(value)
 				end,
 			},
 		},
@@ -375,9 +379,9 @@ function Bans.new(_K)
 	local function updateAuth()
 		local savedBans = _K.Auth.hasPermission(_K.LocalPlayer.UserId, "banasync")
 		if savedBans then
-			banType:set("Forever")
+			banType("Forever")
 		else
-			banType:set("Server")
+			banType("Server")
 		end
 		banTypeListItem._instance.Visible = savedBans
 	end
@@ -393,7 +397,7 @@ function Bans.new(_K)
 		ExitButton = true,
 		Modal = true,
 		Close = function()
-			newBanDialog.Visible:set(false)
+			newBanDialog.Visible(false)
 		end,
 
 		UI.new "UIPadding" {
@@ -407,8 +411,8 @@ function Bans.new(_K)
 
 		UI.new "ListItem" {
 			Text = "Duration",
-			Visible = function(use)
-				return use(banType) == "Timed"
+			Visible = function()
+				return banType() == "Timed"
 			end,
 			UI.new "Input" {
 				AutomaticSize = Enum.AutomaticSize.X,
@@ -435,8 +439,8 @@ function Bans.new(_K)
 				BackgroundTransparency = UI.Theme.TransparencyOverlay,
 				BackgroundColor3 = UI.Theme.PrimaryText,
 				Size = inputSize,
-				Image = function(use)
-					return `rbxthumb://type=AvatarHeadShot&id={use(banTarget)}&w=48&h=48`
+				Image = function()
+					return `rbxthumb://type=AvatarHeadShot&id={banTarget()}&w=48&h=48`
 				end,
 				UI.new "UIAspectRatioConstraint" {
 					AspectType = Enum.AspectType.ScaleWithParentSize,
@@ -457,7 +461,7 @@ function Bans.new(_K)
 			Label = "Ban",
 			Activated = function()
 				if banTarget._value then
-					newBanDialog.Visible:set(false)
+					newBanDialog.Visible(false)
 					local duration: number = if banType._value == "Server"
 						then 0
 						elseif banType._value == "Forever" then -1
@@ -486,12 +490,12 @@ function Bans.new(_K)
 		},
 
 		Activated = function()
-			banTarget:set(nil)
-			banTargetInput.Value:set("")
+			banTarget(nil)
+			banTargetInput.Value("")
 			banReason = nil
-			banReasonInput.Value:set("")
-			newBanDialog.Title:set("New Ban")
-			newBanDialog.Visible:set(true)
+			banReasonInput.Value("")
+			newBanDialog.Title("New Ban")
+			newBanDialog.Visible(true)
 			UI.Sound.Hover03:Play()
 		end,
 	}
@@ -501,8 +505,8 @@ function Bans.new(_K)
 		Name = "FilterInput",
 
 		BackgroundTransparency = 1,
-		Size = UI.compute(function(use)
-			return UDim2.new(1, 0, 0, use(UI.Theme.FontSize) + use(UI.Theme.PaddingDouble).Offset)
+		Size = UI.compute(function()
+			return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
 		end),
 
 		UI.new "UIListLayout" {

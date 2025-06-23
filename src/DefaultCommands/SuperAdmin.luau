@@ -90,12 +90,12 @@ return {
 					if type(userIdOrName) == "number" then
 						if hideCharacter == nil then -- remove from hidden list
 							env.hidden._value[userIdOrName] = nil
-							env.hidden:set(env.hidden._value)
+							env.hidden(env.hidden._value)
 						else
 							local player = _K.Service.Players:GetPlayerByUserId(userIdOrName)
 							if player then
 								env.hidden._value[userIdOrName] = player.Name
-								env.hidden:set(env.hidden._value)
+								env.hidden(env.hidden._value)
 								if hiddenRank > _K.client.rank._value then
 									if hideCharacter then
 										pcall(game.Destroy, player.Character)

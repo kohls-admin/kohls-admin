@@ -36,9 +36,9 @@ for _, themeModule: ModuleScript in themeFolder:GetChildren() do
 		for _, definition in { theme.Image, theme.Sound } do
 			for key, value in definition do
 				if UI.isState(definition[key]) then
-					definition[key]:set("rbxassetid://" .. UI.peek(value))
+					definition[key]("rbxassetid://" .. UI.raw(value))
 				else
-					definition[key] = "rbxassetid://" .. UI.peek(value)
+					definition[key] = "rbxassetid://" .. UI.raw(value)
 				end
 			end
 		end
@@ -56,18 +56,18 @@ for _, themeModule: ModuleScript in themeFolder:GetChildren() do
 		task.spawn(_K.Service.ContentProvider.PreloadAsync, _K.Service.ContentProvider, content)
 	end
 end
-_K.client.themes:set(_K.client.themes._value, true)
+_K.client.themes(_K.client.themes._value, true)
 
 local function deepMergeTheme(from, to, prefix: string?)
 	for key, value in from do
-		value = UI.peek(value)
+		value = UI.raw(value)
 		if UI.isState(to[key]) then
 			if prefix then
 				key = prefix .. key
 				_K.Data.settings[key] = value
-				_K.client.settings[key]:set(value)
+				_K.client.settings[key](value)
 			else
-				to[key]:set(value)
+				to[key](value)
 			end
 		elseif type(value) == "table" then
 			deepMergeTheme(value, to[key])
@@ -86,7 +86,7 @@ for key, value in _K.Data.settings do
 
 	-- UI.Theme connection to theme settings
 	if key == "defaultTheme" then
-		state:hook(function(value)
+		state:Connect(function(value)
 			local theme = _K.client.themes._value[value]
 			if theme then
 				UI.changeTheme(theme)
@@ -95,8 +95,8 @@ for key, value in _K.Data.settings do
 	elseif string.find(key, "theme", 1, true) == 1 then
 		key = string.sub(key, 6)
 		if UI.Theme[key] then
-			state:hook(function(value)
-				UI.Theme[key]:set(value)
+			state:Connect(function(value)
+				UI.Theme[key](value)
 			end)
 		end
 	end
@@ -104,7 +104,7 @@ end
 
 function _K.client.syncSettings(settings)
 	for key, value in settings do
-		value = UI.peek(value)
+		value = UI.raw(value)
 		if
 			string.find(key, "theme", 1, true) == 1
 			and (_K.Data.settings.changeThemeAuthority == "Studio" or settings.defaultTheme ~= "Custom (DataStore)")
@@ -113,7 +113,7 @@ function _K.client.syncSettings(settings)
 		end
 		_K.Data.settings[key] = value
 		if _K.client.settings[key] then
-			_K.client.settings[key]:set(value)
+			_K.client.settings[key](value)
 		end
 	end
 end
@@ -218,7 +218,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 	-- need to improve networking performance!
 	if bans then
 		_K.Util.Table.merge(_K.Data.bans, bans)
-		_K.client.bans:set(_K.Data.bans)
+		_K.client.bans(_K.Data.bans)
 	end
 
 	if logs then
@@ -231,7 +231,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 	end
 
 	_K.Util.Table.merge(_K.Data.members, members)
-	_K.client.members:set(_K.Data.members)
+	_K.client.members(_K.Data.members)
 
 	_K.Data.roles = roles
 	for role, roleData in roles do

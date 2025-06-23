@@ -22,14 +22,16 @@ function Tabs.new(definition)
 		Name = "Tabs",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
-		Position = UI.tween(UI.Theme.TweenOut, UI.computeFrom(UDim2.new, 0, tabOffset, 0, 0)),
+		Position = UI.tween(function()
+			return UDim2.new(0, tabOffset, 0, 0)
+		end, UI.Theme.TweenOut),
 
 		tabList,
 	}
 
 	-- clamp offset on resize
 	tabs:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-		tabOffset:set(
+		tabOffset(
 			math.max(math.min(0, -tabList.AbsoluteContentSize.X + tabs.AbsoluteSize.X), tabOffset._value),
 			false,
 			true
@@ -52,7 +54,7 @@ function Tabs.new(definition)
 	new._pages = pages
 
 	pages.PageEnter:Connect(function(container)
-		currentPage:set(container)
+		currentPage(container)
 		local page = pageCache[container]
 		if not page then
 			return
@@ -76,7 +78,7 @@ function Tabs.new(definition)
 
 	new.JumpTo = function(page)
 		page = containerCache[page] or page
-		currentPage:set(page)
+		currentPage(page)
 		pages:JumpTo(page)
 	end
 
@@ -119,7 +121,7 @@ function Tabs.new(definition)
 					return
 				end
 				lastScroll = closestChild
-				tabOffset:set(math.min(0, -(closestChild.AbsolutePosition.X - tabs.AbsolutePosition.X)))
+				tabOffset(math.min(0, -(closestChild.AbsolutePosition.X - tabs.AbsolutePosition.X)))
 			end,
 			MouseWheelBackward = function()
 				local absoluteStart = new._instance.AbsolutePosition.X
@@ -141,7 +143,7 @@ function Tabs.new(definition)
 				if maxOffset > 0 then
 					lastScroll = closestChild
 				end
-				tabOffset:set(
+				tabOffset(
 					math.max(math.min(0, -maxOffset), -(closestChild.AbsolutePosition.X - tabs.AbsolutePosition.X))
 				)
 			end,
@@ -198,8 +200,8 @@ function Tabs.new(definition)
 			containerCache[page] = container
 
 			local nameState = UI.state(page, "Name")
-			local boldState = function(use)
-				return `<b>{use(nameState)}</b>`
+			local boldState = function()
+				return `<b>{nameState()}</b>`
 			end
 			local hovering, button = UI.state(false)
 			button = UI.new "TextButton" {
@@ -211,12 +213,9 @@ function Tabs.new(definition)
 				AutomaticSize = Enum.AutomaticSize.XY,
 				Size = UDim2.new(0, 0, 0, 0),
 				BackgroundColor3 = UI.Theme.Secondary,
-				BackgroundTransparency = UI.tween(
-					UI.Theme.TweenOut,
-					UI.compute(function(use)
-						return if use(currentPage) == container then use(UI.Theme.TransparencyOverlay) else 1
-					end)
-				),
+				BackgroundTransparency = UI.tween(function()
+					return if currentPage() == container then UI.Theme.TransparencyOverlay() else 1
+				end, UI.Theme.TweenOut),
 				Font = UI.Theme.Font,
 				RichText = true,
 				Text = boldState,
@@ -224,12 +223,9 @@ function Tabs.new(definition)
 				TextColor3 = UI.Theme.PrimaryText,
 				TextStrokeColor3 = UI.Theme.Primary,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-				TextTransparency = UI.tween(
-					UI.Theme.TweenOut,
-					UI.compute(function(use)
-						return if use(hovering) or use(currentPage) == container then 0 else 0.5
-					end)
-				),
+				TextTransparency = UI.tween(function()
+					return if hovering() or currentPage() == container then 0 else 0.5
+				end, UI.Theme.TweenOut),
 
 				UI.new "UICorner" {
 					CornerRadius = UI.Theme.CornerDiameter,
@@ -273,7 +269,7 @@ function Tabs.new(definition)
 				Activated = function()
 					UI.clearActiveStates()
 					UI.Sound.Hover03:Play()
-					currentPage:set(container)
+					currentPage(container)
 					pages:JumpTo(container)
 					local absoluteStart = tabs.Parent.AbsolutePosition.X
 					local absoluteEnd = absoluteStart + tabs.Parent.AbsoluteSize.X
@@ -281,14 +277,14 @@ function Tabs.new(definition)
 					local buttonEnd = buttonStart + button.AbsoluteSize.X + tabList.Padding.Offset
 
 					if tabList.AbsoluteContentSize.X >= tabs.AbsoluteSize.X and absoluteEnd < buttonEnd + 32 then
-						tabOffset:set(
+						tabOffset(
 							math.max(
 								tabs.AbsoluteSize.X - tabList.AbsoluteContentSize.X,
 								tabOffset._value - (32 + (buttonEnd - absoluteEnd))
 							)
 						)
 					elseif buttonStart - 32 < absoluteStart then
-						tabOffset:set(
+						tabOffset(
 							math.min(0, tabOffset._value + (absoluteStart - buttonStart) + 32 + tabList.Padding.Offset)
 						)
 					end
@@ -305,7 +301,7 @@ function Tabs.new(definition)
 			hideButton()
 			task.defer(function()
 				if pages.CurrentPage == container then
-					currentPage:set(container)
+					currentPage(container)
 				end
 			end)
 		end,

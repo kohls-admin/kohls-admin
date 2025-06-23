@@ -17,29 +17,29 @@ local ColorPicker = {}
 ColorPicker.__index = ColorPicker
 setmetatable(ColorPicker, BaseClass)
 
-local hexInputSize = UI.compute(function(use)
-	local fontSize = use(UI.Theme.FontSize)
-	local padding = use(UI.Theme.Padding).Offset
+local hexInputSize = UI.compute(function()
+	local fontSize = UI.Theme.FontSize()
+	local padding = UI.Theme.Padding().Offset
 	return UDim2.fromOffset(math.max(80, 3.5 * fontSize + padding), fontSize + padding)
 end)
 
-local hueSliderSize = UI.compute(function(use)
-	local padding = use(UI.Theme.Padding).Offset
-	local height = use(UI.Theme.FontSize) + padding
-	return UDim2.new(0, height, 0, use(UI.Theme.FontSize) + use(hexInputSize).X.Offset + padding * 2)
+local hueSliderSize = UI.compute(function()
+	local padding = UI.Theme.Padding().Offset
+	local height = UI.Theme.FontSize() + padding
+	return UDim2.new(0, height, 0, UI.Theme.FontSize() + hexInputSize().X.Offset + padding * 2)
 end)
 
-local svSize = UI.compute(function(use)
-	local size = use(hexInputSize).X.Offset
+local svSize = UI.compute(function()
+	local size = hexInputSize().X.Offset
 	return UDim2.fromOffset(size, size)
 end)
 
-local inputColor = UI.compute(function(use)
-	return if UI.getLuminance(use(UI.Theme.Primary)) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
+local inputColor = UI.compute(function()
+	return if UI.getLuminance(UI.Theme.Primary()) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
 end)
 
-local menuCornerRadius = UI.compute(function(use)
-	return UDim.new(0, use(UI.Theme.CornerRadius).Offset + use(UI.Theme.Padding).Offset)
+local menuCornerRadius = UI.compute(function()
+	return UDim.new(0, UI.Theme.CornerRadius().Offset + UI.Theme.Padding().Offset)
 end)
 
 function ColorPicker.new(definition)
@@ -51,7 +51,7 @@ function ColorPicker.new(definition)
 		Selected = Color3.new(1, 0, 0),
 	}, definition)
 
-	new.Selected._value = UI.peek(new.Value)
+	new.Selected._value = UI.raw(new.Value)
 
 	local dragging = UI.state(false)
 
@@ -60,8 +60,8 @@ function ColorPicker.new(definition)
 		Name = "HueSlider",
 		Vertical = true,
 		Size = hueSliderSize,
-		Value = function(use)
-			local h, s, v = use(new.Value):ToHSV()
+		Value = function()
+			local h, s, v = new.Value():ToHSV()
 			if h == 1 and hue == 0 then
 				h = 0
 			end
@@ -97,13 +97,15 @@ function ColorPicker.new(definition)
 				local _, s, v = new.Value._value:ToHSV()
 				local color = Color3.fromHSV(value, s, v)
 				hue = value
-				new.Selected:set(color, true)
-				new.Value:set(color)
+				new.Selected(color, true)
+				new.Value(color)
 			end,
 		},
 	}
 
-	local hueColor = UI.computeFrom(Color3.fromHSV, hueSlider.Value, 1, 1)
+	local hueColor = UI.compute(function()
+		return Color3.fromHSV(hueSlider.Value, 1, 1)
+	end)
 	UI.edit(hueSlider._slider, {
 		BackgroundColor3 = hueColor,
 		UI.new "UIStroke" {
@@ -123,15 +125,15 @@ function ColorPicker.new(definition)
 		Validate = function(value)
 			return pcall(Color3.fromHex, value)
 		end,
-		Value = function(use)
-			return `#{use(new.Value):ToHex()}`
+		Value = function()
+			return `#{new.Value():ToHex()}`
 		end,
 
 		[UI.Hook] = {
 			Selected = function(value)
 				local color = Color3.fromHex(value)
-				new.Selected:set(color, true)
-				new.Value:set(color)
+				new.Selected(color, true)
+				new.Value(color)
 			end,
 		},
 	}
@@ -145,11 +147,11 @@ function ColorPicker.new(definition)
 
 		local x = math.clamp((input.Position.X - sv.AbsolutePosition.X - 8) / (sv.AbsoluteSize.X - 16), 0, 1)
 		local y = 1 - math.clamp((input.Position.Y - sv.AbsolutePosition.Y - 8) / (sv.AbsoluteSize.Y - 16), 0, 1)
-		sX:set(x)
+		sX(x)
 
 		local color = Color3.fromHSV(hue, x, y)
-		new.Selected:set(color, true)
-		new.Value:set(color)
+		new.Selected(color, true)
+		new.Value(color)
 	end
 
 	local function inputBegan(input)
@@ -159,7 +161,7 @@ function ColorPicker.new(definition)
 		then
 			UI.Sound.Hover03:Play()
 			dragInput = input
-			dragging:set(true)
+			dragging(true)
 			local con
 			con = input:GetPropertyChangedSignal("UserInputState"):Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
@@ -167,7 +169,7 @@ function ColorPicker.new(definition)
 					if dragInput == input then
 						UI.Sound.Hover01:Play()
 						dragInput = nil
-						dragging:set(false)
+						dragging(false)
 					end
 				end
 			end)
@@ -237,20 +239,14 @@ function ColorPicker.new(definition)
 				Name = "Picker",
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				BackgroundColor3 = new.Value,
-				Size = UI.tween(
-					UI.Theme.TweenOut,
-					UI.compute(function(use)
-						return if use(dragging) then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
-					end)
-				),
-				Position = UI.tween(
-					UI.Theme.TweenOut,
-					UI.compute(function(use)
-						local _, s, v = use(new.Value):ToHSV()
-						local x = use(sX)
-						return UDim2.new(if v == 0 then x else s, 0, 1 - v, 0)
-					end)
-				),
+				Size = UI.tween(function()
+					return if dragging() then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
+				end, UI.Theme.TweenOut),
+				Position = UI.tween(function()
+					local _, s, v = new.Value():ToHSV()
+					local x = sX()
+					return UDim2.new(if v == 0 then x else s, 0, 1 - v, 0)
+				end, UI.Theme.TweenOut),
 
 				UI.new "UICorner" {
 					CornerRadius = UI.Theme.CornerDiameter,

@@ -192,8 +192,8 @@ return {
 				})
 				local displaySize = _K.UI.state(userFrame.From.From, "AbsoluteSize")
 				_K.UI.edit(userFrame.From.Badge, {
-					Position = function(use)
-						return UDim2.fromOffset(use(displaySize).X / 2 + 4, 0)
+					Position = function()
+						return UDim2.fromOffset(displaySize().X / 2 + 4, 0)
 					end,
 				})
 				existing = msg
@@ -918,7 +918,7 @@ return {
 			end
 			local function xrayCharacter(character: Model)
 				local oldParent = character.Parent
-				characterConnections[character] = xray:hook(function(value)
+				characterConnections[character] = xray:Connect(function(value)
 					character.Parent = if value then xrayModel else oldParent
 				end)
 				character:GetPropertyChangedSignal("Parent"):Connect(function()
@@ -946,7 +946,7 @@ return {
 		end,
 
 		runClient = function(context, fillColor: Color3?, outlineColor: Color3?)
-			context.env.xray:set(if context.undo then false else true)
+			context.env.xray(if context.undo then false else true)
 			context.env.xrayModel.Parent = if context.undo then nil else workspace
 			context.env.highlight.FillColor = fillColor or Color3.new(0, 1, 1)
 			context.env.highlight.OutlineColor = outlineColor or Color3.new(1, 1, 1)
