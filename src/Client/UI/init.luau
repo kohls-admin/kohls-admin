@@ -203,7 +203,7 @@ export type ActiveStateType = "hover" | "floating" | "dialog"
 UI._activeState = {}
 
 --- A generalized function to handle activation/deactivation of both floating and hover states
-function UI.activateState(activeState, stateType: ActiveStateType)
+function UI.activateState(activeState: State<boolean>, stateType: ActiveStateType)
 	if not Flux.isState(activeState) then
 		error("Invalid active state")
 	end
@@ -216,11 +216,13 @@ function UI.activateState(activeState, stateType: ActiveStateType)
 
 	-- Set the new active state
 	UI._activeState[stateType] = activeState
-	activeState(true)
+
+	local state: any = activeState
+	state(true)
 end
 
 --- A generalized function to deactivate both floating and hover states
-function UI.deactivateState(activeState, stateType: ActiveStateType)
+function UI.deactivateState(activeState: State<boolean>, stateType: ActiveStateType)
 	if not Flux.isState(activeState) then
 		error("Invalid active state")
 	end
@@ -230,7 +232,9 @@ function UI.deactivateState(activeState, stateType: ActiveStateType)
 	if previousState and rawequal(previousState, activeState) then
 		UI._activeState[stateType] = nil
 	end
-	activeState(false)
+
+	local state: any = activeState
+	state(true)
 end
 
 --- A generalized function to toggle both floating and hover states
@@ -329,7 +333,7 @@ end
 --- * Parents children to the ._content variable of a UI component if one exists
 --- * Numeric indicies are defined as children with [GuiObject.LayoutOrder] set to the index
 --- * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
-function UI.edit(new: Instance | Dict<any>, properties): Instance | Dict<any>
+function UI.edit(new: Instance | Dict<any>, properties: Dict<any>): Instance | Dict<any>
 	properties = properties :: Dict<any> & GuiObject
 
 	local instance = new
