@@ -46,6 +46,9 @@
 						"TopbarPlus": { "$path": "../submodules/TopbarPlus" },
 						"VERSION": { "$path": "../VERSION.txt" }
 					},
+					"MainModuleLegacy": {
+						"$path": "migrate/KAI"
+					},
 					"Tools": {
 						"$className": "Folder",
 						"Building Tools": {

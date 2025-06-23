@@ -1,9 +1,0 @@
-{
-	"name": "Building Tools",
-	"tree": {
-		"$path": "../../../../submodules/F3X",
-		"$properties": {
-			"Tags": ["_K_Ignore"]
-		}
-	}
-}
