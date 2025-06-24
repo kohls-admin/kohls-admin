@@ -1,6 +1,14 @@
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 
+local Flux = require(script.Parent.Parent.Flux)
+
+local Oklab = Flux.Color.Oklab
+
+local function sortKeypoints(a, b)
+	return a.Time < b.Time
+end
+
 local Title = {
 	definition = {
 		vip = {
@@ -75,14 +83,26 @@ local Title = {
 		},
 		eternal = {
 			gamepass = 983235767,
-			rotation = 30,
+			rotation = 0,
 			getValue = function(elapsed: number)
 				elapsed /= 4
+				local steps = 6
 				local keypoints = {}
-				for i = 0, 6 do
-					local step = i / 6
-					table.insert(keypoints, ColorSequenceKeypoint.new(step, Color3.fromHSV((elapsed + step) % 1, 1, 1)))
+				local offset = elapsed % 1
+
+				local colorAtStart = Oklab.toRGB(Oklab.fromHCL(Vector3.new(-offset, 0.2, 1)))
+				table.insert(keypoints, ColorSequenceKeypoint.new(0, colorAtStart))
+
+				local colorAtEnd = Oklab.toRGB(Oklab.fromHCL(Vector3.new((1 - offset), 0.2, 1)))
+				table.insert(keypoints, ColorSequenceKeypoint.new(1, colorAtEnd))
+
+				for i = 0, steps do
+					local step = i / steps
+					local color = Oklab.toRGB(Oklab.fromHCL(Vector3.new(step, 0.2, 1)))
+					local timeOffset = 1 - ((step + elapsed) % 1)
+					table.insert(keypoints, ColorSequenceKeypoint.new(timeOffset, color))
 				end
+				table.sort(keypoints, sortKeypoints)
 				return ColorSequence.new(keypoints)
 			end,
 			update = function(object, value)
