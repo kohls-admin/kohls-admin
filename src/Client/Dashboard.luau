@@ -119,7 +119,7 @@ task.defer(function()
 			Size = UDim2.new(1, 0, 0, 24),
 			Text = function()
 				local invalidColor = UI.Theme.Invalid():ToHex()
-				local socialWarning = if true or game.CreatorId ~= 3403354
+				local socialWarning = if game.CreatorId ~= 3403354
 					then `\n\n<font color="#{invalidColor}"><b>This game wasn't made by us!</b></font>`
 					else ""
 				return `<font transparency="0.33">Join the <b>Kohl's Admin</b> Discord server!</font>{socialWarning}`
