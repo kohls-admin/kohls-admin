@@ -1,30 +1,8 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
 
-export type Function = UI.Function
-export type Set<T> = UI.Set<T>
-export type Dict<T> = UI.Dict<T>
-export type State<T> = UI.State<T>
-export type Stateful<T> = UI.Stateful<T>
-export type Symbol = UI.Symbol
-
---- A generic function type
---- @within Checkbox
---- @type CheckboxDefinition { Value: Types.Stateful<boolean>, _instance: TextButton }
-type CheckboxDefinition = Dict<any> & {
-	Value: Stateful<boolean>,
-	_instance: TextButton,
-}
-
-type CheckboxClass = {
-	__index: CheckboxClass,
-	new: (definition: CheckboxDefinition) -> Checkbox,
-}
-
-type Checkbox = typeof(setmetatable({} :: CheckboxDefinition, {} :: CheckboxClass))
-
 --- @class Checkbox
-local Checkbox = {} :: CheckboxClass
+local Checkbox = {}
 Checkbox.__index = Checkbox
 setmetatable(Checkbox, BaseClass)
 
@@ -33,7 +11,7 @@ local boxSize = UI.compute(function()
 end)
 
 --- Creates a new checkbox.
-function Checkbox.new(definition: CheckboxDefinition)
+function Checkbox.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Value = false,
 		Selected = false,

@@ -1,32 +1,8 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
 
-export type Function = UI.Function
-export type Set<T> = UI.Set<T>
-export type Dict<T> = UI.Dict<T>
-export type State<T> = UI.State<T>
-export type Stateful<T> = UI.Stateful<T>
-export type Symbol = UI.Symbol
-
---- A circular progress indicator type
---- @within CircleProgress
---- @type CircleProgressDefinition { Value: Types.Stateful<boolean>,Padding: UDim, Size: UDim2, _instance: TextButton }
-type CircleProgressDefinition = Dict<any> & {
-	Value: Stateful<boolean>,
-	Padding: UDim,
-	Size: UDim2,
-	_instance: TextButton,
-}
-
-type CircleProgressClass = {
-	__index: CircleProgressClass,
-	new: (definition: CircleProgressDefinition) -> CircleProgress,
-}
-
-type CircleProgress = typeof(setmetatable({} :: CircleProgressDefinition, {} :: CircleProgressClass))
-
 --- @class CircleProgress
-local CircleProgress = {} :: CircleProgressClass
+local CircleProgress = {}
 CircleProgress.__index = CircleProgress
 setmetatable(CircleProgress, BaseClass)
 
@@ -47,7 +23,7 @@ function CircleProgress:setProgress(alpha)
 end
 
 --- Creates a new circular progress indicator.
-function CircleProgress.new(definition: CircleProgressDefinition)
+function CircleProgress.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Value = 0,
 		Padding = UI.Theme.Padding,
