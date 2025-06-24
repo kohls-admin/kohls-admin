@@ -46,7 +46,7 @@ function Slider.new(definition)
 		end
 
 		new.Selected(value, true)
-		new.Value(value)
+		new.Value(value, true)
 	end
 
 	local function inputBegan(input)
