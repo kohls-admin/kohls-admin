@@ -229,12 +229,12 @@ function UI.deactivateState(activeState: State<boolean>, stateType: ActiveStateT
 
 	-- Clear the previous state if it matches
 	local previousState = UI._activeState[stateType]
-	if previousState and rawequal(previousState, activeState) then
+	if previousState and previousState == activeState then
 		UI._activeState[stateType] = nil
 	end
 
 	local state: any = activeState
-	state(true)
+	state(false)
 end
 
 --- A generalized function to toggle both floating and hover states
