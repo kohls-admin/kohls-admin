@@ -98,7 +98,7 @@ function ColorPicker.new(definition)
 				local color = Color3.fromHSV(value, s, v)
 				hue = value
 				new.Selected(color, true)
-				new.Value(color)
+				new.Value(color, true)
 			end,
 		},
 	}
@@ -133,7 +133,7 @@ function ColorPicker.new(definition)
 			Selected = function(value)
 				local color = Color3.fromHex(value)
 				new.Selected(color, true)
-				new.Value(color)
+				new.Value(color, true)
 			end,
 		},
 	}
@@ -147,11 +147,11 @@ function ColorPicker.new(definition)
 
 		local x = math.clamp((input.Position.X - sv.AbsolutePosition.X - 8) / (sv.AbsoluteSize.X - 16), 0, 1)
 		local y = 1 - math.clamp((input.Position.Y - sv.AbsolutePosition.Y - 8) / (sv.AbsoluteSize.Y - 16), 0, 1)
-		sX(x)
+		sX(x, true)
 
 		local color = Color3.fromHSV(hue, x, y)
 		new.Selected(color, true)
-		new.Value(color)
+		new.Value(color, true)
 	end
 
 	local function inputBegan(input)
