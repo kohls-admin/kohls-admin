@@ -181,7 +181,6 @@ function Button.new(definition)
 		end,
 		InputEnded = function(input)
 			if
-
 				input.UserInputType == Enum.UserInputType.MouseButton1
 				or input.UserInputType == Enum.UserInputType.MouseMovement
 				or input.UserInputType == Enum.UserInputType.Touch
