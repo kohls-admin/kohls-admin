@@ -369,7 +369,7 @@ function Input.new(definition)
 		},
 	}
 
-	new._cleanup = {
+	new[UI.Clean] = {
 		new._input:GetPropertyChangedSignal("SelectionStart"):Connect(function()
 			if new._input.SelectionStart == -1 then
 				selection.Visible = false
