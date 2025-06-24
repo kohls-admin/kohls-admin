@@ -5,14 +5,8 @@ local SoundService = game:GetService("SoundService")
 local UserInputService = game:GetService("UserInputService")
 
 local Flux = require(script.Parent.Parent.Flux)
+local Type = require(script.Parent.Parent.Flux.Type)
 local state = Flux.state
-
-export type Function = Flux.Function
-export type Set<T> = Flux.Set<T>
-export type Dict<T> = Flux.Dict<T>
-export type State<T> = Flux.State<T>
-export type Stateful<T> = Flux.Stateful<T>
-export type Symbol = Flux.Symbol
 
 local playerGui = Players.LocalPlayer and Players.LocalPlayer:WaitForChild("PlayerGui")
 
@@ -83,19 +77,19 @@ UI.Platform = if UserInputService.VREnabled
 --- A marker for defining UI state hooks in [UI.edit]
 --- @prop Hook Flux.Symbol
 --- @readonly
-UI.Hook = table.freeze({ type = "Symbol" }) :: Symbol
+UI.Hook = table.freeze({ type = "Symbol" }) :: Type.Symbol
 
 --- @within UI
 --- A marker for defining function defaultState in [UI.makeStatefulDefaults]
 --- @prop Function Flux.Symbol
 --- @readonly
-UI.Function = table.freeze({ type = "Symbol" }) :: Symbol
+UI.Function = table.freeze({ type = "Symbol" }) :: Type.Symbol
 
 --- @within UI
 --- A marker for defining Nil defaultState in [UI.makeStatefulDefaults]
 --- @prop Nil Flux.Symbol
 --- @readonly
-UI.Nil = table.freeze({ type = "Symbol" }) :: Symbol
+UI.Nil = table.freeze({ type = "Symbol" }) :: Type.Symbol
 
 --- @within UI
 --- GuiService.TopbarInset as a Flux state
@@ -203,7 +197,7 @@ export type ActiveStateType = "hover" | "floating" | "dialog"
 UI._activeState = {}
 
 --- A generalized function to handle activation/deactivation of both floating and hover states
-function UI.activateState(activeState: State<boolean>, stateType: ActiveStateType)
+function UI.activateState(activeState: any, stateType: ActiveStateType)
 	if not Flux.isState(activeState) then
 		error("Invalid active state")
 	end
@@ -222,7 +216,7 @@ function UI.activateState(activeState: State<boolean>, stateType: ActiveStateTyp
 end
 
 --- A generalized function to deactivate both floating and hover states
-function UI.deactivateState(activeState: State<boolean>, stateType: ActiveStateType)
+function UI.deactivateState(activeState: any, stateType: ActiveStateType)
 	if not Flux.isState(activeState) then
 		error("Invalid active state")
 	end
@@ -238,7 +232,7 @@ function UI.deactivateState(activeState: State<boolean>, stateType: ActiveStateT
 end
 
 --- A generalized function to toggle both floating and hover states
-function UI.toggleState(activeState: State<boolean>, stateType: ActiveStateType)
+function UI.toggleState(activeState: any, stateType: ActiveStateType)
 	if not Flux.isState(activeState) then
 		error("Invalid active state")
 	end
@@ -309,7 +303,7 @@ function UI.sinkInput(x: number, y: number, object: GuiObject): boolean
 end
 
 --- Helper function for defining Flux state defaults
-function UI.makeStatefulDefaults(default: Dict<any>, definition: Dict<any>?)
+function UI.makeStatefulDefaults(default: Type.Dict<any>, definition: Type.Dict<any>?)
 	for key, value in default do
 		if definition then
 			value = if definition[key] ~= nil then definition[key] else value
@@ -333,8 +327,8 @@ end
 --- * Parents children to the ._content variable of a UI component if one exists
 --- * Numeric indicies are defined as children with [GuiObject.LayoutOrder] set to the index
 --- * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
-function UI.edit(new: Instance | Dict<any>, properties: Dict<any>): Instance | Dict<any>
-	properties = properties :: Dict<any> & GuiObject
+function UI.edit(new: Instance | Type.Dict<any>, properties: Type.Dict<any>): Instance | Type.Dict<any>
+	properties = properties :: Type.Dict<any> & GuiObject
 
 	local instance = new
 	local contentParent = instance
@@ -415,11 +409,11 @@ setmetatable(constructors, {
 		local new
 
 		if class then
-			new = function(properties: Dict<any>): Instance | Dict<any>
+			new = function(properties: Type.Dict<any>): Instance | Type.Dict<any>
 				return UI.edit(class.new(properties), properties)
 			end
 		else
-			new = function(properties: Dict<any>): Instance | Dict<any>
+			new = function(properties: Type.Dict<any>): Instance | Type.Dict<any>
 				return UI.edit(Instance.new(class), properties)
 			end
 		end
@@ -439,10 +433,10 @@ UI.new = function(className)
 	return function(definition)
 		return UI.edit(if class then class.new(definition) else Instance.new(className), definition)
 	end
-end :: Flux.Constructor
+end :: Type.Constructor
 
 --- Registers a new UI component class
-function UI.register(className: string, class: Dict<any>)
+function UI.register(className: string, class: Type.Dict<any>)
 	if UI.Class[className] then
 		error(`UI class "{className}" already exists`)
 	end
