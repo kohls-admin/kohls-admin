@@ -104,7 +104,7 @@ function ColorPicker.new(definition)
 	}
 
 	local hueColor = UI.compute(function()
-		return Color3.fromHSV(hueSlider.Value, 1, 1)
+		return Color3.fromHSV(hueSlider.Value(), 1, 1)
 	end)
 	UI.edit(hueSlider._slider, {
 		BackgroundColor3 = hueColor,
