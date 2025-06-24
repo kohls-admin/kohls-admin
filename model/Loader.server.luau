@@ -33,7 +33,7 @@ if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 	local localMainModule = script:FindFirstChild(MAIN_MODULE_NAME) or MAIN_MODULE_ID
 
 	if typeof(localMainModule) == "Instance" then
-		script:WaitForChild("Tools").Parent = localMainModule
+		script:WaitForChild("Tools").Parent = localMainModule:FindFirstChild("Server") or localMainModule
 	end
 
 	local ok, result = pcall(require, if AUTO_UPDATE then MAIN_MODULE_ID else localMainModule)
