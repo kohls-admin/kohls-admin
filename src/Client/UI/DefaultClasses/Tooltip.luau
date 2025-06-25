@@ -49,6 +49,7 @@ function Tooltip.new(definition)
 		TextColor3 = UI.Theme.PrimaryText,
 		TextStrokeColor3 = UI.Theme.Primary,
 		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+		TextXAlignment = Enum.TextXAlignment.Left,
 		TextWrapped = true,
 		RichText = true,
 		AutomaticSize = Enum.AutomaticSize.XY,

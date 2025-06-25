@@ -257,7 +257,6 @@ function Settings.new(_K)
 					if data.tip
 						then UI.new "Tooltip" {
 							Text = data.tip,
-							TextXAlignment = Enum.TextXAlignment.Left,
 						}
 						else nil,
 				}

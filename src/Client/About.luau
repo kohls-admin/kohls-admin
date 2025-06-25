@@ -423,7 +423,6 @@ function About.new(_K)
 					UI.new "Tooltip" {
 						Parent = button._instance,
 						Text = ugc.tip,
-						TextXAlignment = Enum.TextXAlignment.Left,
 						Hovering = button._hovering,
 					}
 				end
@@ -567,7 +566,6 @@ function About.new(_K)
 						> 4
 					then "<font color='#0f0'>Gives a title!"
 					else "<font color='#0f0'>Gives a particle effect!"}</font></b>`,
-				TextXAlignment = Enum.TextXAlignment.Left,
 				Hovering = button._hovering,
 			}
 
@@ -799,7 +797,6 @@ function About.new(_K)
 		UI.new "Tooltip" {
 			Parent = adminModelButton,
 			Text = "Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management. 🚀",
-			TextXAlignment = Enum.TextXAlignment.Left,
 			Hovering = adminModelButton._hovering,
 		}
 
@@ -907,7 +904,6 @@ function About.new(_K)
 						.. "<font transparency='0.5'>Check the Kohl's Admin <b>Settings</b> script in Studio to add your game to the list.</font>\n\n"
 						.. "<b>Game Creators</b> get up to <font color='#0f0'><b>40%</b></font> when "
 						.. "<font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in their Roblox Game Settings!",
-					TextXAlignment = Enum.TextXAlignment.Left,
 				},
 			},
 		})

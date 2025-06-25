@@ -31,7 +31,6 @@ function Logs.new(_K)
 		local tooltip = UI.new "Tooltip" {
 			Font = UI.Theme.FontMono,
 			Text = "Loading...",
-			TextXAlignment = Enum.TextXAlignment.Left,
 		}
 
 		local itemRef = {
