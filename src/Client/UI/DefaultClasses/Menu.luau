@@ -69,42 +69,34 @@ function Menu.new(definition)
 		},
 	}
 
+	local positionState = UI.state(Vector2.zero)
+	local sizeState = UI.state(Vector2.zero)
 	local menuSize = UI.state(new._instance, "AbsoluteSize")
 
-	local function onAdornee(adornee)
-		if not adornee or typeof(adornee) ~= "Instance" then
-			return
-		end
+	UI.edit(new._instance, {
+		Position = function()
+			local size = menuSize()
+			local layerSize = LayerTopSize()
+			local absolutePos = positionState()
+			local absoluteSize = sizeState()
+			local rightAlign = new.RightAlign()
+			local padding = UI.Theme.Padding().Offset
+			local height = UI.TopbarInset().Height
 
-		local absolutePosition = UI.state(adornee, "AbsolutePosition")
-		local absoluteSize = UI.state(adornee, "AbsoluteSize")
+			local xPos = absolutePos.X + if rightAlign then absoluteSize.X else 0
+			local yPos = absolutePos.Y + absoluteSize.Y + padding + height
 
-		UI.edit(new._instance, {
-			Position = function()
-				local size = menuSize()
-				local layerSize = LayerTopSize()
-				local absolutePos = absolutePosition()
-				local absoluteSize = absoluteSize()
-				local rightAlign = new.RightAlign()
-				local padding = UI.Theme.Padding().Offset
-				local height = UI.TopbarInset().Height
-
-				local xPos = absolutePos.X + if rightAlign then absoluteSize.X else 0
-				local yPos = absolutePos.Y + absoluteSize.Y + padding + height
-
-				return UDim2.fromOffset(
-					if rightAlign
-						then math.clamp(xPos, size.X, math.max(size.X, layerSize.X))
-						else math.clamp(xPos, 0, math.max(0, layerSize.X - size.X)),
-					math.clamp(yPos, 0, math.max(0, layerSize.Y - size.Y))
-				)
-			end,
-		})
-	end
+			return UDim2.fromOffset(
+				if rightAlign
+					then math.clamp(xPos, size.X, math.max(size.X, layerSize.X))
+					else math.clamp(xPos, 0, math.max(0, layerSize.X - size.X)),
+				math.clamp(yPos, 0, math.max(0, layerSize.Y - size.Y))
+			)
+		end,
+	})
 
 	UI.edit(new._instance, {
 		[UI.Clean] = {
-			new.Adornee:Connect(onAdornee),
 			UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
 				if
 					(
@@ -120,8 +112,23 @@ function Menu.new(definition)
 				end
 			end),
 		},
+		new._instance:GetPropertyChangedSignal("Visible"):Connect(function()
+			local adornee = new.Adornee._value
+			if new._instance.Visible and typeof(adornee) == "Instance" then
+				positionState(adornee.AbsolutePosition, true)
+				sizeState(adornee.AbsoluteSize, true)
+				positionState:_bindToProperty(adornee, "AbsolutePosition")
+				sizeState:_bindToProperty(adornee, "AbsoluteSize")
+			else
+				if positionState._bindConnection then
+					positionState._bindConnection:Disconnect()
+				end
+				if sizeState._bindConnection then
+					sizeState._bindConnection:Disconnect()
+				end
+			end
+		end),
 	})
-	onAdornee(UI.raw(new.Adornee))
 
 	return setmetatable(new, Menu)
 end

@@ -140,10 +140,23 @@ function Tooltip.new(definition)
 					table.insert(hoverConnections, parent.InputEnded:Connect(inputEnded))
 					table.insert(hoverConnections, parent.SelectionGained:Connect(hoverEnter))
 					table.insert(hoverConnections, parent.SelectionLost:Connect(hoverLeave))
-					positionState:_bindToProperty(parent, "AbsolutePosition")
-					sizeState:_bindToProperty(parent, "AbsoluteSize")
 					task.wait()
 					new._instance.Parent = UI.LayerTop
+				end
+			end),
+			new._instance:GetPropertyChangedSignal("Visible"):Connect(function()
+				if new._instance.Visible and parent then
+					positionState(parent.AbsolutePosition, true)
+					sizeState(parent.AbsoluteSize, true)
+					positionState:_bindToProperty(parent, "AbsolutePosition")
+					sizeState:_bindToProperty(parent, "AbsoluteSize")
+				else
+					if positionState._bindConnection then
+						positionState._bindConnection:Disconnect()
+					end
+					if sizeState._bindConnection then
+						sizeState._bindConnection:Disconnect()
+					end
 				end
 			end),
 			positionState,
