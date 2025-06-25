@@ -19,54 +19,63 @@ function Commands.new(_K)
 	local escape = _K.Util.String.escapeRichText
 
 	local function createItem(self, command)
-		local tooltip = UI.new "Tooltip" {
-			Font = UI.Theme.FontMono,
-			Text = "Loading...",
-		}
 		local itemRef = {
-			_instance = UI.new "TextLabel" {
+			command = UI.state(command),
+		}
+
+		local textColor = function()
+			return if itemRef.command().LocalPlayerAuthorized
+				then UI.Theme.PrimaryText()
+				else UI.Theme.PrimaryText():Lerp(UI.Theme.Primary(), 0.5)
+		end
+
+		itemRef._instance = UI.new "TextLabel" {
+			AutoLocalize = false,
+			BackgroundTransparency = 1,
+			Size = self.ItemSize,
+			RichText = true,
+			Font = UI.Theme.FontMono,
+			TextColor3 = textColor,
+			TextSize = UI.Theme.FontSize,
+			TextStrokeColor3 = UI.Theme.Primary,
+			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+			TextTruncate = Enum.TextTruncate.SplitWord,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Top,
+
+			UI.new "TextLabel" {
 				AutoLocalize = false,
 				BackgroundTransparency = 1,
-				Size = self.ItemSize,
+				Name = "Description",
 				RichText = true,
 				Font = UI.Theme.FontMono,
+				TextColor3 = textColor,
 				TextSize = UI.Theme.FontSize,
 				TextStrokeColor3 = UI.Theme.Primary,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				TextYAlignment = Enum.TextYAlignment.Top,
-
-				UI.new "TextLabel" {
-					AutoLocalize = false,
-					BackgroundTransparency = 1,
-					Name = "Description",
-					RichText = true,
-					Font = UI.Theme.FontMono,
-					TextSize = UI.Theme.FontSize,
-					TextStrokeColor3 = UI.Theme.Primary,
-					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-					TextTruncate = Enum.TextTruncate.SplitWord,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					TextYAlignment = Enum.TextYAlignment.Top,
-					Size = function()
-						local size = UI.Theme.FontSize()
-						return UDim2.new(1, -size, 0, size)
-					end,
-					Position = function()
-						local size = UI.Theme.FontSize()
-						return UDim2.new(0, size, 0, size)
-					end,
-				},
-
-				tooltip,
+				Size = function()
+					local size = UI.Theme.FontSize()
+					return UDim2.new(1, -size, 0, size)
+				end,
+				Position = function()
+					local size = UI.Theme.FontSize()
+					return UDim2.new(0, size, 0, size)
+				end,
 			},
-			tipText = "",
+		}
+
+		local tooltip = UI.new "Tooltip" {
+			Parent = itemRef._instance,
+			Font = UI.Theme.FontMono,
+			Text = "Loading...",
 		}
 
 		tooltip.Visible:Connect(function()
 			if tooltip.Visible._value then
-				tooltip._instance.Text = itemRef.tipText
+				tooltip._instance.Text = itemRef.command._value.tipText
 			end
 		end)
 
@@ -78,10 +87,7 @@ function Commands.new(_K)
 			local item = itemData._instance
 			item.Text = command.renderText
 			item.Description.Text = command.renderDesc
-			item.TextColor3 = command.roleColorAuth
-			item.Description.TextColor3 = command.roleColorAuth
-
-			itemData.tipText = command.tipText
+			itemData.command(command)
 		end
 	end
 
@@ -179,13 +185,16 @@ function Commands.new(_K)
 				return _K.Data.roles[a]._rank < _K.Data.roles[b]._rank
 			end)
 
-			command.roleColor = if #roles > 0
-				then Color3.fromHex(_K.Data.roles[roles[1]].color)
-				else UI.raw(UI.Theme.Primary)
+			-- non-breaking spaces
+			local narrowSpace = " "
+			local thinSpace = " "
 
-			for i, role in roles do
-				local roleData = _K.Data.roles[role]
-				roles[i] = `<font color="{roleData.color}">{roleData.name}</font>`
+			local roleColor = if #roles > 0 then _K.Data.roles[roles[1]].color else UI.Theme.Primary._value:ToHex()
+			local roleCircle = `<font color="{roleColor}">●</font>{narrowSpace}`
+
+			for i, roleId in roles do
+				local role = _K.Data.roles[roleId]
+				roles[i] = `<font color="{role.color}">●</font>{narrowSpace}{string.gsub(role.name, " ", thinSpace)}`
 			end
 
 			command.roleText = table.concat(roles, ", ")
@@ -198,8 +207,9 @@ function Commands.new(_K)
 			command.rawTextNoAlias = `{_K.getCommandPrefix()}{command.name} {command.argNames}`
 			command.rawText = `{command.rawTextNoAlias} {command.aliasText}`
 
-			command.richText =
-				`<b>{escape(command.rawTextNoAlias)}</b> <font transparency="0.66">{escape(command.aliasText)}</font>`
+			command.richText = `{roleCircle}<b>{escape(command.rawTextNoAlias)}</b> <font transparency="0.66">{escape(
+				command.aliasText
+			)}</font>`
 			command.richDesc = `<font transparency="0.33">{command.description}</font>`
 
 			command.filterTest = string.lower(`{command.rawText} {command.description}`)
@@ -207,9 +217,9 @@ function Commands.new(_K)
 			command.filterDesc = string.lower(command.description)
 		end
 
-		command.roleColorAuth = if command.LocalPlayerAuthorized
-			then command.roleColor
-			else command.roleColor:Lerp(UI.raw(UI.Theme.Primary), 0.5)
+		command.colorAuth = if command.LocalPlayerAuthorized
+			then UI.Theme.PrimaryText._value
+			else UI.Theme.PrimaryText._value:Lerp(UI.Theme.Primary._value, 0.5)
 	end
 
 	local function filterTest(self, list)
