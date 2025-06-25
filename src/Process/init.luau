@@ -282,9 +282,14 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 				for _, arg in command.args do
 					local position = index
 					tasks:add(function()
-						local argString = Util.Table.concat(arg.parsedArgs, ",")
-						if arg.rawType.filterLog and _K.IsServer then
-							argString = Util.String.filterForBroadcast(argString, from)
+						local argString
+						if arg.rawType.log then
+							argString = arg.rawType.log(arg)
+						else
+							argString = Util.Table.concat(arg.parsedArgs, ",")
+							if arg.rawType.filterLog and _K.IsServer then
+								argString = Util.String.filterForBroadcast(argString, from)
+							end
 						end
 						log[position] = argString
 					end)
