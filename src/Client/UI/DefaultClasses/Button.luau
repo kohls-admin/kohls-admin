@@ -95,6 +95,7 @@ function Button.new(definition)
 					BackgroundTransparency = 1,
 					Size = UDim2.new(1, 0, 1, 0),
 					Image = new.Icon,
+					ScaleType = Enum.ScaleType.Fit,
 				},
 				new.IconProperties._value
 			),
