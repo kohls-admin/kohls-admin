@@ -114,7 +114,8 @@ function Input.new(definition)
 	local textState = UI.state(UI.raw(new.Value))
 
 	local inputSize = function()
-		return UDim2.new(if new.Fill() then 1 else 0, 0, 1, 0)
+		local fill = new.Fill()
+		return UDim2.new(if fill then 1 else 0, if fill then 0 else new.FontSize(), 1, 0)
 	end
 
 	local displayLabel = UI.new "TextLabel" {
