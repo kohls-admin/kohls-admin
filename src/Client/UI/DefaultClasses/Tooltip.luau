@@ -145,7 +145,7 @@ function Tooltip.new(definition)
 				end
 			end),
 			new._instance:GetPropertyChangedSignal("Visible"):Connect(function()
-				if new._instance.Visible and parent then
+				if new._instance.Visible and typeof(parent) == "Instance" and parent:IsA("GuiObject") then
 					positionState(parent.AbsolutePosition, true)
 					sizeState(parent.AbsoluteSize, true)
 					positionState:_bindToProperty(parent, "AbsolutePosition")

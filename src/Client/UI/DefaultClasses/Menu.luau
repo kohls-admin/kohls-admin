@@ -114,7 +114,7 @@ function Menu.new(definition)
 		},
 		new._instance:GetPropertyChangedSignal("Visible"):Connect(function()
 			local adornee = new.Adornee._value
-			if new._instance.Visible and typeof(adornee) == "Instance" then
+			if new._instance.Visible and typeof(adornee) == "Instance" and adornee:IsA("GuiObject") then
 				positionState(adornee.AbsolutePosition, true)
 				sizeState(adornee.AbsoluteSize, true)
 				positionState:_bindToProperty(adornee, "AbsolutePosition")
