@@ -32,7 +32,7 @@ function Select.new(definition)
 					font = choice
 				end
 				choice = choice.Name
-			elseif typeof(choice) == "Instance" then
+			elseif typeof(choice) == "Instance" or type(choice) == "table" then
 				choice = choice.Name
 			end
 			maxWidth = math.max(maxWidth, UI.TextService:GetTextSize(choice, size, font, Vector2.zero).X)
@@ -55,7 +55,7 @@ function Select.new(definition)
 		Label = function()
 			local choice = new.Choice()
 			local typeOf = typeof(choice)
-			return if typeOf == "EnumItem" or typeOf == "Instance" then choice.Name else choice
+			return if typeOf == "EnumItem" or typeOf == "Instance" or typeOf == "table" then choice.Name else choice
 		end,
 		Size = itemSize,
 		Font = new.Font,
@@ -105,7 +105,7 @@ function Select.new(definition)
 					font = choice
 				end
 				name = choice.Name
-			elseif typeof(choice) == "Instance" then
+			elseif typeof(choice) == "Instance" or type(choice) == "table" then
 				name = choice.Name
 			end
 
