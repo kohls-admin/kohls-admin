@@ -406,6 +406,30 @@ function Bans.new(_K)
 			PaddingRight = UI.Theme.Padding,
 		},
 
+		UI.new "ListItem" {
+			Text = "User",
+			UI.new "ImageLabel" {
+				BackgroundTransparency = UI.Theme.TransparencyOverlay,
+				BackgroundColor3 = UI.Theme.PrimaryText,
+				Size = inputSize,
+				Image = function()
+					return `rbxthumb://type=AvatarHeadShot&id={banTarget()}&w=48&h=48`
+				end,
+				UI.new "UIAspectRatioConstraint" {
+					AspectType = Enum.AspectType.ScaleWithParentSize,
+					DominantAxis = Enum.DominantAxis.Height,
+				},
+				UI.new "UICorner" {
+					CornerRadius = UDim.new(1, 0),
+				},
+			},
+			banTargetInput,
+		},
+		UI.new "ListItem" {
+			Text = "Reason",
+			banReasonInput,
+		},
+
 		banTypeListItem,
 
 		UI.new "ListItem" {
@@ -432,29 +456,6 @@ function Bans.new(_K)
 			banDurationUnit,
 		},
 
-		UI.new "ListItem" {
-			Text = "User",
-			UI.new "ImageLabel" {
-				BackgroundTransparency = UI.Theme.TransparencyOverlay,
-				BackgroundColor3 = UI.Theme.PrimaryText,
-				Size = inputSize,
-				Image = function()
-					return `rbxthumb://type=AvatarHeadShot&id={banTarget()}&w=48&h=48`
-				end,
-				UI.new "UIAspectRatioConstraint" {
-					AspectType = Enum.AspectType.ScaleWithParentSize,
-					DominantAxis = Enum.DominantAxis.Height,
-				},
-				UI.new "UICorner" {
-					CornerRadius = UDim.new(1, 0),
-				},
-			},
-			banTargetInput,
-		},
-		UI.new "ListItem" {
-			Text = "Reason",
-			banReasonInput,
-		},
 
 		UI.new "Button" {
 			Label = "Ban",
