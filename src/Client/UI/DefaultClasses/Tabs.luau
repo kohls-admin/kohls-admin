@@ -251,7 +251,7 @@ function Tabs.new(definition)
 						input.UserInputType == Enum.UserInputType.MouseMovement
 						or input.UserInputType == Enum.UserInputType.Touch
 					then
-						if UI.sinkInput(input.Position.X, input.Position.Y, new._instance) then
+						if UI.sinkInput(input.Position.X, input.Position.Y, button) then
 							UI.deactivateState(hovering, "hover")
 							return
 						end
