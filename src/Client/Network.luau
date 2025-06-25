@@ -113,7 +113,7 @@ end)
 
 _K.Remote.Member.OnClientEvent:Connect(function(userId, member)
 	local viewas = _K.Registry.commands.viewas
-	if viewas.env.originalMember then
+	if viewas.env.originalMember and userId == tostring(_K.LocalPlayer.UserId) then
 		viewas.env.originalMember = member
 		member = _K.Data.members[userId]
 	end
