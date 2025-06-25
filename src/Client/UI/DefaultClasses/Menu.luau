@@ -72,7 +72,7 @@ function Menu.new(definition)
 	local menuSize = UI.state(new._instance, "AbsoluteSize")
 
 	local function onAdornee(adornee)
-		if not adornee then
+		if not adornee or typeof(adornee) ~= "Instance" then
 			return
 		end
 
