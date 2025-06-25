@@ -204,7 +204,7 @@ function UI.activateState(activeState: any, stateType: ActiveStateType)
 
 	-- Clear the previous state if it's different
 	local previousState = UI._activeState[stateType]
-	if previousState and not rawequal(previousState, activeState) then
+	if previousState and previousState ~= activeState then
 		previousState(false)
 	end
 
