@@ -21,7 +21,6 @@ function CircleProgress:setProgress(alpha)
 	end
 end
 
---- Creates a new circular progress indicator.
 function CircleProgress.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Value = 0,

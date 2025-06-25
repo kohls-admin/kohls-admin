@@ -9,7 +9,6 @@ local boxSize = UI.compute(function()
 	return UDim2.fromOffset(UI.Theme.FontSizeLarger(), UI.Theme.FontSizeLarger())
 end)
 
---- Creates a new checkbox.
 function Checkbox.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Value = false,

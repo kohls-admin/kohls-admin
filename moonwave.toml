@@ -10,11 +10,11 @@ classes = ["MainModule", "Auth", "Hook", "Process", "Registry", "Remote"]
 
 [[classOrder]]
 section = "Interface"
-classes = ["UI", "Checkbox"]
+classes = ["UI"]
 
 [[classOrder]]
 section = "Utility"
-classes = ["Util", "Logger", "String"]
+classes = ["Logger", "String"]
 
 [docusaurus]
 onBrokenLinks = "warn"
