@@ -30,6 +30,11 @@ function Members.new(_K)
 		Placeholder = "UserId or Username",
 		Size = inputSize,
 		Value = "",
+
+		UI.new "UIFlexItem" {
+			FlexMode = Enum.UIFlexMode.Shrink,
+		},
+
 		[UI.Hook] = {
 			Selected = function(value)
 				local userId
