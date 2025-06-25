@@ -119,7 +119,11 @@ function Members.new(_K)
 					(_K.client.rank() > role._rank or _K.creatorId == _K.LocalPlayer.UserId)
 					and _K.Registry.commands.unrole.LocalPlayerAuthorized
 				then
-					local cmd = `{_K.getCommandPrefix()}unrole {member.name or member.userId} {roleId}`
+					local target = member.name or member.userId
+					if string.find(target, "%s") then
+						target = `"{target}"`
+					end
+					local cmd = `{_K.getCommandPrefix()}unrole {target} {roleId}`
 					_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
 				end
 			end,
