@@ -38,6 +38,54 @@ return {
 		end,
 	},
 	{
+		name = "btools",
+		aliases = { "build", "f3x" },
+		credit = { "GigsD4X", "Kohl @Scripth" },
+		description = "Gives Building Tools by F3X to one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to give Building Tools by F3X.",
+			},
+		},
+		env = function(_K)
+			local env = {}
+
+			task.defer(function()
+				env.tool = _K.Tools:WaitForChild("Building Tools") :: Tool
+				env.tool.CanBeDropped = false
+				local handle = Instance.new("Part")
+				handle.Name = "Handle"
+				handle.Size = Vector3.new(0.8, 0.8, 0.8)
+				handle.CastShadow = false
+				handle.CanTouch = false
+				handle.CanQuery = false
+				handle.TopSurface = 0
+				handle.BottomSurface = 0
+				for _, face in Enum.NormalId:GetEnumItems() do
+					local decal = Instance.new("Decal")
+					decal.Face = face
+					decal.Texture = "rbxassetid://129748355"
+					decal.Parent = handle
+				end
+				handle.Parent = env.tool
+			end)
+
+			return env
+		end,
+
+		run = function(context, players)
+			for _, player in players do
+				local backpack = player:FindFirstChildOfClass("Backpack")
+				if not backpack or backpack:FindFirstChild("Building Tools") then
+					continue
+				end
+				context.env.tool:Clone().Parent = backpack
+			end
+		end,
+	},
+	{
 		name = "clearterrain",
 		aliases = { "cterrain", "clrterrain", "removeterrain" },
 		description = "Removes all terrain.",
