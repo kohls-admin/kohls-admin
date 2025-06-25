@@ -6,6 +6,181 @@ Members.__index = Members
 function Members.new(_K)
 	local escape = _K.Util.String.escapeRichText
 
+	local inputSize = function()
+		local size = UI.Theme.FontSize()
+		local padding = UI.Theme.Padding().Offset
+		return UDim2.fromOffset(0, size + padding)
+	end
+
+	local roleChoice = UI.state({ Id = "vip", Name = "VIP" })
+	local roleChoices = UI.state({ { Id = "vip", Name = "VIP" } })
+	local roleDialogTarget = UI.state()
+	local roleDialogInput
+	local function resetRoleTargetInput()
+		roleDialogTarget(nil)
+		roleDialogInput.Value("")
+		roleDialogInput.Selected("")
+	end
+
+	roleDialogInput = UI.new "Input" {
+		AutomaticSize = Enum.AutomaticSize.X,
+		Font = UI.Theme.FontMono,
+		FontSize = UI.Theme.FontSize,
+		MaxChars = 20,
+		Placeholder = "UserId or Username",
+		Size = inputSize,
+		Value = "",
+		[UI.Hook] = {
+			Selected = function(value)
+				local userId
+				if tonumber(value) then
+					userId = tonumber(value)
+				else
+					local ok, result = pcall(_K.Service.Players.GetUserIdFromNameAsync, _K.Service.Players, value)
+					userId = ok and result
+				end
+
+				local fauxArg = {
+					_K = _K,
+					definition = _K.Registry.commands.role.args[1],
+					command = {
+						from = _K.LocalPlayer.UserId,
+						fromRank = _K.Auth.getRank(_K.LocalPlayer.UserId),
+						fromRole = {},
+						rank = _K.Auth.hasCommand(_K.LocalPlayer.UserId, "role") or 0,
+					},
+				}
+
+				if userId and not _K.Auth.targetUserArgument(fauxArg, userId, userId) then
+					userId = nil
+					task.defer(resetRoleTargetInput)
+				end
+
+				local member = _K.Data.members[tostring(userId)] or {}
+				local availableRoles = {}
+				for rank, role in _K.Data.rolesList do
+					if rank == 0 or (rank >= _K.client.rank._value and _K.creatorId ~= _K.LocalPlayer.UserId) then
+						continue
+					end
+					local hasRole = if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
+						then table.find(member.persist or {}, role._key)
+						else table.find(member.roles or {}, role._key)
+					if hasRole then
+						continue
+					end
+					table.insert(availableRoles, { Id = role._key, Name = role.name })
+				end
+				if availableRoles then
+					roleChoice(availableRoles[1])
+					roleChoices(availableRoles)
+				else
+					roleChoice("")
+					roleChoices({})
+				end
+				roleDialogTarget(userId)
+			end,
+		},
+	}
+
+	local newRoleDialog
+	newRoleDialog = UI.new "Dialog" {
+		Parent = UI.LayerTop,
+		BackgroundTransparency = 0,
+		Draggable = true,
+		Title = "Add Role",
+		Visible = false,
+		ExitButton = true,
+		Modal = true,
+		Close = function()
+			newRoleDialog.Visible(false)
+		end,
+
+		UI.new "UIPadding" {
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+		},
+
+		UI.new "ListItem" {
+			Text = "User",
+			UI.new "ImageLabel" {
+				BackgroundTransparency = UI.Theme.TransparencyOverlay,
+				BackgroundColor3 = UI.Theme.PrimaryText,
+				Size = inputSize,
+				Image = function()
+					return `rbxthumb://type=AvatarHeadShot&id={roleDialogTarget()}&w=48&h=48`
+				end,
+				UI.new "UIAspectRatioConstraint" {
+					AspectType = Enum.AspectType.ScaleWithParentSize,
+					DominantAxis = Enum.DominantAxis.Height,
+				},
+				UI.new "UICorner" {
+					CornerRadius = UDim.new(1, 0),
+				},
+			},
+			roleDialogInput,
+		},
+
+		UI.new "ListItem" {
+			Text = "Role",
+			UI.new "Select" {
+				Choice = roleChoice,
+				Choices = roleChoices,
+			},
+			Visible = function()
+				return roleDialogTarget() and #roleChoices() > 0
+			end,
+		},
+
+		UI.new "Button" {
+			Label = "Confirm",
+			Activated = function()
+				if roleDialogTarget._value then
+					local save = _K.Registry.commands.role.LocalPlayerAuthorized
+					local cmd =
+						`{_K.getCommandPrefix()}{if save then "" else "temp"}role {roleDialogTarget()} {roleChoice().Id}`
+					_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
+					newRoleDialog.Visible(false)
+					resetRoleTargetInput()
+				end
+			end,
+		},
+	}
+
+	local newRoleButton = UI.new "Button" {
+		LayoutOrder = 3,
+		ActiveSound = false,
+		Icon = UI.Theme.Image.Add,
+		IconProperties = {
+			ImageColor3 = UI.Theme.PrimaryText,
+			Size = UDim2.fromScale(0.625, 0.625),
+		},
+		Size = UDim2.new(1, 0, 1, 0),
+		SizeConstraint = Enum.SizeConstraint.RelativeYY,
+		UI.new "UIPadding" {
+			PaddingTop = UI.Theme.PaddingHalf,
+			PaddingBottom = UI.Theme.PaddingHalf,
+			PaddingLeft = UI.Theme.PaddingHalf,
+			PaddingRight = UI.Theme.PaddingHalf,
+		},
+
+		Visible = function()
+			_K.client.rank()
+			return _K.Registry.commands.role.LocalPlayerAuthorized
+				or _K.Registry.commands.temprole.LocalPlayerAuthorized
+		end,
+
+		Activated = function()
+			if not newRoleDialog.Visible._value then
+				roleDialogTarget(nil)
+				roleDialogInput.Value("")
+				newRoleDialog.Visible(true)
+				UI.Sound.Hover03:Play()
+			end
+		end,
+	}
+
 	local itemSize = UI.compute(function()
 		_K.client.rank()
 		local font = UI.Theme.Font()
@@ -347,11 +522,28 @@ function Members.new(_K)
 		CreateItem = createItem,
 		RenderItem = renderItem,
 	}
-	UI.edit(scroller._scroller, {
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
+
+	UI.new "Frame" {
+		Parent = scroller,
+		Name = "FilterInput",
+
+		BackgroundTransparency = 1,
+		Size = UI.compute(function()
+			return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
+		end),
+
+		UI.new "UIListLayout" {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UI.Theme.Padding,
+			SortOrder = Enum.SortOrder.LayoutOrder,
 		},
-	})
+		UI.edit(scroller._input, {
+			UI.new "UIFlexItem" {
+				FlexMode = Enum.UIFlexMode.Fill,
+			},
+		}),
+		newRoleButton,
+	}
 
 	local function updateCache(member)
 		member.nameCache = member.name
