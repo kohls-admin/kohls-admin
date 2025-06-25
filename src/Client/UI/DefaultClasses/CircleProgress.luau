@@ -1,7 +1,6 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
 
---- @class CircleProgress
 local CircleProgress = {}
 CircleProgress.__index = CircleProgress
 setmetatable(CircleProgress, BaseClass)

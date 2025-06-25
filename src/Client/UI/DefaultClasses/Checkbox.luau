@@ -1,7 +1,6 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
 
---- @class Checkbox
 local Checkbox = {}
 Checkbox.__index = Checkbox
 setmetatable(Checkbox, BaseClass)
