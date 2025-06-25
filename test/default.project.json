@@ -60,7 +60,11 @@
 					"$path": "../model/README.luau"
 				},
 				"Config": {
-					"$path": "../model/Config"
+					"$path": "../model/Config",
+					"Themes": {
+						"$className": "Folder",
+						"$path": "../src/Client/UI/Theme/Themes"
+					}
 				}
 			}
 		},
