@@ -5,6 +5,6 @@ else
 	MainModule = script:WaitForChild("KAI")
 end
 
-script:WaitForChild("Tools").Parent = MainModule
+script:WaitForChild("Tools").Parent = MainModule:FindFirstChild("Server") or MainModule
 
 return require(MainModule)
