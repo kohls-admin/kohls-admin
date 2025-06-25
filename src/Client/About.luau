@@ -424,7 +424,7 @@ function About.new(_K)
 						Parent = button._instance,
 						Text = ugc.tip,
 						TextXAlignment = Enum.TextXAlignment.Left,
-						Visible = button._hovering,
+						Hovering = button._hovering,
 					}
 				end
 			end)
@@ -568,7 +568,7 @@ function About.new(_K)
 					then "<font color='#0f0'>Gives a title!"
 					else "<font color='#0f0'>Gives a particle effect!"}</font></b>`,
 				TextXAlignment = Enum.TextXAlignment.Left,
-				Visible = button._hovering,
+				Hovering = button._hovering,
 			}
 
 			updateTitleLabel(button, pass.name)
@@ -641,7 +641,7 @@ function About.new(_K)
 		UI.new "Tooltip" {
 			Parent = vipButtonGlobal,
 			Text = "✨ <b>Become a VIP</b>\n\n<font color='#0f0'>Unlock <b>VIP commands</b> globally!</font>",
-			Visible = vipButtonGlobal._hovering,
+			Hovering = vipButtonGlobal._hovering,
 		}
 
 		updateTitleLabel(
@@ -800,7 +800,7 @@ function About.new(_K)
 			Parent = adminModelButton,
 			Text = "Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management. 🚀",
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Visible = adminModelButton._hovering,
+			Hovering = adminModelButton._hovering,
 		}
 
 		task.defer(function()

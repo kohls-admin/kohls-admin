@@ -11,10 +11,11 @@ function Tooltip.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Enabled = true,
 		Visible = false,
+		Hovering = false,
 	}, definition)
 
 	local hoverStart
-	local hovering = UI.state(false)
+	local hovering = new.Hovering
 	local positionState = UI.state(Vector2.zero)
 	local sizeState = UI.state(Vector2.zero)
 	local tipSizeState = UI.state(Vector2.zero)
