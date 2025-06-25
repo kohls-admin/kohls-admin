@@ -78,9 +78,9 @@ function Slider.new(definition)
 		Name = "Slider",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		BackgroundColor3 = UI.Theme.SecondaryText,
-		Position = UI.tween(function()
+		Position = function()
 			return if new.Vertical() then UDim2.new(0.5, 0, valueAlpha(), 0) else UDim2.new(valueAlpha(), 0, 0.5, 0)
-		end, UI.Theme.TweenOut),
+		end,
 		Size = UI.tween(function()
 			local size = UI.Theme.FontSize()
 			local half = size / 2
@@ -136,11 +136,11 @@ function Slider.new(definition)
 			Name = "Filled",
 			BackgroundColor3 = UI.Theme.Secondary,
 			BorderSizePixel = 0,
-			Size = UI.tween(function()
+			Size = function()
 				local alpha = valueAlpha()
 				local buffer = (UI.Theme.FontSize() + UI.Theme.Padding().Offset) * (1 - alpha)
 				return if new.Vertical() then UDim2.new(1, 0, alpha, buffer) else UDim2.new(alpha, buffer, 1, 0)
-			end, UI.Theme.TweenOut),
+			end,
 
 			UI.new "UICorner" {
 				CornerRadius = UI.Theme.CornerDiameter,
