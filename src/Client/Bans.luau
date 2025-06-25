@@ -149,6 +149,7 @@ function Bans.new(_K)
 				newBanDialog.Visible(true)
 			end,
 		}
+		UI.new "Tooltip" { Parent = editBanButton, Text = "Edit Ban", Hovering = editBanButton._hovering }
 
 		local unbanButton = UI.new "Button" {
 			LayoutOrder = 9,
@@ -169,6 +170,7 @@ function Bans.new(_K)
 				unbanDialog.Visible(true)
 			end,
 		}
+		UI.new "Tooltip" { Parent = unbanButton, Text = "Remove Ban", Hovering = unbanButton._hovering }
 
 		itemRef._instance = UI.new "Frame" {
 			BackgroundTransparency = 1,
@@ -500,6 +502,7 @@ function Bans.new(_K)
 			end
 		end,
 	}
+	UI.new "Tooltip" { Parent = newBanButton, Text = "New Ban", Hovering = newBanButton._hovering }
 
 	UI.new "Frame" {
 		Parent = scroller,

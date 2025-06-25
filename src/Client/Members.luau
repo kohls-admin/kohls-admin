@@ -180,6 +180,7 @@ function Members.new(_K)
 			end
 		end,
 	}
+	UI.new "Tooltip" { Parent = newRoleButton, Text = "New Member", Hovering = newRoleButton._hovering }
 
 	local itemSize = UI.compute(function()
 		_K.client.rank()
@@ -303,6 +304,7 @@ function Members.new(_K)
 				end
 			end,
 		}
+		UI.new "Tooltip" { Parent = button, Text = "Remove Role", Hovering = button._hovering }
 
 		return UI.new "Frame" {
 			AutomaticSize = Enum.AutomaticSize.X,
@@ -403,6 +405,7 @@ function Members.new(_K)
 				end
 			end,
 		}
+		UI.new "Tooltip" { Parent = addButton, Text = "Add Role", Hovering = addButton._hovering }
 
 		item._instance = UI.new "Frame" {
 			BackgroundTransparency = 1,
