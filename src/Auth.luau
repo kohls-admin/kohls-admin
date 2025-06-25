@@ -76,9 +76,13 @@ function Auth.banUsers(
 		timestamp = if duration > 0 then os.time() + duration else -1
 	end
 
+	local unbanAsync = {}
 	for _, userId in userIds do
 		local ban = { Util.getUserInfo(userId).Username, reason, timestamp, fromUserId }
 		local key = tostring(userId)
+		if Data.bans[key] and Data.bans[key][3] ~= 0 then
+			table.insert(unbanAsync, userId)
+		end
 		Data.bans[key] = ban
 		if timestamp then
 			Data.Cache.bans[key] = ban
@@ -98,6 +102,8 @@ function Auth.banUsers(
 			Duration = duration,
 			ApplyToUniverse = true,
 		})
+	elseif #unbanAsync > 0 and not Data.SEPARATE_DATASTORE then
+		Util.Service.Players:UnbanAsync({ UserIds = unbanAsync, ApplyToUniverse = true })
 	end
 end
 
