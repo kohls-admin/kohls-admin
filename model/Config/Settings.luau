@@ -122,7 +122,7 @@ return {
 			_key = "everyone", -- ⚠️ DO NOT CHANGE
 
 			name = "Player",
-			color = "#0ff", -- Hex color only
+			color = "#aaa", -- Hex color only
 
 			groups = {
 				-- "creator", --        clearlogs, hidelogs, script, localscript, etc.
@@ -156,7 +156,7 @@ return {
 		{ -- VIP Role
 			_key = "vip", -- ⚠️ DO NOT CHANGE
 			name = "VIP",
-			color = "#0f8",
+			color = "#0ff",
 			groups = { "vip" },
 			limits = { cooldown = 4, commands = 16, targets = 1 },
 			permissions = {},
@@ -188,7 +188,7 @@ return {
 		{ -- Administrator Role
 			_key = "admin", -- ⚠️ DO NOT CHANGE
 			name = "Administrator",
-			color = "#ff0",
+			color = "#fc0",
 			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
 			limits = { cooldown = 4, commands = 64, targets = math.huge },
 			permissions = { banasync = true, serverlogs = true },
