@@ -348,14 +348,13 @@ function UI.edit(new: Instance | Type.Dict<any>, properties: Type.Dict<any>): In
 		if type(child) == "table" and child._instance then
 			child = child._instance
 		end
-		if typeof(child) ~= "Instance" then
-			error(`Invalid UI child Instance: {child}`)
+		if typeof(child) == "Instance" then
+			if child:IsA("GuiObject") then
+				child.LayoutOrder = if child.LayoutOrder ~= 0 then child.LayoutOrder else index
+			end
+			child.Parent = contentParent
+			properties[index] = nil
 		end
-		if child:IsA("GuiObject") then
-			child.LayoutOrder = if child.LayoutOrder ~= 0 then child.LayoutOrder else index
-		end
-		child.Parent = contentParent
-		properties[index] = nil
 	end
 
 	if type(new) == "table" then
