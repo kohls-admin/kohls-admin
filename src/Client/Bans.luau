@@ -456,7 +456,6 @@ function Bans.new(_K)
 			banDurationUnit,
 		},
 
-
 		UI.new "Button" {
 			Label = "Ban",
 			Activated = function()
@@ -490,13 +489,15 @@ function Bans.new(_K)
 		},
 
 		Activated = function()
-			banTarget(nil)
-			banTargetInput.Value("")
-			banReason = nil
-			banReasonInput.Value("")
-			newBanDialog.Title("New Ban")
-			newBanDialog.Visible(true)
-			UI.Sound.Hover03:Play()
+			if not newBanDialog.Visible._value then
+				banTarget(nil)
+				banTargetInput.Value("")
+				banReason = nil
+				banReasonInput.Value("")
+				newBanDialog.Title("New Ban")
+				newBanDialog.Visible(true)
+				UI.Sound.Hover03:Play()
+			end
 		end,
 	}
 
