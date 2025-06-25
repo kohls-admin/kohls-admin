@@ -94,15 +94,19 @@ return {
 				name = "Temporary",
 				description = "Assigns the role(s) only for the current server.",
 				optional = true,
+				permissions = { saveRoles = true },
 			},
 		},
-		permissions = { saveRoles = true },
 
 		run = function(context, userIds, roles, temporary)
+			local persist = if temporary or not context._K.Auth.hasPermission(context.from, "saveRoles")
+				then false
+				else true
+
 			for _, userId in userIds do
 				local rolesAdded = {}
 				for _, role in roles do
-					if context._K.Auth.userRoleAdd(userId, role, if temporary then false else true) then
+					if context._K.Auth.userRoleAdd(userId, role, persist) then
 						local roleData = context._K.Data.roles[role]
 						table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
 					end
