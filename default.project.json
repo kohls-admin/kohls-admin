@@ -7,7 +7,12 @@
 		"TopbarPlus": { "$path": "submodules/TopbarPlus" },
 		"Tools": {
 			"$className": "Folder",
-			"Building Tools": { "$path": "submodules/F3X" }
+			"Building Tools": {
+				"$path": "submodules/F3X",
+				"$properties": {
+					"Tags": ["_K_Ignore"]
+				}
+			}
 		},
 		"VERSION": {
 			"$path": "VERSION.txt"

@@ -29,7 +29,10 @@
 				"Tools": {
 					"$className": "Folder",
 					"Building Tools": {
-						"$path": "../submodules/F3X"
+						"$path": "../submodules/F3X",
+						"$properties": {
+							"Tags": ["_K_Ignore"]
+						}
 					}
 				}
 			},
@@ -52,7 +55,10 @@
 					"Tools": {
 						"$className": "Folder",
 						"Building Tools": {
-							"$path": "../submodules/F3X"
+							"$path": "../submodules/F3X",
+							"$properties": {
+								"Tags": ["_K_Ignore"]
+							}
 						}
 					}
 				},
