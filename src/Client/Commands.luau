@@ -91,10 +91,111 @@ function Commands.new(_K)
 		end
 	end
 
+	local purchase = { gamepass = nil, role = nil }
+	local purchaseData = {}
+	local function updatePurchaseData(list)
+		local current
+		for index, command in list do
+			if not command.RestrictedToRole then
+				for rank, role in _K.Data.rolesList do
+					if _K.Auth.roleCanUseCommand(role._key, command) then
+						command.RestrictedToRole = role
+						break
+					end
+				end
+			end
+			if command.LocalPlayerAuthorized then
+				continue
+			end
+			local role = command.RestrictedToRole
+			if current and role ~= current then
+				purchaseData[current].lastIndex = index - 1
+				current = nil
+			end
+			if not current and role and (role._key == "vip" or role.gamepasses) then
+				current = role
+				purchaseData[role] = {
+					firstIndex = index - 1,
+				}
+			end
+		end
+	end
+
+	-- TODO: update text/price based on current view, find bounds of the canvas position items
+
+	local purchaseButton = UI.new "Button" {
+		Label = "Loading...",
+		LayoutOrder = 9,
+		Icon = "rbxasset://textures/ui/common/robux.png",
+		IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
+		IconRightAlign = true,
+		Padding = UI.Theme.PaddingDouble,
+		TextSize = UI.Theme.FontSizeLarge,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = function()
+			return UDim2.new(1, 0, 0, UI.Theme.FontSizeLarge() + UI.Theme.PaddingDouble().Offset)
+		end,
+		Visible = false,
+
+		UI.new "TextLabel" {
+			Name = "Price",
+			LayoutOrder = 8,
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.XY,
+			BackgroundTransparency = 1,
+			Font = UI.Theme.FontMono,
+			TextSize = UI.Theme.FontSizeLarge,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextStrokeColor3 = UI.Theme.Primary,
+			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+			TextWrapped = true,
+			Size = function()
+				return UDim2.new(0, UI.Theme.FontSizeLarge(), 1, 0)
+			end,
+			Text = `<b>?</b>`,
+			RichText = true,
+		},
+
+		Activated = function()
+			if purchase.role == "vip" and _K.Data.settings.vip then
+				_K.promptPurchaseVIP()
+			elseif purchase.gamepass then
+				_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, purchase.gamepass)
+			end
+		end,
+	}
+
+	local function updatePurchasePrice()
+		local ok, result = pcall(function()
+			return _K.Service.Marketplace:GetProductInfo(purchase.gamepass, Enum.InfoType.GamePass).PriceInRobux
+		end)
+		purchaseButton._content.Price.Text = `<b>{ok and result or "?"}</b>`
+	end
+
+	purchaseButton._content.Price.Text = `<b>799</b>`
+
+	local function sortCommandsList(a, b)
+		local rankA, rankB = math.huge, math.huge
+		for rank, role in _K.Data.rolesList do
+			if rankA > rank and _K.Auth.roleCanUseCommand(role._key, a) then
+				rankA = rank
+			end
+			if rankB > rank and _K.Auth.roleCanUseCommand(role._key, b) then
+				rankB = rank
+			end
+		end
+		if rankA == rankB then
+			return a.name < b.name
+		else
+			return rankA < rankB
+		end
+	end
+
 	local commandsList = UI.state(_K.Registry.commandsList)
 	local function updateCommandsList()
+		local list
 		if _K.client.settings.onlyShowUsableCommands._value then
-			local list = {}
+			list = {}
 			for _, command in _K.Registry.commandsList do
 				local added
 				for role, roleData in _K.Data.roles do
@@ -111,14 +212,18 @@ function Commands.new(_K)
 					table.insert(list, command)
 				end
 			end
-			commandsList(list)
 		else
-			commandsList(_K.Registry.commandsList)
+			list = _K.Registry.commandsList
 		end
+		table.sort(list, sortCommandsList)
+		commandsList(list)
+		updatePurchaseData(list)
 	end
-	_K.client.settings.onlyShowUsableCommands:Connect(updateCommandsList)
-	_K.client.rank:Connect(updateCommandsList)
-	updateCommandsList()
+
+	local debounceUpdateCommandsList = _K.Util.Function.debounce(0.2, updateCommandsList)
+	_K.client.settings.onlyShowUsableCommands:Connect(debounceUpdateCommandsList)
+	_K.client.rank:Connect(debounceUpdateCommandsList)
+	debounceUpdateCommandsList()
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Commands",
@@ -131,6 +236,7 @@ function Commands.new(_K)
 		end,
 		CreateItem = createItem,
 		RenderItem = renderItem,
+		purchaseButton,
 	}
 
 	UI.edit(scroller._scroller, {
@@ -138,6 +244,37 @@ function Commands.new(_K)
 			FlexMode = Enum.UIFlexMode.Fill,
 		},
 	})
+
+	local function updatePurchaseButton()
+		local itemHeight = UI.Theme.FontSize._value * 2
+		local windowHeight = scroller._scroller.AbsoluteWindowSize.Y
+		local top = scroller._scroller.CanvasPosition.Y
+		local middle = top + windowHeight / 2
+		local bottom = top + windowHeight
+
+		local role
+		for roleData, data in purchaseData do
+			local first = data.firstIndex * itemHeight
+			local last = data.lastIndex * itemHeight
+			if first < bottom and last > middle then
+				role = roleData
+			end
+		end
+
+		if role then
+			purchase.role = role._key
+			purchase.gamepass = if role._key == "vip" then 5411126 else role.gamepasses[1]
+			purchaseButton.Label(`<b>Unlock <font color="{role.color}">{role.name or role._key}</font> Commands</b>`)
+			purchaseButton._instance.Visible = true
+			task.spawn(updatePurchasePrice)
+			return
+		end
+
+		purchaseButton._instance.Visible = false
+	end
+
+	UI.Theme.FontSize:Connect(updatePurchaseButton)
+	scroller._scroller:GetPropertyChangedSignal("CanvasPosition"):Connect(updatePurchaseButton)
 
 	local function updateRenderParameters(command)
 		if not command.aliasText then
@@ -267,22 +404,6 @@ function Commands.new(_K)
 	end
 
 	task.defer(function()
-		scroller:sort(function(a, b)
-			local rankA, rankB = math.huge, math.huge
-			for role, roleData in _K.Data.roles do
-				if _K.Auth.roleCanUseCommand(role, a) and roleData._rank < rankA then
-					rankA = roleData._rank
-				end
-				if _K.Auth.roleCanUseCommand(role, b) and roleData._rank < rankB then
-					rankB = roleData._rank
-				end
-			end
-			if rankA == rankB then
-				return a.name < b.name
-			else
-				return rankA < rankB
-			end
-		end)
 		scroller:filter(filterTest)
 	end)
 
