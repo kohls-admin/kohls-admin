@@ -800,7 +800,7 @@ return {
 				local sources = { fromPlayer:FindFirstChildOfClass("Backpack"), fromPlayer.Character }
 				for _, source in sources do
 					for _, child in source:GetChildren() do
-						if child:IsA("Tool") or child:IsA("HopperBin") then
+						if (child:IsA("Tool") or child:IsA("HopperBin")) and not child:HasTag("_K_Ignore") then
 							table.insert(tools, child)
 						end
 					end
