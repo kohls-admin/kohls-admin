@@ -54,11 +54,17 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 		Text = `Requesting <b>{self.alias}</b> command on <b>{targetPlayer.DisplayName}<font transparency="0.5">{userName}</font></b>.`,
 	})
 
-	local accepted = self._K.Remote.RequestCommand:InvokeClient(
+	local ok, accepted = pcall(
+		self._K.Remote.RequestCommand.InvokeClient,
+		self._K.Remote.RequestCommand,
 		targetPlayer,
 		self.fromPlayer,
 		`{self._K.getCommandPrefix()}{self.alias} {targetPlayer.Name}`
 	)
+
+	if not ok then
+		return false, `{userName} left during "{self.alias}" command request!`
+	end
 
 	local validColor = self._K.Data.settings.themeValid:ToHex()
 	local invalidColor = self._K.Data.settings.themeInvalid:ToHex()
