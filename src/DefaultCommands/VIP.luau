@@ -503,8 +503,20 @@ return {
 				pe.Parent = root
 			end
 
-			_K.Remote.DonorTrail.OnServerEvent:Connect(function(player)
-				apply(player, player, nil, nil)
+			_K.Remote.DonorTrail.OnServerEvent:Connect(function(player, enable: boolean?)
+				if enable then
+					apply(player, player, nil, nil)
+				else
+					local root = player.Character
+						and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
+					if not root then
+						return
+					end
+					local existing = root:FindFirstChild("_KParticleEffect")
+					if existing then
+						existing:Destroy()
+					end
+				end
 			end)
 
 			return { apply = apply }
