@@ -94,7 +94,7 @@ return {
 			{
 				type = "players",
 				name = "Player(s)",
-				description = "The player(s) whose logs to hide.",
+				description = "The player(s) to run the localscript on.",
 				shouldRequest = true,
 			},
 			{
