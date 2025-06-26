@@ -413,11 +413,11 @@ setmetatable(constructors, {
 			end
 		else
 			new = function(properties: Type.Dict<any>): Instance | Type.Dict<any>
-				return UI.edit(Instance.new(class), properties)
+				return UI.edit(Instance.new(className), properties)
 			end
 		end
 
-		self[class] = new
+		self[className] = new
 		return new
 	end,
 })
@@ -428,10 +428,7 @@ setmetatable(constructors, {
 --- @param className string
 --- @return UI.edit
 UI.new = function(className)
-	local class = UI.Class[className]
-	return function(definition)
-		return UI.edit(if class then class.new(definition) else Instance.new(className), definition)
-	end
+	return constructors[className]
 end :: Type.Constructor
 
 --- Registers a new UI component class
