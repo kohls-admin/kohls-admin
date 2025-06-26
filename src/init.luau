@@ -469,11 +469,13 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 	end
 
 	function _K.setupPurchasables(purchasables, key)
-		for id, role in purchasables do
-			local roleData = _K.Data.roles[role]
-			if roleData then
-				roleData[key] = roleData[key] or {}
-				table.insert(roleData[key], id)
+		for id, roles in purchasables do
+			for _, role in roles do
+				local roleData = _K.Data.roles[role]
+				if roleData then
+					roleData[key] = roleData[key] or {}
+					table.insert(roleData[key], id)
+				end
 			end
 		end
 	end
