@@ -590,7 +590,7 @@ updateCompletion = function()
 					suggestionPurchase.gamepass = if roleId == "vip" then 5411126 else roleData.gamepasses[1]
 					suggestionPurchaseButton._instance.Parent = TooltipFrame
 					suggestionPurchaseButton.Label(
-						`<sc>Purchase <font color="{roleData.color}">{roleData.name or roleId}</font></sc>`
+						`<b>Unlock <font color="{roleData.color}">{roleData.name or roleId}</font> Commands</b>`
 					)
 					task.spawn(updateSuggestionPurchasePrice)
 					break
