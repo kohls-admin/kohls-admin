@@ -441,9 +441,7 @@ local function updateSuggestionPurchasePrice()
 	local ok, result = pcall(function()
 		return _K.Service.Marketplace:GetProductInfo(suggestionPurchase.gamepass, Enum.InfoType.GamePass).PriceInRobux
 	end)
-	if ok then
-		suggestionPurchaseButton._content.Price.Text = `<b>{result or "?"}</b>`
-	end
+	suggestionPurchaseButton._content.Price.Text = `<b>{ok and result or "?"}</b>`
 end
 
 local function invalidSuggestion(data, err, pos, text)
