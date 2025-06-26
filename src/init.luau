@@ -386,6 +386,8 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 				settings.roles[rank] = nil
 				definition._rank = rank - 1
 				roles[definition._key] = definition
+			else
+				definition._key = rank
 			end
 		end
 		Util.Table.merge(settings.roles, roles)
