@@ -39,7 +39,7 @@ function _K.client.updateInterfaceAuth()
 
 	for _, command in _K.Registry.commands do
 		command.LocalPlayerAuthorized = _K.Auth.hasCommand(userId, command)
-		if not command.LocalPlayerAuthorized then
+		if not command.RestrictedToRole then
 			for rank, roleData in _K.Data.rolesList do
 				if _K.Auth.roleCanUseCommand(roleData._key, command) then
 					command.RestrictedToRole = roleData
