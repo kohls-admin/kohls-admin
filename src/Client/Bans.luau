@@ -250,7 +250,7 @@ function Bans.new(_K)
 
 		tooltip.Visible:Connect(function()
 			if tooltip.Visible._value then
-				tooltip._instance.Text = itemRef.tipText
+				tooltip.Text(itemRef.tipText)
 			end
 		end)
 

@@ -75,7 +75,7 @@ function Commands.new(_K)
 
 		tooltip.Visible:Connect(function()
 			if tooltip.Visible._value then
-				tooltip._instance.Text = itemRef.command._value.tipText
+				tooltip.Text(itemRef.command._value.tipText)
 			end
 		end)
 

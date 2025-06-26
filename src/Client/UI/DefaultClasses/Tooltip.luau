@@ -1,27 +1,110 @@
 local BaseClass = require(script.Parent.BaseClass)
 local UI = require(script.Parent.Parent)
 
+local layerSizeState = UI.state(UI.LayerTop, "AbsoluteSize")
+local positionState = UI.state(Vector2.zero)
+local sizeState = UI.state(Vector2.zero)
+local tipSizeState = UI.state(Vector2.zero)
+
+local tooltip = UI.new "TextLabel" {
+	Parent = UI.LayerTop,
+	AutoLocalize = false,
+	AutomaticSize = Enum.AutomaticSize.XY,
+	Name = "Tooltip",
+	ZIndex = 100,
+	BackgroundColor3 = UI.Theme.Primary,
+	Font = UI.Theme.Font,
+	TextSize = UI.Theme.FontSize,
+	TextColor3 = UI.Theme.PrimaryText,
+	TextStrokeColor3 = UI.Theme.Primary,
+	TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextWrapped = true,
+	RichText = true,
+	Visible = false,
+
+	Position = function()
+		local tipSize = tipSizeState()
+		local max = layerSizeState()
+		local position, size = positionState(), sizeState()
+		local yOffset = position.Y + size.Y + UI.TopbarInset().Height + UI.Theme.PaddingHalf().Offset
+
+		return UDim2.fromOffset(
+			math.clamp(position.X, 0, math.max(0, max.X - tipSize.X)),
+			math.clamp(yOffset, 0, math.max(0, max.Y - tipSize.Y))
+		)
+	end,
+
+	UI.new "UICorner" {
+		CornerRadius = UI.Theme.CornerRadius,
+	},
+	UI.new "UIPadding" {
+		PaddingLeft = UI.Theme.Padding,
+		PaddingRight = UI.Theme.Padding,
+		PaddingTop = UI.Theme.Padding,
+		PaddingBottom = UI.Theme.Padding,
+	},
+	UI.new "UISizeConstraint" {
+		MinSize = Vector2.new(8, 8),
+		MaxSize = Vector2.new(256, math.huge),
+	},
+	UI.new "UIStroke" {
+		Enabled = UI.Theme.StrokeEnabled,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		Transparency = UI.Theme.TransparencyClamped,
+		Color = UI.Theme.Border,
+	},
+}
+
+tipSizeState:_bindToProperty(tooltip, "AbsoluteSize")
+
+local invalidProperties = { "Enabled", "Hovering", "Parent", "_instance" }
+local function updateTooltip(visible: boolean, adornee: GuiObject?, properties: { [string]: any }?)
+	tooltip.Visible = visible
+	if visible and properties and typeof(adornee) == "Instance" and adornee:IsA("GuiObject") then
+		properties = table.clone(properties)
+		for _, key in invalidProperties do
+			properties[key] = nil
+		end
+		UI.edit(tooltip, properties)
+		positionState(adornee.AbsolutePosition, true)
+		sizeState(adornee.AbsoluteSize, true)
+		positionState:_bindToProperty(adornee, "AbsolutePosition")
+		sizeState:_bindToProperty(adornee, "AbsoluteSize")
+	else
+		if positionState._bindConnection then
+			positionState._bindConnection:Disconnect()
+		end
+		if sizeState._bindConnection then
+			sizeState._bindConnection:Disconnect()
+		end
+	end
+end
+
 local Tooltip = {}
 Tooltip.__index = Tooltip
 setmetatable(Tooltip, BaseClass)
 
-local layerSizeState = UI.state(UI.LayerTop, "AbsoluteSize")
-
 function Tooltip.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Enabled = true,
-		Visible = false,
 		Hovering = false,
+		Visible = false,
+		Font = UI.Theme.Font,
+		Text = "Example tooltip text.",
 	}, definition)
 
-	local hoverStart
+	local parent = definition.Parent
+	table.clear(definition)
+	definition.Parent = parent
+
+	local Adornee
+	local hoverConnections = {}
 	local hovering = new.Hovering
-	local positionState = UI.state(Vector2.zero)
-	local sizeState = UI.state(Vector2.zero)
-	local tipSizeState = UI.state(Vector2.zero)
+	local hoverStart
 
 	local function hover(value)
-		if value then
+		if value and new.Enabled._value then
 			local start = tick()
 			hoverStart = start
 			task.delay(0.4, function()
@@ -34,60 +117,6 @@ function Tooltip.new(definition)
 		end
 	end
 
-	new._instance = UI.new "TextLabel" {
-		AutoLocalize = false,
-		Parent = UI.LayerTop,
-		Name = "Tooltip",
-		Visible = function()
-			return new.Enabled() and new.Visible()
-		end,
-		ZIndex = 100,
-		BackgroundColor3 = UI.Theme.Primary,
-		Font = UI.Theme.Font,
-		TextSize = UI.Theme.FontSize,
-		Text = "Example tooltip text.",
-		TextColor3 = UI.Theme.PrimaryText,
-		TextStrokeColor3 = UI.Theme.Primary,
-		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextWrapped = true,
-		RichText = true,
-		AutomaticSize = Enum.AutomaticSize.XY,
-		Position = function()
-			local tipSize = tipSizeState()
-			local max = layerSizeState()
-			local position, size = positionState(), sizeState()
-			local yOffset = position.Y + size.Y + UI.TopbarInset().Height + UI.Theme.PaddingHalf().Offset
-
-			return UDim2.fromOffset(
-				math.clamp(position.X, 0, math.max(0, max.X - tipSize.X)),
-				math.clamp(yOffset, 0, math.max(0, max.Y - tipSize.Y))
-			)
-		end,
-
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
-		},
-		UI.new "UIPadding" {
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-		},
-		UI.new "UISizeConstraint" {
-			MinSize = Vector2.new(8, 8),
-			MaxSize = Vector2.new(256, math.huge),
-		},
-		UI.new "UIStroke" {
-			Enabled = UI.Theme.StrokeEnabled,
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Transparency = UI.Theme.TransparencyClamped,
-			Color = UI.Theme.Border,
-		},
-	}
-
-	local parent
-	local hoverConnections = {}
 	local function hoverEnter()
 		UI.activateState(hovering, "hover")
 	end
@@ -103,7 +132,7 @@ function Tooltip.new(definition)
 			input.UserInputType == Enum.UserInputType.MouseMovement
 			or input.UserInputType == Enum.UserInputType.Touch
 		then
-			if UI.sinkInput(input.Position.X, input.Position.Y, parent) then
+			if UI.sinkInput(input.Position.X, input.Position.Y, Adornee) then
 				hoverLeave()
 				return
 			end
@@ -120,52 +149,45 @@ function Tooltip.new(definition)
 		end
 	end
 
+	local function updateAdornee(adornee: GuiObject)
+		if Adornee then
+			for _, v in hoverConnections do
+				v:Disconnect()
+			end
+		end
+		table.insert(hoverConnections, adornee.InputChanged:Connect(inputChanged))
+		table.insert(hoverConnections, adornee.InputEnded:Connect(inputEnded))
+		table.insert(hoverConnections, adornee.SelectionGained:Connect(hoverEnter))
+		table.insert(hoverConnections, adornee.SelectionLost:Connect(hoverLeave))
+		Adornee = adornee
+	end
+
+	new._instance = UI.new "Folder" {
+		Name = "TooltipReference",
+	}
+
 	UI.edit(new._instance, {
 		[UI.Clean] = {
-			UI.UserInputService.TouchMoved:Connect(function()
-				hovering(false)
-			end),
+			hovering,
 			hovering:Connect(hover),
+			new.Visible:Connect(function(visible)
+				if visible then
+					updateTooltip(true, Adornee, new)
+				else
+					updateTooltip(false)
+				end
+			end),
 			new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
 				local newParent = new._instance.Parent
 				if newParent and newParent ~= UI.LayerTop then
-					if parent then
-						for _, v in hoverConnections do
-							v:Disconnect()
-						end
-					end
-
-					parent = newParent
-					table.insert(hoverConnections, parent.InputChanged:Connect(inputChanged))
-					table.insert(hoverConnections, parent.InputEnded:Connect(inputEnded))
-					table.insert(hoverConnections, parent.SelectionGained:Connect(hoverEnter))
-					table.insert(hoverConnections, parent.SelectionLost:Connect(hoverLeave))
-					task.wait()
-					new._instance.Parent = UI.LayerTop
+					updateAdornee(newParent)
 				end
 			end),
-			new._instance:GetPropertyChangedSignal("Visible"):Connect(function()
-				if new._instance.Visible and typeof(parent) == "Instance" and parent:IsA("GuiObject") then
-					positionState(parent.AbsolutePosition, true)
-					sizeState(parent.AbsoluteSize, true)
-					positionState:_bindToProperty(parent, "AbsolutePosition")
-					sizeState:_bindToProperty(parent, "AbsoluteSize")
-				else
-					if positionState._bindConnection then
-						positionState._bindConnection:Disconnect()
-					end
-					if sizeState._bindConnection then
-						sizeState._bindConnection:Disconnect()
-					end
-				end
+			UI.UserInputService.TouchMoved:Connect(function()
+				hovering(false)
 			end),
-			positionState,
-			sizeState,
-			hovering,
 		},
 	})
-
-	tipSizeState:_bindToProperty(new._instance, "AbsoluteSize")
 
 	return setmetatable(new, Tooltip)
 end
