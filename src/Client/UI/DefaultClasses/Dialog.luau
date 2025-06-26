@@ -43,14 +43,14 @@ function Dialog.new(definition)
 
 		local delta = input.Position - dragStart
 		local size = new._instance.AbsoluteSize
-		local anchorOffset = size * new._instance.AnchorPoint
-		local minPosition = new._instance.Parent.AbsolutePosition + anchorOffset
-		local maxPosition = new._instance.Parent.AbsoluteSize - (size - anchorOffset)
+		local offset = size * new._instance.AnchorPoint
+		local min = new._instance.Parent.AbsolutePosition + offset
+		local max = new._instance.Parent.AbsoluteSize - (size - offset)
 
 		new.Position(
 			UDim2.fromOffset(
-				math.clamp(math.round(startOffset.X + delta.X), minPosition.X, math.max(0, maxPosition.X)),
-				math.clamp(math.round(startOffset.Y + delta.Y), minPosition.Y, math.max(0, maxPosition.Y))
+				math.clamp(math.round(startOffset.X + delta.X), min.X, math.max(offset.X, max.X)),
+				math.clamp(math.round(startOffset.Y + delta.Y), math.max(offset.Y, min.Y), math.max(offset.Y, max.Y))
 			)
 		)
 	end
