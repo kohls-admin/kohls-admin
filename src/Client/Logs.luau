@@ -137,14 +137,15 @@ function Logs.new(_K)
 					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
 
 				log.filterText = string.lower(log.rawText)
-				log.richText =
+				log.preText =
 					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[log.levelText] or "#fff"}"><b>{log.levelText}</b></font><b>{if log.client
 						then clientTag
 						elseif not log.from then serverTag
-						else ""}</b> {if log.name then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(
-						log.text or ""
-					)}`
-				log.tipText = `<font transparency="0.5">{date}</font> {log.richText}`
+						else ""}</b>`
+				log.postText =
+					`{if log.name then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(log.text or "")}`
+				log.richText = `{log.preText} {log.postText}`
+				log.tipText = `<font transparency="0.5">{date}</font> {log.preText}\n{log.postText}`
 			end
 
 			if not logTypeFilter[log.levelText]._value then
