@@ -158,7 +158,7 @@ function Commands.new(_K)
 
 		Activated = function()
 			if purchase.role == "vip" and _K.Data.settings.vip then
-				_K.promptPurchaseVIP()
+				_K.promptPurchaseVIP(true)
 			elseif purchase.gamepass then
 				_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, purchase.gamepass)
 			end
@@ -261,9 +261,12 @@ function Commands.new(_K)
 			end
 		end
 
-		if role then
+		if role and ((role._key == "vip" and _K.Data.settings.vip) or role.gamepasses) then
 			purchase.role = role._key
-			purchase.gamepass = if role._key == "vip" then 5411126 else role.gamepasses[1]
+			purchase.gamepass = if role._key == "vip" and _K.Data.settings.vip then 5411126 else role.gamepasses[1]
+			if not purchase.gamepass then
+				return
+			end
 			purchaseButton.Label(`<b>Unlock <font color="{role.color}">{role.name or role._key}</font> Commands</b>`)
 			purchaseButton._instance.Visible = true
 			task.spawn(updatePurchasePrice)

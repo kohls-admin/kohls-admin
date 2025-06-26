@@ -430,7 +430,7 @@ local suggestionPurchaseButton = UI.new "Button" {
 
 	Activated = function()
 		if suggestionPurchase.role == "vip" and _K.Data.settings.vip then
-			_K.promptPurchaseVIP()
+			_K.promptPurchaseVIP(true)
 		elseif suggestionPurchase.gamepass then
 			_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, suggestionPurchase.gamepass)
 		end
@@ -585,9 +585,17 @@ updateCompletion = function()
 			Tooltip.Text ..= string.format(invalidFormat, `\n<b>Restricted to {value.RestrictedToRole.name}</b>`)
 			for rank, roleData in _K.Data.rolesList do
 				local roleId = roleData._key
-				if (roleId == "vip" or roleData.gamepasses) and _K.Auth.roleCanUseCommand(roleId, value) then
+				if
+					((roleId == "vip" and _K.Data.settings.vip) or roleData.gamepasses)
+					and _K.Auth.roleCanUseCommand(roleId, value)
+				then
 					suggestionPurchase.role = roleId
-					suggestionPurchase.gamepass = if roleId == "vip" then 5411126 else roleData.gamepasses[1]
+					suggestionPurchase.gamepass = if (roleId == "vip" and _K.Data.settings.vip)
+						then 5411126
+						else roleData.gamepasses[1]
+					if not suggestionPurchase.gamepass then
+						continue
+					end
 					suggestionPurchaseButton._instance.Parent = TooltipFrame
 					suggestionPurchaseButton.Label(
 						`<b>Unlock <font color="{roleData.color}">{roleData.name or roleId}</font> Commands</b>`
