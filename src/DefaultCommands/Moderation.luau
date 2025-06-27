@@ -860,15 +860,89 @@ return {
 		envClient = function(_K)
 			local UI = _K.UI
 
+			local env = {
+				command = UI.state("give"),
+				removeCommand = UI.state("removetools"),
+				target = UI.state(nil),
+			}
+
+			local function hasCommand()
+				_K.client.rank()
+				local command = _K.Registry.commands[env.command()]
+				return command and command.LocalPlayerAuthorized
+			end
+
+			local function hasTarget()
+				return env.target() ~= nil
+			end
+
+			local function itemSize()
+				return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset)
+			end
+
+			local function scrollerItemSize()
+				return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
+			end
+
 			local scroller = UI.new "ScrollerFast" {
 				List = {},
 				Enabled = true,
 				FilterInput = true,
-				ReverseOrder = true,
 				Visible = true,
-				ItemSize = function()
-					return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset)
+				CreateItem = function(self)
+					local item
+					item = UI.new "ListItem" {
+						ContentAutomaticSize = false,
+						Size = itemSize,
+
+						UI.new "Button" {
+							AnchorPoint = Vector2.new(1, 0),
+							Icon = UI.Theme.Image.Add,
+							IconRightAlign = true,
+							IconProperties = {
+								Size = UDim2.fromScale(0.625, 0.625),
+							},
+							Position = UDim2.new(1, 0),
+							Size = UDim2.new(1, 0, 1, 0),
+							SizeConstraint = Enum.SizeConstraint.RelativeYY,
+							Visible = hasCommand,
+
+							Activated = function()
+								local cmd = `{_K.getCommandPrefix()}{env.command._value} me {item.tool}`
+								_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
+							end,
+						},
+
+						UI.new "Button" {
+							AnchorPoint = Vector2.new(1, 0),
+							Icon = UI.Theme.Image.Close_Bold,
+							IconRightAlign = true,
+							IconProperties = {
+								Size = UDim2.fromScale(0.5, 0.5),
+							},
+							Position = UDim2.new(1, 0),
+							Size = UDim2.new(1, 0, 1, 0),
+							SizeConstraint = Enum.SizeConstraint.RelativeYY,
+							Visible = hasTarget,
+
+							Activated = function()
+								if env.target._value then
+									_K.Remote.RemoveTool:FireServer(env.target._value, item.tool)
+									-- TODO: refresh list
+								end
+							end,
+						},
+					}
+					item._content.AutomaticSize = Enum.AutomaticSize.None
+					item._content.Size = UDim2.new()
+
+					return item
 				end,
+				RenderItem = function(self, item, tool)
+					item.tool = tool
+					item.Text(if tool == "all" then "all (Everything)" else tool)
+				end,
+				ItemSize = scrollerItemSize,
 			}
 
 			UI.edit(scroller._scroller, {
@@ -886,17 +960,71 @@ return {
 				},
 			})
 
-			return {
-				scroller = scroller,
-				window = UI.new "Window" {
-					Parent = UI.LayerTopInset,
-					Title = "Kohl's Admin Tools",
-					Exitable = true,
-					Position = UDim2.new(0.5, -128, 0.5, -128),
-					Size = UDim2.new(0, 256, 0, 256),
+			task.defer(function()
+				UI.new "Button" {
+					Parent = scroller,
+					Label = "<b>Remove all tools</b>",
+					LayoutOrder = 9,
+					Icon = UI.Theme.Image.Close_Bold,
+					IconProperties = {
+						ImageColor3 = UI.Theme.PrimaryText,
+						Size = UDim2.fromScale(0.5, 0.5),
+					},
+					IconRightAlign = true,
+					Size = scrollerItemSize,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					Visible = function()
+						_K.client.rank()
+						local command = _K.Registry.commands[env.removeCommand()]
+						return command and command.LocalPlayerAuthorized
+					end,
 
-					scroller,
-				},
+					Activated = function()
+						local cmd =
+							`{_K.getCommandPrefix()}{env.removeCommand._value} {env.target._value and env.target._value.Name or "me"}`
+						_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
+					end,
+				}
+			end)
+
+			env.scroller = scroller
+			env.window = UI.new "Window" {
+				Parent = UI.LayerTopInset,
+				Title = "Tools",
+				Exitable = true,
+				Position = UDim2.new(0.5, -128, 0.5, -128),
+				Size = UDim2.new(0, 256, 0, 256),
+
+				scroller,
+			}
+
+			return env
+		end,
+		env = function(_K)
+			local remote = _K.Remote.RemoveTool
+			remote.OnServerEvent:Connect(function(player: Player, target: Player, toolName: string)
+				if _K.Auth.hasCommand(player.UserId, "removetools") then
+					local removed
+					for _, source in { target.Character, target:FindFirstChildOfClass("Backpack") } do
+						if not source then
+							continue
+						end
+						for _, tool in source:GetChildren() do
+							if (tool:IsA("Tool") or tool:IsA("HopperBin")) and tool.Name == toolName then
+								task.spawn(game.Destroy, tool)
+								removed = true
+								break
+							end
+						end
+					end
+					if removed then
+						_K.log(`Removed "{toolName}" tool from {target.Name}`, "COMMAND", player.UserId)
+					end
+				end
+			end)
+
+			return {
+				remote = remote,
 			}
 		end,
 		runClient = function(context, player)
@@ -904,16 +1032,20 @@ return {
 				context._K.Notify({ Text = `No tools found!` })
 				return
 			end
+
 			local toolNames = {}
 			for _, tool in context._K.tools do
-				if tool.Name == "all" or table.find(toolNames, tool.Name) then
+				if table.find(toolNames, tool.Name) then
 					continue
 				end
 				table.insert(toolNames, tool.Name)
 			end
-			table.sort(toolNames)
 
+			context.env.command("give")
+			context.env.removeCommand("removetools")
+			context.env.target(nil)
 			context.env.scroller.List(toolNames)
+			context.env.window.Title("Tools")
 			context.env.window._instance.Visible = true
 		end,
 	},
@@ -922,54 +1054,13 @@ return {
 		aliases = { "starttools", "stools" },
 		description = "Views all tools in the StarterPack.",
 
-		envClient = function(_K)
-			local UI = _K.UI
-
-			local scroller = UI.new "ScrollerFast" {
-				List = {},
-				Enabled = true,
-				FilterInput = true,
-				ReverseOrder = true,
-				Visible = true,
-				ItemSize = function()
-					return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset)
-				end,
-			}
-
-			UI.edit(scroller._scroller, {
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
-			})
-
-			UI.edit(scroller._instance, {
-				UI.new "UIPadding" {
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
-				},
-			})
-
-			return {
-				scroller = scroller,
-				window = UI.new "Window" {
-					Parent = UI.LayerTopInset,
-					Title = "Starter Tools",
-					Exitable = true,
-					Position = UDim2.new(0.5, -128, 0.5, -128),
-					Size = UDim2.new(0, 256, 0, 256),
-
-					scroller,
-				},
-			}
-		end,
 		runClient = function(context, player)
 			local tools = context._K.Service.StarterPack:GetChildren()
-			if #tools <= 1 then
+			if #tools == 0 then
 				context._K.Notify({ Text = `No starter tools found!` })
 				return
 			end
+
 			local toolNames = {}
 			for _, tool in tools do
 				if tool:IsA("Tool") or tool:IsA("HopperBin") then
@@ -978,8 +1069,13 @@ return {
 			end
 			table.sort(toolNames)
 
-			context.env.scroller.List(toolNames)
-			context.env.window._instance.Visible = true
+			local toolsEnv = context._K.Registry.commands.tools.env
+			toolsEnv.command("startergive")
+			toolsEnv.removeCommand("starterremove")
+			toolsEnv.env.target(nil)
+			toolsEnv.scroller.List(toolNames)
+			toolsEnv.window.Title("Starter Tools")
+			toolsEnv.window._instance.Visible = true
 		end,
 	},
 	{
@@ -994,72 +1090,78 @@ return {
 			},
 		},
 		envClient = function(_K)
-			local UI = _K.UI
-
-			local scroller = UI.new "ScrollerFast" {
-				List = {},
-				Enabled = true,
-				FilterInput = true,
-				ReverseOrder = true,
-				Visible = true,
-				ItemSize = function()
-					return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset)
-				end,
+			local env = {
+				connections = {},
+				target = nil,
 			}
 
-			UI.edit(scroller._scroller, {
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
-			})
+			function env.createConnections(player)
+				env.removeConnections()
+				env.target = player
+				env.updateTools(player)
+				for _, source in { player.Character, player:FindFirstChildOfClass("Backpack") } do
+					table.insert(env.connections, source.ChildAdded:Connect(env.childChanged))
+					table.insert(env.connections, source.ChildRemoved:Connect(env.childChanged))
+					table.insert(env.connections, player.Destroying:Once(env.removeConnections))
+					table.insert(
+						env.connections,
+						player.CharacterAdded:Once(function(character)
+							local player = env.createConnections(_K.Service.Players:GetPlayerFromCharacter(character))
+						end)
+					)
+					table.insert(
+						env.connections,
+						_K.Registry.commands.tools.env.window.Title:Connect(env.removeConnections)
+					)
+				end
+			end
 
-			UI.edit(scroller._instance, {
-				UI.new "UIPadding" {
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
-				},
-			})
+			function env.removeConnections()
+				_K.Flux.cleanup(env.connections)
+				env.target = nil
+			end
 
-			return {
-				scroller = scroller,
-				window = UI.new "Window" {
-					Parent = UI.LayerTopInset,
-					Title = "Kohl's Admin Tools",
-					Exitable = true,
-					Position = UDim2.new(0.5, -128, 0.5, -128),
-					Size = UDim2.new(0, 256, 0, 256),
-
-					scroller,
-				},
-
-				addTools = function(source: Instance, tools)
-					if not source then
-						return
-					end
+			function env.updateTools(player)
+				local toolNames = {}
+				for _, source in { player.Character, player:FindFirstChildOfClass("Backpack") } do
 					for _, tool in source:GetChildren() do
-						if (tool:IsA("Tool") or tool:IsA("HopperBin")) and not table.find(tools, tool.Name) then
-							table.insert(tools, tool.Name)
+						if (tool:IsA("Tool") or tool:IsA("HopperBin")) and not table.find(toolNames, tool.Name) then
+							table.insert(toolNames, tool.Name)
 						end
 					end
-				end,
-			}
+				end
+
+				if #toolNames > 0 then
+					table.sort(toolNames)
+				end
+
+				_K.Registry.commands.tools.env.scroller.List(toolNames)
+
+				return #toolNames > 0
+			end
+
+			function env.childChanged(child)
+				if child:IsA("Tool") or child:IsA("HopperBin") then
+					env.updateTools(env.target)
+				end
+			end
+
+			return env
 		end,
 
-		runClient = function(context, player)
-			local toolNames = {}
-			context.env.addTools(player:FindFirstChildOfClass("Backpack"), toolNames)
-			context.env.addTools(player.Character, toolNames)
-			if #toolNames == 0 then
-				context._K.Notify({ Text = `No tools found!` })
-				return
-			end
-			table.sort(toolNames)
+		runClient = function(context, player: Player)
+			if context.env.updateTools(player) then
+				local toolsEnv = context._K.Registry.commands.tools.env
+				toolsEnv.command("give")
+				toolsEnv.removeCommand("removetools")
+				toolsEnv.target(player)
+				toolsEnv.window.Title(player.Name .. "'s Tools", true)
+				toolsEnv.window._instance.Visible = true
 
-			context.env.scroller.List(toolNames)
-			context.env.window.Title(player.Name .. "'s Tools")
-			context.env.window._instance.Visible = true
+				context.env.createConnections(player)
+			else
+				context._K.Notify({ Text = `No tools found for <b>{player.Name}</b>!` })
+			end
 		end,
 	},
 	{
