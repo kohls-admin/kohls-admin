@@ -685,7 +685,7 @@ function About.new(_K)
 		updateTitleLabel(
 			vipButtonDeveloper,
 			"VIP",
-			`  <font transparency="0.75"><stroke thickness="1" transparency="0.75">(Game)</font>`
+			`  <font transparency="0.75"><stroke thickness="1" transparency="0.75">(Game)</stroke></font>`
 		)
 
 		task.defer(updatePassPriceText, vipButtonGlobal._content.Price, vipGlobalPassId, `<b>SHOW</b>`)
