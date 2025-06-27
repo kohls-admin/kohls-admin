@@ -250,7 +250,9 @@ function ScrollerFast:sort(sortFunction: (...any) -> any)
 	self._sortFunction = sortFunction
 	if self._instance.Visible then
 		if sortFunction then
-			table.sort(self._sortedList, sortFunction)
+			if self._sortedList then
+				table.sort(self._sortedList, sortFunction)
+			end
 		else -- unsort
 			self:cloneRaw()
 		end
