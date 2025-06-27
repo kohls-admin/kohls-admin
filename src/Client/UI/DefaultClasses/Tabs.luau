@@ -23,7 +23,7 @@ function Tabs.new(definition)
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 		Position = UI.tween(function()
-			return UDim2.new(0, tabOffset, 0, 0)
+			return UDim2.new(0, tabOffset(), 0, 0)
 		end, UI.Theme.TweenOut),
 
 		tabList,
