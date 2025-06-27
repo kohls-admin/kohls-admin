@@ -164,12 +164,10 @@ function Tooltip.new(definition)
 
 	new._instance = UI.new "Folder" {
 		Name = "TooltipReference",
-	}
 
-	UI.edit(new._instance, {
 		[UI.Clean] = {
-			hovering,
-			hovering:Connect(hover),
+			hoverState = hovering,
+			hoverDisconnect = hovering:Connect(hover),
 			new.Visible:Connect(function(visible)
 				if visible then
 					updateTooltip(true, Adornee, new)
@@ -177,17 +175,20 @@ function Tooltip.new(definition)
 					updateTooltip(false)
 				end
 			end),
-			new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
-				local newParent = new._instance.Parent
-				if newParent and newParent ~= UI.LayerTop then
-					updateAdornee(newParent)
-				end
-			end),
 			UI.UserInputService.TouchMoved:Connect(function()
 				hovering(false)
 			end),
 		},
-	})
+
+		[UI.Event] = {
+			Parent = function()
+				local newParent = new._instance.Parent
+				if newParent and newParent ~= UI.LayerTop then
+					updateAdornee(newParent)
+				end
+			end,
+		},
+	}
 
 	return setmetatable(new, Tooltip)
 end
