@@ -306,6 +306,7 @@ function Settings.new(_K)
 		end
 
 		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updateSliderSize)
+		settingsScroller._instance:GetPropertyChangedSignal("CanvasPosition"):Connect(updateSliderSize)
 
 		local lastSelected
 		local lastSelectedY = 0
