@@ -47,11 +47,10 @@ return function(context)
 
 	if _K.IsServer then
 		local function sortName(a, b)
-			return a.Name > b.Name
+			return a.Name < b.Name
 		end
-		local debounceSort = _K.Util.Function.debounce(0.2, function()
-			table.sort(tools, sortName)
-		end)
+
+		local debounceSort = _K.Util.Function.debounce(0.2, table.sort)
 
 		local function shouldIgnore(object)
 			if object == nil then
@@ -73,7 +72,7 @@ return function(context)
 				end
 			end
 			table.insert(tools, tool)
-			debounceSort()
+			debounceSort(tools, sortName)
 		end
 
 		local function registerSource(source)
