@@ -31,13 +31,16 @@ function ListItem.new(definition)
 	}
 
 	local labelSize = UI.state(new._label, "AbsoluteSize")
+	local automaticSize = function()
+		return new.ContentAutomaticSize() and Enum.AutomaticSize.Y or Enum.AutomaticSize.None
+	end
 
 	new._content = UI.new "Frame" {
 		Name = "UIContent",
 		AnchorPoint = Vector2.new(1, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
+		AutomaticSize = automaticSize,
 		Size = function()
-			return UDim2.new(1, -labelSize().X - UI.Theme.Padding().Offset, 0, 0)
+			return UDim2.new(1, -labelSize().X - UI.Theme.Padding().Offset, new.ContentAutomaticSize() and 0 or 1, 0)
 		end,
 		Position = UDim2.new(1, 0, 0, 0),
 		BackgroundTransparency = 1,
@@ -62,9 +65,11 @@ function ListItem.new(definition)
 
 	new._instance = UI.new "Frame" {
 		Name = new.Text._value,
-		AutomaticSize = Enum.AutomaticSize.Y,
+		AutomaticSize = automaticSize,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 0),
+		Size = function()
+			return UDim2.new(1, 0, 0, new.ContentAutomaticSize() and 0 or labelSize().Y + UI.Theme.Padding().Offset)
+		end,
 		new._label,
 		new._content,
 	}
