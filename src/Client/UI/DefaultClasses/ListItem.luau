@@ -7,7 +7,7 @@ setmetatable(ListItem, BaseClass)
 
 function ListItem.new(definition)
 	local new = UI.makeStatefulDefaults({
-		Text = "ListItem Label",
+		Text = "ListItem",
 		ContentAutomaticSize = true,
 		ContentListLayout = true,
 	}, definition)
@@ -16,18 +16,17 @@ function ListItem.new(definition)
 		AutoLocalize = false,
 		AutomaticSize = Enum.AutomaticSize.XY,
 		AnchorPoint = Vector2.new(0, 0.5),
-		Text = new.Text,
-		Size = UDim2.new(0, 0, 0, 0),
+		BackgroundTransparency = 1,
 		Position = UDim2.fromScale(0, 0.5),
-		TextXAlignment = Enum.TextXAlignment.Left,
-		RichText = true,
+		Size = UDim2.new(0, 0, 0, 0),
 		Font = UI.Theme.Font,
-		TextSize = UI.Theme.FontSize,
+		RichText = true,
+		Text = new.Text,
 		TextColor3 = UI.Theme.PrimaryText,
+		TextSize = UI.Theme.FontSize,
 		TextStrokeColor3 = UI.Theme.Primary,
 		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-		TextTruncate = Enum.TextTruncate.SplitWord,
-		BackgroundTransparency = 1,
+		TextXAlignment = Enum.TextXAlignment.Left,
 	}
 
 	local labelSize = UI.state(new._label, "AbsoluteSize")
