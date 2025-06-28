@@ -103,6 +103,8 @@ return function(_K, text, cursorPosition)
 				table.move(invalidSuggestions, 1, #invalidSuggestions, #data.suggestions + 1, data.suggestions)
 			end
 
+			data.commandDefinition = commandDefinition or data.suggestions[1][3]
+
 			if commandDefinition then
 				if commandDefinition.LocalPlayerAuthorized then
 					local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)

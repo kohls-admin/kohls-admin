@@ -641,6 +641,23 @@ updateCompletion = function()
 		startIndex, endIndex = 1, #suggestion
 	end
 
+	if
+		not invalid
+		and data.commandDefinition
+		and data.commandDefinition.args
+		and not string.find(postCompletion, "%S")
+	then
+		local buffer = {}
+		for i = data.argIndex, #data.commandDefinition.args do
+			local v = data.commandDefinition.args[i]
+			table.insert(buffer, `{v.name}{if v.optional then "?" else ""}`)
+		end
+		if #buffer > 0 then
+			local inlineArgSuggestions = table.concat(buffer, " ")
+			suggestion = `{suggestion} {inlineArgSuggestions}`
+		end
+	end
+
 	Input.DisplayText(
 		string.format(
 			if invalid then invalidInlineFormat else inlineFormat,
@@ -649,7 +666,8 @@ updateCompletion = function()
 			_K.Util.String.escapeRichText(data.rawQuery or data.query),
 			_K.Util.String.escapeRichText(string.sub(suggestion, endIndex + 1)),
 			_K.Util.String.escapeRichText(postCompletion)
-		)
+		),
+		true
 	)
 
 	if data.argDefinition or data.argIndex == 1 then
