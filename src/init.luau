@@ -103,6 +103,9 @@ task.spawn(function()
 	_K.Data.creatorId = _K.creatorId
 
 	if _K.IsServer then
+		while not _K.Data.roles do
+			task.wait()
+		end
 		_K.Auth.userRoleAdd(_K.creatorId, "creator")
 	end
 end)
@@ -286,9 +289,9 @@ local function playerAdded(player: Player)
 		task.spawn(welcomeBadge, player.UserId)
 	end
 
-	repeat
+	while not _K.Data.roles do
 		task.wait()
-	until _K.Data.roles
+	end
 
 	task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
 
