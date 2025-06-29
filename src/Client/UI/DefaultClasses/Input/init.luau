@@ -208,8 +208,6 @@ function Input.new(definition)
 
 	if new.HotkeyInput._value then
 		new._input.Focused:Connect(function()
-			table.clear(new.Modifiers._value)
-			new.Selected("")
 			new.Value("")
 		end)
 		UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -217,20 +215,23 @@ function Input.new(definition)
 				return
 			end
 			if input.UserInputType == Enum.UserInputType.Keyboard then
-				local mods = new.Modifiers._value
+				local mods = {}
+				mods.Ctrl = input:IsModifierKeyDown(Enum.ModifierKey.Ctrl)
 				mods.Shift = input:IsModifierKeyDown(Enum.ModifierKey.Shift)
 				mods.Alt = input:IsModifierKeyDown(Enum.ModifierKey.Alt)
+				mods.Meta = input:IsModifierKeyDown(Enum.ModifierKey.Meta)
 
-				local hotkeyText = `{mods.Shift and "Shift+" or ""}{mods.Alt and "Alt+" or ""}`
+				local hotkeyText =
+					`{mods.Ctrl and "Ctrl+" or ""}{mods.Shift and "Shift+" or ""}{mods.Alt and "Alt+" or ""}{mods.Meta and "Meta+" or ""}`
 				if table.find(MODIFIERS, input.KeyCode) then
-					new.Selected(hotkeyText)
 					new.Value(hotkeyText)
 					return
 				end
 
-				new.Selected(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
-				new.Value(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
 				new.Hotkey(input.KeyCode)
+				new.Modifiers(mods)
+				new.Selected(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode), true)
+				new.Value(new.Selected._value, true)
 				new._input:ReleaseFocus(true)
 			end
 		end)

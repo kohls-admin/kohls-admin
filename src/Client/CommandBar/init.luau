@@ -757,7 +757,8 @@ return {
 		prefix = _K.getCommandPrefix()
 		Input.Value(prefix, true)
 		CommandBar.Parent = UI.TopbarFrame
-		_K.client.hotkeys.commandBar = { key = UI.state(Enum.KeyCode.Semicolon), mods = {}, callback = self.show }
+		_K.client.hotkeys.commandBar =
+			{ key = UI.state(Enum.KeyCode.Semicolon), mods = UI.state({}), callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
 
 		local function updatePrefix()

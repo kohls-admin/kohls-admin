@@ -18,7 +18,7 @@ _K.client = {
 
 	ready = false,
 	hotkeys = {
-		dashboard = { key = _K.Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
+		dashboard = { key = UI.state(Enum.KeyCode.Quote), mods = UI.state({}), callback = nil },
 	},
 	settings = {},
 
@@ -142,7 +142,7 @@ _K.Service.UserInput.InputBegan:Connect(function(input, gameProcessedEvent)
 				local missingMod = false
 				for _, modifierKey in Enum.ModifierKey:GetEnumItems() do
 					local isDown = input:IsModifierKeyDown(modifierKey)
-					if isDown == not data.mods[modifierKey] then
+					if isDown == not data.mods._value[modifierKey.Name] then
 						missingMod = true
 						break
 					end
