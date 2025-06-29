@@ -1,5 +1,8 @@
+local ContentProvider = game:GetService("ContentProvider")
+
 local Flux = require(script.Parent.Parent.Parent:WaitForChild("Flux"))
-local Default = require(script:WaitForChild("Themes"):WaitForChild("Default"))
+local ThemesFolder = script:WaitForChild("Themes")
+local Default = require(ThemesFolder:WaitForChild("Default"))
 
 local compute = Flux.compute
 local state = Flux.state
@@ -40,10 +43,35 @@ local state = Flux.state
 --- .Volume State<number>
 local Theme = Default
 
--- import values from default studio theme
-for key, value in Default do
-	Theme[key] = value
+local themes = {}
+for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
+	if themeModule:IsA("ModuleScript") then
+		if themes[themeModule.Name] then
+			warn("Duplicate theme found, make sure they have different names!")
+		end
+		local theme = require(themeModule)
+		local content = {}
+		for _, definition in { theme.Image, theme.Sound } do
+			for key, value in definition do
+				definition[key] = "rbxassetid://" .. value
+				table.insert(content, definition[key])
+			end
+		end
+		if themeModule.Name == "Default" then
+			-- clone the default theme to not use overwritten values
+			local default = {}
+			for key, value in theme do
+				default[key] = if type(value) == "table" then table.clone(value) else value
+			end
+			themes[themeModule.Name] = default
+		else
+			themes[themeModule.Name] = theme
+		end
+
+		task.spawn(ContentProvider.PreloadAsync, ContentProvider, content)
+	end
 end
+Theme.Themes = themes
 
 local function makeStateful(source: { [string]: any })
 	for key, value in source do

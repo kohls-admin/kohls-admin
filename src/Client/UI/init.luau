@@ -10,25 +10,22 @@ local state = Flux.state
 
 local playerGui = Players.LocalPlayer and Players.LocalPlayer:WaitForChild("PlayerGui")
 
--- TODO: allow a way to easily override builtin theme binds with a new compute or whatever!
-
 --- @class UI
 local UI = { Class = {} }
 UI.__index = UI
 setmetatable(UI, Flux)
 
 UI.Theme = require(script.Theme)
+UI.Themes = UI.Theme.Themes
 UI.Sound = {}
 
-local SoundGroup = Instance.new("SoundGroup")
-SoundGroup.Name = "_KASounds"
-SoundGroup.Parent = SoundService
-
-Flux.edit(SoundGroup, {
-	Volume = Flux.compute(function()
+local SoundGroup = Flux.new "SoundGroup" {
+	Parent = SoundService,
+	Name = "_KASounds",
+	Volume = function()
 		return if UI.Theme.SoundEnabled() then UI.Theme.Volume() else 0
-	end),
-})
+	end,
+}
 
 for key, soundIdState in UI.Theme.Sound do
 	UI.Sound[key] = Flux.new "Sound" {

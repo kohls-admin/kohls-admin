@@ -21,42 +21,7 @@ _K.client = {
 		dashboard = { key = _K.Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
 	},
 	settings = {},
-	themes = UI.state({}),
 }
-
--- Initialize themes
-local themeFolder = script:WaitForChild("UI"):WaitForChild("Theme"):WaitForChild("Themes")
-for _, themeModule: ModuleScript in themeFolder:GetChildren() do
-	if themeModule:IsA("ModuleScript") then
-		if _K.client.themes._value[themeModule.Name] then
-			warn("[Kohl's Admin]: Duplicate theme found! Make sure they have different names.")
-		end
-		local theme = require(themeModule)
-		local content = {}
-		for _, definition in { theme.Image, theme.Sound } do
-			for key, value in definition do
-				if UI.isState(definition[key]) then
-					definition[key]("rbxassetid://" .. UI.raw(value))
-				else
-					definition[key] = "rbxassetid://" .. UI.raw(value)
-				end
-			end
-		end
-		if themeModule.Name == "Default" then
-			-- clone the default theme to allow for intellisense without overwriting the values
-			local default = {}
-			for key, value in theme do
-				default[key] = if type(value) == "table" then table.clone(value) else value
-			end
-			_K.client.themes._value[themeModule.Name] = default
-		else
-			_K.client.themes._value[themeModule.Name] = theme
-		end
-
-		task.spawn(_K.Service.ContentProvider.PreloadAsync, _K.Service.ContentProvider, content)
-	end
-end
-_K.client.themes(_K.client.themes._value, true)
 
 local function deepMergeTheme(from, to, prefix: string?)
 	for key, value in from do
@@ -87,7 +52,7 @@ for key, value in _K.Data.settings do
 	-- UI.Theme connection to theme settings
 	if key == "defaultTheme" then
 		state:Connect(function(value)
-			local theme = _K.client.themes._value[value]
+			local theme = UI.Themes[value]
 			if theme then
 				UI.changeTheme(theme)
 			end

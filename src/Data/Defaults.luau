@@ -112,6 +112,9 @@ end
 
 -- UI Theme initial settings
 for key, state in Theme do
+	if key == "Themes" then
+		continue
+	end
 	if state._value ~= nil then
 		Data.settings["theme" .. key] = state._value
 	end

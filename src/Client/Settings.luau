@@ -57,7 +57,7 @@ function Settings.new(_K)
 		end
 
 		local theme = _K.Data.settings.defaultTheme
-		local themeModule = _K.client.themes._value[theme]
+		local themeModule = UI.Themes[theme]
 
 		local different = false
 		local differentTheme = false
@@ -80,7 +80,7 @@ function Settings.new(_K)
 				change("defaultTheme", newTheme)
 			end
 		elseif key == "defaultTheme" then
-			themeModule = _K.client.themes._value[value]
+			themeModule = UI.Themes[value]
 			if themeModule then
 				_K.Data.settings.defaultTheme = value
 				-- FIX: update images and sounds
@@ -200,7 +200,7 @@ function Settings.new(_K)
 		-- Theme select
 		local themeList = UI.compute(function()
 			local themes = {}
-			for key in _K.client.themes() do
+			for key in UI.Themes do
 				table.insert(themes, key)
 			end
 			table.sort(themes)
