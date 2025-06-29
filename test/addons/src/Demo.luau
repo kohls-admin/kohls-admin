@@ -4,6 +4,7 @@ return function(_K)
 		table.insert(_K.Data.settings.freeAdmin, "admin")
 		_K.Util.Table.merge(_K.Data.roles.admin.commands, {
 			serverlock = false,
+			btools = true,
 		})
 	end
 end
