@@ -4,9 +4,7 @@ local RunService = game:GetService("RunService")
 local Util = require(script.Parent.Parent.Util)
 
 local Store = {
-	dataStore = nil,
-} :: {
-	dataStore: DataStore?,
+	dataStore = nil :: DataStore?,
 }
 
 function Store.getBudget(requestType: Enum.DataStoreRequestType)
