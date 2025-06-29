@@ -395,9 +395,22 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 	_K.Data.bans = table.clone(settings.bans)
 	_K.Data.roles = table.clone(settings.roles)
+
+	local ignoredSettings = {
+		bans = true,
+		userRoles = true,
+		assetRoles = true,
+		gamepassRoles = true,
+		subscriptionRoles = true,
+		groupRoles = true,
+		friendRoles = true,
+		commands = true,
+		roles = true,
+	}
 	for key, value in settings do
-		if _K.Data.settings[key] ~= nil then
-			_K.Data.settings[key] = value
+		if not ignoredSettings[key] then
+			_K.Data.settingsDefault[key] = value
+			_K.Data.settings[key] = if type(value) == "table" then table.clone(value) else value
 		end
 	end
 
@@ -615,10 +628,13 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 			else {
 				[tostring(player.UserId)] = _K.Data.members[tostring(player.UserId)],
 			}
+		local roles = _K.Data.roles
 		local servers = (_K.Auth.hasCommand(player.UserId, "place") or _K.Auth.hasCommand(player.UserId, "unreserve"))
 			and _K.Data.reservedServers
+		local settings = _K.Data.settings
+		local settingsDefault = _K.Data.settingsDefault
 
-		_K.Remote.Init:FireClient(player, bans, logs, members, _K.Data.roles, _K.Data.settings, servers)
+		_K.Remote.Init:FireClient(player, bans, logs, members, roles, servers, settings, settingsDefault)
 		player:SetAttribute("_K_READY", true)
 
 		if

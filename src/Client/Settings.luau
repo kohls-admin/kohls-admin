@@ -49,7 +49,7 @@ function Settings.new(_K)
 
 		if originalValues[key] == value then
 			pendingChanges[key] = nil
-		else
+		elseif _K.Data.settings[key] ~= value then
 			pendingChanges[key] = value
 			if not originalValues[key] then
 				originalValues[key] = _K.Data.settings[key]
@@ -96,9 +96,32 @@ function Settings.new(_K)
 		end
 	end
 
+	local ignoredDefaultSettings = {
+		announcement = true,
+		announcements = true,
+		notifications = true,
+		freeAdmin = true,
+		prefix = true,
+	}
+
 	local settingsScroller = UI.new "Scroller" {
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
+		},
+		UI.new "Button" {
+			LayoutOrder = 2 ^ 31 - 1,
+			Label = "Restore Default Settings",
+
+			Activated = function()
+				for k, v in _K.Data.defaultSettings do
+					if not ignoredDefaultSettings[k] then
+						change(k, v)
+						if _K.client.settings[k] then
+							_K.client.settings[k](v)
+						end
+					end
+				end
+			end,
 		},
 	}
 

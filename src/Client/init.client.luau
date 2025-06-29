@@ -46,29 +46,6 @@ function UI.changeTheme(new)
 	deepMergeTheme(new, UI.Theme, "theme")
 end
 
--- Flux stateful settings
-for key, value in _K.Data.settings do
-	local state = _K.Flux.state(value)
-	_K.client.settings[key] = state
-
-	-- UI.Theme connection to theme settings
-	if key == "defaultTheme" then
-		state:Connect(function(value)
-			local theme = UI.Themes[value]
-			if theme then
-				UI.changeTheme(theme)
-			end
-		end)
-	elseif string.find(key, "theme", 1, true) == 1 then
-		key = string.sub(key, 6)
-		if UI.Theme[key] then
-			state:Connect(function(value)
-				UI.Theme[key](value)
-			end)
-		end
-	end
-end
-
 function _K.client.syncSettings(settings)
 	for key, value in settings do
 		value = UI.raw(value)
@@ -181,7 +158,7 @@ end)
 
 -- initial remote connection
 
-_K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings, servers)
+_K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, settings, settingsDefault)
 	-- need to improve networking performance!
 	if bans then
 		_K.Util.Table.merge(_K.Data.bans, bans)
@@ -206,6 +183,43 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 	end
 
 	_K.client.playerPrefix = _K.Flux.state(settings.prefix[1])
+
+	local theme = UI.Themes[settingsDefault.defaultTheme]
+	if theme then
+		for key, state in theme do
+			if state._value ~= nil then
+				settingsDefault["theme" .. key] = state._value
+			end
+		end
+	end
+	_K.Data.defaultSettings = settingsDefault
+	_K.Util.Table.merge(_K.Data.settings, settingsDefault)
+
+	for key, value in _K.Data.settings do
+		local state
+		if string.find(key, "theme", 1, true) == 1 then
+			state = UI.Theme[string.sub(key, 6)]
+		end
+		state = state or _K.Flux.state(value)
+		_K.client.settings[key] = state
+
+		-- UI.Theme connection to theme settings
+		if key == "defaultTheme" then
+			state:Connect(function(value)
+				local theme = UI.Themes[value]
+				if theme then
+					UI.changeTheme(theme)
+				end
+			end)
+		elseif string.find(key, "theme", 1, true) == 1 then
+			key = string.sub(key, 6)
+			if UI.Theme[key] then
+				state:Connect(function(value)
+					UI.Theme[key](value)
+				end)
+			end
+		end
+	end
 
 	_K.client.syncSettings(settings)
 

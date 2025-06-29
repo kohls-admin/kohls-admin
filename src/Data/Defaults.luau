@@ -35,33 +35,9 @@ local Data = {
 	rolesList = {},
 
 	settingsModuleData = nil,
+	settingsDefault = {},
 	settings = {
 		liveSettings = true,
-
-		prefix = { ";", ":" },
-
-		chatCommands = true,
-		commandBarRank = 0,
-		dashboardRank = 0,
-		dashboardButtonRank = 0,
-		joinNotificationRank = 1,
-		onlyShowUsableCommands = false,
-		wrongPrefixWarning = true,
-		welcomeBadgeId = 0,
-		getKohlsAdminPopup = true,
-
-		changeThemeAuthority = "Client",
-		defaultTheme = "Default",
-
-		gameHubEnabled = true,
-		vip = true,
-		commandRequests = true,
-		saveLogs = true,
-
-		commands = {},
-		freeAdmin = {},
-		announcements = {},
-		notifications = {},
 
 		announcement = false,
 	},
