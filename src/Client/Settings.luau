@@ -42,7 +42,7 @@ function Settings.new(_K)
 		table.clear(pendingChanges)
 	end
 
-	local function change(key, value)
+	local function change(key, value, skipCustomCheck)
 		if not _K.client.ready then
 			return
 		end
@@ -61,42 +61,38 @@ function Settings.new(_K)
 
 		local different = false
 		local differentTheme = false
-		for key, value in pendingChanges do
-			if
-				themeModule
-				and string.find(key, "theme", 1, true) == 1
-				and UI.raw(themeModule[string.sub(key, 6)]) ~= value
-			then
+		for k, v in pendingChanges do
+			if themeModule and string.find(k, "theme", 1, true) == 1 and UI.raw(themeModule[string.sub(k, 6)]) ~= v then
 				differentTheme = true
 			end
-			if value ~= originalValues[key] and (key ~= "defaultTheme" or value ~= "Custom (DataStore)") then
+			if v ~= originalValues[k] then
 				different = true
 			end
 		end
 
-		if
-			string.find(key, "theme", 1, true) == 1
-			and theme ~= "Custom (DataStore)"
-			and pendingChanges.defaultTheme ~= theme
-		then
-			change("defaultTheme", if differentTheme then "Custom (DataStore)" else theme)
+		if settingsDialog then
+			settingsDialog._instance.Visible = different
+		end
+
+		if string.find(key, "theme", 1, true) == 1 and not skipCustomCheck then
+			local newTheme = if differentTheme then "Custom (DataStore)" else theme
+			if pendingChanges.defaultTheme ~= newTheme then
+				change("defaultTheme", newTheme)
+			end
 		elseif key == "defaultTheme" then
 			themeModule = _K.client.themes._value[value]
 			if themeModule then
+				_K.Data.settings.defaultTheme = value
 				-- FIX: update images and sounds
 				for key, value in themeModule do
 					local dataKey = "theme" .. key
 					local existing = _K.Data.settings[dataKey]
 					if existing ~= nil and existing ~= UI.raw(value) then
-						change(dataKey, UI.raw(value))
+						change(dataKey, UI.raw(value), true)
 					end
 				end
 			end
 			_K.client.settings.defaultTheme(value)
-		end
-
-		if settingsDialog then
-			settingsDialog._instance.Visible = different
 		end
 	end
 
