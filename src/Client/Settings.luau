@@ -145,6 +145,7 @@ function Settings.new(_K)
 			-- TODO: customizable listable/argument delimiter?
 			UI.new "ListItem" {
 				Text = "Command Bar Hotkey",
+				Tooltip = "The keyboard shortcut to open the command bar.",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
 					FontSize = UI.Theme.FontSize,
@@ -158,6 +159,7 @@ function Settings.new(_K)
 			},
 			UI.new "ListItem" {
 				Text = "Dashboard Hotkey",
+				Tooltip = "The keyboard shortcut to open the dashboard.",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
 					FontSize = UI.Theme.FontSize,
@@ -171,6 +173,7 @@ function Settings.new(_K)
 			},
 			UI.new "ListItem" {
 				Text = "Command Prefix",
+				Tooltip = "A custom character to trigger a command, only affects the client.",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
 					FontSize = UI.Theme.FontSize,
@@ -196,6 +199,7 @@ function Settings.new(_K)
 		General = {
 			UI.new "ListItem" {
 				Text = "Default Command Prefix",
+				Tooltip = "The character to trigger a command.",
 				UI.new "Input" {
 					Font = UI.Theme.FontMono,
 					FontSize = UI.Theme.FontSize,
@@ -237,6 +241,7 @@ function Settings.new(_K)
 			settingsLineItems.Theme,
 			UI.new "ListItem" {
 				Text = "Theme",
+				Tooltip = "Changes the theme of Kohl's Admin interfaces.",
 				UI.new "Select" {
 					Choice = function()
 						return _K.client.settings.theme()
@@ -267,6 +272,7 @@ function Settings.new(_K)
 				settingsLineItems.Theme,
 				UI.new "ListItem" {
 					Text = data.text,
+					Tooltip = data.tip,
 					UI.new "Switch" {
 						Value = UI.Theme[data.key],
 
@@ -276,11 +282,6 @@ function Settings.new(_K)
 							end,
 						},
 					},
-					if data.tip
-						then UI.new "Tooltip" {
-							Text = data.tip,
-						}
-						else nil,
 				}
 			)
 		end
