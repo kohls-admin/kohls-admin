@@ -1106,7 +1106,7 @@ return {
 					table.insert(
 						env.connections,
 						player.CharacterAdded:Once(function(character)
-							local player = env.createConnections(_K.Service.Players:GetPlayerFromCharacter(character))
+							env.createConnections(_K.Service.Players:GetPlayerFromCharacter(character))
 						end)
 					)
 					table.insert(
