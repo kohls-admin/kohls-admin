@@ -284,54 +284,6 @@ local function welcomeBadge(userId)
 	end
 end
 
-local function playerAdded(player: Player)
-	if (_K.Data.settings.welcomeBadgeId or 0) > 0 then
-		task.spawn(welcomeBadge, player.UserId)
-	end
-
-	while not _K.Data.roles do
-		task.wait()
-	end
-
-	task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
-
-	if _K.Auth.banHandler(player) then
-		return
-	end
-
-	for _, role in _K.Data.settings.freeAdmin do
-		_K.Auth.userRoleAdd(player.UserId, role)
-	end
-
-	-- group admin and gamepass roles
-	local success = _K.Auth.userAsyncRoles(player.UserId, true)
-	player:SetAttribute("_KRolesLoaded", success)
-
-	if _K._serverLock and _K.Auth.getRank(player.UserId) < 2 then
-		player:Kick(`Server has been locked by {_K._serverLock}`)
-		return
-	end
-
-	if player.Character then
-		task.spawn(characterAdded, player.Character)
-	end
-	player.CharacterAdded:Connect(characterAdded)
-	player.Chatted:Connect(function(message: string)
-		local emote = string.find(message, "/e", 1, true) == 1
-		local v = _K.Service.TextChat.ChatVersion
-		if
-			_K.Data.settings.chatCommands ~= false
-			and ((v == Enum.ChatVersion.TextChatService and emote) or v == Enum.ChatVersion.LegacyChatService)
-		then
-			_K.Remote.Command:FireClient(player, message)
-		end
-		if emote then
-			return
-		end
-		_K.log(_K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
-	end)
-end
-
 local _initialized
 function _K.initialize(config: Configuration | ModuleScript | { [string]: any }, oldAddonStructure: Folder?)
 	if _initialized then
@@ -746,9 +698,53 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		player:SetAttribute("_KIdleTime", idleTime)
 	end)
 
-	-- server hooks
+	_K.Util.SafePlayerAdded(function(player: Player)
+		if (_K.Data.settings.welcomeBadgeId or 0) > 0 then
+			task.spawn(welcomeBadge, player.UserId)
+		end
 
-	_K.Util.SafePlayerAdded(playerAdded)
+		while not _K.Data.roles do
+			task.wait()
+		end
+
+		task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
+
+		if _K.Auth.banHandler(player) then
+			return
+		end
+
+		for _, role in _K.Data.settings.freeAdmin do
+			_K.Auth.userRoleAdd(player.UserId, role)
+		end
+
+		-- group admin and gamepass roles
+		local success = _K.Auth.userAsyncRoles(player.UserId, true)
+		player:SetAttribute("_KRolesLoaded", success)
+
+		if _K._serverLock and _K.Auth.getRank(player.UserId) < 2 then
+			player:Kick(`Server has been locked by {_K._serverLock}`)
+			return
+		end
+
+		if player.Character then
+			task.spawn(characterAdded, player.Character)
+		end
+		player.CharacterAdded:Connect(characterAdded)
+		player.Chatted:Connect(function(message: string)
+			local emote = string.find(message, "/e", 1, true) == 1
+			local v = _K.Service.TextChat.ChatVersion
+			if
+				_K.Data.settings.chatCommands ~= false
+				and ((v == Enum.ChatVersion.TextChatService and emote) or v == Enum.ChatVersion.LegacyChatService)
+			then
+				_K.Remote.Command:FireClient(player, message)
+			end
+			if emote then
+				return
+			end
+			_K.log(_K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
+		end)
+	end)
 	_K.Service.Players.PlayerRemoving:Connect(function(player)
 		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId)
 	end)
