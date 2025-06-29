@@ -351,6 +351,8 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 	_K.Data.bans = table.clone(settings.bans)
 	_K.Data.roles = table.clone(settings.roles)
 
+	_K.Data.Migrate.Settings(settings)
+
 	local ignoredSettings = {
 		bans = true,
 		userRoles = true,

@@ -21,6 +21,8 @@ local Data = {
 	SEPARATE_DATASTORE = false,
 	REMOVE = table.freeze({}),
 
+	Migrate = {} :: any,
+
 	Cache = Cache,
 	creatorId = game.CreatorId,
 	bans = {},

@@ -20,6 +20,8 @@ local Hook = require(script.Parent.Hook)
 local Util = require(script.Parent.Util)
 local Remote = require(script.Parent.Remote)
 
+Data.Migrate = Migrate
+
 -- DataStore value limit of 4,194,303 bytes
 local DATA_LIMIT = 2 ^ 22 - 1
 
@@ -214,6 +216,8 @@ local function syncMain(result)
 		end
 	end
 
+	Migrate.Settings(settings)
+
 	-- settings sync
 	if type(settings.prefix) == "string" then
 		Data.settings.prefix[1] = settings.prefix
@@ -260,7 +264,7 @@ local function updateMain()
 		end
 
 		Data.mergeRemove(value[1], members)
-		Util.Table.merge(value[2], settings)
+		Data.mergeRemove(value[2], settings)
 
 		return value
 	end)
