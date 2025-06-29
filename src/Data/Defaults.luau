@@ -28,6 +28,7 @@ local Data = {
 	logFingerprints = {},
 	members = {},
 	players = {},
+	playerPrefix = {},
 	reservedServers = {},
 	targetLimits = {},
 	roles = nil,
@@ -63,7 +64,6 @@ local Data = {
 		notifications = {},
 
 		announcement = false,
-		playerPrefix = {},
 	},
 
 	async = {

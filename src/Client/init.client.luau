@@ -21,6 +21,8 @@ _K.client = {
 		dashboard = { key = _K.Flux.state(Enum.KeyCode.Quote), mods = {}, callback = nil },
 	},
 	settings = {},
+
+	playerPrefix = ";",
 }
 
 local function deepMergeTheme(from, to, prefix: string?)
@@ -202,6 +204,8 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, settings,
 	for role, roleData in roles do
 		_K.Data.rolesList[roleData._rank] = roleData
 	end
+
+	_K.client.playerPrefix = _K.Flux.state(settings.prefix[1])
 
 	_K.client.syncSettings(settings)
 

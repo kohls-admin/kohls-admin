@@ -150,8 +150,7 @@ function Settings.new(_K)
 					Placeholder = ";",
 					MaxChars = 1,
 					Value = function()
-						return _K.client.settings.playerPrefix()[_K.LocalPlayer.UserId]
-							or _K.client.settings.prefix()[1]
+						return _K.client.playerPrefix() or _K.client.settings.prefix()[1]
 					end,
 					Validate = function(text)
 						return not (text == "" or table.find(reservedPrefixes, text))
@@ -159,8 +158,7 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Selected = function(value)
-							_K.Data.settings.playerPrefix[_K.LocalPlayer.UserId] = value
-							_K.client.settings.playerPrefix(_K.Data.settings.playerPrefix, true)
+							_K.client.playerPrefix(value, true)
 							_K.Remote.PlayerPrefix:FireServer(value)
 						end,
 					},

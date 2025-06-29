@@ -767,7 +767,7 @@ return {
 			Input.Value(value .. string.sub(Input._input.Text, #oldPrefix + 1), true)
 		end
 		_K.client.settings.prefix:Connect(updatePrefix)
-		_K.client.settings.playerPrefix:Connect(updatePrefix)
+		_K.client.playerPrefix:Connect(updatePrefix)
 
 		TooltipFrame.MouseWheelForward:Connect(suggestionUp)
 		TooltipFrame.MouseWheelBackward:Connect(suggestionDown)
