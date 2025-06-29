@@ -50,8 +50,9 @@ function _K.client.syncSettings(settings)
 	for key, value in settings do
 		value = UI.raw(value)
 		if
-			string.find(key, "theme", 1, true) == 1
-			and (_K.Data.settings.changeThemeAuthority == "Studio" or settings.defaultTheme ~= "Custom (DataStore)")
+			key ~= "theme"
+			and string.find(key, "theme", 1, true) == 1
+			and (_K.Data.settings.changeThemeAuthority == "Studio" or settings.theme ~= "Custom (DataStore)")
 		then
 			continue
 		end
@@ -184,7 +185,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 	_K.client.playerPrefix = _K.Flux.state(settings.prefix[1])
 
-	local theme = UI.Themes[settingsDefault.defaultTheme]
+	local theme = UI.Themes[settingsDefault.theme]
 	if theme then
 		for key, state in theme do
 			if state._value ~= nil then
@@ -197,14 +198,14 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 	for key, value in _K.Data.settings do
 		local state
-		if string.find(key, "theme", 1, true) == 1 then
+		if key ~= "theme" and string.find(key, "theme", 1, true) == 1 then
 			state = UI.Theme[string.sub(key, 6)]
 		end
 		state = state or _K.Flux.state(value)
 		_K.client.settings[key] = state
 
 		-- UI.Theme connection to theme settings
-		if key == "defaultTheme" then
+		if key == "theme" then
 			state:Connect(function(value)
 				local theme = UI.Themes[value]
 				if theme then

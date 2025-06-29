@@ -95,8 +95,8 @@ return {
 	welcomeBadgeId = 0, --             Badge for new players (0 = none)
 	getKohlsAdminPopup = true, --      Show feedback popup
 
+	theme = "Default", --               Initial theme (customize in Config.Themes)
 	changeThemeAuthority = "Client", -- "Client", "Server", or "Studio"
-	defaultTheme = "Default", --        Initial theme (customize in Config.Themes)
 
 	gameHubEnabled = true, -- Add to games list   (requires HTTP requests enabled)
 	vip = true, --            Enable VIP features (required if gameHubEnabled = true)

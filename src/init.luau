@@ -636,7 +636,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 				continue
 			end
 
-			if string.find(key, "theme", 1, true) and (themeAuthority == "Studio") then
+			if string.find(key, "theme", 1, true) and themeAuthority == "Studio" then
 				continue
 			end
 
