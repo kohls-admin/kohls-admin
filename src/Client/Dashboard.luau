@@ -41,6 +41,7 @@ local dashboard = UI.new "Window" {
 	_K.client.dashboard.Tabs,
 }
 _K.client.dashboard.Window = dashboard
+dashboard._exitButton.ActiveSound(false)
 
 _K.client.commandBarVisible = UI.state(_K.client.CommandBar.Bar, "Visible")
 
