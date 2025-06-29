@@ -10,6 +10,7 @@ function ListItem.new(definition)
 		Text = "ListItem",
 		ContentAutomaticSize = true,
 		ContentListLayout = true,
+		Tooltip = UI.Nil,
 	}, definition)
 
 	new._label = UI.new "TextLabel" {
@@ -71,6 +72,7 @@ function ListItem.new(definition)
 		end,
 		new._label,
 		new._content,
+		if new.Tooltip then UI.new "Tooltip" { Text = new.Tooltip } else nil,
 	}
 
 	return setmetatable(new, ListItem)
