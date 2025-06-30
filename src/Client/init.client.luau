@@ -163,8 +163,11 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 	_K.Data.roles = roles
 	for role, roleData in roles do
-		_K.Data.rolesList[roleData._rank] = roleData
+		table.insert(_K.Data.rolesList, roleData)
 	end
+	table.sort(_K.Data.rolesList, function(a, b)
+		return a._rank < b._rank
+	end)
 
 	local theme = UI.Themes[defaultSettings.theme]
 	if theme then

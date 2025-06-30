@@ -375,8 +375,11 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 	_K.Data.settings = _K.Data.savedSettings :: any
 
 	for role, roleData in _K.Data.roles do
-		_K.Data.rolesList[roleData._rank] = roleData
+		table.insert(_K.Data.rolesList, roleData)
 	end
+	table.sort(_K.Data.rolesList, function(a, b)
+		return a._rank < b._rank
+	end)
 
 	task.spawn(function() -- populate ban names
 		for userId, ban in _K.Data.bans do
