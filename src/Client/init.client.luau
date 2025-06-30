@@ -174,10 +174,29 @@ local function Chatted(message: string)
 	end
 end
 
+local function windowAdded(message: TextChatMessage)
+	local Players = _K.Service.Players
+	local chatWindowConfiguration = _K.Service.TextChat.ChatWindowConfiguration
+
+	local properties = chatWindowConfiguration:DeriveNewMessageProperties()
+
+	if message.TextSource then
+		local color = Players:GetPlayerByUserId(message.TextSource.UserId):GetAttribute("_Kchatcolor")
+		if color then
+			properties.PrefixTextProperties = chatWindowConfiguration:DeriveNewMessageProperties()
+			properties.PrefixTextProperties.TextColor3 = color
+		end
+	end
+
+	return properties
+end
+
 if _K.Service.TextChat.ChatVersion == Enum.ChatVersion.TextChatService then
 	_K.Service.TextChat.SendingMessage:Connect(function(textChatMessage: TextChatMessage)
 		Chatted(_K.Util.String.unescapeRichText(textChatMessage.Text))
 	end)
+
+	_K.Service.TextChat.OnChatWindowAdded = windowAdded -- this runs on every chat message, outgoing or inbound
 end
 
 _K.Remote.Command.OnClientEvent:Connect(Chatted)
