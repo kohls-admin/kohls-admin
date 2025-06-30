@@ -224,7 +224,9 @@ function Tabs.new(definition)
 				TextStrokeColor3 = UI.Theme.Primary,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextTransparency = UI.tween(function()
-					return if hovering() or currentPage() == container then 0 else 0.5
+					local hover = hovering()
+					local current = currentPage() == container
+					return if current then 0 elseif hover then 0.125 else 0.5
 				end, UI.Theme.TweenOut),
 
 				UI.new "UICorner" {
