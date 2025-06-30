@@ -116,7 +116,7 @@ function Select.new(definition)
 
 			local choiceButton
 			choiceButton = UI.new "Button" {
-				LayoutOrder = i,
+				LayoutOrder = math.min(2 ^ 31 - 1, i),
 				ZIndex = 1e3,
 				Parent = menu._content,
 				Name = tostring(name),
