@@ -84,25 +84,25 @@ return {
 	prefix = { ";", ":" }, -- Command trigger characters
 	splitKey = "%s", --       Command/argument separator
 
-	chatCommands = true, --      Enable commands via chat
 	commandBarRank = 0, --       Minimum rank for Command Bar (false = disable)
 	dashboardRank = 0, --        Minimum rank for Dashboard (false = disable)
 	dashboardButtonRank = 0, --  Minimum rank for Dashboard button (false = disable)
 	joinNotificationRank = 1, -- Minimum rank for join notifications (false = disable)
 
-	onlyShowUsableCommands = false, -- Show only purchasable/usable commands
-	wrongPrefixWarning = true, --      Warn on incorrect prefix
-	welcomeBadgeId = 0, --             Badge for new players (0 = none)
-	getKohlsAdminPopup = true, --      Show feedback popup
-
-	theme = "Default", --               Initial theme (customize in Config.Themes)
-	changeThemeAuthority = "Client", -- "Client", "Server", or "Studio"
+	welcomeBadgeId = 0, -- Badge for new players (0 = none)
 
 	addToCharts = true, -- Add this game to the Kohl's Admin Charts  (⚠️ Requires "Allow HTTP Requests" in File > Game Settings > Security)  https://roblox.com/games/17873329124/Kohls-Admin-Charts
 	vip = true, --         Enable VIP features                       (⚠️ Required if addToCharts is true)
 
-	saveLogs = true, --        Save/sync logs across servers
-	commandRequests = true, -- Request commands on same/higher rank
+	chatCommands = true, --            Enable commands via chat
+	commandRequests = true, --         Request commands on same/higher rank
+	onlyShowUsableCommands = false, -- Show only purchasable/usable commands
+	getKohlsAdminPopup = true, --      Show the Get Kohl's Admin popup
+	wrongPrefixWarning = true, --      Warn on incorrect prefix
+	saveLogs = true, --                Save/sync logs across servers
+
+	theme = "Default", --               Initial theme (customize in Config.Themes)
+	changeThemeAuthority = "Client", -- "Client", "Server", or "Studio"
 
 	commands = { -- Configure command access per role
 		everyone = {
