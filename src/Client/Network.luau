@@ -1,8 +1,7 @@
 local _K = require(script.Parent.Parent)
 local UI = _K.UI
 
-function _K.client.updateInterfaceAuth()
-	-- TODO: recheck visibility for all restricted UIs
+_K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 	local userId = _K.LocalPlayer.UserId
 	local userRank = _K.Auth.getRank(userId)
 	_K.client.rank(userRank)
@@ -56,7 +55,7 @@ function _K.client.updateInterfaceAuth()
 	end
 
 	_K.Hook.authChanged:Fire()
-end
+end)
 
 _K.Remote.Announce.OnClientEvent:Connect(_K.Announce)
 _K.Remote.Notify.OnClientEvent:Connect(_K.Notify)
