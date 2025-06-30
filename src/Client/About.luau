@@ -59,7 +59,6 @@ function About.new(_K)
 			Text = "roblox.com/game-pass/5391355/",
 			TextEditable = false,
 			ClearTextOnFocus = false,
-			Visible = _K.client.settings.gameHubEnabled,
 
 			UI.new "UICorner" {
 				CornerRadius = UI.Theme.CornerRadius,
