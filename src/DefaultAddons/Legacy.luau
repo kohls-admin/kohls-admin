@@ -309,15 +309,15 @@ return function(_K)
 		-- SETTINGS
 
 		if settings.AdminCredit == false then
-			_K.Data.settings.dashboardButtonRank = false
+			_K.Data.defaultSettings.dashboardButtonRank = false
 		end
 
 		if settings.CommandBar == false then
-			_K.Data.settings.commandBarRank = false
+			_K.Data.defaultSettings.commandBarRank = false
 		end
 
 		if settings.JoinMessage == false then
-			_K.Data.settings.joinNotificationRank = false
+			_K.Data.defaultSettings.joinNotificationRank = false
 		end
 
 		if settings.PublicLogs == true then
@@ -325,7 +325,7 @@ return function(_K)
 		end
 
 		if settings.Prefix ~= ";" then
-			_K.Data.settings.prefix = { settings.Prefix }
+			_K.Data.defaultSettings.prefix = { settings.Prefix }
 		end
 
 		if tonumber(settings.FreeAdmin) then

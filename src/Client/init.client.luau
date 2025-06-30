@@ -31,7 +31,7 @@ local function deepMergeTheme(from, to, prefix: string?)
 		if UI.isState(to[key]) then
 			if prefix then
 				key = prefix .. key
-				_K.Data.settings[key] = value
+				_K.Data.savedSettings[key] = value
 				_K.client.settings[key](value)
 			else
 				to[key](value)
@@ -44,23 +44,6 @@ end
 
 function UI.changeTheme(new)
 	deepMergeTheme(new, UI.Theme, "theme")
-end
-
-function _K.client.syncSettings(settings)
-	for key, value in settings do
-		value = UI.raw(value)
-		if
-			key ~= "theme"
-			and string.find(key, "theme", 1, true) == 1
-			and (_K.Data.settings.changeThemeAuthority == "Studio" or settings.theme ~= "Custom (DataStore)")
-		then
-			continue
-		end
-		_K.Data.settings[key] = value
-		if _K.client.settings[key] then
-			_K.client.settings[key](value)
-		end
-	end
 end
 
 local chatCommandThrottle
@@ -159,7 +142,7 @@ end)
 
 -- initial remote connection
 
-_K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, settings, settingsDefault)
+_K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, savedSettings, defaultSettings)
 	-- need to improve networking performance!
 	if bans then
 		_K.Util.Table.merge(_K.Data.bans, bans)
@@ -183,23 +166,34 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		_K.Data.rolesList[roleData._rank] = roleData
 	end
 
-	_K.client.playerPrefix = _K.Flux.state(settings.prefix[1])
-
-	local theme = UI.Themes[settingsDefault.theme]
+	local theme = UI.Themes[defaultSettings.theme]
 	if theme then
 		for key, state in theme do
 			if state._value ~= nil then
-				settingsDefault["theme" .. key] = state._value
+				defaultSettings["theme" .. key] = state._value
 			end
 		end
 	end
-	_K.Data.defaultSettings = settingsDefault
-	_K.Util.Table.merge(_K.Data.settings, settingsDefault)
+
+	local merge = _K.Util.Table.merge
+	_K.Data.defaultSettings = merge(table.clone(_K.Data.settings), defaultSettings)
+	_K.Data.savedSettings = merge(_K.Util.Table.deepCopy(_K.Data.defaultSettings), savedSettings)
+	_K.Data.settings = if _K.Data.savedSettings.useSavedSettings ~= false
+		then _K.Data.savedSettings
+		else _K.Data.defaultSettings
+
+	_K.client.playerPrefix = _K.Flux.state(_K.Data.settings.prefix[1])
 
 	for key, value in _K.Data.settings do
+		if key == "useSavedSettings" then
+			value = _K.Data.savedSettings.useSavedSettings
+		end
 		local state
 		if key ~= "theme" and string.find(key, "theme", 1, true) == 1 then
 			state = UI.Theme[string.sub(key, 6)]
+			if state then
+				state(value)
+			end
 		end
 		state = state or _K.Flux.state(value)
 		_K.client.settings[key] = state
@@ -219,10 +213,18 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 					UI.Theme[key](value)
 				end)
 			end
+		elseif key == "useSavedSettings" then
+			state:Connect(function(useSaved)
+				local settings = if useSaved then _K.Data.savedSettings else _K.Data.defaultSettings
+				_K.Data.settings = settings
+				for key, value in settings do
+					if key ~= "useSavedSettings" and _K.client.settings[key] then
+						_K.client.settings[key](value, true)
+					end
+				end
+			end)
 		end
 	end
-
-	_K.client.syncSettings(settings)
 
 	_K.client.CommandBar = require(script:WaitForChild("CommandBar"))
 	_K.client.CommandBar:init(_K)

@@ -21,7 +21,7 @@ function Settings.new(_K)
 
 	local function resetChanges()
 		for key, value in originalValues do
-			_K.Data.settings[key] = value
+			_K.Data.savedSettings[key] = value
 			if _K.client.settings[key] then
 				_K.client.settings[key](value, true)
 			end
@@ -33,7 +33,7 @@ function Settings.new(_K)
 	local function confirmChanges()
 		_K.Remote.Settings:FireServer(pendingChanges)
 		for key, value in pendingChanges do
-			_K.Data.settings[key] = value
+			_K.Data.savedSettings[key] = value
 			if _K.client.settings[key] then
 				_K.client.settings[key](value, true)
 			end
@@ -49,14 +49,14 @@ function Settings.new(_K)
 
 		if originalValues[key] == value then
 			pendingChanges[key] = nil
-		elseif _K.Data.settings[key] ~= value then
+		elseif _K.Data.savedSettings[key] ~= value then
 			pendingChanges[key] = value
 			if not originalValues[key] then
-				originalValues[key] = _K.Data.settings[key]
+				originalValues[key] = _K.Data.savedSettings[key]
 			end
 		end
 
-		local theme = _K.Data.settings.theme
+		local theme = _K.Data.savedSettings.theme
 		local themeModule = UI.Themes[theme]
 
 		local different = false
@@ -87,11 +87,11 @@ function Settings.new(_K)
 		elseif key == "theme" then
 			themeModule = UI.Themes[value]
 			if themeModule then
-				_K.Data.settings.theme = value
+				_K.Data.savedSettings.theme = value
 				-- FIX: update images and sounds
 				for key, value in themeModule do
 					local dataKey = "theme" .. key
-					local existing = _K.Data.settings[dataKey]
+					local existing = _K.Data.savedSettings[dataKey]
 					if existing ~= nil and existing ~= UI.raw(value) then
 						change(dataKey, UI.raw(value), true)
 					end
@@ -116,10 +116,11 @@ function Settings.new(_K)
 		UI.new "Button" {
 			LayoutOrder = 2 ^ 31 - 1,
 			Label = "Restore Default Settings",
+			Visible = _K.client.settings.useSavedSettings,
 
 			Activated = function()
 				for k, v in _K.Data.defaultSettings do
-					if not ignoredDefaultSettings[k] then
+					if not ignoredDefaultSettings[k] and _K.Data.savedSettings[k] ~= v then
 						change(k, v)
 						if _K.client.settings[k] then
 							_K.client.settings[k](v)
@@ -528,6 +529,22 @@ function Settings.new(_K)
 		end
 
 		local keyOrder = { "general", "theme" }
+		local savedSettingsSwitch = UI.new "ListItem" {
+			Parent = settingsScroller,
+			LayoutOrder = -1,
+			Text = "<b>Use Saved Settings</b>",
+			Tooltip = "Toggles using saved or studio-only settings.",
+			UI.new "Switch" {
+				Value = _K.client.settings.useSavedSettings,
+
+				[UI.Hook] = {
+					Selected = function(value)
+						change("useSavedSettings", value)
+					end,
+				},
+			},
+		}
+
 		for key, lineItems in settingsLineItems do
 			local list = UI.new "List" {
 				Parent = settingsScroller,
@@ -549,9 +566,11 @@ function Settings.new(_K)
 			local themeAuthority = _K.Data.settings.changeThemeAuthority
 			settingsScroller._instance.Theme.Visible = themeAuthority == "Client"
 				or (themeAuthority == "Server" and settingsAuth)
-			settingsScroller._instance.General.Visible = settingsAuth
+			settingsScroller._instance.General.Visible = settingsAuth and _K.client.settings.useSavedSettings._value
+			savedSettingsSwitch._instance.Visible = settingsAuth
 		end
 		_K.Hook.authChanged:Connect(updateSettingsAuth)
+		_K.client.settings.useSavedSettings:Connect(updateSettingsAuth)
 		updateSettingsAuth()
 	end)
 

@@ -220,17 +220,20 @@ local function syncMain(result)
 
 	-- settings sync
 	if type(settings.prefix) == "string" then
-		Data.settings.prefix[1] = settings.prefix
-		settings.prefix = Data.settings.prefix
+		Data.savedSettings.prefix[1] = settings.prefix
+		settings.prefix = Data.savedSettings.prefix
 	end
-	Util.Table.merge(Data.settings, settings)
+	Util.Table.merge(Data.savedSettings, settings)
+
+	Data.settings = if Data.savedSettings.useSavedSettings then Data.savedSettings else Data.defaultSettings
+
 
 	for _, player in Players:GetPlayers() do
 		if not player:GetAttribute("_K_READY") then
 			continue
 		end
 		Remote.Members:FireClient(player, Data.members)
-		Remote.Settings:FireClient(player, Data.settings)
+		Remote.Settings:FireClient(player, Data.savedSettings)
 	end
 	Hook.postSyncMain:Fire(Data)
 end

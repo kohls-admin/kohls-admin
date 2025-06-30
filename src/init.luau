@@ -364,12 +364,15 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		commands = true,
 		roles = true,
 	}
-	for key, value in settings do
-		if not ignoredSettings[key] then
-			_K.Data.settingsDefault[key] = value
-			_K.Data.settings[key] = if type(value) == "table" then table.clone(value) else value
+	for _, data in { _K.Data.settings, settings } do
+		for key, value in data do
+			if not ignoredSettings[key] then
+				_K.Data.defaultSettings[key] = value
+				_K.Data.savedSettings[key] = if type(value) == "table" then table.clone(value) else value
+			end
 		end
 	end
+	_K.Data.settings = _K.Data.savedSettings :: any
 
 	for role, roleData in _K.Data.roles do
 		_K.Data.rolesList[roleData._rank] = roleData
@@ -588,10 +591,10 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		local roles = _K.Data.roles
 		local servers = (_K.Auth.hasCommand(player.UserId, "place") or _K.Auth.hasCommand(player.UserId, "unreserve"))
 			and _K.Data.reservedServers
-		local settings = _K.Data.settings
-		local settingsDefault = _K.Data.settingsDefault
+		local savedSettings = _K.Data.savedSettings
+		local defaultSettings = _K.Data.defaultSettings
 
-		_K.Remote.Init:FireClient(player, bans, logs, members, roles, servers, settings, settingsDefault)
+		_K.Remote.Init:FireClient(player, bans, logs, members, roles, servers, savedSettings, defaultSettings)
 		player:SetAttribute("_K_READY", true)
 
 		if
@@ -632,7 +635,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 		local changeStrings = {}
 		for key, value in changes do
-			if _K.Data.settings[key] == nil then
+			if _K.Data.savedSettings[key] == nil then
 				continue
 			end
 
@@ -640,7 +643,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 				continue
 			end
 
-			_K.Data.settings[key] = value
+			_K.Data.savedSettings[key] = value
 			table.insert(changeStrings, `[{key}]: {value}`)
 
 			local cacheValue, valueType = value, typeof(value)
@@ -654,11 +657,17 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 			_K.Data.Cache.settings[key] = cacheValue
 		end
+
 		for _, toPlayer in _K.Service.Players:GetPlayers() do
 			if toPlayer ~= player then
 				_K.Remote.Settings:FireClient(toPlayer, changes)
 			end
 		end
+
+		_K.Data.settings = if _K.Data.savedSettings.useSavedSettings
+			then _K.Data.savedSettings
+			else _K.Data.defaultSettings
+
 		_K.log(`changed settings: {table.concat(changeStrings, " ")}`, "COMMAND", player.UserId)
 	end)
 

@@ -13,7 +13,7 @@ return {
 		},
 		env = function(_K)
 			local function announceDataInit()
-				local announcement = _K.Data.settings.announcement
+				local announcement = _K.Data.savedSettings.announcement
 				if announcement then
 					local message, from = unpack(announcement)
 					_K.Remote.Announce:FireAllClients({
@@ -23,7 +23,7 @@ return {
 					})
 				end
 			end
-			if _K.Data.settings.announcement then
+			if _K.Data.savedSettings.announcement then
 				announceDataInit()
 			else
 				_K.Hook.initDataStore:Once(announceDataInit)
@@ -32,12 +32,12 @@ return {
 			task.spawn(function()
 				_K.Service.Messaging:SubscribeAsync("KA_Announcement", function(message)
 					if type(message.Data) ~= "table" then
-						_K.Data.settings.announcement = false
+						_K.Data.savedSettings.announcement = false
 						return
 					end
 
 					local msg, from = unpack(message.Data)
-					_K.Data.settings.announcement = message.Data
+					_K.Data.savedSettings.announcement = message.Data
 					_K.Remote.Announce:FireAllClients({
 						From = from,
 						Text = msg,

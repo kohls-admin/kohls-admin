@@ -37,12 +37,12 @@ local Data = {
 	rolesList = {},
 
 	settingsModuleData = nil,
-	settingsDefault = {},
+	defaultSettings = {},
 	settings = {
-		liveSettings = true,
-
 		announcement = false,
+		useSavedSettings = true,
 	},
+	savedSettings = {} :: any,
 
 	async = {
 		asset = {},

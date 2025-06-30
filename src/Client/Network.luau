@@ -185,7 +185,21 @@ _K.Remote.Logs.OnClientEvent:Connect(function(rawLogs)
 end)
 
 _K.Remote.Settings.OnClientEvent:Connect(function(settings)
-	_K.client.syncSettings(settings)
+	local useSaved = _K.Data.savedSettings.useSavedSettings or settings.useSavedSettings
+	for key, value in settings do
+		value = UI.raw(value)
+		if
+			key ~= "theme"
+			and string.find(key, "theme", 1, true) == 1
+			and (_K.Data.settings.changeThemeAuthority == "Studio" or settings.theme ~= "Custom (DataStore)")
+		then
+			continue
+		end
+		_K.Data.savedSettings[key] = value
+		if useSaved and _K.client.settings[key] then
+			_K.client.settings[key](value)
+		end
+	end
 	_K.client.updateInterfaceAuth()
 end)
 
