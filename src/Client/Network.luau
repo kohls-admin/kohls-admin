@@ -6,9 +6,9 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 	local userRank = _K.Auth.getRank(userId)
 	_K.client.rank(userRank)
 
-	local commandBarRank = _K.Data.settings.commandBarRank
-	local dashboardRank = _K.Data.settings.dashboardRank
-	local dashboardButtonRank = _K.Data.settings.dashboardButtonRank
+	local commandBarRank = _K.client.settings.commandBarRank._value
+	local dashboardRank = _K.client.settings.dashboardRank._value
+	local dashboardButtonRank = _K.client.settings.dashboardButtonRank._value
 
 	if commandBarRank == nil then
 		commandBarRank = 0
@@ -56,6 +56,10 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 
 	_K.Hook.authChanged:Fire()
 end)
+
+_K.client.settings.commandBarRank:Connect(_K.client.updateInterfaceAuth)
+_K.client.settings.dashboardRank:Connect(_K.client.updateInterfaceAuth)
+_K.client.settings.dashboardButtonRank:Connect(_K.client.updateInterfaceAuth)
 
 _K.Remote.Announce.OnClientEvent:Connect(_K.Announce)
 _K.Remote.Notify.OnClientEvent:Connect(_K.Notify)
