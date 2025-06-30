@@ -30,11 +30,7 @@ function Color.new(definition)
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
 		},
-		UI.new "UIStroke" {
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Transparency = UI.Theme.TransparencyClamped,
-			Color = UI.Theme.Border,
-		},
+		UI.new "Stroke" {},
 
 		Activated = function()
 			UI.toggleState(new._dialog.Visible, "floating")

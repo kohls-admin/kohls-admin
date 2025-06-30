@@ -79,13 +79,7 @@ function ColorPicker.new(definition)
 			UI.new "UICorner" {
 				CornerRadius = UI.Theme.CornerDiameter,
 			},
-			UI.new "UIStroke" {
-				Enabled = UI.Theme.StrokeEnabled,
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				Color = UI.Theme.Border,
-				Transparency = UI.Theme.TransparencyClamped,
-				Thickness = 1,
-			},
+			UI.new "Stroke" {},
 			UI.new "UIGradient" {
 				Color = rainbowSequence,
 				Rotation = 90,
@@ -188,13 +182,7 @@ function ColorPicker.new(definition)
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
 		},
-		UI.new "UIStroke" {
-			Enabled = UI.Theme.StrokeEnabled,
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Color = UI.Theme.Border,
-			Transparency = UI.Theme.TransparencyClamped,
-			Thickness = 1,
-		},
+		UI.new "Stroke" {},
 		UI.new "Frame" {
 			Name = "Saturation",
 			BackgroundColor3 = Color3.new(1, 1, 1),

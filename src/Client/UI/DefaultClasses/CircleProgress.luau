@@ -101,11 +101,7 @@ function CircleProgress.new(definition)
 				CornerRadius = UDim.new(1, 0),
 			},
 
-			UI.new "UIStroke" {
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				Transparency = UI.Theme.TransparencyClamped,
-				Color = UI.Theme.Border,
-			},
+			UI.new "Stroke" {},
 		},
 		unpack(new._circles),
 	}

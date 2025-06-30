@@ -134,9 +134,7 @@ local TooltipFrame = UI.new "Frame" {
 	UI.new "UICorner" {
 		CornerRadius = UI.Theme.CornerRadius,
 	},
-	UI.new "UIStroke" {
-		Color = UI.Theme.Border,
-	},
+	UI.new "Stroke" {},
 }
 
 local TooltipLayout = UI.new "UIListLayout" {

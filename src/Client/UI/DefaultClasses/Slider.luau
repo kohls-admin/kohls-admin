@@ -111,12 +111,7 @@ function Slider.new(definition)
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerDiameter,
 		},
-		UI.new "UIStroke" {
-			Enabled = UI.Theme.StrokeEnabled,
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Transparency = UI.Theme.TransparencyClamped,
-			Color = UI.Theme.Border,
-		},
+		UI.new "Stroke" {},
 
 		UI.new "Frame" {
 			BackgroundTransparency = 1,

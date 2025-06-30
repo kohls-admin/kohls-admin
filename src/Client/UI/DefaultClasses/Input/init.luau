@@ -337,12 +337,7 @@ function Input.new(definition)
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
 		},
-		UI.new "UIStroke" {
-			Enabled = UI.Theme.StrokeEnabled,
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Transparency = UI.Theme.TransparencyClamped,
-			Color = UI.Theme.Border,
-		},
+		UI.new "Stroke" {},
 		UI.new "UIPadding" {
 			PaddingLeft = new.Padding,
 			PaddingRight = new.Padding,

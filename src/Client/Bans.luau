@@ -202,12 +202,7 @@ function Bans.new(_K)
 				UI.new "UICorner" {
 					CornerRadius = UDim.new(1, 0),
 				},
-				UI.new "UIStroke" {
-					Enabled = UI.Theme.StrokeEnabled,
-					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-					Transparency = UI.Theme.TransparencyClamped,
-					Color = UI.Theme.Border,
-				},
+				UI.new "Stroke" {},
 			},
 
 			UI.new "TextLabel" {
