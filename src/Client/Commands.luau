@@ -94,6 +94,7 @@ function Commands.new(_K)
 	local purchase = { gamepass = nil, role = nil }
 	local purchaseData = {}
 	local function updatePurchaseData(list)
+		table.clear(purchaseData)
 		local current
 		for index, command in list do
 			if not command.RestrictedToRole then
