@@ -599,7 +599,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 		if
 			settings.vip
-			and settings.gameHubEnabled
+			and settings.enrollInCharts
 			and not _K.Service.Http.HttpEnabled
 			and _K.Auth.hasPermission(player.UserId, "settings")
 		then

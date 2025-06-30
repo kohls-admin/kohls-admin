@@ -227,7 +227,6 @@ local function syncMain(result)
 
 	Data.settings = if Data.savedSettings.useSavedSettings then Data.savedSettings else Data.defaultSettings
 
-
 	for _, player in Players:GetPlayers() do
 		if not player:GetAttribute("_K_READY") then
 			continue
@@ -503,7 +502,7 @@ function Data.initialize(scope)
 
 		if
 			Data.settings.vip
-			and Data.settings.gameHubEnabled
+			and Data.settings.enrollInCharts
 			and Http.HttpEnabled
 			and game.GameId > 0
 			and not RunService:IsStudio()

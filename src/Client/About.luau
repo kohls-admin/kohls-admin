@@ -887,7 +887,7 @@ function About.new(_K)
 				TextWrapped = true,
 				TextEditable = false,
 				ClearTextOnFocus = false,
-				Visible = _K.client.settings.gameHubEnabled,
+				Visible = _K.client.settings.enrollInCharts,
 
 				UI.new "UICorner" {
 					CornerRadius = UI.Theme.CornerRadius,

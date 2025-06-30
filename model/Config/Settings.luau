@@ -98,8 +98,8 @@ return {
 	theme = "Default", --               Initial theme (customize in Config.Themes)
 	changeThemeAuthority = "Client", -- "Client", "Server", or "Studio"
 
-	gameHubEnabled = true, -- Add to games list   (requires HTTP requests enabled)
-	vip = true, --            Enable VIP features (required if gameHubEnabled = true)
+	addToCharts = true, -- Add this game to the Kohl's Admin Charts  (⚠️ Requires "Allow HTTP Requests" in File > Game Settings > Security)  https://roblox.com/games/17873329124/Kohls-Admin-Charts
+	vip = true, --         Enable VIP features                       (⚠️ Required if addToCharts is true)
 
 	saveLogs = true, --        Save/sync logs across servers
 	commandRequests = true, -- Request commands on same/higher rank

@@ -2,6 +2,7 @@ local Data = require(script.Parent.Parent.Defaults)
 
 local MIGRATE = {
 	defaultTheme = "theme",
+	gameHubEnabled = "addToCharts",
 }
 
 return function(settings)
