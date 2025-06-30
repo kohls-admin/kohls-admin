@@ -5,6 +5,19 @@ local Select = {}
 Select.__index = Select
 setmetatable(Select, BaseClass)
 
+local function getName(choice)
+	local name = tostring(choice)
+	local typeOf = typeof(choice)
+
+	if typeOf == "EnumItem" or typeOf == "Instance" then
+		name = choice.Name
+	elseif typeOf == "table" then
+		name = choice.Name or choice.name
+	end
+
+	return name
+end
+
 function Select.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Choice = "Default",
@@ -31,11 +44,8 @@ function Select.new(definition)
 				if choice.EnumType == Enum.Font then
 					font = choice
 				end
-				choice = choice.Name
-			elseif typeof(choice) == "Instance" or type(choice) == "table" then
-				choice = choice.Name
 			end
-			maxWidth = math.max(maxWidth, UI.TextService:GetTextSize(choice, size, font, Vector2.zero).X)
+			maxWidth = math.max(maxWidth, UI.TextService:GetTextSize(getName(choice), size, font, Vector2.zero).X)
 		end
 
 		return UDim2.fromOffset(maxWidth + padding * 2 + size, size + padding)
@@ -53,9 +63,7 @@ function Select.new(definition)
 			Size = UDim2.fromScale(0.5, 0.5),
 		},
 		Label = function()
-			local choice = new.Choice()
-			local typeOf = typeof(choice)
-			return if typeOf == "EnumItem" or typeOf == "Instance" or typeOf == "table" then choice.Name else choice
+			return getName(new.Choice())
 		end,
 		Size = itemSize,
 		Font = new.Font,
@@ -95,7 +103,7 @@ function Select.new(definition)
 	local function updateChoices()
 		local selected = new.Selected._value
 		for i, choice in new.Choices._value do
-			local name = choice
+			local name = getName(choice)
 			local font
 			if typeof(choice) == "EnumItem" then
 				if choice.Name == "Unknown" then
@@ -104,9 +112,6 @@ function Select.new(definition)
 				if choice.EnumType == Enum.Font then
 					font = choice
 				end
-				name = choice.Name
-			elseif typeof(choice) == "Instance" or type(choice) == "table" then
-				name = choice.Name
 			end
 
 			local choiceButton
