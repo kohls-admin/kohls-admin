@@ -223,7 +223,7 @@ function Commands.new(_K)
 
 	local debounceUpdateCommandsList = _K.Util.Function.debounce(0.2, updateCommandsList)
 	_K.client.settings.onlyShowUsableCommands:Connect(debounceUpdateCommandsList)
-	_K.client.rank:Connect(debounceUpdateCommandsList)
+	_K.Hook.authChanged:Connect(debounceUpdateCommandsList)
 	debounceUpdateCommandsList()
 
 	local scroller = UI.new "ScrollerFast" {
@@ -277,6 +277,7 @@ function Commands.new(_K)
 		purchaseButton._instance.Visible = false
 	end
 
+	_K.Hook.authChanged:Connect(updatePurchaseButton)
 	UI.Theme.FontSize:Connect(updatePurchaseButton)
 	scroller._scroller:GetPropertyChangedSignal("CanvasPosition"):Connect(updatePurchaseButton)
 
