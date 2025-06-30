@@ -79,14 +79,15 @@ local function migrateKAI()
 		end
 
 		if settings then
-			for key, value in HttpService:JSONDecode(settings) do
-				key = string.lower(key)
-				for setting in Data.settings do
-					if string.lower(setting) == key then
-						main[2][key] = value
-						break
-					end
+			settings = HttpService:JSONDecode(settings)
+			if settings.FreeAdmin then
+				local role = Data.rolesList[settings.FreeAdmin + 1]
+				if role then
+					main[2].freeAdmin = { role._key }
 				end
+			end
+			if settings.Prefix then
+				main[2].prefix = { settings.Prefix }
 			end
 		end
 

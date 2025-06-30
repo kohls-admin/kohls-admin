@@ -2,15 +2,6 @@ local Settings = { _K = nil }
 Settings.__index = Settings
 
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
-local colors = {
-	"Primary",
-	"PrimaryText",
-	"Secondary",
-	"SecondaryText",
-	"Border",
-	"Valid",
-	"Invalid",
-}
 
 function Settings.new(_K)
 	local UI = _K.UI
@@ -52,7 +43,8 @@ function Settings.new(_K)
 		elseif _K.Data.savedSettings[key] ~= value then
 			pendingChanges[key] = value
 			if not originalValues[key] then
-				originalValues[key] = _K.Data.savedSettings[key]
+				local original = _K.Data.savedSettings[key]
+				originalValues[key] = if type(original) == "table" then table.clone(original) else original
 			end
 		end
 
@@ -139,11 +131,178 @@ function Settings.new(_K)
 		return UDim2.new(0, 0, 0, lineItemHeight())
 	end)
 
+	local themeLineItems = { Name = "Appearance" }
+
+	local rankChoices = table.clone(_K.Data.rolesList)
+	local disabledRankChoice = { _rank = false, name = "Disabled" }
+	table.insert(rankChoices, disabledRankChoice)
+
+	local function rankItem(setting: string, text: string, tooltip: string)
+		return UI.new "ListItem" {
+			Text = text,
+			Tooltip = tooltip,
+			UI.new "Select" {
+				Choice = function()
+					local setting = _K.client.settings[setting]()
+					return if setting then _K.Auth.getRoleFromRank(setting) else disabledRankChoice
+				end,
+				Choices = rankChoices,
+				[UI.Hook] = {
+					Selected = function(value)
+						change(setting, value._rank)
+						_K.client.settings[setting](value._rank)
+					end,
+				},
+			},
+		}
+	end
+
+	local function switchItem(setting: string, text: string, tooltip: string?)
+		return UI.new "ListItem" {
+			Text = text,
+			Tooltip = tooltip,
+			UI.new "Switch" {
+				Value = _K.client.settings[setting],
+				[UI.Hook] = {
+					Selected = function(value)
+						change(setting, value)
+					end,
+				},
+			},
+		}
+	end
+
+	local function sliderItem(setting: string, text: string, tooltip: string?)
+		return UI.new "ListItem" {
+			Text = text,
+			Tooltip = tooltip,
+			UI.new "Slider" {
+				Value = _K.client.settings[setting],
+				[UI.Hook] = {
+					Selected = function(value)
+						change(setting, value)
+					end,
+				},
+			},
+		}
+	end
+
+	local freeAdminCache = {}
 	local reservedPrefixes = { ",", " ", "`", '"', "@", "$", "%", "*", "~" }
 	local settingsLineItems = {
-		Local = {
-			-- FIX: prevent selecting reserved characters (comma, space, !@#$%^&*, `, ")
-			-- TODO: customizable listable/argument delimiter?
+		{
+			Name = "Admin",
+			UI.new "ListItem" {
+				Text = "Command Prefix",
+				Tooltip = "The character to trigger a command.",
+				UI.new "Input" {
+					Font = UI.Theme.FontMono,
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
+					Placeholder = ";",
+					MaxChars = 1,
+					Value = function()
+						return _K.client.settings.prefix()[1]
+					end,
+					Validate = function(text)
+						return not (text == "" or table.find(reservedPrefixes, text))
+					end,
+
+					[UI.Hook] = {
+						Selected = function(value)
+							_K.client.settings.prefix._value[1] = value
+							change("prefix", { value, unpack(_K.client.settings.prefix._value, 2) })
+						end,
+					},
+				},
+			},
+			UI.new "ListItem" {
+				Text = "Free Admin",
+				Tooltip = "🚨 Role given to every player who joins",
+				UI.new "Select" {
+					Choice = function()
+						local freeAdmin = _K.client.settings.freeAdmin()
+						return if type(freeAdmin) == "table" and freeAdmin[1]
+							then _K.Data.roles[freeAdmin[1]]
+							else disabledRankChoice
+					end,
+					Choices = rankChoices,
+					[UI.Hook] = {
+						Selected = function(value)
+							local roleId = value._key
+							value = freeAdminCache[roleId]
+							if not value then
+								value = { roleId }
+								freeAdminCache[roleId] = value
+							end
+							change("freeAdmin", value)
+							_K.client.settings.freeAdmin(
+								_K.Util.Table.merge(table.clone(_K.Data.defaultSettings.freeAdmin), value)
+							)
+						end,
+					},
+				},
+			},
+			rankItem("commandBarRank", "Command Bar Rank", "Minimum role to use the Command Bar"),
+			rankItem("dashboardRank", "Dashboard Rank", "Minimum role to use the Dashboard"),
+			rankItem("dashboardButtonRank", "Dashboard Button Rank", "Minimum role to show the Dashboard Button"),
+			rankItem(
+				"joinNotificationRank",
+				"Join Notification Rank",
+				"Minimum role to show the default join notification"
+			),
+			switchItem(
+				"addToCharts",
+				"Add Game to Charts",
+				"Adds the game to a list of games using Kohl's Admin, check About for details."
+			),
+			switchItem(
+				"vip",
+				"Global VIP Features",
+				"Toggles VIP features for the admin.\n<b>Required if game is added to charts!</b>"
+			),
+			switchItem("chatCommands", "Chat Commands", "Toggle commands via chat"),
+			switchItem("commandRequests", "Command Requests", "Toggle commands requests on same or higher rank users"),
+			switchItem("onlyShowUsableCommands", "Only Show Usable Commands", "Show only purchasable/usable commands"),
+			switchItem(
+				"getKohlsAdminPopup",
+				"Get Kohl's Admin Popup",
+				"Shows users a popup after using a few commands to get the Kohl's Admin model"
+			),
+			switchItem(
+				"wrongPrefixWarning",
+				"Wrong Prefix Warning",
+				"Warns users when the wrong command prefix is used"
+			),
+			switchItem("saveLogs", "Save Logs", "Toggle the saving and synchronization of logs across servers"),
+		},
+
+		{
+			Name = "Local",
+			UI.new "ListItem" {
+				Text = "Custom Command Prefix",
+				Tooltip = "A custom character to trigger a command, only affects the client.",
+				UI.new "Input" {
+					Font = UI.Theme.FontMono,
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
+					Placeholder = ";",
+					MaxChars = 1,
+					Value = function()
+						return _K.client.playerPrefix() or _K.client.settings.prefix()[1]
+					end,
+					Validate = function(text)
+						return not (text == "" or table.find(reservedPrefixes, text))
+					end,
+
+					[UI.Hook] = {
+						Selected = function(value)
+							_K.client.playerPrefix(value, true)
+							_K.Remote.PlayerPrefix:FireServer(value)
+						end,
+					},
+				},
+			},
 			UI.new "ListItem" {
 				Text = "Command Bar Hotkey",
 				Tooltip = "The keyboard shortcut to open the command bar.",
@@ -172,62 +331,21 @@ function Settings.new(_K)
 					Modifiers = _K.client.hotkeys.dashboard.mods,
 				},
 			},
-			UI.new "ListItem" {
-				Text = "Command Prefix",
-				Tooltip = "A custom character to trigger a command, only affects the client.",
-				UI.new "Input" {
-					Font = UI.Theme.FontMono,
-					FontSize = UI.Theme.FontSize,
-					Size = inputSize,
-					Placeholder = ";",
-					MaxChars = 1,
-					Value = function()
-						return _K.client.playerPrefix() or _K.client.settings.prefix()[1]
-					end,
-					Validate = function(text)
-						return not (text == "" or table.find(reservedPrefixes, text))
-					end,
-
-					[UI.Hook] = {
-						Selected = function(value)
-							_K.client.playerPrefix(value, true)
-							_K.Remote.PlayerPrefix:FireServer(value)
-						end,
-					},
-				},
-			},
 		},
-		General = {
-			UI.new "ListItem" {
-				Text = "Default Command Prefix",
-				Tooltip = "The character to trigger a command.",
-				UI.new "Input" {
-					Font = UI.Theme.FontMono,
-					FontSize = UI.Theme.FontSize,
-					Size = inputSize,
-					Placeholder = ";",
-					MaxChars = 1,
-					Value = function()
-						return _K.client.settings.prefix()[1]
-					end,
-					Validate = function(text)
-						return not (text == "" or table.find(reservedPrefixes, text))
-					end,
 
-					[UI.Hook] = {
-						Selected = function(value)
-							_K.client.settings.prefix._value[1] = value
-							change("prefix", { value, unpack(_K.client.settings.prefix._value, 2) })
-						end,
-					},
-				},
-			},
+		themeLineItems,
+
+		{
+			Name = "Sound",
+			switchItem("themeSoundEnabled", "UI Sounds"),
+			switchItem("themeTypingSounds", "Typing sounds"),
+			switchItem("themeTypingSoundsOnEveryTextBox", "Typing sounds on every TextBox"),
 		},
-		Theme = {},
 	}
 
 	task.defer(function()
 		_K.Util.Defer.reset()
+
 		-- Theme select
 		local themeList = UI.compute(function()
 			local themes = {}
@@ -239,7 +357,7 @@ function Settings.new(_K)
 			return themes
 		end)
 		table.insert(
-			settingsLineItems.Theme,
+			themeLineItems,
 			UI.new "ListItem" {
 				Text = "Theme",
 				Tooltip = "Changes the theme of Kohl's Admin interfaces.",
@@ -256,36 +374,6 @@ function Settings.new(_K)
 				},
 			}
 		)
-		-- switches
-		for _, data in
-			{
-				{ key = "SoundEnabled", text = "UI Sounds" },
-				{
-					key = "TypingSounds",
-					text = "Typing sounds",
-					tip = "<b>NOTE:</b> Requires taking the audios and adding permissions to your game!\n<font transparency='0.66'>Why does Roblox do this to me</font> 😔",
-				},
-				{ key = "TypingSoundsOnEveryTextBox", text = "Sounds on every TextBox" },
-				{ key = "StrokeEnabled", text = "UI Borders" },
-			}
-		do
-			table.insert(
-				settingsLineItems.Theme,
-				UI.new "ListItem" {
-					Text = data.text,
-					Tooltip = data.tip,
-					UI.new "Switch" {
-						Value = UI.Theme[data.key],
-
-						[UI.Hook] = {
-							Selected = function(value)
-								change("theme" .. data.key, value)
-							end,
-						},
-					},
-				}
-			)
-		end
 
 		-- font faces
 		do
@@ -295,9 +383,8 @@ function Settings.new(_K)
 				return a.Name < b.Name
 			end)
 			for _, key in { "Font", "FontMono" } do
-				_K.Util.Defer.wait()
 				table.insert(
-					settingsLineItems.Theme,
+					themeLineItems,
 					UI.new "ListItem" {
 						Text = key:gsub("(.)(%u)", "%1 %2"),
 						UI.new "Select" {
@@ -330,7 +417,6 @@ function Settings.new(_K)
 		end
 
 		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updateSliderSize)
-		settingsScroller._instance:GetPropertyChangedSignal("CanvasPosition"):Connect(updateSliderSize)
 
 		local lastSelected
 		local lastSelectedY = 0
@@ -391,7 +477,7 @@ function Settings.new(_K)
 
 			listItem._label.Size = UDim2.new(0.5, 0, 0, 0)
 			table.insert(sliders, slider._instance)
-			table.insert(settingsLineItems.Theme, listItem)
+			table.insert(themeLineItems, listItem)
 		end
 		_K.Util.Defer.wait()
 
@@ -421,7 +507,7 @@ function Settings.new(_K)
 			}
 			table.insert(sliders, slider._instance)
 			table.insert(
-				settingsLineItems.Theme,
+				themeLineItems,
 				UI.new "ListItem" {
 					Text = key:gsub("(.)(%u)", "%1 %2"),
 					UI.new "Input" {
@@ -476,7 +562,7 @@ function Settings.new(_K)
 				}
 				table.insert(sliders, slider._instance)
 				table.insert(
-					settingsLineItems.Theme,
+					themeLineItems,
 					UI.new "ListItem" {
 						Text = data.text,
 						UI.new "Input" {
@@ -507,13 +593,26 @@ function Settings.new(_K)
 			end
 		end
 
+		-- switches
+		table.insert(themeLineItems, switchItem("themeStrokeEnabled", "UI Borders"))
+
 		-- Color options
-		for index, key in colors do
+		for index, key in
+			{
+				"Primary",
+				"PrimaryText",
+				"Secondary",
+				"SecondaryText",
+				"Border",
+				"Valid",
+				"Invalid",
+			}
+		do
 			_K.Util.Defer.wait()
 			local state = UI.Theme[key]
 			local dataKey = "theme" .. key
 			table.insert(
-				settingsLineItems.Theme,
+				themeLineItems,
 				UI.new "ListItem" {
 					Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
 					UI.new "Color" {
@@ -528,7 +627,6 @@ function Settings.new(_K)
 			)
 		end
 
-		local keyOrder = { "general", "theme" }
 		local savedSettingsSwitch = UI.new "ListItem" {
 			Parent = settingsScroller,
 			LayoutOrder = -1,
@@ -545,28 +643,22 @@ function Settings.new(_K)
 			},
 		}
 
-		for key, lineItems in settingsLineItems do
-			local list = UI.new "List" {
+		for layoutOrder, definition in ipairs(settingsLineItems) do
+			settingsLineItems[definition.Name] = UI.new("List")(_K.Util.Table.merge({
 				Parent = settingsScroller,
-				Name = key,
-				Label = key,
+				Label = definition.Name,
 				Collapsible = true,
-				LayoutOrder = table.find(keyOrder, string.lower(key)),
-			}
-			for index, lineItem in ipairs(lineItems) do
-				UI.edit(lineItem, {
-					LayoutOrder = index,
-					Parent = list,
-				})
-			end
+				Padding = UI.Theme.PaddingDouble,
+				LayoutOrder = layoutOrder,
+			}, definition))
 		end
 
 		local function updateSettingsAuth()
 			local settingsAuth = _K.Auth.hasPermission(_K.LocalPlayer.UserId, "settings")
 			local themeAuthority = _K.Data.settings.changeThemeAuthority
-			settingsScroller._instance.Theme.Visible = themeAuthority == "Client"
+			settingsScroller._instance.Appearance.Visible = themeAuthority == "Client"
 				or (themeAuthority == "Server" and settingsAuth)
-			settingsScroller._instance.General.Visible = settingsAuth and _K.client.settings.useSavedSettings._value
+			settingsScroller._instance.Admin.Visible = settingsAuth and _K.client.settings.useSavedSettings._value
 			savedSettingsSwitch._instance.Visible = settingsAuth
 		end
 		_K.Hook.authChanged:Connect(updateSettingsAuth)
@@ -618,15 +710,32 @@ function Settings.new(_K)
 
 	local function filterSettings()
 		local filter = string.lower(filterInput._input.Text)
-		for _, lineItems in settingsLineItems do
-			for _, lineItem in lineItems do
-				if filter == "" then
+		for _, lineItems in ipairs(settingsLineItems) do
+			local list = settingsScroller._instance[lineItems.Name]
+			if filter == "" then
+				list.Visible = true
+				for _, lineItem in ipairs(lineItems) do
 					lineItem.Text(lineItem._instance.Name)
 					lineItem._instance.Visible = true
-					continue
 				end
+				continue
+			end
+
+			local listFound = string.find(string.lower(lineItems.Name), filter, 1, true)
+			if listFound then
+				list.Visible = true
+				settingsLineItems[lineItems.Name].Collapsed(false)
+			else
+				list.Visible = false
+			end
+
+			for _, lineItem in ipairs(lineItems) do
 				local rawText = lineItem._instance.Name
 				local found = string.find(string.lower(rawText), filter, 1, true)
+				if found then
+					list.Visible = true
+					settingsLineItems[lineItems.Name].Collapsed(false)
+				end
 				local text = if found
 					then string.format(
 						filterRichFormat,
@@ -634,14 +743,18 @@ function Settings.new(_K)
 						_K.Util.String.escapeRichText(string.sub(rawText, found, found + #filter - 1)),
 						_K.Util.String.escapeRichText(string.sub(rawText, found + #filter))
 					)
-					else rawText
+					else `<font transparency="0.5">{rawText}</font>`
 				lineItem.Text(text)
-				lineItem._instance.Visible = found
+				lineItem._instance.Visible = found or listFound
 			end
 		end
 	end
 
 	filterInput._input:GetPropertyChangedSignal("Text"):Connect(filterSettings)
+
+	UI.edit(settingsScroller._instance.UIPadding, {
+		PaddingBottom = UI.Theme.Padding,
+	})
 
 	local settingsFrame = UI.new "Frame" {
 		Name = "Settings",
@@ -649,6 +762,11 @@ function Settings.new(_K)
 		Size = UDim2.new(1, 0, 1, 0),
 
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
+		UI.new "UIPadding" {
+			PaddingTop = UI.Theme.Padding,
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+		},
 		filterInput,
 		settingsScroller,
 		settingsDialog,
