@@ -321,8 +321,11 @@ function ScrollerFast.new(definition)
 	local windowAbsolute = UI.state(self._scroller, "AbsoluteWindowSize")
 	UI.new "UIPadding" {
 		Parent = self._scroller,
+		PaddingBottom = UDim.new(0, 1),
+		PaddingTop = UDim.new(0, 1),
+		PaddingLeft = UDim.new(0, 1),
 		PaddingRight = function()
-			return if canvasAbsolute().Y > windowAbsolute().Y then UI.Theme.Padding() else UDim.new()
+			return if canvasAbsolute().Y > windowAbsolute().Y then UI.Theme.Padding() else UDim.new(0, 1)
 		end,
 	}
 
