@@ -249,7 +249,7 @@ return {
 						},
 
 						UI.new "ImageLabel" {
-							BackgroundTransparency = UI.Theme.TransparencyOverlay,
+							BackgroundTransparency = UI.Theme.TransparencyHeavy,
 							BackgroundColor3 = UI.Theme.PrimaryText,
 							Size = UDim2.new(1, 0, 1, 0),
 							SizeConstraint = Enum.SizeConstraint.RelativeYY,

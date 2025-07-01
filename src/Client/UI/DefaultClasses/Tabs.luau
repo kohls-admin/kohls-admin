@@ -214,7 +214,7 @@ function Tabs.new(definition)
 				Size = UDim2.new(0, 0, 0, 0),
 				BackgroundColor3 = UI.Theme.Secondary,
 				BackgroundTransparency = UI.tween(function()
-					return if currentPage() == container then UI.Theme.TransparencyOverlay() else 1
+					return if currentPage() == container then UI.Theme.TransparencyHeavy() else 1
 				end, UI.Theme.TweenOut),
 				Font = UI.Theme.Font,
 				RichText = true,

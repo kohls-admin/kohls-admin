@@ -19,7 +19,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 
 	local imageLabel = UI.new "ImageLabel" {
 		Name = "Icon",
-		BackgroundTransparency = UI.Theme.TransparencyOverlay,
+		BackgroundTransparency = UI.Theme.TransparencyHeavy,
 		BackgroundColor3 = UI.Theme.PrimaryText,
 		Size = function()
 			return UDim2.fromOffset(UI.Theme.FontSizeDouble(), UI.Theme.FontSizeDouble())

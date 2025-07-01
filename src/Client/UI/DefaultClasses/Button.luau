@@ -16,7 +16,7 @@ function Button.new(definition)
 		LabelProperties = {},
 		ActiveSound = true,
 		BackgroundColor3 = UI.Theme.Secondary,
-		BackgroundTransparency = UI.Theme.TransparencyOverlay,
+		BackgroundTransparency = UI.Theme.TransparencyHeavy,
 		HoverTransparency = 0.75,
 		Font = UI.Theme.Font,
 		TextSize = UI.Theme.FontSize,

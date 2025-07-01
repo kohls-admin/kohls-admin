@@ -110,7 +110,7 @@ function Members.new(_K)
 		UI.new "ListItem" {
 			Text = "User",
 			UI.new "ImageLabel" {
-				BackgroundTransparency = UI.Theme.TransparencyOverlay,
+				BackgroundTransparency = UI.Theme.TransparencyHeavy,
 				BackgroundColor3 = UI.Theme.PrimaryText,
 				Size = inputSize,
 				Image = function()
@@ -424,7 +424,7 @@ function Members.new(_K)
 			},
 
 			UI.new "ImageLabel" {
-				BackgroundTransparency = UI.Theme.TransparencyOverlay,
+				BackgroundTransparency = UI.Theme.TransparencyHeavy,
 				BackgroundColor3 = UI.Theme.PrimaryText,
 				Size = UDim2.new(1, 0, 1, 0),
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,

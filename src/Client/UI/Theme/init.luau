@@ -86,12 +86,36 @@ makeStateful(Theme)
 
 -- COMPUTED THEME VALUES
 
-Theme.TransparencyOverlay = compute(function()
-	return Theme.Transparency() * 0.125 + 0.875
+Theme.TransparencySlight = compute(function()
+	return Theme.Transparency * 0.9375 + 0.0625
+end)
+
+Theme.TransparencyLight = compute(function()
+	return Theme.Transparency * 0.875 + 0.125
+end)
+
+Theme.TransparencyMedium = compute(function()
+	return Theme.Transparency * 0.75 + 0.25
+end)
+
+Theme.TransparencyBalanced = compute(function()
+	return Theme.Transparency * 0.5 + 0.5
+end)
+
+Theme.TransparencyStrong = compute(function()
+	return Theme.Transparency * 0.25 + 0.75
+end)
+
+Theme.TransparencyHeavy = compute(function()
+	return Theme.Transparency * 0.125 + 0.875
+end)
+
+Theme.TransparencyMax = compute(function()
+	return Theme.Transparency * 0.0625 + 0.9375
 end)
 
 Theme.TransparencyClamped = compute(function()
-	return math.min(0.75, Theme.Transparency())
+	return Theme.Transparency * 0.75
 end)
 
 Theme.FontHeavy = compute(function()

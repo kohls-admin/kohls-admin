@@ -10,7 +10,7 @@ function Stroke.new(definition)
 	new._instance = UI.new "UIStroke" {
 		Enabled = UI.Theme.StrokeEnabled,
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-		Transparency = UI.Theme.TransparencyClamped,
+		Transparency = UI.Theme.TransparencyLight,
 		Color = UI.Theme.Border,
 	}
 	return new

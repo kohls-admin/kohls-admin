@@ -18,7 +18,7 @@ function Switch.new(definition)
 	new.Selected._value = UI.raw(new.Value)
 
 	local backgroundTransparency = UI.tween(function()
-		return if new.Value() then 0 else UI.Theme.TransparencyOverlay()
+		return if new.Value() then 0 else UI.Theme.TransparencyHeavy()
 	end, UI.Theme.TweenOut)
 
 	local backgroundTransparencyClamped = UI.tween(function()

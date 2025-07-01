@@ -102,7 +102,7 @@ function Slider.new(definition)
 		Name = "Slider",
 		Active = true,
 		BackgroundColor3 = UI.Theme.Secondary,
-		BackgroundTransparency = UI.Theme.TransparencyOverlay,
+		BackgroundTransparency = UI.Theme.TransparencyHeavy,
 		Size = function()
 			local height = UI.Theme.FontSize() + UI.Theme.Padding().Offset
 			return if new.Vertical() then UDim2.new(0, height, 1, 0) else UDim2.new(1, 0, 0, height)

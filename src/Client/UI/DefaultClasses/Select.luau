@@ -55,7 +55,7 @@ function Select.new(definition)
 		Name = "Header",
 		ActiveSound = false,
 		BackgroundColor3 = UI.Theme.Secondary,
-		BackgroundTransparency = UI.Theme.TransparencyOverlay,
+		BackgroundTransparency = UI.Theme.TransparencyHeavy,
 		Icon = UI.Theme.Image.Down,
 		IconRightAlign = true,
 		IconProperties = {
@@ -147,7 +147,7 @@ function Select.new(definition)
 							and UI.Theme.Transparency() > 0
 							and new.Choice() ~= choice
 						then 1
-						else UI.Theme.TransparencyOverlay()
+						else UI.Theme.TransparencyHeavy()
 				end,
 			})
 			choiceButton._hovering:Connect(function(value)

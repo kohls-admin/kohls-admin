@@ -23,7 +23,7 @@ function Checkbox.new(definition)
 		Active = true,
 		AnchorPoint = Vector2.new(1, 0.5),
 		BackgroundColor3 = UI.Theme.Secondary,
-		BackgroundTransparency = UI.Theme.TransparencyOverlay,
+		BackgroundTransparency = UI.Theme.TransparencyHeavy,
 		Position = UDim2.new(1, 0, 0.5, 0),
 		Text = "",
 		TextTransparency = 1,
