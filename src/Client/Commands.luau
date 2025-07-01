@@ -109,9 +109,10 @@ function Commands.new(_K)
 				continue
 			end
 			local role = command.RestrictedToRole
-			if current and role ~= current then
-				purchaseData[current].lastIndex = index - 1
-				current = nil
+			if current then
+				if role == current then
+					purchaseData[current].lastIndex = index
+				end
 			end
 			if not current and role and (role._key == "vip" or role.gamepasses) then
 				current = role
@@ -201,8 +202,12 @@ function Commands.new(_K)
 				local added
 				for role, roleData in _K.Data.roles do
 					if
-						(roleData.assets or roleData.gamepasses or roleData.subscriptions)
-						and _K.Auth.roleCanUseCommand(role, command)
+						(
+							(roleData.assets and next(roleData.assets))
+							or (roleData.gamepasses and next(roleData.gamepasses))
+							or (roleData.subscriptions and next(roleData.subscriptions))
+							or (role == "vip" and _K.Data.settings.vip)
+						) and _K.Auth.roleCanUseCommand(role, command)
 					then
 						table.insert(list, command)
 						added = true
