@@ -238,18 +238,12 @@ function Commands.new(_K)
 		FilterInput = true,
 		Visible = false,
 		ItemSize = function()
-			return UDim2.new(1, 0, 0, UI.Theme.FontSize * 2)
+			return UDim2.new(1, 0, 0, UI.Theme.FontSize * 2 + UI.Theme.Padding().Offset)
 		end,
 		CreateItem = createItem,
 		RenderItem = renderItem,
 		purchaseButton,
 	}
-
-	UI.edit(scroller._scroller, {
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
-		},
-	})
 
 	local function updatePurchaseButton()
 		local itemHeight = UI.Theme.FontSize._value * 2
@@ -338,6 +332,7 @@ function Commands.new(_K)
 
 			local roleColor = if #roles > 0 then _K.Data.roles[roles[1]].color else UI.Theme.Primary._value:ToHex()
 			local roleCircle = `<font color="{roleColor}">●</font>{narrowSpace}`
+			command.roleCircle = roleCircle
 
 			for i, roleId in roles do
 				local role = _K.Data.roles[roleId]
@@ -387,13 +382,13 @@ function Commands.new(_K)
 				if string.find(command.filterTest, filter, 1, true) then
 					local filterFound = string.find(command.filterText, self._filter, 1, true)
 					command.renderText = if filterFound
-						then string.format(
+						then command.roleCircle .. string.format(
 							filterRichFormat,
 							escape(string.sub(command.rawText, 1, filterFound - 1)),
 							escape(string.sub(command.rawText, filterFound, filterFound + #self._filter - 1)),
 							escape(string.sub(command.rawText, filterFound + #self._filter))
 						)
-						else `<font transparency="0.5">{command.rawText}</font>`
+						else `{command.roleCircle}<font transparency="0.5">{command.rawText}</font>`
 
 					local descFound = string.find(command.filterDesc, self._filter, 1, true)
 					command.renderDesc = if descFound

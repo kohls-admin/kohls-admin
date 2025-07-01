@@ -19,29 +19,421 @@ _K.client.dashboard.Members = Members.new(_K)
 _K.client.dashboard.Logs = Logs.new(_K)
 _K.client.dashboard.Settings = Settings.new(_K)
 
+local titleLine = UI.new "Frame" {
+	Name = "Line",
+	BackgroundColor3 = UI.Theme.Border,
+	BackgroundTransparency = UI.Theme.TransparencyBalanced,
+	BorderSizePixel = 0,
+	Size = UDim2.new(1, 0, 0, 1),
+}
+
 _K.client.dashboard.Tabs = UI.new "Tabs" {
+	Vertical = true,
 	_K.client.dashboard.Commands,
 	_K.client.dashboard.Bans,
 	_K.client.dashboard.Members,
 	_K.client.dashboard.Logs,
 	_K.client.dashboard.Settings,
 	_K.client.dashboard.About,
+
+	[UI.Event] = {
+		AbsoluteSize = function()
+			local size = _K.client.dashboard.Tabs._instance.AbsoluteSize
+			_K.client.dashboard.Tabs.Vertical(size.x > size.y)
+			titleLine.Visible = size.x > size.y
+		end,
+	},
 }
 
 task.delay(0.2, _K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
-	SizeBounds = Rect.new(320, 256, 9e9, 9e9),
-	Title = function()
-		return `Kohl's Admin  <stroke transparency="1"><font transparency="0.75" size="{math.round(UI.Theme.FontSize())}">v{_K.VERSION}</font></stroke>`
-	end,
+	Icon = "rbxassetid://71961243872230",
+	IconProperties = {
+		Size = function()
+			return UDim2.fromOffset(UI.Theme.FontSize(), UI.Theme.FontSize())
+		end,
+		UI.new "Tooltip" {
+			Text = "Kohl's Admin",
+		},
+	},
+	Position = UDim2.new(0.5, -320, 0.5, -240),
+	Size = UDim2.fromOffset(640, 480),
+	SizeBounds = Rect.new(128, 128, 9e9, 9e9),
+	Title = "",
 	Visible = false,
-
 	_K.client.dashboard.Tabs,
 }
 _K.client.dashboard.Window = dashboard
 dashboard._exitButton.ActiveSound(false)
+dashboard._content.UIPadding:Destroy()
+
+task.spawn(function()
+	repeat
+		task.wait(1)
+		dashboard.Title(DateTime.now():FormatLocalTime("LT", "en-us"))
+	until nil
+end)
+
+titleLine.Parent = dashboard._instance.Frame
+
+local titleBar = dashboard._instance.Frame.TitleBar
+
+UI.edit(titleBar.UIPadding, {
+	PaddingLeft = UI.Theme.PaddingDouble,
+})
+
+UI.edit(titleBar.Left.Title, {
+	TextSize = UI.Theme.FontSize,
+	TextTransparency = 0.5,
+})
+
+local parented = {}
+for _, page in
+	{
+		_K.client.dashboard.Bans,
+		_K.client.dashboard.Commands,
+		_K.client.dashboard.Logs,
+		_K.client.dashboard.Members,
+		_K.client.dashboard.Settings,
+	}
+do
+	local instance = if type(page) == "table" then page._instance else page
+	local parentState = UI.state(instance, "Parent")
+	local moveToTitleBar = UI.compute(function()
+		local parent = parentState()
+		return parent
+			and parent:IsDescendantOf(dashboard._instance)
+			and _K.client.dashboard.Tabs._pages.CurrentPage == instance.Parent
+			and _K.client.dashboard.Tabs.Vertical()
+	end)
+	UI.new "UIFlexItem" {
+		Parent = page._input._instance,
+		FlexMode = function()
+			return if moveToTitleBar() then Enum.UIFlexMode.Fill else Enum.UIFlexMode.None
+		end,
+	}
+	UI.edit(page._input, {
+		Size = function()
+			local y = if moveToTitleBar() then 0 else 1
+			return UDim2.new(y, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2)
+		end,
+		LayoutOrder = function()
+			return if moveToTitleBar() then 4 else -1
+		end,
+		Parent = function()
+			local move = moveToTitleBar()
+			parented[page] = if move then true else nil
+			titleBar.Spacer.Visible = next(parented) == nil
+			return if move then titleBar else instance
+		end,
+	})
+	UI.edit(page._scroller.UIPadding, {
+		PaddingTop = function()
+			return if moveToTitleBar() then UI.Theme.Padding else UDim.new(0, 1)
+		end,
+	})
+end
+
+UI.edit(_K.client.dashboard.Logs._scroller.UIPadding, {
+	PaddingTop = UDim.new(),
+})
+
+UI.edit(_K.client.dashboard.Tabs._instance.Bar.UIPadding, {
+	PaddingBottom = function()
+		return if _K.client.dashboard.Tabs.Vertical() then UDim.new() else UI.Theme.Padding
+	end,
+})
+
+local titleSize = UI.state(titleBar.Left.Title, "AbsoluteSize")
+local tabBarSize = UI.state(_K.client.dashboard.Tabs._instance.Bar, "AbsoluteSize")
+
+UI.edit(dashboard._instance.Frame.TitleBar.Left, {
+	Size = function()
+		return if _K.client.dashboard.Tabs.Vertical()
+			then UDim2.fromOffset(tabBarSize().X - UI.Theme.PaddingDouble().Offset, 0)
+			else UDim2.new()
+	end,
+})
+
+UI.new "Frame" {
+	Name = "SideBar",
+	Parent = dashboard._instance,
+	BackgroundTransparency = 1,
+	ClipsDescendants = true,
+	Size = function()
+		if _K.client.dashboard.Tabs.Vertical() then
+			local padding = UI.Theme.Padding().Offset
+			local titleWidth = (titleBar.Left.Title.AbsolutePosition.X + titleSize().X + padding * 4)
+				- titleBar.Left.AbsolutePosition.X
+			local maxWidth = math.max(titleWidth, tabBarSize().X)
+			local statusBarHeight = UI.Theme.FontSize + padding + 1
+			_K.client.dashboard.Tabs._instance.Bar.Size = UDim2.new(0, titleWidth, 1, 0)
+			return UDim2.new(0, maxWidth + 1, 1, -statusBarHeight)
+		else
+			_K.client.dashboard.Tabs._instance.Bar.Size = UDim2.new(1, 0, 0, 0)
+			return UDim2.new()
+		end
+	end,
+	UI.new "Frame" {
+		BackgroundTransparency = UI.Theme.TransparencyMax,
+		BackgroundColor3 = UI.Theme.Secondary,
+		Size = UDim2.fromScale(2, 1),
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerRadius,
+		},
+	},
+	UI.new "Frame" {
+		Name = "Line",
+		BackgroundColor3 = UI.Theme.Border,
+		BackgroundTransparency = UI.Theme.TransparencyBalanced,
+		BorderSizePixel = 0,
+		Position = UDim2.new(1, -1, 0, 0),
+		Size = UDim2.new(0, 1, 1, 0),
+	},
+	Visible = _K.client.dashboard.Tabs.Vertical,
+}
+
+local statusLabelPosition = UI.compute(function()
+	return UDim2.fromOffset(UI.Theme.FontSize() + UI.Theme.PaddingHalf().Offset, 0)
+end)
+
+local function statusIconLabel(name, imageDefinition, labelDefinition, tooltipDefinition)
+	return UI.new "Frame" {
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		Name = name,
+		Size = UDim2.new(0, 0, 1, 0),
+		UI.edit(
+			UI.new "ImageLabel" {
+				BackgroundTransparency = 1,
+				Image = UI.Theme.Image.Signal,
+				ImageColor3 = UI.Theme.PrimaryText,
+				ImageTransparency = 0.5,
+				Size = UDim2.new(1, 0, 1, 0),
+				SizeConstraint = Enum.SizeConstraint.RelativeYY,
+			},
+			imageDefinition or {}
+		),
+		UI.edit(
+			UI.new "TextLabel" {
+				Name = "Label",
+				AutomaticSize = Enum.AutomaticSize.X,
+				BackgroundTransparency = 1,
+				Position = statusLabelPosition,
+				Size = UDim2.fromScale(0, 1),
+				Font = UI.Theme.FontMono,
+				Text = "?",
+				TextColor3 = UI.Theme.PrimaryText,
+				TextSize = UI.Theme.FontSize,
+				TextTransparency = 0.5,
+			},
+			labelDefinition or {}
+		),
+		UI.edit(UI.new "Tooltip" { Font = UI.Theme.FontMono, Text = name }, tooltipDefinition or {}),
+	}
+end
+
+local function getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
+	local now = tick()
+	if now > nextAvgUpdate then
+		nextAvgUpdate = now + 2
+		table.sort(buffer)
+		avg, low = math.round(sum / #buffer), 0
+		local lowCount = math.ceil(#buffer / 100)
+		for i = 1, lowCount do
+			low += buffer[i]
+		end
+		low //= lowCount
+		table.clear(buffer)
+	end
+	return avg, low, 0
+end
+
+local lerpGreenRed
+do
+	local hueGreen = UI.compute(function()
+		return UI.Color.Oklab.toHCL(UI.Color.Oklab.fromLinear(UI.Theme.Valid())).X
+	end)
+	local hueRed = UI.compute(function()
+		return UI.Color.Oklab.toHCL(UI.Color.Oklab.fromLinear(UI.Theme.Invalid())).X
+	end)
+	lerpGreenRed = function(alpha: number)
+		local hcl = Vector3.new(math.lerp(hueGreen(), hueRed(), alpha), 1, 1)
+		return UI.Color.Oklab.toLinear(UI.Color.Oklab.fromHCL(hcl))
+	end
+end
+
+UI.new "Frame" {
+	Name = "StatusBar",
+	Parent = dashboard._instance.Frame,
+	LayoutOrder = 2 ^ 31 - 1,
+	AnchorPoint = Vector2.new(0, 1),
+	BackgroundTransparency = 1,
+	ClipsDescendants = true,
+	Position = UDim2.fromScale(0, 1),
+	Size = function()
+		return UDim2.new(1, 0, 0, UI.Theme.FontSizeSmall + UI.Theme.PaddingDouble().Offset)
+	end,
+	UI.new "Frame" {
+		AnchorPoint = Vector2.new(0, 1),
+		BackgroundTransparency = UI.Theme.TransparencyMax,
+		BackgroundColor3 = UI.Theme.Secondary,
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.fromScale(1, 2),
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerRadius,
+		},
+	},
+	UI.new "Frame" {
+		Name = "Line",
+		BackgroundColor3 = UI.Theme.Border,
+		BackgroundTransparency = UI.Theme.TransparencyBalanced,
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, 0, 0, 0),
+		Size = UDim2.new(1, 0, 0, 1),
+	},
+
+	UI.new "Frame" {
+		Name = "Content",
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		UI.new "UIListLayout" {
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			FillDirection = Enum.FillDirection.Horizontal,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			Padding = UI.Theme.PaddingDouble,
+		},
+		UI.new "UIPadding" {
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+		},
+		statusIconLabel("Ping", {
+			Image = UI.Theme.Image.SignalSheet,
+			ImageRectSize = Vector2.new(86, 86),
+		}, {
+			UI.action(function(instance)
+				local ping, max, avg, nFrames, sum = 0, 0, 0, 0, 0
+				local buffer, nextAvgUpdate = {}, tick()
+				_K.Service.Run.Heartbeat:Connect(function()
+					ping = math.round(_K.Service.Players.LocalPlayer:GetNetworkPing() * 1000)
+					max = math.min(math.max(max, ping), 30000)
+					nFrames += 1
+					sum += ping
+					table.insert(buffer, ping)
+				end)
+				repeat
+					task.wait(1)
+					if tick() > nextAvgUpdate then
+						nextAvgUpdate = tick() + 2
+						avg = sum // nFrames
+						sum, nFrames = 0, 0
+					end
+
+					local alpha = math.clamp(ping / 350, 0, 1)
+					local color = lerpGreenRed(alpha)
+					instance.Parent.ImageLabel.ImageRectOffset =
+						Vector2.new(math.round((1 - alpha) * 4) * 90 + math.ceil(alpha), 0)
+					instance.Parent.ImageLabel.ImageColor3 = color
+					instance.TextColor3 = color
+					instance.Text = `{avg}ms`
+
+					local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
+					if tooltip then
+						tooltip.Text(`Ping\n\n<b>Avg:</b>     {avg}ms\n<b>Max:</b>     {max}ms`)
+					end
+				until nil
+			end),
+		}),
+		statusIconLabel("FPS", {
+			Image = UI.Theme.Image.Pace,
+		}, {
+			UI.action(function(instance)
+				local fps, max, avg, low, sum = 0, 0, 0, 0, 0
+				local buffer, nextAvgUpdate = {}, tick()
+				_K.Service.Run.Heartbeat:Connect(function()
+					fps = math.round(1 / _K.Service.Stats.FrameTime)
+					max = math.min(math.max(max, fps), 240)
+					sum += fps
+					table.insert(buffer, fps)
+				end)
+				repeat
+					task.wait(1)
+					avg, low, sum = getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
+
+					local alpha = math.clamp(fps / max, 0, 1)
+					local color = lerpGreenRed(1 - alpha)
+					instance.Parent.ImageLabel.ImageColor3 = color
+					instance.TextColor3 = color
+					instance.Text = `{avg} fps`
+
+					local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
+					if tooltip then
+						tooltip.Text(
+							`Frames Per Second\n\n<b>1% Low:</b>  {low} fps\n<b>Avg:</b>     {avg} fps\n<b>Max:</b>     {max} fps`
+						)
+					end
+				until nil
+			end),
+		}),
+		UI.edit(
+			statusIconLabel("Memory Usage (RAM)", {
+				Image = UI.Theme.Image.Memory_Alt,
+			}, {
+				UI.action(function(instance)
+					repeat
+						task.wait(1)
+						instance.Text = `{math.round(_K.Service.Stats:GetTotalMemoryUsageMb())} MB`
+					until nil
+				end),
+			}),
+			{ UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }
+		),
+		statusIconLabel("Uptime", {
+			Image = UI.Theme.Image.Hourglass_Bottom,
+		}, {
+			UI.action(function(instance)
+				local function getTimeString(amount)
+					local hours = math.floor(amount / 3600)
+					local minutes = math.floor((amount % 3600) / 60)
+					local seconds = math.floor(amount % 60)
+					local strings = {}
+					for k, v in { hours, minutes, seconds } do
+						if hours > 0 or v > 0 or k == 3 then
+							table.insert(
+								strings,
+								if (v < 10 and v > 0) and ((k == 2 and hours == 0) or (k == 3 and minutes == 0))
+									then tostring(v)
+									else string.format("%02d", v)
+							)
+						end
+					end
+					return table.concat(strings, ":")
+				end
+				repeat
+					task.wait(1)
+					local uptime = math.round(workspace:GetServerTimeNow() - _K.script:GetAttribute("ServerStartTime"))
+					instance.Text = getTimeString(uptime)
+
+					local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
+					if tooltip then
+						tooltip.Text(`Server Uptime\n\n<b>Client Uptime:</b>  {getTimeString(time())}`)
+					end
+				until nil
+			end),
+		}),
+		statusIconLabel("Kohl's Admin Version", {
+			Image = UI.Theme.Image.Graph1,
+			ImageTransparency = UI.Theme.TransparencyStrong,
+		}, {
+			Text = `{_K.VERSION}`,
+			TextTransparency = UI.Theme.TransparencyStrong,
+		}),
+	},
+}
 
 _K.client.commandBarVisible = UI.state(_K.client.CommandBar.Bar, "Visible")
 
@@ -78,6 +470,12 @@ UI.edit(_K.client.toggleCommandBar._content.IconFrame.Icon, {
 		return if _K.client.commandBarVisible() then 0 elseif _K.client.toggleCommandBar._hovering() then 0.5 else 0.75
 	end,
 })
+
+UI.new "Tooltip" {
+	Parent = _K.client.toggleCommandBar,
+	Hovering = _K.client.toggleCommandBar._hovering,
+	Text = "Command Bar",
+}
 
 task.defer(function()
 	local success, result = _K.Util.Retry(function()
@@ -173,6 +571,11 @@ task.defer(function()
 			end,
 		}
 		socialButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+		UI.new "Tooltip" {
+			Parent = socialButton,
+			Hovering = socialButton._hovering,
+			Text = "Kohl's Admin Community",
+		}
 
 		socialMenu = UI.new "Menu" {
 			Adornee = socialButton._instance,

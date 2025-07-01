@@ -85,6 +85,8 @@ local Tooltip = {}
 Tooltip.__index = Tooltip
 setmetatable(Tooltip, BaseClass)
 
+Tooltip.Cache = {}
+
 function Tooltip.new(definition)
 	local new = UI.makeStatefulDefaults({
 		Enabled = true,
@@ -155,6 +157,7 @@ function Tooltip.new(definition)
 				v:Disconnect()
 			end
 		end
+		Tooltip.Cache[adornee] = new
 		table.insert(hoverConnections, adornee.InputChanged:Connect(inputChanged))
 		table.insert(hoverConnections, adornee.InputEnded:Connect(inputEnded))
 		table.insert(hoverConnections, adornee.SelectionGained:Connect(hoverEnter))

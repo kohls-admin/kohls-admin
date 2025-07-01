@@ -166,7 +166,7 @@ function ScrollerFast:forceRender()
 	local startIndex = math.max(0, math.floor(self._scroller.CanvasPosition.Y / lineHeight)) + 1
 	local endIndex = math.min(startIndex + math.ceil(self._scroller.AbsoluteWindowSize.Y / lineHeight), length)
 
-	self._scroller.CanvasSize = UDim2.new(0, 0, 0, length * lineHeight)
+	self._scroller.CanvasSize = UDim2.new(0, 0, 0, length * lineHeight + UI.Theme.Padding._value.Offset)
 
 	local usedItems = {}
 	for i = math.max(1, startIndex - 4), math.min(length, endIndex + 4) do
@@ -311,6 +311,10 @@ function ScrollerFast.new(definition)
 		BottomImage = UI.Theme.ScrollBottomImage,
 		VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
+		UI.new "UIFlexItem" {
+			FlexMode = Enum.UIFlexMode.Fill,
+		},
+
 		[UI.Event] = {
 			AbsoluteWindowSize = render,
 			CanvasPosition = render,
@@ -321,8 +325,8 @@ function ScrollerFast.new(definition)
 	local windowAbsolute = UI.state(self._scroller, "AbsoluteWindowSize")
 	UI.new "UIPadding" {
 		Parent = self._scroller,
-		PaddingBottom = UDim.new(0, 1),
-		PaddingTop = UDim.new(0, 1),
+		PaddingBottom = UI.Theme.Padding,
+		PaddingTop = UI.Theme.Padding,
 		PaddingLeft = UDim.new(0, 1),
 		PaddingRight = function()
 			return if canvasAbsolute().Y > windowAbsolute().Y then UI.Theme.Padding() else UDim.new(0, 1)

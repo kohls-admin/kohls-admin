@@ -225,6 +225,8 @@ end
 -- START OF SERVER CODE --
 --------------------------
 
+script:SetAttribute("ServerStartTime", workspace:GetServerTimeNow())
+
 local function characterAdded(character: Model)
 	local player = _K.Service.Players:GetPlayerFromCharacter(character)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")

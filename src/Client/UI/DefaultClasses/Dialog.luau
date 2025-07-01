@@ -51,7 +51,8 @@ function Dialog.new(definition)
 			UDim2.fromOffset(
 				math.clamp(math.round(startOffset.X + delta.X), min.X, math.max(offset.X, max.X)),
 				math.clamp(math.round(startOffset.Y + delta.Y), math.max(offset.Y, min.Y), math.max(offset.Y, max.Y))
-			)
+			),
+			true
 		)
 	end
 

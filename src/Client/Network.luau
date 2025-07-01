@@ -34,7 +34,7 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 	_K.client.dashboard.Bans._instance:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "bans"))
 	_K.client.dashboard.Logs._instance:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "logs"))
 	_K.client.dashboard.Members._instance:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "members"))
-	_K.client.dashboard.Settings:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "settings"))
+	_K.client.dashboard.Settings._instance:SetAttribute("Enabled", _K.Auth.hasCommand(userId, "settings"))
 
 	for _, command in _K.Registry.commands do
 		command.LocalPlayerAuthorized = _K.Auth.hasCommand(userId, command)

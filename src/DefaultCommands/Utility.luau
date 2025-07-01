@@ -55,13 +55,8 @@ return {
 			task.defer(function()
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
-					Title = "Kohl's Admin About",
-					_K.UI.new "UIPadding" {
-						PaddingLeft = UDim.new(0, 1),
-						PaddingRight = UDim.new(0, 1),
-						PaddingTop = UDim.new(0, 1),
-						PaddingBottom = UDim.new(0, 1),
-					},
+					Icon = "rbxassetid://71961243872230",
+					Title = "About",
 				}
 				_K.UI.edit(window, {
 					[_K.UI.Event] = {
@@ -102,13 +97,8 @@ return {
 			task.defer(function()
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
-					Title = "Kohl's Admin Commands",
-					_K.UI.new "UIPadding" {
-						PaddingLeft = UDim.new(0, 1),
-						PaddingRight = UDim.new(0, 1),
-						PaddingTop = UDim.new(0, 1),
-						PaddingBottom = UDim.new(0, 1),
-					},
+					Icon = "rbxassetid://71961243872230",
+					Title = "Commands",
 				}
 				_K.UI.edit(window, {
 					[_K.UI.Event] = {
@@ -212,13 +202,8 @@ return {
 			task.defer(function()
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
-					Title = "Kohl's Admin Logs",
-					_K.UI.new "UIPadding" {
-						PaddingLeft = UDim.new(0, 1),
-						PaddingRight = UDim.new(0, 1),
-						PaddingTop = UDim.new(0, 1),
-						PaddingBottom = UDim.new(0, 1),
-					},
+					Icon = "rbxassetid://71961243872230",
+					Title = "Logs",
 				}
 				_K.UI.edit(window, {
 					[_K.UI.Event] = {
@@ -283,13 +268,8 @@ return {
 			task.defer(function()
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
-					Title = "Kohl's Admin Settings",
-					_K.UI.new "UIPadding" {
-						PaddingLeft = UDim.new(0, 1),
-						PaddingRight = UDim.new(0, 1),
-						PaddingTop = UDim.new(0, 1),
-						PaddingBottom = UDim.new(0, 1),
-					},
+					Icon = "rbxassetid://71961243872230",
+					Title = "Settings",
 				}
 				_K.UI.edit(window, {
 					[_K.UI.Event] = {
@@ -312,7 +292,7 @@ return {
 				Visible = true,
 				context._K.client.dashboard.Settings,
 			})
-			context._K.client.dashboard.Settings.Visible = true
+			context._K.client.dashboard.Settings._instance.Visible = true
 		end,
 	},
 

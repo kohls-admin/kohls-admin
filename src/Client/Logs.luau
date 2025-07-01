@@ -5,7 +5,7 @@ local clientTag = " <font color='#0bb'><b>CLIENT</b></font>"
 local serverTag = " <font color='#b60'><b>SERVER</b></font>"
 local logTypes = {
 	{ "DEBUG", "#888" },
-	{ "INFO", "#fff" },
+	{ "INFO", "#ccc" },
 	{ "WARN", "#ff0" },
 	{ "ERROR", "#f00" },
 	{ "CHAT", "#0f8" },
@@ -109,6 +109,7 @@ function Logs.new(_K)
 	for _, array in logTypes do
 		logTypeFilter[array[1]] = UI.state(array[1] ~= "DEBUG" or _K.DEBUG)
 	end
+	scroller.logTypeFilter = logTypeFilter
 	-- TODO: load filter options from client datastore profile
 
 	local escape = _K.Util.String.escapeRichText
@@ -270,7 +271,7 @@ function Logs.new(_K)
 		}
 	end
 
-	UI.new "Frame" {
+	scroller._input._instance = UI.new "Frame" {
 		Parent = scroller,
 		Name = "FilterInput",
 
@@ -284,21 +285,9 @@ function Logs.new(_K)
 			Padding = UI.Theme.Padding,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		},
-		UI.edit(scroller._input, {
-			UI.new "UIFlexItem" {
-				FlexMode = Enum.UIFlexMode.Fill,
-			},
-		}),
+		UI.edit(scroller._input, { UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }),
 		filterButton,
 	}
-
-	UI.edit(scroller._scroller, {
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
-		},
-	})
-
-	scroller.logTypeFilter = logTypeFilter
 
 	return scroller
 end

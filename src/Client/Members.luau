@@ -310,6 +310,7 @@ function Members.new(_K)
 			end,
 		}
 		UI.new "Tooltip" { Parent = button, Text = "Remove Role", Hovering = button._hovering }
+		button._instance.UIStroke:Destroy()
 
 		return UI.new "Frame" {
 			AutomaticSize = Enum.AutomaticSize.X,
@@ -320,8 +321,6 @@ function Members.new(_K)
 			UI.new "UICorner" {
 				CornerRadius = UI.Theme.CornerRadius,
 			},
-
-			UI.new "Stroke" {},
 
 			UI.new "UIPadding" {
 				PaddingLeft = function()
@@ -412,8 +411,7 @@ function Members.new(_K)
 			Size = self.ItemSize,
 
 			UI.new "UIPadding" {
-				PaddingTop = UI.Theme.PaddingHalf,
-				PaddingBottom = UI.Theme.PaddingHalf,
+				PaddingBottom = UI.Theme.Padding,
 			},
 
 			UI.new "UIListLayout" {
@@ -521,7 +519,7 @@ function Members.new(_K)
 		RenderItem = renderItem,
 	}
 
-	UI.new "Frame" {
+	scroller._input._instance = UI.new "Frame" {
 		Parent = scroller,
 		Name = "FilterInput",
 
@@ -535,11 +533,7 @@ function Members.new(_K)
 			Padding = UI.Theme.Padding,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		},
-		UI.edit(scroller._input, {
-			UI.new "UIFlexItem" {
-				FlexMode = Enum.UIFlexMode.Fill,
-			},
-		}),
+		UI.edit(scroller._input, { UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }),
 		newRoleButton,
 	}
 

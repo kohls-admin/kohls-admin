@@ -2,7 +2,7 @@ local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.UI)
 
 return function(from: number?, name: string?, image: string?, badgeEnabled: boolean?)
-	local displayName = name or "System"
+	local displayName = name or ""
 
 	if badgeEnabled == nil then
 		badgeEnabled = true
@@ -133,7 +133,24 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		AutomaticSize = Enum.AutomaticSize.XY,
 		BackgroundTransparency = 1,
 
-		if from then imageLabel else nil,
+		if from
+			then imageLabel
+			else UI.new "Frame" {
+				BackgroundTransparency = 1,
+				Size = function()
+					return UDim2.fromOffset(UI.Theme.FontSizeLarger(), UI.Theme.FontSizeLarger())
+				end,
+				UI.new "ImageLabel" {
+					Name = "Icon",
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundTransparency = 1,
+					Position = UDim2.fromScale(0.5, 0.5),
+					Size = function()
+						return UDim2.fromOffset(UI.Theme.FontSize(), UI.Theme.FontSize())
+					end,
+					Image = "rbxassetid://71961243872230",
+				},
+			},
 		UI.new "Frame" {
 			Name = "From",
 			AutomaticSize = Enum.AutomaticSize.XY,
@@ -145,6 +162,12 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 
 			UI.new "UIFlexItem" {
 				FlexMode = Enum.UIFlexMode.Shrink,
+			},
+			UI.new "UIPadding" {
+				PaddingLeft = UDim.new(0, 1),
+				PaddingRight = UDim.new(0, 1),
+				PaddingTop = UDim.new(0, 1),
+				PaddingBottom = UDim.new(0, 1),
 			},
 
 			displayNameLabel,

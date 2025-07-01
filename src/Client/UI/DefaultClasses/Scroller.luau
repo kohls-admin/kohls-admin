@@ -35,7 +35,8 @@ function Scroller.new(definition)
 
 	UI.new "UIPadding" {
 		Parent = new._instance,
-		PaddingBottom = UDim.new(0, 1),
+		PaddingBottom = UI.Theme.Padding,
+		PaddingTop = UI.Theme.Padding,
 		PaddingLeft = UDim.new(0, 1),
 		PaddingRight = function()
 			return if canvasAbsolute().Y > windowAbsolute().Y then UI.Theme.Padding() else UDim.new(0, 1)

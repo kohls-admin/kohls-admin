@@ -329,7 +329,6 @@ function UI.edit(new: Instance | Type.Dict<any>, properties: Type.Dict<any>): In
 
 	local instance = new
 	local contentParent = instance
-	local parent = properties.Parent
 	local cleanup = {}
 
 	if type(new) == "table" then
@@ -389,9 +388,9 @@ function UI.edit(new: Instance | Type.Dict<any>, properties: Type.Dict<any>): In
 		table.insert(properties[Flux.Clean], v)
 	end
 
-	properties.Parent = nil
+	local parent = properties.Parent
 	if parent then
-		instance.Parent = if type(parent) == "table" then (parent._content or parent._instance) else parent
+		properties.Parent = if type(parent) == "table" then (parent._content or parent._instance) else parent
 	end
 	-- apply non class members to the root instance with Flux.edit
 	Flux.edit(instance, properties)

@@ -199,6 +199,7 @@ function Tabs.new(definition)
 
 		UI.new "UIPadding" {
 			PaddingTop = UDim.new(0, 1),
+			PaddingLeft = UI.Theme.Padding,
 			PaddingRight = UI.Theme.Padding,
 		},
 

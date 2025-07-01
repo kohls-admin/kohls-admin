@@ -137,7 +137,7 @@ function Settings.new(_K)
 	local disabledRankChoice = { _rank = false, name = "Disabled" }
 	table.insert(rankChoices, disabledRankChoice)
 
-	local function rankItem(setting: string, text: string, tooltip: string)
+	local function rankItem(setting: string, text: string, tooltip: string, callback)
 		return UI.new "ListItem" {
 			Text = text,
 			Tooltip = tooltip,
@@ -151,6 +151,9 @@ function Settings.new(_K)
 					Selected = function(value)
 						change(setting, value._rank)
 						_K.client.settings[setting](value._rank)
+						if callback then
+							callback()
+						end
 					end,
 				},
 			},
@@ -244,7 +247,12 @@ function Settings.new(_K)
 				},
 			},
 			rankItem("commandBarRank", "Command Bar Rank", "Minimum role to use the Command Bar"),
-			rankItem("dashboardRank", "Dashboard Rank", "Minimum role to use the Dashboard"),
+			rankItem("dashboardRank", "Dashboard Rank", "Minimum role to use the Dashboard", function()
+				print(_K.client.settings.dashboardRank())
+				if _K.client.settings.dashboardRank() == false then
+					_K.Process.runCommands(_K, _K.LocalPlayer.UserId, ";settings")
+				end
+			end),
 			rankItem("dashboardButtonRank", "Dashboard Button Rank", "Minimum role to show the Dashboard Button"),
 			rankItem(
 				"joinNotificationRank",
@@ -630,7 +638,7 @@ function Settings.new(_K)
 		local savedSettingsSwitch = UI.new "ListItem" {
 			Parent = settingsScroller,
 			LayoutOrder = -1,
-			Text = "<b>Use Saved Settings</b>",
+			Text = "Use Saved Settings",
 			Tooltip = "Toggles using saved or studio-only settings.",
 			UI.new "Switch" {
 				Value = _K.client.settings.useSavedSettings,
@@ -642,6 +650,10 @@ function Settings.new(_K)
 				},
 			},
 		}
+
+		UI.edit(savedSettingsSwitch._label, {
+			FontFace = UI.Theme.FontBold,
+		})
 
 		for layoutOrder, definition in ipairs(settingsLineItems) do
 			settingsLineItems[definition.Name] = UI.new("List")(_K.Util.Table.merge({
@@ -752,27 +764,22 @@ function Settings.new(_K)
 
 	filterInput._input:GetPropertyChangedSignal("Text"):Connect(filterSettings)
 
-	UI.edit(settingsScroller._instance.UIPadding, {
-		PaddingBottom = UI.Theme.Padding,
-	})
-
 	local settingsFrame = UI.new "Frame" {
 		Name = "Settings",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
-		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.Padding,
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-		},
 		filterInput,
 		settingsScroller,
 		settingsDialog,
 	}
 
-	return settingsFrame
+	return {
+		_instance = settingsFrame,
+		_input = filterInput,
+		_scroller = settingsScroller._instance,
+	}
 end
 
 return Settings

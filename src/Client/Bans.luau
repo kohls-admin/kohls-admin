@@ -182,8 +182,7 @@ function Bans.new(_K)
 			Size = self.ItemSize,
 
 			UI.new "UIPadding" {
-				PaddingTop = UI.Theme.PaddingHalf,
-				PaddingBottom = UI.Theme.PaddingHalf,
+				PaddingBottom = UI.Theme.Padding,
 			},
 
 			UI.new "UIListLayout" {
@@ -280,11 +279,6 @@ function Bans.new(_K)
 
 		unbanDialog,
 	}
-	UI.edit(scroller._scroller, {
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
-		},
-	})
 
 	scroller._filterUpdate = true
 	local function filterTest(self, list)
@@ -504,25 +498,20 @@ function Bans.new(_K)
 	}
 	UI.new "Tooltip" { Parent = newBanButton, Text = "New Ban", Hovering = newBanButton._hovering }
 
-	UI.new "Frame" {
+	scroller._input._instance = UI.new "Frame" {
 		Parent = scroller,
 		Name = "FilterInput",
 
 		BackgroundTransparency = 1,
-		Size = UI.compute(function()
-			return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
-		end),
-
+		Size = function()
+			return UDim2.new(0, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
+		end,
 		UI.new "UIListLayout" {
 			FillDirection = Enum.FillDirection.Horizontal,
 			Padding = UI.Theme.Padding,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		},
-		UI.edit(scroller._input, {
-			UI.new "UIFlexItem" {
-				FlexMode = Enum.UIFlexMode.Fill,
-			},
-		}),
+		UI.edit(scroller._input, { UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }),
 		newBanButton,
 	}
 

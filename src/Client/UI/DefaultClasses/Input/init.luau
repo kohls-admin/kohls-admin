@@ -331,7 +331,7 @@ function Input.new(definition)
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyHeavy,
 		Size = function()
-			return UDim2.new(1, 0, 0, new.FontSize() + new.Padding().Offset * 2)
+			return UDim2.new(0, 0, 0, new.FontSize() + new.Padding().Offset * 2)
 		end,
 
 		UI.new "UICorner" {

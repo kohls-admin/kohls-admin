@@ -59,6 +59,7 @@ function Select.new(definition)
 		Icon = UI.Theme.Image.Down,
 		IconRightAlign = true,
 		IconProperties = {
+			ImageColor3 = UI.Theme.PrimaryText,
 			Position = UDim2.new(0.5, 0, 0.5, 1),
 			Size = UDim2.fromScale(0.5, 0.5),
 		},

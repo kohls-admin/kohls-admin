@@ -116,6 +116,8 @@ function Window.new(definition)
 		Resizable = true,
 		RemoveOnClose = false,
 		Close = UI.Function,
+		Icon = "",
+		IconProperties = {},
 		Title = "Window",
 		Position = UDim2.new(0.5, -210, 0.5, -210),
 		Size = UDim2.new(0, 420, 0, 420),
@@ -143,7 +145,8 @@ function Window.new(definition)
 			UDim2.fromOffset(
 				math.clamp(math.round(startOffset.X + delta.X), 0, math.max(0, maxPosition.X)),
 				math.clamp(math.round(startOffset.Y + delta.Y), 0, math.max(0, maxPosition.Y))
-			)
+			),
+			true
 		)
 	end
 
@@ -236,17 +239,21 @@ function Window.new(definition)
 	end
 
 	local titleBarHeight = UI.compute(function()
-		return UI.Theme.FontSizeLargest()
+		return UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2
 	end)
+	local buttonSize = function()
+		return UDim2.fromOffset(titleBarHeight(), titleBarHeight())
+	end
+	local iconSize = function()
+		return UDim2.fromOffset(UI.Theme.FontSize(), UI.Theme.FontSize())
+	end
 
 	new._exitButton = UI.new "Button" {
 		LayoutOrder = 9,
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
 		BackgroundTransparency = 1,
 		HoverTransparency = 0,
-		Size = function()
-			return UDim2.fromOffset(titleBarHeight(), titleBarHeight())
-		end,
+		Size = buttonSize,
 		Icon = UI.Theme.Image.Close,
 		IconProperties = {
 			ImageColor3 = UI.Theme.PrimaryText,
@@ -274,6 +281,12 @@ function Window.new(definition)
 
 		UI.new "UIFlexItem" {
 			FlexMode = Enum.UIFlexMode.Fill,
+		},
+		UI.new "UIPadding" {
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+			PaddingTop = UDim.new(0, 1),
 		},
 	}
 
@@ -314,14 +327,6 @@ function Window.new(definition)
 
 			UI.new "UIListLayout" {
 				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.Padding,
-			},
-
-			UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
 			},
 
 			UI.new "TextButton" {
@@ -339,36 +344,62 @@ function Window.new(definition)
 					FillDirection = Enum.FillDirection.Horizontal,
 					SortOrder = Enum.SortOrder.LayoutOrder,
 					Padding = UI.Theme.Padding,
+					VerticalAlignment = Enum.VerticalAlignment.Center,
+				},
+				UI.new "UIPadding" {
+					PaddingLeft = function()
+						return UDim.new(0, UI.Theme.Padding().Offset + UI.Theme.FontSize / 2)
+					end,
+					PaddingRight = UI.Theme.Padding,
+					PaddingTop = UI.Theme.Padding,
+					PaddingBottom = UI.Theme.Padding,
 				},
 
-				UI.new "TextLabel" {
-					AutoLocalize = false,
-					Name = "Title",
+				UI.new "Frame" {
+					Name = "Left",
+					AutomaticSize = Enum.AutomaticSize.XY,
 					BackgroundTransparency = 1,
-					AutomaticSize = Enum.AutomaticSize.Y,
-					Size = function()
-						return UDim2.new(1, 0, 0, titleBarHeight())
-					end,
-					Font = UI.Theme.Font,
-					RichText = true,
-					Text = function()
-						return `<b>{new.Title()}</b>`
-					end,
-					TextColor3 = UI.Theme.PrimaryText,
-					TextStrokeColor3 = UI.Theme.Primary,
-					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-					TextSize = UI.Theme.FontSizeLargest,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					TextYAlignment = Enum.TextYAlignment.Bottom,
-					TextTruncate = Enum.TextTruncate.SplitWord,
+					Size = UDim2.new(),
 
-					UI.new "UIFlexItem" {
-						FlexMode = Enum.UIFlexMode.Fill,
-					},
-					UI.new "UIPadding" {
-						PaddingLeft = UI.Theme.Padding,
+					UI.edit(
+						UI.new "ImageLabel" {
+							AnchorPoint = Vector2.new(0, 0.5),
+							BackgroundTransparency = 1,
+							Image = new.Icon,
+							ImageColor3 = UI.Theme.PrimaryText,
+							Position = UDim2.fromScale(0, 0.5),
+							Size = iconSize,
+							Visible = function()
+								return if new.Icon() ~= "" then true else false
+							end,
+						},
+						new.IconProperties()
+					),
+
+					UI.new "TextLabel" {
+						AutoLocalize = false,
+						Name = "Title",
+						BackgroundTransparency = 1,
+						AutomaticSize = Enum.AutomaticSize.XY,
+						Size = UDim2.new(0, 0, 0, 0),
+						Font = UI.Theme.Font,
+						Position = function()
+							return UDim2.fromOffset(UI.Theme.FontSize + UI.Theme.Padding().Offset, 0)
+						end,
+						RichText = true,
+						Text = function()
+							return `<b>{new.Title()}</b>`
+						end,
+						TextColor3 = UI.Theme.PrimaryText,
+						TextStrokeColor3 = UI.Theme.Primary,
+						TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+						TextSize = UI.Theme.FontSizeLarger,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						TextYAlignment = Enum.TextYAlignment.Center,
+						TextTruncate = Enum.TextTruncate.SplitWord,
 					},
 				},
+				UI.new "Spacer" {},
 
 				new._exitButton,
 

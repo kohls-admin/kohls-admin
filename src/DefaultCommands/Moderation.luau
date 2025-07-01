@@ -11,13 +11,8 @@ return {
 			task.defer(function()
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
-					Title = "Kohl's Admin Bans",
-					_K.UI.new "UIPadding" {
-						PaddingLeft = UDim.new(0, 1),
-						PaddingRight = UDim.new(0, 1),
-						PaddingTop = UDim.new(0, 1),
-						PaddingBottom = UDim.new(0, 1),
-					},
+					Icon = "rbxassetid://71961243872230",
+					Title = "Bans",
 				}
 				_K.UI.edit(window, {
 					[_K.UI.Event] = {
@@ -53,13 +48,8 @@ return {
 			task.defer(function()
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
-					Title = "Kohl's Admin Members",
-					_K.UI.new "UIPadding" {
-						PaddingLeft = UDim.new(0, 1),
-						PaddingRight = UDim.new(0, 1),
-						PaddingTop = UDim.new(0, 1),
-						PaddingBottom = UDim.new(0, 1),
-					},
+					Icon = "rbxassetid://71961243872230",
+					Title = "Members",
 				}
 				_K.UI.edit(window, {
 					[_K.UI.Event] = {
@@ -990,6 +980,7 @@ return {
 			env.scroller = scroller
 			env.window = UI.new "Window" {
 				Parent = UI.LayerTopInset,
+				Icon = "rbxassetid://71961243872230",
 				Title = "Tools",
 				Exitable = true,
 				Position = UDim2.new(0.5, -128, 0.5, -128),
