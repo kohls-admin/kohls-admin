@@ -19,7 +19,7 @@ return {
 
 	CornerRadius = UDim.new(0, 8),
 	Padding = UDim.new(0, 6),
-	StrokeEnabled = false,
+	StrokeEnabled = true,
 
 	TweenIn = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In),
 	TweenOut = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out),

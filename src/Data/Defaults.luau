@@ -89,7 +89,7 @@ if game:GetService("RunService"):IsClient() then
 end
 
 -- UI Theme initial settings
-for key, state in Theme do
+for key, state in Theme :: any do
 	if key == "Themes" then
 		continue
 	end

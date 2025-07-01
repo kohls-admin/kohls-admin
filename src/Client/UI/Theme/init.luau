@@ -41,7 +41,11 @@ local state = Flux.state
 --- .TypingSounds State<boolean>
 --- .TypingSoundsOnEveryTextBox State<boolean>
 --- .Volume State<number>
-local Theme = Default
+local Theme = {}
+
+for k, v in Default do
+	Theme[k] = v
+end
 
 local themes = {}
 for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
@@ -143,31 +147,31 @@ Theme.FontLight = compute(function()
 end)
 
 Theme.FontSizeDouble = compute(function()
-	return math.round(Theme.FontSize() * 2)
+	return math.round(Theme.FontSize * 2)
 end)
 
 Theme.FontSizeLargest = compute(function()
-	return math.round(Theme.FontSize() * 1.75)
+	return math.round(Theme.FontSize * 1.75)
 end)
 
 Theme.FontSizeLarger = compute(function()
-	return math.round(Theme.FontSize() * 1.5)
+	return math.round(Theme.FontSize * 1.5)
 end)
 
 Theme.FontSizeLarge = compute(function()
-	return math.round(Theme.FontSize() * 1.25)
+	return math.round(Theme.FontSize * 1.25)
 end)
 
 Theme.FontSizeSmall = compute(function()
-	return math.round(Theme.FontSize() * 0.75)
+	return math.round(Theme.FontSize * 0.75)
 end)
 
 Theme.FontSizeSmaller = compute(function()
-	return math.round(Theme.FontSize() * 0.5)
+	return math.round(Theme.FontSize * 0.5)
 end)
 
 Theme.FontSizeSmallest = compute(function()
-	return math.round(Theme.FontSize() * 0.25)
+	return math.round(Theme.FontSize * 0.25)
 end)
 
 Theme.PaddingHalf = compute(function()
@@ -198,4 +202,4 @@ Theme.ScrollBottomImage = compute(function()
 	return if Theme.CornerRadius().Offset == 0 then "rbxassetid://18370268668" else "rbxassetid://110012579042362"
 end)
 
-return Theme
+return Theme :: typeof(Default) & typeof(Theme)
