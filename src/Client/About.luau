@@ -803,6 +803,11 @@ function About.new(_K)
 			end
 		end)
 
+		local gamesTooltipText = "A list of games using Kohl's Admin!\n\n"
+			.. "<font transparency='0.5'>Check the Kohl's Admin <b>Settings</b> script in Studio to add your game to the list.</font>\n\n"
+			.. "<b>Game Creators</b> get up to <font color='#0f0'><b>40%</b></font> when "
+			.. "<font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in their Roblox Game Settings!"
+
 		UI.edit(scroller._instance, {
 
 			UI.new "TextLabel" {
@@ -854,7 +859,7 @@ function About.new(_K)
 
 			UI.new "TextLabel" {
 				AutoLocalize = false,
-				AutomaticSize = Enum.AutomaticSize.Y,
+				AutomaticSize = Enum.AutomaticSize.XY,
 				BackgroundTransparency = 1,
 				Font = UI.Theme.Font,
 				TextSize = UI.Theme.FontSize,
@@ -862,9 +867,12 @@ function About.new(_K)
 				TextStrokeColor3 = UI.Theme.Primary,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.new(0, 0, 0, 0),
 				Text = "<b>Looking for more games with Kohl's Admin?</b>",
 				RichText = true,
+				UI.new "Tooltip" {
+					Text = gamesTooltipText,
+				},
 			},
 
 			UI.new "TextBox" {
@@ -894,10 +902,7 @@ function About.new(_K)
 					PaddingBottom = UI.Theme.Padding,
 				},
 				UI.new "Tooltip" {
-					Text = "A list of games using Kohl's Admin!\n\n"
-						.. "<font transparency='0.5'>Check the Kohl's Admin <b>Settings</b> script in Studio to add your game to the list.</font>\n\n"
-						.. "<b>Game Creators</b> get up to <font color='#0f0'><b>40%</b></font> when "
-						.. "<font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in their Roblox Game Settings!",
+					Text = gamesTooltipText,
 				},
 			},
 		})
