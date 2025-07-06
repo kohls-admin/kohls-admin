@@ -955,6 +955,10 @@ return {
 		name = "whois",
 		aliases = { "userinfo" },
 		description = "Displays detailed information about a player.",
+		credit = {
+			"Realistic @iiRealistic_Dev",
+			"Kohl @Scripth",
+		},
 		group = "moderation",
 		args = {
 			{
