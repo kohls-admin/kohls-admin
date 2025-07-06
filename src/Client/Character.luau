@@ -35,7 +35,7 @@ local function updateFly(delta: number)
 		local reference = CFrame.lookAlong(align.CFrame.Position, Vector3.new(look.X, 0, look.Z), Vector3.yAxis)
 		local controlVector = reference:VectorToObjectSpace(humanoid.MoveDirection).Unit
 		if controlVector ~= controlVector then
-			return
+			controlVector = Vector3.zero
 		end
 		speed = math.clamp(speed + delta * maxSpeed / 4, math.min(humanoid.WalkSpeed, maxSpeed), maxSpeed)
 		linear.VectorVelocity = (align.CFrame:VectorToWorldSpace(controlVector) + Vector3.new(0, up, 0)) * speed
