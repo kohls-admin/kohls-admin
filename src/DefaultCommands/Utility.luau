@@ -320,10 +320,12 @@ return {
 		name = "serverage",
 		aliases = { "uptime" },
 		description = "Displays the age of the server.",
-		run = function(context, volume)
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+		runClient = function(context, volume)
+			context._K.Notify({
 				From = "_K",
-				Text = `<b>Server Age:</b> {context._K.Util.Time.readable(workspace.DistributedGameTime)}`,
+				Text = `<b>Server Age:</b> {context._K.Util.Time.readable(
+					workspace:GetServerTimeNow() - context._K.script:GetAttribute("ServerStartTime")
+				)}`,
 			})
 		end,
 	},
