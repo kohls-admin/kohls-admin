@@ -34,14 +34,13 @@ Fourth table consists of the arguments that will be returned in the args table.
 
 Fifth index consists of the function that will run when the command is executed properly.	]]
 return {
-
-	{
-		{ "test", "othertest" },
-		{ "Test command.", "Example" },
-		6,
-		{ "number", "string/" },
-		function(pl, args)
-			print(pl, args[1], args[2])
-		end,
-	},
+	-- {
+	-- 	{ "test", "othertest" },
+	-- 	{ "Test command.", "Example" },
+	-- 	6,
+	-- 	{ "number", "string/" },
+	-- 	function(pl, args)
+	-- 		print(pl, args[1], args[2])
+	-- 	end,
+	-- },
 }
