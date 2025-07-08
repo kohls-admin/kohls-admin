@@ -523,7 +523,15 @@ function Auth.targetUserArgument(arg, userId: number, value: Player | number | s
 	end
 end
 
-if Util.Service.Run:IsServer() then
+function Auth.isFreeAdmin(userId: number)
+	local maxFreeAdminRank = 0
+	for _, roleId in Data.settings.freeAdmin do
+		local role = Data.roles[roleId]
+		if role and role._rank > maxFreeAdminRank then
+			maxFreeAdminRank = role._rank
+		end
+	end
+	return Auth.getRank(userId) <= maxFreeAdminRank
 end
 
 return Auth

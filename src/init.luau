@@ -678,6 +678,23 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 	-- handle ban events
 	_K.Remote.Ban.OnServerEvent:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
+		if _K.Auth.isFreeAdmin(player.UserId) then
+			local authorized
+			local member = _K.Data.members[tostring(player.UserId)]
+			if member then
+				for _, roleId in member.persist do
+					local role = _K.Data.roles[roleId]
+					if role and role.permissions and role.permissions.banasync then
+						authorized = true
+						break
+					end
+				end
+			end
+			if not authorized then
+				duration = 0
+			end
+		end
+
 		local fauxArg = {
 			_K = _K,
 			definition = _K.Registry.commands.ban.args[1],
