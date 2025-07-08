@@ -32,6 +32,14 @@ local function handleFailedTeleport(player, teleportResult, errorMessage, target
 		task.wait(RETRY_DELAY)
 	end
 
+	if
+		teleportResult == Enum.TeleportResult.GameNotFound
+		or teleportResult == Enum.TeleportResult.Unauthorized
+		or string.find(errorMessage, "Roblox Studio")
+	then
+		return
+	end
+
 	SafeTeleport(targetPlaceId, { player }, teleportOptions)
 end
 

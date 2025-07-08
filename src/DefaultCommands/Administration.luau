@@ -388,10 +388,8 @@ return {
 			end
 			for _, player in players do
 				context._K.Remote.Notify:FireClient(player, {
-					{
-						From = "_K",
-						Text = "Teleport initiated...",
-					},
+					From = "_K",
+					Text = "Teleport initiated...",
 				})
 			end
 		end,
