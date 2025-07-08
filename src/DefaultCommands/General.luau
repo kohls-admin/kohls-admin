@@ -899,7 +899,6 @@ return {
 		envClient = function(_K)
 			local xray = _K.Flux.state(false)
 			local xrayModel = _K.Flux.new "Model" {
-				Parent = workspace,
 				Name = "_K_XRay",
 			}
 			local highlight = _K.Flux.new "Highlight" {
