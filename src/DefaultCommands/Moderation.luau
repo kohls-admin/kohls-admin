@@ -1907,18 +1907,33 @@ return {
 			},
 		},
 		envClient = function(_K)
-			local limitTime = 0
-			_K.Remote.FPS.OnClientEvent:Connect(function(fps: number?)
-				fps = fps or 32
-				local t = tick()
-				limitTime = t
+			local connection
+			local fps = 0
 
-				while t == limitTime and _K.LocalPlayer:GetAttribute("_KFPSLimit") do
-					local nextStep = tick() + (1 / fps :: number)
-					repeat
-					until tick() > nextStep
-					task.wait()
+			local frameStart = 0
+			_K.Service.Run.PreRender:Connect(function()
+				frameStart = tick()
+			end)
+
+			local function lag()
+				if not _K.LocalPlayer:GetAttribute("_KFPSLimit") then
+					connection:Disconnect()
+					return
 				end
+
+				local now = tick()
+				local elapsed = now - frameStart
+				local nextStep = now + (1 / fps :: number) - elapsed * 2
+				repeat
+				until tick() >= nextStep
+			end
+
+			_K.Remote.FPS.OnClientEvent:Connect(function(amount: number?)
+				fps = amount or 32
+				if connection then
+					connection:Disconnect()
+				end
+				connection = _K.Service.Run.Heartbeat:Connect(lag)
 			end)
 		end,
 		env = function(_K)
