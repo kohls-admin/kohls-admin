@@ -45,7 +45,7 @@ _K.client.dashboard.Tabs = UI.new "Tabs" {
 	},
 }
 
-task.delay(0.2, _K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
+--task.delay(0.2, _K.client.dashboard.Tabs.JumpTo, _K.client.dashboard.About)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
@@ -615,6 +615,9 @@ local function dashboardToggle(button)
 	local page = container and container:FindFirstChildWhichIsA("GuiObject")
 	if page then
 		page.Visible = button.isSelected
+	end
+	if (not container) or (#container:GetChildren() == 0) then
+		_K.client.dashboard.Tabs.JumpTo(_K.client.dashboard.About)
 	end
 	dashboard._instance.Visible = button.isSelected
 end
