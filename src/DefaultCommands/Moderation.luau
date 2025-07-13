@@ -1427,7 +1427,7 @@ return {
 	},
 	{
 		name = "invisible",
-		aliases = { "inv" },
+		aliases = { "inv", "hide" },
 		description = "Makes one or more player(s) invisible.",
 		args = {
 			{
@@ -1470,7 +1470,7 @@ return {
 	},
 	{
 		name = "visible",
-		aliases = { "vis" },
+		aliases = { "vis", "show", "unhide" },
 		description = "Makes one or more player(s) visible.",
 		args = {
 			{
