@@ -45,7 +45,8 @@ function Select.new(definition)
 					font = choice
 				end
 			end
-			maxWidth = math.max(maxWidth, UI.TextService:GetTextSize(getName(choice), size, font, Vector2.zero).X)
+			maxWidth =
+				math.max(maxWidth, math.ceil(UI.TextService:GetTextSize(getName(choice), size, font, Vector2.zero).X))
 		end
 
 		return UDim2.fromOffset(maxWidth + padding * 2 + size, size + padding)
