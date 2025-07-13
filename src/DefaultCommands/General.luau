@@ -607,7 +607,7 @@ return {
 	},
 	{
 		name = "spectate",
-		aliases = { "spy" },
+		aliases = { "spy", "view" },
 		description = "Spectate a player's camera view.",
 		args = {
 			{
@@ -711,7 +711,7 @@ return {
 	},
 	{
 		name = "unspectate",
-		aliases = { "unspy", "unwatch", "uncamera", "unfollow" },
+		aliases = { "unspy", "unwatch", "uncamera", "unfollow", "unview" },
 		description = "Stop spectating.",
 		args = {},
 
