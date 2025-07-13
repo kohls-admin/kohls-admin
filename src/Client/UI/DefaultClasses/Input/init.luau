@@ -187,6 +187,13 @@ function Input.new(definition)
 				end
 			end
 
+			if new.Hotkey and new.Hotkey._value then
+				local key = UI.UserInputService:GetStringForKeyCode(new.Hotkey._value)
+				if key ~= string.sub(text, -1) then
+					text ..= key
+				end
+			end
+
 			if new.MaxChars._value ~= math.huge then
 				text = string.sub(text, 1, new.MaxChars._value)
 				new._input.CursorPosition = math.min(new.MaxChars._value + 1, new._input.CursorPosition)
