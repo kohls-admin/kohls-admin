@@ -122,6 +122,8 @@ function Tabs.new(definition)
 		Padding = UI.Theme.Padding,
 	}
 	new._pages = pages
+	new._pageCache = pageCache
+	new._containerCache = containerCache
 
 	pages.PageEnter:Connect(function(container)
 		currentPage(container)

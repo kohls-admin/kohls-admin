@@ -27,7 +27,7 @@ local titleLine = UI.new "Frame" {
 	Size = UDim2.new(1, 0, 0, 1),
 }
 
-_K.client.dashboard.Tabs = UI.new "Tabs" {
+local tabs = UI.new "Tabs" {
 	Vertical = true,
 	_K.client.dashboard.Commands,
 	_K.client.dashboard.Bans,
@@ -44,6 +44,7 @@ _K.client.dashboard.Tabs = UI.new "Tabs" {
 		end,
 	},
 }
+_K.client.dashboard.Tabs = tabs
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
@@ -98,14 +99,26 @@ for _, page in
 	}
 do
 	local instance = if type(page) == "table" then page._instance else page
-	local parentState = UI.state(instance, "Parent")
-	local moveToTitleBar = UI.compute(function()
-		local parent = parentState()
-		return parent
+	local moveToTitleBar = UI.state(false)
+
+	local function update()
+		local parent = instance.Parent
+		local move = parent
 			and parent:IsDescendantOf(dashboard._instance)
 			and _K.client.dashboard.Tabs._pages.CurrentPage == instance.Parent
 			and _K.client.dashboard.Tabs.Vertical()
+
+		moveToTitleBar(move, true)
+	end
+
+	instance:GetPropertyChangedSignal("Parent"):Connect(update)
+	tabs._pages:GetPropertyChangedSignal("CurrentPage"):Connect(function()
+		local page = tabs._pageCache[tabs._pages.CurrentPage]
+		if page == instance then
+			update()
+		end
 	end)
+
 	UI.new "UIFlexItem" {
 		Parent = page._input._instance,
 		FlexMode = function()
