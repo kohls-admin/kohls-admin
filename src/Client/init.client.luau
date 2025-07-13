@@ -111,9 +111,6 @@ end
 _K.Remote.Command.OnClientEvent:Connect(Chatted)
 
 _K.Service.UserInput.InputBegan:Connect(function(input, gameProcessedEvent)
-	if gameProcessedEvent then
-		return
-	end
 	if input.UserInputType == Enum.UserInputType.Keyboard then
 		for keyName, data in _K.client.hotkeys do
 			if
