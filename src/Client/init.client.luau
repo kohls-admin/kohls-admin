@@ -110,8 +110,36 @@ end
 
 _K.Remote.Command.OnClientEvent:Connect(Chatted)
 
+local textBoxFocused
+do
+	local focusedTextBoxes = {}
+	textBoxFocused = function()
+		if next(focusedTextBoxes) then
+			return true
+		end
+		local ChatInputBarConfiguration = _K.Service.TextChat:FindFirstChildOfClass("ChatInputBarConfiguration")
+		if ChatInputBarConfiguration and ChatInputBarConfiguration.IsFocused then
+			return true
+		end
+		return false
+	end
+
+	_K.Service.UserInput.TextBoxFocused:Connect(function(textbox)
+		if not (textbox and textbox.TextEditable) then
+			return
+		end
+		focusedTextBoxes[textbox] = true
+	end)
+	_K.Service.UserInput.TextBoxFocusReleased:Connect(function(textbox)
+		if not (textbox and textbox.TextEditable) then
+			return
+		end
+		focusedTextBoxes[textbox] = nil
+	end)
+end
+
 _K.Service.UserInput.InputBegan:Connect(function(input, gameProcessedEvent)
-	if input.UserInputType == Enum.UserInputType.Keyboard then
+	if input.UserInputType == Enum.UserInputType.Keyboard and not textBoxFocused() then
 		for keyName, data in _K.client.hotkeys do
 			if
 				data.callback
