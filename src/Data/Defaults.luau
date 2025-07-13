@@ -41,6 +41,29 @@ local Data = {
 	settings = {
 		announcement = false,
 		useSavedSettings = true,
+
+		prefix = { ";", ":" },
+		splitKey = "%s",
+
+		commandBarRank = 0,
+		dashboardRank = 0,
+		dashboardButtonRank = 0,
+		joinNotificationRank = 1,
+
+		welcomeBadgeId = 0,
+
+		addToCharts = true,
+		vip = true,
+
+		chatCommands = true,
+		commandRequests = true,
+		onlyShowUsableCommands = false,
+		getKohlsAdminPopup = true,
+		wrongPrefixWarning = true,
+		saveLogs = true,
+
+		theme = "Default",
+		changeThemeAuthority = "Client",
 	},
 	savedSettings = {} :: any,
 
