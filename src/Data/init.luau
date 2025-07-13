@@ -418,8 +418,9 @@ local function updateLogs()
 end
 
 function Data.initialize(scope)
-	local store = Data.Store.loadStore("_KData", scope)
-	if store == nil then
+	local ok, result = Data.Store.loadStore("_KData", scope)
+	if not ok then
+		warn("[Kohl's Admin] Data failed to load: " .. result)
 		Hook.initDataStore:Fire()
 		return Data
 	end
