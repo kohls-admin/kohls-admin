@@ -491,9 +491,9 @@ function Bans.new(_K)
 				banReason = nil
 				banReasonInput.Value("")
 				newBanDialog.Title("New Ban")
-				newBanDialog.Visible(true)
 				UI.Sound.Hover03:Play()
 			end
+			newBanDialog.Visible(not newBanDialog.Visible._value)
 		end,
 	}
 	UI.new "Tooltip" { Parent = newBanButton, Text = "New Ban", Hovering = newBanButton._hovering }

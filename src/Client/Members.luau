@@ -180,9 +180,9 @@ function Members.new(_K)
 			if not newRoleDialog.Visible._value then
 				roleDialogTarget(nil)
 				roleDialogInput.Value("")
-				newRoleDialog.Visible(true)
 				UI.Sound.Hover03:Play()
 			end
+			newRoleDialog.Visible(not newRoleDialog.Visible._value)
 		end,
 	}
 	UI.new "Tooltip" { Parent = newRoleButton, Text = "New Member", Hovering = newRoleButton._hovering }
