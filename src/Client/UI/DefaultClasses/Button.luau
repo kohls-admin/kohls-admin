@@ -145,8 +145,10 @@ function Button.new(definition)
 		InputBegan = function(input, processed)
 			if
 				processed
-				or input.UserInputType ~= Enum.UserInputType.MouseButton1
-				or input.UserInputType ~= Enum.UserInputType.Touch
+				or (
+					input.UserInputType ~= Enum.UserInputType.MouseButton1
+					and input.UserInputType ~= Enum.UserInputType.Touch
+				)
 			then
 				return
 			end
