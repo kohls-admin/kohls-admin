@@ -166,7 +166,9 @@ function ScrollerFast:forceRender()
 	local startIndex = math.max(0, math.floor(self._scroller.CanvasPosition.Y / lineHeight)) + 1
 	local endIndex = math.min(startIndex + math.ceil(self._scroller.AbsoluteWindowSize.Y / lineHeight), length)
 
-	self._scroller.CanvasSize = UDim2.new(0, 0, 0, length * lineHeight + UI.Theme.Padding._value.Offset)
+	local padding = self._scroller.UIPadding
+	padding = padding.PaddingTop.Offset + padding.PaddingBottom.Offset
+	self._scroller.CanvasSize = UDim2.new(0, 0, 0, length * lineHeight + padding)
 
 	local usedItems = {}
 	for i = math.max(1, startIndex - 4), math.min(length, endIndex + 4) do
