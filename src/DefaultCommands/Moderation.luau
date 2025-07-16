@@ -9,6 +9,9 @@ return {
 		envClient = function(_K)
 			local env = {}
 			task.defer(function()
+				while not _K.client do
+					task.wait()
+				end
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
 					Icon = "rbxassetid://71961243872230",
@@ -46,6 +49,9 @@ return {
 		envClient = function(_K)
 			local env = {}
 			task.defer(function()
+				while not _K.client do
+					task.wait()
+				end
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
 					Icon = "rbxassetid://71961243872230",
@@ -944,6 +950,9 @@ return {
 			})
 
 			task.defer(function()
+				while not _K.client do
+					task.wait()
+				end
 				UI.new "Button" {
 					Parent = scroller,
 					Label = "<b>Remove all tools</b>",
