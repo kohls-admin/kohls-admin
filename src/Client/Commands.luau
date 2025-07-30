@@ -118,6 +118,7 @@ function Commands.new(_K)
 				current = role
 				purchaseData[role] = {
 					firstIndex = index - 1,
+					lastIndex = index,
 				}
 			end
 		end
