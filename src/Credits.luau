@@ -38,7 +38,7 @@ return {
 		Users = {
 			{ Id = 131233603, Tooltip = "Dedicated Support Team Member - Making a positive difference! ✨" }, -- Geed
 			{ Id = 201989656, Tooltip = "Dedicated Support Team Member - Committed to finding solutions! 💡" }, -- iiRealistic_Dev
-			{ Id = 2773879457, Tooltip = "Dedicated Support Team Member - Making your issues disappear! 🪄" } -- therealfaylix
+			{ Id = 2773879457, Tooltip = "Dedicated Support Team Member - Making your issues disappear! 🪄" }, -- therealfaylix
 			{ Id = 1224156917, Tooltip = "Dedicated Support Team Member - Always ready to help! 🤝" }, -- dalien
 			{ Id = 4847574, Tooltip = "Dedicated Support Team Member - Providing excellent assistance! 🛡️" }, -- mets
 			{ Id = 195261420, Tooltip = "Dedicated Support Team Member - Ensuring user satisfaction! 😊" }, -- exobyte
@@ -51,7 +51,6 @@ return {
 			{ Id = 345072461, Tooltip = "Dedicated Support Team Member - Assisting with dedication! 🎖️" }, -- raenlua
 			{ Id = 130170862, Tooltip = "Dedicated Support Team Member - Always helpful and friendly! 👋" }, -- matsagor1
 			{ Id = 77608258, Tooltip = "Dedicated Support Team Member - Soaring to provide support! 🕊️" }, -- icarus
-
 		},
 	},
 	{
