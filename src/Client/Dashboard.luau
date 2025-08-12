@@ -136,7 +136,10 @@ do
 		Parent = function()
 			local move = moveToTitleBar()
 			parented[page] = if move then true else nil
-			titleBar.Spacer.Visible = next(parented) == nil
+			local spacer = titleBar:FindFirstChild("Spacer")
+			if spacer then
+				spacer.Visible = next(parented) == nil
+			end
 			return if move then titleBar else instance
 		end,
 	})
