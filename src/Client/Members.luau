@@ -206,7 +206,7 @@ function Members.new(_K)
 		RightAlign = true,
 		Size = UDim2.new(),
 	}
-	roleMenu._content.AutomaticSize = Enum.AutomaticSize.XY
+	roleMenu._content.AutomaticSize = Enum.AutomaticSize.X
 
 	local target = UI.state()
 
@@ -394,6 +394,13 @@ function Members.new(_K)
 
 			Activated = function()
 				target(item.target(), true)
+				local count = 0
+				for _, child in roleMenu._content:GetChildren() do
+					if child:IsA("TextButton") and child.Visible then
+						count += 1
+					end
+				end
+				roleMenu._instance.Size = UDim2.fromOffset(0, math.min(count, 7.5) * itemSize().Y.Offset)
 				roleMenu.Adornee(addButton._instance, true)
 				UI.toggleState(roleMenu.Visible, "floating")
 				local value = UI.raw(roleMenu.Visible)
