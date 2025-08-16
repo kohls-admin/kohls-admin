@@ -236,7 +236,9 @@ function Settings.new(_K)
 							value = freeAdminCache[roleId]
 							if not value then
 								value = { roleId }
-								freeAdminCache[roleId] = value
+								if roleId ~= nil then
+									freeAdminCache[roleId] = value
+								end
 							end
 							change("freeAdmin", value)
 							_K.client.settings.freeAdmin(
