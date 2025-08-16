@@ -162,6 +162,10 @@ end
 
 --- Adds a role to a user if they don't already have it
 function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?): boolean
+	if roleId == "everyone" then
+		return false
+	end
+
 	local key = tostring(userId)
 	local member = Data.members[key]
 	local roleAdded = false
