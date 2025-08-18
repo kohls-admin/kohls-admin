@@ -630,9 +630,6 @@ local function dashboardToggle(button)
 	if page then
 		page.Visible = button.isSelected
 	end
-	if (not container) or (#container:GetChildren() == 0) then
-		_K.client.dashboard.Tabs.JumpTo(_K.client.dashboard.About)
-	end
 	dashboard._instance.Visible = button.isSelected
 end
 
