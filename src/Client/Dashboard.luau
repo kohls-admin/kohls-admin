@@ -46,6 +46,8 @@ local tabs = UI.new "Tabs" {
 }
 _K.client.dashboard.Tabs = tabs
 
+task.delay(1, tabs.JumpTo, _K.client.dashboard.About)
+
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
 	Icon = "rbxassetid://71961243872230",
