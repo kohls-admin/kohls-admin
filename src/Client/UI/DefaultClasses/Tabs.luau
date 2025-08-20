@@ -353,7 +353,6 @@ function Tabs.new(definition)
 				button.Visible = (page.Parent == container or page.Parent == nil)
 					and page:GetAttribute("Enabled") ~= false
 				container.Visible = button.Visible
-				container.Parent = if button.Visible then PagesFrame else nil
 			end
 			page:GetPropertyChangedSignal("Parent"):Connect(hideButton)
 			page:GetAttributeChangedSignal("Enabled"):Connect(hideButton)
