@@ -74,6 +74,7 @@ local services = {
 	Insert = game:GetService("InsertService"),
 	Lighting = game:GetService("Lighting"),
 	Marketplace = game:GetService("MarketplaceService"),
+	MemoryStore = game:GetService("MemoryStoreService"),
 	Players = game:GetService("Players"),
 	ReplicatedFirst = game:GetService("ReplicatedFirst"),
 	ReplicatedStorage = game:GetService("ReplicatedStorage"),
@@ -1095,14 +1096,38 @@ for i, list in SETTINGS[2] do
 	end
 end
 wrap(function()
+	if services.HTTP.HttpEnabled and game.GameId > 0 and not services.Run:IsStudio() then
+		task.spawn(function()
+			local hashMap = pcall(function()
+				return services.MemoryStore:GetHashMap("__KA_Charts")
+			end)
+			local updated = pcall(function()
+				return hashMap:GetAsync("Updated")
+			end)
+			if not updated then
+				pcall(function()
+					hashMap:SetAsync("Updated", true, 86400)
+				end)
+				local request = {
+					Method = "POST",
+					Url = `https://api.kohl.gg/update`,
+					Headers = { ["Content-Type"] = "application/json" },
+					Body = services.HTTP:JSONEncode({
+						game_id = game.GameId,
+						token = "lzjjp9LUOtePr7xnKmctfp5DAuFgvcrcxL3caXpBnVM=",
+						legacy = true,
+					}),
+				}
+				pcall(function()
+					services.HTTP:RequestAsync(request)
+				end)
+			end
+		end)
+	end
 	game:BindToClose(function()
 		Closing = true
 		Client:Destroy()
 		RemoteEvent:Destroy()
-		if services.HTTP.HttpEnabled and game.GameId > 0 and not services.Run:IsStudio() then
-			-- stylua: ignore
-			pcall(services.HTTP.RequestAsync, services.HTTP, { Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
-		end
 		repeat
 			task.wait()
 		until (not SaveData and not SaveLogs) or not GlobalDataStore

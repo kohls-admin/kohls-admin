@@ -7,6 +7,7 @@
 local Http = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local MemoryStore = game:GetService("MemoryStoreService")
 
 local Data = require(script.Defaults)
 
@@ -496,20 +497,44 @@ function Data.initialize(scope)
 		until Data.gameClosing
 	end)
 
+	if
+		Data.settings.vip
+		and Data.settings.enrollInCharts
+		and Http.HttpEnabled
+		and game.GameId > 0
+		and not RunService:IsStudio()
+	then
+		task.spawn(function()
+			local hashMap = Util.Retry(function()
+				return MemoryStore:GetHashMap("__KA_Charts")
+			end)
+			local updated = Util.Retry(function()
+				return hashMap:GetAsync("Updated")
+			end)
+			if not updated then
+				Util.Retry(function()
+					hashMap:SetAsync("Updated", true, 86400)
+				end)
+				local request = {
+					Method = "POST",
+					Url = `https://api.kohl.gg/update`,
+					Headers = { ["Content-Type"] = "application/json" },
+					Body = Http:JSONEncode({
+						game_id = game.GameId,
+						token = "lzjjp9LUOtePr7xnKmctfp5DAuFgvcrcxL3caXpBnVM=",
+					}),
+				}
+				Util.Retry(function()
+					Http:RequestAsync(request)
+				end)
+			end
+		end)
+	end
+
 	game:BindToClose(function()
 		Data.gameClosing = true
 
 		local tasks = Util.Tasks.new()
-
-		if
-			Data.settings.vip
-			and Data.settings.enrollInCharts
-			and Http.HttpEnabled
-			and game.GameId > 0
-			and not RunService:IsStudio()
-		then
-			tasks:add(Http.RequestAsync, Http, { Method = "POST", Url = `https://api.kohl.gg/update/{game.GameId}` })
-		end
 
 		local bans = Data.Cache.bans
 		if next(bans) then
