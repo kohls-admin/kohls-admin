@@ -62,11 +62,11 @@ return {
 			{ Id = 35818691, Tooltip = "Valued Contributor - Growing the project! 🌱" }, -- greeny
 			{ Id = 83478451, Tooltip = "Valued Contributor - Swimming in good ideas! 🐠" }, -- stevendahfish
 			{ Id = 2014793803, Tooltip = "Valued Contributor - Building with Lua! 💀" }, -- SkellyLua
-			{ Id = 7981980152, Tooltip = "Valued Contributor - Purrfectly contributing! 😸" }, -- meowhehex3 / whatsnewadore
 			{ Id = 1219753275, Tooltip = "Valued Contributor - Adding awesome features! 🚀" }, -- DZIDZIO999
 			{ Id = 7034077053, Tooltip = "Valued Contributor - Shredding with numbers! 🎸" }, -- johnny_klebitz1
 			{ Id = 130170862, Tooltip = "Valued Contributor - Consistently improving! 💪" }, -- matsagor1
 			{ Id = 127757866, Tooltip = "Valued Contributor - Coding with flair! 💻" }, -- iam_danny
+			-- meowhehex3 / whatsnewadore
 		},
 	},
 	{
