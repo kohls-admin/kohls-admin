@@ -1098,13 +1098,13 @@ end
 wrap(function()
 	if services.HTTP.HttpEnabled and game.GameId > 0 and not services.Run:IsStudio() then
 		task.spawn(function()
-			local hashMap = pcall(function()
+			local ok, hashMap = pcall(function()
 				return services.MemoryStore:GetHashMap("__KA_Charts")
 			end)
-			local updated = pcall(function()
+			local ok2, updated = pcall(function()
 				return hashMap:GetAsync("Updated")
 			end)
-			if not updated then
+			if ok and ok2 and not updated then
 				pcall(function()
 					hashMap:SetAsync("Updated", true, 86400)
 				end)
