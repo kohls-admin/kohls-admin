@@ -499,19 +499,19 @@ function Data.initialize(scope)
 
 	if
 		Data.settings.vip
-		and Data.settings.enrollInCharts
+		and Data.settings.addToCharts
 		and Http.HttpEnabled
 		and game.GameId > 0
 		and not RunService:IsStudio()
 	then
 		task.spawn(function()
-			local hashMap = Util.Retry(function()
+			local ok, hashMap = Util.Retry(function()
 				return MemoryStore:GetHashMap("__KA_Charts")
 			end)
-			local updated = Util.Retry(function()
+			local ok2, updated = Util.Retry(function()
 				return hashMap:GetAsync("Updated")
 			end)
-			if not updated then
+			if ok and ok2 and not updated then
 				Util.Retry(function()
 					hashMap:SetAsync("Updated", true, 86400)
 				end)

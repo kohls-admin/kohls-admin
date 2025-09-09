@@ -890,7 +890,7 @@ function About.new(_K)
 				TextWrapped = true,
 				TextEditable = false,
 				ClearTextOnFocus = false,
-				Visible = _K.client.settings.enrollInCharts,
+				Visible = _K.client.settings.addToCharts,
 
 				UI.new "UICorner" {
 					CornerRadius = UI.Theme.CornerRadius,

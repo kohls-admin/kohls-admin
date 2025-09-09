@@ -604,7 +604,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 		if
 			settings.vip
-			and settings.enrollInCharts
+			and settings.addToCharts
 			and not _K.Service.Http.HttpEnabled
 			and _K.Auth.hasPermission(player.UserId, "settings")
 		then
