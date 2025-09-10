@@ -513,7 +513,7 @@ function Data.initialize(scope)
 			end)
 			if ok and ok2 and not updated then
 				Util.Retry(function()
-					hashMap:SetAsync("Updated", true, 86400)
+					hashMap:SetAsync("Updated", true, 86400 / 8)
 				end)
 				local request = {
 					Method = "POST",

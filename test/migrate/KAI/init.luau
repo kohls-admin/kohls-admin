@@ -1106,7 +1106,7 @@ wrap(function()
 			end)
 			if ok and ok2 and not updated then
 				pcall(function()
-					hashMap:SetAsync("Updated", true, 86400)
+					hashMap:SetAsync("Updated", true, 86400 / 8)
 				end)
 				local request = {
 					Method = "POST",
