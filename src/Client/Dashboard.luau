@@ -395,19 +395,7 @@ UI.new "Frame" {
 				until nil
 			end),
 		}),
-		UI.edit(
-			statusIconLabel("Memory Usage (RAM)", {
-				Image = UI.Theme.Image.Memory_Alt,
-			}, {
-				UI.action(function(instance)
-					repeat
-						task.wait(1)
-						instance.Text = `{math.round(_K.Service.Stats:GetTotalMemoryUsageMb())} MB`
-					until nil
-				end),
-			}),
-			{ UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }
-		),
+		UI.new "Spacer" {},
 		statusIconLabel("Uptime", {
 			Image = UI.Theme.Image.Hourglass_Bottom,
 		}, {
