@@ -105,6 +105,8 @@ function Auth.banUsers(
 	elseif #unbanAsync > 0 and not Data.SEPARATE_DATASTORE then
 		Util.Service.Players:UnbanAsync({ UserIds = unbanAsync, ApplyToUniverse = true })
 	end
+
+	Hook.ban:Fire(userIds, reason, duration, fromUserId, forceBanAsync)
 end
 
 function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync: boolean?)
@@ -126,6 +128,8 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 	if not Data.SEPARATE_DATASTORE then
 		Util.Service.Players:UnbanAsync({ UserIds = userIds, ApplyToUniverse = true })
 	end
+
+	Hook.unban:Fire(userIds, fromUserId, forceBanAsync)
 end
 
 -- ROLE FUNCTIONS

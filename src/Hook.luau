@@ -1,7 +1,5 @@
 local Util = require(script.Parent:WaitForChild("Util"))
 
--- TODO: add hooks for auth, registry, etc
-
 --- @class Hook
 local Hook = {
 	log = Util.Signal.new(),
@@ -9,6 +7,8 @@ local Hook = {
 	preCommand = Util.Signal.new(),
 	postCommand = Util.Signal.new(),
 	runPreparedCommands = Util.Signal.new(),
+	ban = Util.Signal.new(),
+	unban = Util.Signal.new(),
 	roleAdded = Util.Signal.new(),
 	roleRemoved = Util.Signal.new(),
 	authChanged = Util.Signal.new(),
