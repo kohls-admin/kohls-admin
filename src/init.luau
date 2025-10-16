@@ -129,7 +129,13 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 	if _K.IsClient then
 		log.client = true
 	elseif level == "CHAT" or level == "COMMAND" then
-		log.fingerprint = table.concat({ text, log.level, log.time, from :: any }, "|")
+		local hash = buffer.create(if from then 17 else 9)
+		buffer.writeu8(hash, 0, log.level)
+		buffer.writef64(hash, 1, log.time)
+		if from then
+			buffer.writef64(hash, 9, from)
+		end
+		log.fingerprint = buffer.tostring(hash)
 		_K.Data.logFingerprints[log.fingerprint] = true
 	end
 

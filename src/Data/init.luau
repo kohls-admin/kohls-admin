@@ -304,7 +304,13 @@ local function syncLogs(logsData)
 		for _, log in logData do
 			Util.Defer.wait()
 			local text, level, time, from, name = unpack(log)
-			local fingerprint = table.concat({ text, level, time, from }, "|")
+			local hash = buffer.create(if from then 17 else 9)
+			buffer.writeu8(hash, 0, level)
+			buffer.writef64(hash, 1, time)
+			if from then
+				buffer.writef64(hash, 9, from)
+			end
+			local fingerprint = buffer.tostring(hash)
 			if Data.logFingerprints[fingerprint] then
 				continue
 			end
