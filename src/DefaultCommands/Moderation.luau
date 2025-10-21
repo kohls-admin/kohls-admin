@@ -186,7 +186,7 @@ return {
 					table.insert(unbannedNames, ban[1] or userId)
 				end
 			end
-			context._K.Auth.unbanUsers(bans, context.from)
+			context._K.Auth.unbanUsers(bans, context.from, true)
 			context._K.Remote.Notify:FireClient(
 				context.fromPlayer,
 				{ Text = `<b>Unbanned:</b> <i>{table.concat(unbannedNames, ", ")}</i>` }

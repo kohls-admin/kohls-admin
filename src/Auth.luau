@@ -15,25 +15,21 @@ function Auth.banHandler(player)
 	local key = tostring(player.UserId)
 	local banInfo = Data.bans[key]
 
-	if player.UserId == Data.creatorId or player.UserId < 1 then
+	if player.UserId == Data.creatorId or player.UserId < 1 or not banInfo then
 		return -- not banned
 	end
 
-	if not Util.Service.Run:IsStudio() then
+	if not Util.RunContext.IsStudio then
 		local banHistory = Util.Service.Players:GetBanHistoryAsync(player.UserId)
 		if banHistory then
 			local items = banHistory:GetCurrentPage()
 			local last = items[1]
 
 			if last and not last.Ban and banInfo and banInfo[3] ~= 0 then
-				Auth.unbanUsers({ player.UserId }, nil, true)
+				Auth.unbanUsers({ player.UserId })
 				return -- unbanned from site
 			end
 		end
-	end
-
-	if not banInfo then
-		return -- not banned
 	end
 
 	local _name, reason, timeStamp = unpack(banInfo)
@@ -44,7 +40,7 @@ function Auth.banHandler(player)
 			if timeRemaining > 0 then
 				banMessage = "You are banned from this experience for " .. Util.Time.readable(timeRemaining) .. "!"
 			else
-				Auth.unbanUsers({ player.UserId }, nil, true)
+				Auth.unbanUsers({ player.UserId })
 				return -- duration has passed, unbanned
 			end
 		else
@@ -56,6 +52,19 @@ function Auth.banHandler(player)
 
 	player:Kick(if reason then banMessage .. "\n Reason: " .. reason else banMessage)
 	return true
+end
+
+local function saveBan(key, userId, reason, timestamp, fromUserId)
+	local ban = { Util.getUserInfo(userId).Username, reason, timestamp, fromUserId }
+	Data.bans[key] = ban
+	if timestamp then
+		Data.Cache.bans[key] = ban
+	end
+	for _, player in Util.Service.Players:GetPlayers() do
+		if Auth.hasCommand(player.UserId, "ban") then
+			Remote.Ban:FireClient(player, key, ban)
+		end
+	end
 end
 
 function Auth.banUsers(
@@ -78,32 +87,35 @@ function Auth.banUsers(
 
 	local unbanAsync = {}
 	for _, userId in userIds do
-		local ban = { Util.getUserInfo(userId).Username, reason, timestamp, fromUserId }
 		local key = tostring(userId)
 		if Data.bans[key] and Data.bans[key][3] ~= 0 then
+			-- remove saved bans when changed to server ban
+			Data.Cache.bans[key] = Data.REMOVE
 			table.insert(unbanAsync, userId)
 		end
-		Data.bans[key] = ban
-		if timestamp then
-			Data.Cache.bans[key] = ban
-		end
-		for _, player in Util.Service.Players:GetPlayers() do
-			if Auth.hasCommand(player.UserId, "ban") then
-				Remote.Ban:FireClient(player, key, ban)
-			end
-		end
+		task.spawn(saveBan, key, userId, reason, timestamp, fromUserId)
 	end
 
-	if banAsync and timestamp and not Data.SEPARATE_DATASTORE then
-		Util.Service.Players:BanAsync({
-			UserIds = userIds,
-			PrivateReason = reason or "No reason.",
-			DisplayReason = reason or "No reason.",
-			Duration = duration,
-			ApplyToUniverse = true,
-		})
-	elseif #unbanAsync > 0 and not Data.SEPARATE_DATASTORE then
-		Util.Service.Players:UnbanAsync({ UserIds = unbanAsync, ApplyToUniverse = true })
+	if banAsync and timestamp and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
+		for i = 1, #userIds, 50 do
+			local chunk = table.move(userIds, i, i + 49, 1, {})
+			Util.Retry(function()
+				Util.Service.Players:BanAsync({
+					UserIds = chunk, -- limit of 50
+					PrivateReason = reason or "No reason.",
+					DisplayReason = reason or "No reason.",
+					Duration = duration,
+					ApplyToUniverse = true,
+				})
+			end, math.huge)
+		end
+	elseif #unbanAsync > 0 and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
+		for i = 1, #unbanAsync, 50 do
+			local chunk = table.move(unbanAsync, i, i + 49, 1, {})
+			Util.Retry(function()
+				Util.Service.Players:UnbanAsync({ UserIds = chunk, ApplyToUniverse = true })
+			end, math.huge)
+		end
 	end
 
 	Hook.ban:Fire(userIds, reason, duration, fromUserId, forceBanAsync)
@@ -125,8 +137,18 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 		end
 	end
 
-	if not Data.SEPARATE_DATASTORE then
-		Util.Service.Players:UnbanAsync({ UserIds = userIds, ApplyToUniverse = true })
+	if forceBanAsync and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
+		local ok, result =
+			pcall(Util.Service.Players.UnbanAsync, Util.Service.Players, { UserIds = userIds, ApplyToUniverse = true })
+		if not ok then
+			warn(result)
+		end
+		for i = 1, #userIds, 50 do
+			local chunk = table.move(userIds, i, i + 49, 1, {})
+			Util.Retry(function()
+				Util.Service.Players:UnbanAsync({ UserIds = chunk, ApplyToUniverse = true })
+			end, math.huge)
+		end
 	end
 
 	Hook.unban:Fire(userIds, fromUserId, forceBanAsync)
