@@ -20,10 +20,10 @@ local attempting = {}
 local debounceGetUserInfos
 debounceGetUserInfos = Function.debounce(0.2, function()
 	for userId in loading do
-		table.insert(attempting, userId)
 		if #attempting == 200 then
 			break
 		end
+		table.insert(attempting, userId)
 	end
 
 	local ok, result = Retry(function()
