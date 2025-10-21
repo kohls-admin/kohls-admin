@@ -130,7 +130,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 		log.client = true
 	elseif level == "CHAT" or level == "COMMAND" then
 		local hash = buffer.create(if from then 17 else 9)
-		buffer.writeu8(hash, 0, log.level)
+		buffer.writeu8(hash, 0, string.byte(log.level))
 		buffer.writef64(hash, 1, log.time)
 		if from then
 			buffer.writef64(hash, 9, from)

@@ -60,12 +60,12 @@ function Logger.sortTime(a, b)
 	return a.time < b.time
 end
 
-function Logger:encode(level: LogType): number
-	return (table.find(LEVELS, level) or 1) - 1
+function Logger:encode(level: LogType): string
+	return string.char((table.find(LEVELS, level) or 1))
 end
 
-function Logger:decode(index: number): LogType
-	return LEVELS[index + 1]
+function Logger:decode(level: string): LogType
+	return LEVELS[string.byte(level)] or "UNKNOWN"
 end
 
 function Logger:log(text: string, level: LogType, userId: number?, noAppend: boolean?): Log?
@@ -75,7 +75,7 @@ function Logger:log(text: string, level: LogType, userId: number?, noAppend: boo
 
 	local log = {
 		text = text,
-		level = (table.find(LEVELS, level) or 1) - 1,
+		level = Logger:encode(level),
 		time = workspace:GetServerTimeNow(),
 		from = userId,
 	}
