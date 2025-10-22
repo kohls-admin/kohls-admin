@@ -274,12 +274,16 @@ function Members.new(_K)
 			:Connect(hoverClick)
 	end
 
-	local function roleChip(roleId: string, member)
+	local function roleChip(roleId: string, member, item)
 		local role = _K.Data.roles[roleId]
 		local color = Color3.fromHex(role.color)
 
-		local canRemove = UI.compute(function()
-			return (_K.client.rank() > role._rank or _K.creatorId == _K.LocalPlayer.UserId)
+		local canRemove = UI.compute(function() -- TODO need to check the highest role chip
+			local rank = 0
+			for _, id in item.roles() do
+				rank = math.max(rank, _K.Data.roles[id]._rank)
+			end
+			return (_K.client.rank() > rank or _K.creatorId == _K.LocalPlayer.UserId)
 				and _K.Registry.commands.unrole.LocalPlayerAuthorized
 		end)
 
@@ -474,7 +478,7 @@ function Members.new(_K)
 					local chips = {}
 					local target = item.target()
 					for _, roleId in item.roles() do
-						table.insert(chips, roleChip(roleId, target))
+						table.insert(chips, roleChip(roleId, target, item))
 					end
 					return chips
 				end,
