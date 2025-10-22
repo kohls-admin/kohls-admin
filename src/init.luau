@@ -128,15 +128,6 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 	end
 	if _K.IsClient then
 		log.client = true
-	elseif level == "CHAT" or level == "COMMAND" then
-		local hash = buffer.create(if from then 17 else 9)
-		buffer.writeu8(hash, 0, string.byte(log.level))
-		buffer.writef64(hash, 1, log.time)
-		if from then
-			buffer.writef64(hash, 9, from)
-		end
-		log.fingerprint = buffer.tostring(hash)
-		_K.Data.logFingerprints[log.fingerprint] = true
 	end
 
 	task.defer(function()
@@ -147,11 +138,11 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 			if from and filtered then
 				log.text = Util.String.filterForBroadcast(text, from)
 			end
-			if level == "COMMAND" and (not from or _K.Auth.getRank(from) > 1) then
-				table.insert(_K.Data.Cache.logs, { log.text, log.level, log.time, from, log.name })
-			end
-			if level == "CHAT" then
-				table.insert(_K.Data.Cache.chatLogs, { log.text, log.level, log.time, from, log.name })
+			if
+				(level == "CHAT" and _K.Data.settings.saveChatLogs)
+				or (level == "COMMAND" and (not from or _K.Auth.getRank(from) > 1) and _K.Data.settings.saveLogs)
+			then
+				table.insert(_K.Data.Sync.logs, { log.text, log.level, log.time, from, log.name })
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
@@ -163,10 +154,9 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 		end
 		table.insert(_K.Logger.logs, log)
 		_K.Hook.log:Fire(log)
-		while #_K.Data.logs > _K.Logger.limit do
-			local removedLog = table.remove(_K.Data.logs, 1)
-			_K.Data.logFingerprints[removedLog.fingerprint] = nil
-			Util.Defer.wait()
+		local excess = #_K.Data.logs - _K.Logger.limit
+		if excess > 0 then
+			_K.Util.Table.fastRemove(_K.Data.logs, 1, excess)
 		end
 	end)
 
@@ -666,7 +656,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 				cacheValue = { "udim", value.Scale, value.Offset }
 			end
 
-			_K.Data.Cache.settings[key] = cacheValue
+			_K.Data.Sync.settings[key] = cacheValue
 		end
 
 		for _, toPlayer in _K.Service.Players:GetPlayers() do

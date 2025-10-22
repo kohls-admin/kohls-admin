@@ -14,25 +14,25 @@ end
 function Store.getAsync(key: string, options: DataStoreSetOptions?): (boolean, any)
 	return Util.Retry(function()
 		return Store.dataStore:GetAsync(key, options)
-	end)
+	end, math.huge)
 end
 
 function Store.setAsync(key: string, value: any, userIds: { number }?, options: DataStoreSetOptions?): (boolean, any)
 	return Util.Retry(function()
 		return Store.dataStore:SetAsync(key, value, userIds, options)
-	end)
+	end, math.huge)
 end
 
 function Store.updateAsync(key: string, func: (value: any, keyInfo: DataStoreKeyInfo) -> any): (boolean, any)
 	return Util.Retry(function()
 		return Store.dataStore:UpdateAsync(key, func)
-	end)
+	end, math.huge)
 end
 
 function Store.removeAsync(key: string): (boolean, any)
 	return Util.Retry(function()
 		return Store.dataStore:RemoveAsync(key)
-	end)
+	end, math.huge)
 end
 
 function Store.loadStore(name, scope)

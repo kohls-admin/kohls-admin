@@ -10,6 +10,7 @@ local Service = setmetatable({
 	Http = game:GetService("HttpService"),
 	Insert = game:GetService("InsertService"),
 	Marketplace = game:GetService("MarketplaceService"),
+	MemoryStore = game:GetService("MemoryStoreService"),
 	Messaging = game:GetService("MessagingService"),
 	Players = game:GetService("Players"),
 	Policy = game:GetService("PolicyService"),

@@ -58,7 +58,7 @@ local function saveBan(key, userId, reason, timestamp, fromUserId)
 	local ban = { Util.getUserInfo(userId).Username, reason, timestamp, fromUserId }
 	Data.bans[key] = ban
 	if timestamp then
-		Data.Cache.bans[key] = ban
+		Data.Sync.bans[key] = ban
 	end
 	for _, player in Util.Service.Players:GetPlayers() do
 		if Auth.hasCommand(player.UserId, "ban") then
@@ -90,7 +90,7 @@ function Auth.banUsers(
 		local key = tostring(userId)
 		if Data.bans[key] and Data.bans[key][3] ~= 0 then
 			-- remove saved bans when changed to server ban
-			Data.Cache.bans[key] = Data.REMOVE
+			Data.Sync.bans[key] = Data.REMOVE
 			table.insert(unbanAsync, userId)
 		end
 		task.spawn(saveBan, key, userId, reason, timestamp, fromUserId)
@@ -129,7 +129,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 		end
 		local key = tostring(userId)
 		Data.bans[key] = nil
-		Data.Cache.bans[key] = Data.REMOVE
+		Data.Sync.bans[key] = Data.REMOVE
 		for _, player in Util.Service.Players:GetPlayers() do
 			if Auth.hasCommand(player.UserId, "ban") then
 				Remote.Ban:FireClient(player, key)
@@ -157,7 +157,7 @@ end
 -- ROLE FUNCTIONS
 
 local function saveMember(key, userId)
-	Data.Cache.members[key] = { Util.getUserInfo(userId).Username, Data.members[key].persist }
+	Data.Sync.members[key] = { Util.getUserInfo(userId).Username, Data.members[key].persist }
 end
 
 function Auth.networkMember(userId: number)
@@ -260,7 +260,7 @@ function Auth.userRoleRemove(userId: number, roleId: Role): boolean
 		end
 		if persistent then
 			if #member.persist == 0 then
-				Data.Cache.members[key] = Data.REMOVE
+				Data.Sync.members[key] = Data.REMOVE
 			else
 				task.spawn(saveMember, key, userId)
 			end

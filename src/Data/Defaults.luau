@@ -4,40 +4,54 @@ local Theme = require(script.Parent.Parent.Client:WaitForChild("UI"):WaitForChil
 
 type Dict = { [any]: any }
 
-local Cache = {
-	-- Main
-	bans = {},
-	members = {},
-	settings = {},
-	-- Logs
-	chatLogs = {},
-	logs = {},
-	-- userId
-	players = {},
-}
-
 local Data = {
 	IS_PRIVATE_SERVER = RunService:IsServer() and game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0,
-	SEPARATE_DATASTORE = false,
+
+	-- DataStore
+
+	SEPARATE_DATASTORE = nil,
 	REMOVE = table.freeze({}),
 
+	Sync = {
+		bans = {},
+		members = {},
+		settings = {},
+		logs = {},
+		players = {},
+	},
 	Migrate = {} :: any,
+	initialize = nil,
 
-	Cache = Cache,
+	sizeBans = 0,
+	sizeMain = 0,
+	sizeLogs = 0,
+
+	-- Core
+
 	creatorId = game.CreatorId,
+	gameClosing = false,
+
+	async = {
+		asset = {},
+		gamepass = {},
+		group = {},
+		subscription = {},
+	},
+
 	bans = {},
-	logs = {},
-	logFingerprints = {},
 	members = {},
-	players = {},
-	playerPrefix = {},
+	logs = {},
 	reservedServers = {},
-	targetLimits = {},
 	roles = nil,
 	rolesList = {},
 
-	settingsModuleData = nil,
+	logsHidden = {},
+	playerPrefix = {},
+	targetLimits = {},
+
 	defaultSettings = {},
+	savedSettings = {} :: any,
+	settingsModuleData = nil,
 	settings = {
 		announcement = false,
 		useSavedSettings = true,
@@ -65,27 +79,6 @@ local Data = {
 		theme = "Default",
 		changeThemeAuthority = "Client",
 	},
-	savedSettings = {} :: any,
-
-	async = {
-		asset = {},
-		gamepass = {},
-		group = {},
-		subscription = {},
-	},
-
-	logsHidden = {},
-
-	gameClosing = false,
-	sizeBans = 0,
-	sizeMain = 0,
-	sizeLogs = 0,
-	updatedTimeBans = 0,
-	updatedTimeMain = 0,
-	updatedTimeLogs = 0,
-	updateAsyncInterval = 60,
-
-	initialize = nil,
 }
 
 function Data.filterRemove(source: Dict): Dict

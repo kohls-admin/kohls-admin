@@ -13,7 +13,7 @@ return function(settings)
 			elseif type(value) == "string" then
 				settings[value] = settings[key]
 				settings[key] = nil
-				Data.Cache.settings[key] = Data.REMOVE
+				Data.Sync.settings[key] = Data.REMOVE
 			end
 		end
 	end

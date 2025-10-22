@@ -53,7 +53,7 @@ return {
 			end
 
 			local announcement = { message, context.from }
-			context._K.Data.Cache.settings.announcement = announcement
+			context._K.Data.Sync.settings.announcement = announcement
 			context._K.Service.Messaging:PublishAsync("KA_Announcement", announcement)
 			return
 		end,
@@ -69,7 +69,7 @@ return {
 				return `Announcements are disabled in private servers.`
 			end
 
-			context._K.Data.Cache.settings.announcement = context._K.Data.REMOVE
+			context._K.Data.Sync.settings.announcement = context._K.Data.REMOVE
 			context._K.Service.Messaging:PublishAsync("KA_Announcement", nil)
 			return
 		end,
@@ -270,7 +270,7 @@ return {
 				local member = context._K.Data.members[key]
 				if member then
 					context._K.Data.members[key] = nil
-					context._K.Data.Cache.members[key] = context._K.Data.REMOVE
+					context._K.Data.Sync.members[key] = context._K.Data.REMOVE
 					context._K.Remote.Member:FireAllClients(key)
 					table.insert(membersUnroled, member and member.name or key)
 				end

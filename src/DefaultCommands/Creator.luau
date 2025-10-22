@@ -23,8 +23,7 @@ return {
 				remote = _K.Remote.ClearLogs,
 				clearLogs = function()
 					table.clear(_K.Data.logs)
-					table.clear(_K.Data.Cache.logs)
-					table.clear(_K.Data.Cache.chatLogs)
+					table.clear(_K.Data.Sync.logs)
 				end,
 			}
 			task.spawn(function()
@@ -34,7 +33,7 @@ return {
 		end,
 
 		run = function(context)
-			task.spawn(context._K.Data.Store.removeAsync, "LogsV2")
+			task.spawn(context._K.Data.Store.removeAsync, "Logs")
 			context._K.Service.Messaging:PublishAsync("KA_ClearLogs")
 			for _, player in context._K.Service.Players:GetPlayers() do
 				context._K.Remote.ClearLogs:FireClient(player)

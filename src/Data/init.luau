@@ -24,10 +24,16 @@ local Remote = require(script.Parent.Remote)
 Data.Migrate = Migrate
 
 -- DataStore value limit of 4,194,303 bytes
+local DATA_KEY = "_KData"
+
+---------------------------
+-- Core Update Functions --
+---------------------------
+
 local DATA_LIMIT = 2 ^ 22 - 1
 
 local nextDataLimitWarning = {}
-local function dataLimitWarning(size, dataType)
+local function dataLimitWarning(dataType, size)
 	local ratio = size / DATA_LIMIT
 	if ratio > 0.9 and tick() > (nextDataLimitWarning[dataType] or 0) then
 		nextDataLimitWarning[dataType] = tick() + 300
@@ -50,459 +56,477 @@ local function dataLimitWarning(size, dataType)
 	end
 end
 
--- BANS
-
-local function syncBans(bans)
-	Hook.preSyncBans:Fire(bans)
-
-	local mergeBans = {}
-	-- merge settings bans
-	for key, ban in Data.settingsModuleData.bans do
-		if Data.bans[key] then
-			mergeBans[key] = ban
-		end
-	end
-	-- merge server bans
-	for key, ban in Data.bans do
-		if ban and ban[3] == nil then
-			mergeBans[key] = ban
-		end
-	end
-
-	table.clear(Data.bans)
-	Util.Table.merge(Data.bans, mergeBans)
-	Util.Table.merge(Data.bans, bans)
-	Util.Table.merge(Data.bans, Data.Cache.bans)
-	Hook.postSyncBans:Fire(Data.bans)
-
-	for _, player in Players:GetPlayers() do
-		if player:GetAttribute("_K_READY") and Auth.hasCommand(player.UserId, "ban") then
-			Remote.Bans:FireClient(player, Data.bans)
-		end
-	end
-end
-
-local nextBansInterval = tick() + Data.updateAsyncInterval
-local function updateBans()
-	nextBansInterval = math.huge
-	-- flush cache and hold onto references to make sure they are immutable!
-	local save = false
-	local bans = Data.Cache.bans
-	if next(bans) then
-		save = true
-		Data.Cache.bans = {}
-	end
-	if Data.gameClosing and not save then
-		return
-	end
-
-	local sync, updatedTime
-	local ok, result = Data.Store.updateAsync("Bans", function(value, metaData)
-		if not value then
-			return Data.filterRemove(bans)
-		end
-		if metaData.UpdatedTime > Data.updatedTimeBans then
-			sync, updatedTime = value, metaData.UpdatedTime
-		end
-		if not save then
-			return
-		end
-		return Data.mergeRemove(value, bans)
-	end)
-
-	if ok then
-		if sync and not Data.gameClosing then
-			Data.updatedTimeBans = updatedTime
-			task.defer(syncBans, result or sync)
-		end
-		task.defer(function()
-			Data.sizeBans = #Http:JSONEncode(result or sync)
-			dataLimitWarning(Data.sizeBans, "ban")
-		end)
-	else
-		warn(`[Kohl's Admin] Main Datastore UpdateAsync failed: {result}`)
-	end
-
-	nextBansInterval = tick() + Data.updateAsyncInterval
-end
-
--- MAIN
-
 local function fillMemberName(key, data)
 	local userId = tonumber(key)
 	data.name = Util.getUserInfo(userId).Username
-	Data.Cache.members[key] = { data.name, data.persist }
+	Data.Sync.members[key] = { data.name, data.persist }
 	Auth.networkMember(key)
-end
-
-local function syncMain(result)
-	Hook.preSyncMain:Fire(result)
-	local members, settings = unpack(result)
-
-	-- deserialize and add roles
-	for key, data in members do
-		local cache = Data.Cache.members[key]
-		if cache then -- don't overwrite pending save!
-			members[key] = nil
-			continue
-		end
-		data.name, data[1] = data[1], nil
-		data.persist, data[2] = data[2], nil
-
-		-- filter out invalid roleIds
-		local persist = {}
-		for _, roleId in data.persist do
-			if Data.roles[roleId] then
-				table.insert(persist, roleId)
-			else
-				warn(`Invalid roleId: {roleId}, did you change the role _key?`)
-				continue
-			end
-		end
-		data.persist = persist
-
-		-- append saved roles to cached roles
-		data.roles = if Data.members[key] then Data.members[key].roles else table.clone(data.persist)
-		if data.persist ~= data.roles then
-			for _, roleId in data.persist do
-				if data.persist ~= data.roles and not table.find(data.roles, roleId) then
-					table.insert(data.roles, roleId)
-				end
-			end
-		end
-
-		table.sort(data.persist, Auth.roleIdSort)
-		table.sort(data.roles, Auth.roleIdSort)
-	end
-
-	-- remove all saved roles when no saved member
-	for key, data in Data.members do
-		local cache = Data.Cache.members[key]
-		if cache then -- don't overwrite pending save!
-			members[key] = nil
-		elseif not members[key] and #data.persist > 0 then
-			for _, role in data.roles do
-				if table.find(data.persist, role) then
-					table.remove(data.roles, table.find(data.roles, role))
-				end
-			end
-			if #data.roles == 0 then
-				Data.members[key] = nil
-				continue
-			end
-			table.clear(data.persist)
-		end
-	end
-
-	Util.Table.merge(Data.members, members)
-
-	-- fill missing names
-	for key, data in Data.members do
-		if not data.name and #data.persist > 0 then
-			task.defer(fillMemberName, key, data)
-		end
-	end
-
-	-- deserialize settings
-	for key, setting in settings do
-		if type(setting) == "table" then
-			local itemType = setting[1]
-			if itemType == "color" then
-				settings[key] = Color3.new(unpack(setting, 2))
-			elseif itemType == "udim" then
-				settings[key] = UDim.new(unpack(setting, 2))
-			elseif itemType == "enum" then
-				settings[key] = Enum[setting[2]][setting[3]]
-			end
-		end
-	end
-
-	Migrate.Settings(settings)
-
-	-- settings sync
-	if type(settings.prefix) == "string" then
-		Data.savedSettings.prefix[1] = settings.prefix
-		settings.prefix = Data.savedSettings.prefix
-	end
-	Util.Table.merge(Data.savedSettings, settings)
-
-	Data.settings = if Data.savedSettings.useSavedSettings then Data.savedSettings else Data.defaultSettings
-
-	for _, player in Players:GetPlayers() do
-		if not player:GetAttribute("_K_READY") then
-			continue
-		end
-		Remote.Members:FireClient(player, Data.members)
-		Remote.Settings:FireClient(player, Data.savedSettings)
-	end
-	Hook.postSyncMain:Fire(Data)
-end
-
-local nextMainInterval = tick() + Data.updateAsyncInterval * 4 / 3
-local function updateMain()
-	nextMainInterval = math.huge
-	local save = false
-	local members = Data.Cache.members
-	local settings = Data.Cache.settings
-	if next(members) or next(settings) then
-		save = true
-		Data.Cache.members = {}
-		Data.Cache.settings = {}
-	end
-	if Data.gameClosing and not save then
-		return
-	end
-
-	local sync, updatedTime
-	local ok, result = Data.Store.updateAsync("Main", function(value, metaData)
-		if not value then
-			return Data.filterRemove({ members, settings })
-		end
-
-		if metaData.UpdatedTime > Data.updatedTimeMain then
-			sync, updatedTime = value, metaData.UpdatedTime
-		end
-		if not save then
-			return
-		end
-
-		Data.mergeRemove(value[1], members)
-		Data.mergeRemove(value[2], settings)
-
-		return value
-	end)
-
-	if ok then
-		if sync and not Data.gameClosing then
-			Data.updatedTimeMain = updatedTime
-			task.defer(syncMain, result or sync)
-		end
-		task.defer(function()
-			Data.sizeMain = #Http:JSONEncode(result or sync)
-			dataLimitWarning(Data.sizeMain, "member")
-		end)
-	else
-		warn(`[Kohl's Admin] Main Datastore UpdateAsync failed: {result}`)
-		Data.Cache.members = Util.Table.merge(members, Data.Cache.members)
-		Data.Cache.settings = Util.Table.merge(settings, Data.Cache.settings)
-	end
-
-	nextMainInterval = tick() + Data.updateAsyncInterval
-end
-
--- LOGS
-
-local function syncLogs(logsData)
-	Hook.preSyncLogs:Fire(unpack(logsData))
-	Util.Defer.reset()
-	local newLogs = {}
-	local newLogsRaw = {}
-	for _, logData in logsData do
-		if type(logData) ~= "table" then -- skip the size cache
-			continue
-		end
-		for _, log in logData do
-			Util.Defer.wait()
-			local text, level, time, from, name = unpack(log)
-			if type(level) == "number" then
-				level = string.char(level + 1)
-			end
-			local hash = buffer.create(if from then 17 else 9)
-			buffer.writeu8(hash, 0, string.byte(level))
-			buffer.writef64(hash, 1, time)
-			if from then
-				buffer.writef64(hash, 9, from)
-			end
-			local fingerprint = buffer.tostring(hash)
-			if Data.logFingerprints[fingerprint] then
-				continue
-			end
-			Data.logFingerprints[fingerprint] = true
-			table.insert(
-				newLogs,
-				{ text = text, level = level, time = time, from = from, name = name, fingerprint = fingerprint }
-			)
-			table.insert(newLogsRaw, { text, level, time, from, name })
-		end
-	end
-	if #newLogs > 0 then
-		Util.Table.mergeList(Data.logs, newLogs)
-		while #Data.logs > Util.Logger.limit do
-			local removedLog = table.remove(Data.logs, 1)
-			Data.logFingerprints[removedLog.fingerprint] = nil
-			Util.Defer.wait()
-		end
-		table.sort(Data.logs, Util.Logger.sortTime)
-
-		for _, player in Players:GetPlayers() do
-			if player:GetAttribute("_K_READY") and Auth.hasPermission(player.UserId, "serverlogs") then
-				Remote.Logs:FireClient(player, newLogsRaw)
-			end
-		end
-	end
-	Hook.postSyncLogs:Fire(unpack(logsData))
 end
 
 local function rawSortTime(a, b)
 	return a[3] > b[3] -- reverse sort
 end
 
-local nextLogsInterval = tick() + Data.updateAsyncInterval * 5 / 3
-local function updateLogs()
-	nextLogsInterval = math.huge
-	if Data.settings.saveLogs == false then
+local SAVE = {
+	bans = {},
+	members = {},
+	settings = {},
+	logs = {},
+	players = {},
+}
+
+local updatingBans = false
+local function updateBans()
+	if updatingBans then
 		return
 	end
+	updatingBans = true
 
-	local save = false
-	local chatLogs, logs = Data.Cache.chatLogs, Data.Cache.logs
-	if next(chatLogs) or next(logs) then
-		save = true
-		Data.Cache.chatLogs, Data.Cache.logs = {}, {}
+	local ok, result = Data.Store.updateAsync("Bans", function(value)
+		return if not value then Data.filterRemove(SAVE.bans) else Data.mergeRemove(value, SAVE.bans)
+	end)
+
+	table.clear(SAVE.bans)
+	updatingBans = false
+
+	if ok and not Data.gameClosing then
+		task.defer(dataLimitWarning, "ban", #Http:JSONEncode(result))
 	end
-	if Data.gameClosing and not save then
+end
+
+local updatingMain = false
+local function updateMain()
+	if updatingMain then
 		return
 	end
-	local chatSize, logsSize = #Http:JSONEncode(chatLogs), #Http:JSONEncode(logs)
-	local dataStructureSize = #Http:JSONEncode({ {}, {}, math.ceil(DATA_LIMIT / 2), math.ceil(DATA_LIMIT / 2) })
+	updatingMain = true
 
-	local sync, updatedTime
-	local ok, result = Data.Store.updateAsync("LogsV2", function(value, metaData)
+	local ok, result = Data.Store.updateAsync("Main", function(value)
 		if not value then
-			return { chatLogs, logs, chatSize, logsSize }
+			return Data.filterRemove({ SAVE.members, SAVE.settings })
 		end
-		if metaData.UpdatedTime > Data.updatedTimeLogs then
-			sync, updatedTime = value, metaData.UpdatedTime
-		end
-		if not save then
-			return
+		Data.mergeRemove(value[1], SAVE.members)
+		Data.mergeRemove(value[2], SAVE.settings)
+		return value
+	end)
+
+	table.clear(SAVE.members)
+	table.clear(SAVE.settings)
+	updatingMain = false
+
+	if ok and not Data.gameClosing then
+		task.defer(dataLimitWarning, "member", #Http:JSONEncode(result))
+	end
+end
+
+local updatingLogs = false
+local function updateLogs()
+	if updatingLogs then
+		return
+	end
+
+	updatingLogs = true
+
+	local updateSize = #Http:JSONEncode(SAVE.logs)
+	local dataStructureSize = #Http:JSONEncode({ {}, DATA_LIMIT })
+
+	Data.Store.updateAsync("Logs", function(value)
+		if not value or type(value) ~= "table" or type(value[1]) ~= "table" or type(value[2]) ~= "number" then
+			return { SAVE.logs, updateSize }
 		end
 
-		local savedChatLogs, savedLogs, savedChatSize, savedLogsSize = unpack(value)
-		if not savedChatSize then
-			savedChatSize = #Http:JSONEncode(savedChatLogs)
-		end
-		if not savedLogsSize then
-			savedLogsSize = #Http:JSONEncode(savedLogs)
-		end
-		for index, data in
-			{ { savedChatLogs, chatLogs, savedChatSize, chatSize }, { savedLogs, logs, savedLogsSize, logsSize } }
-		do
-			local savedData, newData, savedSize, newSize = unpack(data)
-			Util.Table.mergeList(savedData, newData)
-			table.sort(savedData, rawSortTime)
+		local savedLogs, savedSize = unpack(value)
+		savedSize = savedSize or #Http:JSONEncode(savedLogs)
 
-			local totalSize = savedSize + newSize
-			local excess = totalSize - (math.ceil(DATA_LIMIT / 2) + dataStructureSize)
-			local count = #savedData
+		Util.Table.mergeList(savedLogs, SAVE.logs)
+		table.sort(savedLogs, rawSortTime)
 
-			while excess > 0 do
-				local logSize = #Http:JSONEncode(savedData[count]) + 1
-				excess -= logSize
-				totalSize -= logSize
-				savedData[count] = nil
-				count -= 1
-			end
-			value[index + 2] = totalSize
+		local totalSize = savedSize + updateSize
+		local excess = totalSize - (DATA_LIMIT + dataStructureSize)
+		local count = #savedLogs
+
+		while excess > 0 do
+			local logSize = #Http:JSONEncode(savedLogs[count]) + 1
+			excess -= logSize
+			totalSize -= logSize
+			savedLogs[count] = nil
+			count -= 1
 		end
+		value[2] = totalSize
 
 		return value
 	end)
 
-	if ok then
-		if sync and not Data.gameClosing then
-			Data.updatedTimeLogs = updatedTime
-			task.defer(syncLogs, sync)
-		end
-	else
-		warn(`[Kohl's Admin] Logs Datastore UpdateAsync failed: {result}`)
-		for logData, logCache in { [chatLogs] = Data.Cache.chatLogs, [logs] = Data.Cache.logs } do
-			for _, log in logData do
-				table.insert(logCache, log)
+	table.clear(SAVE.logs)
+
+	updatingLogs = false
+end
+
+-------------------------
+-- Core Sync Functions --
+-------------------------
+
+local SYNC = {
+	bans = function(state, changes)
+		Hook.preSyncBans:Fire(changes)
+		Util.Table.merge(state, changes)
+		Util.Table.merge(state, Data.Sync.bans)
+		Hook.postSyncBans:Fire(state)
+
+		for _, player in Players:GetPlayers() do
+			if player:GetAttribute("_K_READY") and Auth.hasCommand(player.UserId, "ban") then
+				Remote.Bans:FireClient(player, state)
 			end
-			table.sort(logCache, rawSortTime)
+		end
+	end,
+
+	members = function(state, changes)
+		for userId, data in changes do
+			local cache = Data.Sync.members[userId]
+			if cache then -- don't overwrite pending change!
+				changes[userId] = nil
+				continue
+			end
+			data.name, data[1] = data[1], nil
+			data.persist, data[2] = data[2], nil
+
+			-- filter out invalid roleIds
+			local persist = {}
+			for _, roleId in data.persist do
+				if Data.roles[roleId] then
+					table.insert(persist, roleId)
+				else
+					warn(`Invalid roleId: {roleId}, did you change the role _key?`)
+					continue
+				end
+			end
+			data.persist = persist
+
+			local member = state[userId]
+			if member then
+				data.roles = member.roles
+
+				-- remove roles that were saved but now aren't
+				if member.persist then
+					for _, role in data.roles do
+						local hadRole = table.find(member.persist, role)
+						local hasRole = table.find(data.persist, role)
+						if hadRole and not hasRole then
+							table.remove(data.roles, table.find(data.roles, role))
+						end
+					end
+				end
+
+				-- append new saved roles to cached roles
+				for _, roleId in data.persist do
+					if not table.find(data.roles, roleId) then
+						table.insert(data.roles, roleId)
+					end
+				end
+			else
+				data.roles = table.clone(data.persist)
+			end
+
+			if #data.roles == 0 then -- remove member
+				state[userId] = nil
+				continue
+			end
+
+			table.sort(data.persist, Auth.roleIdSort)
+			table.sort(data.roles, Auth.roleIdSort)
+		end
+
+		Util.Table.merge(state, changes)
+
+		-- fill missing names
+		for key, data in state do
+			if not data.name and #data.persist > 0 then
+				task.defer(fillMemberName, key, data)
+			end
+		end
+
+		for _, player in Players:GetPlayers() do
+			if player:GetAttribute("_K_READY") then
+				Remote.Members:FireClient(player, state)
+			end
+		end
+	end,
+
+	settings = function(state, changes)
+		-- deserialize settings
+		for key, setting in changes do
+			if type(setting) == "table" then
+				local itemType = setting[1]
+				if itemType == "color" then
+					changes[key] = Color3.new(unpack(setting, 2))
+				elseif itemType == "udim" then
+					changes[key] = UDim.new(unpack(setting, 2))
+				elseif itemType == "enum" then
+					changes[key] = Enum[setting[2]][setting[3]]
+				end
+			end
+		end
+
+		Migrate.Settings(changes)
+
+		-- settings sync
+		if type(changes.prefix) == "string" then
+			state.prefix[1] = changes.prefix
+			changes.prefix = state.prefix
+		end
+		Util.Table.merge(state, changes)
+		Data.settings = if Data.savedSettings.useSavedSettings then state else Data.defaultSettings
+
+		for _, player in Players:GetPlayers() do
+			if player:GetAttribute("_K_READY") then
+				Remote.Settings:FireClient(player, state)
+			end
+		end
+	end,
+
+	logs = function(state, changes)
+		local newLogs = {}
+		local newLogsRaw = {}
+
+		for _, log in changes do
+			Util.Defer.wait()
+			local text, level, time, from, name = unpack(log)
+			if type(level) == "number" then
+				level = string.char(level + 1)
+			end
+			table.insert(newLogs, { text = text, level = level, time = time, from = from, name = name })
+			table.insert(newLogsRaw, { text, level, time, from, name })
+		end
+
+		if #newLogs > 0 then
+			Util.Table.mergeList(state, newLogs)
+			local excess = #state - Util.Logger.limit
+			if excess > 0 then
+				for i = 1, excess do
+					state[i] = nil
+				end
+				Util.Table.settle(state)
+			end
+			table.sort(state, Util.Logger.sortTime)
+
+			for _, player in Players:GetPlayers() do
+				if player:GetAttribute("_K_READY") and Auth.hasPermission(player.UserId, "serverlogs") then
+					Remote.Logs:FireClient(player, newLogsRaw)
+				end
+			end
+		end
+	end,
+}
+
+local REMOVE = {
+	bans = function(state, keys)
+		for _, player in Util.Service.Players:GetPlayers() do
+			if Auth.hasCommand(player.UserId, "ban") then
+				for _, key in keys do
+					Remote.Ban:FireClient(player, key)
+				end
+			end
+		end
+	end,
+	members = function(state, keys)
+		for _, key in keys do
+			Auth.networkMember(key)
+		end
+	end,
+}
+
+-----------------------------
+-- CROSS SERVER NETWORKING --
+-----------------------------
+-- Partition limit: 150k Requests Per Minute
+-- 7 Hashmaps * 150k RPM = 1.05M total RPM
+-- Aligns with 1M hashmap item limit
+-- Supports 1M server syncs/min
+local HASH_EXPIRY = 60
+local HASH_PARTITIONS = 7
+local SYNC_HASH_MAPS = {}
+
+local idsFromThisServer = {}
+local function removeIdFromThisServer(id)
+	idsFromThisServer[id] = nil
+end
+
+local function syncData(dir, changes)
+	for key, info in changes do
+		local state = dir[key]
+		if info.changes then
+			syncData(state, info.changes)
+		end
+		if info.unset then
+			for _, key in info.unset do
+				state[key] = nil
+			end
+			if REMOVE[key] then
+				REMOVE[key](state, info.unset)
+			end
+		end
+		if info.insert then
+			(SYNC[key] or Util.Table.mergeList)(state, info.insert)
+		elseif info.set then
+			(SYNC[key] or Util.Table.merge)(state, info.set)
+		end
+	end
+end
+
+local cacheKeys = { bans = "set", members = "set", settings = "set", logs = "insert" }
+local function syncChanges()
+	local changes = {}
+
+	for key, action in cacheKeys do
+		local pending = Data.Sync[key]
+		if next(pending) then -- pending changes
+			local change, remove = {}, {}
+			for k, v in pending do
+				if v == Data.REMOVE then
+					table.insert(remove, k)
+				else
+					change[k] = v
+				end
+			end
+
+			local changing, removing = next(change) ~= nil, next(remove) ~= nil
+			if changing or removing then
+				changes[key] = {
+					[action] = if changing then change else nil,
+					unset = if removing then remove else nil,
+				}
+			end
+
+			-- merge to datastore save queue
+			if action == "insert" then
+				Util.Table.mergeList(SAVE[key], pending)
+			else
+				Util.Table.merge(SAVE[key], pending)
+			end
+			table.clear(pending)
 		end
 	end
 
-	nextLogsInterval = tick() + Data.updateAsyncInterval
+	if next(changes) == nil then
+		return
+	end
+
+	if not Data.gameClosing then
+		if changes.bans then
+			task.spawn(updateBans)
+		end
+		if changes.members or changes.settings then
+			task.spawn(updateMain)
+		end
+		if changes.logs then
+			task.spawn(updateLogs)
+		end
+	end
+
+	local id = Http:GenerateGUID(false)
+	idsFromThisServer[id] = true
+
+	for i = 1, HASH_PARTITIONS do
+		Util.Retry(function()
+			-- set random map for #HASH_PARTITIONS * request limit
+			SYNC_HASH_MAPS[i]:SetAsync(id, changes, HASH_EXPIRY)
+		end, math.huge)
+	end
+	task.delay(HASH_EXPIRY, removeIdFromThisServer, id)
+
+	Util.Retry(function()
+		Util.Service.Messaging:PublishAsync(DATA_KEY, id)
+	end, math.huge)
 end
 
+----------
+-- INIT --
+----------
+
 function Data.initialize(scope)
-	local ok, result = Data.Store.loadStore("_KData", scope)
+	local ok, result = Data.Store.loadStore(DATA_KEY, scope)
 	if not ok then
 		warn("[Kohl's Admin] Data failed to load: " .. result)
 		Hook.initDataStore:Fire()
 		return Data
 	end
 
-	local okMain, main, mainMetaData = Data.Store.getAsync("Main")
+	local okMain, main = Data.Store.getAsync("Main")
 	if okMain then
 		if main then
-			Data.updatedTimeMain = mainMetaData.UpdatedTime
-			syncMain(main)
+			SYNC.members(Data.members, main[1])
+			SYNC.settings(Data.savedSettings, main[2])
 		else -- first time load
 			local bansKAI, mainKAI = Migrate.KAI()
 			if bansKAI then
 				print("[Kohl's Admin] Migrating Data from Kohl's Admin Infinite...")
-				Data.Cache.bans = bansKAI
-				Data.Cache.members = mainKAI[1]
-				Data.Cache.settings = mainKAI[2]
+				Data.Sync.bans = bansKAI
+				Data.Sync.members = mainKAI[1]
+				Data.Sync.settings = mainKAI[2]
 
-				syncBans(bansKAI)
-				syncMain(Util.Table.deepCopy(mainKAI))
+				local data = Util.Table.deepCopy(mainKAI)
+				SYNC.bans(Data.bans, bansKAI)
+				SYNC.members(Data.members, data[1])
+				SYNC.settings(Data.savedSettings, data[2])
 			end
 		end
 	end
 
-	local okBans, bans, bansMetaData = Data.Store.getAsync("Bans")
-	if okBans then
-		if bans then
-			Data.updatedTimeBans = bansMetaData.UpdatedTime
-			syncBans(bans)
-		end
+	local okBans, bans = Data.Store.getAsync("Bans")
+	if okBans and bans then
+		SYNC.bans(Data.bans, bans)
 	end
 
-	if Data.settings.saveLogs ~= false then
-		local okLogs, logs, logsMetaData = Data.Store.getAsync("LogsV2")
-		if okLogs then
-			if logs then
-				Data.updatedTimeLogs = logsMetaData.UpdatedTime
-				syncLogs(logs)
-			end
+	if Data.settings.saveLogs ~= false or Data.settings.saveChatLogs ~= false then
+		local okLogs, logs = Data.Store.getAsync("Logs")
+		if okLogs and logs and type(logs) == "table" and type(logs[1]) == "table" and type(logs[1][1]) == "table" then
+			SYNC.logs(Data.logs, logs[1])
 		end
 	end
 
 	local okServers, servers = Data.Store.getAsync("Servers")
-	if okServers then
-		if servers then
-			Util.Table.merge(Data.reservedServers, servers)
-			for _, player in Util.Service.Players:GetPlayers() do
-				task.spawn(function()
-					if Auth.hasCommand(player.UserId, "place") or Auth.hasCommand(player.UserId, "unreserve") then
-						Remote.ReservedServers:FireClient(player, servers)
-					end
-				end)
-			end
+	if okServers and servers then
+		Util.Table.merge(Data.reservedServers, servers)
+		for _, player in Util.Service.Players:GetPlayers() do
+			task.spawn(function()
+				if Auth.hasCommand(player.UserId, "place") or Auth.hasCommand(player.UserId, "unreserve") then
+					Remote.ReservedServers:FireClient(player, servers)
+				end
+			end)
 		end
 	end
 
 	Hook.initDataStore:Fire()
 
+	-- disable cross server sync logic in private servers
+	if not Data.SEPARATE_DATASTORE then
+		for i = 1, HASH_PARTITIONS do
+			local _, syncHashMap = Util.Retry(function()
+				return MemoryStore:GetHashMap(DATA_KEY .. i)
+			end, math.huge)
+			table.insert(SYNC_HASH_MAPS, syncHashMap)
+		end
+
+		task.defer(Util.Retry, function()
+			return Util.Service.Messaging:SubscribeAsync(DATA_KEY, function(message)
+				local id = message.Data
+				if not id or idsFromThisServer[id] then
+					return
+				end
+
+				local _ok, changes = Util.Retry(function()
+					-- get random map for #HASH_PARTITIONS * request limit
+					return SYNC_HASH_MAPS[math.random(HASH_PARTITIONS)]:GetAsync(id)
+				end, math.huge)
+				syncData(Data, changes)
+			end)
+		end, math.huge)
+	end
+
 	task.spawn(function()
 		repeat
+			syncChanges()
 			task.wait(1)
-			if Data.Store.getBudget(Enum.DataStoreRequestType.UpdateAsync) <= 3 then
-				continue
-			end
-			if tick() > nextMainInterval then
-				task.defer(updateMain)
-			end
-			if tick() > nextBansInterval then
-				task.defer(updateBans)
-			end
-			if tick() > nextLogsInterval then
-				task.defer(updateLogs)
-			end
 		until Data.gameClosing
 	end)
 
@@ -543,32 +567,19 @@ function Data.initialize(scope)
 	game:BindToClose(function()
 		Data.gameClosing = true
 
+		syncChanges()
+
 		local tasks = Util.Tasks.new()
 
-		local bans = Data.Cache.bans
-		if next(bans) then
+		if next(Data.Sync.bans) then
 			tasks:add(updateBans)
 		end
-		if next(Data.Cache.members) or next(Data.Cache.settings) then
+		if next(Data.Sync.members) or next(Data.Sync.settings) then
 			tasks:add(updateMain)
 		end
-		if next(Data.Cache.chatLogs) or next(Data.Cache.logs) then
+		if next(Data.Sync.logs) then
 			tasks:add(updateLogs)
 		end
-
-		-- local function userSave(key, func)
-		-- 	local success, result = Data.Store.updateAsync(key, func)
-		-- 	if not success then
-		-- 		warn(string.format("Failed to save %d's data: %s", key, result))
-		-- 	end
-		-- end
-
-		-- TODO: prepare player data
-		-- for userId, sessionData in Cache.players do
-		--  tasks:add(userSave, userId, function(value)
-		-- 		return sessionData
-		-- 	end)
-		-- end
 
 		tasks:wait()
 	end)
