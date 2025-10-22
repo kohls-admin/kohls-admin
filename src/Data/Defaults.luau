@@ -75,6 +75,7 @@ local Data = {
 		getKohlsAdminPopup = true,
 		wrongPrefixWarning = true,
 		saveLogs = true,
+		saveChatLogs = true,
 
 		theme = "Default",
 		changeThemeAuthority = "Client",

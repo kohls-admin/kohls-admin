@@ -124,7 +124,6 @@ local function updateLogs()
 	if updatingLogs then
 		return
 	end
-
 	updatingLogs = true
 
 	local updateSize = #Http:JSONEncode(SAVE.logs)

@@ -285,6 +285,11 @@ function Settings.new(_K)
 				"Warns users when the wrong command prefix is used"
 			),
 			switchItem("saveLogs", "Save Logs", "Toggle the saving and synchronization of logs across servers"),
+			switchItem(
+				"saveChatLogs",
+				"Save Chat Logs",
+				"Toggle the saving and synchronization of chat logs across servers"
+			),
 		},
 
 		{

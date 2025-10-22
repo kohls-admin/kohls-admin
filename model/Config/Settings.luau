@@ -99,7 +99,8 @@ return {
 	onlyShowUsableCommands = false, -- Show only purchasable/usable commands
 	getKohlsAdminPopup = true, --      Show the Get Kohl's Admin popup
 	wrongPrefixWarning = true, --      Warn on incorrect prefix
-	saveLogs = true, --                Save/sync logs across servers
+	saveLogs = true, --                Save/sync command logs across servers
+	saveChatLogs = false, --           Save/sync chat logs across servers
 
 	theme = "Default", --               Initial theme (customize in Config.Themes)
 	changeThemeAuthority = "Client", -- "Client", "Server", or "Studio"
