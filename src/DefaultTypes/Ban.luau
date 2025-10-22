@@ -3,12 +3,9 @@ local _K
 local function parseBan(input)
 	local query = string.lower(input)
 	for userId, ban in _K.Data.bans do
-		local name = ban[1] or _K.Util.getUserInfo(userId).Username
-		if not name then
-			continue
-		end
+		local name = ban[1]
 		if
-			string.find(string.lower(name), query, 1, true) == 1
+			(name and string.find(string.lower(name), query, 1, true) == 1)
 			or string.find(string.lower(userId), query, 1, true) == 1
 		then
 			return userId
@@ -32,11 +29,12 @@ local typeBan = {
 	suggestions = function(text)
 		local names = { { { "*", "all" }, "*  [all] (Everyone)" } }
 		for userId, ban in _K.Data.bans do
-			local name = ban[1] or _K.Util.getUserInfo(userId).Username
-			if not name then
-				continue
+			local name = ban[1]
+			if name then
+				table.insert(names, { { name, userId }, `{name} [{userId}]` })
+			else
+				table.insert(names, { userId, `UNKNOWN [{userId}]` })
 			end
-			table.insert(names, { { name, userId }, `{name} [{userId}]` })
 		end
 		return names
 	end,
