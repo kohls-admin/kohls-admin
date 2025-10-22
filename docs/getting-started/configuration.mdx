@@ -194,51 +194,58 @@ userRoles = {
 ### Settings
 
 ```lua
-prefix = ";", -- The prefix character used to trigger commands (e.g., ";kick")
+announcements = {
+		-- {
+		-- 	From = "_K", -- userId or "_K"
+		-- 	Duration = 30, -- seconds, 0 = no auto-hide
+		-- 	Text = "Hi!",
+		-- },
+	},
 
-chatCommands = true, --        Enables command execution via the Chat
-commandBarRank = 0, --         Minimum rank required to view the Command Bar       (Set to false to disable for everyone)
-dashboardRank = 0, --          Minimum rank required to view the Dashboard         (Set to false to disable for everyone)
-dashboardButtonRank = 0, --    Minimum rank required to view the Dashboard button  (Set to false to disable for everyone)
-joinNotificationRank = 1, --   Minimum rank required to show the join notification (Set to false to disable for everyone)
+notifications = {
+	-- {
+	-- 	From = "_K", -- userId or "_K"
+	-- 	Duration = 30, -- seconds, 0 = no auto-hide
+	-- 	Text = "Hi!",
+	-- },
+},
 
-onlyShowUsableCommands = false, -- Only displays commands the player can purchase or use
-wrongPrefixWarning = true, --      Warns users when they use the wrong command prefix
-welcomeBadgeId = 0, --             Awards a badge to new players, set to 0 for no badge
-getKohlsAdminPopup = true, --      Enables the "Enjoy Kohl's Admin?" feedback popup to users
+-- 🔧 SYSTEM SETTINGS
+prefix = { ";", ":" }, -- Command trigger characters
+splitKey = "%s", --       Command/argument separator
 
-gameHubEnabled = true, -- Adds your to a list of games with Kohl's Admin | ⚠️ Requires "Allow HTTP Requests" in File > Game Settings > Security | https://www.roblox.com/games/17873329124/Kohls-Admin-Games-Hub
-vip = true, --            Enables VIP-specific features and donation support | ⚠️ Required if gameHubEnabled is true
+commandBarRank = 0, --       Minimum rank for Command Bar (false = disable)
+dashboardRank = 0, --        Minimum rank for Dashboard (false = disable)
+dashboardButtonRank = 0, --  Minimum rank for Dashboard button (false = disable)
+joinNotificationRank = 1, -- Minimum rank for join notifications (false = disable)
 
-saveLogs = true, -- Saves and syncs admin logs across multiple servers
+welcomeBadgeId = 0, -- Badge for new players (0 = none)
+
+addToCharts = true, -- Add this game to the Kohl's Admin Charts  (⚠️ Requires "Allow HTTP Requests" in File > Game Settings > Security)  https://roblox.com/games/17873329124/Kohls-Admin-Charts
+vip = true, --         Enable VIP features                       (⚠️ Required if addToCharts is true)
+
+chatCommands = true, --            Enable commands via chat
+commandRequests = true, --         Request commands on same/higher rank
+onlyShowUsableCommands = false, -- Show only purchasable/usable commands
+getKohlsAdminPopup = true, --      Show the Get Kohl's Admin popup
+wrongPrefixWarning = true, --      Warn on incorrect prefix
+saveLogs = true, --                Save/sync command logs across servers
+saveChatLogs = false, --           Save/sync chat logs across servers
+
+theme = "Default", --               Initial theme (customize in Config.Themes)
+changeThemeAuthority = "Client", -- "Client", "Server", or "Studio"
 
 commands = { -- Configure command access per role
 	everyone = {
-		help = true, --      Enable help command
-		shutdown = false, -- Disable shutdown capability
+		help = true,
+		shutdown = false,
 	},
 	vip = {},
 	mod = {},
 	admin = {},
 	superadmin = {},
 	creator = {},
-},
-
-announcements = {
-	-- {
-	-- 	From = "_K", --    Set to a userId or "_K"
-	-- 	Duration = 30, --  Duration in seconds until the announcement is hidden, set to 0 to not automatically hide
-	-- 	Text = "Hi!",
-	-- },
-},
-
-notifications = {
-	-- {
-	-- 	From = "_K", --    Set to a userId or "_K"
-	-- 	Duration = 30, --  Duration in seconds until the notification is hidden, set to 0 to not automatically hide
-	-- 	Text = "Hi!",
-	-- },
-},
+}
 ```
 
 ### 🎭 ROLE CONFIGURATION
@@ -246,75 +253,97 @@ notifications = {
 Defines the hierarchy, permissions, and capabilities of each role, you can create as many custom roles as you want!
 
 ```lua
-roles = {
-	{ -- Default Role (Base permissions for all users)
-		_key = "everyone", -- DO NOT CHANGE: System identifier
+	roles = {
+		{ -- Default Role
+			_key = "everyone", -- ⚠️ DO NOT CHANGE
 
-		name = "Player", -- Display name
-		color = "#0ff", -- Role color, hex only!
+			name = "Player",
+			color = "#aaa", -- Hex color only
 
-		-- Command Access Groups
-		groups = {
-			-- "creator",        -- System-level commands
-			-- "administration", -- Administrative tools
-			-- "moderation",     -- Moderation tools
-			-- "environment",    -- World manipulation
-			-- "general",        -- Staff utilities
-			-- "fun",            -- Entertainment commands
-			-- "vip",            -- Special features
-			"utility", -- Common utilities
+			groups = {
+				-- "creator", --        clearlogs, hidelogs, script, localscript, etc.
+				-- "superadmin", --     badge, clearterrain, reserve, shutdown, global, etc.
+				-- "administration", -- announce, role, btools, gear, insert, place, serverlock, etc.
+				-- "moderation", --     ban, kick, jail, teleport, mute, warnings, etc.
+				-- "environment", --    fix, lighting, gravity, wind, water, atmosphere, etc.
+				-- "general", --        respawn, refresh, spectate, view, vote, xray, etc.
+				-- "fun", --            disco, explode, clone, punish, zombie, etc. (abusive)
+				-- "vip", --            appearance, accessories, animations, particles, etc.
+				"utility", --           help, version, info, logs, etc. (safe basics)
+			},
+
+			limits = {
+				cooldown = 4, -- Cooldown period in seconds
+				commands = 4, -- Max commands per cooldown
+				targets = 1, --  Max targets per command
+			},
+
+			permissions = {
+				admin = false, --   ⚠️ Bypasses all permissions
+				banasync = false, --   Saved bans
+				saveRoles = false, --  Saved roles
+				settings = false, --   Saved settings
+				serverlogs = false, -- Server logs
+			},
+
+			onlyTargetSelf = true, -- Can only use commands on self
 		},
 
-		-- Permission Flags
-		permissions = {
-			admin = false, --   ⚠️ Complete bypass of all restrictions
-			banasync = false, --   Permanent ban capability
-			saveRoles = false, --  Role management for lower ranks
-			settings = false, --   Global admin settings access
-			serverlogs = false, -- Server-side log access
+		{ -- VIP Role
+			_key = "vip", -- ⚠️ DO NOT CHANGE
+			name = "VIP",
+			color = "#0ff",
+			groups = { "vip" },
+			limits = { cooldown = 4, commands = 16, targets = 1 },
+			permissions = {},
+			onlyTargetSelf = true,
 		},
 
-		onlyTargetSelf = true, -- Whether users can ONLY use commands on themselves
-	},
+		-- 🎭 Create as many roles as you want!
+		-- Use the _key in other settings like friendRoles to auto give the role
+		-- Helper would be higher rank than VIP, and lower than moderator
 
-	{ -- VIP Role
-		_key = "vip", -- DO NOT CHANGE: System identifier
-		name = "VIP",
-		color = "#0f8",
-		groups = { "vip" },
-		permissions = {},
-		onlyTargetSelf = true,
-	},
+		-- {
+		-- 	_key = "helper",
+		-- 	name = "Helper",
+		-- 	color = "#080",
+		-- 	groups = { "general" },
+		-- 	limits = { cooldown = 4, commands = 32, targets = math.huge },
+		-- 	permissions = { serverlogs = true },
+		-- },
 
-	{ -- Moderator Role
-		_key = "mod", -- DO NOT CHANGE: System identifier
-		name = "Moderator",
-		color = "#0f0",
-		groups = { "moderation", "general", "environment", "fun", "vip" },
-		permissions = { serverlogs = true },
-	},
+		{ -- Moderator Role
+			_key = "mod", -- ⚠️ DO NOT CHANGE
+			name = "Moderator",
+			color = "#0f0",
+			groups = { "moderation", "general", "environment", "fun", "vip" },
+			limits = { cooldown = 4, commands = 32, targets = math.huge },
+			permissions = { serverlogs = true },
+		},
 
-	{ -- Administrator Role
-		_key = "admin", -- DO NOT CHANGE: System identifier
-		name = "Administrator",
-		color = "#ff0",
-		groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
-		permissions = { banasync = true, serverlogs = true },
-	},
+		{ -- Administrator Role
+			_key = "admin", -- ⚠️ DO NOT CHANGE
+			name = "Administrator",
+			color = "#fc0",
+			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
+			limits = { cooldown = 4, commands = 64, targets = math.huge },
+			permissions = { banasync = true, serverlogs = true },
+		},
 
-	{ -- SuperAdmin Role
-		_key = "superadmin", -- DO NOT CHANGE: System identifier
-		name = "SuperAdmin",
-		color = "#f80",
-		groups = { "superadmin", "administration", "moderation", "general", "environment", "fun", "vip" },
-		permissions = { banasync = true, saveRoles = true, settings = true, serverlogs = true },
-	},
+		{ -- SuperAdmin Role
+			_key = "superadmin", -- ⚠️ DO NOT CHANGE
+			name = "SuperAdmin",
+			color = "#f80",
+			groups = { "superadmin", "administration", "moderation", "general", "environment", "fun", "vip" },
+			permissions = { banasync = true, saveRoles = true, settings = true, serverlogs = true },
+		},
 
-	[math.huge] = { -- Creator Role (Highest Authority)
-		_key = "creator", -- DO NOT CHANGE: System identifier
-		name = "Game Creator",
-		color = "#f00",
-		permissions = { admin = true }, -- Full system access
+		[math.huge] = { -- Creator Role (Highest Authority)
+			_key = "creator", -- ⚠️ DO NOT CHANGE
+			name = "Game Creator",
+			color = "#f00",
+			permissions = { admin = true },
+		},
 	},
 },
 ```
