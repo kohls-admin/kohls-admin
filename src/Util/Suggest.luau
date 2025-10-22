@@ -119,12 +119,12 @@ function Suggest.new(setOrContainer: any): ({ string }, { any })
 		elseif setItemType == "string" then
 			names = setOrContainer
 		elseif setItem ~= nil then
-			error("only accepts tables of instances or strings.")
+			error(`only accepts tables of instances or strings, got: {setItemType}`)
 		else
 			names = {}
 		end
 	else
-		error("only accepts a table, Enum, or Instance.")
+		error(`only accepts a table, Enum, or Instance, got: {setType}`)
 	end
 
 	return names, instances
