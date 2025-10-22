@@ -1058,6 +1058,79 @@ return {
 	},
 
 	{
+		name = "tts",
+		aliases = { "speak" },
+		description = "Plays text to speech audio.",
+		args = {
+			{
+				type = "voiceId",
+				name = "Voice",
+				description = "The voice to speak in.",
+				optional = true,
+			},
+			{
+				type = "string",
+				name = "Text",
+				description = "The text to speak.",
+			},
+		},
+
+		envClient = function(_K)
+			local ids = {
+				"British male",
+				"British female",
+				"US male",
+				"US female",
+				"US male #2",
+				"US female #2",
+				"Australian male",
+				"Australian female",
+				"Retro #1",
+				"Retro #2",
+			}
+			_K.Registry.registerType("voiceId", _K.Registry.makeEnumType("voiceId", ids))
+		end,
+		env = function(_K)
+			local ids = {
+				"British male",
+				"British female",
+				"US male",
+				"US female",
+				"US male #2",
+				"US female #2",
+				"Australian male",
+				"Australian female",
+				"Retro #1",
+				"Retro #2",
+			}
+			_K.Registry.registerType("voiceId", _K.Registry.makeEnumType("voiceId", ids))
+
+			return {
+				playing = nil,
+				voiceIds = ids,
+			}
+		end,
+		run = function(context, voice: string?, text: string)
+			local voiceId = table.find(context.env.voiceIds, voice or "British male")
+
+			local audioTextToSpeech: AudioTextToSpeech = Instance.new("AudioTextToSpeech")
+			audioTextToSpeech.Parent = workspace
+			audioTextToSpeech.Text = text
+			audioTextToSpeech.VoiceId = tostring(voiceId)
+
+			local deviceOutput = Instance.new("AudioDeviceOutput")
+			deviceOutput.Parent = workspace
+
+			local wire = Instance.new("Wire")
+			wire.Parent = workspace
+
+			wire.SourceInstance = audioTextToSpeech
+			wire.TargetInstance = deviceOutput
+
+			audioTextToSpeech:Play()
+		end,
+	},
+	{
 		name = "play",
 		aliases = { "music", "sound", "audio" },
 		description = "Plays a sound.",
