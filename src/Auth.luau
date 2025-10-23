@@ -553,7 +553,7 @@ function Auth.targetUserArgument(arg, userId: number, value: Player | number | s
 	end
 end
 
-function Auth.isFreeAdmin(userId: number)
+function Auth.isFreeAdmin(userId: number): boolean
 	local maxFreeAdminRank = 0
 	for _, roleId in Data.settings.freeAdmin do
 		local role = Data.roles[roleId]
