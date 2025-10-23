@@ -6,7 +6,7 @@ Retries a function with exponential backoff until it succeeds or exceeds the max
 @param ...: any? -- Additional arguments to pass to the callback function
 @return (boolean, any) -- Returns the result of the pcall callback execution
 ]]
-local function Retry(callback: () -> any | nil, attempts: number?, base: number?, ...: any?): (boolean, any)
+local function Retry(callback: (...any) -> any | nil, attempts: number?, base: number?, ...: any?): (boolean, any)
 	attempts = attempts or 5
 	base = base or 2
 
