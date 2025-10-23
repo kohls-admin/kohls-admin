@@ -66,6 +66,7 @@ local _K = {
 	Flux = require(script:WaitForChild("Flux")),
 	Hook = require(script:WaitForChild("Hook")),
 	Remote = require(script:WaitForChild("Remote")),
+	Z = require(script:WaitForChild("Z")),
 	UI = nil,
 
 	-- core modules
@@ -135,6 +136,10 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 			log.name = Util.getUserInfo(from).Username
 		end
 		if _K.IsServer then
+			-- trim for 32KB sync max
+			if #log.text > 16 * 1024 then
+				log.text = string.sub(log.text, 1, 16 * 1024)
+			end
 			if from and filtered then
 				log.text = Util.String.filterForBroadcast(text, from)
 			end
@@ -142,7 +147,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 				(level == "CHAT" and _K.Data.settings.saveChatLogs)
 				or (level == "COMMAND" and _K.Data.settings.saveLogs and (not from or _K.Auth.hasRestrictedRole(from)))
 			then
-				table.insert(_K.Data.Sync.logs, { log.text, log.level, log.time, from, log.name })
+				table.insert(_K.Data.Sync.logs, log)
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
@@ -574,7 +579,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 	end
 
 	-- server network events
-
+	local lastLog, cachedLogsBuffer
 	_K.Remote.Init.OnServerEvent:Connect(function(player, initData)
 		if initData.Attributes then
 			for attribute, value in initData.Attributes do
@@ -582,8 +587,20 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 			end
 		end
 
+		local logs
+		if _K.Auth.hasPermission(player.UserId, "serverlogs") then
+			if lastLog ~= _K.Data.logs[#_K.Data.logs] or not cachedLogsBuffer then
+				lastLog = _K.Data.logs[#_K.Data.logs]
+				local err
+				cachedLogsBuffer, err = _K.Z.ser(_K.Data.Schema.logs, _K.Data.logs)
+				if not cachedLogsBuffer then
+					warn("Failed to serialize logs:", err)
+				end
+			end
+			logs = cachedLogsBuffer
+		end
+
 		local bans = _K.Auth.hasCommand(player.UserId, "ban") and _K.Data.bans
-		local logs = _K.Auth.hasPermission(player.UserId, "serverlogs") and _K.Data.logs
 		local members = if _K.Auth.hasCommand(player.UserId, "members")
 			then _K.Data.members
 			else {

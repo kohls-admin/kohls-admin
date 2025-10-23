@@ -1,8 +1,23 @@
 local RunService = game:GetService("RunService")
 
 local Theme = require(script.Parent.Parent.Client:WaitForChild("UI"):WaitForChild("Theme"))
+local Z = require(script.Parent.Parent.Z)
 
 type Dict = { [any]: any }
+
+Z.TRIM_STRINGS = true
+
+local Schema = {}
+
+Schema.log = Z {
+	level = Z.byte,
+	from = Z.some(Z.uint),
+	name = Z.some(Z.str8),
+	text = Z.str16,
+	time = Z.f64,
+}
+
+Schema.logs = Z { Schema.log }
 
 local Data = {
 	IS_PRIVATE_SERVER = RunService:IsServer() and game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0,
@@ -11,13 +26,13 @@ local Data = {
 
 	SEPARATE_DATASTORE = nil,
 	REMOVE = table.freeze({}),
+	Schema = Schema,
 
 	Sync = {
 		bans = {},
 		members = {},
 		settings = {},
 		logs = {},
-		players = {},
 	},
 	Migrate = {} :: any,
 	initialize = nil,

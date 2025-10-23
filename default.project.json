@@ -2,9 +2,14 @@
 	"name": "kohls-admin",
 	"emitLegacyScripts": false,
 	"tree": {
-		"$path": "src",
-		"Flux": { "$path": "submodules/Flux" },
-		"TopbarPlus": { "$path": "submodules/TopbarPlus" },
+		"$path": "test/migrate",
+		"KA": {
+			"$path": "src",
+			"Flux": { "$path": "submodules/Flux" },
+			"TopbarPlus": { "$path": "submodules/TopbarPlus" },
+			"Z": { "$path": "submodules/Z" },
+			"VERSION": { "$path": "VERSION.txt" }
+		},
 		"Tools": {
 			"$className": "Folder",
 			"Building Tools": {
@@ -13,9 +18,6 @@
 					"Tags": ["_K_Ignore"]
 				}
 			}
-		},
-		"VERSION": {
-			"$path": "VERSION.txt"
 		}
 	}
 }

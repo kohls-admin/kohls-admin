@@ -175,8 +175,11 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 	end
 
 	if logs then
-		table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)
-		table.sort(_K.Data.logs, _K.Logger.sortTime)
+		local des = _K.Z.des(_K.Data.Schema.logs, logs)
+		if des then
+			table.move(des, 1, #des, #_K.Data.logs + 1, _K.Data.logs)
+			table.sort(_K.Data.logs, _K.Logger.sortTime)
+		end
 	end
 
 	if servers then

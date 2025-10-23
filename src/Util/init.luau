@@ -16,6 +16,7 @@ local Util = {
 	getUserInfo = require(script:WaitForChild("getUserInfo")),
 	Humanoid = require(script:WaitForChild("Humanoid")),
 	iterPageItems = require(script:WaitForChild("iterPageItems")),
+	MemoryStore = require(script:WaitForChild("MemoryStore")),
 	Queue = require(script:WaitForChild("Queue")),
 	Retry = require(script:WaitForChild("Retry")),
 	Rollout = require(script:WaitForChild("Rollout")),

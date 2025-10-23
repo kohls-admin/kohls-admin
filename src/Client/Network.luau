@@ -145,45 +145,45 @@ _K.Remote.Members.OnClientEvent:Connect(function(members)
 	_K.client.updateInterfaceAuth()
 end)
 
+local function removeExcessLogs()
+	local logs = _K.Data.logs
+	local excess = #logs - _K.Logger.limit
+	if excess > 0 then
+		for i = 1, excess do
+			logs[i] = nil
+		end
+		_K.Util.Table.settle(logs)
+	end
+end
+
 _K.Remote.Log.OnClientEvent:Connect(function(log)
 	if not _K.client.ready then
 		return
 	end
-	-- TODO: PERF: add to sorted list and filtered list directly
-	table.insert(_K.Data.logs, log)
 
-	_K.Util.Defer.reset()
-	while #_K.Data.logs > _K.Logger.limit do
-		table.remove(_K.Data.logs, 1)
-		_K.Util.Defer.wait()
-	end
+	table.insert(_K.Data.logs, log)
+	removeExcessLogs()
 
 	task.defer(_K.client.dashboard.Logs.updateList, _K.client.dashboard.Logs)
 end)
 
-_K.Remote.Logs.OnClientEvent:Connect(function(rawLogs)
+_K.Remote.Logs.OnClientEvent:Connect(function(logsBuffer)
 	if not _K.client.ready then
 		return
 	end
 
 	_K.Util.Defer.reset()
 
-	local logs = {}
-	for _, log in rawLogs do
-		_K.Util.Defer.wait()
-		log.text, log.level, log.time, log.from, log.name = unpack(log)
-		log[1], log[2], log[3], log[4], log[5] = nil
-		table.insert(logs, log)
-	end
+	local logs = _K.Z.des(_K.Data.Schema.logs, logsBuffer)
+	_K.Util.Defer.wait()
 
 	table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)
 	_K.Util.Defer.wait()
-	table.sort(_K.Data.logs, _K.Logger.sortTime)
 
-	while #_K.Data.logs > _K.Logger.limit do
-		table.remove(_K.Data.logs, 1)
-		_K.Util.Defer.wait()
-	end
+	table.sort(_K.Data.logs, _K.Logger.sortTime)
+	_K.Util.Defer.wait()
+
+	removeExcessLogs()
 
 	_K.client.dashboard.Logs:updateList()
 end)
