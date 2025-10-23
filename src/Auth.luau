@@ -566,4 +566,24 @@ function Auth.isFreeAdmin(userId: number): boolean
 	return Auth.getRank(userId) <= maxFreeAdminRank
 end
 
+--- Checks if a user has any non-purchasable roles; Roles not associated with any assets, gamepasses, or subscriptions
+function Auth.hasRestrictedRole(userId: number): boolean
+	local member = Data.members[tostring(userId)]
+	if member and member.roles then
+		for _, roleId in member.roles do
+			local role = Data.roles[roleId]
+			if
+				role
+				and (roleId ~= "vip" or not Data.settings.vip)
+				and (type(role.assets) ~= "table" or not next(role.assets))
+				and (type(role.gamepasses) ~= "table" or not next(role.gamepasses))
+				and (type(role.subscriptions) ~= "table" or not next(role.subscriptions))
+			then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 return Auth
