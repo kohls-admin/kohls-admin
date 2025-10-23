@@ -51,6 +51,7 @@ return {
 			{ Id = 345072461, Tooltip = "Dedicated Support Team Member - Assisting with dedication! 🎖️" }, -- raenlua
 			{ Id = 130170862, Tooltip = "Dedicated Support Team Member - Always helpful and friendly! 👋" }, -- matsagor1
 			{ Id = 77608258, Tooltip = "Dedicated Support Team Member - Soaring to provide support! 🕊️" }, -- icarus
+			{ Id = 14658110, Tooltip = "Dedicated Support Team Member - Transforming confusion into clarity! 💫" }, -- Rietria
 		},
 	},
 	{
