@@ -515,6 +515,7 @@ function Auth.getRoleFromRank(rank: number): Role
 	return roleResult
 end
 
+--- Validates if a user can be targeted by a command argument based on permissions and rank limits
 function Auth.targetUserArgument(arg, userId: number, value: Player | number | string)
 	local from = arg.command.from
 	local limits = arg.command.fromRole.limits
@@ -553,6 +554,7 @@ function Auth.targetUserArgument(arg, userId: number, value: Player | number | s
 	end
 end
 
+--- Checks if a user has a "free admin" role based on configured `freeAdmin` settings
 function Auth.isFreeAdmin(userId: number): boolean
 	local maxFreeAdminRank = 0
 	for _, roleId in Data.settings.freeAdmin do
