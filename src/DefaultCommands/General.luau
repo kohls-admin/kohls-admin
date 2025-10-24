@@ -536,8 +536,8 @@ return {
 					billboard.Name = "_KLink"
 					billboard.LightInfluence = 0
 					billboard.AlwaysOnTop = true
-					billboard.Size = (player.DisplayName == player.Name) and UDim2.new(0, 250, 0, 35)
-						or UDim2.new(0, 250, 0, 50)
+					billboard.Size = (player.DisplayName == player.Name) and UDim2.fromOffset(250, 35)
+						or UDim2.fromOffset(250, 50)
 					billboard.SizeOffset = Vector2.new(0, 0.5)
 					billboard.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
 					local beam = Instance.new("Beam")
@@ -557,7 +557,7 @@ return {
 					label.Font = Enum.Font.RobotoMono
 					label.RichText = true
 					label.TextScaled = true
-					label.Size = UDim2.new(1, 0, 1, 0)
+					label.Size = UDim2.fromScale(1, 1)
 					label.Text = (player.DisplayName == player.Name) and `@{player.Name}`
 						or `{player.DisplayName}\n@{player.Name}`
 					label.Parent = billboard
@@ -605,16 +605,16 @@ return {
 				end
 			end
 
-		localPlayer.CharacterAdded:Connect(function()
-			for player in persist do
-				task.defer(link, player)
-			end
-		end)
+			localPlayer.CharacterAdded:Connect(function()
+				for player in persist do
+					task.defer(link, player)
+				end
+			end)
 
-		return {
-			persist = persist,
-			link = link,
-		}
+			return {
+				persist = persist,
+				link = link,
+			}
 		end,
 
 		runClient = function(context, players, persistent)
