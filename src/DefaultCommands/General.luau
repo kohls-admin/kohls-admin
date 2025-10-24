@@ -489,6 +489,10 @@ return {
 		name = "link",
 		aliases = { "connect", "track" },
 		description = "Links one or more player(s) to your character.",
+		credit = {
+			"Kohl @Scripth",
+			"Rie @Rietria",
+		},
 		args = {
 			{
 				type = "players",
@@ -507,11 +511,11 @@ return {
 			local localPlayer = _K.Service.Players.LocalPlayer
 			local persist, link = {}, nil
 
-			local function characterAddedHandler(character)
+			local function characterAddedHandler(character: Model)
 				task.defer(link, _K.Service.Players:GetPlayerFromCharacter(character))
 			end
 
-			link = function(player, persistent)
+			link = function(player: Player, persistent: boolean?)
 				if persistent and not persist[player] then
 					persist[player] = player.CharacterAdded:Connect(characterAddedHandler)
 				end
@@ -522,21 +526,78 @@ return {
 					and localPlayer.Character:FindFirstChild("HumanoidRootPart")
 				local playerAttachment = playerRoot and playerRoot:FindFirstChildOfClass("Attachment")
 				local localAttachment = localRoot and localRoot:FindFirstChildOfClass("Attachment")
+				
 				if playerAttachment and localAttachment then
-					local beam = playerRoot:FindFirstChild("_KBeamLink")
-					if not beam then
-						beam = Instance.new("Beam")
-						beam.Name = "_KBeamLink"
-						beam.Color = ColorSequence.new(Color3.fromHSV(math.random(), 1, math.random()))
-						beam.FaceCamera = true
-						beam.Segments = 1
-						beam.Transparency = NumberSequence.new(0)
-						beam.Width0 = 0.2
-						beam.Width1 = 0.2
-						beam.Parent = playerRoot
+					local billboard = playerRoot:FindFirstChild("_KLink")
+					if billboard then
+						billboard:Destroy()
 					end
+					billboard = Instance.new("BillboardGui")
+					billboard.Name = "_KLink"
+					billboard.LightInfluence = 0
+					billboard.AlwaysOnTop = true
+					billboard.Size = (player.DisplayName == player.Name) and UDim2.new(0, 250, 0, 35) or UDim2.new(0, 250, 0, 50)
+					billboard.SizeOffset = Vector2.new(0, 0.5)
+					billboard.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
+					local beam = Instance.new("Beam")
+					beam.Color = ColorSequence.new(player.TeamColor.Color)
+					beam.Brightness = 2
+					beam.FaceCamera = true
+					beam.Segments = 1
+					beam.Transparency = NumberSequence.new(0)
+					beam.Width0 = 0.2
+					beam.Width1 = 0.2
 					beam.Attachment0 = playerAttachment
 					beam.Attachment1 = localAttachment
+					beam.Parent = billboard
+					local label = Instance.new("TextLabel")
+					label.TextColor3 = player.TeamColor.Color
+					label.BackgroundTransparency = 1
+					label.Font = Enum.Font.RobotoMono
+					label.RichText = true
+					label.TextScaled = true
+					label.Size = UDim2.new(1, 0, 1, 0)
+					label.Text = (player.DisplayName == player.Name) and `@{player.Name}` or `{player.DisplayName}\n@{player.Name}`
+					label.Parent = billboard
+					billboard.Parent = playerRoot
+					
+					local teamChanged = player:GetPropertyChangedSignal("TeamColor"):Connect(function()
+						beam.Color = ColorSequence.new(player.TeamColor.Color)
+						label.TextColor3 = player.TeamColor.Color
+					end)
+					local ancestryChanged = nil
+					local localCharacterRemoving = nil
+					local function cleanLink()
+						teamChanged:Disconnect()
+						if ancestryChanged then
+							ancestryChanged:Disconnect()
+						end
+						if localCharacterRemoving then
+							localCharacterRemoving:Disconnect()
+						end
+						if billboard then
+							billboard:Destroy()
+						end
+					end
+					ancestryChanged = billboard.AncestryChanged:Connect(function(instance: Instance, parent: Instance?)
+						if not parent then
+							cleanLink()
+						end
+					end)
+					localCharacterRemoving = localPlayer.CharacterRemoving:Connect(function()
+						cleanLink()
+					end)
+					task.spawn(function()
+						local originalLabel = label.Text
+						while billboard and billboard.Parent do
+							local ok, distance = pcall(function()
+								return (localAttachment.WorldPosition - playerAttachment.WorldPosition).Magnitude
+							end)
+							if not ok then break end
+							label.Text = `{originalLabel}\n[{math.round(distance)}]`
+							task.wait(.1)
+						end
+					end)
 				end
 			end
 
@@ -579,7 +640,7 @@ return {
 					context._K.Registry.commands.link.env.persist[player] = nil
 				end
 				local playerRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-				local link = playerRoot and playerRoot:FindFirstChild("_KBeamLink")
+				local link = playerRoot and playerRoot:FindFirstChild("_KLink")
 				if link then
 					link:Destroy()
 				end
