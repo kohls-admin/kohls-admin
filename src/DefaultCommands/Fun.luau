@@ -1620,12 +1620,33 @@ return {
 					TorsoColor = blue,
 					Pants = 0,
 					Shirt = 0,
+					GraphicTShirt = 0,
 					LeftArm = 0,
 					RightArm = 0,
 					LeftLeg = 0,
 					RightLeg = 0,
 					Torso = 0,
 				},
+				accessoryColors = {
+					[Enum.AccessoryType.Hat] = yellow,
+					[Enum.AccessoryType.Hair]= yellow,
+					[Enum.AccessoryType.Face] = blue,
+					[Enum.AccessoryType.Neck] = blue,
+					[Enum.AccessoryType.Shoulder] = blue,
+					[Enum.AccessoryType.Front] = blue,
+					[Enum.AccessoryType.Back] = blue,
+					[Enum.AccessoryType.Waist] = blue,
+					[Enum.AccessoryType.TShirt] = blue,
+					[Enum.AccessoryType.Shirt] = blue,
+					[Enum.AccessoryType.Pants] = green,
+					[Enum.AccessoryType.Jacket] = blue,
+					[Enum.AccessoryType.Sweater] = blue,
+					[Enum.AccessoryType.Shorts] = green,
+					[Enum.AccessoryType.LeftShoe] = green,
+					[Enum.AccessoryType.RightShoe] = green,
+					[Enum.AccessoryType.DressSkirt] = blue,
+				},
+				fallback = yellow,
 			}
 		end,
 		run = function(context, players)
@@ -1637,6 +1658,22 @@ return {
 						description[k] = v
 					end
 					task.defer(humanoid.ApplyDescription, humanoid, description, Enum.AssetTypeVerification.Always)
+					for _, child in pairs(player.Character:GetChildren()) do
+						if child:IsA("Accessory") then
+							for _, accessoryDescendant in pairs(child:GetDescendants()) do
+								if accessoryDescendant:IsA("BasePart") then
+									accessoryDescendant.Color = context.env.accessoryColors[child.AccessoryType] or context.env.fallback
+								end
+								if accessoryDescendant:IsA("MeshPart") then
+									accessoryDescendant.TextureID = ""
+								elseif accessoryDescendant:IsA("SpecialMesh") then
+									accessoryDescendant.TextureId = ""
+								elseif accessoryDescendant:IsA("Decal") or accessoryDescendant:IsA("Texture") or accessoryDescendant:IsA("SurfaceAppearance") then
+									accessoryDescendant:Destroy()
+								end
+							end
+						end
+					end
 				end
 			end
 		end,
