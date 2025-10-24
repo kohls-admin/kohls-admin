@@ -526,7 +526,7 @@ return {
 					and localPlayer.Character:FindFirstChild("HumanoidRootPart")
 				local playerAttachment = playerRoot and playerRoot:FindFirstChildOfClass("Attachment")
 				local localAttachment = localRoot and localRoot:FindFirstChildOfClass("Attachment")
-				
+
 				if playerAttachment and localAttachment then
 					local billboard = playerRoot:FindFirstChild("_KLink")
 					if billboard then
@@ -536,7 +536,8 @@ return {
 					billboard.Name = "_KLink"
 					billboard.LightInfluence = 0
 					billboard.AlwaysOnTop = true
-					billboard.Size = (player.DisplayName == player.Name) and UDim2.new(0, 250, 0, 35) or UDim2.new(0, 250, 0, 50)
+					billboard.Size = (player.DisplayName == player.Name) and UDim2.new(0, 250, 0, 35)
+						or UDim2.new(0, 250, 0, 50)
 					billboard.SizeOffset = Vector2.new(0, 0.5)
 					billboard.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
 					local beam = Instance.new("Beam")
@@ -557,10 +558,11 @@ return {
 					label.RichText = true
 					label.TextScaled = true
 					label.Size = UDim2.new(1, 0, 1, 0)
-					label.Text = (player.DisplayName == player.Name) and `@{player.Name}` or `{player.DisplayName}\n@{player.Name}`
+					label.Text = (player.DisplayName == player.Name) and `@{player.Name}`
+						or `{player.DisplayName}\n@{player.Name}`
 					label.Parent = billboard
 					billboard.Parent = playerRoot
-					
+
 					local teamChanged = player:GetPropertyChangedSignal("TeamColor"):Connect(function()
 						beam.Color = ColorSequence.new(player.TeamColor.Color)
 						label.TextColor3 = player.TeamColor.Color
@@ -593,24 +595,26 @@ return {
 							local ok, distance = pcall(function()
 								return (localAttachment.WorldPosition - playerAttachment.WorldPosition).Magnitude
 							end)
-							if not ok then break end
+							if not ok then
+								break
+							end
 							label.Text = `{originalLabel}\n[{math.round(distance)}]`
-							task.wait(.1)
+							task.wait(0.1)
 						end
 					end)
 				end
 			end
 
-			localPlayer.CharacterAdded:Connect(function()
-				for player in persist do
-					task.defer(link, player)
-				end
-			end)
+		localPlayer.CharacterAdded:Connect(function()
+			for player in persist do
+				task.defer(link, player)
+			end
+		end)
 
-			return {
-				persist = persist,
-				link = link,
-			}
+		return {
+			persist = persist,
+			link = link,
+		}
 		end,
 
 		runClient = function(context, players, persistent)
