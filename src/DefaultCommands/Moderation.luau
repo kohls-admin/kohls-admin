@@ -2874,6 +2874,31 @@ return {
 		end,
 	},
 	{
+		name = "teamrespawn",
+		aliases = { "tmrs", "trs", "teamrs" },
+		description = "Changes the team of one or more player(s) and spawns them.",
+		credit = { "Rie @Rietria" },
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose teams to change and spawn.",
+			},
+			{
+				type = "team",
+				name = "Team",
+				description = "The team to assign.",
+				optional = true,
+			},
+		},
+		run = function(context, players, team)
+			for _, player in players do
+				player.Team = team
+				player:LoadCharacter()
+			end
+		end,
+	},
+	{
 		name = "randomizeteams",
 		aliases = { "randomiseteams", "randomteams", "rteams", "rteam", "rt" },
 		description = "Randomizes the team of one or more player(s) from a list of teams.",
