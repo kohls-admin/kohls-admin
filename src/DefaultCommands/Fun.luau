@@ -1629,7 +1629,7 @@ return {
 				},
 				accessoryColors = {
 					[Enum.AccessoryType.Hat] = yellow,
-					[Enum.AccessoryType.Hair]= yellow,
+					[Enum.AccessoryType.Hair] = yellow,
 					[Enum.AccessoryType.Face] = blue,
 					[Enum.AccessoryType.Neck] = blue,
 					[Enum.AccessoryType.Shoulder] = blue,
@@ -1662,13 +1662,18 @@ return {
 						if child:IsA("Accessory") then
 							for _, accessoryDescendant in pairs(child:GetDescendants()) do
 								if accessoryDescendant:IsA("BasePart") then
-									accessoryDescendant.Color = context.env.accessoryColors[child.AccessoryType] or context.env.fallback
+									accessoryDescendant.Color = context.env.accessoryColors[child.AccessoryType]
+										or context.env.fallback
 								end
 								if accessoryDescendant:IsA("MeshPart") then
 									accessoryDescendant.TextureID = ""
 								elseif accessoryDescendant:IsA("SpecialMesh") then
 									accessoryDescendant.TextureId = ""
-								elseif accessoryDescendant:IsA("Decal") or accessoryDescendant:IsA("Texture") or accessoryDescendant:IsA("SurfaceAppearance") then
+								elseif
+									accessoryDescendant:IsA("Decal")
+									or accessoryDescendant:IsA("Texture")
+									or accessoryDescendant:IsA("SurfaceAppearance")
+								then
 									accessoryDescendant:Destroy()
 								end
 							end
