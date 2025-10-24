@@ -480,6 +480,10 @@ return {
 				if not humanoid then
 					continue
 				end
+				local oldDescription = player:FindFirstChild("_KHumanoidDescription")
+				if oldDescription then
+					oldDescription:Destroy()
+				end
 				task.spawn(humanoid.ApplyDescription, humanoid, appearance)
 			end
 			return
@@ -516,6 +520,10 @@ return {
 				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 				if not humanoid then
 					continue
+				end
+				local oldDescription = player:FindFirstChild("_KHumanoidDescription")
+				if oldDescription then
+					oldDescription:Destroy()
 				end
 				task.spawn(context.env.apply, player, humanoid)
 			end
@@ -1647,34 +1655,58 @@ return {
 					[Enum.AccessoryType.DressSkirt] = blue,
 				},
 				fallback = yellow,
+				getDescription = function(player: Player, humanoid: Humanoid): HumanoidDescription
+					local foundDescription = player:FindFirstChild("_KHumanoidDescription") :: HumanoidDescription?
+					if foundDescription then
+						if foundDescription:GetAttribute("_KNoob") then
+							return foundDescription
+						end
+						foundDescription:Destroy()
+					end
+					local newDescription = humanoid:GetAppliedDescription()
+					newDescription.Name = "_KHumanoidDescription"
+					newDescription:SetAttribute("_KNoob", true)
+					newDescription.Parent = player
+					return newDescription
+				end,
 			}
 		end,
 		run = function(context, players)
+			local crmCommand = context._K.Registry.commands.crm
+			if not crmCommand then
+				return
+			end
 			for _, player in players do
-				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				local character = player.Character
+				local humanoid = character and player.Character:FindFirstChildOfClass("Humanoid")
+
 				if humanoid then
-					local description = humanoid:GetAppliedDescription()
+					local description = context.env.getDescription(player, humanoid):Clone()
 					for k, v in context.env.properties do
 						description[k] = v
 					end
-					task.defer(humanoid.ApplyDescription, humanoid, description, Enum.AssetTypeVerification.Always)
-					for _, child in pairs(player.Character:GetChildren()) do
+					task.defer(function()
+						humanoid:ApplyDescription(description, Enum.AssetTypeVerification.Always)
+						description:Destroy()
+					end)
+					for _, child in player.Character:GetChildren() do
 						if child:IsA("Accessory") then
-							for _, accessoryDescendant in pairs(child:GetDescendants()) do
-								if accessoryDescendant:IsA("BasePart") then
-									accessoryDescendant.Color = context.env.accessoryColors[child.AccessoryType]
-										or context.env.fallback
-								end
-								if accessoryDescendant:IsA("MeshPart") then
-									accessoryDescendant.TextureID = ""
-								elseif accessoryDescendant:IsA("SpecialMesh") then
-									accessoryDescendant.TextureId = ""
-								elseif
-									accessoryDescendant:IsA("Decal")
-									or accessoryDescendant:IsA("Texture")
-									or accessoryDescendant:IsA("SurfaceAppearance")
-								then
-									accessoryDescendant:Destroy()
+							for _, descendant in child:GetDescendants() do
+								if descendant:IsA("BasePart") then
+									crmCommand.env.updatePart(
+										descendant,
+										context.env.accessoryColors[child.AccessoryType] or context.env.fallback,
+										0,
+										Enum.Material.Plastic
+									)
+								elseif descendant:IsA("SurfaceAppearance") then
+									if not descendant:FindFirstChild("_KParent") then
+										local _KParent = Instance.new("ObjectValue")
+										_KParent.Name = "_KParent"
+										_KParent.Value = descendant.Parent
+										_KParent.Parent = descendant
+										descendant.Parent = humanoid
+									end
 								end
 							end
 						end

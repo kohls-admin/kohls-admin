@@ -73,7 +73,7 @@ return {
 						local face = character
 							and character:FindFirstChild("Head")
 							and character.Head:FindFirstChild("face")
-						if face then
+						if face and face:GetAttribute("_KInfectOriginal") then
 							face.Texture = face:GetAttribute("_KInfectOriginal")
 							face:SetAttribute("_KInfectOriginal")
 						end
