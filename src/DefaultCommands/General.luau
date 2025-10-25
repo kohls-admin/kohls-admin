@@ -814,19 +814,27 @@ return {
 				description = "The maximum flight speed, defaults to 128.",
 				optional = true,
 			},
+			{
+				type = "boolean",
+				name = "Constant",
+				description = "If true, flight speed is always set to maximum.",
+				optional = true,
+			},
 		},
 		env = function(_K)
 			_K.Hook.roleRemoved:Connect(function(userId: number, role: string)
 				local player = _K.Service.Players:GetPlayerByUserId(userId)
 				if player and not _K.Auth.hasCommand(userId, _K.Registry.commands.fly) then
 					player:SetAttribute("_KFly", nil)
+					player:SetAttribute("_KFlyConstant", nil)
 					player:SetAttribute("_KNoClip", nil)
 				end
 			end)
 		end,
-		run = function(context, players, speed)
+		run = function(context, players, speed, constant)
 			for _, player in players do
 				player:SetAttribute("_KFly", speed or 128)
+				player:SetAttribute("_KFlyConstant", constant and true or nil)
 				player:SetAttribute("_KNoClip", nil)
 			end
 		end,
@@ -845,6 +853,7 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				player:SetAttribute("_KFly", nil)
+				player:SetAttribute("_KFlyConstant", nil)
 				player:SetAttribute("_KNoClip", nil)
 			end
 		end,
