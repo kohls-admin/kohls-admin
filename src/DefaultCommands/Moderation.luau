@@ -2899,6 +2899,34 @@ return {
 		end,
 	},
 	{
+		name = "substitute",
+		aliases = { "sub", "subteams", "switch", "switchteams" },
+		description = "Switches the teams of 2 players and spawns them.",
+		credit = { "Rie @Rietria" },
+		args = {
+			{
+				type = "player",
+				name = "Player1",
+				description = "The first player to switch",
+				lowerRank = false,
+			},
+			{
+				type = "player",
+				name = "Player2",
+				description = "The second player to switch",
+				lowerRank = false,
+			},
+		},
+		run = function(context, player1, player2)
+			local team1 = player1.TeamColor
+			local team2 = player2.TeamColor
+			player1.TeamColor = team2
+			player2.TeamColor = team1
+			player1:LoadCharacter()
+			player2:LoadCharacter()
+		end,
+	},
+	{
 		name = "randomizeteams",
 		aliases = { "randomiseteams", "randomteams", "rteams", "rteam", "rt" },
 		description = "Randomizes the team of one or more player(s) from a list of teams.",
