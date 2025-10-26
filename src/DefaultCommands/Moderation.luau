@@ -2908,20 +2908,15 @@ return {
 				type = "player",
 				name = "Player1",
 				description = "The first player to switch",
-				lowerRank = false,
 			},
 			{
 				type = "player",
 				name = "Player2",
 				description = "The second player to switch",
-				lowerRank = false,
 			},
 		},
 		run = function(context, player1, player2)
-			local team1 = player1.TeamColor
-			local team2 = player2.TeamColor
-			player1.TeamColor = team2
-			player2.TeamColor = team1
+			player1.Team, player2.Team = player2.Team, player1.Team
 			player1:LoadCharacter()
 			player2:LoadCharacter()
 		end,
