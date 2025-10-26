@@ -23,7 +23,7 @@ linear.ForceLimitsEnabled = false
 linear.Enabled = true
 
 local speed = 0
-local function updateFly(delta: number)
+local function updateFly(delta: number, constant: boolean?)
 	local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 	if not humanoid then
 		return
@@ -37,10 +37,12 @@ local function updateFly(delta: number)
 		if controlVector ~= controlVector then
 			controlVector = Vector3.zero
 		end
-		speed = math.clamp(speed + delta * maxSpeed / 4, math.min(humanoid.WalkSpeed, maxSpeed), maxSpeed)
-		linear.VectorVelocity = (align.CFrame:VectorToWorldSpace(controlVector) + Vector3.new(0, up, 0)) * speed
+		speed = constant and maxSpeed
+			or math.clamp(speed + delta * maxSpeed / 4, math.min(humanoid.WalkSpeed, maxSpeed), maxSpeed)
+		linear.VectorVelocity = (align.CFrame:VectorToWorldSpace(controlVector) + (align.CFrame.UpVector * up)) * speed
 	else
-		speed = math.clamp(speed - delta * maxSpeed / 2, math.min(humanoid.WalkSpeed, maxSpeed), maxSpeed)
+		speed = constant and maxSpeed
+			or math.clamp(speed - delta * maxSpeed / 2, math.min(humanoid.WalkSpeed, maxSpeed), maxSpeed)
 		linear.VectorVelocity = Vector3.zero
 	end
 end
@@ -71,7 +73,7 @@ local Character = {}
 local canDoubleJump, hasDoubleJumped = false, false
 local flying, flyConnection = false, nil
 
-function Character.fly(enable: boolean)
+function Character.fly(enable: boolean, constant: boolean?)
 	if enable == flying then
 		return
 	end
@@ -90,12 +92,14 @@ function Character.fly(enable: boolean)
 	flying = enable
 
 	if flying then
-		task.delay(1, function()
+		task.delay(0.3, function()
 			canDoubleJump, hasDoubleJumped = false, false
 		end)
 		humanoid.PlatformStand = true
 		flyAttachment.Parent = humanoid.RootPart
-		flyConnection = RunService.Heartbeat:Connect(updateFly)
+		flyConnection = RunService.Heartbeat:Connect(function(delta)
+			updateFly(delta, constant or false)
+		end)
 		task.defer(humanoid.ChangeState, humanoid, Enum.HumanoidStateType.Freefall)
 	else
 		flyAttachment.Parent = nil
@@ -119,14 +123,16 @@ local function onCharacter(character)
 	Character.fly(false)
 	Character.noclip(false)
 	local humanoid = character:WaitForChild("Humanoid")
-	humanoid.StateChanged:Connect(function(_old, new)
+	humanoid.StateChanged:Connect(function(old, new)
 		noClip(character)
 		if new == Enum.HumanoidStateType.Landed then
 			canDoubleJump = false
 			hasDoubleJumped = false
 		elseif new == Enum.HumanoidStateType.Freefall then
-			task.wait(0.15)
-			canDoubleJump = true
+			task.wait((old == Enum.HumanoidStateType.Jumping) and 0.1 or 0.4)
+			if humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+				canDoubleJump = true
+			end
 		end
 	end)
 end
@@ -144,7 +150,7 @@ local function onJumpRequest()
 		lastJump = now
 
 		if flying then
-			if duration < 0.25 then
+			if duration < 0.4 then
 				Character.noclip(false)
 				Character.fly(false)
 			end
@@ -152,6 +158,7 @@ local function onJumpRequest()
 			hasDoubleJumped = true
 			local noclip = LocalPlayer:GetAttribute("_KNoClip")
 			local fly = LocalPlayer:GetAttribute("_KFly")
+			local constant = LocalPlayer:GetAttribute("_KFlyConstant") and true or false
 			if noclip then
 				Character.noclip(if fly then true else not noclipping)
 				if not fly then
@@ -162,7 +169,7 @@ local function onJumpRequest()
 				end
 			end
 			if fly then
-				Character.fly(true)
+				Character.fly(true, constant)
 			end
 		end
 	end
@@ -170,9 +177,10 @@ end
 
 LocalPlayer:GetAttributeChangedSignal("_KFly"):Connect(function()
 	local fly = LocalPlayer:GetAttribute("_KFly")
+	local constant = LocalPlayer:GetAttribute("_KFlyConstant") and true or false
 	local noclip = LocalPlayer:GetAttribute("_KNoClip")
 	maxSpeed = math.max(0, fly or 128)
-	Character.fly(fly)
+	Character.fly(fly, constant)
 	if not flying and not noclip and fly then
 		Notify({
 			Text = `Double tap <b>jump</b> to toggle fly.`,
