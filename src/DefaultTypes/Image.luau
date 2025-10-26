@@ -24,7 +24,10 @@ local imageType = {
 		if self.definition.optional and self.rawArg == "" then
 			return ""
 		end
-		return nil, "Invalid image"
+		if _K.IsClient then
+			return "rbxasset://textures/ui/GuiImagePlaceholder.png"
+		end
+		return nil, "Failed to load image"
 	end,
 	suggestions = function(text)
 		return { if tonumber(text) then text else nil }
