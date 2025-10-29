@@ -109,8 +109,10 @@ _K.Remote.Ban.OnClientEvent:Connect(function(userId, ban)
 end)
 
 _K.Remote.Bans.OnClientEvent:Connect(function(bans)
-	_K.Data.bans = bans
-	_K.client.bans(_K.Data.bans)
+	if bans then
+		_K.Data.bans = bans
+		_K.client.bans(_K.Data.bans)
+	end
 end)
 
 _K.Remote.Member.OnClientEvent:Connect(function(userId, member)
