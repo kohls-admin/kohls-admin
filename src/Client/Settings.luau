@@ -175,7 +175,7 @@ function Settings.new(_K)
 		}
 	end
 
-	local function sliderItem(setting: string, text: string, tooltip: string?)
+	local function _sliderItem(setting: string, text: string, tooltip: string?)
 		return UI.new "ListItem" {
 			Text = text,
 			Tooltip = tooltip,

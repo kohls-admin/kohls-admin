@@ -516,7 +516,7 @@ function Auth.getRoleFromRank(rank: number): Role
 end
 
 --- Validates if a user can be targeted by a command argument based on permissions and rank limits
-function Auth.targetUserArgument(arg, userId: number, value: Player | number | string)
+function Auth.targetUserArgument(arg: any, userId: number, value: Player | number | string)
 	local from = arg.command.from
 	local limits = arg.command.fromRole.limits
 	local targetLimits = arg._K.Data.targetLimits
