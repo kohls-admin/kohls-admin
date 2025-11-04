@@ -114,6 +114,16 @@ local function updateMain()
 	end
 end
 
+local function getLogsSize(logs)
+	local size = 0
+	for _, log in logs do
+		-- 1 byte level, 1 byte some 8 bytes uint, 1 byte some 1 + N bytes str8, 2 + N bytes log text, 8 bytes f64 time
+		log.size = 11 + (log.from and 9 or 1) + (log.name and 2 + #log.name or 1) + #log.text
+		size += log.size
+	end
+	return size
+end
+
 local updatingLogs = false
 local function updateLogs()
 	if updatingLogs then
@@ -123,21 +133,33 @@ local function updateLogs()
 
 	Data.Store.updateAsync("Logs_" .. math.random(4), function(value)
 		if not value or type(value) ~= "buffer" then
-			return Z.ser(Data.Schema.logs, SAVE.logs, nil, nil, DATA_LIMIT)
+			return Z.ser(Data.Schema.logs, SAVE.logs)
 		end
 
 		local logs = Z.des(Data.Schema.logs, value)
 
 		local thirtyDaysAgo = workspace:GetServerTimeNow() - 30 * 86400
+		local count = 1
 		for i, log in logs do
 			if log.time < thirtyDaysAgo then
 				logs[i] = nil
+				count += 1
 			end
+		end
+
+		local size = getLogsSize(logs) + getLogsSize(SAVE.logs)
+		while size > DATA_LIMIT do
+			size -= logs[count].size
+			logs[count] = nil
+			count += 1
+		end
+		if count > 1 then
+			Util.Table.settle(logs)
 		end
 
 		Util.Table.mergeList(logs, SAVE.logs)
 
-		local result, err = Z.ser(Data.Schema.logs, logs, nil, nil, DATA_LIMIT)
+		local result, err = Z.ser(Data.Schema.logs, logs)
 		assert(result, err)
 
 		return result
@@ -271,7 +293,7 @@ local SYNC = {
 	end,
 
 	logs = function(state, changes)
-		local logs = Z.des(Data.Schema.logs, changes, nil, true)
+		local logs = Z.des(Data.Schema.logs, changes)
 		if #logs > 0 then
 			Util.Table.mergeList(state, logs)
 			local excess = #state - Util.Logger.limit
