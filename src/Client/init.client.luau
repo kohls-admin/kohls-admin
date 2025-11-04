@@ -8,8 +8,8 @@ _K.LocalPlayer = _K.Service.Players.LocalPlayer
 
 _K.client = {
 	Character = require(script:WaitForChild("Character")),
-	TopbarPlus = require(script.Parent:WaitForChild("TopbarPlus")),
 	UserFrame = require(script:WaitForChild("UserFrame")),
+	TopbarPlus = nil,
 
 	bans = _K.Flux.state(_K.Data.bans),
 	logs = _K.Flux.state(_K.Data.logs),
@@ -24,6 +24,15 @@ _K.client = {
 
 	playerPrefix = ";",
 }
+
+task.spawn(function()
+	local reference = _K.Service.ReplicatedStorage:WaitForChild("TopbarPlusReference", math.huge)
+	repeat
+		task.wait()
+	until reference.Value
+
+	_K.client.TopbarPlus = require(reference.Value)
+end)
 
 local function deepMergeTheme(from, to, prefix: string?)
 	for key, value in from do

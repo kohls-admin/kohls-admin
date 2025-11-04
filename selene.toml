@@ -1,5 +1,4 @@
 std = "roblox"
-exclude = ["MainModule/Client/TopbarPlus/*"]
 
 [lints]
 global_usage = "allow"

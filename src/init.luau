@@ -572,12 +572,6 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 	script.Name = "Kohl's Admin Source"
 	script.Parent = _K.Service.ReplicatedStorage
 
-	-- fix wally renaming nested default.project.json
-	local wallyIsBroken = Client:FindFirstChild("kohls-admin")
-	if wallyIsBroken then
-		wallyIsBroken.Name = "TopbarPlus"
-	end
-
 	-- server network events
 	local lastLog, cachedLogsBuffer
 	_K.Remote.Init.OnServerEvent:Connect(function(player, initData)

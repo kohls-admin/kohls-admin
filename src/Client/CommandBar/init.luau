@@ -711,7 +711,11 @@ local function hideCommandBar()
 	if CommandBar.Visible then
 		CommandBar.Visible = false
 		if _K.client then
-			_K.client.TopbarPlus.setTopbarEnabled(true)
+			if _K.client.TopbarPlus then
+				_K.client.TopbarPlus.setTopbarEnabled(true)
+			else
+				_K.client.dashboardButton.Visible = true
+			end
 		end
 		coreGuiEnabled(true)
 	end
@@ -912,7 +916,11 @@ return {
 	end,
 	show = function()
 		if _K.client.toggleCommandBar._instance.Visible then
-			_K.client.TopbarPlus.setTopbarEnabled(false)
+			if _K.client.TopbarPlus then
+				_K.client.TopbarPlus.setTopbarEnabled(false)
+			else
+				_K.client.dashboardButton.Visible = false
+			end
 			coreGuiEnabled(false)
 			CommandBar.Visible = true
 			task.wait()

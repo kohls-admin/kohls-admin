@@ -25,7 +25,12 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 	_K.client.dashboardButtonEnabled = _K.client.dashboardEnabled
 		and dashboardButtonRank
 		and userRank >= dashboardButtonRank
-	_K.client.dashboardButton:setEnabled(_K.client.dashboardButtonEnabled)
+
+	if typeof(_K.client.dashboardButton) == "Instance" and _K.client.dashboardButton:IsA("GuiObject") then
+		_K.client.dashboardButton.Visible = _K.client.dashboardButtonEnabled
+	else
+		_K.client.dashboardButton:setEnabled(_K.client.dashboardButtonEnabled)
+	end
 
 	if not _K.client.dashboardEnabled then
 		_K.client.dashboard.Window._instance.Visible = false

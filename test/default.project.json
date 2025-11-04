@@ -23,7 +23,6 @@
 				"KA": {
 					"$path": "../src",
 					"Flux": { "$path": "../submodules/Flux" },
-					"TopbarPlus": { "$path": "../submodules/TopbarPlus" },
 					"Z": { "$path": "../submodules/Z" },
 					"VERSION": { "$path": "../VERSION.txt" }
 				},
@@ -47,7 +46,6 @@
 					"MainModule": {
 						"$path": "../src",
 						"Flux": { "$path": "../submodules/Flux" },
-						"TopbarPlus": { "$path": "../submodules/TopbarPlus" },
 						"Z": { "$path": "../submodules/Z" },
 						"VERSION": { "$path": "../VERSION.txt" }
 					},

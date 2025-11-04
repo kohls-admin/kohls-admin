@@ -167,7 +167,12 @@ UI.TopbarFrame = UI.new "Frame" {
 	Parent = UI.LayerTopbar,
 	BackgroundTransparency = 1,
 	Position = UDim2.new(0, 0, 0, if UI.IsConsoleScreen then 4 else 0),
-	Size = UDim2.new(1, 0, 1, if UI.IsConsoleScreen then 50 else 0),
+	Size = function()
+		return UDim2.new(1, 0, 0, UI.TopbarInset().Height + if UI.IsConsoleScreen then 50 else 0)
+	end,
+	Visible = function()
+		return UI.IsConsoleScreen or UI.TopbarInset().Height > 0
+	end,
 
 	UI.new "UIListLayout" {
 		FillDirection = Enum.FillDirection.Horizontal,
@@ -176,13 +181,13 @@ UI.TopbarFrame = UI.new "Frame" {
 		Padding = UI.TopbarPadding,
 	},
 	UI.new "UIPadding" {
-		PaddingLeft = UI.TopbarPadding,
+		PaddingLeft = if UI.IsConsoleScreen
+			then UDim.new(0, 10)
+			else function()
+				return UDim.new(0, 2 + UI.TopbarPadding().Offset / 2)
+			end,
 		PaddingRight = UI.TopbarPadding,
-		PaddingTop = if UI.IsConsoleScreen
-			then UDim.new(0, 6)
-			else Flux.compute(function()
-				return UDim.new(0, UI.TopbarPadding().Offset)
-			end),
+		PaddingTop = if UI.IsConsoleScreen then UDim.new(0, 6) else UI.TopbarPadding,
 		PaddingBottom = UDim.new(0, if UI.IsConsoleScreen then 0 else 2),
 	},
 }

@@ -1,6 +1,5 @@
 local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.UI)
-local TopbarPlus = require(script.Parent.Parent.TopbarPlus)
 
 local About = require(script.Parent.About)
 local Bans = require(script.Parent.Bans)
@@ -483,7 +482,7 @@ UI.new "Tooltip" {
 
 task.defer(function()
 	local success, result = _K.Util.Retry(function()
-		return _K.Util.Service.PolicyService:GetPolicyInfoForPlayerAsync(_K.Util.Service.Players.LocalPlayer)
+		return _K.Service.PolicyService:GetPolicyInfoForPlayerAsync(_K.Service.Players.LocalPlayer)
 	end)
 
 	local socialInvite = success
@@ -623,29 +622,68 @@ local function dashboardToggle(button)
 	dashboard._instance.Visible = button.isSelected
 end
 
-local buttonEnabled = _K.Data.settings.dashboardButtonRank
-	and _K.Data.settings.dashboardButtonRank <= _K.Auth.getRank(_K.LocalPlayer.UserId)
-local dashboardButton = TopbarPlus.new()
-	:setName("KADashboardIcon")
-	:setCaption("Kohl's Admin Dashboard")
-	:setImage(71961243872230)
-	:setOrder(-1)
-	:setEnabled(buttonEnabled)
-	:bindEvent("toggled", dashboardToggle)
-local dashboardButtonIcon = dashboardButton:getInstance("IconImage")
+local fakeButton = { isSelected = false }
+local dashboardButton = UI.new "TextButton" {
+	Parent = UI.TopbarFrame,
+	Name = "KADashboardButton",
+	BackgroundColor3 = Color3.fromRGB(18, 18, 21),
+	BackgroundTransparency = 0.08,
+	Size = UDim2.fromScale(1, 1),
+	SizeConstraint = Enum.SizeConstraint.RelativeYY,
+	Text = "",
+	Visible = false,
 
-if dashboardButton.modifyTheme then
-	dashboardButton:modifyTheme({ "Widget", "BorderSize", 0 })
-end
+	UI.new "UICorner" { CornerRadius = UDim.new(1, 0) },
+	UI.new "UIPadding" {
+		PaddingLeft = UDim.new(0, 12),
+		PaddingRight = UDim.new(0, 12),
+		PaddingTop = UDim.new(0, 12),
+		PaddingBottom = UDim.new(0, 12),
+	},
 
+	UI.new "ImageLabel" {
+		BackgroundTransparency = 1,
+		Image = "rbxassetid://71961243872230",
+		Size = UDim2.fromScale(1, 1),
+	},
+
+	Activated = function()
+		fakeButton.isSelected = not fakeButton.isSelected
+		dashboardToggle(fakeButton)
+	end,
+}
+
+local dashboardButtonIcon = dashboardButton.ImageLabel
 _K.client.dashboardButton = dashboardButton
 
-local fakeButton = { isSelected = false }
+task.spawn(function()
+	repeat
+		task.wait()
+	until _K.client.TopbarPlus
+
+	dashboardButton:Destroy()
+	dashboardButton = _K.client.TopbarPlus
+		.new()
+		:setName("KADashboardButton")
+		:setCaption("Kohl's Admin Dashboard")
+		:setImage(71961243872230)
+		:setOrder(-1)
+		:setEnabled(_K.client.dashboardButtonEnabled)
+		:bindEvent("toggled", dashboardToggle)
+
+	if dashboardButton.modifyTheme then
+		dashboardButton:modifyTheme({ "Widget", "BorderSize", 0 })
+	end
+
+	dashboardButtonIcon = dashboardButton:getInstance("IconImage")
+	_K.client.dashboardButton = dashboardButton
+end)
+
 _K.client.hotkeys.dashboard.callback = function()
 	if not _K.client.dashboardEnabled then
 		return
 	end
-	if _K.client.dashboardButtonEnabled then
+	if _K.client.dashboardButtonEnabled and _K.client.TopbarPlus then
 		if dashboardButton.isSelected then
 			dashboardButton:deselect()
 		else
@@ -658,8 +696,12 @@ _K.client.hotkeys.dashboard.callback = function()
 end
 
 dashboard._exitButton._instance.Activated:Connect(function()
-	dashboardButton:deselect()
 	fakeButton.isSelected = false
+	if _K.client.TopbarPlus then
+		dashboardButton:deselect()
+	else
+		dashboardToggle(fakeButton)
+	end
 end)
 
 task.spawn(function()

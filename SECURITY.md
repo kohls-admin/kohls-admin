@@ -43,7 +43,6 @@ We value the contributions of the security research community and encourage resp
 
 * **Out of Scope:**
     * F3X
-    * TopbarPlus
 
 ### 🎁 Rewards
 
