@@ -2721,41 +2721,6 @@ function LoadCommands()
 				end
 			end
 		)
-		f.addCommand(
-			{ "ls", "localscript" },
-			{ "Creates a localscript.", "game.Players:Destroy()" },
-			5,
-			{ "string" },
-			function(pl, args)
-				if not (pl and pl.Character) then
-					return
-				end
-				local localScript = Dependencies.LocalScriptBase:Clone()
-				localScript.Parent = pl.Character
-				table.insert(ClearObjects, localScript)
-				new("StringValue")({ Name = "Code", Value = args[1], Parent = localScript })
-				Dependencies.Loadstring:Clone().Parent = localScript
-				localScript.Disabled = false
-			end
-		)
-		f.addCommand(
-			{ "lsplr", "localscriptplr" },
-			{ "Creates a localscript in a player.", "Kohl game.Players.LocalPlayer:Destroy()" },
-			5,
-			{ "player", "string" },
-			function(pl, args)
-				for i, plr in args[1] do
-					if plr and plr.Character then
-						local localScript = Dependencies.LocalScriptBase:Clone()
-						localScript.Parent = plr.Character
-						table.insert(ClearObjects, localScript)
-						new("StringValue")({ Name = "Code", Value = args[2], Parent = localScript })
-						Dependencies.Loadstring:Clone().Parent = localScript
-						localScript.Disabled = false
-					end
-				end
-			end
-		)
 	end
 
 	f.addCommand(
