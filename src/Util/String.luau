@@ -180,7 +180,7 @@ end
 
 --- Filters a broadcast message with [TextService.FilterStringAsync]
 function String.filterForBroadcast(message: string, fromUserId: number, filterContext: Enum.TextFilterContext?): string
-	local _, result = String.filterResult(message, fromUserId)
+	local _, result = String.filterResult(message, fromUserId, filterContext)
 	return String.filterResultForBroadcast(result, fromUserId)
 end
 
