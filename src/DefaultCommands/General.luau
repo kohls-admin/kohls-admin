@@ -69,6 +69,11 @@ return {
 			return { remote = _K.Remote.Hint }
 		end,
 		run = function(context, message: string)
+			if context.global then
+				context.env.remote:FireAllClients(`<b>{context.fromPlayer}:</b> {message}`)
+				return
+			end
+
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return result
@@ -99,6 +104,13 @@ return {
 			},
 		},
 		run = function(context, players: { Player }, message: string)
+			if context.global then
+				for _, player in players do
+					context._K.Remote.Hint:FireClient(player, `<b>{context.fromPlayer}:</b> {message}`)
+				end
+				return
+			end
+
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return result
@@ -125,6 +137,11 @@ return {
 		},
 
 		run = function(context, message)
+			if context.global then
+				context._K.Remote.Announce:FireAllClients({ From = context.from, Text = message })
+				return
+			end
+
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return result
@@ -132,10 +149,7 @@ return {
 			for _, player in context._K.Service.Players:GetPlayers() do
 				task.spawn(function()
 					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context._K.Remote.Announce:FireClient(player, {
-						From = context.from,
-						Text = msg,
-					})
+					context._K.Remote.Announce:FireClient(player, { From = context.from, Text = msg })
 				end)
 			end
 			return
@@ -204,6 +218,11 @@ return {
 			return { remote = _K.Remote.FullScreenMessage }
 		end,
 		run = function(context, message)
+			if context.global then
+				context.env.remote:FireAllClients({ From = context.from, Text = message })
+				return
+			end
+
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return result
@@ -235,6 +254,11 @@ return {
 		},
 
 		run = function(context, players, message)
+			if context.global then
+				context._K.Remote.Notify:FireAllClients({ From = context.from, Text = message })
+				return
+			end
+
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return result
@@ -242,7 +266,7 @@ return {
 			for _, player in players do
 				task.spawn(function()
 					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context._K.Remote.Notify:FireClient(player, { Text = msg, From = context.from })
+					context._K.Remote.Notify:FireClient(player, { From = context.from, Text = msg })
 				end)
 			end
 			return
@@ -266,6 +290,13 @@ return {
 		},
 
 		run = function(context, players, message)
+			if context.global then
+				for _, player in players do
+					context._K.Remote.Announce:FireClient(player, { From = context.from, Text = message })
+				end
+				return
+			end
+
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return result
@@ -273,10 +304,7 @@ return {
 			for _, player in players do
 				task.spawn(function()
 					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context._K.Remote.Announce:FireClient(player, {
-						From = context.from,
-						Text = msg,
-					})
+					context._K.Remote.Announce:FireClient(player, { From = context.from, Text = msg })
 				end)
 			end
 			return
@@ -448,6 +476,10 @@ return {
 		end,
 
 		run = function(context, players, message)
+			if context.global then
+				return
+			end
+
 			local ok, result = context._K.Util.String.filterResult(message, context.from)
 			if not ok then
 				return

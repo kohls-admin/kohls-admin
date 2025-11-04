@@ -97,7 +97,7 @@ return function(context)
 		listable = true,
 	}, rawStringType)
 	function stringType.parse(v, self)
-		if _K.Service.RunService:IsClient() then
+		if _K.Service.RunService:IsClient() or self.command.global then
 			return v
 		end
 		return _K.Util.String.filterForBroadcast(v, self.command.from)

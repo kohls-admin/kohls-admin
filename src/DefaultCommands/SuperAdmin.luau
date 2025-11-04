@@ -477,20 +477,56 @@ return {
 				_K.Service.Messaging:SubscribeAsync("KA_GlobalCommand", function(message)
 					local from, commandString = unpack(message.Data)
 					if from and commandString then
-						local prefix = _K.getCommandPrefix(from)
-						if string.find(commandString, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
-							commandString = prefix .. commandString
-						end
-						_K.Process.runCommands(_K, from, commandString, true)
+						_K.Process.runCommands(_K, from, commandString, true, true)
 					end
 				end)
 			end)
+
+			return
 		end,
 		run = function(context, commandString: string)
+			if context.global then
+				return
+			end
+
 			if context._K.Data.SEPARATE_DATASTORE then
 				return `Global commands are disabled in private servers.`
 			end
 
+			local prefix = context._K.getCommandPrefix(context.from)
+			if string.find(commandString, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
+				commandString = prefix .. commandString
+			end
+
+			local ok, result = context._K.Process.prepareCommands(context._K, context.from, commandString)
+			if not ok then
+				return result
+			end
+
+			local commandStrings = {}
+			local msgCommands = { "hint", "privatehint", "message", "privatemessage", "fullmessage", "notify" }
+
+			for index, command in result do
+				if not command.definition.args then
+					local last = command.array[#command.array]
+					table.insert(commandStrings, string.sub(commandString, command.array[1][1], last[1] + #last[2]))
+				end
+
+				local argType = if table.find(msgCommands, command.definition.name) then "rawString" else "string"
+				local argStrings = {}
+				for i, arg in command.definition.args do
+					if arg.type == argType then
+						local filtered = context._K.Util.String.filterForBroadcast(command.args[i].rawArg, context.from)
+						table.insert(argStrings, filtered)
+					else
+						table.insert(argStrings, command.args[i].rawArg)
+					end
+				end
+
+				table.insert(commandStrings, `{prefix}{command.definition.name} {table.concat(argStrings, " ")}`)
+			end
+
+			commandString = table.concat(commandStrings, " ")
 			context._K.Service.Messaging:PublishAsync("KA_GlobalCommand", { context.from, commandString })
 			return
 		end,

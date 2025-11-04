@@ -161,7 +161,7 @@ local function resetLimit(from: number)
 	commandLimits[from] = nil
 end
 
-function Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?): boolean
+function Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?): boolean
 	from = from or _K.creatorId
 
 	local cooldown, limit
@@ -183,6 +183,9 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 
 	if ok then
 		for index, command in result do
+			if global then
+				command.global = true
+			end
 			local _ok, err = command:run()
 			if err then
 				local escapedError = _K.Util.String.escapeRichText(err)

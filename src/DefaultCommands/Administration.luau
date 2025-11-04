@@ -48,7 +48,7 @@ return {
 		end,
 
 		run = function(context, message)
-			if context._K.Data.SEPARATE_DATASTORE then
+			if context._K.Data.SEPARATE_DATASTORE or context.global then
 				return `Announcements are disabled in private servers.`
 			end
 
