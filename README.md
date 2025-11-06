@@ -3,7 +3,7 @@
 	<br/>
 	<a href="https://docs.kohl.gg/"><img src="https://img.shields.io/badge/docs-docs.kohl.gg-222"></a>
 	<a href="https://discord.gg/kohl"><img src="https://img.shields.io/discord/694630328064671775"></a>
-	<a href="https://github.com/kohls-admin/kohls-admin/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/kohls-admin/kohls-admin" alt="License"></a>
+	<a href="https://github.com/kohls-admin/kohls-admin/blob/master/LICENSE.md"><img src="https://img.shields.io/github/license/kohls-admin/kohls-admin" alt="License"></a>
 	<a href="https://github.com/kohls-admin/kohls-admin/graphs/contributors"><img src="https://img.shields.io/github/contributors/kohls-admin/kohls-admin" alt="Contributors"></a>
 	<a href="https://github.com/kohls-admin/kohls-admin/issues"><img src="https://img.shields.io/github/issues/kohls-admin/kohls-admin" alt="GitHub issues"></a>
 	<a href="https://github.com/kohls-admin/kohls-admin/stargazers"><img src="https://img.shields.io/github/stars/kohls-admin/kohls-admin" alt="GitHub stars"></a>
@@ -55,4 +55,4 @@ Found a bug? Have a feature request? Let us know by opening an issue:
 
 # 📄 License
 
-This project is licensed under the [MIT License](LICENSE.txt).
+This project is licensed under the [MIT License](LICENSE.md).

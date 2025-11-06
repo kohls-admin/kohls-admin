@@ -12,7 +12,7 @@ include = [
 	"src/**",
 	"default.project.json",
 	"wally.toml",
-	"LICENSE.txt",
+	"LICENSE.md",
 	"VERSION.txt",
 ]
 
