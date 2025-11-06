@@ -1,7 +1,7 @@
 The MIT License (MIT)
 =====================
 
-Copyright © 2025 Kohl <https://github.com/kohls-admin>
+Copyright © 2025 Kohl &lt;<https://github.com/kohls-admin>&gt;
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
