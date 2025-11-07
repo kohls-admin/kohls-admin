@@ -293,7 +293,14 @@ local SYNC = {
 	end,
 
 	logs = function(state, changes)
-		local logs = Z.des(Data.Schema.logs, changes)
+		local logs = changes
+
+		if type(changes) == "table" then
+			changes = Z.ser(Data.Schema.logs, changes)
+		elseif type(changes) == "buffer" then
+			logs = Z.des(Data.Schema.logs, changes)
+		end
+
 		if #logs > 0 then
 			Util.Table.mergeList(state, logs)
 			local excess = #state - Util.Logger.limit
