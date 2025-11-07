@@ -1,5 +1,5 @@
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
 
 local layerSizeState = UI.state(UI.LayerTop, "AbsoluteSize")
 local positionState = UI.state(Vector2.zero)
@@ -81,41 +81,47 @@ local function updateTooltip(visible: boolean, adornee: GuiObject?, properties: 
 	end
 end
 
-local Tooltip = {}
-Tooltip.__index = Tooltip
-setmetatable(Tooltip, BaseClass)
+local DEFAULT = {
+	Enabled = true,
+	Hovering = false,
+	Visible = false,
+	Font = UI.Theme.Font,
+	Text = "Example tooltip text.",
+}
 
-Tooltip.Cache = {}
+type Properties = typeof(DEFAULT) & Folder
 
-function Tooltip.new(definition)
-	local new = UI.makeStatefulDefaults({
-		Enabled = true,
-		Hovering = false,
-		Visible = false,
-		Font = UI.Theme.Font,
-		Text = "Example tooltip text.",
-	}, definition)
+local Class = { Cache = {} }
+Class.__index = Class
+setmetatable(Class, BaseClass)
 
-	local parent = definition.Parent
-	table.clear(definition)
-	definition.Parent = parent
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
+
+	local parent
+	if properties then
+		parent = properties.Parent
+		table.clear(properties)
+		properties.Parent = parent
+	end
 
 	local Adornee
 	local hoverConnections = {}
-	local hovering = new.Hovering
+	local hovering = self.Hovering
 	local hoverStart
 
 	local function hover(value)
-		if value and new.Enabled._value then
+		if value and self.Enabled._value then
 			local start = tick()
 			hoverStart = start
 			task.delay(0.4, function()
 				if hoverStart == start and hovering._value then
-					new.Visible(true)
+					self.Visible(true)
 				end
 			end)
 		else
-			new.Visible(false)
+			self.Visible(false)
 		end
 	end
 
@@ -157,7 +163,7 @@ function Tooltip.new(definition)
 				v:Disconnect()
 			end
 		end
-		Tooltip.Cache[adornee] = new
+		Class.Cache[adornee] = self
 		table.insert(hoverConnections, adornee.InputChanged:Connect(inputChanged))
 		table.insert(hoverConnections, adornee.InputEnded:Connect(inputEnded))
 		table.insert(hoverConnections, adornee.SelectionGained:Connect(hoverEnter))
@@ -165,15 +171,15 @@ function Tooltip.new(definition)
 		Adornee = adornee
 	end
 
-	new._instance = UI.new "Folder" {
+	self._instance = UI.new "Folder" {
 		Name = "TooltipReference",
 
 		[UI.Clean] = {
 			hoverState = hovering,
 			hoverDisconnect = hovering:Connect(hover),
-			new.Visible:Connect(function(visible)
+			self.Visible:Connect(function(visible)
 				if visible then
-					updateTooltip(true, Adornee, new)
+					updateTooltip(true, Adornee, self)
 				else
 					updateTooltip(false)
 				end
@@ -185,15 +191,15 @@ function Tooltip.new(definition)
 
 		[UI.Event] = {
 			Parent = function()
-				local newParent = new._instance.Parent
+				local newParent = self._instance.Parent
 				if newParent and newParent ~= UI.LayerTop then
 					updateAdornee(newParent)
 				end
 			end,
 		},
-	}
+	} :: Folder
 
-	return setmetatable(new, Tooltip)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return Tooltip
+return Class

@@ -1,7 +1,17 @@
-local UserInputService = game:GetService("UserInputService")
-
-local UI = require(script.Parent.Parent)
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
+local Menu = require(script.Parent.Menu)
+type Menu = typeof(Menu.new())
+type MenuInstance = typeof(Menu.new()._instance)
+
+local DEFAULT = {
+	Adornee = false,
+	RightAlign = false,
+	Value = Color3.new(1, 0, 0),
+	Visible = false,
+}
+
+type Properties = typeof(DEFAULT) & TextButton
 
 local rainbowSequence = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
@@ -12,10 +22,6 @@ local rainbowSequence = ColorSequence.new({
 	ColorSequenceKeypoint.new(5 / 6, Color3.fromRGB(255, 0, 255)),
 	ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 0, 0)),
 })
-
-local ColorPicker = {}
-ColorPicker.__index = ColorPicker
-setmetatable(ColorPicker, BaseClass)
 
 local hexInputSize = UI.compute(function()
 	local fontSize = UI.Theme.FontSize()
@@ -42,16 +48,13 @@ local menuCornerRadius = UI.compute(function()
 	return UDim.new(0, UI.Theme.CornerRadius().Offset + UI.Theme.Padding().Offset)
 end)
 
-function ColorPicker.new(definition)
-	local new = UI.makeStatefulDefaults({
-		Adornee = false,
-		RightAlign = false,
-		Visible = false,
-		Value = Color3.new(1, 0, 0),
-		Selected = Color3.new(1, 0, 0),
-	}, definition)
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
 
-	new.Selected._value = UI.raw(new.Value)
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
 
 	local dragging = UI.state(false)
 
@@ -61,7 +64,7 @@ function ColorPicker.new(definition)
 		Vertical = true,
 		Size = hueSliderSize,
 		Value = function()
-			local h, s, v = new.Value():ToHSV()
+			local h, s, v = self.Value():ToHSV()
 			if h == 1 and hue == 0 then
 				h = 0
 			end
@@ -87,12 +90,15 @@ function ColorPicker.new(definition)
 		},
 
 		[UI.Hook] = {
-			Selected = function(value)
-				local _, s, v = new.Value._value:ToHSV()
+			Value = function(value)
+				if value == hue then
+					return
+				end
+
+				local _, s, v = self.Value._value:ToHSV()
 				local color = Color3.fromHSV(value, s, v)
 				hue = value
-				new.Selected(color, true)
-				new.Value(color, true)
+				self.Value(color, true)
 			end,
 		},
 	}
@@ -120,14 +126,15 @@ function ColorPicker.new(definition)
 			return pcall(Color3.fromHex, value)
 		end,
 		Value = function()
-			return `#{new.Value():ToHex()}`
+			return `#{self.Value():ToHex()}`
 		end,
 
 		[UI.Hook] = {
-			Selected = function(value)
-				local color = Color3.fromHex(value)
-				new.Selected(color, true)
-				new.Value(color, true)
+			Value = function(value)
+				if value == `#{self.Value():ToHex()}` then
+					return
+				end
+				self.Value(Color3.fromHex(value), true)
 			end,
 		},
 	}
@@ -144,8 +151,7 @@ function ColorPicker.new(definition)
 		sX(x, true)
 
 		local color = Color3.fromHSV(hue, x, y)
-		new.Selected(color, true)
-		new.Value(color, true)
+		self.Value(color, true)
 	end
 
 	local function inputBegan(input)
@@ -171,7 +177,7 @@ function ColorPicker.new(definition)
 		end
 	end
 
-	UserInputService.InputChanged:Connect(update)
+	UI.UserInputService.InputChanged:Connect(update)
 
 	sv = UI.new "Frame" {
 		Name = "SaturationValue",
@@ -226,15 +232,15 @@ function ColorPicker.new(definition)
 			UI.new "Frame" {
 				Name = "Picker",
 				AnchorPoint = Vector2.new(0.5, 0.5),
-				BackgroundColor3 = new.Value,
+				BackgroundColor3 = self.Value,
 				Size = UI.tween(function()
 					return if dragging() then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
 				end, UI.Theme.TweenOut),
-				Position = UI.tween(function()
-					local _, s, v = new.Value():ToHSV()
+				Position = function()
+					local _, s, v = self.Value():ToHSV()
 					local x = sX()
 					return UDim2.new(if v == 0 then x else s, 0, 1 - v, 0)
-				end, UI.Theme.TweenOut),
+				end,
 
 				UI.new "UICorner" {
 					CornerRadius = UI.Theme.CornerDiameter,
@@ -252,13 +258,13 @@ function ColorPicker.new(definition)
 		InputBegan = inputBegan,
 	}
 
-	new._menu = UI.new "Menu" {
+	self._menu = UI.new "Menu" {
 		Name = "ColorPicker",
-		Adornee = new.Adornee,
-		RightAlign = new.RightAlign,
+		Adornee = self.Adornee,
+		RightAlign = self.RightAlign,
 		AutomaticSize = Enum.AutomaticSize.XY,
 		Size = UDim2.new(),
-		Visible = new.Visible,
+		Visible = self.Visible,
 
 		UI.new "UIPadding" {
 			PaddingLeft = UI.Theme.Padding,
@@ -281,14 +287,14 @@ function ColorPicker.new(definition)
 			sv,
 			hexInput,
 		},
-	}
-	new._menu._list.FillDirection = Enum.FillDirection.Horizontal
-	new._menu._content.AutomaticSize = Enum.AutomaticSize.XY
-	UI.edit(new._menu._list, { Padding = UI.Theme.Padding })
-	new._instance = new._menu._instance
-	UI.edit(new._instance.UICorner, { CornerRadius = menuCornerRadius })
+	} :: Menu
+	self._menu._list.FillDirection = Enum.FillDirection.Horizontal
+	self._menu._content.AutomaticSize = Enum.AutomaticSize.XY
+	UI.edit(self._menu._list, { Padding = UI.Theme.Padding })
+	self._instance = self._menu._instance :: MenuInstance
+	UI.edit(self._instance.UICorner, { CornerRadius = menuCornerRadius })
 
-	return setmetatable(new, ColorPicker)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return ColorPicker
+return Class

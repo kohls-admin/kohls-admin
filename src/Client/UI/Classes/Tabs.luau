@@ -1,24 +1,29 @@
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
 
-local Tabs = {}
-Tabs.__index = Tabs
-setmetatable(Tabs, BaseClass)
+local DEFAULT = {
+	Vertical = false,
+}
 
-function Tabs.new(definition)
-	local new = UI.makeStatefulDefaults({
-		Vertical = false,
-	}, definition)
+type Properties = typeof(DEFAULT) & Frame
+
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
+
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
 
 	local tabOffset = UI.state(0)
 	local lastScroll
 
 	local tabList = UI.new "UIListLayout" {
 		FillDirection = function()
-			return if new.Vertical() then Enum.FillDirection.Vertical else Enum.FillDirection.Horizontal
+			return if self.Vertical() then Enum.FillDirection.Vertical else Enum.FillDirection.Horizontal
 		end,
 		HorizontalFlex = function()
-			return if new.Vertical() then Enum.UIFlexAlignment.Fill else Enum.UIFlexAlignment.None
+			return if self.Vertical() then Enum.UIFlexAlignment.Fill else Enum.UIFlexAlignment.None
 		end,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Padding = UI.Theme.Padding,
@@ -30,29 +35,28 @@ function Tabs.new(definition)
 		Active = false,
 		AutomaticCanvasSize = Enum.AutomaticSize.XY,
 		AutomaticSize = function()
-			return if new.Vertical() then Enum.AutomaticSize.X else Enum.AutomaticSize.Y
+			return if self.Vertical() then Enum.AutomaticSize.X else Enum.AutomaticSize.Y
 		end,
 		BackgroundTransparency = 1,
 		ClipsDescendants = false,
 		CanvasPosition = UI.tween(function()
-			return if new.Vertical() then Vector2.new(0, tabOffset()) else Vector2.new(tabOffset(), 0)
+			return if self.Vertical() then Vector2.new(0, tabOffset()) else Vector2.new(tabOffset(), 0)
 		end, UI.Theme.TweenOut),
 		CanvasSize = UDim2.new(),
 		Size = UDim2.new(1, 0, 1, 0),
 		ScrollBarThickness = 0,
 
 		MouseWheelForward = function()
-			if new.Vertical() then
+			if self.Vertical() then
 				lastScroll = nil
 				return
 			end
-			local absoluteStart = new._instance.AbsolutePosition.X
+			local absoluteStart = self._instance.AbsolutePosition.X
 			local closest, closestChild = math.huge, nil
 			for _, child in tabs:GetChildren() do
 				if child:IsA("GuiObject") then
 					local childStart = child.AbsolutePosition.X
 					if childStart < absoluteStart - 2 and absoluteStart - childStart < closest then
-						print(child)
 						closest = math.floor(absoluteStart - childStart)
 						closestChild = child
 					end
@@ -65,11 +69,11 @@ function Tabs.new(definition)
 			tabOffset(math.max(0, closestChild.AbsolutePosition.X - (tabs.AbsolutePosition.X - tabs.CanvasPosition.X)))
 		end,
 		MouseWheelBackward = function()
-			if new.Vertical() then
+			if self.Vertical() then
 				lastScroll = nil
 				return
 			end
-			local absoluteStart = new._instance.AbsolutePosition.X
+			local absoluteStart = self._instance.AbsolutePosition.X
 				+ (if lastScroll then lastScroll.AbsoluteSize.X else 0)
 			local closest, closestChild = math.huge, nil
 			for _, child in tabs:GetChildren() do
@@ -94,17 +98,17 @@ function Tabs.new(definition)
 
 		[UI.Event] = {
 			CanvasPosition = function()
-				if tabs.CanvasPosition.Y == 1 and not new.Vertical() then
+				if tabs.CanvasPosition.Y == 1 and not self.Vertical() then
 					tabs.CanvasPosition = Vector2.new(tabs.CanvasPosition.X, 0)
 				end
 			end,
 		},
 
 		tabList,
-	}
+	} :: ScrollingFrame
 
 	tabs:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-		if new.Vertical() then
+		if self.Vertical() then
 			tabOffset(math.clamp(tabOffset._value, 0, tabList.AbsoluteContentSize.Y + tabs.AbsoluteSize.Y), false, true)
 		else
 			tabOffset(math.clamp(tabOffset._value, 0, tabList.AbsoluteContentSize.X + tabs.AbsoluteSize.X), false, true)
@@ -121,9 +125,9 @@ function Tabs.new(definition)
 		ScrollWheelInputEnabled = false,
 		Padding = UI.Theme.Padding,
 	}
-	new._pages = pages
-	new._pageCache = pageCache
-	new._containerCache = containerCache
+	self._pages = pages
+	self._pageCache = pageCache
+	self._containerCache = containerCache
 
 	pages.PageEnter:Connect(function(container)
 		currentPage(container)
@@ -148,24 +152,24 @@ function Tabs.new(definition)
 		end)
 	end)
 
-	new.JumpTo = function(page)
+	self.JumpTo = function(page)
 		page = containerCache[page] or page
 		currentPage(page)
 		pages:JumpTo(page)
 	end
 
 	local function tabPadding()
-		return if new.Vertical() then UI.Theme.Padding() else UDim.new(0, 1)
+		return if self.Vertical() then UI.Theme.Padding() else UDim.new(0, 1)
 	end
 
-	new._instance = UI.new "Frame" {
+	self._instance = UI.new "Frame" {
 		Name = "TabController",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 
 		UI.new "UIListLayout" {
 			FillDirection = function()
-				return if new.Vertical() then Enum.FillDirection.Horizontal else Enum.FillDirection.Vertical
+				return if self.Vertical() then Enum.FillDirection.Horizontal else Enum.FillDirection.Vertical
 			end,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		},
@@ -175,10 +179,10 @@ function Tabs.new(definition)
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
 			AutomaticSize = function()
-				return if new.Vertical() then Enum.AutomaticSize.X else Enum.AutomaticSize.Y
+				return if self.Vertical() then Enum.AutomaticSize.X else Enum.AutomaticSize.Y
 			end,
 			Size = function()
-				return if new.Vertical() then UDim2.new(0, 0, 1, 0) else UDim2.new(1, 0, 0, 0)
+				return if self.Vertical() then UDim2.new(0, 0, 1, 0) else UDim2.new(1, 0, 0, 0)
 			end,
 
 			tabs,
@@ -190,7 +194,7 @@ function Tabs.new(definition)
 				PaddingRight = UI.Theme.Padding,
 			},
 		},
-	}
+	} :: Frame
 
 	local PagesFrame = UI.new "Frame" {
 		Name = "PagesFrame",
@@ -208,10 +212,10 @@ function Tabs.new(definition)
 		pages,
 	}
 
-	new._content = UI.new "Frame" {
+	self._content = UI.new "Frame" {
 		LayoutOrder = 3,
 		Name = "UIContent",
-		Parent = new._instance,
+		Parent = self._instance,
 		AnchorPoint = Vector2.new(0, 1),
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
@@ -326,7 +330,7 @@ function Tabs.new(definition)
 					currentPage(container)
 					pages:JumpTo(container)
 
-					local axis = if new.Vertical() then "Y" else "X"
+					local axis = if self.Vertical() then "Y" else "X"
 					local absoluteStart = tabs.Parent.AbsolutePosition[axis]
 					local absoluteEnd = absoluteStart + tabs.Parent.AbsoluteSize[axis]
 					local buttonStart = button.AbsolutePosition[axis]
@@ -363,9 +367,9 @@ function Tabs.new(definition)
 				end
 			end)
 		end,
-	}
+	} :: Frame
 
-	return setmetatable(new, Tabs)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return Tabs
+return Class

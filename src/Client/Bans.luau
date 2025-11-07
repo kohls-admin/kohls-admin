@@ -50,14 +50,13 @@ function Bans.new(_K)
 	local banDuration = 1
 	local banDurationUnit = UI.new "Select" {
 		AutomaticSize = Enum.AutomaticSize.X,
-		Choice = "Hour",
+		Value = "Hour",
 		Choices = { "Hour", "Day", "Week", "Month", "Year" },
 	}
 
 	local banTargetInput
 	local function resetbanTargetInput()
 		banTargetInput.Value("")
-		banTargetInput.Selected("")
 	end
 
 	banTargetInput = UI.new "Input" {
@@ -74,7 +73,7 @@ function Bans.new(_K)
 		},
 
 		[UI.Hook] = {
-			Selected = function(value)
+			Value = function(value)
 				local userId
 				if tonumber(value) then
 					userId = tonumber(value)
@@ -112,7 +111,7 @@ function Bans.new(_K)
 		Size = inputSize,
 		Value = "",
 		[UI.Hook] = {
-			Selected = function(value)
+			Value = function(value)
 				banReason = value ~= "" and value
 			end,
 		},
@@ -361,10 +360,10 @@ function Bans.new(_K)
 	local banTypeListItem = UI.new "ListItem" {
 		Text = "Type",
 		UI.new "Select" {
-			Choice = banType,
+			Value = banType,
 			Choices = banTypes,
 			[UI.Hook] = {
-				Selected = function(value)
+				Value = function(value)
 					banType(value)
 				end,
 			},
@@ -444,7 +443,7 @@ function Bans.new(_K)
 				Size = inputSize,
 				Value = 1,
 				[UI.Hook] = {
-					Selected = function(value)
+					Value = function(value)
 						banDuration = value
 					end,
 				},

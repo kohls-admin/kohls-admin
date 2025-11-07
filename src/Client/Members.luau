@@ -19,7 +19,6 @@ function Members.new(_K)
 	local function resetRoleTargetInput()
 		roleDialogTarget(nil)
 		roleDialogInput.Value("")
-		roleDialogInput.Selected("")
 	end
 
 	roleDialogInput = UI.new "Input" {
@@ -36,7 +35,7 @@ function Members.new(_K)
 		},
 
 		[UI.Hook] = {
-			Selected = function(value)
+			Value = function(value)
 				local userId
 				if tonumber(value) then
 					userId = tonumber(value)
@@ -130,7 +129,7 @@ function Members.new(_K)
 		UI.new "ListItem" {
 			Text = "Role",
 			UI.new "Select" {
-				Choice = roleChoice,
+				Value = roleChoice,
 				Choices = roleChoices,
 			},
 			Visible = function()

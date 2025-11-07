@@ -529,31 +529,14 @@ task.defer(function()
 			RichText = true,
 		}
 
-		UI.new "TextBox" {
+		UI.new "Link" {
 			Parent = social,
-			LayoutOrder = -1,
 			Name = "Invite",
-			AutoLocalize = false,
-			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundColor3 = Color3.fromHex("#5865F2"),
-			Size = UDim2.fromScale(1, 0),
 			Font = UI.Theme.FontMono,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = Color3.new(1, 1, 1),
+			Size = UDim2.fromScale(1, 0),
 			Text = "discord.gg/kohl",
-			TextWrapped = true,
-			TextEditable = false,
-			ClearTextOnFocus = false,
-
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
-			},
-			UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-			},
+			TextColor3 = Color3.new(1, 1, 1),
 		}
 
 		local socialMenu

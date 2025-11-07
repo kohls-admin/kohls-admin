@@ -1,7 +1,7 @@
 local RunService = game:GetService("RunService")
-
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
+
+local UI = require(script.Parent.Parent) :: any
 
 local Defer = {}
 do
@@ -22,9 +22,9 @@ do
 	end
 end
 
-local ScrollerFast = {}
-ScrollerFast.__index = ScrollerFast
-setmetatable(ScrollerFast, BaseClass)
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
 
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 local function defaultFilter(self, list)
@@ -41,9 +41,9 @@ local function defaultFilter(self, list)
 				new,
 				string.format(
 					filterRichFormat,
-					ScrollerFast.escapeRichText(string.sub(text, 1, filterIndex - 1)),
-					ScrollerFast.escapeRichText(string.sub(text, filterIndex, filterEnd)),
-					ScrollerFast.escapeRichText(string.sub(text, filterEnd + 1))
+					Class.escapeRichText(string.sub(text, 1, filterIndex - 1)),
+					Class.escapeRichText(string.sub(text, filterIndex, filterEnd)),
+					Class.escapeRichText(string.sub(text, filterEnd + 1))
 				)
 			)
 		end
@@ -51,7 +51,7 @@ local function defaultFilter(self, list)
 	return new
 end
 
-function ScrollerFast.escapeRichText(s: string): string
+function Class.escapeRichText(s: string): string
 	s = string.gsub(s, "&", "&amp;") -- first because substitutes contain it
 	s = string.gsub(s, "<", "&lt;")
 	s = string.gsub(s, ">", "&gt;")
@@ -157,7 +157,7 @@ RunService.Heartbeat:connect(function()
 	end
 end)
 
-function ScrollerFast:forceRender()
+function Class:forceRender()
 	if not (self.Enabled._value and self._instance.Visible and self._filteredList) then
 		return
 	end
@@ -210,7 +210,7 @@ function ScrollerFast:forceRender()
 	self:freeCache(usedItems)
 end
 
-function ScrollerFast:freeCache(usedItems: { [any]: any }?)
+function Class:freeCache(usedItems: { [any]: any }?)
 	for data, item in self._lineItemCache do
 		if usedItems and usedItems[data] then
 			continue
@@ -223,32 +223,32 @@ function ScrollerFast:freeCache(usedItems: { [any]: any }?)
 end
 
 -- Used to render changes from the _rawList
-function ScrollerFast:updateList()
+function Class:updateList()
 	updateQueue[self] = true
 end
 
-function ScrollerFast:cloneRaw()
+function Class:cloneRaw()
 	cloneQueue[self] = true
 end
 
-function ScrollerFast:refreshList()
+function Class:refreshList()
 	refreshQueue[self] = true
 end
 
-function ScrollerFast:render(bustCache: boolean?)
+function Class:render(bustCache: boolean?)
 	if bustCache then
 		self:freeCache()
 	end
 	renderQueue[self] = true
 end
 
-function ScrollerFast:filter(filterFunction: (...any) -> { any })
+function Class:filter(filterFunction: (...any) -> { any })
 	self._filterFunction = filterFunction
 	self.Enabled(true)
 	self:refreshList()
 end
 
-function ScrollerFast:sort(sortFunction: (...any) -> any)
+function Class:sort(sortFunction: (...any) -> any)
 	self._sortFunction = sortFunction
 	if self._instance.Visible then
 		if sortFunction then
@@ -262,21 +262,26 @@ function ScrollerFast:sort(sortFunction: (...any) -> any)
 	end
 end
 
-function ScrollerFast.new(definition)
-	local self = UI.makeStatefulDefaults({
-		Enabled = true,
-		ItemSize = function()
-			return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
-		end,
-		List = {},
-		DictList = false,
-		FilterInput = false,
-		FilterInputDebounce = 0,
-		CreateItem = UI.Function,
-		RenderItem = UI.Function,
-		ReverseOrder = false,
-		Visible = true,
-	}, definition)
+local DEFAULT = {
+	Enabled = true,
+	ItemSize = function()
+		return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
+	end,
+	List = {},
+	DictList = false,
+	FilterInput = false,
+	FilterInputDebounce = 0,
+	CreateItem = UI.Function,
+	RenderItem = UI.Function,
+	ReverseOrder = false,
+	Visible = true,
+}
+
+type Properties = typeof(DEFAULT) & Frame
+
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
 
 	self._lineItemCache = {}
 	self._lineItemFree = {}
@@ -321,7 +326,7 @@ function ScrollerFast.new(definition)
 			AbsoluteWindowSize = render,
 			CanvasPosition = render,
 		},
-	}
+	} :: ScrollingFrame & { UIFlexItem: UIFlexItem, UIPadding: UIPadding }
 
 	local canvasAbsolute = UI.state(self._scroller, "AbsoluteCanvasSize")
 	local windowAbsolute = UI.state(self._scroller, "AbsoluteWindowSize")
@@ -347,9 +352,9 @@ function ScrollerFast.new(definition)
 		[UI.Event] = {
 			Parent = render,
 		},
-	}
+	} :: Frame & { UIListLayout: UIListLayout, ScrollerFast: typeof(self._scroller) }
 
-	self = setmetatable(self, ScrollerFast)
+	self = setmetatable(self, Class)
 
 	self.List:Connect(function()
 		self:updateList()
@@ -385,7 +390,7 @@ function ScrollerFast.new(definition)
 		self:filter(defaultFilter)
 	end
 
-	return self
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return ScrollerFast
+return Class

@@ -191,7 +191,7 @@ end
 if _K.IsClient then
 	_K.UI = require(Client:WaitForChild("UI"))
 	local uiRegisterStart = os.clock()
-	_K.UI.registerDefaultClasses()
+	_K.UI.registerClasses()
 	task.spawn(_K.log, `UI classes registered in {math.round((os.clock() - uiRegisterStart) * 1000)} ms`, "DEBUG")
 end
 

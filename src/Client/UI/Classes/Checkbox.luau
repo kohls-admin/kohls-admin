@@ -1,23 +1,26 @@
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
 
-local Checkbox = {}
-Checkbox.__index = Checkbox
-setmetatable(Checkbox, BaseClass)
+local DEFAULT = {
+	--- Whether or not the checkbox is selected.
+	Value = false,
+}
+
+type Properties = typeof(DEFAULT) & TextButton
+
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
 
 local boxSize = UI.compute(function()
 	return UDim2.fromOffset(UI.Theme.FontSizeLarger(), UI.Theme.FontSizeLarger())
 end)
 
-function Checkbox.new(definition)
-	local new = UI.makeStatefulDefaults({
-		Value = false,
-		Selected = false,
-	}, definition)
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
 
-	new.Selected._value = UI.raw(new.Value)
-
-	new._instance = UI.new "TextButton" {
+	self._instance = UI.new "TextButton" {
 		AutoLocalize = false,
 		Name = "Checkbox",
 		Active = true,
@@ -47,7 +50,7 @@ function Checkbox.new(definition)
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
 			Size = UI.tween(function()
-				return UDim2.new(if new.Value() then 1 else 0, 0, 1, 0)
+				return UDim2.new(if self.Value() then 1 else 0, 0, 1, 0)
 			end, UI.Theme.TweenOut),
 
 			UI.new "ImageLabel" {
@@ -62,19 +65,22 @@ function Checkbox.new(definition)
 		},
 
 		Activated = function()
-			local value = not UI.raw(new.Value)
-			new.Selected(value, true)
-			new.Value(value)
-
+			local value = not UI.raw(self.Value)
+			self.Value(value)
 			if value then
 				UI.Sound.Hover03:Play()
 			else
 				UI.Sound.Hover01:Play()
 			end
 		end,
+	} :: TextButton & {
+		UICorner: UICorner,
+		UIStroke: UIStroke,
+		UIPadding: UIPadding,
+		Checkmark: Frame & { ImageLabel: ImageLabel },
 	}
 
-	return setmetatable(new, Checkbox)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return Checkbox
+return Class

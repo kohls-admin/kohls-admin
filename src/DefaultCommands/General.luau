@@ -352,10 +352,29 @@ return {
 				}
 				progress = _K.UI.new "CircleProgress" {
 					Parent = _K.UI.LayerTopInset,
+					Image = "rbxassetid://123508079198656",
 					Position = UDim2.fromOffset(math.floor(_K.UI.LayerTop.AbsoluteSize.X / 2) - 64, 0),
 					Size = UDim2.new(0, 128, 0, 128),
 					ZIndex = -1,
+
 					time,
+					_K.UI.new "Frame" {
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						BackgroundColor3 = _K.UI.Theme.Primary,
+						BackgroundTransparency = _K.UI.Theme.Transparency,
+						Position = UDim2.new(0.5, 0, 0.5, 0),
+						Size = function()
+							local padding = _K.UI.Theme.Padding().Offset * 2
+							return UDim2.new(1, padding, 1, padding)
+						end,
+						ZIndex = 0,
+
+						_K.UI.new "UICorner" {
+							CornerRadius = UDim.new(1, 0),
+						},
+
+						_K.UI.new "Stroke" {},
+					},
 				}
 
 				_K.UI.Sound.Hover03:Play()
@@ -368,7 +387,7 @@ return {
 						_K.UI.Sound.Notification_High:Play()
 						return
 					end
-					progress:setProgress(1 - math.clamp(delta / duration, 0, 1))
+					progress.Alpha(1 - math.clamp(delta / duration, 0, 1))
 					local newText = tostring(math.clamp(math.floor(duration - delta) + 1, 0, duration))
 					if newText ~= time.Text then
 						_K.UI.Sound.Hover03:Play()

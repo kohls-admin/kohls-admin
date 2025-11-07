@@ -1,5 +1,5 @@
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
 local Clack = require(script.Clack).registerAll()
 
 Clack.enabled = UI.raw(UI.Theme.TypingSounds)
@@ -79,43 +79,48 @@ local MODIFIERS = {
 	Enum.KeyCode.RightSuper,
 }
 
-local Input = {}
-Input.__index = Input
-setmetatable(Input, BaseClass)
--- TODO: send/clear button
-function Input.new(definition)
-	local new = UI.makeStatefulDefaults({
-		Cursor = "_",
-		DisplayText = "",
-		Placeholder = "",
-		Value = "",
-		Selected = "",
-		Fill = false,
-		Font = UI.Theme.Font,
-		FontSize = UI.Theme.FontSize,
-		TextColor3 = UI.Theme.PrimaryText,
-		TextStrokeColor3 = UI.Theme.Primary,
-		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-		Padding = UI.Theme.Padding,
-		Icon = "",
-		IconProperties = {},
-		IconRightAlign = false,
-		HotkeyInput = false,
-		Hotkey = UI.Nil,
-		Modifiers = UI.Nil,
-		MaxChars = math.huge,
-		NumberOnly = false,
-		IntegerOnly = false,
-		NumberRange = NumberRange.new(0, 1),
-		Validate = UI.Function,
-	}, definition)
+local DEFAULT = {
+	Cursor = "_",
+	DisplayText = "",
+	Placeholder = "",
+	Value = "",
+	Fill = false,
+	Font = UI.Theme.Font,
+	FontSize = UI.Theme.FontSize,
+	TextColor3 = UI.Theme.PrimaryText,
+	TextStrokeColor3 = UI.Theme.Primary,
+	TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+	Padding = UI.Theme.Padding,
+	Icon = "",
+	IconProperties = {},
+	IconRightAlign = false,
+	HotkeyInput = false,
+	Hotkey = UI.Nil,
+	Modifiers = UI.Nil,
+	MaxChars = math.huge,
+	NumberOnly = false,
+	IntegerOnly = false,
+	NumberRange = NumberRange.new(0, 1),
+	Validate = UI.Function,
+}
 
-	new.Selected._value = UI.raw(new.Value)
-	local textState = UI.state(UI.raw(new.Value))
+type Properties = typeof(DEFAULT) & TextButton
+
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
+
+-- TODO: send/clear button
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
+	self.IconProperties = {}
+
+	local textState = UI.state(UI.raw(self.Value))
 
 	local inputSize = function()
-		local fill = new.Fill()
-		return UDim2.new(if fill then 1 else 0, if fill then 0 else new.FontSize(), 1, 0)
+		local fill = self.Fill()
+		return UDim2.new(if fill then 1 else 0, if fill then 0 else self.FontSize(), 1, 0)
 	end
 
 	local displayLabel = UI.new "TextLabel" {
@@ -123,16 +128,16 @@ function Input.new(definition)
 		AutoLocalize = false,
 		Size = inputSize,
 		BackgroundTransparency = 1,
-		TextSize = new.FontSize,
-		TextColor3 = new.TextColor3,
-		Font = new.Font,
+		TextSize = self.FontSize,
+		TextColor3 = self.TextColor3,
+		Font = self.Font,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = function()
-			local display = new.DisplayText()
-			local placeholder = new.Placeholder()
+			local display = self.DisplayText()
+			local placeholder = self.Placeholder()
 			local input = textState()
-			local maxChars = new.MaxChars()
+			local maxChars = self.MaxChars()
 
 			local text = if display ~= "" then display elseif input ~= "" then input else placeholder
 			text = stripNewLines(text)
@@ -140,21 +145,21 @@ function Input.new(definition)
 			return if maxChars ~= math.huge then string.sub(text, 1, maxChars) else text
 		end,
 		TextTransparency = function()
-			return if new.Value() == "" and new.DisplayText() == "" then 0.5 else 0
+			return if self.Value() == "" and self.DisplayText() == "" then 0.5 else 0
 		end,
 	}
-	new._displayLabel = displayLabel
+	self._displayLabel = displayLabel
 
-	new._input = UI.new "TextBox" {
+	self._input = UI.new "TextBox" {
 		AutomaticSize = Enum.AutomaticSize.X,
 		AutoLocalize = false,
 		ClearTextOnFocus = false,
 		Size = inputSize,
 		BackgroundTransparency = 1,
 		TextTransparency = 1,
-		TextSize = new.FontSize,
-		Text = new.Value,
-		Font = new.Font,
+		TextSize = self.FontSize,
+		Text = self.Value,
+		Font = self.Font,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		CursorPosition = -1,
@@ -162,63 +167,61 @@ function Input.new(definition)
 		displayLabel,
 
 		FocusLost = function()
-			local text = new._input.Text
-			local numberOnly = new.NumberOnly._value
-			local integerOnly = new.IntegerOnly._value
+			local text = self._input.Text
+			local numberOnly = self.NumberOnly._value
+			local integerOnly = self.IntegerOnly._value
 
 			if text == "" and (numberOnly or integerOnly) then
-				new.Selected(new.NumberRange._value.Min)
-				new.Value(new.NumberRange._value.Min)
+				self.Value(self.NumberRange._value.Min)
 				return
 			end
 
 			if (numberOnly or integerOnly) and text ~= "" then
 				local number = tonumber(text)
 				if not number or (integerOnly and string.find(text, "%D")) then
-					new._input.Text = new.Value._value
+					self._input.Text = self.Value._value
 					return
 				end
-				local numberClamped = math.clamp(number, new.NumberRange._value.Min, new.NumberRange._value.Max)
-				text = if number == numberClamped then new._input.Text else numberClamped
-				new._input.Text = text
+				local numberClamped = math.clamp(number, self.NumberRange._value.Min, self.NumberRange._value.Max)
+				text = if number == numberClamped then self._input.Text else numberClamped
+				self._input.Text = text
 				local textLength = #tostring(text)
-				if new._input.CursorPosition - 1 > textLength then
-					new._input.CursorPosition = textLength + 1
+				if self._input.CursorPosition - 1 > textLength then
+					self._input.CursorPosition = textLength + 1
 				end
 			end
 
-			if new.Hotkey and new.Hotkey._value then
-				local key = UI.UserInputService:GetStringForKeyCode(new.Hotkey._value)
+			if self.Hotkey and self.Hotkey._value then
+				local key = UI.UserInputService:GetStringForKeyCode(self.Hotkey._value)
 				if key ~= string.sub(text, -1) then
 					text ..= key
 				end
 			end
 
-			if new.MaxChars._value ~= math.huge then
-				text = string.sub(text, 1, new.MaxChars._value)
-				new._input.CursorPosition = math.min(new.MaxChars._value + 1, new._input.CursorPosition)
-				new._input.Text = text
+			if self.MaxChars._value ~= math.huge then
+				text = string.sub(text, 1, self.MaxChars._value)
+				self._input.CursorPosition = math.min(self.MaxChars._value + 1, self._input.CursorPosition)
+				self._input.Text = text
 			end
 
-			if new.Validate and not new.Validate._value(text) then
-				new._input.Text = if new.MaxChars._value ~= math.huge
-					then string.sub(new.Value._value, 1, new.MaxChars._value)
-					else new.Value._value
+			if self.Validate and not self.Validate._value(text) then
+				self._input.Text = if self.MaxChars._value ~= math.huge
+					then string.sub(self.Value._value, 1, self.MaxChars._value)
+					else self.Value._value
 				return
 			end
 
-			new.Selected(text)
-			new.Value(text)
+			self.Value(text)
 		end,
 	}
-	new._input:AddTag("KeyClackSound")
+	self._input:AddTag("KeyClackSound")
 
-	if new.HotkeyInput._value then
-		new._input.Focused:Connect(function()
-			new.Value("")
+	if self.HotkeyInput._value then
+		self._input.Focused:Connect(function()
+			self.Value("")
 		end)
 		UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
-			if not new._input:IsFocused() then
+			if not self._input:IsFocused() then
 				return
 			end
 			if input.UserInputType == Enum.UserInputType.Keyboard then
@@ -231,15 +234,14 @@ function Input.new(definition)
 				local hotkeyText =
 					`{mods.Ctrl and "Ctrl+" or ""}{mods.Shift and "Shift+" or ""}{mods.Alt and "Alt+" or ""}{mods.Meta and "Meta+" or ""}`
 				if table.find(MODIFIERS, input.KeyCode) then
-					new.Value(hotkeyText)
+					self.Value(hotkeyText)
 					return
 				end
 
-				new.Hotkey(input.KeyCode)
-				new.Modifiers(mods)
-				new.Selected(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode), true)
-				new.Value(new.Selected._value, true)
-				new._input:ReleaseFocus(true)
+				self.Hotkey(input.KeyCode)
+				self.Modifiers(mods)
+				self.Value(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode), true)
+				self._input:ReleaseFocus(true)
 			end
 		end)
 	end
@@ -248,7 +250,7 @@ function Input.new(definition)
 		Name = "Selection",
 		AnchorPoint = Vector2.new(0, 0.5),
 		BackgroundTransparency = 0.75,
-		Size = UDim2.new(0, 0, 0, Input.TextSize),
+		Size = UDim2.new(0, 0, 0, self.FontSize),
 		Position = UDim2.new(0, 0, 0.5, 0),
 		BackgroundColor3 = UI.Theme.Secondary,
 		BorderSizePixel = 0,
@@ -262,14 +264,14 @@ function Input.new(definition)
 		Size = UDim2.new(0, 0, 1, 0),
 		Position = UDim2.new(0, 0, 0, 0),
 		BackgroundTransparency = 1,
-		TextSize = new.FontSize,
+		TextSize = self.FontSize,
 		TextColor3 = UI.Theme.PrimaryText,
 		TextStrokeColor3 = UI.Theme.Primary,
 		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-		Font = new.Font,
+		Font = self.Font,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Text = new.Cursor,
+		Text = self.Cursor,
 		Visible = false,
 	}
 	local lastCursorChange = 0
@@ -283,7 +285,7 @@ function Input.new(definition)
 	end)
 
 	local automaticFill = function()
-		return if new.Fill() then Enum.AutomaticSize.None else Enum.AutomaticSize.X
+		return if self.Fill() then Enum.AutomaticSize.None else Enum.AutomaticSize.X
 	end
 
 	local inputMask = UI.new "Frame" {
@@ -294,24 +296,24 @@ function Input.new(definition)
 		Position = UDim2.new(0, 0, 0, 0),
 		Size = UDim2.new(1, 0, 1, 0),
 
-		new._input,
+		self._input,
 		selection,
 	}
 
-	new._inputOffset = UI.state(0)
-	new._maskSize = UI.state(inputMask, "AbsoluteSize")
-	new._bounds = UI.state(new._input, "TextBounds")
+	self._inputOffset = UI.state(0)
+	self._maskSize = UI.state(inputMask, "AbsoluteSize")
+	self._bounds = UI.state(self._input, "TextBounds")
 
-	new._input:GetPropertyChangedSignal("Text"):Connect(function()
-		local text = new._input.Text
-		text = if new.MaxChars._value ~= math.huge then string.sub(text, 1, new.MaxChars._value) else text
-		new._input.Text = text
+	self._input:GetPropertyChangedSignal("Text"):Connect(function()
+		local text = self._input.Text
+		text = if self.MaxChars._value ~= math.huge then string.sub(text, 1, self.MaxChars._value) else text
+		self._input.Text = text
 		textState(text)
 	end)
 
-	UI.edit(new._input, {
+	UI.edit(self._input, {
 		Position = function()
-			local xOffset = if new._bounds().X > new._maskSize().X then -new._inputOffset() else 0
+			local xOffset = if self._bounds().X > self._maskSize().X then -self._inputOffset() else 0
 			return UDim2.fromOffset(xOffset, 0)
 		end,
 	})
@@ -321,24 +323,24 @@ function Input.new(definition)
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
-		Image = new.Icon,
+		Image = self.Icon,
 		ImageColor3 = UI.Theme.Secondary,
 		Visible = function()
-			return new.Icon() ~= ""
+			return self.Icon() ~= ""
 		end,
 	}
-	if definition.IconProperties then
-		UI.edit(icon, definition.IconProperties)
+	if properties and properties.IconProperties then
+		UI.edit(icon, properties.IconProperties)
 	end
 
-	new._instance = UI.new "Frame" {
+	self._instance = UI.new "Frame" {
 		Name = "Input",
 		AutomaticSize = automaticFill,
 		ClipsDescendants = true,
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyHeavy,
 		Size = function()
-			return UDim2.new(0, 0, 0, new.FontSize() + new.Padding().Offset * 2)
+			return UDim2.new(0, 0, 0, self.FontSize() + self.Padding().Offset * 2)
 		end,
 
 		UI.new "UICorner" {
@@ -346,14 +348,14 @@ function Input.new(definition)
 		},
 		UI.new "Stroke" {},
 		UI.new "UIPadding" {
-			PaddingLeft = new.Padding,
-			PaddingRight = new.Padding,
+			PaddingLeft = self.Padding,
+			PaddingRight = self.Padding,
 		},
 		UI.new "UIListLayout" {
 			VerticalAlignment = Enum.VerticalAlignment.Center,
 			FillDirection = Enum.FillDirection.Horizontal,
 			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = new.Padding,
+			Padding = self.Padding,
 		},
 
 		icon,
@@ -373,28 +375,28 @@ function Input.new(definition)
 		},
 	}
 
-	new[UI.Clean] = {
-		new._input:GetPropertyChangedSignal("SelectionStart"):Connect(function()
-			if new._input.SelectionStart == -1 then
+	self[UI.Clean] = {
+		self._input:GetPropertyChangedSignal("SelectionStart"):Connect(function()
+			if self._input.SelectionStart == -1 then
 				selection.Visible = false
 			else
-				updateSelection(selection, displayLabel, new._input, new._inputOffset)
+				updateSelection(selection, displayLabel, self._input, self._inputOffset)
 			end
 		end),
 
-		new._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
+		self._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 			lastCursorChange = tick()
 			cursor.TextTransparency = 0
-			if new._input.CursorPosition == -1 then
+			if self._input.CursorPosition == -1 then
 				cursor.Visible = false
 			else
 				-- defer for text to register
-				task.defer(updateCursor, cursor, displayLabel, new._input, inputMask, new._inputOffset, selection)
+				task.defer(updateCursor, cursor, displayLabel, self._input, inputMask, self._inputOffset, selection)
 			end
 		end),
 	}
 
-	return setmetatable(new, Input)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return Input
+return Class

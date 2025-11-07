@@ -1,37 +1,42 @@
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
 
-local Dialog = {}
-Dialog.__index = Dialog
-setmetatable(Dialog, BaseClass)
+local DEFAULT = {
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.new(0.5, 0, 0.5, 0),
+	Text = "",
+	TextSize = UI.Theme.FontSize,
+	TextColor3 = UI.Theme.PrimaryText,
+	TextStrokeColor3 = UI.Theme.Primary,
+	TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+	Title = "",
+	TitleSize = UI.Theme.FontSizeLargest,
+	Activated = false,
+	ActionText = UI.Nil,
+	ActionTextSize = UI.Theme.FontSize,
+	Action = UI.Nil,
+	Duration = UI.Nil,
+	Draggable = false,
+	LeftAction = UI.Nil,
+	RightAction = UI.Nil,
+	ExitButton = false,
+	Close = UI.Function,
+	Visible = true,
+	Width = 256,
+}
+
+type Properties = typeof(DEFAULT) & TextButton
+
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
 
 -- alert, simple, confirmation dialogs
 -- allow timed dialogs using announce design, fire an event when duration ends so cleanup can be handled dynamically?
 -- maximum of 2 actions
-function Dialog.new(definition)
-	local new = UI.makeStatefulDefaults({
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Text = "",
-		TextSize = UI.Theme.FontSize,
-		TextColor3 = UI.Theme.PrimaryText,
-		TextStrokeColor3 = UI.Theme.Primary,
-		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-		Title = "",
-		TitleSize = UI.Theme.FontSizeLargest,
-		Activated = false,
-		ActionText = UI.Nil,
-		ActionTextSize = UI.Theme.FontSize,
-		Action = UI.Nil,
-		Duration = UI.Nil,
-		Draggable = false,
-		LeftAction = UI.Nil,
-		RightAction = UI.Nil,
-		ExitButton = false,
-		Close = UI.Function,
-		Visible = true,
-		Width = 256,
-	}, definition)
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
 
 	local dragInput, dragStart, startOffset
 	local dragging = UI.state(false)
@@ -42,12 +47,12 @@ function Dialog.new(definition)
 		end
 
 		local delta = input.Position - dragStart
-		local size = new._instance.AbsoluteSize
-		local offset = size * new._instance.AnchorPoint
-		local min = new._instance.Parent.AbsolutePosition + offset
-		local max = new._instance.Parent.AbsoluteSize - (size - offset)
+		local size = self._instance.AbsoluteSize
+		local offset = size * self._instance.AnchorPoint
+		local min = self._instance.Parent.AbsolutePosition + offset
+		local max = self._instance.Parent.AbsoluteSize - (size - offset)
 
-		new.Position(
+		self.Position(
 			UDim2.fromOffset(
 				math.clamp(math.round(startOffset.X + delta.X), min.X, math.max(offset.X, max.X)),
 				math.clamp(math.round(startOffset.Y + delta.Y), math.max(offset.Y, min.Y), math.max(offset.Y, max.Y))
@@ -57,15 +62,15 @@ function Dialog.new(definition)
 	end
 
 	local function dragInputBegan(input, gameProcessed)
-		if gameProcessed or not new.Draggable._value then
+		if gameProcessed or not self.Draggable._value then
 			return
 		end
 		if
 			input.UserInputType == Enum.UserInputType.MouseButton1
 			or input.UserInputType == Enum.UserInputType.Touch
 		then
-			startOffset = (new._instance.AbsolutePosition + new._instance.AbsoluteSize * new._instance.AnchorPoint)
-				- new._instance.Parent.AbsolutePosition
+			startOffset = (self._instance.AbsolutePosition + self._instance.AbsoluteSize * self._instance.AnchorPoint)
+				- self._instance.Parent.AbsolutePosition
 			dragInput, dragStart = input, input.Position
 			dragging(true)
 			local con
@@ -83,19 +88,19 @@ function Dialog.new(definition)
 
 	local con
 	local function activate(active)
-		if UI.raw(new.Activated) then
+		if UI.raw(self.Activated) then
 			return
 		end
-		new.Activated(true)
-		new.Action(active, true)
+		self.Activated(true)
+		self.Action(active, true)
 
 		if con then
 			con:Disconnect()
 		end
-		if new.Close and type(new.Close._value) == "function" then
-			new.Close._value(new)
+		if self.Close and type(self.Close._value) == "function" then
+			self.Close._value(self)
 		else
-			new:Destroy()
+			self:Destroy()
 		end
 	end
 
@@ -107,7 +112,7 @@ function Dialog.new(definition)
 		Position = UDim2.fromScale(0, 1),
 		Size = UDim2.new(1, 0, 0, 4),
 		ClipsDescendants = true,
-		Visible = if new.Duration and new.Duration._value > 0 then true else false,
+		Visible = if self.Duration and self.Duration._value > 0 then true else false,
 
 		UI.new "Frame" {
 			Name = "Bar",
@@ -122,10 +127,10 @@ function Dialog.new(definition)
 	}
 
 	local hovering = UI.state(false)
-	new._hovering = hovering
+	self._hovering = hovering
 
-	if new.Duration and new.Duration._value > 0 then
-		local duration = new.Duration._value
+	if self.Duration and self.Duration._value > 0 then
+		local duration = self.Duration._value
 		local elapsed = 0
 		con = game:GetService("RunService").PreRender:Connect(function(dt: number)
 			if hovering._value then
@@ -137,10 +142,10 @@ function Dialog.new(definition)
 			progress.Size = UDim2.new(math.clamp(1 - alpha, 0, 1), 0, 0, 4)
 			if alpha >= 1 then
 				con:Disconnect()
-				if new.Close and type(new.Close._value) == "function" then
-					new.Close._value(new)
+				if self.Close and type(self.Close._value) == "function" then
+					self.Close._value(self)
 				else
-					new:Destroy()
+					self:Destroy()
 				end
 			end
 		end)
@@ -165,20 +170,20 @@ function Dialog.new(definition)
 		},
 		Text = "",
 		Activated = function()
-			if new.Close and type(new.Close._value) == "function" then
-				new.Close._value(new)
+			if self.Close and type(self.Close._value) == "function" then
+				self.Close._value(self)
 			else
-				new:Destroy()
+				self:Destroy()
 			end
 		end,
 		Visible = function()
-			return if new.ExitButton() then true else false
+			return if self.ExitButton() then true else false
 		end,
 	}
 	exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
-	new._exitButton = exitButton
+	self._exitButton = exitButton
 
-	new._content = UI.new "Frame" {
+	self._content = UI.new "Frame" {
 		Name = "UIContent",
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
@@ -197,7 +202,7 @@ function Dialog.new(definition)
 			BackgroundTransparency = 1,
 			Text = "",
 			Visible = function()
-				local title = new.Title()
+				local title = self.Title()
 				return title and title ~= ""
 			end,
 
@@ -213,8 +218,8 @@ function Dialog.new(definition)
 				TextColor3 = UI.Theme.PrimaryText,
 				TextStrokeColor3 = UI.Theme.Primary,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-				Text = new.Title,
-				TextSize = new.TitleSize,
+				Text = self.Title,
+				TextSize = self.TitleSize,
 				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = "Left",
 				FontFace = UI.Theme.FontHeavy,
@@ -226,7 +231,7 @@ function Dialog.new(definition)
 				},
 			},
 
-			if UI.raw(new.Title) then exitButton else nil,
+			if UI.raw(self.Title) then exitButton else nil,
 
 			InputBegan = dragInputBegan,
 		},
@@ -235,25 +240,25 @@ function Dialog.new(definition)
 			AutoLocalize = false,
 			Name = "Text",
 			BackgroundTransparency = 1,
-			TextColor3 = new.TextColor3,
-			Text = new.Text,
-			TextSize = new.TextSize,
+			TextColor3 = self.TextColor3,
+			Text = self.Text,
+			TextSize = self.TextSize,
 			TextWrapped = true,
 			TextXAlignment = "Left",
 			Font = UI.Theme.Font,
 			RichText = true,
 			Visible = function()
-				local text = new.Text()
+				local text = self.Text()
 				return text and text ~= ""
 			end,
 
 			AutomaticSize = Enum.AutomaticSize.XY,
 
-			if UI.raw(new.Title) then nil else exitButton,
+			if UI.raw(self.Title) then nil else exitButton,
 		},
 	}
 
-	new._instance = UI.new "TextButton" {
+	self._instance = UI.new "TextButton" {
 		Name = "Dialog",
 		Active = false,
 		AutoButtonColor = false,
@@ -261,13 +266,13 @@ function Dialog.new(definition)
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
 		ClipsDescendants = true,
-		AnchorPoint = new.AnchorPoint,
-		Position = new.Position,
+		AnchorPoint = self.AnchorPoint,
+		Position = self.Position,
 		Size = function()
-			return UDim2.fromOffset(new.Width(), 0)
+			return UDim2.fromOffset(self.Width(), 0)
 		end,
 		Text = "",
-		Visible = new.Visible,
+		Visible = self.Visible,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
@@ -293,8 +298,8 @@ function Dialog.new(definition)
 				Padding = UI.Theme.Padding,
 			},
 
-			new._content,
-			if new.LeftAction or new.RightAction
+			self._content,
+			if self.LeftAction or self.RightAction
 				then UI.new "Frame" {
 					Name = "Actions",
 					AutomaticSize = Enum.AutomaticSize.Y,
@@ -318,15 +323,15 @@ function Dialog.new(definition)
 						TextColor3 = UI.Theme.PrimaryText,
 						TextStrokeColor3 = UI.Theme.Primary,
 						TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-						Text = new.ActionText,
-						TextSize = new.ActionTextSize,
+						Text = self.ActionText,
+						TextSize = self.ActionTextSize,
 						TextWrapped = true,
 						TextTruncate = Enum.TextTruncate.SplitWord,
 						TextXAlignment = "Left",
 						FontFace = UI.Theme.FontBold,
 						RichText = true,
 						Visible = function()
-							local text = new.ActionText()
+							local text = self.ActionText()
 							return text and text ~= ""
 						end,
 
@@ -390,7 +395,7 @@ function Dialog.new(definition)
 
 		[UI.Clean] = {
 			UI.UserInputService.InputChanged:Connect(function(input)
-				if not (new.Draggable._value and new._instance.Visible) then
+				if not (self.Draggable._value and self._instance.Visible) then
 					return
 				end
 				if
@@ -404,9 +409,9 @@ function Dialog.new(definition)
 			end),
 			hovering,
 		},
-	}
+	} :: TextButton
 
-	local sizeState = UI.state(new._instance, "AbsoluteSize")
+	local sizeState = UI.state(self._instance, "AbsoluteSize")
 
 	UI.edit(progress.Bar, {
 		Size = function()
@@ -415,7 +420,7 @@ function Dialog.new(definition)
 		end,
 	})
 
-	return setmetatable(new, Dialog)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return Dialog
+return Class

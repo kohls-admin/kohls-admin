@@ -1,9 +1,9 @@
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
 
-local Window = {}
-Window.__index = Window
-setmetatable(Window, BaseClass)
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
 
 local resizeReference = {
 	{ -1, 1, 0, 0, 48 }, -- left
@@ -68,7 +68,7 @@ local function sortZIndex(a, b)
 	return a.ZIndex < b.ZIndex
 end
 
-function Window.bringToFront(self)
+function Class.bringToFront(self)
 	local windows = {}
 	for window in windowCache do
 		table.insert(windows, window._instance)
@@ -80,7 +80,7 @@ function Window.bringToFront(self)
 	end
 end
 
-function Window.nudge(self)
+function Class.nudge(self)
 	local nudgeAmount = 32
 	local maxAttempts = 16
 	local position = self._instance.AbsolutePosition
@@ -109,22 +109,28 @@ function Window.nudge(self)
 	end
 end
 
-function Window.new(definition)
-	local new = UI.makeStatefulDefaults({
-		Exitable = true,
-		Draggable = true,
-		Resizable = true,
-		RemoveOnClose = false,
-		Close = UI.Function,
-		Icon = "",
-		IconProperties = {},
-		Title = "Window",
-		Position = UDim2.new(0.5, -210, 0.5, -210),
-		Size = UDim2.new(0, 420, 0, 420),
-		SizeBounds = Rect.new(128, 128, 9e9, 9e9),
-	}, definition)
+local DEFAULT = {
+	Exitable = true,
+	Draggable = true,
+	Resizable = true,
+	RemoveOnClose = false,
+	Close = UI.Function,
+	Icon = "",
+	IconProperties = {},
+	Title = "Window",
+	Position = UDim2.new(0.5, -210, 0.5, -210),
+	Size = UDim2.new(0, 420, 0, 420),
+	SizeBounds = Rect.new(128, 128, 9e9, 9e9),
+}
 
-	windowCache[new] = true
+type Properties = typeof(DEFAULT) & Frame
+
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	self.IconProperties = {}
+	UI.makeStatefulDefaults(self, properties)
+
+	windowCache[self] = true
 
 	local dragInput, dragStart, startOffset
 	local inputPosition = UI.state(Vector2.new())
@@ -139,9 +145,9 @@ function Window.new(definition)
 		end
 
 		local delta = input.Position - dragStart
-		local maxPosition = new._instance.Parent.AbsoluteSize - new._instance.AbsoluteSize
+		local maxPosition = self._instance.Parent.AbsoluteSize - self._instance.AbsoluteSize
 
-		new.Position(
+		self.Position(
 			UDim2.fromOffset(
 				math.clamp(math.round(startOffset.X + delta.X), 0, math.max(0, maxPosition.X)),
 				math.clamp(math.round(startOffset.Y + delta.Y), 0, math.max(0, maxPosition.Y))
@@ -159,9 +165,9 @@ function Window.new(definition)
 			and not resizing._value
 			and not resizeHover._value
 		then
-			Window.bringToFront(new)
+			Class.bringToFront(self)
 
-			startOffset = new._instance.AbsolutePosition - new._instance.Parent.AbsolutePosition
+			startOffset = self._instance.AbsolutePosition - self._instance.Parent.AbsolutePosition
 			dragInput, dragStart = input, input.Position
 			dragging(true)
 			local con
@@ -180,23 +186,23 @@ function Window.new(definition)
 	local resizeBuffer = 5
 	local startSize, xSize, xPos, ySize, yPos
 	local function resizeUpdate(input)
-		local parentSize = new._instance.Parent.AbsoluteSize
+		local parentSize = self._instance.Parent.AbsoluteSize
 		local delta = Vector3.new(
 			math.clamp(input.Position.X, 0, parentSize.X),
 			math.clamp(input.Position.Y, 0, parentSize.Y),
 			0
 		) - dragStart
-		local resizeMin = new.SizeBounds._value.Min - startSize
-		local resizeMax = new.SizeBounds._value.Max - startSize
+		local resizeMin = self.SizeBounds._value.Min - startSize
+		local resizeMax = self.SizeBounds._value.Max - startSize
 		inputPosition(input.Position)
-		new.Size(
+		self.Size(
 			UDim2.fromOffset(
 				math.round(startSize.X + math.clamp(xSize * delta.X, resizeMin.X, math.max(resizeMin.X, resizeMax.X))),
 				math.round(startSize.Y + math.clamp(ySize * delta.Y, resizeMin.Y, math.max(resizeMin.Y, resizeMax.Y)))
 			)
 		)
 
-		new.Position(
+		self.Position(
 			UDim2.fromOffset(
 				math.round(startOffset.X - math.clamp(xPos * -delta.X, resizeMin.X, math.max(resizeMin.X, resizeMax.X))),
 				math.round(startOffset.Y - math.clamp(yPos * -delta.Y, resizeMin.Y, math.max(resizeMin.Y, resizeMax.Y)))
@@ -210,19 +216,19 @@ function Window.new(definition)
 		end
 		if
 			(input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch)
-			and new._instance.Visible
+			and self._instance.Visible
 		then
 			local resize = getResizeIndex(
 				Vector2.new(input.Position.X, input.Position.Y),
-				new._instance.AbsoluteSize,
-				new._instance.AbsolutePosition,
+				self._instance.AbsoluteSize,
+				self._instance.AbsolutePosition,
 				resizeBuffer
 			)
 			if resize then
 				xSize, xPos, ySize, yPos = unpack(resize, 1, 4)
 				dragInput, dragStart = input, input.Position
-				startOffset = new._instance.AbsolutePosition - new._instance.Parent.AbsolutePosition
-				startSize = new._instance.AbsoluteSize
+				startOffset = self._instance.AbsolutePosition - self._instance.Parent.AbsolutePosition
+				startSize = self._instance.AbsoluteSize
 				resizing(true)
 				local con
 				con = input:GetPropertyChangedSignal("UserInputState"):Connect(function()
@@ -248,7 +254,7 @@ function Window.new(definition)
 		return UDim2.fromOffset(UI.Theme.FontSize(), UI.Theme.FontSize())
 	end
 
-	new._exitButton = UI.new "Button" {
+	self._exitButton = UI.new "Button" {
 		LayoutOrder = 9,
 		BackgroundColor3 = Color3.fromRGB(200, 0, 0),
 		BackgroundTransparency = 1,
@@ -261,19 +267,19 @@ function Window.new(definition)
 		},
 		Text = "",
 		Activated = function()
-			new._instance.Visible = false
+			self._instance.Visible = false
 			UI.clearActiveStates()
 
-			if new.Close and type(new.Close._value) == "function" then
-				new.Close._value(new)
-			elseif new.RemoveOnClose._value then
-				new:Destroy()
+			if self.Close and type(self.Close._value) == "function" then
+				self.Close._value(self)
+			elseif self.RemoveOnClose._value then
+				self:Destroy()
 			end
 		end,
 	}
-	new._exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+	self._exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 
-	new._content = UI.new "Frame" {
+	self._content = UI.new "Frame" {
 		Name = "UIContent",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
@@ -290,12 +296,12 @@ function Window.new(definition)
 		},
 	}
 
-	new._instance = UI.new "Frame" {
+	self._instance = UI.new "Frame" {
 		Name = "Window",
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
-		Position = new.Position,
-		Size = new.Size,
+		Position = self.Position,
+		Size = self.Size,
 		Visible = false,
 
 		UI.new "UICorner" {
@@ -314,7 +320,7 @@ function Window.new(definition)
 			Visible = resizeHover,
 			Position = function()
 				local inputPos = inputPosition()
-				return UDim2.fromOffset(inputPos.X - 12, inputPos.Y - 12) - new.Position()
+				return UDim2.fromOffset(inputPos.X - 12, inputPos.Y - 12) - self.Position()
 			end,
 
 			InputBegan = resizeBegan,
@@ -365,15 +371,15 @@ function Window.new(definition)
 						UI.new "ImageLabel" {
 							AnchorPoint = Vector2.new(0, 0.5),
 							BackgroundTransparency = 1,
-							Image = new.Icon,
+							Image = self.Icon,
 							ImageColor3 = UI.Theme.PrimaryText,
 							Position = UDim2.fromScale(0, 0.5),
 							Size = iconSize,
 							Visible = function()
-								return if new.Icon() ~= "" then true else false
+								return if self.Icon() ~= "" then true else false
 							end,
 						},
-						new.IconProperties()
+						self.IconProperties()
 					),
 
 					UI.new "TextLabel" {
@@ -388,7 +394,7 @@ function Window.new(definition)
 						end,
 						RichText = true,
 						Text = function()
-							return `<b>{new.Title()}</b>`
+							return `<b>{self.Title()}</b>`
 						end,
 						TextColor3 = UI.Theme.PrimaryText,
 						TextStrokeColor3 = UI.Theme.Primary,
@@ -401,23 +407,23 @@ function Window.new(definition)
 				},
 				UI.new "Spacer" {},
 
-				new._exitButton,
+				self._exitButton,
 
 				InputBegan = dragInputBegan,
 			},
 
-			new._content,
+			self._content,
 		},
 
 		[UI.Event] = {
 			Visible = function()
-				if new._instance.Visible then
-					Window.bringToFront(new)
-					Window.nudge(new)
+				if self._instance.Visible then
+					Class.bringToFront(self)
+					Class.nudge(self)
 				end
 			end,
 		},
-	}
+	} :: Frame
 
 	local mouseIconWasEnabled, mouseIconChanging = UI.UserInputService.MouseIconEnabled, nil
 	UI.UserInputService:GetPropertyChangedSignal("MouseIconEnabled"):Connect(function()
@@ -429,7 +435,7 @@ function Window.new(definition)
 
 	UI.UserInputService.InputBegan:Connect(resizeBegan)
 	UI.UserInputService.InputChanged:Connect(function(input)
-		if not new._instance.Visible then
+		if not self._instance.Visible then
 			return
 		end
 
@@ -445,8 +451,8 @@ function Window.new(definition)
 			else
 				local resize = getResizeIndex(
 					Vector2.new(input.Position.X, input.Position.Y),
-					new._instance.AbsoluteSize,
-					new._instance.AbsolutePosition,
+					self._instance.AbsoluteSize,
+					self._instance.AbsolutePosition,
 					resizeBuffer
 				)
 				if resize then
@@ -471,23 +477,23 @@ function Window.new(definition)
 	end)
 
 	local parentConn
-	new._instance:GetPropertyChangedSignal("Parent"):Connect(function()
+	self._instance:GetPropertyChangedSignal("Parent"):Connect(function()
 		if parentConn then
 			parentConn:Disconnect()
 		end
-		local parent = new._instance.Parent
+		local parent = self._instance.Parent
 		if parent and parent:IsA("GuiBase2d") then
 			local function updateSize()
-				if not new._instance.Visible then
+				if not self._instance.Visible then
 					return
 				end
 
-				local parentSize = new._instance.Parent.AbsoluteSize
-				local windowSize = new._instance.AbsoluteSize
+				local parentSize = self._instance.Parent.AbsoluteSize
+				local windowSize = self._instance.AbsoluteSize
 				local maxPosition = parentSize - windowSize
-				local position = new._instance.AbsolutePosition - new._instance.Parent.AbsolutePosition
+				local position = self._instance.AbsolutePosition - self._instance.Parent.AbsolutePosition
 
-				local padding = new._instance.Parent:FindFirstChildOfClass("UIPadding")
+				local padding = self._instance.Parent:FindFirstChildOfClass("UIPadding")
 				local paddingX = if padding
 					then padding.PaddingLeft.Offset
 						+ parentSize.X * padding.PaddingLeft.Scale
@@ -501,13 +507,13 @@ function Window.new(definition)
 						+ parentSize.Y * padding.PaddingBottom.Scale
 					else 0
 
-				new.Size(
+				self.Size(
 					UDim2.fromOffset(
 						math.clamp(windowSize.X, 0, math.max(0, parentSize.X - paddingX)),
 						math.clamp(windowSize.Y, 0, math.max(0, parentSize.Y - paddingY))
 					)
 				)
-				new.Position(
+				self.Position(
 					UDim2.fromOffset(
 						math.clamp(position.X, 0, math.max(0, maxPosition.X)),
 						math.clamp(position.Y, 0, math.max(0, maxPosition.Y))
@@ -515,14 +521,14 @@ function Window.new(definition)
 				)
 			end
 			parentConn = parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSize)
-			new._instance:GetPropertyChangedSignal("Visible"):Connect(updateSize)
-			if new._instance.Visible then
+			self._instance:GetPropertyChangedSignal("Visible"):Connect(updateSize)
+			if self._instance.Visible then
 				updateSize()
 			end
 		end
 	end)
 
-	return setmetatable(new, Window)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return Window
+return Class

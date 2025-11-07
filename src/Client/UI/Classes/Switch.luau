@@ -1,31 +1,33 @@
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
 
-local Switch = {}
-Switch.__index = Switch
-setmetatable(Switch, BaseClass)
+local DEFAULT = {
+	Value = false,
+}
+
+type Properties = typeof(DEFAULT) & TextButton
 
 local itemHeight = UI.compute(function()
 	return UI.Theme.FontSize() + UI.Theme.Padding().Offset
 end)
 
-function Switch.new(definition)
-	local new = UI.makeStatefulDefaults({
-		Value = false,
-		Selected = false,
-	}, definition)
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
 
-	new.Selected._value = UI.raw(new.Value)
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
 
 	local backgroundTransparency = UI.tween(function()
-		return if new.Value() then 0 else UI.Theme.TransparencyHeavy()
+		return if self.Value() then 0 else UI.Theme.TransparencyHeavy()
 	end, UI.Theme.TweenOut)
 
 	local backgroundTransparencyClamped = UI.tween(function()
-		return if new.Value() then 0 else UI.Theme.TransparencyClamped()
+		return if self.Value() then 0 else UI.Theme.TransparencyClamped()
 	end, UI.Theme.TweenOut)
 
-	new._instance = UI.new "TextButton" {
+	self._instance = UI.new "TextButton" {
 		AutoLocalize = false,
 		Name = "Switch",
 		Active = true,
@@ -53,7 +55,7 @@ function Switch.new(definition)
 			Size = UDim2.new(1, -2, 1, -2),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			Position = UI.tween(function()
-				return UDim2.new(0, if new.Value() then itemHeight() + 1 else 1, 0, 1)
+				return UDim2.new(0, if self.Value() then itemHeight() + 1 else 1, 0, 1)
 			end, UI.Theme.TweenOut),
 
 			UI.new "UICorner" {
@@ -62,19 +64,17 @@ function Switch.new(definition)
 		},
 
 		Activated = function()
-			local value = not UI.raw(new.Value)
-			new.Selected(value, true)
-			new.Value(value)
-
+			local value = not UI.raw(self.Value)
+			self.Value(value)
 			if value then
 				UI.Sound.Hover03:Play()
 			else
 				UI.Sound.Hover01:Play()
 			end
 		end,
-	}
+	} :: TextButton & { UICorner: UICorner, UIStroke: UIStroke, Circle: Frame & { UICorner: UICorner } }
 
-	return setmetatable(new, Switch)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return Switch
+return Class

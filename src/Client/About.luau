@@ -1,3 +1,4 @@
+local UI = require(script.Parent.UI)
 local CREDITS = require(script.Parent.Parent.Credits)
 local UserFrame = require(script.Parent.UserFrame)
 
@@ -5,8 +6,6 @@ local About = {}
 About.__index = About
 
 function About.new(_K)
-	local UI = _K.UI
-
 	local scroller = UI.new "Scroller" {
 		Name = "About",
 	}
@@ -43,32 +42,9 @@ function About.new(_K)
 		_K.client.AllowThirdPartySales = if _K.DEBUG and _K.IsStudio then false else true
 		_K.client.lastAttemptedPurchase = false
 
-		local purchaseLink = UI.new "TextBox" {
-			Name = "Link",
+		local purchaseLink = UI.new "Link" {
 			LayoutOrder = 10,
-			AutoLocalize = false,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundColor3 = UI.Theme.Secondary,
-			BackgroundTransparency = 0.25,
-			Size = UDim2.fromScale(1, 0),
-			Font = UI.Theme.FontMono,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = UI.Theme.SecondaryText,
-			TextStrokeColor3 = UI.Theme.Secondary,
-			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 			Text = "roblox.com/game-pass/5391355/",
-			TextEditable = false,
-			ClearTextOnFocus = false,
-
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
-			},
-			UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-			},
 		}
 
 		local purchaseDialog
@@ -875,35 +851,10 @@ function About.new(_K)
 				},
 			},
 
-			UI.new "TextBox" {
+			UI.new "Link" {
 				Name = "CatalogLink",
-				AutoLocalize = false,
-				AutomaticSize = Enum.AutomaticSize.XY,
-				BackgroundColor3 = UI.Theme.Secondary,
-				BackgroundTransparency = 0.25,
-				Font = UI.Theme.FontMono,
-				TextSize = UI.Theme.FontSize,
-				TextColor3 = UI.Theme.SecondaryText,
-				TextStrokeColor3 = UI.Theme.Secondary,
-				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				Text = "roblox.com/games/17873329124/",
-				TextWrapped = true,
-				TextEditable = false,
-				ClearTextOnFocus = false,
-				Visible = _K.client.settings.addToCharts,
-
-				UI.new "UICorner" {
-					CornerRadius = UI.Theme.CornerRadius,
-				},
-				UI.new "UIPadding" {
-					PaddingLeft = UI.Theme.Padding,
-					PaddingRight = UI.Theme.Padding,
-					PaddingTop = UI.Theme.Padding,
-					PaddingBottom = UI.Theme.Padding,
-				},
-				UI.new "Tooltip" {
-					Text = gamesTooltipText,
-				},
+				Tooltip = `<b>Copy:</b> Ctrl + C\n\n{gamesTooltipText}`,
 			},
 		})
 

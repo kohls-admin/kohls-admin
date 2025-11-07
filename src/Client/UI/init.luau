@@ -8,6 +8,7 @@ local Flux = require(script.Parent.Parent.Flux)
 local Type = require(script.Parent.Parent.Flux.Type)
 local state = Flux.state
 
+local Classes = script:WaitForChild("Classes")
 local playerGui = Players.LocalPlayer and Players.LocalPlayer:WaitForChild("PlayerGui")
 
 --- @class UI
@@ -423,14 +424,37 @@ setmetatable(constructors, {
 	end,
 })
 
+type Constructor =
+	Type.Constructor
+	& Type.New<"Button", typeof(require(Classes.Button).new())>
+	& Type.New<"Checkbox", typeof(require(Classes.Checkbox).new())>
+	& Type.New<"CircleProgress", typeof(require(Classes.CircleProgress).new())>
+	& Type.New<"Color", typeof(require(Classes.Color).new())>
+	& Type.New<"ColorPicker", typeof(require(Classes.ColorPicker).new())>
+	& Type.New<"Dialog", typeof(require(Classes.Dialog).new())>
+	& Type.New<"Link", typeof(require(Classes.Link).new())>
+	& Type.New<"List", typeof(require(Classes.List).new())>
+	& Type.New<"ListItem", typeof(require(Classes.ListItem).new())>
+	& Type.New<"Menu", typeof(require(Classes.Menu).new())>
+	& Type.New<"Scroller", typeof(require(Classes.Scroller).new())>
+	& Type.New<"ScrollerFast", typeof(require(Classes.ScrollerFast).new())>
+	& Type.New<"Select", typeof(require(Classes.Select).new())>
+	& Type.New<"Slider", typeof(require(Classes.Slider).new())>
+	& Type.New<"Spacer", typeof(require(Classes.Spacer).new())>
+	& Type.New<"Stroke", typeof(require(Classes.Stroke).new())>
+	& Type.New<"Switch", typeof(require(Classes.Switch).new())>
+	& Type.New<"Tabs", typeof(require(Classes.Tabs).new())>
+	& Type.New<"Tooltip", typeof(require(Classes.Tooltip).new())>
+	& Type.New<"Window", typeof(require(Classes.Window).new())>
+
 --- Creates a new Instance with [UI.edit]
 --- @within UI
 --- @function new
 --- @param className string
 --- @return UI.edit
-UI.new = function(className)
+UI.new = (function(className)
 	return constructors[className]
-end :: Type.Constructor
+end :: any) :: Constructor
 
 --- Registers a new UI component class
 function UI.register(className: string, class: Type.Dict<any>)
@@ -440,10 +464,10 @@ function UI.register(className: string, class: Type.Dict<any>)
 	UI.Class[className] = class
 end
 
---- Run to register all default classes in the UI module
-function UI.registerDefaultClasses(): typeof(UI)
-	UI.registerDefaultClasses = nil :: any
-	for _, child in script.DefaultClasses:GetChildren() do
+--- Run to register the default classes for the UI module
+function UI.registerClasses(): typeof(UI)
+	UI.registerClasses = nil :: any
+	for _, child in script.Classes:GetChildren() do
 		if child:IsA("ModuleScript") then
 			UI.register(child.Name, require(child))
 		end

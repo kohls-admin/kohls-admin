@@ -1,35 +1,42 @@
-local UI = require(script.Parent.Parent)
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
 
 local Tween = game:GetService("TweenService")
 
-local Button = {}
-Button.__index = Button
-setmetatable(Button, BaseClass)
+local DEFAULT = {
+	--- A test property.
+	Icon = "",
+	IconProperties = {},
+	IconRightAlign = false,
+	Label = "",
+	LabelProperties = {},
+	ActiveSound = true,
+	BackgroundColor3 = UI.Theme.Secondary,
+	BackgroundTransparency = UI.Theme.TransparencyHeavy,
+	HoverTransparency = 0.75,
+	Font = UI.Theme.Font,
+	TextSize = UI.Theme.FontSize,
+	TextScaled = false,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	TextYAlignment = Enum.TextYAlignment.Center,
+	Padding = UI.Theme.Padding,
+}
 
-function Button.new(definition)
-	local new = UI.makeStatefulDefaults({
-		Icon = "",
-		IconProperties = {},
-		IconRightAlign = false,
-		Label = "",
-		LabelProperties = {},
-		ActiveSound = true,
-		BackgroundColor3 = UI.Theme.Secondary,
-		BackgroundTransparency = UI.Theme.TransparencyHeavy,
-		HoverTransparency = 0.75,
-		Font = UI.Theme.Font,
-		TextSize = UI.Theme.FontSize,
-		TextScaled = false,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		TextYAlignment = Enum.TextYAlignment.Center,
-		Padding = UI.Theme.Padding,
-	}, definition)
+type Properties = typeof(DEFAULT) & TextButton
 
-	local hovering = UI.state(false)
-	new._hovering = hovering
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
 
-	new._content = UI.new "Frame" {
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	self.IconProperties, self.LabelProperties = {}, {}
+	UI.makeStatefulDefaults(self, properties)
+
+	local hovering = UI.state(false) :: boolean
+	self._hovering = hovering
+
+	self._content = UI.new "Frame" {
 		Name = "UIContent",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
@@ -47,44 +54,44 @@ function Button.new(definition)
 				AutoLocalize = false,
 				BackgroundTransparency = 1,
 				Size = UDim2.new(1, 0, 1, 0),
-				Font = new.Font,
+				Font = self.Font,
 				RichText = true,
 				Text = function()
-					return tostring(new.Label)
+					return tostring(self.Label)
 				end,
-				TextSize = new.TextSize,
-				TextScaled = new.TextScaled,
+				TextSize = self.TextSize,
+				TextScaled = self.TextScaled,
 				TextColor3 = UI.Theme.PrimaryText,
 				TextStrokeColor3 = UI.Theme.Primary,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextTruncate = Enum.TextTruncate.SplitWord,
-				TextXAlignment = new.TextXAlignment,
-				TextYAlignment = new.TextYAlignment,
+				TextXAlignment = self.TextXAlignment,
+				TextYAlignment = self.TextYAlignment,
 				Visible = function()
-					return new.Label() ~= ""
+					return self.Label() ~= ""
 				end,
 
 				UI.new "UIFlexItem" {
 					FlexMode = Enum.UIFlexMode.Fill,
 				},
 				UI.new "UIPadding" {
-					PaddingLeft = new.Padding,
-					PaddingRight = new.Padding,
+					PaddingLeft = self.Padding,
+					PaddingRight = self.Padding,
 				},
 			},
-			new.LabelProperties._value
+			self.LabelProperties._value
 		),
 
 		UI.new "Frame" {
 			Name = "IconFrame",
 			LayoutOrder = function()
-				return if new.IconRightAlign() then 9 else -9
+				return if self.IconRightAlign() then 9 else -9
 			end,
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			Visible = function()
-				return new.Icon() ~= ""
+				return self.Icon() ~= ""
 			end,
 
 			UI.edit(
@@ -94,12 +101,16 @@ function Button.new(definition)
 					Position = UDim2.new(0.5, 0, 0.5, 0),
 					BackgroundTransparency = 1,
 					Size = UDim2.new(1, 0, 1, 0),
-					Image = new.Icon,
+					Image = self.Icon,
 					ScaleType = Enum.ScaleType.Fit,
 				},
-				new.IconProperties._value
+				self.IconProperties._value
 			),
 		},
+	} :: Frame & {
+		UIListLayout: UIListLayout,
+		Label: TextLabel & { UIFlexItem: UIFlexItem, UIPadding: UIPadding },
+		IconFrame: Frame & { Icon: ImageLabel },
 	}
 
 	local ripple = UI.new "Frame" {
@@ -107,7 +118,7 @@ function Button.new(definition)
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
 		BackgroundColor3 = function()
-			return if UI.getLuminance(new.BackgroundColor3()) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
+			return if UI.getLuminance(self.BackgroundColor3()) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
 		end,
 
 		UI.new "UICorner" {
@@ -115,14 +126,14 @@ function Button.new(definition)
 		},
 	}
 
-	new._instance = UI.new "TextButton" {
+	local instance = UI.new "TextButton" {
 		AutoLocalize = false,
 		Name = "Button",
 		Active = true,
 		AutoButtonColor = false,
-		BackgroundColor3 = new.BackgroundColor3,
+		BackgroundColor3 = self.BackgroundColor3,
 		BackgroundTransparency = function()
-			return if hovering() then new.HoverTransparency() else new.BackgroundTransparency()
+			return if hovering() then self.HoverTransparency() else self.BackgroundTransparency()
 		end,
 		ClipsDescendants = true,
 		Text = "",
@@ -134,11 +145,11 @@ function Button.new(definition)
 		},
 		UI.new "Stroke" {},
 
-		new._content,
+		self._content,
 		ripple,
 
 		Activated = function()
-			if new.ActiveSound._value then
+			if self.ActiveSound._value then
 				UI.Sound.Hover01:Play()
 			end
 		end,
@@ -152,10 +163,9 @@ function Button.new(definition)
 			then
 				return
 			end
-			local ap = new._instance.AbsolutePosition
 			local x = input.Position.X
 			ripple.Size = UDim2.new(0, 0, 1, 0)
-			ripple.Position = UDim2.new(0, x - ap.x, 0, 0)
+			ripple.Position = UDim2.new(0, x - self._instance.AbsolutePosition.x, 0, 0)
 			Tween:Create(ripple, UI.Theme.TweenOut._value, {
 				BackgroundTransparency = 0.9,
 				Size = UDim2.new(1, 0, 1, 0),
@@ -170,7 +180,7 @@ function Button.new(definition)
 				input.UserInputType == Enum.UserInputType.MouseMovement
 				or input.UserInputType == Enum.UserInputType.Touch
 			then
-				if UI.sinkInput(input.Position.X, input.Position.Y, new._instance) then
+				if UI.sinkInput(input.Position.X, input.Position.Y, self._instance) then
 					UI.deactivateState(hovering, "hover")
 					return
 				end
@@ -188,9 +198,14 @@ function Button.new(definition)
 			end
 		end,
 	}
-	new.Activated = new._instance.Activated
+	self._instance = instance :: TextButton & {
+		UICorner: UICorner,
+		UIStroke: UIStroke,
+		UIContent: typeof(self._content),
+		Ripple: typeof(ripple) & { UICorner: UICorner },
+	}
 
-	return setmetatable(new, Button)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return Button
+return Class

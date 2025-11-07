@@ -33,8 +33,12 @@ function Settings.new(_K)
 		table.clear(pendingChanges)
 	end
 
-	local function change(key, value, skipCustomCheck)
-		if not _K.client.ready then
+	local function change(key, value, current, skipCustomCheck)
+		if current == nil and string.find(key, "theme", 1, true) == 1 then
+			current = UI.Theme[string.sub(key, 6)]
+		end
+
+		if not _K.client.ready or _K.Util.Table.deepCompare(value, UI.raw(current)) then
 			return
 		end
 
@@ -46,6 +50,10 @@ function Settings.new(_K)
 				local original = _K.Data.savedSettings[key]
 				originalValues[key] = if type(original) == "table" then table.clone(original) else original
 			end
+		end
+
+		if current then
+			current(value)
 		end
 
 		local theme = _K.Data.savedSettings.theme
@@ -85,7 +93,7 @@ function Settings.new(_K)
 					local dataKey = "theme" .. key
 					local existing = _K.Data.savedSettings[dataKey]
 					if existing ~= nil and existing ~= UI.raw(value) then
-						change(dataKey, UI.raw(value), true)
+						change(dataKey, UI.raw(value), nil, true)
 					end
 				end
 			end
@@ -142,15 +150,14 @@ function Settings.new(_K)
 			Text = text,
 			Tooltip = tooltip,
 			UI.new "Select" {
-				Choice = function()
-					local setting = _K.client.settings[setting]()
-					return if setting then _K.Auth.getRoleFromRank(setting) else disabledRankChoice
+				Value = function()
+					local current = _K.client.settings[setting]()
+					return if current then _K.Auth.getRoleFromRank(current) else disabledRankChoice
 				end,
 				Choices = rankChoices,
 				[UI.Hook] = {
-					Selected = function(value)
-						change(setting, value._rank)
-						_K.client.settings[setting](value._rank)
+					Value = function(value)
+						change(setting, value._rank, _K.client.settings[setting])
 						if callback then
 							callback()
 						end
@@ -165,10 +172,12 @@ function Settings.new(_K)
 			Text = text,
 			Tooltip = tooltip,
 			UI.new "Switch" {
-				Value = _K.client.settings[setting],
+				Value = function()
+					return _K.client.settings[setting]()
+				end,
 				[UI.Hook] = {
-					Selected = function(value)
-						change(setting, value)
+					Value = function(value)
+						change(setting, value, _K.client.settings[setting])
 					end,
 				},
 			},
@@ -180,10 +189,12 @@ function Settings.new(_K)
 			Text = text,
 			Tooltip = tooltip,
 			UI.new "Slider" {
-				Value = _K.client.settings[setting],
+				Value = function()
+					return _K.client.settings[setting]()
+				end,
 				[UI.Hook] = {
-					Selected = function(value)
-						change(setting, value)
+					Value = function(value)
+						change(setting, value, _K.client.settings[setting])
 					end,
 				},
 			},
@@ -212,7 +223,10 @@ function Settings.new(_K)
 					end,
 
 					[UI.Hook] = {
-						Selected = function(value)
+						Value = function(value)
+							if value == _K.client.settings.prefix()[1] then
+								return
+							end
 							_K.client.settings.prefix._value[1] = value
 							change("prefix", { value, unpack(_K.client.settings.prefix._value, 2) })
 						end,
@@ -223,7 +237,7 @@ function Settings.new(_K)
 				Text = "Free Admin",
 				Tooltip = "🚨 Role given to every player who joins",
 				UI.new "Select" {
-					Choice = function()
+					Value = function()
 						local freeAdmin = _K.client.settings.freeAdmin()
 						return if type(freeAdmin) == "table" and freeAdmin[1]
 							then _K.Data.roles[freeAdmin[1]]
@@ -231,7 +245,7 @@ function Settings.new(_K)
 					end,
 					Choices = rankChoices,
 					[UI.Hook] = {
-						Selected = function(value)
+						Value = function(value)
 							local roleId = value._key
 							value = freeAdminCache[roleId]
 							if not value then
@@ -240,6 +254,16 @@ function Settings.new(_K)
 									freeAdminCache[roleId] = value
 								end
 							end
+
+							local freeAdmin = _K.client.settings.freeAdmin()
+							local current = if type(freeAdmin) == "table" and freeAdmin[1]
+								then _K.Data.roles[freeAdmin[1]]
+								else disabledRankChoice
+
+							if roleId == current._key then
+								return
+							end
+
 							change("freeAdmin", value)
 							_K.client.settings.freeAdmin(
 								_K.Util.Table.merge(table.clone(_K.Data.defaultSettings.freeAdmin), value)
@@ -250,7 +274,6 @@ function Settings.new(_K)
 			},
 			rankItem("commandBarRank", "Command Bar Rank", "Minimum role to use the Command Bar"),
 			rankItem("dashboardRank", "Dashboard Rank", "Minimum role to use the Dashboard", function()
-				print(_K.client.settings.dashboardRank())
 				if _K.client.settings.dashboardRank() == false then
 					_K.Process.runCommands(_K, _K.LocalPlayer.UserId, ";settings")
 				end
@@ -311,7 +334,7 @@ function Settings.new(_K)
 					end,
 
 					[UI.Hook] = {
-						Selected = function(value)
+						Value = function(value)
 							_K.client.playerPrefix(value, true)
 							_K.Remote.PlayerPrefix:FireServer(value)
 						end,
@@ -377,12 +400,12 @@ function Settings.new(_K)
 				Text = "Theme",
 				Tooltip = "Changes the theme of Kohl's Admin interfaces.",
 				UI.new "Select" {
-					Choice = function()
+					Value = function()
 						return _K.client.settings.theme()
 					end,
 					Choices = themeList,
 					[UI.Hook] = {
-						Selected = function(value)
+						Value = function(value)
 							change("theme", value)
 						end,
 					},
@@ -404,10 +427,12 @@ function Settings.new(_K)
 						Text = key:gsub("(.)(%u)", "%1 %2"),
 						UI.new "Select" {
 							Font = UI.Theme[key],
-							Choice = UI.Theme[key],
+							Value = function()
+								return UI.Theme[key]()
+							end,
 							Choices = if key == "Font" then fonts else mono,
 							[UI.Hook] = {
-								Selected = function(value)
+								Value = function(value)
 									change("theme" .. key, value)
 								end,
 							},
@@ -459,10 +484,9 @@ function Settings.new(_K)
 					FlexMode = Enum.UIFlexMode.Fill,
 				},
 				[UI.Hook] = {
-					Selected = function(value)
+					Value = function(value)
 						lastSelected = slider._instance
 						lastSelectedY = lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
-						UI.Theme.FontSize(value + 7)
 						change("themeFontSize", value + 7)
 					end,
 				},
@@ -476,9 +500,11 @@ function Settings.new(_K)
 					NumberOnly = true,
 					NumberRange = NumberRange.new(8, 32),
 					Placeholder = "",
-					Value = UI.Theme.FontSize,
+					Value = function()
+						return UI.Theme.FontSize()
+					end,
 					[UI.Hook] = {
-						Selected = function(value)
+						Value = function(value)
 							local number = tonumber(value)
 							if not number then
 								return
@@ -511,11 +537,13 @@ function Settings.new(_K)
 					FlexMode = Enum.UIFlexMode.Fill,
 				},
 				[UI.Hook] = {
-					Selected = function(value)
+					Value = function(value)
 						lastSelected = slider._instance
 						lastSelectedY = lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
+						if value == math.clamp(UI.Theme[key]().Offset + 1, 1, 17) then
+							return
+						end
 						value = UDim.new(0, value - 1)
-						UI.Theme[key](value)
 						change("theme" .. key, value)
 					end,
 				},
@@ -536,13 +564,12 @@ function Settings.new(_K)
 							return UI.Theme[key]().Offset
 						end,
 						[UI.Hook] = {
-							Selected = function(value)
+							Value = function(value)
 								local number = tonumber(value)
 								if not number then
 									return
 								end
 								value = UDim.new(0, number)
-								UI.Theme[key](value)
 								change("theme" .. key, value)
 							end,
 						},
@@ -565,12 +592,14 @@ function Settings.new(_K)
 					UI.new "UISizeConstraint" {
 						MaxSize = sliderMaxSize,
 					},
-					Value = UI.Theme[data.key],
+					Value = function()
+						return UI.Theme[data.key]()
+					end,
 					UI.new "UIFlexItem" {
 						FlexMode = Enum.UIFlexMode.Fill,
 					},
 					[UI.Hook] = {
-						Selected = function(value)
+						Value = function(value)
 							change("theme" .. data.key, value)
 						end,
 					},
@@ -592,12 +621,11 @@ function Settings.new(_K)
 								return string.sub(UI.Theme[data.key](), 1, 5)
 							end,
 							[UI.Hook] = {
-								Selected = function(value)
+								Value = function(value)
 									local number = tonumber(value)
-									if not tonumber(value) then
+									if not tonumber(value) or math.abs(number - UI.Theme[data.key]()) < 0.001 then
 										return
 									end
-									UI.Theme[data.key](number)
 									change("theme" .. data.key, number)
 								end,
 							},
@@ -631,9 +659,11 @@ function Settings.new(_K)
 				UI.new "ListItem" {
 					Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
 					UI.new "Color" {
-						Value = state,
+						Value = function()
+							return state()
+						end,
 						[UI.Hook] = {
-							Selected = function(value)
+							Value = function(value)
 								change(dataKey, value)
 							end,
 						},
@@ -642,25 +672,13 @@ function Settings.new(_K)
 			)
 		end
 
-		local savedSettingsSwitch = UI.new "ListItem" {
-			Parent = settingsScroller,
-			LayoutOrder = -1,
-			Text = "Use Saved Settings",
-			Tooltip = "Toggles using saved or studio-only settings.",
-			UI.new "Switch" {
-				Value = _K.client.settings.useSavedSettings,
-
-				[UI.Hook] = {
-					Selected = function(value)
-						change("useSavedSettings", value)
-					end,
-				},
-			},
-		}
-
+		local savedSettingsSwitch =
+			switchItem("useSavedSettings", "Use Saved Settings", "Toggles using saved or studio-only settings.")
+		savedSettingsSwitch.LayoutOrder = -1
 		UI.edit(savedSettingsSwitch._label, {
 			FontFace = UI.Theme.FontBold,
 		})
+		savedSettingsSwitch.Parent = settingsScroller
 
 		for layoutOrder, definition in ipairs(settingsLineItems) do
 			settingsLineItems[definition.Name] = UI.new("List")(_K.Util.Table.merge({

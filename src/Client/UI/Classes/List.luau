@@ -1,21 +1,26 @@
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
 
-local List = {}
-List.__index = List
-setmetatable(List, BaseClass)
+local DEFAULT = {
+	Collapsible = false,
+	Collapsed = false,
+	Label = "New List",
+	Padding = UI.Theme.Padding,
+}
 
-function List.new(definition)
-	local new = UI.makeStatefulDefaults({
-		Collapsible = false,
-		Collapsed = false,
-		Label = "New List",
-		Padding = UI.Theme.Padding,
-	}, definition)
+type Properties = typeof(DEFAULT) & Frame
+
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
+
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
 
 	local listLayout = UI.new "UIListLayout" {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = new.Padding,
+		Padding = self.Padding,
 		HorizontalAlignment = Enum.HorizontalAlignment.Left,
 		VerticalAlignment = Enum.VerticalAlignment.Top,
 	}
@@ -23,10 +28,10 @@ function List.new(definition)
 	local contentSize = UI.state(listLayout, "AbsoluteContentSize")
 
 	local headerTransparency = UI.tween(function()
-		return if new.Collapsed() then 0.5 else 0
+		return if self.Collapsed() then 0.5 else 0
 	end, UI.Theme.TweenOut)
 
-	new._instance = UI.new "Frame" {
+	self._instance = UI.new "Frame" {
 		Name = "List",
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyMax,
@@ -36,7 +41,7 @@ function List.new(definition)
 				1,
 				0,
 				0,
-				if new.Collapsed()
+				if self.Collapsed()
 					then UI.Theme.FontSize() + UI.Theme.Padding().Offset * 4
 					else contentSize().Y + UI.Theme.FontSize() + UI.Theme.Padding().Offset * 6
 			)
@@ -58,10 +63,10 @@ function List.new(definition)
 			Size = UDim2.new(1, 0, 0, 0),
 
 			UI.new "UIPadding" {
-				PaddingLeft = new.Padding,
-				PaddingRight = new.Padding,
-				PaddingTop = new.Padding,
-				PaddingBottom = new.Padding,
+				PaddingLeft = self.Padding,
+				PaddingRight = self.Padding,
+				PaddingTop = self.Padding,
+				PaddingBottom = self.Padding,
 			},
 
 			UI.new "ImageLabel" {
@@ -73,9 +78,9 @@ function List.new(definition)
 				Image = UI.Theme.Image.Down,
 				ImageColor3 = UI.Theme.PrimaryText,
 				ImageTransparency = headerTransparency,
-				Visible = new.Collapsible,
+				Visible = self.Collapsible,
 				Rotation = UI.tween(function()
-					return if new.Collapsed() then -90 else 0
+					return if self.Collapsed() then -90 else 0
 				end, UI.Theme.TweenOut),
 
 				UI.new "UIAspectRatioConstraint" {},
@@ -87,14 +92,14 @@ function List.new(definition)
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				Position = function()
-					return UDim2.new(0, if new.Collapsible() then UI.Theme.FontSize() else UI.Theme.Padding(), 0, 0)
+					return UDim2.new(0, if self.Collapsible() then UI.Theme.FontSize() else UI.Theme.Padding(), 0, 0)
 				end,
 				Size = function()
 					return UDim2.new(1, -UI.Theme.FontSize(), 0, 0)
 				end,
 				FontFace = UI.Theme.FontBold,
 				Text = function()
-					return string.upper(new.Label())
+					return string.upper(self.Label())
 				end,
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = UI.Theme.PrimaryText,
@@ -106,9 +111,9 @@ function List.new(definition)
 			},
 
 			Activated = function()
-				if new.Collapsible._value then
-					new.Collapsed(not new.Collapsed._value)
-					if new.Collapsed._value then
+				if self.Collapsible._value then
+					self.Collapsed(not self.Collapsed._value)
+					if self.Collapsed._value then
 						UI.Sound.Hover01:Play()
 					else
 						UI.Sound.Hover03:Play()
@@ -116,36 +121,44 @@ function List.new(definition)
 				end
 			end,
 		},
-	}
+	} :: Frame & { UIListLayout: UIListLayout, UIPadding: UIPadding }
 
-	new._content = UI.new "Frame" {
+	self._content = UI.new "Frame" {
 		Name = "UIContent",
-		Parent = new._instance,
+		Parent = self._instance,
 		BackgroundTransparency = 1,
 		Position = function()
-			return UDim2.new(0, 0, 0, UI.Theme.FontSize + new.Padding().Offset * 2)
+			return UDim2.new(0, 0, 0, UI.Theme.FontSize + self.Padding().Offset * 2)
 		end,
 		Size = UI.tween(function()
-			local collapse = new.Collapsed()
+			local collapse = self.Collapsed()
 			return UDim2.new(
 				1,
 				0,
 				if collapse then 0 else 1,
-				if collapse then 0 else -UI.Theme.FontSize + new.Padding().Offset * 2
+				if collapse then 0 else -UI.Theme.FontSize + self.Padding().Offset * 2
 			)
 		end, UI.Theme.TweenOut),
 		ClipsDescendants = true,
 
 		listLayout,
 		UI.new "UIPadding" {
-			PaddingLeft = new.Padding,
-			PaddingRight = new.Padding,
+			PaddingLeft = self.Padding,
+			PaddingRight = self.Padding,
 			PaddingTop = UDim.new(0, 1),
 			PaddingBottom = UDim.new(0, 1),
 		},
+	} :: Frame & {
+		UICorner: UICorner,
+		UIStroke: UIStroke,
+		Header: TextButton & {
+			Arrow: ImageLabel & { UIAspectRatioConstraint: UIAspectRatioConstraint },
+			Label: TextLabel,
+			UIPadding: UIPadding,
+		},
 	}
 
-	return setmetatable(new, List)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return List
+return Class

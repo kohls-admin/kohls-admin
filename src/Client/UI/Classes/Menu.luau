@@ -1,28 +1,33 @@
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
 
-local Menu = {}
-Menu.__index = Menu
-setmetatable(Menu, BaseClass)
+local DEFAULT = {
+	Adornee = false,
+	RightAlign = false,
+	Visible = false,
+}
+
+type Properties = typeof(DEFAULT) & TextButton
+
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
 
 local LayerTopSize = UI.state(UI.LayerTop, "AbsoluteSize")
 
-function Menu.new(definition)
-	local new = UI.makeStatefulDefaults({
-		Adornee = false,
-		RightAlign = false,
-		Visible = false,
-	}, definition)
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
 
-	new._list = UI.new "UIListLayout" {
+	self._list = UI.new "UIListLayout" {
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		FillDirection = Enum.FillDirection.Vertical,
 		VerticalAlignment = Enum.VerticalAlignment.Top,
 	}
 
-	local listContentSize = UI.state(new._list, "AbsoluteContentSize")
+	local listContentSize = UI.state(self._list, "AbsoluteContentSize")
 
-	new._content = UI.new "ScrollingFrame" {
+	self._content = UI.new "ScrollingFrame" {
 		Name = "Menu",
 		ZIndex = 100,
 		BackgroundTransparency = 1,
@@ -34,22 +39,22 @@ function Menu.new(definition)
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 0,
 
-		new._list,
+		self._list,
 
 		[UI.Event] = {
 			CanvasPosition = function()
 				UI.clearState("hover")
 			end,
 		},
-	}
+	} :: ScrollingFrame & { UIListLayout: UIListLayout }
 
-	new._instance = UI.new "TextButton" {
+	self._instance = UI.new "TextButton" {
 		Name = "Menu",
 		ZIndex = 100,
-		Visible = new.Visible,
+		Visible = self.Visible,
 		Parent = UI.LayerTop,
 		AnchorPoint = function()
-			return if new.RightAlign() then Vector2.new(1, 0) else Vector2.zero
+			return if self.RightAlign() then Vector2.new(1, 0) else Vector2.zero
 		end,
 		BackgroundColor3 = UI.Theme.Primary,
 		ClipsDescendants = true,
@@ -57,24 +62,24 @@ function Menu.new(definition)
 		AutoButtonColor = false,
 		Text = "",
 
-		new._content,
+		self._content,
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
 		},
 		UI.new "Stroke" {},
-	}
+	} :: TextButton & { UIContent: typeof(self._content), UICorner: UICorner, UIStroke: UIStroke }
 
 	local positionState = UI.state(Vector2.zero)
 	local sizeState = UI.state(Vector2.zero)
-	local menuSize = UI.state(new._instance, "AbsoluteSize")
+	local menuSize = UI.state(self._instance, "AbsoluteSize")
 
-	UI.edit(new._instance, {
+	UI.edit(self._instance, {
 		Position = function()
 			local size = menuSize()
 			local layerSize = LayerTopSize()
 			local absolutePos = positionState()
 			local absoluteSize = sizeState()
-			local rightAlign = new.RightAlign()
+			local rightAlign = self.RightAlign()
 			local padding = UI.Theme.Padding().Offset
 			local height = UI.TopbarInset().Height
 
@@ -90,7 +95,7 @@ function Menu.new(definition)
 		end,
 	})
 
-	UI.edit(new._instance, {
+	UI.edit(self._instance, {
 		[UI.Clean] = {
 			UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
 				if
@@ -99,17 +104,17 @@ function Menu.new(definition)
 						or input.UserInputType == Enum.UserInputType.Touch
 						or input.UserInputType == Enum.UserInputType.TextInput
 					)
-					and new.Visible._value
-					and not UI.pointInGuiObject(input.Position.X, input.Position.Y, new.Adornee._value)
-					and not UI.pointInGuiObject(input.Position.X, input.Position.Y, new._instance)
+					and self.Visible._value
+					and not UI.pointInGuiObject(input.Position.X, input.Position.Y, self.Adornee._value)
+					and not UI.pointInGuiObject(input.Position.X, input.Position.Y, self._instance)
 				then
-					UI.deactivateState(new.Visible, "floating")
+					UI.deactivateState(self.Visible, "floating")
 				end
 			end),
 		},
-		new._instance:GetPropertyChangedSignal("Visible"):Connect(function()
-			local adornee = new.Adornee._value
-			if new._instance.Visible and typeof(adornee) == "Instance" and adornee:IsA("GuiObject") then
+		self._instance:GetPropertyChangedSignal("Visible"):Connect(function()
+			local adornee = self.Adornee._value
+			if self._instance.Visible and typeof(adornee) == "Instance" and adornee:IsA("GuiObject") then
 				positionState(adornee.AbsolutePosition, true)
 				sizeState(adornee.AbsoluteSize, true)
 				positionState:_bindToProperty(adornee, "AbsolutePosition")
@@ -125,7 +130,7 @@ function Menu.new(definition)
 		end),
 	})
 
-	return setmetatable(new, Menu)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return Menu
+return Class

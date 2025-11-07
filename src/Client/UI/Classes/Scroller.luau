@@ -1,14 +1,19 @@
+local UI = require(script.Parent.Parent) :: any
 local BaseClass = require(script.Parent.BaseClass)
-local UI = require(script.Parent.Parent)
 
-local Scroller = {}
-Scroller.__index = Scroller
-setmetatable(Scroller, BaseClass)
+local DEFAULT = {}
 
-function Scroller.new(definition)
-	local new = UI.makeStatefulDefaults({}, definition)
+type Properties = typeof(DEFAULT) & ScrollingFrame
 
-	new._instance = UI.new "ScrollingFrame" {
+local Class = {}
+Class.__index = Class
+setmetatable(Class, BaseClass)
+
+function Class.new(properties: Properties?)
+	local self = table.clone(DEFAULT)
+	UI.makeStatefulDefaults(self, properties)
+
+	self._instance = UI.new "ScrollingFrame" {
 		Name = "Scroller",
 		BorderSizePixel = 0,
 		BackgroundTransparency = 1,
@@ -28,13 +33,13 @@ function Scroller.new(definition)
 		[UI.Event] = {
 			CanvasPosition = UI.clearActiveStates,
 		},
-	}
+	} :: ScrollingFrame & { UIListLayout: UIListLayout, UIPadding: UIPadding }
 
-	local canvasAbsolute = UI.state(new._instance, "AbsoluteCanvasSize")
-	local windowAbsolute = UI.state(new._instance, "AbsoluteWindowSize")
+	local canvasAbsolute = UI.state(self._instance, "AbsoluteCanvasSize")
+	local windowAbsolute = UI.state(self._instance, "AbsoluteWindowSize")
 
 	UI.new "UIPadding" {
-		Parent = new._instance,
+		Parent = self._instance,
 		PaddingBottom = UI.Theme.Padding,
 		PaddingTop = UI.Theme.Padding,
 		PaddingLeft = UDim.new(0, 1),
@@ -43,7 +48,7 @@ function Scroller.new(definition)
 		end,
 	}
 
-	return setmetatable(new, Scroller)
+	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
 
-return Scroller
+return Class
