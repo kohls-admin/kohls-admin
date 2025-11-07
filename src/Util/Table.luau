@@ -48,6 +48,18 @@ function Table.mergeList(to: List, from: List)
 	table.move(from, 1, #from, #to + 1, to)
 end
 
+function Table.deepCompare(a: any, b: any)
+	if type(a) ~= "table" or type(b) ~= "table" then
+		return a == b
+	end
+	for k, v in a do
+		if not Table.deepCompare(v, b[k]) then
+			return false
+		end
+	end
+	return true
+end
+
 function Table.deepMerge(to: Dict, from: Dict, appendArrays: boolean?): Dict
 	if appendArrays and Table.isArray(from) then
 		if Table.isArray(to) then
