@@ -150,24 +150,14 @@ _K.Remote.Members.OnClientEvent:Connect(function(members)
 	_K.client.updateInterfaceAuth()
 end)
 
-local function removeExcessLogs()
-	local logs = _K.Data.logs
-	local excess = #logs - _K.Logger.limit
-	if excess > 0 then
-		for i = 1, excess do
-			logs[i] = nil
-		end
-		_K.Util.Table.settle(logs)
-	end
-end
-
 _K.Remote.Log.OnClientEvent:Connect(function(log)
 	if not _K.client.ready then
 		return
 	end
 
 	table.insert(_K.Data.logs, log)
-	removeExcessLogs()
+
+	_K.removeExcessLogs()
 
 	task.defer(_K.client.dashboard.Logs.updateList, _K.client.dashboard.Logs)
 end)
@@ -188,7 +178,7 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logsBuffer)
 	table.sort(_K.Data.logs, _K.Logger.sortTime)
 	_K.Util.Defer.wait()
 
-	removeExcessLogs()
+	_K.removeExcessLogs()
 
 	_K.client.dashboard.Logs:updateList()
 end)

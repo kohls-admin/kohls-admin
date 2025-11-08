@@ -118,6 +118,14 @@ function _K.getCommandPrefix(from: number?)
 	return _K.Data.playerPrefix[from] or ";"
 end
 
+function _K.removeExcessLogs()
+	local logs = _K.Data.logs
+	local excess = #logs - _K.Logger.limit
+	if excess > 0 then
+		_K.Util.Table.fastRemove(logs, 1, excess)
+	end
+end
+
 function _K.log(text: string, level: LogType, from: number?, filtered: boolean?): Log?
 	if _K.Data.logsHidden[from] then
 		return
@@ -134,6 +142,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 		if from then
 			log.name = Util.getUserInfo(from).Username
 		end
+
 		if _K.IsServer then
 			-- trim for 32KB sync max
 			if #log.text > 16 * 1024 then
@@ -156,12 +165,10 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 		elseif _K.client and _K.client.dashboard then
 			_K.client.dashboard.Logs:updateList()
 		end
-		table.insert(_K.Logger.logs, log)
+
+		table.insert(_K.Data.logs, log)
 		_K.Hook.log:Fire(log)
-		local excess = #_K.Data.logs - _K.Logger.limit
-		if excess > 0 then
-			_K.Util.Table.fastRemove(_K.Data.logs, 1, excess)
-		end
+		_K.removeExcessLogs()
 	end)
 
 	return log
