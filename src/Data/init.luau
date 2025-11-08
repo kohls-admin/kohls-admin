@@ -623,7 +623,7 @@ function Data.initialize(scope)
 		if next(SAVE.bans) ~= nil then
 			tasks:add(updateBans)
 		end
-		if next(SAVE.members) ~= nil or next(Data.Sync.settings) ~= nil then
+		if next(SAVE.members) ~= nil or next(SAVE.settings) ~= nil then
 			tasks:add(updateMain)
 		end
 		if next(SAVE.logs) ~= nil then
