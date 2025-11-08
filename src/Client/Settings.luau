@@ -335,7 +335,10 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Value = function(value)
-							_K.client.playerPrefix(value, true)
+							if value == _K.client.playerPrefix() then
+								return
+							end
+							_K.client.playerPrefix(value)
 							_K.Remote.PlayerPrefix:FireServer(value)
 						end,
 					},

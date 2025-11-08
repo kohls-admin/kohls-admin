@@ -115,8 +115,7 @@ function _K.getCommandPrefix(from: number?)
 	if _K.IsClient then
 		return _K.client.playerPrefix._value
 	end
-	return _K.Data.playerPrefix[from]
-		or (if type(_K.Data.settings.prefix) == "table" then _K.Data.settings.prefix[1] else _K.Data.settings.prefix)
+	return _K.Data.playerPrefix[from] or ";"
 end
 
 function _K.log(text: string, level: LogType, from: number?, filtered: boolean?): Log?
