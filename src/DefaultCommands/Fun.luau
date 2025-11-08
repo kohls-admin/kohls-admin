@@ -605,7 +605,6 @@ return {
 				context.env.connections[player] = context.fromPlayer
 					:GetPropertyChangedSignal("Character")
 					:Connect(function()
-						print("character removing", humanoid.Health)
 						context.env.connections[player]:Disconnect()
 						context.env.connections[player] = nil
 						if humanoid and humanoid.Health > 0 then
