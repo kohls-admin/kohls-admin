@@ -459,7 +459,7 @@ function Bans.new(_K)
 					local duration: number = if banType._value == "Server"
 						then 0
 						elseif banType._value == "Forever" then -1
-						else banDuration * _K.Util.Time.fromUnit(banDurationUnit.Choice._value)
+						else banDuration * _K.Util.Time.fromUnit(banDurationUnit.Value._value)
 					_K.Remote.Ban:FireServer(banTarget._value, banReason, duration)
 				end
 			end,
