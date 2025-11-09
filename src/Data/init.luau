@@ -261,7 +261,6 @@ local SYNC = {
 	end,
 
 	settings = function(state, changes)
-		-- deserialize settings
 		for key, setting in changes do
 			if type(setting) == "table" then
 				local itemType = setting[1]
@@ -277,11 +276,15 @@ local SYNC = {
 
 		Migrate.Settings(changes)
 
-		-- settings sync
-		if type(changes.prefix) == "string" then
-			state.prefix[1] = changes.prefix
+		if changes.prefix then
+			local prefix = if type(changes.prefix) == "table" then changes.prefix[1] else changes.prefix
+			state.prefix = table.clone(Data.settingsModuleData.prefix)
+			if not table.find(state.prefix, prefix) then
+				table.insert(state.prefix, 1, prefix)
+			end
 			changes.prefix = state.prefix
 		end
+
 		Util.Table.merge(state, changes)
 		Data.settings = if Data.savedSettings.useSavedSettings then state else Data.defaultSettings
 
