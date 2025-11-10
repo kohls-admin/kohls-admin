@@ -419,16 +419,9 @@ return {
 		description = "Rejoins the server.",
 
 		run = function(context)
-			local alone = #context._K.Service.Players:GetPlayers() <= 1
 			local options = Instance.new("TeleportOptions")
 			options.ServerInstanceId = game.JobId
-
-			local ok =
-				context._K.Util.SafeTeleport(game.PlaceId, { context.fromPlayer }, if alone then nil else options)
-
-			if ok and alone then
-				context.fromPlayer:Destroy()
-			end
+			context._K.Util.SafeTeleport(game.PlaceId, { context.fromPlayer }, options)
 		end,
 	},
 	{
