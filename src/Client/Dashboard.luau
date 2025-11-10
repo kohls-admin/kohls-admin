@@ -332,13 +332,12 @@ UI.new "Frame" {
 		}, {
 			UI.action(function(instance)
 				local ping, max, avg, nFrames, sum = 0, 0, 0, 0, 0
-				local buffer, nextAvgUpdate = {}, tick()
+				local nextAvgUpdate = tick()
 				_K.Service.Run.Heartbeat:Connect(function()
 					ping = math.round(_K.Service.Players.LocalPlayer:GetNetworkPing() * 1000)
 					max = math.min(math.max(max, ping), 30000)
 					nFrames += 1
 					sum += ping
-					table.insert(buffer, ping)
 				end)
 				repeat
 					task.wait(1)
