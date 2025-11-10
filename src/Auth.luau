@@ -554,18 +554,6 @@ function Auth.targetUserArgument(arg: any, userId: number, value: Player | numbe
 	end
 end
 
---- Checks if a user has a "free admin" role based on configured `freeAdmin` settings
-function Auth.isFreeAdmin(userId: number): boolean
-	local maxFreeAdminRank = 0
-	for _, roleId in Data.settings.freeAdmin do
-		local role = Data.roles[roleId]
-		if role and role._rank > maxFreeAdminRank then
-			maxFreeAdminRank = role._rank
-		end
-	end
-	return Auth.getRank(userId) <= maxFreeAdminRank
-end
-
 --- Checks if a user has any non-purchasable roles; Roles not associated with any assets, gamepasses, or subscriptions
 function Auth.hasRestrictedRole(userId: number): boolean
 	local member = Data.members[tostring(userId)]
@@ -579,6 +567,16 @@ function Auth.hasRestrictedRole(userId: number): boolean
 				and (type(role.gamepasses) ~= "table" or not next(role.gamepasses))
 				and (type(role.subscriptions) ~= "table" or not next(role.subscriptions))
 			then
+				local isFree
+				for _, freeRoleId in Data.settings.freeAdmin do
+					if roleId == freeRoleId then
+						isFree = true
+						break
+					end
+				end
+				if isFree then
+					continue
+				end
 				return true
 			end
 		end

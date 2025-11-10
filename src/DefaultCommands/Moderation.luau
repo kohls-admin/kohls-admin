@@ -108,21 +108,8 @@ return {
 		},
 
 		run = function(context, userIds, duration: number?, reason: string?)
-			if context._K.Auth.isFreeAdmin(context.from) then
-				local authorized
-				local member = context._K.Data.members[tostring(context.from)]
-				if member then
-					for _, roleId in member.persist do
-						local role = context._K.Data.roles[roleId]
-						if role and role.permissions and role.permissions.banasync then
-							authorized = true
-							break
-						end
-					end
-				end
-				if not authorized then
-					duration = 0
-				end
+			if not context._K.Auth.hasRestrictedRole(context.from) then
+				duration = 0
 			end
 
 			if type(reason) == "string" then
