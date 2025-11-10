@@ -14,7 +14,7 @@ local isOnline = game.JobId ~= ""
 local isRCC = isOnline and isServer
 
 pcall(function()
-	isEdit = RunService:IsEdit()
+	isEdit = if plugin then RunService:IsEdit() else false
 end)
 
 return table.freeze({
