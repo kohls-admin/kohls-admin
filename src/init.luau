@@ -90,6 +90,9 @@ local _K = {
 	_addonTag = "Kohl's Admin Addon",
 }
 
+-- Increase Z scratch buffer size to 4MB
+_K.Z.BUFFER = buffer.create(4 * 1024 ^ 2)
+
 -- register creator
 task.spawn(function()
 	if game.CreatorType == Enum.CreatorType.Group then
