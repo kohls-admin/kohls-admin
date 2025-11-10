@@ -55,6 +55,13 @@ function UI.changeTheme(new)
 	deepMergeTheme(new, UI.Theme, "theme")
 end
 
+local closeTags = { "font", "stroke", "b", "i", "u", "s", "uc", "sc", "uppercase", "smallcaps", "mark" }
+local openTags = {}
+for i, tag in closeTags do
+	openTags[i] = "<" .. tag
+	closeTags[i] = "</" .. tag .. ">?"
+end
+
 local chatCommandThrottle
 local warnPrefixes = _K.Util.String.escapePattern(";:!$~.")
 
@@ -105,7 +112,18 @@ local function Chatted(message: string)
 	end
 	if not chatCommandThrottle then
 		chatCommandThrottle = true
-		_K.Process.runCommands(_K, _K.LocalPlayer.UserId, string.sub(message, commandStart))
+
+		-- trim hanging richtext tags
+		message = string.sub(message, commandStart)
+		for i, tag in closeTags do
+			local findIndex = string.find(message, tag, 1, true)
+			if not findIndex or string.find(message, openTags[i], 1, true) < findIndex then
+				continue
+			end
+			message = string.gsub(message, tag, "")
+		end
+
+		_K.Process.runCommands(_K, _K.LocalPlayer.UserId, message)
 		task.wait(0.2)
 		chatCommandThrottle = nil
 	end
