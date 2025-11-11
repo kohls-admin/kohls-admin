@@ -1,8 +1,14 @@
 local Data = require(script.Parent.Parent.Defaults)
 
+local function convertFont(font: Enum.Font | Font)
+	return if typeof(font) == "EnumItem" then Font.fromEnum(font) else font
+end
+
 local MIGRATE = {
 	defaultTheme = "theme",
 	gameHubEnabled = "addToCharts",
+	themeFont = convertFont,
+	themeFontMono = convertFont,
 }
 
 return function(settings)

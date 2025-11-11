@@ -55,7 +55,7 @@ task.defer(function()
 			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
-			Font = UI.Theme.FontMono,
+			FontFace = UI.Theme.FontMono,
 			TextSize = UI.Theme.FontSizeLarge,
 			TextColor3 = UI.Theme.PrimaryText,
 			TextStrokeColor3 = UI.Theme.Primary,

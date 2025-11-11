@@ -41,11 +41,6 @@ local state = Flux.state
 --- .TypingSounds State<boolean>
 --- .TypingSoundsOnEveryTextBox State<boolean>
 --- .Volume State<number>
-local Theme = {}
-
-for k, v in Default do
-	Theme[k] = v
-end
 
 local themes = {}
 for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
@@ -54,11 +49,15 @@ for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
 			warn("Duplicate theme found, make sure they have different names!")
 		end
 		local theme = require(themeModule)
-		local content = {}
+		if typeof(theme.Font) == "EnumItem" then
+			theme.Font = Font.fromEnum(theme.Font :: Enum.Font)
+		end
+		if typeof(theme.FontMono) == "EnumItem" then
+			theme.FontMono = Font.fromEnum(theme.FontMono :: Enum.Font)
+		end
 		for _, definition in { theme.Image, theme.Sound } do
 			for key, value in definition do
 				definition[key] = "rbxassetid://" .. value
-				table.insert(content, definition[key])
 			end
 		end
 		if themeModule.Name == "Default" then
@@ -71,11 +70,15 @@ for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
 		else
 			themes[themeModule.Name] = theme
 		end
-
-		task.spawn(ContentProvider.PreloadAsync, ContentProvider, content)
 	end
 end
-Theme.Themes = themes
+
+local Theme = {
+	Themes = themes,
+}
+for k, v in Default do
+	Theme[k] = v
+end
 
 local function makeStateful(source: { [string]: any })
 	for key, value in source do
@@ -123,27 +126,23 @@ Theme.TransparencyClamped = compute(function()
 end)
 
 Theme.FontHeavy = compute(function()
-	local font = Font.fromEnum(Theme.Font())
-	font.Weight = Enum.FontWeight.Heavy
-	return font
+	return Font.new(Theme.Font().Family, Enum.FontWeight.Heavy)
 end)
 
 Theme.FontBold = compute(function()
-	local font = Font.fromEnum(Theme.Font())
-	font.Weight = Enum.FontWeight.Bold
-	return font
+	return Font.new(Theme.Font().Family, Enum.FontWeight.Bold)
 end)
 
 Theme.FontSemiBold = compute(function()
-	local font = Font.fromEnum(Theme.Font())
-	font.Weight = Enum.FontWeight.SemiBold
-	return font
+	return Font.new(Theme.Font().Family, Enum.FontWeight.SemiBold)
 end)
 
 Theme.FontLight = compute(function()
-	local font = Font.fromEnum(Theme.Font())
-	font.Weight = Enum.FontWeight.Light
-	return font
+	return Font.new(Theme.Font().Family, Enum.FontWeight.Light)
+end)
+
+Theme.FontThin = compute(function()
+	return Font.new(Theme.Font().Family, Enum.FontWeight.Thin)
 end)
 
 Theme.FontSizeDouble = compute(function()

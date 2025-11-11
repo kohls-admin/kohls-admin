@@ -14,7 +14,7 @@ return {
 	Invalid = Color3.fromRGB(255, 0, 0),
 
 	FontSize = 15,
-	Font = Enum.Font.Roboto,
+	Font = Font.fromId(12187365364),
 	FontMono = Enum.Font.RobotoMono,
 
 	CornerRadius = UDim.new(0, 8),

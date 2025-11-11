@@ -14,7 +14,7 @@ local DEFAULT = {
 	BackgroundColor3 = UI.Theme.Secondary,
 	BackgroundTransparency = UI.Theme.TransparencyHeavy,
 	HoverTransparency = 0.75,
-	Font = UI.Theme.Font,
+	FontFace = UI.Theme.Font,
 	TextSize = UI.Theme.FontSize,
 	TextScaled = false,
 	TextXAlignment = Enum.TextXAlignment.Center,
@@ -54,7 +54,7 @@ function Class.new(properties: Properties?)
 				AutoLocalize = false,
 				BackgroundTransparency = 1,
 				Size = UDim2.new(1, 0, 1, 0),
-				Font = self.Font,
+				FontFace = self.FontFace,
 				RichText = true,
 				Text = function()
 					return tostring(self.Label)

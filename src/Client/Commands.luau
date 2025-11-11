@@ -34,7 +34,7 @@ function Commands.new(_K)
 			BackgroundTransparency = 1,
 			Size = self.ItemSize,
 			RichText = true,
-			Font = UI.Theme.FontMono,
+			FontFace = UI.Theme.Font,
 			TextColor3 = textColor,
 			TextSize = UI.Theme.FontSize,
 			TextStrokeColor3 = UI.Theme.Primary,
@@ -48,7 +48,7 @@ function Commands.new(_K)
 				BackgroundTransparency = 1,
 				Name = "Description",
 				RichText = true,
-				Font = UI.Theme.FontMono,
+				FontFace = UI.Theme.Font,
 				TextColor3 = textColor,
 				TextSize = UI.Theme.FontSize,
 				TextStrokeColor3 = UI.Theme.Primary,
@@ -69,7 +69,6 @@ function Commands.new(_K)
 
 		local tooltip = UI.new "Tooltip" {
 			Parent = itemRef._instance,
-			Font = UI.Theme.FontMono,
 			Text = "Loading...",
 		}
 
@@ -146,7 +145,7 @@ function Commands.new(_K)
 			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
-			Font = UI.Theme.FontMono,
+			FontFace = UI.Theme.FontMono,
 			TextSize = UI.Theme.FontSizeLarge,
 			TextColor3 = UI.Theme.PrimaryText,
 			TextStrokeColor3 = UI.Theme.Primary,

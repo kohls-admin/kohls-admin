@@ -276,6 +276,13 @@ local SYNC = {
 
 		Migrate.Settings(changes)
 
+		if changes.themeFont then
+			changes.themeFont = Font.new(changes.themeFont)
+		end
+		if changes.themeFontMono then
+			changes.themeFontMono = Font.new(changes.themeFontMono)
+		end
+
 		if changes.prefix then
 			local prefix = if type(changes.prefix) == "table" then changes.prefix[1] else changes.prefix
 			state.prefix = table.clone(Data.settingsModuleData.prefix)

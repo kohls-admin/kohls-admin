@@ -61,7 +61,7 @@ function Bans.new(_K)
 
 	banTargetInput = UI.new "Input" {
 		AutomaticSize = Enum.AutomaticSize.X,
-		Font = UI.Theme.FontMono,
+		FontFace = UI.Theme.FontMono,
 		FontSize = UI.Theme.FontSize,
 		MaxChars = 20,
 		Placeholder = "UserId or Username",
@@ -104,7 +104,7 @@ function Bans.new(_K)
 
 	local banReasonInput = UI.new "Input" {
 		AutomaticSize = Enum.AutomaticSize.X,
-		Font = UI.Theme.FontMono,
+		FontFace = UI.Theme.FontMono,
 		FontSize = UI.Theme.FontSize,
 		MaxChars = 400,
 		Placeholder = "No reason.",
@@ -119,7 +119,7 @@ function Bans.new(_K)
 
 	local function createItem(self)
 		local tooltip = UI.new "Tooltip" {
-			Font = UI.Theme.FontMono,
+			FontFace = UI.Theme.FontMono,
 			Text = "Loading...",
 		}
 
@@ -210,7 +210,7 @@ function Bans.new(_K)
 				BackgroundTransparency = 1,
 				Size = UDim2.new(0, 0, 1, 0),
 				RichText = true,
-				Font = UI.Theme.FontMono,
+				FontFace = UI.Theme.Font,
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = UI.Theme.PrimaryText,
 				TextStrokeColor3 = UI.Theme.Primary,
@@ -225,7 +225,7 @@ function Bans.new(_K)
 				BackgroundTransparency = 1,
 				Size = UDim2.new(0, 0, 1, 0),
 				RichText = true,
-				Font = UI.Theme.FontMono,
+				FontFace = UI.Theme.Font,
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = UI.Theme.PrimaryText,
 				TextStrokeColor3 = UI.Theme.Primary,
@@ -434,7 +434,7 @@ function Bans.new(_K)
 			end,
 			UI.new "Input" {
 				AutomaticSize = Enum.AutomaticSize.X,
-				Font = UI.Theme.FontMono,
+				FontFace = UI.Theme.FontMono,
 				FontSize = UI.Theme.FontSize,
 				MaxChars = 3,
 				NumberOnly = true,

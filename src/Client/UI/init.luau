@@ -16,6 +16,7 @@ local UI = { Class = {} }
 UI.__index = UI
 setmetatable(UI, Flux)
 
+UI.Fonts = require(script.Fonts)
 UI.Theme = require(script.Theme)
 UI.Themes = UI.Theme.Themes
 UI.Sound = {}
@@ -35,6 +36,19 @@ for key, soundIdState in UI.Theme.Sound do
 		SoundId = soundIdState,
 		SoundGroup = SoundGroup,
 	}
+end
+
+function UI.getFontName(font: Font | Enum.Font)
+	if typeof(font) == "Font" then
+		local id = string.match(font.Family, "%d+$")
+		if id then
+			return UI.Fonts[id]
+		else
+			return string.match(font.Family, "/([^/]+)%.json$")
+		end
+	else
+		return font.Name
+	end
 end
 
 --- @within UI

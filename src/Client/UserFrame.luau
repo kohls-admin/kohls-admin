@@ -61,7 +61,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		Text = `<font transparency="0.5"><b>@{userName}</b></font>`,
 		TextSize = UI.Theme.FontSizeSmall,
 		TextXAlignment = "Left",
-		Font = UI.Theme.Font,
+		FontFace = UI.Theme.Font,
 		RichText = true,
 
 		AutomaticSize = Enum.AutomaticSize.XY,
@@ -83,7 +83,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 				return UI.Theme.FontSizeLarge() - 8
 			end,
 			TextXAlignment = "Left",
-			Font = UI.Theme.FontMono,
+			FontFace = UI.Theme.FontMono,
 			RichText = true,
 
 			AutomaticSize = Enum.AutomaticSize.X,

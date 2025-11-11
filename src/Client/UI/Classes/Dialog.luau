@@ -245,7 +245,7 @@ function Class.new(properties: Properties?)
 			TextSize = self.TextSize,
 			TextWrapped = true,
 			TextXAlignment = "Left",
-			Font = UI.Theme.Font,
+			FontFace = UI.Theme.Font,
 			RichText = true,
 			Visible = function()
 				local text = self.Text()

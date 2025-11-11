@@ -238,7 +238,7 @@ local function statusIconLabel(name, imageDefinition, labelDefinition, tooltipDe
 				BackgroundTransparency = 1,
 				Position = statusLabelPosition,
 				Size = UDim2.fromScale(0, 1),
-				Font = UI.Theme.FontMono,
+				FontFace = UI.Theme.FontMono,
 				Text = "?",
 				TextColor3 = UI.Theme.PrimaryText,
 				TextSize = UI.Theme.FontSize,
@@ -246,7 +246,7 @@ local function statusIconLabel(name, imageDefinition, labelDefinition, tooltipDe
 			},
 			labelDefinition or {}
 		),
-		UI.edit(UI.new "Tooltip" { Font = UI.Theme.FontMono, Text = name }, tooltipDefinition or {}),
+		UI.edit(UI.new "Tooltip" { FontFace = UI.Theme.FontMono, Text = name }, tooltipDefinition or {}),
 	}
 end
 
@@ -511,7 +511,7 @@ task.defer(function()
 			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
-			Font = UI.Theme.Font,
+			FontFace = UI.Theme.Font,
 			TextSize = UI.Theme.FontSize,
 			TextColor3 = UI.Theme.PrimaryText,
 			TextStrokeColor3 = UI.Theme.Primary,
@@ -532,9 +532,9 @@ task.defer(function()
 			Parent = social,
 			Name = "Invite",
 			BackgroundColor3 = Color3.fromHex("#5865F2"),
-			Font = UI.Theme.FontMono,
 			Size = UDim2.fromScale(1, 0),
 			Text = "discord.gg/kohl",
+			FontFace = UI.Theme.FontMono,
 			TextColor3 = Color3.new(1, 1, 1),
 		}
 

@@ -23,7 +23,7 @@ function Members.new(_K)
 
 	roleDialogInput = UI.new "Input" {
 		AutomaticSize = Enum.AutomaticSize.X,
-		Font = UI.Theme.FontMono,
+		FontFace = UI.Theme.FontMono,
 		FontSize = UI.Theme.FontSize,
 		MaxChars = 20,
 		Placeholder = "UserId or Username",
@@ -192,8 +192,16 @@ function Members.new(_K)
 		local size = UI.Theme.FontSize()
 		local padding = UI.Theme.Padding().Offset
 		local maxWidth = size
+
+		local params = Instance.new("GetTextBoundsParams")
+		params.Font = font
+		params.Size = size
+		params.Width = math.huge
+		params.RichText = true
+
 		for _, role in _K.Data.roles do
-			maxWidth = math.max(maxWidth, UI.TextService:GetTextSize(role.name, size, font, Vector2.zero).X)
+			params.Text = role.name
+			maxWidth = math.max(maxWidth, UI.TextService:GetTextBoundsAsync(params).X)
 		end
 
 		local cloudWidth = if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles") then size + padding else 0
@@ -348,7 +356,7 @@ function Members.new(_K)
 				AutomaticSize = Enum.AutomaticSize.X,
 				BackgroundTransparency = 1,
 				Size = UDim2.new(0, 0, 1, 0),
-				Font = UI.Theme.Font,
+				FontFace = UI.Theme.Font,
 				Text = role.name,
 				TextSize = function()
 					return UI.Theme.FontSize() - UI.Theme.PaddingHalf().Offset
@@ -449,7 +457,7 @@ function Members.new(_K)
 				BackgroundTransparency = 1,
 				Size = UDim2.new(0, 0, 1, 0),
 				RichText = true,
-				Font = UI.Theme.FontMono,
+				FontFace = UI.Theme.Font,
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = UI.Theme.PrimaryText,
 				TextStrokeColor3 = UI.Theme.Primary,

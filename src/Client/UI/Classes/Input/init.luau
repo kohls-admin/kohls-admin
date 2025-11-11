@@ -20,18 +20,26 @@ end
 
 -- NOTE: only works for single line inputs
 -- TODO: fallback for multiline
-local function bytePositionToWidth(text, size, font, bytePosition)
+local function bytePositionToWidth(text, size, font, richText, bytePosition)
 	if bytePosition == 1 then
 		return 0
 	end
-	local subText = string.sub(text, 1, bytePosition - 1)
-	local bounds = UI.TextService:GetTextSize(subText, size, font, Vector2.zero)
-	return bounds.X
+
+	local params = Instance.new("GetTextBoundsParams")
+	params.Font = font
+	params.RichText = richText
+	params.Size = size
+	params.Text = string.sub(text, 1, bytePosition - 1)
+	params.Width = math.huge
+
+	return math.ceil(UI.TextService:GetTextBoundsAsync(params).X)
 end
 
 local function updateSelection(selection, display, input, inputOffset, cursorWidth)
-	cursorWidth = cursorWidth or bytePositionToWidth(input.Text, display.TextSize, display.Font, input.CursorPosition)
-	local selectWidth = bytePositionToWidth(input.Text, display.TextSize, display.Font, input.SelectionStart)
+	cursorWidth = cursorWidth
+		or bytePositionToWidth(input.Text, display.TextSize, display.FontFace, display.RichText, input.CursorPosition)
+	local selectWidth =
+		bytePositionToWidth(input.Text, display.TextSize, display.FontFace, display.RichText, input.SelectionStart)
 	local deltaWidth = cursorWidth - selectWidth
 	selection.Size = UDim2.fromOffset(deltaWidth, display.TextSize)
 	selection.Position = UDim2.new(0, selectWidth - inputOffset._value, 0.5, 0)
@@ -39,7 +47,8 @@ local function updateSelection(selection, display, input, inputOffset, cursorWid
 end
 
 local function updateCursor(cursor, display, input, inputMask, inputOffset, selection)
-	local cursorWidth = bytePositionToWidth(input.Text, display.TextSize, display.Font, input.CursorPosition)
+	local cursorWidth =
+		bytePositionToWidth(input.Text, display.TextSize, display.FontFace, display.RichText, input.CursorPosition)
 	local visibleWidth = cursor.Parent.AbsoluteSize.X
 	local cursorOffset = cursorWidth - inputOffset._value
 
@@ -85,7 +94,7 @@ local DEFAULT = {
 	Placeholder = "",
 	Value = "",
 	Fill = false,
-	Font = UI.Theme.Font,
+	FontFace = UI.Theme.Font,
 	FontSize = UI.Theme.FontSize,
 	TextColor3 = UI.Theme.PrimaryText,
 	TextStrokeColor3 = UI.Theme.Primary,
@@ -130,7 +139,7 @@ function Class.new(properties: Properties?)
 		BackgroundTransparency = 1,
 		TextSize = self.FontSize,
 		TextColor3 = self.TextColor3,
-		Font = self.Font,
+		FontFace = self.FontFace,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = function()
@@ -159,7 +168,7 @@ function Class.new(properties: Properties?)
 		TextTransparency = 1,
 		TextSize = self.FontSize,
 		Text = self.Value,
-		Font = self.Font,
+		FontFace = self.FontFace,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		CursorPosition = -1,
@@ -268,7 +277,7 @@ function Class.new(properties: Properties?)
 		TextColor3 = UI.Theme.PrimaryText,
 		TextStrokeColor3 = UI.Theme.Primary,
 		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-		Font = self.Font,
+		FontFace = self.FontFace,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = self.Cursor,

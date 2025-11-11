@@ -309,7 +309,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 		_K.Notify({
 			From = "_K",
-			Text = `<font family="{UI.Theme.FontMono._value.Name}"><b>Role{if #member.roles > 1 then "s" else ""}:</b>\n<sc>{roleString}</sc></font>`,
+			Text = `<font family="{UI.Theme.FontMono._value.Family}"><b>Role{if #member.roles > 1 then "s" else ""}:</b>\n<sc>{roleString}</sc></font>`,
 			Duration = 15,
 		})
 	end

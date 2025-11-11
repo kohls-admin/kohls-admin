@@ -9,7 +9,7 @@ type Menu = typeof(Menu.new())
 local DEFAULT = {
 	Value = "Default",
 	Choices = { "Default", "Choice A", "Choice B", "Choice C" },
-	Font = UI.Theme.Font,
+	FontFace = UI.Theme.Font,
 }
 
 type Properties = typeof(DEFAULT) & Frame
@@ -20,6 +20,8 @@ local function getName(choice)
 
 	if typeOf == "EnumItem" or typeOf == "Instance" then
 		name = choice.Name
+	elseif typeOf == "Font" then
+		name = UI.getFontName(choice)
 	elseif typeOf == "table" then
 		name = choice.Name or choice.name
 	end
@@ -37,21 +39,32 @@ function Class.new(properties: Properties?)
 
 	local itemSize = UI.compute(function()
 		local choices = self.Choices()
-		local font = self.Font()
+		local font = self.FontFace()
 		local size = UI.Theme.FontSize()
 		local padding = UI.Theme.Padding().Offset
 		local maxWidth = size
+
+		local params = Instance.new("GetTextBoundsParams")
+		params.Size = size
+		params.Width = math.huge
+		params.RichText = true
+
 		for _, choice in choices do
-			if typeof(choice) == "EnumItem" then
+			if typeof(choice) == "Font" then
+				font = choice
+			elseif typeof(choice) == "EnumItem" then
 				if choice.Name == "Unknown" then
 					continue
 				end
 				if choice.EnumType == Enum.Font then
-					font = choice
+					font = Font.fromEnum(choice :: Enum.Font)
 				end
 			end
-			maxWidth =
-				math.max(maxWidth, math.ceil(UI.TextService:GetTextSize(getName(choice), size, font, Vector2.zero).X))
+
+			params.Font = font
+			params.Text = getName(choice)
+
+			maxWidth = math.max(maxWidth, math.ceil(UI.TextService:GetTextBoundsAsync(params).X))
 		end
 
 		return UDim2.fromOffset(maxWidth + padding * 2 + size, size + padding)
@@ -73,7 +86,7 @@ function Class.new(properties: Properties?)
 			return getName(self.Value())
 		end,
 		Size = itemSize,
-		Font = self.Font,
+		FontFace = self.FontFace,
 		TextXAlignment = Enum.TextXAlignment.Left,
 
 		Activated = function()
@@ -112,12 +125,14 @@ function Class.new(properties: Properties?)
 		for i, choice in self.Choices._value do
 			local name = getName(choice)
 			local font
-			if typeof(choice) == "EnumItem" then
+			if typeof(choice) == "Font" then
+				font = choice
+			elseif typeof(choice) == "EnumItem" then
 				if choice.Name == "Unknown" then
 					continue
 				end
 				if choice.EnumType == Enum.Font then
-					font = choice
+					font = Font.fromEnum(choice :: Enum.Font)
 				end
 			end
 
@@ -128,7 +143,7 @@ function Class.new(properties: Properties?)
 				Parent = self.menu._content,
 				Name = tostring(name),
 				Label = name,
-				Font = font,
+				FontFace = font,
 				TextSize = UI.Theme.FontSize,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Size = itemSize,

@@ -27,7 +27,7 @@ Input = UI.new "Input" {
 	BackgroundColor3 = UI.Theme.Primary,
 	BackgroundTransparency = UI.Theme.Transparency,
 	Fill = true,
-	Font = UI.Theme.FontMono,
+	FontFace = UI.Theme.FontMono,
 	FontSize = 20,
 	Position = UDim2.fromScale(0, 0.5),
 	Size = UDim2.new(1, 0, 1, 0),
@@ -151,7 +151,7 @@ local Tooltip = UI.new "TextLabel" {
 	BackgroundTransparency = 1,
 	TextWrapped = true,
 	RichText = true,
-	Font = UI.Theme.FontMono,
+	FontFace = UI.Theme.FontMono,
 	TextSize = 20,
 	TextColor3 = UI.Theme.PrimaryText,
 	TextStrokeColor3 = UI.Theme.Primary,
@@ -199,7 +199,7 @@ local SuggestionFrame = UI.new "TextButton" {
 		BackgroundTransparency = 1,
 		Size = UDim2.new(0, 0, 1, 0),
 		RichText = true,
-		Font = UI.Theme.FontMono,
+		FontFace = UI.Theme.FontMono,
 		TextSize = Tooltip.TextSize,
 		TextColor3 = UI.Theme.PrimaryText,
 		TextStrokeColor3 = UI.Theme.Primary,
@@ -282,8 +282,14 @@ local function formatSuggestionLabel(label, display, query, invalid)
 		_K.Util.String.escapeRichText(string.sub(display, endIndex + 1))
 	)
 
-	return TextService:GetTextSize(display, label.TextSize, label.Font, Vector2.zero).X
-		+ UI.Theme.PaddingDouble._value.Offset
+	local params = Instance.new("GetTextBoundsParams")
+	params.Text = display
+	params.Font = label.FontFace
+	params.Size = label.TextSize
+	params.Width = math.huge
+	params.RichText = true
+
+	return TextService:GetTextBoundsAsync(params).X + UI.Theme.PaddingDouble._value.Offset
 end
 
 local suggestionUpdating
@@ -335,6 +341,8 @@ local function updateSuggestionLabels(data)
 			if value.EnumType == Enum.Font then
 				frame.TextLabel.Font = value
 			end
+		elseif valueType == "Font" then
+			frame.TextLabel.FontFace = value
 		elseif valueType == "table" then
 			if value.userId or value.UserId then
 				UI.new "ImageLabel" {
@@ -413,7 +421,7 @@ local suggestionPurchaseButton = UI.new "Button" {
 		AutoLocalize = false,
 		AutomaticSize = Enum.AutomaticSize.XY,
 		BackgroundTransparency = 1,
-		Font = UI.Theme.FontMono,
+		FontFace = UI.Theme.FontMono,
 		TextSize = UI.Theme.FontSizeLarge,
 		TextColor3 = UI.Theme.PrimaryText,
 		TextStrokeColor3 = UI.Theme.Primary,
@@ -548,14 +556,16 @@ updateCompletion = function()
 		-- TODO: some types should show a widget for fast select e.g. color wheel
 	end
 
+	local params = Instance.new("GetTextBoundsParams")
+	params.Text = string.sub(string.gsub(string.gsub(data.message, "\n", " "), "\r", " "), 1, data.argPos - 1)
+	params.Font = Tooltip.FontFace
+	params.Size = Tooltip.TextSize
+	params.Width = math.huge
+	params.RichText = true
+
 	-- move tooltip to start of query
 	-- FIX: adjust with inputoffset
-	local argX = TextService:GetTextSize(
-		string.sub(string.gsub(string.gsub(data.message, "\n", " "), "\r", " "), 1, data.argPos - 1),
-		Tooltip.TextSize,
-		Tooltip.Font,
-		Vector2.zero
-	).X
+	local argX = TextService:GetTextBoundsAsync(params).X
 	TooltipFrame.Position = UDim2.new(
 		0,
 		math.floor(argX)

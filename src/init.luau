@@ -674,6 +674,8 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 				cacheValue = { "enum", tostring(value.EnumType), value.Name }
 			elseif valueType == "UDim" then
 				cacheValue = { "udim", value.Scale, value.Offset }
+			elseif valueType == "Font" then
+				cacheValue = value.Family
 			end
 
 			_K.Data.Sync.settings[key] = cacheValue

@@ -183,7 +183,7 @@ function Class:forceRender()
 						BackgroundTransparency = 1,
 						Size = self.ItemSize,
 						RichText = true,
-						Font = UI.Theme.FontMono,
+						FontFace = UI.Theme.FontMono,
 						TextSize = UI.Theme.FontSize,
 						TextColor3 = UI.Theme.PrimaryText,
 						TextStrokeColor3 = UI.Theme.Primary,

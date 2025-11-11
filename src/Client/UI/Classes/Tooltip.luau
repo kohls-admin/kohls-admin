@@ -13,7 +13,7 @@ local tooltip = UI.new "TextLabel" {
 	Name = "Tooltip",
 	ZIndex = 100,
 	BackgroundColor3 = UI.Theme.Primary,
-	Font = UI.Theme.Font,
+	FontFace = UI.Theme.Font,
 	TextSize = UI.Theme.FontSize,
 	TextColor3 = UI.Theme.PrimaryText,
 	TextStrokeColor3 = UI.Theme.Primary,
@@ -85,7 +85,7 @@ local DEFAULT = {
 	Enabled = true,
 	Hovering = false,
 	Visible = false,
-	Font = UI.Theme.Font,
+	FontFace = UI.Theme.Font,
 	Text = "Example tooltip text.",
 }
 

@@ -29,7 +29,6 @@ function Logs.new(_K)
 
 	local function createItem(self, log)
 		local tooltip = UI.new "Tooltip" {
-			Font = UI.Theme.FontMono,
 			Text = "Loading...",
 		}
 
@@ -41,7 +40,7 @@ function Logs.new(_K)
 				Size = self.ItemSize,
 				TextEditable = false,
 				ClearTextOnFocus = false,
-				Font = UI.Theme.FontMono,
+				FontFace = UI.Theme.FontMono,
 				Text = "",
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = UI.Theme.Primary,
@@ -57,7 +56,7 @@ function Logs.new(_K)
 					BackgroundTransparency = 1,
 					Size = self.ItemSize,
 					RichText = true,
-					Font = UI.Theme.FontMono,
+					FontFace = UI.Theme.FontMono,
 					Text = "Log failed to render.",
 					TextSize = UI.Theme.FontSize,
 					TextColor3 = UI.Theme.PrimaryText,

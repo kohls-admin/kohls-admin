@@ -388,7 +388,7 @@ function Class.new(properties: Properties?)
 						BackgroundTransparency = 1,
 						AutomaticSize = Enum.AutomaticSize.XY,
 						Size = UDim2.new(0, 0, 0, 0),
-						Font = UI.Theme.Font,
+						FontFace = UI.Theme.Font,
 						Position = function()
 							return UDim2.fromOffset(UI.Theme.FontSize + UI.Theme.Padding().Offset, 0)
 						end,

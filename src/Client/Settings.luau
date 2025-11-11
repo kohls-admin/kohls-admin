@@ -210,7 +210,7 @@ function Settings.new(_K)
 				Text = "Command Prefix",
 				Tooltip = "The character to trigger a command.",
 				UI.new "Input" {
-					Font = UI.Theme.FontMono,
+					FontFace = UI.Theme.FontMono,
 					FontSize = UI.Theme.FontSize,
 					Size = inputSize,
 					Placeholder = ";",
@@ -321,7 +321,7 @@ function Settings.new(_K)
 				Text = "Custom Command Prefix",
 				Tooltip = "A custom character to trigger a command, only affects the client.",
 				UI.new "Input" {
-					Font = UI.Theme.FontMono,
+					FontFace = UI.Theme.FontMono,
 					FontSize = UI.Theme.FontSize,
 					Size = inputSize,
 					Placeholder = ";",
@@ -348,7 +348,7 @@ function Settings.new(_K)
 				Text = "Command Bar Hotkey",
 				Tooltip = "The keyboard shortcut to open the command bar.",
 				UI.new "Input" {
-					Font = UI.Theme.FontMono,
+					FontFace = UI.Theme.FontMono,
 					FontSize = UI.Theme.FontSize,
 					Size = inputSize,
 					Placeholder = ";",
@@ -362,7 +362,7 @@ function Settings.new(_K)
 				Text = "Dashboard Hotkey",
 				Tooltip = "The keyboard shortcut to open the dashboard.",
 				UI.new "Input" {
-					Font = UI.Theme.FontMono,
+					FontFace = UI.Theme.FontMono,
 					FontSize = UI.Theme.FontSize,
 					Size = inputSize,
 					Placeholder = "'",
@@ -418,18 +418,61 @@ function Settings.new(_K)
 
 		-- font faces
 		do
-			local fonts = Enum.Font:GetEnumItems()
-			local mono = { Enum.Font.Code, Enum.Font.RobotoMono }
-			table.sort(fonts, function(a, b)
-				return a.Name < b.Name
-			end)
+			local lines = { Font = nil, FontMono = nil }
 			for _, key in { "Font", "FontMono" } do
-				table.insert(
-					themeLineItems,
-					UI.new "ListItem" {
-						Text = key:gsub("(.)(%u)", "%1 %2"),
+				lines[key] = UI.new "ListItem" {
+					Text = key:gsub("(.)(%u)", "%1 %2"),
+					UI.new "TextLabel" {
+						BackgroundTransparency = 1,
+						AutomaticSize = Enum.AutomaticSize.XY,
+						FontFace = UI.Theme[key],
+						Text = "Loading Fonts...",
+						TextColor3 = UI.Theme.PrimaryText,
+						TextSize = UI.Theme.FontSize,
+						TextTransparency = UI.Theme.TransparencyBalanced,
+					},
+				}
+				table.insert(themeLineItems, lines[key])
+			end
+
+			task.defer(function()
+				repeat -- wait until settings is in view
+					task.wait()
+				until _K.client.dashboard.Tabs.CurrentPage._value == _K.client.dashboard.Settings._instance
+					or _K.client.dashboard.Settings._instance.Parent == nil
+					or not _K.client.dashboard.Settings._instance:IsDescendantOf(_K.client.dashboard.Tabs._content)
+
+				local fonts = {}
+				local mono = {
+					16658246179,
+					Enum.Font.Code,
+					12187606783,
+					Enum.Font.Arcade,
+					Enum.Font.RobotoMono,
+					12187371840,
+					12187362578,
+				}
+				for id in UI.Fonts do
+					table.insert(fonts, Font.fromId(tonumber(id) :: number))
+				end
+				for i, font in mono do
+					mono[i] = if type(font) == "number" then Font.fromId(font) else Font.fromEnum(font)
+				end
+				for i, font in Enum.Font:GetEnumItems() do
+					if font.Name == "Unknown" then
+						continue
+					end
+					table.insert(fonts, Font.fromEnum(font))
+				end
+				table.sort(fonts, function(a, b)
+					return UI.getFontName(a) < UI.getFontName(b)
+				end)
+
+				for _, key in { "Font", "FontMono" } do
+					task.spawn(function()
 						UI.new "Select" {
-							Font = UI.Theme[key],
+							Parent = lines[key],
+							FontFace = UI.Theme[key],
 							Value = function()
 								return UI.Theme[key]()
 							end,
@@ -439,10 +482,11 @@ function Settings.new(_K)
 									change("theme" .. key, value)
 								end,
 							},
-						},
-					}
-				)
-			end
+						}
+						lines[key]._content.TextLabel:Destroy()
+					end)
+				end
+			end)
 		end
 		_K.Util.Defer.wait()
 
@@ -497,7 +541,7 @@ function Settings.new(_K)
 			local listItem = UI.new "ListItem" {
 				Text = "Font Size",
 				UI.new "Input" {
-					Font = UI.Theme.FontMono,
+					FontFace = UI.Theme.FontMono,
 					FontSize = UI.Theme.FontSize,
 					Size = inputSize,
 					NumberOnly = true,
@@ -557,7 +601,7 @@ function Settings.new(_K)
 				UI.new "ListItem" {
 					Text = key:gsub("(.)(%u)", "%1 %2"),
 					UI.new "Input" {
-						Font = UI.Theme.FontMono,
+						FontFace = UI.Theme.FontMono,
 						FontSize = UI.Theme.FontSize,
 						Size = inputSize,
 						NumberOnly = true,
@@ -613,7 +657,7 @@ function Settings.new(_K)
 					UI.new "ListItem" {
 						Text = data.text,
 						UI.new "Input" {
-							Font = UI.Theme.FontMono,
+							FontFace = UI.Theme.FontMono,
 							FontSize = UI.Theme.FontSize,
 							Size = inputSize,
 							MaxChars = 5,

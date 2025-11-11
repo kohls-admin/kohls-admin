@@ -266,7 +266,7 @@ return {
 							BackgroundTransparency = 1,
 							Size = UDim2.new(0, 0, 1, 0),
 							RichText = true,
-							Font = UI.Theme.FontMono,
+							FontFace = UI.Theme.FontMono,
 							TextSize = UI.Theme.FontSize,
 							TextColor3 = UI.Theme.PrimaryText,
 							TextStrokeColor3 = UI.Theme.Primary,

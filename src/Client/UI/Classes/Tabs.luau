@@ -267,7 +267,7 @@ function Class.new(properties: Properties?)
 						elseif hover then UI.Theme.TransparencyMax()
 						else 1
 				end, UI.Theme.TweenOut),
-				Font = UI.Theme.Font,
+				FontFace = UI.Theme.Font,
 				RichText = true,
 				Text = boldState,
 				TextSize = UI.Theme.FontSize,

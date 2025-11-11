@@ -117,7 +117,7 @@ function Class.new(properties: Properties?)
 	hueSlider._instance:FindFirstChild("Filled"):Destroy()
 
 	local hexInput = UI.new "Input" {
-		Font = UI.Theme.FontMono,
+		FontFace = UI.Theme.FontMono,
 		BackgroundColor3 = inputColor,
 		TextColor3 = inputColor,
 		Size = hexInputSize,
