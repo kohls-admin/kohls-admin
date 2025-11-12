@@ -80,7 +80,7 @@ function Class.new(properties: Properties?)
 			Position = UDim2.new(0.5, 0, 0.5, 0),
 
 			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerDiameter,
+				CornerRadius = UI.Theme.CornerPadded,
 			},
 			UI.new "Stroke" {},
 			UI.new "UIGradient" {
@@ -186,7 +186,7 @@ function Class.new(properties: Properties?)
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
 		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 		UI.new "Stroke" {},
 		UI.new "Frame" {
@@ -195,7 +195,7 @@ function Class.new(properties: Properties?)
 			Size = UDim2.new(1, 0, 1, 0),
 
 			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
+				CornerRadius = UI.Theme.CornerPadded2,
 			},
 			UI.new "UIGradient" {
 				Color = ColorSequence.new(Color3.new(1, 1, 1)),
@@ -209,7 +209,7 @@ function Class.new(properties: Properties?)
 			ZIndex = 2,
 
 			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
+				CornerRadius = UI.Theme.CornerPadded2,
 			},
 			UI.new "UIGradient" {
 				Color = ColorSequence.new(Color3.new()),
@@ -292,7 +292,6 @@ function Class.new(properties: Properties?)
 	self._menu._content.AutomaticSize = Enum.AutomaticSize.XY
 	UI.edit(self._menu._list, { Padding = UI.Theme.Padding })
 	self._instance = self._menu._instance :: MenuInstance
-	UI.edit(self._instance.UICorner, { CornerRadius = menuCornerRadius })
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end

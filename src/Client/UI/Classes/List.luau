@@ -48,7 +48,7 @@ function Class.new(properties: Properties?)
 		end, UI.Theme.TweenOut),
 
 		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 		UI.new "Stroke" { Transparency = UI.Theme.TransparencyBalanced },
 

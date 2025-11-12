@@ -120,7 +120,7 @@ function Members.new(_K)
 					DominantAxis = Enum.DominantAxis.Height,
 				},
 				UI.new "UICorner" {
-					CornerRadius = UDim.new(1, 0),
+					CornerRadius = UI.Theme.CornerPadded,
 				},
 			},
 			roleDialogInput,
@@ -185,6 +185,7 @@ function Members.new(_K)
 		end,
 	}
 	UI.new "Tooltip" { Parent = newRoleButton, Text = "New Member", Hovering = newRoleButton._hovering }
+	UI.edit(newRoleButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
 
 	local itemSize = UI.compute(function()
 		_K.client.rank()
@@ -281,6 +282,12 @@ function Members.new(_K)
 			:Connect(hoverClick)
 	end
 
+	local function roleRemoveCornerRadius()
+		local padding = UI.Theme.Padding()
+		local radius = UI.Theme.CornerRadius()
+		return UDim.new(radius.Scale, radius.Offset - padding.Offset * 0.75)
+	end
+
 	local function roleChip(roleId: string, member, item)
 		local role = _K.Data.roles[roleId]
 		local color = Color3.fromHex(role.color)
@@ -323,6 +330,8 @@ function Members.new(_K)
 		UI.new "Tooltip" { Parent = button, Text = "Remove Role", Hovering = button._hovering }
 		button._instance.UIStroke:Destroy()
 
+		UI.edit(button._instance.UICorner, { CornerRadius = roleRemoveCornerRadius })
+
 		return UI.new "Frame" {
 			AutomaticSize = Enum.AutomaticSize.X,
 			BackgroundColor3 = color,
@@ -330,7 +339,7 @@ function Members.new(_K)
 			Size = UDim2.new(0, 0, 1, 0),
 
 			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
+				CornerRadius = UI.Theme.CornerPadded,
 			},
 
 			UI.new "UIPadding" {
@@ -423,6 +432,7 @@ function Members.new(_K)
 			end,
 		}
 		UI.new "Tooltip" { Parent = addButton, Text = "Add Role", Hovering = addButton._hovering }
+		UI.edit(addButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
 
 		item._instance = UI.new "Frame" {
 			BackgroundTransparency = 1,
@@ -446,7 +456,7 @@ function Members.new(_K)
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
 				UI.new "UICorner" {
-					CornerRadius = UDim.new(1, 0),
+					CornerRadius = UI.Theme.CornerPadded,
 				},
 				UI.new "Stroke" {},
 			},
@@ -548,7 +558,7 @@ function Members.new(_K)
 
 		UI.new "UIListLayout" {
 			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UI.Theme.Padding,
+			Padding = UI.Theme.PaddingWithStroke,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		},
 		UI.edit(scroller._input, { UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }),

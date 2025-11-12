@@ -33,7 +33,7 @@ function Class.new(properties: Properties?)
 		Size = boxSize,
 
 		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 
 		UI.new "Stroke" {},

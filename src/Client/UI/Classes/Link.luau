@@ -39,7 +39,7 @@ function Class.new(properties: Properties?)
 		ClearTextOnFocus = false,
 
 		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 		UI.new "UIPadding" {
 			PaddingLeft = UI.Theme.Padding,

@@ -183,6 +183,14 @@ Theme.PaddingDouble = compute(function()
 	return UDim.new(padding.Scale * 2, padding.Offset * 2)
 end)
 
+Theme.PaddingStroke = compute(function()
+	return UDim.new(0, if Theme.StrokeEnabled() then 1 else 0)
+end)
+
+Theme.PaddingWithStroke = compute(function()
+	return Theme.Padding + Theme.PaddingStroke
+end)
+
 Theme.CornerHalf = compute(function()
 	local radius = Theme.CornerRadius()
 	return UDim.new(radius.Scale / 2, radius.Offset / 2)
@@ -191,6 +199,24 @@ end)
 Theme.CornerDiameter = compute(function()
 	local radius = Theme.CornerRadius()
 	return UDim.new(radius.Scale * 2, radius.Offset * 2)
+end)
+
+Theme.CornerPadded = compute(function()
+	local padding = Theme.Padding()
+	local radius = Theme.CornerRadius()
+	return UDim.new(radius.Scale, radius.Offset - padding.Offset / 2)
+end)
+
+Theme.CornerPadded2 = compute(function()
+	local padding = Theme.Padding()
+	local radius = Theme.CornerRadius()
+	return UDim.new(radius.Scale, radius.Offset - padding.Offset)
+end)
+
+Theme.CornerPadded3 = compute(function()
+	local padding = Theme.Padding()
+	local radius = Theme.CornerRadius()
+	return UDim.new(radius.Scale, radius.Offset - padding.Offset * 1.5)
 end)
 
 Theme.ScrollMidImage = state("rbxassetid://18370268668")

@@ -35,17 +35,12 @@ function Class.new(properties: Properties?)
 		},
 	} :: ScrollingFrame & { UIListLayout: UIListLayout, UIPadding: UIPadding }
 
-	local canvasAbsolute = UI.state(self._instance, "AbsoluteCanvasSize")
-	local windowAbsolute = UI.state(self._instance, "AbsoluteWindowSize")
-
 	UI.new "UIPadding" {
 		Parent = self._instance,
-		PaddingBottom = UI.Theme.Padding,
-		PaddingTop = UI.Theme.Padding,
-		PaddingLeft = UDim.new(0, 1),
-		PaddingRight = function()
-			return if canvasAbsolute().Y > windowAbsolute().Y then UI.Theme.Padding() else UDim.new(0, 1)
-		end,
+		PaddingBottom = UI.Theme.PaddingWithStroke,
+		PaddingTop = UI.Theme.PaddingWithStroke,
+		PaddingLeft = UI.Theme.PaddingStroke,
+		PaddingRight = UI.Theme.PaddingWithStroke,
 	}
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)

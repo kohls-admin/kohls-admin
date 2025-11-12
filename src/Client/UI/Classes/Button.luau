@@ -122,7 +122,7 @@ function Class.new(properties: Properties?)
 		end,
 
 		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 	}
 
@@ -141,7 +141,7 @@ function Class.new(properties: Properties?)
 		Size = UDim2.new(1, 0, 0, 32),
 
 		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 		UI.new "Stroke" {},
 

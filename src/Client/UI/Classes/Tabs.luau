@@ -204,9 +204,10 @@ function Class.new(properties: Properties?)
 		Position = UDim2.new(0, 0, 1, 0),
 
 		UI.new "UIPadding" {
-			PaddingTop = UDim.new(0, 1),
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
+			PaddingTop = UI.Theme.PaddingStroke,
+			PaddingLeft = UI.Theme.PaddingStroke,
+			PaddingRight = UI.Theme.PaddingStroke,
+			PaddingBottom = UI.Theme.PaddingStroke,
 		},
 
 		pages,

@@ -140,7 +140,7 @@ function About.new(_K)
 				FillDirection = Enum.FillDirection.Horizontal,
 				HorizontalFlex = Enum.UIFlexAlignment.SpaceEvenly,
 				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.Padding,
+				Padding = UI.Theme.PaddingWithStroke,
 				Wraps = true,
 			},
 		}
@@ -217,7 +217,7 @@ function About.new(_K)
 						TileSize = UDim2.fromOffset(16, 16),
 
 						UI.new "UICorner" {
-							CornerRadius = UI.Theme.CornerRadius,
+							CornerRadius = UI.Theme.CornerPadded,
 						},
 						UI.new "Stroke" {},
 
@@ -412,7 +412,7 @@ function About.new(_K)
 				FillDirection = Enum.FillDirection.Horizontal,
 				HorizontalFlex = Enum.UIFlexAlignment.SpaceEvenly,
 				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.Padding,
+				Padding = UI.Theme.PaddingWithStroke,
 				Wraps = true,
 			},
 		}
@@ -554,7 +554,7 @@ function About.new(_K)
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				FillDirection = Enum.FillDirection.Horizontal,
 				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.Padding,
+				Padding = UI.Theme.PaddingWithStroke,
 				Wraps = true,
 			},
 		}
@@ -803,7 +803,7 @@ function About.new(_K)
 				end,
 
 				UI.new "UICorner" {
-					CornerRadius = UI.Theme.CornerRadius,
+					CornerRadius = UI.Theme.CornerPadded,
 				},
 				UI.new "UIPadding" {
 					PaddingLeft = UI.Theme.Padding,
@@ -859,7 +859,7 @@ function About.new(_K)
 		})
 
 		UI.edit(scroller._instance.UIListLayout, {
-			Padding = UI.Theme.Padding,
+			Padding = UI.Theme.PaddingWithStroke,
 			HorizontalAlignment = "Center",
 		})
 

@@ -278,6 +278,7 @@ function Class.new(properties: Properties?)
 		end,
 	}
 	self._exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+	UI.edit(self._exitButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
 
 	self._content = UI.new "Frame" {
 		Name = "UIContent",

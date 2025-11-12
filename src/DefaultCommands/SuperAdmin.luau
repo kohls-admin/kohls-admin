@@ -293,10 +293,10 @@ return {
 
 			UI.edit(scroller._instance, {
 				UI.new "UIPadding" {
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
+					PaddingTop = UI.Theme.PaddingStroke,
+					PaddingBottom = UI.Theme.PaddingStroke,
+					PaddingLeft = UI.Theme.PaddingStroke,
+					PaddingRight = UI.Theme.PaddingStroke,
 				},
 			})
 

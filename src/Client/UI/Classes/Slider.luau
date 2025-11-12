@@ -86,7 +86,7 @@ function Class.new(properties: Properties?)
 		end, UI.Theme.TweenOut),
 
 		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerDiameter,
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 
 		InputBegan = inputBegan,
@@ -107,7 +107,7 @@ function Class.new(properties: Properties?)
 		end,
 
 		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerDiameter,
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 		UI.new "Stroke" {},
 
@@ -136,7 +136,7 @@ function Class.new(properties: Properties?)
 			end,
 
 			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerDiameter,
+				CornerRadius = UI.Theme.CornerPadded,
 			},
 		},
 

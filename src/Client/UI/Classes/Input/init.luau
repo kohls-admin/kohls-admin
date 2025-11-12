@@ -353,7 +353,7 @@ function Class.new(properties: Properties?)
 		end,
 
 		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 		UI.new "Stroke" {},
 		UI.new "UIPadding" {

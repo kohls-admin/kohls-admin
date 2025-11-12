@@ -201,6 +201,8 @@ function Logs.new(_K)
 		end,
 	}
 
+	UI.edit(filterButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
+
 	filterMenu = UI.new "Menu" {
 		Adornee = filterButton._instance,
 		AutomaticSize = Enum.AutomaticSize.Y,
@@ -281,7 +283,7 @@ function Logs.new(_K)
 
 		UI.new "UIListLayout" {
 			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UI.Theme.Padding,
+			Padding = UI.Theme.PaddingWithStroke,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		},
 		UI.edit(scroller._input, { UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }),

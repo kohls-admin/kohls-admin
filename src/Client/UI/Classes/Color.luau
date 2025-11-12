@@ -32,7 +32,7 @@ function Class.new(properties: Properties?)
 		Position = UDim2.new(1, 0, 0.5, 0),
 
 		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 		UI.new "Stroke" {},
 

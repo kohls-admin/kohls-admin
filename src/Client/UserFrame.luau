@@ -30,7 +30,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			else "rbxassetid://10650688076",
 
 		UI.new "UICorner" {
-			CornerRadius = UDim.new(1, 0),
+			CornerRadius = UI.Theme.CornerPadded,
 		},
 		UI.new "Stroke" {},
 	}
@@ -95,7 +95,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 			end,
 
 			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerDiameter,
+				CornerRadius = UI.Theme.CornerPadded,
 			},
 			UI.new "UIPadding" {
 				PaddingLeft = UDim.new(0, 4),
@@ -164,10 +164,10 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 				FlexMode = Enum.UIFlexMode.Shrink,
 			},
 			UI.new "UIPadding" {
-				PaddingLeft = UDim.new(0, 1),
-				PaddingRight = UDim.new(0, 1),
-				PaddingTop = UDim.new(0, 1),
-				PaddingBottom = UDim.new(0, 1),
+				PaddingLeft = UI.Theme.PaddingStroke,
+				PaddingRight = UI.Theme.PaddingStroke,
+				PaddingTop = UI.Theme.PaddingStroke,
+				PaddingBottom = UI.Theme.PaddingStroke,
 			},
 
 			displayNameLabel,

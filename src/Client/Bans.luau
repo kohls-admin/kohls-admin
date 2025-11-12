@@ -38,9 +38,7 @@ function Bans.new(_K)
 	unbanDialog._content:Destroy()
 
 	local inputSize = function()
-		local size = UI.Theme.FontSize()
-		local padding = UI.Theme.Padding().Offset
-		return UDim2.fromOffset(0, size + padding)
+		return UDim2.fromOffset(0, UI.Theme.FontSize + UI.Theme.PaddingWithStroke().Offset)
 	end
 
 	local banType = UI.state("Server")
@@ -176,19 +174,22 @@ function Bans.new(_K)
 		}
 		UI.new "Tooltip" { Parent = unbanButton, Text = "Remove Ban", Hovering = unbanButton._hovering }
 
+		UI.edit(editBanButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
+		UI.edit(unbanButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
+
 		itemRef._instance = UI.new "Frame" {
 			BackgroundTransparency = 1,
 			Size = self.ItemSize,
 
 			UI.new "UIPadding" {
-				PaddingBottom = UI.Theme.Padding,
+				PaddingBottom = UI.Theme.PaddingWithStroke,
 			},
 
 			UI.new "UIListLayout" {
 				VerticalAlignment = Enum.VerticalAlignment.Center,
 				FillDirection = Enum.FillDirection.Horizontal,
 				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.Padding,
+				Padding = UI.Theme.PaddingWithStroke,
 			},
 
 			UI.new "ImageLabel" {
@@ -198,7 +199,7 @@ function Bans.new(_K)
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
 				UI.new "UICorner" {
-					CornerRadius = UDim.new(1, 0),
+					CornerRadius = UI.Theme.CornerPadded,
 				},
 				UI.new "Stroke" {},
 			},
@@ -395,10 +396,10 @@ function Bans.new(_K)
 		end,
 
 		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
+			PaddingTop = UI.Theme.PaddingWithStroke,
+			PaddingBottom = UI.Theme.PaddingWithStroke,
+			PaddingLeft = UI.Theme.PaddingWithStroke,
+			PaddingRight = UI.Theme.PaddingWithStroke,
 		},
 
 		UI.new "ListItem" {
@@ -415,7 +416,7 @@ function Bans.new(_K)
 					DominantAxis = Enum.DominantAxis.Height,
 				},
 				UI.new "UICorner" {
-					CornerRadius = UDim.new(1, 0),
+					CornerRadius = UI.Theme.CornerPadded,
 				},
 			},
 			banTargetInput,
@@ -496,6 +497,7 @@ function Bans.new(_K)
 		end,
 	}
 	UI.new "Tooltip" { Parent = newBanButton, Text = "New Ban", Hovering = newBanButton._hovering }
+	UI.edit(newBanButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
 
 	scroller._input._instance = UI.new "Frame" {
 		Parent = scroller,
@@ -507,7 +509,7 @@ function Bans.new(_K)
 		end,
 		UI.new "UIListLayout" {
 			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UI.Theme.Padding,
+			Padding = UI.Theme.PaddingWithStroke,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		},
 		UI.edit(scroller._input, { UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }),
