@@ -44,10 +44,6 @@ local inputColor = UI.compute(function()
 	return if UI.getLuminance(UI.Theme.Primary()) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
 end)
 
-local menuCornerRadius = UI.compute(function()
-	return UDim.new(0, UI.Theme.CornerRadius().Offset + UI.Theme.Padding().Offset)
-end)
-
 local Class = {}
 Class.__index = Class
 setmetatable(Class, BaseClass)

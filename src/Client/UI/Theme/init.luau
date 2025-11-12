@@ -1,5 +1,3 @@
-local ContentProvider = game:GetService("ContentProvider")
-
 local Flux = require(script.Parent.Parent.Parent:WaitForChild("Flux"))
 local ThemesFolder = script:WaitForChild("Themes")
 local Default = require(ThemesFolder:WaitForChild("Default"))
