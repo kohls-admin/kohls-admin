@@ -27,12 +27,21 @@ local tooltip = UI.new "TextLabel" {
 		local tipSize = tipSizeState()
 		local max = layerSizeState()
 		local position, size = positionState(), sizeState()
-		local yOffset = position.Y + size.Y + UI.TopbarInset().Height + UI.Theme.PaddingHalf().Offset
+		local padding = UI.Theme.Padding().Offset
+		local yOffset = position.Y + size.Y + UI.TopbarInset().Height + padding
+		local tipBoundX = math.max(0, max.X - tipSize.X)
+		local tipBoundY = math.max(0, max.Y - tipSize.Y)
+		local xOffset = 0
 
-		return UDim2.fromOffset(
-			math.clamp(position.X, 0, math.max(0, max.X - tipSize.X)),
-			math.clamp(yOffset, 0, math.max(0, max.Y - tipSize.Y))
-		)
+		-- slide horizontally
+		if yOffset > tipBoundY then
+			xOffset = size.X + UI.Theme.Padding().Offset
+			if position.X + size.X + padding > tipBoundX then
+				xOffset = -(tipSize.X + padding)
+			end
+		end
+
+		return UDim2.fromOffset(math.clamp(position.X + xOffset, 0, tipBoundX), math.clamp(yOffset, 0, tipBoundY))
 	end,
 
 	UI.new "UICorner" {
