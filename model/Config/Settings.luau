@@ -101,7 +101,7 @@ return {
 	wrongPrefixWarning = true, --      Warn on incorrect prefix
 	saveLogs = true, --                Save/sync command logs across servers
 	saveChatLogs = false, --           Save/sync chat logs across servers
-	saveLogsForAllRoles = false, --   Save/sync logs from all roles, instead of only restricted roles (non-purchasable)
+	saveLogsForAllRoles = false, --    Save/sync logs from all roles, instead of only restricted roles (non-purchasable)
 
 	theme = "Default", --               Initial theme (customize in Config.Themes)
 	changeThemeAuthority = "Client", -- "Client", "Server", or "Studio"
