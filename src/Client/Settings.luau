@@ -310,6 +310,11 @@ function Settings.new(_K)
 			),
 			switchItem("saveLogs", "Save Logs", "Toggle the saving and syncing of logs across servers"),
 			switchItem("saveChatLogs", "Save Chat Logs", "Toggle the saving and syncing of chat logs across servers"),
+			switchItem(
+				"saveLogsForAllRoles",
+				"Save Logs For All Roles",
+				"Toggle the saving and syncing of command logs for all roles, instead of only logging non-purchasable restricted roles"
+			),
 		},
 
 		{

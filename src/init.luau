@@ -156,7 +156,11 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 			end
 			if
 				(level == "CHAT" and _K.Data.settings.saveChatLogs)
-				or (level == "COMMAND" and _K.Data.settings.saveLogs and (not from or _K.Auth.hasRestrictedRole(from)))
+				or (
+					level == "COMMAND"
+					and _K.Data.settings.saveLogs
+					and (not from or _K.Data.settings.saveLogsForAllRoles or _K.Auth.hasRestrictedRole(from))
+				)
 			then
 				table.insert(_K.Data.Sync.logs, log)
 			end
