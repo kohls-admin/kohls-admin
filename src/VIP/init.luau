@@ -217,7 +217,7 @@ if Util.Service.Run:IsServer() then
 	end)
 
 	function VIP.EffectHandler(character)
-		if not Data.settings.vip then
+		if not Data.settings.vip or not character then
 			return
 		end
 
