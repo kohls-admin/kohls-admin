@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local UserService = game:GetService("UserService")
+local RunService = game:GetService("RunService")
 
 local Function = require(script.Parent:WaitForChild("Function"))
 local Retry = require(script.Parent:WaitForChild("Retry"))
@@ -14,6 +15,13 @@ type UserInfo = {
 
 local userInfoCache =
 	{} :: { [number]: { Id: number, Username: string, DisplayName: string, HasVerifiedBadge: boolean } }
+
+local REMOTE
+if RunService:IsServer() then
+	REMOTE = Instance.new("RemoteFunction", script)
+elseif RunService:IsClient() then
+	REMOTE = script:WaitForChild("RemoteFunction")
+end
 
 local loading = {}
 local attempting = {}
@@ -72,6 +80,15 @@ local function getUserInfo(userId: number, checkCache: boolean?): UserInfo
 		return userInfoCache[userId]
 	end
 
+	if RunService:IsClient() then
+		local info = REMOTE:InvokeServer(userId)
+		if not info then
+			return { Id = userId, Username = "Unknown", DisplayName = "Unknown", HasVerifiedBadge = false }
+		end
+		userInfoCache[userId] = info
+		return info
+	end
+
 	local hook = loading[userId]
 	if hook then
 		return hook:Wait()
@@ -95,6 +112,12 @@ local function getUserInfo(userId: number, checkCache: boolean?): UserInfo
 
 	task.spawn(debounceGetUserInfos)
 	return hook:Wait()
+end
+
+if RunService:IsServer() then
+	REMOTE.OnServerInvoke = function(player, userId)
+		return getUserInfo(userId)
+	end
 end
 
 return getUserInfo
