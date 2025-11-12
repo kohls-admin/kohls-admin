@@ -471,24 +471,48 @@ function Settings.new(_K)
 					return UI.getFontName(a) < UI.getFontName(b)
 				end)
 
-				for _, key in { "Font", "FontMono" } do
-					task.spawn(function()
-						UI.new "Select" {
-							Parent = lines[key],
-							FontFace = UI.Theme[key],
-							Value = function()
-								return UI.Theme[key]()
-							end,
-							Choices = if key == "Font" then fonts else mono,
-							[UI.Hook] = {
-								Value = function(value)
-									change("theme" .. key, value)
+				task.spawn(function()
+					local temp = Instance.new("Frame")
+					temp.BackgroundTransparency = 1
+					temp.Parent = UI.LayerTop
+
+					for _, key in { "Font", "FontMono" } do
+						task.spawn(function()
+							local list = if key == "Font" then fonts else mono
+							local loader = (if key == "Font" then lines.Font else lines.FontMono)._content.TextLabel
+
+							for i, font in list do
+								local label = Instance.new("TextLabel")
+								label.BackgroundTransparency = 1
+								label.TextTransparency = 1
+								label.FontFace = font
+								label.Parent = temp
+
+								loader.Text = `Loading fonts... {i}/{#list}`
+								_K.Service.ContentProvider:PreloadAsync({ label })
+							end
+
+							UI.new "Select" {
+								Parent = lines[key],
+								FontFace = UI.Theme[key],
+								Value = function()
+									return UI.Theme[key]()
 								end,
-							},
-						}
-						lines[key]._content.TextLabel:Destroy()
-					end)
-				end
+								Choices = list,
+								[UI.Hook] = {
+									Value = function(value)
+										change("theme" .. key, value)
+									end,
+								},
+							}
+
+							loader:Destroy()
+							if key == "Font" then
+								temp:Destroy()
+							end
+						end)
+					end
+				end)
 			end)
 		end
 		_K.Util.Defer.wait()
