@@ -535,8 +535,10 @@ function Settings.new(_K)
 				},
 				[UI.Hook] = {
 					Value = function(value)
-						lastSelected = slider._instance
-						lastSelectedY = lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
+						if value + 7 ~= UI.Theme.FontSize() then
+							lastSelected = slider._instance
+							lastSelectedY = lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
+						end
 						change("themeFontSize", value + 7)
 					end,
 				},
@@ -588,11 +590,11 @@ function Settings.new(_K)
 				},
 				[UI.Hook] = {
 					Value = function(value)
-						lastSelected = slider._instance
-						lastSelectedY = lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
 						if value == math.clamp(UI.Theme[key]().Offset + 1, 1, 17) then
 							return
 						end
+						lastSelected = slider._instance
+						lastSelectedY = lastSelected.AbsolutePosition.Y + lastSelected.AbsoluteSize.Y / 2
 						value = UDim.new(0, value - 1)
 						change("theme" .. key, value)
 					end,
