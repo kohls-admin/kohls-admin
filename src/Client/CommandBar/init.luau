@@ -5,7 +5,7 @@ local TextService = game:GetService("TextService")
 local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
 
-local UI = _K.UI
+local UI = require(script.Parent.UI)
 local prefix = _K.getCommandPrefix()
 
 local validState = UI.state(nil)

@@ -4,6 +4,7 @@ local UI = require(script.Parent.UI)
 local About = require(script.Parent.About)
 local Bans = require(script.Parent.Bans)
 local Commands = require(script.Parent.Commands)
+local Home = require(script.Parent.Home)
 local Logs = require(script.Parent.Logs)
 local Members = require(script.Parent.Members)
 local Settings = require(script.Parent.Settings)
@@ -12,40 +13,34 @@ local clockStart = os.clock()
 
 _K.client.dashboard = {}
 _K.client.dashboard.About = About.new(_K)
-_K.client.dashboard.Commands = Commands.new(_K)
 _K.client.dashboard.Bans = Bans.new(_K)
+_K.client.dashboard.Commands = Commands.new(_K)
+_K.client.dashboard.Home = Home.new(_K)
 _K.client.dashboard.Members = Members.new(_K)
 _K.client.dashboard.Logs = Logs.new(_K)
 _K.client.dashboard.Settings = Settings.new(_K)
 
-local titleLine = UI.new "Frame" {
-	Name = "Line",
-	BackgroundColor3 = UI.Theme.Border,
-	BackgroundTransparency = UI.Theme.TransparencyBalanced,
-	BorderSizePixel = 0,
-	Size = UDim2.new(1, 0, 0, 1),
-}
-
 local tabs = UI.new "Tabs" {
+	CurrentPage = _K.client.dashboard.Commands,
+	Tabs = {
+		-- { _K.client.dashboard.Home },
+		{ _K.client.dashboard.Commands },
+		{ _K.client.dashboard.Bans },
+		{ _K.client.dashboard.Members },
+		{ _K.client.dashboard.Logs },
+		{ _K.client.dashboard.Settings },
+		{ _K.client.dashboard.About },
+	},
 	Vertical = true,
-	_K.client.dashboard.Commands,
-	_K.client.dashboard.Bans,
-	_K.client.dashboard.Members,
-	_K.client.dashboard.Logs,
-	_K.client.dashboard.Settings,
-	_K.client.dashboard.About,
 
 	[UI.Event] = {
 		AbsoluteSize = function()
 			local size = _K.client.dashboard.Tabs._instance.AbsoluteSize
 			_K.client.dashboard.Tabs.Vertical(size.x > size.y)
-			titleLine.Visible = size.x > size.y
 		end,
 	},
 }
 _K.client.dashboard.Tabs = tabs
-
-task.delay(1, tabs.JumpTo, _K.client.dashboard.About)
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
@@ -63,7 +58,7 @@ local dashboard = UI.new "Window" {
 	SizeBounds = Rect.new(128, 128, 9e9, 9e9),
 	Title = "",
 	Visible = false,
-	_K.client.dashboard.Tabs,
+	tabs,
 }
 _K.client.dashboard.Window = dashboard
 dashboard._exitButton.ActiveSound(false)
@@ -76,8 +71,6 @@ task.spawn(function()
 	until nil
 end)
 
-titleLine.Parent = dashboard._instance.Frame
-
 local titleBar = dashboard._instance.Frame.TitleBar
 
 UI.edit(titleBar.UIPadding, {
@@ -88,6 +81,20 @@ UI.edit(titleBar.Left.Title, {
 	TextSize = UI.Theme.FontSize,
 	TextTransparency = 0.5,
 })
+
+local timeTooltip = UI.new "Tooltip" {
+	Parent = titleBar.Left.Title,
+}
+task.spawn(function()
+	repeat
+		task.wait(1)
+		timeTooltip.Text(DateTime.now():FormatLocalTime("dddd, LL", UI.LocalPlayer.LocaleId))
+	until nil
+end)
+
+local listPaddingRight = UI.compute(function()
+	return if tabs.Vertical() then UI.Theme.PaddingWithStroke else UI.Theme.PaddingStroke
+end)
 
 local parented = {}
 for _, page in
@@ -106,8 +113,8 @@ do
 		local parent = instance.Parent
 		local move = parent
 			and parent:IsDescendantOf(dashboard._instance)
-			and _K.client.dashboard.Tabs._pages.CurrentPage == instance.Parent
-			and _K.client.dashboard.Tabs.Vertical()
+			and tabs._pages.CurrentPage == instance.Parent
+			and tabs.Vertical()
 
 		moveToTitleBar(move, true)
 	end
@@ -119,6 +126,10 @@ do
 			update()
 		end
 	end)
+	tabs.Vertical:Connect(update)
+	if tabs._pageCache[tabs._pages.CurrentPage] == instance then
+		update()
+	end
 
 	UI.new "UIFlexItem" {
 		Parent = page._input._instance,
@@ -145,9 +156,9 @@ do
 		end,
 	})
 	UI.edit(page._scroller.UIPadding, {
-		PaddingTop = function()
-			return if moveToTitleBar() then UI.Theme.Padding else UDim.new(0, 1)
-		end,
+		PaddingTop = UI.Theme.PaddingStroke,
+		PaddingBottom = UI.Theme.PaddingStroke,
+		PaddingRight = listPaddingRight,
 	})
 end
 
@@ -155,60 +166,21 @@ UI.edit(_K.client.dashboard.Logs._scroller.UIPadding, {
 	PaddingTop = UDim.new(),
 })
 
-UI.edit(_K.client.dashboard.Tabs._instance.Bar.UIPadding, {
+UI.edit(tabs._instance.Bar.UIPadding, {
 	PaddingBottom = function()
-		return if _K.client.dashboard.Tabs.Vertical() then UDim.new() else UI.Theme.Padding
+		return if tabs.Vertical() then UDim.new() else UI.Theme.Padding
 	end,
 })
 
-local titleSize = UI.state(titleBar.Left.Title, "AbsoluteSize")
-local tabBarSize = UI.state(_K.client.dashboard.Tabs._instance.Bar, "AbsoluteSize")
+local tabBarSize = UI.state(tabs._instance.Bar, "AbsoluteSize")
 
-UI.edit(dashboard._instance.Frame.TitleBar.Left, {
+UI.edit(titleBar.Left, {
 	Size = function()
-		return if _K.client.dashboard.Tabs.Vertical()
-			then UDim2.fromOffset(tabBarSize().X - UI.Theme.PaddingDouble().Offset, 0)
+		return if tabs.Vertical()
+			then UDim2.fromOffset(tabBarSize().X - UI.Theme.Padding().Offset * 3, 0)
 			else UDim2.new()
 	end,
 })
-
-UI.new "Frame" {
-	Name = "SideBar",
-	Parent = dashboard._instance,
-	BackgroundTransparency = 1,
-	ClipsDescendants = true,
-	Size = function()
-		if _K.client.dashboard.Tabs.Vertical() then
-			local padding = UI.Theme.Padding().Offset
-			local titleWidth = (titleBar.Left.Title.AbsolutePosition.X + titleSize().X + padding * 4)
-				- titleBar.Left.AbsolutePosition.X
-			local maxWidth = math.max(titleWidth, tabBarSize().X)
-			local statusBarHeight = UI.Theme.FontSize + padding + 1
-			_K.client.dashboard.Tabs._instance.Bar.Size = UDim2.new(0, titleWidth, 1, 0)
-			return UDim2.new(0, maxWidth + 1, 1, -statusBarHeight)
-		else
-			_K.client.dashboard.Tabs._instance.Bar.Size = UDim2.new(1, 0, 0, 0)
-			return UDim2.new()
-		end
-	end,
-	UI.new "Frame" {
-		BackgroundTransparency = UI.Theme.TransparencyMax,
-		BackgroundColor3 = UI.Theme.Secondary,
-		Size = UDim2.fromScale(2, 1),
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
-		},
-	},
-	UI.new "Frame" {
-		Name = "Line",
-		BackgroundColor3 = UI.Theme.Border,
-		BackgroundTransparency = UI.Theme.TransparencyBalanced,
-		BorderSizePixel = 0,
-		Position = UDim2.new(1, -1, 0, 0),
-		Size = UDim2.new(0, 1, 1, 0),
-	},
-	Visible = _K.client.dashboard.Tabs.Vertical,
-}
 
 local statusLabelPosition = UI.compute(function()
 	return UDim2.fromOffset(UI.Theme.FontSize() + UI.Theme.PaddingHalf().Offset, 0)
@@ -291,24 +263,6 @@ UI.new "Frame" {
 	Size = function()
 		return UDim2.new(1, 0, 0, UI.Theme.FontSizeSmall + UI.Theme.PaddingDouble().Offset)
 	end,
-	UI.new "Frame" {
-		AnchorPoint = Vector2.new(0, 1),
-		BackgroundTransparency = UI.Theme.TransparencyMax,
-		BackgroundColor3 = UI.Theme.Secondary,
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.fromScale(1, 2),
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
-		},
-	},
-	UI.new "Frame" {
-		Name = "Line",
-		BackgroundColor3 = UI.Theme.Border,
-		BackgroundTransparency = UI.Theme.TransparencyBalanced,
-		BorderSizePixel = 0,
-		Position = UDim2.new(0, 0, 0, 0),
-		Size = UDim2.new(1, 0, 0, 1),
-	},
 
 	UI.new "Frame" {
 		Name = "Content",
@@ -422,7 +376,9 @@ UI.new "Frame" {
 
 					local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
 					if tooltip then
-						tooltip.Text(`Server Uptime\n\n<b>Client Uptime:</b>  {getTimeString(time())}`)
+						tooltip.Text(
+							`Uptime\n\n<b>Server:</b>  {instance.Text}\n<b>Client:</b>  {getTimeString(time())}`
+						)
 					end
 				until nil
 			end),
@@ -596,7 +552,7 @@ local function dashboardToggle(button)
 		UI.Sound.Hover01:Play()
 		UI.clearActiveStates()
 	end
-	local container = _K.client.dashboard.Tabs._pages.CurrentPage
+	local container = tabs._pages.CurrentPage
 	local page = container and container:FindFirstChildWhichIsA("GuiObject")
 	if page then
 		page.Visible = button.isSelected

@@ -286,7 +286,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 	_K.client.CommandBar = require(script:WaitForChild("CommandBar"))
 	_K.client.CommandBar:init(_K)
-	_K.client.Dashboard = require(script:WaitForChild("Dashboard")) -- relies on command bar
+	_K.client.Dashboard = require(script:WaitForChild("Dashboard") :: any) -- relies on command bar
 	require(script:WaitForChild("GetKA"))
 	require(script:WaitForChild("Network"))
 

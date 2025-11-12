@@ -179,15 +179,15 @@ function Logs.new(_K)
 		Icon = UI.Theme.Image.Filter,
 		IconProperties = {
 			ImageColor3 = UI.Theme.PrimaryText,
-			Size = UDim2.fromScale(0.75, 0.75),
 		},
 		Size = UDim2.new(1, 0, 1, 0),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
+
 		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.PaddingHalf,
-			PaddingBottom = UI.Theme.PaddingHalf,
-			PaddingLeft = UI.Theme.PaddingHalf,
-			PaddingRight = UI.Theme.PaddingHalf,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
 		},
 
 		Activated = function()
@@ -201,6 +201,7 @@ function Logs.new(_K)
 		end,
 	}
 
+	UI.new "Tooltip" { Parent = filterButton, Text = "Filter Logs", Hovering = filterButton._hovering }
 	UI.edit(filterButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
 
 	filterMenu = UI.new "Menu" {

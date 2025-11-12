@@ -1,11 +1,11 @@
+local UI = require(script.Parent.UI)
+
 local Settings = { _K = nil }
 Settings.__index = Settings
 
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
 function Settings.new(_K)
-	local UI = _K.UI
-
 	local settingsDialog
 	local originalValues = {}
 	local pendingChanges = {}
@@ -114,6 +114,7 @@ function Settings.new(_K)
 			FlexMode = Enum.UIFlexMode.Fill,
 		},
 		UI.new "Button" {
+			BackgroundColor3 = UI.Theme.Invalid,
 			LayoutOrder = 2 ^ 31 - 1,
 			Label = "Restore Default Settings",
 			Visible = _K.client.settings.useSavedSettings,
@@ -307,12 +308,8 @@ function Settings.new(_K)
 				"Wrong Prefix Warning",
 				"Warns users when the wrong command prefix is used"
 			),
-			switchItem("saveLogs", "Save Logs", "Toggle the saving and synchronization of logs across servers"),
-			switchItem(
-				"saveChatLogs",
-				"Save Chat Logs",
-				"Toggle the saving and synchronization of chat logs across servers"
-			),
+			switchItem("saveLogs", "Save Logs", "Toggle the saving and syncing of logs across servers"),
+			switchItem("saveChatLogs", "Save Chat Logs", "Toggle the saving and syncing of chat logs across servers"),
 		},
 
 		{
@@ -438,7 +435,8 @@ function Settings.new(_K)
 			task.defer(function()
 				repeat -- wait until settings is in view
 					task.wait()
-				until _K.client.dashboard.Tabs.CurrentPage._value == _K.client.dashboard.Settings._instance
+				until _K.client.dashboard.Tabs
+						and _K.client.dashboard.Tabs.CurrentPage._value == _K.client.dashboard.Settings._instance
 					or _K.client.dashboard.Settings._instance.Parent == nil
 					or not _K.client.dashboard.Settings._instance:IsDescendantOf(_K.client.dashboard.Tabs._content)
 

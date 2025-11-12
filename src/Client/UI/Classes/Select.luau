@@ -41,7 +41,7 @@ function Class.new(properties: Properties?)
 		local choices = self.Choices()
 		local font = self.FontFace()
 		local size = UI.Theme.FontSize()
-		local padding = UI.Theme.Padding().Offset
+		local padding = if self.Padding then self.Padding().Offset else UI.Theme.Padding().Offset
 		local maxWidth = size
 
 		local params = Instance.new("GetTextBoundsParams")

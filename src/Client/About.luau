@@ -458,15 +458,15 @@ function About.new(_K)
 
 		local passDefinition = {
 			{ name = "Tip", color = "#bf0", id = 5391355 },
-			{ name = "Donation", color = "#8f0", id = 5391356 },
-			{ name = "Gift", color = "#0f0", id = 933980650 },
+			{ name = "Gift", color = "#8f0", id = 5391356 },
+			{ name = "Donor", color = "#0f0", id = 933980650 },
 			{ name = "Tribute", color = "#0f8", id = 933582848 },
 			{ name = "Patron", color = "#0ff", id = 938480383 },
 			{ name = "Elite", color = "#80f", id = 939618404 },
 			{ name = "Epic", color = "#f0f", id = 936146448 },
 			{ name = "Hero", color = "#f08", id = 941076536 },
 			{ name = "Legend", color = "#f00", id = 941162509 },
-			{ name = "Mythic", color = "#f00", id = 941006661 },
+			{ name = "Mythic", color = "#000", id = 941006661 },
 			{ name = "Eternal", color = "#000", id = 983235767 },
 		}
 
@@ -894,9 +894,8 @@ function About.new(_K)
 					TextStrokeColor3 = UI.Theme.Primary,
 					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 					Size = UDim2.new(1, 0, 0, 24),
-					Text = `<sc>{string.lower(group.Title)}</sc>`,
+					Text = string.upper(group.Title),
 					TextTransparency = 0.5,
-					RichText = true,
 				}
 				order += 1
 				local flexFrame = UI.new "Frame" {

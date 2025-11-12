@@ -117,9 +117,7 @@ function Class.new(properties: Properties?)
 		Name = "Ripple",
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
-		BackgroundColor3 = function()
-			return if UI.getLuminance(self.BackgroundColor3()) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
-		end,
+		BackgroundColor3 = UI.Theme.Secondary,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerPadded,

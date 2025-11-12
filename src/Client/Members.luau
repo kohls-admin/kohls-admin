@@ -152,21 +152,21 @@ function Members.new(_K)
 		},
 	}
 
-	local newRoleButton = UI.new "Button" {
+	local newMemberButton = UI.new "Button" {
 		LayoutOrder = 3,
 		ActiveSound = false,
 		Icon = UI.Theme.Image.Add,
 		IconProperties = {
 			ImageColor3 = UI.Theme.PrimaryText,
-			Size = UDim2.fromScale(0.625, 0.625),
 		},
 		Size = UDim2.new(1, 0, 1, 0),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
+
 		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.PaddingHalf,
-			PaddingBottom = UI.Theme.PaddingHalf,
-			PaddingLeft = UI.Theme.PaddingHalf,
-			PaddingRight = UI.Theme.PaddingHalf,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
 		},
 
 		Visible = function()
@@ -184,8 +184,8 @@ function Members.new(_K)
 			newRoleDialog.Visible(not newRoleDialog.Visible._value)
 		end,
 	}
-	UI.new "Tooltip" { Parent = newRoleButton, Text = "New Member", Hovering = newRoleButton._hovering }
-	UI.edit(newRoleButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
+	UI.new "Tooltip" { Parent = newMemberButton, Text = "New Member", Hovering = newMemberButton._hovering }
+	UI.edit(newMemberButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
 
 	local itemSize = UI.compute(function()
 		_K.client.rank()
@@ -405,7 +405,6 @@ function Members.new(_K)
 			},
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
-			Text = "",
 			Visible = function()
 				local _rank = _K.client.rank()
 				return _K.Registry.commands.role.LocalPlayerAuthorized
@@ -552,9 +551,9 @@ function Members.new(_K)
 		Name = "FilterInput",
 
 		BackgroundTransparency = 1,
-		Size = UI.compute(function()
-			return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
-		end),
+		Size = function()
+			return UDim2.new(0, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
+		end,
 
 		UI.new "UIListLayout" {
 			FillDirection = Enum.FillDirection.Horizontal,
@@ -562,7 +561,7 @@ function Members.new(_K)
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		},
 		UI.edit(scroller._input, { UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }),
-		newRoleButton,
+		newMemberButton,
 	}
 
 	local function updateCache(member)

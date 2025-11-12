@@ -131,8 +131,6 @@ function Bans.new(_K)
 
 		local editBanButton = UI.new "Button" {
 			LayoutOrder = 9,
-			BackgroundTransparency = 1,
-			-- HoverTransparency = 0,
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			Icon = UI.Theme.Image.Edit,
@@ -155,9 +153,7 @@ function Bans.new(_K)
 
 		local unbanButton = UI.new "Button" {
 			LayoutOrder = 9,
-			BackgroundColor3 = Color3.fromRGB(200, 0, 0),
-			BackgroundTransparency = 1,
-			HoverTransparency = 0,
+			BackgroundColor3 = UI.Theme.Invalid,
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			Icon = UI.Theme.Image.Close_Bold,
@@ -473,15 +469,15 @@ function Bans.new(_K)
 		Icon = UI.Theme.Image.Add,
 		IconProperties = {
 			ImageColor3 = UI.Theme.PrimaryText,
-			Size = UDim2.fromScale(0.625, 0.625),
 		},
 		Size = UDim2.new(1, 0, 1, 0),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
+
 		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.PaddingHalf,
-			PaddingBottom = UI.Theme.PaddingHalf,
-			PaddingLeft = UI.Theme.PaddingHalf,
-			PaddingRight = UI.Theme.PaddingHalf,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
 		},
 
 		Activated = function()

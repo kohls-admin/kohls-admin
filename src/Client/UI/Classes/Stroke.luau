@@ -18,6 +18,12 @@ function Class.new(properties: Properties?)
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		Transparency = UI.Theme.TransparencyLight,
 		Color = UI.Theme.Border,
+
+		UI.new "UIGradient" {
+			Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1)),
+			Transparency = NumberSequence.new(1, 0),
+			Rotation = -90,
+		},
 	} :: UIStroke
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
