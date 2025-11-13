@@ -260,7 +260,10 @@ function Class.new(properties: Properties?)
 		pageCache[container] = page
 		containerCache[page] = container
 
-		page.Parent = if self.CurrentPage() == page then container else nil
+		if self.CurrentPage() == page then
+			page.Parent = container
+			pages:JumpTo(container)
+		end
 
 		local nameState = UI.state(page, "Name")
 		local button
