@@ -52,7 +52,10 @@ function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
+	local cleanup = {}
+
 	local dragging = UI.state(false)
+	table.insert(cleanup, dragging)
 
 	local hue = 0
 	local hueSlider = UI.new "Slider" {
@@ -98,6 +101,7 @@ function Class.new(properties: Properties?)
 			end,
 		},
 	}
+	self.hueSlider = hueSlider
 
 	local hueColor = UI.compute(function()
 		return Color3.fromHSV(hueSlider.Value(), 1, 1)
@@ -134,6 +138,7 @@ function Class.new(properties: Properties?)
 			end,
 		},
 	}
+	self.hexInput = hexInput
 
 	local sv, dragInput
 	local sX = UI.state(0)
@@ -173,7 +178,7 @@ function Class.new(properties: Properties?)
 		end
 	end
 
-	UI.UserInputService.InputChanged:Connect(update)
+	table.insert(cleanup, UI.UserInputService.InputChanged:Connect(update))
 
 	sv = UI.new "Frame" {
 		Name = "SaturationValue",
@@ -253,6 +258,7 @@ function Class.new(properties: Properties?)
 
 		InputBegan = inputBegan,
 	}
+	self.sv = sv
 
 	self._menu = UI.new "Menu" {
 		Name = "ColorPicker",
@@ -283,6 +289,7 @@ function Class.new(properties: Properties?)
 			sv,
 			hexInput,
 		},
+		[UI.Clean] = cleanup,
 	} :: Menu
 	self._menu._list.FillDirection = Enum.FillDirection.Horizontal
 	self._menu._content.AutomaticSize = Enum.AutomaticSize.XY

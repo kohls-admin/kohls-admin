@@ -583,6 +583,7 @@ return {
 					if billboard then
 						billboard:Destroy()
 					end
+
 					billboard = Instance.new("BillboardGui")
 					billboard.Name = "_KLink"
 					billboard.LightInfluence = 0
@@ -591,6 +592,7 @@ return {
 						or UDim2.fromOffset(250, 50)
 					billboard.SizeOffset = Vector2.new(0, 0.5)
 					billboard.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
+
 					local beam = Instance.new("Beam")
 					beam.Color = ColorSequence.new(player.TeamColor.Color)
 					beam.Brightness = 2
@@ -602,6 +604,7 @@ return {
 					beam.Attachment0 = playerAttachment
 					beam.Attachment1 = localAttachment
 					beam.Parent = billboard
+
 					local label = Instance.new("TextLabel")
 					label.TextColor3 = player.TeamColor.Color
 					label.BackgroundTransparency = 1
@@ -614,32 +617,21 @@ return {
 					label.Parent = billboard
 					billboard.Parent = playerRoot
 
-					local teamChanged = player:GetPropertyChangedSignal("TeamColor"):Connect(function()
-						beam.Color = ColorSequence.new(player.TeamColor.Color)
-						label.TextColor3 = player.TeamColor.Color
-					end)
-					local ancestryChanged = nil
-					local localCharacterRemoving = nil
+					local cleanup = {
+						billboard,
+						player:GetPropertyChangedSignal("TeamColor"):Connect(function()
+							beam.Color = ColorSequence.new(player.TeamColor.Color)
+							label.TextColor3 = player.TeamColor.Color
+						end),
+					}
+
 					local function cleanLink()
-						teamChanged:Disconnect()
-						if ancestryChanged then
-							ancestryChanged:Disconnect()
-						end
-						if localCharacterRemoving then
-							localCharacterRemoving:Disconnect()
-						end
-						if billboard then
-							billboard:Destroy()
-						end
+						_K.Flux.cleanup(cleanup)
 					end
-					ancestryChanged = billboard.AncestryChanged:Connect(function(instance: Instance, parent: Instance?)
-						if not parent then
-							cleanLink()
-						end
-					end)
-					localCharacterRemoving = localPlayer.CharacterRemoving:Connect(function()
-						cleanLink()
-					end)
+
+					billboard.Destroying:Once(cleanLink)
+					localPlayer.CharacterRemoving:Once(cleanLink)
+
 					task.spawn(function()
 						local originalLabel = label.Text
 						while billboard and billboard.Parent do
@@ -978,6 +970,7 @@ return {
 			},
 		},
 		envClient = function(_K)
+			local connection
 			_K.Remote.Notrip.OnClientEvent:Connect(function(enable)
 				local player = _K.Service.Players.LocalPlayer
 				local humanoid: Humanoid? = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -985,11 +978,19 @@ return {
 					humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, not enable)
 					humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, not enable)
 					humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, enable)
-					humanoid.StateChanged:Connect(function(old: Enum.HumanoidStateType, state: Enum.HumanoidStateType)
-						if state == Enum.HumanoidStateType.FallingDown or state == Enum.HumanoidStateType.Ragdoll then
-							humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+					if connection then
+						connection:Disconnect()
+					end
+					connection = humanoid.StateChanged:Connect(
+						function(old: Enum.HumanoidStateType, state: Enum.HumanoidStateType)
+							if
+								state == Enum.HumanoidStateType.FallingDown
+								or state == Enum.HumanoidStateType.Ragdoll
+							then
+								humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+							end
 						end
-					end)
+					)
 				end
 			end)
 		end,
@@ -1031,36 +1032,57 @@ return {
 				Enabled = xray,
 				FillColor = Color3.new(),
 			}
-			local characterConnections = {}
+
+			local characterCleanup = {}
 			local function cleanup(character)
-				local con = characterConnections[character]
-				if con then
-					con()
-				end
-				characterConnections[character] = nil
+				_K.Flux.cleanup(characterCleanup[character])
+				characterCleanup[character] = nil
 			end
+
 			local function xrayCharacter(character: Model)
 				local oldParent = character.Parent
-				characterConnections[character] = xray:Connect(function(value)
-					character.Parent = if value then xrayModel else oldParent
-				end)
-				character:GetPropertyChangedSignal("Parent"):Connect(function()
-					if character.Parent ~= xrayModel then
-						oldParent = character.Parent
-					end
-				end)
+				if not characterCleanup[character] then
+					characterCleanup[character] = {}
+				end
+				table.insert(
+					characterCleanup[character],
+					xray:Connect(function(value)
+						character.Parent = if value then xrayModel else oldParent
+					end)
+				)
+				table.insert(
+					characterCleanup[character],
+					character:GetPropertyChangedSignal("Parent"):Connect(function()
+						if character.Parent ~= xrayModel then
+							oldParent = character.Parent
+						end
+					end)
+				)
 			end
+
+			local playerCleanup = {}
+
 			local function xrayPlayer(player: Player)
 				if player == _K.LocalPlayer then
 					return
 				end
-				player.CharacterAdded:Connect(xrayCharacter)
-				player.CharacterRemoving:Connect(cleanup)
+				local connections = {}
+				playerCleanup[player] = connections
+				table.insert(connections, player.CharacterAdded:Connect(xrayCharacter))
+				table.insert(connections, player.CharacterRemoving:Connect(cleanup))
 				if player.Character then
 					xrayCharacter(player.Character)
 				end
 			end
+
 			_K.Util.SafePlayerAdded(xrayPlayer)
+			_K.Service.Players.PlayerRemoving:Connect(function(player)
+				if playerCleanup[player] then
+					_K.Flux.cleanup(playerCleanup[player])
+					playerCleanup[player] = nil
+				end
+			end)
+
 			return {
 				xray = xray,
 				xrayModel = xrayModel,

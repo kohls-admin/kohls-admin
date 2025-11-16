@@ -1,3 +1,5 @@
+local UI = require(script.Parent.UI)
+
 local Commands = {}
 Commands.__index = Commands
 
@@ -15,7 +17,6 @@ local function _argsString(command)
 end
 
 function Commands.new(_K)
-	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
 
 	local function createItem(self, command)
@@ -28,6 +29,12 @@ function Commands.new(_K)
 				then UI.Theme.PrimaryText()
 				else UI.Theme.PrimaryText():Lerp(UI.Theme.Primary(), 0.5)
 		end
+
+		local tooltip = UI.new "Tooltip" {
+			Text = "Loading...",
+		}
+
+		local cleanup = { tooltip }
 
 		itemRef._instance = UI.new "TextLabel" {
 			AutoLocalize = false,
@@ -65,18 +72,19 @@ function Commands.new(_K)
 					return UDim2.new(0, size, 0, size)
 				end,
 			},
+			tooltip,
+
+			[UI.Clean] = cleanup,
 		}
 
-		local tooltip = UI.new "Tooltip" {
-			Parent = itemRef._instance,
-			Text = "Loading...",
-		}
-
-		tooltip.Visible:Connect(function()
-			if tooltip.Visible._value then
-				tooltip.Text(itemRef.command._value.tipText)
-			end
-		end)
+		table.insert(
+			cleanup,
+			tooltip.Visible:Connect(function()
+				if tooltip.Visible._value then
+					tooltip.Text(itemRef.command._value.tipText)
+				end
+			end)
+		)
 
 		return itemRef
 	end

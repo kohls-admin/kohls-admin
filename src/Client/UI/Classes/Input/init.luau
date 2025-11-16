@@ -125,6 +125,7 @@ function Class.new(properties: Properties?)
 	UI.makeStatefulDefaults(self, properties)
 	self.IconProperties = {}
 
+	local cleanup = {}
 	local textState = UI.state(UI.raw(self.Value))
 
 	local inputSize = function()
@@ -226,9 +227,12 @@ function Class.new(properties: Properties?)
 	self._input:AddTag("KeyClackSound")
 
 	if self.HotkeyInput._value then
-		self._input.Focused:Connect(function()
-			self.Value("")
-		end)
+		table.insert(
+			cleanup,
+			self._input.Focused:Connect(function()
+				self.Value("")
+			end)
+		)
 		UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			if not self._input:IsFocused() then
 				return
@@ -382,17 +386,22 @@ function Class.new(properties: Properties?)
 				FlexMode = Enum.UIFlexMode.Fill,
 			},
 		},
+		[UI.Clean] = cleanup,
 	}
 
-	self[UI.Clean] = {
+	table.insert(
+		cleanup,
 		self._input:GetPropertyChangedSignal("SelectionStart"):Connect(function()
 			if self._input.SelectionStart == -1 then
 				selection.Visible = false
 			else
 				updateSelection(selection, displayLabel, self._input, self._inputOffset)
 			end
-		end),
+		end)
+	)
 
+	table.insert(
+		cleanup,
 		self._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 			lastCursorChange = tick()
 			cursor.TextTransparency = 0
@@ -402,8 +411,8 @@ function Class.new(properties: Properties?)
 				-- defer for text to register
 				task.defer(updateCursor, cursor, displayLabel, self._input, inputMask, self._inputOffset, selection)
 			end
-		end),
-	}
+		end)
+	)
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end

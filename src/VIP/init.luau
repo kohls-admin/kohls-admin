@@ -260,20 +260,45 @@ if Util.Service.Run:IsServer() then
 		end
 	end
 
+	local characterCleanup = {}
+
 	function VIP.CharacterAdded(character)
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if not humanoid then
 			return
 		end
-		humanoid.ApplyDescriptionFinished:Connect(function()
+		characterCleanup[character] = humanoid.ApplyDescriptionFinished:Connect(function()
 			VIP.EffectHandler(character)
 		end)
 	end
 
+	local playerCleanup = {}
+	Util.Service.Players.PlayerRemoving:Connect(function(player)
+		if playerCleanup[player] then
+			for _, connection in playerCleanup[player] do
+				if connection and connection.Connected then
+					connection:Disconnect()
+				end
+			end
+			table.clear(playerCleanup[player])
+		end
+		playerCleanup[player] = nil
+	end)
+
 	Util.SafePlayerAdded(function(player)
 		task.spawn(setDonationLevel, player)
-		player.CharacterAdded:Connect(VIP.CharacterAdded)
-		player.CharacterAppearanceLoaded:Connect(VIP.EffectHandler)
+		playerCleanup[player] = {}
+		table.insert(playerCleanup[player], player.CharacterAdded:Connect(VIP.CharacterAdded))
+		table.insert(playerCleanup[player], player.CharacterAppearanceLoaded:Connect(VIP.EffectHandler))
+		table.insert(
+			playerCleanup[player],
+			player.CharacterRemoving:Connect(function(character)
+				if characterCleanup[character] and characterCleanup[character].Connected then
+					characterCleanup[character]:Disconnect()
+				end
+				characterCleanup[character] = nil
+			end)
+		)
 		if player.Character then
 			VIP.EffectHandler(player.Character)
 		end

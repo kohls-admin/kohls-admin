@@ -17,6 +17,8 @@ function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
+	local cleanup = {}
+
 	local currentPage = self.CurrentPage()
 	if type(currentPage) == "table" and currentPage._instance then
 		self.CurrentPage(currentPage._instance)
@@ -24,6 +26,8 @@ function Class.new(properties: Properties?)
 
 	local tabOffset = UI.state(0)
 	local lastScroll
+
+	table.insert(cleanup, tabOffset)
 
 	local tabList = UI.new "UIListLayout" {
 		FillDirection = function()
@@ -114,14 +118,25 @@ function Class.new(properties: Properties?)
 		tabList,
 	} :: ScrollingFrame
 
-	tabs:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-		if self.Vertical() then
-			tabOffset(math.clamp(tabOffset._value, 0, tabList.AbsoluteContentSize.Y + tabs.AbsoluteSize.Y), false, true)
-		else
-			tabOffset(math.clamp(tabOffset._value, 0, tabList.AbsoluteContentSize.X + tabs.AbsoluteSize.X), false, true)
-		end
-		-- TODO: keep current page visible when resizing down?
-	end)
+	table.insert(
+		cleanup,
+		tabs:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+			if self.Vertical() then
+				tabOffset(
+					math.clamp(tabOffset._value, 0, tabList.AbsoluteContentSize.Y + tabs.AbsoluteSize.Y),
+					false,
+					true
+				)
+			else
+				tabOffset(
+					math.clamp(tabOffset._value, 0, tabList.AbsoluteContentSize.X + tabs.AbsoluteSize.X),
+					false,
+					true
+				)
+			end
+			-- TODO: keep current page visible when resizing down?
+		end)
+	)
 
 	local pageCache, containerCache = {}, {}
 
@@ -135,32 +150,39 @@ function Class.new(properties: Properties?)
 	self._pageCache = pageCache
 	self._containerCache = containerCache
 
-	pages.PageEnter:Connect(function(container)
-		local page = pageCache[container]
-		if not page then
-			return
-		end
-		self.CurrentPage(page)
-		page.Visible = true
-		page.Parent = container
-	end)
-
-	pages.PageLeave:Connect(function(container)
-		local page = pageCache[container]
-		if not page then
-			return
-		end
-		task.defer(function()
-			if pages.CurrentPage ~= container then
-				page.Parent = nil
-				page.Visible = false
+	table.insert(
+		cleanup,
+		pages.PageEnter:Connect(function(container)
+			local page = pageCache[container]
+			if not page then
+				return
 			end
+			self.CurrentPage(page)
+			page.Visible = true
+			page.Parent = container
 		end)
-	end)
+	)
 
-	local function tabPadding()
+	table.insert(
+		cleanup,
+		pages.PageLeave:Connect(function(container)
+			local page = pageCache[container]
+			if not page then
+				return
+			end
+			task.defer(function()
+				if pages.CurrentPage ~= container then
+					page.Parent = nil
+					page.Visible = false
+				end
+			end)
+		end)
+	)
+
+	local tabPadding = UI.compute(function()
 		return if self.Vertical() then UI.Theme.Padding() else UDim.new(0, 1)
-	end
+	end)
+	table.insert(cleanup, tabPadding)
 
 	self._instance = UI.new "Frame" {
 		Name = "TabController",
@@ -194,11 +216,13 @@ function Class.new(properties: Properties?)
 				PaddingRight = UI.Theme.Padding,
 			},
 		},
+		[UI.Clean] = cleanup,
 	} :: Frame
 
 	local sidePadding = UI.compute(function()
 		return if self.Vertical() then UI.Theme.PaddingStroke else UI.Theme.PaddingWithStroke
 	end)
+	table.insert(cleanup, sidePadding)
 
 	local PagesFrame = UI.new "Frame" {
 		Name = "PagesFrame",
@@ -314,6 +338,7 @@ function Class.new(properties: Properties?)
 				end
 			end,
 		}
+		table.insert(cleanup, button)
 
 		UI.edit(button._content.Label, {
 			TextTransparency = UI.tween(function()
@@ -348,8 +373,8 @@ function Class.new(properties: Properties?)
 			button._instance.Visible = visible
 			container.Parent = if visible then PagesFrame else nil
 		end
-		page:GetPropertyChangedSignal("Parent"):Connect(hideButton)
-		page:GetAttributeChangedSignal("Enabled"):Connect(hideButton)
+		table.insert(cleanup, page:GetPropertyChangedSignal("Parent"):Connect(hideButton))
+		table.insert(cleanup, page:GetAttributeChangedSignal("Enabled"):Connect(hideButton))
 		hideButton()
 	end
 

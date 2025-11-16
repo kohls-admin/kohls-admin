@@ -514,16 +514,27 @@ return {
 			end)
 		end,
 		env = function(_K)
+			local cleanup = {}
 			local displayNames = {}
+
 			_K.Util.SafePlayerAdded(function(player)
-				player.CharacterAdded:Connect(function(character)
-					local name = displayNames[player.UserId]
-					if not name then
-						return
-					end
-					character:FindFirstChildOfClass("Humanoid").DisplayName = name
-					_K.Remote.DisplayName:FireClient(player, name)
-				end)
+				cleanup[player] = {
+					player.CharacterAdded:Connect(function(character)
+						local name = displayNames[player.UserId]
+						if not name then
+							return
+						end
+						character:FindFirstChildOfClass("Humanoid").DisplayName = name
+						_K.Remote.DisplayName:FireClient(player, name)
+					end),
+				}
+			end)
+
+			_K.Service.Players.PlayerRemoving:Connect(function(player)
+				if cleanup[player] then
+					_K.Flux.cleanup(cleanup[player])
+					cleanup[player] = nil
+				end
 			end)
 
 			return {
@@ -1621,9 +1632,16 @@ return {
 				reapply(_K.Service.Players:GetPlayerFromCharacter(character))
 			end
 
+			local cleanup = {}
+
 			_K.Util.SafePlayerAdded(function(player: Player)
-				player.CharacterAdded:Connect(reapplyCharacter)
+				cleanup[player] = player.CharacterAdded:Connect(reapplyCharacter)
 				reapply(player)
+			end)
+
+			_K.Service.Players.PlayerRemoving:Connect(function(player)
+				_K.Flux.cleanup(cleanup[player])
+				cleanup[player] = nil
 			end)
 
 			return env
@@ -1819,8 +1837,10 @@ return {
 				return kJail
 			end
 
+			local cleanup = {}
+
 			_K.Util.SafePlayerAdded(function(player)
-				player.CharacterAdded:Connect(Jail.recaptureCharacter)
+				cleanup[player] = player.CharacterAdded:Connect(Jail.recaptureCharacter)
 				local jailPos = Jail.users[player.UserId]
 				if jailPos then
 					if not player.Character then
@@ -1832,11 +1852,11 @@ return {
 			end)
 
 			_K.Service.Players.PlayerRemoving:Connect(function(player)
-				local jail = Jail.parts[player.UserId]
-				if jail then
-					jail:Destroy()
-					Jail.parts[player.UserId] = nil
-				end
+				_K.Flux.cleanup(cleanup[player])
+				cleanup[player] = nil
+				local parts = Jail.parts[player.UserId]
+				_K.Flux.cleanup(parts)
+				Jail.parts[player.UserId] = nil
 			end)
 
 			return Jail

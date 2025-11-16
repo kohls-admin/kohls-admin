@@ -336,6 +336,8 @@ function Class.new(properties: Properties?)
 		PaddingRight = UI.Theme.PaddingWithStroke,
 	}
 
+	local cleanup = {}
+
 	self._instance = UI.new "Frame" {
 		Name = "ScrollerFast",
 		BackgroundTransparency = 1,
@@ -345,6 +347,7 @@ function Class.new(properties: Properties?)
 		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
 		self._scroller,
 
+		[UI.Clean] = cleanup,
 		[UI.Event] = {
 			Parent = render,
 		},
@@ -352,16 +355,19 @@ function Class.new(properties: Properties?)
 
 	self = setmetatable(self, Class)
 
-	self.List:Connect(function()
-		self:updateList()
-	end)
+	table.insert(
+		cleanup,
+		self.List:Connect(function()
+			self:updateList()
+		end)
+	)
 	self:updateList()
 
 	local function refresh()
 		self:refreshList()
 	end
-	UI.Theme.FontSize:Connect(refresh)
-	UI.Theme.Padding:Connect(refresh)
+	table.insert(cleanup, UI.Theme.FontSize:Connect(refresh))
+	table.insert(cleanup, UI.Theme.Padding:Connect(refresh))
 
 	if self.FilterInput._value then
 		local thread = false
@@ -382,7 +388,7 @@ function Class.new(properties: Properties?)
 				Size = UDim2.fromOffset(18, 18),
 			},
 		}
-		self._input._input:GetPropertyChangedSignal("Text"):Connect(debounce)
+		table.insert(cleanup, self._input._input:GetPropertyChangedSignal("Text"):Connect(debounce))
 		self:filter(defaultFilter)
 	end
 

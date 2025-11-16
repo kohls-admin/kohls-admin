@@ -801,6 +801,13 @@ return {
 
 					env.infect(player, part.Parent)
 				end)
+
+				player.CharacterRemoving:Once(function()
+					if env.infected[character] then
+						env.infected[character]:Disconnect()
+						env.infected[character] = nil
+					end
+				end)
 			end
 
 			return env

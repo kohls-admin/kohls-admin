@@ -185,18 +185,22 @@ return {
 				end
 			end
 
+			local cleanup = {}
+
 			_K.Util.SafePlayerAdded(function(player: Player)
 				for hiddenPlayer, hideCharacter in env.hidden do
 					local hiddenRank = _K.Auth.getRank(hiddenPlayer.UserId)
 					env.remote:FireAllClients(hiddenPlayer.UserId, hiddenRank, hideCharacter)
 				end
+				cleanup[player] = player.CharacterAdded:Connect(characterAdded)
 				if player.Character then
 					characterAdded(player.Character)
 				end
-				player.CharacterAdded:Connect(characterAdded)
 			end)
 
 			_K.Service.Players.PlayerRemoving:Connect(function(player)
+				_K.Flux.cleanup(cleanup[player])
+				cleanup[player] = nil
 				if env.hidden[player] ~= nil then
 					env.hidden[player] = nil
 					env.remote:FireAllClients(player.UserId)

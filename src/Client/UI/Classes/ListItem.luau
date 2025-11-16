@@ -18,6 +18,8 @@ function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
+	local cleanup = {}
+
 	self._label = UI.new "TextLabel" {
 		AutoLocalize = false,
 		AutomaticSize = Enum.AutomaticSize.XY,
@@ -36,9 +38,11 @@ function Class.new(properties: Properties?)
 	} :: TextLabel
 
 	local labelSize = UI.state(self._label, "AbsoluteSize")
-	local automaticSize = function()
+	local automaticSize = UI.compute(function()
 		return self.ContentAutomaticSize() and Enum.AutomaticSize.Y or Enum.AutomaticSize.None
-	end
+	end)
+	table.insert(cleanup, labelSize)
+	table.insert(cleanup, automaticSize)
 
 	self._content = UI.new "Frame" {
 		Name = "UIContent",
@@ -78,6 +82,7 @@ function Class.new(properties: Properties?)
 		self._label,
 		self._content,
 		if self.Tooltip then UI.new "Tooltip" { Text = self.Tooltip } else nil,
+		[UI.Clean] = cleanup,
 	} :: Frame & { TextLabel: TextLabel, UIContent: typeof(self._content) }
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)

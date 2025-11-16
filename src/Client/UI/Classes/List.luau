@@ -18,6 +18,8 @@ function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
+	local cleanup = {}
+
 	local listLayout = UI.new "UIListLayout" {
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Padding = self.Padding,
@@ -26,10 +28,12 @@ function Class.new(properties: Properties?)
 	}
 
 	local contentSize = UI.state(listLayout, "AbsoluteContentSize")
+	table.insert(cleanup, contentSize)
 
 	local headerTransparency = UI.tween(function()
 		return if self.Collapsed() then 0.5 else 0
 	end, UI.Theme.TweenOut)
+	table.insert(cleanup, headerTransparency)
 
 	self._instance = UI.new "Frame" {
 		Name = "List",
@@ -121,6 +125,7 @@ function Class.new(properties: Properties?)
 				end
 			end,
 		},
+		[UI.Clean] = cleanup,
 	} :: Frame & { UIListLayout: UIListLayout, UIPadding: UIPadding }
 
 	self._content = UI.new "Frame" {

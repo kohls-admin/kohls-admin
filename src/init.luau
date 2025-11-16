@@ -241,7 +241,17 @@ end
 
 script:SetAttribute("ServerStartTime", workspace:GetServerTimeNow())
 
+local characterCleanup = {}
+
+local function characterRemoving(character: Model)
+	_K.Flux.cleanup(characterCleanup[character])
+	characterCleanup[character] = nil
+	task.defer(game.Destroy, character)
+end
+
 local function characterAdded(character: Model)
+	local cleanup = {}
+	characterCleanup[character] = cleanup
 	local player = _K.Service.Players:GetPlayerFromCharacter(character)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 
@@ -262,36 +272,42 @@ local function characterAdded(character: Model)
 		end
 	end
 	local logDamageDebounce = _K.Util.Function.debounce(1, logDamage)
-	humanoid.HealthChanged:Connect(function(health)
-		if alive then
-			local tag = humanoid:FindFirstChild("creator")
-			local from = (tag and tag.Value) or game
-			local damage = lastHealth - health
-			lastHealth = health
-			if damage > 0 and health >= 0 then
-				damageBatch[from] = (damageBatch[from] or 0) + damage
-				logDamageDebounce(from)
+	table.insert(
+		cleanup,
+		humanoid.HealthChanged:Connect(function(health)
+			if alive then
+				local tag = humanoid:FindFirstChild("creator")
+				local from = (tag and tag.Value) or game
+				local damage = lastHealth - health
+				lastHealth = health
+				if damage > 0 and health >= 0 then
+					damageBatch[from] = (damageBatch[from] or 0) + damage
+					logDamageDebounce(from)
+				end
 			end
-		end
-	end)
+		end)
+	)
 
 	-- kill logs
-	humanoid.Died:Connect(function()
-		alive = false
-		local tag = humanoid:FindFirstChild("creator")
-		local from = tag and tag.Value
-		for attacker in damageBatch do
-			logDamage(attacker)
-		end
-		if from then
-			_K.log(`died to {from}.`, "DEATH", player.UserId)
-			if typeof(from) == "Instance" and from:IsA("Player") then
-				_K.log(`killed {player}.`, "KILL", from.UserId)
+	table.insert(
+		cleanup,
+		humanoid.Died:Connect(function()
+			alive = false
+			local tag = humanoid:FindFirstChild("creator")
+			local from = tag and tag.Value
+			for attacker in damageBatch do
+				logDamage(attacker)
 			end
-		else
-			_K.log(`died.`, "DEATH", player.UserId)
-		end
-	end)
+			if from then
+				_K.log(`died to {from}.`, "DEATH", player.UserId)
+				if typeof(from) == "Instance" and from:IsA("Player") then
+					_K.log(`killed {player}.`, "KILL", from.UserId)
+				end
+			else
+				_K.log(`died.`, "DEATH", player.UserId)
+			end
+		end)
+	)
 end
 
 local function welcomeBadge(userId)
@@ -740,6 +756,8 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		player:SetAttribute("_KIdleTime", idleTime)
 	end)
 
+	local playerCleanup = {}
+
 	_K.Util.SafePlayerAdded(function(player: Player)
 		if (_K.Data.settings.welcomeBadgeId or 0) > 0 then
 			task.spawn(welcomeBadge, player.UserId)
@@ -771,24 +789,33 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		if player.Character then
 			task.spawn(characterAdded, player.Character)
 		end
-		player.CharacterAdded:Connect(characterAdded)
-		player.Chatted:Connect(function(message: string)
-			local emote = string.find(message, "/e", 1, true) == 1
-			local v = _K.Service.TextChat.ChatVersion
-			if
-				_K.Data.settings.chatCommands ~= false
-				and ((v == Enum.ChatVersion.TextChatService and emote) or v == Enum.ChatVersion.LegacyChatService)
-			then
-				_K.Remote.Command:FireClient(player, message)
-			end
-			if emote then
-				return
-			end
-			_K.log(_K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
-		end)
+		local cleanup = {}
+		playerCleanup[player] = cleanup
+		table.insert(cleanup, player.CharacterAdded:Connect(characterAdded))
+		table.insert(cleanup, player.CharacterRemoving:Connect(characterRemoving))
+		table.insert(
+			cleanup,
+			player.Chatted:Connect(function(message: string)
+				local emote = string.find(message, "/e", 1, true) == 1
+				local v = _K.Service.TextChat.ChatVersion
+				if
+					_K.Data.settings.chatCommands ~= false
+					and ((v == Enum.ChatVersion.TextChatService and emote) or v == Enum.ChatVersion.LegacyChatService)
+				then
+					_K.Remote.Command:FireClient(player, message)
+				end
+				if emote then
+					return
+				end
+				_K.log(_K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
+			end)
+		)
 	end)
 	_K.Service.Players.PlayerRemoving:Connect(function(player)
+		_K.Flux.cleanup(playerCleanup[player])
+		playerCleanup[player] = nil
 		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId)
+		task.defer(game.Destroy, player)
 	end)
 
 	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")

@@ -4,10 +4,18 @@ local Util = require(script.Parent.Parent.Util)
 
 if Util.Service.Run:IsServer() then
 	-- update humanoid description on respawn from _K attributes
+	local cleanup = {}
 	Util.SafePlayerAdded(function(player)
-		player.CharacterAppearanceLoaded:Connect(function(character)
+		cleanup[player] = player.CharacterAppearanceLoaded:Connect(function(character)
 			task.defer(Util.Humanoid.reapplyDescription, player)
 		end)
+	end)
+
+	Util.Service.Players.PlayerRemoving:Connect(function(player)
+		if cleanup[player] and cleanup[player].Connected then
+			cleanup[player]:Disconnect()
+			cleanup[player] = nil
+		end
 	end)
 end
 
@@ -70,6 +78,7 @@ return {
 					local infected = infectedCommand.env.infected[character]
 					if infected then
 						infected:Disconnect()
+						infectedCommand.env.infected[character] = nil
 						local face = character
 							and character:FindFirstChild("Head")
 							and character.Head:FindFirstChild("face")

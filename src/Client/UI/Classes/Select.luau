@@ -102,15 +102,19 @@ function Class.new(properties: Properties?)
 
 	UI.edit(headerButton._content.Label.UIPadding, { PaddingRight = UDim.new() })
 
+	local cleanup = { itemSize }
+
 	self._instance = UI.new "Frame" {
 		ZIndex = 100,
 		Name = "Select",
 		BackgroundTransparency = 1,
 		Size = itemSize,
 		headerButton,
+		[UI.Clean] = cleanup,
 	} :: Frame & { Header: Button }
 
 	local absoluteSize = UI.state(self._instance, "AbsoluteSize")
+	table.insert(cleanup, absoluteSize)
 
 	self.menu = UI.new "Menu" {
 		Adornee = self._instance,
@@ -118,6 +122,9 @@ function Class.new(properties: Properties?)
 			return UDim2.new(0, absoluteSize().X, 0, math.min(#self.Choices(), 7.5) * itemSize().Y.Offset)
 		end,
 	} :: Menu
+	table.insert(cleanup, self.menu)
+
+	local choiceCleanup = {}
 
 	local selectedButton
 	local function updateChoices()
@@ -171,11 +178,14 @@ function Class.new(properties: Properties?)
 						else UI.Theme.TransparencyHeavy()
 				end,
 			})
-			choiceButton._hovering:Connect(function(value)
-				if value then
-					UI.Sound.Hover02:Play()
-				end
-			end)
+			table.insert(
+				choiceCleanup,
+				choiceButton._hovering:Connect(function(value)
+					if value then
+						UI.Sound.Hover02:Play()
+					end
+				end)
+			)
 
 			if choice == selected then
 				selectedButton = choiceButton._instance
@@ -183,26 +193,32 @@ function Class.new(properties: Properties?)
 		end
 	end
 
-	self.menu.Visible:Connect(function(value)
-		if selectedButton and value then
-			local buttonHeight = selectedButton.AbsoluteSize.Y
-			local buttonPosition = selectedButton.AbsolutePosition.Y + self.menu._content.CanvasPosition.Y
-			local offset = math.round((self.menu._content.AbsoluteSize.Y / 2) / buttonHeight) * buttonHeight
-			self.menu._content.CanvasPosition =
-				Vector2.new(0, buttonPosition - self.menu._content.AbsolutePosition.Y - offset)
-		end
-	end)
-
-	local disconnectHook = self.Choices:Connect(function(value)
-		for _, child in self.menu._content:GetChildren() do
-			if not child:IsA("UIBase") then
-				child:Destroy()
+	table.insert(
+		cleanup,
+		self.menu.Visible:Connect(function(value)
+			if selectedButton and value then
+				local buttonHeight = selectedButton.AbsoluteSize.Y
+				local buttonPosition = selectedButton.AbsolutePosition.Y + self.menu._content.CanvasPosition.Y
+				local offset = math.round((self.menu._content.AbsoluteSize.Y / 2) / buttonHeight) * buttonHeight
+				self.menu._content.CanvasPosition =
+					Vector2.new(0, buttonPosition - self.menu._content.AbsolutePosition.Y - offset)
 			end
-		end
-		updateChoices()
-	end)
+		end)
+	)
 
-	self.menu._instance.Destroying:Connect(disconnectHook)
+	table.insert(
+		cleanup,
+		self.Choices:Connect(function(value)
+			for _, child in self.menu._content:GetChildren() do
+				if not child:IsA("UIBase") then
+					child:Destroy()
+				end
+			end
+			UI.cleanup(choiceCleanup)
+			updateChoices()
+		end)
+	)
+
 	updateChoices()
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)

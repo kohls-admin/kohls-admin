@@ -105,7 +105,6 @@ function Character.fly(enable: boolean, constant: boolean?)
 		flyAttachment.Parent = nil
 		linear.VectorVelocity = Vector3.zero
 		humanoid.PlatformStand = false
-		flyConnection = nil
 		humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 	end
 end
@@ -119,11 +118,16 @@ end
 
 -- CONNECTIONS
 
+local characterCleanup = {}
+
 local function onCharacter(character)
 	Character.fly(false)
 	Character.noclip(false)
 	local humanoid = character:WaitForChild("Humanoid")
-	humanoid.StateChanged:Connect(function(old, new)
+	if characterCleanup[character] then
+		characterCleanup[character]:Disconnect()
+	end
+	characterCleanup[character] = humanoid.StateChanged:Connect(function(old, new)
 		noClip(character)
 		if new == Enum.HumanoidStateType.Landed then
 			canDoubleJump = false
@@ -202,6 +206,12 @@ if LocalPlayer.Character then
 	task.spawn(onCharacter, LocalPlayer.Character)
 end
 LocalPlayer.CharacterAdded:Connect(onCharacter)
+LocalPlayer.CharacterRemoving:Connect(function(character)
+	if characterCleanup[character] and characterCleanup[character].Connected then
+		characterCleanup[character]:Disconnect()
+	end
+	characterCleanup[character] = nil
+end)
 
 UserInputService.JumpRequest:Connect(onJumpRequest)
 
