@@ -517,25 +517,9 @@ function Settings.new(_K)
 		end
 		_K.Util.Defer.wait()
 
-		local vector2Huge = Vector2.new(math.huge, math.huge)
-		local sliderMaxSize = UI.state(vector2Huge)
-
-		local sliders = {}
-		local function updateSliderSize()
-			sliderMaxSize(vector2Huge, true)
-			local minimumWidth = math.huge
-			for _, slider in sliders do
-				minimumWidth = math.min(slider.AbsoluteSize.X, minimumWidth)
-			end
-			sliderMaxSize(Vector2.new(minimumWidth, math.huge), true)
-		end
-
-		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updateSliderSize)
-
 		local lastSelected
 		local lastSelectedY = 0
 		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(function()
-			updateSliderSize()
 			if not lastSelected then
 				return
 			end
@@ -591,9 +575,7 @@ function Settings.new(_K)
 				},
 				slider,
 			}
-
 			listItem._label.Size = UDim2.new(0.5, 0, 0, 0)
-			table.insert(sliders, slider._instance)
 			table.insert(themeLineItems, listItem)
 		end
 		_K.Util.Defer.wait()
@@ -603,9 +585,6 @@ function Settings.new(_K)
 			local slider
 			slider = UI.new "Slider" {
 				Snap = 17,
-				UI.new "UISizeConstraint" {
-					MaxSize = sliderMaxSize,
-				},
 				Value = function()
 					return math.clamp(UI.Theme[key]().Offset + 1, 1, 17)
 				end,
@@ -624,35 +603,33 @@ function Settings.new(_K)
 					end,
 				},
 			}
-			table.insert(sliders, slider._instance)
-			table.insert(
-				themeLineItems,
-				UI.new "ListItem" {
-					Text = key:gsub("(.)(%u)", "%1 %2"),
-					UI.new "Input" {
-						FontFace = UI.Theme.FontMono,
-						FontSize = UI.Theme.FontSize,
-						Size = inputSize,
-						NumberOnly = true,
-						NumberRange = NumberRange.new(0, 16),
-						Placeholder = "",
-						Value = function()
-							return UI.Theme[key]().Offset
+			local listItem = UI.new "ListItem" {
+				Text = key:gsub("(.)(%u)", "%1 %2"),
+				UI.new "Input" {
+					FontFace = UI.Theme.FontMono,
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
+					NumberOnly = true,
+					NumberRange = NumberRange.new(0, 16),
+					Placeholder = "",
+					Value = function()
+						return UI.Theme[key]().Offset
+					end,
+					[UI.Hook] = {
+						Value = function(value)
+							local number = tonumber(value)
+							if not number then
+								return
+							end
+							value = UDim.new(0, number)
+							change("theme" .. key, value)
 						end,
-						[UI.Hook] = {
-							Value = function(value)
-								local number = tonumber(value)
-								if not number then
-									return
-								end
-								value = UDim.new(0, number)
-								change("theme" .. key, value)
-							end,
-						},
 					},
-					slider,
-				}
-			)
+				},
+				slider,
+			}
+			listItem._label.Size = UDim2.new(0.5, 0, 0, 0)
+			table.insert(themeLineItems, listItem)
 		end
 		_K.Util.Defer.wait()
 
@@ -665,9 +642,6 @@ function Settings.new(_K)
 			do
 				local slider
 				slider = UI.new "Slider" {
-					UI.new "UISizeConstraint" {
-						MaxSize = sliderMaxSize,
-					},
 					Value = function()
 						return UI.Theme[data.key]()
 					end,
@@ -680,35 +654,33 @@ function Settings.new(_K)
 						end,
 					},
 				}
-				table.insert(sliders, slider._instance)
-				table.insert(
-					themeLineItems,
-					UI.new "ListItem" {
-						Text = data.text,
-						UI.new "Input" {
-							FontFace = UI.Theme.FontMono,
-							FontSize = UI.Theme.FontSize,
-							Size = inputSize,
-							MaxChars = 5,
-							NumberOnly = true,
-							NumberRange = NumberRange.new(0, 1),
-							Placeholder = "",
-							Value = function()
-								return string.sub(UI.Theme[data.key](), 1, 5)
+				local listItem = UI.new "ListItem" {
+					Text = data.text,
+					UI.new "Input" {
+						FontFace = UI.Theme.FontMono,
+						FontSize = UI.Theme.FontSize,
+						Size = inputSize,
+						MaxChars = 5,
+						NumberOnly = true,
+						NumberRange = NumberRange.new(0, 1),
+						Placeholder = "",
+						Value = function()
+							return string.sub(UI.Theme[data.key](), 1, 5)
+						end,
+						[UI.Hook] = {
+							Value = function(value)
+								local number = tonumber(value)
+								if not tonumber(value) or math.abs(number - UI.Theme[data.key]()) < 0.001 then
+									return
+								end
+								change("theme" .. data.key, number)
 							end,
-							[UI.Hook] = {
-								Value = function(value)
-									local number = tonumber(value)
-									if not tonumber(value) or math.abs(number - UI.Theme[data.key]()) < 0.001 then
-										return
-									end
-									change("theme" .. data.key, number)
-								end,
-							},
 						},
-						slider,
-					}
-				)
+					},
+					slider,
+				}
+				listItem._label.Size = UDim2.new(0.5, 0, 0, 0)
+				table.insert(themeLineItems, listItem)
 			end
 		end
 
