@@ -83,7 +83,7 @@ task.defer(function()
 	dialog = UI.new "Dialog" {
 		Parent = UI.LayerTop,
 		Title = "❤️ Kohl's Admin?",
-		Text = "Used by <b>30M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management. 🚀",
+		Text = "Used by <b>32M+</b> developers since 2011, Kohl's Admin is the leading tool for experience management. 🚀",
 		Visible = false,
 		Draggable = true,
 		ExitButton = true,
