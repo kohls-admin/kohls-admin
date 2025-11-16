@@ -28,16 +28,18 @@ local tooltip = UI.new "TextLabel" {
 		local max = layerSizeState()
 		local position, size = positionState(), sizeState()
 		local padding = UI.Theme.Padding().Offset
-		local yOffset = position.Y + size.Y + UI.TopbarInset().Height + padding
+		local yOffset = position.Y + size.Y + padding + UI.TopbarInset().Height
 		local tipBoundX = math.max(0, max.X - tipSize.X)
 		local tipBoundY = math.max(0, max.Y - tipSize.Y)
 		local xOffset = 0
 
-		-- slide horizontally
 		if yOffset > tipBoundY then
-			xOffset = size.X + UI.Theme.Padding().Offset
-			if position.X + size.X + padding > tipBoundX then
-				xOffset = -(tipSize.X + padding)
+			yOffset = position.Y - tipSize.Y - padding + UI.TopbarInset().Height
+			if yOffset < 0 then
+				xOffset = size.X + padding
+				if position.X + size.X + padding > tipBoundX then
+					xOffset = -(tipSize.X + padding)
+				end
 			end
 		end
 
