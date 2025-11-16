@@ -59,8 +59,9 @@ end
 local function fillMemberName(key, data)
 	local userId = tonumber(key)
 	data.name = Util.getUserInfo(userId).Username
-	Data.Sync.members[key] = { data.name, data.persist }
-	Auth.networkMember(key)
+	if data.persist then
+		Data.Sync.members[key] = { data.name, data.persist }
+	end
 end
 
 local SAVE = {
@@ -247,11 +248,13 @@ local SYNC = {
 		Util.Table.merge(state, changes)
 
 		-- fill missing names
+		local tasks = Util.Tasks.new()
 		for key, data in state do
-			if not data.name and #data.persist > 0 then
-				task.defer(fillMemberName, key, data)
+			if not data.name then
+				tasks:add(fillMemberName, key, data)
 			end
 		end
+		tasks:wait()
 
 		for _, player in Players:GetPlayers() do
 			if player:GetAttribute("_K_READY") then
