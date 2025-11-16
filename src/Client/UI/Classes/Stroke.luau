@@ -17,12 +17,13 @@ function Class.new(properties: Properties?)
 		Enabled = UI.Theme.StrokeEnabled,
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		Transparency = UI.Theme.TransparencyLight,
-		Color = UI.Theme.Border,
+		Color = Color3.new(1, 1, 1),
 
 		UI.new "UIGradient" {
-			Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1)),
-			Transparency = NumberSequence.new(1, 0),
-			Rotation = -90,
+			Color = function()
+				return ColorSequence.new(UI.Theme.Border(), UI.Theme.BorderStop())
+			end,
+			Rotation = UI.Theme.BorderAngle,
 		},
 	} :: UIStroke
 

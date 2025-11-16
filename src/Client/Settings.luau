@@ -684,40 +684,90 @@ function Settings.new(_K)
 			end
 		end
 
-		-- switches
-		table.insert(themeLineItems, switchItem("themeStrokeEnabled", "UI Borders"))
-
 		-- Color options
 		for index, key in
 			{
+				"Border",
 				"Primary",
 				"PrimaryText",
 				"Secondary",
 				"SecondaryText",
-				"Border",
 				"Valid",
 				"Invalid",
 			}
 		do
 			_K.Util.Defer.wait()
-			local state = UI.Theme[key]
-			local dataKey = "theme" .. key
-			table.insert(
-				themeLineItems,
-				UI.new "ListItem" {
-					Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
-					UI.new "Color" {
-						Value = function()
-							return state()
+			local color = UI.new "Color" {
+				Value = function()
+					return UI.Theme[key]()
+				end,
+				[UI.Hook] = {
+					Value = function(value)
+						change("theme" .. key, value)
+					end,
+				},
+			}
+			local listItem = UI.new "ListItem" {
+				Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
+				color,
+			}
+			if key == "Border" then
+				listItem.Text("UI Borders")
+				UI.new "Tooltip" { Parent = color, Text = "Border Color Start" }
+				UI.new "Switch" {
+					Parent = listItem,
+					LayoutOrder = -1,
+					Value = function()
+						return _K.client.settings.themeStrokeEnabled()
+					end,
+					UI.new "Tooltip" { Text = "Border Color Start" },
+					[UI.Hook] = {
+						Value = function(value)
+							change("themeStrokeEnabled", value, _K.client.settings.themeStrokeEnabled)
 						end,
-						[UI.Hook] = {
-							Value = function(value)
-								change(dataKey, value)
-							end,
-						},
 					},
 				}
-			)
+				local input = UI.new "Input" {
+					Parent = listItem,
+					LayoutOrder = 0,
+					FontFace = UI.Theme.FontMono,
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
+					MaxChars = 5,
+					NumberOnly = true,
+					NumberRange = NumberRange.new(-360, 360),
+					Placeholder = "",
+					Value = function()
+						return UI.Theme.BorderAngle()
+					end,
+					[UI.Hook] = {
+						Value = function(value)
+							local number = tonumber(value)
+							if not tonumber(value) or math.abs(number - UI.Theme.BorderAngle()) < 0.001 then
+								return
+							end
+							change("themeBorderAngle", number)
+						end,
+					},
+				}
+				UI.new "Tooltip" { Parent = input._displayLabel, Text = "Border Rotation" }
+				UI.new "Color" {
+					Parent = listItem,
+					LayoutOrder = 2,
+					Value = function()
+						return UI.Theme[key .. "Stop"]()
+					end,
+					UI.new "Tooltip" { Text = "Border Color Stop" },
+					[UI.Hook] = {
+						Value = function(value)
+							change("theme" .. key .. "Stop", value)
+						end,
+					},
+				}
+			else
+				UI.new "Tooltip" { Parent = color, Text = listItem.Text() }
+			end
+			table.insert(themeLineItems, listItem)
 		end
 
 		local savedSettingsSwitch =
@@ -759,7 +809,9 @@ function Settings.new(_K)
 		BackgroundTransparency = UI.Theme.TransparencyHeavy,
 		BackgroundColor3 = UI.Theme.Secondary,
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.fromScale(1, 0),
+		Size = function()
+			return UDim2.new(1, -UI.Theme.Padding().Offset - 8, 0, 0)
+		end,
 		ActionText = "Save changes"
 			.. (_K.Data.settings.changeThemeAuthority == "Server" and " and update for everyone?" or "?"),
 		Action = true,

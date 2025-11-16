@@ -60,8 +60,15 @@ local tooltip = UI.new "TextLabel" {
 	UI.new "UIStroke" {
 		Enabled = UI.Theme.StrokeEnabled,
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-		Transparency = UI.Theme.TransparencyClamped,
-		Color = UI.Theme.Border,
+		Transparency = UI.Theme.TransparencyLight,
+		Color = Color3.new(1, 1, 1),
+
+		UI.new "UIGradient" {
+			Color = function()
+				return ColorSequence.new(UI.Theme.Border(), UI.Theme.BorderStop())
+			end,
+			Rotation = UI.Theme.BorderAngle,
+		},
 	},
 }
 
