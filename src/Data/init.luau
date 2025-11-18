@@ -451,7 +451,7 @@ local function processSync()
 	end
 
 	-- cross server sync
-	if not Data.SEPARATE_DATASTORE and next(changes) ~= nil then
+	if not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio and next(changes) ~= nil then
 		local id = Http:GenerateGUID(false)
 		idsFromThisServer[id] = true
 
