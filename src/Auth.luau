@@ -211,7 +211,10 @@ end
 
 --- Sorts roleIds by highest to lowest
 function Auth.roleIdSort(a: Role, b: Role): boolean
-	return Data.roles[a]._rank > Data.roles[b]._rank
+	local roleA, roleB = Data.roles[a], Data.roles[b]
+	local rankA = if roleA then roleA._rank else 0
+	local rankB = if roleB then roleB._rank else 0
+	return rankA > rankB
 end
 
 --- Sorts roleIds by lowest to highest
