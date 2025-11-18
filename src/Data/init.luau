@@ -400,6 +400,7 @@ local dataStoreUpdateThrottle = false
 local cacheKeys = { bans = "set", members = "set", settings = "set", logs = "insert" }
 local function processSync()
 	local changes = {}
+	local changed = false
 
 	-- process changes
 	for key, action in cacheKeys do
@@ -417,6 +418,7 @@ local function processSync()
 
 			local changing, removing = next(change) ~= nil, next(remove) ~= nil
 			if changing or removing then
+				changed = true
 				changes[key] = {
 					[action] = if changing then change else nil,
 					unset = if removing then remove else nil,
@@ -451,7 +453,7 @@ local function processSync()
 	end
 
 	-- cross server sync
-	if not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio and next(changes) ~= nil then
+	if not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio and changed then
 		local id = Http:GenerateGUID(false)
 		idsFromThisServer[id] = true
 
@@ -473,6 +475,8 @@ local function processSync()
 			Util.Service.Messaging:PublishAsync(DATA_KEY, { id, #chunks })
 		end, math.huge)
 	end
+
+	return changed
 end
 
 ----------
@@ -594,8 +598,7 @@ function Data.initialize(scope)
 
 	task.spawn(function()
 		repeat
-			processSync()
-			task.wait(1)
+			task.wait(if processSync() then 6 else 1)
 		until Data.gameClosing
 	end)
 
