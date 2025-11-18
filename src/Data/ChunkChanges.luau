@@ -1,6 +1,6 @@
 local Http = game:GetService("HttpService")
 
-local LIMIT = 32 * 1024 - 32 -- 32 KB
+local LIMIT = 32 * 1000 - 32 -- 32 KB
 
 local function getNewData(chunk, size, key, action)
 	local newSize = size
