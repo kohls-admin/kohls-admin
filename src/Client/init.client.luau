@@ -314,6 +314,15 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		})
 	end
 
+	if savedSettings.announcement then
+		local msg, from = unpack(savedSettings.announcement)
+		_K.Announce({
+			From = from,
+			Text = msg,
+			Duration = 0,
+		})
+	end
+
 	if _K.Data.settings.announcements then
 		for _, announcement in _K.Data.settings.announcements do
 			_K.Announce(announcement)
