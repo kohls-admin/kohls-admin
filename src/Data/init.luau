@@ -260,13 +260,11 @@ local SYNC = {
 		Util.Table.merge(state, changes)
 
 		-- fill missing names
-		local tasks = Util.Tasks.new()
 		for key, data in state do
 			if not data.name then
-				tasks:add(fillMemberName, key, data)
+				task.spawn(fillMemberName, key, data)
 			end
 		end
-		tasks:wait()
 
 		for _, player in Players:GetPlayers() do
 			if player:GetAttribute("_K_READY") then
