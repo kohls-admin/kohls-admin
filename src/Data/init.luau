@@ -203,7 +203,8 @@ local SYNC = {
 
 	members = function(state, changes)
 		for userId, data in changes do
-			local cache = Data.Sync.members[userId]
+			local key = tostring(userId)
+			local cache = Data.Sync.members[key]
 			if cache then -- don't overwrite pending change!
 				changes[userId] = nil
 				continue
@@ -223,7 +224,7 @@ local SYNC = {
 			end
 			data.persist = persist
 
-			local member = state[userId]
+			local member = state[key]
 			if member then
 				data.roles = member.roles
 
@@ -249,7 +250,7 @@ local SYNC = {
 			end
 
 			if #data.roles == 0 then -- remove member
-				state[userId] = nil
+				state[key] = nil
 				continue
 			end
 
