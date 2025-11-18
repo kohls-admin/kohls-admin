@@ -1617,6 +1617,9 @@ return {
 			end
 
 			local function reapply(player: Player)
+				if not player then
+					return
+				end
 				local anchorPos = env.anchorPos[player.UserId]
 				if anchorPos then
 					if not player.Character then
