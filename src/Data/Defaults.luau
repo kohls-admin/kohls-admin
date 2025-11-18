@@ -90,7 +90,7 @@ local Data = {
 		getKohlsAdminPopup = true,
 		wrongPrefixWarning = true,
 		saveLogs = true,
-		saveChatLogs = true,
+		saveChatLogs = false,
 		saveLogsForAllRoles = false,
 
 		theme = "Default",
