@@ -1,7 +1,10 @@
 local Data = require(script.Parent.Parent.Defaults)
 
-local function convertFont(font: Enum.Font | Font)
-	return if typeof(font) == "EnumItem" then Font.fromEnum(font) else font
+local function convertFont(font: Enum.Font | Font | string)
+	return if type(font) == "string"
+		then Font.new(font)
+		elseif typeof(font) == "EnumItem" then Font.fromEnum(font)
+		else font
 end
 
 local MIGRATE = {
