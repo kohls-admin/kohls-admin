@@ -783,7 +783,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		local success = _K.Auth.userAsyncRoles(player.UserId, true)
 		player:SetAttribute("_KRolesLoaded", success)
 
-		if _K._serverLock and _K.Auth.getRank(player.UserId) < 2 then
+		if _K._serverLock and not _K.Auth.hasRestrictedRole(player.UserId) then
 			player:Kick(`Server has been locked by {_K._serverLock}`)
 			return
 		end
