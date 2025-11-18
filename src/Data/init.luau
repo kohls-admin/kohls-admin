@@ -468,12 +468,20 @@ local function processSync()
 					SYNC_HASH_MAPS[n]:SetAsync(id .. "_" .. chunkId, chunk, HASH_EXPIRY)
 				end, math.huge)
 			end
+			table.clear(chunk)
 		end
 
 		task.delay(HASH_EXPIRY, removeIdFromThisServer, id)
 		pcall(Util.Retry, function()
 			Util.Service.Messaging:PublishAsync(DATA_KEY, { id, #chunks })
 		end, math.huge)
+		for _, v in changes do
+			if type(v) == "table" then
+				table.clear(v)
+			end
+		end
+		table.clear(changes)
+		table.clear(chunks)
 	end
 
 	return changed
