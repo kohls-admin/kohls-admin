@@ -197,12 +197,12 @@ local typeIndividual = {
 }
 
 local function parseUser(arg, self)
-	local player = parseIndividual(arg, self, true)
+	local player, reason = parseIndividual(arg, self, true)
 	local userId = tonumber(if player then player.UserId else arg)
 	if userId and userId > 0 then
 		return self._K.Auth.targetUserArgument(self, userId, userId)
 	end
-	return nil, "Invalid user"
+	return nil, if reason == "Invalid player" then "Invalid user" else reason
 end
 
 local typeUser = {
