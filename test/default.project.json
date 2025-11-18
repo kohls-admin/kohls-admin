@@ -69,7 +69,10 @@
 					"$path": "../model/Config",
 					"Themes": {
 						"$className": "Folder",
-						"$path": "../src/Client/UI/Theme/Themes"
+						"$path": "../src/Client/UI/Theme/Themes",
+						"Default": {
+							"$path": "../src/Client/UI/Theme/Default.luau"
+						}
 					}
 				}
 			}
