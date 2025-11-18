@@ -9,7 +9,7 @@ Z.TRIM_STRINGS = true
 
 local Schema = {}
 
-Schema.log = Z {
+Schema.log = Z.schema {
 	level = Z.byte,
 	from = Z.some(Z.uint),
 	name = Z.some(Z.str8),
@@ -17,7 +17,7 @@ Schema.log = Z {
 	time = Z.f64,
 }
 
-Schema.logs = Z { Schema.log }
+Schema.logs = Z.schema { Schema.log }
 
 local Data = {
 	IS_PRIVATE_SERVER = RunService:IsServer() and game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0,
