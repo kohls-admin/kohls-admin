@@ -539,7 +539,7 @@ function Data.initialize(scope)
 	Hook.initDataStore:Fire()
 
 	-- disable cross server sync logic in private servers
-	if not Data.SEPARATE_DATASTORE then
+	if not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
 		for i = 1, HASH_PARTITIONS do
 			local _, _, syncHashMap = pcall(Util.Retry, function()
 				return MemoryStore:GetHashMap(DATA_KEY .. i)
@@ -569,27 +569,25 @@ function Data.initialize(scope)
 			end)
 		end, math.huge)
 
-		if not Util.RunContext.IsStudio then
-			local times = {
-				bans = if metaBans then metaBans.UpdatedTime else 0,
-				members = if metaMain then metaMain.UpdatedTime else 0,
-				settings = if metaMain then metaMain.UpdatedTime else 0,
-				logs = logsUpdatedTime,
-			}
-			local hashmap = SYNC_HASH_MAPS[math.random(HASH_PARTITIONS)]
-			local success, items = pcall(Util.MemoryStore.getItemsFromHashMap, hashmap)
-			if success then
-				for _, changes in items do
-					for key in changes do
-						if key == "_time" then
-							continue
-						end
-						if changes._time <= times[key] then
-							changes[key] = nil -- strip stale data
-						end
+		local times = {
+			bans = if metaBans then metaBans.UpdatedTime else 0,
+			members = if metaMain then metaMain.UpdatedTime else 0,
+			settings = if metaMain then metaMain.UpdatedTime else 0,
+			logs = logsUpdatedTime,
+		}
+		local hashmap = SYNC_HASH_MAPS[math.random(HASH_PARTITIONS)]
+		local success, items = pcall(Util.MemoryStore.getItemsFromHashMap, hashmap)
+		if success then
+			for key, changes in items do
+				for setting in changes do
+					if setting == "_time" then
+						continue
 					end
-					syncChanges(changes)
+					if changes._time <= times[key] then
+						changes[setting] = nil -- strip stale data
+					end
 				end
+				syncChanges(changes)
 			end
 		end
 	end
