@@ -775,22 +775,10 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 		task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
 
-		if _K.Auth.banHandler(player) then
-			return
-		end
-
-		-- group admin and gamepass roles
-		local success = _K.Auth.userAsyncRoles(player.UserId, true)
-		player:SetAttribute("_KRolesLoaded", success)
-
-		if _K._serverLock and not _K.Auth.hasRestrictedRole(player.UserId) then
-			player:Kick(`Server has been locked by {_K._serverLock}`)
-			return
-		end
-
 		if player.Character then
 			task.spawn(characterAdded, player.Character)
 		end
+
 		local cleanup = {}
 		playerCleanup[player] = cleanup
 		table.insert(cleanup, player.CharacterAdded:Connect(characterAdded))
@@ -812,6 +800,19 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 				_K.log(_K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
 			end)
 		)
+
+		if _K.Auth.banHandler(player) then
+			return
+		end
+
+		-- group admin and gamepass roles
+		local success = _K.Auth.userAsyncRoles(player.UserId, true)
+		player:SetAttribute("_KRolesLoaded", success)
+
+		if _K._serverLock and not _K.Auth.hasRestrictedRole(player.UserId) then
+			player:Kick(`Server has been locked by {_K._serverLock}`)
+			return
+		end
 	end)
 	_K.Service.Players.PlayerRemoving:Connect(function(player)
 		_K.Flux.cleanup(playerCleanup[player])
