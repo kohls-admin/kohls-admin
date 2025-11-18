@@ -779,10 +779,6 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 			return
 		end
 
-		for _, role in _K.Data.settings.freeAdmin do
-			_K.Auth.userRoleAdd(player.UserId, role)
-		end
-
 		-- group admin and gamepass roles
 		local success = _K.Auth.userAsyncRoles(player.UserId, true)
 		player:SetAttribute("_KRolesLoaded", success)

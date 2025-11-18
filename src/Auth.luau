@@ -490,6 +490,13 @@ function Auth.hasCommand(userId: number, command: any): boolean | number
 			end
 		end
 	end
+	if Data.settings.freeAdmin then
+		for _, roleId in Data.settings.freeAdmin do
+			if Auth.roleCanUseCommand(roleId, command) then
+				return Data.roles[roleId]._rank
+			end
+		end
+	end
 	if Auth.roleCanUseCommand("everyone", command) then
 		return 0
 	end
@@ -508,6 +515,14 @@ function Auth.hasPermission(userId: number, permission: string): boolean
 	local member = Data.members[tostring(userId)]
 	if member then
 		for _, roleId in member.roles do
+			local role = Data.roles[roleId]
+			if role and (role.permissions.admin or role.permissions[permission]) then
+				return true
+			end
+		end
+	end
+	if Data.settings.freeAdmin then
+		for _, roleId in Data.settings.freeAdmin do
 			local role = Data.roles[roleId]
 			if role and (role.permissions.admin or role.permissions[permission]) then
 				return true
