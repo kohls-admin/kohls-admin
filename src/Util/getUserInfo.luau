@@ -1,10 +1,10 @@
-local Players = game:GetService("Players")
 local UserService = game:GetService("UserService")
 local RunService = game:GetService("RunService")
 
 local Function = require(script.Parent:WaitForChild("Function"))
 local Retry = require(script.Parent:WaitForChild("Retry"))
 local Signal = require(script.Parent:WaitForChild("Signal"))
+local SafePlayerAdded = require(script.Parent:WaitForChild("SafePlayerAdded"))
 
 type UserInfo = {
 	Id: number,
@@ -108,7 +108,7 @@ if RunService:IsServer() then
 	end
 end
 
-Players.PlayerAdded:Connect(function(player)
+SafePlayerAdded(function(player)
 	userInfoCache[player.UserId] = {
 		Id = player.UserId,
 		Username = player.Name,
