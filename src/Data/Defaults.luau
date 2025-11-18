@@ -91,6 +91,7 @@ local Data = {
 		wrongPrefixWarning = true,
 		saveLogs = true,
 		saveChatLogs = true,
+		saveLogsForAllRoles = false,
 
 		theme = "Default",
 		changeThemeAuthority = "Client",
