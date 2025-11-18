@@ -144,9 +144,15 @@ return {
 			end
 
 			context._K.Auth.banUsers(userIds, reason, duration, context.from)
+
+			local tasks = context._K.Util.Tasks.new()
 			for _, userId in getNames do
-				table.insert(bannedNames, context._K.Util.getUserInfo(userId).Username)
+				tasks:add(function()
+					table.insert(bannedNames, context._K.Util.getUserInfo(userId).Username)
+				end)
 			end
+			tasks:wait()
+
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
 				Text = `Banned <b>{table.concat(bannedNames, ", ")}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`,
 			})
