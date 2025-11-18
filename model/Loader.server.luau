@@ -7,6 +7,8 @@ local MAIN_MODULE_NAME = "MainModule"
 local AUTO_UPDATE = true
 local LEGACY = false
 
+local ServerScriptService = game:GetService("ServerScriptService")
+
 local CONFIG = Package:FindFirstChild("Config")
 if CONFIG then
 	AUTO_UPDATE = CONFIG:GetAttribute("AutoUpdate")
@@ -23,10 +25,10 @@ if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 			child.Parent = script
 		end
 		script.Name = "Kohl's Admin Infinite"
-		script.Parent = game:GetService("ServerScriptService")
+		script.Parent = ServerScriptService
 	else
 		shared._K_LOADER_LOADED = true
-		Package.Parent = game:GetService("ServerScriptService")
+		Package.Parent = ServerScriptService
 	end
 	AUTO_UPDATE = AUTO_UPDATE and game.PlaceId ~= DEMO_PLACE
 
