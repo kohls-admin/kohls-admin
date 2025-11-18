@@ -815,7 +815,6 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		_K.Flux.cleanup(playerCleanup[player])
 		playerCleanup[player] = nil
 		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId)
-		task.defer(game.Destroy, player)
 	end)
 
 	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
