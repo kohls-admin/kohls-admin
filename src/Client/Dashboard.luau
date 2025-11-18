@@ -19,9 +19,8 @@ _K.client.dashboard.Logs = Logs.new(_K)
 _K.client.dashboard.Settings = Settings.new(_K)
 
 local tabs = UI.new "Tabs" {
-	CurrentPage = _K.client.dashboard.Commands,
+	CurrentPage = _K.client.dashboard.About,
 	Tabs = {
-		-- { _K.client.dashboard.Home },
 		{ _K.client.dashboard.Commands },
 		{ _K.client.dashboard.Bans },
 		{ _K.client.dashboard.Members },
@@ -111,7 +110,7 @@ do
 		local parent = instance.Parent
 		local move = parent
 			and parent:IsDescendantOf(dashboard._instance)
-			and tabs._pages.CurrentPage == instance.Parent
+			and tabs._pages.CurrentPage == parent
 			and tabs.Vertical()
 
 		moveToTitleBar(move, true)
@@ -398,6 +397,14 @@ local titleBarButtonSize = UI.compute(function()
 	return UDim2.fromOffset(size, size)
 end)
 
+local function toggleCommandBar()
+	if _K.client.CommandBar.Bar.Visible then
+		_K.client.CommandBar.hide()
+	else
+		_K.client.CommandBar.show()
+	end
+end
+
 -- add a command bar toggle button next to the exit button
 _K.client.toggleCommandBar = UI.new "Button" {
 	BackgroundTransparency = 1,
@@ -412,13 +419,7 @@ _K.client.toggleCommandBar = UI.new "Button" {
 	Parent = dashboard._instance.Frame.TitleBar,
 	LayoutOrder = 8,
 
-	Activated = function()
-		if _K.client.CommandBar.Bar.Visible then
-			_K.client.CommandBar.hide()
-		else
-			_K.client.CommandBar.show()
-		end
-	end,
+	Activated = toggleCommandBar,
 }
 _K.client.toggleCommandBar._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 UI.edit(_K.client.toggleCommandBar._content.IconFrame.Icon, {
@@ -540,10 +541,12 @@ task.defer(function()
 	end
 end)
 
+local isSelected = UI.state(false)
 local function dashboardToggle(button)
 	if not _K.client.dashboardEnabled then
 		return
 	end
+	isSelected(button.isSelected)
 	if button.isSelected then
 		UI.Sound.Hover03:Play()
 	else
@@ -558,6 +561,10 @@ local function dashboardToggle(button)
 	dashboard._instance.Visible = button.isSelected
 end
 
+local dashboardButtonPadding = UI.spring(function()
+	return if isSelected() then UDim.new(0, 10) else UDim.new(0, 12)
+end, 16, 0.5)
+
 local fakeButton = { isSelected = false }
 local dashboardButton = UI.new "TextButton" {
 	Parent = UI.TopbarFrame,
@@ -571,10 +578,10 @@ local dashboardButton = UI.new "TextButton" {
 
 	UI.new "UICorner" { CornerRadius = UDim.new(1, 0) },
 	UI.new "UIPadding" {
-		PaddingLeft = UDim.new(0, 12),
-		PaddingRight = UDim.new(0, 12),
-		PaddingTop = UDim.new(0, 12),
-		PaddingBottom = UDim.new(0, 12),
+		PaddingLeft = dashboardButtonPadding,
+		PaddingRight = dashboardButtonPadding,
+		PaddingTop = dashboardButtonPadding,
+		PaddingBottom = dashboardButtonPadding,
 	},
 
 	UI.new "ImageLabel" {
@@ -587,9 +594,10 @@ local dashboardButton = UI.new "TextButton" {
 		fakeButton.isSelected = not fakeButton.isSelected
 		dashboardToggle(fakeButton)
 	end,
+	MouseButton2Click = toggleCommandBar,
+	TouchLongPress = toggleCommandBar,
 }
 
-local dashboardButtonIcon = dashboardButton.ImageLabel
 _K.client.dashboardButton = dashboardButton
 
 task.spawn(function()
@@ -601,8 +609,8 @@ task.spawn(function()
 	dashboardButton = _K.client.TopbarPlus
 		.new()
 		:setName("KADashboardButton")
-		:setCaption("Kohl's Admin Dashboard")
 		:setImage(71961243872230)
+		:setImageScale(1)
 		:setOrder(-1)
 		:setEnabled(_K.client.dashboardButtonEnabled)
 		:bindEvent("toggled", dashboardToggle)
@@ -611,7 +619,28 @@ task.spawn(function()
 		dashboardButton:modifyTheme({ "Widget", "BorderSize", 0 })
 	end
 
-	dashboardButtonIcon = dashboardButton:getInstance("IconImage")
+	local clickRegion: TextButton? = dashboardButton:getInstance("ClickRegion")
+	if clickRegion then
+		clickRegion.MouseButton2Click:Connect(toggleCommandBar)
+		clickRegion.TouchLongPress:Connect(toggleCommandBar)
+	end
+
+	local iconSpot = dashboardButton:getInstance("IconSpot")
+	if iconSpot then
+		iconSpot.Size = UDim2.fromOffset(44, 44)
+	end
+
+	local image = dashboardButton:getInstance("IconImage")
+	if image then
+		UI.new "UIPadding" {
+			Parent = image.Parent,
+			PaddingLeft = dashboardButtonPadding,
+			PaddingRight = dashboardButtonPadding,
+			PaddingTop = dashboardButtonPadding,
+			PaddingBottom = dashboardButtonPadding,
+		}
+	end
+
 	_K.client.dashboardButton = dashboardButton
 end)
 
@@ -637,21 +666,6 @@ dashboard._exitButton._instance.Activated:Connect(function()
 		dashboardButton:deselect()
 	else
 		dashboardToggle(fakeButton)
-	end
-end)
-
-task.spawn(function()
-	local elapsed = 1
-	while dashboard and dashboardButton and dashboard._instance do
-		local dt = task.wait()
-		if dashboard._instance.Visible then
-			local alpha = math.abs(elapsed % 2 - 1) * 0.7
-			dashboardButtonIcon.ImageTransparency = -(math.cos(math.pi * alpha) - 1) / 2
-			elapsed += dt
-		elseif elapsed ~= 1 then
-			dashboardButtonIcon.ImageTransparency = 0
-			elapsed = 1
-		end
 	end
 end)
 
