@@ -138,13 +138,8 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 	end
 
 	if forceBanAsync and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
-		local ok, result =
-			pcall(Util.Service.Players.UnbanAsync, Util.Service.Players, { UserIds = userIds, ApplyToUniverse = true })
-		if not ok then
-			warn(result)
-		end
 		for i = 1, #userIds, 50 do
-			local chunk = table.move(userIds, i, i + 49, 1, {})
+			local chunk = table.move(userIds, i, math.min(#userIds, i + 49), 1, {})
 			Util.Retry(function()
 				Util.Service.Players:UnbanAsync({ UserIds = chunk, ApplyToUniverse = true })
 			end, math.huge)
