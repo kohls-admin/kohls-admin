@@ -124,6 +124,10 @@ function Class.new(properties: Properties?)
 	} :: Menu
 	table.insert(cleanup, self.menu)
 
+	UI.edit(self.menu._instance.UICorner, {
+		CornerRadius = UI.Theme.CornerPadded,
+	})
+
 	local choiceCleanup = {}
 
 	local selectedButton
