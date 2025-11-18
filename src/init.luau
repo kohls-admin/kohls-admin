@@ -601,12 +601,18 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 	script.Name = "Kohl's Admin Source"
 	script.Parent = _K.Service.ReplicatedStorage
 
+	local attributeSchema = { Platform = "string", SessionStart = "number" }
+
 	-- server network events
 	local lastLog, cachedLogsBuffer
 	_K.Remote.Init.OnServerEvent:Connect(function(player, initData)
-		if initData.Attributes then
-			for attribute, value in initData.Attributes do
-				player:SetAttribute("_K" .. attribute, value)
+		local attributes = initData.Attributes
+		if attributes then
+			for attribute, valueType in attributeSchema do
+				local value = attributes[attribute]
+				if typeof(value) == valueType then
+					player:SetAttribute("_K" .. attribute, value)
+				end
 			end
 		end
 
