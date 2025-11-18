@@ -532,7 +532,7 @@ function Data.initialize(scope)
 			if okLogs and type(logs) == "buffer" then
 				SYNC.logs(Data.logs, logs)
 			end
-			logsUpdatedTime = if metaLogs then metaLogs.UpdatedTime else logsUpdatedTime
+			logsUpdatedTime = math.max(if metaLogs then metaLogs.UpdatedTime else 0, logsUpdatedTime)
 		end
 	end
 
@@ -587,21 +587,23 @@ function Data.initialize(scope)
 			settings = if metaMain then metaMain.UpdatedTime else 0,
 			logs = logsUpdatedTime,
 		}
-		local hashmap = SYNC_HASH_MAPS[math.random(HASH_PARTITIONS)]
-		local success, items = pcall(Util.MemoryStore.getItemsFromHashMap, hashmap)
-		if success then
-			for key, changes in items do
-				for setting in changes do
-					if setting == "_time" then
-						continue
+		task.spawn(function()
+			local hashmap = SYNC_HASH_MAPS[math.random(HASH_PARTITIONS)]
+			local success, items = pcall(Util.MemoryStore.getItemsFromHashMap, hashmap)
+			if success then
+				for key, changes in items do
+					for setting in changes do
+						if setting == "_time" then
+							continue
+						end
+						if (changes._time or math.huge) <= (times[setting] or 0) then
+							changes[setting] = nil -- strip stale data
+						end
 					end
-					if changes._time <= times[key] then
-						changes[setting] = nil -- strip stale data
-					end
+					syncChanges(changes)
 				end
-				syncChanges(changes)
 			end
-		end
+		end)
 	end
 
 	task.spawn(function()
