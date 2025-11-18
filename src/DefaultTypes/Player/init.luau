@@ -63,6 +63,7 @@ local function freeUser(userId: number)
 		local freeThread = userCache[userId].freeThread
 		if freeThread then
 			pcall(task.cancel, freeThread)
+			userCache[userId].freeThread = nil
 		end
 	end
 	userCache[userId] = nil
