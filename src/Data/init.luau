@@ -465,6 +465,7 @@ local function processSync()
 
 		local now = DateTime.now().UnixTimestampMillis
 		local chunks = ChunkChanges(changes)
+
 		for chunkId, chunk in chunks do
 			chunk._time = now
 			for n = 1, HASH_PARTITIONS do
@@ -548,7 +549,7 @@ function Data.initialize(scope)
 	-- disable cross server sync logic in private servers
 	if not Data.SEPARATE_DATASTORE then
 		for i = 1, HASH_PARTITIONS do
-			local _, syncHashMap = pcall(Util.Retry, function()
+			local _, _, syncHashMap = pcall(Util.Retry, function()
 				return MemoryStore:GetHashMap(DATA_KEY .. i)
 			end, math.huge)
 			table.insert(SYNC_HASH_MAPS, syncHashMap)
@@ -616,10 +617,10 @@ function Data.initialize(scope)
 		and not RunService:IsStudio()
 	then
 		task.spawn(function()
-			local ok, hashMap = pcall(Util.Retry, function()
+			local _, ok, hashMap = pcall(Util.Retry, function()
 				return MemoryStore:GetHashMap("__KA_Charts")
 			end)
-			local ok2, updated = pcall(Util.Retry, function()
+			local _, ok2, updated = pcall(Util.Retry, function()
 				return hashMap:GetAsync("Updated")
 			end)
 			if ok and ok2 and not updated then
