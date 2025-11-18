@@ -724,7 +724,7 @@ local function hideCommandBar()
 			if _K.client.TopbarPlus then
 				_K.client.TopbarPlus.setTopbarEnabled(true)
 			else
-				_K.client.dashboardButton.Visible = true
+				_K.client.dashboardButton.Visible = _K.client.dashboardButtonEnabled
 			end
 		end
 		coreGuiEnabled(true)
