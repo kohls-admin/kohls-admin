@@ -772,11 +772,10 @@ function Settings.new(_K)
 
 		local savedSettingsSwitch =
 			switchItem("useSavedSettings", "Use Saved Settings", "Toggles using saved or studio-only settings.")
-		savedSettingsSwitch.LayoutOrder = -1
 		UI.edit(savedSettingsSwitch._label, {
 			FontFace = UI.Theme.FontBold,
 		})
-		savedSettingsSwitch.Parent = settingsScroller
+		UI.edit(savedSettingsSwitch, { LayoutOrder = -1, Parent = settingsScroller })
 
 		for layoutOrder, definition in ipairs(settingsLineItems) do
 			settingsLineItems[definition.Name] = UI.new("List")(_K.Util.Table.merge({
