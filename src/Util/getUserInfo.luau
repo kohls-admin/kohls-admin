@@ -94,23 +94,11 @@ local function getUserInfo(userId: number, checkCache: boolean?): UserInfo
 		return hook:Wait()
 	end
 
-	local info
-	local player = Players:GetPlayerByUserId(userId)
-	if player then
-		info = {
-			Id = userId,
-			Username = player.Name,
-			DisplayName = player.DisplayName,
-			HasVerifiedBadge = player.HasVerifiedBadge,
-		}
-		userInfoCache[userId] = info
-		return info
-	end
-
 	hook = Signal.new()
 	loading[userId] = hook
 
-	task.spawn(debounceGetUserInfos)
+	task.defer(debounceGetUserInfos)
+
 	return hook:Wait()
 end
 
@@ -119,5 +107,14 @@ if RunService:IsServer() then
 		return getUserInfo(userId)
 	end
 end
+
+Players.PlayerAdded:Connect(function(player)
+	userInfoCache[player.UserId] = {
+		Id = player.UserId,
+		Username = player.Name,
+		DisplayName = player.DisplayName,
+		HasVerifiedBadge = player.HasVerifiedBadge,
+	}
+end)
 
 return getUserInfo
