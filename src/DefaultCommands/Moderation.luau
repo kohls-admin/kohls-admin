@@ -1620,9 +1620,8 @@ return {
 				local anchorPos = env.anchorPos[player.UserId]
 				if anchorPos then
 					if not player.Character then
-						player.CharacterAdded:Wait()
+						player.CharacterAppearanceLoaded:Wait()
 					end
-					player.CharacterAppearanceLoaded:Wait()
 					task.wait()
 					if player.Character then
 						player.Character:PivotTo(anchorPos)
@@ -1641,7 +1640,7 @@ return {
 			local cleanup = {}
 
 			_K.Util.SafePlayerAdded(function(player: Player)
-				cleanup[player] = player.CharacterAdded:Connect(reapplyCharacter)
+				cleanup[player] = player.CharacterAppearanceLoaded:Connect(reapplyCharacter)
 				reapply(player)
 			end)
 
