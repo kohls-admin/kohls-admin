@@ -1708,9 +1708,11 @@ return {
 		},
 		envClient = function(_K)
 			_K.Remote.JailCollide.OnClientEvent:Connect(function(jail: Part)
-				for _, child in jail:GetChildren() do
-					if child:IsA("BasePart") then
-						child.CanCollide = true
+				if jail then
+					for _, child in jail:GetChildren() do
+						if child:IsA("BasePart") then
+							child.CanCollide = true
+						end
 					end
 				end
 			end)
@@ -1819,9 +1821,6 @@ return {
 				back.Position = position + Vector3.new(0, 0, offset.Z)
 
 				kJail.Parent = workspace
-
-				JailCollide:FireClient(player, kJail)
-
 				root.CFrame = rootCFrame
 
 				local lowerBounds = position - size / 2
@@ -1839,6 +1838,8 @@ return {
 						end
 					until not player or Jail.parts[player.UserId] == nil
 				end)
+
+				task.delay(0, JailCollide.FireClient, JailCollide, player, kJail)
 
 				return kJail
 			end
