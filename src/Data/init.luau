@@ -403,8 +403,8 @@ local function processSync()
 	-- process changes
 	for key, action in cacheKeys do
 		local pending = Data.Sync[key]
-		Data.Sync[key] = {}
 		if next(pending) ~= nil then -- pending changes
+			Data.Sync[key] = {}
 			local change, remove = {}, {}
 			for k, v in pending do
 				if v == Data.REMOVE then
