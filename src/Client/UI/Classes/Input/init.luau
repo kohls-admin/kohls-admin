@@ -4,9 +4,6 @@ local Clack = require(script.Clack).registerAll()
 
 Clack.enabled = UI.raw(UI.Theme.TypingSounds)
 Clack.everyTextBox = UI.raw(UI.Theme.TypingSoundsOnEveryTextBox)
-UI.Theme.SoundEnabled:Connect(function(value)
-	Clack.enabled = value and UI.Theme.TypingSounds._value
-end)
 UI.Theme.TypingSounds:Connect(function(value)
 	Clack.enabled = value and UI.Theme.SoundEnabled._value
 end)
