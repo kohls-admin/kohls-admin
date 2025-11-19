@@ -350,7 +350,7 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 			for _, roleId in roleIds do
 				Auth.userRoleAdd(userId, roleId)
 			end
-		else
+		elseif not ok then
 			warn(result)
 		end
 	end
@@ -368,7 +368,7 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 			for _, roleId in roleIds do
 				Auth.userRoleAdd(userId, roleId)
 			end
-		else
+		elseif not ok then
 			warn(result)
 		end
 	end
@@ -381,7 +381,7 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 			for _, roleId in roleIds do
 				Auth.userRoleAdd(userId, roleId)
 			end
-		else
+		elseif not ok then
 			warn(result)
 		end
 	end
