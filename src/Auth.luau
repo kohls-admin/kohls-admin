@@ -469,8 +469,15 @@ function Auth.hasArgument(userId: number, argument: any): boolean
 	end
 	local member = Data.members[tostring(userId)]
 	if member then
-		for _, role in member.roles do
-			if Auth.roleCanUseArgument(role, argument) then
+		for _, roleId in member.roles do
+			if Auth.roleCanUseArgument(roleId, argument) then
+				return true
+			end
+		end
+	end
+	if Data.settings.freeAdmin then
+		for _, roleId in Data.settings.freeAdmin do
+			if Auth.roleCanUseArgument(roleId, argument) then
 				return true
 			end
 		end
@@ -539,15 +546,25 @@ function Auth.getRank(userId: number): (number, Role)
 		return math.huge, Data.roles.creator
 	end
 	local member = Data.members[tostring(userId)]
+	local rank, role = 0, Data.roles.everyone
 	if member then
-		for _, roleId in member.roles do -- roles are descending by rank
-			local role = Data.roles[roleId]
-			if role then
-				return role._rank, role
+		for _, roleId in member.roles do
+			local data = Data.roles[roleId]
+			if data and data._rank > rank then
+				rank, role = data._rank, data
 			end
 		end
 	end
-	return 0, Data.roles.everyone
+	if Data.settings.freeAdmin then
+		for _, roleId in Data.settings.freeAdmin do
+			local data = Data.roles[roleId]
+			if data and data._rank > rank then
+				rank, role = data._rank, data
+			end
+		end
+	end
+
+	return rank, role
 end
 
 --- Gets the closest role equal to or above a given rank
