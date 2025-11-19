@@ -810,8 +810,8 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		end
 
 		-- group admin and gamepass roles
-		local success = _K.Auth.userAsyncRoles(player.UserId, true)
-		player:SetAttribute("_KRolesLoaded", success)
+		_K.Auth.userAsyncRoles(player.UserId, true)
+		player:SetAttribute("_KRolesLoaded", true)
 
 		if _K._serverLock and not _K.Auth.hasRestrictedRole(player.UserId) then
 			player:Kick(`Server has been locked by {_K._serverLock}`)

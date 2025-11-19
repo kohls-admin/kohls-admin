@@ -310,32 +310,18 @@ end
 
 local asyncRolesCache = {}
 function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
-	local success = true
-	if asyncRolesCache[userId] and not bustCache then
+	local cached = asyncRolesCache[userId]
+	if cached and not bustCache then
 		return
 	end
 	asyncRolesCache[userId] = true
 
-	for gamePassId, roleIds in Data.async.gamepass do
-		local ok, result = Util.Retry(function()
-			return Util.Service.Marketplace:UserOwnsGamePassAsync(userId, gamePassId)
-		end)
-		if ok and result then
-			for _, roleId in roleIds do
-				Auth.userRoleAdd(userId, roleId)
-			end
-		end
-		if not ok then
-			success = false
-		end
-	end
-
 	if next(Data.async.group) then
-		local ok, groups = Util.Retry(function()
+		local ok, result = Util.Retry(function()
 			return Util.Service.Group:GetGroupsAsync(userId)
-		end)
+		end, math.huge)
 		if ok then
-			for _, group in groups do
+			for _, group in result do
 				local groupAuth = Data.async.group[group.Id]
 				if groupAuth then
 					for _, auth in groupAuth do
@@ -348,8 +334,20 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 				end
 			end
 		end
-		if not ok then
-			success = false
+	end
+
+	if cached then
+		return
+	end
+
+	for gamePassId, roleIds in Data.async.gamepass do
+		local ok, result = Util.Retry(function()
+			return Util.Service.Marketplace:UserOwnsGamePassAsync(userId, gamePassId)
+		end, math.huge)
+		if ok and result then
+			for _, roleId in roleIds do
+				Auth.userRoleAdd(userId, roleId)
+			end
 		end
 	end
 
@@ -361,32 +359,24 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 	for assetId, roleIds in Data.async.asset do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
-		end)
+		end, math.huge)
 		if ok and result then
 			for _, roleId in roleIds do
 				Auth.userRoleAdd(userId, roleId)
 			end
-		end
-		if not ok then
-			success = false
 		end
 	end
 
 	for subscriptionId, roleIds in Data.async.subscription do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:GetUserSubscriptionStatusAsync(player, subscriptionId)
-		end)
+		end, math.huge)
 		if ok and result.IsSubscribed then
 			for _, roleId in roleIds do
 				Auth.userRoleAdd(userId, roleId)
 			end
 		end
-		if not ok then
-			success = false
-		end
 	end
-
-	return success
 end
 
 -- PERMISSION FUNCTIONS
