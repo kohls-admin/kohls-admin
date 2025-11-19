@@ -9,7 +9,6 @@ local cache: { [PlayerSet]: RBXScriptConnection } = {}
 Players.PlayerRemoving:Connect(function(player)
 	for processed, connection in cache do
 		if connection and connection.Connected then
-			connection:Disconnect()
 			processed[player] = nil
 		else
 			cache[processed] = nil
