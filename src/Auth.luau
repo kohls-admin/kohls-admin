@@ -319,7 +319,7 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 	if next(Data.async.group) then
 		local ok, result = Util.Retry(function()
 			return Util.Service.Group:GetGroupsAsync(userId)
-		end, math.huge)
+		end)
 		if ok then
 			for _, group in result do
 				local groupAuth = Data.async.group[group.Id]
@@ -333,6 +333,8 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 					end
 				end
 			end
+		else
+			warn(result)
 		end
 	end
 
@@ -343,11 +345,13 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 	for gamePassId, roleIds in Data.async.gamepass do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:UserOwnsGamePassAsync(userId, gamePassId)
-		end, math.huge)
+		end)
 		if ok and result then
 			for _, roleId in roleIds do
 				Auth.userRoleAdd(userId, roleId)
 			end
+		else
+			warn(result)
 		end
 	end
 
@@ -359,22 +363,26 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 	for assetId, roleIds in Data.async.asset do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
-		end, math.huge)
+		end)
 		if ok and result then
 			for _, roleId in roleIds do
 				Auth.userRoleAdd(userId, roleId)
 			end
+		else
+			warn(result)
 		end
 	end
 
 	for subscriptionId, roleIds in Data.async.subscription do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:GetUserSubscriptionStatusAsync(player, subscriptionId)
-		end, math.huge)
+		end)
 		if ok and result.IsSubscribed then
 			for _, roleId in roleIds do
 				Auth.userRoleAdd(userId, roleId)
 			end
+		else
+			warn(result)
 		end
 	end
 end
