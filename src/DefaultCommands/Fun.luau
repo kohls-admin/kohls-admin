@@ -683,10 +683,19 @@ return {
 		env = function(_K)
 			return {
 				apply = function(character: Model)
+					if character:GetAttribute("_KSeizure") then
+						return
+					end
 					character:SetAttribute("_KSeizure", true)
 					character:PivotTo(character:GetPivot() * CFrame.Angles(math.pi / 2, 0, 0))
 					local humanoid = character:FindFirstChildOfClass("Humanoid")
-					while character and character.PrimaryPart and humanoid and character:GetAttribute("_KSeizure") do
+					while
+						character
+						and character.Parent
+						and character.PrimaryPart
+						and humanoid
+						and character:GetAttribute("_KSeizure")
+					do
 						humanoid.PlatformStand = true
 						character.PrimaryPart.AssemblyLinearVelocity =
 							Vector3.new(math.random(-10, 10), math.random(-5, 1), math.random(-10, 10))
