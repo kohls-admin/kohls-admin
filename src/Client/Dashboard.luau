@@ -561,6 +561,16 @@ local function dashboardToggle(button)
 	dashboard._instance.Visible = button.isSelected
 end
 
+local function toggleCommandBarWithSound()
+	if _K.client.CommandBar.Bar.Visible then
+		UI.Sound.Hover03:Play()
+		_K.client.CommandBar.hide()
+	else
+		UI.Sound.Hover01:Play()
+		_K.client.CommandBar.show()
+	end
+end
+
 local dashboardButtonPadding = UI.spring(function()
 	return if isSelected() then UDim.new(0, 10) else UDim.new(0, 12)
 end, 16, 0.5)
@@ -594,8 +604,8 @@ local dashboardButton = UI.new "TextButton" {
 		fakeButton.isSelected = not fakeButton.isSelected
 		dashboardToggle(fakeButton)
 	end,
-	MouseButton2Click = toggleCommandBar,
-	TouchLongPress = toggleCommandBar,
+	MouseButton2Click = toggleCommandBarWithSound,
+	TouchLongPress = toggleCommandBarWithSound,
 }
 
 _K.client.dashboardButton = dashboardButton
@@ -621,8 +631,8 @@ task.spawn(function()
 
 	local clickRegion: TextButton? = dashboardButton:getInstance("ClickRegion")
 	if clickRegion then
-		clickRegion.MouseButton2Click:Connect(toggleCommandBar)
-		clickRegion.TouchLongPress:Connect(toggleCommandBar)
+		clickRegion.MouseButton2Click:Connect(toggleCommandBarWithSound)
+		clickRegion.TouchLongPress:Connect(toggleCommandBarWithSound)
 	end
 
 	local iconSpot = dashboardButton:getInstance("IconSpot")
