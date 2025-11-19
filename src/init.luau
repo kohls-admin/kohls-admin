@@ -769,24 +769,19 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 			task.spawn(welcomeBadge, player.UserId)
 		end
 
-		while not _K.Data.roles do
-			task.wait()
-		end
-
 		task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
 
-		if player.Character then
-			task.spawn(characterAdded, player.Character)
-		end
-
 		local cleanup = {}
-		playerCleanup[player] = cleanup
+		playerCleanup[player.UserId] = cleanup
 		table.insert(cleanup, player.CharacterAdded:Connect(characterAdded))
 		table.insert(cleanup, player.CharacterRemoving:Connect(characterRemoving))
 		table.insert(
 			cleanup,
 			player.Chatted:Connect(function(message: string)
 				local emote = string.find(message, "/e", 1, true) == 1
+				if not emote then
+					task.spawn(_K.log, _K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
+				end
 				local v = _K.Service.TextChat.ChatVersion
 				if
 					_K.Data.settings.chatCommands ~= false
@@ -794,12 +789,21 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 				then
 					_K.Remote.Command:FireClient(player, message)
 				end
-				if emote then
-					return
-				end
-				_K.log(_K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
 			end)
 		)
+
+		if player.Character then
+			task.spawn(characterAdded, player.Character)
+		end
+
+		local warning = tick() + 10
+		while not _K.Data.roles do
+			task.wait()
+			if tick() > warning then
+				warn("Unexpected yield while waiting for _K.Data.roles")
+				warning = math.huge
+			end
+		end
 
 		if _K.Auth.banHandler(player) then
 			return
@@ -814,10 +818,14 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 			return
 		end
 	end)
+
 	_K.Service.Players.PlayerRemoving:Connect(function(player)
-		_K.Flux.cleanup(playerCleanup[player])
-		playerCleanup[player] = nil
+		local userId = player.UserId
+
 		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId)
+
+		_K.Flux.cleanup(playerCleanup[userId])
+		playerCleanup[userId] = nil
 	end)
 
 	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
