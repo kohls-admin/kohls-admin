@@ -297,11 +297,20 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		local member = _K.Data.members[tostring(_K.LocalPlayer.UserId)]
 		local roleStrings = {}
 		if member and member.roles then
-			for _, role in member.roles do
-				local roleData = _K.Data.roles[role]
-				if roleData then
-					table.insert(roleStrings, `<font color="{roleData.color}">{roleData.name}</font>`)
+			for _, roleId in member.roles do
+				local role = _K.Data.roles[roleId]
+				if role then
+					table.insert(roleStrings, `<font color="{role.color}">{role.name}</font>`)
 				end
+			end
+		end
+		for _, roleId in _K.Data.settings.freeAdmin do
+			if member and member.roles and table.find(member.roles, roleId) then
+				continue
+			end
+			local role = _K.Data.roles[roleId]
+			if role then
+				table.insert(roleStrings, `<font color="{role.color}">{role.name}</font>`)
 			end
 		end
 		table.insert(roleStrings, `<font color="{_K.Data.roles.everyone.color}">{_K.Data.roles.everyone.name}</font>`)
@@ -309,7 +318,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 		_K.Notify({
 			From = "_K",
-			Text = `<font family="{UI.Theme.FontMono._value.Family}"><b>Role{if #member.roles > 1 then "s" else ""}:</b>\n<sc>{roleString}</sc></font>`,
+			Text = `<font family="{UI.Theme.FontMono._value.Family}"><b>Role{if #roleStrings > 1 then "s" else ""}:</b>\n<sc>{roleString}</sc></font>`,
 			Duration = 15,
 		})
 	end
