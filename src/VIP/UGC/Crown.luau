@@ -124,15 +124,17 @@ return {
 
 		local clone = hat:Clone()
 
-		if colors then
-			local primary, secondary = unpack(colors)
-			clone.Handle.Color = primary
-			clone.Handle.Fire.Color = secondary
-			clone.Handle.Fire.SecondaryColor = secondary
-		end
+		if clone:FindFirstChild("Handle") then
+			if colors then
+				local primary, secondary = unpack(colors)
+				clone.Handle.Color = primary
+				clone.Handle.Fire.Color = secondary
+				clone.Handle.Fire.SecondaryColor = secondary
+			end
 
-		clone:SetAttribute("_KCrownColor", clone.Handle.Color)
-		clone:SetAttribute("_KCrownFireColor", clone.Handle.Fire.Color)
+			clone:SetAttribute("_KCrownColor", clone.Handle.Color)
+			clone:SetAttribute("_KCrownFireColor", clone.Handle.Fire.Color)
+		end
 
 		clone.Parent = character
 

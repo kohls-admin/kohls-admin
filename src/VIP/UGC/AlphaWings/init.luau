@@ -120,13 +120,16 @@ return {
 
 		local clone = hat:Clone()
 
-		if color then
-			clone:SetAttribute("_KWingsColor", color)
-			clone.Wings.Color = color
+		if clone:FindFirstChild("Wings") then
+			if color then
+				clone:SetAttribute("_KWingsColor", color)
+				clone.Wings.Color = color
+			end
+
+			clone.Wings.Animate.Enabled = true
 		end
 
 		clone.Parent = character
-		clone.Wings.Animate.Enabled = true
 
 		return clone
 	end,
