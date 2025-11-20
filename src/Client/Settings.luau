@@ -484,17 +484,25 @@ function Settings.new(_K)
 						task.spawn(function()
 							local list = if key == "Font" then fonts else mono
 							local loader = (if key == "Font" then lines.Font else lines.FontMono)._content.TextLabel
-
-							for i, font in list do
-								local label = Instance.new("TextLabel")
-								label.BackgroundTransparency = 1
-								label.TextTransparency = 1
-								label.FontFace = font
-								label.Parent = temp
+							local content = {}
+							for i = 1, #list, 8 do
+								for j = 1, 8 do
+									local font = list[i + j]
+									if not font then
+										break
+									end
+									local label = Instance.new("TextLabel")
+									label.BackgroundTransparency = 1
+									label.TextTransparency = 1
+									label.FontFace = font
+									label.Parent = temp
+									content[j] = label
+								end
 
 								loader.Text = `Loading fonts... {i}/{#list}`
-								_K.Service.ContentProvider:PreloadAsync({ label })
+								_K.Service.ContentProvider:PreloadAsync(content)
 							end
+							table.clear(content)
 
 							UI.new "Select" {
 								Parent = lines[key],
