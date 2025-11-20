@@ -44,7 +44,7 @@ debounceGetUserInfos = Function.debounce(0.2, function()
 			local hook = loading[info.Id]
 			if hook then
 				hook:Fire(info)
-				hook:DisconnectAll()
+				hook:Destroy()
 			end
 			loading[info.Id] = nil
 		end
@@ -55,7 +55,7 @@ debounceGetUserInfos = Function.debounce(0.2, function()
 				local hook = loading[userId]
 				if hook then
 					hook:Fire(info)
-					hook:DisconnectAll()
+					hook:Destroy()
 				end
 			end
 			loading[userId] = nil
