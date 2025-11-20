@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[1603],{3036:e=>{e.exports=JSON.parse('{"functions":[],"properties":[],"types":[],"name":"Signal","desc":"A performant, connection pooled, type-safe, linked-list implementation of the Observer pattern.","source":{"line":7,"path":"src/Util/Signal.luau"}}')}}]);
