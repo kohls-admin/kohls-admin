@@ -321,13 +321,14 @@ UI.new "Frame" {
 				local buffer, nextAvgUpdate = {}, tick()
 				_K.Service.Run.Heartbeat:Connect(function()
 					fps = math.round(1 / _K.Service.Stats.FrameTime)
-					max = math.min(math.max(max, fps), 240)
+					max = math.clamp(fps, max, 240)
 					sum += fps
 					table.insert(buffer, fps)
 				end)
 				repeat
 					task.wait(1)
 					avg, low, sum, nextAvgUpdate = getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
+					avg = math.clamp(avg, 0, 240)
 
 					local alpha = math.clamp(fps / max, 0, 1)
 					local color = lerpGreenRed(1 - alpha)
