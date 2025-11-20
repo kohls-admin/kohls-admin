@@ -438,12 +438,16 @@ function Settings.new(_K)
 			end
 
 			task.defer(function()
-				repeat -- wait until settings is in view
-					task.wait()
-				until _K.client.dashboard.Tabs
+				while true do
+					local dashboardView = _K.client.dashboard.Tabs
 						and _K.client.dashboard.Tabs.CurrentPage._value == _K.client.dashboard.Settings._instance
-					or _K.client.dashboard.Settings._instance.Parent == nil
-					or not _K.client.dashboard.Settings._instance:IsDescendantOf(_K.client.dashboard.Tabs._content)
+					local windowView = _K.client.dashboard.Settings._instance.Parent
+						and not _K.client.dashboard.Settings._instance:IsDescendantOf(_K.client.dashboard.Tabs._content)
+					if dashboardView or windowView then
+						break
+					end
+					task.wait()
+				end
 
 				local fonts = {}
 				local mono = {
