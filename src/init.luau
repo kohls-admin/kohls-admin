@@ -310,9 +310,10 @@ local function characterAdded(character: Model)
 	)
 end
 
-local function welcomeBadge(userId)
-	if not _K.Service.Badge:UserHasBadgeAsync(userId, _K.Data.settings.welcomeBadgeId) then
-		_K.Service.Badge:AwardBadge(userId, _K.Data.settings.welcomeBadgeId)
+local function awardBadge(userId: number, badgeId: number)
+	local badgeInfo = _K.Service.Badge:GetBadgeInfoAsync(badgeId)
+	if badgeInfo.IsEnabled then
+		task.spawn(_K.Util.Retry, _K.Service.Badge.AwardBadge, 5, 2, _K.Service.Badge, badgeId)
 	end
 end
 
@@ -766,7 +767,7 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 	_K.Util.SafePlayerAdded(function(player: Player)
 		if (_K.Data.settings.welcomeBadgeId or 0) > 0 then
-			task.spawn(welcomeBadge, player.UserId)
+			task.spawn(_K.Util.Retry, awardBadge, 5, 2, player.UserId, _K.Data.settings.welcomeBadgeId)
 		end
 
 		task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
