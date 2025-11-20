@@ -224,7 +224,7 @@ local function getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
 	if now > nextAvgUpdate then
 		nextAvgUpdate = now + 2
 		table.sort(buffer)
-		avg, low = math.round(sum / #buffer), 0
+		avg, low = math.round(sum / #buffer) * 2, 0
 		local lowCount = math.ceil(#buffer / 100)
 		for i = 1, lowCount do
 			low += buffer[i]
@@ -232,7 +232,7 @@ local function getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
 		low //= lowCount
 		table.clear(buffer)
 	end
-	return avg, low, 0
+	return avg, low, 0, nextAvgUpdate
 end
 
 local lerpGreenRed
@@ -327,7 +327,7 @@ UI.new "Frame" {
 				end)
 				repeat
 					task.wait(1)
-					avg, low, sum = getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
+					avg, low, sum, nextAvgUpdate = getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
 
 					local alpha = math.clamp(fps / max, 0, 1)
 					local color = lerpGreenRed(1 - alpha)
