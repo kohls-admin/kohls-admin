@@ -163,7 +163,7 @@ local function parseIndividual(arg, self, userType)
 		if name == arg then
 			return self._K.Auth.targetUserArgument(self, player.UserId, player)
 		end
-		if not partial and string.find(name, arg, 1, true) == 1 then
+		if not partial and string.find(name, arg :: string, 1, true) == 1 then
 			partial = player
 		end
 	end
@@ -175,7 +175,11 @@ local function parseIndividual(arg, self, userType)
 			return self._K.Auth.targetUserArgument(self, player.UserId, player)
 		end
 		if
-			not partial and (string.find(displayName, arg, 1, true) == 1 or (string.find(kDisplay, arg, 1, true) == 1))
+			not partial
+			and (
+				string.find(displayName, arg :: string, 1, true) == 1
+				or (string.find(kDisplay, arg :: string, 1, true) == 1)
+			)
 		then
 			partial = player
 		end

@@ -247,8 +247,8 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 			value = _K.Data.savedSettings.useSavedSettings
 		end
 		local state
-		if key ~= "theme" and string.find(key, "theme", 1, true) == 1 then
-			state = UI.Theme[string.sub(key, 6)]
+		if key ~= "theme" and string.find(key :: string, "theme", 1, true) == 1 then
+			state = UI.Theme[string.sub(key :: string, 6)]
 			if state then
 				state(value)
 			end
@@ -264,8 +264,8 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 					UI.changeTheme(theme)
 				end
 			end)
-		elseif string.find(key, "theme", 1, true) == 1 then
-			key = string.sub(key, 6)
+		elseif string.find(key :: string, "theme", 1, true) == 1 then
+			key = string.sub(key :: string, 6)
 			if UI.Theme[key] then
 				state:Connect(function(value)
 					UI.Theme[key](value)

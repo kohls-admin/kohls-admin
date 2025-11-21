@@ -19,8 +19,8 @@ function Time.fromUnit(unit: string): number?
 	elseif unit == "mss" then
 		return 1 / 1000
 	end
-	if #unit > 1 and string.find(unit, "s$") then
-		unit = string.sub(unit, 1, -2)
+	if #unit > 1 and string.find(unit :: string, "s$") then
+		unit = string.sub(unit :: string, 1, -2)
 	end
 	for _, list in Time.UNITS do
 		for i = 2, #list do

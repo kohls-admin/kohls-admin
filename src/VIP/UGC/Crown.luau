@@ -109,7 +109,7 @@ return {
 				accessory:Destroy()
 			elseif typeof(accessory) == "string" then
 				for key, value in COLORS do
-					if string.find(string.lower(accessory), key, 1, true) then
+					if string.find(string.lower(accessory :: string), key :: string, 1, true) then
 						colors = value
 						break
 					end

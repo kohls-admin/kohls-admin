@@ -17,7 +17,7 @@ return function(_K)
 					continue
 				end
 				for _, alias in command.aliases do
-					if string.find(string.lower(alias), query, 1, true) then
+					if string.find(string.lower(alias :: string), query, 1, true) then
 						return command
 					end
 				end

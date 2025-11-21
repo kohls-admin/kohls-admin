@@ -244,7 +244,7 @@ do
 		return UI.Color.Oklab.toHCL(UI.Color.Oklab.fromLinear(UI.Theme.Invalid())).X
 	end)
 	lerpGreenRed = function(alpha: number)
-		local hcl = Vector3.new(math.lerp(hueGreen(), hueRed(), alpha), 1, 1)
+		local hcl = Vector3.new(math.lerp(hueGreen() :: number, hueRed() :: number, alpha), 1, 1)
 		return UI.Color.Oklab.toLinear(UI.Color.Oklab.fromHCL(hcl))
 	end
 end

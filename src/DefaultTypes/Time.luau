@@ -36,7 +36,7 @@ return function(_K)
 	local function parseTime(input: string): (boolean, string | number)
 		if input == "" then
 			return true, 1
-		elseif string.find("-1", input, 1, true) then
+		elseif string.find("-1", input :: string, 1, true) then
 			return true, -1
 		end
 
@@ -44,12 +44,12 @@ return function(_K)
 			-- no units specified, default to seconds?
 			return true, tonumber(input) :: number
 		end
-		if string.find(input, TIME_PATTERN) == nil then
+		if string.find(input :: string, TIME_PATTERN) == nil then
 			return false, "Invalid time format"
 		end
 
 		local seconds = 0
-		for amount, unit in string.gmatch(string.lower(input), TIME_PATTERN) do
+		for amount, unit in string.gmatch(string.lower(input :: string), TIME_PATTERN) do
 			local duration: number? = _K.Util.Time.fromUnit(unit)
 			if duration == nil then
 				return false, "Invalid time format"
@@ -83,7 +83,7 @@ return function(_K)
 					local original = if number > 1 then pluralUnits else suggestedUnits
 					for i, value in original do
 						local capitalized = if #value > 2
-							then string.upper(string.sub(value, 1, 1)) .. string.sub(value, 2)
+							then string.upper(string.sub(value :: string, 1, 1)) .. string.sub(value :: string, 2)
 							else value
 						names[i + 1] = {
 							number .. value,

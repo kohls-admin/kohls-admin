@@ -66,7 +66,7 @@ function Argument:transform()
 		local argType = self.rawType
 		if argType.prefixes then
 			for prefix, prefixType in argType.prefixes do
-				local startIndex, endIndex = string.find(arg, prefix)
+				local startIndex, endIndex = string.find(arg, prefix :: string)
 				if startIndex == 1 then
 					argType = self._K.Registry.types[prefixType]
 					arg = string.sub(arg, endIndex + 1)
@@ -81,7 +81,7 @@ function Argument:transform()
 			arg = value
 			if value == nil and not optional then
 				local message = feedback
-					or "Invalid transform: " .. if string.find(rawArg, "^%s*$") then "nil" else rawArg
+					or "Invalid transform: " .. if string.find(rawArg :: string, "^%s*$") then "nil" else rawArg
 				return self:invalidate(rawArg, argPos, message)
 			end
 		end

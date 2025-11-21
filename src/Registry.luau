@@ -74,7 +74,7 @@ local function cacheCommandNames(command)
 
 	if command.aliases then
 		for _, alias in command.aliases do
-			alias = string.lower(alias)
+			alias = string.lower(alias :: string)
 			table.insert(Registry.commandNames, alias)
 		end
 	end
@@ -170,7 +170,7 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 		end
 		if oldCommand.aliases then
 			for _, alias in oldCommand.aliases do
-				Registry.commands[string.lower(alias)] = nil
+				Registry.commands[string.lower(alias :: string)] = nil
 			end
 		end
 	elseif not oldCommand then

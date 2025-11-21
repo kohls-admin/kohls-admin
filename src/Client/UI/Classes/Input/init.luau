@@ -185,7 +185,7 @@ function Class.new(properties: Properties?)
 
 			if (numberOnly or integerOnly) and text ~= "" then
 				local number = tonumber(text)
-				if not number or (integerOnly and string.find(text, "%D")) then
+				if not number or (integerOnly and string.find(text :: string, "%D")) then
 					self._input.Text = self.Value._value
 					return
 				end

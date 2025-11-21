@@ -93,7 +93,7 @@ return function(_K)
 					continue
 				end
 			else
-				if string.find(match, arg, 1, true) ~= 1 then
+				if string.find(match :: string, arg, 1, true) ~= 1 then
 					continue
 				end
 			end

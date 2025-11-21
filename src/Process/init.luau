@@ -55,7 +55,7 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 			argument = { first - 1, prefix, char }
 			table.insert(command, argument)
 		elseif char == prefix and string.find(lastChar, delimiter) then
-			if #argument == 1 or string.find(argument[2], `^{delimiter}*$`) then
+			if #argument == 1 or string.find(argument[2] :: string, `^{delimiter}*$`) then
 				table.remove(command)
 			end
 			argument = { first + 1 }
@@ -73,7 +73,7 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 			else
 				table.insert(argument, char)
 			end
-		elseif string.find(char, delimiter) and not string.find(lastChar, delimiter) then
+		elseif string.find(char :: string, delimiter) and not string.find(lastChar, delimiter) then
 			argument = { first + 1 }
 			table.insert(command, argument)
 		else
@@ -257,7 +257,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			end
 			runOnServer = true
 			local last = command.array[#command.array]
-			table.insert(commandStrings, string.sub(rawText, command.array[1][1], last[1] + #last[2]))
+			table.insert(commandStrings, string.sub(rawText, command.array[1][1] :: number, last[1] + #last[2]))
 		end
 		if runOnServer then
 			_K.Remote.Command:FireServer(`{prefix}{table.concat(commandStrings, " " .. prefix)}`)

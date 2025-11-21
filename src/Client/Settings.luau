@@ -65,8 +65,8 @@ function Settings.new(_K)
 			if
 				themeModule
 				and k ~= "theme"
-				and string.find(k, "theme", 1, true) == 1
-				and UI.raw(themeModule[string.sub(k, 6)]) ~= v
+				and string.find(k :: string, "theme", 1, true) == 1
+				and UI.raw(themeModule[string.sub(k :: string, 6)]) ~= v
 			then
 				differentTheme = true
 			end
@@ -79,7 +79,7 @@ function Settings.new(_K)
 			settingsDialog._instance.Visible = different
 		end
 
-		if key ~= "theme" and string.find(key, "theme", 1, true) == 1 and not skipCustomCheck then
+		if key ~= "theme" and string.find(key :: string, "theme", 1, true) == 1 and not skipCustomCheck then
 			local newTheme = if differentTheme then "Custom (DataStore)" else theme
 			if pendingChanges.theme ~= newTheme then
 				change("theme", newTheme)
@@ -869,7 +869,7 @@ function Settings.new(_K)
 				continue
 			end
 
-			local listFound = string.find(string.lower(lineItems.Name), filter, 1, true)
+			local listFound = string.find(string.lower(lineItems.Name), filter :: string, 1, true)
 			if listFound then
 				list.Visible = true
 				settingsLineItems[lineItems.Name].Collapsed(false)
@@ -879,7 +879,7 @@ function Settings.new(_K)
 
 			for _, lineItem in ipairs(lineItems) do
 				local rawText = lineItem._instance.Name
-				local found = string.find(string.lower(rawText), filter, 1, true)
+				local found = string.find(string.lower(rawText), filter :: string, 1, true)
 				if found then
 					list.Visible = true
 					settingsLineItems[lineItems.Name].Collapsed(false)

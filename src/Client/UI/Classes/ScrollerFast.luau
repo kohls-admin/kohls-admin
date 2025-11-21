@@ -34,7 +34,7 @@ local function defaultFilter(self, list)
 		return list
 	end
 	local new = {}
-	for k, text in list do
+	for k, text in list :: { string } do
 		local filterIndex, filterEnd = string.find(string.lower(text), filter, 1, true)
 		if filterIndex then
 			table.insert(

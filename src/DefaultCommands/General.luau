@@ -388,7 +388,7 @@ return {
 						return
 					end
 					progress.Alpha(1 - math.clamp(delta / duration, 0, 1))
-					local newText = tostring(math.clamp(math.floor(duration - delta) + 1, 0, duration))
+					local newText = tostring(math.clamp(math.floor(duration - delta) + 1, 0, duration :: number))
 					if newText ~= time.Text then
 						_K.UI.Sound.Hover03:Play()
 					end

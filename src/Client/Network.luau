@@ -198,7 +198,7 @@ _K.Remote.Settings.OnClientEvent:Connect(function(settings)
 		value = UI.raw(value)
 		if
 			key ~= "theme"
-			and string.find(key, "theme", 1, true) == 1
+			and string.find(key :: string, "theme", 1, true) == 1
 			and (_K.Data.settings.changeThemeAuthority == "Studio" or settings.theme ~= "Custom (DataStore)")
 		then
 			continue
