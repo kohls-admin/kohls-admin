@@ -4,6 +4,6 @@
 [submodule "Flux"]
 	path = submodules/Flux
 	url = git@github.com:kohltastrophe/flux.git
-[submodule "submodules/Z"]
+[submodule "Z"]
 	path = submodules/Z
 	url = git@github.com:kohltastrophe/Z.git
