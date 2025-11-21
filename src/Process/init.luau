@@ -174,6 +174,9 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			_K.systemNotify(from, `<b>Command usage on cooldown!</b>`, true)
 			return false
 		end
+		if #rawText > 1024 and not _K.Auth.hasRestrictedRole(from) then
+			rawText = string.sub(rawText, 1, 1024)
+		end
 	end
 
 	local ok, result = Process.prepareCommands(_K, from, rawText)
