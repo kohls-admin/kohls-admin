@@ -1,9 +1,8 @@
 --!strict
---!native
 --!optimize 2
 
 --- @class Signal
---- A performant, connection pooled, type-safe, linked-list implementation of the Observer pattern.
+--- A performant, doubly linked-list implementation of the Observer pattern.
 
 type Function = (...any) -> ()
 
@@ -14,6 +13,7 @@ export type Connection = {
 	_next: Connection?,
 	_prev: Connection?,
 	_callback: Function?,
+	_thread: thread?,
 }
 
 export type Signal = {
@@ -25,31 +25,17 @@ export type Signal = {
 	_head: Connection?,
 }
 
-local freeConnections = {}
-
 local Connection = {}
 Connection.__index = Connection
 
 function Connection.new(signal: Signal, callback: Function): Connection
-	local self
-	if #freeConnections > 0 then
-		self = table.remove(freeConnections) :: Connection
-		self.Connected = true
-		self._signal = signal
-		self._callback = callback
-		self._next = nil
-		self._prev = nil
-	else
-		self = setmetatable({
-			Connected = true,
-			_signal = signal,
-			_callback = callback,
-			_next = nil,
-			_prev = nil,
-		}, Connection) :: any
-	end
-
-	return self
+	return setmetatable({
+		Connected = true,
+		_signal = signal,
+		_callback = callback,
+		_next = nil,
+		_prev = nil,
+	}, Connection) :: any
 end
 
 function Connection:Disconnect()
@@ -57,22 +43,20 @@ function Connection:Disconnect()
 		return
 	end
 	self.Connected = false
-
 	local nextConn = self._next
 	local prevConn = self._prev
-
 	if nextConn then
 		nextConn._prev = prevConn
 	end
-
 	if prevConn then
 		prevConn._next = nextConn
 	elseif self._signal then
 		self._signal._head = nextConn
 	end
-
-	table.clear(self)
-	table.insert(freeConnections, self)
+	self._callback = nil
+	self._signal = nil :: any
+	self._prev = nil :: any
+	-- _next is preserved so the firing loop can continue if disconnected during dispatch
 end
 
 local Signal = {}
@@ -93,7 +77,7 @@ function Signal:Connect(callback: Function): Connection
 end
 
 function Signal:Once(callback: Function): Connection
-	local connection
+	local connection: Connection
 	connection = self:Connect(function(...)
 		if connection.Connected then
 			connection:Disconnect()
@@ -109,18 +93,23 @@ function Signal:Fire(...)
 		local nextItem = item._next
 		if item.Connected then
 			task.spawn(item._callback, ...)
+		else -- Disconnected
+			item.Connected = nil
+			item._next = nil :: any
 		end
 		item = nextItem
 	end
 end
 
 function Signal:Wait(): ...any
-	local running = coroutine.running()
-	local connection
+	local thread = coroutine.running()
+	local connection: Connection
 	connection = self:Connect(function(...)
 		connection:Disconnect()
-		task.spawn(running, ...)
+		connection._thread = nil
+		task.spawn(thread, ...)
 	end)
+	connection._thread = thread
 	return coroutine.yield()
 end
 
@@ -129,8 +118,10 @@ function Signal:Destroy()
 	while item do
 		local nextItem = item._next
 		if item.Connected then
-			table.clear(item)
-			table.insert(freeConnections, item)
+			if item._thread and coroutine.status(item._thread) == "suspended" then
+				task.cancel(item._thread)
+			end
+			table.clear(item :: any)
 		end
 		item = nextItem
 	end
