@@ -1000,7 +1000,11 @@ return {
 		env = function(_K)
 			local remote = _K.Remote.RemoveTool
 			remote.OnServerEvent:Connect(function(player: Player, target: Player, toolName: string)
-				if _K.Auth.hasCommand(player.UserId, "removetools") then
+				if
+					_K.Auth.hasCommand(player.UserId, "removetools")
+					and typeof(target) == "Player"
+					and type(toolName) == "string"
+				then
 					local removed
 					for _, source in { target.Character, target:FindFirstChildOfClass("Backpack") } do
 						if not source then

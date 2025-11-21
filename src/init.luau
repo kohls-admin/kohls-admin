@@ -723,8 +723,9 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 	-- handle ban events
 	_K.Remote.Ban.OnServerEvent:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
-		if not _K.Auth.hasRestrictedRole(player.UserId) then
-			duration = 0
+		local canBan = _K.Auth.hasCommand(player.UserId, "ban")
+		if not (tonumber(userId) and canBan) then
+			return
 		end
 
 		local fauxArg = {
@@ -734,16 +735,12 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 				from = player.UserId,
 				fromRank = _K.Auth.getRank(player.UserId),
 				fromRole = {},
-				rank = _K.Auth.hasCommand(player.UserId, "ban") or 0,
+				rank = canBan or 0,
 			},
 		}
 
-		if
-			tonumber(userId)
-			and _K.Auth.targetUserArgument(fauxArg, userId, userId)
-			and _K.Auth.hasCommand(player.UserId, "ban")
-		then
-			if not _K.Auth.hasPermission(player.UserId, "banasync") then
+		if _K.Auth.targetUserArgument(fauxArg, userId, userId) then
+			if not _K.Auth.hasPermission(player.UserId, "banasync") or not _K.Auth.hasRestrictedRole(player.UserId) then
 				duration = 0
 			end
 			_K.log(`{_K.getCommandPrefix()}ban {userId} {duration} {reason}`, "COMMAND", player.UserId)
@@ -759,8 +756,10 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		end
 	end)
 
-	_K.Remote.Idled.OnServerEvent:Connect(function(player, idleTime)
-		player:SetAttribute("_KIdleTime", idleTime)
+	_K.Remote.Idled.OnServerEvent:Connect(function(player: Player, idleTime: number)
+		if type(idleTime) == "number" then
+			player:SetAttribute("_KIdleTime", idleTime)
+		end
 	end)
 
 	local playerCleanup = {}

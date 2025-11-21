@@ -109,7 +109,7 @@ if Util.Service.Run:IsServer() then
 	}
 
 	local cache = {}
-	function VIP.Effect(player, assetId, match, equip, name)
+	function VIP.Effect(player: Player, assetId: number, match: string, equip: boolean, name: string)
 		if not Data.settings.vip then
 			return
 		end
