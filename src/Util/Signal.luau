@@ -107,7 +107,9 @@ function Signal:Wait(): ...any
 	connection = self:Connect(function(...)
 		connection:Disconnect()
 		connection._thread = nil
-		task.spawn(thread, ...)
+		if coroutine.status(thread) == "suspended" then
+			task.spawn(thread, ...)
+		end
 	end)
 	connection._thread = thread
 	return coroutine.yield()
