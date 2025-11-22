@@ -1127,6 +1127,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) whose head size to change.",
+				shouldRequest = true,
 			},
 			{
 				type = "number",
