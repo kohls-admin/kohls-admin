@@ -209,11 +209,62 @@ return {
 				while not _K.client do
 					task.wait()
 				end
+				local pinned, previousSize, previousPosition = _K.Flux.state(false), nil, nil
 				local window = _K.UI.new "Window" {
 					Parent = _K.UI.LayerTopInset,
 					Icon = "rbxassetid://71961243872230",
 					Title = "Logs",
+					BackgroundTransparency = function()
+						return if pinned() then 1 else _K.UI.Theme.Transparency
+					end,
 				}
+				local pinButton = _K.UI.new "Button" {
+					Name = "PinButton",
+					BackgroundTransparency = 1,
+					HoverTransparency = 1,
+					Size = UDim2.fromOffset(_K.UI.Theme.FontSizeLargest(), _K.UI.Theme.FontSizeLargest()),
+					Icon = "rbxassetid://133378348132181",
+					IconProperties = {
+						ImageColor3 = _K.UI.Theme.PrimaryText,
+						Size = UDim2.fromScale(1, 0.6),
+					},
+					Text = "",
+					Parent = window._instance.Frame.TitleBar,
+					LayoutOrder = function()
+						return if pinned() then 1 else 8
+					end,
+					Activated = function()
+						pinned(not pinned())
+					end,
+				}
+				pinButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+				_K.UI.new "Tooltip" {
+					Parent = pinButton,
+					Hovering = pinButton._hovering,
+					Text = function()
+						return if pinned() then "Unpin Logs" else "Pin Logs"
+					end,
+				}
+				_K.UI.edit(pinButton._content.IconFrame.Icon, {
+					ImageTransparency = function()
+						return if pinned() then 0 elseif pinButton._hovering() then 0.5 else 0.75
+					end,
+				})
+				pinned:Connect(function()
+					window._instance.Size, previousSize = previousSize or window._instance.Size, window._instance.Size
+					window._instance.Position, previousPosition =
+						previousPosition or UDim2.new(0, 0, 1, -window._instance.Size.Y.Offset),
+						window._instance.Position
+					window._instance.Parent = nil
+					window._instance.Parent = _K.UI.LayerTopInset
+					local switched = not pinned()
+					window._instance.UIStroke.Enabled = switched
+					window._instance.Frame.TitleBar.Left.Visible = switched
+					window._instance.Frame.TitleBar.Button.Visible = switched
+					window._instance.Frame.TitleBar.Modal = switched
+					window._content.Logs.FilterInput.Input.UIStroke.Enabled = switched
+					window._content.Logs.FilterInput.Button.UIStroke.Enabled = switched
+				end)
 				_K.UI.edit(window, {
 					[_K.UI.Event] = {
 						Visible = function()
