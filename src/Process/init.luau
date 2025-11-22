@@ -37,6 +37,11 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 	local batchIgnore = string.format(`[%s{Process.ignoreFormat}{escapedSplit}]`, Util.String.escapePattern(prefix))
 	message = string.sub(message, commandStart + #prefix)
 
+	local len, invalidPos = utf8.len(message)
+	if not len then
+		message = string.sub(message, invalidPos - 1)
+	end
+
 	local argument = { 1 }
 	local command = { argument }
 	local commands = { command }
