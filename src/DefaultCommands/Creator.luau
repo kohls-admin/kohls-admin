@@ -33,7 +33,9 @@ return {
 		end,
 
 		run = function(context)
-			task.spawn(context._K.Data.Store.removeAsync, "Logs")
+			for i = 1, 4 do
+				task.spawn(context._K.Data.Store.removeAsync, "Logs_" .. i)
+			end
 			context._K.Service.Messaging:PublishAsync("KA_ClearLogs")
 			for _, player in context._K.Service.Players:GetPlayers() do
 				context._K.Remote.ClearLogs:FireClient(player)
