@@ -872,7 +872,7 @@ return {
 				name = "Player(s)",
 				description = "The player(s) to nuke.",
 				shouldRequest = true,
-			},,
+			},
 			{
 				type = "number",
 				name = "Size",
