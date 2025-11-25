@@ -295,7 +295,7 @@ function Class.new(properties: Properties?)
 	end)
 
 	local automaticFill = function()
-		return if self.Fill() then Enum.AutomaticSize.None else Enum.AutomaticSize.X
+		return if self.Fill() then Enum.AutomaticSize.X else Enum.AutomaticSize.None
 	end
 
 	local inputMask = UI.new "Frame" {
