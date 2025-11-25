@@ -11,6 +11,7 @@ local DEFAULT = {
 	Label = "",
 	LabelProperties = {},
 	ActiveSound = true,
+	AutomaticSize = Enum.AutomaticSize.None,
 	BackgroundColor3 = UI.Theme.Secondary,
 	BackgroundTransparency = UI.Theme.TransparencyHeavy,
 	HoverTransparency = 0.75,
@@ -36,10 +37,23 @@ function Class.new(properties: Properties?)
 	local hovering = UI.state(false) :: boolean
 	self._hovering = hovering
 
+	local autoSize = UI.compute(function()
+		local auto, x, y = self.AutomaticSize(), 1, 1
+		if auto == Enum.AutomaticSize.XY then
+			x, y = 0, 0
+		elseif auto == Enum.AutomaticSize.X then
+			x = 0
+		elseif auto == Enum.AutomaticSize.Y then
+			y = 0
+		end
+		return UDim2.fromScale(x, y)
+	end)
+
 	self._content = UI.new "Frame" {
 		Name = "UIContent",
+		AutomaticSize = self.AutomaticSize,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = autoSize,
 
 		UI.new "UIListLayout" {
 			FillDirection = Enum.FillDirection.Horizontal,
@@ -51,9 +65,10 @@ function Class.new(properties: Properties?)
 			UI.new "TextLabel" {
 				Name = "Label",
 				LayoutOrder = 2,
+				AutomaticSize = self.AutomaticSize,
 				AutoLocalize = false,
 				BackgroundTransparency = 1,
-				Size = UDim2.new(1, 0, 1, 0),
+				Size = autoSize,
 				FontFace = self.FontFace,
 				RichText = true,
 				Text = function()
@@ -115,6 +130,7 @@ function Class.new(properties: Properties?)
 
 	local ripple = UI.new "Frame" {
 		Name = "Ripple",
+		Active = false,
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundTransparency = 1,
 		BackgroundColor3 = UI.Theme.Secondary,
@@ -125,6 +141,7 @@ function Class.new(properties: Properties?)
 	}
 
 	local instance = UI.new "TextButton" {
+		AutomaticSize = self.AutomaticSize,
 		AutoLocalize = false,
 		Name = "Button",
 		Active = true,
@@ -136,7 +153,11 @@ function Class.new(properties: Properties?)
 		ClipsDescendants = true,
 		Text = "",
 		TextTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 32),
+		Size = function()
+			local auto = self.AutomaticSize()
+			local x = if auto == Enum.AutomaticSize.X or auto == Enum.AutomaticSize.XY then 0 else 1
+			return UDim2.new(x, 0, 0, UI.Theme.FontSize + UI.Theme.Padding().Offset * 2)
+		end,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerPadded,
