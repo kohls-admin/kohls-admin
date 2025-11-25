@@ -207,12 +207,12 @@ function Class.new(properties: Properties?)
 			end
 		end,
 		InputEnded = function(input)
-			if
-				input.UserInputType == Enum.UserInputType.MouseButton1
-				or input.UserInputType == Enum.UserInputType.MouseMovement
+			local isMoveOrTouch = input.UserInputType == Enum.UserInputType.MouseMovement
 				or input.UserInputType == Enum.UserInputType.Touch
-			then
+			if isMoveOrTouch then
 				UI.deactivateState(hovering, "hover")
+			end
+			if isMoveOrTouch or input.UserInputType == Enum.UserInputType.MouseButton1 then
 				Tween:Create(ripple, UI.Theme.TweenOut._value, { BackgroundTransparency = 1 }):Play()
 			end
 		end,
