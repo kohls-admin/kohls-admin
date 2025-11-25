@@ -631,26 +631,7 @@ LogService.MessageOut:Connect(function(message, messageType)
 	end
 end)
 
--- socials
-local PolicyService = game:GetService("PolicyService")
 local Players = game:GetService("Players")
-
-local player = Players.LocalPlayer
-
-local success, result = pcall(function()
-	return PolicyService:GetPolicyInfoForPlayerAsync(player)
-end)
-
-if success and result.AllowedExternalLinkReferences and table.find(result.AllowedExternalLinkReferences, "Discord") then
-	cm.Position = UDim2.new(0.5, -125, 0.5, -144)
-	cm.Trail.Position = UDim2.new(0, 0, 1, 268)
-	cm.Hat.Position = UDim2.new(0, 83, 1, 268)
-	cm.Shine.Position = UDim2.new(1, -82, 1, 268)
-	cm.Social.Visible = true
-	cm.Social.Text = "discord.gg/bwCC7gV"
-	f.template.Help.BG.Social.Visible = true
-	f.template.Help.BG.Social.Text = "discord.gg/bwCC7gV"
-end
 
 -- TextChatService compatibility
 local TextChatService = game:GetService("TextChatService")
