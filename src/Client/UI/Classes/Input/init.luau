@@ -298,9 +298,13 @@ function Class.new(properties: Properties?)
 		return if self.Fill() then Enum.AutomaticSize.X else Enum.AutomaticSize.None
 	end
 
+	local automaticFillInverse = function()
+		return if self.Fill() then Enum.AutomaticSize.None else Enum.AutomaticSize.X
+	end
+
 	local inputMask = UI.new "Frame" {
 		Name = "InputMask",
-		AutomaticSize = automaticFill,
+		AutomaticSize = automaticFillInverse,
 		ClipsDescendants = true,
 		BackgroundTransparency = 1,
 		Position = UDim2.new(0, 0, 0, 0),
