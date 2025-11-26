@@ -483,6 +483,7 @@ local function toggleCommandBarWithSound()
 	else
 		UI.Sound.Hover01:Play()
 		_K.client.CommandBar.show()
+		UI.Haptic.Hover:Play()
 	end
 end
 
