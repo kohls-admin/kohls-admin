@@ -7,6 +7,7 @@ local Commands = require(script.Parent.Commands)
 local Logs = require(script.Parent.Logs)
 local Members = require(script.Parent.Members)
 local Settings = require(script.Parent.Settings)
+local Market = require(script.Parent.Market)
 
 local clockStart = os.clock()
 
@@ -17,6 +18,7 @@ _K.client.dashboard.Commands = Commands.new(_K)
 _K.client.dashboard.Members = Members.new(_K)
 _K.client.dashboard.Logs = Logs.new(_K)
 _K.client.dashboard.Settings = Settings.new(_K)
+_K.client.dashboard.Market = Market.new(_K)
 
 local tabs = UI.new "Tabs" {
 	CurrentPage = _K.client.dashboard.About,
@@ -27,6 +29,7 @@ local tabs = UI.new "Tabs" {
 		{ _K.client.dashboard.Logs },
 		{ _K.client.dashboard.Settings },
 		{ _K.client.dashboard.About },
+		{ _K.client.dashboard.Market },
 	},
 	Vertical = true,
 
@@ -168,6 +171,24 @@ UI.edit(tabs._instance.Bar.UIPadding, {
 		return if tabs.Vertical() then UDim.new() else UI.Theme.Padding
 	end,
 })
+
+UI.edit(tabs._instance.Bar.Tabs, {
+	UI.new "Spacer" {
+		LayoutOrder = 9e8 - 1,
+		Visible = tabs.Vertical,
+	},
+})
+
+UI.edit(tabs._instance.Bar.Tabs.Market, {
+	LayoutOrder = 9e8,
+})
+
+UI.edit(tabs._instance.Bar.Tabs.Market.UIContent.Label, {
+	Name = "Title",
+	UI.new "UIGradient" {},
+})
+
+tabs._instance.Bar.Tabs.Market.UIContent:AddTag("_Keternal")
 
 local tabBarSize = UI.state(tabs._instance.Bar, "AbsoluteSize")
 

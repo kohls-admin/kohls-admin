@@ -369,6 +369,13 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 	_K.client.ready = true
 	_K.Hook.init:Fire()
+
+	task.spawn(function()
+		local page = if _K.Auth.hasRestrictedRole(_K.LocalPlayer.UserId)
+			then _K.client.dashboard.About
+			else _K.client.dashboard.Market
+		_K.client.dashboard.Tabs._pages:JumpTo(_K.client.dashboard.Tabs._containerCache[page])
+	end)
 end)
 
 _K.Remote.Init:FireServer({ Attributes = { Platform = UI.Platform, SessionStart = workspace:GetServerTimeNow() } })
