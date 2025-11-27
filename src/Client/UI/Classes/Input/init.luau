@@ -90,6 +90,7 @@ local DEFAULT = {
 	DisplayText = "",
 	Placeholder = "",
 	Value = "",
+	--- Fills to the size of the text input.
 	Fill = false,
 	FontFace = UI.Theme.Font,
 	FontSize = UI.Theme.FontSize,
@@ -295,16 +296,12 @@ function Class.new(properties: Properties?)
 	end)
 
 	local automaticFill = function()
-		return if self.Fill() then Enum.AutomaticSize.X else Enum.AutomaticSize.None
-	end
-
-	local automaticFillInverse = function()
 		return if self.Fill() then Enum.AutomaticSize.None else Enum.AutomaticSize.X
 	end
 
 	local inputMask = UI.new "Frame" {
 		Name = "InputMask",
-		AutomaticSize = automaticFillInverse,
+		AutomaticSize = automaticFill,
 		ClipsDescendants = true,
 		BackgroundTransparency = 1,
 		Position = UDim2.new(0, 0, 0, 0),
