@@ -927,7 +927,7 @@ return {
 		end)
 	end,
 	show = function()
-		if _K.client.toggleCommandBar._instance.Visible then
+		if _K.client.commandBarEnabled then
 			if _K.client.TopbarPlus then
 				_K.client.TopbarPlus.setTopbarEnabled(false)
 			else

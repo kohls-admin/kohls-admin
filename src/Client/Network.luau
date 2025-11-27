@@ -20,11 +20,16 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 		dashboardButtonRank = 0
 	end
 
-	_K.client.toggleCommandBar._instance.Visible = commandBarRank and userRank >= commandBarRank
+	_K.client.commandBarEnabled = commandBarRank and userRank >= commandBarRank
 	_K.client.dashboardEnabled = dashboardRank and userRank >= dashboardRank
 	_K.client.dashboardButtonEnabled = _K.client.dashboardEnabled
 		and dashboardButtonRank
 		and userRank >= dashboardButtonRank
+
+	_K.client.toggleCommandBar._instance.Visible = _K.client.commandBarEnabled
+	if not _K.client.commandBarEnabled and _K.client.CommandBar and _K.client.CommandBar.Bar.Visible then
+		_K.client.CommandBar.hide()
+	end
 
 	if typeof(_K.client.dashboardButton) == "Instance" and _K.client.dashboardButton:IsA("GuiObject") then
 		_K.client.dashboardButton.Visible = _K.client.dashboardButtonEnabled
