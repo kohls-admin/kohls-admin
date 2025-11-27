@@ -83,7 +83,7 @@ local dashboard = UI.new "Window" {
 		},
 	},
 	Position = UDim2.new(0.5, -320, 0.5, -240),
-	Size = UDim2.fromOffset(640, 480),
+	Size = UDim2.fromOffset(648, 492),
 	SizeBounds = Rect.new(128, 128, 9e9, 9e9),
 	Title = "",
 	Visible = false,
