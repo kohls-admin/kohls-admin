@@ -55,28 +55,26 @@ return function(dialogOverride)
 		hide(self, announce)
 	end
 
-	local dialog = UI.new("Dialog")(_K.Util.Table.merge({
+	local dialog
+	dialog = UI.new("Dialog")(_K.Util.Table.merge({
 		Parent = UI.LayerTopInset,
 		Close = close,
 		Duration = 4 + 0.0625 * #dialogOverride.Text,
 		ExitButton = true,
 
 		Size = UDim2.fromScale(0.5, 0),
-		AnchorPoint = UI.tween(function()
-			return if announce
-				then Vector2.new(0.5, if visible() then 0 else 1)
-				else Vector2.new(if visible() then 1 else 0, 1)
-		end, UI.Theme.TweenInOut),
-		Position = UI.tween(function()
-			local padding = UI.Theme.Padding().Offset
-			if announce then
+		AnchorPoint = if announce then Vector2.new(0.5, 1) else Vector2.new(1, 1),
+		Position = if announce
+			then UI.spring(function()
+				local padding = UI.Theme.Padding().Offset
 				local height = UI.TopbarInset().Height
-				local heightOffset = offset()
-				return UDim2.new(0.5, 0, 0, if visible() then padding + heightOffset else -height)
-			else
-				return UDim2.new(1, if visible() then -padding else 0, 1, -(padding + offset()))
-			end
-		end, UI.Theme.TweenInOut),
+				local y = if visible() then padding + offset() + dialog._instance.AbsoluteSize.Y else -height - 32
+				return UDim2.new(0.5, 0, 0, y)
+			end, 16, 0.5)
+			else UI.spring(function()
+				local padding = UI.Theme.Padding().Offset
+				return UDim2.new(1, if visible() then -padding else 256 + 32, 1, -(padding + offset()))
+			end, 16, 0.625),
 		if announce
 			then UI.new "UIPadding" {
 				PaddingLeft = UI.Theme.Padding,
@@ -115,7 +113,9 @@ return function(dialogOverride)
 
 	self = { dialog._instance, visible, offset, duration }
 	table.insert(list, 1, self)
-	visible(true)
+	task.defer(function()
+		visible(true)
+	end)
 
 	if resetOffset(announce) > UI.LayerTopInset.AbsoluteSize.Y / (if announce then 2 else 1) then
 		for index = #list, 1, -1 do

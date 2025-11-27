@@ -12,24 +12,7 @@ return {
 			},
 		},
 		env = function(_K)
-			local function announceDataInit()
-				local announcement = _K.Data.savedSettings.announcement
-				if announcement then
-					local message, from = unpack(announcement)
-					_K.Remote.Announce:FireAllClients({
-						From = from,
-						Text = message,
-						Duration = 0,
-					})
-				end
-			end
-			if _K.Data.savedSettings.announcement then
-				announceDataInit()
-			else
-				_K.Hook.initDataStore:Once(announceDataInit)
-			end
-
-			task.spawn(function()
+			task.spawn(_K.Util.Retry, function()
 				_K.Service.Messaging:SubscribeAsync("KA_Announcement", function(message)
 					if type(message.Data) ~= "table" then
 						_K.Data.savedSettings.announcement = false
@@ -44,7 +27,7 @@ return {
 						Duration = 0,
 					})
 				end)
-			end)
+			end, math.huge)
 		end,
 
 		run = function(context, message)
@@ -53,8 +36,11 @@ return {
 			end
 
 			local announcement = { message, context.from }
+			context._K.Data.savedSettings.announcement = announcement
 			context._K.Data.Sync.settings.announcement = announcement
-			context._K.Service.Messaging:PublishAsync("KA_Announcement", announcement)
+			task.spawn(context._K.Util.Retry, function()
+				context._K.Service.Messaging:PublishAsync("KA_Announcement", announcement)
+			end, math.huge)
 			return
 		end,
 	},
@@ -69,6 +55,7 @@ return {
 				return `Announcements are disabled in private servers.`
 			end
 
+			context._K.Data.savedSettings.announcement = false
 			context._K.Data.Sync.settings.announcement = context._K.Data.REMOVE
 			context._K.Service.Messaging:PublishAsync("KA_Announcement", nil)
 			return

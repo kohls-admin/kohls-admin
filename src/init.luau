@@ -241,7 +241,17 @@ end
 
 script:SetAttribute("ServerStartTime", workspace:GetServerTimeNow())
 
+local characterCleanup = {}
+
+local function characterRemoving(character: Model)
+	_K.Flux.cleanup(characterCleanup[character])
+	characterCleanup[character] = nil
+	task.defer(game.Destroy, character)
+end
+
 local function characterAdded(character: Model)
+	local cleanup = {}
+	characterCleanup[character] = cleanup
 	local player = _K.Service.Players:GetPlayerFromCharacter(character)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 
@@ -262,41 +272,48 @@ local function characterAdded(character: Model)
 		end
 	end
 	local logDamageDebounce = _K.Util.Function.debounce(1, logDamage)
-	humanoid.HealthChanged:Connect(function(health)
-		if alive then
-			local tag = humanoid:FindFirstChild("creator")
-			local from = (tag and tag.Value) or game
-			local damage = lastHealth - health
-			lastHealth = health
-			if damage > 0 and health >= 0 then
-				damageBatch[from] = (damageBatch[from] or 0) + damage
-				logDamageDebounce(from)
+	table.insert(
+		cleanup,
+		humanoid.HealthChanged:Connect(function(health)
+			if alive then
+				local tag = humanoid:FindFirstChild("creator")
+				local from = (tag and tag.Value) or game
+				local damage = lastHealth - health
+				lastHealth = health
+				if damage > 0 and health >= 0 then
+					damageBatch[from] = (damageBatch[from] or 0) + damage
+					logDamageDebounce(from)
+				end
 			end
-		end
-	end)
+		end)
+	)
 
 	-- kill logs
-	humanoid.Died:Connect(function()
-		alive = false
-		local tag = humanoid:FindFirstChild("creator")
-		local from = tag and tag.Value
-		for attacker in damageBatch do
-			logDamage(attacker)
-		end
-		if from then
-			_K.log(`died to {from}.`, "DEATH", player.UserId)
-			if typeof(from) == "Instance" and from:IsA("Player") then
-				_K.log(`killed {player}.`, "KILL", from.UserId)
+	table.insert(
+		cleanup,
+		humanoid.Died:Connect(function()
+			alive = false
+			local tag = humanoid:FindFirstChild("creator")
+			local from = tag and tag.Value
+			for attacker in damageBatch do
+				logDamage(attacker)
 			end
-		else
-			_K.log(`died.`, "DEATH", player.UserId)
-		end
-	end)
+			if from then
+				_K.log(`died to {from}.`, "DEATH", player.UserId)
+				if typeof(from) == "Instance" and from:IsA("Player") then
+					_K.log(`killed {player}.`, "KILL", from.UserId)
+				end
+			else
+				_K.log(`died.`, "DEATH", player.UserId)
+			end
+		end)
+	)
 end
 
-local function welcomeBadge(userId)
-	if not _K.Service.Badge:UserHasBadgeAsync(userId, _K.Data.settings.welcomeBadgeId) then
-		_K.Service.Badge:AwardBadge(userId, _K.Data.settings.welcomeBadgeId)
+local function awardBadge(userId: number, badgeId: number)
+	local badgeInfo = _K.Service.Badge:GetBadgeInfoAsync(badgeId)
+	if badgeInfo.IsEnabled then
+		task.spawn(_K.Util.Retry, _K.Service.Badge.AwardBadge, 5, 2, _K.Service.Badge, badgeId)
 	end
 end
 
@@ -585,12 +602,18 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 	script.Name = "Kohl's Admin Source"
 	script.Parent = _K.Service.ReplicatedStorage
 
+	local attributeSchema = { Platform = "string", SessionStart = "number" }
+
 	-- server network events
 	local lastLog, cachedLogsBuffer
 	_K.Remote.Init.OnServerEvent:Connect(function(player, initData)
-		if initData.Attributes then
-			for attribute, value in initData.Attributes do
-				player:SetAttribute("_K" .. attribute, value)
+		local attributes = initData.Attributes
+		if attributes then
+			for attribute, valueType in attributeSchema do
+				local value = attributes[attribute]
+				if typeof(value) == valueType then
+					player:SetAttribute("_K" .. attribute, value)
+				end
 			end
 		end
 
@@ -700,8 +723,9 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 
 	-- handle ban events
 	_K.Remote.Ban.OnServerEvent:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
-		if not _K.Auth.hasRestrictedRole(player.UserId) then
-			duration = 0
+		local canBan = _K.Auth.hasCommand(player.UserId, "ban")
+		if not (tonumber(userId) and canBan) then
+			return
 		end
 
 		local fauxArg = {
@@ -711,16 +735,12 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 				from = player.UserId,
 				fromRank = _K.Auth.getRank(player.UserId),
 				fromRole = {},
-				rank = _K.Auth.hasCommand(player.UserId, "ban") or 0,
+				rank = canBan or 0,
 			},
 		}
 
-		if
-			tonumber(userId)
-			and _K.Auth.targetUserArgument(fauxArg, userId, userId)
-			and _K.Auth.hasCommand(player.UserId, "ban")
-		then
-			if not _K.Auth.hasPermission(player.UserId, "banasync") then
+		if _K.Auth.targetUserArgument(fauxArg, userId, userId) then
+			if not _K.Auth.hasPermission(player.UserId, "banasync") or not _K.Auth.hasRestrictedRole(player.UserId) then
 				duration = 0
 			end
 			_K.log(`{_K.getCommandPrefix()}ban {userId} {duration} {reason}`, "COMMAND", player.UserId)
@@ -736,59 +756,76 @@ function _K.initialize(config: Configuration | ModuleScript | { [string]: any },
 		end
 	end)
 
-	_K.Remote.Idled.OnServerEvent:Connect(function(player, idleTime)
-		player:SetAttribute("_KIdleTime", idleTime)
+	_K.Remote.Idled.OnServerEvent:Connect(function(player: Player, idleTime: number)
+		if type(idleTime) == "number" then
+			player:SetAttribute("_KIdleTime", idleTime)
+		end
 	end)
+
+	local playerCleanup = {}
 
 	_K.Util.SafePlayerAdded(function(player: Player)
 		if (_K.Data.settings.welcomeBadgeId or 0) > 0 then
-			task.spawn(welcomeBadge, player.UserId)
-		end
-
-		while not _K.Data.roles do
-			task.wait()
+			task.spawn(_K.Util.Retry, awardBadge, 5, 2, player.UserId, _K.Data.settings.welcomeBadgeId)
 		end
 
 		task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
+
+		local cleanup = {}
+		playerCleanup[player.UserId] = cleanup
+		table.insert(cleanup, player.CharacterAdded:Connect(characterAdded))
+		table.insert(cleanup, player.CharacterRemoving:Connect(characterRemoving))
+		table.insert(
+			cleanup,
+			player.Chatted:Connect(function(message: string)
+				local emote = string.find(message, "/e", 1, true) == 1
+				if not emote then
+					task.spawn(_K.log, _K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
+				end
+				local v = _K.Service.TextChat.ChatVersion
+				if
+					_K.Data.settings.chatCommands ~= false
+					and ((v == Enum.ChatVersion.TextChatService and emote) or v == Enum.ChatVersion.LegacyChatService)
+				then
+					_K.Remote.Command:FireClient(player, message)
+				end
+			end)
+		)
+
+		if player.Character then
+			task.spawn(characterAdded, player.Character)
+		end
+
+		local warning = tick() + 10
+		while not _K.Data.roles do
+			task.wait()
+			if tick() > warning then
+				warn("Unexpected yield while waiting for _K.Data.roles")
+				warning = math.huge
+			end
+		end
 
 		if _K.Auth.banHandler(player) then
 			return
 		end
 
-		for _, role in _K.Data.settings.freeAdmin do
-			_K.Auth.userRoleAdd(player.UserId, role)
-		end
-
 		-- group admin and gamepass roles
-		local success = _K.Auth.userAsyncRoles(player.UserId, true)
-		player:SetAttribute("_KRolesLoaded", success)
+		_K.Auth.userAsyncRoles(player.UserId, true)
+		player:SetAttribute("_KRolesLoaded", true)
 
-		if _K._serverLock and _K.Auth.getRank(player.UserId) < 2 then
+		if _K._serverLock and not _K.Auth.hasRestrictedRole(player.UserId) then
 			player:Kick(`Server has been locked by {_K._serverLock}`)
 			return
 		end
-
-		if player.Character then
-			task.spawn(characterAdded, player.Character)
-		end
-		player.CharacterAdded:Connect(characterAdded)
-		player.Chatted:Connect(function(message: string)
-			local emote = string.find(message, "/e", 1, true) == 1
-			local v = _K.Service.TextChat.ChatVersion
-			if
-				_K.Data.settings.chatCommands ~= false
-				and ((v == Enum.ChatVersion.TextChatService and emote) or v == Enum.ChatVersion.LegacyChatService)
-			then
-				_K.Remote.Command:FireClient(player, message)
-			end
-			if emote then
-				return
-			end
-			_K.log(_K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
-		end)
 	end)
+
 	_K.Service.Players.PlayerRemoving:Connect(function(player)
+		local userId = player.UserId
+
 		task.spawn(_K.log, "left the server.", "LEAVE", player.UserId)
+
+		_K.Flux.cleanup(playerCleanup[userId])
+		playerCleanup[userId] = nil
 	end)
 
 	task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")

@@ -59,8 +59,9 @@ end
 local function fillMemberName(key, data)
 	local userId = tonumber(key)
 	data.name = Util.getUserInfo(userId).Username
-	Data.Sync.members[key] = { data.name, data.persist }
-	Auth.networkMember(key)
+	if data.persist then
+		Data.Sync.members[key] = { data.name, data.persist }
+	end
 end
 
 local SAVE = {
@@ -76,12 +77,13 @@ local function updateBans()
 		return
 	end
 	updatingBans = true
+	local saveBans = SAVE.bans
+	SAVE.bans = {}
 
 	local ok, result = Data.Store.updateAsync("Bans", function(value)
-		return if not value then Data.filterRemove(SAVE.bans) else Data.mergeRemove(value, SAVE.bans)
+		return if not value then Data.filterRemove(saveBans) else Data.mergeRemove(value, saveBans)
 	end)
 
-	table.clear(SAVE.bans)
 	updatingBans = false
 
 	if ok and not Data.gameClosing then
@@ -95,18 +97,18 @@ local function updateMain()
 		return
 	end
 	updatingMain = true
+	local saveMembers, saveSettings = SAVE.members, SAVE.settings
+	SAVE.members, SAVE.settings = {}, {}
 
 	local ok, result = Data.Store.updateAsync("Main", function(value)
 		if not value then
-			return Data.filterRemove({ SAVE.members, SAVE.settings })
+			return Data.filterRemove({ saveMembers, saveSettings })
 		end
-		Data.mergeRemove(value[1], SAVE.members)
-		Data.mergeRemove(value[2], SAVE.settings)
+		Data.mergeRemove(value[1], saveMembers)
+		Data.mergeRemove(value[2], saveSettings)
 		return value
 	end)
 
-	table.clear(SAVE.members)
-	table.clear(SAVE.settings)
 	updatingMain = false
 
 	if ok and not Data.gameClosing then
@@ -130,10 +132,23 @@ local function updateLogs()
 		return
 	end
 	updatingLogs = true
+	local saveLogs = SAVE.logs
+	SAVE.logs = {}
+
+	local n = 0
+	local saveLogsSize = getLogsSize(saveLogs)
+	while saveLogsSize > DATA_LIMIT do
+		n += 1
+		saveLogsSize -= saveLogs[n].size
+		saveLogs[n] = nil
+	end
+	if n > 0 then
+		Util.Table.settle(saveLogs)
+	end
 
 	Data.Store.updateAsync("Logs_" .. math.random(4), function(value)
 		if not value or type(value) ~= "buffer" then
-			return Z.ser(Data.Schema.logs, SAVE.logs)
+			return Z.ser(Data.Schema.logs, saveLogs)
 		end
 
 		local logs = Z.des(Data.Schema.logs, value)
@@ -147,7 +162,7 @@ local function updateLogs()
 			end
 		end
 
-		local size = getLogsSize(logs) + getLogsSize(SAVE.logs)
+		local size = getLogsSize(logs) + saveLogsSize
 		while size > DATA_LIMIT do
 			size -= logs[count].size
 			logs[count] = nil
@@ -157,15 +172,13 @@ local function updateLogs()
 			Util.Table.settle(logs)
 		end
 
-		Util.Table.mergeList(logs, SAVE.logs)
+		Util.Table.mergeList(logs, saveLogs)
 
 		local result, err = Z.ser(Data.Schema.logs, logs)
 		assert(result, err)
 
 		return result
 	end)
-
-	table.clear(SAVE.logs)
 
 	updatingLogs = false
 end
@@ -190,7 +203,8 @@ local SYNC = {
 
 	members = function(state, changes)
 		for userId, data in changes do
-			local cache = Data.Sync.members[userId]
+			local key = tostring(userId)
+			local cache = Data.Sync.members[key]
 			if cache then -- don't overwrite pending change!
 				changes[userId] = nil
 				continue
@@ -210,7 +224,7 @@ local SYNC = {
 			end
 			data.persist = persist
 
-			local member = state[userId]
+			local member = state[key]
 			if member then
 				data.roles = member.roles
 
@@ -236,7 +250,7 @@ local SYNC = {
 			end
 
 			if #data.roles == 0 then -- remove member
-				state[userId] = nil
+				state[key] = nil
 				continue
 			end
 
@@ -248,8 +262,8 @@ local SYNC = {
 
 		-- fill missing names
 		for key, data in state do
-			if not data.name and #data.persist > 0 then
-				task.defer(fillMemberName, key, data)
+			if not data.name then
+				task.spawn(fillMemberName, key, data)
 			end
 		end
 
@@ -275,13 +289,6 @@ local SYNC = {
 		end
 
 		Migrate.Settings(changes)
-
-		if changes.themeFont then
-			changes.themeFont = Font.new(changes.themeFont)
-		end
-		if changes.themeFontMono then
-			changes.themeFontMono = Font.new(changes.themeFontMono)
-		end
 
 		if changes.prefix then
 			local prefix = if type(changes.prefix) == "table" then changes.prefix[1] else changes.prefix
@@ -310,9 +317,11 @@ local SYNC = {
 		elseif type(changes) == "buffer" then
 			logs = Z.des(Data.Schema.logs, changes)
 		end
+		Util.Defer.wait()
 
 		if #logs > 0 then
 			Util.Table.mergeList(state, logs)
+			Util.Defer.wait()
 			local excess = #state - Util.Logger.limit
 			if excess > 0 then
 				for i = 1, excess do
@@ -320,6 +329,7 @@ local SYNC = {
 				end
 				Util.Table.settle(state)
 			end
+			Util.Defer.wait()
 			table.sort(state, Util.Logger.sortTime)
 
 			for _, player in Players:GetPlayers() do
@@ -390,11 +400,13 @@ local dataStoreUpdateThrottle = false
 local cacheKeys = { bans = "set", members = "set", settings = "set", logs = "insert" }
 local function processSync()
 	local changes = {}
+	local changed = false
 
 	-- process changes
 	for key, action in cacheKeys do
 		local pending = Data.Sync[key]
 		if next(pending) ~= nil then -- pending changes
+			Data.Sync[key] = {}
 			local change, remove = {}, {}
 			for k, v in pending do
 				if v == Data.REMOVE then
@@ -406,6 +418,7 @@ local function processSync()
 
 			local changing, removing = next(change) ~= nil, next(remove) ~= nil
 			if changing or removing then
+				changed = true
 				changes[key] = {
 					[action] = if changing then change else nil,
 					unset = if removing then remove else nil,
@@ -440,27 +453,38 @@ local function processSync()
 	end
 
 	-- cross server sync
-	if not Data.SEPARATE_DATASTORE and next(changes) ~= nil then
+	if not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio and changed then
 		local id = Http:GenerateGUID(false)
 		idsFromThisServer[id] = true
 
 		local now = DateTime.now().UnixTimestampMillis
 		local chunks = ChunkChanges(changes)
+
 		for chunkId, chunk in chunks do
 			chunk._time = now
 			for n = 1, HASH_PARTITIONS do
-				Util.Retry(function()
+				pcall(Util.Retry, function()
 					-- set random map for #HASH_PARTITIONS * request limit
-					SYNC_HASH_MAPS[n]:SetAsync(id .. "_" .. chunkId, changes, HASH_EXPIRY)
+					SYNC_HASH_MAPS[n]:SetAsync(id .. "_" .. chunkId, chunk, HASH_EXPIRY)
 				end, math.huge)
 			end
+			table.clear(chunk)
 		end
 
 		task.delay(HASH_EXPIRY, removeIdFromThisServer, id)
-		Util.Retry(function()
+		pcall(Util.Retry, function()
 			Util.Service.Messaging:PublishAsync(DATA_KEY, { id, #chunks })
 		end, math.huge)
+		for _, v in changes do
+			if type(v) == "table" then
+				table.clear(v)
+			end
+		end
+		table.clear(changes)
+		table.clear(chunks)
 	end
+
+	return changed
 end
 
 ----------
@@ -508,7 +532,7 @@ function Data.initialize(scope)
 			if okLogs and type(logs) == "buffer" then
 				SYNC.logs(Data.logs, logs)
 			end
-			logsUpdatedTime = if metaLogs then metaLogs.UpdatedTime else logsUpdatedTime
+			logsUpdatedTime = math.max(if metaLogs then metaLogs.UpdatedTime else 0, logsUpdatedTime)
 		end
 	end
 
@@ -527,9 +551,9 @@ function Data.initialize(scope)
 	Hook.initDataStore:Fire()
 
 	-- disable cross server sync logic in private servers
-	if not Data.SEPARATE_DATASTORE then
+	if not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
 		for i = 1, HASH_PARTITIONS do
-			local _, syncHashMap = Util.Retry(function()
+			local _, _, syncHashMap = pcall(Util.Retry, function()
 				return MemoryStore:GetHashMap(DATA_KEY .. i)
 			end, math.huge)
 			table.insert(SYNC_HASH_MAPS, syncHashMap)
@@ -557,35 +581,34 @@ function Data.initialize(scope)
 			end)
 		end, math.huge)
 
-		if not Util.RunContext.IsStudio then
-			local times = {
-				bans = if metaBans then metaBans.UpdatedTime else 0,
-				members = if metaMain then metaMain.UpdatedTime else 0,
-				settings = if metaMain then metaMain.UpdatedTime else 0,
-				logs = logsUpdatedTime,
-			}
+		local times = {
+			bans = if metaBans then metaBans.UpdatedTime else 0,
+			members = if metaMain then metaMain.UpdatedTime else 0,
+			settings = if metaMain then metaMain.UpdatedTime else 0,
+			logs = logsUpdatedTime,
+		}
+		task.spawn(function()
 			local hashmap = SYNC_HASH_MAPS[math.random(HASH_PARTITIONS)]
 			local success, items = pcall(Util.MemoryStore.getItemsFromHashMap, hashmap)
 			if success then
-				for _, changes in items do
-					for key in changes do
-						if key == "_time" then
+				for key, changes in items do
+					for setting in changes do
+						if setting == "_time" then
 							continue
 						end
-						if changes._time <= times[key] then
-							changes[key] = nil -- strip stale data
+						if (changes._time or math.huge) <= (times[setting] or 0) then
+							changes[setting] = nil -- strip stale data
 						end
 					end
 					syncChanges(changes)
 				end
 			end
-		end
+		end)
 	end
 
 	task.spawn(function()
 		repeat
-			processSync()
-			task.wait(1)
+			task.wait(if processSync() then 6 else 1)
 		until Data.gameClosing
 	end)
 
@@ -597,14 +620,14 @@ function Data.initialize(scope)
 		and not RunService:IsStudio()
 	then
 		task.spawn(function()
-			local ok, hashMap = Util.Retry(function()
+			local _, ok, hashMap = pcall(Util.Retry, function()
 				return MemoryStore:GetHashMap("__KA_Charts")
 			end)
-			local ok2, updated = Util.Retry(function()
+			local _, ok2, updated = pcall(Util.Retry, function()
 				return hashMap:GetAsync("Updated")
 			end)
 			if ok and ok2 and not updated then
-				Util.Retry(function()
+				pcall(Util.Retry, function()
 					hashMap:SetAsync("Updated", true, 86400 / 8)
 				end)
 				local request = {
@@ -616,7 +639,7 @@ function Data.initialize(scope)
 						token = "lzjjp9LUOtePr7xnKmctfp5DAuFgvcrcxL3caXpBnVM=",
 					}),
 				}
-				Util.Retry(function()
+				pcall(Util.Retry, function()
 					Http:RequestAsync(request)
 				end)
 			end

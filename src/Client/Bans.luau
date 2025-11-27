@@ -1,8 +1,9 @@
+local UI = require(script.Parent.UI)
+
 local Bans = {}
 Bans.__index = Bans
 
 function Bans.new(_K)
-	local UI = _K.UI
 	local escape = _K.Util.String.escapeRichText
 
 	local function close(self)
@@ -121,6 +122,7 @@ function Bans.new(_K)
 			Text = "Loading...",
 		}
 
+		local cleanup = { tooltip }
 		local itemRef = {
 			userId = 0,
 			reason = nil,
@@ -149,7 +151,10 @@ function Bans.new(_K)
 				newBanDialog.Visible(true)
 			end,
 		}
-		UI.new "Tooltip" { Parent = editBanButton, Text = "Edit Ban", Hovering = editBanButton._hovering }
+		table.insert(
+			cleanup,
+			UI.new "Tooltip" { Parent = editBanButton, Text = "Edit Ban", Hovering = editBanButton._hovering }
+		)
 
 		local unbanButton = UI.new "Button" {
 			LayoutOrder = 9,
@@ -168,7 +173,10 @@ function Bans.new(_K)
 				unbanDialog.Visible(true)
 			end,
 		}
-		UI.new "Tooltip" { Parent = unbanButton, Text = "Remove Ban", Hovering = unbanButton._hovering }
+		table.insert(
+			cleanup,
+			UI.new "Tooltip" { Parent = unbanButton, Text = "Remove Ban", Hovering = unbanButton._hovering }
+		)
 
 		UI.edit(editBanButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
 		UI.edit(unbanButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
@@ -236,13 +244,17 @@ function Bans.new(_K)
 			editBanButton,
 			unbanButton,
 			tooltip,
+			[UI.Clean] = cleanup,
 		}
 
-		tooltip.Visible:Connect(function()
-			if tooltip.Visible._value then
-				tooltip.Text(itemRef.tipText)
-			end
-		end)
+		table.insert(
+			cleanup,
+			tooltip.Visible:Connect(function()
+				if tooltip.Visible._value then
+					tooltip.Text(itemRef.tipText)
+				end
+			end)
+		)
 
 		return itemRef
 	end

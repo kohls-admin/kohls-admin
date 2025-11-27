@@ -18,13 +18,19 @@ function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
+	local cleanup = {}
+
 	local dragInput
 	local dragging = UI.state(false)
+	self._dragging = dragging
+
 	local valueAlpha = UI.compute(function()
 		local snap = self.Snap()
 		local value = self.Value()
 		return if snap > 1 then math.max(0, value - 1) / (snap - 1) else value
 	end)
+
+	table.insert(cleanup, valueAlpha)
 
 	local function update(input)
 		if not dragInput then
@@ -70,7 +76,7 @@ function Class.new(properties: Properties?)
 		end
 	end
 
-	UI.UserInputService.InputChanged:Connect(update)
+	table.insert(cleanup, UI.UserInputService.InputChanged:Connect(update))
 
 	self._slider = UI.new "Frame" {
 		Name = "Slider",
@@ -92,9 +98,11 @@ function Class.new(properties: Properties?)
 		InputBegan = inputBegan,
 	} :: Frame & { UICorner: UICorner }
 
-	local padding = function()
+	local padding = UI.compute(function()
 		return UDim.new(0, UI.Theme.FontSizeSmaller() + UI.Theme.PaddingHalf().Offset)
-	end
+	end)
+
+	table.insert(cleanup, padding)
 
 	self._instance = UI.new "Frame" {
 		Name = "Slider",
@@ -141,6 +149,8 @@ function Class.new(properties: Properties?)
 		},
 
 		InputBegan = inputBegan,
+
+		[UI.Clean] = cleanup,
 	} :: Frame & {
 		UICorner: UICorner,
 		UIStroke: UIStroke,

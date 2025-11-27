@@ -19,13 +19,17 @@ function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
+	local cleanup = {}
+
 	local backgroundTransparency = UI.tween(function()
 		return if self.Value() then 0 else UI.Theme.TransparencyHeavy()
 	end, UI.Theme.TweenOut)
+	table.insert(cleanup, backgroundTransparency)
 
 	local backgroundTransparencyClamped = UI.tween(function()
 		return if self.Value() then 0 else UI.Theme.TransparencyClamped()
 	end, UI.Theme.TweenOut)
+	table.insert(cleanup, backgroundTransparencyClamped)
 
 	self._instance = UI.new "TextButton" {
 		AutoLocalize = false,
@@ -72,6 +76,8 @@ function Class.new(properties: Properties?)
 				UI.Sound.Hover01:Play()
 			end
 		end,
+
+		[UI.Clean] = cleanup,
 	} :: TextButton & { UICorner: UICorner, UIStroke: UIStroke, Circle: Frame & { UICorner: UICorner } }
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)

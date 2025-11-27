@@ -37,6 +37,11 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 	local batchIgnore = string.format(`[%s{Process.ignoreFormat}{escapedSplit}]`, Util.String.escapePattern(prefix))
 	message = string.sub(message, commandStart + #prefix)
 
+	local len, invalidPos = utf8.len(message)
+	if not len then
+		message = string.sub(message, invalidPos - 1)
+	end
+
 	local argument = { 1 }
 	local command = { argument }
 	local commands = { command }
@@ -55,7 +60,7 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 			argument = { first - 1, prefix, char }
 			table.insert(command, argument)
 		elseif char == prefix and string.find(lastChar, delimiter) then
-			if #argument == 1 or string.find(argument[2], `^{delimiter}*$`) then
+			if #argument == 1 or string.find(argument[2] :: string, `^{delimiter}*$`) then
 				table.remove(command)
 			end
 			argument = { first + 1 }
@@ -73,7 +78,7 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 			else
 				table.insert(argument, char)
 			end
-		elseif string.find(char, delimiter) and not string.find(lastChar, delimiter) then
+		elseif string.find(char :: string, delimiter) and not string.find(lastChar, delimiter) then
 			argument = { first + 1 }
 			table.insert(command, argument)
 		else
@@ -174,6 +179,9 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			_K.systemNotify(from, `<b>Command usage on cooldown!</b>`, true)
 			return false
 		end
+		if #rawText > 1024 and not _K.Auth.hasRestrictedRole(from) then
+			rawText = string.sub(rawText, 1, 1024)
+		end
 	end
 
 	local ok, result = Process.prepareCommands(_K, from, rawText)
@@ -257,7 +265,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			end
 			runOnServer = true
 			local last = command.array[#command.array]
-			table.insert(commandStrings, string.sub(rawText, command.array[1][1], last[1] + #last[2]))
+			table.insert(commandStrings, string.sub(rawText, command.array[1][1] :: number, last[1] + #last[2]))
 		end
 		if runOnServer then
 			_K.Remote.Command:FireServer(`{prefix}{table.concat(commandStrings, " " .. prefix)}`)

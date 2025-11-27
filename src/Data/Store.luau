@@ -44,7 +44,7 @@ function Store.loadStore(name, scope)
 	local ok, result = pcall(DataStoreService.GetDataStore, DataStoreService, name, scope)
 	if not ok then
 		if RunService:IsStudio() and type(result) == "string" then
-			if string.find(result, "publish", 1, true) then
+			if string.find(result :: string, "publish", 1, true) then
 				error("You must publish this game to Roblox.")
 			end
 		end

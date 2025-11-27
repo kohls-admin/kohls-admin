@@ -63,6 +63,7 @@ local function freeUser(userId: number)
 		local freeThread = userCache[userId].freeThread
 		if freeThread then
 			pcall(task.cancel, freeThread)
+			userCache[userId].freeThread = nil
 		end
 	end
 	userCache[userId] = nil
@@ -162,7 +163,7 @@ local function parseIndividual(arg, self, userType)
 		if name == arg then
 			return self._K.Auth.targetUserArgument(self, player.UserId, player)
 		end
-		if not partial and string.find(name, arg, 1, true) == 1 then
+		if not partial and string.find(name, arg :: string, 1, true) == 1 then
 			partial = player
 		end
 	end
@@ -174,7 +175,11 @@ local function parseIndividual(arg, self, userType)
 			return self._K.Auth.targetUserArgument(self, player.UserId, player)
 		end
 		if
-			not partial and (string.find(displayName, arg, 1, true) == 1 or (string.find(kDisplay, arg, 1, true) == 1))
+			not partial
+			and (
+				string.find(displayName, arg :: string, 1, true) == 1
+				or (string.find(kDisplay, arg :: string, 1, true) == 1)
+			)
 		then
 			partial = player
 		end
@@ -196,12 +201,12 @@ local typeIndividual = {
 }
 
 local function parseUser(arg, self)
-	local player = parseIndividual(arg, self, true)
+	local player, reason = parseIndividual(arg, self, true)
 	local userId = tonumber(if player then player.UserId else arg)
 	if userId and userId > 0 then
 		return self._K.Auth.targetUserArgument(self, userId, userId)
 	end
-	return nil, "Invalid user"
+	return nil, if reason == "Invalid player" then "Invalid user" else reason
 end
 
 local typeUser = {

@@ -7,7 +7,7 @@ return function(_K)
 		local feedback = {}
 		local players, valid = {}, false
 		for roleId in _K.Data.roles do
-			if string.find(string.lower(roleId), arg, 1, true) == 1 then
+			if string.find(string.lower(roleId :: string), arg, 1, true) == 1 then
 				valid = true
 				for _, player in Players:GetPlayers() do
 					local userPermissions = _K.Data.members[tostring(player.UserId)]

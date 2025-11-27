@@ -53,7 +53,7 @@ local typeColor = {
 		if input == "" then
 			return ""
 		end
-		input = _K.Util.String.trim(string.lower(input))
+		input = _K.Util.String.trim(string.lower(input :: string))
 		if COLORS[input] then
 			if input == "random" then
 				return Color3.new(math.random(), math.random(), math.random())
@@ -116,10 +116,10 @@ local typeColor = {
 				table.insert(names, text .. string.rep("f", 7 - #text))
 			end
 		elseif text ~= "" then
-			if string.find("random", string.lower(text), 1, true) == 1 then
+			if string.find("random", string.lower(text :: string), 1, true) == 1 then
 				COLORS.random = Color3.new(math.random(), math.random(), math.random())
 			end
-			local r, g, b = string.match(text, "^(%d+),?(%d*),?(%d*)$")
+			local r, g, b = string.match(text :: string, "^(%d+),?(%d*),?(%d*)$")
 			table.insert(names, `{r or 255},{g or 255},{b or 255}`)
 		end
 

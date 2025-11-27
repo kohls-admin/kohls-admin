@@ -184,12 +184,21 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logsBuffer)
 end)
 
 _K.Remote.Settings.OnClientEvent:Connect(function(settings)
+	if settings.announcement and not _K.Data.savedSettings.announcement then
+		local msg, from = unpack(settings.announcement)
+		_K.Announce({
+			From = from,
+			Text = msg,
+			Duration = 0,
+		})
+	end
+
 	local useSaved = _K.Data.savedSettings.useSavedSettings or settings.useSavedSettings
 	for key, value in settings do
 		value = UI.raw(value)
 		if
 			key ~= "theme"
-			and string.find(key, "theme", 1, true) == 1
+			and string.find(key :: string, "theme", 1, true) == 1
 			and (_K.Data.settings.changeThemeAuthority == "Studio" or settings.theme ~= "Custom (DataStore)")
 		then
 			continue

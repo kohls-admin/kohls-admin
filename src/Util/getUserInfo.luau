@@ -1,10 +1,10 @@
-local Players = game:GetService("Players")
 local UserService = game:GetService("UserService")
 local RunService = game:GetService("RunService")
 
 local Function = require(script.Parent:WaitForChild("Function"))
 local Retry = require(script.Parent:WaitForChild("Retry"))
 local Signal = require(script.Parent:WaitForChild("Signal"))
+local SafePlayerAdded = require(script.Parent:WaitForChild("SafePlayerAdded"))
 
 type UserInfo = {
 	Id: number,
@@ -44,7 +44,7 @@ debounceGetUserInfos = Function.debounce(0.2, function()
 			local hook = loading[info.Id]
 			if hook then
 				hook:Fire(info)
-				hook:DisconnectAll()
+				hook:Destroy()
 			end
 			loading[info.Id] = nil
 		end
@@ -55,7 +55,7 @@ debounceGetUserInfos = Function.debounce(0.2, function()
 				local hook = loading[userId]
 				if hook then
 					hook:Fire(info)
-					hook:DisconnectAll()
+					hook:Destroy()
 				end
 			end
 			loading[userId] = nil
@@ -94,23 +94,11 @@ local function getUserInfo(userId: number, checkCache: boolean?): UserInfo
 		return hook:Wait()
 	end
 
-	local info
-	local player = Players:GetPlayerByUserId(userId)
-	if player then
-		info = {
-			Id = userId,
-			Username = player.Name,
-			DisplayName = player.DisplayName,
-			HasVerifiedBadge = player.HasVerifiedBadge,
-		}
-		userInfoCache[userId] = info
-		return info
-	end
-
 	hook = Signal.new()
 	loading[userId] = hook
 
-	task.spawn(debounceGetUserInfos)
+	task.defer(debounceGetUserInfos)
+
 	return hook:Wait()
 end
 
@@ -119,5 +107,14 @@ if RunService:IsServer() then
 		return getUserInfo(userId)
 	end
 end
+
+SafePlayerAdded(function(player)
+	userInfoCache[player.UserId] = {
+		Id = player.UserId,
+		Username = player.Name,
+		DisplayName = player.DisplayName,
+		HasVerifiedBadge = player.HasVerifiedBadge,
+	}
+end)
 
 return getUserInfo

@@ -1,6 +1,6 @@
 local Flux = require(script.Parent.Parent.Parent:WaitForChild("Flux"))
 local ThemesFolder = script:WaitForChild("Themes")
-local Default = require(ThemesFolder:WaitForChild("Default"))
+local Default = require(script:WaitForChild("Default"))
 
 local compute = Flux.compute
 local state = Flux.state
@@ -41,7 +41,8 @@ local state = Flux.state
 --- .Volume State<number>
 
 local themes = {}
-for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
+
+local function loadTheme(themeModule: ModuleScript)
 	if themeModule:IsA("ModuleScript") then
 		if themes[themeModule.Name] then
 			warn("Duplicate theme found, make sure they have different names!")
@@ -58,6 +59,9 @@ for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
 				definition[key] = "rbxassetid://" .. value
 			end
 		end
+		if theme == Default then
+			return
+		end
 		if themeModule.Name == "Default" then
 			-- clone the default theme to not use overwritten values
 			local default = {}
@@ -71,11 +75,20 @@ for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
 	end
 end
 
+loadTheme(script:WaitForChild("Default"))
+for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
+	loadTheme(themeModule)
+end
+task.wait()
+
 local Theme = {
 	Themes = themes,
 }
+
+local userDefault = ThemesFolder:FindFirstChild("Default") :: ModuleScript
+userDefault = if userDefault then require(userDefault) else {}
 for k, v in Default do
-	Theme[k] = v
+	Theme[k] = userDefault[k] or v
 end
 
 local function makeStateful(source: { [string]: any })

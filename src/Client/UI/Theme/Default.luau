@@ -9,6 +9,8 @@ return {
 	SecondaryText = Color3.fromRGB(0, 0, 0),
 
 	Border = Color3.fromRGB(100, 100, 100),
+	BorderStop = Color3.fromRGB(100, 100, 100),
+	BorderAngle = 90,
 
 	Valid = Color3.fromRGB(0, 255, 0),
 	Invalid = Color3.fromRGB(255, 0, 0),

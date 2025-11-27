@@ -25,6 +25,8 @@ function Class.new(properties: Properties?)
 		end
 	end
 
+	local cleanup = {}
+
 	self._instance = UI.new "TextBox" {
 		AutoLocalize = false,
 		AutomaticSize = Enum.AutomaticSize.X,
@@ -54,6 +56,7 @@ function Class.new(properties: Properties?)
 			self._instance.CursorPosition = -1
 		end,
 
+		[UI.Clean] = cleanup,
 		[UI.Event] = {
 			CursorPosition = selectAll,
 			SelectionStart = selectAll,
@@ -90,12 +93,19 @@ function Class.new(properties: Properties?)
 			Hovering = hover,
 			Text = self.Tooltip or "<b>Copy:</b> Ctrl + C",
 		}
-		self._instance.Focused:Connect(function()
-			hover(true)
-		end)
-		self._instance.FocusLost:Connect(function()
-			hover(false)
-		end)
+		table.insert(cleanup, self._tooltip)
+		table.insert(
+			cleanup,
+			self._instance.Focused:Connect(function()
+				hover(true)
+			end)
+		)
+		table.insert(
+			cleanup,
+			self._instance.FocusLost:Connect(function()
+				hover(false)
+			end)
+		)
 	end
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)

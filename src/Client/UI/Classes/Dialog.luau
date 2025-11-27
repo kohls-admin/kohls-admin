@@ -40,6 +40,7 @@ function Class.new(properties: Properties?)
 
 	local dragInput, dragStart, startOffset
 	local dragging = UI.state(false)
+	self._dragging = dragging
 
 	local function dragUpdate(input)
 		if not dragInput then
@@ -154,6 +155,7 @@ function Class.new(properties: Properties?)
 	local buttonSize = UI.compute(function()
 		return UDim2.new(0, UI.Theme.FontSizeLargest(), 0, UI.Theme.FontSizeLargest())
 	end)
+	self._buttonSize = buttonSize
 
 	local exitButton = UI.new "Button" {
 		LayoutOrder = 9,
@@ -412,6 +414,7 @@ function Class.new(properties: Properties?)
 	} :: TextButton
 
 	local sizeState = UI.state(self._instance, "AbsoluteSize")
+	self.sizeState = sizeState
 
 	UI.edit(progress.Bar, {
 		Size = function()

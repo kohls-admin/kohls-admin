@@ -4,7 +4,7 @@ local function notNil(v)
 	return v ~= nil
 end
 
-local function startMatch(list, v)
+local function startMatch(list: { string }, v)
 	for _, match in list do
 		local vStart, vEnd = string.find(match, v, 1, true)
 		if vStart == 1 and vEnd > 0 then

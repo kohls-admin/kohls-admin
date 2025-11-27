@@ -170,7 +170,7 @@ function Command:validate()
 			if definition.optional or not hasArgument then
 				continue
 			end
-			local start = self.array[1][1]
+			local start: number = self.array[1][1]
 			self.invalidPos = start
 			self.invalidArg = string.sub(self.text, start, start + #self.text)
 			self.argMissing = `Command "{self.definition.name}" failed, argument {index} missing: {definition.name}`

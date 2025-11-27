@@ -572,7 +572,10 @@ function Members.new(_K)
 		if member.roles then
 			local roles = {}
 			for _, roleId in member.roles do
-				table.insert(roles, _K.Data.roles[roleId].name)
+				local role = _K.Data.roles[roleId]
+				if role then
+					table.insert(roles, role.name)
+				end
 			end
 
 			member.roleString = table.concat(roles, " | ") or ""

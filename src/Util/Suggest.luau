@@ -36,7 +36,7 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 
 		local matched = false
 		for _, target in suggestions do
-			if string.lower(target) == query then
+			if string.lower(target :: string) == query then
 				table.insert(results, 1, { target, display, value or target })
 				matched = true
 				break
@@ -45,7 +45,7 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 		if not matched then
 			local length, suggestion, partial = 0, nil, nil
 			for _, target in suggestions do
-				local startIndex, endIndex = string.find(string.lower(target), query, 1, true)
+				local startIndex, endIndex = string.find(string.lower(target :: string), query, 1, true)
 				if startIndex then
 					if startIndex == 1 and endIndex > length then -- starts
 						length, suggestion = endIndex, target
@@ -70,7 +70,7 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 	if #levenshtein > 0 then
 		local lowestDistance, suggestionData = math.huge, nil
 		for _, data in levenshtein do
-			local distance = String.levenshteinDistance(string.lower(data[1]), query)
+			local distance = String.levenshteinDistance(string.lower(data[1] :: string), query)
 			if distance < lowestDistance then
 				lowestDistance = distance
 				suggestionData = data

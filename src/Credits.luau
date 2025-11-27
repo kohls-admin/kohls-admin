@@ -1,6 +1,6 @@
 return {
 	{
-		Title = "Core Contributors",
+		Title = "Contributors",
 		Users = {
 			{
 				Id = 44391621, -- kohl
@@ -18,24 +18,16 @@ return {
 				Id = 3286467, -- lejam7890
 				Tooltip = "Valuable input on design, planning, and expert advice. 🛠️",
 			},
-		},
-	},
-	{
-		Title = "Major Contributors",
-		Users = {
+
+			-- major contributors
 			{ Id = 1022854840, Tooltip = "Helped with 3D modeling, UGC creation, and offering design advice. 🎨" }, -- JJJ
 			{ Id = 15303771, Tooltip = "Design, planning, and ensuring top-notch quality assurance. ✅" }, -- Fragility
+			{ Id = 131233603, Tooltip = "Making a positive difference! ✨" }, -- Geed
 			{ Id = 201989656, Tooltip = "Committed to finding solutions! 💡" }, -- iiRealistic_Dev
 			{ Id = 14658110, Tooltip = "Transforming chaos into clarity! 💫" }, -- Rietria
 			{ Id = 448137594, Tooltip = "Serving up great ideas! 🌮" }, -- Lucatacos
-		},
-	},
-	{
-		Title = "Support Team",
-		Users = {
-			{ Id = 131233603, Tooltip = "Making a positive difference! ✨" }, -- Geed
-			{ Id = 201989656, Tooltip = "Committed to finding solutions! 💡" }, -- iiRealistic_Dev
-			{ Id = 14658110, Tooltip = "Transforming confusion into clarity! 💫" }, -- Rietria
+
+			-- support team
 			{ Id = 2773879457, Tooltip = "Making your issues disappear! 🪄" }, -- therealfaylix
 			{ Id = 1224156917, Tooltip = "Always ready to help! 🤝" }, -- dalien
 			{ Id = 4847574, Tooltip = "Providing excellent assistance! 🛡️" }, -- mets
@@ -47,21 +39,16 @@ return {
 			{ Id = 1142396048, Tooltip = "A pillar of support! 🏛️" }, -- Franklin_Surten (H)
 			{ Id = 483215789, Tooltip = "Ensuring smooth experiences! ⚙️" }, -- seil
 			{ Id = 345072461, Tooltip = "Assisting with dedication! 🎖️" }, -- raenlua
-			{ Id = 130170862, Tooltip = "Always helpful and friendly! 👋" }, -- matsagor1
+			{ Id = 130170862, Tooltip = "Consistently improving! 💪" }, -- matsagor1
 			{ Id = 77608258, Tooltip = "Soaring to provide support! 🕊️" }, -- icarus
-		},
-	},
-	{
-		Title = "Contributors",
-		Users = {
+
+			-- contributors
 			{ Id = 41336494, Tooltip = "Calculating improvements! 🧮" }, -- Calculatous
-			{ Id = 345072461, Tooltip = "Shining with contributions! 🌟" }, -- raenlua
 			{ Id = 35818691, Tooltip = "Growing the project! 🌱" }, -- greeny
 			{ Id = 83478451, Tooltip = "Swimming in good ideas! 🐠" }, -- stevendahfish
 			{ Id = 2014793803, Tooltip = "Building with Lua! 💀" }, -- SkellyLua
 			{ Id = 1219753275, Tooltip = "Adding awesome features! 🚀" }, -- DZIDZIO999
 			{ Id = 7034077053, Tooltip = "Shredding with numbers! 🎸" }, -- johnny_klebitz1
-			{ Id = 130170862, Tooltip = "Consistently improving! 💪" }, -- matsagor1
 			{ Id = 127757866, Tooltip = "Coding with flair! 💻" }, -- iam_danny
 			-- meowhehex3 / whatsnewadore
 		},

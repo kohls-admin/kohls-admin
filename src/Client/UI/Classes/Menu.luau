@@ -19,6 +19,8 @@ function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
+	local cleanup = {}
+
 	self._list = UI.new "UIListLayout" {
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		FillDirection = Enum.FillDirection.Vertical,
@@ -26,6 +28,7 @@ function Class.new(properties: Properties?)
 	}
 
 	local listContentSize = UI.state(self._list, "AbsoluteContentSize")
+	table.insert(cleanup, listContentSize)
 
 	self._content = UI.new "ScrollingFrame" {
 		Name = "Menu",
@@ -67,51 +70,61 @@ function Class.new(properties: Properties?)
 			CornerRadius = UI.Theme.CornerRadius,
 		},
 		UI.new "Stroke" {},
+
+		[UI.Clean] = cleanup,
 	} :: TextButton & { UIContent: typeof(self._content), UICorner: UICorner, UIStroke: UIStroke }
 
 	local positionState = UI.state(Vector2.zero)
 	local sizeState = UI.state(Vector2.zero)
 	local menuSize = UI.state(self._instance, "AbsoluteSize")
+	table.insert(cleanup, positionState)
+	table.insert(cleanup, sizeState)
+	table.insert(cleanup, menuSize)
+
+	local menuPosition = UI.compute(function()
+		local size = menuSize()
+		local layerSize = LayerTopSize()
+		local absolutePos = positionState()
+		local absoluteSize = sizeState()
+		local rightAlign = self.RightAlign()
+		local padding = UI.Theme.Padding().Offset
+		local height = UI.TopbarInset().Height
+
+		local xPos = absolutePos.X + if rightAlign then absoluteSize.X else 0
+		local yPos = absolutePos.Y + absoluteSize.Y + padding + height
+
+		return UDim2.fromOffset(
+			if rightAlign
+				then math.clamp(xPos, size.X, math.max(size.X, layerSize.X))
+				else math.clamp(xPos, 0, math.max(0, layerSize.X - size.X)),
+			math.clamp(yPos, 0, math.max(0, layerSize.Y - size.Y))
+		)
+	end)
 
 	UI.edit(self._instance, {
-		Position = function()
-			local size = menuSize()
-			local layerSize = LayerTopSize()
-			local absolutePos = positionState()
-			local absoluteSize = sizeState()
-			local rightAlign = self.RightAlign()
-			local padding = UI.Theme.Padding().Offset
-			local height = UI.TopbarInset().Height
-
-			local xPos = absolutePos.X + if rightAlign then absoluteSize.X else 0
-			local yPos = absolutePos.Y + absoluteSize.Y + padding + height
-
-			return UDim2.fromOffset(
-				if rightAlign
-					then math.clamp(xPos, size.X, math.max(size.X, layerSize.X))
-					else math.clamp(xPos, 0, math.max(0, layerSize.X - size.X)),
-				math.clamp(yPos, 0, math.max(0, layerSize.Y - size.Y))
-			)
-		end,
+		Position = menuPosition,
 	})
 
-	UI.edit(self._instance, {
-		[UI.Clean] = {
-			UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
-				if
-					(
-						input.UserInputType == Enum.UserInputType.MouseButton1
-						or input.UserInputType == Enum.UserInputType.Touch
-						or input.UserInputType == Enum.UserInputType.TextInput
-					)
-					and self.Visible._value
-					and not UI.pointInGuiObject(input.Position.X, input.Position.Y, self.Adornee._value)
-					and not UI.pointInGuiObject(input.Position.X, input.Position.Y, self._instance)
-				then
-					UI.deactivateState(self.Visible, "floating")
-				end
-			end),
-		},
+	table.insert(
+		cleanup,
+		UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if
+				(
+					input.UserInputType == Enum.UserInputType.MouseButton1
+					or input.UserInputType == Enum.UserInputType.Touch
+					or input.UserInputType == Enum.UserInputType.TextInput
+				)
+				and self.Visible._value
+				and not UI.pointInGuiObject(input.Position.X, input.Position.Y, self.Adornee._value)
+				and not UI.pointInGuiObject(input.Position.X, input.Position.Y, self._instance)
+			then
+				UI.deactivateState(self.Visible, "floating")
+			end
+		end)
+	)
+
+	table.insert(
+		cleanup,
 		self._instance:GetPropertyChangedSignal("Visible"):Connect(function()
 			local adornee = self.Adornee._value
 			if self._instance.Visible and typeof(adornee) == "Instance" and adornee:IsA("GuiObject") then
@@ -127,8 +140,8 @@ function Class.new(properties: Properties?)
 					sizeState._bindConnection:Disconnect()
 				end
 			end
-		end),
-	})
+		end)
+	)
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end

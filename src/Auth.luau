@@ -25,7 +25,7 @@ function Auth.banHandler(player)
 			local items = banHistory:GetCurrentPage()
 			local last = items[1]
 
-			if last and not last.Ban and banInfo and banInfo[3] ~= 0 then
+			if last and not last.Ban and banInfo and banInfo[3] and banInfo[3] ~= 0 then
 				Auth.unbanUsers({ player.UserId })
 				return -- unbanned from site
 			end
@@ -88,7 +88,7 @@ function Auth.banUsers(
 	local unbanAsync = {}
 	for _, userId in userIds do
 		local key = tostring(userId)
-		if Data.bans[key] and Data.bans[key][3] ~= 0 then
+		if Data.bans[key] and Data.bans[key][3] and Data.bans[key][3] ~= 0 then
 			-- remove saved bans when changed to server ban
 			Data.Sync.bans[key] = Data.REMOVE
 			table.insert(unbanAsync, userId)
@@ -98,23 +98,43 @@ function Auth.banUsers(
 
 	if banAsync and timestamp and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
 		for i = 1, #userIds, 50 do
-			local chunk = table.move(userIds, i, i + 49, 1, {})
-			Util.Retry(function()
-				Util.Service.Players:BanAsync({
-					UserIds = chunk, -- limit of 50
+			local chunk = table.move(userIds, i, math.min(#userIds, i + 49), 1, {})
+			local attempt = 0
+			repeat
+				local ok, err = pcall(Util.Service.Players.BanAsync, Util.Service.Players, {
+					UserIds = chunk,
 					PrivateReason = reason or "No reason.",
 					DisplayReason = reason or "No reason.",
 					Duration = duration,
 					ApplyToUniverse = true,
 				})
-			end, math.huge)
+				if ok then
+					break
+				end
+				local code = string.match(err, '"code": "([^"]+)"')
+				warn(`BanAsync failed: {code or err}, trying again...`)
+				attempt += 1
+				task.wait(2 ^ attempt)
+			until nil
 		end
 	elseif #unbanAsync > 0 and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
 		for i = 1, #unbanAsync, 50 do
-			local chunk = table.move(unbanAsync, i, i + 49, 1, {})
-			Util.Retry(function()
-				Util.Service.Players:UnbanAsync({ UserIds = chunk, ApplyToUniverse = true })
-			end, math.huge)
+			local chunk = table.move(unbanAsync, i, math.min(#unbanAsync, i + 49), 1, {})
+			local attempt = 0
+			repeat
+				local ok, err = pcall(
+					Util.Service.Players.UnbanAsync,
+					Util.Service.Players,
+					{ UserIds = chunk, ApplyToUniverse = true }
+				)
+				if ok then
+					break
+				end
+				local code = string.match(err, '"code": "([^"]+)"')
+				warn(`UnbanAsync failed: {code or err}, trying again...`)
+				attempt += 1
+				task.wait(2 ^ attempt)
+			until nil
 		end
 	end
 
@@ -122,12 +142,18 @@ function Auth.banUsers(
 end
 
 function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync: boolean?)
+	local unbanAsync = {}
 	for index, userId in userIds do
-		local number = tonumber(userId)
-		if number then
-			userIds[index] = number
-		end
 		local key = tostring(userId)
+		local number = tonumber(userId)
+
+		if forceBanAsync then
+			local ban = Data.bans[key]
+			if ban and ban[3] and ban[3] ~= 0 then
+				table.insert(unbanAsync, number)
+			end
+		end
+
 		Data.bans[key] = nil
 		Data.Sync.bans[key] = Data.REMOVE
 		for _, player in Util.Service.Players:GetPlayers() do
@@ -137,17 +163,24 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 		end
 	end
 
-	if forceBanAsync and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
-		local ok, result =
-			pcall(Util.Service.Players.UnbanAsync, Util.Service.Players, { UserIds = userIds, ApplyToUniverse = true })
-		if not ok then
-			warn(result)
-		end
-		for i = 1, #userIds, 50 do
-			local chunk = table.move(userIds, i, i + 49, 1, {})
-			Util.Retry(function()
-				Util.Service.Players:UnbanAsync({ UserIds = chunk, ApplyToUniverse = true })
-			end, math.huge)
+	if forceBanAsync and #unbanAsync > 0 and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
+		for i = 1, #unbanAsync, 50 do
+			local chunk = table.move(unbanAsync, i, math.min(#unbanAsync, i + 49), 1, {})
+			local attempt = 0
+			repeat
+				attempt += 1
+				local ok, err = pcall(
+					Util.Service.Players.UnbanAsync,
+					Util.Service.Players,
+					{ UserIds = chunk, ApplyToUniverse = true }
+				)
+				if ok then
+					break
+				end
+				local code = string.match(err, '"code": "([^"]+)"')
+				warn(`UnbanAsync failed: {code or err}, trying again...`)
+				task.wait(2 ^ attempt)
+			until nil
 		end
 	end
 
@@ -178,7 +211,10 @@ end
 
 --- Sorts roleIds by highest to lowest
 function Auth.roleIdSort(a: Role, b: Role): boolean
-	return Data.roles[a]._rank > Data.roles[b]._rank
+	local roleA, roleB = Data.roles[a], Data.roles[b]
+	local rankA = if roleA then roleA._rank else 0
+	local rankB = if roleB then roleB._rank else 0
+	return rankA > rankB
 end
 
 --- Sorts roleIds by lowest to highest
@@ -274,32 +310,18 @@ end
 
 local asyncRolesCache = {}
 function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
-	local success = true
-	if asyncRolesCache[userId] and not bustCache then
+	local cached = asyncRolesCache[userId]
+	if cached and not bustCache then
 		return
 	end
 	asyncRolesCache[userId] = true
 
-	for gamePassId, roleIds in Data.async.gamepass do
-		local ok, result = Util.Retry(function()
-			return Util.Service.Marketplace:UserOwnsGamePassAsync(userId, gamePassId)
-		end)
-		if ok and result then
-			for _, roleId in roleIds do
-				Auth.userRoleAdd(userId, roleId)
-			end
-		end
-		if not ok then
-			success = false
-		end
-	end
-
 	if next(Data.async.group) then
-		local ok, groups = Util.Retry(function()
+		local ok, result = Util.Retry(function()
 			return Util.Service.Group:GetGroupsAsync(userId)
 		end)
 		if ok then
-			for _, group in groups do
+			for _, group in result do
 				local groupAuth = Data.async.group[group.Id]
 				if groupAuth then
 					for _, auth in groupAuth do
@@ -311,9 +333,25 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 					end
 				end
 			end
+		else
+			warn(result)
 		end
-		if not ok then
-			success = false
+	end
+
+	if cached then
+		return
+	end
+
+	for gamePassId, roleIds in Data.async.gamepass do
+		local ok, result = Util.Retry(function()
+			return Util.Service.Marketplace:UserOwnsGamePassAsync(userId, gamePassId)
+		end)
+		if ok and result then
+			for _, roleId in roleIds do
+				Auth.userRoleAdd(userId, roleId)
+			end
+		elseif not ok then
+			warn(result)
 		end
 	end
 
@@ -330,9 +368,8 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 			for _, roleId in roleIds do
 				Auth.userRoleAdd(userId, roleId)
 			end
-		end
-		if not ok then
-			success = false
+		elseif not ok then
+			warn(result)
 		end
 	end
 
@@ -344,13 +381,10 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 			for _, roleId in roleIds do
 				Auth.userRoleAdd(userId, roleId)
 			end
-		end
-		if not ok then
-			success = false
+		elseif not ok then
+			warn(result)
 		end
 	end
-
-	return success
 end
 
 -- PERMISSION FUNCTIONS
@@ -435,8 +469,15 @@ function Auth.hasArgument(userId: number, argument: any): boolean
 	end
 	local member = Data.members[tostring(userId)]
 	if member then
-		for _, role in member.roles do
-			if Auth.roleCanUseArgument(role, argument) then
+		for _, roleId in member.roles do
+			if Auth.roleCanUseArgument(roleId, argument) then
+				return true
+			end
+		end
+	end
+	if Data.settings.freeAdmin then
+		for _, roleId in Data.settings.freeAdmin do
+			if Auth.roleCanUseArgument(roleId, argument) then
 				return true
 			end
 		end
@@ -452,6 +493,13 @@ function Auth.hasCommand(userId: number, command: any): boolean | number
 	local member = Data.members[tostring(userId)]
 	if member then
 		for _, roleId in member.roles do
+			if Auth.roleCanUseCommand(roleId, command) then
+				return Data.roles[roleId]._rank
+			end
+		end
+	end
+	if Data.settings.freeAdmin then
+		for _, roleId in Data.settings.freeAdmin do
 			if Auth.roleCanUseCommand(roleId, command) then
 				return Data.roles[roleId]._rank
 			end
@@ -481,6 +529,14 @@ function Auth.hasPermission(userId: number, permission: string): boolean
 			end
 		end
 	end
+	if Data.settings.freeAdmin then
+		for _, roleId in Data.settings.freeAdmin do
+			local role = Data.roles[roleId]
+			if role and (role.permissions.admin or role.permissions[permission]) then
+				return true
+			end
+		end
+	end
 	return false
 end
 
@@ -490,15 +546,25 @@ function Auth.getRank(userId: number): (number, Role)
 		return math.huge, Data.roles.creator
 	end
 	local member = Data.members[tostring(userId)]
+	local rank, role = 0, Data.roles.everyone
 	if member then
-		for _, roleId in member.roles do -- roles are descending by rank
-			local role = Data.roles[roleId]
-			if role then
-				return role._rank, role
+		for _, roleId in member.roles do
+			local data = Data.roles[roleId]
+			if data and data._rank > rank then
+				rank, role = data._rank, data
 			end
 		end
 	end
-	return 0, Data.roles.everyone
+	if Data.settings.freeAdmin then
+		for _, roleId in Data.settings.freeAdmin do
+			local data = Data.roles[roleId]
+			if data and data._rank > rank then
+				rank, role = data._rank, data
+			end
+		end
+	end
+
+	return rank, role
 end
 
 --- Gets the closest role equal to or above a given rank

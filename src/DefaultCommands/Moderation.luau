@@ -144,9 +144,15 @@ return {
 			end
 
 			context._K.Auth.banUsers(userIds, reason, duration, context.from)
+
+			local tasks = context._K.Util.Tasks.new()
 			for _, userId in getNames do
-				table.insert(bannedNames, context._K.Util.getUserInfo(userId).Username)
+				tasks:add(function()
+					table.insert(bannedNames, context._K.Util.getUserInfo(userId).Username)
+				end)
 			end
+			tasks:wait()
+
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
 				Text = `Banned <b>{table.concat(bannedNames, ", ")}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`,
 			})
@@ -514,16 +520,27 @@ return {
 			end)
 		end,
 		env = function(_K)
+			local cleanup = {}
 			local displayNames = {}
+
 			_K.Util.SafePlayerAdded(function(player)
-				player.CharacterAdded:Connect(function(character)
-					local name = displayNames[player.UserId]
-					if not name then
-						return
-					end
-					character:FindFirstChildOfClass("Humanoid").DisplayName = name
-					_K.Remote.DisplayName:FireClient(player, name)
-				end)
+				cleanup[player] = {
+					player.CharacterAdded:Connect(function(character)
+						local name = displayNames[player.UserId]
+						if not name then
+							return
+						end
+						character:FindFirstChildOfClass("Humanoid").DisplayName = name
+						_K.Remote.DisplayName:FireClient(player, name)
+					end),
+				}
+			end)
+
+			_K.Service.Players.PlayerRemoving:Connect(function(player)
+				if cleanup[player] then
+					_K.Flux.cleanup(cleanup[player])
+					cleanup[player] = nil
+				end
 			end)
 
 			return {
@@ -983,7 +1000,11 @@ return {
 		env = function(_K)
 			local remote = _K.Remote.RemoveTool
 			remote.OnServerEvent:Connect(function(player: Player, target: Player, toolName: string)
-				if _K.Auth.hasCommand(player.UserId, "removetools") then
+				if
+					_K.Auth.hasCommand(player.UserId, "removetools")
+					and typeof(target) == "Player"
+					and type(toolName) == "string"
+				then
 					local removed
 					for _, source in { target.Character, target:FindFirstChildOfClass("Backpack") } do
 						if not source then
@@ -1600,12 +1621,14 @@ return {
 			end
 
 			local function reapply(player: Player)
+				if not player then
+					return
+				end
 				local anchorPos = env.anchorPos[player.UserId]
 				if anchorPos then
 					if not player.Character then
-						player.CharacterAdded:Wait()
+						player.CharacterAppearanceLoaded:Wait()
 					end
-					player.CharacterAppearanceLoaded:Wait()
 					task.wait()
 					if player.Character then
 						player.Character:PivotTo(anchorPos)
@@ -1621,9 +1644,16 @@ return {
 				reapply(_K.Service.Players:GetPlayerFromCharacter(character))
 			end
 
+			local cleanup = {}
+
 			_K.Util.SafePlayerAdded(function(player: Player)
-				player.CharacterAdded:Connect(reapplyCharacter)
+				cleanup[player] = player.CharacterAppearanceLoaded:Connect(reapplyCharacter)
 				reapply(player)
+			end)
+
+			_K.Service.Players.PlayerRemoving:Connect(function(player)
+				_K.Flux.cleanup(cleanup[player])
+				cleanup[player] = nil
 			end)
 
 			return env
@@ -1684,9 +1714,11 @@ return {
 		},
 		envClient = function(_K)
 			_K.Remote.JailCollide.OnClientEvent:Connect(function(jail: Part)
-				for _, child in jail:GetChildren() do
-					if child:IsA("BasePart") then
-						child.CanCollide = true
+				if jail then
+					for _, child in jail:GetChildren() do
+						if child:IsA("BasePart") then
+							child.CanCollide = true
+						end
 					end
 				end
 			end)
@@ -1795,9 +1827,6 @@ return {
 				back.Position = position + Vector3.new(0, 0, offset.Z)
 
 				kJail.Parent = workspace
-
-				JailCollide:FireClient(player, kJail)
-
 				root.CFrame = rootCFrame
 
 				local lowerBounds = position - size / 2
@@ -1816,11 +1845,15 @@ return {
 					until not player or Jail.parts[player.UserId] == nil
 				end)
 
+				task.delay(0, JailCollide.FireClient, JailCollide, player, kJail)
+
 				return kJail
 			end
 
+			local cleanup = {}
+
 			_K.Util.SafePlayerAdded(function(player)
-				player.CharacterAdded:Connect(Jail.recaptureCharacter)
+				cleanup[player] = player.CharacterAdded:Connect(Jail.recaptureCharacter)
 				local jailPos = Jail.users[player.UserId]
 				if jailPos then
 					if not player.Character then
@@ -1832,11 +1865,11 @@ return {
 			end)
 
 			_K.Service.Players.PlayerRemoving:Connect(function(player)
-				local jail = Jail.parts[player.UserId]
-				if jail then
-					jail:Destroy()
-					Jail.parts[player.UserId] = nil
-				end
+				_K.Flux.cleanup(cleanup[player])
+				cleanup[player] = nil
+				local parts = Jail.parts[player.UserId]
+				_K.Flux.cleanup(parts)
+				Jail.parts[player.UserId] = nil
 			end)
 
 			return Jail

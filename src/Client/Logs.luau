@@ -1,3 +1,5 @@
+local UI = require(script.Parent.UI)
+
 local Logs = {}
 Logs.__index = Logs
 
@@ -25,12 +27,12 @@ for _, array in logTypes do
 end
 
 function Logs.new(_K)
-	local UI = _K.UI
-
 	local function createItem(self, log)
 		local tooltip = UI.new "Tooltip" {
 			Text = "Loading...",
 		}
+
+		local cleanup = { tooltip }
 
 		local itemRef = {
 			_instance = UI.new "TextBox" {
@@ -70,13 +72,18 @@ function Logs.new(_K)
 			},
 
 			tipText = "",
+
+			[UI.Clean] = cleanup,
 		}
 
-		tooltip.Visible:Connect(function()
-			if tooltip.Visible._value then
-				tooltip.Text(itemRef.tipText)
-			end
-		end)
+		table.insert(
+			cleanup,
+			tooltip.Visible:Connect(function()
+				if tooltip.Visible._value then
+					tooltip.Text(itemRef.tipText)
+				end
+			end)
+		)
 
 		return itemRef
 	end

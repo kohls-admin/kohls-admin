@@ -65,8 +65,8 @@ function Settings.new(_K)
 			if
 				themeModule
 				and k ~= "theme"
-				and string.find(k, "theme", 1, true) == 1
-				and UI.raw(themeModule[string.sub(k, 6)]) ~= v
+				and string.find(k :: string, "theme", 1, true) == 1
+				and UI.raw(themeModule[string.sub(k :: string, 6)]) ~= v
 			then
 				differentTheme = true
 			end
@@ -79,7 +79,7 @@ function Settings.new(_K)
 			settingsDialog._instance.Visible = different
 		end
 
-		if key ~= "theme" and string.find(key, "theme", 1, true) == 1 and not skipCustomCheck then
+		if key ~= "theme" and string.find(key :: string, "theme", 1, true) == 1 and not skipCustomCheck then
 			local newTheme = if differentTheme then "Custom (DataStore)" else theme
 			if pendingChanges.theme ~= newTheme then
 				change("theme", newTheme)
@@ -438,12 +438,16 @@ function Settings.new(_K)
 			end
 
 			task.defer(function()
-				repeat -- wait until settings is in view
-					task.wait()
-				until _K.client.dashboard.Tabs
+				while true do
+					local dashboardView = _K.client.dashboard.Tabs
 						and _K.client.dashboard.Tabs.CurrentPage._value == _K.client.dashboard.Settings._instance
-					or _K.client.dashboard.Settings._instance.Parent == nil
-					or not _K.client.dashboard.Settings._instance:IsDescendantOf(_K.client.dashboard.Tabs._content)
+					local windowView = _K.client.dashboard.Settings._instance.Parent
+						and not _K.client.dashboard.Settings._instance:IsDescendantOf(_K.client.dashboard.Tabs._content)
+					if dashboardView or windowView then
+						break
+					end
+					task.wait()
+				end
 
 				local fonts = {}
 				local mono = {
@@ -480,17 +484,25 @@ function Settings.new(_K)
 						task.spawn(function()
 							local list = if key == "Font" then fonts else mono
 							local loader = (if key == "Font" then lines.Font else lines.FontMono)._content.TextLabel
-
-							for i, font in list do
-								local label = Instance.new("TextLabel")
-								label.BackgroundTransparency = 1
-								label.TextTransparency = 1
-								label.FontFace = font
-								label.Parent = temp
+							local content = {}
+							for i = 1, #list, 8 do
+								for j = 1, 8 do
+									local font = list[i + j]
+									if not font then
+										break
+									end
+									local label = Instance.new("TextLabel")
+									label.BackgroundTransparency = 1
+									label.TextTransparency = 1
+									label.FontFace = font
+									label.Parent = temp
+									content[j] = label
+								end
 
 								loader.Text = `Loading fonts... {i}/{#list}`
-								_K.Service.ContentProvider:PreloadAsync({ label })
+								_K.Service.ContentProvider:PreloadAsync(content)
 							end
+							table.clear(content)
 
 							UI.new "Select" {
 								Parent = lines[key],
@@ -517,25 +529,9 @@ function Settings.new(_K)
 		end
 		_K.Util.Defer.wait()
 
-		local vector2Huge = Vector2.new(math.huge, math.huge)
-		local sliderMaxSize = UI.state(vector2Huge)
-
-		local sliders = {}
-		local function updateSliderSize()
-			sliderMaxSize(vector2Huge, true)
-			local minimumWidth = math.huge
-			for _, slider in sliders do
-				minimumWidth = math.min(slider.AbsoluteSize.X, minimumWidth)
-			end
-			sliderMaxSize(Vector2.new(minimumWidth, math.huge), true)
-		end
-
-		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updateSliderSize)
-
 		local lastSelected
 		local lastSelectedY = 0
 		settingsScroller._instance:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(function()
-			updateSliderSize()
 			if not lastSelected then
 				return
 			end
@@ -591,9 +587,7 @@ function Settings.new(_K)
 				},
 				slider,
 			}
-
 			listItem._label.Size = UDim2.new(0.5, 0, 0, 0)
-			table.insert(sliders, slider._instance)
 			table.insert(themeLineItems, listItem)
 		end
 		_K.Util.Defer.wait()
@@ -603,9 +597,6 @@ function Settings.new(_K)
 			local slider
 			slider = UI.new "Slider" {
 				Snap = 17,
-				UI.new "UISizeConstraint" {
-					MaxSize = sliderMaxSize,
-				},
 				Value = function()
 					return math.clamp(UI.Theme[key]().Offset + 1, 1, 17)
 				end,
@@ -624,35 +615,33 @@ function Settings.new(_K)
 					end,
 				},
 			}
-			table.insert(sliders, slider._instance)
-			table.insert(
-				themeLineItems,
-				UI.new "ListItem" {
-					Text = key:gsub("(.)(%u)", "%1 %2"),
-					UI.new "Input" {
-						FontFace = UI.Theme.FontMono,
-						FontSize = UI.Theme.FontSize,
-						Size = inputSize,
-						NumberOnly = true,
-						NumberRange = NumberRange.new(0, 16),
-						Placeholder = "",
-						Value = function()
-							return UI.Theme[key]().Offset
+			local listItem = UI.new "ListItem" {
+				Text = key:gsub("(.)(%u)", "%1 %2"),
+				UI.new "Input" {
+					FontFace = UI.Theme.FontMono,
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
+					NumberOnly = true,
+					NumberRange = NumberRange.new(0, 16),
+					Placeholder = "",
+					Value = function()
+						return UI.Theme[key]().Offset
+					end,
+					[UI.Hook] = {
+						Value = function(value)
+							local number = tonumber(value)
+							if not number then
+								return
+							end
+							value = UDim.new(0, number)
+							change("theme" .. key, value)
 						end,
-						[UI.Hook] = {
-							Value = function(value)
-								local number = tonumber(value)
-								if not number then
-									return
-								end
-								value = UDim.new(0, number)
-								change("theme" .. key, value)
-							end,
-						},
 					},
-					slider,
-				}
-			)
+				},
+				slider,
+			}
+			listItem._label.Size = UDim2.new(0.5, 0, 0, 0)
+			table.insert(themeLineItems, listItem)
 		end
 		_K.Util.Defer.wait()
 
@@ -665,9 +654,6 @@ function Settings.new(_K)
 			do
 				local slider
 				slider = UI.new "Slider" {
-					UI.new "UISizeConstraint" {
-						MaxSize = sliderMaxSize,
-					},
 					Value = function()
 						return UI.Theme[data.key]()
 					end,
@@ -680,81 +666,128 @@ function Settings.new(_K)
 						end,
 					},
 				}
-				table.insert(sliders, slider._instance)
-				table.insert(
-					themeLineItems,
-					UI.new "ListItem" {
-						Text = data.text,
-						UI.new "Input" {
-							FontFace = UI.Theme.FontMono,
-							FontSize = UI.Theme.FontSize,
-							Size = inputSize,
-							MaxChars = 5,
-							NumberOnly = true,
-							NumberRange = NumberRange.new(0, 1),
-							Placeholder = "",
-							Value = function()
-								return string.sub(UI.Theme[data.key](), 1, 5)
+				local listItem = UI.new "ListItem" {
+					Text = data.text,
+					UI.new "Input" {
+						FontFace = UI.Theme.FontMono,
+						FontSize = UI.Theme.FontSize,
+						Size = inputSize,
+						MaxChars = 5,
+						NumberOnly = true,
+						NumberRange = NumberRange.new(0, 1),
+						Placeholder = "",
+						Value = function()
+							return string.sub(UI.Theme[data.key](), 1, 5)
+						end,
+						[UI.Hook] = {
+							Value = function(value)
+								local number = tonumber(value)
+								if not tonumber(value) or math.abs(number - UI.Theme[data.key]()) < 0.001 then
+									return
+								end
+								change("theme" .. data.key, number)
 							end,
-							[UI.Hook] = {
-								Value = function(value)
-									local number = tonumber(value)
-									if not tonumber(value) or math.abs(number - UI.Theme[data.key]()) < 0.001 then
-										return
-									end
-									change("theme" .. data.key, number)
-								end,
-							},
 						},
-						slider,
-					}
-				)
+					},
+					slider,
+				}
+				listItem._label.Size = UDim2.new(0.5, 0, 0, 0)
+				table.insert(themeLineItems, listItem)
 			end
 		end
-
-		-- switches
-		table.insert(themeLineItems, switchItem("themeStrokeEnabled", "UI Borders"))
 
 		-- Color options
 		for index, key in
 			{
+				"Border",
 				"Primary",
 				"PrimaryText",
 				"Secondary",
 				"SecondaryText",
-				"Border",
 				"Valid",
 				"Invalid",
 			}
 		do
 			_K.Util.Defer.wait()
-			local state = UI.Theme[key]
-			local dataKey = "theme" .. key
-			table.insert(
-				themeLineItems,
-				UI.new "ListItem" {
-					Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
-					UI.new "Color" {
-						Value = function()
-							return state()
+			local color = UI.new "Color" {
+				Value = function()
+					return UI.Theme[key]()
+				end,
+				[UI.Hook] = {
+					Value = function(value)
+						change("theme" .. key, value)
+					end,
+				},
+			}
+			local listItem = UI.new "ListItem" {
+				Text = key:gsub("(.)(%u)", "%1 %2") .. " Color",
+				color,
+			}
+			if key == "Border" then
+				listItem.Text("UI Borders")
+				UI.new "Tooltip" { Parent = color, Text = "Border Color Start" }
+				UI.new "Switch" {
+					Parent = listItem,
+					LayoutOrder = -1,
+					Value = function()
+						return _K.client.settings.themeStrokeEnabled()
+					end,
+					UI.new "Tooltip" { Text = "Border Color Start" },
+					[UI.Hook] = {
+						Value = function(value)
+							change("themeStrokeEnabled", value, _K.client.settings.themeStrokeEnabled)
 						end,
-						[UI.Hook] = {
-							Value = function(value)
-								change(dataKey, value)
-							end,
-						},
 					},
 				}
-			)
+				local input = UI.new "Input" {
+					Parent = listItem,
+					LayoutOrder = 0,
+					FontFace = UI.Theme.FontMono,
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
+					MaxChars = 5,
+					NumberOnly = true,
+					NumberRange = NumberRange.new(-360, 360),
+					Placeholder = "",
+					Value = function()
+						return UI.Theme.BorderAngle()
+					end,
+					[UI.Hook] = {
+						Value = function(value)
+							local number = tonumber(value)
+							if not tonumber(value) or math.abs(number - UI.Theme.BorderAngle()) < 0.001 then
+								return
+							end
+							change("themeBorderAngle", number)
+						end,
+					},
+				}
+				UI.new "Tooltip" { Parent = input._displayLabel, Text = "Border Rotation" }
+				UI.new "Color" {
+					Parent = listItem,
+					LayoutOrder = 2,
+					Value = function()
+						return UI.Theme[key .. "Stop"]()
+					end,
+					UI.new "Tooltip" { Text = "Border Color Stop" },
+					[UI.Hook] = {
+						Value = function(value)
+							change("theme" .. key .. "Stop", value)
+						end,
+					},
+				}
+			else
+				UI.new "Tooltip" { Parent = color, Text = listItem.Text() }
+			end
+			table.insert(themeLineItems, listItem)
 		end
 
 		local savedSettingsSwitch =
 			switchItem("useSavedSettings", "Use Saved Settings", "Toggles using saved or studio-only settings.")
-		savedSettingsSwitch.LayoutOrder = -1
 		UI.edit(savedSettingsSwitch._label, {
 			FontFace = UI.Theme.FontBold,
 		})
-		savedSettingsSwitch.Parent = settingsScroller
+		UI.edit(savedSettingsSwitch, { LayoutOrder = -1, Parent = settingsScroller })
 
 		for layoutOrder, definition in ipairs(settingsLineItems) do
 			settingsLineItems[definition.Name] = UI.new("List")(_K.Util.Table.merge({
@@ -787,7 +820,9 @@ function Settings.new(_K)
 		BackgroundTransparency = UI.Theme.TransparencyHeavy,
 		BackgroundColor3 = UI.Theme.Secondary,
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.fromScale(1, 0),
+		Size = function()
+			return UDim2.new(1, -UI.Theme.Padding().Offset - 8, 0, 0)
+		end,
 		ActionText = "Save changes"
 			.. (_K.Data.settings.changeThemeAuthority == "Server" and " and update for everyone?" or "?"),
 		Action = true,
@@ -834,7 +869,7 @@ function Settings.new(_K)
 				continue
 			end
 
-			local listFound = string.find(string.lower(lineItems.Name), filter, 1, true)
+			local listFound = string.find(string.lower(lineItems.Name), filter :: string, 1, true)
 			if listFound then
 				list.Visible = true
 				settingsLineItems[lineItems.Name].Collapsed(false)
@@ -844,7 +879,7 @@ function Settings.new(_K)
 
 			for _, lineItem in ipairs(lineItems) do
 				local rawText = lineItem._instance.Name
-				local found = string.find(string.lower(rawText), filter, 1, true)
+				local found = string.find(string.lower(rawText), filter :: string, 1, true)
 				if found then
 					list.Visible = true
 					settingsLineItems[lineItems.Name].Collapsed(false)

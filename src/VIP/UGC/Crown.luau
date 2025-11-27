@@ -2,6 +2,10 @@ local CollectionService = game:GetService("CollectionService")
 local InsertService = game:GetService("InsertService")
 local RunService = game:GetService("RunService")
 
+local Flux = require(script.Parent.Parent.Parent.Flux)
+
+local Oklab = Flux.Color.Oklab
+
 local hat = Instance.new("Accessory")
 hat.AccessoryType = Enum.AccessoryType.Hat
 hat.Name = "SuperCrown"
@@ -55,7 +59,7 @@ if RunService:IsClient() then
 				end
 			end
 			-- rainbow crowns
-			local color = Color3.fromHSV((t / 10) % 1, 1, 1)
+			local color = Oklab.toRGB(Oklab.fromHCL(Vector3.new((t / 10) % 1, 0.4, 1)))
 			for crown in rainbowCrowns do
 				if crown and crown.Parent and crown:FindFirstChild("Handle") then
 					crown.Handle.Color = color
@@ -105,7 +109,7 @@ return {
 				accessory:Destroy()
 			elseif typeof(accessory) == "string" then
 				for key, value in COLORS do
-					if string.find(string.lower(accessory), key, 1, true) then
+					if string.find(string.lower(accessory :: string), key :: string, 1, true) then
 						colors = value
 						break
 					end
@@ -120,15 +124,17 @@ return {
 
 		local clone = hat:Clone()
 
-		if colors then
-			local primary, secondary = unpack(colors)
-			clone.Handle.Color = primary
-			clone.Handle.Fire.Color = secondary
-			clone.Handle.Fire.SecondaryColor = secondary
-		end
+		if clone:FindFirstChild("Handle") then
+			if colors then
+				local primary, secondary = unpack(colors)
+				clone.Handle.Color = primary
+				clone.Handle.Fire.Color = secondary
+				clone.Handle.Fire.SecondaryColor = secondary
+			end
 
-		clone:SetAttribute("_KCrownColor", clone.Handle.Color)
-		clone:SetAttribute("_KCrownFireColor", clone.Handle.Fire.Color)
+			clone:SetAttribute("_KCrownColor", clone.Handle.Color)
+			clone:SetAttribute("_KCrownFireColor", clone.Handle.Fire.Color)
+		end
 
 		clone.Parent = character
 

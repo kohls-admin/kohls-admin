@@ -247,8 +247,8 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 			value = _K.Data.savedSettings.useSavedSettings
 		end
 		local state
-		if key ~= "theme" and string.find(key, "theme", 1, true) == 1 then
-			state = UI.Theme[string.sub(key, 6)]
+		if key ~= "theme" and string.find(key :: string, "theme", 1, true) == 1 then
+			state = UI.Theme[string.sub(key :: string, 6)]
 			if state then
 				state(value)
 			end
@@ -264,8 +264,8 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 					UI.changeTheme(theme)
 				end
 			end)
-		elseif string.find(key, "theme", 1, true) == 1 then
-			key = string.sub(key, 6)
+		elseif string.find(key :: string, "theme", 1, true) == 1 then
+			key = string.sub(key :: string, 6)
 			if UI.Theme[key] then
 				state:Connect(function(value)
 					UI.Theme[key](value)
@@ -297,11 +297,20 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		local member = _K.Data.members[tostring(_K.LocalPlayer.UserId)]
 		local roleStrings = {}
 		if member and member.roles then
-			for _, role in member.roles do
-				local roleData = _K.Data.roles[role]
-				if roleData then
-					table.insert(roleStrings, `<font color="{roleData.color}">{roleData.name}</font>`)
+			for _, roleId in member.roles do
+				local role = _K.Data.roles[roleId]
+				if role then
+					table.insert(roleStrings, `<font color="{role.color}">{role.name}</font>`)
 				end
+			end
+		end
+		for _, roleId in _K.Data.settings.freeAdmin do
+			if member and member.roles and table.find(member.roles, roleId) then
+				continue
+			end
+			local role = _K.Data.roles[roleId]
+			if role then
+				table.insert(roleStrings, `<font color="{role.color}">{role.name}</font>`)
 			end
 		end
 		table.insert(roleStrings, `<font color="{_K.Data.roles.everyone.color}">{_K.Data.roles.everyone.name}</font>`)
@@ -309,8 +318,17 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 		_K.Notify({
 			From = "_K",
-			Text = `<font family="{UI.Theme.FontMono._value.Family}"><b>Role{if #member.roles > 1 then "s" else ""}:</b>\n<sc>{roleString}</sc></font>`,
+			Text = `<font family="{UI.Theme.FontMono._value.Family}"><b>Role{if #roleStrings > 1 then "s" else ""}:</b>\n<sc>{roleString}</sc></font>`,
 			Duration = 15,
+		})
+	end
+
+	if savedSettings.announcement then
+		local msg, from = unpack(savedSettings.announcement)
+		_K.Announce({
+			From = from,
+			Text = msg,
+			Duration = 0,
 		})
 	end
 

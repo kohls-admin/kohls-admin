@@ -258,7 +258,7 @@ return {
 				for _, state in context._K.client.dashboard.Logs.logTypeFilter do
 					state(false)
 				end
-				local alias = string.lower(context.alias)
+				local alias = string.lower(context.alias :: string)
 				local match = context.env.aliasMap[alias] or alias
 				match = string.upper(string.match(match, "(%w+)logs?$") :: string)
 				for _, logType in context.env.typeMap[match] do
