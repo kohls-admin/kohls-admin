@@ -15,13 +15,13 @@ return {
 	Valid = Color3.fromRGB(0, 255, 0),
 	Invalid = Color3.fromRGB(255, 0, 0),
 
-	FontSize = 15,
+	FontSize = 16,
 	Font = Font.fromId(12187365364),
 	FontMono = Enum.Font.RobotoMono,
 
-	CornerRadius = UDim.new(0, 8),
+	CornerRadius = UDim.new(0, 12),
 	Padding = UDim.new(0, 6),
-	StrokeEnabled = true,
+	StrokeEnabled = false,
 
 	TweenIn = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.In),
 	TweenOut = TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out),

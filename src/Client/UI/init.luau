@@ -38,6 +38,27 @@ for key, soundIdState in UI.Theme.Sound do
 	}
 end
 
+UI.Haptic = {
+	Click = Flux.new "HapticEffect" {
+		Parent = workspace,
+		Type = Enum.HapticEffectType.Custom,
+		Flux.action(function(self)
+			self:SetWaveformKeys({
+				FloatCurveKey.new(0, 0.1, Enum.KeyInterpolationMode.Constant),
+				FloatCurveKey.new(1, 0, Enum.KeyInterpolationMode.Constant),
+			})
+		end),
+	},
+	Hover = Flux.new "HapticEffect" {
+		Parent = workspace,
+		Type = Enum.HapticEffectType.UIHover,
+	},
+	Notification = Flux.new "HapticEffect" {
+		Parent = workspace,
+		Type = Enum.HapticEffectType.UINotification,
+	},
+}
+
 function UI.getFontName(font: Font | Enum.Font)
 	if typeof(font) == "Font" then
 		local id = string.match(font.Family, "%d+$")
@@ -421,6 +442,8 @@ function UI.edit(new: Instance | Type.Dict<any>, properties: Type.Dict<any>): In
 	return new
 end
 
+local defaultProperties = require(script.DefaultProperties)(UI)
+
 local constructors: { [string]: () -> Instance } = {}
 setmetatable(constructors, {
 	__index = function(self, className: string)
@@ -433,7 +456,13 @@ setmetatable(constructors, {
 			end
 		else
 			new = function(properties: Type.Dict<any>): Instance | Type.Dict<any>
-				return UI.edit(Instance.new(className), properties)
+				local instance = Instance.new(className)
+
+				if defaultProperties[className] then
+					UI.edit(instance, defaultProperties[className])
+				end
+
+				return UI.edit(instance, properties)
 			end
 		end
 

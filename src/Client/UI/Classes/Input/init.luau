@@ -90,6 +90,7 @@ local DEFAULT = {
 	DisplayText = "",
 	Placeholder = "",
 	Value = "",
+	--- Fills to the size of the text input.
 	Fill = false,
 	FontFace = UI.Theme.Font,
 	FontSize = UI.Theme.FontSize,

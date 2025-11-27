@@ -11,18 +11,25 @@ local Class = {}
 Class.__index = Class
 setmetatable(Class, BaseClass)
 
+function Class:_updateSelection()
+	local instance = self._instance
+	if instance:IsFocused() and (instance.SelectionStart ~= 1 or instance.CursorPosition ~= #instance.Text + 1) then
+		instance.SelectionStart = 1
+		instance.CursorPosition = #instance.Text + 1
+	end
+end
+
+function Class:Select()
+	self._instance:CaptureFocus()
+	self:_updateSelection()
+end
+
 function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
-	local function selectAll()
-		if
-			self._instance:IsFocused()
-			and (self._instance.SelectionStart ~= 1 or self._instance.CursorPosition ~= #self._instance.Text + 1)
-		then
-			self._instance.SelectionStart = 1
-			self._instance.CursorPosition = #self._instance.Text + 1
-		end
+	local function update()
+		self:_updateSelection()
 	end
 
 	local cleanup = {}
@@ -50,7 +57,7 @@ function Class.new(properties: Properties?)
 			PaddingBottom = UI.Theme.Padding,
 		},
 
-		Focused = selectAll,
+		Focused = update,
 		FocusLost = function()
 			self._instance.SelectionStart = -1
 			self._instance.CursorPosition = -1
@@ -58,8 +65,8 @@ function Class.new(properties: Properties?)
 
 		[UI.Clean] = cleanup,
 		[UI.Event] = {
-			CursorPosition = selectAll,
-			SelectionStart = selectAll,
+			CursorPosition = update,
+			SelectionStart = update,
 		},
 	} :: TextBox & { UICorner: UICorner, UIPadding: UIPadding, UISizeConstraint: UISizeConstraint }
 

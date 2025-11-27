@@ -90,6 +90,8 @@ return function(dialogOverride)
 		MaxSize = Vector2.new(if announce then 512 else 256, 9e9),
 	}
 
+	UI.Haptic.Notification:Play()
+
 	if userFrame or from then
 		userFrame = if userFrame
 			then _K.client.UserFrame(unpack(userFrame))

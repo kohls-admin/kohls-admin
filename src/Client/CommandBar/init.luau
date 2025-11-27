@@ -101,6 +101,8 @@ UI.edit(Input._instance.UIPadding, {
 	PaddingBottom = UDim.new(0, 0),
 })
 
+UI.edit(Input._instance.InputFrame, { AutomaticSize = Enum.AutomaticSize.None })
+
 local CommandBar = UI.new "Frame" {
 	Name = "CommandBar",
 	AnchorPoint = Vector2.new(0.5, 0),
@@ -925,7 +927,7 @@ return {
 		end)
 	end,
 	show = function()
-		if _K.client.toggleCommandBar._instance.Visible then
+		if _K.client.commandBarEnabled then
 			if _K.client.TopbarPlus then
 				_K.client.TopbarPlus.setTopbarEnabled(false)
 			else

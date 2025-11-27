@@ -336,23 +336,5 @@ t.TextColor3 = Color3.fromRGB(255, 255, 255)
 t.Text = "Crown"
 t.Font = 4
 t.Parent = c
-local u = Instance.new "TextBox"
-u.Name = "Social"
-u.Visible = false
-u.Size = UDim2.new(1, 0, 0, 20)
-u.BorderColor3 = Color3.fromRGB(0, 0, 0)
-u.BackgroundTransparency = 0.7
-u.Position = UDim2.new(0, 0, 0, 267)
-u.BorderSizePixel = 0
-u.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-u.FontSize = 6
-u.TextStrokeTransparency = 0.75
-u.TextSize = 18
-u.TextColor3 = Color3.fromRGB(255, 255, 255)
-u.Text = ""
-u.TextEditable = false
-u.Font = 4
-u.ClearTextOnFocus = false
-u.Parent = c
 
 return a

@@ -7,6 +7,7 @@ local Commands = require(script.Parent.Commands)
 local Logs = require(script.Parent.Logs)
 local Members = require(script.Parent.Members)
 local Settings = require(script.Parent.Settings)
+local Market = require(script.Parent.Market)
 
 local clockStart = os.clock()
 
@@ -17,6 +18,7 @@ _K.client.dashboard.Commands = Commands.new(_K)
 _K.client.dashboard.Members = Members.new(_K)
 _K.client.dashboard.Logs = Logs.new(_K)
 _K.client.dashboard.Settings = Settings.new(_K)
+_K.client.dashboard.Market = Market.new(_K)
 
 local tabs = UI.new "Tabs" {
 	CurrentPage = _K.client.dashboard.About,
@@ -27,17 +29,47 @@ local tabs = UI.new "Tabs" {
 		{ _K.client.dashboard.Logs },
 		{ _K.client.dashboard.Settings },
 		{ _K.client.dashboard.About },
+		{ _K.client.dashboard.Market },
 	},
 	Vertical = true,
 
 	[UI.Event] = {
 		AbsoluteSize = function()
-			local size = _K.client.dashboard.Tabs._instance.AbsoluteSize
+			local size = _K.client.dashboard.Window._instance.AbsoluteSize
 			_K.client.dashboard.Tabs.Vertical(size.x > size.y)
 		end,
 	},
 }
 _K.client.dashboard.Tabs = tabs
+
+local notPaddedWhenVertical = UI.compute(function()
+	return if tabs.Vertical() then UDim.new() else UI.Theme.Padding
+end)
+
+local paddedWhenVertical = UI.compute(function()
+	return if tabs.Vertical() then UI.Theme.Padding else UDim.new()
+end)
+
+local paddedWhenVerticalWithStroke = UI.compute(function()
+	return if tabs.Vertical() then UI.Theme.PaddingWithStroke else UI.Theme.PaddingStroke
+end)
+
+UI.edit(tabs._content, {
+	BackgroundColor3 = UI.Theme.Secondary,
+	BackgroundTransparency = function()
+		return if tabs.Vertical() then UI.Theme.TransparencyMax else 1
+	end,
+	UI.new "UICorner" { CornerRadius = UI.Theme.CornerPadded },
+	UI.new "UIPadding" {
+		PaddingRight = paddedWhenVertical,
+		PaddingLeft = paddedWhenVertical,
+	},
+})
+
+UI.new "UIPadding" {
+	Parent = tabs._instance,
+	PaddingRight = paddedWhenVertical,
+}
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
@@ -51,7 +83,7 @@ local dashboard = UI.new "Window" {
 		},
 	},
 	Position = UDim2.new(0.5, -320, 0.5, -240),
-	Size = UDim2.fromOffset(640, 480),
+	Size = UDim2.fromOffset(648, 492),
 	SizeBounds = Rect.new(128, 128, 9e9, 9e9),
 	Title = "",
 	Visible = false,
@@ -87,10 +119,6 @@ task.spawn(function()
 		task.wait(1)
 		timeTooltip.Text(DateTime.now():FormatLocalTime("dddd, LL", UI.LocalPlayer.LocaleId))
 	until nil
-end)
-
-local listPaddingRight = UI.compute(function()
-	return if tabs.Vertical() then UI.Theme.PaddingWithStroke else UI.Theme.PaddingStroke
 end)
 
 local parented = {}
@@ -153,9 +181,9 @@ do
 		end,
 	})
 	UI.edit(page._scroller.UIPadding, {
-		PaddingTop = UI.Theme.PaddingStroke,
-		PaddingBottom = UI.Theme.PaddingStroke,
-		PaddingRight = listPaddingRight,
+		PaddingTop = paddedWhenVerticalWithStroke,
+		PaddingBottom = paddedWhenVerticalWithStroke,
+		PaddingRight = paddedWhenVerticalWithStroke,
 	})
 end
 
@@ -164,10 +192,26 @@ UI.edit(_K.client.dashboard.Logs._scroller.UIPadding, {
 })
 
 UI.edit(tabs._instance.Bar.UIPadding, {
-	PaddingBottom = function()
-		return if tabs.Vertical() then UDim.new() else UI.Theme.Padding
-	end,
+	PaddingBottom = notPaddedWhenVertical,
 })
+
+UI.edit(tabs._instance.Bar.Tabs, {
+	UI.new "Spacer" {
+		LayoutOrder = 9e8 - 1,
+		Visible = tabs.Vertical,
+	},
+})
+
+UI.edit(tabs._instance.Bar.Tabs.Market, {
+	LayoutOrder = 9e8,
+})
+
+UI.edit(tabs._instance.Bar.Tabs.Market.UIContent.Label, {
+	Name = "Title",
+	UI.new "UIGradient" {},
+})
+
+tabs._instance.Bar.Tabs.Market.UIContent:AddTag("_Keternal")
 
 local tabBarSize = UI.state(tabs._instance.Bar, "AbsoluteSize")
 
@@ -435,113 +479,6 @@ UI.new "Tooltip" {
 	Text = "Command Bar",
 }
 
-task.defer(function()
-	local success, result = _K.Util.Retry(function()
-		return _K.Service.PolicyService:GetPolicyInfoForPlayerAsync(_K.Service.Players.LocalPlayer)
-	end)
-
-	local socialInvite = success
-		and result.AllowedExternalLinkReferences
-		and table.find(result.AllowedExternalLinkReferences, "Discord")
-
-	if socialInvite then
-		local social = UI.new "Frame" {
-			Name = "Social",
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
-			Size = UDim2.new(1, -2, 0, 0),
-			LayoutOrder = 2,
-
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				FillDirection = Enum.FillDirection.Horizontal,
-				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.PaddingDouble,
-				Wraps = true,
-			},
-		}
-
-		UI.new "TextLabel" {
-			Parent = social,
-			LayoutOrder = -2,
-			AutoLocalize = false,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
-			FontFace = UI.Theme.Font,
-			TextSize = UI.Theme.FontSize,
-			TextColor3 = UI.Theme.PrimaryText,
-			TextStrokeColor3 = UI.Theme.Primary,
-			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-			TextWrapped = true,
-			Size = UDim2.new(1, 0, 0, 24),
-			Text = function()
-				local invalidColor = UI.Theme.Invalid():ToHex()
-				local socialWarning = if game.CreatorId ~= 3403354
-					then `\n\n<font color="#{invalidColor}"><b>This game wasn't made by us!</b></font>`
-					else ""
-				return `<font transparency="0.33">Join the <b>Kohl's Admin</b> Discord server!</font>{socialWarning}`
-			end,
-			RichText = true,
-		}
-
-		UI.new "Link" {
-			Parent = social,
-			Name = "Invite",
-			BackgroundColor3 = Color3.fromHex("#5865F2"),
-			Size = UDim2.fromScale(1, 0),
-			Text = "discord.gg/kohl",
-			FontFace = UI.Theme.FontMono,
-			TextColor3 = Color3.new(1, 1, 1),
-		}
-
-		local socialMenu
-		local socialButton = UI.new "Button" {
-			BackgroundTransparency = 1,
-			HoverTransparency = 1,
-			Size = titleBarButtonSize,
-			Icon = "rbxassetid://129281087731453",
-			IconProperties = {
-				ImageColor3 = UI.Theme.PrimaryText,
-				Size = UDim2.new(0.75, 0, 50 / 66 * 0.75, 0),
-			},
-			Text = "",
-			Parent = dashboard._instance.Frame.TitleBar,
-			LayoutOrder = 7,
-			Activated = function()
-				UI.toggleState(socialMenu.Visible, "floating")
-			end,
-		}
-		socialButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
-		UI.new "Tooltip" {
-			Parent = socialButton,
-			Hovering = socialButton._hovering,
-			Text = "Kohl's Admin Community",
-		}
-
-		socialMenu = UI.new "Menu" {
-			Adornee = socialButton._instance,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			Size = UDim2.fromOffset(256, 0),
-
-			UI.new "UIPadding" {
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-			},
-
-			social,
-		}
-		socialMenu._content.AutomaticSize = Enum.AutomaticSize.Y
-
-		UI.edit(socialButton._content.IconFrame.Icon, {
-			ImageTransparency = function()
-				return if socialMenu.Visible() then 0 elseif socialButton._hovering() then 0.5 else 0.75
-			end,
-		})
-	end
-end)
-
 local isSelected = UI.state(false)
 local function dashboardToggle(button)
 	if not _K.client.dashboardEnabled then
@@ -569,6 +506,7 @@ local function toggleCommandBarWithSound()
 	else
 		UI.Sound.Hover01:Play()
 		_K.client.CommandBar.show()
+		UI.Haptic.Hover:Play()
 	end
 end
 
