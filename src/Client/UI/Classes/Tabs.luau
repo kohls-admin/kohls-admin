@@ -258,9 +258,11 @@ function Class.new(properties: Properties?)
 
 		ChildAdded = function(page)
 			local container = containerCache[page]
-			task.defer(function()
-				page.Parent = if self.CurrentPage() == container then container else nil
-			end)
+			if container then
+				task.defer(function()
+					page.Parent = if self.CurrentPage() == container then container else nil
+				end)
+			end
 		end,
 	} :: Frame
 
