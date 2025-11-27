@@ -4,24 +4,24 @@ return {
 		Users = {
 			{
 				Id = 44391621, -- kohl
-				Tooltip = "Creator of Kohl's Admin! For support, visit the Kohl's Admin Community Resource on the Roblox DevForums. 🙏",
+				Tooltip = "Project Founder & Architect. Driving the vision forward. 👑",
 			},
 			{
 				Id = 521855368, -- rfov
-				Tooltip = "Key contributions in design, strategic planning, and expert advice. 💡",
+				Tooltip = "Strategist and Designer. Expert advice and planning. 💡",
 			},
 			{
 				Id = 15554260, -- zeejaym
-				Tooltip = "Instrumental in design, planning, website development, and providing expert advice. 🌐",
+				Tooltip = "Web Development lead and design infrastructure. 🌐",
 			},
 			{
 				Id = 3286467, -- lejam7890
-				Tooltip = "Valuable input on design, planning, and expert advice. 🛠️",
+				Tooltip = "Critical input on design and system planning. 🛠️",
 			},
 
 			-- major contributors
-			{ Id = 1022854840, Tooltip = "Helped with 3D modeling, UGC creation, and offering design advice. 🎨" }, -- JJJ
-			{ Id = 15303771, Tooltip = "Design, planning, and ensuring top-notch quality assurance. ✅" }, -- Fragility
+			{ Id = 1022854840, Tooltip = "3D Modeling and UGC Design specialist. 🎨" }, -- JJJ
+			{ Id = 15303771, Tooltip = "Design planning and Quality Assurance lead. ✅" }, -- Fragility
 			{ Id = 131233603, Tooltip = "Making a positive difference! ✨" }, -- Geed
 			{ Id = 201989656, Tooltip = "Committed to finding solutions! 💡" }, -- iiRealistic_Dev
 			{ Id = 14658110, Tooltip = "Transforming chaos into clarity! 💫" }, -- Rietria
@@ -50,7 +50,6 @@ return {
 			{ Id = 1219753275, Tooltip = "Adding awesome features! 🚀" }, -- DZIDZIO999
 			{ Id = 7034077053, Tooltip = "Shredding with numbers! 🎸" }, -- johnny_klebitz1
 			{ Id = 127757866, Tooltip = "Coding with flair! 💻" }, -- iam_danny
-			-- meowhehex3 / whatsnewadore
 		},
 	},
 	{
@@ -79,19 +78,19 @@ return {
 		Users = {
 			{
 				Id = 1237666, -- Sceleratis
-				Tooltip = "Pioneered influential forks, drawing inspiration from Adonis & EISS. 🍴",
+				Tooltip = "Pioneered influential forks; inspired by Adonis & EISS. 🍴",
 			},
 			{
 				Id = 214258, -- Person299
-				Tooltip = "The original spark for Kohl's Admin with Person299's Admin Commands. ✨",
+				Tooltip = "The original spark. Creator of Person299's Admin Commands. ✨",
 			},
 			{
 				Id = 576473, -- lpg
-				Tooltip = "Master of Rojo, a crucial tool for modern Roblox development. 👑",
+				Tooltip = "Master of Rojo. A crucial tool for modern development. 👑",
 			},
 			{
 				Id = 92658764, -- evaera
-				Tooltip = "Inspired through Moonwave and Cmdr, enhancing command systems. 🌙",
+				Tooltip = "Creator of Moonwave and Cmdr. 🌙",
 			},
 			{
 				Id = 484140, -- GigsD4x
@@ -99,7 +98,7 @@ return {
 			},
 			{
 				Id = 2722909519, -- sona
-				Tooltip = "Innovator of Squash & inspiration with data-oriented magic. 🪄",
+				Tooltip = "Innovator of Squash. Inspiration via data-oriented magic. 🪄",
 			},
 			{
 				Id = 80119, -- stravant
@@ -107,7 +106,7 @@ return {
 			},
 			{
 				Id = 82347291, -- ForeverHD
-				Tooltip = "Created TopbarPlus & provided inspiration through HD Admin. 👈",
+				Tooltip = "Creator of TopbarPlus. Inspiration via HD Admin. 👈",
 			},
 			{
 				Id = 4812582, -- Sharksie
@@ -119,7 +118,7 @@ return {
 			},
 			{
 				Id = 1670764, -- Elttob
-				Tooltip = "Inspired Flux development with the innovative Fusion UI framework. 🔥",
+				Tooltip = "Inspired Flux development via the Fusion UI framework. 🔥",
 			},
 		},
 	},
@@ -136,7 +135,7 @@ return {
 			},
 			{
 				Id = 16, -- cassel
-				Tooltip = "For inspiring a generation of creators and players on Roblox. ❤️",
+				Tooltip = "For inspiring a generation of creators and players. ❤️",
 			},
 		},
 	},
