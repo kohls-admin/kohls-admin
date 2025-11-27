@@ -35,12 +35,41 @@ local tabs = UI.new "Tabs" {
 
 	[UI.Event] = {
 		AbsoluteSize = function()
-			local size = _K.client.dashboard.Tabs._instance.AbsoluteSize
+			local size = _K.client.dashboard.Window._instance.AbsoluteSize
 			_K.client.dashboard.Tabs.Vertical(size.x > size.y)
 		end,
 	},
 }
 _K.client.dashboard.Tabs = tabs
+
+local notPaddedWhenVertical = UI.compute(function()
+	return if tabs.Vertical() then UDim.new() else UI.Theme.Padding
+end)
+
+local paddedWhenVertical = UI.compute(function()
+	return if tabs.Vertical() then UI.Theme.Padding else UDim.new()
+end)
+
+local paddedWhenVerticalWithStroke = UI.compute(function()
+	return if tabs.Vertical() then UI.Theme.PaddingWithStroke else UI.Theme.PaddingStroke
+end)
+
+UI.edit(tabs._content, {
+	BackgroundColor3 = UI.Theme.Secondary,
+	BackgroundTransparency = function()
+		return if tabs.Vertical() then UI.Theme.TransparencyMax else 1
+	end,
+	UI.new "UICorner" { CornerRadius = UI.Theme.CornerPadded },
+	UI.new "UIPadding" {
+		PaddingRight = paddedWhenVertical,
+		PaddingLeft = paddedWhenVertical,
+	},
+})
+
+UI.new "UIPadding" {
+	Parent = tabs._instance,
+	PaddingRight = paddedWhenVertical,
+}
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
@@ -90,10 +119,6 @@ task.spawn(function()
 		task.wait(1)
 		timeTooltip.Text(DateTime.now():FormatLocalTime("dddd, LL", UI.LocalPlayer.LocaleId))
 	until nil
-end)
-
-local listPaddingRight = UI.compute(function()
-	return if tabs.Vertical() then UI.Theme.PaddingWithStroke else UI.Theme.PaddingStroke
 end)
 
 local parented = {}
@@ -156,9 +181,9 @@ do
 		end,
 	})
 	UI.edit(page._scroller.UIPadding, {
-		PaddingTop = UI.Theme.PaddingStroke,
-		PaddingBottom = UI.Theme.PaddingStroke,
-		PaddingRight = listPaddingRight,
+		PaddingTop = paddedWhenVerticalWithStroke,
+		PaddingBottom = paddedWhenVerticalWithStroke,
+		PaddingRight = paddedWhenVerticalWithStroke,
 	})
 end
 
@@ -167,9 +192,7 @@ UI.edit(_K.client.dashboard.Logs._scroller.UIPadding, {
 })
 
 UI.edit(tabs._instance.Bar.UIPadding, {
-	PaddingBottom = function()
-		return if tabs.Vertical() then UDim.new() else UI.Theme.Padding
-	end,
+	PaddingBottom = notPaddedWhenVertical,
 })
 
 UI.edit(tabs._instance.Bar.Tabs, {

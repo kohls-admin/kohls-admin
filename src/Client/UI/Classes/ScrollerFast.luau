@@ -313,9 +313,9 @@ function Class.new(properties: Properties?)
 		ScrollBarThickness = 8,
 		ScrollBarImageColor3 = UI.Theme.Secondary,
 		ScrollBarImageTransparency = UI.Theme.TransparencyClamped,
-		TopImage = UI.Theme.ScrollMidImage,
+		TopImage = UI.Theme.ScrollTopImage,
 		MidImage = UI.Theme.ScrollMidImage,
-		BottomImage = UI.Theme.ScrollMidImage,
+		BottomImage = UI.Theme.ScrollBottomImage,
 		VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
 		UI.new "UIFlexItem" {
