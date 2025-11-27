@@ -328,7 +328,7 @@ function Class.new(properties: Properties?)
 		},
 	} :: ScrollingFrame & { UIFlexItem: UIFlexItem, UIPadding: UIPadding }
 
-	UI.new "UIPadding" {
+	local padding = UI.new "UIPadding" {
 		Parent = self._scroller,
 		PaddingBottom = UI.Theme.PaddingWithStroke,
 		PaddingTop = UI.Theme.PaddingWithStroke,
@@ -336,7 +336,19 @@ function Class.new(properties: Properties?)
 		PaddingRight = UI.Theme.PaddingWithStroke,
 	}
 
-	local cleanup = {}
+	local function updatePadding()
+		UI.edit(padding, {
+			PaddingRight = if self._scroller.AbsoluteCanvasSize.Y > self._scroller.AbsoluteWindowSize.Y
+				then UI.Theme.PaddingWithStroke
+				else UDim.new(),
+		})
+	end
+	updatePadding()
+
+	local cleanup = {
+		self._scroller:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updatePadding),
+		self._scroller:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(updatePadding),
+	}
 
 	self._instance = UI.new "Frame" {
 		Name = "ScrollerFast",

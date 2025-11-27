@@ -35,13 +35,29 @@ function Class.new(properties: Properties?)
 		},
 	} :: ScrollingFrame & { UIListLayout: UIListLayout, UIPadding: UIPadding }
 
-	UI.new "UIPadding" {
+	local padding = UI.new "UIPadding" {
 		Parent = self._instance,
 		PaddingBottom = UI.Theme.PaddingWithStroke,
 		PaddingTop = UI.Theme.PaddingWithStroke,
 		PaddingLeft = UI.Theme.PaddingStroke,
 		PaddingRight = UI.Theme.PaddingWithStroke,
 	}
+
+	local function updatePadding()
+		UI.edit(padding, {
+			PaddingRight = if self._instance.AbsoluteCanvasSize.Y > self._instance.AbsoluteWindowSize.Y
+				then UI.Theme.PaddingWithStroke
+				else UDim.new(),
+		})
+	end
+	updatePadding()
+
+	UI.edit(padding, {
+		[UI.Clean] = {
+			self._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updatePadding),
+			self._instance:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(updatePadding),
+		},
+	})
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end
