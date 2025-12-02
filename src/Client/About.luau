@@ -212,10 +212,34 @@ function About.new(_K)
 				},
 			},
 
-			UI.new "Link" {
-				Name = "CatalogLink",
-				Text = "roblox.com/games/17873329124",
-				Tooltip = `<b>Copy:</b> Ctrl + C\n\n{gamesTooltipText}`,
+			UI.new "Frame" {
+				AutomaticSize = Enum.AutomaticSize.XY,
+				BackgroundTransparency = 1,
+
+				UI.new "UIListLayout" {
+					FillDirection = Enum.FillDirection.Horizontal,
+					Padding = UI.Theme.PaddingWithStroke,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					VerticalAlignment = Enum.VerticalAlignment.Center,
+				},
+
+				UI.new "ImageButton" {
+					BackgroundTransparency = 1,
+					Size = UDim2.new(0, 24, 0, 24),
+					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
+					ImageColor3 = Color3.new(1, 0.8, 0),
+					Activated = function()
+						_K.Service.AvatarEditor:PromptSetFavorite(17873329124, 1, true)
+					end,
+					UI.new "Tooltip" {
+						Text = "Add to Favorites",
+					},
+				},
+				UI.new "Link" {
+					Name = "CatalogLink",
+					Text = "roblox.com/games/17873329124",
+					Tooltip = `<b>Copy:</b> Ctrl + C\n\n{gamesTooltipText}`,
+				},
 			},
 
 			UI.new "Frame" { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0) },
