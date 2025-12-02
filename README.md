@@ -14,21 +14,20 @@
 
 <br/>
 <h1 align="center">Embrace creativity, not chaos.</h1>
-<!--moonwave-hide-before-this-line-->
-<p align="center"><b>Trusted by millions of Roblox developers</b>, Kohl's Admin is your all-in-one solution for effortless Roblox experience management. Streamline moderation, elevate gameplay, and nurture a thriving community — all with a powerful, versatile, and user-friendly tool.</p>
-<p align="center">🚧 <b>Actively Under Development as a Fully Open-Source Project</b> 🚧</p>
+<p align="center"><b>Used by 30M+ developers</b>, Kohl's Admin is the most powerful, reliable, and trusted solution for Roblox experience management.</p>
 
-# ✨ Key Features
+# ✨ Power Meets Simplicity
 
-- **Effortless Moderation:** Ban, kick, mute, teleport, and more — over 200 commands to keep your experiences safe and enjoyable.
-- **Community Building:** Manage roles, permissions, and communication to foster a thriving community.
-- **Enhanced Customization:** Customize your experiences with custom commands and addons.
-- **Seamless User Experience:**
-  - Automatic updates ensure you always have the latest features and improvements.
-  - Autocomplete suggestions make it easy to find and use commands.
-  - Instant command validation improves server performance.
-  - A customizable user interface lets you personalize the look and feel.
-- **Extensive Support:** Get started quickly with [detailed documentation](https://kohls-admin.github.io/kohls-admin/) and a [helpful community](https://discord.gg/kohl).
+Everything you need to manage your game effectively.
+
+- **Modern Interface:** A sleek, customizable user interface that fits perfectly with any game style. Choose from various themes or create your own with responsive design and intuitive controls.
+- **Built-in Monetization:** Create your own products to sell roles and commands, or earn revenue from ours. Get up to 40% commission on every global VIP gamepass or hat sold in your game.
+- **Global Charts:** Turn your admin system into a discovery engine and gain exposure from players exploring the ecosystem with free advertising and live rankings.
+- **High Performance:** Optimized code ensures zero lag impact on your experience with fast execution.
+- **Smart Autocomplete:** Never guess a command again. Our intelligent autocomplete system provides argument suggestions, error highlighting, and instant validation as you type.
+- **Secure Architecture:** Flexible, role-based access control and anti-abuse protection keeps your game safe.
+- **Effortless Setup:** Automatic updates mean you're always on the latest version with new features and fewer bugs.
+- **Limitless Customization:** Extend functionality with community-made addons for infinite scalability and custom logic.
 
 # 🙌 Contributing
 
