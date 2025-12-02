@@ -75,6 +75,9 @@ end)
 
 local function getUserInfo(userId: number, checkCache: boolean?): UserInfo
 	userId = tonumber(userId) :: number
+	if not userId then
+		return { Id = userId, Username = "Unknown", DisplayName = "Unknown", HasVerifiedBadge = false }
+	end
 
 	if checkCache or userInfoCache[userId] then
 		return userInfoCache[userId]
