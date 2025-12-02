@@ -1,5 +1,5 @@
 local UI = require(script.Parent.UI)
-local CREDITS = require(script.Parent.Parent.Credits)
+local CREDITS = require(script.Parent.Credits)
 local UserFrame = require(script.Parent.UserFrame)
 
 local About = {}

@@ -1,8 +1,10 @@
-local Data = require(script.Parent.Data.Defaults)
-local Hook = require(script.Parent.Hook)
-local Registry = require(script.Parent.Registry)
-local Remote = require(script.Parent.Remote)
-local Util = require(script.Parent.Util)
+local Shared = script.Parent
+
+local Data = require(Shared.Data.Defaults)
+local Hook = require(Shared.Hook)
+local Registry = require(Shared.Registry)
+local Remote = require(Shared.Remote)
+local Util = require(Shared.Util)
 
 export type Role = "everyone" | "vip" | "mod" | "admin" | "superadmin" | "creator" | string
 

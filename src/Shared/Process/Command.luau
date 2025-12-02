@@ -1,9 +1,11 @@
 local Players = game:GetService("Players")
 
-local Auth = require(script.Parent.Parent.Auth)
+local Shared = script.Parent.Parent
+
+local Auth = require(Shared.Auth)
 local Argument = require(script.Parent.Argument)
-local Util = require(script.Parent.Parent.Util)
-local Type = require(script.Parent.Parent.Type)
+local Util = require(Shared.Util)
+local Type = require(Shared.Type)
 
 local Command = {
 	Argument = Argument,

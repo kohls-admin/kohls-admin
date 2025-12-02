@@ -1,7 +1,10 @@
 local RunService = game:GetService("RunService")
 
-local Theme = require(script.Parent.Parent.Client:WaitForChild("UI"):WaitForChild("Theme"))
-local Z = require(script.Parent.Parent.Z)
+local Shared = script.Parent.Parent
+local Package = Shared.Parent
+
+local Theme = require(Package.Client:WaitForChild("UI"):WaitForChild("Theme"))
+local Z = require(Package.Z)
 
 type Dict = { [any]: any }
 

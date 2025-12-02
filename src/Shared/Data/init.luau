@@ -15,13 +15,17 @@ if RunService:IsClient() then
 	return Data
 end
 
-local Auth = require(script.Parent.Auth)
+local Shared = script.Parent
+local Package = Shared.Parent
+
+local Auth = require(Shared.Auth)
+local Hook = require(Shared.Hook)
+local Util = require(Shared.Util)
+local Remote = require(Shared.Remote)
+local Z = require(Package.Z)
+
 local ChunkChanges = require(script.ChunkChanges)
-local Hook = require(script.Parent.Hook)
 local Migrate = require(script.Migrate)
-local Util = require(script.Parent.Util)
-local Remote = require(script.Parent.Remote)
-local Z = require(script.Parent.Z)
 
 Data.Migrate = Migrate
 

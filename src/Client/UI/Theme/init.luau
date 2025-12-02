@@ -1,4 +1,6 @@
-local Flux = require(script.Parent.Parent.Parent:WaitForChild("Flux"))
+local Package = script.Parent.Parent.Parent
+
+local Flux = require(Package:WaitForChild("Flux"))
 local ThemesFolder = script:WaitForChild("Themes")
 local Default = require(script:WaitForChild("Default"))
 

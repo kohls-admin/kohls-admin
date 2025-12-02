@@ -1,13 +1,15 @@
 --!optimize 2
 --!native
 
-local Auth = require(script.Parent.Auth)
-local Data = require(script.Parent.Data.Defaults)
-local Hook = require(script.Parent.Hook)
-local Registry = require(script.Parent.Registry)
-local Util = require(script.Parent.Util)
+local Shared = script.Parent
+
+local Auth = require(Shared.Auth)
+local Data = require(Shared.Data.Defaults)
+local Hook = require(Shared.Hook)
+local Registry = require(Shared.Registry)
+local Util = require(Shared.Util)
 local Command = require(script.Command)
-local Type = require(script.Parent.Type)
+local Type = require(Shared.Type)
 
 type ArgumentType = Type.ArgumentType
 type ArgumentDefinition = Type.ArgumentDefinition

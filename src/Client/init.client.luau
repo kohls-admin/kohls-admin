@@ -361,7 +361,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		end
 	end
 
-	loadAddons(_K.script:WaitForChild("DefaultAddons"):GetChildren())
+	loadAddons(_K.script.Shared:WaitForChild("DefaultAddons"):GetChildren())
 	loadAddons(_K.script:WaitForChild("Addons"):GetChildren())
 	loadAddons(_K.Service.Collection:GetTagged(_K._addonTag))
 

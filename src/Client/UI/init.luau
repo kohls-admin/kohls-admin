@@ -4,8 +4,10 @@ local TextService = game:GetService("TextService")
 local SoundService = game:GetService("SoundService")
 local UserInputService = game:GetService("UserInputService")
 
-local Flux = require(script.Parent.Parent.Flux)
-local Type = require(script.Parent.Parent.Flux.Type)
+local Package = script.Parent.Parent
+
+local Flux = require(Package:WaitForChild("Flux"))
+local Type = require(Package.Flux.Type)
 local state = Flux.state
 
 local Classes = script:WaitForChild("Classes")

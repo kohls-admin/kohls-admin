@@ -2,7 +2,9 @@ local CollectionService = game:GetService("CollectionService")
 local InsertService = game:GetService("InsertService")
 local RunService = game:GetService("RunService")
 
-local Flux = require(script.Parent.Parent.Parent.Flux)
+local Package = script.Parent.Parent.Parent.Parent
+
+local Flux = require(Package.Flux)
 
 local Oklab = Flux.Color.Oklab
 
