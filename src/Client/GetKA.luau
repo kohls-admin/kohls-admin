@@ -70,7 +70,7 @@ task.defer(function()
 
 		Activated = function()
 			_K.client.lastAttemptedPurchase = adminModelId
-			_K.client.purchaseLink.Text = "create.roblox.com/store/asset/" .. adminModelId
+			_K.client.purchaseLink._instance.Text = "create.roblox.com/store/asset/" .. adminModelId
 			if _K.client.AllowThirdPartySales then
 				_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, adminModelId)
 			else

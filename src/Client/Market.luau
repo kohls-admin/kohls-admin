@@ -73,7 +73,7 @@ function Market.new(_K)
 			_K.client.lastAttemptedPurchase = passId
 			purchaseDialog.Title("Buy " .. passName)
 			purchaseDialog.Text(thirdPartyText)
-			purchaseLink.Text = "roblox.com/game-pass/" .. passId
+			purchaseLink._instance.Text = "roblox.com/game-pass/" .. passId
 			if _K.client.AllowThirdPartySales then
 				purchaseDialog.Visible(false)
 				_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, passId)
@@ -323,7 +323,7 @@ function Market.new(_K)
 						_K.client.lastAttemptedPurchase = ugc.id
 						purchaseDialog.Title("Buy" .. ugc.name)
 						purchaseDialog.Text(thirdPartyText)
-						purchaseLink.Text = "roblox.com/catalog/" .. ugc.id
+						purchaseLink._instance.Text = "roblox.com/catalog/" .. ugc.id
 						if _K.client.AllowThirdPartySales then
 							purchaseDialog.Visible(false)
 							_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, ugc.id)
