@@ -24,34 +24,8 @@ function About.new(_K)
 			Label = "<b>Get Kohl's Admin</b>",
 			TextXAlignment = Enum.TextXAlignment.Left,
 
-			UI.new "Frame" {
-				BackgroundTransparency = 1,
-				AnchorPoint = Vector2.new(0, 0.5),
-				Position = UDim2.new(0, 0, 0.5, 0),
-				Size = UDim2.new(0, 28, 0, 28),
-				UI.new "ImageLabel" {
-					BackgroundTransparency = 1,
-					Size = UDim2.new(0, 28, 0, 28),
-					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
-					ImageColor3 = Color3.new(0, 0, 0),
-					ImageTransparency = 0.875,
-				},
-				UI.new "ImageButton" {
-					BackgroundTransparency = 1,
-					Position = UDim2.new(0, 2, 0, 2),
-					Size = UDim2.new(0, 24, 0, 24),
-					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
-					ImageColor3 = Color3.new(1, 0.8, 0),
-					Activated = function()
-						_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
-					end,
-					UI.new "Tooltip" {
-						Text = "Add to Favorites",
-					},
-				},
-			},
-
 			UI.new "TextLabel" {
+				LayoutOrder = 2,
 				Name = "Price",
 				AutoLocalize = false,
 				AutomaticSize = Enum.AutomaticSize.XY,
@@ -189,7 +163,45 @@ function About.new(_K)
 			},
 			UI.new "Frame" { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0) },
 
-			adminModelButton,
+			UI.new "Frame" {
+				AutomaticSize = Enum.AutomaticSize.XY,
+				BackgroundTransparency = 1,
+
+				UI.new "UIListLayout" {
+					FillDirection = Enum.FillDirection.Horizontal,
+					Padding = UI.Theme.PaddingWithStroke,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					VerticalAlignment = Enum.VerticalAlignment.Center,
+				},
+				UI.new "Frame" {
+					BackgroundTransparency = 1,
+					AnchorPoint = Vector2.new(0, 0.5),
+					Position = UDim2.new(0, 0, 0.5, 0),
+					Size = UDim2.new(0, 28, 0, 28),
+					UI.new "ImageLabel" {
+						BackgroundTransparency = 1,
+						Size = UDim2.new(0, 28, 0, 28),
+						Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
+						ImageColor3 = Color3.new(0, 0, 0),
+						ImageTransparency = 0.875,
+					},
+					UI.new "ImageButton" {
+						BackgroundTransparency = 1,
+						Position = UDim2.new(0, 2, 0, 2),
+						Size = UDim2.new(0, 24, 0, 24),
+						Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
+						ImageColor3 = Color3.new(1, 0.8, 0),
+						Activated = function()
+							_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
+						end,
+						UI.new "Tooltip" {
+							Text = "Add to Favorites",
+						},
+					},
+				},
+
+				adminModelButton,
+			},
 			UI.new "Frame" { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0) },
 
 			communityFrame,
