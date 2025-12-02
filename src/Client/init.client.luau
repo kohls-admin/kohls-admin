@@ -66,7 +66,7 @@ local chatCommandThrottle
 local warnPrefixes = _K.Util.String.escapePattern(";:!$~.")
 
 local function Chatted(message: string)
-	if _K.Data.settings.chatCommands == false then
+	if not _K.client.ready or _K.Data.settings.chatCommands == false then
 		return
 	end
 	local prefix = _K.getCommandPrefix()
