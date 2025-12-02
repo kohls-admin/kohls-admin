@@ -26,12 +26,11 @@ _K.client = {
 }
 
 task.spawn(function()
-	local reference = _K.Service.ReplicatedStorage:WaitForChild("TopbarPlusReference", math.huge)
-	repeat
-		task.wait()
-	until reference.Value
-
-	_K.client.TopbarPlus = require(reference.Value)
+	local reference = _K.Service.ReplicatedStorage:WaitForChild("TopbarPlusReference", 10)
+	if reference then
+		local module = reference.Value or reference.Changed:Wait()
+		_K.client.TopbarPlus = require(module)
+	end
 end)
 
 local function deepMergeTheme(from, to, prefix: string?)
