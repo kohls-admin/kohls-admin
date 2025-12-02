@@ -1027,7 +1027,7 @@ return {
 			}
 		end,
 		runClient = function(context, player)
-			if #context._K.tools <= 1 then
+			if not context._K.tools or #context._K.tools <= 1 then
 				context._K.Notify({ Text = `No tools found!` })
 				return
 			end
