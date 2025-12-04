@@ -2,6 +2,13 @@ local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.UI)
 
 return function(from: number?, name: string?, image: string?, badgeEnabled: boolean?)
+	if type(from) == "string" then
+		if name == nil and from ~= "_K" then
+			name = from
+		end
+		from = nil
+	end
+
 	local displayName = name or ""
 
 	if badgeEnabled == nil then

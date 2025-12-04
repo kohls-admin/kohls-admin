@@ -93,9 +93,7 @@ return function(dialogOverride)
 	UI.Haptic.Notification:Play()
 
 	if userFrame or from then
-		userFrame = if userFrame
-			then _K.client.UserFrame(unpack(userFrame))
-			else _K.client.UserFrame(if from ~= "_K" then from else nil, name, image)
+		userFrame = if userFrame then _K.client.UserFrame(unpack(userFrame)) else _K.client.UserFrame(from, name, image)
 		UI.edit(userFrame, {
 			Parent = dialog,
 
