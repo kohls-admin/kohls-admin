@@ -199,7 +199,8 @@ function About.new(_K)
 		}
 
 		task.spawn(function()
-			if _K.Util.Retry(_K.LocalPlayer.IsInGroup, math.huge, nil, _K.LocalPlayer, 3403354) then
+			local ok, result = _K.Util.Retry(_K.LocalPlayer.IsInGroup, math.huge, nil, _K.LocalPlayer, 3403354)
+			if ok and result then
 				communityButton._instance.Visible = false
 				communityLink._instance.Visible = true
 				communityFrame.TextLabel.Text = "<b>Need help or have a suggestion?</b>"
