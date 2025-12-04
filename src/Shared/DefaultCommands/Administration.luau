@@ -14,17 +14,20 @@ return {
 		env = function(_K)
 			task.spawn(_K.Util.Retry, function()
 				_K.Service.Messaging:SubscribeAsync("KA_Announcement", function(message)
+					if type(message.Data) == "string" then
+						message.Data = _K.Service.Http:JSONDecode(message.Data)
+					end
 					if type(message.Data) ~= "table" then
 						_K.Data.savedSettings.announcement = false
 						return
 					end
 
-					local msg, from = unpack(message.Data)
+					local msg, from, duration = unpack(message.Data)
 					_K.Data.savedSettings.announcement = message.Data
 					_K.Remote.Announce:FireAllClients({
 						From = from,
 						Text = msg,
-						Duration = 0,
+						Duration = duration or 0,
 					})
 				end)
 			end, math.huge)
