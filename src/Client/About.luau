@@ -11,8 +11,24 @@ function About.new(_K)
 	}
 
 	task.defer(function()
-		local thirdPartyText = "Copy the link below to continue."
-			.. "\n<font transparency='0.5'>Rejoin after your purchase to get your perks!</font>"
+		local ctaLabel = UI.new "TextLabel" {
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			FontFace = UI.Theme.Font,
+			TextSize = UI.Theme.FontSize,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextStrokeColor3 = UI.Theme.Primary,
+			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+			TextWrapped = true,
+			Size = UDim2.new(1, 0, 0, 0),
+			Text = "<font transparency='0.5'><b>Stop playing. Take command.</b> Get the same powerful tools used here for your own games. Total control, advanced security, and professional moderation are yours for free.</font>",
+			RichText = true,
+
+			UI.new "UISizeConstraint" {
+				MaxSize = Vector2.new(420, math.huge),
+			},
+		}
 
 		local adminModelId = 172732271
 		local adminModelButton = UI.new "Button" {
@@ -46,7 +62,9 @@ function About.new(_K)
 			Activated = function()
 				_K.client.lastAttemptedPurchase = adminModelId
 				_K.client.purchaseDialog.Title("Get Kohl's Admin")
-				_K.client.purchaseDialog.Text(thirdPartyText)
+				_K.client.purchaseDialog.Text(
+					"Copy the link below to continue.\n<font transparency='0.5'>Rejoin after your purchase to get your perks!</font>"
+				)
 				_K.client.purchaseLink._instance.Text = "create.roblox.com/store/asset/" .. adminModelId
 				if _K.client.AllowThirdPartySales then
 					_K.client.purchaseDialog.Visible(false)
@@ -63,13 +81,59 @@ function About.new(_K)
 			Hovering = adminModelButton._hovering,
 		}
 
+		local adminModelFrame = UI.new "Frame" {
+			AutomaticSize = Enum.AutomaticSize.XY,
+			BackgroundTransparency = 1,
+
+			UI.new "UIListLayout" {
+				FillDirection = Enum.FillDirection.Horizontal,
+				Padding = UI.Theme.PaddingWithStroke,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+			},
+			UI.new "Frame" {
+				BackgroundTransparency = 1,
+				AnchorPoint = Vector2.new(0, 0.5),
+				Position = UDim2.new(0, 0, 0.5, 0),
+				Size = UDim2.new(0, 28, 0, 28),
+				UI.new "ImageLabel" {
+					BackgroundTransparency = 1,
+					Size = UDim2.new(0, 28, 0, 28),
+					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
+					ImageColor3 = Color3.new(0, 0, 0),
+					ImageTransparency = 0.875,
+				},
+				UI.new "ImageButton" {
+					BackgroundTransparency = 1,
+					Position = UDim2.new(0, 2, 0, 2),
+					Size = UDim2.new(0, 24, 0, 24),
+					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
+					ImageColor3 = Color3.new(1, 0.8, 0),
+					Activated = function()
+						_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
+					end,
+					UI.new "Tooltip" {
+						Text = "Add to Favorites",
+					},
+				},
+			},
+
+			adminModelButton,
+		}
+
 		task.defer(function()
 			local ok, owned = _K.Util.Retry(function()
 				return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, adminModelId)
 			end)
 			if ok and owned then
-				adminModelButton._content.Price.Text = `<b>OWNED</b>`
-				adminModelButton._content.Price.TextTransparency = 0.5
+				adminModelButton._instance.Visible = false
+				UI.new "Link" {
+					Parent = adminModelFrame,
+					LayoutOrder = 3,
+					Name = "CatalogLink",
+					Text = "create.roblox.com/store/asset/" .. adminModelId,
+				}
+				ctaLabel.Text = "<b>Love the Power?</b>\nDrop a Like 👍 and Favorite ⭐ to support us!"
 			end
 		end)
 
@@ -103,12 +167,13 @@ function About.new(_K)
 		local communityFrame = UI.new "Frame" {
 			BackgroundTransparency = 1,
 			AutomaticSize = Enum.AutomaticSize.XY,
-			Visible = false,
+			Visible = true,
 
 			UI.new "UIListLayout" {
 				FillDirection = Enum.FillDirection.Vertical,
-				SortOrder = Enum.SortOrder.LayoutOrder,
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
 				Padding = UI.Theme.Padding,
+				SortOrder = Enum.SortOrder.LayoutOrder,
 			},
 
 			UI.new "TextLabel" {
@@ -122,7 +187,7 @@ function About.new(_K)
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
 				Size = UDim2.new(0, 0, 0, 0),
-				Text = "<b>Join our community for cool perks!</b>",
+				Text = "<b>Join our community for help and cool perks!</b>",
 				RichText = true,
 				UI.new "Tooltip" {
 					Text = gamesTooltipText,
@@ -131,13 +196,13 @@ function About.new(_K)
 
 			communityButton,
 			communityLink,
-
-			UI.new "Frame" { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0) },
 		}
 
 		task.spawn(function()
-			if not _K.Util.Retry(_K.LocalPlayer.IsInGroup, math.huge, nil, _K.LocalPlayer, 3403354) then
-				communityFrame.Visible = true
+			if _K.Util.Retry(_K.LocalPlayer.IsInGroup, math.huge, nil, _K.LocalPlayer, 3403354) then
+				communityButton._instance.Visible = false
+				communityLink._instance.Visible = true
+				communityFrame.TextLabel.Text = "<b>Need help or have a suggestion?</b>"
 			end
 		end)
 
@@ -154,111 +219,78 @@ function About.new(_K)
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
 				Size = UDim2.new(1, 0, 0, 0),
-				Text = "<b>Kohl's Admin</b>\n<font transparency='0.5'><i>Embrace creativity, not chaos.</i>\n\n<b>Stop playing. Take command.</b> Get the same powerful tools used here for your own games. Total control, advanced security, and professional moderation are yours for free.</font>",
+				Text = "<b>Kohl's Admin</b>\n<font transparency='0.5'><i>Embrace creativity, not chaos.</i></font>",
 				RichText = true,
-
-				UI.new "UISizeConstraint" {
-					MaxSize = Vector2.new(420, math.huge),
-				},
 			},
-			UI.new "Frame" { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0) },
+			ctaLabel,
+
+			adminModelFrame,
+
+			communityFrame,
 
 			UI.new "Frame" {
 				AutomaticSize = Enum.AutomaticSize.XY,
 				BackgroundTransparency = 1,
 
 				UI.new "UIListLayout" {
-					FillDirection = Enum.FillDirection.Horizontal,
-					Padding = UI.Theme.PaddingWithStroke,
+					FillDirection = Enum.FillDirection.Vertical,
+					HorizontalAlignment = Enum.HorizontalAlignment.Center,
+					Padding = UI.Theme.Padding,
 					SortOrder = Enum.SortOrder.LayoutOrder,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
 				},
-				UI.new "Frame" {
+
+				UI.new "TextLabel" {
+					AutoLocalize = false,
+					AutomaticSize = Enum.AutomaticSize.XY,
 					BackgroundTransparency = 1,
-					AnchorPoint = Vector2.new(0, 0.5),
-					Position = UDim2.new(0, 0, 0.5, 0),
-					Size = UDim2.new(0, 28, 0, 28),
-					UI.new "ImageLabel" {
-						BackgroundTransparency = 1,
-						Size = UDim2.new(0, 28, 0, 28),
-						Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
-						ImageColor3 = Color3.new(0, 0, 0),
-						ImageTransparency = 0.875,
+					FontFace = UI.Theme.Font,
+					TextSize = UI.Theme.FontSize,
+					TextColor3 = UI.Theme.PrimaryText,
+					TextStrokeColor3 = UI.Theme.Primary,
+					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+					TextWrapped = true,
+					Size = UDim2.new(0, 0, 0, 0),
+					Text = "<b>Looking for more games with Kohl's Admin?</b>",
+					RichText = true,
+					UI.new "Tooltip" {
+						Text = gamesTooltipText,
 					},
+				},
+
+				UI.new "Frame" {
+					AutomaticSize = Enum.AutomaticSize.XY,
+					BackgroundTransparency = 1,
+
+					UI.new "UIListLayout" {
+						FillDirection = Enum.FillDirection.Horizontal,
+						Padding = UI.Theme.PaddingWithStroke,
+						SortOrder = Enum.SortOrder.LayoutOrder,
+						VerticalAlignment = Enum.VerticalAlignment.Center,
+					},
+
 					UI.new "ImageButton" {
 						BackgroundTransparency = 1,
-						Position = UDim2.new(0, 2, 0, 2),
 						Size = UDim2.new(0, 24, 0, 24),
 						Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 						ImageColor3 = Color3.new(1, 0.8, 0),
 						Activated = function()
-							_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
+							_K.Service.AvatarEditor:PromptSetFavorite(17873329124, 1, true)
 						end,
 						UI.new "Tooltip" {
 							Text = "Add to Favorites",
 						},
 					},
-				},
-
-				adminModelButton,
-			},
-			UI.new "Frame" { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0) },
-
-			communityFrame,
-
-			UI.new "TextLabel" {
-				AutoLocalize = false,
-				AutomaticSize = Enum.AutomaticSize.XY,
-				BackgroundTransparency = 1,
-				FontFace = UI.Theme.Font,
-				TextSize = UI.Theme.FontSize,
-				TextColor3 = UI.Theme.PrimaryText,
-				TextStrokeColor3 = UI.Theme.Primary,
-				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-				TextWrapped = true,
-				Size = UDim2.new(0, 0, 0, 0),
-				Text = "<b>Looking for more games with Kohl's Admin?</b>",
-				RichText = true,
-				UI.new "Tooltip" {
-					Text = gamesTooltipText,
-				},
-			},
-
-			UI.new "Frame" {
-				AutomaticSize = Enum.AutomaticSize.XY,
-				BackgroundTransparency = 1,
-
-				UI.new "UIListLayout" {
-					FillDirection = Enum.FillDirection.Horizontal,
-					Padding = UI.Theme.PaddingWithStroke,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
-				},
-
-				UI.new "ImageButton" {
-					BackgroundTransparency = 1,
-					Size = UDim2.new(0, 24, 0, 24),
-					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
-					ImageColor3 = Color3.new(1, 0.8, 0),
-					Activated = function()
-						_K.Service.AvatarEditor:PromptSetFavorite(17873329124, 1, true)
-					end,
-					UI.new "Tooltip" {
-						Text = "Add to Favorites",
+					UI.new "Link" {
+						Name = "CatalogLink",
+						Text = "roblox.com/games/17873329124",
+						Tooltip = `<b>Copy:</b> Ctrl + C\n\n{gamesTooltipText}`,
 					},
 				},
-				UI.new "Link" {
-					Name = "CatalogLink",
-					Text = "roblox.com/games/17873329124",
-					Tooltip = `<b>Copy:</b> Ctrl + C\n\n{gamesTooltipText}`,
-				},
 			},
-
-			UI.new "Frame" { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0) },
 		})
 
 		UI.edit(scroller._instance.UIListLayout, {
-			Padding = UI.Theme.PaddingWithStroke,
+			Padding = UI.Theme.PaddingDouble,
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		})
 
