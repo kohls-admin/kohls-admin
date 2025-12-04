@@ -53,8 +53,6 @@ function Class.new(properties: Properties?)
 		UI.new "UIPadding" {
 			PaddingLeft = UI.Theme.Padding,
 			PaddingRight = UI.Theme.Padding,
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
 		},
 
 		Focused = update,
