@@ -373,7 +373,7 @@ function Class.new(properties: Properties?)
 		local function hideButton()
 			local visible = (page.Parent == container or page.Parent == nil) and page:GetAttribute("Enabled") ~= false
 			button._instance.Visible = visible
-			container.Parent = if visible then PagesFrame else nil
+			container.Visible = visible
 		end
 		table.insert(cleanup, page:GetPropertyChangedSignal("Parent"):Connect(hideButton))
 		table.insert(cleanup, page:GetAttributeChangedSignal("Enabled"):Connect(hideButton))
