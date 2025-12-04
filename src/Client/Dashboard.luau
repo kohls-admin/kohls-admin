@@ -183,7 +183,6 @@ do
 	UI.edit(page._scroller.UIPadding, {
 		PaddingTop = paddedWhenVerticalWithStroke,
 		PaddingBottom = paddedWhenVerticalWithStroke,
-		PaddingRight = paddedWhenVerticalWithStroke,
 	})
 end
 
