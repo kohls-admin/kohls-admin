@@ -47,7 +47,7 @@ return {
 	},
 	{
 		name = "about",
-		aliases = { "credit", "credits", "info", "donate", "support" },
+		aliases = { "credit", "credits", "info" },
 		description = "Shows the about tab in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
@@ -78,16 +78,9 @@ return {
 		end,
 
 		runClient = function(context)
-			local about = context._K.client.dashboard.About
-			local scrollY = if string.find(context.alias, "credit", 1, true)
-				then about.CanvasPosition.Y + about.Credits.AbsolutePosition.Y - about.AbsolutePosition.Y
-				else 0
-			about.CanvasPosition = Vector2.new(0, scrollY)
-			context._K.UI.edit(context.env.window, {
-				Visible = true,
-				context._K.client.dashboard.About,
-			})
-			context._K.client.dashboard.About.Visible = true
+			context._K.client.dashboard.About._instance.Parent = context.env.window._content
+			context._K.client.dashboard.About._instance.Visible = true
+			context.env.window._instance.Visible = true
 		end,
 	},
 	{

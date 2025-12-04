@@ -380,7 +380,7 @@ function About.new(_K)
 		end)
 	end)
 
-	return scroller._instance
+	return scroller
 end
 
 return About

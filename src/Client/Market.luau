@@ -803,7 +803,7 @@ function Market.new(_K)
 		})
 	end)
 
-	return scroller._instance
+	return scroller
 end
 
 return Market

@@ -373,7 +373,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		local page = if _K.Auth.hasRestrictedRole(_K.LocalPlayer.UserId)
 			then _K.client.dashboard.About
 			else _K.client.dashboard.Market
-		_K.client.dashboard.Tabs._pages:JumpTo(_K.client.dashboard.Tabs._containerCache[page])
+		_K.client.dashboard.Tabs._pages:JumpTo(_K.client.dashboard.Tabs._containerCache[page._instance])
 	end)
 end)
 
