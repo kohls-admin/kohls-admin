@@ -2,22 +2,10 @@ return {
 	{
 		Title = "Contributors",
 		Users = {
-			{
-				Id = 44391621, -- kohl
-				Tooltip = "Project Founder & Architect. Driving the vision forward. 👑",
-			},
-			{
-				Id = 521855368, -- rfov
-				Tooltip = "Strategist and Designer. Expert advice and planning. 💡",
-			},
-			{
-				Id = 15554260, -- zeejaym
-				Tooltip = "Web Development lead and design infrastructure. 🌐",
-			},
-			{
-				Id = 3286467, -- lejam7890
-				Tooltip = "Critical input on design and system planning. 🛠️",
-			},
+			{ Id = 44391621, Tooltip = "Project Founder & Architect. Driving the vision forward. 👑" }, -- kohl
+			{ Id = 15554260, Tooltip = "Web Development lead and design infrastructure. 🌐" }, -- zeejaym
+			{ Id = 3286467, Tooltip = "Critical input on design and system planning. 🛠️" }, -- lejam7890
+			{ Id = 521855368, Tooltip = "Strategist and Designer. Expert advice and planning. 💡" }, -- rfov
 
 			-- major contributors
 			{ Id = 1022854840, Tooltip = "3D Modeling and UGC Design specialist. 🎨" }, -- JJJ
@@ -85,6 +73,10 @@ return {
 				Tooltip = "The original spark. Creator of Person299's Admin Commands. ✨",
 			},
 			{
+				Id = 82347291, -- ForeverHD
+				Tooltip = "Creator of TopbarPlus. Inspiration via HD Admin. 👈",
+			},
+			{
 				Id = 576473, -- lpg
 				Tooltip = "Master of Rojo. A crucial tool for modern development. 👑",
 			},
@@ -99,14 +91,6 @@ return {
 			{
 				Id = 2722909519, -- sona
 				Tooltip = "Innovator of Squash. Inspiration via data-oriented magic. 🪄",
-			},
-			{
-				Id = 80119, -- stravant
-				Tooltip = "Developed the foundational Signal Class for event handling. 📡",
-			},
-			{
-				Id = 82347291, -- ForeverHD
-				Tooltip = "Creator of TopbarPlus. Inspiration via HD Admin. 👈",
 			},
 			{
 				Id = 4812582, -- Sharksie
