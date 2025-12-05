@@ -34,6 +34,7 @@ return function(dialogOverride)
 	local offset = UI.state(0)
 	local self
 
+	local activated = dialogOverride.Activated
 	local announce = dialogOverride.Announce
 	local duration = dialogOverride.Duration
 	local from = dialogOverride.From
@@ -41,6 +42,7 @@ return function(dialogOverride)
 	local image = dialogOverride.Image
 	local sound = dialogOverride.Sound
 	local userFrame = dialogOverride.UserFrame
+	dialogOverride.Activated = nil
 	dialogOverride.Announce = nil
 	dialogOverride.From = nil
 	dialogOverride.Name = nil
@@ -84,6 +86,14 @@ return function(dialogOverride)
 			}
 			else nil,
 	}, dialogOverride))
+
+	if type(activated) == "function" then
+		dialog._instance.Active = true
+		dialog._instance.Activated:Once(function()
+			task.spawn(activated)
+			close()
+		end)
+	end
 
 	UI.new "UISizeConstraint" {
 		Parent = dialog._instance,
