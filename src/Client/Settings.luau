@@ -279,6 +279,7 @@ function Settings.new(_K)
 					_K.Process.runCommands(_K, _K.LocalPlayer.UserId, ";settings")
 				end
 			end),
+			rankItem("commandsButtonRank", "Commands Button Rank", "Minimum role to show the Commands Button"),
 			rankItem("dashboardButtonRank", "Dashboard Button Rank", "Minimum role to show the Dashboard Button"),
 			rankItem(
 				"joinNotificationRank",
