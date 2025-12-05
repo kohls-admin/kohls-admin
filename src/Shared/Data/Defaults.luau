@@ -79,8 +79,8 @@ local Data = {
 
 		commandBarRank = 0,
 		dashboardRank = 0,
-		dashboardButtonRank = 0,
 		commandsButtonRank = 0,
+		dashboardButtonRank = 1,
 		joinNotificationRank = 1,
 
 		welcomeBadgeId = 0,
@@ -90,7 +90,7 @@ local Data = {
 
 		chatCommands = true,
 		commandRequests = true,
-		onlyShowUsableCommands = false,
+		onlyShowUsableCommands = true,
 		getKohlsAdminPopup = true,
 		wrongPrefixWarning = true,
 		saveLogs = true,

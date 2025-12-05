@@ -86,9 +86,10 @@ return {
 
 	commandBarRank = 0, --       Minimum rank for Command Bar (false = disable)
 	dashboardRank = 0, --        Minimum rank for Dashboard (false = disable)
-	dashboardButtonRank = 0, --  Minimum rank for Dashboard button (false = disable)
 	commandsButtonRank = 0, --   Minimum rank for Dashboard button (false = disable)
+	dashboardButtonRank = 1, --  Minimum rank for Dashboard button (false = disable)
 	joinNotificationRank = 1, -- Minimum rank for join notifications (false = disable)
+	onlyShowUsableCommands = true, -- Show only purchasable/usable commands
 
 	welcomeBadgeId = 0, -- Badge for new players (0 = none)
 
@@ -97,7 +98,6 @@ return {
 
 	chatCommands = true, --            Enable commands via chat
 	commandRequests = true, --         Request commands on same/higher rank
-	onlyShowUsableCommands = false, -- Show only purchasable/usable commands
 	getKohlsAdminPopup = true, --      Show the Get Kohl's Admin popup
 	wrongPrefixWarning = true, --      Warn on incorrect prefix
 	saveLogs = true, --                Save/sync command logs across servers
