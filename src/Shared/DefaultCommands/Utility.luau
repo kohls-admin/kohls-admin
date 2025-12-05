@@ -159,6 +159,44 @@ return {
 		end,
 	},
 	{
+		name = "donate",
+		aliases = { "market", "support" },
+		description = "Shows the market tab in a separate window.",
+		optionalPrefix = true,
+		envClient = function(_K)
+			local env = {}
+			task.defer(function()
+				while not _K.client do
+					task.wait()
+				end
+				local window = _K.UI.new "Window" {
+					Parent = _K.UI.LayerTopInset,
+					Icon = "rbxassetid://71961243872230",
+					Title = "Market",
+				}
+				_K.UI.edit(window, {
+					[_K.UI.Event] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Market,
+								})
+							end
+						end,
+					},
+				})
+				env.window = window
+			end)
+			return env
+		end,
+
+		runClient = function(context)
+			context._K.client.dashboard.Market._instance.Parent = context.env.window._content
+			context._K.client.dashboard.Market._instance.Visible = true
+			context.env.window._instance.Visible = true
+		end,
+	},
+	{
 		name = "log",
 		aliases = {
 			"logs",
