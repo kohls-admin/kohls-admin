@@ -420,7 +420,7 @@ return {
 				return store
 			end)
 
-			context._K.Service.Message:PublishAsync("_K_ReservedServers", { code })
+			context._K.Service.Messaging:PublishAsync("_K_ReservedServers", { code })
 			context._K.Remote.Notify:FireClient(context.fromPlayer, {
 				Text = `Server "<b>{code}</b>" {if removed then "has been removed" else "was NOT found"}!`,
 			})
