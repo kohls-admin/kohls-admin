@@ -10,7 +10,7 @@ return {
 			-- major contributors
 			{ Id = 1022854840, Tooltip = "3D Modeling and UGC Design specialist. 🎨" }, -- JJJ
 			{ Id = 15303771, Tooltip = "Design planning and Quality Assurance lead. ✅" }, -- Fragility
-			{ Id = 131233603, Tooltip = "Making a positive difference! ✨" }, -- Geed
+			{ Id = 131233603, Tooltip = "Design, direction, and leading the community. 😎" }, -- Geed
 			{ Id = 201989656, Tooltip = "Committed to finding solutions! 💡" }, -- iiRealistic_Dev
 			{ Id = 14658110, Tooltip = "Transforming chaos into clarity! 💫" }, -- Rietria
 			{ Id = 448137594, Tooltip = "Serving up great ideas! 🌮" }, -- Lucatacos
