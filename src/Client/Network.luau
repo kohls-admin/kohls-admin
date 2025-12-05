@@ -8,6 +8,7 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 
 	local commandBarRank = _K.client.settings.commandBarRank._value
 	local dashboardRank = _K.client.settings.dashboardRank._value
+	local commandsButtonRank = _K.client.settings.commandsButtonRank._value
 	local dashboardButtonRank = _K.client.settings.dashboardButtonRank._value
 
 	if commandBarRank == nil then
@@ -25,6 +26,9 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 	_K.client.dashboardButtonEnabled = _K.client.dashboardEnabled
 		and dashboardButtonRank
 		and userRank >= dashboardButtonRank
+	_K.client.commandsButtonEnabled = not _K.client.dashboardButtonEnabled
+		and commandsButtonRank
+		and userRank >= commandsButtonRank
 
 	_K.client.toggleCommandBar._instance.Visible = _K.client.commandBarEnabled
 	if not _K.client.commandBarEnabled and _K.client.CommandBar and _K.client.CommandBar.Bar.Visible then
@@ -35,6 +39,12 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 		_K.client.dashboardButton.Visible = _K.client.dashboardButtonEnabled
 	else
 		_K.client.dashboardButton:setEnabled(_K.client.dashboardButtonEnabled)
+	end
+
+	if typeof(_K.client.commandsButton) == "Instance" and _K.client.commandsButton:IsA("GuiObject") then
+		_K.client.commandsButton.Visible = _K.client.commandsButtonEnabled
+	else
+		_K.client.commandsButton:setEnabled(_K.client.commandsButtonEnabled)
 	end
 
 	if not _K.client.dashboardEnabled then

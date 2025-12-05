@@ -80,6 +80,7 @@ local Data = {
 		commandBarRank = 0,
 		dashboardRank = 0,
 		dashboardButtonRank = 0,
+		commandsButtonRank = 0,
 		joinNotificationRank = 1,
 
 		welcomeBadgeId = 0,

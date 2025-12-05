@@ -87,6 +87,7 @@ return {
 	commandBarRank = 0, --       Minimum rank for Command Bar (false = disable)
 	dashboardRank = 0, --        Minimum rank for Dashboard (false = disable)
 	dashboardButtonRank = 0, --  Minimum rank for Dashboard button (false = disable)
+	commandsButtonRank = 0, --   Minimum rank for Dashboard button (false = disable)
 	joinNotificationRank = 1, -- Minimum rank for join notifications (false = disable)
 
 	welcomeBadgeId = 0, -- Badge for new players (0 = none)

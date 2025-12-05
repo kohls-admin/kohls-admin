@@ -548,6 +548,59 @@ local dashboardButton = UI.new "TextButton" {
 
 _K.client.dashboardButton = dashboardButton
 
+local function commandsWindow(visible: boolean)
+	local context = _K.Registry.commands.cmds
+	if visible then
+		UI.edit(context.env.window, {
+			Visible = true,
+			_K.client.dashboard.Commands,
+		})
+		_K.client.dashboard.Commands._instance.Visible = true
+	else
+		context.env.window._instance.Visible = false
+		_K.UI.edit(_K.client.dashboard.Tabs, {
+			_K.client.dashboard.Commands,
+		})
+	end
+end
+
+_K.client.commandsWindowVisible = commandsWindow
+
+local function toggleCommandsWindow()
+	commandsWindow(_K.client.dashboard.Commands._instance.Parent ~= _K.Registry.commands.cmds.env.window._content)
+end
+
+local commandsButton = UI.new "TextButton" {
+	Parent = UI.TopbarFrame,
+	Name = "KACommandsButton",
+	BackgroundColor3 = Color3.fromRGB(18, 18, 21),
+	BackgroundTransparency = 0.08,
+	Size = UDim2.fromScale(1, 1),
+	SizeConstraint = Enum.SizeConstraint.RelativeYY,
+	Text = "",
+	Visible = true,
+
+	UI.new "UICorner" { CornerRadius = UDim.new(1, 0) },
+	UI.new "UIPadding" {
+		PaddingLeft = UDim.new(0, 12),
+		PaddingRight = UDim.new(0, 12),
+		PaddingTop = UDim.new(0, 12),
+		PaddingBottom = UDim.new(0, 12),
+	},
+
+	UI.new "ImageLabel" {
+		BackgroundTransparency = 1,
+		Image = UI.Theme.Image.Terminal,
+		Size = UDim2.fromScale(1, 1),
+	},
+
+	Activated = toggleCommandsWindow,
+	MouseButton2Click = toggleCommandBarWithSound,
+	TouchLongPress = toggleCommandBarWithSound,
+}
+
+_K.client.commandsButton = commandsButton
+
 task.spawn(function()
 	repeat
 		task.wait()
@@ -563,21 +616,6 @@ task.spawn(function()
 		:setEnabled(_K.client.dashboardButtonEnabled)
 		:bindEvent("toggled", dashboardToggle)
 
-	if dashboardButton.modifyTheme then
-		dashboardButton:modifyTheme({ "Widget", "BorderSize", 0 })
-	end
-
-	local clickRegion: TextButton? = dashboardButton:getInstance("ClickRegion")
-	if clickRegion then
-		clickRegion.MouseButton2Click:Connect(toggleCommandBarWithSound)
-		clickRegion.TouchLongPress:Connect(toggleCommandBarWithSound)
-	end
-
-	local iconSpot = dashboardButton:getInstance("IconSpot")
-	if iconSpot then
-		iconSpot.Size = UDim2.fromOffset(44, 44)
-	end
-
 	local image = dashboardButton:getInstance("IconImage")
 	if image then
 		UI.new "UIPadding" {
@@ -590,6 +628,46 @@ task.spawn(function()
 	end
 
 	_K.client.dashboardButton = dashboardButton
+
+	commandsButton:Destroy()
+	commandsButton = _K.client.TopbarPlus
+		.new()
+		:setName("KACommandsButton")
+		:setImage(string.match(UI.Theme.Image.Terminal._value, "%d+$"))
+		:setImageScale(1)
+		:setOrder(-1)
+		:setEnabled(_K.client.commandsButtonEnabled)
+		:bindEvent("toggled", toggleCommandsWindow)
+
+	_K.client.commandsButton = commandsButton
+
+	local image2 = commandsButton:getInstance("IconImage")
+	if image2 then
+		UI.new "UIPadding" {
+			Parent = image2.Parent,
+			PaddingLeft = UDim.new(0, 12),
+			PaddingRight = UDim.new(0, 12),
+			PaddingTop = UDim.new(0, 12),
+			PaddingBottom = UDim.new(0, 12),
+		}
+	end
+
+	for _, button in { commandsButton, dashboardButton } do
+		if button.modifyTheme then
+			button:modifyTheme({ "Widget", "BorderSize", 0 })
+		end
+
+		local clickRegion: TextButton? = button:getInstance("ClickRegion")
+		if clickRegion then
+			clickRegion.MouseButton2Click:Connect(toggleCommandBarWithSound)
+			clickRegion.TouchLongPress:Connect(toggleCommandBarWithSound)
+		end
+
+		local iconSpot = button:getInstance("IconSpot")
+		if iconSpot then
+			iconSpot.Size = UDim2.fromOffset(44, 44)
+		end
+	end
 end)
 
 _K.client.hotkeys.dashboard.callback = function()

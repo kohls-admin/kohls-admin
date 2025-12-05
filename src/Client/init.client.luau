@@ -314,11 +314,15 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		end
 		table.insert(roleStrings, `<font color="{_K.Data.roles.everyone.color}">{_K.Data.roles.everyone.name}</font>`)
 		local roleString = table.concat(roleStrings, ", ")
+		local nString = if roleString:sub(1, 1):lower():match("aeiou") then "n" else ""
 
 		_K.Notify({
 			From = "_K",
-			Text = `<font family="{UI.Theme.FontMono._value.Family}"><b>Role{if #roleStrings > 1 then "s" else ""}:</b>\n<sc>{roleString}</sc></font>`,
+			Text = `<font family="{UI.Theme.FontMono._value.Family}"><b>You're a{nString}</b> <sc>{roleString}</sc>\n\n<i>Click to see the commands.</i></font>`,
 			Duration = 15,
+			Activated = function()
+				_K.client.commandsWindowVisible(true)
+			end,
 		})
 	end
 
