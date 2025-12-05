@@ -148,7 +148,7 @@ function About.new(_K)
 			Visible = false,
 		}
 
-		local communityButton
+		local communityButton, communityFrame
 		communityButton = UI.new "Button" {
 			Label = "Join Community",
 			BackgroundColor3 = Color3.fromRGB(51, 95, 255),
@@ -156,7 +156,15 @@ function About.new(_K)
 			HoverTransparency = 0,
 			AutomaticSize = Enum.AutomaticSize.X,
 			Activated = function()
-				if not pcall(_K.Service.Group.PromptJoinAsync, _K.Service.Group, 3403354) then
+				local ok, result = pcall(_K.Service.Group.PromptJoinAsync, _K.Service.Group, 3403354)
+				if ok then
+					if result == Enum.GroupMembershipStatus.None then
+						return
+					end
+					communityButton._instance.Visible = false
+					communityLink._instance.Visible = true
+					communityFrame.TextLabel.Text = "<b>Need help or have a suggestion?</b>"
+				else
 					communityButton._instance.Visible = false
 					communityLink._instance.Visible = true
 					communityLink:Select()
@@ -164,7 +172,7 @@ function About.new(_K)
 			end,
 		}
 
-		local communityFrame = UI.new "Frame" {
+		communityFrame = UI.new "Frame" {
 			BackgroundTransparency = 1,
 			AutomaticSize = Enum.AutomaticSize.XY,
 			Visible = true,
