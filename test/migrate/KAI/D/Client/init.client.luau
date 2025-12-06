@@ -54,6 +54,7 @@ local s = {
 	Debris = S("Debris"),
 	Content = S("ContentProvider"),
 	Gui = S("GuiService"),
+	Group = S("GroupService"),
 	Market = S("MarketplaceService"),
 	UIS = S("UserInputService"),
 	TP = S("TeleportService"),
@@ -595,6 +596,22 @@ end)
 cm.Shine.MouseButton1Click:connect(function()
 	server:FireServer(f.uID .. "KShine")
 end)
+cm.Join.Activated:Connect(function()
+	local ok, result = pcall(s.Group.PromptJoinAsync, s.Group, 3403354)
+	if ok then
+		if result == Enum.GroupMembershipStatus.None then
+			return
+		end
+		cm.Join:Destroy()
+	end
+end)
+task.spawn(function()
+	local ok, result = pcall(plr.IsInGroup, plr, 3403354)
+	if ok and result then
+		cm.Join:Destroy()
+	end
+end)
+
 wrap(function()
 	local a, b, t = false, 1, nil
 	repeat

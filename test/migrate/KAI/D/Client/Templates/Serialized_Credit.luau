@@ -337,4 +337,21 @@ t.Text = "Crown"
 t.Font = 4
 t.Parent = c
 
+local join = Instance.new("TextButton")
+join.Name = "Join"
+join.AutoLocalize = false
+join.BackgroundColor3 = Color3.fromRGB(51, 95, 255)
+join.BackgroundTransparency = 0.5
+join.BorderColor3 = Color3.new()
+join.BorderSizePixel = 0
+join.Position = UDim2.fromOffset(0, 288)
+join.Size = UDim2.new(1, 0, 0, 20)
+join.Text = "Join our Community!"
+join.TextColor3 = Color3.new(1, 1, 1)
+join.TextSize = 18
+join.TextStrokeTransparency = 0.9
+join.Font = 4
+join.ZIndex = 9
+join.Parent = c
+
 return a
