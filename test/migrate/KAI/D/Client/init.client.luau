@@ -569,31 +569,31 @@ function ToggleCredit()
 		CredF = false
 	end
 end
-Credit.Toggle.MouseButton1Click:connect(ToggleCredit)
-cm.Close.MouseButton1Click:connect(ToggleCredit)
+Credit.Toggle.Activated:Connect(ToggleCredit)
+cm.Close.Activated:Connect(ToggleCredit)
 cm.Trail.Visible, cm.Hat.Visible, cm.Shine.Visible = kdonor.Value > 0, kdonor.Value > 2, kdonor.Value > 3
 kdonor.Changed:Connect(function()
 	cm.Trail.Visible, cm.Hat.Visible, cm.Shine.Visible = kdonor.Value > 0, kdonor.Value > 2, kdonor.Value > 3
 end)
-cm.Get.MouseButton1Click:connect(function()
+cm.Get.Activated:Connect(function()
 	s.Market:PromptPurchase(plr, 172732271)
 end)
 for i, v in { { 5391355, 10 }, { 5391356, 100 }, { 5391359, 250 }, { 5391361, 500 }, { 5411126, 1000 } } do
 	local obj = cm["D" .. i]
 	local success, info = pcall(s.Market.GetProductInfo, s.Market, v[1], Enum.InfoType.GamePass)
 	obj.Text = (success and info.PriceInRobux or v[2]) .. " R$"
-	obj.MouseButton1Click:Connect(function()
+	obj.Activated:Connect(function()
 		lastAttemptedPurchase = v[1]
 		s.Market:PromptGamePassPurchase(plr, v[1])
 	end)
 end
-cm.Hat.MouseButton1Click:connect(function()
+cm.Hat.Activated:Connect(function()
 	server:FireServer(f.uID .. "KHat")
 end)
-cm.Trail.MouseButton1Click:connect(function()
+cm.Trail.Activated:Connect(function()
 	server:FireServer(f.uID .. "KTrail")
 end)
-cm.Shine.MouseButton1Click:connect(function()
+cm.Shine.Activated:Connect(function()
 	server:FireServer(f.uID .. "KShine")
 end)
 cm.Join.Activated:Connect(function()
@@ -632,7 +632,7 @@ local LogService = game:GetService("LogService")
 local Direct = f.template.Direct:Clone()
 Direct.Parent = CoreUI
 
-Direct.Close.MouseButton1Click:Connect(function()
+Direct.Close.Activated:Connect(function()
 	Direct.Visible = false
 end)
 
@@ -774,7 +774,7 @@ end)
 function f.HookList(a, b, c, d)
 	d = FindChild(a, "List") or FindChild(a, "BG")
 	local FadeB = false
-	b = a.Hide.MouseButton1Click:connect(function()
+	b = a.Hide.Activated:Connect(function()
 		if not FadeB then
 			FadeB = true
 			if d.Parent.Name ~= "BG" then
@@ -785,7 +785,7 @@ function f.HookList(a, b, c, d)
 			FadeB = false
 		end
 	end)
-	c = a.Close.MouseButton1Click:connect(function()
+	c = a.Close.Activated:Connect(function()
 		b:disconnect()
 		c:disconnect()
 		f.Hide(a, true)
@@ -881,7 +881,7 @@ f.KeyDown = function(a)
 	return s.UIS:IsKeyDown(a)
 end
 f.HookToggle = function(a, b)
-	a.MouseButton1Click:connect(function(c)
+	a.Activated:Connect(function(c)
 		c = a.BackgroundColor3 == Color3.new()
 		a.BackgroundColor3 = c and Color3.new(1, 1, 1) or Color3.new()
 		if b then
@@ -1721,10 +1721,10 @@ function ClientEvent(a, b)
 			wrap(f.Hide, v, true)
 			server:FireServer(f.uID .. "KVote", c)
 		end
-		c1 = v.Y.MouseButton1Click:connect(function()
+		c1 = v.Y.Activated:Connect(function()
 			cleanup(true)
 		end)
-		c2 = v.N.MouseButton1Click:connect(function()
+		c2 = v.N.Activated:Connect(function()
 			cleanup(false)
 		end)
 		delay(9, function()
