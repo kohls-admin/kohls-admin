@@ -700,7 +700,7 @@ function Market.new(_K)
 				return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.LocalPlayer.UserId, 5411126)
 			end)
 			if success and owned then
-				task.defer(updatePassPriceText, vipButtonGlobal._content.Price, 5411126)
+				task.defer(updatePassPriceText, vipButtonGlobal._content.Price, 5411126, `<b>SHOW</b>`)
 			else
 				task.defer(updateAssetPriceText, vipButtonGlobal._content.Price, 110019084552349, `<b>SHOW</b>`)
 			end
