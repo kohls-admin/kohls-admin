@@ -326,6 +326,33 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		})
 	end
 
+	local vipNotificationVisible = false
+
+	function _K.client.VIPNotification()
+		if vipNotificationVisible then
+			return
+		end
+
+		local initialJoin = _K.LocalPlayer:GetAttribute("_KInitialJoin")
+		local line = if workspace:GetServerTimeNow() - initialJoin < 15 * 60
+			then "Get chat commands for <font color='#0f0'><b>20% OFF</b></font>!"
+			else "Get <b>exclusive</b> chat commands!"
+
+		vipNotificationVisible = true
+
+		_K.Notify({
+			From = "_K",
+			Text = `{line}\n\n<i>Click for more details.</i>`,
+			Duration = 0,
+			Activated = function()
+				_K.VIP.popup.Visible = true
+				vipNotificationVisible = false
+			end,
+		})
+	end
+	_K.Remote.VIPNotification.OnClientEvent:Connect(_K.client.VIPNotification)
+	_K.VIP.popup.Parent = UI.LayerTopInset
+
 	if savedSettings.announcement then
 		local msg, from = unpack(savedSettings.announcement)
 		_K.Announce({

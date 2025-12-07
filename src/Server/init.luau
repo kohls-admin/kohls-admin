@@ -533,9 +533,17 @@ return function(_K)
 			end
 		end)
 
+		local initialJoin = {}
 		local playerCleanup = {}
 
 		_K.Util.SafePlayerAdded(function(player: Player)
+			local initialJoinTime = initialJoin[player.UserId]
+			if not initialJoinTime then
+				initialJoinTime = workspace:GetServerTimeNow()
+				initialJoin[player.UserId] = initialJoinTime
+			end
+			player:SetAttribute("_KInitialJoin", initialJoinTime)
+
 			if (_K.Data.settings.welcomeBadgeId or 0) > 0 then
 				task.spawn(_K.Util.Retry, awardBadge, 5, 2, player.UserId, _K.Data.settings.welcomeBadgeId)
 			end

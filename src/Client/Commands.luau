@@ -168,7 +168,7 @@ function Commands.new(_K)
 
 		Activated = function()
 			if purchase.role == "vip" and _K.Data.settings.vip then
-				_K.promptPurchaseVIP(true)
+				_K.PromptPurchaseVIP()
 			elseif purchase.gamepass then
 				_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, purchase.gamepass)
 			end
@@ -379,6 +379,21 @@ function Commands.new(_K)
 		local noFilter = string.find(self._filter, "^%s*$")
 
 		local new = {}
+
+		if string.find(filter, "role=", 1, true) == 1 then
+			filter = string.sub(filter, 6)
+			for _, command in list do
+				updateRenderParameters(command)
+				if string.find(string.lower(command.roleText), filter, 1, true) then
+					command.renderText = command.richText
+					command.renderDesc = command.richDesc
+					table.insert(new, command)
+				end
+			end
+
+			return new
+		end
+
 		for _, command in list do
 			updateRenderParameters(command)
 

@@ -578,13 +578,16 @@ end)
 cm.Get.Activated:Connect(function()
 	s.Market:PromptPurchase(plr, 172732271)
 end)
-for i, v in { { 5391355, 10 }, { 5391356, 100 }, { 5391359, 250 }, { 5391361, 500 }, { 5411126, 1000 } } do
+for i, v in { { 129760409821083, 2 }, { 77680874300094, 49 }, { 110019084552349, 499 } } do
 	local obj = cm["D" .. i]
-	local success, info = pcall(s.Market.GetProductInfo, s.Market, v[1], Enum.InfoType.GamePass)
+	local success, info = pcall(s.Market.GetProductInfo, s.Market, v[1], Enum.InfoType.Asset)
 	obj.Text = (success and info.PriceInRobux or v[2]) .. " R$"
 	obj.Activated:Connect(function()
 		lastAttemptedPurchase = v[1]
-		s.Market:PromptGamePassPurchase(plr, v[1])
+		server:FireServer(
+			f.uID .. "KBulkPurchase",
+			{ { Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(v[1]) } }
+		)
 	end)
 end
 cm.Hat.Activated:Connect(function()

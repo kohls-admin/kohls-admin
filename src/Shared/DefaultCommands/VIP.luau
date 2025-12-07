@@ -1656,7 +1656,7 @@ return {
 
 		runClient = function(context)
 			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 and context._K.Data.settings.vip then
-				context._K.promptPurchaseVIP(true)
+				context._K.PromptPurchaseVIP()
 				return
 			end
 		end,
@@ -1684,7 +1684,7 @@ return {
 		description = "Toggles the VIP wings rainbow.",
 		runClient = function(context)
 			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 and context._K.Data.settings.vip then
-				context._K.promptPurchaseVIP(true)
+				context._K.PromptPurchaseVIP()
 				return
 			end
 		end,
@@ -1730,7 +1730,7 @@ return {
 
 		runClient = function(context)
 			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 2 and context._K.Data.settings.vip then
-				context._K.promptPurchaseVIP(true)
+				context._K.PromptPurchaseVIP()
 				return
 			end
 		end,
@@ -1762,7 +1762,7 @@ return {
 		description = "Toggles the VIP crown rainbow.",
 		runClient = function(context)
 			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 and context._K.Data.settings.vip then
-				context._K.promptPurchaseVIP(true)
+				context._K.PromptPurchaseVIP()
 				return
 			end
 		end,

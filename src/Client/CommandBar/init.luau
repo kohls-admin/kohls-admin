@@ -438,7 +438,7 @@ local suggestionPurchaseButton = UI.new "Button" {
 
 	Activated = function()
 		if suggestionPurchase.role == "vip" and _K.Data.settings.vip then
-			_K.promptPurchaseVIP(true)
+			_K.PromptPurchaseVIP()
 		elseif suggestionPurchase.gamepass then
 			_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, suggestionPurchase.gamepass)
 		end

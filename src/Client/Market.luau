@@ -83,6 +83,39 @@ function Market.new(_K)
 		end
 		_K.client.promptThirdPartyGamePassDialog = promptThirdPartyGamePassDialog
 
+		local function updateAssetPriceText(label: TextLabel, assetId: number, ownedText: string?)
+			local success, owned = _K.Util.Retry(function()
+				return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, assetId)
+			end)
+
+			if success then
+				if owned then
+					label.Text = ownedText or "<b>OWNED</b>"
+					label.TextTransparency = 0.5
+					return
+				end
+
+				local conn
+				conn = _K.Service.Marketplace.PromptPurchaseFinished:Connect(function(userId, purchaseId, purchased)
+					if purchased and purchaseId == assetId and userId == _K.LocalPlayer.UserId then
+						conn:Disconnect()
+						owned = true
+						label.Text = ownedText or "<b>OWNED</b>"
+						label.TextTransparency = 0.5
+					end
+				end)
+
+				local ok, result = _K.Util.Retry(function()
+					return _K.Service.Marketplace:GetProductInfo(assetId, Enum.InfoType.Asset).PriceInRobux
+				end)
+				if ok then
+					if not owned then
+						label.Text = `<b>{result or "?"}</b>`
+					end
+				end
+			end
+		end
+
 		local function updatePassPriceText(label: TextLabel, gamePassId: number, ownedText: string?)
 			local success, owned = _K.Util.Retry(function()
 				return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.LocalPlayer.UserId, gamePassId)
@@ -457,8 +490,8 @@ function Market.new(_K)
 		end
 
 		local passDefinition = {
-			{ name = "Tip", color = "#bf0", id = 5391355 },
-			{ name = "Gift", color = "#8f0", id = 5391356 },
+			{ name = "Tip", color = "#bf0", id = 129760409821083, type = Enum.InfoType.Asset },
+			{ name = "Gift", color = "#8f0", id = 77680874300094, type = Enum.InfoType.Asset },
 			{ name = "Donor", color = "#0f0", id = 933980650 },
 			{ name = "Tribute", color = "#0f8", id = 933582848 },
 			{ name = "Patron", color = "#0ff", id = 938480383 },
@@ -522,7 +555,11 @@ function Market.new(_K)
 					if button._content.Price.Text == `<b>SHOW</b>` or button._content.Price.Text == `<b>HIDE</b>` then
 						donorEquip(pass.name, button, remote)
 					else
-						promptThirdPartyGamePassDialog(pass.id, pass.name)
+						if pass.type == Enum.InfoType.Asset then
+							_K.PromptBulkPurchase(pass.id)
+						else
+							promptThirdPartyGamePassDialog(pass.id, pass.name)
+						end
 					end
 				end,
 			}
@@ -541,7 +578,8 @@ function Market.new(_K)
 
 			updateTitleLabel(button, pass.name)
 
-			task.spawn(updatePassPriceText, button._content.Price, pass.id, `<b>SHOW</b>`)
+			local updatePrice = if pass.type == Enum.InfoType.Asset then updateAssetPriceText else updatePassPriceText
+			task.spawn(updatePrice, button._content.Price, pass.id, `<b>SHOW</b>`)
 		end
 
 		local vipList = UI.new "Frame" {
@@ -564,7 +602,6 @@ function Market.new(_K)
 		end)
 
 		local vipDeveloperPassId = _K.Data.roles.vip.gamepasses and _K.Data.roles.vip.gamepasses[1]
-		local vipGlobalPassId = 5411126
 		local vipButtonGlobal
 		vipButtonGlobal = UI.new "Button" {
 			Parent = vipList,
@@ -601,7 +638,7 @@ function Market.new(_K)
 				then
 					donorEquip("VIP", vipButtonGlobal, _K.Remote.Title)
 				else
-					promptThirdPartyGamePassDialog(vipGlobalPassId, "VIP (Global)")
+					_K.PromptVIPPurchase()
 				end
 			end,
 		}
@@ -658,41 +695,15 @@ function Market.new(_K)
 			`  <font transparency="0.75"><stroke thickness="1" transparency="0.75">(Game)</stroke></font>`
 		)
 
-		task.defer(updatePassPriceText, vipButtonGlobal._content.Price, vipGlobalPassId, `<b>SHOW</b>`)
+		local initialJoin = _K.LocalPlayer:GetAttribute("_KInitialJoin") or 0
+		local chatCommandsId = if workspace:GetServerTimeNow() - initialJoin > 15 * 60
+			then 110019084552349
+			else 115444443724463 -- 20% off
+
+		task.defer(updateAssetPriceText, vipButtonGlobal._content.Price, chatCommandsId, `<b>SHOW</b>`)
+
 		if vipDeveloperPassId then
 			task.defer(updatePassPriceText, vipButtonDeveloper._content.Price, vipDeveloperPassId)
-		end
-
-		local purchaseVIPDialog
-		purchaseVIPDialog = UI.new "Dialog" {
-			Parent = UI.LayerTop,
-			Title = "✨ <b>Become a VIP</b>",
-			Text = "<font color='#0f0'>Unlock <b>VIP commands</b> globally!</font>",
-			Visible = false,
-			Draggable = true,
-			ExitButton = true,
-			BackgroundTransparency = 0,
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, 0, 0.5, 0),
-			Size = UDim2.new(0, 320, 0, 0),
-			ZIndex = 999,
-			Close = function()
-				purchaseVIPDialog.Visible(false)
-				vipButtonDeveloper._instance.Parent = vipList
-				vipButtonGlobal._instance.Parent = vipList
-				vipList.Visible = true
-			end,
-		}
-
-		function _K.promptPurchaseVIP(global: boolean?)
-			if not global and vipDeveloperPassId then
-				vipList.Visible = false
-				vipButtonDeveloper._instance.Parent = purchaseVIPDialog._content
-				vipButtonGlobal._instance.Parent = purchaseVIPDialog._content
-				purchaseVIPDialog.Visible(true)
-			else
-				promptThirdPartyGamePassDialog(vipGlobalPassId, "VIP (Global)")
-			end
 		end
 
 		local gamesTooltipText = "Find games using Kohl's Admin!\n\n"

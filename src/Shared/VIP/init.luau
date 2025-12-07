@@ -3,16 +3,17 @@ local Data = require(script.Parent:WaitForChild("Data"))
 local Remote = require(script.Parent:WaitForChild("Remote"))
 local Util = require(script.Parent:WaitForChild("Util"))
 
+local Popup = require(script:WaitForChild("Popup"))
 local Title = require(script:WaitForChild("Title"))
 
-local VIP = { effects = {} }
+local VIP = { effects = {}, popup = Popup }
 
 -- vip, supervip, premium
 local gamePassDonations = { 5391359, 5391361, 5411126 }
 local assetDonations = { { 441133423, 313102724 }, { 441134066, 423601416 } }
 
 -- 5 group member
--- 4 subscriber
+-- 4 chat commands/subscriber
 -- 3 premium donor
 -- 2 super vip
 -- 1 vip
@@ -22,6 +23,15 @@ local function getDonationLevel(player)
 	end)
 	if okRank and rank > 1 then
 		return 5
+	end
+
+	for _, ugcId in { 115444443724463, 110019084552349 } do
+		local ok, result = Util.Retry(function()
+			return Util.Service.Marketplace:PlayerOwnsAsset(player, ugcId)
+		end)
+		if ok and result then
+			return 4
+		end
 	end
 
 	local okSubscription, status = Util.Retry(function()
@@ -60,6 +70,9 @@ local function setDonationLevel(player)
 
 	if Data.settings.vip and level > 0 then
 		Auth.userRoleAdd(player.UserId, "vip")
+		if level < 3 then
+			Remote.VIPNotification:FireClient(player)
+		end
 	end
 end
 

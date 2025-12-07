@@ -1599,6 +1599,10 @@ function f.LoadCheck(plr: Player)
 
 	f.isVIPAdmin(plr)
 end
+
+local VIP_UGC_ID = "110019084552349"
+local VIP_UGC_SALE_ID = "115444443724463"
+
 function f.Load(plr: Player)
 	if not plr then
 		return
@@ -1619,7 +1623,12 @@ function f.Load(plr: Player)
 	new("BoolValue")({ Parent = plr, Name = "KHat", Value = false })
 	new("BoolValue")({ Parent = plr, Name = "KShine", Value = false })
 	local donorValue = 0
-	if (plr:GetRankInGroup(451053) or 0) > 1 or f.HasPass(plr, 5411126) then
+	if
+		(plr:GetRankInGroup(451053) or 0) > 1
+		or f.Has(plr, VIP_UGC_SALE_ID)
+		or f.Has(plr, VIP_UGC_ID)
+		or f.HasPass(plr, 5411126)
+	then
 		donorValue = 4
 	elseif f.HasPass(plr, 5391361) or f.Has(plr, 441134066) or f.Has(plr, 423601416) then
 		donorValue = 3
@@ -1753,6 +1762,8 @@ function ServerEvent(plr: Player, event, arguments, uID)
 			local shine = f.shine(plr)
 			plr.KShine.Value = shine
 		end
+	elseif event == "KBulkPurchase" then
+		services.Marketplace:PromptBulkPurchase(plr, arguments, {})
 	end
 end
 RemoteEvent.OnServerEvent:Connect(ServerEvent)
