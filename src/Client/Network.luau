@@ -184,7 +184,13 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logsBuffer)
 
 	_K.Util.Defer.reset()
 
-	local logs = _K.Z.des(_K.Data.Schema.logs, logsBuffer)
+	local ok, result = pcall(_K.Z.des, _K.Data.Schema.logs, logsBuffer)
+	if not ok then
+		warn(result)
+		return
+	end
+
+	local logs = result
 	_K.Util.Defer.wait()
 
 	table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)

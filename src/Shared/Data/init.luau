@@ -155,7 +155,13 @@ local function updateLogs()
 			return Z.ser(Data.Schema.logs, saveLogs)
 		end
 
-		local logs = Z.des(Data.Schema.logs, value)
+		local ok, result = pcall(Z.des :: any, Data.Schema.logs, value)
+		if not ok then
+			warn(result)
+			return Z.ser(Data.Schema.logs, saveLogs)
+		end
+
+		local logs = result
 
 		local thirtyDaysAgo = workspace:GetServerTimeNow() - 30 * 86400
 		local count = 1
@@ -317,9 +323,19 @@ local SYNC = {
 		local logs = changes
 
 		if type(changes) == "table" then
-			changes = Z.ser(Data.Schema.logs, changes)
+			local result, feedback = Z.ser(Data.Schema.logs, changes)
+			if result == nil then
+				warn(feedback)
+				return
+			end
+			changes = result
 		elseif type(changes) == "buffer" then
-			logs = Z.des(Data.Schema.logs, changes)
+			local ok, result = pcall(Z.des :: any, Data.Schema.logs, changes)
+			if not ok then
+				warn(result)
+				return
+			end
+			logs = result
 		end
 		Util.Defer.wait()
 
