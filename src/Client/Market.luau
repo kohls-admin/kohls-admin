@@ -695,12 +695,16 @@ function Market.new(_K)
 			`  <font transparency="0.75"><stroke thickness="1" transparency="0.75">(Game)</stroke></font>`
 		)
 
-		local initialJoin = _K.LocalPlayer:GetAttribute("_KInitialJoin") or 0
-		local chatCommandsId = if workspace:GetServerTimeNow() - initialJoin > 15 * 60
-			then 110019084552349
-			else 115444443724463 -- 20% off
-
-		task.defer(updateAssetPriceText, vipButtonGlobal._content.Price, chatCommandsId, `<b>SHOW</b>`)
+		task.defer(function()
+			local success, owned = _K.Util.Retry(function()
+				return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.LocalPlayer.UserId, 5411126)
+			end)
+			if success and owned then
+				task.defer(updatePassPriceText, vipButtonGlobal._content.Price, 5411126)
+			else
+				task.defer(updateAssetPriceText, vipButtonGlobal._content.Price, 110019084552349, `<b>SHOW</b>`)
+			end
+		end)
 
 		if vipDeveloperPassId then
 			task.defer(updatePassPriceText, vipButtonDeveloper._content.Price, vipDeveloperPassId)
