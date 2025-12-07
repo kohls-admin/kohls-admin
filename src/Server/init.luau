@@ -221,6 +221,44 @@ return function(_K)
 			end
 
 			_K.Data.initialize(dataStoreScope)
+
+			if _K.Data.settings.vip then
+				local VIP_UGC_ID = "110019084552349"
+				local VIP_UGC_SALE_ID = "115444443724463"
+
+				for _, cmd in _K.Registry.commandsList do
+					if cmd.group ~= "VIP" then
+						continue
+					end
+
+					local chatCommand = Instance.new("TextChatCommand")
+					chatCommand.Enabled = true
+					chatCommand.AutocompleteVisible = true
+					chatCommand.PrimaryAlias = "/" .. cmd.name
+					chatCommand.Parent = _K.Service.TextChat
+
+					chatCommand.Triggered:Connect(function(source: TextSource, rawText: string)
+						local player = _K.Service.Players:GetPlayerByUserId(source.UserId)
+						if not player then
+							return
+						end
+
+						if (player:GetAttribute("_KDonationLevel") or 0) > 0 then
+							local cmd = `{_K.getCommandPrefix()}{string.sub(rawText, 2)}`
+							_K.Process.runCommands(_K, source.UserId, cmd)
+							return
+						end
+
+						local initialJoin = player:GetAttribute("_KInitialJoin") or 0
+						local id = if workspace:GetServerTimeNow() - initialJoin > 15 * 60
+							then VIP_UGC_ID
+							else VIP_UGC_SALE_ID
+
+						local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = id } }
+						_K.Service.Marketplace:PromptBulkPurchase(player, items, {})
+					end)
+				end
+			end
 		end)
 
 		-- define user roles
