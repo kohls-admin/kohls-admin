@@ -482,6 +482,7 @@ buy.Activated:Connect(promptPurchaseVIP)
 view.Activated:Connect(function()
 	shared._K_INTERFACE.client.commandsWindowVisible(true)
 	shared._K_INTERFACE.client.dashboard.Commands._input._input.Text = "role=vip"
+	vip.ZIndex = shared._K_INTERFACE.Registry.commands.cmds.env.window._instance.ZIndex - 1
 end)
 
 local count = 0
