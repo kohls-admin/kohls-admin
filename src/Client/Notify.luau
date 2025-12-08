@@ -36,7 +36,7 @@ return function(dialogOverride)
 
 	local activated = dialogOverride.Activated
 	local announce = dialogOverride.Announce
-	local duration = dialogOverride.Duration
+	local closeCallback = dialogOverride.Close
 	local from = dialogOverride.From
 	local name = dialogOverride.Name
 	local image = dialogOverride.Image
@@ -44,6 +44,7 @@ return function(dialogOverride)
 	local userFrame = dialogOverride.UserFrame
 	dialogOverride.Activated = nil
 	dialogOverride.Announce = nil
+	dialogOverride.Close = nil
 	dialogOverride.From = nil
 	dialogOverride.Name = nil
 	dialogOverride.Image = nil
@@ -53,6 +54,9 @@ return function(dialogOverride)
 	local function close()
 		if not self then
 			return
+		end
+		if closeCallback then
+			task.spawn(closeCallback, self)
 		end
 		hide(self, announce)
 	end
@@ -121,7 +125,7 @@ return function(dialogOverride)
 
 	local list = if announce then announcements else notifications
 
-	self = { dialog._instance, visible, offset, duration }
+	self = { dialog._instance, visible, offset, dialogOverride.Duration }
 	table.insert(list, 1, self)
 	task.defer(function()
 		visible(true)

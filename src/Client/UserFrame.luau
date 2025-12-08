@@ -2,6 +2,7 @@ local _K = require(script.Parent.Parent)
 local UI = require(script.Parent.UI)
 
 return function(from: number?, name: string?, image: string?, badgeEnabled: boolean?)
+	local fromK = from :: any == "_K"
 	if type(from) == "string" then
 		if name == nil and from ~= "_K" then
 			name = from
@@ -24,23 +25,43 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		badge = "?"
 	end
 
-	local imageLabel = UI.new "ImageLabel" {
-		Name = "Icon",
-		BackgroundTransparency = UI.Theme.TransparencyHeavy,
-		BackgroundColor3 = UI.Theme.PrimaryText,
-		Size = function()
-			return UDim2.fromOffset(UI.Theme.FontSizeDouble(), UI.Theme.FontSizeDouble())
-		end,
-		Image = if image
-			then image
-			elseif from then `rbxthumb://type=AvatarHeadShot&id={from}&w=48&h=48`
-			else "rbxassetid://10650688076",
+	local imageLabel
+	if image or fromK or tonumber(from) then
+		imageLabel = if from
+			then UI.new "ImageLabel" {
+				Name = "Icon",
+				BackgroundTransparency = UI.Theme.TransparencyHeavy,
+				BackgroundColor3 = UI.Theme.PrimaryText,
+				Size = function()
+					return UDim2.fromOffset(UI.Theme.FontSizeDouble(), UI.Theme.FontSizeDouble())
+				end,
+				Image = if image
+					then image
+					elseif from then `rbxthumb://type=AvatarHeadShot&id={from}&w=48&h=48`
+					else "rbxassetid://10650688076",
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
-		UI.new "Stroke" {},
-	}
+				UI.new "UICorner" {
+					CornerRadius = UI.Theme.CornerPadded,
+				},
+				UI.new "Stroke" {},
+			}
+			else UI.new "Frame" {
+				BackgroundTransparency = 1,
+				Size = function()
+					return UDim2.fromOffset(UI.Theme.FontSizeLarger(), UI.Theme.FontSizeLarger())
+				end,
+				UI.new "ImageLabel" {
+					Name = "Icon",
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundTransparency = 1,
+					Position = UDim2.fromScale(0.5, 0.5),
+					Size = function()
+						return UDim2.fromOffset(UI.Theme.FontSize(), UI.Theme.FontSize())
+					end,
+					Image = "rbxassetid://71961243872230",
+				},
+			}
+	end
 
 	local displayNameLabel = UI.new "TextLabel" {
 		AutoLocalize = false,
@@ -140,24 +161,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		AutomaticSize = Enum.AutomaticSize.XY,
 		BackgroundTransparency = 1,
 
-		if from
-			then imageLabel
-			else UI.new "Frame" {
-				BackgroundTransparency = 1,
-				Size = function()
-					return UDim2.fromOffset(UI.Theme.FontSizeLarger(), UI.Theme.FontSizeLarger())
-				end,
-				UI.new "ImageLabel" {
-					Name = "Icon",
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					BackgroundTransparency = 1,
-					Position = UDim2.fromScale(0.5, 0.5),
-					Size = function()
-						return UDim2.fromOffset(UI.Theme.FontSize(), UI.Theme.FontSize())
-					end,
-					Image = "rbxassetid://71961243872230",
-				},
-			},
+		imageLabel,
 		UI.new "Frame" {
 			Name = "From",
 			AutomaticSize = Enum.AutomaticSize.XY,
