@@ -113,8 +113,7 @@ label1.LayoutOrder = 1
 label1.Position = UDim2.new(0.5, 8, 0, 64)
 label1.RichText = true
 label1.Size = UDim2.new(0.5, 0, 0, 48)
-label1.Text = [[Use in over <b>100k</b>
-Roblox experiences]]
+label1.Text = "Use in over <b>100k</b>\nRoblox experiences"
 label1.TextColor3 = Color3.new(1, 1, 1)
 label1.TextSize = 24
 label1.TextWrapped = true
@@ -153,7 +152,7 @@ label2.LayoutOrder = 1
 label2.Position = UDim2.new(0.5, 8, 0, 64)
 label2.RichText = true
 label2.Size = UDim2.new(0.5, 0, 0, 32)
-label2.Text = "30% goes to supporting open-source projects"
+label2.Text = "30% goes to supporting free and open-source projects"
 label2.TextColor3 = Color3.fromRGB(184, 184, 184)
 label2.TextSize = 16
 label2.TextWrapped = true
@@ -167,7 +166,7 @@ emoji1.AutomaticSize = Enum.AutomaticSize.XY
 emoji1.BackgroundTransparency = 1
 emoji1.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
 emoji1.Position = UDim2.new(0.25, 0, 0, 64)
-emoji1.Text = "❤️"
+emoji1.Text = "🌎"
 emoji1.TextColor3 = Color3.new(1, 1, 1)
 emoji1.TextSize = 24
 emoji1.TextWrapped = true
@@ -213,7 +212,7 @@ emoji2.AutomaticSize = Enum.AutomaticSize.XY
 emoji2.BackgroundTransparency = 1
 emoji2.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
 emoji2.Position = UDim2.new(0.25, 0, 0, 64)
-emoji2.Text = "⭐"
+emoji2.Text = "❤️"
 emoji2.TextColor3 = Color3.new(1, 1, 1)
 emoji2.TextSize = 24
 emoji2.TextWrapped = true
@@ -465,9 +464,9 @@ task.spawn(function()
 	task.spawn(updatePrice, buy.Price, productId)
 
 	repeat
+		task.wait(0.5)
 		duration = (15 * 60) - (workspace:GetServerTimeNow() - initialJoin)
 		sale.Text = `20% OFF for {string.format("%02d:%02d", duration // 60, duration % 60)}`
-		task.wait(0.5)
 	until duration < 0
 
 	productId = originalProductId
