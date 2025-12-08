@@ -321,7 +321,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 		_K.Notify({
 			From = "_K",
-			Text = `<font family="{UI.Theme.FontMono._value.Family}"><b>You're a{nString}</b> <sc>{roleString}</sc>\n\n<i>Click to see the commands.</i></font>`,
+			Text = `<font family="{UI.Theme.FontMono._value.Family}"><b>You're a{nString}</b> <sc>{roleString}</sc></font>\n\n<i>Click to see the commands.</i>`,
 			Duration = 15,
 			Activated = function()
 				_K.client.commandsWindowVisible(true)
