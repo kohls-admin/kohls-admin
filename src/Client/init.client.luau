@@ -329,32 +329,54 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		})
 	end
 
-	local vipNotificationVisible = false
+	do
+		local count = 0
+		local lastVIPNotification = -math.huge
+		local vipNotificationVisible = false
 
-	function _K.client.VIPNotification()
-		if vipNotificationVisible then
-			return
+		local function vipNotificationClosed()
+			vipNotificationVisible = false
 		end
 
-		local initialJoin = _K.LocalPlayer:GetAttribute("_KInitialJoin")
-		local line = if workspace:GetServerTimeNow() - initialJoin < 15 * 60
-			then "Get chat commands for <font color='#0f0'><b>20% OFF</b></font>!"
-			else "Get <b>exclusive</b> chat commands!"
+		local function showPopup()
+			_K.VIP.popup.Visible = true
+			vipNotificationVisible = false
+		end
 
-		vipNotificationVisible = true
+		function _K.client.VIPNotification(check: boolean?)
+			if
+				vipNotificationVisible
+				or (check and tick() - lastVIPNotification < 16 + 2 ^ (5 + count))
+				or _K.LocalPlayer:GetAttribute("_KDonationLevel") > 3
+			then
+				return
+			end
 
-		_K.Notify({
-			From = "_K",
-			Text = `{line}\n\n<i>Click for more details.</i>`,
-			Duration = 0,
-			Activated = function()
-				_K.VIP.popup.Visible = true
-				vipNotificationVisible = false
-			end,
-		})
+			count += 1
+			lastVIPNotification = tick()
+			vipNotificationVisible = true
+
+			local initialJoin = _K.LocalPlayer:GetAttribute("_KInitialJoin")
+			local line = if workspace:GetServerTimeNow() - initialJoin < 15 * 60
+				then "Unlock exclusive chat commands in <b>100k+</b> games for <font color='#0f0'><b>20% OFF</b></font>!"
+				else "Unlock <b>exclusive</b> chat commands!"
+
+			_K.Notify({
+				From = "System",
+				Text = `{line}\n\n<i>Click for more details.</i>`,
+				Duration = 60,
+				Sound = "Call_Accept",
+				Activated = showPopup,
+				Close = vipNotificationClosed,
+			})
+		end
+		_K.Remote.VIPNotification.OnClientEvent:Connect(_K.client.VIPNotification)
+		_K.VIP.popup.Parent = UI.LayerTopInset
+
+		_K.client.dashboard.Window._instance:GetPropertyChangedSignal("Visible"):Once(function()
+			_K.VIP.popup.Visible = true
+		end)
 	end
-	_K.Remote.VIPNotification.OnClientEvent:Connect(_K.client.VIPNotification)
-	_K.VIP.popup.Parent = UI.LayerTopInset
 
 	if savedSettings.announcement then
 		local msg, from = unpack(savedSettings.announcement)

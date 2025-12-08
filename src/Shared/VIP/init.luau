@@ -71,7 +71,7 @@ local function setDonationLevel(player)
 	if Data.settings.vip and level > 0 then
 		Auth.userRoleAdd(player.UserId, "vip")
 		if level < 3 then
-			Remote.VIPNotification:FireClient(player)
+			task.delay(8, Remote.VIPNotification.FireClient, Remote.VIPNotification, player)
 		end
 	end
 end

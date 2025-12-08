@@ -25,6 +25,7 @@ vip.BackgroundTransparency = 1
 vip.Position = UDim2.fromScale(0.5, 0.5)
 vip.Size = UDim2.fromOffset(420, 420)
 vip.Visible = false
+vip.ZIndex = 9e8
 
 local imageLabel = Instance.new("ImageLabel")
 imageLabel.Name = "ImageLabel"
@@ -413,9 +414,6 @@ close.Image = "rbxasset://textures/ui/ScreenshotHud/Close.png"
 close.Position = UDim2.new(1, -4, 0, 4)
 close.Size = UDim2.fromOffset(32, 32)
 close.Parent = vip
-close.Activated:Connect(function()
-	vip.Visible = false
-end)
 
 local originalProductId = "110019084552349"
 local saleProductId = "115444443724463"
@@ -486,13 +484,37 @@ view.Activated:Connect(function()
 	shared._K_INTERFACE.client.dashboard.Commands._input._input.Text = "role=vip"
 end)
 
+local count = 0
+local thread
+
+close.Activated:Connect(function()
+	count += 1
+	vip.Visible = false
+	if thread and coroutine.status(thread) == "suspended" then
+		task.cancel(thread)
+	end
+	thread = task.delay(16 + 2 ^ (5 + count), shared._K_INTERFACE.client.VIPNotification, true)
+end)
+
 MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player, status, results)
 	if player ~= LocalPlayer or (results.Items[1].id ~= productId and results.Items[1].id ~= saleProductId) then
 		return
 	end
 	if status == Enum.MarketplaceBulkPurchasePromptStatus.Completed then
-		vip:Destroy()
+		shared._K_INTERFACE.client.VIPNotification = function() end
+		vip.Visible = false
 	end
+end)
+
+-- automatic scaling for small screens
+local scale = Instance.new("UIScale", vip)
+vip:GetPropertyChangedSignal("Parent"):Once(function()
+	local parent = vip.Parent
+	local function updateScale()
+		scale.Scale = math.min(1, parent.AbsoluteSize.Y / 420)
+	end
+	updateScale()
+	parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateScale)
 end)
 
 return vip

@@ -496,6 +496,7 @@ local function dashboardToggle(button)
 		page.Visible = button.isSelected
 	end
 	dashboard._instance.Visible = button.isSelected
+	task.delay(4, _K.client.VIPNotification, true)
 end
 
 local function toggleCommandBarWithSound()
