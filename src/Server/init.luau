@@ -235,6 +235,9 @@ return function(_K)
 					chatCommand.Enabled = true
 					chatCommand.AutocompleteVisible = true
 					chatCommand.PrimaryAlias = "/" .. cmd.name
+					if cmd.aliases and cmd.aliases[1] then
+						chatCommand.SecondaryAlias = "/" .. cmd.aliases[1]
+					end
 					chatCommand.Parent = _K.Service.TextChat
 
 					chatCommand.Triggered:Connect(function(source: TextSource, rawText: string)
