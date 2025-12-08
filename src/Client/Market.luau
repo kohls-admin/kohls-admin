@@ -353,16 +353,7 @@ function Market.new(_K)
 							return
 						end
 
-						_K.client.lastAttemptedPurchase = ugc.id
-						purchaseDialog.Title("Buy" .. ugc.name)
-						purchaseDialog.Text(thirdPartyText)
-						purchaseLink._instance.Text = "roblox.com/catalog/" .. ugc.id
-						if _K.client.AllowThirdPartySales then
-							purchaseDialog.Visible(false)
-							_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, ugc.id)
-						else
-							purchaseDialog.Visible(true)
-						end
+						_K.PromptBulkPurchase(ugc.id)
 					end,
 				}
 
