@@ -346,6 +346,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		function _K.client.VIPNotification(check: boolean?)
 			if
 				vipNotificationVisible
+				or not _K.Data.settings.vip
 				or (check and tick() - lastVIPNotification < 16 + 2 ^ (5 + count))
 				or _K.LocalPlayer:GetAttribute("_KDonationLevel") > 2
 			then
