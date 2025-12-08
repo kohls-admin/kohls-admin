@@ -96,8 +96,11 @@ function Market.new(_K)
 				end
 
 				local conn
-				conn = _K.Service.Marketplace.PromptPurchaseFinished:Connect(function(userId, purchaseId, purchased)
-					if purchased and purchaseId == assetId and userId == _K.LocalPlayer.UserId then
+				conn = _K.Service.Marketplace.PromptBulkPurchaseFinished:Connect(function(player, status, results)
+					if player ~= _K.LocalPlayer or (results.Items[1].id ~= tostring(assetId)) then
+						return
+					end
+					if status == Enum.MarketplaceBulkPurchasePromptStatus.Completed then
 						conn:Disconnect()
 						owned = true
 						label.Text = ownedText or "<b>OWNED</b>"
