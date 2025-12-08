@@ -277,6 +277,16 @@ buyFrame.BackgroundTransparency = 1
 buyFrame.LayoutOrder = 3
 buyFrame.Size = UDim2.new(1, 0, 0, 64)
 
+local favorite = Instance.new("TextButton", buyFrame)
+favorite.Name = "Favorite"
+favorite.BackgroundTransparency = 1
+favorite.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+favorite.Size = UDim2.fromOffset(84, 48)
+favorite.Text = "⭐"
+favorite.TextColor3 = Color3.new()
+favorite.TextSize = 48
+favorite.TextXAlignment = Enum.TextXAlignment.Right
+
 local buy = Instance.new("TextButton")
 buy.Name = "Buy"
 buy.BackgroundColor3 = Color3.fromRGB(51, 95, 255)
@@ -457,6 +467,7 @@ task.spawn(function()
 	end
 
 	productId = saleProductId
+	favorite.Visible = false
 	originalPrice.Visible = true
 	sale.Visible = true
 	buy.Price.Text = "399"
@@ -470,6 +481,7 @@ task.spawn(function()
 	until duration < 0
 
 	productId = originalProductId
+	favorite.Visible = true
 	originalPrice.Visible = false
 	sale.Visible = false
 	buy.Price.Text = "499"
@@ -478,6 +490,9 @@ task.spawn(function()
 end)
 
 buy.Activated:Connect(promptPurchaseVIP)
+favorite.Activated:Connect(function()
+	shared._K_INTERFACE.Service.AvatarEditor:PromptSetFavorite(productId, 1, true)
+end)
 view.Activated:Connect(function()
 	shared._K_INTERFACE.client.commandsWindowVisible(true)
 	shared._K_INTERFACE.client.dashboard.Commands._input._input.Text = "role=vip"
