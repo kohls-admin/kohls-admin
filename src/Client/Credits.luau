@@ -38,6 +38,7 @@ return {
 			{ Id = 1219753275, Tooltip = "Adding awesome features! 🚀" }, -- DZIDZIO999
 			{ Id = 7034077053, Tooltip = "Shredding with numbers! 🎸" }, -- johnny_klebitz1
 			{ Id = 127757866, Tooltip = "Coding with flair! 💻" }, -- iam_danny
+			{ Id = 190022817, Tooltip = "Blazing through contributions! 🔥" }, -- emblazes
 		},
 	},
 	{
@@ -58,7 +59,6 @@ return {
 			{ Id = 3230955923, Tooltip = "Napping on bugs (after finding them)! 😴" }, -- napiw
 			{ Id = 516417505, Tooltip = "Landing on solutions! 🛬" }, -- landon
 			{ Id = 105503420, Tooltip = "A legendary bug hunter! 🏆" }, -- general_legendary
-			{ Id = 190022817, Tooltip = "Blazing through tests! 🔥" }, -- emblazes
 		},
 	},
 	{

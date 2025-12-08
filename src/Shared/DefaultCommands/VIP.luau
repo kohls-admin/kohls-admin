@@ -772,6 +772,98 @@ return {
 		end,
 	},
 	{
+		name = "headless",
+		aliases = { "nohead" },
+		description = "Apply headless head to one or more player(s)",
+		credit = { "emblazes", "Kohl @Scripth" },
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to apply this to.",
+			},
+			{
+				type = "boolean",
+				name = "Full bundle",
+				description = "Option to apply the full bundle.",
+				optional = true,
+			},
+		},
+		run = function(context, players, fullBundle)
+			for _, player in players do
+				if fullBundle then
+					context._K.Registry.commands.bundle:run(players, 201)
+					continue
+				end
+				Util.Humanoid.attributeDescription(player, "Head", 15093053680)
+			end
+		end,
+	},
+	{
+		name = "korblox",
+		aliases = { "korbloxleg" },
+		description = "Apply korblox bundle to one or more player(s)",
+		credit = { "emblazes", "Kohl @Scripth" },
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to apply this to.",
+			},
+			{
+				type = "boolean",
+				name = "Leg only",
+				description = "Option to apply only the right leg.",
+				optional = true,
+			},
+		},
+		run = function(context, players, rightLeg)
+			for _, player in players do
+				if rightLeg then
+					Util.Humanoid.attributeDescription(player, "RightLeg", 139607718)
+					continue
+				end
+				context._K.Registry.commands.bundle:run(players, 192)
+			end
+		end,
+	},
+	{
+		name = "werewolf",
+		aliases = { "🌕", "wolf" },
+		description = "Apply werewolf bundle to one or more player(s)",
+		credit = { "emblazes", "Kohl @Scripth" },
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to apply this to.",
+			},
+		},
+		run = function(context, players)
+			for _, player in players do
+				context._K.Registry.commands.bundle:run(players, 292)
+			end
+		end,
+	},
+	{
+		name = "vampire",
+		aliases = { "🧛", "dracula" },
+		description = "Apply vampire bundle to one or more player(s)",
+		credit = { "emblazes", "Kohl @Scripth" },
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to apply this to.",
+			},
+		},
+		run = function(context, players)
+			for _, player in players do
+				context._K.Registry.commands.bundle:run(players, 293)
+			end
+		end,
+	},
+	{
 		name = "cape",
 		description = "Gives a cape to one or more player(s)",
 		args = {
