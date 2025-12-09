@@ -37,7 +37,10 @@ function Market.new(_K)
 
 		-- THIRD PARTY PURCHASES HANDLING
 
-		_K.client.AllowThirdPartySales = if _K.DEBUG and _K.IsStudio then false else true
+		local STUDIO_DEBUG = _K.DEBUG and _K.IsStudio
+		local DEBUG_SHOW_PRICES = STUDIO_DEBUG
+
+		_K.client.AllowThirdPartySales = not STUDIO_DEBUG
 		_K.client.lastAttemptedPurchase = false
 
 		local purchaseLink = UI.new "Link" {
@@ -89,7 +92,7 @@ function Market.new(_K)
 			end)
 
 			if success then
-				if owned then
+				if owned and not DEBUG_SHOW_PRICES then
 					label.Text = ownedText or "<b>OWNED</b>"
 					label.TextTransparency = 0.5
 					return
@@ -112,7 +115,7 @@ function Market.new(_K)
 					return _K.Service.Marketplace:GetProductInfo(assetId, Enum.InfoType.Asset).PriceInRobux
 				end)
 				if ok then
-					if not owned then
+					if not owned or DEBUG_SHOW_PRICES then
 						label.Text = `<b>{result or "?"}</b>`
 					end
 				end
@@ -125,7 +128,7 @@ function Market.new(_K)
 			end)
 
 			if success then
-				if owned then
+				if owned and not DEBUG_SHOW_PRICES then
 					label.Text = ownedText or "<b>OWNED</b>"
 					label.TextTransparency = 0.5
 					return
@@ -145,7 +148,7 @@ function Market.new(_K)
 					return _K.Service.Marketplace:GetProductInfo(gamePassId, Enum.InfoType.GamePass).PriceInRobux
 				end)
 				if ok then
-					if not owned then
+					if not owned or DEBUG_SHOW_PRICES then
 						label.Text = `<b>{result or "?"}</b>`
 					end
 				end
@@ -569,12 +572,14 @@ function Market.new(_K)
 			updateTitleLabel(button, pass.name)
 
 			task.spawn(function()
-				local success, owned = _K.Util.Retry(function()
-					return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.LocalPlayer.UserId, pass.id)
-				end)
-				if success and owned then
-					button._content.Price.Text = `<b>SHOW</b>`
-					return
+				if not DEBUG_SHOW_PRICES then
+					local success, owned = _K.Util.Retry(function()
+						return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.LocalPlayer.UserId, pass.id)
+					end)
+					if success and owned then
+						button._content.Price.Text = `<b>SHOW</b>`
+						return
+					end
 				end
 				updateAssetPriceText(button._content.Price, pass.assetId, `<b>SHOW</b>`)
 			end)
