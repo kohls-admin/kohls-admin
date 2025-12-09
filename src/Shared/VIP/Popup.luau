@@ -441,7 +441,7 @@ task.spawn(function()
 	while not shared._K_INTERFACE do
 		task.wait()
 	end
-	shared._K_INTERFACE.PromptVIPPurchase = promptPurchaseVIP
+	shared._K_INTERFACE.PromptPurchaseVIP = promptPurchaseVIP
 	shared._K_INTERFACE.PromptBulkPurchase = promptBulkPurchase
 end)
 

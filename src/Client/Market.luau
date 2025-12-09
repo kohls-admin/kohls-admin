@@ -632,7 +632,7 @@ function Market.new(_K)
 				then
 					donorEquip("VIP", vipButtonGlobal, _K.Remote.Title)
 				else
-					_K.PromptVIPPurchase()
+					_K.PromptPurchaseVIP()
 				end
 			end,
 		}
