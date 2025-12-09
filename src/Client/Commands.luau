@@ -271,7 +271,9 @@ function Commands.new(_K)
 
 		if role and ((role._key == "vip" and _K.Data.settings.vip) or role.gamepasses) then
 			purchase.role = role._key
-			purchase.gamepass = if role._key == "vip" and _K.Data.settings.vip then 5411126 else role.gamepasses[1]
+			purchase.gamepass = if role._key == "vip" and _K.Data.settings.vip
+				then 110019084552349
+				else role.gamepasses[1]
 			if not purchase.gamepass then
 				return
 			end

@@ -447,7 +447,11 @@ local suggestionPurchaseButton = UI.new "Button" {
 
 local function updateSuggestionPurchasePrice()
 	local ok, result = pcall(function()
-		return _K.Service.Marketplace:GetProductInfo(suggestionPurchase.gamepass, Enum.InfoType.GamePass).PriceInRobux
+		if suggestionPurchase.role == "vip" and _K.Data.settings.vip then
+			return _K.Service.Marketplace:GetProductInfo(suggestionPurchase.gamepass, Enum.InfoType.Asset).PriceInRobux
+		else
+			return _K.Service.Marketplace:GetProductInfo(suggestionPurchase.gamepass, Enum.InfoType.GamePass).PriceInRobux
+		end
 	end)
 	suggestionPurchaseButton._content.Price.Text = `<b>{ok and result or "?"}</b>`
 end
@@ -601,7 +605,7 @@ updateCompletion = function()
 				then
 					suggestionPurchase.role = roleId
 					suggestionPurchase.gamepass = if (roleId == "vip" and _K.Data.settings.vip)
-						then 5411126
+						then 110019084552349
 						else roleData.gamepasses[1]
 					if not suggestionPurchase.gamepass then
 						continue
