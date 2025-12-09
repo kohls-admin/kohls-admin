@@ -15,17 +15,21 @@ local Title = {
 	definition = {
 		vip = {
 			color = Color3.fromHex("#fc0"),
+			assetId = { 110019084552349, 115444443724463 },
 			gamepass = 5411126,
 		},
 		patron = {
 			color = Color3.fromHex("#0ff"),
+			assetId = 115403290087767,
 			gamepass = 938480383,
 		},
 		elite = {
 			color = Color3.fromHex("#0bf"),
+			assetId = 130880915606069,
 			gamepass = 939618404,
 		},
 		epic = {
+			assetId = 84349662672781,
 			gamepass = 936146448,
 			rotation = 0,
 			getValue = function(elapsed: number)
@@ -44,6 +48,7 @@ local Title = {
 			end,
 		},
 		hero = {
+			assetId = 129439770798699,
 			gamepass = 941076536,
 			getValue = function(elapsed: number)
 				elapsed /= 2
@@ -61,6 +66,7 @@ local Title = {
 			end,
 		},
 		legend = {
+			assetId = 132161234381156,
 			gamepass = 941162509,
 			getValue = function(elapsed: number)
 				elapsed /= 2
@@ -78,6 +84,7 @@ local Title = {
 			end,
 		},
 		mythic = {
+			assetId = 89859349616824,
 			gamepass = 941006661,
 			getValue = function(elapsed: number)
 				return ColorSequence.new(Oklab.toRGB(Oklab.fromHCL(Vector3.new((time() / 10) % 1, 0.4, 1))))
@@ -87,6 +94,7 @@ local Title = {
 			end,
 		},
 		eternal = {
+			assetId = 102980653148583,
 			gamepass = 983235767,
 			rotation = 0,
 			getValue = function(elapsed: number)

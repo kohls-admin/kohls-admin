@@ -192,14 +192,37 @@ if Util.Service.Run:IsServer() then
 			if definition.ownerCache[player.UserId] == false then
 				return
 			else
-				local okGamePass, result = Util.Retry(function()
-					return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, definition.gamepass)
-				end)
-				if okGamePass then
-					definition.ownerCache[player.UserId] = result
+				local owned = false
+				if definition.assetId then
+					local assets = if typeof(definition.assetId) == "table"
+						then definition.assetId
+						else { definition.assetId }
+					for _, assetId in assets do
+						if not (player and player.Parent) then
+							return
+						end
+						local okAsset, result = Util.Retry(function()
+							return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
+						end)
+						if okAsset then
+							definition.ownerCache[player.UserId] = result
+							if result then
+								owned = true
+								break
+							end
+						end
+					end
 				end
-				if not (okGamePass and result) then
-					return
+				if not owned and definition.gamepass and player and player.Parent then
+					local okGamePass, result = Util.Retry(function()
+						return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, definition.gamepass)
+					end)
+					if okGamePass then
+						definition.ownerCache[player.UserId] = result
+					end
+					if not (okGamePass and result) then
+						return -- early return if they don't own
+					end
 				end
 			end
 		end
@@ -325,6 +348,20 @@ if Util.Service.Run:IsServer() then
 				ownedCache[player.UserId] = ownedUGC
 			end
 			ownedUGC[assetId] = true
+
+			for title, definition in Title.definition do
+				if definition.assetId then
+					local assets = if type(definition.assetId) == "table"
+						then definition.assetId
+						else { definition.assetId }
+					for _, id in assets do
+						if id == assetId then
+							definition.ownerCache[player.UserId] = true
+							break
+						end
+					end
+				end
+			end
 		end
 	end)
 
