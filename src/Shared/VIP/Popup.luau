@@ -10,8 +10,11 @@ if RunService:IsServer() then
 	promptBulkPurchaseEvent.Name = "PromptBulkPurchaseEvent"
 	promptBulkPurchaseEvent.Parent = ReplicatedStorage
 
-	promptBulkPurchaseEvent.OnServerEvent:Connect(function(player, items)
-		MarketplaceService:PromptBulkPurchase(player, items, {})
+	promptBulkPurchaseEvent.OnServerEvent:Connect(function(player, id)
+		if type(id) == "number" then
+			local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(id) } }
+			MarketplaceService:PromptBulkPurchase(player, items, {})
+		end
 	end)
 	return false
 end
@@ -429,8 +432,8 @@ local saleProductId = "115444443724463"
 
 local productId = originalProductId
 
-local function promptBulkPurchase(id: number)
-	promptBulkPurchaseEvent:FireServer({ { Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(id) } })
+local function promptBulkPurchase(id: number | string)
+	promptBulkPurchaseEvent:FireServer(tonumber(id))
 end
 
 local function promptPurchaseVIP()
@@ -441,8 +444,8 @@ task.spawn(function()
 	while not shared._K_INTERFACE do
 		task.wait()
 	end
-	shared._K_INTERFACE.PromptPurchaseVIP = promptPurchaseVIP
 	shared._K_INTERFACE.PromptBulkPurchase = promptBulkPurchase
+	shared._K_INTERFACE.PromptPurchaseVIP = promptPurchaseVIP
 
 	shared._K_INTERFACE.UI.new "Tooltip" {
 		Parent = favorite,
