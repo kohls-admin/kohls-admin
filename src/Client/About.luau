@@ -10,6 +10,53 @@ function About.new(_K)
 		Name = "About",
 	}
 
+	local STUDIO_DEBUG = _K.DEBUG and _K.IsStudio
+
+	_K.client.AllowThirdPartySales = not STUDIO_DEBUG
+	_K.client.lastAttemptedPurchase = false
+
+	local KA_MODEL_ID = 172732271
+
+	local purchaseLink = UI.new "Link" {
+		LayoutOrder = 10,
+		Text = "create.roblox.com/store/asset/" .. KA_MODEL_ID,
+	}
+
+	local purchaseKADialog
+	purchaseKADialog = UI.new "Dialog" {
+		Parent = UI.LayerTop,
+		Title = "Get Kohl's Admin",
+		Text = "Copy the link below to continue.",
+		Visible = false,
+		Draggable = true,
+		ExitButton = true,
+		BackgroundTransparency = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		Size = UDim2.new(0, 320, 0, 0),
+		Modal = true,
+		ZIndex = 1000,
+		Close = function()
+			_K.client.lastAttemptedPurchase = false
+			purchaseKADialog.Visible(false)
+		end,
+
+		purchaseLink,
+	}
+
+	_K.client.purchaseKADialog = purchaseKADialog
+
+	local con
+	con = _K.Service.Log.MessageOut:Connect(function(message, messageType)
+		if messageType == Enum.MessageType.MessageWarning and string.find(message, "AllowThirdPartySales") then
+			con:Disconnect()
+			_K.client.AllowThirdPartySales = false
+			if _K.client.lastAttemptedPurchase then
+				purchaseKADialog.Visible(true)
+			end
+		end
+	end)
+
 	task.defer(function()
 		local ctaLabel = UI.new "TextLabel" {
 			AutoLocalize = false,
@@ -30,7 +77,6 @@ function About.new(_K)
 			},
 		}
 
-		local adminModelId = 172732271
 		local adminModelButton = UI.new "Button" {
 			Name = "adminModelButton",
 			AutomaticSize = Enum.AutomaticSize.X,
@@ -60,17 +106,12 @@ function About.new(_K)
 			},
 
 			Activated = function()
-				_K.client.lastAttemptedPurchase = adminModelId
-				_K.client.purchaseDialog.Title("Get Kohl's Admin")
-				_K.client.purchaseDialog.Text(
-					"Copy the link below to continue.\n<font transparency='0.5'>Rejoin after your purchase to get your perks!</font>"
-				)
-				_K.client.purchaseLink._instance.Text = "create.roblox.com/store/asset/" .. adminModelId
+				_K.client.lastAttemptedPurchase = KA_MODEL_ID
 				if _K.client.AllowThirdPartySales then
-					_K.client.purchaseDialog.Visible(false)
-					_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, adminModelId)
+					purchaseKADialog.Visible(false)
+					_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, KA_MODEL_ID)
 				else
-					_K.client.purchaseDialog.Visible(true)
+					purchaseKADialog.Visible(true)
 				end
 			end,
 		}
@@ -110,7 +151,7 @@ function About.new(_K)
 					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 					ImageColor3 = Color3.new(1, 0.8, 0),
 					Activated = function()
-						_K.Service.AvatarEditor:PromptSetFavorite(adminModelId, 1, true)
+						_K.Service.AvatarEditor:PromptSetFavorite(KA_MODEL_ID, 1, true)
 					end,
 					UI.new "Tooltip" {
 						Text = "Add to Favorites",
@@ -123,15 +164,15 @@ function About.new(_K)
 
 		task.defer(function()
 			local ok, owned = _K.Util.Retry(function()
-				return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, adminModelId)
+				return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, KA_MODEL_ID)
 			end)
-			if ok and owned then
+			if ok and owned and not STUDIO_DEBUG then
 				adminModelButton._instance.Visible = false
 				UI.new "Link" {
 					Parent = adminModelFrame,
 					LayoutOrder = 3,
 					Name = "CatalogLink",
-					Text = "create.roblox.com/store/asset/" .. adminModelId,
+					Text = "create.roblox.com/store/asset/" .. KA_MODEL_ID,
 				}
 				ctaLabel.Text = "<b>Love the Power?</b>\nDrop a Like 👍 and Favorite ⭐ to support us!"
 			end

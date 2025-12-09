@@ -9,9 +9,6 @@ function Market.new(_K)
 	}
 
 	task.defer(function()
-		local thirdPartyText = "Copy the link below to continue."
-			.. "\n<font transparency='0.5'>Rejoin after your purchase to get your perks!</font>"
-
 		local donationLevel = _K.LocalPlayer:GetAttribute("_KDonationLevel")
 
 		local equippedUGC = {}
@@ -39,52 +36,6 @@ function Market.new(_K)
 
 		local STUDIO_DEBUG = _K.DEBUG and _K.IsStudio
 		local DEBUG_SHOW_PRICES = STUDIO_DEBUG
-
-		_K.client.AllowThirdPartySales = not STUDIO_DEBUG
-		_K.client.lastAttemptedPurchase = false
-
-		local purchaseLink = UI.new "Link" {
-			LayoutOrder = 10,
-			Text = "roblox.com/game-pass/5391355/",
-		}
-
-		local purchaseDialog
-		purchaseDialog = UI.new "Dialog" {
-			Parent = UI.LayerTop,
-			Title = "Kohl's Admin Purchase",
-			Text = thirdPartyText,
-			Visible = false,
-			Draggable = true,
-			ExitButton = true,
-			BackgroundTransparency = 0,
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, 0, 0.5, 0),
-			Size = UDim2.new(0, 320, 0, 0),
-			Modal = true,
-			ZIndex = 1000,
-			Close = function()
-				_K.client.lastAttemptedPurchase = false
-				purchaseDialog.Visible(false)
-			end,
-
-			purchaseLink,
-		}
-		_K.client.purchaseDialog = purchaseDialog
-		_K.client.purchaseLink = purchaseLink
-
-		local function promptThirdPartyGamePassDialog(passId, passName)
-			_K.client.lastAttemptedPurchase = passId
-			purchaseDialog.Title("Buy " .. passName)
-			purchaseDialog.Text(thirdPartyText)
-			purchaseLink._instance.Text = "roblox.com/game-pass/" .. passId
-			if _K.client.AllowThirdPartySales then
-				purchaseDialog.Visible(false)
-				_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, passId)
-			else
-				purchaseDialog.Visible(true)
-			end
-		end
-		_K.client.promptThirdPartyGamePassDialog = promptThirdPartyGamePassDialog
 
 		local function updateAssetPriceText(label: TextLabel, assetId: number, ownedText: string?)
 			local success, owned = _K.Util.Retry(function()
@@ -154,17 +105,6 @@ function Market.new(_K)
 				end
 			end
 		end
-
-		local con
-		con = _K.Service.Log.MessageOut:Connect(function(message, messageType)
-			if messageType == Enum.MessageType.MessageWarning and string.find(message, "AllowThirdPartySales") then
-				con:Disconnect()
-				_K.client.AllowThirdPartySales = false
-				if _K.client.lastAttemptedPurchase then
-					purchaseDialog.Visible(true)
-				end
-			end
-		end)
 
 		-- CUSTOM UGC
 
