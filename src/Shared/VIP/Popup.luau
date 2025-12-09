@@ -526,6 +526,7 @@ MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player, status, r
 	if status == Enum.MarketplaceBulkPurchasePromptStatus.Completed then
 		shared._K_INTERFACE.client.VIPNotification = function() end
 		vip.Visible = false
+		game:GetService("AvatarEditorService"):PromptSetFavorite(17873329124, 1, true)
 	end
 end)
 
