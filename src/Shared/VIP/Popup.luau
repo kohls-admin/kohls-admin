@@ -443,6 +443,11 @@ task.spawn(function()
 	end
 	shared._K_INTERFACE.PromptPurchaseVIP = promptPurchaseVIP
 	shared._K_INTERFACE.PromptBulkPurchase = promptBulkPurchase
+
+	shared._K_INTERFACE.UI.new "Tooltip" {
+		Parent = favorite,
+		Text = "Add to Favorites",
+	}
 end)
 
 local function updatePrice(label: TextLabel, id: number)
