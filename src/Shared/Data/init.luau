@@ -130,6 +130,14 @@ local function getLogsSize(logs)
 	return size
 end
 
+local function serLogs(logs)
+	local ser, err = Z.ser(Data.Schema.logs, logs)
+	if not ser then
+		error(err)
+	end
+	return ser
+end
+
 local updatingLogs = false
 local function updateLogs()
 	if updatingLogs then
@@ -152,13 +160,13 @@ local function updateLogs()
 
 	Data.Store.updateAsync("Logs_" .. math.random(4), function(value)
 		if not value or type(value) ~= "buffer" then
-			return Z.ser(Data.Schema.logs, saveLogs)
+			return serLogs(saveLogs)
 		end
 
 		local ok, result = pcall(Z.des :: any, Data.Schema.logs, value)
 		if not ok then
 			warn(result)
-			return Z.ser(Data.Schema.logs, saveLogs)
+			return serLogs(saveLogs)
 		end
 
 		local logs = result
@@ -184,10 +192,7 @@ local function updateLogs()
 
 		Util.Table.mergeList(logs, saveLogs)
 
-		local result, err = Z.ser(Data.Schema.logs, logs)
-		assert(result, err)
-
-		return result
+		return serLogs(logs)
 	end)
 
 	updatingLogs = false
