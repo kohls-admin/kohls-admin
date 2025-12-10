@@ -604,8 +604,7 @@ return {
 			if not context.env.connections[player] then
 				context.env.connections[player] = context.fromPlayer
 					:GetPropertyChangedSignal("Character")
-					:Connect(function()
-						context.env.connections[player]:Disconnect()
+					:Once(function()
 						context.env.connections[player] = nil
 						if humanoid and humanoid.Health > 0 then
 							local old = character:GetPivot()
