@@ -54,11 +54,11 @@ return function(_K)
 			if not id then
 				return false, "Invalid group: " .. arg
 			end
-			if player:IsInGroup(id) then
+			if player:IsInGroupAsync(id) then
 				if not rank then
 					return true
 				end
-				local playerRank = player:GetRankInGroup(id)
+				local playerRank = player:GetRankInGroupAsync(id)
 				if not playerRank then
 					return false
 				end
