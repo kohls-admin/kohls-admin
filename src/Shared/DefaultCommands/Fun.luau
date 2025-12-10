@@ -606,7 +606,7 @@ return {
 					:GetPropertyChangedSignal("Character")
 					:Once(function()
 						context.env.connections[player] = nil
-						if humanoid and humanoid.Health > 0 then
+						if player and player.Parent and humanoid and humanoid.Health > 0 then
 							local old = character:GetPivot()
 							player:LoadCharacterAsync()
 							local newCharacter = player.Character
