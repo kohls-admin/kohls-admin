@@ -516,7 +516,7 @@ close.Activated:Connect(function()
 	if thread and coroutine.status(thread) == "suspended" then
 		task.cancel(thread)
 	end
-	thread = task.delay(16 + 2 ^ (5 + count), shared._K_INTERFACE.client.VIPNotification, true)
+	thread = task.delay(2 ^ (6 + count), shared._K_INTERFACE.client.VIPNotification, true)
 end)
 
 MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player, status, results)
