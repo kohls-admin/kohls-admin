@@ -83,7 +83,7 @@ function Class.new(properties: Properties?)
 			}
 
 			return Vector2.new(
-				UI.TextService:GetTextBoundsAsync(params).X + UI.Theme.Padding().Offset * 2,
+				UI.retryGetTextBoundsAsync(params).X + UI.Theme.Padding().Offset * 2,
 				UI.Theme.FontSize + UI.Theme.Padding().Offset * 2
 			)
 		end,

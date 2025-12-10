@@ -202,7 +202,7 @@ function Members.new(_K)
 
 		for _, role in _K.Data.roles do
 			params.Text = role.name
-			maxWidth = math.max(maxWidth, UI.TextService:GetTextBoundsAsync(params).X)
+			maxWidth = math.max(maxWidth, UI.retryGetTextBoundsAsync(params).X)
 		end
 
 		local cloudWidth = if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles") then size + padding else 0

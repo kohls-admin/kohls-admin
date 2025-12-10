@@ -29,10 +29,6 @@ local function getName(choice)
 	return name
 end
 
-local function getTextBoundsSafe(params)
-	return pcall(UI.TextService.GetTextBoundsAsync, UI.TextService, params)
-end
-
 local Class = {}
 Class.__index = Class
 setmetatable(Class, BaseClass)
@@ -68,15 +64,7 @@ function Class.new(properties: Properties?)
 			params.Font = font
 			params.Text = getName(choice)
 
-			local attempt = 1
-			local ok, bounds = getTextBoundsSafe(params)
-			while not ok do
-				task.wait(2 ^ attempt)
-				attempt += 1
-				ok, bounds = getTextBoundsSafe(params)
-			end
-
-			maxWidth = math.max(maxWidth, math.ceil(bounds.X))
+			maxWidth = math.max(maxWidth, math.ceil(UI.retryGetTextBoundsAsync(params).X))
 		end
 
 		return UDim2.fromOffset(maxWidth + padding * 2 + size, size + padding)

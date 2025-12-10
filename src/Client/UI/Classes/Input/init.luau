@@ -29,7 +29,7 @@ local function bytePositionToWidth(text, size, font, richText, bytePosition)
 	params.Text = string.sub(text, 1, bytePosition - 1)
 	params.Width = math.huge
 
-	return math.ceil(UI.TextService:GetTextBoundsAsync(params).X)
+	return math.ceil(UI.retryGetTextBoundsAsync(params).X)
 end
 
 local function updateSelection(selection, display, input, inputOffset, cursorWidth)

@@ -310,7 +310,7 @@ function Class.new(properties: Properties?)
 				params.Text = nameState()
 				params.Font = UI.Theme.FontBold()
 				params.Size = UI.Theme.FontSize()
-				local width = UI.TextService:GetTextBoundsAsync(params).X + padding * 2
+				local width = UI.retryGetTextBoundsAsync(params).X + padding * 2
 				return UDim2.new(0, math.ceil(width), 0, UI.Theme.FontSize + padding * 2)
 			end,
 			Label = function()

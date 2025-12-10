@@ -1,6 +1,5 @@
 local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
-local TextService = game:GetService("TextService")
 
 local _K = require(script.Parent.Parent)
 local CompletionData = require(script.CompletionData)
@@ -291,7 +290,7 @@ local function formatSuggestionLabel(label, display, query, invalid)
 	params.Width = math.huge
 	params.RichText = true
 
-	return TextService:GetTextBoundsAsync(params).X + UI.Theme.PaddingDouble._value.Offset
+	return UI.retryGetTextBoundsAsync(params).X + UI.Theme.PaddingDouble._value.Offset
 end
 
 local suggestionUpdating
@@ -571,7 +570,7 @@ updateCompletion = function()
 
 	-- move tooltip to start of query
 	-- FIX: adjust with inputoffset
-	local argX = TextService:GetTextBoundsAsync(params).X
+	local argX = UI.retryGetTextBoundsAsync(params).X
 	TooltipFrame.Position = UDim2.new(
 		0,
 		math.floor(argX)

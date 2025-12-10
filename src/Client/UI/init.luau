@@ -346,6 +346,17 @@ function UI.sinkInput(x: number, y: number, object: GuiObject): boolean
 	return false
 end
 
+function UI.retryGetTextBoundsAsync(params)
+	local attempt = 1
+	local ok, bounds = pcall(TextService.GetTextBoundsAsync, TextService, params)
+	while not ok do
+		task.wait(2 ^ attempt)
+		attempt += 1
+		ok, bounds = pcall(TextService.GetTextBoundsAsync, TextService, params)
+	end
+	return bounds
+end
+
 --- Helper function for defining Flux state defaults
 function UI.makeStatefulDefaults(default: Type.Dict<any>, definition: Type.Dict<any>?)
 	for key, value in default do
