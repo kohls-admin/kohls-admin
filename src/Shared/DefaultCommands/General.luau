@@ -1274,6 +1274,12 @@ return {
 			wire.SourceInstance = audioTextToSpeech
 			wire.TargetInstance = deviceOutput
 
+			audioTextToSpeech.Ended:Once(function()
+				audioTextToSpeech:Destroy()
+				deviceOutput:Destroy()
+				wire:Destroy()
+			end)
+
 			audioTextToSpeech:Play()
 		end,
 	},
