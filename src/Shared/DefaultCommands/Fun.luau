@@ -1259,7 +1259,7 @@ return {
 					effect.Opacity = 0.1
 					effect.RiseVelocity = 0
 					effect.Parent = humanoid.RootPart
-					task.delay(duration or 8, removeEffect, effect)
+					task.delay(math.clamp(duration or 8, 0, 999), removeEffect, effect)
 					local dealt = 0
 					repeat
 						local hit = math.min(damage / (duration or 8) * task.wait(0.8), damage - dealt)
