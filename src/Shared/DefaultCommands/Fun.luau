@@ -608,7 +608,7 @@ return {
 						context.env.connections[player] = nil
 						if player and player.Parent and humanoid and humanoid.Health > 0 then
 							local old = character:GetPivot()
-							player:LoadCharacterAsync()
+							player:LoadCharacter()
 							local newCharacter = player.Character
 							newCharacter:PivotTo(old)
 							context._K.Remote.Refresh:FireClient(player)

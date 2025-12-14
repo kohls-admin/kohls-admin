@@ -1189,7 +1189,7 @@ return {
 		runClient = function(context, player: Player, groupId: number)
 			context._K.Notify({
 				From = player.UserId,
-				Text = `<b>Group Rank:</b> [{player:GetRankInGroupAsync(groupId)}] {player:GetRoleInGroupAsync(groupId)}`,
+				Text = `<b>Group Rank:</b> [{player:GetRankInGroup(groupId)}] {player:GetRoleInGroup(groupId)}`,
 			})
 		end,
 	},

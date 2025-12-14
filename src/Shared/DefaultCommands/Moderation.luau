@@ -453,7 +453,7 @@ return {
 						context.env.remote:FireClient(player, character)
 					else -- fix for PlayerCharacterDestroyBehaviour
 						local old = character:GetPivot()
-						player:LoadCharacterAsync()
+						player:LoadCharacter()
 						player.Character:PivotTo(old)
 						context._K.Remote.Refresh:FireClient(player)
 						character:Destroy()
@@ -2559,7 +2559,7 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				player:LoadCharacterAsync()
+				player:LoadCharacter()
 			end
 		end,
 	},
@@ -2594,7 +2594,7 @@ return {
 			for _, player in players do
 				if player and player.Character then
 					local old = player.Character:GetPivot()
-					player:LoadCharacterAsync()
+					player:LoadCharacter()
 					player.Character:PivotTo(old)
 					context._K.Remote.Refresh:FireClient(player)
 				end
@@ -2912,7 +2912,7 @@ return {
 		run = function(context, players, team)
 			for _, player in players do
 				player.Team = team
-				player:LoadCharacterAsync()
+				player:LoadCharacter()
 			end
 		end,
 	},
@@ -2935,8 +2935,8 @@ return {
 		},
 		run = function(context, player1, player2)
 			player1.Team, player2.Team = player2.Team, player1.Team
-			player1:LoadCharacterAsync()
-			player2:LoadCharacterAsync()
+			player1:LoadCharacter()
+			player2:LoadCharacter()
 		end,
 	},
 	{

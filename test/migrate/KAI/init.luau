@@ -535,7 +535,7 @@ function f.toPlayer(player: Player, name: string, id: number?): { Player }
 			elseif d:find("g") == 1 and d:match("%d+$") and d:match("%d+$") ~= d then
 				local gp = tonumber(d:match("%d+$"))
 				for i, v in f.Players() do
-					if v:IsInGroupAsync(gp) then
+					if v:IsInGroup(gp) then
 						selected[#selected + 1] = v
 					end
 				end
@@ -882,8 +882,8 @@ function f.isGroupAdmin(player: Player): number?
 	local newPower = 0
 	for groupId, ranks in Set.GroupAdmin do
 		groupId = tonumber(groupId)
-		if player:IsInGroupAsync(groupId) then
-			local currentRank = player:GetRankInGroupAsync(groupId)
+		if player:IsInGroup(groupId) then
+			local currentRank = player:GetRankInGroup(groupId)
 			for rank, rankPower in ranks do
 				rank = tonumber(rank)
 				if (Set.GroupAdminExactRank ~= true and currentRank >= rank) or currentRank == rank then
@@ -1456,7 +1456,7 @@ end
 -- Donor Stuff
 function f.pe(plr: Player)
 	if plr and plr.Character and FindChild(plr.Character, "HumanoidRootPart") then
-		local nrml = (plr:GetRankInGroupAsync(451053) or 0) <= 1
+		local nrml = (plr:GetRankInGroup(451053) or 0) <= 1
 		local a, b = nrml and 176111410, nrml and Color3.new(1, 1, 1)
 		if FindChild(plr.Character.HumanoidRootPart, "KPe") then
 			plr.Character.HumanoidRootPart.KPe:Destroy()
@@ -1624,7 +1624,7 @@ function f.Load(plr: Player)
 	new("BoolValue")({ Parent = plr, Name = "KShine", Value = false })
 	local donorValue = 0
 	if
-		(plr:GetRankInGroupAsync(451053) or 0) > 1
+		(plr:GetRankInGroup(451053) or 0) > 1
 		or f.Has(plr, VIP_UGC_SALE_ID)
 		or f.Has(plr, VIP_UGC_ID)
 		or f.HasPass(plr, 5411126)
@@ -1712,7 +1712,7 @@ function ServerEvent(plr: Player, event, arguments, uID)
 	elseif event == "KRefresh" then
 		if KRefresh[plr] then
 			KRefresh[plr] = nil
-			plr:LoadCharacterAsync()
+			plr:LoadCharacter()
 		end
 	elseif event == "KCmdBar" then
 		f.Chatted(plr, arguments, 1)
@@ -3007,13 +3007,13 @@ function LoadCommands()
 		{ "player", "number" },
 		function(pl, args)
 			for i, plr in args[1] do
-				if not (plr and plr:IsInGroupAsync(args[2])) then
+				if not (plr and plr:IsInGroup(args[2])) then
 					return
 				end
 				f.Msg(pl, {
 					ScriptName,
 					plr.DisplayName .. "'s Group Rank",
-					"[" .. plr:GetRankInGroupAsync(args[2]) .. "] " .. plr:GetRoleInGroupAsync(args[2]),
+					"[" .. plr:GetRankInGroup(args[2]) .. "] " .. plr:GetRoleInGroup(args[2]),
 				}, pl)
 			end
 		end
@@ -3317,7 +3317,7 @@ function LoadCommands()
 	f.addCommand({ "respawn", "spawn" }, { "Respawns a player.", "Kohl" }, 2, { "player" }, function(pl, args)
 		for i, plr in args[1] do
 			if plr and f.Auth(pl, plr) then
-				plr:LoadCharacterAsync()
+				plr:LoadCharacter()
 			end
 		end
 	end)
@@ -4318,7 +4318,7 @@ function LoadCommands()
 				for i, plr in args[1] do
 					if plr and f.Auth(pl, plr) then
 						plr.CharacterAppearanceId = args[2]
-						plr:LoadCharacterAsync()
+						plr:LoadCharacter()
 					end
 				end
 			end
@@ -4327,7 +4327,7 @@ function LoadCommands()
 			for i, plr in args[1] do
 				if plr and f.Auth(pl, plr) then
 					plr.CharacterAppearanceId = plr.UserId
-					plr:LoadCharacterAsync()
+					plr:LoadCharacter()
 				end
 			end
 		end)
@@ -5413,7 +5413,7 @@ function LoadCommands()
 			{ "player", "number/", "color/" },
 			function(pl, args)
 				local ex = args[2] or args[3]
-				local nrml = (pl:GetRankInGroupAsync(451053) or 0) <= 1
+				local nrml = (pl:GetRankInGroup(451053) or 0) <= 1
 				args[2], args[3] = args[2] or nrml and 176111410, args[3] or nrml and Color3.new(1, 1, 1)
 				for i, plr in args[1] do
 					if plr and plr.Character and FindChild(plr.Character, "HumanoidRootPart") then

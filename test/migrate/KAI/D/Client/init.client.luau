@@ -609,7 +609,7 @@ cm.Join.Activated:Connect(function()
 	end
 end)
 task.spawn(function()
-	local ok, result = pcall(plr.IsInGroupAsync, plr, 3403354)
+	local ok, result = pcall(plr.IsInGroup, plr, 3403354)
 	if ok and result then
 		cm.Join:Destroy()
 	end
