@@ -84,11 +84,11 @@ return {
 	prefix = { ";", ":" }, -- Command trigger characters
 	splitKey = "%s", --       Command/argument separator
 
-	commandBarRank = 0, --       Minimum rank for Command Bar (false = disable)
-	dashboardRank = 0, --        Minimum rank for Dashboard (false = disable)
-	commandsButtonRank = 0, --   Minimum rank for Dashboard button (false = disable)
-	dashboardButtonRank = 1, --  Minimum rank for Dashboard button (false = disable)
-	joinNotificationRank = 1, -- Minimum rank for join notifications (false = disable)
+	commandBarRank = 0, --       Minimum role rank for Command Bar (false = disable)
+	dashboardRank = 0, --        Minimum role rank for Dashboard (false = disable)
+	commandsButtonRank = 0, --   Minimum role rank for Dashboard button (false = disable)
+	dashboardButtonRank = 1, --  Minimum role rank for Dashboard button (false = disable)
+	joinNotificationRank = 1, -- Minimum role rank for join notifications (false = disable)
 	onlyShowUsableCommands = true, -- Show only purchasable/usable commands
 
 	welcomeBadgeId = 0, -- Badge for new players (0 = none)
@@ -120,6 +120,7 @@ return {
 	},
 
 	-- 🎭 ROLE CONFIGURATION
+	-- Role ranks are defined by their position in the array - 1, unless explicitly defined like the creator role
 	roles = {
 		{ -- Default Role
 			_key = "everyone", -- ⚠️ DO NOT CHANGE
