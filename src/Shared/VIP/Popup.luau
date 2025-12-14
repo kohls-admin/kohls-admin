@@ -219,35 +219,35 @@ uIListLayout4.Parent = creator
 
 creator.Parent = frame
 
-local title = Instance.new("Frame")
-title.Name = "Title"
+local titleFrame = Instance.new("Frame")
+titleFrame.Name = "Title"
+titleFrame.BackgroundTransparency = 1
+titleFrame.Size = UDim2.new(1, 0, 0, 40)
+
+local title = Instance.new("TextLabel")
+title.Name = "Header"
 title.BackgroundTransparency = 1
-title.Size = UDim2.new(1, 0, 0, 40)
+title.FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+title.Size = UDim2.fromScale(1, 1)
+title.Text = ""
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 24
+title.TextTransparency = 0.25
+title.TextWrapped = true
+title.Visible = true
+title.Parent = titleFrame
 
-local sale = Instance.new("TextLabel")
-sale.Name = "Sale"
-sale.BackgroundTransparency = 1
-sale.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-sale.Size = UDim2.fromScale(1, 1)
-sale.Text = ""
-sale.TextColor3 = Color3.new(1, 1, 1)
-sale.TextSize = 24
-sale.TextTransparency = 0.25
-sale.TextWrapped = true
-sale.Visible = false
-sale.Parent = title
-
-local bG = Instance.new("Frame")
-bG.Name = "BG"
-bG.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-bG.BackgroundTransparency = 0.5
-bG.Size = UDim2.fromScale(1, 2)
-bG.ZIndex = 0
+local titleBG = Instance.new("Frame")
+titleBG.Name = "BG"
+titleBG.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+titleBG.BackgroundTransparency = 0.5
+titleBG.Size = UDim2.fromScale(1, 2)
+titleBG.ZIndex = 0
 
 local uICorner1 = Instance.new("UICorner")
 uICorner1.Name = "UICorner"
 uICorner1.CornerRadius = UDim.new(0, 12)
-uICorner1.Parent = bG
+uICorner1.Parent = titleBG
 
 local uIGradient = Instance.new("UIGradient")
 uIGradient.Name = "UIGradient"
@@ -256,11 +256,11 @@ uIGradient.Transparency = NumberSequence.new({
 	NumberSequenceKeypoint.new(0, 0),
 	NumberSequenceKeypoint.new(1, 1),
 })
-uIGradient.Parent = bG
+uIGradient.Parent = titleBG
 
-bG.Parent = title
+titleBG.Parent = titleFrame
 
-title.Parent = frame
+titleFrame.Parent = frame
 
 local buyFrame = Instance.new("Frame")
 buyFrame.Name = "BuyFrame"
@@ -465,23 +465,21 @@ task.spawn(function()
 	productId = saleProductId
 	favorite.Visible = false
 	originalPrice.Visible = true
-	sale.Visible = true
-	buy.Price.Text = "399"
-	bG.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+	title.Visible = true
+	buy.Price.Text = "479"
 	task.spawn(updatePrice, buy.Price, productId)
 
 	repeat
 		task.wait(0.5)
 		duration = (15 * 60) - (workspace:GetServerTimeNow() - initialJoin)
-		sale.Text = `20% OFF for {string.format("%02d:%02d", duration // 60, duration % 60)}`
+		title.Text = `40% OFF for {string.format("%02d:%02d", duration // 60, duration % 60)}`
 	until duration < 0
 
 	productId = originalProductId
 	favorite.Visible = true
 	originalPrice.Visible = false
-	sale.Visible = false
-	buy.Price.Text = "499"
-	bG.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	title.Visible = false
+	buy.Price.Text = "799"
 	task.spawn(updatePrice, buy.Price, productId)
 end)
 
