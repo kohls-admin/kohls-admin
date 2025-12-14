@@ -178,7 +178,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			cooldown, limit = role.limits.cooldown, role.limits.commands
 		end
 		if (commandLimits[from] or 0) > (limit or math.huge) then
-			_K.systemNotify(from, `<b>Command usage on cooldown!</b>`, true)
+			_K.alert(from, `<b>Command usage on cooldown!</b>`, true)
 			return false
 		end
 		if #rawText > 1024 and not _K.Auth.hasRestrictedRole(from) then
@@ -215,7 +215,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 						table.insert(notRan, command.alias)
 					end
 					local appendText = if #notRan == 0 then "" else `\nCommands not ran: {table.concat(notRan, ", ")}`
-					_K.systemNotify(from, `<b>Command limit reached!</b>{appendText}`, true)
+					_K.alert(from, `<b>Command limit reached!</b>{appendText}`, true)
 					break
 				end
 			end

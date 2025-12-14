@@ -186,12 +186,12 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 end
 _K.Logger.logs = _K.Data.logs
 
-function _K.systemNotify(to: number | Player, text: string, isError: boolean?)
+function _K.alert(to: number | Player, text: string, isError: boolean?)
 	if type(to) == "number" then
 		to = _K.Service.Players:GetPlayerByUserId(to)
 	end
 	if to then
-		local props = { Text = text, From = "_K" }
+		local props = { Text = text, From = if isError then "_K" else nil }
 		if isError then
 			props.TextColor3 = Color3.new(1, 0, 0)
 			props.Sound = "Call_Leave"
