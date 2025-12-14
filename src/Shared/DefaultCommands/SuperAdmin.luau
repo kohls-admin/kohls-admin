@@ -1,6 +1,6 @@
 -- dangerous commands restricted to superadmins
 
-local BadgeService = game:GetService("BadgeService")
+local Util = require(script.Parent.Parent.Util)
 
 return {
 	{
@@ -21,20 +21,38 @@ return {
 		},
 
 		run = function(context, players, badge)
-			for _, player in players do
-				if BadgeService:UserHasBadgeAsync(player.UserId, badge) then
-					context._K.Remote.Notify:FireClient(context.fromPlayer, {
-						Text = `{player.Name} already has the badge!`,
-					})
-				else
-					local success, err = BadgeService:AwardBadge(player.UserId, badge)
+			local service = context._K.Service.Badge
+			local tasks = Util.Tasks.new()
 
-					context._K.Remote.Notify:FireClient(
-						context.fromPlayer,
-						{ Text = if success then "Badge awarded!" else `Failed to award badge: {err}` }
-					)
+			for _, player in players do
+				tasks:add(function()
+					local ok, result = Util.Retry(service.UserHasBadgeAsync, 5, 2, service, player.UserId, badge)
+					if not ok then
+						error(result)
+					end
+					if result then
+						context._K.alert(context.fromPlayer, `{player.Name} already has the badge!`)
+						return
+					else
+						local ok2, result2 = Util.Retry(service.AwardBadge, 5, 2, service, player.UserId, badge)
+						if not ok2 then
+							error(result2)
+						end
+						return result2
+					end
+				end)
+			end
+
+			local resultsList = tasks:wait()
+			for _, results in resultsList do
+				local ok, result = results[1], results[2]
+				if not ok then
+					return `Failed to award badges: {result}`
 				end
 			end
+
+			context._K.alert(context.fromPlayer, `Badges awarded!`)
+			return
 		end,
 	},
 	{
