@@ -1,25 +1,13 @@
 local MarketplaceService = game:GetService("MarketplaceService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local LocalPlayer = game.Players.LocalPlayer
-local promptBulkPurchaseEvent
 
 if RunService:IsServer() then
-	promptBulkPurchaseEvent = Instance.new("RemoteEvent")
-	promptBulkPurchaseEvent.Name = "PromptBulkPurchaseEvent"
-	promptBulkPurchaseEvent.Parent = ReplicatedStorage
-
-	promptBulkPurchaseEvent.OnServerEvent:Connect(function(player, id)
-		if type(id) == "number" then
-			local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(id) } }
-			MarketplaceService:PromptBulkPurchase(player, items, {})
-		end
-	end)
 	return false
 end
 
-promptBulkPurchaseEvent = ReplicatedStorage:WaitForChild("PromptBulkPurchaseEvent")
+local promptBulkPurchaseEvent = script.Parent:WaitForChild("PromptBulkPurchaseEvent")
 
 local vip = Instance.new("Frame")
 vip.Name = "VIP"

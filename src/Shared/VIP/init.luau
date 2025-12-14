@@ -4,9 +4,10 @@ local Remote = require(script.Parent:WaitForChild("Remote"))
 local Util = require(script.Parent:WaitForChild("Util"))
 
 local Popup = require(script:WaitForChild("Popup"))
+local Purchasables = require(script:WaitForChild("Purchasables"))
 local Title = require(script:WaitForChild("Title"))
 
-local VIP = { effects = {}, popup = Popup }
+local VIP = { allowedBulkPurchaseIds = {}, effects = {}, popup = Popup, purchasables = Purchasables }
 
 -- vip, supervip, premium
 local gamePassDonations = { 5391359, 5391361, 5411126 }
@@ -25,7 +26,7 @@ local function getDonationLevel(player)
 		return 5
 	end
 
-	for _, ugcId in { 115444443724463, 110019084552349 } do
+	for _, ugcId in Purchasables.chatCommands do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:PlayerOwnsAsset(player, ugcId)
 		end)
@@ -384,6 +385,29 @@ if Util.Service.Run:IsServer() then
 			end
 		end
 	end)
+
+	local promptBulkPurchaseEvent = Instance.new("RemoteEvent")
+	promptBulkPurchaseEvent.Name = "PromptBulkPurchaseEvent"
+	promptBulkPurchaseEvent.Parent = script
+
+	promptBulkPurchaseEvent.OnServerEvent:Connect(function(player, id)
+		if type(id) == "number" and VIP.allowedBulkPurchaseIds[id] then
+			local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(id) } }
+			Util.Service.Marketplace:PromptBulkPurchase(player, items, {})
+		end
+	end)
+
+	for _, id in Purchasables.chatCommands do
+		VIP.allowedBulkPurchaseIds[id] = true
+	end
+
+	for _, data in Purchasables.donations do
+		VIP.allowedBulkPurchaseIds[data.assetId] = true
+	end
+
+	for _, data in Purchasables.scriptedUGC do
+		VIP.allowedBulkPurchaseIds[data.id] = true
+	end
 end
 
 return VIP
