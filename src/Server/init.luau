@@ -79,9 +79,9 @@ return function(_K)
 	end
 
 	local function awardBadge(userId: number, badgeId: number)
-		local badgeInfo = _K.Service.Badge:GetBadgeInfoAsync(badgeId)
-		if badgeInfo.IsEnabled then
-			task.spawn(_K.Util.Retry, _K.Service.Badge.AwardBadge, 5, 2, _K.Service.Badge, badgeId)
+		local ok, result = _K.Util.Retry(_K.Service.Badge.GetBadgeInfoAsync, 5, 2, _K.Service.Badge, badgeId)
+		if ok and result.IsEnabled then
+			_K.Util.Retry(_K.Service.Badge.AwardBadge, 5, 2, _K.Service.Badge, userId, badgeId)
 		end
 	end
 
@@ -587,7 +587,7 @@ return function(_K)
 			player:SetAttribute("_KInitialJoin", initialJoinTime)
 
 			if (_K.Data.settings.welcomeBadgeId or 0) > 0 then
-				task.spawn(_K.Util.Retry, awardBadge, 5, 2, player.UserId, _K.Data.settings.welcomeBadgeId)
+				task.spawn(awardBadge, player.UserId, _K.Data.settings.welcomeBadgeId)
 			end
 
 			task.spawn(_K.log, "joined the server.", "JOIN", player.UserId)
