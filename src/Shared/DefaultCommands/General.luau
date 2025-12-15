@@ -1044,6 +1044,9 @@ return {
 				if not characterCleanup[character] then
 					characterCleanup[character] = {}
 				end
+				if xray._value then
+					character.Parent = xrayModel
+				end
 				table.insert(
 					characterCleanup[character],
 					xray:Connect(function(value)
