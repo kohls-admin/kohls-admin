@@ -729,27 +729,20 @@ return {
 			local env = {
 				currentSubject = nil,
 				spectateConnection = nil,
+				subjectFocus = nil,
+				subjectDistance = nil,
+				watched = nil,
 			}
 
-			local function spectateNetwork()
-				_K.Remote.SpectateSubject:FireServer(workspace.CurrentCamera.CFrame)
-			end
-
-			_K.Remote.SpectateSubject.OnClientEvent:Connect(function(enabled: boolean)
-				if env.spectateConnection then
-					env.spectateConnection:Disconnect()
-				end
-				if enabled then
-					env.spectateConnection = _K.Service.Run.Heartbeat:Connect(spectateNetwork)
+			_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame, distance: number)
+				if env.currentSubject then
+					env.subjectFocus = cframe
+					env.subjectDistance = distance
 				end
 			end)
 
-			_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame)
-				_K.Service.Tween
-					:Create(workspace.CurrentCamera, TweenInfo.new(0.1), {
-						CFrame = cframe,
-					})
-					:Play()
+			_K.Remote.SpectateSubject.OnClientEvent:Connect(function(enabled: boolean)
+				env.watched = enabled
 			end)
 
 			_K.Service.Players.PlayerRemoving:Connect(function(player: Player)
@@ -758,17 +751,80 @@ return {
 				end
 			end)
 
+			local HEAD_OFFSET = Vector3.new(0, 1.5, 0)
+			local R15_HEAD_OFFSET = Vector3.new(0, 1.5, 0)
+			local R15_HEAD_OFFSET_NO_SCALING = Vector3.new(0, 2, 0)
+			local HUMANOID_ROOT_PART_SIZE = Vector3.new(2, 2, 1)
+
+			local function getSubjectCFrame(humanoid: Humanoid)
+				if humanoid and humanoid:IsA("Humanoid") then
+					local humanoidIsDead = humanoid:GetState() == Enum.HumanoidStateType.Dead
+
+					local cameraOffset = humanoid.CameraOffset
+					local followPart = humanoid.RootPart
+
+					if humanoidIsDead then
+						if humanoid.Parent and humanoid.Parent:IsA("Model") then
+							followPart = humanoid.Parent:FindFirstChild("Head") or followPart
+						end
+					end
+
+					if followPart and followPart:IsA("BasePart") then
+						local heightOffset
+						if humanoid.RigType == Enum.HumanoidRigType.R15 then
+							if humanoid.AutomaticScalingEnabled then
+								heightOffset = R15_HEAD_OFFSET
+
+								local rootPart = humanoid.RootPart
+								if followPart == rootPart then
+									local rootPartSizeOffset = (rootPart.Size.Y - HUMANOID_ROOT_PART_SIZE.Y) / 2
+									heightOffset = heightOffset + Vector3.new(0, rootPartSizeOffset, 0)
+								end
+							else
+								heightOffset = R15_HEAD_OFFSET_NO_SCALING
+							end
+						else
+							heightOffset = HEAD_OFFSET
+						end
+
+						if humanoidIsDead then
+							heightOffset = Vector3.zero
+						end
+
+						return followPart.CFrame * CFrame.new(heightOffset + cameraOffset)
+					end
+				end
+
+				return
+			end
+
+			_K.Service.Run.PreRender:Connect(function(step)
+				if env.watched then
+					_K.Remote.SpectateSubject:FireServer(
+						workspace.CurrentCamera.CFrame.Rotation + workspace.CurrentCamera.Focus.Position,
+						(workspace.CurrentCamera.Focus.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+					)
+				end
+				if env.currentSubject and env.subjectFocus then
+					local subjectCFrame = getSubjectCFrame(workspace.CurrentCamera.CameraSubject)
+					local cframe = if subjectCFrame
+						then env.subjectFocus.Rotation + subjectCFrame.Position
+						else env.subjectFocus
+					workspace.CurrentCamera.CFrame = cframe * CFrame.new(0, 0, env.subjectDistance)
+				end
+			end)
+
 			return env
 		end,
 		env = function(_K)
 			local spectators = {}
 			local spectateRemote = _K.Remote.Spectate
-			_K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe: CFrame)
-				if not spectators[player] then
+			_K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe: CFrame, distance: number)
+				if not spectators[player] or typeof(cframe) ~= "CFrame" or typeof(distance) ~= "number" then
 					return
 				end
 				for _, player in spectators[player] do
-					spectateRemote:FireClient(player, cframe)
+					spectateRemote:FireClient(player, cframe, distance)
 				end
 			end)
 
@@ -850,12 +906,13 @@ return {
 					if character then
 						workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")
 					end
-					local spectateEnv = _K.Registry.commands.spectate.env
-					if spectateEnv.spectateConnection then
-						spectateEnv.spectateConnection:Disconnect()
-						spectateEnv.spectateConnection = nil
+					local env = _K.Registry.commands.spectate.env
+					if env.spectateConnection then
+						env.spectateConnection:Disconnect()
+						env.spectateConnection = nil
 					end
-					spectateEnv.currentSubject = nil
+					env.currentSubject = nil
+					env.targetCFrame = nil
 				end,
 			}
 		end,
