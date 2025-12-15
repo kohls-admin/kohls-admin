@@ -485,7 +485,9 @@ end)
 
 buy.Activated:Connect(promptPurchaseVIP)
 favorite.Activated:Connect(function()
-	shared._K_INTERFACE.Service.AvatarEditor:PromptSetFavorite(productId, 1, true)
+	pcall(function()
+		shared._K_INTERFACE.Service.AvatarEditor:PromptSetFavorite(productId, 1, true)
+	end)
 end)
 view.Activated:Connect(function()
 	shared._K_INTERFACE.client.commandsWindowVisible(true)
@@ -512,7 +514,9 @@ MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player, status, r
 	if status == Enum.MarketplaceBulkPurchasePromptStatus.Completed then
 		shared._K_INTERFACE.client.VIPNotification = function() end
 		vip.Visible = false
-		game:GetService("AvatarEditorService"):PromptSetFavorite(17873329124, 1, true)
+		pcall(function()
+			game:GetService("AvatarEditorService"):PromptSetFavorite(17873329124, 1, true)
+		end)
 	end
 end)
 

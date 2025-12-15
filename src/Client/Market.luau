@@ -169,7 +169,9 @@ function Market.new(_K)
 								Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 								ImageColor3 = Color3.new(1, 0.8, 0),
 								Activated = function()
-									_K.Service.AvatarEditor:PromptSetFavorite(ugc.id, 1, true)
+									pcall(function()
+										_K.Service.AvatarEditor:PromptSetFavorite(ugc.id, 1, true)
+									end)
 								end,
 								UI.new "Tooltip" {
 									Text = "Add to Favorites",
@@ -683,7 +685,9 @@ function Market.new(_K)
 					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 					ImageColor3 = Color3.new(1, 0.8, 0),
 					Activated = function()
-						_K.Service.AvatarEditor:PromptSetFavorite(17873329124, 1, true)
+						pcall(function()
+							_K.Service.AvatarEditor:PromptSetFavorite(17873329124, 1, true)
+						end)
 					end,
 					UI.new "Tooltip" {
 						Text = "Add to Favorites",
