@@ -727,6 +727,7 @@ return {
 
 		envClient = function(_K)
 			local env = {
+				currentSubject = nil,
 				spectateConnection = nil,
 			}
 
@@ -749,6 +750,12 @@ return {
 						CFrame = cframe,
 					})
 					:Play()
+			end)
+
+			_K.Service.Players.PlayerRemoving:Connect(function(player: Player)
+				if player == env.currentSubject then
+					_K.Registry.commands.unspectate.env.unspectate()
+				end
 			end)
 
 			return env
@@ -786,6 +793,13 @@ return {
 				end
 			end)
 
+			_K.Service.Players.PlayerRemoving:Connect(function(player: Player)
+				if spectators[player] then
+					table.clear(spectators[player])
+				end
+				spectators[player] = nil
+			end)
+
 			return {
 				spectators = spectators,
 				spectateCleanup = spectateCleanup,
@@ -793,12 +807,14 @@ return {
 		end,
 
 		runClient = function(context, player)
+			context.env.currentSubject = player
 			if not workspace.CurrentCamera:GetAttribute("kCameraType") then
 				workspace.CurrentCamera:SetAttribute("kCameraType", workspace.CurrentCamera.CameraType)
 				workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
 			end
-			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
+			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				workspace.CurrentCamera.CameraSubject = humanoid
 			end
 			if context.env.spectateConnection then
 				context.env.spectateConnection:Disconnect()
@@ -822,21 +838,30 @@ return {
 		description = "Stop spectating.",
 		args = {},
 
+		envClient = function(_K)
+			return {
+				unspectate = function()
+					if workspace.CurrentCamera:GetAttribute("kCameraType") then
+						workspace.CurrentCamera.CameraType =
+							workspace.CurrentCamera:GetAttribute("kCameraType") :: Enum.CameraType
+						workspace.CurrentCamera:SetAttribute("kCameraType", nil)
+					end
+					local character = _K.LocalPlayer.Character
+					if character then
+						workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")
+					end
+					local spectateEnv = _K.Registry.commands.spectate.env
+					if spectateEnv.spectateConnection then
+						spectateEnv.spectateConnection:Disconnect()
+						spectateEnv.spectateConnection = nil
+					end
+					spectateEnv.currentSubject = nil
+				end,
+			}
+		end,
+
 		runClient = function(context)
-			if workspace.CurrentCamera:GetAttribute("kCameraType") then
-				workspace.CurrentCamera.CameraType =
-					workspace.CurrentCamera:GetAttribute("kCameraType") :: Enum.CameraType
-				workspace.CurrentCamera:SetAttribute("kCameraType", nil)
-			end
-			local character = context.fromPlayer.Character
-			if character then
-				workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")
-			end
-			local spectateEnv = context._K.Registry.commands.spectate.env
-			if spectateEnv.spectateConnection then
-				spectateEnv.spectateConnection:Disconnect()
-				spectateEnv.spectateConnection = nil
-			end
+			context.env.unspectate()
 		end,
 		run = function(context)
 			context._K.Registry.commands.spectate.env.spectateCleanup(context)
