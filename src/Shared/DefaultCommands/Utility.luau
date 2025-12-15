@@ -37,8 +37,7 @@ return {
 			context._K.Notify({
 				From = "_K",
 				Text = table.concat({
-					`<font family="{context._K.UI.Theme.FontMono._value.Name}">This game uses <b>Kohl's Admin</b>!\n`,
-					`<b>Prefix</b>     <font color="#0f0">{prefixKeyText} {prefix}</font>`,
+					`<font family="{context._K.UI.Theme.FontMono._value.Family}"><b>Prefix</b>     <font color="#0f0">{prefixKeyText} {prefix}</font>`,
 					`<b>Commands</b>   <font color="#0f0">{commandBarKeyText} {commandBarKeyRaw}</font>`,
 					`<b>Dashboard</b>  <font color="#0f0">{dashboardKeyText} {dashboardKeyRaw}</font></font>`,
 				}, "\n"),
