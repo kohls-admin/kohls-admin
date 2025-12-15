@@ -145,8 +145,10 @@ return function(_K)
 			return
 		end
 
-		local CUSTOM_COMMANDS = require(LEGACY_CONFIG:WaitForChild("Custom_Commands") :: any)
 		local SETTINGS = require(LEGACY_CONFIG:WaitForChild("Settings") :: any)
+		local commandsModule = LEGACY_CONFIG:FindFirstChild("Custom_Commands")
+			or LEGACY_CONFIG:FindFirstChild("Custom Commands")
+		local CUSTOM_COMMANDS = commandsModule and require(commandsModule :: any)
 
 		-- MIGRATE CUSTOM COMMANDS
 
