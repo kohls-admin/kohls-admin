@@ -348,7 +348,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 				vipNotificationVisible
 				or not _K.Data.settings.vip
 				or (check and tick() - lastVIPNotification < 16 + 2 ^ (5 + count))
-				or _K.LocalPlayer:GetAttribute("_KDonationLevel") > 2
+				or (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) > 2
 			then
 				return
 			end
@@ -375,7 +375,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		_K.VIP.popup.Parent = UI.LayerTopInset
 
 		_K.client.dashboard.Window._instance:GetPropertyChangedSignal("Visible"):Once(function()
-			if _K.LocalPlayer:GetAttribute("_KDonationLevel") < 3 then
+			if (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
 				_K.VIP.popup.Visible = true
 			end
 		end)
