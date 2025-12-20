@@ -79,9 +79,13 @@ return function(_K)
 	end
 
 	local function awardBadge(userId: number, badgeId: number)
-		local ok, result = _K.Util.Retry(_K.Service.Badge.GetBadgeInfoAsync, 5, 2, _K.Service.Badge, badgeId)
+		local ok, result = _K.Util.Retry(function()
+			return _K.Service.Badge:GetBadgeInfoAsync(badgeId)
+		end)
 		if ok and result.IsEnabled then
-			_K.Util.Retry(_K.Service.Badge.AwardBadge, 5, 2, _K.Service.Badge, userId, badgeId)
+			_K.Util.Retry(function()
+				_K.Service.Badge:AwardBadge(userId, badgeId)
+			end)
 		end
 	end
 
