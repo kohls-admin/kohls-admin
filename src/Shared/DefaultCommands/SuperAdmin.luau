@@ -104,6 +104,45 @@ return {
 		end,
 	},
 	{
+		name = "chat",
+		aliases = { "forcechat" },
+		description = "Forces one or more player(s) to chat.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) who will be forced to chat.",
+				shouldRequest = true,
+			},
+			{
+				type = "rawString",
+				name = "Message",
+				description = "The chat message to send.",
+			},
+		},
+		envClient = function(_K)
+			_K.Remote.ForceChat.OnClientEvent:Connect(function(message: string)
+				_K.Service.TextChat:WaitForChild("TextChannels").RBXGeneral:SendAsync(message)
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.ForceChat }
+		end,
+		run = function(context, players: { Player }, message: string)
+			local ok, result = context._K.Util.String.filterResult(message, context.from)
+			if not ok then
+				return result
+			end
+			for _, player in context._K.Service.Players:GetPlayers() do
+				task.spawn(function()
+					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
+					context.env.remote:FireClient(player, msg)
+				end)
+			end
+			return
+		end,
+	},
+	{
 		name = "clearterrain",
 		aliases = { "cterrain", "clrterrain", "removeterrain" },
 		description = "Removes all terrain.",
