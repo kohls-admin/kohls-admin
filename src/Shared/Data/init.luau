@@ -551,7 +551,7 @@ function Data.initialize(scope)
 	end
 
 	local logsUpdatedTime = 0
-	if Data.settings.saveLogs ~= false or Data.settings.saveChatLogs ~= false then
+	if not Data.SEPARATE_DATASTORE and (Data.settings.saveLogs ~= false or Data.settings.saveChatLogs ~= false) then
 		for i = 1, 4 do -- 4 shards
 			local okLogs, logs, metaLogs = Data.Store.getAsync("Logs_" .. i)
 			if okLogs and type(logs) == "buffer" then
@@ -559,6 +559,15 @@ function Data.initialize(scope)
 			end
 			logsUpdatedTime = math.max(if metaLogs then metaLogs.UpdatedTime else 0, logsUpdatedTime)
 		end
+	end
+
+	-- erase existing private server logs
+	if Data.SEPARATE_DATASTORE then
+		task.defer(function()
+			for i = 1, 4 do -- 4 shards
+				Data.Store.setAsync("Logs_" .. i, nil)
+			end
+		end)
 	end
 
 	local okServers, servers = Data.Store.getAsync("Servers")
