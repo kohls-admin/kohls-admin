@@ -135,6 +135,10 @@ _K.Remote.Bans.OnClientEvent:Connect(function(bans)
 	end
 end)
 
+_K.Remote.DisplayBubble.OnClientEvent:Connect(function(character: Model, message: string)
+	_K.Service.TextChat:DisplayBubble(character, message)
+end)
+
 _K.Remote.Member.OnClientEvent:Connect(function(userId, member)
 	local viewas = _K.Registry.commands.viewas
 	if viewas.env.originalMember and userId == tostring(_K.LocalPlayer.UserId) then

@@ -12,6 +12,7 @@ local Remote = {
 	Ban = _REMOTE,
 	Bans = _REMOTE,
 	Command = _REMOTE,
+	DisplayBubble = _REMOTE,
 	Idled = _REMOTE,
 	Init = _REMOTE,
 	Log = _REMOTE,
