@@ -250,6 +250,11 @@ return function(_K)
 							return
 						end
 
+						if player.Character then
+							local msg = `{_K.getCommandPrefix()}{string.sub(chatCommand.PrimaryAlias, 2)}`
+							_K.Remote.DisplayBubble:FireAllClients(player.Character, msg)
+						end
+
 						if (player:GetAttribute("_KDonationLevel") or 0) > 0 then
 							local cmd = `{_K.getCommandPrefix()}{string.sub(rawText, 2)}`
 							_K.Process.runCommands(_K, source.UserId, cmd)
