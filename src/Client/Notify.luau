@@ -30,6 +30,10 @@ local function hide(info, announce: boolean?)
 end
 
 return function(dialogOverride)
+	if not dialogOverride.Text then
+		dialogOverride.Text = "No text provided"
+	end
+
 	local visible = UI.state(false)
 	local offset = UI.state(0)
 	local self
