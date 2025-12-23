@@ -30,6 +30,10 @@ local function hide(info, announce: boolean?)
 end
 
 return function(dialogOverride)
+	if type(dialogOverride) ~= "table" then
+		return
+	end
+
 	if not dialogOverride.Text then
 		dialogOverride.Text = "No text provided"
 	end
