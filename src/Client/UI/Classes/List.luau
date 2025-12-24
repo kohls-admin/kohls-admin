@@ -4,7 +4,7 @@ local BaseClass = require(script.Parent.BaseClass)
 local DEFAULT = {
 	Collapsible = false,
 	Collapsed = false,
-	Label = "New List",
+	Label = "",
 	Padding = UI.Theme.Padding,
 }
 
@@ -41,14 +41,11 @@ function Class.new(properties: Properties?)
 		BackgroundTransparency = UI.Theme.TransparencyMax,
 		ClipsDescendants = true,
 		Size = UI.tween(function()
-			return UDim2.new(
-				1,
-				0,
-				0,
-				if self.Collapsed()
-					then UI.Theme.FontSize() + UI.Theme.Padding().Offset * 4
-					else contentSize().Y + UI.Theme.FontSize() + UI.Theme.Padding().Offset * 6
-			)
+			local fontSize, padding = UI.Theme.FontSize(), UI.Theme.Padding().Offset
+			local height = if self.Collapsed()
+				then fontSize + padding * 4
+				else contentSize().Y + (if self.Label() ~= "" then fontSize + padding * 6 else padding * 2)
+			return UDim2.new(1, 0, 0, height)
 		end, UI.Theme.TweenOut),
 
 		UI.new "UICorner" {
@@ -65,6 +62,9 @@ function Class.new(properties: Properties?)
 			TextTransparency = 1,
 			Text = "",
 			Size = UDim2.new(1, 0, 0, 0),
+			Visible = function()
+				return self.Collapsible() or self.Label() ~= ""
+			end,
 
 			UI.new "UIPadding" {
 				PaddingLeft = self.Padding,
@@ -133,7 +133,8 @@ function Class.new(properties: Properties?)
 		Parent = self._instance,
 		BackgroundTransparency = 1,
 		Position = function()
-			return UDim2.new(0, 0, 0, UI.Theme.FontSize + self.Padding().Offset * 2)
+			local padding = self.Padding().Offset
+			return UDim2.new(0, 0, 0, (if self.Label() ~= "" then UI.Theme.FontSize + padding * 2 else padding))
 		end,
 		Size = UI.tween(function()
 			local collapse = self.Collapsed()
