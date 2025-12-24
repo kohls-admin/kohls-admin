@@ -1,7 +1,7 @@
 local _K
 
 local function notNil(v)
-	return v ~= nil
+	return v ~= nil, "Invalid value"
 end
 
 local function startMatch(list: { string }, v)
