@@ -157,7 +157,7 @@ function Class.new(properties: Properties?)
 	end
 
 	local function dragInputBegan(input, gameProcessed)
-		if gameProcessed then
+		if gameProcessed or not self.Draggable._value then
 			return
 		end
 		if
@@ -211,7 +211,7 @@ function Class.new(properties: Properties?)
 	end
 
 	local function resizeBegan(input, gameProcessed)
-		if gameProcessed then
+		if gameProcessed or not self.Resizable._value then
 			return
 		end
 		if
@@ -449,7 +449,7 @@ function Class.new(properties: Properties?)
 				resizeUpdate(input)
 			elseif dragging._value then
 				dragUpdate(input)
-			else
+			elseif self.Resizable._value then
 				local resize = getResizeIndex(
 					Vector2.new(input.Position.X, input.Position.Y),
 					self._instance.AbsoluteSize,
