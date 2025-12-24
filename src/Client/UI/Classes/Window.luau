@@ -391,7 +391,8 @@ function Class.new(properties: Properties?)
 						Size = UDim2.new(0, 0, 0, 0),
 						FontFace = UI.Theme.Font,
 						Position = function()
-							return UDim2.fromOffset(UI.Theme.FontSize + UI.Theme.Padding().Offset, 0)
+							local x = if self.Icon() ~= "" then UI.Theme.FontSize + UI.Theme.Padding().Offset else 0
+							return UDim2.fromOffset(x, 0)
 						end,
 						RichText = true,
 						Text = function()
