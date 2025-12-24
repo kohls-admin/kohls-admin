@@ -1,5 +1,6 @@
 local InsertService = game:GetService("InsertService")
 local MarketplaceService = game:GetService("MarketplaceService")
+local RunService = game:GetService("RunService")
 
 local loadAssetTextureTypes = {
 	Enum.AssetType.Face.Value,
@@ -15,22 +16,42 @@ local textureProperty = {
 	ShirtGraphic = "Graphic",
 }
 
-local function getTexture(assetId)
-	local assetType = MarketplaceService:GetProductInfo(assetId).AssetTypeId
-	if assetType == Enum.AssetType.Image.Value then
-		return "rbxassetid://" .. assetId
-	elseif table.find(loadAssetTextureTypes, assetType) then
+local textureCache = {}
+
+local function getTexture(assetId: number, small: boolean?): string?
+	local cached = textureCache[assetId]
+	if cached then
+		return cached
+	end
+
+	local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, assetId)
+	if not ok then
+		return
+	end
+
+	local texture = false
+
+	if info.AssetTypeId == Enum.AssetType.Image.Value then
+		texture = "rbxassetid://" .. assetId
+	elseif RunService:IsServer() and table.find(loadAssetTextureTypes, info.AssetTypeId) then
 		local success, model = pcall(function()
 			return InsertService:LoadAsset(assetId)
 		end)
 		if success then
 			local object = model:GetChildren()[1]
-			local texture = object[textureProperty[object.ClassName]]
+			texture = object[textureProperty[object.ClassName]]
 			model:Destroy()
-			return texture
 		end
 	end
-	return "rbxthumb://type=Asset&id=" .. assetId .. "&w=420&h=420"
+
+	if not texture then
+		local size = if small then 150 else 420
+		texture = `rbxthumb://type=Asset&id={assetId}&w={size}&h={size}`
+	end
+
+	textureCache[assetId] = texture
+
+	return texture
 end
 
 return getTexture
