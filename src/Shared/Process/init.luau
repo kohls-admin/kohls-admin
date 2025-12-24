@@ -112,7 +112,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 	local rawCommands = Process.rawParse(
 		text,
 		{ _K.getCommandPrefix(from), unpack(_K.Data.settings.prefix) },
-		_K.Data.settings.splitKey or "%s"
+		_K.Data.settings.splitKey or " "
 	)
 	if not rawCommands then
 		return

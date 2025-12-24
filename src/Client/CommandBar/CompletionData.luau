@@ -29,7 +29,7 @@ return function(_K, text, cursorPosition)
 	end
 
 	local rawCommands =
-		_K.Process.rawParse(text, { prefix, unpack(_K.Data.settings.prefix) }, _K.Data.settings.splitKey or "%s")
+		_K.Process.rawParse(text, { prefix, unpack(_K.Data.settings.prefix) }, _K.Data.settings.splitKey or " ")
 	if not rawCommands then
 		table.insert(data.invalid, { "Invalid command string", 2, string.sub(text, 2) })
 		return data -- invalid command string, show valid example

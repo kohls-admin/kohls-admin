@@ -75,7 +75,7 @@ local Data = {
 		useSavedSettings = true,
 
 		prefix = { ";", ":" },
-		splitKey = "%s",
+		splitKey = " ",
 
 		commandBarRank = 0,
 		dashboardRank = 0,

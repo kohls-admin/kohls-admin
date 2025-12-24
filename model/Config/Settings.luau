@@ -82,7 +82,7 @@ return {
 
 	-- 🔧 SYSTEM SETTINGS
 	prefix = { ";", ":" }, -- Command trigger characters
-	splitKey = "%s", --       Command/argument separator
+	splitKey = " ", --       Command/argument separator
 
 	commandBarRank = 0, --       Minimum role rank for Command Bar (false = disable)
 	dashboardRank = 0, --        Minimum role rank for Dashboard (false = disable)

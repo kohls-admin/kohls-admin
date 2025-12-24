@@ -71,7 +71,7 @@ local function Chatted(message: string)
 	local prefix = _K.getCommandPrefix()
 
 	local commandFormat =
-		`%s[^%s{_K.Process.ignoreFormat}{_K.Util.String.escapePattern(_K.Data.settings.splitKey or "%s")}]`
+		`%s[^%s{_K.Process.ignoreFormat}{_K.Util.String.escapePattern(_K.Data.settings.splitKey or " ")}]`
 	local commandStart
 	for _, value in { prefix, unpack(_K.Data.settings.prefix) } do
 		local escapedPrefix = _K.Util.String.escapePattern(value)
