@@ -383,7 +383,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 	if savedSettings.announcement then
 		local msg, from = unpack(savedSettings.announcement)
-		_K.Announce({
+		task.spawn(_K.Announce, {
 			From = from,
 			Text = msg,
 			Duration = 0,
@@ -392,13 +392,13 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 	if _K.Data.settings.announcements then
 		for _, announcement in _K.Data.settings.announcements do
-			_K.Announce(announcement)
+			task.spawn(_K.Announce, announcement)
 		end
 	end
 
 	if _K.Data.settings.notifications then
 		for _, notification in _K.Data.settings.notifications do
-			_K.Notify(notification)
+			task.spawn(_K.Notify, notification)
 		end
 	end
 
