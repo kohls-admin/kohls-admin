@@ -121,9 +121,11 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.ForceChat.OnClientEvent:Connect(function(message: string)
+			local function forceChat(message: string)
 				_K.Service.TextChat:WaitForChild("TextChannels").RBXGeneral:SendAsync(message)
-			end)
+			end
+			_K.Remote.ForceChat.OnClientEvent:Connect(forceChat)
+			_K.forceChat = forceChat
 		end,
 		env = function(_K)
 			return { remote = _K.Remote.ForceChat }
