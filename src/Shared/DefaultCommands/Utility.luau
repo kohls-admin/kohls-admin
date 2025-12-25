@@ -474,7 +474,12 @@ return {
 						lineItem.ImageLabel.Image = `rbxthumb://type=Asset&id={lineData.emoteId}&w=150&h=150`
 						lineItem.TextLabel.Text = lineData.name
 						if lineData.owned == nil then
-							lineData.owned = _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, lineData.emoteId)
+							lineData.owned = false
+							task.spawn(function()
+								lineData.owned =
+									_K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, lineData.emoteId)
+								self:render(true)
+							end)
 						end
 						lineItem.Unlock.Visible = not lineData.owned
 					end,
