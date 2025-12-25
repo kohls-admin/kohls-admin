@@ -357,8 +357,11 @@ return {
 					List = _K.Data.emotes,
 					Enabled = true,
 					Visible = true,
-					CreateItem = function(self, lineData)
-						return UI.new "Frame" {
+					CreateItem = function(self, initialLineData)
+						local item = {
+							lineData = initialLineData,
+						}
+						item._instance = UI.new "Frame" {
 							BackgroundTransparency = 1,
 							Size = self.ItemSize,
 
@@ -389,12 +392,12 @@ return {
 									BackgroundTransparency = 1,
 									ImageTransparency = 0.25,
 									ImageColor3 = function()
-										return if EMOTE.emoteId() == lineData.emoteId
+										return if EMOTE.emoteId() == item.lineData.emoteId
 											then Color3.new(1, 0, 0)
 											else Color3.new(1, 1, 1)
 									end,
 									Image = function()
-										return if EMOTE.emoteId() == lineData.emoteId
+										return if EMOTE.emoteId() == item.lineData.emoteId
 											then UI.Theme.Image.Stop
 											else UI.Theme.Image.Play
 									end,
@@ -404,17 +407,17 @@ return {
 									UI.action(function(button)
 										button.Activated:Connect(function()
 											if
-												not lineData.owned
+												not item.lineData.owned
 												or _K.LocalPlayer:GetAttribute("_KDonationLevel") < 4
 											then
-												EMOTE.updatePreview(lineData.emoteId)
+												EMOTE.updatePreview(item.lineData.emoteId)
 												EMOTE.preview.Visible = true
 												return
 											end
-											if EMOTE.emoteId._value == lineData.emoteId then
+											if EMOTE.emoteId._value == item.lineData.emoteId then
 												EMOTE.playEmote()
 											else
-												EMOTE.playEmote(lineData.animationId)
+												EMOTE.playEmote(item.lineData.animationId)
 											end
 										end)
 										button.MouseEnter:Connect(function()
@@ -453,7 +456,7 @@ return {
 								Size = UDim2.new(1, 0, 1, 0),
 								SizeConstraint = Enum.SizeConstraint.RelativeYY,
 								Activated = function()
-									EMOTE.updatePreview(lineData.emoteId)
+									EMOTE.updatePreview(item.lineData.emoteId)
 									EMOTE.preview.Visible = true
 								end,
 							},
@@ -464,15 +467,19 @@ return {
 								Size = UDim2.new(1, 0, 1, 0),
 								SizeConstraint = Enum.SizeConstraint.RelativeYY,
 								Activated = function()
-									_K.Service.AvatarEditor:PromptSetFavorite(lineData.emoteId, 1, true)
+									_K.Service.AvatarEditor:PromptSetFavorite(item.lineData.emoteId, 1, true)
 								end,
 							},
 						}
+
+						return item
 					end,
 
 					RenderItem = function(self, lineItem, lineData)
-						lineItem.ImageLabel.Image = `rbxthumb://type=Asset&id={lineData.emoteId}&w=150&h=150`
-						lineItem.TextLabel.Text = lineData.name
+						lineItem.lineData = lineData
+						local instance = lineItem._instance
+						instance.ImageLabel.Image = `rbxthumb://type=Asset&id={lineData.emoteId}&w=150&h=150`
+						instance.TextLabel.Text = lineData.name
 						if lineData.owned == nil then
 							lineData.owned = false
 							task.spawn(function()
@@ -481,7 +488,7 @@ return {
 								self:render(true)
 							end)
 						end
-						lineItem.Unlock.Visible = not lineData.owned
+						instance.Unlock.Visible = not lineData.owned
 					end,
 				}
 
