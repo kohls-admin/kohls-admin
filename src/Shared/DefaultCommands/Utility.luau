@@ -418,6 +418,9 @@ return {
 												EMOTE.playEmote()
 											else
 												EMOTE.playEmote(item.lineData.animationId)
+												if _K.forceChat then
+													_K.forceChat(`{_K.getCommandPrefix()}emote me {item.lineData.name}`)
+												end
 											end
 										end)
 										button.MouseEnter:Connect(function()
