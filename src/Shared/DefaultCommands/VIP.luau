@@ -75,11 +75,28 @@ return {
 				local worldModel = Instance.new("WorldModel")
 				local previewCamera = UI.new "Camera" {}
 
+				local cameraStartCFrame = CFrame.new(0, 3, 0)
+					* CFrame.Angles(math.rad(-cameraAngleX), math.rad(cameraAngleY), 0)
+					* CFrame.new(0, 0, cameraZ)
+
+				local resetCameraTween = game:GetService("TweenService")
+					:Create(previewCamera, TweenInfo.new(1, Enum.EasingStyle.Cubic), {
+						CFrame = cameraStartCFrame,
+					})
+
+				local resetCamera = _K.Util.Function.debounce(4, function()
+					resetCameraTween:Play()
+				end)
+
 				local function updatePreviewCamera()
 					previewCamera.CFrame = CFrame.new(0, 3, 0)
 						* CFrame.Angles(math.rad(-cameraAngleX), math.rad(cameraAngleY), 0)
 						* CFrame.new(0, 0, cameraZ)
+					if not (previewCamera.CFrame):FuzzyEq(cameraStartCFrame) then
+						resetCamera()
+					end
 				end
+
 				updatePreviewCamera()
 
 				local dragStart, startAngleX, startAngleY
@@ -160,7 +177,6 @@ return {
 								or input.UserInputType == Enum.UserInputType.Touch
 							then
 								dragStart = nil
-								-- TODO: debounce then return to initial view
 							end
 						end,
 					},
