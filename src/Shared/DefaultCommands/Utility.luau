@@ -407,7 +407,8 @@ return {
 												not lineData.owned
 												or _K.LocalPlayer:GetAttribute("_KDonationLevel") < 4
 											then
-												_K.PromptBulkPurchase(lineData.emoteId)
+												EMOTE.updatePreview(lineData.emoteId)
+												EMOTE.preview.Visible = true
 												return
 											end
 											if EMOTE.emoteId._value == lineData.emoteId then
