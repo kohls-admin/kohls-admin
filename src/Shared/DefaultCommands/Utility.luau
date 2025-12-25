@@ -340,6 +340,7 @@ return {
 	{
 		name = "emotes",
 		description = "Shows the emotes list.",
+		optionalPrefix = true,
 		envClient = function(_K)
 			local UI = _K.UI
 
