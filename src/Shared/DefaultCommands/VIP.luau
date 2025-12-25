@@ -248,9 +248,15 @@ return {
 
 				task.spawn(function()
 					local model = _K.Service.Players:CreateHumanoidModelFromUserId(_K.LocalPlayer.UserId)
-					model:FindFirstChild("Animate"):Destroy()
 					model:PivotTo(CFrame.new(0, 3, 0))
 					model.Parent = worldModel
+
+					task.spawn(function()
+						local animate = model:WaitForChild("Animate", 5)
+						if typeof(animate) == "Instance" and animate:IsA("LocalScript") then
+							animate:Destroy()
+						end
+					end)
 
 					local humanoid = model:WaitForChild("Humanoid")
 					local animator = humanoid:WaitForChild("Animator")
@@ -340,8 +346,10 @@ return {
 						return buttonVisible() and not ownsEmote()
 					end,
 					Activated = function()
-						env.updatePreview(emoteId._value)
-						env.preview.Visible = true
+						if env.updatePreview and env.preview then
+							env.updatePreview(emoteId._value)
+							env.preview.Visible = true
+						end
 					end,
 				}
 
