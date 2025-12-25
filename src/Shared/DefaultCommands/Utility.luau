@@ -337,6 +337,179 @@ return {
 			context._K.client.dashboard.Settings._instance.Visible = true
 		end,
 	},
+	{
+		name = "emotes",
+		description = "Shows the emotes list.",
+		envClient = function(_K)
+			local UI = _K.UI
+
+			local env = {}
+
+			task.spawn(function()
+				repeat
+					task.wait()
+				until _K.Registry.commands.emote and _K.Registry.commands.emote.env
+
+				local EMOTE = _K.Registry.commands.emote.env
+
+				local scroller = UI.new "ScrollerFast" {
+					List = _K.Data.emotes,
+					Enabled = true,
+					Visible = true,
+					CreateItem = function(self, lineData)
+						return UI.new "Frame" {
+							BackgroundTransparency = 1,
+							Size = self.ItemSize,
+
+							UI.new "UIPadding" {
+								PaddingTop = UI.Theme.PaddingHalf,
+								PaddingBottom = UI.Theme.PaddingHalf,
+							},
+
+							UI.new "UIListLayout" {
+								VerticalAlignment = Enum.VerticalAlignment.Center,
+								FillDirection = Enum.FillDirection.Horizontal,
+								SortOrder = Enum.SortOrder.LayoutOrder,
+								Padding = UI.Theme.Padding,
+							},
+
+							UI.new "ImageLabel" {
+								BackgroundTransparency = UI.Theme.TransparencyHeavy,
+								BackgroundColor3 = UI.Theme.PrimaryText,
+								Size = UDim2.new(1, 0, 1, 0),
+								SizeConstraint = Enum.SizeConstraint.RelativeYY,
+
+								UI.new "UICorner" {
+									CornerRadius = UDim.new(1, 0),
+								},
+								UI.new "Stroke" {},
+
+								UI.new "ImageButton" {
+									BackgroundTransparency = 1,
+									ImageTransparency = 0.25,
+									ImageColor3 = function()
+										return if EMOTE.emoteId() == lineData.emoteId
+											then Color3.new(1, 0, 0)
+											else Color3.new(1, 1, 1)
+									end,
+									Image = function()
+										return if EMOTE.emoteId() == lineData.emoteId
+											then UI.Theme.Image.Stop
+											else UI.Theme.Image.Play
+									end,
+									Size = UDim2.new(1, 0, 1, 0),
+									SizeConstraint = Enum.SizeConstraint.RelativeYY,
+
+									UI.action(function(button)
+										button.Activated:Connect(function()
+											if
+												not lineData.owned
+												or _K.LocalPlayer:GetAttribute("_KDonationLevel") < 4
+											then
+												_K.PromptBulkPurchase(lineData.emoteId)
+												return
+											end
+											if EMOTE.emoteId._value == lineData.emoteId then
+												EMOTE.playEmote()
+											else
+												EMOTE.playEmote(lineData.animationId)
+											end
+										end)
+										button.MouseEnter:Connect(function()
+											button.ImageTransparency = 0
+										end)
+										button.MouseLeave:Connect(function()
+											button.ImageTransparency = 0.25
+										end)
+									end),
+								},
+							},
+
+							UI.new "TextLabel" {
+								AutoLocalize = false,
+								AutomaticSize = Enum.AutomaticSize.X,
+								BackgroundTransparency = 1,
+								Size = UDim2.new(0, 0, 1, 0),
+								RichText = true,
+								FontFace = UI.Theme.FontMono,
+								TextSize = UI.Theme.FontSize,
+								TextColor3 = UI.Theme.PrimaryText,
+								TextStrokeColor3 = UI.Theme.Primary,
+								TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+								TextTruncate = Enum.TextTruncate.SplitWord,
+								TextXAlignment = Enum.TextXAlignment.Left,
+
+								UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
+							},
+
+							UI.new "Spacer" {},
+
+							UI.new "Button" {
+								Name = "Unlock",
+								Label = "🔓",
+								Padding = UI.Theme.PaddingHalf,
+								Size = UDim2.new(1, 0, 1, 0),
+								SizeConstraint = Enum.SizeConstraint.RelativeYY,
+								Activated = function()
+									EMOTE.updatePreview(lineData.emoteId)
+									EMOTE.preview.Visible = true
+								end,
+							},
+
+							UI.new "Button" {
+								Label = "⭐",
+								Padding = UI.Theme.PaddingHalf,
+								Size = UDim2.new(1, 0, 1, 0),
+								SizeConstraint = Enum.SizeConstraint.RelativeYY,
+								Activated = function()
+									_K.Service.AvatarEditor:PromptSetFavorite(lineData.emoteId, 1, true)
+								end,
+							},
+						}
+					end,
+
+					RenderItem = function(self, lineItem, lineData)
+						lineItem.ImageLabel.Image = `rbxthumb://type=Asset&id={lineData.emoteId}&w=150&h=150`
+						lineItem.TextLabel.Text = lineData.name
+						if lineData.owned == nil then
+							lineData.owned = _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, lineData.emoteId)
+						end
+						lineItem.Unlock.Visible = not lineData.owned
+					end,
+				}
+
+				UI.edit(scroller._instance, {
+					UI.new "UIPadding" {
+						PaddingTop = UI.Theme.PaddingStroke,
+						PaddingBottom = UI.Theme.PaddingStroke,
+						PaddingLeft = UI.Theme.PaddingStroke,
+						PaddingRight = UI.Theme.PaddingStroke,
+					},
+				})
+				UI.edit(scroller._scroller.UIPadding, {
+					PaddingTop = UDim.new(),
+					PaddingBottom = UDim.new(),
+				})
+
+				env.scroller = scroller
+				env.window = UI.new "Window" {
+					Parent = UI.LayerTopInset,
+					Name = "Emotes",
+					Title = "Emotes",
+					Exitable = true,
+					Position = UDim2.new(0.5, -128, 0.5, -128),
+					Size = UDim2.new(0, 256, 0, 256),
+
+					scroller,
+				}
+			end)
+
+			return env
+		end,
+		runClient = function(context, player)
+			context.env.window._instance.Visible = true
+		end,
+	},
 
 	{
 		name = "age",

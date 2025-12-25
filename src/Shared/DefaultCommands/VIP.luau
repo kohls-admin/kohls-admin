@@ -21,6 +21,421 @@ end
 
 return {
 	{
+		name = "emote",
+		aliases = { "animation", "anim", "stopemote", "stopanim" },
+		description = "Plays an animation on one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to play the animation on.",
+			},
+			{
+				type = "emote",
+				name = "Animation",
+				description = "The emote or animation id to play.",
+				optional = true,
+			},
+			{
+				type = "boolean",
+				name = "Looping",
+				description = "If the animation should loop.",
+				optional = true,
+			},
+			{
+				type = "number",
+				name = "Speed",
+				description = "The speed of the animation.",
+				optional = true,
+			},
+		},
+		envClient = function(_K)
+			local UI = _K.UI
+			local env = {
+				playing = nil,
+				looped = nil,
+				speed = nil,
+				window = nil,
+				preview = nil,
+			}
+
+			local emoteId = UI.state()
+			local ownsEmote = UI.state(false)
+
+			env.emoteId = emoteId
+
+			task.defer(function()
+				while not _K.client do
+					task.wait()
+				end
+
+				local cameraAngleX = 0
+				local cameraAngleY = 180
+				local cameraZ = 9
+				local worldModel = Instance.new("WorldModel")
+				local previewCamera = UI.new "Camera" {}
+
+				local function updatePreviewCamera()
+					previewCamera.CFrame = CFrame.new(0, 3, 0)
+						* CFrame.Angles(math.rad(-cameraAngleX), math.rad(cameraAngleY), 0)
+						* CFrame.new(0, 0, cameraZ)
+				end
+				updatePreviewCamera()
+
+				local dragStart, startAngleX, startAngleY
+
+				local previewId
+				env.preview = UI.new "Frame" {
+					Parent = UI.LayerTopInset,
+					BackgroundColor3 = Color3.new(1, 1, 1),
+					Size = UDim2.new(0, 300, 0, 360),
+					Position = UDim2.new(0.5, -150, 0.5, -180),
+					Visible = false,
+					ZIndex = 9e8,
+
+					UI.new "UICorner" {
+						CornerRadius = UDim.new(0, 12),
+					},
+					UI.new "UIGradient" {
+						Color = ColorSequence.new({
+							ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 18, 21)),
+							ColorSequenceKeypoint.new(1 / 3, Color3.fromRGB(36, 36, 42)),
+							ColorSequenceKeypoint.new(2 / 3, Color3.fromRGB(36, 36, 42)),
+							ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 21)),
+						}),
+						Rotation = 90,
+					},
+
+					UI.new "ViewportFrame" {
+						BackgroundTransparency = 1,
+						Size = UDim2.new(1, 0, 1, 0),
+						Ambient = Color3.fromRGB(127, 127, 127),
+						LightColor = Color3.fromRGB(200, 200, 200),
+						LightDirection = Vector3.new(0, -1, 1),
+						CurrentCamera = previewCamera,
+
+						previewCamera,
+						worldModel,
+						MouseWheelBackward = function()
+							cameraZ = math.clamp(cameraZ + 1, 3, 15)
+							updatePreviewCamera()
+						end,
+						MouseWheelForward = function()
+							cameraZ = math.clamp(cameraZ - 1, 3, 15)
+							updatePreviewCamera()
+						end,
+						TouchPinch = function(_touchPositions, scale, _velocity, state)
+							if state == Enum.UserInputState.Change then
+								cameraZ = math.clamp(scale * 15, 3, 15)
+								updatePreviewCamera()
+							end
+						end,
+						InputBegan = function(input)
+							if
+								input.UserInputType == Enum.UserInputType.MouseButton1
+								or input.UserInputType == Enum.UserInputType.Touch
+							then
+								dragStart = input.Position
+								startAngleX = cameraAngleX
+								startAngleY = cameraAngleY
+							end
+						end,
+						InputChanged = function(input, gameProcessed)
+							if gameProcessed or not dragStart then
+								return
+							end
+							if
+								input.UserInputType == Enum.UserInputType.MouseMovement
+								or input.UserInputType == Enum.UserInputType.Touch
+							then
+								local delta = dragStart - input.Position
+								cameraAngleX = (startAngleX + delta.Y) % 360
+								cameraAngleY = (startAngleY + delta.X) % 360
+								updatePreviewCamera()
+							end
+						end,
+						InputEnded = function(input)
+							if
+								input.UserInputType == Enum.UserInputType.MouseButton1
+								or input.UserInputType == Enum.UserInputType.Touch
+							then
+								dragStart = nil
+								-- TODO: debounce then return to initial view
+							end
+						end,
+					},
+
+					UI.new "ImageButton" {
+						Name = "Close",
+						AnchorPoint = Vector2.new(1, 0),
+						BackgroundTransparency = 1,
+						Image = "rbxasset://textures/ui/ScreenshotHud/Close.png",
+						Position = UDim2.new(1, -4, 0, 4),
+						Size = UDim2.fromOffset(32, 32),
+						Activated = function()
+							env.preview.Visible = false
+						end,
+					},
+
+					UI.new "TextLabel" {
+						Name = "Title",
+						BackgroundTransparency = 1,
+						FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+						Position = UDim2.fromOffset(0, 16),
+						Size = UDim2.new(1, 0, 0, 28),
+						Text = "Loading",
+						TextColor3 = Color3.new(1, 1, 1),
+						TextSize = 28,
+
+						UI.new "TextLabel" {
+							Name = "Category",
+							AutomaticSize = Enum.AutomaticSize.Y,
+							BackgroundTransparency = 1,
+							FontFace = Font.new("rbxassetid://12187365364"),
+							Position = UDim2.fromScale(0, 1),
+							Size = UDim2.fromScale(1, 0),
+							Text = "Emote",
+							TextColor3 = Color3.new(1, 1, 1),
+							TextSize = 16,
+						},
+					},
+
+					UI.new "TextButton" {
+						Name = "Unlock",
+						AnchorPoint = Vector2.new(0.5, 1),
+						AutomaticSize = Enum.AutomaticSize.XY,
+						BackgroundColor3 = Color3.fromRGB(51, 95, 255),
+						FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+						Position = UDim2.new(0.5, 0, 1, -38),
+						Text = "UNLOCK",
+						TextColor3 = Color3.new(1, 1, 1),
+						TextSize = 28,
+
+						UI.new "UICorner" {
+							Name = "UICorner",
+							CornerRadius = UDim.new(0, 12),
+						},
+
+						UI.new "UIPadding" {
+							Name = "UIPadding",
+							PaddingBottom = UDim.new(0, 12),
+							PaddingLeft = UDim.new(0, 34),
+							PaddingRight = UDim.new(0, 34),
+							PaddingTop = UDim.new(0, 12),
+						},
+
+						Activated = function()
+							if previewId then
+								_K.PromptBulkPurchase(previewId)
+							end
+						end,
+					},
+
+					UI.new "TextLabel" {
+						Name = "Tip",
+						AnchorPoint = Vector2.new(0, 1),
+						AutomaticSize = Enum.AutomaticSize.Y,
+						BackgroundTransparency = 1,
+						FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Light, Enum.FontStyle.Normal),
+						Position = UDim2.new(0, 0, 1, -16),
+						RichText = true,
+						Size = UDim2.fromScale(1, 0),
+						Text = "Use in <b>every</b> Roblox game",
+						TextColor3 = Color3.new(1, 1, 1),
+						TextSize = 16,
+					},
+				}
+
+				task.spawn(function()
+					local model = _K.Service.Players:CreateHumanoidModelFromUserId(_K.LocalPlayer.UserId)
+					model:FindFirstChild("Animate"):Destroy()
+					model:PivotTo(CFrame.new(0, 3, 0))
+					model.Parent = worldModel
+
+					local humanoid = model:WaitForChild("Humanoid")
+					local animator = humanoid:WaitForChild("Animator")
+
+					local anim: Animation = Instance.new("Animation")
+					local animTrack: AnimationTrack
+
+					local function updatePreview(id)
+						if animTrack then
+							animTrack:Stop()
+							animTrack:Destroy()
+						end
+						previewId = id
+						if id then
+							cameraAngleX = 0
+							cameraAngleY = 180
+							cameraZ = 9
+							updatePreviewCamera()
+							local item = _K.Data.emoteItemFromId[id]
+							env.preview.Title.Text = item.name
+							anim.AnimationId = "rbxassetid://" .. item.animationId
+							animTrack = animator:LoadAnimation(anim)
+							animTrack.Looped = true
+							animTrack:Play()
+						end
+					end
+					env.updatePreview = updatePreview
+				end)
+
+				local looped = UI.new "Switch" {
+					[UI.Hook] = {
+						Value = function(loop: boolean)
+							if env.playing then
+								env.playing.Looped = loop
+								if not env.playing.IsPlaying then
+									env.playing:Play(0.1, 99, env.speed.Value._value * 5)
+								end
+							end
+						end,
+					},
+				}
+				local speed = UI.new "Slider" {
+					[UI.Hook] = {
+						Value = function(alpha: number)
+							if env.playing then
+								env.playing:AdjustSpeed(alpha * 5)
+							end
+						end,
+					},
+				}
+				env.looped = looped
+				env.speed = speed
+
+				local window = UI.new "Window" {
+					Parent = UI.LayerTopInset,
+					Title = "Emote",
+					Resizable = false,
+					Size = UDim2.new(0, 256, 0, 32),
+					Position = UDim2.new(1, -256 - 6, 0.5, -16),
+					UI.new "List" {
+						UI.new "ListItem" { Text = "Looped", looped },
+						UI.new "ListItem" { Text = "Speed", speed },
+					},
+				}
+
+				window._content.Size = UDim2.fromScale(1, 0)
+				window._content.AutomaticSize = Enum.AutomaticSize.Y
+				window._instance.Frame.AutomaticSize = Enum.AutomaticSize.Y
+				window._instance.AutomaticSize = Enum.AutomaticSize.Y
+
+				local titleBarHeight = UI.compute(function()
+					return UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2
+				end)
+				local buttonSize = function()
+					return UDim2.fromOffset(titleBarHeight(), titleBarHeight())
+				end
+				local buttonVisible = function()
+					return emoteId() ~= nil
+				end
+
+				UI.new "Button" {
+					LayoutOrder = 3,
+					Parent = window._instance.Frame.TitleBar,
+					Label = "🔓",
+					Size = buttonSize,
+					Visible = function()
+						return buttonVisible() and not ownsEmote()
+					end,
+					Activated = function()
+						env.updatePreview(emoteId._value)
+						env.preview.Visible = true
+					end,
+				}
+
+				UI.new "Button" {
+					LayoutOrder = 3,
+					Parent = window._instance.Frame.TitleBar,
+					Label = "⭐",
+					Size = buttonSize,
+					Visible = buttonVisible,
+					Activated = function()
+						_K.Service.AvatarEditor:PromptSetFavorite(emoteId._value, 1, true)
+					end,
+				}
+
+				env.window = window
+			end)
+
+			local function playEmote(animation: number, loop: boolean?, speed: number?)
+				if env.playing then
+					env.playing:Stop()
+					env.playing:Destroy()
+					env.playing = nil
+					emoteId(nil)
+					ownsEmote(false)
+				end
+
+				if not animation then
+					return
+				end
+
+				local player = _K.LocalPlayer
+				local character = player.Character or player.CharacterAdded:Wait()
+				local humanoid = character:WaitForChild("Humanoid")
+				local animator = humanoid:WaitForChild("Animator")
+				local anim: Animation = _K.Flux.new "Animation" { AnimationId = `rbxassetid://{animation}` }
+
+				local playing = animator:LoadAnimation(anim)
+				playing.Priority = Enum.AnimationPriority.Action
+				anim.Parent = playing
+
+				if loop ~= nil then
+					playing.Looped = loop
+					env.looped.Value(playing.Looped)
+				else
+					task.spawn(function()
+						local start = tick()
+						repeat
+							task.wait()
+						until playing.Looped == true or tick() - start > 1
+						env.looped.Value(true)
+					end)
+				end
+
+				env.speed.Value(math.clamp(speed or 1, 0, 5) / 5)
+
+				if not playing.Looped then
+					playing.Stopped:Once(function()
+						playing:Destroy()
+					end)
+				end
+
+				local id = _K.Data.animationToEmoteId[animation]
+				local emoteItem = emoteId and _K.Data.emoteItemFromId[id]
+				env.window.Title(if emoteItem then emoteItem.name else "Emote")
+				emoteId(id)
+				ownsEmote(false)
+				task.spawn(function()
+					ownsEmote(_K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, id))
+				end)
+
+				playing:Play(0.1, 99, speed)
+				env.playing = playing
+				env.window._instance.Visible = true
+
+				return playing
+			end
+
+			env.playEmote = playEmote
+			_K.Remote.Emote.OnClientEvent:Connect(playEmote)
+
+			return env
+		end,
+		env = function(_K)
+			return {
+				remote = _K.Remote.Emote,
+			}
+		end,
+		run = function(context, players, animation: number, loop: boolean?, speed: number?)
+			for _, player in players do
+				context.env.remote:FireClient(player, animation, loop, speed)
+			end
+		end,
+	},
+	{
 		name = "normal",
 		aliases = { "uninfect" },
 		description = "Returns one or more player(s) to their normal appearance.",
