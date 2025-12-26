@@ -103,6 +103,7 @@ return {
 
 				local previewId
 				env.preview = UI.new "Frame" {
+					Name = "Preview",
 					Parent = UI.LayerTopInset,
 					BackgroundColor3 = Color3.new(1, 1, 1),
 					Size = UDim2.new(0, 300, 0, 360),
