@@ -30,6 +30,7 @@ local Remote = {
 	Settings = _REMOTE,
 	Teleport = _REMOTE,
 	Unban = _REMOTE,
+	VIPCheck = _REMOTE,
 	VIPNotification = _REMOTE,
 
 	ShowFPS = _REMOTECALL,

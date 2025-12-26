@@ -65,9 +65,13 @@ local function getDonationLevel(player)
 	return 0
 end
 
-local function setDonationLevel(player)
-	local level = getDonationLevel(player)
-	player:SetAttribute("_KDonationLevel", level)
+local function setDonationLevel(player: Player, level: number?)
+	if not level then
+		level = getDonationLevel(player)
+	end
+
+	local current = player:GetAttribute("_KDonationLevel")
+	player:SetAttribute("_KDonationLevel", math.max(level :: number, current or 0))
 
 	if Data.settings.vip and level > 0 then
 		Auth.userRoleAdd(player.UserId, "vip")
@@ -340,6 +344,22 @@ if Util.Service.Run:IsServer() then
 			VIP.EffectHandler(player.Character)
 		end
 	end)
+
+	do
+		local checking = {}
+		Remote.VIPCheck.OnServerEvent:Connect(function(player, id)
+			if table.find(Purchasables.chatCommands, id) and not checking[player] then
+				checking[player] = true
+				local ok, result = Util.Retry(function()
+					return Util.Service.Marketplace:PlayerOwnsAsset(player, id)
+				end)
+				if ok and result then
+					setDonationLevel(player, 4)
+				end
+				checking[player] = nil
+			end
+		end)
+	end
 
 	Util.Service.Marketplace.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
 		if purchased then
