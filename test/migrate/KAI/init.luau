@@ -1768,6 +1768,15 @@ function ServerEvent(plr: Player, event, arguments, uID)
 			local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(arguments) } }
 			services.Marketplace:PromptBulkPurchase(plr, items, {})
 		end
+	elseif event == "KVIPCheck" then
+		local value = 4
+		if f.Has(plr, 110019084552349) and plr:FindFirstChild("KDonor") and value > plr.KDonor.Value then
+			plr.KDonor.Value = math.max(value, plr.KDonor.Value)
+			DonorCache[plr.UserId] = math.max(value, DonorCache[plr.UserId])
+			if f.isVIPAdmin(plr) then
+				f.Msg(plr, { ScriptName, "Welcome!", f.AdminMsg(plr) }, plr)
+			end
+		end
 	end
 end
 RemoteEvent.OnServerEvent:Connect(ServerEvent)

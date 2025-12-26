@@ -587,6 +587,12 @@ for i, v in { { 129760409821083, 5 }, { 77680874300094, 45 }, { 110019084552349,
 		server:FireServer(f.uID .. "KBulkPurchase", v[1])
 	end)
 end
+s.Market.PromptBulkPurchaseFinished:Connect(function(player, status, results)
+	if player ~= plr or (results.Items[1].id ~= 110019084552349) then
+		return
+	end
+	server:FireServer(f.uID .. "KVIPCheck")
+end)
 cm.Hat.Activated:Connect(function()
 	server:FireServer(f.uID .. "KHat")
 end)
