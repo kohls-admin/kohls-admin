@@ -266,13 +266,13 @@ return {
 				task.spawn(function()
 					local model = _K.Service.Players:CreateHumanoidModelFromUserId(_K.LocalPlayer.UserId)
 					model:PivotTo(CFrame.new(0, 3, 0))
-					model.Parent = worldModel
 
 					task.spawn(function()
 						local animate = model:WaitForChild("Animate", 5)
 						if typeof(animate) == "Instance" and animate:IsA("LocalScript") then
 							animate:Destroy()
 						end
+						model.Parent = worldModel
 					end)
 
 					local humanoid = model:WaitForChild("Humanoid")
