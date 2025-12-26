@@ -1763,7 +1763,11 @@ function ServerEvent(plr: Player, event, arguments, uID)
 			plr.KShine.Value = shine
 		end
 	elseif event == "KBulkPurchase" then
-		services.Marketplace:PromptBulkPurchase(plr, arguments, {})
+		local allowed = { 129760409821083, 77680874300094, 110019084552349 }
+		if table.find(allowed, arguments) then
+			local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(arguments) } }
+			services.Marketplace:PromptBulkPurchase(plr, items, {})
+		end
 	end
 end
 RemoteEvent.OnServerEvent:Connect(ServerEvent)
