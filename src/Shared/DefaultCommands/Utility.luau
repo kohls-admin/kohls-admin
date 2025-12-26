@@ -377,60 +377,52 @@ return {
 								Padding = UI.Theme.Padding,
 							},
 
-							UI.new "ImageLabel" {
-								BackgroundTransparency = UI.Theme.TransparencyHeavy,
+							UI.new "ImageButton" {
+								BackgroundTransparency = 1,
 								BackgroundColor3 = UI.Theme.PrimaryText,
 								Size = UDim2.new(1, 0, 1, 0),
 								SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-								UI.new "UICorner" {
-									CornerRadius = UDim.new(1, 0),
-								},
-								UI.new "Stroke" {},
+								ImageTransparency = 0.25,
+								ImageColor3 = function()
+									return if EMOTE.emoteId() == item.lineData.emoteId
+										then Color3.new(1, 0, 0)
+										else Color3.new(1, 1, 1)
+								end,
+								Image = function()
+									return if EMOTE.emoteId() == item.lineData.emoteId
+										then UI.Theme.Image.Stop
+										else UI.Theme.Image.Play
+								end,
 
-								UI.new "ImageButton" {
-									BackgroundTransparency = 1,
-									ImageTransparency = 0.25,
-									ImageColor3 = function()
-										return if EMOTE.emoteId() == item.lineData.emoteId
-											then Color3.new(1, 0, 0)
-											else Color3.new(1, 1, 1)
-									end,
-									Image = function()
-										return if EMOTE.emoteId() == item.lineData.emoteId
-											then UI.Theme.Image.Stop
-											else UI.Theme.Image.Play
-									end,
-									Size = UDim2.new(1, 0, 1, 0),
-									SizeConstraint = Enum.SizeConstraint.RelativeYY,
-
-									UI.action(function(button)
-										button.Activated:Connect(function()
-											if
-												not item.lineData.owned
-												or _K.LocalPlayer:GetAttribute("_KDonationLevel") < 4
-											then
-												EMOTE.updatePreview(item.lineData.emoteId)
-												EMOTE.preview.Visible = true
-												return
+								UI.action(function(button)
+									button.Activated:Connect(function()
+										if
+											not item.lineData.owned
+											or _K.LocalPlayer:GetAttribute("_KDonationLevel") < 4
+										then
+											EMOTE.updatePreview(item.lineData.emoteId)
+											EMOTE.preview.Visible = true
+											return
+										end
+										if EMOTE.emoteId._value == item.lineData.emoteId then
+											_K.UI.Sound.Hover01:Play()
+											EMOTE.playEmote()
+										else
+											_K.UI.Sound.Hover03:Play()
+											EMOTE.playEmote(item.lineData.animationId)
+											if _K.forceChat then
+												_K.forceChat(`{_K.getCommandPrefix()}emote me {item.lineData.name}`)
 											end
-											if EMOTE.emoteId._value == item.lineData.emoteId then
-												EMOTE.playEmote()
-											else
-												EMOTE.playEmote(item.lineData.animationId)
-												if _K.forceChat then
-													_K.forceChat(`{_K.getCommandPrefix()}emote me {item.lineData.name}`)
-												end
-											end
-										end)
-										button.MouseEnter:Connect(function()
-											button.ImageTransparency = 0
-										end)
-										button.MouseLeave:Connect(function()
-											button.ImageTransparency = 0.25
-										end)
-									end),
-								},
+										end
+									end)
+									button.MouseEnter:Connect(function()
+										button.ImageTransparency = 0
+									end)
+									button.MouseLeave:Connect(function()
+										button.ImageTransparency = 0.25
+									end)
+								end),
 							},
 
 							UI.new "TextLabel" {
@@ -483,7 +475,6 @@ return {
 					RenderItem = function(self, lineItem, lineData)
 						lineItem.lineData = lineData
 						local instance = lineItem._instance
-						instance.ImageLabel.Image = `rbxthumb://type=Asset&id={lineData.emoteId}&w=150&h=150`
 						instance.TextLabel.Text = lineData.name
 						if lineData.owned == nil then
 							lineData.owned = false
