@@ -292,10 +292,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 	require(script:WaitForChild("GetKA"))
 	require(script:WaitForChild("Network"))
 
-	if
-		_K.Data.settings.joinNotificationRank
-		and _K.Auth.getRank(_K.Service.Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank
-	then
+	function _K.client.rolesNotification()
 		local member = _K.Data.members[tostring(_K.LocalPlayer.UserId)]
 		local roleStrings = {}
 		if member and member.roles then
@@ -327,6 +324,13 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 				_K.client.commandsWindowVisible(true)
 			end,
 		})
+	end
+
+	if
+		_K.Data.settings.joinNotificationRank
+		and _K.Auth.getRank(_K.Service.Players.LocalPlayer.UserId) >= _K.Data.settings.joinNotificationRank
+	then
+		_K.client.rolesNotification()
 	end
 
 	do

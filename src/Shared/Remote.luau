@@ -25,6 +25,7 @@ local Remote = {
 	Refresh = _REMOTE,
 	Role = _REMOTE,
 	Roles = _REMOTE,
+	RolesNotification = _REMOTE,
 	SetCore = _REMOTE,
 	Setting = _REMOTE,
 	Settings = _REMOTE,

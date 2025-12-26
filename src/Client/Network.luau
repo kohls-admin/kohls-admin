@@ -246,4 +246,7 @@ _K.Remote.Roles.OnClientEvent:Connect(function(roles)
 	_K.client.updateInterfaceAuth()
 end)
 
+_K.Remote.RolesNotification.OnClientEvent:Connect(function()
+	_K.client.rolesNotification()
+end)
 return true

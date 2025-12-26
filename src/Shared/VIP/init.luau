@@ -355,6 +355,7 @@ if Util.Service.Run:IsServer() then
 				end)
 				if ok and result then
 					setDonationLevel(player, 4)
+					Remote.RolesNotification:FireClient(player)
 				end
 				checking[player] = nil
 			end
@@ -394,6 +395,7 @@ if Util.Service.Run:IsServer() then
 				level = math.max(level, vipIndex)
 				if Data.settings.vip then
 					Auth.userRoleAdd(player.UserId, "vip")
+					Remote.RolesNotification:FireClient(player)
 				end
 			end
 			player:SetAttribute("_KDonationLevel", level)
