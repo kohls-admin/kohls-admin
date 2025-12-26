@@ -9,19 +9,29 @@ local emoteToAnimationId = {}
 local emoteItemFromId = {}
 local emotes = {
 	{
+		name = "Spin",
+		animationId = 138111357779914,
+		emoteId = 136523996372200,
+	},
+	{
+		name = "Trip",
+		animationId = 108359446512277,
+		emoteId = 124892295531922,
+	},
+	{
 		name = "Aura",
 		animationId = 115838519466885,
 		emoteId = 88753579128439,
 	},
 	{
-		name = "Box",
-		animationId = 101350367122161,
-		emoteId = 83194012641579,
+		name = "Reset",
+		animationId = 94627802956613,
+		emoteId = 96519077691177,
 	},
 	{
-		name = "Hide",
-		animationId = 123543644842799,
-		emoteId = 132448394391960,
+		name = "Phase",
+		animationId = 136482078271100,
+		emoteId = 104339810974997,
 	},
 	{
 		name = "Dog",
@@ -39,24 +49,14 @@ local emotes = {
 		emoteId = 96782264040461,
 	},
 	{
-		name = "Phase",
-		animationId = 136482078271100,
-		emoteId = 104339810974997,
+		name = "Box",
+		animationId = 101350367122161,
+		emoteId = 83194012641579,
 	},
 	{
-		name = "Reset",
-		animationId = 94627802956613,
-		emoteId = 96519077691177,
-	},
-	{
-		name = "Spin",
-		animationId = 138111357779914,
-		emoteId = 136523996372200,
-	},
-	{
-		name = "Trip",
-		animationId = 108359446512277,
-		emoteId = 124892295531922,
+		name = "Hide",
+		animationId = 123543644842799,
+		emoteId = 132448394391960,
 	},
 }
 
