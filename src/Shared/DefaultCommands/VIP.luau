@@ -76,7 +76,7 @@ return {
 				local previewCamera = UI.new "Camera" {}
 
 				local cameraStartCFrame = CFrame.new(0, 3, 0)
-					* CFrame.Angles(math.rad(-cameraAngleX), math.rad(cameraAngleY), 0)
+					* CFrame.fromOrientation(math.rad(cameraAngleX), math.rad(cameraAngleY), 0)
 					* CFrame.new(0, 0, cameraZ)
 
 				local resetCameraTween = game:GetService("TweenService")
@@ -90,7 +90,7 @@ return {
 
 				local function updatePreviewCamera()
 					previewCamera.CFrame = CFrame.new(0, 3, 0)
-						* CFrame.Angles(math.rad(-cameraAngleX), math.rad(cameraAngleY), 0)
+						* CFrame.fromOrientation(math.rad(cameraAngleX), math.rad(cameraAngleY), 0)
 						* CFrame.new(0, 0, cameraZ)
 					if not (previewCamera.CFrame):FuzzyEq(cameraStartCFrame) then
 						resetCamera()
