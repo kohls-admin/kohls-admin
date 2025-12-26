@@ -331,7 +331,6 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 	do
 		local count = 0
-		local lastVIPNotification = -math.huge
 		local vipNotificationVisible = false
 
 		local function vipNotificationClosed()
@@ -343,18 +342,16 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 			vipNotificationVisible = false
 		end
 
-		function _K.client.VIPNotification(check: boolean?)
+		_K.client.VIPNotification = _K.Util.Function.throttle(300, function(check: boolean?)
 			if
 				vipNotificationVisible
 				or not _K.Data.settings.vip
-				or (check and tick() - lastVIPNotification < 16 + 2 ^ (5 + count))
 				or (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) > 2
 			then
 				return
 			end
 
 			count += 1
-			lastVIPNotification = tick()
 			vipNotificationVisible = true
 
 			local initialJoin = _K.LocalPlayer:GetAttribute("_KInitialJoin")
@@ -370,7 +367,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 				Activated = showPopup,
 				Close = vipNotificationClosed,
 			})
-		end
+		end)
 		_K.Remote.VIPNotification.OnClientEvent:Connect(_K.client.VIPNotification)
 		_K.VIP.popup.Parent = UI.LayerTopInset
 

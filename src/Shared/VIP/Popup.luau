@@ -504,7 +504,7 @@ close.Activated:Connect(function()
 	if thread and coroutine.status(thread) == "suspended" then
 		task.cancel(thread)
 	end
-	thread = task.delay(2 ^ (6 + count), shared._K_INTERFACE.client.VIPNotification, true)
+	thread = task.delay(300, shared._K_INTERFACE.client.VIPNotification, true)
 end)
 
 MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player, status, results)
@@ -514,6 +514,7 @@ MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player, status, r
 	if status == Enum.MarketplaceBulkPurchasePromptStatus.Completed then
 		shared._K_INTERFACE.client.VIPNotification = function() end
 		vip.Visible = false
+		task.wait(4)
 		pcall(function()
 			game:GetService("AvatarEditorService"):PromptSetFavorite(17873329124, 1, true)
 		end)
