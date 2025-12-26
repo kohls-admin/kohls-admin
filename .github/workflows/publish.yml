@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: testing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: CompeyDev/setup-rokit@v0.1.2
