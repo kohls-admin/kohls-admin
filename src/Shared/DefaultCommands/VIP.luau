@@ -436,7 +436,12 @@ return {
 				emoteId(id)
 				ownsEmote(false)
 				task.spawn(function()
-					ownsEmote(_K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, id))
+					local ok, result = _K.Util.Retry(function()
+						return _K.Util.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, id)
+					end)
+					if ok then
+						ownsEmote(result)
+					end
 				end)
 
 				playing:Play(0.1, 99, speed)

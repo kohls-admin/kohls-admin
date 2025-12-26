@@ -479,9 +479,13 @@ return {
 						if lineData.owned == nil then
 							lineData.owned = false
 							task.spawn(function()
-								lineData.owned =
-									_K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, lineData.emoteId)
-								self:render(true)
+								local ok, result = _K.Util.Retry(function()
+									return _K.Util.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, lineData.emoteId)
+								end)
+								if ok then
+									lineData.owned = result
+									self:render(true)
+								end
 							end)
 						end
 						instance.Unlock.Visible = not lineData.owned
