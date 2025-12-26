@@ -346,7 +346,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 			vipNotificationVisible = false
 		end
 
-		_K.client.VIPNotification = _K.Util.Function.throttle(300, function(check: boolean?)
+		_K.client.VIPNotification = _K.Util.Function.throttle(300, function()
 			if
 				vipNotificationVisible
 				or not _K.Data.settings.vip
