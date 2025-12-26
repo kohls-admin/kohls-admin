@@ -73,8 +73,10 @@ local function setDonationLevel(player: Player, level: number?)
 	local current = player:GetAttribute("_KDonationLevel")
 	player:SetAttribute("_KDonationLevel", math.max(level :: number, current or 0))
 
-	if Data.settings.vip and level > 0 then
-		Auth.userRoleAdd(player.UserId, "vip")
+	if Data.settings.vip then
+		if level > 0 then
+			Auth.userRoleAdd(player.UserId, "vip")
+		end
 		if level < 3 then
 			task.delay(8, Remote.VIPNotification.FireClient, Remote.VIPNotification, player)
 		end
