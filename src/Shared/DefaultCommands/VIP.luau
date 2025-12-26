@@ -1488,22 +1488,69 @@ return {
 				optional = true,
 			},
 		},
-		env = function()
-			return {
-				allowed = { 24112667, 24114402, 33070696, 305888394 },
-				limit = function(character)
-					-- limit to 16 hats to mitigate lag
-					local hats = 0
-					for _, child in character:GetChildren() do
-						if child:IsA("Accoutrement") and string.find(child.Name, "_KHat") == 1 then
-							hats += 1
-							if hats >= 16 then
-								child:Destroy()
-							end
+		env = function(_K)
+			local env = {
+				allowed = { 24112667, 24114402, 33070696, 305888394 }, -- sound hats
+				cache = {},
+			}
+
+			function env.limit(character)
+				-- limit to 16 hats to mitigate lag
+				local hats = 0
+				for _, child in character:GetChildren() do
+					if child:IsA("Accoutrement") and string.find(child.Name, "_KHat") == 1 then
+						hats += 1
+						if hats >= 16 then
+							child:Destroy()
 						end
 					end
-				end,
-			}
+				end
+			end
+
+			function env.loadHat(assetId)
+				local model = _K.Service.Insert:LoadAsset(assetId)
+
+				if not table.find(env.allowed, assetId) then
+					for _, descendant in model:GetDescendants() do
+						if descendant:IsA("BaseScript") or descendant:IsA("ModuleScript") then
+							descendant:Destroy()
+						end
+					end
+				end
+
+				local hat = model:FindFirstChildWhichIsA("Accoutrement")
+				if hat then
+					hat.Parent = nil
+				end
+				model:Destroy()
+
+				if not hat then
+					return
+				end
+
+				local handle = hat:FindFirstChild("Handle")
+				if handle then
+					local mesh: FileMesh = handle:FindFirstChildWhichIsA("FileMesh")
+					if mesh then
+						local new: MeshPart = _K.Service.Insert:CreateMeshPartAsync(
+							mesh.MeshId,
+							Enum.CollisionFidelity.Box,
+							Enum.RenderFidelity.Precise
+						)
+						new.Name = "Handle"
+						new.TextureID = mesh.TextureId
+						mesh:Destroy()
+						for _, v in handle:GetChildren() do
+							v.Parent = new
+						end
+						new.Parent = hat
+						handle:Destroy()
+					end
+				end
+
+				return hat
+			end
+			return env
 		end,
 
 		run = function(context, players, assetIds, texture, color, reflectance, material)
@@ -1512,57 +1559,21 @@ return {
 					break
 				end
 
-				local hat, model
-
-				-- meshpart loading hack for crm neon compatibility
-				local accessoryTypes = {
-					[8] = "HatAccessory",
-					[41] = "HairAccessory",
-					[42] = "FaceAccessory",
-					[43] = "NeckAccessory",
-					[44] = "ShouldersAccessory",
-					[45] = "FrontAccessory",
-					[46] = "BackAccessory",
-					[47] = "WaistAccessory",
-				}
-				local ok, info = pcall(function()
-					return context._K.Service.Marketplace:GetProductInfo(assetId)
-				end)
-				local accessoryType = ok and accessoryTypes[info.AssetTypeId]
-				local description = Instance.new("HumanoidDescription")
-				if accessoryType then
-					description[accessoryType] = assetId
-					model = context._K.Service.Players:CreateHumanoidModelFromDescription(
-						description,
-						Enum.HumanoidRigType.R15
-					)
-					hat = model:FindFirstChildWhichIsA("Accoutrement")
-				end
-
-				-- fallback hat loading
+				local hat = context.env.cache[assetId]
 				if not hat then
-					model = context._K.Service.Insert:LoadAsset(assetId)
-					-- clean up scripts if not a sound hat
-					if not table.find(context.env.allowed, assetId) then
-						for _, descendant in model:GetDescendants() do
-							if descendant:IsA("BaseScript") or descendant:IsA("ModuleScript") then
-								descendant:Destroy()
-							end
-						end
-					end
-					hat = model:FindFirstChildWhichIsA("Accoutrement")
+					hat = context.env.loadHat(assetId)
+					context.env.cache[assetId] = hat
 				end
-
-				hat = hat and hat:Clone()
-				model:Destroy()
 
 				if not hat then
 					continue
 				end
 
-				if texture and hat:FindFirstChild("Handle") then
-					if hat.Handle:IsA("MeshPart") then
-						hat.Handle.TextureID = texture
+				local handle = hat:FindFirstChild("Handle")
+
+				if texture and handle then
+					if handle:IsA("MeshPart") then
+						handle.TextureID = texture
 					else
 						local mesh = hat.Handle:FindFirstChildWhichIsA("FileMesh")
 						if mesh then
