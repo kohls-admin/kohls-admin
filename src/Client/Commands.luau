@@ -177,7 +177,10 @@ function Commands.new(_K)
 
 	local function updatePurchasePrice()
 		local ok, result = pcall(function()
-			return _K.Service.Marketplace:GetProductInfo(purchase.gamepass, Enum.InfoType.GamePass).PriceInRobux
+			local productType = if purchase.role == "vip" and _K.Data.settings.vip
+				then Enum.InfoType.Asset
+				else Enum.InfoType.GamePass
+			return _K.Service.Marketplace:GetProductInfo(purchase.gamepass, productType).PriceInRobux
 		end)
 		purchaseButton._content.Price.Text = `<b>{ok and result or "?"}</b>`
 	end
