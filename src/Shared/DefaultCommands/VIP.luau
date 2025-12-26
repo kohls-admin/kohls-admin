@@ -377,7 +377,9 @@ return {
 					Size = buttonSize,
 					Visible = buttonVisible,
 					Activated = function()
-						_K.Service.AvatarEditor:PromptSetFavorite(emoteId._value, 1, true)
+						pcall(function()
+							_K.Service.AvatarEditor:PromptSetFavorite(emoteId._value, 1, true)
+						end)
 					end,
 				}
 

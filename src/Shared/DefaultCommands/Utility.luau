@@ -470,7 +470,9 @@ return {
 								Size = UDim2.new(1, 0, 1, 0),
 								SizeConstraint = Enum.SizeConstraint.RelativeYY,
 								Activated = function()
-									_K.Service.AvatarEditor:PromptSetFavorite(item.lineData.emoteId, 1, true)
+									pcall(function()
+										_K.Service.AvatarEditor:PromptSetFavorite(item.lineData.emoteId, 1, true)
+									end)
 								end,
 							},
 						}
