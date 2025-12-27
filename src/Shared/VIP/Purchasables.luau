@@ -1,5 +1,5 @@
 return {
-	chatCommands = { 115444443724463, 110019084552349 },
+	chatCommands = { 115444443724463, 110019084552349, 130880915606069 },
 
 	donations = {
 		{ name = "Tip", color = "#bf0", id = 5391355, assetId = 129760409821083 },

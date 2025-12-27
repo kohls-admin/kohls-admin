@@ -96,11 +96,19 @@ g.TextStrokeTransparency = 0.75
 g.TextSize = 18
 g.TextColor3 = Color3.fromRGB(255, 255, 255)
 g.TextYAlignment = 0
-g.Text = "VIP DONATION"
+g.Text = "VIP Commands"
 g.TextWrapped = true
 g.TextWrap = true
 g.Font = 4
 g.Parent = d
+local uIGradient_g = Instance.new("UIGradient")
+uIGradient_g.Name = "UIGradient"
+uIGradient_g.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(127, 0, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 127)),
+})
+uIGradient_g.Rotation = -90
+uIGradient_g.Parent = g
 local i = Instance.new "TextButton"
 i.Name = "Close"
 i.AutoLocalize = false
