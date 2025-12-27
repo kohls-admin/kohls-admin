@@ -90,6 +90,7 @@ return {
 	dashboardButtonRank = 1, --  Minimum role rank for Dashboard button (false = disable)
 	joinNotificationRank = 1, -- Minimum role rank for join notifications (false = disable)
 	onlyShowUsableCommands = true, -- Show only purchasable/usable commands
+	chatCommandsNotification = true, -- Shows users a notification to purchase VIP (non-abusable) chat commands on join, 40% of the purchase goes to the game creator.
 
 	welcomeBadgeId = 0, -- Badge for new players (0 = none)
 

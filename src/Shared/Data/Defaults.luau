@@ -89,6 +89,7 @@ local Data = {
 		vip = true,
 
 		chatCommands = true,
+		chatCommandsNotification = true,
 		commandRequests = true,
 		onlyShowUsableCommands = true,
 		getKohlsAdminPopup = true,

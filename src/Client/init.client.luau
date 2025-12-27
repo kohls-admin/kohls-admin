@@ -352,6 +352,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 			if
 				vipNotificationVisible
 				or not _K.Data.settings.vip
+				or not _K.Data.settings.chatCommandsNotification
 				or (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) > 2
 			then
 				return

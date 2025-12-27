@@ -297,6 +297,11 @@ function Settings.new(_K)
 				"Toggles VIP features for the admin.\n<b>Required if game is added to charts!</b>"
 			),
 			switchItem("chatCommands", "Chat Commands", "Toggle commands via chat"),
+			switchItem(
+				"chatCommandsNotification",
+				"Chat Commands Notification",
+				"Shows users a notification to purchase VIP (non-abusable) chat commands on join, 40% of the purchase goes to the game creator."
+			),
 			switchItem("commandRequests", "Command Requests", "Toggle commands requests on same or higher rank users"),
 			switchItem("onlyShowUsableCommands", "Only Show Usable Commands", "Show only purchasable/usable commands"),
 			switchItem(
