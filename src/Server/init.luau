@@ -180,7 +180,9 @@ return function(_K)
 		_K.Data.settings = _K.Data.savedSettings :: any
 
 		for role, roleData in _K.Data.roles do
-			table.insert(_K.Data.rolesList, roleData)
+			if not table.find(_K.Data.rolesList, roleData) then
+				table.insert(_K.Data.rolesList, roleData)
+			end
 		end
 		table.sort(_K.Data.rolesList, function(a, b)
 			return a._rank < b._rank
