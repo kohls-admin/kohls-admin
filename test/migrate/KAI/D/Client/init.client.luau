@@ -1733,7 +1733,7 @@ function ClientEvent(a, b)
 		c2 = v.N.Activated:Connect(function()
 			cleanup(false)
 		end)
-		delay(9, function()
+		task.delay(9, function()
 			if v.Parent == CoreUI and c1 then
 				wrap(f.Hide, v, true)
 			end
