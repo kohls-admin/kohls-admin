@@ -1546,6 +1546,7 @@ return {
 						)
 						new.Name = "Handle"
 						new.TextureID = mesh.TextureId
+						new.Size *= mesh.Scale
 						mesh:Destroy()
 						for _, v in handle:GetChildren() do
 							v.Parent = new
