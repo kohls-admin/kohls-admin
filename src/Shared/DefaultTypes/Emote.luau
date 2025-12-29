@@ -1,105 +1,36 @@
+local AvatarEditorService = game:GetService("AvatarEditorService")
 local InsertService = game:GetService("InsertService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local RunService = game:GetService("RunService")
 
-local _K
+local Util = require(script.Parent.Parent.Util)
 
+local _K, Remote
+
+local emotes = {}
+local emoteItemFromId = {}
 local animationToEmoteId = {}
 local emoteToAnimationId = {}
-local emoteItemFromId = {}
-local emotes = {
-	{
-		name = "Spin",
-		animationId = 138111357779914,
-		emoteId = 136523996372200,
-	},
-	{
-		name = "Trip",
-		animationId = 108359446512277,
-		emoteId = 124892295531922,
-	},
-	{
-		name = "Aura",
-		animationId = 115838519466885,
-		emoteId = 88753579128439,
-	},
-	{
-		name = "Reset",
-		animationId = 94627802956613,
-		emoteId = 96519077691177,
-	},
-	{
-		name = "Phase",
-		animationId = 136482078271100,
-		emoteId = 104339810974997,
-	},
-	{
-		name = "Dog",
-		animationId = 88276748301589,
-		emoteId = 77670698747413,
-	},
-	{
-		name = "Focus",
-		animationId = 107132020813478,
-		emoteId = 79391937339603,
-	},
-	{
-		name = "Protect",
-		animationId = 71804788958142,
-		emoteId = 96782264040461,
-	},
-	{
-		name = "Box",
-		animationId = 101350367122161,
-		emoteId = 83194012641579,
-	},
-	{
-		name = "Hide",
-		animationId = 123543644842799,
-		emoteId = 132448394391960,
-	},
-}
 
-local function getInfo(id: number)
-	return MarketplaceService:GetProductInfo(id)
-end
-
-local function updateEmoteName(emoteItem)
-	local ok, result = pcall(getInfo, emoteItem)
-	if ok and type(result) == "table" and result.AssetTypeId == Enum.AssetType.EmoteAnimation.Value then
-		emoteItem.name = result.Name
-		emoteItem.nameLower = string.lower(result.Name)
-	end
-end
-
-for _, item in emotes do
-	item.default = true
-	emoteItemFromId[item.emoteId] = item
-	emoteToAnimationId[item.emoteId] = item.animationId
-	animationToEmoteId[item.animationId] = item.emoteId
-	item.nameLower = string.lower(item.name)
-	task.spawn(updateEmoteName, item)
-end
-
-local isEmoteCache = {}
 local function isEmote(id: number)
-	if isEmoteCache[id] then
-		return isEmoteCache[id]
+	if emoteItemFromId[id] then
+		return emoteItemFromId[id]
 	end
 
-	local ok, result = pcall(getInfo, id)
+	local ok, result = pcall(MarketplaceService.GetProductInfo, MarketplaceService, id)
 	if ok and type(result) == "table" and result.AssetTypeId == Enum.AssetType.EmoteAnimation.Value then
-		isEmoteCache[id] = true
-		if not emoteItemFromId[id] then
-			local item = {
-				name = result.Name,
-				nameLower = string.lower(result.Name),
-				emoteId = id,
-			}
-			table.insert(emotes, item)
-			emoteItemFromId[id] = item
+		local item = {
+			name = result.Name,
+			nameLower = string.lower(result.Name),
+			emoteId = id,
+			canSell = result.IsForSale and not (result.isLimited or result.isLimitedUnique),
+		}
+		table.insert(emotes, item)
+		emoteItemFromId[id] = item
+		if item.canSell then
+			_K.VIP.allowedBulkPurchaseIds[id] = true
 		end
-		return true
+		return item
 	end
 
 	return false
@@ -114,7 +45,7 @@ local function getAnimationIdFromEmoteId(emoteId: number): number?
 		return
 	end
 
-	-- clients can't LoadAsset (request from server?)
+	-- clients can't LoadAsset
 	if RunService:IsClient() then
 		return 0
 	end
@@ -130,19 +61,116 @@ local function getAnimationIdFromEmoteId(emoteId: number): number?
 	if ok and result then
 		result = string.match(result, "%d+$")
 		if result then
+			result = tonumber(result)
+			animationToEmoteId[result] = emoteId
 			emoteToAnimationId[emoteId] = result
+
 			local item = emoteItemFromId[emoteId]
 			if item then
 				item.animationId = result
+				if Remote then
+					Remote:FireAllClients({ item })
+				end
 			end
 			return result
 		else
 			warn("Invalid animationId")
 		end
+	else
+		warn(result)
 	end
 
 	return
 end
+
+local function pagesToTable(pages)
+	local items = {}
+	while true do
+		local page = pages:GetCurrentPage()
+		table.move(page, 1, #page, #items + 1, items)
+		if pages.IsFinished then
+			break
+		end
+		pages:AdvanceToNextPageAsync()
+	end
+	return items
+end
+
+task.spawn(function()
+	if RunService:IsServer() then
+		local params = CatalogSearchParams.new()
+		params.AssetTypes = { Enum.AvatarAssetType.EmoteAnimation }
+		params.CreatorId = 3403354
+		params.CreatorType = Enum.CreatorTypeFilter.Group
+
+		local okPages, pages = Util.Retry(function()
+			return AvatarEditorService:SearchCatalogAsync(params)
+		end)
+
+		if not okPages then
+			warn(pages)
+			return
+		end
+
+		local okItems, items = Util.Retry(function()
+			return pagesToTable(pages)
+		end)
+
+		if not okItems then
+			warn(items)
+			return
+		end
+
+		local tasks = Util.Tasks.new()
+		for _, item in items do
+			local emote = {
+				default = true,
+				animationId = 0,
+				emoteId = item.Id,
+				name = item.Name,
+				nameLower = string.lower(item.Name),
+			}
+			table.insert(emotes, emote)
+			emoteItemFromId[item.Id] = emote
+			_K.VIP.allowedBulkPurchaseIds[item.Id] = true
+			tasks:add(getAnimationIdFromEmoteId, item.Id)
+		end
+		tasks:wait()
+
+		Remote = Instance.new("RemoteEvent", script)
+		Remote.OnServerEvent:Connect(function(player)
+			Remote:FireClient(player, emotes)
+		end)
+	else
+		Remote = script:WaitForChild("RemoteEvent")
+		Remote.OnClientEvent:Connect(function(data)
+			for index, item in data do
+				emoteToAnimationId[item.emoteId] = item.animationId
+				animationToEmoteId[item.animationId] = item.emoteId
+				local existing = emoteItemFromId[item.emoteId]
+				if existing then
+					table.clear(existing)
+					for k, v in item do
+						existing[k] = v
+					end
+				else
+					table.insert(emotes, item)
+					emoteItemFromId[item.emoteId] = item
+				end
+			end
+
+			if
+				_K
+				and _K.Registry.commands.emotes
+				and _K.Registry.commands.emotes.env
+				and _K.Registry.commands.emotes.env.scroller
+			then
+				_K.Registry.commands.emotes.env.scroller:refreshList()
+			end
+		end)
+		Remote:FireServer()
+	end
+end)
 
 local emoteType = {
 	filterLog = true,
@@ -198,8 +226,4 @@ return function(context)
 	_K.Data.emotes = emotes
 	_K.Registry.registerType("emote", emoteType)
 	_K.Registry.registerType("emotes", { listable = true }, emoteType)
-
-	for _, item in emotes do
-		_K.VIP.allowedBulkPurchaseIds[item.emoteId] = true
-	end
 end
