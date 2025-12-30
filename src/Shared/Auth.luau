@@ -576,7 +576,7 @@ function Auth.getRoleFromRank(rank: number): Role
 		if role._rank == rank then
 			return role
 		end
-		if role._rank >= rank and role._rank < roleResult._rank then
+		if role._rank >= rank and (not roleResult or role._rank < roleResult._rank) then
 			roleResult = role
 		end
 	end
