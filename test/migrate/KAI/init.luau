@@ -435,6 +435,24 @@ end
 function f.Players(): { Player }
 	return services.Players:GetPlayers()
 end
+function f.IsInGroup(player: Player, groupId: number): boolean
+	local ok, result = pcall(function()
+		return player:IsInGroup(groupId)
+	end)
+	return ok and result
+end
+function f.GetRankInGroup(player: Player, groupId: number): number
+	local ok, result = pcall(function()
+		return player:GetRankInGroup(groupId)
+	end)
+	return if ok then result else 0
+end
+function f.GetRoleInGroup(player: Player, groupId: number): string
+	local ok, result = pcall(function()
+		return player:GetRoleInGroup(groupId)
+	end)
+	return if ok then result else "Guest"
+end
 function f.getPlayer(name: string): Player
 	local b = {}
 	for i, player in f.Players() do
@@ -535,7 +553,7 @@ function f.toPlayer(player: Player, name: string, id: number?): { Player }
 			elseif d:find("g") == 1 and d:match("%d+$") and d:match("%d+$") ~= d then
 				local gp = tonumber(d:match("%d+$"))
 				for i, v in f.Players() do
-					if v:IsInGroup(gp) then
+					if f.IsInGroup(v, gp) then
 						selected[#selected + 1] = v
 					end
 				end
@@ -885,8 +903,8 @@ function f.isGroupAdmin(player: Player): number?
 	local newPower = 0
 	for groupId, ranks in Set.GroupAdmin do
 		groupId = tonumber(groupId)
-		if player:IsInGroup(groupId) then
-			local currentRank = player:GetRankInGroup(groupId)
+		if f.IsInGroup(player, groupId) then
+			local currentRank = f.GetRankInGroup(player, groupId)
 			for rank, rankPower in ranks do
 				rank = tonumber(rank)
 				if (Set.GroupAdminExactRank ~= true and currentRank >= rank) or currentRank == rank then
@@ -1459,7 +1477,7 @@ end
 -- Donor Stuff
 function f.pe(plr: Player)
 	if plr and plr.Character and FindChild(plr.Character, "HumanoidRootPart") then
-		local nrml = (plr:GetRankInGroup(451053) or 0) <= 1
+		local nrml = f.GetRankInGroup(plr, 451053) <= 1
 		local a, b = nrml and 176111410, nrml and Color3.new(1, 1, 1)
 		if FindChild(plr.Character.HumanoidRootPart, "KPe") then
 			plr.Character.HumanoidRootPart.KPe:Destroy()
@@ -1624,7 +1642,7 @@ function f.Load(plr: Player)
 	new("BoolValue")({ Parent = plr, Name = "KShine", Value = false })
 	local donorValue = 0
 	if
-		(plr:GetRankInGroup(451053) or 0) > 1
+		f.GetRankInGroup(plr, 451053) > 1
 		or f.Has(plr, 110019084552349)
 		or f.Has(plr, 115444443724463)
 		or f.Has(plr, 130880915606069)
@@ -3021,13 +3039,13 @@ function LoadCommands()
 		{ "player", "number" },
 		function(pl, args)
 			for i, plr in args[1] do
-				if not (plr and plr:IsInGroup(args[2])) then
+				if not (plr and f.IsInGroup(plr, args[2])) then
 					return
 				end
 				f.Msg(pl, {
 					ScriptName,
 					plr.DisplayName .. "'s Group Rank",
-					"[" .. plr:GetRankInGroup(args[2]) .. "] " .. plr:GetRoleInGroup(args[2]),
+					"[" .. f.GetRankInGroup(plr, args[2]) .. "] " .. f.GetRoleInGroup(plr, args[2]),
 				}, pl)
 			end
 		end
@@ -5427,7 +5445,7 @@ function LoadCommands()
 			{ "player", "number/", "color/" },
 			function(pl, args)
 				local ex = args[2] or args[3]
-				local nrml = (pl:GetRankInGroup(451053) or 0) <= 1
+				local nrml = f.GetRankInGroup(pl, 451053) <= 1
 				args[2], args[3] = args[2] or nrml and 176111410, args[3] or nrml and Color3.new(1, 1, 1)
 				for i, plr in args[1] do
 					if plr and plr.Character and FindChild(plr.Character, "HumanoidRootPart") then
