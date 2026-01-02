@@ -778,13 +778,16 @@ function f.addCommand(
 	table.insert(state.Commands, { names, description, power, argumentTypes, func })
 end
 function f.Has(player: Player, assetId: number): boolean
-	local _success, result = pcall(function()
+	local ok, result = pcall(function()
 		return services.Marketplace:PlayerOwnsAsset(player, assetId)
 	end)
-	return result
+	return ok and result
 end
 function f.HasPass(player: Player, gamePassId: number): boolean
-	return services.Marketplace:UserOwnsGamePassAsync(player.UserId, gamePassId)
+	local ok, result = pcall(function()
+		return services.Marketplace:UserOwnsGamePassAsync(player.UserId, gamePassId)
+	end)
+	return ok and result
 end
 function f.Auth(from, subject, danger): boolean?
 	-- always authorize self unless dangerous command
