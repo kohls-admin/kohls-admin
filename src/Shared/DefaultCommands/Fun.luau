@@ -880,11 +880,19 @@ return {
 			}
 			local sphere
 			task.defer(function()
-				sphere = _K.Service.Insert:CreateMeshPartAsync(
-					"rbxassetid://116325731356319",
-					Enum.CollisionFidelity.Box,
-					Enum.RenderFidelity.Precise
-				)
+				local ok, result = _K.Util.Retry(function()
+					return _K.Service.Insert:CreateMeshPartAsync(
+						"rbxassetid://116325731356319",
+						Enum.CollisionFidelity.Box,
+						Enum.RenderFidelity.Precise
+					)
+				end)
+				if not ok then
+					sphere = Instance.new("MeshPart")
+					return
+				end
+				sphere = result
+
 				_K.Flux.edit(sphere, {
 					Name = "Sphere",
 					Color = Color3.new(1, 0, 0),

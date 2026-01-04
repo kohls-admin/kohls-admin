@@ -1092,11 +1092,19 @@ return {
 				if handle then
 					local mesh: FileMesh = handle:FindFirstChildWhichIsA("FileMesh")
 					if mesh then
-						local new: MeshPart = _K.Service.Insert:CreateMeshPartAsync(
-							mesh.MeshId,
-							Enum.CollisionFidelity.Box,
-							Enum.RenderFidelity.Precise
-						)
+						local ok, result = _K.Util.Retry(function()
+							return _K.Service.Insert:CreateMeshPartAsync(
+								mesh.MeshId,
+								Enum.CollisionFidelity.Box,
+								Enum.RenderFidelity.Precise
+							)
+						end)
+
+						if not ok then
+							return
+						end
+
+						local new: MeshPart = result
 						new.Name = "Handle"
 						new.TextureID = mesh.TextureId
 						new.Size *= mesh.Scale

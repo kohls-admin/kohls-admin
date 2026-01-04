@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local Package = script.Parent.Parent.Parent.Parent
 
 local Flux = require(Package:WaitForChild("Flux"))
+local Util = require(Package.Shared:WaitForChild("Util"))
 
 local Oklab = Flux.Color.Oklab
 
@@ -27,11 +28,18 @@ attachment.CFrame = CFrame.new(0, -0.5, 0)
 attachment.Name = "BodyBackAttachment"
 
 task.spawn(function()
-	local wingMesh = InsertService:CreateMeshPartAsync(
-		"rbxassetid://135389107063517",
-		Enum.CollisionFidelity.Box,
-		Enum.RenderFidelity.Precise
-	)
+	local ok, result = Util.Retry(function()
+		return InsertService:CreateMeshPartAsync(
+			"rbxassetid://135389107063517",
+			Enum.CollisionFidelity.Box,
+			Enum.RenderFidelity.Precise
+		)
+	end)
+	if not ok then
+		warn(result)
+		return
+	end
+	local wingMesh = result
 	wingMesh:AddTag("_KAlphaWings")
 	wingMesh.Parent = hat
 	wingMesh.Name = "Wings"

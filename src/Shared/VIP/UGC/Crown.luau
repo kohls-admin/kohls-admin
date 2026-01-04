@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local Package = script.Parent.Parent.Parent.Parent
 
 local Flux = require(Package:WaitForChild("Flux"))
+local Util = require(Package.Shared:WaitForChild("Util"))
 
 local Oklab = Flux.Color.Oklab
 
@@ -15,11 +16,18 @@ hat.AttachmentPoint = CFrame.new(0, -1, 0)
 hat:AddTag("_KSuperCrown")
 
 task.spawn(function()
-	local handle = InsertService:CreateMeshPartAsync(
-		"rbxassetid://18966762965",
-		Enum.CollisionFidelity.Box,
-		Enum.RenderFidelity.Automatic
-	)
+	local ok, result = Util.Retry(function()
+		return InsertService:CreateMeshPartAsync(
+			"rbxassetid://18966762965",
+			Enum.CollisionFidelity.Box,
+			Enum.RenderFidelity.Automatic
+		)
+	end)
+	if not ok then
+		warn(result)
+		return
+	end
+	local handle = result
 	handle.Parent = hat
 	handle.Name = "Handle"
 	handle.Color = Color3.new(1, 1, 1)
