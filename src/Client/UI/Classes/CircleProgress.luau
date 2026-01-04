@@ -34,6 +34,9 @@ function Class.new(properties: Properties?)
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
 			Size = UDim2.fromScale(0.5, 1),
+			Visible = function()
+				return self.Alpha() > 0.5
+			end,
 
 			UI.new "ImageLabel" {
 				BackgroundTransparency = 1,
@@ -56,6 +59,9 @@ function Class.new(properties: Properties?)
 			ClipsDescendants = true,
 			Position = UDim2.fromScale(0.5, 0),
 			Size = UDim2.fromScale(0.5, 1),
+			Visible = function()
+				return self.Alpha() > 0
+			end,
 
 			UI.new "ImageLabel" {
 				BackgroundTransparency = 1,
