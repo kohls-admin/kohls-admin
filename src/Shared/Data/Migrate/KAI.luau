@@ -1,8 +1,8 @@
 local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
 
-local Data = require(script.Parent.Parent.Defaults)
-local Util = require(script.Parent.Parent.Parent.Util)
+local Data = require(script.Parent.Parent:WaitForChild("Defaults"))
+local Util = require(script.Parent.Parent.Parent:WaitForChild("Util"))
 
 local function deserializeItem(data: string)
 	local result = {}

@@ -4,7 +4,7 @@ local RunService = game:GetService("RunService")
 
 local Package = script.Parent.Parent.Parent.Parent
 
-local Flux = require(Package.Flux)
+local Flux = require(Package:WaitForChild("Flux"))
 
 local Oklab = Flux.Color.Oklab
 

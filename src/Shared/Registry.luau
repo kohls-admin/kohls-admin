@@ -1,9 +1,9 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
-local Hook = require(script.Parent.Hook)
-local Util = require(script.Parent.Util)
-local Type = require(script.Parent.Type)
+local Hook = require(script.Parent:WaitForChild("Hook"))
+local Util = require(script.Parent:WaitForChild("Util"))
+local Type = require(script.Parent:WaitForChild("Type"))
 
 --- @within Registry
 --- @prop types { [string]: ArgumentType }

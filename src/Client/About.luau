@@ -1,6 +1,6 @@
-local UI = require(script.Parent.UI)
-local CREDITS = require(script.Parent.Credits)
-local UserFrame = require(script.Parent.UserFrame)
+local UI = require(script.Parent:WaitForChild("UI"))
+local CREDITS = require(script.Parent:WaitForChild("Credits"))
+local UserFrame = require(script.Parent:WaitForChild("UserFrame"))
 
 local About = {}
 About.__index = About

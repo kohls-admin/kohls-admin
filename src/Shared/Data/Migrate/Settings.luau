@@ -1,4 +1,4 @@
-local Data = require(script.Parent.Parent.Defaults)
+local Data = require(script.Parent.Parent:WaitForChild("Defaults"))
 
 local function convertFont(font: Enum.Font | Font | string)
 	return if type(font) == "string"

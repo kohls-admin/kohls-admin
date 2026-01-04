@@ -1,10 +1,10 @@
 local Shared = script.Parent
 
-local Data = require(Shared.Data.Defaults)
-local Hook = require(Shared.Hook)
-local Registry = require(Shared.Registry)
-local Remote = require(Shared.Remote)
-local Util = require(Shared.Util)
+local Data = require(Shared.Data:WaitForChild("Defaults"))
+local Hook = require(Shared:WaitForChild("Hook"))
+local Registry = require(Shared:WaitForChild("Registry"))
+local Remote = require(Shared:WaitForChild("Remote"))
+local Util = require(Shared:WaitForChild("Util"))
 
 export type Role = "everyone" | "vip" | "mod" | "admin" | "superadmin" | "creator" | string
 

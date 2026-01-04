@@ -1,5 +1,5 @@
 local RunService = game:GetService("RunService")
-local BaseClass = require(script.Parent.BaseClass)
+local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local UI = require(script.Parent.Parent) :: any
 

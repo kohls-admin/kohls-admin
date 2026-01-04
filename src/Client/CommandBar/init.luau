@@ -2,9 +2,9 @@ local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
 
 local _K = require(script.Parent.Parent)
-local CompletionData = require(script.CompletionData)
+local CompletionData = require(script:WaitForChild("CompletionData"))
 
-local UI = require(script.Parent.UI)
+local UI = require(script.Parent:WaitForChild("UI"))
 local prefix = _K.getCommandPrefix()
 
 local validState = UI.state(nil)

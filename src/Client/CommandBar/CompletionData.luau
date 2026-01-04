@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 
 local Package = script.Parent.Parent.Parent
 
-local Command = require(Package.Shared.Process.Command)
+local Command = require(Package.Shared.Process:WaitForChild("Command"))
 
 local LocalPlayer = Players.LocalPlayer
 

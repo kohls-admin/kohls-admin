@@ -1,6 +1,6 @@
 local UI = require(script.Parent.Parent) :: any
-local BaseClass = require(script.Parent.BaseClass)
-local ColorPicker = require(script.Parent.ColorPicker)
+local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
+local ColorPicker = require(script.Parent:WaitForChild("ColorPicker"))
 type ColorPicker = typeof(ColorPicker.new())
 
 -- a simple color square, when clicked shows a color picker dialog

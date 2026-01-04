@@ -1,7 +1,7 @@
 local DataStoreService = game:GetService("DataStoreService")
 local RunService = game:GetService("RunService")
 
-local Util = require(script.Parent.Parent.Util)
+local Util = require(script.Parent.Parent:WaitForChild("Util"))
 
 local Store = {
 	dataStore = nil :: DataStore?,

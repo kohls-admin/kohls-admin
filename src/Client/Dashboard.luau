@@ -1,13 +1,13 @@
 local _K = require(script.Parent.Parent)
-local UI = require(script.Parent.UI)
+local UI = require(script.Parent:WaitForChild("UI"))
 
-local About = require(script.Parent.About)
-local Bans = require(script.Parent.Bans)
-local Commands = require(script.Parent.Commands)
-local Logs = require(script.Parent.Logs)
-local Members = require(script.Parent.Members)
-local Settings = require(script.Parent.Settings)
-local Market = require(script.Parent.Market)
+local About = require(script.Parent:WaitForChild("About"))
+local Bans = require(script.Parent:WaitForChild("Bans"))
+local Commands = require(script.Parent:WaitForChild("Commands"))
+local Logs = require(script.Parent:WaitForChild("Logs"))
+local Members = require(script.Parent:WaitForChild("Members"))
+local Settings = require(script.Parent:WaitForChild("Settings"))
+local Market = require(script.Parent:WaitForChild("Market"))
 
 local clockStart = os.clock()
 

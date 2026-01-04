@@ -9,7 +9,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local MemoryStore = game:GetService("MemoryStoreService")
 
-local Data = require(script.Defaults)
+local Data = require(script:WaitForChild("Defaults"))
 
 if RunService:IsClient() then
 	return Data
@@ -18,14 +18,14 @@ end
 local Shared = script.Parent
 local Package = Shared.Parent
 
-local Auth = require(Shared.Auth)
-local Hook = require(Shared.Hook)
-local Util = require(Shared.Util)
-local Remote = require(Shared.Remote)
-local Z = require(Package.Z)
+local Auth = require(Shared:WaitForChild("Auth"))
+local Hook = require(Shared:WaitForChild("Hook"))
+local Util = require(Shared:WaitForChild("Util"))
+local Remote = require(Shared:WaitForChild("Remote"))
+local Z = require(Package:WaitForChild("Z"))
 
-local ChunkChanges = require(script.ChunkChanges)
-local Migrate = require(script.Migrate)
+local ChunkChanges = require(script:WaitForChild("ChunkChanges"))
+local Migrate = require(script:WaitForChild("Migrate"))
 
 Data.Migrate = Migrate
 

@@ -1,6 +1,6 @@
 -- dangerous commands restricted to superadmins
 
-local Util = require(script.Parent.Parent.Util)
+local Util = require(script.Parent.Parent:WaitForChild("Util"))
 
 return {
 	{

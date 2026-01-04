@@ -2,8 +2,8 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local Notify = require(script.Parent.Notify)
-local UI = require(script.Parent.UI)
+local Notify = require(script.Parent:WaitForChild("Notify"))
+local UI = require(script.Parent:WaitForChild("UI"))
 
 local LocalPlayer = Players.LocalPlayer
 

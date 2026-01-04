@@ -1,5 +1,5 @@
 local UI = require(script.Parent.Parent) :: any
-local BaseClass = require(script.Parent.BaseClass)
+local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 local Clack = require(script.Clack).registerAll()
 
 Clack.enabled = UI.raw(UI.Theme.TypingSounds)

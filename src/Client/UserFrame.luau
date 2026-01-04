@@ -1,5 +1,5 @@
 local _K = require(script.Parent.Parent)
-local UI = require(script.Parent.UI)
+local UI = require(script.Parent:WaitForChild("UI"))
 
 return function(from: number?, name: string?, image: string?, badgeEnabled: boolean?)
 	local fromK = from :: any == "_K"

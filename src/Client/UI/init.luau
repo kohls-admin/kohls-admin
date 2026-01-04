@@ -7,7 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 local Package = script.Parent.Parent
 
 local Flux = require(Package:WaitForChild("Flux"))
-local Type = require(Package.Flux.Type)
+local Type = require(Package.Flux:WaitForChild("Type"))
 local state = Flux.state
 
 local Classes = script:WaitForChild("Classes")

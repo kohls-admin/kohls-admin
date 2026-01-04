@@ -4,7 +4,7 @@ local Shared = script.Parent.Parent
 local Package = Shared.Parent
 
 local Theme = require(Package.Client:WaitForChild("UI"):WaitForChild("Theme"))
-local Z = require(Package.Z)
+local Z = require(Package:WaitForChild("Z"))
 
 type Dict = { [any]: any }
 
@@ -121,7 +121,7 @@ function Data.mergeRemove(to: Dict, from: Dict): Dict
 	return to
 end
 
-Data.Store = require(script.Parent.Store)
+Data.Store = require(script.Parent:WaitForChild("Store"))
 if game:GetService("RunService"):IsClient() then
 	Data.Store = nil
 end

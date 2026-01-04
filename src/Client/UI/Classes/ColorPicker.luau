@@ -1,6 +1,6 @@
 local UI = require(script.Parent.Parent) :: any
-local BaseClass = require(script.Parent.BaseClass)
-local Menu = require(script.Parent.Menu)
+local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
+local Menu = require(script.Parent:WaitForChild("Menu"))
 type Menu = typeof(Menu.new())
 type MenuInstance = typeof(Menu.new()._instance)
 

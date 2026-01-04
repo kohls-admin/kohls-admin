@@ -1,5 +1,5 @@
 local UI = require(script.Parent.Parent) :: any
-local BaseClass = require(script.Parent.BaseClass)
+local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local layerSizeState = UI.state(UI.LayerTop, "AbsoluteSize")
 local positionState = UI.state(Vector2.zero)

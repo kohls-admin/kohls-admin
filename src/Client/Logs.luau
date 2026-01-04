@@ -1,4 +1,4 @@
-local UI = require(script.Parent.UI)
+local UI = require(script.Parent:WaitForChild("UI"))
 
 local Logs = {}
 Logs.__index = Logs

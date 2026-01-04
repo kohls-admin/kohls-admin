@@ -1,6 +1,6 @@
 -- non abusive fun commands given to VIP role by default
 
-local Util = require(script.Parent.Parent.Util)
+local Util = require(script.Parent.Parent:WaitForChild("Util"))
 
 if Util.Service.Run:IsServer() then
 	-- update humanoid description on respawn from _K attributes

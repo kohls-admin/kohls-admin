@@ -3,13 +3,13 @@
 
 local Shared = script.Parent
 
-local Auth = require(Shared.Auth)
-local Data = require(Shared.Data.Defaults)
-local Hook = require(Shared.Hook)
-local Registry = require(Shared.Registry)
-local Util = require(Shared.Util)
-local Command = require(script.Command)
-local Type = require(Shared.Type)
+local Auth = require(Shared:WaitForChild("Auth"))
+local Data = require(Shared.Data:WaitForChild("Defaults"))
+local Hook = require(Shared:WaitForChild("Hook"))
+local Registry = require(Shared:WaitForChild("Registry"))
+local Util = require(Shared:WaitForChild("Util"))
+local Command = require(script:WaitForChild("Command"))
+local Type = require(Shared:WaitForChild("Type"))
 
 type ArgumentType = Type.ArgumentType
 type ArgumentDefinition = Type.ArgumentDefinition
