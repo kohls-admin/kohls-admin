@@ -410,9 +410,12 @@ return {
 											EMOTE.playEmote()
 										else
 											_K.UI.Sound.Hover03:Play()
-											EMOTE.playEmote(item.lineData.animationId)
 											if _K.forceChat then
-												_K.forceChat(`{_K.getCommandPrefix()}emote me {item.lineData.name}`)
+												local name = item.lineData.name
+												if string.find(name, _K.Data.settings.splitKey, 1, true) then
+													name = `"{name}"`
+												end
+												_K.forceChat(`{_K.getCommandPrefix()}emote me {name}`)
 											end
 										end
 									end)
