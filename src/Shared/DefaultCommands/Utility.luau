@@ -581,7 +581,16 @@ return {
 				}
 
 				task.spawn(function()
-					local model = _K.Service.Players:CreateHumanoidModelFromUserId(_K.LocalPlayer.UserId)
+					local ok, model = _K.Util.Retry(function()
+						return _K.Service.Players:CreateHumanoidModelFromUserId(_K.LocalPlayer.UserId)
+					end)
+					if not ok then
+						model = _K.Flux.new "Model" {
+							_K.Flux.new "Humanoid" {
+								_K.Flux.new "Animator" {},
+							},
+						}
+					end
 					model:PivotTo(CFrame.new(0, 3, 0))
 
 					task.spawn(function()
