@@ -309,7 +309,7 @@ return {
 							if env.playing then
 								env.playing.Looped = loop
 								if not env.playing.IsPlaying then
-									env.playing:Play(0.1, 99, env.speed.Value._value * 5)
+									env.playing:Play(0.1, 99, env.speed.Value._value * 2)
 								end
 							end
 						end,
@@ -319,7 +319,7 @@ return {
 					[UI.Hook] = {
 						Value = function(alpha: number)
 							if env.playing then
-								env.playing:AdjustSpeed(alpha * 5)
+								env.playing:AdjustSpeed(alpha * 2)
 							end
 						end,
 					},
@@ -422,7 +422,7 @@ return {
 					end)
 				end
 
-				env.speed.Value(math.clamp(speed or 1, 0, 5) / 5)
+				env.speed.Value(math.clamp(speed or 1, 0, 2) / 2)
 
 				if not playing.Looped then
 					playing.Stopped:Once(function()
