@@ -343,19 +343,26 @@ return {
 					BackgroundTransparency = 1,
 					Position = UDim2.new(0.5, 0, 0.5, 0),
 					FontFace = _K.UI.Theme.Font,
-					TextSize = 100,
+					TextScaled = true,
 					TextColor3 = _K.UI.Theme.SecondaryText,
 					TextStrokeColor3 = _K.UI.Theme.PrimaryText,
 					TextStrokeTransparency = 0.5,
 					Text = duration,
 					ZIndex = 2,
 				}
+
 				progress = _K.UI.new "CircleProgress" {
 					Parent = _K.UI.LayerTopInset,
 					Image = "rbxassetid://123508079198656",
-					Position = UDim2.fromOffset(math.floor(_K.UI.LayerTop.AbsoluteSize.X / 2) - 64, 0),
-					Size = UDim2.new(0, 128, 0, 128),
+					AnchorPoint = Vector2.new(0.5, 0),
+					Position = UDim2.new(0.5, 0),
+					Size = UDim2.new(0.125, 0, 0.125, 0),
+					SizeConstraint = Enum.SizeConstraint.RelativeYY,
 					ZIndex = -1,
+
+					_K.UI.new "UISizeConstraint" {
+						MaxSize = Vector2.new(128, 128),
+					},
 
 					time,
 					_K.UI.new "Frame" {
