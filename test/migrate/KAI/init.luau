@@ -437,19 +437,19 @@ function f.Players(): { Player }
 end
 function f.IsInGroup(player: Player, groupId: number): boolean
 	local ok, result = pcall(function()
-		return player:IsInGroup(groupId)
+		return player:IsInGroupAsync(groupId)
 	end)
 	return ok and result
 end
 function f.GetRankInGroup(player: Player, groupId: number): number
 	local ok, result = pcall(function()
-		return player:GetRankInGroup(groupId)
+		return player:GetRankInGroupAsync(groupId)
 	end)
 	return if ok then result else 0
 end
 function f.GetRoleInGroup(player: Player, groupId: number): string
 	local ok, result = pcall(function()
-		return player:GetRoleInGroup(groupId)
+		return player:GetRoleInGroupAsync(groupId)
 	end)
 	return if ok then result else "Guest"
 end
@@ -1731,7 +1731,7 @@ function ServerEvent(plr: Player, event, arguments, uID)
 	elseif event == "KRefresh" then
 		if KRefresh[plr] then
 			KRefresh[plr] = nil
-			plr:LoadCharacter()
+			plr:LoadCharacterAsync()
 		end
 	elseif event == "KCmdBar" then
 		f.Chatted(plr, arguments, 1)
@@ -3349,7 +3349,7 @@ function LoadCommands()
 	f.addCommand({ "respawn", "spawn" }, { "Respawns a player.", "Kohl" }, 2, { "player" }, function(pl, args)
 		for i, plr in args[1] do
 			if plr and f.Auth(pl, plr) then
-				plr:LoadCharacter()
+				plr:LoadCharacterAsync()
 			end
 		end
 	end)
@@ -4350,7 +4350,7 @@ function LoadCommands()
 				for i, plr in args[1] do
 					if plr and f.Auth(pl, plr) then
 						plr.CharacterAppearanceId = args[2]
-						plr:LoadCharacter()
+						plr:LoadCharacterAsync()
 					end
 				end
 			end
@@ -4359,7 +4359,7 @@ function LoadCommands()
 			for i, plr in args[1] do
 				if plr and f.Auth(pl, plr) then
 					plr.CharacterAppearanceId = plr.UserId
-					plr:LoadCharacter()
+					plr:LoadCharacterAsync()
 				end
 			end
 		end)

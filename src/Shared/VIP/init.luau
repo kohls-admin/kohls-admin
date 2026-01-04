@@ -20,7 +20,7 @@ local assetDonations = { { 441133423, 313102724 }, { 441134066, 423601416 } }
 -- 1 vip
 local function getDonationLevel(player)
 	local okRank, rank = Util.Retry(function()
-		return player:GetRankInGroup(3403354)
+		return player:GetRankInGroupAsync(3403354)
 	end)
 	if okRank and rank > 1 then
 		return 5
