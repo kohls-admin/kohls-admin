@@ -461,14 +461,23 @@ return {
 		args = {},
 		run = function(context)
 			if context.fromPlayer then
-				context._K.Remote.SpectateSubject:FireClient(context.fromPlayer, true)
 				local con
 				con = context._K.Remote.SpectateSubject.OnServerEvent:Connect(function(player, cframe)
 					if player == context.fromPlayer then
 						con:Disconnect()
+						local speed = workspace.GlobalWind.Magnitude
+						if speed ~= speed then
+							return
+						end
+						for _, n in { cframe:GetComponents() } do
+							if n ~= n then
+								return
+							end
+						end
 						workspace.GlobalWind = cframe.LookVector * workspace.GlobalWind.Magnitude
 					end
 				end)
+				context._K.Remote.SpectateSubject:FireClient(context.fromPlayer, true)
 			end
 		end,
 	},
@@ -483,6 +492,9 @@ return {
 			},
 		},
 		run = function(context, windSpeed)
+			if windSpeed ~= windSpeed then
+				return
+			end
 			workspace.GlobalWind = windSpeed
 				* if workspace.GlobalWind.Magnitude > 0 then workspace.GlobalWind.Unit else -Vector3.xAxis
 		end,
