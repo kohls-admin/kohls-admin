@@ -1,8 +1,9 @@
 {
 	"ClassName": "Camera",
 	"Properties": {
-		"CFrame": [0, 0, -229.5, -1, 0, 0, 0, 1, 0, 0, 0, -1],
-		"FieldOfView": 1
+		"CFrame": [-2.875, 0, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0],
+		"Focus": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		"FieldOfView": 70
 	},
 	"Children": [
 		{
@@ -11,9 +12,10 @@
 			"Properties": {
 				"Anchored": true,
 				"CanCollide": false,
-				"CastShadow": false,
+				"CastShadow": true,
 				"Color": [0, 0, 0],
 				"Size": [4, 4, 0.001],
+				"CFrame": [0, 0, 0, 0, 0, 1, 0, 1, 0, -1, 0, 0],
 				"Transparency": 0,
 				"Material": "SmoothPlastic"
 			},
