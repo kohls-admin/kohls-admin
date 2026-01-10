@@ -146,11 +146,7 @@ function String.filterResultForBroadcast(filterResult: TextFilterResult | string
 		return filterResult
 	end
 	local _, result = pcall(function()
-		if TextChatService:CanUserChatAsync(fromUserId) then
-			return filterResult:GetNonChatStringForBroadcastAsync()
-		else
-			return "User cannot chat"
-		end
+		return filterResult:GetNonChatStringForBroadcastAsync()
 	end)
 	return result
 end
