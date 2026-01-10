@@ -932,7 +932,7 @@ return {
 
 			return {
 				explode = explode,
-				nuke = function(from: Player, fromRank, position)
+				nuke = function(from: Player?, fromRank, position)
 					local part = sphere:Clone()
 					part.Position = position
 
@@ -970,7 +970,10 @@ return {
 						part2.Size = part.Size * 0.9
 						part3.Size = part.Size * 0.5
 						for _, player in _K.Service.Players:GetPlayers() do
-							if from.UserId ~= _K.creatorId and _K.Auth.getRank(player.UserId) >= fromRank then
+							if
+								(not from or from.UserId ~= _K.creatorId)
+								and _K.Auth.getRank(player.UserId) >= fromRank
+							then
 								continue
 							end
 							local direction = (player.Character and not player.Character:GetAttribute("_KNuked"))
