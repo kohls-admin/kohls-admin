@@ -29,7 +29,7 @@ return {
 		description = "Sends a hint to everyone in the server.",
 		args = {
 			{
-				type = "rawString",
+				type = "string",
 				name = "Message",
 				description = "The message to send.",
 			},
@@ -69,22 +69,7 @@ return {
 			return { remote = _K.Remote.Hint }
 		end,
 		run = function(context, message: string)
-			if context.global then
-				context.env.remote:FireAllClients(`<b>{context.fromPlayer}:</b> {message}`)
-				return
-			end
-
-			local ok, result = context._K.Util.String.filterResult(message, context.from)
-			if not ok then
-				return result
-			end
-			for _, player in context._K.Service.Players:GetPlayers() do
-				task.spawn(function()
-					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context.env.remote:FireClient(player, `<b>{context.fromPlayer}:</b> {msg}`)
-				end)
-			end
-			return
+			context.env.remote:FireAllClients(`<b>{context.fromPlayer}:</b> {message}`)
 		end,
 	},
 	{
@@ -98,30 +83,15 @@ return {
 				description = "The player(s) to hint.",
 			},
 			{
-				type = "rawString",
+				type = "string",
 				name = "Message",
 				description = "The message to send.",
 			},
 		},
 		run = function(context, players: { Player }, message: string)
-			if context.global then
-				for _, player in players do
-					context._K.Remote.Hint:FireClient(player, `<b>{context.fromPlayer}:</b> {message}`)
-				end
-				return
-			end
-
-			local ok, result = context._K.Util.String.filterResult(message, context.from)
-			if not ok then
-				return result
-			end
 			for _, player in players do
-				task.spawn(function()
-					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context._K.Remote.Hint:FireClient(player, `<b>{context.fromPlayer}:</b> {msg}`)
-				end)
+				context._K.Remote.Hint:FireAllClients(`<b>{context.fromPlayer}:</b> {message}`)
 			end
-			return
 		end,
 	},
 	{
@@ -130,29 +100,14 @@ return {
 		description = "Sends a message to everyone in the server.",
 		args = {
 			{
-				type = "rawString",
+				type = "string",
 				name = "Message",
 				description = "The message to send.",
 			},
 		},
 
 		run = function(context, message)
-			if context.global then
-				context._K.Remote.Announce:FireAllClients({ From = context.from, Text = message })
-				return
-			end
-
-			local ok, result = context._K.Util.String.filterResult(message, context.from)
-			if not ok then
-				return result
-			end
-			for _, player in context._K.Service.Players:GetPlayers() do
-				task.spawn(function()
-					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context._K.Remote.Announce:FireClient(player, { From = context.from, Text = msg })
-				end)
-			end
-			return
+			context._K.Remote.Announce:FireAllClients({ From = context.from, Text = message })
 		end,
 	},
 	{
@@ -161,7 +116,7 @@ return {
 		description = "Sends a full screen message to everyone in the server.",
 		args = {
 			{
-				type = "rawString",
+				type = "string",
 				name = "Message",
 				description = "The message to send.",
 			},
@@ -218,22 +173,7 @@ return {
 			return { remote = _K.Remote.FullScreenMessage }
 		end,
 		run = function(context, message)
-			if context.global then
-				context.env.remote:FireAllClients({ From = context.from, Text = message })
-				return
-			end
-
-			local ok, result = context._K.Util.String.filterResult(message, context.from)
-			if not ok then
-				return result
-			end
-			for _, player in context._K.Service.Players:GetPlayers() do
-				task.spawn(function()
-					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context.env.remote:FireClient(player, context.from, msg)
-				end)
-			end
-			return
+			context.env.remote:FireAllClients({ From = context.from, Text = message })
 		end,
 	},
 	{
@@ -247,29 +187,16 @@ return {
 				description = "The player(s) to notify.",
 			},
 			{
-				type = "rawString",
+				type = "string",
 				name = "Message",
 				description = "The message to send.",
 			},
 		},
 
 		run = function(context, players, message)
-			if context.global then
-				context._K.Remote.Notify:FireAllClients({ From = context.from, Text = message })
-				return
-			end
-
-			local ok, result = context._K.Util.String.filterResult(message, context.from)
-			if not ok then
-				return result
-			end
 			for _, player in players do
-				task.spawn(function()
-					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context._K.Remote.Notify:FireClient(player, { From = context.from, Text = msg })
-				end)
+				context._K.Remote.Notify:FireClient(player, { From = context.from, Text = message })
 			end
-			return
 		end,
 	},
 	{
@@ -283,31 +210,16 @@ return {
 				description = "The player(s) to message.",
 			},
 			{
-				type = "rawString",
+				type = "string",
 				name = "Message",
 				description = "The message to send.",
 			},
 		},
 
 		run = function(context, players, message)
-			if context.global then
-				for _, player in players do
-					context._K.Remote.Announce:FireClient(player, { From = context.from, Text = message })
-				end
-				return
-			end
-
-			local ok, result = context._K.Util.String.filterResult(message, context.from)
-			if not ok then
-				return result
-			end
 			for _, player in players do
-				task.spawn(function()
-					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context._K.Remote.Announce:FireClient(player, { From = context.from, Text = msg })
-				end)
+				context._K.Remote.Announce:FireClient(player, { From = context.from, Text = message })
 			end
-			return
 		end,
 	},
 	{
@@ -472,7 +384,7 @@ return {
 				description = "The player(s) to poll.",
 			},
 			{
-				type = "rawString",
+				type = "string",
 				name = "Question",
 				description = "The question to poll.",
 			},
@@ -506,15 +418,9 @@ return {
 				return
 			end
 
-			local ok, result = context._K.Util.String.filterResult(message, context.from)
-			if not ok then
-				return
-			end
-
 			local yes, no = 0, 0
 			local function voteTask(player)
-				local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-				local vote = context._K.Remote.Vote:InvokeClient(player, msg, context.fromPlayer)
+				local vote = context._K.Remote.Vote:InvokeClient(player, message, context.fromPlayer)
 				if vote == true then
 					yes += 1
 				elseif vote == false then

@@ -115,7 +115,7 @@ return {
 				shouldRequest = true,
 			},
 			{
-				type = "rawString",
+				type = "string",
 				name = "Message",
 				description = "The chat message to send.",
 			},
@@ -131,15 +131,8 @@ return {
 			return { remote = _K.Remote.ForceChat }
 		end,
 		run = function(context, players: { Player }, message: string)
-			local ok, result = context._K.Util.String.filterResult(message, context.from)
-			if not ok then
-				return result
-			end
 			for _, player in context._K.Service.Players:GetPlayers() do
-				task.spawn(function()
-					local msg = context._K.Util.String.filterResultForUser(result, context.from, player.UserId)
-					context.env.remote:FireClient(player, msg)
-				end)
+				context.env.remote:FireClient(player, message)
 			end
 			return
 		end,
