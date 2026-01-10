@@ -18,7 +18,6 @@ return {
 			-- support team
 			{ Id = 2773879457, Tooltip = "Making your issues disappear! 🪄" }, -- therealfaylix
 			{ Id = 1224156917, Tooltip = "Always ready to help! 🤝" }, -- dalien
-			{ Id = 4847574, Tooltip = "Providing excellent assistance! 🛡️" }, -- mets
 			{ Id = 195261420, Tooltip = "Ensuring user satisfaction! 😊" }, -- exobyte
 			{ Id = 208790398, Tooltip = "Here for your questions! ❓" }, -- chan
 			{ Id = 3357116228, Tooltip = "Offering valuable support! 🌟" }, -- lemon
@@ -29,6 +28,7 @@ return {
 			{ Id = 345072461, Tooltip = "Assisting with dedication! 🎖️" }, -- raenlua
 			{ Id = 130170862, Tooltip = "Consistently improving! 💪" }, -- matsagor1
 			{ Id = 77608258, Tooltip = "Soaring to provide support! 🕊️" }, -- icarus
+			{ Id = 444317184, Tooltip = "Providing excellent assistance! 🛡️" }, -- vonials
 
 			-- contributors
 			{ Id = 41336494, Tooltip = "Calculating improvements! 🧮" }, -- Calculatous
@@ -59,6 +59,7 @@ return {
 			{ Id = 3230955923, Tooltip = "Napping on bugs (after finding them)! 😴" }, -- napiw
 			{ Id = 516417505, Tooltip = "Landing on solutions! 🛬" }, -- landon
 			{ Id = 105503420, Tooltip = "A legendary bug hunter! 🏆" }, -- general_legendary
+			{ Id = 4847574, Tooltip = "Providing valuable insights! 🔎" }, -- mets
 		},
 	},
 	{
