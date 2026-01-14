@@ -35,13 +35,6 @@ local function getDonationLevel(player)
 		end
 	end
 
-	local okSubscription, status = Util.Retry(function()
-		return Util.Service.Marketplace:GetUserSubscriptionStatusAsync(player, "EXP-4118475727682928968")
-	end)
-	if okSubscription and status.IsSubscribed then
-		return 4
-	end
-
 	for level = #gamePassDonations, 1, -1 do
 		local okGamePass, result = Util.Retry(function()
 			return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, gamePassDonations[level])
