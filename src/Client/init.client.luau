@@ -350,7 +350,9 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 
 		_K.client.VIPNotification = _K.Util.Function.throttle(300, function()
 			if
-				vipNotificationVisible
+				count > 3
+				or vipNotificationVisible
+				or _K.VIP.popup.Visible
 				or not _K.Data.settings.vip
 				or not _K.Data.settings.chatCommandsNotification
 				or (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) > 2
@@ -378,11 +380,22 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 		_K.Remote.VIPNotification.OnClientEvent:Connect(_K.client.VIPNotification)
 		_K.VIP.popup.Parent = UI.LayerTopInset
 
-		_K.client.dashboard.Window._instance:GetPropertyChangedSignal("Visible"):Once(function()
-			if _K.Data.settings.vip and (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
+		local connections
+		local function showOnFirstOpen()
+			if
+				_K.Data.settings.vip
+				and not vipNotificationVisible
+				and (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) < 3
+			then
 				_K.VIP.popup.Visible = true
+				_K.Flux.cleanup(connections)
 			end
-		end)
+		end
+
+		connections = {
+			_K.client.dashboard.Commands._instance:GetPropertyChangedSignal("Visible"):Once(showOnFirstOpen),
+			_K.client.dashboard.Window._instance:GetPropertyChangedSignal("Visible"):Once(showOnFirstOpen),
+		}
 	end
 
 	if savedSettings.announcement then
