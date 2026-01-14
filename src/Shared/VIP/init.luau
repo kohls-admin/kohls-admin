@@ -19,6 +19,10 @@ local assetDonations = { { 441133423, 313102724 }, { 441134066, 423601416 } }
 -- 2 super vip
 -- 1 vip
 local function getDonationLevel(player)
+	if Util.Service.Run:IsStudio() and shared._K_INTERFACE and shared._K_INTERFACE.DEBUG then
+		return Util.Service.ReplicatedStorage:GetAttribute("DonationLevel") or 0
+	end
+
 	local okRank, rank = Util.Retry(function()
 		return player:GetRankInGroupAsync(3403354)
 	end)
