@@ -482,7 +482,10 @@ function Market.new(_K)
 			return UDim2.new(0.5, -UI.Theme.Padding().Offset, 0, 32)
 		end)
 
-		local vipDeveloperPassId = _K.Data.roles.vip.gamepasses and _K.Data.roles.vip.gamepasses[1]
+		local vipDeveloperPassId = if _K.Data.roles.vip and _K.Data.roles.vip.gamepasses
+			then _K.Data.roles.vip.gamepasses[1]
+			else nil
+
 		local vipButtonGlobal
 		vipButtonGlobal = UI.new "Button" {
 			Parent = vipList,
