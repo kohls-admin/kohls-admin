@@ -10,20 +10,25 @@ end
 
 function Function.throttle(delay: number, func: (...any) -> ...any)
 	local thread, throttled
-	local function reset()
-		throttled = nil
+	local function trailing(...)
+		throttled = tick() + delay
+		func(...)
 	end
+
 	return function(...)
+		local now = tick()
+
 		if thread then
 			pcall(task.cancel, thread)
 			thread = nil
 		end
-		if throttled then
-			thread = task.delay(throttled - tick(), func, ...)
+
+		if throttled and now < throttled then
+			thread = task.delay(throttled - now, trailing, ...)
 			return
 		end
-		throttled = tick() + delay
-		task.delay(delay, reset)
+
+		throttled = now + delay
 		func(...)
 	end
 end
