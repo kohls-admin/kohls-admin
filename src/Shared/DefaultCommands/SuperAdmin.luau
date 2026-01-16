@@ -124,7 +124,7 @@ return {
 			local function forceChat(message: string)
 				_K.Service.TextChat:WaitForChild("TextChannels").RBXGeneral:SendAsync(message)
 			end
-			_K.Remote.ForceChat.OnClientEvent:Connect(forceChat)
+			_K.Remote.ForceChat:Connect(forceChat)
 			_K.forceChat = forceChat
 		end,
 		env = function(_K)
@@ -132,7 +132,7 @@ return {
 		end,
 		run = function(context, players: { Player }, message: string)
 			for _, player in context._K.Service.Players:GetPlayers() do
-				context.env.remote:FireClient(player, message)
+				context.env.remote:Fire(player, message)
 			end
 			return
 		end,
@@ -185,7 +185,7 @@ return {
 				end
 			end
 
-			_K.Remote.Incognito.OnClientEvent:Connect(
+			_K.Remote.Incognito:Connect(
 				function(userIdOrName: number | string, hiddenRank: number, hideCharacter: boolean?)
 					if type(userIdOrName) == "number" then
 						if hideCharacter == nil then -- remove from hidden list
@@ -222,9 +222,9 @@ return {
 			function env.apply(hiddenPlayer: Player, hideCharacter: boolean?)
 				local hiddenRank = _K.Auth.getRank(hiddenPlayer.UserId)
 				if env.hidden[hiddenPlayer] == false and hideCharacter then
-					env.remote:FireAllClients(hiddenPlayer.Name, hiddenRank, hideCharacter)
+					env.remote:FireAll(hiddenPlayer.Name, hiddenRank, hideCharacter)
 				else
-					env.remote:FireAllClients(hiddenPlayer.UserId, hiddenRank, hideCharacter)
+					env.remote:FireAll(hiddenPlayer.UserId, hiddenRank, hideCharacter)
 				end
 				env.hidden[hiddenPlayer] = hideCharacter
 			end
@@ -233,7 +233,7 @@ return {
 				local player = _K.Service.Players:GetPlayerFromCharacter(character)
 				if env.hidden[player] ~= nil then
 					local hiddenRank = _K.Auth.getRank(player.UserId)
-					env.remote:FireAllClients(character.Name, hiddenRank)
+					env.remote:FireAll(character.Name, hiddenRank)
 				end
 			end
 
@@ -242,7 +242,7 @@ return {
 			_K.Util.SafePlayerAdded(function(player: Player)
 				for hiddenPlayer, hideCharacter in env.hidden do
 					local hiddenRank = _K.Auth.getRank(hiddenPlayer.UserId)
-					env.remote:FireAllClients(hiddenPlayer.UserId, hiddenRank, hideCharacter)
+					env.remote:FireAll(hiddenPlayer.UserId, hiddenRank, hideCharacter)
 				end
 				cleanup[player] = player.CharacterAdded:Connect(characterAdded)
 				if player.Character then
@@ -255,7 +255,7 @@ return {
 				cleanup[player] = nil
 				if env.hidden[player] ~= nil then
 					env.hidden[player] = nil
-					env.remote:FireAllClients(player.UserId)
+					env.remote:FireAll(player.UserId)
 				end
 			end)
 
@@ -391,6 +391,7 @@ return {
 			},
 		},
 		env = function(_K)
+			local remote = _K.Remote.ReservedServers
 			task.spawn(
 				_K.Service.Messaging.SubscribeAsync,
 				_K.Service.Messaging,
@@ -404,7 +405,7 @@ return {
 								_K.Auth.hasCommand(player.UserId, "place")
 								or _K.Auth.hasCommand(player.UserId, "unreserve")
 							then
-								_K.Remote.ReservedServers:FireClient(player, {
+								remote:Fire(player, {
 									[data[1]] = { unpack(data, 2) },
 								})
 							end
@@ -412,10 +413,10 @@ return {
 					end
 				end
 			)
-			return
+			return { remote = remote }
 		end,
 		envClient = function(_K)
-			_K.Remote.ReservedServers.OnClientEvent:Connect(function(data)
+			_K.Remote.ReservedServers:Connect(function(data)
 				if data then
 					_K.Util.Table.merge(_K.Data.reservedServers, data)
 				end
@@ -437,7 +438,7 @@ return {
 			end)
 
 			context._K.Service.Messaging:PublishAsync("_K_ReservedServers", { code, unpack(data, 2) })
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `Server "<b>{code}</b>" has been reserved, use <b>{context._K.getCommandPrefix(context.from)}place me @{code}</b> to join it!`,
 			})
 
@@ -473,7 +474,7 @@ return {
 			end)
 
 			context._K.Service.Messaging:PublishAsync("_K_ReservedServers", { code })
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `Server "<b>{code}</b>" {if removed then "has been removed" else "was NOT found"}!`,
 			})
 
@@ -500,7 +501,7 @@ return {
 		},
 		run = function(context, delay: number?, reason: string?)
 			if delay ~= nil then
-				context._K.Remote.Announce:FireAllClients({
+				context._K.Remote.Announce:FireAll({
 					Text = `Server will shut down in {delay} seconds`,
 					From = context.from,
 					Duration = delay,

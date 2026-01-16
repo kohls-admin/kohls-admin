@@ -29,7 +29,7 @@ function Market.new(_K)
 				button.Label("<b>WEAR</b>")
 			end
 
-			_K.Remote.VIPUGCMethod:FireServer(id, equip, equipped, name)
+			_K.Remote.VIPUGCMethod:Fire(id, equip, equipped, name)
 		end)
 
 		-- THIRD PARTY PURCHASES HANDLING
@@ -386,10 +386,10 @@ function Market.new(_K)
 			if equipped ~= button then
 				remoteEquipped[remote] = button
 				button._content.Price.Text = `<b>HIDE</b>`
-				remote:FireServer(name)
+				remote:Fire(name)
 			else
 				remoteEquipped[remote] = nil
-				remote:FireServer()
+				remote:Fire()
 			end
 		end
 

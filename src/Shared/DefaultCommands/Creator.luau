@@ -7,7 +7,7 @@ return {
 		description = "Removes all Kohl's Admin server logs.",
 		args = {},
 		envClient = function(_K)
-			_K.Remote.ClearLogs.OnClientEvent:Connect(function()
+			_K.Remote.ClearLogs:Connect(function()
 				local logs = _K.Data.logs
 				for index, log in logs do
 					if log.client then
@@ -38,7 +38,7 @@ return {
 			end
 			context._K.Service.Messaging:PublishAsync("KA_ClearLogs")
 			for _, player in context._K.Service.Players:GetPlayers() do
-				context._K.Remote.ClearLogs:FireClient(player)
+				context._K.Remote.ClearLogs:Fire(player)
 			end
 		end,
 	},

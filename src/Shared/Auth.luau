@@ -3,8 +3,9 @@ local Shared = script.Parent
 local Data = require(Shared.Data:WaitForChild("Defaults"))
 local Hook = require(Shared:WaitForChild("Hook"))
 local Registry = require(Shared:WaitForChild("Registry"))
-local Remote = require(Shared:WaitForChild("Remote"))
 local Util = require(Shared:WaitForChild("Util"))
+
+local Remote = Util.Remote
 
 export type Role = "everyone" | "vip" | "mod" | "admin" | "superadmin" | "creator" | string
 
@@ -64,7 +65,7 @@ local function saveBan(key, userId, reason, timestamp, fromUserId)
 	end
 	for _, player in Util.Service.Players:GetPlayers() do
 		if Auth.hasCommand(player.UserId, "ban") then
-			Remote.Ban:FireClient(player, key, ban)
+			Remote.Ban:Fire(player, key, ban)
 		end
 	end
 end
@@ -160,7 +161,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 		Data.Sync.bans[key] = Data.REMOVE
 		for _, player in Util.Service.Players:GetPlayers() do
 			if Auth.hasCommand(player.UserId, "ban") then
-				Remote.Ban:FireClient(player, key)
+				Remote.Ban:Fire(player, key)
 			end
 		end
 	end
@@ -202,7 +203,7 @@ function Auth.networkMember(userId: number)
 		if not player:GetAttribute("_K_READY") then
 			continue
 		end
-		Remote.Member:FireClient(player, userIdString, member)
+		Remote.Member:Fire(player, userIdString, member)
 	end
 end
 

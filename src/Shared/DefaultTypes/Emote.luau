@@ -5,7 +5,9 @@ local RunService = game:GetService("RunService")
 
 local Util = require(script.Parent.Parent:WaitForChild("Util"))
 
-local _K, Remote
+local Remote = Util.Remote.EmoteType
+
+local _K
 
 local emotes = {}
 local emoteItemFromId = {}
@@ -68,9 +70,7 @@ local function getAnimationIdFromEmoteId(emoteId: number): number?
 			local item = emoteItemFromId[emoteId]
 			if item then
 				item.animationId = result
-				if Remote then
-					Remote:FireAllClients({ item })
-				end
+				Remote:FireAll({ item })
 			end
 			return result
 		else
@@ -137,13 +137,11 @@ task.spawn(function()
 		end
 		tasks:wait()
 
-		Remote = Instance.new("RemoteEvent", script)
-		Remote.OnServerEvent:Connect(function(player)
-			Remote:FireClient(player, emotes)
+		Remote:Connect(function(player)
+			Remote:Fire(player, emotes)
 		end)
 	else
-		Remote = script:WaitForChild("RemoteEvent", math.huge)
-		Remote.OnClientEvent:Connect(function(data)
+		Remote:Connect(function(data)
 			for index, item in data do
 				emoteToAnimationId[item.emoteId] = item.animationId
 				animationToEmoteId[item.animationId] = item.emoteId
@@ -168,7 +166,7 @@ task.spawn(function()
 				_K.Registry.commands.emotes.env.scroller:refreshList()
 			end
 		end)
-		Remote:FireServer()
+		Remote:Fire()
 	end
 end)
 

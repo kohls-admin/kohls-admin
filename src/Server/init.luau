@@ -211,6 +211,8 @@ return function(_K)
 			end
 		end
 
+		local displayBubbleRemote = _K.Remote.DisplayBubble
+
 		task.spawn(function()
 			repeat
 				task.wait()
@@ -256,7 +258,7 @@ return function(_K)
 
 						if player.Character then
 							local msg = `{_K.getCommandPrefix()}{string.sub(chatCommand.PrimaryAlias, 2)}`
-							_K.Remote.DisplayBubble:FireAllClients(player.Character, msg)
+							displayBubbleRemote:FireAll(player.Character, msg)
 						end
 
 						if (player:GetAttribute("_KDonationLevel") or 0) > 0 then
@@ -378,7 +380,7 @@ return function(_K)
 
 				if player and #rolesAdded > 0 then
 					local prefix = _K.getCommandPrefix(player.UserId)
-					_K.Remote.Notify:FireClient(player, {
+					_K.Remote.Notify:Fire(player, {
 						Text = `You got the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{prefix}cmds</b> or <b>{prefix}info</b> for details.`,
 						From = "_K",
 					})
@@ -428,7 +430,7 @@ return function(_K)
 
 		-- server network events
 		local lastLog, cachedLogsBuffer
-		_K.Remote.Init.OnServerEvent:Connect(function(player, initData)
+		_K.Remote.Init:Connect(function(player, initData)
 			local attributes = initData.Attributes
 			if attributes then
 				for attribute, valueType in attributeSchema do
@@ -465,7 +467,7 @@ return function(_K)
 			local savedSettings = _K.Data.savedSettings
 			local defaultSettings = _K.Data.defaultSettings
 
-			_K.Remote.Init:FireClient(player, bans, logs, members, roles, servers, savedSettings, defaultSettings)
+			_K.Remote.Init:Fire(player, bans, logs, members, roles, servers, savedSettings, defaultSettings)
 			player:SetAttribute("_K_READY", true)
 
 			if
@@ -475,7 +477,7 @@ return function(_K)
 				and _K.Auth.hasPermission(player.UserId, "settings")
 			then
 				task.delay(4, function()
-					_K.Remote.Notify:FireClient(player, {
+					_K.Remote.Notify:Fire(player, {
 						From = "_K",
 						Text = `Your game is unable to participate in the <b>Kohl's Admin Games Hub</b> because <b><font color='#{_K.Data.settings.themeInvalid:ToHex()}'>HTTP Requests are disabled in your game settings</font></b>.\n\n<i><font transparency='0.5'>Enable HTTP Requests in your Roblox game settings to avoid missing out on free advertising and other benefits!</font></i>`,
 						Sound = "Call_Leave",
@@ -487,17 +489,32 @@ return function(_K)
 		-- enable client
 		Client.Enabled = true
 
-		_K.Remote.Command.OnServerEvent:Connect(function(player: Player, message: string)
+		-- initialize core remotes
+		local _
+		_ = _K.Remote.Bans
+		_ = _K.Remote.Member
+		_ = _K.Remote.Members
+		_ = _K.Remote.Log
+		_ = _K.Remote.Logs
+		_ = _K.Remote.RequestCommand
+		-- TODO: implement in-game role creation
+		_ = _K.Remote.Role
+		_ = _K.Remote.Roles
+		_ = _K.Remote.RolesNotification
+		_ = _K.Remote.SetCore
+		_ = _K.Remote.VIPNotification
+
+		_K.Remote.Command:Connect(function(player: Player, message: string)
 			_K.Process.runCommands(_K, player.UserId, message)
 		end)
 
 		-- handle custom command prefix
-		_K.Remote.PlayerPrefix.OnServerEvent:Connect(function(player, prefix)
+		_K.Remote.PlayerPrefix:Connect(function(player, prefix)
 			_K.Data.playerPrefix[player.UserId] = prefix
 		end)
 
 		-- handle changing of settings
-		_K.Remote.Settings.OnServerEvent:Connect(function(player, changes)
+		_K.Remote.Settings:Connect(function(player, changes)
 			local themeAuthority = _K.Data.settings.changeThemeAuthority
 			--TODO: make the Client authority save each players' theming
 
@@ -534,7 +551,7 @@ return function(_K)
 
 			for _, toPlayer in _K.Service.Players:GetPlayers() do
 				if toPlayer ~= player then
-					_K.Remote.Settings:FireClient(toPlayer, changes)
+					_K.Remote.Settings:Fire(toPlayer, changes)
 				end
 			end
 
@@ -546,7 +563,7 @@ return function(_K)
 		end)
 
 		-- handle ban events
-		_K.Remote.Ban.OnServerEvent:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
+		_K.Remote.Ban:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
 			local canBan = _K.Auth.hasCommand(player.UserId, "ban")
 			if not (tonumber(userId) and canBan) then
 				return
@@ -574,7 +591,7 @@ return function(_K)
 			end
 		end)
 
-		_K.Remote.Unban.OnServerEvent:Connect(function(player: Player, userId: number)
+		_K.Remote.Unban:Connect(function(player: Player, userId: number)
 			local ban = _K.Data.bans[tostring(userId)]
 			if ban and _K.Auth.hasCommand(player.UserId, "unban") then
 				_K.log(`{_K.getCommandPrefix()}unban {userId}`, "COMMAND", player.UserId)
@@ -582,7 +599,7 @@ return function(_K)
 			end
 		end)
 
-		_K.Remote.Idled.OnServerEvent:Connect(function(player: Player, idleTime: number)
+		_K.Remote.Idled:Connect(function(player: Player, idleTime: number)
 			if type(idleTime) == "number" then
 				player:SetAttribute("_KIdleTime", idleTime)
 			end
@@ -624,7 +641,7 @@ return function(_K)
 							or v == Enum.ChatVersion.LegacyChatService
 						)
 					then
-						_K.Remote.Command:FireClient(player, message)
+						_K.Remote.Command:Fire(player, message)
 					end
 				end)
 			)

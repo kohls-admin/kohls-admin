@@ -233,12 +233,12 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		if _K.IsServer then
 			local player = _K.Service.Players:GetPlayerByUserId(from)
 			if player then
-				_K.Remote.Notify:FireClient(
+				_K.Remote.Notify:Fire(
 					player,
 					{ Text = commandError, From = "_K", TextColor3 = Color3.new(1, 0, 0), Sound = "Call_Leave" }
 				)
 				for _, err in commandErrors do
-					_K.Remote.Log:FireClient(player, {
+					_K.Remote.Log:Fire(player, {
 						text = err,
 						level = _K.Logger:encode("ERROR"),
 						time = workspace:GetServerTimeNow(),
@@ -272,7 +272,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			table.insert(commandStrings, string.sub(rawText, command.array[1][1] :: number, last[1] + #last[2]))
 		end
 		if runOnServer then
-			_K.Remote.Command:FireServer(`{prefix}{table.concat(commandStrings, " " .. prefix)}`)
+			_K.Remote.Command:Fire(`{prefix}{table.concat(commandStrings, " " .. prefix)}`)
 		end
 	end
 

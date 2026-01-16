@@ -22,7 +22,7 @@ function Settings.new(_K)
 	end
 
 	local function confirmChanges()
-		_K.Remote.Settings:FireServer(pendingChanges)
+		_K.Remote.Settings:Fire(pendingChanges)
 		for key, value in pendingChanges do
 			_K.Data.savedSettings[key] = value
 			if _K.client.settings[key] then
@@ -347,7 +347,7 @@ function Settings.new(_K)
 								return
 							end
 							_K.client.playerPrefix(value)
-							_K.Remote.PlayerPrefix:FireServer(value)
+							_K.Remote.PlayerPrefix:Fire(value)
 						end,
 					},
 				},

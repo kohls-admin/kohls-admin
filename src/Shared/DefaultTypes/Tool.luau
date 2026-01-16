@@ -87,13 +87,13 @@ return function(context)
 		registerSource(_K.Service.ServerStorage)
 		registerSource(_K.Service.StarterPack)
 
-		_K.Remote.Tools.OnServerEvent:Connect(function(player)
+		_K.Remote.Tools:Connect(function(player)
 			if _K.Auth.hasCommand(player.UserId, "tools") then
 				local toolData = table.create(#tools)
 				for i, tool in tools do
 					toolData[i] = { Name = tool.Name }
 				end
-				_K.Remote.Tools:FireClient(player, toolData)
+				_K.Remote.Tools:Fire(player, toolData)
 			end
 		end)
 
@@ -108,17 +108,17 @@ return function(context)
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if _K.Auth.hasCommand(player.UserId, "tools") then
-					_K.Remote.Tools:FireClient(player, toolData)
+					_K.Remote.Tools:Fire(player, toolData)
 				end
 			end
 		end)
 	else -- Client
-		_K.Remote.Tools.OnClientEvent:Connect(function(toolData)
+		_K.Remote.Tools:Connect(function(toolData)
 			tools = toolData
 			_K.tools = tools
 			table.insert(tools, 1, { Name = "all" })
 		end)
-		_K.Remote.Tools:FireServer()
+		_K.Remote.Tools:Fire()
 	end
 
 	_K.Registry.registerType("tool", typeTool)

@@ -512,7 +512,7 @@ return {
 				pe.Parent = root
 			end
 
-			_K.Remote.DonorTrail.OnServerEvent:Connect(function(player, enable: boolean?)
+			_K.Remote.DonorTrail:Connect(function(player, enable: boolean?)
 				if enable then
 					apply(player, player, nil, nil)
 				else

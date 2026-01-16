@@ -153,7 +153,7 @@ return {
 			end
 			tasks:wait()
 
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `Banned <b>{table.concat(bannedNames, ", ")}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`,
 			})
 
@@ -180,7 +180,7 @@ return {
 				end
 			end
 			context._K.Auth.unbanUsers(bans, context.from, true)
-			context._K.Remote.Notify:FireClient(
+			context._K.Remote.Notify:Fire(
 				context.fromPlayer,
 				{ Text = `<b>Unbanned:</b> <i>{table.concat(unbannedNames, ", ")}</i>` }
 			)
@@ -209,7 +209,7 @@ return {
 				player:Kick(reason)
 			end
 			local names = context._K.Util.Suggest.getNames(players)
-			context._K.Remote.Notify:FireClient(
+			context._K.Remote.Notify:Fire(
 				context.fromPlayer,
 				{ Text = `<b>Kicked:</b> <i>{table.concat(names, ", ")}</i>` }
 			)
@@ -228,7 +228,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.Crash.OnClientEvent:Connect(function()
+			_K.Remote.Crash:Connect(function()
 				repeat
 				until nil
 			end)
@@ -238,7 +238,7 @@ return {
 		end,
 		run = function(context, players, reason: string?)
 			for _, player in players do
-				context.env.remote:FireClient(player)
+				context.env.remote:Fire(player)
 			end
 		end,
 	},
@@ -255,7 +255,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.Mute.OnClientEvent:Connect(function(muted)
+			_K.Remote.Mute:Connect(function(muted)
 				local muteText = if muted then "muted" else "unmuted"
 				if _K.Service.TextChat.ChatVersion == Enum.ChatVersion.LegacyChatService then
 					_K.Service.StarterGui:SetCore("ChatBarDisabled", muted)
@@ -299,7 +299,7 @@ return {
 					con:Disconnect()
 				end
 
-				context.env.remote:FireClient(player, true)
+				context.env.remote:Fire(player, true)
 
 				context.env.muted[player.UserId] = context._K.Service.TextChat.DescendantAdded:Connect(
 					function(descendant)
@@ -322,7 +322,7 @@ return {
 				end
 			end
 			local names = context._K.Util.Suggest.getNames(players)
-			context._K.Remote.Notify:FireClient(
+			context._K.Remote.Notify:Fire(
 				context.fromPlayer,
 				{ Text = `<b>Muted:</b> <i>{table.concat(names, ", ")}</i>` }
 			)
@@ -360,10 +360,10 @@ return {
 					end
 				end
 
-				context._K.Remote.Mute:FireClient(player)
+				context._K.Remote.Mute:Fire(player)
 			end
 			local names = context._K.Util.Suggest.getNames(players)
-			context._K.Remote.Notify:FireClient(
+			context._K.Remote.Notify:Fire(
 				context.fromPlayer,
 				{ Text = `<b>Unmuted:</b> <i>{table.concat(names, ", ")}</i>` }
 			)
@@ -419,7 +419,7 @@ return {
 			local function reactivate(script)
 				script.Enabled = true
 			end
-			_K.Remote.RefreshLocalScripts.OnClientEvent:Connect(function(model: Model)
+			_K.Remote.RefreshLocalScripts:Connect(function(model: Model)
 				for _, descendant in model:GetDescendants() do
 					if descendant:IsA("LocalScript") and descendant.Enabled then
 						descendant.Enabled = false
@@ -450,12 +450,12 @@ return {
 					local ok = pcall(context.env.reparent, character)
 					if ok then
 						player.Character = character
-						context.env.remote:FireClient(player, character)
+						context.env.remote:Fire(player, character)
 					else -- fix for PlayerCharacterDestroyBehaviour
 						local old = character:GetPivot()
 						player:LoadCharacterAsync()
 						player.Character:PivotTo(old)
-						context._K.Remote.Refresh:FireClient(player)
+						context._K.Remote.Refresh:Fire(player)
 						character:Destroy()
 						continue
 					end
@@ -482,7 +482,7 @@ return {
 		},
 		envClient = function(_K)
 			local display
-			_K.Remote.DisplayName.OnClientEvent:Connect(function(name)
+			_K.Remote.DisplayName:Connect(function(name)
 				local character = _K.LocalPlayer.Character
 				local head = character and character:FindFirstChild("Head")
 				if head then
@@ -529,7 +529,7 @@ return {
 							return
 						end
 						character:FindFirstChildOfClass("Humanoid").DisplayName = name
-						_K.Remote.DisplayName:FireClient(player, name)
+						_K.Remote.DisplayName:Fire(player, name)
 					end),
 				}
 			end)
@@ -558,7 +558,7 @@ return {
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
 					humanoid.DisplayName = displayName or player.DisplayName
-					context._K.Remote.DisplayName:FireClient(player, displayName)
+					context._K.Remote.DisplayName:Fire(player, displayName)
 				end
 			end
 		end,
@@ -918,7 +918,7 @@ return {
 
 							Activated = function()
 								if env.target._value then
-									_K.Remote.RemoveTool:FireServer(env.target._value, item.tool)
+									_K.Remote.RemoveTool:Fire(env.target._value, item.tool)
 									-- TODO: refresh list
 								end
 							end,
@@ -997,7 +997,7 @@ return {
 		end,
 		env = function(_K)
 			local remote = _K.Remote.RemoveTool
-			remote.OnServerEvent:Connect(function(player: Player, target: Player, toolName: string)
+			remote:Connect(function(player: Player, target: Player, toolName: string)
 				if
 					_K.Auth.hasCommand(player.UserId, "removetools")
 					and typeof(target) == "Player"
@@ -1537,7 +1537,7 @@ return {
 				ZIndex = -100,
 				Visible = false,
 			}
-			_K.Remote.Blind.OnClientEvent:Connect(function(blinded)
+			_K.Remote.Blind:Connect(function(blinded)
 				blind.Visible = if blinded then true else false
 			end)
 			return { frame = blind }
@@ -1545,7 +1545,7 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				context._K.Remote.Blind:FireClient(player, true)
+				context._K.Remote.Blind:Fire(player, true)
 			end
 		end,
 	},
@@ -1562,7 +1562,7 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				context._K.Remote.Blind:FireClient(player)
+				context._K.Remote.Blind:Fire(player)
 			end
 		end,
 	},
@@ -1711,7 +1711,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.JailCollide.OnClientEvent:Connect(function(jail: Part)
+			_K.Remote.JailCollide:Connect(function(jail: Part)
 				if jail then
 					for _, child in jail:GetChildren() do
 						if child:IsA("BasePart") then
@@ -1843,7 +1843,7 @@ return {
 					until not player or Jail.parts[player.UserId] == nil
 				end)
 
-				task.delay(0, JailCollide.FireClient, JailCollide, player, kJail)
+				task.delay(0, JailCollide.Fire, JailCollide, player, kJail)
 
 				return kJail
 			end
@@ -1948,7 +1948,7 @@ return {
 				until tick() >= nextStep
 			end
 
-			_K.Remote.FPS.OnClientEvent:Connect(function(amount: number?)
+			_K.Remote.FPS:Connect(function(amount: number?)
 				fps = amount or 32
 				if connection then
 					connection:Disconnect()
@@ -1968,7 +1968,7 @@ return {
 					continue
 				end
 				player:SetAttribute("_KFPSLimit", true)
-				context.env.remote:FireClient(player, fps)
+				context.env.remote:Fire(player, fps)
 			end
 		end,
 	},
@@ -2118,7 +2118,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.Teleport.OnClientEvent:Connect(function(cframe)
+			_K.Remote.Teleport:Connect(function(cframe)
 				local character = _K.LocalPlayer.Character
 				if character then
 					character:PivotTo(cframe)
@@ -2126,7 +2126,9 @@ return {
 			end)
 		end,
 		env = function(_K)
+			local remote = _K.Remote.Teleport
 			return {
+				remote = remote,
 				teleport = function(from, to)
 					if not (from and to) then
 						return
@@ -2168,7 +2170,7 @@ return {
 
 					local player = _K.Service.Players:GetPlayerFromCharacter(from)
 					if player then
-						_K.Remote.Teleport:FireClient(player, cframe)
+						remote:Fire(player, cframe)
 					end
 				end,
 			}
@@ -2201,7 +2203,7 @@ return {
 		},
 		envClient = function(_K)
 			local last
-			_K.Remote.FOV.OnClientEvent:Connect(function(degrees)
+			_K.Remote.FOV:Connect(function(degrees)
 				if degrees and not last then
 					last = workspace.CurrentCamera.FieldOfView
 				end
@@ -2222,7 +2224,7 @@ return {
 
 		run = function(context, players, degrees)
 			for _, player in players do
-				context.env.remote:FireClient(player, if degrees == nil then nil else degrees)
+				context.env.remote:Fire(player, if degrees == nil then nil else degrees)
 			end
 		end,
 	},
@@ -2531,7 +2533,7 @@ return {
 					player.Character = rig
 					_K.VIP.EffectHandler(rig)
 					rig.Parent = workspace
-					_K.Remote.Refresh:FireClient(player)
+					_K.Remote.Refresh:Fire(player)
 
 					return rig
 				end,
@@ -2576,9 +2578,13 @@ return {
 			},
 		},
 
+		env = function(_K)
+			return { remote = _K.Remote.Refresh }
+		end,
+
 		envClient = function(_K)
 			local lastCameraCFrame
-			_K.Remote.Refresh.OnClientEvent:Connect(function()
+			_K.Remote.Refresh:Connect(function()
 				if lastCameraCFrame then
 					workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Wait()
 					workspace.CurrentCamera.CFrame = lastCameraCFrame
@@ -2596,7 +2602,7 @@ return {
 					local old = player.Character:GetPivot()
 					player:LoadCharacterAsync()
 					player.Character:PivotTo(old)
-					context._K.Remote.Refresh:FireClient(player)
+					context.env.remote:Fire(player)
 				end
 			end
 		end,
@@ -2789,7 +2795,7 @@ return {
 				result = result.IsSubscribed
 			end
 			if ok then
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = player.UserId,
 					Text = `<b>{if result
 						then `<font color="#{context._K.Data.settings.themeValid:ToHex()}">Owns`
@@ -2999,7 +3005,7 @@ return {
 			team.AutoAssignable = autoAssignable
 			team.Parent = context._K.Service.Teams
 
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				From = "_K",
 				Text = `<b>Created team:</b> <font color="#{color:ToHex()}">{name}</font>`,
 			})
@@ -3048,12 +3054,12 @@ return {
 				team.TeamColor = BrickColor.new(color)
 				team.AutoAssignable = autoAssignable
 
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Edited team:</b> <font color="#{oldColor:ToHex()}">{oldName}</font> to <font color="#{color:ToHex()}">{name}</font>`,
 				})
 			else
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Failed to edit team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
 				})
@@ -3078,12 +3084,12 @@ return {
 		run = function(context, team)
 			if team and context._K.Service.Teams:FindFirstChild(team.Name) then
 				team:Destroy()
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Removed team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
 				})
 			else
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Failed to remove team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
 				})
@@ -3101,7 +3107,7 @@ return {
 			for _, team in context._K.Service.Teams:GetTeams() do
 				team:Destroy()
 			end
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				From = "_K",
 				Text = "<b>Cleared all teams.</b>",
 			})
@@ -3148,7 +3154,7 @@ return {
 					context.env.setCollision(player.Character, collide)
 				end
 			end
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				From = "_K",
 				Text = `<b>Collisions {collide and "enabled" or "disabled"} for the given player(s) or team(s).</b>`,
 			})

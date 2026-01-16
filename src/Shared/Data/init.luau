@@ -21,11 +21,12 @@ local Package = Shared.Parent
 local Auth = require(Shared:WaitForChild("Auth"))
 local Hook = require(Shared:WaitForChild("Hook"))
 local Util = require(Shared:WaitForChild("Util"))
-local Remote = require(Shared:WaitForChild("Remote"))
 local Z = require(Package:WaitForChild("Z"))
 
 local ChunkChanges = require(script:WaitForChild("ChunkChanges"))
 local Migrate = require(script:WaitForChild("Migrate"))
+
+local Remote = Util.Remote
 
 Data.Migrate = Migrate
 
@@ -48,7 +49,7 @@ local function dataLimitWarning(dataType, size)
 				or Auth.hasPermission(player.UserId, "settings")
 			then
 				local invalidColor = Data.settings.themeInvalid:ToHex()
-				Remote.Notify:FireClient(player, {
+				Remote.Notify:Fire(player, {
 					From = "_K",
 					Text = `<b><font color="#{invalidColor}">You're approaching the limit of the DataStore!</font>\n\tConsider removing some {dataType}s.</b>\n\n<b>Data Usage:</b> {string.format(
 						"%.01f",
@@ -211,7 +212,7 @@ local SYNC = {
 
 		for _, player in Players:GetPlayers() do
 			if player:GetAttribute("_K_READY") and Auth.hasCommand(player.UserId, "ban") then
-				Remote.Bans:FireClient(player, state)
+				Remote.Bans:Fire(player, state)
 			end
 		end
 	end,
@@ -283,7 +284,7 @@ local SYNC = {
 
 		for _, player in Players:GetPlayers() do
 			if player:GetAttribute("_K_READY") then
-				Remote.Members:FireClient(player, state)
+				Remote.Members:Fire(player, state)
 			end
 		end
 	end,
@@ -318,7 +319,7 @@ local SYNC = {
 
 		for _, player in Players:GetPlayers() do
 			if player:GetAttribute("_K_READY") then
-				Remote.Settings:FireClient(player, state)
+				Remote.Settings:Fire(player, state)
 			end
 		end
 	end,
@@ -358,7 +359,7 @@ local SYNC = {
 
 			for _, player in Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and Auth.hasPermission(player.UserId, "serverlogs") then
-					Remote.Logs:FireClient(player, changes)
+					Remote.Logs:Fire(player, changes)
 				end
 			end
 		end
@@ -370,7 +371,7 @@ local REMOVE = {
 		for _, player in Util.Service.Players:GetPlayers() do
 			if Auth.hasCommand(player.UserId, "ban") then
 				for _, key in keys do
-					Remote.Ban:FireClient(player, key)
+					Remote.Ban:Fire(player, key)
 				end
 			end
 		end
@@ -575,7 +576,7 @@ function Data.initialize(scope)
 		for _, player in Util.Service.Players:GetPlayers() do
 			task.spawn(function()
 				if Auth.hasCommand(player.UserId, "place") or Auth.hasCommand(player.UserId, "unreserve") then
-					Remote.ReservedServers:FireClient(player, servers)
+					Remote.ReservedServers:Fire(player, servers)
 				end
 			end)
 		end

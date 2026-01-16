@@ -42,7 +42,7 @@ return function(_K)
 						continue
 					end
 					local prefix = context._K.getCommandPrefix(userId)
-					context._K.Remote.Notify:FireClient(player, {
+					context._K.Remote.Notify:Fire(player, {
 						Text = `Gave you the <b><font color="{roleData.color}">{roleData.name}</font></b> role!\nSay <b>{prefix}cmds</b> or <b>{prefix}info</b> for details.`,
 						From = context.from,
 					})
@@ -59,7 +59,7 @@ return function(_K)
 					table.insert(names, context._K.Util.getUserInfo(userId).DisplayName)
 				end
 
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Gave Role:</b> <b><font color="{roleData.color}">{roleData.name}</font></b>\n<b>To:</b> <i>{table.concat(
 						names,
@@ -126,7 +126,7 @@ return function(_K)
 				end
 
 				local roleData = context._K.Data.roles[role]
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					Text = `<b>Removed Roles:</b> <b><font color="{roleData.color}">{roleData.name}</font></b>\n<b>From:</b> <i>{table.concat(
 						membersUnroled,
 						", "

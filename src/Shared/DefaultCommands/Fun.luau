@@ -569,7 +569,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.ControlCommand.OnClientEvent:Connect(function(target: Humanoid | Model)
+			_K.Remote.ControlCommand:Connect(function(target: Humanoid | Model)
 				if target then
 					workspace.CurrentCamera.CameraSubject = target
 				end
@@ -592,8 +592,8 @@ return {
 			end
 
 			context.fromPlayer.Character = character
-			context.env.remote:FireClient(context.fromPlayer, humanoid)
-			context.env.remote:FireClient(player, humanoid)
+			context.env.remote:Fire(context.fromPlayer, humanoid)
+			context.env.remote:Fire(player, humanoid)
 
 			for _, descendant in character:GetDescendants() do
 				if descendant:IsA("BasePart") and descendant:CanSetNetworkOwnership() then
@@ -611,7 +611,7 @@ return {
 							player:LoadCharacterAsync()
 							local newCharacter = player.Character
 							newCharacter:PivotTo(old)
-							context._K.Remote.Refresh:FireClient(player)
+							context._K.Remote.Refresh:Fire(player)
 						end
 					end)
 			end
@@ -640,7 +640,7 @@ return {
 
 		envClient = function(_K)
 			local connection
-			_K.Remote.Glitch.OnClientEvent:Connect(function(enable: boolean?, distance: number?)
+			_K.Remote.Glitch:Connect(function(enable: boolean?, distance: number?)
 				if connection then
 					connection:Disconnect()
 				end
@@ -662,7 +662,7 @@ return {
 		end,
 		run = function(context, players: { Player }, distance: number)
 			for _, player in players do
-				context.env.remote:FireClient(player, not context.undo, distance)
+				context.env.remote:Fire(player, not context.undo, distance)
 			end
 		end,
 	},
@@ -1128,7 +1128,7 @@ return {
 				local function invertControls(player, direction, relative)
 					player.Move(player, -direction, relative)
 				end
-				_K.Remote.Confuse.OnClientEvent:Connect(function(enable)
+				_K.Remote.Confuse:Connect(function(enable)
 					local player = _K.Service.Players.LocalPlayer
 					local playerScripts = player:WaitForChild("PlayerScripts")
 					local playerModule = require(playerScripts:WaitForChild("PlayerModule"))
@@ -1144,7 +1144,7 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				context.env.remote:FireClient(player, not context.undo)
+				context.env.remote:Fire(player, not context.undo)
 			end
 		end,
 	},
@@ -1450,7 +1450,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.Trip.OnClientEvent:Connect(function()
+			_K.Remote.Trip:Connect(function()
 				local character = _K.LocalPlayer.Character
 				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
@@ -1470,7 +1470,7 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
-				context.env.remote:FireClient(player)
+				context.env.remote:Fire(player)
 			end
 		end,
 	},
@@ -1754,7 +1754,7 @@ return {
 		},
 		envClient = function(_K)
 			local thread
-			_K.Remote.Slippery.OnClientEvent:Connect(function(bodyVelocity: BodyVelocity?)
+			_K.Remote.Slippery:Connect(function(bodyVelocity: BodyVelocity?)
 				if thread then
 					task.cancel(thread)
 					thread = nil
@@ -1791,7 +1791,7 @@ return {
 					continue
 				end
 
-				context.env.remote:FireClient(
+				context.env.remote:Fire(
 					player,
 					context._K.Flux.new "BodyVelocity" {
 						Name = "_K_Slippery",

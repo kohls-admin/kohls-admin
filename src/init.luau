@@ -63,7 +63,7 @@ local _K = {
 	Util = Util,
 	Data = require(Shared:WaitForChild("Data")),
 	Hook = require(Shared:WaitForChild("Hook")),
-	Remote = require(Shared:WaitForChild("Remote")),
+	Remote = Util.Remote,
 	UI = nil,
 
 	-- submodules
@@ -170,7 +170,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
-					_K.Remote.Log:FireClient(player, log)
+					_K.Remote.Log:Fire(player, log)
 				end
 			end
 		elseif _K.client and _K.client.dashboard then
@@ -197,9 +197,9 @@ function _K.alert(to: number | Player, text: string, isError: boolean?)
 			props.Sound = "Call_Leave"
 		end
 		if _K.IsServer then
-			_K.Remote.Notify:FireClient(to, props)
+			_K.Remote.Notify:Fire(to, props)
 		else
-			_K.Notify:FireClient(props)
+			_K.Notify:Fire(props)
 		end
 	end
 end

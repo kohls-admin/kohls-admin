@@ -18,6 +18,7 @@ local Util = {
 	iterPageItems = require(script:WaitForChild("iterPageItems")),
 	MemoryStore = require(script:WaitForChild("MemoryStore")),
 	Queue = require(script:WaitForChild("Queue")),
+	Remote = require(script:WaitForChild("Remote")),
 	Retry = require(script:WaitForChild("Retry")),
 	Rollout = require(script:WaitForChild("Rollout")),
 	RunContext = require(script:WaitForChild("RunContext")),

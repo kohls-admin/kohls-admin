@@ -71,7 +71,7 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 	_K.client.CommandBar.updateCompletionData()
 
 	if _K.Registry.commands.tools and _K.Registry.commands.tools.LocalPlayerAuthorized then
-		_K.Remote.Tools:FireServer()
+		_K.Remote.Tools:Fire()
 	end
 
 	_K.Hook.authChanged:Fire()
@@ -81,15 +81,15 @@ _K.client.settings.commandBarRank:Connect(_K.client.updateInterfaceAuth)
 _K.client.settings.dashboardRank:Connect(_K.client.updateInterfaceAuth)
 _K.client.settings.dashboardButtonRank:Connect(_K.client.updateInterfaceAuth)
 
-_K.Remote.Announce.OnClientEvent:Connect(_K.Announce)
-_K.Remote.Notify.OnClientEvent:Connect(_K.Notify)
+_K.Remote.Announce:Connect(_K.Announce)
+_K.Remote.Notify:Connect(_K.Notify)
 
-_K.Remote.SetCore.OnClientEvent:Connect(function(parameter: string, value: any)
+_K.Remote.SetCore:Connect(function(parameter: string, value: any)
 	_K.Service.StarterGui:SetCore(parameter, value)
 end)
 
 local requestingCommand = {}
-_K.Remote.RequestCommand.OnClientInvoke = function(from: Player, text: string)
+_K.Remote.RequestCommand.OnInvoke = function(from: Player, text: string)
 	if requestingCommand[from.UserId] then
 		return
 	end
@@ -123,23 +123,23 @@ end
 
 -- general data replication
 
-_K.Remote.Ban.OnClientEvent:Connect(function(userId, ban)
+_K.Remote.Ban:Connect(function(userId, ban)
 	_K.Data.bans[userId] = ban
 	_K.client.bans(_K.Data.bans)
 end)
 
-_K.Remote.Bans.OnClientEvent:Connect(function(bans)
+_K.Remote.Bans:Connect(function(bans)
 	if bans then
 		_K.Data.bans = bans
 		_K.client.bans(_K.Data.bans)
 	end
 end)
 
-_K.Remote.DisplayBubble.OnClientEvent:Connect(function(character: Model, message: string)
+_K.Remote.DisplayBubble:Connect(function(character: Model, message: string)
 	_K.Service.TextChat:DisplayBubble(character, message)
 end)
 
-_K.Remote.Member.OnClientEvent:Connect(function(userId, member)
+_K.Remote.Member:Connect(function(userId, member)
 	local viewas = _K.Registry.commands.viewas
 	if viewas.env.originalMember and userId == tostring(_K.LocalPlayer.UserId) then
 		viewas.env.originalMember = member
@@ -151,7 +151,7 @@ _K.Remote.Member.OnClientEvent:Connect(function(userId, member)
 	_K.client.updateInterfaceAuth()
 end)
 
-_K.Remote.Members.OnClientEvent:Connect(function(members)
+_K.Remote.Members:Connect(function(members)
 	local viewas = _K.Registry.commands.viewas
 	if viewas.env.originalMember then
 		local key = tostring(_K.LocalPlayer.UserId)
@@ -169,7 +169,7 @@ _K.Remote.Members.OnClientEvent:Connect(function(members)
 	_K.client.updateInterfaceAuth()
 end)
 
-_K.Remote.Log.OnClientEvent:Connect(function(log)
+_K.Remote.Log:Connect(function(log)
 	if not _K.client.ready then
 		return
 	end
@@ -181,7 +181,7 @@ _K.Remote.Log.OnClientEvent:Connect(function(log)
 	task.defer(_K.client.dashboard.Logs.updateList, _K.client.dashboard.Logs)
 end)
 
-_K.Remote.Logs.OnClientEvent:Connect(function(logsBuffer)
+_K.Remote.Logs:Connect(function(logsBuffer)
 	if not _K.client.ready then
 		return
 	end
@@ -208,7 +208,7 @@ _K.Remote.Logs.OnClientEvent:Connect(function(logsBuffer)
 	_K.client.dashboard.Logs:updateList()
 end)
 
-_K.Remote.Settings.OnClientEvent:Connect(function(settings)
+_K.Remote.Settings:Connect(function(settings)
 	if settings.announcement and not _K.Data.savedSettings.announcement then
 		local msg, from = unpack(settings.announcement)
 		_K.Announce({
@@ -236,17 +236,17 @@ _K.Remote.Settings.OnClientEvent:Connect(function(settings)
 	_K.client.updateInterfaceAuth()
 end)
 
-_K.Remote.Role.OnClientEvent:Connect(function(role, roleData)
+_K.Remote.Role:Connect(function(role, roleData)
 	_K.Data.roles[role] = roleData
 	_K.client.updateInterfaceAuth()
 end)
 
-_K.Remote.Roles.OnClientEvent:Connect(function(roles)
+_K.Remote.Roles:Connect(function(roles)
 	_K.Util.Table.merge(_K.Data.roles, roles)
 	_K.client.updateInterfaceAuth()
 end)
 
-_K.Remote.RolesNotification.OnClientEvent:Connect(function()
+_K.Remote.RolesNotification:Connect(function()
 	_K.client.rolesNotification()
 end)
 return true

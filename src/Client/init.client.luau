@@ -134,7 +134,7 @@ if _K.Service.TextChat.ChatVersion == Enum.ChatVersion.TextChatService then
 	end)
 end
 
-_K.Remote.Command.OnClientEvent:Connect(Chatted)
+_K.Remote.Command:Connect(Chatted)
 
 local textBoxFocused
 do
@@ -193,7 +193,7 @@ end)
 
 -- initial remote connection
 
-_K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, savedSettings, defaultSettings)
+_K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings, defaultSettings)
 	-- need to improve networking performance!
 	if bans then
 		_K.Util.Table.merge(_K.Data.bans, bans)
@@ -377,7 +377,7 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 				Close = vipNotificationClosed,
 			})
 		end)
-		_K.Remote.VIPNotification.OnClientEvent:Connect(_K.client.VIPNotification)
+		_K.Remote.VIPNotification:Connect(_K.client.VIPNotification)
 		_K.VIP.popup.Parent = UI.LayerTopInset
 
 		local connections
@@ -453,17 +453,17 @@ _K.Remote.Init.OnClientEvent:Once(function(bans, logs, members, roles, servers, 
 	end)
 end)
 
-_K.Remote.Init:FireServer({ Attributes = { Platform = UI.Platform, SessionStart = workspace:GetServerTimeNow() } })
+_K.Remote.Init:Fire({ Attributes = { Platform = UI.Platform, SessionStart = workspace:GetServerTimeNow() } })
 
 local lastIdle = time()
 local function resetIdle()
 	if time() - 30 > lastIdle then
-		_K.Remote.Idled:FireServer(0)
+		_K.Remote.Idled:Fire(0)
 	end
 end
 
 _K.Service.Players.LocalPlayer.Idled:Connect(function(idleTime)
 	lastIdle = time()
-	_K.Remote.Idled:FireServer(idleTime)
+	_K.Remote.Idled:Fire(idleTime)
 	task.delay(35, resetIdle)
 end)

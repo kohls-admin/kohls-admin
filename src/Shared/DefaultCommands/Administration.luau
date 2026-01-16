@@ -24,7 +24,7 @@ return {
 
 					local msg, from, duration = unpack(message.Data)
 					_K.Data.savedSettings.announcement = message.Data
-					_K.Remote.Announce:FireAllClients({
+					_K.Remote.Announce:FireAll({
 						From = from,
 						Text = msg,
 						Duration = duration or 0,
@@ -105,7 +105,7 @@ return {
 				local player = context._K.Service.Players:GetPlayerByUserId(userId)
 				if player and #rolesAdded > 0 then
 					local prefix = context._K.getCommandPrefix(player.UserId)
-					context._K.Remote.Notify:FireClient(player, {
+					context._K.Remote.Notify:Fire(player, {
 						Text = `Gave you the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{prefix}cmds</b> or <b>{prefix}info</b> for details.`,
 						From = context.from,
 					})
@@ -124,7 +124,7 @@ return {
 					table.insert(names, context._K.Util.getUserInfo(userId).DisplayName)
 				end
 
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Gave Roles:</b> {table.concat(roleString, ", ")}\n<b>To:</b> <i>{table.concat(
 						names,
@@ -164,7 +164,7 @@ return {
 				local player = context._K.Service.Players:GetPlayerByUserId(userId)
 				if player and #rolesAdded > 0 then
 					local prefix = context._K.getCommandPrefix(player.UserId)
-					context._K.Remote.Notify:FireClient(player, {
+					context._K.Remote.Notify:Fire(player, {
 						Text = `Gave you the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{prefix}cmds</b> or <b>{prefix}info</b> for details.`,
 						From = context.from,
 					})
@@ -183,7 +183,7 @@ return {
 					table.insert(names, context._K.Util.getUserInfo(userId).DisplayName)
 				end
 
-				context._K.Remote.Notify:FireClient(context.fromPlayer, {
+				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
 					Text = `<b>Gave Roles:</b> {table.concat(roleString, ", ")}\n<b>To:</b> <i>{table.concat(
 						names,
@@ -231,7 +231,7 @@ return {
 				local roleData = context._K.Data.roles[role]
 				table.insert(roleString, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
 			end
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `<b>Removed Roles:</b> {table.concat(roleString, ", ")}\n<b>From:</b> <i>{table.concat(
 					membersUnroled,
 					", "
@@ -261,7 +261,7 @@ return {
 				if member then
 					context._K.Data.members[key] = nil
 					context._K.Data.Sync.members[key] = context._K.Data.REMOVE
-					context._K.Remote.Member:FireAllClients(key)
+					context._K.Remote.Member:FireAll(key)
 					table.insert(membersUnroled, member and member.name or key)
 				end
 			end
@@ -270,7 +270,7 @@ return {
 				return
 			end
 
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `<b>Removed member{#membersUnroled > 1 and "s" or ""}:</b> <i>{table.concat(
 					membersUnroled,
 					", "
@@ -377,7 +377,7 @@ return {
 				context._K.Util.SafeTeleport(placeId, players, options)
 			end
 			for _, player in players do
-				context._K.Remote.Notify:FireClient(player, {
+				context._K.Remote.Notify:Fire(player, {
 					From = "_K",
 					Text = "Teleport initiated...",
 				})
@@ -392,7 +392,7 @@ return {
 		run = function(context)
 			if not context._K._serverLock then
 				context._K._serverLock = context.fromPlayer.Name
-				context._K.Remote.Notify:FireAllClients({
+				context._K.Remote.Notify:FireAll({
 					Text = "The server has been <b>locked</b>.",
 					From = context.from,
 				})
@@ -406,7 +406,7 @@ return {
 		args = {},
 		run = function(context)
 			context._K._serverLock = nil
-			context._K.Remote.Notify:FireAllClients({
+			context._K.Remote.Notify:FireAll({
 				Text = "The server has been <b>unlocked</b>.",
 				From = context.from,
 			})

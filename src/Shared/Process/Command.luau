@@ -53,12 +53,12 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 
 	local userName = if targetPlayer.Name == targetPlayer.DisplayName then "" else " @" .. targetPlayer.Name
 
-	self._K.Remote.Notify:FireClient(self.fromPlayer, {
+	self._K.Remote.Notify:Fire(self.fromPlayer, {
 		Text = `Requesting <b>{self.alias}</b> command on <b>{targetPlayer.DisplayName}<font transparency="0.5">{userName}</font></b>.`,
 	})
 
 	local ok, accepted = pcall(
-		self._K.Remote.RequestCommand.InvokeClient,
+		self._K.Remote.RequestCommand.Invoke,
 		self._K.Remote.RequestCommand,
 		targetPlayer,
 		self.fromPlayer,
@@ -74,7 +74,7 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 	local status = if accepted
 		then `<font color='#{validColor}'>accepted</font>`
 		else `<font color='#{invalidColor}'>denied</font>`
-	self._K.Remote.Notify:FireClient(
+	self._K.Remote.Notify:Fire(
 		self.fromPlayer,
 		{ Text = `Command request for <b>{self.alias}</b> was <b>{status}</b>.`, From = targetPlayer.UserId }
 	)
@@ -83,7 +83,7 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 		self._K.Hook.preCommand:Fire(self)
 		local _ok, err = pcall(run, self, unpack(args))
 		if err then
-			self._K.Remote.Notify:FireClient(self.fromPlayer, {
+			self._K.Remote.Notify:Fire(self.fromPlayer, {
 				Text = `<b>"{self.alias}" command failed:</b> {err}`,
 				From = "_K",
 				TextColor3 = Color3.new(1, 0, 0),

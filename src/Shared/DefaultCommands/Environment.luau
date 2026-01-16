@@ -462,7 +462,7 @@ return {
 		run = function(context)
 			if context.fromPlayer then
 				local con
-				con = context._K.Remote.SpectateSubject.OnServerEvent:Connect(function(player, cframe)
+				con = context._K.Remote.SpectateSubject:Connect(function(player, cframe)
 					if player == context.fromPlayer then
 						con:Disconnect()
 						local speed = workspace.GlobalWind.Magnitude
@@ -477,7 +477,7 @@ return {
 						workspace.GlobalWind = cframe.LookVector * workspace.GlobalWind.Magnitude
 					end
 				end)
-				context._K.Remote.SpectateSubject:FireClient(context.fromPlayer, true)
+				context._K.Remote.SpectateSubject:Fire(context.fromPlayer, true)
 			end
 		end,
 	},

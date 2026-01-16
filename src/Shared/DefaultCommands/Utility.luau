@@ -778,7 +778,7 @@ return {
 			end
 
 			env.playEmote = playEmote
-			_K.Remote.Emote.OnClientEvent:Connect(playEmote)
+			_K.Remote.Emote:Connect(playEmote)
 
 			return env
 		end,
@@ -806,7 +806,7 @@ return {
 				end
 			end
 			for _, player in players do
-				context.env.remote:FireClient(player, animation, loop, speed)
+				context.env.remote:Fire(player, animation, loop, speed)
 			end
 		end,
 	},
@@ -1046,11 +1046,14 @@ return {
 				lowerRank = true,
 			},
 		},
+		env = function(_K)
+			return { remote = _K.Remote.ShowFPS }
+		end,
 		envClient = function(_K)
 			local env = {
 				fps = 60,
 			}
-			function _K.Remote.ShowFPS.OnClientInvoke()
+			function _K.Remote.ShowFPS.OnInvoke()
 				return env.fps
 			end
 			local frames, last = 0, tick()
@@ -1065,8 +1068,8 @@ return {
 			return env
 		end,
 		run = function(context, player: Player)
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
-				Text = `<b>FPS:</b> {math.round(context._K.Remote.ShowFPS:InvokeClient(player) or 0)}`,
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
+				Text = `<b>FPS:</b> {math.round(context.env.remote:Invoke(player) or 0)}`,
 				From = player.UserId,
 			})
 		end,
@@ -1085,7 +1088,7 @@ return {
 		},
 
 		run = function(context, player: Player)
-			context._K.Remote.Notify:FireClient(
+			context._K.Remote.Notify:Fire(
 				context.fromPlayer,
 				{ Text = `<b>Ping:</b> {math.round(player:GetNetworkPing() * 1000)} ms`, From = player.UserId }
 			)

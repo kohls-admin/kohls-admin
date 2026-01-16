@@ -30,7 +30,7 @@ function Bans.new(_K)
 			Action = function(v)
 				unbanDialog.Visible(false)
 				if v and unbanDialog.userId then
-					_K.Remote.Unban:FireServer(tonumber(unbanDialog.userId))
+					_K.Remote.Unban:Fire(tonumber(unbanDialog.userId))
 				end
 				unbanDialog.userId = nil
 			end,
@@ -469,7 +469,7 @@ function Bans.new(_K)
 						then 0
 						elseif banType._value == "Forever" then -1
 						else banDuration * _K.Util.Time.fromUnit(banDurationUnit.Value._value)
-					_K.Remote.Ban:FireServer(banTarget._value, banReason, duration)
+					_K.Remote.Ban:Fire(banTarget._value, banReason, duration)
 				end
 			end,
 		},

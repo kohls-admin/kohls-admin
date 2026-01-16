@@ -20,7 +20,7 @@ return {
 			if discoCommand then
 				task.spawn(discoCommand.env.cleanup)
 			end
-			context._K.Remote.StartCountdown:FireAllClients()
+			context._K.Remote.StartCountdown:FireAll()
 		end,
 	},
 	{
@@ -36,7 +36,7 @@ return {
 		},
 		envClient = function(_K)
 			local existing
-			_K.Remote.Hint.OnClientEvent:Connect(function(message: string, duration: number?)
+			_K.Remote.Hint:Connect(function(message: string, duration: number?)
 				if existing then
 					existing:Destroy()
 				end
@@ -69,7 +69,7 @@ return {
 			return { remote = _K.Remote.Hint }
 		end,
 		run = function(context, message: string)
-			context.env.remote:FireAllClients(`<b>{context.fromPlayer}:</b> {message}`)
+			context.env.remote:FireAll(`<b>{context.fromPlayer}:</b> {message}`)
 		end,
 	},
 	{
@@ -90,7 +90,7 @@ return {
 		},
 		run = function(context, players: { Player }, message: string)
 			for _, player in players do
-				context._K.Remote.Hint:FireAllClients(`<b>{context.fromPlayer}:</b> {message}`)
+				context._K.Remote.Hint:FireAll(`<b>{context.fromPlayer}:</b> {message}`)
 			end
 		end,
 	},
@@ -106,8 +106,11 @@ return {
 			},
 		},
 
+		env = function(_K)
+			return { remote = _K.Remote.Announce }
+		end,
 		run = function(context, message)
-			context._K.Remote.Announce:FireAllClients({ From = context.from, Text = message })
+			context.env.remote:FireAll({ From = context.from, Text = message })
 		end,
 	},
 	{
@@ -123,7 +126,7 @@ return {
 		},
 		envClient = function(_K)
 			local existing
-			_K.Remote.FullScreenMessage.OnClientEvent:Connect(function(from: number, message: string, duration: number?)
+			_K.Remote.FullScreenMessage:Connect(function(from: number, message: string, duration: number?)
 				if existing then
 					existing:Destroy()
 				end
@@ -173,7 +176,7 @@ return {
 			return { remote = _K.Remote.FullScreenMessage }
 		end,
 		run = function(context, message)
-			context.env.remote:FireAllClients({ From = context.from, Text = message })
+			context.env.remote:FireAll({ From = context.from, Text = message })
 		end,
 	},
 	{
@@ -192,10 +195,12 @@ return {
 				description = "The message to send.",
 			},
 		},
-
+		env = function(_K)
+			return { remote = _K.Remote.Notify }
+		end,
 		run = function(context, players, message)
 			for _, player in players do
-				context._K.Remote.Notify:FireClient(player, { From = context.from, Text = message })
+				context.env.remote:Fire(player, { From = context.from, Text = message })
 			end
 		end,
 	},
@@ -218,7 +223,7 @@ return {
 
 		run = function(context, players, message)
 			for _, player in players do
-				context._K.Remote.Announce:FireClient(player, { From = context.from, Text = message })
+				context._K.Remote.Announce:Fire(player, { From = context.from, Text = message })
 			end
 		end,
 	},
@@ -236,7 +241,7 @@ return {
 		},
 		envClient = function(_K)
 			local countdown, progress
-			_K.Remote.StartCountdown.OnClientEvent:Connect(function(start, duration)
+			_K.Remote.StartCountdown:Connect(function(start, duration)
 				if countdown then
 					countdown:Disconnect()
 				end
@@ -321,9 +326,9 @@ return {
 
 		run = function(context, duration)
 			if duration then
-				context.env.remote:FireAllClients(workspace:GetServerTimeNow(), math.min(duration, 3600))
+				context.env.remote:FireAll(workspace:GetServerTimeNow(), math.min(duration, 3600))
 			else
-				context.env.remote:FireAllClients()
+				context.env.remote:FireAll()
 			end
 		end,
 	},
@@ -389,8 +394,11 @@ return {
 				description = "The question to poll.",
 			},
 		},
+		env = function(_K)
+			return { remote = _K.Remote.Vote }
+		end,
 		envClient = function(_K)
-			_K.Remote.Vote.OnClientInvoke = function(text: string, from: Player)
+			_K.Remote.Vote.OnInvoke = function(text: string, from: Player)
 				local actionSignal = _K.Util.Signal.new()
 				_K.Notify({
 					Text = text,
@@ -420,7 +428,7 @@ return {
 
 			local yes, no = 0, 0
 			local function voteTask(player)
-				local vote = context._K.Remote.Vote:InvokeClient(player, message, context.fromPlayer)
+				local vote = context.env.remote:Invoke(player, message, context.fromPlayer)
 				if vote == true then
 					yes += 1
 				elseif vote == false then
@@ -433,7 +441,7 @@ return {
 				tasks:add(voteTask, player)
 			end
 
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `Created vote: <b>{message}</b>\n\n<font transparency="0.5"><i>The vote will end in 30 seconds or when every player has submitted their vote!</i></font>`,
 			})
 
@@ -444,7 +452,7 @@ return {
 
 			local validColor = context._K.Data.settings.themeValid:ToHex()
 			local invalidColor = context._K.Data.settings.themeInvalid:ToHex()
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `<font transparency="0.5">The results are in!</font>\n\n<b>{message}</b>\n\t<font color="#{validColor}"><b><sc>yes</sc></b>\t{yes}</font>\n\t<font color="#{invalidColor}"><b><sc>no</sc></b> \t{no}</font>`,
 			})
 		end,
@@ -647,14 +655,14 @@ return {
 				watched = nil,
 			}
 
-			_K.Remote.Spectate.OnClientEvent:Connect(function(cframe: CFrame, distance: number)
+			_K.Remote.Spectate:Connect(function(cframe: CFrame, distance: number)
 				if env.currentSubject then
 					env.subjectFocus = cframe
 					env.subjectDistance = distance
 				end
 			end)
 
-			_K.Remote.SpectateSubject.OnClientEvent:Connect(function(enabled: boolean)
+			_K.Remote.SpectateSubject:Connect(function(enabled: boolean)
 				env.watched = enabled
 			end)
 
@@ -713,7 +721,7 @@ return {
 
 			_K.Service.Run.PreRender:Connect(function(step)
 				if env.watched then
-					_K.Remote.SpectateSubject:FireServer(
+					_K.Remote.SpectateSubject:Fire(
 						workspace.CurrentCamera.CFrame.Rotation + workspace.CurrentCamera.Focus.Position,
 						(workspace.CurrentCamera.Focus.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
 					)
@@ -732,12 +740,12 @@ return {
 		env = function(_K)
 			local spectators = {}
 			local spectateRemote = _K.Remote.Spectate
-			_K.Remote.SpectateSubject.OnServerEvent:Connect(function(player: Player, cframe: CFrame, distance: number)
+			_K.Remote.SpectateSubject:Connect(function(player: Player, cframe: CFrame, distance: number)
 				if not spectators[player] or typeof(cframe) ~= "CFrame" or typeof(distance) ~= "number" then
 					return
 				end
 				for _, player in spectators[player] do
-					spectateRemote:FireClient(player, cframe, distance)
+					spectateRemote:Fire(player, cframe, distance)
 				end
 			end)
 
@@ -749,7 +757,7 @@ return {
 						table.remove(spectators, found)
 						if #spectators == 0 then
 							spectatorCache[subject] = nil
-							context._K.Remote.SpectateSubject:FireClient(subject)
+							context._K.Remote.SpectateSubject:Fire(subject)
 						end
 					end
 				end
@@ -797,7 +805,7 @@ return {
 			if not context.env.spectators[player] then
 				context.env.spectators[player] = {}
 			end
-			context._K.Remote.SpectateSubject:FireClient(player, true)
+			context._K.Remote.SpectateSubject:Fire(player, true)
 			table.insert(context.env.spectators[player], context.fromPlayer)
 		end,
 	},
@@ -966,7 +974,7 @@ return {
 		},
 		envClient = function(_K)
 			local connection
-			_K.Remote.Notrip.OnClientEvent:Connect(function(enable)
+			_K.Remote.Notrip:Connect(function(enable)
 				local player = _K.Service.Players.LocalPlayer
 				local humanoid: Humanoid? = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
@@ -994,7 +1002,7 @@ return {
 		end,
 		run = function(context, players: { Player })
 			for _, player in players do
-				context.env.remote:FireClient(player, not context.undo)
+				context.env.remote:Fire(player, not context.undo)
 			end
 		end,
 	},
@@ -1113,7 +1121,7 @@ return {
 			},
 		},
 		run = function(context, player: Player)
-			local fps = math.min(999, math.round(context._K.Remote.ShowFPS:InvokeClient(player)) or 0)
+			local fps = math.min(999, math.round(context._K.Remote.ShowFPS:Invoke(player)) or 0)
 			local ping = math.min(9999, math.ceil(player:GetNetworkPing() * 1000))
 			local teamColor = player.Team and "#" .. player.Team.TeamColor.Color:ToHex() or "#16a085"
 			local locale = context._K.Service.LocalizationService:GetCountryRegionForPlayerAsync(player)
@@ -1161,7 +1169,7 @@ return {
 
 			table.sort(info)
 
-			context._K.Remote.Notify:FireClient(context.fromPlayer, {
+			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = table.concat(info, "\n"),
 				From = player.UserId,
 			})

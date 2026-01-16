@@ -1,13 +1,13 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local RunService = game:GetService("RunService")
 
+local Util = require(script.Parent.Parent.Util)
+
 local LocalPlayer = game.Players.LocalPlayer
 
 if RunService:IsServer() then
 	return false
 end
-
-local promptBulkPurchaseEvent = script.Parent:WaitForChild("PromptBulkPurchaseEvent")
 
 local vip = Instance.new("Frame")
 vip.Name = "VIP"
@@ -422,7 +422,7 @@ local saleProductId = "115444443724463"
 local productId = originalProductId
 
 local function promptBulkPurchase(id: number | string)
-	promptBulkPurchaseEvent:FireServer(tonumber(id))
+	Util.Remote.PromptBulkPurchase:Fire(tonumber(id))
 end
 
 local function promptPurchaseVIP()
@@ -512,7 +512,7 @@ MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player, status, r
 	if player ~= LocalPlayer or (results.Items[1].id ~= productId and results.Items[1].id ~= saleProductId) then
 		return
 	end
-	shared._K_INTERFACE.Remote.VIPCheck:FireServer(tonumber(results.Items[1].id))
+	shared._K_INTERFACE.Remote.VIPCheck:Fire(tonumber(results.Items[1].id))
 	if status == Enum.MarketplaceBulkPurchasePromptStatus.Completed then
 		shared._K_INTERFACE.client.VIPNotification = function() end
 		vip.Visible = false

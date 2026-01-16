@@ -1,11 +1,12 @@
 local Auth = require(script.Parent:WaitForChild("Auth"))
 local Data = require(script.Parent:WaitForChild("Data"))
-local Remote = require(script.Parent:WaitForChild("Remote"))
 local Util = require(script.Parent:WaitForChild("Util"))
 
 local Popup = require(script:WaitForChild("Popup"))
 local Purchasables = require(script:WaitForChild("Purchasables"))
 local Title = require(script:WaitForChild("Title"))
+
+local Remote = Util.Remote
 
 local VIP = { allowedBulkPurchaseIds = {}, effects = {}, popup = Popup, purchasables = Purchasables }
 
@@ -75,7 +76,7 @@ local function setDonationLevel(player: Player, level: number?)
 			Auth.userRoleAdd(player.UserId, "vip")
 		end
 		if level < 3 then
-			task.delay(8, Remote.VIPNotification.FireClient, Remote.VIPNotification, player)
+			task.delay(8, Remote.VIPNotification.Fire, Remote.VIPNotification, player)
 		end
 	end
 end
@@ -188,7 +189,7 @@ if Util.Service.Run:IsServer() then
 		end
 	end
 
-	Remote.VIPUGCMethod.OnServerEvent:Connect(VIP.Effect)
+	Remote.VIPUGCMethod:Connect(VIP.Effect)
 
 	function VIP.Title(player: Player, title, ...)
 		local definition = Title.definition[title and string.lower(title)]
@@ -244,7 +245,7 @@ if Util.Service.Run:IsServer() then
 		end
 	end
 
-	Remote.Title.OnServerEvent:Connect(function(player: Player, title: string?)
+	Remote.Title:Connect(function(player: Player, title: string?)
 		if not Data.settings.vip then
 			return
 		end
@@ -346,7 +347,7 @@ if Util.Service.Run:IsServer() then
 
 	do
 		local checking = {}
-		Remote.VIPCheck.OnServerEvent:Connect(function(player, id)
+		Remote.VIPCheck:Connect(function(player, id)
 			if table.find(Purchasables.chatCommands, id) and not checking[player] then
 				checking[player] = true
 				local ok, result = Util.Retry(function()
@@ -354,7 +355,7 @@ if Util.Service.Run:IsServer() then
 				end)
 				if ok and result then
 					setDonationLevel(player, 4)
-					Remote.RolesNotification:FireClient(player)
+					Remote.RolesNotification:Fire(player)
 				end
 				checking[player] = nil
 			end
@@ -394,7 +395,7 @@ if Util.Service.Run:IsServer() then
 				level = math.max(level, vipIndex)
 				if Data.settings.vip then
 					Auth.userRoleAdd(player.UserId, "vip")
-					Remote.RolesNotification:FireClient(player)
+					Remote.RolesNotification:Fire(player)
 				end
 			end
 			player:SetAttribute("_KDonationLevel", level)
@@ -407,11 +408,7 @@ if Util.Service.Run:IsServer() then
 		end
 	end)
 
-	local promptBulkPurchaseEvent = Instance.new("RemoteEvent")
-	promptBulkPurchaseEvent.Name = "PromptBulkPurchaseEvent"
-	promptBulkPurchaseEvent.Parent = script
-
-	promptBulkPurchaseEvent.OnServerEvent:Connect(function(player, id)
+	Util.Remote.PromptBulkPurchase:Connect(function(player, id)
 		if type(id) == "number" and VIP.allowedBulkPurchaseIds[id] then
 			local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(id) } }
 			Util.Service.Marketplace:PromptBulkPurchase(player, items, {})
