@@ -233,7 +233,6 @@ local SYNC = {
 				if Data.roles[roleId] then
 					table.insert(persist, roleId)
 				else
-					warn(`Invalid roleId: {roleId}, did you change the role _key?`)
 					continue
 				end
 			end
