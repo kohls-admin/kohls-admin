@@ -3,10 +3,7 @@ local Function = {}
 function Function.debounce(delay: number, func: (...any) -> ...any)
 	local thread
 	return function(...)
-		if thread then
-			pcall(task.cancel, thread)
-			thread = nil
-		end
+		pcall(task.cancel, thread)
 		thread = task.delay(delay, func, ...)
 	end
 end
