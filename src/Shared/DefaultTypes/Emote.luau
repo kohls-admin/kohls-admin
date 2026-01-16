@@ -142,7 +142,7 @@ task.spawn(function()
 			Remote:FireClient(player, emotes)
 		end)
 	else
-		Remote = script:WaitForChild("RemoteEvent")
+		Remote = script:WaitForChild("RemoteEvent", math.huge)
 		Remote.OnClientEvent:Connect(function(data)
 			for index, item in data do
 				emoteToAnimationId[item.emoteId] = item.animationId
