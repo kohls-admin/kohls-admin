@@ -145,7 +145,7 @@ function Command:run()
 	self._K.Hook.postCommand:Fire(self)
 
 	if not ok then
-		warn("Kohl's Admin Command Error:", err)
+		warn(`Kohl's Admin "{self.definition.name}" Command Error:`, err)
 	end
 
 	return ok, err
