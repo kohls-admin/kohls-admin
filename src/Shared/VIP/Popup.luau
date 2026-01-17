@@ -20,8 +20,9 @@ vip.ZIndex = 9e8
 
 local imageLabel = Instance.new("ImageLabel")
 imageLabel.Name = "ImageLabel"
-imageLabel.BackgroundTransparency = 1
-imageLabel.Image = "rbxassetid://120106892762444"
+imageLabel.BackgroundColor3 = Color3.fromRGB(18, 18, 21)
+imageLabel.BackgroundTransparency = 0
+imageLabel.Image = "rbxassetid://104331312960285"
 imageLabel.Size = UDim2.fromScale(1, 1)
 
 local uICorner = Instance.new("UICorner")
