@@ -1,4 +1,5 @@
 --!optimize 2
+--!nocheck
 --!nolint
 
 --|   __________   |--
