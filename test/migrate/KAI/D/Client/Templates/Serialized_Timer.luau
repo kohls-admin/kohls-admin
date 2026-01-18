@@ -81,7 +81,7 @@ g.BackgroundTransparency = 1
 g.Position = UDim2.new(0.5, 0, 0.5, -2)
 g.BorderSizePixel = 0
 g.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-g.FontSize = 14
+
 g.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
 g.TextStrokeTransparency = 0.5
 g.TextSize = 80

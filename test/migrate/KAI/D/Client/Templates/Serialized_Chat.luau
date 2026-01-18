@@ -12,7 +12,7 @@ a.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 local b = Instance.new "TextBox"
 b.Name = "Msg"
 b.AutoLocalize = false
-b.Localize = false
+
 b.ZIndex = 9
 b.Size = UDim2.new(1, -23, 0, 20)
 b.ClipsDescendants = true
@@ -21,7 +21,7 @@ b.BackgroundTransparency = 1
 b.Position = UDim2.new(0, 3, 1, 0)
 b.BorderSizePixel = 0
 b.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-b.FontSize = 6
+
 b.TextSize = 18
 b.TextTransparency = 1
 b.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -87,7 +87,7 @@ f.Parent = a
 local g = Instance.new "TextLabel"
 g.Name = "Msg"
 g.AutoLocalize = false
-g.Localize = false
+
 g.ZIndex = 10
 g.Size = UDim2.new(1, -10, 1, -10)
 g.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -95,13 +95,12 @@ g.BackgroundTransparency = 1
 g.Position = UDim2.new(0, 5, 0, 5)
 g.BorderSizePixel = 0
 g.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-g.FontSize = 7
+
 g.TextStrokeTransparency = 0.9
 g.TextSize = 24
 g.TextColor3 = Color3.fromRGB(0, 0, 0)
 g.Text = "..."
 g.TextWrapped = true
-g.TextWrap = true
 g.Font = 4
 g.Parent = f
 local h = Instance.new "ImageLabel"
@@ -122,7 +121,7 @@ h.Parent = a
 local i = Instance.new "TextLabel"
 i.Name = "Msg"
 i.AutoLocalize = false
-i.Localize = false
+
 i.ZIndex = 10
 i.Size = UDim2.new(1, -10, 1, -10)
 i.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -130,13 +129,12 @@ i.BackgroundTransparency = 1
 i.Position = UDim2.new(0, 5, 0, 5)
 i.BorderSizePixel = 0
 i.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-i.FontSize = 7
+
 i.TextStrokeTransparency = 0.9
 i.TextSize = 24
 i.TextColor3 = Color3.fromRGB(0, 0, 0)
 i.Text = ""
 i.TextWrapped = true
-i.TextWrap = true
 i.Font = 3
 i.Parent = h
 

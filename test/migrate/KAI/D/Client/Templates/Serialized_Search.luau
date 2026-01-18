@@ -10,14 +10,14 @@ a.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 local b = Instance.new "TextBox"
 b.Name = "BG"
 b.AutoLocalize = false
-b.Localize = false
+
 b.Size = UDim2.new(1, 0, 1, 0)
 b.ClipsDescendants = true
 b.BorderColor3 = Color3.fromRGB(0, 0, 0)
 b.BackgroundTransparency = 0.75
 b.BorderSizePixel = 0
 b.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-b.FontSize = 5
+
 b.TextStrokeTransparency = 0.75
 b.TextSize = 14
 b.TextColor3 = Color3.fromRGB(255, 255, 255)

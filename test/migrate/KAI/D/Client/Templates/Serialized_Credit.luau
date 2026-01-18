@@ -42,7 +42,7 @@ d.Parent = c
 local e = Instance.new "TextLabel"
 e.Name = "T1"
 e.AutoLocalize = false
-e.Localize = false
+
 e.ZIndex = 10
 e.Size = UDim2.new(1, -10, 0, 40)
 e.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -50,20 +50,19 @@ e.BackgroundTransparency = 1
 e.Position = UDim2.new(0, 5, 0, 5)
 e.BorderSizePixel = 0
 e.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-e.FontSize = 6
+
 e.TextStrokeTransparency = 0.75
 e.TextSize = 18
 e.TextColor3 = Color3.fromRGB(255, 255, 255)
 e.TextYAlignment = 0
 e.Text = "This game uses Kohl's Admin Infinite, created by Scripth!"
 e.TextWrapped = true
-e.TextWrap = true
 e.Font = 3
 e.Parent = d
 local f = Instance.new "TextLabel"
 f.Name = "T2"
 f.AutoLocalize = false
-f.Localize = false
+
 f.ZIndex = 10
 f.Size = UDim2.new(1, -10, 0, 40)
 f.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -71,19 +70,18 @@ f.BackgroundTransparency = 1
 f.Position = UDim2.new(0, 5, 0, 75)
 f.BorderSizePixel = 0
 f.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-f.FontSize = 6
+
 f.TextStrokeTransparency = 0.75
 f.TextSize = 18
 f.TextColor3 = Color3.fromRGB(255, 255, 255)
 f.Text = "Enjoy the Admin?\nRate it & donate for cool stuff!"
 f.TextWrapped = true
-f.TextWrap = true
 f.Font = 3
 f.Parent = d
 local g = Instance.new "TextLabel"
 g.Name = "T3"
 g.AutoLocalize = false
-g.Localize = false
+
 g.ZIndex = 10
 g.Size = UDim2.new(1, -10, 0, 20)
 g.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -91,14 +89,13 @@ g.BackgroundTransparency = 1
 g.Position = UDim2.new(0, 5, 0, 145)
 g.BorderSizePixel = 0
 g.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-g.FontSize = 6
+
 g.TextStrokeTransparency = 0.75
 g.TextSize = 18
 g.TextColor3 = Color3.fromRGB(255, 255, 255)
 g.TextYAlignment = 0
 g.Text = "VIP Commands"
 g.TextWrapped = true
-g.TextWrap = true
 g.Font = 4
 g.Parent = d
 local uIGradient_g = Instance.new("UIGradient")
@@ -112,7 +109,7 @@ uIGradient_g.Parent = g
 local i = Instance.new "TextButton"
 i.Name = "Close"
 i.AutoLocalize = false
-i.Localize = false
+
 i.ZIndex = 10
 i.Size = UDim2.new(0, 20, 0, 20)
 i.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -120,7 +117,7 @@ i.BackgroundTransparency = 1
 i.Position = UDim2.new(1, -20, 0, 0)
 i.BorderSizePixel = 0
 i.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-i.FontSize = 6
+
 i.TextStrokeTransparency = 0.75
 i.TextSize = 18
 i.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -130,7 +127,7 @@ i.Parent = c
 local j = Instance.new "TextLabel"
 j.Name = "Title"
 j.AutoLocalize = false
-j.Localize = false
+
 j.ZIndex = 10
 j.Size = UDim2.new(1, -25, 0, 20)
 j.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -138,7 +135,7 @@ j.BackgroundTransparency = 1
 j.Position = UDim2.new(0, 5, 0, 0)
 j.BorderSizePixel = 0
 j.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-j.FontSize = 6
+
 j.TextStrokeTransparency = 0.75
 j.TextSize = 18
 j.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -158,7 +155,7 @@ k.Parent = c
 local l = Instance.new "TextButton"
 l.Name = "Get"
 l.AutoLocalize = false
-l.Localize = false
+
 l.ZIndex = 9
 l.Size = UDim2.new(0, 90, 0, 20)
 l.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -166,7 +163,7 @@ l.BackgroundTransparency = 0.5
 l.Position = UDim2.new(0.5, -45, 0, 70)
 l.BorderSizePixel = 0
 l.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-l.FontSize = 6
+
 l.TextStrokeTransparency = 0.9
 l.TextSize = 18
 l.TextColor3 = Color3.fromRGB(0, 0, 0)
@@ -176,7 +173,7 @@ l.Parent = c
 local m = Instance.new "TextButton"
 m.Name = "D2"
 m.AutoLocalize = false
-m.Localize = false
+
 m.ZIndex = 9
 m.Size = UDim2.new(0, 75, 0, 20)
 m.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -184,7 +181,7 @@ m.BackgroundTransparency = 0.5
 m.Position = UDim2.new(0.5, 3, 0, 140)
 m.BorderSizePixel = 0
 m.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-m.FontSize = 6
+
 m.TextStrokeTransparency = 0.75
 m.TextSize = 18
 m.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -194,7 +191,7 @@ m.Parent = c
 local n = Instance.new "TextButton"
 n.Name = "Trail"
 n.AutoLocalize = false
-n.Localize = false
+
 n.ZIndex = 9
 n.Visible = false
 n.Size = UDim2.new(0, 82, 0, 20)
@@ -203,7 +200,7 @@ n.BackgroundTransparency = 0.5
 n.Position = UDim2.new(0, 0, 0, 220)
 n.BorderSizePixel = 0
 n.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-n.FontSize = 6
+
 n.TextStrokeTransparency = 0.9
 n.TextSize = 18
 n.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -213,7 +210,7 @@ n.Parent = c
 local p = Instance.new "TextButton"
 p.Name = "D3"
 p.AutoLocalize = false
-p.Localize = false
+
 p.ZIndex = 9
 p.Size = UDim2.new(0, 84, 0, 20)
 p.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -221,7 +218,7 @@ p.BackgroundTransparency = 0.5
 p.Position = UDim2.new(0, 83, 0, 190)
 p.BorderSizePixel = 0
 p.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-p.FontSize = 6
+
 p.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
 p.TextStrokeTransparency = 0.9
 p.TextSize = 18
@@ -232,7 +229,7 @@ p.Parent = c
 local q = Instance.new "TextButton"
 q.Name = "D1"
 q.AutoLocalize = false
-q.Localize = false
+
 q.ZIndex = 9
 q.Size = UDim2.new(0, 75, 0, 20)
 q.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -240,7 +237,7 @@ q.BackgroundTransparency = 0.5
 q.Position = UDim2.new(0.5, -78, 0, 140)
 q.BorderSizePixel = 0
 q.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-q.FontSize = 6
+
 q.TextStrokeTransparency = 0.75
 q.TextSize = 18
 q.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -250,7 +247,7 @@ q.Parent = c
 local r = Instance.new "TextButton"
 r.Name = "Shine"
 r.AutoLocalize = false
-r.Localize = false
+
 r.ZIndex = 9
 r.Visible = false
 r.Size = UDim2.new(0, 82, 0, 20)
@@ -259,7 +256,7 @@ r.BackgroundTransparency = 0.5
 r.Position = UDim2.new(1, -82, 0, 220)
 r.BorderSizePixel = 0
 r.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-r.FontSize = 6
+
 r.TextStrokeTransparency = 0.9
 r.TextSize = 18
 r.TextColor3 = Color3.fromRGB(255, 200, 0)
@@ -269,7 +266,7 @@ r.Parent = c
 local t = Instance.new "TextButton"
 t.Name = "Hat"
 t.AutoLocalize = false
-t.Localize = false
+
 t.ZIndex = 9
 t.Visible = false
 t.Size = UDim2.new(0, 84, 0, 20)
@@ -278,7 +275,7 @@ t.BackgroundTransparency = 0.5
 t.Position = UDim2.new(0, 83, 0, 220)
 t.BorderSizePixel = 0
 t.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-t.FontSize = 6
+
 t.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
 t.TextStrokeTransparency = 0.9
 t.TextSize = 18

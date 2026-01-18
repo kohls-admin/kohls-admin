@@ -12,7 +12,7 @@ a.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 local b = Instance.new "TextButton"
 b.Name = "Close"
 b.AutoLocalize = false
-b.Localize = false
+
 b.ZIndex = 7
 b.Size = UDim2.new(0, 20, 0, 20)
 b.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -21,7 +21,7 @@ b.Position = UDim2.new(1, -20, 0, 0)
 b.BorderSizePixel = 0
 b.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 b.Modal = true
-b.FontSize = 6
+
 b.TextStrokeTransparency = 0.75
 b.TextSize = 18
 b.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -31,7 +31,7 @@ b.Parent = a
 local c = Instance.new "TextButton"
 c.Name = "Hide"
 c.AutoLocalize = false
-c.Localize = false
+
 c.ZIndex = 7
 c.Size = UDim2.new(0, 20, 0, 20)
 c.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -40,7 +40,7 @@ c.Position = UDim2.new(1, -40, 0, 0)
 c.BorderSizePixel = 0
 c.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 c.Modal = true
-c.FontSize = 7
+
 c.TextStrokeTransparency = 0.75
 c.TextSize = 24
 c.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -50,7 +50,7 @@ c.Parent = a
 local d = Instance.new "TextLabel"
 d.Name = "Title"
 d.AutoLocalize = false
-d.Localize = false
+
 d.ZIndex = 7
 d.Size = UDim2.new(1, -45, 0, 20)
 d.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -58,7 +58,7 @@ d.BackgroundTransparency = 1
 d.Position = UDim2.new(0, 5, 0, 0)
 d.BorderSizePixel = 0
 d.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-d.FontSize = 6
+
 d.TextStrokeTransparency = 0.75
 d.TextSize = 18
 d.TextColor3 = Color3.fromRGB(255, 255, 255)

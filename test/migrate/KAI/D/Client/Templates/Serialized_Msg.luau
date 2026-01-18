@@ -19,7 +19,7 @@ b.Parent = a
 local c = Instance.new "TextLabel"
 c.Name = "Msg"
 c.AutoLocalize = false
-c.Localize = false
+
 c.ZIndex = 10
 c.Size = UDim2.new(0.75, 0, 1, 0)
 c.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -27,26 +27,25 @@ c.BackgroundTransparency = 1
 c.Position = UDim2.new(0.125, 0, 0, 0)
 c.BorderSizePixel = 0
 c.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-c.FontSize = 10
+
 c.TextStrokeTransparency = 0.75
 c.TextSize = 28
 c.TextColor3 = Color3.fromRGB(255, 255, 255)
 c.Text = "You're an admin!"
 c.TextWrapped = true
-c.TextWrap = true
 c.Font = 4
 c.Parent = a
 local d = Instance.new "TextLabel"
 d.Name = "Owner"
 d.AutoLocalize = false
-d.Localize = false
+
 d.ZIndex = 10
 d.Size = UDim2.new(1, 0, 0, 70)
 d.BorderColor3 = Color3.fromRGB(0, 0, 0)
 d.BackgroundTransparency = 1
 d.BorderSizePixel = 0
 d.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-d.FontSize = 13
+
 d.TextStrokeTransparency = 0.75
 d.TextSize = 60
 d.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -56,7 +55,7 @@ d.Parent = a
 local e = Instance.new "TextLabel"
 e.Name = "Title"
 e.AutoLocalize = false
-e.Localize = false
+
 e.ZIndex = 10
 e.Size = UDim2.new(1, 0, 0, 30)
 e.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -64,7 +63,7 @@ e.BackgroundTransparency = 1
 e.Position = UDim2.new(0, 0, 0, 71)
 e.BorderSizePixel = 0
 e.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-e.FontSize = 10
+
 e.TextStrokeTransparency = 0.75
 e.TextSize = 28
 e.TextColor3 = Color3.fromRGB(255, 255, 255)

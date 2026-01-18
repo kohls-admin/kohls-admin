@@ -12,7 +12,7 @@ a.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 local b = Instance.new "TextButton"
 b.Name = "Close"
 b.AutoLocalize = false
-b.Localize = false
+
 b.ZIndex = 10
 b.Size = UDim2.new(0, 20, 0, 20)
 b.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -21,7 +21,7 @@ b.Position = UDim2.new(1, -20, 0, 0)
 b.BorderSizePixel = 0
 b.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 b.Modal = true
-b.FontSize = 6
+
 b.TextStrokeTransparency = 0.75
 b.TextSize = 18
 b.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -31,7 +31,7 @@ b.Parent = a
 local c = Instance.new "TextButton"
 c.Name = "Hide"
 c.AutoLocalize = false
-c.Localize = false
+
 c.ZIndex = 10
 c.Size = UDim2.new(0, 20, 0, 20)
 c.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -40,7 +40,7 @@ c.Position = UDim2.new(1, -40, 0, 0)
 c.BorderSizePixel = 0
 c.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 c.Modal = true
-c.FontSize = 7
+
 c.TextStrokeTransparency = 0.75
 c.TextSize = 24
 c.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -50,7 +50,7 @@ c.Parent = a
 local d = Instance.new "TextLabel"
 d.Name = "Title"
 d.AutoLocalize = false
-d.Localize = false
+
 d.ZIndex = 7
 d.Size = UDim2.new(1, -65, 0, 20)
 d.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -58,7 +58,7 @@ d.BackgroundTransparency = 1
 d.Position = UDim2.new(0, 25, 0, 0)
 d.BorderSizePixel = 0
 d.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-d.FontSize = 6
+
 d.TextStrokeTransparency = 0.75
 d.TextSize = 18
 d.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -106,7 +106,7 @@ g.Parent = a
 local h = Instance.new "TextLabel"
 h.Name = "S1"
 h.AutoLocalize = false
-h.Localize = false
+
 h.LayoutOrder = 1
 h.ZIndex = 9
 h.Size = UDim2.new(1, -30, 0, 20)
@@ -114,20 +114,19 @@ h.BorderColor3 = Color3.fromRGB(0, 0, 0)
 h.BackgroundTransparency = 1
 h.BorderSizePixel = 0
 h.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-h.FontSize = 6
+
 h.TextStrokeTransparency = 0.75
 h.TextSize = 18
 h.TextColor3 = Color3.fromRGB(255, 255, 255)
 h.Text = "Flat"
 h.TextWrapped = true
-h.TextWrap = true
 h.Font = 3
 h.TextXAlignment = 0
 h.Parent = g
 local i = Instance.new "TextButton"
 i.Name = "Toggle"
 i.AutoLocalize = false
-i.Localize = false
+
 i.ZIndex = 9
 i.Size = UDim2.new(0, 16, 0, 16)
 i.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -135,7 +134,7 @@ i.BackgroundTransparency = 0.5
 i.Position = UDim2.new(1, 2, 0, 2)
 i.BorderSizePixel = 0
 i.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-i.FontSize = 7
+
 i.TextStrokeTransparency = 0.75
 i.TextSize = 24
 i.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -145,7 +144,7 @@ i.Parent = h
 local j = Instance.new "TextLabel"
 j.Name = "S10"
 j.AutoLocalize = false
-j.Localize = false
+
 j.LayoutOrder = 10
 j.ZIndex = 9
 j.Size = UDim2.new(1, -30, 0, 20)
@@ -154,20 +153,19 @@ j.BackgroundTransparency = 1
 j.Position = UDim2.new(0, 5, 0, 0)
 j.BorderSizePixel = 0
 j.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-j.FontSize = 6
+
 j.TextStrokeTransparency = 0.75
 j.TextSize = 18
 j.TextColor3 = Color3.fromRGB(255, 255, 255)
 j.Text = "CommandBar"
 j.TextWrapped = true
-j.TextWrap = true
 j.Font = 3
 j.TextXAlignment = 0
 j.Parent = g
 local k = Instance.new "TextButton"
 k.Name = "Toggle"
 k.AutoLocalize = false
-k.Localize = false
+
 k.ZIndex = 9
 k.Size = UDim2.new(0, 16, 0, 16)
 k.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -175,7 +173,7 @@ k.BackgroundTransparency = 0.5
 k.Position = UDim2.new(1, 2, 0, 2)
 k.BorderSizePixel = 0
 k.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-k.FontSize = 7
+
 k.TextStrokeTransparency = 0.75
 k.TextSize = 24
 k.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -185,7 +183,7 @@ k.Parent = j
 local l = Instance.new "TextLabel"
 l.Name = "S11"
 l.AutoLocalize = false
-l.Localize = false
+
 l.LayoutOrder = 11
 l.ZIndex = 9
 l.Size = UDim2.new(1, -30, 0, 20)
@@ -194,20 +192,19 @@ l.BackgroundTransparency = 1
 l.Position = UDim2.new(0, 5, 0, 0)
 l.BorderSizePixel = 0
 l.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-l.FontSize = 6
+
 l.TextStrokeTransparency = 0.75
 l.TextSize = 18
 l.TextColor3 = Color3.fromRGB(255, 255, 255)
 l.Text = "FunCommands"
 l.TextWrapped = true
-l.TextWrap = true
 l.Font = 3
 l.TextXAlignment = 0
 l.Parent = g
 local m = Instance.new "TextButton"
 m.Name = "Toggle"
 m.AutoLocalize = false
-m.Localize = false
+
 m.ZIndex = 9
 m.Size = UDim2.new(0, 16, 0, 16)
 m.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -215,7 +212,7 @@ m.BackgroundTransparency = 0.5
 m.Position = UDim2.new(1, 2, 0, 2)
 m.BorderSizePixel = 0
 m.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-m.FontSize = 7
+
 m.TextStrokeTransparency = 0.75
 m.TextSize = 24
 m.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -225,7 +222,7 @@ m.Parent = l
 local n = Instance.new "TextLabel"
 n.Name = "S12"
 n.AutoLocalize = false
-n.Localize = false
+
 n.LayoutOrder = 12
 n.ZIndex = 9
 n.Size = UDim2.new(1, -50, 0, 20)
@@ -234,20 +231,19 @@ n.BackgroundTransparency = 1
 n.Position = UDim2.new(0, 5, 0, 0)
 n.BorderSizePixel = 0
 n.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-n.FontSize = 6
+
 n.TextStrokeTransparency = 0.75
 n.TextSize = 18
 n.TextColor3 = Color3.fromRGB(255, 255, 255)
 n.Text = "FreeAdmin"
 n.TextWrapped = true
-n.TextWrap = true
 n.Font = 3
 n.TextXAlignment = 0
 n.Parent = g
 local o = Instance.new "TextButton"
 o.Name = "Toggle"
 o.AutoLocalize = false
-o.Localize = false
+
 o.ZIndex = 9
 o.Size = UDim2.new(0, 16, 0, 16)
 o.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -255,7 +251,7 @@ o.BackgroundTransparency = 0.5
 o.Position = UDim2.new(1, 2, 0, 2)
 o.BorderSizePixel = 0
 o.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-o.FontSize = 7
+
 o.TextStrokeTransparency = 0.75
 o.TextSize = 24
 o.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -265,7 +261,7 @@ o.Parent = n
 local p = Instance.new "TextBox"
 p.Name = "Input"
 p.AutoLocalize = false
-p.Localize = false
+
 p.ZIndex = 9
 p.Size = UDim2.new(0, 16, 0, 16)
 p.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -273,7 +269,7 @@ p.BackgroundTransparency = 0.5
 p.Position = UDim2.new(1, 22, 0, 2)
 p.BorderSizePixel = 0
 p.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-p.FontSize = 5
+
 p.TextStrokeTransparency = 0.75
 p.TextSize = 14
 p.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -283,7 +279,7 @@ p.Parent = n
 local q = Instance.new "TextLabel"
 q.Name = "S14"
 q.AutoLocalize = false
-q.Localize = false
+
 q.LayoutOrder = 14
 q.ZIndex = 9
 q.Size = UDim2.new(1, -30, 0, 20)
@@ -292,20 +288,19 @@ q.BackgroundTransparency = 1
 q.Position = UDim2.new(0, 5, 0, 0)
 q.BorderSizePixel = 0
 q.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-q.FontSize = 6
+
 q.TextStrokeTransparency = 0.75
 q.TextSize = 18
 q.TextColor3 = Color3.fromRGB(255, 255, 255)
 q.Text = "PublicLogs"
 q.TextWrapped = true
-q.TextWrap = true
 q.Font = 3
 q.TextXAlignment = 0
 q.Parent = g
 local r = Instance.new "TextButton"
 r.Name = "Toggle"
 r.AutoLocalize = false
-r.Localize = false
+
 r.ZIndex = 9
 r.Size = UDim2.new(0, 16, 0, 16)
 r.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -313,7 +308,7 @@ r.BackgroundTransparency = 0.5
 r.Position = UDim2.new(1, 2, 0, 2)
 r.BorderSizePixel = 0
 r.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-r.FontSize = 7
+
 r.TextStrokeTransparency = 0.75
 r.TextSize = 24
 r.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -323,7 +318,7 @@ r.Parent = q
 local s = Instance.new "TextLabel"
 s.Name = "S13"
 s.AutoLocalize = false
-s.Localize = false
+
 s.LayoutOrder = 13
 s.ZIndex = 9
 s.Size = UDim2.new(1, -30, 0, 20)
@@ -332,20 +327,19 @@ s.BackgroundTransparency = 1
 s.Position = UDim2.new(0, 5, 0, 0)
 s.BorderSizePixel = 0
 s.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-s.FontSize = 6
+
 s.TextStrokeTransparency = 0.75
 s.TextSize = 18
 s.TextColor3 = Color3.fromRGB(255, 255, 255)
 s.Text = "JoinMessage"
 s.TextWrapped = true
-s.TextWrap = true
 s.Font = 3
 s.TextXAlignment = 0
 s.Parent = g
 local t = Instance.new "TextButton"
 t.Name = "Toggle"
 t.AutoLocalize = false
-t.Localize = false
+
 t.ZIndex = 9
 t.Size = UDim2.new(0, 16, 0, 16)
 t.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -353,7 +347,7 @@ t.BackgroundTransparency = 0.5
 t.Position = UDim2.new(1, 2, 0, 2)
 t.BorderSizePixel = 0
 t.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-t.FontSize = 7
+
 t.TextStrokeTransparency = 0.75
 t.TextSize = 24
 t.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -363,7 +357,7 @@ t.Parent = s
 local u = Instance.new "TextLabel"
 u.Name = "S2"
 u.AutoLocalize = false
-u.Localize = false
+
 u.LayoutOrder = 2
 u.ZIndex = 9
 u.Size = UDim2.new(1, -30, 0, 20)
@@ -372,20 +366,19 @@ u.BackgroundTransparency = 1
 u.Position = UDim2.new(0, 5, 0, 0)
 u.BorderSizePixel = 0
 u.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-u.FontSize = 6
+
 u.TextStrokeTransparency = 0.75
 u.TextSize = 18
 u.TextColor3 = Color3.fromRGB(255, 255, 255)
 u.Text = "ForcedColor"
 u.TextWrapped = true
-u.TextWrap = true
 u.Font = 3
 u.TextXAlignment = 0
 u.Parent = g
 local v = Instance.new "TextButton"
 v.Name = "Toggle"
 v.AutoLocalize = false
-v.Localize = false
+
 v.ZIndex = 9
 v.Size = UDim2.new(0, 16, 0, 16)
 v.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -393,7 +386,7 @@ v.BackgroundTransparency = 0.5
 v.Position = UDim2.new(1, 2, 0, 2)
 v.BorderSizePixel = 0
 v.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-v.FontSize = 7
+
 v.TextStrokeTransparency = 0.75
 v.TextSize = 24
 v.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -403,7 +396,7 @@ v.Parent = u
 local w = Instance.new "TextLabel"
 w.Name = "S3"
 w.AutoLocalize = false
-w.Localize = false
+
 w.LayoutOrder = 3
 w.ZIndex = 9
 w.Size = UDim2.new(1, -92, 0, 20)
@@ -412,20 +405,19 @@ w.BackgroundTransparency = 1
 w.Position = UDim2.new(0, 5, 0, 0)
 w.BorderSizePixel = 0
 w.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-w.FontSize = 6
+
 w.TextStrokeTransparency = 0.75
 w.TextSize = 18
 w.TextColor3 = Color3.fromRGB(255, 255, 255)
 w.Text = "Color"
 w.TextWrapped = true
-w.TextWrap = true
 w.Font = 3
 w.TextXAlignment = 0
 w.Parent = g
 local x = Instance.new "TextBox"
 x.Name = "Input1"
 x.AutoLocalize = false
-x.Localize = false
+
 x.ZIndex = 9
 x.Size = UDim2.new(0, 24, 0, 16)
 x.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -433,7 +425,7 @@ x.BackgroundTransparency = 0.5
 x.Position = UDim2.new(1, 2, 0, 2)
 x.BorderSizePixel = 0
 x.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-x.FontSize = 5
+
 x.TextStrokeTransparency = 0.75
 x.TextSize = 14
 x.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -443,7 +435,7 @@ x.Parent = w
 local y = Instance.new "TextBox"
 y.Name = "Input2"
 y.AutoLocalize = false
-y.Localize = false
+
 y.ZIndex = 9
 y.Size = UDim2.new(0, 24, 0, 16)
 y.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -451,7 +443,7 @@ y.BackgroundTransparency = 0.5
 y.Position = UDim2.new(1, 29, 0, 2)
 y.BorderSizePixel = 0
 y.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-y.FontSize = 5
+
 y.TextStrokeTransparency = 0.75
 y.TextSize = 14
 y.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -461,7 +453,7 @@ y.Parent = w
 local z = Instance.new "TextBox"
 z.Name = "Input3"
 z.AutoLocalize = false
-z.Localize = false
+
 z.ZIndex = 9
 z.Size = UDim2.new(0, 24, 0, 16)
 z.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -469,7 +461,7 @@ z.BackgroundTransparency = 0.5
 z.Position = UDim2.new(1, 56, 0, 2)
 z.BorderSizePixel = 0
 z.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-z.FontSize = 5
+
 z.TextStrokeTransparency = 0.75
 z.TextSize = 14
 z.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -479,7 +471,7 @@ z.Parent = w
 local A = Instance.new "TextLabel"
 A.Name = "S4"
 A.AutoLocalize = false
-A.Localize = false
+
 A.LayoutOrder = 4
 A.ZIndex = 9
 A.Size = UDim2.new(1, -46, 0, 20)
@@ -488,20 +480,19 @@ A.BackgroundTransparency = 1
 A.Position = UDim2.new(0, 5, 0, 0)
 A.BorderSizePixel = 0
 A.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-A.FontSize = 6
+
 A.TextStrokeTransparency = 0.75
 A.TextSize = 18
 A.TextColor3 = Color3.fromRGB(255, 255, 255)
 A.Text = "ColorTransparency"
 A.TextWrapped = true
-A.TextWrap = true
 A.Font = 3
 A.TextXAlignment = 0
 A.Parent = g
 local B = Instance.new "TextBox"
 B.Name = "Input"
 B.AutoLocalize = false
-B.Localize = false
+
 B.ZIndex = 9
 B.Size = UDim2.new(0, 32, 0, 16)
 B.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -509,7 +500,7 @@ B.BackgroundTransparency = 0.5
 B.Position = UDim2.new(1, 2, 0, 2)
 B.BorderSizePixel = 0
 B.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-B.FontSize = 5
+
 B.TextStrokeTransparency = 0.75
 B.TextSize = 14
 B.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -519,7 +510,7 @@ B.Parent = A
 local C = Instance.new "TextLabel"
 C.Name = "S5"
 C.AutoLocalize = false
-C.Localize = false
+
 C.LayoutOrder = 5
 C.ZIndex = 9
 C.Size = UDim2.new(1, -30, 0, 20)
@@ -528,20 +519,19 @@ C.BackgroundTransparency = 1
 C.Position = UDim2.new(0, 5, 0, 0)
 C.BorderSizePixel = 0
 C.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-C.FontSize = 6
+
 C.TextStrokeTransparency = 0.75
 C.TextSize = 18
 C.TextColor3 = Color3.fromRGB(255, 255, 255)
 C.Text = "Chat"
 C.TextWrapped = true
-C.TextWrap = true
 C.Font = 3
 C.TextXAlignment = 0
 C.Parent = g
 local D = Instance.new "TextButton"
 D.Name = "Toggle"
 D.AutoLocalize = false
-D.Localize = false
+
 D.ZIndex = 9
 D.Size = UDim2.new(0, 16, 0, 16)
 D.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -549,7 +539,7 @@ D.BackgroundTransparency = 0.5
 D.Position = UDim2.new(1, 2, 0, 2)
 D.BorderSizePixel = 0
 D.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-D.FontSize = 7
+
 D.TextStrokeTransparency = 0.75
 D.TextSize = 24
 D.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -559,7 +549,7 @@ D.Parent = C
 local E = Instance.new "TextLabel"
 E.Name = "S6"
 E.AutoLocalize = false
-E.Localize = false
+
 E.LayoutOrder = 6
 E.ZIndex = 9
 E.Size = UDim2.new(1, -30, 0, 20)
@@ -568,20 +558,19 @@ E.BackgroundTransparency = 1
 E.Position = UDim2.new(0, 5, 0, 0)
 E.BorderSizePixel = 0
 E.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-E.FontSize = 6
+
 E.TextStrokeTransparency = 0.75
 E.TextSize = 18
 E.TextColor3 = Color3.fromRGB(255, 255, 255)
 E.Text = "BubbleChat"
 E.TextWrapped = true
-E.TextWrap = true
 E.Font = 3
 E.TextXAlignment = 0
 E.Parent = g
 local F = Instance.new "TextButton"
 F.Name = "Toggle"
 F.AutoLocalize = false
-F.Localize = false
+
 F.ZIndex = 9
 F.Size = UDim2.new(0, 16, 0, 16)
 F.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -589,7 +578,7 @@ F.BackgroundTransparency = 0.5
 F.Position = UDim2.new(1, 2, 0, 2)
 F.BorderSizePixel = 0
 F.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-F.FontSize = 7
+
 F.TextStrokeTransparency = 0.75
 F.TextSize = 24
 F.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -599,7 +588,7 @@ F.Parent = E
 local G = Instance.new "TextLabel"
 G.Name = "S7"
 G.AutoLocalize = false
-G.Localize = false
+
 G.LayoutOrder = 7
 G.ZIndex = 9
 G.Size = UDim2.new(1, -30, 0, 20)
@@ -608,20 +597,19 @@ G.BackgroundTransparency = 1
 G.Position = UDim2.new(0, 5, 0, 0)
 G.BorderSizePixel = 0
 G.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-G.FontSize = 6
+
 G.TextStrokeTransparency = 0.75
 G.TextSize = 18
 G.TextColor3 = Color3.fromRGB(255, 255, 255)
 G.Text = "AdminCredit"
 G.TextWrapped = true
-G.TextWrap = true
 G.Font = 3
 G.TextXAlignment = 0
 G.Parent = g
 local H = Instance.new "TextButton"
 H.Name = "Toggle"
 H.AutoLocalize = false
-H.Localize = false
+
 H.ZIndex = 9
 H.Size = UDim2.new(0, 16, 0, 16)
 H.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -629,7 +617,7 @@ H.BackgroundTransparency = 0.5
 H.Position = UDim2.new(1, 2, 0, 2)
 H.BorderSizePixel = 0
 H.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-H.FontSize = 7
+
 H.TextStrokeTransparency = 0.75
 H.TextSize = 24
 H.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -639,7 +627,7 @@ H.Parent = G
 local I = Instance.new "TextLabel"
 I.Name = "S8"
 I.AutoLocalize = false
-I.Localize = false
+
 I.LayoutOrder = 8
 I.ZIndex = 9
 I.Size = UDim2.new(1, -30, 0, 20)
@@ -648,20 +636,19 @@ I.BackgroundTransparency = 1
 I.Position = UDim2.new(0, 5, 0, 0)
 I.BorderSizePixel = 0
 I.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-I.FontSize = 6
+
 I.TextStrokeTransparency = 0.75
 I.TextSize = 18
 I.TextColor3 = Color3.fromRGB(255, 255, 255)
 I.Text = "AutoClean"
 I.TextWrapped = true
-I.TextWrap = true
 I.Font = 3
 I.TextXAlignment = 0
 I.Parent = g
 local J = Instance.new "TextButton"
 J.Name = "Toggle"
 J.AutoLocalize = false
-J.Localize = false
+
 J.ZIndex = 9
 J.Size = UDim2.new(0, 16, 0, 16)
 J.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -669,7 +656,7 @@ J.BackgroundTransparency = 0.5
 J.Position = UDim2.new(1, 2, 0, 2)
 J.BorderSizePixel = 0
 J.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-J.FontSize = 7
+
 J.TextStrokeTransparency = 0.75
 J.TextSize = 24
 J.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -679,7 +666,7 @@ J.Parent = I
 local K = Instance.new "TextLabel"
 K.Name = "S9"
 K.AutoLocalize = false
-K.Localize = false
+
 K.LayoutOrder = 9
 K.ZIndex = 9
 K.Size = UDim2.new(1, -46, 0, 20)
@@ -688,20 +675,19 @@ K.BackgroundTransparency = 1
 K.Position = UDim2.new(0, 5, 0, 0)
 K.BorderSizePixel = 0
 K.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-K.FontSize = 6
+
 K.TextStrokeTransparency = 0.75
 K.TextSize = 18
 K.TextColor3 = Color3.fromRGB(255, 255, 255)
 K.Text = "AutoCleanDelay"
 K.TextWrapped = true
-K.TextWrap = true
 K.Font = 3
 K.TextXAlignment = 0
 K.Parent = g
 local L = Instance.new "TextBox"
 L.Name = "Input"
 L.AutoLocalize = false
-L.Localize = false
+
 L.ZIndex = 9
 L.Size = UDim2.new(0, 32, 0, 16)
 L.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -709,7 +695,7 @@ L.BackgroundTransparency = 0.5
 L.Position = UDim2.new(1, 2, 0, 2)
 L.BorderSizePixel = 0
 L.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-L.FontSize = 5
+
 L.TextStrokeTransparency = 0.75
 L.TextSize = 14
 L.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -722,7 +708,7 @@ M.Parent = g
 local N = Instance.new "TextLabel"
 N.Name = "S15"
 N.AutoLocalize = false
-N.Localize = false
+
 N.LayoutOrder = 15
 N.ZIndex = 9
 N.Size = UDim2.new(1, -30, 0, 20)
@@ -731,20 +717,19 @@ N.BackgroundTransparency = 1
 N.Position = UDim2.new(0, 5, 0, 0)
 N.BorderSizePixel = 0
 N.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-N.FontSize = 6
+
 N.TextStrokeTransparency = 0.75
 N.TextSize = 18
 N.TextColor3 = Color3.fromRGB(255, 255, 255)
 N.Text = "Prefix"
 N.TextWrapped = true
-N.TextWrap = true
 N.Font = 3
 N.TextXAlignment = 0
 N.Parent = g
 local O = Instance.new "TextBox"
 O.Name = "Input"
 O.AutoLocalize = false
-O.Localize = false
+
 O.ZIndex = 9
 O.Size = UDim2.new(0, 16, 0, 16)
 O.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -752,7 +737,7 @@ O.BackgroundTransparency = 0.5
 O.Position = UDim2.new(1, 2, 0, 2)
 O.BorderSizePixel = 0
 O.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-O.FontSize = 5
+
 O.TextStrokeTransparency = 0.75
 O.TextSize = 14
 O.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -765,7 +750,7 @@ P.Parent = g
 local Q = Instance.new "TextButton"
 Q.Name = "Toggle"
 Q.AutoLocalize = false
-Q.Localize = false
+
 Q.ZIndex = 10
 Q.Size = UDim2.new(0, 16, 0, 16)
 Q.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -773,7 +758,7 @@ Q.BackgroundTransparency = 0.5
 Q.Position = UDim2.new(0, 2, 0, 2)
 Q.BorderSizePixel = 0
 Q.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Q.FontSize = 7
+
 Q.TextStrokeTransparency = 0.75
 Q.TextSize = 24
 Q.TextColor3 = Color3.fromRGB(255, 255, 255)

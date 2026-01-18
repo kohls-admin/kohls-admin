@@ -2,7 +2,7 @@ local a = Instance.new "TextLabel"
 a.AnchorPoint = Vector2.new(0, 1)
 a.Name = "Note"
 a.AutoLocalize = false
-a.Localize = false
+
 a.ZIndex = 10
 a.Visible = false
 a.Size = UDim2.new(0, 0, 0, 20)
@@ -10,7 +10,7 @@ a.BorderColor3 = Color3.fromRGB(0, 0, 0)
 a.BackgroundTransparency = 1
 a.BorderSizePixel = 0
 a.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-a.FontSize = 5
+
 a.TextStrokeTransparency = 0.7
 a.TextSize = 14
 a.TextColor3 = Color3.fromRGB(255, 255, 255)

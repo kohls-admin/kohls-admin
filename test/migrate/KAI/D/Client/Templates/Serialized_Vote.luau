@@ -19,7 +19,7 @@ b.Parent = a
 local c = Instance.new "TextLabel"
 c.Name = "Msg"
 c.AutoLocalize = false
-c.Localize = false
+
 c.ZIndex = 9
 c.Size = UDim2.new(1, -10, 0, 60)
 c.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -27,19 +27,18 @@ c.BackgroundTransparency = 1
 c.Position = UDim2.new(0, 5, 0, 5)
 c.BorderSizePixel = 0
 c.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-c.FontSize = 6
+
 c.TextStrokeTransparency = 0.75
 c.TextSize = 18
 c.TextColor3 = Color3.fromRGB(255, 255, 255)
 c.Text = ""
 c.TextWrapped = true
-c.TextWrap = true
 c.Font = 2
 c.Parent = a
 local d = Instance.new "TextButton"
 d.Name = "Y"
 d.AutoLocalize = false
-d.Localize = false
+
 d.ZIndex = 9
 d.Size = UDim2.new(0, 50, 0, 25)
 d.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -48,7 +47,7 @@ d.Position = UDim2.new(0.5, -75, 1, -30)
 d.BorderSizePixel = 0
 d.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 d.Modal = true
-d.FontSize = 6
+
 d.TextStrokeTransparency = 0.75
 d.TextSize = 18
 d.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -58,7 +57,7 @@ d.Parent = a
 local e = Instance.new "TextButton"
 e.Name = "N"
 e.AutoLocalize = false
-e.Localize = false
+
 e.ZIndex = 9
 e.Size = UDim2.new(0, 50, 0, 25)
 e.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -67,7 +66,7 @@ e.Position = UDim2.new(0.5, 25, 1, -30)
 e.BorderSizePixel = 0
 e.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 e.Modal = true
-e.FontSize = 6
+
 e.TextStrokeTransparency = 0.75
 e.TextSize = 18
 e.TextColor3 = Color3.fromRGB(255, 255, 255)

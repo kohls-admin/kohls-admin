@@ -22,7 +22,7 @@ c.BackgroundTransparency = 0.9
 c.Position = UDim2.new(0, 0, 1, 0)
 c.BorderSizePixel = 0
 c.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-c.FontSize = 7
+
 c.TextSize = 20
 c.TextColor3 = Color3.fromRGB(255, 255, 255)
 c.Text = "roblox.com/game-pass/5411126"
@@ -47,7 +47,7 @@ f.BackgroundTransparency = 1
 f.Position = UDim2.new(0, 0, 0, -2)
 f.BorderSizePixel = 0
 f.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-f.FontSize = 7
+
 f.TextSize = 20
 f.TextColor3 = Color3.fromRGB(255, 255, 255)
 f.Text = "Kohl's Admin Donation"
@@ -62,12 +62,11 @@ g.BackgroundTransparency = 1
 g.Position = UDim2.new(0, 0, 0, 24)
 g.BorderSizePixel = 0
 g.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-g.FontSize = 5
+
 g.TextSize = 14
 g.TextColor3 = Color3.fromRGB(255, 255, 255)
 g.Text = "This game does not allow third party sales.\nCopy the link below to donate directly."
 g.TextWrapped = true
-g.TextWrap = true
 g.Font = 3
 g.Parent = a
 local h = Instance.new "TextLabel"
@@ -78,7 +77,7 @@ h.BackgroundTransparency = 1
 h.Position = UDim2.new(0, 0, 0, 60)
 h.BorderSizePixel = 0
 h.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-h.FontSize = 5
+
 h.TextSize = 14
 h.TextColor3 = Color3.fromRGB(255, 0, 0)
 h.Text = "You will need to rejoin the game for perks!"
