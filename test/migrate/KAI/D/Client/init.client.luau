@@ -1506,7 +1506,7 @@ function ClientEvent(a, b)
 				repeat
 					chr.CFrame = list[3]
 					task.wait()
-				until (chr.Position - list[3].p).magnitude < 1
+				until (chr.Position - list[3].Position).magnitude < 1
 				cam.CoordinateFrame, cam.Focus = list[1], list[2]
 				c:disconnect()
 			end)
@@ -1547,7 +1547,7 @@ function ClientEvent(a, b)
 					if b.Value then
 						task.wait()
 						dir, CF = hum.MoveDirection, cam.CFrame
-						dir = (CF:inverse() * CFrame.new(CF.p + dir)).p
+						dir = (CF:inverse() * CFrame.new(CF.Position + dir)).Position
 						acc = acc * 0.95
 						acc = Vector3.new(
 							math.max(-maxspd, math.min(maxspd, acc.x + dir.x * m)),
@@ -1564,7 +1564,7 @@ function ClientEvent(a, b)
 							),
 							math.max(-maxspd, math.min(maxspd, acc.z + dir.z * m))
 						)
-						bg.cframe, bv.velocity = CF, (CF * CFrame.new(acc)).p - CF.p
+						bg.cframe, bv.velocity = CF, (CF * CFrame.new(acc)).Position - CF.Position
 					else
 						task.wait()
 					end
@@ -1586,7 +1586,7 @@ function ClientEvent(a, b)
 		end
 		if b then
 			local maxspd, m, acc, zm, CF, dir, zmc, zmc2 =
-				5, 0.06, Vector3.new(), (cam.CFrame.p - humroot.Position).magnitude, nil
+				5, 0.06, Vector3.new(), (cam.CFrame.Position - humroot.Position).magnitude, nil
 			zmc = mouse.WheelBackward:connect(function()
 				zm = math.min(zm + 2.5, 100)
 			end)
@@ -1599,7 +1599,7 @@ function ClientEvent(a, b)
 				if b == Curr.Noclip then
 					a = b.Value
 					if humroot and a then
-						zm = (cam.CFrame.p - humroot.Position).magnitude
+						zm = (cam.CFrame.Position - humroot.Position).magnitude
 					end
 					cam.CameraType, hum.WalkSpeed, hum.PlatformStand, humroot.Anchored, humroot.Anchored =
 						a and "Fixed" or "Custom", a and 0 or 16, a, a, a
@@ -1611,7 +1611,7 @@ function ClientEvent(a, b)
 					if b.Value then
 						task.wait()
 						CF, dir = cam.CFrame, hum.MoveDirection
-						dir = (CF:inverse() * CFrame.new(CF.p + dir)).p
+						dir = (CF:inverse() * CFrame.new(CF.Position + dir)).Position
 						acc = acc * 0.9
 						local m = (m + acc.magnitude * 0.1)
 						acc = Vector3.new(
@@ -1628,7 +1628,7 @@ function ClientEvent(a, b)
 							CF = cam.CFrame
 							cam.Focus = CF * CFrame.new(0, 0, -zm)
 							dir = cam.Focus * CFrame.new(0, 0, -1)
-							dir = CFrame.new(cam.Focus.p, Vector3.new(dir.x, cam.Focus.y, dir.z))
+							dir = CFrame.new(cam.Focus.Position, Vector3.new(dir.x, cam.Focus.y, dir.z))
 								- Vector3.new(0, 1.5, 0)
 							humroot.CFrame = dir
 						end
