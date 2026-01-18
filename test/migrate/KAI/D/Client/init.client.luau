@@ -1,3 +1,5 @@
+--!nolint
+
 --|  |Core Setup|  |--
 task.wait()
 local function new(a, b)
