@@ -14,7 +14,6 @@ Command.__index = Command
 
 function Command.new(_K, alias, definition: Type.CommandDefinition, array, from, text)
 	local rank, role = Auth.getRank(from)
-	_K.Data.targetLimits[from] = nil
 	return setmetatable({
 		_K = _K,
 		alias = alias,

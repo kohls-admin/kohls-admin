@@ -155,6 +155,8 @@ function Argument:parse()
 end
 
 function Argument:prepare()
+	self._K.Data.targetLimits[self.command.from] = 0
+
 	if self.validated then
 		return true, if self.rawType.listable then self.parsedArgs else self.parsedArgs[1]
 	end
