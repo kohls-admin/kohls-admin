@@ -681,6 +681,7 @@ return function(_K)
 
 			_K.Flux.cleanup(playerCleanup[userId])
 			playerCleanup[userId] = nil
+			_K.Data.targetLimits[userId] = nil
 		end)
 
 		task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
