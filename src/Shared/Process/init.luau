@@ -61,9 +61,11 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 			command = commands[#commands]
 			argument = { first - 1, prefix, char }
 			table.insert(command, argument)
-		elseif char == prefix and string.find(lastChar, delimiter) then
-			if #argument == 1 or string.find(argument[2] :: string, `^{delimiter}*$`) then
+		elseif char == prefix and (string.find(lastChar, "%s") or string.find(lastChar, delimiter)) then
+			if #argument == 1 or string.find(argument[2], "%s") or string.find(argument[2], delimiter) then
 				table.remove(command)
+			elseif string.find(lastChar, "%s") then
+				table.remove(argument)
 			end
 			argument = { first + 1 }
 			command = { argument }
