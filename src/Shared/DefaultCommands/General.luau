@@ -176,7 +176,7 @@ return {
 			return { remote = _K.Remote.FullScreenMessage }
 		end,
 		run = function(context, message)
-			context.env.remote:FireAll({ From = context.from, Text = message })
+			context.env.remote:FireAll(context.from, message)
 		end,
 	},
 	{
