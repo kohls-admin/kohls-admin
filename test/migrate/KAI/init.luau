@@ -1235,8 +1235,6 @@ do
 			local KLogs = GlobalDataStore:GetAsync(dataKey.logs)
 			if KLogs then
 				f.UpdateLogs(KLogs)
-				GlobalDataStore:OnUpdate(dataKey.save, f.UpdateSave)
-				GlobalDataStore:OnUpdate(dataKey.logs, f.UpdateLogs)
 			end
 		end
 	end)
