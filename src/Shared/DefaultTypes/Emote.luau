@@ -19,7 +19,7 @@ local function isEmote(id: number)
 		return emoteItemFromId[id]
 	end
 
-	local ok, result = pcall(MarketplaceService.GetProductInfo, MarketplaceService, id)
+	local ok, result = pcall(MarketplaceService.GetProductInfoAsync, MarketplaceService, id)
 	if ok and type(result) == "table" and result.AssetTypeId == Enum.AssetType.EmoteAnimation.Value then
 		local item = {
 			name = result.Name,

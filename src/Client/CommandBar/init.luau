@@ -449,7 +449,7 @@ local function updateSuggestionPurchasePrice()
 		local productType = if suggestionPurchase.role == "vip" and _K.Data.settings.vip
 			then Enum.InfoType.Asset
 			else Enum.InfoType.GamePass
-		return _K.Service.Marketplace:GetProductInfo(suggestionPurchase.gamepass, productType).PriceInRobux
+		return _K.Service.Marketplace:GetProductInfoAsync(suggestionPurchase.gamepass, productType).PriceInRobux
 	end)
 	suggestionPurchaseButton._content.Price.Text = `<b>{ok and result or "?"}</b>`
 end

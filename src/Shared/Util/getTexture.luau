@@ -24,7 +24,7 @@ local function getTexture(assetId: number, small: boolean?): string?
 		return cached
 	end
 
-	local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, assetId)
+	local ok, info = pcall(MarketplaceService.GetProductInfoAsync, MarketplaceService, assetId)
 	if not ok then
 		return
 	end

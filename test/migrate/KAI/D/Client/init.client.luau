@@ -129,7 +129,7 @@ function f.unMapTab(a, b)
 	return b
 end
 function f.AssetInfo(a)
-	return s.Market:GetProductInfo(a)
+	return s.Market:GetProductInfoAsync(a)
 end
 function f.RImage(a, b, c)
 	b = f.AssetInfo(a)
@@ -583,7 +583,7 @@ cm.Get.Activated:Connect(function()
 end)
 for i, v in { { 129760409821083, 5 }, { 77680874300094, 45 }, { 130880915606069, 795 } } do
 	local obj = cm["D" .. i]
-	local success, info = pcall(s.Market.GetProductInfo, s.Market, v[1], Enum.InfoType.Asset)
+	local success, info = pcall(s.Market.GetProductInfoAsync, s.Market, v[1], Enum.InfoType.Asset)
 	obj.Text = (success and info.PriceInRobux or v[2]) .. " R$"
 	obj.Activated:Connect(function()
 		lastAttemptedPurchase = v[1]

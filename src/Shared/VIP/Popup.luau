@@ -443,7 +443,7 @@ task.spawn(function()
 end)
 
 local function updatePrice(label: TextLabel, id: number)
-	local ok, result = pcall(MarketplaceService.GetProductInfo, MarketplaceService, id, Enum.InfoType.Asset)
+	local ok, result = pcall(MarketplaceService.GetProductInfoAsync, MarketplaceService, id, Enum.InfoType.Asset)
 	if ok then
 		label.Text = result.PriceInRobux
 	end

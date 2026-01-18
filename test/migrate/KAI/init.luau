@@ -313,7 +313,7 @@ local DonorCache = {}
 --|  Server Functions  |--
 
 function f.AssetInfo(assetId: number)
-	return services.Marketplace:GetProductInfo(assetId)
+	return services.Marketplace:GetProductInfoAsync(assetId)
 end
 function f.Merge(mergeInto, mergeFrom)
 	for key, value in mergeFrom do
@@ -4396,7 +4396,7 @@ function LoadCommands()
 							[46] = "BackAccessory",
 							[47] = "WaistAccessory",
 						}
-						local _ok, info = pcall(services.Marketplace.GetProductInfo, services.Marketplace, args[2])
+						local _ok, info = pcall(services.Marketplace.GetProductInfoAsync, services.Marketplace, args[2])
 						local accessoryType = accessoryTypes[info.AssetTypeId]
 						local description = Instance.new("HumanoidDescription")
 						if accessoryType then

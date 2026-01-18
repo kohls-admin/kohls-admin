@@ -2802,7 +2802,7 @@ return {
 				market = MarketplaceService,
 				method = {
 					[Enum.InfoType.Asset] = MarketplaceService.PlayerOwnsAssetAsync,
-					[Enum.InfoType.Bundle] = MarketplaceService.PlayerOwnsBundle,
+					[Enum.InfoType.Bundle] = MarketplaceService.PlayerOwnsBundleAsync,
 					[Enum.InfoType.GamePass] = MarketplaceService.UserOwnsGamePassAsync,
 					[Enum.InfoType.Subscription] = MarketplaceService.GetUserSubscriptionStatusAsync,
 				},

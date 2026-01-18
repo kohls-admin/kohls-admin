@@ -63,7 +63,7 @@ function Market.new(_K)
 				end)
 
 				local ok, result = _K.Util.Retry(function()
-					return _K.Service.Marketplace:GetProductInfo(assetId, Enum.InfoType.Asset).PriceInRobux
+					return _K.Service.Marketplace:GetProductInfoAsync(assetId, Enum.InfoType.Asset).PriceInRobux
 				end)
 				if ok then
 					if not owned or DEBUG_SHOW_PRICES then
@@ -96,7 +96,7 @@ function Market.new(_K)
 				end)
 
 				local ok, result = _K.Util.Retry(function()
-					return _K.Service.Marketplace:GetProductInfo(gamePassId, Enum.InfoType.GamePass).PriceInRobux
+					return _K.Service.Marketplace:GetProductInfoAsync(gamePassId, Enum.InfoType.GamePass).PriceInRobux
 				end)
 				if ok then
 					if not owned or DEBUG_SHOW_PRICES then
@@ -302,7 +302,7 @@ function Market.new(_K)
 					end)
 
 					local ok, result = _K.Util.Retry(function()
-						return _K.Service.Marketplace:GetProductInfo(ugc.id, Enum.InfoType.Asset).PriceInRobux
+						return _K.Service.Marketplace:GetProductInfoAsync(ugc.id, Enum.InfoType.Asset).PriceInRobux
 					end)
 					if ok then
 						ugc.price = result or "?"

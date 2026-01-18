@@ -730,7 +730,7 @@ return {
 			local function getHumanoidDescriptionBundle(bundleId)
 				local itemId = getOutfitId(bundleId)
 				if itemId and itemId > 0 then
-					return Util.Service.Players:GetHumanoidDescriptionFromOutfitId(itemId)
+					return Util.Service.Players:GetHumanoidDescriptionFromOutfitIdAsync(itemId)
 				end
 
 				return nil
