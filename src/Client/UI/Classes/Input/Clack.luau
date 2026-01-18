@@ -21,7 +21,7 @@ function module.sound(keycode)
 	local sound = Instance.new("Sound")
 	sound.Volume = random:NextNumber(1.5, 2)
 	if keyHash == lastHash and keycode ~= lastKey then
-		sound.Pitch = random:NextNumber(0.9, 1.1)
+		sound.PlaybackSpeed = random:NextNumber(0.9, 1.1)
 	end
 	sound.SoundId = clacks
 	sound.PlaybackRegionsEnabled = true
