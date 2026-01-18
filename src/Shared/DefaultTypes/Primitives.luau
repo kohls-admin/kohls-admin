@@ -100,6 +100,12 @@ return function(context)
 		if _K.Service.RunService:IsClient() or self.command.global then
 			return v
 		end
+		if
+			not _K.Auth.hasRestrictedRole(self.command.from)
+			and not _K.Service.TextChat:CanUserChatAsync(self.command.from)
+		then
+			return "User cannot chat"
+		end
 		return _K.Util.String.filterForBroadcast(v, self.command.from)
 	end
 	_K.Registry.registerType("string", stringType)
