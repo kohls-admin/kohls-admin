@@ -55,6 +55,7 @@ function Members.new(_K)
 					},
 				}
 
+				_K.Data.targetLimits[_K.LocalPlayer.UserId] = 0
 				if userId and not _K.Auth.targetUserArgument(fauxArg, userId, userId) then
 					userId = nil
 					task.defer(resetRoleTargetInput)
