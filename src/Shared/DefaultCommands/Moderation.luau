@@ -1909,6 +1909,40 @@ return {
 		end,
 	},
 	{
+		name = "cameraoffset",
+		aliases = { "camoffset" },
+		description = "Changes the CameraOffset of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose CameraOffset to change.",
+			},
+			{
+				type = "vector3",
+				name = "Offset",
+				description = "The Vector3 CameraOffset to set.",
+			},
+		},
+		env = function(_K)
+			return { remote = _K.Remote.CameraOffset }
+		end,
+		envClient = function(_K)
+			_K.Remote.CameraOffset:Connect(function(offset: Vector3)
+				local player = game.Players.LocalPlayer
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid.CameraOffset = offset
+				end
+			end)
+		end,
+		run = function(context, players: { Player }, offset: Vector3)
+			for _, player in players do
+				context._K.Remote.CameraOffset:Fire(player, offset)
+			end
+		end,
+	},
+	{
 		name = "fps",
 		aliases = { "lag", "unlag", "unfps" },
 		description = "Limits the frames per second of one or more player(s).",

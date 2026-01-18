@@ -34,6 +34,8 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
+				context._K.Remote.CameraOffset:Fire(player, Vector3.zero)
+
 				local character = player.Character
 				local existing = character and character:FindFirstChild("_KCape")
 				if existing then
