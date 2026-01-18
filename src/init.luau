@@ -197,7 +197,7 @@ function _K.alert(to: number | Player, text: string, isError: boolean?)
 			props.Sound = "Call_Leave"
 		end
 		if _K.IsServer then
-			_K.Remote.Notify:Fire(to, props)
+			_K.Remote.Notify:Fire(to :: Player, props)
 		else
 			_K.Notify:Fire(props)
 		end

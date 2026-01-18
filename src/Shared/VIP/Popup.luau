@@ -422,7 +422,7 @@ local saleProductId = "115444443724463"
 local productId = originalProductId
 
 local function promptBulkPurchase(id: number | string)
-	Util.Remote.PromptBulkPurchase:Fire(tonumber(id))
+	Util.Remote.PromptBulkPurchase:Fire(tonumber(id) :: any)
 end
 
 local function promptPurchaseVIP()
