@@ -1,3 +1,5 @@
+--!nolint
+
 local a = Instance.new "Frame"
 a.Name = "Help"
 a.ZIndex = 9

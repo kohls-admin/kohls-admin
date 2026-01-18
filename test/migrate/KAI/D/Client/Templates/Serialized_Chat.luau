@@ -1,3 +1,5 @@
+--!nolint
+
 local a = Instance.new "Frame"
 a.Name = "Chat"
 a.ZIndex = 8
