@@ -334,7 +334,7 @@ function f.MatchClr(a, b)
 	return b
 end
 function f.Has(a, b)
-	return s.Market:PlayerOwnsAsset(a, b)
+	return s.Market:PlayerOwnsAssetAsync(a, b)
 end
 function f.onCam(a)
 	return (cam.CFrame:inverse() * a).z < 0

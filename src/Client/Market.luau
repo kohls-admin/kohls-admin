@@ -39,7 +39,7 @@ function Market.new(_K)
 
 		local function updateAssetPriceText(label: TextLabel, assetId: number, ownedText: string?)
 			local success, owned = _K.Util.Retry(function()
-				return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, assetId)
+				return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, assetId)
 			end)
 
 			if success then
@@ -294,7 +294,7 @@ function Market.new(_K)
 							if owned then
 								return true
 							end
-							return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, ugc.id)
+							return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, ugc.id)
 						end)
 						if ok and result then
 							setOwned()
@@ -589,7 +589,7 @@ function Market.new(_K)
 				local VIP_UGC_ID = 110019084552349
 				local VIP_UGC_SALE_ID = 115444443724463
 				local ok, ugcOwned = _K.Util.Retry(function()
-					return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, VIP_UGC_ID)
+					return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, VIP_UGC_ID)
 				end)
 				local id = if ok and ugcOwned then VIP_UGC_ID else VIP_UGC_SALE_ID
 				task.defer(updateAssetPriceText, vipButtonGlobal._content.Price, id, `<b>SHOW</b>`)

@@ -365,7 +365,7 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 
 	for assetId, roleIds in Data.async.asset do
 		local ok, result = Util.Retry(function()
-			return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
+			return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
 		end)
 		if ok and result then
 			for _, roleId in roleIds do

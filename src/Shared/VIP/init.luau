@@ -33,7 +33,7 @@ local function getDonationLevel(player)
 
 	for _, ugcId in Purchasables.chatCommands do
 		local ok, result = Util.Retry(function()
-			return Util.Service.Marketplace:PlayerOwnsAsset(player, ugcId)
+			return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, ugcId)
 		end)
 		if ok and result then
 			return 4
@@ -52,7 +52,7 @@ local function getDonationLevel(player)
 	for level = #assetDonations, 1, -1 do
 		for _, assetId in assetDonations[level] do
 			local okAsset, result = Util.Retry(function()
-				return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
+				return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
 			end)
 			if okAsset and result then
 				return level
@@ -105,7 +105,7 @@ if Util.Service.Run:IsServer() then
 		end
 
 		local ok, result = Util.Retry(function()
-			return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
+			return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
 		end)
 		if ok then
 			ownedUGC[assetId] = result
@@ -207,7 +207,7 @@ if Util.Service.Run:IsServer() then
 							return
 						end
 						local okAsset, result = Util.Retry(function()
-							return Util.Service.Marketplace:PlayerOwnsAsset(player, assetId)
+							return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
 						end)
 						if okAsset then
 							definition.ownerCache[player.UserId] = result
@@ -351,7 +351,7 @@ if Util.Service.Run:IsServer() then
 			if table.find(Purchasables.chatCommands, id) and not checking[player] then
 				checking[player] = true
 				local ok, result = Util.Retry(function()
-					return Util.Service.Marketplace:PlayerOwnsAsset(player, id)
+					return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, id)
 				end)
 				if ok and result then
 					setDonationLevel(player, 4)

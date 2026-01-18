@@ -166,7 +166,7 @@ function About.new(_K)
 
 		task.defer(function()
 			local ok, owned = _K.Util.Retry(function()
-				return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, KA_MODEL_ID)
+				return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, KA_MODEL_ID)
 			end)
 			if ok and owned and not STUDIO_DEBUG then
 				adminModelButton._instance.Visible = false

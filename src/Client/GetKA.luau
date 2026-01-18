@@ -4,7 +4,7 @@ local UI = _K.UI
 task.defer(function()
 	local adminModelId = 172732271
 	local ok, owned = _K.Util.Retry(function()
-		return _K.Service.Marketplace:PlayerOwnsAsset(_K.LocalPlayer, adminModelId)
+		return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, adminModelId)
 	end)
 
 	if not ok or owned then

@@ -797,7 +797,7 @@ function f.addCommand(
 end
 function f.Has(player: Player, assetId: number): boolean
 	local ok, result = pcall(function()
-		return services.Marketplace:PlayerOwnsAsset(player, assetId)
+		return services.Marketplace:PlayerOwnsAssetAsync(player, assetId)
 	end)
 	return ok and result
 end
