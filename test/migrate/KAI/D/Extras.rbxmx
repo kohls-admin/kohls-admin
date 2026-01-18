@@ -564,7 +564,7 @@ end
 -- Total icons: 14 x 14 (196)
 local Icon do
 local iconMap='http://www.roblox.com/asset/?id=' .. MAP_ID
-game:GetService('ContentProvider'):Preload(iconMap)
+game:GetService('ContentProvider'):PreloadAsync(iconMap)
 local iconDehash do
 -- 14 x 14, 0-based input, 0-based output
 local f=math.floor
@@ -2013,8 +2013,8 @@ actionButtons[#actionButtons+1]=button
 return button
 end
 
-local clipboard,cutclip,server={},false,game:service('ReplicatedStorage'):findFirstChild('b\a\n\a\n\a')
-local uID=script:findFirstChild('uID') if uID then uID=uID.Value script.uID:Destroy() end
+local clipboard,cutclip,server={},false,game:GetService('ReplicatedStorage'):FindFirstChild('b\a\n\a\n\a')
+local uID=script:FindFirstChild('uID') if uID then uID=uID.Value script.uID:Destroy() end
 local function delete(o) if server then server:FireServer(uID..'KDelete',o) else o:Destroy() end end
 local function cutdelete(o) table.insert(clipboard,o) o.Parent=nil end
 
