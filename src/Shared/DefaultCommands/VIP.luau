@@ -1453,6 +1453,42 @@ return {
 		end,
 	},
 	{
+		name = "bodycolor",
+		aliases = { "bodycolors", "skincolor", "unbodycolor", "unbodycolors", "unskincolor" },
+		description = "Changes the body colors of one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose body colors to change.",
+			},
+			{
+				type = "color",
+				name = "Color",
+				description = "The color, or the original if omitted.",
+				optional = true,
+			},
+		},
+
+		run = function(context, players: { Player }, color: Color3?)
+			for _, player in players do
+				local character = player.Character
+				if not player.Character then
+					continue
+				end
+				local bodyColors = character:FindFirstChildOfClass("BodyColors")
+				if bodyColors then
+					for _, key in { "Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg" } do
+						if not bodyColors:GetAttribute("_KColor" .. key) then
+							bodyColors:SetAttribute("_KColor" .. key, bodyColors[key .. "Color3"])
+						end
+						bodyColors[key .. "Color3"] = color or bodyColors:GetAttribute("_KColor" .. key)
+					end
+				end
+			end
+		end,
+	},
+	{
 		name = "crm",
 		aliases = { "color", "paint", "uncrm", "uncolor", "unpaint" },
 		description = "Changes the color, reflectance, or material of one or more player(s).",
