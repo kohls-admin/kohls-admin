@@ -1454,7 +1454,7 @@ return {
 	},
 	{
 		name = "crm",
-		aliases = { "uncrm" },
+		aliases = { "color", "paint", "uncrm", "uncolor", "unpaint" },
 		description = "Changes the color, reflectance, or material of one or more player(s).",
 		args = {
 			{
