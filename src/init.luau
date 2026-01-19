@@ -199,7 +199,7 @@ function _K.alert(to: number | Player, text: string, isError: boolean?)
 		if _K.IsServer then
 			_K.Remote.Notify:Fire(to :: Player, props)
 		else
-			_K.Notify:Fire(props)
+			_K.Notify(props)
 		end
 	end
 end
