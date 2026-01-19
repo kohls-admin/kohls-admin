@@ -315,11 +315,19 @@ function Class.new(properties: Properties?)
 	self._maskSize = UI.state(inputMask, "AbsoluteSize")
 	self._bounds = UI.state(self._input, "TextBounds")
 
+	local isUpdating = false
 	self._input:GetPropertyChangedSignal("Text"):Connect(function()
+		if isUpdating then
+			return
+		end
+		isUpdating = true
+
 		local text = self._input.Text
 		text = if self.MaxChars._value ~= math.huge then string.sub(text, 1, self.MaxChars._value) else text
 		self._input.Text = text
 		textState(text)
+
+		isUpdating = false
 	end)
 
 	UI.edit(self._input, {
