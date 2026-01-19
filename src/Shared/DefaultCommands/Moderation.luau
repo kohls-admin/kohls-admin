@@ -2840,6 +2840,38 @@ return {
 		end,
 	},
 	{
+		name = "promptgroup",
+		aliases = { "joingroup" },
+		description = "Prompts one or more player(s) to join a group.",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to prompt.",
+			},
+			{
+				type = "integer",
+				name = "Identifier",
+				description = "The identifier of the group.",
+			},
+		},
+
+		envClient = function(_K)
+			_K.Remote.PromptJoinAsync:Connect(function(id: number)
+				pcall(_K.Service.Group.PromptJoinAsync, _K.Service.Group, id)
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.PromptJoinAsync }
+		end,
+
+		run = function(context, players: { Player }, id: number)
+			for _, player in players do
+				context.env.remote:Fire(player, id)
+			end
+		end,
+	},
+	{
 		name = "change",
 		aliases = {},
 		description = "Changes a leaderstat of one or more player(s).",
