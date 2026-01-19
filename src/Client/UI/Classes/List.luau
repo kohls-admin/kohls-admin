@@ -103,7 +103,7 @@ function Class.new(properties: Properties?)
 				end,
 				FontFace = UI.Theme.FontBold,
 				Text = function()
-					return string.upper(self.Label())
+					return string.upper(self.Label() :: string)
 				end,
 				TextSize = UI.Theme.FontSize,
 				TextColor3 = UI.Theme.PrimaryText,

@@ -396,7 +396,7 @@ function UI.edit(new: Instance | Type.Dict<any>, properties: Type.Dict<any>): In
 
 	-- numeric index child definition
 	for index, child in properties do
-		if type(index) ~= "number" or index ~= math.floor(index) then
+		if type(index) ~= "number" or index ~= math.floor(index :: number) then
 			continue
 		end
 		if type(child) == "table" and child._instance then

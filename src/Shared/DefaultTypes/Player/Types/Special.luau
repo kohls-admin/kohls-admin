@@ -89,7 +89,7 @@ return function(_K)
 	local function specialParse(arg, self)
 		for match, check in specialReference do
 			if match == "distance" or match == "group" then
-				if string.find(arg, match, 1, true) ~= 1 then
+				if string.find(arg, match :: string, 1, true) ~= 1 then
 					continue
 				end
 			else

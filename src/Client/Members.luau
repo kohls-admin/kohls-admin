@@ -193,7 +193,7 @@ function Members.new(_K)
 		local font = UI.Theme.Font()
 		local size = UI.Theme.FontSize()
 		local padding = UI.Theme.Padding().Offset
-		local maxWidth = size
+		local maxWidth: number = size
 
 		local params = Instance.new("GetTextBoundsParams")
 		params.Font = font
@@ -226,12 +226,12 @@ function Members.new(_K)
 	end
 
 	for roleId, role in _K.Data.roles do
-		if role._rank == 0 then
+		if not role._rank or role._rank == 0 then
 			continue
 		end
 		UI.new "Button" {
 			Parent = roleMenu,
-			LayoutOrder = math.min(1e9, role._rank),
+			LayoutOrder = math.min(1e9, role._rank :: number),
 			BackgroundTransparency = 1,
 			Label = role.name,
 			Icon = UI.Theme.Image.Circle,

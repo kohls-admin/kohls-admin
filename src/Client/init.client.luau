@@ -428,7 +428,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings,
 		for _, object in list do
 			if object:IsA("ModuleScript") then
 				task.spawn(function()
-					require(object)(_K)
+					require(object :: ModuleScript)(_K)
 				end)
 			else
 				loadAddons(object:GetChildren())

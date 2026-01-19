@@ -180,7 +180,7 @@ return function(_K)
 
 				local args = {}
 				for _, arg in argList do
-					arg = string.lower(arg)
+					arg = string.lower(arg :: string)
 					local optional = string.find(arg, "/$")
 					if optional then
 						arg = string.sub(arg, 1, -2)

@@ -401,12 +401,12 @@ return function(_K)
 					if string.find(object.Name, "Server", 1, true) then
 						object.Parent = serverAddons
 						task.spawn(function()
-							require(object)(_K)
+							require(object :: ModuleScript)(_K)
 						end)
 					elseif not string.find(object.Name, "Client", 1, true) then
 						object.Parent = sharedAddons
 						task.spawn(function()
-							require(object)(_K)
+							require(object :: ModuleScript)(_K)
 						end)
 					else
 						object.Parent = sharedAddons

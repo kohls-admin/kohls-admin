@@ -150,7 +150,7 @@ function Class.new(properties: Properties?)
 			local text = if display ~= "" then display elseif input ~= "" then input else placeholder
 			text = stripNewLines(text)
 
-			return if maxChars ~= math.huge then string.sub(text, 1, maxChars) else text
+			return if maxChars ~= math.huge then string.sub(text, 1, maxChars :: number) else text
 		end,
 		TextTransparency = function()
 			return if textState() == "" and self.DisplayText() == "" then 0.5 else 0
