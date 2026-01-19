@@ -69,6 +69,10 @@ return function(dialogOverride)
 		hide(self, announce)
 	end
 
+	if announce and not dialogOverride.TextSize then
+		dialogOverride.TextSize = _K.UI.Theme.FontSizeLarge
+	end
+
 	local dialog
 	dialog = UI.new("Dialog")(_K.Util.Table.merge({
 		Parent = UI.LayerTopInset,
