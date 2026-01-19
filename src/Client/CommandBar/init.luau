@@ -896,36 +896,48 @@ return {
 			return
 		end)
 
+		local isUpdating = false
 		Input._input:GetPropertyChangedSignal("Text"):Connect(function()
+			if isUpdating then
+				return
+			end
+			isUpdating = true
+
 			if currentCompletion and UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
 				completeSuggestion()
+				isUpdating = false
 				return
 			end
 
 			local prefixLen = #prefix
 			local text = Input._input.Text
 
+			-- prepend prefix
 			if string.find(text, prefix, 1, true) ~= 1 then
 				Input._input.CursorPosition += prefixLen
-				Input.Value(prefix .. text, true)
+				text = prefix .. text
+				Input.Value(text, true)
 				Input._input.CursorPosition += prefixLen
-				return
-			else -- trim whitespace after prefix
-				local trimmed = prefix .. _K.Util.String.trimStart(string.sub(text, prefixLen + 1))
-				if trimmed ~= Input._input.Text then
-					Input.Value(trimmed, true)
-					return
-				end
+			end
+
+			-- trim whitespace after prefix
+			local trimmed = prefix .. _K.Util.String.trimStart(string.sub(text, prefixLen + 1))
+			if trimmed ~= Input._input.Text then
+				text = trimmed
+				Input.Value(trimmed, true)
 			end
 
 			if text ~= prefix then
+				-- remove duplicate starting prefix
 				if string.find(text, prefix, prefixLen + 1, true) == prefixLen + 1 then
 					text = string.sub(text, prefixLen + 1)
 					Input.Value(text, true)
-					return
+				else
+					Input.DisplayText(_K.Util.String.escapeRichText(text), true)
 				end
-				Input.DisplayText(_K.Util.String.escapeRichText(text), true)
 			end
+
+			isUpdating = false
 		end)
 	end,
 	show = function()
