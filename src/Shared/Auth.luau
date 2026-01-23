@@ -600,10 +600,10 @@ function Auth.targetUserArgument(arg: any, userId: number, value: Player | numbe
 		end
 		return value
 	end
-	if from == Data.creatorId then
+	if from == Data.creatorId or Auth.hasPermission(from, "admin") then
 		return value
 	end
-	if Auth.hasPermission(from, "targetOthers") ~= true and not Auth.hasPermission(from, "admin") then
+	if Auth.hasPermission(from, "targetOthers") ~= true then
 		return nil, "Can only target yourself"
 	end
 	if
