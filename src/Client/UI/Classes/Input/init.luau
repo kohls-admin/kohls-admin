@@ -90,6 +90,7 @@ local DEFAULT = {
 	DisplayText = "",
 	Placeholder = "",
 	Value = "",
+	ClearTextButton = false,
 	--- Fills to the size of the text input.
 	Fill = false,
 	FontFace = UI.Theme.Font,
@@ -392,6 +393,23 @@ function Class.new(properties: Properties?)
 				FlexMode = Enum.UIFlexMode.Fill,
 			},
 		},
+
+		UI.new "ImageButton" {
+			LayoutOrder = 3,
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(0.5, 0.5),
+			SizeConstraint = Enum.SizeConstraint.RelativeYY,
+			Image = UI.Theme.Image.Close,
+			ImageColor3 = UI.Theme.Secondary,
+			Visible = function()
+				return self.ClearTextButton() and textState() ~= ""
+			end,
+
+			Activated = function()
+				self._input.Text = ""
+			end,
+		},
+
 		[UI.Clean] = cleanup,
 	}
 
