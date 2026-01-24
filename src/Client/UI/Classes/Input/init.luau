@@ -359,7 +359,7 @@ function Class.new(properties: Properties?)
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyHeavy,
 		Size = function()
-			return UDim2.new(0, 0, 0, self.FontSize() + self.Padding().Offset * 2)
+			return UDim2.new(1, 0, 0, self.FontSize() + self.Padding().Offset * 2)
 		end,
 
 		UI.new "UICorner" {
