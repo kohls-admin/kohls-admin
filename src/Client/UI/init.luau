@@ -378,6 +378,40 @@ function UI.makeStatefulDefaults(default: Type.Dict<any>, definition: Type.Dict<
 	return default
 end
 
+function UI.newSinkHoverState(object: GuiObject, hovering: any?)
+	if not hovering then
+		hovering = UI.state(false)
+	end
+
+	UI.edit(object, {
+		InputChanged = function(input, processed)
+			if processed then
+				return
+			end
+			if
+				input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
+				if UI.sinkInput(input.Position.X, input.Position.Y, object) then
+					UI.deactivateState(hovering, "hover")
+					return
+				end
+				UI.activateState(hovering, "hover")
+			end
+		end,
+		InputEnded = function(input)
+			if
+				input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
+				UI.deactivateState(hovering, "hover")
+			end
+		end,
+	})
+
+	return hovering
+end
+
 --- Inherits [Flux.edit]
 --- * Parents children to the ._content variable of a UI component if one exists
 --- * Numeric indicies are defined as children with [GuiObject.LayoutOrder] set to the index
