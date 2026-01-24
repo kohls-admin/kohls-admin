@@ -606,6 +606,60 @@ return function(_K)
 			end
 		end)
 
+		local function cloneInstanceUnsafe(instance, parent: Instance?)
+			local clone = instance:Clone()
+			clone.Parent = parent
+
+			return clone
+		end
+
+		_K.Remote.Explorer:Connect(function(player: Player, action: string, data: any, selected: Instance?)
+			local explorerRank = _K.Auth.hasCommand(player.UserId, "explorer")
+			if not explorerRank then
+				return
+			end
+
+			if action == "PASTE" and selected then
+				print(data, selected)
+				for _, copy: Instance in data do
+					local wasArchivable = copy.Archivable
+					copy.Archivable = true
+					pcall(cloneInstanceUnsafe, copy, selected)
+					if not wasArchivable then
+						copy.Archivable = false
+					end
+				end
+			elseif action == "DELETE" then
+				local fauxArg = {
+					_K = _K,
+					definition = _K.Registry.commands.ban.args[1],
+					command = {
+						from = player.UserId,
+						fromRank = _K.Auth.getRank(player.UserId),
+						fromRole = {},
+						rank = explorerRank or 0,
+					},
+				}
+
+				for _, instance in data do
+					if typeof(instance) ~= "Instance" then
+						continue
+					end
+
+					if instance:IsA("Player") then
+						if _K.Data.targetLimits[player.UserId] then
+							_K.Data.targetLimits[player.UserId] -= 1
+						end
+						if not _K.Auth.targetUserArgument(fauxArg, instance.UserId, instance.UserId) then
+							continue
+						end
+					end
+
+					pcall(game.Destroy, instance)
+				end
+			end
+		end)
+
 		local initialJoin = {}
 		local playerCleanup = {}
 

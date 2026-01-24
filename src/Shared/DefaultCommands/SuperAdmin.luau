@@ -147,6 +147,14 @@ return {
 		end,
 	},
 	{
+		name = "explorer",
+		description = "Shows the explorer.",
+		args = {},
+		runClient = function(context)
+			context._K.client.Explorer.Show()
+		end,
+	},
+	{
 		name = "incognito",
 		description = "Hides one or more player(s) from lower rank players. (Persists until rejoin)",
 		args = {

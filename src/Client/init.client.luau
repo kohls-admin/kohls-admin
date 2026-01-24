@@ -8,6 +8,7 @@ _K.LocalPlayer = _K.Service.Players.LocalPlayer
 
 _K.client = {
 	Character = require(script:WaitForChild("Character")),
+	Explorer = require(script:WaitForChild("Explorer")),
 	UserFrame = require(script:WaitForChild("UserFrame")),
 	TopbarPlus = nil,
 
