@@ -853,6 +853,7 @@ function Settings.new(_K)
 	settingsDialog._content:Destroy()
 
 	local filterInput = UI.new "Input" {
+		ClearTextButton = true,
 		Fill = true,
 		Placeholder = "Search",
 		Icon = UI.Theme.Image.Search,
