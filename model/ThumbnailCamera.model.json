@@ -15,7 +15,7 @@
 				"CastShadow": true,
 				"Color": [0, 0, 0],
 				"Size": [4, 4, 0.001],
-				"CFrame": [0, 0, 0, 0, 0, 1, 0, 1, 0, -1, 0, 0],
+				"CFrame": [0, 0, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0],
 				"Transparency": 0,
 				"Material": "SmoothPlastic"
 			},
