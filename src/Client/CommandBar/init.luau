@@ -22,6 +22,7 @@ end)
 local Input
 Input = UI.new "Input" {
 	AnchorPoint = Vector2.new(0, 0.5),
+	ClearTextButton = true,
 	Placeholder = "Search",
 	BackgroundColor3 = UI.Theme.Primary,
 	BackgroundTransparency = UI.Theme.Transparency,
@@ -84,6 +85,10 @@ Input = UI.new "Input" {
 		end,
 	},
 }
+
+UI.edit(Input._instance.ImageButton, {
+	Size = UDim2.new(0, 16, 0, 16),
+})
 
 UI.edit(Input._instance.UICorner, {
 	CornerRadius = UDim.new(1, 0),
