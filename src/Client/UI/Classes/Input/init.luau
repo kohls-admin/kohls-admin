@@ -153,7 +153,7 @@ function Class.new(properties: Properties?)
 			return if maxChars ~= math.huge then string.sub(text, 1, maxChars) else text
 		end,
 		TextTransparency = function()
-			return if self.Value() == "" and self.DisplayText() == "" then 0.5 else 0
+			return if textState() == "" and self.DisplayText() == "" then 0.5 else 0
 		end,
 	}
 	self._displayLabel = displayLabel
@@ -325,7 +325,7 @@ function Class.new(properties: Properties?)
 		local text = self._input.Text
 		text = if self.MaxChars._value ~= math.huge then string.sub(text, 1, self.MaxChars._value) else text
 		self._input.Text = text
-		textState(text)
+		textState(text, true)
 
 		isUpdating = false
 	end)
