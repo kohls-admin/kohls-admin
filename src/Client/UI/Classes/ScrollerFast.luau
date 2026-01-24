@@ -392,6 +392,7 @@ function Class.new(properties: Properties?)
 		self._input = UI.new "Input" {
 			LayoutOrder = -1,
 			Parent = self._instance,
+			ClearTextButton = true,
 			Fill = true,
 			Placeholder = "Search",
 			Icon = UI.Theme.Image.Search,
