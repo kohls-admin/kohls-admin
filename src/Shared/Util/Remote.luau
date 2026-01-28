@@ -94,7 +94,7 @@ else
 end
 
 if not IS_SERVER and not script:IsDescendantOf(ReplicatedStorage) then
-	warn("Network module should be placed in ReplicatedStorage")
+	warn("Remote module should be placed in ReplicatedStorage")
 end
 
 local RemoteObject = {}
@@ -151,7 +151,7 @@ end
 
 function RemoteObject.SetUnreliable(self: Remote, state: boolean)
 	if not IS_SERVER then
-		warn("Client cannot set reliability")
+		warn(`Client cannot set reliability on Remote {self._key}`)
 	else
 		local targetRemote = state and UNRELIABLE or EVENT
 		if self._remote ~= targetRemote then
