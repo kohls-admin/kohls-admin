@@ -522,6 +522,18 @@ return function(_K)
 				return
 			end
 
+			if changes.freeAdmin then
+				if type(changes.freeAdmin) ~= "table" then
+					changes.freeAdmin = nil
+				end
+				for _, roleId in changes.freeAdmin do
+					if type(roleId) ~= "string" or not _K.Auth.hasRole(player.UserId, roleId) then
+						changes.freeAdmin = nil
+						break
+					end
+				end
+			end
+
 			local changeStrings = {}
 			for key, value in changes do
 				if _K.Data.savedSettings[key] == nil then
