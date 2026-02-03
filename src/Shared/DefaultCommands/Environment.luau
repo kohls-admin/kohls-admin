@@ -461,10 +461,8 @@ return {
 		args = {},
 		run = function(context)
 			if context.fromPlayer then
-				local con
-				con = context._K.Remote.SpectateSubject:Connect(function(player, cframe)
+				context._K.Remote.SpectateSubject:Once(function(player, cframe)
 					if player == context.fromPlayer then
-						con:Disconnect()
 						local speed = workspace.GlobalWind.Magnitude
 						if speed ~= speed then
 							return
