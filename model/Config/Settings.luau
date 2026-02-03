@@ -148,11 +148,11 @@ return {
 			},
 
 			permissions = {
-				admin = false, --   ⚠️ Bypasses all permissions
-				banasync = false, --   Saved bans
-				saveRoles = false, --  Saved roles
-				settings = false, --   Saved settings
-				serverlogs = false, -- Server logs
+				admin = false, --     ⚠️ Can do everything
+				banasync = false, --  ⚠️ Can permanently ban users
+				saveRoles = false, -- ⚠️ Can permanently assign roles
+				settings = false, --  ⚠️ Can change the saved admin settings
+				serverlogs = false, -- Can view the server logs
 			},
 
 			onlyTargetSelf = true, -- Can only use commands on self
