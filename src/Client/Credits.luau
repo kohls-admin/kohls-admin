@@ -39,6 +39,7 @@ return {
 			{ Id = 7034077053, Tooltip = "Shredding with numbers! 🎸" }, -- johnny_klebitz1
 			{ Id = 127757866, Tooltip = "Coding with flair! 💻" }, -- iam_danny
 			{ Id = 190022817, Tooltip = "Blazing through contributions! 🔥" }, -- emblazes
+			{ Id = 197640401, Tooltip = "I love animation! 🎬" }, -- swibes
 		},
 	},
 	{
