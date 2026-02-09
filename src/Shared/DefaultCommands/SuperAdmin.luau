@@ -406,7 +406,7 @@ return {
 				"_K_ReservedServers",
 				function(message)
 					local data = message.Data
-					if data then
+					if type(data) == "table" then
 						_K.Data.reservedServers[data[1]] = { unpack(data, 2) }
 						for _, player in _K.Service.Players:GetPlayers() do
 							if
@@ -540,6 +540,12 @@ return {
 		env = function(_K)
 			task.spawn(function()
 				_K.Service.Messaging:SubscribeAsync("KA_GlobalCommand", function(message)
+					if type(message.Data) == "string" then
+						message.Data = Util.Service.Http:JSONDecode(message.Data)
+					end
+					if type(message.Data) ~= "table" then
+						return
+					end
 					local from, commandString = unpack(message.Data)
 					if from and commandString then
 						_K.Process.runCommands(_K, from, commandString, true, true)

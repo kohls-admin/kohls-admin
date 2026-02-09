@@ -595,12 +595,14 @@ function Data.initialize(scope)
 
 		task.defer(Util.Retry, function()
 			return Util.Service.Messaging:SubscribeAsync(DATA_KEY, function(message)
-				local data = message.Data
-				if not data then
+				if type(message.Data) == "string" then
+					message.Data = Util.Service.Http:JSONDecode(message.Data)
+				end
+				if type(message.Data) ~= "table" then
 					return
 				end
 
-				local id, chunkCount = unpack(data)
+				local id, chunkCount = unpack(message.Data)
 				if not id or not chunkCount or idsFromThisServer[id] then
 					return
 				end
