@@ -118,6 +118,7 @@ local DEFAULT = {
 	Icon = "",
 	IconProperties = {},
 	Title = "Window",
+	AutomaticSize = Enum.AutomaticSize.None,
 	Position = UDim2.new(0.5, -210, 0.5, -210),
 	Size = UDim2.new(0, 420, 0, 420),
 	SizeBounds = Rect.new(128, 128, 9e9, 9e9),
@@ -282,6 +283,7 @@ function Class.new(properties: Properties?)
 
 	self._content = UI.new "Frame" {
 		Name = "UIContent",
+		AutomaticSize = self.AutomaticSize,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 		ClipsDescendants = true,
@@ -299,6 +301,7 @@ function Class.new(properties: Properties?)
 
 	self._instance = UI.new "Frame" {
 		Name = "Window",
+		AutomaticSize = self.AutomaticSize,
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = UI.Theme.Transparency,
 		Position = self.Position,
@@ -328,6 +331,7 @@ function Class.new(properties: Properties?)
 		},
 
 		UI.new "Frame" {
+			AutomaticSize = self.AutomaticSize,
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
 			Size = UDim2.fromScale(1, 1),
