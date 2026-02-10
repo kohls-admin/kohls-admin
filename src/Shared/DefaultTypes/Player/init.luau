@@ -46,8 +46,8 @@ local userCache = {}
 local function memoizeUser(player: Player)
 	if userCache[player.UserId] then
 		local freeThread = userCache[player.UserId].freeThread
-		if freeThread then
-			pcall(task.cancel, freeThread)
+		if typeof(freeThread) == "thread" and coroutine.status(freeThread) == "suspended" then
+			task.cancel(freeThread)
 		end
 		return
 	end
@@ -61,8 +61,8 @@ end
 local function freeUser(userId: number)
 	if userCache[userId] then
 		local freeThread = userCache[userId].freeThread
-		if freeThread then
-			pcall(task.cancel, freeThread)
+		if typeof(freeThread) == "thread" and coroutine.status(freeThread) == "suspended" then
+			task.cancel(freeThread)
 			userCache[userId].freeThread = nil
 		end
 	end

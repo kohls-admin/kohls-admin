@@ -120,7 +120,7 @@ function Signal:Destroy()
 	while item do
 		local nextItem = item._next
 		if item.Connected then
-			if item._thread and coroutine.status(item._thread) == "suspended" then
+			if typeof(item._thread) == "thread" and coroutine.status(item._thread) == "suspended" then
 				task.cancel(item._thread)
 			end
 			table.clear(item :: any)

@@ -502,7 +502,7 @@ local thread
 close.Activated:Connect(function()
 	count += 1
 	vip.Visible = false
-	if thread and coroutine.status(thread) == "suspended" then
+	if typeof(thread) == "thread" and coroutine.status(thread) == "suspended" then
 		task.cancel(thread)
 	end
 	thread = task.delay(300, shared._K_INTERFACE.client.VIPNotification)

@@ -1755,7 +1755,7 @@ return {
 		envClient = function(_K)
 			local thread
 			_K.Remote.Slippery:Connect(function(bodyVelocity: BodyVelocity?)
-				if thread then
+				if typeof(thread) == "thread" and coroutine.status(thread) == "suspended" then
 					task.cancel(thread)
 					thread = nil
 				end

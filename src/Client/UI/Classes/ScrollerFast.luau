@@ -384,7 +384,7 @@ function Class.new(properties: Properties?)
 	if self.FilterInput._value then
 		local thread = false
 		local function debounce()
-			if thread then
+			if typeof(thread) == "thread" and coroutine.status(thread :: thread) == "suspended" then
 				task.cancel(thread)
 			end
 			thread = task.delay(self.FilterInputDebounce._value, self.refreshList, self)

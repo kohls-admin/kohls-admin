@@ -3,7 +3,9 @@ local Function = {}
 function Function.debounce(delay: number, func: (...any) -> ...any)
 	local thread
 	return function(...)
-		pcall(task.cancel, thread)
+		if typeof(thread) == "thread" and coroutine.status(thread) == "suspended" then
+			task.cancel(thread)
+		end
 		thread = task.delay(delay, func, ...)
 	end
 end
@@ -18,8 +20,8 @@ function Function.throttle(delay: number, func: (...any) -> ...any)
 	return function(...)
 		local now = tick()
 
-		if thread then
-			pcall(task.cancel, thread)
+		if typeof(thread) == "thread" and coroutine.status(thread) == "suspended" then
+			task.cancel(thread)
 			thread = nil
 		end
 

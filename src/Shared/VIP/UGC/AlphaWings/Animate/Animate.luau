@@ -20,8 +20,8 @@ end
 local tracks = {}
 
 function Animate.play(rig: MeshPart, sequence: KeyframeSequence, loop: boolean?)
-	if tracks[rig] then
-		pcall(task.cancel, tracks[rig])
+	if typeof(tracks[rig]) == "thread" and coroutine.status(tracks[rig]) == "suspended" then
+		task.cancel(tracks[rig])
 	end
 	tracks[rig] = coroutine.running()
 
