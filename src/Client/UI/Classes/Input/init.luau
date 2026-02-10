@@ -407,6 +407,9 @@ function Class.new(properties: Properties?)
 
 			Activated = function()
 				self._input.Text = ""
+				self.DisplayText("", true)
+				self.Value("", true)
+				textState("", true)
 			end,
 		},
 
