@@ -5,7 +5,6 @@ local _K = require(script.Parent.Parent)
 local CompletionData = require(script:WaitForChild("CompletionData"))
 
 local UI = require(script.Parent:WaitForChild("UI"))
-local prefix = _K.getCommandPrefix()
 
 local validState = UI.state(nil)
 local indicatorColor = UI.compute(function()
@@ -642,7 +641,7 @@ updateCompletion = function()
 	elseif
 		not quote
 		and data.suggestionType ~= "History"
-		and string.find(completion, `[ {_K.Util.String.escapePattern(prefix)}]`)
+		and string.find(completion, `[ {_K.Util.String.escapePattern(_K.getCommandPrefix())}]`)
 	then
 		completion = `"{completion}"`
 	end
@@ -775,18 +774,17 @@ return {
 		end
 		initialized = true
 
-		prefix = _K.getCommandPrefix()
-		Input.Value(prefix, true)
+		Input.Value(_K.getCommandPrefix(), true)
 		CommandBar.Parent = UI.TopbarFrame
 		_K.client.hotkeys.commandBar =
 			{ key = UI.state(Enum.KeyCode.Semicolon), mods = UI.state({}), callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
 
+		local lastPrefix = _K.getCommandPrefix()
 		local function updatePrefix()
-			local value = _K.getCommandPrefix()
-			local oldPrefix = prefix
-			prefix = value
-			Input.Value(value .. string.sub(Input._input.Text, #oldPrefix + 1), true)
+			local prefix = _K.getCommandPrefix()
+			Input.Value(prefix .. string.sub(Input._input.Text, #lastPrefix + 1), true)
+			lastPrefix = prefix
 		end
 		_K.client.settings.prefix:Connect(updatePrefix)
 		_K.client.playerPrefix:Connect(updatePrefix)
@@ -818,7 +816,7 @@ return {
 		Input._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
 			local cursorPosition = Input._input.CursorPosition
 			if cursorPosition ~= -1 then
-				local prefixPosition = #prefix + 1
+				local prefixPosition = #_K.getCommandPrefix() + 1
 				if cursorPosition < prefixPosition then
 					Input._input.CursorPosition = prefixPosition
 					return
@@ -852,6 +850,7 @@ return {
 					return Input._input:CaptureFocus()
 				end
 
+				local prefix = _K.getCommandPrefix()
 				if Input._input.Text ~= prefix and #data.commands < 1 then
 					UI.Sound.Negative:Play()
 					return Input._input:CaptureFocus()
@@ -914,6 +913,7 @@ return {
 				return
 			end
 
+			local prefix = _K.getCommandPrefix()
 			local prefixLen = #prefix
 			local text = Input._input.Text
 
