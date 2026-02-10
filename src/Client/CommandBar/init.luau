@@ -900,49 +900,55 @@ return {
 			return
 		end)
 
-		local isUpdating = false
-		Input._input:GetPropertyChangedSignal("Text"):Connect(function()
-			if isUpdating then
+		local updating = {}
+		local function updateInput(input: any, autocomplete: boolean?)
+			if updating[input] then
 				return
 			end
-			isUpdating = true
+			updating[input] = true
 
-			if currentCompletion and UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
+			if autocomplete and currentCompletion and UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
 				completeSuggestion()
-				isUpdating = false
+				updating[input] = false
 				return
 			end
 
 			local prefix = _K.getCommandPrefix()
 			local prefixLen = #prefix
-			local text = Input._input.Text
+			local text = input._input.Text
 
 			-- prepend prefix
 			if string.find(text, prefix, 1, true) ~= 1 then
-				Input._input.CursorPosition += prefixLen
+				input._input.CursorPosition += prefixLen
 				text = prefix .. text
-				Input.Value(text, true)
-				Input._input.CursorPosition += prefixLen
+				input.Value(text, true)
+				input._input.CursorPosition += prefixLen
 			end
 
 			-- trim whitespace after prefix
 			local trimmed = prefix .. _K.Util.String.trimStart(string.sub(text, prefixLen + 1))
-			if trimmed ~= Input._input.Text then
+			if trimmed ~= input._input.Text then
 				text = trimmed
-				Input.Value(trimmed, true)
+				input.Value(trimmed, true)
 			end
 
 			if text ~= prefix then
 				-- remove duplicate starting prefix
 				if string.find(text, prefix, prefixLen + 1, true) == prefixLen + 1 then
 					text = string.sub(text, prefixLen + 1)
-					Input.Value(text, true)
+					input.Value(text, true)
 				else
-					Input.DisplayText(_K.Util.String.escapeRichText(text), true)
+					input.DisplayText(_K.Util.String.escapeRichText(text), true)
 				end
 			end
 
-			isUpdating = false
+			updating[input] = false
+		end
+
+		_K.client.updateCommandInput = updateInput
+
+		Input._input:GetPropertyChangedSignal("Text"):Connect(function()
+			updateInput(Input, true)
 		end)
 	end,
 	show = function()
