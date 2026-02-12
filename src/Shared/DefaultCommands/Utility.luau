@@ -1115,6 +1115,7 @@ return {
 	},
 	{
 		name = "rejoin",
+		aliases = { "rj" },
 		description = "Rejoins the server.",
 
 		run = function(context)
