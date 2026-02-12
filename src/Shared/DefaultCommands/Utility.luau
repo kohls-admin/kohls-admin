@@ -1098,6 +1098,31 @@ return {
 		end,
 	},
 	{
+		name = "gameid",
+		aliases = {},
+		description = "Displays the current GameId.",
+		runClient = function(context, volume)
+			context._K.Notify({ From = "GameId", Text = tostring(game.GameId), Selectable = true })
+		end,
+	},
+	{
+		name = "jobid",
+		aliases = {},
+		description = "Displays the current JobId.",
+		runClient = function(context, volume)
+			context._K.Notify({ From = "JobId", Text = tostring(game.JobId), Selectable = true })
+		end,
+	},
+	{
+		name = "placeid",
+		aliases = {},
+		description = "Displays the current PlaceId.",
+		runClient = function(context, volume)
+			context._K.Notify({ From = "PlaceId", Text = tostring(game.PlaceId), Selectable = true })
+		end,
+	},
+
+	{
 		name = "showfps",
 		aliases = { "getfps", "checkfps", "playerfps" },
 		description = "Displays the frames per second of a player.",
