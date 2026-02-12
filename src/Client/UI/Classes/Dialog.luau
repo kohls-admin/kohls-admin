@@ -21,6 +21,7 @@ local DEFAULT = {
 	RightAction = UI.Nil,
 	ExitButton = false,
 	Close = UI.Function,
+	Selectable = false,
 	Visible = true,
 	Width = 256,
 }
@@ -238,10 +239,13 @@ function Class.new(properties: Properties?)
 			InputBegan = dragInputBegan,
 		},
 
-		UI.new "TextLabel" {
+		UI.new "TextBox" {
 			AutoLocalize = false,
 			Name = "Text",
 			BackgroundTransparency = 1,
+			ClearTextOnFocus = false,
+			Interactable = self.Selectable,
+			TextEditable = false,
 			TextColor3 = self.TextColor3,
 			Text = self.Text,
 			TextSize = self.TextSize,
