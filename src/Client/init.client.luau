@@ -387,6 +387,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings,
 				_K.Data.settings.vip
 				and not vipNotificationVisible
 				and (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) < 3
+				and not _K.Auth.hasRestrictedRole(_K.LocalPlayer.UserId)
 			then
 				_K.VIP.popup.Visible = true
 				_K.Flux.cleanup(connections)
