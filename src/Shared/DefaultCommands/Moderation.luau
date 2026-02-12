@@ -607,6 +607,43 @@ return {
 		end,
 	},
 	{
+		name = "setcoregui",
+		aliases = { "coregui" },
+		description = "Enables/disables a CoreGui for one or more player(s)",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) to affect.",
+				shouldRequest = true,
+			},
+			{
+				type = "Enum.CoreGuiType",
+				name = "CoreGui",
+				description = "The CoreGui to enable/disable.",
+			},
+			{
+				type = "boolean",
+				name = "Enabled",
+				description = "If the CoreGui is enabled.",
+				optional = true,
+			},
+		},
+		envClient = function(_K)
+			_K.Remote.SetCoreGuiEnabled:Connect(function(coreType: Enum.CoreGuiType, enabled: boolean)
+				_K.Service.StarterGui:SetCoreGuiEnabled(coreType, if enabled then true else false)
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.SetCoreGuiEnabled }
+		end,
+		run = function(context, players, coreType: Enum.CoreGuiType, enabled: boolean?)
+			for _, player in players do
+				context.env.remote:Fire(player, coreType, enabled)
+			end
+		end,
+	},
+	{
 		name = "toolban",
 		aliases = { "bantools" },
 		description = "Bans one or more player(s) from using tools.",
