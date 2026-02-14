@@ -36,7 +36,7 @@ return function(changes)
 				for _, v in data do
 					local size = #Http:JSONEncode(v) + 1 -- ,value
 
-					if currentChunkSize + size >= LIMIT then
+					if currentChunkSize + size >= LIMIT and currentChunkSize > 2 then
 						currentChunk, currentChunkSize = {}, 2
 						table.insert(chunks, currentChunk)
 					end
