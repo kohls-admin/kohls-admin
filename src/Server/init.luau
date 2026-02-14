@@ -683,6 +683,10 @@ return function(_K)
 			end
 			player:SetAttribute("_KInitialJoin", initialJoinTime)
 
+			if _K.Service.Run:IsStudio() then
+				_K.Auth.userRoleAdd(player.UserId, "creator")
+			end
+
 			if (_K.Data.settings.welcomeBadgeId or 0) > 0 then
 				task.spawn(awardBadge, player.UserId, _K.Data.settings.welcomeBadgeId)
 			end
