@@ -500,8 +500,9 @@ local function invalidSuggestion(data, err, pos, text)
 	if data.argIndex == 1 then -- command
 		-- TODO: inline argument types if command
 		-- show command aliases too!
-		Tooltip.Text =
-			string.format(argumentFormat, _K.Util.String.escapeRichText(suggestion), "command", value.description)
+		local desc = value.description
+		local description = if type(value) == "table" and type(desc) == "string" then desc else "?"
+		Tooltip.Text = string.format(argumentFormat, _K.Util.String.escapeRichText(suggestion), "command", description)
 	end
 	return
 end
