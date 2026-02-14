@@ -642,7 +642,7 @@ return {
 
 				task.spawn(function()
 					local ok, model = _K.Util.Retry(function()
-						return _K.Service.Players:CreateHumanoidModelFromUserId(_K.LocalPlayer.UserId)
+						return _K.Service.Players:CreateHumanoidModelFromUserId(math.max(1, _K.LocalPlayer.UserId))
 					end)
 					if not ok then
 						model = _K.Flux.new "Model" {

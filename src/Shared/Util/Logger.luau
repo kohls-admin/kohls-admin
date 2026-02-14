@@ -77,7 +77,7 @@ function Logger:log(text: string, level: LogType, userId: number?, noAppend: boo
 		text = text,
 		level = Logger:encode(level),
 		time = workspace:GetServerTimeNow(),
-		from = userId,
+		from = if userId then math.abs(userId) else nil,
 	}
 
 	if not noAppend then
