@@ -1280,13 +1280,20 @@ return {
 			wire.SourceInstance = audioTextToSpeech
 			wire.TargetInstance = deviceOutput
 
-			audioTextToSpeech.Ended:Once(function()
+			local function cleanup()
+				audioTextToSpeech:Unload()
 				audioTextToSpeech:Destroy()
 				deviceOutput:Destroy()
 				wire:Destroy()
-			end)
+			end
 
-			audioTextToSpeech:Play()
+			local status = audioTextToSpeech:LoadAsync()
+			if status == Enum.AssetFetchStatus.Success then
+				audioTextToSpeech.Ended:Once(cleanup)
+				audioTextToSpeech:Play()
+			else
+				cleanup()
+			end
 		end,
 	},
 	{
