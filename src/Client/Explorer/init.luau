@@ -99,7 +99,6 @@ end
 local function sortNodes(A: Instance, B: Instance)
 	local a, b = NODES[A], NODES[B]
 	if not a or not b then
-		print(A, B)
 		return false
 	end
 	return a.Index < b.Index

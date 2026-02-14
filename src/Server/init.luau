@@ -635,7 +635,6 @@ return function(_K)
 			end
 
 			if action == "PASTE" and selected then
-				print(data, selected)
 				for _, copy: Instance in data do
 					local wasArchivable = copy.Archivable
 					copy.Archivable = true
