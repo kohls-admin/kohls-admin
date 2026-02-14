@@ -11,6 +11,7 @@ Use Kohl's Admin to:
 	- 🛠️ Easily moderate your game!
 	- 💵 Earn Robux by selling gamepasses and more!
 	- ✨ Enhance your experience with fun and useful commands!
+	- ⚙️ Adjust game settings to your liking!
 
 💡 Have a suggestion or a problem? Check out our community resources:
 https://devforum.roblox.com/t/-/3163723
