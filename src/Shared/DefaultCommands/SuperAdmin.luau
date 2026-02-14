@@ -217,6 +217,8 @@ return {
 				end
 			)
 
+			_K.Remote.Incognito:Fire()
+
 			return env
 		end,
 
@@ -247,10 +249,6 @@ return {
 			local cleanup = {}
 
 			_K.Util.SafePlayerAdded(function(player: Player)
-				for hiddenPlayer, hideCharacter in env.hidden do
-					local hiddenRank = _K.Auth.getRank(hiddenPlayer.UserId)
-					env.remote:FireAll(hiddenPlayer.UserId, hiddenRank, hideCharacter)
-				end
 				cleanup[player] = player.CharacterAdded:Connect(characterAdded)
 				if player.Character then
 					characterAdded(player.Character)
@@ -263,6 +261,13 @@ return {
 				if env.hidden[player] ~= nil then
 					env.hidden[player] = nil
 					env.remote:FireAll(player.UserId)
+				end
+			end)
+
+			env.remote:Connect(function(player)
+				for hiddenPlayer, hideCharacter in env.hidden do
+					local hiddenRank = _K.Auth.getRank(hiddenPlayer.UserId)
+					env.remote:Fire(player, hiddenPlayer.UserId, hiddenRank, hideCharacter)
 				end
 			end)
 
