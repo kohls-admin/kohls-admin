@@ -131,10 +131,9 @@ return {
 			return { remote = _K.Remote.ForceChat }
 		end,
 		run = function(context, players: { Player }, message: string)
-			for _, player in context._K.Service.Players:GetPlayers() do
+			for _, player in players do
 				context.env.remote:Fire(player, message)
 			end
-			return
 		end,
 	},
 	{
