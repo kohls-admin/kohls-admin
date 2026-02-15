@@ -5,7 +5,9 @@ NOTE = [[
 -- Use usernames or userIds to add a user to a list
 -- For example;	Admins = {'MyBestFriend', 'Telamon', 261}
 
-local Banned = { "someoneyoudislike" } -- For those who have wronged you, & this guy
+local Banned = { 
+-- "someoneyoudislike",
+} -- For those who have wronged you, & this guy
 
 --------------------------------------------------------------
 -- You DO NOT need to add yourself to any of these lists!!! --
