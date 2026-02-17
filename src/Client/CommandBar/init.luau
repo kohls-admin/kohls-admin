@@ -476,7 +476,7 @@ local function invalidSuggestion(data, err, pos, text)
 			argumentFormat,
 			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
 			_K.Util.String.escapeRichText(data.suggestionType.name) .. if data.argDefinition.optional then "?" else "",
-			data.argDefinition.description
+			data.argDefinition.description or "No description."
 		)
 
 	local frame = SuggestionFrame:Clone()
@@ -500,7 +500,7 @@ local function invalidSuggestion(data, err, pos, text)
 	if data.argIndex == 1 then -- command
 		-- TODO: inline argument types if command
 		-- show command aliases too!
-		local desc = value.description
+		local desc = value.description or "No description."
 		local description = if type(value) == "table" and type(desc) == "string" then desc else "?"
 		Tooltip.Text = string.format(argumentFormat, _K.Util.String.escapeRichText(suggestion), "command", description)
 	end
@@ -558,7 +558,7 @@ updateCompletion = function()
 			argumentFormat,
 			_K.Util.String.escapeRichText(data.argDefinition.displayName or data.argDefinition.name),
 			_K.Util.String.escapeRichText(data.suggestionType.name) .. if data.argDefinition.optional then "?" else "",
-			data.argDefinition.description
+			data.argDefinition.description or "No description."
 		)
 		Tooltip.Visible = true
 		TooltipFrame.Visible = true

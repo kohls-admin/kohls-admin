@@ -312,7 +312,7 @@ function Commands.new(_K)
 					command.argTooltip,
 					`\n<b><sc>{arg.name}</sc> <font transparency="0.66"><i>&lt;{arg.type}{if arg.optional
 						then `?`
-						else ""}&gt;</i></font></b>\n{arg.description}`
+						else ""}&gt;</i></font></b>\n{arg.description or "No description."}`
 				)
 				if arg.ignoreSelf then
 					table.insert(command.argTooltip, `\t<font transparency="0.5"><b>ignoreSelf:</b> true</font>`)
@@ -355,6 +355,8 @@ function Commands.new(_K)
 			command.roleText = table.concat(roles, ", ")
 
 			local credit = command.credit or "Kohl @Scripth"
+			local description = command.description or "No description."
+
 			command.creditText = if type(credit) == "table" then table.concat(credit, ", ") else credit
 			command.tipText =
 				`<b>Restricted to:</b> {command.roleText}{command.argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {command.creditText}</font>`
@@ -365,11 +367,11 @@ function Commands.new(_K)
 			command.richText = `{roleCircle}<b>{escape(command.rawTextNoAlias)}</b> <font transparency="0.66">{escape(
 				command.aliasText
 			)}</font>`
-			command.richDesc = `<font transparency="0.33">{command.description}</font>`
+			command.richDesc = `<font transparency="0.33">{description}</font>`
 
-			command.filterTest = string.lower(`{command.rawText} {command.description}`)
+			command.filterTest = string.lower(`{command.rawText} {description}`)
 			command.filterText = string.lower(command.rawText)
-			command.filterDesc = string.lower(command.description)
+			command.filterDesc = string.lower(description)
 		end
 
 		command.colorAuth = if command.LocalPlayerAuthorized
@@ -418,15 +420,16 @@ function Commands.new(_K)
 						)
 						else `{command.roleCircle}<font transparency="0.5">{command.rawText}</font>`
 
+					local description = command.description or "No description."
 					local descFound = string.find(command.filterDesc, self._filter, 1, true)
 					command.renderDesc = if descFound
 						then string.format(
 							filterRichFormat,
-							escape(string.sub(command.description, 1, descFound - 1)),
-							escape(string.sub(command.description, descFound, descFound + #self._filter - 1)),
-							escape(string.sub(command.description, descFound + #self._filter))
+							escape(string.sub(description, 1, descFound - 1)),
+							escape(string.sub(description, descFound, descFound + #self._filter - 1)),
+							escape(string.sub(description, descFound + #self._filter))
 						)
-						else `<font transparency="0.5">{command.description}</font>`
+						else `<font transparency="0.5">{description}</font>`
 
 					table.insert(new, command)
 				end
