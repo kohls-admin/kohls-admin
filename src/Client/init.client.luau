@@ -378,7 +378,12 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings,
 				Close = vipNotificationClosed,
 			})
 		end)
+
 		_K.Remote.VIPNotification:Connect(_K.client.VIPNotification)
+		_K.Hook.postCommand:Connect(_K.client.VIPNotification)
+		_K.client.dashboard.Commands._instance:GetPropertyChangedSignal("Visible"):Once(_K.client.VIPNotification)
+		_K.client.dashboard.Window._instance:GetPropertyChangedSignal("Visible"):Once(_K.client.VIPNotification)
+
 		_K.VIP.popup.Parent = UI.LayerTopInset
 
 		local connections
