@@ -45,7 +45,7 @@ function Store.loadStore(name, scope)
 	if not ok then
 		if RunService:IsStudio() and type(result) == "string" then
 			if string.find(result :: string, "publish", 1, true) then
-				error("You must publish this game to Roblox.")
+				warn("You must publish this game to Roblox for full features.")
 			end
 		end
 		ok, result = Util.Retry(function()
@@ -60,7 +60,7 @@ function Store.loadStore(name, scope)
 	local success, err = pcall(result.GetAsync, result, "__TEST")
 	if not success then
 		if string.find(err, "Studio access", 1, true) then
-			error("Enable Studio access to API services in Game Settings.")
+			warn("Enable Studio access to API services in Game Settings for full features.")
 		end
 	end
 
