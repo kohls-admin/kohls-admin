@@ -235,6 +235,7 @@ title.TextColor3 = Color3.new(1, 1, 1)
 title.TextSize = 24
 title.TextTransparency = 0.25
 title.TextWrapped = true
+title.RichText = true
 title.Visible = true
 title.Parent = titleFrame
 
@@ -442,14 +443,23 @@ task.spawn(function()
 	}
 end)
 
-local function updatePrice(label: TextLabel, id: number)
+local function updateLabelPrice(label: TextLabel, id: number)
 	local ok, result = pcall(MarketplaceService.GetProductInfoAsync, MarketplaceService, id, Enum.InfoType.Asset)
 	if ok then
 		label.Text = result.PriceInRobux
 	end
 end
 
-task.spawn(updatePrice, originalPriceLabel, productId)
+local function setSalePrice(onSale: boolean?)
+	productId = if onSale then saleProductId else originalProductId
+	favorite.Visible = not onSale
+	originalPrice.Visible = onSale
+	title.Visible = not onSale
+	buy.Price.Text = if onSale then "479" else "799"
+	task.spawn(updateLabelPrice, buy.Price, productId)
+end
+
+task.spawn(updateLabelPrice, originalPriceLabel, productId)
 task.spawn(function()
 	local initialJoin = LocalPlayer:GetAttribute("_KInitialJoin")
 	while not initialJoin do
@@ -457,31 +467,23 @@ task.spawn(function()
 		initialJoin = LocalPlayer:GetAttribute("_KInitialJoin")
 	end
 
-	local duration = workspace:GetServerTimeNow() - initialJoin
-	if duration > 15 * 60 then
-		task.spawn(updatePrice, buy.Price, productId)
-		return
+	local elapsed = workspace:GetServerTimeNow() - initialJoin
+
+	if elapsed < 15 * 60 then
+		setSalePrice(false)
+		while elapsed < 15 * 60 do
+			task.wait(0.5)
+			elapsed = (workspace:GetServerTimeNow() - initialJoin)
+			local duration = (15 * 60) - elapsed
+			title.Text = `<font color="#0f0" transparency="0">40% OFF SALE</font> in {string.format(
+				"%02d:%02d",
+				duration // 60,
+				duration % 60
+			)}`
+		end
 	end
 
-	productId = saleProductId
-	favorite.Visible = false
-	originalPrice.Visible = true
-	title.Visible = true
-	buy.Price.Text = "479"
-	task.spawn(updatePrice, buy.Price, productId)
-
-	repeat
-		task.wait(0.5)
-		duration = (15 * 60) - (workspace:GetServerTimeNow() - initialJoin)
-		title.Text = `40% OFF for {string.format("%02d:%02d", duration // 60, duration % 60)}`
-	until duration < 0
-
-	productId = originalProductId
-	favorite.Visible = true
-	originalPrice.Visible = false
-	title.Visible = false
-	buy.Price.Text = "799"
-	task.spawn(updatePrice, buy.Price, productId)
+	setSalePrice(true)
 end)
 
 buy.Activated:Connect(promptPurchaseVIP)

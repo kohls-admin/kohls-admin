@@ -364,7 +364,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings,
 			vipNotificationVisible = true
 
 			local initialJoin = _K.LocalPlayer:GetAttribute("_KInitialJoin")
-			local line = if workspace:GetServerTimeNow() - initialJoin < 15 * 60
+			local line = if workspace:GetServerTimeNow() - initialJoin > 15 * 60
 				then "Unlock exclusive chat commands in <b>10k+</b> experiences for <font color='#0f0'><b>40% OFF</b></font>!"
 				else "Unlock <b>exclusive</b> chat commands in <b>10k+</b> experiences!"
 

@@ -268,7 +268,7 @@ return function(_K)
 						end
 
 						local initialJoin = player:GetAttribute("_KInitialJoin") or 0
-						local id = if workspace:GetServerTimeNow() - initialJoin > 15 * 60
+						local id = if workspace:GetServerTimeNow() - initialJoin < 15 * 60
 							then VIP_UGC_ID
 							else VIP_UGC_SALE_ID
 
