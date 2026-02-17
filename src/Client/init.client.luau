@@ -351,8 +351,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings,
 
 		_K.client.VIPNotification = _K.Util.Function.throttle(300, function()
 			if
-				count > 3
-				or vipNotificationVisible
+				vipNotificationVisible
 				or _K.VIP.popup.Visible
 				or not _K.Data.settings.vip
 				or not _K.Data.settings.chatCommandsNotification

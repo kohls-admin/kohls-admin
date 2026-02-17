@@ -496,16 +496,8 @@ view.Activated:Connect(function()
 	vip.ZIndex = shared._K_INTERFACE.Registry.commands.cmds.env.window._instance.ZIndex - 1
 end)
 
-local count = 0
-local thread
-
 close.Activated:Connect(function()
-	count += 1
 	vip.Visible = false
-	if typeof(thread) == "thread" and coroutine.status(thread) == "suspended" then
-		task.cancel(thread)
-	end
-	thread = task.delay(300, shared._K_INTERFACE.client.VIPNotification)
 end)
 
 MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player, status, results)
