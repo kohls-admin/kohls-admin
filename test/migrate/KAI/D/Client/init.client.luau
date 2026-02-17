@@ -582,7 +582,15 @@ end)
 cm.Get.Activated:Connect(function()
 	s.Market:PromptPurchase(plr, 172732271)
 end)
-for i, v in { { 129760409821083, 5 }, { 77680874300094, 45 }, { 130880915606069, 795 } } do
+for i, v in
+	{
+		{ 129760409821083, 10 },
+		{ 77680874300094, 80 },
+		{ 88978146769822, 320 },
+		{ 115403290087767, 480 },
+		{ 130880915606069, 800 },
+	}
+do
 	local obj = cm["D" .. i]
 	local success, info = pcall(s.Market.GetProductInfoAsync, s.Market, v[1], Enum.InfoType.Asset)
 	obj.Text = (success and info.PriceInRobux or v[2]) .. " R$"
@@ -592,7 +600,8 @@ for i, v in { { 129760409821083, 5 }, { 77680874300094, 45 }, { 130880915606069,
 	end)
 end
 s.Market.PromptBulkPurchaseFinished:Connect(function(player, status, results)
-	if player ~= plr or (results.Items[1].id ~= 130880915606069) then
+	local id = results.Items[1].id
+	if player ~= plr or (id ~= 88978146769822 and id ~= 115403290087767 and id ~= 130880915606069) then
 		return
 	end
 	server:FireServer(f.uID .. "KVIPCheck")

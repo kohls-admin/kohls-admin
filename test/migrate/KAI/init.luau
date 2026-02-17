@@ -1650,9 +1650,9 @@ function f.Load(plr: Player)
 		or f.HasPass(plr, 5411126)
 	then
 		donorValue = 4
-	elseif f.HasPass(plr, 5391361) or f.Has(plr, 441134066) or f.Has(plr, 423601416) then
+	elseif f.Has(plr, 115403290087767) or f.HasPass(plr, 5391361) or f.Has(plr, 441134066) or f.Has(plr, 423601416) then
 		donorValue = 3
-	elseif f.HasPass(plr, 5391359) or f.Has(plr, 441133423) or f.Has(plr, 313102724) then
+	elseif f.Has(plr, 88978146769822) or f.HasPass(plr, 5391359) or f.Has(plr, 441133423) or f.Has(plr, 313102724) then
 		donorValue = 2
 	elseif f.HasPass(plr, 5391355) or f.HasPass(plr, 5391356) or f.Has(plr, 441133305) or f.Has(plr, 441133363) then
 		donorValue = 1
@@ -1783,14 +1783,18 @@ function ServerEvent(plr: Player, event, arguments, uID)
 			plr.KShine.Value = shine
 		end
 	elseif event == "KBulkPurchase" then
-		local allowed = { 129760409821083, 77680874300094, 130880915606069 }
+		local allowed = { 129760409821083, 77680874300094, 88978146769822, 115403290087767, 130880915606069 }
 		if table.find(allowed, arguments) then
 			local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(arguments) } }
 			services.Marketplace:PromptBulkPurchase(plr, items, {})
 		end
 	elseif event == "KVIPCheck" then
 		local value = 4
-		if f.Has(plr, 130880915606069) and plr:FindFirstChild("KDonor") and value > plr.KDonor.Value then
+		if
+			f.Has(plr, 88978146769822)
+			or f.Has(plr, 115403290087767)
+			or f.Has(plr, 130880915606069) and plr:FindFirstChild("KDonor") and value > plr.KDonor.Value
+		then
 			plr.KDonor.Value = math.max(value, plr.KDonor.Value)
 			DonorCache[plr.UserId] = math.max(value, DonorCache[plr.UserId])
 			if f.isVIPAdmin(plr) then

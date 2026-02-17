@@ -32,7 +32,7 @@ c.Parent = a
 local d = Instance.new "Frame"
 d.Name = "BG"
 d.ZIndex = 7
-d.Size = UDim2.new(1, 0, 0, 198)
+d.Size = UDim2.new(1, 0, 0, 245)
 d.BorderColor3 = Color3.fromRGB(0, 0, 0)
 d.BackgroundTransparency = 0.7
 d.Position = UDim2.new(0, 0, 0, 21)
@@ -94,10 +94,33 @@ g.TextStrokeTransparency = 0.75
 g.TextSize = 18
 g.TextColor3 = Color3.fromRGB(255, 255, 255)
 g.TextYAlignment = 0
-g.Text = "VIP Commands"
+g.Text = "VIP DONATIONS"
 g.TextWrapped = true
 g.Font = 4
 g.Parent = d
+
+local h = Instance.new "TextLabel"
+h.Name = "T4"
+h.AutoLocalize = false
+h.Localize = false
+h.ZIndex = 10
+h.Size = UDim2.new(1, -10, 0, 20)
+h.BorderColor3 = Color3.fromRGB(0, 0, 0)
+h.BackgroundTransparency = 1
+h.Position = UDim2.new(0, 5, 0, 195)
+h.BorderSizePixel = 0
+h.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+h.FontSize = 6
+h.TextStrokeTransparency = 0.75
+h.TextSize = 18
+h.TextColor3 = Color3.fromRGB(255, 255, 255)
+h.TextYAlignment = 0
+h.Text = "ELITE DONATION"
+h.TextWrapped = true
+h.TextWrap = true
+h.Font = 4
+h.Parent = d
+
 local uIGradient_g = Instance.new("UIGradient")
 uIGradient_g.Name = "UIGradient"
 uIGradient_g.Color = ColorSequence.new({
@@ -105,7 +128,8 @@ uIGradient_g.Color = ColorSequence.new({
 	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 127)),
 })
 uIGradient_g.Rotation = -90
-uIGradient_g.Parent = g
+uIGradient_g.Parent = h
+
 local i = Instance.new "TextButton"
 i.Name = "Close"
 i.AutoLocalize = false
@@ -197,7 +221,7 @@ n.Visible = false
 n.Size = UDim2.new(0, 82, 0, 20)
 n.BorderColor3 = Color3.fromRGB(0, 0, 0)
 n.BackgroundTransparency = 0.5
-n.Position = UDim2.new(0, 0, 0, 220)
+n.Position = UDim2.new(0, 0, 0, 267)
 n.BorderSizePixel = 0
 n.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 
@@ -207,15 +231,36 @@ n.TextColor3 = Color3.fromRGB(255, 255, 255)
 n.Text = "Trail"
 n.Font = 4
 n.Parent = c
+
+local o = Instance.new "TextButton"
+o.Name = "D4"
+o.AutoLocalize = false
+o.Localize = false
+o.ZIndex = 9
+o.Size = UDim2.new(0, 75, 0, 20)
+o.BorderColor3 = Color3.fromRGB(0, 0, 0)
+o.BackgroundTransparency = 0.5
+o.Position = UDim2.new(0.5, 3, 0, 190)
+o.BorderSizePixel = 0
+o.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+o.FontSize = 6
+o.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
+o.TextStrokeTransparency = 0.9
+o.TextSize = 18
+o.TextColor3 = Color3.fromRGB(255, 255, 255)
+o.Text = "400 R$"
+o.Font = 4
+o.Parent = c
+
 local p = Instance.new "TextButton"
 p.Name = "D3"
 p.AutoLocalize = false
 
 p.ZIndex = 9
-p.Size = UDim2.new(0, 84, 0, 20)
+p.Size = UDim2.new(0, 75, 0, 20)
 p.BorderColor3 = Color3.fromRGB(0, 0, 0)
 p.BackgroundTransparency = 0.5
-p.Position = UDim2.new(0, 83, 0, 190)
+p.Position = UDim2.new(0.5, -78, 0, 190)
 p.BorderSizePixel = 0
 p.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 
@@ -253,7 +298,7 @@ r.Visible = false
 r.Size = UDim2.new(0, 82, 0, 20)
 r.BorderColor3 = Color3.fromRGB(0, 0, 0)
 r.BackgroundTransparency = 0.5
-r.Position = UDim2.new(1, -82, 0, 220)
+r.Position = UDim2.new(1, -82, 0, 267)
 r.BorderSizePixel = 0
 r.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 
@@ -263,6 +308,26 @@ r.TextColor3 = Color3.fromRGB(255, 200, 0)
 r.Text = "Shine"
 r.Font = 4
 r.Parent = c
+
+local s = Instance.new "TextButton"
+s.Name = "D5"
+s.AutoLocalize = false
+s.Localize = false
+s.ZIndex = 9
+s.Size = UDim2.new(0, 156, 0, 20)
+s.BorderColor3 = Color3.fromRGB(0, 0, 0)
+s.BackgroundTransparency = 0.5
+s.Position = UDim2.new(0.5, -78, 0, 240)
+s.BorderSizePixel = 0
+s.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+s.FontSize = 6
+s.TextStrokeTransparency = 0.75
+s.TextSize = 18
+s.TextColor3 = Color3.fromRGB(0, 200, 0)
+s.Text = "800 R$"
+s.Font = 4
+s.Parent = c
+
 local t = Instance.new "TextButton"
 t.Name = "Hat"
 t.AutoLocalize = false
@@ -272,7 +337,7 @@ t.Visible = false
 t.Size = UDim2.new(0, 84, 0, 20)
 t.BorderColor3 = Color3.fromRGB(0, 0, 0)
 t.BackgroundTransparency = 0.5
-t.Position = UDim2.new(0, 83, 0, 220)
+t.Position = UDim2.new(0, 83, 0, 267)
 t.BorderSizePixel = 0
 t.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 
