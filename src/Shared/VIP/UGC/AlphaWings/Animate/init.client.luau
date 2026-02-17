@@ -21,6 +21,8 @@ end)
 
 game:GetService("RunService").PreSimulation:Connect(function(step)
 	local falling = humanoid.FloorMaterial == Enum.Material.Air
+		and humanoid.RootPart
+		and humanoid.RootPart.Anchored == false
 	local currentY = part.Position.Y
 	local speed = (if lastY then currentY - lastY else part.Velocity.Y) / step
 	lastY = currentY
