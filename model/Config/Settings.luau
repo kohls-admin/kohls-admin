@@ -17,13 +17,17 @@ return {
 	-- Format: ["UserId"] = {Username, Reason, Duration, BannedByUserId}
 	-- Duration: -1 = permanent, 0 = server ban, >0 = temp ban (UTC timestamp)
 	bans = {
-		["2"] = { "John Doe", "He been noob.", 0, 44391621 },
-		["3"] = { "Jane Doe", "She was noob.", 1720922623, 44391621 },
+		-- ["2"] = { "John Doe", "He been noob.", 0, 44391621 },
+		-- ["3"] = { "Jane Doe", "She was noob.", 1720922623, 44391621 },
 	},
 
 	-- 👤 USER ROLES - Assign roles by UserId or Username
 	userRoles = {
-		vip = { "Roblox", 156, game.PrivateServerOwnerId },
+		vip = {
+			-- 156, -- Assign by UserId
+			-- "Roblox", -- Assign by Username
+			game.PrivateServerOwnerId, -- Gives the "vip" role to Private Server Owners
+		},
 		mod = {},
 		admin = {},
 		superadmin = {},
