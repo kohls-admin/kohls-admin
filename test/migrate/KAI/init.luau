@@ -1444,6 +1444,12 @@ function f.Chatted(plr: Player | serverContext, msg: string, cmdbar: boolean?)
 					string.format("INVALID PERMISSIONS FOR:\t%s\tRESTRICTED TO:\t%s", cmd, f.getTitle(v[1][3])),
 					plr
 				)
+				if v[1][3] == 1 then
+					task.delay(1, function()
+						local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = "130880915606069" } }
+						services.Marketplace:PromptBulkPurchase(plr, items, {})
+					end)
+				end
 			else
 				f.Error(string.format("CMD:\t%s\tINVALID SYNTAX:\t%s", f.getExample(v[1]), ms), plr)
 			end
