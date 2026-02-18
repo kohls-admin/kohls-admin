@@ -232,6 +232,14 @@ return function(_K)
 
 			_K.Data.initialize(dataStoreScope)
 
+			if _K.Data.canSave == false then
+				for _, player in _K.Service.Players:GetPlayers() do
+					if player:GetAttribute("_K_READY") then
+						task.spawn(_K.alert, player, `<b>DataStores failed to load!\n{_K.Data.saveError}</b>`, true)
+					end
+				end
+			end
+
 			if _K.Data.settings.vip then
 				local VIP_UGC_ID = "110019084552349"
 				local VIP_UGC_SALE_ID = "115444443724463"
@@ -469,6 +477,10 @@ return function(_K)
 
 			_K.Remote.Init:Fire(player, bans, logs, members, roles, servers, savedSettings, defaultSettings)
 			player:SetAttribute("_K_READY", true)
+
+			if _K.Data.canSave == false then
+				_K.alert(player, `<b>Global save data failed to load:</b>\n{_K.Data.saveError}`, true)
+			end
 
 			if
 				settings.vip

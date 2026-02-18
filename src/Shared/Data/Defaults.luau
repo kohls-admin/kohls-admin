@@ -38,6 +38,8 @@ local Data = {
 		logs = {},
 	},
 	Migrate = {} :: any,
+	canSave = nil,
+	saveError = nil,
 	initialize = nil,
 
 	sizeBans = 0,

@@ -35,9 +35,11 @@ function Store.removeAsync(key: string): (boolean, any)
 	end, math.huge)
 end
 
-function Store.loadStore(name, scope)
+local canSave = true
+
+function Store.loadStore(name, scope): (boolean, DataStore | string)
 	if Store.dataStore then
-		return Store.dataStore
+		return canSave, Store.dataStore
 	end
 
 	print(`[Kohl's Admin] Initializing DataStore {name}...`)
@@ -45,7 +47,9 @@ function Store.loadStore(name, scope)
 	if not ok then
 		if RunService:IsStudio() and type(result) == "string" then
 			if string.find(result :: string, "publish", 1, true) then
-				warn("You must publish this game to Roblox for full features.")
+				result = "You must publish this game to Roblox for full features."
+				canSave = false
+				warn(result)
 			end
 		end
 		ok, result = Util.Retry(function()
@@ -54,19 +58,24 @@ function Store.loadStore(name, scope)
 	end
 
 	if not ok then
-		error(result)
+		canSave = false
+		warn(result)
 	end
 
 	local success, err = pcall(result.GetAsync, result, "__TEST")
 	if not success then
 		if string.find(err, "Studio access", 1, true) then
-			warn("Enable Studio access to API services in Game Settings for full features.")
+			result = "Enable Studio access to API services in Game Settings for full features."
+			canSave = false
+			warn(result)
 		end
 	end
 
-	Store.dataStore = result
+	if canSave then
+		Store.dataStore = result
+	end
 
-	return result
+	return canSave, result
 end
 
 return Store

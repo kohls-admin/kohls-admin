@@ -517,12 +517,16 @@ end
 ----------
 
 function Data.initialize(scope)
-	local ok, result = Data.Store.loadStore(DATA_KEY, scope)
-	if not ok then
-		warn("[Kohl's Admin] Data failed to load: " .. result)
+	local canSave, result = Data.Store.loadStore(DATA_KEY, scope)
+	if not canSave then
+		warn(`[Kohl's Admin] Data failed to load: {result}`)
+		Data.canSave = false
+		Data.saveError = tostring(result)
 		Hook.initDataStore:Fire()
-		return Data
+		return
 	end
+
+	Data.canSave = true
 
 	local okMain, main, metaMain = Data.Store.getAsync("Main")
 	if okMain then
@@ -701,8 +705,6 @@ function Data.initialize(scope)
 
 		tasks:wait()
 	end)
-
-	return Data
 end
 
 return Data
