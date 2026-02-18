@@ -9,8 +9,10 @@ local DEFAULT = {
 	TextColor3 = UI.Theme.PrimaryText,
 	TextStrokeColor3 = UI.Theme.Primary,
 	TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+	TextXAlignment = Enum.TextXAlignment.Left,
 	Title = "",
 	TitleSize = UI.Theme.FontSizeLargest,
+	TitleTextXAlignment = Enum.TextXAlignment.Left,
 	Activated = false,
 	ActionText = UI.Nil,
 	ActionTextSize = UI.Theme.FontSize,
@@ -224,7 +226,7 @@ function Class.new(properties: Properties?)
 				Text = self.Title,
 				TextSize = self.TitleSize,
 				TextTruncate = Enum.TextTruncate.SplitWord,
-				TextXAlignment = "Left",
+				TextXAlignment = self.TitleTextXAlignment,
 				FontFace = UI.Theme.FontHeavy,
 				RichText = true,
 
@@ -250,7 +252,7 @@ function Class.new(properties: Properties?)
 			Text = self.Text,
 			TextSize = self.TextSize,
 			TextWrapped = true,
-			TextXAlignment = "Left",
+			TextXAlignment = self.TextXAlignment,
 			FontFace = UI.Theme.Font,
 			RichText = true,
 			Visible = function()
