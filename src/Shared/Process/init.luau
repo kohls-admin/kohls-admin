@@ -198,6 +198,8 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 	local commandErrors = {}
 
 	if ok then
+		Hook.runPreparedCommands:Fire(from, result, rawText)
+
 		for index, command in result do
 			if global then
 				command.global = true
@@ -226,8 +228,6 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 				end
 			end
 		end
-
-		Hook.runPreparedCommands:Fire(from, result, rawText)
 	else
 		table.insert(commandErrors, result)
 	end
