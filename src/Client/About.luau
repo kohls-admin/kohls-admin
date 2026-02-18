@@ -69,7 +69,7 @@ function About.new(_K)
 			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 			TextWrapped = true,
 			Size = UDim2.new(1, 0, 0, 0),
-			Text = "<font transparency='0.5'><b>Stop playing. Take command.</b> Get the same powerful tools used here for your own games. Total control, advanced security, and professional moderation are yours for free.</font>",
+			Text = "<font transparency='0.5'><b>Stop playing. Take command.</b> Get the same powerful tools used here for your own games. Total control, advanced security, and professional moderation are yours for <b>free</b>.</font>",
 			RichText = true,
 
 			UI.new "UISizeConstraint" {
