@@ -106,6 +106,45 @@ function Market.new(_K)
 			end
 		end
 
+		local function updateTitleLabel(button, name: string, display: string?)
+			local titleRef = string.lower(name)
+			local definition = shared._KVIPTitle.definition[titleRef]
+			local label = button._content.Label
+
+			UI.new "Spacer" {
+				Parent = button._content,
+				LayoutOrder = 2,
+			}
+			UI.edit(label, {
+				AutomaticSize = Enum.AutomaticSize.X,
+				Size = UDim2.new(0, 0, 1, 0),
+				FontFace = Font.fromEnum(Enum.Font.FredokaOne),
+				TextSize = UI.Theme.FontSizeLarge,
+				TextColor3 = Color3.new(1, 1, 1),
+			})
+			label.UIFlexItem.FlexMode = Enum.UIFlexMode.Shrink
+
+			if definition then
+				label.Name = "Title"
+				label.Text = `<stroke thickness="1">{name}</stroke>{display or ""}`
+
+				UI.new "UIGradient" {
+					Parent = label,
+					Color = ColorSequence.new(
+						definition.topColor or Color3.new(1, 1, 1),
+						definition.color or Color3.new(1, 1, 1)
+					),
+					Rotation = definition.rotation or 90,
+				}
+				button._content:AddTag("_K" .. titleRef)
+			else
+				UI.new "UIStroke" {
+					Parent = label,
+					Thickness = 1,
+				}
+			end
+		end
+
 		-- CUSTOM UGC
 
 		local customUGC = UI.new "Frame" {
@@ -338,45 +377,6 @@ function Market.new(_K)
 			},
 		}
 
-		local function updateTitleLabel(button, name: string, display: string?)
-			local titleRef = string.lower(name)
-			local definition = shared._KVIPTitle.definition[titleRef]
-			local label = button._content.Label
-
-			UI.new "Spacer" {
-				Parent = button._content,
-				LayoutOrder = 2,
-			}
-			UI.edit(label, {
-				AutomaticSize = Enum.AutomaticSize.X,
-				Size = UDim2.new(0, 0, 1, 0),
-				FontFace = Font.fromEnum(Enum.Font.FredokaOne),
-				TextSize = UI.Theme.FontSizeLarge,
-				TextColor3 = Color3.new(1, 1, 1),
-			})
-			label.UIFlexItem.FlexMode = Enum.UIFlexMode.Shrink
-
-			if definition then
-				label.Name = "Title"
-				label.Text = `<stroke thickness="1">{name}</stroke>{display or ""}`
-
-				UI.new "UIGradient" {
-					Parent = label,
-					Color = ColorSequence.new(
-						definition.topColor or Color3.new(1, 1, 1),
-						definition.color or Color3.new(1, 1, 1)
-					),
-					Rotation = definition.rotation or 90,
-				}
-				button._content:AddTag("_K" .. titleRef)
-			else
-				UI.new "UIStroke" {
-					Parent = label,
-					Thickness = 1,
-				}
-			end
-		end
-
 		local remoteEquipped = {}
 		local function donorEquip(name, button, remote)
 			local equipped = remoteEquipped[remote]
@@ -393,81 +393,90 @@ function Market.new(_K)
 			end
 		end
 
-		for i, pass in _K.VIP.purchasables.donations do
-			local isTitle = _K.Data.settings.vip and i > 4
-			local remote = if isTitle then _K.Remote.Title else _K.Remote.DonorTrail
-			local button
-			button = UI.new "Button" {
-				Parent = gamePasses,
-				LayoutOrder = i,
-				Icon = "rbxasset://textures/ui/common/robux.png",
-				IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
-				IconRightAlign = true,
-				Label = `<font color='{pass.color}'><b>{pass.name}</b></font>`,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				Size = UDim2.new(0, 128, 0, 32),
+		local function generateDonationButtons(parent: Instance)
+			for i, pass in _K.VIP.purchasables.donations do
+				local isTitle = _K.Data.settings.vip and i > 4
+				local remote = if isTitle then _K.Remote.Title else _K.Remote.DonorTrail
+				local button
+				button = UI.new "Button" {
+					Parent = parent,
+					LayoutOrder = i,
+					Icon = "rbxasset://textures/ui/common/robux.png",
+					IconProperties = { ImageColor3 = UI.Theme.PrimaryText },
+					IconRightAlign = true,
+					Label = `<font color='{pass.color}'><b>{pass.name}</b></font>`,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					Size = UDim2.new(0, 128, 0, 32),
 
-				UI.new "TextLabel" {
-					Name = "Price",
-					LayoutOrder = 8,
-					AutoLocalize = false,
-					AutomaticSize = Enum.AutomaticSize.XY,
-					BackgroundTransparency = 1,
-					FontFace = UI.Theme.FontMono,
-					TextSize = UI.Theme.FontSizeLarge,
-					TextColor3 = UI.Theme.PrimaryText,
-					TextStrokeColor3 = UI.Theme.Primary,
-					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-					TextWrapped = true,
-					Size = function()
-						return UDim2.new(0, UI.Theme.FontSizeLarge(), 0, 32)
+					UI.new "TextLabel" {
+						Name = "Price",
+						LayoutOrder = 8,
+						AutoLocalize = false,
+						AutomaticSize = Enum.AutomaticSize.XY,
+						BackgroundTransparency = 1,
+						FontFace = UI.Theme.FontMono,
+						TextSize = UI.Theme.FontSizeLarge,
+						TextColor3 = UI.Theme.PrimaryText,
+						TextStrokeColor3 = UI.Theme.Primary,
+						TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+						TextWrapped = true,
+						Size = function()
+							return UDim2.new(0, UI.Theme.FontSizeLarge(), 0, 32)
+						end,
+						Text = `?`,
+						RichText = true,
+					},
+
+					Activated = function()
+						if
+							button._content.Price.Text == `<b>SHOW</b>`
+							or button._content.Price.Text == `<b>HIDE</b>`
+						then
+							donorEquip(pass.name, button, remote)
+						else
+							_K.PromptBulkPurchase(pass.assetId)
+						end
 					end,
-					Text = `?`,
-					RichText = true,
-				},
+				}
+				UI.new "UIFlexItem" {
+					Parent = button._instance,
+					FlexMode = Enum.UIFlexMode.Fill,
+				}
 
-				Activated = function()
-					if button._content.Price.Text == `<b>SHOW</b>` or button._content.Price.Text == `<b>HIDE</b>` then
-						donorEquip(pass.name, button, remote)
-					else
-						_K.PromptBulkPurchase(pass.assetId)
+				local perkText = if i > 5
+					then "Unlocks:</b></font>\n💬 Chat commands\n👑 All animated accessories\n✨ Custom particle effects\n😎 Exclusive title"
+					elseif
+						i > 4
+					then "Unlocks:</b></font>\n💬 Chat commands\n👑 Floating crown\n✨ Custom particle effects\n😎 Exclusive title"
+					elseif i > 3 then "Unlocks:</b></font>\n💬 Chat commands\n✨ Custom particle effects"
+					else "Unlocks a particle effect!</b></font>"
+
+				UI.new "Tooltip" {
+					Parent = button._instance,
+					Text = `We've poured thousands of hours into Kohl's Admin.\nIf you enjoy it, please donate! ❤️\n\n<font color='#0f0'><b>{perkText}`,
+					Hovering = button._hovering,
+				}
+
+				updateTitleLabel(button, pass.name)
+
+				task.spawn(function()
+					if not DEBUG_SHOW_PRICES then
+						local success, owned = _K.Util.Retry(function()
+							return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.LocalPlayer.UserId, pass.id)
+						end)
+						if success and owned then
+							button._content.Price.Text = `<b>SHOW</b>`
+							return
+						end
 					end
-				end,
-			}
-			UI.new "UIFlexItem" {
-				Parent = button._instance,
-				FlexMode = Enum.UIFlexMode.Fill,
-			}
-
-			local perkText = if i > 5
-				then "Unlocks:</b></font>\n💬 Chat commands\n👑 All animated accessories\n✨ Custom particle effects\n😎 Exclusive title"
-				elseif
-					i > 4
-				then "Unlocks:</b></font>\n💬 Chat commands\n👑 Floating crown\n✨ Custom particle effects\n😎 Exclusive title"
-				elseif i > 3 then "Unlocks:</b></font>\n💬 Chat commands\n✨ Custom particle effects"
-				else "Unlocks a particle effect!</b></font>"
-
-			UI.new "Tooltip" {
-				Parent = button._instance,
-				Text = `We've poured thousands of hours into Kohl's Admin.\nIf you enjoy it, please donate! ❤️\n\n<font color='#0f0'><b>{perkText}`,
-				Hovering = button._hovering,
-			}
-
-			updateTitleLabel(button, pass.name)
-
-			task.spawn(function()
-				if not DEBUG_SHOW_PRICES then
-					local success, owned = _K.Util.Retry(function()
-						return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.LocalPlayer.UserId, pass.id)
-					end)
-					if success and owned then
-						button._content.Price.Text = `<b>SHOW</b>`
-						return
-					end
-				end
-				updateAssetPriceText(button._content.Price, pass.assetId, `<b>SHOW</b>`)
-			end)
+					updateAssetPriceText(button._content.Price, pass.assetId, `<b>SHOW</b>`)
+				end)
+			end
 		end
+
+		_K.client.generateDonationButtons = generateDonationButtons
+
+		generateDonationButtons(gamePasses)
 
 		local vipList = UI.new "Frame" {
 			Name = "VIP",
