@@ -576,6 +576,12 @@ function Data.initialize(scope)
 
 	local okServers, servers = Data.Store.getAsync("Servers")
 	if okServers and servers then
+		-- convert to new format
+		for k, v in servers do
+			if #v == 2 then
+				servers[k] = { k, v[1], v[2] }
+			end
+		end
 		Util.Table.merge(Data.reservedServers, servers)
 		for _, player in Util.Service.Players:GetPlayers() do
 			task.spawn(function()
