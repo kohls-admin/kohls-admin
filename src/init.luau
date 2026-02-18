@@ -190,7 +190,7 @@ function _K.alert(to: number | Player, text: string, isError: boolean?)
 	if type(to) == "number" then
 		to = _K.Service.Players:GetPlayerByUserId(to)
 	end
-	if to then
+	if typeof(to) == "Instance" and to:IsA("Player") then
 		local props = { Text = text, From = if isError then "_K" else nil }
 		if isError then
 			props.TextColor3 = Color3.new(1, 0, 0)
