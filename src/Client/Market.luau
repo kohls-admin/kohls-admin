@@ -438,12 +438,18 @@ function Market.new(_K)
 				Parent = button._instance,
 				FlexMode = Enum.UIFlexMode.Fill,
 			}
+
+			local perkText = if i > 5
+				then "Unlocks:</b></font>\n💬 Chat commands\n👑 All animated accessories\n✨ Custom particle effects\n😎 Exclusive title"
+				elseif
+					i > 4
+				then "Unlocks:</b></font>\n💬 Chat commands\n👑 Floating crown\n✨ Custom particle effects\n😎 Exclusive title"
+				elseif i > 3 then "Unlocks:</b></font>\n💬 Chat commands\n✨ Custom particle effects"
+				else "Unlocks a particle effect!</b></font>"
+
 			UI.new "Tooltip" {
 				Parent = button._instance,
-				Text = `We've poured thousands of hours into Kohl's Admin.\nIf you enjoy it, please donate! ❤️\n\n<b>{if i
-						> 4
-					then "<font color='#0f0'>Gives a title!"
-					else "<font color='#0f0'>Gives a particle effect!"}</font></b>`,
+				Text = `We've poured thousands of hours into Kohl's Admin.\nIf you enjoy it, please donate! ❤️\n\n<font color='#0f0'><b>{perkText}`,
 				Hovering = button._hovering,
 			}
 

@@ -12,7 +12,7 @@ local VIP = { allowedBulkPurchaseIds = {}, effects = {}, popup = Popup, purchasa
 
 -- vip, supervip, premium
 local gamePassDonations = { 5391359, 5391361, 5411126 }
-local assetDonations = { { 441133423, 313102724 }, { 441134066, 423601416 } }
+local assetDonations = { { 88978146769822, 441133423, 313102724 }, { 115403290087767, 441134066, 423601416 } }
 
 -- 5 group member
 -- 4 chat commands/subscriber
