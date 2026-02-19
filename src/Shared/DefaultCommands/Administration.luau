@@ -370,11 +370,10 @@ return {
 		run = function(context, players, id)
 			if type(id) == "number" then
 				context._K.Util.SafeTeleport(id, players)
-			else
-				local code, placeId = unpack(id)
+			else -- reservedServer
 				local options = Instance.new("TeleportOptions")
-				options.ReservedServerAccessCode = code
-				context._K.Util.SafeTeleport(placeId, players, options)
+				options.ReservedServerAccessCode = id[2]
+				context._K.Util.SafeTeleport(id[3], players, options)
 			end
 			for _, player in players do
 				context._K.Remote.Notify:Fire(player, {
