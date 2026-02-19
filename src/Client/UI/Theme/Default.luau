@@ -2,6 +2,15 @@ return {
 	Transparency = 0.08,
 	TextStrokeTransparency = 0.875,
 
+	BackgroundImage = "rbxassetid://104331312960285",
+	BackgroundImageScaleType = Enum.ScaleType.Crop,
+	BackgroundImageTransparency = 1,
+
+	BackgroundGradientEnabled = false,
+	BackgroundGradient = Color3.fromRGB(63, 0, 31),
+	BackgroundGradientStop = Color3.fromRGB(31, 0, 63),
+	BackgroundGradientAngle = 45,
+
 	Primary = Color3.fromRGB(18, 18, 21),
 	PrimaryText = Color3.fromRGB(255, 255, 255),
 

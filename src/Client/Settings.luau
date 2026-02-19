@@ -651,9 +651,62 @@ function Settings.new(_K)
 		end
 		_K.Util.Defer.wait()
 
+		do -- Background Image
+			table.insert(
+				themeLineItems,
+				UI.new "ListItem" {
+					Text = "Background Image AssetId",
+					Tooltip = "Changes the Background Image of windows and dialogs.",
+					UI.new "Input" {
+						FontFace = UI.Theme.FontMono,
+						FontSize = UI.Theme.FontSize,
+						Size = inputSize,
+						NumberOnly = true,
+						NumberRange = NumberRange.new(0, math.huge),
+						Placeholder = "12345",
+						Value = function()
+							return tonumber(string.match(UI.Theme.BackgroundImage(), "(%d+)$")) or 0
+						end,
+						[UI.Hook] = {
+							Value = function(value)
+								print(value)
+								local number = tonumber(value)
+								if not number then
+									return
+								end
+								change("themeBackgroundImage", "rbxassetid://" .. value)
+							end,
+						},
+					},
+				}
+			)
+
+			local scaleTypes = { Enum.ScaleType.Crop, Enum.ScaleType.Fit, Enum.ScaleType.Stretch }
+
+			table.insert(
+				themeLineItems,
+				UI.new "ListItem" {
+					Text = "Background Image ScaleType",
+					Tooltip = "Changes the ScaleType of the Background Image.",
+					UI.new "Select" {
+						Value = function()
+							return _K.client.settings.themeBackgroundImageScaleType()
+						end,
+						Choices = scaleTypes,
+						[UI.Hook] = {
+							Value = function(value)
+								change("themeBackgroundImageScaleType", value)
+							end,
+						},
+					},
+				}
+			)
+		end
+
 		do -- Transparency
 			for _, data in
 				{
+					{ key = "BackgroundImageTransparency", text = "Background Image Transparency" },
 					{ key = "Transparency", text = "Background Transparency" },
 					{ key = "TextStrokeTransparency", text = "Text Stroke Transparency" },
 				}
@@ -706,6 +759,7 @@ function Settings.new(_K)
 		for index, key in
 			{
 				"Border",
+				"BackgroundGradient",
 				"Primary",
 				"PrimaryText",
 				"Secondary",
@@ -738,7 +792,7 @@ function Settings.new(_K)
 					Value = function()
 						return _K.client.settings.themeStrokeEnabled()
 					end,
-					UI.new "Tooltip" { Text = "Border Color Start" },
+					UI.new "Tooltip" { Text = "Toggle UI Borders" },
 					[UI.Hook] = {
 						Value = function(value)
 							change("themeStrokeEnabled", value, _K.client.settings.themeStrokeEnabled)
@@ -776,6 +830,63 @@ function Settings.new(_K)
 						return UI.Theme[key .. "Stop"]()
 					end,
 					UI.new "Tooltip" { Text = "Border Color Stop" },
+					[UI.Hook] = {
+						Value = function(value)
+							change("theme" .. key .. "Stop", value)
+						end,
+					},
+				}
+			elseif key == "BackgroundGradient" then
+				listItem.Text("Background Gradient")
+				UI.new "Tooltip" { Parent = color, Text = "Gradient Color Start" }
+				UI.new "Switch" {
+					Parent = listItem,
+					LayoutOrder = -1,
+					Value = function()
+						return _K.client.settings.themeBackgroundGradientEnabled()
+					end,
+					UI.new "Tooltip" { Text = "Toggle Background Gradients" },
+					[UI.Hook] = {
+						Value = function(value)
+							change(
+								"themeBackgroundGradientEnabled",
+								value,
+								_K.client.settings.themeBackgroundGradientEnabled
+							)
+						end,
+					},
+				}
+				local input = UI.new "Input" {
+					Parent = listItem,
+					LayoutOrder = 0,
+					FontFace = UI.Theme.FontMono,
+					FontSize = UI.Theme.FontSize,
+					Size = inputSize,
+					MaxChars = 5,
+					NumberOnly = true,
+					NumberRange = NumberRange.new(-360, 360),
+					Placeholder = "",
+					Value = function()
+						return UI.Theme.BackgroundGradientAngle()
+					end,
+					[UI.Hook] = {
+						Value = function(value)
+							local number = tonumber(value)
+							if not tonumber(value) or math.abs(number - UI.Theme.BackgroundGradientAngle()) < 0.001 then
+								return
+							end
+							change("themeBackgroundGradientAngle", number)
+						end,
+					},
+				}
+				UI.new "Tooltip" { Parent = input._displayLabel, Text = "Gradient Rotation" }
+				UI.new "Color" {
+					Parent = listItem,
+					LayoutOrder = 2,
+					Value = function()
+						return UI.Theme[key .. "Stop"]()
+					end,
+					UI.new "Tooltip" { Text = "Gradient Color Stop" },
 					[UI.Hook] = {
 						Value = function(value)
 							change("theme" .. key .. "Stop", value)

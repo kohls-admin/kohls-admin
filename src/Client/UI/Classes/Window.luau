@@ -299,11 +299,16 @@ function Class.new(properties: Properties?)
 		},
 	}
 
-	self._instance = UI.new "Frame" {
+	self._instance = UI.new "ImageLabel" {
 		Name = "Window",
 		AutomaticSize = self.AutomaticSize,
-		BackgroundColor3 = UI.Theme.Primary,
+		BackgroundColor3 = function()
+			return if UI.Theme.BackgroundGradientEnabled() then Color3.new(1, 1, 1) else UI.Theme.Primary()
+		end,
 		BackgroundTransparency = UI.Theme.Transparency,
+		Image = UI.Theme.BackgroundImage,
+		ImageTransparency = UI.Theme.BackgroundImageTransparency,
+		ScaleType = UI.Theme.BackgroundImageScaleType,
 		Position = self.Position,
 		Size = self.Size,
 		Visible = false,
@@ -311,6 +316,7 @@ function Class.new(properties: Properties?)
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
 		},
+		UI.new "Gradient" {},
 		UI.new "Stroke" {},
 
 		UI.new "ImageLabel" {

@@ -266,25 +266,30 @@ function Class.new(properties: Properties?)
 		},
 	}
 
-	self._instance = UI.new "TextButton" {
+	self._instance = UI.new "ImageButton" {
 		Name = "Dialog",
 		Active = false,
 		AutoButtonColor = false,
 		AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundColor3 = UI.Theme.Primary,
+		BackgroundColor3 = function()
+			return if UI.Theme.BackgroundGradientEnabled() then Color3.new(1, 1, 1) else UI.Theme.Primary()
+		end,
 		BackgroundTransparency = UI.Theme.Transparency,
+		Image = UI.Theme.BackgroundImage,
+		ImageTransparency = UI.Theme.BackgroundImageTransparency,
+		ScaleType = UI.Theme.BackgroundImageScaleType,
 		ClipsDescendants = true,
 		AnchorPoint = self.AnchorPoint,
 		Position = self.Position,
 		Size = function()
 			return UDim2.fromOffset(self.Width(), 0)
 		end,
-		Text = "",
 		Visible = self.Visible,
 
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
 		},
+		UI.new "Gradient" {},
 		UI.new "Stroke" {},
 		UI.new "UIListLayout" {
 			SortOrder = Enum.SortOrder.LayoutOrder,
