@@ -437,7 +437,7 @@ return {
 				end
 			end)
 		end,
-		run = function(context, code: string, placeId: string?)
+		run = function(context, code: string, placeId: number?)
 			if context._K.Data.SEPARATE_DATASTORE then
 				return `Reserve command is disabled in private servers.`
 			end
