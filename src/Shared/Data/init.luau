@@ -125,7 +125,7 @@ local function getLogsSize(logs)
 	local size = 0
 	for _, log in logs do
 		-- 1 byte level, 1 byte some 8 bytes uint, 1 byte some 1 + N bytes str8, 2 + N bytes log text, 8 bytes f64 time
-		log.size = 11 + (log.from and 9 or 1) + (log.name and 2 + #log.name or 1) + #log.text
+		log.size = 11 + (log[4] and 9 or 1) + (log[5] and 2 + #log[5] or 1) + #log[1]
 		size += log.size
 	end
 	return size
@@ -138,6 +138,8 @@ local function serLogs(logs)
 	end
 	return ser
 end
+
+local LOG_FORMAT_VERSION = 1
 
 local updatingLogs = false
 local function updateLogs()
@@ -159,12 +161,17 @@ local function updateLogs()
 		Util.Table.settle(saveLogs)
 	end
 
-	Data.Store.updateAsync("Logs_" .. math.random(4), function(value)
+	Data.Store.updateAsync("Logs_" .. math.random(4), function(value, keyInfo: DataStoreKeyInfo)
 		if not value or type(value) ~= "buffer" then
 			return serLogs(saveLogs)
 		end
 
-		local ok, result = pcall(Z.des :: any, Data.Schema.logs, value)
+		local metadata = keyInfo:GetMetadata()
+		local formatVersion = if value then (metadata.version or 0) else LOG_FORMAT_VERSION
+
+		local desSchema = if formatVersion <= 0 then Data.Schema.logsV0 else Data.Schema.logs
+
+		local ok, result = pcall(Z.des :: any, desSchema, value)
 		if not ok then
 			warn(result)
 			return serLogs(saveLogs)
@@ -172,10 +179,17 @@ local function updateLogs()
 
 		local logs = result
 
+		if formatVersion <= 0 then
+			for i, log in logs do
+				log[1], log[2], log[3], log[4], log[5] = log.text, log.level, log.time, log.from, log.name
+				log.text, log.level, log.time, log.from, log.name = nil, nil, nil, nil, nil
+			end
+		end
+
 		local thirtyDaysAgo = workspace:GetServerTimeNow() - 30 * 86400
 		local count = 1
 		for i, log in logs do
-			if log.time < thirtyDaysAgo then
+			if log[3] < thirtyDaysAgo then
 				logs[i] = nil
 				count += 1
 			end
@@ -193,7 +207,9 @@ local function updateLogs()
 
 		Util.Table.mergeList(logs, saveLogs)
 
-		return serLogs(logs)
+		metadata.version = LOG_FORMAT_VERSION
+
+		return serLogs(logs), {}, metadata
 	end)
 
 	updatingLogs = false
@@ -558,6 +574,24 @@ function Data.initialize(scope)
 	if not Data.SEPARATE_DATASTORE and (Data.settings.saveLogs ~= false or Data.settings.saveChatLogs ~= false) then
 		for i = 1, 4 do -- 4 shards
 			local okLogs, logs, metaLogs = Data.Store.getAsync("Logs_" .. i)
+
+			local metadata = metaLogs:GetMetadata()
+			local formatVersion = if okLogs and logs then (metadata.version or 0) else LOG_FORMAT_VERSION
+
+			if okLogs and logs and formatVersion <= 0 then
+				local ok = Z.migrate(Data.Schema.logsV0, Data.Schema.logs, logs, function(logs)
+					for i, log in logs do
+						log[1], log[2], log[3], log[4], log[5] = log.text, log.level, log.time, log.from, log.name
+						log.text, log.level, log.time, log.from, log.name = nil, nil, nil, nil, nil
+					end
+					return logs
+				end)
+				if not ok then
+					continue
+				end
+				logs = ok
+			end
+
 			if okLogs and type(logs) == "buffer" then
 				SYNC.logs(Data.logs, logs)
 			end

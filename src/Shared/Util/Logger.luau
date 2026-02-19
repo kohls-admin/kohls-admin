@@ -57,7 +57,7 @@ function Logger.new(debugEnabled: boolean?): Logger
 end
 
 function Logger.sortTime(a, b)
-	return a.time < b.time
+	return a[3] < b[3]
 end
 
 function Logger:encode(level: LogType): string
@@ -74,10 +74,12 @@ function Logger:log(text: string, level: LogType, userId: number?, noAppend: boo
 	end
 
 	local log = {
-		text = text,
-		level = Logger:encode(level),
-		time = workspace:GetServerTimeNow(),
-		from = if userId then math.abs(userId) else nil,
+		text,
+		Logger:encode(level),
+		workspace:GetServerTimeNow(),
+		if userId then math.abs(userId) else nil,
+		-- [5] = name: string?
+		-- [6] = client: boolean? -- true = client/false = global/nil = server
 	}
 
 	if not noAppend then

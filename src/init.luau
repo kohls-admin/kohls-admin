@@ -141,22 +141,23 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 	if not log then
 		return -- DEBUG disabled
 	end
+
 	if _K.IsClient then
-		log.client = true
+		log[6] = true
 	end
 
 	task.defer(function()
 		if from then
-			log.name = Util.getUserInfo(from).Username
+			log[5] = Util.getUserInfo(from).Username
 		end
 
 		if _K.IsServer then
 			-- trim for 32KB sync max
-			if #log.text > 16 * 1024 then
-				log.text = string.sub(log.text, 1, 16 * 1024)
+			if #log[1] > 16 * 1024 then
+				log[1] = string.sub(log[1] :: string, 1, 16 * 1024)
 			end
 			if from and filtered then
-				log.text = Util.String.filterForBroadcast(text, from)
+				log[1] = Util.String.filterForBroadcast(text, from)
 			end
 			if
 				(level == "CHAT" and _K.Data.settings.saveChatLogs)

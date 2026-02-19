@@ -5,6 +5,7 @@ Logs.__index = Logs
 
 local clientTag = " <font color='#0bb'><b>CLIENT</b></font>"
 local serverTag = " <font color='#b60'><b>SERVER</b></font>"
+local globalTag = " <font color='#0b6'><b>GLOBAL</b></font>"
 local logTypes = {
 	{ "DEBUG", "#888" },
 	{ "INFO", "#ccc" },
@@ -88,12 +89,49 @@ function Logs.new(_K)
 		return itemRef
 	end
 
+	local escape = _K.Util.String.escapeRichText
+
 	local function renderItem(self, itemData, log)
-		if log.renderText then
-			local item = itemData._instance
-			item.Text = if string.find(self._filter, "^%s*$") then log.textBoxText else log.rawText
-			item.TextLabel.Text = log.renderText
-			itemData.tipText = log.tipText
+		if not log.filterText then
+			return
+		end
+
+		local item = itemData._instance
+		local date = os.date("%y-%m-%d", log[3])
+		local timeOfDay = os.date("%X", log[3])
+		local level = _K.Logger:decode(log[2])
+
+		local preText =
+			`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[level] or "#fff"}"><b>{level}</b></font><b>{if log[6]
+				then clientTag
+				elseif not log[5] then if log[6] == nil then serverTag else globalTag
+				else ""}</b>`
+
+		local postText = `{if log[5] then `<font transparency='0.5'>{log[5]}:</font> ` else ""}{escape(log[1] or "")}`
+
+		itemData.tipText = `<font transparency="0.5">{date}</font> {preText}\n{postText}`
+
+		local rawText = `{timeOfDay} {level}{if log[6]
+			then " CLIENT"
+			elseif not log[4] then if log[6] == nil then " SERVER" else " GLOBAL"
+			else ""} {if log[5] then log[5] .. ": " else ""}{log[1]}`
+
+		if self._noFilter then
+			item.Text = rawText
+			item.TextLabel.Text = `{preText} {postText}`
+		else
+			local filterIndex, filterEnd = string.find(log.filterText, self._filter, 1, true)
+			rawText = `{date} {rawText}`
+
+			item.Text = `{timeOfDay} {level}{if log[6]
+				then " CLIENT"
+				elseif not log[4] then if log[6] == nil then " SERVER" else " GLOBAL"
+				else ""} {if log[5] then log[5] .. ": " else ""}{log[1]}`
+
+			item.TextLabel.Text =
+				`<font transparency="0.5">{escape(string.sub(rawText, 1, filterIndex - 1))}</font><b>{escape(
+					string.sub(rawText, filterIndex, filterEnd)
+				)}</b><font transparency="0.5">{escape(string.sub(rawText, filterEnd + 1))}</font>`
 		end
 	end
 
@@ -118,59 +156,37 @@ function Logs.new(_K)
 	scroller.logTypeFilter = logTypeFilter
 	-- TODO: load filter options from client datastore profile
 
-	local escape = _K.Util.String.escapeRichText
 	local function filterTest(self, list)
 		local filter = string.lower(self._input._input.Text)
 		self._filter = filter
 
 		local noFilter = string.find(filter, "^%s*$")
+		self._noFilter = noFilter
 
 		local new = {}
 		for i, log in list do
+			local level = _K.Logger:decode(log[2])
+
 			if not log.filterText then
-				local date = os.date("%y-%m-%d", log.time)
-				local timeOfDay = os.date("%X", log.time)
+				local date = os.date("%y-%m-%d", log[3])
+				local timeOfDay = os.date("%X", log[3])
 
-				log.levelText = _K.Logger:decode(log.level)
-
-				log.rawText = `{date} {timeOfDay} {log.levelText}{if log.client
-					then " CLIENT"
-					elseif not log.from then " SERVER"
-					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
-
-				log.textBoxText = `{timeOfDay} {log.levelText}{if log.client
-					then " CLIENT"
-					elseif not log.from then " SERVER"
-					else ""} {if log.name then log.name .. ": " else ""}{log.text}`
-
-				log.filterText = string.lower(log.rawText)
-				log.preText =
-					`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[log.levelText] or "#fff"}"><b>{log.levelText}</b></font><b>{if log.client
-						then clientTag
-						elseif not log.from then serverTag
-						else ""}</b>`
-				log.postText =
-					`{if log.name then `<font transparency='0.5'>{log.name}:</font> ` else ""}{escape(log.text or "")}`
-				log.richText = `{log.preText} {log.postText}`
-				log.tipText = `<font transparency="0.5">{date}</font> {log.preText}\n{log.postText}`
+				log.filterText = string.lower(
+					`{date} {timeOfDay} {level}{if log[6]
+						then " CLIENT"
+						elseif not log[4] then if log[6] == nil then " SERVER" else " GLOBAL"
+						else ""} {if log[5] then log[5] .. ": " else ""}{log[1]}`
+				)
 			end
 
-			if not logTypeFilter[log.levelText]._value then
+			if not logTypeFilter[level]._value then
 				continue
 			end
 
 			if noFilter then
-				log.renderText = log.richText
 				table.insert(new, log)
-			else
-				local filterIndex, filterEnd = string.find(log.filterText, filter, 1, true)
-				if filterIndex then
-					log.renderText =
-						`<font transparency="0.5">{escape(string.sub(log.rawText, 1, filterIndex - 1))}</font><b>{escape(
-							string.sub(log.rawText, filterIndex, filterEnd)
-						)}</b><font transparency="0.5">{escape(string.sub(log.rawText, filterEnd + 1))}</font>`
-					table.insert(new, log)
-				end
+			elseif string.find(log.filterText, filter, 1, true) then
+				table.insert(new, log)
 			end
 		end
 

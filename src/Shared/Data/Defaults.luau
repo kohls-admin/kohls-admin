@@ -13,6 +13,16 @@ Z.TRIM_STRINGS = true
 local Schema = {}
 
 Schema.log = Z.schema {
+	Z.str16, -- text
+	Z.byte, -- level
+	Z.f64, -- time
+	Z.some(Z.uint), -- from
+	Z.some(Z.str8), -- name
+}
+
+Schema.logs = Z.schema { Schema.log }
+
+Schema.logV0 = Z.schema {
 	level = Z.byte,
 	from = Z.some(Z.uint),
 	name = Z.some(Z.str8),
@@ -20,7 +30,7 @@ Schema.log = Z.schema {
 	time = Z.f64,
 }
 
-Schema.logs = Z.schema { Schema.log }
+Schema.logsV0 = Z.schema { Schema.logV0 }
 
 local Data = {
 	IS_PRIVATE_SERVER = RunService:IsServer() and game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0,
