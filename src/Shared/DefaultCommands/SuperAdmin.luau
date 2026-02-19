@@ -464,7 +464,7 @@ return {
 				return store
 			end)
 
-			context.env.remote:FireAll(data)
+			context.env.remote:FireAll({ [code] = data })
 			context._K.Service.Messaging:PublishAsync("_K_ReservedServers", data)
 			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `Server "<b>{code}</b>" has been reserved, use <b>{context._K.getCommandPrefix(context.from)}place me @{code}</b> to join it!`,
