@@ -1571,7 +1571,7 @@ return {
 				Parent = _K.UI.LayerTop,
 				BackgroundColor3 = Color3.new(),
 				Size = UDim2.fromScale(1, 1),
-				ZIndex = -100,
+				ZIndex = 9e8,
 				Visible = false,
 			}
 			_K.Remote.Blind:Connect(function(blinded)
