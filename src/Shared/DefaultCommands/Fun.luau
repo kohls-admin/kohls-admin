@@ -1630,7 +1630,7 @@ return {
 
 		run = function(context, players, scale)
 			for _, player in players do
-				player.Character:ScaleTo(scale or 1)
+				player.Character:ScaleTo(math.clamp(scale, 0.01, 50) or 1)
 			end
 		end,
 	},
