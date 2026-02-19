@@ -1996,6 +1996,10 @@ return {
 			_K.Remote.AntiLag:Connect(function(undo: boolean?)
 				if undo then
 					for _, instance in game:GetDescendants() do
+						if instance:HasTag("_K_Ignore") then
+							continue
+						end
+
 						if instance:IsA("BasePart") then
 							local original = instance:GetAttribute("_KMaterial")
 							if original then
@@ -2017,7 +2021,7 @@ return {
 					local model = instance:FindFirstAncestorOfClass("Model")
 					local humanoid = model and model:FindFirstChildOfClass("Humanoid")
 
-					if humanoid then
+					if humanoid or instance:HasTag("_K_Ignore") then
 						continue
 					end
 
