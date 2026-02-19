@@ -16,14 +16,8 @@ export type LogType =
 	| string
 
 --- @within Logger
---- @type Log { text: string, level: LogType, time: number, user: number? }
-export type Log = {
-	text: string,
-	level: LogType,
-	time: number,
-	from: number?,
-	client: boolean?,
-}
+--- @type Log { string | LogType | number? | boolean? }
+export type Log = { string | LogType | number? | boolean? }
 
 --- @class Logger
 local Logger = { limit = 100_000 }
