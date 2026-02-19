@@ -1980,6 +1980,80 @@ return {
 		end,
 	},
 	{
+		name = "antilag",
+		aliases = { "unantilag" },
+		description = "Improves the game performance for one or more player(s).",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose performance to improve.",
+				shouldRequest = true,
+			},
+		},
+		envClient = function(_K)
+			local parentMap = {}
+			_K.Remote.AntiLag:Connect(function(undo: boolean?)
+				if undo then
+					for _, instance in game:GetDescendants() do
+						if instance:IsA("BasePart") then
+							local original = instance:GetAttribute("_KMaterial")
+							if original then
+								instance.Material = original
+								instance:SetAttribute("_KMaterial", nil)
+							end
+						end
+						_K.Util.Defer.wait()
+					end
+					for instance, parent in parentMap do
+						instance.Parent = parent
+					end
+					table.clear(parentMap)
+					return
+				end
+
+				for _, instance in game:GetDescendants() do
+					local parent = instance.Parent
+					local model = instance:FindFirstAncestorOfClass("Model")
+					local humanoid = model and model:FindFirstChildOfClass("Humanoid")
+
+					if humanoid then
+						continue
+					end
+
+					if instance:IsA("Decal") or instance:IsA("Texture") then
+						parentMap[instance] = parent
+						instance.Parent = nil
+					elseif instance:IsA("BasePart") then
+						if not instance:GetAttribute("_KMaterial") then
+							instance:SetAttribute("_KMaterial", instance.Material)
+						end
+						instance.Material = Enum.Material.SmoothPlastic
+					elseif instance:IsA("MeshPart") then
+						if not instance:GetAttribute("_KMaterial") then
+							instance:SetAttribute("_KMaterial", instance.Material)
+						end
+						instance.Material = Enum.Material.SmoothPlastic
+						if not instance:GetAttribute("_KTextureID") then
+							instance:SetAttribute("_KTextureID", instance.TextureID)
+						end
+						instance.TextureID = ""
+					end
+
+					_K.Util.Defer.wait()
+				end
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.AntiLag }
+		end,
+		run = function(context, players)
+			for _, player in players do
+				context.env.remote:Fire(player, context.undo)
+			end
+		end,
+	},
+	{
 		name = "fps",
 		aliases = { "lag", "unlag", "unfps" },
 		description = "Limits the frames per second of one or more player(s).",
