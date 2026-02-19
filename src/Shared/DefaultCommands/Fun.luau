@@ -620,6 +620,64 @@ return {
 		end,
 	},
 	{
+		name = "jumpscare",
+		aliases = { "js" },
+		credit = { "Kohl @Scripth", "Pok @vonials" },
+		description = "Jumpscares a player with an image and sound.",
+		group = "Fun",
+		args = {
+			{
+				type = "players",
+				name = "Player(s)",
+				description = "The player(s) whose performance to improve.",
+				shouldRequest = true,
+			},
+			{
+				type = "image",
+				name = "DecalId",
+				description = "The image to show the player(s).",
+				optional = true,
+			},
+			{
+				type = "number",
+				name = "SoundId",
+				description = "The sound to play.",
+				optional = true,
+			},
+		},
+		envClient = function(_K)
+			_K.Remote.Jumpscare:Connect(function(imageId: string, soundId: number)
+				local image = _K.UI.new "ImageLabel" {
+					Name = "JumpScare",
+					Parent = _K.UI.LayerTop,
+					BackgroundTransparency = 0,
+					BackgroundColor3 = Color3.new(0, 0, 0),
+					Size = UDim2.fromScale(1, 1),
+					Image = imageId,
+					ZIndex = 9e8,
+				}
+				local sound = _K.UI.new "Sound" {
+					Parent = image,
+					SoundId = "rbxassetid://" .. (tonumber(soundId) or 0),
+					Volume = 5,
+				}
+				sound:Play()
+				task.delay(2, game.Destroy, image)
+			end)
+		end,
+		env = function(_K)
+			return { remote = _K.Remote.Jumpscare }
+		end,
+		run = function(context, players: { Players }, decalId: string?, soundId: number?)
+			decalId = decalId or "rbxassetid://1119705746"
+			soundId = soundId or 130285917830946
+
+			for _, player in players do
+				context.env.remote:Fire(player, decalId, soundId)
+			end
+		end,
+	},
+	{
 		name = "glitch",
 		aliases = { "unglitch", "vibrate", "unvibrate" },
 		description = "Makes one or more player(s) start glitching.",
