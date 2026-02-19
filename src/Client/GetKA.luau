@@ -3,9 +3,14 @@ local UI = _K.UI
 
 task.defer(function()
 	local ADMIN_MODEL_ID = 172732271
-	local ok, owned = _K.Util.Retry(function()
+	local ok, result = _K.Util.Retry(function()
 		return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, ADMIN_MODEL_ID)
 	end)
+	local ownsModel = ok and result
+
+	if _K.LocalPlayer:GetAttribute("_KDonationLevel") > 3 then
+		return
+	end
 
 	local dialog
 	local adminModelButton = UI.new "Button" {
@@ -62,11 +67,11 @@ task.defer(function()
 			Size = function()
 				return UDim2.new(0, UI.Theme.FontSizeLarge(), 0, 32)
 			end,
-			Text = if owned then "<b>OWNED</b>" else "<b>FREE</b>",
+			Text = if ownsModel then "<b>OWNED</b>" else "<b>FREE</b>",
 			RichText = true,
 		},
 
-		Activated = if owned
+		Activated = if ownsModel
 			then nil
 			else function()
 				_K.client.lastAttemptedPurchase = true
@@ -117,7 +122,7 @@ task.defer(function()
 
 	local attempt, connection = 0, nil
 	connection = _K.Hook.runPreparedCommands:Connect(function()
-		if not _K.Data.settings.getKohlsAdminPopup then
+		if _K.Data.settings.getKohlsAdminPopup == false or _K.LocalPlayer:GetAttribute("_KDonationLevel") > 3 then
 			connection:Disconnect()
 			dialog:Destroy()
 		end
