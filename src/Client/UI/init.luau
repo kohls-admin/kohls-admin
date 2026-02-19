@@ -526,6 +526,7 @@ type Constructor =
 	& Type.New<"Color", typeof(require(Classes.Color).new())>
 	& Type.New<"ColorPicker", typeof(require(Classes.ColorPicker).new())>
 	& Type.New<"Dialog", typeof(require(Classes.Dialog).new())>
+	& Type.New<"Gradient", typeof(require(Classes.Gradient).new())>
 	& Type.New<"Link", typeof(require(Classes.Link).new())>
 	& Type.New<"List", typeof(require(Classes.List).new())>
 	& Type.New<"ListItem", typeof(require(Classes.ListItem).new())>
