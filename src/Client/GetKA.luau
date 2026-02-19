@@ -8,7 +8,7 @@ task.defer(function()
 	end)
 	local ownsModel = ok and result
 
-	if _K.LocalPlayer:GetAttribute("_KDonationLevel") > 3 then
+	if (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) > 3 then
 		return
 	end
 
