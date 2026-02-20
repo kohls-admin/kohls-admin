@@ -606,8 +606,11 @@ function Market.new(_K)
 				local ok, ugcOwned = _K.Util.Retry(function()
 					return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, VIP_UGC_ID)
 				end)
-				local id = if ok and ugcOwned then VIP_UGC_ID else VIP_UGC_SALE_ID
-				task.defer(updateAssetPriceText, vipButtonGlobal._content.Price, id, `<b>SHOW</b>`)
+				task.defer(updateAssetPriceText, vipButtonGlobal._content.Price, VIP_UGC_ID, `<b>SHOW</b>`)
+				if not ok or ugcOwned then
+					return
+				end
+				task.defer(600, updateAssetPriceText, vipButtonGlobal._content.Price, VIP_UGC_SALE_ID, `<b>SHOW</b>`)
 			end
 		end)
 
