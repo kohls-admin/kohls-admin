@@ -238,6 +238,8 @@ if IS_SERVER then
 			return remote.OnInvoke(player, ...)
 		end
 	end
+
+	EVENT:SetAttribute("ServerReady", true)
 else -- Client
 	function RemoteObject.Fire(self: Remote, ...)
 		if self._id then
@@ -358,6 +360,10 @@ else -- Client
 		if remote and remote.OnInvoke then
 			return remote.OnInvoke(...)
 		end
+	end
+
+	if not EVENT:GetAttribute("ServerReady") then
+		EVENT:GetAttributeChangedSignal("ServerReady"):Wait()
 	end
 
 	EVENT:FireServer(script)
