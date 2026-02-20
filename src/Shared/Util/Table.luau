@@ -11,6 +11,14 @@ function Table.concat(array: List, delimiter: string): string
 	return table.concat(strings, delimiter)
 end
 
+function Table.countKeys(t: Dict): number
+	local count = 0
+	for _ in t do
+		count += 1
+	end
+	return count
+end
+
 function Table.toHashMap(array: List): Dict
 	local map = {}
 	for _, key in array do
