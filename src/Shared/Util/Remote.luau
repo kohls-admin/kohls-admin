@@ -282,7 +282,7 @@ else -- Client
 	local function flushQueue(remote: Remote)
 		if remote._fireQueue then
 			for _, args in remote._fireQueue do
-				(remote._remote :: RemoteEvent):FireServer(remote._id, unpack(args))
+				EVENT:FireServer(remote._id, unpack(args))
 			end
 			remote._fireQueue = nil
 		end
