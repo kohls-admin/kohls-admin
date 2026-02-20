@@ -454,7 +454,7 @@ return function(_K)
 				if lastLog ~= _K.Data.logs[#_K.Data.logs] or not cachedLogsBuffer then
 					lastLog = _K.Data.logs[#_K.Data.logs]
 					local err
-					cachedLogsBuffer, err = _K.Z.ser(_K.Data.Schema.logs, _K.Data.logs)
+					cachedLogsBuffer, err = _K.Z.ser(_K.Data.Schema.logsRemote, _K.Data.logs)
 					if not cachedLogsBuffer then
 						warn("Failed to serialize logs:", err)
 					end

@@ -344,7 +344,11 @@ local SYNC = {
 		local logs = changes
 
 		if type(changes) == "table" then
-			local result, feedback = Z.ser(Data.Schema.logs, changes)
+			for _, log in logs do
+				log[6] = false -- add global flag to each log
+			end
+
+			local result, feedback = Z.ser(Data.Schema.logsRemote, changes)
 			if result == nil then
 				warn(feedback)
 				return
@@ -357,6 +361,19 @@ local SYNC = {
 				return
 			end
 			logs = result
+
+			for _, log in logs do
+				log[6] = false -- add global flag to each log
+			end
+
+			Util.Defer.wait()
+
+			local ser, feedback = Z.ser(Data.Schema.logsRemote, logs)
+			if ser == nil then
+				warn(feedback)
+				return
+			end
+			changes = ser
 		end
 		Util.Defer.wait()
 

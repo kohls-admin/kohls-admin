@@ -22,6 +22,17 @@ Schema.log = Z.schema {
 
 Schema.logs = Z.schema { Schema.log }
 
+Schema.logRemote = Z.schema {
+	Z.str16, -- text
+	Z.byte, -- level
+	Z.f64, -- time
+	Z.some(Z.uint), -- from
+	Z.some(Z.str8), -- name
+	Z.some(Z.bool), -- false = global
+}
+
+Schema.logsRemote = Z.schema { Schema.logRemote }
+
 Schema.logV0 = Z.schema {
 	level = Z.byte,
 	from = Z.some(Z.uint),

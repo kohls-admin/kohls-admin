@@ -3,9 +3,10 @@ local UI = require(script.Parent:WaitForChild("UI"))
 local Logs = {}
 Logs.__index = Logs
 
+local GLOBAL_KEY = "GLOBAL 🌐"
+
 local clientTag = " <font color='#0bb'><b>CLIENT</b></font>"
 local serverTag = " <font color='#b60'><b>SERVER</b></font>"
-local globalTag = " <font color='#0b6'><b>GLOBAL</b></font>"
 local logTypes = {
 	{ "DEBUG", "#888" },
 	{ "INFO", "#ccc" },
@@ -19,6 +20,7 @@ local logTypes = {
 	{ "DEATH", "#800" },
 	{ "DAMAGE", "#a80" },
 	{ "PURCHASE", "#0ff" },
+	{ GLOBAL_KEY, "#fff" },
 }
 
 local logTypeColors = {}
@@ -100,20 +102,21 @@ function Logs.new(_K)
 		local date = os.date("%y-%m-%d", log[3])
 		local timeOfDay = os.date("%X", log[3])
 		local level = _K.Logger:decode(log[2])
+		local global = if log[6] == false then " 🌐" else ""
 
 		local preText =
-			`<font transparency="0.5">{escape(timeOfDay)}</font> <font color="{logTypeColors[level] or "#fff"}"><b>{level}</b></font><b>{if log[6]
+			`<font transparency="0.5">{escape(timeOfDay)}</font>{global} <font color="{logTypeColors[level] or "#fff"}"><b>{level}</b></font><b>{if log[6]
 				then clientTag
-				elseif not log[5] then if log[6] == nil then serverTag else globalTag
+				elseif not log[5] and log[6] == nil then serverTag
 				else ""}</b>`
 
 		local postText = `{if log[5] then `<font transparency='0.5'>{log[5]}:</font> ` else ""}{escape(log[1] or "")}`
 
 		itemData.tipText = `<font transparency="0.5">{date}</font> {preText}\n{postText}`
 
-		local rawText = `{timeOfDay} {level}{if log[6]
+		local rawText = `{timeOfDay}{global} {level}{if log[6]
 			then " CLIENT"
-			elseif not log[4] then if log[6] == nil then " SERVER" else " GLOBAL"
+			elseif not log[5] and log[6] == nil then " SERVER"
 			else ""} {if log[5] then log[5] .. ": " else ""}{log[1]}`
 
 		if self._noFilter then
@@ -123,9 +126,9 @@ function Logs.new(_K)
 			local filterIndex, filterEnd = string.find(log.filterText, self._filter, 1, true)
 			rawText = `{date} {rawText}`
 
-			item.Text = `{timeOfDay} {level}{if log[6]
+			item.Text = `{timeOfDay}{global} {level}{if log[6]
 				then " CLIENT"
-				elseif not log[4] then if log[6] == nil then " SERVER" else " GLOBAL"
+				elseif not log[5] and log[6] == nil then " SERVER"
 				else ""} {if log[5] then log[5] .. ": " else ""}{log[1]}`
 
 			item.TextLabel.Text =
@@ -163,6 +166,8 @@ function Logs.new(_K)
 		local noFilter = string.find(filter, "^%s*$")
 		self._noFilter = noFilter
 
+		local showGlobal = logTypeFilter[GLOBAL_KEY]._value
+
 		local new = {}
 		for i, log in list do
 			local level = _K.Logger:decode(log[2])
@@ -172,14 +177,18 @@ function Logs.new(_K)
 				local timeOfDay = os.date("%X", log[3])
 
 				log.filterText = string.lower(
-					`{date} {timeOfDay} {level}{if log[6]
+					`{date} {timeOfDay}{if log[6] == false then " 🌐" else ""} {level}{if log[6]
 						then " CLIENT"
-						elseif not log[4] then if log[6] == nil then " SERVER" else " GLOBAL"
+						elseif not log[5] and log[6] == nil then " SERVER"
 						else ""} {if log[5] then log[5] .. ": " else ""}{log[1]}`
 				)
 			end
 
 			if not logTypeFilter[level]._value then
+				continue
+			end
+
+			if log[6] == false and not showGlobal then
 				continue
 			end
 
@@ -227,6 +236,20 @@ function Logs.new(_K)
 	UI.new "Tooltip" { Parent = filterButton, Text = "Filter Logs", Hovering = filterButton._hovering }
 	UI.edit(filterButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
 
+	local listItemFrame = UI.new "Frame" {
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 0),
+
+		UI.new "UIListLayout" {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UI.Theme.Padding,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			VerticalAlignment = Enum.VerticalAlignment.Top,
+			Wraps = true,
+		},
+	}
+
 	filterMenu = UI.new "Menu" {
 		Adornee = filterButton._instance,
 		AutomaticSize = Enum.AutomaticSize.Y,
@@ -242,6 +265,8 @@ function Logs.new(_K)
 			PaddingLeft = UI.Theme.Padding,
 			PaddingRight = UI.Theme.Padding,
 		},
+
+		listItemFrame,
 	}
 
 	filterMenu._content.AutomaticSize = Enum.AutomaticSize.Y
@@ -259,7 +284,7 @@ function Logs.new(_K)
 	for index, array in logTypes do
 		local logType = array[1]
 		UI.new "ListItem" {
-			Parent = filterMenu._content,
+			Parent = listItemFrame,
 			LayoutOrder = index,
 			Text = logType,
 			Size = lineItemSize,

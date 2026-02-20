@@ -202,7 +202,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings,
 	end
 
 	if logs then
-		local ok, result = pcall(_K.Z.des, _K.Data.Schema.logs, logs)
+		local ok, result = pcall(_K.Z.des, _K.Data.Schema.logsRemote, logs)
 		if not ok then
 			warn(result)
 		end

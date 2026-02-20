@@ -188,7 +188,7 @@ _K.Remote.Logs:Connect(function(logsBuffer)
 
 	_K.Util.Defer.reset()
 
-	local ok, result = pcall(_K.Z.des, _K.Data.Schema.logs, logsBuffer)
+	local ok, result = pcall(_K.Z.des, _K.Data.Schema.logsRemote, logsBuffer)
 	if not ok then
 		warn(result)
 		return
