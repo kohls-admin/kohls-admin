@@ -276,6 +276,27 @@ function Bans.new(_K)
 		end
 	end
 
+	local emptyBanListButton = UI.new "Button" {
+		Label = "Create a new ban",
+
+		Activated = function()
+			if not newBanDialog.Visible._value then
+				banTarget(nil)
+				banTargetInput.Value("")
+				banReason = nil
+				banReasonInput.Value("")
+				newBanDialog.Title("New Ban")
+				UI.Sound.Hover03:Play()
+			end
+			newBanDialog.Visible(not newBanDialog.Visible._value)
+		end,
+	}
+
+	emptyBanListButton._instance.Visible = _K.Util.Table.countKeys(_K.client.bans._value) == 0
+	_K.client.bans:Connect(function()
+		emptyBanListButton._instance.Visible = _K.Util.Table.countKeys(_K.client.bans._value) == 0
+	end)
+
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Bans",
 		List = _K.client.bans,
@@ -286,6 +307,7 @@ function Bans.new(_K)
 		CreateItem = createItem,
 		RenderItem = renderItem,
 
+		emptyBanListButton,
 		unbanDialog,
 	}
 
