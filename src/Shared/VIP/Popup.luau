@@ -469,12 +469,14 @@ task.spawn(function()
 
 	local elapsed = workspace:GetServerTimeNow() - initialJoin
 
-	if elapsed < 15 * 60 then
+	local PERIOD = 10 * 60
+
+	if elapsed < PERIOD then
 		setSalePrice(false)
-		while elapsed < 15 * 60 do
+		while elapsed < PERIOD do
 			task.wait(0.5)
 			elapsed = (workspace:GetServerTimeNow() - initialJoin)
-			local duration = (15 * 60) - elapsed
+			local duration = PERIOD - elapsed
 			title.Text = `<font color="#0f0" transparency="0">40% OFF SALE</font> in {string.format(
 				"%02d:%02d",
 				duration // 60,
