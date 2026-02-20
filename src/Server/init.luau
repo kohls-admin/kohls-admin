@@ -605,7 +605,7 @@ return function(_K)
 			}
 
 			_K.Data.targetLimits[player.UserId] = 0
-			if type(reason) == "string" and _K.Auth.targetUserArgument(fauxArg, userId, userId) then
+			if (reason == nil or type(reason) == "string") and _K.Auth.targetUserArgument(fauxArg, userId, userId) then
 				if
 					not _K.Auth.hasPermission(player.UserId, "banasync") or not _K.Auth.hasRestrictedRole(player.UserId)
 				then
