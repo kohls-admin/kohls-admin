@@ -133,18 +133,6 @@
 					"Spread": 0.1
 				}
 			}
-		},
-		"Workspace": {
-			"Baseplate": {
-				"$className": "Part",
-				"$properties": {
-					"Anchored": true,
-					"Locked": true,
-					"Position": [0, -8, 0],
-					"Size": [2048, 16, 2048],
-					"Transparency": 1
-				}
-			}
 		}
 	}
 }

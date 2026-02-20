@@ -4,7 +4,13 @@ local LocalPlayer = Players.LocalPlayer
 
 local gridSize = 8
 
-local baseplate = workspace:WaitForChild("Baseplate")
+local baseplate = Instance.new("Part")
+baseplate.Anchored = true
+baseplate.Locked = true
+baseplate.Position = Vector3.new(0, -8, 0)
+baseplate.Size = Vector3.new(2048, 16, 2048)
+baseplate.Transparency = 1
+baseplate.Parent = workspace
 
 function UpdatePosition()
 	local char = LocalPlayer.Character
