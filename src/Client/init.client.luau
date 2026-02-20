@@ -337,7 +337,6 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings,
 	end
 
 	do
-		local count = 0
 		local vipNotificationVisible = false
 
 		local function vipNotificationClosed()
@@ -360,7 +359,6 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings,
 				return
 			end
 
-			count += 1
 			vipNotificationVisible = true
 
 			local initialJoin = _K.LocalPlayer:GetAttribute("_KInitialJoin")
