@@ -92,7 +92,7 @@ function Logs.new(_K)
 	local escape = _K.Util.String.escapeRichText
 
 	local function renderItem(self, itemData, log)
-		if not log.filterText then
+		if not log.filterText or #log < 3 then
 			return
 		end
 
