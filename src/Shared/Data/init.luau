@@ -166,7 +166,7 @@ local function updateLogs()
 			return serLogs(saveLogs)
 		end
 
-		local metadata = keyInfo:GetMetadata()
+		local metadata = if keyInfo then keyInfo:GetMetadata() else {}
 		local formatVersion = if value then (metadata.version or 0) else LOG_FORMAT_VERSION
 
 		local desSchema = if formatVersion <= 0 then Data.Schema.logsV0 else Data.Schema.logs
@@ -591,8 +591,7 @@ function Data.initialize(scope)
 	if not Data.SEPARATE_DATASTORE and (Data.settings.saveLogs ~= false or Data.settings.saveChatLogs ~= false) then
 		for i = 1, 4 do -- 4 shards
 			local okLogs, logs, metaLogs = Data.Store.getAsync("Logs_" .. i)
-
-			local metadata = metaLogs:GetMetadata()
+			local metadata = if metaLogs then metaLogs:GetMetadata() else {}
 			local formatVersion = if okLogs and logs then (metadata.version or 0) else LOG_FORMAT_VERSION
 
 			if okLogs and logs and formatVersion <= 0 then
