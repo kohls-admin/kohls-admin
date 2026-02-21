@@ -611,7 +611,7 @@ return function(_K)
 				then
 					duration = 0
 				end
-				if #reason > 1024 then
+				if reason and #reason > 1024 then
 					reason = string.sub(reason, 1, 1024)
 				end
 				_K.log(`{_K.getCommandPrefix()}ban {userId} {duration} {reason}`, "COMMAND", player.UserId)
