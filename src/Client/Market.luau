@@ -610,7 +610,7 @@ function Market.new(_K)
 				if not ok or ugcOwned then
 					return
 				end
-				task.defer(600, updateAssetPriceText, vipButtonGlobal._content.Price, VIP_UGC_SALE_ID, `<b>SHOW</b>`)
+				task.delay(600, updateAssetPriceText, vipButtonGlobal._content.Price, VIP_UGC_SALE_ID, `<b>SHOW</b>`)
 			end
 		end)
 
