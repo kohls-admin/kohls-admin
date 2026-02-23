@@ -17,6 +17,7 @@ local Util = {
 	Humanoid = require(script:WaitForChild("Humanoid")),
 	iterPageItems = require(script:WaitForChild("iterPageItems")),
 	MemoryStore = require(script:WaitForChild("MemoryStore")),
+	Property = require(script:WaitForChild("Property")),
 	Queue = require(script:WaitForChild("Queue")),
 	Remote = require(script:WaitForChild("Remote")),
 	Retry = require(script:WaitForChild("Retry")),
