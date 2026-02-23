@@ -4,6 +4,8 @@ local Bans = {}
 Bans.__index = Bans
 
 function Bans.new(_K)
+	local BANS = _K.Data.bans
+
 	local escape = _K.Util.String.escapeRichText
 
 	local function close(self)
@@ -388,6 +390,20 @@ function Bans.new(_K)
 	end
 
 	task.defer(scroller.filter, scroller, filterTest)
+
+	local function termWeight(ban)
+		return if ban and ban[3] and ban[3] ~= 0 then (if ban[3] > 0 and ban[3] ~= math.huge then 1000 else 2000) else 0
+	end
+
+	task.defer(scroller.sort, scroller, function(a, b)
+		a, b = BANS[a], BANS[b]
+		local weightA, weightB = termWeight(a), termWeight(b)
+		if weightA == weightB then
+			return (a and b and a[1] and b[1]) and a[1] < b[1]
+		else
+			return weightA < weightB
+		end
+	end)
 
 	local banTypeListItem = UI.new "ListItem" {
 		Text = "Type",
