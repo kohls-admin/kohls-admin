@@ -240,51 +240,65 @@ return function(_K)
 				end
 			end
 
+			local chatCommandsFolder = Instance.new("Folder")
+			chatCommandsFolder.Name = "TextChatCommands_KA"
+
+			local function defaultCommandTrigger(source: TextSource, rawText: string)
+				if not _K.Service.Players:GetPlayerByUserId(source.UserId) then
+					return
+				end
+				_K.Process.runCommands(_K, source.UserId, `{_K.getCommandPrefix()}{string.sub(rawText, 2)}`)
+			end
+
+			local function chatCommandTrigger(source: TextSource, rawText: string)
+				local player = _K.Service.Players:GetPlayerByUserId(source.UserId)
+				if not player then
+					return
+				end
+
+				if player.Character then
+					local space = string.find(rawText, "%s", 2, false)
+					local alias = string.sub(rawText, 2, if space then space - 1 else nil)
+					local msg = `{_K.getCommandPrefix()}{alias}`
+					displayBubbleRemote:FireAll(player.Character, msg)
+				end
+
+				_K.Process.runCommands(_K, source.UserId, `{_K.getCommandPrefix()}{string.sub(rawText, 2)}`)
+			end
+
+			local function registerChatCommand(cmd, trigger)
+				local chatCommand = Instance.new("TextChatCommand")
+				chatCommand.Name = string.upper(string.sub(cmd.name, 1, 1)) .. string.sub(cmd.name, 2)
+				chatCommand.Enabled = true
+				chatCommand.AutocompleteVisible = true
+				chatCommand.PrimaryAlias = "/" .. cmd.name
+				if cmd.aliases and cmd.aliases[1] then
+					chatCommand.SecondaryAlias = "/" .. cmd.aliases[1]
+				end
+				chatCommand.Parent = chatCommandsFolder
+				chatCommand.Triggered:Connect(trigger or defaultCommandTrigger)
+			end
+
 			if _K.Data.settings.vip then
-				local VIP_UGC_ID = "110019084552349"
-				local VIP_UGC_SALE_ID = "115444443724463"
+				registerChatCommand(_K.Registry.commands.headless, chatCommandTrigger)
+				registerChatCommand(_K.Registry.commands.korblox, chatCommandTrigger)
+				registerChatCommand(_K.Registry.commands.vampire, chatCommandTrigger)
+				registerChatCommand(_K.Registry.commands.werewolf, chatCommandTrigger)
+				registerChatCommand(_K.Registry.commands.cape, chatCommandTrigger)
+				registerChatCommand(_K.Registry.commands.fire, chatCommandTrigger)
+				registerChatCommand(_K.Registry.commands.light, chatCommandTrigger)
+				registerChatCommand(_K.Registry.commands.particle, chatCommandTrigger)
+				registerChatCommand(_K.Registry.commands.trail, chatCommandTrigger)
+				registerChatCommand(_K.Registry.commands.shine, chatCommandTrigger)
+			end
 
-				for _, cmd in _K.Registry.commandsList do
-					if cmd.group ~= "VIP" then
-						continue
-					end
-
-					local chatCommand = Instance.new("TextChatCommand")
-					chatCommand.Enabled = true
-					chatCommand.AutocompleteVisible = true
-					chatCommand.PrimaryAlias = "/" .. cmd.name
-					if cmd.aliases and cmd.aliases[1] then
-						chatCommand.SecondaryAlias = "/" .. cmd.aliases[1]
-					end
-					chatCommand.Parent = _K.Service.TextChat
-
-					chatCommand.Triggered:Connect(function(source: TextSource, rawText: string)
-						local player = _K.Service.Players:GetPlayerByUserId(source.UserId)
-						if not player then
-							return
-						end
-
-						if player.Character then
-							local msg = `{_K.getCommandPrefix()}{string.sub(chatCommand.PrimaryAlias, 2)}`
-							displayBubbleRemote:FireAll(player.Character, msg)
-						end
-
-						if (player:GetAttribute("_KDonationLevel") or 0) > 0 then
-							local cmd = `{_K.getCommandPrefix()}{string.sub(rawText, 2)}`
-							_K.Process.runCommands(_K, source.UserId, cmd)
-							return
-						end
-
-						local initialJoin = player:GetAttribute("_KInitialJoin") or 0
-						local id = if workspace:GetServerTimeNow() - initialJoin < 10 * 60
-							then VIP_UGC_ID
-							else VIP_UGC_SALE_ID
-
-						local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = id } }
-						_K.Service.Marketplace:PromptBulkPurchase(player, items, {})
-					end)
+			for _, cmd in _K.Registry.commandsList do
+				if cmd.group == "Utility" and cmd.name ~= "emote" then
+					registerChatCommand(cmd)
 				end
 			end
+
+			chatCommandsFolder.Parent = _K.Service.TextChat
 		end)
 
 		-- define user roles
