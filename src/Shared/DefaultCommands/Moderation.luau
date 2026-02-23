@@ -1405,10 +1405,7 @@ return {
 
 				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
-					if not humanoid:GetAttribute("_KMaxHealth") then
-						humanoid:SetAttribute("_KMaxHealth", humanoid.MaxHealth)
-					end
-					humanoid.MaxHealth = math.huge
+					context._K.Util.Property.override(humanoid, "MaxHealth", math.huge)
 					humanoid.Health = math.huge
 				end
 			end
@@ -1466,12 +1463,8 @@ return {
 
 					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 					if humanoid then
-						local oldHealth = humanoid:GetAttribute("_KMaxHealth")
-						if oldHealth then
-							humanoid:SetAttribute("_KMaxHealth", nil)
-							humanoid.MaxHealth = oldHealth
-							humanoid.Health = oldHealth
-						end
+						context._K.Util.Property.reset(humanoid, "MaxHealth")
+						humanoid.Health = math.min(humanoid.Health, humanoid.MaxHealth)
 					end
 				end
 			end
@@ -2001,11 +1994,7 @@ return {
 						end
 
 						if instance:IsA("BasePart") then
-							local original = instance:GetAttribute("_KMaterial")
-							if original then
-								instance.Material = original
-								instance:SetAttribute("_KMaterial", nil)
-							end
+							_K.Util.Property.reset(instance, "Material")
 						end
 						_K.Util.Defer.wait()
 					end
@@ -2029,19 +2018,10 @@ return {
 						parentMap[instance] = parent
 						instance.Parent = nil
 					elseif instance:IsA("BasePart") then
-						if not instance:GetAttribute("_KMaterial") then
-							instance:SetAttribute("_KMaterial", instance.Material)
-						end
-						instance.Material = Enum.Material.SmoothPlastic
+						_K.Util.Property.override(instance, "Material", Enum.Material.SmoothPlastic)
 					elseif instance:IsA("MeshPart") then
-						if not instance:GetAttribute("_KMaterial") then
-							instance:SetAttribute("_KMaterial", instance.Material)
-						end
-						instance.Material = Enum.Material.SmoothPlastic
-						if not instance:GetAttribute("_KTextureID") then
-							instance:SetAttribute("_KTextureID", instance.TextureID)
-						end
-						instance.TextureID = ""
+						_K.Util.Property.override(instance, "Material", Enum.Material.SmoothPlastic)
+						_K.Util.Property.override(instance, "TextureID", "")
 					end
 
 					_K.Util.Defer.wait()

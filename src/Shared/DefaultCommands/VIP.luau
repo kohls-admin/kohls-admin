@@ -1257,31 +1257,25 @@ return {
 					return
 				end
 				if human.RigType == Enum.HumanoidRigType.R15 then
-					if human:FindFirstChild("HeadScale") then
-						local headScale = human:GetAttribute("_KHeadScale")
-						if not headScale then
-							headScale = human.HeadScale.Value
-							human:SetAttribute("_KHeadScale", headScale)
-						end
-						human.HeadScale.Value = headScale * scale
+					local headScale = human:FindFirstChild("HeadScale")
+					if headScale then
+						local cache = _K.Util.Property.cache[headScale]
+						local originalScale = if cache and cache.Value then cache.Value[1] else headScale.Value
+						_K.Util.Property.override(headScale, "Value", originalScale * scale)
 					end
 				elseif human.RigType == Enum.HumanoidRigType.R6 then
 					if char:FindFirstChild("Head") and char:FindFirstChild("Torso") then
-						local meshScale = human:GetAttribute("_KMeshScale")
-						if not meshScale then
-							meshScale = char.Head.Mesh.Scale
-							human:SetAttribute("_KMeshScale", meshScale)
+						local headMesh = char.Head:FindFirstChild("Mesh")
+						if headMesh then
+							local cache = _K.Util.Property.cache[headMesh]
+							local originalScale = if cache and cache.Scale then cache.Scale[1] else headMesh.Scale
+							_K.Util.Property.override(headMesh, "Scale", originalScale * scale)
 						end
-						char.Head.Mesh.Scale = meshScale * scale
 
 						local headY = char.Head.Size.Y
 						char.Torso.Neck.C0 = CFrame.new(0, headY / 2 + (headY * scale / 2), 0)
 							* CFrame.Angles(math.pi / 2, math.pi, 0)
 					end
-				end
-				if scale == 1 then
-					human:SetAttribute("_KHeadScale", nil)
-					human:SetAttribute("_KMeshScale", nil)
 				end
 			end
 
@@ -1340,10 +1334,11 @@ return {
 					face.Name = "face"
 					face.Parent = head
 				end
-				if not player.Character:GetAttribute("_KFace") then
-					player.Character:SetAttribute("_KFace", face.Texture)
+				if context.undo then
+					context._K.Util.Property.reset(face, "Texture")
+				else
+					context._K.Util.Property.override(face, "Texture", image)
 				end
-				face.Texture = if context.undo then player.Character:GetAttribute("_KFace") else image
 			end
 		end,
 	},
@@ -1375,10 +1370,11 @@ return {
 					shirt = Instance.new("Shirt")
 					shirt.Parent = player.Character
 				end
-				if not player.Character:GetAttribute("_KShirt") then
-					player.Character:SetAttribute("_KShirt", shirt.ShirtTemplate)
+				if context.undo then
+					context._K.Util.Property.reset(shirt, "ShirtTemplate")
+				else
+					context._K.Util.Property.override(shirt, "ShirtTemplate", image)
 				end
-				shirt.ShirtTemplate = if context.undo then player.Character:GetAttribute("_KShirt") else image
 			end
 		end,
 	},
@@ -1410,10 +1406,11 @@ return {
 					existing = Instance.new("Pants")
 					existing.Parent = player.Character
 				end
-				if not player.Character:GetAttribute("_KPants") then
-					player.Character:SetAttribute("_KPants", existing.PantsTemplate)
+				if context.undo then
+					context._K.Util.Property.reset(existing, "PantsTemplate")
+				else
+					context._K.Util.Property.override(existing, "PantsTemplate", image)
 				end
-				existing.PantsTemplate = if context.undo then player.Character:GetAttribute("_KPants") else image
 			end
 		end,
 	},
@@ -1445,10 +1442,11 @@ return {
 					tshirt = Instance.new("ShirtGraphic")
 					tshirt.Parent = player.Character
 				end
-				if not player.Character:GetAttribute("_KTShirt") then
-					player.Character:SetAttribute("_KTShirt", tshirt.Graphic)
+				if context.undo then
+					context._K.Util.Property.reset(tshirt, "Graphic")
+				else
+					context._K.Util.Property.override(tshirt, "Graphic", image)
 				end
-				tshirt.Graphic = if context.undo then player.Character:GetAttribute("_KTShirt") else image
 			end
 		end,
 	},
@@ -1479,10 +1477,11 @@ return {
 				local bodyColors = character:FindFirstChildOfClass("BodyColors")
 				if bodyColors then
 					for _, key in { "Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg" } do
-						if not bodyColors:GetAttribute("_KColor" .. key) then
-							bodyColors:SetAttribute("_KColor" .. key, bodyColors[key .. "Color3"])
+						if color then
+							context._K.Util.Property.override(bodyColors, key .. "Color3", color)
+						else
+							context._K.Util.Property.reset(bodyColors, key .. "Color3")
 						end
-						bodyColors[key .. "Color3"] = color or bodyColors:GetAttribute("_KColor" .. key)
 					end
 				end
 			end
@@ -1526,30 +1525,39 @@ return {
 				local apply = color or reflectance or material
 
 				if part:IsA("MeshPart") and material ~= Enum.Material.ForceField then
-					if not part:GetAttribute("_KTextureID") then
-						part:SetAttribute("_KTextureID", part.TextureID)
+					if apply then
+						_K.Util.Property.override(part, "TextureID", "")
+					else
+						_K.Util.Property.reset(part, "TextureID")
 					end
-					part.TextureID = if apply then "" else part:GetAttribute("_KTextureID") :: string
 				end
+
 				local mesh = part:FindFirstChildOfClass("SpecialMesh")
 				if mesh and material ~= Enum.Material.ForceField then
-					if not mesh:GetAttribute("_KTextureId") then
-						mesh:SetAttribute("_KTextureId", mesh.TextureId)
+					if apply then
+						_K.Util.Property.override(mesh, "TextureId", "")
+					else
+						_K.Util.Property.reset(mesh, "TextureId")
 					end
-					mesh.TextureId = if apply then "" else mesh:GetAttribute("_KTextureId")
 				end
-				if not part:GetAttribute("_KColor") then
-					part:SetAttribute("_KColor", part.Color)
+
+				if color then
+					_K.Util.Property.override(part, "Color", color)
+				else
+					_K.Util.Property.reset(part, "Color")
 				end
-				if not part:GetAttribute("_KReflectance") then
-					part:SetAttribute("_KReflectance", part.Reflectance)
+
+				if reflectance then
+					_K.Util.Property.override(part, "Reflectance", reflectance)
+				else
+					_K.Util.Property.reset(part, "Reflectance")
 				end
-				if not part:GetAttribute("_KMaterial") then
-					part:SetAttribute("_KMaterial", part.Material)
+
+				if material then
+					_K.Util.Property.override(part, "Material", material)
+				else
+					_K.Util.Property.reset(part, "Material")
 				end
-				part.Color = if color then color else part:GetAttribute("_KColor") :: Color3
-				part.Reflectance = if reflectance then reflectance else part:GetAttribute("_KReflectance") :: number
-				part.Material = if material then material else part:GetAttribute("_KMaterial") :: Enum.Material
 			end
 
 			return {
@@ -1566,10 +1574,11 @@ return {
 					local bodyColors = character:FindFirstChildOfClass("BodyColors")
 					if bodyColors then
 						for _, key in { "Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg" } do
-							if not bodyColors:GetAttribute("_KColor" .. key) then
-								bodyColors:SetAttribute("_KColor" .. key, bodyColors[key .. "Color3"])
+							if color then
+								_K.Util.Property.override(bodyColors, key .. "Color3", color)
+							else
+								_K.Util.Property.reset(bodyColors, key .. "Color3")
 							end
-							bodyColors[key .. "Color3"] = color or bodyColors:GetAttribute("_KColor" .. key)
 						end
 					end
 
@@ -1578,18 +1587,20 @@ return {
 					if material ~= Enum.Material.ForceField then
 						local shirt = character:FindFirstChildOfClass("Shirt")
 						if shirt then
-							if not character:GetAttribute("_KShirt") then
-								character:SetAttribute("_KShirt", shirt.ShirtTemplate)
+							if apply then
+								_K.Util.Property.override(shirt, "ShirtTemplate", "")
+							else
+								_K.Util.Property.reset(shirt, "ShirtTemplate")
 							end
-							shirt.ShirtTemplate = if apply then "" else character:GetAttribute("_KShirt")
 						end
 
 						local pants = character:FindFirstChildOfClass("Pants")
 						if pants then
-							if not character:GetAttribute("_KPants") then
-								character:SetAttribute("_KPants", pants.PantsTemplate)
+							if apply then
+								_K.Util.Property.override(pants, "PantsTemplate", "")
+							else
+								_K.Util.Property.reset(pants, "PantsTemplate")
 							end
-							pants.PantsTemplate = if apply then "" else character:GetAttribute("_KPants")
 						end
 					end
 
@@ -1736,20 +1747,14 @@ return {
 						shirt = Instance.new("Shirt")
 						shirt.Parent = player.Character
 					end
-					if not player.Character:GetAttribute("_KShirt") then
-						player.Character:SetAttribute("_KShirt", shirt.ShirtTemplate)
-					end
-					shirt.ShirtTemplate = "rbxassetid://109163376"
+					context._K.Util.Property.override(shirt, "ShirtTemplate", "rbxassetid://109163376")
 
 					local pants = player.Character:FindFirstChildOfClass("Pants")
 					if not pants then
 						pants = Instance.new("Pants")
 						pants.Parent = player.Character
 					end
-					if not player.Character:GetAttribute("_KPants") then
-						player.Character:SetAttribute("_KPants", pants.PantsTemplate)
-					end
-					pants.PantsTemplate = "rbxassetid://109163376"
+					context._K.Util.Property.override(pants, "PantsTemplate", "rbxassetid://109163376")
 
 					context._K.Registry.commands.cape.env.add(
 						player.Character,
@@ -1782,11 +1787,11 @@ return {
 					end
 					local shirt = player.Character:FindFirstChildOfClass("Shirt")
 					if shirt then
-						shirt.ShirtTemplate = player.Character:GetAttribute("_KShirt") or shirt.ShirtTemplate
+						context._K.Util.Property.reset(shirt, "ShirtTemplate", "rbxassetid://109163376")
 					end
 					local pants = player.Character:FindFirstChildOfClass("Pants")
 					if pants then
-						pants.PantsTemplate = player.Character:GetAttribute("_KPants") or pants.PantsTemplate
+						context._K.Util.Property.reset(pants, "PantsTemplate")
 					end
 				end
 			end
