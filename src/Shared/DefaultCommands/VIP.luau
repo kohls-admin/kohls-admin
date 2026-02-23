@@ -1234,7 +1234,7 @@ return {
 	},
 	{
 		name = "headsize",
-		aliases = { "bighead", "hugehead", "largehead", "tinyhead", "minihead", "smallhead", "normalhead" },
+		aliases = { "headscale", "bighead", "hugehead", "largehead", "tinyhead", "minihead", "smallhead", "normalhead" },
 		description = "Changes the head size of one or more player(s).",
 		args = {
 			{
