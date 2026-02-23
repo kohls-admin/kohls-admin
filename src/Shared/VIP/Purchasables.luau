@@ -2,14 +2,16 @@ return {
 	chatCommands = {
 		115444443724463, -- 40% off chat commands
 		110019084552349, -- chat commands
-		88978146769822, -- tribute
-		115403290087767, -- patron
 		130880915606069, -- elite
 		84349662672781, -- epic
 		129439770798699, -- hero
 		132161234381156, -- legend
 		89859349616824, -- mythic
 		102980653148583, -- eternal
+	},
+	chatCommandsLower = {
+		88978146769822, -- tribute
+		115403290087767, -- patron
 	},
 
 	donations = {

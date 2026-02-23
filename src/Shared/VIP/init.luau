@@ -348,17 +348,26 @@ if Util.Service.Run:IsServer() then
 	do
 		local checking = {}
 		Remote.VIPCheck:Connect(function(player, id)
-			if table.find(Purchasables.chatCommands, id) and not checking[player] then
-				checking[player] = true
+			if checking[player] then
+				return
+			end
+			checking[player] = true
+
+			local level = if table.find(Purchasables.chatCommands, id)
+				then 4
+				else table.find(Purchasables.chatCommandsLower, id) or 0
+
+			if level > 0 then
 				local ok, result = Util.Retry(function()
 					return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, id)
 				end)
 				if ok and result then
-					setDonationLevel(player, 4)
+					setDonationLevel(player, level)
 					Remote.RolesNotification:Fire(player)
 				end
-				checking[player] = nil
 			end
+
+			checking[player] = nil
 		end)
 	end
 
@@ -416,6 +425,10 @@ if Util.Service.Run:IsServer() then
 	end)
 
 	for _, id in Purchasables.chatCommands do
+		VIP.allowedBulkPurchaseIds[id] = true
+	end
+
+	for _, id in Purchasables.chatCommandsLower do
 		VIP.allowedBulkPurchaseIds[id] = true
 	end
 
