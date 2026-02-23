@@ -1472,7 +1472,7 @@ return {
 	},
 	{
 		name = "invisible",
-		aliases = { "inv", "hide" },
+		aliases = { "inv", "invis", "hide" },
 		description = "Makes one or more player(s) invisible.",
 		args = {
 			{
