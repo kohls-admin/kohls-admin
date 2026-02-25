@@ -9,6 +9,10 @@ return function(_K)
 	local Server = _K.Server
 	local Util = _K.Util
 
+	if Util.Service.Run:IsClient() then
+		error("Cannot load server-side code on the client")
+	end
+
 	local characterCleanup = {}
 
 	local function characterRemoving(character: Model)
