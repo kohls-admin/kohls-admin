@@ -595,7 +595,7 @@ function Data.initialize(scope)
 			local formatVersion = if okLogs and logs then (metadata.version or 0) else LOG_FORMAT_VERSION
 
 			if okLogs and logs and formatVersion <= 0 then
-				local success, ok = pcall(Z.migrate, Data.Schema.logsV0, Data.Schema.logs, logs, function(logs)
+				local success, ok = pcall(Z.migrate :: any, Data.Schema.logsV0, Data.Schema.logs, logs, function(logs)
 					for i, log in logs do
 						log[1], log[2], log[3], log[4], log[5] = log.text, log.level, log.time, log.from, log.name
 						log.text, log.level, log.time, log.from, log.name = nil, nil, nil, nil, nil
