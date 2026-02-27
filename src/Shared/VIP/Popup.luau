@@ -454,7 +454,7 @@ local function setSalePrice(onSale: boolean?)
 	productId = if onSale then saleProductId else originalProductId
 	favorite.Visible = not onSale
 	originalPrice.Visible = onSale
-	title.Visible = not onSale
+	title.Visible = true
 	buy.Price.Text = if onSale then "479" else "799"
 	task.spawn(updateLabelPrice, buy.Price, productId)
 end
@@ -477,12 +477,13 @@ task.spawn(function()
 			task.wait(0.5)
 			elapsed = (workspace:GetServerTimeNow() - initialJoin)
 			local duration = PERIOD - elapsed
-			title.Text = `<font color="#0f0" transparency="0">40% OFF SALE</font> in {string.format(
+			title.Text = `<font color="#0f0" transparency="0">40% OFF</font> in {string.format(
 				"%02d:%02d",
 				duration // 60,
 				duration % 60
 			)}`
 		end
+		title.Text = `<font color="#0f0" transparency="0">40% OFF</font>`
 	end
 
 	setSalePrice(true)
