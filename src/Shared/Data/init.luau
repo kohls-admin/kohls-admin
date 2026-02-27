@@ -173,7 +173,7 @@ local function updateLogs()
 
 		local ok, result = pcall(Z.des :: any, desSchema, value)
 		if not ok then
-			warn(result)
+			warn("Failed to deserialize logs:", result)
 			return serLogs(saveLogs)
 		end
 
@@ -350,14 +350,14 @@ local SYNC = {
 
 			local result, feedback = Z.ser(Data.Schema.logsRemote, changes)
 			if result == nil then
-				warn(feedback)
+				warn("Failed to serialize sync logs:", feedback)
 				return
 			end
 			changes = result
 		elseif type(changes) == "buffer" then
 			local ok, result = pcall(Z.des :: any, Data.Schema.logs, changes)
 			if not ok then
-				warn(result)
+				warn("Failed to deserialize sync logs:", result)
 				return
 			end
 			logs = result
@@ -370,7 +370,7 @@ local SYNC = {
 
 			local ser, feedback = Z.ser(Data.Schema.logsRemote, logs)
 			if ser == nil then
-				warn(feedback)
+				warn("Failed to serialize remote logs:", feedback)
 				return
 			end
 			changes = ser
