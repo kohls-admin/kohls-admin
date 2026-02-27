@@ -162,19 +162,21 @@ local function updateLogs()
 	end
 
 	Data.Store.updateAsync("Logs_" .. math.random(4), function(value, keyInfo: DataStoreKeyInfo)
-		if not value or type(value) ~= "buffer" then
-			return serLogs(saveLogs)
-		end
-
 		local metadata = if keyInfo then keyInfo:GetMetadata() else {}
 		local formatVersion = if value then (metadata.version or 0) else LOG_FORMAT_VERSION
 
-		local desSchema = if formatVersion <= 0 then Data.Schema.logsV0 else Data.Schema.logs
+		metadata.version = LOG_FORMAT_VERSION
 
+		if not value or type(value) ~= "buffer" then
+			return serLogs(saveLogs), {}, metadata
+		end
+
+		local desSchema = if formatVersion <= 0 then Data.Schema.logsV0 else Data.Schema.logs
 		local ok, result = pcall(Z.des :: any, desSchema, value)
+
 		if not ok then
 			warn("Failed to deserialize logs:", result)
-			return serLogs(saveLogs)
+			return serLogs(saveLogs), {}, metadata
 		end
 
 		local logs = result
@@ -206,8 +208,6 @@ local function updateLogs()
 		end
 
 		Util.Table.mergeList(logs, saveLogs)
-
-		metadata.version = LOG_FORMAT_VERSION
 
 		return serLogs(logs), {}, metadata
 	end)
