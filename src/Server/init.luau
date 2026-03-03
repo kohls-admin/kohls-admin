@@ -779,7 +779,7 @@ return function(_K)
 		_K.Service.Players.PlayerRemoving:Connect(function(player)
 			local userId = player.UserId
 
-			task.spawn(_K.log, "left the server.", "LEAVE", player.UserId)
+			task.spawn(_K.log, "left the server.", "LEAVE", userId)
 
 			_K.Flux.cleanup(playerCleanup[userId])
 			playerCleanup[userId] = nil
