@@ -15,6 +15,7 @@ _K.client = {
 	bans = _K.Flux.state(_K.Data.bans),
 	logs = _K.Flux.state(_K.Data.logs),
 	members = _K.Flux.state(_K.Data.members),
+	servers = _K.Flux.state(_K.Data.servers),
 	rank = _K.Flux.state(0),
 
 	ready = false,
@@ -194,7 +195,7 @@ end)
 
 -- initial remote connection
 
-_K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings, defaultSettings)
+_K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, servers, savedSettings, defaultSettings)
 	-- need to improve networking performance!
 	if bans then
 		_K.Util.Table.merge(_K.Data.bans, bans)
@@ -212,8 +213,13 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, servers, savedSettings,
 		end
 	end
 
+	if reservedServers then
+		_K.Util.Table.merge(_K.Data.reservedServers, reservedServers)
+	end
+
 	if servers then
-		_K.Util.Table.merge(_K.Data.reservedServers, servers)
+		_K.Util.Table.merge(_K.Data.servers, servers)
+		_K.client.servers(_K.Data.servers)
 	end
 
 	_K.Util.Table.merge(_K.Data.members, members)

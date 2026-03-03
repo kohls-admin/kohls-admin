@@ -6,6 +6,7 @@ local Bans = require(script.Parent:WaitForChild("Bans"))
 local Commands = require(script.Parent:WaitForChild("Commands"))
 local Logs = require(script.Parent:WaitForChild("Logs"))
 local Members = require(script.Parent:WaitForChild("Members"))
+local Servers = require(script.Parent:WaitForChild("Servers"))
 local Settings = require(script.Parent:WaitForChild("Settings"))
 local Market = require(script.Parent:WaitForChild("Market"))
 
@@ -16,6 +17,7 @@ _K.client.dashboard.About = About.new(_K)
 _K.client.dashboard.Bans = Bans.new(_K)
 _K.client.dashboard.Commands = Commands.new(_K)
 _K.client.dashboard.Members = Members.new(_K)
+_K.client.dashboard.Servers = Servers.new(_K)
 _K.client.dashboard.Logs = Logs.new(_K)
 _K.client.dashboard.Settings = Settings.new(_K)
 _K.client.dashboard.Market = Market.new(_K)
@@ -26,6 +28,7 @@ local tabs = UI.new "Tabs" {
 		{ _K.client.dashboard.Commands },
 		{ _K.client.dashboard.Bans },
 		{ _K.client.dashboard.Members },
+		{ _K.client.dashboard.Servers },
 		{ _K.client.dashboard.Logs },
 		{ _K.client.dashboard.Settings },
 		{ _K.client.dashboard.About },

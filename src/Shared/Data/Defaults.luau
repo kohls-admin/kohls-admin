@@ -83,6 +83,7 @@ local Data = {
 	members = {},
 	logs = {},
 	reservedServers = {},
+	servers = {},
 	roles = nil,
 	rolesList = {},
 

@@ -81,6 +81,45 @@ return {
 			context._K.client.dashboard.Members._instance.Visible = true
 		end,
 	},
+	{
+		name = "servers",
+		description = "Shows the live game servers in a separate window.",
+		args = {},
+		envClient = function(_K)
+			local env = {}
+			task.defer(function()
+				while not _K.client do
+					task.wait()
+				end
+				local window = _K.UI.new "Window" {
+					Parent = _K.UI.LayerTopInset,
+					Icon = "rbxassetid://71961243872230",
+					Title = "Servers",
+				}
+				_K.UI.edit(window, {
+					[_K.UI.Event] = {
+						Visible = function()
+							if not window._instance.Visible and #_K.client.dashboard then
+								_K.UI.edit(_K.client.dashboard.Tabs, {
+									_K.client.dashboard.Servers,
+								})
+							end
+						end,
+					},
+				})
+				env.window = window
+			end)
+			return env
+		end,
+
+		runClient = function(context)
+			context._K.UI.edit(context.env.window, {
+				Visible = true,
+				context._K.client.dashboard.Servers,
+			})
+			context._K.client.dashboard.Servers._instance.Visible = true
+		end,
+	},
 
 	{
 		name = "ban",

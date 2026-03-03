@@ -9,6 +9,20 @@ return function(_K)
 	local Server = _K.Server
 	local Util = _K.Util
 
+	local Servers = require(script.Servers)
+	local Servers_Subscribers: { [Player]: boolean? } = {}
+	local serversRemote = _K.Remote.Servers
+
+	_K.Data.servers = Servers.Map
+
+	table.insert(Servers.ChangedCallbacks, function(jobId: string?, data: any?)
+		for player: Player, subscribed: boolean? in Servers_Subscribers do
+			if subscribed then
+				serversRemote:Fire(player, jobId, data)
+			end
+		end
+	end)
+
 	if Util.Service.Run:IsClient() then
 		error("Cannot load server-side code on the client")
 	end
@@ -487,13 +501,26 @@ return function(_K)
 					[tostring(player.UserId)] = _K.Data.members[tostring(player.UserId)],
 				}
 			local roles = _K.Data.roles
-			local servers = (
-				_K.Auth.hasCommand(player.UserId, "place") or _K.Auth.hasCommand(player.UserId, "unreserve")
-			) and _K.Data.reservedServers
+			local reservedServers = if (
+					_K.Auth.hasCommand(player.UserId, "place") or _K.Auth.hasCommand(player.UserId, "unreserve")
+				)
+				then _K.Data.reservedServers
+				else nil
+			local servers = if _K.Auth.hasCommand(player.UserId, "servers") then Servers.Map else nil
 			local savedSettings = _K.Data.savedSettings
 			local defaultSettings = _K.Data.defaultSettings
 
-			_K.Remote.Init:Fire(player, bans, logs, members, roles, servers, savedSettings, defaultSettings)
+			_K.Remote.Init:Fire(
+				player,
+				bans,
+				logs,
+				members,
+				roles,
+				reservedServers,
+				servers,
+				savedSettings,
+				defaultSettings
+			)
 			player:SetAttribute("_K_READY", true)
 
 			if _K.Data.canSave == false then
@@ -704,6 +731,27 @@ return function(_K)
 			end
 		end)
 
+		_K.Hook.roleAdded:Connect(function(userId: number, roleId: string)
+			local player = _K.Service.Players:GetPlayerByUserId(userId)
+			if player then
+				if _K.Auth.hasCommand(userId, "servers") then
+					if not Servers_Subscribers[player] then
+						_K.Remote.Servers:Fire(player, nil, Servers.Map)
+					end
+					Servers_Subscribers[player] = true
+				end
+			end
+		end)
+
+		_K.Hook.roleRemoved:Connect(function(userId: number, roleId: string)
+			local player = _K.Service.Players:GetPlayerByUserId(userId)
+			if player then
+				if not _K.Auth.hasCommand(userId, "servers") then
+					Servers_Subscribers[player] = nil
+				end
+			end
+		end)
+
 		local initialJoin = {}
 		local playerCleanup = {}
 
@@ -749,6 +797,10 @@ return function(_K)
 				end)
 			)
 
+			if _K.Auth.hasCommand(player.UserId, "servers") then
+				Servers_Subscribers[player] = true
+			end
+
 			if player.Character then
 				task.spawn(characterAdded, player.Character)
 			end
@@ -777,6 +829,8 @@ return function(_K)
 		end)
 
 		_K.Service.Players.PlayerRemoving:Connect(function(player)
+			Servers_Subscribers[player] = nil
+
 			local userId = player.UserId
 
 			task.spawn(_K.log, "left the server.", "LEAVE", userId)
