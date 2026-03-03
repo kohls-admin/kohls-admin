@@ -428,7 +428,8 @@ function Auth.roleCanUseCommand(roleId: Role, command: any): boolean
 		command = Registry.commands[string.lower(command)]
 	end
 	if type(command) ~= "table" then
-		error(`Invalid command type for {tostring(rawCommand)}: Expected table or string got {typeof(command)}`, 2)
+		warn(`Invalid command type for {tostring(rawCommand)}: Expected table or string got {typeof(command)}`, 2)
+		return false
 	end
 
 	if role.permissions and role.permissions.admin then
