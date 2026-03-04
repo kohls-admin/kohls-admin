@@ -823,7 +823,7 @@ return {
 				ownsEmote(false)
 				task.spawn(function()
 					local ok, result = _K.Util.Retry(function()
-						return _K.Util.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, id)
+						return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, id)
 					end)
 					if ok then
 						ownsEmote(result)
@@ -853,7 +853,7 @@ return {
 				and not context._K.Auth.hasPermission(context.from, "admin")
 			then
 				local ok, owned = context._K.Util.Retry(function()
-					return context._K.Util.Service.Marketplace:PlayerOwnsAssetAsync(context._K.LocalPlayer, animation)
+					return context._K.Service.Marketplace:PlayerOwnsAssetAsync(context._K.LocalPlayer, animation)
 				end)
 				if ok and not owned then
 					local id = tostring(animation)
@@ -861,7 +861,7 @@ return {
 						id = "115444443724463" -- chat commands
 					end
 					local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = id } }
-					context._K.Util.Service.Marketplace:PromptBulkPurchase(context._K.LocalPlayer, items, {})
+					context._K.Service.Marketplace:PromptBulkPurchase(context._K.LocalPlayer, items, {})
 					return
 				end
 			end
@@ -1016,10 +1016,7 @@ return {
 							lineData.owned = false
 							task.spawn(function()
 								local ok, result = _K.Util.Retry(function()
-									return _K.Util.Service.Marketplace:PlayerOwnsAssetAsync(
-										_K.LocalPlayer,
-										lineData.emoteId
-									)
+									return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, lineData.emoteId)
 								end)
 								if ok then
 									lineData.owned = result
