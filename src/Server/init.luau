@@ -480,7 +480,7 @@ return function(_K)
 				logs = cachedLogsBuffer
 			end
 
-			local bans = _K.Auth.hasCommand(player.UserId, "ban") and _K.Data.bans
+			local bans = if _K.Auth.hasCommand(player.UserId, "ban") then _K.Data.bans else nil
 			local members = if _K.Auth.hasCommand(player.UserId, "members")
 				then _K.Data.members
 				else {
