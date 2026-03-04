@@ -33,6 +33,20 @@ function Time.fromUnit(unit: string): number?
 	return
 end
 
+function Time.clock(seconds: number): string
+	local hh = math.floor(seconds / 3600)
+	local mm = math.floor((seconds % 3600) / 60)
+	local ss = math.floor(seconds % 60)
+
+	if hh > 0 then
+		return string.format("%02d:%02d:%02d", hh, mm, ss)
+	elseif mm > 0 then
+		return string.format("%02d:%02d", mm, ss)
+	else
+		return string.format("%02d", ss)
+	end
+end
+
 function Time.readable(seconds: number): string
 	local buffer = {}
 	for index = #Time.UNITS, 2, -1 do

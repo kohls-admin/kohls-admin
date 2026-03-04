@@ -393,32 +393,15 @@ UI.new "Frame" {
 			Image = UI.Theme.Image.Hourglass_Bottom,
 		}, {
 			UI.action(function(instance)
-				local function getTimeString(amount)
-					local hours = math.floor(amount / 3600)
-					local minutes = math.floor((amount % 3600) / 60)
-					local seconds = math.floor(amount % 60)
-					local strings = {}
-					for k, v in { hours, minutes, seconds } do
-						if hours > 0 or v > 0 or k == 3 then
-							table.insert(
-								strings,
-								if (v < 10 and v > 0) and ((k == 2 and hours == 0) or (k == 3 and minutes == 0))
-									then tostring(v)
-									else string.format("%02d", v)
-							)
-						end
-					end
-					return table.concat(strings, ":")
-				end
 				repeat
 					task.wait(1)
 					local uptime = math.round(workspace:GetServerTimeNow() - _K.script:GetAttribute("ServerStartTime"))
-					instance.Text = getTimeString(uptime)
+					instance.Text = _K.Util.Time.clock(uptime)
 
 					local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
 					if tooltip then
 						tooltip.Text(
-							`Uptime\n\n<b>Server:</b>  {instance.Text}\n<b>Client:</b>  {getTimeString(time())}`
+							`Uptime\n\n<b>Server:</b>  {instance.Text}\n<b>Client:</b>  {_K.Util.Time.clock(time())}`
 						)
 					end
 				until nil
