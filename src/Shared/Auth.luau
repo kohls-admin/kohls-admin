@@ -1,3 +1,5 @@
+local Players = game:GetService("Players")
+
 local Shared = script.Parent
 
 local Data = require(Shared.Data:WaitForChild("Defaults"))
@@ -23,7 +25,7 @@ function Auth.banHandler(player)
 	end
 
 	if not Util.RunContext.IsStudio then
-		local banHistory = Util.Service.Players:GetBanHistoryAsync(player.UserId)
+		local banHistory = Players:GetBanHistoryAsync(player.UserId)
 		if banHistory then
 			local items = banHistory:GetCurrentPage()
 			local last = items[1]
@@ -63,7 +65,7 @@ local function saveBan(key, userId, reason, timestamp, fromUserId)
 	if timestamp then
 		Data.Sync.bans[key] = ban
 	end
-	for _, player in Util.Service.Players:GetPlayers() do
+	for _, player in Players:GetPlayers() do
 		if Auth.hasCommand(player.UserId, "ban") then
 			Remote.Ban:Fire(player, key, ban)
 		end
@@ -104,7 +106,7 @@ function Auth.banUsers(
 			local chunk = table.move(userIds, i, math.min(#userIds, i + 49), 1, {})
 			local attempt = 0
 			repeat
-				local ok, err = pcall(Util.Service.Players.BanAsync, Util.Service.Players, {
+				local ok, err = pcall(Players.BanAsync, Players, {
 					UserIds = chunk,
 					PrivateReason = reason or "No reason.",
 					DisplayReason = reason or "No reason.",
@@ -125,11 +127,7 @@ function Auth.banUsers(
 			local chunk = table.move(unbanAsync, i, math.min(#unbanAsync, i + 49), 1, {})
 			local attempt = 0
 			repeat
-				local ok, err = pcall(
-					Util.Service.Players.UnbanAsync,
-					Util.Service.Players,
-					{ UserIds = chunk, ApplyToUniverse = true }
-				)
+				local ok, err = pcall(Players.UnbanAsync, Players, { UserIds = chunk, ApplyToUniverse = true })
 				if ok then
 					break
 				end
@@ -159,7 +157,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 
 		Data.bans[key] = nil
 		Data.Sync.bans[key] = Data.REMOVE
-		for _, player in Util.Service.Players:GetPlayers() do
+		for _, player in Players:GetPlayers() do
 			if Auth.hasCommand(player.UserId, "ban") then
 				Remote.Ban:Fire(player, key)
 			end
@@ -172,11 +170,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 			local attempt = 0
 			repeat
 				attempt += 1
-				local ok, err = pcall(
-					Util.Service.Players.UnbanAsync,
-					Util.Service.Players,
-					{ UserIds = chunk, ApplyToUniverse = true }
-				)
+				local ok, err = pcall(Players.UnbanAsync, Players, { UserIds = chunk, ApplyToUniverse = true })
 				if ok then
 					break
 				end
@@ -199,7 +193,7 @@ end
 function Auth.networkMember(userId: number)
 	local userIdString = tostring(userId)
 	local member = Data.members[userIdString]
-	for _, player in Util.Service.Players:GetPlayers() do
+	for _, player in Players:GetPlayers() do
 		if not player:GetAttribute("_K_READY") then
 			continue
 		end
@@ -358,7 +352,7 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 		end
 	end
 
-	local player = Util.Service.Players:GetPlayerByUserId(userId)
+	local player = Players:GetPlayerByUserId(userId)
 	if not player then
 		return
 	end
@@ -611,7 +605,7 @@ function Auth.targetUserArgument(arg: any, userId: number, value: Player | numbe
 		arg.definition.lowerRank
 		and (not arg.definition.shouldRequest or arg._K.Data.settings.commandRequests == false)
 	then
-		local player = Util.Service.Players:GetPlayerByUserId(userId)
+		local player = Players:GetPlayerByUserId(userId)
 		if player and player:GetAttribute("_KRolesLoaded") ~= true then
 			return nil, "Can't target loading user"
 		end
