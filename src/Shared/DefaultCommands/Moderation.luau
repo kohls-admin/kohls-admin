@@ -922,7 +922,7 @@ return {
 	{
 		name = "tools",
 		aliases = { "toollist" },
-		description = "Views all tools usable with the give command.",
+		description = "Views all tools usable with the give command.\nThe default tool location is <b>game.ServerStorage</b>",
 
 		envClient = function(_K)
 			local UI = _K.UI
