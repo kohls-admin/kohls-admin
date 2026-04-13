@@ -1593,6 +1593,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to blind.",
+				shouldRequest = true,
 			},
 		},
 		env = function(_K)
@@ -1626,6 +1627,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to unblind.",
+				lowerRank = true,
 			},
 		},
 
