@@ -170,7 +170,7 @@ _K.Remote.Members:Connect(function(members)
 end)
 
 _K.Remote.Log:Connect(function(log)
-	if not _K.client.ready then
+	if not _K.ready then
 		return
 	end
 
@@ -182,7 +182,7 @@ _K.Remote.Log:Connect(function(log)
 end)
 
 _K.Remote.Logs:Connect(function(logsBuffer)
-	if not _K.client.ready then
+	if not _K.ready then
 		return
 	end
 

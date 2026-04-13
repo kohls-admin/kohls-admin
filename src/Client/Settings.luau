@@ -38,7 +38,7 @@ function Settings.new(_K)
 			current = UI.Theme[string.sub(key, 6)]
 		end
 
-		if not _K.client.ready or _K.Util.Table.deepCompare(value, UI.raw(current)) then
+		if not _K.ready or _K.Util.Table.deepCompare(value, UI.raw(current)) then
 			return
 		end
 

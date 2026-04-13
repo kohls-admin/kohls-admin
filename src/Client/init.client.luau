@@ -67,7 +67,7 @@ local chatCommandThrottle
 local warnPrefixes = _K.Util.String.escapePattern(";:!$~.")
 
 local function Chatted(message: string)
-	if not _K.client.ready or _K.Data.settings.chatCommands == false then
+	if not _K.ready or _K.Data.settings.chatCommands == false then
 		return
 	end
 	local prefix = _K.getCommandPrefix()
@@ -451,7 +451,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 
 	_K.client.updateInterfaceAuth()
 
-	_K.client.ready = true
+	_K.ready = true
 	_K.Hook.init:Fire()
 
 	task.spawn(function()
