@@ -69,6 +69,7 @@ function Class.new(properties: Properties?)
 		UI.new "UICorner" {
 			CornerRadius = UI.Theme.CornerRadius,
 		},
+		UI.new "Gradient" {},
 		UI.new "Stroke" {},
 
 		[UI.Clean] = cleanup,
