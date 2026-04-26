@@ -5,7 +5,7 @@ local RunService = game:GetService("RunService")
 local Package = script.Parent
 local Shared = Package.Shared.Value
 
-local Remote = require(Shared.Util.Remote)
+local Remote = require(Shared.Util.Remote) :: any
 
 local THROTTLE = 15
 local TOPIC = "_KAdminServers"
