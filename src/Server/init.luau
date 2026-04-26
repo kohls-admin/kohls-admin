@@ -9,19 +9,15 @@ return function(_K)
 	local Server = _K.Server
 	local Util = _K.Util
 
+	local SharedReference = Instance.new("ObjectValue")
+	SharedReference.Name = "Shared"
+	SharedReference.Value = Shared
+	SharedReference.Parent = Server
+
 	local Servers = require(script.Servers)
-	local Servers_Subscribers: { [Player]: boolean? } = {}
-	local serversRemote = _K.Remote.Servers
+	local ServersSubscribers = Servers.Subscribers
 
 	_K.Data.servers = Servers.Map
-
-	table.insert(Servers.ChangedCallbacks, function(jobId: string?, data: any?)
-		for player: Player, subscribed: boolean? in Servers_Subscribers do
-			if subscribed then
-				serversRemote:Fire(player, jobId, data)
-			end
-		end
-	end)
 
 	if Util.Service.Run:IsClient() then
 		error("Cannot load server-side code on the client")
@@ -735,10 +731,10 @@ return function(_K)
 			local player = _K.Service.Players:GetPlayerByUserId(userId)
 			if player then
 				if _K.Auth.hasCommand(userId, "servers") then
-					if not Servers_Subscribers[player] then
+					if not ServersSubscribers[player] then
 						_K.Remote.Servers:Fire(player, nil, Servers.Map)
 					end
-					Servers_Subscribers[player] = true
+					ServersSubscribers[player] = true
 				end
 			end
 		end)
@@ -747,7 +743,7 @@ return function(_K)
 			local player = _K.Service.Players:GetPlayerByUserId(userId)
 			if player then
 				if not _K.Auth.hasCommand(userId, "servers") then
-					Servers_Subscribers[player] = nil
+					ServersSubscribers[player] = nil
 				end
 			end
 		end)
@@ -798,7 +794,7 @@ return function(_K)
 			)
 
 			if _K.Auth.hasCommand(player.UserId, "servers") then
-				Servers_Subscribers[player] = true
+				ServersSubscribers[player] = true
 			end
 
 			if player.Character then
@@ -829,7 +825,7 @@ return function(_K)
 		end)
 
 		_K.Service.Players.PlayerRemoving:Connect(function(player)
-			Servers_Subscribers[player] = nil
+			ServersSubscribers[player] = nil
 
 			local userId = player.UserId
 

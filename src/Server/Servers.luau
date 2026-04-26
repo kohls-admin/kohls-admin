@@ -2,37 +2,42 @@ local MessagingService = game:GetService("MessagingService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
+local Package = script.Parent
+local Shared = Package.Shared.Value
+
+local Remote = require(Shared.Util.Remote)
+
 local THROTTLE = 15
 local TOPIC = "_KAdminServers"
-local SERVER_ID = game.JobId ~= "" and game.JobId
+local SERVER_ID = game.JobId
+
+local EXPIRE = THROTTLE * 2 + 5
+
+local SERVERS_REMOTE = Remote.Servers
 
 local Map: { [string]: { number } } = {}
+local ServersSubscribers: { [Player]: boolean? } = {}
 
 local Servers = {
-	ChangedCallbacks = {},
 	Map = Map,
+	Subscribers = ServersSubscribers,
 }
 
 if RunService:IsServer() then
 	local START = DateTime.now().UnixTimestamp
 
-	local function cleanup()
-		local expireTime = tick() - (THROTTLE * 2) - 5
-		for jobId, data in Map do
-			local updated = data[3]
-			if type(updated) == "number" and updated < expireTime then
-				Map[jobId] = nil
-				for _, callback in Servers.ChangedCallbacks do
-					if type(callback) == "function" then
-						task.spawn(callback, jobId)
-					end
-				end
+	local function network(jobId: string, data: any)
+		for player: Player, subscribed: boolean? in ServersSubscribers do
+			if subscribed then
+				SERVERS_REMOTE:Fire(player, jobId, data)
 			end
 		end
 	end
 
 	local function publish()
-		MessagingService:PublishAsync(TOPIC, { SERVER_ID, game.PlaceId, #Players:GetPlayers(), START })
+		if not RunService:IsStudio() then
+			MessagingService:PublishAsync(TOPIC, { SERVER_ID, game.PlaceId, #Players:GetPlayers(), START })
+		end
 	end
 
 	local function subscribe()
@@ -43,6 +48,7 @@ if RunService:IsServer() then
 				or type(data[1]) ~= "string"
 				or type(data[2]) ~= "number"
 				or type(data[3]) ~= "number"
+				or type(data[4]) ~= "number"
 			then
 				return
 			end
@@ -65,12 +71,8 @@ if RunService:IsServer() then
 				Map[jobId] = existing
 			end
 
-			if changed and type(Servers.ChangedCallbacks) == "table" then
-				for _, callback in Servers.ChangedCallbacks do
-					if type(callback) == "function" then
-						task.spawn(callback, jobId, existing)
-					end
-				end
+			if changed then
+				network(jobId, existing)
 			end
 		end)
 	end
@@ -83,15 +85,24 @@ if RunService:IsServer() then
 		until ok
 	end)
 
-	if not RunService:IsStudio() then
-		task.spawn(function()
-			while true do
-				task.spawn(cleanup)
-				task.spawn(publish)
-				task.wait(THROTTLE)
+	local function cleanup()
+		local expireTime = tick() - EXPIRE
+		for jobId, data in Map do
+			local updated = data[4]
+			if type(updated) == "number" and updated < expireTime then
+				Map[jobId] = nil
+				network(jobId)
 			end
-		end)
+		end
 	end
+
+	task.spawn(function()
+		while true do
+			task.spawn(cleanup)
+			task.spawn(publish)
+			task.wait(THROTTLE)
+		end
+	end)
 end
 
 return Servers
