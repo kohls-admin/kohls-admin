@@ -6,75 +6,66 @@ local positionState = UI.state(Vector2.zero)
 local sizeState = UI.state(Vector2.zero)
 local tipSizeState = UI.state(Vector2.zero)
 
-local tooltip = UI.new "TextLabel" {
-	Parent = UI.LayerTop,
-	AutoLocalize = false,
-	AutomaticSize = Enum.AutomaticSize.XY,
-	Name = "Tooltip",
-	ZIndex = 9e8,
-	BackgroundColor3 = UI.Theme.Primary,
-	FontFace = UI.Theme.Font,
-	TextSize = UI.Theme.FontSize,
-	TextColor3 = UI.Theme.PrimaryText,
-	TextStrokeColor3 = UI.Theme.Primary,
-	TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-	TextXAlignment = Enum.TextXAlignment.Left,
-	TextWrapped = true,
-	RichText = true,
-	Visible = false,
+local tooltip
+local function init()
+	tooltip = UI.new "TextLabel" {
+		Parent = UI.LayerTop,
+		AutoLocalize = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Name = "Tooltip",
+		ZIndex = 9e8,
+		BackgroundColor3 = UI.Theme.Primary,
+		FontFace = UI.Theme.Font,
+		TextSize = UI.Theme.FontSize,
+		TextColor3 = UI.Theme.PrimaryText,
+		TextStrokeColor3 = UI.Theme.Primary,
+		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextWrapped = true,
+		RichText = true,
+		Visible = false,
 
-	Position = function()
-		local tipSize = tipSizeState()
-		local max = layerSizeState()
-		local position, size = positionState(), sizeState()
-		local padding = UI.Theme.Padding().Offset
-		local yOffset = position.Y + size.Y + padding + UI.TopbarInset().Height
-		local tipBoundX = math.max(0, max.X - tipSize.X)
-		local tipBoundY = math.max(0, max.Y - tipSize.Y)
-		local xOffset = 0
+		Position = function()
+			local tipSize = tipSizeState()
+			local max = layerSizeState()
+			local position, size = positionState(), sizeState()
+			local padding = UI.Theme.Padding().Offset
+			local yOffset = position.Y + size.Y + padding + UI.TopbarInset().Height
+			local tipBoundX = math.max(0, max.X - tipSize.X)
+			local tipBoundY = math.max(0, max.Y - tipSize.Y)
+			local xOffset = 0
 
-		if yOffset > tipBoundY then
-			yOffset = position.Y - tipSize.Y - padding + UI.TopbarInset().Height
-			if yOffset < 0 then
-				xOffset = size.X + padding
-				if position.X + size.X + padding > tipBoundX then
-					xOffset = -(tipSize.X + padding)
+			if yOffset > tipBoundY then
+				yOffset = position.Y - tipSize.Y - padding + UI.TopbarInset().Height
+				if yOffset < 0 then
+					xOffset = size.X + padding
+					if position.X + size.X + padding > tipBoundX then
+						xOffset = -(tipSize.X + padding)
+					end
 				end
 			end
-		end
 
-		return UDim2.fromOffset(math.clamp(position.X + xOffset, 0, tipBoundX), math.clamp(yOffset, 0, tipBoundY))
-	end,
+			return UDim2.fromOffset(math.clamp(position.X + xOffset, 0, tipBoundX), math.clamp(yOffset, 0, tipBoundY))
+		end,
 
-	UI.new "UICorner" {
-		CornerRadius = UI.Theme.CornerRadius,
-	},
-	UI.new "UIPadding" {
-		PaddingLeft = UI.Theme.Padding,
-		PaddingRight = UI.Theme.Padding,
-		PaddingTop = UI.Theme.Padding,
-		PaddingBottom = UI.Theme.Padding,
-	},
-	UI.new "UISizeConstraint" {
-		MinSize = Vector2.new(8, 8),
-		MaxSize = Vector2.new(256, math.huge),
-	},
-	UI.new "UIStroke" {
-		Enabled = UI.Theme.StrokeEnabled,
-		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-		Transparency = UI.Theme.TransparencyLight,
-		Color = Color3.new(1, 1, 1),
-
-		UI.new "UIGradient" {
-			Color = function()
-				return ColorSequence.new(UI.Theme.Border(), UI.Theme.BorderStop())
-			end,
-			Rotation = UI.Theme.BorderAngle,
+		UI.new "UICorner" {
+			CornerRadius = UI.Theme.CornerRadius,
 		},
-	},
-}
+		UI.new "UIPadding" {
+			PaddingLeft = UI.Theme.Padding,
+			PaddingRight = UI.Theme.Padding,
+			PaddingTop = UI.Theme.Padding,
+			PaddingBottom = UI.Theme.Padding,
+		},
+		UI.new "UISizeConstraint" {
+			MinSize = Vector2.new(8, 8),
+			MaxSize = Vector2.new(256, math.huge),
+		},
+		UI.new "Stroke" {},
+	}
 
-tipSizeState:_bindToProperty(tooltip, "AbsoluteSize")
+	tipSizeState:_bindToProperty(tooltip, "AbsoluteSize")
+end
 
 local invalidProperties = { "Enabled", "Hovering", "Parent", "_instance" }
 local function updateTooltip(visible: boolean, adornee: GuiObject?, properties: { [string]: any }?)
@@ -114,6 +105,10 @@ Class.__index = Class
 setmetatable(Class, BaseClass)
 
 function Class.new(properties: Properties?)
+	if not tooltip then
+		init()
+	end
+
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
