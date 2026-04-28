@@ -11,7 +11,10 @@ local module = {
 }
 
 local clacks = "rbxassetid://136112106699293"
-task.spawn(ContentProvider.PreloadAsync, ContentProvider, { clacks })
+
+local sound = Instance.new("Sound")
+sound.SoundId = clacks
+task.spawn(ContentProvider.PreloadAsync, ContentProvider, { sound })
 
 local lastHash, lastKey
 local random = Random.new()

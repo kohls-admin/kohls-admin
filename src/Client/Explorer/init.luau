@@ -64,10 +64,13 @@ local function setClassIcon(item, instance: Instance)
 		"rbxasset://studio_svg_textures/Shared/Placeholder/Dark/Standard/Placeholder.png"
 
 	local texture = `rbxasset://studio_svg_textures/Shared/InsertableObjects/Dark/Standard/{instance.ClassName}.png`
+	local decal = Instance.new("Decal")
+	decal.Texture = texture
+
 	task.spawn(
 		ContentProvider.PreloadAsync,
 		ContentProvider,
-		{ texture },
+		{ decal },
 		function(path: string, Status: Enum.AssetFetchStatus)
 			if Status == Enum.AssetFetchStatus.Success then
 				classIcons[instance.ClassName] = path
