@@ -1291,8 +1291,10 @@ return {
 			if status == Enum.AssetFetchStatus.Success then
 				audioTextToSpeech.Ended:Once(cleanup)
 				audioTextToSpeech:Play()
+				return
 			else
 				cleanup()
+				return `Failed to load sound`
 			end
 		end,
 	},
