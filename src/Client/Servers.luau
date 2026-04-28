@@ -115,7 +115,7 @@ function Servers.new(_K)
 
 				Activated = function()
 					if lineItem.placeId and lineItem.jobId then
-						_K.Util.SafeTeleport(lineItem.placeId, lineItem.jobId)
+						_K.Remote.TeleportToServer:Fire(lineItem.placeId, lineItem.jobId)
 					end
 				end,
 			},

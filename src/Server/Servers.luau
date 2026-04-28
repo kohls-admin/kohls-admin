@@ -6,6 +6,7 @@ local Package = script.Parent
 local Shared = Package.Shared.Value
 
 local Remote = require(Shared.Util.Remote) :: any
+local SafeTeleport = require(Shared.Util.SafeTeleport) :: any
 
 local THROTTLE = 15
 local TOPIC = "_KAdminServers"
@@ -101,6 +102,19 @@ if RunService:IsServer() then
 			task.spawn(cleanup)
 			task.spawn(publish)
 			task.wait(THROTTLE)
+		end
+	end)
+
+	Remote.TeleportToServer:Connect(function(player: Player, placeId: number, jobId: string)
+		if
+			jobId ~= SERVER_ID
+			and ServersSubscribers[player] ~= nil
+			and type(placeId) == "number"
+			and type(jobId) == "string"
+		then
+			local options = Instance.new("TeleportOptions")
+			options.ServerInstanceId = jobId
+			SafeTeleport(placeId, { player }, options)
 		end
 	end)
 end
