@@ -156,17 +156,34 @@ function Servers.new(_K)
 		end
 	end
 
+	local itemSize = UI.compute(function()
+		return UDim2.new(1, 0, 0, UI.Theme.FontSize * 2 + UI.Theme.Padding().Offset)
+	end)
+
+	local emptyListLabel = label {
+		Name = "EmptyListLabel",
+		Text = "No other servers found",
+		FontFace = UI.Theme.Font,
+		Size = itemSize,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Visible = false,
+	}
+	emptyListLabel.Visible = _K.Util.Table.countKeys(_K.client.servers._value) == 0
+	_K.client.bans:Connect(function()
+		emptyListLabel.Visible = _K.Util.Table.countKeys(_K.client.servers._value) == 0
+	end)
+
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Servers",
 		List = _K.client.servers,
 		DictList = true,
 		Enabled = false,
 		Visible = false,
-		ItemSize = function()
-			return UDim2.new(1, 0, 0, UI.Theme.FontSize * 2 + UI.Theme.Padding().Offset)
-		end,
+		ItemSize = itemSize,
 		CreateItem = createItem,
 		RenderItem = renderItem,
+
+		emptyListLabel,
 	}
 
 	task.defer(scroller.filter, scroller, function(self, list)
