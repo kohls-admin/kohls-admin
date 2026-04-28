@@ -169,7 +169,7 @@ function Servers.new(_K)
 		Visible = false,
 	}
 	emptyListLabel.Visible = _K.Util.Table.countKeys(_K.client.servers._value) == 0
-	_K.client.bans:Connect(function()
+	_K.client.servers:Connect(function()
 		emptyListLabel.Visible = _K.Util.Table.countKeys(_K.client.servers._value) == 0
 	end)
 
