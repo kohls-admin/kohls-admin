@@ -2352,6 +2352,35 @@ return {
 			end
 		end,
 	},
+	{
+		name = "join",
+		description = "Join a player in the same game.",
+		args = {
+			{
+				type = "userId",
+				name = "UserId",
+				description = "The UserId of the player to join.",
+			},
+		},
+
+		run = function(context, userId)
+			local ok, samePlace, errorMessage, placeId, jobId =
+				pcall(context._K.Service.Teleport.GetPlayerPlaceInstanceAsync, context._K.Service.Teleport, userId)
+			if not ok then
+				return errorMessage or samePlace
+			end
+			if samePlace then
+				return "You're already in the same server!"
+			end
+
+			if placeId and jobId then
+				local options = Instance.new("TeleportOptions")
+				options.ServerInstanceId = jobId
+				context._K.Util.SafeTeleport(placeId, { context.fromPlayer }, options)
+			end
+			return
+		end,
+	},
 
 	{
 		name = "fov",
