@@ -241,14 +241,11 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 					player,
 					{ Text = commandError, From = "_K", TextColor3 = Color3.new(1, 0, 0), Sound = "Call_Leave" }
 				)
+				local level = _K.Logger:encode("ERROR")
+				local now = workspace:GetServerTimeNow()
+				local name = player.Name
 				for _, err in commandErrors do
-					_K.Remote.Log:Fire(player, {
-						text = err,
-						level = _K.Logger:encode("ERROR"),
-						time = workspace:GetServerTimeNow(),
-						from = from,
-						name = player.Name,
-					})
+					_K.Remote.Log:Fire(player, { err, level, now, from, name })
 				end
 			end
 		else
