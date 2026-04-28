@@ -171,13 +171,9 @@ local Tooltip = UI.new "TextLabel" {
 	},
 }
 
-local TooltipTextBounds = UI.state(Tooltip, "TextBounds")
 UI.edit(Tooltip, {
-	Size = function()
-		local height = TooltipTextBounds().Y
-		local padding = UI.Theme.PaddingDouble().Offset
-		return UDim2.new(1, 0, 0, math.max(32, height + padding))
-	end,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.new(1, 0, 0, 32),
 })
 
 TooltipLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
