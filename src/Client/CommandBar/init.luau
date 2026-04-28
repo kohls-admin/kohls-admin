@@ -152,6 +152,8 @@ local Tooltip = UI.new "TextLabel" {
 	Parent = TooltipFrame,
 	LayoutOrder = -1,
 	AutoLocalize = false,
+	AutomaticSize = Enum.AutomaticSize.Y,
+	Size = UDim2.new(1, 0, 0, 32),
 	Name = "Tooltip",
 	BackgroundTransparency = 1,
 	TextWrapped = true,
@@ -170,15 +172,6 @@ local Tooltip = UI.new "TextLabel" {
 		PaddingRight = UI.Theme.Padding,
 	},
 }
-
-local TooltipTextBounds = UI.state(Tooltip, "TextBounds")
-UI.edit(Tooltip, {
-	Size = function()
-		local height = TooltipTextBounds().Y
-		local padding = UI.Theme.PaddingDouble().Offset
-		return UDim2.new(1, 0, 0, math.max(32, height + padding))
-	end,
-})
 
 TooltipLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	local size = TooltipLayout.AbsoluteContentSize
