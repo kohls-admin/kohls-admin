@@ -133,7 +133,7 @@ function Servers.new(_K)
 
 		local data = servers[jobId]
 		if data then
-			local _, placeId, playerCount, startTime = unpack(data)
+			local placeId, playerCount, startTime = unpack(data)
 
 			lineItem.placeId = placeId
 
