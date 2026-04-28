@@ -59,7 +59,7 @@ if RunService:IsServer() then
 				return
 			end
 
-			local changed
+			local changed = true
 			local existing = Map[jobId]
 			local now = tick()
 
@@ -67,7 +67,6 @@ if RunService:IsServer() then
 				changed = existing[2] ~= count
 				existing[2], existing[4] = count, now
 			else
-				changed = true
 				existing = { placeId, count, start, now }
 				Map[jobId] = existing
 			end
