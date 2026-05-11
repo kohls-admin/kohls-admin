@@ -13,6 +13,26 @@ if CONFIG then
 	LEGACY = CONFIG:GetAttribute("Legacy")
 end
 
+do
+	local ok, err = pcall(function()
+		return script.Sandboxed
+	end)
+	if not ok and type(err) == "string" and string.find(err, "lacking capability") then
+		error([[
+
+
+[KOHL'S ADMIN PERMISSIONS FIX]
+
+Select the Kohl's Admin folder in the Explorer and run this script in the command bar:
+
+local obj = game.Selection:Get()[1]
+for _, v in obj:GetDescendants() do v.Sandboxed = false end
+while obj and obj ~= game do obj.Sandboxed = false obj = obj.Parent end
+
+]])
+	end
+end
+
 if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 	local legacyConfig = CONFIG:FindFirstChild("Legacy")
 
