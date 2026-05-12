@@ -65,7 +65,7 @@ function Store.loadStore(name, scope): (boolean, DataStore | string)
 	local success, err = pcall(result.GetAsync, result, "__TEST")
 	if not success then
 		if string.find(err, "Studio access", 1, true) then
-			result = "Enable Studio access to API services in Game Settings for full features."
+			result = "Enable Studio access to API services in Experience Settings for full features."
 			canSave = false
 			warn(result)
 		end
