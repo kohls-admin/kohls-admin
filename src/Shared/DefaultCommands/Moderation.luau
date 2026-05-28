@@ -1177,7 +1177,7 @@ return {
 			local toolsEnv = context._K.Registry.commands.tools.env
 			toolsEnv.command("startergive")
 			toolsEnv.removeCommand("starterremove")
-			toolsEnv.env.target(nil)
+			toolsEnv.target(nil)
 			toolsEnv.scroller.List(toolNames)
 			toolsEnv.window.Title("Starter Tools")
 			toolsEnv.window._instance.Visible = true
