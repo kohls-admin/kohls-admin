@@ -681,9 +681,11 @@ return function(_K)
 			return clone
 		end
 
+		local MAX_EXPLORER_BATCH_SIZE = 64
+
 		_K.Remote.Explorer:Connect(function(player: Player, action: string, data: any, selected: Instance?)
 			local explorerRank = _K.Auth.hasCommand(player.UserId, "explorer")
-			if not explorerRank then
+			if not explorerRank or type(data) ~= "table" or #data > MAX_EXPLORER_BATCH_SIZE then
 				return
 			end
 
@@ -691,7 +693,10 @@ return function(_K)
 				for _, copy: Instance in data do
 					local wasArchivable = copy.Archivable
 					copy.Archivable = true
-					pcall(cloneInstanceUnsafe, copy, selected)
+					local ok, err = pcall(cloneInstanceUnsafe, copy, selected)
+					if not ok then
+						_K.log(`failed to paste instance: {err}`, "ERROR", player.UserId)
+					end
 					if not wasArchivable then
 						copy.Archivable = false
 					end
@@ -722,7 +727,10 @@ return function(_K)
 						end
 					end
 
-					pcall(game.Destroy, instance)
+					local ok, err = pcall(game.Destroy, instance)
+					if not ok then
+						_K.log(`failed to delete instance: {err}`, "ERROR", player.UserId)
+					end
 				end
 			end
 		end)
