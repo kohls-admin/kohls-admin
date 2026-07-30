@@ -60,6 +60,9 @@ function Table.deepCompare(a: any, b: any)
 	if type(a) ~= "table" or type(b) ~= "table" then
 		return a == b
 	end
+	if Table.countKeys(a) ~= Table.countKeys(b) then
+		return false
+	end
 	for k, v in a do
 		if not Table.deepCompare(v, b[k]) then
 			return false
@@ -81,6 +84,8 @@ function Table.deepMerge(to: Dict, from: Dict, appendArrays: boolean?): Dict
 		for key, value in from do
 			if to[key] and type(value) == "table" then
 				Table.deepMerge(to[key], value, appendArrays)
+			elseif type(value) == "table" then
+				to[key] = Table.deepCopy(value)
 			else
 				to[key] = value
 			end
