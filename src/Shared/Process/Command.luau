@@ -14,6 +14,7 @@ Command.__index = Command
 
 function Command.new(_K, alias, definition: Type.CommandDefinition, array, from, text)
 	local rank, role = Auth.getRank(from)
+	_K.Data.targetLimits[from] = 0
 	return setmetatable({
 		_K = _K,
 		alias = alias,
@@ -89,7 +90,8 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 				Sound = "Call_Leave",
 			})
 		end
-		-- TODO: log the command request!
+		local prefix = self._K.getCommandPrefix()
+		self._K.log(`{prefix}{self.alias} {targetPlayer.Name} (requested, accepted)`, "COMMAND", self.from)
 		self._K.Hook.postCommand:Fire(self)
 	end
 

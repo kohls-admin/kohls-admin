@@ -6,6 +6,8 @@ Retries a function with exponential backoff until it succeeds or exceeds the max
 @param ...: any? -- Additional arguments to pass to the callback function
 @return (boolean, any) -- Returns the result of the pcall callback execution
 ]]
+local MAX_DELAY_SECONDS = 30
+
 local function Retry(callback: (...any) -> any | nil, attempts: number?, base: number?, ...: any?): (boolean, any)
 	attempts = attempts or 5
 	base = base or 2
@@ -15,7 +17,7 @@ local function Retry(callback: (...any) -> any | nil, attempts: number?, base: n
 		if results[1] or attempt == attempts then
 			return unpack(results)
 		end
-		task.wait(base :: number ^ attempt)
+		task.wait(math.min(base :: number ^ attempt, MAX_DELAY_SECONDS))
 	end
 
 	return false

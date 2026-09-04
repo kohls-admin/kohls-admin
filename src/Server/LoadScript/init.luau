@@ -8,13 +8,25 @@ local BASE = {
 	Server = script.ServerBase,
 }
 
+local MAX_CACHE_ENTRIES = 50
+
 local bytecodeCache = {}
+local bytecodeCacheOrder = {}
+
 local function Bytecode(source: string)
 	if bytecodeCache[source] then
 		return bytecodeCache[source]
 	end
+
 	local _f, code = Loadstring(source, "LuaC")
 	bytecodeCache[source] = code
+	table.insert(bytecodeCacheOrder, source)
+
+	if #bytecodeCacheOrder > MAX_CACHE_ENTRIES then
+		local oldest = table.remove(bytecodeCacheOrder, 1)
+		bytecodeCache[oldest] = nil
+	end
+
 	return code
 end
 

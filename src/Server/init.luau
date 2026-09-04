@@ -467,8 +467,12 @@ return function(_K)
 		-- server network events
 		local lastLog, cachedLogsBuffer
 		_K.Remote.Init:Connect(function(player, initData)
-			local attributes = initData.Attributes
-			if attributes then
+		if type(initData) ~= "table" then
+			return
+		end
+
+		local attributes = initData.Attributes
+		if attributes then
 				for attribute, valueType in attributeSchema do
 					local value = attributes[attribute]
 					if typeof(value) == valueType then
@@ -557,9 +561,12 @@ return function(_K)
 		_ = _K.Remote.SetCore
 		_ = _K.Remote.VIPNotification
 
-		_K.Remote.Command:Connect(function(player: Player, message: string)
-			_K.Process.runCommands(_K, player.UserId, message)
-		end)
+_K.Remote.Command:Connect(function(player: Player, message: string)
+		if type(message) ~= "string" then
+			return
+		end
+		_K.Process.runCommands(_K, player.UserId, message)
+	end)
 
 		-- handle custom command prefix
 		_K.Remote.PlayerPrefix:Connect(function(player, prefix)
@@ -568,12 +575,16 @@ return function(_K)
 
 		-- handle changing of settings
 		_K.Remote.Settings:Connect(function(player, changes)
-			local themeAuthority = _K.Data.settings.changeThemeAuthority
-			--TODO: make the Client authority save each players' theming
+		if type(changes) ~= "table" then
+			return
+		end
 
-			if not _K.Auth.hasPermission(player.UserId, "settings") then
-				return
-			end
+		local themeAuthority = _K.Data.settings.changeThemeAuthority
+		--TODO: make the Client authority save each players' theming
+
+		if not _K.Auth.hasPermission(player.UserId, "settings") then
+			return
+		end
 
 			if changes.freeAdmin then
 				if type(changes.freeAdmin) ~= "table" then
@@ -589,7 +600,12 @@ return function(_K)
 
 			local changeStrings = {}
 			for key, value in changes do
-				if _K.Data.savedSettings[key] == nil then
+				local existing = _K.Data.savedSettings[key]
+				if existing == nil then
+					continue
+				end
+
+				if typeof(value) ~= typeof(existing) then
 					continue
 				end
 
@@ -629,36 +645,41 @@ return function(_K)
 
 		-- handle ban events
 		_K.Remote.Ban:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
-			local canBan = _K.Auth.hasCommand(player.UserId, "ban")
-			if not (tonumber(userId) and canBan) then
-				return
-			end
+		local canBan = _K.Auth.hasCommand(player.UserId, "ban")
+		userId = tonumber(userId) :: number
+		if not (userId and canBan) then
+			return
+		end
 
-			local fauxArg = {
-				_K = _K,
-				definition = _K.Registry.commands.ban.args[1],
-				command = {
-					from = player.UserId,
-					fromRank = _K.Auth.getRank(player.UserId),
-					fromRole = {},
-					rank = canBan or 0,
-				},
-			}
+		if duration ~= nil and type(duration) ~= "number" then
+			return
+		end
 
-			_K.Data.targetLimits[player.UserId] = 0
-			if (reason == nil or type(reason) == "string") and _K.Auth.targetUserArgument(fauxArg, userId, userId) then
-				if
-					not _K.Auth.hasPermission(player.UserId, "banasync") or not _K.Auth.hasRestrictedRole(player.UserId)
-				then
-					duration = 0
-				end
-				if reason and #reason > 1024 then
-					reason = string.sub(reason, 1, 1024)
-				end
-				_K.log(`{_K.getCommandPrefix()}ban {userId} {duration} {reason}`, "COMMAND", player.UserId)
-				_K.Auth.banUsers({ userId }, reason, duration, player.UserId)
+		local fauxArg = {
+			_K = _K,
+			definition = _K.Registry.commands.ban.args[1],
+			command = {
+				from = player.UserId,
+				fromRank = _K.Auth.getRank(player.UserId),
+				fromRole = {},
+				rank = canBan or 0,
+			},
+		}
+
+		_K.Data.targetLimits[player.UserId] = 0
+		if (reason == nil or type(reason) == "string") and _K.Auth.targetUserArgument(fauxArg, userId, userId) then
+			if
+				not _K.Auth.hasPermission(player.UserId, "banasync") or not _K.Auth.hasRestrictedRole(player.UserId)
+			then
+				duration = 0
 			end
-		end)
+			if reason and #reason > 1024 then
+				reason = string.sub(reason, 1, 1024)
+			end
+			_K.log(`{_K.getCommandPrefix()}ban {userId} {duration} {reason}`, "COMMAND", player.UserId)
+			_K.Auth.banUsers({ userId }, reason, duration, player.UserId)
+		end
+	end)
 
 		_K.Remote.Unban:Connect(function(player: Player, userId: number)
 			local ban = _K.Data.bans[tostring(userId)]
@@ -682,12 +703,16 @@ return function(_K)
 		end
 
 		_K.Remote.Explorer:Connect(function(player: Player, action: string, data: any, selected: Instance?)
-			local explorerRank = _K.Auth.hasCommand(player.UserId, "explorer")
-			if not explorerRank then
-				return
-			end
+		local explorerRank = _K.Auth.hasCommand(player.UserId, "explorer")
+		if not explorerRank then
+			return
+		end
 
-			if action == "PASTE" and selected then
+		if type(data) ~= "table" then
+			return
+		end
+
+		if action == "PASTE" and selected then
 				for _, copy: Instance in data do
 					local wasArchivable = copy.Archivable
 					copy.Archivable = true
