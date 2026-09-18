@@ -58,6 +58,20 @@ Whether you're a seasoned developer or just starting out, there are ways for you
      ```
    - **Connect Studio to Rojo:** Open Roblox and use the [Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin) to connect to the server you just started.
 
+#### Development Container
+
+Open the repository in a container using VS Code's **Reopen in Container**, Zed's **Open in Container**, or another Dev Containers-compatible client. Docker or Podman must be installed locally; GitHub Codespaces runs the same configuration in the cloud.
+
+The container includes Node.js 22, Luaudocs, and Rokit. Setup initializes the Git submodules and installs the versions in `rokit.toml`, including Rojo, Selene, StyLua, and Luau LSP. Tools are on the container's `PATH` for any editor or terminal. VS Code and Zed extensions are configured automatically; Zed's project settings enable Roblox types and StyLua formatting.
+
+Run `rojo serve test` to start Rojo on forwarded port **34872**. Roblox Studio and its Rojo plugin run on your host machine. To preview documentation, run:
+
+```bash
+luaudocs dev -- --host 0.0.0.0 --port 5173 --strictPort
+```
+
+Open forwarded port **5173** in your browser. Rebuild the container after changing its Dockerfile or configuration. To reinstall tools after a `rokit.toml` change, run `rokit install --no-trust-check`.
+
 #### GitHub Codespaces
 
 1. Open this project in GitHub Codespaces

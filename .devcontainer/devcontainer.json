@@ -1,12 +1,7 @@
 {
 	"name": "Kohl's Admin",
-	"image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-	"features": {
-		"ghcr.io/ryanlua/features/rojo:0.2.0": {
-			"version": "latest",
-			"toolchainManager": "rokit"
-		},
-		"ghcr.io/devcontainers/features/node:1": {}
+	"build": {
+		"dockerfile": "Dockerfile"
 	},
 	"customizations": {
 		"vscode": {
@@ -16,21 +11,28 @@
 				"JohnnyMorganz.stylua",
 				"JohnnyMorganz.luau-lsp"
 			]
+		},
+		"zed": {
+			"extensions": ["luau", "toml"]
+		},
+		"codespaces": {
+			"openFiles": ["CONTRIBUTING.md"]
 		}
 	},
 	"forwardPorts": [
-		3000,
+		5173,
 		34872
 	],
 	"portsAttributes": {
-		"3000": {
-			"label": "Moonwave",
-			"onAutoForward": "openPreview"
+		"5173": {
+			"label": "Luaudocs",
+			"onAutoForward": "openBrowser"
 		},
 		"34872": {
 			"label": "Rojo"
 		}
 	},
-	"postCreateCommand": "git config submodule.recurse true && git config pull.rebase true && rokit install --no-trust-check && npm i -g moonwave",
-	"remoteUser": "root"
+	"postCreateCommand": ["bash", ".devcontainer/post-create.sh"],
+	"waitFor": "postCreateCommand",
+	"remoteUser": "node"
 }
