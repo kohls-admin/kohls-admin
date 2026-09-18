@@ -2,8 +2,7 @@
 --!strict
 
 --[[
-	NETWORKING MODULE
-	Single-Remote Wrapper with Byte-Packed IDs and Auto-Batching
+	Single-remote networking wrapper with byte-packed IDs and auto-batching.
 
 	Standard Roblox networking often involves creating many RemoteEvents. However, this creates network
 	overhead because every unique RemoteEvent adds its own packet header and protocol metadata.
@@ -16,41 +15,38 @@
 	2. It assigns short, byte-packed IDs (1-2 bytes) to logical events.
 	3. Result: Massive reduction in packet overhead (headers/delimiters) and automatic queueing.
 
-	[ KEY FEATURES ]
+	### Key features
 
-	* Lazy Instantiation: Just do `Remote.MyEvent`. If it doesn't exist, it's created.
-	* Auto-Synchronization: Clients automatically wait for the server to replicate IDs.
-		No `WaitForChild` required.
-	* Byte-Packing: IDs are compressed to 1 byte (for the first 256 events) or 2 bytes.
-	* Reliability Toggling: Switch an event to `Unreliable` mode on the fly.
+	- Lazy Instantiation: Just do `Remote.MyEvent`. If it doesn't exist, it's created.
+	- Auto-Synchronization: Clients automatically wait for the server to replicate IDs.
+	  No `WaitForChild` required.
+	- Byte-Packing: IDs are compressed to 1 byte (for the first 256 events) or 2 bytes.
+	- Reliability Toggling: Switch an event to `Unreliable` mode on the fly.
 
-	[ API REFERENCE ]
+	### API reference
 
-	> SHARED
+	```luau
+	-- Shared
+	Remote.EventName:Connect(callback)     --> RBXScriptConnection
+	Remote.EventName:Once(callback)        --> RBXScriptConnection
+	Remote.EventName:Wait()                --> ...any
 
-		Remote.EventName:Connect(callback)     -> RBXScriptConnection
-		Remote.EventName:Once(callback)        -> RBXScriptConnection
-		Remote.EventName:Wait()                -> ...any
+	-- Server
+	Remote.EventName:Fire(player, ...)     --> void
+	Remote.EventName:FireAll(...)          --> void
+	Remote.FuncName:Invoke(player, ...)    --> ...any (invokes the client)
+	Remote.EventName:SetUnreliable(bool)   --> void (switches transport method)
+	Remote.FuncName.OnInvoke = (...) -> ...any
 
-	> SERVER
+	-- Client
+	Remote.EventName:Fire(...)             --> void
+	Remote.FuncName:Invoke(...)            --> ...any (invokes the server)
+	Remote.FuncName.OnInvoke = (...) -> ...any
+	```
 
-		Remote.EventName:Fire(player, ...)     -> void
-		Remote.EventName:FireAll(...)          -> void
-		Remote.FuncName:Invoke(player, ...)    -> ...any (Invokes Client)
+	### Usage
 
-		Remote.EventName:SetUnreliable(bool)   -> void   (Switches transport method)
-
-		Remote.FuncName.OnInvoke = (...) -> ...any
-
-	> CLIENT
-
-		Remote.EventName:Fire(...)             -> void
-		Remote.FuncName:Invoke(...)            -> ...any (Invokes Server)
-
-		Remote.FuncName.OnInvoke = (...) -> ...any
-
-	[ USAGE EXAMPLE ]
-
+	```luau
 	-- Server
 	local Remote = require(ReplicatedStorage.Remote)
 
@@ -66,7 +62,7 @@
 	local Remote = require(ReplicatedStorage.Remote)
 	Remote.Combat:Connect(function(status) print(status) end) -- Prints "FightStarted"
 	print(Remote.GetGold:Invoke()) -- Prints 100
-	____________________________________________________________________________________________________
+	```
 ]]
 
 local Players = game:GetService("Players")
