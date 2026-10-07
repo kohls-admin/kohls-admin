@@ -1,7 +1,7 @@
 <div align="center">
 	<img src=".moonwave/static/logo-load-dark.svg" alt="Kohl's Admin" height="150" />
 	<br/>
-	<a href="https://docs.kohl.gg/"><img src="https://img.shields.io/badge/docs-docs.kohl.gg-222"></a>
+	<a href="https://admin.kohl.gg/"><img src="https://img.shields.io/badge/docs-admin.kohl.gg-222"></a>
 	<a href="https://discord.gg/kohl"><img src="https://img.shields.io/discord/694630328064671775"></a>
 	<a href="https://github.com/kohls-admin/kohls-admin/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/kohls-admin/kohls-admin" alt="License"></a>
 	<a href="https://github.com/kohls-admin/kohls-admin/graphs/contributors"><img src="https://img.shields.io/github/contributors/kohls-admin/kohls-admin" alt="Contributors"></a>

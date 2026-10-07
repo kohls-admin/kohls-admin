@@ -24,7 +24,7 @@ favicon = "/logo-dark.svg"
 organizationName = "kohls-admin"
 projectName = "main"
 tagline = "Embrace creativity, not chaos."
-url = "https://docs.kohl.gg"
+url = "https://admin.kohl.gg"
 baseUrl = "/"
 
 [home]
