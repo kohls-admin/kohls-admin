@@ -23,7 +23,6 @@ trailingSlash = false
 favicon = "/logo-dark.svg"
 organizationName = "kohls-admin"
 projectName = "main"
-deploymentBranch = "gh-pages"
 tagline = "Embrace creativity, not chaos."
 url = "https://docs.kohl.gg"
 baseUrl = "/"
