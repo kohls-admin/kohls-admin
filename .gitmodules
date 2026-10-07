@@ -3,7 +3,7 @@
 	url = https://github.com/kohls-admin/F3X-Building-Tools.git
 [submodule "Flux"]
 	path = submodules/Flux
-	url = git@github.com:kohltastrophe/flux.git
+	url = https://github.com/kohltastrophe/flux.git
 [submodule "Z"]
 	path = submodules/Z
-	url = git@github.com:kohltastrophe/Z.git
+	url = https://github.com/kohltastrophe/Z.git
