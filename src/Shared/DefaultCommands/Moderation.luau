@@ -2466,8 +2466,15 @@ return {
 
 		run = function(context, players, jumpPower)
 			for _, player in players do
-				if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-					player.Character:FindFirstChildOfClass("Humanoid").JumpPower = jumpPower
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if not humanoid then
+					continue
+				end
+
+				if humanoid.UseJumpPower then
+					humanoid.JumpPower = jumpPower
+				else
+					humanoid.JumpHeight = jumpPower ^ 2 / (2 * workspace.Gravity)
 				end
 			end
 		end,
