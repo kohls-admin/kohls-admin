@@ -80,10 +80,14 @@ return {
 			},
 		},
 		run = function(context, source: string)
-			if context._K.Data.SEPARATE_DATASTORE then
+			local _K = context._K
+			if context.fromRank < _K.Data.roles.creator._rank then
+				return "Insufficient permissions to execute server scripts."
+			end
+			if _K.Data.SEPARATE_DATASTORE then
 				return `Script commands are disabled in private servers.`
 			end
-			table.insert(context._K.cleanupCommands, context._K.LoadScript(source, "Server"))
+			table.insert(_K.cleanupCommands, _K.LoadScript(source, "Server"))
 			return
 		end,
 	},
@@ -105,7 +109,11 @@ return {
 			},
 		},
 		run = function(context, players: { Player }, source: string)
-			if context._K.Data.SEPARATE_DATASTORE then
+			local _K = context._K
+			if context.fromRank < _K.Data.roles.creator._rank then
+				return "Insufficient permissions to execute client scripts."
+			end
+			if _K.Data.SEPARATE_DATASTORE then
 				return `Script commands are disabled in private servers.`
 			end
 			for _, player in players do
@@ -113,7 +121,7 @@ return {
 				if not parent then
 					continue
 				end
-				table.insert(context._K.cleanupCommands, context._K.LoadScript(source, "Client", parent))
+				table.insert(_K.cleanupCommands, _K.LoadScript(source, "Client", parent))
 			end
 			return
 		end,
