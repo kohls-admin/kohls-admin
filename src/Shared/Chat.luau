@@ -224,8 +224,7 @@ if RunService:IsServer() then
 	Util.SafePlayerAdded(function(player)
 		Util.Retry(function()
 			if player.Parent then
-				local _, added = broadcast:AddUserAsync(player.UserId)
-				assert(added, "AddUserAsync failed")
+				broadcast:AddUserAsync(player.UserId)
 			end
 		end)
 	end)
@@ -294,8 +293,9 @@ if RunService:IsServer() then
 					flag = 2 -- sender is also a target
 				elseif not members[player.UserId] then
 					tasks:add(function()
-						local ok, _, added = pcall(channel.AddUserAsync, channel, player.UserId)
-						if ok and added then
+						local ok, source = pcall(channel.AddUserAsync, channel, player.UserId)
+						if ok and source then
+							source.CanSend = false
 							members[player.UserId] = true
 						end
 					end)
@@ -449,6 +449,9 @@ else
 	Remote.ChatSend:Connect(function(channelName: string, text: string, metadata: string)
 		local channel = TextChatService:WaitForChild(channelName, 10)
 		if channel and channel:IsA("TextChannel") then
+			if not channel:FindFirstChildOfClass("TextSource") then
+				channel.ChildAdded:Wait()
+			end
 			local ok, err = pcall(channel.SendAsync, channel, text, metadata)
 			if not ok then
 				warn(`Kohl's Admin failed to send message: {err}`)

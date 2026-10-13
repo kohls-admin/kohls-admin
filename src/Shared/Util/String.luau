@@ -141,22 +141,32 @@ function String.filterResult(
 end
 
 --- Filters a [TextFilterResult] for broadcast messages with [TextService.FilterStringAsync]
-function String.filterResultForBroadcast(filterResult: TextFilterResult | string, fromUserId: number)
+function String.filterResultForBroadcast(filterResult: TextFilterResult | string, fromUserId: number): string
 	if type(filterResult) == "string" then
-		return filterResult
+		warn("String.filterResult failed:", filterResult)
+		return "[Filter Error]"
 	end
-	local _, result = pcall(function()
+	local ok, result = pcall(function()
 		return filterResult:GetNonChatStringForBroadcastAsync()
 	end)
+	if not ok then
+		warn("String.filterResultForBroadcast failed:", result)
+		return "[Filter Error]"
+	end
 	return result
 end
 
 --- Filters a [TextFilterResult] for chat messages chat with [TextService.FilterStringAsync]
-function String.filterResultForUser(filterResult: TextFilterResult | string, fromUserId: number, toUserId: number)
+function String.filterResultForUser(
+	filterResult: TextFilterResult | string,
+	fromUserId: number,
+	toUserId: number
+): string
 	if type(filterResult) == "string" then
-		return filterResult
+		warn("String.filterResult failed:", filterResult)
+		return "[Filter Error]"
 	end
-	local _, result = pcall(function()
+	local ok, result = pcall(function()
 		if Players:GetPlayerByUserId(fromUserId) then
 			if TextChatService:CanUsersChatAsync(fromUserId, toUserId) then
 				return filterResult:GetNonChatStringForUserAsync(toUserId)
@@ -171,13 +181,26 @@ function String.filterResultForUser(filterResult: TextFilterResult | string, fro
 			end
 		end
 	end)
+	if not ok then
+		warn("String.filterResultForUser failed:", result)
+		return "[Filter Error]"
+	end
 	return result
 end
 
 --- Filters a broadcast message with [TextService.FilterStringAsync]
 function String.filterForBroadcast(message: string, fromUserId: number, filterContext: Enum.TextFilterContext?): string
-	local _, result = String.filterResult(message, fromUserId, filterContext)
-	return String.filterResultForBroadcast(result, fromUserId)
+	local ok, result = String.filterResult(message, fromUserId, filterContext)
+	if not ok then
+		warn("String.filterForBroadcast failed:", result)
+		return string.rep("#", #message)
+	end
+	local okBroadcast, filtered = pcall((result :: TextFilterResult).GetNonChatStringForBroadcastAsync, result)
+	if not okBroadcast then
+		warn("String.filterForBroadcast failed:", filtered)
+		return string.rep("#", #message)
+	end
+	return filtered
 end
 
 --- Filters a chat message with [TextService.FilterStringAsync]
@@ -190,7 +213,11 @@ function String.filterForUser(
 	if fromUserId == toUserId then
 		return message
 	end
-	local _, result = String.filterResult(message, fromUserId)
+	local ok, result = String.filterResult(message, fromUserId, filterContext)
+	if not ok then
+		warn("String.filterForUser failed:", result)
+		return string.rep("#", #message)
+	end
 	return String.filterResultForUser(result, fromUserId, toUserId)
 end
 

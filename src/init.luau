@@ -144,7 +144,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 		return -- DEBUG disabled
 	end
 
-	if _K.IsClient then
+	if _K.IsClient and level ~= "CHAT" then
 		log[6] = true
 	end
 
@@ -168,12 +168,9 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 				stored[1] = liveText
 			end
 			if
-				(level == "CHAT" and _K.Data.settings.saveChatLogs)
-				or (
-					level == "COMMAND"
-					and _K.Data.settings.saveLogs
-					and (not from or _K.Data.settings.saveLogsForAllRoles or _K.Auth.hasRestrictedRole(from))
-				)
+				level == "COMMAND"
+				and _K.Data.settings.saveLogs
+				and (not from or _K.Data.settings.saveLogsForAllRoles or _K.Auth.hasRestrictedRole(from))
 			then
 				table.insert(_K.Data.Sync.logs, stored)
 			end
@@ -182,13 +179,15 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 					_K.Remote.Log:Fire(player, if player.UserId == from then log else stored)
 				end
 			end
-		elseif _K.client and _K.client.dashboard then
-			_K.client.dashboard.Logs:updateList()
 		end
 
 		table.insert(_K.Data.logs, stored)
 		_K.Hook.log:Fire(stored)
 		_K.removeExcessLogs()
+
+		if _K.IsClient and _K.client and _K.client.dashboard then
+			_K.client.dashboard.Logs:updateList()
+		end
 	end)
 
 	return log

@@ -563,17 +563,61 @@ return function(_K)
 			_K.Process.runCommands(_K, player.UserId, message)
 		end)
 
+		local reservedPrefixes = { ",", " ", "`", '"', "@", "$", "%", "*", "~" }
+
 		-- handle custom command prefix
 		_K.Remote.PlayerPrefix:Connect(function(player, prefix)
-			_K.Data.playerPrefix[player.UserId] = prefix
+			if type(prefix) == "string" and utf8.len(prefix) == 1 and not table.find(reservedPrefixes, prefix) then
+				_K.Data.playerPrefix[player.UserId] = prefix
+			end
 		end)
+
+		local handledSettings = {
+			freeAdmin = true,
+			announcement = true,
+			announcements = true,
+			notifications = true,
+			prefix = true,
+			splitKey = true,
+		}
+
+		local function isValidSetting(key: any, value: any): boolean
+			if type(key) ~= "string" then
+				return false
+			end
+			if handledSettings[key] then
+				return true
+			end
+			local default = _K.Data.defaultSettings[key]
+			if default == nil then
+				return false
+			end
+			if string.sub(key, -4) == "Rank" then
+				return value == false or (type(value) == "number" and value == value and math.abs(value) ~= math.huge)
+			elseif key == "themeBackgroundImage" then
+				return type(value) == "string" and string.match(value, "^rbxassetid://%d+$") ~= nil
+			elseif key == "theme" then
+				return type(value) == "string" and #value <= 64 and string.match(value, "^[%w ()%-_]+$") ~= nil
+			elseif key == "changeThemeAuthority" then
+				return value == "Client" or value == "Server" or value == "Studio"
+			end
+			local defaultType = typeof(default)
+			if defaultType == "string" or defaultType == "table" then
+				return false
+			elseif defaultType == "number" then
+				return type(value) == "number" and value == value and math.abs(value) ~= math.huge
+			elseif defaultType == "EnumItem" then
+				return typeof(value) == "EnumItem" and value.EnumType == default.EnumType
+			end
+			return typeof(value) == defaultType
+		end
 
 		-- handle changing of settings
 		_K.Remote.Settings:Connect(function(player, changes)
 			local themeAuthority = _K.Data.settings.changeThemeAuthority
 			--TODO: make the Client authority save each players' theming
 
-			if not _K.Auth.hasPermission(player.UserId, "settings") then
+			if type(changes) ~= "table" or not _K.Auth.hasPermission(player.UserId, "settings") then
 				return
 			end
 
@@ -603,37 +647,48 @@ return function(_K)
 			local announcement = changes.announcement
 			changes.announcement = nil
 			local newAnnouncement = type(announcement) == "table" and type(announcement[1]) == "string"
+			local newCount = if newAnnouncement then 1 else 0
 
 			-- these settings are lists, existing entries are kept as is and only new ones need the gate
 			local function itemKey(item)
 				return `{item.From}\0{item.Duration}\0{item.Text}`
 			end
-			local lists, needsGate = {}, newAnnouncement
+			local lists = {}
 			for _, key in { "announcements", "notifications" } do
 				local items = changes[key]
 				changes[key] = nil
 				if type(items) ~= "table" then
 					continue
 				end
-				local existing, entries = {}, {}
+				local existing, existingCounts, entries = {}, {}, {}
 				for _, item in _K.Data.savedSettings[key] or {} do
-					existing[itemKey(item)] = item
+					local k = itemKey(item)
+					existing[k] = item
+					existingCounts[k] = (existingCounts[k] or 0) + 1
 				end
 				for _, item in items do
 					if type(item) == "table" and type(item.Text) == "string" then
-						local old = existing[itemKey(item)]
-						table.insert(entries, old or { new = item })
-						needsGate = needsGate or not old
+						local k = itemKey(item)
+						if (existingCounts[k] or 0) > 0 then
+							existingCounts[k] -= 1
+							table.insert(entries, existing[k])
+						else
+							newCount += 1
+							table.insert(entries, { new = item })
+						end
 					end
 				end
 				lists[key] = entries
 			end
 
 			local err
-			if needsGate then
+			if newCount > 0 then
 				err = if _K.Data.SEPARATE_DATASTORE
 					then "Announcements are disabled in private servers."
 					else _K.Chat.limitBroadcast(player.UserId, "Announcements require a developer role.")
+				if not err and newCount > 1 then
+					err = "Please wait before adding another message."
+				end
 				if err then
 					_K.alert(player, err, true)
 				end
@@ -664,43 +719,57 @@ return function(_K)
 				changes[key] = items
 			end
 
-			-- the prefix and split key are shown to everyone, other users are limited to new single characters like the
-			-- settings UI, and rate limited
-			if not isDeveloper then
+			-- the prefix and split key are shown to everyone, users are limited to single valid characters like the
+			-- settings UI, and non-developers are rate limited
+			do
 				local current = _K.Data.savedSettings
-				-- nil when a new value isn't a single character, otherwise whether any value is new
-				local function addsCharacters(values, existing): boolean?
-					if type(values) ~= "table" or #values == 0 then
+				local existingPrefixes = current.prefix or {}
+				-- nil when invalid, otherwise number of newly added characters
+				local function countAddedCharacters(values, existing, isPrefix: boolean): number?
+					if type(values) ~= "table" or #values == 0 or #values > math.max(#existing, 1) then
 						return nil
 					end
-					local added = false
+					local added = 0
+					local seen = {}
 					for _, value in values do
+						if
+							type(value) ~= "string"
+							or utf8.len(value) ~= 1
+							or seen[value]
+							or (isPrefix and table.find(reservedPrefixes, value))
+						then
+							return nil
+						end
+						seen[value] = true
 						if not table.find(existing, value) then
-							if not (type(value) == "string" and utf8.len(value) == 1) then
-								return nil
-							end
-							added = true
+							added += 1
 						end
 					end
 					return added
 				end
-				local invalid, changed = false, false
-				for key, existing in { prefix = current.prefix or {}, splitKey = { current.splitKey } } do
+				local invalid, totalAdded = false, 0
+				for key, existing in { prefix = existingPrefixes, splitKey = { current.splitKey } } do
 					local value = changes[key]
 					if value == nil then
 						continue
 					end
-					local added = addsCharacters(if key == "splitKey" then { value } else value, existing)
-					if added == nil then
+					local added = countAddedCharacters(
+						if key == "splitKey" then { value } else value,
+						existing,
+						key == "prefix"
+					)
+					if added == nil or (not isDeveloper and added > 1) then
 						changes[key], invalid = nil, true
 					else
-						changed = changed or added
+						totalAdded += added
 					end
 				end
-				if invalid then
+				if invalid or (not isDeveloper and totalAdded > 1) then
+					if totalAdded > 1 then
+						changes.prefix, changes.splitKey = nil, nil
+					end
 					_K.alert(player, "Prefixes and split keys are limited to a single character.", true)
-				end
-				if changed then
+				elseif not isDeveloper and totalAdded > 0 then
 					local cooldownError = _K.Chat.cooldown(player.UserId, "prefix")
 					if cooldownError then
 						changes.prefix, changes.splitKey = nil, nil
@@ -715,17 +784,18 @@ return function(_K)
 				if
 					_K.Data.savedSettings[key] == nil
 					or (string.find(key, "theme", 1, true) and themeAuthority == "Studio")
+					or not isValidSetting(key, value)
 				then
 					changes[key] = nil
 					continue
 				end
 
 				_K.Data.savedSettings[key] = value
-				-- developer-set strings such as role names are logged as is, other users' strings are filtered
-				local logValue = if type(value) == "string" and not isDeveloper
+				local logValue = if type(value) == "string"
 					then _K.Util.String.filterForBroadcast(value, player.UserId)
 					elseif key == "announcement" and type(value) == "table" then value[1] -- already filtered
 					elseif key == "announcements" or key == "notifications" then `{#value} {key}`
+					elseif key == "freeAdmin" or key == "prefix" then table.concat(value, ", ")
 					else value
 				if key == "announcement" and value then
 					announcementLog = logValue
@@ -804,7 +874,10 @@ return function(_K)
 				then
 					duration = 0
 				end
-				if reason then
+				local existingBan = _K.Data.bans[tostring(userId)]
+				if existingBan and reason == existingBan[2] then
+					reason = existingBan[2]
+				elseif reason then
 					reason = string.sub(reason, 1, 400) -- banasync limit
 					-- ban reasons are user text other admins can see
 					reason = _K.Chat.limitReason(player.UserId, reason)
@@ -976,15 +1049,11 @@ return function(_K)
 			table.insert(
 				cleanup,
 				player.Chatted:Connect(function(message: string)
-					local emote = string.find(message, "/e", 1, true) == 1
-					if not emote then
-						task.spawn(_K.log, _K.Util.String.unescapeRichText(message), "CHAT", player.UserId, true)
-					end
 					local v = _K.Service.TextChat.ChatVersion
 					if
 						_K.Data.settings.chatCommands ~= false
 						and (
-							(v == Enum.ChatVersion.TextChatService and emote)
+							(v == Enum.ChatVersion.TextChatService and string.find(message, "/e", 1, true) == 1)
 							or v == Enum.ChatVersion.LegacyChatService
 						)
 					then

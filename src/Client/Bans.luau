@@ -273,7 +273,7 @@ function Bans.new(_K)
 			itemData.name = ban[1]
 			itemData.tipText = ban.tipText
 			itemData.userId = ban.userId
-			itemData.reason = ban.reason
+			itemData.reason = ban[2]
 			itemData.term = ban.term
 		end
 	end

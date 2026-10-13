@@ -132,7 +132,27 @@ end
 
 if _K.Service.TextChat.ChatVersion == Enum.ChatVersion.TextChatService then
 	_K.Service.TextChat.SendingMessage:Connect(function(textChatMessage: TextChatMessage)
+		local channel = textChatMessage.TextChannel
+		if (channel and string.find(channel.Name, "KA_", 1, true) == 1) or textChatMessage.Metadata ~= "" then
+			return
+		end
 		Chatted(_K.Util.String.unescapeRichText(textChatMessage.Text))
+	end)
+	_K.Service.TextChat.MessageReceived:Connect(function(textChatMessage: TextChatMessage)
+		local source = textChatMessage.TextSource
+		local channel = textChatMessage.TextChannel
+		if
+			not source
+			or textChatMessage.Status ~= Enum.TextChatMessageStatus.Success
+			or (channel and string.find(channel.Name, "KA_", 1, true) == 1)
+			or textChatMessage.Metadata ~= ""
+		then
+			return
+		end
+		local text = _K.Util.String.unescapeRichText(textChatMessage.Text)
+		if string.find(text, "/e", 1, true) ~= 1 then
+			task.spawn(_K.log, text, "CHAT", source.UserId)
+		end
 	end)
 end
 

@@ -353,19 +353,18 @@ local SYNC = {
 			Util.Defer.wait()
 		end
 
-		-- chat from other servers isn't pushed live, admins could talk across servers through it, it stays in the
-		-- history that loads on join
-		local live = {}
+		-- chat is logged client-side through TextChatService, skip any legacy saved chat logs
+		local filtered = {}
 		for _, log in logs do
-			log[6] = false -- add global flag to each log
 			if log[2] ~= CHAT_LEVEL then
-				table.insert(live, log)
+				log[6] = false -- add global flag to each log
+				table.insert(filtered, log)
 			end
 		end
 		Util.Defer.wait()
 
-		if #logs > 0 then
-			Util.Table.mergeList(state, logs)
+		if #filtered > 0 then
+			Util.Table.mergeList(state, filtered)
 			Util.Defer.wait()
 			local excess = #state - Util.Logger.limit
 			if excess > 0 then
@@ -377,10 +376,7 @@ local SYNC = {
 			Util.Defer.wait()
 			table.sort(state, Util.Logger.sortTime)
 
-			if #live == 0 then
-				return
-			end
-			local ser, feedback = Z.ser(Data.Schema.logsRemote, live)
+			local ser, feedback = Z.ser(Data.Schema.logsRemote, filtered)
 			if ser == nil then
 				warn("Failed to serialize remote logs:", feedback)
 				return
@@ -583,7 +579,7 @@ function Data.initialize(scope)
 	end
 
 	local logsUpdatedTime = 0
-	if not Data.SEPARATE_DATASTORE and (Data.settings.saveLogs ~= false or Data.settings.saveChatLogs ~= false) then
+	if not Data.SEPARATE_DATASTORE and Data.settings.saveLogs ~= false then
 		for i = 1, 4 do -- 4 shards
 			local okLogs, logs, metaLogs = Data.Store.getAsync("Logs_" .. i)
 			local metadata = if metaLogs then metaLogs:GetMetadata() else {}
