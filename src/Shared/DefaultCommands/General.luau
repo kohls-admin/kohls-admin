@@ -1,5 +1,18 @@
 -- "non-abusive" commands for game staff members
 
+local VOICE_IDS = {
+	"British male",
+	"British female",
+	"US male",
+	"US female",
+	"US male #2",
+	"US female #2",
+	"Australian male",
+	"Australian female",
+	"Retro #1",
+	"Retro #2",
+}
+
 return {
 	{
 		name = "clean",
@@ -29,14 +42,14 @@ return {
 		description = "Sends a hint to everyone in the server.",
 		args = {
 			{
-				type = "string",
+				type = "chatString",
 				name = "Message",
 				description = "The message to send.",
 			},
 		},
 		envClient = function(_K)
 			local existing
-			_K.Remote.Hint:Connect(function(message: string, duration: number?)
+			local function showHint(message: string)
 				if existing then
 					existing:Destroy()
 				end
@@ -62,14 +75,17 @@ return {
 					},
 				}
 				existing = hint
-				task.delay(duration or 4 + 0.0625 * #message, game.Destroy, hint)
-			end)
-		end,
-		env = function(_K)
-			return { remote = _K.Remote.Hint }
+				task.delay(4 + 0.0625 * #message, game.Destroy, hint)
+			end
+			local function onHint(text: string, from: number)
+				-- global hints come from players in other servers
+				showHint(`<b>{_K.Util.getUserInfo(from).Username}:</b> {text}`)
+			end
+			_K.Chat.onMessage("hint", onHint)
+			_K.Chat.onMessage("privatehint", onHint)
 		end,
 		run = function(context, message: string)
-			context.env.remote:FireAll(`<b>{context.fromPlayer}:</b> {message}`)
+			return select(2, context._K.Chat.send(context, "hint", message))
 		end,
 	},
 	{
@@ -83,15 +99,13 @@ return {
 				description = "The player(s) to hint.",
 			},
 			{
-				type = "string",
+				type = "chatString",
 				name = "Message",
 				description = "The message to send.",
 			},
 		},
 		run = function(context, players: { Player }, message: string)
-			for _, player in players do
-				context._K.Remote.Hint:FireAll(`<b>{context.fromPlayer}:</b> {message}`)
-			end
+			return select(2, context._K.Chat.send(context, "privatehint", message, players))
 		end,
 	},
 	{
@@ -100,17 +114,19 @@ return {
 		description = "Sends a message to everyone in the server.",
 		args = {
 			{
-				type = "string",
+				type = "chatString",
 				name = "Message",
 				description = "The message to send.",
 			},
 		},
 
-		env = function(_K)
-			return { remote = _K.Remote.Announce }
+		envClient = function(_K)
+			_K.Chat.onMessage("message", function(text: string, from: number)
+				_K.Announce({ From = from, Text = text })
+			end)
 		end,
 		run = function(context, message)
-			context.env.remote:FireAll({ From = context.from, Text = message })
+			return select(2, context._K.Chat.send(context, "message", message))
 		end,
 	},
 	{
@@ -119,14 +135,14 @@ return {
 		description = "Sends a full screen message to everyone in the server.",
 		args = {
 			{
-				type = "string",
+				type = "chatString",
 				name = "Message",
 				description = "The message to send.",
 			},
 		},
 		envClient = function(_K)
 			local existing
-			_K.Remote.FullScreenMessage:Connect(function(from: number, message: string, duration: number?)
+			_K.Chat.onMessage("fullmessage", function(message: string, from: number)
 				if existing then
 					existing:Destroy()
 				end
@@ -169,14 +185,11 @@ return {
 					end,
 				})
 				existing = msg
-				task.delay(duration or 4 + 0.0625 * #message, game.Destroy, msg)
+				task.delay(4 + 0.0625 * #message, game.Destroy, msg)
 			end)
 		end,
-		env = function(_K)
-			return { remote = _K.Remote.FullScreenMessage }
-		end,
 		run = function(context, message)
-			context.env.remote:FireAll(context.from, message)
+			return select(2, context._K.Chat.send(context, "fullmessage", message))
 		end,
 	},
 	{
@@ -190,18 +203,18 @@ return {
 				description = "The player(s) to notify.",
 			},
 			{
-				type = "string",
+				type = "chatString",
 				name = "Message",
 				description = "The message to send.",
 			},
 		},
-		env = function(_K)
-			return { remote = _K.Remote.Notify }
+		envClient = function(_K)
+			_K.Chat.onMessage("notify", function(text: string, from: number)
+				_K.Notify({ From = from, Text = text })
+			end)
 		end,
 		run = function(context, players, message)
-			for _, player in players do
-				context.env.remote:Fire(player, { From = context.from, Text = message })
-			end
+			return select(2, context._K.Chat.send(context, "notify", message, players))
 		end,
 	},
 	{
@@ -215,16 +228,19 @@ return {
 				description = "The player(s) to message.",
 			},
 			{
-				type = "string",
+				type = "chatString",
 				name = "Message",
 				description = "The message to send.",
 			},
 		},
 
+		envClient = function(_K)
+			_K.Chat.onMessage("privatemessage", function(text: string, from: number)
+				_K.Announce({ From = from, Text = text })
+			end)
+		end,
 		run = function(context, players, message)
-			for _, player in players do
-				context._K.Remote.Announce:Fire(player, { From = context.from, Text = message })
-			end
+			return select(2, context._K.Chat.send(context, "privatemessage", message, players))
 		end,
 	},
 	{
@@ -369,6 +385,12 @@ return {
 		},
 
 		run = function(context, players, title: string?, color: Color3?, secondaryColor: Color3?, font: Enum.Font?)
+			if title and not context.undo then
+				local err = context._K.Chat.cooldown(context.from, "title")
+				if err then
+					return err
+				end
+			end
 			for _, player in players do
 				if context.undo then
 					task.spawn(context._K.VIP.Title, player)
@@ -376,6 +398,7 @@ return {
 					task.spawn(context._K.VIP.Title, player, title, color, secondaryColor, font)
 				end
 			end
+			return
 		end,
 	},
 	{
@@ -389,7 +412,7 @@ return {
 				description = "The player(s) to poll.",
 			},
 			{
-				type = "string",
+				type = "chatString",
 				name = "Question",
 				description = "The question to poll.",
 			},
@@ -398,7 +421,12 @@ return {
 			return { remote = _K.Remote.Vote }
 		end,
 		envClient = function(_K)
-			_K.Remote.Vote.OnInvoke = function(text: string, from: Player)
+			_K.Remote.Vote.OnInvoke = function(id: string, from: Player)
+				-- the question arrives filtered through TextChatService
+				local text = _K.Chat.waitForMessage(id)
+				if not text then
+					return nil
+				end
 				local actionSignal = _K.Util.Signal.new()
 				_K.Notify({
 					Text = text,
@@ -426,9 +454,16 @@ return {
 				return
 			end
 
+			local id, err = context._K.Chat.send(context, "vote", message, players)
+			if not id then
+				return err
+			end
+			-- the question is echoed back to the sender, keep it filtered like everywhere else
+			message = context._K.Util.String.filterForBroadcast(message, context.from)
+
 			local yes, no = 0, 0
 			local function voteTask(player)
-				local vote = context.env.remote:Invoke(player, message, context.fromPlayer)
+				local vote = context.env.remote:Invoke(player, id, context.fromPlayer)
 				if vote == true then
 					yes += 1
 				elseif vote == false then
@@ -455,6 +490,7 @@ return {
 			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `<font transparency="0.5">The results are in!</font>\n\n<b>{message}</b>\n\t<font color="#{validColor}"><b><sc>yes</sc></b>\t{yes}</font>\n\t<font color="#{invalidColor}"><b><sc>no</sc></b> \t{no}</font>`,
 			})
+			return
 		end,
 	},
 	{
@@ -1222,80 +1258,54 @@ return {
 				optional = true,
 			},
 			{
-				type = "string",
+				type = "chatString",
 				name = "Text",
 				description = "The text to speak.",
 			},
 		},
 
 		envClient = function(_K)
-			local ids = {
-				"British male",
-				"British female",
-				"US male",
-				"US female",
-				"US male #2",
-				"US female #2",
-				"Australian male",
-				"Australian female",
-				"Retro #1",
-				"Retro #2",
-			}
-			_K.Registry.registerType("voiceId", _K.Registry.makeEnumType("voiceId", ids))
+			_K.Registry.registerType("voiceId", _K.Registry.makeEnumType("voiceId", VOICE_IDS))
+
+			-- speech is built locally from the text filtered through TextChatService
+			_K.Chat.onMessage("tts", function(text: string, _from: number, voiceId: number?)
+				local audioTextToSpeech: AudioTextToSpeech = Instance.new("AudioTextToSpeech")
+				-- speak the words, not the restored rich text tags
+				audioTextToSpeech.Text = _K.Util.String.unescapeRichText((string.gsub(text, "<[^>]*>", "")))
+				audioTextToSpeech.VoiceId = tostring(tonumber(voiceId) or 1)
+				audioTextToSpeech.Parent = workspace
+
+				local deviceOutput = Instance.new("AudioDeviceOutput")
+				deviceOutput.Parent = workspace
+
+				local wire = Instance.new("Wire")
+				wire.Parent = workspace
+
+				wire.SourceInstance = audioTextToSpeech
+				wire.TargetInstance = deviceOutput
+
+				local function cleanup()
+					audioTextToSpeech:Unload()
+					audioTextToSpeech:Destroy()
+					deviceOutput:Destroy()
+					wire:Destroy()
+				end
+
+				local status = audioTextToSpeech:LoadAsync()
+				if status == Enum.AssetFetchStatus.Success then
+					audioTextToSpeech.Ended:Once(cleanup)
+					audioTextToSpeech:Play()
+				else
+					cleanup()
+				end
+			end)
 		end,
 		env = function(_K)
-			local ids = {
-				"British male",
-				"British female",
-				"US male",
-				"US female",
-				"US male #2",
-				"US female #2",
-				"Australian male",
-				"Australian female",
-				"Retro #1",
-				"Retro #2",
-			}
-			_K.Registry.registerType("voiceId", _K.Registry.makeEnumType("voiceId", ids))
-
-			return {
-				playing = nil,
-				voiceIds = ids,
-			}
+			_K.Registry.registerType("voiceId", _K.Registry.makeEnumType("voiceId", VOICE_IDS))
 		end,
 		run = function(context, voice: string?, text: string)
-			local voiceId = table.find(context.env.voiceIds, voice or "British male")
-
-			local audioTextToSpeech: AudioTextToSpeech = Instance.new("AudioTextToSpeech")
-			audioTextToSpeech.Parent = workspace
-			audioTextToSpeech.Text = text
-			audioTextToSpeech.VoiceId = tostring(voiceId)
-
-			local deviceOutput = Instance.new("AudioDeviceOutput")
-			deviceOutput.Parent = workspace
-
-			local wire = Instance.new("Wire")
-			wire.Parent = workspace
-
-			wire.SourceInstance = audioTextToSpeech
-			wire.TargetInstance = deviceOutput
-
-			local function cleanup()
-				audioTextToSpeech:Unload()
-				audioTextToSpeech:Destroy()
-				deviceOutput:Destroy()
-				wire:Destroy()
-			end
-
-			local status = audioTextToSpeech:LoadAsync()
-			if status == Enum.AssetFetchStatus.Success then
-				audioTextToSpeech.Ended:Once(cleanup)
-				audioTextToSpeech:Play()
-				return
-			else
-				cleanup()
-				return `Failed to load sound`
-			end
+			local voiceId = table.find(VOICE_IDS, voice or "British male")
+			return select(2, context._K.Chat.send(context, "tts", text, nil, voiceId))
 		end,
 	},
 	{

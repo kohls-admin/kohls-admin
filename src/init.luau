@@ -30,6 +30,7 @@ end
 	.Flux Flux
 
 	.Auth Auth
+	.Chat Chat
 
 	.Process Process
 	.Registry Registry
@@ -72,6 +73,7 @@ local _K = {
 
 	-- core modules
 	Auth = require(Shared:WaitForChild("Auth")),
+	Chat = require(Shared:WaitForChild("Chat")),
 	Process = require(Shared:WaitForChild("Process")),
 	Registry = require(Shared:WaitForChild("Registry")),
 	VIP = require(Shared:WaitForChild("VIP")),

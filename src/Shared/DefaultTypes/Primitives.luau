@@ -91,17 +91,19 @@ return function(context)
 	_K.Registry.registerType("numbers", {
 		listable = true,
 	}, numberType)
-	_K.Registry.registerType("stringGreedy", rawStringType)
 	_K.Registry.registerType("rawString", rawStringType)
 	_K.Registry.registerType("rawStrings", {
 		listable = true,
 	}, rawStringType)
+	-- text sent with TextChannel:SendAsync, TextChatService filters it per recipient so the server doesn't
+	_K.Registry.registerType("chatString", {}, rawStringType)
+	_K.Registry.registerType("stringGreedy", {}, rawStringType) -- fallback alias of chatString
 	function stringType.parse(v, self)
 		if _K.Service.RunService:IsClient() or self.command.global then
 			return v
 		end
 		if
-			not _K.Auth.hasRestrictedRole(self.command.from)
+			not (_K.IsStudio and _K.Auth.hasRestrictedRole(self.command.from))
 			and not _K.Service.TextChat:CanUserChatAsync(self.command.from)
 		then
 			return "User cannot chat"

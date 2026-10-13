@@ -296,7 +296,7 @@ return {
 		description = "Changes the value of Lighting.ClockTime.",
 		args = {
 			{
-				type = "string",
+				type = "rawString",
 				name = "Time",
 				description = "The time of day, can be HH, HH:MM, or HH:MM:SS.",
 			},
