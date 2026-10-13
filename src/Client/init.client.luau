@@ -427,15 +427,6 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 		}
 	end
 
-	if savedSettings.announcement then
-		local msg, from = unpack(savedSettings.announcement)
-		task.spawn(_K.Announce, {
-			From = from,
-			Text = msg,
-			Duration = 0,
-		})
-	end
-
 	if _K.Data.settings.announcements then
 		for _, announcement in _K.Data.settings.announcements do
 			task.spawn(_K.Announce, announcement)

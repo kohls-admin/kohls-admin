@@ -11,6 +11,15 @@ return {
 				description = "The message to send.",
 			},
 		},
+		envClient = function(_K)
+			_K.Chat.onMessage("announce", function(text: string, from: number, duration: number?)
+				_K.Announce({
+					From = from,
+					Text = text,
+					Duration = duration or 0,
+				})
+			end)
+		end,
 		env = function(_K)
 			task.spawn(_K.Util.Retry, function()
 				_K.Service.Messaging:SubscribeAsync("KA_Announcement", function(message)
@@ -24,11 +33,13 @@ return {
 
 					local msg, from, duration = unpack(message.Data)
 					_K.Data.savedSettings.announcement = message.Data
-					_K.Remote.Announce:FireAll({
-						From = from,
-						Text = msg,
-						Duration = duration or 0,
-					})
+					_K.Chat.send(
+						{ global = true, from = from, fromPlayer = from and _K.Service.Players:GetPlayerByUserId(from) },
+						"announce",
+						msg,
+						nil,
+						duration or 0
+					)
 				end)
 			end, math.huge)
 		end,

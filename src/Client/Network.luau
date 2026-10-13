@@ -209,15 +209,6 @@ _K.Remote.Logs:Connect(function(logsBuffer)
 end)
 
 _K.Remote.Settings:Connect(function(settings)
-	if settings.announcement and not _K.Data.savedSettings.announcement then
-		local msg, from = unpack(settings.announcement)
-		_K.Announce({
-			From = from,
-			Text = msg,
-			Duration = 0,
-		})
-	end
-
 	local useSaved = _K.Data.savedSettings.useSavedSettings or settings.useSavedSettings
 	for key, value in settings do
 		value = UI.raw(value)

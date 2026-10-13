@@ -30,6 +30,7 @@ local Chat = {
 	COOLDOWN = COOLDOWN,
 	-- tags shown before KA messages in the chat window and bubbles
 	LABELS = {
+		announce = "Announce",
 		message = "Message",
 		hint = "Hint",
 		fullmessage = "Full Message",
@@ -263,19 +264,17 @@ if RunService:IsServer() then
 	]=]
 	function Chat.send(context: any, kind: string, text: string, targets: { Player }?, data: any?): (string?, string?)
 		local id = HttpService:GenerateGUID(false)
-		if context.global then
+		local sender = context.fromPlayer or (context.from and Players:GetPlayerByUserId(context.from))
+		if context.global and not (sender and sender.Parent) then
 			local escaped = Util.String.escapeRichText(text)
-			if targets then
-				for _, player in targets do
+			for _, player in targets or Players:GetPlayers() do
+				if player.UserId == context.from or not Auth.hasRestrictedRole(player.UserId) then
 					Remote.ChatSystem:Fire(player, kind, escaped, context.from, data, id)
 				end
-			else
-				Remote.ChatSystem:FireAll(kind, escaped, context.from, data, id)
 			end
 			return id
 		end
 
-		local sender = context.fromPlayer
 		if not (sender and sender.Parent) then
 			return nil, "Message commands must be run by a player in this server."
 		end

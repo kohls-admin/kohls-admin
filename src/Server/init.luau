@@ -521,6 +521,17 @@ return function(_K)
 			)
 			player:SetAttribute("_K_READY", true)
 
+			if type(_K.Data.savedSettings.announcement) == "table" then
+				local msg, from, duration = unpack(_K.Data.savedSettings.announcement)
+				_K.Chat.send(
+					{ global = true, from = from, fromPlayer = from and _K.Service.Players:GetPlayerByUserId(from) },
+					"announce",
+					msg,
+					{ player },
+					duration or 0
+				)
+			end
+
 			if _K.Data.canSave == false then
 				_K.alert(player, `<b>Global save data failed to load:</b>\n{_K.Data.saveError}`, true)
 			end
@@ -574,9 +585,6 @@ return function(_K)
 
 		local handledSettings = {
 			freeAdmin = true,
-			announcement = true,
-			announcements = true,
-			notifications = true,
 			prefix = true,
 			splitKey = true,
 		}
@@ -642,83 +650,6 @@ return function(_K)
 				end
 			end
 
-			-- announcements and notifications are user text shown to everyone, so new ones are gated, filtered and rate
-			-- limited like ;announce
-			local announcement = changes.announcement
-			changes.announcement = nil
-			local newAnnouncement = type(announcement) == "table" and type(announcement[1]) == "string"
-			local newCount = if newAnnouncement then 1 else 0
-
-			-- these settings are lists, existing entries are kept as is and only new ones need the gate
-			local function itemKey(item)
-				return `{item.From}\0{item.Duration}\0{item.Text}`
-			end
-			local lists = {}
-			for _, key in { "announcements", "notifications" } do
-				local items = changes[key]
-				changes[key] = nil
-				if type(items) ~= "table" then
-					continue
-				end
-				local existing, existingCounts, entries = {}, {}, {}
-				for _, item in _K.Data.savedSettings[key] or {} do
-					local k = itemKey(item)
-					existing[k] = item
-					existingCounts[k] = (existingCounts[k] or 0) + 1
-				end
-				for _, item in items do
-					if type(item) == "table" and type(item.Text) == "string" then
-						local k = itemKey(item)
-						if (existingCounts[k] or 0) > 0 then
-							existingCounts[k] -= 1
-							table.insert(entries, existing[k])
-						else
-							newCount += 1
-							table.insert(entries, { new = item })
-						end
-					end
-				end
-				lists[key] = entries
-			end
-
-			local err
-			if newCount > 0 then
-				err = if _K.Data.SEPARATE_DATASTORE
-					then "Announcements are disabled in private servers."
-					else _K.Chat.limitBroadcast(player.UserId, "Announcements require a developer role.")
-				if not err and newCount > 1 then
-					err = "Please wait before adding another message."
-				end
-				if err then
-					_K.alert(player, err, true)
-				end
-			end
-
-			if announcement == false then
-				changes.announcement = false -- clearing it, like ;unannounce
-			elseif not err and newAnnouncement then
-				changes.announcement = {
-					_K.Util.String.filterForBroadcast(announcement[1], player.UserId),
-					player.UserId,
-				}
-			end
-
-			for key, entries in lists do
-				local items = {}
-				for _, entry in entries do
-					if not entry.new then
-						table.insert(items, entry)
-					elseif not err then
-						table.insert(items, {
-							From = player.UserId,
-							Duration = tonumber(entry.new.Duration),
-							Text = _K.Util.String.filterForBroadcast(entry.new.Text, player.UserId),
-						})
-					end
-				end
-				changes[key] = items
-			end
-
 			-- the prefix and split key are shown to everyone, users are limited to single valid characters like the
 			-- settings UI, and non-developers are rate limited
 			do
@@ -778,7 +709,7 @@ return function(_K)
 				end
 			end
 
-			local changeStrings, announcementLog = {}, nil
+			local changeStrings = {}
 			for key, value in changes do
 				-- skipped keys aren't sent to other players either
 				if
@@ -793,15 +724,9 @@ return function(_K)
 				_K.Data.savedSettings[key] = value
 				local logValue = if type(value) == "string"
 					then _K.Util.String.filterForBroadcast(value, player.UserId)
-					elseif key == "announcement" and type(value) == "table" then value[1] -- already filtered
-					elseif key == "announcements" or key == "notifications" then `{#value} {key}`
 					elseif key == "freeAdmin" or key == "prefix" then table.concat(value, ", ")
 					else value
-				if key == "announcement" and value then
-					announcementLog = logValue
-				else
-					table.insert(changeStrings, `[{key}]: {logValue}`)
-				end
+				table.insert(changeStrings, `[{key}]: {logValue}`)
 
 				local cacheValue, valueType = value, typeof(value)
 				if valueType == "Color3" then
@@ -827,18 +752,8 @@ return function(_K)
 				then _K.Data.savedSettings
 				else _K.Data.defaultSettings
 
-			local logText = `changed settings: {table.concat(changeStrings, " ")}`
-			if announcementLog then
-				-- the announcement is free text, other admins' logs don't show it
-				_K.log(
-					`{logText} [announcement]: {announcementLog}`,
-					"COMMAND",
-					player.UserId,
-					nil,
-					`{logText} [announcement]: …`
-				)
-			elseif #changeStrings > 0 then
-				_K.log(logText, "COMMAND", player.UserId)
+			if #changeStrings > 0 then
+				_K.log(`changed settings: {table.concat(changeStrings, " ")}`, "COMMAND", player.UserId)
 			end
 		end)
 
