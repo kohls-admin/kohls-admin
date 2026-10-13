@@ -209,6 +209,7 @@ return {
 				type = "bans",
 				name = "Player(s)",
 				description = "The player(s) to unban.",
+				lowerRank = true,
 			},
 		},
 
@@ -220,7 +221,7 @@ return {
 					table.insert(unbannedNames, ban[1] or userId)
 				end
 			end
-			context._K.Auth.unbanUsers(bans, context.from, true)
+			context._K.Auth.unbanUsers(bans, context.from)
 			context._K.Remote.Notify:Fire(
 				context.fromPlayer,
 				{ Text = `<b>Unbanned:</b> <i>{table.concat(unbannedNames, ", ")}</i>` }
@@ -907,6 +908,7 @@ return {
 				type = "players",
 				name = "Player(s)",
 				description = "The player(s) to remove tools from.",
+				lowerRank = true,
 			},
 		},
 		env = function(_K)
@@ -1086,11 +1088,27 @@ return {
 		env = function(_K)
 			local remote = _K.Remote.RemoveTool
 			remote:Connect(function(player: Player, target: Player, toolName: string)
+				local canRemove = _K.Auth.hasCommand(player.UserId, "removetools")
 				if
-					_K.Auth.hasCommand(player.UserId, "removetools")
-					and typeof(target) == "Player"
+					canRemove
+					and typeof(target) == "Instance"
+					and target:IsA("Player")
 					and type(toolName) == "string"
 				then
+					local fauxArg = {
+						_K = _K,
+						definition = _K.Registry.commands.removetools.args[1],
+						command = {
+							from = player.UserId,
+							fromRank = _K.Auth.getRank(player.UserId),
+							fromRole = {},
+							rank = canRemove or 0,
+						},
+					}
+					_K.Data.targetLimits[player.UserId] = 0
+					if not _K.Auth.targetUserArgument(fauxArg, target.UserId, target) then
+						return
+					end
 					local removed
 					for _, source in { target.Character, target:FindFirstChildOfClass("Backpack") } do
 						if not source then

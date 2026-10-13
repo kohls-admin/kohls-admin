@@ -853,15 +853,17 @@ return {
 				and not context._K.Auth.hasPermission(context.from, "admin")
 			then
 				local ok, owned = context._K.Util.Retry(function()
-					return context._K.Service.Marketplace:PlayerOwnsAssetAsync(context._K.LocalPlayer, animation)
+					return context._K.Service.Marketplace:PlayerOwnsAssetAsync(context.fromPlayer, animation)
 				end)
-				if ok and not owned then
-					local id = tostring(animation)
-					if not context._K.VIP.allowedBulkPurchaseIds[animation] then
-						id = "115444443724463" -- chat commands
+				if not ok or not owned then
+					if ok then
+						local id = tostring(animation)
+						if not context._K.VIP.allowedBulkPurchaseIds[animation] then
+							id = "115444443724463" -- chat commands
+						end
+						local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = id } }
+						context._K.Service.Marketplace:PromptBulkPurchase(context.fromPlayer, items, {})
 					end
-					local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = id } }
-					context._K.Service.Marketplace:PromptBulkPurchase(context._K.LocalPlayer, items, {})
 					return
 				end
 			end

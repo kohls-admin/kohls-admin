@@ -292,14 +292,16 @@ return function(_K)
 				group[groupId] = definition
 			end
 			_K.Util.Table.deepMerge(_K.Data.async.group, group, true)
+			_K.Auth.prefetchGroupEntryRanks()
 		end
 
 		if type(settings.VIPAdmin) == "table" then
 			local asset, gamepass = {}, {}
 			for itemId, rank in settings.VIPAdmin do
+				itemId = tonumber(itemId)
 				local roleId = getRoleFromRank(rank)
-				if roleId and tonumber(itemId) then
-					(if itemId > 0 then asset else gamepass)[itemId] = { roleId }
+				if roleId and itemId then
+					(if itemId > 0 then asset else gamepass)[math.abs(itemId)] = { roleId }
 				end
 			end
 			_K.Util.Table.deepMerge(_K.Data.async.asset, asset, true)

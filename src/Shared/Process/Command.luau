@@ -123,16 +123,20 @@ function Command:run()
 						return true -- skip running initial command
 					end
 				else -- list of players
-					for i, player in prepared do
+					for i = #prepared, 1, -1 do
+						local player = prepared[i]
 						if player == self.fromPlayer then
 							continue -- don't request self
 						end
 						if self:shouldRequest(player) then
-							prepared[i] = nil -- strip player
+							table.remove(prepared, i) -- strip player
 							local soloPrepared = table.clone(self.preparedArgs)
 							soloPrepared[argIndex] = { player }
 							task.spawn(self.requestCommand, self, player, soloPrepared, run)
 						end
+					end
+					if #prepared == 0 then
+						return true -- skip running initial command
 					end
 				end
 			end

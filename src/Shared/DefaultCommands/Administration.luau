@@ -95,14 +95,17 @@ return {
 		},
 
 		run = function(context, userIds, roles, temporary)
-			local persist = if temporary or not context._K.Auth.hasPermission(context.from, "saveRoles")
+			local isDeveloper = context._K.Auth.hasRestrictedRole(context.from)
+			local persist = if temporary
+					or not isDeveloper
+					or not context._K.Auth.hasPermission(context.from, "saveRoles")
 				then false
 				else true
 
 			for _, userId in userIds do
 				local rolesAdded = {}
 				for _, role in roles do
-					if context._K.Auth.userRoleAdd(userId, role, persist) then
+					if context._K.Auth.userRoleAdd(userId, role, persist, not isDeveloper) then
 						local roleData = context._K.Data.roles[role]
 						table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
 					end
@@ -158,10 +161,11 @@ return {
 		},
 
 		run = function(context, userIds, roles)
+			local unrestricted = not context._K.Auth.hasRestrictedRole(context.from)
 			for _, userId in userIds do
 				local rolesAdded = {}
 				for _, role in roles do
-					if context._K.Auth.userRoleAdd(userId, role) then
+					if context._K.Auth.userRoleAdd(userId, role, false, unrestricted) then
 						local roleData = context._K.Data.roles[role]
 						table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
 					end

@@ -577,21 +577,29 @@ return function(_K)
 				return
 			end
 
-			if changes.freeAdmin then
-				if type(changes.freeAdmin) ~= "table" then
+			local isDeveloper = _K.Auth.hasRestrictedRole(player.UserId)
+
+			if changes.freeAdmin ~= nil then
+				if type(changes.freeAdmin) ~= "table" or not isDeveloper then
 					changes.freeAdmin = nil
-				end
-				for _, roleId in changes.freeAdmin do
-					if type(roleId) ~= "string" or not _K.Auth.hasRole(player.UserId, roleId) then
-						changes.freeAdmin = nil
-						break
+				else
+					local rank = _K.Auth.getRank(player.UserId)
+					for _, roleId in changes.freeAdmin do
+						local role = type(roleId) == "string" and _K.Data.roles[roleId]
+						if
+							not role
+							or role == _K.Data.roles.everyone
+							or (player.UserId ~= _K.creatorId and rank <= role._rank)
+						then
+							changes.freeAdmin = nil
+							break
+						end
 					end
 				end
 			end
 
 			-- announcements and notifications are user text shown to everyone, so new ones are gated, filtered and rate
 			-- limited like ;announce
-			local isDeveloper = _K.Auth.hasRestrictedRole(player.UserId)
 			local announcement = changes.announcement
 			changes.announcement = nil
 			local newAnnouncement = type(announcement) == "table" and type(announcement[1]) == "string"
@@ -766,9 +774,16 @@ return function(_K)
 
 		-- handle ban events
 		_K.Remote.Ban:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
+			userId = tonumber(userId) :: number
 			local canBan = _K.Auth.hasCommand(player.UserId, "ban")
-			if not (tonumber(userId) and canBan) then
+			if not (canBan and userId and userId > 0 and userId < math.huge and math.floor(userId) == userId) then
 				return
+			end
+			if duration ~= nil then
+				if type(duration) ~= "number" or duration ~= duration or math.abs(duration) == math.huge then
+					return
+				end
+				duration = math.floor(duration)
 			end
 
 			local fauxArg = {
@@ -789,13 +804,17 @@ return function(_K)
 				then
 					duration = 0
 				end
-				if reason and #reason > 1024 then
-					reason = string.sub(reason, 1, 1024)
-				end
-				-- ban reasons are user text other admins can see
-				reason = _K.Chat.limitReason(player.UserId, reason)
 				if reason then
-					reason = _K.Util.String.filterForBroadcast(reason, player.UserId)
+					reason = string.sub(reason, 1, 400) -- banasync limit
+					-- ban reasons are user text other admins can see
+					reason = _K.Chat.limitReason(player.UserId, reason)
+					if reason then
+						reason = _K.Util.String.filterForBroadcast(reason, player.UserId)
+					end
+				end
+				local targetPlayer = _K.Service.Players:GetPlayerByUserId(userId)
+				if targetPlayer then
+					targetPlayer:Kick(reason or "No reason.")
 				end
 				local logText = `{_K.getCommandPrefix()}ban {userId} {duration}`
 				-- the reason is free text, other admins' logs don't show it
@@ -811,10 +830,41 @@ return function(_K)
 		end)
 
 		_K.Remote.Unban:Connect(function(player: Player, userId: number)
+			userId = tonumber(userId) :: number
+			local canUnban = _K.Auth.hasCommand(player.UserId, "unban")
+			if not (canUnban and userId and userId > 0 and userId < math.huge and math.floor(userId) == userId) then
+				return
+			end
 			local ban = _K.Data.bans[tostring(userId)]
-			if ban and _K.Auth.hasCommand(player.UserId, "unban") then
+			if not ban then
+				return
+			end
+			if
+				ban[3]
+				and ban[3] ~= 0
+				and player.UserId ~= _K.Data.creatorId
+				and not _K.Auth.hasPermission(player.UserId, "admin")
+				and (
+					not _K.Auth.hasPermission(player.UserId, "banasync")
+					or not _K.Auth.hasRestrictedRole(player.UserId)
+				)
+			then
+				return
+			end
+			local fauxArg = {
+				_K = _K,
+				definition = _K.Registry.commands.unban.args[1],
+				command = {
+					from = player.UserId,
+					fromRank = _K.Auth.getRank(player.UserId),
+					fromRole = {},
+					rank = canUnban or 0,
+				},
+			}
+			_K.Data.targetLimits[player.UserId] = 0
+			if _K.Auth.targetUserArgument(fauxArg, userId, userId) then
 				_K.log(`{_K.getCommandPrefix()}unban {userId}`, "COMMAND", player.UserId)
-				_K.Auth.unbanUsers({ userId }, player.UserId, true)
+				_K.Auth.unbanUsers({ userId }, player.UserId)
 			end
 		end)
 

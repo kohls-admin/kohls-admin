@@ -1,6 +1,23 @@
 local _K
 
-local function parseBan(input)
+local function canUnban(userId: string, ban: any, self: any)
+	local from = self.command.from
+	if
+		(not ban or (ban[3] and ban[3] ~= 0))
+		and from ~= _K.Data.creatorId
+		and not _K.Auth.hasPermission(from, "admin")
+		and (not _K.Auth.hasPermission(from, "banasync") or not _K.Auth.hasRestrictedRole(from))
+	then
+		return nil, "No permission to unban saved bans"
+	end
+	local numId = tonumber(userId)
+	if not numId then
+		return nil, "Invalid ban."
+	end
+	return self._K.Auth.targetUserArgument(self, numId, userId)
+end
+
+local function parseBan(input, self)
 	local query = string.lower(input)
 	for userId, ban in _K.Data.bans do
 		local name = ban[1]
@@ -8,12 +25,14 @@ local function parseBan(input)
 			(name and string.find(string.lower(name), query, 1, true) == 1)
 			or string.find(string.lower(userId), query, 1, true) == 1
 		then
-			return userId
+			return canUnban(userId, ban, self)
 		end
 	end
 
-	if tonumber(input) then
-		return tonumber(input)
+	local userId = tonumber(input)
+	if userId and userId > 0 and userId < math.huge and math.floor(userId) == userId then
+		local key = tostring(userId)
+		return canUnban(key, _K.Data.bans[key], self)
 	end
 
 	return nil, "Invalid ban."
@@ -48,12 +67,11 @@ local function parseAll(arg, self)
 	local feedback = {}
 	local bans = {}
 	for userId, ban in _K.Data.bans do
-		local message
-		ban, message = self._K.Auth.targetUserArgument(self, tonumber(userId) :: number, userId)
-		if ban then
+		local target, message = canUnban(userId, ban, self)
+		if target then
 			table.insert(bans, userId)
 		elseif not table.find(feedback, message) then
-			table.insert(feedback, userId)
+			table.insert(feedback, message)
 		end
 	end
 

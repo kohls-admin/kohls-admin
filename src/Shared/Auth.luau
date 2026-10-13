@@ -79,7 +79,9 @@ function Auth.banUsers(
 	fromUserId: number?,
 	forceBanAsync: boolean?
 )
-	local banAsync = forceBanAsync or not fromUserId or Auth.hasPermission(fromUserId, "banasync")
+	local banAsync = forceBanAsync
+		or not fromUserId
+		or (Auth.hasPermission(fromUserId, "banasync") and Auth.hasRestrictedRole(fromUserId))
 
 	if not banAsync then
 		duration = 0
@@ -143,14 +145,20 @@ function Auth.banUsers(
 end
 
 function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync: boolean?)
+	local banAsync = forceBanAsync
+		or not fromUserId
+		or (Auth.hasPermission(fromUserId, "banasync") and Auth.hasRestrictedRole(fromUserId))
 	local unbanAsync = {}
 	for index, userId in userIds do
 		local key = tostring(userId)
 		local number = tonumber(userId)
+		local ban = Data.bans[key]
 
-		if forceBanAsync then
-			local ban = Data.bans[key]
-			if ban and ban[3] and ban[3] ~= 0 then
+		if not ban or (ban[3] and ban[3] ~= 0) then
+			if not banAsync then
+				continue
+			end
+			if number then
 				table.insert(unbanAsync, number)
 			end
 		end
@@ -164,7 +172,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 		end
 	end
 
-	if forceBanAsync and #unbanAsync > 0 and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
+	if banAsync and #unbanAsync > 0 and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
 		for i = 1, #unbanAsync, 50 do
 			local chunk = table.move(unbanAsync, i, math.min(#unbanAsync, i + 49), 1, {})
 			local attempt = 0
@@ -220,7 +228,7 @@ function Auth.roleIdSortAscending(a: Role, b: Role): boolean
 end
 
 --- Adds a role to a user if they don't already have it
-function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?): boolean
+function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?, unrestricted: boolean?): boolean
 	if roleId == "everyone" then
 		return false
 	end
@@ -234,6 +242,7 @@ function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?): bool
 			name = nil,
 			roles = { roleId },
 			persist = { if persist then roleId else nil },
+			unrestricted = if unrestricted then { [roleId] = true } else nil,
 		}
 		Data.members[key] = member
 		roleAdded = true
@@ -243,6 +252,12 @@ function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?): bool
 			table.insert(member.roles, roleId)
 			table.sort(member.roles, Auth.roleIdSort)
 			roleAdded = true
+			if unrestricted then
+				member.unrestricted = member.unrestricted or {}
+				member.unrestricted[roleId] = true
+			end
+		elseif not unrestricted and member.unrestricted then
+			member.unrestricted[roleId] = nil
 		end
 		if persist and not table.find(member.persist, roleId) then
 			table.insert(member.persist, roleId)
@@ -278,6 +293,9 @@ function Auth.userRoleRemove(userId: number, roleId: Role): boolean
 		if index then
 			table.remove(member.roles, index)
 			roleRemoved = true
+		end
+		if member.unrestricted then
+			member.unrestricted[roleId] = nil
 		end
 		index = table.find(member.persist, roleId)
 		if index then
@@ -543,6 +561,22 @@ function Auth.hasPermission(userId: number, permission: string): boolean
 	return false
 end
 
+--- Checks if a user has a role or higher rank
+function Auth.hasRole(userId: number, roleId: Role): boolean
+	if userId == Data.creatorId then
+		return true
+	end
+	local role = type(roleId) == "string" and Data.roles[roleId]
+	if not role then
+		return false
+	end
+	local member = Data.members[tostring(userId)]
+	if member and member.roles and table.find(member.roles, roleId) then
+		return true
+	end
+	return Auth.getRank(userId) > role._rank
+end
+
 --- Checks the maximum role rank of the user
 function Auth.getRank(userId: number): (number, Role)
 	if userId == Data.creatorId then
@@ -586,6 +620,9 @@ end
 
 --- Validates if a user can be targeted by a command argument based on permissions and rank limits
 function Auth.targetUserArgument(arg: any, userId: number, value: Player | number | string)
+	if type(userId) ~= "number" or math.floor(userId) ~= userId or math.abs(userId) == math.huge then
+		return nil, "Invalid user"
+	end
 	local from = arg.command.from
 	local limits = arg.command.fromRole.limits
 	local targetLimits = arg._K.Data.targetLimits
@@ -689,9 +726,15 @@ end
 
 --- Checks if a user has any developer roles; Roles not associated with any assets, gamepasses, subscriptions, and not handed out freely
 function Auth.hasRestrictedRole(userId: number): boolean
+	if userId == Data.creatorId then
+		return true
+	end
 	local member = Data.members[tostring(userId)]
 	if member and member.roles then
 		for _, roleId in member.roles do
+			if member.unrestricted and member.unrestricted[roleId] then
+				continue
+			end
 			local role = Data.roles[roleId]
 			if
 				role
