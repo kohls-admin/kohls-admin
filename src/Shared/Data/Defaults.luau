@@ -78,6 +78,7 @@ local Data = {
 		group = {},
 		subscription = {},
 	},
+	friendRoles = {},
 
 	bans = {},
 	members = {},

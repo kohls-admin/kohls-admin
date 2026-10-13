@@ -306,6 +306,11 @@ function Auth.userRoleRemove(userId: number, roleId: Role): boolean
 end
 
 local asyncRolesCache = {}
+-- checks a group role rule against a group rank, either exactly or at least that rank
+local function rankMatches(rule, rank: number): boolean
+	return rank == rule.rank or (not rule.exactRank and rank >= rule.rank)
+end
+
 function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 	local cached = asyncRolesCache[userId]
 	if cached and not bustCache then
@@ -322,7 +327,7 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 				local groupAuth = Data.async.group[group.Id]
 				if groupAuth then
 					for _, auth in groupAuth do
-						if group.Rank == auth.rank or (not auth.exactRank and group.Rank >= auth.rank) then
+						if rankMatches(auth, group.Rank) then
 							for _, roleId in auth.roles do
 								Auth.userRoleAdd(userId, roleId)
 							end
@@ -618,7 +623,71 @@ function Auth.targetUserArgument(arg: any, userId: number, value: Player | numbe
 	end
 end
 
---- Checks if a user has any non-purchasable roles; Roles not associated with any assets, gamepasses, or subscriptions
+local groupEntryRanks: { [number]: number | false } = {}
+
+-- the lowest member rank of a group, which anyone joining the group receives; nil until known
+local function getGroupEntryRank(groupId: number): number?
+	local cached = groupEntryRanks[groupId]
+	if cached == nil then
+		groupEntryRanks[groupId] = false
+		task.spawn(function()
+			local ok, info = Util.Retry(function()
+				return Util.Service.Group:GetGroupInfoAsync(groupId)
+			end)
+			local entry
+			if ok and type(info) == "table" and type(info.Roles) == "table" then
+				for _, role in info.Roles do
+					if role.Rank > 0 and (not entry or role.Rank < entry) then
+						entry = role.Rank
+					end
+				end
+			end
+			if entry then
+				groupEntryRanks[groupId] = entry
+			else
+				-- stay closed and retry later
+				task.delay(60, function()
+					groupEntryRanks[groupId] = nil
+				end)
+			end
+		end)
+	end
+	return cached or nil
+end
+
+--- Starts fetching the entry rank of every group in the group roles, so role checks don't stay closed on first use
+function Auth.prefetchGroupEntryRanks()
+	for groupId in Data.async.group do
+		getGroupEntryRank(tonumber(groupId) :: number)
+	end
+end
+
+--- Checks if a role is handed out freely: free admin, friends of the creator, or every member of a group
+function Auth.isPublicRole(roleId: Role): boolean
+	if Data.settings.freeAdmin and table.find(Data.settings.freeAdmin, roleId) then
+		return true
+	end
+	if table.find(Data.friendRoles, roleId) then
+		return true
+	end
+	for groupId, rules in Data.async.group do
+		for _, rule in rules do
+			if type(rule.roles) ~= "table" or not table.find(rule.roles, roleId) then
+				continue
+			end
+			local entry = getGroupEntryRank(tonumber(groupId) :: number)
+			if not entry then
+				return true -- fail closed until the group's entry rank is known
+			end
+			if rankMatches(rule, entry) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+--- Checks if a user has any developer roles; Roles not associated with any assets, gamepasses, subscriptions, and not handed out freely
 function Auth.hasRestrictedRole(userId: number): boolean
 	local member = Data.members[tostring(userId)]
 	if member and member.roles then
@@ -630,17 +699,8 @@ function Auth.hasRestrictedRole(userId: number): boolean
 				and (type(role.assets) ~= "table" or not next(role.assets))
 				and (type(role.gamepasses) ~= "table" or not next(role.gamepasses))
 				and (type(role.subscriptions) ~= "table" or not next(role.subscriptions))
+				and not Auth.isPublicRole(roleId)
 			then
-				local isFree
-				for _, freeRoleId in Data.settings.freeAdmin do
-					if roleId == freeRoleId then
-						isFree = true
-						break
-					end
-				end
-				if isFree then
-					continue
-				end
 				return true
 			end
 		end

@@ -364,9 +364,11 @@ return function(_K)
 
 		if settings.groupRoles then
 			_K.Util.Table.deepMerge(_K.Data.async.group, settings.groupRoles, true)
+			_K.Auth.prefetchGroupEntryRanks()
 		end
 
 		if settings.friendRoles and #settings.friendRoles > 0 then
+			_K.Data.friendRoles = table.clone(settings.friendRoles)
 			task.spawn(function()
 				local friendPages = _K.Service.Players:GetFriendsAsync(_K.creatorId)
 				for item, _pageNo in Util.iterPageItems(friendPages) do
