@@ -589,31 +589,40 @@ return function(_K)
 				end
 			end
 
-			-- announcements are user text shown to everyone, so new ones are gated, filtered and rate limited like ;announce
+			-- announcements and notifications are user text shown to everyone, so new ones are gated, filtered and rate
+			-- limited like ;announce
 			local isDeveloper = _K.Auth.hasRestrictedRole(player.UserId)
-			local announcement, announcements = changes.announcement, changes.announcements
-			changes.announcement, changes.announcements = nil, nil
+			local announcement = changes.announcement
+			changes.announcement = nil
+			local newAnnouncement = type(announcement) == "table" and type(announcement[1]) == "string"
 
-			-- the announcements setting is a list, existing entries are kept as is and only new ones need the gate
-			local kept, added = {}, {}
-			if type(announcements) == "table" then
-				local existing = {}
-				for _, item in _K.Data.savedSettings.announcements or {} do
-					existing[`{item.From}\0{item.Duration}\0{item.Text}`] = item
+			-- these settings are lists, existing entries are kept as is and only new ones need the gate
+			local function itemKey(item)
+				return `{item.From}\0{item.Duration}\0{item.Text}`
+			end
+			local lists, needsGate = {}, newAnnouncement
+			for _, key in { "announcements", "notifications" } do
+				local items = changes[key]
+				changes[key] = nil
+				if type(items) ~= "table" then
+					continue
 				end
-				for _, item in announcements do
+				local existing, entries = {}, {}
+				for _, item in _K.Data.savedSettings[key] or {} do
+					existing[itemKey(item)] = item
+				end
+				for _, item in items do
 					if type(item) == "table" and type(item.Text) == "string" then
-						local old = existing[`{item.From}\0{item.Duration}\0{item.Text}`]
-						table.insert(kept, old or false)
-						if not old then
-							table.insert(added, { index = #kept, item = item })
-						end
+						local old = existing[itemKey(item)]
+						table.insert(entries, old or { new = item })
+						needsGate = needsGate or not old
 					end
 				end
+				lists[key] = entries
 			end
 
 			local err
-			if (type(announcement) == "table" and type(announcement[1]) == "string") or #added > 0 then
+			if needsGate then
 				err = if _K.Data.SEPARATE_DATASTORE
 					then "Announcements are disabled in private servers."
 					else _K.Chat.limitBroadcast(player.UserId, "Announcements require a developer role.")
@@ -624,39 +633,82 @@ return function(_K)
 
 			if announcement == false then
 				changes.announcement = false -- clearing it, like ;unannounce
-			elseif not err and type(announcement) == "table" and type(announcement[1]) == "string" then
+			elseif not err and newAnnouncement then
 				changes.announcement = {
 					_K.Util.String.filterForBroadcast(announcement[1], player.UserId),
 					player.UserId,
 				}
 			end
 
-			if type(announcements) == "table" then
-				if not err then
-					for _, new in added do
-						kept[new.index] = {
+			for key, entries in lists do
+				local items = {}
+				for _, entry in entries do
+					if not entry.new then
+						table.insert(items, entry)
+					elseif not err then
+						table.insert(items, {
 							From = player.UserId,
-							Duration = tonumber(new.item.Duration),
-							Text = _K.Util.String.filterForBroadcast(new.item.Text, player.UserId),
-						}
+							Duration = tonumber(entry.new.Duration),
+							Text = _K.Util.String.filterForBroadcast(entry.new.Text, player.UserId),
+						})
 					end
 				end
-				local list = {}
-				for _, item in kept do
-					if item then
-						table.insert(list, item)
-					end
-				end
-				changes.announcements = list
+				changes[key] = items
 			end
 
-			local changeStrings = {}
-			for key, value in changes do
-				if _K.Data.savedSettings[key] == nil then
-					continue
+			-- the prefix and split key are shown to everyone, other users are limited to new single characters like the
+			-- settings UI, and rate limited
+			if not isDeveloper then
+				local current = _K.Data.savedSettings
+				-- nil when a new value isn't a single character, otherwise whether any value is new
+				local function addsCharacters(values, existing): boolean?
+					if type(values) ~= "table" or #values == 0 then
+						return nil
+					end
+					local added = false
+					for _, value in values do
+						if not table.find(existing, value) then
+							if not (type(value) == "string" and utf8.len(value) == 1) then
+								return nil
+							end
+							added = true
+						end
+					end
+					return added
 				end
+				local invalid, changed = false, false
+				for key, existing in { prefix = current.prefix or {}, splitKey = { current.splitKey } } do
+					local value = changes[key]
+					if value == nil then
+						continue
+					end
+					local added = addsCharacters(if key == "splitKey" then { value } else value, existing)
+					if added == nil then
+						changes[key], invalid = nil, true
+					else
+						changed = changed or added
+					end
+				end
+				if invalid then
+					_K.alert(player, "Prefixes and split keys are limited to a single character.", true)
+				end
+				if changed then
+					local cooldownError = _K.Chat.cooldown(player.UserId, "prefix")
+					if cooldownError then
+						changes.prefix, changes.splitKey = nil, nil
+						_K.alert(player, cooldownError, true)
+					end
+				end
+			end
 
-				if string.find(key, "theme", 1, true) and themeAuthority == "Studio" then
+			local changeStrings, announcementLog = {}, nil
+			for key, value in changes do
+				-- skipped keys aren't sent to other players either
+				if
+					_K.Data.savedSettings[key] == nil
+					or (string.find(key, "theme", 1, true) and themeAuthority == "Studio")
+				then
+					changes[key] = nil
 					continue
 				end
 
@@ -665,9 +717,13 @@ return function(_K)
 				local logValue = if type(value) == "string" and not isDeveloper
 					then _K.Util.String.filterForBroadcast(value, player.UserId)
 					elseif key == "announcement" and type(value) == "table" then value[1] -- already filtered
-					elseif key == "announcements" then `{#value} announcements`
+					elseif key == "announcements" or key == "notifications" then `{#value} {key}`
 					else value
-				table.insert(changeStrings, `[{key}]: {logValue}`)
+				if key == "announcement" and value then
+					announcementLog = logValue
+				else
+					table.insert(changeStrings, `[{key}]: {logValue}`)
+				end
 
 				local cacheValue, valueType = value, typeof(value)
 				if valueType == "Color3" then
@@ -693,8 +749,18 @@ return function(_K)
 				then _K.Data.savedSettings
 				else _K.Data.defaultSettings
 
-			if #changeStrings > 0 then
-				_K.log(`changed settings: {table.concat(changeStrings, " ")}`, "COMMAND", player.UserId)
+			local logText = `changed settings: {table.concat(changeStrings, " ")}`
+			if announcementLog then
+				-- the announcement is free text, other admins' logs don't show it
+				_K.log(
+					`{logText} [announcement]: {announcementLog}`,
+					"COMMAND",
+					player.UserId,
+					nil,
+					`{logText} [announcement]: …`
+				)
+			elseif #changeStrings > 0 then
+				_K.log(logText, "COMMAND", player.UserId)
 			end
 		end)
 
@@ -731,7 +797,15 @@ return function(_K)
 				if reason then
 					reason = _K.Util.String.filterForBroadcast(reason, player.UserId)
 				end
-				_K.log(`{_K.getCommandPrefix()}ban {userId} {duration} {reason}`, "COMMAND", player.UserId)
+				local logText = `{_K.getCommandPrefix()}ban {userId} {duration}`
+				-- the reason is free text, other admins' logs don't show it
+				_K.log(
+					if reason then `{logText} {reason}` else logText,
+					"COMMAND",
+					player.UserId,
+					nil,
+					reason and `{logText} …`
+				)
 				_K.Auth.banUsers({ userId }, reason, duration, player.UserId)
 			end
 		end)
