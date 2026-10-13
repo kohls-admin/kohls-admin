@@ -294,6 +294,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 
 		if #commandsRan > 0 then
 			local index, log, tasks = 1, {}, Util.Tasks.new()
+			local textPositions = {}
 			local prefix = _K.getCommandPrefix()
 			for _, command in commandsRan do
 				if command.definition.noLog or (_K.IsClient and not command.definition.runClient) then
@@ -303,6 +304,9 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 				index += 1
 				for _, arg in command.args do
 					local position = index
+					if arg.rawType.freeText then
+						table.insert(textPositions, position)
+					end
 					tasks:add(function()
 						local argString
 						if arg.rawType.log then
@@ -326,6 +330,13 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			end
 
 			logText = table.concat(log, " ")
+			-- free text would let admins talk through the logs, only the sender sees it
+			if #textPositions > 0 then
+				for _, position in textPositions do
+					log[position] = "…"
+				end
+				liveText = table.concat(log, " ")
+			end
 		else -- filter entire rawText as broadcast
 			local trimmed = Util.String.trim(rawText)
 			if #trimmed == 0 then

@@ -153,6 +153,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 			log[5] = Util.getUserInfo(from).Username
 		end
 
+		local stored = log
 		if _K.IsServer then
 			-- trim for 32KB sync max
 			if #log[1] > 16 * 1024 then
@@ -160,6 +161,11 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 			end
 			if from and filtered then
 				log[1] = Util.String.filterForBroadcast(text, from)
+			end
+			-- liveText replaces the text for everyone but the sender, including the stored and synced logs
+			if liveText then
+				stored = table.clone(log)
+				stored[1] = liveText
 			end
 			if
 				(level == "CHAT" and _K.Data.settings.saveChatLogs)
@@ -169,25 +175,19 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 					and (not from or _K.Data.settings.saveLogsForAllRoles or _K.Auth.hasRestrictedRole(from))
 				)
 			then
-				table.insert(_K.Data.Sync.logs, log)
-			end
-			-- other admins get liveText in place of the text when it is given
-			local liveLog = log
-			if liveText then
-				liveLog = table.clone(log)
-				liveLog[1] = liveText
+				table.insert(_K.Data.Sync.logs, stored)
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
-					_K.Remote.Log:Fire(player, if player.UserId == from then log else liveLog)
+					_K.Remote.Log:Fire(player, if player.UserId == from then log else stored)
 				end
 			end
 		elseif _K.client and _K.client.dashboard then
 			_K.client.dashboard.Logs:updateList()
 		end
 
-		table.insert(_K.Data.logs, log)
-		_K.Hook.log:Fire(log)
+		table.insert(_K.Data.logs, stored)
+		_K.Hook.log:Fire(stored)
 		_K.removeExcessLogs()
 	end)
 

@@ -67,13 +67,16 @@ local numberType = {
 	end,
 }
 
+-- freeText marks user text, other admins' logs show it as "…"
 local rawStringType = {
 	filterLog = true,
+	freeText = true,
 	validate = notNil,
 	parse = tostring,
 }
 
 local stringType = {
+	freeText = true,
 	validate = notNil,
 }
 
