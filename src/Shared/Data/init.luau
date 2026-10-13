@@ -27,6 +27,7 @@ local ChunkChanges = require(script:WaitForChild("ChunkChanges"))
 local Migrate = require(script:WaitForChild("Migrate"))
 
 local Remote = Util.Remote
+local CHAT_LEVEL = Util.Logger:encode("CHAT")
 
 Data.Migrate = Migrate
 
@@ -342,38 +343,24 @@ local SYNC = {
 
 	logs = function(state, changes)
 		local logs = changes
-
-		if type(changes) == "table" then
-			for _, log in logs do
-				log[6] = false -- add global flag to each log
-			end
-
-			local result, feedback = Z.ser(Data.Schema.logsRemote, changes)
-			if result == nil then
-				warn("Failed to serialize sync logs:", feedback)
-				return
-			end
-			changes = result
-		elseif type(changes) == "buffer" then
+		if type(changes) == "buffer" then
 			local ok, result = pcall(Z.des :: any, Data.Schema.logs, changes)
 			if not ok then
 				warn("Failed to deserialize sync logs:", result)
 				return
 			end
 			logs = result
-
-			for _, log in logs do
-				log[6] = false -- add global flag to each log
-			end
-
 			Util.Defer.wait()
+		end
 
-			local ser, feedback = Z.ser(Data.Schema.logsRemote, logs)
-			if ser == nil then
-				warn("Failed to serialize remote logs:", feedback)
-				return
+		-- chat from other servers isn't pushed live, admins could talk across servers through it, it stays in the
+		-- history that loads on join
+		local live = {}
+		for _, log in logs do
+			log[6] = false -- add global flag to each log
+			if log[2] ~= CHAT_LEVEL then
+				table.insert(live, log)
 			end
-			changes = ser
 		end
 		Util.Defer.wait()
 
@@ -390,9 +377,17 @@ local SYNC = {
 			Util.Defer.wait()
 			table.sort(state, Util.Logger.sortTime)
 
+			if #live == 0 then
+				return
+			end
+			local ser, feedback = Z.ser(Data.Schema.logsRemote, live)
+			if ser == nil then
+				warn("Failed to serialize remote logs:", feedback)
+				return
+			end
 			for _, player in Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and Auth.hasPermission(player.UserId, "serverlogs") then
-					Remote.Logs:Fire(player, changes)
+					Remote.Logs:Fire(player, ser)
 				end
 			end
 		end
