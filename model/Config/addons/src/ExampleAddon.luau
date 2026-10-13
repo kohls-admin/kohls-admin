@@ -22,6 +22,8 @@ return function(_K)
 			"number" "numbers"
 			"string" "strings"        - normal strings are filtered by default!
 			"rawString" "rawStrings" - use rawStrings for commands that require an unfiltered input
+			"chatString"             - messages between users, send them with _K.Chat.send so TextChatService
+			                           filters them and they can be reported, like the message and pm commands
 			"vector2"
 			"vector3"
 
@@ -111,6 +113,14 @@ return function(_K)
 
 		-- Function that runs on the server when the command is called
 		run = function(context, message: string?)
+			-- Text that other users can see must be rate limited to at least once a minute (Roblox chat guidelines)
+			if message then
+				local err = context._K.Chat.cooldown(context.from, "customcommand")
+				if err then
+					return err -- Returning a string shows it to the caller as an error
+				end
+			end
+
 			-- Create a simple Roblox message object
 			local messageInstance = Instance.new("Message", workspace)
 
@@ -124,6 +134,7 @@ return function(_K)
 			context.env.countServer += 1
 
 			print("Custom command ran on server!", message, context.env.countServer)
+			return
 		end,
 
 		-- Function that runs on the player's client when the command is called
