@@ -132,7 +132,9 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 		local commandDefinition = Registry.commands[commandAlias]
 
 		if not commandDefinition then
-			return false, `Invalid command: {commandText}, did you mean "{Registry.suggestCommandAlias(commandAlias)}"?`
+			return false,
+				`Invalid command: {commandText}, did you mean "{Registry.suggestCommandAlias(commandAlias)}"?`,
+				commands
 		end
 
 		if not Auth.hasCommand(from, commandDefinition) then
@@ -150,9 +152,10 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 					end
 				end
 				return false,
-					`"<b>{commandText}</b>" command restricted to <b>{commandDefinition.RestrictedToRole.name}</b>`
+					`"<b>{commandText}</b>" command restricted to <b>{commandDefinition.RestrictedToRole.name}</b>`,
+					commands
 			end
-			return false, `"<b>{commandText}</b>" command restricted`
+			return false, `"<b>{commandText}</b>" command restricted`, commands
 		end
 
 		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
@@ -162,7 +165,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 
 		if not ok then
 			command.Error = result
-			return false, result
+			return false, result, commands
 		end
 	end
 
@@ -192,7 +195,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		end
 	end
 
-	local ok, result = Process.prepareCommands(_K, from, rawText)
+	local ok, result, prepared = Process.prepareCommands(_K, from, rawText)
 
 	local commandsRan = {}
 	local commandErrors = {}
@@ -287,7 +290,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			return
 		end
 
-		local logText
+		local logText, liveText
 
 		if #commandsRan > 0 then
 			local index, log, tasks = 1, {}, Util.Tasks.new()
@@ -329,9 +332,17 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 				return
 			end
 			logText = if _K.IsServer then Util.String.filterForBroadcast(trimmed, from) else trimmed
+			-- free text that didn't run a command would let admins talk through the live logs, only show the commands
+			local aliases = {}
+			local prefix = _K.getCommandPrefix()
+			for _, command in if ok then result else prepared or {} do
+				table.insert(aliases, prefix .. command.alias)
+			end
+			table.insert(aliases, "…")
+			liveText = table.concat(aliases, " ")
 		end
 
-		_K.log(logText or "", "COMMAND", from)
+		_K.log(logText or "", "COMMAND", from, nil, liveText)
 	end)
 
 	return #commandErrors == 0

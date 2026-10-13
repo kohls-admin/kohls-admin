@@ -135,7 +135,7 @@ function _K.removeExcessLogs()
 	end
 end
 
-function _K.log(text: string, level: LogType, from: number?, filtered: boolean?): Log?
+function _K.log(text: string, level: LogType, from: number?, filtered: boolean?, liveText: string?): Log?
 	if _K.Data.logsHidden[from] then
 		return
 	end
@@ -171,9 +171,15 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?)
 			then
 				table.insert(_K.Data.Sync.logs, log)
 			end
+			-- other admins get liveText in place of the text when it is given
+			local liveLog = log
+			if liveText then
+				liveLog = table.clone(log)
+				liveLog[1] = liveText
+			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
-					_K.Remote.Log:Fire(player, log)
+					_K.Remote.Log:Fire(player, if player.UserId == from then log else liveLog)
 				end
 			end
 		elseif _K.client and _K.client.dashboard then
