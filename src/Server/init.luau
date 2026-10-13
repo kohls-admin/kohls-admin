@@ -589,6 +589,67 @@ return function(_K)
 				end
 			end
 
+			-- announcements are user text shown to everyone, so new ones are gated, filtered and rate limited like ;announce
+			local isDeveloper = _K.Auth.hasRestrictedRole(player.UserId)
+			local announcement, announcements = changes.announcement, changes.announcements
+			changes.announcement, changes.announcements = nil, nil
+
+			-- the announcements setting is a list, existing entries are kept as is and only new ones need the gate
+			local kept, added = {}, {}
+			if type(announcements) == "table" then
+				local existing = {}
+				for _, item in _K.Data.savedSettings.announcements or {} do
+					existing[`{item.From}\0{item.Duration}\0{item.Text}`] = item
+				end
+				for _, item in announcements do
+					if type(item) == "table" and type(item.Text) == "string" then
+						local old = existing[`{item.From}\0{item.Duration}\0{item.Text}`]
+						table.insert(kept, old or false)
+						if not old then
+							table.insert(added, { index = #kept, item = item })
+						end
+					end
+				end
+			end
+
+			local err
+			if (type(announcement) == "table" and type(announcement[1]) == "string") or #added > 0 then
+				err = if _K.Data.SEPARATE_DATASTORE
+					then "Announcements are disabled in private servers."
+					else _K.Chat.limitBroadcast(player.UserId, "Announcements require a developer role.")
+				if err then
+					_K.alert(player, err, true)
+				end
+			end
+
+			if announcement == false then
+				changes.announcement = false -- clearing it, like ;unannounce
+			elseif not err and type(announcement) == "table" and type(announcement[1]) == "string" then
+				changes.announcement = {
+					_K.Util.String.filterForBroadcast(announcement[1], player.UserId),
+					player.UserId,
+				}
+			end
+
+			if type(announcements) == "table" then
+				if not err then
+					for _, new in added do
+						kept[new.index] = {
+							From = player.UserId,
+							Duration = tonumber(new.item.Duration),
+							Text = _K.Util.String.filterForBroadcast(new.item.Text, player.UserId),
+						}
+					end
+				end
+				local list = {}
+				for _, item in kept do
+					if item then
+						table.insert(list, item)
+					end
+				end
+				changes.announcements = list
+			end
+
 			local changeStrings = {}
 			for key, value in changes do
 				if _K.Data.savedSettings[key] == nil then
@@ -600,7 +661,13 @@ return function(_K)
 				end
 
 				_K.Data.savedSettings[key] = value
-				table.insert(changeStrings, `[{key}]: {value}`)
+				-- developer-set strings such as role names are logged as is, other users' strings are filtered
+				local logValue = if type(value) == "string" and not isDeveloper
+					then _K.Util.String.filterForBroadcast(value, player.UserId)
+					elseif key == "announcement" and type(value) == "table" then value[1] -- already filtered
+					elseif key == "announcements" then `{#value} announcements`
+					else value
+				table.insert(changeStrings, `[{key}]: {logValue}`)
 
 				local cacheValue, valueType = value, typeof(value)
 				if valueType == "Color3" then
@@ -626,7 +693,9 @@ return function(_K)
 				then _K.Data.savedSettings
 				else _K.Data.defaultSettings
 
-			_K.log(`changed settings: {table.concat(changeStrings, " ")}`, "COMMAND", player.UserId)
+			if #changeStrings > 0 then
+				_K.log(`changed settings: {table.concat(changeStrings, " ")}`, "COMMAND", player.UserId)
+			end
 		end)
 
 		-- handle ban events
@@ -656,6 +725,11 @@ return function(_K)
 				end
 				if reason and #reason > 1024 then
 					reason = string.sub(reason, 1, 1024)
+				end
+				-- ban reasons are user text other admins can see
+				reason = _K.Chat.limitReason(player.UserId, reason)
+				if reason then
+					reason = _K.Util.String.filterForBroadcast(reason, player.UserId)
 				end
 				_K.log(`{_K.getCommandPrefix()}ban {userId} {duration} {reason}`, "COMMAND", player.UserId)
 				_K.Auth.banUsers({ userId }, reason, duration, player.UserId)

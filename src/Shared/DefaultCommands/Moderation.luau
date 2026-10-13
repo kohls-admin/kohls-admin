@@ -153,6 +153,8 @@ return {
 
 			if type(reason) == "string" then
 				reason = string.sub(reason, 1, 400) -- banasync limit
+				-- ban reasons are user text other admins can see
+				reason = context._K.Chat.limitReason(context.from, reason)
 			end
 
 			if not context._K.Auth.hasPermission(context.from, "banasync") then
@@ -244,6 +246,8 @@ return {
 			},
 		},
 		run = function(context, players, reason: string?)
+			-- kick reasons are user text the kicked players see
+			reason = context._K.Chat.limitReason(context.from, reason)
 			for _, player in players do
 				player:Kick(reason)
 			end
@@ -591,8 +595,15 @@ return {
 				displayName = nil
 			end
 
+			if displayName then
+				local err = context._K.Chat.cooldown(context.from, "name")
+				if err then
+					return err
+				end
+			end
+
 			for _, player in players do
-				context.env[player.UserId] = displayName
+				context.env.displayNames[player.UserId] = displayName
 				player:SetAttribute("_KDisplayName", displayName)
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
@@ -600,6 +611,7 @@ return {
 					context._K.Remote.DisplayName:Fire(player, displayName)
 				end
 			end
+			return
 		end,
 	},
 	{
@@ -3059,6 +3071,7 @@ return {
 		},
 		run = function(context, players, stat, value)
 			stat = string.lower(stat)
+			local filteredValue, cooldownError
 			for _, player in players do
 				local leaderstats = player:FindFirstChild("leaderstats")
 				if not leaderstats then
@@ -3071,12 +3084,21 @@ return {
 						elseif child:IsA("BoolValue") then
 							local v = string.lower(value)
 							child.Value = v ~= "false" and v ~= "nil" and v ~= "0" and v ~= "off"
-						elseif child:IsA("StringValue") then
-							child.Value = context._K.Util.String.filterForBroadcast(value, context.from)
+						elseif child:IsA("StringValue") and not cooldownError then
+							-- text stats are shown to everyone, so they are rate limited; other stats still apply
+							if not filteredValue then
+								cooldownError = context._K.Chat.cooldown(context.from, "leaderstat")
+								if cooldownError then
+									continue
+								end
+								filteredValue = context._K.Util.String.filterForBroadcast(value, context.from)
+							end
+							child.Value = filteredValue
 						end
 					end
 				end
 			end
+			return cooldownError
 		end,
 	},
 	{
@@ -3227,6 +3249,11 @@ return {
 			},
 		},
 		run = function(context, name, color, autoAssignable)
+			local err = context._K.Chat.cooldown(context.from, "team")
+			if err then
+				return err
+			end
+
 			local team = Instance.new("Team")
 			if not color then
 				color = BrickColor.random().Color
@@ -3240,6 +3267,7 @@ return {
 				From = "_K",
 				Text = `<b>Created team:</b> <font color="#{color:ToHex()}">{name}</font>`,
 			})
+			return
 		end,
 	},
 	{
@@ -3277,6 +3305,13 @@ return {
 
 		run = function(context, team, name, color, autoAssignable)
 			if team and context._K.Service.Teams:FindFirstChild(team.Name) then
+				if name ~= team.Name then
+					local err = context._K.Chat.cooldown(context.from, "team")
+					if err then
+						return err
+					end
+				end
+
 				local oldColor, oldName = team.TeamColor.Color, team.Name
 				if not color then
 					color = BrickColor.random().Color
@@ -3295,6 +3330,7 @@ return {
 					Text = `<b>Failed to edit team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
 				})
 			end
+			return
 		end,
 	},
 	{

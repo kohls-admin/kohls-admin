@@ -131,9 +131,15 @@ return {
 			return { remote = _K.Remote.ForceChat }
 		end,
 		run = function(context, players: { Player }, message: string)
+			-- the text is sent as the target's own chat, so it is gated and rate limited like announcements
+			local err = context._K.Chat.limitBroadcast(context.from, "Forced chat requires a developer role.")
+			if err then
+				return err
+			end
 			for _, player in players do
 				context.env.remote:Fire(player, message)
 			end
+			return
 		end,
 	},
 	{
@@ -446,6 +452,17 @@ return {
 				return `Server "<b>{code}</b>" is already reserved.`
 			end
 
+			-- access codes are listed to admins in every server, so they are filtered and rate limited
+			local filtered = context._K.Util.String.filterForBroadcast(code, context.from)
+			if filtered ~= code then
+				return "That access code was filtered, choose another."
+			end
+
+			local err = context._K.Chat.cooldown(context.from, "reserve")
+			if err then
+				return err
+			end
+
 			placeId = placeId or game.PlaceId
 			local data = { code, context._K.Service.Teleport:ReserveServer(placeId), placeId }
 			context._K.Data.Store.updateAsync("Servers", function(store)
@@ -540,6 +557,8 @@ return {
 				})
 				task.wait(delay)
 			end
+			-- shutdown reasons are user text everyone sees
+			reason = context._K.Chat.limitReason(context.from, reason)
 			local from = tostring(context.fromPlayer or context.from)
 			local function kick(player)
 				player:Kick(`{from} has shutdown the server.{if reason then `\nReason: {reason}` else ""}`)
@@ -598,29 +617,62 @@ return {
 				return result
 			end
 
-			local commandStrings = {}
-			local msgCommands = { "hint", "privatehint", "message", "privatemessage", "fullmessage", "notify" }
-
-			for index, command in result do
-				if not command.definition.args then
+			-- text shown to other users can't go through TextChatService across servers, so commands carrying any are
+			-- gated and rate limited like announcements
+			local commands = {} -- each command's name and argument strings
+			local texts = {} -- argument lists and indexes of text that must be filtered
+			for _, command in result do
+				local definition = command.definition
+				if definition.name == "vote" then
+					return `"vote" can't run globally.`
+				end
+				if not definition.args then
 					local last = command.array[#command.array]
-					table.insert(commandStrings, string.sub(commandString, command.array[1][1], last[1] + #last[2]))
+					table.insert(commands, { string.sub(commandString, command.array[1][1], last[1] + #last[2]) })
+					continue
 				end
 
-				local argType = if table.find(msgCommands, command.definition.name) then "rawString" else "string"
-				local argStrings = {}
-				for i, arg in command.definition.args do
-					if arg.type == argType then
-						local filtered = context._K.Util.String.filterForBroadcast(command.args[i].rawArg, context.from)
-						table.insert(argStrings, filtered)
-					else
-						table.insert(argStrings, command.args[i].rawArg)
+				local argStrings = { prefix .. definition.name }
+				for i, arg in definition.args do
+					local rawArg = command.args[i] and command.args[i].rawArg
+					if not rawArg or rawArg == "" then
+						continue
+					end
+					table.insert(argStrings, rawArg)
+					if
+						arg.type == "string"
+						or arg.type == "strings"
+						or arg.type == "chatString"
+						or arg.type == "stringGreedy"
+					then
+						table.insert(texts, { argStrings, #argStrings })
 					end
 				end
-
-				table.insert(commandStrings, `{prefix}{command.definition.name} {table.concat(argStrings, " ")}`)
+				table.insert(commands, argStrings)
 			end
 
+			if #texts > 0 then
+				local err =
+					context._K.Chat.limitBroadcast(context.from, "Global commands with text require a developer role.")
+				if err then
+					return err
+				end
+				local filters = context._K.Util.Tasks.new()
+				for _, text in texts do
+					local argStrings, index = text[1], text[2]
+					local rawArg = argStrings[index]
+					argStrings[index] = "" -- stays empty if filtering fails
+					filters:add(function()
+						argStrings[index] = context._K.Util.String.filterForBroadcast(rawArg, context.from)
+					end)
+				end
+				filters:wait()
+			end
+
+			local commandStrings = {}
+			for _, argStrings in commands do
+				table.insert(commandStrings, table.concat(argStrings, " "))
+			end
 			commandString = table.concat(commandStrings, " ")
 			context._K.Service.Messaging:PublishAsync("KA_GlobalCommand", { context.from, commandString })
 			return

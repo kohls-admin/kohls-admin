@@ -38,6 +38,12 @@ return {
 				return `Announcements are disabled in private servers.`
 			end
 
+			-- announcements are user text shown to everyone, so they need a developer role and are rate limited
+			local err = context._K.Chat.limitBroadcast(context.from, "Announcements require a developer role.")
+			if err then
+				return err
+			end
+
 			local announcement = { message, context.from }
 			context._K.Data.savedSettings.announcement = announcement
 			context._K.Data.Sync.settings.announcement = announcement
