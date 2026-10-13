@@ -58,16 +58,24 @@ return function(_K)
 				if not rank then
 					return true
 				end
-				local playerRank = player:GetRankInGroupAsync(id)
-				if not playerRank then
+				-- matches if any held role satisfies the comparison, role order doesn't follow Rank
+				local info = _K.Service.Group:GetRolesInGroupAsync(player.UserId, id)
+				if not info then
 					return false
 				end
-				if sign == ">" then
-					return if equal then playerRank >= rank else playerRank > rank
-				elseif sign == "<" then
-					return if equal then playerRank <= rank else playerRank < rank
-				else
-					return playerRank == rank
+				for _, role in info.Roles do
+					local playerRank = role.Rank
+					if sign == ">" then
+						if if equal then playerRank >= rank else playerRank > rank then
+							return true
+						end
+					elseif sign == "<" then
+						if if equal then playerRank <= rank else playerRank < rank then
+							return true
+						end
+					elseif playerRank == rank then
+						return true
+					end
 				end
 			end
 			return false

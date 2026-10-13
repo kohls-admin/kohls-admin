@@ -1229,9 +1229,11 @@ return {
 		},
 
 		runClient = function(context, player: Player, groupId: number)
+			local info = context._K.Service.Group:GetRolesInGroupAsync(player.UserId, groupId)
+			local role = info and info.Roles[1]
 			context._K.Notify({
 				From = player.UserId,
-				Text = `<b>Group Rank:</b> [{player:GetRankInGroupAsync(groupId)}] {player:GetRoleInGroupAsync(groupId)}`,
+				Text = `<b>Group Rank:</b> [{if role then role.Rank else 0}] {if role then role.Name else "Guest"}`,
 			})
 		end,
 	},

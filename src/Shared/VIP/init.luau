@@ -24,10 +24,11 @@ local function getDonationLevel(player)
 		return Util.Service.ReplicatedStorage:GetAttribute("DonationLevel") or 0
 	end
 
-	local okRank, rank = Util.Retry(function()
-		return player:GetRankInGroupAsync(3403354)
+	local okRank, info = Util.Retry(function()
+		return Util.Service.Group:GetRolesInGroupAsync(player.UserId, 3403354)
 	end)
-	if okRank and rank > 1 then
+	local role = okRank and info.Roles[1]
+	if role and role.Rank > 1 then
 		return 5
 	end
 
