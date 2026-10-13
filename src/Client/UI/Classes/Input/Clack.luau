@@ -61,7 +61,7 @@ function module.registerAll()
 		if
 			not module.enabled
 			or not (textBoxFocused or ChatInputBarConfiguration.IsFocused)
-			or input.KeyCode == Enum.KeyCode.Unknown
+			or input.KeyCode == Enum.KeyCode.None
 		then
 			return
 		end
