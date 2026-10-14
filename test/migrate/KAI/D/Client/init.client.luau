@@ -685,6 +685,9 @@ TextChatService.SendingMessage:Connect(function(message)
 end)
 
 TextChatService.MessageReceived:Connect(function(message)
+	if message.Status ~= Enum.TextChatMessageStatus.Success then
+		return
+	end
 	local source = message.TextSource
 	if not source then
 		return
@@ -707,10 +710,11 @@ TextChatService.MessageReceived:Connect(function(message)
 	end
 	local sender = Players:GetPlayerByUserId(source.UserId)
 	local name = if sender then sender.Name else tostring(source.UserId)
+	local displayName = if sender then sender.DisplayName else name
 	if #CLogs >= 300 then
 		table.remove(CLogs, #CLogs)
 	end
-	table.insert(CLogs, 1, { math.floor(workspace.DistributedGameTime), name .. ": " .. text })
+	table.insert(CLogs, 1, { os.time(), string.sub(`{displayName} [@{name}]:\t{text:gsub("\n", "\t")}`, 1, 99) })
 	clogb.Value = not clogb.Value
 end)
 
@@ -750,6 +754,9 @@ local function watchChannel(channel)
 	end
 
 	channel.MessageReceived:Connect(function(message)
+		if message.Status ~= Enum.TextChatMessageStatus.Success then
+			return
+		end
 		local source = message.TextSource
 		if not source then
 			return
@@ -1046,7 +1053,7 @@ local musicMuted = false
 
 function ClientEvent(a, b)
 	if a == "KuID" then
-		f.uID, Admins, Set, Cmds, Logs, CLogs = b[1], b[2], b[3], b[4], b[5], b[6]
+		f.uID, Admins, Set, Cmds, Logs = b[1], b[2], b[3], b[4], b[5]
 		f.UpdateSet()
 		return
 	end
@@ -1086,15 +1093,27 @@ function ClientEvent(a, b)
 		end)
 		clogb.Value = not clogb.Value
 	elseif a == "KChatSend" and type(b) == "table" then
-		local channel, text, metadata = b[1], b[2], b[3]
-		if typeof(channel) == "Instance" and channel:IsA("TextChannel") and type(text) == "string" then
+		local channelName, text, metadata = b[1], b[2], b[3]
+		if type(channelName) == "string" and type(text) == "string" then
 			task.spawn(function()
-				local sourceName = plr.Name
-				local deadline = os.clock() + 5
-				while not channel:FindFirstChild(sourceName) and os.clock() < deadline do
-					task.wait()
+				local channel = TextChatService:WaitForChild(channelName, 10)
+				if channel and channel:IsA("TextChannel") then
+					local deadline = os.clock() + 5
+					while os.clock() < deadline do
+						local found = false
+						for _, child in channel:GetChildren() do
+							if child:IsA("TextSource") and child.UserId == plr.UserId then
+								found = true
+								break
+							end
+						end
+						if found then
+							break
+						end
+						task.wait()
+					end
+					pcall(channel.SendAsync, channel, text, metadata)
 				end
-				pcall(channel.SendAsync, channel, text, metadata)
 			end)
 		end
 	elseif a == "KBuy" then

@@ -283,6 +283,9 @@ local directChannels: { [Player]: TextChannel } = {}
 local directMembers: { [TextChannel]: { [number]: boolean } } = {}
 
 function f.cooldown(userId: number, key: string, seconds: number?): boolean
+	if userId == 0 then
+		return true
+	end
 	local id = `{key}:{userId}`
 	local duration = seconds or COOLDOWN
 	local now = os.clock()
@@ -304,7 +307,7 @@ function f.cooldown(userId: number, key: string, seconds: number?): boolean
 end
 
 local function canUserChat(userId: number): boolean
-	if services.Run:IsStudio() and f.getPower(userId) >= 6 then
+	if userId == 0 or (services.Run:IsStudio() and f.getPower(userId) >= 6) then
 		return true
 	end
 	local ok, canChat = pcall(services.TextChat.CanUserChatAsync, services.TextChat, userId)
@@ -314,6 +317,9 @@ end
 local function getTextObject(stringToFilter: string, fromUserId: number): TextFilterResult | false
 	if type(stringToFilter) ~= "string" then
 		return false
+	end
+	if fromUserId == 0 then
+		return stringToFilter :: any
 	end
 	local success, result = pcall(function()
 		return services.Text:FilterStringAsync(stringToFilter, fromUserId)
@@ -329,6 +335,9 @@ end
 local function getFilteredMessage(textObject: TextFilterResult | false, fromUserId: number): string
 	if not textObject then
 		return "[Filter Error]"
+	end
+	if fromUserId == 0 then
+		return tostring(textObject)
 	end
 	if not canUserChat(fromUserId) then
 		return "User cannot chat"
@@ -417,7 +426,7 @@ function f.chatSend(sender: Player, kind: string, text: string, targets: (Player
 	if not (sender and typeof(sender) == "Instance" and sender:IsA("Player") and sender.Parent) then
 		return false
 	end
-	if type(text) ~= "string" then
+	if type(text) ~= "string" or text == "" then
 		return false
 	end
 
@@ -443,6 +452,9 @@ function f.chatSend(sender: Player, kind: string, text: string, targets: (Player
 					end
 				end
 			end
+		end
+		if not next(targetSet) then
+			return false
 		end
 	end
 
@@ -1529,7 +1541,8 @@ function f.Chatted(plr: Player | serverContext, msg: string, cmdbar: boolean?)
 	local server = plr == serverContext
 	if not server and not cmdbar then
 		for _, grant in grants do
-			if grant.from == plr.UserId and grant.text == msg then
+			if grant.from == plr.UserId and grant.text == msg and not grant.chatted then
+				grant.chatted = true
 				return
 			end
 		end
@@ -1663,7 +1676,7 @@ function f.Chatted(plr: Player | serverContext, msg: string, cmdbar: boolean?)
 						if privateCommands[cmdName] then
 							table.insert(logParts, `{cmd} {words[1] or ""}`)
 						else
-							table.insert(logParts, ms:gsub("\n", "\t"))
+							table.insert(logParts, (ms:gsub("\n", "\t")))
 						end
 					end
 					-- Prevents VIP and lower from using duplicate commands other than hat
