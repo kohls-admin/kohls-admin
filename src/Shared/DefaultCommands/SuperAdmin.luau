@@ -462,11 +462,8 @@ return {
 			end
 
 			if not (context._K.IsStudio and context._K.Auth.hasRestrictedRole(context.from)) then
-				local ok, canChat = pcall(
-					context._K.Service.TextChat.CanUserChatAsync,
-					context._K.Service.TextChat,
-					context.from
-				)
+				local ok, canChat =
+					pcall(context._K.Service.TextChat.CanUserChatAsync, context._K.Service.TextChat, context.from)
 				if not ok or not canChat then
 					return "User cannot chat"
 				end

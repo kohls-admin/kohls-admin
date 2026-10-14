@@ -3106,7 +3106,9 @@ return {
 							-- text stats are shown to everyone, so they are rate limited; other stats still apply
 							if not filteredValue then
 								if not context.global then
-									if not (context._K.IsStudio and context._K.Auth.hasRestrictedRole(context.from)) then
+									if
+										not (context._K.IsStudio and context._K.Auth.hasRestrictedRole(context.from))
+									then
 										local ok, canChat = pcall(
 											context._K.Service.TextChat.CanUserChatAsync,
 											context._K.Service.TextChat,

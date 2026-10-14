@@ -423,7 +423,9 @@ function f.chatSend(sender: Player, kind: string, text: string, targets: (Player
 
 	local channel, targetSet, flag = broadcastChannel, nil, nil
 	if targets then
-		local targetList: { Player } = if typeof(targets) == "Instance" then { targets :: Player } else targets :: { Player }
+		local targetList: { Player } = if typeof(targets) == "Instance"
+			then { targets :: Player }
+			else targets :: { Player }
 		channel = getDirectChannel(sender)
 		local members = directMembers[channel]
 		targetSet = {}
@@ -1948,11 +1950,7 @@ function ServerEvent(plr: Player, event, arguments, uID)
 	uID, event = event:match("(%d*)(.+)")
 	if event == "KuID" then
 		local logs = if Set.PublicLogs or f.getPower(plr) >= 2 then state.Logs else {}
-		RemoteEvent:FireClient(
-			plr,
-			"KuID",
-			{ f.uID, f.MapTab(Admins), f.MapTab(Set), state.Commands, logs, {} }
-		)
+		RemoteEvent:FireClient(plr, "KuID", { f.uID, f.MapTab(Admins), f.MapTab(Set), state.Commands, logs, {} })
 		return
 	end
 	if uID ~= f.uID or not plr then
@@ -3822,9 +3820,7 @@ function LoadCommands()
 						if v.Name:lower():find("^" .. args[2]:lower()) then
 							if v:IsA("StringValue") then
 								if not filtered then
-									if
-										not canUserChat(pl.UserId) or not f.cooldown(pl.UserId, "leaderstat")
-									then
+									if not canUserChat(pl.UserId) or not f.cooldown(pl.UserId, "leaderstat") then
 										return
 									end
 									filtered = getFilteredMessage(getTextObject(args[3], pl.UserId), pl.UserId)

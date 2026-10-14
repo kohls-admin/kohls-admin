@@ -684,11 +684,8 @@ return function(_K)
 					if value == nil then
 						continue
 					end
-					local added = countAddedCharacters(
-						if key == "splitKey" then { value } else value,
-						existing,
-						key == "prefix"
-					)
+					local added =
+						countAddedCharacters(if key == "splitKey" then { value } else value, existing, key == "prefix")
 					if added == nil or (not isDeveloper and added > 1) then
 						changes[key], invalid = nil, true
 					else
