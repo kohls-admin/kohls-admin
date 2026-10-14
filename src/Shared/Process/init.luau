@@ -109,7 +109,7 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 	return commands
 end
 
-function Process.prepareCommands(_K: any, from: number, rawText: string)
+function Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?)
 	if not utf8.len(rawText) then
 		return false, "Invalid utf8 string"
 	end
@@ -158,7 +158,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string)
 			return false, `"<b>{commandText}</b>" command restricted`, commands
 		end
 
-		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
+		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text, global)
 		local ok, result = command:validate()
 
 		table.insert(commands, command)
@@ -195,7 +195,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		end
 	end
 
-	local ok, result, prepared = Process.prepareCommands(_K, from, rawText)
+	local ok, result, prepared = Process.prepareCommands(_K, from, rawText, global)
 
 	local commandsRan = {}
 	local commandErrors = {}
@@ -204,9 +204,6 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		Hook.runPreparedCommands:Fire(from, result, rawText)
 
 		for index, command in result do
-			if global then
-				command.global = true
-			end
 			local _ok, err = command:run()
 			if err then
 				local escapedError = _K.Util.String.escapeRichText(err)

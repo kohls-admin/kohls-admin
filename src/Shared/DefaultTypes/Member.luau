@@ -94,9 +94,6 @@ local typeMember = {
 
 		return names
 	end,
-	log = function(arg)
-		return arg.rawArg
-	end,
 }
 
 local typeMembers = {

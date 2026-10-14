@@ -3105,11 +3105,26 @@ return {
 						elseif child:IsA("StringValue") and not cooldownError then
 							-- text stats are shown to everyone, so they are rate limited; other stats still apply
 							if not filteredValue then
+								if not context.global then
+									if not (context._K.IsStudio and context._K.Auth.hasRestrictedRole(context.from)) then
+										local ok, canChat = pcall(
+											context._K.Service.TextChat.CanUserChatAsync,
+											context._K.Service.TextChat,
+											context.from
+										)
+										if not ok or not canChat then
+											cooldownError = "User cannot chat"
+											continue
+										end
+									end
+								end
 								cooldownError = context._K.Chat.cooldown(context.from, "leaderstat")
 								if cooldownError then
 									continue
 								end
-								filteredValue = context._K.Util.String.filterForBroadcast(value, context.from)
+								filteredValue = if context.global
+									then value
+									else context._K.Util.String.filterForBroadcast(value, context.from)
 							end
 							child.Value = filteredValue
 						end

@@ -265,14 +265,25 @@ if RunService:IsServer() then
 	function Chat.send(context: any, kind: string, text: string, targets: { Player }?, data: any?): (string?, string?)
 		local id = HttpService:GenerateGUID(false)
 		local sender = context.fromPlayer or (context.from and Players:GetPlayerByUserId(context.from))
-		if context.global and not (sender and sender.Parent) then
-			local escaped = Util.String.escapeRichText(text)
-			for _, player in targets or Players:GetPlayers() do
-				if player.UserId == context.from or not Auth.hasRestrictedRole(player.UserId) then
-					Remote.ChatSystem:Fire(player, kind, escaped, context.from, data, id)
+		if context.global then
+			local needsChannel = (sender and sender.Parent) ~= nil and targets == nil
+			if not needsChannel and sender and sender.Parent and targets then
+				for _, player in targets do
+					if player.UserId ~= context.from and Auth.hasRestrictedRole(player.UserId) then
+						needsChannel = true
+						break
+					end
 				end
 			end
-			return id
+			if not needsChannel then
+				local escaped = Util.String.escapeRichText(text)
+				for _, player in targets or Players:GetPlayers() do
+					if player.UserId == context.from or not Auth.hasRestrictedRole(player.UserId) then
+						Remote.ChatSystem:Fire(player, kind, escaped, context.from, data, id)
+					end
+				end
+				return id
+			end
 		end
 
 		if not (sender and sender.Parent) then
@@ -329,6 +340,12 @@ if RunService:IsServer() then
 	function Chat.limitReason(userId: number, reason: string?): string?
 		if not reason then
 			return nil
+		end
+		if not (RunService:IsStudio() and Auth.hasRestrictedRole(userId)) then
+			local ok, canChat = pcall(TextChatService.CanUserChatAsync, TextChatService, userId)
+			if not ok or not canChat then
+				return nil
+			end
 		end
 		local err = Chat.cooldown(userId, "reason")
 		if not err then
@@ -448,8 +465,19 @@ else
 	Remote.ChatSend:Connect(function(channelName: string, text: string, metadata: string)
 		local channel = TextChatService:WaitForChild(channelName, 10)
 		if channel and channel:IsA("TextChannel") then
-			if not channel:FindFirstChildOfClass("TextSource") then
-				channel.ChildAdded:Wait()
+			local deadline = os.clock() + 5
+			while os.clock() < deadline do
+				local found = false
+				for _, child in channel:GetChildren() do
+					if child:IsA("TextSource") and child.UserId == LocalPlayer.UserId then
+						found = true
+						break
+					end
+				end
+				if found then
+					break
+				end
+				task.wait()
 			end
 			local ok, err = pcall(channel.SendAsync, channel, text, metadata)
 			if not ok then

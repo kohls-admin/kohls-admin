@@ -132,9 +132,15 @@ return {
 		end,
 		run = function(context, players: { Player }, message: string)
 			-- the text is sent as the target's own chat, so it is gated and rate limited like announcements
-			local err = context._K.Chat.limitBroadcast(context.from, "Forced chat requires a developer role.")
-			if err then
-				return err
+			if context.global then
+				if not context._K.Auth.hasRestrictedRole(context.from) then
+					return "Forced chat requires a developer role."
+				end
+			else
+				local err = context._K.Chat.limitBroadcast(context.from, "Forced chat requires a developer role.")
+				if err then
+					return err
+				end
 			end
 			for _, player in players do
 				context.env.remote:Fire(player, message)
@@ -444,12 +450,26 @@ return {
 			end)
 		end,
 		run = function(context, code: string, placeId: number?)
+			if context.global then
+				return
+			end
 			if context._K.Data.SEPARATE_DATASTORE then
 				return `Reserve command is disabled in private servers.`
 			end
 
 			if context._K.Data.reservedServers[code] then
 				return `Server "<b>{code}</b>" is already reserved.`
+			end
+
+			if not (context._K.IsStudio and context._K.Auth.hasRestrictedRole(context.from)) then
+				local ok, canChat = pcall(
+					context._K.Service.TextChat.CanUserChatAsync,
+					context._K.Service.TextChat,
+					context.from
+				)
+				if not ok or not canChat then
+					return "User cannot chat"
+				end
 			end
 
 			-- access codes are listed to admins in every server, so they are filtered and rate limited
@@ -502,6 +522,9 @@ return {
 			},
 		},
 		run = function(context, data)
+			if context.global then
+				return
+			end
 			if context._K.Data.SEPARATE_DATASTORE then
 				return `Unreserve command is disabled in private servers.`
 			end
@@ -608,6 +631,7 @@ return {
 			end
 
 			local prefix = context._K.getCommandPrefix(context.from)
+			local serverPrefix = context._K.getCommandPrefix()
 			if string.find(commandString, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
 				commandString = prefix .. commandString
 			end
@@ -627,12 +651,11 @@ return {
 					return `"vote" can't run globally.`
 				end
 				if not definition.args then
-					local last = command.array[#command.array]
-					table.insert(commands, { string.sub(commandString, command.array[1][1], last[1] + #last[2]) })
+					table.insert(commands, { serverPrefix .. command.alias })
 					continue
 				end
 
-				local argStrings = { prefix .. definition.name }
+				local argStrings = { serverPrefix .. command.alias }
 				for i, arg in definition.args do
 					local rawArg = command.args[i] and command.args[i].rawArg
 					if not rawArg or rawArg == "" then
@@ -644,8 +667,9 @@ return {
 						or arg.type == "strings"
 						or arg.type == "chatString"
 						or arg.type == "stringGreedy"
+						or (definition.name == "change" and i == 3)
 					then
-						table.insert(texts, { argStrings, #argStrings })
+						table.insert(texts, { argStrings, #argStrings, i < #definition.args or #result > 1 })
 					end
 				end
 				table.insert(commands, argStrings)
@@ -659,11 +683,15 @@ return {
 				end
 				local filters = context._K.Util.Tasks.new()
 				for _, text in texts do
-					local argStrings, index = text[1], text[2]
-					local rawArg = argStrings[index]
+					local argStrings, index, quoteArg = text[1], text[2], text[3]
+					local rawArg = context._K.Util.String.stripQuotes(context._K.Util.String.trim(argStrings[index]))
 					argStrings[index] = "" -- stays empty if filtering fails
 					filters:add(function()
-						argStrings[index] = context._K.Util.String.filterForBroadcast(rawArg, context.from)
+						local filtered = context._K.Util.String.filterForBroadcast(rawArg, context.from)
+						if quoteArg then
+							filtered = `"{string.gsub(filtered, '["`]', "'")}"`
+						end
+						argStrings[index] = filtered
 					end)
 				end
 				filters:wait()

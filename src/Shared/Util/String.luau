@@ -2,7 +2,6 @@
 --!native
 
 local Players = game:GetService("Players")
-local TextChatService = game:GetService("TextChatService")
 local TextService = game:GetService("TextService")
 
 --- @class String
@@ -156,7 +155,7 @@ function String.filterResultForBroadcast(filterResult: TextFilterResult | string
 	return result
 end
 
---- Filters a [TextFilterResult] for chat messages chat with [TextService.FilterStringAsync]
+--- Filters a [TextFilterResult] for non-chat text shown to a specific user with [TextService.FilterStringAsync]
 function String.filterResultForUser(
 	filterResult: TextFilterResult | string,
 	fromUserId: number,
@@ -168,17 +167,9 @@ function String.filterResultForUser(
 	end
 	local ok, result = pcall(function()
 		if Players:GetPlayerByUserId(fromUserId) then
-			if TextChatService:CanUsersChatAsync(fromUserId, toUserId) then
-				return filterResult:GetNonChatStringForUserAsync(toUserId)
-			else
-				return "User cannot chat"
-			end
+			return filterResult:GetNonChatStringForUserAsync(toUserId)
 		else
-			if TextChatService:CanUserChatAsync(fromUserId) then
-				return filterResult:GetNonChatStringForBroadcastAsync()
-			else
-				return "User cannot chat"
-			end
+			return filterResult:GetNonChatStringForBroadcastAsync()
 		end
 	end)
 	if not ok then

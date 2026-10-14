@@ -274,7 +274,7 @@ return function(_K)
 					local space = string.find(rawText, "%s", 2, false)
 					local alias = string.sub(rawText, 2, if space then space - 1 else nil)
 					local msg = `{_K.getCommandPrefix()}{alias}`
-					displayBubbleRemote:FireAll(player.Character, msg)
+					displayBubbleRemote:Fire(player, player.Character, msg)
 				end
 
 				_K.Process.runCommands(_K, source.UserId, `{_K.getCommandPrefix()}{string.sub(rawText, 2)}`)

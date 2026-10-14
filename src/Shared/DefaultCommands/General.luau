@@ -459,7 +459,9 @@ return {
 				return err
 			end
 			-- the question is echoed back to the sender, keep it filtered like everywhere else
-			message = context._K.Util.String.filterForBroadcast(message, context.from)
+			message = context._K.Chat.restoreRichText(
+				context._K.Util.String.escapeRichText(context._K.Util.String.filterForBroadcast(message, context.from))
+			)
 
 			local yes, no = 0, 0
 			local function voteTask(player)

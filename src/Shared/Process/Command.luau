@@ -12,7 +12,7 @@ local Command = {
 }
 Command.__index = Command
 
-function Command.new(_K, alias, definition: Type.CommandDefinition, array, from, text)
+function Command.new(_K, alias, definition: Type.CommandDefinition, array, from, text, global: boolean?)
 	local rank, role = Auth.getRank(from)
 	return setmetatable({
 		_K = _K,
@@ -24,7 +24,7 @@ function Command.new(_K, alias, definition: Type.CommandDefinition, array, from,
 		fromPlayer = Players:GetPlayerByUserId(from),
 		fromRank = rank,
 		fromRole = role,
-		global = false,
+		global = global == true,
 		rank = Auth.hasCommand(from, definition) or 0,
 		text = text,
 		undo = string.find(alias, "un", 1, true) == 1,
