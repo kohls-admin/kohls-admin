@@ -435,8 +435,6 @@ function f.chatSend(sender: Player, kind: string, text: string, targets: (Player
 		local targetList: { Player } = if typeof(targets) == "Instance"
 			then { targets :: Player }
 			else targets :: { Player }
-		channel = getDirectChannel(sender)
-		local members = directMembers[channel]
 		targetSet = {}
 		flag = 1
 		for _, player in targetList do
@@ -444,11 +442,17 @@ function f.chatSend(sender: Player, kind: string, text: string, targets: (Player
 				targetSet[player.UserId] = true
 				if player == sender then
 					flag = 2
-				elseif not members[player.UserId] then
-					local ok, source = pcall(channel.AddUserAsync, channel, player.UserId)
-					if ok and source then
-						source.CanSend = false
-						members[player.UserId] = true
+				else
+					if channel == broadcastChannel then
+						channel = getDirectChannel(sender)
+					end
+					local members = directMembers[channel]
+					if not members[player.UserId] then
+						local ok, source = pcall(channel.AddUserAsync, channel, player.UserId)
+						if ok and source then
+							source.CanSend = false
+							members[player.UserId] = true
+						end
 					end
 				end
 			end

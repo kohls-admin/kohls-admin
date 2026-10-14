@@ -342,10 +342,15 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 		end)
 		if ok then
 			for _, group in result do
-				local groupAuth = Data.async.group[group.Id]
-				if groupAuth then
-					for _, auth in groupAuth do
-						if rankMatches(auth, group.Rank) then
+				local groupAuth = Data.async.group[group.Id] or Data.async.group[tostring(group.Id)]
+				if type(groupAuth) == "table" then
+					for _, auth in if type(groupAuth.roles) == "table" then { groupAuth } else groupAuth do
+						if
+							type(auth) == "table"
+							and type(auth.rank) == "number"
+							and type(auth.roles) == "table"
+							and rankMatches(auth, group.Rank)
+						then
 							for _, roleId in auth.roles do
 								Auth.userRoleAdd(userId, roleId)
 							end
@@ -695,7 +700,10 @@ end
 --- Starts fetching the entry rank of every group in the group roles, so role checks don't stay closed on first use
 function Auth.prefetchGroupEntryRanks()
 	for groupId in Data.async.group do
-		getGroupEntryRank(tonumber(groupId) :: number)
+		local id = tonumber(groupId)
+		if id then
+			getGroupEntryRank(id)
+		end
 	end
 end
 
@@ -708,11 +716,20 @@ function Auth.isPublicRole(roleId: Role): boolean
 		return true
 	end
 	for groupId, rules in Data.async.group do
-		for _, rule in rules do
-			if type(rule.roles) ~= "table" or not table.find(rule.roles, roleId) then
+		local id = tonumber(groupId)
+		if not id or type(rules) ~= "table" then
+			continue
+		end
+		for _, rule in if type(rules.roles) == "table" then { rules } else rules do
+			if
+				type(rule) ~= "table"
+				or type(rule.rank) ~= "number"
+				or type(rule.roles) ~= "table"
+				or not table.find(rule.roles, roleId)
+			then
 				continue
 			end
-			local entry = getGroupEntryRank(tonumber(groupId) :: number)
+			local entry = getGroupEntryRank(id)
 			if not entry then
 				return true -- fail closed until the group's entry rank is known
 			end

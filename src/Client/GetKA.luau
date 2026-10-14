@@ -122,9 +122,13 @@ task.defer(function()
 
 	local attempt, connection = 0, nil
 	connection = _K.Hook.runPreparedCommands:Connect(function()
-		if _K.Data.settings.getKohlsAdminPopup == false or _K.LocalPlayer:GetAttribute("_KDonationLevel") > 3 then
+		if
+			_K.Data.settings.getKohlsAdminPopup == false
+			or (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) > 3
+		then
 			connection:Disconnect()
 			dialog:Destroy()
+			return
 		end
 
 		attempt += 1

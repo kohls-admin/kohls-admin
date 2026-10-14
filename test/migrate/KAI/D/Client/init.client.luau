@@ -718,6 +718,28 @@ TextChatService.MessageReceived:Connect(function(message)
 	clogb.Value = not clogb.Value
 end)
 
+local function dispatchKChat(sourceUserId, text, meta)
+	local sender = Players:GetPlayerByUserId(sourceUserId)
+	local name = if sender then sender.DisplayName else tostring(sourceUserId)
+	local kind = meta.k
+	local data = type(meta.d) == "table" and meta.d or nil
+	if kind == "msg" then
+		local isSystem = data and data[1] == SN
+		local owner = if isSystem then SN else name
+		local title = if data and type(data[2]) == "string" then data[2] else ""
+		local userId = if isSystem then nil else sourceUserId
+		task.spawn(ClientEvent, "KMsg", { owner, title, text, userId })
+	elseif kind == "pm" then
+		task.spawn(ClientEvent, "KMsg", { name, "Private Message", text, sourceUserId })
+	elseif kind == "h" or kind == "ph" then
+		task.spawn(ClientEvent, "KHint", string.format("%s: %s", name, text))
+	elseif kind == "notify" then
+		task.spawn(ClientEvent, "KNotify", text)
+	elseif kind == "vote" then
+		task.spawn(ClientEvent, "KVote", text)
+	end
+end
+
 local watchedChannels = {}
 local function watchChannel(channel)
 	if not channel:IsA("TextChannel") or watchedChannels[channel] or not string.find(channel.Name, "^KAI_") then
@@ -768,25 +790,7 @@ local function watchChannel(channel)
 		if source.UserId == plr.UserId and meta.t == 1 then
 			return
 		end
-		local sender = Players:GetPlayerByUserId(source.UserId)
-		local name = if sender then sender.DisplayName else tostring(source.UserId)
-		local kind = meta.k
-		local data = type(meta.d) == "table" and meta.d or nil
-		if kind == "msg" then
-			local isSystem = data and data[1] == SN
-			local owner = if isSystem then SN else name
-			local title = if data and type(data[2]) == "string" then data[2] else ""
-			local userId = if isSystem then nil else source.UserId
-			task.spawn(ClientEvent, "KMsg", { owner, title, message.Text, userId })
-		elseif kind == "pm" then
-			task.spawn(ClientEvent, "KMsg", { name, "Private Message", message.Text, source.UserId })
-		elseif kind == "h" or kind == "ph" then
-			task.spawn(ClientEvent, "KHint", string.format("%s: %s", name, message.Text))
-		elseif kind == "notify" then
-			task.spawn(ClientEvent, "KNotify", message.Text)
-		elseif kind == "vote" then
-			task.spawn(ClientEvent, "KVote", message.Text)
-		end
+		dispatchKChat(source.UserId, message.Text, meta)
 	end)
 end
 
@@ -1112,7 +1116,13 @@ function ClientEvent(a, b)
 						end
 						task.wait()
 					end
-					pcall(channel.SendAsync, channel, text, metadata)
+					local sent = pcall(channel.SendAsync, channel, text, metadata)
+					if sent and string.find(channelName, "^KAI_Direct_") and type(metadata) == "string" then
+						local ok, meta = pcall(s.HTTP.JSONDecode, s.HTTP, metadata)
+						if ok and type(meta) == "table" and meta.t == 2 then
+							dispatchKChat(plr.UserId, text, meta)
+						end
+					end
 				end
 			end)
 		end

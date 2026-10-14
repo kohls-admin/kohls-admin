@@ -281,6 +281,9 @@ return function(_K)
 		if type(settings.GroupAdmin) == "table" then
 			local group = {}
 			for groupId, groupRanks in settings.GroupAdmin do
+				if type(groupRanks) ~= "table" then
+					continue
+				end
 				local definition = {}
 				for groupRank, powerRank in groupRanks do
 					groupRank = tonumber(groupRank)

@@ -292,26 +292,37 @@ if RunService:IsServer() then
 
 		local channel, targetSet, flag = broadcast, nil, nil
 		if targets then
-			channel = getDirectChannel(sender)
-			local members = directMembers[channel]
-			local tasks = Util.Tasks.new()
+			local tasks
 			targetSet = {}
 			flag = 1
 			for _, player in targets do
 				targetSet[player.UserId] = true
 				if player == sender then
 					flag = 2 -- sender is also a target
-				elseif not members[player.UserId] then
-					tasks:add(function()
-						local ok, source = pcall(channel.AddUserAsync, channel, player.UserId)
-						if ok and source then
-							source.CanSend = false
-							members[player.UserId] = true
-						end
-					end)
+				else
+					if channel == broadcast then
+						channel = getDirectChannel(sender)
+					end
+					local members = directMembers[channel]
+					if not members[player.UserId] then
+						tasks = tasks or Util.Tasks.new()
+						tasks:add(function()
+							local ok, source = pcall(channel.AddUserAsync, channel, player.UserId)
+							if ok and source then
+								source.CanSend = false
+								members[player.UserId] = true
+							end
+						end)
+					end
 				end
 			end
-			tasks:wait()
+			if tasks then
+				tasks:wait()
+			end
+			-- DirectChatRequester channels do not deliver back to the requester
+			if channel ~= broadcast and flag == 2 then
+				Remote.ChatSystem:Fire(sender, kind, Util.String.escapeRichText(text), sender.UserId, data, id)
+			end
 		end
 
 		local metadata = HttpService:JSONEncode({ k = kind, id = id, d = data, t = flag })
@@ -378,7 +389,9 @@ else
 		local threads = waiting[id] or {}
 		waiting[id] = threads
 		table.insert(threads, thread)
+		local timedOut = false
 		local timer = task.delay(timeout or 10, function()
+			timedOut = true
 			local index = table.find(threads, thread)
 			if index then
 				table.remove(threads, index)
@@ -386,11 +399,16 @@ else
 			end
 		end)
 		local text = coroutine.yield()
-		task.cancel(timer)
+		if not timedOut then
+			task.cancel(timer)
+		end
 		return text
 	end
 
 	local function dispatch(kind: string, text: string, from: number, data: any, id: string)
+		if received[id] then
+			return
+		end
 		received[id] = text
 		task.delay(30, function()
 			received[id] = nil

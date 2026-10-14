@@ -362,8 +362,44 @@ return function(_K)
 			_K.setupPurchasables(settings.subscriptionRoles, "subscriptions")
 		end
 
-		if settings.groupRoles then
-			_K.Util.Table.deepMerge(_K.Data.async.group, settings.groupRoles, true)
+		if type(settings.groupRoles) == "table" then
+			local defaultRoles = { "vip", "mod", "admin", "superadmin", "creator" }
+			local group = {}
+			for groupId, rules in settings.groupRoles do
+				if type(rules) ~= "table" then
+					continue
+				end
+				if rules.rank ~= nil or rules.roles ~= nil then
+					rules = { rules }
+				end
+				local definition = {}
+				for k, rule in rules do
+					if type(rule) == "table" then
+						local rank = tonumber(rule.rank)
+						local roles = if type(rule.roles) == "string"
+							then { rule.roles }
+							elseif type(rule.roles) == "table" then rule.roles
+							else nil
+						if rank and roles then
+							table.insert(definition, { rank = rank, roles = roles, exactRank = rule.exactRank })
+						end
+					elseif tonumber(k) then
+						local roleId = if type(rule) == "string"
+							then rule
+							elseif tonumber(rule) then defaultRoles[math.clamp(
+								math.abs(tonumber(rule) :: number),
+								1,
+								5
+							)]
+							else nil
+						if roleId and _K.Data.roles[roleId] then
+							table.insert(definition, { rank = tonumber(k) :: number, roles = { roleId } })
+						end
+					end
+				end
+				group[groupId] = definition
+			end
+			_K.Util.Table.deepMerge(_K.Data.async.group, group, true)
 			_K.Auth.prefetchGroupEntryRanks()
 		end
 
@@ -557,11 +593,13 @@ return function(_K)
 
 		-- initialize core remotes
 		local _
+		_ = _K.Remote.Announce
 		_ = _K.Remote.Bans
 		_ = _K.Remote.Member
 		_ = _K.Remote.Members
 		_ = _K.Remote.Log
 		_ = _K.Remote.Logs
+		_ = _K.Remote.Notify
 		_ = _K.Remote.RequestCommand
 		-- TODO: implement in-game role creation
 		_ = _K.Remote.Role
