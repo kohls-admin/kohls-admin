@@ -672,10 +672,121 @@ local Players = game:GetService("Players")
 -- TextChatService compatibility
 local TextChatService = game:GetService("TextChatService")
 TextChatService.SendingMessage:Connect(function(message)
+	local channel = message.TextChannel
+	if channel and string.find(channel.Name, "^KAI_") then
+		return
+	end
+	if type(message.Metadata) == "string" and message.Metadata ~= "" then
+		return
+	end
 	if string.find(message.Text, Set.Prefix, 1, true) == 1 then
 		server:FireServer(f.uID .. "KCmdBar", message.Text)
 	end
 end)
+
+TextChatService.MessageReceived:Connect(function(message)
+	local source = message.TextSource
+	if not source then
+		return
+	end
+	local channel = message.TextChannel
+	if channel and string.find(channel.Name, "^KAI_") then
+		return
+	end
+	if type(message.Metadata) == "string" and message.Metadata ~= "" then
+		return
+	end
+	local text = message.Text
+	if
+		type(text) ~= "string"
+		or text == ""
+		or string.find(text, "^/e ")
+		or string.find(text, Set.Prefix, 1, true) == 1
+	then
+		return
+	end
+	local sender = Players:GetPlayerByUserId(source.UserId)
+	local name = if sender then sender.Name else tostring(source.UserId)
+	if #CLogs >= 300 then
+		table.remove(CLogs, #CLogs)
+	end
+	table.insert(CLogs, 1, { math.floor(workspace.DistributedGameTime), name .. ": " .. text })
+	clogb.Value = not clogb.Value
+end)
+
+local watchedChannels = {}
+local function watchChannel(channel)
+	if not channel:IsA("TextChannel") or watchedChannels[channel] or not string.find(channel.Name, "^KAI_") then
+		return
+	end
+	watchedChannels[channel] = true
+
+	channel.OnIncomingMessage = function(message)
+		local ok, meta = pcall(s.HTTP.JSONDecode, s.HTTP, message.Metadata)
+		if not ok or type(meta) ~= "table" then
+			return nil
+		end
+		local props = Instance.new("TextChatMessageProperties")
+		local kind = meta.k
+		local data = type(meta.d) == "table" and meta.d or nil
+		local sender = message.TextSource and Players:GetPlayerByUserId(message.TextSource.UserId)
+		local name = if sender then sender.DisplayName else ""
+		if kind == "msg" then
+			local owner = if data and data[1] == SN then SN else name
+			local title = if data and type(data[2]) == "string" and data[2] ~= "" then data[2] else "Message"
+			props.PrefixText = string.format("[%s] %s:", title, owner)
+		elseif kind == "pm" then
+			props.PrefixText = string.format("[PM] %s:", name)
+		elseif kind == "h" then
+			props.PrefixText = string.format("[Hint] %s:", name)
+		elseif kind == "ph" then
+			props.PrefixText = string.format("[Private Hint] %s:", name)
+		elseif kind == "notify" then
+			props.PrefixText = string.format("[Notify] %s:", name)
+		elseif kind == "vote" then
+			props.PrefixText = string.format("[Vote] %s:", name)
+		end
+		return props
+	end
+
+	channel.MessageReceived:Connect(function(message)
+		local source = message.TextSource
+		if not source then
+			return
+		end
+		local ok, meta = pcall(s.HTTP.JSONDecode, s.HTTP, message.Metadata)
+		if not ok or type(meta) ~= "table" then
+			return
+		end
+		if source.UserId == plr.UserId and meta.t == 1 then
+			return
+		end
+		local sender = Players:GetPlayerByUserId(source.UserId)
+		local name = if sender then sender.DisplayName else tostring(source.UserId)
+		local kind = meta.k
+		local data = type(meta.d) == "table" and meta.d or nil
+		if kind == "msg" then
+			local isSystem = data and data[1] == SN
+			local owner = if isSystem then SN else name
+			local title = if data and type(data[2]) == "string" then data[2] else ""
+			local userId = if isSystem then nil else source.UserId
+			task.spawn(ClientEvent, "KMsg", { owner, title, message.Text, userId })
+		elseif kind == "pm" then
+			task.spawn(ClientEvent, "KMsg", { name, "Private Message", message.Text, source.UserId })
+		elseif kind == "h" or kind == "ph" then
+			task.spawn(ClientEvent, "KHint", string.format("%s: %s", name, message.Text))
+		elseif kind == "notify" then
+			task.spawn(ClientEvent, "KNotify", message.Text)
+		elseif kind == "vote" then
+			task.spawn(ClientEvent, "KVote", message.Text)
+		end
+	end)
+end
+
+for _, descendant in TextChatService:GetDescendants() do
+	watchChannel(descendant)
+end
+TextChatService.DescendantAdded:Connect(watchChannel)
 
 --|  Cape Setup  |--
 local function Cape(c, clr, d, t, h)
@@ -974,8 +1085,18 @@ function ClientEvent(a, b)
 			return a[1] > b[1]
 		end)
 		clogb.Value = not clogb.Value
-	elseif a == "KFakeChat" then
-		server:FireServer(f.uID .. "KChat", { plr.Name, b })
+	elseif a == "KChatSend" and type(b) == "table" then
+		local channel, text, metadata = b[1], b[2], b[3]
+		if typeof(channel) == "Instance" and channel:IsA("TextChannel") and type(text) == "string" then
+			task.spawn(function()
+				local sourceName = plr.Name
+				local deadline = os.clock() + 5
+				while not channel:FindFirstChild(sourceName) and os.clock() < deadline do
+					task.wait()
+				end
+				pcall(channel.SendAsync, channel, text, metadata)
+			end)
+		end
 	elseif a == "KBuy" then
 		s.Market:PromptPurchase(plr, b)
 	elseif a == "KBuyBundle" then
@@ -1294,6 +1415,13 @@ function ClientEvent(a, b)
 		f.Drag(BL, 200, 220)
 		f.Show(BL)
 	elseif a == "KLogs" then
+		if type(b) == "table" then
+			Logs = b[2] or Logs
+			table.sort(Logs, function(x, y)
+				return x[1] > y[1]
+			end)
+			b = b[1]
+		end
 		a = FindChild(CoreUI, b)
 		if a then
 			wrap(f.Hide, a, true)
@@ -1508,8 +1636,12 @@ function ClientEvent(a, b)
 	elseif a == "KMute" then
 		a = "You have been " .. (b and "" or "un") .. "muted."
 		Curr.Muted = b
-		s.StarterGui:SetCore("ChatBarDisabled", b)
-		s.StarterGui:SetCore("ChatMakeSystemMessage", { Text = a, Color = Color3.new(1, 0, 0) })
+		local chatInputBar = TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
+		if chatInputBar then
+			chatInputBar.Enabled = not b
+		end
+		pcall(s.StarterGui.SetCore, s.StarterGui, "ChatBarDisabled", b)
+		pcall(s.StarterGui.SetCore, s.StarterGui, "ChatMakeSystemMessage", { Text = a, Color = Color3.new(1, 0, 0) })
 	elseif a == "KRefresh" then
 		local list = { cam.CFrame, cam.Focus, char.HumanoidRootPart.CFrame }
 		wrap(function()
@@ -1772,9 +1904,6 @@ function ClientEvent(a, b)
 end
 server.OnClientEvent:connect(ClientEvent)
 server:FireServer("KuID")
-if FindChild(server, "KNotify") then
-	ClientEvent("KNotify", server.KNotify.Value)
-end
 plr.CharacterAdded:connect(function(a)
 	char, cam = a, workspace.CurrentCamera
 	cam.CameraSubject = WaitForChild(char, "Humanoid")

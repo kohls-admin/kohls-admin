@@ -273,7 +273,48 @@ local creatorId = game.CreatorType == Enum.CreatorType.Group
 	or game.CreatorId
 Admins[creatorId] = 7
 
+local COOLDOWN = 60
+local GRANT_LIFETIME = 15
+local BROADCAST_CHANNEL = "KAI_Broadcast"
+local cooldowns: { [string]: number } = {}
+local grants = {}
+local delivering = {}
+local directChannels: { [Player]: TextChannel } = {}
+local directMembers: { [TextChannel]: { [number]: boolean } } = {}
+
+function f.cooldown(userId: number, key: string, seconds: number?): boolean
+	local id = `{key}:{userId}`
+	local duration = seconds or COOLDOWN
+	local now = os.clock()
+	local last = cooldowns[id]
+	if last and now - last < duration then
+		local player = services.Players:GetPlayerByUserId(userId)
+		if player then
+			f.Error(`Wait {math.ceil(duration - (now - last))}s before using this again.`, player)
+		end
+		return false
+	end
+	cooldowns[id] = now
+	task.delay(duration, function()
+		if cooldowns[id] == now then
+			cooldowns[id] = nil
+		end
+	end)
+	return true
+end
+
+local function canUserChat(userId: number): boolean
+	if services.Run:IsStudio() and f.getPower(userId) >= 6 then
+		return true
+	end
+	local ok, canChat = pcall(services.TextChat.CanUserChatAsync, services.TextChat, userId)
+	return ok and canChat
+end
+
 local function getTextObject(stringToFilter: string, fromUserId: number): TextFilterResult | false
+	if type(stringToFilter) ~= "string" then
+		return false
+	end
 	local success, result = pcall(function()
 		return services.Text:FilterStringAsync(stringToFilter, fromUserId)
 	end)
@@ -285,28 +326,143 @@ local function getTextObject(stringToFilter: string, fromUserId: number): TextFi
 	end
 end
 
-local function getFilteredMessage(textObject: TextFilterResult, fromUserId: number, toUserId: number?): string
+local function getFilteredMessage(textObject: TextFilterResult | false, fromUserId: number): string
+	if not textObject then
+		return "[Filter Error]"
+	end
+	if not canUserChat(fromUserId) then
+		return "User cannot chat"
+	end
 	local success, message = pcall(function()
-		if toUserId and services.Players:GetPlayerByUserId(fromUserId) then
-			if services.TextChat:CanUsersChatAsync(fromUserId, toUserId) then
-				return textObject:GetNonChatStringForUserAsync(toUserId)
-			else
-				return "User cannot chat"
-			end
-		else
-			if services.TextChat:CanUserChatAsync(fromUserId) then
-				return textObject:GetNonChatStringForBroadcastAsync()
-			else
-				return "User cannot chat"
-			end
-		end
+		return textObject:GetNonChatStringForBroadcastAsync()
 	end)
 	if success then
 		return message
 	else
 		print("Error filtering message:", message)
 	end
-	return ""
+	return "[Filter Error]"
+end
+
+local function decodeMetadata(metadata: string?)
+	if type(metadata) ~= "string" or metadata == "" then
+		return nil
+	end
+	local ok, data = pcall(services.HTTP.JSONDecode, services.HTTP, metadata)
+	if ok and type(data) == "table" and type(data.k) == "string" and type(data.id) == "string" then
+		return data
+	end
+	return nil
+end
+
+local function shouldDeliver(message: TextChatMessage, textSource: TextSource)
+	local grant = delivering[message.MessageId]
+	if not grant then
+		local sender = message.TextSource
+		local data = decodeMetadata(message.Metadata)
+		grant = data and grants[data.id]
+		if
+			not (sender and grant)
+			or grant.from ~= sender.UserId
+			or grant.metadata ~= message.Metadata
+			or os.clock() > grant.expires
+			or grant.messageId ~= nil
+		then
+			return false
+		end
+		grant.messageId = message.MessageId
+		delivering[message.MessageId] = grant
+	end
+	return grant.targets == nil or grant.targets[textSource.UserId] == true
+end
+
+local function newChannel(name: string): TextChannel
+	local existing = services.TextChat:FindFirstChild(name)
+	if existing and existing:IsA("TextChannel") then
+		existing:Destroy()
+	end
+	local channel = Instance.new("TextChannel")
+	channel.Name = name
+	channel.ShouldDeliverCallback = shouldDeliver
+	channel.Parent = services.TextChat
+	return channel
+end
+
+local broadcastChannel = newChannel(BROADCAST_CHANNEL)
+
+local function getDirectChannel(sender: Player): TextChannel
+	local channel = directChannels[sender]
+	if not channel then
+		channel = newChannel(`KAI_Direct_{sender.UserId}`)
+		channel:SetDirectChatRequester(sender)
+		directChannels[sender] = channel
+		directMembers[channel] = { [sender.UserId] = true }
+	end
+	return channel
+end
+
+services.Players.PlayerRemoving:Connect(function(player)
+	local channel = directChannels[player]
+	if channel then
+		directChannels[player] = nil
+		directMembers[channel] = nil
+		channel:Destroy()
+	end
+	for _, members in directMembers do
+		members[player.UserId] = nil
+	end
+end)
+
+function f.chatSend(sender: Player, kind: string, text: string, targets: (Player | { Player })?, data: any?): boolean
+	if not (sender and typeof(sender) == "Instance" and sender:IsA("Player") and sender.Parent) then
+		return false
+	end
+	if type(text) ~= "string" then
+		return false
+	end
+
+	local channel, targetSet, flag = broadcastChannel, nil, nil
+	if targets then
+		local targetList: { Player } = if typeof(targets) == "Instance" then { targets :: Player } else targets :: { Player }
+		channel = getDirectChannel(sender)
+		local members = directMembers[channel]
+		targetSet = {}
+		flag = 1
+		for _, player in targetList do
+			if player and typeof(player) == "Instance" and player:IsA("Player") then
+				targetSet[player.UserId] = true
+				if player == sender then
+					flag = 2
+				elseif not members[player.UserId] then
+					local ok, source = pcall(channel.AddUserAsync, channel, player.UserId)
+					if ok and source then
+						source.CanSend = false
+						members[player.UserId] = true
+					end
+				end
+			end
+		end
+	end
+
+	local id = services.HTTP:GenerateGUID(false)
+	local metadata = services.HTTP:JSONEncode({ k = kind, id = id, d = data, t = flag })
+	grants[id] = {
+		from = sender.UserId,
+		text = text,
+		metadata = metadata,
+		targets = targetSet,
+		expires = os.clock() + GRANT_LIFETIME,
+	}
+	task.delay(GRANT_LIFETIME, function()
+		local grant = grants[id]
+		grants[id] = nil
+		if grant and grant.messageId then
+			delivering[grant.messageId] = nil
+		end
+	end)
+
+	RemoteEvent:FireClient(sender, "KChatSend", { channel.Name, text, metadata })
+	return true
 end
 
 local DonorCache = {}
@@ -406,16 +562,22 @@ function f.SortLogs(logs)
 	return sorted
 end
 function f.KUpdateLog(a)
-	RemoteEvent:FireAllClients("KUpdateLog", a)
+	for _, player in f.Players() do
+		if Set.PublicLogs or f.getPower(player) >= 2 then
+			RemoteEvent:FireClient(player, "KUpdateLog", a)
+		end
+	end
 end
-function f.KUpdateCLog(a)
-	RemoteEvent:FireAllClients("KUpdateCLog", a)
-end
+function f.KUpdateCLog(a) end
 function f.KUpdateLogs()
-	RemoteEvent:FireAllClients("KUpdateLogs", state.Logs)
+	for _, player in f.Players() do
+		if Set.PublicLogs or f.getPower(player) >= 2 then
+			RemoteEvent:FireClient(player, "KUpdateLogs", state.Logs)
+		end
+	end
 end
 function f.KUpdateCLogs()
-	RemoteEvent:FireAllClients("KUpdateCLogs", state.ChatLogs)
+	RemoteEvent:FireAllClients("KUpdateCLogs", {})
 end
 function f.SetAdmins()
 	local a = {}
@@ -1003,24 +1165,22 @@ function f.Msg(player: Player, a, b)
 	end
 end
 function f.filteredMsg(player: Player, a, b)
-	local fromId = player.UserId
-	local textObject = getTextObject(a[3], fromId)
-	if b then
-		RemoteEvent:FireClient(b, "KMsg", { a[1], a[2], getFilteredMessage(textObject, fromId, b.UserId), fromId })
+	f.chatSend(player, if b then "pm" else "msg", a[3], b, { a[1], a[2] })
+end
+local function systemHint(message: string, playerTo: Player?)
+	if playerTo then
+		RemoteEvent:FireClient(playerTo, "KHint", message)
 	else
-		for i, b in f.Players() do
-			RemoteEvent:FireClient(b, "KMsg", { a[1], a[2], getFilteredMessage(textObject, fromId, b.UserId), fromId })
-		end
+		RemoteEvent:FireAllClients("KHint", message)
 	end
 end
-function f.Hint(playerFrom: Player, message: string, playerTo: Player?)
-	local textObject = getTextObject(message, playerFrom.UserId)
-	if playerTo then
-		RemoteEvent:FireClient(playerTo, "KHint", getFilteredMessage(textObject, playerFrom.UserId, playerTo.UserId))
-	else
-		for _, player in f.Players() do
-			RemoteEvent:FireClient(player, "KHint", getFilteredMessage(textObject, playerFrom.UserId, player.UserId))
+function f.Hint(playerFrom: Player, message: string, playerTo: (Player | { Player })?)
+	if playerFrom and typeof(playerFrom) == "Instance" and playerFrom:IsA("Player") then
+		local prefix = playerFrom.DisplayName .. ": "
+		if string.find(message, prefix, 1, true) == 1 then
+			message = string.sub(message, #prefix + 1)
 		end
+		f.chatSend(playerFrom, if playerTo then "ph" else "h", message, playerTo)
 	end
 end
 function f.Error(message: string, player: Player)
@@ -1157,6 +1317,64 @@ wrap(function()
 		until (not SaveData and not SaveLogs) or not GlobalDataStore
 	end)
 end)
+local allowedUpdateSettings = {
+	IGS = "boolean",
+	Flat = "boolean",
+	ForcedColor = "boolean",
+	Color = "Color3",
+	ColorTransparency = "number",
+	AdminCredit = "boolean",
+	AutoClean = "boolean",
+	AutoCleanDelay = "number",
+	CommandBar = "boolean",
+	FunCommands = "boolean",
+	FreeAdmin = "number",
+	JoinMessage = "boolean",
+	PublicLogs = "boolean",
+	Prefix = "string",
+}
+
+local function sanitizeSetting(key: string, value: any, power: number?): (boolean, any)
+	local expected = allowedUpdateSettings[key]
+	if not expected then
+		return false, nil
+	end
+	if key == "Prefix" then
+		if type(value) == "string" then
+			value = value:gsub("%s", "")
+			if #value == 1 and utf8.len(value) == 1 then
+				return true, value
+			end
+		end
+		return false, nil
+	elseif key == "FreeAdmin" then
+		if value == false then
+			return true, false
+		end
+		local n = tonumber(value)
+		if n and n == n then
+			local maxPower = if power then power - 1 else 5
+			return true, math.clamp(math.floor(n), 0, maxPower)
+		end
+		return false, nil
+	elseif key == "ColorTransparency" then
+		if type(value) == "number" and value == value then
+			return true, math.clamp(value, 0, 1)
+		end
+		return false, nil
+	elseif key == "AutoCleanDelay" then
+		if type(value) == "number" and value == value then
+			return true, math.clamp(value, 1, 3600)
+		end
+		return false, nil
+	elseif expected == "Color3" then
+		return typeof(value) == "Color3", value
+	elseif expected == "boolean" then
+		return type(value) == "boolean", value
+	end
+	return false, nil
+end
+
 function f.UpdateSave(n, merge)
 	if n[1] then
 		Admins = f.Merge(if merge then Admins else f.SetAdmins(), f.unCache(n[1]))
@@ -1173,14 +1391,18 @@ function f.UpdateSave(n, merge)
 		end
 		n[3]["GroupAdmin"], n[3]["VIPAdmin"], n[3]["Permissions"], n[3]["CommandLimits"] = nil, nil, nil, nil
 		for i, v in n[3] do
-			Set[i] = v
+			local ok, clean = sanitizeSetting(i, v)
+			if ok then
+				Set[i] = clean
+			end
 		end
 	end
 	RemoteEvent:FireAllClients("KUpdate", f.MapTab(Set))
 end
 function f.UpdateLogs(n)
-	state.Logs = f.SortLogs(f.LMerge(state.Logs, f.unMapTab(n[1])))
-	state.ChatLogs = f.SortLogs(f.LMerge(state.ChatLogs, f.unMapTab(n[2])))
+	if n and n[1] then
+		state.Logs = f.SortLogs(f.LMerge(state.Logs, f.unMapTab(n[1])))
+	end
 end
 function f.ForceSave()
 	local ok, err = wrap(function(a, b)
@@ -1205,7 +1427,7 @@ function f.ForceSave()
 end
 function f.ForceLogs(a, b)
 	local ok, err = wrap(function()
-		GlobalDataStore:SetAsync(dataKey.logs, { f.MapTab(state.Logs), f.MapTab(state.ChatLogs) })
+		GlobalDataStore:SetAsync(dataKey.logs, { f.MapTab(state.Logs), {} })
 	end)
 	if not ok then
 		print(ScriptName .. ":\tSaving logs failed!", err or "")
@@ -1292,13 +1514,40 @@ local MTime = {
 local chattedCache = {}
 local CommandCooldown = {}
 local fastCommands = { "credit", "prefix", "clean", "ping", "set", "settings" }
+local privateCommands = { pm = true, pmsg = true, ph = true, phint = true }
 local serverContext = {
 	DisplayName = "Server",
 	Name = "SERVER",
 	UserId = 0,
 }
 function f.Chatted(plr: Player | serverContext, msg: string, cmdbar: boolean?)
+	if type(msg) ~= "string" then
+		return
+	end
 	local server = plr == serverContext
+	if not server and not cmdbar then
+		for _, grant in grants do
+			if grant.from == plr.UserId and grant.text == msg then
+				return
+			end
+		end
+	end
+	if not utf8.len(msg) then
+		if not server then
+			f.Error("INVALID UTF8 INPUT", plr)
+		end
+		return
+	end
+	for i, v in fastCommands do
+		if string.lower(msg) == v then
+			msg = Set.Prefix .. msg
+			break
+		end
+	end
+	local Cmds = f.getCmds(msg)
+	if #Cmds == 0 then
+		return
+	end
 	local now = time()
 	-- debounce f.Chatted
 	if chattedCache[plr] ~= nil and now < chattedCache[plr] then
@@ -1320,26 +1569,12 @@ function f.Chatted(plr: Player | serverContext, msg: string, cmdbar: boolean?)
 	end
 	local pow = if server then math.huge else f.getPower(plr)
 	local limits = StudioSet.CommandLimits[pow]
-	for i, v in fastCommands do
-		if string.lower(msg) == v then
-			msg = Set.Prefix .. msg
-			break
-		end
-	end
-	local filteredMessage = if server
-		then msg:gsub("\n", "\t")
-		else getFilteredMessage(getTextObject(msg:gsub("\n", "\t"), plr.UserId), plr.UserId)
-	local CLog: Log = { os.time(), string.sub(`{plr.DisplayName} [@{plr.Name}]:\t{filteredMessage}`, 1, 99) }
-	local Logs, CMD
+	local CMD
+	local logParts = {}
 	local success, _result = wrap(function()
 		if not server then
 			f.isReal(plr)
 		end
-		if not utf8.len(CLog[2]) then
-			f.Error(`INVALID UTF8:\t{CLog[2]}`, plr)
-			error(`{ScriptName} Error: User {plr.UserId} invalid UTF8 input`)
-		end
-		local Cmds = f.getCmds(msg)
 		local isBatch, cmdobj
 		if #Cmds > 1 then
 			isBatch, cmdobj = true, new("BoolValue", script)({})
@@ -1351,7 +1586,7 @@ function f.Chatted(plr: Player | serverContext, msg: string, cmdbar: boolean?)
 				break
 			end
 			if nCmd > (limits[1] or 10) then
-				f.Error(`BATCH LIMIT ({limits[1] or 10}) EXCEEDED, IGNORED COMMANDS:\t{msg:sub(v[2])}`, plr)
+				f.Error(`BATCH LIMIT ({limits[1] or 10}) EXCEEDED`, plr)
 				break
 			end
 			local ms = msg:sub(v[2], v[3] or #msg)
@@ -1422,6 +1657,12 @@ function f.Chatted(plr: Player | serverContext, msg: string, cmdbar: boolean?)
 					end
 					if v[1][3] > 1 then
 						CMD = true
+						local cmdName = string.lower(v[1][1][1])
+						if privateCommands[cmdName] then
+							table.insert(logParts, `{cmd} {words[1] or ""}`)
+						else
+							table.insert(logParts, ms:gsub("\n", "\t"))
+						end
 					end
 					-- Prevents VIP and lower from using duplicate commands other than hat
 					if pow > 1 or v[1][1][1] == "hat" or not cmdCache[v[1][1][1]] then
@@ -1458,21 +1699,17 @@ function f.Chatted(plr: Player | serverContext, msg: string, cmdbar: boolean?)
 			cmdobj:Destroy()
 		end
 	end)
-	if success and CMD then
-		Logs = state.Logs
-	else
-		Logs = state.ChatLogs
-	end
-	if not FindChild(plr, "KHideLogs") then
-		if #Logs > 300 then
-			table.remove(Logs, #Logs)
+	if success and CMD and not FindChild(plr, "KHideLogs") then
+		local rawLog = table.concat(logParts, " ")
+		local filteredMessage = if server
+			then rawLog
+			else getFilteredMessage(getTextObject(rawLog, plr.UserId), plr.UserId)
+		local CLog: Log = { os.time(), string.sub(`{plr.DisplayName} [@{plr.Name}]:\t{filteredMessage}`, 1, 99) }
+		if #state.Logs > 300 then
+			table.remove(state.Logs, #state.Logs)
 		end
-		table.insert(Logs, 1, CLog)
-		if success and CMD then
-			f.KUpdateLog(CLog)
-		else
-			f.KUpdateCLog(CLog)
-		end
+		table.insert(state.Logs, 1, CLog)
+		f.KUpdateLog(CLog)
 		SaveLogs = 0
 	end
 end
@@ -1633,6 +1870,18 @@ function f.Load(plr: Player)
 		return
 	end
 	userPermissions[plr] = {}
+	task.spawn(function()
+		for _ = 1, 5 do
+			if not plr.Parent then
+				return
+			end
+			local ok = pcall(broadcastChannel.AddUserAsync, broadcastChannel, plr.UserId)
+			if ok then
+				break
+			end
+			task.wait(1)
+		end
+	end)
 	plr.CharacterAdded:Connect(function(char)
 		f.CharacterLoad(plr, char)
 	end)
@@ -1692,55 +1941,31 @@ for _, player in f.Players() do
 end
 KRefresh = {} -- sanitize loadcharacter calls :)
 
-local allowedUpdateSettings = {
-	IGS = true,
-	Flat = true,
-	ForcedColor = true,
-	Color = true,
-	ColorTransparency = true,
-	AdminCredit = true,
-	AutoClean = true,
-	AutoCleanDelay = true,
-	CommandBar = true,
-	FunCommands = true,
-	FreeAdmin = true,
-	JoinMessage = true,
-	PublicLogs = true,
-	Prefix = true,
-}
-
 function ServerEvent(plr: Player, event, arguments, uID)
-	if type(arguments) == "function" then
+	if type(arguments) == "function" or type(event) ~= "string" then
 		return
 	end
 	uID, event = event:match("(%d*)(.+)")
 	if event == "KuID" then
+		local logs = if Set.PublicLogs or f.getPower(plr) >= 2 then state.Logs else {}
 		RemoteEvent:FireClient(
 			plr,
 			"KuID",
-			{ f.uID, f.MapTab(Admins), f.MapTab(Set), state.Commands, state.Logs, state.ChatLogs }
+			{ f.uID, f.MapTab(Admins), f.MapTab(Set), state.Commands, logs, {} }
 		)
 		return
 	end
 	if uID ~= f.uID or not plr then
 		return
 	end
-	if event == "KChat" then
-		f.Chatted(plr, arguments[2])
-		local textObject = getTextObject(arguments[2], plr.UserId)
-		for _, v in f.Players() do
-			if v ~= plr then
-				RemoteEvent:FireClient(v, event, { arguments[1], getFilteredMessage(textObject, plr.UserId, v.UserId) })
-			end
-		end
-	elseif event == "KCClr" and FindChild(plr, "KCClr") then
+	if event == "KCClr" and FindChild(plr, "KCClr") and typeof(arguments) == "Color3" then
 		plr.KCClr.Value = arguments
 	elseif event == "KRefresh" then
 		if KRefresh[plr] then
 			KRefresh[plr] = nil
 			plr:LoadCharacterAsync()
 		end
-	elseif event == "KCmdBar" then
+	elseif event == "KCmdBar" and type(arguments) == "string" then
 		f.Chatted(plr, arguments, 1)
 	elseif event == "KDelete" and arguments and f.getPower(plr) > 4 then
 		arguments:Destroy()
@@ -1751,15 +1976,18 @@ function ServerEvent(plr: Player, event, arguments, uID)
 				v:Destroy()
 			end
 		end
-	elseif event == "KUpdate" and arguments and f.getPower(plr) > 4 then
+	elseif event == "KUpdate" and type(arguments) == "table" and f.getPower(plr) > 4 then
 		if arguments.IGS then
 			local power = f.getPower(plr)
 			for i, v in arguments do
-				if allowedUpdateSettings[i] then
-					if i == "FreeAdmin" then
-						v = math.min(power - 1, tonumber(v) or 0)
+				local ok, clean = sanitizeSetting(i, v, power)
+				if ok then
+					if i == "Prefix" and clean ~= Set.Prefix and power < 6 then
+						if not f.cooldown(plr.UserId, "prefix") then
+							continue
+						end
 					end
-					Set[i] = v
+					Set[i] = clean
 				end
 			end
 		else
@@ -1771,7 +1999,7 @@ function ServerEvent(plr: Player, event, arguments, uID)
 		RemoteEvent:FireAllClients("KUpdate", f.MapTab(Set))
 		LoadCommands()
 		SaveData = 0
-	elseif event == "KVote" then
+	elseif event == "KVote" and type(arguments) == "boolean" then
 		state.Votes[plr.UserId] = arguments
 	elseif event == "KHat" then
 		if DonorCache[plr.UserId] > 2 then
@@ -2315,7 +2543,7 @@ function LoadCommands()
 	end)
 
 	f.addCommand({ "logs" }, { "Shows the command logs." }, Set.PublicLogs and 0 or 2, {}, function(pl, args)
-		RemoteEvent:FireClient(pl, "KLogs", "Command Logs")
+		RemoteEvent:FireClient(pl, "KLogs", { "Command Logs", state.Logs })
 	end)
 	f.addCommand({ "chatlogs", "clogs" }, { "Shows the chat logs." }, Set.PublicLogs and 0 or 2, {}, function(pl, args)
 		RemoteEvent:FireClient(pl, "KCLogs", "Chat Logs")
@@ -2601,10 +2829,16 @@ function LoadCommands()
 		end
 	end)
 	f.addCommand({ "kick" }, { "Kicks players.", "Kohl" }, 2, { "player", "string/" }, function(pl, args)
-		local textObject = getTextObject(args[2], pl.UserId)
+		local reason = "Kicked"
+		if type(args[2]) == "string" and args[2] ~= "" then
+			if not canUserChat(pl.UserId) or not f.cooldown(pl.UserId, "reason") then
+				return
+			end
+			reason = getFilteredMessage(getTextObject(args[2], pl.UserId), pl.UserId)
+		end
 		for i, plr in args[1] do
 			if plr and f.Auth(pl, plr, 0) then
-				if not pcall(plr.Kick, plr, getFilteredMessage(textObject, pl.UserId, plr.UserId)) then
+				if not pcall(plr.Kick, plr, reason) then
 					RemoteEvent:FireClient(plr, "KCrash")
 				end
 			end
@@ -2654,11 +2888,11 @@ function LoadCommands()
 	)
 
 	f.addCommand({ "serverlock", "slock" }, { "Prevents nonadmins from joining." }, 3, {}, function(pl, args)
-		f.Hint(pl, "SERVERLOCK: ON")
+		systemHint("SERVERLOCK: ON")
 		LocalSet.SLock = 1
 	end)
 	f.addCommand({ "unserverlock", "unslock", "serverunlock" }, { "Unlocks the server." }, 3, {}, function(pl, args)
-		f.Hint(pl, "SERVERLOCK: OFF")
+		systemHint("SERVERLOCK: OFF")
 		LocalSet.SLock = nil
 	end)
 	f.addCommand({ "shutdown" }, { "Shut the game down.", "10(optional)" }, 4, { "number/" }, function(pl, args)
@@ -2697,8 +2931,7 @@ function LoadCommands()
 				end)
 			end)
 			if ok then
-				f.Hint(
-					pl,
+				systemHint(
 					"Private Server:\t" .. args[1] .. "\thas been created! Use the place command to visit it!",
 					pl
 				)
@@ -2716,9 +2949,9 @@ function LoadCommands()
 					data = data or {}
 					if data[args[1]] then
 						data[args[1]] = nil
-						f.Hint(pl, "Private Server:\t" .. args[1] .. " has been removed!", pl)
+						systemHint("Private Server:\t" .. args[1] .. " has been removed!", pl)
 					else
-						f.Hint(pl, "Private Server:\t" .. args[1] .. "\thas NOT been found!", pl)
+						systemHint("Private Server:\t" .. args[1] .. "\thas NOT been found!", pl)
 					end
 					return data
 				end)
@@ -3121,8 +3354,7 @@ function LoadCommands()
 		function(pl, args)
 			for i, plr in args[1] do
 				if plr then
-					f.Hint(
-						pl,
+					systemHint(
 						plr.DisplayName .. (f.Has(plr, args[2]) and " has" or " does NOT have") .. " the asset!",
 						pl
 					)
@@ -3139,9 +3371,9 @@ function LoadCommands()
 			for i, plr in args[1] do
 				if plr then
 					if services.Badge:UserHasBadgeAsync(plr.UserId, args[2]) then
-						f.Hint(pl, plr.DisplayName .. " already has the badge!", pl)
+						systemHint(plr.DisplayName .. " already has the badge!", pl)
 					else
-						f.Hint(pl, "Awarding badge to: " .. plr.DisplayName, pl)
+						systemHint("Awarding badge to: " .. plr.DisplayName, pl)
 						services.Badge:AwardBadge(plr.UserId, args[2])
 					end
 				end
@@ -3154,17 +3386,15 @@ function LoadCommands()
 		2,
 		{ "player", "string" },
 		function(pl, args)
-			local t = tick()
-			state.LastVote = t
-			state.Votes = {}
-			local textObject = getTextObject(args[2], pl.UserId)
-			for i, plr in args[1] do
-				if plr then
-					RemoteEvent:FireClient(plr, "KVote", getFilteredMessage(textObject, pl.UserId, plr.UserId))
-				end
+			if not f.cooldown(pl.UserId, "vote") then
+				return
 			end
+			local voteTime = tick()
+			state.LastVote = voteTime
+			state.Votes = {}
+			f.chatSend(pl, "vote", args[2], args[1])
 			task.delay(10, function()
-				if t == state.LastVote then
+				if voteTime == state.LastVote then
 					local y, n, t = 0, 0, 0
 					for i, v in state.Votes do
 						if v then
@@ -3174,16 +3404,17 @@ function LoadCommands()
 						end
 						t += 1
 					end
+					local question = getFilteredMessage(getTextObject(args[2], pl.UserId), pl.UserId)
 					f.Msg(pl, {
 						ScriptName,
 						"Vote Results",
 						string.format(
 							"%s\nYES: %d (%.0f%%)\t NO: %d (%.0f%%)",
-							args[2],
+							question,
 							y,
-							(y / t) * 100,
+							if t > 0 then (y / t) * 100 else 0,
 							n,
-							(n / t) * 100
+							if t > 0 then (n / t) * 100 else 0
 						),
 					}, pl)
 				end
@@ -3197,6 +3428,9 @@ function LoadCommands()
 		3,
 		{ "string" },
 		function(pl, args)
+			if not f.cooldown(pl.UserId, "announce") then
+				return
+			end
 			f.filteredMsg(pl, { ScriptName, "Announcement", args[1] })
 		end
 	)
@@ -3218,9 +3452,7 @@ function LoadCommands()
 		2,
 		{ "player", "string" },
 		function(pl, args)
-			for i, plr in args[1] do
-				f.filteredMsg(pl, { pl.DisplayName, "Private Message", args[2] }, plr)
-			end
+			f.filteredMsg(pl, { pl.DisplayName, "Private Message", args[2] }, args[1])
 		end
 	)
 	f.addCommand(
@@ -3229,16 +3461,11 @@ function LoadCommands()
 		2,
 		{ "player", "string" },
 		function(pl, args)
-			for i, plr in args[1] do
-				f.Hint(pl, pl.DisplayName .. ": " .. args[2], plr)
-			end
+			f.Hint(pl, pl.DisplayName .. ": " .. args[2], args[1])
 		end
 	)
 	f.addCommand({ "notify", "n" }, { "Places a permanent message.", "I'm afk." }, 2, { "string" }, function(pl, args)
-		local a = FindChild(RemoteEvent, "KNotify") or new("StringValue")({ Parent = RemoteEvent, Name = "KNotify" })
-		local textObject = getTextObject(args[1], pl.UserId)
-		a.Value = getFilteredMessage(textObject, pl.UserId)
-		RemoteEvent:FireAllClients("KNotify", a.Value)
+		f.chatSend(pl, "notify", args[1])
 	end)
 	f.addCommand({ "rnotify", "rn" }, { "Removes a permanent message." }, 2, {}, function(a)
 		a = FindChild(RemoteEvent, "KNotify")
@@ -3265,16 +3492,15 @@ function LoadCommands()
 		2,
 		{ "player", "string" },
 		function(pl, args)
+			if not args[2] or not f.CheckNF(args[2]) then
+				return
+			end
+			if not canUserChat(pl.UserId) or not f.cooldown(pl.UserId, "name") then
+				return
+			end
 			local filtered = getFilteredMessage(getTextObject(args[2], pl.UserId), pl.UserId)
 			for i, plr in args[1] do
-				if
-					args[2]
-					and f.CheckNF(args[2])
-					and plr
-					and plr.Character
-					and FindChild(plr.Character, "Humanoid")
-					and f.Auth(pl, plr)
-				then
+				if plr and plr.Character and FindChild(plr.Character, "Humanoid") and f.Auth(pl, plr) then
 					displayNames[plr.UserId] = filtered
 					displayName(plr)
 				end
@@ -3502,14 +3728,14 @@ function LoadCommands()
 							GlobalDataStore:GetAsync(dataKey.servers)
 						end)
 						if not ok then
-							f.Hint(pl, "Failed to load reserved servers", pl)
+							systemHint("Failed to load reserved servers", pl)
 							return
 						end
 						local server = data[args[2]]
 						if server then
 							services.Teleport:TeleportToPrivateServer(server.Id, server.Code, args[1])
 						else
-							f.Hint(pl, "No place with that name found!", pl)
+							systemHint("No place with that name found!", pl)
 						end
 					end
 				end
@@ -3589,12 +3815,20 @@ function LoadCommands()
 		2,
 		{ "player", "word", "string" },
 		function(pl, args)
-			local filtered = getFilteredMessage(getTextObject(args[3], pl.UserId), pl.UserId)
+			local filtered
 			for i, plr in args[1] do
 				if plr and FindChild(plr, "leaderstats") then
 					for i2, v in plr.leaderstats:GetChildren() do
 						if v.Name:lower():find("^" .. args[2]:lower()) then
 							if v:IsA("StringValue") then
+								if not filtered then
+									if
+										not canUserChat(pl.UserId) or not f.cooldown(pl.UserId, "leaderstat")
+									then
+										return
+									end
+									filtered = getFilteredMessage(getTextObject(args[3], pl.UserId), pl.UserId)
+								end
 								v.Value = filtered
 							else
 								v.Value = tonumber(args[3])
