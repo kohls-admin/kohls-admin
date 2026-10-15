@@ -24,31 +24,6 @@ if Server then
 	Server.Parent = Util.Service.ServerStorage
 end
 
---[=[
-	@within MainModule
-	@interface _K
-	.Flux Flux
-
-	.Auth Auth
-	.Chat Chat
-
-	.Process Process
-	.Registry Registry
-	.Util Util
-	.UI UI
-
-	.IsClient boolean
-	.IsServer boolean
-	.IsStudio boolean
-
-	.client { [any]: any }?
-	.pinnedAnnouncement {}?
-	._serverLock boolean
-
-	.creatorId number
-	.log Logger.log
-	.logger Logger.logger
-]=]
 local _K = {
 	script = script,
 	IsClient = RunService:IsClient(),

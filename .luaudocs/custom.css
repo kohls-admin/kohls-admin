@@ -1,0 +1,2320 @@
+@property --rainbow-l {
+	syntax: "<percentage>";
+	inherits: true;
+	initial-value: 80%;
+}
+
+@property --rainbow-c {
+	syntax: "<number>";
+	inherits: true;
+	initial-value: 0.2;
+}
+
+@property --spectrum-angle {
+	syntax: "<angle>";
+	inherits: true;
+	initial-value: 0deg;
+}
+
+@property --spectrum-mix {
+	syntax: "<percentage>";
+	inherits: true;
+	initial-value: 0%;
+}
+
+@property --spectrum-on {
+	syntax: "<percentage>";
+	inherits: true;
+	initial-value: 0%;
+}
+
+:root {
+	--vp-c-brand-1: #08f;
+	--vp-c-brand-2: #06e;
+	--vp-c-brand-3: #04d;
+	--vp-c-brand-soft: #48f2;
+	--vp-sidebar-bg-color: var(--vp-c-bg);
+}
+
+.dark:root {
+	--vp-c-bg: #08090b;
+	--vp-c-bg-alt: #0e1014;
+	--vp-c-bg-elv: #14171d;
+	--vp-c-bg-soft: #0e1014;
+}
+
+/* ==========================================================================
+   Kohl's Admin Custom Page System (.ka-page)
+   ========================================================================== */
+
+.ka-page {
+	/* Light mode tokens: vibrant spectrum lightness for rainbows & buttons,
+	   paired with high-contrast accent lightness for small labels on white. */
+	--rainbow-l: 70%;
+	--rainbow-c: 0.21;
+	--accent-l: 56%;
+	--accent-c: 0.2;
+
+	--ink: #ffffff;
+	--ink-2: #f6f7fa;
+	--ink-3: #eceef4;
+	--line: #dfe3ec;
+	--line-2: #c5cddc;
+	--bone: #0c0e12;
+	--ash: #4a5160;
+	--ash-dim: #666e7f;
+	--panel: #111113;
+
+	--h-ui: oklch(var(--accent-l) var(--accent-c) 0deg);
+	--h-money: oklch(var(--accent-l) var(--accent-c) 45deg);
+	--h-charts: oklch(var(--accent-l) var(--accent-c) 90deg);
+	--h-perf: oklch(var(--accent-l) var(--accent-c) 135deg);
+	--h-auto: oklch(var(--accent-l) var(--accent-c) 180deg);
+	--h-secure: oklch(var(--accent-l) var(--accent-c) 225deg);
+	--h-setup: oklch(var(--accent-l) var(--accent-c) 270deg);
+	--h-addons: oklch(var(--accent-l) var(--accent-c) 315deg);
+
+	--accent: var(--bone);
+
+	--spectrum: linear-gradient(
+		to right in oklab,
+		oklch(var(--rainbow-l) var(--rainbow-c) 0),
+		oklch(var(--rainbow-l) var(--rainbow-c) 60),
+		oklch(var(--rainbow-l) var(--rainbow-c) 120),
+		oklch(var(--rainbow-l) var(--rainbow-c) 180),
+		oklch(var(--rainbow-l) var(--rainbow-c) 240),
+		oklch(var(--rainbow-l) var(--rainbow-c) 300),
+		oklch(var(--rainbow-l) var(--rainbow-c) 360)
+	);
+
+	--spectrum-inv: linear-gradient(
+		to left in oklab,
+		oklch(var(--rainbow-l) var(--rainbow-c) 0),
+		oklch(var(--rainbow-l) var(--rainbow-c) 60),
+		oklch(var(--rainbow-l) var(--rainbow-c) 120),
+		oklch(var(--rainbow-l) var(--rainbow-c) 180),
+		oklch(var(--rainbow-l) var(--rainbow-c) 240),
+		oklch(var(--rainbow-l) var(--rainbow-c) 300),
+		oklch(var(--rainbow-l) var(--rainbow-c) 360)
+	);
+
+	--pulse: oklch(var(--accent-l) var(--accent-c) 144deg);
+	--stale: oklch(var(--accent-l) calc(var(--accent-c) * 0.75) 75deg);
+	--bad: oklch(60% 0.2 25deg);
+	--link: oklch(var(--accent-l) calc(var(--accent-c) * 0.85) 230deg);
+
+	--btn-core-fill: color-mix(in oklab, var(--ink) 86%, transparent);
+	--btn-glow-rest: 0.38;
+	--btn-glow-hover: 0.85;
+	--card-shadow:
+		0 18px 42px -24px rgb(12 14 18 / 0.12),
+		0 2px 10px -4px rgb(12 14 18 / 0.06);
+
+	--display: var(--vp-font-family-base);
+	--body: var(--vp-font-family-base);
+	--mono: var(--vp-font-family-mono);
+
+	--shell: 1180px;
+	--gutter: clamp(20px, 4vw, 48px);
+	--radius: 8px;
+	--ease: ease;
+
+	background: var(--ink);
+	color: var(--bone);
+	font-family: var(--body);
+	font-size: 1rem;
+	line-height: 1.65;
+	overflow-x: hidden;
+	-webkit-font-smoothing: antialiased;
+}
+
+.dark .ka-page {
+	--rainbow-l: 80%;
+	--rainbow-c: 0.2;
+	--accent-l: 80%;
+	--accent-c: 0.2;
+
+	--ink: #08090b;
+	--ink-2: #0e1014;
+	--ink-3: #14171d;
+	--line: #1e222a;
+	--line-2: #2b3039;
+	--bone: #e9eaee;
+	--ash: #878c96;
+	--ash-dim: #7e838e;
+	--panel: #111113;
+
+	--bad: oklch(70% 0.19 25deg);
+	--link: oklch(var(--rainbow-l) calc(var(--rainbow-c) * 0.8) 144deg);
+
+	--btn-core-fill: #000b;
+	--btn-glow-rest: 0;
+	--btn-glow-hover: 0.8;
+	--card-shadow: 0 -12px 40px rgb(0 0 0 / 0.45);
+}
+
+.ka-page .accent-ui {
+	--accent: var(--h-ui);
+}
+.ka-page .accent-money {
+	--accent: var(--h-money);
+}
+.ka-page .accent-charts {
+	--accent: var(--h-charts);
+}
+.ka-page .accent-perf {
+	--accent: var(--h-perf);
+}
+.ka-page .accent-auto {
+	--accent: var(--h-auto);
+}
+.ka-page .accent-secure {
+	--accent: var(--h-secure);
+}
+.ka-page .accent-setup {
+	--accent: var(--h-setup);
+}
+.ka-page .accent-addons {
+	--accent: var(--h-addons);
+}
+
+.ka-page *,
+.ka-page *::before,
+.ka-page *::after {
+	box-sizing: border-box;
+}
+
+.ka-page img,
+.ka-page svg {
+	display: block;
+	max-width: 100%;
+}
+
+.ka-page a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.ka-page ul,
+.ka-page ol {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.ka-page p,
+.ka-page dl,
+.ka-page dd {
+	margin: 0;
+}
+
+.ka-page h1,
+.ka-page h2,
+.ka-page h3 {
+	margin: 0;
+	font-family: var(--display);
+	font-weight: 700;
+	line-height: 1.04;
+	letter-spacing: -0.022em;
+}
+
+.ka-page :focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+	border-radius: 3px;
+}
+
+.ka-page .shell {
+	width: 100%;
+	max-width: var(--shell);
+	margin: 0 auto;
+	padding: 0 var(--gutter);
+}
+
+.ka-page .eyebrow {
+	font: 400 0.7rem/1 var(--mono);
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--ash-dim);
+	display: block;
+	margin-bottom: 1.1rem;
+}
+
+.ka-page .lede {
+	color: var(--ash);
+	font-size: 1.03rem;
+	max-width: 62ch;
+}
+
+@keyframes ka-rainbow-move {
+	0% {
+		background-position: 0%;
+		animation-timing-function: steps(320);
+	}
+	to {
+		background-position: 400%;
+	}
+}
+
+@keyframes ka-rainbow-move-inv {
+	0% {
+		background-position: 0%;
+		animation-timing-function: steps(320);
+	}
+	to {
+		background-position: -400%;
+	}
+}
+
+@keyframes ka-spectrum-spin {
+	0% {
+		animation-timing-function: steps(240);
+	}
+	to {
+		--spectrum-angle: 360deg;
+	}
+}
+
+.ka-page code {
+	font-family: var(--mono);
+	font-size: 0.86em;
+	color: var(--bone);
+	background: var(--ink-3);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	padding: 1px 6px;
+}
+
+@supports (background-clip: text) and
+	(background: linear-gradient(in oklab, red, blue)) {
+	.ka-page .hl-spectrum,
+	.ka-page .hl-spectrum-inv,
+	.ka-page .row-spectrum .row-num,
+	.ka-page .row-spectrum .receipt-label {
+		animation: ka-rainbow-move 32s linear infinite;
+		background: var(--spectrum);
+		background-size: 400% auto;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		color: transparent;
+	}
+
+	.ka-page .hl-spectrum-inv {
+		animation-name: ka-rainbow-move-inv;
+		background-image: var(--spectrum-inv);
+	}
+
+	.ka-page .hl-spectrum,
+	.ka-page .hl-spectrum-inv {
+		padding: 0.24em 0.1em 0.24em 0;
+		margin-right: -0.1em;
+	}
+
+	.ka-page .more-links a {
+		--spectrum-text: linear-gradient(
+			to right in oklab,
+			color-mix(
+				in oklab,
+				var(--spectrum-base, var(--ash)),
+				oklch(var(--rainbow-l) var(--rainbow-c) 0)
+					var(--spectrum-mix, 0%)
+			),
+			color-mix(
+				in oklab,
+				var(--spectrum-base, var(--ash)),
+				oklch(var(--rainbow-l) var(--rainbow-c) 60)
+					var(--spectrum-mix, 0%)
+			),
+			color-mix(
+				in oklab,
+				var(--spectrum-base, var(--ash)),
+				oklch(var(--rainbow-l) var(--rainbow-c) 120)
+					var(--spectrum-mix, 0%)
+			),
+			color-mix(
+				in oklab,
+				var(--spectrum-base, var(--ash)),
+				oklch(var(--rainbow-l) var(--rainbow-c) 180)
+					var(--spectrum-mix, 0%)
+			),
+			color-mix(
+				in oklab,
+				var(--spectrum-base, var(--ash)),
+				oklch(var(--rainbow-l) var(--rainbow-c) 240)
+					var(--spectrum-mix, 0%)
+			),
+			color-mix(
+				in oklab,
+				var(--spectrum-base, var(--ash)),
+				oklch(var(--rainbow-l) var(--rainbow-c) 300)
+					var(--spectrum-mix, 0%)
+			),
+			color-mix(
+				in oklab,
+				var(--spectrum-base, var(--ash)),
+				oklch(var(--rainbow-l) var(--rainbow-c) 360)
+					var(--spectrum-mix, 0%)
+			)
+		);
+		background: var(--spectrum-text);
+		background-size: 400% auto;
+		-webkit-background-clip: text;
+		background-clip: text;
+		-webkit-text-fill-color: transparent;
+		animation: ka-rainbow-move 32s linear infinite;
+		animation-play-state: paused;
+		transition:
+			--spectrum-mix 0.3s var(--ease),
+			border-color 0.18s var(--ease);
+	}
+
+	.ka-page .more-links a:hover {
+		--spectrum-mix: 100%;
+		animation-play-state: running;
+		border-color: oklch(var(--rainbow-l) var(--rainbow-c) 180);
+	}
+}
+
+.ka-page .lede a,
+.ka-page .work-desc a,
+.ka-page .faq-body a,
+.ka-page .prose a {
+	color: var(--link);
+	border-bottom: 1px solid color-mix(in oklab, var(--link) 32%, transparent);
+	padding-bottom: 2px;
+	transition:
+		color 0.18s var(--ease),
+		border-color 0.18s var(--ease);
+}
+
+.ka-page .lede a:hover,
+.ka-page .work-desc a:hover,
+.ka-page .faq-body a:hover,
+.ka-page .prose a:hover {
+	color: color-mix(in oklab, var(--link) 45%, var(--bone));
+	border-color: currentcolor;
+}
+
+/* ---------------------------------------------------------------- Buttons */
+/* Mirrors kohl.gg's .btn-primary and .btn-secondary.
+   IMPORTANT: .btn-secondary must NOT set `isolation: isolate` on itself,
+   because its ::before (z-index: -1, which paints the --ink padding-box
+   fill) would otherwise paint above the element's own `background-clip: text`
+   and hide the text when `color` transitions to transparent on hover.
+   Instead, `.hero-actions` forms the stacking context. */
+
+.ka-page .hero-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	isolation: isolate;
+}
+
+.ka-page .btn {
+	display: inline-flex;
+	align-items: center;
+	position: relative;
+	gap: 8px;
+	padding: 12px 20px;
+	--btn-radius: 10px;
+	border-radius: var(--btn-radius);
+	font: 500 0.88rem/1 var(--mono);
+	border: 1px solid transparent;
+	cursor: pointer;
+	transition: transform 0.18s var(--ease);
+}
+
+.ka-page .btn-primary,
+.ka-page .btn-secondary {
+	--spectrum-conic: conic-gradient(
+		from var(--spectrum-angle, 0deg) in oklch,
+		oklch(var(--rainbow-l) var(--rainbow-c) 0 / var(--spectrum-mix)),
+		oklch(var(--rainbow-l) var(--rainbow-c) 60 / var(--spectrum-mix)),
+		oklch(var(--rainbow-l) var(--rainbow-c) 120 / var(--spectrum-mix)),
+		oklch(var(--rainbow-l) var(--rainbow-c) 180 / var(--spectrum-mix)),
+		oklch(var(--rainbow-l) var(--rainbow-c) 240 / var(--spectrum-mix)),
+		oklch(var(--rainbow-l) var(--rainbow-c) 300 / var(--spectrum-mix)),
+		oklch(var(--rainbow-l) var(--rainbow-c) 360 / var(--spectrum-mix))
+	);
+	--spectrum-core: radial-gradient(
+		circle 18px at 50% 50%,
+		oklch(var(--rainbow-l) 0 0 / var(--spectrum-mix)),
+		oklch(var(--rainbow-l) 0 0 / calc(var(--spectrum-mix) * 0.55)) 35%,
+		oklch(var(--rainbow-l) 0 0 / calc(var(--spectrum-mix) * 0.16)) 65%,
+		oklch(var(--rainbow-l) 0 0 / 0)
+	);
+	animation: ka-spectrum-spin 8s linear infinite;
+}
+
+.ka-page .btn-primary {
+	--spectrum-mix: 100%;
+	--feather: 6px;
+	background: var(--spectrum-core), var(--spectrum-conic);
+	color: var(--bone);
+	font-weight: 700;
+	border: none;
+	isolation: isolate;
+}
+
+.ka-page .btn-primary::after {
+	content: "";
+	position: absolute;
+	inset: calc(var(--feather) / 2);
+	z-index: -1;
+	background: var(--btn-core-fill);
+	border-radius: calc(var(--btn-radius) - var(--feather) / 2);
+	filter: blur(calc(var(--feather) / 2));
+}
+
+.ka-page .btn-primary::before,
+.ka-page .btn-secondary::after {
+	content: "";
+	position: absolute;
+	inset: -2px;
+	z-index: -1;
+	background: var(--spectrum-conic);
+	filter: blur(16px);
+	border-radius: calc(var(--btn-radius) + 2px);
+	pointer-events: none;
+}
+
+.ka-page .btn-primary::before {
+	opacity: var(--btn-glow-rest);
+	transition: opacity 0.3s var(--ease);
+}
+
+.ka-page .btn-primary:hover {
+	transform: translateY(-2px);
+}
+
+.ka-page .btn-primary:hover::before {
+	opacity: var(--btn-glow-hover);
+}
+
+.ka-page .btn-secondary {
+	color: var(--bone);
+	top: 0;
+	animation-play-state: paused;
+	--btn-frame:
+		linear-gradient(var(--ink), var(--ink)) padding-box,
+		var(--spectrum-conic) border-box,
+		linear-gradient(var(--line-2), var(--line-2)) border-box;
+	background: var(--btn-frame);
+	transition:
+		top 0.18s var(--ease),
+		--spectrum-mix 0.3s var(--ease);
+}
+
+.ka-page .btn-secondary:hover {
+	--spectrum-mix: 100%;
+	animation-play-state: running;
+	top: -2px;
+}
+
+@supports (background-clip: text) and
+	(background: linear-gradient(in oklab, red, blue)) {
+	.ka-page .btn-secondary {
+		background: var(--spectrum-core), var(--spectrum-conic);
+		background-origin: border-box;
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: color-mix(
+			in oklab,
+			var(--bone),
+			transparent var(--spectrum-mix)
+		);
+	}
+
+	.ka-page .btn-secondary::before {
+		content: "";
+		position: absolute;
+		inset: -1px;
+		z-index: -1;
+		border: 1px solid transparent;
+		border-radius: var(--btn-radius);
+		background: var(--btn-frame);
+	}
+
+	.ka-page .btn-secondary::after {
+		z-index: -2;
+	}
+}
+
+/* ------------------------------------------------------------------ Bands */
+/* Sections use kohl.gg's centered fading accent hairline and subtle radial
+   accent wash instead of flat full-bleed borders. */
+
+.ka-page .band {
+	position: relative;
+	isolation: isolate;
+	padding: clamp(3.8rem, 7.5vw, 5.8rem) 0;
+	overflow: clip;
+}
+
+.ka-page .band > .shell {
+	position: relative;
+	z-index: 1;
+}
+
+.ka-page .band:not(.band-first):not(.band-ocean)::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	background: radial-gradient(
+		ellipse 62% 48% at 50% 42%,
+		color-mix(in oklab, var(--accent) 8%, transparent),
+		transparent 72%
+	);
+}
+
+.ka-page .band:not(.band-first)::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: var(--gutter);
+	right: var(--gutter);
+	height: 1px;
+	pointer-events: none;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		color-mix(in oklab, var(--accent) 55%, var(--line-2)) 30% 70%,
+		transparent
+	);
+}
+
+.ka-page .band-head {
+	max-width: 62ch;
+	margin-bottom: 3rem;
+}
+
+.ka-page .band-title {
+	font-size: clamp(1.9rem, 3.8vw, 2.7rem);
+	margin-bottom: 0.9rem;
+}
+
+/* ------------------------------------------------------------------- Hero */
+
+.ka-page .hero {
+	position: relative;
+	isolation: isolate;
+	padding: clamp(3.2rem, 7.5vw, 5.6rem) 0 0;
+}
+
+.ka-page .hero::before {
+	content: "";
+	position: absolute;
+	inset: 0 0 auto;
+	z-index: -1;
+	height: clamp(360px, 65%, 640px);
+	background:
+		linear-gradient(180deg, var(--ink), transparent 96px),
+		radial-gradient(78% 100% at 50% 0%, transparent, var(--ink) 76%),
+		var(--spectrum);
+	opacity: 0.14;
+	pointer-events: none;
+}
+
+.dark .ka-page .hero::before {
+	opacity: 0.1;
+}
+
+.ka-page .hero-grid {
+	display: grid;
+	grid-template-columns: 1.05fr 0.95fr;
+	gap: clamp(2rem, 5vw, 4rem);
+	align-items: center;
+}
+
+.ka-page .hero-title {
+	font-size: clamp(2.5rem, 6vw, 4.1rem);
+	letter-spacing: -0.028em;
+	text-wrap: balance;
+	margin-bottom: 1.35rem;
+}
+
+.ka-page .hero-claim {
+	font-family: var(--display);
+	font-size: clamp(1.15rem, 2.1vw, 1.42rem);
+	font-weight: 600;
+	line-height: 1.28;
+	letter-spacing: -0.01em;
+	color: var(--bone);
+	max-width: 34ch;
+	margin-bottom: 1.25rem;
+}
+
+.ka-page .hero-lede {
+	color: var(--ash);
+	font-size: 1.05rem;
+	max-width: 48ch;
+	margin-bottom: 2rem;
+}
+
+.ka-page .hero-lede strong {
+	color: var(--bone);
+	font-weight: 600;
+}
+
+/* Open mono readout at the foot of the Hero (replaces the boxy 4-cell grid) */
+
+.ka-page .hero-readout {
+	position: relative;
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	align-items: center;
+	gap: 20px clamp(1.25rem, 3.5vw, 3rem);
+	margin-top: clamp(2.8rem, 5.5vw, 4.2rem);
+	padding: clamp(1.85rem, 3.4vw, 2.5rem) 0;
+}
+
+.ka-page .hero-readout::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		oklch(var(--rainbow-l) var(--rainbow-c) 30 / 0.55) 20%,
+		oklch(var(--rainbow-l) var(--rainbow-c) 150 / 0.65) 50%,
+		oklch(var(--rainbow-l) var(--rainbow-c) 270 / 0.55) 80%,
+		transparent
+	);
+}
+
+.ka-page .hero-metric {
+	display: flex;
+	flex-direction: column-reverse;
+	justify-content: center;
+	align-items: flex-start;
+	gap: 7px;
+	padding: 2px 0 2px 14px;
+	border-left: 2px solid color-mix(in oklab, var(--accent) 55%, var(--line-2));
+	transition: border-color 0.25s var(--ease);
+}
+
+.ka-page .hero-metric:hover {
+	border-left-color: var(--accent);
+}
+
+.ka-page .hero-metric dt {
+	font: 500 0.68rem/1 var(--mono);
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+	color: var(--ash-dim);
+	transition: color 0.25s var(--ease);
+}
+
+.ka-page .hero-metric:hover dt {
+	color: var(--bone);
+}
+
+.ka-page .hero-metric dd {
+	font: 700 clamp(1.75rem, 3.4vw, 2.45rem) / 0.88 var(--display);
+	letter-spacing: -0.03em;
+	font-variant-numeric: tabular-nums;
+	color: var(--bone);
+	transition: color 0.25s var(--ease);
+}
+
+.ka-page .hero-metric:hover dd {
+	color: color-mix(in oklab, var(--accent) 48%, var(--bone));
+}
+
+/* ----------------------------------------------------- Command Bar & Demo */
+/* Always keep the command bar dark-themed so it matches the real in-game
+   Kohl's Admin panel in both light and dark docs themes. */
+
+.ka-page .demo {
+	--cmd-ink: #08090b;
+	--cmd-ink-2: #0e1014;
+	--cmd-ink-3: #14171d;
+	--cmd-line: #1e222a;
+	--cmd-line-2: #2b3039;
+	--cmd-bone: #e9eaee;
+	--cmd-ash: #878c96;
+	--cmd-ash-dim: #7e838e;
+	--cmd-pulse: oklch(80% 0.2 144deg);
+	--cmd-bad: oklch(70% 0.19 25deg);
+	--accent: oklch(80% 0.2 180deg);
+
+	position: relative;
+	border: 1px solid var(--cmd-line-2);
+	border-radius: var(--radius);
+	background: linear-gradient(180deg, var(--cmd-ink-2), var(--cmd-ink));
+	padding: clamp(18px, 2.6vw, 24px);
+	box-shadow:
+		0 28px 60px -32px #0008,
+		0 2px 14px -6px #0006;
+	color: var(--cmd-bone);
+}
+
+.ka-page .demo-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 14px;
+}
+
+.ka-page .demo-title {
+	font: 500 0.76rem/1 var(--mono);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--cmd-ash);
+}
+
+.ka-page .demo-tag {
+	font: 400 0.68rem/1 var(--mono);
+	color: var(--cmd-ash-dim);
+}
+
+.ka-page .cmdbar {
+	font: 400 0.88rem/1.45 var(--mono);
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.ka-page .pill {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 46px;
+	padding: 0 14px;
+	border-radius: 23px;
+	border: 1px solid var(--cmd-line-2);
+	background: var(--cmd-ink-3);
+	box-shadow: 0 8px 24px #0006;
+	transition:
+		border-color 0.25s var(--ease),
+		box-shadow 0.25s var(--ease);
+}
+
+.ka-page .pill.bad {
+	border-color: color-mix(in oklab, var(--cmd-bad) 60%, var(--cmd-line-2));
+	box-shadow:
+		0 8px 24px #0006,
+		0 0 0 3px color-mix(in oklab, var(--cmd-bad) 18%, transparent);
+}
+
+.ka-page .pill-mark {
+	flex: none;
+	width: 22px;
+	height: 22px;
+	border: 2px solid var(--cmd-pulse);
+	border-radius: 50%;
+	color: var(--cmd-pulse);
+	display: grid;
+	place-items: center;
+	transition:
+		border-color 0.25s var(--ease),
+		color 0.25s var(--ease);
+}
+
+.ka-page .pill.bad .pill-mark {
+	border-color: var(--cmd-bad);
+	color: var(--cmd-bad);
+}
+
+.ka-page .pill-mark svg {
+	width: 16px;
+	height: 16px;
+	fill: currentcolor;
+}
+
+.ka-page .pill-mark .glyph-x,
+.ka-page .pill.bad .glyph-check {
+	display: none;
+}
+
+.ka-page .pill.bad .glyph-x {
+	display: block;
+}
+
+.ka-page .pill-cmd {
+	color: var(--cmd-bone);
+	font-weight: 500;
+}
+
+.ka-page .pill-args {
+	color: var(--cmd-ash);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ka-page .pill.bad .pill-cmd {
+	color: color-mix(in oklab, var(--cmd-bad) 55%, var(--cmd-ash));
+}
+
+.ka-page .pill.bad .pill-args {
+	color: var(--cmd-bad);
+}
+
+.ka-page .pill-caret {
+	width: 1px;
+	height: 1.15em;
+	margin-left: -2px;
+	background: var(--accent);
+	animation: ka-caret 1.1s steps(1) infinite;
+}
+
+@keyframes ka-caret {
+	50% {
+		opacity: 0;
+	}
+}
+
+.ka-page .menu {
+	border: 1px solid var(--cmd-line);
+	border-radius: 10px;
+	background: var(--cmd-ink-2);
+	overflow: hidden;
+	box-shadow: 0 12px 32px #0007;
+}
+
+.ka-page .menu-head {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	padding: 9px 12px 0;
+}
+
+.ka-page .menu-name {
+	font-weight: 500;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--accent);
+	font-size: 0.75rem;
+}
+
+.ka-page .menu-type {
+	color: var(--cmd-ash-dim);
+	font-size: 0.75rem;
+}
+
+.ka-page .menu-desc {
+	padding: 2px 12px 9px;
+	color: var(--cmd-ash);
+	font-size: 0.79rem;
+	line-height: 1.5;
+}
+
+.ka-page .menu-opt {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 6px 12px;
+	font-size: 0.81rem;
+	color: var(--cmd-ash-dim);
+	background: var(--cmd-ink-3);
+	border-top: 1px solid var(--cmd-line);
+}
+
+.ka-page .menu-opt .hint {
+	color: var(--cmd-ash-dim);
+	font-size: 0.72rem;
+}
+
+.ka-page .menu-opt.on {
+	color: var(--cmd-bone);
+	background: color-mix(in oklab, var(--accent) 14%, var(--cmd-ink-3));
+	box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.ka-page .menu-opt.warn {
+	color: var(--cmd-bad);
+	background: color-mix(in oklab, var(--cmd-bad) 14%, var(--cmd-ink-3));
+	box-shadow: inset 2px 0 0 var(--cmd-bad);
+}
+
+.ka-page .demo-foot {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 14px;
+	padding-top: 14px;
+	border-top: 1px solid var(--cmd-line);
+}
+
+.ka-page .demo-btn {
+	font: 500 0.75rem/1 var(--mono);
+	color: var(--cmd-bone);
+	background: var(--cmd-ink-3);
+	border: 1px solid var(--cmd-line-2);
+	border-radius: 8px;
+	padding: 9px 13px;
+	cursor: pointer;
+	transition:
+		border-color 0.18s var(--ease),
+		color 0.18s var(--ease);
+}
+
+.ka-page .demo-btn:hover {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+.ka-page .demo-btn[aria-pressed="true"] {
+	border-color: var(--accent);
+	color: var(--accent);
+	background: color-mix(in oklab, var(--accent) 12%, var(--cmd-ink-3));
+}
+
+.ka-page .demo-status {
+	display: flex;
+	align-items: baseline;
+	gap: 9px;
+	margin-top: 12px;
+	font: 400 0.72rem/1.45 var(--mono);
+	color: var(--cmd-ash-dim);
+}
+
+.ka-page .demo-phase {
+	flex: none;
+	padding: 6px 8px;
+	border: 1px solid var(--cmd-line-2);
+	border-radius: 999px;
+	font-size: 0.64rem;
+	line-height: 1;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--cmd-ash);
+}
+
+.ka-page .demo-status[data-phase="valid"] .demo-phase {
+	color: var(--cmd-pulse);
+	border-color: color-mix(in oklab, var(--cmd-pulse) 45%, var(--cmd-line-2));
+}
+
+.ka-page .demo-status[data-phase="blocked"] .demo-phase {
+	color: var(--cmd-bad);
+	border-color: color-mix(in oklab, var(--cmd-bad) 45%, var(--cmd-line-2));
+}
+
+/* ------------------------------------------- Showcase Panels (kohl.gg) */
+
+.ka-page .showcase-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px;
+	margin-bottom: clamp(2.8rem, 5vw, 4rem);
+}
+
+.ka-page .panel {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	padding: clamp(22px, 3.2vw, 34px);
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: linear-gradient(180deg, var(--ink-2), var(--ink));
+	box-shadow: var(--card-shadow);
+	transition:
+		transform 0.3s var(--ease),
+		border-color 0.3s var(--ease);
+}
+
+.ka-page .panel:hover {
+	transform: translateY(-3px);
+	border-color: color-mix(in oklab, var(--accent) 42%, var(--line));
+}
+
+.ka-page .panel::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: radial-gradient(
+		circle 420px at 100% 0%,
+		color-mix(in oklab, var(--accent) 11%, transparent),
+		transparent 62%
+	);
+	opacity: 0;
+	transition: opacity 0.35s var(--ease);
+}
+
+.ka-page .panel:hover::before {
+	opacity: 1;
+}
+
+.ka-page .panel::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 2px;
+	background: linear-gradient(90deg, var(--accent), transparent 70%);
+	opacity: 0.65;
+	transition: opacity 0.3s var(--ease);
+}
+
+.ka-page .panel:hover::after {
+	opacity: 1;
+}
+
+/* kohl.gg diagonal accent sash with anti-aliased hairline */
+
+.ka-page .panel-shard {
+	position: absolute;
+	z-index: -1;
+	inset: -40% -30%;
+	--sash: 66%;
+	--sash-a: color-mix(in oklab, var(--accent) 11%, transparent);
+	--sash-b: color-mix(in oklab, var(--accent) 24%, transparent);
+	background: linear-gradient(
+		150deg,
+		transparent calc(var(--sash) - 5% - 1px),
+		var(--sash-a) calc(var(--sash) - 5% + 1px),
+		var(--sash-a) calc(var(--sash) + 5% - 1px),
+		transparent calc(var(--sash) + 5% + 1px),
+		transparent calc(var(--sash) + 7.2% - 1px),
+		var(--sash-b) calc(var(--sash) + 7.2% + 1px),
+		var(--sash-b) calc(var(--sash) + 7.6% - 1px),
+		transparent calc(var(--sash) + 7.6% + 1px)
+	);
+	pointer-events: none;
+	mask-image: linear-gradient(
+		to bottom,
+		#000 50%,
+		rgb(0 0 0 / 0.913) 55.56%,
+		rgb(0 0 0 / 0.704) 61.11%,
+		rgb(0 0 0 / 0.456) 66.67%,
+		rgb(0 0 0 / 0.247) 72.22%,
+		rgb(0 0 0 / 0.16) 77.78%
+	);
+}
+
+.dark .ka-page .panel-shard {
+	--sash-a: color-mix(in oklab, var(--accent) 17%, transparent);
+	--sash-b: color-mix(in oklab, var(--accent) 34%, transparent);
+	mix-blend-mode: screen;
+}
+
+.ka-page .work-index {
+	position: absolute;
+	top: 8px;
+	right: 20px;
+	z-index: -1;
+	font: 700 clamp(3.4rem, 6vw, 5.2rem) / 1 var(--display);
+	letter-spacing: -0.05em;
+	color: color-mix(in oklab, var(--accent) 18%, transparent);
+	transition: color 0.3s var(--ease);
+	pointer-events: none;
+}
+
+.ka-page .panel:hover .work-index {
+	color: color-mix(in oklab, var(--accent) 32%, transparent);
+}
+
+.ka-page .work-kind {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	align-self: flex-start;
+	font: 400 0.68rem/1 var(--mono);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--accent);
+	margin-bottom: 0.9rem;
+}
+
+.ka-page .work-kind::before {
+	content: "";
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--accent);
+	box-shadow: 0 0 8px color-mix(in oklab, var(--accent) 70%, transparent);
+}
+
+.ka-page .work-name {
+	font-size: clamp(1.45rem, 2.4vw, 1.85rem);
+	letter-spacing: -0.02em;
+	color: color-mix(in oklab, var(--accent) 30%, var(--bone));
+	margin-bottom: 0.6rem;
+	transition: color 0.3s var(--ease);
+}
+
+.ka-page .panel:hover .work-name {
+	color: color-mix(in oklab, var(--accent) 58%, var(--bone));
+}
+
+.ka-page .work-desc {
+	color: var(--ash);
+	font-size: 0.95rem;
+	max-width: 58ch;
+	margin-bottom: 1.35rem;
+}
+
+/* Uncropped 16:9 screenshot stage framed inside the panel */
+
+.ka-page .stage-shot {
+	--pan-x: var(--pos-x, 0%);
+	--pan-y: var(--pos-y, 0%);
+	position: relative;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	margin-top: auto;
+	margin-bottom: 1.25rem;
+	border-radius: 6px;
+	border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--line));
+	background: var(--panel);
+	overflow: hidden;
+	box-shadow: 0 14px 32px -16px rgb(0 0 0 / 0.45);
+	transition: border-color 0.3s var(--ease);
+}
+
+.ka-page .panel:hover .stage-shot {
+	border-color: color-mix(in oklab, var(--accent) 50%, var(--line));
+}
+
+.ka-page .stage-shot img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: var(--pan-x) var(--pan-y);
+	transform-origin: var(--pan-x) var(--pan-y);
+	scale: min(var(--zoom, 1), var(--zoom-max, 1));
+	transition:
+		scale 0.45s var(--ease),
+		object-position 0.16s linear,
+		transform-origin 0.16s linear;
+}
+
+.ka-page .panel:hover .stage-shot img {
+	scale: var(--zoom-max, 1);
+}
+
+.ka-page .work-foot {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 10px 14px;
+	flex-wrap: wrap;
+	padding-top: 1rem;
+	border-top: 1px dashed var(--line-2);
+}
+
+.ka-page .work-stat {
+	font: 400 0.8rem/1.5 var(--mono);
+	color: var(--ash);
+}
+
+.ka-page .work-stat b {
+	color: var(--accent);
+	font-weight: 500;
+}
+
+.ka-page .work-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 1.5rem;
+}
+
+.ka-page .work-links a {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font: 500 0.8rem/1.5 var(--mono);
+	color: var(--bone);
+	transition: color 0.18s var(--ease);
+}
+
+.ka-page .work-links a:hover {
+	color: var(--accent);
+}
+
+/* --------------------------------------------------- Ledger (kohl.gg) */
+/* Full-width rows between hairlines: numeral in the accent, capability,
+   and receipt with a dotted leader running to the proof link. */
+
+.ka-page .ledger {
+	border-top: 1px solid var(--line);
+}
+
+.ka-page .row {
+	position: relative;
+	display: grid;
+	grid-template-columns: clamp(4.8rem, 8vw, 6.8rem) minmax(0, 1.15fr) minmax(
+			0,
+			0.85fr
+		);
+	gap: 0 clamp(1.4rem, 3vw, 3rem);
+	align-items: start;
+	padding: clamp(1.5rem, 3vw, 2.25rem) 0;
+	border-bottom: 1px solid var(--line);
+}
+
+.ka-page .row::before {
+	content: "";
+	position: absolute;
+	top: -1px;
+	left: 0;
+	width: 42px;
+	height: 1px;
+	background: var(--accent);
+	opacity: 0.85;
+	transition:
+		width 0.5s var(--ease),
+		opacity 0.35s var(--ease);
+}
+
+.ka-page .row:hover::before {
+	width: 100%;
+	opacity: 0.65;
+}
+
+.ka-page .row-spectrum::before {
+	background: var(--spectrum);
+}
+
+.ka-page .row-num {
+	justify-self: start;
+	width: max-content;
+	font: 700 clamp(2.75rem, 5.2vw, 4.2rem) / 1 var(--display);
+	letter-spacing: -0.05em;
+	color: var(--accent);
+	padding: 0.12em 0.12em 0.12em 0;
+	margin: -0.16em -0.12em -0.12em 0;
+}
+
+.ka-page .row-main h3 {
+	font-size: clamp(1.25rem, 2vw, 1.5rem);
+	color: var(--bone);
+	margin-bottom: 0.55rem;
+}
+
+.ka-page .row-main p {
+	color: var(--ash);
+	font-size: 0.98rem;
+	max-width: 46ch;
+}
+
+.ka-page .row-receipt {
+	display: flex;
+	flex-direction: column;
+	gap: 0.45rem;
+	padding-top: 0.35rem;
+	font: 400 0.76rem/1.65 var(--mono);
+	color: var(--ash-dim);
+}
+
+.ka-page .receipt-label {
+	font-size: 0.62rem;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--accent);
+}
+
+.ka-page .row-receipt a {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	margin-top: 0.35rem;
+	font-weight: 500;
+	color: var(--bone);
+	transition: color 0.18s var(--ease);
+}
+
+.ka-page .row-receipt a::before {
+	content: "";
+	flex: 1;
+	border-bottom: 1px dotted var(--line-2);
+	translate: 0 -0.35em;
+	transition: border-color 0.18s var(--ease);
+}
+
+.ka-page .row-receipt a::after,
+.ka-page .work-links a::after {
+	content: "";
+	width: 0.42em;
+	height: 0.42em;
+	align-self: center;
+	border: solid currentcolor;
+	border-width: 1.5px 1.5px 0 0;
+	rotate: 45deg;
+	transition: translate 0.18s var(--ease);
+}
+
+.ka-page .row-receipt a:hover {
+	color: var(--accent);
+}
+
+.ka-page .row-receipt a:hover::before {
+	border-color: var(--accent);
+}
+
+.ka-page .row-receipt a:hover::after,
+.ka-page .work-links a:hover::after {
+	translate: 3px 0;
+}
+
+/* Spectrum row proof link: bone at rest, eases into the rainbow spectrum
+   across the label, dotted leader, and chevron on hover. */
+
+.ka-page .row-spectrum .row-receipt a:hover {
+	color: var(--bone);
+}
+
+@supports (background-clip: text) and
+	(background: linear-gradient(in oklab, red, blue)) and
+	(mask-image: linear-gradient(red, red)) {
+	.ka-page .row-spectrum .row-receipt a {
+		--spectrum-fade: linear-gradient(
+			to right in oklab,
+			oklch(var(--rainbow-l) var(--rainbow-c) 0 / var(--spectrum-on)),
+			oklch(var(--rainbow-l) var(--rainbow-c) 60 / var(--spectrum-on)),
+			oklch(var(--rainbow-l) var(--rainbow-c) 120 / var(--spectrum-on)),
+			oklch(var(--rainbow-l) var(--rainbow-c) 180 / var(--spectrum-on)),
+			oklch(var(--rainbow-l) var(--rainbow-c) 240 / var(--spectrum-on)),
+			oklch(var(--rainbow-l) var(--rainbow-c) 300 / var(--spectrum-on)),
+			oklch(var(--rainbow-l) var(--rainbow-c) 360 / var(--spectrum-on))
+		);
+		transition:
+			--spectrum-mix 0.18s var(--ease),
+			--spectrum-on 0s 0.18s;
+	}
+
+	.ka-page .row-spectrum .row-receipt a:hover {
+		--spectrum-mix: 100%;
+		--spectrum-on: 100%;
+		transition:
+			--spectrum-mix 0.18s var(--ease),
+			--spectrum-on 0s;
+	}
+
+	.ka-page .row-spectrum .row-receipt a > span,
+	.ka-page .row-spectrum .row-receipt a::before,
+	.ka-page .row-spectrum .row-receipt a::after {
+		animation: ka-rainbow-move 32s linear infinite paused;
+		background-size: 400% auto;
+	}
+
+	.ka-page .row-spectrum .row-receipt a:hover > span,
+	.ka-page .row-spectrum .row-receipt a:hover::before,
+	.ka-page .row-spectrum .row-receipt a:hover::after {
+		animation-play-state: running;
+	}
+
+	.ka-page .row-spectrum .row-receipt a > span {
+		background-image: var(--spectrum-fade);
+		-webkit-background-clip: text;
+		background-clip: text;
+		-webkit-text-fill-color: color-mix(
+			in oklab,
+			var(--bone),
+			transparent var(--spectrum-mix)
+		);
+	}
+
+	.ka-page .row-spectrum .row-receipt a::before {
+		--leader: color-mix(
+			in oklab,
+			var(--line-2),
+			transparent var(--spectrum-mix)
+		);
+		border: 0;
+		height: 1px;
+		background-image:
+			linear-gradient(var(--leader), var(--leader)), var(--spectrum-fade);
+		mask-image: repeating-linear-gradient(
+			to right,
+			#000 0 1px,
+			#0000 1px 2px
+		);
+	}
+
+	.ka-page .row-spectrum .row-receipt a::after {
+		--chevron: color-mix(
+			in oklab,
+			var(--bone),
+			transparent var(--spectrum-mix)
+		);
+		border-color: transparent;
+		background-image:
+			linear-gradient(var(--chevron), var(--chevron)),
+			var(--spectrum-fade);
+		mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
+		mask-size:
+			100% 1.5px,
+			1.5px 100%;
+		mask-position: top, right;
+		mask-repeat: no-repeat;
+	}
+}
+
+.ka-page .more {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+	margin-top: clamp(2.4rem, 4.5vw, 3.4rem);
+}
+
+.ka-page .more-line {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 20px;
+	width: 100%;
+	font-family: var(--display);
+	font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+	font-weight: 700;
+	letter-spacing: -0.02em;
+}
+
+.ka-page .more-line::before,
+.ka-page .more-line::after {
+	content: "";
+	flex: 1 1 30px;
+	height: 1px;
+	background: linear-gradient(90deg, transparent, var(--line-2));
+}
+
+.ka-page .more-line::after {
+	background: linear-gradient(90deg, var(--line-2), transparent);
+}
+
+.ka-page .more-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 24px;
+	justify-content: center;
+}
+
+.ka-page .more-links a {
+	font: 500 0.74rem/1 var(--mono);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--ash);
+	border-bottom: 1px solid var(--line-2);
+	padding-bottom: 5px;
+}
+
+/* ----------------------------------------------------- Contributing Grid */
+
+.ka-page .contrib-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 14px;
+}
+
+.ka-page .contrib-card {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	padding: 22px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: linear-gradient(180deg, var(--ink-2), var(--ink));
+	transition:
+		transform 0.25s var(--ease),
+		border-color 0.25s var(--ease);
+}
+
+.ka-page .contrib-card::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 2px;
+	background: linear-gradient(90deg, var(--accent), transparent 75%);
+	opacity: 0.5;
+	transition: opacity 0.25s var(--ease);
+}
+
+.ka-page .contrib-card:hover {
+	transform: translateY(-2px);
+	border-color: color-mix(in oklab, var(--accent) 40%, var(--line));
+}
+
+.ka-page .contrib-card:hover::after {
+	opacity: 0.95;
+}
+
+.ka-page .contrib-name {
+	font-size: 1.12rem;
+	color: color-mix(in oklab, var(--accent) 32%, var(--bone));
+	margin-bottom: 0.5rem;
+}
+
+.ka-page .contrib-desc {
+	font-size: 0.9rem;
+	color: var(--ash);
+	line-height: 1.55;
+}
+
+.ka-page .contrib-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-top: 22px;
+	padding: 18px 22px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: var(--ink-2);
+}
+
+.ka-page .contrib-actions-copy {
+	color: var(--ash);
+	font-size: 0.94rem;
+}
+
+.ka-page .contrib-actions-copy strong {
+	color: var(--bone);
+	font-weight: 600;
+}
+
+/* ------------------------------------------- Closing CTA & Ocean (kohl.gg) */
+
+.ka-page .ocean {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	overflow: clip;
+	pointer-events: none;
+	filter: hue-rotate(0deg);
+	opacity: 0.42;
+	mask-image: radial-gradient(
+		ellipse 50% 50% at 50% 50%,
+		#000,
+		rgb(0 0 0 / 0.984) 10%,
+		rgb(0 0 0 / 0.937) 20%,
+		rgb(0 0 0 / 0.86) 30%,
+		rgb(0 0 0 / 0.757) 40%,
+		rgb(0 0 0 / 0.631) 50%,
+		rgb(0 0 0 / 0.49) 60%,
+		rgb(0 0 0 / 0.34) 70%,
+		rgb(0 0 0 / 0.195) 80%,
+		rgb(0 0 0 / 0.07) 90%,
+		rgb(0 0 0 / 0.024) 95%,
+		transparent
+	);
+}
+
+.dark .ka-page .ocean {
+	mix-blend-mode: plus-lighter;
+	opacity: 1;
+}
+
+.ka-page .swell {
+	position: absolute;
+	left: calc(var(--x) - var(--w) / 2);
+	top: calc(var(--y) - var(--h) / 2);
+	width: var(--w);
+	height: var(--h);
+	rotate: var(--a);
+	border-radius: 50%;
+	--swell: var(--rainbow-l) var(--rainbow-c) var(--hue);
+	background: radial-gradient(
+		ellipse closest-side,
+		oklch(var(--swell) / 0.42),
+		oklch(var(--swell) / 0.105) 60%,
+		oklch(var(--swell) / 0.059) 70%,
+		oklch(var(--swell) / 0.026) 80%,
+		oklch(var(--swell) / 0.0066) 90%,
+		oklch(var(--swell) / 0) 100%
+	);
+	opacity: 0.55;
+}
+
+.dark .ka-page .swell {
+	mix-blend-mode: screen;
+	opacity: 0.5;
+}
+
+.ka-page .grain {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 3 0 0 0 -1'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)'/%3E%3C/svg%3E")
+		0 0 / 256px 256px;
+	opacity: 0.015;
+	mask-image: linear-gradient(transparent, #000 8%, #000 92%, transparent);
+}
+
+@keyframes ka-swell-drift {
+	from {
+		translate: var(--dx) var(--dy);
+	}
+	to {
+		translate: calc(var(--dx) * -1) calc(var(--dy) * -1);
+	}
+}
+
+@keyframes ka-ocean-hue {
+	to {
+		filter: hue-rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.ka-page .swell {
+		animation: ka-swell-drift var(--d) ease-in-out var(--t) infinite
+			alternate;
+	}
+
+	.ka-page .ocean {
+		animation: ka-ocean-hue 150s linear infinite;
+	}
+}
+
+.ka-page .cta {
+	max-width: 44rem;
+	margin: 0 auto;
+	text-align: center;
+}
+
+.ka-page .cta .lede {
+	max-width: 46ch;
+	margin: 0 auto;
+}
+
+.ka-page .cta-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 14px;
+	margin-bottom: 1.5rem;
+	border: 1px solid var(--line);
+	border-radius: 100px;
+	background: color-mix(in oklab, var(--ink-2) 85%, transparent);
+	font: 500 0.7rem/1 var(--mono);
+	letter-spacing: 0.06em;
+	color: var(--pulse);
+}
+
+.ka-page .cta-title {
+	font-size: clamp(2rem, 4.8vw, 3.1rem);
+	letter-spacing: -0.026em;
+	margin-bottom: 1rem;
+}
+
+.ka-page .cta-actions {
+	justify-content: center;
+	margin-top: 2.1rem;
+}
+
+.ka-page .cta-meta {
+	margin-top: 1.7rem;
+	font: 400 0.74rem/1.8 var(--mono);
+	letter-spacing: 0.04em;
+	color: var(--ash-dim);
+}
+
+.ka-page .cta-meta i {
+	font-style: normal;
+	padding: 0 0.4em;
+	color: var(--line-2);
+}
+
+.ka-page .pulse {
+	position: relative;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--pulse);
+}
+
+.ka-page .pulse::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	background: color-mix(in oklab, var(--pulse) 55%, transparent);
+	animation: ka-pulse 2.4s var(--ease) infinite;
+}
+
+@keyframes ka-pulse {
+	0% {
+		transform: scale(1);
+		opacity: 1;
+	}
+	70%,
+	100% {
+		transform: scale(3.6);
+		opacity: 0;
+	}
+}
+
+/* -------------------------------------------------------------------- FAQ */
+
+.ka-page .faq-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	max-width: 860px;
+}
+
+.ka-page .faq {
+	--accent: var(--link);
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: linear-gradient(180deg, var(--ink-2), var(--ink));
+	overflow: hidden;
+	transition: border-color 0.25s var(--ease);
+}
+
+.ka-page .faq:hover,
+.ka-page .faq[open] {
+	border-color: color-mix(in oklab, var(--accent) 36%, var(--line));
+}
+
+.ka-page .faq summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 16px 20px;
+	cursor: pointer;
+	list-style: none;
+	font-family: var(--display);
+	font-weight: 600;
+	font-size: 1.05rem;
+	letter-spacing: -0.01em;
+	color: var(--bone);
+}
+
+.ka-page .faq summary::-webkit-details-marker {
+	display: none;
+}
+
+.ka-page .faq summary::after {
+	content: "";
+	flex: none;
+	width: 9px;
+	height: 9px;
+	border-right: 1.5px solid var(--ash);
+	border-bottom: 1.5px solid var(--ash);
+	transform: rotate(45deg) translate(-2px, -2px);
+	transition:
+		transform 0.25s var(--ease),
+		border-color 0.25s var(--ease);
+}
+
+.ka-page .faq:hover summary::after {
+	border-color: var(--accent);
+}
+
+.ka-page .faq[open] summary::after {
+	transform: rotate(-135deg) translate(-3px, -3px);
+	border-color: var(--accent);
+}
+
+.ka-page .faq-body {
+	--accent: var(--link);
+	padding: 16px 20px 18px;
+	color: var(--ash);
+	border-top: 1px solid var(--line);
+}
+
+.ka-page .faq-body p {
+	color: var(--ash);
+	margin-bottom: 0.85rem;
+}
+
+.ka-page .faq-body :is(ul, ol) {
+	color: var(--ash);
+	margin-bottom: 0.85rem;
+}
+
+.ka-page .faq-body li {
+	position: relative;
+	padding-left: 1.25rem;
+	margin-bottom: 0.35rem;
+}
+
+.ka-page .faq-body ul > li::before {
+	content: "";
+	position: absolute;
+	left: 2px;
+	top: 0.68em;
+	width: 5px;
+	height: 1px;
+	background: color-mix(in oklab, var(--accent) 60%, var(--line-2));
+}
+
+.ka-page .faq-body ol {
+	counter-reset: step;
+}
+
+.ka-page .faq-body ol > li {
+	padding-left: 2rem;
+	counter-increment: step;
+}
+
+.ka-page .faq-body ol > li::before {
+	content: counter(step, decimal-leading-zero);
+	position: absolute;
+	top: 0;
+	left: 0;
+	font: 500 0.72rem/1.9 var(--mono);
+	color: var(--accent);
+}
+
+.ka-page .faq-body :is(b, strong) {
+	color: var(--bone);
+	font-weight: 600;
+}
+
+.ka-page .faq-body > :last-child {
+	margin-bottom: 0;
+}
+
+.ka-page .note {
+	border-left: 2px solid color-mix(in oklab, var(--accent) 55%, var(--line-2));
+	background: var(--ink-2);
+	border-radius: 0 var(--radius) var(--radius) 0;
+	padding: 14px 18px;
+	margin: 1.1rem 0;
+}
+
+.ka-page .note > :last-child {
+	margin-bottom: 0;
+}
+
+/* ----------------------------------------------------------------- Donate */
+
+.ka-page .donate-tier-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 14px;
+	margin-bottom: 2.5rem;
+}
+
+.ka-page .donate-tier-card {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	padding: 22px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: linear-gradient(180deg, var(--ink-2), var(--ink));
+	transition:
+		transform 0.25s var(--ease),
+		border-color 0.25s var(--ease);
+}
+
+.ka-page .donate-tier-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: radial-gradient(
+		circle 260px at 100% 0%,
+		color-mix(in oklab, var(--accent) 12%, transparent),
+		transparent 65%
+	);
+	opacity: 0;
+	transition: opacity 0.3s var(--ease);
+}
+
+.ka-page .donate-tier-card::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 2px;
+	background: linear-gradient(90deg, var(--accent), transparent 75%);
+	opacity: 0.6;
+}
+
+.ka-page .donate-tier-card:hover {
+	transform: translateY(-3px);
+	border-color: color-mix(in oklab, var(--accent) 45%, var(--line));
+}
+
+.ka-page .donate-tier-card:hover::before {
+	opacity: 1;
+}
+
+.ka-page .donate-tier-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 0.45rem;
+}
+
+.ka-page .donate-tier-name {
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: color-mix(in oklab, var(--accent) 40%, var(--bone));
+}
+
+.ka-page .donate-tier-price {
+	font: 600 0.8rem/1 var(--mono);
+	color: var(--accent);
+	white-space: nowrap;
+}
+
+.ka-page .donate-tier-sub {
+	font-size: 0.86rem;
+	color: var(--ash);
+	margin-bottom: 1rem;
+}
+
+.ka-page .donate-tier-perks {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 1.25rem;
+	flex: 1;
+}
+
+.ka-page .donate-tier-perks li {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 0.86rem;
+	color: var(--bone);
+}
+
+.ka-page .donate-tier-perks li::before {
+	content: "";
+	flex: none;
+	width: 8px;
+	height: 5px;
+	border-left: 2px solid var(--accent);
+	border-bottom: 2px solid var(--accent);
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+
+.ka-page .donate-tier-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+	padding-top: 0.9rem;
+	border-top: 1px dashed var(--line-2);
+}
+
+.ka-page .donate-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	border: 1px solid var(--line-2);
+	border-radius: 6px;
+	background: var(--ink-3);
+	font: 500 0.72rem/1 var(--mono);
+	color: var(--bone);
+	transition:
+		border-color 0.18s var(--ease),
+		color 0.18s var(--ease),
+		transform 0.18s var(--ease);
+}
+
+.ka-page .donate-pill:hover {
+	border-color: var(--tier-color, var(--accent));
+	color: var(--tier-color, var(--accent));
+	transform: translateY(-1px);
+}
+
+.ka-page .donate-pill b {
+	color: var(--tier-color, var(--accent));
+	font-weight: 600;
+}
+
+.ka-page .donate-pill span {
+	color: var(--ash);
+}
+
+.ka-page .ugc-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 14px;
+}
+
+.ka-page .ugc-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	padding: 20px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: linear-gradient(180deg, var(--ink-2), var(--ink));
+	transition:
+		transform 0.25s var(--ease),
+		border-color 0.25s var(--ease);
+}
+
+.ka-page .ugc-card:hover {
+	transform: translateY(-2px);
+	border-color: color-mix(in oklab, var(--accent) 42%, var(--line));
+}
+
+.ka-page .ugc-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 0.5rem;
+}
+
+.ka-page .ugc-name {
+	font-size: 1.15rem;
+	color: var(--bone);
+}
+
+.ka-page .ugc-badge {
+	font: 500 0.68rem/1 var(--mono);
+	color: var(--accent);
+	padding: 4px 8px;
+	border: 1px solid color-mix(in oklab, var(--accent) 35%, var(--line));
+	border-radius: 999px;
+}
+
+.ka-page .ugc-desc {
+	font-size: 0.88rem;
+	color: var(--ash);
+	margin-bottom: 1rem;
+	flex: 1;
+}
+
+.ka-page .ugc-variants {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding-top: 0.85rem;
+	border-top: 1px dashed var(--line-2);
+}
+
+.ka-page .table-scroll {
+	overflow-x: auto;
+	margin: 1rem 0;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+}
+
+.ka-page .table {
+	width: 100%;
+	min-width: 620px;
+	border-collapse: collapse;
+	font-size: 0.88rem;
+	margin: 0;
+}
+
+.ka-page .table th,
+.ka-page .table td {
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--line);
+	border-right: 1px solid var(--line);
+	text-align: center;
+}
+
+.ka-page .table th:first-child,
+.ka-page .table td:first-child {
+	text-align: left;
+	color: var(--bone);
+	white-space: nowrap;
+}
+
+.ka-page .table th:last-child,
+.ka-page .table td:last-child {
+	border-right: none;
+}
+
+.ka-page .table tbody tr:last-child td,
+.ka-page .table tbody tr:last-child th {
+	border-bottom: none;
+}
+
+.ka-page .table thead th {
+	background: var(--ink-2);
+	font: 500 0.7rem/1.4 var(--mono);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ash);
+	vertical-align: bottom;
+}
+
+.ka-page .table tbody tr {
+	transition: background 0.18s var(--ease);
+}
+
+.ka-page .table tbody tr:hover {
+	background: var(--ink-2);
+}
+
+.ka-page .table tbody th {
+	font-weight: 500;
+}
+
+.ka-page .yes,
+.ka-page .no-cell {
+	font-size: 0;
+}
+
+.ka-page .yes::before,
+.ka-page .no-cell::before {
+	content: "";
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.ka-page .yes::before {
+	width: 10px;
+	height: 6px;
+	border-left: 2px solid var(--pulse);
+	border-bottom: 2px solid var(--pulse);
+	transform: rotate(-45deg) translate(1px, -2px);
+}
+
+.ka-page .no-cell::before {
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	border: 1.5px solid color-mix(in oklab, var(--bad) 55%, var(--line-2));
+}
+
+.ka-page .tier {
+	display: inline-flex;
+	flex-direction: column;
+	gap: 3px;
+	align-items: center;
+	transition: color 0.18s var(--ease);
+}
+
+.ka-page .tier:hover {
+	color: var(--link);
+}
+
+.ka-page .tier b {
+	font-weight: 600;
+	color: var(--bone);
+	text-transform: none;
+	letter-spacing: 0;
+	font-size: 0.8rem;
+	border-bottom: 1px solid var(--line-2);
+	padding-bottom: 2px;
+	transition:
+		color 0.18s var(--ease),
+		border-color 0.18s var(--ease);
+}
+
+.ka-page .tier:hover b {
+	color: var(--link);
+	border-color: currentcolor;
+}
+
+.ka-page .sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* --------------------------------------------------------- Reduced Motion */
+
+@media (prefers-reduced-motion: reduce) {
+	.ka-page .hl-spectrum,
+	.ka-page .hl-spectrum-inv,
+	.ka-page .row-spectrum .row-num,
+	.ka-page .row-spectrum .receipt-label,
+	.ka-page .row-spectrum .row-receipt a > span,
+	.ka-page .row-spectrum .row-receipt a::before,
+	.ka-page .row-spectrum .row-receipt a::after,
+	.ka-page .more-links a,
+	.ka-page .btn-primary,
+	.ka-page .btn-secondary {
+		animation: none;
+	}
+
+	.ka-page .stage-shot img {
+		transition: none;
+	}
+
+	.ka-page .panel:hover .stage-shot img {
+		scale: 1;
+	}
+
+	.ka-page .pulse::after {
+		content: none;
+	}
+}
+
+/* ------------------------------------------------------------ Breakpoints */
+
+@media (max-width: 960px) {
+	.ka-page .hero-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.ka-page .hero-readout {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.ka-page .showcase-grid,
+	.ka-page .contrib-grid,
+	.ka-page .donate-tier-grid,
+	.ka-page .ugc-grid {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.ka-page .row {
+		grid-template-columns: 3.2rem minmax(0, 1fr);
+	}
+
+	.ka-page .row-num {
+		font-size: 2.4rem;
+	}
+
+	.ka-page .row-receipt {
+		grid-column: 2;
+		margin-top: 1rem;
+	}
+}
+
+@media (max-width: 720px) {
+	.ka-page .showcase-grid,
+	.ka-page .contrib-grid,
+	.ka-page .donate-tier-grid,
+	.ka-page .ugc-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.ka-page .demo {
+		padding: 14px;
+	}
+
+	.ka-page .more-line::before,
+	.ka-page .more-line::after {
+		content: none;
+	}
+}
+
+@media (max-width: 480px) {
+	.ka-page .hero-readout {
+		grid-template-columns: 1fr 1fr;
+		gap: 16px 20px;
+	}
+}

@@ -7,41 +7,6 @@ local Default = require(script:WaitForChild("Default"))
 local compute = Flux.compute
 local state = Flux.state
 
---- @within UI
---- A directory of Flux state for UI components to use as theme variables
---- @interface Theme
---- .Transparency State<number>
---- .Primary State<Color3>
---- .PrimaryText State<Color3>
---- .Secondary State<Color3>
---- .SecondaryText State<Color3>
---- .Border State<Color3>
---- .Valid State<Color3>
---- .Invalid State<Color3>
---- .FontSize State<number>
---- .Font State<Font>
---- .FontMono State<Font>
---- .FontHeavy State<Font>
---- .FontBold State<Font>
---- .FontSemiBold State<Font>
---- .FontLight State<Font>
---- .CornerRadius State<UDim>
---- .CornerHalf State<UDim>
---- .CornerDiameter State<UDim>
---- .Padding State<UDim>
---- .PaddingHalf State<UDim>
---- .PaddingDouble State<UDim>
---- .StrokeEnabled State<boolean>
---- .NormalTween State<TweenInfo>
---- .TransparencyClamped State<number>
---- .ScrollMidImage State<string>
---- .ScrollTopImage State<string>
---- .ScrollBottomImage State<string>
---- .SoundsEnabled State<boolean>
---- .TypingSounds State<boolean>
---- .TypingSoundsOnEveryTextBox State<boolean>
---- .Volume State<number>
-
 local themes = {}
 
 local function loadTheme(themeModule: ModuleScript)
@@ -83,6 +48,7 @@ for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
 end
 task.wait()
 
+--- A directory of Flux state for UI components to use as theme variables
 local Theme = {
 	Themes = themes,
 }

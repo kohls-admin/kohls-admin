@@ -1,15 +1,22 @@
+<div align="right">
+    <a href="https://admin.kohl.gg"><picture><source media="(prefers-color-scheme: dark)" srcset=".luaudocs/public/logo-load-dark.svg"><img  alt="Kohl's Admin" src=".luaudocs/public/logo-load.svg" align="left" width="128"></picture></a>
+    <a href="https://admin.kohl.gg"><picture><source media="(prefers-color-scheme: dark)" srcset=".luaudocs/public/link-docs-dark.svg"><img alt="Docs" src=".luaudocs/public/link-docs.svg"></picture></a>
+    <a href="https://github.com/kohls-admin/kohls-admin/releases"><picture><source media="(prefers-color-scheme: dark)" srcset=".luaudocs/public/link-download-dark.svg"><img alt="Download" src=".luaudocs/public/link-download.svg"></picture></a>
+    <a href="https://create.roblox.com/store/asset/18506925834"><picture><source media="(prefers-color-scheme: dark)" srcset=".luaudocs/public/link-creator-dark.svg"><img alt="Get it on the Creator Marketplace" src=".luaudocs/public/link-creator.svg"></picture></a>
+</div>
+
+<br/>
+<br/>
+<br/>
+
 <div align="center">
-	<img src=".moonwave/static/logo-load-dark.svg" alt="Kohl's Admin" height="150" />
-	<br/>
-	<a href="https://admin.kohl.gg/"><img src="https://img.shields.io/badge/docs-admin.kohl.gg-222"></a>
-	<a href="https://discord.gg/kohl"><img src="https://img.shields.io/discord/694630328064671775"></a>
-	<a href="https://github.com/kohls-admin/kohls-admin/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/kohls-admin/kohls-admin" alt="License"></a>
-	<a href="https://github.com/kohls-admin/kohls-admin/graphs/contributors"><img src="https://img.shields.io/github/contributors/kohls-admin/kohls-admin" alt="Contributors"></a>
-	<a href="https://github.com/kohls-admin/kohls-admin/issues"><img src="https://img.shields.io/github/issues/kohls-admin/kohls-admin" alt="GitHub issues"></a>
-	<a href="https://github.com/kohls-admin/kohls-admin/stargazers"><img src="https://img.shields.io/github/stars/kohls-admin/kohls-admin" alt="GitHub stars"></a>
-	<a href="https://github.com/kohls-admin/kohls-admin/network/members"><img src="https://img.shields.io/github/forks/kohls-admin/kohls-admin" alt="GitHub forks"></a>
-	<br/>
-	<a href='https://codespaces.new/kohls-admin/kohls-admin?quickstart=1'><img src='https://github.com/codespaces/badge.svg' alt='Open in GitHub Codespaces' style='max-width: 100%;'></a>
+    <a href="https://admin.kohl.gg/"><img src="https://img.shields.io/badge/docs-admin.kohl.gg-222"></a>
+    <a href="https://discord.gg/kohl"><img src="https://img.shields.io/discord/694630328064671775"></a>
+    <a href="https://github.com/kohls-admin/kohls-admin/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/kohls-admin/kohls-admin" alt="License"></a>
+    <a href="https://github.com/kohls-admin/kohls-admin/graphs/contributors"><img src="https://img.shields.io/github/contributors/kohls-admin/kohls-admin" alt="Contributors"></a>
+    <a href="https://github.com/kohls-admin/kohls-admin/issues"><img src="https://img.shields.io/github/issues/kohls-admin/kohls-admin" alt="GitHub issues"></a>
+    <br/>
+    <a href='https://codespaces.new/kohls-admin/kohls-admin?quickstart=1'><img src='https://github.com/codespaces/badge.svg' alt='Open in GitHub Codespaces' style='max-width: 100%;'></a>
 </div>
 
 <br/>

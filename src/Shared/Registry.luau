@@ -5,21 +5,12 @@ local Hook = require(script.Parent:WaitForChild("Hook"))
 local Util = require(script.Parent:WaitForChild("Util"))
 local Type = require(script.Parent:WaitForChild("Type"))
 
---- @within Registry
---- @prop types { [string]: ArgumentType }
-
---- @within Registry
---- @prop commands { [string]: CommandDefinition }
-
---- @within Registry
---- @prop commandsList { CommandDefinition }
-
 --- @class Registry
 local Registry = {
 	types = {} :: { [string]: Type.ArgumentType },
-	commands = {},
-	commandsList = {},
-	commandNames = {},
+	commands = {} :: { [string]: Type.CommandDefinition },
+	commandsList = {} :: { Type.CommandDefinition },
+	commandNames = {} :: { string },
 }
 
 --- Makes an Enum argument type definition
@@ -39,8 +30,6 @@ function Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string 
 	}
 end
 
---- @within Registry
---- @type SequenceDefinition { constructor: (...any) -> any, parse: (...any) -> any, transform: (string) -> any, validate: (any) -> boolean, prefixes: { [string]: string } }
 export type SequenceDefinition = {
 	constructor: (...any) -> any,
 	parse: (...any) -> any,

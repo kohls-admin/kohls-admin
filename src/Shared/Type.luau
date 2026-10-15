@@ -1,13 +1,12 @@
 export type Dict = { [any]: any }
 
+--- @within Registry
 export type Environment = {} | (_K: any) -> {}
 
 --- @within Registry
---- @type ArgumentFunction (value: any, from: Player) -> ...any
 export type ArgumentFunction = (value: any, from: Player) -> ...any
 
 --- @within Registry
---- @type ArgumentType {name: string, displayName: string?, listable: boolean?, filterLog: boolean?, freeText: boolean?, transform: ArgumentFunction?, validate: ArgumentFunction, parse: ArgumentFunction, preParse: ArgumentFunction?, postParse: ArgumentFunction?, suggestions: ArgumentFunction?, prefixes: { [string]: string }? }
 export type ArgumentType = {
 	name: string?,
 	displayName: string?,
@@ -23,7 +22,6 @@ export type ArgumentType = {
 }
 
 --- @within Registry
---- @type ArgumentDefinition {type: string, name: string, description: string, optional: boolean?, permissions: { [string]: boolean }?, lowerRank: boolean?, ignoreSelf: boolean?, shouldRequest: boolean? }
 export type ArgumentDefinition = {
 	type: string,
 	name: string,
@@ -37,7 +35,6 @@ export type ArgumentDefinition = {
 }
 
 --- @within Registry
---- @type CommandDefinition {name: string, aliases: { string }?, description: string, group: string, noLog: boolean?, args: { ArgumentDefinition }, permissions: { [string]: boolean }?, envClient: {} | () -> {}?, env: {} | () -> {}?, runClient: (...any) -> ()?, run: (...any) -> ()? }
 export type CommandDefinition = {
 	name: string,
 	aliases: { string }?,

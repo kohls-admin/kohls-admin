@@ -1,5 +1,3 @@
---- @within Logger
---- @type LogType "INFO" | "WARN" | "ERROR" | "DEBUG" | "CHAT" | "COMMAND" | "PURCHASE" | "DAMAGE" | "DEATH" | "KILL" | "JOIN" | "LEAVE" | string
 export type LogType =
 	"INFO"
 	| "WARN"
@@ -15,16 +13,12 @@ export type LogType =
 	| "LEAVE"
 	| string
 
---- @within Logger
---- @type Log { string | LogType | number? | boolean? }
 export type Log = { string | LogType | number? | boolean? }
 
 --- @class Logger
 local Logger = { limit = 100_000 }
 Logger.__index = Logger
 
---- @within Logger
---- @type Logger typeof(setmetatable({} :: { logs: { Log }, debug: boolean? }, Logger))
 export type Logger = typeof(setmetatable({} :: { logs: { Log }, debug: boolean? }, Logger))
 
 -- WARN: DO NOT CHANGE THE ARRAY ORDER WITHOUT A DATASTORE MIGRATION!

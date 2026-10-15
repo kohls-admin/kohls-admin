@@ -124,8 +124,7 @@ Whether you're a seasoned developer or just starting out, there are ways for you
 1. Setup Your Environment
 
    - Follow steps 1-2 outlined in the [Improve the Code](#improve-the-code) section above.
-   - [Install Node.js v14+](https://nodejs.org/en/)
-   - [Install Moonwave](https://eryn.io/moonwave/docs/intro)
+   - [Install Node.js v22+](https://nodejs.org/en/)
 
 2. Run the Development Server
 
@@ -135,11 +134,11 @@ Whether you're a seasoned developer or just starting out, there are ways for you
      ```
    - **Start the Server:**
      ```bash
-     moonwave dev
+     npx luaudocs dev
      ```
 
 3. Edit Documentation
-   - **Navigate to the `docs/` folder:** This is where you'll find the markdown files for our documentation.
+   - **Navigate to the `.luaudocs/guide/` folder:** This is where you'll find the markdown files for our documentation.
    - **Create or Edit Pages:** Use your favorite text editor to create new pages or modify existing ones.
    - **Preview Your Changes:** The development server will automatically update as you make changes.
    - **Submit Your Changes:** Follow steps 5-9 outlined in the [Improve the Code](#improve-the-code) section above.

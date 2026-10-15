@@ -6,8 +6,6 @@ export type Logger = Logger.Logger
 
 --- @class Util
 local Util = {
-	--- @within Util
-	--- @prop Logger Logger
 	Logger = Logger,
 
 	Defer = require(script:WaitForChild("Defer")),
@@ -27,8 +25,6 @@ local Util = {
 	SafeTeleport = require(script:WaitForChild("SafeTeleport")),
 	Service = require(script:WaitForChild("Service")),
 	Signal = require(script:WaitForChild("Signal")),
-	--- @within Util
-	--- @prop String String
 	String = require(script:WaitForChild("String")),
 	Suggest = require(script:WaitForChild("Suggest")),
 	Table = require(script:WaitForChild("Table")),

@@ -74,73 +74,41 @@ function UI.getFontName(font: Font | Enum.Font)
 	end
 end
 
---- @within UI
---- @prop GuiService GuiService
 UI.GuiService = GuiService
-
---- @within UI
---- @prop TextService TextService
 UI.TextService = TextService
-
---- @within UI
---- @prop UserInputService UserInputService
 UI.UserInputService = UserInputService
-
---- @within UI
---- @prop LocalPlayer Player
 UI.LocalPlayer = Players.LocalPlayer
-
---- @within UI
---- @prop PlayerGui PlayerGui
 UI.PlayerGui = playerGui
 
---- @within UI
---- @type Platform "Console" | "Mobile" | "PC" | "VR"
 export type Platform = "Console" | "Mobile" | "PC" | "VR"
 
---- @within UI
---- @prop Touch boolean
 UI.Touch = UserInputService.TouchEnabled
-
 UI.IsConsoleScreen = GuiService:IsTenFootInterface()
 
---- @within UI
---- @prop Platform Platform
-UI.Platform = if UserInputService.VREnabled
-	then "VR"
-	elseif UI.IsConsoleScreen then "Console"
-	elseif UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then "PC"
-	else "Mobile"
+UI.Platform = (
+	if UserInputService.VREnabled
+		then "VR"
+		elseif UI.IsConsoleScreen then "Console"
+		elseif UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then "PC"
+		else "Mobile"
+) :: Platform
 
---- @within UI
 --- A marker for defining UI state hooks in [UI.edit]
---- @prop Hook Flux.Symbol
---- @readonly
 UI.Hook = table.freeze({ type = "Symbol" }) :: Type.Symbol
 
---- @within UI
 --- A marker for defining function defaultState in [UI.makeStatefulDefaults]
---- @prop Function Flux.Symbol
---- @readonly
 UI.Function = table.freeze({ type = "Symbol" }) :: Type.Symbol
 
---- @within UI
 --- A marker for defining Nil defaultState in [UI.makeStatefulDefaults]
---- @prop Nil Flux.Symbol
---- @readonly
 UI.Nil = table.freeze({ type = "Symbol" }) :: Type.Symbol
 
---- @within UI
 --- GuiService.TopbarInset as a Flux state
---- @prop TopbarInset State<Rect>
 UI.TopbarInset = state(GuiService, "TopbarInset")
 UI.TopbarPadding = Flux.compute(function()
 	return UDim.new(0, if UI.IsConsoleScreen then 10 else UI.TopbarInset().Height - 46)
 end)
 
---- @within UI
 --- The lowermost ScreenGui for UI components
---- @prop LayerBottom State<ScreenGui>
 UI.LayerBottom = Flux.new "ScreenGui" {
 	Parent = playerGui,
 	Name = "FluxUILayerBottom",
@@ -150,9 +118,7 @@ UI.LayerBottom = Flux.new "ScreenGui" {
 	ScreenInsets = Enum.ScreenInsets.None,
 }
 
---- @within UI
 --- The default ScreenGui for UI components
---- @prop LayerDefault State<ScreenGui>
 UI.LayerDefault = Flux.new "ScreenGui" {
 	Parent = playerGui,
 	Name = "FluxUILayerDefault",
@@ -163,9 +129,7 @@ UI.LayerDefault = Flux.new "ScreenGui" {
 	ScreenInsets = Enum.ScreenInsets.None,
 }
 
---- @within UI
 --- The topmost ScreenGui for UI components
---- @prop LayerTop State<ScreenGui>
 UI.LayerTop = Flux.new "ScreenGui" {
 	Parent = playerGui,
 	Name = "FluxUILayerTop",
@@ -189,9 +153,7 @@ UI.LayerTopInset = UI.new "Frame" {
 		end,
 }
 
---- @within UI
 --- The Topbar ScreenGui for UI components
---- @prop LayerTopbar State<ScreenGui>
 UI.LayerTopbar = Flux.new "ScreenGui" {
 	Parent = playerGui,
 	Name = "FluxUILayerTopbar",
@@ -202,9 +164,7 @@ UI.LayerTopbar = Flux.new "ScreenGui" {
 	ScreenInsets = Enum.ScreenInsets.TopbarSafeInsets,
 }
 
---- @within UI
 --- A sorted Topbar Frame for UI components, parented under [UI.LayerTopbar]
---- @prop TopbarFrame State<Frame>
 UI.TopbarFrame = UI.new "Frame" {
 	Parent = UI.LayerTopbar,
 	BackgroundTransparency = 1,
@@ -234,8 +194,6 @@ UI.TopbarFrame = UI.new "Frame" {
 	},
 }
 
---- @within UI
---- @type ActiveStateType "hover" | "floating" | "dialog"
 export type ActiveStateType = "hover" | "floating" | "dialog"
 
 UI._activeState = {}
@@ -543,11 +501,7 @@ type Constructor =
 	& Type.New<"Window", typeof(require(Classes.Window).new())>
 
 --- Creates a new Instance with [UI.edit]
---- @within UI
---- @function new
---- @param className string
---- @return UI.edit
-UI.new = (function(className)
+UI.new = (function(className: string)
 	return constructors[className]
 end :: any) :: Constructor
 

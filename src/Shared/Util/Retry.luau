@@ -1,10 +1,10 @@
 --[[
 Retries a function with exponential backoff until it succeeds or exceeds the maximum number of attempts.
-@param callback: () -> any | nil -- The function to retry
-@param attempts: number -- Number of retry attempts (Default: 5)
-@param base: number? -- Backoff delay exponent base, adds a delay of `base ^ attempts` between attempts (Default: 2)
-@param ...: any? -- Additional arguments to pass to the callback function
-@return (boolean, any) -- Returns the result of the pcall callback execution
+@param callback -- The function to retry
+@param attempts -- Number of retry attempts (Default: 5)
+@param base -- Backoff delay exponent base, adds a delay of `base ^ attempts` between attempts (Default: 2)
+@param ... -- Additional arguments to pass to the callback function
+@return -- Whether the pcall succeeded, followed by its results
 ]]
 local function Retry(callback: (...any) -> any | nil, attempts: number?, base: number?, ...: any?): (boolean, any)
 	attempts = attempts or 5

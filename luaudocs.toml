@@ -1,0 +1,48 @@
+title = "Kohl's Admin"
+description = "Embrace creativity, not chaos."
+
+[source]
+entries = [ "src" ]
+
+[repo]
+url = "https://github.com/kohls-admin/kohls-admin"
+branch = "master"
+
+[site]
+siteTitle = ""
+favicon = "/logo-dark.svg"
+
+[site.logo]
+light = "/logo-load.svg"
+dark = "/logo-load-dark.svg"
+
+[site.footer]
+copyright = "© 2010–2026 Kohl"
+
+[[site.nav]]
+text = "Guide"
+link = "/guide/intro"
+activeMatch = "^/guide/"
+
+[[site.nav]]
+text = "API"
+link = "/api/"
+activeMatch = "^/api/"
+
+[[site.nav]]
+text = "FAQ"
+link = "/faq"
+activeMatch = "^/faq"
+
+[[site.nav]]
+text = "Donate"
+link = "/donate"
+activeMatch = "^/donate"
+
+[[site.nav]]
+text = "Discord"
+link = "https://discord.gg/kohl"
+
+[docs]
+url = "https://admin.kohl.gg/"
+
