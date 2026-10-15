@@ -2,7 +2,7 @@
     <a href="https://admin.kohl.gg"><picture><source media="(prefers-color-scheme: dark)" srcset=".luaudocs/public/logo-load-dark.svg"><img  alt="Kohl's Admin" src=".luaudocs/public/logo-load.svg" align="left" width="128"></picture></a>
     <a href="https://admin.kohl.gg"><picture><source media="(prefers-color-scheme: dark)" srcset=".luaudocs/public/link-docs-dark.svg"><img alt="Docs" src=".luaudocs/public/link-docs.svg"></picture></a>
     <a href="https://github.com/kohls-admin/kohls-admin/releases"><picture><source media="(prefers-color-scheme: dark)" srcset=".luaudocs/public/link-download-dark.svg"><img alt="Download" src=".luaudocs/public/link-download.svg"></picture></a>
-    <a href="https://create.roblox.com/store/asset/18506925834"><picture><source media="(prefers-color-scheme: dark)" srcset=".luaudocs/public/link-creator-dark.svg"><img alt="Get it on the Creator Marketplace" src=".luaudocs/public/link-creator.svg"></picture></a>
+    <a href="https://create.roblox.com/store/asset/172732271"><picture><source media="(prefers-color-scheme: dark)" srcset=".luaudocs/public/link-creator-dark.svg"><img alt="Get it on the Creator Marketplace" src=".luaudocs/public/link-creator.svg"></picture></a>
 </div>
 
 <br/>
