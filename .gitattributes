@@ -14,3 +14,4 @@
 *.yml eol=lf
 *.txt text=auto
 *.txt eol=lf
+*.avif filter=lfs diff=lfs merge=lfs -text
