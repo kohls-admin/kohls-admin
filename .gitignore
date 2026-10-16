@@ -2,3 +2,6 @@
 build/
 dist/
 sourcemap.json
+
+node_modules/
+__pycache__
