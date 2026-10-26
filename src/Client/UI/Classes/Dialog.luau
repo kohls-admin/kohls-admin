@@ -21,6 +21,8 @@ local DEFAULT = {
 	Draggable = false,
 	LeftAction = UI.Nil,
 	RightAction = UI.Nil,
+	Options = UI.Nil,
+	OptionColors = UI.Nil,
 	ExitButton = false,
 	Close = UI.Function,
 	Selectable = false,
@@ -36,7 +38,7 @@ setmetatable(Class, BaseClass)
 
 -- alert, simple, confirmation dialogs
 -- allow timed dialogs using announce design, fire an event when duration ends so cleanup can be handled dynamically?
--- maximum of 2 actions
+-- maximum of 2 icon actions, or labelled Options that fire Action with the chosen index
 function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
@@ -159,6 +161,64 @@ function Class.new(properties: Properties?)
 		return UDim2.new(0, UI.Theme.FontSizeLargest(), 0, UI.Theme.FontSizeLargest())
 	end)
 	self._buttonSize = buttonSize
+
+	-- one button per option, activating it fires Action with its index
+	local optionLabels = if self.Options then UI.raw(self.Options) else nil
+	local optionColors = if self.OptionColors then UI.raw(self.OptionColors) else nil
+	local optionsFrame = nil
+	if optionLabels and #optionLabels > 0 then
+		optionsFrame = UI.new "Frame" {
+			Name = "Options",
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 0),
+
+			UI.new "UIListLayout" {
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UI.Theme.Padding,
+			},
+			UI.new "TextLabel" {
+				AutoLocalize = false,
+				Name = "Text",
+				LayoutOrder = -1, -- non-zero, UI.edit would otherwise reorder it by its child index
+				AutomaticSize = Enum.AutomaticSize.XY,
+				BackgroundTransparency = 1,
+				TextColor3 = UI.Theme.PrimaryText,
+				TextStrokeColor3 = UI.Theme.Primary,
+				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+				Text = self.ActionText,
+				TextSize = self.ActionTextSize,
+				TextWrapped = true,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				FontFace = UI.Theme.FontBold,
+				RichText = true,
+				Visible = function()
+					local text = self.ActionText()
+					return text and text ~= ""
+				end,
+			},
+		}
+		for index, label in optionLabels do
+			UI.new "Button" {
+				Parent = optionsFrame,
+				Name = `Option{index}`,
+				LayoutOrder = index,
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BackgroundColor3 = if optionColors then optionColors[index] else nil,
+				Label = label,
+				LabelProperties = {
+					TextWrapped = true,
+					-- the button's height as a minimum so one line stays centered, it grows when the text wraps
+					Size = function()
+						return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2)
+					end,
+				},
+				Activated = function()
+					activate(index)
+				end,
+			}
+		end
+	end
 
 	local exitButton = UI.new "Button" {
 		LayoutOrder = 9,
@@ -383,6 +443,7 @@ function Class.new(properties: Properties?)
 					},
 				}
 				else nil,
+			optionsFrame,
 		},
 		progress,
 
