@@ -1130,16 +1130,18 @@ return {
 					break
 				end
 
-				local hat = context.env.cache[assetId]
-				if not hat then
-					hat = context.env.loadHat(assetId)
-					context.env.cache[assetId] = hat
+				local cached = context.env.cache[assetId]
+				if not cached then
+					cached = context.env.loadHat(assetId)
+					context.env.cache[assetId] = cached
 				end
 
-				if not hat then
+				if not cached then
 					continue
 				end
 
+				-- modify a copy so texture/color/material never leak into the cache
+				local hat = cached:Clone()
 				local handle = hat:FindFirstChild("Handle")
 
 				if texture and handle then
@@ -1174,6 +1176,9 @@ return {
 						hat:Clone().Parent = player.Character
 					end
 				end
+
+				-- Property.override keeps modified instances referenced until destroyed
+				hat:Destroy()
 			end
 		end,
 	},
