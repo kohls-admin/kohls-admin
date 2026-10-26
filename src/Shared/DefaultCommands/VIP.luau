@@ -1176,6 +1176,9 @@ return {
 						hat:Clone().Parent = player.Character
 					end
 				end
+
+				-- Property.override keeps modified instances referenced until destroyed
+				hat:Destroy()
 			end
 		end,
 	},
