@@ -488,10 +488,13 @@ function Class.new(properties: Properties?)
 		end
 	end)
 
-	local parentConn
+	local parentConn, visibleConn
 	self._instance:GetPropertyChangedSignal("Parent"):Connect(function()
 		if parentConn then
 			parentConn:Disconnect()
+		end
+		if visibleConn then
+			visibleConn:Disconnect()
 		end
 		local parent = self._instance.Parent
 		if parent and parent:IsA("GuiBase2d") then
@@ -533,7 +536,7 @@ function Class.new(properties: Properties?)
 				)
 			end
 			parentConn = parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSize)
-			self._instance:GetPropertyChangedSignal("Visible"):Connect(updateSize)
+			visibleConn = self._instance:GetPropertyChangedSignal("Visible"):Connect(updateSize)
 			if self._instance.Visible then
 				updateSize()
 			end
