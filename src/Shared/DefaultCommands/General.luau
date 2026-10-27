@@ -13,6 +13,405 @@ local VOICE_IDS = {
 	"Retro #2",
 }
 
+local VOTE_DURATION = 30
+local VOTE_YES_NO = { "YES", "NO" }
+local POLL_MAX_OPTIONS = 8
+local POLL_MAX_LENGTH = 200 -- TextChatService message limit, the question and options share one message
+local RESULTS_DURATION = 20
+
+-- options are sent with the question, so a | typed in one would split it
+local WIRE_SEPARATOR = " | "
+
+--- Cleans up a poll's question and options, the options are nil for a yes/no vote
+local function preparePoll(_K, question: string, given: { string }): (string?, { string }?, string?)
+	local function clean(text: string): string
+		return _K.Util.String.trim((string.gsub(text, "|", "/")))
+	end
+
+	question = clean(question)
+	if question == "" then
+		return nil, nil, "A poll needs a question."
+	end
+
+	local options, seen = {}, {}
+	for _, option in given do
+		option = clean(option)
+		if option == "" then
+			continue
+		end
+		local key = string.lower(option)
+		if seen[key] then
+			return nil, nil, "Poll options must be different from each other."
+		end
+		seen[key] = true
+		table.insert(options, option)
+	end
+
+	if #options == 0 then
+		return question, nil, nil
+	elseif #options < 2 then
+		return nil, nil, "A poll needs at least 2 options."
+	end
+
+	local joined = `{question}{WIRE_SEPARATOR}{table.concat(options, WIRE_SEPARATOR)}`
+	if (utf8.len(joined) or #joined) > POLL_MAX_LENGTH then
+		return nil, nil, `The question and options can be at most {POLL_MAX_LENGTH} characters.`
+	end
+	return question, options, nil
+end
+
+--[=[
+	Runs a vote for `players`, shared by the yes/no `vote` and the multiple choice `poll`.
+
+	The server validates the options and tallies the votes, accepting one option number per asked player until the
+	vote closes. Clients only display the options and report which one was picked.
+]=]
+local function startVote(context, players: { Player }, text: string, given: { string }?): string?
+	if context.global then
+		return
+	end
+	local _K = context._K
+
+	local question, options = text, nil
+	if given then
+		local err
+		question, options, err = preparePoll(_K, text, given)
+		if err then
+			return err
+		end
+	end
+	local count = if options then #options else #VOTE_YES_NO
+
+	-- the question and options are sent as one message so TextChatService filters them for each player
+	local rawQuestion = question :: string
+	local message = if options
+		then `{rawQuestion}{WIRE_SEPARATOR}{table.concat(options, WIRE_SEPARATOR)}`
+		else rawQuestion
+	local id, err = _K.Chat.send(context, "vote", message, players)
+	if not id then
+		return err
+	end
+
+	-- the sender is shown the text filtered like everywhere else
+	local function clean(value: string): string
+		return _K.Util.String.escapeRichText(_K.Util.String.filterForBroadcast(value, context.from))
+	end
+	local labels = table.create(count)
+	if options then
+		local filters = _K.Util.Tasks.new()
+		filters:add(function()
+			question = clean(rawQuestion)
+		end)
+		for index, option in options do
+			filters:add(function()
+				labels[index] = clean(option)
+			end)
+		end
+		filters:wait()
+		for index = 1, count do
+			labels[index] = labels[index] or "…"
+		end
+	else
+		question = _K.Chat.restoreRichText(clean(rawQuestion))
+		table.move(VOTE_YES_NO, 1, count, 1, labels)
+	end
+
+	local tally = table.create(count, 0)
+	local voted = {} -- players whose vote was counted
+	local closed = false
+	local pending = #players
+	local finished = pending == 0
+	local waiter = coroutine.running()
+	local function finish()
+		if finished then
+			return
+		end
+		finished = true
+		if coroutine.status(waiter) == "suspended" then
+			task.spawn(waiter)
+		end
+	end
+
+	local remote = context.env.remote
+	for _, player in players do
+		task.spawn(function()
+			local ok, choice = pcall(
+				remote.Invoke,
+				remote,
+				player,
+				id,
+				context.fromPlayer,
+				count,
+				if options then nil else VOTE_YES_NO
+			)
+			-- the client's answer is untrusted, only a whole option number counts
+			if
+				ok
+				and not closed
+				and not voted[player]
+				and type(choice) == "number"
+				and choice % 1 == 0
+				and choice >= 1
+				and choice <= count
+			then
+				voted[player] = true
+				tally[choice] += 1
+			end
+			pending -= 1
+			if pending <= 0 then
+				finish()
+			end
+		end)
+	end
+
+	local noun = if options then "poll" else "vote"
+	local intro = `Created {noun}: <b>{question}</b>`
+	if options then
+		intro ..= `\n<font transparency="0.5">{table.concat(labels, ", ")}</font>`
+	end
+	_K.Remote.Notify:Fire(context.fromPlayer, {
+		Text = `{intro}\n\n<font transparency="0.5"><i>The {noun} will end in {VOTE_DURATION} seconds or when every player has submitted their vote!</i></font>`,
+	})
+
+	-- wait for timeout or all votes to be submitted, later votes are ignored
+	task.delay(VOTE_DURATION, finish)
+	if not finished then
+		coroutine.yield()
+	end
+	closed = true
+
+	local total = 0
+	for _, votes in tally do
+		total += votes
+	end
+
+	if context.fromPlayer and context.fromPlayer.Parent then
+		context.env.results:Fire(context.fromPlayer, question, labels, tally, #players - total, not options)
+	end
+	return
+end
+
+local function voteEnv(_K)
+	-- the results remote is created here so clients can connect to it at start
+	return { remote = _K.Remote.Vote, results = _K.Remote.VoteResults }
+end
+
+local voteConnected = false
+
+--- Shows votes on a player's client, a vote returns the option they picked
+local function connectVote(_K)
+	-- both vote commands connect, only the first needs to
+	if voteConnected then
+		return
+	end
+	voteConnected = true
+
+	local UI = _K.UI
+
+	-- restored tags would be left open once the text is split into options
+	local function plain(value: string): string
+		return _K.Util.String.trim((string.gsub(value, "<[^>]*>", "")))
+	end
+
+	_K.Remote.Vote.OnInvoke = function(id: string, from: Player, count: number, fixedLabels: { string }?)
+		if type(count) ~= "number" or count < 2 then
+			return nil
+		end
+		-- the question arrives filtered through TextChatService
+		local text = _K.Chat.waitForMessage(id)
+		if not text then
+			return nil
+		end
+
+		local question, labels = text, fixedLabels
+		if not labels then
+			labels = table.create(count)
+			local parts = string.split(text, "|")
+			if #parts == count + 1 then
+				question = plain(parts[1])
+				for index = 1, count do
+					local label = plain(parts[index + 1])
+					labels[index] = if label == "" then `Option {index}` else label
+				end
+			else
+				-- filtering changed the separators, so the options can only be numbered
+				question = plain(text)
+				for index = 1, count do
+					labels[index] = `Option {index}`
+				end
+			end
+		end
+
+		local choiceSignal = _K.Util.Signal.new()
+		_K.Notify({
+			Text = question,
+			ActionText = "<b>CAST YOUR VOTE</b>",
+			Action = true,
+			Options = labels,
+			-- yes and no are colored like the results
+			OptionColors = if fixedLabels then { UI.Theme.Valid, UI.Theme.Invalid } else nil,
+			ExitButton = false,
+			Duration = VOTE_DURATION,
+
+			UserFrame = { from.UserId },
+
+			[UI.Hook] = {
+				Action = function(choice)
+					choiceSignal:Fire(choice)
+				end,
+			},
+			-- the vote timed out without a choice
+			Close = function()
+				choiceSignal:Fire(nil)
+			end,
+		})
+		return choiceSignal:Wait()
+	end
+
+	-- the server tallies the votes, this only draws them
+	_K.Remote.VoteResults:Connect(
+		function(question: string, labels: { string }, tally: { number }, missing: number, yesNo: boolean)
+			if type(labels) ~= "table" or type(tally) ~= "table" then
+				return
+			end
+
+			local total, highest = 0, 0
+			for _, votes in tally do
+				total += votes
+				highest = math.max(highest, votes)
+			end
+
+			local list = UI.new "Frame" {
+				Name = "Results",
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BackgroundTransparency = 1,
+				Size = UDim2.fromScale(1, 0),
+
+				UI.new "UIListLayout" {
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					Padding = UI.Theme.Padding,
+				},
+			}
+
+			local function addText(text: string, order: number)
+				UI.new "TextLabel" {
+					Parent = list,
+					AutoLocalize = false,
+					LayoutOrder = order,
+					AutomaticSize = Enum.AutomaticSize.XY,
+					BackgroundTransparency = 1,
+					FontFace = UI.Theme.Font,
+					RichText = true,
+					Text = text,
+					TextColor3 = UI.Theme.PrimaryText,
+					TextSize = UI.Theme.FontSize,
+					TextStrokeColor3 = UI.Theme.Primary,
+					TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+					TextWrapped = true,
+					TextXAlignment = Enum.TextXAlignment.Left,
+				}
+			end
+
+			for index, label in labels do
+				local votes = tally[index] or 0
+				local fraction = if total > 0 then votes / total else 0
+				local color = UI.Theme.Secondary
+				if yesNo then
+					color = if index == 1 then UI.Theme.Valid else UI.Theme.Invalid
+				elseif votes == highest and votes > 0 then
+					color = UI.Theme.Valid
+				end
+
+				local fill = UI.new "Frame" {
+					BackgroundColor3 = color,
+					Size = UDim2.fromScale(0, 1),
+
+					UI.new "UICorner" {
+						CornerRadius = UI.Theme.CornerRadius,
+					},
+				}
+				UI.new "Frame" {
+					Parent = list,
+					Name = `Result{index}`,
+					LayoutOrder = index,
+					AutomaticSize = Enum.AutomaticSize.Y,
+					BackgroundTransparency = 1,
+					Size = UDim2.fromScale(1, 0),
+
+					UI.new "UIListLayout" {
+						SortOrder = Enum.SortOrder.LayoutOrder,
+						Padding = UDim.new(0, 2),
+					},
+					UI.new "TextLabel" {
+						AutoLocalize = false,
+						AutomaticSize = Enum.AutomaticSize.XY,
+						BackgroundTransparency = 1,
+						FontFace = UI.Theme.Font,
+						RichText = true,
+						Text = `<b>{label}</b>  {math.round(fraction * 100)}% <font transparency="0.5">({votes})</font>`,
+						TextColor3 = UI.Theme.PrimaryText,
+						TextSize = UI.Theme.FontSize,
+						TextStrokeColor3 = UI.Theme.Primary,
+						TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+						TextWrapped = true,
+						TextXAlignment = Enum.TextXAlignment.Left,
+					},
+					UI.new "Frame" {
+						BackgroundColor3 = UI.Theme.Secondary,
+						BackgroundTransparency = UI.Theme.TransparencyHeavy,
+						Size = UDim2.new(1, 0, 0, 8),
+
+						UI.new "UICorner" {
+							CornerRadius = UI.Theme.CornerRadius,
+						},
+						fill,
+					},
+				}
+				-- the delay lets the notification slide in first
+				game:GetService("TweenService")
+					:Create(
+						fill,
+						TweenInfo.new(0.6, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out, 0, false, 0.3),
+						{ Size = UDim2.fromScale(fraction, 1) }
+					)
+					:Play()
+			end
+
+			if type(missing) == "number" and missing > 0 then
+				addText(`<font transparency="0.5">{missing} did not vote</font>`, #labels + 1)
+			end
+
+			_K.Notify({
+				Text = `<font transparency="0.5">The results are in!</font>\n\n<b>{question}</b>`,
+				Duration = RESULTS_DURATION,
+
+				list,
+			})
+		end
+	)
+end
+
+local POLL_ARGS = {
+	{
+		type = "players",
+		name = "Player(s)",
+		description = "The player(s) to poll.",
+	},
+	{
+		type = "chatString",
+		name = "Question",
+		description = "The question to poll, in quotes when it has spaces.",
+	},
+}
+for index = 1, POLL_MAX_OPTIONS do
+	table.insert(POLL_ARGS, {
+		type = "chatString",
+		name = `Option {index}`,
+		description = if index == 1 then "An option to vote for, in quotes when it has spaces." else "Another option.",
+		optional = true,
+	})
+end
+
 return {
 	{
 		name = "clean",
@@ -403,8 +802,8 @@ return {
 	},
 	{
 		name = "vote",
-		aliases = { "makevote", "startvote", "poll" },
-		description = "Starts a vote for one or more player(s).",
+		aliases = { "makevote", "startvote" },
+		description = "Starts a yes/no vote for one or more player(s).",
 		args = {
 			{
 				type = "players",
@@ -417,82 +816,23 @@ return {
 				description = "The question to poll.",
 			},
 		},
-		env = function(_K)
-			return { remote = _K.Remote.Vote }
-		end,
-		envClient = function(_K)
-			_K.Remote.Vote.OnInvoke = function(id: string, from: Player)
-				-- the question arrives filtered through TextChatService
-				local text = _K.Chat.waitForMessage(id)
-				if not text then
-					return nil
-				end
-				local actionSignal = _K.Util.Signal.new()
-				_K.Notify({
-					Text = text,
-					ActionText = "<b>VOTE</b>",
-					Action = true,
-					ExitButton = false,
-					LeftAction = true,
-					RightAction = true,
-					Duration = 30,
-
-					UserFrame = { from.UserId },
-
-					[_K.UI.Hook] = {
-						Action = function(v)
-							actionSignal:Fire(v)
-						end,
-					},
-				})
-				return actionSignal:Wait() == true
-			end
-		end,
+		env = voteEnv,
+		envClient = connectVote,
 
 		run = function(context, players, message)
-			if context.global then
-				return
-			end
+			return startVote(context, players, message, nil)
+		end,
+	},
+	{
+		name = "poll",
+		aliases = { "makepoll", "startpoll" },
+		description = `Starts a multiple choice poll with up to {POLL_MAX_OPTIONS} options for one or more player(s). Without options it is a yes/no vote.`,
+		args = POLL_ARGS,
+		env = voteEnv,
+		envClient = connectVote,
 
-			local id, err = context._K.Chat.send(context, "vote", message, players)
-			if not id then
-				return err
-			end
-			-- the question is echoed back to the sender, keep it filtered like everywhere else
-			message = context._K.Chat.restoreRichText(
-				context._K.Util.String.escapeRichText(context._K.Util.String.filterForBroadcast(message, context.from))
-			)
-
-			local yes, no = 0, 0
-			local function voteTask(player)
-				local vote = context.env.remote:Invoke(player, id, context.fromPlayer)
-				if vote == true then
-					yes += 1
-				elseif vote == false then
-					no += 1
-				end
-			end
-
-			local tasks = context._K.Util.Tasks.new()
-			for _, player in players do
-				tasks:add(voteTask, player)
-			end
-
-			context._K.Remote.Notify:Fire(context.fromPlayer, {
-				Text = `Created vote: <b>{message}</b>\n\n<font transparency="0.5"><i>The vote will end in 30 seconds or when every player has submitted their vote!</i></font>`,
-			})
-
-			-- wait for timeout or all votes to be submitted
-			task.delay(30, coroutine.resume, tasks._running)
-			tasks:wait()
-			tasks._waiting = false
-
-			local validColor = context._K.Data.settings.themeValid:ToHex()
-			local invalidColor = context._K.Data.settings.themeInvalid:ToHex()
-			context._K.Remote.Notify:Fire(context.fromPlayer, {
-				Text = `<font transparency="0.5">The results are in!</font>\n\n<b>{message}</b>\n\t<font color="#{validColor}"><b><sc>yes</sc></b>\t{yes}</font>\n\t<font color="#{invalidColor}"><b><sc>no</sc></b> \t{no}</font>`,
-			})
-			return
+		run = function(context, players, question, ...)
+			return startVote(context, players, question, { ... })
 		end,
 	},
 	{

@@ -644,8 +644,8 @@ return {
 			local texts = {} -- argument lists and indexes of text that must be filtered
 			for _, command in result do
 				local definition = command.definition
-				if definition.name == "vote" then
-					return `"vote" can't run globally.`
+				if definition.name == "vote" or definition.name == "poll" then
+					return `"{definition.name}" can't run globally.`
 				end
 				if not definition.args then
 					table.insert(commands, { serverPrefix .. command.alias })
