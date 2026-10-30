@@ -106,46 +106,10 @@ return {
 	{
 		name = "chat",
 		aliases = { "forcechat" },
-		description = "Forces one or more player(s) to chat.",
-		args = {
-			{
-				type = "players",
-				name = "Player(s)",
-				description = "The player(s) who will be forced to chat.",
-				shouldRequest = true,
-			},
-			{
-				type = "string",
-				name = "Message",
-				description = "The chat message to send.",
-			},
-		},
-		envClient = function(_K)
-			local function forceChat(message: string)
-				_K.Service.TextChat:WaitForChild("TextChannels").RBXGeneral:SendAsync(message)
-			end
-			_K.Remote.ForceChat:Connect(forceChat)
-			_K.forceChat = forceChat
-		end,
-		env = function(_K)
-			return { remote = _K.Remote.ForceChat }
-		end,
-		run = function(context, players: { Player }, message: string)
-			-- the text is sent as the target's own chat, so it is gated and rate limited like announcements
-			if context.global then
-				if not context._K.Auth.hasRestrictedRole(context.from) then
-					return "Forced chat requires a developer role."
-				end
-			else
-				local err = context._K.Chat.limitBroadcast(context.from, "Forced chat requires a developer role.")
-				if err then
-					return err
-				end
-			end
-			for _, player in players do
-				context.env.remote:Fire(player, message)
-			end
-			return
+		description = "Disabled, scripts can't send chat messages for players.",
+		args = {},
+		runClient = function(context)
+			context._K.Notify({ From = "_K", Text = "Forcing players to chat is disabled, scripts can't send chat." })
 		end,
 	},
 	{
@@ -204,7 +168,7 @@ return {
 				end
 			end
 
-			_K.Remote.Incognito:Connect(
+			local _ = _K.Remote.Incognito:Connect(
 				function(userIdOrName: number | string, hiddenRank: number, hideCharacter: boolean?)
 					if type(userIdOrName) == "number" then
 						if hideCharacter == nil then -- remove from hidden list
@@ -216,8 +180,8 @@ return {
 								env.hidden:peek()[userIdOrName] = player.Name
 								env.hidden(env.hidden:peek(), true)
 								if hiddenRank > _K.client.rank:peek() then
-									if hideCharacter then
-										pcall(game.Destroy, player.Character)
+									if hideCharacter and player.Character then
+										player.Character:Destroy()
 									end
 									player:Destroy()
 								end
@@ -267,7 +231,7 @@ return {
 				end
 			end)
 
-			_K.Service.Players.PlayerRemoving:Connect(function(player)
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
 				_K.Flux.dispose(cleanup[player])
 				cleanup[player] = nil
 				if env.hidden[player] ~= nil then
@@ -276,7 +240,7 @@ return {
 				end
 			end)
 
-			env.remote:Connect(function(player)
+			local _ = env.remote:Connect(function(player)
 				for hiddenPlayer, hideCharacter in env.hidden do
 					local hiddenRank = _K.Auth.getRank(hiddenPlayer.UserId)
 					env.remote:Fire(player, hiddenPlayer.UserId, hiddenRank, hideCharacter)
@@ -430,7 +394,7 @@ return {
 			return { remote = remote }
 		end,
 		envClient = function(_K)
-			_K.Remote.ReservedServers:Connect(function(data)
+			local _ = _K.Remote.ReservedServers:Connect(function(data)
 				if type(data) == "table" then
 					_K.Util.Table.merge(_K.Data.reservedServers, data)
 				elseif type(data) == "string" then
@@ -451,8 +415,8 @@ return {
 			end
 
 			if not (context._K.IsStudio and context._K.Auth.hasRestrictedRole(context.from)) then
-				local ok, canChat =
-					pcall(context._K.Service.TextChat.CanUserChatAsync, context._K.Service.TextChat, context.from)
+				local TextChat = context._K.Service.TextChat
+				local ok, canChat = pcall(TextChat.CanUserChatAsync, TextChat, context.from)
 				if not ok or not canChat then
 					return "User cannot chat"
 				end
@@ -467,6 +431,9 @@ return {
 			local err = context._K.Chat.cooldown(context.from, "reserve")
 			if err then
 				return err
+			end
+			if context.args[1] then
+				context.args[1].redactLog = false
 			end
 
 			placeId = placeId or game.PlaceId
@@ -567,13 +534,18 @@ return {
 				task.wait(delay)
 			end
 			-- shutdown reasons are user text everyone sees
-			reason = context._K.Chat.limitReason(context.from, reason)
+			if not context.global then
+				reason = context._K.Chat.limitReason(context.from, reason)
+			end
+			if reason and context.args[2] then
+				context.args[2].redactLog = false
+			end
 			local from = tostring(context.fromPlayer or context.from)
 			local function kick(player)
 				player:Kick(`{from} has shutdown the server.{if reason then `\nReason: {reason}` else ""}`)
 			end
-			game:GetService("Players").PlayerAdded:Connect(kick)
-			for _, player in game:GetService("Players"):GetPlayers() do
+			local _ = context._K.Service.Players.PlayerAdded:Connect(kick)
+			for _, player in context._K.Service.Players:GetPlayers() do
 				kick(player)
 			end
 		end,
@@ -617,8 +589,9 @@ return {
 			end
 
 			local prefix = context._K.getCommandPrefix(context.from)
+			local escapedPrefix = context._K.Util.String.escapePattern(prefix)
 			local serverPrefix = context._K.getCommandPrefix()
-			if string.find(commandString, string.format('^%s[^%s"`,%%s]', prefix, prefix)) ~= 1 then
+			if string.find(commandString, string.format('^%s[^%s"`,%%s]', escapedPrefix, escapedPrefix)) ~= 1 then
 				commandString = prefix .. commandString
 			end
 
@@ -630,7 +603,15 @@ return {
 			-- text shown to other users can't go through TextChatService across servers, so commands carrying any are
 			-- gated and rate limited like announcements
 			local commands = {} -- each command's name and argument strings
-			local texts = {} -- argument lists and indexes of text that must be filtered
+			local texts = {} -- argument lists and indexes of text to filter, if it's a list, its quoted pieces and items
+			local argIndexes = {} -- each command's argument string index of each published argument
+			local function publishedArg(commandArg)
+				-- a skipped optional argument leaves its token to the next argument, so it isn't published twice
+				if not commandArg or commandArg.skipped == commandArg.rawArg or commandArg.rawArg == "" then
+					return nil
+				end
+				return commandArg.rawArg
+			end
 			for _, command in result do
 				local definition = command.definition
 				if definition.name == "vote" or definition.name == "poll" then
@@ -638,16 +619,19 @@ return {
 				end
 				if not definition.args then
 					table.insert(commands, { serverPrefix .. command.alias })
+					table.insert(argIndexes, {})
 					continue
 				end
 
 				local argStrings = { serverPrefix .. command.alias }
+				local indexes = {}
 				for i, arg in definition.args do
-					local rawArg = command.args[i] and command.args[i].rawArg
-					if not rawArg or rawArg == "" then
+					local rawArg = publishedArg(command.args[i])
+					if not rawArg then
 						continue
 					end
 					table.insert(argStrings, rawArg)
+					indexes[i] = #argStrings
 					if
 						arg.type == "string"
 						or arg.type == "strings"
@@ -655,39 +639,146 @@ return {
 						or arg.type == "stringGreedy"
 						or (definition.name == "change" and i == 3)
 					then
-						table.insert(texts, { argStrings, #argStrings, i < #definition.args or #result > 1 })
+						table.insert(texts, { argStrings, #argStrings, #commands + 1, arg.type == "strings" })
 					end
 				end
 				table.insert(commands, argStrings)
+				table.insert(argIndexes, indexes)
+			end
+
+			-- always quoted so receiving servers read one text argument instead of commands or skipped arguments in it,
+			-- quotes have no escapes so it takes the quote the text doesn't use
+			local function quoted(text: string): string
+				local quote = if string.find(text, '"', 1, true) then "`" else '"'
+				text = string.gsub(text, quote, "'")
+				return quote .. text .. quote
+			end
+			for _, text in texts do
+				local argStrings, index = text[1], text[2]
+				-- a list is filtered and quoted per item so receiving servers split the same items
+				local items = if text[4]
+					then context._K.Util.String.splitOutsideQuotes(argStrings[index]) :: { string }
+					else { argStrings[index] }
+				local pieces = {}
+				for i, item in items do
+					items[i] = context._K.Util.String.stripQuotes(context._K.Util.String.trim(item))
+					pieces[i] = quoted(items[i])
+				end
+				text[5], text[6] = pieces, items
+			end
+
+			local commandStrings = {}
+			local function build()
+				for _, text in texts do
+					text[1][text[2]] = table.concat(text[5], ",")
+				end
+				table.clear(commandStrings)
+				for _, argStrings in commands do
+					table.insert(commandStrings, table.concat(argStrings, " "))
+				end
+				commandString = table.concat(commandStrings, " ")
+			end
+
+			-- receiving servers must read the same commands, arguments and text: they split tokens at the server prefix
+			-- that the sender's own prefix left whole or quotes the sender's prefix didn't open, in Roblox a combining
+			-- mark after a quote joins its grapheme, and an optional argument skipped here can take the quoted text
+			local function parsesBack()
+				local parsed = context._K.Process.rawParse(
+					commandString,
+					{ serverPrefix },
+					context._K.Data.settings.splitKey or " "
+				)
+				if not parsed or #parsed ~= #commands then
+					return false
+				end
+				for i, parsedArgs in parsed do
+					local argStrings = {}
+					for _, arg in parsedArgs do
+						table.insert(argStrings, arg[2])
+					end
+					if serverPrefix .. table.concat(argStrings, " ") ~= commandStrings[i] then
+						return false
+					end
+				end
+				for _, text in texts do
+					local token = parsed[text[3]][text[2]]
+					if not token or token[2] ~= text[1][text[2]] then
+						return false
+					end
+					-- and split a list into the same items
+					if text[4] then
+						for i, piece in context._K.Util.String.splitOutsideQuotes(token[2]) :: { string } do
+							if piece ~= text[5][i] then
+								return false
+							end
+						end
+					end
+				end
+				local bound, boundCommands =
+					context._K.Process.prepareCommands(context._K, context.from, commandString, true)
+				if not bound or #boundCommands ~= #commands then
+					return false
+				end
+				for i, command in boundCommands do
+					if command.definition ~= result[i].definition then
+						return false
+					end
+					for j in command.definition.args or {} do
+						local index = argIndexes[i][j]
+						if publishedArg(command.args[j]) ~= (index and commands[i][index]) then
+							return false
+						end
+					end
+				end
+				return true
+			end
+
+			-- receiving servers cut longer command strings from users without a restricted role
+			local function tooLong()
+				return #commandString > 1024 and not context._K.Auth.hasRestrictedRole(context.from)
+			end
+
+			-- checked with the text as typed first so a refused string doesn't spend the announcement cooldown,
+			-- filtering never makes text longer
+			build()
+			if tooLong() then
+				return "This command string is too long to run globally."
+			end
+			if not parsesBack() then
+				return "Other servers would parse this command string differently."
 			end
 
 			if #texts > 0 then
-				local err =
-					context._K.Chat.limitBroadcast(context.from, "Global commands with text require a developer role.")
+				local err = context._K.Chat.limitBroadcast(context.from)
 				if err then
 					return err
 				end
 				local filters = context._K.Util.Tasks.new()
 				for _, text in texts do
-					local argStrings, index, quoteArg = text[1], text[2], text[3]
-					local rawArg = context._K.Util.String.stripQuotes(context._K.Util.String.trim(argStrings[index]))
-					argStrings[index] = "" -- stays empty if filtering fails
-					filters:add(function()
-						local filtered = context._K.Util.String.filterForBroadcast(rawArg, context.from)
-						if quoteArg then
-							filtered = `"{string.gsub(filtered, '["`]', "'")}"`
-						end
-						argStrings[index] = filtered
-					end)
+					for i, item in text[6] do
+						text[5][i] = "" -- stays empty if filtering fails
+						filters:add(function()
+							text[5][i] = quoted(context._K.Util.String.filterForBroadcast(item, context.from))
+						end)
+					end
 				end
 				filters:wait()
+				build()
 			end
 
-			local commandStrings = {}
-			for _, argStrings in commands do
-				table.insert(commandStrings, table.concat(argStrings, " "))
+			if tooLong() then
+				return "This command string is too long to run globally."
 			end
-			commandString = table.concat(commandStrings, " ")
+
+			-- filtered text can still parse differently, those refusals spend the cooldown
+			if not parsesBack() then
+				return "Other servers would parse this command string differently."
+			end
+
+			if context.args[1] then
+				context.args[1].parsedArgs = { commandString }
+				context.args[1].redactLog = false
+			end
 			context._K.Service.Messaging:PublishAsync("KA_GlobalCommand", { context.from, commandString })
 			return
 		end,

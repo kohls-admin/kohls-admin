@@ -58,42 +58,38 @@ return function(_K)
 			end
 		end
 		local logDamageDebounce = _K.Util.Function.debounce(1, logDamage)
-		table.insert(
-			cleanup,
-			humanoid.HealthChanged:Connect(function(health)
-				if alive then
-					local tag = humanoid:FindFirstChild("creator")
-					local from = (tag and tag.Value) or game
-					local damage = lastHealth - health
-					lastHealth = health
-					if damage > 0 and health >= 0 then
-						damageBatch[from] = (damageBatch[from] or 0) + damage
-						logDamageDebounce(from)
-					end
+		local healthConn = humanoid.HealthChanged:Connect(function(health)
+			if alive then
+				local tag = humanoid:FindFirstChild("creator")
+				local from = (tag and tag.Value) or game
+				local damage = lastHealth - health
+				lastHealth = health
+				if damage > 0 and health >= 0 then
+					damageBatch[from] = (damageBatch[from] or 0) + damage
+					logDamageDebounce(from)
 				end
-			end)
-		)
+			end
+		end)
+		table.insert(cleanup, healthConn)
 
 		-- kill logs
-		table.insert(
-			cleanup,
-			humanoid.Died:Connect(function()
-				alive = false
-				local tag = humanoid:FindFirstChild("creator")
-				local from = tag and tag.Value
-				for attacker in damageBatch do
-					logDamage(attacker)
+		local diedConn = humanoid.Died:Connect(function()
+			alive = false
+			local tag = humanoid:FindFirstChild("creator")
+			local from = tag and tag.Value
+			for attacker in damageBatch do
+				logDamage(attacker)
+			end
+			if from then
+				_K.log(`died to {from}.`, "DEATH", player.UserId)
+				if typeof(from) == "Instance" and from:IsA("Player") then
+					_K.log(`killed {player}.`, "KILL", from.UserId)
 				end
-				if from then
-					_K.log(`died to {from}.`, "DEATH", player.UserId)
-					if typeof(from) == "Instance" and from:IsA("Player") then
-						_K.log(`killed {player}.`, "KILL", from.UserId)
-					end
-				else
-					_K.log(`died.`, "DEATH", player.UserId)
-				end
-			end)
-		)
+			else
+				_K.log(`died.`, "DEATH", player.UserId)
+			end
+		end)
+		table.insert(cleanup, diedConn)
 	end
 
 	local function awardBadge(userId: number, badgeId: number)
@@ -197,7 +193,7 @@ return function(_K)
 				end
 			end
 		end
-		_K.Data.settings = _K.Data.savedSettings :: any
+		_K.Data.settings = _K.Data.savedSettings
 
 		for role, roleData in _K.Data.roles do
 			if not table.find(_K.Data.rolesList, roleData) then
@@ -376,47 +372,53 @@ return function(_K)
 			end
 		end
 
-		_K.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, purchaseSuccess)
-			if not purchaseSuccess then
-				return
-			end
-			_K.log(`bought gamepass {gamePassId}`, "PURCHASE", player.UserId)
-			for id, roles in _K.Data.async.gamepass do
-				if gamePassId ~= id then
-					continue
-				end
-				-- exploits can fake purchaseSuccess, and ownership can lag a few seconds behind a real purchase
-				local owned = _K.Util.Retry(function()
-					assert(_K.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, gamePassId), "not owned")
-				end, 3)
-				if not owned then
+		local _ = _K.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(
+			function(player, gamePassId, purchaseSuccess)
+				if not purchaseSuccess then
 					return
 				end
-				local rolesAdded = {}
-				for _, role in roles do
-					local roleAdded = _K.Auth.asyncRoleAdd(player.UserId, role)
-					if roleAdded then
-						local roleData = _K.Data.roles[role]
-						table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
+				_K.log(`bought gamepass {gamePassId}`, "PURCHASE", player.UserId)
+				for id, roles in _K.Data.async.gamepass do
+					if gamePassId ~= id then
+						continue
+					end
+					-- exploits can fake purchaseSuccess, and ownership can lag a few seconds behind a real purchase
+					local owned = _K.Util.Retry(function()
+						assert(_K.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, gamePassId), "not owned")
+					end, 3)
+					if not owned then
+						return
+					end
+					local rolesAdded = {}
+					for _, role in roles do
+						local roleAdded = _K.Auth.asyncRoleAdd(player.UserId, role)
+						if roleAdded then
+							local roleData = _K.Data.roles[role]
+							table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
+						end
+					end
+
+					if player and #rolesAdded > 0 then
+						local prefix = _K.getCommandPrefix(player.UserId)
+						_K.Remote.Notify:Fire(player, {
+							Text = `You got the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1
+								then "s"
+								else ""}!\nSay <b>{prefix}cmds</b> or <b>{prefix}info</b> for details.`,
+							From = "_K",
+						})
 					end
 				end
-
-				if player and #rolesAdded > 0 then
-					local prefix = _K.getCommandPrefix(player.UserId)
-					_K.Remote.Notify:Fire(player, {
-						Text = `You got the {table.concat(rolesAdded, ", ")} role{if #rolesAdded > 1 then "s" else ""}!\nSay <b>{prefix}cmds</b> or <b>{prefix}info</b> for details.`,
-						From = "_K",
-					})
-				end
 			end
-		end)
+		)
 
 		-- addons
-		local serverAddons = Instance.new("Folder", _K.Service.ServerStorage)
+		local serverAddons = Instance.new("Folder")
 		serverAddons.Name = "_KServerAddons"
+		serverAddons.Parent = _K.Service.ServerStorage
 
-		local sharedAddons = Instance.new("Folder", Package)
+		local sharedAddons = Instance.new("Folder")
 		sharedAddons.Name = "Addons"
+		sharedAddons.Parent = Package
 
 		local function loadAddons(list)
 			for _, object in list do
@@ -451,18 +453,19 @@ return function(_K)
 
 		-- ;whois shows Platform as RichText, so only take what the client sets it to (UI.Platform)
 		local platforms = { Console = true, Mobile = true, PC = true, VR = true }
+		local function isValidSessionStart(value)
+			return type(value) == "number" and value == value and math.abs(value) ~= math.huge
+		end
 		local attributeSchema = {
 			Platform = function(value)
 				return platforms[value] == true
 			end,
-			SessionStart = function(value)
-				return type(value) == "number" and value == value and math.abs(value) ~= math.huge
-			end,
+			SessionStart = isValidSessionStart,
 		}
 
 		-- server network events
 		local lastLog, cachedLogsBuffer
-		_K.Remote.Init:Connect(function(player, initData)
+		local _ = _K.Remote.Init:Connect(function(player, initData)
 			local attributes = type(initData) == "table" and initData.Attributes
 			if type(attributes) == "table" then
 				for attribute, isValid in attributeSchema do
@@ -574,7 +577,7 @@ return function(_K)
 		_ = _K.Remote.SetCore
 		_ = _K.Remote.VIPNotification
 
-		_K.Remote.Command:Connect(function(player: Player, message: string)
+		local _ = _K.Remote.Command:Connect(function(player: Player, message: string)
 			if type(message) ~= "string" then
 				return
 			end
@@ -584,9 +587,12 @@ return function(_K)
 		local reservedPrefixes = { ",", " ", "`", '"', "@", "$", "%", "*", "~" }
 
 		-- handle custom command prefix
-		_K.Remote.PlayerPrefix:Connect(function(player, prefix)
+		local _ = _K.Remote.PlayerPrefix:Connect(function(player, prefix)
 			if type(prefix) == "string" and utf8.len(prefix) == 1 and not table.find(reservedPrefixes, prefix) then
 				_K.Data.playerPrefix[player.UserId] = prefix
+				if _K.ChatCommands then
+					_K.ChatCommands.schedule()
+				end
 			end
 		end)
 
@@ -633,7 +639,7 @@ return function(_K)
 		end
 
 		-- handle changing of settings
-		_K.Remote.Settings:Connect(function(player, changes)
+		local _ = _K.Remote.Settings:Connect(function(player, changes)
 			local themeAuthority = _K.Data.settings.changeThemeAuthority
 			--TODO: make the Client authority save each players' theming
 
@@ -779,6 +785,16 @@ return function(_K)
 					end
 					return added
 				end
+				if type(changes.prefix) == "table" then
+					local deduped, seen = {}, {}
+					for _, v in changes.prefix do
+						if not seen[v] then
+							seen[v] = true
+							table.insert(deduped, v)
+						end
+					end
+					changes.prefix = deduped
+				end
 				local invalid, totalAdded = false, 0
 				for key, existing in { prefix = existingPrefixes, splitKey = { current.splitKey } } do
 					local value = changes[key]
@@ -793,10 +809,7 @@ return function(_K)
 						totalAdded += added
 					end
 				end
-				if invalid or (not isDeveloper and totalAdded > 1) then
-					if totalAdded > 1 then
-						changes.prefix, changes.splitKey = nil, nil
-					end
+				if invalid then
 					_K.alert(player, "Prefixes and split keys are limited to a single character.", true)
 				elseif not isDeveloper and totalAdded > 0 then
 					local cooldownError = _K.Chat.cooldown(player.UserId, "prefix")
@@ -868,7 +881,7 @@ return function(_K)
 		end)
 
 		-- handle ban events
-		_K.Remote.Ban:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
+		local _ = _K.Remote.Ban:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
 			userId = tonumber(userId) :: number
 			local canBan = _K.Auth.hasCommand(player.UserId, "ban")
 			if not (canBan and userId and userId > 0 and userId <= 2 ^ 53 and math.floor(userId) == userId) then
@@ -925,7 +938,7 @@ return function(_K)
 			end
 		end)
 
-		_K.Remote.Unban:Connect(function(player: Player, userId: number)
+		local _ = _K.Remote.Unban:Connect(function(player: Player, userId: number)
 			userId = tonumber(userId) :: number
 			local canUnban = _K.Auth.hasCommand(player.UserId, "unban")
 			if not (canUnban and userId and userId > 0 and userId <= 2 ^ 53 and math.floor(userId) == userId) then
@@ -966,7 +979,7 @@ return function(_K)
 			end
 		end)
 
-		_K.Remote.Idled:Connect(function(player: Player, idleTime: number)
+		local _ = _K.Remote.Idled:Connect(function(player: Player, idleTime: number)
 			if type(idleTime) == "number" and idleTime >= 0 and idleTime < math.huge then
 				player:SetAttribute("_KIdleTime", idleTime)
 			end
@@ -1012,7 +1025,7 @@ return function(_K)
 			return nil
 		end
 
-		_K.Remote.Explorer:Connect(function(player: Player, action: string, data: any, selected: Instance?)
+		local _ = _K.Remote.Explorer:Connect(function(player: Player, action: string, data: any, selected: Instance?)
 			local explorerRank = _K.Auth.hasCommand(player.UserId, "explorer")
 			if not explorerRank or type(data) ~= "table" then
 				return
@@ -1080,7 +1093,7 @@ return function(_K)
 					end
 					local wasArchivable = copy.Archivable
 					copy.Archivable = true
-					pcall(cloneInstanceUnsafe, copy, selected)
+					local _ = pcall(cloneInstanceUnsafe, copy, selected)
 					if not wasArchivable then
 						copy.Archivable = false
 					end
@@ -1091,12 +1104,12 @@ return function(_K)
 						continue
 					end
 
-					pcall(game.Destroy, instance)
+					local _ = pcall(game.Destroy, instance)
 				end
 			end
 		end)
 
-		_K.Hook.roleAdded:Connect(function(userId: number, roleId: string)
+		local _ = _K.Hook.roleAdded:Connect(function(userId: number, roleId: string)
 			local player = _K.Service.Players:GetPlayerByUserId(userId)
 			if player then
 				if _K.Auth.hasCommand(userId, "servers") then
@@ -1108,7 +1121,7 @@ return function(_K)
 			end
 		end)
 
-		_K.Hook.roleRemoved:Connect(function(userId: number, roleId: string)
+		local _ = _K.Hook.roleRemoved:Connect(function(userId: number, roleId: string)
 			local player = _K.Service.Players:GetPlayerByUserId(userId)
 			if player then
 				if not _K.Auth.hasCommand(userId, "servers") then
@@ -1174,7 +1187,7 @@ return function(_K)
 			end
 		end)
 
-		_K.Service.Players.PlayerRemoving:Connect(function(player)
+		local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
 			ServersSubscribers[player] = nil
 
 			local userId = player.UserId

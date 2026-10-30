@@ -27,7 +27,7 @@
 
 	```luau
 	-- Shared
-	Remote.EventName:Connect(callback)     --> RBXScriptConnection
+	local _ = Remote.EventName:Connect(callback)     --> RBXScriptConnection
 	Remote.EventName:Once(callback)        --> RBXScriptConnection
 	Remote.EventName:Wait()                --> ...any
 
@@ -60,7 +60,7 @@
 
 	-- Client
 	local Remote = require(ReplicatedStorage.Remote)
-	Remote.Combat:Connect(function(status) print(status) end) -- Prints "FightStarted"
+	local _ = Remote.Combat:Connect(function(status) print(status) end) -- Prints "FightStarted"
 	print(Remote.GetGold:Invoke()) -- Prints 100
 	```
 ]]
@@ -76,13 +76,19 @@ local IS_SERVER = RunService:IsServer()
 local EVENT: RemoteEvent, FUNCTION: RemoteFunction, UNRELIABLE: UnreliableRemoteEvent
 
 if IS_SERVER then
-	EVENT = script:FindFirstChildOfClass("RemoteEvent") or Instance.new("RemoteEvent", script)
-	FUNCTION = script:FindFirstChildOfClass("RemoteFunction") or Instance.new("RemoteFunction", script)
-	UNRELIABLE = script:FindFirstChildOfClass("UnreliableRemoteEvent") or Instance.new("UnreliableRemoteEvent", script)
+	local function getOrCreate(className: string)
+		local remote = script:FindFirstChildOfClass(className)
+		if not remote then
+			remote = Instance.new(className)
+			remote.Name = className
+			remote.Parent = script
+		end
+		return remote
+	end
 
-	EVENT.Name = "RemoteEvent"
-	FUNCTION.Name = "RemoteFunction"
-	UNRELIABLE.Name = "UnreliableRemoteEvent"
+	EVENT = getOrCreate("RemoteEvent") :: RemoteEvent
+	FUNCTION = getOrCreate("RemoteFunction") :: RemoteFunction
+	UNRELIABLE = getOrCreate("UnreliableRemoteEvent") :: UnreliableRemoteEvent
 else
 	EVENT = script:WaitForChild("RemoteEvent") :: RemoteEvent
 	FUNCTION = script:WaitForChild("RemoteFunction") :: RemoteFunction
@@ -109,8 +115,8 @@ export type RemoteData = {
 
 export type Remote = typeof(setmetatable({} :: RemoteData, RemoteObject))
 
-local Remote: { [string | Instance]: Remote } = {}
-local idToRemote: { [string | Instance]: Remote } = {}
+local Remote: { [string]: Remote } = {}
+local idToRemote: { [string]: Remote } = {}
 
 local function newRemote(key: string, internalId: string?): Remote
 	local self = setmetatable({
@@ -133,11 +139,11 @@ function RemoteObject.Connect(self: Remote, callback: (...any) -> ()): Signal.Co
 	return self._signal:Connect(callback)
 end
 
-function RemoteObject.Once(self: Remote, callback: (...any) -> ()): ...any?
+function RemoteObject.Once(self: Remote, callback: (...any) -> ()): Signal.Connection
 	return self._signal:Once(callback)
 end
 
-function RemoteObject.Wait(self: Remote): ...any?
+function RemoteObject.Wait(self: Remote): ...any
 	return self._signal:Wait()
 end
 
@@ -165,6 +171,7 @@ if IS_SERVER then
 	end
 
 	function RemoteObject.Invoke(self: Remote, player: Player, ...): ...any
+		assert(self._id, `Remote "{self._key}" is not initialized`)
 		return FUNCTION:InvokeClient(player, self._id, ...)
 	end
 
@@ -193,59 +200,61 @@ if IS_SERVER then
 		end
 		loaded[player.UserId] = true
 
-		local payload: { [string?]: { string | boolean? } } = {}
+		local payload: { [string]: { string | boolean? } } = {}
 
-		for name, remote in Remote :: any do
-			if name == script then
-				continue
+		for name, remote in pairs(Remote) do
+			if remote._id then
+				local unreliable = if remote._remote == UNRELIABLE then true else nil
+				payload[remote._id] = { name, unreliable }
 			end
-
-			local unreliable = if remote._remote == UNRELIABLE then true else nil
-			payload[remote._id] = { name, unreliable }
 		end
 
 		EVENT:FireClient(player, script, payload)
 	end
 
-	Players.PlayerRemoving:Connect(function(player)
+	local _ = Players.PlayerRemoving:Connect(function(player)
 		loaded[player.UserId] = nil
 	end)
 
-	idToRemote[script] = {
-		_signal = {
-			Fire = function(self, player: Player)
-				syncPayload(player)
-			end,
-		},
-	} :: any
-
-	local function handleEvent(player: Player, id: string, ...)
+	local function handleEvent(player: Player, id: Instance | string, ...)
+		if id == script then
+			syncPayload(player)
+			return
+		end
+		if type(id) ~= "string" then
+			return
+		end
 		local remote = idToRemote[id]
 		if remote then
 			remote._signal:Fire(player, ...)
 		end
 	end
 
-	EVENT.OnServerEvent:Connect(handleEvent)
-	UNRELIABLE.OnServerEvent:Connect(handleEvent)
-	FUNCTION.OnServerInvoke = function(player, id: Instance | string, ...)
+	local function handleServerInvoke(player: Player, id: Instance | string, ...)
+		if type(id) ~= "string" then
+			return
+		end
 		local remote = idToRemote[id]
 		if remote and remote.OnInvoke then
 			return remote.OnInvoke(player, ...)
 		end
+		return
 	end
+
+	local _ = EVENT.OnServerEvent:Connect(handleEvent)
+	local _ = UNRELIABLE.OnServerEvent:Connect(handleEvent)
+	FUNCTION.OnServerInvoke = handleServerInvoke
 
 	EVENT:SetAttribute("ServerReady", true)
 else -- Client
 	function RemoteObject.Fire(self: Remote, ...)
 		if self._id then
-			(self._remote :: any):FireServer(self._id, ...)
+			(self._remote :: RemoteEvent):FireServer(self._id, ...)
 		else
-			if not self._fireQueue then
-				self._fireQueue = {}
-			end
+			local fireQueue: { { [number]: any, n: number } } = self._fireQueue or {}
+			self._fireQueue = fireQueue
 			-- packed so nil arguments survive the queue
-			table.insert(self._fireQueue :: any, table.pack(...))
+			table.insert(fireQueue, table.pack(...))
 		end
 	end
 
@@ -253,10 +262,9 @@ else -- Client
 		if self._id then
 			return FUNCTION:InvokeServer(self._id, ...)
 		else
-			if not self._invokeQueue then
-				self._invokeQueue = {}
-			end
-			table.insert(self._invokeQueue :: any, table.pack(coroutine.running(), ...))
+			local invokeQueue: { { [number]: any, n: number } } = self._invokeQueue or {}
+			self._invokeQueue = invokeQueue
+			table.insert(invokeQueue, table.pack(coroutine.running(), ...))
 
 			return coroutine.yield()
 		end
@@ -279,7 +287,7 @@ else -- Client
 	local function flushQueue(remote: Remote)
 		if remote._fireQueue then
 			for _, args in remote._fireQueue do
-				(remote._remote :: any):FireServer(remote._id, unpack(args, 1, args.n))
+				(remote._remote :: RemoteEvent):FireServer(remote._id, unpack(args, 1, args.n))
 			end
 			remote._fireQueue = nil
 		end
@@ -318,45 +326,54 @@ else -- Client
 		flushQueue(remote)
 	end
 
-	idToRemote[script] = {
-		_signal = {
-			Fire = function(self, arg1, arg2)
-				-- New Event: (string Name, string ID)
-				if type(arg1) == "string" then
-					linkId(arg1, arg2)
+	local function handleSync(arg1: any, arg2: any)
+		-- New Event: (string Name, string ID)
+		if type(arg1) == "string" then
+			linkId(arg1, arg2)
 
-				-- Reliability Change: (boolean State, string ID)
-				elseif type(arg1) == "boolean" then
-					local remote = idToRemote[arg2]
-					if remote then
-						remote:SetUnreliable(arg1)
-					end
+		-- Reliability Change: (boolean State, string ID)
+		elseif type(arg1) == "boolean" then
+			local remote = idToRemote[arg2]
+			if remote then
+				remote:SetUnreliable(arg1)
+			end
 
-				-- Initial Sync: { [string ID]: {string Name, boolean? Unreliable} }
-				elseif type(arg1) == "table" then
-					for id, data in arg1 do
-						linkId(data[1], id, data[2])
-					end
-				end
-			end,
-		},
-	} :: any
+		-- Initial Sync: { [string ID]: {string Name, boolean? Unreliable} }
+		elseif type(arg1) == "table" then
+			for id, data in arg1 do
+				linkId(data[1], id, data[2])
+			end
+		end
+	end
 
-	local function handleEvent(id: string, ...)
+	local function handleEvent(id: Instance | string, ...)
+		if id == script then
+			handleSync(...)
+			return
+		end
+		if type(id) ~= "string" then
+			return
+		end
 		local remote = idToRemote[id]
 		if remote then
 			remote._signal:Fire(...)
 		end
 	end
 
-	EVENT.OnClientEvent:Connect(handleEvent)
-	UNRELIABLE.OnClientEvent:Connect(handleEvent)
-	FUNCTION.OnClientInvoke = function(id: Instance | string, ...)
+	local function handleClientInvoke(id: Instance | string, ...)
+		if type(id) ~= "string" then
+			return
+		end
 		local remote = idToRemote[id]
 		if remote and remote.OnInvoke then
 			return remote.OnInvoke(...)
 		end
+		return
 	end
+
+	local _ = EVENT.OnClientEvent:Connect(handleEvent)
+	local _ = UNRELIABLE.OnClientEvent:Connect(handleEvent)
+	FUNCTION.OnClientInvoke = handleClientInvoke
 
 	if not EVENT:GetAttribute("ServerReady") then
 		EVENT:GetAttributeChangedSignal("ServerReady"):Wait()

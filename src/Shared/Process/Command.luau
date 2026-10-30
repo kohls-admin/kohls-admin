@@ -9,6 +9,8 @@ local Type = require(Shared:WaitForChild("Type"))
 
 local Command = {
 	Argument = Argument,
+	-- added with Process.addCommandFilter
+	filters = {} :: { (command: any) -> (boolean, string?) },
 }
 Command.__index = Command
 
@@ -42,7 +44,9 @@ function Command:shouldRequest(player: Player)
 	if self._K._shouldRequestOverride then
 		return self._K._shouldRequestOverride(self, player)
 	end
-	return self.from ~= self._K.creatorId and self.rank <= Auth.getRank(player.UserId)
+	-- a joining player's rank reads 0 until its roles load, so it's asked like an equal rank
+	return self.from ~= self._K.creatorId
+		and (player:GetAttribute("_KRolesLoaded") ~= true or self.rank <= Auth.getRank(player.UserId))
 end
 
 function Command:requestCommand(targetPlayer: Player, args, run)
@@ -91,8 +95,8 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 
 	if accepted then
 		self._K.Hook.preCommand:Fire(self)
-		local _ok, err = pcall(run, self, unpack(args))
-		if err then
+		local _ok, err = pcall(run, self, unpack(args, 1, #self.definition.args))
+		if err and self.fromPlayer then
 			self._K.Remote.Notify:Fire(self.fromPlayer, {
 				Text = `<b>"{self.alias}" command failed:</b> {err}`,
 				From = "_K",
@@ -107,9 +111,64 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 	return
 end
 
+--[=[
+	Removes a player from a `player` or `players` argument, for command filters before the command runs. The command
+	is cancelled when a required argument has no players left. Returns true when the player was removed.
+]=]
+function Command:dropTarget(argIndex: number, player: Player): boolean
+	local arg = self.args[argIndex]
+	local optional = arg and arg.definition and arg.definition.optional == true
+	local prepared = self.preparedArgs[argIndex]
+	if prepared == player then
+		self.preparedArgs[argIndex] = nil
+		if arg and type(arg.parsedArgs) == "table" then
+			table.clear(arg.parsedArgs)
+		end
+		if not optional then
+			self.noTargets = true
+		end
+		return true
+	elseif type(prepared) == "table" then
+		local index = table.find(prepared, player)
+		if index then
+			table.remove(prepared, index)
+			if #prepared == 0 and not optional then
+				self.noTargets = true
+			end
+			return true
+		end
+	end
+	return false
+end
+
+-- runs the command filters in order, returns false and the reason when one cancels the command
+function Command:filter(): (boolean, string?)
+	for _, filter in table.clone(Command.filters) do
+		local ok, allowed, reason = pcall(filter, self)
+		if not ok then
+			warn(`Kohl's Admin command filter error:`, allowed)
+			return false, "Command blocked by a filter error."
+		elseif not allowed then
+			return false, if type(reason) == "string" then reason else "Command blocked."
+		end
+		if self.noTargets then
+			break
+		end
+	end
+	if self.noTargets then
+		return false, "No players left to run the command on."
+	end
+	return true
+end
+
 function Command:run()
 	if not self.validated then
 		return false, self.Error or "Command must be validated before it is run!"
+	end
+
+	local allowed, reason = self:filter()
+	if not allowed then
+		return false, reason
 	end
 
 	local run = self.definition[if self._K.IsServer then "run" else "runClient"]
@@ -161,7 +220,8 @@ function Command:run()
 	end
 
 	self._K.Hook.preCommand:Fire(self)
-	local ok, err = pcall(run, self, unpack(self.preparedArgs))
+	local argCount = if self.definition.args then #self.definition.args else 0
+	local ok, err = pcall(run, self, unpack(self.preparedArgs, 1, argCount))
 	self._K.Hook.postCommand:Fire(self)
 
 	if not ok then

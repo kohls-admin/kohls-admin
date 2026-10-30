@@ -19,6 +19,25 @@ local Process = {
 	ignoreFormat = `"\`%%$%%%%^%%*%%.%%+%%-%%(%%)%%[%%]\{\}%%p`,
 }
 
+--[=[
+	Adds a filter that every command passes before it runs on this side, synchronously in Command:run before command
+	requests are split off. `filter(command)` returns true to let it run, or false and a reason to cancel it, and may
+	drop targets with `command:dropTarget(argIndex, player)`. It must not yield. A filter that errors cancels the
+	command. Returns a function that removes the filter.
+
+	Unlike the preCommand hook, which only observes, a filter can stop a command.
+]=]
+function Process.addCommandFilter(filter: (command: any) -> (boolean, string?)): () -> ()
+	assert(type(filter) == "function", "Command filter must be a function")
+	table.insert(Command.filters, filter)
+	return function()
+		local index = table.find(Command.filters, filter)
+		if index then
+			table.remove(Command.filters, index)
+		end
+	end
+end
+
 --- Parses a string into a raw command format.
 function Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?
 	local escapedSplit = Util.String.escapePattern(delimiter)
@@ -117,7 +136,8 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 	local text = Util.String.trimStart(rawText)
 	local rawCommands = Process.rawParse(
 		text,
-		{ _K.getCommandPrefix(from), unpack(_K.Data.settings.prefix) },
+		-- global command strings are published with the server prefix, a sender's own prefix in their text isn't one
+		if global then { _K.getCommandPrefix() } else { _K.getCommandPrefix(from), unpack(_K.Data.settings.prefix) },
 		_K.Data.settings.splitKey or " "
 	)
 	if not rawCommands then
@@ -181,7 +201,19 @@ local function resetLimit(from: number)
 	commandLimits[from] = nil
 end
 
-function Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?): boolean
+--[=[
+	Parses and runs a command string from a user. On the client, commands run their client part and the ones with a
+	server part are sent to the server, unless `clientOnly`: the server already runs them (chat commands) and reports
+	their prepare/server errors.
+]=]
+function Process.runCommands(
+	_K: any,
+	from: number,
+	rawText: string,
+	noLog: boolean?,
+	global: boolean?,
+	clientOnly: boolean?
+): boolean
 	from = from or _K.creatorId
 
 	local cooldown, limit
@@ -205,7 +237,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 	local commandErrors = {}
 
 	if ok then
-		Hook.runPreparedCommands:Fire(from, result, rawText)
+		Hook.runPreparedCommands:Fire(from, result, rawText, not clientOnly)
 
 		for index, command in result do
 			-- count before running so at most `limit` commands run per cooldown
@@ -240,7 +272,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		table.insert(commandErrors, result)
 	end
 
-	if #commandErrors > 0 then
+	if #commandErrors > 0 and not (clientOnly and not ok) then
 		local commandError = `{table.concat(commandErrors, "\n")}`
 		if _K.IsServer then
 			local player = _K.Service.Players:GetPlayerByUserId(from)
@@ -269,7 +301,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		end
 	end
 
-	if _K.IsClient and #commandsRan > 0 then
+	if _K.IsClient and #commandsRan > 0 and not clientOnly then
 		local prefix = _K.getCommandPrefix(from)
 		local commandStrings, runOnServer = {}, false
 		for _, command in commandsRan do
@@ -302,14 +334,16 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 			local textPositions = {}
 			local prefix = _K.getCommandPrefix()
 			for _, command in commandsRan do
-				if command.definition.noLog or (_K.IsClient and not command.definition.runClient) then
+				-- each side logs the commands it runs, chat commands reach the server with their client-only ones
+				local definition = command.definition
+				if definition.noLog or not definition[if _K.IsClient then "runClient" else "run"] then
 					continue
 				end
 				log[index] = prefix .. command.alias
 				index += 1
 				for _, arg in command.args do
 					local position = index
-					if arg.rawType.freeText then
+					if if arg.redactLog ~= nil then arg.redactLog else arg.rawType.freeText then
 						table.insert(textPositions, position)
 					end
 					tasks:add(function()
@@ -318,7 +352,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 							argString = arg.rawType.log(arg)
 						else
 							argString = Util.Table.concat(arg.parsedArgs, ",")
-							if arg.rawType.filterLog and _K.IsServer then
+							if arg.rawType.filterLog and arg.redactLog ~= false and _K.IsServer then
 								argString = Util.String.filterForBroadcast(argString, from)
 							end
 						end

@@ -13,7 +13,7 @@ hat.AccessoryType = Enum.AccessoryType.Back
 hat.Name = "_KAlphaWings"
 hat:AddTag("_KAlphaWings")
 
-local handle = Instance.new("Part", hat)
+local handle = Instance.new("Part")
 handle.Name = "Handle"
 handle.Transparency = 1
 handle.CanCollide = false
@@ -21,10 +21,12 @@ handle.CanQuery = false
 handle.CanTouch = false
 handle.Massless = true
 handle.Locked = true
+handle.Parent = hat
 
-local attachment = Instance.new("Attachment", handle)
+local attachment = Instance.new("Attachment")
 attachment.CFrame = CFrame.new(0, -0.5, 0)
 attachment.Name = "BodyBackAttachment"
+attachment.Parent = handle
 
 task.spawn(function()
 	local ok, result = Util.Retry(function()
@@ -52,9 +54,10 @@ task.spawn(function()
 	wingMesh.Material = Enum.Material.Neon
 	wingMesh:SetAttribute("OriginalSize", wingMesh.Size)
 
-	local weld = Instance.new("Weld", wingMesh)
+	local weld = Instance.new("Weld")
 	weld.Part0 = handle
 	weld.Part1 = wingMesh
+	weld.Parent = wingMesh
 
 	local Bones = require(script:WaitForChild("Bones"))
 	for _, bone in Bones:GetChildren() do
@@ -67,7 +70,7 @@ end)
 
 if RunService:IsClient() then
 	local rainbow = {}
-	RunService.Heartbeat:Connect(function()
+	local _ = RunService.Heartbeat:Connect(function()
 		if next(rainbow) then
 			local color = hclToRGB(Vector3.new((time() / 10) % 1, 0.4, 1))
 			for wings in rainbow do

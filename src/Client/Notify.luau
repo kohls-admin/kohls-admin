@@ -118,6 +118,7 @@ return function(dialogOverride)
 		userFrame = if userFrame then _K.client.UserFrame(unpack(userFrame)) else _K.client.UserFrame(from, name, image)
 		UI.edit(userFrame)({
 			Parent = dialog,
+			LayoutOrder = -3,
 
 			UI.list {
 				direction = "x",
@@ -132,7 +133,7 @@ return function(dialogOverride)
 
 	local list = if announce then announcements else notifications
 
-	self = { dialog._instance, visible, offset, dialogOverride.Duration }
+	self = { dialog._instance, visible, offset, dialogOverride.Duration, close }
 	table.insert(list, 1, self)
 	task.defer(function()
 		visible(true)
@@ -140,11 +141,15 @@ return function(dialogOverride)
 
 	if resetOffset(announce) > UI.LayerTopInset.AbsoluteSize.Y / (if announce then 2 else 1) then
 		for index = #list, 1, -1 do
-			local _card, _visible, _offset, delay = unpack(list[index])
+			local _card, _visible, _offset, delay, closeEntry = unpack(list[index])
 			if delay == 0 then
 				continue
 			end
-			hide(list[index], announce)
+			if closeEntry then
+				closeEntry()
+			else
+				hide(list[index], announce)
+			end
 			break
 		end
 	end

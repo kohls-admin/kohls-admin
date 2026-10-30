@@ -7,16 +7,22 @@ local function convertFont(font: Enum.Font | Font | string)
 		else font
 end
 
+local function never()
+	return false
+end
+
 local MIGRATE = {
 	defaultTheme = "theme",
 	gameHubEnabled = "addToCharts",
+	-- chat text is never logged, platform-integrated chat hides it from scripts
+	saveChatLogs = never,
 	themeFont = convertFont,
 	themeFontMono = convertFont,
 }
 
 return function(settings)
 	for key, value in MIGRATE do
-		if settings[key] then
+		if settings[key] ~= nil then
 			if type(value) == "function" then
 				settings[key] = value(settings[key])
 			elseif type(value) == "string" then

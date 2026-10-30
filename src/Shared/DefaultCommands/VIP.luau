@@ -11,12 +11,41 @@ if Util.Service.Run:IsServer() then
 		end)
 	end)
 
-	Util.Service.Players.PlayerRemoving:Connect(function(player)
+	local _ = Util.Service.Players.PlayerRemoving:Connect(function(player)
 		if cleanup[player] and cleanup[player].Connected then
 			cleanup[player]:Disconnect()
 			cleanup[player] = nil
 		end
 	end)
+end
+
+local function removeRootEffect(effectName: string, players: { Player })
+	for _, player in players do
+		local root = player.Character
+			and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
+		local existing = root and root:FindFirstChild(effectName)
+		if existing then
+			existing:Destroy()
+		end
+	end
+end
+
+local function applyClothing(context: any, players: { Player }, className: string, prop: string, image: any)
+	for _, player in players do
+		if not player.Character then
+			continue
+		end
+		local existing = player.Character:FindFirstChildOfClass(className)
+		if not existing then
+			existing = Instance.new(className)
+			existing.Parent = player.Character
+		end
+		if context.undo then
+			context._K.Util.Property.reset(existing, prop)
+		else
+			context._K.Util.Property.override(existing, prop, image)
+		end
+	end
 end
 
 return {
@@ -160,17 +189,7 @@ return {
 		},
 
 		run = function(context, players)
-			for _, player in players do
-				local root = player.Character
-					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
-				if not root then
-					continue
-				end
-				local existing = root:FindFirstChild("_KFire")
-				if existing then
-					existing:Destroy()
-				end
-			end
+			removeRootEffect("_KFire", players)
 		end,
 	},
 	{
@@ -226,17 +245,7 @@ return {
 		},
 
 		run = function(context, players)
-			for _, player in players do
-				local root = player.Character
-					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
-				if not root then
-					continue
-				end
-				local existing = root:FindFirstChild("_KSmoke")
-				if existing then
-					existing:Destroy()
-				end
-			end
+			removeRootEffect("_KSmoke", players)
 		end,
 	},
 	{
@@ -291,17 +300,7 @@ return {
 		},
 
 		run = function(context, players)
-			for _, player in players do
-				local root = player.Character
-					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
-				if not root then
-					continue
-				end
-				local existing = root:FindFirstChild("_KSparkles")
-				if existing then
-					existing:Destroy()
-				end
-			end
+			removeRootEffect("_KSparkles", players)
 		end,
 	},
 	{
@@ -362,17 +361,7 @@ return {
 		},
 
 		run = function(context, players)
-			for _, player in players do
-				local root = player.Character
-					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
-				if not root then
-					continue
-				end
-				local existing = root:FindFirstChild("_KLight")
-				if existing then
-					existing:Destroy()
-				end
-			end
+			removeRootEffect("_KLight", players)
 		end,
 	},
 	{
@@ -514,7 +503,7 @@ return {
 				pe.Parent = root
 			end
 
-			_K.Remote.DonorTrail:Connect(function(player, enable: boolean?)
+			local _ = _K.Remote.DonorTrail:Connect(function(player, enable: boolean?)
 				if enable then
 					apply(player, player, nil, nil)
 				else
@@ -552,17 +541,7 @@ return {
 		},
 
 		run = function(context, players)
-			for _, player in players do
-				local root = player.Character
-					and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart)
-				if not root then
-					continue
-				end
-				local existing = root:FindFirstChild("_KParticleEffect")
-				if existing then
-					existing:Destroy()
-				end
-			end
+			removeRootEffect("_KParticleEffect", players)
 		end,
 	},
 	{
@@ -900,10 +879,10 @@ return {
 			},
 		},
 		envClient = function(_K)
-			local CollectionService = game:GetService("CollectionService")
+			local CollectionService = _K.Service.Collection
 
 			local capeMotors = {}
-			game:GetService("RunService").Heartbeat:Connect(function(step)
+			local _ = _K.Service.Run.Heartbeat:Connect(function(step)
 				for motor, offset in capeMotors do
 					local root = motor.Part0
 					if not root then
@@ -967,7 +946,9 @@ return {
 					cape.Size = Vector3.new(1.9, 3.8, 0.2)
 
 					if image then
-						Instance.new("Decal", cape).Texture = image
+						local decal = Instance.new("Decal")
+						decal.Texture = image
+						decal.Parent = cape
 					end
 
 					local motor = Instance.new("Motor6D")
@@ -1366,21 +1347,7 @@ return {
 		},
 
 		run = function(context, players, image)
-			for _, player in players do
-				if not player.Character then
-					continue
-				end
-				local shirt = player.Character:FindFirstChildOfClass("Shirt")
-				if not shirt then
-					shirt = Instance.new("Shirt")
-					shirt.Parent = player.Character
-				end
-				if context.undo then
-					context._K.Util.Property.reset(shirt, "ShirtTemplate")
-				else
-					context._K.Util.Property.override(shirt, "ShirtTemplate", image)
-				end
-			end
+			applyClothing(context, players, "Shirt", "ShirtTemplate", image)
 		end,
 	},
 	{
@@ -1402,21 +1369,7 @@ return {
 		},
 
 		run = function(context, players, image)
-			for _, player in players do
-				if not player.Character then
-					continue
-				end
-				local existing = player.Character:FindFirstChildOfClass("Pants")
-				if not existing then
-					existing = Instance.new("Pants")
-					existing.Parent = player.Character
-				end
-				if context.undo then
-					context._K.Util.Property.reset(existing, "PantsTemplate")
-				else
-					context._K.Util.Property.override(existing, "PantsTemplate", image)
-				end
-			end
+			applyClothing(context, players, "Pants", "PantsTemplate", image)
 		end,
 	},
 	{
@@ -1438,21 +1391,7 @@ return {
 		},
 
 		run = function(context, players, image)
-			for _, player in players do
-				if not player.Character then
-					continue
-				end
-				local tshirt = player.Character:FindFirstChildOfClass("ShirtGraphic")
-				if not tshirt then
-					tshirt = Instance.new("ShirtGraphic")
-					tshirt.Parent = player.Character
-				end
-				if context.undo then
-					context._K.Util.Property.reset(tshirt, "Graphic")
-				else
-					context._K.Util.Property.override(tshirt, "Graphic", image)
-				end
-			end
+			applyClothing(context, players, "ShirtGraphic", "Graphic", image)
 		end,
 	},
 	{

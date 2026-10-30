@@ -66,11 +66,11 @@ return function(_K)
 				for _, role in info.Roles do
 					local playerRank = role.Rank
 					if sign == ">" then
-						if if equal then playerRank >= rank else playerRank > rank then
+						if if equal == "=" then playerRank >= rank else playerRank > rank then
 							return true
 						end
 					elseif sign == "<" then
-						if if equal then playerRank <= rank else playerRank < rank then
+						if if equal == "=" then playerRank <= rank else playerRank < rank then
 							return true
 						end
 					elseif playerRank == rank then

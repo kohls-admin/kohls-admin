@@ -9,12 +9,16 @@ if RunService:IsServer() then
 	return false
 end
 
+local ORIGINAL_PRODUCT_ID = 110019084552349
+local SALE_PRODUCT_ID = 115444443724463
+local SALE_PERIOD = 10 * 60
+
 local vip = Instance.new("Frame")
 vip.Name = "VIP"
 vip.AnchorPoint = Vector2.new(0.5, 0.5)
 vip.BackgroundTransparency = 1
 vip.Position = UDim2.fromScale(0.5, 0.5)
-vip.Size = UDim2.fromOffset(420, 420)
+vip.Size = UDim2.fromOffset(420, 440)
 vip.Visible = false
 vip.ZIndex = 9e8
 
@@ -40,7 +44,7 @@ frame.Size = UDim2.fromScale(1, 1)
 local uIListLayout1 = Instance.new("UIListLayout")
 uIListLayout1.Name = "UIListLayout"
 uIListLayout1.HorizontalAlignment = Enum.HorizontalAlignment.Center
-uIListLayout1.Padding = UDim.new(0, 24)
+uIListLayout1.Padding = UDim.new(0, 16)
 uIListLayout1.SortOrder = Enum.SortOrder.LayoutOrder
 uIListLayout1.Parent = frame
 
@@ -127,6 +131,27 @@ imageLabel1.Size = UDim2.fromOffset(48, 48)
 imageLabel1.Parent = games
 
 games.Parent = frame
+
+local previewLabel = Instance.new("TextLabel")
+previewLabel.Name = "Preview"
+previewLabel.AutomaticSize = Enum.AutomaticSize.XY
+previewLabel.BackgroundTransparency = 1
+previewLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+previewLabel.LayoutOrder = 2
+previewLabel.RichText = true
+previewLabel.Size = UDim2.new(0.85, 0, 0, 20)
+previewLabel.TextColor3 = Color3.fromRGB(220, 220, 230)
+previewLabel.TextSize = 15
+previewLabel.TextWrapped = true
+previewLabel.TextXAlignment = Enum.TextXAlignment.Center
+previewLabel.Parent = frame
+
+local function updatePreviewPrefix(rawPrefix: string?)
+	local p = Util.String.escapeRichText(rawPrefix or ";")
+	previewLabel.Text =
+		`<font transparency='0.25'>Includes <b>{p}headless</b>, <b>{p}korblox</b>, <b>{p}fire</b>, <b>{p}cape</b>, <b>{p}goldify</b> &amp; more!</font>`
+end
+updatePreviewPrefix(";")
 
 local panel = Instance.new("Frame")
 panel.Name = "Panel"
@@ -270,75 +295,48 @@ buyFrame.BackgroundTransparency = 1
 buyFrame.LayoutOrder = 3
 buyFrame.Size = UDim2.new(1, 0, 0, 64)
 
-local favorite = Instance.new("TextButton", buyFrame)
+local favorite = Instance.new("ImageButton")
 favorite.Name = "Favorite"
 favorite.BackgroundTransparency = 1
-favorite.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
-favorite.Size = UDim2.fromOffset(84, 48)
-favorite.Text = "⭐"
-favorite.TextColor3 = Color3.new()
-favorite.TextSize = 48
-favorite.TextXAlignment = Enum.TextXAlignment.Right
-
-local buy = Instance.new("TextButton")
-buy.Name = "Buy"
-buy.BackgroundColor3 = Color3.fromRGB(51, 95, 255)
-buy.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
-buy.LayoutOrder = 3
-buy.Size = UDim2.fromOffset(114, 64)
-buy.Text = "399"
-buy.TextColor3 = Color3.new(1, 1, 1)
-buy.TextSize = 12
-buy.TextTransparency = 1
-
-local uICorner2 = Instance.new("UICorner")
-uICorner2.Name = "UICorner"
-uICorner2.CornerRadius = UDim.new(0, 12)
-uICorner2.Parent = buy
-
-local robuxIcon = Instance.new("ImageLabel")
-robuxIcon.Name = "RobuxIcon"
-robuxIcon.BackgroundTransparency = 1
-robuxIcon.Image = "rbxasset://textures/ui/common/robux@2x.png"
-robuxIcon.Size = UDim2.fromScale(1, 1)
-robuxIcon.SizeConstraint = Enum.SizeConstraint.RelativeYY
-robuxIcon.ZIndex = 2
-robuxIcon.Parent = buy
-
-local uIPadding = Instance.new("UIPadding")
-uIPadding.Name = "UIPadding"
-uIPadding.PaddingBottom = UDim.new(0, 16)
-uIPadding.PaddingLeft = UDim.new(0, 16)
-uIPadding.PaddingRight = UDim.new(0, 16)
-uIPadding.PaddingTop = UDim.new(0, 16)
-uIPadding.Parent = buy
-
-local price = Instance.new("TextLabel")
-price.Name = "Price"
-price.BackgroundTransparency = 1
-price.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-price.Position = UDim2.fromOffset(40, 0)
-price.Size = UDim2.fromOffset(42, 32)
-price.Text = "399"
-price.TextColor3 = Color3.new(1, 1, 1)
-price.TextSize = 24
-price.Parent = buy
-
-buy.Parent = buyFrame
+favorite.Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png"
+favorite.ImageColor3 = Color3.new(1, 0.8, 0)
+favorite.LayoutOrder = 1
+favorite.Size = UDim2.fromOffset(36, 36)
+favorite.Parent = buyFrame
 
 local originalPrice = Instance.new("Frame")
 originalPrice.Name = "OriginalPrice"
+originalPrice.AutomaticSize = Enum.AutomaticSize.X
 originalPrice.BackgroundTransparency = 1
-originalPrice.Size = UDim2.fromOffset(84, 32)
+originalPrice.LayoutOrder = 2
+originalPrice.Size = UDim2.fromOffset(0, 32)
 originalPrice.Visible = false
+
+local origList = Instance.new("UIListLayout")
+origList.FillDirection = Enum.FillDirection.Horizontal
+origList.Padding = UDim.new(0, 4)
+origList.SortOrder = Enum.SortOrder.LayoutOrder
+origList.VerticalAlignment = Enum.VerticalAlignment.Center
+origList.Parent = originalPrice
+
+local robuxIcon1 = Instance.new("ImageLabel")
+robuxIcon1.Name = "RobuxIcon"
+robuxIcon1.BackgroundTransparency = 1
+robuxIcon1.Image = "rbxasset://textures/ui/common/robux@2x.png"
+robuxIcon1.ImageColor3 = Color3.fromRGB(184, 184, 184)
+robuxIcon1.LayoutOrder = 1
+robuxIcon1.Size = UDim2.fromOffset(24, 24)
+robuxIcon1.ZIndex = 2
+robuxIcon1.Parent = originalPrice
 
 local originalPriceLabel = Instance.new("TextLabel")
 originalPriceLabel.Name = "Label"
+originalPriceLabel.AutomaticSize = Enum.AutomaticSize.X
 originalPriceLabel.BackgroundTransparency = 1
 originalPriceLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
-originalPriceLabel.Position = UDim2.fromOffset(40, 0)
-originalPriceLabel.Size = UDim2.fromOffset(42, 32)
-originalPriceLabel.Text = "499"
+originalPriceLabel.LayoutOrder = 2
+originalPriceLabel.Size = UDim2.fromOffset(0, 32)
+originalPriceLabel.Text = "799"
 originalPriceLabel.TextColor3 = Color3.fromRGB(184, 184, 184)
 originalPriceLabel.TextSize = 24
 
@@ -349,29 +347,73 @@ line.BackgroundColor3 = Color3.fromRGB(184, 184, 184)
 line.BorderColor3 = Color3.new()
 line.BorderSizePixel = 0
 line.Position = UDim2.fromScale(0.5, 0.5)
-line.Size = UDim2.fromOffset(48, 2)
+line.Size = UDim2.new(1, 4, 0, 2)
 line.ZIndex = 2
 line.Parent = originalPriceLabel
 
 originalPriceLabel.Parent = originalPrice
-
-local robuxIcon1 = Instance.new("ImageLabel")
-robuxIcon1.Name = "RobuxIcon"
-robuxIcon1.BackgroundTransparency = 1
-robuxIcon1.Image = "rbxasset://textures/ui/common/robux@2x.png"
-robuxIcon1.ImageColor3 = Color3.fromRGB(184, 184, 184)
-robuxIcon1.Size = UDim2.fromScale(1, 1)
-robuxIcon1.SizeConstraint = Enum.SizeConstraint.RelativeYY
-robuxIcon1.ZIndex = 2
-robuxIcon1.Parent = originalPrice
-
 originalPrice.Parent = buyFrame
+
+local buy = Instance.new("TextButton")
+buy.Name = "Buy"
+buy.AutomaticSize = Enum.AutomaticSize.X
+buy.BackgroundColor3 = Color3.fromRGB(51, 95, 255)
+buy.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+buy.LayoutOrder = 3
+buy.Size = UDim2.fromOffset(0, 56)
+buy.Text = ""
+buy.TextColor3 = Color3.new(1, 1, 1)
+buy.TextSize = 12
+buy.TextTransparency = 1
+
+local uICorner2 = Instance.new("UICorner")
+uICorner2.Name = "UICorner"
+uICorner2.CornerRadius = UDim.new(0, 12)
+uICorner2.Parent = buy
+
+local buyList = Instance.new("UIListLayout")
+buyList.FillDirection = Enum.FillDirection.Horizontal
+buyList.Padding = UDim.new(0, 8)
+buyList.SortOrder = Enum.SortOrder.LayoutOrder
+buyList.VerticalAlignment = Enum.VerticalAlignment.Center
+buyList.Parent = buy
+
+local robuxIcon = Instance.new("ImageLabel")
+robuxIcon.Name = "RobuxIcon"
+robuxIcon.BackgroundTransparency = 1
+robuxIcon.Image = "rbxasset://textures/ui/common/robux@2x.png"
+robuxIcon.LayoutOrder = 1
+robuxIcon.Size = UDim2.fromOffset(28, 28)
+robuxIcon.ZIndex = 2
+robuxIcon.Parent = buy
+
+local uIPadding = Instance.new("UIPadding")
+uIPadding.Name = "UIPadding"
+uIPadding.PaddingBottom = UDim.new(0, 12)
+uIPadding.PaddingLeft = UDim.new(0, 16)
+uIPadding.PaddingRight = UDim.new(0, 16)
+uIPadding.PaddingTop = UDim.new(0, 12)
+uIPadding.Parent = buy
+
+local price = Instance.new("TextLabel")
+price.Name = "Price"
+price.AutomaticSize = Enum.AutomaticSize.X
+price.BackgroundTransparency = 1
+price.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+price.LayoutOrder = 2
+price.Size = UDim2.fromOffset(0, 32)
+price.Text = "799"
+price.TextColor3 = Color3.new(1, 1, 1)
+price.TextSize = 24
+price.Parent = buy
+
+buy.Parent = buyFrame
 
 local uIListLayout5 = Instance.new("UIListLayout")
 uIListLayout5.Name = "UIListLayout"
 uIListLayout5.FillDirection = Enum.FillDirection.Horizontal
 uIListLayout5.HorizontalAlignment = Enum.HorizontalAlignment.Center
-uIListLayout5.Padding = UDim.new(0, 16)
+uIListLayout5.Padding = UDim.new(0, 14)
 uIListLayout5.SortOrder = Enum.SortOrder.LayoutOrder
 uIListLayout5.VerticalAlignment = Enum.VerticalAlignment.Center
 uIListLayout5.Parent = buyFrame
@@ -382,7 +424,7 @@ view.AnchorPoint = Vector2.new(0, 0.5)
 view.AutomaticSize = Enum.AutomaticSize.X
 view.BackgroundColor3 = Color3.fromRGB(64, 64, 64)
 view.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
-view.LayoutOrder = 3
+view.LayoutOrder = 4
 view.Position = UDim2.new(1, 32, 0.5, 0)
 view.Size = UDim2.fromOffset(0, 48)
 view.Text = "View"
@@ -396,10 +438,10 @@ uiCorner3.Parent = view
 
 local uIPadding1 = Instance.new("UIPadding")
 uIPadding1.Name = "UIPadding"
-uIPadding1.PaddingBottom = UDim.new(0, 16)
+uIPadding1.PaddingBottom = UDim.new(0, 12)
 uIPadding1.PaddingLeft = UDim.new(0, 16)
 uIPadding1.PaddingRight = UDim.new(0, 16)
-uIPadding1.PaddingTop = UDim.new(0, 16)
+uIPadding1.PaddingTop = UDim.new(0, 12)
 uIPadding1.Parent = view
 
 view.Parent = buyFrame
@@ -417,17 +459,25 @@ close.Position = UDim2.new(1, -4, 0, 4)
 close.Size = UDim2.fromOffset(32, 32)
 close.Parent = vip
 
-local originalProductId = "110019084552349"
-local saleProductId = "115444443724463"
-
-local productId = originalProductId
+local productId: number = ORIGINAL_PRODUCT_ID
 
 local function promptBulkPurchase(id: number | string)
-	Util.Remote.PromptBulkPurchase:Fire(tonumber(id) :: any)
+	local numId = tonumber(id)
+	if numId then
+		Util.Remote.PromptBulkPurchase:Fire(numId)
+	end
 end
 
-local function promptPurchaseVIP()
+local function buyActiveVIP()
 	promptBulkPurchase(productId)
+end
+
+local function promptPurchaseVIP(directPurchase: boolean?)
+	if directPurchase or vip.Visible then
+		buyActiveVIP()
+	else
+		vip.Visible = true
+	end
 end
 
 task.spawn(function()
@@ -443,23 +493,28 @@ task.spawn(function()
 	}
 end)
 
-local function updateLabelPrice(label: TextLabel, id: number)
-	local ok, result = pcall(MarketplaceService.GetProductInfoAsync, MarketplaceService, id, Enum.InfoType.Asset)
-	if ok then
-		label.Text = result.PriceInRobux
+local function updateLabelPrice(targetLabel: TextLabel, id: number)
+	local ok, result = Util.Retry(function()
+		return MarketplaceService:GetProductInfoAsync(id, Enum.InfoType.Asset).PriceInRobux
+	end)
+	if ok and result then
+		targetLabel.Text = tostring(result)
 	end
 end
 
 local function setSalePrice(onSale: boolean?)
-	productId = if onSale then saleProductId else originalProductId
-	favorite.Visible = not onSale
-	originalPrice.Visible = onSale
+	productId = if onSale then SALE_PRODUCT_ID else ORIGINAL_PRODUCT_ID
+	favorite.Visible = true
+	originalPrice.Visible = if onSale then true else false
 	title.Visible = true
-	buy.Price.Text = if onSale then "479" else "799"
-	task.spawn(updateLabelPrice, buy.Price, productId)
+	price.Text = if onSale then "479" else "799"
+	task.spawn(updateLabelPrice, price, productId)
+	if shared._K_INTERFACE and shared._K_INTERFACE.VIP and shared._K_INTERFACE.VIP.saleStateChanged then
+		shared._K_INTERFACE.VIP.saleStateChanged:Fire(onSale == true, productId)
+	end
 end
 
-task.spawn(updateLabelPrice, originalPriceLabel, productId)
+task.spawn(updateLabelPrice, originalPriceLabel, ORIGINAL_PRODUCT_ID)
 task.spawn(function()
 	local initialJoin = LocalPlayer:GetAttribute("_KInitialJoin")
 	while not initialJoin do
@@ -469,63 +524,89 @@ task.spawn(function()
 
 	local elapsed = workspace:GetServerTimeNow() - initialJoin
 
-	local PERIOD = 10 * 60
-
-	if elapsed < PERIOD then
+	if elapsed < SALE_PERIOD then
 		setSalePrice(false)
-		while elapsed < PERIOD do
+		while elapsed < SALE_PERIOD do
 			task.wait(0.5)
-			elapsed = (workspace:GetServerTimeNow() - initialJoin)
-			local duration = PERIOD - elapsed
+			elapsed = workspace:GetServerTimeNow() - initialJoin
+			local duration = math.max(0, SALE_PERIOD - elapsed)
 			title.Text = `<font color="#0f0" transparency="0">40% OFF</font> in {string.format(
 				"%02d:%02d",
 				duration // 60,
 				duration % 60
 			)}`
 		end
-		title.Text = `<font color="#0f0" transparency="0">40% OFF</font>`
 	end
 
+	title.Text = `<font color="#0f0" transparency="0">40% OFF</font>`
 	setSalePrice(true)
+	if shared._K_INTERFACE and shared._K_INTERFACE.client and shared._K_INTERFACE.client.VIPNotification then
+		shared._K_INTERFACE.client.VIPNotification()
+	end
 end)
 
-buy.Activated:Connect(promptPurchaseVIP)
-favorite.Activated:Connect(function()
-	pcall(function()
+local _ = buy.Activated:Connect(buyActiveVIP)
+local _ = favorite.Activated:Connect(function()
+	local _ = pcall(function()
 		shared._K_INTERFACE.Service.AvatarEditor:PromptSetFavorite(productId, 1, true)
 	end)
 end)
-view.Activated:Connect(function()
-	shared._K_INTERFACE.client.commandsWindowVisible(true)
-	shared._K_INTERFACE.client.dashboard.Commands._input._input.Text = "role=vip"
-	vip.ZIndex = shared._K_INTERFACE.Registry.commands.cmds.env.window._instance.ZIndex - 1
+local _ = view.Activated:Connect(function()
+	vip.Visible = false
+	local client = shared._K_INTERFACE and shared._K_INTERFACE.client
+	if client then
+		if client.commandsWindowVisible then
+			client.commandsWindowVisible(true)
+		end
+		local commands = client.dashboard and client.dashboard.Commands
+		if commands and commands._input and commands._input._input then
+			commands._input._input.Text = "role=vip"
+		end
+	end
+	local cmds = shared._K_INTERFACE and shared._K_INTERFACE.Registry and shared._K_INTERFACE.Registry.commands.cmds
+	local cmdsWindow = cmds and cmds.env and cmds.env.window
+	if cmdsWindow and cmdsWindow.bringToFront then
+		cmdsWindow:bringToFront()
+	end
 end)
 
-close.Activated:Connect(function()
+local _ = close.Activated:Connect(function()
 	vip.Visible = false
 end)
 
-MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player, status, results)
-	if player ~= LocalPlayer or (results.Items[1].id ~= productId and results.Items[1].id ~= saleProductId) then
+vip:GetPropertyChangedSignal("Visible"):Connect(function()
+	if vip.Visible and shared._K_INTERFACE and shared._K_INTERFACE.getCommandPrefix then
+		updatePreviewPrefix(shared._K_INTERFACE.getCommandPrefix())
+	end
+end)
+
+local _ = MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player, status, results)
+	if player ~= LocalPlayer or type(results) ~= "table" or type(results.Items) ~= "table" or not results.Items[1] then
 		return
 	end
-	shared._K_INTERFACE.Remote.VIPCheck:Fire(tonumber(results.Items[1].id))
+	local itemId = tonumber(results.Items[1].Id or results.Items[1].id)
+	if itemId ~= ORIGINAL_PRODUCT_ID and itemId ~= SALE_PRODUCT_ID then
+		return
+	end
+	shared._K_INTERFACE.Remote.VIPCheck:Fire(itemId)
 	if status == Enum.MarketplaceBulkPurchasePromptStatus.Completed then
-		shared._K_INTERFACE.client.VIPNotification = function() end
+		local function noop() end
+		shared._K_INTERFACE.client.VIPNotification = noop
 		vip.Visible = false
 		task.wait(4)
-		pcall(function()
-			game:GetService("AvatarEditorService"):PromptSetFavorite(17873329124, 1, true)
+		local _ = pcall(function()
+			shared._K_INTERFACE.Service.AvatarEditor:PromptSetFavorite(17873329124, 1, true)
 		end)
 	end
 end)
 
 -- automatic scaling for small screens
-local scale = Instance.new("UIScale", vip)
+local scale = Instance.new("UIScale")
+scale.Parent = vip
 vip:GetPropertyChangedSignal("Parent"):Once(function()
 	local parent = vip.Parent
 	local function updateScale()
-		scale.Scale = math.min(1, parent.AbsoluteSize.Y / 420)
+		scale.Scale = math.min(1, parent.AbsoluteSize.Y / 440)
 	end
 	updateScale()
 	parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateScale)

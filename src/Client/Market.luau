@@ -51,9 +51,15 @@ function Market.new(_K)
 
 				local conn
 				conn = _K.Service.Marketplace.PromptBulkPurchaseFinished:Connect(function(player, status, results)
-					if player ~= _K.LocalPlayer or (results.Items[1].id ~= tostring(assetId)) then
+					if player ~= _K.LocalPlayer or type(results) ~= "table" or type(results.Items) ~= "table" then
 						return
 					end
+					local item = results.Items[1]
+					local itemId = item and tonumber(item.Id or item.id)
+					if itemId ~= assetId then
+						return
+					end
+					_K.Remote.VIPCheck:Fire(assetId)
 					if status == Enum.MarketplaceBulkPurchasePromptStatus.Completed then
 						conn:Disconnect()
 						owned = true
@@ -295,7 +301,7 @@ function Market.new(_K)
 					button._content.IconFrame.Visible = false
 					button._content.Label.TextXAlignment = Enum.TextXAlignment.Center
 
-					local con, con2
+					local con, con2, con3
 					local function setOwned()
 						if con then
 							con:Disconnect()
@@ -304,6 +310,10 @@ function Market.new(_K)
 						if con2 then
 							con2:Disconnect()
 							con2 = nil
+						end
+						if con3 then
+							con3:Disconnect()
+							con3 = nil
 						end
 						owned, try = true, nil
 						button.Label("<b>WEAR</b>")
@@ -314,6 +324,22 @@ function Market.new(_K)
 					con = _K.Service.Marketplace.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
 						if purchased and assetId == ugc.id and player == _K.LocalPlayer then
 							setOwned()
+						end
+					end)
+
+					con3 = _K.Service.Marketplace.PromptBulkPurchaseFinished:Connect(function(player, status, results)
+						if
+							player ~= _K.LocalPlayer
+							or status ~= Enum.MarketplaceBulkPurchasePromptStatus.Completed
+							or type(results) ~= "table"
+							or type(results.Items) ~= "table"
+						then
+							return
+						end
+						local item = results.Items[1]
+						if item and tonumber(item.Id or item.id) == ugc.id then
+							setOwned()
+							_K.Remote.VIPCheck:Fire(ugc.id)
 						end
 					end)
 
@@ -585,6 +611,22 @@ function Market.new(_K)
 		)
 
 		task.defer(function()
+			local vipOwned = (donationLevel or 0) >= 3
+			if vipOwned and not DEBUG_SHOW_PRICES then
+				vipButtonGlobal._content.Price.Text = `<b>SHOW</b>`
+				vipButtonGlobal._content.Price.TextTransparency = 0.5
+				return
+			end
+
+			local levelCon
+			levelCon = _K.LocalPlayer:GetAttributeChangedSignal("_KDonationLevel"):Connect(function()
+				if (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) >= 3 and not DEBUG_SHOW_PRICES then
+					levelCon:Disconnect()
+					vipButtonGlobal._content.Price.Text = `<b>SHOW</b>`
+					vipButtonGlobal._content.Price.TextTransparency = 0.5
+				end
+			end)
+
 			local success, owned = _K.Util.Retry(function()
 				return _K.Service.Marketplace:UserOwnsGamePassAsync(_K.LocalPlayer.UserId, 5411126)
 			end)
@@ -593,14 +635,34 @@ function Market.new(_K)
 			else
 				local VIP_UGC_ID = 110019084552349
 				local VIP_UGC_SALE_ID = 115444443724463
-				local ok, ugcOwned = _K.Util.Retry(function()
-					return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, VIP_UGC_ID)
-				end)
-				task.defer(updateAssetPriceText, vipButtonGlobal._content.Price, VIP_UGC_ID, `<b>SHOW</b>`)
-				if not ok or ugcOwned then
-					return
+				for _, assetId in _K.VIP.purchasables.chatCommands do
+					local ok, ugcOwned = _K.Util.Retry(function()
+						return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, assetId)
+					end)
+					if ok and ugcOwned and not DEBUG_SHOW_PRICES then
+						vipButtonGlobal._content.Price.Text = `<b>SHOW</b>`
+						vipButtonGlobal._content.Price.TextTransparency = 0.5
+						return
+					end
 				end
-				task.delay(600, updateAssetPriceText, vipButtonGlobal._content.Price, VIP_UGC_SALE_ID, `<b>SHOW</b>`)
+
+				local activeId = if _K.VIP.isOnSale and _K.VIP.isOnSale() then VIP_UGC_SALE_ID else VIP_UGC_ID
+				task.defer(updateAssetPriceText, vipButtonGlobal._content.Price, activeId, `<b>SHOW</b>`)
+				if _K.VIP.saleStateChanged then
+					_K.VIP.saleStateChanged:Connect(function(onSale: boolean, newId: number)
+						if
+							vipButtonGlobal._content.Price.Text ~= `<b>SHOW</b>`
+							and vipButtonGlobal._content.Price.Text ~= `<b>HIDE</b>`
+						then
+							task.defer(
+								updateAssetPriceText,
+								vipButtonGlobal._content.Price,
+								newId or (if onSale then VIP_UGC_SALE_ID else VIP_UGC_ID),
+								`<b>SHOW</b>`
+							)
+						end
+					end)
+				end
 			end
 		end)
 

@@ -7,7 +7,7 @@ return {
 		description = "Removes all Kohl's Admin server logs.",
 		args = {},
 		envClient = function(_K)
-			_K.Remote.ClearLogs:Connect(function()
+			local _ = _K.Remote.ClearLogs:Connect(function()
 				local logs = _K.Data.logs
 				for index, log in logs do
 					if log.client then
@@ -109,7 +109,7 @@ return {
 				return `Script commands are disabled in private servers.`
 			end
 			for _, player in players do
-				local parent = context.fromPlayer:FindFirstChildOfClass("PlayerGui")
+				local parent = player:FindFirstChildOfClass("PlayerGui")
 				if not parent then
 					continue
 				end

@@ -43,8 +43,10 @@ local function migrateKAI()
 		return
 	end
 
-	local dataKAI = GlobalDataStore:GetAsync("KSave")
-	if type(dataKAI) == "table" then
+	local okGet, dataKAI = Util.Retry(function()
+		return GlobalDataStore:GetAsync("KSave")
+	end)
+	if okGet and type(dataKAI) == "table" then
 		local admins, bans, settings = unpack(dataKAI)
 		local newBans, main = {}, { {}, {} }
 

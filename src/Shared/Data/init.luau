@@ -76,6 +76,11 @@ local SAVE = {
 	settings = {},
 	logs = {},
 }
+local SAVE_TIME = {
+	bans = {},
+	members = {},
+	settings = {},
+}
 
 local updatingBans = false
 local function updateBans()
@@ -122,12 +127,16 @@ local function updateMain()
 	end
 end
 
+-- serialized log sizes, kept off the log rows because the same rows are sent to other servers as JSON arrays
+local logSizes = setmetatable({}, { __mode = "k" })
+
 local function getLogsSize(logs)
 	local size = 0
 	for _, log in logs do
 		-- 1 byte level, 1 byte some 8 bytes uint, 1 byte some 1 + N bytes str8, 2 + N bytes log text, 8 bytes f64 time
-		log.size = 11 + (log[4] and 9 or 1) + (log[5] and 2 + #log[5] or 1) + #log[1]
-		size += log.size
+		local logSize = 11 + (log[4] and 9 or 1) + (log[5] and 2 + #log[5] or 1) + #log[1]
+		logSizes[log] = logSize
+		size += logSize
 	end
 	return size
 end
@@ -155,7 +164,7 @@ local function updateLogs()
 	local saveLogsSize = getLogsSize(saveLogs)
 	while saveLogsSize > DATA_LIMIT do
 		n += 1
-		saveLogsSize -= saveLogs[n].size
+		saveLogsSize -= logSizes[saveLogs[n]]
 		saveLogs[n] = nil
 	end
 	if n > 0 then
@@ -173,7 +182,7 @@ local function updateLogs()
 		end
 
 		local desSchema = if formatVersion <= 0 then Data.Schema.logsV0 else Data.Schema.logs
-		local ok, result = pcall(Z.des :: any, desSchema, value)
+		local ok, result = pcall((Z.des :: unknown) :: (...any) -> ...any, desSchema, value)
 
 		if not ok then
 			warn("Failed to deserialize logs:", result)
@@ -200,7 +209,7 @@ local function updateLogs()
 
 		local size = getLogsSize(logs) + saveLogsSize
 		while size > DATA_LIMIT do
-			size -= logs[count].size
+			size -= logSizes[logs[count]]
 			logs[count] = nil
 			count += 1
 		end
@@ -224,7 +233,7 @@ local SYNC = {
 	bans = function(state, changes)
 		Hook.preSyncBans:Fire(changes)
 		Util.Table.merge(state, changes)
-		Util.Table.merge(state, Data.Sync.bans)
+		Data.mergeRemove(state, Data.Sync.bans)
 		Hook.postSyncBans:Fire(state)
 
 		for _, player in Players:GetPlayers() do
@@ -237,7 +246,7 @@ local SYNC = {
 	members = function(state, changes)
 		for userId, data in changes do
 			local key = tostring(userId)
-			local cache = Data.Sync.members[key]
+			local cache = Data.Sync.members[key] or SAVE.members[key]
 			if cache then -- don't overwrite pending change!
 				changes[userId] = nil
 				continue
@@ -259,14 +268,23 @@ local SYNC = {
 			local member = state[key]
 			if member then
 				data.roles = member.roles
+				-- keep the flags of roles a non-developer gave this session; saved roles come from developers
+				data.unrestricted = member.unrestricted
+				if data.unrestricted then
+					for _, roleId in data.persist do
+						data.unrestricted[roleId] = nil
+					end
+				end
 
 				-- remove roles that were saved but now aren't
 				if member.persist then
-					for _, role in data.roles do
+					local userIdNumber = tonumber(key) :: number
+					for i = #data.roles, 1, -1 do
+						local role = data.roles[i]
 						local hadRole = table.find(member.persist, role)
 						local hasRole = table.find(data.persist, role)
-						if hadRole and not hasRole then
-							table.remove(data.roles, table.find(data.roles, role))
+						if hadRole and not hasRole and not Auth.hasAsyncRole(userIdNumber, role) then
+							table.remove(data.roles, i)
 						end
 					end
 				end
@@ -283,6 +301,7 @@ local SYNC = {
 
 			if #data.roles == 0 then -- remove member
 				state[key] = nil
+				changes[userId] = nil
 				continue
 			end
 
@@ -344,7 +363,7 @@ local SYNC = {
 	logs = function(state, changes)
 		local logs = changes
 		if type(changes) == "buffer" then
-			local ok, result = pcall(Z.des :: any, Data.Schema.logs, changes)
+			local ok, result = pcall((Z.des :: unknown) :: (...any) -> ...any, Data.Schema.logs, changes)
 			if not ok then
 				warn("Failed to deserialize sync logs:", result)
 				return
@@ -352,8 +371,9 @@ local SYNC = {
 			logs = result
 			Util.Defer.wait()
 		end
+		Hook.preSyncLogs:Fire(logs)
 
-		-- chat is logged client-side through TextChatService, skip any legacy saved chat logs
+		-- chat text is never logged, skip any legacy saved chat logs
 		local filtered = {}
 		for _, log in logs do
 			if log[2] ~= CHAT_LEVEL then
@@ -384,6 +404,7 @@ local SYNC = {
 				end
 			end
 		end
+		Hook.postSyncLogs:Fire(filtered)
 	end,
 }
 
@@ -421,24 +442,101 @@ local function removeIdFromThisServer(id)
 end
 
 local function syncChanges(changes)
+	if type(changes) ~= "table" then
+		return
+	end
+	local main = changes.members ~= nil or changes.settings ~= nil
+	if main then
+		Hook.preSyncMain:Fire(changes)
+	end
+	local syncTime = changes._time
 	for key, info in changes do
 		if key == "_time" then
 			continue
 		end
-		local state = Data[key]
+		local state = if key == "settings" then Data.savedSettings else Data[key]
+		-- receivers save other servers' changes too: the origin may not save them (failed load, write throttle,
+		-- shutdown), and a restarting server drops synced changes older than the key's UpdatedTime
+		local saveQueue = SAVE[key]
+		local saveTime = SAVE_TIME[key]
 		if info.unset then
-			for _, key in info.unset do
-				state[key] = nil
+			local unset = {}
+			for _, k in info.unset do
+				local canApply = Data.Sync[key][k] == nil
+					and (
+						(
+							(not saveQueue or saveQueue[k] == nil)
+							and (not saveTime or saveTime[k] == nil or syncTime == nil)
+						)
+						or (syncTime ~= nil and saveTime and saveTime[k] ~= nil and syncTime >= saveTime[k])
+					)
+				if canApply then
+					if key == "members" and state[k] then
+						local member = state[k]
+						if member.persist then
+							local userIdNumber = tonumber(k) :: number
+							for i = #member.roles, 1, -1 do
+								local role = member.roles[i]
+								if table.find(member.persist, role) and not Auth.hasAsyncRole(userIdNumber, role) then
+									table.remove(member.roles, i)
+								end
+							end
+							table.clear(member.persist)
+						end
+						if #member.roles == 0 then
+							state[k] = nil
+						end
+					else
+						state[k] = nil
+					end
+					table.insert(unset, k)
+					if saveQueue then
+						saveQueue[k] = Data.REMOVE
+						if saveTime and syncTime ~= nil then
+							saveTime[k] = syncTime
+						end
+					end
+				end
 			end
-			if REMOVE[key] then
-				REMOVE[key](state, info.unset)
+			if #unset > 0 and REMOVE[key] then
+				REMOVE[key](state, unset)
 			end
 		end
 		if info.insert then
 			(SYNC[key] or Util.Table.mergeList)(state, info.insert)
 		elseif info.set then
-			(SYNC[key] or Util.Table.merge)(state, info.set)
+			local rawSet
+			if saveQueue then
+				rawSet = {}
+				for k, v in info.set do
+					local canApply = Data.Sync[key][k] == nil
+						and (
+							(saveQueue[k] == nil and (not saveTime or saveTime[k] == nil or syncTime == nil))
+							or (syncTime ~= nil and saveTime and saveTime[k] ~= nil and syncTime >= saveTime[k])
+						)
+					if canApply then
+						rawSet[k] = if type(v) == "table" then Util.Table.deepCopy(v) else v
+						saveQueue[k] = nil
+					else
+						info.set[k] = nil
+					end
+				end
+			end
+			if next(info.set) ~= nil then
+				(SYNC[key] or Util.Table.merge)(state, info.set)
+			end
+			if saveQueue and rawSet then
+				for k, v in rawSet do
+					saveQueue[k] = v
+					if saveTime and syncTime ~= nil then
+						saveTime[k] = syncTime
+					end
+				end
+			end
 		end
+	end
+	if main then
+		Hook.postSyncMain:Fire(Data)
 	end
 end
 
@@ -447,6 +545,7 @@ local cacheKeys = { bans = "set", members = "set", settings = "set", logs = "ins
 local function processSync()
 	local changes = {}
 	local changed = false
+	local now = DateTime.now().UnixTimestampMillis
 
 	-- process changes
 	for key, action in cacheKeys do
@@ -476,13 +575,23 @@ local function processSync()
 				Util.Table.mergeList(SAVE[key], pending)
 			else
 				Util.Table.merge(SAVE[key], pending)
+				local saveTime = SAVE_TIME[key]
+				if saveTime then
+					for k in pending do
+						saveTime[k] = now
+					end
+				end
 			end
 			table.clear(pending)
 		end
 	end
 
 	-- update datastores
-	if not Data.gameClosing and not dataStoreUpdateThrottle then
+	local hasSave = next(SAVE.bans) ~= nil
+		or next(SAVE.members) ~= nil
+		or next(SAVE.settings) ~= nil
+		or next(SAVE.logs) ~= nil
+	if not Data.gameClosing and not dataStoreUpdateThrottle and hasSave then
 		dataStoreUpdateThrottle = true
 		task.delay(HASH_EXPIRY, function()
 			dataStoreUpdateThrottle = false
@@ -509,7 +618,7 @@ local function processSync()
 		for chunkId, chunk in chunks do
 			chunk._time = now
 			for n = 1, HASH_PARTITIONS do
-				pcall(Util.Retry, function()
+				Util.Retry(function()
 					-- set random map for #HASH_PARTITIONS * request limit
 					SYNC_HASH_MAPS[n]:SetAsync(id .. "_" .. chunkId, chunk, HASH_EXPIRY)
 				end, math.huge)
@@ -518,7 +627,7 @@ local function processSync()
 		end
 
 		task.delay(HASH_EXPIRY, removeIdFromThisServer, id)
-		pcall(Util.Retry, function()
+		Util.Retry(function()
 			Util.Service.Messaging:PublishAsync(DATA_KEY, { id, #chunks })
 		end, math.huge)
 		for _, v in changes do
@@ -552,20 +661,24 @@ function Data.initialize(scope)
 	local okMain, main, metaMain = Data.Store.getAsync("Main")
 	if okMain then
 		if main then
+			Hook.preSyncMain:Fire(main)
 			SYNC.members(Data.members, main[1])
 			SYNC.settings(Data.savedSettings, main[2])
+			Hook.postSyncMain:Fire(Data)
 		else -- first time load
 			local bansKAI, mainKAI = Migrate.KAI()
 			if bansKAI then
 				print("[Kohl's Admin] Migrating Data from Kohl's Admin Infinite...")
+				local data = Util.Table.deepCopy(mainKAI)
+				SYNC.bans(Data.bans, bansKAI)
+				Hook.preSyncMain:Fire(data)
+				SYNC.members(Data.members, data[1])
+				SYNC.settings(Data.savedSettings, data[2])
+				Hook.postSyncMain:Fire(Data)
+
 				Data.Sync.bans = bansKAI
 				Data.Sync.members = mainKAI[1]
 				Data.Sync.settings = mainKAI[2]
-
-				local data = Util.Table.deepCopy(mainKAI)
-				SYNC.bans(Data.bans, bansKAI)
-				SYNC.members(Data.members, data[1])
-				SYNC.settings(Data.savedSettings, data[2])
 			end
 		end
 	end
@@ -583,13 +696,19 @@ function Data.initialize(scope)
 			local formatVersion = if okLogs and logs then (metadata.version or 0) else LOG_FORMAT_VERSION
 
 			if okLogs and logs and formatVersion <= 0 then
-				local success, ok = pcall(Z.migrate :: any, Data.Schema.logsV0, Data.Schema.logs, logs, function(logs)
-					for i, log in logs do
-						log[1], log[2], log[3], log[4], log[5] = log.text, log.level, log.time, log.from, log.name
-						log.text, log.level, log.time, log.from, log.name = nil, nil, nil, nil, nil
+				local success, ok = pcall(
+					(Z.migrate :: unknown) :: (...any) -> ...any,
+					Data.Schema.logsV0,
+					Data.Schema.logs,
+					logs,
+					function(logs)
+						for i, log in logs do
+							log[1], log[2], log[3], log[4], log[5] = log.text, log.level, log.time, log.from, log.name
+							log.text, log.level, log.time, log.from, log.name = nil, nil, nil, nil, nil
+						end
+						return logs
 					end
-					return logs
-				end)
+				)
 				if success and ok then
 					logs = ok
 				elseif not success then
@@ -679,7 +798,14 @@ function Data.initialize(scope)
 			local hashmap = SYNC_HASH_MAPS[math.random(HASH_PARTITIONS)]
 			local success, items = pcall(Util.MemoryStore.getItemsFromHashMap, hashmap)
 			if success then
-				for key, changes in items do
+				local sorted = {}
+				for _, changes in items do
+					table.insert(sorted, changes)
+				end
+				table.sort(sorted, function(a, b)
+					return (a._time or 0) < (b._time or 0)
+				end)
+				for _, changes in sorted do
 					for setting in changes do
 						if setting == "_time" then
 							continue
@@ -708,14 +834,14 @@ function Data.initialize(scope)
 		and not RunService:IsStudio()
 	then
 		task.spawn(function()
-			local _, ok, hashMap = pcall(Util.Retry, function()
+			local ok, hashMap = Util.Retry(function()
 				return MemoryStore:GetHashMap("__KA_Charts")
 			end)
-			local _, ok2, updated = pcall(Util.Retry, function()
+			local ok2, updated = Util.Retry(function()
 				return hashMap:GetAsync("Updated")
 			end)
 			if ok and ok2 and not updated then
-				pcall(Util.Retry, function()
+				Util.Retry(function()
 					hashMap:SetAsync("Updated", true, 86400 / 8)
 				end)
 				local request = {
@@ -727,7 +853,7 @@ function Data.initialize(scope)
 						token = "lzjjp9LUOtePr7xnKmctfp5DAuFgvcrcxL3caXpBnVM=",
 					}),
 				}
-				pcall(Util.Retry, function()
+				Util.Retry(function()
 					Http:RequestAsync(request)
 				end)
 			end
@@ -736,6 +862,16 @@ function Data.initialize(scope)
 
 	game:BindToClose(function()
 		Data.gameClosing = true
+
+		if Data.pendingLogReveals then
+			for _, entry in Data.pendingLogReveals do
+				entry.stored[1] = entry.fullText
+				if entry.save then
+					table.insert(Data.Sync.logs, entry.stored)
+				end
+			end
+			table.clear(Data.pendingLogReveals)
+		end
 
 		processSync()
 

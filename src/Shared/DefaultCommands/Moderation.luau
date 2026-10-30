@@ -1,5 +1,41 @@
 -- dangerous moderation commands, but not the most dangerous of commands
 
+local function setDisplayDistanceType(players: { Player }, displayType: Enum.HumanoidDisplayDistanceType)
+	for _, player in players do
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.DisplayDistanceType = displayType
+		end
+	end
+end
+
+local function setVehicleSeatProperty(players: { Player }, prop: "MaxSpeed" | "Torque", value: number)
+	for _, player in players do
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		local seat = humanoid and humanoid.SeatPart
+		if seat and seat:IsA("VehicleSeat") then
+			if prop == "MaxSpeed" then
+				seat.MaxSpeed = value
+			else
+				seat.Torque = value
+			end
+		end
+	end
+end
+
+local function removeLimbs(players: { Player }, pattern: string)
+	for _, player in players do
+		if not player.Character then
+			continue
+		end
+		for _, instance in player.Character:GetChildren() do
+			if string.find(instance.Name, pattern) then
+				instance:Destroy()
+			end
+		end
+	end
+end
+
 return {
 	{
 		name = "bans",
@@ -7,28 +43,7 @@ return {
 		description = "Shows the bans in a separate window.",
 		args = {},
 		envClient = function(_K)
-			local env = {}
-			task.defer(function()
-				while not _K.client do
-					task.wait()
-				end
-				local window = _K.UI.new "Window" {
-					Parent = _K.UI.LayerTopInset,
-					Icon = "rbxassetid://71961243872230",
-					Title = "Bans",
-				}
-				_K.UI.edit(window)({
-					_Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs)({
-								_K.client.dashboard.Bans,
-							})
-						end
-					end,
-				})
-				env.window = window
-			end)
-			return env
+			return _K.Registry.dashboardWindowEnv("Bans")(_K)
 		end,
 
 		runClient = function(context)
@@ -45,28 +60,7 @@ return {
 		description = "Shows the roled members in a separate window.",
 		args = {},
 		envClient = function(_K)
-			local env = {}
-			task.defer(function()
-				while not _K.client do
-					task.wait()
-				end
-				local window = _K.UI.new "Window" {
-					Parent = _K.UI.LayerTopInset,
-					Icon = "rbxassetid://71961243872230",
-					Title = "Members",
-				}
-				_K.UI.edit(window)({
-					_Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs)({
-								_K.client.dashboard.Members,
-							})
-						end
-					end,
-				})
-				env.window = window
-			end)
-			return env
+			return _K.Registry.dashboardWindowEnv("Members")(_K)
 		end,
 
 		runClient = function(context)
@@ -82,28 +76,7 @@ return {
 		description = "Shows the live game servers in a separate window.",
 		args = {},
 		envClient = function(_K)
-			local env = {}
-			task.defer(function()
-				while not _K.client do
-					task.wait()
-				end
-				local window = _K.UI.new "Window" {
-					Parent = _K.UI.LayerTopInset,
-					Icon = "rbxassetid://71961243872230",
-					Title = "Servers",
-				}
-				_K.UI.edit(window)({
-					_Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs)({
-								_K.client.dashboard.Servers,
-							})
-						end
-					end,
-				})
-				env.window = window
-			end)
-			return env
+			return _K.Registry.dashboardWindowEnv("Servers")(_K)
 		end,
 
 		runClient = function(context)
@@ -148,7 +121,13 @@ return {
 			if type(reason) == "string" then
 				reason = string.sub(reason, 1, 400) -- banasync limit
 				-- ban reasons are user text other admins can see
-				reason = context._K.Chat.limitReason(context.from, reason)
+				if not context.global then
+					reason = context._K.Chat.limitReason(context.from, reason)
+				end
+				if reason and context.args[3] then
+					context.args[3].parsedArgs = { reason }
+					context.args[3].redactLog = false
+				end
 			end
 
 			if not context._K.Auth.hasPermission(context.from, "banasync") then
@@ -161,13 +140,13 @@ return {
 				else context._K.Util.Time.readable(duration)
 
 			local players = context._K.Service.Players:GetPlayers()
-			local bannedNames, getNames = {}, {}
+			local names, getNames = {}, {}
 			for _, userId in userIds do
 				local skip
 				for _, player in players do
 					if player.UserId == tonumber(userId) then
 						player:Kick(reason or "No reason.")
-						table.insert(bannedNames, player.Name)
+						names[userId] = player.Name
 						skip = true
 						break
 					end
@@ -178,19 +157,33 @@ return {
 				table.insert(getNames, userId)
 			end
 
-			context._K.Auth.banUsers(userIds, reason, duration, context.from)
+			local banned = context._K.Auth.banUsers(userIds, reason, duration, context.from)
 
 			local tasks = context._K.Util.Tasks.new()
 			for _, userId in getNames do
 				tasks:add(function()
-					table.insert(bannedNames, context._K.Util.getUserInfo(userId).Username)
+					names[userId] = context._K.Util.getUserInfo(userId).Username
 				end)
 			end
 			tasks:wait()
 
-			context._K.Remote.Notify:Fire(context.fromPlayer, {
-				Text = `Banned <b>{table.concat(bannedNames, ", ")}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`,
-			})
+			-- saved bans are kept unless the caller can use banasync
+			local bannedNames, keptNames = {}, {}
+			for _, userId in userIds do
+				table.insert(if table.find(banned, userId) then bannedNames else keptNames, names[userId])
+			end
+
+			local lines = {}
+			if #bannedNames > 0 then
+				table.insert(
+					lines,
+					`Banned <b>{table.concat(bannedNames, ", ")}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`
+				)
+			end
+			if #keptNames > 0 then
+				table.insert(lines, `Kept saved ban for <b>{table.concat(keptNames, ", ")}</b>.`)
+			end
+			context._K.Remote.Notify:Fire(context.fromPlayer, { Text = table.concat(lines, "\n") })
 
 			return
 		end,
@@ -204,6 +197,8 @@ return {
 				name = "Player(s)",
 				description = "The player(s) to unban.",
 				lowerRank = true,
+				-- lifting a ban can't harm the target, so offline ranks aren't looked up (also used by Remote.Unban)
+				skipOfflineRank = true,
 			},
 		},
 
@@ -242,7 +237,12 @@ return {
 		},
 		run = function(context, players, reason: string?)
 			-- kick reasons are user text the kicked players see
-			reason = context._K.Chat.limitReason(context.from, reason)
+			if not context.global then
+				reason = context._K.Chat.limitReason(context.from, reason)
+			end
+			if reason and context.args[2] then
+				context.args[2].redactLog = false
+			end
 			for _, player in players do
 				player:Kick(reason)
 			end
@@ -266,7 +266,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.Crash:Connect(function()
+			local _ = _K.Remote.Crash:Connect(function()
 				repeat
 				until nil
 			end)
@@ -293,7 +293,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.Mute:Connect(function(muted)
+			local _ = _K.Remote.Mute:Connect(function(muted)
 				local muteText = if muted then "muted" else "unmuted"
 				if _K.Service.TextChat.ChatVersion == Enum.ChatVersion.LegacyChatService then
 					_K.Service.StarterGui:SetCore("ChatBarDisabled", muted)
@@ -319,7 +319,7 @@ return {
 		end,
 		env = function(_K)
 			local muted = {}
-			_K.Service.TextChat.DescendantAdded:Connect(function(descendant)
+			local _ = _K.Service.TextChat.DescendantAdded:Connect(function(descendant)
 				if descendant:IsA("TextSource") then
 					if muted[descendant.UserId] then
 						descendant.CanSend = false
@@ -421,7 +421,7 @@ return {
 		},
 		env = function(_K)
 			local punished = {}
-			_K.Service.Players.PlayerRemoving:Connect(function(player)
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
 				local character = punished[player]
 				if character then
 					character:Destroy()
@@ -434,7 +434,10 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				if player.Character then
-					pcall(game.Destroy, context.env.punished[player])
+					local oldChar = context.env.punished[player]
+					if oldChar then
+						oldChar:Destroy()
+					end
 					context.env.punished[player] = player.Character
 					player.Character.Parent = nil
 					player.Character = nil
@@ -457,7 +460,7 @@ return {
 			local function reactivate(script)
 				script.Enabled = true
 			end
-			_K.Remote.RefreshLocalScripts:Connect(function(model: Model)
+			local _ = _K.Remote.RefreshLocalScripts:Connect(function(model: Model)
 				for _, descendant in model:GetDescendants() do
 					if descendant:IsA("LocalScript") and descendant.Enabled then
 						descendant.Enabled = false
@@ -520,7 +523,7 @@ return {
 		},
 		envClient = function(_K)
 			local display
-			_K.Remote.DisplayName:Connect(function(name)
+			local _ = _K.Remote.DisplayName:Connect(function(name)
 				local character = _K.LocalPlayer.Character
 				local head = character and character:FindFirstChild("Head")
 				if head then
@@ -560,19 +563,18 @@ return {
 			local displayNames = {}
 
 			_K.Util.SafePlayerAdded(function(player)
-				cleanup[player] = {
-					player.CharacterAdded:Connect(function(character)
-						local name = displayNames[player.UserId]
-						if not name then
-							return
-						end
-						character:FindFirstChildOfClass("Humanoid").DisplayName = name
-						_K.Remote.DisplayName:Fire(player, name)
-					end),
-				}
+				local charConn = player.CharacterAdded:Connect(function(character)
+					local name = displayNames[player.UserId]
+					if not name then
+						return
+					end
+					character:FindFirstChildOfClass("Humanoid").DisplayName = name
+					_K.Remote.DisplayName:Fire(player, name)
+				end)
+				cleanup[player] = { charConn }
 			end)
 
-			_K.Service.Players.PlayerRemoving:Connect(function(player)
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
 				if cleanup[player] then
 					_K.Flux.dispose(cleanup[player])
 					cleanup[player] = nil
@@ -594,6 +596,9 @@ return {
 				local err = context._K.Chat.cooldown(context.from, "name")
 				if err then
 					return err
+				end
+				if context.args[2] then
+					context.args[2].redactLog = false
 				end
 			end
 
@@ -622,12 +627,7 @@ return {
 		},
 
 		run = function(context, players)
-			for _, player in players do
-				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-				if humanoid then
-					humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-				end
-			end
+			setDisplayDistanceType(players, Enum.HumanoidDisplayDistanceType.None)
 		end,
 	},
 	{
@@ -644,12 +644,7 @@ return {
 		},
 
 		run = function(context, players)
-			for _, player in players do
-				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-				if humanoid then
-					humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
-				end
-			end
+			setDisplayDistanceType(players, Enum.HumanoidDisplayDistanceType.Viewer)
 		end,
 	},
 	{
@@ -676,7 +671,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.SetCoreGuiEnabled:Connect(function(coreType: Enum.CoreGuiType, enabled: boolean)
+			local _ = _K.Remote.SetCoreGuiEnabled:Connect(function(coreType: Enum.CoreGuiType, enabled: boolean)
 				_K.Service.StarterGui:SetCoreGuiEnabled(coreType, if enabled then true else false)
 			end)
 		end,
@@ -1074,7 +1069,7 @@ return {
 		end,
 		env = function(_K)
 			local remote = _K.Remote.RemoveTool
-			remote:Connect(function(player: Player, target: Player, toolName: string)
+			local _ = remote:Connect(function(player: Player, target: Player, toolName: string)
 				local canRemove = _K.Auth.hasCommand(player.UserId, "removetools")
 				if
 					canRemove
@@ -1625,7 +1620,7 @@ return {
 				ZIndex = 9e8,
 				Visible = false,
 			}
-			_K.Remote.Blind:Connect(function(blinded)
+			local _ = _K.Remote.Blind:Connect(function(blinded)
 				blind.Visible = if blinded then true else false
 			end)
 			return { frame = blind }
@@ -1738,7 +1733,7 @@ return {
 				reapply(player)
 			end)
 
-			_K.Service.Players.PlayerRemoving:Connect(function(player)
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
 				_K.Flux.dispose(cleanup[player])
 				cleanup[player] = nil
 			end)
@@ -1800,7 +1795,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.JailCollide:Connect(function(jail: Part)
+			local _ = _K.Remote.JailCollide:Connect(function(jail: Part)
 				if jail then
 					for _, child in jail:GetChildren() do
 						if child:IsA("BasePart") then
@@ -1951,7 +1946,7 @@ return {
 				end
 			end)
 
-			_K.Service.Players.PlayerRemoving:Connect(function(player)
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
 				_K.Flux.dispose(cleanup[player])
 				cleanup[player] = nil
 				local parts = Jail.parts[player.UserId]
@@ -2017,7 +2012,7 @@ return {
 			return { remote = _K.Remote.CameraOffset }
 		end,
 		envClient = function(_K)
-			_K.Remote.CameraOffset:Connect(function(offset: Vector3)
+			local _ = _K.Remote.CameraOffset:Connect(function(offset: Vector3)
 				local player = game.Players.LocalPlayer
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
@@ -2045,7 +2040,7 @@ return {
 		},
 		envClient = function(_K)
 			local parentMap = {}
-			_K.Remote.AntiLag:Connect(function(undo: boolean?)
+			local _ = _K.Remote.AntiLag:Connect(function(undo: boolean?)
 				if undo then
 					for _, instance in game:GetDescendants() do
 						if instance:HasTag("_K_Ignore") then
@@ -2119,7 +2114,7 @@ return {
 			local fps = 0
 
 			local frameStart = 0
-			_K.Service.Run.PreRender:Connect(function()
+			local _ = _K.Service.Run.PreRender:Connect(function()
 				frameStart = tick()
 			end)
 
@@ -2136,7 +2131,7 @@ return {
 				until tick() >= nextStep
 			end
 
-			_K.Remote.FPS:Connect(function(amount: number?)
+			local _ = _K.Remote.FPS:Connect(function(amount: number?)
 				fps = amount or 32
 				if connection then
 					connection:Disconnect()
@@ -2306,7 +2301,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.Teleport:Connect(function(cframe)
+			local _ = _K.Remote.Teleport:Connect(function(cframe)
 				local character = _K.LocalPlayer.Character
 				if character then
 					character:PivotTo(cframe)
@@ -2382,8 +2377,9 @@ return {
 		},
 
 		run = function(context, userId)
-			local ok, samePlace, errorMessage, placeId, jobId =
-				pcall(context._K.Service.Teleport.GetPlayerPlaceInstanceAsync, context._K.Service.Teleport, userId)
+			local Teleport = context._K.Service.Teleport
+			local getPlace = Teleport.GetPlayerPlaceInstanceAsync
+			local ok, samePlace, errorMessage, placeId, jobId = pcall(getPlace, Teleport, userId)
 			if not ok then
 				return errorMessage or samePlace
 			end
@@ -2420,7 +2416,7 @@ return {
 		},
 		envClient = function(_K)
 			local last
-			_K.Remote.FOV:Connect(function(degrees)
+			local _ = _K.Remote.FOV:Connect(function(degrees)
 				if degrees and not last then
 					last = workspace.CurrentCamera.FieldOfView
 				end
@@ -2615,16 +2611,7 @@ return {
 		},
 
 		run = function(context, players, speed: number)
-			for _, player in players do
-				if not player.Character then
-					continue
-				end
-				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-				if not (humanoid and humanoid.SeatPart) then
-					continue
-				end
-				humanoid.SeatPart.MaxSpeed = speed
-			end
+			setVehicleSeatProperty(players, "MaxSpeed", speed)
 		end,
 	},
 	{
@@ -2646,16 +2633,7 @@ return {
 		},
 
 		run = function(context, players, torque: number)
-			for _, player in players do
-				if not player.Character then
-					continue
-				end
-				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-				if not (humanoid and humanoid.SeatPart) then
-					continue
-				end
-				humanoid.SeatPart.Torque = torque
-			end
+			setVehicleSeatProperty(players, "Torque", torque)
 		end,
 	},
 	{
@@ -2808,14 +2786,14 @@ return {
 
 		envClient = function(_K)
 			local lastCameraCFrame
-			_K.Remote.Refresh:Connect(function()
+			local _ = _K.Remote.Refresh:Connect(function()
 				if lastCameraCFrame then
 					workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Wait()
 					workspace.CurrentCamera.CFrame = lastCameraCFrame
 				end
 			end)
 
-			_K.Service.Players.LocalPlayer.CharacterRemoving:Connect(function()
+			local _ = _K.Service.Players.LocalPlayer.CharacterRemoving:Connect(function()
 				lastCameraCFrame = workspace.CurrentCamera.CFrame
 			end)
 		end,
@@ -2871,16 +2849,7 @@ return {
 		},
 
 		run = function(context, players)
-			for _, player in players do
-				if not player.Character then
-					continue
-				end
-				for _, instance in player.Character:GetChildren() do
-					if string.find(instance.Name, "Arm$") then
-						instance:Destroy()
-					end
-				end
-			end
+			removeLimbs(players, "Arm$")
 		end,
 	},
 	{
@@ -2897,16 +2866,7 @@ return {
 		},
 
 		run = function(context, players)
-			for _, player in players do
-				if not player.Character then
-					continue
-				end
-				for _, instance in player.Character:GetChildren() do
-					if string.find(instance.Name, "Leg$") then
-						instance:Destroy()
-					end
-				end
-			end
+			removeLimbs(players, "Leg$")
 		end,
 	},
 
@@ -2934,7 +2894,7 @@ return {
 		},
 
 		env = function(_K)
-			local MarketplaceService = game:GetService("MarketplaceService")
+			local MarketplaceService = _K.Service.Marketplace
 			return {
 				market = MarketplaceService,
 				method = {
@@ -2959,7 +2919,7 @@ return {
 				id = "EXP-" .. id
 			end
 			for _, player in players do
-				pcall(method, context.env.market, player, id)
+				local _ = pcall(method, context.env.market, player, id)
 			end
 		end,
 	},
@@ -2987,7 +2947,7 @@ return {
 		},
 
 		env = function(_K)
-			local MarketplaceService = game:GetService("MarketplaceService")
+			local MarketplaceService = _K.Service.Marketplace
 			return {
 				market = MarketplaceService,
 				method = {
@@ -3047,8 +3007,8 @@ return {
 		},
 
 		envClient = function(_K)
-			_K.Remote.PromptJoinAsync:Connect(function(id: number)
-				pcall(_K.Service.Group.PromptJoinAsync, _K.Service.Group, id)
+			local _ = _K.Remote.PromptJoinAsync:Connect(function(id: number)
+				local _ = pcall(_K.Service.Group.PromptJoinAsync, _K.Service.Group, id)
 			end)
 		end,
 		env = function(_K)
@@ -3084,7 +3044,7 @@ return {
 		},
 		run = function(context, players, stat, value)
 			stat = string.lower(stat)
-			local filteredValue, cooldownError
+			local filteredValue, cooldownError, matchedStat, appliedValue
 			for _, player in players do
 				local leaderstats = player:FindFirstChild("leaderstats")
 				if not leaderstats then
@@ -3093,10 +3053,15 @@ return {
 				for _, child in leaderstats:GetChildren() do
 					if string.find(string.lower(child.Name), stat, 1, true) == 1 then
 						if child:IsA("IntValue") or child:IsA("NumberValue") then
-							child.Value = tonumber(value)
+							local num = tonumber(value)
+							if num then
+								child.Value = num
+								matchedStat, appliedValue = child.Name, tostring(child.Value)
+							end
 						elseif child:IsA("BoolValue") then
 							local v = string.lower(value)
 							child.Value = v ~= "false" and v ~= "nil" and v ~= "0" and v ~= "off"
+							matchedStat, appliedValue = child.Name, tostring(child.Value)
 						elseif child:IsA("StringValue") and not cooldownError then
 							-- text stats are shown to everyone, so they are rate limited; other stats still apply
 							if not filteredValue then
@@ -3124,8 +3089,19 @@ return {
 									else context._K.Util.String.filterForBroadcast(value, context.from)
 							end
 							child.Value = filteredValue
+							matchedStat, appliedValue = child.Name, filteredValue
 						end
 					end
+				end
+			end
+			if matchedStat and appliedValue ~= nil and not cooldownError then
+				if context.args[2] then
+					context.args[2].parsedArgs = { matchedStat }
+					context.args[2].redactLog = false
+				end
+				if context.args[3] then
+					context.args[3].parsedArgs = { appliedValue }
+					context.args[3].redactLog = false
 				end
 			end
 			return cooldownError
@@ -3283,6 +3259,9 @@ return {
 			if err then
 				return err
 			end
+			if context.args[1] then
+				context.args[1].redactLog = false
+			end
 
 			local team = Instance.new("Team")
 			if not color then
@@ -3340,6 +3319,9 @@ return {
 					if err then
 						return err
 					end
+				end
+				if context.args[2] then
+					context.args[2].redactLog = false
 				end
 
 				local oldColor, oldName = team.TeamColor.Color, team.Name

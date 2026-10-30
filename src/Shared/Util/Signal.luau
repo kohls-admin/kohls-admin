@@ -29,16 +29,18 @@ local Connection = {}
 Connection.__index = Connection
 
 function Connection.new(signal: Signal, callback: Function): Connection
-	return setmetatable({
-		Connected = true,
-		_signal = signal,
-		_callback = callback,
-		_next = nil,
-		_prev = nil,
-	}, Connection) :: any
+	return (
+		setmetatable({
+			Connected = true,
+			_signal = signal,
+			_callback = callback,
+			_next = nil,
+			_prev = nil,
+		}, Connection) :: unknown
+	) :: Connection
 end
 
-function Connection:Disconnect()
+function Connection.Disconnect(self: Connection)
 	if not self.Connected then
 		return
 	end
@@ -54,8 +56,8 @@ function Connection:Disconnect()
 		self._signal._head = nextConn
 	end
 	self._callback = nil
-	self._signal = nil :: any
-	self._prev = nil :: any
+	self._signal = nil
+	self._prev = nil
 	-- _next is preserved so the firing loop can continue if disconnected during dispatch
 end
 
@@ -63,10 +65,10 @@ local Signal = {}
 Signal.__index = Signal
 
 function Signal.new(): Signal
-	return setmetatable({}, Signal) :: any
+	return (setmetatable({}, Signal) :: unknown) :: Signal
 end
 
-function Signal:Connect(callback: Function): Connection
+function Signal.Connect(self: Signal, callback: Function): Connection
 	local connection = Connection.new(self, callback)
 	if self._head then
 		connection._next = self._head
@@ -76,7 +78,7 @@ function Signal:Connect(callback: Function): Connection
 	return connection
 end
 
-function Signal:Once(callback: Function): Connection
+function Signal.Once(self: Signal, callback: Function): Connection
 	local connection: Connection
 	connection = self:Connect(function(...)
 		if connection.Connected then
@@ -87,21 +89,22 @@ function Signal:Once(callback: Function): Connection
 	return connection
 end
 
-function Signal:Fire(...)
+function Signal.Fire(self: Signal, ...: any)
 	local item = self._head
 	while item do
 		local nextItem = item._next
-		if item.Connected then
-			task.spawn(item._callback, ...)
+		local callback = item._callback
+		if item.Connected and callback then
+			task.spawn(callback, ...)
 		else -- Disconnected
 			item.Connected = nil
-			item._next = nil :: any
+			item._next = nil
 		end
 		item = nextItem
 	end
 end
 
-function Signal:Wait(): ...any
+function Signal.Wait(self: Signal): ...any
 	local thread = coroutine.running()
 	local connection: Connection
 	connection = self:Connect(function(...)
@@ -115,7 +118,7 @@ function Signal:Wait(): ...any
 	return coroutine.yield()
 end
 
-function Signal:Destroy()
+function Signal.Destroy(self: Signal)
 	local item = self._head
 	while item do
 		local nextItem = item._next
@@ -123,11 +126,11 @@ function Signal:Destroy()
 			if typeof(item._thread) == "thread" and coroutine.status(item._thread) == "suspended" then
 				task.cancel(item._thread)
 			end
-			table.clear(item :: any)
+			table.clear(item :: { [any]: any })
 		end
 		item = nextItem
 	end
-	table.clear(self)
+	table.clear(self :: { [any]: any })
 end
 
 return Signal

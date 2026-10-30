@@ -65,7 +65,10 @@ return {
 			if discoCommand then
 				task.spawn(discoCommand.env.cleanup)
 			end
-			pcall(game.Destroy, context._K.Service.Lighting:FindFirstChild("_KSky"))
+			local sky = context._K.Service.Lighting:FindFirstChild("_KSky")
+			if sky then
+				sky:Destroy()
+			end
 			for object, original in context.env do
 				for property, originalValue in original do
 					object[property] = originalValue
@@ -204,10 +207,11 @@ return {
 		run = function(context, studs)
 			Lighting.FogEnd = studs
 			local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
-			if atmosphere then
-				atmosphere.Density = (64 / studs) ^ 0.25
-				atmosphere.Haze = math.max(2 ^ -32, 5 / studs ^ 0.1)
+			if not atmosphere then
+				return
 			end
+			atmosphere.Density = (64 / studs) ^ 0.25
+			atmosphere.Haze = math.max(2 ^ -32, 5 / studs ^ 0.1)
 		end,
 	},
 	{
@@ -312,6 +316,12 @@ return {
 			hours = math.clamp(tonumber(hours) or 0, 0, 23)
 			minutes = math.clamp(tonumber(minutes) or 0, 0, 59)
 			seconds = math.clamp(tonumber(seconds) or 0, 0, 59)
+			if context.args[1] then
+				if not string.match(time, "^%d+:?%d*:?%d*$") then
+					context.args[1].parsedArgs = { string.format("%02d:%02d:%02d", hours, minutes, seconds) }
+				end
+				context.args[1].redactLog = false
+			end
 
 			local clockTime = hours + minutes / 60 + seconds / 3600
 
@@ -402,7 +412,10 @@ return {
 		},
 		run = function(context, bottom, back, left, top, front, right)
 			if not bottom or context.undo then
-				pcall(game.Destroy, context._K.Service.Lighting:FindFirstChild("_KSky"))
+				local sky = context._K.Service.Lighting:FindFirstChild("_KSky")
+				if sky then
+					sky:Destroy()
+				end
 				return
 			end
 			local existing = context._K.Service.Lighting:FindFirstChildOfClass("Sky")
@@ -460,19 +473,22 @@ return {
 		description = "Orients the wind direction along your camera.",
 		args = {},
 		run = function(context)
-			if context.fromPlayer then
+			local fromPlayer = context.fromPlayer
+			if fromPlayer then
 				-- other players fire this remote while spectated, wait for the sender's reply instead of the first one
-				local connection
 				local function stopWatching()
-					if connection and connection.Connected then
-						connection:Disconnect()
-						context._K.Remote.SpectateSubject:Fire(context.fromPlayer)
+					local spectate = context._K.Registry.commands.spectate
+					local spectators = spectate and spectate.env and spectate.env.spectators
+					if not (spectators and spectators[fromPlayer]) then
+						context._K.Remote.SpectateSubject:Fire(fromPlayer)
 					end
 				end
+				local connection
 				connection = context._K.Remote.SpectateSubject:Connect(function(player, cframe)
-					if player ~= context.fromPlayer then
+					if player ~= fromPlayer then
 						return
 					end
+					connection:Disconnect()
 					stopWatching()
 					if typeof(cframe) ~= "CFrame" then
 						return
@@ -488,8 +504,13 @@ return {
 					end
 					workspace.GlobalWind = cframe.LookVector * speed
 				end)
-				task.delay(10, stopWatching)
-				context._K.Remote.SpectateSubject:Fire(context.fromPlayer, true)
+				task.delay(10, function()
+					if connection.Connected then
+						connection:Disconnect()
+						stopWatching()
+					end
+				end)
+				context._K.Remote.SpectateSubject:Fire(fromPlayer, true)
 			end
 		end,
 	},

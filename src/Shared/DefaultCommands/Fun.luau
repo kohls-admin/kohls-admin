@@ -5,15 +5,70 @@ return {
 		name = "disco",
 		aliases = { "🪩", "un🪩", "undisco" },
 		description = "It's time to party! 🎉",
+		-- the server only marks disco active on Lighting (a replicated attribute), each client tweens its own Lighting
+		-- one hue per STEP seconds (luminance changes at <= 1 Hz) and skips it while the player opts out with the
+		-- KAH_NoFx attribute or GuiService.ReducedMotionEnabled, restoring its lighting when either turns on mid-effect
 		env = function(_K)
-			local env = { id = false, restore = false }
+			local env = { id = false }
 			function env.cleanup()
-				if env.restore then
-					_K.Service.Lighting.Ambient, _K.Service.Lighting.FogColor = unpack(env.restore)
-					env.restore = false
-				end
+				_K.Service.Lighting:SetAttribute("_KDisco", nil)
 				env.id = false
 			end
+			return env
+		end,
+		envClient = function(_K)
+			local Lighting = _K.Service.Lighting
+			local GuiService = _K.Service.GuiService
+			local LocalPlayer = _K.Service.Players.LocalPlayer
+			local env = { STEP = 1.5, COLORS = {}, tween = false, restore = false, running = false }
+			for hue = 0, 7 do
+				table.insert(env.COLORS, Color3.fromHSV(hue / 8, 0.6, 0.8))
+			end
+
+			function env.optedOut()
+				return GuiService.ReducedMotionEnabled == true
+					or if LocalPlayer:GetAttribute("KAH_NoFx") then true else false
+			end
+
+			function env.stop()
+				env.running = false
+				if env.tween then
+					env.tween:Cancel()
+					env.tween = false
+				end
+				if env.restore then
+					Lighting.Ambient, Lighting.FogColor = unpack(env.restore)
+					env.restore = false
+				end
+			end
+
+			function env.update()
+				if not Lighting:GetAttribute("_KDisco") or env.optedOut() then
+					return env.stop()
+				elseif env.running then
+					return
+				end
+				local running = {}
+				env.running = running
+				env.restore = { Lighting.Ambient, Lighting.FogColor }
+				task.spawn(function()
+					local index = 0
+					local info = TweenInfo.new(env.STEP, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+					while env.running == running do
+						index = index % #env.COLORS + 1
+						local color = env.COLORS[index]
+						local tween = _K.Service.Tween:Create(Lighting, info, { Ambient = color, FogColor = color })
+						env.tween = tween
+						tween:Play()
+						tween.Completed:Wait()
+					end
+				end)
+			end
+
+			Lighting:GetAttributeChangedSignal("_KDisco"):Connect(env.update)
+			LocalPlayer:GetAttributeChangedSignal("KAH_NoFx"):Connect(env.update)
+			GuiService:GetPropertyChangedSignal("ReducedMotionEnabled"):Connect(env.update)
+			task.defer(env.update)
 			return env
 		end,
 
@@ -21,21 +76,8 @@ return {
 			if context.undo then
 				return context.env.cleanup()
 			end
-
-			if not context.env.restore then
-				context.env.restore = { context._K.Service.Lighting.Ambient, context._K.Service.Lighting.FogColor }
-			end
-
-			local t = time()
-			context.env.id = t
-			task.spawn(function()
-				repeat
-					local color = Color3.fromHSV((time() - t) % 1, 1, 1)
-					context._K.Service.Lighting.Ambient = color
-					context._K.Service.Lighting.FogColor = color
-					task.wait(math.pi / 10)
-				until context.env.id ~= t
-			end)
+			context.env.id = time()
+			context._K.Service.Lighting:SetAttribute("_KDisco", context.env.id)
 			return
 		end,
 	},
@@ -569,7 +611,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.ControlCommand:Connect(function(target: Humanoid | Model)
+			local _ = _K.Remote.ControlCommand:Connect(function(target: Humanoid | Model)
 				if target then
 					workspace.CurrentCamera.CameraSubject = target
 				end
@@ -646,7 +688,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.Jumpscare:Connect(function(imageId: string, soundId: number)
+			local _ = _K.Remote.Jumpscare:Connect(function(imageId: string, soundId: number)
 				local image = _K.UI.new "ImageLabel" {
 					Name = "JumpScare",
 					Parent = _K.UI.LayerTop,
@@ -698,7 +740,7 @@ return {
 
 		envClient = function(_K)
 			local connection
-			_K.Remote.Glitch:Connect(function(enable: boolean?, distance: number?)
+			local _ = _K.Remote.Glitch:Connect(function(enable: boolean?, distance: number?)
 				if connection then
 					connection:Disconnect()
 				end
@@ -1186,7 +1228,7 @@ return {
 				local function invertControls(player, direction, relative)
 					player.Move(player, -direction, relative)
 				end
-				_K.Remote.Confuse:Connect(function(enable)
+				local _ = _K.Remote.Confuse:Connect(function(enable)
 					local player = _K.Service.Players.LocalPlayer
 					local playerScripts = player:WaitForChild("PlayerScripts")
 					local playerModule = require(playerScripts:WaitForChild("PlayerModule"))
@@ -1508,7 +1550,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Remote.Trip:Connect(function()
+			local _ = _K.Remote.Trip:Connect(function()
 				local character = _K.LocalPlayer.Character
 				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
@@ -1812,7 +1854,7 @@ return {
 		},
 		envClient = function(_K)
 			local thread
-			_K.Remote.Slippery:Connect(function(bodyVelocity: BodyVelocity?)
+			local _ = _K.Remote.Slippery:Connect(function(bodyVelocity: BodyVelocity?)
 				if typeof(thread) == "thread" and coroutine.status(thread) == "suspended" then
 					task.cancel(thread)
 					thread = nil

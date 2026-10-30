@@ -406,11 +406,13 @@ function UI.newSinkHoverState(object: GuiObject, hovering: any?, options: Flux.H
 	return target
 end
 
+local FIND_SYMBOL = Flux.Find.Child("")({})[1]
+
 local function unwrapChild(child: any): any
 	if type(child) == "table" then
 		if child._instance then
 			return child._instance
-		elseif not Flux.isNode(child) and not table.isfrozen(child) and child[1] ~= Flux.Find.Symbol then
+		elseif not Flux.isNode(child) and not table.isfrozen(child) and child[1] ~= FIND_SYMBOL then
 			for k, v in child do
 				if type(k) == "number" then
 					child[k] = unwrapChild(v)

@@ -36,7 +36,7 @@ return function(_K)
 	local function parseTime(input: string): (boolean, string | number)
 		if input == "" then
 			return true, 1
-		elseif string.find("-1", input :: string, 1, true) then
+		elseif input == "-1" or input == "-" then
 			return true, -1
 		end
 
@@ -44,7 +44,9 @@ return function(_K)
 			-- no units specified, default to seconds?
 			return true, tonumber(input) :: number
 		end
-		if string.find(input :: string, TIME_PATTERN) == nil then
+		-- the whole input must be durations, so text that only contains one falls through to the next argument
+		local rest, count = string.gsub(input :: string, TIME_PATTERN, "")
+		if count == 0 or string.find(rest, "%S") then
 			return false, "Invalid time format"
 		end
 

@@ -2,10 +2,11 @@ local _K
 
 local function canUnban(userId: string, ban: any, self: any)
 	local from = self.command.from
+	local savedBan = ban and ban[3] and (ban[3] < 0 or ban[3] > os.time())
 	if
-		(not ban or (ban[3] and ban[3] ~= 0))
+		(not ban or savedBan)
 		and from ~= _K.Data.creatorId
-		and not _K.Auth.hasPermission(from, "admin")
+		-- banasync includes admin, and only developers change saved bans, as in Auth.unbanUsers
 		and (not _K.Auth.hasPermission(from, "banasync") or not _K.Auth.hasRestrictedRole(from))
 	then
 		return nil, "No permission to unban saved bans"
@@ -30,7 +31,7 @@ local function parseBan(input, self)
 	end
 
 	local userId = tonumber(input)
-	if userId and userId > 0 and userId < math.huge and math.floor(userId) == userId then
+	if userId and userId > 0 and userId <= 2 ^ 53 and math.floor(userId) == userId then
 		local key = tostring(userId)
 		return canUnban(key, _K.Data.bans[key], self)
 	end

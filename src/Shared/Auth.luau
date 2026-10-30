@@ -60,9 +60,12 @@ function Auth.banHandler(player)
 	return true
 end
 
-local function saveBan(key, userId, reason, timestamp, fromUserId)
-	local ban = { Util.getUserInfo(userId).Username, reason, timestamp, fromUserId }
-	Data.bans[key] = ban
+local function saveBan(key, userId, ban, timestamp)
+	local username = Util.getUserInfo(userId).Username
+	if Data.bans[key] ~= ban then
+		return
+	end
+	ban[1] = username
 	if timestamp then
 		Data.Sync.bans[key] = ban
 	end
@@ -96,13 +99,14 @@ local function banApi(method: (Players, any) -> (), name: string, userIds: { num
 	end
 end
 
+--- Bans users and returns the ones banned; saved bans are kept unless the caller can use banasync
 function Auth.banUsers(
 	userIds: { number },
 	reason: string?,
 	duration: number?,
 	fromUserId: number?,
 	forceBanAsync: boolean?
-)
+): { number }
 	local banAsync = forceBanAsync
 		or not fromUserId
 		or (Auth.hasPermission(fromUserId, "banasync") and Auth.hasRestrictedRole(fromUserId))
@@ -116,15 +120,27 @@ function Auth.banUsers(
 		timestamp = if duration > 0 then os.time() + duration else -1
 	end
 
-	local unbanAsync = {}
+	local banned, unbanAsync = {}, {}
 	for _, userId in userIds do
 		local key = tostring(userId)
-		if Data.bans[key] and Data.bans[key][3] and Data.bans[key][3] ~= 0 then
+		local ban = Data.bans[key]
+		local savedBan = ban and ban[3] and (ban[3] < 0 or ban[3] > os.time())
+		if savedBan then
+			-- only banasync can change saved bans, as in unbanUsers
+			if not banAsync then
+				continue
+			end
 			-- remove saved bans when changed to server ban
 			Data.Sync.bans[key] = Data.REMOVE
 			table.insert(unbanAsync, userId)
 		end
-		task.spawn(saveBan, key, userId, reason, timestamp, fromUserId)
+		local newBan = { if ban then ban[1] else nil, reason, timestamp, fromUserId }
+		Data.bans[key] = newBan
+		if timestamp then
+			Data.Sync.bans[key] = newBan
+		end
+		table.insert(banned, userId)
+		task.spawn(saveBan, key, userId, newBan, timestamp)
 	end
 
 	if banAsync and timestamp and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
@@ -138,20 +154,26 @@ function Auth.banUsers(
 		banApi(Players.UnbanAsync, "UnbanAsync", unbanAsync, { ApplyToUniverse = true })
 	end
 
-	Hook.ban:Fire(userIds, reason, duration, fromUserId, forceBanAsync)
+	if #banned > 0 then
+		Hook.ban:Fire(banned, reason, duration, fromUserId, forceBanAsync)
+	end
+
+	return banned
 end
 
-function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync: boolean?)
+--- Unbans users and returns the ones unbanned; saved bans are kept unless the caller can use banasync
+function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync: boolean?): { number }
 	local banAsync = forceBanAsync
 		or not fromUserId
 		or (Auth.hasPermission(fromUserId, "banasync") and Auth.hasRestrictedRole(fromUserId))
-	local unbanAsync = {}
+	local unbanned, unbanAsync = {}, {}
 	for index, userId in userIds do
 		local key = tostring(userId)
 		local number = tonumber(userId)
 		local ban = Data.bans[key]
+		local savedBan = ban and ban[3] and (ban[3] < 0 or ban[3] > os.time())
 
-		if not ban or (ban[3] and ban[3] ~= 0) then
+		if not ban or savedBan then
 			if not banAsync then
 				continue
 			end
@@ -160,6 +182,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 			end
 		end
 
+		table.insert(unbanned, userId)
 		Data.bans[key] = nil
 		Data.Sync.bans[key] = Data.REMOVE
 		for _, player in Players:GetPlayers() do
@@ -173,13 +196,21 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 		banApi(Players.UnbanAsync, "UnbanAsync", unbanAsync, { ApplyToUniverse = true })
 	end
 
-	Hook.unban:Fire(userIds, fromUserId, forceBanAsync)
+	if #unbanned > 0 then
+		Hook.unban:Fire(unbanned, fromUserId, forceBanAsync)
+	end
+
+	return unbanned
 end
 
 -- ROLE FUNCTIONS
 
 local function saveMember(key, userId)
-	Data.Sync.members[key] = { Util.getUserInfo(userId).Username, Data.members[key].persist }
+	local username = Util.getUserInfo(userId).Username
+	local member = Data.members[key]
+	if member and #member.persist > 0 then
+		Data.Sync.members[key] = { username, member.persist }
+	end
 end
 
 function Auth.networkMember(userId: number)
@@ -265,7 +296,34 @@ function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?, unres
 	return roleAdded
 end
 
---- Removes a role from a user if it exists
+-- roles users own through a group, gamepass, asset or subscription, which userRoleRemove keeps
+local asyncRoles: { [number]: { [Role]: true } } = {}
+local groupAsyncRoles: { [number]: { [Role]: true } } = {}
+local ownedAsyncRoles: { [number]: { [Role]: true } } = {}
+
+--- Gives a user a role they own through a group, gamepass, asset or subscription, which userRoleRemove keeps
+function Auth.asyncRoleAdd(userId: number, roleId: Role, fromGroup: boolean?): boolean
+	local roles = asyncRoles[userId] or {}
+	asyncRoles[userId] = roles
+	roles[roleId] = true
+	if not fromGroup then
+		local owned = ownedAsyncRoles[userId] or {}
+		ownedAsyncRoles[userId] = owned
+		owned[roleId] = true
+	end
+	return Auth.userRoleAdd(userId, roleId)
+end
+
+--- Checks if a user owns a role through a group, gamepass, asset or subscription
+function Auth.hasAsyncRole(userId: number, roleId: Role): boolean
+	local roles = asyncRoles[tonumber(userId) :: number]
+	return roles ~= nil and roles[roleId] == true
+end
+
+--[=[
+	Removes a role from a user if it exists. A role the user owns through a group, gamepass, asset or subscription
+	(Auth.hasAsyncRole) stays, only a saved copy of it is removed.
+]=]
 function Auth.userRoleRemove(userId: number, roleId: Role): boolean
 	local key = tostring(userId)
 	local member = Data.members[key]
@@ -274,7 +332,7 @@ function Auth.userRoleRemove(userId: number, roleId: Role): boolean
 
 	if member then
 		local index = table.find(member.roles, roleId)
-		if index then
+		if index and not Auth.hasAsyncRole(userId, roleId) then
 			table.remove(member.roles, index)
 			roleRemoved = true
 		end
@@ -284,12 +342,11 @@ function Auth.userRoleRemove(userId: number, roleId: Role): boolean
 		index = table.find(member.persist, roleId)
 		if index then
 			table.remove(member.persist, index)
-			roleRemoved = true
 			persistent = true
 		end
 	end
 
-	if roleRemoved then
+	if roleRemoved or persistent then
 		if #member.roles == 0 then
 			Data.members[key] = nil
 		end
@@ -300,11 +357,13 @@ function Auth.userRoleRemove(userId: number, roleId: Role): boolean
 				task.spawn(saveMember, key, userId)
 			end
 		end
-		Hook.roleRemoved:Fire(userId, roleId)
+		if roleRemoved then
+			Hook.roleRemoved:Fire(userId, roleId)
+		end
 		Auth.networkMember(userId)
 	end
 
-	return roleRemoved
+	return roleRemoved or persistent
 end
 
 local asyncRolesCache = {}
@@ -313,6 +372,86 @@ local function rankMatches(rule, rank: number): boolean
 	return rank == rule.rank or (not rule.exactRank and rank >= rule.rank)
 end
 
+-- the roles a user gets from their groups, without giving them; false and the error when the groups can't be read
+local function groupRoleIds(userId: number, attempts: number?): (boolean, { Role } | string)
+	local ok, result = Util.Retry(function()
+		return Util.Service.Group:GetGroupsAsync(userId)
+	end, attempts)
+	if not ok then
+		return false, result
+	end
+	local roleIds = {}
+	for _, group in result do
+		local groupAuth = Data.async.group[group.Id] or Data.async.group[tostring(group.Id)]
+		if type(groupAuth) == "table" then
+			for _, auth in if type(groupAuth.roles) == "table" then { groupAuth } else groupAuth do
+				if
+					type(auth) == "table"
+					and type(auth.rank) == "number"
+					and type(auth.roles) == "table"
+					and rankMatches(auth, group.Rank)
+				then
+					table.move(auth.roles, 1, #auth.roles, #roleIds + 1, roleIds)
+				end
+			end
+		end
+	end
+	return true, roleIds
+end
+
+-- the roles a user gets from the gamepasses they own, without giving them; also returns the last ownership error
+local function gamePassRoleIds(userId: number): ({ Role }, string?)
+	local roleIds, err = {}, nil
+	for gamePassId, passRoleIds in Data.async.gamepass do
+		local ok, result = Util.Retry(function()
+			return Util.Service.Marketplace:UserOwnsGamePassAsync(userId, gamePassId)
+		end)
+		if ok and result then
+			table.move(passRoleIds, 1, #passRoleIds, #roleIds + 1, roleIds)
+		elseif not ok then
+			warn(result)
+			err = result
+		end
+	end
+	return roleIds, err
+end
+
+-- gives the roles a user gets from their groups, returns the error when the groups can't be read
+local function giveGroupRoles(userId: number, attempts: number?): string?
+	local ok, result = groupRoleIds(userId, attempts)
+	if not ok then
+		return result :: string
+	end
+	local current: { [Role]: true } = {}
+	for _, roleId in result :: { Role } do
+		current[roleId] = true
+	end
+	local previous = groupAsyncRoles[userId]
+	groupAsyncRoles[userId] = current
+	if previous then
+		local owned = ownedAsyncRoles[userId]
+		local roles = asyncRoles[userId]
+		local member = Data.members[tostring(userId)]
+		for roleId in previous do
+			if not current[roleId] and not (owned and owned[roleId]) then
+				if roles then
+					roles[roleId] = nil
+				end
+				if member and (not member.persist or not table.find(member.persist, roleId)) then
+					Auth.userRoleRemove(userId, roleId)
+				end
+			end
+		end
+	end
+	for _, roleId in result :: { Role } do
+		Auth.asyncRoleAdd(userId, roleId, true)
+	end
+	return nil
+end
+
+-- waits between group fetches after the first one fails, about a minute in total with its own retries
+local GROUP_RETRY_DELAYS = { 5, 10, 15 }
+
 function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 	local cached = asyncRolesCache[userId]
 	if cached and not bustCache then
@@ -320,79 +459,56 @@ function Auth.userAsyncRoles(userId: number, bustCache: boolean?)
 	end
 	asyncRolesCache[userId] = true
 
-	if next(Data.async.group) then
-		local ok, result = Util.Retry(function()
-			return Util.Service.Group:GetGroupsAsync(userId)
-		end)
-		if ok then
-			for _, group in result do
-				local groupAuth = Data.async.group[group.Id] or Data.async.group[tostring(group.Id)]
-				if type(groupAuth) == "table" then
-					for _, auth in if type(groupAuth.roles) == "table" then { groupAuth } else groupAuth do
-						if
-							type(auth) == "table"
-							and type(auth.rank) == "number"
-							and type(auth.roles) == "table"
-							and rankMatches(auth, group.Rank)
-						then
-							for _, roleId in auth.roles do
-								Auth.userRoleAdd(userId, roleId)
-							end
-						end
-					end
-				end
-			end
-		else
-			warn(result)
-		end
-	end
-
-	if cached then
-		return
-	end
-
-	for gamePassId, roleIds in Data.async.gamepass do
-		local ok, result = Util.Retry(function()
-			return Util.Service.Marketplace:UserOwnsGamePassAsync(userId, gamePassId)
-		end)
-		if ok and result then
-			for _, roleId in roleIds do
-				Auth.userRoleAdd(userId, roleId)
-			end
-		elseif not ok then
-			warn(result)
-		end
-	end
-
 	local player = Players:GetPlayerByUserId(userId)
-	if not player then
-		return
-	end
+	local groupError = if next(Data.async.group) then giveGroupRoles(userId) else nil
 
-	for assetId, roleIds in Data.async.asset do
-		local ok, result = Util.Retry(function()
-			return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
-		end)
-		if ok and result then
-			for _, roleId in roleIds do
-				Auth.userRoleAdd(userId, roleId)
-			end
-		elseif not ok then
-			warn(result)
+	if not cached then
+		for _, roleId in (gamePassRoleIds(userId)) do
+			Auth.asyncRoleAdd(userId, roleId)
 		end
 	end
 
-	for subscriptionId, roleIds in Data.async.subscription do
-		local ok, result = Util.Retry(function()
-			return Util.Service.Marketplace:GetUserSubscriptionStatusAsync(player, subscriptionId)
-		end)
-		if ok and result.IsSubscribed then
-			for _, roleId in roleIds do
-				Auth.userRoleAdd(userId, roleId)
+	if player and not cached then
+		for assetId, roleIds in Data.async.asset do
+			local ok, result = Util.Retry(function()
+				return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
+			end)
+			if ok and result then
+				for _, roleId in roleIds do
+					Auth.asyncRoleAdd(userId, roleId)
+				end
+			elseif not ok then
+				warn(result)
 			end
-		elseif not ok then
-			warn(result)
 		end
+
+		for subscriptionId, roleIds in Data.async.subscription do
+			local ok, result = Util.Retry(function()
+				return Util.Service.Marketplace:GetUserSubscriptionStatusAsync(player, subscriptionId)
+			end)
+			if ok and result.IsSubscribed then
+				for _, roleId in roleIds do
+					Auth.asyncRoleAdd(userId, roleId)
+				end
+			elseif not ok then
+				warn(result)
+			end
+		end
+	end
+
+	-- a group-ranked player would count as rank 0, so the player keeps loading while their groups are retried
+	for _, delay in GROUP_RETRY_DELAYS do
+		if not groupError or not player or not player.Parent then
+			break
+		end
+		task.wait(delay)
+		if not player.Parent then
+			break
+		end
+		groupError = giveGroupRoles(userId, 1)
+	end
+	if groupError then
+		warn(groupError)
 	end
 end
 
@@ -607,6 +723,72 @@ function Auth.getRoleFromRank(rank: number): Role
 	return roleResult
 end
 
+local offlineRanks: { [number]: number } = {}
+local offlineLookups: { [number]: true } = {}
+
+-- the highest rank a user gets from groups and gamepasses, nil when a web call fails
+local function lookupOfflineRank(userId: number): number?
+	local roleIds = {}
+	if next(Data.async.group) then
+		local ok, result = groupRoleIds(userId)
+		if not ok then
+			warn(result)
+			return nil
+		end
+		roleIds = result :: { Role }
+	end
+	local passRoleIds, err = gamePassRoleIds(userId)
+	if err then
+		return nil
+	end
+	table.move(passRoleIds, 1, #passRoleIds, #roleIds + 1, roleIds)
+
+	local offlineRank = 0
+	for _, roleId in roleIds do
+		local role = Data.roles[roleId]
+		if role and role._rank > offlineRank then
+			offlineRank = role._rank
+		end
+	end
+	return offlineRank
+end
+
+-- the highest rank a user out of this server gets from groups and gamepasses, nil when it can't be verified
+local function getOfflineRank(userId: number, rank: number, from: number): number?
+	-- asset and subscription ownership needs the Player, so fail closed when they give this rank or higher
+	for _, source in { Data.async.asset, Data.async.subscription } do
+		for _, roleIds in source do
+			for _, roleId in roleIds do
+				local role = Data.roles[roleId]
+				if role and role._rank >= rank then
+					return nil
+				end
+			end
+		end
+	end
+
+	local cached = offlineRanks[userId]
+	if cached then
+		return cached
+	end
+
+	-- one lookup at a time per caller, so nobody can spend the web call budget that joining players need
+	if offlineLookups[from] then
+		return nil
+	end
+	offlineLookups[from] = true
+	local offlineRank = lookupOfflineRank(userId)
+	offlineLookups[from] = nil
+
+	if offlineRank then
+		offlineRanks[userId] = offlineRank
+		task.delay(60, function()
+			offlineRanks[userId] = nil
+		end)
+	end
+	return offlineRank
+end
+
 --- Validates if a user can be targeted by a command argument based on permissions and rank limits
 function Auth.targetUserArgument(arg: any, userId: number, value: Player | number | string)
 	if type(userId) ~= "number" or math.floor(userId) ~= userId or math.abs(userId) == math.huge then
@@ -640,10 +822,20 @@ function Auth.targetUserArgument(arg: any, userId: number, value: Player | numbe
 		if player and player:GetAttribute("_KRolesLoaded") ~= true then
 			return nil, "Can't target loading user"
 		end
-		if Auth.getRank(userId) < (if arg.command.rank == 0 then arg.command.fromRank else arg.command.rank) then
-			return value
+		local rank = if arg.command.rank == 0 then arg.command.fromRank else arg.command.rank
+		if Auth.getRank(userId) >= rank then
+			return nil, "Can only target lower ranks"
 		end
-		return nil, "Can only target lower ranks"
+		if not player and Util.RunContext.IsServer and not arg.definition.skipOfflineRank then
+			-- roles from groups and gamepasses are only given in the user's server
+			local offlineRank = getOfflineRank(userId, rank, from)
+			if not offlineRank then
+				return nil, "Can't verify the rank of an offline user"
+			elseif offlineRank >= rank then
+				return nil, "Can only target lower ranks"
+			end
+		end
+		return value
 	else
 		return value
 	end

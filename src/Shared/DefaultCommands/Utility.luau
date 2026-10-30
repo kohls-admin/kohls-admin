@@ -73,7 +73,7 @@ return {
 				task.spawn(_K.Process.runCommands, _K, _K.LocalPlayer.UserId, trimmed)
 			end
 
-			input._input.FocusLost:Connect(function(enterPressed)
+			local _ = input._input.FocusLost:Connect(function(enterPressed)
 				if enterPressed then
 					executeCommand()
 				end
@@ -111,28 +111,7 @@ return {
 		description = "Shows the about tab in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
-			local env = {}
-			task.defer(function()
-				while not _K.client do
-					task.wait()
-				end
-				local window = _K.UI.new "Window" {
-					Parent = _K.UI.LayerTopInset,
-					Icon = "rbxassetid://71961243872230",
-					Title = "About",
-				}
-				_K.UI.edit(window)({
-					_Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs)({
-								_K.client.dashboard.About,
-							})
-						end
-					end,
-				})
-				env.window = window
-			end)
-			return env
+			return _K.Registry.dashboardWindowEnv("About")(_K)
 		end,
 
 		runClient = function(context)
@@ -147,28 +126,7 @@ return {
 		description = "Shows the commands in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
-			local env = {}
-			task.defer(function()
-				while not _K.client do
-					task.wait()
-				end
-				local window = _K.UI.new "Window" {
-					Parent = _K.UI.LayerTopInset,
-					Icon = "rbxassetid://71961243872230",
-					Title = "Commands",
-				}
-				_K.UI.edit(window)({
-					_Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs)({
-								_K.client.dashboard.Commands,
-							})
-						end
-					end,
-				})
-				env.window = window
-			end)
-			return env
+			return _K.Registry.dashboardWindowEnv("Commands")(_K)
 		end,
 
 		runClient = function(context)
@@ -220,28 +178,7 @@ return {
 		description = "Shows the market tab in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
-			local env = {}
-			task.defer(function()
-				while not _K.client do
-					task.wait()
-				end
-				local window = _K.UI.new "Window" {
-					Parent = _K.UI.LayerTopInset,
-					Icon = "rbxassetid://71961243872230",
-					Title = "Market",
-				}
-				_K.UI.edit(window)({
-					_Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs)({
-								_K.client.dashboard.Market,
-							})
-						end
-					end,
-				})
-				env.window = window
-			end)
-			return env
+			return _K.Registry.dashboardWindowEnv("Market")(_K)
 		end,
 
 		runClient = function(context)
@@ -256,13 +193,11 @@ return {
 			"logs",
 			"debuglogs",
 			"errorlogs",
-			"chatlogs",
 			"commandlogs",
 			"joinlogs",
 			"damagelogs",
 			"killlogs",
 			"purchaselogs",
-			"clogs",
 			"cmdlogs",
 			"dmglogs",
 			"buylogs",
@@ -272,7 +207,6 @@ return {
 		envClient = function(_K)
 			local env = {
 				aliasMap = {
-					clogs = "chatlogs",
 					cmdlogs = "commandlogs",
 					dmglogs = "damagelogs",
 					buylogs = "purchaselogs",
@@ -280,7 +214,6 @@ return {
 				typeMap = {
 					DEBUG = { "DEBUG", "INFO", "WARN", "ERROR" },
 					ERROR = { "WARN", "ERROR" },
-					CHAT = { "CHAT" },
 					COMMAND = { "COMMAND" },
 					JOIN = { "JOIN", "LEAVE" },
 					KILL = { "KILL", "DEATH", "DAMAGE" },
@@ -356,28 +289,7 @@ return {
 		description = "Shows the settings in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)
-			local env = {}
-			task.defer(function()
-				while not _K.client do
-					task.wait()
-				end
-				local window = _K.UI.new "Window" {
-					Parent = _K.UI.LayerTopInset,
-					Icon = "rbxassetid://71961243872230",
-					Title = "Settings",
-				}
-				_K.UI.edit(window)({
-					_Visible = function()
-						if not window._instance.Visible and #_K.client.dashboard then
-							_K.UI.edit(_K.client.dashboard.Tabs)({
-								_K.client.dashboard.Settings,
-							})
-						end
-					end,
-				})
-				env.window = window
-			end)
-			return env
+			return _K.Registry.dashboardWindowEnv("Settings")(_K)
 		end,
 
 		runClient = function(context)
@@ -447,8 +359,8 @@ return {
 					* CFrame.fromOrientation(math.rad(cameraAngleX), math.rad(cameraAngleY), 0)
 					* CFrame.new(0, 0, cameraZ)
 
-				local resetCameraTween = game:GetService("TweenService")
-					:Create(previewCamera, TweenInfo.new(1, Enum.EasingStyle.Cubic), {
+				local resetCameraTween =
+					_K.Service.Tween:Create(previewCamera, TweenInfo.new(1, Enum.EasingStyle.Cubic), {
 						CFrame = cameraStartCFrame,
 					})
 
@@ -744,7 +656,7 @@ return {
 					Size = buttonSize,
 					Visible = buttonVisible,
 					Activated = function()
-						pcall(function()
+						local _ = pcall(function()
 							_K.Service.AvatarEditor:PromptSetFavorite(emoteId:peek(), 1, true)
 						end)
 					end,
@@ -789,7 +701,9 @@ return {
 					end)
 				end
 
-				env.speed.Value(math.clamp(speed or 1, 0, 2) / 2)
+				-- the slider's hook applies its speed on the next flush, so play at the same clamped speed
+				local playSpeed = math.clamp(speed or 1, 0, 2)
+				env.speed.Value(playSpeed / 2)
 
 				if not playing.Looped then
 					playing.Stopped:Once(function()
@@ -798,20 +712,22 @@ return {
 				end
 
 				local id = _K.Data.animationToEmoteId[animation]
-				local emoteItem = emoteId and _K.Data.emoteItemFromId[id]
+				local emoteItem = id and _K.Data.emoteItemFromId[id]
 				env.window.Title(if emoteItem then emoteItem.name else "Emote")
 				emoteId:set(id)
 				ownsEmote(false)
-				task.spawn(function()
-					local ok, result = _K.Util.Retry(function()
-						return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, id)
+				if id then
+					task.spawn(function()
+						local ok, result = _K.Util.Retry(function()
+							return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, id)
+						end)
+						if ok then
+							ownsEmote(result)
+						end
 					end)
-					if ok then
-						ownsEmote(result)
-					end
-				end)
+				end
 
-				playing:Play(0.1, 99, speed)
+				playing:Play(0.1, 99, playSpeed)
 				env.playing = playing
 				env.window._instance.Visible = true
 
@@ -819,7 +735,7 @@ return {
 			end
 
 			env.playEmote = playEmote
-			_K.Remote.Emote:Connect(playEmote)
+			local _ = _K.Remote.Emote:Connect(playEmote)
 
 			return env
 		end,
@@ -830,16 +746,20 @@ return {
 		end,
 		run = function(context, players, animation: number, loop: boolean?, speed: number?)
 			if
-				context._K.Auth.hasPermission(context.from, "targetOthers") ~= true
+				type(animation) == "number"
+				and (not context.fromPlayer or (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 1)
+				and not context._K.Auth.hasRole(context.from, "vip")
+				and context._K.Auth.hasPermission(context.from, "targetOthers") ~= true
 				and not context._K.Auth.hasPermission(context.from, "admin")
 			then
+				local emoteId = context._K.Data.animationToEmoteId[animation] or animation
 				local ok, owned = context._K.Util.Retry(function()
-					return context._K.Service.Marketplace:PlayerOwnsAssetAsync(context.fromPlayer, animation)
+					return context._K.Service.Marketplace:PlayerOwnsAssetAsync(context.fromPlayer, emoteId)
 				end)
 				if not ok or not owned then
 					if ok then
-						local id = tostring(animation)
-						if not context._K.VIP.allowedBulkPurchaseIds[animation] then
+						local id = tostring(emoteId)
+						if not context._K.VIP.allowedBulkPurchaseIds[emoteId] then
 							id = "115444443724463" -- chat commands
 						end
 						local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = id } }
@@ -910,10 +830,13 @@ return {
 								end,
 
 								function(button)
-									button.Activated:Connect(function()
+									local _ = button.Activated:Connect(function()
 										if
 											not item.lineData.owned
-											or _K.LocalPlayer:GetAttribute("_KDonationLevel") < 4
+											and (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) < 1
+											and not _K.Auth.hasRole(_K.LocalPlayer.UserId, "vip")
+											and _K.Auth.hasPermission(_K.LocalPlayer.UserId, "targetOthers") ~= true
+											and not _K.Auth.hasPermission(_K.LocalPlayer.UserId, "admin")
 										then
 											EMOTE.updatePreview(item.lineData.emoteId)
 											EMOTE.preview.Visible = true
@@ -924,13 +847,15 @@ return {
 											EMOTE.playEmote()
 										else
 											_K.UI.Sound.Hover03:Play()
-											if _K.forceChat then
-												local name = item.lineData.name
-												if string.find(name, _K.Data.settings.splitKey, 1, true) then
-													name = `"{name}"`
-												end
-												_K.forceChat(`{_K.getCommandPrefix()}emote me {name}`)
+											local name = item.lineData.name
+											if string.find(name, _K.Data.settings.splitKey, 1, true) then
+												name = `"{name}"`
 											end
+											_K.Process.runCommands(
+												_K,
+												_K.LocalPlayer.UserId,
+												`{_K.getCommandPrefix()}emote me {name}`
+											)
 										end
 									end)
 									local hovering = UI.Interact.hover(button)
@@ -978,7 +903,7 @@ return {
 								Size = UDim2.new(1, 0, 1, 0),
 								SizeConstraint = Enum.SizeConstraint.RelativeYY,
 								Activated = function()
-									pcall(function()
+									local _ = pcall(function()
 										_K.Service.AvatarEditor:PromptSetFavorite(item.lineData.emoteId, 1, true)
 									end)
 								end,
@@ -1113,11 +1038,12 @@ return {
 			local env = {
 				fps = 60,
 			}
-			function _K.Remote.ShowFPS.OnInvoke()
+			local function onShowFPSInvoke()
 				return env.fps
 			end
+			_K.Remote.ShowFPS.OnInvoke = onShowFPSInvoke
 			local frames, last = 0, tick()
-			_K.Service.Run.Heartbeat:Connect(function()
+			local _ = _K.Service.Run.Heartbeat:Connect(function()
 				frames += 1
 				local dt = tick() - last
 				if dt >= 1 then
@@ -1255,7 +1181,7 @@ return {
 						.. `\n\nUse <b>{context._K.getCommandPrefix(context.from)}unviewas</b> to return to normal.`,
 				})
 			end
-			context._K.client.members(context._K.Data.members)
+			context._K.client.members(context._K.Data.members, true)
 			context._K.client.updateInterfaceAuth()
 		end,
 	},

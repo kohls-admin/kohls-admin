@@ -137,11 +137,11 @@ task.spawn(function()
 		end
 		tasks:wait()
 
-		Remote:Connect(function(player)
+		local _ = Remote:Connect(function(player)
 			Remote:Fire(player, emotes)
 		end)
 	else
-		Remote:Connect(function(data)
+		local _ = Remote:Connect(function(data)
 			for index, item in data do
 				emoteToAnimationId[item.emoteId] = item.animationId
 				animationToEmoteId[item.animationId] = item.emoteId

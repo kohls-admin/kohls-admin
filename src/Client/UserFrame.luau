@@ -152,6 +152,7 @@ return function(from: (number | string)?, name: string?, image: string?, badgeEn
 
 	return UI.new "Frame" {
 		Name = "Header",
+		LayoutOrder = -3,
 		Size = UDim2.new(),
 		AutomaticSize = Enum.AutomaticSize.XY,
 		BackgroundTransparency = 1,

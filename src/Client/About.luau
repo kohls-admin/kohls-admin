@@ -14,6 +14,7 @@ function About.new(_K)
 
 	_K.client.AllowThirdPartySales = not STUDIO_DEBUG
 	_K.client.lastAttemptedPurchase = false
+	_K.client.ownsKAModel = UI.signal(false)
 
 	local KA_MODEL_ID = 172732271
 
@@ -26,14 +27,14 @@ function About.new(_K)
 	purchaseKADialog = UI.new "Dialog" {
 		Parent = UI.LayerTop,
 		Title = "Get Kohl's Admin",
-		Text = "Copy the link below to continue.",
+		Text = "Third-party model sales are disabled in this experience.\n<b>Favorite ⭐</b> Kohl's Admin or copy the Creator Store link below to get it for <b>free</b>!",
 		Visible = false,
 		Draggable = true,
 		ExitButton = true,
 		BackgroundTransparency = 0,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Size = UDim2.new(0, 320, 0, 0),
+		Size = UDim2.new(0, 340, 0, 0),
 		Modal = true,
 		ZIndex = 1000,
 		Close = function()
@@ -46,13 +47,33 @@ function About.new(_K)
 
 	_K.client.purchaseKADialog = purchaseKADialog
 
+	local function showFallbackDialog()
+		purchaseKADialog.Visible(true)
+		task.defer(function()
+			purchaseLink:Select()
+		end)
+		local _ = pcall(function()
+			_K.Service.AvatarEditor:PromptSetFavorite(KA_MODEL_ID, 1, true)
+		end)
+	end
+
+	function _K.client.promptGetKA()
+		_K.client.lastAttemptedPurchase = KA_MODEL_ID
+		if _K.client.AllowThirdPartySales then
+			purchaseKADialog.Visible(false)
+			_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, KA_MODEL_ID)
+		else
+			showFallbackDialog()
+		end
+	end
+
 	local con
 	con = _K.Service.Log.MessageOut:Connect(function(message, messageType)
 		if messageType == Enum.MessageType.MessageWarning and string.find(message, "AllowThirdPartySales") then
 			con:Disconnect()
 			_K.client.AllowThirdPartySales = false
 			if _K.client.lastAttemptedPurchase then
-				purchaseKADialog.Visible(true)
+				showFallbackDialog()
 			end
 		end
 	end)
@@ -106,13 +127,7 @@ function About.new(_K)
 			},
 
 			Activated = function()
-				_K.client.lastAttemptedPurchase = KA_MODEL_ID
-				if _K.client.AllowThirdPartySales then
-					purchaseKADialog.Visible(false)
-					_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, KA_MODEL_ID)
-				else
-					purchaseKADialog.Visible(true)
-				end
+				_K.client.promptGetKA()
 			end,
 		}
 
@@ -163,11 +178,14 @@ function About.new(_K)
 			adminModelButton,
 		}
 
-		task.defer(function()
-			local ok, owned = _K.Util.Retry(function()
-				return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, KA_MODEL_ID)
-			end)
-			if ok and owned and not STUDIO_DEBUG then
+		local markedOwned = false
+		local function markModelOwned()
+			if markedOwned then
+				return
+			end
+			markedOwned = true
+			_K.client.ownsKAModel(true)
+			if not STUDIO_DEBUG then
 				adminModelButton._instance.Visible = false
 				UI.new "Link" {
 					Parent = adminModelFrame,
@@ -176,6 +194,21 @@ function About.new(_K)
 					Text = "create.roblox.com/store/asset/" .. KA_MODEL_ID,
 				}
 				ctaLabel.Text = "<b>Love the Power?</b>\nDrop a Like 👍 and Favorite ⭐ to support us!"
+			end
+		end
+
+		local _ = _K.Service.Marketplace.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
+			if purchased and assetId == KA_MODEL_ID and player == _K.LocalPlayer then
+				markModelOwned()
+			end
+		end)
+
+		task.defer(function()
+			local ok, owned = _K.Util.Retry(function()
+				return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, KA_MODEL_ID)
+			end)
+			if ok and owned then
+				markModelOwned()
 			end
 		end)
 

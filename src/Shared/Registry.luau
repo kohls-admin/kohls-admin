@@ -166,21 +166,22 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 		table.insert(Registry.commandsList, commandObject)
 	end
 
-	commandObject.args = commandObject.args or {}
-	for _, arg in commandObject.args :: any do
+	local args: { Type.ArgumentDefinition } = commandObject.args or {}
+	commandObject.args = args
+	for _, arg in args do
 		if Registry.types[arg.type] then
 			continue
 		end
 		if string.find(arg.type, "Enum.", 1, true) == 1 then
 			local argType = arg.type
 			local ok, enum = pcall(function()
-				return (Enum :: any)[string.sub(argType, 6)]
+				return ((Enum :: unknown) :: { [string]: Enum })[string.sub(argType, 6)]
 			end)
 
 			if not ok and string.find(argType, "s$") then
-				argType = string.sub(argType, -2)
+				argType = string.sub(argType, 1, -2)
 				ok, enum = pcall(function()
-					return (Enum :: any)[string.sub(argType, 6)]
+					return ((Enum :: unknown) :: { [string]: Enum })[string.sub(argType, 6)]
 				end)
 			end
 
@@ -190,7 +191,7 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 			Registry.registerType(argType, enumType)
 			Registry.registerType(argType .. "s", { listable = true }, enumType)
 		elseif string.find(arg.type, "%S,%S") then
-			local enumType = Registry.makeEnumType(arg.type, string.split(arg.type))
+			local enumType = Registry.makeEnumType(arg.type, string.split(arg.type, ","))
 			Registry.registerType(arg.type, enumType)
 			Registry.registerType(arg.type .. "s", { listable = true }, enumType)
 		end
@@ -221,6 +222,33 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 end
 
 local aliases = {}
+function Registry.dashboardWindowEnv(tab: string)
+	return function(_K: any)
+		local env = {}
+		task.defer(function()
+			while not (_K.UI and _K.client and _K.client.dashboard) do
+				task.wait()
+			end
+			local window = _K.UI.new "Window" {
+				Parent = _K.UI.LayerTopInset,
+				Icon = "rbxassetid://71961243872230",
+				Title = tab,
+			}
+			_K.UI.edit(window)({
+				_Visible = function()
+					if not window._instance.Visible and #_K.client.dashboard then
+						_K.UI.edit(_K.client.dashboard.Tabs)({
+							_K.client.dashboard[tab],
+						})
+					end
+				end,
+			})
+			env.window = window
+		end)
+		return env
+	end
+end
+
 --- Registers a local command alias
 function Registry.registerCommandAlias(_K: any, alias: string, command: string)
 	print("command alias", alias, command)

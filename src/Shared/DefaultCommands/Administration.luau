@@ -12,11 +12,15 @@ return {
 			},
 		},
 		envClient = function(_K)
-			_K.Chat.onMessage("announce", function(text: string, from: number, duration: number?)
+			_K.Chat.onMessage("announce", function(text: string, from: number, data: any)
+				-- the pinned announcement ({ text, from, duration, id }) also arrives through settings, it shows once
+				if type(data) == "table" and not _K.Chat.pinAnnouncement(data) then
+					return
+				end
 				_K.Announce({
 					From = from,
 					Text = text,
-					Duration = duration or 0,
+					Duration = (if type(data) == "table" then data[3] else data) or 0,
 				})
 			end)
 		end,
@@ -28,17 +32,23 @@ return {
 					end
 					if type(message.Data) ~= "table" then
 						_K.Data.savedSettings.announcement = false
+						-- clients forget the shown announcement, so the next one shows even when it is the same
+						for _, player in _K.Service.Players:GetPlayers() do
+							if player:GetAttribute("_K_READY") then
+								_K.Remote.Settings:Fire(player, { announcement = false })
+							end
+						end
 						return
 					end
 
-					local msg, from, duration = unpack(message.Data)
+					local msg, from = unpack(message.Data)
 					_K.Data.savedSettings.announcement = message.Data
 					_K.Chat.send(
 						{ global = true, from = from, fromPlayer = from and _K.Service.Players:GetPlayerByUserId(from) },
 						"announce",
 						msg,
 						nil,
-						duration or 0
+						message.Data
 					)
 				end)
 			end, math.huge)
@@ -49,13 +59,17 @@ return {
 				return `Announcements are disabled in private servers.`
 			end
 
-			-- announcements are user text shown to everyone, so they need a developer role and are rate limited
-			local err = context._K.Chat.limitBroadcast(context.from, "Announcements require a developer role.")
+			-- announcements are user text shown to everyone, so they are rate limited
+			local err = context._K.Chat.limitBroadcast(context.from)
 			if err then
 				return err
 			end
+			if context.args[1] then
+				context.args[1].redactLog = false
+			end
 
-			local announcement = { message, context.from }
+			-- the id tells a repeated announcement apart from the same one arriving again in a settings sync
+			local announcement = { message, context.from, 0, context._K.Service.Http:GenerateGUID(false) }
 			context._K.Data.savedSettings.announcement = announcement
 			context._K.Data.Sync.settings.announcement = announcement
 			task.spawn(context._K.Util.Retry, function()

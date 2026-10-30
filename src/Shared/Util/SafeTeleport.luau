@@ -43,6 +43,6 @@ local function handleFailedTeleport(player, teleportResult, errorMessage, target
 	SafeTeleport(targetPlaceId, { player }, teleportOptions)
 end
 
-TeleportService.TeleportInitFailed:Connect(handleFailedTeleport)
+local _ = TeleportService.TeleportInitFailed:Connect(handleFailedTeleport)
 
 return SafeTeleport

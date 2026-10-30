@@ -7,13 +7,13 @@ local function getNewData(chunk, size, key, action)
 
 	if not chunk[key] then
 		chunk[key] = {}
-		newSize += #key + 5 -- "key":{}
+		newSize += #Http:JSONEncode(key) + 4 -- ,"key":{}
 	end
 
 	local newInfo = chunk[key]
 	if not newInfo[action] then
+		newSize += #action + (if next(newInfo) ~= nil then 6 else 5) -- "action":{} or ,"action":{}
 		newInfo[action] = {}
-		newSize += #action + 5 -- "action":{}
 	end
 
 	local newData = newInfo[action]
@@ -32,36 +32,33 @@ return function(changes)
 
 	for key, info in changes do
 		for action, data in info do
-			if action == "insert" then -- array
-				for _, v in data do
-					local size = #Http:JSONEncode(v) + 1 -- ,value
+			-- insert (log entries) and unset (removed keys) are arrays: re-index them from 1 in every chunk,
+			-- a copied original index leaves later chunks sparse and they stop encoding as JSON arrays
+			local isArray = action == "insert" or action == "unset"
+			for k, v in data do
+				local prefix = if isArray then 1 else #Http:JSONEncode(tostring(k)) + 2 -- , or ,"k":
+				local size = #Http:JSONEncode(v) + prefix
+				local wrapper = (if not currentChunk[key] then #Http:JSONEncode(key) + 4 else 0)
+					+ (
+						if not (currentChunk[key] and currentChunk[key][action])
+							then #action + (if currentChunk[key] and next(currentChunk[key]) ~= nil then 6 else 5)
+							else 0
+					)
 
-					if currentChunkSize + size >= LIMIT and currentChunkSize > 2 then
-						currentChunk, currentChunkSize = {}, 2
-						table.insert(chunks, currentChunk)
-					end
+				if currentChunkSize + wrapper + size >= LIMIT and currentChunkSize > 2 then
+					currentChunk, currentChunkSize = {}, 2
+					table.insert(chunks, currentChunk)
+				end
 
-					local newData
-					newData, currentChunkSize = getNewData(currentChunk, currentChunkSize, key, action)
+				local newData
+				newData, currentChunkSize = getNewData(currentChunk, currentChunkSize, key, action)
 
+				if isArray then
 					table.insert(newData, v)
-					currentChunkSize += size
-				end
-			else -- dictionary
-				for k, v in pairs(data) do
-					local size = #Http:JSONEncode(v) + #k + 4 -- ,"k":value
-
-					if currentChunkSize + size >= LIMIT then
-						currentChunk, currentChunkSize = {}, 2
-						table.insert(chunks, currentChunk)
-					end
-
-					local newData
-					newData, currentChunkSize = getNewData(currentChunk, currentChunkSize, key, action)
-
+				else
 					newData[k] = v
-					currentChunkSize += size
 				end
+				currentChunkSize += size
 			end
 		end
 	end
