@@ -1,0 +1,91 @@
+# Kohl's Admin test toolkit configuration for `python3 tools/sert.py <command>`
+# (fetch, run, studio, cloud, lint, coverage, release, dist).
+
+[sert]
+version = "0.1.0"
+sha256 = "" # TODO: sha256 of sert-0.1.0.zip (sert lock --pin once sert v0.1.0 is released)
+pyz_sha256 = "" # TODO: sha256 of sert-0.1.0.pyz (sert lock --pin once sert v0.1.0 is released)
+
+[tools]
+luau = "0.724"
+
+[test]
+entries = ["test/spec.client.luau"]
+stage = "default.project.json"
+
+[coverage]
+include = ["src"]
+min = 90
+
+[mutate]
+include = [
+  "src/init.luau",
+  "src/Server",
+  "src/Shared/Auth.luau",
+  "src/Shared/Chat.luau",
+  "src/Shared/Hook.luau",
+  "src/Shared/Registry.luau",
+  "src/Shared/Data",
+  "src/Shared/Process",
+  "src/Shared/Util",
+  "src/Shared/DefaultTypes",
+  "src/Shared/DefaultAddons/Legacy.luau",
+  "src/Shared/DefaultCommands/Creator.luau",
+  "src/Shared/DefaultCommands/Administration.luau",
+  "src/Shared/DefaultCommands/Environment.luau",
+  "src/Shared/DefaultCommands/SuperAdmin.luau",
+  "src/Client/UI/init.luau",
+  "src/Client/CommandBar/CompletionData.luau",
+  "src/Client/Explorer/ExplorerOrder.luau",
+  "src/Client/UI/Classes/CircleProgress.luau",
+  "src/Client/UI/Classes/Button.luau",
+  "src/Client/UI/Classes/Checkbox.luau",
+]
+exclude = [
+  "src/Server/LoadScript/Loadstring",
+  "src/Shared/DefaultTypes/Player/Types/Inverse.luau",
+]
+min = 85
+timeout = 20
+
+[mutate.specs]
+"src/Shared/Util" = "@file=Util"
+"src/Shared/Util/Remote.luau" = "@file=Util,Remote"
+"src/Server/LoadScript" = "@file=Util,Loadstring"
+"src/Shared/Auth.luau" = "@file=Auth,ProcessAndTypes"
+"src/Shared/Process" = "@file=ProcessAndTypes"
+"src/Shared/Registry.luau" = "@file=ProcessAndTypes,DefaultTypes"
+"src/Shared/Hook.luau" = "@file=ProcessAndTypes"
+"src/Shared/Data" = "@file=DataAndSim,ChatAndServer"
+"src/Shared/Data/ChunkChanges.luau" = "ChunkChanges"
+"src/Shared/Data/Migrate" = "Migrate"
+"src/Shared/Data/Store.luau" = "Store.loadStore"
+"src/Shared/Chat.luau" = "@file=ChatAndServer"
+"src/Server" = "@file=ChatAndServer,Remote,DefaultCommands"
+"src/init.luau" = "@file=ChatAndServer,DefaultCommands,ClientAndUI"
+"src/Shared/DefaultTypes" = "@file=DefaultTypes"
+"src/Shared/DefaultCommands" = "@file=DefaultCommands"
+"src/Shared/DefaultAddons" = "@file=DefaultCommands"
+"src/Shared/VIP" = "@file=DefaultCommands"
+"src/Client/UI/init.luau" = "Part 1"
+"src/Client/UI/Classes" = "Part 2"
+"src/Client/CommandBar/CompletionData.luau" = "Part 3"
+"src/Client" = "@file=ClientAndUI"
+
+[lint]
+paths = ["model", "src", "test/unit", "test/runner", "test/sert.luau", "test/spec.client.luau"]
+project = "default.project.json"
+solvers = ["old"]
+selene = false
+ignore = ["submodules/**", "**/.sert/**", "test/migrate/**"]
+registration = { aggregator = "test/unit/init.luau", specs = "test/unit/**/*.spec.luau" }
+extra = [["selene", "test/unit", "test/runner", "test/sert.luau", "test/spec.client.luau"]]
+
+[studio]
+project = "test/test.project.json"
+mode = "play"
+config = "ReplicatedStorage/Tests/Config"
+specs = ["test/unit/**/*.spec.luau"]
+sides = ["server", "client"]
+list_command = ["python3", "tools/sert.py", "run", "-a", "--list"]
+timeout = 300

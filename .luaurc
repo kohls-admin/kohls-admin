@@ -1,0 +1,16 @@
+{
+	"languageMode": "nonstrict",
+	"lint": {
+		"*": true,
+		"FunctionUnused": false,
+		"ImportUnused": false,
+		"LocalShadow": false,
+		"LocalUnused": false,
+		"ImplicitReturn": false
+	},
+	"aliases": {
+		"sert": "./.sert/sert/src",
+		"stage": "./.sert/stage",
+		"ka": "./src"
+	}
+}
