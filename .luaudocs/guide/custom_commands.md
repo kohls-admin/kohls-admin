@@ -13,7 +13,7 @@ Custom commands let you extend Kohl's Admin with experience-specific tools, auto
 
 ## Creating a Command Addon
 
-Custom commands are registered inside an **Addon**—a [ModuleScript](https://create.roblox.com/docs/reference/engine/classes/ModuleScript) placed in `Kohl's Admin > Config > Addons` (or tagged with `"Kohl's Admin Addon"` via `CollectionService`) that returns a `function(_K)`.
+Custom commands are registered inside an **Addon**, a [ModuleScript](https://create.roblox.com/docs/reference/engine/classes/ModuleScript) placed in `Kohl's Admin > Config > Addons` (or tagged with `"Kohl's Admin Addon"` via `CollectionService`) that returns a `function(_K)`.
 
 :::danger Keep Command Addons Shared
 Do **not** include `"Server"` or `"Client"` in the `ModuleScript` name of an addon that registers commands!
@@ -47,7 +47,7 @@ return function(_K)
 				return err -- Returning a string displays an error notification to the caller
 			end
 
-			context._K.Remote.Notify:FireAllClients({
+			context._K.Remote.Notify:FireAll({
 				From = context.from,
 				Text = message,
 				Duration = 10,
@@ -138,8 +138,8 @@ Kohl's Admin registers a rich set of built-in argument types in `src/Shared/Defa
 | `"integer"` | `"integers"` | `number` | Whole numbers only (`math.floor(n) == n`). |
 | `"number"` | `"numbers"` | `number` | Any valid number (integer or decimal). |
 | `"string"` | `"strings"` | `string` | **Filtered by default** via `TextService` for safe public broadcast. If it is the last argument in `args`, consumes the remainder of the command text. |
-| `"rawString"` | `"rawStrings"` | `string` | **Unfiltered** raw string. Use only for internal identifiers, asset names, or code—never display unfiltered `rawString` text to other players! |
-| `"chatString"` | — | `string` | For player-to-player messages sent through `_K.Chat.send` (where `TextChatService` handles per-recipient filtering and abuse reporting). |
+| `"rawString"` | `"rawStrings"` | `string` | **Unfiltered** raw string. Use only for internal identifiers, asset names, or code; never display unfiltered `rawString` text to other players! |
+| `"chatString"` | - | `string` | For player-to-player messages sent through `_K.Chat.send`, which filters the text for broadcast and rate-limits the sender. |
 
 #### Players, Users & Roles
 
@@ -156,12 +156,12 @@ Kohl's Admin registers a rich set of built-in argument types in `src/Shared/Defa
 
 | Type | Listable Type | Parsed Value | Notes |
 | :--- | :--- | :--- | :--- |
-| `"color"` | — | `Color3` | Accepts color names (`red`, `cyan`), BrickColor names/IDs, hex (`#0ff`, `#ff00ff`), RGB (`255,0,128`), or `random`. |
-| `"vector2"` | — | `Vector2` | Comma-separated pair of numbers (e.g. `10,20`). |
-| `"vector3"` | — | `Vector3` | Comma-separated trio of numbers (e.g. `0,50,0`). |
-| `"timeSimple"` | — | `number` | Duration in seconds. Accepts units like `30s`, `5m`, `2h`, `7d`, `1w`, `1y`, `0` (session), or `-1` (forever). |
+| `"color"` | - | `Color3` | Accepts color names (`red`, `cyan`), BrickColor names/IDs, hex (`#0ff`, `#ff00ff`), RGB (`255,0,128`), or `random`. |
+| `"vector2"` | - | `Vector2` | Comma-separated pair of numbers (e.g. `10,20`). |
+| `"vector3"` | - | `Vector3` | Comma-separated trio of numbers (e.g. `0,50,0`). |
+| `"timeSimple"` | - | `number` | Duration in seconds. Accepts units like `30s`, `5m`, `2h`, `7d`, `1w`, `1y`, `0` (session), or `-1` (forever). |
 | `"tool"` | `"tools"` | `Tool \| HopperBin` | Matches tools in `Lighting`, `ReplicatedStorage`, `ServerStorage`, or `StarterPack` (supports `all`). Exclude specific tools by adding the `"_K_Ignore"` CollectionService tag. |
-| `"command"` | — | `CommandDefinition` | Matches any registered command or alias the caller is authorized to use. |
+| `"command"` | - | `CommandDefinition` | Matches any registered command or alias the caller is authorized to use. |
 | `"reservedServer"` | `"reservedServers"` | `table` | Matches a saved reserved server code created via `;reserve`. |
 | `"emote"` | `"emotes"` | `number` | Catalog emote name or asset ID, parsed into its animation ID. |
 | `"image"` | `"images"` | `string` | Decal/Image asset ID, parsed into a resolved `rbxassetid://...` texture string. |

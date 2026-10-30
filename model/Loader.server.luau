@@ -1,3 +1,5 @@
+local InsertService = game:GetService("InsertService")
+
 local Package = script.Parent
 
 local DEMO_PLACE = 2569622788
@@ -61,7 +63,7 @@ if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 	if not ok then
 		if AUTO_UPDATE then
 			local function loadModuleAsset(assetId: number)
-				local asset = game:GetService("InsertService"):LoadAsset(assetId)
+				local asset = InsertService:LoadAsset(assetId)
 				local module = asset:FindFirstChild("MainModule", true)
 				if module then
 					return assert(require(module), ":LoadAsset() module returned invalid values!")

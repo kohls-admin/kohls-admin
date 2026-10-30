@@ -5,7 +5,7 @@ return [[
 └─┘┴ ┴└─┘┴└─┴ ┴└─┘└─┘  └─┘┴└─└─┘┴ ┴ ┴ ┴ └┘ ┴ ┴  ┴ ┘  ┘└┘└─┘ ┴   └─┘┴ ┴┴ ┴└─┘└─┘o
 
 Trusted by millions of developers, Kohl's Admin is your all-in-one solution for effortless experience management.
-Streamline moderation, elevate gameplay, and nurture a thriving community — all with a powerful, versatile, and user-friendly tool.
+Streamline moderation, elevate gameplay, and nurture a thriving community, all with a powerful, versatile, and user-friendly tool.
 
 Use Kohl's Admin to:
 	- 🛠️ Easily moderate your game!

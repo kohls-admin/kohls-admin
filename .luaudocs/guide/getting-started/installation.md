@@ -74,7 +74,7 @@ _K.initialize({
 
 ## Recommended Studio & Game Settings
 
-To unlock all features of Kohl's Admin—including persistent bans, saved roles, cross-server logs, Charts discovery, and VIP sales—publish your experience (`File > Publish to Roblox`) and configure the following options under **`File > Game Settings > Security`**:
+To enable cross-server bans, persistent role assignments, and group rank checks, enable the following settings in Roblox Studio under **`File > Game Settings > Security`** after publishing your experience (`File > Publish to Roblox`):
 
 | Setting | Purpose |
 | :--- | :--- |

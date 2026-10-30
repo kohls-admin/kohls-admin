@@ -4,10 +4,10 @@ sidebar_position: 4
 
 # Using UIs
 
-Kohl's Admin includes a modern, reactive user interface built with [`Flux`](/api/Flux) that adapts automatically to PC, Mobile, Tablet, Console, and VR screens.
+Kohl's Admin includes a reactive user interface built with [`Flux`](/api/Flux) that adapts to PC, Mobile, Tablet, Console, and VR screens.
 
-:::info Using the Legacy Loader?
-Looking for the classic *Kohl's Admin Infinite* windows (`;help`, `;admins`, `;bans`, `;tools`)? See the [Legacy Loader & Migration](/guide/getting-started/legacy_loader#legacy-loaders-uis) guide.
+:::info Legacy Loader Compatibility
+For the classic *Kohl's Admin Infinite* windows (`;help`, `;admins`, `;bans`, `;tools`), see the [Legacy Loader & Migration](/guide/getting-started/legacy_loader#legacy-loaders-uis) guide.
 :::
 
 ## Topbar Buttons & Shortcuts
@@ -66,7 +66,7 @@ The Dashboard is the central control panel for Kohl's Admin. You can resize, dra
 ### 6. Settings
 
 - **Local Client Settings**: Every player can customize their personal command prefix (`playerPrefix`), Dashboard/Command Bar hotkeys, UI sounds, and typing sounds. When `changeThemeAuthority = "Client"`, players can also pick their preferred UI theme and colors locally.
-- **Global Server Settings**: Admins with the `settings = true` permission (such as `SuperAdmin` and `Game Creator`) can modify game-wide settings—such as prefixes, rank thresholds, `freeAdmin`, and server-wide themes—which automatically save to DataStores and sync to all servers.
+- **Global Server Settings**: Admins with the `settings = true` permission (such as `SuperAdmin` and `Game Creator`) can modify game-wide settings (such as prefixes, rank thresholds, `freeAdmin`, and server-wide themes), which automatically save to DataStores and sync to all servers.
 
 ### 7. About
 
@@ -74,7 +74,7 @@ The Dashboard is the central control panel for Kohl's Admin. You can resize, dra
 
 ### 8. Market
 
-- Browse and purchase global **VIP** perks (unlocking dozens of cosmetic commands and `/headless`, `/korblox`, `/cape`, `/fire`, etc. across participating experiences), experience-specific GamePass roles, and supporter UGC items.
+- Browse and purchase global **VIP** perks (granting cosmetic commands and `/headless`, `/korblox`, `/cape`, `/fire`, etc. across participating experiences), experience-specific GamePass roles, and supporter UGC items.
 
 ### Dashboard Status Bar
 

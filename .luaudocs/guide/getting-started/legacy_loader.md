@@ -4,7 +4,7 @@ sidebar_position: 5
 
 # Legacy Loader & Migration
 
-Kohl's Admin includes built-in support for experiences upgrading from **Kohl's Admin Infinite (KAI)**—both through **automatic migration** into the modern loader and an optional **Legacy Loader** mode.
+Kohl's Admin includes built-in support for experiences upgrading from **Kohl's Admin Infinite (KAI)**, both through **automatic migration** into the modern loader and an optional **Legacy Loader** mode.
 
 <Tabs>
 	<TabItem value="new" label="Modern Loader (Default)" default>
