@@ -69,6 +69,9 @@ if RunService:IsClient() then
 				end
 			end
 			-- rainbow crowns
+			if not next(rainbowCrowns) then
+				return
+			end
 			local color = Oklab.toRGB(Oklab.fromHCL(Vector3.new((t / 10) % 1, 0.4, 1)))
 			for crown in rainbowCrowns do
 				if crown and crown.Parent and crown:FindFirstChild("Handle") then

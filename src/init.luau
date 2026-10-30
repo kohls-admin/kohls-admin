@@ -104,9 +104,14 @@ end
 
 function _K.removeExcessLogs()
 	local logs = _K.Data.logs
-	local excess = #logs - _K.Logger.limit
+	local count = #logs
+	local excess = count - _K.Logger.limit
 	if excess > 0 then
-		_K.Util.Table.fastRemove(logs, 1, excess)
+		-- runs for every new log once the limit is reached, shift natively instead of re-indexing in Luau
+		table.move(logs, excess + 1, count, 1)
+		for i = count - excess + 1, count do
+			logs[i] = nil
+		end
 	end
 end
 

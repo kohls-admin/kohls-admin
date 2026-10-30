@@ -781,6 +781,10 @@ return function(_K)
 				_K.Data.Sync.settings[key] = cacheValue
 			end
 
+			if next(changes) == nil then
+				return -- nothing valid changed, skip the broadcast
+			end
+
 			for _, toPlayer in _K.Service.Players:GetPlayers() do
 				if toPlayer ~= player then
 					_K.Remote.Settings:Fire(toPlayer, changes)

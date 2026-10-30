@@ -195,9 +195,10 @@ if Util.Service.Run:IsServer() then
 	function VIP.Title(player: Player, title, ...)
 		local definition = Title.definition[title and string.lower(title)]
 		if definition and definition.gamepass then
-			if definition.ownerCache[player.UserId] == false then
+			local cachedOwner = definition.ownerCache[player.UserId]
+			if cachedOwner == false then
 				return
-			else
+			elseif cachedOwner ~= true then -- known owners skip the marketplace requests
 				local owned = false
 				if definition.assetId then
 					local assets = if typeof(definition.assetId) == "table"
