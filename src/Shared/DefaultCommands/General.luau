@@ -16,28 +16,31 @@ local VOICE_IDS = {
 local VOTE_DURATION = 30
 local VOTE_YES_NO = { "YES", "NO" }
 local POLL_MAX_OPTIONS = 8
-local POLL_MAX_LENGTH = 200 -- TextChatService message limit, the question and options share one message
+local POLL_MAX_LENGTH = 200 -- TextChatService message limit
 local RESULTS_DURATION = 20
 
--- options are sent with the question, so a | typed in one would split it
-local WIRE_SEPARATOR = " | "
-
 --- Cleans up a poll's question and options, the options are nil for a yes/no vote
-local function preparePoll(_K, question: string, given: { string }): (string?, { string }?, string?)
-	local function clean(text: string): string
-		return _K.Util.String.trim((string.gsub(text, "|", "/")))
-	end
-
-	question = clean(question)
+local function preparePoll(_K, question: string, given: { string }?): (string?, { string }?, string?)
+	question = _K.Util.String.trim(question or "")
 	if question == "" then
 		return nil, nil, "A poll needs a question."
+	end
+	if (utf8.len(question) or #question) > POLL_MAX_LENGTH then
+		return nil, nil, `The question can be at most {POLL_MAX_LENGTH} characters.`
+	end
+
+	if not given or #given == 0 then
+		return question, nil, nil
 	end
 
 	local options, seen = {}, {}
 	for _, option in given do
-		option = clean(option)
+		option = _K.Util.String.trim(option)
 		if option == "" then
 			continue
+		end
+		if (utf8.len(option) or #option) > POLL_MAX_LENGTH then
+			return nil, nil, `Each option can be at most {POLL_MAX_LENGTH} characters.`
 		end
 		local key = string.lower(option)
 		if seen[key] then
@@ -47,16 +50,12 @@ local function preparePoll(_K, question: string, given: { string }): (string?, {
 		table.insert(options, option)
 	end
 
-	if #options == 0 then
-		return question, nil, nil
-	elseif #options < 2 then
+	if #options < 2 then
 		return nil, nil, "A poll needs at least 2 options."
+	elseif #options > POLL_MAX_OPTIONS then
+		return nil, nil, `A poll can have at most {POLL_MAX_OPTIONS} options.`
 	end
 
-	local joined = `{question}{WIRE_SEPARATOR}{table.concat(options, WIRE_SEPARATOR)}`
-	if (utf8.len(joined) or #joined) > POLL_MAX_LENGTH then
-		return nil, nil, `The question and options can be at most {POLL_MAX_LENGTH} characters.`
-	end
 	return question, options, nil
 end
 
@@ -72,54 +71,71 @@ local function startVote(context, players: { Player }, text: string, given: { st
 	end
 	local _K = context._K
 
-	local question, options = text, nil
-	if given then
-		local err
-		question, options, err = preparePoll(_K, text, given)
-		if err then
-			return err
-		end
+	local question, options, prepErr = preparePoll(_K, text, given)
+	if prepErr then
+		return prepErr
 	end
+	local rawQuestion = question :: string
 	local count = if options then #options else #VOTE_YES_NO
 
-	-- the question and options are sent as one message so TextChatService filters them for each player
-	local rawQuestion = question :: string
-	local message = if options
-		then `{rawQuestion}{WIRE_SEPARATOR}{table.concat(options, WIRE_SEPARATOR)}`
-		else rawQuestion
-	local id, err = _K.Chat.send(context, "vote", message, players)
+	-- deduplicate target players so duplicate entries don't open two dialogs or inflate missing counts
+	local uniquePlayers, seenPlayers = {}, {}
+	for _, player in players do
+		if not seenPlayers[player] then
+			seenPlayers[player] = true
+			table.insert(uniquePlayers, player)
+		end
+	end
+	if #uniquePlayers == 0 then
+		return "No players to poll."
+	end
+
+	local id, err = _K.Chat.send(context, "vote", rawQuestion, uniquePlayers)
 	if not id then
 		return err
 	end
 
-	-- the sender is shown the text filtered like everywhere else
-	local function clean(value: string): string
-		return _K.Util.String.escapeRichText(_K.Util.String.filterForBroadcast(value, context.from))
+	local function clean(value: string): (string, string)
+		local filtered = _K.Util.String.filterForBroadcast(value, context.from)
+		return _K.Chat.restoreRichText(_K.Util.String.escapeRichText(filtered)), filtered
 	end
+
 	local labels = table.create(count)
+	local filteredOptions = if options then table.create(count) else nil
+	local filteredQuestion
+	local filters = _K.Util.Tasks.new()
+	filters:add(function()
+		question, filteredQuestion = clean(rawQuestion)
+	end)
 	if options then
-		local filters = _K.Util.Tasks.new()
-		filters:add(function()
-			question = clean(rawQuestion)
-		end)
 		for index, option in options do
 			filters:add(function()
-				labels[index] = clean(option)
+				labels[index], filteredOptions[index] = clean(option)
 			end)
 		end
-		filters:wait()
+	else
+		table.move(VOTE_YES_NO, 1, count, 1, labels)
+	end
+	filters:wait()
+	if options then
 		for index = 1, count do
 			labels[index] = labels[index] or "…"
+			filteredOptions[index] = filteredOptions[index] or "…"
 		end
-	else
-		question = _K.Chat.restoreRichText(clean(rawQuestion))
-		table.move(VOTE_YES_NO, 1, count, 1, labels)
+	end
+	if context.args then
+		if context.args[2] then
+			context.args[2].parsedArgs = { filteredQuestion or "…" }
+		end
+		if context.args[3] then
+			context.args[3].parsedArgs = filteredOptions or {}
+		end
 	end
 
 	local tally = table.create(count, 0)
 	local voted = {} -- players whose vote was counted
 	local closed = false
-	local pending = #players
+	local pending = #uniquePlayers
 	local finished = pending == 0
 	local waiter = coroutine.running()
 	local function finish()
@@ -133,29 +149,26 @@ local function startVote(context, players: { Player }, text: string, given: { st
 	end
 
 	local remote = context.env.remote
-	for _, player in players do
+	for _, player in uniquePlayers do
 		task.spawn(function()
 			local ok, choice = pcall(
 				remote.Invoke,
 				remote,
 				player,
 				id,
-				context.fromPlayer,
+				context.fromPlayer or context.from,
 				count,
-				if options then nil else VOTE_YES_NO
+				if options then labels else VOTE_YES_NO
 			)
-			-- the client's answer is untrusted, only a whole option number counts
-			if
-				ok
-				and not closed
-				and not voted[player]
-				and type(choice) == "number"
-				and choice % 1 == 0
-				and choice >= 1
-				and choice <= count
-			then
-				voted[player] = true
-				tally[choice] += 1
+			-- the client's answer is untrusted, only a whole option number (or legacy boolean for 2 options) counts
+			if ok and not closed and not voted[player] then
+				if type(choice) == "boolean" and count == 2 then
+					choice = if choice then 1 else 2
+				end
+				if type(choice) == "number" and choice % 1 == 0 and choice >= 1 and choice <= count then
+					voted[player] = true
+					tally[choice] += 1
+				end
 			end
 			pending -= 1
 			if pending <= 0 then
@@ -169,9 +182,11 @@ local function startVote(context, players: { Player }, text: string, given: { st
 	if options then
 		intro ..= `\n<font transparency="0.5">{table.concat(labels, ", ")}</font>`
 	end
-	_K.Remote.Notify:Fire(context.fromPlayer, {
-		Text = `{intro}\n\n<font transparency="0.5"><i>The {noun} will end in {VOTE_DURATION} seconds or when every player has submitted their vote!</i></font>`,
-	})
+	if context.fromPlayer and context.fromPlayer.Parent then
+		_K.Remote.Notify:Fire(context.fromPlayer, {
+			Text = `{intro}\n\n<font transparency="0.5"><i>The {noun} will end in {VOTE_DURATION} seconds or when every player has submitted their vote!</i></font>`,
+		})
+	end
 
 	-- wait for timeout or all votes to be submitted, later votes are ignored
 	task.delay(VOTE_DURATION, finish)
@@ -185,8 +200,11 @@ local function startVote(context, players: { Player }, text: string, given: { st
 		total += votes
 	end
 
+	local isYesNo = not options
+		or (count == 2 and string.upper(options[1]) == "YES" and string.upper(options[2]) == "NO")
+
 	if context.fromPlayer and context.fromPlayer.Parent then
-		context.env.results:Fire(context.fromPlayer, question, labels, tally, #players - total, not options)
+		context.env.results:Fire(context.fromPlayer, question, labels, tally, #uniquePlayers - total, isYesNo)
 	end
 	return
 end
@@ -196,25 +214,15 @@ local function voteEnv(_K)
 	return { remote = _K.Remote.Vote, results = _K.Remote.VoteResults }
 end
 
-local voteConnected = false
-
 --- Shows votes on a player's client, a vote returns the option they picked
 local function connectVote(_K)
-	-- both vote commands connect, only the first needs to
-	if voteConnected then
-		return
-	end
-	voteConnected = true
-
 	local UI = _K.UI
 
-	-- restored tags would be left open once the text is split into options
-	local function plain(value: string): string
-		return _K.Util.String.trim((string.gsub(value, "<[^>]*>", "")))
-	end
-
-	_K.Remote.Vote.OnInvoke = function(id: string, from: Player, count: number, fixedLabels: { string }?)
-		if type(count) ~= "number" or count < 2 then
+	_K.Remote.Vote.OnInvoke = function(id: string, from: Player | number, count: number?, fixedLabels: { string }?)
+		local numOptions = if count == nil then #VOTE_YES_NO else count
+		if count == nil then
+			fixedLabels = VOTE_YES_NO
+		elseif type(numOptions) ~= "number" or numOptions < 2 then
 			return nil
 		end
 		-- the question arrives filtered through TextChatService
@@ -223,37 +231,39 @@ local function connectVote(_K)
 			return nil
 		end
 
-		local question, labels = text, fixedLabels
+		local labels = fixedLabels
 		if not labels then
-			labels = table.create(count)
-			local parts = string.split(text, "|")
-			if #parts == count + 1 then
-				question = plain(parts[1])
-				for index = 1, count do
-					local label = plain(parts[index + 1])
-					labels[index] = if label == "" then `Option {index}` else label
-				end
-			else
-				-- filtering changed the separators, so the options can only be numbered
-				question = plain(text)
-				for index = 1, count do
-					labels[index] = `Option {index}`
-				end
+			labels = table.create(numOptions)
+			for index = 1, numOptions do
+				labels[index] = `Option {index}`
 			end
 		end
 
+		local fromUserId = if typeof(from) == "Instance" and from:IsA("Player")
+			then from.UserId
+			elseif type(from) == "number" then from
+			else nil
+
 		local choiceSignal = _K.Util.Signal.new()
-		_K.Notify({
-			Text = question,
+		local dialog = _K.Notify({
+			Text = text,
 			ActionText = "<b>CAST YOUR VOTE</b>",
 			Action = true,
 			Options = labels,
 			-- yes and no are colored like the results
-			OptionColors = if fixedLabels then { UI.Theme.Valid, UI.Theme.Invalid } else nil,
+			OptionColors = if fixedLabels == VOTE_YES_NO
+					or (
+						fixedLabels
+						and #fixedLabels == 2
+						and string.upper(fixedLabels[1]) == "YES"
+						and string.upper(fixedLabels[2]) == "NO"
+					)
+				then { UI.Theme.Valid, UI.Theme.Invalid }
+				else nil,
 			ExitButton = false,
 			Duration = VOTE_DURATION,
 
-			UserFrame = { from.UserId },
+			UserFrame = if fromUserId then { fromUserId } else nil,
 
 			[UI.Hook] = {
 				Action = function(choice)
@@ -265,6 +275,11 @@ local function connectVote(_K)
 				choiceSignal:Fire(nil)
 			end,
 		})
+		if dialog and dialog._instance then
+			dialog._instance.Destroying:Once(function()
+				choiceSignal:Fire(nil)
+			end)
+		end
 		return choiceSignal:Wait()
 	end
 
@@ -283,6 +298,7 @@ local function connectVote(_K)
 
 			local list = UI.new "Frame" {
 				Name = "Results",
+				LayoutOrder = 3,
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				Size = UDim2.fromScale(1, 0),
@@ -368,7 +384,7 @@ local function connectVote(_K)
 					},
 				}
 				-- the delay lets the notification slide in first
-				game:GetService("TweenService")
+				_K.Service.Tween
 					:Create(
 						fill,
 						TweenInfo.new(0.6, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out, 0, false, 0.3),
@@ -400,17 +416,15 @@ local POLL_ARGS = {
 	{
 		type = "chatString",
 		name = "Question",
-		description = "The question to poll, in quotes when it has spaces.",
+		description = "The question to poll, in quotes when it has spaces and options follow.",
+	},
+	{
+		type = "rawStrings",
+		name = "Options",
+		description = `Up to {POLL_MAX_OPTIONS} options separated by commas or spaces (in quotes when they have spaces).`,
+		optional = true,
 	},
 }
-for index = 1, POLL_MAX_OPTIONS do
-	table.insert(POLL_ARGS, {
-		type = "chatString",
-		name = `Option {index}`,
-		description = if index == 1 then "An option to vote for, in quotes when it has spaces." else "Another option.",
-		optional = true,
-	})
-end
 
 return {
 	{
@@ -829,10 +843,49 @@ return {
 		description = `Starts a multiple choice poll with up to {POLL_MAX_OPTIONS} options for one or more player(s). Without options it is a yes/no vote.`,
 		args = POLL_ARGS,
 		env = voteEnv,
-		envClient = connectVote,
 
-		run = function(context, players, question, ...)
-			return startVote(context, players, question, { ... })
+		run = function(context, players, question, options, ...)
+			local given: { string }?
+			if type(options) == "table" then
+				local list = options :: { string }
+				given = list
+				-- if comma-separated rawStrings came in as a single space-separated string, split tokens outside quotes
+				if #list == 1 then
+					local first = list[1]
+					local rawArg = if context.args and context.args[3] then context.args[3].rawArg else nil
+					local trimmedRaw = if rawArg then context._K.Util.String.trim(rawArg) else ""
+					local questionRaw = if context.args and context.args[2] then context.args[2].rawArg else ""
+					local trimmedQuestion = context._K.Util.String.trim(questionRaw)
+					local questionUnquoted = trimmedQuestion ~= "" and not string.find(trimmedQuestion, '^["`].*["`]$')
+					local optionsHasQuotes = string.find(trimmedRaw, '["`]') ~= nil
+					if questionUnquoted and rawArg and not optionsHasQuotes then
+						-- unquoted question with unquoted, comma-free words: join into the yes/no question
+						question = `{question} {trimmedRaw}`
+						given = nil
+						if context.args and context.args[3] then
+							context.args[3] = nil
+						end
+					else
+						local split = context._K.Util.String.splitOutsideQuotes(
+							if trimmedRaw ~= "" then trimmedRaw else first,
+							" "
+						)
+						if split and #split > 1 then
+							local tokens = {}
+							for _, part in split do
+								local stripped = context._K.Util.String.stripQuotes(context._K.Util.String.trim(part))
+								if stripped ~= "" then
+									table.insert(tokens, stripped)
+								end
+							end
+							given = tokens
+						end
+					end
+				end
+			elseif options ~= nil then
+				given = { options, ... }
+			end
+			return startVote(context, players, question, given)
 		end,
 	},
 	{

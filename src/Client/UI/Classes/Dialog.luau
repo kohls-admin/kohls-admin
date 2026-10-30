@@ -42,6 +42,9 @@ setmetatable(Class, BaseClass)
 function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
+	if not self.Action and (self.Options or self.LeftAction or self.RightAction) then
+		self.Action = UI.state(nil)
+	end
 
 	local dragInput, dragStart, startOffset
 	local dragging = UI.state(false)
@@ -98,7 +101,9 @@ function Class.new(properties: Properties?)
 			return
 		end
 		self.Activated(true)
-		self.Action(active, true)
+		if self.Action then
+			self.Action(active, true)
+		end
 
 		if con then
 			con:Disconnect()
@@ -137,9 +142,10 @@ function Class.new(properties: Properties?)
 
 	if self.Duration and self.Duration._value > 0 then
 		local duration = self.Duration._value
+		local pauseOnHover = not (self.Options or self.LeftAction or self.RightAction)
 		local elapsed = 0
 		con = game:GetService("RunService").PreRender:Connect(function(dt: number)
-			if hovering._value then
+			if pauseOnHover and hovering._value then
 				return
 			end
 
@@ -193,8 +199,8 @@ function Class.new(properties: Properties?)
 				FontFace = UI.Theme.FontBold,
 				RichText = true,
 				Visible = function()
-					local text = self.ActionText()
-					return text and text ~= ""
+					local text = self.ActionText and self.ActionText()
+					return text ~= nil and text ~= ""
 				end,
 			},
 		}
@@ -207,6 +213,7 @@ function Class.new(properties: Properties?)
 				BackgroundColor3 = if optionColors then optionColors[index] else nil,
 				Label = label,
 				LabelProperties = {
+					TextTruncate = Enum.TextTruncate.None,
 					TextWrapped = true,
 					-- the button's height as a minimum so one line stays centered, it grows when the text wraps
 					Size = function()
@@ -235,6 +242,9 @@ function Class.new(properties: Properties?)
 		},
 		Text = "",
 		Activated = function()
+			if con then
+				con:Disconnect()
+			end
 			if self.Close and type(self.Close._value) == "function" then
 				self.Close._value(self)
 			else
@@ -262,6 +272,7 @@ function Class.new(properties: Properties?)
 
 		UI.new "TextButton" {
 			Name = "Title",
+			LayoutOrder = -2,
 			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
@@ -304,6 +315,7 @@ function Class.new(properties: Properties?)
 		UI.new "TextBox" {
 			AutoLocalize = false,
 			Name = "Text",
+			LayoutOrder = -1,
 			BackgroundTransparency = 1,
 			ClearTextOnFocus = false,
 			Interactable = self.Selectable,
@@ -482,6 +494,11 @@ function Class.new(properties: Properties?)
 				end
 			end),
 			hovering,
+			dragging,
+			buttonSize,
+			exitButton,
+			con or false,
+			self.Action or false,
 		},
 	} :: TextButton
 
@@ -493,6 +510,7 @@ function Class.new(properties: Properties?)
 			local size = sizeState()
 			return UDim2.fromOffset(size.X, size.Y)
 		end,
+		[UI.Clean] = { sizeState },
 	})
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
