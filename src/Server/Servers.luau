@@ -105,12 +105,9 @@ if RunService:IsServer() then
 	end)
 
 	Remote.TeleportToServer:Connect(function(player: Player, placeId: number, jobId: string)
-		if
-			jobId ~= SERVER_ID
-			and ServersSubscribers[player] ~= nil
-			and type(placeId) == "number"
-			and type(jobId) == "string"
-		then
+		-- only servers this server knows about, the servers list shows the same entries
+		local server = type(jobId) == "string" and Map[jobId]
+		if jobId ~= SERVER_ID and ServersSubscribers[player] ~= nil and server and server[1] == placeId then
 			local options = Instance.new("TeleportOptions")
 			options.ServerInstanceId = jobId
 			SafeTeleport(placeId, { player }, options)

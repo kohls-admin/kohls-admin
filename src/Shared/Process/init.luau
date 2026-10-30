@@ -61,11 +61,11 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 			command = commands[#commands]
 			argument = { first - 1, prefix, char }
 			table.insert(command, argument)
-		elseif char == prefix and (string.find(lastChar, "%s") or string.find(lastChar, delimiter)) then
+		elseif char == prefix and (string.find(lastChar, "%s") or string.find(lastChar, delimiter, 1, true)) then
 			if
 				#argument == 1
 				or string.find(argument[2] :: string, "%s")
-				or string.find(argument[2] :: string, delimiter)
+				or string.find(argument[2] :: string, delimiter, 1, true)
 			then
 				table.remove(command)
 			elseif string.find(lastChar, "%s") then
@@ -76,7 +76,7 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 			table.insert(commands, command)
 		elseif char == "`" or char == '"' then
 			quote = char
-			if string.find(lastChar, delimiter) then
+			if string.find(lastChar, delimiter, 1, true) then
 				if #argument == 1 then
 					argument[1], argument[2] = first, char
 				else
@@ -86,7 +86,7 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 			else
 				table.insert(argument, char)
 			end
-		elseif string.find(char :: string, delimiter) and not string.find(lastChar, delimiter) then
+		elseif string.find(char :: string, delimiter, 1, true) and not string.find(lastChar, delimiter, 1, true) then
 			argument = { first + 1 }
 			table.insert(command, argument)
 		else
@@ -186,7 +186,7 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		if role.limits then
 			cooldown, limit = role.limits.cooldown, role.limits.commands
 		end
-		if (commandLimits[from] or 0) > (limit or math.huge) then
+		if (commandLimits[from] or 0) >= (limit or math.huge) then
 			_K.alert(from, `<b>Command usage on cooldown!</b>`, true)
 			return false
 		end
@@ -197,6 +197,15 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 
 	local ok, result, prepared = Process.prepareCommands(_K, from, rawText, global)
 
+	if ok == false and _K.IsServer and limit then
+		-- failed commands still cost a notification and a filtered log, count them so they can't be spammed
+		if not commandLimits[from] then
+			commandLimits[from] = 0
+			task.delay(cooldown, resetLimit, from)
+		end
+		commandLimits[from] += 1
+	end
+
 	local commandsRan = {}
 	local commandErrors = {}
 
@@ -204,28 +213,32 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 		Hook.runPreparedCommands:Fire(from, result, rawText)
 
 		for index, command in result do
+			-- count before running so at most `limit` commands run per cooldown
+			if _K.IsServer and limit then
+				if not commandLimits[from] then
+					commandLimits[from] = 0
+					task.delay(cooldown, resetLimit, from)
+				end
+				if commandLimits[from] >= limit then
+					local notRan = {}
+					for i = index, #result do
+						table.insert(notRan, result[i].alias)
+					end
+					_K.alert(
+						from,
+						`<b>Command limit reached!</b>\nCommands not ran: {table.concat(notRan, ", ")}`,
+						true
+					)
+					break
+				end
+				commandLimits[from] += 1
+			end
 			local _ok, err = command:run()
 			if err then
 				local escapedError = _K.Util.String.escapeRichText(err)
 				table.insert(commandErrors, `<b>"{command.alias}" command failed:</b> {escapedError}`)
 			else
 				table.insert(commandsRan, command)
-			end
-			if _K.IsServer and limit then
-				if not commandLimits[from] then
-					commandLimits[from] = 0
-					task.delay(cooldown, resetLimit, from)
-				end
-				commandLimits[from] += 1
-				if commandLimits[from] > limit then
-					local notRan = {}
-					for _ = index, #result do
-						table.insert(notRan, command.alias)
-					end
-					local appendText = if #notRan == 0 then "" else `\nCommands not ran: {table.concat(notRan, ", ")}`
-					_K.alert(from, `<b>Command limit reached!</b>{appendText}`, true)
-					break
-				end
 			end
 		end
 	else

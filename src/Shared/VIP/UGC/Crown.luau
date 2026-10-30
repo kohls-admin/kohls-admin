@@ -69,6 +69,9 @@ if RunService:IsClient() then
 				end
 			end
 			-- rainbow crowns
+			if not next(rainbowCrowns) then
+				return
+			end
 			local color = Oklab.toRGB(Oklab.fromHCL(Vector3.new((t / 10) % 1, 0.4, 1)))
 			for crown in rainbowCrowns do
 				if crown and crown.Parent and crown:FindFirstChild("Handle") then
@@ -78,7 +81,7 @@ if RunService:IsClient() then
 						fire.SecondaryColor = color
 					end
 				else
-					crowns[crown] = nil
+					rainbowCrowns[crown] = nil
 				end
 			end
 		end
@@ -109,7 +112,7 @@ return {
 		if accessory then
 			if typeof(accessory) == "Instance" then
 				local part = accessory:FindFirstChild("Handle")
-				if part:IsA("MeshPart") then
+				if part and part:IsA("MeshPart") then
 					if string.find(part.TextureID, "74391200400192") then
 						colors = COLORS.dark
 					elseif string.find(part.TextureID, "115319077247149") then

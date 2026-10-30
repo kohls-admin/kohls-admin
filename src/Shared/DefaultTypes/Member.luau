@@ -10,7 +10,8 @@ local function parseMember(input: string, self: any): string?
 
 	local partial
 	for id, member in _K.Data.members do
-		local name = string.lower(member.name)
+		-- names are fetched asynchronously, new members don't have one yet
+		local name = string.lower(member.name or id)
 		if id == query or name == query then
 			return self._K.Auth.targetUserArgument(self, tonumber(id) :: number, id)
 		end
@@ -81,7 +82,8 @@ local typeMember = {
 				continue
 			end
 			if from == _K.creatorId or not lowerRank or (fromString == id) or rank > memberRank then
-				table.insert(names, { { member.name, id }, `{member.name} [{id}]` })
+				local name = member.name or id
+				table.insert(names, { { name, id }, `{name} [{id}]` })
 			end
 		end
 

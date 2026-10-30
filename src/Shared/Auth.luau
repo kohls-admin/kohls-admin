@@ -25,8 +25,9 @@ function Auth.banHandler(player)
 	end
 
 	if not Util.RunContext.IsStudio then
-		local banHistory = Players:GetBanHistoryAsync(player.UserId)
-		if banHistory then
+		-- a failed lookup must not skip the kick below
+		local ok, banHistory = pcall(Players.GetBanHistoryAsync, Players, player.UserId)
+		if ok and banHistory then
 			local items = banHistory:GetCurrentPage()
 			local last = items[1]
 
@@ -72,6 +73,29 @@ local function saveBan(key, userId, reason, timestamp, fromUserId)
 	end
 end
 
+local BAN_API_ATTEMPTS = 8
+local BAN_API_MAX_DELAY = 60
+
+-- calls BanAsync/UnbanAsync in chunks of 50 with capped exponential backoff
+local function banApi(method: (Players, any) -> (), name: string, userIds: { number }, config: { [string]: any })
+	for i = 1, #userIds, 50 do
+		config.UserIds = table.move(userIds, i, math.min(#userIds, i + 49), 1, {})
+		for attempt = 1, BAN_API_ATTEMPTS do
+			local ok, err = pcall(method, Players, config)
+			if ok then
+				break
+			end
+			local code = string.match(tostring(err), '"code": "([^"]+)"')
+			if attempt == BAN_API_ATTEMPTS then
+				warn(`{name} failed: {code or err}, giving up`)
+				break
+			end
+			warn(`{name} failed: {code or err}, trying again...`)
+			task.wait(math.min(2 ^ attempt, BAN_API_MAX_DELAY))
+		end
+	end
+end
+
 function Auth.banUsers(
 	userIds: { number },
 	reason: string?,
@@ -104,41 +128,14 @@ function Auth.banUsers(
 	end
 
 	if banAsync and timestamp and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
-		for i = 1, #userIds, 50 do
-			local chunk = table.move(userIds, i, math.min(#userIds, i + 49), 1, {})
-			local attempt = 0
-			repeat
-				local ok, err = pcall(Players.BanAsync, Players, {
-					UserIds = chunk,
-					PrivateReason = reason or "No reason.",
-					DisplayReason = reason or "No reason.",
-					Duration = duration,
-					ApplyToUniverse = true,
-				})
-				if ok then
-					break
-				end
-				local code = string.match(err, '"code": "([^"]+)"')
-				warn(`BanAsync failed: {code or err}, trying again...`)
-				attempt += 1
-				task.wait(2 ^ attempt)
-			until nil
-		end
+		banApi(Players.BanAsync, "BanAsync", userIds, {
+			PrivateReason = reason or "No reason.",
+			DisplayReason = reason or "No reason.",
+			Duration = duration,
+			ApplyToUniverse = true,
+		})
 	elseif #unbanAsync > 0 and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
-		for i = 1, #unbanAsync, 50 do
-			local chunk = table.move(unbanAsync, i, math.min(#unbanAsync, i + 49), 1, {})
-			local attempt = 0
-			repeat
-				local ok, err = pcall(Players.UnbanAsync, Players, { UserIds = chunk, ApplyToUniverse = true })
-				if ok then
-					break
-				end
-				local code = string.match(err, '"code": "([^"]+)"')
-				warn(`UnbanAsync failed: {code or err}, trying again...`)
-				attempt += 1
-				task.wait(2 ^ attempt)
-			until nil
-		end
+		banApi(Players.UnbanAsync, "UnbanAsync", unbanAsync, { ApplyToUniverse = true })
 	end
 
 	Hook.ban:Fire(userIds, reason, duration, fromUserId, forceBanAsync)
@@ -173,20 +170,7 @@ function Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync
 	end
 
 	if banAsync and #unbanAsync > 0 and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
-		for i = 1, #unbanAsync, 50 do
-			local chunk = table.move(unbanAsync, i, math.min(#unbanAsync, i + 49), 1, {})
-			local attempt = 0
-			repeat
-				attempt += 1
-				local ok, err = pcall(Players.UnbanAsync, Players, { UserIds = chunk, ApplyToUniverse = true })
-				if ok then
-					break
-				end
-				local code = string.match(err, '"code": "([^"]+)"')
-				warn(`UnbanAsync failed: {code or err}, trying again...`)
-				task.wait(2 ^ attempt)
-			until nil
-		end
+		banApi(Players.UnbanAsync, "UnbanAsync", unbanAsync, { ApplyToUniverse = true })
 	end
 
 	Hook.unban:Fire(userIds, fromUserId, forceBanAsync)
@@ -632,7 +616,7 @@ function Auth.targetUserArgument(arg: any, userId: number, value: Player | numbe
 	local limits = arg.command.fromRole.limits
 	local targetLimits = arg._K.Data.targetLimits
 	targetLimits[from] = targetLimits[from] or 0
-	if limits and targetLimits[from] > (limits.targets or math.huge) then
+	if limits and targetLimits[from] >= (limits.targets or math.huge) then
 		return nil, `Can only target {limits.targets} user{if limits.targets == 1 then "" else "s"}`
 	end
 	targetLimits[from] += 1

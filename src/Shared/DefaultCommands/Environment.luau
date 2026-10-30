@@ -461,18 +461,30 @@ return {
 		args = {},
 		run = function(context)
 			if context.fromPlayer then
-				context._K.Remote.SpectateSubject:Once(function(player, cframe)
-					if player == context.fromPlayer then
-						local speed = workspace.GlobalWind.Magnitude
-						if speed ~= speed then
+				-- other players fire this remote while spectated, wait for the sender's reply instead of the first one
+				local connection
+				connection = context._K.Remote.SpectateSubject:Connect(function(player, cframe)
+					if player ~= context.fromPlayer then
+						return
+					end
+					connection:Disconnect()
+					if typeof(cframe) ~= "CFrame" then
+						return
+					end
+					local speed = workspace.GlobalWind.Magnitude
+					if speed ~= speed then
+						return
+					end
+					for _, n in { cframe:GetComponents() } do
+						if n ~= n or math.abs(n) == math.huge then
 							return
 						end
-						for _, n in { cframe:GetComponents() } do
-							if n ~= n then
-								return
-							end
-						end
-						workspace.GlobalWind = cframe.LookVector * workspace.GlobalWind.Magnitude
+					end
+					workspace.GlobalWind = cframe.LookVector * speed
+				end)
+				task.delay(10, function()
+					if connection.Connected then
+						connection:Disconnect()
 					end
 				end)
 				context._K.Remote.SpectateSubject:Fire(context.fromPlayer, true)

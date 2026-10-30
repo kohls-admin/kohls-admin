@@ -109,7 +109,33 @@ local function getUserInfo(userId: number, checkCache: boolean?): UserInfo
 end
 
 if RunService:IsServer() then
+	-- uncached lookups hit UserService and stay cached, so each client gets a budget of them
+	local LOOKUP_BUDGET, LOOKUP_WINDOW = 30, 10
+	local lookups: { [Player]: { start: number, count: number } } = {}
+
+	game:GetService("Players").PlayerRemoving:Connect(function(player)
+		lookups[player] = nil
+	end)
+
 	REMOTE.OnServerInvoke = function(player, userId)
+		userId = tonumber(userId)
+		if not userId or userId < 1 or userId >= 2 ^ 53 or userId % 1 ~= 0 then
+			return nil
+		end
+		local cached = userInfoCache[userId]
+		if cached then
+			return cached
+		end
+		local now = os.clock()
+		local budget = lookups[player]
+		if not budget or now - budget.start > LOOKUP_WINDOW then
+			budget = { start = now, count = 0 }
+			lookups[player] = budget
+		end
+		if budget.count >= LOOKUP_BUDGET then
+			return nil
+		end
+		budget.count += 1
 		return getUserInfo(userId)
 	end
 end

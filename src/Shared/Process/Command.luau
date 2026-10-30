@@ -65,7 +65,12 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 	)
 
 	if not ok then
-		return false, `{userName} left during "{self.alias}" command request!`
+		-- runs in its own thread, a returned error would never reach the sender
+		self._K.Remote.Notify:Fire(self.fromPlayer, {
+			Text = `<b>{targetPlayer.Name}</b> left during <b>{self.alias}</b> command request!`,
+			From = "_K",
+		})
+		return false
 	end
 
 	local validColor = self._K.Data.settings.themeValid:ToHex()
