@@ -12,13 +12,14 @@ function Members.new(_K)
 		return UDim2.fromOffset(0, size + padding)
 	end
 
-	local roleChoice = UI.state({ Id = "vip", Name = "VIP" })
-	local roleChoices = UI.state({ { Id = "vip", Name = "VIP" } })
-	local roleDialogTarget = UI.state()
+	local roleChoice = UI.signal({ Id = "vip", Name = "VIP" })
+	local roleChoices = UI.signal({ { Id = "vip", Name = "VIP" } })
+	local roleDialogTarget = UI.signal(nil)
 	local roleDialogInput
+	local lookup = 0
 	local function resetRoleTargetInput()
-		roleDialogTarget(nil)
-		roleDialogInput.Value("")
+		roleDialogTarget:set(nil)
+		roleDialogInput:SetValue("")
 	end
 
 	roleDialogInput = UI.new "Input" {
@@ -30,59 +31,68 @@ function Members.new(_K)
 		Size = inputSize,
 		Value = "",
 
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Shrink,
-		},
+		UI.flex("shrink"),
 
 		[UI.Hook] = {
 			Value = function(value)
-				local userId
-				if tonumber(value) then
-					userId = tonumber(value)
-				else
-					local ok, result = pcall(_K.Service.Players.GetUserIdFromNameAsync, _K.Service.Players, value)
-					userId = ok and result
+				-- the name lookup yields, so it runs off the reactive graph; a newer lookup drops this one
+				-- clear the target until it resolves so actions can't hit the previous user
+				lookup += 1
+				local current = lookup
+				roleDialogTarget:set(nil)
+				if value == "" then
+					UI.flush()
+					return
 				end
-
-				local fauxArg = {
-					_K = _K,
-					definition = _K.Registry.commands.role.args[1],
-					command = {
-						from = _K.LocalPlayer.UserId,
-						fromRank = _K.Auth.getRank(_K.LocalPlayer.UserId),
-						fromRole = {},
-						rank = _K.Auth.hasCommand(_K.LocalPlayer.UserId, "role") or 0,
-					},
-				}
-
-				_K.Data.targetLimits[_K.LocalPlayer.UserId] = 0
-				if userId and not _K.Auth.targetUserArgument(fauxArg, userId, userId) then
-					userId = nil
-					task.defer(resetRoleTargetInput)
-				end
-
-				local member = _K.Data.members[tostring(userId)] or {}
-				local availableRoles = {}
-				for rank, role in _K.Data.rolesList do
-					if rank == 0 or (rank >= _K.client.rank._value and _K.creatorId ~= _K.LocalPlayer.UserId) then
-						continue
+				task.spawn(function()
+					local userId
+					if tonumber(value) then
+						userId = tonumber(value)
+					else
+						local ok, result = pcall(_K.Service.Players.GetUserIdFromNameAsync, _K.Service.Players, value)
+						userId = ok and result
 					end
-					local hasRole = if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
-						then table.find(member.persist or {}, role._key)
-						else table.find(member.roles or {}, role._key)
-					if hasRole then
-						continue
+					if current ~= lookup then
+						return
 					end
-					table.insert(availableRoles, { Id = role._key, Name = role.name })
-				end
-				if availableRoles then
-					roleChoice(availableRoles[1])
+
+					local fauxArg = {
+						_K = _K,
+						definition = _K.Registry.commands.role.args[1],
+						command = {
+							from = _K.LocalPlayer.UserId,
+							fromRank = _K.Auth.getRank(_K.LocalPlayer.UserId),
+							fromRole = {},
+							rank = _K.Auth.hasCommand(_K.LocalPlayer.UserId, "role") or 0,
+						},
+					}
+
+					_K.Data.targetLimits[_K.LocalPlayer.UserId] = 0
+					if userId and not _K.Auth.targetUserArgument(fauxArg, userId, userId) then
+						userId = nil
+						task.defer(resetRoleTargetInput)
+					end
+
+					local member = _K.Data.members[tostring(userId)] or {}
+					local availableRoles = {}
+					for rank, role in _K.Data.rolesList do
+						if rank == 0 or (rank >= _K.client.rank:peek() and _K.creatorId ~= _K.LocalPlayer.UserId) then
+							continue
+						end
+						local hasRole = if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
+							then table.find(member.persist or {}, role._key)
+							else table.find(member.roles or {}, role._key)
+						if hasRole then
+							continue
+						end
+						table.insert(availableRoles, { Id = role._key, Name = role.name })
+					end
+					-- roleChoice stays a role table, Confirm reads its Id
+					roleChoice(availableRoles[1] or { Id = "", Name = "" })
 					roleChoices(availableRoles)
-				else
-					roleChoice("")
-					roleChoices({})
-				end
-				roleDialogTarget(userId)
+					roleDialogTarget:set(userId)
+					UI.flush()
+				end)
 			end,
 		},
 	}
@@ -100,12 +110,7 @@ function Members.new(_K)
 			newRoleDialog.Visible(false)
 		end,
 
-		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-		},
+		UI.padding(UI.Theme.Padding),
 
 		UI.new "ListItem" {
 			Text = "User",
@@ -116,13 +121,8 @@ function Members.new(_K)
 				Image = function()
 					return `rbxthumb://type=AvatarHeadShot&id={roleDialogTarget()}&w=48&h=48`
 				end,
-				UI.new "UIAspectRatioConstraint" {
-					AspectType = Enum.AspectType.ScaleWithParentSize,
-					DominantAxis = Enum.DominantAxis.Height,
-				},
-				UI.new "UICorner" {
-					CornerRadius = UI.Theme.CornerPadded,
-				},
+				UI.aspectRatio(1, "scale", "height"),
+				UI.corner(UI.Theme.CornerPadded),
 			},
 			roleDialogInput,
 		},
@@ -141,7 +141,7 @@ function Members.new(_K)
 		UI.new "Button" {
 			Label = "Confirm",
 			Activated = function()
-				if roleDialogTarget._value then
+				if roleDialogTarget:peek() and roleChoice:peek().Id ~= "" then
 					local save = _K.Registry.commands.role.LocalPlayerAuthorized
 					local cmd =
 						`{_K.getCommandPrefix()}{if save then "" else "temp"}role {roleDialogTarget()} {roleChoice().Id}`
@@ -163,12 +163,7 @@ function Members.new(_K)
 		Size = UDim2.new(1, 0, 1, 0),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-		},
+		UI.padding(UI.Theme.Padding),
 
 		Visible = function()
 			_K.client.rank()
@@ -177,36 +172,37 @@ function Members.new(_K)
 		end,
 
 		Activated = function()
-			if not newRoleDialog.Visible._value then
-				roleDialogTarget(nil)
-				roleDialogInput.Value("")
+			if not newRoleDialog.Visible:peek() then
+				roleDialogTarget:set(nil)
+				roleDialogInput:SetValue("")
 				UI.Sound.Hover03:Play()
 			end
-			newRoleDialog.Visible(not newRoleDialog.Visible._value)
+			newRoleDialog.Visible(not newRoleDialog.Visible:peek())
 		end,
 	}
 	UI.new "Tooltip" { Parent = newMemberButton, Text = "New Member", Hovering = newMemberButton._hovering }
-	UI.edit(newMemberButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
+	UI.edit(newMemberButton._instance.UICorner)({ CornerRadius = UI.Theme.CornerPadded })
 
-	local itemSize = UI.compute(function()
+	-- measured off the reactive graph: GetTextBoundsAsync yields and must never run inside a computed
+	local roleTextWidth = UI.textWidth(function()
 		_K.client.rank()
 		local font = UI.Theme.Font()
 		local size = UI.Theme.FontSize()
-		local padding = UI.Theme.Padding().Offset
-		local maxWidth: number = size
-
-		local params = Instance.new("GetTextBoundsParams")
-		params.Font = font
-		params.Size = size
-		params.Width = math.huge
-		params.RichText = true
-
+		local requests = {}
 		for _, role in _K.Data.roles do
-			params.Text = role.name
-			maxWidth = math.max(maxWidth, UI.retryGetTextBoundsAsync(params).X)
+			table.insert(requests, { Text = role.name, Font = font, Size = size, RichText = true })
 		end
+		return requests
+	end)
 
-		local cloudWidth = if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles") then size + padding else 0
+	local itemSize = UI.computed(function()
+		_K.client.rank()
+		local size = UI.Theme.FontSize()
+		local padding = UI.Theme.Padding().Offset
+		local maxWidth: number = math.max(size, roleTextWidth())
+
+		local canSave = _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
+		local cloudWidth = canSave and (size + padding) or 0
 		return UDim2.fromOffset(maxWidth + padding * 3 + size + cloudWidth, math.round(size + padding))
 	end)
 
@@ -217,7 +213,7 @@ function Members.new(_K)
 	}
 	roleMenu._content.AutomaticSize = Enum.AutomaticSize.X
 
-	local target = UI.state()
+	local target = UI.signal(nil)
 
 	local function hoverClick(value)
 		if value then
@@ -229,7 +225,7 @@ function Members.new(_K)
 		if not role._rank or role._rank == 0 then
 			continue
 		end
-		UI.new "Button" {
+		local roleButton = UI.new "Button" {
 			Parent = roleMenu,
 			LayoutOrder = math.min(1e9, role._rank :: number),
 			BackgroundTransparency = 1,
@@ -273,14 +269,14 @@ function Members.new(_K)
 
 			Activated = function()
 				UI.deactivateState(roleMenu.Visible, "floating")
-				if _K.client.rank._value > role._rank or _K.creatorId == _K.LocalPlayer.UserId then
+				if _K.client.rank:peek() > role._rank or _K.creatorId == _K.LocalPlayer.UserId then
 					local save = _K.Registry.commands.role.LocalPlayerAuthorized
 					local cmd = `{_K.getCommandPrefix()}{if save then "" else "temp"}role {target().userId} {roleId}`
 					_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
 				end
 			end,
-		}._hovering
-			:Connect(hoverClick)
+		}
+		UI.effect(UI.on(roleButton._hovering, hoverClick, true)):get()
 	end
 
 	local function roleRemoveCornerRadius()
@@ -289,11 +285,11 @@ function Members.new(_K)
 		return UDim.new(radius.Scale, radius.Offset - padding.Offset * 0.75)
 	end
 
-	local function roleChip(roleId: string, member, item)
+	local function roleChip(index, roleId: string, item)
 		local role = _K.Data.roles[roleId]
 		local color = Color3.fromHex(role.color)
 
-		local canRemove = UI.compute(function() -- TODO need to check the highest role chip
+		local canRemove = UI.computed(function() -- TODO need to check the highest role chip
 			local rank = 0
 			for _, id in item.roles() do
 				rank = math.max(rank, _K.Data.roles[id]._rank)
@@ -319,6 +315,7 @@ function Members.new(_K)
 					(_K.client.rank() > role._rank or _K.creatorId == _K.LocalPlayer.UserId)
 					and _K.Registry.commands.unrole.LocalPlayerAuthorized
 				then
+					local member = item.target:peek()
 					local target = member.name or member.userId
 					if string.find(target, "%s") then
 						target = `"{target}"`
@@ -328,35 +325,34 @@ function Members.new(_K)
 				end
 			end,
 		}
-		UI.new "Tooltip" { Parent = button, Text = "Remove Role", Hovering = button._hovering }
+		local tooltip = UI.new "Tooltip" { Parent = button, Text = "Remove Role", Hovering = button._hovering }
 		button._instance.UIStroke:Destroy()
+		UI.cleanup({ button, tooltip })
 
-		UI.edit(button._instance.UICorner, { CornerRadius = roleRemoveCornerRadius })
+		UI.edit(button._instance.UICorner)({ CornerRadius = roleRemoveCornerRadius })
 
 		return UI.new "Frame" {
+			__CLEAN = { button, tooltip },
+			LayoutOrder = index,
 			AutomaticSize = Enum.AutomaticSize.X,
 			BackgroundColor3 = color,
 			BackgroundTransparency = 0.75,
 			Size = UDim2.new(0, 0, 1, 0),
 
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerPadded,
-			},
+			UI.corner(UI.Theme.CornerPadded),
 
-			UI.new "UIPadding" {
-				PaddingLeft = function()
+			UI.padding {
+				left = function()
 					return if canRemove() then UI.Theme.PaddingHalf() else UI.Theme.Padding()
 				end,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.PaddingHalf,
-				PaddingBottom = UI.Theme.PaddingHalf,
+				right = UI.Theme.Padding,
+				y = UI.Theme.PaddingHalf,
 			},
 
-			UI.new "UIListLayout" {
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-				FillDirection = Enum.FillDirection.Horizontal,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.PaddingHalf,
+			UI.list {
+				direction = "x",
+				gap = UI.Theme.PaddingHalf,
+				verticalAlign = "center",
 			},
 
 			button,
@@ -384,16 +380,17 @@ function Members.new(_K)
 				Size = UDim2.fromScale(1, 1),
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 				Visible = function()
-					return table.find(member.persist or {}, roleId)
+					local member = item.target()
+					return if member and member.persist and table.find(member.persist, roleId) then true else false
 				end,
 			},
 		}
 	end
 
-	local function createItem(self, log)
+	local function createItem(self, lineData)
 		local item = {
-			roles = UI.state({}),
-			target = UI.state(),
+			roles = UI.signal({}),
+			target = UI.signal(nil),
 		}
 
 		local addButton
@@ -413,7 +410,8 @@ function Members.new(_K)
 			end,
 
 			Activated = function()
-				target(item.target(), true)
+				target(item.target:peek(), true)
+				UI.flush()
 				local count = 0
 				for _, child in roleMenu._content:GetChildren() do
 					if child:IsA("TextButton") and child.Visible then
@@ -432,21 +430,20 @@ function Members.new(_K)
 			end,
 		}
 		UI.new "Tooltip" { Parent = addButton, Text = "Add Role", Hovering = addButton._hovering }
-		UI.edit(addButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
+		UI.edit(addButton._instance.UICorner)({ CornerRadius = UI.Theme.CornerPadded })
 
 		item._instance = UI.new "Frame" {
 			BackgroundTransparency = 1,
 			Size = self.ItemSize,
 
-			UI.new "UIPadding" {
-				PaddingBottom = UI.Theme.Padding,
+			UI.padding {
+				bottom = UI.Theme.Padding,
 			},
 
-			UI.new "UIListLayout" {
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-				FillDirection = Enum.FillDirection.Horizontal,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.Padding,
+			UI.list {
+				direction = "x",
+				gap = UI.Theme.Padding,
+				verticalAlign = "center",
 			},
 
 			UI.new "ImageLabel" {
@@ -455,9 +452,7 @@ function Members.new(_K)
 				Size = UDim2.new(1, 0, 1, 0),
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-				UI.new "UICorner" {
-					CornerRadius = UI.Theme.CornerPadded,
-				},
+				UI.corner(UI.Theme.CornerPadded),
 				UI.new "Stroke" {},
 			},
 
@@ -484,21 +479,15 @@ function Members.new(_K)
 				CanvasSize = UDim2.new(),
 				Size = UDim2.new(0, 0, 1, 0),
 				ScrollBarThickness = 0,
-				UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Shrink },
-				UI.new "UIListLayout" {
-					VerticalAlignment = Enum.VerticalAlignment.Center,
-					FillDirection = Enum.FillDirection.Horizontal,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UI.Theme.Padding,
+				UI.flex("shrink"),
+				UI.list {
+					direction = "x",
+					gap = UI.Theme.Padding,
+					verticalAlign = "center",
 				},
-				function()
-					local chips = {}
-					local target = item.target()
-					for _, roleId in item.roles() do
-						table.insert(chips, roleChip(roleId, target, item))
-					end
-					return chips
-				end,
+				UI.forValue(item.roles, function(index, roleId)
+					return roleChip(index, roleId, item)
+				end),
 			},
 			addButton,
 		}
@@ -523,15 +512,15 @@ function Members.new(_K)
 		return false
 	end
 
-	local function renderItem(self, item, userId)
-		local member = _K.Data.members[userId]
+	local function renderItem(self, itemData, lineData)
+		local member = _K.Data.members[lineData]
 		if member and member.renderText then
-			local instance = item._instance
+			local instance = itemData._instance
 			instance.TextLabel.Text = member.renderText
 			instance.ImageLabel.Image = `rbxthumb://type=AvatarHeadShot&id={member.userId}&w=48&h=48`
-			item.target(member)
-			if isDifferent(item.roles._value, member.roles) then
-				item.roles(member.roles)
+			itemData.target:set(member)
+			if isDifferent(itemData.roles:peek(), member.roles) then
+				itemData.roles:set(if member.roles then table.clone(member.roles) else {})
 			end
 		end
 	end
@@ -550,18 +539,18 @@ function Members.new(_K)
 	scroller._input._instance = UI.new "Frame" {
 		Parent = scroller,
 		Name = "FilterInput",
+		LayoutOrder = -1,
 
 		BackgroundTransparency = 1,
 		Size = function()
 			return UDim2.new(0, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
 		end,
 
-		UI.new "UIListLayout" {
-			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UI.Theme.PaddingWithStroke,
-			SortOrder = Enum.SortOrder.LayoutOrder,
+		UI.list {
+			direction = "x",
+			gap = UI.Theme.PaddingWithStroke,
 		},
-		UI.edit(scroller._input, { UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }),
+		UI.edit(scroller._input)({ UI.flex("fill") }),
 		newMemberButton,
 	}
 

@@ -1,4 +1,6 @@
-local UI = require(script.Parent.Parent) :: any
+local RunService = game:GetService("RunService")
+
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {
@@ -14,7 +16,7 @@ local DEFAULT = {
 	TitleSize = UI.Theme.FontSizeLargest,
 	TitleTextXAlignment = Enum.TextXAlignment.Left,
 	Activated = false,
-	ActionText = UI.Nil,
+	ActionText = "",
 	ActionTextSize = UI.Theme.FontSize,
 	Action = UI.Nil,
 	Duration = UI.Nil,
@@ -38,16 +40,19 @@ setmetatable(Class, BaseClass)
 
 -- alert, simple, confirmation dialogs
 -- allow timed dialogs using announce design, fire an event when duration ends so cleanup can be handled dynamically?
--- maximum of 2 icon actions, or labelled Options that fire Action with the chosen index
+-- maximum of 2 icon actions, or labeled Options that fire Action with the chosen index
 function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 	if not self.Action and (self.Options or self.LeftAction or self.RightAction) then
-		self.Action = UI.state(nil)
+		self.Action = UI.signal(nil)
+		if self._createdNodes then
+			table.insert(self._createdNodes, self.Action)
+		end
 	end
 
 	local dragInput, dragStart, startOffset
-	local dragging = UI.state(false)
+	local dragging = UI.signal(false)
 	self._dragging = dragging
 
 	local function dragUpdate(input)
@@ -68,10 +73,11 @@ function Class.new(properties: Properties?)
 			),
 			true
 		)
+		UI.flush()
 	end
 
 	local function dragInputBegan(input, gameProcessed)
-		if gameProcessed or not self.Draggable._value then
+		if gameProcessed or not self.Draggable:peek() then
 			return
 		end
 		if
@@ -104,12 +110,13 @@ function Class.new(properties: Properties?)
 		if self.Action then
 			self.Action(active, true)
 		end
+		UI.flush()
 
 		if con then
 			con:Disconnect()
 		end
-		if self.Close and type(self.Close._value) == "function" then
-			self.Close._value(self)
+		if self.Close and type(self.Close:peek()) == "function" then
+			self.Close:peek()(self)
 		else
 			self:Destroy()
 		end
@@ -123,7 +130,7 @@ function Class.new(properties: Properties?)
 		Position = UDim2.fromScale(0, 1),
 		Size = UDim2.new(1, 0, 0, 4),
 		ClipsDescendants = true,
-		Visible = if self.Duration and self.Duration._value > 0 then true else false,
+		Visible = if self.Duration and self.Duration:peek() > 0 then true else false,
 
 		UI.new "Frame" {
 			Name = "Bar",
@@ -131,39 +138,11 @@ function Class.new(properties: Properties?)
 			BackgroundColor3 = UI.Theme.Secondary,
 			Position = UDim2.fromScale(0, 1),
 			Size = UDim2.new(),
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerRadius,
-			},
+			UI.corner(UI.Theme.CornerRadius),
 		},
 	}
 
-	local hovering = UI.state(false)
-	self._hovering = hovering
-
-	if self.Duration and self.Duration._value > 0 then
-		local duration = self.Duration._value
-		local pauseOnHover = not (self.Options or self.LeftAction or self.RightAction)
-		local elapsed = 0
-		con = game:GetService("RunService").PreRender:Connect(function(dt: number)
-			if pauseOnHover and hovering._value then
-				return
-			end
-
-			elapsed += dt
-			local alpha = elapsed / duration
-			progress.Size = UDim2.new(math.clamp(1 - alpha, 0, 1), 0, 0, 4)
-			if alpha >= 1 then
-				con:Disconnect()
-				if self.Close and type(self.Close._value) == "function" then
-					self.Close._value(self)
-				else
-					self:Destroy()
-				end
-			end
-		end)
-	end
-
-	local buttonSize = UI.compute(function()
+	local buttonSize = UI.computed(function()
 		return UDim2.new(0, UI.Theme.FontSizeLargest(), 0, UI.Theme.FontSizeLargest())
 	end)
 	self._buttonSize = buttonSize
@@ -179,9 +158,8 @@ function Class.new(properties: Properties?)
 			BackgroundTransparency = 1,
 			Size = UDim2.fromScale(1, 0),
 
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.Padding,
+			UI.list {
+				gap = UI.Theme.Padding,
 			},
 			UI.new "TextLabel" {
 				AutoLocalize = false,
@@ -245,8 +223,8 @@ function Class.new(properties: Properties?)
 			if con then
 				con:Disconnect()
 			end
-			if self.Close and type(self.Close._value) == "function" then
-				self.Close._value(self)
+			if self.Close and type(self.Close:peek()) == "function" then
+				self.Close:peek()(self)
 			else
 				self:Destroy()
 			end
@@ -264,10 +242,9 @@ function Class.new(properties: Properties?)
 		BackgroundTransparency = 1,
 		Size = UDim2.fromScale(1, 0),
 
-		UI.new "UIListLayout" {
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UI.Theme.Padding,
-			HorizontalFlex = Enum.UIFlexAlignment.Fill,
+		UI.list {
+			gap = UI.Theme.Padding,
+			horizontalAlign = "fill",
 		},
 
 		UI.new "TextButton" {
@@ -282,10 +259,9 @@ function Class.new(properties: Properties?)
 				return title and title ~= ""
 			end,
 
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.Padding,
-				FillDirection = Enum.FillDirection.Horizontal,
+			UI.list {
+				direction = "x",
+				gap = UI.Theme.Padding,
 			},
 
 			UI.new "TextLabel" {
@@ -302,9 +278,7 @@ function Class.new(properties: Properties?)
 				RichText = true,
 
 				AutomaticSize = Enum.AutomaticSize.XY,
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
+				UI.flex("fill"),
 			},
 
 			if UI.raw(self.Title) then exitButton else nil,
@@ -358,29 +332,19 @@ function Class.new(properties: Properties?)
 		end,
 		Visible = self.Visible,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
-		},
+		UI.corner(UI.Theme.CornerRadius),
 		UI.new "Gradient" {},
 		UI.new "Stroke" {},
-		UI.new "UIListLayout" {
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		},
+		UI.list {},
 
 		UI.new "Frame" {
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, 0, 0, 0),
 
-			UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-			},
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.Padding,
+			UI.padding(UI.Theme.Padding),
+			UI.list {
+				gap = UI.Theme.Padding,
 			},
 
 			self._content,
@@ -392,14 +356,12 @@ function Class.new(properties: Properties?)
 
 					Size = UDim2.new(1, 0, 0, 0),
 
-					UI.new "UIListLayout" {
-						SortOrder = Enum.SortOrder.LayoutOrder,
-						FillDirection = Enum.FillDirection.Horizontal,
-						HorizontalAlignment = Enum.HorizontalAlignment.Right,
-						VerticalAlignment = Enum.VerticalAlignment.Center,
-						VerticalFlex = Enum.UIFlexAlignment.Fill,
-						Padding = UI.Theme.Padding,
-					},
+					UI.edit(UI.list {
+						direction = "x",
+						gap = UI.Theme.Padding,
+						horizontalAlign = "end",
+						verticalAlign = "fill",
+					})({ VerticalAlignment = Enum.VerticalAlignment.Center }),
 
 					UI.new "TextLabel" {
 						AutoLocalize = false,
@@ -416,8 +378,8 @@ function Class.new(properties: Properties?)
 						FontFace = UI.Theme.FontBold,
 						RichText = true,
 						Visible = function()
-							local text = self.ActionText()
-							return text and text ~= ""
+							local text = self.ActionText and self.ActionText()
+							return text ~= nil and text ~= ""
 						end,
 
 						AutomaticSize = Enum.AutomaticSize.XY,
@@ -458,59 +420,69 @@ function Class.new(properties: Properties?)
 			optionsFrame,
 		},
 		progress,
-
-		InputChanged = function(input, processed)
-			if processed then
-				return
-			end
-			if
-				input.UserInputType == Enum.UserInputType.MouseMovement
-				or input.UserInputType == Enum.UserInputType.Touch
-			then
-				hovering(true)
-			end
-		end,
-		inputEnded = function(input)
-			if
-				input.UserInputType == Enum.UserInputType.MouseMovement
-				or input.UserInputType == Enum.UserInputType.Touch
-			then
-				hovering(false)
-			end
-		end,
-
-		[UI.Clean] = {
-			UI.UserInputService.InputChanged:Connect(function(input)
-				if not (self.Draggable._value and self._instance.Visible) then
-					return
-				end
-				if
-					input.UserInputType == Enum.UserInputType.MouseMovement
-					or input.UserInputType == Enum.UserInputType.Touch
-				then
-					if dragging._value then
-						dragUpdate(input)
-					end
-				end
-			end),
-			hovering,
-			dragging,
-			buttonSize,
-			exitButton,
-			con or false,
-			self.Action or false,
-		},
 	} :: TextButton
 
-	local sizeState = UI.state(self._instance, "AbsoluteSize")
-	self.sizeState = sizeState
+	local hovering = UI.Interact.hover(self._instance, { within = true })
+	self._hovering = hovering
 
-	UI.edit(progress.Bar, {
+	local inputConn = UI.UserInputService.InputChanged:Connect(function(input)
+		if not (self.Draggable:peek() and self._instance.Visible) then
+			return
+		end
+		if
+			input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
+			if dragging:peek() then
+				dragUpdate(input)
+			end
+		end
+	end)
+	local cleanup = {
+		inputConn,
+		hovering,
+	}
+
+	if self.Duration and self.Duration:peek() > 0 then
+		local duration = self.Duration:peek()
+		local pauseOnHover = not (self.Options or self.LeftAction or self.RightAction)
+		local elapsed = 0
+		con = RunService.PreRender:Connect(function(dt: number)
+			if pauseOnHover and hovering() then
+				return
+			end
+
+			elapsed += dt
+			local alpha = elapsed / duration
+			progress.Size = UDim2.new(math.clamp(1 - alpha, 0, 1), 0, 0, 4)
+			if alpha >= 1 then
+				con:Disconnect()
+				if self.Close and type(self.Close:peek()) == "function" then
+					self.Close:peek()(self)
+				else
+					self:Destroy()
+				end
+			end
+		end)
+	end
+
+	local sizeState = UI.property(self._instance, "AbsoluteSize")
+	self.sizeState = sizeState
+	table.insert(cleanup, dragging)
+	table.insert(cleanup, sizeState)
+	table.insert(cleanup, buttonSize)
+	table.insert(cleanup, exitButton)
+	if con then
+		table.insert(cleanup, con)
+	end
+
+	UI.edit(self._instance)({ __CLEAN = cleanup })
+
+	UI.edit(progress.Bar)({
 		Size = function()
 			local size = sizeState()
 			return UDim2.fromOffset(size.X, size.Y)
 		end,
-		[UI.Clean] = { sizeState },
 	})
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)

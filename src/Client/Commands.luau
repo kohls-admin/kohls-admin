@@ -5,23 +5,12 @@ Commands.__index = Commands
 
 local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font transparency="0.5">%s</font>`
 
-local function _argsString(command)
-	if not command.args or #command.args == 0 then
-		return ""
-	end
-	local argTypes = {}
-	for _, arg in command.args do
-		table.insert(argTypes, arg.type)
-	end
-	return " <" .. table.concat(argTypes, "> <") .. ">"
-end
-
 function Commands.new(_K)
 	local escape = _K.Util.String.escapeRichText
 
-	local function createItem(self, command)
+	local function createItem(self, lineData)
 		local itemRef = {
-			command = UI.state(command),
+			command = UI.signal(lineData),
 		}
 
 		local textColor = function()
@@ -30,8 +19,11 @@ function Commands.new(_K)
 				else UI.Theme.PrimaryText():Lerp(UI.Theme.Primary(), 0.5)
 		end
 
+		-- follows the row's command, so a row recycled in place by ScrollerFast never shows a stale tooltip
 		local tooltip = UI.new "Tooltip" {
-			Text = "Loading...",
+			Text = function()
+				return itemRef.command().tipText or "Loading..."
+			end,
 		}
 
 		local cleanup = { tooltip }
@@ -74,27 +66,19 @@ function Commands.new(_K)
 			},
 			tooltip,
 
-			[UI.Clean] = cleanup,
+			__CLEAN = cleanup,
 		}
-
-		table.insert(
-			cleanup,
-			tooltip.Visible:Connect(function()
-				if tooltip.Visible._value then
-					tooltip.Text(itemRef.command._value.tipText)
-				end
-			end)
-		)
 
 		return itemRef
 	end
 
-	local function renderItem(self, itemData, command)
+	local function renderItem(self, itemData, lineData)
+		local command = lineData
 		if command.renderText then
 			local item = itemData._instance
 			item.Text = command.renderText
 			item.Description.Text = command.renderDesc
-			itemData.command(command)
+			itemData.command(command, true)
 		end
 	end
 
@@ -176,13 +160,7 @@ function Commands.new(_K)
 	}
 
 	local function updatePurchasePrice()
-		local ok, result = pcall(function()
-			local productType = if purchase.role == "vip" and _K.Data.settings.vip
-				then Enum.InfoType.Asset
-				else Enum.InfoType.GamePass
-			return _K.Service.Marketplace:GetProductInfoAsync(purchase.gamepass, productType).PriceInRobux
-		end)
-		purchaseButton._content.Price.Text = `<b>{ok and result or "?"}</b>`
+		_K.VIP.updatePurchasePrice(purchase, purchaseButton)
 	end
 
 	purchaseButton._content.Price.Text = `<b>799</b>`
@@ -204,10 +182,10 @@ function Commands.new(_K)
 		end
 	end
 
-	local commandsList = UI.state(_K.Registry.commandsList)
+	local commandsList = UI.signal(_K.Registry.commandsList)
 	local function updateCommandsList()
 		local list
-		if _K.client.settings.onlyShowUsableCommands._value then
+		if _K.client.settings.onlyShowUsableCommands:peek() then
 			list = {}
 			for _, command in _K.Registry.commandsList do
 				local added
@@ -233,13 +211,13 @@ function Commands.new(_K)
 			list = _K.Registry.commandsList
 		end
 		table.sort(list, sortCommandsList)
-		commandsList(list)
+		commandsList(list, true)
 		updatePurchaseData(list)
 	end
 
 	local debounceUpdateCommandsList = _K.Util.Function.debounce(0.2, updateCommandsList)
-	_K.client.settings.onlyShowUsableCommands:Connect(debounceUpdateCommandsList)
-	_K.Hook.authChanged:Connect(debounceUpdateCommandsList)
+	UI.effect(UI.on(_K.client.settings.onlyShowUsableCommands, debounceUpdateCommandsList, true)):get()
+	local _ = _K.Hook.authChanged:Connect(debounceUpdateCommandsList)
 	debounceUpdateCommandsList()
 
 	local scroller = UI.new "ScrollerFast" {
@@ -249,7 +227,7 @@ function Commands.new(_K)
 		FilterInput = true,
 		Visible = false,
 		ItemSize = function()
-			return UDim2.new(1, 0, 0, UI.Theme.FontSize * 2 + UI.Theme.Padding().Offset)
+			return UDim2.new(1, 0, 0, UI.Theme.FontSize() * 2 + UI.Theme.Padding().Offset)
 		end,
 		CreateItem = createItem,
 		RenderItem = renderItem,
@@ -257,7 +235,7 @@ function Commands.new(_K)
 	}
 
 	local function updatePurchaseButton()
-		local itemHeight = UI.Theme.FontSize._value * 2
+		local itemHeight = UI.Theme.FontSize:peek() * 2
 		local windowHeight = scroller._scroller.AbsoluteWindowSize.Y
 		local top = scroller._scroller.CanvasPosition.Y
 		local middle = top + windowHeight / 2
@@ -289,8 +267,8 @@ function Commands.new(_K)
 		purchaseButton._instance.Visible = false
 	end
 
-	_K.Hook.authChanged:Connect(updatePurchaseButton)
-	UI.Theme.FontSize:Connect(updatePurchaseButton)
+	local _ = _K.Hook.authChanged:Connect(updatePurchaseButton)
+	UI.effect(UI.on(UI.Theme.FontSize, updatePurchaseButton, true)):get()
 	scroller._scroller:GetPropertyChangedSignal("CanvasPosition"):Connect(updatePurchaseButton)
 
 	local function updateRenderParameters(command)
@@ -343,7 +321,7 @@ function Commands.new(_K)
 			local narrowSpace = " "
 			local thinSpace = " "
 
-			local roleColor = if #roles > 0 then _K.Data.roles[roles[1]].color else UI.Theme.Primary._value:ToHex()
+			local roleColor = if #roles > 0 then _K.Data.roles[roles[1]].color else UI.Theme.Primary:peek():ToHex()
 			local roleCircle = `<font color="{roleColor}">●</font>{narrowSpace}`
 			command.roleCircle = roleCircle
 
@@ -375,8 +353,8 @@ function Commands.new(_K)
 		end
 
 		command.colorAuth = if command.LocalPlayerAuthorized
-			then UI.Theme.PrimaryText._value
-			else UI.Theme.PrimaryText._value:Lerp(UI.Theme.Primary._value, 0.5)
+			then UI.Theme.PrimaryText:peek()
+			else UI.Theme.PrimaryText:peek():Lerp(UI.Theme.Primary:peek(), 0.5)
 	end
 
 	local function filterTest(self, list)

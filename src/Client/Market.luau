@@ -115,7 +115,7 @@ function Market.new(_K)
 				Parent = button._content,
 				LayoutOrder = 2,
 			}
-			UI.edit(label, {
+			UI.edit(label)({
 				AutomaticSize = Enum.AutomaticSize.X,
 				Size = UDim2.new(0, 0, 1, 0),
 				FontFace = Font.fromEnum(Enum.Font.FredokaOne),
@@ -128,14 +128,14 @@ function Market.new(_K)
 				label.Name = "Title"
 				label.Text = `<stroke thickness="1">{name}</stroke>{display or ""}`
 
-				UI.new "UIGradient" {
-					Parent = label,
-					Color = ColorSequence.new(
+				UI.gradient({
+					color = ColorSequence.new(
 						definition.topColor or Color3.new(1, 1, 1),
 						definition.color or Color3.new(1, 1, 1)
 					),
-					Rotation = definition.rotation or 90,
-				}
+					rotation = definition.rotation or 90,
+				}).Parent =
+					label
 				button._content:AddTag("_K" .. titleRef)
 			else
 				UI.new "UIStroke" {
@@ -153,14 +153,12 @@ function Market.new(_K)
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, -2, 0, 0),
 
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				FillDirection = Enum.FillDirection.Horizontal,
-				HorizontalFlex = Enum.UIFlexAlignment.SpaceEvenly,
-				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.PaddingWithStroke,
-				Wraps = true,
-			},
+			UI.edit(UI.list {
+				direction = "x",
+				horizontalAlign = "evenly",
+				gap = UI.Theme.PaddingWithStroke,
+				wraps = true,
+			})({ HorizontalAlignment = Enum.HorizontalAlignment.Center }),
 		}
 
 		for i, ugc in _K.VIP.purchasables.scriptedUGC do
@@ -183,9 +181,7 @@ function Market.new(_K)
 						ScaleType = Enum.ScaleType.Tile,
 						TileSize = UDim2.fromOffset(16, 16),
 
-						UI.new "UICorner" {
-							CornerRadius = UI.Theme.CornerPadded,
-						},
+						UI.corner(UI.Theme.CornerPadded),
 						UI.new "Stroke" {},
 
 						UI.new "ImageLabel" {
@@ -208,7 +204,7 @@ function Market.new(_K)
 								Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 								ImageColor3 = Color3.new(1, 0.8, 0),
 								Activated = function()
-									pcall(function()
+									local _ = pcall(function()
 										_K.Service.AvatarEditor:PromptSetFavorite(ugc.id, 1, true)
 									end)
 								end,
@@ -247,7 +243,7 @@ function Market.new(_K)
 					Size = UDim2.new(0, 80, 0, 32),
 					Position = UDim2.fromOffset(0, 88),
 
-					[UI.Attribute] = {
+					__ATTR = {
 						Price = ugc.price,
 					},
 
@@ -367,14 +363,12 @@ function Market.new(_K)
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, -2, 0, 0),
 
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				FillDirection = Enum.FillDirection.Horizontal,
-				HorizontalFlex = Enum.UIFlexAlignment.SpaceEvenly,
-				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.PaddingWithStroke,
-				Wraps = true,
-			},
+			UI.edit(UI.list {
+				direction = "x",
+				horizontalAlign = "evenly",
+				gap = UI.Theme.PaddingWithStroke,
+				wraps = true,
+			})({ HorizontalAlignment = Enum.HorizontalAlignment.Center }),
 		}
 
 		local remoteEquipped = {}
@@ -438,10 +432,7 @@ function Market.new(_K)
 						end
 					end,
 				}
-				UI.new "UIFlexItem" {
-					Parent = button._instance,
-					FlexMode = Enum.UIFlexMode.Fill,
-				}
+				UI.flex("fill").Parent = button._instance
 
 				local perkText = if i > 5
 					then "Unlocks:</b></font>\n💬 Chat commands\n👑 All animated accessories\n✨ Custom particle effects\n😎 Exclusive title"
@@ -484,16 +475,15 @@ function Market.new(_K)
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, -2, 0, 0),
 
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				FillDirection = Enum.FillDirection.Horizontal,
-				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.PaddingWithStroke,
-				Wraps = true,
+			UI.list {
+				direction = "x",
+				horizontalAlign = "center",
+				gap = UI.Theme.PaddingWithStroke,
+				wraps = true,
 			},
 		}
 
-		local halfButtonSize = UI.compute(function()
+		local halfButtonSize = UI.computed(function()
 			return UDim2.new(0.5, -UI.Theme.Padding().Offset, 0, 32)
 		end)
 
@@ -623,7 +613,7 @@ function Market.new(_K)
 			.. "<b>Game Creators</b> get up to <font color='#0f0'><b>40%</b></font> when "
 			.. "<font transparency='0.5'><b>Third Party Purchases</b></font> are enabled in their Roblox Game Settings!"
 
-		UI.edit(scroller._instance, {
+		UI.edit(scroller._instance)({
 
 			UI.new "TextLabel" {
 				Name = "Status",
@@ -641,14 +631,10 @@ function Market.new(_K)
 					return not _K.client.settings.vip()
 				end,
 
-				UI.new "UICorner" {
-					CornerRadius = UI.Theme.CornerPadded,
-				},
-				UI.new "UIPadding" {
-					PaddingLeft = UI.Theme.Padding,
-					PaddingRight = UI.Theme.Padding,
-					PaddingTop = UI.Theme.PaddingHalf,
-					PaddingBottom = UI.Theme.PaddingHalf,
+				UI.corner(UI.Theme.CornerPadded),
+				UI.padding {
+					x = UI.Theme.Padding,
+					y = UI.Theme.PaddingHalf,
 				},
 			},
 
@@ -693,11 +679,10 @@ function Market.new(_K)
 				AutomaticSize = Enum.AutomaticSize.XY,
 				BackgroundTransparency = 1,
 
-				UI.new "UIListLayout" {
-					FillDirection = Enum.FillDirection.Horizontal,
-					Padding = UI.Theme.PaddingWithStroke,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
+				UI.list {
+					direction = "x",
+					gap = UI.Theme.PaddingWithStroke,
+					verticalAlign = "center",
 				},
 
 				UI.new "ImageButton" {
@@ -706,7 +691,7 @@ function Market.new(_K)
 					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 					ImageColor3 = Color3.new(1, 0.8, 0),
 					Activated = function()
-						pcall(function()
+						local _ = pcall(function()
 							_K.Service.AvatarEditor:PromptSetFavorite(17873329124, 1, true)
 						end)
 					end,
@@ -722,7 +707,7 @@ function Market.new(_K)
 			},
 		})
 
-		UI.edit(scroller._instance.UIListLayout, {
+		UI.edit(scroller._instance.UIListLayout)({
 			Padding = UI.Theme.PaddingWithStroke,
 			HorizontalAlignment = "Center",
 		})

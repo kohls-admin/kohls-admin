@@ -26,7 +26,7 @@ return function(_K)
 	local characterCleanup = {}
 
 	local function characterRemoving(character: Model)
-		_K.Flux.cleanup(characterCleanup[character])
+		_K.Flux.dispose(characterCleanup[character])
 		characterCleanup[character] = nil
 		task.defer(game.Destroy, character)
 	end
@@ -1146,7 +1146,7 @@ return function(_K)
 
 			task.spawn(_K.log, "left the server.", "LEAVE", userId)
 
-			_K.Flux.cleanup(playerCleanup[userId])
+			_K.Flux.dispose(playerCleanup[userId])
 			playerCleanup[userId] = nil
 			_K.Data.targetLimits[userId] = nil
 		end)

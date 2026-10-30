@@ -53,7 +53,7 @@ function Settings.new(_K)
 		end
 
 		if current then
-			current(value)
+			current(value, true)
 		end
 
 		local theme = _K.Data.savedSettings.theme
@@ -99,6 +99,7 @@ function Settings.new(_K)
 			end
 			_K.client.settings.theme(value)
 		end
+		UI.flush()
 	end
 
 	local ignoredDefaultSettings = {
@@ -110,9 +111,7 @@ function Settings.new(_K)
 	}
 
 	local settingsScroller = UI.new "Scroller" {
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
-		},
+		UI.flex("fill"),
 		UI.new "Button" {
 			BackgroundColor3 = UI.Theme.Invalid,
 			LayoutOrder = 2 ^ 31 - 1,
@@ -124,7 +123,7 @@ function Settings.new(_K)
 					if not ignoredDefaultSettings[k] and _K.Data.savedSettings[k] ~= v then
 						change(k, v)
 						if _K.client.settings[k] then
-							_K.client.settings[k](v)
+							_K.client.settings[k](v, true)
 						end
 					end
 				end
@@ -132,11 +131,11 @@ function Settings.new(_K)
 		},
 	}
 
-	local lineItemHeight = UI.compute(function()
+	local lineItemHeight = UI.computed(function()
 		return UI.Theme.FontSize() + UI.Theme.Padding().Offset
 	end)
 
-	local inputSize = UI.compute(function()
+	local inputSize = UI.computed(function()
 		return UDim2.new(0, 0, 0, lineItemHeight())
 	end)
 
@@ -185,23 +184,6 @@ function Settings.new(_K)
 		}
 	end
 
-	local function _sliderItem(setting: string, text: string, tooltip: string?)
-		return UI.new "ListItem" {
-			Text = text,
-			Tooltip = tooltip,
-			UI.new "Slider" {
-				Value = function()
-					return _K.client.settings[setting]()
-				end,
-				[UI.Hook] = {
-					Value = function(value)
-						change(setting, value, _K.client.settings[setting])
-					end,
-				},
-			},
-		}
-	end
-
 	local freeAdminCache = {}
 	local reservedPrefixes = { ",", " ", "`", '"', "@", "$", "%", "*", "~" }
 	local settingsLineItems = {
@@ -228,8 +210,13 @@ function Settings.new(_K)
 							if value == _K.client.settings.prefix()[1] then
 								return
 							end
-							_K.client.settings.prefix._value[1] = value
-							change("prefix", { value, unpack(_K.client.settings.prefix._value, 2) })
+							local newPrefixes = { value }
+							for i, prefix in _K.client.settings.prefix:peek() do
+								if i > 1 and prefix ~= value then
+									table.insert(newPrefixes, prefix)
+								end
+							end
+							change("prefix", newPrefixes, _K.client.settings.prefix)
 						end,
 					},
 				},
@@ -360,7 +347,7 @@ function Settings.new(_K)
 					Size = inputSize,
 					Placeholder = ";",
 					HotkeyInput = true,
-					Value = UI.UserInputService:GetStringForKeyCode(_K.client.hotkeys.commandBar.key._value),
+					Value = UI.UserInputService:GetStringForKeyCode(_K.client.hotkeys.commandBar.key:peek()),
 					Hotkey = _K.client.hotkeys.commandBar.key,
 					Modifiers = _K.client.hotkeys.commandBar.mods,
 				},
@@ -374,7 +361,7 @@ function Settings.new(_K)
 					Size = inputSize,
 					Placeholder = "'",
 					HotkeyInput = true,
-					Value = UI.UserInputService:GetStringForKeyCode(_K.client.hotkeys.dashboard.key._value),
+					Value = UI.UserInputService:GetStringForKeyCode(_K.client.hotkeys.dashboard.key:peek()),
 					Hotkey = _K.client.hotkeys.dashboard.key,
 					Modifiers = _K.client.hotkeys.dashboard.mods,
 				},
@@ -395,7 +382,7 @@ function Settings.new(_K)
 		_K.Util.Defer.reset()
 
 		-- Theme select
-		local themeList = UI.compute(function()
+		local themeList = UI.computed(function()
 			local themes = {}
 			for key in UI.Themes do
 				table.insert(themes, key)
@@ -445,7 +432,7 @@ function Settings.new(_K)
 			task.defer(function()
 				while true do
 					local dashboardView = _K.client.dashboard.Tabs
-						and _K.client.dashboard.Tabs.CurrentPage._value == _K.client.dashboard.Settings._instance
+						and _K.client.dashboard.Tabs.CurrentPage:peek() == _K.client.dashboard.Settings._instance
 					local windowView = _K.client.dashboard.Settings._instance.Parent
 						and not _K.client.dashboard.Settings._instance:IsDescendantOf(_K.client.dashboard.Tabs._content)
 					if dashboardView or windowView then
@@ -555,9 +542,7 @@ function Settings.new(_K)
 				Value = function()
 					return math.clamp(UI.Theme.FontSize() - 7, 1, 25)
 				end,
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
+				UI.flex("fill"),
 				[UI.Hook] = {
 					Value = function(value)
 						if value + 7 ~= UI.Theme.FontSize() then
@@ -605,9 +590,7 @@ function Settings.new(_K)
 				Value = function()
 					return math.clamp(UI.Theme[key]().Offset + 1, 1, 17)
 				end,
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
+				UI.flex("fill"),
 				[UI.Hook] = {
 					Value = function(value)
 						if value == math.clamp(UI.Theme[key]().Offset + 1, 1, 17) then
@@ -668,7 +651,6 @@ function Settings.new(_K)
 						end,
 						[UI.Hook] = {
 							Value = function(value)
-								print(value)
 								local number = tonumber(value)
 								if not number then
 									return
@@ -715,9 +697,7 @@ function Settings.new(_K)
 					Value = function()
 						return UI.Theme[data.key]()
 					end,
-					UI.new "UIFlexItem" {
-						FlexMode = Enum.UIFlexMode.Fill,
-					},
+					UI.flex("fill"),
 					[UI.Hook] = {
 						Value = function(value)
 							change("theme" .. data.key, value)
@@ -893,17 +873,17 @@ function Settings.new(_K)
 					},
 				}
 			else
-				UI.new "Tooltip" { Parent = color, Text = listItem.Text() }
+				UI.new "Tooltip" { Parent = color, Text = listItem.Text:peek() }
 			end
 			table.insert(themeLineItems, listItem)
 		end
 
 		local savedSettingsSwitch =
 			switchItem("useSavedSettings", "Use Saved Settings", "Toggles using saved or studio-only settings.")
-		UI.edit(savedSettingsSwitch._label, {
+		UI.edit(savedSettingsSwitch._label)({
 			FontFace = UI.Theme.FontBold,
 		})
-		UI.edit(savedSettingsSwitch, { LayoutOrder = -1, Parent = settingsScroller })
+		UI.edit(savedSettingsSwitch)({ LayoutOrder = -1, Parent = settingsScroller })
 
 		for layoutOrder, definition in ipairs(settingsLineItems) do
 			settingsLineItems[definition.Name] = UI.new("List")(_K.Util.Table.merge({
@@ -920,11 +900,11 @@ function Settings.new(_K)
 			local themeAuthority = _K.Data.settings.changeThemeAuthority
 			settingsScroller._instance.Appearance.Visible = themeAuthority == "Client"
 				or (themeAuthority == "Server" and settingsAuth)
-			settingsScroller._instance.Admin.Visible = settingsAuth and _K.client.settings.useSavedSettings._value
+			settingsScroller._instance.Admin.Visible = settingsAuth and _K.client.settings.useSavedSettings:peek()
 			savedSettingsSwitch._instance.Visible = settingsAuth
 		end
-		_K.Hook.authChanged:Connect(updateSettingsAuth)
-		_K.client.settings.useSavedSettings:Connect(updateSettingsAuth)
+		local _ = _K.Hook.authChanged:Connect(updateSettingsAuth)
+		UI.effect(UI.on(_K.client.settings.useSavedSettings, updateSettingsAuth, true)):get()
 		updateSettingsAuth()
 	end)
 
@@ -1022,7 +1002,7 @@ function Settings.new(_K)
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 
-		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
+		UI.list { gap = UI.Theme.Padding },
 		filterInput,
 		settingsScroller,
 		settingsDialog,

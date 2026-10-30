@@ -4,10 +4,9 @@ local RunService = game:GetService("RunService")
 
 local Package = script.Parent.Parent.Parent.Parent
 
-local Flux = require(Package:WaitForChild("Flux"))
 local Util = require(Package.Shared:WaitForChild("Util"))
 
-local Oklab = Flux.Color.Oklab
+local hclToRGB = Util.Color.hclToRGB
 
 local hat = Instance.new("Accessory")
 hat.AccessoryType = Enum.AccessoryType.Hat
@@ -72,7 +71,7 @@ if RunService:IsClient() then
 			if not next(rainbowCrowns) then
 				return
 			end
-			local color = Oklab.toRGB(Oklab.fromHCL(Vector3.new((t / 10) % 1, 0.4, 1)))
+			local color = hclToRGB(Vector3.new((t / 10) % 1, 0.4, 1))
 			for crown in rainbowCrowns do
 				if crown and crown.Parent and crown:FindFirstChild("Handle") then
 					crown.Handle.Color = color

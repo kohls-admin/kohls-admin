@@ -1,6 +1,8 @@
 local _K = require(script.Parent.Parent)
 local UI = require(script.Parent:WaitForChild("UI"))
-local ExplorerOrder = require(script:WaitForChild("ExplorerOrder"))
+
+--stylua: ignore
+local ExplorerOrder = {Accessory=30,AccessoryDescription=22,Accoutrement=20,Actor=10,AdGui=200,AdPlacement=200,AdPortal=200,AirController=20,AlignOrientation=30,AlignPosition=30,AngularVelocity=30,Animation=220,AnimationConstraint=30,AnimationController=220,AnimationTrack=220,Animator=220,ArcHandles=200,Atmosphere=5,AtmosphereSensor=20,Attachment=30,AudioAnalyzer=10,AudioChannelMixer=10,AudioChannelSplitter=10,AudioChorus=10,AudioCompressor=10,AudioDeviceInput=10,AudioDeviceOutput=10,AudioDistortion=10,AudioEcho=10,AudioEmitter=10,AudioEqualizer=10,AudioFDNReverb=10,AudioFader=10,AudioFilter=10,AudioFlanger=10,AudioGate=10,AudioLimiter=10,AudioListener=10,AudioPitchShifter=10,AudioPlayer=10,AudioRecorder=10,AudioReverb=10,AudioSpeechToText=10,AudioStreamReader=10,AudioStreamWriter=10,AudioTextToSpeech=10,AudioTremolo=10,AudioWindSynthesizer=10,AuroraScript=50,AvatarAccessoryRules=20,AvatarAnimationRules=20,AvatarBodyRules=20,AvatarClothingRules=20,AvatarCollisionRules=20,AvatarRules=20,Backpack=30,BackpackItem=20,BallSocketConstraint=30,BasePart=3,Beam=30,BillboardGui=140,BindableEvent=50,BindableFunction=40,BlockMesh=30,BloomEffect=20,BlurEffect=20,BodyAngularVelocity=140,BodyColors=20,BodyForce=140,BodyGyro=140,BodyPartDescription=22,BodyPosition=140,BodyThrust=140,BodyVelocity=140,Bone=30,BoolValue=30,BoxHandleAdornment=205,BrickColorValue=30,BubbleChatConfiguration=13,BuoyancySensor=20,CFrameValue=30,Camera=5,CanvasGroup=200,ChannelTabsConfiguration=12,CharacterMesh=220,Chat=510,ChatInputBarConfiguration=11,ChatService=510,ChatWindowConfiguration=10,ChorusSoundEffect=20,ClickDetector=30,ClimbController=20,Clothing=20,Clouds=5,Color3Value=30,ColorCorrectionEffect=20,ColorGradingEffect=20,CompressorSoundEffect=20,ConeHandleAdornment=205,Configuration=220,Constraint=30,ControlState=31,ControllerManager=20,ControllerPartSensor=20,CoreGui=30,CorePackages=30,CornerWedgePart=120,CustomEvent=30,CustomEventReceiver=30,CylinderHandleAdornment=205,CylinderMesh=30,CylindricalConstraint=30,DebugSettings=20,Decal=40,DepthOfFieldEffect=20,Dialog=220,DialogChoice=220,DistortionSoundEffect=20,DoubleConstrainedValue=30,DragDetector=30,EchoSoundEffect=20,EqualizerSoundEffect=20,Explosion=30,FaceControls=105,Feature=20,Fire=30,Flag=30,FlagStand=30,FlangeSoundEffect=20,FloorWire=30,FluidForceSensor=20,Folder=10,ForceField=30,Frame=150,FunctionalTest=10,GameSettings=20,GeneratedFolder=10,GlobalDataStore=-1,GlobalSettings=20,GroundController=20,GuiButton=160,GuiMain=140,HandRigDescription=222,Handles=190,HapticEffect=100,Hat=30,Highlight=20,HingeConstraint=30,Hint=110,Hole=20,Hopper=20,HopperBin=240,Humanoid=30,HumanoidDescription=22,HumanoidRigDescription=220,IKControl=220,ImageButton=160,ImageHandleAdornment=205,ImageLabel=180,InputAction=31,InputActionLabel=185,InputContext=31,InputBinding=31,IntConstrainedValue=30,IntValue=30,Item=20,JointInstance=200,Keyframe=220,KeyframeMarker=220,Light=30,Lighting=30,LineForce=30,LineHandleAdornment=205,LinearVelocity=30,LocalScript=40,LocalizationService=530,LocalizationTable=30,MakeupDescription=22,MaterialService=30,MaterialVariant=41,MeshPart=105,Message=110,Model=100,ModuleScript=50,Motor=20,Motor6D=200,NegateOperation=104,NetworkClient=30,NetworkReplicator=30,NetworkServer=30,NetworkSettings=20,NoCollisionConstraint=30,NumberPose=220,NumberValue=30,ObjectValue=30,OrderedDataStore=-1,PackageLink=1,Pants=20,ParallelRampPart=120,Part=110,PartPairLasso=220,ParticleEmitter=30,ParticleEmitter2D=30,Path2D=31,PathfindingLink=210,PathfindingModifier=210,PhysicsActivitySensor=20,PitchShiftSoundEffect=20,Plane=30,PlaneConstraint=30,Platform=30,PlatformLibraries=30,Player=10,PlayerGui=130,PlayerScripts=130,Players=20,Plugin=30,PluginCapabilities=30,PluginDebugService=30,PluginGuiService=30,PointLight=30,Pose=220,PoseBase=220,Preloaded=30,PrismPart=120,PrismaticConstraint=30,ProceduralModel=100,ProximityPrompt=30,PyramidHandleAdornment=205,PyramidPart=120,RayValue=30,RemoteEvent=50,RemoteFunction=40,RenderSettings=20,RenderingTest=40,ReplicatedFirst=30,ReplicatedStorage=30,ReverbSoundEffect=20,RightAngleRampPart=120,RigidConstraint=30,RobloxPluginGuiService=30,RocketPropulsion=140,RodConstraint=30,RopeConstraint=30,ScreenGui=140,Script=30,ScrollingFrame=150,Seat=30,SelectionBox=210,SelectionPartLasso=220,SelectionPointLasso=220,SelectionSphere=210,Shirt=20,ShirtGraphic=20,SkateboardPlatform=30,Skin=20,Sky=5,SlidingBallConstraint=30,Smoke=30,Snap=200,Sound=10,SoundGroup=20,SoundService=500,Sparkles=30,SpawnLocation=30,SpecialMesh=30,SphereHandleAdornment=205,SpotLight=30,SpringConstraint=30,StandalonePluginScripts=130,StarterCharacterScripts=130,StarterGear=30,StarterGui=30,StarterPack=30,StarterPlayer=30,StarterPlayerScripts=130,Status=100,StockSound=-1,StringValue=30,StyleBase=200,StyleDerive=200,StyleLink=200,StyleQuery=200,StyleRule=200,StyleSheet=200,SunRaysEffect=20,SurfaceAppearance=40,SurfaceGui=140,SurfaceGuiBase=140,SurfaceLight=30,SurfaceSelection=210,SwimController=20,Team=10,Teams=140,Terrain=5,TerrainDetail=42,TerrainRegion=20,TestService=1000,TextBox=170,TextButton=170,TextChannel=14,TextChannelWindow=16,TextChatCommand=15,TextChatService=511,TextDocument=55,TextLabel=190,TextSource=10,Texture=40,Tool=30,Torque=30,TorsionSpringConstraint=30,TouchTransmitter=30,Trail=30,TremoloSoundEffect=20,TrussPart=120,UIAspectRatioConstraint=30,UICorner=30,UIDragDetector=30,UIFlexItem=130,UIGradient=30,UIGridLayout=30,UIListLayout=30,UIPadding=30,UIPageLayout=30,UIScale=30,UIShadow=30,UISizeConstraint=30,UIStroke=30,UITableLayout=30,UITextSizeConstraint=30,UnionOperation=105,UniversalConstraint=30,UnreliableRemoteEvent=51,VRService=1000,ValueBase=30,Vector3Value=30,VectorForce=30,VehicleSeat=30,VideoDisplay=10,VideoFrame=18,VideoPlayer=10,ViewportCamera=5,ViewportFrame=30,VoiceChatService=520,WedgePart=120,Weld=200,WeldConstraint=30,Wire=10,WireframeHandleAdornment=205,Workspace=5,WorldModel=22,WrapDeformer=32,WrapLayer=32,WrapTarget=32,WrapTextureTransfer=33}
 
 local ContentProvider = game:GetService("ContentProvider")
 local Reflection = game:GetService("ReflectionService")
@@ -9,7 +11,7 @@ local DragScope = {
 	Active = false,
 	StartPos = Vector3.zero,
 	Ghost = nil :: Instance?,
-	TargetNode = nil :: any,
+	TargetNode = nil,
 }
 
 local CLIPBOARD = {}
@@ -159,8 +161,8 @@ end
 local function removeNode(instance)
 	local node = NODES[instance]
 	if node then
-		if _K and _K.Flux and _K.Flux.cleanup then
-			_K.Flux.cleanup(node)
+		if _K and _K.Flux and _K.Flux.dispose then
+			_K.Flux.dispose(node)
 		end
 		NODES[instance] = nil
 	end
@@ -168,8 +170,8 @@ local function removeNode(instance)
 	for _, descendant in instance:GetDescendants() do
 		local descNode = NODES[descendant]
 		if descNode then
-			if _K and _K.Flux and _K.Flux.cleanup then
-				_K.Flux.cleanup(descNode)
+			if _K and _K.Flux and _K.Flux.dispose then
+				_K.Flux.dispose(descNode)
 			end
 			NODES[descendant] = nil
 		end
@@ -224,8 +226,8 @@ local function instanceAdded(instance: Instance, parent: Instance?)
 		if not node.Connection then
 			node.Connection = true
 
-			instance.AncestryChanged:Connect(instanceAdded)
-			instance.Destroying:Connect(function()
+			local _ = instance.AncestryChanged:Connect(instanceAdded)
+			local _ = instance.Destroying:Connect(function()
 				local parentNode = instance.Parent and NODES[instance.Parent]
 				if parentNode and parentNode.Expanded then
 					updateListThrottled(scroller)
@@ -272,7 +274,7 @@ local function DELETE()
 		if node.Instance:IsA("Player") then
 			continue
 		end
-		pcall(game.Destroy, node.Instance)
+		local _ = pcall(game.Destroy, node.Instance)
 	end
 	table.clear(SELECTION)
 end
@@ -289,7 +291,7 @@ local function PASTE()
 	updateListThrottled(scroller)
 end
 
-local titleBarHeight = UI.compute(function()
+local titleBarHeight = UI.computed(function()
 	return UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2
 end)
 
@@ -304,8 +306,8 @@ local function Initialize()
 		Name = "Explorer",
 		Title = "Explorer",
 
-		UI.new "UIListLayout" {
-			Padding = UI.Theme.Padding,
+		UI.list {
+			gap = UI.Theme.Padding,
 		},
 	}
 
@@ -367,9 +369,7 @@ local function Initialize()
 			AutomaticSize = Enum.AutomaticSize.XY,
 			Size = UDim2.new(),
 
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-			},
+			UI.list(),
 		}
 
 		for i, node in SELECTION do
@@ -381,10 +381,9 @@ local function Initialize()
 					BackgroundTransparency = 1,
 					Size = UDim2.new(0, 0, 0, 20),
 
-					UI.new "UIListLayout" {
-						FillDirection = Enum.FillDirection.Horizontal,
-						SortOrder = Enum.SortOrder.LayoutOrder,
-						VerticalAlignment = Enum.VerticalAlignment.Center,
+					UI.list {
+						direction = "x",
+						verticalAlign = "center",
 					},
 
 					UI.new "Frame" {
@@ -425,7 +424,7 @@ local function Initialize()
 
 	local function updateGhost(position: Vector3)
 		if DragScope.Ghost then
-			DragScope.Ghost.Position = UDim2.fromOffset(position.X + 6, position.Y - 10 + UI.TopbarInset._value.Height)
+			DragScope.Ghost.Position = UDim2.fromOffset(position.X + 6, position.Y - 10 + UI.TopbarInset:peek().Height)
 		end
 	end
 
@@ -440,8 +439,10 @@ local function Initialize()
 		for _, node in SELECTION do
 			local inst = node.Instance
 			if inst ~= target and not isService(inst) and not target:IsDescendantOf(inst) and inst.Parent ~= target then
-				pcall(parentInstanceUnsafe, inst, target)
-				changed = true
+				local ok = pcall(parentInstanceUnsafe, inst, target)
+				if ok then
+					changed = true
+				end
 			end
 		end
 
@@ -452,7 +453,7 @@ local function Initialize()
 		end
 	end
 
-	UI.UserInputService.InputChanged:Connect(function(input, processed)
+	local _ = UI.UserInputService.InputChanged:Connect(function(input, processed)
 		if input.UserInputType == Enum.UserInputType.MouseMovement then
 			if DragScope.Active then
 				updateGhost(input.Position)
@@ -460,7 +461,7 @@ local function Initialize()
 		end
 	end)
 
-	UI.UserInputService.InputEnded:Connect(function(input)
+	local _ = UI.UserInputService.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			if DragScope.Active then
 				executeReparent()
@@ -474,7 +475,7 @@ local function Initialize()
 		end
 	end)
 
-	UI.UserInputService.InputBegan:Connect(function(input: InputObject)
+	local _ = UI.UserInputService.InputBegan:Connect(function(input: InputObject)
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			local ctrl = UI.UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
 			if input.KeyCode == Enum.KeyCode.C and ctrl then
@@ -496,7 +497,7 @@ local function Initialize()
 		Visible = true,
 		ItemSize = itemSize,
 		CreateItem = function(self)
-			local item = {} :: any
+			local item: { [string]: any } = {}
 			local lastActivate = 0
 			item._instance = UI.new "TextButton" {
 				Parent = Explorer._content,
@@ -507,12 +508,11 @@ local function Initialize()
 				TextTransparency = 1,
 				Size = itemSize,
 
-				UI.new "UIPadding" {},
+				UI.padding(0),
 
-				UI.new "UIListLayout" {
-					FillDirection = Enum.FillDirection.Horizontal,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
+				UI.list {
+					direction = "x",
+					verticalAlign = "center",
 				},
 
 				UI.new "TextButton" {
@@ -586,20 +586,20 @@ local function Initialize()
 						item.node.Selected = not item.node.Selected
 						if item.node.Selected then
 							table.insert(SELECTION, item.node)
-							item._instance.BackgroundTransparency = 0.75
+							item.selected(true)
 						else
 							local idx = table.find(SELECTION, item.node)
 							if idx then
 								table.remove(SELECTION, idx)
-								item._instance.BackgroundTransparency = 0.9
+								item.selected(false)
 							end
 						end
 					else -- Single select
 						for _, v in scroller._lineItemCache do
-							v._instance.BackgroundTransparency = 1
+							v.selected(false)
 						end
 						for _, v in scroller._lineItemFree do
-							v._instance.BackgroundTransparency = 1
+							v.selected(false)
 						end
 						for _, v in SELECTION do
 							v.Selected = false
@@ -608,8 +608,9 @@ local function Initialize()
 
 						item.node.Selected = true
 						table.insert(SELECTION, item.node)
-						item._instance.BackgroundTransparency = 0.75
+						item.selected(true)
 					end
+					UI.flush()
 				end,
 
 				TouchLongPress = function(input, processed)
@@ -652,18 +653,24 @@ local function Initialize()
 				end,
 			}
 
-			item.hovering = UI.newSinkHoverState(item._instance)
-			UI.edit(item._instance, {
-				BackgroundTransparency = UI.compute(function()
-					local hover = item.hovering()
-					if hover and DragScope.Active then
-						DragScope.TargetNode = item.node
-					end
-					if item.node and item.node.Selected then
-						return 0.75
-					end
-					return if hover then 0.875 else 1
-				end),
+			item.selected = UI.signal(false)
+			item.hovering = UI.Interact.hover(item._instance, { within = true })
+			local dragHoverEffect = UI.effect(UI.on(item.hovering, function(hover)
+				if hover and DragScope.Active then
+					DragScope.TargetNode = item.node
+				end
+			end, true))
+			dragHoverEffect:get()
+			local bgTransparency = UI.computed(function()
+				local hover = item.hovering()
+				if item.selected() then
+					return 0.75
+				end
+				return if hover then 0.875 else 1
+			end)
+			UI.edit(item._instance)({
+				BackgroundTransparency = bgTransparency,
+				__CLEAN = { item.selected, item.hovering, dragHoverEffect, bgTransparency },
 			})
 
 			return item
@@ -673,7 +680,8 @@ local function Initialize()
 			if node then
 				item.node = node
 				item._instance.TextLabel.Text = instance.Name
-				item._instance.BackgroundTransparency = if node.Selected then 0.75 else 1
+				item.selected(node.Selected == true)
+				UI.flush()
 
 				setClassIcon(item, instance)
 				item._instance.Expand.ImageLabel.Visible = #instance:GetChildren() > 0
@@ -769,10 +777,10 @@ local function Initialize()
 		return new
 	end)
 
-	UI.edit(Explorer, { Visible = true })
+	UI.edit(Explorer)({ Visible = true })
 
-	game.DescendantAdded:Connect(instanceAdded)
-	game.DescendantRemoving:Connect(instanceRemoving)
+	local _ = game.DescendantAdded:Connect(instanceAdded)
+	local _ = game.DescendantRemoving:Connect(instanceRemoving)
 	for _, instance in game:GetDescendants() do
 		task.spawn(instanceAdded, instance)
 	end
@@ -787,7 +795,7 @@ return {
 		if not initialized then
 			initialized = Initialize()
 		else
-			UI.edit(initialized, { Visible = true })
+			UI.edit(initialized)({ Visible = true })
 		end
 	end,
 }

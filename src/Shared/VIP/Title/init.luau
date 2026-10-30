@@ -3,9 +3,9 @@ local RunService = game:GetService("RunService")
 
 local Package = script.Parent.Parent.Parent
 
-local Flux = require(Package:WaitForChild("Flux"))
+local Util = require(Package.Shared:WaitForChild("Util"))
 
-local Oklab = Flux.Color.Oklab
+local hclToRGB = Util.Color.hclToRGB
 
 local function sortKeypoints(a, b)
 	return a.Time < b.Time
@@ -38,7 +38,7 @@ local Title = {
 				for i = 0, 2 do
 					local step = i / 2
 					local oscillate = math.abs(((elapsed + step) % 2) - 1) * 1 / 7
-					local color = Oklab.toRGB(Oklab.fromHCL(Vector3.new(3 / 7 + oscillate, 0.4, 1)))
+					local color = hclToRGB(Vector3.new(3 / 7 + oscillate, 0.4, 1))
 					table.insert(keypoints, ColorSequenceKeypoint.new(step, color))
 				end
 				return ColorSequence.new(keypoints)
@@ -56,7 +56,7 @@ local Title = {
 				for i = 0, 2 do
 					local step = i / 2
 					local oscillate = math.abs(((elapsed + step) % 2) - 1) * 1 / 7
-					local color = Oklab.toRGB(Oklab.fromHCL(Vector3.new(5 / 7 + oscillate, 0.4, 1)))
+					local color = hclToRGB(Vector3.new(5 / 7 + oscillate, 0.4, 1))
 					table.insert(keypoints, ColorSequenceKeypoint.new(step, color))
 				end
 				return ColorSequence.new(keypoints)
@@ -74,7 +74,7 @@ local Title = {
 				for i = 0, 2 do
 					local step = i / 2
 					local oscillate = math.abs(((elapsed + step) % 2) - 1) * 1 / 7
-					local color = Oklab.toRGB(Oklab.fromHCL(Vector3.new(oscillate, 0.4, 1)))
+					local color = hclToRGB(Vector3.new(oscillate, 0.4, 1))
 					table.insert(keypoints, ColorSequenceKeypoint.new(step, color))
 				end
 				return ColorSequence.new(keypoints)
@@ -87,7 +87,7 @@ local Title = {
 			assetId = 89859349616824,
 			gamepass = 941006661,
 			getValue = function(elapsed: number)
-				return ColorSequence.new(Oklab.toRGB(Oklab.fromHCL(Vector3.new((time() / 10) % 1, 0.4, 1))))
+				return ColorSequence.new(hclToRGB(Vector3.new((time() / 10) % 1, 0.4, 1)))
 			end,
 			update = function(object, value)
 				object.Title.UIGradient.Color = value
@@ -103,15 +103,15 @@ local Title = {
 				local keypoints = {}
 				local offset = elapsed % 1
 
-				local colorAtStart = Oklab.toRGB(Oklab.fromHCL(Vector3.new(-offset, 0.4, 1)))
+				local colorAtStart = hclToRGB(Vector3.new(-offset, 0.4, 1))
 				table.insert(keypoints, ColorSequenceKeypoint.new(0, colorAtStart))
 
-				local colorAtEnd = Oklab.toRGB(Oklab.fromHCL(Vector3.new((1 - offset), 0.4, 1)))
+				local colorAtEnd = hclToRGB(Vector3.new((1 - offset), 0.4, 1))
 				table.insert(keypoints, ColorSequenceKeypoint.new(1, colorAtEnd))
 
 				for i = 0, steps do
 					local step = i / steps
-					local color = Oklab.toRGB(Oklab.fromHCL(Vector3.new(step, 0.4, 1)))
+					local color = hclToRGB(Vector3.new(step, 0.4, 1))
 					local timeOffset = 1 - ((step + elapsed) % 1)
 					table.insert(keypoints, ColorSequenceKeypoint.new(timeOffset, color))
 				end

@@ -6,6 +6,12 @@ local Command = require(Package.Shared.Process:WaitForChild("Command"))
 
 local LocalPlayer = Players.LocalPlayer
 
+-- RestrictedToRole is filled in once roles load, so name it only when known
+local function restrictedMessage(commandText: string, commandDefinition: any): string
+	local role = commandDefinition.RestrictedToRole
+	return if role then `"{commandText}" command restricted to {role.name}` else `"{commandText}" command restricted`
+end
+
 return function(_K, text, cursorPosition)
 	local from = LocalPlayer.UserId
 	local data = {
@@ -59,12 +65,11 @@ return function(_K, text, cursorPosition)
 				local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text)
 				table.insert(data.commands, command)
 				if not commandDefinition.LocalPlayerAuthorized then
-					local message = `"{commandText}" command restricted to {commandDefinition.RestrictedToRole.name}`
+					local message = restrictedMessage(commandText, commandDefinition)
 					table.insert(data.invalid, { message, commandPos, commandText })
 					continue
 				end
 				command:validate()
-				table.insert(data.commands, command)
 				if command.invalidArg then
 					table.insert(
 						data.invalid,
@@ -116,7 +121,7 @@ return function(_K, text, cursorPosition)
 					#data.suggestions == 0
 					or not string.find(string.lower(data.suggestions[1][1]), string.lower(data.query), 1, true)
 				then
-					local message = `"{commandText}" command restricted to {commandDefinition.RestrictedToRole.name}`
+					local message = restrictedMessage(commandText, commandDefinition)
 					table.insert(data.invalid, { message, commandPos, commandText })
 				end
 			end
@@ -130,7 +135,7 @@ return function(_K, text, cursorPosition)
 			table.insert(data.invalid, { feedback, commandPos, commandText })
 			return data
 		elseif not commandDefinition.LocalPlayerAuthorized then
-			local message = `"{commandText}" command restricted to {commandDefinition.RestrictedToRole.name}`
+			local message = restrictedMessage(commandText, commandDefinition)
 			table.insert(data.invalid, { message, commandPos, commandText })
 			return data
 		end

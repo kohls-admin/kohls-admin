@@ -4,10 +4,9 @@ local RunService = game:GetService("RunService")
 
 local Package = script.Parent.Parent.Parent.Parent
 
-local Flux = require(Package:WaitForChild("Flux"))
 local Util = require(Package.Shared:WaitForChild("Util"))
 
-local Oklab = Flux.Color.Oklab
+local hclToRGB = Util.Color.hclToRGB
 
 local hat = Instance.new("Accessory")
 hat.AccessoryType = Enum.AccessoryType.Back
@@ -70,7 +69,7 @@ if RunService:IsClient() then
 	local rainbow = {}
 	RunService.Heartbeat:Connect(function()
 		if next(rainbow) then
-			local color = Oklab.toRGB(Oklab.fromHCL(Vector3.new((time() / 10) % 1, 0.4, 1)))
+			local color = hclToRGB(Vector3.new((time() / 10) % 1, 0.4, 1))
 			for wings in rainbow do
 				if wings and wings.Parent and wings:FindFirstChild("Handle") then
 					wings.Wings.Color = color

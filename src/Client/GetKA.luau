@@ -43,7 +43,7 @@ task.defer(function()
 				Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 				ImageColor3 = Color3.new(1, 0.8, 0),
 				Activated = function()
-					pcall(function()
+					local _ = pcall(function()
 						_K.Service.AvatarEditor:PromptSetFavorite(ADMIN_MODEL_ID, 1, true)
 					end)
 				end,
@@ -90,13 +90,12 @@ task.defer(function()
 		Size = UDim2.new(1, -2, 0, 0),
 		LayoutOrder = 11,
 
-		UI.new "UIListLayout" {
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			FillDirection = Enum.FillDirection.Horizontal,
+		UI.list {
+			direction = "x",
+			horizontalAlign = "center",
+			gap = UI.Theme.PaddingWithStroke,
+			wraps = true,
 			HorizontalFlex = Enum.UIFlexAlignment.SpaceEvenly,
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			Padding = UI.Theme.PaddingWithStroke,
-			Wraps = true,
 		},
 	}
 

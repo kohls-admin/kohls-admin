@@ -36,43 +36,38 @@ local tabs = UI.new "Tabs" {
 	},
 	Vertical = true,
 
-	[UI.Event] = {
-		AbsoluteSize = function()
-			local size = _K.client.dashboard.Window._instance.AbsoluteSize
-			_K.client.dashboard.Tabs.Vertical(size.x > size.y)
-		end,
-	},
+	_AbsoluteSize = function()
+		-- can fire while the dashboard is still being built, before Window and Tabs are assigned below
+		local window, dashboardTabs = _K.client.dashboard.Window, _K.client.dashboard.Tabs
+		if not window or not dashboardTabs then
+			return
+		end
+		local size = window._instance.AbsoluteSize
+		dashboardTabs.Vertical(size.x > size.y)
+	end,
 }
 _K.client.dashboard.Tabs = tabs
 
-local notPaddedWhenVertical = UI.compute(function()
-	return if tabs.Vertical() then UDim.new() else UI.Theme.Padding
-end)
+local notPaddedWhenVertical = UI.pick(tabs.Vertical, UDim.new(), UI.Theme.Padding)
 
-local paddedWhenVertical = UI.compute(function()
-	return if tabs.Vertical() then UI.Theme.Padding else UDim.new()
-end)
+local paddedWhenVertical = UI.pick(tabs.Vertical, UI.Theme.Padding, UDim.new())
 
-local paddedWhenVerticalWithStroke = UI.compute(function()
-	return if tabs.Vertical() then UI.Theme.PaddingWithStroke else UI.Theme.PaddingStroke
-end)
+local paddedWhenVerticalWithStroke = UI.pick(tabs.Vertical, UI.Theme.PaddingWithStroke, UI.Theme.PaddingStroke)
 
-UI.edit(tabs._content, {
+UI.edit(tabs._content)({
 	BackgroundColor3 = UI.Theme.Secondary,
-	BackgroundTransparency = function()
-		return if tabs.Vertical() then UI.Theme.TransparencyMax else 1
-	end,
-	UI.new "UICorner" { CornerRadius = UI.Theme.CornerPadded },
-	UI.new "UIPadding" {
-		PaddingRight = paddedWhenVertical,
-		PaddingLeft = paddedWhenVertical,
+	BackgroundTransparency = UI.pick(tabs.Vertical, UI.Theme.TransparencyMax, 1),
+	UI.corner(UI.Theme.CornerPadded),
+	UI.padding {
+		x = paddedWhenVertical,
 	},
 })
 
-UI.new "UIPadding" {
-	Parent = tabs._instance,
-	PaddingRight = paddedWhenVertical,
-}
+UI.edit(tabs._instance)({
+	UI.padding {
+		right = paddedWhenVertical,
+	},
+})
 
 local dashboard = UI.new "Window" {
 	Parent = UI.LayerTopInset,
@@ -105,11 +100,11 @@ end)
 
 local titleBar = dashboard._instance.Frame.TitleBar
 
-UI.edit(titleBar.UIPadding, {
+UI.edit(titleBar.UIPadding)({
 	PaddingLeft = UI.Theme.PaddingDouble,
 })
 
-UI.edit(titleBar.Left.Title, {
+UI.edit(titleBar.Left.Title)({
 	TextSize = UI.Theme.FontSize,
 	TextTransparency = 0.5,
 })
@@ -135,7 +130,7 @@ for _, page in
 	}
 do
 	local instance = if type(page) == "table" then page._instance else page
-	local moveToTitleBar = UI.state(false)
+	local moveToTitleBar = UI.signal(false)
 
 	local function update()
 		local parent = instance.Parent
@@ -154,18 +149,15 @@ do
 			update()
 		end
 	end)
-	tabs.Vertical:Connect(update)
+	UI.effect(UI.on(tabs.Vertical, update, true)):get()
 	if tabs._pageCache[tabs._pages.CurrentPage] == instance then
 		update()
 	end
 
-	UI.new "UIFlexItem" {
-		Parent = page._input._instance,
-		FlexMode = function()
-			return if moveToTitleBar() then Enum.UIFlexMode.Fill else Enum.UIFlexMode.None
-		end,
-	}
-	UI.edit(page._input, {
+	UI.edit(page._input._instance)({
+		UI.flex(UI.pick(moveToTitleBar, "fill", "none")),
+	})
+	UI.edit(page._input)({
 		Size = function()
 			local y = if moveToTitleBar() then 0 else 1
 			return UDim2.new(y, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2)
@@ -183,41 +175,41 @@ do
 			return if move then titleBar else instance
 		end,
 	})
-	UI.edit(page._scroller.UIPadding, {
+	UI.edit(page._scroller.UIPadding)({
 		PaddingTop = paddedWhenVerticalWithStroke,
 		PaddingBottom = paddedWhenVerticalWithStroke,
 	})
 end
 
-UI.edit(_K.client.dashboard.Logs._scroller.UIPadding, {
+UI.edit(_K.client.dashboard.Logs._scroller.UIPadding)({
 	PaddingTop = UDim.new(),
 })
 
-UI.edit(tabs._instance.Bar.UIPadding, {
+UI.edit(tabs._instance.Bar.UIPadding)({
 	PaddingBottom = notPaddedWhenVertical,
 })
 
-UI.edit(tabs._instance.Bar.Tabs, {
+UI.edit(tabs._instance.Bar.Tabs)({
 	UI.new "Spacer" {
 		LayoutOrder = 9e8 - 1,
 		Visible = tabs.Vertical,
 	},
 })
 
-UI.edit(tabs._instance.Bar.Tabs.Market, {
+UI.edit(tabs._instance.Bar.Tabs.Market)({
 	LayoutOrder = 9e8,
 })
 
-UI.edit(tabs._instance.Bar.Tabs.Market.UIContent.Label, {
+UI.edit(tabs._instance.Bar.Tabs.Market.UIContent.Label)({
 	Name = "Title",
-	UI.new "UIGradient" {},
+	UI.gradient(),
 })
 
 tabs._instance.Bar.Tabs.Market.UIContent:AddTag("_Keternal")
 
-local tabBarSize = UI.state(tabs._instance.Bar, "AbsoluteSize")
+local tabBarSize = UI.property(tabs._instance.Bar, "AbsoluteSize")
 
-UI.edit(titleBar.Left, {
+UI.edit(titleBar.Left)({
 	Size = function()
 		return if tabs.Vertical()
 			then UDim2.fromOffset(tabBarSize().X - UI.Theme.Padding().Offset * 3, 0)
@@ -225,7 +217,7 @@ UI.edit(titleBar.Left, {
 	end,
 })
 
-local statusLabelPosition = UI.compute(function()
+local statusLabelPosition = UI.computed(function()
 	return UDim2.fromOffset(UI.Theme.FontSize() + UI.Theme.PaddingHalf().Offset, 0)
 end)
 
@@ -235,33 +227,27 @@ local function statusIconLabel(name, imageDefinition, labelDefinition, tooltipDe
 		BackgroundTransparency = 1,
 		Name = name,
 		Size = UDim2.new(0, 0, 1, 0),
-		UI.edit(
-			UI.new "ImageLabel" {
-				BackgroundTransparency = 1,
-				Image = UI.Theme.Image.Signal,
-				ImageColor3 = UI.Theme.PrimaryText,
-				ImageTransparency = 0.5,
-				Size = UDim2.new(1, 0, 1, 0),
-				SizeConstraint = Enum.SizeConstraint.RelativeYY,
-			},
-			imageDefinition or {}
-		),
-		UI.edit(
-			UI.new "TextLabel" {
-				Name = "Label",
-				AutomaticSize = Enum.AutomaticSize.X,
-				BackgroundTransparency = 1,
-				Position = statusLabelPosition,
-				Size = UDim2.fromScale(0, 1),
-				FontFace = UI.Theme.FontMono,
-				Text = "?",
-				TextColor3 = UI.Theme.PrimaryText,
-				TextSize = UI.Theme.FontSize,
-				TextTransparency = 0.5,
-			},
-			labelDefinition or {}
-		),
-		UI.edit(UI.new "Tooltip" { FontFace = UI.Theme.FontMono, Text = name }, tooltipDefinition or {}),
+		UI.edit(UI.new "ImageLabel" {
+			BackgroundTransparency = 1,
+			Image = UI.Theme.Image.Signal,
+			ImageColor3 = UI.Theme.PrimaryText,
+			ImageTransparency = 0.5,
+			Size = UDim2.new(1, 0, 1, 0),
+			SizeConstraint = Enum.SizeConstraint.RelativeYY,
+		})(imageDefinition or {}),
+		UI.edit(UI.new "TextLabel" {
+			Name = "Label",
+			AutomaticSize = Enum.AutomaticSize.X,
+			BackgroundTransparency = 1,
+			Position = statusLabelPosition,
+			Size = UDim2.fromScale(0, 1),
+			FontFace = UI.Theme.FontMono,
+			Text = "?",
+			TextColor3 = UI.Theme.PrimaryText,
+			TextSize = UI.Theme.FontSize,
+			TextTransparency = 0.5,
+		})(labelDefinition or {}),
+		UI.edit(UI.new "Tooltip" { FontFace = UI.Theme.FontMono, Text = name })(tooltipDefinition or {}),
 	}
 end
 
@@ -281,18 +267,17 @@ local function getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
 	return avg, low, 0, nextAvgUpdate
 end
 
-local lerpGreenRed
-do
-	local hueGreen = UI.compute(function()
-		return UI.Color.Oklab.toHCL(UI.Color.Oklab.fromLinear(UI.Theme.Valid())).X
-	end)
-	local hueRed = UI.compute(function()
-		return UI.Color.Oklab.toHCL(UI.Color.Oklab.fromLinear(UI.Theme.Invalid())).X
-	end)
-	lerpGreenRed = function(alpha: number)
-		local hcl = Vector3.new(math.lerp(hueGreen() :: number, hueRed() :: number, alpha), 1, 1)
-		return UI.Color.Oklab.toLinear(UI.Color.Oklab.fromHCL(hcl))
-	end
+local function oklabHue(color: Color3): number
+	local lab = UI.Color.Oklab.fromRGB(color)
+	return math.atan2(lab.Z, lab.Y) / (2 * math.pi)
+end
+
+-- interpolates only the Oklab hue (green -> yellow -> red) at fixed chroma/lightness, so the midpoint stays vivid;
+-- the shorter way round the hue circle, for themes whose hues straddle the wrap
+local function lerpGreenRed(alpha: number)
+	local from = oklabHue(UI.Theme.Valid:peek())
+	local delta = (oklabHue(UI.Theme.Invalid:peek()) - from + 0.5) % 1 - 0.5
+	return _K.Util.Color.hclToRGB(Vector3.new(from + delta * alpha, 0.4, 1))
 end
 
 UI.new "Frame" {
@@ -304,111 +289,112 @@ UI.new "Frame" {
 	ClipsDescendants = true,
 	Position = UDim2.fromScale(0, 1),
 	Size = function()
-		return UDim2.new(1, 0, 0, UI.Theme.FontSizeSmall + UI.Theme.PaddingDouble().Offset)
+		return UDim2.new(1, 0, 0, UI.Theme.FontSizeSmall() + UI.Theme.PaddingDouble().Offset)
 	end,
 
 	UI.new "Frame" {
 		Name = "Content",
 		BackgroundTransparency = 1,
 		Size = UDim2.fromScale(1, 1),
-		UI.new "UIListLayout" {
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			FillDirection = Enum.FillDirection.Horizontal,
-			VerticalAlignment = Enum.VerticalAlignment.Center,
-			Padding = UI.Theme.PaddingDouble,
+		UI.list {
+			direction = "x",
+			verticalAlign = "center",
+			gap = UI.Theme.PaddingDouble,
 		},
-		UI.new "UIPadding" {
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-		},
+		UI.padding(UI.Theme.Padding),
 		statusIconLabel("Ping", {
 			Image = UI.Theme.Image.SignalSheet,
 			ImageRectSize = Vector2.new(86, 86),
 		}, {
-			UI.action(function(instance)
-				local ping, max, avg, nFrames, sum = 0, 0, 0, 0, 0
-				local nextAvgUpdate = tick()
-				_K.Service.Run.Heartbeat:Connect(function()
-					ping = math.round(_K.Service.Players.LocalPlayer:GetNetworkPing() * 1000)
-					max = math.min(math.max(max, ping), 30000)
-					nFrames += 1
-					sum += ping
+			function(instance)
+				task.spawn(function()
+					local ping, max, avg, nFrames, sum = 0, 0, 0, 0, 0
+					local nextAvgUpdate = tick()
+					local _ = _K.Service.Run.Heartbeat:Connect(function()
+						ping = math.round(_K.Service.Players.LocalPlayer:GetNetworkPing() * 1000)
+						max = math.min(math.max(max, ping), 30000)
+						nFrames += 1
+						sum += ping
+					end)
+					repeat
+						task.wait(1)
+						if tick() > nextAvgUpdate then
+							nextAvgUpdate = tick() + 2
+							avg = sum // nFrames
+							sum, nFrames = 0, 0
+						end
+
+						local alpha = math.clamp(ping / 350, 0, 1)
+						local color = lerpGreenRed(alpha)
+						instance.Parent.ImageLabel.ImageRectOffset =
+							Vector2.new(math.round((1 - alpha) * 4) * 90 + math.ceil(alpha), 0)
+						instance.Parent.ImageLabel.ImageColor3 = color
+						instance.TextColor3 = color
+						instance.Text = `{avg}ms`
+
+						local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
+						if tooltip then
+							tooltip.Text(`Ping\n\n<b>Avg:</b>     {avg}ms\n<b>Max:</b>     {max}ms`)
+						end
+					until nil
 				end)
-				repeat
-					task.wait(1)
-					if tick() > nextAvgUpdate then
-						nextAvgUpdate = tick() + 2
-						avg = sum // nFrames
-						sum, nFrames = 0, 0
-					end
-
-					local alpha = math.clamp(ping / 350, 0, 1)
-					local color = lerpGreenRed(alpha)
-					instance.Parent.ImageLabel.ImageRectOffset =
-						Vector2.new(math.round((1 - alpha) * 4) * 90 + math.ceil(alpha), 0)
-					instance.Parent.ImageLabel.ImageColor3 = color
-					instance.TextColor3 = color
-					instance.Text = `{avg}ms`
-
-					local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
-					if tooltip then
-						tooltip.Text(`Ping\n\n<b>Avg:</b>     {avg}ms\n<b>Max:</b>     {max}ms`)
-					end
-				until nil
-			end),
+			end,
 		}),
 		statusIconLabel("FPS", {
 			Image = UI.Theme.Image.Pace,
 		}, {
-			UI.action(function(instance)
-				local fps, max, avg, low, sum = 0, 0, 0, 0, 0
-				local buffer, nextAvgUpdate = {}, tick()
-				_K.Service.Run.Heartbeat:Connect(function()
-					fps = math.round(1 / _K.Service.Stats.FrameTime)
-					max = math.clamp(fps, max, 240)
-					sum += fps
-					table.insert(buffer, fps)
+			function(instance)
+				task.spawn(function()
+					local fps, max, avg, low, sum = 0, 0, 0, 0, 0
+					local buffer, nextAvgUpdate = {}, tick()
+					local _ = _K.Service.Run.Heartbeat:Connect(function()
+						fps = math.round(1 / _K.Service.Stats.FrameTime)
+						max = math.clamp(fps, max, 240)
+						sum += fps
+						table.insert(buffer, fps)
+					end)
+					repeat
+						task.wait(1)
+						avg, low, sum, nextAvgUpdate = getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
+						avg = math.clamp(avg, 0, 240)
+
+						local alpha = math.clamp(fps / max, 0, 1)
+						local color = lerpGreenRed(1 - alpha)
+						instance.Parent.ImageLabel.ImageColor3 = color
+						instance.TextColor3 = color
+						instance.Text = `{avg} fps`
+
+						local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
+						if tooltip then
+							tooltip.Text(
+								`Frames Per Second\n\n<b>1% Low:</b>  {low} fps\n<b>Avg:</b>     {avg} fps\n<b>Max:</b>     {max} fps`
+							)
+						end
+					until nil
 				end)
-				repeat
-					task.wait(1)
-					avg, low, sum, nextAvgUpdate = getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
-					avg = math.clamp(avg, 0, 240)
-
-					local alpha = math.clamp(fps / max, 0, 1)
-					local color = lerpGreenRed(1 - alpha)
-					instance.Parent.ImageLabel.ImageColor3 = color
-					instance.TextColor3 = color
-					instance.Text = `{avg} fps`
-
-					local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
-					if tooltip then
-						tooltip.Text(
-							`Frames Per Second\n\n<b>1% Low:</b>  {low} fps\n<b>Avg:</b>     {avg} fps\n<b>Max:</b>     {max} fps`
-						)
-					end
-				until nil
-			end),
+			end,
 		}),
 		UI.new "Spacer" {},
 		statusIconLabel("Uptime", {
 			Image = UI.Theme.Image.Hourglass_Bottom,
 		}, {
-			UI.action(function(instance)
-				repeat
-					task.wait(1)
-					local uptime = math.round(workspace:GetServerTimeNow() - _K.script:GetAttribute("ServerStartTime"))
-					instance.Text = _K.Util.Time.clock(uptime)
+			function(instance)
+				task.spawn(function()
+					repeat
+						task.wait(1)
+						local uptime =
+							math.round(workspace:GetServerTimeNow() - _K.script:GetAttribute("ServerStartTime"))
+						instance.Text = _K.Util.Time.clock(uptime)
 
-					local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
-					if tooltip then
-						tooltip.Text(
-							`Uptime\n\n<b>Server:</b>  {instance.Text}\n<b>Client:</b>  {_K.Util.Time.clock(time())}`
-						)
-					end
-				until nil
-			end),
+						local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
+						if tooltip then
+							tooltip.Text(
+								`Uptime\n\n<b>Server:</b>  {instance.Text}\n<b>Client:</b>  {_K.Util.Time.clock(time())}`
+							)
+						end
+					until nil
+				end)
+			end,
 		}),
 		statusIconLabel("Kohl's Admin Version", {
 			Image = UI.Theme.Image.Graph1,
@@ -420,9 +406,9 @@ UI.new "Frame" {
 	},
 }
 
-_K.client.commandBarVisible = UI.state(_K.client.CommandBar.Bar, "Visible")
+_K.client.commandBarVisible = UI.property(_K.client.CommandBar.Bar, "Visible")
 
-local titleBarButtonSize = UI.compute(function()
+local titleBarButtonSize = UI.computed(function()
 	local size = UI.Theme.FontSizeLargest()
 	return UDim2.fromOffset(size, size)
 end)
@@ -452,7 +438,7 @@ _K.client.toggleCommandBar = UI.new "Button" {
 	Activated = toggleCommandBar,
 }
 _K.client.toggleCommandBar._instance:FindFirstChildOfClass("UIStroke"):Destroy()
-UI.edit(_K.client.toggleCommandBar._content.IconFrame.Icon, {
+UI.edit(_K.client.toggleCommandBar._content.IconFrame.Icon)({
 	ImageTransparency = function()
 		return if _K.client.commandBarVisible() then 0 elseif _K.client.toggleCommandBar._hovering() then 0.5 else 0.75
 	end,
@@ -464,7 +450,7 @@ UI.new "Tooltip" {
 	Text = "Command Bar",
 }
 
-local isSelected = UI.state(false)
+local isSelected = UI.signal(false)
 local function dashboardToggle(button)
 	if not _K.client.dashboardEnabled then
 		return
@@ -498,7 +484,7 @@ end
 
 local dashboardButtonPadding = UI.spring(function()
 	return if isSelected() then UDim.new(0, 10) else UDim.new(0, 12)
-end, 16, 0.5)
+end, 8 / math.pi, 0.5)
 
 local fakeButton = { isSelected = false }
 local dashboardButton = UI.new "TextButton" {
@@ -511,13 +497,8 @@ local dashboardButton = UI.new "TextButton" {
 	Text = "",
 	Visible = false,
 
-	UI.new "UICorner" { CornerRadius = UDim.new(1, 0) },
-	UI.new "UIPadding" {
-		PaddingLeft = dashboardButtonPadding,
-		PaddingRight = dashboardButtonPadding,
-		PaddingTop = dashboardButtonPadding,
-		PaddingBottom = dashboardButtonPadding,
-	},
+	UI.corner(UDim.new(1, 0)),
+	UI.padding(dashboardButtonPadding),
 
 	UI.new "ImageLabel" {
 		BackgroundTransparency = 1,
@@ -535,26 +516,26 @@ local dashboardButton = UI.new "TextButton" {
 
 _K.client.dashboardButton = dashboardButton
 
-local function commandsWindow(visible: boolean)
+function _K.client.commandsWindowVisible(visible: boolean)
 	local context = _K.Registry.commands.cmds
 	if visible then
-		UI.edit(context.env.window, {
+		UI.edit(context.env.window)({
 			Visible = true,
 			_K.client.dashboard.Commands,
 		})
 		_K.client.dashboard.Commands._instance.Visible = true
 	else
 		context.env.window._instance.Visible = false
-		_K.UI.edit(_K.client.dashboard.Tabs, {
+		_K.UI.edit(_K.client.dashboard.Tabs)({
 			_K.client.dashboard.Commands,
 		})
 	end
 end
 
-_K.client.commandsWindowVisible = commandsWindow
-
 local function toggleCommandsWindow()
-	commandsWindow(_K.client.dashboard.Commands._instance.Parent ~= _K.Registry.commands.cmds.env.window._content)
+	_K.client.commandsWindowVisible(
+		_K.client.dashboard.Commands._instance.Parent ~= _K.Registry.commands.cmds.env.window._content
+	)
 end
 
 local commandsButton = UI.new "TextButton" {
@@ -567,13 +548,8 @@ local commandsButton = UI.new "TextButton" {
 	Text = "",
 	Visible = true,
 
-	UI.new "UICorner" { CornerRadius = UDim.new(1, 0) },
-	UI.new "UIPadding" {
-		PaddingLeft = UDim.new(0, 12),
-		PaddingRight = UDim.new(0, 12),
-		PaddingTop = UDim.new(0, 12),
-		PaddingBottom = UDim.new(0, 12),
-	},
+	UI.corner(UDim.new(1, 0)),
+	UI.padding(12),
 
 	UI.new "ImageLabel" {
 		BackgroundTransparency = 1,
@@ -605,13 +581,7 @@ task.spawn(function()
 
 	local image = dashboardButton:getInstance("IconImage")
 	if image then
-		UI.new "UIPadding" {
-			Parent = image.Parent,
-			PaddingLeft = dashboardButtonPadding,
-			PaddingRight = dashboardButtonPadding,
-			PaddingTop = dashboardButtonPadding,
-			PaddingBottom = dashboardButtonPadding,
-		}
+		UI.padding(dashboardButtonPadding).Parent = image.Parent
 	end
 
 	_K.client.dashboardButton = dashboardButton
@@ -620,7 +590,7 @@ task.spawn(function()
 	commandsButton = _K.client.TopbarPlus
 		.new()
 		:setName("KACommandsButton")
-		:setImage(string.match(UI.Theme.Image.Terminal._value, "%d+$"))
+		:setImage(string.match(UI.Theme.Image.Terminal:peek(), "%d+$"))
 		:setImageScale(1)
 		:setOrder(-1)
 		:setEnabled(_K.client.commandsButtonEnabled)
@@ -630,13 +600,7 @@ task.spawn(function()
 
 	local image2 = commandsButton:getInstance("IconImage")
 	if image2 then
-		UI.new "UIPadding" {
-			Parent = image2.Parent,
-			PaddingLeft = UDim.new(0, 12),
-			PaddingRight = UDim.new(0, 12),
-			PaddingTop = UDim.new(0, 12),
-			PaddingBottom = UDim.new(0, 12),
-		}
+		UI.padding(12).Parent = image2.Parent
 	end
 
 	for _, button in { commandsButton, dashboardButton } do
@@ -646,8 +610,8 @@ task.spawn(function()
 
 		local clickRegion: TextButton? = button:getInstance("ClickRegion")
 		if clickRegion then
-			clickRegion.MouseButton2Click:Connect(toggleCommandBarWithSound)
-			clickRegion.TouchLongPress:Connect(toggleCommandBarWithSound)
+			local _ = clickRegion.MouseButton2Click:Connect(toggleCommandBarWithSound)
+			local _ = clickRegion.TouchLongPress:Connect(toggleCommandBarWithSound)
 		end
 
 		local iconSpot = button:getInstance("IconSpot")
@@ -673,7 +637,7 @@ _K.client.hotkeys.dashboard.callback = function()
 	end
 end
 
-dashboard._exitButton._instance.Activated:Connect(function()
+local _ = dashboard._exitButton._instance.Activated:Connect(function()
 	fakeButton.isSelected = false
 	if _K.client.TopbarPlus then
 		dashboardButton:deselect()

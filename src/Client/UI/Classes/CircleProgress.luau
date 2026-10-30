@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {
@@ -44,9 +44,9 @@ function Class.new(properties: Properties?)
 				Image = self.Image,
 				Size = UDim2.fromScale(2, 1),
 
-				UI.new "UIGradient" {
-					Transparency = halfMask,
-					Rotation = function()
+				UI.gradient {
+					transparency = halfMask,
+					rotation = function()
 						return math.clamp(self.Alpha() * 360 - 360, -180, 0)
 					end,
 				},
@@ -70,9 +70,9 @@ function Class.new(properties: Properties?)
 				Position = UDim2.fromScale(-1, 0),
 				Size = UDim2.fromScale(2, 1),
 
-				UI.new "UIGradient" {
-					Transparency = halfMask,
-					Rotation = function()
+				UI.gradient {
+					transparency = halfMask,
+					rotation = function()
 						return math.clamp(self.Alpha() * 360, 0, 180)
 					end,
 				},

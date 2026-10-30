@@ -12,7 +12,7 @@ local logTypes = {
 	{ "INFO", "#ccc" },
 	{ "WARN", "#ff0" },
 	{ "ERROR", "#f00" },
-	{ "CHAT", "#0f8" },
+	-- no CHAT, chat text is never logged
 	{ "COMMAND", "#80f" },
 	{ "JOIN", "#0f0" },
 	{ "LEAVE", "#080" },
@@ -30,7 +30,7 @@ for _, array in logTypes do
 end
 
 function Logs.new(_K)
-	local function createItem(self, log)
+	local function createItem(self, lineData)
 		local tooltip = UI.new "Tooltip" {
 			Text = "Loading...",
 		}
@@ -72,28 +72,29 @@ function Logs.new(_K)
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Center,
 				},
+
+				__CLEAN = cleanup,
 			},
 
 			tipText = "",
-
-			[UI.Clean] = cleanup,
+			tooltip = tooltip,
 		}
 
-		table.insert(
-			cleanup,
-			tooltip.Visible:Connect(function()
-				if tooltip.Visible._value then
-					tooltip.Text(itemRef.tipText)
-				end
-			end)
-		)
+		local tipEffect = UI.effect(UI.on(tooltip.Visible, function()
+			if tooltip.Visible:peek() then
+				tooltip.Text(itemRef.tipText)
+			end
+		end, true))
+		tipEffect:get()
+		table.insert(cleanup, tipEffect)
 
 		return itemRef
 	end
 
 	local escape = _K.Util.String.escapeRichText
 
-	local function renderItem(self, itemData, log)
+	local function renderItem(self, itemData, lineData)
+		local log = lineData
 		if not log.filterText or #log < 3 then
 			return
 		end
@@ -113,6 +114,10 @@ function Logs.new(_K)
 		local postText = `{if log[5] then `<font transparency='0.5'>{log[5]}:</font> ` else ""}{escape(log[1] or "")}`
 
 		itemData.tipText = `<font transparency="0.5">{date}</font> {preText}\n{postText}`
+		-- a row recycled in place while its tooltip is shown must not keep the previous log's text
+		if itemData.tooltip.Visible:peek() then
+			itemData.tooltip.Text(itemData.tipText)
+		end
 
 		local rawText = `{timeOfDay}{global} {level}{if log[6]
 			then " CLIENT"
@@ -154,7 +159,7 @@ function Logs.new(_K)
 
 	local logTypeFilter = {}
 	for _, array in logTypes do
-		logTypeFilter[array[1]] = UI.state(array[1] ~= "DEBUG" or _K.DEBUG)
+		logTypeFilter[array[1]] = UI.signal(array[1] ~= "DEBUG" or _K.DEBUG)
 	end
 	scroller.logTypeFilter = logTypeFilter
 	-- TODO: load filter options from client datastore profile
@@ -166,7 +171,7 @@ function Logs.new(_K)
 		local noFilter = string.find(filter, "^%s*$")
 		self._noFilter = noFilter
 
-		local showGlobal = logTypeFilter[GLOBAL_KEY]._value
+		local showGlobal = logTypeFilter[GLOBAL_KEY]:peek()
 
 		local new = {}
 		for i, log in list do
@@ -184,7 +189,8 @@ function Logs.new(_K)
 				)
 			end
 
-			if not logTypeFilter[level]._value then
+			local shown = logTypeFilter[level]
+			if not (shown and shown:peek()) then
 				continue
 			end
 
@@ -215,12 +221,7 @@ function Logs.new(_K)
 		Size = UDim2.new(1, 0, 1, 0),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-		},
+		UI.padding(UI.Theme.Padding),
 
 		Activated = function()
 			UI.toggleState(filterMenu.Visible, "floating")
@@ -234,19 +235,18 @@ function Logs.new(_K)
 	}
 
 	UI.new "Tooltip" { Parent = filterButton, Text = "Filter Logs", Hovering = filterButton._hovering }
-	UI.edit(filterButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
+	UI.edit(filterButton._instance.UICorner)({ CornerRadius = UI.Theme.CornerPadded })
 
 	local listItemFrame = UI.new "Frame" {
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 0),
 
-		UI.new "UIListLayout" {
-			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UI.Theme.Padding,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			VerticalAlignment = Enum.VerticalAlignment.Top,
-			Wraps = true,
+		UI.list {
+			direction = "x",
+			gap = UI.Theme.Padding,
+			verticalAlign = "start",
+			wraps = true,
 		},
 	}
 
@@ -259,25 +259,20 @@ function Logs.new(_K)
 			return UDim2.fromOffset(256 + padding * 3, 0)
 		end,
 
-		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-		},
+		UI.padding(UI.Theme.Padding),
 
 		listItemFrame,
 	}
 
 	filterMenu._content.AutomaticSize = Enum.AutomaticSize.Y
 
-	UI.edit(filterMenu._list, {
+	UI.edit(filterMenu._list)({
 		FillDirection = Enum.FillDirection.Horizontal,
 		Padding = UI.Theme.Padding,
 		Wraps = true,
 	})
 
-	local lineItemSize = UI.compute(function()
+	local lineItemSize = UI.computed(function()
 		return UDim2.fromOffset(128, UI.Theme.FontSizeLarger())
 	end)
 
@@ -324,18 +319,18 @@ function Logs.new(_K)
 	scroller._input._instance = UI.new "Frame" {
 		Parent = scroller,
 		Name = "FilterInput",
+		LayoutOrder = -1,
 
 		BackgroundTransparency = 1,
 		Size = function()
 			return UDim2.new(1, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
 		end,
 
-		UI.new "UIListLayout" {
-			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UI.Theme.PaddingWithStroke,
-			SortOrder = Enum.SortOrder.LayoutOrder,
+		UI.list {
+			direction = "x",
+			gap = UI.Theme.PaddingWithStroke,
 		},
-		UI.edit(scroller._input, { UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }),
+		UI.edit(scroller._input)({ UI.flex("fill") }),
 		filterButton,
 	}
 

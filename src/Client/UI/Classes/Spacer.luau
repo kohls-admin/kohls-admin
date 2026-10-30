@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {}
@@ -17,9 +17,7 @@ function Class.new(properties: Properties?)
 		Name = "Spacer",
 		BackgroundTransparency = 1,
 
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
-		},
+		UI.flex("fill"),
 	} :: Frame & { UIFlexItem: UIFlexItem }
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)

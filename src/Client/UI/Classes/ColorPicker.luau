@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 local Menu = require(script.Parent:WaitForChild("Menu"))
 type Menu = typeof(Menu.new())
@@ -23,25 +23,25 @@ local rainbowSequence = ColorSequence.new({
 	ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 0, 0)),
 })
 
-local hexInputSize = UI.compute(function()
+local hexInputSize = UI.computed(function()
 	local fontSize = UI.Theme.FontSize()
 	local padding = UI.Theme.Padding().Offset
 	return UDim2.fromOffset(math.max(80, 3.5 * fontSize + padding), fontSize + padding)
 end)
 
-local hueSliderSize = UI.compute(function()
+local hueSliderSize = UI.computed(function()
 	local padding = UI.Theme.Padding().Offset
 	local height = UI.Theme.FontSize() + padding
 	return UDim2.new(0, height, 0, UI.Theme.FontSize() + hexInputSize().X.Offset + padding * 2)
 end)
 
-local svSize = UI.compute(function()
+local svSize = UI.computed(function()
 	local size = hexInputSize().X.Offset
 	return UDim2.fromOffset(size, size)
 end)
 
-local inputColor = UI.compute(function()
-	return if UI.getLuminance(UI.Theme.Primary()) > 0.5 then Color3.new() else Color3.new(1, 1, 1)
+local inputColor = UI.computed(function()
+	return UI.Color.readable(UI.Theme.Primary())
 end)
 
 local Class = {}
@@ -54,7 +54,7 @@ function Class.new(properties: Properties?)
 
 	local cleanup = {}
 
-	local dragging = UI.state(false)
+	local dragging = UI.signal(false)
 	table.insert(cleanup, dragging)
 
 	local hue = 0
@@ -64,8 +64,8 @@ function Class.new(properties: Properties?)
 		Size = hueSliderSize,
 		Value = function()
 			local h, s, v = self.Value():ToHSV()
-			if h == 1 and hue == 0 then
-				h = 0
+			if (h == 1 and hue == 0) or (h == 0 and hue == 1) then
+				h = hue
 			end
 			hue = if s > 0 and v > 0 then h else hue
 			return hue
@@ -78,13 +78,11 @@ function Class.new(properties: Properties?)
 			Size = UDim2.new(1, 0, 1, 0),
 			Position = UDim2.new(0.5, 0, 0.5, 0),
 
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerPadded,
-			},
+			UI.corner(UI.Theme.CornerPadded),
 			UI.new "Stroke" {},
-			UI.new "UIGradient" {
-				Color = rainbowSequence,
-				Rotation = 90,
+			UI.gradient {
+				color = rainbowSequence,
+				rotation = 90,
 			},
 		},
 
@@ -94,19 +92,22 @@ function Class.new(properties: Properties?)
 					return
 				end
 
-				local _, s, v = self.Value._value:ToHSV()
+				local _, s, v = self.Value:peek():ToHSV()
 				local color = Color3.fromHSV(value, s, v)
 				hue = value
 				self.Value(color, true)
+				UI.flush()
 			end,
 		},
 	}
 	self.hueSlider = hueSlider
 
-	local hueColor = UI.compute(function()
+	local hueColor = UI.computed(function()
 		return Color3.fromHSV(hueSlider.Value(), 1, 1)
 	end)
-	UI.edit(hueSlider._slider, {
+	table.insert(cleanup, hueColor)
+	table.insert(cleanup, hueSlider)
+	UI.edit(hueSlider._slider)({
 		BackgroundColor3 = hueColor,
 		UI.new "UIStroke" {
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
@@ -131,54 +132,34 @@ function Class.new(properties: Properties?)
 
 		[UI.Hook] = {
 			Value = function(value)
-				if value == `#{self.Value():ToHex()}` then
+				if value == `#{self.Value:peek():ToHex()}` then
 					return
 				end
 				self.Value(Color3.fromHex(value), true)
+				UI.flush()
 			end,
 		},
 	}
 	self.hexInput = hexInput
 
-	local sv, dragInput
-	local sX = UI.state(0)
-	local function update(input)
-		if not dragInput then
-			return
-		end
-
+	local sv
+	local sX = UI.signal(0)
+	table.insert(cleanup, sX)
+	table.insert(cleanup, hexInput)
+	local inputBegan = BaseClass.bindDragInput(dragging, function(input)
 		local x = math.clamp((input.Position.X - sv.AbsolutePosition.X - 8) / (sv.AbsoluteSize.X - 16), 0, 1)
 		local y = 1 - math.clamp((input.Position.Y - sv.AbsolutePosition.Y - 8) / (sv.AbsoluteSize.Y - 16), 0, 1)
 		sX(x, true)
 
 		local color = Color3.fromHSV(hue, x, y)
 		self.Value(color, true)
-	end
+		UI.flush()
+	end, cleanup)
 
-	local function inputBegan(input)
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
-			UI.Sound.Hover03:Play()
-			dragInput = input
-			dragging(true)
-			local con
-			con = input:GetPropertyChangedSignal("UserInputState"):Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					con:Disconnect()
-					if dragInput == input then
-						UI.Sound.Hover01:Play()
-						dragInput = nil
-						dragging(false)
-					end
-				end
-			end)
-			update(input)
-		end
-	end
-
-	table.insert(cleanup, UI.UserInputService.InputChanged:Connect(update))
+	local pickerSize = UI.tween(function()
+		return if dragging() then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
+	end, UI.Theme.TweenOut)
+	table.insert(cleanup, pickerSize)
 
 	sv = UI.new "Frame" {
 		Name = "SaturationValue",
@@ -186,21 +167,17 @@ function Class.new(properties: Properties?)
 		Size = svSize,
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
+		UI.corner(UI.Theme.CornerPadded),
 		UI.new "Stroke" {},
 		UI.new "Frame" {
 			Name = "Saturation",
 			BackgroundColor3 = Color3.new(1, 1, 1),
 			Size = UDim2.new(1, 0, 1, 0),
 
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerPadded2,
-			},
-			UI.new "UIGradient" {
-				Color = ColorSequence.new(Color3.new(1, 1, 1)),
-				Transparency = NumberSequence.new(0, 1),
+			UI.corner(UI.Theme.CornerPadded2),
+			UI.gradient {
+				color = ColorSequence.new(Color3.new(1, 1, 1)),
+				transparency = NumberSequence.new(0, 1),
 			},
 		},
 		UI.new "Frame" {
@@ -209,13 +186,11 @@ function Class.new(properties: Properties?)
 			Size = UDim2.new(1, 0, 1, 0),
 			ZIndex = 2,
 
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerPadded2,
-			},
-			UI.new "UIGradient" {
-				Color = ColorSequence.new(Color3.new()),
-				Transparency = NumberSequence.new(0, 1),
-				Rotation = -90,
+			UI.corner(UI.Theme.CornerPadded2),
+			UI.gradient {
+				color = ColorSequence.new(Color3.new()),
+				transparency = NumberSequence.new(0, 1),
+				rotation = -90,
 			},
 		},
 		UI.new "Frame" {
@@ -224,28 +199,19 @@ function Class.new(properties: Properties?)
 			Size = UDim2.new(1, 0, 1, 0),
 			ZIndex = 3,
 
-			UI.new "UIPadding" {
-				PaddingLeft = UDim.new(0, 8),
-				PaddingRight = UDim.new(0, 8),
-				PaddingTop = UDim.new(0, 8),
-				PaddingBottom = UDim.new(0, 8),
-			},
+			UI.padding(UDim.new(0, 8)),
 			UI.new "Frame" {
 				Name = "Picker",
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				BackgroundColor3 = self.Value,
-				Size = UI.tween(function()
-					return if dragging() then UDim2.new(0, 16, 0, 16) else UDim2.new(0, 8, 0, 8)
-				end, UI.Theme.TweenOut),
+				Size = pickerSize,
 				Position = function()
 					local _, s, v = self.Value():ToHSV()
 					local x = sX()
 					return UDim2.new(if v == 0 then x else s, 0, 1 - v, 0)
 				end,
 
-				UI.new "UICorner" {
-					CornerRadius = UI.Theme.CornerDiameter,
-				},
+				UI.corner(UI.Theme.CornerDiameter),
 				UI.new "UIStroke" {
 					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 					Color = Color3.new(1, 1, 1),
@@ -268,32 +234,26 @@ function Class.new(properties: Properties?)
 		Size = UDim2.new(),
 		Visible = self.Visible,
 
-		UI.new "UIPadding" {
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-		},
+		UI.padding(UI.Theme.Padding),
 
 		hueSlider,
 		UI.new "Frame" {
 			BackgroundTransparency = 1,
 			AutomaticSize = Enum.AutomaticSize.XY,
 
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				FillDirection = Enum.FillDirection.Vertical,
-				Padding = UI.Theme.Padding,
+			UI.list {
+				direction = "y",
+				gap = UI.Theme.Padding,
 			},
 
 			sv,
 			hexInput,
 		},
-		[UI.Clean] = cleanup,
+		__CLEAN = cleanup,
 	} :: Menu
 	self._menu._list.FillDirection = Enum.FillDirection.Horizontal
 	self._menu._content.AutomaticSize = Enum.AutomaticSize.XY
-	UI.edit(self._menu._list, { Padding = UI.Theme.Padding })
+	UI.edit(self._menu._list)({ Padding = UI.Theme.Padding })
 	self._instance = self._menu._instance :: MenuInstance
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)

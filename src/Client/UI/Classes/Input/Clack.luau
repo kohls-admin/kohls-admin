@@ -36,9 +36,9 @@ function module.sound(keycode)
 end
 
 function module.registerAll()
-	module.registerAll = nil :: any
+	module.registerAll = (nil :: unknown) :: typeof(module.registerAll)
 	local focused, textBoxFocused = {}, false
-	UserInputService.TextBoxFocused:Connect(function(textbox)
+	local _ = UserInputService.TextBoxFocused:Connect(function(textbox)
 		if not (textbox and textbox.TextEditable) then
 			return
 		end
@@ -46,7 +46,7 @@ function module.registerAll()
 		textBoxFocused = textbox
 	end)
 
-	UserInputService.TextBoxFocusReleased:Connect(function(textbox)
+	local _ = UserInputService.TextBoxFocusReleased:Connect(function(textbox)
 		if not (textbox and textbox.TextEditable) then
 			return
 		end
@@ -57,7 +57,7 @@ function module.registerAll()
 		textBoxFocused = nil
 	end)
 
-	UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+	local _ = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 		if
 			not module.enabled
 			or not (textBoxFocused or ChatInputBarConfiguration.IsFocused)

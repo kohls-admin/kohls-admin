@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {
@@ -7,7 +7,7 @@ local DEFAULT = {
 
 type Properties = typeof(DEFAULT) & TextButton
 
-local itemHeight = UI.compute(function()
+local itemHeight = UI.computed(function()
 	return UI.Theme.FontSize() + UI.Theme.Padding().Offset
 end)
 
@@ -31,6 +31,14 @@ function Class.new(properties: Properties?)
 	end, UI.Theme.TweenOut)
 	table.insert(cleanup, backgroundTransparencyClamped)
 
+	local circlePosition = UI.tween(function()
+		return UDim2.new(0, if self.Value() then itemHeight() + 1 else 1, 0, 1)
+	end, UI.Theme.TweenOut)
+	table.insert(cleanup, circlePosition)
+	local function onActivated()
+		self:ToggleValue()
+	end
+
 	self._instance = UI.new "TextButton" {
 		AutoLocalize = false,
 		Name = "Switch",
@@ -47,9 +55,7 @@ function Class.new(properties: Properties?)
 			return UDim2.new(0, height * 2, 0, height)
 		end,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
+		UI.corner(UI.Theme.CornerPadded),
 		UI.new "Stroke" {},
 
 		UI.new "Frame" {
@@ -58,26 +64,14 @@ function Class.new(properties: Properties?)
 			BackgroundTransparency = backgroundTransparencyClamped,
 			Size = UDim2.new(1, -2, 1, -2),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
-			Position = UI.tween(function()
-				return UDim2.new(0, if self.Value() then itemHeight() + 1 else 1, 0, 1)
-			end, UI.Theme.TweenOut),
+			Position = circlePosition,
 
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerPadded,
-			},
+			UI.corner(UI.Theme.CornerPadded),
 		},
 
-		Activated = function()
-			local value = not UI.raw(self.Value)
-			self.Value(value)
-			if value then
-				UI.Sound.Hover03:Play()
-			else
-				UI.Sound.Hover01:Play()
-			end
-		end,
+		Activated = onActivated,
 
-		[UI.Clean] = cleanup,
+		__CLEAN = cleanup,
 	} :: TextButton & { UICorner: UICorner, UIStroke: UIStroke, Circle: Frame & { UICorner: UICorner } }
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)

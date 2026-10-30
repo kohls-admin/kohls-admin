@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local Tween = game:GetService("TweenService")
@@ -34,10 +34,7 @@ function Class.new(properties: Properties?)
 	self.IconProperties, self.LabelProperties = {}, {}
 	UI.makeStatefulDefaults(self, properties)
 
-	local hovering = UI.state(false) :: boolean
-	self._hovering = hovering
-
-	local autoSize = UI.compute(function()
+	local autoSize = UI.computed(function()
 		local auto, x, y = self.AutomaticSize(), 1, 1
 		if auto == Enum.AutomaticSize.XY then
 			x, y = 0, 0
@@ -55,53 +52,42 @@ function Class.new(properties: Properties?)
 		BackgroundTransparency = 1,
 		Size = autoSize,
 
-		UI.new "UIListLayout" {
-			FillDirection = Enum.FillDirection.Horizontal,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			VerticalAlignment = Enum.VerticalAlignment.Center,
+		UI.list {
+			direction = "x",
+			verticalAlign = "center",
 		},
 
-		UI.edit(
-			UI.new "TextLabel" {
-				Name = "Label",
-				LayoutOrder = 2,
-				AutomaticSize = self.AutomaticSize,
-				AutoLocalize = false,
-				BackgroundTransparency = 1,
-				Size = autoSize,
-				FontFace = self.FontFace,
-				RichText = true,
-				Text = function()
-					return tostring(self.Label)
-				end,
-				TextSize = self.TextSize,
-				TextScaled = self.TextScaled,
-				TextColor3 = UI.Theme.PrimaryText,
-				TextStrokeColor3 = UI.Theme.Primary,
-				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-				TextTruncate = Enum.TextTruncate.SplitWord,
-				TextXAlignment = self.TextXAlignment,
-				TextYAlignment = self.TextYAlignment,
-				Visible = function()
-					return self.Label() ~= ""
-				end,
+		UI.edit(UI.new "TextLabel" {
+			Name = "Label",
+			LayoutOrder = 2,
+			AutomaticSize = self.AutomaticSize,
+			AutoLocalize = false,
+			BackgroundTransparency = 1,
+			Size = autoSize,
+			FontFace = self.FontFace,
+			RichText = true,
+			Text = function()
+				return tostring(self.Label())
+			end,
+			TextSize = self.TextSize,
+			TextScaled = self.TextScaled,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextStrokeColor3 = UI.Theme.Primary,
+			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+			TextTruncate = Enum.TextTruncate.SplitWord,
+			TextXAlignment = self.TextXAlignment,
+			TextYAlignment = self.TextYAlignment,
+			Visible = function()
+				return self.Label() ~= ""
+			end,
 
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
-				UI.new "UIPadding" {
-					PaddingLeft = self.Padding,
-					PaddingRight = self.Padding,
-				},
-			},
-			self.LabelProperties._value
-		),
+			UI.flex("fill"),
+			UI.padding { x = self.Padding },
+		})(self.LabelProperties:peek()),
 
 		UI.new "Frame" {
 			Name = "IconFrame",
-			LayoutOrder = function()
-				return if self.IconRightAlign() then 9 else -9
-			end,
+			LayoutOrder = UI.pick(self.IconRightAlign, 9, -9),
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
@@ -109,18 +95,15 @@ function Class.new(properties: Properties?)
 				return self.Icon() ~= ""
 			end,
 
-			UI.edit(
-				UI.new "ImageLabel" {
-					Name = "Icon",
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					Position = UDim2.new(0.5, 0, 0.5, 0),
-					BackgroundTransparency = 1,
-					Size = UDim2.new(1, 0, 1, 0),
-					Image = self.Icon,
-					ScaleType = Enum.ScaleType.Fit,
-				},
-				self.IconProperties._value
-			),
+			UI.edit(UI.new "ImageLabel" {
+				Name = "Icon",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				BackgroundTransparency = 1,
+				Size = UDim2.new(1, 0, 1, 0),
+				Image = self.Icon,
+				ScaleType = Enum.ScaleType.Fit,
+			})(self.IconProperties:peek()),
 		},
 	} :: Frame & {
 		UIListLayout: UIListLayout,
@@ -135,10 +118,44 @@ function Class.new(properties: Properties?)
 		BackgroundTransparency = 1,
 		BackgroundColor3 = UI.Theme.Secondary,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
+		UI.corner(UI.Theme.CornerPadded),
 	}
+
+	local function onActivated()
+		if self.ActiveSound:peek() then
+			UI.Sound.Hover01:Play()
+		end
+	end
+
+	local function onInputBegan(input, processed)
+		if
+			processed
+			or (
+				input.UserInputType ~= Enum.UserInputType.MouseButton1
+				and input.UserInputType ~= Enum.UserInputType.Touch
+			)
+		then
+			return
+		end
+		local x = input.Position.X
+		ripple.Size = UDim2.new(0, 0, 1, 0)
+		ripple.Position = UDim2.new(0, x - self._instance.AbsolutePosition.x, 0, 0)
+		Tween:Create(ripple, UI.Theme.TweenOut:peek(), {
+			BackgroundTransparency = 0.9,
+			Size = UDim2.new(1, 0, 1, 0),
+			Position = UDim2.new(0.5, 0, 0, 0),
+		}):Play()
+	end
+
+	local function onInputEnded(input)
+		if
+			input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseButton1
+		then
+			Tween:Create(ripple, UI.Theme.TweenOut:peek(), { BackgroundTransparency = 1 }):Play()
+		end
+	end
 
 	local instance = UI.new "TextButton" {
 		AutomaticSize = self.AutomaticSize,
@@ -147,76 +164,31 @@ function Class.new(properties: Properties?)
 		Active = true,
 		AutoButtonColor = false,
 		BackgroundColor3 = self.BackgroundColor3,
-		BackgroundTransparency = function()
-			return if hovering() then self.HoverTransparency() else self.BackgroundTransparency()
-		end,
 		ClipsDescendants = true,
 		Text = "",
 		TextTransparency = 1,
 		Size = function()
 			local auto = self.AutomaticSize()
 			local x = if auto == Enum.AutomaticSize.X or auto == Enum.AutomaticSize.XY then 0 else 1
-			return UDim2.new(x, 0, 0, UI.Theme.FontSize + UI.Theme.Padding().Offset * 2)
+			return UDim2.new(x, 0, 0, UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2)
 		end,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
+		UI.corner(UI.Theme.CornerPadded),
 		UI.new "Stroke" {},
 
 		self._content,
 		ripple,
 
-		Activated = function()
-			if self.ActiveSound._value then
-				UI.Sound.Hover01:Play()
-			end
-		end,
-		InputBegan = function(input, processed)
-			if
-				processed
-				or (
-					input.UserInputType ~= Enum.UserInputType.MouseButton1
-					and input.UserInputType ~= Enum.UserInputType.Touch
-				)
-			then
-				return
-			end
-			local x = input.Position.X
-			ripple.Size = UDim2.new(0, 0, 1, 0)
-			ripple.Position = UDim2.new(0, x - self._instance.AbsolutePosition.x, 0, 0)
-			Tween:Create(ripple, UI.Theme.TweenOut._value, {
-				BackgroundTransparency = 0.9,
-				Size = UDim2.new(1, 0, 1, 0),
-				Position = UDim2.new(0.5, 0, 0, 0),
-			}):Play()
-		end,
-		InputChanged = function(input, processed)
-			if processed then
-				return
-			end
-			if
-				input.UserInputType == Enum.UserInputType.MouseMovement
-				or input.UserInputType == Enum.UserInputType.Touch
-			then
-				if UI.sinkInput(input.Position.X, input.Position.Y, self._instance) then
-					UI.deactivateState(hovering, "hover")
-					return
-				end
-				UI.activateState(hovering, "hover")
-			end
-		end,
-		InputEnded = function(input)
-			local isMoveOrTouch = input.UserInputType == Enum.UserInputType.MouseMovement
-				or input.UserInputType == Enum.UserInputType.Touch
-			if isMoveOrTouch then
-				UI.deactivateState(hovering, "hover")
-			end
-			if isMoveOrTouch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-				Tween:Create(ripple, UI.Theme.TweenOut._value, { BackgroundTransparency = 1 }):Play()
-			end
-		end,
+		Activated = onActivated,
+		InputBegan = onInputBegan,
+		InputEnded = onInputEnded,
 	}
+	local hovering = UI.Interact.hover(instance, { within = true })
+	self._hovering = hovering
+	UI.edit(instance)({
+		BackgroundTransparency = UI.pick(hovering, self.HoverTransparency, self.BackgroundTransparency),
+		__CLEAN = { hovering, autoSize },
+	})
 	self._instance = instance :: TextButton & {
 		UICorner: UICorner,
 		UIStroke: UIStroke,

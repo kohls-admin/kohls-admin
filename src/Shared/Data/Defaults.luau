@@ -156,8 +156,8 @@ for key, state in Theme :: any do
 	if key == "Themes" then
 		continue
 	end
-	if state._value ~= nil then
-		Data.settings["theme" .. key] = state._value
+	if type(state.peek) == "function" then
+		Data.settings["theme" .. key] = state:peek()
 	end
 end
 

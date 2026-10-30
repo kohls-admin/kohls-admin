@@ -12,19 +12,19 @@ _K.client = {
 	UserFrame = require(script:WaitForChild("UserFrame")),
 	TopbarPlus = nil,
 
-	bans = _K.Flux.state(_K.Data.bans),
-	logs = _K.Flux.state(_K.Data.logs),
-	members = _K.Flux.state(_K.Data.members),
-	servers = _K.Flux.state(_K.Data.servers),
-	rank = _K.Flux.state(0),
+	bans = _K.Flux.signal(_K.Data.bans),
+	logs = _K.Flux.signal(_K.Data.logs),
+	members = _K.Flux.signal(_K.Data.members),
+	servers = _K.Flux.signal(_K.Data.servers),
+	rank = _K.Flux.signal(0),
 
 	ready = false,
 	hotkeys = {
-		dashboard = { key = UI.state(Enum.KeyCode.Quote), mods = UI.state({}), callback = nil },
+		dashboard = { key = UI.signal(Enum.KeyCode.Quote), mods = UI.signal({}), callback = nil },
 	},
 	settings = {},
 
-	playerPrefix = ";",
+	playerPrefix = _K.Flux.signal(";"),
 }
 
 task.spawn(function()
@@ -38,7 +38,7 @@ end)
 local function deepMergeTheme(from, to, prefix: string?)
 	for key, value in from do
 		value = UI.raw(value)
-		if UI.isState(to[key]) then
+		if UI.isNode(to[key]) then
 			if prefix then
 				key = prefix .. key
 				_K.Data.savedSettings[key] = value
@@ -56,107 +56,26 @@ function UI.changeTheme(new)
 	deepMergeTheme(new, UI.Theme, "theme")
 end
 
-local closeTags = { "font", "stroke", "b", "i", "u", "s", "uc", "sc", "uppercase", "smallcaps", "mark" }
-local openTags = {}
-for i, tag in closeTags do
-	openTags[i] = "<" .. tag
-	closeTags[i] = "</" .. tag .. ">?"
-end
-
-local chatCommandThrottle
-local warnPrefixes = _K.Util.String.escapePattern(";:!$~.")
-
-local function Chatted(message: string)
-	if not _K.ready or _K.Data.settings.chatCommands == false then
-		return
-	end
-	local prefix = _K.getCommandPrefix()
-
-	local commandFormat =
-		`%s[^%s{_K.Process.ignoreFormat}{_K.Util.String.escapePattern(_K.Data.settings.splitKey or " ")}]`
-	local commandStart
-	for _, value in { prefix, unpack(_K.Data.settings.prefix) } do
-		local escapedPrefix = _K.Util.String.escapePattern(value)
-		commandStart = string.find(message, string.format(commandFormat, escapedPrefix, escapedPrefix))
-		if commandStart then
-			break
-		end
-	end
-
-	if not commandStart then
-		-- check for optionalPrefix
-		local directCommand = _K.Registry.commands[string.lower(message)]
-		if directCommand and directCommand.optionalPrefix then
-			commandStart = 1
-			message = prefix .. message
-		else
-			if _K.Data.settings.wrongPrefixWarning ~= false and #warnPrefixes > 0 then
-				local test = " " .. string.lower(message)
-				for alias in _K.Registry.commands do
-					local i = string.find(test, `[{warnPrefixes}]{_K.Util.String.escapePattern(alias)}`)
-					if i then
-						warnPrefixes =
-							_K.Util.String.escapePattern(warnPrefixes:gsub("%%", ""):gsub(test:sub(i, i), ""))
-						task.spawn(_K.Notify, {
-							From = "_K",
-							Text = `<b>Invalid command prefix, try "{prefix}{alias}"</b>`,
-							TextColor3 = Color3.new(1, 0, 0),
-							Sound = "Call_Leave",
-						})
-						break
-					end
-					_K.Util.Defer.wait()
-				end
+-- chat commands are TextChatCommands the server runs, it forwards their text so this client runs its own part (windows,
+-- purchase prompts); scripts can't read chat text with platform-integrated chat
+local _ = _K.Remote.Command:Connect(function(message: string, clientOnly: boolean?)
+	if _K.ready then
+		if clientOnly and type(message) == "string" then
+			local trimmed = _K.Util.String.trimStart(message)
+			local nextChar = utf8.offset(trimmed, 2) or 2
+			local firstChar = string.sub(trimmed, 1, nextChar - 1)
+			local clientPrefix = _K.getCommandPrefix()
+			if
+				firstChar ~= clientPrefix
+				and not table.find(_K.Data.settings.prefix, firstChar)
+				and table.find(_K.Data.savedSettings.prefix or {}, firstChar)
+			then
+				message = clientPrefix .. string.sub(trimmed, nextChar)
 			end
-			return
 		end
+		_K.Process.runCommands(_K, _K.LocalPlayer.UserId, message, nil, nil, clientOnly == true)
 	end
-	if not chatCommandThrottle then
-		chatCommandThrottle = true
-
-		-- trim hanging richtext tags
-		message = string.sub(message, commandStart)
-		for i, tag in closeTags do
-			local findIndex = string.find(message, tag, 1, true)
-			if not findIndex or string.find(message, openTags[i], 1, true) < findIndex then
-				continue
-			end
-			message = string.gsub(message, tag, "")
-		end
-
-		_K.Process.runCommands(_K, _K.LocalPlayer.UserId, message)
-		task.wait(0.2)
-		chatCommandThrottle = nil
-	end
-end
-
-if _K.Service.TextChat.ChatVersion == Enum.ChatVersion.TextChatService then
-	_K.Service.TextChat.SendingMessage:Connect(function(textChatMessage: TextChatMessage)
-		local channel = textChatMessage.TextChannel
-		if (channel and string.find(channel.Name, "KA_", 1, true) == 1) or textChatMessage.Metadata ~= "" then
-			return
-		end
-		Chatted(_K.Util.String.unescapeRichText(textChatMessage.Text))
-	end)
-	_K.Service.TextChat.MessageReceived:Connect(function(textChatMessage: TextChatMessage)
-		local source = textChatMessage.TextSource
-		local channel = textChatMessage.TextChannel
-		if
-			not source
-			or textChatMessage.Status ~= Enum.TextChatMessageStatus.Success
-			or (channel and string.find(channel.Name, "KA_", 1, true) == 1)
-			or textChatMessage.Metadata ~= ""
-		then
-			return
-		end
-		local text = _K.Util.String.unescapeRichText(textChatMessage.Text)
-		if string.find(text, "/e", 1, true) ~= 1 then
-			task.spawn(_K.log, text, "CHAT", source.UserId)
-		end
-	end)
-end
-
-_K.Remote.Command:Connect(Chatted)
+end)
 
 local textBoxFocused
 do
@@ -172,13 +91,13 @@ do
 		return false
 	end
 
-	_K.Service.UserInput.TextBoxFocused:Connect(function(textbox)
+	local _ = _K.Service.UserInput.TextBoxFocused:Connect(function(textbox)
 		if not (textbox and textbox.TextEditable) then
 			return
 		end
 		focusedTextBoxes[textbox] = true
 	end)
-	_K.Service.UserInput.TextBoxFocusReleased:Connect(function(textbox)
+	local _ = _K.Service.UserInput.TextBoxFocusReleased:Connect(function(textbox)
 		if not (textbox and textbox.TextEditable) then
 			return
 		end
@@ -186,20 +105,20 @@ do
 	end)
 end
 
-_K.Service.UserInput.InputBegan:Connect(function(input, gameProcessedEvent)
+local _ = _K.Service.UserInput.InputBegan:Connect(function(input, gameProcessedEvent)
 	if input.UserInputType == Enum.UserInputType.Keyboard and not textBoxFocused() then
 		for keyName, data in _K.client.hotkeys do
 			if
 				data.callback
 				and (
-					input.KeyCode == data.key._value
-					or (type(data.key._value) == "table" and table.find(data.key._value, input.KeyCode))
+					input.KeyCode == data.key:peek()
+					or (type(data.key:peek()) == "table" and table.find(data.key:peek(), input.KeyCode))
 				)
 			then
 				local missingMod = false
 				for _, modifierKey in Enum.ModifierKey:GetEnumItems() do
 					local isDown = input:IsModifierKeyDown(modifierKey)
-					if isDown == not data.mods._value[modifierKey.Name] then
+					if isDown == not data.mods:peek()[modifierKey.Name] then
 						missingMod = true
 						break
 					end
@@ -219,7 +138,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 	-- need to improve networking performance!
 	if bans then
 		_K.Util.Table.merge(_K.Data.bans, bans)
-		_K.client.bans(_K.Data.bans)
+		_K.client.bans(_K.Data.bans, true)
 	end
 
 	if logs then
@@ -239,11 +158,11 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 
 	if servers then
 		_K.Util.Table.merge(_K.Data.servers, servers)
-		_K.client.servers(_K.Data.servers)
+		_K.client.servers(_K.Data.servers, true)
 	end
 
 	_K.Util.Table.merge(_K.Data.members, members)
-	_K.client.members(_K.Data.members)
+	_K.client.members(_K.Data.members, true)
 
 	_K.Data.roles = roles
 	for role, roleData in roles do
@@ -258,8 +177,12 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 	local theme = UI.Themes[defaultSettings.theme]
 	if theme then
 		for key, state in theme do
-			if state._value ~= nil then
-				defaultSettings["theme" .. key] = state._value
+			local val = if type(state) == "table" and type(state.peek) == "function"
+				then state:peek()
+				elseif type(state) ~= "table" then state
+				else nil
+			if val ~= nil then
+				defaultSettings["theme" .. key] = val
 			end
 		end
 	end
@@ -271,7 +194,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 		then _K.Data.savedSettings
 		else _K.Data.defaultSettings
 
-	_K.client.playerPrefix = _K.Flux.state(_K.Data.settings.prefix[1])
+	_K.client.playerPrefix(_K.Data.settings.prefix[1])
 
 	for key, value in _K.Data.settings do
 		if key == "useSavedSettings" then
@@ -284,26 +207,26 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 				state(value)
 			end
 		end
-		state = state or _K.Flux.state(value)
+		state = state or _K.Flux.signal(value)
 		_K.client.settings[key] = state
 
 		-- UI.Theme connection to theme settings
 		if key == "theme" then
-			state:Connect(function(value)
+			UI.effect(UI.on(state, function(value)
 				local theme = UI.Themes[value]
 				if theme then
 					UI.changeTheme(theme)
 				end
-			end)
+			end, true)):get()
 		elseif string.find(key :: string, "theme", 1, true) == 1 then
 			key = string.sub(key :: string, 6)
 			if UI.Theme[key] then
-				state:Connect(function(value)
+				UI.effect(UI.on(state, function(value)
 					UI.Theme[key](value)
-				end)
+				end, true)):get()
 			end
 		elseif key == "useSavedSettings" then
-			state:Connect(function(useSaved)
+			UI.effect(UI.on(state, function(useSaved)
 				local settings = if useSaved then _K.Data.savedSettings else _K.Data.defaultSettings
 				_K.Data.settings = settings
 				for key, value in settings do
@@ -311,13 +234,13 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 						_K.client.settings[key](value, true)
 					end
 				end
-			end)
+			end, true)):get()
 		end
 	end
 
 	_K.client.CommandBar = require(script:WaitForChild("CommandBar"))
 	_K.client.CommandBar:init(_K)
-	_K.client.Dashboard = require(script:WaitForChild("Dashboard") :: any) -- relies on command bar
+	_K.client.Dashboard = require(script:WaitForChild("Dashboard")) -- relies on command bar
 	require(script:WaitForChild("GetKA"))
 	require(script:WaitForChild("Network"))
 
@@ -347,7 +270,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 
 		_K.Notify({
 			From = "_K",
-			Text = `<font family="{UI.Theme.FontMono._value.Family}"><b>You're a{nString}</b> <sc>{roleString}</sc></font>\n\n<i>Click to see the commands.</i>`,
+			Text = `<font family="{UI.Theme.FontMono:peek().Family}"><b>You're a{nString}</b> <sc>{roleString}</sc></font>\n\n<i>Click to see the commands.</i>`,
 			Duration = 15,
 			Activated = function()
 				_K.client.commandsWindowVisible(true)
@@ -402,8 +325,8 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 			})
 		end)
 
-		_K.Remote.VIPNotification:Connect(_K.client.VIPNotification)
-		_K.Hook.postCommand:Connect(_K.client.VIPNotification)
+		local _ = _K.Remote.VIPNotification:Connect(_K.client.VIPNotification)
+		local _ = _K.Hook.postCommand:Connect(_K.client.VIPNotification)
 		_K.client.dashboard.Commands._instance:GetPropertyChangedSignal("Visible"):Once(_K.client.VIPNotification)
 		_K.client.dashboard.Window._instance:GetPropertyChangedSignal("Visible"):Once(_K.client.VIPNotification)
 
@@ -417,7 +340,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 				and (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) < 3
 			then
 				_K.VIP.popup.Visible = true
-				_K.Flux.cleanup(connections)
+				_K.Flux.dispose(connections)
 			end
 		end
 
@@ -482,7 +405,7 @@ local function resetIdle()
 	end
 end
 
-_K.Service.Players.LocalPlayer.Idled:Connect(function(idleTime)
+local _ = _K.Service.Players.LocalPlayer.Idled:Connect(function(idleTime)
 	lastIdle = time()
 	_K.Remote.Idled:Fire(idleTime)
 	task.delay(35, resetIdle)

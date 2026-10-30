@@ -951,7 +951,7 @@ return {
 				end
 				sphere = result
 
-				_K.Flux.edit(sphere, {
+				_K.Flux.edit(sphere)({
 					Name = "Sphere",
 					Color = Color3.new(1, 0, 0),
 					Material = Enum.Material.Neon,

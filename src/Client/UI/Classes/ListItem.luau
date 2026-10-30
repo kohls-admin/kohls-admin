@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {
@@ -37,8 +37,8 @@ function Class.new(properties: Properties?)
 		TextXAlignment = Enum.TextXAlignment.Left,
 	} :: TextLabel
 
-	local labelSize = UI.state(self._label, "AbsoluteSize")
-	local automaticSize = UI.compute(function()
+	local labelSize = UI.property(self._label, "AbsoluteSize")
+	local automaticSize = UI.computed(function()
 		return self.ContentAutomaticSize() and Enum.AutomaticSize.Y or Enum.AutomaticSize.None
 	end)
 	table.insert(cleanup, labelSize)
@@ -54,26 +54,26 @@ function Class.new(properties: Properties?)
 		Position = UDim2.new(1, 0, 0, 0),
 		BackgroundTransparency = 1,
 
-		UI.new "UIPadding" {
-			PaddingRight = UDim.new(0, 1),
+		UI.padding {
+			right = UDim.new(0, 1),
 		},
 	} :: Frame & { UIPadding: UIPadding }
 
-	local layout = UI.new "UIListLayout" {
-		Parent = self._content,
-		HorizontalAlignment = Enum.HorizontalAlignment.Right,
-		VerticalAlignment = Enum.VerticalAlignment.Center,
-		FillDirection = Enum.FillDirection.Horizontal,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UI.Theme.Padding,
+	local layout = UI.list {
+		direction = "x",
+		gap = UI.Theme.Padding,
+		horizontalAlign = "end",
+		verticalAlign = "center",
 	}
 
-	self._layoutParentCompute = UI.compute(function()
+	self._layoutParentCompute = UI.effect(function()
 		layout.Parent = if self.ContentListLayout() then self._content else nil
 	end)
+	table.insert(cleanup, self._layoutParentCompute)
+	table.insert(cleanup, layout)
 
 	self._instance = UI.new "Frame" {
-		Name = self.Text._value,
+		Name = self.Text:peek(),
 		AutomaticSize = automaticSize,
 		BackgroundTransparency = 1,
 		Size = function()
@@ -82,7 +82,7 @@ function Class.new(properties: Properties?)
 		self._label,
 		self._content,
 		if self.Tooltip then UI.new "Tooltip" { Text = self.Tooltip } else nil,
-		[UI.Clean] = cleanup,
+		__CLEAN = cleanup,
 	} :: Frame & { TextLabel: TextLabel, UIContent: typeof(self._content) }
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)

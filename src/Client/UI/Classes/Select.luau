@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 local Button = require(script.Parent:WaitForChild("Button"))
 local Menu = require(script.Parent:WaitForChild("Menu"))
@@ -37,36 +37,32 @@ function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
-	local itemSize = UI.compute(function()
-		local choices = self.Choices()
+	-- measured off the reactive graph: GetTextBoundsAsync yields and must never run inside a computed
+	local textWidth, textMeasure = UI.textWidth(function()
 		local font = self.FontFace()
 		local size = UI.Theme.FontSize()
-		local padding = if self.Padding then self.Padding().Offset else UI.Theme.Padding().Offset
-		local maxWidth = size
-
-		local params = Instance.new("GetTextBoundsParams")
-		params.Size = size
-		params.Width = math.huge
-		params.RichText = true
-
-		for _, choice in choices do
+		local requests = {}
+		for _, choice in self.Choices() do
+			local choiceFont = font
 			if typeof(choice) == "Font" then
-				font = choice
+				choiceFont = choice
 			elseif typeof(choice) == "EnumItem" then
 				if choice.Name == "Unknown" then
 					continue
 				end
 				if choice.EnumType == Enum.Font then
-					font = Font.fromEnum(choice :: Enum.Font)
+					choiceFont = Font.fromEnum(choice :: Enum.Font)
 				end
 			end
-
-			params.Font = font
-			params.Text = getName(choice)
-
-			maxWidth = math.max(maxWidth, math.ceil(UI.retryGetTextBoundsAsync(params).X))
+			table.insert(requests, { Text = getName(choice), Font = choiceFont, Size = size, RichText = true })
 		end
+		return requests
+	end)
 
+	local itemSize = UI.computed(function()
+		local size = UI.Theme.FontSize()
+		local padding = if self.Padding then self.Padding().Offset else UI.Theme.Padding().Offset
+		local maxWidth = math.max(size, textWidth())
 		return UDim2.fromOffset(maxWidth + padding * 2 + size, size + padding)
 	end)
 
@@ -100,9 +96,9 @@ function Class.new(properties: Properties?)
 		end,
 	} :: Button
 
-	UI.edit(headerButton._content.Label.UIPadding, { PaddingRight = UDim.new() })
+	UI.edit(headerButton._content.Label.UIPadding)({ PaddingRight = UDim.new() })
 
-	local cleanup = { itemSize }
+	local cleanup = { itemSize, textWidth, textMeasure }
 
 	self._instance = UI.new "Frame" {
 		ZIndex = 100,
@@ -110,10 +106,10 @@ function Class.new(properties: Properties?)
 		BackgroundTransparency = 1,
 		Size = itemSize,
 		headerButton,
-		[UI.Clean] = cleanup,
+		__CLEAN = cleanup,
 	} :: Frame & { Header: Button }
 
-	local absoluteSize = UI.state(self._instance, "AbsoluteSize")
+	local absoluteSize = UI.property(self._instance, "AbsoluteSize")
 	table.insert(cleanup, absoluteSize)
 
 	self.menu = UI.new "Menu" {
@@ -124,106 +120,102 @@ function Class.new(properties: Properties?)
 	} :: Menu
 	table.insert(cleanup, self.menu)
 
-	UI.edit(self.menu._instance.UICorner, {
+	UI.edit(self.menu._instance.UICorner)({
 		CornerRadius = UI.Theme.CornerPadded,
 	})
 
-	local choiceCleanup = {}
+	local isSelected = UI.selector(self.Value)
+	table.insert(cleanup, isSelected)
 
 	local selectedButton
-	local function updateChoices()
-		local selected = self.Value._value
-		for i, choice in self.Choices._value do
-			local name = getName(choice)
-			local font
-			if typeof(choice) == "Font" then
-				font = choice
-			elseif typeof(choice) == "EnumItem" then
-				if choice.Name == "Unknown" then
-					continue
+	local function createOption(i: number, choiceSignal: any)
+		local choiceButton
+		choiceButton = UI.new "Button" {
+			LayoutOrder = math.min(2 ^ 31 - 1, i),
+			ZIndex = 1e3,
+			Name = function()
+				return tostring(getName(choiceSignal()))
+			end,
+			Label = function()
+				return getName(choiceSignal())
+			end,
+			FontFace = function()
+				local choice = choiceSignal()
+				if typeof(choice) == "Font" then
+					return choice
+				elseif typeof(choice) == "EnumItem" and choice.EnumType == Enum.Font and choice.Name ~= "Unknown" then
+					return Font.fromEnum(choice :: Enum.Font)
 				end
-				if choice.EnumType == Enum.Font then
-					font = Font.fromEnum(choice :: Enum.Font)
-				end
+				return self.FontFace()
+			end,
+			TextSize = UI.Theme.FontSize,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Size = itemSize,
+			Visible = function()
+				local choice = choiceSignal()
+				return not (typeof(choice) == "EnumItem" and choice.Name == "Unknown")
+			end,
+
+			Activated = function()
+				local choice = choiceSignal:peek()
+				selectedButton = choiceButton._instance
+				self.Value(choice, true)
+				UI.deactivateState(self.menu.Visible, "floating")
+			end,
+		}
+		choiceButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
+		UI.edit(choiceButton._instance)({
+			BackgroundColor3 = function()
+				local hovering = choiceButton._hovering()
+				return if isSelected(choiceSignal()) and not hovering
+					then UI.Theme.Secondary()
+					elseif hovering or UI.Theme.Transparency() > 0 then UI.Theme.Secondary()
+					else UI.Theme.Primary()
+			end,
+			BackgroundTransparency = function()
+				return if not choiceButton._hovering()
+						and UI.Theme.Transparency() > 0
+						and not isSelected(choiceSignal())
+					then 1
+					else UI.Theme.TransparencyHeavy()
+			end,
+		})
+		local hoverEffect = UI.effect(UI.on(choiceButton._hovering, function(value)
+			if value then
+				UI.Sound.Hover02:Play()
 			end
-
-			local choiceButton
-			choiceButton = UI.new "Button" {
-				LayoutOrder = math.min(2 ^ 31 - 1, i),
-				ZIndex = 1e3,
-				Parent = self.menu._content,
-				Name = tostring(name),
-				Label = name,
-				FontFace = font,
-				TextSize = UI.Theme.FontSize,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				Size = itemSize,
-
-				Activated = function()
-					selectedButton = choiceButton._instance
-					self.Value(choice, true)
-					UI.deactivateState(self.menu.Visible, "floating")
-				end,
-			}
-			choiceButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
-			UI.edit(choiceButton._instance, {
-				BackgroundColor3 = function()
-					local hovering = choiceButton._hovering()
-					return if self.Value() == choice and not hovering
-						then UI.Theme.Secondary()
-						elseif hovering or UI.Theme.Transparency() > 0 then UI.Theme.Secondary()
-						else UI.Theme.Primary()
-				end,
-				BackgroundTransparency = function()
-					return if not choiceButton._hovering()
-							and UI.Theme.Transparency() > 0
-							and self.Value() ~= choice
-						then 1
-						else UI.Theme.TransparencyHeavy()
-				end,
-			})
-			table.insert(
-				choiceCleanup,
-				choiceButton._hovering:Connect(function(value)
-					if value then
-						UI.Sound.Hover02:Play()
-					end
-				end)
-			)
-
-			if choice == selected then
+		end, true))
+		hoverEffect:get()
+		local selectEffect = UI.effect(function()
+			if isSelected(choiceSignal()) then
 				selectedButton = choiceButton._instance
 			end
-		end
+		end)
+		selectEffect:get()
+
+		return choiceButton
 	end
 
-	table.insert(
-		cleanup,
-		self.menu.Visible:Connect(function(value)
-			if selectedButton and value then
-				local buttonHeight = selectedButton.AbsoluteSize.Y
-				local buttonPosition = selectedButton.AbsolutePosition.Y + self.menu._content.CanvasPosition.Y
-				local offset = math.round((self.menu._content.AbsoluteSize.Y / 2) / buttonHeight) * buttonHeight
-				self.menu._content.CanvasPosition =
-					Vector2.new(0, buttonPosition - self.menu._content.AbsolutePosition.Y - offset)
-			end
-		end)
-	)
+	local choicesNode = UI.forIndex(self.Choices, function(i, choiceSignal)
+		local option = createOption(i, choiceSignal)
+		UI.cleanup(option)
+		return option._instance
+	end)
+	table.insert(cleanup, headerButton)
+	table.insert(cleanup, choicesNode)
+	UI.edit(self.menu._content)({ choicesNode })
 
-	table.insert(
-		cleanup,
-		self.Choices:Connect(function(value)
-			for _, child in self.menu._content:GetChildren() do
-				if not child:IsA("UIBase") then
-					child:Destroy()
-				end
-			end
-			UI.cleanup(choiceCleanup)
-			updateChoices()
-		end)
-	)
-
-	updateChoices()
+	local menuVisibleEffect = UI.effect(UI.on(self.menu.Visible, function(value)
+		if selectedButton and value then
+			local buttonHeight = selectedButton.AbsoluteSize.Y
+			local buttonPosition = selectedButton.AbsolutePosition.Y + self.menu._content.CanvasPosition.Y
+			local offset = math.round((self.menu._content.AbsoluteSize.Y / 2) / buttonHeight) * buttonHeight
+			self.menu._content.CanvasPosition =
+				Vector2.new(0, buttonPosition - self.menu._content.AbsolutePosition.Y - offset)
+		end
+	end, true))
+	menuVisibleEffect:get()
+	table.insert(cleanup, menuVisibleEffect)
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end

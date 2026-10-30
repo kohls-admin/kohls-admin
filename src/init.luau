@@ -97,7 +97,7 @@ end)
 
 function _K.getCommandPrefix(from: number?)
 	if _K.IsClient then
-		return _K.client.playerPrefix._value
+		return _K.client.playerPrefix:peek()
 	end
 	return _K.Data.playerPrefix[from] or ";"
 end

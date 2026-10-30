@@ -41,12 +41,12 @@ function Bans.new(_K)
 	unbanDialog._content:Destroy()
 
 	local inputSize = function()
-		return UDim2.fromOffset(0, UI.Theme.FontSize + UI.Theme.PaddingWithStroke().Offset)
+		return UDim2.fromOffset(0, UI.Theme.FontSize() + UI.Theme.PaddingWithStroke().Offset)
 	end
 
-	local banType = UI.state("Server")
-	local banTypes = UI.state({ "Forever", "Timed", "Server" })
-	local banTarget = UI.state()
+	local banType = UI.signal("Server")
+	local banTypes = UI.signal({ "Forever", "Timed", "Server" })
+	local banTarget = UI.signal(nil)
 	local banReason = nil
 	local banDuration = 1
 	local banDurationUnit = UI.new "Select" {
@@ -56,8 +56,9 @@ function Bans.new(_K)
 	}
 
 	local banTargetInput
+	local lookup = 0
 	local function resetbanTargetInput()
-		banTargetInput.Value("")
+		banTargetInput:SetValue("")
 	end
 
 	banTargetInput = UI.new "Input" {
@@ -69,37 +70,50 @@ function Bans.new(_K)
 		Size = inputSize,
 		Value = "",
 
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Shrink,
-		},
+		UI.flex("shrink"),
 
 		[UI.Hook] = {
 			Value = function(value)
-				local userId
-				if tonumber(value) then
-					userId = tonumber(value)
-				else
-					local ok, result = pcall(_K.Service.Players.GetUserIdFromNameAsync, _K.Service.Players, value)
-					userId = ok and result
+				-- the name lookup yields, so it runs off the reactive graph; a newer lookup drops this one
+				-- clear the target until it resolves so actions can't hit the previous user
+				lookup += 1
+				local current = lookup
+				banTarget:set(nil)
+				if value == "" then
+					UI.flush()
+					return
 				end
+				task.spawn(function()
+					local userId
+					if tonumber(value) then
+						userId = tonumber(value)
+					else
+						local ok, result = pcall(_K.Service.Players.GetUserIdFromNameAsync, _K.Service.Players, value)
+						userId = ok and result
+					end
+					if current ~= lookup then
+						return
+					end
 
-				local fauxArg = {
-					_K = _K,
-					definition = _K.Registry.commands.ban.args[1],
-					command = {
-						from = _K.LocalPlayer.UserId,
-						fromRank = _K.Auth.getRank(_K.LocalPlayer.UserId),
-						fromRole = {},
-						rank = _K.Auth.hasCommand(_K.LocalPlayer.UserId, "ban") or 0,
-					},
-				}
+					local fauxArg = {
+						_K = _K,
+						definition = _K.Registry.commands.ban.args[1],
+						command = {
+							from = _K.LocalPlayer.UserId,
+							fromRank = _K.Auth.getRank(_K.LocalPlayer.UserId),
+							fromRole = {},
+							rank = _K.Auth.hasCommand(_K.LocalPlayer.UserId, "ban") or 0,
+						},
+					}
 
-				_K.Data.targetLimits[_K.LocalPlayer.UserId] = 0
-				if userId and not _K.Auth.targetUserArgument(fauxArg, userId, userId) then
-					userId = nil
-					task.defer(resetbanTargetInput)
-				end
-				banTarget(userId)
+					_K.Data.targetLimits[_K.LocalPlayer.UserId] = 0
+					if userId and not _K.Auth.targetUserArgument(fauxArg, userId, userId) then
+						userId = nil
+						task.defer(resetbanTargetInput)
+					end
+					banTarget:set(userId)
+					UI.flush()
+				end)
 			end,
 		},
 	}
@@ -119,7 +133,7 @@ function Bans.new(_K)
 		},
 	}
 
-	local function createItem(self)
+	local function createItem(self, lineData)
 		local tooltip = UI.new "Tooltip" {
 			FontFace = UI.Theme.FontMono,
 			Text = "Loading...",
@@ -132,6 +146,7 @@ function Bans.new(_K)
 			term = nil,
 			name = "",
 			tipText = "",
+			tooltip = tooltip,
 		}
 
 		local editBanButton = UI.new "Button" {
@@ -146,10 +161,10 @@ function Bans.new(_K)
 			Text = "",
 			Activated = function()
 				banType(if itemRef.term == "Server" or itemRef.term == "Forever" then itemRef.term else "Timed")
-				banTarget(tonumber(itemRef.userId))
-				banTargetInput.Value(itemRef.userId)
+				banTarget:set(tonumber(itemRef.userId))
+				banTargetInput:SetValue(itemRef.userId)
 				banReason = itemRef.reason
-				banReasonInput.Value(itemRef.reason or "")
+				banReasonInput:SetValue(itemRef.reason or "")
 				newBanDialog.Title("Edit Ban")
 				newBanDialog.Visible(true)
 			end,
@@ -181,22 +196,21 @@ function Bans.new(_K)
 			UI.new "Tooltip" { Parent = unbanButton, Text = "Remove Ban", Hovering = unbanButton._hovering }
 		)
 
-		UI.edit(editBanButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
-		UI.edit(unbanButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
+		UI.edit(editBanButton._instance.UICorner)({ CornerRadius = UI.Theme.CornerPadded })
+		UI.edit(unbanButton._instance.UICorner)({ CornerRadius = UI.Theme.CornerPadded })
 
 		itemRef._instance = UI.new "Frame" {
 			BackgroundTransparency = 1,
 			Size = self.ItemSize,
 
-			UI.new "UIPadding" {
-				PaddingBottom = UI.Theme.PaddingWithStroke,
+			UI.padding {
+				bottom = UI.Theme.PaddingWithStroke,
 			},
 
-			UI.new "UIListLayout" {
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-				FillDirection = Enum.FillDirection.Horizontal,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UI.Theme.PaddingWithStroke,
+			UI.list {
+				verticalAlign = "center",
+				direction = "x",
+				gap = UI.Theme.PaddingWithStroke,
 			},
 
 			UI.new "ImageLabel" {
@@ -205,9 +219,7 @@ function Bans.new(_K)
 				Size = UDim2.new(1, 0, 1, 0),
 				SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-				UI.new "UICorner" {
-					CornerRadius = UI.Theme.CornerPadded,
-				},
+				UI.corner(UI.Theme.CornerPadded),
 				UI.new "Stroke" {},
 			},
 
@@ -241,29 +253,28 @@ function Bans.new(_K)
 				TextTruncate = Enum.TextTruncate.SplitWord,
 				TextXAlignment = Enum.TextXAlignment.Right,
 
-				UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
+				UI.flex("fill"),
 			},
 
 			editBanButton,
 			unbanButton,
 			tooltip,
-			[UI.Clean] = cleanup,
+			__CLEAN = cleanup,
 		}
 
-		table.insert(
-			cleanup,
-			tooltip.Visible:Connect(function()
-				if tooltip.Visible._value then
-					tooltip.Text(itemRef.tipText)
-				end
-			end)
-		)
+		local tipEffect = UI.effect(UI.on(tooltip.Visible, function()
+			if tooltip.Visible:peek() then
+				tooltip.Text(itemRef.tipText)
+			end
+		end, true))
+		tipEffect:get()
+		table.insert(cleanup, tipEffect)
 
 		return itemRef
 	end
 
-	local function renderItem(self, itemData, userId)
-		local ban = _K.Data.bans[userId]
+	local function renderItem(self, itemData, lineData)
+		local ban = _K.Data.bans[lineData]
 		if ban and ban.renderTextLeft then
 			local item = itemData._instance
 			item.Left.Text = ban.renderTextLeft
@@ -275,6 +286,10 @@ function Bans.new(_K)
 			itemData.userId = ban.userId
 			itemData.reason = ban[2]
 			itemData.term = ban.term
+			-- a row recycled in place while its tooltip is shown must not keep the previous ban's text
+			if itemData.tooltip.Visible:peek() then
+				itemData.tooltip.Text(itemData.tipText)
+			end
 		end
 	end
 
@@ -282,22 +297,22 @@ function Bans.new(_K)
 		Label = "Create a new ban",
 
 		Activated = function()
-			if not newBanDialog.Visible._value then
-				banTarget(nil)
-				banTargetInput.Value("")
+			if not newBanDialog.Visible:peek() then
+				banTarget:set(nil)
+				banTargetInput:SetValue("")
 				banReason = nil
-				banReasonInput.Value("")
+				banReasonInput:SetValue("")
 				newBanDialog.Title("New Ban")
 				UI.Sound.Hover03:Play()
 			end
-			newBanDialog.Visible(not newBanDialog.Visible._value)
+			newBanDialog.Visible(not newBanDialog.Visible:peek())
 		end,
 	}
 
-	emptyBanListButton._instance.Visible = _K.Util.Table.countKeys(_K.client.bans._value) == 0
-	_K.client.bans:Connect(function()
-		emptyBanListButton._instance.Visible = _K.Util.Table.countKeys(_K.client.bans._value) == 0
-	end)
+	emptyBanListButton._instance.Visible = _K.Util.Table.countKeys(_K.client.bans:peek()) == 0
+	UI.effect(UI.on(_K.client.bans, function()
+		emptyBanListButton._instance.Visible = _K.Util.Table.countKeys(_K.client.bans:peek()) == 0
+	end, true)):get()
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Bans",
@@ -427,7 +442,7 @@ function Bans.new(_K)
 		end
 		banTypeListItem._instance.Visible = savedBans
 	end
-	_K.Hook.authChanged:Connect(updateAuth)
+	local _ = _K.Hook.authChanged:Connect(updateAuth)
 	updateAuth()
 
 	newBanDialog = UI.new "Dialog" {
@@ -442,12 +457,7 @@ function Bans.new(_K)
 			newBanDialog.Visible(false)
 		end,
 
-		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.PaddingWithStroke,
-			PaddingBottom = UI.Theme.PaddingWithStroke,
-			PaddingLeft = UI.Theme.PaddingWithStroke,
-			PaddingRight = UI.Theme.PaddingWithStroke,
-		},
+		UI.padding(UI.Theme.PaddingWithStroke),
 
 		UI.new "ListItem" {
 			Text = "User",
@@ -458,13 +468,8 @@ function Bans.new(_K)
 				Image = function()
 					return `rbxthumb://type=AvatarHeadShot&id={banTarget()}&w=48&h=48`
 				end,
-				UI.new "UIAspectRatioConstraint" {
-					AspectType = Enum.AspectType.ScaleWithParentSize,
-					DominantAxis = Enum.DominantAxis.Height,
-				},
-				UI.new "UICorner" {
-					CornerRadius = UI.Theme.CornerPadded,
-				},
+				UI.aspectRatio(1, "scale", "height"),
+				UI.corner(UI.Theme.CornerPadded),
 			},
 			banTargetInput,
 		},
@@ -502,13 +507,13 @@ function Bans.new(_K)
 		UI.new "Button" {
 			Label = "Ban",
 			Activated = function()
-				if banTarget._value then
+				if banTarget:peek() then
 					newBanDialog.Visible(false)
-					local duration: number = if banType._value == "Server"
+					local duration: number = if banType:peek() == "Server"
 						then 0
-						elseif banType._value == "Forever" then -1
-						else banDuration * _K.Util.Time.fromUnit(banDurationUnit.Value._value)
-					_K.Remote.Ban:Fire(banTarget._value, banReason, duration)
+						elseif banType:peek() == "Forever" then -1
+						else banDuration * _K.Util.Time.fromUnit(banDurationUnit.Value:peek())
+					_K.Remote.Ban:Fire(banTarget:peek(), banReason, duration)
 				end
 			end,
 		},
@@ -524,42 +529,37 @@ function Bans.new(_K)
 		Size = UDim2.new(1, 0, 1, 0),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-		},
+		UI.padding(UI.Theme.Padding),
 
 		Activated = function()
-			if not newBanDialog.Visible._value then
-				banTarget(nil)
-				banTargetInput.Value("")
+			if not newBanDialog.Visible:peek() then
+				banTarget:set(nil)
+				banTargetInput:SetValue("")
 				banReason = nil
-				banReasonInput.Value("")
+				banReasonInput:SetValue("")
 				newBanDialog.Title("New Ban")
 				UI.Sound.Hover03:Play()
 			end
-			newBanDialog.Visible(not newBanDialog.Visible._value)
+			newBanDialog.Visible(not newBanDialog.Visible:peek())
 		end,
 	}
 	UI.new "Tooltip" { Parent = newBanButton, Text = "New Ban", Hovering = newBanButton._hovering }
-	UI.edit(newBanButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
+	UI.edit(newBanButton._instance.UICorner)({ CornerRadius = UI.Theme.CornerPadded })
 
 	scroller._input._instance = UI.new "Frame" {
 		Parent = scroller,
 		Name = "FilterInput",
+		LayoutOrder = -1,
 
 		BackgroundTransparency = 1,
 		Size = function()
 			return UDim2.new(0, 0, 0, UI.Theme.FontSize() + UI.Theme.PaddingDouble().Offset)
 		end,
-		UI.new "UIListLayout" {
-			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UI.Theme.PaddingWithStroke,
-			SortOrder = Enum.SortOrder.LayoutOrder,
+		UI.list {
+			direction = "x",
+			gap = UI.Theme.PaddingWithStroke,
 		},
-		UI.edit(scroller._input, { UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill } }),
+		UI.edit(scroller._input)({ UI.flex("fill") }),
 		newBanButton,
 	}
 
