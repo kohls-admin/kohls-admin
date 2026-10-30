@@ -782,6 +782,15 @@ return {
 				if not spectators[player] or typeof(cframe) ~= "CFrame" or typeof(distance) ~= "number" then
 					return
 				end
+				-- forwarded to the spectators' cameras, drop NaN and infinite values
+				if distance ~= distance or math.abs(distance) == math.huge then
+					return
+				end
+				for _, n in { cframe:GetComponents() } do
+					if n ~= n or math.abs(n) == math.huge then
+						return
+					end
+				end
 				for _, player in spectators[player] do
 					spectateRemote:Fire(player, cframe, distance)
 				end

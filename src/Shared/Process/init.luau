@@ -197,6 +197,15 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 
 	local ok, result, prepared = Process.prepareCommands(_K, from, rawText, global)
 
+	if ok == false and _K.IsServer and limit then
+		-- failed commands still cost a notification and a filtered log, count them so they can't be spammed
+		if not commandLimits[from] then
+			commandLimits[from] = 0
+			task.delay(cooldown, resetLimit, from)
+		end
+		commandLimits[from] += 1
+	end
+
 	local commandsRan = {}
 	local commandErrors = {}
 

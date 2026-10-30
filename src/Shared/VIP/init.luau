@@ -133,6 +133,11 @@ if Util.Service.Run:IsServer() then
 			return
 		end
 
+		-- the effect methods destroy an Instance passed as `name`, a client must only send the colour name
+		if type(match) ~= "string" or type(name) ~= "string" or #name > 64 then
+			return
+		end
+
 		local ugcEffect = adminUGCMap[match]
 		if not (ugcEffect and player.Character) then
 			return
@@ -250,6 +255,9 @@ if Util.Service.Run:IsServer() then
 	Remote.Title:Connect(function(player: Player, title: string?)
 		if not Data.settings.vip then
 			return
+		end
+		if type(title) ~= "string" then
+			title = nil
 		end
 		local titleDefinition = Title.definition[title and string.lower(title)]
 		if titleDefinition then

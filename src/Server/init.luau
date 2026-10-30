@@ -508,12 +508,29 @@ return function(_K)
 
 		-- server network events
 		local lastLog, cachedLogsBuffer
+		-- each init sends the bans, logs, members and settings, don't let a client request them in a loop
+		local INIT_COOLDOWN = 10
+		local lastInit: { [Player]: number } = {}
+		_K.Service.Players.PlayerRemoving:Connect(function(player)
+			lastInit[player] = nil
+		end)
 		_K.Remote.Init:Connect(function(player, initData)
-			local attributes = initData.Attributes
-			if attributes then
+			local now = os.clock()
+			if lastInit[player] and now - lastInit[player] < INIT_COOLDOWN then
+				return
+			end
+			lastInit[player] = now
+
+			local attributes = type(initData) == "table" and initData.Attributes
+			if type(attributes) == "table" then
 				for attribute, valueType in attributeSchema do
 					local value = attributes[attribute]
-					if typeof(value) == valueType then
+					-- player attributes replicate to everyone, keep them small and finite
+					if
+						typeof(value) == valueType
+						and (valueType ~= "string" or #value <= 32)
+						and (valueType ~= "number" or (value == value and math.abs(value) ~= math.huge))
+					then
 						player:SetAttribute("_K" .. attribute, value)
 					end
 				end
@@ -613,6 +630,9 @@ return function(_K)
 		_ = _K.Remote.VIPNotification
 
 		_K.Remote.Command:Connect(function(player: Player, message: string)
+			if type(message) ~= "string" then
+				return
+			end
 			_K.Process.runCommands(_K, player.UserId, message)
 		end)
 
@@ -900,7 +920,7 @@ return function(_K)
 		end)
 
 		_K.Remote.Idled:Connect(function(player: Player, idleTime: number)
-			if type(idleTime) == "number" then
+			if type(idleTime) == "number" and idleTime >= 0 and idleTime < math.huge then
 				player:SetAttribute("_KIdleTime", idleTime)
 			end
 		end)
@@ -912,14 +932,75 @@ return function(_K)
 			return clone
 		end
 
+		-- the admin system's own instances, changing them breaks it for everyone
+		local function isProtectedInstance(instance: Instance): boolean
+			for _, root in { Package, Server } do
+				if instance == root or instance:IsDescendantOf(root) or root:IsDescendantOf(instance) then
+					return true
+				end
+			end
+			return false
+		end
+
+		-- the player an instance belongs to, through the Player object or their character
+		local function getInstanceOwner(instance: Instance): Player?
+			if instance:IsA("Player") then
+				return instance
+			end
+			local owner = instance:FindFirstAncestorWhichIsA("Player")
+			if owner then
+				return owner
+			end
+			for _, player in _K.Service.Players:GetPlayers() do
+				local character = player.Character
+				if character and (instance == character or instance:IsDescendantOf(character)) then
+					return player
+				end
+			end
+			return nil
+		end
+
 		_K.Remote.Explorer:Connect(function(player: Player, action: string, data: any, selected: Instance?)
 			local explorerRank = _K.Auth.hasCommand(player.UserId, "explorer")
-			if not explorerRank then
+			if not explorerRank or type(data) ~= "table" then
 				return
 			end
 
-			if action == "PASTE" and selected then
-				for _, copy: Instance in data do
+			local fauxArg = {
+				_K = _K,
+				definition = _K.Registry.commands.ban.args[1],
+				command = {
+					from = player.UserId,
+					fromRank = _K.Auth.getRank(player.UserId),
+					fromRole = {},
+					rank = explorerRank or 0,
+				},
+			}
+
+			-- instances of other players (their character, PlayerGui, Backpack...) follow the same rank rules as
+			-- targeting the player, so a lower rank can't run scripts on or remove the parts of a higher rank
+			local function canModify(instance: Instance): boolean
+				if isProtectedInstance(instance) then
+					return false
+				end
+				local owner = getInstanceOwner(instance)
+				if owner and (owner ~= player or instance == owner) then
+					if _K.Data.targetLimits[player.UserId] then
+						_K.Data.targetLimits[player.UserId] -= 1
+					end
+					return _K.Auth.targetUserArgument(fauxArg, owner.UserId, owner.UserId) ~= nil
+				end
+				return true
+			end
+
+			if action == "PASTE" then
+				if typeof(selected) ~= "Instance" or not canModify(selected) then
+					return
+				end
+				for _, copy in data do
+					if typeof(copy) ~= "Instance" or isProtectedInstance(copy) then
+						continue
+					end
 					local wasArchivable = copy.Archivable
 					copy.Archivable = true
 					pcall(cloneInstanceUnsafe, copy, selected)
@@ -928,29 +1009,9 @@ return function(_K)
 					end
 				end
 			elseif action == "DELETE" then
-				local fauxArg = {
-					_K = _K,
-					definition = _K.Registry.commands.ban.args[1],
-					command = {
-						from = player.UserId,
-						fromRank = _K.Auth.getRank(player.UserId),
-						fromRole = {},
-						rank = explorerRank or 0,
-					},
-				}
-
 				for _, instance in data do
-					if typeof(instance) ~= "Instance" then
+					if typeof(instance) ~= "Instance" or not canModify(instance) then
 						continue
-					end
-
-					if instance:IsA("Player") then
-						if _K.Data.targetLimits[player.UserId] then
-							_K.Data.targetLimits[player.UserId] -= 1
-						end
-						if not _K.Auth.targetUserArgument(fauxArg, instance.UserId, instance.UserId) then
-							continue
-						end
 					end
 
 					pcall(game.Destroy, instance)
