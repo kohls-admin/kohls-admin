@@ -17,16 +17,14 @@ return {
 					Icon = "rbxassetid://71961243872230",
 					Title = "Bans",
 				}
-				_K.UI.edit(window, {
-					[_K.UI.Event] = {
-						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.Bans,
-								})
-							end
-						end,
-					},
+				_K.UI.edit(window)({
+					_Visible = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs)({
+								_K.client.dashboard.Bans,
+							})
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -34,7 +32,7 @@ return {
 		end,
 
 		runClient = function(context)
-			context._K.UI.edit(context.env.window, {
+			context._K.UI.edit(context.env.window)({
 				Visible = true,
 				context._K.client.dashboard.Bans,
 			})
@@ -57,16 +55,14 @@ return {
 					Icon = "rbxassetid://71961243872230",
 					Title = "Members",
 				}
-				_K.UI.edit(window, {
-					[_K.UI.Event] = {
-						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.Members,
-								})
-							end
-						end,
-					},
+				_K.UI.edit(window)({
+					_Visible = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs)({
+								_K.client.dashboard.Members,
+							})
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -74,7 +70,7 @@ return {
 		end,
 
 		runClient = function(context)
-			context._K.UI.edit(context.env.window, {
+			context._K.UI.edit(context.env.window)({
 				Visible = true,
 				context._K.client.dashboard.Members,
 			})
@@ -96,16 +92,14 @@ return {
 					Icon = "rbxassetid://71961243872230",
 					Title = "Servers",
 				}
-				_K.UI.edit(window, {
-					[_K.UI.Event] = {
-						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.Servers,
-								})
-							end
-						end,
-					},
+				_K.UI.edit(window)({
+					_Visible = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs)({
+								_K.client.dashboard.Servers,
+							})
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -113,7 +107,7 @@ return {
 		end,
 
 		runClient = function(context)
-			context._K.UI.edit(context.env.window, {
+			context._K.UI.edit(context.env.window)({
 				Visible = true,
 				context._K.client.dashboard.Servers,
 			})
@@ -318,7 +312,7 @@ return {
 					end
 					local system = channels:FindFirstChild("RBXSystem")
 					system:DisplaySystemMessage(
-						`<font color="#{_K.UI.Theme[if muted then "Invalid" else "Valid"]._value:ToHex()}"><b>You have been {muteText}!</b></font>`
+						`<font color="#{_K.UI.Theme[if muted then "Invalid" else "Valid"]:peek():ToHex()}"><b>You have been {muteText}!</b></font>`
 					)
 				end
 			end)
@@ -580,7 +574,7 @@ return {
 
 			_K.Service.Players.PlayerRemoving:Connect(function(player)
 				if cleanup[player] then
-					_K.Flux.cleanup(cleanup[player])
+					_K.Flux.dispose(cleanup[player])
 					cleanup[player] = nil
 				end
 			end)
@@ -942,9 +936,9 @@ return {
 			local UI = _K.UI
 
 			local env = {
-				command = UI.state("give"),
-				removeCommand = UI.state("removetools"),
-				target = UI.state(nil),
+				command = UI.signal("give"),
+				removeCommand = UI.signal("removetools"),
+				target = UI.signal(nil),
 			}
 
 			local function hasCommand()
@@ -989,7 +983,7 @@ return {
 							Visible = hasCommand,
 
 							Activated = function()
-								local cmd = `{_K.getCommandPrefix()}{env.command._value} me {item.tool}`
+								local cmd = `{_K.getCommandPrefix()}{env.command:peek()} me {item.tool}`
 								_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
 							end,
 						},
@@ -1007,8 +1001,8 @@ return {
 							Visible = hasTarget,
 
 							Activated = function()
-								if env.target._value then
-									_K.Remote.RemoveTool:Fire(env.target._value, item.tool)
+								if env.target:peek() then
+									_K.Remote.RemoveTool:Fire(env.target:peek(), item.tool)
 									-- TODO: refresh list
 								end
 							end,
@@ -1026,19 +1020,12 @@ return {
 				ItemSize = scrollerItemSize,
 			}
 
-			UI.edit(scroller._scroller, {
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
+			UI.edit(scroller._scroller)({
+				UI.flex("fill"),
 			})
 
-			UI.edit(scroller._instance, {
-				UI.new "UIPadding" {
-					PaddingTop = UDim.new(0, 1),
-					PaddingBottom = UDim.new(0, 1),
-					PaddingLeft = UDim.new(0, 1),
-					PaddingRight = UDim.new(0, 1),
-				},
+			UI.edit(scroller._instance)({
+				UI.padding(UDim.new(0, 1)),
 			})
 
 			task.defer(function()
@@ -1065,7 +1052,7 @@ return {
 
 					Activated = function()
 						local cmd =
-							`{_K.getCommandPrefix()}{env.removeCommand._value} {env.target._value and env.target._value.Name or "me"}`
+							`{_K.getCommandPrefix()}{env.removeCommand:peek()} {env.target:peek() and env.target:peek().Name or "me"}`
 						_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
 					end,
 				}
@@ -1148,7 +1135,7 @@ return {
 
 			context.env.command("give")
 			context.env.removeCommand("removetools")
-			context.env.target(nil)
+			context.env.target:set(nil)
 			context.env.scroller.List(toolNames)
 			context.env.window.Title("Tools")
 			context.env.window._instance.Visible = true
@@ -1177,7 +1164,7 @@ return {
 			local toolsEnv = context._K.Registry.commands.tools.env
 			toolsEnv.command("startergive")
 			toolsEnv.removeCommand("starterremove")
-			toolsEnv.target(nil)
+			toolsEnv.target:set(nil)
 			toolsEnv.scroller.List(toolNames)
 			toolsEnv.window.Title("Starter Tools")
 			toolsEnv.window._instance.Visible = true
@@ -1207,22 +1194,23 @@ return {
 				for _, source in { player.Character, player:FindFirstChildOfClass("Backpack") } do
 					table.insert(env.connections, source.ChildAdded:Connect(env.childChanged))
 					table.insert(env.connections, source.ChildRemoved:Connect(env.childChanged))
-					table.insert(env.connections, player.Destroying:Once(env.removeConnections))
-					table.insert(
-						env.connections,
-						player.CharacterAdded:Once(function(character)
-							env.createConnections(_K.Service.Players:GetPlayerFromCharacter(character))
-						end)
-					)
-					table.insert(
-						env.connections,
-						_K.Registry.commands.tools.env.window.Title:Connect(env.removeConnections)
-					)
 				end
+				table.insert(env.connections, player.Destroying:Once(env.removeConnections))
+				table.insert(
+					env.connections,
+					player.CharacterAdded:Once(function(character)
+						env.createConnections(_K.Service.Players:GetPlayerFromCharacter(character))
+					end)
+				)
+				local titleEff =
+					_K.Flux.effect(_K.Flux.on(_K.Registry.commands.tools.env.window.Title, env.removeConnections, true))
+				titleEff:get()
+				table.insert(env.connections, titleEff)
 			end
 
 			function env.removeConnections()
-				_K.Flux.cleanup(env.connections)
+				_K.Flux.dispose(env.connections)
+				table.clear(env.connections)
 				env.target = nil
 			end
 
@@ -1259,7 +1247,7 @@ return {
 				local toolsEnv = context._K.Registry.commands.tools.env
 				toolsEnv.command("give")
 				toolsEnv.removeCommand("removetools")
-				toolsEnv.target(player)
+				toolsEnv.target:set(player)
 				toolsEnv.window.Title(player.Name .. "'s Tools", true)
 				toolsEnv.window._instance.Visible = true
 
@@ -1751,7 +1739,7 @@ return {
 			end)
 
 			_K.Service.Players.PlayerRemoving:Connect(function(player)
-				_K.Flux.cleanup(cleanup[player])
+				_K.Flux.dispose(cleanup[player])
 				cleanup[player] = nil
 			end)
 
@@ -1964,10 +1952,10 @@ return {
 			end)
 
 			_K.Service.Players.PlayerRemoving:Connect(function(player)
-				_K.Flux.cleanup(cleanup[player])
+				_K.Flux.dispose(cleanup[player])
 				cleanup[player] = nil
 				local parts = Jail.parts[player.UserId]
-				_K.Flux.cleanup(parts)
+				_K.Flux.dispose(parts)
 				Jail.parts[player.UserId] = nil
 			end)
 

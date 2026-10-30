@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {
@@ -20,14 +20,13 @@ function Class.new(properties: Properties?)
 
 	local cleanup = {}
 
-	local listLayout = UI.new "UIListLayout" {
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = self.Padding,
-		HorizontalAlignment = Enum.HorizontalAlignment.Left,
-		VerticalAlignment = Enum.VerticalAlignment.Top,
+	local listLayout = UI.list {
+		gap = self.Padding,
+		horizontalAlign = "start",
+		verticalAlign = "start",
 	}
 
-	local contentSize = UI.state(listLayout, "AbsoluteContentSize")
+	local contentSize = UI.property(listLayout, "AbsoluteContentSize")
 	table.insert(cleanup, contentSize)
 
 	local headerTransparency = UI.tween(function()
@@ -35,22 +34,50 @@ function Class.new(properties: Properties?)
 	end, UI.Theme.TweenOut)
 	table.insert(cleanup, headerTransparency)
 
+	-- motion nodes bound straight to a property are not owned by the instance: destroy them with it
+	local listSize = UI.tween(function()
+		local fontSize, padding = UI.Theme.FontSize(), UI.Theme.Padding().Offset
+		local height = if self.Collapsed()
+			then fontSize + padding * 4
+			else contentSize().Y + (if self.Label() ~= "" then fontSize + padding * 6 else padding * 2)
+		return UDim2.new(1, 0, 0, height)
+	end, UI.Theme.TweenOut)
+	table.insert(cleanup, listSize)
+
+	local arrowRotation = UI.tween(function()
+		return if self.Collapsed() then -90 else 0
+	end, UI.Theme.TweenOut)
+	table.insert(cleanup, arrowRotation)
+
+	local contentFrameSize = UI.tween(function()
+		local collapse = self.Collapsed()
+		return UDim2.new(
+			1,
+			0,
+			if collapse then 0 else 1,
+			if collapse then 0 else -UI.Theme.FontSize() + self.Padding().Offset * 2
+		)
+	end, UI.Theme.TweenOut)
+	table.insert(cleanup, contentFrameSize)
+	local function onHeaderActivated()
+		if self.Collapsible:peek() then
+			self.Collapsed(not self.Collapsed:peek())
+			if self.Collapsed:peek() then
+				UI.Sound.Hover01:Play()
+			else
+				UI.Sound.Hover03:Play()
+			end
+		end
+	end
+
 	self._instance = UI.new "Frame" {
 		Name = "List",
 		BackgroundColor3 = UI.Theme.Secondary,
 		BackgroundTransparency = UI.Theme.TransparencyMax,
 		ClipsDescendants = true,
-		Size = UI.tween(function()
-			local fontSize, padding = UI.Theme.FontSize(), UI.Theme.Padding().Offset
-			local height = if self.Collapsed()
-				then fontSize + padding * 4
-				else contentSize().Y + (if self.Label() ~= "" then fontSize + padding * 6 else padding * 2)
-			return UDim2.new(1, 0, 0, height)
-		end, UI.Theme.TweenOut),
+		Size = listSize,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
+		UI.corner(UI.Theme.CornerPadded),
 		UI.new "Stroke" { Transparency = UI.Theme.TransparencyBalanced },
 
 		UI.new "TextButton" {
@@ -66,12 +93,7 @@ function Class.new(properties: Properties?)
 				return self.Collapsible() or self.Label() ~= ""
 			end,
 
-			UI.new "UIPadding" {
-				PaddingLeft = self.Padding,
-				PaddingRight = self.Padding,
-				PaddingTop = self.Padding,
-				PaddingBottom = self.Padding,
-			},
+			UI.padding(self.Padding),
 
 			UI.new "ImageLabel" {
 				Name = "Arrow",
@@ -83,11 +105,9 @@ function Class.new(properties: Properties?)
 				ImageColor3 = UI.Theme.PrimaryText,
 				ImageTransparency = headerTransparency,
 				Visible = self.Collapsible,
-				Rotation = UI.tween(function()
-					return if self.Collapsed() then -90 else 0
-				end, UI.Theme.TweenOut),
+				Rotation = arrowRotation,
 
-				UI.new "UIAspectRatioConstraint" {},
+				UI.aspectRatio(1),
 			},
 
 			UI.new "TextLabel" {
@@ -96,7 +116,12 @@ function Class.new(properties: Properties?)
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				Position = function()
-					return UDim2.new(0, if self.Collapsible() then UI.Theme.FontSize() else UI.Theme.Padding(), 0, 0)
+					return UDim2.new(
+						0,
+						if self.Collapsible() then UI.Theme.FontSize() else UI.Theme.Padding().Offset,
+						0,
+						0
+					)
 				end,
 				Size = function()
 					return UDim2.new(1, -UI.Theme.FontSize(), 0, 0)
@@ -114,18 +139,9 @@ function Class.new(properties: Properties?)
 				TextXAlignment = "Left",
 			},
 
-			Activated = function()
-				if self.Collapsible._value then
-					self.Collapsed(not self.Collapsed._value)
-					if self.Collapsed._value then
-						UI.Sound.Hover01:Play()
-					else
-						UI.Sound.Hover03:Play()
-					end
-				end
-			end,
+			Activated = onHeaderActivated,
 		},
-		[UI.Clean] = cleanup,
+		__CLEAN = cleanup,
 	} :: Frame & { UIListLayout: UIListLayout, UIPadding: UIPadding }
 
 	self._content = UI.new "Frame" {
@@ -134,25 +150,15 @@ function Class.new(properties: Properties?)
 		BackgroundTransparency = 1,
 		Position = function()
 			local padding = self.Padding().Offset
-			return UDim2.new(0, 0, 0, (if self.Label() ~= "" then UI.Theme.FontSize + padding * 2 else padding))
+			return UDim2.new(0, 0, 0, (if self.Label() ~= "" then UI.Theme.FontSize() + padding * 2 else padding))
 		end,
-		Size = UI.tween(function()
-			local collapse = self.Collapsed()
-			return UDim2.new(
-				1,
-				0,
-				if collapse then 0 else 1,
-				if collapse then 0 else -UI.Theme.FontSize + self.Padding().Offset * 2
-			)
-		end, UI.Theme.TweenOut),
+		Size = contentFrameSize,
 		ClipsDescendants = true,
 
 		listLayout,
-		UI.new "UIPadding" {
-			PaddingLeft = self.Padding,
-			PaddingRight = self.Padding,
-			PaddingTop = UDim.new(0, 1),
-			PaddingBottom = UDim.new(0, 1),
+		UI.padding {
+			x = self.Padding,
+			y = UDim.new(0, 1),
 		},
 	} :: Frame & {
 		UICorner: UICorner,

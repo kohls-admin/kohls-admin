@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {
@@ -12,7 +12,7 @@ local Class = {}
 Class.__index = Class
 setmetatable(Class, BaseClass)
 
-local boxSize = UI.compute(function()
+local boxSize = UI.computed(function()
 	return UDim2.fromOffset(UI.Theme.FontSizeLarger(), UI.Theme.FontSizeLarger())
 end)
 
@@ -20,38 +20,37 @@ function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
+	-- motion nodes bound straight to a property are not owned by the instance: destroy them with it
+	local checkmarkSize = UI.tween(function()
+		return UDim2.new(if self.Value() then 1 else 0, 0, 1, 0)
+	end, UI.Theme.TweenOut)
+	local function onActivated()
+		self:ToggleValue()
+	end
+
 	self._instance = UI.new "TextButton" {
 		AutoLocalize = false,
 		Name = "Checkbox",
 		Active = true,
 		AnchorPoint = Vector2.new(1, 0.5),
-		BackgroundColor3 = UI.Theme.Secondary,
-		BackgroundTransparency = UI.Theme.TransparencyHeavy,
+		BackgroundColor3 = UI.pick(self.Value, UI.Theme.Valid, UI.Theme.Secondary),
+		BackgroundTransparency = UI.pick(self.Value, 0, UI.Theme.TransparencyHeavy),
 		Position = UDim2.new(1, 0, 0.5, 0),
 		Text = "",
 		TextTransparency = 1,
 		Size = boxSize,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
+		UI.corner(UI.Theme.CornerRadius),
 
 		UI.new "Stroke" {},
 
-		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.PaddingHalf,
-			PaddingRight = UI.Theme.PaddingHalf,
-			PaddingBottom = UI.Theme.PaddingHalf,
-			PaddingLeft = UI.Theme.PaddingHalf,
-		},
+		UI.padding(UI.Theme.PaddingHalf),
 
 		UI.new "Frame" {
 			Name = "Checkmark",
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
-			Size = UI.tween(function()
-				return UDim2.new(if self.Value() then 1 else 0, 0, 1, 0)
-			end, UI.Theme.TweenOut),
+			Size = checkmarkSize,
 
 			UI.new "ImageLabel" {
 				AnchorPoint = Vector2.new(0, 0.5),
@@ -64,15 +63,9 @@ function Class.new(properties: Properties?)
 			},
 		},
 
-		Activated = function()
-			local value = not UI.raw(self.Value)
-			self.Value(value)
-			if value then
-				UI.Sound.Hover03:Play()
-			else
-				UI.Sound.Hover01:Play()
-			end
-		end,
+		Activated = onActivated,
+
+		__CLEAN = { checkmarkSize },
 	} :: TextButton & {
 		UICorner: UICorner,
 		UIStroke: UIStroke,

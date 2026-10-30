@@ -16,14 +16,16 @@ return {
 		optionalPrefix = true,
 		runClient = function(context)
 			local commandBarKey = context._K.client.hotkeys.commandBar
-			local commandBarKeyRaw = context._K.UI.UserInputService:GetStringForKeyCode(commandBarKey.key._value)
+			local commandBarMods = commandBarKey.mods:peek()
+			local commandBarKeyRaw = context._K.UI.UserInputService:GetStringForKeyCode(commandBarKey.key:peek())
 			local commandBarKeyText =
-				`{commandBarKey.mods.Shift and "Shift+" or ""}{commandBarKey.mods.Alt and "Alt+" or ""}{commandBarKey.key._value.Name}`
+				`{commandBarMods.Shift and "Shift+" or ""}{commandBarMods.Alt and "Alt+" or ""}{commandBarKey.key:peek().Name}`
 
 			local dashboardKey = context._K.client.hotkeys.dashboard
-			local dashboardKeyRaw = context._K.UI.UserInputService:GetStringForKeyCode(dashboardKey.key._value)
+			local dashboardMods = dashboardKey.mods:peek()
+			local dashboardKeyRaw = context._K.UI.UserInputService:GetStringForKeyCode(dashboardKey.key:peek())
 			local dashboardKeyText =
-				`{dashboardKey.mods.Shift and "Shift+" or ""}{dashboardKey.mods.Alt and "Alt+" or ""}{dashboardKey.key._value.Name}`
+				`{dashboardMods.Shift and "Shift+" or ""}{dashboardMods.Alt and "Alt+" or ""}{dashboardKey.key:peek().Name}`
 
 			local prefix = context._K.UI.raw(context._K.client.settings.prefix)[1]
 			local prefixKeyText = string.byte(prefix)
@@ -37,7 +39,7 @@ return {
 			context._K.Notify({
 				From = "_K",
 				Text = table.concat({
-					`<font family="{context._K.UI.Theme.FontMono._value.Family}"><b>Prefix</b>     <font color="#0f0">{prefixKeyText} {prefix}</font>`,
+					`<font family="{context._K.UI.Theme.FontMono:peek().Family}"><b>Prefix</b>     <font color="#0f0">{prefixKeyText} {prefix}</font>`,
 					`<b>Commands</b>   <font color="#0f0">{commandBarKeyText} {commandBarKeyRaw}</font>`,
 					`<b>Dashboard</b>  <font color="#0f0">{dashboardKeyText} {dashboardKeyRaw}</font></font>`,
 				}, "\n"),
@@ -85,9 +87,8 @@ return {
 				AutomaticSize = Enum.AutomaticSize.Y,
 				Size = UDim2.fromOffset(420, 0),
 
-				UI.new "UIListLayout" {
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UI.Theme.Padding,
+				UI.list {
+					gap = UI.Theme.Padding,
 				},
 
 				input,
@@ -120,16 +121,14 @@ return {
 					Icon = "rbxassetid://71961243872230",
 					Title = "About",
 				}
-				_K.UI.edit(window, {
-					[_K.UI.Event] = {
-						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.About,
-								})
-							end
-						end,
-					},
+				_K.UI.edit(window)({
+					_Visible = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs)({
+								_K.client.dashboard.About,
+							})
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -158,16 +157,14 @@ return {
 					Icon = "rbxassetid://71961243872230",
 					Title = "Commands",
 				}
-				_K.UI.edit(window, {
-					[_K.UI.Event] = {
-						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.Commands,
-								})
-							end
-						end,
-					},
+				_K.UI.edit(window)({
+					_Visible = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs)({
+								_K.client.dashboard.Commands,
+							})
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -175,7 +172,7 @@ return {
 		end,
 
 		runClient = function(context)
-			context._K.UI.edit(context.env.window, {
+			context._K.UI.edit(context.env.window)({
 				Visible = true,
 				context._K.client.dashboard.Commands,
 			})
@@ -233,16 +230,14 @@ return {
 					Icon = "rbxassetid://71961243872230",
 					Title = "Market",
 				}
-				_K.UI.edit(window, {
-					[_K.UI.Event] = {
-						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.Market,
-								})
-							end
-						end,
-					},
+				_K.UI.edit(window)({
+					_Visible = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs)({
+								_K.client.dashboard.Market,
+							})
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -304,22 +299,20 @@ return {
 					Icon = "rbxassetid://71961243872230",
 					Title = "Logs",
 				}
-				_K.UI.edit(window, {
-					[_K.UI.Event] = {
-						Visible = function()
-							if not window._instance.Visible then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.Logs,
-								})
-								if env.originalFilter then
-									for logType, value in env.originalFilter do
-										_K.client.dashboard.Logs.logTypeFilter[logType](value)
-									end
-									env.originalFilter = nil
+				_K.UI.edit(window)({
+					_Visible = function()
+						if not window._instance.Visible then
+							_K.UI.edit(_K.client.dashboard.Tabs)({
+								_K.client.dashboard.Logs,
+							})
+							if env.originalFilter then
+								for logType, value in env.originalFilter do
+									_K.client.dashboard.Logs.logTypeFilter[logType](value)
 								end
+								env.originalFilter = nil
 							end
-						end,
-					},
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -327,7 +320,7 @@ return {
 		end,
 
 		runClient = function(context)
-			context._K.UI.edit(context.env.window, {
+			context._K.UI.edit(context.env.window)({
 				Visible = true,
 				context._K.client.dashboard.Logs,
 			})
@@ -336,7 +329,7 @@ return {
 			if not context.env.originalFilter then
 				context.env.originalFilter = {}
 				for logType, state in context._K.client.dashboard.Logs.logTypeFilter do
-					context.env.originalFilter[logType] = state._value
+					context.env.originalFilter[logType] = state:peek()
 				end
 			end
 
@@ -373,16 +366,14 @@ return {
 					Icon = "rbxassetid://71961243872230",
 					Title = "Settings",
 				}
-				_K.UI.edit(window, {
-					[_K.UI.Event] = {
-						Visible = function()
-							if not window._instance.Visible and #_K.client.dashboard then
-								_K.UI.edit(_K.client.dashboard.Tabs, {
-									_K.client.dashboard.Settings,
-								})
-							end
-						end,
-					},
+				_K.UI.edit(window)({
+					_Visible = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs)({
+								_K.client.dashboard.Settings,
+							})
+						end
+					end,
 				})
 				env.window = window
 			end)
@@ -390,7 +381,7 @@ return {
 		end,
 
 		runClient = function(context)
-			context._K.UI.edit(context.env.window, {
+			context._K.UI.edit(context.env.window)({
 				Visible = true,
 				context._K.client.dashboard.Settings,
 			})
@@ -436,8 +427,8 @@ return {
 				preview = nil,
 			}
 
-			local emoteId = UI.state()
-			local ownsEmote = UI.state(false)
+			local emoteId = UI.signal(nil)
+			local ownsEmote = UI.signal(false)
 
 			env.emoteId = emoteId
 
@@ -488,17 +479,15 @@ return {
 					Visible = false,
 					ZIndex = 9e8,
 
-					UI.new "UICorner" {
-						CornerRadius = UDim.new(0, 12),
-					},
-					UI.new "UIGradient" {
-						Color = ColorSequence.new({
+					UI.corner(12),
+					UI.gradient {
+						color = ColorSequence.new({
 							ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 18, 21)),
 							ColorSequenceKeypoint.new(1 / 3, Color3.fromRGB(36, 36, 42)),
 							ColorSequenceKeypoint.new(2 / 3, Color3.fromRGB(36, 36, 42)),
 							ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 21)),
 						}),
-						Rotation = 90,
+						rotation = 90,
 					},
 
 					UI.new "ViewportFrame" {
@@ -605,17 +594,11 @@ return {
 						TextColor3 = Color3.new(1, 1, 1),
 						TextSize = 28,
 
-						UI.new "UICorner" {
-							Name = "UICorner",
-							CornerRadius = UDim.new(0, 12),
-						},
+						UI.corner(12),
 
-						UI.new "UIPadding" {
-							Name = "UIPadding",
-							PaddingBottom = UDim.new(0, 12),
-							PaddingLeft = UDim.new(0, 34),
-							PaddingRight = UDim.new(0, 34),
-							PaddingTop = UDim.new(0, 12),
+						UI.padding {
+							x = 34,
+							y = 12,
 						},
 
 						Activated = function()
@@ -695,7 +678,7 @@ return {
 							if env.playing then
 								env.playing.Looped = loop
 								if not env.playing.IsPlaying then
-									env.playing:Play(0.1, 99, env.speed.Value._value * 2)
+									env.playing:Play(0.1, 99, env.speed.Value:peek() * 2)
 								end
 							end
 						end,
@@ -730,11 +713,9 @@ return {
 				window._instance.Frame.AutomaticSize = Enum.AutomaticSize.Y
 				window._instance.AutomaticSize = Enum.AutomaticSize.Y
 
-				local titleBarHeight = UI.compute(function()
-					return UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2
-				end)
 				local buttonSize = function()
-					return UDim2.fromOffset(titleBarHeight(), titleBarHeight())
+					local h = UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2
+					return UDim2.fromOffset(h, h)
 				end
 				local buttonVisible = function()
 					return emoteId() ~= nil
@@ -750,7 +731,7 @@ return {
 					end,
 					Activated = function()
 						if env.updatePreview and env.preview then
-							env.updatePreview(emoteId._value)
+							env.updatePreview(emoteId:peek())
 							env.preview.Visible = true
 						end
 					end,
@@ -764,7 +745,7 @@ return {
 					Visible = buttonVisible,
 					Activated = function()
 						pcall(function()
-							_K.Service.AvatarEditor:PromptSetFavorite(emoteId._value, 1, true)
+							_K.Service.AvatarEditor:PromptSetFavorite(emoteId:peek(), 1, true)
 						end)
 					end,
 				}
@@ -777,7 +758,7 @@ return {
 					env.playing:Stop()
 					env.playing:Destroy()
 					env.playing = nil
-					emoteId(nil)
+					emoteId:set(nil)
 					ownsEmote(false)
 				end
 
@@ -819,7 +800,7 @@ return {
 				local id = _K.Data.animationToEmoteId[animation]
 				local emoteItem = emoteId and _K.Data.emoteItemFromId[id]
 				env.window.Title(if emoteItem then emoteItem.name else "Emote")
-				emoteId(id)
+				emoteId:set(id)
 				ownsEmote(false)
 				task.spawn(function()
 					local ok, result = _K.Util.Retry(function()
@@ -900,16 +881,14 @@ return {
 							BackgroundTransparency = 1,
 							Size = self.ItemSize,
 
-							UI.new "UIPadding" {
-								PaddingTop = UI.Theme.PaddingHalf,
-								PaddingBottom = UI.Theme.PaddingHalf,
+							UI.padding {
+								y = UI.Theme.PaddingHalf,
 							},
 
-							UI.new "UIListLayout" {
-								VerticalAlignment = Enum.VerticalAlignment.Center,
-								FillDirection = Enum.FillDirection.Horizontal,
-								SortOrder = Enum.SortOrder.LayoutOrder,
-								Padding = UI.Theme.Padding,
+							UI.list {
+								direction = "x",
+								gap = UI.Theme.Padding,
+								verticalAlign = "center",
 							},
 
 							UI.new "ImageButton" {
@@ -920,17 +899,17 @@ return {
 
 								ImageTransparency = 0.25,
 								ImageColor3 = function()
-									return if EMOTE.emoteId() == item.lineData.emoteId
+									return if item.lineData and EMOTE.emoteId() == item.lineData.emoteId
 										then Color3.new(1, 0, 0)
 										else Color3.new(1, 1, 1)
 								end,
 								Image = function()
-									return if EMOTE.emoteId() == item.lineData.emoteId
-										then UI.Theme.Image.Stop
-										else UI.Theme.Image.Play
+									return if item.lineData and EMOTE.emoteId() == item.lineData.emoteId
+										then UI.Theme.Image.Stop()
+										else UI.Theme.Image.Play()
 								end,
 
-								UI.action(function(button)
+								function(button)
 									button.Activated:Connect(function()
 										if
 											not item.lineData.owned
@@ -940,7 +919,7 @@ return {
 											EMOTE.preview.Visible = true
 											return
 										end
-										if EMOTE.emoteId._value == item.lineData.emoteId then
+										if EMOTE.emoteId:peek() == item.lineData.emoteId then
 											_K.UI.Sound.Hover01:Play()
 											EMOTE.playEmote()
 										else
@@ -954,13 +933,12 @@ return {
 											end
 										end
 									end)
-									button.MouseEnter:Connect(function()
-										button.ImageTransparency = 0
-									end)
-									button.MouseLeave:Connect(function()
-										button.ImageTransparency = 0.25
-									end)
-								end),
+									local hovering = UI.Interact.hover(button)
+									UI.edit(button)({
+										ImageTransparency = UI.pick(hovering, 0, 0.25),
+										__CLEAN = { hovering },
+									})
+								end,
 							},
 
 							UI.new "TextLabel" {
@@ -977,7 +955,7 @@ return {
 								TextTruncate = Enum.TextTruncate.SplitWord,
 								TextXAlignment = Enum.TextXAlignment.Left,
 
-								UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
+								UI.flex("fill"),
 							},
 
 							UI.new "Spacer" {},
@@ -1030,15 +1008,10 @@ return {
 					end,
 				}
 
-				UI.edit(scroller._instance, {
-					UI.new "UIPadding" {
-						PaddingTop = UI.Theme.PaddingStroke,
-						PaddingBottom = UI.Theme.PaddingStroke,
-						PaddingLeft = UI.Theme.PaddingStroke,
-						PaddingRight = UI.Theme.PaddingStroke,
-					},
+				UI.edit(scroller._instance)({
+					UI.padding(UI.Theme.PaddingStroke),
 				})
-				UI.edit(scroller._scroller.UIPadding, {
+				UI.edit(scroller._scroller.UIPadding)({
 					PaddingTop = UDim.new(),
 					PaddingBottom = UDim.new(),
 				})

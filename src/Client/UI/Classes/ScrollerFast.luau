@@ -1,7 +1,9 @@
 local RunService = game:GetService("RunService")
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
+local String =
+	require(script.Parent.Parent.Parent.Parent:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("String"))
 
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 
 local Defer = {}
 do
@@ -51,14 +53,7 @@ local function defaultFilter(self, list)
 	return new
 end
 
-function Class.escapeRichText(s: string): string
-	s = string.gsub(s, "&", "&amp;") -- first because substitutes contain it
-	s = string.gsub(s, "<", "&lt;")
-	s = string.gsub(s, ">", "&gt;")
-	s = string.gsub(s, '"', "&quot;")
-	s = string.gsub(s, "'", "&apos;")
-	return s
-end
+Class.escapeRichText = String.escapeRichText
 
 local queueBudget = 1 / 90
 local updateQueue = {}
@@ -92,18 +87,18 @@ RunService.Heartbeat:connect(function()
 			scroller:cloneRaw()
 			continue
 		end
-		if scroller.DictList._value then
-			local list, index = scroller._sortedList ~= scroller.List._value and scroller._sortedList or {}, 1
+		if scroller.DictList:peek() then
+			local list, index = scroller._sortedList ~= scroller.List:peek() and scroller._sortedList or {}, 1
 			table.clear(list)
-			for key in scroller.List._value do
+			for key in scroller.List:peek() do
 				list[index] = key
 				index += 1
 			end
 			scroller._sortedList = list
 		elseif scroller._sortFunction then
-			scroller._sortedList = table.clone(scroller.List._value)
+			scroller._sortedList = table.clone(scroller.List:peek())
 		else
-			scroller._sortedList = scroller.List._value
+			scroller._sortedList = scroller.List:peek()
 		end
 		if scroller._sortFunction then
 			table.sort(scroller._sortedList, scroller._sortFunction)
@@ -126,8 +121,8 @@ RunService.Heartbeat:connect(function()
 			then scroller._filterFunction(scroller, scroller._sortedList)
 			else scroller._sortedList
 		-- pause canvas
-		if not scroller.DictList._value then
-			local lineHeight = scroller.ItemSize._value.Y.Offset
+		if not scroller.DictList:peek() then
+			local lineHeight = scroller.ItemSize:peek().Y.Offset
 			if scroller._lastValue and scroller._scroller.CanvasPosition.Y > lineHeight then
 				local change = #scroller._filteredList - scroller._lastLength
 				if change == 0 then
@@ -158,11 +153,11 @@ RunService.Heartbeat:connect(function()
 end)
 
 function Class:forceRender()
-	if not (self.Enabled._value and self._instance.Visible and self._filteredList) then
+	if not (self.Enabled:peek() and self._instance.Visible and self._filteredList) then
 		return
 	end
 	local length = #self._filteredList
-	local lineHeight = self.ItemSize._value.Y.Offset
+	local lineHeight = self.ItemSize:peek().Y.Offset
 	local startIndex = math.max(0, math.floor(self._scroller.CanvasPosition.Y / lineHeight)) + 1
 	local endIndex = math.min(startIndex + math.ceil(self._scroller.AbsoluteWindowSize.Y / lineHeight), length)
 
@@ -172,12 +167,12 @@ function Class:forceRender()
 
 	local usedItems = {}
 	for i = math.max(1, startIndex - 4), math.min(length, endIndex + 4) do
-		local lineData = if self.ReverseOrder._value then self._filteredList[length - i + 1] else self._filteredList[i]
+		local lineData = if self.ReverseOrder:peek() then self._filteredList[length - i + 1] else self._filteredList[i]
 		local lineItem = self._lineItemCache[lineData]
 		if not lineItem then
 			lineItem = table.remove(self._lineItemFree)
 				or if self.CreateItem
-					then self.CreateItem._value(self, lineData)
+					then self.CreateItem:peek()(self, lineData)
 					else UI.new "TextLabel" {
 						AutoLocalize = false,
 						BackgroundTransparency = 1,
@@ -194,7 +189,7 @@ function Class:forceRender()
 			self._lineItemCache[lineData] = lineItem
 
 			if self.RenderItem then
-				self.RenderItem._value(self, lineItem, lineData)
+				self.RenderItem:peek()(self, lineItem, lineData)
 			else
 				lineItem.Text = lineData
 			end
@@ -304,8 +299,19 @@ function Class.new(properties: Properties?)
 		end
 	end
 
+	-- PaddingRight follows a signal so a resize only writes it, instead of re-editing the UIPadding each time
+	local scrollBarShown = UI.signal(false)
+	local padding = UI.padding {
+		y = UI.Theme.PaddingWithStroke,
+		left = UI.Theme.PaddingStroke,
+		right = function()
+			return if scrollBarShown() then UI.Theme.PaddingWithStroke() else UDim.new()
+		end,
+	}
+
 	self._scroller = UI.new "ScrollingFrame" {
 		Name = "ScrollerFast",
+		LayoutOrder = 2,
 		BorderSizePixel = 0,
 		BackgroundTransparency = 1,
 		Position = UDim2.new(0, 0, 0, 0),
@@ -318,34 +324,23 @@ function Class.new(properties: Properties?)
 		BottomImage = UI.Theme.ScrollBottomImage,
 		VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
-		},
+		UI.flex("fill"),
+		padding,
 
-		[UI.Event] = {
-			AbsoluteWindowSize = render,
-			CanvasPosition = render,
-		},
+		_AbsoluteWindowSize = render,
+		_CanvasPosition = render,
 	} :: ScrollingFrame & { UIFlexItem: UIFlexItem, UIPadding: UIPadding }
 
-	local padding = UI.new "UIPadding" {
-		Parent = self._scroller,
-		PaddingBottom = UI.Theme.PaddingWithStroke,
-		PaddingTop = UI.Theme.PaddingWithStroke,
-		PaddingLeft = UI.Theme.PaddingStroke,
-		PaddingRight = UI.Theme.PaddingWithStroke,
-	}
-
 	local function updatePadding()
-		UI.edit(padding, {
-			PaddingRight = if self._scroller.AbsoluteCanvasSize.Y > self._scroller.AbsoluteWindowSize.Y
-				then UI.Theme.PaddingWithStroke
-				else UDim.new(),
-		})
+		scrollBarShown(self._scroller.AbsoluteCanvasSize.Y > self._scroller.AbsoluteWindowSize.Y)
+		if not UI.isReactive() then
+			UI.flush()
+		end
 	end
 	updatePadding()
 
 	local cleanup = {
+		scrollBarShown,
 		self._scroller:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updatePadding),
 		self._scroller:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(updatePadding),
 	}
@@ -356,38 +351,39 @@ function Class.new(properties: Properties?)
 		Size = UDim2.new(1, 0, 1, 0),
 		Visible = self.Visible,
 
-		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
+		UI.list { gap = UI.Theme.Padding },
 		self._scroller,
 
-		[UI.Clean] = cleanup,
-		[UI.Event] = {
-			Parent = render,
-		},
+		__CLEAN = cleanup,
+		_Parent = render,
 	} :: Frame & { UIListLayout: UIListLayout, ScrollerFast: typeof(self._scroller) }
 
 	self = setmetatable(self, Class)
 
-	table.insert(
-		cleanup,
-		self.List:Connect(function()
-			self:updateList()
-		end)
-	)
+	local listEffect = UI.effect(UI.on(self.List, function()
+		self:updateList()
+	end, true))
+	listEffect:get()
+	table.insert(cleanup, listEffect)
 	self:updateList()
 
 	local function refresh()
 		self:refreshList()
 	end
-	table.insert(cleanup, UI.Theme.FontSize:Connect(refresh))
-	table.insert(cleanup, UI.Theme.Padding:Connect(refresh))
+	local fontSizeEffect = UI.effect(UI.on(UI.Theme.FontSize, refresh, true))
+	fontSizeEffect:get()
+	table.insert(cleanup, fontSizeEffect)
+	local paddingEffect = UI.effect(UI.on(UI.Theme.Padding, refresh, true))
+	paddingEffect:get()
+	table.insert(cleanup, paddingEffect)
 
-	if self.FilterInput._value then
+	if self.FilterInput:peek() then
 		local thread = false
 		local function debounce()
 			if typeof(thread) == "thread" and coroutine.status(thread :: thread) == "suspended" then
 				task.cancel(thread)
 			end
-			thread = task.delay(self.FilterInputDebounce._value, self.refreshList, self)
+			thread = task.delay(self.FilterInputDebounce:peek(), self.refreshList, self)
 		end
 		self._input = UI.new "Input" {
 			LayoutOrder = -1,

@@ -1,8 +1,8 @@
 local _K = require(script.Parent.Parent)
 local UI = require(script.Parent:WaitForChild("UI"))
 
-return function(from: number?, name: string?, image: string?, badgeEnabled: boolean?)
-	local fromK = from :: any == "_K"
+return function(from: (number | string)?, name: string?, image: string?, badgeEnabled: boolean?)
+	local fromK = from == "_K"
 	if type(from) == "string" then
 		if name == nil and from ~= "_K" then
 			name = from
@@ -40,9 +40,7 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 					elseif from then `rbxthumb://type=AvatarHeadShot&id={from}&w=48&h=48`
 					else "rbxassetid://10650688076",
 
-				UI.new "UICorner" {
-					CornerRadius = UI.Theme.CornerPadded,
-				},
+				UI.corner(UI.Theme.CornerPadded),
 				UI.new "Stroke" {},
 			}
 			else UI.new "Frame" {
@@ -79,33 +77,36 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		AutomaticSize = Enum.AutomaticSize.XY,
 	}
 
-	local userNameLabel = UI.new "TextLabel" {
-		AutoLocalize = false,
-		Name = "FromBottom",
-		BackgroundTransparency = 1,
-		TextColor3 = UI.Theme.PrimaryText,
-		TextStrokeColor3 = UI.Theme.Primary,
-		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-		Text = `<font transparency="0.5"><b>@{userName}</b></font>`,
-		TextSize = UI.Theme.FontSizeSmall,
-		TextXAlignment = "Left",
-		FontFace = UI.Theme.Font,
-		RichText = true,
-
-		AutomaticSize = Enum.AutomaticSize.XY,
-		Position = function()
-			return UDim2.fromOffset(0, UI.Theme.FontSizeLarge())
-		end,
-	}
-
-	local displaySize = UI.state(displayNameLabel, "AbsoluteSize")
-
-	local badgeLabel = if badgeEnabled and badge
+	local userNameLabel = if userName or from
 		then UI.new "TextLabel" {
+			AutoLocalize = false,
+			Name = "FromBottom",
+			BackgroundTransparency = 1,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextStrokeColor3 = UI.Theme.Primary,
+			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+			Text = `<font transparency="0.5"><b>@{userName}</b></font>`,
+			TextSize = UI.Theme.FontSizeSmall,
+			TextXAlignment = "Left",
+			FontFace = UI.Theme.Font,
+			RichText = true,
+
+			AutomaticSize = Enum.AutomaticSize.XY,
+			Position = function()
+				return UDim2.fromOffset(0, UI.Theme.FontSizeLarge())
+			end,
+		}
+		else nil
+
+	local badgeLabel
+	if badgeEnabled and badge then
+		local displaySize = UI.property(displayNameLabel, "AbsoluteSize")
+		badgeLabel = UI.new "TextLabel" {
+			__CLEAN = { displaySize },
 			AutoLocalize = false,
 			Name = "Badge",
 			BackgroundColor3 = Color3.fromHex(color),
-			TextColor3 = if UI.getLuminance(Color3.fromHex(color)) > 0.5 then Color3.new() else Color3.new(1, 1, 1),
+			TextColor3 = UI.Color.readable(Color3.fromHex(color)),
 			Text = `<b>{string.upper(badge)}</b>`,
 			TextSize = function()
 				return UI.Theme.FontSizeLarge() - 8
@@ -122,17 +123,10 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 				return UDim2.fromOffset(displaySize().X + 4, 0)
 			end,
 
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerPadded,
-			},
-			UI.new "UIPadding" {
-				PaddingLeft = UDim.new(0, 4),
-				PaddingRight = UDim.new(0, 4),
-				PaddingTop = UDim.new(0, 4),
-				PaddingBottom = UDim.new(0, 4),
-			},
+			UI.corner(UI.Theme.CornerPadded),
+			UI.padding(4),
 		}
-		else nil
+	end
 
 	task.spawn(function()
 		if not from then
@@ -142,17 +136,18 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 		-- role badge
 		if badgeLabel then
 			local _rank, role = _K.Auth.getRank(from)
-			badgeLabel.BackgroundColor3 = Color3.fromHex(role.color)
+			local roleColor = if role and role.color then Color3.fromHex(role.color) else Color3.new(1, 1, 1)
+			badgeLabel.BackgroundColor3 = roleColor
 			badgeLabel.Text = `<b>{string.upper(if role then role.name else "Unknown")}</b>`
-			badgeLabel.TextColor3 = if UI.getLuminance(Color3.fromHex(role.color or Color3.new(1, 1, 1))) > 0.5
-				then Color3.new()
-				else Color3.new(1, 1, 1)
+			badgeLabel.TextColor3 = UI.Color.readable(roleColor)
 		end
 
 		-- name
 		local info = _K.Util.getUserInfo(from)
-		displayNameLabel.Text, userNameLabel.Text =
-			`<b>{name or info.DisplayName}</b>`, `<font transparency="0.5"><b>@{info.Username}</b></font>`
+		displayNameLabel.Text = `<b>{name or info.DisplayName}</b>`
+		if userNameLabel then
+			userNameLabel.Text = `<font transparency="0.5"><b>@{info.Username}</b></font>`
+		end
 	end)
 
 	return UI.new "Frame" {
@@ -171,18 +166,11 @@ return function(from: number?, name: string?, image: string?, badgeEnabled: bool
 				return UDim2.fromOffset(UI.Theme.FontSizeDouble() + 4, 0)
 			end,
 
-			UI.new "UIFlexItem" {
-				FlexMode = Enum.UIFlexMode.Shrink,
-			},
-			UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.PaddingStroke,
-				PaddingRight = UI.Theme.PaddingStroke,
-				PaddingTop = UI.Theme.PaddingStroke,
-				PaddingBottom = UI.Theme.PaddingStroke,
-			},
+			UI.flex("shrink"),
+			UI.padding(UI.Theme.PaddingStroke),
 
 			displayNameLabel,
-			if userName then userNameLabel else nil,
+			if userNameLabel then userNameLabel else nil,
 			if badge then badgeLabel else nil,
 		},
 	}

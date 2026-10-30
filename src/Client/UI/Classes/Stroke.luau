@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {}
@@ -19,11 +19,11 @@ function Class.new(properties: Properties?)
 		Transparency = UI.Theme.TransparencyLight,
 		Color = Color3.new(1, 1, 1),
 
-		UI.new "UIGradient" {
-			Color = function()
+		UI.gradient {
+			color = function()
 				return ColorSequence.new(UI.Theme.Border(), UI.Theme.BorderStop())
 			end,
-			Rotation = UI.Theme.BorderAngle,
+			rotation = UI.Theme.BorderAngle,
 		},
 	} :: UIStroke
 

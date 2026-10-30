@@ -30,7 +30,7 @@ return function(_K)
 		end,
 
 		suggestions = function(text)
-			if _K.client.settings.onlyShowUsableCommands._value then
+			if _K.client.settings.onlyShowUsableCommands:peek() then
 				local filtered = {}
 				for _, name in _K.Registry.commandNames do
 					local command = _K.Registry.commands[name]

@@ -8,6 +8,7 @@ export type Logger = Logger.Logger
 local Util = {
 	Logger = Logger,
 
+	Color = require(script:WaitForChild("Color")),
 	Defer = require(script:WaitForChild("Defer")),
 	Function = require(script:WaitForChild("Function")),
 	getTexture = require(script:WaitForChild("getTexture")),

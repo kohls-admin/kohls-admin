@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {
@@ -20,11 +20,10 @@ function Class.new(properties: Properties?)
 
 	local cleanup = {}
 
-	local dragInput
-	local dragging = UI.state(false)
+	local dragging = UI.signal(false)
 	self._dragging = dragging
 
-	local valueAlpha = UI.compute(function()
+	local valueAlpha = UI.computed(function()
 		local snap = self.Snap()
 		local value = self.Value()
 		return if snap > 1 then math.max(0, value - 1) / (snap - 1) else value
@@ -32,51 +31,31 @@ function Class.new(properties: Properties?)
 
 	table.insert(cleanup, valueAlpha)
 
-	local function update(input)
-		if not dragInput then
-			return
-		end
+	local inputBegan = BaseClass.bindDragInput(dragging, function(input)
 		-- stylua: ignore
-		local value = if self.Vertical._value
+		local value = if self.Vertical:peek()
 			then math.clamp((input.Position.Y - self._instance.AbsolutePosition.Y - 12) / (self._instance.AbsoluteSize.Y - 24), 0, 1)
 			else math.clamp((input.Position.X - self._instance.AbsolutePosition.X - 12) / (self._instance.AbsoluteSize.X - 24), 0, 1)
-		local snap = self.Snap._value
+		local snap = self.Snap:peek()
 
 		if snap > 1 then
 			value = math.round(1 + value * (snap - 1))
 
-			if self.SnapSound._value and self.Value._value ~= value then
+			if self.SnapSound:peek() and self.Value:peek() ~= value then
 				UI.Sound.Hover02:Play()
 			end
 		end
 
 		self.Value(value, true)
-	end
+		UI.flush()
+	end, cleanup)
 
-	local function inputBegan(input)
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
-			UI.Sound.Hover03:Play()
-			dragInput = input
-			dragging(true)
-			local con
-			con = input:GetPropertyChangedSignal("UserInputState"):Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					con:Disconnect()
-					if dragInput == input then
-						UI.Sound.Hover01:Play()
-						dragInput = nil
-						dragging(false)
-					end
-				end
-			end)
-			update(input)
-		end
-	end
-
-	table.insert(cleanup, UI.UserInputService.InputChanged:Connect(update))
+	local knobSize = UI.tween(function()
+		local size = UI.Theme.FontSize()
+		local half = size / 2
+		return if dragging() then UDim2.new(0, size, 0, size) else UDim2.new(0, half, 0, half)
+	end, UI.Theme.TweenOut)
+	table.insert(cleanup, knobSize)
 
 	self._slider = UI.new "Frame" {
 		Name = "Slider",
@@ -85,20 +64,14 @@ function Class.new(properties: Properties?)
 		Position = function()
 			return if self.Vertical() then UDim2.new(0.5, 0, valueAlpha(), 0) else UDim2.new(valueAlpha(), 0, 0.5, 0)
 		end,
-		Size = UI.tween(function()
-			local size = UI.Theme.FontSize()
-			local half = size / 2
-			return if dragging() then UDim2.new(0, size, 0, size) else UDim2.new(0, half, 0, half)
-		end, UI.Theme.TweenOut),
+		Size = knobSize,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
+		UI.corner(UI.Theme.CornerPadded),
 
 		InputBegan = inputBegan,
 	} :: Frame & { UICorner: UICorner }
 
-	local padding = UI.compute(function()
+	local padding = UI.computed(function()
 		return UDim.new(0, UI.Theme.FontSizeSmaller() + UI.Theme.PaddingHalf().Offset)
 	end)
 
@@ -114,9 +87,7 @@ function Class.new(properties: Properties?)
 			return if self.Vertical() then UDim2.new(0, height, 1, 0) else UDim2.new(1, 0, 0, height)
 		end,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
+		UI.corner(UI.Theme.CornerPadded),
 		UI.new "Stroke" {},
 
 		UI.new "Frame" {
@@ -124,12 +95,7 @@ function Class.new(properties: Properties?)
 			Size = UDim2.new(1, 0, 1, 0),
 			ZIndex = 2,
 
-			UI.new "UIPadding" {
-				PaddingTop = padding,
-				PaddingBottom = padding,
-				PaddingLeft = padding,
-				PaddingRight = padding,
-			},
+			UI.padding(padding),
 			self._slider,
 		},
 
@@ -143,14 +109,12 @@ function Class.new(properties: Properties?)
 				return if self.Vertical() then UDim2.new(1, 0, alpha, buffer) else UDim2.new(alpha, buffer, 1, 0)
 			end,
 
-			UI.new "UICorner" {
-				CornerRadius = UI.Theme.CornerPadded,
-			},
+			UI.corner(UI.Theme.CornerPadded),
 		},
 
 		InputBegan = inputBegan,
 
-		[UI.Clean] = cleanup,
+		__CLEAN = cleanup,
 	} :: Frame & {
 		UICorner: UICorner,
 		UIStroke: UIStroke,

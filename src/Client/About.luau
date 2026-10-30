@@ -72,8 +72,8 @@ function About.new(_K)
 			Text = "<font transparency='0.5'><b>Stop playing. Take command.</b> Get the same powerful tools used here for your own games. Total control, advanced security, and professional moderation are yours for <b>free</b>.</font>",
 			RichText = true,
 
-			UI.new "UISizeConstraint" {
-				MaxSize = Vector2.new(420, math.huge),
+			UI.sizeConstraint {
+				max = Vector2.new(420, math.huge),
 			},
 		}
 
@@ -126,11 +126,10 @@ function About.new(_K)
 			AutomaticSize = Enum.AutomaticSize.XY,
 			BackgroundTransparency = 1,
 
-			UI.new "UIListLayout" {
-				FillDirection = Enum.FillDirection.Horizontal,
-				Padding = UI.Theme.PaddingWithStroke,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
+			UI.list {
+				direction = "x",
+				gap = UI.Theme.PaddingWithStroke,
+				verticalAlign = "center",
 			},
 			UI.new "Frame" {
 				BackgroundTransparency = 1,
@@ -151,7 +150,7 @@ function About.new(_K)
 					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 					ImageColor3 = Color3.new(1, 0.8, 0),
 					Activated = function()
-						pcall(function()
+						local _ = pcall(function()
 							_K.Service.AvatarEditor:PromptSetFavorite(KA_MODEL_ID, 1, true)
 						end)
 					end,
@@ -220,11 +219,10 @@ function About.new(_K)
 			AutomaticSize = Enum.AutomaticSize.XY,
 			Visible = true,
 
-			UI.new "UIListLayout" {
-				FillDirection = Enum.FillDirection.Vertical,
-				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				Padding = UI.Theme.Padding,
-				SortOrder = Enum.SortOrder.LayoutOrder,
+			UI.list {
+				direction = "y",
+				horizontalAlign = "center",
+				gap = UI.Theme.Padding,
 			},
 
 			UI.new "TextLabel" {
@@ -258,7 +256,7 @@ function About.new(_K)
 			end
 		end)
 
-		UI.edit(scroller._instance, {
+		UI.edit(scroller._instance)({
 
 			UI.new "TextLabel" {
 				AutoLocalize = false,
@@ -284,11 +282,10 @@ function About.new(_K)
 				AutomaticSize = Enum.AutomaticSize.XY,
 				BackgroundTransparency = 1,
 
-				UI.new "UIListLayout" {
-					FillDirection = Enum.FillDirection.Vertical,
-					HorizontalAlignment = Enum.HorizontalAlignment.Center,
-					Padding = UI.Theme.Padding,
-					SortOrder = Enum.SortOrder.LayoutOrder,
+				UI.list {
+					direction = "y",
+					horizontalAlign = "center",
+					gap = UI.Theme.Padding,
 				},
 
 				UI.new "TextLabel" {
@@ -313,11 +310,10 @@ function About.new(_K)
 					AutomaticSize = Enum.AutomaticSize.XY,
 					BackgroundTransparency = 1,
 
-					UI.new "UIListLayout" {
-						FillDirection = Enum.FillDirection.Horizontal,
-						Padding = UI.Theme.PaddingWithStroke,
-						SortOrder = Enum.SortOrder.LayoutOrder,
-						VerticalAlignment = Enum.VerticalAlignment.Center,
+					UI.list {
+						direction = "x",
+						gap = UI.Theme.PaddingWithStroke,
+						verticalAlign = "center",
 					},
 
 					UI.new "ImageButton" {
@@ -326,7 +322,7 @@ function About.new(_K)
 						Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 						ImageColor3 = Color3.new(1, 0.8, 0),
 						Activated = function()
-							pcall(function()
+							local _ = pcall(function()
 								_K.Service.AvatarEditor:PromptSetFavorite(17873329124, 1, true)
 							end)
 						end,
@@ -343,7 +339,7 @@ function About.new(_K)
 			},
 		})
 
-		UI.edit(scroller._instance.UIListLayout, {
+		UI.edit(scroller._instance.UIListLayout)({
 			Padding = UI.Theme.PaddingDouble,
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		})
@@ -357,10 +353,9 @@ function About.new(_K)
 				Size = UDim2.new(1, 0, 0, 0),
 				BackgroundTransparency = 1,
 
-				UI.new "UIListLayout" {
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UI.Theme.PaddingDouble,
-					HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				UI.list {
+					gap = UI.Theme.PaddingDouble,
+					horizontalAlign = "center",
 				},
 			}
 
@@ -390,14 +385,12 @@ function About.new(_K)
 					AutomaticSize = Enum.AutomaticSize.Y,
 					Size = UDim2.fromScale(1, 0),
 
-					UI.new "UIListLayout" {
-						SortOrder = Enum.SortOrder.LayoutOrder,
-						FillDirection = Enum.FillDirection.Horizontal,
-						HorizontalFlex = Enum.UIFlexAlignment.SpaceEvenly,
-						HorizontalAlignment = Enum.HorizontalAlignment.Center,
-						Padding = UI.Theme.PaddingDouble,
-						Wraps = true,
-					},
+					UI.edit(UI.list {
+						direction = "x",
+						horizontalAlign = "evenly",
+						gap = UI.Theme.PaddingDouble,
+						wraps = true,
+					})({ HorizontalAlignment = Enum.HorizontalAlignment.Center }),
 				}
 				order += 1
 				task.defer(function()

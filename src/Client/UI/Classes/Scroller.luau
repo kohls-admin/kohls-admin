@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {}
@@ -12,6 +12,16 @@ setmetatable(Class, BaseClass)
 function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
+
+	-- PaddingRight follows a signal so a resize only writes it, instead of re-editing the UIPadding each time
+	local scrollBarShown = UI.signal(false)
+	local padding = UI.padding {
+		y = UI.Theme.PaddingWithStroke,
+		left = UI.Theme.PaddingStroke,
+		right = function()
+			return if scrollBarShown() then UI.Theme.PaddingWithStroke() else UDim.new()
+		end,
+	}
 
 	self._instance = UI.new "ScrollingFrame" {
 		Name = "Scroller",
@@ -28,32 +38,23 @@ function Class.new(properties: Properties?)
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 
-		UI.new "UIListLayout" { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UI.Theme.Padding },
+		UI.list { gap = UI.Theme.Padding },
+		padding,
 
-		[UI.Event] = {
-			CanvasPosition = UI.clearActiveStates,
-		},
+		_CanvasPosition = UI.clearActiveStates,
 	} :: ScrollingFrame & { UIListLayout: UIListLayout, UIPadding: UIPadding }
 
-	local padding = UI.new "UIPadding" {
-		Parent = self._instance,
-		PaddingBottom = UI.Theme.PaddingWithStroke,
-		PaddingTop = UI.Theme.PaddingWithStroke,
-		PaddingLeft = UI.Theme.PaddingStroke,
-		PaddingRight = UI.Theme.PaddingWithStroke,
-	}
-
 	local function updatePadding()
-		UI.edit(padding, {
-			PaddingRight = if self._instance.AbsoluteCanvasSize.Y > self._instance.AbsoluteWindowSize.Y
-				then UI.Theme.PaddingWithStroke
-				else UDim.new(),
-		})
+		scrollBarShown(self._instance.AbsoluteCanvasSize.Y > self._instance.AbsoluteWindowSize.Y)
+		if not UI.isReactive() then
+			UI.flush()
+		end
 	end
 	updatePadding()
 
-	UI.edit(padding, {
-		[UI.Clean] = {
+	UI.edit(padding)({
+		__CLEAN = {
+			scrollBarShown,
 			self._instance:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(updatePadding),
 			self._instance:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(updatePadding),
 		},

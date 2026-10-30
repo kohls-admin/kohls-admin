@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 local ColorPicker = require(script.Parent:WaitForChild("ColorPicker"))
 type ColorPicker = typeof(ColorPicker.new())
@@ -31,9 +31,8 @@ function Class.new(properties: Properties?)
 		end,
 		Position = UDim2.new(1, 0, 0.5, 0),
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
+		UI.aspectRatio(1),
+		UI.corner(UI.Theme.CornerPadded),
 		UI.new "Stroke" {},
 
 		Activated = function()
@@ -54,6 +53,7 @@ function Class.new(properties: Properties?)
 		BackgroundColor3 = UI.Theme.Primary,
 		BackgroundTransparency = 0,
 	} :: ColorPicker
+	UI.edit(self._instance)({ __CLEAN = { self._dialog } })
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end

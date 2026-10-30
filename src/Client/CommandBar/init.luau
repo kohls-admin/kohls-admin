@@ -6,16 +6,10 @@ local CompletionData = require(script:WaitForChild("CompletionData"))
 
 local UI = require(script.Parent:WaitForChild("UI"))
 
-local validState = UI.state(nil)
-local indicatorColor = UI.compute(function()
+local validState = UI.signal(nil)
+local indicatorColor = UI.computed(function()
 	local valid = validState()
-	if valid == true then
-		return UI.Theme.Valid()
-	elseif valid == false then
-		return UI.Theme.Invalid()
-	else
-		return UI.Theme.PrimaryText()
-	end
+	return (valid == true and UI.Theme.Valid()) or (valid == false and UI.Theme.Invalid()) or UI.Theme.PrimaryText()
 end)
 
 local Input
@@ -43,9 +37,7 @@ Input = UI.new "Input" {
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-			UI.new "UICorner" {
-				CornerRadius = UDim.new(1, 0),
-			},
+			UI.corner(UDim.new(1, 0)),
 			UI.new "UIStroke" {
 				Thickness = 2,
 				Color = indicatorColor,
@@ -85,26 +77,26 @@ Input = UI.new "Input" {
 	},
 }
 
-UI.edit(Input._instance.ImageButton, {
+UI.edit(Input._instance.ImageButton)({
 	Size = UDim2.new(0, 16, 0, 16),
 })
 
-UI.edit(Input._instance.UICorner, {
+UI.edit(Input._instance.UICorner)({
 	CornerRadius = UDim.new(1, 0),
 })
 
-UI.edit(Input._instance.UIListLayout, {
+UI.edit(Input._instance.UIListLayout)({
 	Padding = UDim.new(0, 8),
 })
 
-UI.edit(Input._instance.UIPadding, {
+UI.edit(Input._instance.UIPadding)({
 	PaddingLeft = UDim.new(0, 14),
 	PaddingRight = UDim.new(0, 12),
 	PaddingTop = UDim.new(0, 0),
 	PaddingBottom = UDim.new(0, 0),
 })
 
-UI.edit(Input._instance.InputFrame, { AutomaticSize = Enum.AutomaticSize.None })
+UI.edit(Input._instance.InputFrame)({ AutomaticSize = Enum.AutomaticSize.None })
 
 local CommandBar = UI.new "Frame" {
 	Name = "CommandBar",
@@ -116,16 +108,20 @@ local CommandBar = UI.new "Frame" {
 	Visible = false,
 
 	Input,
-	UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
+	UI.flex("fill"),
 }
 
-UI.edit(Input._instance.UIStroke, {
+UI.edit(Input._instance.UIStroke)({
 	Thickness = 2,
 	Color = UI.Theme.Invalid,
 	Enabled = function()
 		return validState() == false
 	end,
 })
+
+local TooltipLayout = UI.list {
+	gap = UDim.new(0, 0),
+}
 
 local TooltipFrame = UI.new "Frame" {
 	Parent = CommandBar,
@@ -136,16 +132,9 @@ local TooltipFrame = UI.new "Frame" {
 	Size = UDim2.fromOffset(256, 32),
 	Visible = false,
 
-	UI.new "UICorner" {
-		CornerRadius = UI.Theme.CornerRadius,
-	},
+	TooltipLayout,
+	UI.corner(UI.Theme.CornerRadius),
 	UI.new "Stroke" {},
-}
-
-local TooltipLayout = UI.new "UIListLayout" {
-	Parent = TooltipFrame,
-	SortOrder = Enum.SortOrder.LayoutOrder,
-	Padding = UDim.new(0, 0),
 }
 
 local Tooltip = UI.new "TextLabel" {
@@ -165,17 +154,12 @@ local Tooltip = UI.new "TextLabel" {
 	TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 	TextXAlignment = Enum.TextXAlignment.Left,
 
-	UI.new "UIPadding" {
-		PaddingTop = UI.Theme.Padding,
-		PaddingBottom = UI.Theme.Padding,
-		PaddingLeft = UI.Theme.Padding,
-		PaddingRight = UI.Theme.Padding,
-	},
+	UI.padding(UI.Theme.Padding),
 }
 
 TooltipLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	local size = TooltipLayout.AbsoluteContentSize
-	TooltipFrame.Size = UDim2.fromOffset(TooltipFrame.AbsoluteSize.X, size.Y + UI.Theme.PaddingHalf._value.Offset)
+	TooltipFrame.Size = UDim2.fromOffset(TooltipFrame.AbsoluteSize.X, size.Y + UI.Theme.PaddingHalf:peek().Offset)
 end)
 
 local SuggestionFrame = UI.new "TextButton" {
@@ -204,11 +188,9 @@ local SuggestionFrame = UI.new "TextButton" {
 		TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 		TextXAlignment = Enum.TextXAlignment.Left,
 
-		UI.new "UIPadding" {
-			PaddingTop = UI.Theme.PaddingHalf,
-			PaddingBottom = UI.Theme.PaddingHalf,
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
+		UI.padding {
+			y = UI.Theme.PaddingHalf,
+			x = UI.Theme.Padding,
 		},
 	},
 }
@@ -230,8 +212,8 @@ local function updateInvalidColor(invalidColor)
 	invalidInlineFormat =
 		`<font transparency="0.33">%s<b><font color="#{invalidColor}" transparency="0.66">%s<font transparency="0">%s</font>%s</font></b>%s</font>`
 end
-UI.Theme.Invalid:Connect(updateInvalidColor)
-updateInvalidColor(UI.Theme.Invalid._value)
+UI.effect(UI.on(UI.Theme.Invalid, updateInvalidColor, true)):get()
+updateInvalidColor(UI.Theme.Invalid:peek())
 
 local suggestionIndex = 1
 local suggestionLabels = {}
@@ -254,7 +236,7 @@ local function fillSuggestion()
 	end
 	currentCompletion = nil
 
-	Input.Value(text, true)
+	Input:SetValue(text)
 	Input._input.CursorPosition = pos + 1
 end
 
@@ -287,7 +269,7 @@ local function formatSuggestionLabel(label, display, query, invalid)
 	params.Width = math.huge
 	params.RichText = true
 
-	return UI.retryGetTextBoundsAsync(params).X + UI.Theme.PaddingDouble._value.Offset
+	return UI.retryGetTextBoundsAsync(params).X + UI.Theme.PaddingDouble:peek().Offset
 end
 
 local suggestionUpdating
@@ -377,7 +359,7 @@ local function updateSuggestionLabels(data)
 		local textWidth = formatSuggestionLabel(label, display, query, invalid)
 		suggestionWidth = math.max(suggestionWidth, textWidth + widthOffset)
 
-		frame.Activated:Connect(function()
+		local _ = frame.Activated:Connect(function()
 			Input._input:CaptureFocus()
 			suggestionIndex = i
 			updateCompletion()
@@ -442,13 +424,7 @@ local suggestionPurchaseButton = UI.new "Button" {
 }
 
 local function updateSuggestionPurchasePrice()
-	local ok, result = pcall(function()
-		local productType = if suggestionPurchase.role == "vip" and _K.Data.settings.vip
-			then Enum.InfoType.Asset
-			else Enum.InfoType.GamePass
-		return _K.Service.Marketplace:GetProductInfoAsync(suggestionPurchase.gamepass, productType).PriceInRobux
-	end)
-	suggestionPurchaseButton._content.Price.Text = `<b>{ok and result or "?"}</b>`
+	_K.VIP.updatePurchasePrice(suggestionPurchase, suggestionPurchaseButton)
 end
 
 local function invalidSuggestion(data, err, pos, text)
@@ -474,7 +450,7 @@ local function invalidSuggestion(data, err, pos, text)
 
 	local frame = SuggestionFrame:Clone()
 	local label = frame:FindFirstChildOfClass("TextLabel")
-	label.Text = `<font color="#{UI.Theme.Invalid._value:ToHex()}"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
+	label.Text = `<font color="#{UI.Theme.Invalid:peek():ToHex()}"><b>{_K.Util.String.escapeRichText(err)}</b></font>`
 	frame.Parent = TooltipFrame
 	-- show highlight
 	table.insert(suggestionLabels, frame)
@@ -519,7 +495,7 @@ updateCompletion = function()
 		end
 	end
 
-	validState(nil)
+	validState:set(nil)
 
 	-- handle validation hints
 	-- TODO: somehow show validated arguments/text as green :)
@@ -573,7 +549,7 @@ updateCompletion = function()
 		math.floor(argX)
 			+ Input._input.AbsolutePosition.X
 			- Input._instance.AbsolutePosition.X
-			- UI.Theme.Padding._value.Offset,
+			- UI.Theme.Padding:peek().Offset,
 		0.5,
 		Input._instance.AbsoluteSize.Y / 2 + 6
 	)
@@ -592,7 +568,12 @@ updateCompletion = function()
 		Tooltip.Text =
 			string.format(argumentFormat, _K.Util.String.escapeRichText(suggestion), "command", value.description)
 		if invalid then
-			Tooltip.Text ..= string.format(invalidFormat, `\n<b>Restricted to {value.RestrictedToRole.name}</b>`)
+			Tooltip.Text ..= string.format(
+				invalidFormat,
+				if value.RestrictedToRole
+					then `\n<b>Restricted to {value.RestrictedToRole.name}</b>`
+					else "\n<b>Restricted</b>"
+			)
 			for rank, roleData in _K.Data.rolesList do
 				local roleId = roleData._key
 				if
@@ -768,25 +749,25 @@ return {
 		end
 		initialized = true
 
-		Input.Value(_K.getCommandPrefix(), true)
+		Input:SetValue(_K.getCommandPrefix())
 		CommandBar.Parent = UI.TopbarFrame
 		_K.client.hotkeys.commandBar =
-			{ key = UI.state(Enum.KeyCode.Semicolon), mods = UI.state({}), callback = self.show }
+			{ key = UI.signal(Enum.KeyCode.Semicolon), mods = UI.signal({}), callback = self.show }
 		_K.client.CommandBarState = { validState, indicatorColor }
 
 		local lastPrefix = _K.getCommandPrefix()
 		local function updatePrefix()
 			local prefix = _K.getCommandPrefix()
-			Input.Value(prefix .. string.sub(Input._input.Text, #lastPrefix + 1), true)
+			Input:SetValue(prefix .. string.sub(Input._input.Text, #lastPrefix + 1))
 			lastPrefix = prefix
 		end
-		_K.client.settings.prefix:Connect(updatePrefix)
-		_K.client.playerPrefix:Connect(updatePrefix)
+		UI.effect(UI.on(_K.client.settings.prefix, updatePrefix, true)):get()
+		UI.effect(UI.on(_K.client.playerPrefix, updatePrefix, true)):get()
 
-		TooltipFrame.MouseWheelForward:Connect(suggestionUp)
-		TooltipFrame.MouseWheelBackward:Connect(suggestionDown)
+		local _ = TooltipFrame.MouseWheelForward:Connect(suggestionUp)
+		local _ = TooltipFrame.MouseWheelBackward:Connect(suggestionDown)
 
-		UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		local _ = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			if input.UserInputType == Enum.UserInputType.Keyboard then
 				if not Input._input:IsFocused() then
 					return
@@ -823,8 +804,8 @@ return {
 		end)
 		Input._input:GetPropertyChangedSignal("SelectionStart"):Connect(function()
 			if Input._input.SelectionStart ~= -1 then
-				if validState._value == false then
-					validState(nil)
+				if validState:peek() == false then
+					validState:set(nil)
 				end
 				clearCompletion()
 			else
@@ -832,11 +813,11 @@ return {
 			end
 		end)
 
-		Input._input.Focused:Connect(function()
-			Input.Value(_K.Util.String.trimEnd(Input._input.Text), true)
+		local _ = Input._input.Focused:Connect(function()
+			Input:SetValue(_K.Util.String.trimEnd(Input._input.Text))
 		end)
 
-		Input._input.FocusLost:Connect(function(enterPressed)
+		local _ = Input._input.FocusLost:Connect(function(enterPressed, input)
 			if enterPressed then
 				local data = currentCompletionData
 				if #data.invalid > 0 then
@@ -889,7 +870,9 @@ return {
 						table.remove(commandHistory)
 					end
 				end
-				Input.Value(prefix, true)
+				Input:SetValue(prefix)
+			elseif input and input.KeyCode == Enum.KeyCode.Escape then
+				hideCommandBar()
 			end
 			return
 		end)
@@ -915,7 +898,7 @@ return {
 			if string.find(text, prefix, 1, true) ~= 1 then
 				input._input.CursorPosition += prefixLen
 				text = prefix .. text
-				input.Value(text, true)
+				input:SetValue(text)
 				input._input.CursorPosition += prefixLen
 			end
 
@@ -923,14 +906,14 @@ return {
 			local trimmed = prefix .. _K.Util.String.trimStart(string.sub(text, prefixLen + 1))
 			if trimmed ~= input._input.Text then
 				text = trimmed
-				input.Value(trimmed, true)
+				input:SetValue(trimmed)
 			end
 
 			if text ~= prefix then
 				-- remove duplicate starting prefix
 				if string.find(text, prefix, prefixLen + 1, true) == prefixLen + 1 then
 					text = string.sub(text, prefixLen + 1)
-					input.Value(text, true)
+					input:SetValue(text)
 				else
 					input.DisplayText(_K.Util.String.escapeRichText(text), true)
 				end
@@ -958,5 +941,7 @@ return {
 			Input._input:CaptureFocus()
 		end
 	end,
-	hide = hideCommandBar,
+	hide = function()
+		hideCommandBar()
+	end,
 }

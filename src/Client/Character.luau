@@ -11,16 +11,18 @@ local maxSpeed = 128
 
 local flyAttachment = Instance.new("Attachment")
 
-local align = Instance.new("AlignOrientation", flyAttachment)
+local align = Instance.new("AlignOrientation")
 align.Attachment0 = flyAttachment
 align.Mode = "OneAttachment"
 align.RigidityEnabled = true
 align.Enabled = true
+align.Parent = flyAttachment
 
-local linear = Instance.new("LinearVelocity", flyAttachment)
+local linear = Instance.new("LinearVelocity")
 linear.Attachment0 = flyAttachment
 linear.ForceLimitsEnabled = false
 linear.Enabled = true
+linear.Parent = flyAttachment
 
 local speed = 0
 local function updateFly(delta: number, constant: boolean?)
@@ -167,8 +169,8 @@ local function onJumpRequest()
 				Character.noclip(if fly then true else not noclipping)
 				if not fly then
 					local status = if noclipping
-						then `<font color="#{UI.Theme.Valid._value:ToHex()}">enabled`
-						else `<font color="#{UI.Theme.Invalid._value:ToHex()}">disabled`
+						then `<font color="#{UI.Theme.Valid:peek():ToHex()}">enabled`
+						else `<font color="#{UI.Theme.Invalid:peek():ToHex()}">disabled`
 					Notify({ Text = `<b>Noclip {status}</font>.</b>\nDouble tap <b>jump</b> to toggle.` })
 				end
 			end
@@ -205,14 +207,14 @@ end)
 if LocalPlayer.Character then
 	task.spawn(onCharacter, LocalPlayer.Character)
 end
-LocalPlayer.CharacterAdded:Connect(onCharacter)
-LocalPlayer.CharacterRemoving:Connect(function(character)
+local _ = LocalPlayer.CharacterAdded:Connect(onCharacter)
+local _ = LocalPlayer.CharacterRemoving:Connect(function(character)
 	if characterCleanup[character] and characterCleanup[character].Connected then
 		characterCleanup[character]:Disconnect()
 	end
 	characterCleanup[character] = nil
 end)
 
-UserInputService.JumpRequest:Connect(onJumpRequest)
+local _ = UserInputService.JumpRequest:Connect(onJumpRequest)
 
 return Character

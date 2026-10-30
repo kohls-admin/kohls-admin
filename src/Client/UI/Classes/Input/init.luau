@@ -1,15 +1,15 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 local Clack = require(script.Clack).registerAll()
 
 Clack.enabled = UI.raw(UI.Theme.TypingSounds)
 Clack.everyTextBox = UI.raw(UI.Theme.TypingSoundsOnEveryTextBox)
-UI.Theme.TypingSounds:Connect(function(value)
-	Clack.enabled = value and UI.Theme.SoundEnabled._value
-end)
-UI.Theme.TypingSoundsOnEveryTextBox:Connect(function(value)
+UI.effect(UI.on(UI.Theme.TypingSounds, function(value)
+	Clack.enabled = value and UI.Theme.SoundEnabled:peek()
+end, true)):get()
+UI.effect(UI.on(UI.Theme.TypingSoundsOnEveryTextBox, function(value)
 	Clack.everyTextBox = value
-end)
+end, true)):get()
 
 local function stripNewLines(text: string)
 	return string.gsub(string.gsub(text, "\n", " "), "\r", " ")
@@ -39,7 +39,7 @@ local function updateSelection(selection, display, input, inputOffset, cursorWid
 		bytePositionToWidth(input.Text, display.TextSize, display.FontFace, display.RichText, input.SelectionStart)
 	local deltaWidth = cursorWidth - selectWidth
 	selection.Size = UDim2.fromOffset(deltaWidth, display.TextSize)
-	selection.Position = UDim2.new(0, selectWidth - inputOffset._value, 0.5, 0)
+	selection.Position = UDim2.new(0, selectWidth - inputOffset:peek(), 0.5, 0)
 	selection.Visible = true
 end
 
@@ -47,23 +47,23 @@ local function updateCursor(cursor, display, input, inputMask, inputOffset, sele
 	local cursorWidth =
 		bytePositionToWidth(input.Text, display.TextSize, display.FontFace, display.RichText, input.CursorPosition)
 	local visibleWidth = cursor.Parent.AbsoluteSize.X
-	local cursorOffset = cursorWidth - inputOffset._value
+	local cursorOffset = cursorWidth - inputOffset:peek()
 
-	local margin = if (display.TextBounds.X > visibleWidth or inputOffset._value > 0) and cursorWidth > 32
+	local margin = if (display.TextBounds.X > visibleWidth or inputOffset:peek() > 0) and cursorWidth > 32
 		then 32
 		else 0
 	if cursorOffset > visibleWidth then
-		inputOffset(math.min(display.TextBounds.X, inputOffset._value + cursorOffset - visibleWidth))
+		inputOffset(math.min(display.TextBounds.X, inputOffset:peek() + cursorOffset - visibleWidth))
 		cursorOffset = visibleWidth
 	elseif cursorOffset < margin then
-		inputOffset(inputOffset._value + cursorOffset - margin)
-		if margin == 0 or inputOffset._value <= display.TextSize / 2 then
-			inputOffset(math.min(0, inputOffset._value))
+		inputOffset(inputOffset:peek() + cursorOffset - margin)
+		if margin == 0 or inputOffset:peek() <= display.TextSize / 2 then
+			inputOffset(math.min(0, inputOffset:peek()))
 		end
 		cursorOffset = margin
 	end
 
-	input.Position = UDim2.fromOffset(-inputOffset._value, 0)
+	input.Position = UDim2.fromOffset(-inputOffset:peek(), 0)
 	cursor.Position = UDim2.fromOffset(cursorOffset, 1)
 	cursor.Visible = true
 
@@ -118,6 +118,16 @@ local Class = {}
 Class.__index = Class
 setmetatable(Class, BaseClass)
 
+-- Writes Value and the TextBox text together. Writing Value alone only reaches `_input.Text` when valueSync runs on the
+-- next flush, so callers that read `_input.Text` or set CursorPosition straight after must use this.
+function Class:SetValue(value: any)
+	self.Value(value, true)
+	self._input.Text = tostring(value)
+	if not UI.isReactive() then
+		UI.flush()
+	end
+end
+
 -- TODO: send/clear button
 function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
@@ -125,7 +135,7 @@ function Class.new(properties: Properties?)
 	self.IconProperties = {}
 
 	local cleanup = {}
-	local textState = UI.state(UI.raw(self.Value))
+	local textState = UI.signal(UI.raw(self.Value))
 
 	local inputSize = function()
 		local fill = self.Fill()
@@ -159,6 +169,12 @@ function Class.new(properties: Properties?)
 	}
 	self._displayLabel = displayLabel
 
+	local valueSync = UI.effect(UI.on(self.Value, function(value)
+		self._input.Text = tostring(value)
+	end, true))
+	valueSync:get()
+	table.insert(cleanup, valueSync)
+
 	self._input = UI.new "TextBox" {
 		AutomaticSize = Enum.AutomaticSize.X,
 		AutoLocalize = false,
@@ -167,7 +183,7 @@ function Class.new(properties: Properties?)
 		BackgroundTransparency = 1,
 		TextTransparency = 1,
 		TextSize = self.FontSize,
-		Text = self.Value,
+		Text = tostring(UI.raw(self.Value)),
 		FontFace = self.FontFace,
 		RichText = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
@@ -177,62 +193,62 @@ function Class.new(properties: Properties?)
 
 		FocusLost = function()
 			local text = self._input.Text
-			local numberOnly = self.NumberOnly._value
-			local integerOnly = self.IntegerOnly._value
+			local numberOnly = self.NumberOnly:peek()
+			local integerOnly = self.IntegerOnly:peek()
 
 			if text == "" and (numberOnly or integerOnly) then
-				self.Value(self.NumberRange._value.Min)
+				self:SetValue(self.NumberRange:peek().Min)
 				return
 			end
 
 			if (numberOnly or integerOnly) and text ~= "" then
 				local number = tonumber(text)
 				if not number or (integerOnly and string.find(text :: string, "%D")) then
-					self._input.Text = self.Value._value
+					self._input.Text = tostring(self.Value:peek())
 					return
 				end
-				local numberClamped = math.clamp(number, self.NumberRange._value.Min, self.NumberRange._value.Max)
+				local numberClamped = math.clamp(number, self.NumberRange:peek().Min, self.NumberRange:peek().Max)
 				text = if number == numberClamped then self._input.Text else numberClamped
-				self._input.Text = text
+				self._input.Text = tostring(text)
 				local textLength = #tostring(text)
 				if self._input.CursorPosition - 1 > textLength then
 					self._input.CursorPosition = textLength + 1
 				end
 			end
 
-			if self.Hotkey and self.Hotkey._value then
-				local key = UI.UserInputService:GetStringForKeyCode(self.Hotkey._value)
-				if key ~= string.sub(text, -1) then
-					text ..= key
+			if self.Hotkey and self.Hotkey:peek() then
+				local key = UI.UserInputService:GetStringForKeyCode(self.Hotkey:peek())
+				if key ~= string.sub(tostring(text), -1) then
+					text = tostring(text) .. key
+					self._input.Text = text
 				end
 			end
 
-			if self.MaxChars._value ~= math.huge then
-				text = string.sub(text, 1, self.MaxChars._value)
-				self._input.CursorPosition = math.min(self.MaxChars._value + 1, self._input.CursorPosition)
+			if self.MaxChars:peek() ~= math.huge then
+				text = string.sub(tostring(text), 1, self.MaxChars:peek())
+				self._input.CursorPosition = math.min(self.MaxChars:peek() + 1, self._input.CursorPosition)
 				self._input.Text = text
 			end
 
-			if self.Validate and not self.Validate._value(text) then
-				self._input.Text = if self.MaxChars._value ~= math.huge
-					then string.sub(self.Value._value, 1, self.MaxChars._value)
-					else self.Value._value
+			if self.Validate and not self.Validate:peek()(text) then
+				local currentText = tostring(self.Value:peek())
+				self._input.Text = if self.MaxChars:peek() ~= math.huge
+					then string.sub(currentText, 1, self.MaxChars:peek())
+					else currentText
 				return
 			end
 
-			self.Value(text)
+			self:SetValue(text)
 		end,
 	}
 	self._input:AddTag("KeyClackSound")
 
-	if self.HotkeyInput._value then
-		table.insert(
-			cleanup,
-			self._input.Focused:Connect(function()
-				self.Value("")
-			end)
-		)
-		UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if self.HotkeyInput:peek() then
+		local focusConn = self._input.Focused:Connect(function()
+			self:SetValue("")
+		end)
+		table.insert(cleanup, focusConn)
+		local inputConn = UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			if not self._input:IsFocused() then
 				return
 			end
@@ -246,23 +262,24 @@ function Class.new(properties: Properties?)
 				local hotkeyText =
 					`{mods.Ctrl and "Ctrl+" or ""}{mods.Shift and "Shift+" or ""}{mods.Alt and "Alt+" or ""}{mods.Meta and "Meta+" or ""}`
 				if table.find(MODIFIERS, input.KeyCode) then
-					self.Value(hotkeyText)
+					self:SetValue(hotkeyText)
 					return
 				end
 
 				self.Hotkey(input.KeyCode)
 				self.Modifiers(mods)
-				self.Value(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode), true)
+				self:SetValue(hotkeyText .. UI.UserInputService:GetStringForKeyCode(input.KeyCode))
 				self._input:ReleaseFocus(true)
 			end
 		end)
+		table.insert(cleanup, inputConn)
 	end
 
 	local selection = UI.new "Frame" {
 		Name = "Selection",
 		AnchorPoint = Vector2.new(0, 0.5),
 		BackgroundTransparency = 0.75,
-		Size = UDim2.new(0, 0, 0, self.FontSize),
+		Size = UDim2.new(0, 0, 0, self.FontSize:peek()),
 		Position = UDim2.new(0, 0, 0.5, 0),
 		BackgroundColor3 = UI.Theme.Secondary,
 		BorderSizePixel = 0,
@@ -312,29 +329,50 @@ function Class.new(properties: Properties?)
 		selection,
 	}
 
-	self._inputOffset = UI.state(0)
-	self._maskSize = UI.state(inputMask, "AbsoluteSize")
-	self._bounds = UI.state(self._input, "TextBounds")
+	self._inputOffset = UI.signal(0)
+	self._maskSize = UI.property(inputMask, "AbsoluteSize")
+	self._bounds = UI.property(self._input, "TextBounds")
+	table.insert(cleanup, textState)
+	table.insert(cleanup, self._inputOffset)
+	table.insert(cleanup, self._maskSize)
+	table.insert(cleanup, self._bounds)
 
 	local isUpdating = false
-	self._input:GetPropertyChangedSignal("Text"):Connect(function()
-		if isUpdating then
-			return
-		end
-		isUpdating = true
-
-		local text = self._input.Text
-		text = if self.MaxChars._value ~= math.huge then string.sub(text, 1, self.MaxChars._value) else text
-		self._input.Text = text
-		textState(text, true)
-
-		isUpdating = false
-	end)
-
-	UI.edit(self._input, {
+	UI.edit(self._input)({
 		Position = function()
 			local xOffset = if self._bounds().X > self._maskSize().X then -self._inputOffset() else 0
 			return UDim2.fromOffset(xOffset, 0)
+		end,
+		_Text = function()
+			if isUpdating then
+				return
+			end
+			isUpdating = true
+
+			local text = self._input.Text
+			text = if self.MaxChars:peek() ~= math.huge then string.sub(text, 1, self.MaxChars:peek()) else text
+			self._input.Text = text
+			textState(text, true)
+			UI.flush()
+
+			isUpdating = false
+		end,
+		_SelectionStart = function()
+			if self._input.SelectionStart == -1 then
+				selection.Visible = false
+			else
+				updateSelection(selection, displayLabel, self._input, self._inputOffset)
+			end
+		end,
+		_CursorPosition = function()
+			lastCursorChange = tick()
+			cursor.TextTransparency = 0
+			if self._input.CursorPosition == -1 then
+				cursor.Visible = false
+			else
+				-- defer for text to register
+				task.defer(updateCursor, cursor, displayLabel, self._input, inputMask, self._inputOffset, selection)
+			end
 		end,
 	})
 
@@ -350,7 +388,7 @@ function Class.new(properties: Properties?)
 		end,
 	}
 	if properties and properties.IconProperties then
-		UI.edit(icon, properties.IconProperties)
+		UI.edit(icon)(properties.IconProperties)
 	end
 
 	self._instance = UI.new "Frame" {
@@ -363,19 +401,15 @@ function Class.new(properties: Properties?)
 			return UDim2.new(1, 0, 0, self.FontSize() + self.Padding().Offset * 2)
 		end,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerPadded,
-		},
+		UI.corner(UI.Theme.CornerPadded),
 		UI.new "Stroke" {},
-		UI.new "UIPadding" {
-			PaddingLeft = self.Padding,
-			PaddingRight = self.Padding,
+		UI.padding {
+			x = self.Padding,
 		},
-		UI.new "UIListLayout" {
-			VerticalAlignment = Enum.VerticalAlignment.Center,
-			FillDirection = Enum.FillDirection.Horizontal,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = self.Padding,
+		UI.list {
+			direction = "x",
+			gap = self.Padding,
+			verticalAlign = "center",
 		},
 
 		icon,
@@ -389,9 +423,7 @@ function Class.new(properties: Properties?)
 
 			cursor,
 			inputMask,
-			UI.new "UIFlexItem" {
-				FlexMode = Enum.UIFlexMode.Fill,
-			},
+			UI.flex("fill"),
 		},
 
 		UI.new "ImageButton" {
@@ -410,36 +442,12 @@ function Class.new(properties: Properties?)
 				self.DisplayText("", true)
 				self.Value("", true)
 				textState("", true)
+				UI.flush()
 			end,
 		},
 
-		[UI.Clean] = cleanup,
+		__CLEAN = cleanup,
 	}
-
-	table.insert(
-		cleanup,
-		self._input:GetPropertyChangedSignal("SelectionStart"):Connect(function()
-			if self._input.SelectionStart == -1 then
-				selection.Visible = false
-			else
-				updateSelection(selection, displayLabel, self._input, self._inputOffset)
-			end
-		end)
-	)
-
-	table.insert(
-		cleanup,
-		self._input:GetPropertyChangedSignal("CursorPosition"):Connect(function()
-			lastCursorChange = tick()
-			cursor.TextTransparency = 0
-			if self._input.CursorPosition == -1 then
-				cursor.Visible = false
-			else
-				-- defer for text to register
-				task.defer(updateCursor, cursor, displayLabel, self._input, inputMask, self._inputOffset, selection)
-			end
-		end)
-	)
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end

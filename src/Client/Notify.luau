@@ -8,7 +8,7 @@ local function resetOffset(announce: boolean?)
 	for i, list in ipairs(if announce then announcements else notifications) do
 		local card, _, offset = unpack(list)
 		offset(heightOffset, true)
-		heightOffset += card.AbsoluteSize.Y + UI.Theme.Padding._value.Offset
+		heightOffset += card.AbsoluteSize.Y + UI.Theme.Padding:peek().Offset
 	end
 	return heightOffset
 end
@@ -25,8 +25,8 @@ local function hide(info, announce: boolean?)
 	table.remove(list, found)
 	resetOffset(announce)
 	card.ZIndex = -1
-	visible(nil)
-	task.delay(1 + UI.Theme.TweenOut._value.Time, card.Destroy, card)
+	visible:set(nil)
+	task.delay(1 + UI.Theme.TweenOut:peek().Time, card.Destroy, card)
 end
 
 return function(dialogOverride)
@@ -38,8 +38,8 @@ return function(dialogOverride)
 		dialogOverride.Text = "No text provided"
 	end
 
-	local visible = UI.state(false)
-	local offset = UI.state(0)
+	local visible = UI.signal(false)
+	local offset = UI.signal(0)
 	local self
 
 	local activated = dialogOverride.Activated
@@ -74,6 +74,19 @@ return function(dialogOverride)
 	end
 
 	local dialog
+	-- not owned by the card: destroyed with it by the __CLEAN below, once hide()'s delayed Destroy ends the animation
+	local position = if announce
+		then UI.spring(function()
+			local padding = UI.Theme.Padding().Offset
+			local height = UI.TopbarInset().Height
+			local y = if visible() then padding + offset() + dialog._instance.AbsoluteSize.Y else -height - 32
+			return UDim2.new(0.5, 0, 0, y)
+		end, 8 / math.pi, 0.5)
+		else UI.spring(function()
+			local padding = UI.Theme.Padding().Offset
+			return UDim2.new(1, if visible() then -padding else 256 + 32, 1, -(padding + offset()))
+		end, 8 / math.pi, 0.625)
+
 	dialog = UI.new("Dialog")(_K.Util.Table.merge({
 		Parent = UI.LayerTopInset,
 		Close = close,
@@ -82,26 +95,10 @@ return function(dialogOverride)
 
 		Size = UDim2.fromScale(0.5, 0),
 		AnchorPoint = if announce then Vector2.new(0.5, 1) else Vector2.new(1, 1),
-		Position = if announce
-			then UI.spring(function()
-				local padding = UI.Theme.Padding().Offset
-				local height = UI.TopbarInset().Height
-				local y = if visible() then padding + offset() + dialog._instance.AbsoluteSize.Y else -height - 32
-				return UDim2.new(0.5, 0, 0, y)
-			end, 16, 0.5)
-			else UI.spring(function()
-				local padding = UI.Theme.Padding().Offset
-				return UDim2.new(1, if visible() then -padding else 256 + 32, 1, -(padding + offset()))
-			end, 16, 0.625),
-		if announce
-			then UI.new "UIPadding" {
-				PaddingLeft = UI.Theme.Padding,
-				PaddingRight = UI.Theme.Padding,
-				PaddingTop = UI.Theme.Padding,
-				PaddingBottom = UI.Theme.Padding,
-			}
-			else nil,
+		Position = position,
+		if announce then UI.padding(UI.Theme.Padding) else nil,
 	}, dialogOverride))
+	UI.edit(dialog._instance)({ __CLEAN = { position, visible, offset } })
 
 	if type(activated) == "function" then
 		dialog._instance.Active = true
@@ -111,22 +108,20 @@ return function(dialogOverride)
 		end)
 	end
 
-	UI.new "UISizeConstraint" {
-		Parent = dialog._instance,
-		MaxSize = Vector2.new(if announce then 512 else 256, 9e9),
-	}
+	UI.sizeConstraint({
+		max = Vector2.new(if announce then 512 else 256, 9e9),
+	}).Parent = dialog._instance
 
 	UI.Haptic.Notification:Play()
 
 	if userFrame or from then
 		userFrame = if userFrame then _K.client.UserFrame(unpack(userFrame)) else _K.client.UserFrame(from, name, image)
-		UI.edit(userFrame, {
+		UI.edit(userFrame)({
 			Parent = dialog,
 
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UDim.new(0, 4),
-				FillDirection = Enum.FillDirection.Horizontal,
+			UI.list {
+				direction = "x",
+				gap = 4,
 			},
 			UI.new "Spacer" {
 				LayoutOrder = 8,

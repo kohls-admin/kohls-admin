@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local DEFAULT = {
@@ -13,7 +13,7 @@ local Class = {}
 Class.__index = Class
 setmetatable(Class, BaseClass)
 
-local LayerTopSize = UI.state(UI.LayerTop, "AbsoluteSize")
+local LayerTopSize = UI.property(UI.LayerTop, "AbsoluteSize")
 
 function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
@@ -21,14 +21,16 @@ function Class.new(properties: Properties?)
 
 	local cleanup = {}
 
-	self._list = UI.new "UIListLayout" {
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		FillDirection = Enum.FillDirection.Vertical,
-		VerticalAlignment = Enum.VerticalAlignment.Top,
+	self._list = UI.list {
+		direction = "y",
+		verticalAlign = "start",
 	}
 
-	local listContentSize = UI.state(self._list, "AbsoluteContentSize")
+	local listContentSize = UI.property(self._list, "AbsoluteContentSize")
 	table.insert(cleanup, listContentSize)
+	local function onCanvasPosition()
+		UI.clearState("hover")
+	end
 
 	self._content = UI.new "ScrollingFrame" {
 		Name = "Menu",
@@ -44,11 +46,7 @@ function Class.new(properties: Properties?)
 
 		self._list,
 
-		[UI.Event] = {
-			CanvasPosition = function()
-				UI.clearState("hover")
-			end,
-		},
+		_CanvasPosition = onCanvasPosition,
 	} :: ScrollingFrame & { UIListLayout: UIListLayout }
 
 	self._instance = UI.new "TextButton" {
@@ -56,9 +54,7 @@ function Class.new(properties: Properties?)
 		ZIndex = 100,
 		Visible = self.Visible,
 		Parent = UI.LayerTop,
-		AnchorPoint = function()
-			return if self.RightAlign() then Vector2.new(1, 0) else Vector2.zero
-		end,
+		AnchorPoint = UI.pick(self.RightAlign, Vector2.new(1, 0), Vector2.zero),
 		BackgroundColor3 = UI.Theme.Primary,
 		ClipsDescendants = true,
 
@@ -66,23 +62,30 @@ function Class.new(properties: Properties?)
 		Text = "",
 
 		self._content,
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
-		},
+		UI.corner(UI.Theme.CornerRadius),
 		UI.new "Gradient" {},
 		UI.new "Stroke" {},
 
-		[UI.Clean] = cleanup,
+		__CLEAN = cleanup,
 	} :: TextButton & { UIContent: typeof(self._content), UICorner: UICorner, UIStroke: UIStroke }
 
-	local positionState = UI.state(Vector2.zero)
-	local sizeState = UI.state(Vector2.zero)
-	local menuSize = UI.state(self._instance, "AbsoluteSize")
+	local positionState = UI.signal(Vector2.zero)
+	local sizeState = UI.signal(Vector2.zero)
+	local menuSize = UI.property(self._instance, "AbsoluteSize")
+	local positionConn, sizeConn
 	table.insert(cleanup, positionState)
 	table.insert(cleanup, sizeState)
 	table.insert(cleanup, menuSize)
+	table.insert(cleanup, function()
+		if positionConn then
+			positionConn:Disconnect()
+		end
+		if sizeConn then
+			sizeConn:Disconnect()
+		end
+	end)
 
-	local menuPosition = UI.compute(function()
+	local menuPosition = UI.computed(function()
 		local size = menuSize()
 		local layerSize = LayerTopSize()
 		local absolutePos = positionState()
@@ -91,58 +94,66 @@ function Class.new(properties: Properties?)
 		local padding = UI.Theme.Padding().Offset
 		local height = UI.TopbarInset().Height
 
-		local xPos = absolutePos.X + if rightAlign then absoluteSize.X else 0
+		local xPos = absolutePos.X + (rightAlign and absoluteSize.X or 0)
 		local yPos = absolutePos.Y + absoluteSize.Y + padding + height
+		local xClamped = rightAlign and math.clamp(xPos, size.X, math.max(size.X, layerSize.X))
+			or math.clamp(xPos, 0, math.max(0, layerSize.X - size.X))
 
-		return UDim2.fromOffset(
-			if rightAlign
-				then math.clamp(xPos, size.X, math.max(size.X, layerSize.X))
-				else math.clamp(xPos, 0, math.max(0, layerSize.X - size.X)),
-			math.clamp(yPos, 0, math.max(0, layerSize.Y - size.Y))
-		)
+		return UDim2.fromOffset(xClamped, math.clamp(yPos, 0, math.max(0, layerSize.Y - size.Y)))
 	end)
+	table.insert(cleanup, menuPosition)
 
-	UI.edit(self._instance, {
+	local function disconnectAdornee()
+		if positionConn then
+			positionConn:Disconnect()
+			positionConn = nil
+		end
+		if sizeConn then
+			sizeConn:Disconnect()
+			sizeConn = nil
+		end
+	end
+	table.insert(cleanup, disconnectAdornee)
+
+	UI.edit(self._instance)({
 		Position = menuPosition,
-	})
-
-	table.insert(
-		cleanup,
-		UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
-			if
-				(
-					input.UserInputType == Enum.UserInputType.MouseButton1
-					or input.UserInputType == Enum.UserInputType.Touch
-					or input.UserInputType == Enum.UserInputType.TextInput
-				)
-				and self.Visible._value
-				and not UI.pointInGuiObject(input.Position.X, input.Position.Y, self.Adornee._value)
-				and not UI.pointInGuiObject(input.Position.X, input.Position.Y, self._instance)
-			then
-				UI.deactivateState(self.Visible, "floating")
-			end
-		end)
-	)
-
-	table.insert(
-		cleanup,
-		self._instance:GetPropertyChangedSignal("Visible"):Connect(function()
-			local adornee = self.Adornee._value
+		_Visible = function()
+			disconnectAdornee()
+			local adornee = self.Adornee:peek()
 			if self._instance.Visible and typeof(adornee) == "Instance" and adornee:IsA("GuiObject") then
 				positionState(adornee.AbsolutePosition, true)
 				sizeState(adornee.AbsoluteSize, true)
-				positionState:_bindToProperty(adornee, "AbsolutePosition")
-				sizeState:_bindToProperty(adornee, "AbsoluteSize")
-			else
-				if positionState._bindConnection then
-					positionState._bindConnection:Disconnect()
-				end
-				if sizeState._bindConnection then
-					sizeState._bindConnection:Disconnect()
-				end
+				UI.flush()
+				positionConn = adornee:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+					positionState(adornee.AbsolutePosition)
+				end)
+				sizeConn = adornee:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+					sizeState(adornee.AbsoluteSize)
+				end)
 			end
-		end)
-	)
+		end,
+	})
+
+	local inputConn = UI.UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		local adornee = self.Adornee:peek()
+		if
+			(
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+				or input.UserInputType == Enum.UserInputType.TextInput
+			)
+			and self.Visible:peek()
+			and not (typeof(adornee) == "Instance" and adornee:IsA("GuiObject") and UI.Interact.pointIn(
+				input.Position.X,
+				input.Position.Y,
+				adornee
+			))
+			and not UI.Interact.pointIn(input.Position.X, input.Position.Y, self._instance)
+		then
+			UI.deactivateState(self.Visible, "floating")
+		end
+	end)
+	table.insert(cleanup, inputConn)
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end

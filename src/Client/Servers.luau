@@ -22,7 +22,7 @@ function Servers.new(_K)
 		return name
 	end
 
-	_K.Remote.Servers:Connect(function(jobId: string?, data: any?)
+	local _ = _K.Remote.Servers:Connect(function(jobId: string?, data: any?)
 		if not jobId then -- bulk update
 			if type(data) ~= "table" then
 				return
@@ -34,12 +34,12 @@ function Servers.new(_K)
 		else -- single update
 			servers[jobId] = data
 		end
-		_K.client.servers(servers)
+		_K.client.servers(servers, true)
 	end)
 
 	local merge = _K.Util.Table.merge
 
-	local buttonSize = UI.compute(function()
+	local buttonSize = UI.computed(function()
 		return UDim2.new(0.2, 0, 1, -UI.Theme.Padding().Offset)
 	end)
 
@@ -71,18 +71,17 @@ function Servers.new(_K)
 		}, properties))
 	end
 
-	local function createItem(self, server)
-		local lineItem = {} :: any
+	local function createItem(self, lineData)
+		local lineItem: { [string]: any } = {}
 
 		lineItem._instance = UI.new "Frame" {
 			BackgroundTransparency = 1,
 			Size = self.ItemSize,
 
-			UI.new "UIListLayout" {
-				Padding = UI.Theme.Padding,
-				FillDirection = Enum.FillDirection.Horizontal,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
+			UI.list {
+				direction = "x",
+				gap = UI.Theme.Padding,
+				verticalAlign = "center",
 			},
 
 			icon { Image = UI.Theme.Image.Host },
@@ -92,9 +91,7 @@ function Servers.new(_K)
 			label {
 				Name = "Place",
 				FontFace = UI.Theme.Font,
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Shrink,
-				},
+				UI.flex("shrink"),
 			},
 
 			UI.new "Spacer" {},
@@ -109,9 +106,7 @@ function Servers.new(_K)
 				Label = "Join",
 				Size = buttonSize,
 
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Shrink,
-				},
+				UI.flex("shrink"),
 
 				Activated = function()
 					if lineItem.placeId and lineItem.jobId then
@@ -126,7 +121,9 @@ function Servers.new(_K)
 
 	local playerCountFormat = `%-{#tostring(_K.Service.Players.MaxPlayers)}d`
 
-	local function renderItem(self, lineItem, jobId)
+	local function renderItem(self, itemData, lineData)
+		local lineItem = itemData
+		local jobId = lineData
 		local now = tick()
 		lineItem.lastRender = now
 		lineItem.jobId = jobId
@@ -156,8 +153,8 @@ function Servers.new(_K)
 		end
 	end
 
-	local itemSize = UI.compute(function()
-		return UDim2.new(1, 0, 0, UI.Theme.FontSize * 2 + UI.Theme.Padding().Offset)
+	local itemSize = UI.computed(function()
+		return UDim2.new(1, 0, 0, UI.Theme.FontSize() * 2 + UI.Theme.Padding().Offset)
 	end)
 
 	local emptyListLabel = label {
@@ -168,10 +165,10 @@ function Servers.new(_K)
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Visible = false,
 	}
-	emptyListLabel.Visible = _K.Util.Table.countKeys(_K.client.servers._value) == 0
-	_K.client.servers:Connect(function()
-		emptyListLabel.Visible = _K.Util.Table.countKeys(_K.client.servers._value) == 0
-	end)
+	emptyListLabel.Visible = _K.Util.Table.countKeys(_K.client.servers:peek()) == 0
+	UI.effect(UI.on(_K.client.servers, function()
+		emptyListLabel.Visible = _K.Util.Table.countKeys(_K.client.servers:peek()) == 0
+	end, true)):get()
 
 	local scroller = UI.new "ScrollerFast" {
 		Name = "Servers",

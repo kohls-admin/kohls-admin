@@ -6,10 +6,10 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 	local userRank = _K.Auth.getRank(userId)
 	_K.client.rank(userRank)
 
-	local commandBarRank = _K.client.settings.commandBarRank._value
-	local dashboardRank = _K.client.settings.dashboardRank._value
-	local commandsButtonRank = _K.client.settings.commandsButtonRank._value
-	local dashboardButtonRank = _K.client.settings.dashboardButtonRank._value
+	local commandBarRank = _K.client.settings.commandBarRank:peek()
+	local dashboardRank = _K.client.settings.dashboardRank:peek()
+	local commandsButtonRank = _K.client.settings.commandsButtonRank:peek()
+	local dashboardButtonRank = _K.client.settings.dashboardButtonRank:peek()
 
 	if commandBarRank == nil then
 		commandBarRank = 0
@@ -77,23 +77,25 @@ _K.client.updateInterfaceAuth = _K.Util.Function.debounce(0.2, function()
 	_K.Hook.authChanged:Fire()
 end)
 
-_K.client.settings.commandBarRank:Connect(_K.client.updateInterfaceAuth)
-_K.client.settings.dashboardRank:Connect(_K.client.updateInterfaceAuth)
-_K.client.settings.dashboardButtonRank:Connect(_K.client.updateInterfaceAuth)
+UI.effect(UI.on(_K.client.settings.commandBarRank, _K.client.updateInterfaceAuth, true)):get()
+UI.effect(UI.on(_K.client.settings.dashboardRank, _K.client.updateInterfaceAuth, true)):get()
+UI.effect(UI.on(_K.client.settings.dashboardButtonRank, _K.client.updateInterfaceAuth, true)):get()
 
-_K.Remote.Announce:Connect(_K.Announce)
-_K.Remote.Notify:Connect(_K.Notify)
+local _ = _K.Remote.Announce:Connect(_K.Announce)
+local _ = _K.Remote.Notify:Connect(_K.Notify)
 
-_K.Remote.SetCore:Connect(function(parameter: string, value: any)
+local _ = _K.Remote.SetCore:Connect(function(parameter: string, value: any)
 	_K.Service.StarterGui:SetCore(parameter, value)
 end)
 
 local requestingCommand = {}
-_K.Remote.RequestCommand.OnInvoke = function(from: Player, text: string)
-	if requestingCommand[from.UserId] then
+_K.Remote.RequestCommand.OnInvoke = function(from: Player | number, text: string)
+	local fromUserId = if type(from) == "number" then from else from.UserId
+	local fromName = if type(from) == "number" then nil else from.DisplayName
+	if requestingCommand[fromUserId] then
 		return
 	end
-	requestingCommand[from.UserId] = true
+	requestingCommand[fromUserId] = true
 
 	local actionSignal = _K.Util.Signal.new()
 	_K.Notify({
@@ -105,7 +107,7 @@ _K.Remote.RequestCommand.OnInvoke = function(from: Player, text: string)
 		RightAction = true,
 		Duration = 30,
 
-		_K.client.UserFrame(from.UserId, from.DisplayName),
+		_K.client.UserFrame(fromUserId, fromName),
 
 		[UI.Hook] = {
 			Action = function(v)
@@ -117,29 +119,29 @@ _K.Remote.RequestCommand.OnInvoke = function(from: Player, text: string)
 	task.delay(30, actionSignal.Fire, actionSignal, false)
 
 	local action = actionSignal:Wait() == true
-	requestingCommand[from.UserId] = nil
+	requestingCommand[fromUserId] = nil
 	return action
 end
 
 -- general data replication
 
-_K.Remote.Ban:Connect(function(userId, ban)
+local _ = _K.Remote.Ban:Connect(function(userId, ban)
 	_K.Data.bans[userId] = ban
-	_K.client.bans(_K.Data.bans)
+	_K.client.bans(_K.Data.bans, true)
 end)
 
-_K.Remote.Bans:Connect(function(bans)
+local _ = _K.Remote.Bans:Connect(function(bans)
 	if bans then
 		_K.Data.bans = bans
-		_K.client.bans(_K.Data.bans)
+		_K.client.bans(_K.Data.bans, true)
 	end
 end)
 
-_K.Remote.DisplayBubble:Connect(function(character: Model, message: string)
+local _ = _K.Remote.DisplayBubble:Connect(function(character: Model, message: string)
 	_K.Service.TextChat:DisplayBubble(character, message)
 end)
 
-_K.Remote.Member:Connect(function(userId, member)
+local _ = _K.Remote.Member:Connect(function(userId, member)
 	local viewas = _K.Registry.commands.viewas
 	if viewas.env.originalMember and userId == tostring(_K.LocalPlayer.UserId) then
 		viewas.env.originalMember = member
@@ -147,11 +149,11 @@ _K.Remote.Member:Connect(function(userId, member)
 	end
 
 	_K.Data.members[userId] = member
-	_K.client.members(_K.Data.members)
+	_K.client.members(_K.Data.members, true)
 	_K.client.updateInterfaceAuth()
 end)
 
-_K.Remote.Members:Connect(function(members)
+local _ = _K.Remote.Members:Connect(function(members)
 	local viewas = _K.Registry.commands.viewas
 	if viewas.env.originalMember then
 		local key = tostring(_K.LocalPlayer.UserId)
@@ -165,13 +167,32 @@ _K.Remote.Members:Connect(function(members)
 	end
 
 	_K.Data.members = members
-	_K.client.members(_K.Data.members)
+	_K.client.members(_K.Data.members, true)
 	_K.client.updateInterfaceAuth()
 end)
 
-_K.Remote.Log:Connect(function(log)
+local _ = _K.Remote.Log:Connect(function(log)
 	if not _K.ready then
 		return
+	end
+
+	for i = #_K.Data.logs, 1, -1 do
+		local existing = _K.Data.logs[i]
+		if #_K.Data.logs - i > 250 and existing[3] < log[3] then
+			break
+		end
+		if
+			existing[3] == log[3]
+			and existing[2] == log[2]
+			and existing[4] == log[4]
+			and existing[1] ~= log[1]
+			and string.find(existing[1], "…", 1, true)
+		then
+			existing[1] = log[1]
+			existing.filterText = nil
+			task.defer(_K.client.dashboard.Logs.updateList, _K.client.dashboard.Logs)
+			return
+		end
 	end
 
 	table.insert(_K.Data.logs, log)
@@ -181,7 +202,7 @@ _K.Remote.Log:Connect(function(log)
 	task.defer(_K.client.dashboard.Logs.updateList, _K.client.dashboard.Logs)
 end)
 
-_K.Remote.Logs:Connect(function(logsBuffer)
+local _ = _K.Remote.Logs:Connect(function(logsBuffer)
 	if not _K.ready then
 		return
 	end
@@ -208,7 +229,18 @@ _K.Remote.Logs:Connect(function(logsBuffer)
 	_K.client.dashboard.Logs:updateList()
 end)
 
-_K.Remote.Settings:Connect(function(settings)
+local _ = _K.Remote.Settings:Connect(function(settings)
+	-- full settings syncs repeat the pinned announcement, it only shows when it changed
+	if settings.announcement ~= nil and _K.Chat.pinAnnouncement(settings.announcement) then
+		-- shown like the "announce" message would show it
+		local msg, from, duration = unpack(settings.announcement)
+		_K.Announce({
+			From = from,
+			Text = _K.Chat.restoreRichText(_K.Util.String.escapeRichText(msg)),
+			Duration = duration or 0,
+		})
+	end
+
 	local useSaved = _K.Data.savedSettings.useSavedSettings or settings.useSavedSettings
 	for key, value in settings do
 		value = UI.raw(value)
@@ -221,23 +253,23 @@ _K.Remote.Settings:Connect(function(settings)
 		end
 		_K.Data.savedSettings[key] = value
 		if useSaved and _K.client.settings[key] then
-			_K.client.settings[key](value)
+			_K.client.settings[key](value, true)
 		end
 	end
 	_K.client.updateInterfaceAuth()
 end)
 
-_K.Remote.Role:Connect(function(role, roleData)
+local _ = _K.Remote.Role:Connect(function(role, roleData)
 	_K.Data.roles[role] = roleData
 	_K.client.updateInterfaceAuth()
 end)
 
-_K.Remote.Roles:Connect(function(roles)
+local _ = _K.Remote.Roles:Connect(function(roles)
 	_K.Util.Table.merge(_K.Data.roles, roles)
 	_K.client.updateInterfaceAuth()
 end)
 
-_K.Remote.RolesNotification:Connect(function()
+local _ = _K.Remote.RolesNotification:Connect(function()
 	_K.client.rolesNotification()
 end)
 return true

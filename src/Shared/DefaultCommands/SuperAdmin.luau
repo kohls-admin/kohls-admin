@@ -185,7 +185,7 @@ return {
 
 		envClient = function(_K)
 			local env = {
-				hidden = _K.UI.state({}),
+				hidden = _K.UI.signal({}),
 			}
 
 			local function removeCharacter(name: string)
@@ -208,14 +208,14 @@ return {
 				function(userIdOrName: number | string, hiddenRank: number, hideCharacter: boolean?)
 					if type(userIdOrName) == "number" then
 						if hideCharacter == nil then -- remove from hidden list
-							env.hidden._value[userIdOrName] = nil
-							env.hidden(env.hidden._value)
+							env.hidden:peek()[userIdOrName] = nil
+							env.hidden(env.hidden:peek(), true)
 						else
 							local player = _K.Service.Players:GetPlayerByUserId(userIdOrName)
 							if player then
-								env.hidden._value[userIdOrName] = player.Name
-								env.hidden(env.hidden._value)
-								if hiddenRank > _K.client.rank._value then
+								env.hidden:peek()[userIdOrName] = player.Name
+								env.hidden(env.hidden:peek(), true)
+								if hiddenRank > _K.client.rank:peek() then
 									if hideCharacter then
 										pcall(game.Destroy, player.Character)
 									end
@@ -223,7 +223,7 @@ return {
 								end
 							end
 						end
-					elseif type(userIdOrName) == "string" and hiddenRank > _K.client.rank._value then
+					elseif type(userIdOrName) == "string" and hiddenRank > _K.client.rank:peek() then
 						removeCharacter(userIdOrName)
 					end
 				end
@@ -268,7 +268,7 @@ return {
 			end)
 
 			_K.Service.Players.PlayerRemoving:Connect(function(player)
-				_K.Flux.cleanup(cleanup[player])
+				_K.Flux.dispose(cleanup[player])
 				cleanup[player] = nil
 				if env.hidden[player] ~= nil then
 					env.hidden[player] = nil
@@ -316,16 +316,14 @@ return {
 						BackgroundTransparency = 1,
 						Size = self.ItemSize,
 
-						UI.new "UIPadding" {
-							PaddingTop = UI.Theme.PaddingHalf,
-							PaddingBottom = UI.Theme.PaddingHalf,
+						UI.padding {
+							y = UI.Theme.PaddingHalf,
 						},
 
-						UI.new "UIListLayout" {
-							VerticalAlignment = Enum.VerticalAlignment.Center,
-							FillDirection = Enum.FillDirection.Horizontal,
-							SortOrder = Enum.SortOrder.LayoutOrder,
-							Padding = UI.Theme.Padding,
+						UI.list {
+							verticalAlign = "center",
+							direction = "x",
+							gap = UI.Theme.Padding,
 						},
 
 						UI.new "ImageLabel" {
@@ -334,9 +332,7 @@ return {
 							Size = UDim2.new(1, 0, 1, 0),
 							SizeConstraint = Enum.SizeConstraint.RelativeYY,
 
-							UI.new "UICorner" {
-								CornerRadius = UDim.new(1, 0),
-							},
+							UI.corner(UDim.new(1, 0)),
 							UI.new "Stroke" {},
 						},
 
@@ -354,30 +350,23 @@ return {
 							TextTruncate = Enum.TextTruncate.SplitWord,
 							TextXAlignment = Enum.TextXAlignment.Left,
 
-							UI.new "UIFlexItem" { FlexMode = Enum.UIFlexMode.Fill },
+							UI.flex("fill"),
 						},
 					}
 				end,
 				RenderItem = function(self, lineItem, lineData)
 					lineItem.ImageLabel.Image = `rbxthumb://type=AvatarHeadShot&id={lineData}&w=48&h=48`
 					lineItem.TextLabel.Text =
-						`<b>{hidden._value[lineData]}</b> <font transparency="0.5">[{lineData}]</font>`
+						`<b>{hidden:peek()[lineData]}</b> <font transparency="0.5">[{lineData}]</font>`
 				end,
 			}
 
-			UI.edit(scroller._scroller, {
-				UI.new "UIFlexItem" {
-					FlexMode = Enum.UIFlexMode.Fill,
-				},
+			UI.edit(scroller._scroller)({
+				UI.flex("fill"),
 			})
 
-			UI.edit(scroller._instance, {
-				UI.new "UIPadding" {
-					PaddingTop = UI.Theme.PaddingStroke,
-					PaddingBottom = UI.Theme.PaddingStroke,
-					PaddingLeft = UI.Theme.PaddingStroke,
-					PaddingRight = UI.Theme.PaddingStroke,
-				},
+			UI.edit(scroller._instance)({
+				UI.padding(UI.Theme.PaddingStroke),
 			})
 
 			return {

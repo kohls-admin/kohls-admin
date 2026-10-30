@@ -1,4 +1,4 @@
-local UI = require(script.Parent.Parent) :: any
+local UI = require(script.Parent.Parent)
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
 
 local Class = {}
@@ -81,9 +81,13 @@ function Class.bringToFront(self)
 end
 
 function Class.nudge(self)
+	if not self._instance.Parent then
+		return
+	end
 	local nudgeAmount = 32
 	local maxAttempts = 16
-	local position = self._instance.AbsolutePosition
+	local parentPosition = self._instance.Parent.AbsolutePosition
+	local position = self._instance.AbsolutePosition - parentPosition
 	local size = self._instance.AbsoluteSize
 	local parentSize = self._instance.Parent.AbsoluteSize
 
@@ -93,11 +97,12 @@ function Class.nudge(self)
 			if not window._instance.Visible or window == self then
 				continue
 			end
-			if (position - window._instance.AbsolutePosition).Magnitude < 16 then
+			local otherPosition = window._instance.AbsolutePosition - parentPosition
+			if (position - otherPosition).Magnitude < 16 then
 				local newX = math.clamp(position.X + nudgeAmount, 0, math.max(0, parentSize.X - size.X))
 				local newY = math.clamp(position.Y + nudgeAmount, 0, math.max(0, parentSize.Y - size.Y))
 
-				position += Vector2.new(nudgeAmount, nudgeAmount)
+				position = Vector2.new(newX, newY)
 				self.Position(UDim2.fromOffset(newX, newY))
 				nudged = true
 				break
@@ -107,6 +112,7 @@ function Class.nudge(self)
 			break
 		end
 	end
+	UI.flush()
 end
 
 local DEFAULT = {
@@ -134,14 +140,14 @@ function Class.new(properties: Properties?)
 	windowCache[self] = true
 
 	local dragInput, dragStart, startOffset
-	local inputPosition = UI.state(Vector2.new())
-	local dragging = UI.state(false)
-	local resizing = UI.state(false)
-	local resizeHover = UI.state(false)
-	local resizeIconRectOffset = UI.state(Vector2.new())
+	local inputPosition = UI.signal(Vector2.new())
+	local dragging = UI.signal(false)
+	local resizing = UI.signal(false)
+	local resizeHover = UI.signal(false)
+	local resizeIconRectOffset = UI.signal(Vector2.new())
 
 	local function dragUpdate(input)
-		if not dragInput or resizing._value then
+		if not dragInput or resizing:peek() then
 			return
 		end
 
@@ -155,16 +161,17 @@ function Class.new(properties: Properties?)
 			),
 			true
 		)
+		UI.flush()
 	end
 
 	local function dragInputBegan(input, gameProcessed)
-		if gameProcessed or not self.Draggable._value then
+		if gameProcessed or not self.Draggable:peek() then
 			return
 		end
 		if
 			(input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch)
-			and not resizing._value
-			and not resizeHover._value
+			and not resizing:peek()
+			and not resizeHover:peek()
 		then
 			Class.bringToFront(self)
 
@@ -193,8 +200,8 @@ function Class.new(properties: Properties?)
 			math.clamp(input.Position.Y, 0, parentSize.Y),
 			0
 		) - dragStart
-		local resizeMin = self.SizeBounds._value.Min - startSize
-		local resizeMax = self.SizeBounds._value.Max - startSize
+		local resizeMin = self.SizeBounds:peek().Min - startSize
+		local resizeMax = self.SizeBounds:peek().Max - startSize
 		inputPosition(input.Position)
 		self.Size(
 			UDim2.fromOffset(
@@ -209,10 +216,11 @@ function Class.new(properties: Properties?)
 				math.round(startOffset.Y - math.clamp(yPos * -delta.Y, resizeMin.Y, math.max(resizeMin.Y, resizeMax.Y)))
 			)
 		)
+		UI.flush()
 	end
 
 	local function resizeBegan(input, gameProcessed)
-		if gameProcessed or not self.Resizable._value then
+		if gameProcessed or not self.Resizable:peek() then
 			return
 		end
 		if
@@ -245,7 +253,7 @@ function Class.new(properties: Properties?)
 		end
 	end
 
-	local titleBarHeight = UI.compute(function()
+	local titleBarHeight = UI.computed(function()
 		return UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2
 	end)
 	local buttonSize = function()
@@ -271,15 +279,15 @@ function Class.new(properties: Properties?)
 			self._instance.Visible = false
 			UI.clearActiveStates()
 
-			if self.Close and type(self.Close._value) == "function" then
-				self.Close._value(self)
-			elseif self.RemoveOnClose._value then
+			if self.Close and type(self.Close:peek()) == "function" then
+				self.Close:peek()(self)
+			elseif self.RemoveOnClose:peek() then
 				self:Destroy()
 			end
 		end,
 	}
 	self._exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
-	UI.edit(self._exitButton._instance.UICorner, { CornerRadius = UI.Theme.CornerPadded })
+	UI.edit(self._exitButton._instance.UICorner)({ CornerRadius = UI.Theme.CornerPadded })
 
 	self._content = UI.new "Frame" {
 		Name = "UIContent",
@@ -288,23 +296,31 @@ function Class.new(properties: Properties?)
 		Size = UDim2.new(1, 0, 1, 0),
 		ClipsDescendants = true,
 
-		UI.new "UIFlexItem" {
-			FlexMode = Enum.UIFlexMode.Fill,
-		},
-		UI.new "UIPadding" {
-			PaddingLeft = UI.Theme.Padding,
-			PaddingRight = UI.Theme.Padding,
-			PaddingBottom = UI.Theme.Padding,
-			PaddingTop = UDim.new(0, 1),
+		UI.flex("fill"),
+		UI.padding {
+			x = UI.Theme.Padding,
+			bottom = UI.Theme.Padding,
+			top = UDim.new(0, 1),
 		},
 	}
+
+	local function onVisibleChanged()
+		if self._instance.Visible then
+			Class.bringToFront(self)
+			Class.nudge(self)
+		end
+	end
+	local function onParentChanged()
+		if self._instance.Visible and self._instance.Parent then
+			Class.bringToFront(self)
+			Class.nudge(self)
+		end
+	end
 
 	self._instance = UI.new "ImageLabel" {
 		Name = "Window",
 		AutomaticSize = self.AutomaticSize,
-		BackgroundColor3 = function()
-			return if UI.Theme.BackgroundGradientEnabled() then Color3.new(1, 1, 1) else UI.Theme.Primary()
-		end,
+		BackgroundColor3 = UI.pick(UI.Theme.BackgroundGradientEnabled, Color3.new(1, 1, 1), UI.Theme.Primary),
 		BackgroundTransparency = UI.Theme.Transparency,
 		Image = UI.Theme.BackgroundImage,
 		ImageTransparency = UI.Theme.BackgroundImageTransparency,
@@ -313,9 +329,7 @@ function Class.new(properties: Properties?)
 		Size = self.Size,
 		Visible = false,
 
-		UI.new "UICorner" {
-			CornerRadius = UI.Theme.CornerRadius,
-		},
+		UI.corner(UI.Theme.CornerRadius),
 		UI.new "Gradient" {},
 		UI.new "Stroke" {},
 
@@ -342,9 +356,7 @@ function Class.new(properties: Properties?)
 			ClipsDescendants = true,
 			Size = UDim2.fromScale(1, 1),
 
-			UI.new "UIListLayout" {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-			},
+			UI.list {},
 
 			UI.new "TextButton" {
 				Name = "TitleBar",
@@ -357,19 +369,17 @@ function Class.new(properties: Properties?)
 				Size = UDim2.new(1, 0, 0, 0),
 				TextTransparency = 1,
 
-				UI.new "UIListLayout" {
-					FillDirection = Enum.FillDirection.Horizontal,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UI.Theme.Padding,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
+				UI.list {
+					direction = "x",
+					gap = UI.Theme.Padding,
+					verticalAlign = "center",
 				},
-				UI.new "UIPadding" {
-					PaddingLeft = function()
-						return UDim.new(0, UI.Theme.Padding().Offset + UI.Theme.FontSize / 2)
+				UI.padding {
+					left = function()
+						return UDim.new(0, UI.Theme.Padding().Offset + UI.Theme.FontSize() / 2)
 					end,
-					PaddingRight = UI.Theme.Padding,
-					PaddingTop = UI.Theme.Padding,
-					PaddingBottom = UI.Theme.Padding,
+					right = UI.Theme.Padding,
+					y = UI.Theme.Padding,
 				},
 
 				UI.new "Frame" {
@@ -378,20 +388,17 @@ function Class.new(properties: Properties?)
 					BackgroundTransparency = 1,
 					Size = UDim2.new(),
 
-					UI.edit(
-						UI.new "ImageLabel" {
-							AnchorPoint = Vector2.new(0, 0.5),
-							BackgroundTransparency = 1,
-							Image = self.Icon,
-							ImageColor3 = UI.Theme.PrimaryText,
-							Position = UDim2.fromScale(0, 0.5),
-							Size = iconSize,
-							Visible = function()
-								return if self.Icon() ~= "" then true else false
-							end,
-						},
-						self.IconProperties()
-					),
+					UI.edit(UI.new "ImageLabel" {
+						AnchorPoint = Vector2.new(0, 0.5),
+						BackgroundTransparency = 1,
+						Image = self.Icon,
+						ImageColor3 = UI.Theme.PrimaryText,
+						Position = UDim2.fromScale(0, 0.5),
+						Size = iconSize,
+						Visible = function()
+							return if self.Icon() ~= "" then true else false
+						end,
+					})(self.IconProperties:peek()),
 
 					UI.new "TextLabel" {
 						AutoLocalize = false,
@@ -401,7 +408,7 @@ function Class.new(properties: Properties?)
 						Size = UDim2.new(0, 0, 0, 0),
 						FontFace = UI.Theme.Font,
 						Position = function()
-							local x = if self.Icon() ~= "" then UI.Theme.FontSize + UI.Theme.Padding().Offset else 0
+							local x = if self.Icon() ~= "" then UI.Theme.FontSize() + UI.Theme.Padding().Offset else 0
 							return UDim2.fromOffset(x, 0)
 						end,
 						RichText = true,
@@ -427,26 +434,20 @@ function Class.new(properties: Properties?)
 			self._content,
 		},
 
-		[UI.Event] = {
-			Visible = function()
-				if self._instance.Visible then
-					Class.bringToFront(self)
-					Class.nudge(self)
-				end
-			end,
-		},
+		_Visible = onVisibleChanged,
+		_Parent = onParentChanged,
 	} :: Frame
 
 	local mouseIconWasEnabled, mouseIconChanging = UI.UserInputService.MouseIconEnabled, nil
-	UI.UserInputService:GetPropertyChangedSignal("MouseIconEnabled"):Connect(function()
+	local mouseIconConn = UI.UserInputService:GetPropertyChangedSignal("MouseIconEnabled"):Connect(function()
 		if mouseIconChanging then
 			return
 		end
 		mouseIconWasEnabled = UI.UserInputService.MouseIconEnabled
 	end)
 
-	UI.UserInputService.InputBegan:Connect(resizeBegan)
-	UI.UserInputService.InputChanged:Connect(function(input)
+	local inputBeganConn = UI.UserInputService.InputBegan:Connect(resizeBegan)
+	local inputChangedConn = UI.UserInputService.InputChanged:Connect(function(input)
 		if not self._instance.Visible then
 			return
 		end
@@ -455,12 +456,12 @@ function Class.new(properties: Properties?)
 			input.UserInputType == Enum.UserInputType.MouseMovement
 			or input.UserInputType == Enum.UserInputType.Touch
 		then
-			if resizing._value then
+			if resizing:peek() then
 				-- update resize
 				resizeUpdate(input)
-			elseif dragging._value then
+			elseif dragging:peek() then
 				dragUpdate(input)
-			elseif self.Resizable._value then
+			elseif self.Resizable:peek() then
 				local resize = getResizeIndex(
 					Vector2.new(input.Position.X, input.Position.Y),
 					self._instance.AbsoluteSize,
@@ -471,13 +472,15 @@ function Class.new(properties: Properties?)
 					inputPosition(input.Position)
 					resizeHover(true)
 					resizeIconRectOffset(Vector2.new(resize[5]))
+					UI.flush()
 					if UI.UserInputService.MouseIconEnabled then
 						mouseIconChanging = true
 						UI.UserInputService.MouseIconEnabled = false
 						mouseIconChanging = false
 					end
-				elseif resizeHover._value then
+				elseif resizeHover:peek() then
 					resizeHover(false)
+					UI.flush()
 					if UI.UserInputService.MouseIconEnabled ~= mouseIconWasEnabled then
 						mouseIconChanging = true
 						UI.UserInputService.MouseIconEnabled = mouseIconWasEnabled
@@ -492,9 +495,11 @@ function Class.new(properties: Properties?)
 	self._instance:GetPropertyChangedSignal("Parent"):Connect(function()
 		if parentConn then
 			parentConn:Disconnect()
+			parentConn = nil
 		end
 		if visibleConn then
 			visibleConn:Disconnect()
+			visibleConn = nil
 		end
 		local parent = self._instance.Parent
 		if parent and parent:IsA("GuiBase2d") then
@@ -534,6 +539,7 @@ function Class.new(properties: Properties?)
 						math.clamp(position.Y, 0, math.max(0, maxPosition.Y))
 					)
 				)
+				UI.flush()
 			end
 			parentConn = parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSize)
 			visibleConn = self._instance:GetPropertyChangedSignal("Visible"):Connect(updateSize)
@@ -542,6 +548,30 @@ function Class.new(properties: Properties?)
 			end
 		end
 	end)
+
+	UI.edit(self._instance)({
+		__CLEAN = {
+			function()
+				windowCache[self] = nil
+				if parentConn then
+					parentConn:Disconnect()
+				end
+				if visibleConn then
+					visibleConn:Disconnect()
+				end
+			end,
+			inputPosition,
+			dragging,
+			resizing,
+			resizeHover,
+			resizeIconRectOffset,
+			titleBarHeight,
+			self._exitButton,
+			mouseIconConn,
+			inputBeganConn,
+			inputChangedConn,
+		},
+	})
 
 	return setmetatable(self, Class) :: typeof(self) & typeof(Class)
 end

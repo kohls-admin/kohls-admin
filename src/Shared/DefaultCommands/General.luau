@@ -303,9 +303,8 @@ local function connectVote(_K)
 				BackgroundTransparency = 1,
 				Size = UDim2.fromScale(1, 0),
 
-				UI.new "UIListLayout" {
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					Padding = UI.Theme.Padding,
+				UI.list {
+					gap = UI.Theme.Padding,
 				},
 			}
 
@@ -342,9 +341,7 @@ local function connectVote(_K)
 					BackgroundColor3 = color,
 					Size = UDim2.fromScale(0, 1),
 
-					UI.new "UICorner" {
-						CornerRadius = UI.Theme.CornerRadius,
-					},
+					UI.corner(UI.Theme.CornerRadius),
 				}
 				UI.new "Frame" {
 					Parent = list,
@@ -354,9 +351,8 @@ local function connectVote(_K)
 					BackgroundTransparency = 1,
 					Size = UDim2.fromScale(1, 0),
 
-					UI.new "UIListLayout" {
-						SortOrder = Enum.SortOrder.LayoutOrder,
-						Padding = UDim.new(0, 2),
+					UI.list {
+						gap = UDim.new(0, 2),
 					},
 					UI.new "TextLabel" {
 						AutoLocalize = false,
@@ -377,9 +373,7 @@ local function connectVote(_K)
 						BackgroundTransparency = UI.Theme.TransparencyHeavy,
 						Size = UDim2.new(1, 0, 0, 8),
 
-						UI.new "UICorner" {
-							CornerRadius = UI.Theme.CornerRadius,
-						},
+						UI.corner(UI.Theme.CornerRadius),
 						fill,
 					},
 				}
@@ -482,9 +476,8 @@ return {
 					Text = message,
 					RichText = true,
 
-					_K.UI.new "UIPadding" {
-						PaddingTop = _K.UI.Theme.Padding,
-						PaddingBottom = _K.UI.Theme.Padding,
+					_K.UI.padding {
+						y = _K.UI.Theme.Padding,
 					},
 				}
 				existing = hint
@@ -576,14 +569,13 @@ return {
 					TextWrapped = true,
 					RichText = true,
 
-					_K.UI.new "UIPadding" {
-						PaddingLeft = _K.UI.Theme.PaddingDouble,
-						PaddingRight = _K.UI.Theme.PaddingDouble,
+					_K.UI.padding {
+						x = _K.UI.Theme.PaddingDouble,
 					},
 				}
 				local userFrame = _K.client.UserFrame(from)
 				userFrame.Icon.Image = `rbxthumb://type=AvatarHeadShot&id={from}&w=150&h=150`
-				_K.UI.edit(userFrame, {
+				_K.UI.edit(userFrame)({
 					Parent = msg,
 					AnchorPoint = Vector2.new(0.5, 0),
 					Position = UDim2.new(0.5, 0, 0.05, 0),
@@ -591,8 +583,9 @@ return {
 						Scale = 2,
 					},
 				})
-				local displaySize = _K.UI.state(userFrame.From.From, "AbsoluteSize")
-				_K.UI.edit(userFrame.From.Badge, {
+				local displaySize = _K.UI.property(userFrame.From.From, "AbsoluteSize")
+				_K.UI.edit(userFrame.From.Badge)({
+					__CLEAN = { displaySize },
 					Position = function()
 						return UDim2.fromOffset(displaySize().X / 2 + 4, 0)
 					end,
@@ -706,8 +699,8 @@ return {
 					SizeConstraint = Enum.SizeConstraint.RelativeYY,
 					ZIndex = -1,
 
-					_K.UI.new "UISizeConstraint" {
-						MaxSize = Vector2.new(128, 128),
+					_K.UI.sizeConstraint {
+						max = Vector2.new(128, 128),
 					},
 
 					time,
@@ -722,9 +715,7 @@ return {
 						end,
 						ZIndex = 0,
 
-						_K.UI.new "UICorner" {
-							CornerRadius = UDim.new(1, 0),
-						},
+						_K.UI.corner(UDim.new(1, 0)),
 
 						_K.UI.new "Stroke" {},
 					},
@@ -978,7 +969,7 @@ return {
 					}
 
 					local function cleanLink()
-						_K.Flux.cleanup(cleanup)
+						_K.Flux.dispose(cleanup)
 					end
 
 					billboard.Destroying:Once(cleanLink)
@@ -1465,7 +1456,7 @@ return {
 			},
 		},
 		envClient = function(_K)
-			local xray = _K.Flux.state(false)
+			local xray = _K.Flux.signal(false)
 			local xrayModel = _K.Flux.new "Model" {
 				Name = "_K_XRay",
 			}
@@ -1478,7 +1469,7 @@ return {
 
 			local characterCleanup = {}
 			local function cleanup(character)
-				_K.Flux.cleanup(characterCleanup[character])
+				_K.Flux.dispose(characterCleanup[character])
 				characterCleanup[character] = nil
 			end
 
@@ -1487,15 +1478,14 @@ return {
 				if not characterCleanup[character] then
 					characterCleanup[character] = {}
 				end
-				if xray._value then
+				if xray:peek() then
 					character.Parent = xrayModel
 				end
-				table.insert(
-					characterCleanup[character],
-					xray:Connect(function(value)
-						character.Parent = if value then xrayModel else oldParent
-					end)
-				)
+				local xrayEff = _K.Flux.effect(_K.Flux.on(xray, function(value)
+					character.Parent = if value then xrayModel else oldParent
+				end, true))
+				xrayEff:get()
+				table.insert(characterCleanup[character], xrayEff)
 				table.insert(
 					characterCleanup[character],
 					character:GetPropertyChangedSignal("Parent"):Connect(function()
@@ -1524,7 +1514,7 @@ return {
 			_K.Util.SafePlayerAdded(xrayPlayer)
 			_K.Service.Players.PlayerRemoving:Connect(function(player)
 				if playerCleanup[player] then
-					_K.Flux.cleanup(playerCleanup[player])
+					_K.Flux.dispose(playerCleanup[player])
 					playerCleanup[player] = nil
 				end
 			end)
@@ -1538,6 +1528,8 @@ return {
 
 		runClient = function(context, fillColor: Color3?, outlineColor: Color3?)
 			context.env.xray(if context.undo then false else true)
+			-- move characters back out of xrayModel before it leaves workspace
+			context._K.Flux.flush()
 			context.env.xrayModel.Parent = if context.undo then nil else workspace
 			context.env.highlight.FillColor = fillColor or Color3.new(0, 1, 1)
 			context.env.highlight.OutlineColor = outlineColor or Color3.new(1, 1, 1)
