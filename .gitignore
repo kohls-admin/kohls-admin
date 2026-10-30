@@ -5,3 +5,12 @@ sourcemap.json
 
 node_modules/
 __pycache__
+
+.sert/
+sert.local.toml
+coverage.out
+coverage-table.txt
+
+# plexer's local graph cache — regenerable, not committed (run `plexer build`).
+/plexer/
+.ignore

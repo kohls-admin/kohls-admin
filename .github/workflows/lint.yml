@@ -1,46 +1,69 @@
-name: Lint
+name: Lint & Test
 on:
   push:
     branches:
       - master
     paths:
+      - .github/workflows/lint.yml
+      - .luaurc
       - model/**
+      - rokit.toml
+      - selene.toml
+      - sert.toml
       - src/**
       - submodules/**
       - test/**
+      - tools/**
   pull_request:
     branches:
       - master
     paths:
+      - .github/workflows/lint.yml
+      - .luaurc
       - model/**
+      - rokit.toml
+      - selene.toml
+      - sert.toml
       - src/**
       - submodules/**
       - test/**
+      - tools/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   check:
+    name: Lint, Coverage & Mutation
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - uses: CompeyDev/setup-rokit@v0.1.2
+
+      - uses: kohltastrophe/sert/actions/setup@master
         with:
-          version: "*"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          sert-ref: master
 
-      - name: Check tool versions
-        run: |
-          rokit --version
-          luau-lsp --version
-          rojo --version
-          stylua --version
+      - name: sert lint
+        run: python3 tools/sert.py lint
 
-      - name: Generate sourcemap
-        run: rojo sourcemap --output sourcemap.json --include-non-scripts
+      - name: sert run
+        run: python3 tools/sert.py run --coverage
 
-      - name: Analyze
-        run: curl -sO https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau && luau-lsp analyze --defs=globalTypes.d.luau --sourcemap sourcemap.json model/ src/ test/ && rm globalTypes.d.luau
+      # coverage and mutate write their own $GITHUB_STEP_SUMMARY
+      - name: sert coverage
+        run: python3 tools/sert.py coverage --min 90
 
-      - name: Format
-        run: stylua --check model/ src/ test/
+      - name: sert mutate
+        run: python3 tools/sert.py mutate --no-coverage-run --min 85
