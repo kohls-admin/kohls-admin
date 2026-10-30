@@ -3,12 +3,38 @@
 	"emitLegacyScripts": false,
 	"tree": {
 		"$className": "Model",
-		"$path": "../model",
-		"MainModule": {
-			"$path": "../src",
-			"VERSION": {
-				"$path": "../VERSION.txt"
+		"Config": {
+			"$path": "../model/Config"
+		},
+		"Loader": {
+			"$path": "../model/Loader.server.luau",
+			"MainModule": {
+				"$path": "../src",
+				"Flux": {
+					"$path": "../submodules/Flux"
+				},
+				"Z": {
+					"$path": "../submodules/Z"
+				},
+				"VERSION": {
+					"$path": "../VERSION.txt"
+				}
+			},
+			"Tools": {
+				"$className": "Folder",
+				"Building Tools": {
+					"$path": "../submodules/F3X",
+					"$properties": {
+						"Tags": ["_K_Ignore"]
+					}
+				}
 			}
+		},
+		"README": {
+			"$path": "../model/README.luau"
+		},
+		"ThumbnailCamera": {
+			"$path": "../model/ThumbnailCamera.model.json"
 		},
 		"LICENSE": {
 			"$path": "../LICENSE.txt"

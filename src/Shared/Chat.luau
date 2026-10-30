@@ -1,11 +1,12 @@
 --[[
-	Routes user-to-user text through TextChatService TextChannels, as the Roblox chat guidelines require.
+	Delivers admin messages (hints, messages, notifications, private messages, votes, text to speech and announcements)
+	to the admin UI of each recipient, as text the server filtered for broadcast.
 	https://create.roblox.com/docs/chat/guidelines
 
-	The server authorizes a message command and grants its sender one message. The sender's client sends the
-	raw text with TextChannel:SendAsync, so TextChatService applies filtering, privacy settings and reporting.
-	ShouldDeliverCallback only delivers granted messages to the granted targets, and receiving clients render
-	the filtered TextChatMessage.Text in the admin UI.
+	The sender must be allowed to chat, TextService filters the text for broadcast, and messages that reach other
+	players are limited to one a minute per sender. Nothing goes through TextChannels: with platform-integrated chat,
+	scripts can't send or read chat text.
+	https://create.roblox.com/docs/chat/platform-integrated-chat
 ]]
 
 local HttpService = game:GetService("HttpService")
@@ -17,29 +18,11 @@ local Auth = require(script.Parent:WaitForChild("Auth"))
 local Util = require(script.Parent:WaitForChild("Util"))
 local Remote = Util.Remote
 
-local PREFIX = "KA_"
-local TAG = '<font transparency="0.4">[%s]</font> '
--- user text arrives rich text escaped, so only our own tag can match this
-local TAG_PATTERN = '^<font transparency="0%.4">%[[^%]]*%]</font> '
-local BROADCAST = "KA_Broadcast"
-local GRANT_LIFETIME = 15
 local COOLDOWN = 60
 
 --- @class Chat
 local Chat = {
 	COOLDOWN = COOLDOWN,
-	-- tags shown before KA messages in the chat window and bubbles
-	LABELS = {
-		announce = "Announce",
-		message = "Message",
-		hint = "Hint",
-		fullmessage = "Full Message",
-		notify = "Notify",
-		privatemessage = "PM",
-		privatehint = "Private Hint",
-		vote = "Vote",
-		tts = "TTS",
-	},
 }
 
 local cooldowns = {}
@@ -62,10 +45,36 @@ function Chat.cooldown(userId: number, key: string, seconds: number?): string?
 	return nil
 end
 
---- Gates user text shown to everyone behind a developer role and the shared announcement cooldown
-function Chat.limitBroadcast(userId: number, roleError: string): string?
-	if not Auth.hasRestrictedRole(userId) then
-		return roleError
+--- Lists the prefixes that can start a chat command alias: single characters that aren't letters, digits or spaces
+function Chat.commandPrefixes(prefixes: { string }?): { string }
+	local list, candidates: { string } = {}, prefixes or {}
+	for _, prefix in candidates do
+		if
+			type(prefix) == "string"
+			and utf8.len(prefix) == 1
+			and not string.find(prefix, "[%w%s]")
+			and not table.find(list, prefix)
+		then
+			table.insert(list, prefix)
+		end
+	end
+	return list
+end
+
+local function canUserChat(userId: number): boolean
+	if RunService:IsStudio() and Auth.hasRestrictedRole(userId) then
+		return true
+	end
+	local ok, canChat = pcall(TextChatService.CanUserChatAsync, TextChatService, userId)
+	return ok and canChat == true
+end
+
+Chat.canUserChat = canUserChat
+
+--- Gates user text shown to everyone behind a chat check and the shared announcement cooldown
+function Chat.limitBroadcast(userId: number, _roleError: string?): string?
+	if not canUserChat(userId) then
+		return "User cannot chat"
 	end
 	return Chat.cooldown(userId, "announce")
 end
@@ -170,178 +179,77 @@ function Chat.restoreRichText(text: string, compact: boolean?): string
 	return restored
 end
 
-local function decode(metadata: string?)
-	if type(metadata) ~= "string" or metadata == "" then
-		return
-	end
-	local ok, data = pcall(HttpService.JSONDecode, HttpService, metadata)
-	if ok and type(data) == "table" and type(data.k) == "string" and type(data.id) == "string" then
-		return data
-	end
-	return
-end
-
 if RunService:IsServer() then
-	local grants = {}
-	local delivering = {} -- MessageId -> grant it was delivered under
-	local directChannels: { [Player]: TextChannel } = {}
-	local directMembers: { [TextChannel]: { [number]: boolean } } = {}
-
-	local function shouldDeliver(message: TextChatMessage, textSource: TextSource)
-		-- called once per recipient, the grant is checked on the first call
-		local grant = delivering[message.MessageId]
-		if not grant then
-			local sender = message.TextSource
-			local data = decode(message.Metadata)
-			grant = data and grants[data.id]
-			if
-				not (sender and grant)
-				or grant.from ~= sender.UserId
-				or grant.metadata ~= message.Metadata
-				or os.clock() > grant.expires
-				or grant.messageId ~= nil -- one message per grant
-			then
-				return false
-			end
-			grant.messageId = message.MessageId
-			delivering[message.MessageId] = grant
-		end
-		return grant.targets == nil or grant.targets[textSource.UserId] == true
-	end
-
-	local function newChannel(name: string): TextChannel
-		local channel = Instance.new("TextChannel")
-		channel.Name = name
-		channel.ShouldDeliverCallback = shouldDeliver
-		channel.Parent = TextChatService
-		return channel
-	end
-
-	-- create the lazy remotes now, clients connect to them on start
-	_ = Remote.ChatSend
+	-- create the lazy remote now, clients connect to it on start
 	_ = Remote.ChatSystem
 
-	local broadcast = newChannel(BROADCAST)
-	Util.SafePlayerAdded(function(player)
-		Util.Retry(function()
-			if player.Parent then
-				broadcast:AddUserAsync(player.UserId)
-			end
-		end)
-	end)
-
-	local function getDirectChannel(sender: Player): TextChannel
-		local channel = directChannels[sender]
-		if not channel then
-			channel = newChannel(`KA_Direct_{sender.UserId}`)
-			channel:SetDirectChatRequester(sender)
-			directChannels[sender] = channel
-			directMembers[channel] = { [sender.UserId] = true }
-		end
-		return channel
-	end
-
-	Players.PlayerRemoving:Connect(function(player)
-		local channel = directChannels[player]
-		if channel then
-			directChannels[player] = nil
-			directMembers[channel] = nil
-			channel:Destroy()
-		end
-		for _, members in directMembers do
-			members[player.UserId] = nil
-		end
-	end)
-
 	--[=[
-		Grants the command's sender one TextChatService message of `kind` and asks their client to send it.
-		Delivers to everyone in the server, or only to `targets` through a direct chat channel.
+		Sends a message of `kind` to everyone in the server, or only to `targets`, through Remote.ChatSystem to the
+		admin UI. Returns the message id and, after a nil error, the players it reached; or nil and an error message.
 
-		Global commands from another server can't use TextChatService, they are gated and rate limited like
-		announcements by the global command, and their text was filtered in the origin server.
+		The sender must be allowed to chat and the text is filtered for broadcast. Messages that reach other players
+		are rate limited to one a minute per sender, shared by every kind except `vote`.
 
-		Returns the grant id, or nil and an error message.
+		Global messages were rate limited and filtered in their origin server, so here they are delivered directly.
 	]=]
-	function Chat.send(context: any, kind: string, text: string, targets: { Player }?, data: any?): (string?, string?)
-		local id = HttpService:GenerateGUID(false)
-		local sender = context.fromPlayer or (context.from and Players:GetPlayerByUserId(context.from))
+	function Chat.send(
+		context: any,
+		kind: string,
+		text: string,
+		targets: { Player }?,
+		data: any?
+	): (string?, string?, { Player }?)
+		local recipients = targets or Players:GetPlayers()
+		local from, escaped
 		if context.global then
-			local needsChannel = (sender and sender.Parent) ~= nil and targets == nil
-			if not needsChannel and sender and sender.Parent and targets then
-				for _, player in targets do
-					if player.UserId ~= context.from and Auth.hasRestrictedRole(player.UserId) then
-						needsChannel = true
-						break
+			from = context.from
+			escaped = Util.String.escapeRichText(text)
+		else
+			local sender = context.fromPlayer or (context.from and Players:GetPlayerByUserId(context.from))
+			if not (sender and sender.Parent) then
+				return nil, "Message commands must be run by a player in this server."
+			end
+			from = sender.UserId
+			if not canUserChat(from) then
+				return nil, "User cannot chat"
+			end
+			-- messaging only yourself is never limited
+			for _, player in recipients do
+				if player ~= sender then
+					local err = Chat.cooldown(from, if kind == "vote" then "vote" else "direct")
+					if err then
+						return nil, err
 					end
+					break
 				end
 			end
-			if not needsChannel then
-				local escaped = Util.String.escapeRichText(text)
-				for _, player in targets or Players:GetPlayers() do
-					if player.UserId == context.from or not Auth.hasRestrictedRole(player.UserId) then
-						Remote.ChatSystem:Fire(player, kind, escaped, context.from, data, id)
-					end
+			local ok, filterResult = Util.String.filterResult(text, from, Enum.TextFilterContext.PublicChat)
+			if not ok then
+				return nil, "Message could not be filtered"
+			end
+			local filterResultTyped = filterResult :: TextFilterResult
+			local okBroadcast, filtered = pcall(filterResultTyped.GetNonChatStringForBroadcastAsync, filterResultTyped)
+			if not okBroadcast or type(filtered) ~= "string" then
+				return nil, "Message could not be filtered"
+			end
+			escaped = Util.String.escapeRichText(filtered)
+			for _, arg in context.args or {} do
+				if
+					arg.rawType
+					and arg.rawType.freeText
+					and (arg.rawArg == text or Util.String.stripQuotes(arg.rawArg) == text)
+				then
+					arg.parsedArgs = { filtered }
+					arg.redactLog = false
 				end
-				return id
 			end
 		end
 
-		if not (sender and sender.Parent) then
-			return nil, "Message commands must be run by a player in this server."
+		local id = HttpService:GenerateGUID(false)
+		for _, player in recipients do
+			Remote.ChatSystem:Fire(player, kind, escaped, from, data, id)
 		end
-
-		local channel, targetSet, flag = broadcast, nil, nil
-		if targets then
-			local tasks
-			targetSet = {}
-			flag = 1
-			for _, player in targets do
-				targetSet[player.UserId] = true
-				if player == sender then
-					flag = 2 -- sender is also a target
-				else
-					if channel == broadcast then
-						channel = getDirectChannel(sender)
-					end
-					local members = directMembers[channel]
-					if not members[player.UserId] then
-						tasks = tasks or Util.Tasks.new()
-						tasks:add(function()
-							local ok, source = pcall(channel.AddUserAsync, channel, player.UserId)
-							if ok and source then
-								source.CanSend = false
-								members[player.UserId] = true
-							end
-						end)
-					end
-				end
-			end
-			if tasks then
-				tasks:wait()
-			end
-			-- DirectChatRequester channels do not deliver back to the requester
-			if channel ~= broadcast and flag == 2 then
-				Remote.ChatSystem:Fire(sender, kind, Util.String.escapeRichText(text), sender.UserId, data, id)
-			end
-		end
-
-		local metadata = HttpService:JSONEncode({ k = kind, id = id, d = data, t = flag })
-		grants[id] = {
-			from = sender.UserId,
-			metadata = metadata,
-			targets = targetSet,
-			expires = os.clock() + GRANT_LIFETIME,
-		}
-		task.delay(GRANT_LIFETIME, function()
-			local grant = grants[id]
-			grants[id] = nil
-			if grant and grant.messageId then
-				delivering[grant.messageId] = nil
-			end
-		end)
-
-		Remote.ChatSend:Fire(sender, channel.Name, text, metadata)
-		return id
+		return id, nil, recipients
 	end
 
 	--[=[
@@ -352,11 +260,8 @@ if RunService:IsServer() then
 		if not reason then
 			return nil
 		end
-		if not (RunService:IsStudio() and Auth.hasRestrictedRole(userId)) then
-			local ok, canChat = pcall(TextChatService.CanUserChatAsync, TextChatService, userId)
-			if not ok or not canChat then
-				return nil
-			end
+		if not canUserChat(userId) then
+			return nil
 		end
 		local err = Chat.cooldown(userId, "reason")
 		if not err then
@@ -369,15 +274,45 @@ if RunService:IsServer() then
 		return nil
 	end
 else
-	local LocalPlayer = Players.LocalPlayer
 	local handlers = {}
 	local received = {}
 	local waiting: { [string]: { thread } } = {}
-	local originals = {}
 
 	--- Registers the client handler for a message kind, called with the filtered text, sender UserId, data and id
 	function Chat.onMessage(kind: string, callback: (text: string, from: number, data: any, id: string) -> ())
 		handlers[kind] = callback
+	end
+
+	local pinned: string? = nil
+	local shownPins: { [string]: true } = {}
+
+	--[=[
+		Tracks the pinned announcement ({ text, from, duration, id }) shown on this client. It arrives through
+		settings and "announce" messages, so returns true only when it changed and should show. Each pin gets
+		a new id and shows once, so pinning the same text again still shows while a late settings sync of a
+		cleared or replaced pin doesn't. Pins saved without an id show when they differ from the last one.
+		Anything else clears it.
+	]=]
+	function Chat.pinAnnouncement(announcement: any): boolean
+		if type(announcement) ~= "table" or type(announcement[1]) ~= "string" then
+			pinned = nil
+			return false
+		end
+		local id = announcement[4]
+		if type(id) == "string" then
+			if shownPins[id] then
+				return false
+			end
+			shownPins[id] = true
+			pinned = id
+			return true
+		end
+		local key = `{announcement[2]}\0{announcement[1]}`
+		if key == pinned then
+			return false
+		end
+		pinned = key
+		return true
 	end
 
 	--- Waits for the filtered text of a message by id, or nil when it doesn't arrive in time
@@ -427,81 +362,8 @@ else
 		end
 	end
 
-	local function onMessage(message: TextChatMessage)
-		if message.Status ~= Enum.TextChatMessageStatus.Success then
-			return
-		end
-		local source = message.TextSource
-		local data = decode(message.Metadata)
-		if not (source and data) then
-			return
-		end
-		-- the sender always receives their own message, skip it unless they targeted themselves
-		if data.t == 1 and source.UserId == LocalPlayer.UserId then
-			return
-		end
-
-		-- OnIncomingMessage tags the message text in place, the admin UI uses the untagged original
-		local text = originals[message.MessageId] or string.gsub(message.Text, TAG_PATTERN, "")
-		originals[message.MessageId] = nil
-		dispatch(data.k, Chat.restoreRichText(text), source.UserId, data.d, data.id)
-	end
-
-	-- tag KA messages so they stand out from normal chat, only on our own channels
-	local function onIncomingMessage(message: TextChatMessage)
-		local data = decode(message.Metadata)
-		if not data or string.find(message.Text, TAG_PATTERN) then
-			return
-		end
-		if message.Status == Enum.TextChatMessageStatus.Success then
-			local id = message.MessageId
-			originals[id] = message.Text
-			task.delay(30, function()
-				originals[id] = nil
-			end)
-		end
-		local properties = Instance.new("TextChatMessageProperties")
-		properties.Text = string.format(TAG, Chat.LABELS[data.k] or data.k) .. Chat.restoreRichText(message.Text, true)
-		return properties
-	end
-
-	local function watchChannel(child: Instance)
-		if child:IsA("TextChannel") and string.find(child.Name, PREFIX, 1, true) == 1 then
-			child.OnIncomingMessage = onIncomingMessage
-			child.MessageReceived:Connect(onMessage)
-		end
-	end
-	TextChatService.ChildAdded:Connect(watchChannel)
-	for _, child in TextChatService:GetChildren() do
-		watchChannel(child)
-	end
-
-	Remote.ChatSystem:Connect(function(kind: string, text: string, from: number, data: any, id: string)
+	local _ = Remote.ChatSystem:Connect(function(kind: string, text: string, from: number, data: any, id: string)
 		dispatch(kind, Chat.restoreRichText(text), from, data, id)
-	end)
-
-	Remote.ChatSend:Connect(function(channelName: string, text: string, metadata: string)
-		local channel = TextChatService:WaitForChild(channelName, 10)
-		if channel and channel:IsA("TextChannel") then
-			local deadline = os.clock() + 5
-			while os.clock() < deadline do
-				local found = false
-				for _, child in channel:GetChildren() do
-					if child:IsA("TextSource") and child.UserId == LocalPlayer.UserId then
-						found = true
-						break
-					end
-				end
-				if found then
-					break
-				end
-				task.wait()
-			end
-			local ok, err = pcall(channel.SendAsync, channel, text, metadata)
-			if not ok then
-				warn(`Kohl's Admin failed to send message: {err}`)
-			end
-		end
 	end)
 end
 

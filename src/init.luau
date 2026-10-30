@@ -32,6 +32,10 @@ local _K = {
 
 	DEBUG = IS_DEMO_PLACE,
 	VERSION = Util.String.trim(script:WaitForChild("VERSION").Value),
+	-- capabilities addons can check on the running version
+	features = table.freeze({
+		platformIntegratedChat = true,
+	}),
 
 	Logger = Util.Logger.new(true),
 
@@ -57,6 +61,7 @@ local _K = {
 	Service = Util.Service,
 	Server = Server,
 	Tools = Server and Server:WaitForChild("Tools"),
+	ChatCommands = nil,
 
 	client = nil,
 	pinnedAnnouncement = nil,
@@ -102,11 +107,68 @@ function _K.getCommandPrefix(from: number?)
 	return _K.Data.playerPrefix[from] or ";"
 end
 
+-- the first alias of a command that works in chat, e.g. ";kill", or the command prefix before it
+function _K.chatCommandAlias(alias: string): string
+	local word = string.lower(alias)
+	if _K.ChatCommands then
+		local chatAlias = _K.ChatCommands.alias(word)
+		if chatAlias then
+			return chatAlias
+		end
+	end
+	local prefix = _K.Chat.commandPrefixes(_K.Data.settings.prefix)[1] or _K.getCommandPrefix()
+	return prefix .. word
+end
+
 function _K.removeExcessLogs()
 	local logs = _K.Data.logs
 	local excess = #logs - _K.Logger.limit
 	if excess > 0 then
 		_K.Util.Table.fastRemove(logs, 1, excess)
+	end
+end
+
+local pendingLogReveals = {}
+local revealTimer = false
+
+local function flushLogReveals()
+	revealTimer = false
+	local now = os.clock()
+	local nextDelay: number?
+	local ready = {}
+	local remaining = {}
+	for _, entry in pendingLogReveals do
+		local waitTime = (entry.revealAt or 0) - now
+		if waitTime <= 0 then
+			table.insert(ready, entry)
+		else
+			table.insert(remaining, entry)
+			if not nextDelay or waitTime < nextDelay then
+				nextDelay = waitTime
+			end
+		end
+	end
+	table.clear(pendingLogReveals)
+	table.move(remaining, 1, #remaining, 1, pendingLogReveals)
+	if nextDelay then
+		revealTimer = true
+		task.delay(nextDelay, flushLogReveals)
+	end
+	for _, entry in ready do
+		local stored = entry.stored
+		stored[1] = entry.fullText
+		if entry.save then
+			table.insert(_K.Data.Sync.logs, stored)
+		end
+		for _, player in _K.Service.Players:GetPlayers() do
+			if
+				player.UserId ~= stored[4]
+				and player:GetAttribute("_K_READY")
+				and _K.Auth.hasPermission(player.UserId, "serverlogs")
+			then
+				_K.Remote.Log:Fire(player, stored)
+			end
+		end
 	end
 end
 
@@ -137,21 +199,39 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 			if from and filtered then
 				log[1] = Util.String.filterForBroadcast(text, from)
 			end
-			-- liveText replaces the text for everyone but the sender, including the stored and synced logs
-			if liveText then
-				stored = table.clone(log)
-				stored[1] = liveText
-			end
-			if
-				level == "COMMAND"
+			local shouldSave = level == "COMMAND"
 				and _K.Data.settings.saveLogs
 				and (not from or _K.Data.settings.saveLogsForAllRoles or _K.Auth.hasRestrictedRole(from))
-			then
+			local revealLater = false
+			-- liveText replaces the text for everyone but the sender while the sender's 60s log cooldown is active
+			if liveText then
+				if not from or not _K.Chat.canUserChat(from) then
+					stored = table.clone(log)
+					stored[1] = liveText
+				elseif _K.Chat.cooldown(from, "log") then
+					stored = table.clone(log)
+					stored[1] = liveText
+					revealLater = true
+				end
+			end
+			if shouldSave and not revealLater then
 				table.insert(_K.Data.Sync.logs, stored)
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
 					_K.Remote.Log:Fire(player, if player.UserId == from then log else stored)
+				end
+			end
+			if revealLater then
+				table.insert(pendingLogReveals, {
+					stored = stored,
+					fullText = log[1],
+					save = shouldSave,
+					revealAt = os.clock() + _K.Chat.COOLDOWN,
+				})
+				if not revealTimer then
+					revealTimer = true
+					task.delay(_K.Chat.COOLDOWN, flushLogReveals)
 				end
 			end
 		end

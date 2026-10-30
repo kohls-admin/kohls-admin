@@ -229,8 +229,6 @@ return function(_K)
 			end
 		end
 
-		local displayBubbleRemote = _K.Remote.DisplayBubble
-
 		task.spawn(function()
 			repeat
 				task.wait()
@@ -257,66 +255,6 @@ return function(_K)
 					end
 				end
 			end
-
-			local chatCommandsFolder = Instance.new("Folder")
-			chatCommandsFolder.Name = "TextChatCommands_KA"
-
-			local function defaultCommandTrigger(source: TextSource, rawText: string)
-				if not _K.Service.Players:GetPlayerByUserId(source.UserId) then
-					return
-				end
-				_K.Process.runCommands(_K, source.UserId, `{_K.getCommandPrefix()}{string.sub(rawText, 2)}`)
-			end
-
-			local function chatCommandTrigger(source: TextSource, rawText: string)
-				local player = _K.Service.Players:GetPlayerByUserId(source.UserId)
-				if not player then
-					return
-				end
-
-				if player.Character then
-					local space = string.find(rawText, "%s", 2, false)
-					local alias = string.sub(rawText, 2, if space then space - 1 else nil)
-					local msg = `{_K.getCommandPrefix()}{alias}`
-					displayBubbleRemote:Fire(player, player.Character, msg)
-				end
-
-				_K.Process.runCommands(_K, source.UserId, `{_K.getCommandPrefix()}{string.sub(rawText, 2)}`)
-			end
-
-			local function registerChatCommand(cmd, trigger)
-				local chatCommand = Instance.new("TextChatCommand")
-				chatCommand.Name = string.upper(string.sub(cmd.name, 1, 1)) .. string.sub(cmd.name, 2)
-				chatCommand.Enabled = true
-				chatCommand.AutocompleteVisible = true
-				chatCommand.PrimaryAlias = "/" .. cmd.name
-				if cmd.aliases and cmd.aliases[1] then
-					chatCommand.SecondaryAlias = "/" .. cmd.aliases[1]
-				end
-				chatCommand.Parent = chatCommandsFolder
-				chatCommand.Triggered:Connect(trigger or defaultCommandTrigger)
-			end
-
-			if _K.Data.settings.vip then
-				registerChatCommand(_K.Registry.commands.headless, chatCommandTrigger)
-				registerChatCommand(_K.Registry.commands.korblox, chatCommandTrigger)
-				registerChatCommand(_K.Registry.commands.vampire, chatCommandTrigger)
-				registerChatCommand(_K.Registry.commands.werewolf, chatCommandTrigger)
-				registerChatCommand(_K.Registry.commands.cape, chatCommandTrigger)
-				registerChatCommand(_K.Registry.commands.fire, chatCommandTrigger)
-				registerChatCommand(_K.Registry.commands.light, chatCommandTrigger)
-				registerChatCommand(_K.Registry.commands.particle, chatCommandTrigger)
-				registerChatCommand(_K.Registry.commands.trail, chatCommandTrigger)
-				registerChatCommand(_K.Registry.commands.shine, chatCommandTrigger)
-			end
-
-			for _, cmd in _K.Registry.commandsList do
-				if cmd.group == "Utility" and cmd.name ~= "emote" then
-					registerChatCommand(cmd)
-				end
-			end
-
-			chatCommandsFolder.Parent = _K.Service.TextChat
 		end)
 
 		-- define user roles
@@ -447,9 +385,16 @@ return function(_K)
 				if gamePassId ~= id then
 					continue
 				end
+				-- exploits can fake purchaseSuccess, and ownership can lag a few seconds behind a real purchase
+				local owned = _K.Util.Retry(function()
+					assert(_K.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, gamePassId), "not owned")
+				end, 3)
+				if not owned then
+					return
+				end
 				local rolesAdded = {}
 				for _, role in roles do
-					local roleAdded = _K.Auth.userRoleAdd(player.UserId, role)
+					local roleAdded = _K.Auth.asyncRoleAdd(player.UserId, role)
 					if roleAdded then
 						local roleData = _K.Data.roles[role]
 						table.insert(rolesAdded, `<b><font color="{roleData.color}">{roleData.name}</font></b>`)
@@ -575,13 +520,13 @@ return function(_K)
 			player:SetAttribute("_K_READY", true)
 
 			if type(_K.Data.savedSettings.announcement) == "table" then
-				local msg, from, duration = unpack(_K.Data.savedSettings.announcement)
+				local msg, from = unpack(_K.Data.savedSettings.announcement)
 				_K.Chat.send(
 					{ global = true, from = from, fromPlayer = from and _K.Service.Players:GetPlayerByUserId(from) },
 					"announce",
 					msg,
 					{ player },
-					duration or 0
+					_K.Data.savedSettings.announcement
 				)
 			end
 
@@ -605,6 +550,9 @@ return function(_K)
 			end
 		end)
 
+		-- chat commands are TextChatCommands, Player.Chatted never fires with platform-integrated chat
+		_K.ChatCommands = require(script.ChatCommands).start(_K)
+
 		-- enable client
 		Client.Enabled = true
 
@@ -612,6 +560,7 @@ return function(_K)
 		local _
 		_ = _K.Remote.Announce
 		_ = _K.Remote.Bans
+		_ = _K.Remote.DisplayBubble
 		_ = _K.Remote.Member
 		_ = _K.Remote.Members
 		_ = _K.Remote.Log
@@ -643,6 +592,9 @@ return function(_K)
 
 		local handledSettings = {
 			freeAdmin = true,
+			announcement = true,
+			announcements = true,
+			notifications = true,
 			prefix = true,
 			splitKey = true,
 		}
@@ -666,6 +618,8 @@ return function(_K)
 				return type(value) == "string" and #value <= 64 and string.match(value, "^[%w ()%-_]+$") ~= nil
 			elseif key == "changeThemeAuthority" then
 				return value == "Client" or value == "Server" or value == "Studio"
+			elseif key == "saveChatLogs" then
+				return value == false -- chat text is never logged
 			end
 			local defaultType = typeof(default)
 			if defaultType == "string" or defaultType == "table" then
@@ -706,6 +660,95 @@ return function(_K)
 						end
 					end
 				end
+			end
+
+			-- announcements and notifications are user text shown to everyone, so new ones are filtered and rate
+			-- limited like ;announce
+			local announcement = changes.announcement
+			changes.announcement = nil
+			local newAnnouncement = type(announcement) == "table"
+				and type(announcement[1]) == "string"
+				and #announcement[1] <= 1000
+				and utf8.len(announcement[1]) ~= nil
+			local newCount = if newAnnouncement then 1 else 0
+
+			-- these settings are lists, existing entries are kept as is and only new ones need the rate limit
+			local function itemKey(item)
+				return `{item.From}\0{item.Duration}\0{item.Text}`
+			end
+			local lists = {}
+			for _, key in { "announcements", "notifications" } do
+				local items = changes[key]
+				changes[key] = nil
+				if type(items) ~= "table" then
+					continue
+				end
+				local existing, existingCounts, entries = {}, {}, {}
+				for _, item in _K.Data.savedSettings[key] or {} do
+					local k = itemKey(item)
+					existing[k] = item
+					existingCounts[k] = (existingCounts[k] or 0) + 1
+				end
+				for _, item in items do
+					if
+						type(item) == "table"
+						and type(item.Text) == "string"
+						and #item.Text <= 1000
+						and utf8.len(item.Text) ~= nil
+					then
+						local k = itemKey(item)
+						if (existingCounts[k] or 0) > 0 then
+							existingCounts[k] -= 1
+							table.insert(entries, existing[k])
+						else
+							newCount += 1
+							table.insert(entries, { new = item })
+						end
+					end
+				end
+				lists[key] = entries
+			end
+
+			local err
+			if newCount > 0 then
+				-- a rejected burst doesn't start the cooldown shared with ;announce
+				err = if _K.Data.SEPARATE_DATASTORE
+					then "Announcements are disabled in private servers."
+					elseif newCount > 1 then "Please wait before adding another message."
+					else _K.Chat.limitBroadcast(player.UserId)
+				if err then
+					_K.alert(player, err, true)
+				end
+			end
+
+			if announcement == false then
+				changes.announcement = false -- clearing it, like ;unannounce
+			elseif not err and newAnnouncement then
+				changes.announcement = {
+					_K.Util.String.filterForBroadcast(announcement[1], player.UserId),
+					player.UserId,
+					0,
+					_K.Service.Http:GenerateGUID(false), -- shows again when the same text is pinned again
+				}
+			end
+
+			for key, entries in lists do
+				local items = {}
+				for _, entry in entries do
+					if not entry.new then
+						table.insert(items, entry)
+					elseif not err then
+						local rawDuration = tonumber(entry.new.Duration)
+						table.insert(items, {
+							From = player.UserId,
+							Duration = if rawDuration and rawDuration == rawDuration
+								then math.clamp(rawDuration, 0, 600)
+								else nil,
+							Text = _K.Util.String.filterForBroadcast(entry.new.Text, player.UserId),
+						})
+					end
+				end
+				changes[key] = items
 			end
 
 			-- the prefix and split key are shown to everyone, users are limited to single valid characters like the
@@ -768,7 +811,7 @@ return function(_K)
 			for key, value in changes do
 				-- skipped keys aren't sent to other players either
 				if
-					_K.Data.savedSettings[key] == nil
+					(_K.Data.savedSettings[key] == nil and not handledSettings[key])
 					or (string.find(key, "theme", 1, true) and themeAuthority == "Studio")
 					or not isValidSetting(key, value)
 				then
@@ -779,6 +822,8 @@ return function(_K)
 				_K.Data.savedSettings[key] = value
 				local logValue = if type(value) == "string"
 					then _K.Util.String.filterForBroadcast(value, player.UserId)
+					elseif key == "announcement" and type(value) == "table" then value[1] -- already filtered
+					elseif key == "announcements" or key == "notifications" then `{#value} {key}`
 					elseif key == "freeAdmin" or key == "prefix" then table.concat(value, ", ")
 					else value
 				table.insert(changeStrings, `[{key}]: {logValue}`)
@@ -806,10 +851,16 @@ return function(_K)
 					_K.Remote.Settings:Fire(toPlayer, changes)
 				end
 			end
+			-- the editor applied its own changes, but sees the filtered pinned announcement like everyone else
+			if changes.announcement ~= nil then
+				_K.Remote.Settings:Fire(player, { announcement = changes.announcement })
+			end
 
 			_K.Data.settings = if _K.Data.savedSettings.useSavedSettings
 				then _K.Data.savedSettings
 				else _K.Data.defaultSettings
+			-- the prefixes and chatCommands are chat command aliases
+			_K.ChatCommands.schedule()
 
 			if #changeStrings > 0 then
 				_K.log(`changed settings: {table.concat(changeStrings, " ")}`, "COMMAND", player.UserId)
@@ -820,7 +871,7 @@ return function(_K)
 		_K.Remote.Ban:Connect(function(player: Player, userId: number, reason: string?, duration: number?)
 			userId = tonumber(userId) :: number
 			local canBan = _K.Auth.hasCommand(player.UserId, "ban")
-			if not (canBan and userId and userId > 0 and userId < math.huge and math.floor(userId) == userId) then
+			if not (canBan and userId and userId > 0 and userId <= 2 ^ 53 and math.floor(userId) == userId) then
 				return
 			end
 			if duration ~= nil then
@@ -864,34 +915,31 @@ return function(_K)
 				if targetPlayer then
 					targetPlayer:Kick(reason or "No reason.")
 				end
-				local logText = `{_K.getCommandPrefix()}ban {userId} {duration}`
-				-- the reason is free text, other admins' logs don't show it
-				_K.log(
-					if reason then `{logText} {reason}` else logText,
-					"COMMAND",
-					player.UserId,
-					nil,
-					reason and `{logText} …`
-				)
-				_K.Auth.banUsers({ userId }, reason, duration, player.UserId)
+				if #_K.Auth.banUsers({ userId }, reason, duration, player.UserId) > 0 then
+					local logText = `{_K.getCommandPrefix()}ban {userId} {duration}`
+					_K.log(if reason then `{logText} {reason}` else logText, "COMMAND", player.UserId)
+				else
+					-- saved bans are kept unless the caller can use banasync
+					_K.Remote.Notify:Fire(player, { Text = `Kept saved ban for <b>{userId}</b>.` })
+				end
 			end
 		end)
 
 		_K.Remote.Unban:Connect(function(player: Player, userId: number)
 			userId = tonumber(userId) :: number
 			local canUnban = _K.Auth.hasCommand(player.UserId, "unban")
-			if not (canUnban and userId and userId > 0 and userId < math.huge and math.floor(userId) == userId) then
+			if not (canUnban and userId and userId > 0 and userId <= 2 ^ 53 and math.floor(userId) == userId) then
 				return
 			end
 			local ban = _K.Data.bans[tostring(userId)]
 			if not ban then
 				return
 			end
+			local savedBan = ban[3] and (ban[3] < 0 or ban[3] > os.time())
 			if
-				ban[3]
-				and ban[3] ~= 0
+				savedBan
 				and player.UserId ~= _K.Data.creatorId
-				and not _K.Auth.hasPermission(player.UserId, "admin")
+				-- banasync includes admin, and only developers change saved bans, as in Auth.unbanUsers
 				and (
 					not _K.Auth.hasPermission(player.UserId, "banasync")
 					or not _K.Auth.hasRestrictedRole(player.UserId)
@@ -912,8 +960,9 @@ return function(_K)
 			}
 			_K.Data.targetLimits[player.UserId] = 0
 			if _K.Auth.targetUserArgument(fauxArg, userId, userId) then
-				_K.log(`{_K.getCommandPrefix()}unban {userId}`, "COMMAND", player.UserId)
-				_K.Auth.unbanUsers({ userId }, player.UserId)
+				if #_K.Auth.unbanUsers({ userId }, player.UserId) > 0 then
+					_K.log(`{_K.getCommandPrefix()}unban {userId}`, "COMMAND", player.UserId)
+				end
 			end
 		end)
 
@@ -932,7 +981,8 @@ return function(_K)
 
 		-- the admin system's own instances, changing them breaks it for everyone
 		local function isProtectedInstance(instance: Instance, allowAncestors: boolean?): boolean
-			for _, root in { Package, Server } do
+			local chatFolder = _K.ChatCommands and _K.ChatCommands.folder
+			for _, root in { Package, Server, chatFolder } do
 				if
 					instance == root
 					or instance:IsDescendantOf(root)
@@ -1092,21 +1142,6 @@ return function(_K)
 			playerCleanup[player.UserId] = cleanup
 			table.insert(cleanup, player.CharacterAdded:Connect(characterAdded))
 			table.insert(cleanup, player.CharacterRemoving:Connect(characterRemoving))
-			table.insert(
-				cleanup,
-				player.Chatted:Connect(function(message: string)
-					local v = _K.Service.TextChat.ChatVersion
-					if
-						_K.Data.settings.chatCommands ~= false
-						and (
-							(v == Enum.ChatVersion.TextChatService and string.find(message, "/e", 1, true) == 1)
-							or v == Enum.ChatVersion.LegacyChatService
-						)
-					then
-						_K.Remote.Command:Fire(player, message)
-					end
-				end)
-			)
 
 			if _K.Auth.hasCommand(player.UserId, "servers") then
 				ServersSubscribers[player] = true
