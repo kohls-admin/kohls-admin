@@ -101,8 +101,8 @@ export type RemoteData = {
 	_id: string?,
 	_signal: Signal.Signal,
 	_remote: RemoteEvent | UnreliableRemoteEvent,
-	_fireQueue: { { any } }?,
-	_invokeQueue: { { any } }?,
+	_fireQueue: { { n: number, [number]: any } }?,
+	_invokeQueue: { { n: number, [number]: any } }?,
 
 	OnInvoke: ((...any) -> ...any)?,
 }
@@ -244,7 +244,8 @@ else -- Client
 			if not self._fireQueue then
 				self._fireQueue = {}
 			end
-			table.insert(self._fireQueue :: any, { ... })
+			-- packed so nil arguments survive the queue
+			table.insert(self._fireQueue :: any, table.pack(...))
 		end
 	end
 
@@ -255,7 +256,7 @@ else -- Client
 			if not self._invokeQueue then
 				self._invokeQueue = {}
 			end
-			table.insert(self._invokeQueue :: any, { coroutine.running(), ... :: any })
+			table.insert(self._invokeQueue :: any, table.pack(coroutine.running(), ...))
 
 			return coroutine.yield()
 		end
@@ -278,7 +279,7 @@ else -- Client
 	local function flushQueue(remote: Remote)
 		if remote._fireQueue then
 			for _, args in remote._fireQueue do
-				EVENT:FireServer(remote._id, unpack(args))
+				(remote._remote :: any):FireServer(remote._id, unpack(args, 1, args.n))
 			end
 			remote._fireQueue = nil
 		end
@@ -287,10 +288,11 @@ else -- Client
 			for _, args in remote._invokeQueue do
 				local thread = args[1]
 				task.spawn(function()
-					local results =
-						{ pcall(function()
-							return FUNCTION:InvokeServer(remote._id, unpack(args, 2))
-						end) }
+					local results = {
+						pcall(function()
+							return FUNCTION:InvokeServer(remote._id, unpack(args, 2, args.n))
+						end),
+					}
 					if coroutine.status(thread) == "suspended" then
 						if results[1] then
 							task.spawn(thread, unpack(results, 2))

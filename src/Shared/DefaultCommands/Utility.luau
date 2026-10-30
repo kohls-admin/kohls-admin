@@ -1155,8 +1155,11 @@ return {
 			return env
 		end,
 		run = function(context, player: Player)
+			-- the target's client answers, it can error or return anything
+			local ok, fps = pcall(context.env.remote.Invoke, context.env.remote, player)
+			fps = if ok and type(fps) == "number" and fps == fps then math.clamp(fps, 0, 999) else 0
 			context._K.Remote.Notify:Fire(context.fromPlayer, {
-				Text = `<b>FPS:</b> {math.round(context.env.remote:Invoke(player) or 0)}`,
+				Text = `<b>FPS:</b> {math.round(fps)}`,
 				From = player.UserId,
 			})
 		end,

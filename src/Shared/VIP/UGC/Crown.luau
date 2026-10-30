@@ -78,7 +78,7 @@ if RunService:IsClient() then
 						fire.SecondaryColor = color
 					end
 				else
-					crowns[crown] = nil
+					rainbowCrowns[crown] = nil
 				end
 			end
 		end
@@ -109,7 +109,7 @@ return {
 		if accessory then
 			if typeof(accessory) == "Instance" then
 				local part = accessory:FindFirstChild("Handle")
-				if part:IsA("MeshPart") then
+				if part and part:IsA("MeshPart") then
 					if string.find(part.TextureID, "74391200400192") then
 						colors = COLORS.dark
 					elseif string.find(part.TextureID, "115319077247149") then

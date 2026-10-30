@@ -36,6 +36,9 @@ return function(_K)
 		characterCleanup[character] = cleanup
 		local player = _K.Service.Players:GetPlayerFromCharacter(character)
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if not (player and humanoid) then
+			return -- custom characters can spawn without a humanoid
+		end
 
 		-- damage logs
 		local alive, lastHealth = true, humanoid.Health
@@ -47,7 +50,8 @@ return function(_K)
 				return
 			end
 			damage = math.round(damage)
-			if from and from ~= game then
+			-- creator tags can point at any instance, only players have a UserId
+			if typeof(from) == "Instance" and from:IsA("Player") then
 				_K.log(`damaged {player} for {damage} damage.`, "DAMAGE", from.UserId)
 			else
 				_K.log(`{player} took {damage} damage.`, "DAMAGE", player.UserId)

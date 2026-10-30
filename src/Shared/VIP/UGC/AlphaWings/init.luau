@@ -105,7 +105,7 @@ return {
 		if accessory then
 			if typeof(accessory) == "Instance" then
 				local part = accessory:FindFirstChild("Handle")
-				if part:IsA("MeshPart") then
+				if part and part:IsA("MeshPart") then
 					if string.find(part.TextureID, "74391200400192") then
 						color = COLORS.dark
 					elseif string.find(part.TextureID, "115319077247149") then

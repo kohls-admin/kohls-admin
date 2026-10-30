@@ -125,6 +125,9 @@ function Argument:parse()
 		return false, "Argument must be validated before parsing"
 	end
 
+	-- validate already counted these targets, count them once
+	self._K.Data.targetLimits[self.command.from] = 0
+
 	local argPos = self.argPos
 	for i, transformedArg in self.transformedArgs do
 		local rawArg = self.rawArgs[i]
