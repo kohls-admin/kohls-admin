@@ -76,7 +76,7 @@ For arguments that accept multiple values (such as `players`, `roles`, or `tools
 
 ### Quoting Arguments with Spaces
 
-Wrap arguments that contain spaces—or match players whose DisplayName contains spaces—inside double quotes (`"..."`) or backticks (`` `...` ``):
+Wrap arguments that contain spaces (or match players whose DisplayName contains spaces) inside double quotes (`"..."`) or backticks (`` `...` ``):
 
 ```text
 ;team me "Red Team"

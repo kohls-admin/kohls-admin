@@ -6,16 +6,16 @@ sidebar_position: 1
 
 ## What Is Kohl's Admin?
 
-**Kohl's Admin (KA)** is a fast, modern, and extensible administration framework for Roblox experiences. Whether you are moderating players across live servers, testing gameplay mechanics in Studio, selling VIP perks and roles, or building custom administrative tools for your team, Kohl's Admin provides a complete, zero-lag solution out of the box.
+**Kohl's Admin (KA)** is a strictly typed administration, moderation, and command suite for Roblox experiences built on [`Flux`](/api/Flux) and [`Z`](/api/Z). It ships with 200+ built-in commands, layered role-based access control, cross-server `DataStore` persistence, a reactive in-game dashboard, and an addon API for custom commands, argument types, and UI windows.
 
 ## Key Features
 
-- **Role-Based Access Control (RBAC)**: Configure an unlimited hierarchy of custom roles with granular command groups, permission flags, cooldowns, and target limits. Automatically grant roles by UserId, Username, Group Rank, GamePass, Asset, Subscription, Friend status, or Private Server ownership.
-- **Smart Command Bar & Chat Execution**: Run commands with real-time autocomplete, inline argument validation, error highlighting, command history, multi-command batching, and native Roblox `/` slash commands (`TextChatCommand`).
-- **Powerful Target Selectors**: Target players effortlessly using shorthand selectors like `me`, `all` (`*`), `others`, `@role`, `%team`, `~random`, `$friends`, `$admins`, `$distance<100`, and `$group=ID>=RANK`.
-- **Live Dashboard & Server Management**: Manage Commands, Bans, Members, Active & Reserved Servers, Cross-Server Synced Logs, and Settings through a responsive, reactive interface on PC, Mobile, Console, and VR.
-- **Built-in Monetization & Discovery**: Sell custom GamePass/Asset/Subscription roles, earn **40% creator commission** on global VIP and UGC purchases in your experience, and gain free player discovery through **Kohl's Admin Charts**.
-- **Limitless Customization**: Extend Kohl's Admin with shared, server-only, or client-only **Addons**, register **Custom Commands** and **Custom Argument Types**, listen to lifecycle **Hooks** (`_K.Hook`), and customize **UI Themes** or build custom windows with [`_K.UI`](/api/UI) and [`_K.Flux`](/api/Flux).
+- **Role-Based Access Control (RBAC)**: Configure a layered hierarchy of custom roles with granular command groups, permission flags, cooldowns, and target limits. Automatically grant roles by UserId, Username, Group Rank, GamePass, Asset, Subscription, Friend status, or Private Server ownership, with cross-server `DataStore` persistence for `bans`, `members`, `settings`, and `logs`.
+- **Command Bar & Chat Execution**: Run commands with live syntax and target autocomplete, inline argument validation, error highlighting, command history, multi-command chaining, and platform-integrated `TextChatService` and `TextChatCommand` slash aliases with per-viewer broadcast filtering.
+- **Target Selectors**: Filter and target players using shorthand selectors including `me`, `all` (`*`), `others`, `@role`, `%team`, `~random`, `$friends`, `$admins`, `$distance<100`, and `$group=ID>=RANK`.
+- **Reactive Flux Dashboard**: Manage `Commands`, `Bans`, `Members`, `Servers`, `Logs`, `Settings`, `Market`, and `About` through a reactive interface with custom Oklab themes and configurable keybinds across PC, Mobile, Console, and VR.
+- **Monetization & Discovery**: Sell custom GamePass, Asset, or Subscription roles, earn **40% creator commission** on global VIP and UGC purchases in your experience, and list your experience in **Kohl's Admin Charts**.
+- **Addons, Hooks & Custom Types**: Extend Kohl's Admin with shared, server-only, or client-only **Addons**, register **Custom Commands** and **Custom Argument Types**, listen to lifecycle **Hooks** (`_K.Hook`), and build custom reactive windows with [`_K.UI`](/api/UI) and [`_K.Flux`](/api/Flux).
 
 ## Documentation Overview
 

@@ -87,7 +87,7 @@ A custom command registered in `Config > Addons` either does not appear in the c
 
 ### Cause & Solutions
 1. **Addon Named with `"Server"` or `"Client"`**:
-   - If your `ModuleScript` name contains `"Server"` (e.g. `CommandsServer`), it **only** runs on the server—the client never registers the command, so autocomplete and client validation reject it!
+   - If your `ModuleScript` name contains `"Server"` (e.g. `CommandsServer`), it **only** runs on the server; the client never registers the command, so autocomplete and client validation reject it!
    - If your `ModuleScript` name contains `"Client"` (e.g. `CommandsClient`), the server never registers the command, so server execution (`run`) never happens!
    - **Fix**: Rename the `ModuleScript` so it does **not** contain `"Server"` or `"Client"` (e.g. `CustomCommands`). See [Addons & Hooks: Execution Contexts](/guide/addons#addon-execution-contexts-shared-server-client).
 2. **Invalid Argument Type Name**:

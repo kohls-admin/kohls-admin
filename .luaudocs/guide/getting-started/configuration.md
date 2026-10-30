@@ -6,7 +6,7 @@ sidebar_position: 2
 
 All configuration for Kohl's Admin lives inside **`Kohl's Admin > Config > Settings`** in the Roblox Studio Explorer.
 
-:::info Using the Legacy Loader?
+:::info Legacy Loader Compatibility
 There are two `Settings` scripts in the model:
 - **`Kohl's Admin > Config > Settings`**: Used by the modern Kohl's Admin loader (documented on this page).
 - **`Kohl's Admin > Config > Legacy > Settings`**: Used by the legacy *Kohl's Admin Infinite* loader (and automatically imported by the modern loader). See [Legacy Loader & Migration](/guide/getting-started/legacy_loader) for legacy configuration details.

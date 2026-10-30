@@ -141,7 +141,7 @@ _K.Notify({
 })
 
 -- Full-screen banner announcement from the Server to all players:
-_K.Remote.Announce:FireAllClients({
+_K.Remote.Announce:FireAll({
 	Text = "Server maintenance in 5 minutes!",
 	From = _K.creatorId,
 	Duration = 30,

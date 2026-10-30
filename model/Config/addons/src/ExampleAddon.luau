@@ -22,8 +22,8 @@ return function(_K)
 			"number" "numbers"
 			"string" "strings"        - normal strings are filtered by default!
 			"rawString" "rawStrings" - use rawStrings for commands that require an unfiltered input
-			"chatString"             - messages between users, send them with _K.Chat.send so TextChatService
-			                           filters them and they can be reported, like the message and pm commands
+			"chatString"             - messages between users, send them with _K.Chat.send so they are filtered
+			                           and rate limited, like the message and pm commands
 			"vector2"
 			"vector3"
 
@@ -72,27 +72,14 @@ return function(_K)
 		-- COMMAND ENVIRONMENTS
 
 		env = function(_K)
-			-- This will only run once on each server while in studio or in the demo place
 			if _K.DEBUG or _K.IsStudio then
 				_K.log(`Hello World from ExampleAddon customcommand env!`, "INFO")
 			end
-
-			-- This table is passed to the `run` function as `context.env`
-			return {
-				countServer = 0,
-			}
+			return { countServer = 0 }
 		end,
 
 		envClient = function(_K)
-			-- This will only run once on each client while in studio or in the demo place
-			if _K.DEBUG or _K.IsStudio then
-				_K.log(`Hello World from ExampleAddon customcommand envClient!`, "INFO")
-			end
-
-			-- This table is passed to the `runClient` function as `context.env`
-			return {
-				countClient = 0,
-			}
+			return { countClient = 0 }
 		end,
 
 		--[[ COMMAND EXECUTION
@@ -111,7 +98,6 @@ return function(_K)
 
 		]]
 
-		-- Function that runs on the server when the command is called
 		run = function(context, message: string?)
 			-- Text that other users can see must be rate limited to at least once a minute (Roblox chat guidelines)
 			if message then
@@ -122,10 +108,9 @@ return function(_K)
 			end
 
 			-- Create a simple Roblox message object
-			local messageInstance = Instance.new("Message", workspace)
-
-			-- Since our message is optional we need to check nil for a default value
+			local messageInstance = Instance.new("Message")
 			messageInstance.Text = if message == nil then "Default message" else message
+			messageInstance.Parent = workspace
 
 			-- Destroy the message after 5 seconds
 			task.delay(5, messageInstance.Destroy, messageInstance)
@@ -137,7 +122,6 @@ return function(_K)
 			return
 		end,
 
-		-- Function that runs on the player's client when the command is called
 		runClient = function(context, message: string?)
 			-- Number of times the command has been used on this client
 			context.env.countClient += 1
