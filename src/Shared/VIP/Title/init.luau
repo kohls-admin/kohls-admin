@@ -51,15 +51,21 @@ local Title = {
 			assetId = 129439770798699,
 			gamepass = 941076536,
 			getValue = function(elapsed: number)
-				elapsed /= 2
-				local keypoints = {}
-				for i = 0, 2 do
-					local step = i / 2
-					local oscillate = math.abs(((elapsed + step) % 2) - 1) * 1 / 7
-					local color = hclToRGB(Vector3.new(5 / 7 + oscillate, 0.4, 1))
-					table.insert(keypoints, ColorSequenceKeypoint.new(step, color))
-				end
-				return ColorSequence.new(keypoints)
+				local halfElapsed = elapsed * 0.5
+				return ColorSequence.new({
+					ColorSequenceKeypoint.new(
+						0,
+						hclToRGB(Vector3.new(5 / 7 + math.abs((halfElapsed % 2) - 1) / 7, 0.4, 1))
+					),
+					ColorSequenceKeypoint.new(
+						0.5,
+						hclToRGB(Vector3.new(5 / 7 + math.abs(((halfElapsed + 0.5) % 2) - 1) / 7, 0.4, 1))
+					),
+					ColorSequenceKeypoint.new(
+						1,
+						hclToRGB(Vector3.new(5 / 7 + math.abs(((halfElapsed + 1) % 2) - 1) / 7, 0.4, 1))
+					),
+				})
 			end,
 			update = function(object, value)
 				object.Title.UIGradient.Color = value
@@ -204,7 +210,7 @@ if RunService:IsClient() then
 	end
 
 	local start = os.clock()
-	RunService.Heartbeat:Connect(function()
+	local _ = RunService.Heartbeat:Connect(function()
 		local elapsed = os.clock() - start
 		for tag, cache in titleCache do
 			if not next(cache.objects) then

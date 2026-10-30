@@ -5,8 +5,8 @@ local RunService = game:GetService("RunService")
 local Package = script.Parent
 local Shared = Package.Shared.Value
 
-local Remote = require(Shared.Util.Remote) :: any
-local SafeTeleport = require(Shared.Util.SafeTeleport) :: any
+local Remote = require(Shared.Util.Remote :: ModuleScript)
+local SafeTeleport = require(Shared.Util.SafeTeleport :: ModuleScript)
 
 local THROTTLE = 15
 local TOPIC = "_KAdminServers"
@@ -104,7 +104,7 @@ if RunService:IsServer() then
 		end
 	end)
 
-	Remote.TeleportToServer:Connect(function(player: Player, placeId: number, jobId: string)
+	local _ = Remote.TeleportToServer:Connect(function(player: Player, placeId: number, jobId: string)
 		-- only servers this server knows about, the servers list shows the same entries
 		local server = type(jobId) == "string" and Map[jobId]
 		if jobId ~= SERVER_ID and ServersSubscribers[player] ~= nil and server and server[1] == placeId then

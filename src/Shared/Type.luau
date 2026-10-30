@@ -32,6 +32,8 @@ export type ArgumentDefinition = {
 	lowerRank: boolean?,
 	ignoreSelf: boolean?,
 	shouldRequest: boolean?,
+	-- lowerRank compares only the roles given in this server, for arguments that can't harm their target
+	skipOfflineRank: boolean?,
 }
 
 --- @within Registry

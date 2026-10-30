@@ -58,7 +58,7 @@ local Data = {
 		settings = {},
 		logs = {},
 	},
-	Migrate = {} :: any,
+	Migrate = {} :: Dict,
 	canSave = nil,
 	saveError = nil,
 	initialize = nil,
@@ -89,11 +89,12 @@ local Data = {
 	rolesList = {},
 
 	logsHidden = {},
+	pendingLogReveals = {} :: { any },
 	playerPrefix = {},
 	targetLimits = {},
 
 	defaultSettings = {},
-	savedSettings = {} :: any,
+	savedSettings = {} :: Dict,
 	settingsModuleData = nil,
 	settings = {
 		announcement = false,
@@ -152,7 +153,7 @@ if game:GetService("RunService"):IsClient() then
 end
 
 -- UI Theme initial settings
-for key, state in Theme :: any do
+for key, state in pairs(Theme) do
 	if key == "Themes" then
 		continue
 	end

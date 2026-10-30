@@ -32,10 +32,13 @@ return function(_K)
 		end
 
 		local function run(context, userIds)
+			-- same rules as ;role: only developers save roles or grant restricted ones
+			local isDeveloper = context._K.Auth.hasRestrictedRole(context.from)
+			local persist = context.definition.permissions.saveRoles and isDeveloper
 			local usersRoled = {}
 			local roleData = context._K.Data.roles[role]
 			for _, userId in userIds do
-				if context._K.Auth.userRoleAdd(userId, role, context.definition.permissions.saveRoles) then
+				if context._K.Auth.userRoleAdd(userId, role, persist, not isDeveloper) then
 					table.insert(usersRoled, userId)
 					local player = context._K.Service.Players:GetPlayerByUserId(userId)
 					if not player then
@@ -145,10 +148,10 @@ return function(_K)
 			return
 		end
 
-		local SETTINGS = require(LEGACY_CONFIG:WaitForChild("Settings") :: any)
+		local SETTINGS = require(LEGACY_CONFIG:WaitForChild("Settings") :: ModuleScript)
 		local commandsModule = LEGACY_CONFIG:FindFirstChild("Custom_Commands")
 			or LEGACY_CONFIG:FindFirstChild("Custom Commands")
-		local CUSTOM_COMMANDS = commandsModule and require(commandsModule :: any)
+		local CUSTOM_COMMANDS = commandsModule and require(commandsModule :: ModuleScript)
 
 		-- MIGRATE CUSTOM COMMANDS
 

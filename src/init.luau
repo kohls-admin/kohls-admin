@@ -128,7 +128,8 @@ function _K.removeExcessLogs()
 	end
 end
 
-local pendingLogReveals = {}
+local pendingLogReveals = _K.Data.pendingLogReveals or {}
+_K.Data.pendingLogReveals = pendingLogReveals
 local revealTimer = false
 
 local function flushLogReveals()

@@ -93,6 +93,8 @@ local function startVote(context, players: { Player }, text: string, given: { st
 	local id, err = _K.Chat.send(context, "vote", rawQuestion, uniquePlayers)
 	if not id then
 		return err
+	elseif err and context.fromPlayer and context.fromPlayer.Parent then
+		_K.Remote.Notify:Fire(context.fromPlayer, { Text = err })
 	end
 
 	local function clean(value: string): (string, string)
@@ -101,35 +103,41 @@ local function startVote(context, players: { Player }, text: string, given: { st
 	end
 
 	local labels = table.create(count)
-	local filteredOptions = if options then table.create(count) else nil
-	local filteredQuestion
-	local filters = _K.Util.Tasks.new()
-	filters:add(function()
-		question, filteredQuestion = clean(rawQuestion)
-	end)
+	local filteredOptions
 	if options then
+		filteredOptions = table.create(count)
+		local filters = _K.Util.Tasks.new()
 		for index, option in options do
 			filters:add(function()
 				labels[index], filteredOptions[index] = clean(option)
 			end)
 		end
-	else
-		table.move(VOTE_YES_NO, 1, count, 1, labels)
-	end
-	filters:wait()
-	if options then
+		filters:wait()
 		for index = 1, count do
 			labels[index] = labels[index] or "…"
 			filteredOptions[index] = filteredOptions[index] or "…"
 		end
+	else
+		table.move(VOTE_YES_NO, 1, count, 1, labels)
 	end
-	if context.args then
-		if context.args[2] then
-			context.args[2].parsedArgs = { filteredQuestion or "…" }
-		end
-		if context.args[3] then
-			context.args[3].parsedArgs = filteredOptions or {}
-		end
+
+	-- Chat.send already filtered the question into context.args[2] when rawArg matched; otherwise filter once
+	local questionArg = context.args and context.args[2]
+	local filteredQuestion = if questionArg
+			and questionArg.redactLog == false
+			and questionArg.parsedArgs
+		then questionArg.parsedArgs[1]
+		else _K.Util.String.filterForBroadcast(rawQuestion, context.from)
+	question = _K.Chat.restoreRichText(_K.Util.String.escapeRichText(filteredQuestion))
+
+	if questionArg and questionArg.rawType and questionArg.rawType.freeText then
+		questionArg.parsedArgs = { filteredQuestion }
+		questionArg.redactLog = false
+	end
+	local optionsArg = context.args and context.args[3]
+	if optionsArg and filteredOptions then
+		optionsArg.parsedArgs = filteredOptions
+		optionsArg.redactLog = false
 	end
 
 	local tally = table.create(count, 0)
@@ -201,8 +209,7 @@ local function startVote(context, players: { Player }, text: string, given: { st
 	end
 
 	local isYesNo = not options
-		or (count == 2 and string.upper(options[1]) == "YES" and string.upper(options[2]) == "NO")
-
+		or (#labels == 2 and string.upper(labels[1]) == "YES" and string.upper(labels[2]) == "NO")
 	if context.fromPlayer and context.fromPlayer.Parent then
 		context.env.results:Fire(context.fromPlayer, question, labels, tally, #uniquePlayers - total, isYesNo)
 	end
@@ -218,7 +225,7 @@ end
 local function connectVote(_K)
 	local UI = _K.UI
 
-	_K.Remote.Vote.OnInvoke = function(id: string, from: Player | number, count: number?, fixedLabels: { string }?)
+	local function onVoteInvoke(id: string, from: Player | number, count: number?, fixedLabels: { string }?)
 		local numOptions = if count == nil then #VOTE_YES_NO else count
 		if count == nil then
 			fixedLabels = VOTE_YES_NO
@@ -282,9 +289,10 @@ local function connectVote(_K)
 		end
 		return choiceSignal:Wait()
 	end
+	_K.Remote.Vote.OnInvoke = onVoteInvoke
 
 	-- the server tallies the votes, this only draws them
-	_K.Remote.VoteResults:Connect(
+	local _ = _K.Remote.VoteResults:Connect(
 		function(question: string, labels: { string }, tally: { number }, missing: number, yesNo: boolean)
 			if type(labels) ~= "table" or type(tally) ~= "table" then
 				return
@@ -663,7 +671,7 @@ return {
 		},
 		envClient = function(_K)
 			local countdown, progress
-			_K.Remote.StartCountdown:Connect(function(start, duration)
+			local _ = _K.Remote.StartCountdown:Connect(function(start, duration)
 				if countdown then
 					countdown:Disconnect()
 				end
@@ -794,6 +802,9 @@ return {
 				if err then
 					return err
 				end
+				if context.args[2] then
+					context.args[2].redactLog = false
+				end
 			end
 			for _, player in players do
 				if context.undo then
@@ -847,13 +858,17 @@ return {
 					local trimmedRaw = if rawArg then context._K.Util.String.trim(rawArg) else ""
 					local questionRaw = if context.args and context.args[2] then context.args[2].rawArg else ""
 					local trimmedQuestion = context._K.Util.String.trim(questionRaw)
-					local questionUnquoted = trimmedQuestion ~= "" and not string.find(trimmedQuestion, '^["`].*["`]$')
-					local optionsHasQuotes = string.find(trimmedRaw, '["`]') ~= nil
-					if questionUnquoted and rawArg and not optionsHasQuotes then
-						-- unquoted question with unquoted, comma-free words: join into the yes/no question
-						question = `{question} {trimmedRaw}`
+					local questionQuoted = string.find(trimmedQuestion, '^["`].*["`]$') ~= nil
+					if
+						rawArg
+						and trimmedQuestion ~= ""
+						and not questionQuoted
+						and not string.find(trimmedRaw, '["`]')
+					then
+						-- unquoted question with unquoted comma-free words: join into the yes/no question
+						question = `{question} {if trimmedRaw ~= "" then trimmedRaw else first}`
 						given = nil
-						if context.args and context.args[3] then
+						if context.args then
 							context.args[3] = nil
 						end
 					else
@@ -991,7 +1006,7 @@ return {
 				end
 			end
 
-			localPlayer.CharacterAdded:Connect(function()
+			local _ = localPlayer.CharacterAdded:Connect(function()
 				for player in persist do
 					task.defer(link, player)
 				end
@@ -1077,18 +1092,18 @@ return {
 				watched = nil,
 			}
 
-			_K.Remote.Spectate:Connect(function(cframe: CFrame, distance: number)
+			local _ = _K.Remote.Spectate:Connect(function(cframe: CFrame, distance: number)
 				if env.currentSubject then
 					env.subjectFocus = cframe
 					env.subjectDistance = distance
 				end
 			end)
 
-			_K.Remote.SpectateSubject:Connect(function(enabled: boolean)
+			local _ = _K.Remote.SpectateSubject:Connect(function(enabled: boolean)
 				env.watched = enabled
 			end)
 
-			_K.Service.Players.PlayerRemoving:Connect(function(player: Player)
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player: Player)
 				if player == env.currentSubject then
 					_K.Registry.commands.unspectate.env.unspectate()
 				end
@@ -1141,7 +1156,7 @@ return {
 				return
 			end
 
-			_K.Service.Run.PreRender:Connect(function(step)
+			local _ = _K.Service.Run.PreRender:Connect(function(step)
 				if env.watched then
 					_K.Remote.SpectateSubject:Fire(
 						workspace.CurrentCamera.CFrame.Rotation + workspace.CurrentCamera.Focus.Position,
@@ -1162,7 +1177,7 @@ return {
 		env = function(_K)
 			local spectators = {}
 			local spectateRemote = _K.Remote.Spectate
-			_K.Remote.SpectateSubject:Connect(function(player: Player, cframe: CFrame, distance: number)
+			local _ = _K.Remote.SpectateSubject:Connect(function(player: Player, cframe: CFrame, distance: number)
 				if not spectators[player] or typeof(cframe) ~= "CFrame" or typeof(distance) ~= "number" then
 					return
 				end
@@ -1194,14 +1209,14 @@ return {
 				end
 			end
 
-			_K.Hook.roleRemoved:Connect(function(userId: number, role: string)
+			local _ = _K.Hook.roleRemoved:Connect(function(userId: number, role: string)
 				local player = _K.Service.Players:GetPlayerByUserId(userId)
 				if player and not _K.Auth.hasCommand(userId, _K.Registry.commands.spectate) then
 					spectateCleanup({ _K = _K, fromPlayer = player })
 				end
 			end)
 
-			_K.Service.Players.PlayerRemoving:Connect(function(player: Player)
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player: Player)
 				if spectators[player] then
 					table.clear(spectators[player])
 				end
@@ -1299,7 +1314,7 @@ return {
 			},
 		},
 		env = function(_K)
-			_K.Hook.roleRemoved:Connect(function(userId: number, role: string)
+			local _ = _K.Hook.roleRemoved:Connect(function(userId: number, role: string)
 				local player = _K.Service.Players:GetPlayerByUserId(userId)
 				if player and not _K.Auth.hasCommand(userId, _K.Registry.commands.fly) then
 					player:SetAttribute("_KFly", nil)
@@ -1405,7 +1420,7 @@ return {
 		},
 		envClient = function(_K)
 			local connection
-			_K.Remote.Notrip:Connect(function(enable)
+			local _ = _K.Remote.Notrip:Connect(function(enable)
 				local player = _K.Service.Players.LocalPlayer
 				local humanoid: Humanoid? = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if humanoid then
@@ -1512,7 +1527,7 @@ return {
 			end
 
 			_K.Util.SafePlayerAdded(xrayPlayer)
-			_K.Service.Players.PlayerRemoving:Connect(function(player)
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
 				if playerCleanup[player] then
 					_K.Flux.dispose(playerCleanup[player])
 					playerCleanup[player] = nil
@@ -1562,11 +1577,9 @@ return {
 			local ping = math.min(9999, math.ceil(player:GetNetworkPing() * 1000))
 			local teamColor = player.Team and "#" .. player.Team.TeamColor.Color:ToHex() or "#16a085"
 			local locale = context._K.Service.LocalizationService:GetCountryRegionForPlayerAsync(player)
+			-- the server leaves these unset when a client sends a value it doesn't accept
 			local platform = player:GetAttribute("_KPlatform")
 			local sessionStart = player:GetAttribute("_KSessionStart")
-			local sessionText = if type(sessionStart) == "number"
-				then context._K.Util.Time.readable(workspace:GetServerTimeNow() - sessionStart) or "?"
-				else "?"
 			local platformEmoji = {
 				Console = "🎮",
 				Mobile = "📱",
@@ -1579,8 +1592,8 @@ return {
 				`<b>Account Age:</b> {context._K.Util.Time.readable(player.AccountAge * 86400) or "?"}`,
 				`<b>FPS:</b> {fps}   <b>Ping:</b> {ping} ms   <b>Locale:</b> {context._K.Util.String.toFlag(locale)} {locale}`,
 				`<b>Muted:</b> {if context._K.Data.muted[player.UserId] then "✅" else "❌"}\t<b>Verified:</b> {if player:IsVerified() then "✅" else "❌"}`,
-				`<b>Platform:</b> {if platform and platformEmoji[platform] then `{platformEmoji[platform]} {platform}` else "?"}`,
-				`<b>Session:</b> {sessionText}`,
+				`<b>Platform:</b> {if platform then `{platformEmoji[platform]} {platform}` else "?"}`,
+				`<b>Session:</b> {if sessionStart then context._K.Util.Time.readable(workspace:GetServerTimeNow() - sessionStart) else "?"}`,
 				`<b>Team:</b> <font color="{teamColor}">{player.Team and player.Team.Name or "None"}</font>`,
 				`<b>UserId:</b> {player.UserId}`,
 			}
@@ -1635,7 +1648,13 @@ return {
 
 		runClient = function(context, player: Player, groupId: number)
 			local info = context._K.Service.Group:GetRolesInGroupAsync(player.UserId, groupId)
-			local role = info and info.Roles[1]
+			-- show the highest held role, the list isn't ordered by Rank
+			local role
+			for _, held in if info and info.Roles then info.Roles else {} do
+				if not role or held.Rank > role.Rank then
+					role = held
+				end
+			end
 			context._K.Notify({
 				From = player.UserId,
 				Text = `<b>Group Rank:</b> [{if role then role.Rank else 0}] {if role then role.Name else "Guest"}`,

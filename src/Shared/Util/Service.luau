@@ -1,3 +1,5 @@
+local getService = game.GetService
+
 local Service = setmetatable({
 	Asset = game:GetService("AssetService"),
 	AvatarEditor = game:GetService("AvatarEditorService"),
@@ -32,7 +34,7 @@ local Service = setmetatable({
 	UserInput = game:GetService("UserInputService"),
 }, {
 	__index = function(self, key: string)
-		local service = game:GetService(key)
+		local service = getService(game, key)
 		self[key] = service
 		return service
 	end,

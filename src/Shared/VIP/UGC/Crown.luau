@@ -39,21 +39,23 @@ task.spawn(function()
 	handle.Material = Enum.Material.Neon
 	-- handle.Size = Vector3.new(1.2, 0.2, 1.2)
 
-	local attachment = Instance.new("Attachment", handle)
+	local attachment = Instance.new("Attachment")
 	attachment.Name = "HatAttachment"
 	attachment.CFrame = CFrame.new(0, -1.5, 0)
+	attachment.Parent = handle
 
-	local fire = Instance.new("Fire", handle)
+	local fire = Instance.new("Fire")
 	fire.Color = Color3.new(0, 0, 0)
 	fire.SecondaryColor = Color3.new(0, 0, 0)
 	fire.Heat = 4
 	fire.Size = 2
+	fire.Parent = handle
 end)
 
 if RunService:IsClient() then
 	-- handle crown animations
 	local crowns, rainbowCrowns = {}, {}
-	RunService.Heartbeat:Connect(function()
+	local _ = RunService.Heartbeat:Connect(function()
 		if next(crowns) then
 			local t = time()
 			local tpi = t % (math.pi * 2)

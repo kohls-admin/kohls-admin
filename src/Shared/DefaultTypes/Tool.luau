@@ -79,7 +79,7 @@ return function(context)
 			for _, tool in source:GetDescendants() do
 				addTool(tool)
 			end
-			source.DescendantAdded:Connect(addTool)
+			local _ = source.DescendantAdded:Connect(addTool)
 		end
 
 		registerSource(_K.Service.Lighting)
@@ -87,7 +87,7 @@ return function(context)
 		registerSource(_K.Service.ServerStorage)
 		registerSource(_K.Service.StarterPack)
 
-		_K.Remote.Tools:Connect(function(player)
+		local _ = _K.Remote.Tools:Connect(function(player)
 			if _K.Auth.hasCommand(player.UserId, "tools") then
 				local toolData = table.create(#tools)
 				for i, tool in tools do
@@ -113,7 +113,7 @@ return function(context)
 			end
 		end)
 	else -- Client
-		_K.Remote.Tools:Connect(function(toolData)
+		local _ = _K.Remote.Tools:Connect(function(toolData)
 			tools = toolData
 			_K.tools = tools
 			table.insert(tools, 1, { Name = "all" })

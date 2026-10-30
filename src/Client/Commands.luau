@@ -182,6 +182,39 @@ function Commands.new(_K)
 		end
 	end
 
+	local textChat = _K.Service.TextChat
+	local chatCommandsFolder: Instance?
+	local folderReparented = false
+
+	local function reparentChatCommands()
+		if chatCommandsFolder and chatCommandsFolder.Parent == textChat then
+			chatCommandsFolder.Parent = nil
+			chatCommandsFolder.Parent = textChat
+		end
+	end
+
+	local function updateChatCommandsAutocomplete(list)
+		local folder = chatCommandsFolder or textChat:FindFirstChild("TextChatCommands_KA")
+		if not folder then
+			return
+		end
+		local visible = {}
+		if _K.Data.settings.chatCommands ~= false then
+			for _, command in list do
+				visible[string.lower(command.name)] = true
+			end
+		end
+		for _, child in folder:GetChildren() do
+			if child:IsA("TextChatCommand") then
+				child.AutocompleteVisible = visible[child.Name] == true and string.sub(child.PrimaryAlias, 1, 1) == "/"
+			end
+		end
+		if not folderReparented and game:IsLoaded() then
+			folderReparented = true
+			reparentChatCommands()
+		end
+	end
+
 	local commandsList = UI.signal(_K.Registry.commandsList)
 	local function updateCommandsList()
 		local list
@@ -213,11 +246,51 @@ function Commands.new(_K)
 		table.sort(list, sortCommandsList)
 		commandsList(list, true)
 		updatePurchaseData(list)
+		updateChatCommandsAutocomplete(list)
 	end
 
 	local debounceUpdateCommandsList = _K.Util.Function.debounce(0.2, updateCommandsList)
 	UI.effect(UI.on(_K.client.settings.onlyShowUsableCommands, debounceUpdateCommandsList, true)):get()
+	if _K.client.settings.chatCommands then
+		UI.effect(UI.on(_K.client.settings.chatCommands, debounceUpdateCommandsList, true)):get()
+	end
+	if _K.client.settings.vip then
+		UI.effect(UI.on(_K.client.settings.vip, debounceUpdateCommandsList, true)):get()
+	end
 	local _ = _K.Hook.authChanged:Connect(debounceUpdateCommandsList)
+	local _ = _K.Hook.commandRegistered:Connect(debounceUpdateCommandsList)
+
+	local function watchChatCommandsFolder(folder: Instance)
+		if chatCommandsFolder == folder then
+			return
+		end
+		chatCommandsFolder = folder
+		folderReparented = false
+		local _ = folder.ChildAdded:Connect(debounceUpdateCommandsList)
+		local _ = folder.ChildRemoved:Connect(debounceUpdateCommandsList)
+		debounceUpdateCommandsList()
+	end
+	local existingFolder = textChat:FindFirstChild("TextChatCommands_KA")
+	if existingFolder then
+		watchChatCommandsFolder(existingFolder)
+	end
+	local _ = textChat.ChildAdded:Connect(function(child)
+		if child.Name == "TextChatCommands_KA" then
+			watchChatCommandsFolder(child)
+		end
+	end)
+
+	local chatInputBar = textChat:FindFirstChildOfClass("ChatInputBarConfiguration")
+	if chatInputBar then
+		local focusedOnce = false
+		local _ = chatInputBar:GetPropertyChangedSignal("IsFocused"):Connect(function()
+			if not focusedOnce and chatInputBar.IsFocused then
+				focusedOnce = true
+				reparentChatCommands()
+			end
+		end)
+	end
+
 	debounceUpdateCommandsList()
 
 	local scroller = UI.new "ScrollerFast" {
@@ -253,7 +326,7 @@ function Commands.new(_K)
 		if role and ((role._key == "vip" and _K.Data.settings.vip) or role.gamepasses) then
 			purchase.role = role._key
 			purchase.gamepass = if role._key == "vip" and _K.Data.settings.vip
-				then 110019084552349
+				then (_K.VIP.getActiveAssetId and _K.VIP.getActiveAssetId() or 110019084552349)
 				else role.gamepasses[1]
 			if not purchase.gamepass then
 				return
@@ -268,6 +341,9 @@ function Commands.new(_K)
 	end
 
 	local _ = _K.Hook.authChanged:Connect(updatePurchaseButton)
+	if _K.VIP and _K.VIP.saleStateChanged then
+		_K.VIP.saleStateChanged:Connect(updatePurchaseButton)
+	end
 	UI.effect(UI.on(UI.Theme.FontSize, updatePurchaseButton, true)):get()
 	scroller._scroller:GetPropertyChangedSignal("CanvasPosition"):Connect(updatePurchaseButton)
 

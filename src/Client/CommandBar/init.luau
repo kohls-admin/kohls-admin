@@ -427,6 +427,15 @@ local function updateSuggestionPurchasePrice()
 	_K.VIP.updatePurchasePrice(suggestionPurchase, suggestionPurchaseButton)
 end
 
+if _K.VIP and _K.VIP.saleStateChanged then
+	_K.VIP.saleStateChanged:Connect(function()
+		if suggestionPurchaseButton._instance.Parent and suggestionPurchase.role == "vip" then
+			suggestionPurchase.gamepass = _K.VIP.getActiveAssetId()
+			task.spawn(updateSuggestionPurchasePrice)
+		end
+	end)
+end
+
 local function invalidSuggestion(data, err, pos, text)
 	validState(false)
 	Input.DisplayText(
@@ -582,7 +591,7 @@ updateCompletion = function()
 				then
 					suggestionPurchase.role = roleId
 					suggestionPurchase.gamepass = if (roleId == "vip" and _K.Data.settings.vip)
-						then 110019084552349
+						then (_K.VIP.getActiveAssetId and _K.VIP.getActiveAssetId() or 110019084552349)
 						else roleData.gamepasses[1]
 					if not suggestionPurchase.gamepass then
 						continue
@@ -928,7 +937,7 @@ return {
 			updateInput(Input, true)
 		end)
 	end,
-	show = function()
+	show = function(initText: string?)
 		if _K.client.commandBarEnabled then
 			if _K.client.TopbarPlus then
 				_K.client.TopbarPlus.setTopbarEnabled(false)
@@ -939,6 +948,11 @@ return {
 			CommandBar.Visible = true
 			task.wait()
 			Input._input:CaptureFocus()
+			if type(initText) == "string" then
+				Input:SetValue(initText)
+				Input._input.CursorPosition = #initText + 1
+				task.defer(updateCompletionData)
+			end
 		end
 	end,
 	hide = function()

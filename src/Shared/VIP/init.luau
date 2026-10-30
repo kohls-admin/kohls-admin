@@ -8,11 +8,66 @@ local Title = require(script:WaitForChild("Title"))
 
 local Remote = Util.Remote
 
-local VIP = { allowedBulkPurchaseIds = {}, effects = {}, popup = Popup, purchasables = Purchasables }
+local VIP = {
+	ORIGINAL_ASSET_ID = 110019084552349,
+	SALE_ASSET_ID = 115444443724463,
+	SALE_DELAY = 600,
+	allowedBulkPurchaseIds = {},
+	effects = {},
+	popup = Popup,
+	purchasables = Purchasables,
+	saleStateChanged = Util.Signal.new(),
+}
+
+local priceCache: { [string]: number } = {}
+
+function VIP.isOnSale(): boolean
+	local player = Util.Service.Players.LocalPlayer
+	local initialJoin = player and player:GetAttribute("_KInitialJoin")
+	if not initialJoin then
+		return false
+	end
+	return workspace:GetServerTimeNow() - initialJoin >= VIP.SALE_DELAY
+end
+
+function VIP.getActiveAssetId(): number
+	return if VIP.isOnSale() then VIP.SALE_ASSET_ID else VIP.ORIGINAL_ASSET_ID
+end
+
+function VIP.getPriceAsync(id: number, productType: Enum.InfoType): number?
+	local key = `{productType.Name}:{id}`
+	if priceCache[key] then
+		return priceCache[key]
+	end
+	local ok, result = Util.Retry(function()
+		return Util.Service.Marketplace:GetProductInfoAsync(id, productType).PriceInRobux
+	end)
+	if ok and type(result) == "number" then
+		priceCache[key] = result
+		return result
+	end
+	return nil
+end
+
+function VIP.updatePurchasePrice(purchase: { role: string?, gamepass: number? }, button: any)
+	local isVIPAsset = purchase.role == "vip" and Data.settings.vip
+	local onSale = isVIPAsset and VIP.isOnSale()
+	local targetId = if isVIPAsset then VIP.getActiveAssetId() else purchase.gamepass
+	if not targetId then
+		return
+	end
+	local productType = if isVIPAsset then Enum.InfoType.Asset else Enum.InfoType.GamePass
+	local price = VIP.getPriceAsync(targetId, productType)
+	local text = if price then tostring(price) else if isVIPAsset then (if onSale then "479" else "799") else "?"
+	button._content.Price.Text = if onSale then `<font color="#0f0"><b>{text}</b></font>` else `<b>{text}</b>`
+end
 
 -- vip, supervip, premium
 local gamePassDonations = { 5391359, 5391361, 5411126 }
-local assetDonations = { { 88978146769822, 441133423, 313102724 }, { 115403290087767, 441134066, 423601416 } }
+local assetDonations = {
+	{ 88978146769822, 441133423, 313102724 },
+	{ 115403290087767, 441134066, 423601416 },
+}
 
 -- 5 group member
 -- 4 chat commands/subscriber
@@ -27,9 +82,13 @@ local function getDonationLevel(player)
 	local okRank, info = Util.Retry(function()
 		return Util.Service.Group:GetRolesInGroupAsync(player.UserId, 3403354)
 	end)
-	local role = okRank and info.Roles[1]
-	if role and role.Rank > 1 then
-		return 5
+	-- a user can hold several roles and their order doesn't follow Rank
+	if okRank and type(info) == "table" and type(info.Roles) == "table" then
+		for _, role in info.Roles do
+			if role.Rank > 1 then
+				return 5
+			end
+		end
 	end
 
 	for _, ugcId in Purchasables.chatCommands do
@@ -74,7 +133,7 @@ local function setDonationLevel(player: Player, level: number?)
 
 	if Data.settings.vip then
 		if level > 0 then
-			Auth.userRoleAdd(player.UserId, "vip")
+			Auth.asyncRoleAdd(player.UserId, "vip")
 		end
 		if level < 3 then
 			task.delay(8, Remote.VIPNotification.Fire, Remote.VIPNotification, player)
@@ -132,7 +191,6 @@ if Util.Service.Run:IsServer() then
 		if not Data.settings.vip then
 			return
 		end
-
 		-- clients only send a color name; an Instance here would let them destroy anything with a Handle
 		if
 			type(assetId) ~= "number"
@@ -200,20 +258,22 @@ if Util.Service.Run:IsServer() then
 		end
 	end
 
-	Remote.VIPUGCMethod:Connect(VIP.Effect)
+	local _ = Remote.VIPUGCMethod:Connect(VIP.Effect)
 
 	local checkingTitle = {}
 	function VIP.Title(player: Player, title, ...)
-		local definition = Title.definition[title and string.lower(title)]
+		local key = title and string.lower(title)
+		local definition = Title.definition[key]
 		if definition and definition.gamepass then
 			local cachedOwner = definition.ownerCache[player.UserId]
 			if cachedOwner == false then
 				return
 			elseif cachedOwner ~= true then -- known owners skip the marketplace requests
-				if checkingTitle[player.UserId] then
+				local checkKey = `{player.UserId}:{key}`
+				if checkingTitle[checkKey] then
 					return
 				end
-				checkingTitle[player.UserId] = true
+				checkingTitle[checkKey] = true
 				local owned = false
 				local allChecked = true
 				if definition.assetId then
@@ -221,8 +281,8 @@ if Util.Service.Run:IsServer() then
 						then definition.assetId
 						else { definition.assetId }
 					for _, assetId in assets do
-						if not player.Parent then
-							checkingTitle[player.UserId] = nil
+						if not (player and player.Parent) then
+							checkingTitle[checkKey] = nil
 							return
 						end
 						local okAsset, result = Util.Retry(function()
@@ -239,7 +299,11 @@ if Util.Service.Run:IsServer() then
 						end
 					end
 				end
-				if not owned and definition.gamepass and player.Parent then
+				if not (player and player.Parent) then
+					checkingTitle[checkKey] = nil
+					return
+				end
+				if not owned and definition.gamepass then
 					local okGamePass, result = Util.Retry(function()
 						return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, definition.gamepass)
 					end)
@@ -250,9 +314,9 @@ if Util.Service.Run:IsServer() then
 						definition.ownerCache[player.UserId] = false
 					end
 				end
-				checkingTitle[player.UserId] = nil
-				if not owned or not player.Parent then
-					return -- early return if they don't own or left while checking
+				checkingTitle[checkKey] = nil
+				if not owned or not (player and player.Parent) then
+					return -- early return if they don't own or left during the check
 				end
 			end
 		end
@@ -270,7 +334,7 @@ if Util.Service.Run:IsServer() then
 		end
 	end
 
-	Remote.Title:Connect(function(player: Player, title: string?)
+	local _ = Remote.Title:Connect(function(player: Player, title: string?)
 		if not Data.settings.vip then
 			return
 		end
@@ -342,7 +406,7 @@ if Util.Service.Run:IsServer() then
 	end
 
 	local playerCleanup = {}
-	Util.Service.Players.PlayerRemoving:Connect(function(player)
+	local _ = Util.Service.Players.PlayerRemoving:Connect(function(player)
 		if playerCleanup[player] then
 			for _, connection in playerCleanup[player] do
 				if connection and connection.Connected then
@@ -359,93 +423,125 @@ if Util.Service.Run:IsServer() then
 		playerCleanup[player] = {}
 		table.insert(playerCleanup[player], player.CharacterAdded:Connect(VIP.CharacterAdded))
 		table.insert(playerCleanup[player], player.CharacterAppearanceLoaded:Connect(VIP.EffectHandler))
-		table.insert(
-			playerCleanup[player],
-			player.CharacterRemoving:Connect(function(character)
-				if characterCleanup[character] and characterCleanup[character].Connected then
-					characterCleanup[character]:Disconnect()
-				end
-				characterCleanup[character] = nil
-			end)
-		)
+		local charRemovingConn = player.CharacterRemoving:Connect(function(character)
+			if characterCleanup[character] and characterCleanup[character].Connected then
+				characterCleanup[character]:Disconnect()
+			end
+			characterCleanup[character] = nil
+		end)
+		table.insert(playerCleanup[player], charRemovingConn)
 		if player.Character then
 			VIP.EffectHandler(player.Character)
 		end
 	end)
 
-	do
-		local checking = {}
-		Remote.VIPCheck:Connect(function(player, id)
-			if checking[player] then
-				return
+	-- exploits can fake purchased, so only verify ids KA grants something for, one check per player and id at a time
+	local verifying = {}
+	local function verifyPurchase(player: Player, id: number, titles: { any }, ownsAsync: () -> boolean): boolean
+		local key = `{player.UserId}:{id}`
+		if verifying[key] then
+			return false
+		end
+		verifying[key] = true
+		-- ownership can lag a few seconds behind a real purchase
+		local owned = Util.Retry(function()
+			assert(ownsAsync(), "not owned")
+		end, 3)
+		verifying[key] = nil
+
+		for _, definition in titles do
+			if owned then
+				definition.ownerCache[player.UserId] = true
+			elseif definition.ownerCache[player.UserId] == false then
+				-- let VIP.Title check again later instead of staying locked out until rejoin
+				definition.ownerCache[player.UserId] = nil
 			end
-			checking[player] = true
-
-			local level = if table.find(Purchasables.chatCommands, id)
-				then 4
-				else table.find(Purchasables.chatCommandsLower, id) or 0
-
-			if level > 0 then
-				local ok, result = Util.Retry(function()
-					return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, id)
-				end)
-				if ok and result then
-					setDonationLevel(player, level)
-					Remote.RolesNotification:Fire(player)
-				end
-			end
-
-			checking[player] = nil
-		end)
+		end
+		return owned
 	end
 
-	Util.Service.Marketplace.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
-		if purchased then
+	local function handleAssetPurchase(player: Player, assetId: number, fromBulk: boolean?)
+		local titles = {}
+		for _, definition in Title.definition do
+			if
+				definition.assetId == assetId
+				or (type(definition.assetId) == "table" and table.find(definition.assetId, assetId))
+			then
+				table.insert(titles, definition)
+			end
+		end
+
+		local chatLevel = if fromBulk
+			then (if table.find(Purchasables.chatCommands, assetId)
+				then 4
+				else table.find(Purchasables.chatCommandsLower, assetId) or 0)
+			else 0
+
+		if
+			(ugcAssetMatch[assetId] or titles[1] or chatLevel > 0)
+			and verifyPurchase(player, assetId, titles, function()
+				return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
+			end)
+		then
 			local ownedUGC = ownedCache[player.UserId]
 			if not ownedUGC then
 				ownedUGC = {}
 				ownedCache[player.UserId] = ownedUGC
 			end
 			ownedUGC[assetId] = true
-
-			for title, definition in Title.definition do
-				if definition.assetId then
-					local assets = if type(definition.assetId) == "table"
-						then definition.assetId
-						else { definition.assetId }
-					for _, id in assets do
-						if id == assetId then
-							definition.ownerCache[player.UserId] = true
-							break
-						end
-					end
-				end
+			if chatLevel > 0 then
+				setDonationLevel(player, chatLevel)
+				Remote.RolesNotification:Fire(player)
 			end
 		end
+	end
+
+	local _ = Remote.VIPCheck:Connect(function(player, id)
+		if type(id) ~= "number" or not VIP.allowedBulkPurchaseIds[id] then
+			return
+		end
+		handleAssetPurchase(player, id, true)
 	end)
 
-	Util.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
-		if purchased then
+	local _ = Util.Service.Marketplace.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
+		if not purchased then
+			return
+		end
+		handleAssetPurchase(player, assetId, false)
+	end)
+
+	local _ = Util.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
+		if not purchased then
+			return
+		end
+
+		local vipIndex = table.find(gamePassDonations, passId)
+		local titles = {}
+		for _, definition in Title.definition do
+			if definition.gamepass == passId then
+				table.insert(titles, definition)
+			end
+		end
+
+		if
+			(vipIndex or titles[1])
+			and verifyPurchase(player, passId, titles, function()
+				return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, passId)
+			end)
+		then
 			local level = player:GetAttribute("_KDonationLevel") or 0
-			local vipIndex = table.find(gamePassDonations, passId)
 			if vipIndex then
 				level = math.max(level, vipIndex)
 				if Data.settings.vip then
-					Auth.userRoleAdd(player.UserId, "vip")
+					Auth.asyncRoleAdd(player.UserId, "vip")
 					Remote.RolesNotification:Fire(player)
 				end
 			end
 			player:SetAttribute("_KDonationLevel", level)
-
-			for title, definition in Title.definition do
-				if definition.gamepass == passId then
-					definition.ownerCache[player.UserId] = true
-				end
-			end
 		end
 	end)
 
-	Util.Remote.PromptBulkPurchase:Connect(function(player, id)
+	local _ = Util.Remote.PromptBulkPurchase:Connect(function(player, id)
 		if type(id) == "number" and VIP.allowedBulkPurchaseIds[id] then
 			local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(id) } }
 			Util.Service.Marketplace:PromptBulkPurchase(player, items, {})

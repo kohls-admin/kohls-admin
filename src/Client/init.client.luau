@@ -61,7 +61,7 @@ end
 local _ = _K.Remote.Command:Connect(function(message: string, clientOnly: boolean?)
 	if _K.ready then
 		if clientOnly and type(message) == "string" then
-			local trimmed = _K.Util.String.trimStart(message)
+			local trimmed = _K.Util.String.trim(message)
 			local nextChar = utf8.offset(trimmed, 2) or 2
 			local firstChar = string.sub(trimmed, 1, nextChar - 1)
 			local clientPrefix = _K.getCommandPrefix()
@@ -71,6 +71,18 @@ local _ = _K.Remote.Command:Connect(function(message: string, clientOnly: boolea
 				and table.find(_K.Data.savedSettings.prefix or {}, firstChar)
 			then
 				message = clientPrefix .. string.sub(trimmed, nextChar)
+			end
+			if _K.client.commandBarEnabled then
+				local ok, _err, prepared = _K.Process.prepareCommands(_K, _K.LocalPlayer.UserId, message)
+				local lastCommand = not ok and prepared and prepared[#prepared]
+				if
+					lastCommand
+					and (lastCommand.argMissing ~= nil or (#lastCommand.array == 2 and lastCommand.array[2][2] == ""))
+				then
+					local body = string.sub(_K.Util.String.trim(message), prepared[1].array[1][1])
+					_K.client.CommandBar.show(`{clientPrefix}{body} `)
+					return
+				end
 			end
 		end
 		_K.Process.runCommands(_K, _K.LocalPlayer.UserId, message, nil, nil, clientOnly == true)
@@ -287,6 +299,8 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 
 	do
 		local vipNotificationVisible = false
+		local shownPreSale = false
+		local shownSale = false
 
 		local function vipNotificationClosed()
 			vipNotificationVisible = false
@@ -297,7 +311,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 			vipNotificationVisible = false
 		end
 
-		_K.client.VIPNotification = _K.Util.Function.throttle(300, function()
+		_K.client.VIPNotification = function()
 			if
 				vipNotificationVisible
 				or _K.VIP.popup.Visible
@@ -308,46 +322,44 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 				return
 			end
 
+			local initialJoin = _K.LocalPlayer:GetAttribute("_KInitialJoin")
+			local onSale = initialJoin ~= nil and (workspace:GetServerTimeNow() - initialJoin >= 10 * 60)
+
+			if onSale then
+				if shownSale then
+					return
+				end
+				shownSale = true
+			else
+				if shownPreSale then
+					return
+				end
+				shownPreSale = true
+			end
+
 			vipNotificationVisible = true
 
-			local initialJoin = _K.LocalPlayer:GetAttribute("_KInitialJoin")
-			local line = if workspace:GetServerTimeNow() - initialJoin > 10 * 60
-				then "Unlock exclusive chat commands in <b>10k+</b> experiences for <font color='#0f0'><b>40% OFF</b></font>!"
-				else "Unlock <b>exclusive</b> chat commands in <b>10k+</b> experiences!"
+			local prefix = _K.Util.String.escapeRichText(_K.getCommandPrefix())
+			local line = if onSale
+				then "<b>VIP Chat Commands</b> are now <font color='#0f0'><b>40% OFF</b></font> in <b>10k+</b> experiences!"
+				else `Unlock <b>{prefix}headless</b>, <b>{prefix}korblox</b>, <b>{prefix}fire</b> &amp; more VIP chat commands in <b>10k+</b> experiences!`
+			local cta = if onSale then "Click to claim 40% OFF." else "Click for more details."
 
 			_K.Notify({
 				From = "System",
-				Text = `{line}\n\n<i>Click for more details.</i>`,
+				Text = `{line}\n\n<i>{cta}</i>`,
 				Duration = 60,
 				Sound = "Call_Accept",
 				Activated = showPopup,
 				Close = vipNotificationClosed,
 			})
-		end)
+		end
 
 		local _ = _K.Remote.VIPNotification:Connect(_K.client.VIPNotification)
-		local _ = _K.Hook.postCommand:Connect(_K.client.VIPNotification)
 		_K.client.dashboard.Commands._instance:GetPropertyChangedSignal("Visible"):Once(_K.client.VIPNotification)
 		_K.client.dashboard.Window._instance:GetPropertyChangedSignal("Visible"):Once(_K.client.VIPNotification)
 
 		_K.VIP.popup.Parent = UI.LayerTopInset
-
-		local connections
-		local function showOnFirstOpen()
-			if
-				_K.Data.settings.vip
-				and not vipNotificationVisible
-				and (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) < 3
-			then
-				_K.VIP.popup.Visible = true
-				_K.Flux.dispose(connections)
-			end
-		end
-
-		connections = {
-			_K.client.dashboard.Commands._instance:GetPropertyChangedSignal("Visible"):Once(showOnFirstOpen),
-			_K.client.dashboard.Window._instance:GetPropertyChangedSignal("Visible"):Once(showOnFirstOpen),
-		}
 	end
 
 	if _K.Data.settings.announcements then

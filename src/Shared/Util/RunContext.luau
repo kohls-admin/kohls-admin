@@ -5,7 +5,6 @@ local GuiService = game:GetService("GuiService")
 local RunService = game:GetService("RunService")
 local VRService = game:GetService("VRService")
 
-local isEdit = false
 local isServer = RunService:IsServer()
 local isClient = RunService:IsClient()
 local isStudio = RunService:IsStudio()
@@ -13,9 +12,10 @@ local isStudio = RunService:IsStudio()
 local isOnline = game.JobId ~= ""
 local isRCC = isOnline and isServer
 
-pcall(function()
-	isEdit = if plugin then RunService:IsEdit() else false
+local _, isEditResult = pcall(function()
+	return if plugin then RunService:IsEdit() else false
 end)
+local isEdit = isEditResult == true
 
 return table.freeze({
 	IsRCC = isRCC,

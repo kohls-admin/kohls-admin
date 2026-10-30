@@ -6,7 +6,7 @@ type PlayerSet = { [Player]: boolean }
 
 local cache: { [PlayerSet]: RBXScriptConnection } = {}
 
-Players.PlayerRemoving:Connect(function(player)
+local _ = Players.PlayerRemoving:Connect(function(player)
 	for processed, connection in cache do
 		if connection and connection.Connected then
 			processed[player] = nil

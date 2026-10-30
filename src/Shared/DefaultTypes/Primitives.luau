@@ -98,7 +98,7 @@ return function(context)
 	_K.Registry.registerType("rawStrings", {
 		listable = true,
 	}, rawStringType)
-	-- text sent with TextChannel:SendAsync, TextChatService filters it per recipient so the server doesn't
+	-- message text for other users, Chat.send filters it for broadcast and rate-limits the sender
 	_K.Registry.registerType("chatString", {}, rawStringType)
 	_K.Registry.registerType("stringGreedy", {}, rawStringType) -- fallback alias of chatString
 	function stringType.parse(v, self)

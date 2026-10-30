@@ -69,10 +69,10 @@ local function freeUser(userId: number)
 	userCache[userId] = nil
 end
 
-Players.PlayerAdded:Connect(function(player)
+local _ = Players.PlayerAdded:Connect(function(player)
 	freeUser(player.UserId)
 end)
-Players.PlayerRemoving:Connect(function(player)
+local _ = Players.PlayerRemoving:Connect(function(player)
 	memoizeUser(player)
 	userCache[player.UserId].freeThread = task.delay(120, freeUser, player.UserId)
 end)
@@ -207,7 +207,7 @@ local function parseUser(arg, self)
 	end
 	if reason == "Invalid player" then
 		local userId = tonumber(arg)
-		if userId and userId > 0 and userId < math.huge and math.floor(userId) == userId then
+		if userId and userId > 0 and userId <= 2 ^ 53 and math.floor(userId) == userId then
 			return self._K.Auth.targetUserArgument(self, userId, userId)
 		end
 		return nil, "Invalid user"

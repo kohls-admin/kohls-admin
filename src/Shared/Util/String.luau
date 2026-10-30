@@ -12,14 +12,18 @@ function String.escapePattern(s: string): string
 	return string.gsub(s, "([%%%.%(%)%[%]%+%-%*%?%^%$])", "%%%1")
 end
 
+local RICH_ESCAPE = {
+	["&"] = "&amp;",
+	["<"] = "&lt;",
+	[">"] = "&gt;",
+	['"'] = "&quot;",
+	["'"] = "&apos;",
+}
+
 --- Escape RichText tags
 function String.escapeRichText(s: string): string
-	s = string.gsub(s, "&", "&amp;") -- first because substitutes contain it
-	s = string.gsub(s, "<", "&lt;")
-	s = string.gsub(s, ">", "&gt;")
-	s = string.gsub(s, '"', "&quot;")
-	s = string.gsub(s, "'", "&apos;")
-	return s
+	local escaped = string.gsub(s, "[&<>\"']", RICH_ESCAPE)
+	return escaped
 end
 
 --- Unescape RichText tags

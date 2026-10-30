@@ -102,7 +102,7 @@ end
 function Table.settle(t: { any })
 	local shift = 1
 	for i, v in t do
-		t[shift], t[i] = v, nil
+		t[i], t[shift] = nil, v
 		shift += 1
 	end
 	return t
