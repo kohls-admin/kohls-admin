@@ -91,7 +91,8 @@ local typeMember = {
 
 		local fromMember = _K.Data.members[fromString]
 		if fromMember and not definition.ignoreSelf then
-			table.insert(names, 1, { { "me", fromMember.name, from }, `me [{fromMember.name}] [{from}]` })
+			local name = fromMember.name or fromString
+			table.insert(names, 1, { { "me", name, fromString }, `me [{name}] [{from}]` })
 		end
 
 		return names

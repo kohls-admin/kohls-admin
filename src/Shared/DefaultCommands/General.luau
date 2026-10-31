@@ -1168,11 +1168,20 @@ return {
 			},
 		},
 		run = function(context, player: Player)
-			local fps = math.min(999, math.round(context._K.Remote.ShowFPS:Invoke(player)) or 0)
+			local okFps, rawFps = pcall(context._K.Remote.ShowFPS.Invoke, context._K.Remote.ShowFPS, player)
+			local fps = if okFps
+					and type(rawFps) == "number"
+					and rawFps == rawFps
+				then math.clamp(math.round(rawFps), 0, 999)
+				else 0
 			local ping = math.min(9999, math.ceil(player:GetNetworkPing() * 1000))
 			local teamColor = player.Team and "#" .. player.Team.TeamColor.Color:ToHex() or "#16a085"
 			local locale = context._K.Service.LocalizationService:GetCountryRegionForPlayerAsync(player)
 			local platform = player:GetAttribute("_KPlatform")
+			local sessionStart = player:GetAttribute("_KSessionStart")
+			local sessionText = if type(sessionStart) == "number"
+				then context._K.Util.Time.readable(workspace:GetServerTimeNow() - sessionStart) or "?"
+				else "?"
 			local platformEmoji = {
 				Console = "🎮",
 				Mobile = "📱",
@@ -1185,8 +1194,8 @@ return {
 				`<b>Account Age:</b> {context._K.Util.Time.readable(player.AccountAge * 86400) or "?"}`,
 				`<b>FPS:</b> {fps}   <b>Ping:</b> {ping} ms   <b>Locale:</b> {context._K.Util.String.toFlag(locale)} {locale}`,
 				`<b>Muted:</b> {if context._K.Data.muted[player.UserId] then "✅" else "❌"}\t<b>Verified:</b> {if player:IsVerified() then "✅" else "❌"}`,
-				`<b>Platform:</b> {platformEmoji[platform]} {platform}`,
-				`<b>Session:</b> {context._K.Util.Time.readable(workspace:GetServerTimeNow() - player:GetAttribute("_KSessionStart"))}`,
+				`<b>Platform:</b> {if platform and platformEmoji[platform] then `{platformEmoji[platform]} {platform}` else "?"}`,
+				`<b>Session:</b> {sessionText}`,
 				`<b>Team:</b> <font color="{teamColor}">{player.Team and player.Team.Name or "None"}</font>`,
 				`<b>UserId:</b> {player.UserId}`,
 			}

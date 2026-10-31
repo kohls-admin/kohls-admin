@@ -288,16 +288,14 @@ else -- Client
 			for _, args in remote._invokeQueue do
 				local thread = args[1]
 				task.spawn(function()
-					local results = {
-						pcall(function()
-							return FUNCTION:InvokeServer(remote._id, unpack(args, 2, args.n))
-						end),
-					}
+					local ok, result = pcall(function()
+						return table.pack(FUNCTION:InvokeServer(remote._id, unpack(args, 2, args.n)))
+					end)
 					if coroutine.status(thread) == "suspended" then
-						if results[1] then
-							task.spawn(thread, unpack(results, 2))
+						if ok then
+							task.spawn(thread, unpack(result, 1, result.n))
 						else
-							warn("Error invoking remote function:", results[2])
+							warn("Error invoking remote function:", result)
 							task.spawn(thread)
 						end
 					end

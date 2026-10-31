@@ -366,13 +366,9 @@ local SYNC = {
 		if #filtered > 0 then
 			Util.Table.mergeList(state, filtered)
 			Util.Defer.wait()
-			local count = #state
-			local excess = count - Util.Logger.limit
+			local excess = #state - Util.Logger.limit
 			if excess > 0 then
-				table.move(state, excess + 1, count, 1)
-				for i = count - excess + 1, count do
-					state[i] = nil
-				end
+				Util.Table.fastRemove(state, 1, excess)
 			end
 			Util.Defer.wait()
 			table.sort(state, Util.Logger.sortTime)

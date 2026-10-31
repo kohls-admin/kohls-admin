@@ -101,8 +101,8 @@ if Util.Service.Run:IsServer() then
 			ownedCache[player.UserId] = ownedUGC
 		end
 
-		if ownedUGC[assetId] then
-			return true
+		if ownedUGC[assetId] ~= nil then
+			return ownedUGC[assetId]
 		end
 
 		local ok, result = Util.Retry(function()
@@ -133,8 +133,13 @@ if Util.Service.Run:IsServer() then
 			return
 		end
 
-		-- the effect methods destroy an Instance passed as `name`, a client must only send the colour name
-		if type(match) ~= "string" or type(name) ~= "string" or #name > 64 then
+		-- clients only send a color name; an Instance here would let them destroy anything with a Handle
+		if
+			type(assetId) ~= "number"
+			or type(match) ~= "string"
+			or type(equip) ~= "boolean"
+			or (name ~= nil and (type(name) ~= "string" or #name > 64))
+		then
 			return
 		end
 
@@ -197,6 +202,7 @@ if Util.Service.Run:IsServer() then
 
 	Remote.VIPUGCMethod:Connect(VIP.Effect)
 
+	local checkingTitle = {}
 	function VIP.Title(player: Player, title, ...)
 		local definition = Title.definition[title and string.lower(title)]
 		if definition and definition.gamepass then
@@ -204,37 +210,49 @@ if Util.Service.Run:IsServer() then
 			if cachedOwner == false then
 				return
 			elseif cachedOwner ~= true then -- known owners skip the marketplace requests
+				if checkingTitle[player.UserId] then
+					return
+				end
+				checkingTitle[player.UserId] = true
 				local owned = false
+				local allChecked = true
 				if definition.assetId then
 					local assets = if typeof(definition.assetId) == "table"
 						then definition.assetId
 						else { definition.assetId }
 					for _, assetId in assets do
-						if not (player and player.Parent) then
+						if not player.Parent then
+							checkingTitle[player.UserId] = nil
 							return
 						end
 						local okAsset, result = Util.Retry(function()
 							return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
 						end)
 						if okAsset then
-							definition.ownerCache[player.UserId] = result
 							if result then
 								owned = true
+								definition.ownerCache[player.UserId] = true
 								break
 							end
+						else
+							allChecked = false
 						end
 					end
 				end
-				if not owned and definition.gamepass and player and player.Parent then
+				if not owned and definition.gamepass and player.Parent then
 					local okGamePass, result = Util.Retry(function()
 						return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, definition.gamepass)
 					end)
-					if okGamePass then
-						definition.ownerCache[player.UserId] = result
+					if okGamePass and result then
+						owned = true
+						definition.ownerCache[player.UserId] = true
+					elseif okGamePass and allChecked then
+						definition.ownerCache[player.UserId] = false
 					end
-					if not (okGamePass and result) then
-						return -- early return if they don't own
-					end
+				end
+				checkingTitle[player.UserId] = nil
+				if not owned or not player.Parent then
+					return -- early return if they don't own or left while checking
 				end
 			end
 		end

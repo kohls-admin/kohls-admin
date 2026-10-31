@@ -504,36 +504,32 @@ return function(_K)
 		Package.Name = "Kohl's Admin Source"
 		Package.Parent = _K.Service.ReplicatedStorage
 
-		local attributeSchema = { Platform = "string", SessionStart = "number" }
+		-- ;whois shows Platform as RichText, so only take what the client sets it to (UI.Platform)
+		local platforms = { Console = true, Mobile = true, PC = true, VR = true }
+		local attributeSchema = {
+			Platform = function(value)
+				return platforms[value] == true
+			end,
+			SessionStart = function(value)
+				return type(value) == "number" and value == value and math.abs(value) ~= math.huge
+			end,
+		}
 
 		-- server network events
 		local lastLog, cachedLogsBuffer
-		-- each init sends the bans, logs, members and settings, don't let a client request them in a loop
-		local INIT_COOLDOWN = 10
-		local lastInit: { [Player]: number } = {}
-		_K.Service.Players.PlayerRemoving:Connect(function(player)
-			lastInit[player] = nil
-		end)
 		_K.Remote.Init:Connect(function(player, initData)
-			local now = os.clock()
-			if lastInit[player] and now - lastInit[player] < INIT_COOLDOWN then
-				return
-			end
-			lastInit[player] = now
-
 			local attributes = type(initData) == "table" and initData.Attributes
 			if type(attributes) == "table" then
-				for attribute, valueType in attributeSchema do
+				for attribute, isValid in attributeSchema do
 					local value = attributes[attribute]
-					-- player attributes replicate to everyone, keep them small and finite
-					if
-						typeof(value) == valueType
-						and (valueType ~= "string" or #value <= 32)
-						and (valueType ~= "number" or (value == value and math.abs(value) ~= math.huge))
-					then
+					if isValid(value) then
 						player:SetAttribute("_K" .. attribute, value)
 					end
 				end
+			end
+
+			if player:GetAttribute("_K_READY") then
+				return
 			end
 
 			local logs
@@ -834,13 +830,14 @@ return function(_K)
 				duration = math.floor(duration)
 			end
 
+			local fromRank, fromRole = _K.Auth.getRank(player.UserId)
 			local fauxArg = {
 				_K = _K,
 				definition = _K.Registry.commands.ban.args[1],
 				command = {
 					from = player.UserId,
-					fromRank = _K.Auth.getRank(player.UserId),
-					fromRole = {},
+					fromRank = fromRank,
+					fromRole = fromRole or {},
 					rank = canBan or 0,
 				},
 			}
@@ -902,13 +899,14 @@ return function(_K)
 			then
 				return
 			end
+			local fromRank, fromRole = _K.Auth.getRank(player.UserId)
 			local fauxArg = {
 				_K = _K,
 				definition = _K.Registry.commands.unban.args[1],
 				command = {
 					from = player.UserId,
-					fromRank = _K.Auth.getRank(player.UserId),
-					fromRole = {},
+					fromRank = fromRank,
+					fromRole = fromRole or {},
 					rank = canUnban or 0,
 				},
 			}
@@ -933,9 +931,13 @@ return function(_K)
 		end
 
 		-- the admin system's own instances, changing them breaks it for everyone
-		local function isProtectedInstance(instance: Instance): boolean
+		local function isProtectedInstance(instance: Instance, allowAncestors: boolean?): boolean
 			for _, root in { Package, Server } do
-				if instance == root or instance:IsDescendantOf(root) or root:IsDescendantOf(instance) then
+				if
+					instance == root
+					or instance:IsDescendantOf(root)
+					or (not allowAncestors and root:IsDescendantOf(instance))
+				then
 					return true
 				end
 			end
@@ -966,39 +968,64 @@ return function(_K)
 				return
 			end
 
+			local fromRank, fromRole = _K.Auth.getRank(player.UserId)
 			local fauxArg = {
 				_K = _K,
 				definition = _K.Registry.commands.ban.args[1],
 				command = {
 					from = player.UserId,
-					fromRank = _K.Auth.getRank(player.UserId),
-					fromRole = {},
+					fromRank = fromRank,
+					fromRole = fromRole or {},
 					rank = explorerRank or 0,
 				},
 			}
+			_K.Data.targetLimits[player.UserId] = 0
+			local checkedOwners: { [Player]: boolean } = {}
 
 			-- instances of other players (their character, PlayerGui, Backpack...) follow the same rank rules as
 			-- targeting the player, so a lower rank can't run scripts on or remove the parts of a higher rank
-			local function canModify(instance: Instance): boolean
-				if isProtectedInstance(instance) then
+			local function canModify(instance: Instance, allowAncestors: boolean?): boolean
+				if isProtectedInstance(instance, allowAncestors) then
 					return false
 				end
 				local owner = getInstanceOwner(instance)
 				if owner and (owner ~= player or instance == owner) then
-					if _K.Data.targetLimits[player.UserId] then
-						_K.Data.targetLimits[player.UserId] -= 1
+					if checkedOwners[owner] == nil then
+						checkedOwners[owner] = _K.Auth.targetUserArgument(fauxArg, owner.UserId, owner.UserId) ~= nil
 					end
-					return _K.Auth.targetUserArgument(fauxArg, owner.UserId, owner.UserId) ~= nil
+					return checkedOwners[owner]
+				end
+				if not allowAncestors then
+					if instance == _K.Service.Players or _K.Service.Players:IsDescendantOf(instance) then
+						return false
+					end
+					for _, other in _K.Service.Players:GetPlayers() do
+						if other ~= player and other.Character and instance:IsAncestorOf(other.Character) then
+							if checkedOwners[other] == nil then
+								checkedOwners[other] = _K.Auth.targetUserArgument(fauxArg, other.UserId, other.UserId)
+									~= nil
+							end
+							if not checkedOwners[other] then
+								return false
+							end
+						end
+					end
 				end
 				return true
 			end
 
 			if action == "PASTE" then
-				if typeof(selected) ~= "Instance" or not canModify(selected) then
+				if typeof(selected) ~= "Instance" or not canModify(selected, true) then
 					return
 				end
 				for _, copy in data do
-					if typeof(copy) ~= "Instance" or isProtectedInstance(copy) then
+					if
+						typeof(copy) ~= "Instance"
+						or copy:IsA("Player")
+						or copy == selected
+						or copy:IsAncestorOf(selected)
+						or not canModify(copy)
+					then
 						continue
 					end
 					local wasArchivable = copy.Archivable

@@ -22,11 +22,11 @@ local Process = {
 --- Parses a string into a raw command format.
 function Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?
 	local escapedSplit = Util.String.escapePattern(delimiter)
-	local commandFormat = `%s[^%s"\`,{escapedSplit}]`
+	local commandFormat = '%s[^%s"`,%s]'
 	local commandStart, prefix
 	for _, value in prefixes do
 		local escapedPrefix = Util.String.escapePattern(value)
-		commandStart = string.find(message, string.format(commandFormat, escapedPrefix, escapedPrefix))
+		commandStart = string.find(message, string.format(commandFormat, escapedPrefix, escapedPrefix, escapedSplit))
 		if commandStart then
 			prefix = value
 			break
@@ -36,7 +36,7 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 		return
 	end
 
-	local batchIgnore = string.format(`[%s{Process.ignoreFormat}{escapedSplit}]`, Util.String.escapePattern(prefix))
+	local batchIgnore = string.format(`[%s{Process.ignoreFormat}%s]`, Util.String.escapePattern(prefix), escapedSplit)
 	message = string.sub(message, commandStart + #prefix)
 
 	local len, invalidPos = utf8.len(message)
@@ -124,6 +124,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 		return
 	end
 
+	Data.targetLimits[from] = 0
 	local commands = {}
 
 	for i, commandArray in rawCommands do
@@ -151,14 +152,17 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 						end
 					end
 				end
-				return false,
-					`"<b>{commandText}</b>" command restricted to <b>{commandDefinition.RestrictedToRole.name}</b>`,
-					commands
+				-- RestrictedToRole is filled in once the client's roles load
+				local role = commandDefinition.RestrictedToRole
+				if role then
+					return false, `"<b>{commandText}</b>" command restricted to <b>{role.name}</b>`, commands
+				end
 			end
 			return false, `"<b>{commandText}</b>" command restricted`, commands
 		end
 
 		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text, global)
+		command._keepTargetLimits = true
 		local ok, result = command:validate()
 
 		table.insert(commands, command)
@@ -196,15 +200,6 @@ function Process.runCommands(_K: any, from: number, rawText: string, noLog: bool
 	end
 
 	local ok, result, prepared = Process.prepareCommands(_K, from, rawText, global)
-
-	if ok == false and _K.IsServer and limit then
-		-- failed commands still cost a notification and a filtered log, count them so they can't be spammed
-		if not commandLimits[from] then
-			commandLimits[from] = 0
-			task.delay(cooldown, resetLimit, from)
-		end
-		commandLimits[from] += 1
-	end
 
 	local commandsRan = {}
 	local commandErrors = {}

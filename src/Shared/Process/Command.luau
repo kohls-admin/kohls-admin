@@ -52,24 +52,28 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 
 	local userName = if targetPlayer.Name == targetPlayer.DisplayName then "" else " @" .. targetPlayer.Name
 
-	self._K.Remote.Notify:Fire(self.fromPlayer, {
-		Text = `Requesting <b>{self.alias}</b> command on <b>{targetPlayer.DisplayName}<font transparency="0.5">{userName}</font></b>.`,
-	})
+	if self.fromPlayer then
+		self._K.Remote.Notify:Fire(self.fromPlayer, {
+			Text = `Requesting <b>{self.alias}</b> command on <b>{targetPlayer.DisplayName}<font transparency="0.5">{userName}</font></b>.`,
+		})
+	end
 
 	local ok, accepted = pcall(
 		self._K.Remote.RequestCommand.Invoke,
 		self._K.Remote.RequestCommand,
 		targetPlayer,
-		self.fromPlayer,
+		self.fromPlayer or self.from,
 		`{self._K.getCommandPrefix()}{self.alias} {targetPlayer.Name}`
 	)
 
 	if not ok then
 		-- runs in its own thread, a returned error would never reach the sender
-		self._K.Remote.Notify:Fire(self.fromPlayer, {
-			Text = `<b>{targetPlayer.Name}</b> left during <b>{self.alias}</b> command request!`,
-			From = "_K",
-		})
+		if self.fromPlayer then
+			self._K.Remote.Notify:Fire(self.fromPlayer, {
+				Text = `<b>{targetPlayer.Name}</b> left during <b>{self.alias}</b> command request!`,
+				From = "_K",
+			})
+		end
 		return false
 	end
 
@@ -78,10 +82,12 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 	local status = if accepted
 		then `<font color='#{validColor}'>accepted</font>`
 		else `<font color='#{invalidColor}'>denied</font>`
-	self._K.Remote.Notify:Fire(
-		self.fromPlayer,
-		{ Text = `Command request for <b>{self.alias}</b> was <b>{status}</b>.`, From = targetPlayer.UserId }
-	)
+	if self.fromPlayer then
+		self._K.Remote.Notify:Fire(
+			self.fromPlayer,
+			{ Text = `Command request for <b>{self.alias}</b> was <b>{status}</b>.`, From = targetPlayer.UserId }
+		)
+	end
 
 	if accepted then
 		self._K.Hook.preCommand:Fire(self)
@@ -128,12 +134,18 @@ function Command:run()
 						return true -- skip running initial command
 					end
 				else -- list of players
+					local cloned = false
 					for i = #prepared, 1, -1 do
 						local player = prepared[i]
 						if player == self.fromPlayer then
 							continue -- don't request self
 						end
 						if self:shouldRequest(player) then
+							if not cloned then
+								cloned = true
+								prepared = table.clone(prepared)
+								self.preparedArgs[argIndex] = prepared
+							end
 							table.remove(prepared, i) -- strip player
 							local soloPrepared = table.clone(self.preparedArgs)
 							soloPrepared[argIndex] = { player }
@@ -162,6 +174,9 @@ end
 function Command:validate()
 	if self.validated then
 		return true
+	end
+	if not self._keepTargetLimits then
+		self._K.Data.targetLimits[self.from] = 0
 	end
 
 	-- always try first argument for player types

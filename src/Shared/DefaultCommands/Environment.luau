@@ -463,11 +463,17 @@ return {
 			if context.fromPlayer then
 				-- other players fire this remote while spectated, wait for the sender's reply instead of the first one
 				local connection
+				local function stopWatching()
+					if connection and connection.Connected then
+						connection:Disconnect()
+						context._K.Remote.SpectateSubject:Fire(context.fromPlayer)
+					end
+				end
 				connection = context._K.Remote.SpectateSubject:Connect(function(player, cframe)
 					if player ~= context.fromPlayer then
 						return
 					end
-					connection:Disconnect()
+					stopWatching()
 					if typeof(cframe) ~= "CFrame" then
 						return
 					end
@@ -482,11 +488,7 @@ return {
 					end
 					workspace.GlobalWind = cframe.LookVector * speed
 				end)
-				task.delay(10, function()
-					if connection.Connected then
-						connection:Disconnect()
-					end
-				end)
+				task.delay(10, stopWatching)
 				context._K.Remote.SpectateSubject:Fire(context.fromPlayer, true)
 			end
 		end,

@@ -109,10 +109,17 @@ function Table.settle(t: { any })
 end
 
 function Table.fastRemove(t: { any }, index: number, indexEnd: number?)
-	for i = index, indexEnd or index do
-		t[i] = nil
+	local count = #t
+	index = math.max(1, index)
+	local finish = math.min(indexEnd or index, count)
+	local removed = finish - index + 1
+	if removed > 0 then
+		table.move(t, finish + 1, count, index)
+		for i = count - removed + 1, count do
+			t[i] = nil
+		end
 	end
-	return Table.settle(t)
+	return t
 end
 
 function Table.shuffle(list: { any })

@@ -111,6 +111,10 @@ return {
 		local colors
 		if accessory then
 			if typeof(accessory) == "Instance" then
+				-- only replace the wearer's own accessory
+				if not (accessory:IsA("Accessory") and accessory:IsDescendantOf(character)) then
+					return
+				end
 				local part = accessory:FindFirstChild("Handle")
 				if part and part:IsA("MeshPart") then
 					if string.find(part.TextureID, "74391200400192") then
