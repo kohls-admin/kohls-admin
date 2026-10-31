@@ -52,14 +52,14 @@
 				"$path": "migrate",
 				"KA": {
 					"$path": "../src",
-					"Flux": { "$path": "../submodules/Flux" },
-					"Z": { "$path": "../submodules/Z" },
+					"Flux": { "$path": "../vendor/flux" },
+					"Z": { "$path": "../vendor/z" },
 					"VERSION": { "$path": "../VERSION.txt" }
 				},
 				"Tools": {
 					"$className": "Folder",
 					"Building Tools": {
-						"$path": "../submodules/F3X",
+						"$path": "../vendor/f3x",
 						"$properties": {
 							"Tags": ["_K_Ignore"]
 						}
@@ -75,8 +75,8 @@
 					"$path": "../model/Loader.server.luau",
 					"MainModule": {
 						"$path": "../src",
-						"Flux": { "$path": "../submodules/Flux" },
-						"Z": { "$path": "../submodules/Z" },
+						"Flux": { "$path": "../vendor/flux" },
+						"Z": { "$path": "../vendor/z" },
 						"VERSION": { "$path": "../VERSION.txt" }
 					},
 					"MainModuleLegacy": {
@@ -85,7 +85,7 @@
 					"Tools": {
 						"$className": "Folder",
 						"Building Tools": {
-							"$path": "../submodules/F3X",
+							"$path": "../vendor/f3x",
 							"$properties": {
 								"Tags": ["_K_Ignore"]
 							}

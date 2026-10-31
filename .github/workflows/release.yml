@@ -1,22 +1,228 @@
-name: release-please
+# Release Kohl's Admin. release-please keeps a release PR open on main that bumps VERSION.txt and
+# .release-please-manifest.json and writes CHANGELOG.md; merging it tags v<version> and creates the GitHub release.
+# This workflow then checks the version, waits for CI on that commit, builds the MainModule and the Loader model,
+# and attaches them to the GitHub release.
+#
+#   push to main               release-please updates its PR, or releases when its PR was just merged
+#   Run workflow on a v* tag   (dry_run off) publish that release again; every publish step is safe to repeat
+#   Run workflow (dry_run on)  build and package only
+#
+# Secrets:
+#   MY_RELEASE_PLEASE_TOKEN  a token that may push branches and open PRs, so the release PR runs CI
+#   MODEL_TOKEN              (when Roblox publish is enabled) an Open Cloud API key with Assets API read/write access
+name: Release
+
 on:
   push:
     branches:
-      - master
-    paths:
-      - model/**
-      - src/**
-      - test/**
+      - main
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and package only; no release assets or Roblox publish
+        type: boolean
+        default: true
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # The MainModule every Loader requires by id, and the Creator Store model users insert (the Loader).
+  MAIN_MODULE_ASSET_ID: 1868400649
+  LOADER_ASSET_ID: 172732271
 
 jobs:
-  release:
+  release-please:
+    name: Release PR
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      released: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-          release-type: simple
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  version:
+    name: Version
+    needs: release-please
+    if: always() && (needs.release-please.outputs.released == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      tag: ${{ steps.check.outputs.tag }}
+      release: ${{ steps.check.outputs.release }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: kohltastrophe/sert/actions/setup@v0.1.0
+        with:
+          rokit: "false"
+
+      - name: Check the version (and the tag)
+        id: check
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          RELEASED_TAG: ${{ needs.release-please.outputs.tag }}
+        run: |
+          if [ -n "$RELEASED_TAG" ]; then
+            tag=$RELEASED_TAG
+          elif [ "$DRY_RUN" = true ]; then
+            tag=""
+          elif [ "$GITHUB_REF_TYPE" = tag ]; then
+            tag=$GITHUB_REF_NAME
+          else
+            echo "::error::Only a release is published: merge the release PR, or run this workflow on its v* tag."
+            exit 1
+          fi
+          if [ -n "$tag" ]; then
+            version=$(python3 tools/sert.py release check-version --tag "$tag")
+            release=true
+          else
+            version=$(python3 tools/sert.py release check-version)
+            release=false
+          fi
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "release=$release"
+          } >> "$GITHUB_OUTPUT"
+          echo "Kohl's Admin $version: release=$release tag=${tag:-none}"
+
+  ci:
+    name: Wait for CI
+    needs: version
+    if: always() && needs.version.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+    steps:
+      - name: Wait for CI to pass on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for workflow in lint.yml; do
+            empty=0
+            while true; do
+              RESULT=$(gh api \
+                "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?head_sha=$GITHUB_SHA&event=push" \
+                --jq '.workflow_runs | sort_by(.run_number) | last | "\(.status // "none") \(.conclusion // "none")"') || RESULT="none none"
+              STATUS="${RESULT%% *}"
+              CONCLUSION="${RESULT##* }"
+              echo "$workflow status=$STATUS conclusion=$CONCLUSION"
+              if [ "$STATUS" = "completed" ]; then
+                [ "$CONCLUSION" = "success" ] && break
+                echo "::error::$workflow concluded '$CONCLUSION' for $GITHUB_SHA"
+                exit 1
+              elif [ "$STATUS" = "none" ]; then
+                empty=$((empty + 1))
+                if [ "$empty" -ge 8 ]; then
+                  echo "::error::No push run of $workflow found for $GITHUB_SHA after 2 minutes"
+                  exit 1
+                fi
+              else
+                empty=0
+              fi
+              echo "$workflow not finished yet; waiting 15s..."
+              sleep 15
+            done
+          done
+
+  package:
+    name: Package
+    needs: version
+    if: always() && needs.version.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: CompeyDev/setup-rokit@1d9390883f7ebce19d48f5b8d006e11d387c92ab # v0.2.1
+        with:
+          version: v1.2.0
+
+      - name: Build the release assets
+        run: |
+          mkdir -p dist
+          rojo build default.project.json --output dist/MainModule.rbxm
+          rojo build .github/loader.project.json --output dist/KohlsAdmin.rbxm
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release
+          path: dist/
+          if-no-files-found: error
+          overwrite: true
+
+  release:
+    name: GitHub release
+    needs: [version, ci, package]
+    if: always() && needs.version.outputs.release == 'true' && needs.ci.result == 'success' && needs.package.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release
+          path: dist
+
+      # release-please created the release; a re-run replaces its assets.
+      - name: Attach the models to the release
+        working-directory: dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: gh release upload "$TAG" MainModule.rbxm KohlsAdmin.rbxm --clobber
+
+  # Uncomment once the CI and release pipeline is verified in production:
+  #
+  # roblox:
+  #   name: Publish to Roblox
+  #   needs: [version, release]
+  #   if: always() && needs.release.result == 'success'
+  #   environment: release
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+  #       with:
+  #         name: release
+  #         path: dist
+  #
+  #     # Uploading a model again only adds an asset version, so a re-run is safe. The MainModule goes first: every
+  #     # auto-updating game loads it on its next server.
+  #     - name: Update the MainModule and the Loader
+  #       env:
+  #         MODEL_TOKEN: ${{ secrets.MODEL_TOKEN }}
+  #       run: |
+  #         if [ -z "$MODEL_TOKEN" ]; then echo "::notice::No MODEL_TOKEN secret: Roblox publish skipped"; exit 0; fi
+  #         upload() {
+  #           curl --fail-with-body -sS -X PATCH \
+  #             "https://apis.roblox.com/assets/v1/assets/$1" \
+  #             -H "x-api-key: $MODEL_TOKEN" \
+  #             -F 'request={"assetId":"'"$1"'"};type=application/json' \
+  #             -F "fileContent=@$2;type=model/x-rbxm"
+  #           echo
+  #         }
+  #         upload "$MAIN_MODULE_ASSET_ID" dist/MainModule.rbxm
+  #         upload "$LOADER_ASSET_ID" dist/KohlsAdmin.rbxm

@@ -13,7 +13,7 @@
 <div align="center">
     <a href="https://admin.kohl.gg/"><img src="https://img.shields.io/badge/docs-admin.kohl.gg-222"></a>
     <a href="https://discord.gg/kohl"><img src="https://img.shields.io/discord/694630328064671775"></a>
-    <a href="https://github.com/kohls-admin/kohls-admin/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/kohls-admin/kohls-admin" alt="License"></a>
+    <a href="https://github.com/kohls-admin/kohls-admin/blob/main/LICENSE.txt"><img src="https://img.shields.io/github/license/kohls-admin/kohls-admin" alt="License"></a>
     <a href="https://github.com/kohls-admin/kohls-admin/graphs/contributors"><img src="https://img.shields.io/github/contributors/kohls-admin/kohls-admin" alt="Contributors"></a>
     <a href="https://github.com/kohls-admin/kohls-admin/issues"><img src="https://img.shields.io/github/issues/kohls-admin/kohls-admin" alt="GitHub issues"></a>
     <br/>
@@ -21,45 +21,49 @@
 </div>
 
 <br/>
-<h1 align="center">Embrace creativity, not chaos.</h1>
-<p align="center"><b>Used by 30M+ developers</b>, Kohl's Admin is the most powerful, reliable, and trusted solution for Roblox experience management.</p>
+<h1 align="center">Kohl's Admin</h1>
+<p align="center"><b>Trusted by 30M+ developers across 100K+ games.</b> Kohl's Admin is a strictly typed administration, moderation, and command suite for Roblox built on <a href="https://flux.kohl.gg">Flux</a> and <a href="https://github.com/kohltastrophe/Z">Z</a>.</p>
 
-# ✨ Power Meets Simplicity
+## Features
 
-Everything you need to manage your game effectively.
+- **200+ built-in commands:** Live syntax and target autocomplete, inline argument validation, command history, multi-command chaining, and shorthand target selectors (`me`, `all`, `others`, `@role`, `%team`, `~random`, `$friends`, `$distance<N`, `$group=ID>=RANK`).
+- **Layered role hierarchy:** Role-based access control with combinable roles, per-role command groups, cooldown and target limits, automatic grants for GamePasses, Groups, Badges, Friends, Assets, and Subscriptions, and cross-server `DataStore` persistence (`bans`, `members`, `settings`, `logs`).
+- **Reactive Flux dashboard:** Built-in `Commands`, `Bans`, `Members`, `Servers`, `Logs`, `Settings`, `Market`, and `About` tabs plus an in-game Instance Explorer (`;explorer`) and Building Tools (`;btools`), with custom Oklab themes and configurable keybinds across PC, Mobile, Console, and VR.
+- **Platform-integrated chat:** Native `TextChatService` and `TextChatCommand` slash-alias registration with server-enforced rate limits and per-viewer broadcast filtering.
+- **Monetization and discovery:** Sell custom GamePass, Asset, or Subscription roles, earn up to 40% creator commission on global VIP and scripted UGC purchases inside your experience, and list your place in the cross-game Kohl's Admin Charts hub.
+- **Addons, hooks, and custom types:** Extend the system with shared, server-only, or client-only addons, custom commands, custom argument parsers, and `_K.Hook` lifecycle signals.
 
-- **Modern Interface:** A sleek, customizable user interface that fits perfectly with any game style. Choose from various themes or create your own with responsive design and intuitive controls.
-- **Built-in Monetization:** Create your own products to sell roles and commands, or earn revenue from ours. Get up to 40% commission on every global VIP gamepass or hat sold in your game.
-- **Global Charts:** Turn your admin system into a discovery engine and gain exposure from players exploring the ecosystem with free advertising and live rankings.
-- **High Performance:** Optimized code ensures zero lag impact on your experience with fast execution.
-- **Smart Autocomplete:** Never guess a command again. Our intelligent autocomplete system provides argument suggestions, error highlighting, and instant validation as you type.
-- **Secure Architecture:** Flexible, role-based access control and anti-abuse protection keeps your game safe.
-- **Effortless Setup:** Automatic updates mean you're always on the latest version with new features and fewer bugs.
-- **Limitless Customization:** Extend functionality with community-made addons for infinite scalability and custom logic.
+## Installation
 
-# 🙌 Contributing
+Install the [Official Creator Store Loader](https://create.roblox.com/store/asset/172732271), download the standalone `.rbxm` from [GitHub Releases](https://github.com/kohls-admin/kohls-admin/releases), or add `kohltastrophe/kohls-admin` via Wally:
 
-We welcome and encourage contributions from the community! Check out our [Contributor Guidelines](CONTRIBUTING.md) to learn how you can get involved.
+```luau
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local _K = require(ReplicatedStorage.Packages.KohlsAdmin)
 
-### 🙏 Recognition for Contributors
+_K.initialize({
+	prefix = { ";", ":" },
+	userRoles = {
+		admin = { 12345678 },
+	},
+})
+```
 
-- **In-Game Credits:** Your name will be featured in the `credits` command within Kohl's Admin.
-- **Inside Access:** Access to exclusive features, early previews, and private channels within the community.
-- **Special In-Game Benefits:** Enjoy exclusive perks within participating experiences that use Kohl's Admin.
-- **Monetary Compensation (For Exceptional Contributions):** We value your time and effort. See the [Contributor Guidelines](CONTRIBUTING.md#compensation) for details.
+See the [Installation Guide](https://admin.kohl.gg/guide/getting-started/installation) and [Configuration Guide](https://admin.kohl.gg/guide/getting-started/configuration) for full setup details.
 
-Thank you to all our contributors for helping make this project a success! ❤️
+## Contributing
 
-# 💡 Ideas or Issues?
+Read the [Contributor Guidelines](CONTRIBUTING.md) for local Rojo and Dev Container setup, architecture notes, and pull request workflow.
 
-Found a bug? Have a feature request? Let us know by opening an issue:
+- **In-game credits:** Contributors are listed in the built-in `credits` command and `About` tab.
+- **Inside access:** Preview upcoming releases and join contributor channels in the community Discord.
+- **In-game perks:** Receive contributor benefits across participating experiences running Kohl's Admin.
+- **Bounties:** Sustained or high-impact engineering contributions are eligible for monetary compensation; see [Compensation](CONTRIBUTING.md#compensation) for details.
 
-<div align="center">
-	<a href="https://github.com/kohls-admin/kohls-admin/issues/new/choose" target="_blank">
-		<img src="https://img.shields.io/badge/Open_Issue-Click_Here-blue?style=for-the-badge" alt="Open Issue" />
-	</a>
-</div>
+## Support and Issues
 
-# 📄 License
+Report bugs or request features through [GitHub Issues](https://github.com/kohls-admin/kohls-admin/issues/new/choose), or join the community on [Discord](https://discord.gg/kohl).
+
+## License
 
 This project is licensed under the [MIT License](LICENSE.txt).

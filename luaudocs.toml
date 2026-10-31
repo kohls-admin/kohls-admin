@@ -6,7 +6,7 @@ entries = [ "src" ]
 
 [repo]
 url = "https://github.com/kohls-admin/kohls-admin"
-branch = "master"
+branch = "main"
 
 [site]
 siteTitle = ""
@@ -17,7 +17,7 @@ light = "/logo-load.svg"
 dark = "/logo-load-dark.svg"
 
 [site.footer]
-copyright = "© 2010–2026 Kohl"
+copyright = "© 2009 Kohl"
 
 [[site.nav]]
 text = "Guide"

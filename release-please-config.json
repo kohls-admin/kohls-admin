@@ -1,0 +1,35 @@
+{
+	"$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+	"bootstrap-sha": "9dfeb838eb07c8cb4d0bc8051a80982290fc3e65",
+	"packages": {
+		".": {
+			"release-type": "simple",
+			"package-name": "kohls-admin",
+			"version-file": "VERSION.txt",
+			"include-component-in-tag": false,
+			"bump-minor-pre-major": true
+		}
+	},
+	"changelog-sections": [
+		{
+			"type": "feat",
+			"section": "Features"
+		},
+		{
+			"type": "fix",
+			"section": "Bug Fixes"
+		},
+		{
+			"type": "security",
+			"section": "Security"
+		},
+		{
+			"type": "perf",
+			"section": "Performance Improvements"
+		},
+		{
+			"type": "revert",
+			"section": "Reverts"
+		}
+	]
+}

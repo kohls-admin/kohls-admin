@@ -2,32 +2,10 @@ name: Lint & Test
 on:
   push:
     branches:
-      - master
-    paths:
-      - .github/workflows/lint.yml
-      - .luaurc
-      - model/**
-      - rokit.toml
-      - selene.toml
-      - sert.toml
-      - src/**
-      - submodules/**
-      - test/**
-      - tools/**
+      - main
   pull_request:
     branches:
-      - master
-    paths:
-      - .github/workflows/lint.yml
-      - .luaurc
-      - model/**
-      - rokit.toml
-      - selene.toml
-      - sert.toml
-      - src/**
-      - submodules/**
-      - test/**
-      - tools/**
+      - main
   workflow_dispatch:
 
 permissions:
@@ -49,11 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          submodules: recursive
+          persist-credentials: false
 
-      - uses: kohltastrophe/sert/actions/setup@master
-        with:
-          sert-ref: master
+      - uses: kohltastrophe/sert/actions/setup@v0.1.0
 
       - name: sert lint
         run: python3 tools/sert.py lint

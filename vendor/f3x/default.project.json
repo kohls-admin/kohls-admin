@@ -1,0 +1,69 @@
+{
+	"name": "Building Tools",
+	"tree": {
+		"$className": "Tool",
+		"$ignoreUnknownInstances": true,
+		"Core": {
+			"$path": "Core"
+		},
+		"Tools": {
+			"$className": "Folder",
+			"$path": "Tools"
+		},
+		"Loader": {
+			"$path": "Loader"
+		},
+		"SyncAPI": {
+			"$className": "BindableFunction",
+			"SyncModule": {
+				"$path": "SyncAPI.lua"
+			},
+			"LocalEndpoint": {
+				"$path": "Support/LocalAPIEndpoint.client.lua"
+			},
+			"ServerEndpoint": {
+				"$className": "RemoteFunction",
+				"ServerEndpoint": {
+					"$path": "Support/ServerAPIEndpoint.server.lua"
+				}
+			}
+		},
+		"Libraries": {
+			"$path": "Libraries"
+		},
+		"Vendor": {
+			"$className": "Folder",
+			"$ignoreUnknownInstances": false,
+			"Roact": {
+				"$path": "Vendor/Roact/src"
+			}
+		},
+		"Assets": {
+			"$path": "Support/Assets.lua"
+		},
+		"Loaded": {
+			"$className": "BoolValue",
+			"DescendantCount": {
+				"$className": "IntValue",
+				"DescendantCounter": {
+					"$path": "Support/DescendantCounter.server.lua"
+				}
+			},
+			"ReplicationListener": {
+				"$path": "Support/ReplicationListener.client.lua"
+			}
+		},
+		"Version": {
+			"$className": "StringValue",
+			"$properties": {
+				"Value": "3.1.0"
+			}
+		},
+		"UI": {
+			"$path": "UI"
+		},
+		"Interfaces": {
+			"$path": "Interfaces.rbxmx"
+		}
+	}
+}

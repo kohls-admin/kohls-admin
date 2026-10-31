@@ -2,13 +2,21 @@ name: Publish
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - model/**
       - src/**
-      - submodules/**
       - test/**
+      - vendor/**
       - VERSION.txt
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-demo
+  cancel-in-progress: true
 
 jobs:
   demo:
@@ -17,11 +25,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          submodules: recursive
-      - uses: CompeyDev/setup-rokit@v0.1.2
+          persist-credentials: false
+      - uses: CompeyDev/setup-rokit@v0.2.1
         with:
-          version: "*"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          version: v1.2.0
       - name: Publish demo place
         run: |
           rokit --version
