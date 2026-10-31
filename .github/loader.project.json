@@ -11,10 +11,10 @@
 			"MainModule": {
 				"$path": "../src",
 				"Flux": {
-					"$path": "../submodules/Flux"
+					"$path": "../vendor/flux"
 				},
 				"Z": {
-					"$path": "../submodules/Z"
+					"$path": "../vendor/z"
 				},
 				"VERSION": {
 					"$path": "../VERSION.txt"
@@ -23,7 +23,7 @@
 			"Tools": {
 				"$className": "Folder",
 				"Building Tools": {
-					"$path": "../submodules/F3X",
+					"$path": "../vendor/f3x",
 					"$properties": {
 						"Tags": ["_K_Ignore"]
 					}

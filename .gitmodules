@@ -1,9 +1,0 @@
-[submodule "F3X-Building-Tools"]
-	path = submodules/F3X
-	url = https://github.com/kohls-admin/F3X-Building-Tools.git
-[submodule "Flux"]
-	path = submodules/Flux
-	url = https://github.com/kohltastrophe/flux.git
-[submodule "Z"]
-	path = submodules/Z
-	url = https://github.com/kohltastrophe/Z.git

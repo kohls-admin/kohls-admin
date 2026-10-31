@@ -30,7 +30,7 @@ Whether you're a seasoned developer or just starting out, there are ways for you
    - **[Create a fork](https://github.com/kohls-admin/kohls-admin/fork)** of the repository.
    - **Clone your fork**, and run the initial setup commands:
      ```bash
-     git clone --recurse-submodules https://github.com/YOUR-USERNAME/kohls-admin.git
+     git clone https://github.com/YOUR-USERNAME/kohls-admin.git
      ```
 
 3. Setup Your Local Repository
@@ -41,7 +41,6 @@ Whether you're a seasoned developer or just starting out, there are ways for you
      ```
    - **Setup Git:**
      ```bash
-     git config submodule.recurse true;
      git config pull.rebase true;
      ```
    - **Install Project Dependencies:**
@@ -58,11 +57,20 @@ Whether you're a seasoned developer or just starting out, there are ways for you
      ```
    - **Connect Studio to Rojo:** Open Roblox and use the [Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin) to connect to the server you just started.
 
+#### Vendored Libraries
+
+Flux (`vendor/flux`), Z (`vendor/z`), and Building Tools (`vendor/f3x`) live in `vendor/` as [Git subtrees](https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging#_subtree_merge) of each library's `dist` branch (holding only its runtime), so a plain `git clone` builds every place without initializing submodules. Change them in their own repositories, then pull the updated `dist` branch:
+
+```bash
+git remote add flux https://github.com/kohltastrophe/flux.git
+git subtree pull --prefix=vendor/flux flux dist --squash
+```
+
 #### Development Container
 
 Open the repository in a container using VS Code's **Reopen in Container**, Zed's **Open in Container**, or another Dev Containers-compatible client. Docker or Podman must be installed locally; GitHub Codespaces runs the same configuration in the cloud.
 
-The container includes Node.js 22, Luaudocs, and Rokit. Setup initializes the Git submodules and installs the versions in `rokit.toml`, including Rojo, Selene, StyLua, and Luau LSP. Tools are on the container's `PATH` for any editor or terminal. VS Code and Zed extensions are configured automatically; Zed's project settings enable Roblox types and StyLua formatting.
+The container includes Node.js 22, Luaudocs, and Rokit. Setup installs the versions in `rokit.toml`, including Rojo, Selene, StyLua, and Luau LSP. Tools are on the container's `PATH` for any editor or terminal. VS Code and Zed extensions are configured automatically; Zed's project settings enable Roblox types and StyLua formatting.
 
 Run `rojo serve test` to start Rojo on forwarded port **34872**. Roblox Studio and its Rojo plugin run on your host machine. To preview documentation, run:
 
@@ -130,7 +138,7 @@ Open forwarded port **5173** in your browser. Rebuild the container after changi
    - **Collaborate:** Work with us to refine your code and ensure it meets our standards.
 
 5. Merge and Celebrate! 🎉
-   - **Merge:** Once your pull request is approved, it will be merged into the [master](https://github.com/kohls-admin/kohls-admin/tree/master) branch.
+   - **Merge:** Once your pull request is approved, it will be merged into the [main](https://github.com/kohls-admin/kohls-admin/tree/main) branch.
    - **Celebrate:** You've made a valuable contribution to Kohl's Admin! Thank you!
 
 ## Enhance the Documentation
@@ -168,7 +176,7 @@ _If an issue was closed after a fix, but the bug has returned or functionality w
 
 _Please be patient while we address your issue!_
 
-The issue will close when a related [pull request](https://github.com/kohls-admin/kohls-admin/pulls) is merged to the [master](https://github.com/kohls-admin/kohls-admin/tree/master) branch of Kohl's Admin.
+The issue will close when a related [pull request](https://github.com/kohls-admin/kohls-admin/pulls) is merged to the [main](https://github.com/kohls-admin/kohls-admin/tree/main) branch of Kohl's Admin.
 
 ## Compensation
 

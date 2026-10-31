@@ -3,8 +3,8 @@
 
 [sert]
 version = "0.1.0"
-sha256 = "" # TODO: sha256 of sert-0.1.0.zip (sert lock --pin once sert v0.1.0 is released)
-pyz_sha256 = "" # TODO: sha256 of sert-0.1.0.pyz (sert lock --pin once sert v0.1.0 is released)
+sha256 = "f3f1366746507d1b6966438cf1ad57a3a4fb6aa60d53e43db348d2857052c24c"
+pyz_sha256 = "f25896b19148ca53b8a29be815bc6a0a9bab4889da24d05a68db1b553c41a14c"
 
 [tools]
 luau = "0.724"
@@ -77,7 +77,7 @@ paths = ["model", "src", "test/unit", "test/runner", "test/sert.luau", "test/spe
 project = "default.project.json"
 solvers = ["old"]
 selene = false
-ignore = ["submodules/**", "**/.sert/**", "test/migrate/**"]
+ignore = ["vendor/**", "**/.sert/**", "test/migrate/**"]
 registration = { aggregator = "test/unit/init.luau", specs = "test/unit/**/*.spec.luau" }
 extra = [["selene", "test/unit", "test/runner", "test/sert.luau", "test/spec.client.luau"]]
 
@@ -89,3 +89,16 @@ specs = ["test/unit/**/*.spec.luau"]
 sides = ["server", "client"]
 list_command = ["python3", "tools/sert.py", "run", "-a", "--list"]
 timeout = 300
+
+[release]
+prefix = "v"
+versions = [
+  { file = "VERSION.txt", pattern = '^\s*(\S+)\s*$' },
+  { file = ".release-please-manifest.json", pattern = '"\."\s*:\s*"([^"]*)"' },
+]
+
+[tools.sha256]
+"luau/0.724/luau-macos.zip" = "c80e152eb61d6dc07923a86cd433929eaa8736fb52e825da202dd2d4f106ec90"
+"luau/0.724/luau-ubuntu.zip" = "19be57ce53fc21dfe0099d3d763d97138c0f4562fa632da82c72cb3c19d4531a"
+"luau/0.724/luau-windows.zip" = "0840d8a56f4d924c688f4df74d79de28e32f43f2970812758ff9383a1048ee05"
+"luau-lsp/1.70.1/globalTypes.d.luau" = "2857efa8245485f8c25c19c018ee1ef9b46afab4efd2ea70fc3257cd3faf7080"
