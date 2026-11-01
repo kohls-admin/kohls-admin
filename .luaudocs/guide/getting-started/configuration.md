@@ -69,7 +69,7 @@ userRoles = {
 ```
 
 :::tip Private Server DataStore Isolation
-When `game.PrivateServerOwnerId` is listed under any role in `userRoles` (and the private server owner is not the game creator), Kohl's Admin automatically isolates the private server's DataStore scope so changes made in that private server never affect public servers!
+When `game.PrivateServerOwnerId` is listed under any role in `userRoles` (and the private server owner isn't the game creator), Kohl's Admin isolates that private server's DataStore scope so changes made there never affect public servers.
 :::
 
 ### Group Roles (`groupRoles`)
@@ -90,20 +90,20 @@ groupRoles = {
 
 ### GamePass, Asset & Subscription Roles
 
-Grant roles automatically when a player owns a GamePass, catalog Asset, or active Subscription. When a player purchases a configured GamePass in-game, Kohl's Admin immediately grants the role(s) and notifies them without requiring a rejoin.
+Grant roles automatically when a player owns a GamePass, catalog Asset, or active Subscription. When a player buys a configured GamePass in-game, Kohl's Admin grants the role immediately without requiring a rejoin.
 
 ```luau
--- 📦 Catalog Assets (hats, shirts, badges, etc.)
+-- Catalog Assets (hats, shirts, badges, etc.)
 assetRoles = {
 	[18966788838] = { "vip" },
 },
 
--- 💵 GamePasses
+-- GamePasses
 gamepassRoles = {
 	[5411126] = { "vip", "mod" },
 },
 
--- 💳 Subscriptions
+-- Subscriptions
 subscriptionRoles = {
 	["EXP-1234567890"] = { "vip" },
 },
@@ -115,12 +115,12 @@ subscriptionRoles = {
 - **`freeAdmin`**: Grants the listed role(s) to **every player** who joins the server.
 
 ```luau
--- 👥 Friends of the game/group creator
+-- Friends of the game or group creator
 friendRoles = {
 	"vip",
 },
 
--- 👑 Every player in the game
+-- Every player in the server
 freeAdmin = {
 	-- "vip",
 	-- "mod",
@@ -152,7 +152,7 @@ bans = {
 ## System Settings Reference
 
 ```luau
--- 📢 INITIAL ANNOUNCEMENTS & NOTIFICATIONS (shown to players on join)
+-- Initial announcements and notifications shown on join
 announcements = {
 	-- {
 	-- 	From = "_K", -- UserId or "_K"
@@ -169,7 +169,7 @@ notifications = {
 	-- },
 },
 
--- 🔧 SYSTEM SETTINGS
+-- System settings
 prefix = { ";", ":" }, -- Command trigger character(s)
 splitKey = " ", -- Command and argument separator
 
@@ -227,7 +227,7 @@ commands = {
 The `roles` table defines every role in your experience. Roles placed later in the array have a higher authority rank (`_rank = index - 1`).
 
 :::warning Default Role Keys
-Do not rename the `_key` of the built-in roles (`everyone`, `vip`, `mod`, `admin`, `superadmin`, `creator`), as internal systems and legacy migrations reference them. You can freely change their `name`, `color`, `groups`, `limits`, and `permissions`, or insert new custom roles anywhere in the array!
+Don't rename the `_key` of the built-in roles (`everyone`, `vip`, `mod`, `admin`, `superadmin`, `creator`), because internal systems and legacy migrations reference them. You can change their `name`, `color`, `groups`, `limits`, and `permissions`, or insert custom roles anywhere in the array.
 :::
 
 ### Creating a Custom Role

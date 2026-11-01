@@ -153,7 +153,7 @@ return function(_K)
 	_K.Registry.registerType("vehicle", vehicleType)
 	_K.Registry.registerType("vehicles", { listable = true }, vehicleType)
 
-	-- Use the new type in a custom command!
+	-- Use the new type in a custom command
 	_K.Registry.registerCommand(_K, {
 		name = "spawnvehicle",
 		aliases = { "car", "sv" },

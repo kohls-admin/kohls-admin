@@ -18,7 +18,7 @@ const tierGroups = [
 		accent: "perf",
 		name: "Supporter Tiers",
 		price: "10 – 100 R$",
-		sub: "Start supporting Kohl's Admin and unlock a custom particle trail.",
+		sub: "Support Kohl's Admin and get a custom donor particle trail.",
 		perks: [
 			"Custom donor particle effect",
 			"Toggleable in-game via the Market tab",
@@ -34,7 +34,7 @@ const tierGroups = [
 		accent: "auto",
 		name: "Tribute",
 		price: "200 R$",
-		sub: "Unlock global VIP chat commands along with donor particle effects.",
+		sub: "Includes global VIP chat commands and donor particle effects.",
 		perks: [
 			"Global VIP chat commands",
 			"Custom donor particle effects",
@@ -48,12 +48,12 @@ const tierGroups = [
 		accent: "secure",
 		name: "Patron",
 		price: "400 R$",
-		sub: "Add floating animated crowns and an exclusive overhead Patron title.",
+		sub: "Adds floating animated crowns and an overhead Patron title.",
 		perks: [
 			"Global VIP chat commands",
 			"Animated Light, Dark & Gold Crowns",
 			"Custom donor particle effects",
-			"Exclusive overhead Patron title",
+			"Overhead Patron title",
 		],
 		tiers: [
 			{ name: "Patron", price: "400 R$", color: "#00e5ff", href: "https://www.roblox.com/game-pass/938480383/Patron" },
@@ -63,12 +63,12 @@ const tierGroups = [
 		accent: "addons",
 		name: "Elite – Eternal",
 		price: "800 – 25,000 R$",
-		sub: "Unlock every animated crown and wing accessory plus animated gradient titles.",
+		sub: "Includes every animated crown and wing accessory plus animated gradient titles.",
 		perks: [
 			"Global VIP chat commands",
-			"All animated Crowns & Wings unlocked",
+			"All animated Crowns & Wings included",
 			"Custom donor particle effects",
-			"Exclusive animated overhead title",
+			"Animated overhead title",
 		],
 		tiers: [
 			{ name: "Elite", price: "800 R$", color: "#9b4dff", href: "https://www.roblox.com/game-pass/939618404/Elite" },
@@ -86,7 +86,7 @@ const ugcGroups = [
 		accent: "money",
 		name: "Animated Crowns",
 		badge: "100 R$ · Included with Patron+",
-		desc: "Floating crowns enhanced with custom fire effects, neon materials, and smooth spinning in games running Kohl's Admin.",
+		desc: "Floating crowns with custom fire effects, neon materials, and smooth rotation in games running Kohl's Admin.",
 		items: [
 			{ name: "Light Crown", price: "100 R$", href: "https://www.roblox.com/catalog/18966788838/White-Crown" },
 			{ name: "Dark Crown", price: "100 R$", href: "https://www.roblox.com/catalog/106645613603989/Black-Crown" },
@@ -97,7 +97,7 @@ const ugcGroups = [
 		accent: "ui",
 		name: "Animated Wings",
 		badge: "200 R$ · Included with Elite+",
-		desc: "Custom-rigged wings featuring bespoke flying animations and glowing neon materials in games running Kohl's Admin.",
+		desc: "Custom-rigged wings with flying animations and neon materials in games running Kohl's Admin.",
 		items: [
 			{ name: "Light Wings", price: "200 R$", href: "https://www.roblox.com/catalog/133292294488871/White-Wings" },
 			{ name: "Dark Wings", price: "200 R$", href: "https://www.roblox.com/catalog/110848154960799/Black-Wings" },
@@ -108,7 +108,7 @@ const ugcGroups = [
 		accent: "charts",
 		name: "Global VIP Item",
 		badge: "799 R$ · Avatar Asset",
-		desc: "Unlock VIP chat commands and the global VIP title across participating experiences via a single catalog item.",
+		desc: "Grants VIP chat commands and the global VIP title across participating games from a single catalog item.",
 		items: [
 			{ name: "Chat Commands", price: "799 R$", href: "https://www.roblox.com/catalog/110019084552349/Chat-Commands" },
 			{ name: "Try in-game", price: "Demo Place", href: TRY },
@@ -123,13 +123,12 @@ const ugcGroups = [
 			<div class="band-head">
 				<span class="eyebrow">Support Development</span>
 				<h1 class="band-title">
-					Donate &amp; unlock <span class="hl-spectrum">global perks</span>.
+					Donate &amp; get <span class="hl-spectrum">global perks</span>.
 				</h1>
 				<p class="lede">
-					We have poured thousands of hours into Kohl's Admin since 2010.
-					Supporting the project funds continuous updates and unlocks global
-					perks across participating experiences &mdash; and game creators earn
-					up to <strong>40% commission</strong> on every in-game purchase.
+					Supporting Kohl's Admin funds ongoing updates and grants cosmetic perks
+					across participating games. Game creators also earn up to
+					<strong>40% commission</strong> on every in-game purchase.
 				</p>
 			</div>
 			<div class="donate-tier-grid">
@@ -173,10 +172,9 @@ const ugcGroups = [
 					Interactive <span class="hl-spectrum-inv">UGC accessories</span>.
 				</h2>
 				<p class="lede">
-					Wearable Roblox catalog accessories that come alive with custom
-					animations, fire effects, and neon materials inside experiences
-					running Kohl's Admin. You can also preview them for free inside the
-					in-game Market tab.
+					Wearable Roblox catalog accessories with custom animations, fire
+					effects, and neon materials in games running Kohl's Admin. Preview
+					them for free in the in-game Market tab.
 				</p>
 			</div>
 			<div class="ugc-grid">

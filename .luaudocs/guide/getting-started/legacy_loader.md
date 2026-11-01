@@ -8,10 +8,10 @@ Kohl's Admin includes built-in support for experiences upgrading from **Kohl's A
 
 <Tabs>
 	<TabItem value="new" label="Modern Loader (Default)" default>
-		The modern Kohl's Admin loader receives all new features, UI updates, security hardening, and performance optimizations. It **automatically imports** your existing settings, bans, ranks, and custom commands from `Config > Legacy` and migrates saved KAI DataStore entries!
+		The modern Kohl's Admin loader receives all new features, UI updates, security fixes, and performance improvements. It automatically imports your existing settings, bans, ranks, and custom commands from `Config > Legacy` and migrates saved KAI DataStore entries.
 	</TabItem>
 	<TabItem value="legacy" label="Legacy Loader (KAI)">
-		The Legacy Loader runs the classic *Kohl's Admin Infinite* interface and script engine. It no longer receives new content updates, but remains available for experiences that require the classic UI.
+		The Legacy Loader runs the classic *Kohl's Admin Infinite* interface and script engine. It no longer receives new content updates, but remains available for games that require the classic UI.
 	</TabItem>
 </Tabs>
 

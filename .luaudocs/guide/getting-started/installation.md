@@ -96,6 +96,6 @@ If Roblox Studio inserts the model with the experimental **`Sandboxed`** propert
 ## Verify Installation
 
 1. Press **Play** (`F5`) in Roblox Studio to start a test session.
-2. As the creator of the experience, you are automatically granted the **`creator`** role (highest authority).
+2. As the creator of the place, you automatically receive the **`creator`** role.
 3. Press `;` on your keyboard to open the **Command Bar**, or click the **Kohl's Admin** icon in the topbar to open the **Dashboard**.
-4. Next, head to the [Configuration Guide](/guide/getting-started/configuration) to set up your roles, admins, and game settings!
+4. Next, read the [Configuration Guide](/guide/getting-started/configuration) to set up your roles, admins, and game settings.

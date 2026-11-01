@@ -1,4 +1,4 @@
---- A utility for managing concurrent tasks and awaiting their completion.
+--- Runs concurrent tasks and awaits their completion.
 --- @class Tasks
 local Tasks = {}
 Tasks.__index = Tasks
@@ -13,7 +13,7 @@ type self = {
 
 export type Tasks = typeof(setmetatable({} :: self, Tasks))
 
---- Creates a new Tasks instance.
+--- Creates a new task group.
 function Tasks.new(): Tasks
 	return setmetatable({
 		_numTasks = 0,
@@ -42,14 +42,14 @@ local function _run(self: Tasks, callback: (...any) -> ...any, ...: any)
 	end
 end
 
---- Adds a new task to be executed concurrently.
+--- Schedules `callback` to run concurrently.
 function Tasks.add(self: Tasks, callback: (...any) -> ...any, ...: any)
 	assert(typeof(callback) == "function", "Callback must be a function")
 	self._numTasks += 1
 	task.defer(_run, self, callback, ...)
 end
 
---- Waits for all tasks to complete, returning the results in a list.
+--- Yields until all running tasks finish and returns their `{ ok, ... }` results.
 function Tasks.wait(self: Tasks): { { any } }?
 	if self._numTasks > 0 then
 		self._waiting = true
@@ -58,7 +58,7 @@ function Tasks.wait(self: Tasks): { { any } }?
 	return
 end
 
---- Waits for the first task to complete, returning the function's success and its results.
+--- Yields until the first task finishes and returns its `(ok, ...)` result.
 function Tasks.waitForFirst(self: Tasks): (boolean, ...any)
 	self._returnFirstResult = true
 	return unpack(self:wait())

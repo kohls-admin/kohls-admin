@@ -90,7 +90,7 @@ function About.new(_K)
 			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 			TextWrapped = true,
 			Size = UDim2.new(1, 0, 0, 0),
-			Text = "<font transparency='0.5'><b>Stop playing. Take command.</b> Get the same powerful tools used here for your own games. Total control, advanced security, and professional moderation are yours for <b>free</b>.</font>",
+			Text = "<font transparency='0.5'>Add Kohl's Admin to your own games for <b>free</b>—200+ commands, role permissions, and live moderation tools.</font>",
 			RichText = true,
 
 			UI.sizeConstraint {
@@ -133,7 +133,7 @@ function About.new(_K)
 
 		UI.new "Tooltip" {
 			Parent = adminModelButton,
-			Text = "Used by <b>32M+</b> developers since 2011, Kohl's Admin is the longest-running and most reliable admin solution on Roblox.",
+			Text = "Taken by <b>30M+</b> creators since 2010 and running across <b>100K+</b> active games today.",
 			Hovering = adminModelButton._hovering,
 		}
 

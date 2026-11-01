@@ -101,7 +101,7 @@ On the client (`_K.IsClient`), `_K.UI` inherits from [`_K.Flux`](/api/Flux) (Flu
 - **`local doubled = UI.computed(function() return count() * 2 end)`**: Creates a derived node that recalculates whenever any node read inside it changes.
 - **`UI.effect(UI.on(count, function(value, previous) ... end, true)):get()`**: Runs a callback whenever `count` changes. The `true` skips the initial run, and `:get()` runs the effect immediately so it starts watching now instead of on the next frame. Stop it with `Flux.dispose(effect)`.
 - **Writing `nil`**: `count(nil)` is a *read*, because a call with no value reads. Use `count:set(nil)` to clear a signal.
-- **Property functions**: Any property can be a plain function, such as `Text = function() return tostring(count()) end`; it re-runs when the nodes it reads change.
+- **Property functions**: Any property can be a plain function, such as `Text = function() return tostring(count()) end`. It re-runs when the nodes it reads change.
 
 ### Built-In UI Component Classes
 
@@ -210,7 +210,7 @@ Kohl's Admin 0.19 moved its UI to Flux 0.3. Addons written against the 0.18 `_K.
 | `[UI.Event] = { Prop = fn }` | `_Prop = fn` (or `__EVENT = { Prop = fn }`) |
 | `[UI.Attribute] = { ... }` | `__ATTR = { ... }` |
 | `UI.action(function(instance) ... end)` child | a plain `function(instance) ... end` child |
-| `Flux.cleanup(x)` to destroy `x` now | `Flux.dispose(x)`; `Flux.cleanup(x)` now registers `x` to be cleaned up with the current owner |
+| `Flux.cleanup(x)` to destroy `x` now | `Flux.dispose(x)` (`Flux.cleanup(x)` now registers `x` with the current owner) |
 | `UI.isState(x)` | `UI.isNode(x)` |
 | `UI.edit(target, properties)` / `Flux.edit(target, properties)` | `UI.edit(target)(properties)` / `Flux.edit(target)(properties)` |
 

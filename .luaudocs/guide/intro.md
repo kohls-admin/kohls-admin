@@ -6,36 +6,36 @@ sidebar_position: 1
 
 ## What Is Kohl's Admin?
 
-**Kohl's Admin (KA)** is a strictly typed administration, moderation, and command suite for Roblox experiences built on [`Flux`](/api/Flux) and [`Z`](/api/Z). It ships with 200+ built-in commands, layered role-based access control, cross-server `DataStore` persistence, a reactive in-game dashboard, and an addon API for custom commands, argument types, and UI windows.
+**Kohl's Admin (KA)** is an administration, moderation, and command suite for Roblox built on [`Flux`](/api/Flux) and [`Z`](/api/Z). It includes 200+ built-in commands, role-based access control, cross-server `DataStore` sync, an in-game dashboard, and an addon API for custom commands, types, and UI windows.
 
 ## Key Features
 
-- **Role-Based Access Control (RBAC)**: Configure a layered hierarchy of custom roles with granular command groups, permission flags, cooldowns, and target limits. Automatically grant roles by UserId, Username, Group Rank, GamePass, Asset, Subscription, Friend status, or Private Server ownership, with cross-server `DataStore` persistence for `bans`, `members`, `settings`, and `logs`.
-- **Command Bar & Chat Execution**: Run commands with live syntax and target autocomplete, inline argument validation, error highlighting, command history, multi-command chaining, and platform-integrated `TextChatService` and `TextChatCommand` slash aliases with per-viewer broadcast filtering.
-- **Target Selectors**: Filter and target players using shorthand selectors including `me`, `all` (`*`), `others`, `@role`, `%team`, `~random`, `$friends`, `$admins`, `$distance<100`, and `$group=ID>=RANK`.
-- **Reactive Flux Dashboard**: Manage `Commands`, `Bans`, `Members`, `Servers`, `Logs`, `Settings`, `Market`, and `About` through a reactive interface with custom Oklab themes and configurable keybinds across PC, Mobile, Console, and VR.
-- **Monetization & Discovery**: Sell custom GamePass, Asset, or Subscription roles, earn **40% creator commission** on global VIP and UGC purchases in your experience, and list your experience in **Kohl's Admin Charts**.
-- **Addons, Hooks & Custom Types**: Extend Kohl's Admin with shared, server-only, or client-only **Addons**, register **Custom Commands** and **Custom Argument Types**, listen to lifecycle **Hooks** (`_K.Hook`), and build custom reactive windows with [`_K.UI`](/api/UI) and [`_K.Flux`](/api/Flux).
+- **Role-Based Access Control:** Grant combinable roles by UserId, Group rank, GamePass, Asset, or Subscription, and sync bans, members, settings, and logs across servers via `DataStore`.
+- **Command Bar and Chat:** Run commands from the command bar or `TextChatService` slash aliases with live autocomplete, inline validation, and command history.
+- **Target Selectors:** Target players with shorthand selectors like `me`, `all` (`*`), `others`, `@role`, `%team`, `~random`, `$friends`, `$distance<100`, and `$group=ID>=RANK`.
+- **In-Game Dashboard:** Manage commands, bans, members, active servers, logs, and themes from a single window across PC, mobile, console, and VR.
+- **Monetization and Discovery:** Sell custom GamePass roles, earn up to **40% creator commission** on global VIP and UGC purchases, and list your game on **Kohl's Admin Charts**.
+- **Addons and Hooks:** Register custom commands, argument parsers, lifecycle hooks (`_K.Hook`), and reactive windows (`_K.UI`) from shared, server, or client addon scripts.
 
 ## Documentation Overview
 
 ### Getting Started
 
-- **[Installation](/guide/getting-started/installation)**: Install Kohl's Admin via the Creator Store model, GitHub `.rbxm` releases, or Wally & Rojo, and configure recommended Studio security settings.
-- **[Configuration](/guide/getting-started/configuration)**: Set up roles, permissions, automatic role assignments (Groups, GamePasses, Assets, Subscriptions), system settings, and pre-configured bans in `Config > Settings`.
-- **[Using Commands](/guide/getting-started/using_commands)**: Learn how to run commands from the Command Bar or Chat, batch multiple commands, and use advanced player target selectors.
-- **[Using UIs](/guide/getting-started/using_uis)**: Explore the 8 Dashboard tabs (Commands, Bans, Members, Servers, Logs, Settings, About, Market), topbar shortcuts, status bar metrics, and built-in tools like `;explorer` and `;btools`.
-- **[Legacy Loader & Migration](/guide/getting-started/legacy_loader)**: Migrate automatically from Kohl's Admin Infinite (`Config > Legacy`) or switch between the New and Legacy loaders.
+- **[Installation](/guide/getting-started/installation):** Install Kohl's Admin via the Creator Store model, GitHub `.rbxm` releases, or Wally and Rojo.
+- **[Configuration](/guide/getting-started/configuration):** Configure roles, permissions, marketplace grants, system settings, and hardcoded bans in `Config > Settings`.
+- **[Using Commands](/guide/getting-started/using_commands):** Run commands from the command bar or chat, chain multiple commands, and filter targets with selectors.
+- **[Using UIs](/guide/getting-started/using_uis):** Navigate the 8 dashboard tabs, topbar shortcuts, status bar metrics, and built-in tools like `;explorer` and `;btools`.
+- **[Legacy Loader & Migration](/guide/getting-started/legacy_loader):** Migrate existing settings and saved data from Kohl's Admin Infinite (`Config > Legacy`).
 
 ### Developer & Customization Guides
 
-- **[Custom Commands](/guide/custom_commands)**: Register custom commands, configure argument definitions, use built-in argument types, manage command environments (`env` / `envClient`), and handle execution contexts.
-- **[Addons & Hooks](/guide/addons)**: Organize shared, server-only, and client-only addons, tag external addons with `CollectionService`, connect to `_K.Hook` events, and call core `_K` APIs (`_K.Auth`, `_K.Process`, `_K.Notify`, `_K.log`).
-- **[Custom Argument Types](/guide/custom_types)**: Create enum types, sequence types, and full custom argument parsers with validation and autocomplete suggestions.
-- **[Themes & Custom UI](/guide/themes_and_ui)**: Customize UI themes in `Config > Themes` and build reactive windows and components using `_K.UI` and `_K.Flux`.
-- **[API Reference](/api/)**: Full technical reference for [`MainModule` (`_K`)](/api/MainModule), [`Registry`](/api/Registry), [`Auth`](/api/Auth), [`Process`](/api/Process), [`Hook`](/api/Hook), [`UI`](/api/UI), [`Theme`](/api/Theme), [`Flux`](/api/Flux), [`Z`](/api/Z), and [`Util`](/api/Util).
+- **[Custom Commands](/guide/custom_commands):** Register custom commands, define arguments, manage command environments (`env` / `envClient`), and handle undo aliases.
+- **[Addons & Hooks](/guide/addons):** Organize shared, server, and client addons, connect to `_K.Hook` signals, and call `_K.Auth`, `_K.Process`, and `_K.Notify`.
+- **[Custom Argument Types](/guide/custom_types):** Build enum types, sequence types, and custom argument parsers with validation and autocomplete suggestions.
+- **[Themes & Custom UI](/guide/themes_and_ui):** Customize themes in `Config > Themes` and build reactive windows with `_K.UI` and `_K.Flux`.
+- **[API Reference](/api/):** Generated reference for [`MainModule` (`_K`)](/api/MainModule), [`Registry`](/api/Registry), [`Auth`](/api/Auth), [`Process`](/api/Process), [`Hook`](/api/Hook), [`UI`](/api/UI), [`Theme`](/api/Theme), [`Flux`](/api/Flux), [`Z`](/api/Z), and [`Util`](/api/Util).
 
 ### Help & Community
 
-- **[Troubleshooting](/guide/troubleshooting)**: Fix common issues such as Studio `Sandboxed` capability errors, DataStore saving in Studio, HTTP Requests for Charts, and custom command registration.
-- **[Support](/guide/support)**: Join the community Discord server, browse FAQ resources, and report bugs or feature requests.
+- **[Troubleshooting](/guide/troubleshooting):** Fix Studio `Sandboxed` capability errors, DataStore saving in Studio, HTTP requests for Charts, and custom command registration.
+- **[Support](/guide/support):** Join the community Discord server, browse the FAQ, and report bugs or feature requests.

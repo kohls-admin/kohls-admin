@@ -1,21 +1,21 @@
-name: Bug Report 🐛
-description: Report a problem you encountered with Kohl's Admin
+name: Bug Report
+description: Report a bug in Kohl's Admin
 labels: ["bug"]
 body:
   - type: checkboxes
     id: existing
     attributes:
-      label: Did you check for existing issues?
-      description: You can do this by searching https://github.com/kohls-admin/kohls-admin/issues?q=is:issue+label:bug and making sure the bug is not related.
+      label: Existing Issues
+      description: Search https://github.com/kohls-admin/kohls-admin/issues?q=is:issue+label:bug before opening a new report.
       options:
-        - label: I have searched the open and **closed** bugs.
+        - label: I searched open and closed bug reports.
           required: true
 
   - type: dropdown
     id: platform
     attributes:
       label: Platform
-      description: What platform are you seeing the problem on?
+      description: Which platform did this happen on?
       options:
         - PC
         - Mobile
@@ -27,29 +27,26 @@ body:
     id: ver
     attributes:
       label: Version
-      description: Include the version of Kohl's Admin shown in the dashboard title or by running `;version` command.
-      placeholder: ex. 0.1.13
+      description: Version shown in the dashboard status bar or by running `;version`.
+      placeholder: 0.2.3
 
   - type: textarea
     id: desc
     attributes:
       label: Description
-      description: Describe in detail what went wrong and what you expected to happen instead.
+      description: What happened, and what did you expect to happen instead?
     validations:
       required: true
 
   - type: textarea
     id: repro
     attributes:
-      label: Repro
-      description: Provide clear directions so someone else can see the issue on their machine too.
+      label: Reproduction Steps
+      description: Steps to reproduce the issue in Studio or a live server.
 
   - type: textarea
     id: logs
     attributes:
-      label: Details
+      label: Logs and Screenshots
       description: |
-        Attach anything that helps explain the problem.
-        * **Logs:** Use the `;logs` command.
-        * **Errors:** Press `F9` or type `/console` in chat.
-        **Please ATTACH files, don't paste them directly.**
+        Attach relevant logs (`;logs`) or console output (`F9` / `/console` in chat).

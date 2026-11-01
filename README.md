@@ -22,25 +22,22 @@
 
 <br/>
 <h1 align="center">Kohl's Admin</h1>
-<p align="center"><b>Trusted by 30M+ developers across 100K+ games.</b> Kohl's Admin is a strictly typed administration, moderation, and command suite for Roblox built on <a href="https://flux.kohl.gg">Flux</a> and <a href="https://github.com/kohltastrophe/Z">Z</a>.</p>
+<p align="center">An administration, moderation, and command suite for Roblox built on <a href="https://flux.kohl.gg">Flux</a> and <a href="https://github.com/kohltastrophe/Z">Z</a>. Taken by 30M+ creators since 2010 and running across 100K+ active games today.</p>
 
 ## Features
 
-- **200+ built-in commands:** Live syntax and target autocomplete, inline argument validation, command history, multi-command chaining, and shorthand target selectors (`me`, `all`, `others`, `@role`, `%team`, `~random`, `$friends`, `$distance<N`, `$group=ID>=RANK`).
-- **Layered role hierarchy:** Role-based access control with combinable roles, per-role command groups, cooldown and target limits, automatic grants for GamePasses, Groups, Badges, Friends, Assets, and Subscriptions, and cross-server `DataStore` persistence (`bans`, `members`, `settings`, `logs`).
-- **Reactive Flux dashboard:** Built-in `Commands`, `Bans`, `Members`, `Servers`, `Logs`, `Settings`, `Market`, and `About` tabs plus an in-game Instance Explorer (`;explorer`) and Building Tools (`;btools`), with custom Oklab themes and configurable keybinds across PC, Mobile, Console, and VR.
-- **Platform-integrated chat:** Native `TextChatService` and `TextChatCommand` slash-alias registration with server-enforced rate limits and per-viewer broadcast filtering.
-- **Monetization and discovery:** Sell custom GamePass, Asset, or Subscription roles, earn up to 40% creator commission on global VIP and scripted UGC purchases inside your experience, and list your place in the cross-game Kohl's Admin Charts hub.
-- **Addons, hooks, and custom types:** Extend the system with shared, server-only, or client-only addons, custom commands, custom argument parsers, and `_K.Hook` lifecycle signals.
-
-## Installation
-
-Install the [Official Creator Store Loader](https://create.roblox.com/store/asset/172732271), download the standalone `.rbxm` from [GitHub Releases](https://github.com/kohls-admin/kohls-admin/releases), or add `kohltastrophe/kohls-admin` via Wally:
+- **200+ Built-in Commands:** Run commands from chat or the command bar with live autocomplete, inline validation, and target selectors (`@role`, `%team`, `$friends`).
+- **Role-Based Permissions:** Assign combinable roles by UserId, Group rank, GamePass, Asset, or Subscription with cross-server DataStore sync.
+- **In-Game Dashboard:** Manage commands, bans, members, active servers, logs, and themes from a single window across PC, mobile, console, and VR.
+- **Chat Integration:** Registers native `TextChatService` slash commands with server rate limits and per-viewer broadcast filtering.
+- **Monetization and Discovery:** Sell custom GamePass roles, earn up to 40% commission on global VIP and UGC sales, and list your game on Kohl's Admin Charts.
+- **Addons and Hooks:** Register custom commands, argument parsers, and lifecycle hooks through shared, server, or client addon modules.
 
 ```luau
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local _K = require(ReplicatedStorage.Packages.KohlsAdmin)
 
+-- initialize with custom prefixes and admin UserIds
 _K.initialize({
 	prefix = { ";", ":" },
 	userRoles = {
@@ -49,16 +46,18 @@ _K.initialize({
 })
 ```
 
-See the [Installation Guide](https://admin.kohl.gg/guide/getting-started/installation) and [Configuration Guide](https://admin.kohl.gg/guide/getting-started/configuration) for full setup details.
+## Installation
+
+Install the [Official Creator Store Loader](https://create.roblox.com/store/asset/172732271), download the standalone `.rbxm` from [GitHub Releases](https://github.com/kohls-admin/kohls-admin/releases), or add `kohltastrophe/kohls-admin` via Wally. See the [Installation Guide](https://admin.kohl.gg/guide/getting-started/installation) and [Configuration Guide](https://admin.kohl.gg/guide/getting-started/configuration) for full setup details.
 
 ## Contributing
 
 Read the [Contributor Guidelines](CONTRIBUTING.md) for local Rojo and Dev Container setup, architecture notes, and pull request workflow.
 
-- **In-game credits:** Contributors are listed in the built-in `credits` command and `About` tab.
-- **Inside access:** Preview upcoming releases and join contributor channels in the community Discord.
-- **In-game perks:** Receive contributor benefits across participating experiences running Kohl's Admin.
-- **Bounties:** Sustained or high-impact engineering contributions are eligible for monetary compensation; see [Compensation](CONTRIBUTING.md#compensation) for details.
+- **In-Game Credits:** Contributors are listed in the built-in `credits` command and `About` tab.
+- **Early Access:** Preview upcoming releases and join contributor channels in the community Discord.
+- **In-Game Perks:** Receive contributor perks across participating games running Kohl's Admin.
+- **Bounties:** Sustained engineering contributions are eligible for monetary compensation. See [Compensation](CONTRIBUTING.md#compensation) for details.
 
 ## Support and Issues
 

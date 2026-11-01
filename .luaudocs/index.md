@@ -100,8 +100,8 @@ function yearsSinceLaunch(now) {
 }
 
 const stats = [
-	{ target: 30, suffix: "M+", label: "Developers", accent: "ui" },
-	{ target: 100, suffix: "K+", label: "Experiences", accent: "perf" },
+	{ target: 30, suffix: "M+", label: "Installs", accent: "ui" },
+	{ target: 100, suffix: "K+", label: "Active Games", accent: "perf" },
 	{ target: 200, suffix: "+", label: "Commands", accent: "auto" },
 	{ target: yearsSinceLaunch(new Date()), suffix: "+", label: "Years", accent: "addons" },
 ];
@@ -113,7 +113,7 @@ const showcase = [
 		accent: "ui",
 		kind: "interface",
 		name: "Modern interface",
-		desc: "A sleek, customizable panel that fits any game style. Pick a preset or build your own; every color, font, corner radius, and sound saves with your experience.",
+		desc: "A reactive dashboard that adapts to your game. Pick a preset or build your own, and every color, font, corner radius, and sound saves with your place.",
 		stat: "<b>Themeable</b> end to end",
 		links: [
 			{ href: TRY, label: "Try it live", external: true },
@@ -130,7 +130,7 @@ const showcase = [
 		accent: "perf",
 		kind: "runtime",
 		name: "High performance",
-		desc: "Optimized reactive UI and measured startup, so the admin system never shows up in your frame budget. Client and server log every initialization step in milliseconds.",
+		desc: "UI updates batch once per frame to stay out of your frame budget. Startup times are logged in milliseconds on both client and server so slow loads are easy to spot.",
 		stat: "<b>Zero</b> lag impact",
 		links: [
 			{ href: "/guide/intro", label: "Architecture" },
@@ -163,7 +163,7 @@ const showcase = [
 		accent: "charts",
 		kind: "discovery",
 		name: "Global charts",
-		desc: "Players browsing the charts from any participating experience can discover and join yours directly, turning the admin panel into a live discovery engine.",
+		desc: "Players browsing the charts from any participating game can find and join yours directly from the dashboard.",
 		stat: "<b>Free</b> exposure",
 		links: [
 			{ href: CHARTS, label: "See charts", external: true },
@@ -181,32 +181,32 @@ const pillars = [
 	{
 		accent: "auto",
 		title: "Smart autocomplete",
-		body: "Never guess a command syntax again. Arguments, player selectors, and enum options are suggested and type-checked on the client as you type, before anything runs.",
-		receipt: "200+ built-in commands with real-time validation, fuzzy matching, and inline argument hints.",
+		body: "Arguments, player selectors, and enum options are suggested and type-checked on the client as you type before anything runs.",
+		receipt: "200+ built-in commands with live validation, fuzzy matching, and inline argument hints.",
 		href: "/guide/getting-started/using_commands",
 		link: "using commands",
 	},
 	{
 		accent: "secure",
 		title: "Secure architecture",
-		body: "Role-based access control keeps your experience safe from abuse: every command and target is verified on the server against the caller's hierarchy rank before execution.",
+		body: "Role-based access control protects your game from abuse. Every command and target is verified on the server against the caller's rank before running.",
 		receipt: "Hierarchical roles, anti-abuse target guards, interactive command requests, and audit logs.",
 		href: "/api/Auth",
 		link: "the auth api",
 	},
 	{
 		accent: "setup",
-		title: "Effortless setup",
-		body: "Drop the loader into ServerScriptService, publish, and you are done. Automatic live updates keep every server on the latest release without republishing your place.",
+		title: "One-model setup",
+		body: "Drop the loader into ServerScriptService, publish, and you're done. Automatic live updates keep every server on the latest release without republishing your place.",
 		receipt: "One model to install with persistent in-game DataStore settings and legacy KAI migration.",
 		href: "/guide/getting-started/installation",
 		link: "install guide",
 	},
 	{
 		spectrum: true,
-		title: "Limitless customization",
-		body: "Extend functionality with community-made addons, or register your own commands, custom argument types, and reactive UI themes against the same API the built-ins use.",
-		receipt: "MIT licensed source with a strictly versioned addon, hook, and type registry API.",
+		title: "Extensible architecture",
+		body: "Install community addons or register your own commands, custom argument types, and UI themes with the same API the built-ins use.",
+		receipt: "MIT-licensed source with an addon, hook, and custom type registry API.",
 		href: "/guide/custom_commands",
 		link: "custom commands",
 	},
@@ -216,22 +216,22 @@ const contributions = [
 	{
 		accent: "ui",
 		name: "In-game credits",
-		desc: "Your name is featured directly inside the credits command across every participating experience running Kohl's Admin.",
+		desc: "Your name appears in the credits command and About tab across every participating game running Kohl's Admin.",
 	},
 	{
 		accent: "auto",
-		name: "Inside access",
-		desc: "Gain access to exclusive features, early previews, and private contributor channels within the community.",
+		name: "Early access",
+		desc: "Preview upcoming releases and join contributor channels in the community Discord.",
 	},
 	{
 		accent: "money",
-		name: "In-game benefits",
-		desc: "Enjoy special contributor perks and recognition inside participating experiences that use Kohl's Admin.",
+		name: "In-game perks",
+		desc: "Receive contributor perks and recognition inside participating games that run Kohl's Admin.",
 	},
 	{
 		accent: "addons",
 		name: "Monetary bounties",
-		desc: "We value your time and engineering effort, with monetary compensation available for exceptional contributions.",
+		desc: "Sustained or high-impact engineering contributions are eligible for monetary compensation.",
 	},
 ];
 
@@ -340,14 +340,13 @@ onBeforeUnmount(() => {
 						Embrace <span class="hl-spectrum">creativity</span>, not&nbsp;chaos
 					</h1>
 					<p class="hero-claim">
-						One model, dropped into your experience, and every command you will
-						ever need to run it.
+						Drop one model into your place to get 200+ commands, role permissions,
+						and live moderation tools.
 					</p>
 					<p class="hero-lede">
-						Trusted across Roblox for over a decade and a half &mdash;
-						<strong>battle-tested moderation</strong>,
-						<strong>role-based access control</strong>, and live-ops tooling
-						that scales from solo projects to front-page hits.
+						Taken by <strong>30M+ creators</strong> since 2010 and running across
+						<strong>100K+ active games</strong> today. Built for everything from
+						solo projects to front-page games.
 					</p>
 					<div class="hero-actions">
 						<a :href="MODEL" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Get the model</a>
@@ -426,9 +425,8 @@ onBeforeUnmount(() => {
 					Power meets <span class="hl-spectrum-inv">simplicity</span>.
 				</h2>
 				<p class="lede">
-					Everything you need to run an experience, from the first insert to
-					the hundred-thousandth session &mdash; engineered to stay out of your
-					frame budget and fit right into your UI.
+					Built to stay out of your frame budget and match your game's UI from
+					the first insert.
 				</p>
 			</div>
 			<div class="showcase-grid">
@@ -564,8 +562,8 @@ onBeforeUnmount(() => {
 					Ready to upgrade your <span class="hl-spectrum">game</span>?
 				</h2>
 				<p class="lede">
-					Join millions of developers using the most trusted admin system on
-					Roblox. It is free, it is open source, and it takes one insert.
+					Join millions of developers using Kohl's Admin on Roblox. It's free,
+					open source, and installs as a single model.
 				</p>
 				<div class="hero-actions cta-actions">
 					<a :href="MODEL" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Get Kohl's Admin</a>

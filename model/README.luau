@@ -4,25 +4,18 @@ return [[
 ├┤ │││├┴┐├┬┘├─┤│  ├┤   │  ├┬┘├┤ ├─┤ │ │└┐┌┘│ │ └┬┘   ││││ │ │   │  ├─┤├─┤│ │└─┐
 └─┘┴ ┴└─┘┴└─┴ ┴└─┘└─┘  └─┘┴└─└─┘┴ ┴ ┴ ┴ └┘ ┴ ┴  ┴ ┘  ┘└┘└─┘ ┴   └─┘┴ ┴┴ ┴└─┘└─┘o
 
-Trusted by millions of developers, Kohl's Admin is your all-in-one solution for effortless experience management.
-Streamline moderation, elevate gameplay, and nurture a thriving community, all with a powerful, versatile, and user-friendly tool.
+Kohl's Admin is an administration, moderation, and command suite for Roblox. Taken by 30M+ creators since 2010, it runs across 100K+ active games today.
 
-Use Kohl's Admin to:
-	- 🛠️ Easily moderate your game!
-	- 💵 Earn Robux by selling gamepasses and more!
-	- ✨ Enhance your experience with fun and useful commands!
+Quick Start:
+	1. Move the Kohl's Admin folder into ServerScriptService.
+	2. Configure roles, bans, and marketplace grants in Config -> Settings.
+	3. Add custom commands or addons under Config -> Addons.
+	4. Enable Allow Third Party Sales (File -> Game Settings -> Security) to earn up to 40% commission on in-game VIP and UGC sales.
 
-💡 Have a suggestion or a problem? Check out our community resources:
-https://devforum.roblox.com/t/-/3163723
+Documentation & Guides:
+https://admin.kohl.gg
 
-🚀 We've poured thousands of hours into Kohl's Admin. If you find it helpful, we'd love for you to leave a review – your feedback is invaluable:
+Creator Store Model:
 https://create.roblox.com/store/asset/172732271/Kohls-Admin
-
-⭐ Getting Started:
-	- Move Kohl's Admin in 'ServerScriptService`
-	- Add custom commands under Config -> Addons
-	- Configure roles, gamepasses, and more in Config -> Settings
-	- To sell gamepasses with Kohl's Admin 'ThirdPartySales' must be enabled:
-		- Go to File -> Game Settings -> Security -> Tick 'Allow Third Party Sales' and Save
 
 ]]

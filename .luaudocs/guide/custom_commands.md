@@ -16,8 +16,8 @@ Custom commands let you extend Kohl's Admin with experience-specific tools, auto
 Custom commands are registered inside an **Addon**, a [ModuleScript](https://create.roblox.com/docs/reference/engine/classes/ModuleScript) placed in `Kohl's Admin > Config > Addons` (or tagged with `"Kohl's Admin Addon"` via `CollectionService`) that returns a `function(_K)`.
 
 :::danger Keep Command Addons Shared
-Do **not** include `"Server"` or `"Client"` in the `ModuleScript` name of an addon that registers commands!
-Addons with `"Server"` or `"Client"` in their name only execute on that side. Commands **must** be registered on both the server and the client so the client's Command Bar autocomplete, validation, and Commands UI know the command exists.
+Don't include `"Server"` or `"Client"` in the `ModuleScript` name of an addon that registers commands.
+Addons with `"Server"` or `"Client"` in their name only run on that side. Commands must be registered on both the server and the client so autocomplete, validation, and the Commands tab know the command exists.
 :::
 
 Create a `ModuleScript` named `CustomCommands` inside `Kohl's Admin > Config > Addons`:
@@ -123,12 +123,12 @@ type ArgumentDefinition = {
 ```
 
 :::warning Optional Boolean Arguments
-When `optional = true`, an omitted argument is passed to `run` / `runClient` as `nil`. Always check `if arg == nil` rather than `if not arg` when applying a default value to an optional `boolean` argument!
+When `optional = true`, an omitted argument is passed to `run` / `runClient` as `nil`. Always check `if arg == nil` rather than `if not arg` when applying a default value to an optional `boolean` argument.
 :::
 
 ### Built-In Argument Types
 
-Kohl's Admin registers a rich set of built-in argument types in `src/Shared/DefaultTypes`. Most singular types also have a plural **listable** counterpart (accepting comma-separated lists like `arg1,arg2` and passing an array `{ T }` to `run`):
+Kohl's Admin registers its built-in argument types in `src/Shared/DefaultTypes`. Most singular types also have a plural **listable** counterpart that accepts comma-separated lists like `arg1,arg2` and passes an array `{ T }` to `run`:
 
 #### Primitives & Strings
 
@@ -138,7 +138,7 @@ Kohl's Admin registers a rich set of built-in argument types in `src/Shared/Defa
 | `"integer"` | `"integers"` | `number` | Whole numbers only (`math.floor(n) == n`). |
 | `"number"` | `"numbers"` | `number` | Any valid number (integer or decimal). |
 | `"string"` | `"strings"` | `string` | **Filtered by default** via `TextService` for safe public broadcast. If it is the last argument in `args`, consumes the remainder of the command text. |
-| `"rawString"` | `"rawStrings"` | `string` | **Unfiltered** raw string. Use only for internal identifiers, asset names, or code; never display unfiltered `rawString` text to other players! |
+| `"rawString"` | `"rawStrings"` | `string` | **Unfiltered** raw string. Use only for internal identifiers, asset names, or code. Never display unfiltered `rawString` text to other players. |
 | `"chatString"` | - | `string` | For player-to-player messages sent through `_K.Chat.send`, which filters the text for broadcast and rate-limits the sender. |
 
 #### Players, Users & Roles
@@ -146,7 +146,7 @@ Kohl's Admin registers a rich set of built-in argument types in `src/Shared/Defa
 | Type | Listable Type | Parsed Value | Notes |
 | :--- | :--- | :--- | :--- |
 | `"player"` | `"players"` | `Player` | Online `Player` instance(s). Supports all [Target Selectors](/guide/getting-started/using_commands#player-target-selectors) (`me`, `*`, `others`, `@role`, `%team`, `~random`, `$special`). |
-| `"userId"` | `"userIds"` | `number` | Online or recently-cached player `UserId`, or any raw numeric `UserId` for offline users. Also supports all Target Selectors! |
+| `"userId"` | `"userIds"` | `number` | Online or recently-cached player `UserId`, or any raw numeric `UserId` for offline users. Also supports all Target Selectors. |
 | `"member"` | `"members"` | `string` | Stringified `UserId` of a user in `_K.Data.members` (supports `me` and `*`/`all`). |
 | `"ban"` | `"bans"` | `string` | Stringified `UserId` of a banned user in `_K.Data.bans` (supports `*`/`all`). |
 | `"role"` | `"roles"` | `string` | Role ID (`_key`) in `_K.Data.roles` lower than the caller's rank. |
@@ -236,7 +236,7 @@ The first parameter passed to both `run` and `runClient` is the command `context
 | :--- | :--- | :--- |
 | `context._K` | `_K` | Reference to the root [`MainModule` (`_K`)](/api/MainModule) API table. |
 | `context.alias` | `string` | The exact command name or alias the player typed (e.g. `"unfly"`). |
-| `context.undo` | `boolean` | `true` if `context.alias` starts with `"un"` (useful for sharing one `run` function between `fly` and `unfly`!). |
+| `context.undo` | `boolean` | `true` if `context.alias` starts with `"un"` (useful for sharing one `run` function between `fly` and `unfly`). |
 | `context.from` | `number` | `UserId` of the player who ran the command. |
 | `context.fromPlayer` | `Player?` | `Player` instance of the caller (if currently in the server). |
 | `context.fromRank` | `number` | Numeric authority rank of the caller (`0` to `math.huge`). |

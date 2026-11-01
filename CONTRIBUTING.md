@@ -1,197 +1,98 @@
-# Contributing to Kohl's Admin: Let's Build Together!
+# Contributing to Kohl's Admin
 
-We're thrilled you're interested in contributing to Kohl's Admin! Your time and effort are greatly appreciated.
+This guide covers local development setup, vendored subtrees, documentation previews, pull request conventions, and contributor perks.
 
-Whether you're a seasoned developer or just starting out, there are ways for you to get involved.
+## Local Setup
 
-## How You Can Contribute
+1. Install [Git](https://git-scm.com/), [Rokit](https://github.com/rojo-rbx/rokit), and [Roblox Studio](https://create.roblox.com/docs/studio/setting-up-roblox-studio).
+2. [Fork the repository](https://github.com/kohls-admin/kohls-admin/fork) and clone your fork:
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/kohls-admin.git
+   cd kohls-admin
+   ```
+3. Install project tools and the Rojo Studio plugin:
+   ```bash
+   git config pull.rebase true
+   rokit install
+   rojo plugin install
+   ```
+4. Start the Rojo dev server and connect from the Rojo plugin in Roblox Studio:
+   ```bash
+   rojo serve test
+   ```
 
-- [Improve the Code](#improve-the-code)
-- [Enhance the Documentation](#enhance-the-documentation)
-- [Report Bugs & Suggest Features](#report-bugs--suggest-features)
-- [Ask Questions & Join the Community](https://discord.gg/kohl)
+### Vendored Libraries
 
-## Improve the Code
-
-### Setup
-
-#### Local Development
-
-1. Setup Your Environment
-
-   - Install the Essentials
-
-     - [Git](https://git-scm.com/)
-     - [Rokit](https://github.com/rojo-rbx/rokit)
-     - [Roblox Studio](https://create.roblox.com/docs/studio/setting-up-roblox-studio)
-
-2. Fork and Clone the Repository
-
-   - **[Create a fork](https://github.com/kohls-admin/kohls-admin/fork)** of the repository.
-   - **Clone your fork**, and run the initial setup commands:
-     ```bash
-     git clone https://github.com/YOUR-USERNAME/kohls-admin.git
-     ```
-
-3. Setup Your Local Repository
-
-   - **Navigate to the Project Directory:**
-     ```bash
-     cd kohls-admin
-     ```
-   - **Setup Git:**
-     ```bash
-     git config pull.rebase true;
-     ```
-   - **Install Project Dependencies:**
-     ```bash
-     rokit install;
-     rojo plugin install;
-     ```
-
-4. Test Your Changes in Roblox Studio
-
-   - **Start the Rojo Server:**
-     ```bash
-     rojo serve test
-     ```
-   - **Connect Studio to Rojo:** Open Roblox and use the [Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin) to connect to the server you just started.
-
-#### Vendored Libraries
-
-Flux (`vendor/flux`), Z (`vendor/z`), and Building Tools (`vendor/f3x`) live in `vendor/` as [Git subtrees](https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging#_subtree_merge) of each library's `dist` branch (holding only its runtime), so a plain `git clone` builds every place without initializing submodules. Change them in their own repositories, then pull the updated `dist` branch:
+Flux (`vendor/flux`), Z (`vendor/z`), and Building Tools (`vendor/f3x`) live in `vendor/` as [Git subtrees](https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging#_subtree_merge) of each library's `dist` branch. A plain `git clone` builds every place without initializing submodules. Make changes in each library's own repository, then pull the updated `dist` branch:
 
 ```bash
 git remote add flux https://github.com/kohltastrophe/flux.git
 git subtree pull --prefix=vendor/flux flux dist --squash
 ```
 
-#### Development Container
+### Development Container
 
-Open the repository in a container using VS Code's **Reopen in Container**, Zed's **Open in Container**, or another Dev Containers-compatible client. Docker or Podman must be installed locally; GitHub Codespaces runs the same configuration in the cloud.
+Open the repository in a container using VS Code's **Reopen in Container**, Zed's **Open in Container**, or another Dev Containers client. Docker or Podman is required locally, and GitHub Codespaces runs the same configuration in the cloud.
 
-The container includes Node.js 22, Luaudocs, and Rokit. Setup installs the versions in `rokit.toml`, including Rojo, Selene, StyLua, and Luau LSP. Tools are on the container's `PATH` for any editor or terminal. VS Code and Zed extensions are configured automatically; Zed's project settings enable Roblox types and StyLua formatting.
+The container includes Node.js 22, Luaudocs, and the tools pinned in `rokit.toml` (Rojo, Selene, StyLua, and Luau LSP). Run `rojo serve test` to start Rojo on forwarded port **34872**, and connect from Roblox Studio on your host machine.
 
-Run `rojo serve test` to start Rojo on forwarded port **34872**. Roblox Studio and its Rojo plugin run on your host machine. To preview documentation, run:
+To preview the documentation site on port **5173**, run:
 
 ```bash
 luaudocs dev -- --host 0.0.0.0 --port 5173 --strictPort
 ```
 
-Open forwarded port **5173** in your browser. Rebuild the container after changing its Dockerfile or configuration. To reinstall tools after a `rokit.toml` change, run `rokit install --no-trust-check`.
+Rebuild the container after changing its Dockerfile or configuration. After editing `rokit.toml`, run `rokit install --no-trust-check`.
 
-#### GitHub Codespaces
+### GitHub Codespaces
 
-1. Open this project in GitHub Codespaces
+1. Click **Open in GitHub Codespaces** on the repository page (or **Code > Codespaces > Create codespace on main**).
+   ![Create codespace on main](https://github.com/user-attachments/assets/229f37b8-9650-4809-b79a-37a565f6c855)
+2. [Install the Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin) in Roblox Studio.
+3. Start the Rojo server in the codespace terminal:
+   ```bash
+   rojo serve test
+   ```
+4. Open the **PORTS** tab, right-click **Rojo (34872)**, and set **Port Visibility** to **Public**.
+   ![Screenshot of the pop-up menu for a forwarded port, with the "Port Visibility" option selected and "Private" selected in the submenu.](https://docs.github.com/assets/cb-59966/mw-1440/images/help/codespaces/make-public-option.webp)
+5. Copy the forwarded port URL, strip `https://` and the trailing `/`, paste the host into the Rojo plugin in Studio with port `80`, and click **Connect**.
+   ![Screenshot of the "Ports" panel. The copy icon, which copies a forwarded port's URL, is highlighted with an orange outline.](https://docs.github.com/assets/cb-19922/mw-1440/images/help/codespaces/copy-icon-port-url.webp)
 
-   - Click the "Open in GitHub Codespaces" badge or the Code button, then click the Codespaces tab, and "Create codespace on main."
-     ![Create codespace on main](https://github.com/user-attachments/assets/229f37b8-9650-4809-b79a-37a565f6c855)
+## Submitting a Pull Request
 
-2. Setup the Rojo plugin
+1. Pick an [open issue](https://github.com/kohls-admin/kohls-admin/issues?q=is%3Aopen+is%3Aissue+no%3Aassignee) (or a [good first issue](https://github.com/kohls-admin/kohls-admin/issues?q=is%3Aopen+is%3Aissue+no%3Aassignee+label%3A%22good+first+issue%22)) and create a branch:
+   ```bash
+   git checkout -b feat/my-change
+   ```
+2. Format and lint your code with StyLua, Selene, and Luau LSP, and follow the [Roblox Lua Style Guide](https://roblox.github.io/lua-style-guide/).
+3. Commit your changes with a short Conventional Commit subject line (`feat: ...`, `fix: ...`, `docs: ...`) and push your branch:
+   ```bash
+   git commit -m "feat: add example command"
+   git push origin feat/my-change
+   ```
+4. Open a pull request on [GitHub](https://github.com/kohls-admin/kohls-admin) explaining why the change exists and what behavior changed.
 
-   - [Install the Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin) on Roblox Studio from [GitHub](https://github.com/rojo-rbx/rojo/releases) or [Roblox.com](https://www.roblox.com/library/13916111004/Rojo).
+## Editing Documentation
 
-3. Test Your Changes in Roblox Studio
+1. Install [Node.js v22+](https://nodejs.org/en/) and start the local preview server:
+   ```bash
+   npx luaudocs dev
+   ```
+2. Edit the Markdown pages under `.luaudocs/` and preview your changes live in the browser before opening a pull request.
 
-   - **Start the Rojo Server:**
-     ```bash
-     rojo serve test
-     ```
-   - **Change the port visibility to Public:** Open the terminal in your codespace. Click the **PORTS** tab. Right-click the port **Rojo (34872)**, click the **Port Visibility**, then click **Public**.
-     ![Screenshot of the pop-up menu for a forwarded port, with the "Port Visibility" option selected and "Private" selected in the submenu.](https://docs.github.com/assets/cb-59966/mw-1440/images/help/codespaces/make-public-option.webp)
-   - **Copy the forwarded port address:** To the right of the local address for the port, click the copy icon.
-     ![Screenshot of the "Ports" panel. The copy icon, which copies a forwarded port's URL, is highlighted with an orange outline.](https://docs.github.com/assets/cb-19922/mw-1440/images/help/codespaces/copy-icon-port-url.webp)
-   - **Connect Studio to Rojo:** Open Roblox and in the [Rojo plugin](https://rojo.space/docs/v7/getting-started/installation/#installing-the-plugin), paste the port address you copied. Remove the `https://` at the beginning and the `/` of the forwarded address. It should look something like this: `probable-memory-w44vgv9v4vpfjwj-34872.app.github.dev`, and set the port as `80`. Finally, connect to the server you just started.
+## Reporting Bugs and Feature Requests
 
-### Contributing
-
-1. Make Your Changes
-
-   - **Choose an Issue:** Browse our [list of issues](https://github.com/kohls-admin/kohls-admin/issues?q=is%3Aopen+is%3Aissue+no%3Aassignee) and find one that interests you, or create your own. If you're new look at our [good first issues](https://github.com/kohls-admin/kohls-admin/issues?q=is%3Aopen+is%3Aissue+no%3Aassignee+label%3A%22good+first+issue%22).
-   - **Create a New Branch:** Before making any changes, create a new branch for your work. This keeps your changes separate from the main codebase.
-     ```bash
-     git checkout -b my-new-feature
-     ```
-   - **Make Your Changes:** Use your favorite code editor to modify the project files. Follow the [Roblox Lua Style Guide](https://roblox.github.io/lua-style-guide/) to maintain consistency.
-
-2. Save Your Changes
-
-   - **Commit Your Changes:** Once you're happy with your changes, commit them with a clear and descriptive message.
-     ```bash
-     git add .
-     git commit -m "Add feature XYZ"
-     ```
-   - **Push Your Changes:** Push your branch to your forked repository on GitHub.
-     ```bash
-     git push origin my-new-feature
-     ```
-
-3. Create a Pull Request
-
-   - **Open a Pull Request:** Go to [Kohl's Admin on GitHub](https://github.com/kohls-admin/kohls-admin) and click the `Compare & pull request` button.
-   - **Provide Details:** Write a clear description of your changes, referencing any relevant issues.
-   - **Submit Your Changes:** Click the `Create pull request` button.
-
-4. Review and Collaboration
-
-   - **Address Feedback:** Our team will review your pull request and provide feedback, be prepared to make additional changes or clarifications.
-   - **Collaborate:** Work with us to refine your code and ensure it meets our standards.
-
-5. Merge and Celebrate! 🎉
-   - **Merge:** Once your pull request is approved, it will be merged into the [main](https://github.com/kohls-admin/kohls-admin/tree/main) branch.
-   - **Celebrate:** You've made a valuable contribution to Kohl's Admin! Thank you!
-
-## Enhance the Documentation
-
-1. Setup Your Environment
-
-   - Follow steps 1-2 outlined in the [Improve the Code](#improve-the-code) section above.
-   - [Install Node.js v22+](https://nodejs.org/en/)
-
-2. Run the Development Server
-
-   - **Navigate to the Project Directory:**
-     ```bash
-     cd kohls-admin
-     ```
-   - **Start the Server:**
-     ```bash
-     npx luaudocs dev
-     ```
-
-3. Edit Documentation
-   - **Navigate to the `.luaudocs/guide/` folder:** This is where you'll find the markdown files for our documentation.
-   - **Create or Edit Pages:** Use your favorite text editor to create new pages or modify existing ones.
-   - **Preview Your Changes:** The development server will automatically update as you make changes.
-   - **Submit Your Changes:** Follow steps 5-9 outlined in the [Improve the Code](#improve-the-code) section above.
-
-## Report Bugs & Suggest Features
-
-Check existing open and **closed** issues to make sure someone else hasn't created one! **We close duplicate issues immediately!**
-
-_If an issue was closed after a fix, but the bug has returned or functionality was lost, please create a new issue!_
+Search open and closed issues before filing a new one, as duplicate issues are closed right away. If a closed bug regresses, open a new issue linking the original report.
 
 - [New Bug Report](https://github.com/kohls-admin/kohls-admin/issues/new?assignees=&labels=bug&projects=&template=bug.yml)
 - [New Feature Request](https://github.com/kohls-admin/kohls-admin/issues/new?assignees=&labels=enhancement&projects=&template=feature.yml)
 
-_Please be patient while we address your issue!_
-
-The issue will close when a related [pull request](https://github.com/kohls-admin/kohls-admin/pulls) is merged to the [main](https://github.com/kohls-admin/kohls-admin/tree/main) branch of Kohl's Admin.
-
 ## Compensation
 
-We deeply appreciate all contributions, big and small. While most contributions are voluntary, we recognize that exceptional, sustained efforts may warrant monetary compensation.
+Sustained or high-impact engineering contributions are eligible for monetary compensation. Reach out on [Discord](https://discord.gg/kohl) if you want to discuss a bounty or ongoing work.
 
-- **Eligibility:** We consider compensation for contributions that have a significant impact on the project or demonstrate a long-term commitment.
-- **Expressing Interest:** If you believe your contributions meet these criteria, please reach out to us on [Discord](https://discord.gg/kohl).
+All contributors also receive:
 
-Even if monetary compensation isn't possible, we value your contributions and will recognize them through:
-
-- **In-game Credits:** Earn recognition within Kohl's Admin
-- **Insider Access:** Access to exclusive features or early previews
-- **Special Benefits:** Cosmetic benefits and free VIP commands within Kohl's Admin
-- **Public Acknowledgement:** We'll highlight your contributions in our community channels and project documentation
-
-## Let's Get Started!
-
-We're excited to have you join our community! If you have any questions or need help getting started, don't hesitate to reach out on [Discord](https://discord.gg/kohl). Happy contributing!
+- **In-Game Credits:** Listed in the `credits` command and `About` tab across participating games.
+- **Early Access:** Access to contributor channels and upcoming release previews.
+- **In-Game Perks:** Cosmetic perks and VIP commands inside participating games running Kohl's Admin.

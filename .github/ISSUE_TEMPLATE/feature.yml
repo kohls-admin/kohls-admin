@@ -1,19 +1,19 @@
-name: Feature Request ✨
+name: Feature Request
 description: Suggest an improvement or new feature for Kohl's Admin
 labels: ["enhancement"]
 body:
   - type: checkboxes
     attributes:
-      label: Did you check for existing issues?
-      description: You can do this by searching https://github.com/kohls-admin/kohls-admin/issues?q=is:issue+label:enhancement and making sure the request is not related.
+      label: Existing Requests
+      description: Search https://github.com/kohls-admin/kohls-admin/issues?q=is:issue+label:enhancement before opening a new request.
       options:
-        - label: I have searched the open and **closed** feature requests.
+        - label: I searched open and closed feature requests.
           required: true
 
   - type: textarea
     id: desc
     attributes:
       label: Description
-      description: Explain what you'd like to see added or changed, why it's valuable, and what the current situation is like.
+      description: What would you like added or changed, and what problem does it solve?
     validations:
       required: true

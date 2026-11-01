@@ -139,4 +139,4 @@ To prevent abuse between admins of equal authority, commands marked with `should
 When `commandRequests = true` in `Settings` and you target a player with an equal or higher rank:
 1. Kohl's Admin sends a **Command Request** dialog to the target player showing the exact command you want to run on them.
 2. You receive a notification that the request was sent.
-3. If the target player clicks **Accept**, the command executes immediately; if they click **Deny**, you are notified that the request was declined.
+3. If the target player clicks **Accept**, the command runs right away. If they click **Deny**, you're notified that the request was declined.
