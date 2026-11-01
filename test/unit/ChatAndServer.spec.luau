@@ -81,6 +81,14 @@ describe("Chat and Server", function()
 
 			-- limitReason checks nil, CanUserChatAsync, and reason cooldown (notifying player when rate-limited)
 			expect(Chat.limitReason(admin.UserId, nil)).toBeNil()
+			local tcs = h.env.game:GetService("TextChatService")
+			local tcsMethods = rawget(tcs, "_methods")
+			local origCanUsersChat = tcsMethods.CanUsersChatAsync
+			-- When all target players can chat with admin, limitReason doesn't spend the cooldown
+			local allowedReason, restrictedReason = Chat.limitReason(admin.UserId, "Friendly kick", { guest })
+			expect(allowedReason).toBe("Friendly kick")
+			expect(restrictedReason).toBe("Friendly kick")
+
 			expect(Chat.limitReason(admin.UserId, "First valid reason")).toBe("First valid reason")
 
 			local notifiedReason = nil
@@ -90,9 +98,16 @@ describe("Chat and Server", function()
 			expect(Chat.limitReason(admin.UserId, "Second rate-limited reason")).toBeNil()
 			expect(string.find(tostring(notifiedReason), "Reason removed:", 1, true) ~= nil).toBe(true)
 
+			-- When cooling down with a restricted target, chat-allowed targets still get allowedReason while restricted get nil
+			tcsMethods.CanUsersChatAsync = function(_self, _from, to)
+				return to ~= guest.UserId
+			end
+			local allowedOnCd, restrictedOnCd = Chat.limitReason(admin.UserId, "Partial kick reason", { guest })
+			expect(allowedOnCd).toBe("Partial kick reason")
+			expect(restrictedOnCd).toBeNil()
+			tcsMethods.CanUsersChatAsync = origCanUsersChat
+
 			-- CanUserChatAsync returning false blocks limitReason and limitBroadcast
-			local tcs = h.env.game:GetService("TextChatService")
-			local tcsMethods = rawget(tcs, "_methods")
 			local origCanChat = tcsMethods.CanUserChatAsync
 			tcsMethods.CanUserChatAsync = function()
 				return false
@@ -114,9 +129,14 @@ describe("Chat and Server", function()
 
 			local sender = h.env:addPlayer(101, "SenderAdmin")
 			local target = h.env:addPlayer(102, "TargetUser")
-			local _bystander = h.env:addPlayer(103, "BystanderUser")
+			local friend = h.env:addPlayer(103, "BystanderUser")
 			Auth.userRoleAdd(sender.UserId, "admin")
 			local context = { from = sender.UserId, fromPlayer = sender }
+
+			-- sender can chat with friend (103), but cannot chat with target (102)
+			tcsMethods.CanUsersChatAsync = function(_self, _from, to)
+				return to ~= target.UserId
+			end
 
 			local packets = {}
 			Remote.ChatSystem.Fire = function(_self, plr, kind, text, from, data, id)
@@ -183,13 +203,33 @@ describe("Chat and Server", function()
 			expect(Chat.isChannel).toBeNil()
 			expect(Chat.canReply).toBeNil()
 
-			-- messages that reach other players are limited to one a minute, shared by every kind but vote
+			-- messaging players the sender can chat with is never limited, while restricted players are limited to 1/60s
 			table.clear(packets)
 			local limitedId, limitedErr = Chat.send(context, "hint", "Too soon", { target })
 			expect(limitedId).toBeNil()
 			expect(string.find(tostring(limitedErr), "Wait", 1, true) ~= nil).toBe(true)
 			expect(#packets).toBe(0)
-			-- messaging only yourself is never limited
+
+			-- broadcasting to both restricted and chat-allowed players while on cooldown skips restricted and delivers to allowed
+			local skipNotices = {}
+			Remote.Notify.Fire = function(_self, plr, payload)
+				table.insert(skipNotices, { to = plr.UserId, text = payload.Text })
+			end
+			local partialId, partialErr, partialDelivered = Chat.send(context, "message", "Partial broadcast")
+			expect(type(partialId)).toBe("string")
+			expect(partialErr).toBeNil()
+			expect(reached(partialDelivered)).toEqual({ 101, 103 })
+			expect(reached()).toEqual({ 101, 103 })
+			expect(#skipNotices).toBe(1)
+			expect(string.find(skipNotices[1].text, "Players you can't chat with were skipped.", 1, true) ~= nil).toBe(
+				true
+			)
+
+			-- messaging only yourself or a player you can chat with is never limited
+			table.clear(packets)
+			local _, _, friendOnly = Chat.send(context, "hint", "Friend", { friend })
+			expect(reached(friendOnly)).toEqual({ 103 })
+			table.clear(packets)
 			local _, _, selfOnly = Chat.send(context, "hint", "Self", { sender })
 			expect(reached(selfOnly)).toEqual({ 101 })
 			local voteId, voteErr, voters = Chat.send(context, "vote", "Own timer?", { target })
@@ -209,7 +249,7 @@ describe("Chat and Server", function()
 				return true
 			end
 
-			-- text that can't be filtered isn't sent
+			-- text that can't be filtered isn't sent and does not spend the cooldown
 			table.clear(packets)
 			textMethods.FilterStringAsync = function()
 				error("filter down")
@@ -217,7 +257,6 @@ describe("Chat and Server", function()
 			local unfilteredId, unfilteredErr = Chat.send(context, "message", "Unfiltered")
 			expect(unfilteredId).toBeNil()
 			expect(string.find(tostring(unfilteredErr), "filtered", 1, true) ~= nil).toBe(true)
-			h.env:step(61)
 			textMethods.FilterStringAsync = function()
 				return {
 					GetNonChatStringForBroadcastAsync = function()
@@ -227,6 +266,20 @@ describe("Chat and Server", function()
 			end
 			expect((Chat.send(context, "message", "Unfiltered"))).toBeNil()
 			expect(#packets).toBe(0)
+			-- cooldown was not spent by filter failures, so once filtering recovers it sends immediately
+			textMethods.FilterStringAsync = function(_self, text)
+				return {
+					GetNonChatStringForBroadcastAsync = function()
+						return text
+					end,
+				}
+			end
+			local recoveredId, recoveredErr, recoveredDelivered =
+				Chat.send(context, "message", "Recovered after filter error", { target })
+			expect(type(recoveredId)).toBe("string")
+			expect(recoveredErr).toBeNil()
+			expect(reached(recoveredDelivered)).toEqual({ 102 })
+			table.clear(packets)
 
 			-- global messages were already filtered in their origin server
 			local globalId, globalErr, globalDelivered =
@@ -1765,17 +1818,28 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			Harness.seedRoles(_K.Data)
 			local p1 = sh.env:addPlayer(101, "Admin1")
 			local p2 = sh.env:addPlayer(102, "Admin2")
+			local p3 = sh.env:addPlayer(103, "Admin3")
 			p1:SetAttribute("_K_READY", true)
 			p2:SetAttribute("_K_READY", true)
+			p3:SetAttribute("_K_READY", true)
 			_K.Auth.userRoleAdd(101, "superadmin")
 			_K.Auth.userRoleAdd(102, "superadmin")
+			_K.Auth.userRoleAdd(103, "superadmin")
 
-			local receivedBy1, receivedBy2 = {}, {}
+			-- p1 can chat with p3 (103), but cannot chat with p2 (102)
+			local tcsMethods = rawget(sh.env.game:GetService("TextChatService"), "_methods")
+			tcsMethods.CanUsersChatAsync = function(_self, _from, to)
+				return to ~= 102
+			end
+
+			local receivedBy1, receivedBy2, receivedBy3 = {}, {}, {}
 			_K.Remote.Log.Fire = function(_self, plr, log)
 				if plr == p1 then
 					table.insert(receivedBy1, table.clone(log))
 				elseif plr == p2 then
 					table.insert(receivedBy2, table.clone(log))
+				elseif plr == p3 then
+					table.insert(receivedBy3, table.clone(log))
 				end
 			end
 
@@ -1785,9 +1849,10 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			expect(firstLog[1]).toBe(";kick Guest First reason")
 			expect(receivedBy1[#receivedBy1][1]).toBe(";kick Guest First reason")
 			expect(receivedBy2[#receivedBy2][1]).toBe(";kick Guest First reason")
+			expect(receivedBy3[#receivedBy3][1]).toBe(";kick Guest First reason")
 			expect(_K.Data.Sync.logs[#_K.Data.Sync.logs][1]).toBe(";kick Guest First reason")
 
-			-- 2. Second command log within 60s sends redacted liveText to other admins, then reveals after its full 60s cooldown
+			-- 2. Second command log within 60s sends full log to chat-allowed p3 and redacted liveText to restricted p2, then reveals after 60s
 			local syncCountBefore = #_K.Data.Sync.logs
 			_K.log(";kick Guest Second reason", "COMMAND", 101, true, ";kick Guest …")
 			world:run(0.1)
@@ -1795,7 +1860,9 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			expect(secondStored[1]).toBe(";kick Guest …")
 			expect(receivedBy1[#receivedBy1][1]).toBe(";kick Guest Second reason")
 			expect(receivedBy2[#receivedBy2][1]).toBe(";kick Guest …")
+			expect(receivedBy3[#receivedBy3][1]).toBe(";kick Guest Second reason")
 			expect(#_K.Data.Sync.logs).toBe(syncCountBefore)
+			local p3CountBeforeReveal = #receivedBy3
 
 			-- Another redacted log 30s later must not flush early when the first 60s timer fires
 			world:run(30)
@@ -1803,11 +1870,14 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			world:run(0.1)
 			local laterStored = _K.Data.logs[#_K.Data.logs]
 			expect(laterStored[1]).toBe(";kick Guest …")
+			expect(receivedBy3[#receivedBy3][1]).toBe(";kick Guest Later reason")
+			p3CountBeforeReveal = #receivedBy3
 
-			-- Advance 31s (61s total): secondStored reveals, while laterStored remains redacted for another ~30s
+			-- Advance 31s (61s total): secondStored reveals to p2, while p3 (already revealed) gets no duplicate and laterStored remains redacted
 			world:run(31)
 			expect(secondStored[1]).toBe(";kick Guest Second reason")
 			expect(receivedBy2[#receivedBy2][1]).toBe(";kick Guest Second reason")
+			expect(#receivedBy3).toBe(p3CountBeforeReveal)
 			expect(_K.Data.Sync.logs[#_K.Data.Sync.logs][1]).toBe(";kick Guest Second reason")
 			expect(laterStored[1]).toBe(";kick Guest …")
 
@@ -1817,7 +1887,6 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			expect(_K.Data.Sync.logs[#_K.Data.Sync.logs][1]).toBe(";kick Guest Later reason")
 
 			-- 3. If CanUserChatAsync is false, liveText stays permanently redacted for other admins and Sync.logs
-			local tcsMethods = rawget(sh.env.game:GetService("TextChatService"), "_methods")
 			tcsMethods.CanUserChatAsync = function()
 				return false
 			end
@@ -1827,6 +1896,7 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			expect(mutedStored[1]).toBe(";kick Guest …")
 			expect(receivedBy1[#receivedBy1][1]).toBe(";kick Guest Muted reason")
 			expect(receivedBy2[#receivedBy2][1]).toBe(";kick Guest …")
+			expect(receivedBy3[#receivedBy3][1]).toBe(";kick Guest …")
 			expect(_K.Data.Sync.logs[#_K.Data.Sync.logs][1]).toBe(";kick Guest …")
 			world:run(61)
 			expect(mutedStored[1]).toBe(";kick Guest …")

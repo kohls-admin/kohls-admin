@@ -164,6 +164,7 @@ local function flushLogReveals()
 		for _, player in _K.Service.Players:GetPlayers() do
 			if
 				player.UserId ~= stored[4]
+				and not (entry.revealedTo and entry.revealedTo[player.UserId])
 				and player:GetAttribute("_K_READY")
 				and _K.Auth.hasPermission(player.UserId, "serverlogs")
 			then
@@ -204,12 +205,17 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 				and _K.Data.settings.saveLogs
 				and (not from or _K.Data.settings.saveLogsForAllRoles or _K.Auth.hasRestrictedRole(from))
 			local revealLater = false
-			-- liveText replaces the text for everyone but the sender while the sender's 60s log cooldown is active
+			local canChat = from ~= nil and _K.Chat.canUserChat(from)
+			local revealedTo = {}
+			-- liveText replaces the text for players who can't chat with the sender while the sender's 60s log cooldown is active
 			if liveText then
-				if not from or not _K.Chat.canUserChat(from) then
+				if not canChat then
 					stored = table.clone(log)
 					stored[1] = liveText
-				elseif _K.Chat.cooldown(from, "log") then
+				elseif
+					(shouldSave or _K.Chat.hasRestrictedPeer(from :: number))
+					and _K.Chat.cooldown(from :: number, "log")
+				then
 					stored = table.clone(log)
 					stored[1] = liveText
 					revealLater = true
@@ -220,7 +226,12 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
-					_K.Remote.Log:Fire(player, if player.UserId == from then log else stored)
+					local full = player.UserId == from
+						or (canChat and _K.Chat.canUsersChat(from :: number, player.UserId))
+					if full then
+						revealedTo[player.UserId] = true
+					end
+					_K.Remote.Log:Fire(player, if full then log else stored)
 				end
 			end
 			if revealLater then
@@ -229,6 +240,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 					fullText = log[1],
 					save = shouldSave,
 					revealAt = os.clock() + _K.Chat.COOLDOWN,
+					revealedTo = revealedTo,
 				})
 				if not revealTimer then
 					revealTimer = true

@@ -106,7 +106,7 @@ return {
 				optional = true,
 			},
 			{
-				type = "string",
+				type = "rawString",
 				name = "Reason",
 				description = "The reason for the ban.",
 				optional = true,
@@ -229,7 +229,7 @@ return {
 				lowerRank = true,
 			},
 			{
-				type = "string",
+				type = "rawString",
 				name = "Reason",
 				description = "The reason for the kick.",
 				optional = true,
@@ -237,14 +237,22 @@ return {
 		},
 		run = function(context, players, reason: string?)
 			-- kick reasons are user text the kicked players see
+			local allowedReason, restrictedReason = reason, reason
 			if not context.global then
-				reason = context._K.Chat.limitReason(context.from, reason)
+				allowedReason, restrictedReason = context._K.Chat.limitReason(context.from, reason, players)
 			end
-			if reason and context.args[2] then
+			if restrictedReason and context.args[2] then
+				context.args[2].parsedArgs = { restrictedReason }
 				context.args[2].redactLog = false
+			elseif allowedReason and context.args[2] then
+				context.args[2].parsedArgs = { allowedReason }
 			end
 			for _, player in players do
-				player:Kick(reason)
+				player:Kick(
+					if context.global or context._K.Chat.canUsersChat(context.from, player.UserId)
+						then allowedReason
+						else restrictedReason
+				)
 			end
 			local names = context._K.Util.Suggest.getNames(players)
 			context._K.Remote.Notify:Fire(
@@ -592,10 +600,12 @@ return {
 				displayName = nil
 			end
 
-			if displayName then
-				local err = context._K.Chat.cooldown(context.from, "name")
-				if err then
-					return err
+			if displayName and #players > 0 then
+				if not context.global and context._K.Chat.hasRestrictedPeer(context.from) then
+					local err = context._K.Chat.cooldown(context.from, "name")
+					if err then
+						return err
+					end
 				end
 				if context.args[2] then
 					context.args[2].redactLog = false
@@ -3063,46 +3073,38 @@ return {
 							child.Value = v ~= "false" and v ~= "nil" and v ~= "0" and v ~= "off"
 							matchedStat, appliedValue = child.Name, tostring(child.Value)
 						elseif child:IsA("StringValue") and not cooldownError then
+							matchedStat = matchedStat or child.Name
 							-- text stats are shown to everyone, so they are rate limited; other stats still apply
 							if not filteredValue then
 								if not context.global then
-									if
-										not (context._K.IsStudio and context._K.Auth.hasRestrictedRole(context.from))
-									then
-										local ok, canChat = pcall(
-											context._K.Service.TextChat.CanUserChatAsync,
-											context._K.Service.TextChat,
-											context.from
-										)
-										if not ok or not canChat then
-											cooldownError = "User cannot chat"
+									if not context._K.Chat.canUserChat(context.from) then
+										cooldownError = "User cannot chat"
+										continue
+									end
+									if context._K.Chat.hasRestrictedPeer(context.from) then
+										cooldownError = context._K.Chat.cooldown(context.from, "leaderstat")
+										if cooldownError then
 											continue
 										end
 									end
-								end
-								cooldownError = context._K.Chat.cooldown(context.from, "leaderstat")
-								if cooldownError then
-									continue
 								end
 								filteredValue = if context.global
 									then value
 									else context._K.Util.String.filterForBroadcast(value, context.from)
 							end
 							child.Value = filteredValue
-							matchedStat, appliedValue = child.Name, filteredValue
+							appliedValue = filteredValue
 						end
 					end
 				end
 			end
-			if matchedStat and appliedValue ~= nil and not cooldownError then
-				if context.args[2] then
-					context.args[2].parsedArgs = { matchedStat }
-					context.args[2].redactLog = false
-				end
-				if context.args[3] then
-					context.args[3].parsedArgs = { appliedValue }
-					context.args[3].redactLog = false
-				end
+			if matchedStat and context.args[2] then
+				context.args[2].parsedArgs = { matchedStat }
+				context.args[2].redactLog = false
+			end
+			if appliedValue ~= nil and context.args[3] then
+				context.args[3].parsedArgs = { appliedValue }
+				context.args[3].redactLog = false
 			end
 			return cooldownError
 		end,
@@ -3255,9 +3257,11 @@ return {
 			},
 		},
 		run = function(context, name, color, autoAssignable)
-			local err = context._K.Chat.cooldown(context.from, "team")
-			if err then
-				return err
+			if not context.global and context._K.Chat.hasRestrictedPeer(context.from) then
+				local err = context._K.Chat.cooldown(context.from, "team")
+				if err then
+					return err
+				end
 			end
 			if context.args[1] then
 				context.args[1].redactLog = false
@@ -3314,7 +3318,7 @@ return {
 
 		run = function(context, team, name, color, autoAssignable)
 			if team and context._K.Service.Teams:FindFirstChild(team.Name) then
-				if name ~= team.Name then
+				if name ~= team.Name and not context.global and context._K.Chat.hasRestrictedPeer(context.from) then
 					local err = context._K.Chat.cooldown(context.from, "team")
 					if err then
 						return err

@@ -15,7 +15,10 @@ local animationToEmoteId = {}
 local emoteToAnimationId = {}
 
 local function isEmote(id: number)
-	if emoteItemFromId[id] then
+	if type(id) ~= "number" or id < 1 or id > 2 ^ 53 or math.floor(id) ~= id then
+		return false
+	end
+	if emoteItemFromId[id] ~= nil then
 		return emoteItemFromId[id]
 	end
 
@@ -35,6 +38,9 @@ local function isEmote(id: number)
 		return item
 	end
 
+	if ok then
+		emoteItemFromId[id] = false
+	end
 	return false
 end
 
@@ -137,7 +143,15 @@ task.spawn(function()
 		end
 		tasks:wait()
 
+		local sent = {}
+		local _ = game:GetService("Players").PlayerRemoving:Connect(function(player)
+			sent[player] = nil
+		end)
 		local _ = Remote:Connect(function(player)
+			if sent[player] then
+				return
+			end
+			sent[player] = true
 			Remote:Fire(player, emotes)
 		end)
 	else

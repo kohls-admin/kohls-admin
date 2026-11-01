@@ -128,9 +128,46 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 	return commands
 end
 
+local commandLimits = {}
+local function resetLimit(from: number)
+	commandLimits[from] = nil
+end
+
+function Process.resetLimit(from: number)
+	commandLimits[from] = nil
+end
+
+function Process.onCooldown(_K: any, from: number): boolean
+	if not _K.IsServer then
+		return false
+	end
+	local _rank, role = _K.Auth.getRank(from)
+	local limit = role and role.limits and role.limits.commands
+	return (commandLimits[from] or 0) >= (limit or math.huge)
+end
+
+function Process.countCommand(_K: any, from: number, amount: number?)
+	if not _K.IsServer then
+		return
+	end
+	local _rank, role = _K.Auth.getRank(from)
+	local limits = role and role.limits
+	if limits and limits.commands then
+		if not commandLimits[from] then
+			commandLimits[from] = 0
+			task.delay(limits.cooldown, resetLimit, from)
+		end
+		commandLimits[from] += amount or 1
+	end
+end
+
 function Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?)
 	if not utf8.len(rawText) then
 		return false, "Invalid utf8 string"
+	end
+
+	if _K.IsServer and #rawText > 1024 and not _K.Auth.hasRestrictedRole(from) then
+		rawText = string.sub(rawText, 1, 1024)
 	end
 
 	local text = Util.String.trimStart(rawText)
@@ -144,12 +181,28 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 		return
 	end
 
+	local maxPrepare = math.huge
+	if _K.IsServer then
+		local _rank, role = _K.Auth.getRank(from)
+		local limit = role and role.limits and role.limits.commands
+		if limit then
+			maxPrepare = math.max(1, limit - (commandLimits[from] or 0))
+		end
+	end
+
 	Data.targetLimits[from] = 0
 	local commands = {}
 
 	for i, commandArray in rawCommands do
 		local commandText = commandArray[1][2]
 		local commandAlias = string.lower(commandText)
+		if i > maxPrepare then
+			if i <= maxPrepare + 64 then
+				table.insert(commands, { alias = commandAlias })
+			end
+			continue
+		end
+
 		local commandDefinition = Registry.commands[commandAlias]
 
 		if not commandDefinition then
@@ -194,11 +247,6 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 	end
 
 	return true, commands
-end
-
-local commandLimits = {}
-local function resetLimit(from: number)
-	commandLimits[from] = nil
 end
 
 --[=[
@@ -269,6 +317,13 @@ function Process.runCommands(
 			end
 		end
 	else
+		if _K.IsServer and limit then
+			if not commandLimits[from] then
+				commandLimits[from] = 0
+				task.delay(cooldown, resetLimit, from)
+			end
+			commandLimits[from] += if prepared then #prepared + 1 else 1
+		end
 		table.insert(commandErrors, result)
 	end
 

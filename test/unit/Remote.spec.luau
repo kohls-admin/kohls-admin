@@ -357,6 +357,100 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			expect(_K.Data.savedSettings.notifications[#_K.Data.savedSettings.notifications].Duration).toBe(0)
 		end
 	)
+
+	test(
+		"Remote.Command, Remote.PlayerPrefix, Remote.VIPUGCMethod, and Remote.EmoteType enforce rate limits and input validation",
+		function()
+			local world = sert.sim.new({ backing = true })
+			local server = world:server()
+			local guestClient = server:client(202)
+
+			local sh = Harness.newPeerEnv(server, { isStudio = false })
+			local _K = sh:requireK()
+			server:spawn(function()
+				_K.initialize({
+					bans = {},
+					userRoles = {},
+					roles = Harness.defaultRoles(),
+				})
+			end)
+			world:run(1)
+
+			local guestEnv = Harness.newPeerEnv(guestClient, { isClient = true })
+			local gRemote = guestEnv:requireRemote()
+			local alerts = {}
+			gRemote.Notify:Connect(function(payload)
+				if type(payload) == "table" and type(payload.Text) == "string" then
+					table.insert(alerts, payload.Text)
+				end
+			end)
+			world:run(1)
+
+			-- 1. Invalid commands via Remote.Command count against commandLimits and trigger cooldown after limit (4)
+			local longInvalid = ";" .. string.rep("z", 1020)
+			for _ = 1, 5 do
+				gRemote.Command:Fire(longInvalid)
+			end
+			world:run(1)
+			local sawCooldown = false
+			for _, text in alerts do
+				if string.find(text, "Command usage on cooldown!", 1, true) then
+					sawCooldown = true
+				end
+			end
+			expect(sawCooldown).toBe(true)
+			expect(_K.Process.onCooldown(_K, 202)).toBe(true)
+			world:run(4.5)
+			expect(_K.Process.onCooldown(_K, 202)).toBe(false)
+
+			-- 2. Remote.PlayerPrefix rate-limits rapid changes and cleans up on PlayerRemoving
+			gRemote.PlayerPrefix:Fire("!")
+			gRemote.PlayerPrefix:Fire("?")
+			world:run(0.2)
+			expect(_K.Data.playerPrefix[202]).toBe("!")
+			world:run(1.1)
+			gRemote.PlayerPrefix:Fire("?")
+			world:run(0.2)
+			expect(_K.Data.playerPrefix[202]).toBe("?")
+
+			-- 3. Remote.VIPUGCMethod rejects spoofed assetId != ugcAssetMatch[assetId]
+			local srvGuest = sh.env.Players:GetPlayerByUserId(202)
+			local char = sh.env.Instance.new("Model")
+			char.Name = srvGuest.Name
+			sh.env.Instance.new("Part", char).Name = "HumanoidRootPart"
+			char.Parent = sh.env.workspace
+			srvGuest.Character = char
+			local market = sh.env.game:GetService("MarketplaceService")
+			local methods = rawget(market, "_methods")
+			local assetChecks = 0
+			local origOwnsAsset = methods.PlayerOwnsAssetAsync
+			methods.PlayerOwnsAssetAsync = function(_self, _plr, assetId)
+				assetChecks += 1
+				return assetId == 999999 -- guest owns free item 999999, not VIP crown
+			end
+			gRemote.VIPUGCMethod:Fire(999999, "rbxassetid://18966762965", true, "gold")
+			world:run(0.5)
+			expect(assetChecks).toBe(0)
+			expect(char:FindFirstChild("SuperCrown")).toBeNil()
+			methods.PlayerOwnsAssetAsync = origOwnsAsset
+
+			-- 4. Remote.EmoteType only sends full catalog once per player
+			local emotePayloads = 0
+			gRemote.EmoteType:Connect(function()
+				emotePayloads += 1
+			end)
+			gRemote.EmoteType:Fire()
+			gRemote.EmoteType:Fire()
+			gRemote.EmoteType:Fire()
+			world:run(0.5)
+			expect(emotePayloads).toBe(1)
+
+			-- Leaving clears playerPrefix and commandLimits
+			server:leave(srvGuest)
+			world:run(0.2)
+			expect(_K.Data.playerPrefix[202]).toBeNil()
+		end
+	)
 end)
 
 return {}

@@ -364,11 +364,19 @@ describe("Process · Command Preparation, Validation & Execution", function()
 			local modPlayer = h.env:addPlayer(11, "ModSender")
 			local guestPlayer = h.env:addPlayer(22, "LimitedGuest")
 			local otherAdmin = h.env:addPlayer(33, "OtherAdmin")
+			local friendAdmin = h.env:addPlayer(44, "FriendAdmin")
 			modPlayer:SetAttribute("_K_READY", true)
 			guestPlayer:SetAttribute("_K_READY", true)
 			otherAdmin:SetAttribute("_K_READY", true)
+			friendAdmin:SetAttribute("_K_READY", true)
 			_K.Auth.userRoleAdd(modPlayer.UserId, "mod")
 			_K.Auth.userRoleAdd(otherAdmin.UserId, "admin")
+			_K.Auth.userRoleAdd(friendAdmin.UserId, "admin")
+
+			local tcsMethods = rawget(h.env.game:GetService("TextChatService"), "_methods")
+			tcsMethods.CanUsersChatAsync = function(_self, fromId, toId)
+				return toId ~= otherAdmin.UserId and fromId ~= otherAdmin.UserId
+			end
 
 			-- Track Remote.Notify and Remote.Log fires
 			local notifications = {}
@@ -429,15 +437,19 @@ describe("Process · Command Preparation, Validation & Execution", function()
 			local okEcho2 = _K.Process.runCommands(_K, modPlayer.UserId, ";testecho second_secret", false)
 			expect(okEcho2).toBe(true)
 			h.env:step(0.05)
-			senderLog, otherLog = nil, nil
+			local friendLog
+			senderLog, otherLog, friendLog = nil, nil, nil
 			for _, entry in remoteLogs do
 				if entry.to == modPlayer.UserId and string.find(entry.text, ";testecho", 1, true) then
 					senderLog = entry.text
 				elseif entry.to == otherAdmin.UserId and string.find(entry.text, ";testecho", 1, true) then
 					otherLog = entry.text
+				elseif entry.to == friendAdmin.UserId and string.find(entry.text, ";testecho", 1, true) then
+					friendLog = entry.text
 				end
 			end
 			expect(senderLog).toBe(";testecho second_secret")
+			expect(friendLog).toBe(";testecho second_secret")
 			expect(otherLog).toBe(";testecho …")
 			expect(_K.Data.logs[#_K.Data.logs][1]).toBe(";testecho …")
 
@@ -985,9 +997,11 @@ describe("Process · Command filters & async roles", function()
 			})
 			_K.Data.roles.vip.groups = { "general" }
 
-			-- Targeting 2 players fails validation when limits.targets == 1
+			-- Targeting 2 players fails validation when limits.targets == 1 and still counts against commandLimits
 			expect(Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me,OtherTargetTester", true)).toBe(false)
 			expect(runs).toBe(0)
+			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(true)
+			h.env:step(10)
 
 			-- Chaining 2 single-target commands in one message also fails validation when limits.targets == 1
 			_K.Data.roles.vip.limits = { commands = 2, cooldown = 10, targets = 1 }
@@ -995,6 +1009,8 @@ describe("Process · Command filters & async roles", function()
 				false
 			)
 			expect(runs).toBe(0)
+			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(true)
+			h.env:step(10)
 			_K.Data.roles.vip.limits = { commands = 1, cooldown = 10, targets = 1 }
 
 			-- Targeting 1 player succeeds through both validate and parse, and consumes the 1 command limit

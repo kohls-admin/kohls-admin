@@ -588,7 +588,13 @@ return function(_K)
 
 		-- handle custom command prefix
 		local _ = _K.Remote.PlayerPrefix:Connect(function(player, prefix)
-			if type(prefix) == "string" and utf8.len(prefix) == 1 and not table.find(reservedPrefixes, prefix) then
+			if
+				type(prefix) == "string"
+				and utf8.len(prefix) == 1
+				and not table.find(reservedPrefixes, prefix)
+				and _K.Data.playerPrefix[player.UserId] ~= prefix
+				and not _K.Chat.cooldown(player.UserId, "playerPrefix", 1)
+			then
 				_K.Data.playerPrefix[player.UserId] = prefix
 				if _K.ChatCommands then
 					_K.ChatCommands.schedule()
@@ -920,9 +926,6 @@ return function(_K)
 					reason = string.sub(reason, 1, 400) -- banasync limit
 					-- ban reasons are user text other admins can see
 					reason = _K.Chat.limitReason(player.UserId, reason)
-					if reason then
-						reason = _K.Util.String.filterForBroadcast(reason, player.UserId)
-					end
 				end
 				local targetPlayer = _K.Service.Players:GetPlayerByUserId(userId)
 				if targetPlayer then
@@ -1197,6 +1200,13 @@ return function(_K)
 			_K.Flux.dispose(playerCleanup[userId])
 			playerCleanup[userId] = nil
 			_K.Data.targetLimits[userId] = nil
+			_K.Process.resetLimit(userId)
+			if _K.Data.playerPrefix[userId] then
+				_K.Data.playerPrefix[userId] = nil
+				if _K.ChatCommands then
+					_K.ChatCommands.schedule()
+				end
+			end
 		end)
 
 		task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")

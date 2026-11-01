@@ -17,6 +17,7 @@ local VIP = {
 	popup = Popup,
 	purchasables = Purchasables,
 	saleStateChanged = Util.Signal.new(),
+	titleDefinition = Title.definition,
 }
 
 local priceCache: { [string]: number } = {}
@@ -153,6 +154,7 @@ end
 
 if Util.Service.Run:IsServer() then
 	local ownedCache = {}
+	local checkingAsset = {}
 	local function ownsAsset(player, assetId)
 		local ownedUGC = ownedCache[player.UserId]
 		if not ownedUGC then
@@ -164,9 +166,16 @@ if Util.Service.Run:IsServer() then
 			return ownedUGC[assetId]
 		end
 
+		local checkKey = `{player.UserId}:{assetId}`
+		if checkingAsset[checkKey] then
+			return false
+		end
+		checkingAsset[checkKey] = true
+
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
 		end)
+		checkingAsset[checkKey] = nil
 		if ok then
 			ownedUGC[assetId] = result
 			return result
@@ -195,6 +204,7 @@ if Util.Service.Run:IsServer() then
 		if
 			type(assetId) ~= "number"
 			or type(match) ~= "string"
+			or ugcAssetMatch[assetId] ~= match
 			or type(equip) ~= "boolean"
 			or (name ~= nil and (type(name) ~= "string" or #name > 64))
 		then
@@ -222,7 +232,7 @@ if Util.Service.Run:IsServer() then
 			return
 		end
 
-		if ugcAssetMatch[assetId] ~= match then
+		if checkingAsset[`{player.UserId}:{assetId}`] then
 			return
 		end
 
@@ -416,6 +426,8 @@ if Util.Service.Run:IsServer() then
 			table.clear(playerCleanup[player])
 		end
 		playerCleanup[player] = nil
+		ownedCache[player.UserId] = nil
+		VIP.effects[player.UserId] = nil
 	end)
 
 	Util.SafePlayerAdded(function(player)

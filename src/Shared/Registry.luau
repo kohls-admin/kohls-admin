@@ -72,9 +72,15 @@ end
 
 --- Finds the command alias with the lowest Levenshtein distance to the provided alias.
 function Registry.suggestCommandAlias(alias: string): string
+	if #alias > 32 then
+		alias = string.sub(alias, 1, 32)
+	end
 	local suggestedAlias = ""
 	local lowestDistance = math.huge
 	for _, commandAlias in Registry.commandNames do
+		if math.abs(#alias - #commandAlias) >= lowestDistance then
+			continue
+		end
 		local distance = Util.String.levenshteinDistance(alias, commandAlias)
 		if distance < lowestDistance then
 			lowestDistance = distance

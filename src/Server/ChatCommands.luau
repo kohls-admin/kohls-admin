@@ -190,9 +190,11 @@ function ChatCommands.start(_K)
 		local command = _K.Registry.commands[string.lower(string.sub(word, nextChar))]
 		local hasCommand = command ~= nil and _K.Auth.hasCommand(player.UserId, command)
 		local allowed = hasCommand or (command ~= nil and canPurchase(command))
+		local onCooldown = _K.Process.onCooldown(_K, player.UserId)
 		if
 			command
 			and allowed
+			and not onCooldown
 			and _K.Data.settings.vip
 			and VIP_BUBBLES[string.lower(command.name)]
 			and player.Character
@@ -201,7 +203,7 @@ function ChatCommands.start(_K)
 		end
 
 		local ready = player:GetAttribute("_K_READY") == true
-		if ready and hasCommand then
+		if ready and hasCommand and not onCooldown then
 			local commandBarRank = _K.Data.settings.commandBarRank
 			if commandBarRank == nil then
 				commandBarRank = 0
@@ -213,6 +215,7 @@ function ChatCommands.start(_K)
 					lastCommand
 					and (lastCommand.argMissing ~= nil or (#lastCommand.array == 2 and lastCommand.array[2][2] == ""))
 				then
+					_K.Process.countCommand(_K, player.UserId, #prepared)
 					_K.Remote.Command:Fire(player, text, true)
 					return
 				end
@@ -221,7 +224,7 @@ function ChatCommands.start(_K)
 
 		local ok = _K.Process.runCommands(_K, player.UserId, text)
 		-- the client runs its own part of the commands, opens windows and prompts purchases
-		if ready and (ok or allowed) then
+		if ready and not onCooldown and (ok or allowed) then
 			_K.Remote.Command:Fire(player, text, true)
 		end
 	end

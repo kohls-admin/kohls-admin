@@ -90,12 +90,13 @@ local function startVote(context, players: { Player }, text: string, given: { st
 		return "No players to poll."
 	end
 
-	local id, err = _K.Chat.send(context, "vote", rawQuestion, uniquePlayers)
+	local id, err, delivered = _K.Chat.send(context, "vote", rawQuestion, uniquePlayers)
 	if not id then
 		return err
 	elseif err and context.fromPlayer and context.fromPlayer.Parent then
 		_K.Remote.Notify:Fire(context.fromPlayer, { Text = err })
 	end
+	uniquePlayers = delivered or uniquePlayers
 
 	local function clean(value: string): (string, string)
 		local filtered = _K.Util.String.filterForBroadcast(value, context.from)
@@ -771,7 +772,7 @@ return {
 				description = "The player(s) whose title to change.",
 			},
 			{
-				type = "string",
+				type = "rawString",
 				name = "Title",
 				description = "The title text to use.",
 				optional = true,
@@ -798,11 +799,28 @@ return {
 
 		run = function(context, players, title: string?, color: Color3?, secondaryColor: Color3?, font: Enum.Font?)
 			if title and not context.undo then
-				local err = context._K.Chat.cooldown(context.from, "title")
-				if err then
-					return err
-				end
-				if context.args[2] then
+				if context._K.VIP.titleDefinition[string.lower(title)] then
+					if context.args[2] then
+						context.args[2].redactLog = false
+					end
+				elseif not context.global then
+					if #players > 0 then
+						if not context._K.Chat.canUserChat(context.from) then
+							return "User cannot chat"
+						end
+						if context._K.Chat.hasRestrictedPeer(context.from) then
+							local err = context._K.Chat.cooldown(context.from, "title")
+							if err then
+								return err
+							end
+						end
+						title = context._K.Util.String.filterForBroadcast(title, context.from)
+						if context.args[2] then
+							context.args[2].parsedArgs = { title }
+							context.args[2].redactLog = false
+						end
+					end
+				elseif context.args[2] then
 					context.args[2].redactLog = false
 				end
 			end

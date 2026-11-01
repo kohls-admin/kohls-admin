@@ -518,7 +518,7 @@ return {
 				optional = true,
 			},
 			{
-				type = "string",
+				type = "rawString",
 				name = "Reason",
 				description = "The reason for the shutdown.",
 				optional = true,
@@ -534,15 +534,24 @@ return {
 				task.wait(delay)
 			end
 			-- shutdown reasons are user text everyone sees
+			local allowedReason, restrictedReason = reason, reason
 			if not context.global then
-				reason = context._K.Chat.limitReason(context.from, reason)
+				allowedReason, restrictedReason =
+					context._K.Chat.limitReason(context.from, reason, context._K.Service.Players:GetPlayers())
 			end
-			if reason and context.args[2] then
+			if restrictedReason and context.args[2] then
+				context.args[2].parsedArgs = { restrictedReason }
 				context.args[2].redactLog = false
+			elseif allowedReason and context.args[2] then
+				context.args[2].parsedArgs = { allowedReason }
 			end
 			local from = tostring(context.fromPlayer or context.from)
 			local function kick(player)
-				player:Kick(`{from} has shutdown the server.{if reason then `\nReason: {reason}` else ""}`)
+				local playerReason = if context.global
+						or context._K.Chat.canUsersChat(context.from, player.UserId)
+					then allowedReason
+					else restrictedReason
+				player:Kick(`{from} has shutdown the server.{if playerReason then `\nReason: {playerReason}` else ""}`)
 			end
 			local _ = context._K.Service.Players.PlayerAdded:Connect(kick)
 			for _, player in context._K.Service.Players:GetPlayers() do
@@ -638,6 +647,14 @@ return {
 						or arg.type == "chatString"
 						or arg.type == "stringGreedy"
 						or (definition.name == "change" and i == 3)
+						or ((definition.name == "ban" or definition.name == "kick" or definition.name == "shutdown") and arg.name == "Reason")
+						or (
+							definition.name == "title"
+							and i == 2
+							and not context._K.VIP.titleDefinition[string.lower(
+								context._K.Util.String.stripQuotes(context._K.Util.String.trim(rawArg))
+							)]
+						)
 					then
 						table.insert(texts, { argStrings, #argStrings, #commands + 1, arg.type == "strings" })
 					end

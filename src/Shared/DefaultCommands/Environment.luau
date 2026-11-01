@@ -312,6 +312,9 @@ return {
 			},
 		},
 		run = function(context, time: string, duration: number?)
+			if context.args[1] then
+				context.args[1].redactLog = false
+			end
 			local hours, minutes, seconds = unpack(string.split(time, ":"))
 			hours = math.clamp(tonumber(hours) or 0, 0, 23)
 			minutes = math.clamp(tonumber(minutes) or 0, 0, 59)

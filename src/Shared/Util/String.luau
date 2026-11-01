@@ -38,6 +38,10 @@ end
 
 --- Calculates the Levenshtein distance between two strings.
 function String.levenshteinDistance(s1: string, s2: string): number
+	if s1 == s2 then
+		return 0
+	end
+
 	local len1, len2 = #s1, #s2
 	if len1 < len2 then
 		s1, s2, len1, len2 = s2, s1, len2, len1
@@ -55,12 +59,13 @@ function String.levenshteinDistance(s1: string, s2: string): number
 	for i = 1, len1 do
 		local previous = row[0]
 		row[0] = i
+		local b1 = string.byte(s1, i)
 		for j = 1, len2 do
 			local column = row[j]
 			row[j] = math.min(
 				column + 1, -- Deletion
 				row[j - 1] + 1, -- Insertion
-				previous + if string.sub(s1, i, i) == string.sub(s2, j, j) then 0 else 1 -- Substitution
+				previous + if b1 == string.byte(s2, j) then 0 else 1 -- Substitution
 			)
 			previous = column
 		end

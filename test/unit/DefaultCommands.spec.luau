@@ -2020,7 +2020,7 @@ describe("DefaultCommands", function()
 			runSrv(";unban 2")
 			expect(_K.Data.bans["2"]).toBeNil()
 			runSrv(";kick TargetPlr Bye")
-			expect(srvP2._props._kicked).toBe(true)
+			expect(srvP2._props._kicked).toBe("Bye")
 		end
 	)
 
@@ -3651,6 +3651,147 @@ describe("DefaultCommands", function()
 		customcommand.runClient({ _K = clientK, env = cliEnv, from = 1 }, "hello")
 		expect(cliEnv.countClient).toBe(1)
 	end)
+
+	test(
+		"PIC compliance skips restricted recipients on cooldown, allows predefined titles, and preserves moderation actions when sender cannot chat",
+		function()
+			local c = createSimCluster()
+			local _K, srvP1, srvP2 = c._K, c.srvP1, c.srvP2
+			local srvP3 = c.sh.env:addPlayer(3, "RestrictedPlr")
+			buildCharacter(c.sh.env, srvP3)
+
+			local tcs = c.sh.env.game:GetService("TextChatService")
+			local tcMethods = rawget(tcs, "_methods")
+			local origCanUserChat = tcMethods.CanUserChatAsync
+			local origCanUsersChat = tcMethods.CanUsersChatAsync
+
+			-- 1. ;time marks its Time argument redactLog = false
+			local timeArg = { rawArg = "14:30", parsedArgs = { "14:30" }, rawType = { freeText = true } }
+			_K.Registry.commands.time.run({ _K = _K, from = 1, args = { timeArg } }, "14:30", nil)
+			expect(timeArg.redactLog).toBe(false)
+
+			-- 2. When all peers can chat with sender, world-text commands (name, custom title, createteam, editteam, change) do not spend cooldowns
+			tcMethods.CanUsersChatAsync = function()
+				return true
+			end
+			c.runSrv(";name TargetPlr FirstNick")
+			c.runSrv(";name TargetPlr SecondNick")
+			expect(srvP2:GetAttribute("_KDisplayName")).toBe("SecondNick")
+
+			c.runSrv(";createteam TeamAlpha #ff0000")
+			c.runSrv(";createteam TeamBeta #00ff00")
+			local teamBeta = c.sh.env.game:GetService("Teams"):FindFirstChild("TeamBeta")
+			expect(teamBeta ~= nil).toBe(true)
+			c.runSrv(";editteam TeamBeta TeamGamma")
+			c.runSrv(";editteam TeamGamma TeamDelta")
+			expect(teamBeta.Name).toBe("TeamDelta")
+
+			local ls = c.sh.env.Instance.new("Folder", srvP2)
+			ls.Name = "leaderstats"
+			local rankStat = c.sh.env.Instance.new("StringValue", ls)
+			rankStat.Name = "Rank"
+			c.runSrv(";change TargetPlr Rank Bronze")
+			c.runSrv(";change TargetPlr Rank Silver")
+			expect(rankStat.Value).toBe("Silver")
+
+			-- 3. Predefined VIP titles work even when sender cannot chat or is on custom title cooldown
+			-- First restrict srvP3 so custom title spends cooldown
+			tcMethods.CanUsersChatAsync = function(_self, _from, to)
+				return to ~= 3
+			end
+			c.runSrv(";title TargetPlr CustomOne")
+			c.world:run(0.05)
+			expect(srvP2.Character:FindFirstChild("_K_Title").Title.Text).toBe("CustomOne")
+			-- Second custom title within 60s is blocked by cooldown because RestrictedPlr (3) is in server
+			local titleErr = _K.Registry.commands.title.run(
+				{ _K = _K, from = 1, fromPlayer = srvP1, args = {} },
+				{ srvP2 },
+				"CustomTwo"
+			)
+			expect(string.find(tostring(titleErr), "Wait", 1, true) ~= nil).toBe(true)
+			-- Predefined VIP title ("vip") succeeds even while on cooldown and even when CanUserChatAsync is false
+			_K.VIP.titleDefinition.vip.ownerCache[srvP2.UserId] = true
+			tcMethods.CanUserChatAsync = function()
+				return false
+			end
+			c.runSrv(";title TargetPlr vip")
+			c.world:run(0.05)
+			expect(string.lower(srvP2.Character:FindFirstChild("_K_Title").Title.Text)).toBe("vip")
+
+			-- 4. ban, kick, and shutdown still execute with reason stripped when CanUserChatAsync is false
+			srvP2._props._kicked = nil
+			c.runSrv(";ban TargetPlr 0 ShouldStripReason")
+			expect(_K.Data.bans["2"] ~= nil).toBe(true)
+			expect(_K.Data.bans["2"][2]).toBeNil()
+			expect(srvP2._props._kicked).toBe("No reason.")
+			_K.Data.bans["2"] = nil
+
+			srvP2._props._kicked = nil
+			c.runSrv(";kick TargetPlr ShouldAlsoStrip")
+			expect(srvP2._props._kicked).toBe(true) -- nil reason passed to Kick
+
+			srvP2._props._kicked = nil
+			srvP3._props._kicked = nil
+			_K.Registry.commands.shutdown.run({ _K = _K, from = 1, fromPlayer = srvP1, args = {} }, nil, "MutedReason")
+			expect(string.find(tostring(srvP2._props._kicked), "Reason:", 1, true)).toBeNil()
+
+			-- 5. On reason cooldown, kick/shutdown still show the reason to chat-allowed players while stripping for restricted players
+			tcMethods.CanUserChatAsync = origCanUserChat
+			-- Spend the reason cooldown on restricted srvP3
+			_K.Registry.commands.kick.run(
+				{ _K = _K, from = 1, fromPlayer = srvP1, args = {} },
+				{ srvP3 },
+				"FirstKickReason"
+			)
+			expect(srvP3._props._kicked).toBe("FirstKickReason")
+			-- Now on cooldown: kicking both srvP2 (allowed) and srvP3 (restricted) gives srvP2 the reason and srvP3 nil
+			srvP2._props._kicked = nil
+			srvP3._props._kicked = nil
+			_K.Registry.commands.kick.run(
+				{ _K = _K, from = 1, fromPlayer = srvP1, args = {} },
+				{ srvP2, srvP3 },
+				"SecondKickReason"
+			)
+			expect(srvP2._props._kicked).toBe("SecondKickReason")
+			expect(srvP3._props._kicked).toBe(true)
+
+			-- 6. startVote on "vote" cooldown skips restricted srvP3 and only polls delivered srvP2
+			local voteDef = _K.Registry.commands.vote
+			local origVoteInvoke = voteDef.env.remote.Invoke
+			local polledIds = {}
+			voteDef.env.remote.Invoke = function(_self, plr)
+				table.insert(polledIds, plr.UserId)
+				return 1
+			end
+			-- First vote with srvP3 spends the "vote" cooldown
+			c.sh.env.task.spawn(function()
+				voteDef.run(
+					{ _K = _K, from = 1, fromPlayer = srvP1, env = voteDef.env, args = {} },
+					{ srvP2, srvP3 },
+					"First vote?"
+				)
+			end)
+			c.world:run(0.1)
+			table.sort(polledIds)
+			expect(polledIds).toEqual({ 2, 3 })
+
+			-- Second vote within 60s skips srvP3 and only invokes Remote.Vote on srvP2
+			table.clear(polledIds)
+			c.sh.env.task.spawn(function()
+				voteDef.run(
+					{ _K = _K, from = 1, fromPlayer = srvP1, env = voteDef.env, args = {} },
+					{ srvP2, srvP3 },
+					"Second vote?"
+				)
+			end)
+			c.world:run(0.1)
+			expect(polledIds).toEqual({ 2 })
+
+			voteDef.env.remote.Invoke = origVoteInvoke
+			tcMethods.CanUserChatAsync = origCanUserChat
+			tcMethods.CanUsersChatAsync = origCanUsersChat
+		end
+	)
 end)
 
 return {}

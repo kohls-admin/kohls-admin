@@ -68,9 +68,14 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 	end
 
 	if #levenshtein > 0 then
+		local levQuery = if #query > 64 then string.sub(query, 1, 64) else query
 		local lowestDistance, suggestionData = math.huge, nil
 		for _, data in levenshtein do
-			local distance = String.levenshteinDistance(string.lower(data[1] :: string), query)
+			local target = string.lower(data[1] :: string)
+			if math.abs(#target - #levQuery) >= lowestDistance then
+				continue
+			end
+			local distance = String.levenshteinDistance(target, levQuery)
 			if distance < lowestDistance then
 				lowestDistance = distance
 				suggestionData = data
