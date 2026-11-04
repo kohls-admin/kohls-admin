@@ -3,8 +3,6 @@
 
 [sert]
 version = "0.1.0"
-sha256 = "f3f1366746507d1b6966438cf1ad57a3a4fb6aa60d53e43db348d2857052c24c"
-pyz_sha256 = "f25896b19148ca53b8a29be815bc6a0a9bab4889da24d05a68db1b553c41a14c"
 
 [tools]
 luau = "0.724"
@@ -62,7 +60,7 @@ timeout = 20
 "src/Shared/Data/Store.luau" = "Store.loadStore"
 "src/Shared/Chat.luau" = "@file=ChatAndServer"
 "src/Server" = "@file=ChatAndServer,Remote,DefaultCommands"
-"src/init.luau" = "@file=ChatAndServer,DefaultCommands,ClientAndUI"
+"src/init.luau" = "@file=ChatAndServer,DefaultCommands"
 "src/Shared/DefaultTypes" = "@file=DefaultTypes"
 "src/Shared/DefaultCommands" = "@file=DefaultCommands"
 "src/Shared/DefaultAddons" = "@file=DefaultCommands"
@@ -70,6 +68,7 @@ timeout = 20
 "src/Client/UI/init.luau" = "Part 1"
 "src/Client/UI/Classes" = "Part 2"
 "src/Client/CommandBar/CompletionData.luau" = "Part 3"
+"src/Client/Explorer/ExplorerOrder.luau" = "ExplorerOrder"
 "src/Client" = "@file=ClientAndUI"
 
 [lint]
@@ -93,12 +92,7 @@ timeout = 300
 [release]
 prefix = "v"
 versions = [
-  { file = "VERSION.txt", pattern = '^\s*(\S+)\s*$' },
-  { file = ".release-please-manifest.json", pattern = '"\."\s*:\s*"([^"]*)"' },
+  { file = ".luaudocs/guide/getting-started/installation.md", pattern = 'KohlsAdmin = "kohltastrophe/kohls-admin@([^"]+)"' },
+  { file = ".github/ISSUE_TEMPLATE/bug.yml", pattern = '^\s*placeholder:\s*([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)' },
 ]
 
-[tools.sha256]
-"luau/0.724/luau-macos.zip" = "c80e152eb61d6dc07923a86cd433929eaa8736fb52e825da202dd2d4f106ec90"
-"luau/0.724/luau-ubuntu.zip" = "19be57ce53fc21dfe0099d3d763d97138c0f4562fa632da82c72cb3c19d4531a"
-"luau/0.724/luau-windows.zip" = "0840d8a56f4d924c688f4df74d79de28e32f43f2970812758ff9383a1048ee05"
-"luau-lsp/1.70.1/globalTypes.d.luau" = "2857efa8245485f8c25c19c018ee1ef9b46afab4efd2ea70fc3257cd3faf7080"

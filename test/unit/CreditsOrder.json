@@ -1,0 +1,220 @@
+{
+	"about": "The credits' shared fixture, under Credits.luau's real `active` rule (2+ commits in the last 365 days). .github/scripts/credits.py checks the window against it (commits dated against an injected `now`: one exactly on the window's first instant counts, one a second earlier doesn't) and both orders; Credits.spec checks About/Order.luau's orders against `recent`. delta's commits are all older (drops out); zeta has one commit in the window (not active); theta has exactly two (active); eta had two, but the window has rolled past the older one (not active). Active: most commits in the window first, ties by display name, then username, then id. Plain: by username after an ASCII-only lowercase, compared bytewise; a credit with no name last, by id.",
+	"now": "2026-10-03T00:00:00Z",
+	"commits": {
+		"ALPHA": [
+			"2026-05-01T00:00:00Z",
+			"2026-06-01T00:00:00Z",
+			"2026-07-01T00:00:00Z"
+		],
+		"beta": [
+			"2026-01-01T00:00:00Z",
+			"2026-01-02T00:00:00Z",
+			"2026-01-03T00:00:00Z",
+			"2026-01-04T00:00:00Z",
+			"2026-01-05T00:00:00Z",
+			"2026-01-06T00:00:00Z",
+			"2026-01-07T00:00:00Z",
+			"2026-01-08T00:00:00Z",
+			"2026-01-09T00:00:00Z",
+			"2026-01-10T00:00:00Z"
+		],
+		"gamma": [
+			"2025-10-03T00:00:00Z",
+			"2026-01-01T00:00:00Z",
+			"2026-02-01T00:00:00Z"
+		],
+		"delta": [
+			"2025-10-02T23:59:59Z",
+			"2024-01-01T00:00:00Z"
+		],
+		"eps": [
+			"2026-08-01T00:00:00Z",
+			"2026-08-02T00:00:00Z",
+			"2026-10-03T00:00:00Z"
+		],
+		"unmapped": [
+			"2026-03-01T00:00:00Z"
+		],
+		"zeta": [
+			"2026-04-01T00:00:00Z"
+		],
+		"theta": [
+			"2026-04-01T00:00:00Z",
+			"2026-09-01T00:00:00Z"
+		],
+		"eta": [
+			"2025-10-02T23:59:59Z",
+			"2026-03-01T00:00:00Z"
+		]
+	},
+	"recent": {
+		"ALPHA": 3,
+		"beta": 10,
+		"gamma": 3,
+		"eps": 3,
+		"unmapped": 1,
+		"zeta": 1,
+		"theta": 2,
+		"eta": 1
+	},
+	"names": [
+		[
+			1,
+			"zed",
+			"Zed"
+		],
+		[
+			2,
+			"bob",
+			"Bob"
+		],
+		[
+			3,
+			"cy",
+			"Cy"
+		],
+		[
+			4,
+			"amy",
+			"amy"
+		],
+		[
+			5,
+			"al",
+			"Al"
+		],
+		[
+			7,
+			"dee",
+			"Dee"
+		],
+		[
+			8,
+			"Ébé",
+			"Ébé"
+		],
+		[
+			9,
+			"éa",
+			"éa"
+		],
+		[
+			10,
+			"sam_b",
+			"Sam"
+		],
+		[
+			11,
+			"Sam_a",
+			"sam"
+		],
+		[
+			12,
+			"sam_a",
+			"Sam"
+		],
+		[
+			14,
+			"aaa",
+			"Bob"
+		],
+		[
+			15,
+			"zeta_u",
+			"Zeta"
+		],
+		[
+			16,
+			"theta",
+			"Theta"
+		],
+		[
+			17,
+			"eta",
+			"Eta"
+		]
+	],
+	"people": [
+		{
+			"Id": 1
+		},
+		{
+			"Id": 2,
+			"GitHub": "alpha"
+		},
+		{
+			"Id": 3,
+			"GitHub": "Beta"
+		},
+		{
+			"Id": 4
+		},
+		{
+			"Id": 5,
+			"GitHub": "gamma"
+		},
+		{
+			"Id": 6
+		},
+		{
+			"Id": 7,
+			"GitHub": "delta"
+		},
+		{
+			"Id": 8
+		},
+		{
+			"Id": 9
+		},
+		{
+			"Id": 10
+		},
+		{
+			"Id": 11
+		},
+		{
+			"Id": 12
+		},
+		{
+			"Id": 13
+		},
+		{
+			"Id": 14,
+			"GitHub": "eps"
+		},
+		{
+			"Id": 15,
+			"GitHub": "zeta"
+		},
+		{
+			"Id": 16,
+			"GitHub": "theta"
+		},
+		{
+			"Id": 17,
+			"GitHub": "eta"
+		}
+	],
+	"active": [
+		3,
+		5,
+		14,
+		2,
+		16
+	],
+	"plain": [
+		4,
+		7,
+		17,
+		11,
+		12,
+		10,
+		1,
+		15,
+		8,
+		9,
+		6,
+		13
+	]
+}

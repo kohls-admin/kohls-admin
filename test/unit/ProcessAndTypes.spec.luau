@@ -29,25 +29,183 @@ describe("Process · rawParse", function()
 		expect((chained :: any)[2][2][2]).toBe("bob")
 	end)
 
+	local function sanitizeQuotePayload(raw: string, quoteChar: string): string
+		-- Ensure valid UTF-8 and strip the enclosing quote char so the payload cannot prematurely close the quote
+		local clean = if utf8.len(raw) then raw else "utf8_fallback"
+		clean = string.gsub(clean, "[%z\r\n]", "")
+		clean = string.gsub(clean, quoteChar, if quoteChar == '"' then "'" else '"')
+		if #clean == 0 then
+			clean = "payload"
+		end
+		return clean
+	end
+
+	local astGen = function(g: any)
+		local multiChar = g:bool(0.25)
+		local prefix = if multiChar then g:pick({ "::", "!!", ";;" }) else g:pick({ ";", "!", ":" })
+		local cmdCount = if multiChar then 1 else g:int(1, 3)
+		local leadNoise = if g:bool(0.35) then g:pick({ "", "hello ", "chat before " }) else ""
+		local cmds = {}
+		for c = 1, cmdCount do
+			local name = g:pick({ "fly", "ban", "kick", "announce", "fuzzcmd", "fcmd" })
+			local argCount = g:int(0, 4)
+			local args = {}
+			for a = 1, argCount do
+				local kind = g:int(1, 6)
+				if kind == 1 then
+					args[a] = g:pick({ "me", "all", "others", "*", "@mod", "%red", "~1", "$admins" })
+				elseif kind == 2 then
+					local inner = g:pick({
+						"hello ; world",
+						"nested `tick` inside",
+						"a,b,c",
+						"100%s",
+						"escaped \\'single\\' text",
+					})
+					args[a] = `"{inner}"`
+				elseif kind == 3 then
+					local inner = g:pick({ 'nested "double" inside', "semi ; colon", "space sep" })
+					args[a] = "`" .. inner .. "`"
+				elseif kind == 4 then
+					local mal = sert.gen.malformedString()(g)
+					local q = g:pick({ '"', "`" })
+					args[a] = q .. sanitizeQuotePayload(mal, q) .. q
+				elseif kind == 5 and a == argCount then
+					-- Greedy trailing argument tokens
+					args[a] = g:pick({ "greedy_tail_one", "reason_token", "trailing_note" })
+				else
+					args[a] = tostring(g:int(-1000, 1000))
+				end
+			end
+			cmds[c] = { name = name, args = args }
+		end
+		return { leadNoise = leadNoise, prefix = prefix, cmds = cmds }
+	end
+
+	local function unparseAst(spec: any): (string, { { { pos: number, endPos: number, text: string } } })
+		local chunks = {}
+		local expected = {}
+		local cursor = #spec.leadNoise + 1
+		for cIdx, c in spec.cmds do
+			if cIdx > 1 then
+				table.insert(chunks, " ")
+				cursor += 1
+			end
+			local cmdRow = {}
+			local firstTok = spec.prefix .. c.name
+			table.insert(chunks, firstTok)
+			local nameStart = cursor + #spec.prefix - #spec.leadNoise
+			table.insert(cmdRow, {
+				pos = nameStart,
+				endPos = nameStart + #c.name - 1,
+				text = c.name,
+			})
+			cursor += #firstTok
+			for _, a in c.args do
+				table.insert(chunks, " ")
+				cursor += 1
+				table.insert(chunks, a)
+				local argStart = cursor - #spec.leadNoise
+				table.insert(cmdRow, {
+					pos = argStart,
+					endPos = argStart + #a - 1,
+					text = a,
+				})
+				cursor += #a
+			end
+			expected[cIdx] = cmdRow
+		end
+		return spec.leadNoise .. table.concat(chunks, ""), expected
+	end
+
+	sert.laws.differential("Process.rawParse AST roundtrip & token byte spans", {
+		gen = astGen,
+		sut = function(spec: any)
+			local Process = Harness.shared():requireProcess()
+			local message = unparseAst(spec)
+			local parsed = Process.rawParse(message, { spec.prefix }, " ")
+			expect(parsed ~= nil).toBe(true)
+			local out = {}
+			local leadLen = #spec.leadNoise
+			expect(string.sub(message, leadLen + 1, leadLen + #spec.prefix)).toBe(spec.prefix)
+			for i, cmdArr in parsed :: { any } do
+				expect(#cmdArr >= 1).toBe(true)
+				local row = {}
+				for j, tok in cmdArr do
+					local argPos: number = tok[1]
+					local argStr: string = tok[2]
+					local absStart = leadLen + argPos
+					local absEnd = absStart + #argStr - 1
+					expect(string.sub(message, absStart, absEnd)).toBe(argStr)
+					row[j] = {
+						pos = argPos,
+						endPos = argPos + #argStr - 1,
+						text = argStr,
+					}
+				end
+				out[i] = row
+			end
+			return out
+		end,
+		oracle = function(spec: any)
+			local _, expected = unparseAst(spec)
+			return expected
+		end,
+	}, { runs = 80 })
+
 	prop(
-		"rawParse never errors on arbitrary strings and preserves token count for clean alphanumeric tokens",
+		"rawParse enforces prefix, non-empty command array, exact byte span slicing, and unclosed quote offset laws",
 		function(g)
 			local Process = Harness.shared():requireProcess()
 			local noise = g:string(nil, 0, 40)
-			local ok, err = pcall(Process.rawParse, noise, MULTI_PREFIX, " ")
+			local ok, parsed, err = pcall(Process.rawParse, noise, MULTI_PREFIX, " ")
 			expect(ok).toBe(true)
-			expect(err == nil or type(err) == "table").toBe(true)
+			expect(parsed == nil or type(parsed) == "table").toBe(true)
+			if parsed ~= nil and utf8.len(noise) then
+				expect(#parsed >= 1).toBe(true)
+				local matchedPrefix, matchStart = nil, nil
+				for _, p in MULTI_PREFIX do
+					local escapedP = string.gsub(p, "([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+					local s = string.find(noise, string.format('%s[^%s"`, ]', escapedP, escapedP))
+					if s then
+						matchedPrefix = p
+						matchStart = s
+						break
+					end
+				end
+				expect(matchedPrefix ~= nil).toBe(true)
+				expect(matchStart ~= nil).toBe(true)
+				for _, cmdArr in parsed do
+					expect(#cmdArr >= 1).toBe(true)
+					for _, tok in cmdArr do
+						expect(type(tok[1])).toBe("number")
+						expect(type(tok[2])).toBe("string")
+						expect(tok[1] >= 1).toBe(true)
+					end
+				end
+			elseif parsed == nil and err ~= nil then
+				expect(type(err) == "string" or type(err) == "number").toBe(true)
+			end
 
+			-- Unclosed quote law: verify exact unmatched opening quote byte offset
 			local cmd = g:string("abcdefghijklmnopqrstuvwxyz", 1, 10)
 			local arg1 = g:string("abcdefghijklmnopqrstuvwxyz0123456789", 1, 10)
-			local arg2 = g:string("abcdefghijklmnopqrstuvwxyz0123456789", 1, 10)
-			local line = `;{cmd} {arg1} "{arg2} inside"`
-			local parsed = Process.rawParse(line, DEFAULT_PREFIX, " ")
-			expect(parsed ~= nil).toBe(true)
-			expect(#(parsed :: any)).toBe(1)
-			expect((parsed :: any)[1][1][2]).toBe(cmd)
-			expect((parsed :: any)[1][2][2]).toBe(arg1)
-			expect((parsed :: any)[1][3][2]).toBe(`"{arg2} inside"`)
+			local tail = g:string("abcdefghijklmnopqrstuvwxyz0123456789", 1, 10)
+			local quoteChar = g:pick({ '"', "`" })
+			local unclosedMsg = `;{cmd} {arg1} {quoteChar}{tail} ;not_a_new_cmd`
+			local expectedQuoteOffset = 1 + #cmd + 1 + #arg1 + 1 + 1
+			expect(string.sub(unclosedMsg, expectedQuoteOffset, expectedQuoteOffset)).toBe(quoteChar)
+
+			local unclosedParsed, unclosedErr = Process.rawParse(unclosedMsg, DEFAULT_PREFIX, " ")
+			if unclosedParsed == nil then
+				expect(unclosedErr).toBe(expectedQuoteOffset)
+			else
+				expect(#unclosedParsed).toBe(1)
+				local quoteTok = unclosedParsed[1][3]
+				expect(quoteTok[1]).toBe(expectedQuoteOffset)
+				expect(quoteTok[2]).toBe(string.sub(unclosedMsg, expectedQuoteOffset))
+				expect(string.sub(unclosedMsg, quoteTok[1], quoteTok[1] + #quoteTok[2] - 1)).toBe(quoteTok[2])
+			end
 		end,
 		{ runs = 80 }
 	)
@@ -95,7 +253,6 @@ describe("Registry & DefaultTypes / DefaultCommands · Contract Laws", function(
 
 	local propMutant: any = nil
 	local propTypes: any = nil
-	local MATERIALS = { "Plastic", "Wood", "Slate", "Concrete", "Neon", "Glass" }
 	local function getPropTypes()
 		local curMutant = (_G :: any).__SERT_MUTANT
 		if propTypes == nil or propMutant ~= curMutant then
@@ -117,23 +274,29 @@ describe("Registry & DefaultTypes / DefaultCommands · Contract Laws", function(
 		return propTypes
 	end
 
-	prop(
+	local gen = sert.gen
+	sert.check(
 		"built-in scalar, color, timeSimple, vector, and enum types round-trip valid inputs and reject malformed ones",
-		function(g)
+		{
+			gen.int(-10000, 10000),
+			gen.color3(),
+			gen.int(1, 120),
+			gen.int(1, 59),
+			gen.vector3(gen.int(-500, 500)),
+			gen.enum(Harness.globals.Enum.Material),
+		},
+		function(n, expectedColor, mins, secs, vec, matItem)
 			local types = getPropTypes()
-			local Color3 = Harness.globals.Color3
 			local Vector2 = Harness.globals.Vector2
-			local Vector3 = Harness.globals.Vector3
-			local Enum = Harness.globals.Enum
 
-			local n = g:int(-10000, 10000)
 			local intVal = types.integer.transform(tostring(n))
 			expect((types.integer.validate(intVal))).toBe(true)
 			expect(types.integer.parse(intVal)).toBe(n)
 			expect((types.integer.validate(types.integer.transform("not_a_number")))).toBe(false)
 
-			local r, gr, b = g:int(0, 255), g:int(0, 255), g:int(0, 255)
-			local expectedColor = Color3.fromRGB(r, gr, b)
+			local r = math.round(expectedColor.R * 255)
+			local gr = math.round(expectedColor.G * 255)
+			local b = math.round(expectedColor.B * 255)
 			local hex = string.format("#%02x%02x%02x", r, gr, b)
 			local cHex = types.color.transform(hex)
 			expect((types.color.validate(cHex))).toBe(true)
@@ -143,14 +306,12 @@ describe("Registry & DefaultTypes / DefaultCommands · Contract Laws", function(
 			expect(types.color.parse(cRgb)).toEqual(expectedColor)
 			expect((types.color.validate(types.color.transform("#zzzzzz")))).toBe(false)
 
-			local mins = g:int(1, 120)
-			local secs = g:int(1, 59)
 			local okTime, parsedTime = types.timeSimple.validate(`{mins}m {secs}s`)
 			expect(okTime).toBe(true)
 			expect(parsedTime).toBe(mins * 60 + secs)
 			expect((types.timeSimple.validate("invalid_time_xyz"))).toBe(false)
 
-			local vx, vy, vz = g:int(-500, 500), g:int(-500, 500), g:int(-500, 500)
+			local vx, vy, vz = vec.X, vec.Y, vec.Z
 			local v2Val = types.vector2.transform(`{vx},{vy}`)
 			expect((types.vector2.validate(v2Val))).toBe(true)
 			expect(types.vector2.parse(v2Val)).toEqual(Vector2.new(vx, vy))
@@ -158,14 +319,14 @@ describe("Registry & DefaultTypes / DefaultCommands · Contract Laws", function(
 
 			local v3Val = types.vector3.transform(`{vx},{vy},{vz}`)
 			expect((types.vector3.validate(v3Val))).toBe(true)
-			expect(types.vector3.parse(v3Val)).toEqual(Vector3.new(vx, vy, vz))
+			expect(types.vector3.parse(v3Val)).toEqual(vec)
 			expect((types.vector3.validate(types.vector3.transform("1,bad,3")))).toBe(false)
 
 			local enumType = types["Enum.Material"]
-			local matName = g:pick(MATERIALS)
+			local matName = matItem.Name
 			expect((enumType.validate(matName))).toBe(true)
-			expect(enumType.parse(matName)).toBe((Enum.Material :: any)[matName])
-			expect(enumType.parse(string.lower(matName))).toBe((Enum.Material :: any)[matName])
+			expect(enumType.parse(matName)).toBe(matItem)
+			expect(enumType.parse(string.lower(matName))).toBe(matItem)
 		end,
 		{ runs = 60 }
 	)
@@ -1022,6 +1183,495 @@ describe("Process · Command filters & async roles", function()
 			expect(runs).toBe(1)
 		end
 	)
+
+	test(
+		"sert.laws.differential and adversarial fuzzing of rawParse, prepareCommands, runCommands, and Argument coercion",
+		function()
+			local h = Harness.newEnv({ isStudio = false })
+			local Data = h:requireData()
+			local Process = h:requireProcess()
+			local _K = h:requireK()
+			Data.settings.prefix = { ";", "!" }
+
+			local admin = h.env:addPlayer(101, "FuzzAdmin")
+			local guest = h.env:addPlayer(202, "FuzzGuest")
+			admin:SetAttribute("_KRolesLoaded", true)
+			guest:SetAttribute("_KRolesLoaded", true)
+			_K.Auth.userRoleAdd(admin.UserId, "superadmin")
+
+			local capturedCalls = {}
+			_K.Registry.registerCommand(_K, {
+				name = "fuzzcmd",
+				aliases = { "fcmd" },
+				description = "Fuzz target command",
+				group = "moderation",
+				args = {
+					{ type = "players", name = "Targets", description = "Target players", lowerRank = true },
+					{ type = "integer", name = "Count", description = "Count", optional = true },
+					{ type = "number", name = "Scale", description = "Scale", optional = true },
+					{ type = "string", name = "Note", description = "Note", optional = true },
+				},
+				run = function(_context, targets, count, scale, note)
+					table.insert(capturedCalls, {
+						n = #targets,
+						count = count,
+						scale = scale,
+						note = note,
+					})
+				end,
+			})
+
+			-- 1. sert.laws.differential on Process.rawParse with multi-command chains, nested quotes, prefixes, and byte spans
+			local chainGen = function(g: any)
+				local prefix = g:pick({ ";", "!", ":" })
+				local cmdCount = g:int(1, 3)
+				local cmds = {}
+				for c = 1, cmdCount do
+					local name = g:pick({ "fly", "ban", "kick", "announce", "fuzzcmd", "fcmd" })
+					local argCount = g:int(0, 3)
+					local args = {}
+					for a = 1, argCount do
+						local kind = g:int(1, 4)
+						if kind == 1 then
+							args[a] = g:pick({ "me", "all", "others", "*", "@mod", "%red", "~1", "$admins" })
+						elseif kind == 2 then
+							local inner = g:pick({ "hello ; world", "nested `tick` inside", "a,b,c", "100%s" })
+							args[a] = `"{inner}"`
+						elseif kind == 3 then
+							local inner = g:pick({ 'nested "double" inside', "semi ; colon", "space sep" })
+							args[a] = "`" .. inner .. "`"
+						else
+							args[a] = tostring(g:int(-1000, 1000))
+						end
+					end
+					cmds[c] = { name = name, args = args }
+				end
+				return { prefix = prefix, cmds = cmds }
+			end
+
+			sert.laws.differential("Process.rawParse command chain & quote tokenization", {
+				gen = chainGen,
+				sut = function(spec: any)
+					local parts = {}
+					for _, c in spec.cmds do
+						local tokens = { spec.prefix .. c.name }
+						for _, a in c.args do
+							table.insert(tokens, a)
+						end
+						table.insert(parts, table.concat(tokens, " "))
+					end
+					local raw = table.concat(parts, " ")
+					local parsed = Process.rawParse(raw, { spec.prefix }, " ")
+					expect(parsed ~= nil).toBe(true)
+					local simplified = {}
+					for i, cmdArr in parsed or {} do
+						expect(#cmdArr >= 1).toBe(true)
+						local row = {}
+						for j, tok in cmdArr do
+							local pos = tok[1]
+							local text = tok[2]
+							expect(string.sub(raw, pos, pos + #text - 1)).toBe(text)
+							row[j] = { pos = pos, endPos = pos + #text - 1, text = text }
+						end
+						simplified[i] = row
+					end
+					return simplified
+				end,
+				oracle = function(spec: any)
+					local expected = {}
+					local cursor = 1
+					for i, c in spec.cmds do
+						if i > 1 then
+							cursor += 1 -- space between commands
+						end
+						local namePos = cursor + #spec.prefix
+						local row = {
+							{ pos = namePos, endPos = namePos + #c.name - 1, text = c.name },
+						}
+						cursor = namePos + #c.name
+						for _, a in c.args do
+							cursor += 1 -- space before arg
+							table.insert(row, { pos = cursor, endPos = cursor + #a - 1, text = a })
+							cursor += #a
+						end
+						expected[i] = row
+					end
+					return expected
+				end,
+			}, { runs = 60 })
+
+			-- 2. Strict grammar & execution contracts on rawParse, prepareCommands, and runCommands
+			local malformedGen = sert.gen.malformedString()
+			local bIntGen = sert.gen.boundaryInt(-1e9, 1e9)
+			local bFloatGen = sert.gen.boundaryFloat(-1e6, 1e6)
+			local selectorGen = sert.gen.pick({
+				"*",
+				"all",
+				"others",
+				"me",
+				"@mod",
+				"@admin",
+				"@nonexistent",
+				"%red",
+				"~",
+				"~2",
+				"~-1",
+				"$all",
+				"$others",
+				"$admins",
+				"$nonadmins",
+				"$close",
+				"$far",
+				"$distance<50",
+				"$distance>100",
+				"$group=100>=50",
+				"!me",
+			})
+
+			sert.check(
+				"Process.rawParse, prepareCommands, and runCommands satisfy strict grammar and authorization contracts",
+				{ malformedGen, bIntGen, bFloatGen, selectorGen },
+				function(malformed, bInt, bFloat, selector)
+					for _, candidate in
+						{
+							malformed,
+							`;fuzzcmd {selector} {bInt} {bFloat} "{malformed}"`,
+							";fuzzcmd `quote \"inner\"` 'single' \\n\\t\\0 ;fuzzcmd " .. malformed,
+							`;{malformed} "{malformed}"`,
+						}
+					do
+						local okRaw, resRaw = pcall(Process.rawParse, candidate, { ";", "!" }, " ")
+						expect(okRaw).toBe(true)
+						expect(resRaw == nil or type(resRaw) == "table").toBe(true)
+						if resRaw ~= nil then
+							expect(#resRaw >= 1).toBe(true)
+							for _, cmdArr in resRaw do
+								expect(#cmdArr >= 1).toBe(true)
+								for _, tok in cmdArr do
+									expect(type(tok[1])).toBe("number")
+									expect(type(tok[2])).toBe("string")
+									expect(tok[1] >= 1).toBe(true)
+								end
+							end
+						end
+
+						-- Unprivileged guest can never prepare or execute moderation command fuzzcmd
+						local beforeCount = #capturedCalls
+						Process.resetLimit(guest.UserId)
+						local okPrepGuest, prepGuest, guestErrOrCmds =
+							pcall(Process.prepareCommands, _K, guest.UserId, candidate)
+						expect(okPrepGuest).toBe(true)
+						expect(prepGuest ~= true).toBe(true)
+						if prepGuest == false then
+							expect(type(guestErrOrCmds)).toBe("string")
+							expect(#guestErrOrCmds > 0).toBe(true)
+						end
+
+						Process.resetLimit(guest.UserId)
+						local okRunGuest, runGuestRes = pcall(Process.runCommands, _K, guest.UserId, candidate, true)
+						expect(okRunGuest).toBe(true)
+						if prepGuest == false then
+							expect(runGuestRes).toBe(false)
+						end
+						expect(#capturedCalls).toBe(beforeCount)
+						expect(_K.Auth.getRank(guest.UserId)).toBe(0)
+
+						-- Admin preparing arbitrary fuzzed command strings returns validated Command objects or non-empty error string
+						Process.resetLimit(admin.UserId)
+						local okPrepAdmin, prepAdminOk, prepAdminResult =
+							pcall(Process.prepareCommands, _K, admin.UserId, candidate)
+						expect(okPrepAdmin).toBe(true)
+						if prepAdminOk == true then
+							expect(type(prepAdminResult)).toBe("table")
+							for _, cmdObj in prepAdminResult do
+								expect(cmdObj.validated).toBe(true)
+								expect(cmdObj.from).toBe(admin.UserId)
+							end
+						elseif prepAdminOk == false then
+							local errMsg = if type(prepAdminResult) == "table"
+								then prepAdminResult.message
+								else prepAdminResult
+							expect(type(errMsg)).toBe("string")
+							expect(#errMsg > 0).toBe(true)
+						end
+					end
+				end,
+				{ runs = 60 }
+			)
+		end
+	)
+
+	sert.model("Command Execution, Hook & Request Protocol", {
+		setup = function()
+			local h = Harness.newEnv({ isStudio = false })
+			local Data = h:requireData()
+			local Process = h:requireProcess()
+			local _K = h:requireK()
+			Data.settings.prefix = { ";" }
+			Data.settings.commandRequests = true
+
+			local superadmin = h.env:addPlayer(101, "ModelSuper")
+			local mod = h.env:addPlayer(102, "ModelMod")
+			local peerMod = h.env:addPlayer(103, "ModelPeer")
+			local guest = h.env:addPlayer(104, "ModelGuest")
+			for _, p in { superadmin, mod, peerMod, guest } do
+				p:SetAttribute("_KRolesLoaded", true)
+			end
+			_K.Auth.userRoleAdd(superadmin.UserId, "superadmin")
+			_K.Auth.userRoleAdd(mod.UserId, "mod")
+			_K.Auth.userRoleAdd(peerMod.UserId, "mod")
+
+			Data.roles.mod.limits = { commands = 2, cooldown = 5, targets = 4 }
+
+			local sut = {
+				h = h,
+				_K = _K,
+				Data = Data,
+				Process = Process,
+				superadmin = superadmin,
+				mod = mod,
+				peerMod = peerMod,
+				guest = guest,
+				filterCancel = false,
+				nextRequestOutcome = "accept",
+				preHookCount = 0,
+				postHookCount = 0,
+				executedRuns = {} :: { { from: number, targetId: number, value: number } },
+				preHookCancelledButCommandRan = false,
+				deniedOrTimedOutRequestRan = false,
+				rankCeilingBypassed = false,
+			}
+
+			_K.Hook.preCommand:Connect(function(_cmd)
+				sut.preHookCount += 1
+			end)
+			_K.Hook.postCommand:Connect(function(_cmd)
+				sut.postHookCount += 1
+			end)
+
+			local removeFilter = Process.addCommandFilter(function(cmd)
+				if cmd.alias == "modelcmd" and sut.filterCancel then
+					return false, "Cancelled by pre-command filter"
+				end
+				return true
+			end)
+			sut.removeFilter = removeFilter
+
+			_K.Remote.RequestCommand.Invoke = function(_self, _targetPlayer, _fromPlayer, _cmdText)
+				if sut.nextRequestOutcome == "accept" then
+					return true
+				elseif sut.nextRequestOutcome == "deny" then
+					return false
+				else
+					error("RequestCommand timed out / player disconnected")
+				end
+			end
+
+			_K.Registry.registerCommand(_K, {
+				name = "modelcmd",
+				description = "Stateful protocol model command",
+				group = "moderation",
+				args = {
+					{
+						type = "player",
+						name = "Target",
+						description = "Target player",
+						lowerRank = true,
+						shouldRequest = true,
+					},
+					{
+						type = "integer",
+						name = "Value",
+						description = "Value",
+					},
+				},
+				run = function(context, target, value)
+					if sut.filterCancel then
+						sut.preHookCancelledButCommandRan = true
+					end
+					local callerRank = _K.Auth.getRank(context.from)
+					local targetRank = _K.Auth.getRank(target.UserId)
+					if target.UserId ~= context.from and callerRank <= targetRank then
+						if Data.settings.commandRequests == false then
+							sut.rankCeilingBypassed = true
+						elseif sut.nextRequestOutcome ~= "accept" then
+							sut.deniedOrTimedOutRequestRan = true
+						end
+					end
+					if callerRank == 0 then
+						sut.rankCeilingBypassed = true
+					end
+					table.insert(sut.executedRuns, {
+						from = context.from,
+						targetId = target.UserId,
+						value = value,
+					})
+				end,
+			})
+
+			return sut
+		end,
+		teardown = function(sut)
+			if sut and sut.removeFilter then
+				sut.removeFilter()
+			end
+		end,
+		init = function()
+			return {
+				filterCancel = false,
+				commandRequests = true,
+				nextRequestOutcome = "accept",
+				modCommandsUsed = 0,
+				modCommandLimit = 2,
+				expectedExecutions = 0,
+			}
+		end,
+		commands = {
+			setPolicy = {
+				gen = function(g)
+					return {
+						filterCancel = g:bool(0.25),
+						commandRequests = g:bool(0.75),
+						outcome = g:pick({ "accept", "deny", "timeout" }),
+					}
+				end,
+				run = function(sut, arg)
+					sut.filterCancel = arg.filterCancel
+					sut.Data.settings.commandRequests = arg.commandRequests
+					sut.nextRequestOutcome = arg.outcome
+					return true
+				end,
+				next = function(state, arg)
+					state.filterCancel = arg.filterCancel
+					state.commandRequests = arg.commandRequests
+					state.nextRequestOutcome = arg.outcome
+				end,
+			},
+			modRunOnLower = {
+				gen = function(g)
+					return g:int(1, 100)
+				end,
+				run = function(sut, val)
+					local ok = sut.Process.runCommands(sut._K, sut.mod.UserId, `;modelcmd ModelGuest {val}`, true)
+					sut.h.env:step(0.05)
+					return ok
+				end,
+				post = function(state, _val, ok)
+					if state.modCommandsUsed >= state.modCommandLimit or state.filterCancel then
+						expect(ok).toBe(false)
+					else
+						expect(ok).toBe(true)
+					end
+				end,
+				next = function(state)
+					if state.modCommandsUsed < state.modCommandLimit then
+						state.modCommandsUsed += 1
+						if not state.filterCancel then
+							state.expectedExecutions += 1
+						end
+					end
+				end,
+			},
+			modRunOnPeerOrHigher = {
+				gen = function(g)
+					return {
+						targetName = g:pick({ "ModelPeer", "ModelSuper" }),
+						val = g:int(1, 100),
+					}
+				end,
+				run = function(sut, arg)
+					local ok =
+						sut.Process.runCommands(sut._K, sut.mod.UserId, `;modelcmd {arg.targetName} {arg.val}`, true)
+					sut.h.env:step(0.05)
+					return ok
+				end,
+				post = function(state, _arg, ok)
+					if
+						state.modCommandsUsed >= state.modCommandLimit
+						or not state.commandRequests
+						or state.filterCancel
+					then
+						-- Rejected due to cooldown limit, lowerRank without commandRequests, or pre-command filter
+						expect(ok).toBe(false)
+					else
+						-- requestCommand is spawned asynchronously; runCommands returns true
+						expect(ok).toBe(true)
+					end
+				end,
+				next = function(state)
+					if state.modCommandsUsed < state.modCommandLimit then
+						if not state.commandRequests then
+							-- Failed prepareCommands increments commandLimits by #prepared + 1 (2)
+							state.modCommandsUsed += 2
+						else
+							state.modCommandsUsed += 1
+							if not state.filterCancel and state.nextRequestOutcome == "accept" then
+								state.expectedExecutions += 1
+							end
+						end
+					end
+				end,
+			},
+			guestAttemptCommand = {
+				gen = function(g)
+					return {
+						targetName = g:pick({ "ModelGuest", "ModelMod", "ModelSuper" }),
+						val = g:int(1, 100),
+					}
+				end,
+				run = function(sut, arg)
+					return sut.Process.runCommands(
+						sut._K,
+						sut.guest.UserId,
+						`;modelcmd {arg.targetName} {arg.val}`,
+						true
+					)
+				end,
+				post = function(_state, _arg, ok)
+					expect(ok).toBe(false)
+				end,
+			},
+			resetOrExpireCooldown = {
+				gen = function(g)
+					return g:pick({ "step", "reset" })
+				end,
+				run = function(sut, mode)
+					if mode == "step" then
+						sut.h.env:step(5.5)
+					else
+						sut.Process.resetLimit(sut.mod.UserId)
+					end
+					return true
+				end,
+				next = function(state)
+					state.modCommandsUsed = 0
+				end,
+			},
+		},
+		invariants = {
+			prePostHookSymmetry = function(state, sut)
+				return sut.preHookCount == sut.postHookCount and sut.postHookCount == state.expectedExecutions
+			end,
+			executionLogMatchesModel = function(state, sut)
+				return #sut.executedRuns == state.expectedExecutions
+			end,
+			cooldownMatchesModel = function(state, sut)
+				return sut.Process.onCooldown(sut._K, sut.mod.UserId)
+					== (state.modCommandsUsed >= state.modCommandLimit)
+			end,
+		},
+		never = {
+			preHookCancelledButCommandRan = function(_state, sut)
+				return sut.preHookCancelledButCommandRan
+			end,
+			deniedOrTimedOutRequestRan = function(_state, sut)
+				return sut.deniedOrTimedOutRequestRan
+			end,
+			rankCeilingBypassed = function(_state, sut)
+				return sut.rankCeilingBypassed
+			end,
+		},
+	}, { runs = 40, length = 15 })
 end)
 
 return {}

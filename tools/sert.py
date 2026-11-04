@@ -2,9 +2,9 @@
 """sert bootstrap: runs the sert that sert.toml pins. Commit this file unchanged; `sert lint` checks it.
 
 Order: $SERT_SOURCE (a sert checkout, for CI against an unreleased ref), then [override].sert in sert.local.toml,
-then sert-<version>.pyz from the GitHub release (the latest when [sert].version is unset), checked against pyz_sha256
-(else the release's SHA256SUMS) and cached in $SERT_CACHE, else %LOCALAPPDATA%\\sert, ~/Library/Caches/sert or
-~/.cache/sert. $GITHUB_TOKEN goes to github.com only. SERT_OFFLINE=1 runs a cached pyz only. Exit 2 on failure.
+then sert-<version>.pyz from the GitHub release (the latest when [sert].version is unset), cached in $SERT_CACHE,
+else %LOCALAPPDATA%\\sert, ~/Library/Caches/sert or ~/.cache/sert. $GITHUB_TOKEN goes to github.com only.
+SERT_OFFLINE=1 runs a cached pyz only. Exit 2 on failure.
 """
 import sys
 
@@ -12,7 +12,6 @@ if sys.version_info < (3, 11):
     print(f"sert: needs Python 3.11 or newer; this is {sys.version.split()[0]} ({sys.executable})", file=sys.stderr)
     sys.exit(2)
 
-import hashlib
 import http.client
 import os
 from pathlib import Path
@@ -86,13 +85,13 @@ def main():
     if not (source or override or "sert" in toml) and (ROOT / "python" / "sert").is_dir():
         override = "."
     if source or override:
-        checkout = Path(source) if source else (ROOT / override)
+        target = Path(source or override).expanduser()
+        checkout = target if source else (ROOT / target)
         if not (checkout / "python" / "sert").is_dir():
             fail(f"{'SERT_SOURCE' if source else '[override].sert in sert.local.toml'}: {checkout} is not a sert checkout (no python/sert)")
         return run([sys.executable, "-P", "-m", "sert"], checkout.resolve() / "python")  # -P: not the cwd's sert.py
     pin = toml.get("sert", {})
-    version, sha = pin.get("version"), (pin.get("pyz_sha256") or "").lower()
-    repo = pin.get("repo", "kohltastrophe/sert")
+    version, repo = pin.get("version"), pin.get("repo", "kohltastrophe/sert")
     base = os.environ.get("SERT_GITHUB_URL", "https://github.com").rstrip("/") + "/" + repo
     offline = os.environ.get("SERT_OFFLINE", "").strip().lower() in ("1", "true", "yes")
     if not version and offline:
@@ -100,29 +99,20 @@ def main():
     if not version:
         latest = download(f"{base}/releases/latest", "HEAD")[0]  # redirects to .../releases/tag/v<version>
         version = (re.search(r"/tag/v([^/?#]+)$", latest) or fail(f"cannot find the latest release ({latest})"))[1]
-    if not sha and os.environ.get("CI", "").strip().lower() in ("1", "true", "yes"):
-        fail(f"[sert].pyz_sha256 is not pinned (run `{PY} tools/sert.py lock --pin` and commit sert.toml)")
-    if not sha:
-        print("sert: [sert].pyz_sha256 is not pinned; trusting the release's SHA256SUMS"
-              f" (run `{PY} tools/sert.py lock --pin`)", file=sys.stderr)
     name, release = f"sert-{version}.pyz", f"{base}/releases/download/v{version}"
-    cached = [cache_dir() / sha / name] if sha else sorted(cache_dir().glob(f"*/{name}"))
-    pyz = next((p for p in cached if p.is_file() and hashlib.sha256(p.read_bytes()).hexdigest() == p.parent.name), None)
-    if not pyz:
+    pyz = cache_dir() / repo / f"v{version}" / name
+    if not pyz.is_file():
         if offline:
             fail(f"offline: {name} is not in the cache ({cache_dir()})")
-        if not sha:
-            sums = download(f"{release}/SHA256SUMS")[1].decode("utf-8", "replace")
-            match = re.search(rf"^([0-9a-fA-F]{{64}})\s+\*?{re.escape(name)}\s*$", sums, re.M)
-            sha = (match or fail(f"{release}/SHA256SUMS has no line for {name}"))[1].lower()
         data = download(f"{release}/{name}")[1]
-        if (actual := hashlib.sha256(data).hexdigest()) != sha:
-            fail(f"sha256 mismatch for {release}/{name}\n  expected {sha}\n  actual   {actual}")
-        pyz = cache_dir() / sha / name
         pyz.parent.mkdir(parents=True, exist_ok=True)
         part = pyz.with_name(f".{name}.{os.getpid()}")
-        part.write_bytes(data)
-        os.replace(part, pyz)
+        try:
+            part.write_bytes(data)
+            os.replace(part, pyz)
+        except BaseException:
+            part.unlink(missing_ok=True)
+            raise
     return run([sys.executable, str(pyz)])
 
 

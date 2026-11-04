@@ -33,6 +33,11 @@ describe("Auth · Role Ordering Laws", function()
 			end,
 			lt = Auth.roleIdSortAscending,
 		}, { runs = 60 })
+
+		expect(Auth.roleIdSort("mod", "unknown_role")).toBe(true)
+		expect(Auth.roleIdSort("unknown_role", "mod")).toBe(false)
+		expect(Auth.roleIdSortAscending("unknown_role", "mod")).toBe(true)
+		expect(Auth.roleIdSortAscending("mod", "unknown_role")).toBe(false)
 	end)
 end)
 
@@ -45,8 +50,7 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 			local freeAdminRoles = { "vip", "mod" }
 			local banDurations = { 0, 60, -1 }
 
-			local modelSys: any = nil
-			-- typed as any: the old solver rejects sert.model's map-form `commands` (Spec)
+			-- typed as any: the old solver rejects sert.model's map-form `actions` (Spec)
 			local model: any = sert.model
 			model({
 				init = function()
@@ -57,18 +61,15 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 					for _, uid in userIds do
 						h.env:addPlayer(uid, `Player{uid}`)
 					end
-					modelSys = { h = h, Data = Data, Auth = Auth }
-					return {
+					local state = {
 						roles = { [101] = {}, [102] = {}, [103] = {} },
 						persist = { [101] = {}, [102] = {}, [103] = {} },
 						freeAdmin = {},
 						bans = {},
 					}
+					return state, { h = h, Data = Data, Auth = Auth }
 				end,
-				setup = function()
-					return modelSys
-				end,
-				commands = {
+				actions = {
 					GrantRole = {
 						gen = function(g)
 							return {
@@ -76,6 +77,9 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 								role = g:pick(grantableRoles),
 								persist = g:bool(),
 							}
+						end,
+						guard = function(state, args)
+							return args ~= nil and state.roles[args.userId] ~= nil and args.role ~= nil
 						end,
 						run = function(sys, args)
 							sys.Auth.userRoleAdd(args.userId, args.role, args.persist)
@@ -100,6 +104,9 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 								role = g:pick(grantableRoles),
 							}
 						end,
+						guard = function(state, args)
+							return args ~= nil and state.roles[args.userId] ~= nil and args.role ~= nil
+						end,
 						run = function(sys, args)
 							sys.Auth.userRoleRemove(args.userId, args.role)
 						end,
@@ -122,6 +129,9 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 								role = if g:bool() then g:pick(freeAdminRoles) else nil,
 							}
 						end,
+						guard = function(_state, args)
+							return args ~= nil
+						end,
 						run = function(sys, args)
 							sys.Data.settings.freeAdmin = if args.role then { args.role } else {}
 						end,
@@ -136,16 +146,20 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 								duration = g:pick(banDurations),
 							}
 						end,
-						run = function(sys, args)
-							sys.Auth.banUsers({ args.userId }, "rule violation", args.duration, nil, true)
+						guard = function(_state, args)
+							return args ~= nil and args.userId ~= nil and args.duration ~= nil
 						end,
-						next = function(state, args)
+						run = function(sys, args)
 							local stamp = nil
 							if args.duration and args.duration > 0 then
-								stamp = math.floor(modelSys.h.env.workspace:GetServerTimeNow()) + args.duration
+								stamp = math.floor(sys.h.env.workspace:GetServerTimeNow()) + args.duration
 							elseif args.duration == -1 then
 								stamp = -1
 							end
+							sys.Auth.banUsers({ args.userId }, "rule violation", args.duration, nil, true)
+							return stamp
+						end,
+						next = function(state, args, stamp)
 							state.bans[args.userId] = { stamp = stamp }
 						end,
 					},
@@ -155,6 +169,9 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 								userId = g:pick(userIds),
 							}
 						end,
+						guard = function(_state, args)
+							return args ~= nil and args.userId ~= nil
+						end,
 						run = function(sys, args)
 							sys.Auth.unbanUsers({ args.userId }, nil, true)
 						end,
@@ -163,44 +180,76 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 						end,
 					},
 				},
-				invariant = function(state, sys)
-					local Data = sys.Data
-					local Auth = sys.Auth
-					for _, uid in userIds do
-						local expectedRank = 0
-						for _, roleId in state.freeAdmin do
-							expectedRank = math.max(expectedRank, Data.roles[roleId]._rank)
-						end
-						local expectedRestricted = false
-						for _, roleId in state.roles[uid] do
-							expectedRank = math.max(expectedRank, Data.roles[roleId]._rank)
-							if roleId ~= "vip" and not table.find(state.freeAdmin, roleId) then
-								expectedRestricted = true
+				never = {
+					unsortedMemberRoles = function(_state, sys)
+						for _, uid in userIds do
+							local member = sys.Data.members[tostring(uid)]
+							if member then
+								for i = 2, #member.roles do
+									if not sys.Auth.roleIdSort(member.roles[i - 1], member.roles[i]) then
+										return true
+									end
+								end
 							end
 						end
-						local actualRank, actualRole = Auth.getRank(uid)
-						expect(actualRank).toBe(expectedRank)
-						expect(actualRole._rank).toBe(expectedRank)
-						expect(Auth.hasRestrictedRole(uid)).toBe(expectedRestricted)
-						expect(Auth.hasPermission(uid, "banasync")).toBe(expectedRank >= 3)
-						expect(Auth.hasPermission(uid, "saveRoles")).toBe(expectedRank >= 4)
-
-						local member = Data.members[tostring(uid)]
-						if member then
-							for i = 2, #member.roles do
-								expect(Auth.roleIdSort(member.roles[i - 1], member.roles[i])).toBe(true)
+						return false
+					end,
+					bannedWithoutEntry = function(state, sys)
+						for _, uid in userIds do
+							local hasModelBan = state.bans[uid] ~= nil
+							local hasSutBan = sys.Data.bans[tostring(uid)] ~= nil
+							if hasModelBan ~= hasSutBan then
+								return true
 							end
 						end
-
-						local banEntry = Data.bans[tostring(uid)]
-						if state.bans[uid] ~= nil then
-							expect(banEntry ~= nil).toBe(true)
-							expect(banEntry[3]).toBe(state.bans[uid].stamp)
-						else
-							expect(banEntry).toBeNil()
+						return false
+					end,
+					unrestrictedEscalation = function(state, sys)
+						for _, uid in userIds do
+							local expectedRestricted = false
+							for _, roleId in state.roles[uid] do
+								if roleId ~= "vip" and not table.find(state.freeAdmin, roleId) then
+									expectedRestricted = true
+								end
+							end
+							if sys.Auth.hasRestrictedRole(uid) ~= expectedRestricted then
+								return true
+							end
 						end
-					end
-				end,
+						return false
+					end,
+				},
+				invariants = {
+					rankAndPermissionsMatchModel = function(state, sys)
+						local Data = sys.Data
+						local Auth = sys.Auth
+						for _, uid in userIds do
+							local expectedRank = 0
+							for _, roleId in state.freeAdmin do
+								expectedRank = math.max(expectedRank, Data.roles[roleId]._rank)
+							end
+							for _, roleId in state.roles[uid] do
+								expectedRank = math.max(expectedRank, Data.roles[roleId]._rank)
+							end
+							local actualRank, actualRole = Auth.getRank(uid)
+							expect(actualRank).toBe(expectedRank)
+							expect(actualRole._rank).toBe(expectedRank)
+							expect(Auth.hasPermission(uid, "banasync")).toBe(expectedRank >= 3)
+							expect(Auth.hasPermission(uid, "saveRoles")).toBe(expectedRank >= 4)
+						end
+					end,
+					banTimestampsMatchModel = function(state, sys)
+						for _, uid in userIds do
+							local banEntry = sys.Data.bans[tostring(uid)]
+							if state.bans[uid] ~= nil then
+								expect(banEntry ~= nil).toBe(true)
+								expect(banEntry[3]).toBe(state.bans[uid].stamp)
+							else
+								expect(banEntry).toBeNil()
+							end
+						end
+					end,
+				},
 			}, { runs = 35, length = 20 })
 		end
 	)
@@ -370,16 +419,15 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		Data.async.subscription["sub_super"] = { "superadmin" }
 
 		-- p1 has group rank 50 (matches exactRank=50 -> mod), gamepass 555 (-> vip), subscription sub_super (-> superadmin)
-		h.env.groups[1000] = {
-			ranks = { [101] = 50, [102] = 220 },
-			Roles = {
-				{ Name = "Guest", Rank = 0 },
-				{ Name = "Member", Rank = 1 },
-				{ Name = "Mod", Rank = 50 },
-				{ Name = "Admin", Rank = 200 },
-			},
+		h.env:setGroupRank(101, 1000, 50)
+		h.env:setGroupRank(102, 1000, 220)
+		h.env.groups[1000].Roles = {
+			{ Name = "Guest", Rank = 0 },
+			{ Name = "Member", Rank = 1 },
+			{ Name = "Mod", Rank = 50 },
+			{ Name = "Admin", Rank = 200 },
 		}
-		h.env.marketplace.gamePasses[101] = { [555] = true }
+		h.env:setGamePass(101, 555, true)
 		h.env.marketplace.subscriptions[101] = { sub_super = true }
 
 		-- p2 has group rank 220 (does NOT match exactRank=50, matches >=200 -> admin) and asset 777 (-> mod)
@@ -394,7 +442,7 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		Auth.userAsyncRoles(p1.UserId, false)
 
 		-- With bustCache = true, re-evaluates group roles and removes stale exactRank group role
-		h.env.groups[1000].ranks[101] = 250
+		h.env:setGroupRank(101, 1000, 250)
 		Auth.userAsyncRoles(p1.UserId, true)
 		expect(table.find(Data.members["101"].roles, "admin") ~= nil).toBe(true)
 		expect(table.find(Data.members["101"].roles, "mod")).toBeNil()
@@ -433,19 +481,18 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 
 		-- Group whose GetGroupInfoAsync fails stays fail-closed (isPublicRole = true) and schedules retry
 		local GroupService = h.env.game:GetService("GroupService")
-		local groupMethods = rawget(GroupService, "_methods")
-		local origGetInfo = groupMethods.GetGroupInfoAsync
-		groupMethods.GetGroupInfoAsync = function(_self, gid)
+		local origGetInfo = GroupService.GetGroupInfoAsync
+		local getInfoSpy = sert.spy(GroupService, "GetGroupInfoAsync", function(_self, gid)
 			if gid == 3000 then
 				error("GroupService error")
 			end
 			return origGetInfo(_self, gid)
-		end
+		end)
 		Data.async.group[3000] = {
 			{ rank = 200, roles = { "mod" } },
 		}
 		expect(Auth.isPublicRole("mod")).toBe(true)
-		groupMethods.GetGroupInfoAsync = origGetInfo
+		getInfoSpy:restore()
 	end)
 
 	test("banHandler checks site-unban history and formats timed, permanent, and server ban kick messages", function()
@@ -502,27 +549,23 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 			local modPlr = h.env:addPlayer(10, "ModNoBanAsync")
 			Auth.userRoleAdd(modPlr.UserId, "mod")
 
-			local playersMethods = rawget(h.env.Players, "_methods")
-			local origBanAsync = playersMethods.BanAsync
-			local origUnbanAsync = playersMethods.UnbanAsync
-
 			local banAttempts = 0
-			playersMethods.BanAsync = function(_self, config)
+			local banSpy = sert.spy(h.env.Players, "BanAsync", function(_self, config)
 				banAttempts += 1
 				if banAttempts == 1 then
 					error('{"code": "RateLimit"}')
 				end
 				return config
-			end
+			end)
 
 			local unbanAttempts = 0
-			playersMethods.UnbanAsync = function(_self, config)
+			local unbanSpy = sert.spy(h.env.Players, "UnbanAsync", function(_self, config)
 				unbanAttempts += 1
 				if unbanAttempts == 1 then
 					error('{"code": "ServiceUnavailable"}')
 				end
 				return config
-			end
+			end)
 
 			-- Hook.ban fires only with the users actually banned
 			local hookBans = {}
@@ -604,8 +647,8 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 			expect(Data.bans["802"]).toBeNil()
 			expect(Data.Sync.bans["802"]).toBe(Data.REMOVE)
 
-			playersMethods.BanAsync = origBanAsync
-			playersMethods.UnbanAsync = origUnbanAsync
+			banSpy:restore()
+			unbanSpy:restore()
 		end
 	)
 
@@ -736,30 +779,24 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		-- 2. Service errors across GroupService and MarketplaceService are caught and warned without throwing
 		local GroupService = h.env.game:GetService("GroupService")
 		local MarketplaceService = h.env.game:GetService("MarketplaceService")
-		local gMethods = rawget(GroupService, "_methods")
-		local mMethods = rawget(MarketplaceService, "_methods")
 
-		local origGetGroups = gMethods.GetGroupsAsync
-		local origGetGroupInfo = gMethods.GetGroupInfoAsync
-		local origOwnsPass = mMethods.UserOwnsGamePassAsync
-		local origOwnsAsset = mMethods.PlayerOwnsAssetAsync
-		local origSubStatus = mMethods.GetUserSubscriptionStatusAsync
-
-		gMethods.GetGroupsAsync = function()
-			error("GetGroupsAsync failed")
-		end
-		gMethods.GetGroupInfoAsync = function()
-			return { Roles = {} } -- no positive rank -> entry = nil -> schedules 60s reset
-		end
-		mMethods.UserOwnsGamePassAsync = function()
-			error("UserOwnsGamePassAsync failed")
-		end
-		mMethods.PlayerOwnsAssetAsync = function()
-			error("PlayerOwnsAssetAsync failed")
-		end
-		mMethods.GetUserSubscriptionStatusAsync = function()
-			error("GetUserSubscriptionStatusAsync failed")
-		end
+		local spies = {
+			sert.spy(GroupService, "GetGroupsAsync", function()
+				error("GetGroupsAsync failed")
+			end),
+			sert.spy(GroupService, "GetGroupInfoAsync", function()
+				return { Roles = {} } -- no positive rank -> entry = nil -> schedules 60s reset
+			end),
+			sert.spy(MarketplaceService, "UserOwnsGamePassAsync", function()
+				error("UserOwnsGamePassAsync failed")
+			end),
+			sert.spy(MarketplaceService, "PlayerOwnsAssetAsync", function()
+				error("PlayerOwnsAssetAsync failed")
+			end),
+			sert.spy(MarketplaceService, "GetUserSubscriptionStatusAsync", function()
+				error("GetUserSubscriptionStatusAsync failed")
+			end),
+		}
 
 		h.env.task.spawn(function()
 			Auth.prefetchGroupEntryRanks()
@@ -771,11 +808,9 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		end
 		expect(Data.members[tostring(pOnline.UserId)]).toBeNil()
 
-		gMethods.GetGroupsAsync = origGetGroups
-		gMethods.GetGroupInfoAsync = origGetGroupInfo
-		mMethods.UserOwnsGamePassAsync = origOwnsPass
-		mMethods.PlayerOwnsAssetAsync = origOwnsAsset
-		mMethods.GetUserSubscriptionStatusAsync = origSubStatus
+		for _, s in spies do
+			s:restore()
+		end
 	end)
 
 	test("userAsyncRoles keeps a player loading while their groups are retried for about a minute", function()
@@ -784,16 +819,16 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		local Auth = h:requireAuth()
 		local _K = h:requireK()
 
-		local gMethods = rawget(h.env.game:GetService("GroupService"), "_methods")
-		local origGetGroups = gMethods.GetGroupsAsync
+		local GroupService = h.env.game:GetService("GroupService")
+		local origGetGroups = GroupService.GetGroupsAsync
 		local groupCalls, failCalls = 0, 0
-		gMethods.GetGroupsAsync = function(self, userId)
+		local getGroupsSpy = sert.spy(GroupService, "GetGroupsAsync", function(self, userId)
 			groupCalls += 1
 			if groupCalls <= failCalls then
 				error("GetGroupsAsync failed", 0)
 			end
 			return origGetGroups(self, userId)
-		end
+		end)
 		local warnings = {}
 		h.env.game:GetService("LogService").MessageOut:Connect(function(message, messageType)
 			if messageType.Name == "MessageWarning" then
@@ -802,9 +837,11 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		end)
 
 		Data.async.group[4100] = { { rank = 200, roles = { "superadmin" } } }
-		h.env.groups[4100] = { ranks = { [961] = 250, [962] = 250, [963] = 250 }, Roles = {} }
+		h.env:setGroupRank(961, 4100, 250)
+		h.env:setGroupRank(962, 4100, 250)
+		h.env:setGroupRank(963, 4100, 250)
 		Data.async.gamepass[667] = { "vip" }
-		h.env.marketplace.gamePasses[961] = { [667] = true }
+		h.env:setGamePass(961, 667, true)
 		-- unowned assets and subscriptions aren't warnings
 		Data.async.asset[889] = { "mod" }
 		Data.async.subscription.sub_none = { "mod" }
@@ -907,7 +944,7 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		expect(stopped).toBe(true)
 		expect(groupCalls).toBe(5)
 
-		gMethods.GetGroupsAsync = origGetGroups
+		getGroupsSpy:restore()
 	end)
 
 	test("targetUserArgument checks the group and gamepass ranks of users out of this server", function()
@@ -917,25 +954,23 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		local _K = h:requireK()
 
 		local GroupService = h.env.game:GetService("GroupService")
-		local gMethods = rawget(GroupService, "_methods")
-		local origGetGroups = gMethods.GetGroupsAsync
+		local origGetGroups = GroupService.GetGroupsAsync
 		local groupCalls, failGroups = 0, false
-		gMethods.GetGroupsAsync = function(self, userId)
+		local getGroupsSpy = sert.spy(GroupService, "GetGroupsAsync", function(self, userId)
 			groupCalls += 1
 			if failGroups then
 				error("GetGroupsAsync failed")
 			end
 			return origGetGroups(self, userId)
-		end
+		end)
 
 		-- group 5000 rank 200+ gets SuperAdmin; gamepass 556 gets Administrator
 		Data.async.group[5000] = { { rank = 200, roles = { "superadmin" } } }
-		h.env.groups[5000] = {
-			ranks = { [70001] = 250, [70003] = 10 },
-			Roles = { { Name = "Member", Rank = 10 }, { Name = "Staff", Rank = 200 } },
-		}
+		h.env:setGroupRank(70001, 5000, 250)
+		h.env:setGroupRank(70003, 5000, 10)
+		h.env.groups[5000].Roles = { { Name = "Member", Rank = 10 }, { Name = "Staff", Rank = 200 } }
 		Data.async.gamepass[556] = { "admin" }
-		h.env.marketplace.gamePasses[70002] = { [556] = true }
+		h.env:setGamePass(70002, 556, true)
 
 		local adminPlr = h.env:addPlayer(60, "Administrator")
 		adminPlr:SetAttribute("_KRolesLoaded", true)
@@ -1000,13 +1035,11 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		expect(first[2]).toBe("Can't verify the rank of an offline user")
 		failGroups = false
 		expect(target(70009)).toBe(70009)
-		local mMethods = rawget(h.env.game:GetService("MarketplaceService"), "_methods")
-		local origOwnsPass = mMethods.UserOwnsGamePassAsync
-		mMethods.UserOwnsGamePassAsync = function()
+		local ownsPassSpy = sert.spy(h.env.game:GetService("MarketplaceService"), "UserOwnsGamePassAsync", function()
 			error("UserOwnsGamePassAsync failed")
-		end
+		end)
 		expect(select(2, target(70005))).toBe("Can't verify the rank of an offline user")
-		mMethods.UserOwnsGamePassAsync = origOwnsPass
+		ownsPassSpy:restore()
 
 		-- asset and subscription roles need the Player: fail closed only when they reach the command rank
 		Data.async.asset[778] = { "vip" }
@@ -1022,7 +1055,7 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		-- loaded players in this server keep today's check, without web calls
 		local present = h.env:addPlayer(70006, "Present")
 		present:SetAttribute("_KRolesLoaded", true)
-		h.env.groups[5000].ranks[70006] = 250
+		h.env:setGroupRank(70006, 5000, 250)
 		groupCalls = 0
 		expect(target(70006)).toBe(70006)
 		Auth.userRoleAdd(70006, "superadmin")
@@ -1035,7 +1068,7 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		Data.roles.admin.permissions.admin = nil
 		expect(groupCalls).toBe(0)
 
-		gMethods.GetGroupsAsync = origGetGroups
+		getGroupsSpy:restore()
 	end)
 
 	test("targetUserArgument skips offline rank lookups for skipOfflineRank arguments", function()
@@ -1044,20 +1077,10 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		local Auth = h:requireAuth()
 		local _K = h:requireK()
 
-		local gMethods = rawget(h.env.game:GetService("GroupService"), "_methods")
-		local mMethods = rawget(h.env.game:GetService("MarketplaceService"), "_methods")
-		local origGetGroups, origOwnsPass = gMethods.GetGroupsAsync, mMethods.UserOwnsGamePassAsync
-		local webCalls = 0
-		gMethods.GetGroupsAsync = function(...)
-			webCalls += 1
-			return origGetGroups(...)
-		end
-		mMethods.UserOwnsGamePassAsync = function(...)
-			webCalls += 1
-			return origOwnsPass(...)
-		end
+		local groupSpy = sert.spy(h.env.game:GetService("GroupService"), "GetGroupsAsync")
+		local passSpy = sert.spy(h.env.game:GetService("MarketplaceService"), "UserOwnsGamePassAsync")
 		Data.async.group[5000] = { { rank = 200, roles = { "superadmin" } } }
-		h.env.groups[5000] = { ranks = { [70001] = 250 }, Roles = {} }
+		h.env:setGroupRank(70001, 5000, 250)
 		Data.async.gamepass[556] = { "admin" }
 
 		local adminPlr = h.env:addPlayer(60, "Administrator")
@@ -1077,19 +1100,21 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 
 		-- an offline group SuperAdmin can be unbanned without web calls, but not banned
 		expect(target(unban, 70001, "70001")).toBe("70001")
-		expect(webCalls).toBe(0)
+		expect(groupSpy.callCount + passSpy.callCount).toBe(0)
 		expect(select(2, target({ lowerRank = true }, 70001, "70001"))).toBe("Can only target lower ranks")
-		expect(webCalls > 0).toBe(true)
+		expect(groupSpy.callCount + passSpy.callCount > 0).toBe(true)
 
 		-- roles known in this server and loading players are still checked
-		webCalls = 0
+		groupSpy:reset()
+		passSpy:reset()
 		Auth.userRoleAdd(70002, "superadmin")
 		expect(select(2, target(unban, 70002, "70002"))).toBe("Can only target lower ranks")
 		local loading = h.env:addPlayer(70003, "Loading")
 		expect(select(2, target(unban, 70003, loading))).toBe("Can't target loading user")
-		expect(webCalls).toBe(0)
+		expect(groupSpy.callCount + passSpy.callCount).toBe(0)
 
-		gMethods.GetGroupsAsync, mMethods.UserOwnsGamePassAsync = origGetGroups, origOwnsPass
+		groupSpy:restore()
+		passSpy:restore()
 	end)
 
 	test("targetUserArgument on the client never checks web ranks", function()
@@ -1098,13 +1123,7 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		local Data = h:requireData()
 		local Auth = h:requireAuth()
 
-		local gMethods = rawget(h.env.game:GetService("GroupService"), "_methods")
-		local origGetGroups = gMethods.GetGroupsAsync
-		local groupCalls = 0
-		gMethods.GetGroupsAsync = function(self, userId)
-			groupCalls += 1
-			return origGetGroups(self, userId)
-		end
+		local groupSpy = sert.spy(h.env.game:GetService("GroupService"), "GetGroupsAsync")
 		Data.async.group[5000] = { { rank = 200, roles = { "superadmin" } } }
 		Data.async.asset[778] = { "superadmin" }
 		Data.members["61"] = { name = "ClientAdmin", roles = { "admin" }, persist = {} }
@@ -1116,8 +1135,8 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 			command = { from = 61, fromRank = rank, fromRole = role, rank = rank },
 		}
 		expect(Auth.targetUserArgument(arg, 70001, 70001)).toBe(70001)
-		expect(groupCalls).toBe(0)
-		gMethods.GetGroupsAsync = origGetGroups
+		expect(groupSpy.callCount).toBe(0)
+		groupSpy:restore()
 	end)
 
 	test(
@@ -1147,6 +1166,441 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 			expect(banned).toEqual({ 801 })
 		end
 	)
+
+	test(
+		"sert.laws.differential verifies getRank, hasPermission, hasRole, hasCommand, and getRoleFromRank against reference oracle",
+		function()
+			local h = Harness.newEnv({ isStudio = false })
+			local Data = h:requireData()
+			local Auth = h:requireAuth()
+			local Registry = h:requireRegistry()
+
+			Registry.commands.help = { name = "help", group = "utility", aliases = {}, args = {} }
+			Registry.commands.ban = { name = "ban", group = "moderation", aliases = {}, args = {} }
+			Registry.commands.role = { name = "role", group = "administration", aliases = {}, args = {} }
+			Registry.commands.shutdown = { name = "shutdown", group = "superadmin", aliases = {}, args = {} }
+
+			local rolePool = { "vip", "mod", "admin", "superadmin" }
+			local permPool = { "admin", "banasync", "saveRoles", "settings", "serverlogs", "targetOthers" }
+			local cmdPool = { "help", "ban", "role", "shutdown" }
+			local rankNums: { [string]: number } = {
+				everyone = 0,
+				vip = 1,
+				mod = 2,
+				admin = 3,
+				superadmin = 4,
+				creator = math.huge,
+			}
+
+			local scenarioGen = function(g: any)
+				local memberRoles = {}
+				for _, r in rolePool do
+					if g:bool(0.35) then
+						table.insert(memberRoles, r)
+					end
+				end
+				table.sort(memberRoles, Auth.roleIdSort)
+				local freeRoles = {}
+				for _, r in { "vip", "mod", "admin" } do
+					if g:bool(0.25) then
+						table.insert(freeRoles, r)
+					end
+				end
+				return {
+					isCreator = g:bool(0.15),
+					memberRoles = memberRoles,
+					freeRoles = freeRoles,
+					queryRank = g:pick({ -5, 0, 0.5, 1, 2, 2.5, 3, 4, 10, math.huge }),
+				}
+			end
+
+			sert.laws.differential("Auth rank, permission, role, and command resolution", {
+				gen = scenarioGen,
+				sut = function(sc: any)
+					local uid = if sc.isCreator then Data.creatorId else 707
+					if #sc.memberRoles > 0 then
+						Data.members[tostring(uid)] = {
+							name = "DiffUser",
+							roles = table.clone(sc.memberRoles),
+							persist = {},
+						}
+					else
+						Data.members[tostring(uid)] = nil
+					end
+					Data.settings.freeAdmin = table.clone(sc.freeRoles)
+
+					local rank, roleObj = Auth.getRank(uid)
+					local perms = {}
+					for _, p in permPool do
+						perms[p] = Auth.hasPermission(uid, p)
+					end
+					local rolesOut = {}
+					for _, r in ROLE_IDS do
+						rolesOut[r] = Auth.hasRole(uid, r)
+					end
+					local cmdsOut = {}
+					for _, c in cmdPool do
+						cmdsOut[c] = Auth.hasCommand(uid, c)
+					end
+					local roleFromRank = Auth.getRoleFromRank(sc.queryRank)._key
+					return {
+						rank = rank,
+						roleKey = roleObj._key,
+						perms = perms,
+						roles = rolesOut,
+						cmds = cmdsOut,
+						roleFromRank = roleFromRank,
+					}
+				end,
+				oracle = function(sc: any)
+					local maxRank = 0
+					local maxRoleKey = "everyone"
+					if sc.isCreator then
+						maxRank = math.huge
+						maxRoleKey = "creator"
+					else
+						for _, list in { sc.memberRoles, sc.freeRoles } do
+							for _, r in list do
+								local rk = rankNums[r]
+								if rk and rk > maxRank then
+									maxRank = rk
+									maxRoleKey = r
+								end
+							end
+						end
+					end
+
+					local function roleHasPerm(roleKey: string, perm: string): boolean
+						local roleDef = Data.roles[roleKey]
+						if not roleDef then
+							return false
+						end
+						return (roleDef.permissions.admin or roleDef.permissions[perm]) == true
+					end
+
+					local perms = {}
+					for _, p in permPool do
+						local ok = sc.isCreator or roleHasPerm("everyone", p)
+						if not ok then
+							for _, r in sc.memberRoles do
+								if roleHasPerm(r, p) then
+									ok = true
+									break
+								end
+							end
+						end
+						if not ok then
+							for _, r in sc.freeRoles do
+								if roleHasPerm(r, p) then
+									ok = true
+									break
+								end
+							end
+						end
+						perms[p] = ok
+					end
+
+					local rolesOut = {}
+					for _, r in ROLE_IDS do
+						if sc.isCreator or table.find(sc.memberRoles, r) ~= nil then
+							rolesOut[r] = true
+						else
+							rolesOut[r] = maxRank > rankNums[r]
+						end
+					end
+
+					local cmdsOut = {}
+					for _, c in cmdPool do
+						local cmdDef = Registry.commands[c]
+						if sc.isCreator then
+							cmdsOut[c] = math.huge
+						else
+							local matched: boolean | number = false
+							for _, r in sc.memberRoles do
+								if Auth.roleCanUseCommand(r, cmdDef) then
+									matched = rankNums[r]
+									break
+								end
+							end
+							if matched == false then
+								for _, r in sc.freeRoles do
+									if Auth.roleCanUseCommand(r, cmdDef) then
+										matched = rankNums[r]
+										break
+									end
+								end
+							end
+							if matched == false and Auth.roleCanUseCommand("everyone", cmdDef) then
+								matched = 0
+							end
+							cmdsOut[c] = matched
+						end
+					end
+
+					local closestKey = "creator"
+					local closestRank = math.huge
+					for _, r in ROLE_IDS do
+						local rk = rankNums[r]
+						if rk == sc.queryRank then
+							closestKey = r
+							break
+						elseif rk >= sc.queryRank and rk < closestRank then
+							closestRank = rk
+							closestKey = r
+						end
+					end
+
+					return {
+						rank = maxRank,
+						roleKey = maxRoleKey,
+						perms = perms,
+						roles = rolesOut,
+						cmds = cmdsOut,
+						roleFromRank = closestKey,
+					}
+				end,
+			}, { runs = 80 })
+		end
+	)
+
+	test(
+		"sert.laws.remote verifies banUsers, unbanUsers, and targetUserArgument under adversarial and unprivileged inputs",
+		function()
+			local h = Harness.newEnv({ isStudio = false })
+			local Data = h:requireData()
+			local Auth = h:requireAuth()
+			local _K = { Data = Data }
+
+			local adminPlr = h.env:addPlayer(101, "SuperAdminProtected")
+			local modPlr = h.env:addPlayer(201, "ModCaller")
+			local guestPlr = h.env:addPlayer(202, "GuestCaller")
+			for _, p in { adminPlr, modPlr, guestPlr } do
+				p:SetAttribute("_KRolesLoaded", true)
+			end
+			Auth.userRoleAdd(101, "superadmin")
+			Auth.userRoleAdd(201, "mod")
+
+			Data.bans["500"] = { "PersistentBanUser", "Permanent ban", -1, 101 }
+
+			-- 1. Unprivileged guest calling Auth.banUsers / Auth.unbanUsers / Auth.targetUserArgument
+			sert.laws.remote("Auth.banUsers & unbanUsers (guest)", {
+				makePlayer = function()
+					return guestPlr
+				end,
+				argCount = 3,
+				validGen = sert.gen.tuple({
+					sert.gen.pick({ 101, 201, 500 }),
+					sert.gen.malformedString(),
+					sert.gen.boundaryInt(-1, 3600),
+				}),
+				invalidGen = sert.gen.tuple({
+					sert.gen.remotePayload(2),
+					sert.gen.adversarial(2),
+					sert.gen.boundaryFloat(-1e6, 1e6),
+				}),
+				handler = function(plr: any, targetId: any, reason: any, duration: any)
+					local rank, role = Auth.getRank(plr.UserId)
+					Data.targetLimits[plr.UserId] = 0
+					local arg = {
+						_K = _K,
+						definition = { lowerRank = true },
+						command = { from = plr.UserId, fromRank = rank, fromRole = role, rank = rank },
+					}
+					if type(targetId) == "number" and targetId > 0 and math.floor(targetId) == targetId then
+						local allowed = Auth.targetUserArgument(arg, targetId, targetId)
+						if allowed then
+							Auth.banUsers(
+								{ targetId },
+								if type(reason) == "string" then reason else nil,
+								duration,
+								plr.UserId
+							)
+							Auth.unbanUsers({ targetId }, plr.UserId)
+						end
+					end
+				end,
+				post = function(plr: any, ok: boolean)
+					expect(ok).toBe(true)
+					expect(Auth.getRank(plr.UserId)).toBe(0)
+				end,
+				checkState = function(plr: any)
+					expect(Auth.getRank(plr.UserId)).toBe(0)
+					expect(Data.bans["101"]).toBeNil()
+					expect(Data.bans["201"]).toBeNil()
+					expect(Data.bans["500"] ~= nil).toBe(true)
+					expect(Data.bans["500"][3]).toBe(-1)
+				end,
+			}, { runs = 50 })
+
+			-- 2. Moderator (without banasync) calling Auth.banUsers / Auth.unbanUsers against saved ban 500 & higher-rank 101
+			sert.laws.remote("Auth.banUsers & unbanUsers (mod boundary)", {
+				makePlayer = function()
+					return modPlr
+				end,
+				argCount = 3,
+				validGen = sert.gen.tuple({
+					sert.gen.pick({ 101, 500 }),
+					sert.gen.malformedString(),
+					sert.gen.boundaryInt(-1, 3600),
+				}),
+				invalidGen = sert.gen.tuple({
+					sert.gen.adversarial(2),
+					sert.gen.remotePayload(2),
+					sert.gen.boundaryFloat(-1e6, 1e6),
+				}),
+				handler = function(plr: any, targetId: any, reason: any, duration: any)
+					if type(targetId) == "number" and (targetId == 101 or targetId == 500) then
+						local safeDur = if type(duration) == "number" and duration == duration
+							then math.floor(duration)
+							else 0
+						Auth.banUsers(
+							{ targetId },
+							if type(reason) == "string" then reason else "fuzz",
+							safeDur,
+							plr.UserId
+						)
+						Auth.unbanUsers({ targetId }, plr.UserId)
+					end
+				end,
+				post = function(plr: any, ok: boolean)
+					expect(ok).toBe(true)
+					expect(Auth.getRank(plr.UserId)).toBe(2)
+				end,
+				checkState = function()
+					expect(Data.bans["101"]).toBeNil()
+					expect(Data.bans["500"] ~= nil).toBe(true)
+					expect(Data.bans["500"][3]).toBe(-1)
+				end,
+			}, { runs = 50 })
+		end
+	)
+
+	do
+		local compH: any, compData: any, compAuth: any
+		local COMP_ROLES = { "everyone", "vip", "mod", "admin", "superadmin", "creator" }
+		local COMP_PERMS = { "admin", "banasync", "saveRoles", "settings", "serverlogs", "targetOthers" }
+		local COMP_GROUPS =
+			{ "utility", "vip", "moderation", "general", "environment", "fun", "administration", "superadmin" }
+		local COMP_CMDS = { "help", "version", "fly", "ban", "unban", "announce", "settings", "shutdown" }
+
+		sert.prop(
+			"Metamorphic Permission Composition Law: Rank(A ∪ B) == math.max(Rank(A), Rank(B)) and Perms(A ∪ B) == Perms(A) ∪ Perms(B)",
+			function(g)
+				if not compH then
+					compH = Harness.newEnv({ isStudio = false })
+					compData = compH:requireData()
+					compAuth = compH:requireAuth()
+					local Registry = compH:requireRegistry()
+					for _, name in COMP_CMDS do
+						if not Registry.commands[name] then
+							Registry.commands[name] = {
+								name = name,
+								aliases = {},
+								group = "moderation",
+								args = {},
+							}
+						end
+					end
+				end
+
+				Harness.seedRoles(compData)
+				table.clear(compData.members)
+				compData.settings.freeAdmin = {}
+
+				-- Define two dynamic synthetic roles alongside the built-in role catalog
+				local function makeDynamicRole(key: string, rank: number)
+					local perms: { [string]: boolean } = {}
+					for _, p in COMP_PERMS do
+						if p ~= "admin" then
+							perms[p] = g:bool()
+						else
+							perms[p] = g:int(1, 6) == 1
+						end
+					end
+					local groups: { string } = {}
+					for _, grp in COMP_GROUPS do
+						if g:bool() then
+							table.insert(groups, grp)
+						end
+					end
+					local cmds: { [string]: boolean } = {}
+					for _, c in COMP_CMDS do
+						if g:int(1, 4) == 1 then
+							cmds[c] = true
+						end
+					end
+					local roleObj = {
+						_key = key,
+						_rank = rank,
+						name = key,
+						color = "#fff",
+						groups = groups,
+						limits = { cooldown = 4, commands = 32, targets = 10 },
+						permissions = perms,
+						commands = cmds,
+					}
+					compData.roles[key] = roleObj
+					table.insert(compData.rolesList, roleObj)
+				end
+
+				local rankA = g:int(1, 8)
+				local rankB = g:int(1, 8)
+				if rankB == rankA then
+					rankB += 1
+				end
+				makeDynamicRole("customA", rankA)
+				makeDynamicRole("customB", rankB)
+
+				local pool = { "everyone", "vip", "mod", "admin", "superadmin", "creator", "customA", "customB" }
+				local roleA = g:pick(pool)
+				local roleB = g:pick(pool)
+
+				local uA, uB, uAB, uBA = 701, 702, 703, 704
+				compAuth.userRoleAdd(uA, roleA)
+				compAuth.userRoleAdd(uB, roleB)
+				compAuth.userRoleAdd(uAB, roleA)
+				compAuth.userRoleAdd(uAB, roleB)
+				compAuth.userRoleAdd(uBA, roleB)
+				compAuth.userRoleAdd(uBA, roleA)
+
+				local rA = compAuth.getRank(uA)
+				local rB = compAuth.getRank(uB)
+				local rAB = compAuth.getRank(uAB)
+				local rBA = compAuth.getRank(uBA)
+
+				expect(rAB).toBe(math.max(rA, rB))
+				expect(rBA).toBe(rAB)
+
+				for _, p in COMP_PERMS do
+					local pA = compAuth.hasPermission(uA, p)
+					local pB = compAuth.hasPermission(uB, p)
+					local pAB = compAuth.hasPermission(uAB, p)
+					local pBA = compAuth.hasPermission(uBA, p)
+					expect(pAB).toBe(pA or pB)
+					expect(pBA).toBe(pAB)
+				end
+
+				for _, c in COMP_CMDS do
+					local cA = compAuth.hasCommand(uA, c) ~= false
+					local cB = compAuth.hasCommand(uB, c) ~= false
+					local cAB = compAuth.hasCommand(uAB, c) ~= false
+					local cBA = compAuth.hasCommand(uBA, c) ~= false
+					expect(cAB).toBe(cA or cB)
+					expect(cBA).toBe(cAB)
+				end
+
+				for _, r in COMP_ROLES do
+					local hA = compAuth.hasRole(uA, r)
+					local hB = compAuth.hasRole(uB, r)
+					local hAB = compAuth.hasRole(uAB, r)
+					local hBA = compAuth.hasRole(uBA, r)
+					expect(hAB).toBe(hA or hB)
+					expect(hBA).toBe(hAB)
+				end
+			end,
+			{ runs = 80 }
+		)
+	end
 end)
 
 return {}

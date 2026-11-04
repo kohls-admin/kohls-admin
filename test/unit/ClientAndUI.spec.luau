@@ -30,16 +30,16 @@ do
 	end
 
 	local function clientK(): any
-		local _K = shared._K_INTERFACE
-		local deadline = os.clock() + 15
-		while not (_K and _K.ready and _K.client and _K.client.dashboard and _K.client.dashboard.Window) do
-			if os.clock() > deadline then
-				error("the Kohl's Admin client never became ready")
-			end
-			task.wait(0.05)
-			_K = shared._K_INTERFACE
-		end
-		return _K
+		return sert.waitFor(function()
+			local _K = shared._K_INTERFACE
+			return if _K
+					and _K.ready
+					and _K.client
+					and _K.client.dashboard
+					and _K.client.dashboard.Window
+				then _K
+				else nil
+		end, 15, "the Kohl's Admin client never became ready")
 	end
 
 	local function frames(UI: any, n: number?)
@@ -52,8 +52,15 @@ do
 	local function openDashboard(_K: any)
 		local window = _K.client.dashboard.Window
 		if not window._instance.Visible then
-			_K.client.hotkeys.dashboard.callback()
+			local flicker = sert.roblox.Flicker.around(function()
+				return window._instance
+			end, function()
+				_K.client.hotkeys.dashboard.callback()
+			end, { label = "Dashboard", fromSettledSize = true })
+			sert.roblox.Flicker.expect(flicker)
 		end
+		local settled, moving = sert.roblox.Layout.settle(window._instance)
+		sert(settled, `Dashboard layout settled ({moving})`)
 		frames(_K.UI, 3)
 		-- Opening the dashboard must never auto-open the VIP modal
 		if _K.VIP and _K.VIP.popup then
@@ -64,6 +71,7 @@ do
 	local function jumpTo(_K: any, page: any)
 		local tabs = _K.client.dashboard.Tabs
 		tabs._pages:JumpTo(tabs._containerCache[page._instance])
+		sert.roblox.Layout.settle(page._instance)
 		frames(_K.UI, 4)
 	end
 
@@ -102,18 +110,16 @@ do
 			params.Text, params.Font, params.Size, params.Width =
 				"Kohl's Admin", UI.Theme.FontBold:peek(), 18, math.huge
 			local expected = math.ceil(game:GetService("TextService"):GetTextBoundsAsync(params).X)
-			local deadline = os.clock() + 5
-			while width:peek() ~= expected and os.clock() < deadline do
-				task.wait()
-			end
+			sert.waitFor(function()
+				return width:peek() == expected
+			end, 5, "UI.textWidth initial measurement")
 			expect(width:peek()).toBe(expected)
 
 			text:set("Kohl's Admin, but wider")
 			UI.flush()
-			deadline = os.clock() + 5
-			while width:peek() <= expected and os.clock() < deadline do
-				task.wait()
-			end
+			sert.waitFor(function()
+				return width:peek() > expected
+			end, 5, "UI.textWidth updated measurement")
 			sert(width:peek() > expected, "re-measures when its tracked inputs change")
 			measure:Destroy()
 			width:Destroy()
@@ -246,10 +252,16 @@ do
 				local name = page._instance.Name
 				expect(dashboard.Tabs.CurrentPage:peek()).toBe(page._instance)
 				if page._lineItemCache then
-					local deadline = os.clock() + 3
-					while next(page._lineItemCache) == nil and os.clock() < deadline do
-						frames(UI, 1)
-					end
+					sert.waitFor(
+						function()
+							return next(page._lineItemCache) ~= nil
+						end,
+						3,
+						`{name} rows rendered`,
+						function()
+							frames(UI, 1)
+						end
+					)
 					local rows, hitTested = 0, false
 					for _, item in page._lineItemCache do
 						rows += 1
@@ -270,6 +282,30 @@ do
 					end
 					sert(rows > 0, `{name} renders rows, got {rows}`)
 					sert(hitTested, `{name} has a row in view`)
+				end
+				if name == "About" then
+					local credits = sert.waitFor(
+						function()
+							local c = page._instance:FindFirstChild("Credits", true)
+							return if c and c:FindFirstChild("Contributors") then c else nil
+						end,
+						3,
+						"About credits sections rendered",
+						function()
+							frames(UI, 1)
+						end
+					)
+					local activeSection = credits:FindFirstChild("Active contributors")
+					local plainSection = credits:FindFirstChild("Contributors")
+					local specialSection = credits:FindFirstChild("Special Thanks")
+					expect(activeSection ~= nil).toBe(true)
+					expect(plainSection ~= nil).toBe(true)
+					expect(specialSection ~= nil).toBe(true)
+					expect(activeSection.LayoutOrder < plainSection.LayoutOrder).toBe(true)
+					expect(plainSection.LayoutOrder < specialSection.LayoutOrder).toBe(true)
+					local plainUsers = plainSection:FindFirstChild("Users")
+					expect(plainUsers ~= nil and plainUsers:FindFirstChild("Header") == nil).toBe(true)
+					expect(plainUsers:FindFirstChild("Credit") ~= nil).toBe(true)
 				end
 			end
 		end)
@@ -500,8 +536,9 @@ describe("Client and UI", function()
 
 			local UI = cliMounted.env:require(cliMounted.Client.UI)
 			if UI.registerClasses then
-				UI.registerClasses()
+				expect(UI.registerClasses()).toBe(UI)
 			end
+			expect(rawequal(UI.new("Frame"), UI.new("Frame"))).toBe(true)
 
 			-- Double registration throws
 			local okDup = pcall(function()
@@ -531,8 +568,17 @@ describe("Client and UI", function()
 			-- Active state management (hover, floating, dialog)
 			local s1 = UI.signal(false)
 			local s2 = UI.signal(false)
+			local s1Changes = 0
+			local s1Effect = UI.effect(function()
+				s1()
+				s2()
+				s1Changes += 1
+			end)
+			s1Effect:get()
+			expect(s1Changes).toBe(1)
 			UI.activateState(s1, "hover")
 			expect(s1()).toBe(true)
+			expect(s1Changes).toBe(2)
 			UI.activateState(s2, "hover")
 			expect(s1()).toBe(false)
 			expect(s2()).toBe(true)
@@ -546,18 +592,25 @@ describe("Client and UI", function()
 			UI.toggleState(s2, "hover")
 			expect(s2()).toBe(true)
 
+			local beforeDeactivate = s1Changes
 			UI.deactivateState(s2, "hover")
 			expect(s2()).toBe(false)
+			expect(s1Changes).toBe(beforeDeactivate + 1)
 			expect(UI._activeState.hover).toBeNil()
 
 			UI.activateState(s1, "floating")
 			UI.activateState(s2, "dialog")
 			expect(s1()).toBe(true)
 			expect(s2()).toBe(true)
+			local prevS1Changes = s1Changes
 			UI.clearState("floating")
 			expect(s1()).toBe(false)
+			expect(s1Changes).toBe(prevS1Changes + 1)
+			expect(UI._activeState.floating).toBeNil()
 			UI.clearActiveStates()
 			expect(s2()).toBe(false)
+			expect(UI._activeState.dialog).toBeNil()
+			s1Effect:Destroy()
 
 			-- Invalid state throws
 			expect(pcall(UI.activateState, "not_a_state", "hover")).toBe(false)
@@ -632,6 +685,24 @@ describe("Client and UI", function()
 			expect(defs.c()).toBe(fn)
 			expect(UI.isNode(defs.d)).toBe(true)
 			expect(defs.d()).toBe(99)
+			expect(#defs._createdNodes).toBe(3)
+
+			-- UI.textWidth
+			local twSig, twMeasure = UI.textWidth(function()
+				return {
+					{
+						Text = "<b>Hello</b>",
+						Font = Font.fromEnum(Enum.Font.Gotham),
+						Size = 16,
+						RichText = true,
+					},
+				}
+			end)
+			expect(twSig:peek() > 0).toBe(true)
+			world:run(2)
+			expect(twSig:peek() > 0).toBe(true)
+			twMeasure:Destroy()
+			twSig:Destroy()
 
 			-- newSinkHoverState (processed vs unprocessed)
 			local hoverFrame = UI.new "Frame" { Parent = UI.LayerDefault }
@@ -663,6 +734,11 @@ describe("Client and UI", function()
 				)
 			)
 			expect(hoverState()).toBe(false)
+			local externalHover = UI.signal(true)
+			local hoverFrame2 = UI.new "Frame" { Parent = UI.LayerDefault }
+			UI.newSinkHoverState(hoverFrame2, externalHover)
+			expect(externalHover()).toBe(false)
+			hoverFrame2:Destroy()
 
 			-- UI.edit with numeric children (including wrapped class child & preset LayoutOrder), UI.Hook, and DefaultProperties
 			local child1 = UI.new "Frame" { Name = "Child1" }
@@ -742,6 +818,44 @@ describe("Client and UI", function()
 			UI.Theme.CornerRadius(UDim.new(0, 8))
 			expect(UI.Theme.CornerHalf().Offset).toBe(4)
 			expect(UI.Theme.CornerDiameter().Offset).toBe(16)
+
+			-- UI.new custom class constructor, unwrapChild in UI.new, and parent._content unwrapping
+			local customChild1 = { _instance = UI.new "Frame" { Name = "WrappedChild1" } }
+			local customChild2 = { _instance = UI.new "Frame" { Name = "WrappedChild2" } }
+			local customChild3 = { { _instance = UI.new "Frame" { Name = "NestedWrappedChild3" } } }
+			local hostFrame = UI.new "Frame" {
+				Parent = customComp,
+				customChild1,
+				customChild2,
+				customChild3,
+			}
+			expect(hostFrame.Parent).toBe(customComp._content)
+			expect(customChild1._instance.Parent).toBe(hostFrame)
+			expect(customChild1._instance.LayoutOrder).toBe(1)
+			expect(customChild2._instance.Parent).toBe(hostFrame)
+			expect(customChild2._instance.LayoutOrder).toBe(2)
+			expect(customChild3[1].Parent).toBe(hostFrame)
+
+			local customBtn = UI.new "Button" {
+				Parent = customComp,
+				Label = "Part1Btn",
+			}
+			expect(customBtn._instance.Parent).toBe(customComp._content)
+			expect(#customBtn._createdNodes > 0).toBe(true)
+			local btnNodeDestroyed = 0
+			customBtn.ActiveSound:onDestroy(function()
+				btnNodeDestroyed += 1
+			end)
+			customBtn:Destroy()
+			expect(btnNodeDestroyed).toBe(1)
+
+			local reactiveTxt = UI.signal("InitialTxt")
+			local reactiveLbl = UI.new "TextLabel" {
+				Text = function()
+					return reactiveTxt()
+				end,
+			}
+			expect(reactiveLbl.Text).toBe("InitialTxt")
 		end)
 	end)
 
@@ -816,11 +930,15 @@ describe("Client and UI", function()
 				end,
 			}
 			expect(btn._content.Label.Visible).toBe(true)
+			expect(btn._content.Label.Text).toBe("Click Me")
 			expect(btn._content.IconFrame.Visible).toBe(true)
+			expect(btn._instance.Size.X.Scale).toBe(0)
 			btn.AutomaticSize(Enum.AutomaticSize.X)
 			btn.AutomaticSize(Enum.AutomaticSize.Y)
 			btn.AutomaticSize(Enum.AutomaticSize.None)
-			btn._instance.Activated:Fire()
+			UI.flush()
+			expect(btn._instance.Size.X.Scale).toBe(1)
+			env:input():click(btn._instance)
 			expect(btnClicked).toBe(1)
 			btn._instance.InputBegan:Fire(
 				makeInput(env, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(10, 10, 0) }),
@@ -1403,6 +1521,8 @@ describe("Client and UI", function()
 			win1._instance.Parent = paddedParent
 			paddedParent.Size = UDim2.fromOffset(700, 500)
 			win1._instance.Parent = UI.LayerDefault
+			win1.Position(UDim2.fromOffset(100, 100))
+			UI.flush()
 
 			local win2 = UI.new "Window" {
 				Parent = UI.LayerDefault,
@@ -1653,6 +1773,337 @@ describe("Client and UI", function()
 				expect(dBadArg.commands[1].Error ~= nil).toBe(true)
 			end
 		)
+
+		do
+			local cbSut: any = nil
+			local liveHistory: { string } = {}
+
+			local function getOrCreateCommandBarSut()
+				if cbSut and #cbSut.world.scheduler.errors == 0 then
+					return cbSut
+				end
+				local world = sert.sim.new({ backing = true })
+				local server = world:server()
+				local client = server:client(1, "Player1")
+				local cliMounted = setupClientEnv(client, { mockRemote = true })
+
+				local _K = cliMounted:requireK()
+				Harness.seedRoles(_K.Data)
+				_K.Data.settings.prefix = { ";" }
+				_K.Data.settings.splitKey = " "
+				_K.Auth.userRoleAdd(1, "admin")
+
+				local UI = cliMounted.env:require(cliMounted.Client.UI)
+				if UI.registerClasses then
+					UI.registerClasses()
+				end
+				_K.UI = UI
+				_K.IsClient = true
+				_K.LocalPlayer = cliMounted.env.Players.LocalPlayer
+				_K.Notify = function() end
+				_K.client = {
+					rank = _K.Flux.signal(3),
+					commandBarEnabled = true,
+					dashboardButtonEnabled = true,
+					dashboardButton = { Visible = true },
+					playerPrefix = _K.Flux.signal(";"),
+					settings = {
+						prefix = _K.Flux.signal({ ";" }),
+						onlyShowUsableCommands = _K.Flux.signal(false),
+					},
+					hotkeys = {},
+				}
+
+				for _, extraName in { "testalpha", "testbeta" } do
+					_K.Registry.registerCommand(_K, {
+						name = extraName,
+						aliases = {},
+						description = `Test command {extraName}`,
+						group = "Utility",
+						args = {},
+						runClient = function() end,
+					})
+				end
+
+				for _, cmd in _K.Registry.commands do
+					cmd.LocalPlayerAuthorized = _K.Auth.roleCanUseCommand("admin", cmd)
+						or _K.Auth.roleCanUseCommand("mod", cmd)
+						or _K.Auth.roleCanUseCommand("everyone", cmd)
+					cmd.RestrictedToRole = _K.Data.roles.superadmin
+				end
+				for _, name in { "version", "help", "cmds", "fly", "ban", "testalpha", "testbeta" } do
+					if _K.Registry.commands[name] then
+						_K.Registry.commands[name].LocalPlayerAuthorized = true
+					end
+				end
+				if _K.Registry.commands.shutdown then
+					_K.Registry.commands.shutdown.LocalPlayerAuthorized = false
+					_K.Registry.commands.shutdown.RestrictedToRole = _K.Data.roles.superadmin
+				end
+
+				local CompletionData = cliMounted.env:require(cliMounted.Client.CommandBar.CompletionData)
+				local CommandBar = cliMounted.env:require(cliMounted.Client.CommandBar)
+				CommandBar:init(_K)
+				world:run(0.1)
+
+				table.clear(liveHistory)
+				cbSut = {
+					world = world,
+					env = cliMounted.env,
+					_K = _K,
+					UI = UI,
+					CompletionData = CompletionData,
+					CommandBar = CommandBar,
+				}
+				return cbSut
+			end
+
+			local TOKEN_INPUTS = {
+				";",
+				";ver",
+				";version",
+				";help",
+				";testalpha",
+				";testbeta",
+				";fly",
+				";fly me",
+				";ban 2 10m reason",
+				";version ;help",
+				";shutdown",
+				";notacommand ",
+			}
+			local EXECUTABLE_INPUTS = {
+				";version",
+				";help",
+				";testalpha",
+				";testbeta",
+				";notacommand ",
+				";",
+			}
+
+			sert.model("CommandBar & CompletionData Autocomplete and History State Machine", {
+				init = function()
+					local sut = getOrCreateCommandBarSut()
+					local input = sut.CommandBar.Input
+					input._input.SelectionStart = -1
+					input:SetValue(";")
+					input._input.CursorPosition = 2
+					sut.CommandBar.updateCompletionData()
+					sut.world:run(0.05)
+					return {
+						prefix = ";",
+						text = ";",
+						cursor = 2,
+						suggestionIndex = 1,
+						history = table.clone(liveHistory),
+					},
+						sut
+				end,
+				commands = {
+					TypeToken = {
+						gen = function(g)
+							return g:pick(TOKEN_INPUTS)
+						end,
+						run = function(sut, text)
+							local input = sut.CommandBar.Input
+							input._input.SelectionStart = -1
+							input:SetValue(text)
+							input._input.CursorPosition = #text + 1
+							sut.CommandBar.updateCompletionData()
+							sut.world:run(0.05)
+						end,
+						next = function(state, text)
+							state.text = text
+							state.cursor = #text + 1
+							state.suggestionIndex = 1
+							return state
+						end,
+					},
+					MoveCursor = {
+						gen = function(g, state)
+							return g:int(1, #state.text + 1)
+						end,
+						run = function(sut, pos)
+							local input = sut.CommandBar.Input
+							input._input.SelectionStart = -1
+							input._input.CursorPosition = pos
+							sut.CommandBar.updateCompletionData()
+							sut.world:run(0.05)
+						end,
+						next = function(state, pos)
+							state.cursor = math.max(#state.prefix + 1, pos)
+							state.suggestionIndex = 1
+							return state
+						end,
+					},
+					CycleSuggestion = {
+						gen = function(g)
+							return {
+								dir = g:pick({ "Up", "Down" }),
+								steps = g:int(1, 3),
+							}
+						end,
+						run = function(sut, arg)
+							local input = sut.CommandBar.Input
+							input._input:CaptureFocus()
+							local keyCode = if arg.dir == "Up" then Enum.KeyCode.Up else Enum.KeyCode.Down
+							for _ = 1, arg.steps do
+								sut.UI.UserInputService.InputBegan:Fire(
+									makeInput(
+										sut.env,
+										{ UserInputType = Enum.UserInputType.Keyboard, KeyCode = keyCode }
+									),
+									false
+								)
+							end
+							sut.world:run(0.05)
+						end,
+						next = function(state, arg)
+							local sut = getOrCreateCommandBarSut()
+							local isHistory = (state.text == state.prefix)
+							local count = 1
+							if isHistory then
+								count = math.max(1, #state.history)
+							else
+								local d = sut.CompletionData(sut._K, state.text, state.cursor)
+								count = math.max(1, if d.suggestions then #d.suggestions else 1)
+							end
+							for _ = 1, arg.steps do
+								if isHistory then
+									if arg.dir == "Up" then
+										state.suggestionIndex = math.min(count, state.suggestionIndex + 1)
+									else
+										state.suggestionIndex = math.max(1, state.suggestionIndex - 1)
+									end
+								else
+									if arg.dir == "Up" then
+										state.suggestionIndex = math.max(1, state.suggestionIndex - 1)
+									else
+										state.suggestionIndex = math.min(count, state.suggestionIndex + 1)
+									end
+								end
+							end
+							return state
+						end,
+					},
+					NavigateHistory = {
+						gen = function(g)
+							return g:int(0, 3)
+						end,
+						run = function(sut, upSteps)
+							local input = sut.CommandBar.Input
+							input._input.SelectionStart = -1
+							input:SetValue(";")
+							input._input.CursorPosition = 2
+							input._input:CaptureFocus()
+							sut.world:step()
+							sut.CommandBar.updateCompletionData()
+							for _ = 1, upSteps do
+								sut.UI.UserInputService.InputBegan:Fire(
+									makeInput(
+										sut.env,
+										{ UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Up }
+									),
+									false
+								)
+							end
+							sut.world:step()
+						end,
+						next = function(state, upSteps)
+							state.text = state.prefix
+							state.cursor = 2
+							state.suggestionIndex = 1
+							local count = math.max(1, #state.history)
+							for _ = 1, upSteps do
+								state.suggestionIndex = math.min(count, state.suggestionIndex + 1)
+							end
+							return state
+						end,
+					},
+					ExecuteCommand = {
+						gen = function(g)
+							return g:pick(EXECUTABLE_INPUTS)
+						end,
+						run = function(sut, cmdText)
+							local input = sut.CommandBar.Input
+							input._input.SelectionStart = -1
+							input._input:ReleaseFocus()
+							input:SetValue(cmdText)
+							input._input.CursorPosition = #cmdText + 1
+							sut.CommandBar.updateCompletionData()
+							input._input.FocusLost:Fire(true)
+							sut.world:run(0.05)
+							input._input.SelectionStart = -1
+							input._input.CursorPosition = #input._input.Text + 1
+							sut.CommandBar.updateCompletionData()
+							sut.world:run(0.05)
+						end,
+						next = function(state, cmdText)
+							local sut = getOrCreateCommandBarSut()
+							local d = sut.CompletionData(sut._K, cmdText, #cmdText + 1)
+							local hasInvalidArg = false
+							for _, cmd in d.commands do
+								if cmd.invalidArg then
+									hasInvalidArg = true
+									break
+								end
+							end
+							if #d.invalid > 0 or (cmdText ~= state.prefix and #d.commands < 1) or hasInvalidArg then
+								local trimmedInvalid = sut._K.Util.String.trimEnd(cmdText)
+								state.text = trimmedInvalid
+								state.cursor = #trimmedInvalid + 1
+								state.suggestionIndex = 1
+								return state
+							end
+							if cmdText ~= state.prefix then
+								local trimmed = sut._K.Util.String.trimEnd(cmdText)
+								local entry = string.sub(trimmed, 2)
+								for _, hist in { state.history, liveHistory } do
+									local idx = table.find(hist, entry)
+									if idx ~= 1 then
+										if idx then
+											table.remove(hist, idx)
+										end
+										table.insert(hist, 1, entry)
+										if #hist > 32 then
+											table.remove(hist)
+										end
+									end
+								end
+							end
+							state.text = state.prefix
+							state.cursor = 2
+							state.suggestionIndex = 1
+							return state
+						end,
+					},
+				},
+				invariant = function(state, sut)
+					expect(sut.world.scheduler.errors).toEqual({})
+					local input = sut.CommandBar.Input
+					expect(input._input.Text).toBe(state.text)
+					expect(input._input.CursorPosition).toBe(state.cursor)
+					expect(input._input.CursorPosition >= #state.prefix + 1).toBe(true)
+
+					local d = sut.CompletionData(sut._K, state.text, state.cursor)
+					if state.text == state.prefix then
+						expect(d.suggestionType).toBe("History")
+						expect(d.argIndex).toBe(0)
+						expect(d.argPos).toBe(2)
+						if #state.history > 0 then
+							local expectedCmd = state.history[state.suggestionIndex]
+							local display = input.DisplayText:peek()
+							expect(string.find(display, expectedCmd, 1, true) ~= nil).toBe(true)
+						end
+					else
+						local validSignal = sut._K.client.CommandBarState[1]:peek()
+						if #d.invalid > 0 then
+							expect(validSignal).toBe(false)
+						end
+					end
+				end,
+			}, { runs = 25, length = 18 })
+		end
 	end)
 
 	describe(
@@ -1781,8 +2232,9 @@ describe("Client and UI", function()
 						end
 					end
 
-					-- Typing prefix-less text auto-prepends prefix; duplicate prefix strips
-					CommandBar.Input._input.Text = "help"
+					-- Typing prefix-less text via env:input() auto-prepends prefix; duplicate prefix strips
+					cEnv:input():click(CommandBar.Input._input)
+					cEnv:input():type("help")
 					CommandBar.Input._input.CursorPosition = 6
 					world:run(0.2)
 					expect(string.sub(CommandBar.Input._input.Text, 1, 1)).toBe(";")
@@ -1801,15 +2253,11 @@ describe("Client and UI", function()
 					world:run(0.1)
 					expect(CommandBar.Input._input.CursorPosition >= 2).toBe(true)
 
-					-- Up / Down suggestion navigation
-					UI.UserInputService.InputBegan:Fire(
-						makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Down }),
-						false
-					)
-					UI.UserInputService.InputBegan:Fire(
-						makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Up }),
-						false
-					)
+					-- Up / Down suggestion navigation via env:input()
+					cEnv:input():press(Enum.KeyCode.Down)
+					cEnv:input():release(Enum.KeyCode.Down)
+					cEnv:input():press(Enum.KeyCode.Up)
+					cEnv:input():release(Enum.KeyCode.Up)
 
 					-- Register a multi-type test command to exercise all suggestion value renderers in CommandBar
 					cK.Registry.registerType("testRichValues", {
@@ -2076,6 +2524,16 @@ describe("Client and UI", function()
 					world:run(0.5)
 					expect(reqResult).toBe(true)
 
+					-- Verify RequestCommand.OnInvoke accepts a numeric userId (from cross-server ;global request)
+					local reqThread = client:spawn(function()
+						return cK.Remote.RequestCommand.OnInvoke(101, ";kill Target")
+					end)
+					world:run(0.1)
+					expect(coroutine.status(reqThread)).toBe("suspended")
+					client:spawn(function()
+						coroutine.close(reqThread)
+					end)
+
 					-- Chatted / Remote.Command on client (wrong prefix warning + valid command)
 					sK.Remote.Command:Fire(srvPlayer, "!help")
 					world:run(0.3)
@@ -2313,7 +2771,7 @@ describe("Client and UI", function()
 					end
 					-- Click a role button in roleMenu (under UI.LayerTop)
 					for _, menuChild in UI.LayerTop:GetChildren() do
-						if menuChild.Name ~= "Menu" then
+						if menuChild.Name ~= "Menu" or not menuChild.Visible then
 							continue
 						end
 						for _, btn in menuChild:GetDescendants() do
@@ -2487,7 +2945,7 @@ describe("Client and UI", function()
 						world:run(0.1)
 					end
 					for _, menuChild in UI.LayerTop:GetChildren() do
-						if menuChild.Name ~= "Menu" then
+						if menuChild.Name ~= "Menu" or not menuChild.Visible then
 							continue
 						end
 						for _, btn in menuChild:GetDescendants() do
@@ -2603,6 +3061,121 @@ describe("Client and UI", function()
 					-- About & Market tabs
 					dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.About._instance])
 					world:run(0.2)
+					do
+						local AboutModule = cliMounted.Client:FindFirstChild("About")
+						local Credits = cliMounted.env:require(AboutModule:FindFirstChild("Credits"))
+						local Contributions = cliMounted.env:require(AboutModule:FindFirstChild("Contributions"))
+						local Order = cliMounted.env:require(AboutModule:FindFirstChild("Order"))
+
+						local function ids(list)
+							local out = {}
+							for idx, person in list do
+								out[idx] = person.Id
+							end
+							return out
+						end
+
+						-- Shared fixture order & tie-breaking rules (matches test/unit/CreditsOrder.json)
+						local fixtureData = {
+							recent = {
+								ALPHA = 3,
+								beta = 10,
+								gamma = 3,
+								eps = 3,
+								unmapped = 1,
+								zeta = 1,
+								theta = 2,
+								eta = 1,
+							},
+							names = {
+								[1] = { name = "zed", displayName = "Zed", verified = false },
+								[2] = { name = "bob", displayName = "Bob", verified = false },
+								[3] = { name = "cy", displayName = "Cy", verified = false },
+								[4] = { name = "amy", displayName = "amy", verified = false },
+								[5] = { name = "al", displayName = "Al", verified = false },
+								[7] = { name = "dee", displayName = "Dee", verified = false },
+								[8] = { name = "Ébé", displayName = "Ébé", verified = false },
+								[9] = { name = "éa", displayName = "éa", verified = false },
+								[10] = { name = "sam_b", displayName = "Sam", verified = false },
+								[11] = { name = "Sam_a", displayName = "sam", verified = false },
+								[12] = { name = "sam_a", displayName = "Sam", verified = false },
+								[14] = { name = "aaa", displayName = "Bob", verified = false },
+								[15] = { name = "zeta_u", displayName = "Zeta", verified = false },
+								[16] = { name = "theta", displayName = "Theta", verified = false },
+								[17] = { name = "eta", displayName = "Eta", verified = false },
+							},
+						}
+						local fixturePeople = {
+							{ Id = 1 },
+							{ Id = 2, GitHub = "alpha" },
+							{ Id = 3, GitHub = "Beta" },
+							{ Id = 4 },
+							{ Id = 5, GitHub = "gamma" },
+							{ Id = 6 },
+							{ Id = 7, GitHub = "delta" },
+							{ Id = 8 },
+							{ Id = 9 },
+							{ Id = 10 },
+							{ Id = 11 },
+							{ Id = 12 },
+							{ Id = 13 },
+							{ Id = 14, GitHub = "eps" },
+							{ Id = 15, GitHub = "zeta" },
+							{ Id = 16, GitHub = "theta" },
+							{ Id = 17, GitHub = "eta" },
+						}
+						expect(ids(Order.active(fixturePeople, fixtureData))).toEqual({ 3, 5, 14, 2, 16 })
+						expect(ids(Order.plain(fixturePeople, fixtureData))).toEqual({
+							4,
+							7,
+							17,
+							11,
+							12,
+							10,
+							1,
+							15,
+							8,
+							9,
+							6,
+							13,
+						})
+						-- Also exercise active tie-breaking when displayNames or names are missing
+						local tiePeople = {
+							{ Id = 20, GitHub = "alpha" },
+							{ Id = 10, GitHub = "Beta" },
+							{ Id = 30, GitHub = "gamma" },
+						}
+						local tieData = {
+							recent = { alpha = 4, Beta = 4, gamma = 4 },
+							names = {
+								[10] = { name = "same", displayName = "Same", verified = false },
+								[20] = { name = "same", displayName = "Same", verified = false },
+							},
+						}
+						expect(ids(Order.active(tiePeople, tieData))).toEqual({ 10, 20, 30 })
+
+						-- Generated data invariants + luv2trilogy (3727541395)
+						local activeList = Order.active(Credits.people)
+						local plainList = Order.plain(Credits.people)
+						expect(#activeList + #plainList).toBe(#Credits.people)
+						expect(Credits.specialThanks.Id).toBe(16)
+						local foundLuv2 = false
+						for _, person in Credits.people do
+							expect(Contributions.names[person.Id] ~= nil).toBe(true)
+							expect(person.Id ~= 16).toBe(true)
+							if person.Id == 3727541395 then
+								foundLuv2 = true
+								expect(person.GitHub).toBe("luv2trilogy")
+							end
+						end
+						expect(foundLuv2).toBe(true)
+
+						local creditsFrame = dash.About._instance:FindFirstChild("Credits", true)
+						expect(creditsFrame ~= nil).toBe(true)
+						expect(creditsFrame:FindFirstChild("Active contributors") ~= nil).toBe(true)
+						expect(creditsFrame:FindFirstChild("Contributors") ~= nil).toBe(true)
+						expect(creditsFrame:FindFirstChild("Special Thanks") ~= nil).toBe(true)
+					end
 					for _, desc in dash.About._instance:GetDescendants() do
 						if desc:IsA("TextButton") or desc:IsA("ImageButton") then
 							desc.Activated:Fire()
@@ -2875,7 +3448,6 @@ describe("Client and UI", function()
 						end
 					end
 
-					testFolder.Parent = nil
 					testFolder:Destroy()
 					testCfg:Destroy()
 					testPart:Destroy()
@@ -3147,39 +3719,23 @@ describe("Client and UI · motion nodes die with their component", function()
 		local world = sert.sim.new({ backing = true })
 		local server = world:server()
 		local client = server:client(1, "Player1")
-		local srvMounted = Harness.newPeerEnv(server, { isStudio = true })
-		local cliMounted = setupClientEnv(client)
-		local sK = srvMounted:requireK()
-		server:spawn(function()
-			sK.initialize({
-				bans = {},
-				userRoles = { creator = { 1 } },
-				assetRoles = {},
-				gamepassRoles = {},
-				subscriptionRoles = {},
-				groupRoles = {},
-				friendRoles = {},
-				freeAdmin = {},
-				prefix = { ";" },
-				splitKey = " ",
-				commands = {},
-				vip = false,
-				roles = Harness.defaultRoles(),
-			})
-		end)
-		world:run(1)
-
+		local cliMounted = setupClientEnv(client, { mockRemote = true })
 		local cK = cliMounted:requireK()
-		local preUI = cliMounted.env:require(cliMounted.Client.UI)
-		preUI.Pointer = preUI.signal({ Position = Vector3.new(100, 100, 0) })
-		client:spawn(function()
-			cliMounted.env:require(cliMounted.Client)
-		end)
-		world:run(3)
-		expect(cK.ready).toBe(true)
+		Harness.seedRoles(cK.Data)
+		local UI = cliMounted.env:require(cliMounted.Client.UI)
+		if UI.registerClasses then
+			UI.registerClasses()
+		end
+		cK.UI = UI
+		cK.IsClient = true
+		cK.LocalPlayer = cliMounted.env.Players.LocalPlayer
+		cK.client = {
+			rank = cK.Flux.signal(0),
+			UserFrame = cliMounted.env:require(cliMounted.Client.UserFrame),
+		}
+		cK.Notify = cliMounted.env:require(cliMounted.Client.Notify)
 
-		local UI = cK.UI
-		world:run(1)
+		world:run(0.2)
 		UI.flush()
 		local baseline = observers(UI.Theme.Padding)
 
@@ -3231,17 +3787,187 @@ describe("Client and UI · motion nodes die with their component", function()
 		expect(UI.Class.Tooltip.Cache[adornee2]).toBeNil()
 		adornee1:Destroy()
 		adornee2:Destroy()
-
-		-- Verify RequestCommand.OnInvoke accepts a numeric userId (from cross-server ;global request)
-		local reqThread = client:spawn(function()
-			return cK.Remote.RequestCommand.OnInvoke(101, ";kill Target")
-		end)
-		world:run(0.1)
-		expect(coroutine.status(reqThread)).toBe("suspended")
-		client:spawn(function()
-			coroutine.close(reqThread)
-		end)
 	end)
+
+	do
+		local ExplorerOrder: any
+		local explorerClasses: { string }
+		local function getExplorerOrder()
+			if not ExplorerOrder then
+				local h = Harness.shared()
+				ExplorerOrder = h.env:require(h.Client:WaitForChild("Explorer"):WaitForChild("ExplorerOrder"))
+				explorerClasses = {}
+				for className in ExplorerOrder do
+					table.insert(explorerClasses, className)
+				end
+				table.sort(explorerClasses)
+			end
+			return ExplorerOrder, explorerClasses
+		end
+
+		sert.laws.order("ExplorerOrder · sortChildren", {
+			gen = function(g)
+				local _, classes = getExplorerOrder()
+				return {
+					ClassName = g:pick(classes),
+					Name = sert.gen.string("abcd", 1, 4)(g),
+				}
+			end,
+			lt = function(a, b)
+				local orderMap = getExplorerOrder()
+				local orderA = orderMap[a.ClassName]
+				local orderB = orderMap[b.ClassName]
+				if orderA and orderB and orderA ~= orderB then
+					return orderA < orderB
+				end
+				if a.ClassName == b.ClassName then
+					return a.Name < b.Name
+				end
+				return a.ClassName < b.ClassName
+			end,
+		})
+	end
+
+	do
+		sert.laws.ui("UI Components · Multi-Viewport Responsive Layout Audit", {
+			viewports = {
+				{ name = "Phone", size = Vector2.new(390, 844) },
+				{ name = "Tablet", size = Vector2.new(820, 1180) },
+				{ name = "Desktop", size = Vector2.new(1920, 1080) },
+				{ name = "Console", size = Vector2.new(1920, 1080) },
+			},
+			noOverlap = true,
+			fitsViewport = true,
+			noTextOverflow = true,
+			mount = function(_env, _parent, viewport)
+				local world, UI = newClientUI()
+				local screenGui = UI.LayerDefault.Parent
+				if screenGui then
+					screenGui.Size = UDim2.fromOffset(viewport.X, viewport.Y)
+				end
+
+				local panelW = math.min(viewport.X - 24, 560)
+				local panelH = math.min(viewport.Y - 48, 380)
+
+				local btnExecute = UI.new "Button" {
+					Name = "ExecuteButton",
+					Label = "Execute",
+					Size = UDim2.fromOffset(100, 32),
+				}
+				btnExecute._instance.Ripple.Size = UDim2.fromOffset(0, 0)
+				local btnClear = UI.new "Button" {
+					Name = "ClearButton",
+					Label = "Clear",
+					Size = UDim2.fromOffset(88, 32),
+				}
+				btnClear._instance.Ripple.Size = UDim2.fromOffset(0, 0)
+				local swToggle = UI.new "Switch" {
+					Name = "ModeSwitch",
+					AnchorPoint = Vector2.new(0, 0),
+					Position = UDim2.fromOffset(0, 0),
+					Value = true,
+				}
+				local cbCheck = UI.new "Checkbox" {
+					Name = "ConfirmCheck",
+					AnchorPoint = Vector2.new(0, 0),
+					Position = UDim2.fromOffset(0, 0),
+					Value = true,
+				}
+
+				local panel = UI.new "Frame" {
+					Name = "AuditPanel",
+					Parent = UI.LayerDefault,
+					Position = UDim2.fromOffset(12, 24),
+					Size = UDim2.fromOffset(panelW, panelH),
+					BackgroundColor3 = UI.Theme.Primary,
+
+					UI.padding(UDim.new(0, 8)),
+					UI.list {
+						gap = UDim.new(0, 8),
+						horizontalAlign = "start",
+						verticalAlign = "start",
+					},
+
+					UI.new "TextLabel" {
+						Name = "HeaderTitle",
+						LayoutOrder = 1,
+						BackgroundTransparency = 1,
+						Size = UDim2.new(1, 0, 0, 28),
+						FontFace = UI.Theme.FontBold,
+						TextSize = 18,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						Text = "Kohl's Admin Controls",
+					},
+
+					UI.new "Frame" {
+						Name = "Toolbar",
+						LayoutOrder = 2,
+						BackgroundTransparency = 1,
+						Size = UDim2.new(1, 0, 0, 36),
+
+						UI.list {
+							direction = "x",
+							gap = UDim.new(0, 8),
+							verticalAlign = "center",
+						},
+
+						btnExecute._instance,
+						btnClear._instance,
+						swToggle._instance,
+						cbCheck._instance,
+					},
+
+					UI.new "Frame" {
+						Name = "RowsSection",
+						LayoutOrder = 3,
+						BackgroundTransparency = 1,
+						Size = UDim2.new(1, 0, 0, 120),
+
+						UI.list {
+							gap = UDim.new(0, 6),
+						},
+
+						UI.new "TextLabel" {
+							Name = "Row1",
+							LayoutOrder = 1,
+							BackgroundTransparency = 0.5,
+							Size = UDim2.new(1, 0, 0, 28),
+							FontFace = UI.Theme.Font,
+							TextSize = 14,
+							TextXAlignment = Enum.TextXAlignment.Left,
+							Text = "Prefix: ;",
+						},
+						UI.new "TextLabel" {
+							Name = "Row2",
+							LayoutOrder = 2,
+							BackgroundTransparency = 0.5,
+							Size = UDim2.new(1, 0, 0, 28),
+							FontFace = UI.Theme.Font,
+							TextSize = 14,
+							TextXAlignment = Enum.TextXAlignment.Left,
+							Text = "Role: SuperAdmin",
+						},
+					},
+				}
+
+				UI.flush()
+				world:run(0.1)
+				return panel
+			end,
+			check = function(_env, root, vp)
+				expect(root.AbsoluteSize.X > 0 and root.AbsoluteSize.X <= vp.size.X).toBe(true)
+				expect(root.AbsoluteSize.Y > 0 and root.AbsoluteSize.Y <= vp.size.Y).toBe(true)
+				local toolbar = root:FindFirstChild("Toolbar")
+				expect(toolbar ~= nil).toBe(true)
+				local execBtn = toolbar:FindFirstChild("ExecuteButton")
+				local modeSw = toolbar:FindFirstChild("ModeSwitch")
+				local confirmCb = toolbar:FindFirstChild("ConfirmCheck")
+				expect(execBtn ~= nil and execBtn.AbsoluteSize.X > 0).toBe(true)
+				expect(modeSw ~= nil and modeSw.AbsoluteSize.X > 0).toBe(true)
+				expect(confirmCb ~= nil and confirmCb.AbsoluteSize.X > 0).toBe(true)
+			end,
+		})
+	end
 end)
 
 return {}

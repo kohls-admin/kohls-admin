@@ -95,22 +95,22 @@ local function attachPlayerHelpers(
 	local friendSet = cfg.friends or {}
 	local groupRanks = cfg.groups or {}
 
-	rawset(player, "_methods", {
-		DistanceFromCharacter = function(self: any, point: any): number
-			local c = self.Character
-			if not c or not c.PrimaryPart then
-				return 0
-			end
-			return (c.PrimaryPart.Position - point).Magnitude
-		end,
-		IsFriendsWith = function(_self: any, other: any): boolean
-			local otherId = if type(other) == "number" then other else other.UserId
-			return friendSet[otherId] == true
-		end,
-		IsInGroupAsync = function(_self: any, groupId: number): boolean
-			return (groupRanks[groupId] or 0) > 0
-		end,
-	})
+	local methods = rawget(player, "_methods") or {}
+	methods.DistanceFromCharacter = function(self: any, point: any): number
+		local c = self.Character
+		if not c or not c.PrimaryPart then
+			return 0
+		end
+		return (c.PrimaryPart.Position - point).Magnitude
+	end
+	methods.IsFriendsWith = function(_self: any, other: any): boolean
+		local otherId = if type(other) == "number" then other else other.UserId
+		return friendSet[otherId] == true
+	end
+	methods.IsInGroupAsync = function(_self: any, groupId: number): boolean
+		return (groupRanks[groupId] or 0) > 0
+	end
+	rawset(player, "_methods", methods)
 
 	return char, hrp
 end
@@ -404,6 +404,56 @@ describe("DefaultTypes · Time", function()
 		expect(commands[1].preparedArgs[1]).toBe(300)
 		expect(commands[1].preparedArgs[2]).toBe("back soon")
 	end)
+
+	sert.laws.codec("timeSimple duration roundtrip (d, h, m, s, -1)", {
+		gen = function(g)
+			if g:bool(0.15) then
+				return -1
+			end
+			local d = g:int(0, 14)
+			local h = g:int(0, 23)
+			local m = g:int(0, 59)
+			local s = g:int(0, 59)
+			return d * 86400 + h * 3600 + m * 60 + s
+		end,
+		encode = function(seconds: number): string
+			if seconds == -1 then
+				return "-1"
+			elseif seconds == 0 then
+				return "0s"
+			end
+			local rem = seconds
+			local d = math.floor(rem / 86400)
+			rem %= 86400
+			local h = math.floor(rem / 3600)
+			rem %= 3600
+			local m = math.floor(rem / 60)
+			local s = rem % 60
+			local parts = {}
+			if d > 0 then
+				table.insert(parts, `{d}d`)
+			end
+			if h > 0 then
+				table.insert(parts, `{h}h`)
+			end
+			if m > 0 then
+				table.insert(parts, `{m}m`)
+			end
+			if s > 0 then
+				table.insert(parts, `{s}s`)
+			end
+			return table.concat(parts, " ")
+		end,
+		decode = function(encoded: string): number
+			local _K = getSharedK()
+			local timeType = _K.Registry.types.timeSimple
+			local ok, validated = timeType.validate(encoded)
+			expect(ok).toBe(true)
+			local parsed = timeType.parse(encoded)
+			expect(validated).toBe(parsed)
+			return parsed
+		end,
+	}, { runs = 80 })
 end)
 
 describe("DefaultTypes · Color", function()
@@ -485,6 +535,61 @@ describe("DefaultTypes · Color", function()
 		local sugRgb = colorType.suggestions("12,34,56")
 		expect(table.find(sugRgb, "12,34,56") ~= nil).toBe(true)
 	end)
+
+	local function colorEq(a: any, b: any): boolean
+		return rbxTypeof(a) == "Color3"
+			and rbxTypeof(b) == "Color3"
+			and math.round(a.R * 255) == math.round(b.R * 255)
+			and math.round(a.G * 255) == math.round(b.G * 255)
+			and math.round(a.B * 255) == math.round(b.B * 255)
+	end
+
+	sert.laws.codec("color #RRGGBB hex roundtrip", {
+		gen = function(g)
+			return Color3.fromRGB(g:int(0, 255), g:int(0, 255), g:int(0, 255))
+		end,
+		encode = function(c: any): string
+			return string.format("#%02x%02x%02x", math.round(c.R * 255), math.round(c.G * 255), math.round(c.B * 255))
+		end,
+		decode = function(hex: string): any
+			local _K = getSharedK()
+			local colorType = _K.Registry.types.color
+			local transformed = colorType.transform(hex)
+			expect((colorType.validate(transformed))).toBe(true)
+			return colorType.parse(transformed)
+		end,
+		eq = colorEq,
+	}, { runs = 80 })
+
+	sert.laws.codec("color r,g,b RGB roundtrip", {
+		gen = function(g)
+			return Color3.fromRGB(g:int(0, 255), g:int(0, 255), g:int(0, 255))
+		end,
+		encode = function(c: any): string
+			return string.format("%d,%d,%d", math.round(c.R * 255), math.round(c.G * 255), math.round(c.B * 255))
+		end,
+		decode = function(rgb: string): any
+			local _K = getSharedK()
+			local colorType = _K.Registry.types.color
+			local transformed = colorType.transform(rgb)
+			expect((colorType.validate(transformed))).toBe(true)
+			return colorType.parse(transformed)
+		end,
+		eq = colorEq,
+	}, { runs = 80 })
+
+	sert.prop("color BrickColor name and palette number roundtrip", function(g)
+		local _K = getSharedK()
+		local colorType = _K.Registry.types.color
+		local namesList, colorsMap = colorType.suggestions("")
+		-- Index 1 is "random"; indices 2..#namesList are deterministic named and BrickColor palette entries
+		local key = namesList[g:int(2, #namesList)]
+		local expected = colorsMap[key]
+		expect(rbxTypeof(expected)).toBe("Color3")
+		local transformed = colorType.transform(key)
+		expect((colorType.validate(transformed))).toBe(true)
+		expect(colorType.parse(transformed)).toEqual(expected)
+	end, { runs = 40 })
 end)
 
 describe("DefaultTypes · Vector", function()
@@ -530,6 +635,38 @@ describe("DefaultTypes · Vector", function()
 		expect(okArg).toBe(true)
 		expect(valArg).toEqual(Vector3.new(4, 5, 6))
 	end)
+
+	sert.laws.codec("vector2 roundtrip", {
+		gen = function(g)
+			return Vector2.new(g:int(-4000, 4000) / 4, g:int(-4000, 4000) / 4)
+		end,
+		encode = function(v: any): string
+			return string.format("%.2f,%.2f", v.X, v.Y)
+		end,
+		decode = function(s: string): any
+			local _K = getSharedK()
+			local vec2 = _K.Registry.types.vector2
+			local t = vec2.transform(s)
+			expect((vec2.validate(t))).toBe(true)
+			return vec2.parse(t)
+		end,
+	}, { runs = 60 })
+
+	sert.laws.codec("vector3 roundtrip", {
+		gen = function(g)
+			return Vector3.new(g:int(-4000, 4000) / 4, g:int(-4000, 4000) / 4, g:int(-4000, 4000) / 4)
+		end,
+		encode = function(v: any): string
+			return string.format("%.2f,%.2f,%.2f", v.X, v.Y, v.Z)
+		end,
+		decode = function(s: string): any
+			local _K = getSharedK()
+			local vec3 = _K.Registry.types.vector3
+			local t = vec3.transform(s)
+			expect((vec3.validate(t))).toBe(true)
+			return vec3.parse(t)
+		end,
+	}, { runs = 60 })
 end)
 
 describe("DefaultTypes · Ban", function()
@@ -1538,6 +1675,629 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 			local okSoloOthers, errSoloOthers = parsePlayersArg("others", 10)
 			expect(okSoloOthers).toBe(false)
 			expect(errSoloOthers.message).toBe("No other players online")
+		end
+	)
+
+	test(
+		"adversarial argument type coercion fuzzing with malformedString, boundaryInt, boundaryFloat, and strict per-type postcondition contracts",
+		function()
+			local h, _K, Argument = newMountedK({ isStudio = false })
+			local adminPlr = h.env:addPlayer(10, "AdminFuzzer")
+			local modPlr = h.env:addPlayer(20, "ModFuzzer")
+			local guestPlr = h.env:addPlayer(30, "GuestFuzzer")
+			h.env.Players._props.LocalPlayer = adminPlr
+			attachPlayerHelpers(h.env, adminPlr, { position = Vector3.new(0, 0, 0) })
+			attachPlayerHelpers(h.env, modPlr, { position = Vector3.new(25, 0, 0) })
+			attachPlayerHelpers(h.env, guestPlr, { position = Vector3.new(120, 0, 0) })
+			_K.Auth.userRoleAdd(10, "superadmin")
+			_K.Auth.userRoleAdd(20, "mod")
+			_K.Data.bans["901"] = { "BannedNineZeroOne", "FuzzBan", -1, 10 }
+			_K.Data.bans["902"] = { "BannedLowRank", "ModBan", 0, 20 }
+
+			local typeNames = {
+				"integer",
+				"number",
+				"boolean",
+				"color",
+				"timeSimple",
+				"vector2",
+				"vector3",
+				"ban",
+				"member",
+				"role",
+				"player",
+				"players",
+				"userId",
+				"image",
+				"emote",
+				"command",
+			}
+
+			local function snapshotServerState()
+				local bansSnap = {}
+				for k, v in _K.Data.bans do
+					bansSnap[k] = { v[1], v[2], v[3], v[4] }
+				end
+				local membersSnap = {}
+				for k, v in _K.Data.members do
+					membersSnap[k] = table.clone(v.roles)
+				end
+				local rolesSnap = {}
+				for k, v in _K.Data.roles do
+					rolesSnap[k] = v._rank
+				end
+				return { bans = bansSnap, members = membersSnap, roles = rolesSnap }
+			end
+
+			local initialState = snapshotServerState()
+
+			local function assertRankRespectsCaller(callerId: number, targetUserId: number, lowerRank: boolean)
+				if not lowerRank or targetUserId == callerId or callerId == _K.Data.creatorId then
+					return
+				end
+				if _K.Auth.hasPermission(callerId, "admin") then
+					return
+				end
+				local callerRank = _K.Auth.getRank(callerId)
+				local targetRank = _K.Auth.getRank(targetUserId)
+				expect(callerRank > targetRank).toBe(true)
+			end
+
+			local function assertPostcondition(typeName: string, callerId: number, val: any, rawInput: string?)
+				local stripped = if rawInput then _K.Util.String.stripQuotes(_K.Util.String.trim(rawInput)) else ""
+				if typeName == "integer" then
+					expect(type(val)).toBe("number")
+					expect(val == math.floor(val)).toBe(true)
+				elseif typeName == "number" then
+					expect(type(val)).toBe("number")
+					if tonumber(stripped) == tonumber(stripped) then
+						expect(val == val).toBe(true)
+					end
+				elseif typeName == "boolean" then
+					expect(type(val)).toBe("boolean")
+				elseif typeName == "color" then
+					expect(rbxTypeof(val)).toBe("Color3")
+				elseif typeName == "vector2" then
+					expect(rbxTypeof(val)).toBe("Vector2")
+					if not string.find(string.lower(stripped), "nan", 1, true) then
+						expect(val.X == val.X and val.Y == val.Y).toBe(true)
+					end
+				elseif typeName == "vector3" then
+					expect(rbxTypeof(val)).toBe("Vector3")
+					if not string.find(string.lower(stripped), "nan", 1, true) then
+						expect(val.X == val.X and val.Y == val.Y and val.Z == val.Z).toBe(true)
+					end
+				elseif typeName == "timeSimple" then
+					expect(type(val)).toBe("number")
+					if tonumber(stripped) == nil then
+						expect(val == -1 or val >= 0).toBe(true)
+					end
+				elseif typeName == "player" then
+					expect(rbxTypeof(val)).toBe("Instance")
+					expect(val:IsA("Player")).toBe(true)
+					assertRankRespectsCaller(callerId, val.UserId, true)
+				elseif typeName == "players" then
+					expect(type(val)).toBe("table")
+					expect(#val >= 1).toBe(true)
+					for _, plr in val do
+						expect(rbxTypeof(plr)).toBe("Instance")
+						expect(plr:IsA("Player")).toBe(true)
+						assertRankRespectsCaller(callerId, plr.UserId, true)
+					end
+				elseif typeName == "userId" then
+					expect(type(val)).toBe("number")
+					expect(val == math.floor(val) and val > 0 and val <= 2 ^ 53).toBe(true)
+					assertRankRespectsCaller(callerId, val, true)
+				elseif typeName == "role" then
+					expect(type(val)).toBe("string")
+					local roleDef = _K.Data.roles[val]
+					expect(roleDef ~= nil).toBe(true)
+					if callerId ~= _K.Data.creatorId then
+						expect(_K.Auth.getRank(callerId) > roleDef._rank).toBe(true)
+					end
+				elseif typeName == "member" then
+					if type(val) == "table" then
+						for _, mId in val do
+							expect(_K.Data.members[tostring(mId)] ~= nil).toBe(true)
+							assertRankRespectsCaller(callerId, tonumber(mId) :: number, true)
+						end
+					else
+						expect(type(val)).toBe("string")
+						expect(_K.Data.members[val] ~= nil).toBe(true)
+						assertRankRespectsCaller(callerId, tonumber(val) :: number, true)
+					end
+				elseif typeName == "ban" then
+					if type(val) == "table" then
+						for _, bId in val do
+							assertRankRespectsCaller(callerId, tonumber(bId) :: number, true)
+						end
+					else
+						expect(type(val)).toBe("string")
+						assertRankRespectsCaller(callerId, tonumber(val) :: number, true)
+					end
+				end
+			end
+
+			local malformedGen = sert.gen.malformedString()
+			local bIntGen = sert.gen.boundaryInt(-2 ^ 31, 2 ^ 31)
+			local bFloatGen = sert.gen.boundaryFloat(-1e9, 1e9)
+
+			sert.check(
+				"DefaultTypes argument coercion satisfies strict per-type postcondition contracts and preserves server state on failure",
+				{ malformedGen, bIntGen, bFloatGen },
+				function(malformed, bInt, bFloat)
+					local intType = _K.Registry.types.integer
+					local numType = _K.Registry.types.number
+
+					-- Finite integer strings transform, validate, and parse to exact integer within limits
+					local tInt = intType.transform(tostring(bInt))
+					expect((intType.validate(tInt))).toBe(true)
+					local parsedInt = intType.parse(tInt)
+					expect(parsedInt).toBe(bInt)
+					expect(math.abs(parsedInt) <= 2 ^ 31).toBe(true)
+					assertPostcondition("integer", 10, parsedInt, tostring(bInt))
+
+					-- Boundary float validation: NaN and ±inf are rejected by both integerType and numberType
+					local floatStr = tostring(bFloat)
+					local tFloat = numType.transform(floatStr)
+					local isFiniteFloat = tFloat ~= nil and tFloat == tFloat and math.abs(tFloat) ~= math.huge
+					if bFloat ~= bFloat then
+						expect((intType.validate(tFloat))).toBe(false)
+					elseif math.abs(bFloat) < math.huge and bFloat == math.floor(bFloat) and tFloat ~= nil then
+						expect((intType.validate(tFloat))).toBe(true)
+					end
+					expect((numType.validate(tFloat))).toBe(isFiniteFloat)
+					if isFiniteFloat then
+						assertPostcondition("number", 10, numType.parse(tFloat), floatStr)
+					end
+
+					_K.Data.settings.commandRequests = false
+					for _, callerId in { 10, 20 } do
+						local callerCmd = makeCommandContext(_K, callerId)
+						for _, typeName in typeNames do
+							_K.Data.targetLimits[callerId] = 0
+							local arg = Argument.new(
+								callerCmd,
+								{ type = typeName, name = "FuzzArg", lowerRank = true },
+								1,
+								malformed
+							)
+							local okCall, okPrep, resOrErr = pcall(arg.prepare, arg)
+							expect(okCall).toBe(true)
+							expect(type(okPrep)).toBe("boolean")
+							if okPrep then
+								assertPostcondition(typeName, callerId, resOrErr, malformed)
+							else
+								local feedback = if type(resOrErr) == "table" then resOrErr.message else resOrErr
+								expect(type(feedback)).toBe("string")
+								expect(#feedback > 0).toBe(true)
+							end
+						end
+					end
+
+					-- Server state (bans, members, roles) is completely untouched after all coercion attempts
+					expect(snapshotServerState()).toEqual(initialState)
+
+					-- Guest (rank 0, everyone) attempting to target higher-rank players via player/players/userId is always rejected when lowerRank = true
+					local guestCmd = makeCommandContext(_K, 30)
+					for _, rawTarget in { "AdminFuzzer", "ModFuzzer", "@mod", "@superadmin", "$admins", "10", "20" } do
+						_K.Data.targetLimits[30] = 0
+						local guestArg = Argument.new(
+							guestCmd,
+							{ type = "players", name = "Target", lowerRank = true, ignoreSelf = true },
+							1,
+							rawTarget
+						)
+						local okGuest, parsedGuest = guestArg:prepare()
+						expect(okGuest).toBe(false)
+						local feedback = if type(parsedGuest) == "table" then parsedGuest.message else parsedGuest
+						expect(type(feedback)).toBe("string")
+						expect(#feedback > 0).toBe(true)
+					end
+					_K.Data.settings.commandRequests = true
+				end,
+				{ runs = 50 }
+			)
+		end
+	)
+
+	describe("Player Selector Set Algebra", function()
+		local h: any, _K: any, Argument: any
+		local groupRanksByUser: { [number]: number } = {}
+		local redMembers: { any } = {}
+		local blueMembers: { any } = {}
+		local rosterSpecs = {
+			{ id = 10, name = "AlphaAdmin", role = "superadmin", team = "Red", dist = 0, groupRank = 255 },
+			{ id = 20, name = "BravoMod", role = "mod", team = "Red", dist = 35, groupRank = 120 },
+			{ id = 30, name = "CharlieVip", role = "vip", team = "Blue", dist = 75, groupRank = 50 },
+			{ id = 40, name = "DeltaGuest", role = nil, team = "Blue", dist = 160, groupRank = 0 },
+		}
+		local playersById: { [number]: any } = {}
+
+		local function ensureAlgebraEnv()
+			if h then
+				return
+			end
+			h, _K, Argument = newMountedK({ isStudio = false })
+			local groupMethods = rawget(_K.Service.Group, "_methods")
+			groupMethods.GetRolesInGroupAsync = function(_self: any, userId: number, groupId: number)
+				if groupId ~= 100 then
+					return { Roles = {} }
+				end
+				local r = groupRanksByUser[userId] or 0
+				if r > 0 then
+					return { Roles = { { Rank = r } } }
+				end
+				return { Roles = {} }
+			end
+
+			local redTeam = h.env.Instance.new("Team", _K.Service.Teams)
+			redTeam.Name = "Red"
+			rawset(redTeam, "_methods", {
+				GetPlayers = function()
+					return redMembers
+				end,
+			})
+			local blueTeam = h.env.Instance.new("Team", _K.Service.Teams)
+			blueTeam.Name = "Blue"
+			rawset(blueTeam, "_methods", {
+				GetPlayers = function()
+					return blueMembers
+				end,
+			})
+
+			for _, spec in rosterSpecs do
+				local p = h.env:addPlayer(spec.id, spec.name)
+				groupRanksByUser[spec.id] = spec.groupRank
+				attachPlayerHelpers(h.env, p, {
+					position = Vector3.new(spec.dist, 0, 0),
+					groups = { [100] = spec.groupRank },
+				})
+				if spec.role then
+					_K.Auth.userRoleAdd(spec.id, spec.role)
+				end
+				if spec.team == "Red" then
+					table.insert(redMembers, p)
+				else
+					table.insert(blueMembers, p)
+				end
+				playersById[spec.id] = p
+			end
+			h.env.Players._props.LocalPlayer = playersById[10]
+			h.env:step(0.05)
+		end
+
+		local function toSortedIdSet(playersList: { any }): { number }
+			local seen: { [number]: boolean } = {}
+			local out: { number } = {}
+			for _, p in playersList do
+				local uid = if type(p) == "number" then p else p.UserId
+				if not seen[uid] then
+					seen[uid] = true
+					table.insert(out, uid)
+				end
+			end
+			table.sort(out)
+			return out
+		end
+
+		local function setUnion(a: { number }, b: { number }): { number }
+			local combined = table.clone(a)
+			for _, id in b do
+				table.insert(combined, id)
+			end
+			return toSortedIdSet(combined)
+		end
+
+		local function setIntersection(a: { number }, b: { number }): { number }
+			local inB: { [number]: boolean } = {}
+			for _, id in b do
+				inB[id] = true
+			end
+			local out: { number } = {}
+			for _, id in a do
+				if inB[id] then
+					table.insert(out, id)
+				end
+			end
+			return out
+		end
+
+		local function eligibleTargets(callerId: number, lowerRank: boolean?): { number }
+			ensureAlgebraEnv()
+			_K.Data.targetLimits[callerId] = 0
+			local fauxArg =
+				makeArgSelf(_K, callerId, { type = "players", name = "Targets", lowerRank = lowerRank == true }, "all")
+			local eligible: { number } = {}
+			for _, p in _K.Service.Players:GetPlayers() do
+				local target = _K.Auth.targetUserArgument(fauxArg, p.UserId, p)
+				if target then
+					table.insert(eligible, p.UserId)
+				end
+			end
+			table.sort(eligible)
+			return eligible
+		end
+
+		local function resolveAtom(atom: string, callerId: number, lowerRank: boolean?): { number }
+			ensureAlgebraEnv()
+			local negCount = 0
+			local core = atom
+			while string.sub(core, 1, 1) == "!" do
+				negCount += 1
+				core = string.sub(core, 2)
+			end
+			_K.Data.targetLimits[callerId] = 0
+			local cmd = makeCommandContext(_K, callerId)
+			local arg =
+				Argument.new(cmd, { type = "players", name = "Targets", lowerRank = lowerRank == true }, 1, core)
+			local ok, parsed = arg:prepare()
+			local baseSet = if ok and type(parsed) == "table" then toSortedIdSet(parsed) else {}
+			if negCount % 2 == 1 then
+				local universe = eligibleTargets(callerId, lowerRank)
+				local inBase: { [number]: boolean } = {}
+				for _, id in baseSet do
+					inBase[id] = true
+				end
+				local comp: { number } = {}
+				for _, id in universe do
+					if not inBase[id] then
+						table.insert(comp, id)
+					end
+				end
+				return comp
+			elseif negCount > 0 then
+				local universe = eligibleTargets(callerId, lowerRank)
+				return setIntersection(baseSet, universe)
+			end
+			return baseSet
+		end
+
+		local function resolve(expr: string, callerId: number?, lowerRank: boolean?): { number }
+			ensureAlgebraEnv()
+			local cid = callerId or 10
+			-- If expr contains no "!" complement prefix, run the full comma expression directly through Argument:prepare()
+			if not string.find(expr, "!", 1, true) then
+				_K.Data.targetLimits[cid] = 0
+				local cmd = makeCommandContext(_K, cid)
+				local arg =
+					Argument.new(cmd, { type = "players", name = "Targets", lowerRank = lowerRank == true }, 1, expr)
+				local ok, parsed = arg:prepare()
+				if ok and type(parsed) == "table" then
+					return toSortedIdSet(parsed)
+				end
+			end
+			local result: { number } = {}
+			for _, piece in string.split(expr, ",") do
+				result = setUnion(result, resolveAtom(piece, cid, lowerRank))
+			end
+			return result
+		end
+
+		local function oracleAtom(atom: string, callerId: number, lowerRank: boolean?): { number }
+			ensureAlgebraEnv()
+			local negCount = 0
+			local core = atom
+			while string.sub(core, 1, 1) == "!" do
+				negCount += 1
+				core = string.sub(core, 2)
+			end
+			local universe = eligibleTargets(callerId, lowerRank)
+			local isEligible: { [number]: boolean } = {}
+			for _, id in universe do
+				isEligible[id] = true
+			end
+			local callerDist = 0
+			for _, s in rosterSpecs do
+				if s.id == callerId then
+					callerDist = s.dist
+					break
+				end
+			end
+
+			local matched: { number } = {}
+			for _, s in rosterSpecs do
+				if not isEligible[s.id] then
+					continue
+				end
+				local hit = false
+				if core == "me" then
+					hit = (s.id == callerId)
+				elseif core == "all" or core == "*" or core == "$all" then
+					hit = true
+				elseif core == "others" or core == "$others" then
+					hit = (s.id ~= callerId)
+				elseif core == "@superadmin" then
+					hit = (s.role == "superadmin")
+				elseif core == "@mod" then
+					hit = (s.role == "mod")
+				elseif core == "@vip" then
+					hit = (s.role == "vip")
+				elseif core == "%red" then
+					hit = (s.team == "Red")
+				elseif core == "%blue" then
+					hit = (s.team == "Blue")
+				elseif core == "$admins" then
+					hit = (s.role ~= nil)
+				elseif core == "$nonadmins" then
+					hit = (s.role == nil)
+				elseif core == "$close" or core == "$distance<100" then
+					hit = (math.abs(s.dist - callerDist) <= 100)
+				elseif core == "$far" or core == "$distance>100" then
+					hit = (math.abs(s.dist - callerDist) > 100)
+				elseif core == "$distance<50" then
+					hit = (math.abs(s.dist - callerDist) <= 50)
+				elseif core == "$distance>50" then
+					hit = (math.abs(s.dist - callerDist) > 50)
+				elseif core == "$group=100>=50" then
+					hit = (s.groupRank >= 50)
+				elseif core == "$group=100>100" then
+					hit = (s.groupRank > 100)
+				elseif core == "$group=100<=120" then
+					hit = (s.groupRank > 0 and s.groupRank <= 120)
+				end
+				if hit then
+					table.insert(matched, s.id)
+				end
+			end
+			table.sort(matched)
+
+			if negCount % 2 == 1 then
+				local inMatched: { [number]: boolean } = {}
+				for _, id in matched do
+					inMatched[id] = true
+				end
+				local comp: { number } = {}
+				for _, id in universe do
+					if not inMatched[id] then
+						table.insert(comp, id)
+					end
+				end
+				return comp
+			end
+			return matched
+		end
+
+		local selectorPool = {
+			"me",
+			"all",
+			"others",
+			"@superadmin",
+			"@mod",
+			"@vip",
+			"%red",
+			"%blue",
+			"$admins",
+			"$nonadmins",
+			"$close",
+			"$far",
+			"$distance<50",
+			"$distance>50",
+			"$group=100>=50",
+			"$group=100>100",
+			"$group=100<=120",
+		}
+
+		sert.laws.algebra("Player selector comma union (a,b)", {
+			gen = function(g)
+				return g:pick(selectorPool)
+			end,
+			op = function(a: string, b: string): string
+				return a .. "," .. b
+			end,
+			eq = function(a: string, b: string): boolean
+				return sert.rawEq(resolve(a, 10, false), resolve(b, 10, false))
+			end,
+			associative = true,
+			commutative = true,
+			idempotent = true,
+		}, { runs = 60 })
+
+		sert.prop(
+			"selector expressions satisfy oracle equivalence, disjoint complement partition, involution, union commutativity/idempotence, and self/other partition across rosters",
+			function(g)
+				ensureAlgebraEnv()
+				-- Vary player distances and group ranks dynamically per trial
+				for _, spec in rosterSpecs do
+					spec.dist = g:pick({ 0, 25, 45, 80, 130, 180 })
+					spec.groupRank = g:pick({ 0, 50, 120, 255 })
+					groupRanksByUser[spec.id] = spec.groupRank
+					local plr = playersById[spec.id]
+					local hrp = plr.Character.PrimaryPart
+					local pos = Vector3.new(spec.dist, 0, 0)
+					hrp.Position = pos
+					hrp.CFrame = CFrame.new(pos)
+					plr.Character:PivotTo(CFrame.new(pos))
+					sert.spy(plr, "IsInGroupAsync", function(_self: any, groupId: number): boolean
+						return groupId == 100 and spec.groupRank > 0
+					end)
+				end
+
+				local callerId = g:pick({ 10, 20 })
+				local lowerRank = if callerId == 20 then g:bool(0.5) else false
+				_K.Data.settings.commandRequests = false
+
+				local s = g:pick(selectorPool)
+				local b = g:pick(selectorPool)
+
+				-- 1. Differential match against pure set-theory oracle
+				local resolvedS = resolve(s, callerId, lowerRank)
+				local expectedS = oracleAtom(s, callerId, lowerRank)
+				expect(resolvedS).toEqual(expectedS)
+
+				-- 2. Disjoint complement partition: resolve(s) ∩ resolve("!" .. s) == ∅ and resolve(s) ∪ resolve("!" .. s) == eligibleTargets(caller)
+				local resolvedNotS = resolve("!" .. s, callerId, lowerRank)
+				local expectedNotS = oracleAtom("!" .. s, callerId, lowerRank)
+				expect(resolvedNotS).toEqual(expectedNotS)
+				expect(setIntersection(resolvedS, resolvedNotS)).toEqual({})
+				expect(setUnion(resolvedS, resolvedNotS)).toEqual(eligibleTargets(callerId, lowerRank))
+
+				-- 3. Involution on unrestricted universe (caller 10 = superadmin): resolve("!!" .. s) == resolve(s)
+				expect(resolve("!!" .. s, 10, false)).toEqual(resolve(s, 10, false))
+
+				-- 4. Union commutativity & idempotence on unrestricted universe
+				expect(resolve(s .. "," .. b, 10, false)).toEqual(resolve(b .. "," .. s, 10, false))
+				expect(resolve(s .. "," .. s, 10, false)).toEqual(resolve(s, 10, false))
+
+				-- 5. Self/other partition: resolve("all") == resolve("me,others") and resolve("me") ∩ resolve("others") == ∅
+				expect(resolve("all", 10, false)).toEqual(resolve("me,others", 10, false))
+				expect(setIntersection(resolve("me", 10, false), resolve("others", 10, false))).toEqual({})
+
+				-- 6. Native _K complement pairs ($admins vs $nonadmins, $close vs $far, $distance<50 vs $distance>50)
+				expect(setIntersection(resolve("$admins", 10, false), resolve("$nonadmins", 10, false))).toEqual({})
+				expect(setUnion(resolve("$admins", 10, false), resolve("$nonadmins", 10, false))).toEqual(
+					resolve("all", 10, false)
+				)
+				expect(setIntersection(resolve("$close", 10, false), resolve("$far", 10, false))).toEqual({})
+				expect(setUnion(resolve("$close", 10, false), resolve("$far", 10, false))).toEqual(
+					resolve("all", 10, false)
+				)
+				expect(setIntersection(resolve("$distance<50", 10, false), resolve("$distance>50", 10, false))).toEqual({})
+				expect(setUnion(resolve("$distance<50", 10, false), resolve("$distance>50", 10, false))).toEqual(
+					resolve("all", 10, false)
+				)
+
+				-- 7. ~random selector returns k distinct eligible targets subset of eligibleTargets(caller)
+				local k = g:int(1, 3)
+				local randSet = resolve(`~{k}`, callerId, lowerRank)
+				local universe = eligibleTargets(callerId, lowerRank)
+				expect(#randSet).toBe(math.min(k, #universe))
+				expect(setIntersection(randSet, universe)).toEqual(randSet)
+
+				_K.Data.settings.commandRequests = true
+			end,
+			{ runs = 60 }
+		)
+	end)
+
+	test(
+		"rejects NaN and ±inf in integer/number/timeSimple/~random, rejects single-element nil in makeSequenceType, and rejects bare @/%/$ selectors",
+		function()
+			local _K, Argument = getSharedK()
+			local intType = _K.Registry.types.integer
+			local numType = _K.Registry.types.number
+			local timeType = _K.Registry.types.timeSimple
+			local vec2 = _K.Registry.types.vector2
+			local vec3 = _K.Registry.types.vector3
+
+			for _, raw in { "nan", "inf", "-inf" } do
+				expect((intType.validate(intType.transform(raw)))).toBe(false)
+				expect((numType.validate(numType.transform(raw)))).toBe(false)
+				expect((timeType.validate(raw))).toBe(false)
+			end
+			expect((timeType.validate("-5"))).toBe(false)
+
+			-- Single-token invalid input to makeSequenceType must fail validation instead of collapsing to {}
+			expect((vec2.validate(vec2.transform("abc")))).toBe(false)
+			expect((vec3.validate(vec3.transform("1,abc")))).toBe(false)
+
+			-- Bare @, %, $ and invalid ~random selectors must fail prepare cleanly
+			local cmd = makeCommandContext(_K, 10)
+			for _, badSelector in { "@", "%", "$", "~nan", "~inf", "~-1", "~0" } do
+				local arg = Argument.new(cmd, { type = "players", name = "Target", lowerRank = false }, 1, badSelector)
+				local ok = arg:prepare()
+				expect(ok).toBe(false)
+			end
 		end
 	)
 end)

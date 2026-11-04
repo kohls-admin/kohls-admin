@@ -293,8 +293,9 @@ describe("Data · Migrate (Settings & Legacy KAI)", function()
 end)
 
 describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Convergence", function()
-	local function bootServer(world: any, scope: string)
-		local server = world:server({ skew = 0 })
+	local function bootServer(world: any, scope: string, slot: number?)
+		local restarts = if slot ~= nil and world.servers[slot] ~= nil then world.servers[slot].restarts + 1 else 0
+		local server = world:server({ slot = slot, restarts = restarts, skew = 0 })
 		local h = Harness.newPeerEnv(server, { isStudio = false })
 		local Data = h:requireData()
 		Data.savedSettings.useSavedSettings = true
@@ -311,161 +312,425 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 		}
 	end
 
-	test(
-		"sert.sim.model verifies multi-server ban, role, and setting convergence across live sync and server restarts",
-		function()
-			local targetUsers = { 301, 302, 303 }
-			local banReasons = { "spam", "exploit", "grief" }
-			local persistRoles = { "vip", "mod", "admin" }
-			local convergeOpts = { timeout = 30, step = 2 }
-
-			sert.sim.model({
-				world = { backing = true, faults = { profile = "light", drop = 0 } },
-				init = function(world)
-					local n1 = bootServer(world, "_K_ModelSync")
-					local n2 = bootServer(world, "_K_ModelSync")
-					world:run(20)
-					return {
-						bans = {},
-						roles = {},
-						dashboardRank = 0,
-					}, { n1 = n1, n2 = n2, nodes = { n1, n2 } }
-				end,
-				commands = {
-					BanUser = {
-						gen = function(g)
-							return {
-								nodeIdx = g:int(1, 2),
-								userId = g:pick(targetUsers),
-								reason = g:pick(banReasons),
-							}
-						end,
-						run = function(sys, args, world)
-							local node = sys.nodes[args.nodeIdx]
-							node.server:spawn(function()
-								node.Auth.banUsers({ args.userId }, args.reason, -1, nil, true)
-							end)
-							world:run(0.5)
-						end,
-						next = function(state, args)
-							state.bans[tostring(args.userId)] = args.reason
-						end,
-					},
-					UnbanUser = {
-						gen = function(g)
-							return {
-								nodeIdx = g:int(1, 2),
-								userId = g:pick(targetUsers),
-							}
-						end,
-						run = function(sys, args, world)
-							local node = sys.nodes[args.nodeIdx]
-							node.server:spawn(function()
-								node.Auth.unbanUsers({ args.userId }, nil, true)
-							end)
-							world:run(0.5)
-						end,
-						next = function(state, args)
-							state.bans[tostring(args.userId)] = nil
-						end,
-					},
-					GrantPersistRole = {
-						gen = function(g)
-							return {
-								nodeIdx = g:int(1, 2),
-								userId = g:pick(targetUsers),
-								role = g:pick(persistRoles),
-							}
-						end,
-						run = function(sys, args, world)
-							local node = sys.nodes[args.nodeIdx]
-							node.server:spawn(function()
-								node.Auth.userRoleAdd(args.userId, args.role, true)
-							end)
-							world:run(0.5)
-						end,
-						next = function(state, args)
-							local key = tostring(args.userId)
-							state.roles[key] = state.roles[key] or {}
-							state.roles[key][args.role] = true
-						end,
-					},
-					UpdateSetting = {
-						gen = function(g)
-							return {
-								nodeIdx = g:int(1, 2),
-								rank = g:int(0, 3),
-							}
-						end,
-						run = function(sys, args, world)
-							local node = sys.nodes[args.nodeIdx]
-							node.Data.savedSettings.dashboardRank = args.rank
-							node.Data.Sync.settings.dashboardRank = args.rank
-							world:step()
-						end,
-						next = function(state, args)
-							state.dashboardRank = args.rank
-						end,
-					},
-					RestartNode2 = {
-						gen = function()
-							return {}
-						end,
-						run = function(sys, _, world)
-							sys.n2.server:shutdown()
-							world:run(6)
-							sys.n2 = bootServer(world, "_K_ModelSync")
-							sys.nodes[2] = sys.n2
-							world:run(20)
-						end,
-						next = function(_state) end,
-					},
-				},
-				invariant = function(state, sys, world)
-					local function project(srv: any)
-						local node = if srv == sys.n1.server then sys.n1 else sys.n2
-						local activeBans: { [string]: string } = {}
-						for k, v in node.Data.bans do
-							if type(v) == "table" then
-								activeBans[k] = v[2]
-							end
-						end
-						local activeRoles: { [string]: { [string]: boolean } } = {}
-						for k, member in node.Data.members do
-							if type(member) == "table" and type(member.persist) == "table" and #member.persist > 0 then
-								local roleSet: { [string]: boolean } = {}
-								for _, r in member.persist do
-									roleSet[r] = true
-								end
-								activeRoles[k] = roleSet
-							end
-						end
-						return {
-							bans = activeBans,
-							roles = activeRoles,
-							dashboardRank = node.Data.savedSettings.dashboardRank,
-						}
-					end
-					world:run(8)
-					world:converge(project, convergeOpts)
-					expect(project(sys.n1.server)).toEqual({
-						bans = state.bans,
-						roles = state.roles,
-						dashboardRank = state.dashboardRank,
-					})
-				end,
-			}, { runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 15, length = 8 })
-		end
-	)
-
 	local function waitServerReady(world: any, node: any)
 		for _ = 1, 600 do
-			if #node.server.closers > 0 then
+			if #node.server.closers > 0 or node.server.state ~= "up" then
 				return
 			end
 			world:run(0.1)
 		end
 	end
+
+	local targetUsers = { 301, 302, 303 }
+	local banReasons = { "spam", "exploit", "grief" }
+	local persistRoles = { "vip", "mod", "admin" }
+	local convergeOpts = { timeout = 30, step = 2 }
+
+	local function projectNode(node: any)
+		local activeBans: { [string]: string } = {}
+		for k, v in node.Data.bans do
+			if type(v) == "table" then
+				activeBans[k] = v[2]
+			end
+		end
+		local activeRoles: { [string]: { [string]: boolean } } = {}
+		for k, member in node.Data.members do
+			if type(member) == "table" and type(member.persist) == "table" and #member.persist > 0 then
+				local roleSet: { [string]: boolean } = {}
+				for _, r in member.persist do
+					roleSet[r] = true
+				end
+				activeRoles[k] = roleSet
+			end
+		end
+		return {
+			bans = activeBans,
+			roles = activeRoles,
+			dashboardRank = node.Data.savedSettings.dashboardRank,
+		}
+	end
+
+	local function cloneRevoked(revoked: { [string]: { [string]: boolean } }): { [string]: { [string]: boolean } }
+		local out: { [string]: { [string]: boolean } } = {}
+		for uid, roles in revoked do
+			if next(roles) ~= nil then
+				out[uid] = table.clone(roles)
+			end
+		end
+		return out
+	end
+
+	local function ensureUp(world: any, sys: any, idx: number)
+		local node = sys.nodes[idx]
+		if node == nil or node.server.state ~= "up" or #node.server.closers == 0 then
+			local savedFaults = world.faults
+			world.faults = table.clone(world.faults)
+			world.faults.crash = 0
+			world.faults.stale = 0
+			if node == nil or node.server.state ~= "up" then
+				node = bootServer(world, "_K_ModelSync", idx)
+				sys.nodes[idx] = node
+				if idx == 1 then
+					sys.n1 = node
+				elseif idx == 2 then
+					sys.n2 = node
+				end
+			end
+			waitServerReady(world, node)
+			world:run(5)
+			world.faults = savedFaults
+		end
+		return node
+	end
+
+	local function settleCluster(world: any, sys: any, applyFn: ((node: any) -> ())?, nodeIdx: number?)
+		world:run(8)
+		local savedFaults = world.faults
+		world.faults = table.clone(world.faults)
+		world.faults.crash = 0
+		world.faults.stale = 0
+		if nodeIdx ~= nil and applyFn ~= nil and sys.nodes[nodeIdx].server.state ~= "up" then
+			local rebooted = ensureUp(world, sys, nodeIdx)
+			rebooted.server:spawn(function()
+				applyFn(rebooted)
+			end)
+			world:run(8)
+		end
+		ensureUp(world, sys, 1)
+		ensureUp(world, sys, 2)
+		world.faults = savedFaults
+		world:converge(function(srv: any)
+			local node = if srv == sys.n1.server then sys.n1 else sys.n2
+			return projectNode(node)
+		end, convergeOpts)
+	end
+
+	local KAdminDataSpec = sert.sim.spec({
+		name = "KAdminDistributedData",
+		world = {
+			backing = true,
+			autoRestart = false,
+			faults = { profile = "vopr", drop = 0 },
+		},
+		remotes = {
+			GuestAttemptPrivilege = function(_world, player, _targetId, _roleOrReason)
+				-- Unprivileged guest packet arriving (possibly duplicated or reordered) must never grant roles or ban
+				if player and player.UserId == 202 then
+					return
+				end
+				error(`Unexpected caller for GuestAttemptPrivilege: {player and player.UserId}`)
+			end,
+			AdminHeartbeat = function(world, player, seq)
+				if player and player.UserId == 101 and type(seq) == "number" then
+					rawset(world, "_lastAdminHeartbeat", math.max(rawget(world, "_lastAdminHeartbeat") or 0, seq))
+				end
+			end,
+		},
+		init = function(world)
+			local state = {
+				bans = {},
+				roles = {},
+				dashboardRank = 0,
+				unbanned = {},
+				revoked = {},
+			}
+			if world == nil then
+				return state
+			end
+			world.faults.remoteDropRate = 0.15
+			world.faults.remoteReorderRate = 0.2
+			world.faults.remoteDuplicateRate = 0.2
+			local sys: any = { n1 = nil, n2 = nil, nodes = {}, unbanned = {}, revoked = {} }
+			ensureUp(world, sys, 1)
+			ensureUp(world, sys, 2)
+			world:run(20)
+			ensureUp(world, sys, 1)
+			ensureUp(world, sys, 2)
+			return state, sys
+		end,
+		project = function(sys)
+			local projected = projectNode(sys.n1)
+			return {
+				bans = projected.bans,
+				roles = projected.roles,
+				dashboardRank = projected.dashboardRank,
+				unbanned = table.clone(sys.unbanned),
+				revoked = cloneRevoked(sys.revoked),
+			}
+		end,
+		actions = {
+			BanUser = {
+				gen = function(g)
+					return {
+						nodeIdx = g:int(1, 2),
+						userId = g:pick(targetUsers),
+						reason = g:pick(banReasons),
+					}
+				end,
+				guard = function(_st, args)
+					return args ~= nil and (args.nodeIdx == 1 or args.nodeIdx == 2) and args.userId ~= nil
+				end,
+				run = function(sys, args, world)
+					local key = tostring(args.userId)
+					sys.unbanned[key] = nil
+					local function apply(n: any)
+						n.Auth.banUsers({ args.userId }, args.reason, -1, nil, true)
+					end
+					local node = ensureUp(world, sys, args.nodeIdx)
+					node.server:spawn(function()
+						apply(node)
+					end)
+					settleCluster(world, sys, apply, args.nodeIdx)
+				end,
+				next = function(st, args)
+					local key = tostring(args.userId)
+					st.bans[key] = args.reason
+					st.unbanned[key] = nil
+				end,
+			},
+			UnbanUser = {
+				gen = function(g)
+					return {
+						nodeIdx = g:int(1, 2),
+						userId = g:pick(targetUsers),
+					}
+				end,
+				guard = function(_st, args)
+					return args ~= nil and (args.nodeIdx == 1 or args.nodeIdx == 2) and args.userId ~= nil
+				end,
+				run = function(sys, args, world)
+					local key = tostring(args.userId)
+					sys.unbanned[key] = true
+					local function apply(n: any)
+						n.Auth.unbanUsers({ args.userId }, nil, true)
+					end
+					local node = ensureUp(world, sys, args.nodeIdx)
+					node.server:spawn(function()
+						apply(node)
+					end)
+					settleCluster(world, sys, apply, args.nodeIdx)
+				end,
+				next = function(st, args)
+					local key = tostring(args.userId)
+					st.bans[key] = nil
+					st.unbanned[key] = true
+				end,
+			},
+			GrantPersistRole = {
+				gen = function(g)
+					return {
+						nodeIdx = g:int(1, 2),
+						userId = g:pick(targetUsers),
+						role = g:pick(persistRoles),
+					}
+				end,
+				guard = function(_st, args)
+					return args ~= nil and (args.nodeIdx == 1 or args.nodeIdx == 2) and args.role ~= nil
+				end,
+				run = function(sys, args, world)
+					local key = tostring(args.userId)
+					if sys.revoked[key] ~= nil then
+						sys.revoked[key][args.role] = nil
+						if next(sys.revoked[key]) == nil then
+							sys.revoked[key] = nil
+						end
+					end
+					local function apply(n: any)
+						if not n.Auth.userRoleAdd(args.userId, args.role, true) then
+							local member = n.Data.members[key]
+							if member ~= nil and #member.persist > 0 then
+								n.Data.Sync.members[key] = { member.name or `User{args.userId}`, member.persist }
+							end
+						end
+					end
+					local node = ensureUp(world, sys, args.nodeIdx)
+					node.server:spawn(function()
+						apply(node)
+					end)
+					settleCluster(world, sys, apply, args.nodeIdx)
+				end,
+				next = function(st, args)
+					local key = tostring(args.userId)
+					st.roles[key] = st.roles[key] or {}
+					st.roles[key][args.role] = true
+					if st.revoked[key] ~= nil then
+						st.revoked[key][args.role] = nil
+						if next(st.revoked[key]) == nil then
+							st.revoked[key] = nil
+						end
+					end
+				end,
+			},
+			RevokePersistRole = {
+				gen = function(g)
+					return {
+						nodeIdx = g:int(1, 2),
+						userId = g:pick(targetUsers),
+						role = g:pick(persistRoles),
+					}
+				end,
+				guard = function(_st, args)
+					return args ~= nil and (args.nodeIdx == 1 or args.nodeIdx == 2) and args.role ~= nil
+				end,
+				run = function(sys, args, world)
+					local key = tostring(args.userId)
+					sys.revoked[key] = sys.revoked[key] or {}
+					sys.revoked[key][args.role] = true
+					local function apply(n: any)
+						if not n.Auth.userRoleRemove(args.userId, args.role) then
+							local member = n.Data.members[key]
+							if member == nil or #member.persist == 0 then
+								n.Data.Sync.members[key] = n.Data.REMOVE
+							else
+								n.Data.Sync.members[key] = { member.name or `User{args.userId}`, member.persist }
+							end
+						end
+					end
+					local node = ensureUp(world, sys, args.nodeIdx)
+					node.server:spawn(function()
+						apply(node)
+					end)
+					settleCluster(world, sys, apply, args.nodeIdx)
+				end,
+				next = function(st, args)
+					local key = tostring(args.userId)
+					if st.roles[key] ~= nil then
+						st.roles[key][args.role] = nil
+						if next(st.roles[key]) == nil then
+							st.roles[key] = nil
+						end
+					end
+					st.revoked[key] = st.revoked[key] or {}
+					st.revoked[key][args.role] = true
+				end,
+			},
+			UpdateSetting = {
+				gen = function(g)
+					return {
+						nodeIdx = g:int(1, 2),
+						rank = g:int(0, 3),
+					}
+				end,
+				guard = function(_st, args)
+					return args ~= nil and args.rank >= 0 and args.rank <= 3
+				end,
+				run = function(sys, args, world)
+					local function apply(n: any)
+						n.Data.savedSettings.dashboardRank = args.rank
+						n.Data.Sync.settings.dashboardRank = args.rank
+					end
+					local node = ensureUp(world, sys, args.nodeIdx)
+					apply(node)
+					settleCluster(world, sys, apply, args.nodeIdx)
+				end,
+				next = function(st, args)
+					st.dashboardRank = args.rank
+				end,
+			},
+			FaultyRemoteBurst = {
+				gen = function(g)
+					return {
+						seq = g:int(1, 50),
+						targetId = g:pick(targetUsers),
+					}
+				end,
+				guard = function(_st, args)
+					return args ~= nil and type(args.seq) == "number"
+				end,
+				run = function(sys, args, world)
+					ensureUp(world, sys, 1)
+					ensureUp(world, sys, 2)
+					world:fireServer("client_202", "GuestAttemptPrivilege", args.targetId, "creator")
+					world:fireServer("client_101", "AdminHeartbeat", args.seq)
+					world:run(1)
+					world:flushRemotes()
+				end,
+				next = function(_st) end,
+			},
+			RestartNode2 = {
+				gen = function()
+					return {}
+				end,
+				guard = function()
+					return true
+				end,
+				run = function(sys, _, world)
+					ensureUp(world, sys, 1)
+					if sys.n2 ~= nil and sys.n2.server.state == "up" then
+						sys.n2.server:shutdown()
+					end
+					world:run(6)
+					sys.n2 = bootServer(world, "_K_ModelSync", 2)
+					sys.nodes[2] = sys.n2
+					ensureUp(world, sys, 2)
+					settleCluster(world, sys)
+				end,
+				next = function(_st) end,
+			},
+		},
+		never = {
+			unbannedUserStillBanned = function(st)
+				for uid in st.unbanned do
+					if st.bans[uid] ~= nil then
+						return true
+					end
+				end
+				return false
+			end,
+			revokedRoleStillPresent = function(st)
+				for uid, roles in st.revoked do
+					local active = st.roles[uid]
+					if active ~= nil then
+						for role in roles do
+							if active[role] then
+								return true
+							end
+						end
+					end
+				end
+				return false
+			end,
+			invalidDashboardRank = function(st)
+				return type(st.dashboardRank) ~= "number" or st.dashboardRank < 0 or st.dashboardRank > 3
+			end,
+		},
+		invariants = {
+			rolesNonEmpty = function(st)
+				for _, roleSet in st.roles do
+					if next(roleSet) == nil then
+						return false
+					end
+				end
+				return true
+			end,
+			nodesConverged = function(st, sys)
+				if sys == nil then
+					return true
+				end
+				local p1 = projectNode(sys.n1)
+				local p2 = projectNode(sys.n2)
+				expect(p1).toEqual(p2)
+				expect(p1).toEqual({
+					bans = st.bans,
+					roles = st.roles,
+					dashboardRank = st.dashboardRank,
+				})
+				return true
+			end,
+		},
+	})
+
+	sert.sim.checkSpec(
+		"KAdmin distributed data spec satisfies negative and positive invariants",
+		KAdminDataSpec,
+		{ maxStates = 200, maxDepth = 6 }
+	)
+
+	sert.sim.vopr(
+		"KAdmin multi-server sync converges under VOPR hazards",
+		KAdminDataSpec,
+		{ runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 15, length = 8 }
+	)
 
 	test("sert.sim.explore verifies BindToClose shutdown flushes pending bans, roles, and logs to DataStore", function()
 		sert.sim.explore(function(world)
@@ -611,6 +876,150 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			expect(n3.Data.bans["903"][2]).toBe("fresh local ban")
 			n2.server:shutdown()
 			n3.server:shutdown()
+		end
+	)
+
+	test(
+		"cross-server sync survives late MemoryStore SetAsync, single-partition eviction/stale reads, clock drift, and UpdateAsync retransform",
+		function()
+			local world = sert.sim.new({ backing = true })
+			local n1 = bootServer(world, "_K_VoprHazards")
+			local n2 = bootServer(world, "_K_VoprHazards")
+			world:run(6)
+
+			-- 1. Positive clock drift (+30s) on n1 followed by negative clock drift (-30s) on n2:
+			-- causal updates (ban on n1 -> unban on n2) must still apply despite n2's wall clock being 60s behind n1
+			n1.server:drift(30)
+			n1.server:spawn(function()
+				n1.Auth.banUsers({ 401 }, "drifted ban", -1, nil, true)
+				n1.Auth.userRoleAdd(402, "admin", true)
+			end)
+			world:run(2)
+			world.messaging:drain()
+			world:run(1)
+			expect(n2.Data.bans["401"] ~= nil).toBe(true)
+			expect(n2.Data.members["402"] ~= nil).toBe(true)
+
+			-- 2. Inject late MemoryStore SetAsync, single-partition stale read, and -30s drift on n2 when unbanning 401 and revoking 402
+			n2.server:drift(-30)
+			world:fail("MemoryStoreService", "SetAsync", "late")
+			world:fail("MemoryStoreService", "GetAsync", "stale")
+			world:fail("DataStoreService", "UpdateAsync", "retransform")
+			n2.server:spawn(function()
+				n2.Auth.unbanUsers({ 401 }, nil, true)
+				n2.Auth.userRoleRemove(402, "admin")
+			end)
+			world:run(8)
+			world.messaging:drain()
+			world:run(2)
+
+			expect(n1.Data.bans["401"]).toBeNil()
+			expect(n2.Data.bans["401"]).toBeNil()
+			expect(n1.Data.members["402"]).toBeNil()
+			expect(n2.Data.members["402"]).toBeNil()
+			n1.server:shutdown()
+			n2.server:shutdown()
+		end
+	)
+
+	test(
+		"World remote packet drops, duplicates, and reorders with concurrent cross-server ban/rank/settings updates converge without privilege escalation",
+		function()
+			local world = sert.sim.new({
+				seed = 424242,
+				backing = true,
+				faults = "none",
+			})
+
+			local n1 = bootServer(world, "_K_RemoteFaultSync", 1)
+			local n2 = bootServer(world, "_K_RemoteFaultSync", 2)
+			waitServerReady(world, n1)
+			waitServerReady(world, n2)
+			world:run(6)
+
+			world.faults.remoteDropRate = 0.25
+			world.faults.remoteReorderRate = 0.35
+			world.faults.remoteDuplicateRate = 0.3
+			world.faults.remoteLatencyRange = { 1, 4 }
+			world.faults.reorder = 0.2
+			world.faults.duplicate = 0.2
+
+			local adminPackets = 0
+			local guestBlocked = 0
+
+			-- Register server remote handlers on the World remote fault bus
+			world:onServerEvent("AdminMutation", function(player, op, nodeIdx, userId, val)
+				if not player or player.UserId ~= 101 then
+					guestBlocked += 1
+					return
+				end
+				adminPackets += 1
+				local node = if nodeIdx == 2 then n2 else n1
+				node.server:spawn(function()
+					if op == "ban" then
+						node.Auth.banUsers({ userId }, tostring(val), -1, nil, true)
+					elseif op == "unban" then
+						node.Auth.unbanUsers({ userId }, nil, true)
+					elseif op == "role" then
+						if not node.Auth.userRoleAdd(userId, tostring(val), true) then
+							local member = node.Data.members[tostring(userId)]
+							if member and #member.persist > 0 then
+								node.Data.Sync.members[tostring(userId)] =
+									{ member.name or `User{userId}`, member.persist }
+							end
+						end
+					elseif op == "settings" then
+						node.Data.savedSettings.dashboardRank = tonumber(val) or 1
+						node.Data.Sync.settings.dashboardRank = tonumber(val) or 1
+					end
+				end)
+			end)
+
+			-- Fire a burst of hostile guest packets (peer client_202) and admin packets (peer client_101) under drop/reorder/duplicate faults
+			for i = 1, 20 do
+				world:fireServer("client_202", "AdminMutation", "role", (i % 2) + 1, 202, "creator")
+				world:fireServer("client_202", "AdminMutation", "ban", (i % 2) + 1, 101, "hostile")
+				world:fireServer("client_101", "AdminMutation", "ban", 1, 601, "griefing")
+				world:fireServer("client_101", "AdminMutation", "role", 2, 602, "mod")
+				world:fireServer("client_101", "AdminMutation", "settings", 1, 0, 2)
+			end
+
+			world:run(10)
+			world:flushRemotes()
+			world:run(10)
+
+			-- Clear faults and issue deterministic final admin state across n1 and n2
+			for k in world.faults do
+				world.faults[k] = 0
+			end
+			world.faults.remoteLatencyRange = nil
+
+			world:fireServer("client_101", "AdminMutation", "ban", 1, 601, "final_ban")
+			world:fireServer("client_101", "AdminMutation", "role", 2, 602, "admin")
+			world:fireServer("client_101", "AdminMutation", "settings", 1, 0, 2)
+			world:flushRemotes()
+			world:converge(function(srv: any)
+				local node = if srv == n1.server then n1 else n2
+				return projectNode(node)
+			end, convergeOpts)
+
+			expect(adminPackets > 0).toBe(true)
+			expect(guestBlocked > 0).toBe(true)
+			-- Guest 202 never gained any role or banned admin 101
+			expect(n1.Auth.getRank(202)).toBe(0)
+			expect(n2.Auth.getRank(202)).toBe(0)
+			expect(n1.Data.bans["101"]).toBeNil()
+			expect(n2.Data.bans["101"]).toBeNil()
+			-- Both servers converged on the final ban, role, and settings updates
+			expect(n1.Data.bans["601"] ~= nil).toBe(true)
+			expect(n2.Data.bans["601"] ~= nil).toBe(true)
+			expect(n1.Auth.hasRole(602, "admin")).toBe(true)
+			expect(n2.Auth.hasRole(602, "admin")).toBe(true)
+			expect(n1.Data.savedSettings.dashboardRank).toBe(2)
+			expect(n2.Data.savedSettings.dashboardRank).toBe(2)
+
+			n1.server:shutdown()
+			n2.server:shutdown()
 		end
 	)
 
@@ -971,6 +1380,208 @@ describe("Data · ChunkChanges array actions", function()
 			expect(#Http:JSONEncode(chunk) <= LIMIT).toBe(true)
 		end
 	end)
+
+	do
+		local chunkChanges: any
+		local HttpService: any
+		local function getChunkDeps()
+			if not chunkChanges then
+				local h = Harness.shared()
+				chunkChanges = h.env:require(h.Shared:WaitForChild("Data"):WaitForChild("ChunkChanges"))
+				HttpService = h.env.game:GetService("HttpService")
+			end
+			return chunkChanges, HttpService
+		end
+
+		sert.laws.chunk("Data.ChunkChanges multi-action (set, unset, insert)", {
+			minSize = LIMIT,
+			maxSize = LIMIT,
+			gen = function(g)
+				local keyChars = "abcdef012345"
+				local changes: { [string]: any } = {}
+				for _, section in { "bans", "members", "settings" } do
+					local set: { [string]: any } = {}
+					for i = 1, g:int(1, 15) do
+						set[`{section}_s_{i}_{g:string(keyChars, 1, 4)}`] = {
+							g:string(keyChars, 1, g:int(10, 120)),
+							g:int(-1, 100000),
+						}
+					end
+					local unset = {}
+					for i = 1, g:int(1, 30) do
+						unset[i] = `{section}_u_{i}_{g:string(keyChars, 1, 4)}`
+					end
+					changes[section] = { set = set, unset = unset }
+				end
+				local logs = {}
+				for i = 1, g:int(1, 20) do
+					logs[i] = { g:string(keyChars, 1, g:int(10, 80)), string.char(g:int(0, 5)), 1700000000 + i }
+				end
+				changes.logs = { insert = logs }
+				return changes
+			end,
+			chunk = function(changes, _budget)
+				local fn = getChunkDeps()
+				return fn(changes)
+			end,
+			measure = function(piece)
+				local _, http = getChunkDeps()
+				return #http:JSONEncode(piece)
+			end,
+			join = function(pieces)
+				local merged: { [string]: any } = {}
+				for _, piece in pieces do
+					for key, info in piece do
+						local into = merged[key] or {}
+						merged[key] = into
+						for action, data in info do
+							if action == "insert" or action == "unset" then
+								into[action] = into[action] or {}
+								table.move(data, 1, #data, #into[action] + 1, into[action])
+							else
+								into[action] = into[action] or {}
+								for k, v in data do
+									into[action][k] = v
+								end
+							end
+						end
+					end
+				end
+				return merged
+			end,
+			eq = sert.eq,
+		}, { runs = 30 })
+
+		-- Helper that chunks `a` and `b` via ChunkChanges and composes their state transitions (`set` and `unset`)
+		local function composeChunkedDeltas(a: { [string]: any }, b: { [string]: any }): { [string]: any }
+			local fn = getChunkDeps()
+			local state: { [string]: { set: { [string]: any }, unset: { [string]: boolean } } } = {}
+			local function applyChunks(delta: { [string]: any })
+				if next(delta) == nil then
+					return
+				end
+				for _, chunk in fn(delta) do
+					for section, info in chunk do
+						local sec = state[section]
+						if not sec then
+							sec = { set = {}, unset = {} }
+							state[section] = sec
+						end
+						if info.unset then
+							for _, k in info.unset do
+								sec.set[k] = nil
+								sec.unset[k] = true
+							end
+						end
+						if info.set then
+							for k, v in info.set do
+								sec.unset[k] = nil
+								sec.set[k] = v
+							end
+						end
+					end
+				end
+			end
+			applyChunks(a)
+			applyChunks(b)
+
+			local out: { [string]: any } = {}
+			for section, sec in state do
+				local unsetArr = {}
+				for k in sec.unset do
+					table.insert(unsetArr, k)
+				end
+				table.sort(unsetArr)
+				local info: { [string]: any } = {}
+				if next(sec.set) ~= nil then
+					info.set = sec.set
+				end
+				if #unsetArr > 0 then
+					info.unset = unsetArr
+				end
+				if next(info) ~= nil then
+					out[section] = info
+				end
+			end
+			return out
+		end
+
+		local batchSeq = 0
+		sert.laws.algebra("Data.ChunkChanges disjoint-key delta algebra (idempotence & commutativity)", {
+			gen = function(g)
+				batchSeq += 1
+				local ns = batchSeq
+				local delta: { [string]: any } = {}
+				for _, section in { "bans", "members", "settings" } do
+					local set: { [string]: any } = {}
+					local unset = {}
+					for i = 1, g:int(1, 6) do
+						local k = `{section}_{ns}_{i}`
+						if g:bool() then
+							set[k] = { `val_{ns}_{i}`, g:int(-1, 1000) }
+						else
+							table.insert(unset, k)
+						end
+					end
+					table.sort(unset)
+					local info: { [string]: any } = {}
+					if next(set) ~= nil then
+						info.set = set
+					end
+					if #unset > 0 then
+						info.unset = unset
+					end
+					if next(info) ~= nil then
+						delta[section] = info
+					end
+				end
+				return delta
+			end,
+			op = composeChunkedDeltas,
+			identity = {},
+			associative = true,
+			commutative = true,
+			idempotent = true,
+			eq = sert.eq,
+		}, { runs = 40 })
+
+		sert.laws.algebra("Data.ChunkChanges overlapping-key delta algebra (associativity & idempotence)", {
+			gen = function(g)
+				local delta: { [string]: any } = {}
+				for _, section in { "bans", "members" } do
+					local set: { [string]: any } = {}
+					local unset = {}
+					for i = 1, 6 do
+						local choice = g:int(0, 2)
+						local k = `shared_{i}`
+						if choice == 1 then
+							set[k] = { `v_{g:int(1, 4)}`, g:pick({ -1, 0, 60 }) }
+						elseif choice == 2 then
+							table.insert(unset, k)
+						end
+					end
+					table.sort(unset)
+					local info: { [string]: any } = {}
+					if next(set) ~= nil then
+						info.set = set
+					end
+					if #unset > 0 then
+						info.unset = unset
+					end
+					if next(info) ~= nil then
+						delta[section] = info
+					end
+				end
+				return delta
+			end,
+			op = composeChunkedDeltas,
+			identity = {},
+			associative = true,
+			commutative = false,
+			idempotent = true,
+			eq = sert.eq,
+		}, { runs = 40 })
+	end
 end)
 
 return {}

@@ -12,22 +12,6 @@ local Color3 = _globals.Color3
 local Vector3 = _globals.Vector3
 local Enum = _globals.Enum
 
-local _cfMeta = getmetatable(CFrame.identity)
-if type(_cfMeta) == "table" and not table.isfrozen(_cfMeta) then
-	local origCfIndex = _cfMeta.__index
-	_cfMeta.__index = function(self: any, key: string)
-		if key == "FuzzyEq" then
-			return function(a: any, b: any)
-				return a == b
-			end
-		elseif key == "Rotation" then
-			local m = self._m
-			return CFrame.new(0, 0, 0, m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11], m[12])
-		end
-		return if type(origCfIndex) == "function" then origCfIndex(self, key) else origCfIndex[key]
-	end
-end
-
 -- Rich character and service double builder for testing all DefaultCommands & VIP modules
 local function decorateEnvironment(peerEnv: any)
 	local origInstNew = peerEnv.Instance.new
@@ -3217,6 +3201,11 @@ describe("DefaultCommands", function()
 			local seq = def.getValue(1.5)
 			expect(seq).toBeTruthy()
 			def.update(titleGui, seq)
+			local seqBoundary = def.getValue(0)
+			expect(seqBoundary).toBeTruthy()
+			for i = 2, #seqBoundary.Keypoints do
+				expect(seqBoundary.Keypoints[i].Time > seqBoundary.Keypoints[i - 1].Time).toBe(true)
+			end
 		end
 		-- Remove title when title == nil
 		Title.Method(srvChar, nil)

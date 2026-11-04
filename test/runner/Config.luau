@@ -8,15 +8,15 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local load: (Instance) -> any = require
+local sert = load(ReplicatedStorage:WaitForChild("sert"))
 local Runner = load(ReplicatedStorage:WaitForChild("sert"):WaitForChild("roblox"):WaitForChild("Runner"))
 local unit =
 	ReplicatedStorage:WaitForChild("Tests"):WaitForChild("kohls-admin"):WaitForChild("test"):WaitForChild("unit")
 
 local function clientReady()
-	local deadline = os.clock() + 20
-	while (not shared._K_INTERFACE or not shared._K_INTERFACE.ready) and os.clock() < deadline do
-		task.wait()
-	end
+	sert.waitFor(function()
+		return shared._K_INTERFACE and shared._K_INTERFACE.ready
+	end, 15, "_K client interface ready")
 	Runner.phase("client", "ready")
 end
 

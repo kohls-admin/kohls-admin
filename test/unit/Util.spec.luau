@@ -806,43 +806,43 @@ describe(
 			local Util = h:requireUtil()
 			local MarketplaceService = h.env.game:GetService("MarketplaceService")
 			local InsertService = h.env.game:GetService("InsertService")
-			local marketMethods = rawget(MarketplaceService, "_methods")
-			local insertMethods = rawget(InsertService, "_methods")
 
 			-- 1. Error fallback when GetProductInfoAsync throws
-			marketMethods.GetProductInfoAsync = function()
+			local marketSpy = sert.spy(MarketplaceService, "GetProductInfoAsync", function()
 				error("Marketplace unavailable")
-			end
+			end)
 			expect(Util.getTexture(1001)).toBeNil()
 
 			-- 2. Image AssetTypeId (1) returns rbxassetid:// directly and caches
 			local infoCalls = 0
-			marketMethods.GetProductInfoAsync = function(_self, assetId)
+			marketSpy:mockImplementation(function(_self, assetId)
 				infoCalls += 1
 				return { AssetTypeId = h.env.globals.Enum.AssetType.Image.Value, AssetId = assetId }
-			end
+			end)
 			expect(Util.getTexture(1002)).toBe("rbxassetid://1002")
 			expect(Util.getTexture(1002)).toBe("rbxassetid://1002")
 			expect(infoCalls).toBe(1)
 
 			-- 3. Server LoadAsset branch (Face/Shirt/Pants/TShirt) extracts Decal.Texture
-			marketMethods.GetProductInfoAsync = function()
+			marketSpy:mockImplementation(function()
 				return { AssetTypeId = h.env.globals.Enum.AssetType.Face.Value }
-			end
-			insertMethods.LoadAsset = function()
+			end)
+			local insertSpy = sert.spy(InsertService, "LoadAsset", function()
 				local model = h.env.Instance.new("Model")
 				local decal = h.env.Instance.new("Decal", model)
 				decal.Texture = "rbxassetid://999888"
 				return model
-			end
+			end)
 			expect(Util.getTexture(1003)).toBe("rbxassetid://999888")
 
 			-- 4. Fallback to rbxthumb when LoadAsset fails (both small=true 150 and small=false 420)
-			insertMethods.LoadAsset = function()
+			insertSpy:mockImplementation(function()
 				error("LoadAsset blocked")
-			end
+			end)
 			expect(Util.getTexture(1004, true)).toBe("rbxthumb://type=Asset&id=1004&w=150&h=150")
 			expect(Util.getTexture(1005, false)).toBe("rbxthumb://type=Asset&id=1005&w=420&h=420")
+			marketSpy:restore()
+			insertSpy:restore()
 		end)
 
 		test(
@@ -851,7 +851,6 @@ describe(
 				local h = Harness.newEnv()
 				local Util = h:requireUtil()
 				local UserService = h.env.game:GetService("UserService")
-				local userMethods = rawget(UserService, "_methods")
 
 				-- Invalid non-numeric userId fallback
 				local unknown = Util.getUserInfo(nil :: any)
@@ -863,7 +862,7 @@ describe(
 				expect(Util.getUserInfo(online.UserId).Username).toBe("OnlineUser")
 
 				-- UserService:GetUserInfosByUserIdsAsync batch lookup + deleted user fallback
-				userMethods.GetUserInfosByUserIdsAsync = function(_self, ids)
+				local userSpy = sert.spy(UserService, "GetUserInfosByUserIdsAsync", function(_self, ids)
 					local out = {}
 					for _, id in ids do
 						if id == 202 then
@@ -876,7 +875,7 @@ describe(
 						end
 					end
 					return out
-				end
+				end)
 
 				local info202, infoDeleted
 				h.env.task.spawn(function()
@@ -898,7 +897,7 @@ describe(
 
 				-- UserService transient error followed by recovery retry
 				local attempts = 0
-				userMethods.GetUserInfosByUserIdsAsync = function(_self, _ids)
+				userSpy:mockImplementation(function(_self, _ids)
 					attempts += 1
 					if attempts == 1 then
 						error("UserService 500")
@@ -906,7 +905,7 @@ describe(
 					return {
 						{ Id = 303, Username = "Recovered303", DisplayName = "Rec", HasVerifiedBadge = false },
 					}
-				end
+				end)
 				local info303
 				h.env.task.spawn(function()
 					info303 = Util.getUserInfo(303)
@@ -917,7 +916,7 @@ describe(
 				expect(attempts).toBe(2)
 
 				-- >200 concurrent userIds triggers chunked re-deferral (lines 31 & 69)
-				userMethods.GetUserInfosByUserIdsAsync = function(_self, ids)
+				userSpy:mockImplementation(function(_self, ids)
 					local out = {}
 					for _, id in ids do
 						table.insert(
@@ -926,7 +925,7 @@ describe(
 						)
 					end
 					return out
-				end
+				end)
 				local got205 = nil
 				for uid = 1001, 1205 do
 					h.env.task.spawn(function()
@@ -944,7 +943,7 @@ describe(
 
 				-- Permanent failure across all 6 attempts triggers warn + 5s delay retry, then succeeds (lines 74 & 76)
 				local permFails = 0
-				userMethods.GetUserInfosByUserIdsAsync = function(_self, ids)
+				userSpy:mockImplementation(function(_self, ids)
 					permFails += 1
 					if permFails <= 6 then
 						error("UserService total outage")
@@ -952,7 +951,7 @@ describe(
 					return {
 						{ Id = ids[1], Username = "AfterOutage", DisplayName = "AO", HasVerifiedBadge = true },
 					}
-				end
+				end)
 				local infoOutage
 				h.env.task.spawn(function()
 					infoOutage = Util.getUserInfo(9001)
@@ -962,6 +961,7 @@ describe(
 				end
 				expect(infoOutage ~= nil).toBe(true)
 				expect(infoOutage.Username).toBe("AfterOutage")
+				userSpy:restore()
 
 				-- Server OnServerInvoke and Client InvokeServer paths (lines 90-95 & 113)
 				local getUserInfoMod = h.Shared:WaitForChild("Util"):WaitForChild("getUserInfo")
@@ -974,24 +974,23 @@ describe(
 				local cGetUserInfoMod = hc.Shared:WaitForChild("Util"):WaitForChild("getUserInfo")
 				local cRf = hc.env.Instance.new("RemoteFunction", cGetUserInfoMod)
 				cRf.Name = "RemoteFunction"
-				rawset(cRf, "_methods", {
-					InvokeServer = function(_self, uid)
-						if uid == 777 then
-							return {
-								Id = 777,
-								Username = "ClientFetched777",
-								DisplayName = "CF",
-								HasVerifiedBadge = true,
-							}
-						end
-						return nil
-					end,
-				})
+				local cRfSpy = sert.spy(cRf, "InvokeServer", function(_self, uid)
+					if uid == 777 then
+						return {
+							Id = 777,
+							Username = "ClientFetched777",
+							DisplayName = "CF",
+							HasVerifiedBadge = true,
+						}
+					end
+					return nil
+				end)
 				local cGetUserInfo = hc.env:require(cGetUserInfoMod)
 				local cInfo777 = cGetUserInfo(777)
 				expect(cInfo777.Username).toBe("ClientFetched777")
 				local cInfoNil = cGetUserInfo(888)
 				expect(cInfoNil.Username).toBe("Unknown")
+				cRfSpy:restore()
 			end
 		)
 

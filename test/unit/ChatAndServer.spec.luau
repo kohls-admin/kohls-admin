@@ -432,17 +432,18 @@ describe("Chat and Server", function()
 				local guestClient = server:client(202)
 				local modClient = server:client(301)
 
-				local sh = Harness.newPeerEnv(server, { isStudio = false, jobId = "server-job-1", placeId = 1000 })
-				sh.env.game._props.CreatorId = 101
-				local plrMethods = rawget(sh.env.Players, "_methods")
-				plrMethods.GetFriendsAsync = function()
+				local sh = Harness.newPeerEnv(
+					server,
+					{ isStudio = false, creatorId = 101, jobId = "server-job-1", placeId = 1000 }
+				)
+				sert.spy(sh.env.Players, "GetFriendsAsync", function()
 					return {
 						IsFinished = true,
 						GetCurrentPage = function()
 							return { { Id = 202 } }
 						end,
 					}
-				end
+				end)
 				local _K: any
 				local roles = Harness.defaultRoles()
 				roles.everyone.limits = { targetOthers = true }
@@ -1900,6 +1901,70 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			expect(_K.Data.Sync.logs[#_K.Data.Sync.logs][1]).toBe(";kick Guest …")
 			world:run(61)
 			expect(mutedStored[1]).toBe(";kick Guest …")
+		end
+	)
+
+	test(
+		"Wally partial-table _K.initialize seeds default roles, isolates private-server DataStore scope without userRoles, and backfills admin data on roleAdded",
+		function()
+			local world = sert.sim.new({ backing = true })
+			local server = world:server({ jobId = "wally-init-job" })
+			local sh = Harness.newPeerEnv(server, { isStudio = false, jobId = "wally-init-job", placeId = 2000 })
+			sh.env.game._props.CreatorId = 101
+			sh.env.game._props.PrivateServerId = "priv-uuid-1"
+			sh.env.game._props.PrivateServerOwnerId = 555
+
+			local _K = sh:requireK()
+			_K.Data.IS_PRIVATE_SERVER = true
+
+			-- Initialize with a minimal Wally-style table omitting roles, bans, and userRoles
+			_K.initialize({
+				prefix = "!",
+				roles = {
+					mod = { color = "#123456" },
+				},
+			})
+			world:run(1)
+
+			-- All 6 default roles exist and partial override on mod was merged
+			for _, roleKey in { "everyone", "vip", "mod", "admin", "superadmin", "creator" } do
+				expect(_K.Data.roles[roleKey] ~= nil).toBe(true)
+			end
+			expect(_K.Data.roles.mod.color).toBe("#123456")
+			expect(_K.Data.roles.mod._rank).toBe(2)
+			expect(type(_K.Data.bans)).toBe("table")
+			expect(_K.Data.SEPARATE_DATASTORE).toBe(true)
+
+			-- Promoting an already-ready player mid-session backfills Bans, Members, ReservedServers, and Logs
+			local p2 = sh.env:addPlayer(202, "PromotedAdmin")
+			p2:SetAttribute("_K_READY", true)
+			local backfilled = {}
+			_K.Remote.Bans.Fire = function(_self, plr)
+				if plr == p2 then
+					backfilled.bans = true
+				end
+			end
+			_K.Remote.Members.Fire = function(_self, plr)
+				if plr == p2 then
+					backfilled.members = true
+				end
+			end
+			_K.Remote.ReservedServers.Fire = function(_self, plr)
+				if plr == p2 then
+					backfilled.reserved = true
+				end
+			end
+			_K.Remote.Logs.Fire = function(_self, plr)
+				if plr == p2 then
+					backfilled.logs = true
+				end
+			end
+
+			_K.Auth.userRoleAdd(202, "superadmin")
+			expect(backfilled.bans).toBe(true)
+			expect(backfilled.members).toBe(true)
+			expect(backfilled.reserved).toBe(true)
+			expect(backfilled.logs).toBe(true)
 		end
 	)
 end)

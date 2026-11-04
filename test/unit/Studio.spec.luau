@@ -18,10 +18,9 @@ describe("Studio · Server", function()
 
 			local player = Players:GetPlayers()[1]
 			expect(player ~= nil).toBe(true)
-			local deadline = os.clock() + 10
-			while not player:GetAttribute("_KRolesLoaded") and os.clock() < deadline do
-				task.wait()
-			end
+			sert.waitFor(function()
+				return player:GetAttribute("_KRolesLoaded")
+			end, 10, "Studio player _KRolesLoaded")
 			expect(_K.Auth.hasPermission(player.UserId, "admin")).toBe(true)
 		end
 	)
@@ -43,12 +42,10 @@ end)
 
 describe("Studio · Client", function()
 	clientTest("initializes _K client singleton, UI classes, CommandBar, and Dashboard on the live client", function()
-		local _K = shared._K_INTERFACE
-		local deadline = os.clock() + 15
-		while (not _K or not _K.client or not _K.ready) and os.clock() < deadline do
-			task.wait()
-			_K = shared._K_INTERFACE
-		end
+		local _K = sert.waitFor(function()
+			local k = shared._K_INTERFACE
+			return if k and k.client and k.ready then k else nil
+		end, 15, "_K client interface ready")
 		expect(_K ~= nil).toBe(true)
 		expect(_K.IsClient).toBe(true)
 		expect(_K.client ~= nil).toBe(true)
@@ -137,13 +134,19 @@ describe("Studio · Client", function()
 		local CommandBar = _K.client.CommandBar
 		local input = CommandBar.Input
 		local prefix = _K.getCommandPrefix()
-		local deadline = os.clock() + 10
-		while not _K.Registry.commands.ping.LocalPlayerAuthorized and os.clock() < deadline do
-			task.wait()
-		end
+		sert.waitFor(function()
+			return _K.Registry.commands.ping.LocalPlayerAuthorized
+		end, 10, "ping command LocalPlayerAuthorized")
 		expect(not not _K.Registry.commands.ping.LocalPlayerAuthorized).toBe(true)
 
-		CommandBar.show()
+		local flicker = sert.roblox.Flicker.around(function()
+			return CommandBar.Bar
+		end, function()
+			CommandBar.show()
+		end, { label = "CommandBar", fromSettledSize = true })
+		sert.roblox.Flicker.expect(flicker)
+		local settled, moving = sert.roblox.Layout.settle(CommandBar.Bar)
+		sert(settled, `CommandBar layout settled ({moving})`)
 		input._input.Text = `{prefix}ping me`
 		input._input.CursorPosition = #input._input.Text + 1
 		task.wait()

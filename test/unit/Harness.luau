@@ -10,7 +10,7 @@ if not IN_ROBLOX then
 end
 
 local Harness = {
-	globals = sert.env.new().globals,
+	globals = if IN_ROBLOX then getfenv() else sert.env.new().globals,
 }
 
 export type UtilModule = typeof(require("../../src/Shared/Util"))
@@ -226,7 +226,7 @@ local function wrapEnv(env: any): MountedEnv
 	assert(STAGE ~= nil, "Harness requires @stage (run via tools/sert.py)")
 	local rs = env.game:GetService("ReplicatedStorage")
 	local root = env:mount(STAGE, rs)
-	local KA = root:WaitForChild("KA")
+	local KA = root:FindFirstChild("KA") or root
 	local Shared = KA:WaitForChild("Shared")
 	local Server = KA:WaitForChild("Server")
 	local Client = KA:WaitForChild("Client")

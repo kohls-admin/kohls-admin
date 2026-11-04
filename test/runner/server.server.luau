@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local load: (Instance) -> any = require
+local sert = load(ReplicatedStorage:WaitForChild("sert"))
 local Runner = load(ReplicatedStorage:WaitForChild("sert"):WaitForChild("roblox"):WaitForChild("Runner"))
 
 if Runner.args() ~= nil then
@@ -18,13 +19,9 @@ if Runner.args() ~= nil then
 	if config then
 		config:SetAttribute("AutoUpdate", false)
 	end
-	local deadline = os.clock() + 20
-	while
-		(#Players:GetPlayers() == 0 or not shared._K_INTERFACE or not shared._K_INTERFACE.ready)
-		and os.clock() < deadline
-	do
-		task.wait()
-	end
+	sert.waitFor(function()
+		return #Players:GetPlayers() > 0 and shared._K_INTERFACE and shared._K_INTERFACE.ready
+	end, 20, "_K server interface ready")
 	Runner.phase("server", "ready")
 end
 
