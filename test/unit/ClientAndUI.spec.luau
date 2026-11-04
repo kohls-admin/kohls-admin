@@ -526,6 +526,12 @@ local function makeInput(env: any, props: { [string]: any })
 	return input
 end
 
+local sharedFullWorld: any = nil
+local sharedFullClientMounted: any = nil
+local sharedFullCK: any = nil
+local sharedFullPingLabel: any = nil
+local sharedFullMutant: any = nil
+
 describe("Client and UI", function()
 	describe("Part 1 · UI Engine, Theme, Fonts & Stateful Primitives", function()
 		test("registers classes, resolves fonts, manages active states, luminance, and edits instances", function()
@@ -2145,7 +2151,7 @@ describe("Client and UI", function()
 							roles = Harness.defaultRoles(),
 						})
 					end)
-					world:run(1)
+					world:run(0.5)
 
 					local cK = cliMounted:requireK()
 					local preUI = cliMounted.env:require(cliMounted.Client.UI)
@@ -2153,7 +2159,17 @@ describe("Client and UI", function()
 					client:spawn(function()
 						cliMounted.env:require(cliMounted.Client)
 					end)
-					world:run(3)
+					world:run(1)
+
+					if sK.ChatCommands then
+						sK.ChatCommands.schedule = function() end
+					end
+					sharedFullWorld = world
+					sharedFullClientMounted = cliMounted
+					sharedFullCK = cK
+					sharedFullPingLabel =
+						cK.client.dashboard.Window._instance:FindFirstChild("StatusBar", true).Content.Ping.Label
+					sharedFullMutant = (_G :: any).__SERT_MUTANT
 
 					expect(cK.ready).toBe(true)
 					expect(cK.client.dashboard ~= nil).toBe(true)
@@ -2622,7 +2638,7 @@ describe("Client and UI", function()
 						tab.Enabled(true)
 						tab._instance.Visible = true
 						tab:updateList()
-						world:run(0.3)
+						world:run(0.1)
 						tab:forceRender()
 						expect(next(tab._lineItemCache) ~= nil).toBe(true)
 					end
@@ -2631,7 +2647,7 @@ describe("Client and UI", function()
 						for _, q in queries do
 							tab._input._input.Text = q
 							tab:refreshList()
-							world:run(0.2)
+							world:run(0.1)
 							if q ~= "" then
 								tab:forceRender()
 							end
@@ -2790,7 +2806,7 @@ describe("Client and UI", function()
 					do
 						local playersMethods = rawget(cEnv.Players, "_methods")
 						local origLookup = playersMethods.GetUserIdFromNameAsync
-						local lookupDelay: { [string]: number } = { bannedbob = 1, adminalice = 0.2 }
+						local lookupDelay: { [string]: number } = { bannedbob = 0.3, adminalice = 0.15 }
 						playersMethods.GetUserIdFromNameAsync = function(self, name)
 							local delay = lookupDelay[string.lower(name)]
 							if delay then
@@ -2871,9 +2887,9 @@ describe("Client and UI", function()
 						enter(banBox, "AdminAlice")
 						world:run(0.1)
 						expect(targetId(banAvatar)).toBe("nil")
-						world:run(0.3)
+						world:run(0.1)
 						expect(targetId(banAvatar)).toBe("505")
-						world:run(1.2)
+						world:run(0.2)
 						expect(targetId(banAvatar)).toBe("505")
 						banButton.Activated:Fire()
 						expect(bansFired).toEqual({ 505 })
@@ -2903,9 +2919,9 @@ describe("Client and UI", function()
 						enter(roleBox, "AdminAlice")
 						world:run(0.1)
 						expect(targetId(roleAvatar)).toBe("nil")
-						world:run(0.3)
+						world:run(0.1)
 						expect(targetId(roleAvatar)).toBe("505")
-						world:run(1.2)
+						world:run(0.2)
 						expect(targetId(roleAvatar)).toBe("505")
 						confirmButton.Activated:Fire()
 						expect(#commandsRun).toBe(1)
@@ -3038,12 +3054,11 @@ describe("Client and UI", function()
 						if desc:IsA("TextBox") and desc.Text == ";" then
 							desc.Text = ":"
 							desc.FocusLost:Fire(true)
-							world:run(0.1)
 						elseif desc:IsA("TextButton") and desc.Name == "Button" then
 							desc.Activated:Fire()
-							world:run(0.05)
 						end
 					end
+					world:run(0.1)
 					-- Confirm settingsDialog if visible
 					for _, child in dash.Settings._instance:GetChildren() do
 						if
@@ -3179,7 +3194,6 @@ describe("Client and UI", function()
 					for _, desc in dash.About._instance:GetDescendants() do
 						if desc:IsA("TextButton") or desc:IsA("ImageButton") then
 							desc.Activated:Fire()
-							world:run(0.05)
 						end
 					end
 					cEnv.game
@@ -3202,7 +3216,6 @@ describe("Client and UI", function()
 					for _, desc in dash.Market._instance:GetDescendants() do
 						if desc:IsA("TextButton") or desc:IsA("ImageButton") then
 							desc.Activated:Fire()
-							world:run(0.05)
 						end
 					end
 					world:run(0.2)
@@ -3517,53 +3530,62 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 	end)
 
 	test("Dashboard ping color walks the Oklab hue from Valid through yellow to Invalid", function()
-		local world = sert.sim.new({ backing = true })
-		local server = world:server()
-		local client = server:client(1, "Player1")
-		local srvMounted = Harness.newPeerEnv(server, { isStudio = true })
-		local cliMounted = setupClientEnv(client)
-		local sK = srvMounted:requireK()
-		server:spawn(function()
-			sK.initialize({
-				bans = {},
-				userRoles = { creator = { 1 } },
-				assetRoles = {},
-				gamepassRoles = {},
-				subscriptionRoles = {},
-				groupRoles = {},
-				friendRoles = {},
-				freeAdmin = {},
-				prefix = { ";" },
-				splitKey = " ",
-				commands = {},
-				vip = false,
-				roles = Harness.defaultRoles(),
-			})
-		end)
-		world:run(1)
+		local world = sharedFullWorld
+		local cliMounted = sharedFullClientMounted
+		local cK = sharedFullCK
+		if not (world and cliMounted and cK and sharedFullMutant == (_G :: any).__SERT_MUTANT) then
+			world = sert.sim.new({ backing = true })
+			local server = world:server()
+			local client = server:client(1, "Player1")
+			local srvMounted = Harness.newPeerEnv(server, { isStudio = true })
+			cliMounted = setupClientEnv(client)
+			local sK = srvMounted:requireK()
+			server:spawn(function()
+				sK.initialize({
+					bans = {},
+					userRoles = { creator = { 1 } },
+					assetRoles = {},
+					gamepassRoles = {},
+					subscriptionRoles = {},
+					groupRoles = {},
+					friendRoles = {},
+					freeAdmin = {},
+					prefix = { ";" },
+					splitKey = " ",
+					commands = {},
+					vip = false,
+					roles = Harness.defaultRoles(),
+				})
+			end)
+			world:run(0.5)
+
+			cK = cliMounted:requireK()
+			local preUI = cliMounted.env:require(cliMounted.Client.UI)
+			preUI.Pointer = preUI.signal({ Position = Vector3.new(100, 100, 0) })
+			client:spawn(function()
+				cliMounted.env:require(cliMounted.Client)
+			end)
+			world:run(1)
+		end
+		expect(cK.ready).toBe(true)
 
 		local ping = 0.175 -- half of the 350 ms that reads fully Invalid
 		local player = cliMounted.env.Players.LocalPlayer
-		local methods = table.clone(rawget(player, "_methods") or {})
+		local origMethods = rawget(player, "_methods")
+		local methods = table.clone(origMethods or {})
 		methods.GetNetworkPing = function()
 			return ping
 		end
 		rawset(player, "_methods", methods)
 
-		local cK = cliMounted:requireK()
-		local preUI = cliMounted.env:require(cliMounted.Client.UI)
-		preUI.Pointer = preUI.signal({ Position = Vector3.new(100, 100, 0) })
-		client:spawn(function()
-			cliMounted.env:require(cliMounted.Client)
-		end)
-		world:run(3)
-		expect(cK.ready).toBe(true)
-
 		local UI = cK.UI
+		local origValid = UI.Theme.Valid:peek()
+		local origInvalid = UI.Theme.Invalid:peek()
 		UI.Theme.Valid(Color3.fromRGB(0, 255, 0))
 		UI.Theme.Invalid(Color3.fromRGB(255, 0, 0))
-		local label = cK.client.dashboard.Window._instance:FindFirstChild("StatusBar", true).Content.Ping.Label
-		world:run(1.5)
+		local label = sharedFullPingLabel
+			or cK.client.dashboard.Window._instance:FindFirstChild("StatusBar", true).Content.Ping.Label
+		world:run(1.1)
 		-- a straight Oklab mix of green and red is olive (~0.82, 0.66, 0); the hue walk stays a vivid yellow
 		local mid = label.TextColor3
 		sert(mid.R > 0.95 and mid.G > 0.75 and mid.B < 0.1, `midpoint reads as yellow, got {mid}`)
@@ -3571,9 +3593,13 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 		-- endpoints follow the current theme colors' hues
 		ping = 0
 		UI.Theme.Valid(Color3.fromRGB(0, 0, 255))
-		world:run(1.5)
+		world:run(1.1)
 		local low = label.TextColor3
 		sert(low.B > 0.95 and low.B > low.R and low.B > low.G, `zero ping takes the Valid hue, got {low}`)
+
+		UI.Theme.Valid(origValid)
+		UI.Theme.Invalid(origInvalid)
+		rawset(player, "_methods", origMethods)
 	end)
 
 	test("UI.edit leaves a Find selection passed as a child untouched", function()

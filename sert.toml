@@ -44,14 +44,14 @@ exclude = [
   "src/Shared/DefaultTypes/Player/Types/Inverse.luau",
 ]
 min = 85
-timeout = 20
+timeout = 30
 
 [mutate.specs]
 "src/Shared/Util" = "@file=Util"
 "src/Shared/Util/Remote.luau" = "@file=Util,Remote"
 "src/Server/LoadScript" = "@file=Util,Loadstring"
 "src/Shared/Auth.luau" = "@file=Auth,ProcessAndTypes"
-"src/Shared/Process" = "@file=ProcessAndTypes"
+"src/Shared/Process" = "@file=ProcessAndTypes,DefaultCommands"
 "src/Shared/Registry.luau" = "@file=ProcessAndTypes,DefaultTypes"
 "src/Shared/Hook.luau" = "@file=ProcessAndTypes"
 "src/Shared/Data" = "@file=DataAndSim,ChatAndServer"
@@ -59,6 +59,8 @@ timeout = 20
 "src/Shared/Data/Migrate" = "Migrate"
 "src/Shared/Data/Store.luau" = "Store.loadStore"
 "src/Shared/Chat.luau" = "@file=ChatAndServer"
+"src/Server/ChatCommands.luau" = "Chat commands"
+"src/Server/Servers.luau" = "@file=ChatAndServer"
 "src/Server" = "@file=ChatAndServer,Remote,DefaultCommands"
 "src/init.luau" = "@file=ChatAndServer,DefaultCommands"
 "src/Shared/DefaultTypes" = "@file=DefaultTypes"

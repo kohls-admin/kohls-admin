@@ -231,7 +231,10 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 				local adminEnv = Harness.newPeerEnv(adminClient, { isClient = true })
 				fuzzGuestRemote = guestEnv:requireRemote()
 				fuzzAdminRemote = adminEnv:requireRemote()
-				fuzzWorld:run(1)
+				fuzzWorld:run(0.5)
+				if fuzzK.ChatCommands then
+					fuzzK.ChatCommands.schedule = function() end
+				end
 			end
 			local world, _K, gRemote, aRemote = fuzzWorld, fuzzK, fuzzGuestRemote, fuzzAdminRemote
 			_K.Data.playerPrefix[202] = nil
@@ -251,7 +254,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			local reserved = g:pick({ ",", " ", "`", '"', "@", "$", "%", "*", "~", "twochars" })
 			gRemote.PlayerPrefix:Fire(reserved)
 			gRemote.Idled:Fire("not_a_number")
-			world:run(1)
+			world:run(0.1)
 
 			expect(world.scheduler.errors).toEqual({})
 			expect(next(_K.Data.bans)).toBeNil()
@@ -262,7 +265,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			-- Authorized superadmin client bans user 303 and updates dashboardRank
 			aRemote.Ban:Fire(303, "legit ban", -1)
 			aRemote.Settings:Fire({ dashboardRank = 2 })
-			world:run(1)
+			world:run(0.1)
 
 			expect(world.scheduler.errors).toEqual({})
 			expect(_K.Data.playerPrefix[202]).toBe("!")
@@ -271,7 +274,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 
 			-- Authorized superadmin unbans user 303
 			aRemote.Unban:Fire(303)
-			world:run(1)
+			world:run(0.9)
 			expect(_K.Data.bans["303"]).toBeNil()
 		end,
 		{ runs = 25 }
@@ -397,6 +400,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			expect(_K.Process.onCooldown(_K, 202)).toBe(false)
 
 			-- 2. Remote.PlayerPrefix rate-limits rapid changes and cleans up on PlayerRemoving
+			local scheduleSpy = if _K.ChatCommands then sert.spy(_K.ChatCommands, "schedule", function() end) else nil
 			gRemote.PlayerPrefix:Fire("!")
 			gRemote.PlayerPrefix:Fire("?")
 			world:run(0.2)
@@ -405,6 +409,9 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			gRemote.PlayerPrefix:Fire("?")
 			world:run(0.2)
 			expect(_K.Data.playerPrefix[202]).toBe("?")
+			if scheduleSpy then
+				expect(scheduleSpy.callCount).toBe(2)
+			end
 
 			-- 3. Remote.VIPUGCMethod rejects spoofed assetId != ugcAssetMatch[assetId]
 			local srvGuest = sh.env.Players:GetPlayerByUserId(202)

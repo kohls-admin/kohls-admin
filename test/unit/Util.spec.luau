@@ -482,12 +482,16 @@ describe("Util · Queue, Signal, Tasks, Retry, Defer, Function, Rollout, Suggest
 			local names = { "teleport", "tempban", "kick", "ban", " blind " }
 			local exact = Suggest.query("ban", names)
 			expect(exact[1][1]).toBe("ban")
+			expect(exact[2][1]).toBe("tempban")
 
 			local prefix = Suggest.query("tele", names)
 			expect(prefix[1][1]).toBe("teleport")
 
 			local typo = Suggest.query("kic", names)
 			expect(typo[1][1]).toBe("kick")
+
+			local lev = Suggest.query("kixk", names)
+			expect(lev[1][1]).toBe("kick")
 
 			local enumNames, enumInsts = Suggest.new(h.env.globals.Enum.Font)
 			expect(#enumNames > 0).toBe(true)
@@ -569,13 +573,19 @@ describe(
 				desc.Shirt = 111
 				player.Character = character
 
+				local applySpy = sert.spy(Util.Humanoid, "applyDescription")
+				Util.Humanoid.reapplyDescription(player)
+				expect(applySpy.callCount).toBe(0)
+
 				Util.Humanoid.attributeDescription(player, "Shirt", 999)
 				expect(desc.Shirt).toBe(999)
 				expect(player:GetAttribute("_KShirtOriginal")).toBe(111)
+				expect(applySpy.callCount).toBe(1)
 
 				desc.Shirt = 111
 				Util.Humanoid.reapplyDescription(player)
 				expect(desc.Shirt).toBe(999)
+				expect(applySpy.callCount).toBe(2)
 
 				-- Also test _KHumanoidDescription restoration on player
 				local savedDesc = h.env.Instance.new("HumanoidDescription", player)
@@ -584,7 +594,10 @@ describe(
 
 				Util.Humanoid.resetDescription(player)
 				expect(hum:FindFirstChildOfClass("HumanoidDescription")).toBe(savedDesc)
+				expect(savedDesc.Name).toBe("HumanoidDescription")
 				expect(savedDesc.Shirt).toBe(111)
+				expect(player:GetAttribute("_KShirtOriginal")).toBeNil()
+				expect(applySpy.callCount).toBe(3)
 				expect(root:FindFirstChild("_KFire")).toBeNil()
 
 				-- Fallback to character.PrimaryPart when HumanoidRootPart is absent (line 69 of Humanoid.luau)
@@ -592,8 +605,11 @@ describe(
 				character.PrimaryPart = root
 				local smoke = h.env.Instance.new("Smoke", root)
 				smoke.Name = "_KSmoke"
+				savedDesc:Destroy()
 				Util.Humanoid.resetDescription(player)
+				expect(applySpy.callCount).toBe(3)
 				expect(root:FindFirstChild("_KSmoke")).toBeNil()
+				applySpy:restore()
 			end
 		)
 
