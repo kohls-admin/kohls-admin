@@ -105,8 +105,12 @@ function Market.new(_K)
 				end
 
 				local conn
-				conn = _K.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(function(userId, passId, purchased)
-					if purchased and passId == gamePassId and userId == _K.LocalPlayer.UserId then
+				conn = _K.Service.Marketplace.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
+					if
+						purchased
+						and passId == gamePassId
+						and (player == _K.LocalPlayer or player == _K.LocalPlayer.UserId)
+					then
 						conn:Disconnect()
 						owned = true
 						label.Text = ownedText or "<b>OWNED</b>"
@@ -663,7 +667,7 @@ function Market.new(_K)
 				local activeId = if _K.VIP.isOnSale and _K.VIP.isOnSale() then VIP_UGC_SALE_ID else VIP_UGC_ID
 				task.defer(updateAssetPriceText, vipButtonGlobal._content.Price, activeId, `<b>SHOW</b>`)
 				if _K.VIP.saleStateChanged then
-					_K.VIP.saleStateChanged:Connect(function(onSale: boolean, newId: number)
+					local _ = _K.VIP.saleStateChanged:Connect(function(onSale: boolean, newId: number)
 						if
 							vipButtonGlobal._content.Price.Text ~= `<b>SHOW</b>`
 							and vipButtonGlobal._content.Price.Text ~= `<b>HIDE</b>`

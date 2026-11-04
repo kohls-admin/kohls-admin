@@ -195,10 +195,10 @@ if IS_SERVER then
 
 	local loaded = {}
 	local function syncPayload(player: Player)
-		if loaded[player.UserId] then
+		if loaded[player] then
 			return
 		end
-		loaded[player.UserId] = true
+		loaded[player] = true
 
 		local payload: { [string]: { string | boolean? } } = {}
 
@@ -213,7 +213,7 @@ if IS_SERVER then
 	end
 
 	local _ = Players.PlayerRemoving:Connect(function(player)
-		loaded[player.UserId] = nil
+		loaded[player] = nil
 	end)
 
 	local function handleEvent(player: Player, id: Instance | string, ...)
@@ -335,7 +335,7 @@ else -- Client
 		elseif type(arg1) == "boolean" then
 			local remote = idToRemote[arg2]
 			if remote then
-				remote:SetUnreliable(arg1)
+				remote._remote = if arg1 then UNRELIABLE else EVENT
 			end
 
 		-- Initial Sync: { [string ID]: {string Name, boolean? Unreliable} }

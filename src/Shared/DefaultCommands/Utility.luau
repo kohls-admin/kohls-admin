@@ -755,14 +755,20 @@ return {
 				and context._K.Auth.hasPermission(context.from, "targetOthers") ~= true
 				and not context._K.Auth.hasPermission(context.from, "admin")
 			then
+				if not context.fromPlayer or not context.fromPlayer.Parent then
+					return
+				end
 				local emoteId = context._K.Data.animationToEmoteId[animation] or animation
 				local ok, owned = context._K.Util.Retry(function()
 					return context._K.Service.Marketplace:PlayerOwnsAssetAsync(context.fromPlayer, emoteId)
 				end, 3)
 				if not ok or not owned then
-					if ok then
+					if ok and context.fromPlayer.Parent then
 						local id = tostring(emoteId)
 						if not context._K.VIP.allowedBulkPurchaseIds[emoteId] then
+							if not context._K.Data.settings.vip then
+								return
+							end
 							id = "115444443724463" -- chat commands
 						end
 						local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = id } }

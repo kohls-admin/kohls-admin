@@ -671,14 +671,47 @@ describe(
 				expect(retrySeen.p2).toEqual({ val = 20, page = 2 })
 
 				-- MemoryStore.getSharded returns (true, nil) when shards are empty vs (false, nil) when all GetAsync calls fail
+				local probeCount = 0
 				local emptyShardMap: any = {
 					GetAsync = function()
+						probeCount += 1
 						return nil
 					end,
 				}
+				expect({ Util.MemoryStore.getSharded(emptyShardMap, "ZeroShards", 0) }).toEqual({ false, nil })
 				local emptyOk, emptyVal = Util.MemoryStore.getSharded(emptyShardMap, "EmptyPrefix", 4, 2)
 				expect(emptyOk).toBe(true)
 				expect(emptyVal).toBeNil()
+				expect(probeCount).toBe(2)
+
+				probeCount = 0
+				local defaultProbesOk = Util.MemoryStore.getSharded(emptyShardMap, "DefaultProbes", 4)
+				expect(defaultProbesOk).toBe(true)
+				expect(probeCount).toBe(4)
+
+				local shardedData: { [string]: any } = {}
+				local shardMap: any = {
+					GetAsync = function(_self, key: string)
+						return shardedData[key]
+					end,
+					SetAsync = function(_self, key: string, value: any)
+						h.env.task.wait(0.1)
+						shardedData[key] = value
+						return true
+					end,
+				}
+				local setOk = nil
+				h.env.task.spawn(function()
+					setOk = Util.MemoryStore.setSharded(shardMap, "HitPrefix", "payload_val", 60, 3, 1)
+				end)
+				h.env:advance(1)
+				expect(setOk).toBe(true)
+				expect(shardedData["HitPrefix_1"]).toBe("payload_val")
+				expect(shardedData["HitPrefix_2"]).toBe("payload_val")
+				expect(shardedData["HitPrefix_3"]).toBe("payload_val")
+				local hitOk, hitVal = Util.MemoryStore.getSharded(shardMap, "HitPrefix", 3, 2, 1)
+				expect(hitOk).toBe(true)
+				expect(hitVal).toBe("payload_val")
 
 				local failingShardMap: any = {
 					GetAsync = function()
@@ -1436,21 +1469,61 @@ describe(
 				world:run(0.5)
 				expect(cRemote ~= nil).toBe(true)
 
-				-- Firing script sync a second time from client hits loaded[player.UserId] early return on server (line 192)
+				-- Firing script sync a second time from client hits loaded[player] early return on server
 				cEvent:FireServer(cRemoteMod)
 				world:run(0.2)
 
-				-- Queue an Invoke on an unlinked remote on client, then create it on server with throwing OnInvoke so flushQueue hits error path (lines 298-299)
+				-- Reconnecting with the same UserId (new Player instance) queues server->client fires until the new Player initializes
+				local reconnectedPlr = sh.env.Instance.new("Player")
+				reconnectedPlr.UserId = 101
+				reconnectedPlr.Name = "Reconnected101"
+				reconnectedPlr.Parent = sh.env.Players
+				sRemote.ServerCreatedOnly:Fire(reconnectedPlr, "queued_for_reconnect")
+				sh.env.Players.PlayerRemoving:Fire(reconnectedPlr)
+				reconnectedPlr.Parent = nil
+
+				-- Queue a Fire and an Invoke on an unlinked remote on client, then create it on server with throwing OnInvoke so flushQueue hits error path (lines 298-299)
 				local invokeReturned = false
+				local queuedFires = 0
+				cRemote.QueuedErrorInvoke:Fire("queued_fire_arg")
+				expect(cRemote.QueuedErrorInvoke._fireQueue ~= nil).toBe(true)
 				client:spawn(function()
 					cRemote.QueuedErrorInvoke:Invoke("arg1")
 					invokeReturned = true
+				end)
+				expect(cRemote.QueuedErrorInvoke._invokeQueue ~= nil).toBe(true)
+				sRemote.QueuedErrorInvoke:Connect(function(_plr, arg)
+					if arg == "queued_fire_arg" then
+						queuedFires += 1
+					end
 				end)
 				sRemote.QueuedErrorInvoke.OnInvoke = function()
 					error("Queued OnInvoke boom")
 				end
 				world:run(1)
 				expect(invokeReturned).toBe(true)
+				expect(queuedFires).toBe(1)
+				expect(cRemote.QueuedErrorInvoke._fireQueue).toBeNil()
+				expect(cRemote.QueuedErrorInvoke._invokeQueue).toBeNil()
+
+				-- SetUnreliable on server updates _remote and replicates to client; on client it warns without mutating _remote
+				local cUnreliableEvent = cRemoteMod:WaitForChild("UnreliableRemoteEvent")
+				sRemote.ServerCreatedOnly:SetUnreliable(true)
+				world:run(0.2)
+				expect(cRemote.ServerCreatedOnly._remote).toBe(cUnreliableEvent)
+				sRemote.ServerCreatedOnly:SetUnreliable(false)
+				world:run(0.2)
+				expect(cRemote.ServerCreatedOnly._remote).toBe(cEvent)
+				cRemote.ServerCreatedOnly:SetUnreliable(true)
+				expect(cRemote.ServerCreatedOnly._remote).toBe(cEvent)
+
+				-- Server and Client RemoteFunction guard against unknown remote id or remote without OnInvoke
+				local sFunc = sh.Shared:WaitForChild("Util"):WaitForChild("Remote"):WaitForChild("RemoteFunction")
+				local cFunc = cRemoteMod:WaitForChild("RemoteFunction")
+				expect(sFunc.OnServerInvoke(sh.env.Players:GetPlayerByUserId(101), "\255\255")).toBeNil()
+				expect(sFunc.OnServerInvoke(sh.env.Players:GetPlayerByUserId(101), sRemote.ServerCreatedOnly._id)).toBeNil()
+				expect(cFunc.OnClientInvoke("\255\255")).toBeNil()
+				expect(cFunc.OnClientInvoke(cRemote.ServerCreatedOnly._id)).toBeNil()
 
 				-- Indexing a remote on client that is never created on server warns after 5s (line 270)
 				local _never = cRemote.NeverRegisteredOnServer

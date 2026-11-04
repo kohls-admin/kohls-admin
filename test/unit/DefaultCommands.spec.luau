@@ -1701,6 +1701,23 @@ describe("DefaultCommands", function()
 			expect(#bulkPrompts).toBe(0)
 			expect(#emoteFires).toBe(1)
 
+			-- 6. When settings.vip == false, offsale/non-bulk emotes (9002) do not prompt purchase and do not play
+			table.clear(bulkPrompts)
+			table.clear(emoteFires)
+			_K.Data.settings.vip = false
+			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
+			expect(#bulkPrompts).toBe(0)
+			expect(#emoteFires).toBe(0)
+			_K.Data.settings.vip = true
+
+			-- 7. Disconnected fromPlayer (Parent == nil) is a safe no-op
+			local origParent = srvP2.Parent
+			srvP2.Parent = nil
+			emoteCmd.run(p2Ctx, { srvP2 }, 9001)
+			srvP2.Parent = origParent
+			expect(#bulkPrompts).toBe(0)
+			expect(#emoteFires).toBe(0)
+
 			emoteCmd.env.remote.Fire = origEmoteFire
 			if mktMethods then
 				mktMethods.PromptBulkPurchase = origPromptBulk
