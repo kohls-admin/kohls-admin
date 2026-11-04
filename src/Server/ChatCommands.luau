@@ -15,6 +15,11 @@
 local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
 
+local Shared = if script.Parent:FindFirstChild("Shared") and script.Parent.Shared.Value
+	then script.Parent.Shared.Value
+	else script.Parent.Parent:WaitForChild("Shared")
+local Table = require(Shared:WaitForChild("Util"):WaitForChild("Table") :: ModuleScript)
+
 local FOLDER_NAME = "TextChatCommands_KA"
 local SLASH = "/"
 -- Roblox's default commands, reserved even before TextChatService creates them
@@ -121,9 +126,7 @@ local function takenAliases(folder: Instance?): { [string]: true }
 		return TextChatService.CreateDefaultCommands
 	end)
 	if not ok or createsDefaults ~= false then
-		for _, alias in DEFAULT_ALIASES do
-			taken[alias] = true
-		end
+		Table.merge(taken, Table.toHashMap(DEFAULT_ALIASES))
 	end
 	for _, descendant in TextChatService:GetDescendants() do
 		if descendant:IsA("TextChatCommand") and not (folder and descendant:IsDescendantOf(folder)) then
@@ -254,7 +257,7 @@ function ChatCommands.start(_K)
 			if reparent then
 				instance.Parent = self.folder
 			end
-			table.move(group, 1, #group, #aliases + 1, aliases)
+			Table.mergeList(aliases, group)
 		end
 		for i = #list, #groups + 1, -1 do
 			list[i]:Destroy()
@@ -290,7 +293,7 @@ function ChatCommands.start(_K)
 		local groups, skipped = ChatCommands.aliasGroups(definition, self.prefixes, self.taken)
 		sync(string.lower(definition.name), groups)
 		if batchSkipped then
-			table.move(skipped, 1, #skipped, #batchSkipped + 1, batchSkipped)
+			Table.mergeList(batchSkipped, skipped)
 		else
 			logSkipped(skipped)
 		end

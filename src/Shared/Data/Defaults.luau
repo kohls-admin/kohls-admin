@@ -3,7 +3,8 @@ local RunService = game:GetService("RunService")
 local Shared = script.Parent.Parent
 local Package = Shared.Parent
 
-local Theme = require(Package.Client:WaitForChild("UI"):WaitForChild("Theme"))
+local ThemeModule = Package.Client:WaitForChild("UI"):WaitForChild("Theme")
+local Theme = require(ThemeModule)
 local Z = require(Package:WaitForChild("Z"))
 
 type Dict = { [any]: any }
@@ -237,12 +238,17 @@ function Data.mergeRemove(to: Dict, from: Dict): Dict
 end
 
 Data.Store = require(script.Parent:WaitForChild("Store"))
-if game:GetService("RunService"):IsClient() then
+if RunService:IsClient() then
 	Data.Store = nil
 end
 
 -- UI Theme initial settings
 function Data.syncThemeDefaults()
+	if Theme.load then
+		for _, child in ThemeModule.Themes:GetChildren() do
+			Theme.load(child)
+		end
+	end
 	for key, state in pairs(Theme) do
 		if key == "Themes" then
 			continue

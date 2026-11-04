@@ -135,7 +135,7 @@ task.spawn(function()
 		tasks:wait()
 
 		local sent = {}
-		local _ = game:GetService("Players").PlayerRemoving:Connect(function(player)
+		local _ = Util.Service.Players.PlayerRemoving:Connect(function(player)
 			sent[player] = nil
 		end)
 		local _ = Remote:Connect(function(player)
@@ -147,15 +147,15 @@ task.spawn(function()
 		end)
 	else
 		local _ = Remote:Connect(function(data)
-			for index, item in data do
-				emoteToAnimationId[item.emoteId] = item.animationId
-				animationToEmoteId[item.animationId] = item.emoteId
+			for _, item in data do
+				if item.animationId and item.animationId ~= 0 then
+					emoteToAnimationId[item.emoteId] = item.animationId
+					animationToEmoteId[item.animationId] = item.emoteId
+				end
 				local existing = emoteItemFromId[item.emoteId]
 				if existing then
 					table.clear(existing)
-					for k, v in item do
-						existing[k] = v
-					end
+					Util.Table.merge(existing, item)
 				else
 					table.insert(emotes, item)
 					emoteItemFromId[item.emoteId] = item

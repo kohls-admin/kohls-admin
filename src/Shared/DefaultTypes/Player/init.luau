@@ -135,9 +135,7 @@ local function baseSuggestions(text, from, definition, userType: boolean?)
 		end
 	end
 
-	for _, suggestion in prefixSuggestions do
-		table.insert(names, suggestion)
-	end
+	_K.Util.Table.mergeList(names, prefixSuggestions)
 
 	return names
 end
@@ -260,9 +258,7 @@ return function(context)
 			local players = {}
 			for _, arg in parsedArgs do
 				if type(arg) == "table" then
-					for _, player in arg do
-						table.insert(players, player)
-					end
+					_K.Util.Table.mergeList(players, arg)
 				else
 					table.insert(players, arg)
 				end

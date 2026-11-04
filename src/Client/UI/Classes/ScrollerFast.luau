@@ -1,28 +1,10 @@
 local RunService = game:GetService("RunService")
 local BaseClass = require(script.Parent:WaitForChild("BaseClass"))
-local String =
-	require(script.Parent.Parent.Parent.Parent:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("String"))
+local UtilFolder = script.Parent.Parent.Parent.Parent:WaitForChild("Shared"):WaitForChild("Util")
+local Function = require(UtilFolder:WaitForChild("Function"))
+local String = require(UtilFolder:WaitForChild("String"))
 
 local UI = require(script.Parent.Parent)
-
-local Defer = {}
-do
-	local defaultBudget, expireTime = 1 / 240, 0
-	-- Call at start of process to prevent unnecessarily waiting.
-	function Defer.reset(budget: number?)
-		local now = os.clock()
-		if now >= expireTime then
-			expireTime = os.clock() + (defaultBudget or budget)
-		end
-	end
-
-	function Defer.wait(budget: number?)
-		if os.clock() >= expireTime then
-			task.wait()
-			Defer.reset(budget)
-		end
-	end
-end
 
 local Class = {}
 Class.__index = Class
@@ -156,6 +138,10 @@ function Class:forceRender()
 	if not (self.Enabled:peek() and self._instance.Visible and self._filteredList) then
 		return
 	end
+	if self._bustCache then
+		self._bustCache = nil
+		self:freeCache()
+	end
 	local length = #self._filteredList
 	local lineHeight = self.ItemSize:peek().Y.Offset
 	local startIndex = math.max(0, math.floor(self._scroller.CanvasPosition.Y / lineHeight)) + 1
@@ -232,7 +218,7 @@ end
 
 function Class:render(bustCache: boolean?)
 	if bustCache then
-		self:freeCache()
+		self._bustCache = true
 	end
 	renderQueue[self] = true
 end
@@ -381,13 +367,9 @@ function Class.new(properties: Properties?)
 	table.insert(cleanup, paddingEffect)
 
 	if self.FilterInput:peek() then
-		local thread = false
-		local function debounce()
-			if typeof(thread) == "thread" and coroutine.status(thread :: thread) == "suspended" then
-				task.cancel(thread)
-			end
-			thread = task.delay(self.FilterInputDebounce:peek(), self.refreshList, self)
-		end
+		local debounce = Function.debounce(self.FilterInputDebounce:peek(), function()
+			self:refreshList()
+		end)
 		self._input = UI.new "Input" {
 			LayoutOrder = -1,
 			Parent = self._instance,

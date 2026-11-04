@@ -20,7 +20,7 @@ return {
 					"WaterWaveSize",
 					"WaterWaveSpeed",
 				},
-				[_K.Service.Lighting] = {
+				[Lighting] = {
 					"Ambient",
 					"Brightness",
 					"ColorShift_Bottom",
@@ -65,7 +65,7 @@ return {
 			if discoCommand then
 				task.spawn(discoCommand.env.cleanup)
 			end
-			local sky = context._K.Service.Lighting:FindFirstChild("_KSky")
+			local sky = Lighting:FindFirstChild("_KSky")
 			if sky then
 				sky:Destroy()
 			end
@@ -415,7 +415,7 @@ return {
 		},
 		run = function(context, bottom, back, left, top, front, right)
 			if not bottom or context.undo then
-				local sky = context._K.Service.Lighting:FindFirstChild("_KSky")
+				local sky = Lighting:FindFirstChild("_KSky")
 				if sky then
 					sky:Destroy()
 				end

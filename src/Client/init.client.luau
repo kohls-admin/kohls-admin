@@ -159,7 +159,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 			warn(result)
 		end
 		if ok and result then
-			table.move(result, 1, #result, #_K.Data.logs + 1, _K.Data.logs)
+			_K.Util.Table.mergeList(_K.Data.logs, result)
 			table.sort(_K.Data.logs, _K.Logger.sortTime)
 		end
 	end

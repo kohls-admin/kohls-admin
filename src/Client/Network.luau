@@ -218,7 +218,7 @@ local _ = _K.Remote.Logs:Connect(function(logsBuffer)
 	local logs = result
 	_K.Util.Defer.wait()
 
-	table.move(logs, 1, #logs, #_K.Data.logs + 1, _K.Data.logs)
+	_K.Util.Table.mergeList(_K.Data.logs, logs)
 	_K.Util.Defer.wait()
 
 	table.sort(_K.Data.logs, _K.Logger.sortTime)

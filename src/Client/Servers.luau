@@ -27,9 +27,7 @@ function Servers.new(_K)
 				return
 			end
 			table.clear(servers)
-			for k, v in data do
-				servers[k] = v
-			end
+			_K.Util.Table.merge(servers, data)
 		else -- single update
 			servers[jobId] = data
 		end

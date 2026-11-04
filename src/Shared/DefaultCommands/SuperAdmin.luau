@@ -410,12 +410,8 @@ return {
 				return `Server "<b>{code}</b>" is already reserved.`
 			end
 
-			if not (context._K.IsStudio and context._K.Auth.hasRestrictedRole(context.from)) then
-				local TextChat = context._K.Service.TextChat
-				local ok, canChat = pcall(TextChat.CanUserChatAsync, TextChat, context.from)
-				if not ok or not canChat then
-					return "User cannot chat"
-				end
+			if not context._K.Chat.canUserChat(context.from) then
+				return "User cannot chat"
 			end
 
 			-- access codes are listed to admins in every server, so they are filtered and rate limited
@@ -550,10 +546,7 @@ return {
 					else restrictedReason
 				player:Kick(`{from} has shutdown the server.{if playerReason then `\nReason: {playerReason}` else ""}`)
 			end
-			local _ = context._K.Service.Players.PlayerAdded:Connect(kick)
-			for _, player in context._K.Service.Players:GetPlayers() do
-				kick(player)
-			end
+			context._K.Util.SafePlayerAdded(kick)
 		end,
 	},
 	{

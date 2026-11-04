@@ -390,7 +390,7 @@ local function groupRoleIds(userId: number, attempts: number?): (boolean, { Role
 					and type(auth.roles) == "table"
 					and rankMatches(auth, group.Rank)
 				then
-					table.move(auth.roles, 1, #auth.roles, #roleIds + 1, roleIds)
+					Util.Table.mergeList(roleIds, auth.roles)
 				end
 			end
 		end
@@ -406,7 +406,7 @@ local function gamePassRoleIds(userId: number): ({ Role }, string?)
 			return Util.Service.Marketplace:UserOwnsGamePassAsync(userId, gamePassId)
 		end)
 		if ok and result then
-			table.move(passRoleIds, 1, #passRoleIds, #roleIds + 1, roleIds)
+			Util.Table.mergeList(roleIds, passRoleIds)
 		elseif not ok then
 			warn(result)
 			err = result
@@ -421,10 +421,7 @@ local function giveGroupRoles(userId: number, attempts: number?): string?
 	if not ok then
 		return result :: string
 	end
-	local current: { [Role]: true } = {}
-	for _, roleId in result :: { Role } do
-		current[roleId] = true
-	end
+	local current: { [Role]: true } = Util.Table.toHashMap(result :: { Role })
 	local previous = groupAsyncRoles[userId]
 	groupAsyncRoles[userId] = current
 	if previous then
@@ -740,7 +737,7 @@ local function lookupOfflineRank(userId: number): number?
 	if err then
 		return nil
 	end
-	table.move(passRoleIds, 1, #passRoleIds, #roleIds + 1, roleIds)
+	Util.Table.mergeList(roleIds, passRoleIds)
 
 	local offlineRank = 0
 	for _, roleId in roleIds do

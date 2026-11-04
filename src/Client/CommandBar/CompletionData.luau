@@ -107,7 +107,7 @@ return function(_K, text, cursorPosition)
 			end
 
 			if #invalidSuggestions > 0 then
-				table.move(invalidSuggestions, 1, #invalidSuggestions, #data.suggestions + 1, data.suggestions)
+				_K.Util.Table.mergeList(data.suggestions, invalidSuggestions)
 			end
 
 			data.commandDefinition = commandDefinition or data.suggestions[1][3]

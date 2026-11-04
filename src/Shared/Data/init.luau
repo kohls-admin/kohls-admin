@@ -378,9 +378,7 @@ local SYNC = {
 				end
 			else
 				data.roles = table.clone(data.persist)
-				for _, roleId in data.roles do
-					table.insert(addedRoles, roleId)
-				end
+				Util.Table.mergeList(addedRoles, data.roles)
 			end
 
 			if #data.roles == 0 then -- remove member

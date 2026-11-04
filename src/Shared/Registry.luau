@@ -149,9 +149,7 @@ function Registry.registerType(name: string, typeObject: Type.ArgumentType, over
 	assert(Registry.types[name] == nil, 'Type "' .. name .. '" already exists!')
 
 	if override then
-		for key, value in override do
-			typeObject[key] = value
-		end
+		Util.Table.merge(typeObject, override)
 	end
 
 	typeObject.name = name

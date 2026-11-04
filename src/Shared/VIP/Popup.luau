@@ -530,11 +530,7 @@ task.spawn(function()
 			task.wait(0.5)
 			elapsed = workspace:GetServerTimeNow() - initialJoin
 			local duration = math.max(0, SALE_PERIOD - elapsed)
-			title.Text = `<font color="#0f0" transparency="0">40% OFF</font> in {string.format(
-				"%02d:%02d",
-				duration // 60,
-				duration % 60
-			)}`
+			title.Text = `<font color="#0f0" transparency="0">40% OFF</font> in {Util.Time.clock(duration)}`
 		end
 	end
 

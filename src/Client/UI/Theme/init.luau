@@ -1,6 +1,7 @@
 local Package = script.Parent.Parent.Parent
 
 local Flux = require(Package:WaitForChild("Flux"))
+local Table = require(Package:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("Table"))
 local ThemesFolder = script:WaitForChild("Themes")
 local Default = require(script:WaitForChild("Default"))
 
@@ -8,7 +9,7 @@ local computed = Flux.computed
 local signal = Flux.signal
 
 local themes = {}
-local initialized = false
+local loadedModules = setmetatable({}, { __mode = "k" })
 
 local function makeStateful(source: { [string]: any })
 	for key, value in source do
@@ -20,8 +21,27 @@ local function makeStateful(source: { [string]: any })
 	end
 end
 
-local function loadTheme(themeModule: ModuleScript)
+local function updateSignals(target: { [string]: any }, source: { [string]: any })
+	for k, v in source do
+		local node = target[k]
+		if type(node) == "table" then
+			if type(node.set) == "function" then
+				node(Flux.raw(v))
+			elseif type(v) == "table" then
+				updateSignals(node, v)
+			end
+		end
+	end
+end
+
+--- A directory of Flux state for UI components to use as theme variables
+local Theme: { [string]: any } = {}
+
+function Theme.load(themeModule: ModuleScript)
 	if themeModule:IsA("ModuleScript") then
+		if loadedModules[themeModule] == themes[themeModule.Name] and themes[themeModule.Name] ~= nil then
+			return
+		end
 		if themes[themeModule.Name] and themeModule.Name ~= "Default" then
 			warn("Duplicate theme found, make sure they have different names!")
 		end
@@ -51,32 +71,27 @@ local function loadTheme(themeModule: ModuleScript)
 			if type(value) == "table" and not Flux.isNode(value) then
 				local merged = table.clone(value)
 				if type(theme[key]) == "table" then
-					for k, item in theme[key] do
-						merged[k] = item
-					end
+					Table.merge(merged, theme[key])
 				end
 				cloned[key] = merged
 			else
 				cloned[key] = Flux.raw(v)
 			end
 		end
-		if initialized then
-			makeStateful(cloned)
-		end
 		themes[themeModule.Name] = cloned
+		loadedModules[themeModule] = cloned
+		if Flux.isNode(Theme.Primary) and themeModule.Name == "Default" then
+			updateSignals(Theme, cloned)
+		end
 	end
 end
 
-loadTheme(script:WaitForChild("Default"))
+local load = Theme.load
+Theme.load = nil
+load(script:WaitForChild("Default"))
 for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
-	loadTheme(themeModule)
+	load(themeModule)
 end
-task.wait()
-
---- A directory of Flux state for UI components to use as theme variables
-local Theme = {
-	Themes = themes,
-}
 
 local defaultTheme = themes.Default or Default
 for k, v in defaultTheme do
@@ -84,30 +99,16 @@ for k, v in defaultTheme do
 end
 
 makeStateful(Theme)
-initialized = true
+Theme.Themes = themes
+Theme.load = load
 
-local function updateSignals(target: { [string]: any }, source: { [string]: any })
-	for k, v in source do
-		local node = target[k]
-		if type(node) == "table" then
-			if type(node.set) == "function" then
-				node(Flux.raw(v))
-			elseif type(v) == "table" then
-				updateSignals(node, v)
-			end
-		end
-	end
-end
-
-ThemesFolder.ChildRemoved:Connect(function(child)
+local _ = ThemesFolder.ChildRemoved:Connect(function(child)
 	themes[child.Name] = nil
+	loadedModules[child] = nil
 end)
 
-ThemesFolder.ChildAdded:Connect(function(child)
-	loadTheme(child :: ModuleScript)
-	if child.Name == "Default" and themes.Default then
-		updateSignals(Theme, themes.Default)
-	end
+local _ = ThemesFolder.ChildAdded:Connect(function(child)
+	Theme.load(child :: ModuleScript)
 end)
 
 -- COMPUTED THEME VALUES

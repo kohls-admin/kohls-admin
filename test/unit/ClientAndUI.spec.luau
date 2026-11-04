@@ -1364,6 +1364,13 @@ describe("Client and UI", function()
 			link._instance.FocusLost:Fire()
 			world:run(0.05)
 
+			-- Theme.load keeps Theme.Themes entries as plain value tables (no nested Flux signals)
+			local lightThemeModule = cliMounted.Client.UI.Theme.Themes.Light
+			UI.Theme.Themes.Light = nil
+			UI.Theme.load(lightThemeModule)
+			expect(env.globals.typeof(UI.Theme.Themes.Light.Primary)).toBe("Color3")
+			expect(UI.isNode(UI.Theme.Themes.Light.Primary)).toBe(false)
+
 			local tipTarget = UI.new "Frame" {
 				Parent = UI.LayerDefault,
 				Position = UDim2.fromOffset(1250, 710),
@@ -1561,9 +1568,16 @@ describe("Client and UI", function()
 			world:run(0.2)
 			fastArray._scroller._props.AbsoluteCanvasSize = Vector2.new(100, 50)
 			fastArray._scroller:GetPropertyChangedSignal("AbsoluteCanvasSize"):Fire()
+			-- Calling render(true) while hidden defers cache invalidation until forceRender() runs while visible
 			fastArray._instance.Visible = false
+			expect(next(fastArray._lineItemCache) ~= nil).toBe(true)
+			fastArray:render(true)
+			expect(fastArray._bustCache).toBe(true)
+			expect(next(fastArray._lineItemCache) ~= nil).toBe(true)
 			fastArray._instance.Visible = true
 			world:run(0.2)
+			expect(fastArray._bustCache).toBeNil()
+			expect(next(fastArray._lineItemCache) ~= nil).toBe(true)
 			fastArray:Destroy()
 
 			local fastDict = UI.new "ScrollerFast" {
