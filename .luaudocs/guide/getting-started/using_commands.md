@@ -8,11 +8,11 @@ Kohl's Admin supports running commands through the **Command Bar** (on PC, Mobil
 
 ## Using the Command Bar
 
-The Command Bar features real-time autocomplete, argument type validation, inline error feedback, and command history.
+The Command Bar provides live autocomplete, argument type validation, inline error feedback, and command history.
 
 ### Opening the Command Bar
 
-- **Keyboard (PC)**: Press `;` (semicolon) on your keyboard. You can customize this keybind at any time in **Dashboard > Settings**.
+- **Keyboard (PC)**: Press `;` (semicolon) on your keyboard. You can change this keybind in **Dashboard > Settings**.
 - **Topbar Shortcut (PC & Mobile)**:
   - **PC**: Right-click either the **Kohl's Admin Dashboard** button or the **Commands** button in the top-left Roblox topbar.
   - **Mobile / Touch**: Long-press (press and hold) either the **Kohl's Admin Dashboard** button or the **Commands** button in the topbar.
@@ -20,12 +20,12 @@ The Command Bar features real-time autocomplete, argument type validation, inlin
 
 ### Autocomplete, Validation & History
 
-1. Start typing a command name or alias (the prefix is automatically inserted for you).
+1. Start typing a command name or alias. Kohl's Admin inserts the prefix for you.
 2. **Cycle Suggestions**: Press the `Up` / `Down` arrow keys or scroll the mouse wheel over the suggestion list.
 3. **Accept a Suggestion**: Press `Tab` (or click/tap a suggestion) to autocomplete the highlighted command or argument.
-4. **Validation Indicator**: The circle on the right side of the Command Bar displays a **green checkmark** when all arguments are valid, or a **red `X`** with an inline error explanation if an argument is missing or invalid.
-5. **Command History**: When the Command Bar only contains your prefix (`;`), it displays your recently executed commands so you can quickly re-run them.
-6. Press `Enter` (or click/tap the green checkmark) to execute the command.
+4. **Validation Indicator**: The circle on the right side of the Command Bar shows a **green checkmark** when all arguments are valid, or a **red `X`** with an inline error explanation if an argument is missing or invalid.
+5. **Command History**: When the Command Bar only contains your prefix (`;`), it lists your recently run commands so you can re-run them quickly.
+6. Press `Enter` (or click/tap the green checkmark) to run the command.
 
 ---
 

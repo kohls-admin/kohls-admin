@@ -19,9 +19,9 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [Custom Commands](.luaudocs/guide/custom_commands.md): Custom commands let you extend Kohl's Admin with experience-specific tools, automate developer workflows, and create interactive player commands with full autocomplete and permission checks.
 - [Addons & Hooks](.luaudocs/guide/addons.md): Addons are the primary way to extend Kohl's Admin with custom logic, server integrations, event listeners, custom commands, custom argument types, and custom UI windows.
 - [Custom Argument Types](.luaudocs/guide/custom_types.md): When the [built-in argument types](/guide/custom_commands#built-in-argument-types) and inline enums aren't enough, you can register custom argument types with [`_K.Registry.registerType`](/api/Registry#registertype).
-- [Themes & Custom UI](.luaudocs/guide/themes_and_ui.md): Kohl's Admin features a reactive UI framework powered by [`Flux`](/api/Flux) and [`_K.UI`](/api/UI).
+- [Themes & Custom UI](.luaudocs/guide/themes_and_ui.md): Kohl's Admin builds its reactive UI on [`Flux`](/api/Flux) and [`_K.UI`](/api/UI).
 - [Troubleshooting](.luaudocs/guide/troubleshooting.md): This guide covers solutions to the most common setup, permission, DataStore, and customization issues in Kohl's Admin.
-- [Support](.luaudocs/guide/support.md): If you need help with Kohl's Admin (KA), have a question about custom addons, or want to report a bug, several community and documentation resources are available.
+- [Support](.luaudocs/guide/support.md): Need help with Kohl's Admin, building an addon, or reporting a bug?
 
 ## MainModule
 
@@ -72,28 +72,28 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [Auth](src/Shared/Auth.luau)
 - [`type Role = "everyone" | "vip" | "mod" | "admin" | "superadmin" | "creator" | string`](src/Shared/Auth.luau#L12)
 - [`Auth.banHandler(player)`](src/Shared/Auth.luau#L19-L61): [Yields]
-- [`Auth.banUsers(userIds: { number }, reason: string?, duration: number?, fromUserId: number?, forceBanAsync: boolean?): { number }`](src/Shared/Auth.luau#L103-L165): [Yields] Bans users and returns the ones banned; saved bans are kept unless the caller can use banasync
-- [`Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync: boolean?): { number }`](src/Shared/Auth.luau#L168-L207): [Yields] Unbans users and returns the ones unbanned; saved bans are kept unless the caller can use banasync
-- [`Auth.networkMember(userId: number)`](src/Shared/Auth.luau#L219-L230)
-- [`Auth.roleIdSort(a: Role, b: Role): boolean`](src/Shared/Auth.luau#L238-L243): Sorts roleIds by highest to lowest
-- [`Auth.roleIdSortAscending(a: Role, b: Role): boolean`](src/Shared/Auth.luau#L246-L251): Sorts roleIds by lowest to highest
-- [`Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?, unrestricted: boolean?): boolean`](src/Shared/Auth.luau#L254-L305): Adds a role to a user if they don't already have it
-- [`Auth.asyncRoleAdd(userId: number, roleId: Role, fromGroup: boolean?): boolean`](src/Shared/Auth.luau#L313-L323): Gives a user a role they own through a group, gamepass, asset or subscription, which userRoleRemove keeps
-- [`Auth.hasAsyncRole(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L326-L329): Checks if a user owns a role through a group, gamepass, asset or subscription
-- [`Auth.userRoleRemove(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L335-L375): Removes a role from a user if it exists.
-- [`Auth.userAsyncRoles(userId: number, bustCache: boolean?)`](src/Shared/Auth.luau#L463-L521): [Yields]
-- [`Auth.roleCanUseArgument(roleId: Role, argument: any): boolean`](src/Shared/Auth.luau#L526-L546): Checks if a role has access to a command argument
-- [`Auth.roleCanUseCommand(roleId: Role, command: any): boolean`](src/Shared/Auth.luau#L549-L597): Checks if a role has access to a command
-- [`Auth.hasArgument(userId: number, argument: any): boolean`](src/Shared/Auth.luau#L600-L620): Checks if a user has access to a command argument
-- [`Auth.hasCommand(userId: number, command: any): boolean | number`](src/Shared/Auth.luau#L623-L646): Checks if a user has access to a command, returns their rank if they do
-- [`Auth.hasPermission(userId: number, permission: string): boolean`](src/Shared/Auth.luau#L649-L675): Checks if a user has access to a permission
-- [`Auth.hasRole(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L678-L691): Checks if a user has a role or higher rank
-- [`Auth.getRank(userId: number): (number, Role)`](src/Shared/Auth.luau#L694-L718): Checks the maximum role rank of the user
-- [`Auth.getRoleFromRank(rank: number): Role`](src/Shared/Auth.luau#L721-L732): Gets the closest role equal to or above a given rank
-- [`Auth.targetUserArgument(arg: any, userId: number, value: Player | number | string)`](src/Shared/Auth.luau#L801-L850): [Yields] Validates if a user can be targeted by a command argument based on permissions and rank limits
-- [`Auth.prefetchGroupEntryRanks()`](src/Shared/Auth.luau#L885-L892): Starts fetching the entry rank of every group in the group roles, so role checks don't stay closed on first use
-- [`Auth.isPublicRole(roleId: Role): boolean`](src/Shared/Auth.luau#L895-L926): Checks if a role is handed out freely: free admin, friends of the creator, or every member of a group
-- [`Auth.hasRestrictedRole(userId: number): boolean`](src/Shared/Auth.luau#L929-L953): Checks if a user has any developer roles; Roles not associated with any assets, gamepasses, subscriptions, and not handed out freely
+- [`Auth.banUsers(userIds: { number }, reason: string?, duration: number?, fromUserId: number?, forceBanAsync: boolean?): { number }`](src/Shared/Auth.luau#L94-L156): [Yields] Bans users and returns the ones banned; saved bans are kept unless the caller can use banasync
+- [`Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync: boolean?): { number }`](src/Shared/Auth.luau#L159-L198): [Yields] Unbans users and returns the ones unbanned; saved bans are kept unless the caller can use banasync
+- [`Auth.networkMember(userId: number)`](src/Shared/Auth.luau#L210-L221)
+- [`Auth.roleIdSort(a: Role, b: Role): boolean`](src/Shared/Auth.luau#L229-L234): Sorts roleIds by highest to lowest
+- [`Auth.roleIdSortAscending(a: Role, b: Role): boolean`](src/Shared/Auth.luau#L237-L242): Sorts roleIds by lowest to highest
+- [`Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?, unrestricted: boolean?): boolean`](src/Shared/Auth.luau#L245-L296): Adds a role to a user if they don't already have it
+- [`Auth.asyncRoleAdd(userId: number, roleId: Role, fromGroup: boolean?): boolean`](src/Shared/Auth.luau#L304-L314): Gives a user a role they own through a group, gamepass, asset or subscription, which userRoleRemove keeps
+- [`Auth.hasAsyncRole(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L317-L320): Checks if a user owns a role through a group, gamepass, asset or subscription
+- [`Auth.userRoleRemove(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L326-L366): Removes a role from a user if it exists.
+- [`Auth.userAsyncRoles(userId: number, bustCache: boolean?)`](src/Shared/Auth.luau#L451-L509): [Yields]
+- [`Auth.roleCanUseArgument(roleId: Role, argument: any): boolean`](src/Shared/Auth.luau#L514-L534): Checks if a role has access to a command argument
+- [`Auth.roleCanUseCommand(roleId: Role, command: any): boolean`](src/Shared/Auth.luau#L537-L585): Checks if a role has access to a command
+- [`Auth.hasArgument(userId: number, argument: any): boolean`](src/Shared/Auth.luau#L588-L608): Checks if a user has access to a command argument
+- [`Auth.hasCommand(userId: number, command: any): boolean | number`](src/Shared/Auth.luau#L611-L634): Checks if a user has access to a command, returns their rank if they do
+- [`Auth.hasPermission(userId: number, permission: string): boolean`](src/Shared/Auth.luau#L637-L663): Checks if a user has access to a permission
+- [`Auth.hasRole(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L666-L679): Checks if a user has a role or higher rank
+- [`Auth.getRank(userId: number): (number, Role)`](src/Shared/Auth.luau#L682-L706): Checks the maximum role rank of the user
+- [`Auth.getRoleFromRank(rank: number): Role`](src/Shared/Auth.luau#L709-L720): Gets the closest role equal to or above a given rank
+- [`Auth.targetUserArgument(arg: any, userId: number, value: Player | number | string)`](src/Shared/Auth.luau#L789-L838): [Yields] Validates if a user can be targeted by a command argument based on permissions and rank limits
+- [`Auth.prefetchGroupEntryRanks()`](src/Shared/Auth.luau#L873-L880): Starts fetching the entry rank of every group in the group roles, so role checks don't stay closed on first use
+- [`Auth.isPublicRole(roleId: Role): boolean`](src/Shared/Auth.luau#L883-L914): Checks if a role is handed out freely: free admin, friends of the creator, or every member of a group
+- [`Auth.hasRestrictedRole(userId: number): boolean`](src/Shared/Auth.luau#L917-L941): Checks if a user has any developer roles; Roles not associated with any assets, gamepasses, subscriptions, and not handed out freely
 
 ## MainModule.Chat
 
@@ -123,31 +123,37 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Defaults.canSave`](src/Shared/Data/Defaults.luau#L62)
 - [`Defaults.saveError`](src/Shared/Data/Defaults.luau#L63)
 - [`Defaults.initialize`](src/Shared/Data/Defaults.luau#L64)
-- [`Defaults.sizeBans: number`](src/Shared/Data/Defaults.luau#L66)
-- [`Defaults.sizeMain: number`](src/Shared/Data/Defaults.luau#L67)
-- [`Defaults.sizeLogs: number`](src/Shared/Data/Defaults.luau#L68)
-- [`Defaults.creatorId`](src/Shared/Data/Defaults.luau#L72)
-- [`Defaults.gameClosing: boolean`](src/Shared/Data/Defaults.luau#L73)
-- [`Defaults.friendRoles: {}`](src/Shared/Data/Defaults.luau#L81)
-- [`Defaults.bans: {}`](src/Shared/Data/Defaults.luau#L83)
-- [`Defaults.members: {}`](src/Shared/Data/Defaults.luau#L84)
-- [`Defaults.logs: {}`](src/Shared/Data/Defaults.luau#L85)
-- [`Defaults.logsVersion: number`](src/Shared/Data/Defaults.luau#L86)
-- [`Defaults.reservedServers: {}`](src/Shared/Data/Defaults.luau#L87)
-- [`Defaults.servers: {}`](src/Shared/Data/Defaults.luau#L88)
-- [`Defaults.roles`](src/Shared/Data/Defaults.luau#L89)
-- [`Defaults.rolesList: {}`](src/Shared/Data/Defaults.luau#L90)
-- [`Defaults.logsHidden: {}`](src/Shared/Data/Defaults.luau#L160)
-- [`Defaults.pendingLogReveals: { any }`](src/Shared/Data/Defaults.luau#L161)
-- [`Defaults.playerPrefix: {}`](src/Shared/Data/Defaults.luau#L162)
-- [`Defaults.targetLimits: {}`](src/Shared/Data/Defaults.luau#L163)
-- [`Defaults.defaultSettings: {}`](src/Shared/Data/Defaults.luau#L165)
-- [`Defaults.savedSettings: Dict`](src/Shared/Data/Defaults.luau#L166)
-- [`Defaults.settingsModuleData`](src/Shared/Data/Defaults.luau#L167)
-- [`Defaults.Store`](src/Shared/Data/Defaults.luau#L221)
-- [`Defaults.filterRemove(source: Dict): Dict`](src/Shared/Data/Defaults.luau#L201-L210)
-- [`Defaults.mergeRemove(to: Dict, from: Dict): Dict`](src/Shared/Data/Defaults.luau#L212-L217)
-- [`Defaults.syncThemeDefaults()`](src/Shared/Data/Defaults.luau#L225-L234)
+- [`Defaults.logsLoaded: boolean`](src/Shared/Data/Defaults.luau#L65)
+- [`Defaults.serversLoaded: boolean`](src/Shared/Data/Defaults.luau#L66)
+- [`Defaults.sizeBans: number`](src/Shared/Data/Defaults.luau#L77)
+- [`Defaults.sizeMain: number`](src/Shared/Data/Defaults.luau#L78)
+- [`Defaults.sizeLogs: number`](src/Shared/Data/Defaults.luau#L79)
+- [`Defaults.creatorId`](src/Shared/Data/Defaults.luau#L83)
+- [`Defaults.gameClosing: boolean`](src/Shared/Data/Defaults.luau#L84)
+- [`Defaults.friendRoles: {}`](src/Shared/Data/Defaults.luau#L92)
+- [`Defaults.bans: {}`](src/Shared/Data/Defaults.luau#L94)
+- [`Defaults.members: {}`](src/Shared/Data/Defaults.luau#L95)
+- [`Defaults.logs: {}`](src/Shared/Data/Defaults.luau#L96)
+- [`Defaults.logsVersion: number`](src/Shared/Data/Defaults.luau#L97)
+- [`Defaults.reservedServers: {}`](src/Shared/Data/Defaults.luau#L98)
+- [`Defaults.servers: {}`](src/Shared/Data/Defaults.luau#L99)
+- [`Defaults.roles`](src/Shared/Data/Defaults.luau#L100)
+- [`Defaults.rolesList: {}`](src/Shared/Data/Defaults.luau#L101)
+- [`Defaults.logsHidden: {}`](src/Shared/Data/Defaults.luau#L171)
+- [`Defaults.pendingLogReveals: { any }`](src/Shared/Data/Defaults.luau#L172)
+- [`Defaults.playerPrefix: {}`](src/Shared/Data/Defaults.luau#L173)
+- [`Defaults.targetLimits: {}`](src/Shared/Data/Defaults.luau#L174)
+- [`Defaults.defaultSettings: {}`](src/Shared/Data/Defaults.luau#L176)
+- [`Defaults.savedSettings: Dict`](src/Shared/Data/Defaults.luau#L177)
+- [`Defaults.settingsModuleData`](src/Shared/Data/Defaults.luau#L178)
+- [`Defaults.Store`](src/Shared/Data/Defaults.luau#L232)
+- [`Defaults.ensureLogsLoaded()`](src/Shared/Data/Defaults.luau#L68)
+- [`Defaults.ensureServersLoaded()`](src/Shared/Data/Defaults.luau#L69)
+- [`Defaults.subscribeTopic(_topic: string, _callback: (any) -> ()): any`](src/Shared/Data/Defaults.luau#L70-L72)
+- [`Defaults.publishTopic(_topic: string, _data: any?): boolean`](src/Shared/Data/Defaults.luau#L73-L75)
+- [`Defaults.filterRemove(source: Dict): Dict`](src/Shared/Data/Defaults.luau#L212-L221)
+- [`Defaults.mergeRemove(to: Dict, from: Dict): Dict`](src/Shared/Data/Defaults.luau#L223-L228)
+- [`Defaults.syncThemeDefaults()`](src/Shared/Data/Defaults.luau#L236-L245)
 - [`Defaults.Schema`](src/Shared/Data/Defaults.luau#L53)
 - [`Defaults.Schema.log: Schema`](src/Shared/Data/Defaults.luau#L15-L21)
 - [`Defaults.Schema.logs: Schema`](src/Shared/Data/Defaults.luau#L23)
@@ -160,101 +166,101 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Defaults.Sync.members: {}`](src/Shared/Data/Defaults.luau#L57)
 - [`Defaults.Sync.settings: {}`](src/Shared/Data/Defaults.luau#L58)
 - [`Defaults.Sync.logs: {}`](src/Shared/Data/Defaults.luau#L59)
-- [`Defaults.async`](src/Shared/Data/Defaults.luau#L75-L80)
-- [`Defaults.async.asset: {}`](src/Shared/Data/Defaults.luau#L76)
-- [`Defaults.async.gamepass: {}`](src/Shared/Data/Defaults.luau#L77)
-- [`Defaults.async.group: {}`](src/Shared/Data/Defaults.luau#L78)
-- [`Defaults.async.subscription: {}`](src/Shared/Data/Defaults.luau#L79)
-- [`Defaults.defaultRoles.everyone.limits`](src/Shared/Data/Defaults.luau#L98)
-- [`Defaults.defaultRoles.everyone.limits.cooldown: number`](src/Shared/Data/Defaults.luau#L98)
-- [`Defaults.defaultRoles.everyone.limits.commands: number`](src/Shared/Data/Defaults.luau#L98)
-- [`Defaults.defaultRoles.everyone.limits.targets: number`](src/Shared/Data/Defaults.luau#L98)
-- [`Defaults.defaultRoles.everyone.permissions`](src/Shared/Data/Defaults.luau#L99-L106)
-- [`Defaults.defaultRoles.everyone.permissions.admin: boolean`](src/Shared/Data/Defaults.luau#L100)
-- [`Defaults.defaultRoles.everyone.permissions.banasync: boolean`](src/Shared/Data/Defaults.luau#L101)
-- [`Defaults.defaultRoles.everyone.permissions.saveRoles: boolean`](src/Shared/Data/Defaults.luau#L102)
-- [`Defaults.defaultRoles.everyone.permissions.settings: boolean`](src/Shared/Data/Defaults.luau#L103)
-- [`Defaults.defaultRoles.everyone.permissions.serverlogs: boolean`](src/Shared/Data/Defaults.luau#L104)
-- [`Defaults.defaultRoles.everyone.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L105)
-- [`Defaults.defaultRoles.everyone`](src/Shared/Data/Defaults.luau#L92-L108)
-- [`Defaults.defaultRoles.everyone.name: string`](src/Shared/Data/Defaults.luau#L95)
-- [`Defaults.defaultRoles.everyone.color: string`](src/Shared/Data/Defaults.luau#L96)
-- [`Defaults.defaultRoles.everyone.groups: { string }`](src/Shared/Data/Defaults.luau#L97)
-- [`Defaults.defaultRoles.everyone.onlyTargetSelf: boolean`](src/Shared/Data/Defaults.luau#L107)
-- [`Defaults.defaultRoles.vip.limits`](src/Shared/Data/Defaults.luau#L115)
-- [`Defaults.defaultRoles.vip.limits.cooldown: number`](src/Shared/Data/Defaults.luau#L115)
-- [`Defaults.defaultRoles.vip.limits.commands: number`](src/Shared/Data/Defaults.luau#L115)
-- [`Defaults.defaultRoles.vip.limits.targets: number`](src/Shared/Data/Defaults.luau#L115)
-- [`Defaults.defaultRoles.vip.permissions`](src/Shared/Data/Defaults.luau#L116)
-- [`Defaults.defaultRoles.vip.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L116)
-- [`Defaults.defaultRoles.vip`](src/Shared/Data/Defaults.luau#L109-L118)
-- [`Defaults.defaultRoles.vip.name: string`](src/Shared/Data/Defaults.luau#L112)
-- [`Defaults.defaultRoles.vip.color: string`](src/Shared/Data/Defaults.luau#L113)
-- [`Defaults.defaultRoles.vip.groups: { string }`](src/Shared/Data/Defaults.luau#L114)
-- [`Defaults.defaultRoles.vip.onlyTargetSelf: boolean`](src/Shared/Data/Defaults.luau#L117)
-- [`Defaults.defaultRoles.mod.limits`](src/Shared/Data/Defaults.luau#L125)
-- [`Defaults.defaultRoles.mod.limits.cooldown: number`](src/Shared/Data/Defaults.luau#L125)
-- [`Defaults.defaultRoles.mod.limits.commands: number`](src/Shared/Data/Defaults.luau#L125)
-- [`Defaults.defaultRoles.mod.limits.targets`](src/Shared/Data/Defaults.luau#L125)
-- [`Defaults.defaultRoles.mod.permissions`](src/Shared/Data/Defaults.luau#L126)
-- [`Defaults.defaultRoles.mod.permissions.serverlogs: boolean`](src/Shared/Data/Defaults.luau#L126)
-- [`Defaults.defaultRoles.mod.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L126)
-- [`Defaults.defaultRoles.mod`](src/Shared/Data/Defaults.luau#L119-L127)
-- [`Defaults.defaultRoles.mod.name: string`](src/Shared/Data/Defaults.luau#L122)
-- [`Defaults.defaultRoles.mod.color: string`](src/Shared/Data/Defaults.luau#L123)
-- [`Defaults.defaultRoles.mod.groups: { string }`](src/Shared/Data/Defaults.luau#L124)
-- [`Defaults.defaultRoles.admin.limits`](src/Shared/Data/Defaults.luau#L134)
-- [`Defaults.defaultRoles.admin.limits.cooldown: number`](src/Shared/Data/Defaults.luau#L134)
-- [`Defaults.defaultRoles.admin.limits.commands: number`](src/Shared/Data/Defaults.luau#L134)
-- [`Defaults.defaultRoles.admin.limits.targets`](src/Shared/Data/Defaults.luau#L134)
-- [`Defaults.defaultRoles.admin.permissions`](src/Shared/Data/Defaults.luau#L135)
-- [`Defaults.defaultRoles.admin.permissions.banasync: boolean`](src/Shared/Data/Defaults.luau#L135)
-- [`Defaults.defaultRoles.admin.permissions.serverlogs: boolean`](src/Shared/Data/Defaults.luau#L135)
-- [`Defaults.defaultRoles.admin.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L135)
-- [`Defaults.defaultRoles.admin`](src/Shared/Data/Defaults.luau#L128-L136)
-- [`Defaults.defaultRoles.admin.name: string`](src/Shared/Data/Defaults.luau#L131)
-- [`Defaults.defaultRoles.admin.color: string`](src/Shared/Data/Defaults.luau#L132)
-- [`Defaults.defaultRoles.admin.groups: { string }`](src/Shared/Data/Defaults.luau#L133)
-- [`Defaults.defaultRoles.superadmin.permissions`](src/Shared/Data/Defaults.luau#L143-L149)
-- [`Defaults.defaultRoles.superadmin.permissions.banasync: boolean`](src/Shared/Data/Defaults.luau#L144)
-- [`Defaults.defaultRoles.superadmin.permissions.saveRoles: boolean`](src/Shared/Data/Defaults.luau#L145)
-- [`Defaults.defaultRoles.superadmin.permissions.settings: boolean`](src/Shared/Data/Defaults.luau#L146)
-- [`Defaults.defaultRoles.superadmin.permissions.serverlogs: boolean`](src/Shared/Data/Defaults.luau#L147)
-- [`Defaults.defaultRoles.superadmin.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L148)
-- [`Defaults.defaultRoles.superadmin`](src/Shared/Data/Defaults.luau#L137-L150)
-- [`Defaults.defaultRoles.superadmin.name: string`](src/Shared/Data/Defaults.luau#L140)
-- [`Defaults.defaultRoles.superadmin.color: string`](src/Shared/Data/Defaults.luau#L141)
-- [`Defaults.defaultRoles.superadmin.groups: { string }`](src/Shared/Data/Defaults.luau#L142)
-- [`Defaults.defaultRoles.creator.permissions`](src/Shared/Data/Defaults.luau#L156)
-- [`Defaults.defaultRoles.creator.permissions.admin: boolean`](src/Shared/Data/Defaults.luau#L156)
-- [`Defaults.defaultRoles.creator.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L156)
-- [`Defaults.defaultRoles.creator`](src/Shared/Data/Defaults.luau#L151-L157)
-- [`Defaults.defaultRoles.creator.name: string`](src/Shared/Data/Defaults.luau#L154)
-- [`Defaults.defaultRoles.creator.color: string`](src/Shared/Data/Defaults.luau#L155)
-- [`Defaults.settings`](src/Shared/Data/Defaults.luau#L168-L198)
-- [`Defaults.settings.announcement: boolean`](src/Shared/Data/Defaults.luau#L169)
-- [`Defaults.settings.useSavedSettings: boolean`](src/Shared/Data/Defaults.luau#L170)
-- [`Defaults.settings.prefix: { string }`](src/Shared/Data/Defaults.luau#L172)
-- [`Defaults.settings.splitKey: string`](src/Shared/Data/Defaults.luau#L173)
-- [`Defaults.settings.commandBarRank: number`](src/Shared/Data/Defaults.luau#L175)
-- [`Defaults.settings.dashboardRank: number`](src/Shared/Data/Defaults.luau#L176)
-- [`Defaults.settings.commandsButtonRank: number`](src/Shared/Data/Defaults.luau#L177)
-- [`Defaults.settings.dashboardButtonRank: number`](src/Shared/Data/Defaults.luau#L178)
-- [`Defaults.settings.joinNotificationRank: number`](src/Shared/Data/Defaults.luau#L179)
-- [`Defaults.settings.welcomeBadgeId: number`](src/Shared/Data/Defaults.luau#L181)
-- [`Defaults.settings.addToCharts: boolean`](src/Shared/Data/Defaults.luau#L183)
-- [`Defaults.settings.vip: boolean`](src/Shared/Data/Defaults.luau#L184)
-- [`Defaults.settings.chatCommands: boolean`](src/Shared/Data/Defaults.luau#L186)
-- [`Defaults.settings.chatCommandsNotification: boolean`](src/Shared/Data/Defaults.luau#L187)
-- [`Defaults.settings.commandRequests: boolean`](src/Shared/Data/Defaults.luau#L188)
-- [`Defaults.settings.onlyShowUsableCommands: boolean`](src/Shared/Data/Defaults.luau#L189)
-- [`Defaults.settings.getKohlsAdminPopup: boolean`](src/Shared/Data/Defaults.luau#L190)
-- [`Defaults.settings.wrongPrefixWarning: boolean`](src/Shared/Data/Defaults.luau#L191)
-- [`Defaults.settings.saveLogs: boolean`](src/Shared/Data/Defaults.luau#L192)
-- [`Defaults.settings.saveChatLogs: boolean`](src/Shared/Data/Defaults.luau#L193)
-- [`Defaults.settings.saveLogsForAllRoles: boolean`](src/Shared/Data/Defaults.luau#L194)
-- [`Defaults.settings.theme: string`](src/Shared/Data/Defaults.luau#L196)
-- [`Defaults.settings.changeThemeAuthority: string`](src/Shared/Data/Defaults.luau#L197)
+- [`Defaults.async`](src/Shared/Data/Defaults.luau#L86-L91)
+- [`Defaults.async.asset: {}`](src/Shared/Data/Defaults.luau#L87)
+- [`Defaults.async.gamepass: {}`](src/Shared/Data/Defaults.luau#L88)
+- [`Defaults.async.group: {}`](src/Shared/Data/Defaults.luau#L89)
+- [`Defaults.async.subscription: {}`](src/Shared/Data/Defaults.luau#L90)
+- [`Defaults.defaultRoles.everyone.limits`](src/Shared/Data/Defaults.luau#L109)
+- [`Defaults.defaultRoles.everyone.limits.cooldown: number`](src/Shared/Data/Defaults.luau#L109)
+- [`Defaults.defaultRoles.everyone.limits.commands: number`](src/Shared/Data/Defaults.luau#L109)
+- [`Defaults.defaultRoles.everyone.limits.targets: number`](src/Shared/Data/Defaults.luau#L109)
+- [`Defaults.defaultRoles.everyone.permissions`](src/Shared/Data/Defaults.luau#L110-L117)
+- [`Defaults.defaultRoles.everyone.permissions.admin: boolean`](src/Shared/Data/Defaults.luau#L111)
+- [`Defaults.defaultRoles.everyone.permissions.banasync: boolean`](src/Shared/Data/Defaults.luau#L112)
+- [`Defaults.defaultRoles.everyone.permissions.saveRoles: boolean`](src/Shared/Data/Defaults.luau#L113)
+- [`Defaults.defaultRoles.everyone.permissions.settings: boolean`](src/Shared/Data/Defaults.luau#L114)
+- [`Defaults.defaultRoles.everyone.permissions.serverlogs: boolean`](src/Shared/Data/Defaults.luau#L115)
+- [`Defaults.defaultRoles.everyone.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L116)
+- [`Defaults.defaultRoles.everyone`](src/Shared/Data/Defaults.luau#L103-L119)
+- [`Defaults.defaultRoles.everyone.name: string`](src/Shared/Data/Defaults.luau#L106)
+- [`Defaults.defaultRoles.everyone.color: string`](src/Shared/Data/Defaults.luau#L107)
+- [`Defaults.defaultRoles.everyone.groups: { string }`](src/Shared/Data/Defaults.luau#L108)
+- [`Defaults.defaultRoles.everyone.onlyTargetSelf: boolean`](src/Shared/Data/Defaults.luau#L118)
+- [`Defaults.defaultRoles.vip.limits`](src/Shared/Data/Defaults.luau#L126)
+- [`Defaults.defaultRoles.vip.limits.cooldown: number`](src/Shared/Data/Defaults.luau#L126)
+- [`Defaults.defaultRoles.vip.limits.commands: number`](src/Shared/Data/Defaults.luau#L126)
+- [`Defaults.defaultRoles.vip.limits.targets: number`](src/Shared/Data/Defaults.luau#L126)
+- [`Defaults.defaultRoles.vip.permissions`](src/Shared/Data/Defaults.luau#L127)
+- [`Defaults.defaultRoles.vip.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L127)
+- [`Defaults.defaultRoles.vip`](src/Shared/Data/Defaults.luau#L120-L129)
+- [`Defaults.defaultRoles.vip.name: string`](src/Shared/Data/Defaults.luau#L123)
+- [`Defaults.defaultRoles.vip.color: string`](src/Shared/Data/Defaults.luau#L124)
+- [`Defaults.defaultRoles.vip.groups: { string }`](src/Shared/Data/Defaults.luau#L125)
+- [`Defaults.defaultRoles.vip.onlyTargetSelf: boolean`](src/Shared/Data/Defaults.luau#L128)
+- [`Defaults.defaultRoles.mod.limits`](src/Shared/Data/Defaults.luau#L136)
+- [`Defaults.defaultRoles.mod.limits.cooldown: number`](src/Shared/Data/Defaults.luau#L136)
+- [`Defaults.defaultRoles.mod.limits.commands: number`](src/Shared/Data/Defaults.luau#L136)
+- [`Defaults.defaultRoles.mod.limits.targets`](src/Shared/Data/Defaults.luau#L136)
+- [`Defaults.defaultRoles.mod.permissions`](src/Shared/Data/Defaults.luau#L137)
+- [`Defaults.defaultRoles.mod.permissions.serverlogs: boolean`](src/Shared/Data/Defaults.luau#L137)
+- [`Defaults.defaultRoles.mod.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L137)
+- [`Defaults.defaultRoles.mod`](src/Shared/Data/Defaults.luau#L130-L138)
+- [`Defaults.defaultRoles.mod.name: string`](src/Shared/Data/Defaults.luau#L133)
+- [`Defaults.defaultRoles.mod.color: string`](src/Shared/Data/Defaults.luau#L134)
+- [`Defaults.defaultRoles.mod.groups: { string }`](src/Shared/Data/Defaults.luau#L135)
+- [`Defaults.defaultRoles.admin.limits`](src/Shared/Data/Defaults.luau#L145)
+- [`Defaults.defaultRoles.admin.limits.cooldown: number`](src/Shared/Data/Defaults.luau#L145)
+- [`Defaults.defaultRoles.admin.limits.commands: number`](src/Shared/Data/Defaults.luau#L145)
+- [`Defaults.defaultRoles.admin.limits.targets`](src/Shared/Data/Defaults.luau#L145)
+- [`Defaults.defaultRoles.admin.permissions`](src/Shared/Data/Defaults.luau#L146)
+- [`Defaults.defaultRoles.admin.permissions.banasync: boolean`](src/Shared/Data/Defaults.luau#L146)
+- [`Defaults.defaultRoles.admin.permissions.serverlogs: boolean`](src/Shared/Data/Defaults.luau#L146)
+- [`Defaults.defaultRoles.admin.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L146)
+- [`Defaults.defaultRoles.admin`](src/Shared/Data/Defaults.luau#L139-L147)
+- [`Defaults.defaultRoles.admin.name: string`](src/Shared/Data/Defaults.luau#L142)
+- [`Defaults.defaultRoles.admin.color: string`](src/Shared/Data/Defaults.luau#L143)
+- [`Defaults.defaultRoles.admin.groups: { string }`](src/Shared/Data/Defaults.luau#L144)
+- [`Defaults.defaultRoles.superadmin.permissions`](src/Shared/Data/Defaults.luau#L154-L160)
+- [`Defaults.defaultRoles.superadmin.permissions.banasync: boolean`](src/Shared/Data/Defaults.luau#L155)
+- [`Defaults.defaultRoles.superadmin.permissions.saveRoles: boolean`](src/Shared/Data/Defaults.luau#L156)
+- [`Defaults.defaultRoles.superadmin.permissions.settings: boolean`](src/Shared/Data/Defaults.luau#L157)
+- [`Defaults.defaultRoles.superadmin.permissions.serverlogs: boolean`](src/Shared/Data/Defaults.luau#L158)
+- [`Defaults.defaultRoles.superadmin.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L159)
+- [`Defaults.defaultRoles.superadmin`](src/Shared/Data/Defaults.luau#L148-L161)
+- [`Defaults.defaultRoles.superadmin.name: string`](src/Shared/Data/Defaults.luau#L151)
+- [`Defaults.defaultRoles.superadmin.color: string`](src/Shared/Data/Defaults.luau#L152)
+- [`Defaults.defaultRoles.superadmin.groups: { string }`](src/Shared/Data/Defaults.luau#L153)
+- [`Defaults.defaultRoles.creator.permissions`](src/Shared/Data/Defaults.luau#L167)
+- [`Defaults.defaultRoles.creator.permissions.admin: boolean`](src/Shared/Data/Defaults.luau#L167)
+- [`Defaults.defaultRoles.creator.permissions.targetOthers: boolean`](src/Shared/Data/Defaults.luau#L167)
+- [`Defaults.defaultRoles.creator`](src/Shared/Data/Defaults.luau#L162-L168)
+- [`Defaults.defaultRoles.creator.name: string`](src/Shared/Data/Defaults.luau#L165)
+- [`Defaults.defaultRoles.creator.color: string`](src/Shared/Data/Defaults.luau#L166)
+- [`Defaults.settings`](src/Shared/Data/Defaults.luau#L179-L209)
+- [`Defaults.settings.announcement: boolean`](src/Shared/Data/Defaults.luau#L180)
+- [`Defaults.settings.useSavedSettings: boolean`](src/Shared/Data/Defaults.luau#L181)
+- [`Defaults.settings.prefix: { string }`](src/Shared/Data/Defaults.luau#L183)
+- [`Defaults.settings.splitKey: string`](src/Shared/Data/Defaults.luau#L184)
+- [`Defaults.settings.commandBarRank: number`](src/Shared/Data/Defaults.luau#L186)
+- [`Defaults.settings.dashboardRank: number`](src/Shared/Data/Defaults.luau#L187)
+- [`Defaults.settings.commandsButtonRank: number`](src/Shared/Data/Defaults.luau#L188)
+- [`Defaults.settings.dashboardButtonRank: number`](src/Shared/Data/Defaults.luau#L189)
+- [`Defaults.settings.joinNotificationRank: number`](src/Shared/Data/Defaults.luau#L190)
+- [`Defaults.settings.welcomeBadgeId: number`](src/Shared/Data/Defaults.luau#L192)
+- [`Defaults.settings.addToCharts: boolean`](src/Shared/Data/Defaults.luau#L194)
+- [`Defaults.settings.vip: boolean`](src/Shared/Data/Defaults.luau#L195)
+- [`Defaults.settings.chatCommands: boolean`](src/Shared/Data/Defaults.luau#L197)
+- [`Defaults.settings.chatCommandsNotification: boolean`](src/Shared/Data/Defaults.luau#L198)
+- [`Defaults.settings.commandRequests: boolean`](src/Shared/Data/Defaults.luau#L199)
+- [`Defaults.settings.onlyShowUsableCommands: boolean`](src/Shared/Data/Defaults.luau#L200)
+- [`Defaults.settings.getKohlsAdminPopup: boolean`](src/Shared/Data/Defaults.luau#L201)
+- [`Defaults.settings.wrongPrefixWarning: boolean`](src/Shared/Data/Defaults.luau#L202)
+- [`Defaults.settings.saveLogs: boolean`](src/Shared/Data/Defaults.luau#L203)
+- [`Defaults.settings.saveChatLogs: boolean`](src/Shared/Data/Defaults.luau#L204)
+- [`Defaults.settings.saveLogsForAllRoles: boolean`](src/Shared/Data/Defaults.luau#L205)
+- [`Defaults.settings.theme: string`](src/Shared/Data/Defaults.luau#L207)
+- [`Defaults.settings.changeThemeAuthority: string`](src/Shared/Data/Defaults.luau#L208)
 
 ## MainModule.Flux
 
@@ -749,11 +755,11 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string })`](src/Shared/Registry.luau#L17-L31): Makes an Enum argument type definition
 - [`Registry.suggestCommandAlias(alias: string): string`](src/Shared/Registry.luau#L74-L95): Finds the command alias with the lowest Levenshtein distance to the provided alias.
 - [`Registry.makeSequenceType(definition: SequenceDefinition?)`](src/Shared/Registry.luau#L98-L144): Makes an sequence argument type definition, useful for Color3, Vector3, etc
-- [`Registry.registerType(name: string, typeObject: Type.ArgumentType, override: Type.Dict?)`](src/Shared/Registry.luau#L147-L160): Registers an argument type
-- [`Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition)`](src/Shared/Registry.luau#L163-L240): Registers a command
-- [`Registry.dashboardWindowEnv(tab: string)`](src/Shared/Registry.luau#L243-L268)
-- [`Registry.registerCommandAlias(_K: any, alias: string, command: string)`](src/Shared/Registry.luau#L271-L288): [Client] Registers a local command alias
-- [`Registry.registerCommandModule(_K: any, commandModule: ModuleScript)`](src/Shared/Registry.luau#L291-L302): Registers a list of commands with the module name as the command group
+- [`Registry.registerType(name: string, typeObject: Type.ArgumentType, override: Type.Dict?)`](src/Shared/Registry.luau#L147-L158): Registers an argument type
+- [`Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition)`](src/Shared/Registry.luau#L161-L238): Registers a command
+- [`Registry.dashboardWindowEnv(tab: string)`](src/Shared/Registry.luau#L241-L266)
+- [`Registry.registerCommandAlias(_K: any, alias: string, command: string)`](src/Shared/Registry.luau#L269-L286): [Client] Registers a local command alias
+- [`Registry.registerCommandModule(_K: any, commandModule: ModuleScript)`](src/Shared/Registry.luau#L289-L300): Registers a list of commands with the module name as the command group
 
 ## MainModule.Remote
 
@@ -806,57 +812,57 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.UI
 
 - [UI](src/Client/UI/init.luau)
-- [`type Dict<T> = { [T]: any }`](src/Client/UI/init.luau#L11)
-- [`type Symbol = { type: "Symbol" }`](src/Client/UI/init.luau#L12)
-- [`type Platform = "Console" | "Mobile" | "PC" | "VR"`](src/Client/UI/init.luau#L88)
-- [`type ActiveStateType = "hover" | "floating" | "dialog"`](src/Client/UI/init.luau#L202)
-- [`type TextRequest = { Text: string, Font: Font, Size: number, RichText: boolean? }`](src/Client/UI/init.luau#L305)
-- [`UI.Class: {}`](src/Client/UI/init.luau#L17)
-- [`UI.Sound: {}`](src/Client/UI/init.luau#L29)
-- [`UI.GuiService: GuiService`](src/Client/UI/init.luau#L82)
-- [`UI.TextService: TextService`](src/Client/UI/init.luau#L83)
-- [`UI.UserInputService: UserInputService`](src/Client/UI/init.luau#L84)
-- [`UI.LocalPlayer`](src/Client/UI/init.luau#L85)
-- [`UI.PlayerGui`](src/Client/UI/init.luau#L86)
-- [`UI.Touch`](src/Client/UI/init.luau#L90)
-- [`UI.IsConsoleScreen: boolean`](src/Client/UI/init.luau#L91)
-- [`UI.Platform: Platform`](src/Client/UI/init.luau#L93-L99)
-- [`UI.Hook: Symbol`](src/Client/UI/init.luau#L102): A marker for defining UI state hooks in [UI.edit]
-- [`UI.Function: Symbol`](src/Client/UI/init.luau#L105): A marker for defining function defaultState in [UI.makeStatefulDefaults]
-- [`UI.Nil: Symbol`](src/Client/UI/init.luau#L108): A marker for defining Nil defaultState in [UI.makeStatefulDefaults]
-- [`UI.TopbarInset`](src/Client/UI/init.luau#L111): GuiService.TopbarInset as a Flux state
-- [`UI.TopbarPadding: any`](src/Client/UI/init.luau#L112-L115)
-- [`UI.LayerBottom`](src/Client/UI/init.luau#L118-L125): The lowermost ScreenGui for UI components
-- [`UI.LayerDefault`](src/Client/UI/init.luau#L128-L136): The default ScreenGui for UI components
-- [`UI.LayerTop`](src/Client/UI/init.luau#L139-L147): The topmost ScreenGui for UI components
-- [`UI.LayerTopInset`](src/Client/UI/init.luau#L149-L160)
-- [`UI.LayerTopbar`](src/Client/UI/init.luau#L163-L171): The Topbar ScreenGui for UI components
-- [`UI.TopbarFrame`](src/Client/UI/init.luau#L174-L200): A sorted Topbar Frame for UI components, parented under [UI.LayerTopbar]
+- [`type Dict<T> = { [T]: any }`](src/Client/UI/init.luau#L12)
+- [`type Symbol = { type: "Symbol" }`](src/Client/UI/init.luau#L13)
+- [`type Platform = "Console" | "Mobile" | "PC" | "VR"`](src/Client/UI/init.luau#L89)
+- [`type ActiveStateType = "hover" | "floating" | "dialog"`](src/Client/UI/init.luau#L203)
+- [`type TextRequest = { Text: string, Font: Font, Size: number, RichText: boolean? }`](src/Client/UI/init.luau#L300)
+- [`UI.Class: {}`](src/Client/UI/init.luau#L18)
+- [`UI.Sound: {}`](src/Client/UI/init.luau#L30)
+- [`UI.GuiService: GuiService`](src/Client/UI/init.luau#L83)
+- [`UI.TextService: TextService`](src/Client/UI/init.luau#L84)
+- [`UI.UserInputService: UserInputService`](src/Client/UI/init.luau#L85)
+- [`UI.LocalPlayer`](src/Client/UI/init.luau#L86)
+- [`UI.PlayerGui`](src/Client/UI/init.luau#L87)
+- [`UI.Touch`](src/Client/UI/init.luau#L91)
+- [`UI.IsConsoleScreen: boolean`](src/Client/UI/init.luau#L92)
+- [`UI.Platform: Platform`](src/Client/UI/init.luau#L94-L100)
+- [`UI.Hook: Symbol`](src/Client/UI/init.luau#L103): A marker for defining UI state hooks in [UI.edit]
+- [`UI.Function: Symbol`](src/Client/UI/init.luau#L106): A marker for defining function defaultState in [UI.makeStatefulDefaults]
+- [`UI.Nil: Symbol`](src/Client/UI/init.luau#L109): A marker for defining Nil defaultState in [UI.makeStatefulDefaults]
+- [`UI.TopbarInset`](src/Client/UI/init.luau#L112): GuiService.TopbarInset as a Flux state
+- [`UI.TopbarPadding: any`](src/Client/UI/init.luau#L113-L116)
+- [`UI.LayerBottom`](src/Client/UI/init.luau#L119-L126): The lowermost ScreenGui for UI components
+- [`UI.LayerDefault`](src/Client/UI/init.luau#L129-L137): The default ScreenGui for UI components
+- [`UI.LayerTop`](src/Client/UI/init.luau#L140-L148): The topmost ScreenGui for UI components
+- [`UI.LayerTopInset`](src/Client/UI/init.luau#L150-L161)
+- [`UI.LayerTopbar`](src/Client/UI/init.luau#L164-L172): The Topbar ScreenGui for UI components
+- [`UI.TopbarFrame`](src/Client/UI/init.luau#L175-L201): A sorted Topbar Frame for UI components, parented under [UI.LayerTopbar]
 - [`UI.Fonts: Fonts`](src/Client/UI/Fonts.luau): [Module]
 - [`UI.Theme: Theme`](src/Client/UI/Theme/init.luau): [Module]
-- [`UI.Themes: {}`](src/Client/UI/Theme/init.luau#L78): [from Theme]
-- [`UI.getFontName(font: Font | Enum.Font)`](src/Client/UI/init.luau#L69-L80)
-- [`UI.activateState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L207-L226): A generalized function to handle activation/deactivation of both floating and hover states
-- [`UI.deactivateState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L229-L245): A generalized function to deactivate both floating and hover states
-- [`UI.toggleState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L248-L257): A generalized function to toggle both floating and hover states
-- [`UI.clearState(stateType: ActiveStateType)`](src/Client/UI/init.luau#L260-L269): Function to clear a specific state type
-- [`UI.clearActiveStates()`](src/Client/UI/init.luau#L272-L276): Function to clear all active state types
-- [`UI.invertLuminance(color: Color3, amount: number): Color3`](src/Client/UI/init.luau#L282-L287): Inverts the luminance of a [Color3] by an amount
-- [`UI.retryGetTextBoundsAsync(params)`](src/Client/UI/init.luau#L294-L303): [Yields]
-- [`UI.textWidth(getRequests: () -> { TextRequest }): (Flux.Node<number>, Flux.Node<any>)`](src/Client/UI/init.luau#L318-L360): Measures the widest of `getRequests()` without yielding inside the reactive graph.
-- [`UI.makeStatefulDefaults(default: Dict<any>, definition: Dict<any>?)`](src/Client/UI/init.luau#L363-L388): Helper function for defining Flux state defaults
-- [`UI.newSinkHoverState(object: GuiObject, hovering: any?, options: Flux.HoverOptions?)`](src/Client/UI/init.luau#L390-L407)
-- [`UI.edit(new: Instance | Dict<any>)`](src/Client/UI/init.luau#L430-L520): Inherits [Flux.edit] * Parents children to the ._content variable of a UI component if one exists * Unwraps UI component children and auto-numbers [GuiObject.LayoutOrder] sequentially via [Flux.edit] * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
-- [`UI.new(className: string)`](src/Client/UI/init.luau#L591): Creates a new Instance with [UI.edit]
-- [`UI.register(className: string, class: Dict<any>)`](src/Client/UI/init.luau#L594-L599): Registers a new UI component class
-- [`UI.registerClasses(): typeof(UI)`](src/Client/UI/init.luau#L602-L610): Run to register the default classes for the UI module
+- [`UI.Themes: {}`](src/Client/UI/Theme/init.luau#L77): [from Theme]
+- [`UI.getFontName(font: Font | Enum.Font)`](src/Client/UI/init.luau#L70-L81)
+- [`UI.activateState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L208-L227): A generalized function to handle activation/deactivation of both floating and hover states
+- [`UI.deactivateState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L230-L246): A generalized function to deactivate both floating and hover states
+- [`UI.toggleState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L249-L258): A generalized function to toggle both floating and hover states
+- [`UI.clearState(stateType: ActiveStateType)`](src/Client/UI/init.luau#L261-L270): Function to clear a specific state type
+- [`UI.clearActiveStates()`](src/Client/UI/init.luau#L273-L277): Function to clear all active state types
+- [`UI.invertLuminance(color: Color3, amount: number): Color3`](src/Client/UI/init.luau#L283-L288): Inverts the luminance of a [Color3] by an amount
+- [`UI.retryGetTextBoundsAsync(params)`](src/Client/UI/init.luau#L295-L298): [Yields]
+- [`UI.textWidth(getRequests: () -> { TextRequest }): (Flux.Node<number>, Flux.Node<any>)`](src/Client/UI/init.luau#L313-L355): Measures the widest of `getRequests()` without yielding inside the reactive graph.
+- [`UI.makeStatefulDefaults(default: Dict<any>, definition: Dict<any>?)`](src/Client/UI/init.luau#L358-L383): Helper function for defining Flux state defaults
+- [`UI.newSinkHoverState(object: GuiObject, hovering: any?, options: Flux.HoverOptions?)`](src/Client/UI/init.luau#L385-L402)
+- [`UI.edit(new: Instance | Dict<any>)`](src/Client/UI/init.luau#L425-L515): Inherits [Flux.edit] * Parents children to the ._content variable of a UI component if one exists * Unwraps UI component children and auto-numbers [GuiObject.LayoutOrder] sequentially via [Flux.edit] * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
+- [`UI.new(className: string)`](src/Client/UI/init.luau#L586): Creates a new Instance with [UI.edit]
+- [`UI.register(className: string, class: Dict<any>)`](src/Client/UI/init.luau#L589-L594): Registers a new UI component class
+- [`UI.registerClasses(): typeof(UI)`](src/Client/UI/init.luau#L597-L605): Run to register the default classes for the UI module
 - [`UI.getLuminance(c: Color3): number`](vendor/flux/src/Motion.luau#L262): [from Motion] Gets the luminance of a [Color3]
 - [`UI.pointInGuiObject(x: number, y: number, object: GuiObject): boolean`](vendor/flux/src/Interact.luau#L681): [from Interact] Checks if x, y is within the absolute bounds of the GuiObject
 - [`UI.sinkInput(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L682): [from Interact] Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI rendered above `object` (or while the Roblox escape menu is open).
-- [`UI.Haptic`](src/Client/UI/init.luau#L48-L67)
-- [`UI.Haptic.Click`](src/Client/UI/init.luau#L49-L58)
-- [`UI.Haptic.Hover`](src/Client/UI/init.luau#L59-L62)
-- [`UI.Haptic.Notification`](src/Client/UI/init.luau#L63-L66)
+- [`UI.Haptic`](src/Client/UI/init.luau#L49-L68)
+- [`UI.Haptic.Click`](src/Client/UI/init.luau#L50-L59)
+- [`UI.Haptic.Hover`](src/Client/UI/init.luau#L60-L63)
+- [`UI.Haptic.Notification`](src/Client/UI/init.luau#L64-L67)
 
 ## MainModule.UI.Fonts
 
@@ -949,39 +955,39 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.UI.Theme
 
 - [Theme](src/Client/UI/Theme/init.luau): A directory of Flux state for UI components to use as theme variables
-- [`Theme.Themes: {}`](src/Client/UI/Theme/init.luau#L78)
-- [`Theme.TransparencySlight: any`](src/Client/UI/Theme/init.luau#L115-L117)
-- [`Theme.TransparencyLight: any`](src/Client/UI/Theme/init.luau#L119-L121)
-- [`Theme.TransparencyMedium: any`](src/Client/UI/Theme/init.luau#L123-L125)
-- [`Theme.TransparencyBalanced: any`](src/Client/UI/Theme/init.luau#L127-L129)
-- [`Theme.TransparencyStrong: any`](src/Client/UI/Theme/init.luau#L131-L133)
-- [`Theme.TransparencyHeavy: any`](src/Client/UI/Theme/init.luau#L135-L137)
-- [`Theme.TransparencyMax: any`](src/Client/UI/Theme/init.luau#L139-L141)
-- [`Theme.TransparencyClamped: any`](src/Client/UI/Theme/init.luau#L143-L145)
-- [`Theme.FontHeavy: any`](src/Client/UI/Theme/init.luau#L147-L149)
-- [`Theme.FontBold: any`](src/Client/UI/Theme/init.luau#L151-L153)
-- [`Theme.FontSemiBold: any`](src/Client/UI/Theme/init.luau#L155-L157)
-- [`Theme.FontLight: any`](src/Client/UI/Theme/init.luau#L159-L161)
-- [`Theme.FontThin: any`](src/Client/UI/Theme/init.luau#L163-L165)
-- [`Theme.FontSizeDouble: any`](src/Client/UI/Theme/init.luau#L167-L169)
-- [`Theme.FontSizeLargest: any`](src/Client/UI/Theme/init.luau#L171-L173)
-- [`Theme.FontSizeLarger: any`](src/Client/UI/Theme/init.luau#L175-L177)
-- [`Theme.FontSizeLarge: any`](src/Client/UI/Theme/init.luau#L179-L181)
-- [`Theme.FontSizeSmall: any`](src/Client/UI/Theme/init.luau#L183-L185)
-- [`Theme.FontSizeSmaller: any`](src/Client/UI/Theme/init.luau#L187-L189)
-- [`Theme.FontSizeSmallest: any`](src/Client/UI/Theme/init.luau#L191-L193)
-- [`Theme.PaddingHalf: any`](src/Client/UI/Theme/init.luau#L195-L198)
-- [`Theme.PaddingDouble: any`](src/Client/UI/Theme/init.luau#L200-L203)
-- [`Theme.PaddingStroke: any`](src/Client/UI/Theme/init.luau#L205-L207)
-- [`Theme.PaddingWithStroke: any`](src/Client/UI/Theme/init.luau#L209-L211)
-- [`Theme.CornerHalf: any`](src/Client/UI/Theme/init.luau#L213-L216)
-- [`Theme.CornerDiameter: any`](src/Client/UI/Theme/init.luau#L218-L221)
-- [`Theme.CornerPadded: any`](src/Client/UI/Theme/init.luau#L223-L227)
-- [`Theme.CornerPadded2: any`](src/Client/UI/Theme/init.luau#L229-L233)
-- [`Theme.CornerPadded3: any`](src/Client/UI/Theme/init.luau#L235-L239)
-- [`Theme.ScrollMidImage: any`](src/Client/UI/Theme/init.luau#L241)
-- [`Theme.ScrollTopImage: any`](src/Client/UI/Theme/init.luau#L242-L244)
-- [`Theme.ScrollBottomImage: any`](src/Client/UI/Theme/init.luau#L245-L247)
+- [`Theme.Themes: {}`](src/Client/UI/Theme/init.luau#L77)
+- [`Theme.TransparencySlight: any`](src/Client/UI/Theme/init.luau#L114-L116)
+- [`Theme.TransparencyLight: any`](src/Client/UI/Theme/init.luau#L118-L120)
+- [`Theme.TransparencyMedium: any`](src/Client/UI/Theme/init.luau#L122-L124)
+- [`Theme.TransparencyBalanced: any`](src/Client/UI/Theme/init.luau#L126-L128)
+- [`Theme.TransparencyStrong: any`](src/Client/UI/Theme/init.luau#L130-L132)
+- [`Theme.TransparencyHeavy: any`](src/Client/UI/Theme/init.luau#L134-L136)
+- [`Theme.TransparencyMax: any`](src/Client/UI/Theme/init.luau#L138-L140)
+- [`Theme.TransparencyClamped: any`](src/Client/UI/Theme/init.luau#L142-L144)
+- [`Theme.FontHeavy: any`](src/Client/UI/Theme/init.luau#L146-L148)
+- [`Theme.FontBold: any`](src/Client/UI/Theme/init.luau#L150-L152)
+- [`Theme.FontSemiBold: any`](src/Client/UI/Theme/init.luau#L154-L156)
+- [`Theme.FontLight: any`](src/Client/UI/Theme/init.luau#L158-L160)
+- [`Theme.FontThin: any`](src/Client/UI/Theme/init.luau#L162-L164)
+- [`Theme.FontSizeDouble: any`](src/Client/UI/Theme/init.luau#L166-L168)
+- [`Theme.FontSizeLargest: any`](src/Client/UI/Theme/init.luau#L170-L172)
+- [`Theme.FontSizeLarger: any`](src/Client/UI/Theme/init.luau#L174-L176)
+- [`Theme.FontSizeLarge: any`](src/Client/UI/Theme/init.luau#L178-L180)
+- [`Theme.FontSizeSmall: any`](src/Client/UI/Theme/init.luau#L182-L184)
+- [`Theme.FontSizeSmaller: any`](src/Client/UI/Theme/init.luau#L186-L188)
+- [`Theme.FontSizeSmallest: any`](src/Client/UI/Theme/init.luau#L190-L192)
+- [`Theme.PaddingHalf: any`](src/Client/UI/Theme/init.luau#L194-L197)
+- [`Theme.PaddingDouble: any`](src/Client/UI/Theme/init.luau#L199-L202)
+- [`Theme.PaddingStroke: any`](src/Client/UI/Theme/init.luau#L204-L206)
+- [`Theme.PaddingWithStroke: any`](src/Client/UI/Theme/init.luau#L208-L210)
+- [`Theme.CornerHalf: any`](src/Client/UI/Theme/init.luau#L212-L215)
+- [`Theme.CornerDiameter: any`](src/Client/UI/Theme/init.luau#L217-L220)
+- [`Theme.CornerPadded: any`](src/Client/UI/Theme/init.luau#L222-L226)
+- [`Theme.CornerPadded2: any`](src/Client/UI/Theme/init.luau#L228-L232)
+- [`Theme.CornerPadded3: any`](src/Client/UI/Theme/init.luau#L234-L238)
+- [`Theme.ScrollMidImage: any`](src/Client/UI/Theme/init.luau#L240)
+- [`Theme.ScrollTopImage: any`](src/Client/UI/Theme/init.luau#L241-L243)
+- [`Theme.ScrollBottomImage: any`](src/Client/UI/Theme/init.luau#L244-L246)
 
 ## MainModule.Util
 
@@ -1039,8 +1045,8 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.Util.getUserInfo
 
 - [getUserInfo](src/Shared/Util/getUserInfo.luau)
-- [`type UserInfo`](src/Shared/Util/getUserInfo.luau#L8-L13)
-- [`getUserInfo(userId: number, checkCache: boolean?): UserInfo`](src/Shared/Util/getUserInfo.luau#L99-L162): [Yields] [Client]
+- [`type UserInfo`](src/Shared/Util/getUserInfo.luau#L9-L14)
+- [`getUserInfo(userId: number, checkCache: boolean?): UserInfo`](src/Shared/Util/getUserInfo.luau#L94-L157): [Yields] [Client]
 
 ## MainModule.Util.Humanoid
 
@@ -1072,7 +1078,9 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.Util.MemoryStore
 
 - [MemoryStore](src/Shared/Util/MemoryStore.luau)
-- [`MemoryStore.getItemsFromHashMap(hashMap: MemoryStoreHashMap): { [string]: any }`](src/Shared/Util/MemoryStore.luau#L3-L18): [Yields]
+- [`MemoryStore.getItemsFromHashMap(hashMap: MemoryStoreHashMap): { [string]: any }`](src/Shared/Util/MemoryStore.luau#L6-L15): [Yields]
+- [`MemoryStore.getSharded(hashMap: MemoryStoreHashMap, keyPrefix: string, shardCount: number, maxProbes: number?, attempts: number?): (boolean, any)`](src/Shared/Util/MemoryStore.luau#L17-L34): [Yields]
+- [`MemoryStore.setSharded(hashMap: MemoryStoreHashMap, keyPrefix: string, value: any, expiration: number, shardCount: number, attempts: number?): boolean`](src/Shared/Util/MemoryStore.luau#L36-L52): [Yields]
 
 ## MainModule.Util.Property
 
@@ -1124,7 +1132,7 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.Util.SafeTeleport
 
 - [SafeTeleport](src/Shared/Util/SafeTeleport.luau)
-- [`SafeTeleport(placeId, players, options)`](src/Shared/Util/SafeTeleport.luau#L7-L26): [Yields]
+- [`SafeTeleport(placeId, players, options)`](src/Shared/Util/SafeTeleport.luau#L9-L18): [Yields]
 
 ## MainModule.Util.Signal
 

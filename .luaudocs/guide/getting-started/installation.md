@@ -84,10 +84,10 @@ To enable cross-server bans, persistent role assignments, and group rank checks,
 
 ## Loader Attributes (`Config`)
 
-When you select **`Kohl's Admin > Config`** in the Explorer, you will find two boolean attributes in the **Properties** window (under **Attributes**):
+Select **`Kohl's Admin > Config`** in the Explorer to configure two boolean attributes in the **Properties** window (under **Attributes**):
 
-- **`AutoUpdate`** (`boolean`, default `true`): When enabled, the loader automatically fetches the latest `MainModule` release from Roblox on server startup and falls back to a bundled local module if the network request fails. Disable this only if you are bundling a custom fork of `MainModule` inside `Loader`.
-- **`Legacy`** (`boolean`, default `false`): When enabled, switches to the legacy *Kohl's Admin Infinite* loader using `Config > Legacy > Settings`. Leave this **`false`** to use the modern Kohl's Admin system (which also automatically migrates settings and commands from `Config > Legacy`).
+- **`AutoUpdate`** (`boolean`, default `true`): Fetches the latest `MainModule` release from Roblox on server startup and falls back to the bundled module if the network request fails. Disable this only if you bundle a custom fork of `MainModule` inside `Loader`.
+- **`Legacy`** (`boolean`, default `false`): Switches to the legacy *Kohl's Admin Infinite* loader using `Config > Legacy > Settings`. Leave this **`false`** to run the modern Kohl's Admin system (which automatically migrates settings and commands from `Config > Legacy`).
 
 :::tip Studio Sandboxed Models
 If Roblox Studio inserts the model with the experimental **`Sandboxed`** property enabled on the folder or scripts, you may see a `[KOHL'S ADMIN PERMISSIONS FIX]` message in the Output window. See [Troubleshooting: Sandboxed / Lacking Capability Error](/guide/troubleshooting#sandboxed-model-lacking-capability-error) for a one-line fix.

@@ -88,8 +88,8 @@ Along the bottom edge of the Dashboard window, the live Status Bar displays:
 
 ## Built-in Admin Tool Windows
 
-Beyond the main Dashboard, Kohl's Admin includes specialized tool interfaces accessible via commands:
+Beyond the main Dashboard, Kohl's Admin includes tool windows accessible via commands:
 
-- **Instance Explorer (`;explorer`)**: A full in-game Studio-style Explorer and Properties inspector (`src/Client/Explorer`) for browsing and editing the DataModel hierarchy in real time.
-- **Building Tools (`;btools`)**: Equips the full **Building Tools by F3X** suite for in-game part creation, transformation, material/color editing, and exporting.
-- **Environment & Tools Windows (`;tools`, `;emotes`, `;env`)**: Dedicated interactive windows for spawning tools, previewing/playing avatar emotes, and adjusting lighting/atmosphere properties.
+- **Instance Explorer (`;explorer`)**: An in-game Studio-style Explorer and Properties inspector (`src/Client/Explorer`) for browsing and editing the DataModel hierarchy in real time.
+- **Building Tools (`;btools`)**: Equips the **Building Tools by F3X** suite for in-game part creation, transformation, material/color editing, and exporting.
+- **Environment & Tools Windows (`;tools`, `;emotes`, `;env`)**: Interactive windows for spawning tools, previewing and playing avatar emotes, and adjusting lighting and atmosphere properties.

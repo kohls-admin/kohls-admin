@@ -8,7 +8,7 @@ Addons are the primary way to extend Kohl's Admin with custom logic, server inte
 
 ## How Addons Are Loaded
 
-Every addon is a `ModuleScript` that returns a single initializer function accepting the root [`_K` (`MainModule`)](/api/MainModule) table:
+Every addon is a `ModuleScript` that returns an initializer function accepting the root [`_K` (`MainModule`)](/api/MainModule) table:
 
 ```luau
 return function(_K)
@@ -16,10 +16,10 @@ return function(_K)
 end
 ```
 
-Kohl's Admin discovers addons from two places:
+Kohl's Admin loads addons from two places:
 
-1. **`Kohl's Admin > Config > Addons`**: Any `ModuleScript` inside the `Addons` folder (including inside nested subfolders) is automatically loaded.
-2. **`CollectionService` Tag (`"Kohl's Admin Addon"`)**: You can keep your addon `ModuleScript`s anywhere in your project (such as `ServerStorage` or `ReplicatedStorage` in a Rojo project) and tag them with **`"Kohl's Admin Addon"`** (`_K._addonTag`).
+1. **`Kohl's Admin > Config > Addons`**: Loads every `ModuleScript` inside the `Addons` folder, including nested subfolders.
+2. **`CollectionService` Tag (`"Kohl's Admin Addon"`)**: Loads any `ModuleScript` in your project (such as `ServerStorage` or `ReplicatedStorage` in a Rojo project) tagged with **`"Kohl's Admin Addon"`** (`_K._addonTag`).
 
 ---
 

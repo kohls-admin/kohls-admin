@@ -14,12 +14,12 @@ There are two `Settings` scripts in the model:
 
 ## Role Hierarchy & Multi-Role System
 
-Unlike older admin systems where a player only has a single numeric rank, Kohl's Admin uses a **Role-Based Access Control (RBAC)** system:
+Unlike older admin systems where a player holds a single numeric rank, Kohl's Admin uses **Role-Based Access Control (RBAC)**:
 
-- Players can hold **multiple roles simultaneously** (for example, both `vip` and `helper`).
-- A player's effective **rank** is determined by the highest-ranked role they hold.
-- Role ranks are determined automatically by their array order in `roles` (`rank = index - 1`), except for `creator` which is explicitly indexed at `[math.huge]`.
-- Command groups and permissions are combined across all roles a player holds.
+- Players can hold **multiple roles at once** (such as `vip` and `helper`).
+- Your highest-ranked role sets your effective **rank**.
+- Array order in `roles` sets each role's rank (`rank = index - 1`), while `creator` sits at `[math.huge]`.
+- Kohl's Admin combines command groups and permissions across all roles a player holds.
 
 ### Default Roles
 
@@ -38,12 +38,12 @@ Unlike older admin systems where a player only has a single numeric rank, Kohl's
 
 When configuring `Settings`, you can reference users, groups, and marketplace items by their IDs or names:
 
-- **UserId**: Found in a user's profile URL: `https://www.roblox.com/users/44391621/profile` → `44391621`
+- **UserId**: Found in a user's profile URL (`44391621` in `https://www.roblox.com/users/44391621/profile`).
 - **Username**: The player's unique account name (e.g. `"Scripth"`), not their DisplayName. Prefer `UserId` when possible so roles persist if a user changes their username.
-- **GroupId**: Found in a group's URL: `https://www.roblox.com/groups/3403354/Kohl` → `3403354`
+- **GroupId**: Found in a group's URL (`3403354` in `https://www.roblox.com/groups/3403354/Kohl`).
 - **Group Rank**: An integer from `0` to `255` configured on your group's **Roles** page.
-- **AssetId**: Found in a catalog item's URL: `https://www.roblox.com/catalog/18966788838/Light-Crown` → `18966788838`
-- **GamePassId**: Found in a pass's URL: `https://www.roblox.com/game-pass/5411126/VIP` → `5411126`
+- **AssetId**: Found in a catalog item's URL (`18966788838` in `https://www.roblox.com/catalog/18966788838/Light-Crown`).
+- **GamePassId**: Found in a pass's URL (`5411126` in `https://www.roblox.com/game-pass/5411126/VIP`).
 - **SubscriptionId**: Found on your experience's **Subscriptions** page in Creator Hub (e.g. `"EXP-1234567890"`).
 
 ---
@@ -301,9 +301,9 @@ roles = {
 
 | Permission Key | Description |
 | :--- | :--- |
-| `admin` | **Full Authority (`⚠️`)**: Bypasses all command, argument, and target permission checks. |
-| `banasync` | **Permanent Bans (`⚠️`)**: Allows banning and unbanning users permanently or with custom durations saved to DataStores across all servers. Without `banasync`, bans only last for the current server session (`Duration = 0`). |
-| `saveRoles` | **Permanent Roles (`⚠️`)**: Allows permanently assigning or removing lower-ranked roles across servers via DataStores. |
-| `settings` | **Saved Settings (`⚠️`)**: Allows modifying global admin settings in the Dashboard Settings tab and syncing them across servers. |
+| `admin` | **Full Authority**: Bypasses all command, argument, and target permission checks. |
+| `banasync` | **Permanent Bans**: Allows banning and unbanning users permanently or with custom durations saved to DataStores across all servers. Without `banasync`, bans only last for the current server session (`Duration = 0`). |
+| `saveRoles` | **Permanent Roles**: Allows permanently assigning or removing lower-ranked roles across servers via DataStores. |
+| `settings` | **Saved Settings**: Allows modifying global admin settings in the Dashboard Settings tab and syncing them across servers. |
 | `serverlogs` | **Server Logs**: Allows viewing server-side command, chat, join/leave, damage/death, and purchase logs in the Dashboard Logs tab. |
 | `targetOthers` | **Target Other Players**: Automatically set to `not onlyTargetSelf` if omitted. Controls whether the role can target players other than `me`. |

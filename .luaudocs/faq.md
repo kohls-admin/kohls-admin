@@ -1,6 +1,6 @@
 ---
 title: "FAQ - Kohl's Admin"
-description: "Frequently asked questions about Kohl's Admin: installing the model, donation perks, configuring roles, custom commands, and security."
+description: "Frequently asked questions about Kohl's Admin: installing the model, donation perks, sponsors, configuring roles, custom commands, and security."
 layout: page
 sidebar: false
 editLink: false
@@ -12,35 +12,41 @@ import { withBase } from "vitepress";
 
 const DISCORD = "https://discord.gg/kohl";
 const GITHUB = "https://github.com/kohls-admin/kohls-admin";
+const SPONSORS = "https://github.com/sponsors/kohltastrophe";
+const KOFI = "https://ko-fi.com/kohltastrophe";
 const TRY = "https://www.roblox.com/join/0e4i1";
 const MODEL = "https://create.roblox.com/store/asset/172732271/Kohls-Admin";
 </script>
 
 <div class="ka-page">
-	<section class="band band-first">
+	<section class="poster band band-first accent-auto">
 		<div class="shell">
-			<div class="band-head">
-				<span class="eyebrow">Support</span>
-				<h1 class="band-title">
+			<div class="section-head rise">
+				<h1 class="section-title">
 					Frequently asked <span class="hl-spectrum">questions</span>.
 				</h1>
 				<p class="lede">
 					Answers to common questions about installing, configuring, and extending
-					Kohl's Admin. Still stuck? Check the
+					Kohl's Admin. Need more help? Read the
 					<a :href="withBase('/guide/intro')">Guide</a> or ask in
 					<a :href="DISCORD" target="_blank" rel="noopener noreferrer">the Discord</a>.
 				</p>
 			</div>
 			<div class="faq-list">
 				<details class="faq" open>
-					<summary>How can I donate?</summary>
+					<summary>How can I donate or sponsor Kohl's Admin?</summary>
 					<div class="faq-body">
 						<p>
-							Purchase a supporter pass or UGC item on the
+							Grab a supporter pass or scripted UGC item on the
 							<a :href="withBase('/donate')"><strong>Donate page</strong></a>
-							or from the in-game Market tab. Donations grant particle trails,
-							VIP chat commands, animated crowns and wings, and overhead titles
-							across participating games.
+							or from the in-game Market tab. Roblox supporter tiers grant particle
+							trails, VIP chat commands, animated crowns and wings, and overhead
+							titles across participating games.
+						</p>
+						<p>
+							You can also sponsor open-source development directly on
+							<a :href="SPONSORS" target="_blank" rel="noopener noreferrer"><strong>GitHub Sponsors</strong></a>
+							or <a :href="KOFI" target="_blank" rel="noopener noreferrer"><strong>Ko-fi</strong></a>.
 						</p>
 					</div>
 				</details>
@@ -65,7 +71,7 @@ const MODEL = "https://create.roblox.com/store/asset/172732271/Kohls-Admin";
 						</ol>
 						<div class="note">
 							<p>
-								Always verify the model is created by
+								Always verify the model is published by
 								<a href="https://www.roblox.com/users/44391621/profile" target="_blank" rel="noopener noreferrer"><strong>@Scripth</strong></a>
 								using the official link above. Unofficial copies on the Creator
 								Store often contain backdoors.
@@ -77,9 +83,9 @@ const MODEL = "https://create.roblox.com/store/asset/172732271/Kohls-Admin";
 					<summary>Is Kohl's Admin broken right now?</summary>
 					<div class="faq-body">
 						<p>
-							Check the
+							Join the
 							<a :href="TRY" target="_blank" rel="noopener noreferrer">official testing place</a>
-							first to see if the issue reproduces there. If it does, report it in
+							first to check if the issue reproduces there. If it does, report it in
 							<a :href="DISCORD" target="_blank" rel="noopener noreferrer">the Discord</a>
 							or open an issue on
 							<a :href="`${GITHUB}/issues/new/choose`" target="_blank" rel="noopener noreferrer">GitHub</a>.
@@ -92,7 +98,7 @@ const MODEL = "https://create.roblox.com/store/asset/172732271/Kohls-Admin";
 						<p>
 							No one gets a hidden admin role in your game. Donors and developers
 							can only use cosmetic VIP commands when you leave <code>vip = true</code>
-							enabled, and the full source is
+							enabled. The full source is
 							<a :href="GITHUB" target="_blank" rel="noopener noreferrer">public on GitHub</a>.
 						</p>
 					</div>
@@ -120,7 +126,7 @@ const MODEL = "https://create.roblox.com/store/asset/172732271/Kohls-Admin";
 						<p>
 							Keep <code>vip = true</code> in <code>Settings</code> and enable
 							<strong>Allow Third Party Sales</strong> in your Roblox Game
-							Settings. Your game will earn up to <strong>40% commission</strong>
+							Settings. Your game earns up to <strong>40% commission</strong>
 							on every global VIP item, donation pass, or UGC accessory bought
 							in-game.
 						</p>

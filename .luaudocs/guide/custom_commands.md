@@ -13,7 +13,7 @@ Custom commands let you extend Kohl's Admin with experience-specific tools, auto
 
 ## Creating a Command Addon
 
-Custom commands are registered inside an **Addon**, a [ModuleScript](https://create.roblox.com/docs/reference/engine/classes/ModuleScript) placed in `Kohl's Admin > Config > Addons` (or tagged with `"Kohl's Admin Addon"` via `CollectionService`) that returns a `function(_K)`.
+Register custom commands inside an **Addon**. Place a [ModuleScript](https://create.roblox.com/docs/reference/engine/classes/ModuleScript) in `Kohl's Admin > Config > Addons` (or tag it with `"Kohl's Admin Addon"` via `CollectionService`) and return a `function(_K)`.
 
 :::danger Keep Command Addons Shared
 Don't include `"Server"` or `"Client"` in the `ModuleScript` name of an addon that registers commands.
@@ -223,10 +223,10 @@ end,
 
 ## Command Execution (`run` & `runClient`)
 
-When a player executes a command:
-1. Arguments are transformed, validated, and parsed on the client.
-2. If `runClient` is defined on the command, `runClient(context, ...parsedArgs)` runs immediately on the caller's client.
-3. If `run` is defined on the command, the raw command string is sent to the server, re-validated against server authority, rate limits, and target permissions, and `run(context, ...parsedArgs)` runs on the server.
+When a player runs a command:
+1. The client transforms, validates, and parses arguments as the player types.
+2. If the command defines `runClient`, `runClient(context, ...parsedArgs)` runs immediately on the caller's client.
+3. If the command defines `run`, the client sends the raw command string to the server. The server re-validates caller authority, rate limits, and target permissions before calling `run(context, ...parsedArgs)`.
 
 ### The `context` Object
 

@@ -4,11 +4,11 @@ sidebar_position: 6
 
 # Themes & Custom UI
 
-Kohl's Admin features a reactive UI framework powered by [`Flux`](/api/Flux) and [`_K.UI`](/api/UI). You can customize the look and feel of every window using **Themes**, or build your own reactive windows and components inside client addons.
+Kohl's Admin builds its reactive UI on [`Flux`](/api/Flux) and [`_K.UI`](/api/UI). Customize every window with **Themes**, or build your own reactive windows and components inside client addons.
 
 ## Customizing Themes (`Config > Themes`)
 
-Kohl's Admin ships with built-in themes (`Default`, `Light`, and `Legacy`) and allows you to define custom studio themes or let players customize their own theme in-game.
+Kohl's Admin ships with built-in themes (`Default`, `Light`, and `Legacy`). You can define custom Studio themes or let players customize their own theme in-game.
 
 ### Theme Settings in `Config > Settings`
 
@@ -93,7 +93,7 @@ return {
 
 ## Building Custom UI with `_K.UI` & `_K.Flux`
 
-On the client (`_K.IsClient`), `_K.UI` inherits from [`_K.Flux`](/api/Flux) (Flux 0.3) and provides a library of themed, reactive UI component classes (`src/Client/UI/Classes`). Anything not defined on `_K.UI` falls through to `Flux`, so `UI.signal` and `Flux.signal` are the same function.
+On the client (`_K.IsClient`), `_K.UI` inherits from [`_K.Flux`](/api/Flux) (Flux 0.4) and provides themed, reactive UI component classes (`src/Client/UI/Classes`). Anything not defined on `_K.UI` falls through to `Flux`, so `UI.signal` and `Flux.signal` are the same function.
 
 ### Reactive State (`_K.UI.signal` & `_K.UI.computed`)
 

@@ -1,6 +1,6 @@
 ---
 title: "Donate - Kohl's Admin"
-description: "Support Kohl's Admin development and unlock global VIP commands, donor particle trails, animated crowns and wings, and exclusive overhead titles."
+description: "Sponsor Kohl's Admin on GitHub or Ko-fi, or support via Roblox passes and UGC accessories to get global VIP commands, donor trails, crowns, and wings."
 layout: page
 sidebar: false
 editLink: false
@@ -8,10 +8,24 @@ lastUpdated: false
 ---
 
 <script setup>
+import { ref } from "vue";
 import { withBase } from "vitepress";
 
 const TRY = "https://www.roblox.com/join/0e4i1";
 const DISCORD = "https://discord.gg/kohl";
+const SPONSORS = "https://github.com/sponsors/kohltastrophe";
+const KOFI = "https://ko-fi.com/kohltastrophe";
+const SPONSORS_SVG = "https://raw.githubusercontent.com/kohltastrophe/kohltastrophe/badges/sponsors.svg";
+const GH_HEART_PATH = "M7.655 14.916v-.001h-.002l-.006-.003-.018-.01a22.066 22.066 0 0 1-3.744-2.584C2.045 10.731 0 8.35 0 5.5 0 2.836 2.086 1 4.25 1 5.797 1 7.153 1.802 8 3.02 8.847 1.802 10.203 1 11.75 1 13.914 1 16 2.836 16 5.5c0 2.85-2.044 5.231-3.886 6.818a22.094 22.094 0 0 1-3.433 2.414 7.152 7.152 0 0 1-.31.17l-.018.01-.008.004a.75.75 0 0 1-.69 0Z";
+const KOFI_CUP_PATH = "M1 3.5A1 1 0 0 1 2 2.5h9.5a1 1 0 0 1 1 1V4.5h1.25a2.75 2.75 0 0 1 0 5.5H12.4A4.5 4.5 0 0 1 8 13.75H5.5A4.5 4.5 0 0 1 1 9.25V3.5ZM12.5 6v2.5h1.25a1.25 1.25 0 0 0 0-2.5H12.5ZM6.75 10.9c.38-.24 2.85-1.85 2.85-3.7 0-1.05-.8-1.82-1.75-1.82-.48 0-.86.24-1.1.6-.24-.36-.62-.6-1.1-.6-.95 0-1.75.77-1.75 1.82 0 1.85 2.47 3.46 2.85 3.7Z";
+
+const hasSponsorsRoster = ref(false);
+function onSponsorsLoad(event) {
+	const img = event?.target;
+	if (img && img.naturalWidth > 1) {
+		hasSponsorsRoster.value = true;
+	}
+}
 
 const tierGroups = [
 	{
@@ -22,7 +36,7 @@ const tierGroups = [
 		perks: [
 			"Custom donor particle effect",
 			"Toggleable in-game via the Market tab",
-			"Active in all participating experiences",
+			"Active across participating experiences",
 		],
 		tiers: [
 			{ name: "Tip", price: "10 R$", color: "#9fd800", href: "https://www.roblox.com/game-pass/5391355/Tip" },
@@ -38,7 +52,7 @@ const tierGroups = [
 		perks: [
 			"Global VIP chat commands",
 			"Custom donor particle effects",
-			"Active in all participating experiences",
+			"Active across participating experiences",
 		],
 		tiers: [
 			{ name: "Tribute", price: "200 R$", color: "#00f088", href: "https://www.roblox.com/game-pass/933582848/Tribute" },
@@ -85,7 +99,7 @@ const ugcGroups = [
 	{
 		accent: "money",
 		name: "Animated Crowns",
-		badge: "100 R$ · Included with Patron+",
+		badge: "100 R$ · Patron+",
 		desc: "Floating crowns with custom fire effects, neon materials, and smooth rotation in games running Kohl's Admin.",
 		items: [
 			{ name: "Light Crown", price: "100 R$", href: "https://www.roblox.com/catalog/18966788838/White-Crown" },
@@ -96,8 +110,8 @@ const ugcGroups = [
 	{
 		accent: "ui",
 		name: "Animated Wings",
-		badge: "200 R$ · Included with Elite+",
-		desc: "Custom-rigged wings with flying animations and neon materials in games running Kohl's Admin.",
+		badge: "200 R$ · Elite+",
+		desc: "Custom-rigged wings with flight animations and neon materials in games running Kohl's Admin.",
 		items: [
 			{ name: "Light Wings", price: "200 R$", href: "https://www.roblox.com/catalog/133292294488871/White-Wings" },
 			{ name: "Dark Wings", price: "200 R$", href: "https://www.roblox.com/catalog/110848154960799/Black-Wings" },
@@ -107,7 +121,7 @@ const ugcGroups = [
 	{
 		accent: "charts",
 		name: "Global VIP Item",
-		badge: "799 R$ · Avatar Asset",
+		badge: "799 R$ · Catalog",
 		desc: "Grants VIP chat commands and the global VIP title across participating games from a single catalog item.",
 		items: [
 			{ name: "Chat Commands", price: "799 R$", href: "https://www.roblox.com/catalog/110019084552349/Chat-Commands" },
@@ -118,31 +132,30 @@ const ugcGroups = [
 </script>
 
 <div class="ka-page">
-	<section class="band band-first">
+	<section class="poster band band-first accent-perf">
 		<div class="shell">
-			<div class="band-head">
-				<span class="eyebrow">Support Development</span>
-				<h1 class="band-title">
+			<div class="section-head rise">
+				<h1 class="section-title">
 					Donate &amp; get <span class="hl-spectrum">global perks</span>.
 				</h1>
 				<p class="lede">
-					Supporting Kohl's Admin funds ongoing updates and grants cosmetic perks
+					Supporting Kohl's Admin funds ongoing development and grants cosmetic perks
 					across participating games. Game creators also earn up to
 					<strong>40% commission</strong> on every in-game purchase.
 				</p>
 			</div>
-			<div class="donate-tier-grid">
+			<div class="bento-grid">
 				<article
 					v-for="group in tierGroups"
 					:key="group.name"
-					class="donate-tier-card"
+					class="bento-card bento-span-6 rise"
 					:class="`accent-${group.accent}`"
 				>
-					<div class="donate-tier-head">
-						<h2 class="donate-tier-name">{{ group.name }}</h2>
-						<span class="donate-tier-price">{{ group.price }}</span>
+					<div class="bento-head">
+						<h2 class="bento-title">{{ group.name }}</h2>
+						<span class="bento-badge">{{ group.price }}</span>
 					</div>
-					<p class="donate-tier-sub">{{ group.sub }}</p>
+					<p class="bento-desc">{{ group.sub }}</p>
 					<ul class="donate-tier-perks">
 						<li v-for="perk in group.perks" :key="perk">{{ perk }}</li>
 					</ul>
@@ -164,11 +177,10 @@ const ugcGroups = [
 			</div>
 		</div>
 	</section>
-	<section class="band" id="ugc">
+	<section class="poster band accent-money" id="ugc">
 		<div class="shell">
-			<div class="band-head">
-				<span class="eyebrow">Scripted Avatar Items</span>
-				<h2 class="band-title">
+			<div class="section-head rise">
+				<h2 class="section-title">
 					Interactive <span class="hl-spectrum-inv">UGC accessories</span>.
 				</h2>
 				<p class="lede">
@@ -177,18 +189,18 @@ const ugcGroups = [
 					them for free in the in-game Market tab.
 				</p>
 			</div>
-			<div class="ugc-grid">
+			<div class="bento-grid">
 				<article
 					v-for="ugc in ugcGroups"
 					:key="ugc.name"
-					class="ugc-card"
+					class="bento-card bento-span-4 rise"
 					:class="`accent-${ugc.accent}`"
 				>
-					<div class="ugc-head">
-						<h3 class="ugc-name">{{ ugc.name }}</h3>
-						<span class="ugc-badge">{{ ugc.badge }}</span>
+					<div class="bento-head">
+						<h3 class="bento-title">{{ ugc.name }}</h3>
+						<span class="bento-badge">{{ ugc.badge }}</span>
 					</div>
-					<p class="ugc-desc">{{ ugc.desc }}</p>
+					<p class="bento-desc">{{ ugc.desc }}</p>
 					<div class="ugc-variants">
 						<a
 							v-for="item in ugc.items"
@@ -206,9 +218,100 @@ const ugcGroups = [
 			</div>
 		</div>
 	</section>
-	<section class="band">
+	<section class="poster band accent-ui" id="sponsors">
 		<div class="shell">
-			<div class="cta">
+			<div class="section-head rise">
+				<h2 class="section-title">
+					Open-source <span class="hl-spectrum">sponsors</span>.
+				</h2>
+				<p class="lede">
+					Prefer supporting open-source work directly outside Roblox? Sponsor
+					on GitHub Sponsors or Ko-fi to fund development, documentation, and
+					infrastructure.
+				</p>
+			</div>
+			<div class="bento-grid">
+				<article class="bento-card bento-span-12 rise accent-ui">
+					<div class="bento-split">
+						<div class="bento-main">
+							<div class="bento-head">
+								<h3 class="bento-title">GitHub Sponsors &amp; Ko-fi</h3>
+								<span class="bento-badge">MIT Licensed</span>
+							</div>
+							<p class="bento-desc">
+								Every sponsorship goes straight toward maintaining Kohl's Admin,
+								Flux, and open-source Roblox tooling. Active GitHub sponsors are
+								featured automatically on the project roster.
+							</p>
+							<div class="hero-actions">
+								<a :href="SPONSORS" target="_blank" rel="noopener noreferrer" class="btn btn-primary">GitHub Sponsors</a>
+								<a :href="KOFI" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Support on Ko-fi</a>
+							</div>
+							<footer class="bento-foot">
+								<p class="bento-stat"><b>Direct</b> creator support</p>
+								<div class="bento-links">
+									<a :href="withBase('/guide/support')">Support guide</a>
+								</div>
+							</footer>
+						</div>
+						<div class="sponsors-side">
+							<div class="sponsors-platforms">
+								<a
+									:href="SPONSORS"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="sponsor-platform-card"
+								>
+									<span class="sponsor-slot sponsor-slot-github" aria-hidden="true">
+										<svg viewBox="0 0 16 16"><path :d="GH_HEART_PATH" /></svg>
+									</span>
+									<span class="sponsor-platform-copy">
+										<span class="sponsor-platform-title">GitHub Sponsors</span>
+										<span class="sponsor-platform-sub">Monthly &amp; one-time tiers &middot; Featured across every repo</span>
+									</span>
+									<span class="sponsor-platform-pill sponsor-platform-pill-github">Sponsor</span>
+								</a>
+								<a
+									:href="KOFI"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="sponsor-platform-card"
+								>
+									<span class="sponsor-slot sponsor-slot-kofi" aria-hidden="true">
+										<svg viewBox="0 0 16 16"><path fill-rule="evenodd" :d="KOFI_CUP_PATH" /></svg>
+									</span>
+									<span class="sponsor-platform-copy">
+										<span class="sponsor-platform-title">Ko-fi</span>
+										<span class="sponsor-platform-sub">0% platform fee &middot; Tag @github to list your avatar</span>
+									</span>
+									<span class="sponsor-platform-pill sponsor-platform-pill-kofi">Support</span>
+								</a>
+							</div>
+							<div v-show="hasSponsorsRoster" class="sponsors-roster">
+								<a
+									:href="SPONSORS"
+									target="_blank"
+									rel="noopener noreferrer"
+									aria-label="View Kohl's Admin sponsors on GitHub"
+								>
+									<img
+										:src="SPONSORS_SVG"
+										alt="Kohl's Admin sponsors"
+										loading="lazy"
+										decoding="async"
+										@load="onSponsorsLoad"
+									/>
+								</a>
+							</div>
+						</div>
+					</div>
+				</article>
+			</div>
+		</div>
+	</section>
+	<section class="poster band accent-secure">
+		<div class="shell">
+			<div class="cta rise">
 				<span class="cta-status">
 					<span class="pulse" aria-hidden="true"></span>try before you buy
 				</span>
@@ -216,7 +319,7 @@ const ugcGroups = [
 					Want to preview <span class="hl-spectrum">perks</span> in-game?
 				</h2>
 				<p class="lede">
-					Hop into the official Kohl's Admin testing place and open the Market
+					Join the official Kohl's Admin testing place and open the Market
 					tab to test animated crowns, wings, and commands live.
 				</p>
 				<div class="hero-actions cta-actions">

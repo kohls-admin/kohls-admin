@@ -59,7 +59,7 @@ For dynamic game objects (such as vehicles, zones, quests, or inventory items), 
 
 ### How the Argument Pipeline Works
 
-When a user types an argument, `src/Shared/Process/Argument.luau` processes each token through 4 stages (`transform` → `validate` → `parse` → `postParse`):
+When a player types an argument, `src/Shared/Process/Argument.luau` runs each token through four stages (`transform`, `validate`, `parse`, and `postParse`):
 
 1. **`transform(rawText: string) -> (any, string?)`** *(Optional)*:
    Pre-processes the raw token (e.g., `string.lower` or `tonumber`). Returning `nil` (for a non-optional argument) immediately invalidates the argument with the optional second return string as the error message.
