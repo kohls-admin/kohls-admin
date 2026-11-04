@@ -231,4 +231,18 @@ function String.toFlag(locale: string): string
 	return utf8.char(first) .. utf8.char(second)
 end
 
+--- Computes a deterministic 32-bit FNV-1a hash of a string.
+function String.hash(s: string, seed: number?): number
+	local h = bit32.bxor(0x811C9DC5, seed or 0)
+	for i = 1, #s do
+		h = bit32.bxor(h, string.byte(s, i))
+		-- h * 0x01000193 (16777619) mod 2^32 using bit shifts to avoid float53 rounding
+		h = bit32.band(
+			h + bit32.lshift(h, 1) + bit32.lshift(h, 4) + bit32.lshift(h, 7) + bit32.lshift(h, 8) + bit32.lshift(h, 24),
+			0xFFFFFFFF
+		)
+	end
+	return h
+end
+
 return String

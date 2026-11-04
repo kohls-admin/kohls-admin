@@ -528,6 +528,7 @@ return function(_K)
 
 			local logs
 			if _K.Auth.hasPermission(player.UserId, "serverlogs") then
+				_K.Data.ensureLogsLoaded()
 				logs = getSerializedLogs()
 				LogsSubscribers[player] = true
 			end
@@ -539,11 +540,11 @@ return function(_K)
 					[tostring(player.UserId)] = _K.Data.members[tostring(player.UserId)],
 				}
 			local roles = _K.Data.roles
-			local reservedServers = if (
-					_K.Auth.hasCommand(player.UserId, "place") or _K.Auth.hasCommand(player.UserId, "unreserve")
-				)
-				then _K.Data.reservedServers
-				else nil
+			local reservedServers
+			if _K.Auth.hasCommand(player.UserId, "place") or _K.Auth.hasCommand(player.UserId, "unreserve") then
+				_K.Data.ensureServersLoaded(true)
+				reservedServers = _K.Data.reservedServers
+			end
 			local servers = if _K.Auth.hasCommand(player.UserId, "servers") then Servers.Map else nil
 			local savedSettings = _K.Data.savedSettings
 			local defaultSettings = _K.Data.defaultSettings
@@ -911,6 +912,7 @@ return function(_K)
 			end
 			-- the editor applied its own changes, but sees the filtered pinned announcement like everyone else
 			if changes.announcement ~= nil then
+				_K.Data._skipNextAnnounceSync = nil
 				_K.Remote.Settings:Fire(player, { announcement = changes.announcement })
 			end
 
@@ -1170,10 +1172,12 @@ return function(_K)
 						_K.Remote.Members:Fire(player, _K.Data.members)
 					end
 					if _K.Auth.hasCommand(userId, "place") or _K.Auth.hasCommand(userId, "unreserve") then
-						_K.Remote.ReservedServers:Fire(player, nil, _K.Data.reservedServers)
+						_K.Data.ensureServersLoaded(true)
+						_K.Remote.ReservedServers:Fire(player, _K.Data.reservedServers)
 					end
 					if _K.Auth.hasPermission(userId, "serverlogs") and not LogsSubscribers[player] then
 						LogsSubscribers[player] = true
+						_K.Data.ensureLogsLoaded()
 						local logs = getSerializedLogs()
 						if logs then
 							_K.Remote.Logs:Fire(player, logs)

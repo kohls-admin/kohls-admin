@@ -22,10 +22,12 @@ local ServersSubscribers: { [Player]: boolean? } = {}
 local Servers = {
 	Map = Map,
 	Subscribers = ServersSubscribers,
+	Enabled = false,
 }
 
 if RunService:IsServer() then
 	local START = DateTime.now().UnixTimestamp
+	local started = false
 
 	local function network(jobId: string, data: any)
 		for player: Player, subscribed: boolean? in ServersSubscribers do
@@ -77,14 +79,6 @@ if RunService:IsServer() then
 		end)
 	end
 
-	task.spawn(function()
-		local attempts, ok = 0, false
-		repeat
-			ok = pcall(subscribe)
-			task.wait(2 ^ attempts)
-		until ok
-	end)
-
 	local function cleanup()
 		local expireTime = tick() - EXPIRE
 		for jobId, data in Map do
@@ -96,13 +90,35 @@ if RunService:IsServer() then
 		end
 	end
 
-	task.spawn(function()
-		while true do
-			task.spawn(cleanup)
-			task.spawn(publish)
-			task.wait(THROTTLE)
+	function Servers.start()
+		Servers.Enabled = true
+		if started then
+			return
 		end
-	end)
+		started = true
+		if not subscribed then
+			task.spawn(function()
+				local attempts, ok = 0, false
+				repeat
+					ok = pcall(subscribe)
+					task.wait(2 ^ attempts)
+					attempts += 1
+				until ok
+			end)
+		end
+		task.spawn(function()
+			while Servers.Enabled do
+				task.spawn(cleanup)
+				task.spawn(publish)
+				task.wait(THROTTLE)
+			end
+			started = false
+		end)
+	end
+
+	if Servers.Enabled then
+		Servers.start()
+	end
 
 	local _ = Remote.TeleportToServer:Connect(function(player: Player, placeId: number, jobId: string)
 		-- only servers this server knows about, the servers list shows the same entries

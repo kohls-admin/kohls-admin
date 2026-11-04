@@ -648,6 +648,29 @@ describe(
 				expect(seenPages.p1).toEqual({ val = 10, page = 1 })
 				expect(seenPages.p2).toEqual({ val = 20, page = 2 })
 
+				-- MemoryStore.getSharded returns (true, nil) when shards are empty vs (false, nil) when all GetAsync calls fail
+				local emptyShardMap: any = {
+					GetAsync = function()
+						return nil
+					end,
+				}
+				local emptyOk, emptyVal = Util.MemoryStore.getSharded(emptyShardMap, "EmptyPrefix", 4, 2)
+				expect(emptyOk).toBe(true)
+				expect(emptyVal).toBeNil()
+
+				local failingShardMap: any = {
+					GetAsync = function()
+						error("MemoryStore unavailable")
+					end,
+				}
+				local failOk, failVal
+				h.env.task.spawn(function()
+					failOk, failVal = Util.MemoryStore.getSharded(failingShardMap, "FailPrefix", 4, 2)
+				end)
+				h.env:advance(10)
+				expect(failOk).toBe(false)
+				expect(failVal).toBeNil()
+
 				local fakeMap: any = {
 					ListItemsAsync = function()
 						return makeMultiPages()
@@ -664,6 +687,32 @@ describe(
 				local items = Util.MemoryStore.getItemsFromHashMap(map)
 				expect(items.k1.v).toBe(1)
 				expect(items.k2.v).toBe(2)
+
+				-- String.hash (32-bit FNV-1a) and MemoryStore.shardIndex full-ring permutation & uniform distribution
+				expect(Util.String.hash("")).toBe(0x811C9DC5)
+				expect(Util.String.hash("a")).toBe(0xE40C292C)
+				expect(Util.String.hash("foobar")).toBe(0xBF9CF968)
+				expect(Util.MemoryStore.shardIndex("any", 1)).toBe(1)
+
+				for _, shardCount in { 7, 8, 16, 64, 67 } do
+					local visited = {}
+					for offset = 0, shardCount - 1 do
+						local idx = Util.MemoryStore.shardIndex("chunk_key", shardCount, offset, "job-seed-123")
+						expect(idx >= 1 and idx <= shardCount).toBe(true)
+						expect(visited[idx]).toBeNil()
+						visited[idx] = true
+					end
+				end
+
+				-- Check uniform dispersion across 8 shards for 800 distinct server JobIds
+				local counts = table.create(8, 0)
+				for i = 1, 800 do
+					local idx = Util.MemoryStore.shardIndex("Main_100", 8, 0, `server-job-{i}`)
+					counts[idx] += 1
+				end
+				for s = 1, 8 do
+					expect(counts[s] >= 65 and counts[s] <= 135).toBe(true)
+				end
 
 				-- SafePlayerAdded duplicate PlayerAdded guard & last-player PlayerRemoving cleanup
 				local pA = h.env:addPlayer(50, "PlayerA")

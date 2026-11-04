@@ -285,7 +285,7 @@ function Process.runCommands(
 	local commandErrors = {}
 
 	if ok then
-		Hook.runPreparedCommands:Fire(from, result, rawText, not clientOnly)
+		Hook.runPreparedCommands:Fire(from, result, rawText)
 
 		for index, command in result do
 			-- count before running so at most `limit` commands run per cooldown
@@ -377,6 +377,14 @@ function Process.runCommands(
 		return true
 	end
 
+	local isGlobalCommand = global == true
+	for _, command in commandsRan do
+		if command.definition and command.definition.name == "global" then
+			isGlobalCommand = true
+			break
+		end
+	end
+
 	task.spawn(function()
 		if noLog then
 			return
@@ -447,7 +455,7 @@ function Process.runCommands(
 			liveText = table.concat(aliases, " ")
 		end
 
-		_K.log(logText or "", "COMMAND", from, nil, liveText)
+		_K.log(logText or "", "COMMAND", from, nil, liveText, isGlobalCommand)
 	end)
 
 	return #commandErrors == 0

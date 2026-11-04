@@ -995,6 +995,38 @@ describe("DefaultCommands", function()
 			end
 
 			-- === Administration.luau ===
+			expect(
+				_K.Registry.commands.announce.run({ _K = _K, from = 1, fromPlayer = srvP1, global = true }, "GlobalMsg")
+			).toBe("Announcements are disabled in private servers.")
+			_K.Data.SEPARATE_DATASTORE = true
+			expect(
+				_K.Registry.commands.announce.run({ _K = _K, from = 1, fromPlayer = srvP1, global = false }, "PrivMsg")
+			).toBe("Announcements are disabled in private servers.")
+			_K.Data.SEPARATE_DATASTORE = false
+
+			local announceArg = { redactLog = true }
+			local origPublishTopic = _K.Data.publishTopic
+			local publishedTopics = {}
+			_K.Data.publishTopic = function(topic: string, data: any)
+				table.insert(publishedTopics, { topic = topic, data = data })
+				return true
+			end
+			_K.Registry.commands.announce.run(
+				{ _K = _K, from = 1, fromPlayer = srvP1, args = { announceArg } },
+				"DirectAnnounce"
+			)
+			expect(announceArg.redactLog).toBe(false)
+			expect(_K.Data.savedSettings.announcement[1]).toBe("DirectAnnounce")
+			expect(#publishedTopics).toBe(1)
+			expect(publishedTopics[1].topic).toBe("announce")
+			_K.Registry.commands.unannounce.run({ _K = _K, from = 1, fromPlayer = srvP1 })
+			expect(_K.Data.savedSettings.announcement).toBe(false)
+			expect(_K.Data._skipNextAnnounceSync).toBe(_K.Data.REMOVE)
+			expect(#publishedTopics).toBe(2)
+			expect(publishedTopics[2].topic).toBe("announce")
+			_K.Data.publishTopic = origPublishTopic
+			c.world:run(61)
+
 			runSrv(";announce Hello world")
 			-- { text, from, duration, id }, the id tells a repeated announcement apart from a settings sync
 			local pinned = _K.Data.savedSettings.announcement
@@ -1086,9 +1118,74 @@ describe("DefaultCommands", function()
 			expect(_K.Data.logsHidden[1]).toBe(true)
 			runSrv(";unhidelogs")
 			expect(_K.Data.logsHidden[1]).toBeFalsy()
-			runSrv(";clearlogs")
-			_K.Registry.commands.clearlogs.env.clearLogs()
+			-- Verify clearlogs envClient preserves client logs (log[6] == true) and refreshes dashboard.Logs
+			local clientLogKept = { "client log", 0, 1, 1, "CreatorPlr", true }
+			local serverLogCleared = { "server log", 0, 2, 1, "CreatorPlr" }
+			clientK.Data.logs = { clientLogKept, serverLogCleared }
+			local logsDashboardRefreshed = 0
+			local origUpdateList = clientK.client.dashboard.Logs.updateList
+			clientK.client.dashboard.Logs.updateList = function(self: any, ...: any)
+				logsDashboardRefreshed += 1
+				if origUpdateList then
+					return origUpdateList(self, ...)
+				end
+			end
+			_K.Remote.ClearLogs:Fire(srvP1)
+			c.world:run(0.05)
+			clientK.client.dashboard.Logs.updateList = origUpdateList
+			expect(#clientK.Data.logs).toBe(1)
+			expect(clientK.Data.logs[1]).toBe(clientLogKept)
+			expect(logsDashboardRefreshed).toBe(1)
+
+			local removedLogKeys = {}
+			local origRemoveAsync = _K.Data.Store.removeAsync
+			_K.Data.Store.removeAsync = function(key: string)
+				table.insert(removedLogKeys, key)
+				return true
+			end
+			table.insert(_K.Data.pendingLogReveals, { log = { "pending" }, targets = {} })
+			local prevLogsVersion = _K.Data.logsVersion
+			_K.Registry.commands.clearlogs.run({
+				_K = _K,
+				from = 1,
+				fromPlayer = srvP1,
+				env = _K.Registry.commands.clearlogs.env,
+			})
+			c.world:run(0.05)
 			expect(#_K.Data.logs).toBe(0)
+			expect(#_K.Data.pendingLogReveals).toBe(0)
+			expect(_K.Data.logsVersion > prevLogsVersion).toBe(true)
+			expect(#removedLogKeys).toBe(4)
+
+			table.clear(removedLogKeys)
+			_K.Data.SEPARATE_DATASTORE = true
+			table.insert(_K.Data.logs, { "priv_log", 0, 1, 1, "CreatorPlr" })
+			_K.Registry.commands.clearlogs.run({
+				_K = _K,
+				from = 1,
+				fromPlayer = srvP1,
+				env = _K.Registry.commands.clearlogs.env,
+			})
+			c.world:run(0.05)
+			expect(#_K.Data.logs).toBe(0)
+			expect(#removedLogKeys).toBe(0)
+			_K.Data.SEPARATE_DATASTORE = false
+			_K.Data.Store.removeAsync = origRemoveAsync
+
+			-- Verify ;global unannounce does not queue a local REMOVE sync and Settings UI edit is not suppressed by _skipNextAnnounceSync
+			runSrv(";announce LocalPinned")
+			local pinnedBeforeGlobalUnannounce = _K.Data.savedSettings.announcement
+			expect(pinnedBeforeGlobalUnannounce[1]).toBe("LocalPinned")
+			expect(_K.Data._skipNextAnnounceSync).toBe(pinnedBeforeGlobalUnannounce)
+			-- Simulate a different announcement value modified before processSync runs
+			local editedAnnouncement = { "EditedViaSettings", 1, 0, "edited_id" }
+			_K.Data.Sync.settings.announcement = editedAnnouncement
+			expect(_K.Data._skipNextAnnounceSync ~= _K.Data.Sync.settings.announcement).toBe(true)
+			-- Running ;global unannounce publishes to MessagingService without queuing REMOVE in local Sync.settings
+			_K.Registry.commands.unannounce.run({ _K = _K, from = 1, fromPlayer = srvP1, global = true })
+			expect(_K.Data.Sync.settings.announcement).toBe(editedAnnouncement)
+			_K.Registry.commands.unannounce.run({ _K = _K, from = 1, fromPlayer = srvP1, global = false })
+			expect(_K.Data.Sync.settings.announcement).toBe(_K.Data.REMOVE)
 			local prevCleanupCount = #_K.cleanupCommands
 			runSrv(";script local x = 1 + 1")
 			expect(#_K.cleanupCommands).toBe(prevCleanupCount + 1)
@@ -2590,7 +2687,7 @@ describe("DefaultCommands", function()
 			return "Filtered"
 		end
 		local published = {}
-		c.sh.env.game:GetService("MessagingService"):SubscribeAsync("KA_GlobalCommand", function(message)
+		c._K.Data.subscribeTopic("global", function(message)
 			table.insert(published, message.Data[2])
 		end)
 
@@ -2616,7 +2713,7 @@ describe("DefaultCommands", function()
 			return filterResult or text
 		end
 		local published = {}
-		c.sh.env.game:GetService("MessagingService"):SubscribeAsync("KA_GlobalCommand", function(message)
+		c._K.Data.subscribeTopic("global", function(message)
 			table.insert(published, message.Data[2])
 		end)
 		local received, voted = {}, false
@@ -2664,7 +2761,7 @@ describe("DefaultCommands", function()
 			return text
 		end
 		local published = {}
-		c.sh.env.game:GetService("MessagingService"):SubscribeAsync("KA_GlobalCommand", function(message)
+		c._K.Data.subscribeTopic("global", function(message)
 			table.insert(published, message.Data[2])
 		end)
 		local received = {}
@@ -2714,7 +2811,7 @@ describe("DefaultCommands", function()
 			return text
 		end
 		local published = {}
-		c.sh.env.game:GetService("MessagingService"):SubscribeAsync("KA_GlobalCommand", function(message)
+		c._K.Data.subscribeTopic("global", function(message)
 			table.insert(published, message.Data[2])
 		end)
 		local leaderstats = c.sh.env.Instance.new("Folder", c.srvP2)
@@ -2735,7 +2832,7 @@ describe("DefaultCommands", function()
 			return text
 		end
 		local published = {}
-		c.sh.env.game:GetService("MessagingService"):SubscribeAsync("KA_GlobalCommand", function(message)
+		c._K.Data.subscribeTopic("global", function(message)
 			table.insert(published, message.Data[2])
 		end)
 		local received = {}
@@ -2760,7 +2857,7 @@ describe("DefaultCommands", function()
 			return filterResult or text
 		end
 		local published = {}
-		c.sh.env.game:GetService("MessagingService"):SubscribeAsync("KA_GlobalCommand", function(message)
+		c._K.Data.subscribeTopic("global", function(message)
 			table.insert(published, message.Data[2])
 		end)
 		local gravity = c.sh.env.workspace.Gravity
@@ -2809,7 +2906,7 @@ describe("DefaultCommands", function()
 			return filterResult
 		end
 		table.clear(published)
-		c.sh.env.game:GetService("MessagingService"):SubscribeAsync("KA_GlobalCommand", function(message)
+		c._K.Data.subscribeTopic("global", function(message)
 			table.insert(published, message.Data[2])
 		end)
 		c.runSrv(";global m text")
@@ -2863,7 +2960,7 @@ describe("DefaultCommands", function()
 			return text
 		end
 		local published = {}
-		c.sh.env.game:GetService("MessagingService"):SubscribeAsync("KA_GlobalCommand", function(message)
+		c._K.Data.subscribeTopic("global", function(message)
 			table.insert(published, message.Data[2])
 		end)
 
@@ -2895,7 +2992,7 @@ describe("DefaultCommands", function()
 			return filterResult or text
 		end
 		local published = {}
-		c.sh.env.game:GetService("MessagingService"):SubscribeAsync("KA_GlobalCommand", function(message)
+		c._K.Data.subscribeTopic("global", function(message)
 			table.insert(published, message.Data[2])
 		end)
 		local notices = {}
@@ -2944,7 +3041,7 @@ describe("DefaultCommands", function()
 				return filterResult or text
 			end
 			local published = {}
-			c.sh.env.game:GetService("MessagingService"):SubscribeAsync("KA_GlobalCommand", function(message)
+			c._K.Data.subscribeTopic("global", function(message)
 				table.insert(published, message.Data[2])
 			end)
 			local notices = {}

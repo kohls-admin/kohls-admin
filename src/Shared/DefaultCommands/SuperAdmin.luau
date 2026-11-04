@@ -369,28 +369,23 @@ return {
 		},
 		env = function(_K)
 			local remote = _K.Remote.ReservedServers
-			task.spawn(
-				_K.Service.Messaging.SubscribeAsync,
-				_K.Service.Messaging,
-				"_K_ReservedServers",
-				function(message)
-					local data = message.Data
-					if type(data) == "table" then
-						_K.Data.reservedServers[data[1]] = data
-						for _, player in _K.Service.Players:GetPlayers() do
-							if
-								_K.Auth.hasCommand(player.UserId, "place")
-								or _K.Auth.hasCommand(player.UserId, "unreserve")
-							then
-								remote:Fire(player, { [data[1]] = data })
-							end
+			_K.Data.subscribeTopic("reserve", function(message)
+				local data = message.Data
+				if type(data) == "table" then
+					_K.Data.reservedServers[data[1]] = data
+					for _, player in _K.Service.Players:GetPlayers() do
+						if
+							_K.Auth.hasCommand(player.UserId, "place")
+							or _K.Auth.hasCommand(player.UserId, "unreserve")
+						then
+							remote:Fire(player, { [data[1]] = data })
 						end
-					elseif type(data) == "string" then
-						_K.Data.reservedServers[data] = nil
-						remote:FireAll(data)
 					end
+				elseif type(data) == "string" then
+					_K.Data.reservedServers[data] = nil
+					remote:FireAll(data)
 				end
-			)
+			end)
 			return { remote = remote }
 		end,
 		envClient = function(_K)
@@ -410,6 +405,7 @@ return {
 				return `Reserve command is disabled in private servers.`
 			end
 
+			context._K.Data.ensureServersLoaded()
 			if context._K.Data.reservedServers[code] then
 				return `Server "<b>{code}</b>" is already reserved.`
 			end
@@ -454,8 +450,8 @@ return {
 				return store
 			end)
 
-			context.env.remote:FireAll({ [code] = data })
-			context._K.Service.Messaging:PublishAsync("_K_ReservedServers", data)
+			context._K.Data.reservedServers[code] = data
+			context._K.Data.publishTopic("reserve", data)
 			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `Server "<b>{code}</b>" has been reserved, use <b>{context._K.getCommandPrefix(context.from)}place me @{code}</b> to join it!`,
 			})
@@ -482,6 +478,7 @@ return {
 				return `Unreserve command is disabled in private servers.`
 			end
 
+			context._K.Data.ensureServersLoaded()
 			local code = data[1]
 			local removed
 			context._K.Data.Store.updateAsync("Servers", function(store)
@@ -497,8 +494,8 @@ return {
 				return store
 			end)
 
-			context._K.Remote.ReservedServers:FireAll(code)
-			context._K.Service.Messaging:PublishAsync("_K_ReservedServers", code)
+			context._K.Data.reservedServers[code] = nil
+			context._K.Data.publishTopic("reserve", code)
 			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `Server "<b>{code}</b>" {if removed then "has been removed" else "was NOT found"}!`,
 			})
@@ -571,19 +568,15 @@ return {
 			},
 		},
 		env = function(_K)
-			task.spawn(function()
-				_K.Service.Messaging:SubscribeAsync("KA_GlobalCommand", function(message)
-					if type(message.Data) == "string" then
-						message.Data = Util.Service.Http:JSONDecode(message.Data)
-					end
-					if type(message.Data) ~= "table" then
-						return
-					end
-					local from, commandString = unpack(message.Data)
-					if from and commandString then
-						_K.Process.runCommands(_K, from, commandString, true, true)
-					end
-				end)
+			_K.Data.subscribeTopic("global", function(message)
+				local data = message.Data
+				if type(data) ~= "table" then
+					return
+				end
+				local from, commandString = unpack(data)
+				if from and commandString then
+					_K.Process.runCommands(_K, from, commandString, true, true)
+				end
 			end)
 
 			return
@@ -796,7 +789,7 @@ return {
 				context.args[1].parsedArgs = { commandString }
 				context.args[1].redactLog = false
 			end
-			context._K.Service.Messaging:PublishAsync("KA_GlobalCommand", { context.from, commandString })
+			context._K.Data.publishTopic("global", { context.from, commandString })
 			return
 		end,
 	},

@@ -1,6 +1,9 @@
 local _K
 
 local function parse(input: string, self: any): (boolean, string?)
+	if _K.IsServer and not _K.Data.serversLoaded then
+		_K.Data.ensureServersLoaded()
+	end
 	local exact = _K.Data.reservedServers[input]
 	if exact then
 		return exact

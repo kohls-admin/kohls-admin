@@ -1131,19 +1131,39 @@ describe("Chat and Server", function()
 				world:run(1)
 
 				-- 6. Servers.luau cross-server discovery & TeleportToServer
+				expect(serversTable.Enabled).toBe(false)
+				serversTable.Subscribers[srvAdmin] = true
+				serversTable.Subscribers[srvMod] = false
+				local serverBroadcasts = {}
+				local modBroadcasts = 0
+				local origServersFire = _K.Remote.Servers.Fire
+				_K.Remote.Servers.Fire = function(selfRemote: any, player: any, jobId: any, data: any)
+					if player == srvAdmin then
+						table.insert(serverBroadcasts, { player = player, jobId = jobId, count = data and data[2] })
+					elseif player == srvMod then
+						modBroadcasts += 1
+					end
+					return origServersFire(selfRemote, player, jobId, data)
+				end
+				server:spawn(function()
+					serversTable.start()
+				end)
+				world:run(0.5)
+				expect(serversTable.Enabled).toBe(true)
 				local MessagingService = sh.env.game:GetService("MessagingService")
 				server:spawn(function()
-					-- Invalid payload and same SERVER_ID payload are ignored (Servers.luau lines 47-60)
+					-- Invalid payload is ignored; same SERVER_ID is already published by Servers.start()
 					MessagingService:PublishAsync("_KAdminServers", "invalid_string_payload")
-					MessagingService:PublishAsync(
-						"_KAdminServers",
-						{ "server-job-1", 1000, 2, sh.env.globals.os.time() }
-					)
 					MessagingService:PublishAsync(
 						"_KAdminServers",
 						{ "remote-job-99", 1000, 5, sh.env.globals.os.time() }
 					)
-					-- Second publish updates existing Map["remote-job-99"] entry (Servers.luau lines 66-69)
+					-- Identical player count does not re-broadcast (changed == false)
+					MessagingService:PublishAsync(
+						"_KAdminServers",
+						{ "remote-job-99", 1000, 5, sh.env.globals.os.time() }
+					)
+					-- Changed player count updates existing Map["remote-job-99"] entry and broadcasts
 					MessagingService:PublishAsync(
 						"_KAdminServers",
 						{ "remote-job-99", 1000, 7, sh.env.globals.os.time() }
@@ -1152,15 +1172,27 @@ describe("Chat and Server", function()
 				world:run(5)
 				expect(_K.Data.servers["remote-job-99"] ~= nil).toBe(true)
 				expect(_K.Data.servers["remote-job-99"][2]).toBe(7)
+				expect(#serverBroadcasts).toBe(2)
+				expect(modBroadcasts).toBe(0)
+				expect(serverBroadcasts[1].player).toBe(srvAdmin)
+				expect(serverBroadcasts[1].jobId).toBe("remote-job-99")
+				expect(serverBroadcasts[1].count).toBe(5)
+				expect(serverBroadcasts[2].count).toBe(7)
 
 				aRemote.TeleportToServer:Fire(1000, "remote-job-99")
 				world:run(1)
 				expect(#sh.env.teleports >= 1).toBe(true)
 				expect(sh.env.teleports[#sh.env.teleports].placeId).toBe(1000)
 
-				-- Advance past EXPIRE (35s) and trigger cleanup cycle (every 15s) to verify stale server removal
+				-- Advance past EXPIRE (35s) while keeping a fresh server entry to verify selective stale server removal
+				_K.Data.servers["remote-job-fresh"] = { 1000, 3, sh.env.globals.os.time(), sh.env.globals.tick() + 45 }
 				world:run(50)
 				expect(_K.Data.servers["remote-job-99"]).toBeNil()
+				expect(_K.Data.servers["remote-job-fresh"] ~= nil).toBe(true)
+				expect(#serverBroadcasts).toBe(3)
+				expect(serverBroadcasts[3].jobId).toBe("remote-job-99")
+				expect(serverBroadcasts[3].count).toBeNil()
+				_K.Remote.Servers.Fire = origServersFire
 			end
 		)
 
@@ -1926,6 +1958,7 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 		end
 		s1:spawn(function()
 			Data1.initialize(scope)
+			Data1.ensureLogsLoaded()
 		end)
 		world:run(3)
 

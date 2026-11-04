@@ -25,33 +25,29 @@ return {
 			end)
 		end,
 		env = function(_K)
-			task.spawn(_K.Util.Retry, function()
-				_K.Service.Messaging:SubscribeAsync("KA_Announcement", function(message)
-					if type(message.Data) == "string" then
-						message.Data = _K.Service.Http:JSONDecode(message.Data)
-					end
-					if type(message.Data) ~= "table" then
-						_K.Data.savedSettings.announcement = false
-						-- clients forget the shown announcement, so the next one shows even when it is the same
-						for _, player in _K.Service.Players:GetPlayers() do
-							if player:GetAttribute("_K_READY") then
-								_K.Remote.Settings:Fire(player, { announcement = false })
-							end
+			_K.Data.subscribeTopic("announce", function(message)
+				local data = message.Data
+				if type(data) ~= "table" then
+					_K.Data.savedSettings.announcement = false
+					-- clients forget the shown announcement, so the next one shows even when it is the same
+					for _, player in _K.Service.Players:GetPlayers() do
+						if player:GetAttribute("_K_READY") then
+							_K.Remote.Settings:Fire(player, { announcement = false })
 						end
-						return
 					end
+					return
+				end
 
-					local msg, from = unpack(message.Data)
-					_K.Data.savedSettings.announcement = message.Data
-					_K.Chat.send(
-						{ global = true, from = from, fromPlayer = from and _K.Service.Players:GetPlayerByUserId(from) },
-						"announce",
-						msg,
-						nil,
-						message.Data
-					)
-				end)
-			end, math.huge)
+				local msg, from = unpack(data)
+				_K.Data.savedSettings.announcement = data
+				_K.Chat.send(
+					{ global = true, from = from, fromPlayer = from and _K.Service.Players:GetPlayerByUserId(from) },
+					"announce",
+					msg,
+					nil,
+					data
+				)
+			end)
 		end,
 
 		run = function(context, message)
@@ -72,9 +68,8 @@ return {
 			local announcement = { message, context.from, 0, context._K.Service.Http:GenerateGUID(false) }
 			context._K.Data.savedSettings.announcement = announcement
 			context._K.Data.Sync.settings.announcement = announcement
-			task.spawn(context._K.Util.Retry, function()
-				context._K.Service.Messaging:PublishAsync("KA_Announcement", announcement)
-			end, math.huge)
+			context._K.Data._skipNextAnnounceSync = announcement
+			task.spawn(context._K.Data.publishTopic, "announce", announcement)
 			return
 		end,
 	},
@@ -85,13 +80,14 @@ return {
 		args = {},
 
 		run = function(context)
-			if context._K.Data.SEPARATE_DATASTORE then
+			if context._K.Data.SEPARATE_DATASTORE or context.global then
 				return `Announcements are disabled in private servers.`
 			end
 
 			context._K.Data.savedSettings.announcement = false
 			context._K.Data.Sync.settings.announcement = context._K.Data.REMOVE
-			context._K.Service.Messaging:PublishAsync("KA_Announcement", nil)
+			context._K.Data._skipNextAnnounceSync = context._K.Data.REMOVE
+			context._K.Data.publishTopic("announce", nil)
 			return
 		end,
 	},

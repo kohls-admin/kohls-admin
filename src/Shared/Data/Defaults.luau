@@ -62,6 +62,19 @@ local Data = {
 	canSave = nil,
 	saveError = nil,
 	initialize = nil,
+	initialized = false,
+	logsLoaded = false,
+	serversLoaded = false,
+	localOnlyLogs = setmetatable({}, { __mode = "k" }),
+	_skipNextAnnounceSync = nil :: (boolean | { [number]: any })?,
+	ensureLogsLoaded = function() end,
+	ensureServersLoaded = function(_silent: boolean?) end,
+	subscribeTopic = function(_topic: string, _callback: (any) -> ()): any
+		return nil
+	end,
+	publishTopic = function(_topic: string, _data: any?): boolean
+		return false
+	end,
 
 	sizeBans = 0,
 	sizeMain = 0,
@@ -207,6 +220,13 @@ function Data.filterRemove(source: Dict): Dict
 		end
 	end
 	return source
+end
+
+function Data.queueLogSave(stored: any, isGlobal: boolean?)
+	if not isGlobal and Data.localOnlyLogs then
+		Data.localOnlyLogs[stored] = true
+	end
+	table.insert(Data.Sync.logs, stored)
 end
 
 function Data.mergeRemove(to: Dict, from: Dict): Dict

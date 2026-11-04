@@ -185,16 +185,84 @@ describe("Data · Store CRUD, Budget & Studio/Publish Error Warnings", function(
 		expect(okAfter).toBe(true)
 		expect(afterVal).toBeNil()
 
-		-- 2. Studio unpublished game warning ("publish" error in GetDataStore)
+		-- Verify waitForBudget is invoked by getAsync, setAsync, updateAsync, and removeAsync, and respects closing & budget reserve
+		local waitedTypes = {}
+		local origWaitForBudget = Store.waitForBudget
+		Store.waitForBudget = function(reqType, reserve)
+			table.insert(waitedTypes, reqType)
+			return origWaitForBudget(reqType, reserve)
+		end
+		Store.setAsync("bKey", 1)
+		Store.getAsync("bKey")
+		Store.updateAsync("bKey", function(v)
+			return v
+		end)
+		Store.removeAsync("bKey")
+		Store.waitForBudget = origWaitForBudget
+		expect(#waitedTypes).toBe(4)
+
+		-- Verify waitForBudget polls up to 5 times when budget < minBudget, stops early when Store.closing = true, and breaks when getBudget throws
+		local budgetChecks = 0
+		local origGetBudget = Store.getBudget
+		Store.getBudget = function()
+			budgetChecks += 1
+			if budgetChecks < 3 then
+				return 0
+			end
+			return 5
+		end
+		h.env.task.spawn(function()
+			Store.waitForBudget(h.env.globals.Enum.DataStoreRequestType.GetAsync, 2)
+		end)
+		h.env:advance(5)
+		expect(budgetChecks).toBe(3)
+
+		budgetChecks = 0
+		Store.closing = true
+		Store.waitForBudget(h.env.globals.Enum.DataStoreRequestType.GetAsync, 2)
+		expect(budgetChecks).toBe(0)
+		Store.closing = false
+
+		Store.getBudget = function()
+			budgetChecks += 1
+			error("GetRequestBudget unavailable")
+		end
+		Store.waitForBudget(h.env.globals.Enum.DataStoreRequestType.GetAsync, 2)
+		expect(budgetChecks).toBe(1)
+		Store.getBudget = origGetBudget
+
+		-- Verify transient DataStore failure retries with jitterBase > 1s
+		local retryTries = 0
+		local origGetAsync = Store.dataStore.GetAsync
+		Store.dataStore.GetAsync = function(self, k, opts)
+			retryTries += 1
+			if retryTries == 1 then
+				error("Transient 500")
+			end
+			return origGetAsync(self, k, opts)
+		end
+		local retryOk = false
+		h.env.task.spawn(function()
+			retryOk = Store.getAsync("testKey")
+		end)
+		h.env:advance(5)
+		expect(retryOk).toBe(true)
+		expect(retryTries).toBe(2)
+		Store.dataStore.GetAsync = origGetAsync
+
+		-- 2. Studio unpublished game warning ("publish" error in GetDataStore) and non-publish permanent error clearing Store.dataStore
 		local hPub = Harness.newEnv({ isStudio = true })
 		local dssPub = hPub.env.game:GetService("DataStoreService")
 		local origGetDS = dssPub.GetDataStore
+		local StorePub = hPub.env:require(hPub.Shared:WaitForChild("Data"):WaitForChild("Store"))
+		StorePub.loadStore("_KValidFirst", "s")
+		expect(StorePub.dataStore ~= nil).toBe(true)
 		dssPub.GetDataStore = function()
 			error("502: You must publish this place to the web to access DataStore.")
 		end
-		local StorePub = hPub.env:require(hPub.Shared:WaitForChild("Data"):WaitForChild("Store"))
 		local canSavePub = StorePub.loadStore("_KUnpublished", "s")
 		expect(canSavePub).toBe(false)
+		expect(StorePub.dataStore).toBeNil()
 		dssPub.GetDataStore = origGetDS
 
 		-- 3. Studio API access disabled warning ("Studio access" error in GetAsync("__TEST"))
@@ -771,6 +839,10 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			-- Boot a fresh server 2 on the same scope and verify it loads the ban, persistent role, and log
 			local n2 = bootServer(world, "_K_ShutdownFlush")
 			waitServerReady(world, n2)
+			n2.server:spawn(function()
+				n2.Data.ensureLogsLoaded()
+			end)
+			world:run(2)
 
 			expect(n2.Data.bans["777"] ~= nil).toBe(true)
 			expect(n2.Data.bans["777"][3]).toBe(-1)
@@ -854,9 +926,9 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 
 			-- Inject an older cross-server sync item into the MemoryStore hashmap and replay via MessagingService
 			local ms = n1.h.env.game:GetService("MemoryStoreService")
-			for i = 1, 7 do
-				local hm = ms:GetHashMap("_KData" .. i)
-				hm:SetAsync("stale_sync_1", {
+			local hm = ms:GetHashMap("_KData")
+			for i = 1, 16 do
+				hm:SetAsync("stale_sync_1_" .. i, {
 					_time = 1, -- older than n1's local SAVE timestamp
 					members = {
 						set = {
@@ -1285,6 +1357,308 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			DataFail.initialize("_K_FailScope")
 			expect(DataFail.canSave).toBe(false)
 			expect(type(DataFail.saveError)).toBe("string")
+
+			-- Store.loadStore clears Store.dataStore when Studio __TEST check fails so a retry isn't short-circuited
+			local hStudioStore = Harness.newEnv({ isStudio = true })
+			local studioTestFail = true
+			local origStudioGetDataStore = hStudioStore.env.game:GetService("DataStoreService").GetDataStore
+			hStudioStore.env.game:GetService("DataStoreService").GetDataStore = function(
+				self: any,
+				name: string,
+				sc: string
+			)
+				local ds = origStudioGetDataStore(self, name, sc)
+				local origGet = ds.GetAsync
+				ds.GetAsync = function(s: any, key: string, ...: any)
+					if key == "__TEST" and studioTestFail then
+						error("502: API Services rejected request with error. Studio access to APIs is not allowed.")
+					end
+					return origGet(s, key, ...)
+				end
+				return ds
+			end
+			local StudioStore = hStudioStore.env:require(hStudioStore.Shared:WaitForChild("Data"):WaitForChild("Store"))
+			local canSave1 = StudioStore.loadStore("_KData", "_K_StudioRetry")
+			expect(canSave1).toBe(false)
+			expect(StudioStore.dataStore).toBeNil()
+			studioTestFail = false
+			local canSave2 = StudioStore.loadStore("_KData", "_K_StudioRetry")
+			expect(canSave2).toBe(true)
+			expect(StudioStore.dataStore ~= nil).toBe(true)
+		end
+	)
+
+	test(
+		"never calls HashMap:ListItemsAsync, syncs <=900B deltas inline with 0 receiver MemoryStore reads, and only persists from origin server",
+		function()
+			local world = sert.sim.new({ backing = true })
+			local n1 = bootServer(world, "_K_ScaleInline")
+			local n2 = bootServer(world, "_K_ScaleInline")
+			waitServerReady(world, n1)
+			waitServerReady(world, n2)
+			world:run(12)
+
+			expect(world.memory.calls.ListItemsAsync or 0).toBe(0)
+			local beforeGets = world.memory.calls.GetAsync or 0
+			local n2UpdateAsyncCalls = 0
+
+			local origUpdate = n2.Data.Store.updateAsync
+			n2.Data.Store.updateAsync = function(...: any)
+				n2UpdateAsyncCalls += 1
+				return origUpdate(...)
+			end
+
+			-- Small delta (<= 900B): synced inline via MessagingService with 0 receiver MemoryStore GetAsync calls
+			n1.server:spawn(function()
+				n1.Auth.banUsers({ 8801 }, "small inline ban", -1, nil, true)
+			end)
+			world:run(7)
+			world.messaging:drain()
+			world:run(2)
+
+			expect(n2.Data.bans["8801"] ~= nil).toBe(true)
+			expect(n2.Data.bans["8801"][2]).toBe("small inline ban")
+			expect(world.memory.calls.ListItemsAsync or 0).toBe(0)
+			expect(world.memory.calls.GetAsync or 0).toBe(beforeGets)
+			-- Receiver server n2 must not re-queue received syncs into its own DataStore SAVE queue
+			world:run(10)
+			expect(n2UpdateAsyncCalls).toBe(0)
+
+			-- Large delta (> 900B): spills to sharded MemoryStore keys in _KData without calling ListItemsAsync
+			local longReason = string.rep("X", 1200)
+			n1.server:spawn(function()
+				n1.Auth.banUsers({ 8802 }, longReason, -1, nil, true)
+			end)
+			world:run(7)
+			world.messaging:drain()
+			world:run(2)
+
+			expect(n2.Data.bans["8802"] ~= nil).toBe(true)
+			expect(n2.Data.bans["8802"][2]).toBe(longReason)
+			expect(world.memory.calls.ListItemsAsync or 0).toBe(0)
+			expect((world.memory.calls.GetAsync or 0) > beforeGets).toBe(true)
+			expect(n2UpdateAsyncCalls).toBe(0)
+		end
+	)
+
+	test(
+		"lazy-loads Logs_1..4 and Servers on demand, skips __TEST GetAsync outside Studio, and serves startup Main/Bans from sharded MemoryStore cache",
+		function()
+			local world = sert.sim.new({ backing = true })
+			local s1 = world:server({ skew = 0 })
+			local h1 = Harness.newPeerEnv(s1, { isStudio = false })
+			local Data1 = h1:requireData()
+			local Auth1 = h1:requireAuth()
+			Harness.seedRoles(Data1)
+
+			local scope = "_K_LazyAndCache"
+			local rawStore = h1.env.game:GetService("DataStoreService"):GetDataStore("_KData", scope)
+			rawStore:SetAsync("Main", { { ["303"] = { "CachedMod", { "mod" } } }, { prefix = ":" } })
+			rawStore:SetAsync("Bans", { ["404"] = { "CachedBan", "reason", -1, 1 } })
+			rawStore:SetAsync("Servers", { lobby1 = { "lobby1", "code_abc", 12345 } })
+
+			local getKeys: { [string]: number } = {}
+			local origGetAsync = Data1.Store.getAsync
+			Data1.Store.getAsync = function(key: string, ...: any)
+				getKeys[key] = (getKeys[key] or 0) + 1
+				return origGetAsync(key, ...)
+			end
+
+			s1:spawn(function()
+				Data1.initialize(scope)
+			end)
+			world:run(3)
+
+			-- Without an online admin, Logs_1..4 and Servers are not fetched on startup, and __TEST is skipped outside Studio
+			expect(getKeys["__TEST"]).toBeNil()
+			expect(getKeys["Logs_1"]).toBeNil()
+			expect(getKeys["Servers"]).toBeNil()
+			expect(Data1.logsLoaded).toBe(false)
+			expect(Data1.serversLoaded).toBe(false)
+			expect(Data1.members["303"] ~= nil).toBe(true)
+			expect(Data1.bans["404"] ~= nil).toBe(true)
+
+			-- Calling ensureLogsLoaded / ensureServersLoaded loads them once and is idempotent
+			s1:spawn(function()
+				Data1.ensureLogsLoaded()
+				Data1.ensureLogsLoaded()
+				Data1.ensureServersLoaded()
+				Data1.ensureServersLoaded()
+			end)
+			world:run(2)
+			expect(Data1.logsLoaded).toBe(true)
+			expect(Data1.serversLoaded).toBe(true)
+			expect(getKeys["Logs_1"]).toBe(1)
+			expect(getKeys["Servers"]).toBe(1)
+			expect(Data1.reservedServers.lobby1 ~= nil).toBe(true)
+
+			-- Populate all 16 shards of the previous 60s MemoryStore cache bucket (testing bucket - 1 rollover fallback)
+			-- and verify a warm server startup reads 0 DataStore keys
+			local hm = h1.env.game:GetService("MemoryStoreService"):GetHashMap("_KData")
+			local bucket = math.floor(h1.env.workspace:GetServerTimeNow() / 60)
+			local prevBucket = bucket - 1
+			for shard = 1, 16 do
+				hm:SetAsync(`Main_{prevBucket}_{shard}`, {
+					hit = true,
+					value = { { ["505"] = { "WarmCachedAdmin", { "admin" } } }, { prefix = "!" } },
+					updatedTime = 100,
+				}, 60)
+				hm:SetAsync(`Bans_{bucket}_{shard}`, {
+					hit = true,
+					value = { ["606"] = { "WarmBan", "warm reason", -1, 1 } },
+					updatedTime = 100,
+				}, 60)
+			end
+
+			local s2 = world:server({ skew = 0 })
+			local h2 = Harness.newPeerEnv(s2, { isStudio = false })
+			local s2Subscribes = 0
+			local origSub2 = h2.env.game:GetService("MessagingService").SubscribeAsync
+			h2.env.game:GetService("MessagingService").SubscribeAsync = function(self: any, topic: string, ...: any)
+				if topic == "_KData" then
+					s2Subscribes += 1
+				end
+				return origSub2(self, topic, ...)
+			end
+			local Data2 = h2:requireData()
+			Harness.seedRoles(Data2)
+			Data2.subscribeTopic("pre_init_topic", function() end)
+			expect(s2Subscribes).toBe(0) -- subscribeTopic before Data.initialize does not prematurely SubscribeAsync
+			local s2StoreGets = 0
+			local origGet2 = Data2.Store.getAsync
+			Data2.Store.getAsync = function(key: string, ...: any)
+				s2StoreGets += 1
+				return origGet2(key, ...)
+			end
+
+			s2:spawn(function()
+				Data2.initialize(scope)
+			end)
+			world:run(3)
+			expect(s2Subscribes).toBe(1) -- exactly 1 _KData subscription after Data.initialize
+			expect(s2StoreGets).toBe(0)
+			expect(Data2.members["505"] ~= nil).toBe(true)
+			expect(Data2.bans["606"] ~= nil).toBe(true)
+
+			-- Verify invalidateCache clears both current and previous bucket shards, and TOPIC_HANDLERS isolate errors
+			hm:SetAsync(`Bans_{prevBucket}_1`, { hit = true, value = {}, updatedTime = 99 }, 60)
+			s1:spawn(function()
+				Auth1.banUsers({ 909 }, "invalidate both buckets", -1, nil, true)
+			end)
+			world:run(8)
+			expect(hm:GetAsync(`Bans_{bucket}_1`)).toBeNil()
+			expect(hm:GetAsync(`Bans_{prevBucket}_1`)).toBeNil()
+
+			-- Seed >28KB into Recent_1 and trigger an urgent update to verify trimRecentItemsToLimit evicts oldest entries
+			local bigRecentEntry = { _time = 10, bans = { set = { ["1"] = { "Old", string.rep("R", 14000), -1, 1 } } } }
+			local bigRecentEntry2 =
+				{ _time = 20, bans = { set = { ["2"] = { "Old2", string.rep("R", 14000), -1, 1 } } } }
+			hm:SetAsync("Recent_1", { old_a = bigRecentEntry, old_b = bigRecentEntry2 }, 60)
+			s1:spawn(function()
+				Auth1.banUsers({ 910 }, "recent trim test", -1, nil, true)
+			end)
+			world:run(8)
+			local recentAfterTrim = hm:GetAsync("Recent_1")
+			expect(type(recentAfterTrim)).toBe("table")
+			expect(recentAfterTrim.old_a).toBeNil()
+			expect(hm:GetAsync("Recent_8") ~= nil).toBe(true)
+
+			local secondHandlerCalled = false
+			local localDispatchCalls = 0
+			Data1.subscribeTopic("isolated_test", function(packet)
+				if packet.Data == "ping" then
+					localDispatchCalls += 1
+				end
+			end)
+			Data2.subscribeTopic("isolated_test", function()
+				error("first topic handler boom")
+			end)
+			Data2.subscribeTopic("isolated_test", function(packet)
+				if packet.Data == "ping" then
+					secondHandlerCalled = true
+				end
+			end)
+			s1:spawn(function()
+				Data1.publishTopic("isolated_test", "ping")
+			end)
+			world:run(1)
+			world.messaging:drain()
+			world:run(1)
+			expect(secondHandlerCalled).toBe(true)
+			-- Origin server dispatches TOPIC_HANDLERS locally once and suppresses its own MessagingService echo
+			expect(localDispatchCalls).toBe(1)
+
+			-- Failed updateBans does not resurrect a ban key unset by a newer syncChanges during the in-flight UpdateAsync
+			Data1.Sync.bans["7777"] = { "TempBan", "reason", -1, 1 }
+			Data1.Sync.bans["7778"] = { "KeepBan", "reason", -1, 1 }
+			local origStoreUpdate = Data1.Store.updateAsync
+			local simulatedOutageHit = false
+			Data1.Store.updateAsync = function(key: string, fn: any)
+				if key == "Bans" and not simulatedOutageHit then
+					simulatedOutageHit = true
+					-- Deliver a remote unban delta for 7777 with a newer _time while UpdateAsync is in flight
+					local newerTime = h1.env.DateTime.now().UnixTimestampMillis + 100000
+					h1.env.game:GetService("MessagingService"):PublishAsync(
+						"_KData",
+						h1.env.game:GetService("HttpService"):JSONEncode({
+							"remote_unban_7777",
+							1,
+							{ _time = newerTime, bans = { unset = { "7777" } } },
+						})
+					)
+					world.messaging:drain()
+					h1.env.task.wait()
+					return false, "simulated DataStore outage"
+				end
+				return origStoreUpdate(key, fn)
+			end
+			world:run(65)
+			Data1.Store.updateAsync = origStoreUpdate
+			expect(simulatedOutageHit).toBe(true)
+			-- Trigger a second urgent save so SAVE.bans flushes to DataStore
+			Data1.Sync.bans["7779"] = { "TriggerFlush", "reason", -1, 1 }
+			world:run(10)
+			local savedBans = rawStore:GetAsync("Bans")
+			expect(savedBans["7777"]).toBeNil()
+			expect(savedBans["7778"] ~= nil).toBe(true)
+
+			-- Verify local command logs persist to DataStore without broadcasting cross-server MessagingService packets,
+			-- while global command logs broadcast to servers with a logs audience without mutating log tuples
+			local adminPlr2 = h2.env:addPlayer(202, "AdminOnS2")
+			adminPlr2:SetAttribute("_K_READY", true)
+			local Auth2 = h2:requireAuth()
+			Auth2.userRoleAdd(202, "superadmin")
+
+			local localPublishes = 0
+			local origPublish = h1.env.game:GetService("MessagingService").PublishAsync
+			h1.env.game:GetService("MessagingService").PublishAsync = function(...: any)
+				localPublishes += 1
+				return origPublish(...)
+			end
+			Data1.settings.saveLogs = true
+			Data1.settings.saveLogsForAllRoles = true
+			local K1 = h1.env:require(h1.KA)
+			s1:spawn(function()
+				K1.log(";fly me", "COMMAND", 101)
+			end)
+			world:run(35)
+			expect(localPublishes).toBe(0)
+
+			s1:spawn(function()
+				K1.log(";global fly all", "COMMAND", 101, nil, nil, true)
+			end)
+			world:run(35)
+			world.messaging:drain()
+			world:run(2)
+			expect(localPublishes > 0).toBe(true)
+			local foundGlobalLogOnS2 = false
+			for _, logEntry in Data2.logs do
+				if logEntry[1] == ";global fly all" then
+					foundGlobalLogOnS2 = true
+					expect(rawget(logEntry, "_global")).toBeNil()
+				end
+			end
+			expect(foundGlobalLogOnS2).toBe(true)
 		end
 	)
 end)

@@ -10,12 +10,15 @@ return {
 			local _ = _K.Remote.ClearLogs:Connect(function()
 				local logs = _K.Data.logs
 				for index, log in logs do
-					if log.client then
+					if log[6] then
 						continue
 					end
 					logs[index] = nil
 				end
 				_K.Util.Table.settle(logs)
+				if _K.client and _K.client.dashboard and _K.client.dashboard.Logs then
+					_K.client.dashboard.Logs:updateList()
+				end
 			end)
 		end,
 		env = function(_K)
@@ -24,22 +27,25 @@ return {
 				clearLogs = function()
 					table.clear(_K.Data.logs)
 					table.clear(_K.Data.Sync.logs)
+					table.clear(_K.Data.pendingLogReveals)
+					_K.Data.logsVersion += 1
+					for _, player in _K.Service.Players:GetPlayers() do
+						_K.Remote.ClearLogs:Fire(player)
+					end
 				end,
 			}
-			task.spawn(function()
-				_K.Service.Messaging:SubscribeAsync("KA_ClearLogs", env.clearLogs)
-			end)
+			_K.Data.subscribeTopic("clearlogs", env.clearLogs)
 			return env
 		end,
 
 		run = function(context)
-			for i = 1, 4 do
-				task.spawn(context._K.Data.Store.removeAsync, "Logs_" .. i)
+			if not context._K.Data.SEPARATE_DATASTORE then
+				for i = 1, 4 do
+					task.spawn(context._K.Data.Store.removeAsync, "Logs_" .. i)
+				end
 			end
-			context._K.Service.Messaging:PublishAsync("KA_ClearLogs")
-			for _, player in context._K.Service.Players:GetPlayers() do
-				context._K.Remote.ClearLogs:Fire(player)
-			end
+			context.env.clearLogs()
+			context._K.Data.publishTopic("clearlogs")
 		end,
 	},
 	{

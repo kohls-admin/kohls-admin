@@ -161,7 +161,7 @@ local function flushLogReveals()
 		stored[1] = entry.fullText
 		_K.Data.logsVersion = (_K.Data.logsVersion or 0) + 1
 		if entry.save then
-			table.insert(_K.Data.Sync.logs, stored)
+			_K.Data.queueLogSave(stored, entry.global)
 		end
 		for _, player in _K.Service.Players:GetPlayers() do
 			if
@@ -176,7 +176,14 @@ local function flushLogReveals()
 	end
 end
 
-function _K.log(text: string, level: LogType, from: number?, filtered: boolean?, liveText: string?): Log?
+function _K.log(
+	text: string,
+	level: LogType,
+	from: number?,
+	filtered: boolean?,
+	liveText: string?,
+	global: boolean?
+): Log?
 	if _K.Data.logsHidden[from] then
 		return
 	end
@@ -188,6 +195,8 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 	if _K.IsClient and level ~= "CHAT" then
 		log[6] = true
 	end
+
+	local isGlobalLog = global == true
 
 	task.defer(function()
 		if from then
@@ -224,7 +233,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 				end
 			end
 			if shouldSave and not revealLater then
-				table.insert(_K.Data.Sync.logs, stored)
+				_K.Data.queueLogSave(stored, isGlobalLog)
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
@@ -241,6 +250,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 					stored = stored,
 					fullText = log[1],
 					save = shouldSave,
+					global = isGlobalLog,
 					revealAt = os.clock() + _K.Chat.COOLDOWN,
 					revealedTo = revealedTo,
 				})
