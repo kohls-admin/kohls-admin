@@ -67,6 +67,15 @@ Read the [Contributor Guidelines](CONTRIBUTING.md) for local Rojo and Dev Contai
 
 Report bugs or request features through [GitHub Issues](https://github.com/kohls-admin/kohls-admin/issues/new/choose), or join the community on [Discord](https://discord.gg/kohl).
 
+## Sponsors
+
+Kohl's Admin is free and MIT-licensed. If Kohl's Admin is useful to you or your team, you can support its development through [GitHub Sponsors](https://github.com/sponsors/kohltastrophe) or [Ko-fi](https://ko-fi.com/kohltastrophe).
+
+<p align="center">
+  <a href="https://github.com/sponsors/kohltastrophe"><img src="https://raw.githubusercontent.com/kohltastrophe/kohltastrophe/badges/sponsor-github.svg" alt="GitHub Sponsors" /></a>&nbsp;&nbsp;<a href="https://ko-fi.com/kohltastrophe"><img src="https://raw.githubusercontent.com/kohltastrophe/kohltastrophe/badges/sponsor-kofi.svg" alt="Ko-fi" /></a>
+  <a href="https://github.com/sponsors/kohltastrophe"><img src="https://raw.githubusercontent.com/kohltastrophe/kohltastrophe/badges/sponsors.svg" alt="Sponsors" /></a>
+</p>
+
 ## License
 
 Kohl's Admin is released under the [MIT License](LICENSE.txt).
