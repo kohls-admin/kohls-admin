@@ -4,7 +4,7 @@ local Defer = {}
 
 -- Call at start of process to prevent unnecessarily waiting.
 function Defer.reset(budget: number?)
-	expireTime = tick() + (defaultBudget or budget)
+	expireTime = tick() + (budget or defaultBudget)
 end
 
 function Defer.wait(budget: number?)
