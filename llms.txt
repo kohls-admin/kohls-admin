@@ -756,13 +756,13 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Registry.commandsList: { Type.CommandDefinition }`](src/Shared/Registry.luau#L12)
 - [`Registry.commandNames: { string }`](src/Shared/Registry.luau#L13)
 - [`Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string })`](src/Shared/Registry.luau#L17-L31): Makes an Enum argument type definition
-- [`Registry.suggestCommandAlias(alias: string): string`](src/Shared/Registry.luau#L74-L95): Finds the command alias with the lowest Levenshtein distance to the provided alias.
-- [`Registry.makeSequenceType(definition: SequenceDefinition?)`](src/Shared/Registry.luau#L98-L144): Makes an sequence argument type definition, useful for Color3, Vector3, etc
-- [`Registry.registerType(name: string, typeObject: Type.ArgumentType, override: Type.Dict?)`](src/Shared/Registry.luau#L147-L158): Registers an argument type
-- [`Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition)`](src/Shared/Registry.luau#L161-L238): Registers a command
-- [`Registry.dashboardWindowEnv(tab: string)`](src/Shared/Registry.luau#L241-L266)
-- [`Registry.registerCommandAlias(_K: any, alias: string, command: string)`](src/Shared/Registry.luau#L269-L286): [Client] Registers a local command alias
-- [`Registry.registerCommandModule(_K: any, commandModule: ModuleScript)`](src/Shared/Registry.luau#L289-L300): Registers a list of commands with the module name as the command group
+- [`Registry.suggestCommandAlias(alias: string): string`](src/Shared/Registry.luau#L78-L99): Finds the command alias with the lowest Levenshtein distance to the provided alias.
+- [`Registry.makeSequenceType(definition: SequenceDefinition?)`](src/Shared/Registry.luau#L102-L148): Makes an sequence argument type definition, useful for Color3, Vector3, etc
+- [`Registry.registerType(name: string, typeObject: Type.ArgumentType, override: Type.Dict?)`](src/Shared/Registry.luau#L151-L162): Registers an argument type
+- [`Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition)`](src/Shared/Registry.luau#L165-L242): Registers a command
+- [`Registry.dashboardWindowEnv(tab: string)`](src/Shared/Registry.luau#L245-L270)
+- [`Registry.registerCommandAlias(_K: any, alias: string, command: string)`](src/Shared/Registry.luau#L273-L290): [Client] Registers a local command alias
+- [`Registry.registerCommandModule(_K: any, commandModule: ModuleScript)`](src/Shared/Registry.luau#L293-L304): Registers a list of commands with the module name as the command group
 
 ## MainModule.Remote
 

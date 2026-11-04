@@ -47,15 +47,19 @@ end
 
 local debounceSort = Util.Function.debounce(0.2, table.sort)
 
-local function cacheCommandNames(command)
+local function cacheCommandNames(command, oldCommand)
 	local name = string.lower(command.name)
-	local oldCommand = table.find(Registry.commandNames, name)
 	if oldCommand then
-		oldCommand = Registry.commands[name]
 		if oldCommand.aliases then
 			for _, alias in oldCommand.aliases do
-				table.remove(Registry.commandNames, table.find(Registry.commandNames, alias))
+				local idx = table.find(Registry.commandNames, string.lower(alias :: string))
+				if idx then
+					table.remove(Registry.commandNames, idx)
+				end
 			end
+		end
+		if not table.find(Registry.commandNames, name) then
+			table.insert(Registry.commandNames, name)
 		end
 	else
 		table.insert(Registry.commandNames, name)
@@ -221,7 +225,7 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 
 	Registry.commands[lowerName] = commandObject
 	Hook.commandRegistered:Fire(commandObject)
-	task.defer(cacheCommandNames, commandObject)
+	task.defer(cacheCommandNames, commandObject, oldCommand)
 
 	if commandObject.aliases then
 		for _, alias in commandObject.aliases do
