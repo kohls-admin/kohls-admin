@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: "ci-${{ github.ref }}-${{ startsWith(github.event.head_commit.message, 'chore: release') && github.sha || '' }}"
-  cancel-in-progress: "${{ !startsWith(github.event.head_commit.message, 'chore: release') }}"
+  group: "ci-${{ github.ref }}-${{ startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release') && github.sha || '' }}"
+  cancel-in-progress: "${{ !startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release') }}"
 
 defaults:
   run:
@@ -52,7 +52,7 @@ jobs:
         run: python3 tools/sert.py coverage --min 90 --badge
 
       - name: sert mutate
-        if: "!startsWith(github.event.head_commit.message, 'chore: release')"
+        if: "!startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release')"
         run: python3 tools/sert.py mutate --no-coverage-run --min 85
 
       - name: Update coverage badge

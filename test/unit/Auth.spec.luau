@@ -42,218 +42,6 @@ describe("Auth · Role Ordering Laws", function()
 end)
 
 describe("Auth · Stateful RBAC & Ban Model", function()
-	test(
-		"sert.model verifies getRank, hasPermission, hasCommand, member sorting, and ban lifecycle invariants",
-		function()
-			local userIds = { 101, 102, 103 }
-			local grantableRoles = { "vip", "mod", "admin", "superadmin" }
-			local freeAdminRoles = { "vip", "mod" }
-			local banDurations = { 0, 60, -1 }
-
-			-- typed as any: the old solver rejects sert.model's map-form `actions` (Spec)
-			local model: any = sert.model
-			model({
-				init = function()
-					local h = Harness.newEnv({ isStudio = false })
-					local Data = h:requireData()
-					local Auth = h:requireAuth()
-					Data.SEPARATE_DATASTORE = true
-					for _, uid in userIds do
-						h.env:addPlayer(uid, `Player{uid}`)
-					end
-					local state = {
-						roles = { [101] = {}, [102] = {}, [103] = {} },
-						persist = { [101] = {}, [102] = {}, [103] = {} },
-						freeAdmin = {},
-						bans = {},
-					}
-					return state, { h = h, Data = Data, Auth = Auth }
-				end,
-				actions = {
-					GrantRole = {
-						gen = function(g)
-							return {
-								userId = g:pick(userIds),
-								role = g:pick(grantableRoles),
-								persist = g:bool(),
-							}
-						end,
-						guard = function(state, args)
-							return args ~= nil and state.roles[args.userId] ~= nil and args.role ~= nil
-						end,
-						run = function(sys, args)
-							sys.Auth.userRoleAdd(args.userId, args.role, args.persist)
-						end,
-						next = function(state, args)
-							local r = state.roles[args.userId]
-							if not table.find(r, args.role) then
-								table.insert(r, args.role)
-							end
-							if args.persist then
-								local p = state.persist[args.userId]
-								if not table.find(p, args.role) then
-									table.insert(p, args.role)
-								end
-							end
-						end,
-					},
-					RevokeRole = {
-						gen = function(g)
-							return {
-								userId = g:pick(userIds),
-								role = g:pick(grantableRoles),
-							}
-						end,
-						guard = function(state, args)
-							return args ~= nil and state.roles[args.userId] ~= nil and args.role ~= nil
-						end,
-						run = function(sys, args)
-							sys.Auth.userRoleRemove(args.userId, args.role)
-						end,
-						next = function(state, args)
-							local r = state.roles[args.userId]
-							local idx = table.find(r, args.role)
-							if idx then
-								table.remove(r, idx)
-							end
-							local p = state.persist[args.userId]
-							local pidx = table.find(p, args.role)
-							if pidx then
-								table.remove(p, pidx)
-							end
-						end,
-					},
-					SetFreeAdmin = {
-						gen = function(g)
-							return {
-								role = if g:bool() then g:pick(freeAdminRoles) else nil,
-							}
-						end,
-						guard = function(_state, args)
-							return args ~= nil
-						end,
-						run = function(sys, args)
-							sys.Data.settings.freeAdmin = if args.role then { args.role } else {}
-						end,
-						next = function(state, args)
-							state.freeAdmin = if args.role then { args.role } else {}
-						end,
-					},
-					BanUser = {
-						gen = function(g)
-							return {
-								userId = g:pick(userIds),
-								duration = g:pick(banDurations),
-							}
-						end,
-						guard = function(_state, args)
-							return args ~= nil and args.userId ~= nil and args.duration ~= nil
-						end,
-						run = function(sys, args)
-							local stamp = nil
-							if args.duration and args.duration > 0 then
-								stamp = math.floor(sys.h.env.workspace:GetServerTimeNow()) + args.duration
-							elseif args.duration == -1 then
-								stamp = -1
-							end
-							sys.Auth.banUsers({ args.userId }, "rule violation", args.duration, nil, true)
-							return stamp
-						end,
-						next = function(state, args, stamp)
-							state.bans[args.userId] = { stamp = stamp }
-						end,
-					},
-					UnbanUser = {
-						gen = function(g)
-							return {
-								userId = g:pick(userIds),
-							}
-						end,
-						guard = function(_state, args)
-							return args ~= nil and args.userId ~= nil
-						end,
-						run = function(sys, args)
-							sys.Auth.unbanUsers({ args.userId }, nil, true)
-						end,
-						next = function(state, args)
-							state.bans[args.userId] = nil
-						end,
-					},
-				},
-				never = {
-					unsortedMemberRoles = function(_state, sys)
-						for _, uid in userIds do
-							local member = sys.Data.members[tostring(uid)]
-							if member then
-								for i = 2, #member.roles do
-									if not sys.Auth.roleIdSort(member.roles[i - 1], member.roles[i]) then
-										return true
-									end
-								end
-							end
-						end
-						return false
-					end,
-					bannedWithoutEntry = function(state, sys)
-						for _, uid in userIds do
-							local hasModelBan = state.bans[uid] ~= nil
-							local hasSutBan = sys.Data.bans[tostring(uid)] ~= nil
-							if hasModelBan ~= hasSutBan then
-								return true
-							end
-						end
-						return false
-					end,
-					unrestrictedEscalation = function(state, sys)
-						for _, uid in userIds do
-							local expectedRestricted = false
-							for _, roleId in state.roles[uid] do
-								if roleId ~= "vip" and not table.find(state.freeAdmin, roleId) then
-									expectedRestricted = true
-								end
-							end
-							if sys.Auth.hasRestrictedRole(uid) ~= expectedRestricted then
-								return true
-							end
-						end
-						return false
-					end,
-				},
-				invariants = {
-					rankAndPermissionsMatchModel = function(state, sys)
-						local Data = sys.Data
-						local Auth = sys.Auth
-						for _, uid in userIds do
-							local expectedRank = 0
-							for _, roleId in state.freeAdmin do
-								expectedRank = math.max(expectedRank, Data.roles[roleId]._rank)
-							end
-							for _, roleId in state.roles[uid] do
-								expectedRank = math.max(expectedRank, Data.roles[roleId]._rank)
-							end
-							local actualRank, actualRole = Auth.getRank(uid)
-							expect(actualRank).toBe(expectedRank)
-							expect(actualRole._rank).toBe(expectedRank)
-							expect(Auth.hasPermission(uid, "banasync")).toBe(expectedRank >= 3)
-							expect(Auth.hasPermission(uid, "saveRoles")).toBe(expectedRank >= 4)
-						end
-					end,
-					banTimestampsMatchModel = function(state, sys)
-						for _, uid in userIds do
-							local banEntry = sys.Data.bans[tostring(uid)]
-							if state.bans[uid] ~= nil then
-								expect(banEntry ~= nil).toBe(true)
-								expect(banEntry[3]).toBe(state.bans[uid].stamp)
-							else
-								expect(banEntry).toBeNil()
-							end
-						end
-					end,
-				},
-			}, { runs = 35, length = 20 })
-		end
-	)
-
 	test("banHandler kicks active bans and auto-unbans expired temporary bans", function()
 		local h = Harness.newEnv({ isStudio = false })
 		local Data = h:requireData()
@@ -1598,9 +1386,225 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 					expect(hBA).toBe(hAB)
 				end
 			end,
-			{ runs = 80 }
+			{ runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 10 else 80 }
 		)
 	end
+
+	test(
+		"sert.model verifies getRank, hasPermission, hasCommand, member sorting, and ban lifecycle invariants",
+		function()
+			local userIds = { 101, 102, 103 }
+			local grantableRoles = { "vip", "mod", "admin", "superadmin" }
+			local freeAdminRoles = { "vip", "mod" }
+			local banDurations = { 0, 60, -1 }
+
+			local h = Harness.newEnv({ isStudio = false })
+			local Data = h:requireData()
+			local Auth = h:requireAuth()
+			Data.SEPARATE_DATASTORE = true
+			for _, uid in userIds do
+				h.env:addPlayer(uid, `Player{uid}`)
+			end
+			local sys = { h = h, Data = Data, Auth = Auth }
+
+			-- typed as any: the old solver rejects sert.model's map-form `actions` (Spec)
+			local model: any = sert.model
+			model({
+				init = function()
+					table.clear(Data.members)
+					table.clear(Data.bans)
+					table.clear(h.env.kicks)
+					Data.settings.freeAdmin = {}
+					local state = {
+						roles = { [101] = {}, [102] = {}, [103] = {} },
+						persist = { [101] = {}, [102] = {}, [103] = {} },
+						freeAdmin = {},
+						bans = {},
+					}
+					return state, sys
+				end,
+				actions = {
+					GrantRole = {
+						gen = function(g)
+							return {
+								userId = g:pick(userIds),
+								role = g:pick(grantableRoles),
+								persist = g:bool(),
+							}
+						end,
+						guard = function(state, args)
+							return args ~= nil and state.roles[args.userId] ~= nil and args.role ~= nil
+						end,
+						run = function(s, args)
+							s.Auth.userRoleAdd(args.userId, args.role, args.persist)
+						end,
+						next = function(state, args)
+							local r = state.roles[args.userId]
+							if not table.find(r, args.role) then
+								table.insert(r, args.role)
+							end
+							if args.persist then
+								local p = state.persist[args.userId]
+								if not table.find(p, args.role) then
+									table.insert(p, args.role)
+								end
+							end
+						end,
+					},
+					RevokeRole = {
+						gen = function(g)
+							return {
+								userId = g:pick(userIds),
+								role = g:pick(grantableRoles),
+							}
+						end,
+						guard = function(state, args)
+							return args ~= nil and state.roles[args.userId] ~= nil and args.role ~= nil
+						end,
+						run = function(s, args)
+							s.Auth.userRoleRemove(args.userId, args.role)
+						end,
+						next = function(state, args)
+							local r = state.roles[args.userId]
+							local idx = table.find(r, args.role)
+							if idx then
+								table.remove(r, idx)
+							end
+							local p = state.persist[args.userId]
+							local pidx = table.find(p, args.role)
+							if pidx then
+								table.remove(p, pidx)
+							end
+						end,
+					},
+					SetFreeAdmin = {
+						gen = function(g)
+							return {
+								role = if g:bool() then g:pick(freeAdminRoles) else nil,
+							}
+						end,
+						guard = function(_state, args)
+							return args ~= nil
+						end,
+						run = function(s, args)
+							s.Data.settings.freeAdmin = if args.role then { args.role } else {}
+						end,
+						next = function(state, args)
+							state.freeAdmin = if args.role then { args.role } else {}
+						end,
+					},
+					BanUser = {
+						gen = function(g)
+							return {
+								userId = g:pick(userIds),
+								duration = g:pick(banDurations),
+							}
+						end,
+						guard = function(_state, args)
+							return args ~= nil and args.userId ~= nil and args.duration ~= nil
+						end,
+						run = function(s, args)
+							local stamp = nil
+							if args.duration and args.duration > 0 then
+								stamp = math.floor(s.h.env.workspace:GetServerTimeNow()) + args.duration
+							elseif args.duration == -1 then
+								stamp = -1
+							end
+							s.Auth.banUsers({ args.userId }, "rule violation", args.duration, nil, true)
+							return stamp
+						end,
+						next = function(state, args, stamp)
+							state.bans[args.userId] = { stamp = stamp }
+						end,
+					},
+					UnbanUser = {
+						gen = function(g)
+							return {
+								userId = g:pick(userIds),
+							}
+						end,
+						guard = function(_state, args)
+							return args ~= nil and args.userId ~= nil
+						end,
+						run = function(s, args)
+							s.Auth.unbanUsers({ args.userId }, nil, true)
+						end,
+						next = function(state, args)
+							state.bans[args.userId] = nil
+						end,
+					},
+				},
+				never = {
+					unsortedMemberRoles = function(_state, s)
+						for _, uid in userIds do
+							local member = s.Data.members[tostring(uid)]
+							if member then
+								for i = 2, #member.roles do
+									if not s.Auth.roleIdSort(member.roles[i - 1], member.roles[i]) then
+										return true
+									end
+								end
+							end
+						end
+						return false
+					end,
+					bannedWithoutEntry = function(state, s)
+						for _, uid in userIds do
+							local hasModelBan = state.bans[uid] ~= nil
+							local hasSutBan = s.Data.bans[tostring(uid)] ~= nil
+							if hasModelBan ~= hasSutBan then
+								return true
+							end
+						end
+						return false
+					end,
+					unrestrictedEscalation = function(state, s)
+						for _, uid in userIds do
+							local expectedRestricted = false
+							for _, roleId in state.roles[uid] do
+								if roleId ~= "vip" and not table.find(state.freeAdmin, roleId) then
+									expectedRestricted = true
+								end
+							end
+							if s.Auth.hasRestrictedRole(uid) ~= expectedRestricted then
+								return true
+							end
+						end
+						return false
+					end,
+				},
+				invariants = {
+					rankAndPermissionsMatchModel = function(state, s)
+						for _, uid in userIds do
+							local expectedRank = 0
+							for _, roleId in state.freeAdmin do
+								expectedRank = math.max(expectedRank, s.Data.roles[roleId]._rank)
+							end
+							for _, roleId in state.roles[uid] do
+								expectedRank = math.max(expectedRank, s.Data.roles[roleId]._rank)
+							end
+							local actualRank, actualRole = s.Auth.getRank(uid)
+							expect(actualRank).toBe(expectedRank)
+							expect(actualRole._rank).toBe(expectedRank)
+							expect(s.Auth.hasPermission(uid, "banasync")).toBe(expectedRank >= 3)
+							expect(s.Auth.hasPermission(uid, "saveRoles")).toBe(expectedRank >= 4)
+						end
+					end,
+					banTimestampsMatchModel = function(state, s)
+						for _, uid in userIds do
+							local banEntry = s.Data.bans[tostring(uid)]
+							if state.bans[uid] ~= nil then
+								expect(banEntry ~= nil).toBe(true)
+								expect(banEntry[3]).toBe(state.bans[uid].stamp)
+							else
+								expect(banEntry).toBeNil()
+							end
+						end
+					end,
+				},
+			}, { runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 10 else 35, length = 20 })
+		end
+	)
 end)
 
 return {}

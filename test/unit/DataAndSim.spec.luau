@@ -807,60 +807,6 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 		},
 	})
 
-	sert.sim.checkSpec(
-		"KAdmin distributed data spec satisfies negative and positive invariants",
-		KAdminDataSpec,
-		{ maxStates = 200, maxDepth = 6 }
-	)
-
-	sert.sim.vopr(
-		"KAdmin multi-server sync converges under VOPR hazards",
-		KAdminDataSpec,
-		{ runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 15, length = 8 }
-	)
-
-	test("sert.sim.explore verifies BindToClose shutdown flushes pending bans, roles, and logs to DataStore", function()
-		sert.sim.explore(function(world)
-			local n1 = bootServer(world, "_K_ShutdownFlush")
-			waitServerReady(world, n1)
-
-			local now = n1.h.env.workspace:GetServerTimeNow()
-			n1.server:spawn(function()
-				n1.Auth.banUsers({ 777 }, "persistent ban", -1, nil, true)
-				n1.Auth.userRoleAdd(888, "admin", true)
-				table.insert(n1.Data.Sync.logs, { "shutdown_flushed_log", string.char(1), now, 888, "Admin888" })
-			end)
-			world:run(0.5)
-
-			-- Shutdown server 1 (triggers BindToClose DataStore/MemoryStore flush for bans, members, and logs)
-			n1.server:shutdown()
-			world:run(20)
-
-			-- Boot a fresh server 2 on the same scope and verify it loads the ban, persistent role, and log
-			local n2 = bootServer(world, "_K_ShutdownFlush")
-			waitServerReady(world, n2)
-			n2.server:spawn(function()
-				n2.Data.ensureLogsLoaded()
-			end)
-			world:run(2)
-
-			expect(n2.Data.bans["777"] ~= nil).toBe(true)
-			expect(n2.Data.bans["777"][3]).toBe(-1)
-			expect(n2.Data.members["888"] ~= nil).toBe(true)
-			expect(table.find(n2.Data.members["888"].persist, "admin") ~= nil).toBe(true)
-			local sawShutdownLog = false
-			for _, entry in n2.Data.logs do
-				if entry[1] == "shutdown_flushed_log" then
-					sawShutdownLog = true
-				end
-			end
-			expect(sawShutdownLog).toBe(true)
-		end, {
-			maxRuns = 12,
-			world = { faults = "none", backing = true },
-		})
-	end)
-
 	test("member syncs from other servers keep the unrestricted flags of session roles", function()
 		local world = sert.sim.new({ backing = true })
 		local n1 = bootServer(world, "_K_UnrestrictedSync")
@@ -1661,6 +1607,63 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			expect(foundGlobalLogOnS2).toBe(true)
 		end
 	)
+
+	test("KAdmin distributed data spec satisfies negative and positive invariants", function()
+		sert.sim.checkSpec(
+			"KAdmin distributed data spec satisfies negative and positive invariants",
+			KAdminDataSpec,
+			{ maxStates = if rawget(_G, "__SERT_MUTANT") ~= nil then 30 else 200, maxDepth = 6 }
+		)
+	end)
+
+	test("KAdmin multi-server sync converges under VOPR hazards", function()
+		sert.sim.vopr("KAdmin multi-server sync converges under VOPR hazards", KAdminDataSpec, {
+			runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 15,
+			length = 8,
+		})
+	end)
+
+	test("sert.sim.explore verifies BindToClose shutdown flushes pending bans, roles, and logs to DataStore", function()
+		sert.sim.explore(function(world)
+			local n1 = bootServer(world, "_K_ShutdownFlush")
+			waitServerReady(world, n1)
+
+			local now = n1.h.env.workspace:GetServerTimeNow()
+			n1.server:spawn(function()
+				n1.Auth.banUsers({ 777 }, "persistent ban", -1, nil, true)
+				n1.Auth.userRoleAdd(888, "admin", true)
+				table.insert(n1.Data.Sync.logs, { "shutdown_flushed_log", string.char(1), now, 888, "Admin888" })
+			end)
+			world:run(0.5)
+
+			-- Shutdown server 1 (triggers BindToClose DataStore/MemoryStore flush for bans, members, and logs)
+			n1.server:shutdown()
+			world:run(20)
+
+			-- Boot a fresh server 2 on the same scope and verify it loads the ban, persistent role, and log
+			local n2 = bootServer(world, "_K_ShutdownFlush")
+			waitServerReady(world, n2)
+			n2.server:spawn(function()
+				n2.Data.ensureLogsLoaded()
+			end)
+			world:run(2)
+
+			expect(n2.Data.bans["777"] ~= nil).toBe(true)
+			expect(n2.Data.bans["777"][3]).toBe(-1)
+			expect(n2.Data.members["888"] ~= nil).toBe(true)
+			expect(table.find(n2.Data.members["888"].persist, "admin") ~= nil).toBe(true)
+			local sawShutdownLog = false
+			for _, entry in n2.Data.logs do
+				if entry[1] == "shutdown_flushed_log" then
+					sawShutdownLog = true
+				end
+			end
+			expect(sawShutdownLog).toBe(true)
+		end, {
+			maxRuns = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 12,
+			world = { faults = "none", backing = true },
+		})
+	end)
 end)
 
 describe("Data · ChunkChanges array actions", function()

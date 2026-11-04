@@ -486,10 +486,9 @@ describe("Chat and Server", function()
 						groupRoles = {
 							[100] = { { rank = 10, roles = { "mod" } }, { rank = 20 }, { roles = { "mod" } } },
 							[200] = { rank = 5, roles = { "vip" } },
-							[300] = { [15] = "mod" },
+							[300] = { [15] = "mod", [25] = "nonexistent_role" },
 						},
 						friendRoles = { "vip" },
-						freeAdmin = {},
 						announcement = { "Welcome to the server!", 101, 5 },
 						welcomeBadgeId = 1234,
 						vip = true,
@@ -497,6 +496,7 @@ describe("Chat and Server", function()
 						commandRequests = true,
 						prefix = ";",
 						splitKey = " ",
+						defaultTheme = "MigratedTheme",
 						commands = {
 							mod = { ban = true },
 						},
@@ -569,6 +569,7 @@ describe("Chat and Server", function()
 				expect(_K.Data.async.group[200]).toEqual({ { rank = 5, roles = { "vip" } } })
 				expect(_K.Data.async.group[300]).toEqual({ { rank = 15, roles = { "mod" } } })
 				expect(_K.Data.friendRoles).toEqual({ "vip" })
+				expect(_K.Data.savedSettings.theme).toBe("MigratedTheme")
 
 				-- _K.log edge cases: logsHidden, >16KB truncation, liveText, and removeExcessLogs (src/init.luau lines 106-162)
 				_K.Data.logsHidden[9999] = true
@@ -769,13 +770,24 @@ describe("Chat and Server", function()
 				hum.Died:Fire()
 				world:run(0.5)
 
-				-- Also test damage and death WITHOUT a creator tag (lines 53, 89)
+				-- Also test damage and death WITHOUT a creator tag (lines 53, 89) and WITH a non-Player Instance creator tag (line 54)
+				local partAttacker = sh.env.Instance.new("Part")
+				partAttacker.Name = "LavaBrick"
+				creatorTag.Value = partAttacker
+				hum.Health = 90
+				hum.HealthChanged:Fire(90)
+				world:run(1.5)
 				creatorTag:Destroy()
 				hum.Health = 80
 				hum.HealthChanged:Fire(80)
 				hum.Health = 0
 				hum.Died:Fire()
 				world:run(0.5)
+
+				-- Character without Humanoid is ignored on CharacterAdded (line 39)
+				local noHumChar = sh.env.Instance.new("Model", sh.env.workspace)
+				srvGuest.Character = noHumChar
+				srvGuest.CharacterAdded:Fire(noHumChar)
 
 				local sawDamage, sawDeath, sawKill = false, false, false
 				local damage40Count, damage60Count = 0, 0
@@ -994,15 +1006,17 @@ describe("Chat and Server", function()
 				expect(tempVictim.Parent).toBeNil()
 				server:leave(tempVictim)
 
-				-- Deleting a container holding a higher-rank player's character or TextChatCommands_KA is blocked
+				-- Deleting a container holding a higher-rank player's character or TextChatCommands_KA is blocked, while unowned parts succeed
 				_K.Data.roles.mod.commands = { ban = true, explorer = true }
 				local charContainer = sh.env.Instance.new("Folder", sh.env.workspace)
+				local modPart = sh.env.Instance.new("Part", folder)
 				adminChar.Parent = charContainer
 				_K.Remote.Explorer._signal:Fire(
 					srvMod,
 					"DELETE",
-					{ charContainer, adminChar, adminHead, sh.KA, sh.env.Players }
+					{ charContainer, adminChar, adminHead, sh.KA, sh.env.Players, modPart }
 				)
+				expect(modPart.Parent).toBeNil()
 				expect(charContainer.Parent).toBe(sh.env.workspace)
 				expect(adminChar.Parent).toBe(charContainer)
 				expect(adminHead.Parent).toBe(adminChar)
@@ -1244,9 +1258,11 @@ describe("Chat and Server", function()
 				local configObj = hStudio.env.Instance.new("Configuration")
 				local settingsMod = hStudio.env.Instance.new("ModuleScript", configObj)
 				settingsMod.Name = "Settings"
+				local studioRolesTable = Harness.defaultRoles()
+				studioRolesTable[1] = studioRolesTable.vip
+				studioRolesTable.vip = nil
 				rawset(settingsMod, "_factory", function()
 					return {
-						bans = {},
 						userRoles = {
 							superadmin = { 777 },
 						},
@@ -1259,7 +1275,7 @@ describe("Chat and Server", function()
 						commands = {},
 						prefix = ";",
 						splitKey = " ",
-						roles = Harness.defaultRoles(),
+						roles = studioRolesTable,
 					}
 				end)
 
@@ -1303,6 +1319,18 @@ describe("Chat and Server", function()
 				legacyAddon.Name = "LegacyChild"
 
 				local sK = hStudio:requireK()
+				local syncedThemes = 0
+				local origSyncThemes = sK.Data.syncThemeDefaults
+				sK.Data.syncThemeDefaults = function(...)
+					syncedThemes += 1
+					return origSyncThemes(...)
+				end
+				local prefetchedGroups = 0
+				local origPrefetchGroups = sK.Auth.prefetchGroupEntryRanks
+				sK.Auth.prefetchGroupEntryRanks = function(...)
+					prefetchedGroups += 1
+					return origPrefetchGroups(...)
+				end
 				local initHookFired = false
 				sK.Hook.init:Connect(function()
 					initHookFired = true
@@ -1311,9 +1339,15 @@ describe("Chat and Server", function()
 				for _ = 1, 10 do
 					hStudio.env:step(0.5)
 				end
+				sK.Data.syncThemeDefaults = origSyncThemes
+				sK.Auth.prefetchGroupEntryRanks = origPrefetchGroups
 
 				expect(initRet).toBe(sK)
+				expect(studioRolesTable[1]).toBeNil()
+				expect(type(sK.Data.settingsModuleData.bans)).toBe("table")
 				expect(initHookFired).toBe(true)
+				expect(syncedThemes).toBe(1)
+				expect(prefetchedGroups).toBe(1)
 				expect(sK.ready).toBe(true)
 				expect(sK.groupId).toBe(500)
 				expect(table.find(sK.Data.settingsModuleData.userRoles.superadmin, 777) ~= nil).toBe(true)
@@ -1866,17 +1900,61 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 			table.insert(adminNotes, props.Text)
 		end)
 		local beforeForwarded = #forwarded
+		_K.Data.roles.creator.limits = { commands = 1, cooldown = 10, targets = 10 }
+		_K.Process.resetLimit(101)
 		folder:FindFirstChild("announce").Triggered:Fire({ UserId = 101 }, "/announce ")
+		expect(_K.Process.onCooldown(_K, 101)).toBe(true)
 		world:run(1)
+		_K.Process.resetLimit(101)
+		_K.Data.roles.creator.limits = nil
 		expect(#forwarded).toBe(beforeForwarded + 1)
 		expect(forwarded[#forwarded].text).toBe("!announce")
 		expect(forwarded[#forwarded].clientOnly).toBe(true)
 		expect(#adminNotes).toBe(0)
 
+		-- commandBarRank = false disables the missing-arg handoff so server reports the missing argument error
+		_K.Data.settings.commandBarRank = false
+		folder:FindFirstChild("announce").Triggered:Fire({ UserId = 101 }, "/announce ")
+		world:run(1)
+		expect(#adminNotes > 0).toBe(true)
+		_K.Data.settings.commandBarRank = 0
+		table.clear(adminNotes)
+
 		-- explicit invalid arguments still report the server validation error
 		folder:FindFirstChild("ban").Triggered:Fire({ UserId = 101 }, "/ban nonexistentplayer")
 		world:run(1)
 		expect(#adminNotes > 0).toBe(true)
+
+		-- VIP bubble display on VIP command, commandBarRank gating, and sync cleanup when a command is removed from commandsList
+		_K.Data.settings.vip = true
+		local srvAdminChar = sh.env.Instance.new("Model")
+		srvAdmin.Character = srvAdminChar
+		local bubblesFired = {}
+		local origBubbleFireAll = _K.Remote.DisplayBubble.FireAll
+		_K.Remote.DisplayBubble.FireAll = function(_self, char, w)
+			table.insert(bubblesFired, { char = char, word = w })
+		end
+		folder:FindFirstChild("fire").Triggered:Fire({ UserId = 101 }, "!fire me")
+		world:run(0.5)
+		expect(#bubblesFired).toBe(1)
+		expect(bubblesFired[1].char).toBe(srvAdminChar)
+		expect(bubblesFired[1].word).toBe("!fire")
+		_K.Remote.DisplayBubble.FireAll = origBubbleFireAll
+
+		-- Direct refreshCommand without batchSkipped logs skipped aliases immediately
+		_K.ChatCommands.taken["!lateping"] = true
+		_K.ChatCommands.refreshCommand(_K.Registry.commands.lateping)
+		world:run(0.2)
+		expect(string.find(skippedLog(), "!lateping", 1, true) ~= nil).toBe(true)
+
+		-- Removing lateping from commandsList and refreshing cleans up its TextChatCommand instances
+		local lpIdx = table.find(_K.Registry.commandsList, _K.Registry.commands.lateping)
+		if lpIdx then
+			table.remove(_K.Registry.commandsList, lpIdx)
+		end
+		_K.ChatCommands.refresh()
+		expect(_K.ChatCommands.instances.lateping).toBeNil()
+		expect(_K.ChatCommands.aliases.lateping).toEqual({})
 
 		-- chat text is never logged, and the setting can't turn that back on
 		aRemote.Settings:Fire({ saveChatLogs = true })
@@ -2149,6 +2227,39 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			expect(backfilled.members).toBe(true)
 			expect(backfilled.reserved).toBe(true)
 			expect(backfilled.logs).toBe(true)
+
+			-- _K.chatCommandAlias, _K.removeExcessLogs logsVersion, and client _K.log log[6]
+			_K.ChatCommands = {
+				alias = function(w)
+					return if w == "fly" then "/fly" else nil
+				end,
+			}
+			expect(_K.chatCommandAlias("FLY")).toBe("/fly")
+			expect(_K.chatCommandAlias("KILL")).toBe("!kill")
+			_K.ChatCommands = nil
+			local origPrefixes = _K.Data.settings.prefix
+			_K.Data.settings.prefix = {}
+			expect(_K.chatCommandAlias("KILL")).toBe(";kill")
+			_K.Data.settings.prefix = origPrefixes
+
+			local prevLogsVer = _K.Data.logsVersion or 0
+			local origLimit = _K.Logger.limit
+			_K.Logger.limit = 1
+			_K.Logger:log("one", "INFO")
+			_K.Logger:log("two", "INFO")
+			_K.removeExcessLogs()
+			expect(#_K.Data.logs).toBe(1)
+			expect(_K.Data.logsVersion).toBe(prevLogsVer + 1)
+			_K.Logger.limit = origLimit
+
+			_K.IsServer = false
+			_K.IsClient = true
+			local clientInfoLog = _K.log("client info", "INFO")
+			local clientChatLog = _K.log("client chat", "CHAT")
+			expect(clientInfoLog ~= nil and clientInfoLog[6] == true).toBe(true)
+			expect(clientChatLog ~= nil and clientChatLog[6] == nil).toBe(true)
+			_K.IsClient = false
+			_K.IsServer = true
 		end
 	)
 end)

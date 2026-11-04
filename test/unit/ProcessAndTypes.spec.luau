@@ -211,7 +211,7 @@ describe("Process · rawParse", function()
 	)
 end)
 
-describe("Registry & DefaultTypes / DefaultCommands · Contract Laws", function()
+describe("Process · Registry & DefaultTypes Contract Laws", function()
 	test("all DefaultTypes and DefaultCommands satisfy registry & alias laws", function()
 		local h = Harness.newEnv()
 		h:requireData()
@@ -1181,6 +1181,523 @@ describe("Process · Command filters & async roles", function()
 			-- Second command within cooldown is blocked before execution
 			expect(Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me", true)).toBe(false)
 			expect(runs).toBe(1)
+			h.env:step(10)
+
+			-- 3. Process.countCommand & Process.onCooldown (client vs server)
+			_K.Data.roles.vip.limits = { commands = 2, cooldown = 5, targets = 4 }
+			Process.resetLimit(vipPlr.UserId)
+			_K.IsServer = false
+			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(false)
+			Process.countCommand(_K, vipPlr.UserId, 2)
+			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(false)
+			_K.IsServer = true
+			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(false)
+			Process.countCommand(_K, vipPlr.UserId)
+			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(false)
+			Process.countCommand(_K, vipPlr.UserId, 1)
+			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(true)
+			h.env:step(5)
+			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(false)
+
+			-- 4. Process.prepareCommands maxPrepare cap, command.Error, and client VIP / GamePass / RestrictedToRole
+			Process.countCommand(_K, vipPlr.UserId, 1) -- 1 left in limit of 2
+			local okPrepCap, cappedCmds =
+				Process.prepareCommands(_K, vipPlr.UserId, ";testlimitcmd me ;testlimitcmd me")
+			expect(okPrepCap).toBe(true)
+			expect(#cappedCmds).toBe(2)
+			expect(cappedCmds[1].validated).toBe(true)
+			expect(cappedCmds[2].validated).toBeNil()
+			expect(cappedCmds[2].alias).toBe("testlimitcmd")
+			Process.resetLimit(vipPlr.UserId)
+
+			local okPrepFail, failMsg, failCmds =
+				Process.prepareCommands(_K, vipPlr.UserId, ";testlimitcmd NonExistentPlayerXYZ")
+			expect(okPrepFail).toBe(false)
+			expect(failCmds[1].Error).toBe(failMsg)
+
+			local guestPlr = h.env:addPlayer(503, "GuestPurchaseTester")
+			guestPlr:SetAttribute("_KRolesLoaded", true)
+			_K.IsServer = false
+			_K.IsClient = true
+			_K.LocalPlayer = guestPlr
+			_K.client = {
+				playerPrefix = {
+					peek = function()
+						return ";"
+					end,
+				},
+			} :: any
+			_K.Data.settings.vip = true
+			local vipPrompted = 0
+			local gpPrompted: { any } = {}
+			_K.PromptPurchaseVIP = function()
+				vipPrompted += 1
+			end
+			local marketMethods = rawget(h.env.game:GetService("MarketplaceService"), "_methods")
+			marketMethods.PromptGamePassPurchase = function(_self, plr, gpId)
+				table.insert(gpPrompted, { plr = plr, gpId = gpId })
+			end
+			_K.Data.roles.mod.gamepasses = { 777 }
+			_K.Registry.commands.testlimitcmd.RestrictedToRole = { name = "VIP" }
+			local okClientRestr, restrMsg = Process.prepareCommands(_K, guestPlr.UserId, ";testlimitcmd me")
+			expect(okClientRestr).toBe(false)
+			expect(restrMsg).toBe('"<b>testlimitcmd</b>" command restricted to <b>VIP</b>')
+			expect(vipPrompted).toBe(1)
+			expect(#gpPrompted).toBe(1)
+			expect(gpPrompted[1].plr).toBe(guestPlr)
+			expect(gpPrompted[1].gpId).toBe(777)
+			_K.Registry.commands.testlimitcmd.RestrictedToRole = nil
+			_K.Data.roles.mod.gamepasses = nil
+			_K.IsClient = false
+			_K.IsServer = true
+
+			-- 5. Process.runCommands: >1024 restricted admin vs guest, Hook.runPreparedCommands, notRan alert, clientOnly, client Remote.Command
+			local superPlr = h.env:addPlayer(504, "SuperLongCmdTester")
+			superPlr:SetAttribute("_KRolesLoaded", true)
+			_K.Auth.userRoleAdd(superPlr.UserId, "superadmin")
+			local capturedEcho = nil
+			_K.Registry.registerCommand(_K, {
+				name = "testecho",
+				description = "Echo string",
+				group = "general",
+				args = {
+					{ type = "rawString", name = "Text", description = "Text" },
+				},
+				run = function(_context, txt)
+					capturedEcho = txt
+				end,
+				runClient = function(_context, _txt) end,
+			})
+			_K.Registry.registerCommand(_K, {
+				name = "testclientonlycmd",
+				description = "Client only",
+				group = "general",
+				args = {},
+				runClient = function(_context) end,
+			})
+			local longPayload = string.rep("x", 1050)
+			local hookFired = nil
+			local hookConn = _K.Hook.runPreparedCommands:Connect(function(f, res, raw)
+				hookFired = { from = f, count = #res, rawLen = #raw }
+			end)
+			expect(Process.runCommands(_K, superPlr.UserId, ";testecho " .. longPayload, true)).toBe(true)
+			expect(#(capturedEcho or "")).toBe(1050)
+			expect(hookFired ~= nil and hookFired.from == superPlr.UserId and hookFired.count == 1).toBe(true)
+			hookConn:Disconnect()
+
+			-- Guest / non-restricted role has >1024 truncated in prepareCommands and runCommands
+			_K.Data.roles.vip.limits = { commands = 2, cooldown = 5, targets = 4 }
+			Process.resetLimit(vipPlr.UserId)
+			expect(Process.runCommands(_K, vipPlr.UserId, ";testecho " .. longPayload, true)).toBe(true)
+			expect(#(capturedEcho or "")).toBe(1024 - #";testecho ")
+			Process.resetLimit(vipPlr.UserId)
+
+			-- Command limit reached mid-batch alerts with notRan command aliases
+			_K.Data.roles.vip.limits = { commands = 1, cooldown = 5, targets = 4 }
+			local lastAlert = nil
+			local origAlert = _K.alert
+			_K.alert = function(f, msg, s)
+				lastAlert = { from = f, msg = msg, server = s }
+			end
+			-- Pre-prepare 3 commands when limit is 1 by temporarily raising limit during prepareCommands via hook
+			local expandConn = _K.Hook.runPreparedCommands:Connect(function(_f, res)
+				table.insert(res, table.clone(res[1]))
+				res[2].alias = "skippedone"
+				table.insert(res, table.clone(res[1]))
+				res[3].alias = "skippedtwo"
+			end)
+			expect(Process.runCommands(_K, vipPlr.UserId, ";testecho ok", true)).toBe(true)
+			expandConn:Disconnect()
+			_K.alert = origAlert
+			expect(lastAlert ~= nil).toBe(true)
+			expect(string.find((lastAlert :: any).msg, "Commands not ran: skippedone, skippedtwo", 1, true) ~= nil).toBe(
+				true
+			)
+			Process.resetLimit(vipPlr.UserId)
+
+			-- Empty/non-command string returns true
+			expect(Process.runCommands(_K, superPlr.UserId, "hello world not a command", true)).toBe(true)
+
+			-- Client runCommands: clientOnly suppresses prepare error notification; normal client forwards server commands & logs errors
+			_K.IsServer = false
+			_K.IsClient = true
+			local clientNotifies = {}
+			local clientErrorLogs = {}
+			local remoteCmdFired = {}
+			_K.Notify = function(props)
+				table.insert(clientNotifies, props)
+			end
+			local origLog = _K.log
+			local lastGlobalLogFlag = nil
+			_K.log = function(txt, lvl, f, filt, live, glob)
+				if lvl == "ERROR" then
+					table.insert(clientErrorLogs, { text = txt, from = f })
+				end
+				lastGlobalLogFlag = glob
+				return origLog(txt, lvl, f, filt, live, glob)
+			end
+			_K.Remote.Command = {
+				Fire = function(_self, cmdStr)
+					table.insert(remoteCmdFired, cmdStr)
+				end,
+			} :: any
+			expect(Process.runCommands(_K, superPlr.UserId, ";nonexistentcmd", true, false, true)).toBe(false)
+			h.env:flush()
+			expect(#clientNotifies).toBe(0)
+			expect(#clientErrorLogs).toBe(0)
+
+			expect(Process.runCommands(_K, superPlr.UserId, ";nonexistentcmd", true, false, false)).toBe(false)
+			h.env:flush()
+			expect(#clientNotifies).toBe(1)
+			expect(#clientErrorLogs).toBe(1)
+			expect(clientErrorLogs[1].from).toBe(superPlr.UserId)
+
+			expect(Process.runCommands(_K, superPlr.UserId, ";testclientonlycmd ;testecho hello", false, true, false)).toBe(
+				true
+			)
+			h.env:flush()
+			expect(#remoteCmdFired).toBe(1)
+			expect(remoteCmdFired[1]).toBe(";testecho hello")
+			expect(lastGlobalLogFlag).toBe(true)
+			_K.log = origLog
+			_K.IsClient = false
+			_K.IsServer = true
+
+			-- 6. Command:requestCommand error/failure paths & Command:run multi-peer request splitting & Command:validate / Argument edge cases
+			local Command = h.env:require(h.Shared:WaitForChild("Process"):WaitForChild("Command"))
+			local Argument = Command.Argument
+			local peer1 = h.env:addPlayer(505, "PeerReqOne")
+			local peer2 = h.env:addPlayer(506, "PeerReqTwo")
+			local lowPlr = h.env:addPlayer(507, "LowReqTarget")
+			for _, p in { peer1, peer2, lowPlr } do
+				p:SetAttribute("_KRolesLoaded", true)
+			end
+			_K.Auth.userRoleAdd(peer1.UserId, "superadmin")
+			_K.Auth.userRoleAdd(peer2.UserId, "superadmin")
+
+			local reqNotifies = {}
+			_K.Remote.Notify.Fire = function(_self, plr, props)
+				table.insert(reqNotifies, { plr = plr, text = props.Text, from = props.From })
+			end
+			local multiRuns = {}
+			local shouldErrInRun = false
+			_K.Registry.registerCommand(_K, {
+				name = "testmultireq",
+				description = "Multi peer request command",
+				group = "general",
+				args = {
+					{ type = "players", name = "Targets", description = "Targets", shouldRequest = true },
+				},
+				run = function(_context, targets)
+					if shouldErrInRun then
+						error("boom_in_run")
+					end
+					local names = {}
+					for _, t in targets do
+						table.insert(names, t.Name)
+					end
+					table.insert(multiRuns, names)
+				end,
+			})
+
+			-- Invoke throws (player left during request)
+			_K.Remote.RequestCommand.Invoke = function()
+				error("player disconnected")
+			end
+			local okPrepReq, reqCmds = Process.prepareCommands(_K, superPlr.UserId, ";testmultireq PeerReqOne")
+			expect(okPrepReq).toBe(true)
+			local leftRes = reqCmds[1]:requestCommand(peer1, { { peer1 } }, _K.Registry.commands.testmultireq.run)
+			expect(leftRes).toBe(false)
+			expect(string.find(reqNotifies[#reqNotifies].text, "left during", 1, true) ~= nil).toBe(true)
+
+			-- Accepted request where run errors notifies sender with "command failed:"
+			_K.Remote.RequestCommand.Invoke = function()
+				return true
+			end
+			shouldErrInRun = true
+			table.clear(reqNotifies)
+			reqCmds[1]:requestCommand(peer1, { { peer1 } }, _K.Registry.commands.testmultireq.run)
+			expect(string.find(reqNotifies[#reqNotifies].text, "command failed:", 1, true) ~= nil).toBe(true)
+			shouldErrInRun = false
+
+			-- Accepted request where run succeeds does NOT fire "command failed:"
+			table.clear(reqNotifies)
+			reqCmds[1]:requestCommand(peer1, { { peer1 } }, _K.Registry.commands.testmultireq.run)
+			expect(string.find(reqNotifies[#reqNotifies].text, "accepted", 1, true) ~= nil).toBe(true)
+			expect(#multiRuns).toBe(1)
+			expect(multiRuns[1]).toEqual({ "PeerReqOne" })
+
+			-- Multi-target list with 2 peers + 1 lower-rank player splits solo requests for each peer and runs immediately for lowPlr
+			table.clear(multiRuns)
+			local okMulti, multiCmds =
+				Process.prepareCommands(_K, superPlr.UserId, ";testmultireq PeerReqOne,PeerReqTwo,LowReqTarget")
+			expect(okMulti).toBe(true)
+			local runOk = multiCmds[1]:run()
+			expect(runOk).toBe(true)
+			h.env:flush()
+			expect(#multiRuns).toBe(3)
+			expect(multiRuns[1]).toEqual({ "PeerReqTwo" })
+			expect(multiRuns[2]).toEqual({ "PeerReqOne" })
+			expect(multiRuns[3]).toEqual({ "LowReqTarget" })
+
+			-- Multi-target list with ONLY peers skips running the initial command and only runs via requests
+			table.clear(multiRuns)
+			_K.Remote.RequestCommand.Invoke = function()
+				return false
+			end
+			local okOnlyPeers, onlyPeerCmds =
+				Process.prepareCommands(_K, superPlr.UserId, ";testmultireq PeerReqOne,PeerReqTwo")
+			expect(okOnlyPeers).toBe(true)
+			expect(onlyPeerCmds[1]:run()).toBe(true)
+			h.env:flush()
+			expect(#multiRuns).toBe(0)
+
+			-- Direct Command:validate resets targetLimits when not _keepTargetLimits and sets array[2] pos to start + #text
+			_K.Data.targetLimits[superPlr.UserId] = 99
+			local rawCmd = Command.new(
+				_K,
+				"testmultireq",
+				_K.Registry.commands.testmultireq,
+				{ { 2, "testmultireq" } },
+				superPlr.UserId,
+				";testmultireq"
+			)
+			expect(rawCmd:validate()).toBe(true)
+			expect(rawCmd.array[2][1]).toBe(14)
+			expect(rawCmd.array[2][2]).toBe("")
+			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(1)
+
+			-- Argument:transform invalidates when transform returns nil for non-whitespace optional arg; validate/parse restore targetLimits
+			_K.Registry.registerType("testniltransform", {
+				transform = function(txt)
+					if txt == "bad" then
+						return nil, "Custom transform error"
+					end
+					return txt
+				end,
+				validate = function(v)
+					_K.Data.targetLimits[superPlr.UserId] = (_K.Data.targetLimits[superPlr.UserId] or 0) + 5
+					if v == "invalidval" then
+						return false, nil
+					end
+					return true
+				end,
+				parse = function(v)
+					_K.Data.targetLimits[superPlr.UserId] = (_K.Data.targetLimits[superPlr.UserId] or 0) + 5
+					if v == "parsefail" then
+						return nil, "Custom parse error"
+					end
+					return v
+				end,
+			})
+			local dummyCmd = {
+				_K = _K,
+				from = superPlr.UserId,
+				array = { { 1, "cmd" } },
+			}
+			local optNilArg = Argument.new(
+				dummyCmd,
+				{ type = "testniltransform", name = "Opt", description = "Opt", optional = true },
+				5,
+				"bad"
+			)
+			local okTr, trErr = optNilArg:transform()
+			expect(okTr).toBe(false)
+			expect(trErr.message).toBe("Custom transform error")
+
+			local wsNilArg = Argument.new(
+				dummyCmd,
+				{ type = "testniltransform", name = "Opt", description = "Opt", optional = false },
+				5,
+				"   "
+			)
+			wsNilArg.rawType = {
+				transform = function()
+					return nil
+				end,
+				validate = function()
+					return true
+				end,
+				parse = function(v)
+					return v
+				end,
+			} :: any
+			local okWs, wsErr = wsNilArg:transform()
+			expect(okWs).toBe(false)
+			expect(wsErr.message).toBe("Invalid transform: nil")
+
+			_K.Data.targetLimits[superPlr.UserId] = 7
+			local valFailArg =
+				Argument.new(dummyCmd, { type = "testniltransform", name = "V", description = "V" }, 5, "invalidval")
+			expect(valFailArg:transform()).toBe(true)
+			local okVal, valErr = valFailArg:validate()
+			expect(okVal).toBe(false)
+			expect(valErr.message).toBe("Invalid argument: invalidval")
+			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(7)
+
+			local parseFailArg =
+				Argument.new(dummyCmd, { type = "testniltransform", name = "P", description = "P" }, 5, "parsefail")
+			expect(parseFailArg:transform()).toBe(true)
+			expect(parseFailArg:validate()).toBe(true)
+			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(12)
+			local okParse, parseErr = parseFailArg:parse()
+			expect(okParse).toBe(false)
+			expect(parseErr.message).toBe("Custom parse error")
+			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(7)
+
+			-- Prefix type switching listable -> non-listable and listable -> different listable
+			_K.Registry.registerType("testsublist", {
+				listable = true,
+				validate = function()
+					return true
+				end,
+				parse = function(v)
+					return { "sub_" .. v, "sub2_" .. v }
+				end,
+			})
+			_K.Registry.registerType("testsinglepref", {
+				listable = false,
+				prefixes = { ["^@"] = "testsublist" },
+				validate = function()
+					return true
+				end,
+				parse = function(v)
+					return v
+				end,
+			})
+			_K.Registry.registerType("testlistpref", {
+				listable = true,
+				prefixes = { ["^@"] = "testsublist" },
+				validate = function()
+					return true
+				end,
+				parse = function(v)
+					return v
+				end,
+			})
+			local singlePrefArg =
+				Argument.new(dummyCmd, { type = "testsinglepref", name = "SP", description = "SP" }, 5, "@item")
+			local okSP, resSP = singlePrefArg:prepare()
+			expect(okSP).toBe(true)
+			expect(resSP).toBe("sub_item")
+
+			local listPrefArg =
+				Argument.new(dummyCmd, { type = "testlistpref", name = "LP", description = "LP" }, 5, "@item")
+			local okLP, resLP = listPrefArg:prepare()
+			expect(okLP).toBe(true)
+			expect(resLP).toEqual({ "sub_item", "sub2_item" })
+
+			-- 7. Registry edge cases: re-registering command aliases, suggestCommandAlias >32 chars, makeSequenceType, registerCommandModule
+			local regHookCmd = nil
+			local regConn = _K.Hook.commandRegistered:Connect(function(c)
+				regHookCmd = c
+			end)
+			_K.Registry.registerCommand(_K, {
+				name = "testregoverride",
+				aliases = { "tro_old" },
+				description = "Old cmd",
+				group = "moderation",
+				args = {},
+				run = function() end,
+			})
+			h.env:step(0.3)
+			expect(table.find(_K.Registry.commandNames, "tro_old") ~= nil).toBe(true)
+			_K.Registry.registerCommand(_K, {
+				name = "testregoverride",
+				aliases = { "tro_new" },
+				description = "New cmd without explicit group",
+				args = {},
+				run = function() end,
+			})
+			h.env:step(0.3)
+			regConn:Disconnect()
+			expect(regHookCmd ~= nil and regHookCmd.name == "testregoverride").toBe(true)
+			expect(_K.Registry.commands.testregoverride.group).toBe("moderation")
+			expect(_K.Registry.commands.tro_old).toBeNil()
+			expect(table.find(_K.Registry.commandNames, "tro_old")).toBeNil()
+			expect(table.find(_K.Registry.commandNames, "tro_new") ~= nil).toBe(true)
+
+			local longAliasQuery = "testregoverride" .. string.rep("z", 30)
+			expect(#_K.Registry.suggestCommandAlias(longAliasQuery) > 0).toBe(true)
+
+			-- Command:validate client suggestions disabling shouldFillWithSelf, and filledSelf second optional arg skipping
+			_K.Registry.registerType("testplayeropt", {
+				validate = function(v)
+					return v == "me" or v == "PeerReqOne", "Not a player"
+				end,
+				parse = function(v)
+					return v
+				end,
+				suggestions = function()
+					return { "PeerReqOne" }, { peer1 }
+				end,
+			})
+			_K.Registry.registerCommand(_K, {
+				name = "testfillsug",
+				description = "Fill suggestion test",
+				group = "general",
+				args = {
+					{ type = "testplayeropt", name = "Target1", description = "Target1" },
+					{ type = "testplayeropt", name = "Target2", description = "Target2", optional = true },
+					{ type = "integer", name = "Num", description = "Num" },
+				},
+				run = function() end,
+			})
+			_K.IsServer = false
+			_K.IsClient = true
+			local okFillCli, fillCliErr = Process.prepareCommands(_K, superPlr.UserId, ";testfillsug PeerReq 10")
+			expect(okFillCli).toBe(false)
+			expect(fillCliErr).toBe("Not a player")
+			_K.IsClient = false
+			_K.IsServer = true
+
+			local okFillSrv, fillSrvCmds = Process.prepareCommands(_K, superPlr.UserId, ";testfillsug 42")
+			expect(okFillSrv).toBe(true)
+			expect(fillSrvCmds[1].preparedArgs[1]).toBe("me")
+			expect(fillSrvCmds[1].args[2].skipped).toBe("42")
+			expect(fillSrvCmds[1].preparedArgs[3]).toBe(42)
+
+			local okFillSrv2, fillSrvCmds2 = Process.prepareCommands(_K, superPlr.UserId, ";testfillsug PeerReqOne 42")
+			expect(okFillSrv2).toBe(true)
+			expect(fillSrvCmds2[1].preparedArgs[1]).toBe("PeerReqOne")
+			expect(fillSrvCmds2[1].args[2].skipped).toBe("42")
+			expect(fillSrvCmds2[1].preparedArgs[3]).toBe(42)
+
+			-- Process.runCommands liveText redaction for freeText / redactLog args and failed command liveText
+			local capturedLogs = {}
+			local origLog2 = _K.log
+			_K.log = function(txt, lvl, f, filt, live, glob)
+				table.insert(capturedLogs, { txt = txt, lvl = lvl, live = live, glob = glob })
+				return origLog2(txt, lvl, f, filt, live, glob)
+			end
+			_K.Registry.registerType("testfreetext", {
+				freeText = true,
+				filterLog = true,
+				validate = function()
+					return true
+				end,
+				parse = function(v)
+					return v
+				end,
+			})
+			_K.Registry.registerCommand(_K, {
+				name = "testlogredact",
+				description = "Log redact test",
+				group = "general",
+				args = {
+					{ type = "testfreetext", name = "Msg", description = "Msg" },
+				},
+				run = function() end,
+			})
+			expect(Process.runCommands(_K, superPlr.UserId, ";testlogredact secretword", false)).toBe(true)
+			h.env:flush()
+			expect(capturedLogs[#capturedLogs].txt).toBe(";testlogredact secretword")
+			expect(capturedLogs[#capturedLogs].live).toBe(";testlogredact …")
+
+			expect(Process.runCommands(_K, superPlr.UserId, ";testlimitcmd NonExistentPlrXYZ", false)).toBe(false)
+			h.env:flush()
+			expect(capturedLogs[#capturedLogs].live).toBe(";testlimitcmd …")
+			_K.log = origLog2
 		end
 	)
 
@@ -1401,8 +1918,31 @@ describe("Process · Command filters & async roles", function()
 		end
 	)
 
+	local cachedModelSut: any = nil
+	local cachedModelMutant: any = "unset"
 	sert.model("Command Execution, Hook & Request Protocol", {
 		setup = function()
+			local currentMutant = rawget(_G, "__SERT_MUTANT")
+			if cachedModelSut ~= nil and cachedModelMutant == currentMutant then
+				local sut = cachedModelSut
+				sut.h.env:step(6)
+				sut.Data.settings.prefix = { ";" }
+				sut.Data.settings.commandRequests = true
+				sut.Data.roles.mod.limits = { commands = 2, cooldown = 5, targets = 4 }
+				sut.filterCancel = false
+				sut.nextRequestOutcome = "accept"
+				sut.preHookCount = 0
+				sut.postHookCount = 0
+				table.clear(sut.executedRuns)
+				sut.preHookCancelledButCommandRan = false
+				sut.deniedOrTimedOutRequestRan = false
+				sut.rankCeilingBypassed = false
+				for _, p in { sut.superadmin, sut.mod, sut.peerMod, sut.guest } do
+					sut.Process.resetLimit(p.UserId)
+				end
+				return sut
+			end
+
 			local h = Harness.newEnv({ isStudio = false })
 			local Data = h:requireData()
 			local Process = h:requireProcess()
@@ -1509,13 +2049,11 @@ describe("Process · Command filters & async roles", function()
 				end,
 			})
 
+			cachedModelSut = sut
+			cachedModelMutant = currentMutant
 			return sut
 		end,
-		teardown = function(sut)
-			if sut and sut.removeFilter then
-				sut.removeFilter()
-			end
-		end,
+		teardown = function(_sut) end,
 		init = function()
 			return {
 				filterCancel = false,

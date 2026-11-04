@@ -87,11 +87,9 @@ return function(_K, text, cursorPosition)
 			data.rawArg = commandText
 			data.query = string.sub(commandText, 1, cursorPosition - commandPos)
 			data.suggestionType = _K.Registry.types.command
-			data.suggestions =
+			local rawSuggestions =
 				_K.Util.Suggest.query(data.query, _K.Registry.types.command.suggestions(data.query, from))
-
-			local rawSuggestions = data.suggestions
-			data.suggestions = table.create(#data.suggestions)
+			data.suggestions = table.create(#rawSuggestions)
 			local invalidSuggestions = {}
 			for _, suggestionData in rawSuggestions do
 				local _name, _display, cmd = unpack(suggestionData)

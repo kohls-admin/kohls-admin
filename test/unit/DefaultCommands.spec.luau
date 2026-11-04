@@ -849,19 +849,14 @@ local function setupClientState(clientK: any, ch: Harness.MountedEnv)
 	}
 end
 
-local function createSimCluster(serverGlobals: { [string]: any }?)
+local function createSimCluster(serverGlobals: { [string]: any }?, serverOnly: boolean?)
 	local world = sert.sim.new({ backing = true })
 	local server = world:server()
 	local client1 = server:client(1, "CreatorPlr")
 	local client2 = server:client(2, "TargetPlr")
 
 	local sh = Harness.newPeerEnv(server, { isStudio = false })
-	local ch1 = Harness.newPeerEnv(client1, { isClient = true })
-	local ch2 = Harness.newPeerEnv(client2, { isClient = true })
-
 	decorateEnvironment(sh.env)
-	decorateEnvironment(ch1.env)
-	decorateEnvironment(ch2.env)
 
 	local srvP1 = sh.env.Players:GetPlayerByUserId(1)
 	local srvP2 = sh.env.Players:GetPlayerByUserId(2)
@@ -873,20 +868,29 @@ local function createSimCluster(serverGlobals: { [string]: any }?)
 		sh.env.createInstance("PlayerGui", srvP1)
 	end
 
-	ch1.env.Players.LocalPlayer.Name = "CreatorPlr"
-	ch1.env.Players.LocalPlayer.DisplayName = "CreatorPlr"
-	ch2.env.Players.LocalPlayer.Name = "TargetPlr"
-	ch2.env.Players.LocalPlayer.DisplayName = "TargetPlr"
-
 	buildCharacter(sh.env, srvP1)
 	buildCharacter(sh.env, srvP2)
-	buildCharacter(ch1.env, ch1.env.Players.LocalPlayer)
-	buildCharacter(ch2.env, ch2.env.Players.LocalPlayer)
-	local cliP2OnC1 = ch1.env.Players:GetPlayerByUserId(2)
-	if cliP2OnC1 then
-		cliP2OnC1.Name = "TargetPlr"
-		cliP2OnC1.DisplayName = "TargetPlr"
-		buildCharacter(ch1.env, cliP2OnC1)
+
+	local ch1: any, ch2: any
+	if not serverOnly then
+		ch1 = Harness.newPeerEnv(client1, { isClient = true })
+		ch2 = Harness.newPeerEnv(client2, { isClient = true })
+		decorateEnvironment(ch1.env)
+		decorateEnvironment(ch2.env)
+
+		ch1.env.Players.LocalPlayer.Name = "CreatorPlr"
+		ch1.env.Players.LocalPlayer.DisplayName = "CreatorPlr"
+		ch2.env.Players.LocalPlayer.Name = "TargetPlr"
+		ch2.env.Players.LocalPlayer.DisplayName = "TargetPlr"
+
+		buildCharacter(ch1.env, ch1.env.Players.LocalPlayer)
+		buildCharacter(ch2.env, ch2.env.Players.LocalPlayer)
+		local cliP2OnC1 = ch1.env.Players:GetPlayerByUserId(2)
+		if cliP2OnC1 then
+			cliP2OnC1.Name = "TargetPlr"
+			cliP2OnC1.DisplayName = "TargetPlr"
+			buildCharacter(ch1.env, cliP2OnC1)
+		end
 	end
 
 	for name, value in serverGlobals or {} do
@@ -920,12 +924,15 @@ local function createSimCluster(serverGlobals: { [string]: any }?)
 	_K.Auth.userRoleAdd(1, "creator")
 	_K.Auth.userRoleAdd(1, "vip")
 
-	local clientK = ch1:requireK()
-	clientK.Data.creatorId = 1
-	Harness.seedRoles(clientK.Data)
-	clientK.Auth.userRoleAdd(1, "creator")
-	clientK.Auth.userRoleAdd(1, "vip")
-	setupClientState(clientK, ch1)
+	local clientK: any
+	if not serverOnly then
+		clientK = ch1:requireK()
+		clientK.Data.creatorId = 1
+		Harness.seedRoles(clientK.Data)
+		clientK.Auth.userRoleAdd(1, "creator")
+		clientK.Auth.userRoleAdd(1, "vip")
+		setupClientState(clientK, ch1)
+	end
 	world:run(0.1)
 
 	return {
@@ -1296,6 +1303,18 @@ describe("DefaultCommands", function()
 			-- Second award triggers "already has badge" alert branch
 			runSrv(";badge TargetPlr 555")
 			expect(c.sh.env.badges[2][555]).toBe(true)
+			-- Badge error path returns "Failed to award badges: ..."
+			local origAwardBadge = _K.Service.Badge.AwardBadge
+			_K.Service.Badge.AwardBadge = function()
+				error("BadgeAPIError")
+			end
+			local badgeErrRes = nil
+			c.sh.env.task.spawn(function()
+				badgeErrRes = _K.Registry.commands.badge.run({ _K = _K, fromPlayer = srvP1 }, { srvP2 }, 999)
+			end)
+			c.world:run(20)
+			expect(string.find(tostring(badgeErrRes), "Failed to award badges:", 1, true) ~= nil).toBe(true)
+			_K.Service.Badge.AwardBadge = origAwardBadge
 
 			-- btools
 			local btoolMock = c.sh.env.Instance.new("Tool")
@@ -1303,6 +1322,15 @@ describe("DefaultCommands", function()
 			_K.Registry.commands.btools.env.tool = btoolMock
 			runSrv(";btools TargetPlr")
 			expect(srvP2.Backpack:FindFirstChild("Building Tools")).toBeTruthy()
+			-- Second btools run skips duplicating when "Building Tools" is already in Backpack
+			runSrv(";btools TargetPlr")
+			local btoolCount = 0
+			for _, child in srvP2.Backpack:GetChildren() do
+				if child.Name == "Building Tools" then
+					btoolCount += 1
+				end
+			end
+			expect(btoolCount).toBe(1)
 
 			c.world:run(61)
 			runCli(";chat")
@@ -1317,10 +1345,22 @@ describe("DefaultCommands", function()
 			runCli(";explorer")
 			expect(clientK._explorerShown).toBe(true)
 
+			local incogSrvEnv = _K.Registry.commands.incognito.env
+			local incogFired = {}
+			local origIncogFireAll = incogSrvEnv.remote.FireAll
+			incogSrvEnv.remote.FireAll = function(self, ...)
+				table.insert(incogFired, { ... })
+				return origIncogFireAll(self, ...)
+			end
 			runSrv(";incognito TargetPlr false")
-			expect(_K.Registry.commands.incognito.env.hidden[srvP2]).toBe(false)
+			expect(incogSrvEnv.hidden[srvP2]).toBe(false)
+			expect(incogFired[#incogFired][1]).toBe(srvP2.UserId)
+			expect(incogFired[#incogFired][3]).toBe(false)
 			runSrv(";incognito TargetPlr true")
-			expect(_K.Registry.commands.incognito.env.hidden[srvP2]).toBe(true)
+			expect(incogSrvEnv.hidden[srvP2]).toBe(true)
+			expect(incogFired[#incogFired][1]).toBe(srvP2.Name)
+			expect(incogFired[#incogFired][3]).toBe(true)
+			incogSrvEnv.remote.FireAll = origIncogFireAll
 			c.world:run(0.05)
 			runCli(";incognitolist")
 			local incogEnv = clientK.Registry.commands.incognitolist.env
@@ -1334,10 +1374,34 @@ describe("DefaultCommands", function()
 			incogEnv.window._instance.Visible = false
 
 			table.clear(notifications)
+			local ensuredServersCount = 0
+			local origEnsureServers = _K.Data.ensureServersLoaded
+			_K.Data.ensureServersLoaded = function(...)
+				ensuredServersCount += 1
+				return origEnsureServers(...)
+			end
+			local publishedReserve = {}
+			local origPublish = _K.Data.publishTopic
+			_K.Data.publishTopic = function(topic, payload)
+				if topic == "reserve" then
+					table.insert(publishedReserve, payload)
+				end
+				return origPublish(topic, payload)
+			end
 			runSrv(";reserve TestServer")
+			expect(ensuredServersCount).toBe(1)
 			expect(_K.Data.reservedServers["TestServer"]).toBeTruthy()
+			expect(#publishedReserve).toBe(1)
+			expect(type(publishedReserve[1])).toBe("table")
+			expect(publishedReserve[1][1]).toBe("TestServer")
 			expect(#notifications >= 1).toBe(true)
 			expect(string.find(notifications[#notifications].msg.Text, "has been reserved", 1, true) ~= nil).toBe(true)
+			-- Re-reserving same server code returns already-reserved message
+			local dupRes = _K.Registry.commands.reserve.run(
+				{ _K = _K, from = srvP1.UserId, fromPlayer = srvP1, args = { {} } },
+				"TestServer"
+			)
+			expect(string.find(tostring(dupRes), "already reserved", 1, true) ~= nil).toBe(true)
 
 			local tpBefore = #c.sh.env.teleports
 			runSrv(";place TargetPlr @TestServer")
@@ -1347,10 +1411,16 @@ describe("DefaultCommands", function()
 			)
 
 			table.clear(notifications)
+			local beforeUnreserveEnsure = ensuredServersCount
 			runSrv(";unreserve TestServer")
+			expect(ensuredServersCount > beforeUnreserveEnsure).toBe(true)
 			expect(_K.Data.reservedServers["TestServer"]).toBeNil()
+			expect(#publishedReserve).toBe(2)
+			expect(publishedReserve[2]).toBe("TestServer")
 			expect(#notifications >= 1).toBe(true)
 			expect(string.find(notifications[#notifications].msg.Text, "has been removed", 1, true) ~= nil).toBe(true)
+			_K.Data.ensureServersLoaded = origEnsureServers
+			_K.Data.publishTopic = origPublish
 
 			c.world:run(61)
 			runSrv(";global announce GlobalTest")
@@ -1369,12 +1439,21 @@ describe("DefaultCommands", function()
 			expect(sawTimeLog).toBe(true)
 			expect(sawGlobalLog).toBe(true)
 			-- Test Shutdown server cancellation branch and countdown > 0
+			local announceCount = 0
+			local origAnnounceFireAll = _K.Remote.Announce.FireAll
+			_K.Remote.Announce.FireAll = function(self, ...)
+				announceCount += 1
+				return origAnnounceFireAll(self, ...)
+			end
 			local shutThread = c.sh.env.task.spawn(function()
 				runSrv(";shutdown 2 Maintenance soon")
 			end)
 			c.world:run(0.05)
-			runSrv(";shutdown") -- cancel active shutdown
+			expect(announceCount).toBe(1)
+			runSrv(";shutdown") -- cancel active shutdown (no delay -> no Announce:FireAll)
+			expect(announceCount).toBe(1)
 			c.sh.env.task.cancel(shutThread)
+			_K.Remote.Announce.FireAll = origAnnounceFireAll
 			-- Trigger client Shutdown remote listener
 			_K.Remote.Shutdown:Fire(srvP1, 2, "CreatorPlr", "Test reason")
 			_K.Remote.Shutdown:Fire(srvP1, nil)
@@ -1384,6 +1463,18 @@ describe("DefaultCommands", function()
 			c.world:run(0.05)
 			expect(string.find(tostring(srvP2._props._kicked), "has shutdown the server.", 1, true) ~= nil).toBe(true)
 			expect(string.find(tostring(srvP2._props._kicked), "Reason: Server maintenance", 1, true) ~= nil).toBe(true)
+			-- Direct shutdown with nil fromPlayer falls back to tostring(context.from) and updates args[2].parsedArgs
+			local shutArg2: any = {}
+			_K.Registry.commands.shutdown.run(
+				{ _K = _K, from = 77777, fromPlayer = nil, args = { {}, shutArg2 } },
+				nil,
+				"OfflineReason"
+			)
+			expect(shutArg2.parsedArgs).toEqual({ "OfflineReason" })
+			expect(shutArg2.redactLog).toBe(false)
+			expect(string.find(tostring(srvP2._props._kicked), "77777 has shutdown the server.", 1, true) ~= nil).toBe(
+				true
+			)
 		end
 	)
 
@@ -2446,7 +2537,7 @@ describe("DefaultCommands", function()
 	test(
 		"loads DefaultAddons/Legacy.luau, migrates legacy settings and custom commands, and runs legacy role aliases",
 		function()
-			local c = createSimCluster()
+			local c = createSimCluster(nil, true)
 			local _K = c._K
 			_K.setupPurchasables = function() end
 
@@ -2561,7 +2652,7 @@ describe("DefaultCommands", function()
 	)
 
 	test("legacy role commands give unrestricted, unsaved roles unless the giver is a developer", function()
-		local c = createSimCluster()
+		local c = createSimCluster(nil, true)
 		local _K = c._K
 		_K.setupPurchasables = function() end
 		c.sh.env:require(c.sh.Shared.DefaultAddons:FindFirstChild("Legacy"))(_K)
@@ -2603,7 +2694,7 @@ describe("DefaultCommands", function()
 	end)
 
 	test("a moderator's ;ban can't turn a saved ban into a server ban", function()
-		local c = createSimCluster()
+		local c = createSimCluster(nil, true)
 		local _K = c._K
 		_K.Auth.userRoleAdd(2, "mod")
 		_K.Data.bans["777003"] = { "SavedBan", "Exploiting", -1, 1 }
@@ -2648,7 +2739,7 @@ describe("DefaultCommands", function()
 	end)
 
 	test(";unban doesn't look up offline ranks, ;ban still does", function()
-		local c = createSimCluster()
+		local c = createSimCluster(nil, true)
 		local _K = c._K
 		_K.Auth.userRoleAdd(2, "mod")
 		c.srvP2:SetAttribute("_KRolesLoaded", true)
@@ -2697,361 +2788,313 @@ describe("DefaultCommands", function()
 		gMethods.GetGroupsAsync, mMethods.UserOwnsGamePassAsync = origGetGroups, origOwnsPass
 	end)
 
-	test(";global doesn't publish the raw token of a skipped optional argument", function()
-		local c = createSimCluster()
-		local _K = c._K
-		_K.Util.String.filterForBroadcast = function()
-			return "Filtered"
-		end
-		local published = {}
-		c._K.Data.subscribeTopic("global", function(message)
-			table.insert(published, message.Data[2])
-		end)
+	describe("Process · SuperAdmin ;global", function()
+		test(";global doesn't publish the raw token of a skipped optional argument", function()
+			local c = createSimCluster(nil, true)
+			local _K = c._K
+			_K.Util.String.filterForBroadcast = function()
+				return "Filtered"
+			end
+			local published = {}
+			c._K.Data.subscribeTopic("global", function(message)
+				table.insert(published, message.Data[2])
+			end)
 
-		-- "Raw" isn't a delay, so the reason takes it again and only the reason is filtered
-		c.runSrv(';global shutdown "Raw" text')
-		c.world:run(0.1)
-		expect(published[1]).toBe(';shutdown "Filtered"')
-		expect(string.find(tostring(c.srvP2._props._kicked), "Raw", 1, true)).toBeNil()
-		expect(string.find(tostring(c.srvP2._props._kicked), "Reason: Filtered", 1, true) ~= nil).toBe(true)
+			-- "Raw" isn't a delay, so the reason takes it again and only the reason is filtered
+			c.runSrv(';global shutdown "Raw" text')
+			c.world:run(0.1)
+			expect(published[1]).toBe(';shutdown "Filtered"')
+			expect(string.find(tostring(c.srvP2._props._kicked), "Raw", 1, true)).toBeNil()
+			expect(string.find(tostring(c.srvP2._props._kicked), "Reason: Filtered", 1, true) ~= nil).toBe(true)
 
-		-- an optional argument that took its token is still published
-		c.world:run(61)
-		c.runSrv(";global shutdown 0 text")
-		c.world:run(0.1)
-		expect(published[2]).toBe(';shutdown 0 "Filtered"')
-	end)
-
-	test(";global always quotes text so receiving servers can't read commands out of it", function()
-		local c = createSimCluster()
-		local _K = c._K
-		local filterResult
-		_K.Util.String.filterForBroadcast = function(text)
-			return filterResult or text
-		end
-		local published = {}
-		c._K.Data.subscribeTopic("global", function(message)
-			table.insert(published, message.Data[2])
-		end)
-		local received, voted = {}, false
-		_K.Registry.commands.message.run = function(_context, message)
-			table.insert(received, message)
-		end
-		_K.Registry.commands.vote.run = function()
-			voted = true
-		end
-		local function runGlobal(commandString: string)
-			c.world:run(61) -- past the broadcast cooldown
-			c.runSrv(commandString)
-			c.world:run(0.5)
-		end
-
-		-- the last text argument of a single command used to be published unquoted and ran as two commands
-		runGlobal(';global m "x ;vote all question"')
-		expect(published[1]).toBe(';m "x ;vote all question"')
-		expect(received).toEqual({ "x ;vote all question" })
-		expect(voted).toBe(false)
-
-		-- text holding a double quote takes backticks, quotes have no escapes
-		runGlobal(';global `m "say ;vote all" now`')
-		expect(published[2]).toBe(';m `say ;vote all" now`')
-		expect(received[2]).toBe('say ;vote all" now')
-
-		-- text holding both quotes keeps the double quotes and loses the backticks
-		filterResult = 'a "b" `c` ;vote all q'
-		runGlobal(";global m text")
-		expect(published[3]).toBe(";m `a \"b\" 'c' ;vote all q`")
-		expect(received[3]).toBe("a \"b\" 'c' ;vote all q")
-		expect(voted).toBe(false)
-		filterResult = nil
-
-		-- commands without text are published as before
-		runGlobal(";global gravity 80")
-		expect(published[4]).toBe(";gravity 80")
-		expect(c.sh.env.workspace.Gravity).toBe(80)
-	end)
-
-	test(";global text arguments of every text type reach receiving servers without their quotes", function()
-		local c = createSimCluster()
-		local _K = c._K
-		_K.Util.String.filterForBroadcast = function(text)
-			return text
-		end
-		local published = {}
-		c._K.Data.subscribeTopic("global", function(message)
-			table.insert(published, message.Data[2])
-		end)
-		local received = {}
-		for _, argType in { "string", "strings", "chatString", "stringGreedy" } do
-			_K.Registry.registerCommand(_K, {
-				name = "global" .. argType,
-				description = "Records its text",
-				group = "superadmin",
-				args = { { type = argType, name = "Text", description = "The text." } },
-				run = function(_context, text)
-					received[argType] = text
-				end,
-			})
-		end
-		c.world:run(0.1)
-
-		for i, argType in { "string", "strings", "chatString", "stringGreedy" } do
+			-- an optional argument that took its token is still published
 			c.world:run(61)
-			c.runSrv(`;global global{argType} "x ;vote all q"`)
+			c.runSrv(";global shutdown 0 text")
+			c.world:run(0.1)
+			expect(published[2]).toBe(';shutdown 0 "Filtered"')
+		end)
+
+		test(";global always quotes text so receiving servers can't read commands out of it", function()
+			local c = createSimCluster(nil, true)
+			local _K = c._K
+			local filterResult
+			_K.Util.String.filterForBroadcast = function(text)
+				return filterResult or text
+			end
+			local published = {}
+			c._K.Data.subscribeTopic("global", function(message)
+				table.insert(published, message.Data[2])
+			end)
+			local received, voted = {}, false
+			_K.Registry.commands.message.run = function(_context, message)
+				table.insert(received, message)
+			end
+			_K.Registry.commands.vote.run = function()
+				voted = true
+			end
+			local function runGlobal(commandString: string)
+				c.world:run(61) -- past the broadcast cooldown
+				c.runSrv(commandString)
+				c.world:run(0.5)
+			end
+
+			-- the last text argument of a single command used to be published unquoted and ran as two commands
+			runGlobal(';global m "x ;vote all question"')
+			expect(published[1]).toBe(';m "x ;vote all question"')
+			expect(received).toEqual({ "x ;vote all question" })
+			expect(voted).toBe(false)
+
+			-- text holding a double quote takes backticks, quotes have no escapes
+			runGlobal(';global `m "say ;vote all" now`')
+			expect(published[2]).toBe(';m `say ;vote all" now`')
+			expect(received[2]).toBe('say ;vote all" now')
+
+			-- text holding both quotes keeps the double quotes and loses the backticks
+			filterResult = 'a "b" `c` ;vote all q'
+			runGlobal(";global m text")
+			expect(published[3]).toBe(";m `a \"b\" 'c' ;vote all q`")
+			expect(received[3]).toBe("a \"b\" 'c' ;vote all q")
+			expect(voted).toBe(false)
+			filterResult = nil
+
+			-- commands without text are published as before
+			runGlobal(";global gravity 80")
+			expect(published[4]).toBe(";gravity 80")
+			expect(c.sh.env.workspace.Gravity).toBe(80)
+		end)
+
+		test(";global text arguments of every text type reach receiving servers without their quotes", function()
+			local c = createSimCluster(nil, true)
+			local _K = c._K
+			_K.Util.String.filterForBroadcast = function(text)
+				return text
+			end
+			local published = {}
+			c._K.Data.subscribeTopic("global", function(message)
+				table.insert(published, message.Data[2])
+			end)
+			local received = {}
+			for _, argType in { "string", "strings", "chatString", "stringGreedy" } do
+				_K.Registry.registerCommand(_K, {
+					name = "global" .. argType,
+					description = "Records its text",
+					group = "superadmin",
+					args = { { type = argType, name = "Text", description = "The text." } },
+					run = function(_context, text)
+						received[argType] = text
+					end,
+				})
+			end
+			c.world:run(0.1)
+
+			for i, argType in { "string", "strings", "chatString", "stringGreedy" } do
+				c.world:run(61)
+				c.runSrv(`;global global{argType} "x ;vote all q"`)
+				c.world:run(0.5)
+				expect(published[i]).toBe(`;global{string.lower(argType)} "x ;vote all q"`)
+			end
+			expect(received).toEqual({
+				string = "x ;vote all q",
+				strings = { "x ;vote all q" },
+				chatString = "x ;vote all q",
+				stringGreedy = "x ;vote all q",
+			})
+
+			-- a list is quoted per item so receivers get the same items, text that isn't a list keeps its commas
+			c.world:run(61)
+			c.runSrv(';global globalstrings a,"b, ;vote all q",c')
 			c.world:run(0.5)
-			expect(published[i]).toBe(`;global{string.lower(argType)} "x ;vote all q"`)
-		end
-		expect(received).toEqual({
-			string = "x ;vote all q",
-			strings = { "x ;vote all q" },
-			chatString = "x ;vote all q",
-			stringGreedy = "x ;vote all q",
-		})
-
-		-- a list is quoted per item so receivers get the same items, text that isn't a list keeps its commas
-		c.world:run(61)
-		c.runSrv(';global globalstrings a,"b, ;vote all q",c')
-		c.world:run(0.5)
-		expect(published[5]).toBe(';globalstrings "a","b, ;vote all q","c"')
-		expect(received.strings).toEqual({ "a", "b, ;vote all q", "c" })
-		c.world:run(61)
-		c.runSrv(";global globalstring a,b")
-		c.world:run(0.5)
-		expect(published[6]).toBe(';globalstring "a,b"')
-		expect(received.string).toBe("a,b")
-	end)
-
-	test(";global change publishes the leaderstat value quoted and receivers still apply it", function()
-		local c = createSimCluster()
-		local _K = c._K
-		_K.Util.String.filterForBroadcast = function(text)
-			return text
-		end
-		local published = {}
-		c._K.Data.subscribeTopic("global", function(message)
-			table.insert(published, message.Data[2])
-		end)
-		local leaderstats = c.sh.env.Instance.new("Folder", c.srvP2)
-		leaderstats.Name = "leaderstats"
-		local coins = c.sh.env.Instance.new("IntValue", leaderstats)
-		coins.Name = "Coins"
-
-		c.runSrv(";global change TargetPlr Coins 5")
-		c.world:run(0.5)
-		expect(published[1]).toBe(';change TargetPlr Coins "5"')
-		expect(coins.Value).toBe(5)
-	end)
-
-	test(";global receivers only parse the server prefix, not the sender's own prefix inside the text", function()
-		local c = createSimCluster()
-		local _K = c._K
-		_K.Util.String.filterForBroadcast = function(text)
-			return text
-		end
-		local published = {}
-		c._K.Data.subscribeTopic("global", function(message)
-			table.insert(published, message.Data[2])
-		end)
-		local received = {}
-		_K.Registry.commands.message.run = function(_context, message)
-			table.insert(received, message)
-		end
-		_K.Data.playerPrefix[1] = "!"
-		local gravity = c.sh.env.workspace.Gravity
-
-		c.runSrv('!global m "hello !gravity 33 !m z"')
-		c.world:run(0.5)
-		expect(published[1]).toBe(';m "hello !gravity 33 !m z"')
-		expect(received).toEqual({ "hello !gravity 33 !m z" })
-		expect(c.sh.env.workspace.Gravity).toBe(gravity)
-	end)
-
-	test(";global refuses command strings that receiving servers would parse differently", function()
-		local c = createSimCluster()
-		local _K = c._K
-		local filterResult
-		_K.Util.String.filterForBroadcast = function(text)
-			return filterResult or text
-		end
-		local published = {}
-		c._K.Data.subscribeTopic("global", function(message)
-			table.insert(published, message.Data[2])
-		end)
-		local gravity = c.sh.env.workspace.Gravity
-		local notices = {}
-		local origNotifyFire = _K.Remote.Notify.Fire
-		_K.Remote.Notify.Fire = function(self, player, data)
-			table.insert(notices, data.Text)
-			return origNotifyFire(self, player, data)
-		end
-
-		-- the sender's prefix leaves ";gravity" as the time argument, receiving servers would split it off
-		_K.Data.playerPrefix[1] = "!"
-		c.runSrv("!global time ;gravity 33")
-		c.world:run(0.5)
-		expect(#published).toBe(0)
-		expect(c.sh.env.workspace.Gravity).toBe(gravity)
-		expect(string.find(tostring(notices[1]), "would parse this command string differently", 1, true) ~= nil).toBe(
-			true
-		)
-
-		-- or opens a quote there that swallows the next command while keeping the command count
-		local voted = false
-		_K.Registry.commands.vote.run = function()
-			voted = true
-		end
-		c.runSrv('!global `time ;" ;vote all q" !gravity 33`')
-		c.world:run(0.5)
-		expect(#published).toBe(0)
-		expect(voted).toBe(false)
-		expect(c.sh.env.workspace.Gravity).toBe(gravity)
-		_K.Data.playerPrefix[1] = nil
-
-		-- the same text parses back while graphemes keep the quote apart
-		filterResult = '\u{301}x"q" ;gravity 33 ;m z'
-		c.world:run(61)
-		c.runSrv(";global m text")
-		c.world:run(0.5)
-		expect(published[1]).toBe(';m `\u{301}x"q" ;gravity 33 ;m z`')
-		expect(c.sh.env.workspace.Gravity).toBe(gravity)
-		_K.Remote.Notify.Fire = origNotifyFire
-
-		-- in Roblox a combining mark after the opening quote joins its grapheme, so the quote isn't read as one
-		c = createSimCluster({ utf8 = clusteringUtf8() })
-		filterResult = '\u{301}x"q" ;gravity 33 ;m z'
-		c._K.Util.String.filterForBroadcast = function()
-			return filterResult
-		end
-		table.clear(published)
-		c._K.Data.subscribeTopic("global", function(message)
-			table.insert(published, message.Data[2])
-		end)
-		c.runSrv(";global m text")
-		c.world:run(0.5)
-		expect(c.sh.env.workspace.Gravity).toBe(gravity)
-		expect(#published).toBe(0)
-
-		-- or text that splits into the next argument without adding a command
-		c._K.Registry.registerCommand(c._K, {
-			name = "globalpair",
-			description = "Records its text and number",
-			group = "superadmin",
-			args = {
-				{ type = "string", name = "Text", description = "The text." },
-				{ type = "number", name = "Number", description = "The number." },
-			},
-			run = function() end,
-		})
-		c.world:run(0.1)
-		filterResult = '\u{301}x"q" 7'
-		c.world:run(61)
-		c.runSrv(';global globalpair "text" 5')
-		c.world:run(0.5)
-		expect(#published).toBe(0)
-
-		-- or a list item whose opening quote joins its grapheme, so receivers split it at its comma
-		c._K.Registry.registerCommand(c._K, {
-			name = "globallist",
-			description = "Records its items",
-			group = "superadmin",
-			args = { { type = "strings", name = "Items", description = "The items." } },
-			run = function() end,
-		})
-		c.world:run(0.1)
-		filterResult = "\u{301}a,b"
-		c.world:run(61)
-		c.runSrv(";global globallist text")
-		c.world:run(0.5)
-		expect(#published).toBe(0)
-		-- text that isn't a list isn't split there
-		c.world:run(61)
-		c.runSrv(";global m text")
-		c.world:run(0.5)
-		expect(published[1]).toBe(';m "\u{301}a,b"')
-	end)
-
-	test(";global keeps a skipped optional argument skipped when the text starts with its type", function()
-		local c = createSimCluster()
-		local _K = c._K
-		_K.Util.String.filterForBroadcast = function(text)
-			return text
-		end
-		local published = {}
-		c._K.Data.subscribeTopic("global", function(message)
-			table.insert(published, message.Data[2])
+			expect(published[5]).toBe(';globalstrings "a","b, ;vote all q","c"')
+			expect(received.strings).toEqual({ "a", "b, ;vote all q", "c" })
+			c.world:run(61)
+			c.runSrv(";global globalstring a,b")
+			c.world:run(0.5)
+			expect(published[6]).toBe(';globalstring "a,b"')
+			expect(received.string).toBe("a,b")
 		end)
 
-		-- "3 strikes" isn't a duration, so receiving servers must not read its "3" as one
-		c.runSrv(';global ban 777005 "3 strikes"')
-		c.world:run(1)
-		expect(published[1]).toBe(';ban 777005 "3 strikes"')
-		local ban = _K.Data.bans["777005"]
-		expect(ban ~= nil).toBe(true)
-		expect(ban[2]).toBe("3 strikes")
-		expect(ban[3]).toBeNil() -- a server ban, not a 3 second one
+		test(";global change publishes the leaderstat value quoted and receivers still apply it", function()
+			local c = createSimCluster(nil, true)
+			local _K = c._K
+			_K.Util.String.filterForBroadcast = function(text)
+				return text
+			end
+			local published = {}
+			c._K.Data.subscribeTopic("global", function(message)
+				table.insert(published, message.Data[2])
+			end)
+			local leaderstats = c.sh.env.Instance.new("Folder", c.srvP2)
+			leaderstats.Name = "leaderstats"
+			local coins = c.sh.env.Instance.new("IntValue", leaderstats)
+			coins.Name = "Coins"
 
-		-- nor find "5 days" in the quoted reason and ban for 5 days
-		c.world:run(61) -- past the broadcast cooldown
-		c.runSrv(";global ban 777006 appeal in 5 days")
-		c.world:run(1)
-		expect(published[2]).toBe(';ban 777006 "appeal in 5 days"')
-		ban = _K.Data.bans["777006"]
-		expect(ban ~= nil).toBe(true)
-		expect(ban[2]).toBe("appeal in 5 days")
-		expect(ban[3]).toBeNil()
-	end)
-
-	test(";global refuses strings where receivers bind arguments differently or cut them", function()
-		local c = createSimCluster()
-		local _K = c._K
-		local filterResult
-		_K.Util.String.filterForBroadcast = function(text)
-			return filterResult or text
-		end
-		local published = {}
-		c._K.Data.subscribeTopic("global", function(message)
-			table.insert(published, message.Data[2])
+			c.runSrv(";global change TargetPlr Coins 5")
+			c.world:run(0.5)
+			expect(published[1]).toBe(';change TargetPlr Coins "5"')
+			expect(coins.Value).toBe(5)
 		end)
-		local notices = {}
-		local origNotifyFire = _K.Remote.Notify.Fire
-		_K.Remote.Notify.Fire = function(self, player, data)
-			table.insert(notices, data.Text)
-			return origNotifyFire(self, player, data)
-		end
-		local function runGlobal(commandString: string)
-			c.world:run(61) -- past the broadcast cooldown
-			c.runSrv(commandString)
+
+		test(";global receivers only parse the server prefix, not the sender's own prefix inside the text", function()
+			local c = createSimCluster(nil, true)
+			local _K = c._K
+			_K.Util.String.filterForBroadcast = function(text)
+				return text
+			end
+			local published = {}
+			c._K.Data.subscribeTopic("global", function(message)
+				table.insert(published, message.Data[2])
+			end)
+			local received = {}
+			_K.Registry.commands.message.run = function(_context, message)
+				table.insert(received, message)
+			end
+			_K.Data.playerPrefix[1] = "!"
+			local gravity = c.sh.env.workspace.Gravity
+
+			c.runSrv('!global m "hello !gravity 33 !m z"')
+			c.world:run(0.5)
+			expect(published[1]).toBe(';m "hello !gravity 33 !m z"')
+			expect(received).toEqual({ "hello !gravity 33 !m z" })
+			expect(c.sh.env.workspace.Gravity).toBe(gravity)
+		end)
+
+		test(";global refuses command strings that receiving servers would parse differently", function()
+			local c = createSimCluster(nil, true)
+			local _K = c._K
+			local filterResult
+			_K.Util.String.filterForBroadcast = function(text)
+				return filterResult or text
+			end
+			local published = {}
+			c._K.Data.subscribeTopic("global", function(message)
+				table.insert(published, message.Data[2])
+			end)
+			local gravity = c.sh.env.workspace.Gravity
+			local notices = {}
+			local origNotifyFire = _K.Remote.Notify.Fire
+			_K.Remote.Notify.Fire = function(self, player, data)
+				table.insert(notices, data.Text)
+				return origNotifyFire(self, player, data)
+			end
+
+			-- the sender's prefix leaves ";gravity" as the time argument, receiving servers would split it off
+			_K.Data.playerPrefix[1] = "!"
+			c.runSrv("!global time ;gravity 33")
+			c.world:run(0.5)
+			expect(#published).toBe(0)
+			expect(c.sh.env.workspace.Gravity).toBe(gravity)
+			expect(string.find(tostring(notices[1]), "would parse this command string differently", 1, true) ~= nil).toBe(
+				true
+			)
+
+			-- or opens a quote there that swallows the next command while keeping the command count
+			local voted = false
+			_K.Registry.commands.vote.run = function()
+				voted = true
+			end
+			c.runSrv('!global `time ;" ;vote all q" !gravity 33`')
+			c.world:run(0.5)
+			expect(#published).toBe(0)
+			expect(voted).toBe(false)
+			expect(c.sh.env.workspace.Gravity).toBe(gravity)
+			_K.Data.playerPrefix[1] = nil
+
+			-- the same text parses back while graphemes keep the quote apart
+			filterResult = '\u{301}x"q" ;gravity 33 ;m z'
+			c.world:run(61)
+			c.runSrv(";global m text")
+			c.world:run(0.5)
+			expect(published[1]).toBe(';m `\u{301}x"q" ;gravity 33 ;m z`')
+			expect(c.sh.env.workspace.Gravity).toBe(gravity)
+			_K.Remote.Notify.Fire = origNotifyFire
+
+			-- in Roblox a combining mark after the opening quote joins its grapheme, so the quote isn't read as one
+			c = createSimCluster({ utf8 = clusteringUtf8() }, true)
+			filterResult = '\u{301}x"q" ;gravity 33 ;m z'
+			c._K.Util.String.filterForBroadcast = function()
+				return filterResult
+			end
+			table.clear(published)
+			c._K.Data.subscribeTopic("global", function(message)
+				table.insert(published, message.Data[2])
+			end)
+			c.runSrv(";global m text")
+			c.world:run(0.5)
+			expect(c.sh.env.workspace.Gravity).toBe(gravity)
+			expect(#published).toBe(0)
+
+			-- or text that splits into the next argument without adding a command
+			c._K.Registry.registerCommand(c._K, {
+				name = "globalpair",
+				description = "Records its text and number",
+				group = "superadmin",
+				args = {
+					{ type = "string", name = "Text", description = "The text." },
+					{ type = "number", name = "Number", description = "The number." },
+				},
+				run = function() end,
+			})
+			c.world:run(0.1)
+			filterResult = '\u{301}x"q" 7'
+			c.world:run(61)
+			c.runSrv(';global globalpair "text" 5')
+			c.world:run(0.5)
+			expect(#published).toBe(0)
+
+			-- or a list item whose opening quote joins its grapheme, so receivers split it at its comma
+			c._K.Registry.registerCommand(c._K, {
+				name = "globallist",
+				description = "Records its items",
+				group = "superadmin",
+				args = { { type = "strings", name = "Items", description = "The items." } },
+				run = function() end,
+			})
+			c.world:run(0.1)
+			filterResult = "\u{301}a,b"
+			c.world:run(61)
+			c.runSrv(";global globallist text")
+			c.world:run(0.5)
+			expect(#published).toBe(0)
+			-- text that isn't a list isn't split there
+			c.world:run(61)
+			c.runSrv(";global m text")
+			c.world:run(0.5)
+			expect(published[1]).toBe(';m "\u{301}a,b"')
+		end)
+
+		test(";global keeps a skipped optional argument skipped when the text starts with its type", function()
+			local c = createSimCluster(nil, true)
+			local _K = c._K
+			_K.Util.String.filterForBroadcast = function(text)
+				return text
+			end
+			local published = {}
+			c._K.Data.subscribeTopic("global", function(message)
+				table.insert(published, message.Data[2])
+			end)
+
+			-- "3 strikes" isn't a duration, so receiving servers must not read its "3" as one
+			c.runSrv(';global ban 777005 "3 strikes"')
 			c.world:run(1)
-		end
+			expect(published[1]).toBe(';ban 777005 "3 strikes"')
+			local ban = _K.Data.bans["777005"]
+			expect(ban ~= nil).toBe(true)
+			expect(ban[2]).toBe("3 strikes")
+			expect(ban[3]).toBeNil() -- a server ban, not a 3 second one
 
-		-- a quote after the sender's prefix in a raw token opens a quote on receivers and drops a token
-		_K.Data.playerPrefix[1] = "!"
-		runGlobal('!global change all !"coins 5')
-		expect(#published).toBe(0)
-		expect(string.find(tostring(notices[#notices]), "would parse this command string differently", 1, true) ~= nil).toBe(
-			true
-		)
-		_K.Data.playerPrefix[1] = nil
+			-- nor find "5 days" in the quoted reason and ban for 5 days
+			c.world:run(61) -- past the broadcast cooldown
+			c.runSrv(";global ban 777006 appeal in 5 days")
+			c.world:run(1)
+			expect(published[2]).toBe(';ban 777006 "appeal in 5 days"')
+			ban = _K.Data.bans["777006"]
+			expect(ban ~= nil).toBe(true)
+			expect(ban[2]).toBe("appeal in 5 days")
+			expect(ban[3]).toBeNil()
+		end)
 
-		-- receivers cut command strings past 1024 bytes from users without a restricted role
-		local hasRestrictedRole = _K.Auth.hasRestrictedRole
-		_K.Auth.hasRestrictedRole = function()
-			return false
-		end
-		filterResult = string.rep("a", 1020)
-		runGlobal(";global m text")
-		expect(#published).toBe(0)
-		expect(string.find(tostring(notices[#notices]), "too long to run globally", 1, true) ~= nil).toBe(true)
-		_K.Auth.hasRestrictedRole = hasRestrictedRole
-		runGlobal(";global m text")
-		expect(#published).toBe(1)
-		_K.Remote.Notify.Fire = origNotifyFire
-	end)
-
-	test(
-		";global refuses strings receivers would parse differently before they spend the announcement cooldown",
-		function()
-			local c = createSimCluster({ utf8 = clusteringUtf8() })
+		test(";global refuses strings where receivers bind arguments differently or cut them", function()
+			local c = createSimCluster(nil, true)
 			local _K = c._K
 			local filterResult
 			_K.Util.String.filterForBroadcast = function(text)
@@ -3067,62 +3110,116 @@ describe("DefaultCommands", function()
 				table.insert(notices, data.Text)
 				return origNotifyFire(self, player, data)
 			end
-			local function refused()
-				return string.find(tostring(notices[#notices]), "would parse this command string differently", 1, true)
-					~= nil
+			local function runGlobal(commandString: string)
+				c.world:run(61) -- past the broadcast cooldown
+				c.runSrv(commandString)
+				c.world:run(1)
 			end
 
-			-- the text as typed already splits differently on receivers
+			-- a quote after the sender's prefix in a raw token opens a quote on receivers and drops a token
 			_K.Data.playerPrefix[1] = "!"
-			c.runSrv('!global change all !"coins 5')
-			c.world:run(1)
-			expect(refused()).toBe(true)
+			runGlobal('!global change all !"coins 5')
+			expect(#published).toBe(0)
+			expect(
+				string.find(tostring(notices[#notices]), "would parse this command string differently", 1, true) ~= nil
+			).toBe(true)
 			_K.Data.playerPrefix[1] = nil
 
-			-- and a string too long for receivers, once each list item is quoted
-			_K.Registry.registerCommand(_K, {
-				name = "globalitems",
-				description = "Takes items",
-				group = "superadmin",
-				args = { { type = "strings", name = "Items", description = "The items." } },
-				run = function() end,
-			})
-			c.world:run(0.1)
+			-- receivers cut command strings past 1024 bytes from users without a restricted role
 			local hasRestrictedRole = _K.Auth.hasRestrictedRole
 			_K.Auth.hasRestrictedRole = function()
 				return false
 			end
-			c.runSrv(";global globalitems " .. string.rep("a,", 299) .. "a")
-			c.world:run(1)
+			filterResult = string.rep("a", 1020)
+			runGlobal(";global m text")
+			expect(#published).toBe(0)
 			expect(string.find(tostring(notices[#notices]), "too long to run globally", 1, true) ~= nil).toBe(true)
 			_K.Auth.hasRestrictedRole = hasRestrictedRole
-			expect(#published).toBe(0)
-
-			-- so the next announcement doesn't wait for the cooldown
-			c.runSrv(";announce Hello world")
-			c.world:run(0.5)
-			expect(_K.Data.savedSettings.announcement[1]).toBe("Hello world")
-
-			-- filtered text that starts with a combining mark is still refused, after the cooldown it spends
-			filterResult = '\u{301}x"q" ;gravity 33 ;m z'
-			local gravity = c.sh.env.workspace.Gravity
-			c.world:run(61)
-			c.runSrv(";global m text")
-			c.world:run(0.5)
-			expect(refused()).toBe(true)
-			expect(#published).toBe(0)
-			expect(c.sh.env.workspace.Gravity).toBe(gravity)
-			filterResult = nil
-			c.runSrv(";global m text")
-			c.world:run(0.5)
-			expect(string.find(tostring(notices[#notices]), "before using this again", 1, true) ~= nil).toBe(true)
-			expect(#published).toBe(0)
+			runGlobal(";global m text")
+			expect(#published).toBe(1)
 			_K.Remote.Notify.Fire = origNotifyFire
-		end
-	)
+		end)
+
+		test(
+			";global refuses strings receivers would parse differently before they spend the announcement cooldown",
+			function()
+				local c = createSimCluster({ utf8 = clusteringUtf8() }, true)
+				local _K = c._K
+				local filterResult
+				_K.Util.String.filterForBroadcast = function(text)
+					return filterResult or text
+				end
+				local published = {}
+				c._K.Data.subscribeTopic("global", function(message)
+					table.insert(published, message.Data[2])
+				end)
+				local notices = {}
+				local origNotifyFire = _K.Remote.Notify.Fire
+				_K.Remote.Notify.Fire = function(self, player, data)
+					table.insert(notices, data.Text)
+					return origNotifyFire(self, player, data)
+				end
+				local function refused()
+					return string.find(
+						tostring(notices[#notices]),
+						"would parse this command string differently",
+						1,
+						true
+					) ~= nil
+				end
+
+				-- the text as typed already splits differently on receivers
+				_K.Data.playerPrefix[1] = "!"
+				c.runSrv('!global change all !"coins 5')
+				c.world:run(1)
+				expect(refused()).toBe(true)
+				_K.Data.playerPrefix[1] = nil
+
+				-- and a string too long for receivers, once each list item is quoted
+				_K.Registry.registerCommand(_K, {
+					name = "globalitems",
+					description = "Takes items",
+					group = "superadmin",
+					args = { { type = "strings", name = "Items", description = "The items." } },
+					run = function() end,
+				})
+				c.world:run(0.1)
+				local hasRestrictedRole = _K.Auth.hasRestrictedRole
+				_K.Auth.hasRestrictedRole = function()
+					return false
+				end
+				c.runSrv(";global globalitems " .. string.rep("a,", 299) .. "a")
+				c.world:run(1)
+				expect(string.find(tostring(notices[#notices]), "too long to run globally", 1, true) ~= nil).toBe(true)
+				_K.Auth.hasRestrictedRole = hasRestrictedRole
+				expect(#published).toBe(0)
+
+				-- so the next announcement doesn't wait for the cooldown
+				c.runSrv(";announce Hello world")
+				c.world:run(0.5)
+				expect(_K.Data.savedSettings.announcement[1]).toBe("Hello world")
+
+				-- filtered text that starts with a combining mark is still refused, after the cooldown it spends
+				filterResult = '\u{301}x"q" ;gravity 33 ;m z'
+				local gravity = c.sh.env.workspace.Gravity
+				c.world:run(61)
+				c.runSrv(";global m text")
+				c.world:run(0.5)
+				expect(refused()).toBe(true)
+				expect(#published).toBe(0)
+				expect(c.sh.env.workspace.Gravity).toBe(gravity)
+				filterResult = nil
+				c.runSrv(";global m text")
+				c.world:run(0.5)
+				expect(string.find(tostring(notices[#notices]), "before using this again", 1, true) ~= nil).toBe(true)
+				expect(#published).toBe(0)
+				_K.Remote.Notify.Fire = origNotifyFire
+			end
+		)
+	end)
 
 	test("VIPUGCMethod only takes a color name, and UGC Methods only replace the wearer's accessory", function()
-		local c = createSimCluster()
+		local c = createSimCluster(nil, true)
 		local _K, srvP1, srvP2 = c._K, c.srvP1, c.srvP2
 		local env = c.sh.env
 		srvP1:SetAttribute("_KDonationLevel", 3) -- owns every UGC effect, so each call reaches Method
@@ -3224,7 +3321,7 @@ describe("DefaultCommands", function()
 	end)
 
 	test("VIP purchase signals only grant perks the player owns, even when ownership shows up late", function()
-		local c = createSimCluster()
+		local c = createSimCluster(nil, true)
 		local _K, srvP2, world = c._K, c.srvP2, c.world
 		local env = c.sh.env
 		local market = env.game:GetService("MarketplaceService")
@@ -3572,7 +3669,7 @@ describe("DefaultCommands", function()
 	end)
 
 	test(
-		";poll and ;vote validate options, deduplicate targets, tally choices, and render results below question",
+		";poll, ;vote, and SuperAdmin ;global validate options, deduplicate targets, tally choices, and render results below question",
 		function()
 			local c = createSimCluster()
 			local _K, clientK, srvP1, srvP2 = c._K, c.clientK, c.srvP1, c.srvP2
@@ -3759,9 +3856,9 @@ describe("DefaultCommands", function()
 	end)
 
 	test(
-		"PIC compliance skips restricted recipients on cooldown, allows predefined titles, and preserves moderation actions when sender cannot chat",
+		"SuperAdmin and Administration PIC compliance skips restricted recipients on cooldown, allows predefined titles, and preserves moderation actions when sender cannot chat",
 		function()
-			local c = createSimCluster()
+			local c = createSimCluster(nil, true)
 			local _K, srvP1, srvP2 = c._K, c.srvP1, c.srvP2
 			local srvP3 = c.sh.env:addPlayer(3, "RestrictedPlr")
 			buildCharacter(c.sh.env, srvP3)

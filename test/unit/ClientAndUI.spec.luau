@@ -1002,15 +1002,19 @@ describe("Client and UI", function()
 			expect(UI.Theme.CornerHalf().Offset).toBe(4)
 			expect(UI.Theme.CornerDiameter().Offset).toBe(16)
 
-			-- UI.new custom class constructor, unwrapChild in UI.new, and parent._content unwrapping
+			-- UI.new custom class constructor, unwrapChild in UI.new, direct GuiObject LayoutOrder, and parent._content unwrapping
 			local customChild1 = { _instance = UI.new "Frame" { Name = "WrappedChild1" } }
 			local customChild2 = { _instance = UI.new "Frame" { Name = "WrappedChild2" } }
 			local customChild3 = { { _instance = UI.new "Frame" { Name = "NestedWrappedChild3" } } }
+			local directChild1 = UI.new "Frame" { Name = "DirectChild1" }
+			local directChild2 = UI.new "Frame" { Name = "DirectChild2", LayoutOrder = 9 }
 			local hostFrame = UI.new "Frame" {
 				Parent = customComp,
 				customChild1,
 				customChild2,
 				customChild3,
+				directChild1,
+				directChild2,
 			}
 			expect(hostFrame.Parent).toBe(customComp._content)
 			expect(customChild1._instance.Parent).toBe(hostFrame)
@@ -1018,6 +1022,8 @@ describe("Client and UI", function()
 			expect(customChild2._instance.Parent).toBe(hostFrame)
 			expect(customChild2._instance.LayoutOrder).toBe(2)
 			expect(customChild3[1].Parent).toBe(hostFrame)
+			expect(directChild1.LayoutOrder).toBe(4)
+			expect(directChild2.LayoutOrder).toBe(9)
 
 			local customBtn = UI.new "Button" {
 				Parent = customComp,
@@ -1029,8 +1035,38 @@ describe("Client and UI", function()
 			customBtn.ActiveSound:onDestroy(function()
 				btnNodeDestroyed += 1
 			end)
-			customBtn:Destroy()
+			customBtn._instance:Destroy()
 			expect(btnNodeDestroyed).toBe(1)
+
+			-- Hover state cleanup on destroy
+			local hoverDestroyFrame = UI.new "Frame" { Parent = UI.LayerDefault }
+			local hoverDestroyState = UI.newSinkHoverState(hoverDestroyFrame)
+			local hoverDestroyed = 0
+			hoverDestroyState:onDestroy(function()
+				hoverDestroyed += 1
+			end)
+			hoverDestroyFrame:Destroy()
+			expect(hoverDestroyed).toBe(1)
+
+			-- Invalid UTF-8 text width estimation falls back to #text
+			local badUtf8Sig, badUtf8Eff = UI.textWidth(function()
+				return {
+					{
+						Text = "\255\255\255\255",
+						Font = Font.fromEnum(Enum.Font.Gotham),
+						Size = 20,
+					},
+				}
+			end)
+			expect(badUtf8Sig:peek()).toBe(math.ceil(4 * 20 * 0.55))
+			badUtf8Eff:Destroy()
+			badUtf8Sig:Destroy()
+
+			-- Non-integer numeric key in UI.new is not overwritten by unwrapChild
+			local fracFrame = UI.new "Frame" {
+				[1.5] = "custom_frac" :: any,
+			}
+			expect(fracFrame ~= nil).toBe(true)
 
 			local reactiveTxt = UI.signal("InitialTxt")
 			local reactiveLbl = UI.new "TextLabel" {
@@ -1102,8 +1138,16 @@ describe("Client and UI", function()
 
 			-- 1. Button
 			local btnClicked = 0
+			local hoverSoundPlays = 0
+			local origHover01 = UI.Sound.Hover01
+			UI.Sound.Hover01 = {
+				Play = function()
+					hoverSoundPlays += 1
+				end,
+			} :: any
 			local btn = UI.new "Button" {
 				Parent = UI.LayerDefault,
+				Position = UDim2.fromOffset(30, 0),
 				Label = "Click Me",
 				Icon = "rbxassetid://12345",
 				IconRightAlign = true,
@@ -1123,10 +1167,17 @@ describe("Client and UI", function()
 			expect(btn._instance.Size.X.Scale).toBe(1)
 			env:input():click(btn._instance)
 			expect(btnClicked).toBe(1)
+			expect(hoverSoundPlays).toBe(1)
+			btn.ActiveSound(false)
+			env:input():click(btn._instance)
+			expect(hoverSoundPlays).toBe(1)
+			btn.ActiveSound(true)
+			UI.Sound.Hover01 = origHover01
 			btn._instance.InputBegan:Fire(
-				makeInput(env, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(10, 10, 0) }),
+				makeInput(env, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(50, 10, 0) }),
 				false
 			)
+			expect(btn._instance.Ripple.Position.X.Offset).toBe(50 - btn._instance.AbsolutePosition.X)
 			btn._instance.InputChanged:Fire(
 				makeInput(env, { UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(10, 10, 0) }),
 				false
@@ -1863,7 +1914,7 @@ describe("Client and UI", function()
 				expect(#dInvalidStr.invalid > 0).toBe(true)
 				expect(dInvalidStr.invalid[1][1]).toBe("Invalid command string")
 
-				-- 3. Cursor within command name (`;ver` at pos 5) and exact command (`;version` at pos 9)
+				-- 3. Cursor within command name (`;ver` at pos 5) and mid-word (`;version` at pos 5) and exact command (`;version` at pos 9)
 				local dCmd = CompletionData(_K, ";ver", 5)
 				expect(dCmd.argIndex).toBe(1)
 				expect(dCmd.argPos).toBe(2)
@@ -1873,6 +1924,10 @@ describe("Client and UI", function()
 				expect(#dCmd.suggestions > 0).toBe(true)
 				expect(dCmd.validSuggestion).toBe(true)
 				expect(dCmd.commandDefinition).toBe(_K.Registry.commands.version)
+
+				local dMidCmd = CompletionData(_K, ";version", 5)
+				expect(dMidCmd.rawArg).toBe("version")
+				expect(dMidCmd.query).toBe("ver")
 
 				local dExactCmd = CompletionData(_K, ";version", 9)
 				expect(dExactCmd.commandDefinition).toBe(_K.Registry.commands.version)
@@ -1959,15 +2014,20 @@ describe("Client and UI", function()
 				expect(dPrefixArg.suggestionType).toBe(_K.Registry.types.rolePlayers)
 
 				-- Listable arg with `,` delimiter
-				local dArgList = CompletionData(_K, ";ban 2,3", 9)
+				local dArgList = CompletionData(_K, ';ban 2,"34"', 10)
 				expect(dArgList.argIndex).toBe(2)
 				expect(dArgList.argPos).toBe(8)
-				expect(dArgList.rawArg).toBe("3")
+				expect(dArgList.rawArg).toBe('"34"')
+				expect(dArgList.rawQuery).toBe('"3')
+				expect(dArgList.query).toBe("3")
+				expect(CompletionData(_K, ';ban 2,"34"', 7).rawArg).toBe("2")
 
 				local dArg2 = CompletionData(_K, ";ban 2 10", 10)
 				expect(dArg2.argIndex).toBe(3)
 				expect(dArg2.argPos).toBe(8)
 				expect(dArg2.rawArg).toBe("10")
+				expect(CompletionData(_K, ';ban 2 "seconds"', 17).skipped).toBeNil()
+				expect(#CompletionData(_K, ";ban ", 5).invalid).toBe(0)
 
 				-- Skipped optional argument with suggestions (`;ban 2 "seconds"` with cursor inside skipped arg)
 				local dSkipped = CompletionData(_K, ';ban 2 "seconds"', 10)
@@ -1975,6 +2035,7 @@ describe("Client and UI", function()
 				expect(dSkipped.rawQuery).toBe('"s')
 				expect(dSkipped.query).toBe("s")
 				expect(dSkipped.suggestions ~= nil and #dSkipped.suggestions > 0).toBe(true)
+				expect(dSkipped.suggestions[1][1] ~= "0").toBe(true)
 
 				local dArg3 = CompletionData(_K, ";ban 2 10m some reason here   ", 31)
 				expect(dArg3.argIndex).toBe(4)
@@ -1984,6 +2045,73 @@ describe("Client and UI", function()
 				local dBadArg = CompletionData(_K, ";ban Player1 10m", 17)
 				expect(#dBadArg.invalid > 0).toBe(true)
 				expect(dBadArg.commands[1].Error ~= nil).toBe(true)
+
+				-- Mid-token cursor slicing and empty rawArgs / nil suggestions / non-invalidArg command failure
+				local dMidArg = CompletionData(_K, ';ban "2345" 10m', 8)
+				expect(dMidArg.rawArg).toBe('"2345"')
+				expect(dMidArg.rawQuery).toBe('"2')
+				expect(dMidArg.query).toBe("2")
+
+				local dMidSkip = CompletionData(_K, ';ban 2 "seconds"', 11)
+				expect(dMidSkip.skipped).toBe(true)
+				expect(dMidSkip.rawQuery).toBe('"se')
+				expect(dMidSkip.query).toBe("se")
+
+				_K.Registry.registerType("testnosuggest", {
+					listable = false,
+					validate = function()
+						return true
+					end,
+					parse = function(v)
+						return v
+					end,
+				})
+				_K.Registry.registerCommand(_K, {
+					name = "testcompedge",
+					aliases = {},
+					description = "Completion edge cases",
+					group = "Utility",
+					LocalPlayerAuthorized = true,
+					args = {
+						{ type = "testnosuggest", name = "NoSug", description = "NoSug", optional = true },
+						{ type = "players", name = "Plr", description = "Plr" },
+						{ type = "integer", name = "Num", description = "Num" },
+					},
+					runClient = function() end,
+				})
+				-- When shouldFillWithSelf fills "me" for arg 2 (players), arg.rawArg is "me" while arg.skipped is '"xyz"'
+				local dSelfSkip = CompletionData(_K, ';testcompedge 1 "xyz" 5', 18)
+				expect(dSelfSkip.skipped).toBe(true)
+				expect(dSelfSkip.rawQuery).toBe('"')
+				expect(dSelfSkip.query).toBe("")
+				local origSplit = _K.Util.String.splitOutsideQuotes
+				_K.Registry.types.testnosuggest.listable = true
+				_K.Util.String.splitOutsideQuotes = function()
+					return {}
+				end
+				local dNoRawArgs = CompletionData(_K, ';testcompedge "abc" 5', 18)
+				expect(dNoRawArgs.argPos).toBe(15)
+				expect(dNoRawArgs.rawArg).toBe('"abc"')
+				expect(dNoRawArgs.rawQuery).toBe('"ab')
+				expect(dNoRawArgs.query).toBe("ab")
+				expect(dNoRawArgs.suggestionType).toBe(_K.Registry.types.testnosuggest)
+				_K.Util.String.splitOutsideQuotes = origSplit
+				_K.Registry.types.testnosuggest.listable = false
+
+				-- Skipped arg when rawType.suggestions returns {} or is nil falls through to next arg without breaking
+				_K.Registry.types.testnosuggest.validate = function()
+					return false
+				end
+				_K.Registry.types.testnosuggest.suggestions = function()
+					return {}
+				end
+				expect(CompletionData(_K, ';testcompedge "xyz" 42', 16).argIndex).toBe(3)
+				_K.Registry.types.testnosuggest.suggestions = nil
+				local dSkipNilSug = CompletionData(_K, ";testcompedge 42", 16)
+				expect(dSkipNilSug.suggestions == nil or type(dSkipNilSug.suggestions) == "table").toBe(true)
+				_K.Registry.types.testnosuggest.validate = function()
+					return true
+				end
 			end
 		)
 
