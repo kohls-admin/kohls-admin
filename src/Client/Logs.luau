@@ -198,9 +198,7 @@ function Logs.new(_K)
 				continue
 			end
 
-			if noFilter then
-				table.insert(new, log)
-			elseif string.find(log.filterText, filter, 1, true) then
+			if noFilter or string.find(log.filterText, filter, 1, true) then
 				table.insert(new, log)
 			end
 		end

@@ -327,7 +327,6 @@ function Members.new(_K)
 		}
 		local tooltip = UI.new "Tooltip" { Parent = button, Text = "Remove Role", Hovering = button._hovering }
 		button._instance.UIStroke:Destroy()
-		UI.cleanup({ button, tooltip })
 
 		UI.edit(button._instance.UICorner)({ CornerRadius = roleRemoveCornerRadius })
 

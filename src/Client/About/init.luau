@@ -1,6 +1,8 @@
 local UI = require(script.Parent:WaitForChild("UI"))
-local CREDITS = require(script.Parent:WaitForChild("Credits"))
 local UserFrame = require(script.Parent:WaitForChild("UserFrame"))
+local Contributions = require(script:WaitForChild("Contributions"))
+local CREDITS = require(script:WaitForChild("Credits"))
+local Order = require(script:WaitForChild("Order"))
 
 local About = {}
 About.__index = About
@@ -33,8 +35,8 @@ function About.new(_K)
 		ExitButton = true,
 		BackgroundTransparency = 0,
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Size = UDim2.new(0, 340, 0, 0),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(340, 0),
 		Modal = true,
 		ZIndex = 1000,
 		Close = function()
@@ -89,8 +91,8 @@ function About.new(_K)
 			TextStrokeColor3 = UI.Theme.Primary,
 			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 			TextWrapped = true,
-			Size = UDim2.new(1, 0, 0, 0),
-			Text = "<font transparency='0.5'>Add Kohl's Admin to your own games for <b>free</b>—200+ commands, role permissions, and live moderation tools.</font>",
+			Size = UDim2.fromScale(1, 0),
+			Text = "<font transparency='0.5'>Add Kohl's Admin to your own games for <b>free</b>; 200+ commands, role permissions, and live moderation tools.</font>",
 			RichText = true,
 
 			UI.sizeConstraint {
@@ -120,7 +122,7 @@ function About.new(_K)
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
 				Size = function()
-					return UDim2.new(0, UI.Theme.FontSizeLarge(), 0, 32)
+					return UDim2.fromOffset(UI.Theme.FontSizeLarge(), 32)
 				end,
 				Text = "<b>FREE</b>",
 				RichText = true,
@@ -149,19 +151,19 @@ function About.new(_K)
 			UI.new "Frame" {
 				BackgroundTransparency = 1,
 				AnchorPoint = Vector2.new(0, 0.5),
-				Position = UDim2.new(0, 0, 0.5, 0),
-				Size = UDim2.new(0, 28, 0, 28),
+				Position = UDim2.fromScale(0, 0.5),
+				Size = UDim2.fromOffset(28, 28),
 				UI.new "ImageLabel" {
 					BackgroundTransparency = 1,
-					Size = UDim2.new(0, 28, 0, 28),
+					Size = UDim2.fromOffset(28, 28),
 					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 					ImageColor3 = Color3.new(0, 0, 0),
 					ImageTransparency = 0.875,
 				},
 				UI.new "ImageButton" {
 					BackgroundTransparency = 1,
-					Position = UDim2.new(0, 2, 0, 2),
-					Size = UDim2.new(0, 24, 0, 24),
+					Position = UDim2.fromOffset(2, 2),
+					Size = UDim2.fromOffset(24, 24),
 					Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 					ImageColor3 = Color3.new(1, 0.8, 0),
 					Activated = function()
@@ -301,7 +303,7 @@ function About.new(_K)
 				TextStrokeColor3 = UI.Theme.Primary,
 				TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
 				TextWrapped = true,
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				Text = "<b>Kohl's Admin</b>\n<font transparency='0.5'><i>Embrace creativity, not chaos.</i></font>",
 				RichText = true,
 			},
@@ -351,7 +353,7 @@ function About.new(_K)
 
 					UI.new "ImageButton" {
 						BackgroundTransparency = 1,
-						Size = UDim2.new(0, 24, 0, 24),
+						Size = UDim2.fromOffset(24, 24),
 						Image = "rbxasset://textures/ui/InspectMenu/ico_favorite@2x.png",
 						ImageColor3 = Color3.new(1, 0.8, 0),
 						Activated = function()
@@ -383,7 +385,7 @@ function About.new(_K)
 				Parent = scroller,
 				LayoutOrder = 1e6,
 				AutomaticSize = Enum.AutomaticSize.Y,
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.fromScale(1, 0),
 				BackgroundTransparency = 1,
 
 				UI.list {
@@ -392,13 +394,37 @@ function About.new(_K)
 				},
 			}
 
+			local sections = {
+				{ Title = "Active contributors", Chips = true, People = Order.active(CREDITS.people) },
+				{ Title = "Contributors", Chips = false, People = Order.plain(CREDITS.people) },
+				{ Title = "Special Thanks", Chips = true, People = { CREDITS.specialThanks } },
+			}
+
 			local order = 1
-			for _, group in CREDITS do
-				UI.new "TextLabel" {
-					AutoLocalize = false,
+			for _, group in sections do
+				if #group.People == 0 then
+					continue
+				end
+				local sectionFrame = UI.new "Frame" {
+					Name = group.Title,
 					Parent = credits,
 					LayoutOrder = order,
-					Name = group.Title,
+					BackgroundTransparency = 1,
+					AutomaticSize = Enum.AutomaticSize.Y,
+					Size = UDim2.fromScale(1, 0),
+
+					UI.list {
+						gap = UI.Theme.Padding,
+						horizontalAlign = "center",
+					},
+				}
+				order += 1
+
+				UI.new "TextLabel" {
+					AutoLocalize = false,
+					Parent = sectionFrame,
+					LayoutOrder = 1,
+					Name = "Title",
 					BackgroundTransparency = 1,
 					FontFace = UI.Theme.FontHeavy,
 					TextTruncate = Enum.TextTruncate.SplitWord,
@@ -410,10 +436,11 @@ function About.new(_K)
 					Text = string.upper(group.Title),
 					TextTransparency = 0.5,
 				}
-				order += 1
+
 				local flexFrame = UI.new "Frame" {
-					Parent = credits,
-					LayoutOrder = order,
+					Name = "Users",
+					Parent = sectionFrame,
+					LayoutOrder = 2,
 					BackgroundTransparency = 1,
 					AutomaticSize = Enum.AutomaticSize.Y,
 					Size = UDim2.fromScale(1, 0),
@@ -421,35 +448,47 @@ function About.new(_K)
 					UI.edit(UI.list {
 						direction = "x",
 						horizontalAlign = "evenly",
-						gap = UI.Theme.PaddingDouble,
+						gap = if group.Chips then UI.Theme.PaddingDouble else UI.Theme.Padding,
 						wraps = true,
 					})({ HorizontalAlignment = Enum.HorizontalAlignment.Center }),
 				}
-				order += 1
+
 				task.defer(function()
-					if string.lower(group.Title) == "special thanks" then
-						local userFrame = UserFrame(_K.LocalPlayer.UserId, "You", nil, false)
-						userFrame.LayoutOrder = 0
-						userFrame.Parent = flexFrame
-						UI.new "Tooltip" {
-							Parent = userFrame,
-							Text = "Thanks for using the admin!",
-						}
-					end
-					for i, user in group.Users do
-						local userType = type(user)
-						if userType == "number" then
-							local userFrame = UserFrame(user, nil, nil, false)
+					for i, person in group.People do
+						local known = Contributions.names[person.Id]
+						if group.Chips then
+							local userFrame =
+								UserFrame(person.Id, known and known.displayName, nil, false, known and known.name)
+							userFrame:SetAttribute("UserId", person.Id)
 							userFrame.LayoutOrder = i
 							userFrame.Parent = flexFrame
-						elseif userType == "table" then
-							local userFrame = UserFrame(user.Id, nil, nil, false)
-							userFrame.LayoutOrder = i
-							userFrame.Parent = flexFrame
-							if user.Tooltip then
+							if person.Tooltip then
 								UI.new "Tooltip" {
 									Parent = userFrame,
-									Text = user.Tooltip,
+									Text = person.Tooltip,
+								}
+							end
+						else
+							local label = UI.new "TextLabel" {
+								_attr_UserId = person.Id,
+								AutoLocalize = false,
+								Parent = flexFrame,
+								LayoutOrder = i,
+								Name = "Credit",
+								BackgroundTransparency = 1,
+								FontFace = UI.Theme.Font,
+								TextSize = UI.Theme.FontSize,
+								TextColor3 = UI.Theme.PrimaryText,
+								TextStrokeColor3 = UI.Theme.Primary,
+								TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+								TextTransparency = 0.35,
+								AutomaticSize = Enum.AutomaticSize.XY,
+								Text = if known then `@{known.name}` else `@{person.Id}`,
+							}
+							if person.Tooltip then
+								UI.new "Tooltip" {
+									Parent = label,
+									Text = person.Tooltip,
 								}
 							end
 						end

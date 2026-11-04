@@ -856,7 +856,7 @@ return {
 
 				if
 					currentCompletion
-					and not currentCompletion[4]
+					and not currentCompletion[3]
 					and data.suggestionType ~= "History"
 					and #data.suggestions > 1
 				then

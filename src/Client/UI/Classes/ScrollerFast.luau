@@ -284,6 +284,9 @@ function Class.new(properties: Properties?)
 	self._lastScrollY = 0
 
 	local function render()
+		if not self._scroller then
+			return
+		end
 		UI.clearState("hover")
 
 		local sizeY = self._scroller.AbsoluteWindowSize.Y

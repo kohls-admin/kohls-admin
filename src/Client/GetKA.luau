@@ -18,8 +18,13 @@ task.defer(function()
 		if market and tabs and tabs._containerCache and tabs._containerCache[market._instance] then
 			tabs._pages:JumpTo(tabs._containerCache[market._instance])
 		end
-		if _K.client.dashboard and _K.client.dashboard.Window and not _K.client.dashboard.Window.Visible then
-			if _K.client.hotkeys and _K.client.hotkeys.dashboard and _K.client.hotkeys.dashboard.callback then
+		if _K.client.dashboard and _K.client.dashboard.Window and not _K.client.dashboard.Window._instance.Visible then
+			if
+				_K.client.dashboardEnabled
+				and _K.client.hotkeys
+				and _K.client.hotkeys.dashboard
+				and _K.client.hotkeys.dashboard.callback
+			then
 				_K.client.hotkeys.dashboard.callback()
 			else
 				_K.client.dashboard.Window._instance.Visible = true

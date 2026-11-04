@@ -8,37 +8,62 @@ local computed = Flux.computed
 local signal = Flux.signal
 
 local themes = {}
+local initialized = false
+
+local function makeStateful(source: { [string]: any })
+	for key, value in source do
+		if type(value) == "table" and not Flux.isNode(value) then
+			makeStateful(value)
+		elseif not Flux.isNode(value) then
+			source[key] = signal(value)
+		end
+	end
+end
 
 local function loadTheme(themeModule: ModuleScript)
 	if themeModule:IsA("ModuleScript") then
-		if themes[themeModule.Name] then
+		if themes[themeModule.Name] and themeModule.Name ~= "Default" then
 			warn("Duplicate theme found, make sure they have different names!")
 		end
-		local theme = require(themeModule)
+		local ok, theme = pcall(require, themeModule)
+		if not ok or type(theme) ~= "table" then
+			return
+		end
 		if typeof(theme.Font) == "EnumItem" then
 			theme.Font = Font.fromEnum(theme.Font :: Enum.Font)
 		end
 		if typeof(theme.FontMono) == "EnumItem" then
 			theme.FontMono = Font.fromEnum(theme.FontMono :: Enum.Font)
 		end
-		for _, definition in { theme.Image, theme.Sound } do
-			for key, value in definition do
-				definition[key] = "rbxassetid://" .. value
+		for _, key in { "Image", "Sound" } do
+			local definition = theme[key]
+			if type(definition) == "table" then
+				for k, value in definition do
+					if type(value) == "string" and not string.find(value, "rbxassetid://", 1, true) then
+						definition[k] = "rbxassetid://" .. value
+					end
+				end
 			end
 		end
-		if theme == Default then
-			return
-		end
-		if themeModule.Name == "Default" then
-			-- clone the default theme to not use overwritten values
-			local default = {}
-			for key, value in theme do
-				default[key] = if type(value) == "table" then table.clone(value) else value
+		local cloned = {}
+		for key, value in Default do
+			local v = if theme[key] ~= nil then theme[key] else value
+			if type(value) == "table" and not Flux.isNode(value) then
+				local merged = table.clone(value)
+				if type(theme[key]) == "table" then
+					for k, item in theme[key] do
+						merged[k] = item
+					end
+				end
+				cloned[key] = merged
+			else
+				cloned[key] = Flux.raw(v)
 			end
-			themes[themeModule.Name] = default
-		else
-			themes[themeModule.Name] = theme
 		end
+		if initialized then
+			makeStateful(cloned)
+		end
+		themes[themeModule.Name] = cloned
 	end
 end
 
@@ -53,22 +78,37 @@ local Theme = {
 	Themes = themes,
 }
 
-local userDefault = ThemesFolder:FindFirstChild("Default") :: ModuleScript
-userDefault = if userDefault then require(userDefault) else {}
-for k, v in Default do
-	Theme[k] = userDefault[k] or v
+local defaultTheme = themes.Default or Default
+for k, v in defaultTheme do
+	Theme[k] = if type(v) == "table" and not Flux.isNode(v) then table.clone(v) else Flux.raw(v)
 end
 
-local function makeStateful(source: { [string]: any })
-	for key, value in source do
-		if type(value) == "table" then
-			makeStateful(value)
-		else
-			source[key] = signal(value)
+makeStateful(Theme)
+initialized = true
+
+local function updateSignals(target: { [string]: any }, source: { [string]: any })
+	for k, v in source do
+		local node = target[k]
+		if type(node) == "table" then
+			if type(node.set) == "function" then
+				node(Flux.raw(v))
+			elseif type(v) == "table" then
+				updateSignals(node, v)
+			end
 		end
 	end
 end
-makeStateful(Theme)
+
+ThemesFolder.ChildRemoved:Connect(function(child)
+	themes[child.Name] = nil
+end)
+
+ThemesFolder.ChildAdded:Connect(function(child)
+	loadTheme(child :: ModuleScript)
+	if child.Name == "Default" and themes.Default then
+		updateSignals(Theme, themes.Default)
+	end
+end)
 
 -- COMPUTED THEME VALUES
 

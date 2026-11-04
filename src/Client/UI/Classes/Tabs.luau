@@ -226,7 +226,7 @@ function Class.new(properties: Properties?)
 		local container = containerCache[page]
 		if container then
 			task.defer(function()
-				page.Parent = if self.CurrentPage:peek() == container then container else nil
+				page.Parent = if self.CurrentPage:peek() == page then container else nil
 			end)
 		end
 	end

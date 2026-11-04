@@ -56,7 +56,7 @@ function Settings.new(_K)
 			current(value, true)
 		end
 
-		local theme = _K.Data.savedSettings.theme
+		local theme = pendingChanges.theme or _K.Data.savedSettings.theme
 		local themeModule = UI.Themes[theme]
 
 		local different = false
@@ -76,7 +76,7 @@ function Settings.new(_K)
 		end
 
 		if settingsDialog then
-			settingsDialog._instance.Visible = different
+			settingsDialog.Visible(different)
 		end
 
 		if key ~= "theme" and string.find(key :: string, "theme", 1, true) == 1 and not skipCustomCheck then
@@ -87,13 +87,15 @@ function Settings.new(_K)
 		elseif key == "theme" then
 			themeModule = UI.Themes[value]
 			if themeModule then
-				_K.Data.savedSettings.theme = value
 				-- FIX: update images and sounds
 				for key, value in themeModule do
 					local dataKey = "theme" .. key
-					local existing = _K.Data.savedSettings[dataKey]
-					if existing ~= nil and existing ~= UI.raw(value) then
-						change(dataKey, UI.raw(value), nil, true)
+					local rawVal = UI.raw(value)
+					local existing = if pendingChanges[dataKey] ~= nil
+						then pendingChanges[dataKey]
+						else _K.Data.savedSettings[dataKey]
+					if existing ~= nil and existing ~= rawVal then
+						change(dataKey, rawVal, nil, true)
 					end
 				end
 			end
@@ -468,18 +470,19 @@ function Settings.new(_K)
 				end)
 
 				task.spawn(function()
-					local temp = Instance.new("Frame")
-					temp.BackgroundTransparency = 1
-					temp.Parent = UI.LayerTop
-
 					for _, key in { "Font", "FontMono" } do
 						task.spawn(function()
+							local temp = Instance.new("Frame")
+							temp.BackgroundTransparency = 1
+							temp.Parent = UI.LayerTop
+
 							local list = if key == "Font" then fonts else mono
 							local loader = (if key == "Font" then lines.Font else lines.FontMono)._content.TextLabel
 							local content = {}
 							for i = 1, #list, 8 do
+								table.clear(content)
 								for j = 1, 8 do
-									local font = list[i + j]
+									local font = list[i + j - 1]
 									if not font then
 										break
 									end
@@ -493,6 +496,9 @@ function Settings.new(_K)
 
 								loader.Text = `Loading fonts... {i}/{#list}`
 								_K.Service.ContentProvider:PreloadAsync(content)
+								for _, label in content do
+									label:Destroy()
+								end
 							end
 							table.clear(content)
 
@@ -511,9 +517,7 @@ function Settings.new(_K)
 							}
 
 							loader:Destroy()
-							if key == "Font" then
-								temp:Destroy()
-							end
+							temp:Destroy()
 						end)
 					end
 				end)
@@ -931,7 +935,7 @@ function Settings.new(_K)
 
 		[UI.Hook] = {
 			Action = function(v)
-				settingsDialog._instance.Visible = false
+				settingsDialog.Visible(false)
 				if v then
 					confirmChanges()
 				else

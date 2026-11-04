@@ -37,7 +37,13 @@ function Market.new(_K)
 		local STUDIO_DEBUG = _K.DEBUG and _K.IsStudio
 		local DEBUG_SHOW_PRICES = STUDIO_DEBUG
 
+		local assetPriceConnections: { [TextLabel]: RBXScriptConnection } = {}
 		local function updateAssetPriceText(label: TextLabel, assetId: number, ownedText: string?)
+			if assetPriceConnections[label] then
+				assetPriceConnections[label]:Disconnect()
+				assetPriceConnections[label] = nil
+			end
+
 			local success, owned = _K.Util.Retry(function()
 				return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, assetId)
 			end)
@@ -49,6 +55,9 @@ function Market.new(_K)
 					return
 				end
 
+				if assetPriceConnections[label] then
+					assetPriceConnections[label]:Disconnect()
+				end
 				local conn
 				conn = _K.Service.Marketplace.PromptBulkPurchaseFinished:Connect(function(player, status, results)
 					if player ~= _K.LocalPlayer or type(results) ~= "table" or type(results.Items) ~= "table" then
@@ -62,11 +71,15 @@ function Market.new(_K)
 					_K.Remote.VIPCheck:Fire(assetId)
 					if status == Enum.MarketplaceBulkPurchasePromptStatus.Completed then
 						conn:Disconnect()
+						if assetPriceConnections[label] == conn then
+							assetPriceConnections[label] = nil
+						end
 						owned = true
 						label.Text = ownedText or "<b>OWNED</b>"
 						label.TextTransparency = 0.5
 					end
 				end)
+				assetPriceConnections[label] = conn
 
 				local ok, result = _K.Util.Retry(function()
 					return _K.Service.Marketplace:GetProductInfoAsync(assetId, Enum.InfoType.Asset).PriceInRobux
@@ -640,6 +653,7 @@ function Market.new(_K)
 						return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, assetId)
 					end)
 					if ok and ugcOwned and not DEBUG_SHOW_PRICES then
+						levelCon:Disconnect()
 						vipButtonGlobal._content.Price.Text = `<b>SHOW</b>`
 						vipButtonGlobal._content.Price.TextTransparency = 0.5
 						return
@@ -771,7 +785,7 @@ function Market.new(_K)
 
 		UI.edit(scroller._instance.UIListLayout)({
 			Padding = UI.Theme.PaddingWithStroke,
-			HorizontalAlignment = "Center",
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		})
 	end)
 

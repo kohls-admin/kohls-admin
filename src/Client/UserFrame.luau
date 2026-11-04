@@ -1,7 +1,13 @@
 local _K = require(script.Parent.Parent)
 local UI = require(script.Parent:WaitForChild("UI"))
 
-return function(from: (number | string)?, name: string?, image: string?, badgeEnabled: boolean?)
+return function(
+	from: (number | string)?,
+	name: string?,
+	image: string?,
+	badgeEnabled: boolean?,
+	initialUsername: string?
+)
 	local fromK = from == "_K"
 	if type(from) == "string" then
 		if name == nil and from ~= "_K" then
@@ -10,18 +16,23 @@ return function(from: (number | string)?, name: string?, image: string?, badgeEn
 		from = nil
 	end
 
-	local displayName = name or ""
+	local displayName = if name then `<b>{name}</b>` else ""
 
 	if badgeEnabled == nil then
 		badgeEnabled = true
 	end
 
-	local userName, badge
+	local userName = initialUsername
+	local badge
 	local color = "#fff"
 
 	if from then
-		displayName = "Loading..."
-		userName = "Unknown"
+		if not name then
+			displayName = "Loading..."
+		end
+		if not userName then
+			userName = "Unknown"
+		end
 		badge = "?"
 	end
 

@@ -139,7 +139,7 @@ function Class.new(properties: Properties?)
 		end
 		local x = input.Position.X
 		ripple.Size = UDim2.new(0, 0, 1, 0)
-		ripple.Position = UDim2.new(0, x - self._instance.AbsolutePosition.x, 0, 0)
+		ripple.Position = UDim2.new(0, x - self._instance.AbsolutePosition.X, 0, 0)
 		Tween:Create(ripple, UI.Theme.TweenOut:peek(), {
 			BackgroundTransparency = 0.9,
 			Size = UDim2.new(1, 0, 1, 0),

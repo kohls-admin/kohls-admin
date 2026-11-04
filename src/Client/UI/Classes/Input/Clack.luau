@@ -60,7 +60,7 @@ function module.registerAll()
 	local _ = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
 		if
 			not module.enabled
-			or not (textBoxFocused or ChatInputBarConfiguration.IsFocused)
+			or not (textBoxFocused or (ChatInputBarConfiguration and ChatInputBarConfiguration.IsFocused))
 			or input.KeyCode == Enum.KeyCode.None
 		then
 			return

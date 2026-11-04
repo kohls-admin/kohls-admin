@@ -281,7 +281,7 @@ function Class.new(properties: Properties?)
 				UI.flex("fill"),
 			},
 
-			if UI.raw(self.Title) then exitButton else nil,
+			if UI.raw(self.Title) ~= nil and UI.raw(self.Title) ~= "" then exitButton else nil,
 
 			InputBegan = dragInputBegan,
 		},
@@ -308,7 +308,7 @@ function Class.new(properties: Properties?)
 
 			AutomaticSize = Enum.AutomaticSize.XY,
 
-			if UI.raw(self.Title) then nil else exitButton,
+			if UI.raw(self.Title) ~= nil and UI.raw(self.Title) ~= "" then nil else exitButton,
 		},
 	}
 

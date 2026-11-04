@@ -43,7 +43,7 @@ local tabs = UI.new "Tabs" {
 			return
 		end
 		local size = window._instance.AbsoluteSize
-		dashboardTabs.Vertical(size.x > size.y)
+		dashboardTabs.Vertical(size.X > size.Y)
 	end,
 }
 _K.client.dashboard.Tabs = tabs

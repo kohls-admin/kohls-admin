@@ -281,6 +281,9 @@ end
 
 local function PASTE()
 	local selected = SELECTION[1]
+	if not selected or not selected.Instance or not next(CLIPBOARD) then
+		return
+	end
 	_K.Remote.Explorer:Fire("PASTE", CLIPBOARD, selected.Instance)
 
 	if not selected.Expanded then
@@ -475,7 +478,10 @@ local function Initialize()
 		end
 	end)
 
-	local _ = UI.UserInputService.InputBegan:Connect(function(input: InputObject)
+	local _ = UI.UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
+		if gameProcessed or not Explorer._instance.Visible then
+			return
+		end
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			local ctrl = UI.UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
 			if input.KeyCode == Enum.KeyCode.C and ctrl then
