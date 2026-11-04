@@ -245,6 +245,24 @@ describe("Data · Migrate (Settings & Legacy KAI)", function()
 		"Migrate.KAI imports legacy KSave admins, bans, and JSON settings and handles custom roles and DataStore errors",
 		function()
 			local h = Harness.newEnv({ isStudio = true })
+			local studioHashMaps = 0
+			local emptyMap = {
+				ListItemsAsync = function()
+					return {
+						GetCurrentPage = function()
+							return {}
+						end,
+						IsFinished = true,
+					}
+				end,
+			}
+			h.env.game:GetService("MemoryStoreService").GetHashMap = function(_self: any, name: string)
+				if name ~= "__KA_Charts" then
+					studioHashMaps += 1
+				end
+				return emptyMap
+			end
+			h.env.game:GetService("MessagingService").SubscribeAsync = function() end
 			local Data = h:requireData()
 			local dss = h.env.game:GetService("DataStoreService")
 			local HttpService = h.env.game:GetService("HttpService")
@@ -265,6 +283,7 @@ describe("Data · Migrate (Settings & Legacy KAI)", function()
 			})
 
 			Data.initialize("_K_MigrateTest")
+			expect(studioHashMaps).toBe(0)
 			expect(Data.bans["201"] ~= nil).toBe(true)
 			expect(Data.bans["201"][3]).toBe(-1)
 			expect(Data.bans["202"][3]).toBe(1750000000)
@@ -1232,11 +1251,30 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			-- Test Data.initialize when SEPARATE_DATASTORE = true (erases Logs_1..4, lines 627-629)
 			-- and when Store.loadStore fails (canSave = false, lines 561-565)
 			local hPriv = Harness.newEnv({ isStudio = false })
+			local privHashMaps = 0
+			local emptyPrivMap = {
+				ListItemsAsync = function()
+					return {
+						GetCurrentPage = function()
+							return {}
+						end,
+						IsFinished = true,
+					}
+				end,
+			}
+			hPriv.env.game:GetService("MemoryStoreService").GetHashMap = function(_self: any, name: string)
+				if name ~= "__KA_Charts" then
+					privHashMaps += 1
+				end
+				return emptyPrivMap
+			end
+			hPriv.env.game:GetService("MessagingService").SubscribeAsync = function() end
 			local DataPriv = hPriv:requireData()
 			DataPriv.SEPARATE_DATASTORE = true
 			DataPriv.initialize("_K_PrivScope")
 			hPriv.env:step(0.1)
 			expect(DataPriv.canSave).toBe(true)
+			expect(privHashMaps).toBe(0)
 
 			local hFail = Harness.newEnv({ isStudio = true })
 			local dssFail = hFail.env.game:GetService("DataStoreService")

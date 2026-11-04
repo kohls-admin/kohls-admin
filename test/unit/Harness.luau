@@ -196,6 +196,18 @@ local function mountedRequireData(self: MountedEnv): any
 	if not Data.roles then
 		Harness.seedRoles(Data)
 	end
+	if Data.Store and not Data.Store._guardedUpdateAsync then
+		Data.Store._guardedUpdateAsync = true
+		local origUpdateAsync = Data.Store.updateAsync
+		local updateCalls = 0
+		Data.Store.updateAsync = function(key: string, fn: any)
+			updateCalls += 1
+			if updateCalls > 100 then
+				error("Data.Store.updateAsync exceeded max calls (infinite loop)", 0)
+			end
+			return origUpdateAsync(key, fn)
+		end
+	end
 	return Data
 end
 

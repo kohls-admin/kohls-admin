@@ -444,6 +444,18 @@ describe("Chat and Server", function()
 						end,
 					}
 				end)
+				local badgesAwarded = 0
+				local badgeService = sh.env.game:GetService("BadgeService")
+				sert.spy(badgeService, "GetBadgeInfoAsync", function(_self, badgeId)
+					return { IsEnabled = badgeId == 1234 }
+				end)
+				sert.spy(badgeService, "UserHasBadgeAsync", function()
+					return false
+				end)
+				sert.spy(badgeService, "AwardBadge", function()
+					badgesAwarded += 1
+					return true
+				end)
 				local _K: any
 				local roles = Harness.defaultRoles()
 				roles.everyone.limits = { targetOthers = true }
@@ -451,6 +463,7 @@ describe("Chat and Server", function()
 				roles.vip.gamepass = { 666 }
 				roles.vip.subscription = { "sub_inline" }
 				roles.vip.commands = { ping = true }
+				roles.mod.commands = { kick = true }
 
 				server:spawn(function()
 					_K = sh:requireK()
@@ -471,9 +484,9 @@ describe("Chat and Server", function()
 						gamepassRoles = { [888] = { "vip" } },
 						subscriptionRoles = { ["sub_vip"] = { "vip" } },
 						groupRoles = {
-							[100] = { { rank = 10, roles = { "mod" } } },
+							[100] = { { rank = 10, roles = { "mod" } }, { rank = 20 }, { roles = { "mod" } } },
 							[200] = { rank = 5, roles = { "vip" } },
-							[300] = { [15] = { "mod" } },
+							[300] = { [15] = "mod" },
 						},
 						friendRoles = { "vip" },
 						freeAdmin = {},
@@ -488,7 +501,11 @@ describe("Chat and Server", function()
 							mod = { ban = true },
 						},
 						roles = {
-							default = roles.everyone,
+							default = table.isfrozen(roles.everyone) and roles.everyone or (function()
+								local r = table.clone(roles.everyone)
+								r.name = "EveryoneCustom"
+								return r
+							end)(),
 							[1] = roles.vip,
 							[2] = roles.mod,
 							[3] = roles.admin,
@@ -500,6 +517,11 @@ describe("Chat and Server", function()
 								permissions = {},
 								groups = {},
 							},
+							customDef = {
+								name = "DefaultedRole",
+								color = "#eeeeee",
+								onlyTargetSelf = true,
+							},
 							[math.huge] = roles.creator,
 						},
 					})
@@ -508,15 +530,45 @@ describe("Chat and Server", function()
 				end)
 				world:run(2)
 				expect(_K.ready).toBe(true)
+				expect(sh.KA:GetAttribute("ServerStartTime") ~= nil).toBe(true)
+				expect(_K.Server:FindFirstChild("Shared").Value).toBe(sh.KA.Shared)
+				expect(sh.KA.Name).toBe("Kohl's Admin Source")
+				expect(sh.KA.Parent).toBe(sh.env.game:GetService("ReplicatedStorage"))
+				expect(sh.KA:FindFirstChild("Client").Enabled).toBe(true)
+				expect(sh.KA:FindFirstChild("Addons") ~= nil).toBe(true)
+				expect(sh.env.game:GetService("ServerStorage"):FindFirstChild("_KServerAddons") ~= nil).toBe(true)
 				expect(_K.Data.bans["303"][1] ~= nil).toBe(true)
 				expect(type(_K.LoadScript)).toBe("function")
 				expect(type(_K.Data.settingsModuleData)).toBe("table")
 				expect(_K.Data.settingsModuleData.roles.default).toBeNil()
 				expect(_K.Data.settingsModuleData.roles[1]).toBeNil()
+				expect(_K.Data.roles.everyone.name).toBe("EveryoneCustom")
 				expect(_K.Data.roles.vip._rank).toBe(0)
 				expect(_K.Data.roles.everyone.permissions.targetOthers).toBe(false)
+				expect(_K.Data.roles.customStr._key).toBe("customStr")
+				expect(_K.Data.roles.customStr.name).toBe("CustomRole")
+				expect(_K.Data.roles.customStr.permissions.targetOthers).toBe(true)
+				expect(_K.Data.roles.customDef._rank).toBe(0)
+				expect(_K.Data.roles.customDef.permissions.targetOthers).toBe(false)
+				expect(table.find(_K.Data.rolesList, _K.Data.roles.customStr) ~= nil).toBe(true)
+				expect(_K.Data.rolesList[1]._rank <= _K.Data.rolesList[#_K.Data.rolesList]._rank).toBe(true)
+				expect(_K.Data.defaultSettings.vip).toBe(true)
+				expect(_K.Data.defaultSettings.welcomeBadgeId).toBe(1234)
+				expect(_K.Data.settings).toBe(_K.Data.savedSettings)
+				expect(_K.Data.roles.mod.commands.ban).toBe(true)
+				expect(_K.Data.roles.mod.commands.kick).toBe(true)
+				expect(badgesAwarded > 0).toBe(true)
+				expect(_K.Data.async.asset[777]).toEqual({ "vip" })
+				expect(_K.Data.async.gamepass[888]).toEqual({ "vip" })
+				expect(_K.Data.async.subscription["sub_vip"]).toEqual({ "vip" })
 				expect(table.find(_K.Data.roles.vip.assets, 777) ~= nil).toBe(true)
 				expect(table.find(_K.Data.roles.vip.gamepasses, 888) ~= nil).toBe(true)
+				expect(table.find(_K.Data.roles.vip.subscriptions, "sub_vip") ~= nil).toBe(true)
+				expect(_K.Data.roles.vip.gamepasss ~= nil).toBe(true)
+				expect(_K.Data.async.group[100]).toEqual({ { rank = 10, roles = { "mod" } } })
+				expect(_K.Data.async.group[200]).toEqual({ { rank = 5, roles = { "vip" } } })
+				expect(_K.Data.async.group[300]).toEqual({ { rank = 15, roles = { "mod" } } })
+				expect(_K.Data.friendRoles).toEqual({ "vip" })
 
 				-- _K.log edge cases: logsHidden, >16KB truncation, liveText, and removeExcessLogs (src/init.luau lines 106-162)
 				_K.Data.logsHidden[9999] = true
@@ -690,7 +742,7 @@ describe("Chat and Server", function()
 				_K.Data.async.gamepass[889] = nil
 
 				-- 2. Character damage batching & kill/death logs (with and without creator tag)
-				local char = sh.env.Instance.new("Model")
+				local char = sh.env.Instance.new("Model", sh.env.workspace)
 				char.Name = srvGuest.Name
 				local hum = sh.env.Instance.new("Humanoid", char)
 				hum._props.ApplyDescriptionFinished = sh.env:signal()
@@ -710,9 +762,9 @@ describe("Chat and Server", function()
 				-- Step 1.5s to flush the 1s damage debounce
 				world:run(1.5)
 
-				-- Deal fatal damage and fire Died
-				hum.Health = 20
-				hum.HealthChanged:Fire(20)
+				-- Deal fatal damage (35) and fire Died
+				hum.Health = 25
+				hum.HealthChanged:Fire(25)
 				hum.Health = 0
 				hum.Died:Fire()
 				world:run(0.5)
@@ -726,23 +778,59 @@ describe("Chat and Server", function()
 				world:run(0.5)
 
 				local sawDamage, sawDeath, sawKill = false, false, false
+				local damage40Count, damage60Count = 0, 0
+				local deathCountBeforeRemove = 0
 				for _, entry in _K.Data.logs do
 					local text = tostring(entry[1])
 					if string.find(text, "damaged", 1, true) then
 						sawDamage = true
+						if string.find(text, "for 40 damage.", 1, true) then
+							damage40Count += 1
+						elseif string.find(text, "for 60 damage.", 1, true) then
+							damage60Count += 1
+						end
 					elseif string.find(text, "died", 1, true) then
 						sawDeath = true
+						deathCountBeforeRemove += 1
 					elseif string.find(text, "killed", 1, true) then
 						sawKill = true
 					end
 				end
 				expect(sawDamage).toBe(true)
+				expect(damage40Count).toBe(1)
+				expect(damage60Count).toBe(1)
 				expect(sawDeath).toBe(true)
 				expect(sawKill).toBe(true)
 
-				-- CharacterRemoving cleans up connections
+				-- CharacterRemoving cleans up connections synchronously before deferred Destroy
 				srvGuest.CharacterRemoving:Fire(char)
+				hum.Died:Fire()
 				world:run(0.1)
+				expect(char.Parent).toBeNil()
+
+				local char2 = sh.env.Instance.new("Model", sh.env.workspace)
+				local hum2 = sh.env.Instance.new("Humanoid", char2)
+				hum2._props.ApplyDescriptionFinished = sh.env:signal()
+				hum2.Health = 100
+				srvGuest.Character = char2
+				srvGuest.CharacterAdded:Fire(char2)
+				srvGuest.CharacterRemoving:Fire(char2)
+				hum2.Health = 10
+				hum2.HealthChanged:Fire(10)
+				hum2.Died:Fire()
+				world:run(0.05)
+
+				local deathCountAfterRemove, damage90Count = 0, 0
+				for _, entry in _K.Data.logs do
+					local text = tostring(entry[1])
+					if string.find(text, "died", 1, true) then
+						deathCountAfterRemove += 1
+					elseif string.find(text, "90 damage", 1, true) then
+						damage90Count += 1
+					end
+				end
+				expect(deathCountAfterRemove).toBe(deathCountBeforeRemove)
+				expect(damage90Count).toBe(0)
 
 				-- 3. Remote.Settings listener: valid prefix, splitKey, freeAdmin, theme, datatypes, EnumItem/Font, useSavedSettings, and non-developer limits
 				-- Temporarily add a fake EnumItem and Font setting to test serialization branches (lines 656, 770, 774)
@@ -786,30 +874,77 @@ describe("Chat and Server", function()
 				world:run(0.5)
 				expect(_K.Data.savedSettings.useSavedSettings).toBe(true)
 
-				-- Non-developer (mod) attempting freeAdmin is blocked (line 674), single-char prefix/splitKey has 5s cooldown & >1 char rejected (lines 735, 739-742)
+				-- Restricted mod attempting freeAdmin >= own rank is blocked (line 707), non-developer (unrestricted mod) attempting freeAdmin is blocked (line 698)
 				_K.Data.roles.mod.permissions.settings = true
 				mRemote.Settings:Fire({
-					freeAdmin = { "vip" },
+					freeAdmin = { "creator" },
+				})
+				world:run(0.2)
+				expect(_K.Data.savedSettings.freeAdmin).toEqual({ "vip" })
+
+				_K.Data.members["301"].unrestricted = { mod = true }
+				mRemote.Settings:Fire({
+					freeAdmin = { "mod" },
 					prefix = { "?", "extra" },
 				})
 				mRemote.Settings:Fire({
 					prefix = { "?" },
 					splitKey = ",",
 				})
-				-- Immediate second prefix change by non-developer hits 5s cooldown (line 739)
+				-- Immediate second prefix change by non-developer hits cooldown (line 860)
 				mRemote.Settings:Fire({
 					prefix = { ":" },
 				})
 				world:run(0.5)
+				expect(_K.Data.savedSettings.freeAdmin).toEqual({ "vip" })
+				expect(_K.Data.savedSettings.prefix).toEqual({ "?" })
+				expect(_K.Data.savedSettings.splitKey).toBe(",")
 				_K.Data.roles.mod.permissions.settings = nil
+				_K.Data.members["301"].unrestricted = nil
 
-				-- Invalid settings (multi-char prefix, reserved char, freeAdmin >= caller rank, bad rbxassetid) are rejected
+				-- Invalid settings (multi-char prefix, freeAdmin everyone, bad rbxassetid, string/table defaultType, etc.) are rejected
+				_K.Data.defaultSettings.testStrSetting = "origStr"
+				_K.Data.savedSettings.testStrSetting = "origStr"
+				_K.Data.defaultSettings.testTblSetting = { 1 }
+				_K.Data.savedSettings.testTblSetting = { 1 }
 				aRemote.Settings:Fire({
 					prefix = { "twochars" },
-					freeAdmin = { "creator" },
+					freeAdmin = { "everyone" },
 					themeBackgroundImage = "http://bad.url",
+					saveChatLogs = true,
+					changeThemeAuthority = "InvalidAuthority",
+					theme = string.rep("a", 70),
+					dashboardRank = 0 / 0,
+					testStrSetting = "mutatedStr",
+					testTblSetting = { 2 },
+				})
+				aRemote.Settings:Fire({
+					prefix = "not_a_table",
+				})
+				aRemote.Settings:Fire({
+					prefix = {},
 				})
 				world:run(1)
+				expect(_K.Data.savedSettings.prefix).toEqual({ "?" })
+				expect(_K.Data.savedSettings.freeAdmin).toEqual({ "vip" })
+				expect(_K.Data.savedSettings.themeBackgroundImage).toBe("rbxassetid://123456")
+				expect(_K.Data.savedSettings.saveChatLogs).toBe(false)
+				expect(_K.Data.savedSettings.changeThemeAuthority).toBe("Server")
+				expect(_K.Data.savedSettings.theme).toBe("Cyan")
+				expect(_K.Data.savedSettings.dashboardRank).toBe(2)
+				expect(_K.Data.savedSettings.testStrSetting).toBe("origStr")
+				expect(_K.Data.savedSettings.testTblSetting).toEqual({ 1 })
+				_K.Data.defaultSettings.testStrSetting = nil
+				_K.Data.savedSettings.testStrSetting = nil
+				_K.Data.defaultSettings.testTblSetting = nil
+				_K.Data.savedSettings.testTblSetting = nil
+
+				-- Multi-prefix existing list (#existing = 2) allows replacing with 2 prefixes (math.max(#existing, 1))
+				_K.Data.savedSettings.prefix = { ";", "!" }
+				_K.Remote.Settings._signal:Fire(srvAdmin, {
+					prefix = { ";", "?" },
+				})
+				expect(_K.Data.savedSettings.prefix).toEqual({ ";", "?" })
 
 				-- Reset prefix/splitKey/freeAdmin back to standard, and test announcement/announcements/notifications via Remote.Settings
 				world:run(61)
@@ -863,8 +998,16 @@ describe("Chat and Server", function()
 				_K.Data.roles.mod.commands = { ban = true, explorer = true }
 				local charContainer = sh.env.Instance.new("Folder", sh.env.workspace)
 				adminChar.Parent = charContainer
-				_K.Remote.Explorer._signal:Fire(srvMod, "DELETE", { charContainer })
+				_K.Remote.Explorer._signal:Fire(
+					srvMod,
+					"DELETE",
+					{ charContainer, adminChar, adminHead, sh.KA, sh.env.Players }
+				)
 				expect(charContainer.Parent).toBe(sh.env.workspace)
+				expect(adminChar.Parent).toBe(charContainer)
+				expect(adminHead.Parent).toBe(adminChar)
+				expect(sh.KA.Parent).toBe(sh.env.game:GetService("ReplicatedStorage"))
+				expect(sh.env.Players.Parent).toBe(sh.env.game)
 				adminChar.Parent = sh.env.workspace
 				charContainer:Destroy()
 				_K.Data.roles.mod.commands = { ban = true }
@@ -1128,13 +1271,20 @@ describe("Chat and Server", function()
 				legacyAddon.Name = "LegacyChild"
 
 				local sK = hStudio:requireK()
-				sK.initialize(configObj, addonsFolder)
+				local initHookFired = false
+				sK.Hook.init:Connect(function()
+					initHookFired = true
+				end)
+				local initRet = sK.initialize(configObj, addonsFolder)
 				for _ = 1, 10 do
 					hStudio.env:step(0.5)
 				end
 
+				expect(initRet).toBe(sK)
+				expect(initHookFired).toBe(true)
 				expect(sK.ready).toBe(true)
 				expect(sK.groupId).toBe(500)
+				expect(table.find(sK.Data.settingsModuleData.userRoles.superadmin, 777) ~= nil).toBe(true)
 				expect(sharedAddonran).toBe(true)
 				expect(serverAddonRan).toBe(true)
 				expect(subAddonRan).toBe(true)
@@ -1142,7 +1292,8 @@ describe("Chat and Server", function()
 				expect(addonsFolder.Parent).toBe(sK.Server)
 				expect(hStudio.KA.Client.UI.Theme.Themes:FindFirstChild("CustomTheme") ~= nil).toBe(true)
 				expect(serverAddon.Parent ~= nil and serverAddon.Parent.Name == "_KServerAddons").toBe(true)
-				expect(sharedAddon.Parent ~= nil and sharedAddon.Parent.Name == "Addons").toBe(true)
+				expect(sharedAddon.Parent).toBe(hStudio.KA:FindFirstChild("Addons"))
+				expect(clientAddon.Parent).toBe(hStudio.KA:FindFirstChild("Addons"))
 
 				-- Studio Remote.Init with PlaceId == 0 alerts admin about publishing to save data (line 572)
 				sK.Remote.Init._signal:Fire(prePlr, { Attributes = { Platform = "Desktop" } })
