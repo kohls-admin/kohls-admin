@@ -50,6 +50,8 @@ jobs:
       contents: write
       pull-requests: write
       actions: read
+    outputs:
+      should_release: ${{ steps.release.outputs.should_release }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -62,54 +64,12 @@ jobs:
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          wait-for-ci: ci.yml
 
       - uses: CompeyDev/setup-rokit@1d9390883f7ebce19d48f5b8d006e11d387c92ab # v0.2.1
         if: steps.release.outputs.should_release == 'true' || github.event_name == 'workflow_dispatch'
         with:
           version: v1.2.0
-
-      - name: Wait for CI to pass on this commit
-        if: steps.release.outputs.should_release == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          for workflow in lint.yml; do
-            empty=0
-            api_errors=0
-            while true; do
-              if ! RESULT=$(gh api \
-                "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?head_sha=$GITHUB_SHA" \
-                --jq '.workflow_runs | sort_by(.run_number) | last | "\(.status // "none") \(.conclusion // "none")"'); then
-                api_errors=$((api_errors + 1))
-                if [ "$api_errors" -ge 8 ]; then
-                  echo "::error::Failed to query $workflow status after $api_errors consecutive gh api errors"
-                  exit 1
-                fi
-                echo "gh api error ($api_errors/8); retrying in 15s..."
-                sleep 15
-                continue
-              fi
-              api_errors=0
-              STATUS="${RESULT%% *}"
-              CONCLUSION="${RESULT##* }"
-              echo "$workflow status=$STATUS conclusion=$CONCLUSION"
-              if [ "$STATUS" = "completed" ]; then
-                [ "$CONCLUSION" = "success" ] && break
-                echo "::error::$workflow concluded '$CONCLUSION' for $GITHUB_SHA"
-                exit 1
-              elif [ "$STATUS" = "none" ]; then
-                empty=$((empty + 1))
-                if [ "$empty" -ge 8 ]; then
-                  echo "::error::No run of $workflow found for $GITHUB_SHA after 2 minutes"
-                  exit 1
-                fi
-              else
-                empty=0
-              fi
-              echo "$workflow not finished yet; waiting 15s..."
-              sleep 15
-            done
-          done
 
       - name: Build the release assets
         if: steps.release.outputs.should_release == 'true' || github.event_name == 'workflow_dispatch'
@@ -148,6 +108,17 @@ jobs:
               gh release edit "$TAG" --title "Kohl's Admin $VERSION" --notes-file "$NOTES_FILE"
             fi
             gh release upload "$TAG" "${assets[@]}" --clobber
+          elif git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null 2>&1; then
+            if [ "$PRERELEASE" = true ]; then
+              gh release create "$TAG" "${assets[@]}" \
+                --title "Kohl's Admin $VERSION" \
+                --notes-file "$NOTES_FILE" \
+                --prerelease
+            else
+              gh release create "$TAG" "${assets[@]}" \
+                --title "Kohl's Admin $VERSION" \
+                --notes-file "$NOTES_FILE"
+            fi
           elif [ "$PRERELEASE" = true ]; then
             gh release create "$TAG" "${assets[@]}" \
               --target "$GITHUB_SHA" \
@@ -196,3 +167,28 @@ jobs:
           }
           upload "$MAIN_MODULE_ASSET_ID" dist/MainModule.rbxm
           upload "$LOADER_ASSET_ID" dist/KohlsAdmin.rbxm
+
+  demo:
+    name: Publish Demo Place
+    needs: release
+    if: needs.release.outputs.should_release == 'true' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+    runs-on: ubuntu-latest
+    environment: testing
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: CompeyDev/setup-rokit@1d9390883f7ebce19d48f5b8d006e11d387c92ab # v0.2.1
+        with:
+          version: v1.2.0
+      - name: Publish demo place
+        env:
+          PLACE_PUBLISHING_KEY: ${{ secrets.PLACE_PUBLISHING_KEY }}
+          TEST_UNIVERSE_ID: ${{ secrets.TEST_UNIVERSE_ID }}
+          TEST_PLACE_ID: ${{ secrets.TEST_PLACE_ID }}
+        run: |
+          if [ -z "$PLACE_PUBLISHING_KEY" ] || [ -z "$TEST_UNIVERSE_ID" ] || [ -z "$TEST_PLACE_ID" ]; then
+            echo "::notice::Demo place secrets not configured: publish skipped"
+            exit 0
+          fi
+          rojo upload --api_key "$PLACE_PUBLISHING_KEY" --universe_id "$TEST_UNIVERSE_ID" --asset_id "$TEST_PLACE_ID" test

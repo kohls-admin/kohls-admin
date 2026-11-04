@@ -15,7 +15,7 @@
 
 _Kohl's Admin is an administration, moderation, and command suite for Roblox built on [Flux](https://flux.kohl.gg) and [Z](https://github.com/kohltastrophe/Z). Taken by 30M+ creators since 2010 and running across 100K+ active games today._
 
-[![CI](https://img.shields.io/github/actions/workflow/status/kohls-admin/kohls-admin/lint.yml?style=for-the-badge)](https://github.com/kohls-admin/kohls-admin/actions/workflows/lint.yml) [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/kohls-admin/kohls-admin/badges/coverage.json&style=for-the-badge)](https://github.com/kohls-admin/kohls-admin/actions/workflows/lint.yml) [![License](https://img.shields.io/github/license/kohls-admin/kohls-admin?style=for-the-badge)](LICENSE.txt) ![GitHub Release](https://img.shields.io/github/v/release/kohls-admin/kohls-admin?style=for-the-badge)
+[![CI](https://img.shields.io/github/actions/workflow/status/kohls-admin/kohls-admin/ci.yml?style=for-the-badge)](https://github.com/kohls-admin/kohls-admin/actions/workflows/ci.yml) [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/kohls-admin/kohls-admin/badges/coverage.json&style=for-the-badge)](https://github.com/kohls-admin/kohls-admin/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/kohls-admin/kohls-admin?style=for-the-badge)](LICENSE.txt) ![GitHub Release](https://img.shields.io/github/v/release/kohls-admin/kohls-admin?style=for-the-badge)
 
 </div>
 

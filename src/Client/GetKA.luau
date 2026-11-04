@@ -159,7 +159,7 @@ task.defer(function()
 	end
 
 	local attempt, connection = 0, nil
-	connection = _K.Hook.runPreparedCommands:Connect(function(from, _commands, _rawText, silent)
+	connection = _K.Hook.runPreparedCommands:Connect(function(from, _commands, _rawText)
 		if
 			_K.Data.settings.getKohlsAdminPopup == false
 			or (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) > 3
@@ -168,7 +168,7 @@ task.defer(function()
 			return
 		end
 
-		if (from and from ~= _K.LocalPlayer.UserId) or silent == false then
+		if from and from ~= _K.LocalPlayer.UserId then
 			return
 		end
 

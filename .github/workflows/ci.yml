@@ -1,4 +1,4 @@
-name: Lint & Test
+name: CI
 on:
   push:
     branches:
@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: "ci-${{ github.ref }}-${{ startsWith(github.event.head_commit.message, 'chore: release') && github.sha || '' }}"
+  cancel-in-progress: "${{ !startsWith(github.event.head_commit.message, 'chore: release') }}"
 
 defaults:
   run:
@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Conventional Commits and version check
-        uses: kohltastrophe/release@v1
+        uses: kohltastrophe/release@v1.0.0
         with:
           mode: check
           pr-title: ${{ github.event.pull_request.title }}
@@ -52,6 +52,7 @@ jobs:
         run: python3 tools/sert.py coverage --min 90 --badge
 
       - name: sert mutate
+        if: "!startsWith(github.event.head_commit.message, 'chore: release')"
         run: python3 tools/sert.py mutate --no-coverage-run --min 85
 
       - name: Update coverage badge
