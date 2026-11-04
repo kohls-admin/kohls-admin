@@ -12,9 +12,8 @@ function Servers.new(_K)
 			return placeNames[placeId]
 		end
 
-		local success, info = pcall(function()
-			return _K.Service.Marketplace:GetProductInfo(placeId)
-		end)
+		local success, info =
+			_K.Util.Retry(_K.Service.Marketplace.GetProductInfoAsync, 5, 2, _K.Service.Marketplace, placeId)
 
 		local name = if success then info.Name else "Unknown"
 		placeNames[placeId] = name

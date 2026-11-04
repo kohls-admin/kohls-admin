@@ -82,7 +82,7 @@ local function getDonationLevel(player)
 
 	local okRank, info = Util.Retry(function()
 		return Util.Service.Group:GetRolesInGroupAsync(player.UserId, 3403354)
-	end)
+	end, 3)
 	-- a user can hold several roles and their order doesn't follow Rank
 	if okRank and type(info) == "table" and type(info.Roles) == "table" then
 		for _, role in info.Roles do
@@ -95,7 +95,7 @@ local function getDonationLevel(player)
 	for _, ugcId in Purchasables.chatCommands do
 		local ok, result = Util.Retry(function()
 			return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, ugcId)
-		end)
+		end, 3)
 		if ok and result then
 			return 4
 		end
@@ -104,7 +104,7 @@ local function getDonationLevel(player)
 	for level = #gamePassDonations, 1, -1 do
 		local okGamePass, result = Util.Retry(function()
 			return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, gamePassDonations[level])
-		end)
+		end, 3)
 		if okGamePass and result then
 			return level
 		end
@@ -114,7 +114,7 @@ local function getDonationLevel(player)
 		for _, assetId in assetDonations[level] do
 			local okAsset, result = Util.Retry(function()
 				return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
-			end)
+			end, 3)
 			if okAsset and result then
 				return level
 			end
@@ -297,7 +297,7 @@ if Util.Service.Run:IsServer() then
 						end
 						local okAsset, result = Util.Retry(function()
 							return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
-						end)
+						end, 3)
 						if okAsset then
 							if result then
 								owned = true
@@ -316,7 +316,7 @@ if Util.Service.Run:IsServer() then
 				if not owned and definition.gamepass then
 					local okGamePass, result = Util.Retry(function()
 						return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, definition.gamepass)
-					end)
+					end, 3)
 					if okGamePass and result then
 						owned = true
 						definition.ownerCache[player.UserId] = true

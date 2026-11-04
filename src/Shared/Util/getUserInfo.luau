@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 
 local Signal = require(script.Parent:WaitForChild("Signal"))
 local SafePlayerAdded = require(script.Parent:WaitForChild("SafePlayerAdded"))
+local Retry = require(script.Parent:WaitForChild("Retry"))
 
 type UserInfo = {
 	Id: number,
@@ -42,13 +43,9 @@ local function getUserInfos()
 		table.insert(attempting, userId)
 	end
 
-	local attempt = 0
-	local ok, result = pcall(UserService.GetUserInfosByUserIdsAsync, UserService, attempting)
-	while not ok and attempt < 5 do
-		attempt += 1
-		task.wait(2 ^ attempt)
-		ok, result = pcall(UserService.GetUserInfosByUserIdsAsync, UserService, attempting)
-	end
+	local ok, result = Retry(function()
+		return UserService:GetUserInfosByUserIdsAsync(attempting)
+	end)
 
 	if ok and result then
 		for _, info in result do

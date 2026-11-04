@@ -77,24 +77,15 @@ local function saveBan(key, userId, ban, timestamp)
 end
 
 local BAN_API_ATTEMPTS = 8
-local BAN_API_MAX_DELAY = 60
 
 -- calls BanAsync/UnbanAsync in chunks of 50 with capped exponential backoff
 local function banApi(method: (Players, any) -> (), name: string, userIds: { number }, config: { [string]: any })
 	for i = 1, #userIds, 50 do
 		config.UserIds = table.move(userIds, i, math.min(#userIds, i + 49), 1, {})
-		for attempt = 1, BAN_API_ATTEMPTS do
-			local ok, err = pcall(method, Players, config)
-			if ok then
-				break
-			end
+		local ok, err = Util.Retry(method, BAN_API_ATTEMPTS, 2, Players, config)
+		if not ok then
 			local code = string.match(tostring(err), '"code": "([^"]+)"')
-			if attempt == BAN_API_ATTEMPTS then
-				warn(`{name} failed: {code or err}, giving up`)
-				break
-			end
-			warn(`{name} failed: {code or err}, trying again...`)
-			task.wait(math.min(2 ^ attempt, BAN_API_MAX_DELAY))
+			warn(`{name} failed: {code or err}, giving up`)
 		end
 	end
 end

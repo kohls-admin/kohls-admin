@@ -1077,7 +1077,7 @@ return {
 								Enum.CollisionFidelity.Box,
 								Enum.RenderFidelity.Precise
 							)
-						end)
+						end, 3)
 
 						if not ok then
 							return

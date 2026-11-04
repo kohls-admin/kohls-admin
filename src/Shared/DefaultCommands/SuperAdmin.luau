@@ -26,7 +26,7 @@ return {
 
 			for _, player in players do
 				tasks:add(function()
-					local ok, result = Util.Retry(service.UserHasBadgeAsync, 5, 2, service, player.UserId, badge)
+					local ok, result = Util.Retry(service.UserHasBadgeAsync, 3, 2, service, player.UserId, badge)
 					if not ok then
 						error(result)
 					end
@@ -34,7 +34,7 @@ return {
 						context._K.alert(context.fromPlayer, `{player.Name} already has the badge!`)
 						return
 					else
-						local ok2, result2 = Util.Retry(service.AwardBadge, 5, 2, service, player.UserId, badge)
+						local ok2, result2 = Util.Retry(service.AwardBadge, 3, 2, service, player.UserId, badge)
 						if not ok2 then
 							error(result2)
 						end

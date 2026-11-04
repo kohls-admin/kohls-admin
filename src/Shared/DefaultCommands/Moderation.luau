@@ -1277,11 +1277,17 @@ return {
 			local env = {}
 
 			task.defer(function()
-				local sword = _K.Service.Insert:LoadAsset(47433):FindFirstChildOfClass("Tool")
+				local ok, model = _K.Util.Retry(_K.Service.Insert.LoadAsset, 5, 2, _K.Service.Insert, 47433)
+				local sword = ok and model and model:FindFirstChildOfClass("Tool")
 				if not sword then
+					if ok and model then
+						model:Destroy()
+					end
 					warn(`Sword failed to load, sword command won't work!`)
+					return
 				end
 				sword.Parent = _K.Service.ServerStorage
+				model:Destroy()
 				env.sword = sword
 			end)
 
@@ -1289,6 +1295,9 @@ return {
 		end,
 
 		run = function(context, players)
+			if not context.env.sword then
+				return "Sword failed to load."
+			end
 			for _, player in players do
 				local backpack = player:FindFirstChildOfClass("Backpack")
 				if backpack then

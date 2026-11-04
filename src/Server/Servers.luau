@@ -6,6 +6,7 @@ local Package = script.Parent
 local Shared = Package.Shared.Value
 
 local Remote = require(Shared.Util.Remote :: ModuleScript)
+local Retry = require(Shared.Util.Retry :: ModuleScript)
 local SafeTeleport = require(Shared.Util.SafeTeleport :: ModuleScript)
 
 local THROTTLE = 15
@@ -28,10 +29,11 @@ local Servers = {
 if RunService:IsServer() then
 	local START = DateTime.now().UnixTimestamp
 	local started = false
+	local subscribed = false
 
 	local function network(jobId: string, data: any)
-		for player: Player, subscribed: boolean? in ServersSubscribers do
-			if subscribed then
+		for player: Player, isSubscribed: boolean? in ServersSubscribers do
+			if isSubscribed then
 				SERVERS_REMOTE:Fire(player, jobId, data)
 			end
 		end
@@ -39,7 +41,9 @@ if RunService:IsServer() then
 
 	local function publish()
 		if not RunService:IsStudio() then
-			MessagingService:PublishAsync(TOPIC, { SERVER_ID, game.PlaceId, #Players:GetPlayers(), START })
+			Retry(function()
+				MessagingService:PublishAsync(TOPIC, { SERVER_ID, game.PlaceId, #Players:GetPlayers(), START })
+			end, 2)
 		end
 	end
 
@@ -97,13 +101,11 @@ if RunService:IsServer() then
 		end
 		started = true
 		if not subscribed then
+			subscribed = true
 			task.spawn(function()
-				local attempts, ok = 0, false
-				repeat
-					ok = pcall(subscribe)
-					task.wait(2 ^ attempts)
-					attempts += 1
-				until ok
+				if not Retry(subscribe, 5) then
+					subscribed = false
+				end
 			end)
 		end
 		task.spawn(function()
@@ -114,10 +116,6 @@ if RunService:IsServer() then
 			end
 			started = false
 		end)
-	end
-
-	if Servers.Enabled then
-		Servers.start()
 	end
 
 	local _ = Remote.TeleportToServer:Connect(function(player: Player, placeId: number, jobId: string)

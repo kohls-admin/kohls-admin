@@ -1,5 +1,6 @@
 local HttpService = game:GetService("HttpService")
 
+local iterPageItems = require(script.Parent:WaitForChild("iterPageItems"))
 local Retry = require(script.Parent:WaitForChild("Retry"))
 local String = require(script.Parent:WaitForChild("String"))
 local Tasks = require(script.Parent:WaitForChild("Tasks"))
@@ -45,14 +46,8 @@ function module.getItemsFromHashMap(hashMap: MemoryStoreHashMap): { [string]: an
 	local items = {}
 	local pages = hashMap:ListItemsAsync(200)
 
-	while true do
-		for _, entry in pages:GetCurrentPage() do
-			items[entry.key] = entry.value
-		end
-		if pages.IsFinished then
-			break
-		end
-		pages:AdvanceToNextPageAsync()
+	for entry in iterPageItems(pages) do
+		items[entry.key] = entry.value
 	end
 
 	return items

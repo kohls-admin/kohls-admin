@@ -648,6 +648,28 @@ describe(
 				expect(seenPages.p1).toEqual({ val = 10, page = 1 })
 				expect(seenPages.p2).toEqual({ val = 20, page = 2 })
 
+				-- iterPageItems retries transient AdvanceToNextPageAsync failure
+				local retryPages = makeMultiPages()
+				local origAdvance = retryPages.AdvanceToNextPageAsync
+				local advanceAttempts = 0
+				retryPages.AdvanceToNextPageAsync = function(self)
+					advanceAttempts += 1
+					if advanceAttempts == 1 then
+						error("transient pagination error")
+					end
+					return origAdvance(self)
+				end
+				local retrySeen = {}
+				h.env.task.spawn(function()
+					for item, pageNum in Util.iterPageItems(retryPages :: any) do
+						retrySeen[item.key] = { val = item.value, page = pageNum }
+					end
+				end)
+				h.env:advance(5)
+				expect(advanceAttempts).toBe(2)
+				expect(retrySeen.p1).toEqual({ val = 10, page = 1 })
+				expect(retrySeen.p2).toEqual({ val = 20, page = 2 })
+
 				-- MemoryStore.getSharded returns (true, nil) when shards are empty vs (false, nil) when all GetAsync calls fail
 				local emptyShardMap: any = {
 					GetAsync = function()
@@ -1138,9 +1160,9 @@ describe(
 			local calls = {}
 			userMethods.GetUserInfosByUserIdsAsync = function(_self, ids)
 				table.insert(calls, table.clone(ids))
-				if #calls <= 6 then
+				if #calls <= 5 then
 					error("UserService total outage")
-				elseif #calls == 7 then
+				elseif #calls == 6 then
 					-- a malformed entry throws while the batch stores results
 					return { { Username = "NoId" } }
 				end
@@ -1158,7 +1180,7 @@ describe(
 			for _ = 1, 20 do
 				h.env:step(5)
 			end
-			expect(#calls).toBe(8)
+			expect(#calls).toBe(7)
 			for _, ids in calls do
 				expect(ids).toEqual({ 601 })
 			end

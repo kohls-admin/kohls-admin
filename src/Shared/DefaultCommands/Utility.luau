@@ -758,7 +758,7 @@ return {
 				local emoteId = context._K.Data.animationToEmoteId[animation] or animation
 				local ok, owned = context._K.Util.Retry(function()
 					return context._K.Service.Marketplace:PlayerOwnsAssetAsync(context.fromPlayer, emoteId)
-				end)
+				end, 3)
 				if not ok or not owned then
 					if ok then
 						local id = tostring(emoteId)

@@ -25,12 +25,15 @@ local function isEmote(id: number)
 	local ok, result = pcall(MarketplaceService.GetProductInfoAsync, MarketplaceService, id)
 	if ok and type(result) == "table" and result.AssetTypeId == Enum.AssetType.EmoteAnimation.Value then
 		local item = {
+			animationId = 0,
 			name = result.Name,
 			nameLower = string.lower(result.Name),
 			emoteId = id,
-			canSell = result.IsForSale and not (result.isLimited or result.isLimitedUnique),
+			canSell = result.IsForSale and not (result.IsLimited or result.IsLimitedUnique),
 		}
-		table.insert(emotes, item)
+		if RunService:IsClient() then
+			table.insert(emotes, item)
+		end
 		emoteItemFromId[id] = item
 		if item.canSell then
 			_K.VIP.allowedBulkPurchaseIds[id] = true
@@ -58,13 +61,13 @@ local function getAnimationIdFromEmoteId(emoteId: number): number?
 		return 0
 	end
 
-	local ok, result = pcall(function()
+	local ok, result = Util.Retry(function()
 		local asset = InsertService:LoadAsset(emoteId)
 		local animation = asset:FindFirstChildWhichIsA("Animation")
 		local animationId = animation and animation.AnimationId
 		asset:Destroy()
 		return animationId
-	end)
+	end, 3)
 
 	if ok and result then
 		result = string.match(result, "%d+$")
@@ -76,6 +79,9 @@ local function getAnimationIdFromEmoteId(emoteId: number): number?
 			local item = emoteItemFromId[emoteId]
 			if item then
 				item.animationId = result
+				if not table.find(emotes, item) then
+					table.insert(emotes, item)
+				end
 				Remote:FireAll({ item })
 			end
 			return result
@@ -87,19 +93,6 @@ local function getAnimationIdFromEmoteId(emoteId: number): number?
 	end
 
 	return
-end
-
-local function pagesToTable(pages)
-	local items = {}
-	while true do
-		local page = pages:GetCurrentPage()
-		table.move(page, 1, #page, #items + 1, items)
-		if pages.IsFinished then
-			break
-		end
-		pages:AdvanceToNextPageAsync()
-	end
-	return items
 end
 
 task.spawn(function()
@@ -118,17 +111,15 @@ task.spawn(function()
 			return
 		end
 
-		local okItems, items = Util.Retry(function()
-			return pagesToTable(pages)
-		end)
+		local okItems, iter = pcall(Util.iterPageItems, pages)
 
 		if not okItems then
-			warn(items)
+			warn(iter)
 			return
 		end
 
 		local tasks = Util.Tasks.new()
-		for _, item in items do
+		for item in iter do
 			local emote = {
 				default = true,
 				animationId = 0,

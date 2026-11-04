@@ -1235,11 +1235,19 @@ describe("DefaultTypes · Image & Emote", function()
 		})
 
 		local selfArg = makeArgSelf(_K, 1, { type = "emote", name = "Emote" }, "salute")
-		-- Exact and partial name lookup
+		-- Exact and partial prefix name lookup (first prefix match wins; non-prefix substring fails)
 		expect(emoteType.parse("salute", selfArg)).toBe(5001)
 		expect(emoteType.parse("stad", selfArg)).toBe(5002)
+		expect(emoteType.parse("s", selfArg)).toBe(5001)
+		expect(emoteType.parse("wave", selfArg)).toBeNil()
 
 		-- Numeric emote ID via MarketplaceService + InsertService:LoadAsset
+		h.env.marketplace.products[1] = {
+			AssetId = 1,
+			Name = "FirstEmote",
+			AssetTypeId = Enum.AssetType.EmoteAnimation.Value,
+			IsForSale = true,
+		}
 		h.env.marketplace.products[2001] = {
 			AssetId = 2001,
 			Name = "DanceEmote",
@@ -1252,6 +1260,28 @@ describe("DefaultTypes · Image & Emote", function()
 			AssetTypeId = Enum.AssetType.EmoteAnimation.Value,
 			IsForSale = false,
 		}
+		h.env.marketplace.products[2003] = {
+			AssetId = 2003,
+			Name = "LimitedEmote",
+			AssetTypeId = Enum.AssetType.EmoteAnimation.Value,
+			IsForSale = true,
+			IsLimited = true,
+		}
+		h.env.marketplace.products[2004] = {
+			AssetId = 2004,
+			Name = "LimitedUniqueEmote",
+			AssetTypeId = Enum.AssetType.EmoteAnimation.Value,
+			IsForSale = true,
+			IsLimitedUnique = true,
+		}
+		local firedEmoteBroadcasts = 0
+		local origFireAll = _K.Util.Remote.EmoteType.FireAll
+		_K.Util.Remote.EmoteType.FireAll = function(selfRemote: any, items: any)
+			if type(items) == "table" and items[1] and items[1].emoteId then
+				firedEmoteBroadcasts += 1
+			end
+			return origFireAll(selfRemote, items)
+		end
 		local insertMethods = rawget(_K.Service.Insert, "_methods")
 		local origLoadAsset = insertMethods.LoadAsset
 		insertMethods.LoadAsset = function(_self: any, id: number)
@@ -1260,37 +1290,61 @@ describe("DefaultTypes · Image & Emote", function()
 			anim.AnimationId = `rbxassetid://{7000 + id}`
 			return model
 		end
+		expect(emoteType.parse(1, selfArg)).toBe(7001)
+		expect(emoteType.parse(0, selfArg)).toBeNil()
+		expect(emoteType.parse(1.5, selfArg)).toBeNil()
 		expect(emoteType.parse(2001, selfArg)).toBe(9001)
+		expect(firedEmoteBroadcasts).toBe(2)
 		expect(_K.Data.emoteItemFromId[2001] ~= nil).toBe(true)
 		expect(_K.Data.emoteItemFromId[2001].animationId).toBe(9001)
 		expect(_K.Data.animationToEmoteId[9001]).toBe(2001)
 		expect(_K.Data.emoteToAnimationId[2001]).toBe(9001)
 		expect(_K.VIP.allowedBulkPurchaseIds[2001]).toBe(true)
 		expect(emoteType.parse("danceemote", selfArg)).toBe(9001)
-		-- Second call hits emoteToAnimationId cache
+		-- Second call hits emoteToAnimationId cache without broadcasting again
 		expect(emoteType.parse(2001, selfArg)).toBe(9001)
-		-- Offsale emote is not added to allowedBulkPurchaseIds
+		expect(firedEmoteBroadcasts).toBe(2)
+		-- Offsale, Limited, and LimitedUnique emotes are not added to allowedBulkPurchaseIds
 		expect(emoteType.parse(2002, selfArg)).toBe(9002)
 		expect(_K.VIP.allowedBulkPurchaseIds[2002]).toBeNil()
+		expect(emoteType.parse(2003, selfArg)).toBe(9003)
+		expect(_K.VIP.allowedBulkPurchaseIds[2003]).toBeNil()
+		expect(emoteType.parse(2004, selfArg)).toBe(9004)
+		expect(_K.VIP.allowedBulkPurchaseIds[2004]).toBeNil()
 		insertMethods.LoadAsset = origLoadAsset
+		_K.Util.Remote.EmoteType.FireAll = origFireAll
 
 		-- Optional empty emote (when v does not match any emote and rawArg is "")
 		local optSelf = makeArgSelf(_K, 1, { type = "emote", name = "Emote", optional = true }, "")
 		expect(emoteType.parse(0, optSelf)).toBe("")
+		local optNonEmpty = makeArgSelf(_K, 1, { type = "emote", name = "Emote", optional = true }, "nonexistent")
+		expect(emoteType.parse(0, optNonEmpty)).toBeNil()
+		local reqEmpty = makeArgSelf(_K, 1, { type = "emote", name = "Emote", optional = false }, "")
+		expect(emoteType.parse(0, reqEmpty)).toBeNil()
 
-		-- Invalid emote (both unknown string and non-emote numeric ID)
+		-- Invalid emote (both unknown string and non-emote numeric ID, plus negative cache)
 		local badNumVal, badNumErr = emoteType.parse(999999, selfArg)
 		expect(badNumVal).toBeNil()
 		expect(badNumErr).toBe("Could not parse emote")
+		expect(_K.Data.emoteItemFromId[999999]).toBe(false)
+		h.env.marketplace.products[999999] = {
+			AssetId = 999999,
+			Name = "LateAddedEmote",
+			AssetTypeId = Enum.AssetType.EmoteAnimation.Value,
+			IsForSale = true,
+		}
+		expect(emoteType.parse(999999, selfArg)).toBeNil()
 		local badVal, badErr = emoteType.parse("unknown_emote_xyz", selfArg)
 		expect(badVal).toBeNil()
 		expect(badErr).toBe("Could not parse emote")
 
-		-- Suggestions
+		-- Suggestions (numeric and non-numeric query)
 		local sugNum = emoteType.suggestions("2001")
 		expect(sugNum[1]).toBe("2001")
 		expect(table.find(sugNum, "Salute") ~= nil).toBe(true)
 		expect(table.find(sugNum, "DanceEmote") ~= nil).toBe(true)
+		local sugText = emoteType.suggestions("salute")
+		expect(sugText[1]).toBe("Salute")
 	end)
 end)
 

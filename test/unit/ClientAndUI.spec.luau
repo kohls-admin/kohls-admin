@@ -824,6 +824,26 @@ describe("Client and UI", function()
 			world:run(3)
 			expect(attempts).toBe(2)
 			expect(retryBounds ~= nil).toBe(true)
+
+			-- retryGetTextBoundsAsync falls back to Vector2.zero after 5 failed attempts
+			local failAttempts = 0
+			rawset(UI.TextService, "_methods", {
+				GetTextSize = origTextMethods.GetTextSize,
+				FilterStringAsync = origTextMethods.FilterStringAsync,
+				GetTextBoundsAsync = function()
+					failAttempts += 1
+					error("permanent TextService failure")
+				end,
+			})
+			local fallbackBounds = nil
+			client:spawn(function()
+				fallbackBounds = UI.retryGetTextBoundsAsync({ Text = "Hello", Size = 14, Width = 200 })
+			end)
+			for _ = 1, 6 do
+				world:run(1)
+			end
+			expect(failAttempts).toBe(5)
+			expect(fallbackBounds).toBe(Vector2.zero)
 			rawset(UI.TextService, "_methods", origTextMethods)
 
 			-- makeStatefulDefaults with Nil, Function, compute, and values

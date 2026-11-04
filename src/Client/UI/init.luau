@@ -7,6 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 local Package = script.Parent.Parent
 
 local Flux = require(Package:WaitForChild("Flux"))
+local Retry = require(Package:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("Retry"))
 
 type Dict<T> = { [T]: any }
 type Symbol = { type: "Symbol" }
@@ -291,15 +292,9 @@ UI.pointInGuiObject = Flux.Interact.pointIn
 
 UI.sinkInput = Flux.Interact.sunk
 
-function UI.retryGetTextBoundsAsync(params)
-	local attempt = 1
-	local ok, bounds = pcall(TextService.GetTextBoundsAsync, TextService, params)
-	while not ok do
-		task.wait(2 ^ attempt)
-		attempt += 1
-		ok, bounds = pcall(TextService.GetTextBoundsAsync, TextService, params)
-	end
-	return bounds
+function UI.retryGetTextBoundsAsync(params): Vector2
+	local ok, bounds = Retry(TextService.GetTextBoundsAsync, 5, 1, TextService, params)
+	return if ok then bounds else Vector2.zero
 end
 
 export type TextRequest = { Text: string, Font: Font, Size: number, RichText: boolean? }

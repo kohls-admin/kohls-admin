@@ -651,7 +651,7 @@ function Market.new(_K)
 				for _, assetId in _K.VIP.purchasables.chatCommands do
 					local ok, ugcOwned = _K.Util.Retry(function()
 						return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, assetId)
-					end)
+					end, 3)
 					if ok and ugcOwned and not DEBUG_SHOW_PRICES then
 						levelCon:Disconnect()
 						vipButtonGlobal._content.Price.Text = `<b>SHOW</b>`

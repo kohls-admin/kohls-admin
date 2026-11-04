@@ -1,3 +1,5 @@
+local Retry = require(script.Parent:WaitForChild("Retry"))
+
 local function pagesToTable(pages)
 	local items = {}
 	while true do
@@ -5,7 +7,10 @@ local function pagesToTable(pages)
 		if pages.IsFinished then
 			break
 		end
-		pages:AdvanceToNextPageAsync()
+		local ok, err = Retry(pages.AdvanceToNextPageAsync, 5, 2, pages)
+		if not ok then
+			error(err)
+		end
 	end
 	return items
 end
