@@ -28,7 +28,7 @@ body:
     attributes:
       label: Version
       description: Version shown in the dashboard status bar or by running `;version`.
-      placeholder: 0.18.1
+      placeholder: 0.19.0
 
   - type: textarea
     id: desc
