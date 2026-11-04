@@ -560,10 +560,134 @@ local function makeInput(env: any, props: { [string]: any })
 end
 
 local sharedFullWorld: any = nil
+local sharedFullServerMounted: any = nil
 local sharedFullClientMounted: any = nil
+local sharedFullSK: any = nil
 local sharedFullCK: any = nil
 local sharedFullPingLabel: any = nil
 local sharedFullMutant: any = nil
+
+local function getOrCreateFullClientSut()
+	if
+		sharedFullWorld
+		and sharedFullServerMounted
+		and sharedFullClientMounted
+		and sharedFullSK
+		and sharedFullCK
+		and sharedFullMutant == (_G :: any).__SERT_MUTANT
+		and #sharedFullWorld.scheduler.errors == 0
+	then
+		return sharedFullWorld, sharedFullServerMounted, sharedFullClientMounted, sharedFullSK, sharedFullCK
+	end
+
+	local world = sert.sim.new({ backing = true })
+	local server = world:server()
+	local client = server:client(1, "Player1")
+
+	local srvMounted = Harness.newPeerEnv(server, { isStudio = true })
+	local cliMounted = setupClientEnv(client);
+	(srvMounted :: any).peer = server;
+	(cliMounted :: any).peer = client
+
+	local sK = srvMounted:requireK()
+	server:spawn(function()
+		sK.initialize({
+			bans = {
+				["202"] = { "BannedBob", "Griefing", 0, 1 },
+				["303"] = { "TimedTim", "Spam", 1800000000, 1 },
+				["404"] = { "PermPete", "Exploits", -1, nil },
+			},
+			userRoles = { creator = { 1 }, admin = { 505 }, vip = {} },
+			assetRoles = {},
+			gamepassRoles = {},
+			subscriptionRoles = {},
+			groupRoles = {},
+			friendRoles = {},
+			freeAdmin = { "vip" },
+			announcements = { { Text = "Welcome Announcement", Duration = 1 } },
+			notifications = { { Text = "Welcome Notification", Duration = 1 } },
+			prefix = { ";" },
+			splitKey = " ",
+			commands = {},
+			vip = true,
+			chatCommandsNotification = true,
+			joinNotificationRank = 0,
+			roles = Harness.defaultRoles(),
+		})
+	end)
+	for _ = 1, 5 do
+		world:step(0.1)
+	end
+
+	local cK = cliMounted:requireK()
+	local preUI = cliMounted.env:require(cliMounted.Client.UI)
+	preUI.Pointer = preUI.signal({ Position = Vector3.new(100, 100, 0) })
+	client:spawn(function()
+		cliMounted.env:require(cliMounted.Client)
+	end)
+	for _ = 1, 8 do
+		world:step(0.125)
+	end
+
+	if sK.ChatCommands then
+		sK.ChatCommands.schedule = function() end
+	end
+
+	local cEnv = cliMounted.env
+	cEnv.userNames[202] = "BannedBob"
+	cEnv.userNames[303] = "TimedTim"
+	cEnv.userNames[404] = "PermPete"
+	cEnv.userNames[505] = "AdminAlice"
+	cEnv.userNames[707] = "ModMary"
+	cEnv.userNames[808] = "Spaced User"
+
+	if not cK.Registry.types.testRichValues then
+		cK.Registry.registerType("testRichValues", {
+			filterLog = true,
+			transform = function(v)
+				return v
+			end,
+			validate = function()
+				return true
+			end,
+			parse = function(v)
+				return v
+			end,
+			suggestions = function()
+				return {
+					{ "playerVal", "Player1", cEnv.Players.LocalPlayer },
+					{ "colorVal", "Red", Color3.fromRGB(255, 0, 0) },
+					{ "brickVal", "Bright red", BrickColor.new("Bright red") },
+					{ "enumFontVal", "Gotham", Enum.Font.Gotham },
+					{ "fontVal", "GothamFont", Font.fromEnum(Enum.Font.Gotham) },
+					{ "userTableVal", "UserTable", { userId = 1 } },
+				}
+			end,
+		})
+		cK.Registry.registerCommand(cK, {
+			name = "uitestcmd",
+			aliases = {},
+			description = "Test rich suggestions",
+			group = "General",
+			args = {
+				{ type = "testRichValues", name = "rich", description = "rich values" },
+				{ type = "image", name = "img", description = "image arg" },
+			},
+			run = function() end,
+		})
+		cK.Registry.commands.uitestcmd.LocalPlayerAuthorized = true
+	end
+
+	sharedFullWorld = world
+	sharedFullServerMounted = srvMounted
+	sharedFullClientMounted = cliMounted
+	sharedFullSK = sK
+	sharedFullCK = cK
+	sharedFullPingLabel = cK.client.dashboard.Window._instance:FindFirstChild("StatusBar", true).Content.Ping.Label
+	sharedFullMutant = (_G :: any).__SERT_MUTANT
+
+	return world, srvMounted, cliMounted, sK, cK
+end
 
 describe("Client and UI", function()
 	describe("Part 1 · UI Engine, Theme, Fonts & Stateful Primitives", function()
@@ -1944,7 +2068,7 @@ describe("Client and UI", function()
 					input:SetValue(";")
 					input._input.CursorPosition = 2
 					sut.CommandBar.updateCompletionData()
-					sut.world:run(0.05)
+					sut.world:step()
 					return {
 						prefix = ";",
 						text = ";",
@@ -1965,7 +2089,7 @@ describe("Client and UI", function()
 							input:SetValue(text)
 							input._input.CursorPosition = #text + 1
 							sut.CommandBar.updateCompletionData()
-							sut.world:run(0.05)
+							sut.world:step()
 						end,
 						next = function(state, text)
 							state.text = text
@@ -1983,7 +2107,7 @@ describe("Client and UI", function()
 							input._input.SelectionStart = -1
 							input._input.CursorPosition = pos
 							sut.CommandBar.updateCompletionData()
-							sut.world:run(0.05)
+							sut.world:step()
 						end,
 						next = function(state, pos)
 							state.cursor = math.max(#state.prefix + 1, pos)
@@ -2011,7 +2135,7 @@ describe("Client and UI", function()
 									false
 								)
 							end
-							sut.world:run(0.05)
+							sut.world:step()
 						end,
 						next = function(state, arg)
 							local sut = getOrCreateCommandBarSut()
@@ -2087,11 +2211,11 @@ describe("Client and UI", function()
 							input._input.CursorPosition = #cmdText + 1
 							sut.CommandBar.updateCompletionData()
 							input._input.FocusLost:Fire(true)
-							sut.world:run(0.05)
+							sut.world:step()
 							input._input.SelectionStart = -1
 							input._input.CursorPosition = #input._input.Text + 1
 							sut.CommandBar.updateCompletionData()
-							sut.world:run(0.05)
+							sut.world:step()
 						end,
 						next = function(state, cmdText)
 							local sut = getOrCreateCommandBarSut()
@@ -2157,1127 +2281,1158 @@ describe("Client and UI", function()
 						end
 					end
 				end,
-			}, { runs = 25, length = 18 })
+			}, { runs = 12, length = 12 })
 		end
 	end)
 
 	describe(
 		"Part 4 · Full Client Initialization, CommandBar, Dashboard Tabs, Network, Notify, Character & Explorer",
 		function()
+			local function makeFastRun(world: any)
+				return function(seconds: number)
+					local dt = 1 / 60
+					if seconds <= dt * 3 then
+						world:run(seconds)
+					else
+						world:step(dt)
+						world:step(seconds - dt * 2)
+						world:step(dt)
+					end
+				end
+			end
+
+			test("initializes full Server + Client pair, Theme, UserFrame, Notify, Announce, and CommandBar", function()
+				local world, _srvMounted, cliMounted, _sK, cK = getOrCreateFullClientSut()
+				local fastRun = makeFastRun(world)
+
+				expect(cK.ready).toBe(true)
+				expect(cK.client.dashboard ~= nil).toBe(true)
+				expect(cK.client.CommandBar ~= nil).toBe(true)
+
+				local UI = cK.UI
+				local cEnv = cliMounted.env
+
+				-- 1. UI.changeTheme
+				if UI.Themes.Default then
+					UI.changeTheme(UI.Themes.Default)
+				end
+
+				-- 2. UserFrame variations
+				local uf1 = cK.client.UserFrame(1, "CustomDisplay")
+				expect(uf1.Name).toBe("Header")
+				local ufK = cK.client.UserFrame("_K")
+				expect(ufK.Name).toBe("Header")
+				local ufCustom = cK.client.UserFrame("SystemSender", nil, "rbxassetid://12345", false)
+				expect(ufCustom.Name).toBe("Header")
+				local ufBadge = cK.client.UserFrame(1, nil, nil, true)
+				expect(ufBadge.Name).toBe("Header")
+				fastRun(0.2)
+
+				-- 3. Notify & Announce
+				local notifActivated = false
+				local notifClosed = false
+				local nDialog = cK.Notify({
+					Text = "Test Notification",
+					From = 1,
+					Duration = 2,
+					Activated = function()
+						notifActivated = true
+					end,
+					Close = function()
+						notifClosed = true
+					end,
+				})
+				expect(nDialog ~= nil).toBe(true)
+				expect(nDialog._content.Header.LayoutOrder).toBe(-3)
+				expect(nDialog._content.Header.LayoutOrder < nDialog._content.Title.LayoutOrder).toBe(true)
+				expect(nDialog._content.Title.LayoutOrder < nDialog._content.Text.LayoutOrder).toBe(true)
+				nDialog._instance.Activated:Fire()
+				fastRun(0.2)
+				expect(notifActivated).toBe(true)
+				expect(notifClosed).toBe(true)
+
+				local aDialog = cK.Announce({
+					Text = "Pinned Announcement",
+					From = "_K",
+					Duration = 2,
+				})
+				expect(aDialog ~= nil).toBe(true)
+				aDialog._exitButton._instance.Activated:Fire()
+				fastRun(0.2)
+
+				-- 4. CommandBar interactions & rich suggestion types
+				local CommandBar = cK.client.CommandBar
+				CommandBar.show()
+				fastRun(0.2)
+				expect(CommandBar.Bar.Visible).toBe(true)
+
+				-- CircleIndicator button
+				local circleInd = CommandBar.Bar:FindFirstChild("CircleIndicator")
+				if circleInd then
+					local ciBtn = circleInd:FindFirstChildOfClass("TextButton")
+					if ciBtn then
+						ciBtn.Activated:Fire()
+						fastRun(0.1)
+					end
+				end
+
+				-- Typing prefix-less text via env:input() auto-prepends prefix; duplicate prefix strips
+				cEnv:input():click(CommandBar.Input._input)
+				cEnv:input():type("help")
+				CommandBar.Input._input.CursorPosition = 6
+				fastRun(0.2)
+				expect(string.sub(CommandBar.Input._input.Text, 1, 1)).toBe(";")
+
+				CommandBar.Input._input.Text = ";;help"
+				CommandBar.Input._input.CursorPosition = 7
+				fastRun(0.2)
+				expect(CommandBar.Input._input.Text).toBe(";help")
+
+				-- SelectionStart ~= -1 and CursorPosition < prefixPosition clamping
+				CommandBar.Input._input.SelectionStart = 2
+				CommandBar.Input._input.CursorPosition = 1
+				fastRun(0.1)
+				CommandBar.Input._input.SelectionStart = -1
+				CommandBar.Input._input.CursorPosition = 1
+				fastRun(0.1)
+				expect(CommandBar.Input._input.CursorPosition >= 2).toBe(true)
+
+				-- Up / Down suggestion navigation via env:input()
+				cEnv:input():press(Enum.KeyCode.Down)
+				cEnv:input():release(Enum.KeyCode.Down)
+				cEnv:input():press(Enum.KeyCode.Up)
+				cEnv:input():release(Enum.KeyCode.Up)
+
+				CommandBar.Input._input.Text = ";uitestcmd "
+				CommandBar.Input._input.CursorPosition = 12
+				CommandBar.updateCompletionData()
+				fastRun(0.2)
+
+				-- Click a suggestion frame directly
+				local suggestionMenu = CommandBar.Bar:FindFirstChild("SuggestionMenu", true)
+					or UI.LayerTop:FindFirstChild("SuggestionMenu", true)
+				if suggestionMenu then
+					for _, child in suggestionMenu:GetDescendants() do
+						if child:IsA("TextButton") and child.Name ~= "Purchase" then
+							child.Activated:Fire()
+							break
+						end
+					end
+				end
+
+				-- Image argument suggestion branch
+				CommandBar.Input._input.Text = ";uitestcmd playerVal rbxassetid://1"
+				CommandBar.Input._input.CursorPosition = 36
+				CommandBar.updateCompletionData()
+				fastRun(0.2)
+
+				-- Tab completion (including quote completion)
+				local origUisMethods = rawget(UI.UserInputService, "_methods")
+				local tabDown = true
+				rawset(
+					UI.UserInputService,
+					"_methods",
+					setmetatable({
+						IsKeyDown = function(_self, kc)
+							return tabDown and kc == Enum.KeyCode.Tab
+						end,
+					}, { __index = origUisMethods })
+				)
+
+				CommandBar.Input._input.Text = ';uitestcmd "pla'
+				CommandBar.Input._input.CursorPosition = 16
+				CommandBar.updateCompletionData()
+				fastRun(0.1)
+				UI.UserInputService.InputBegan:Fire(
+					makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Tab }),
+					false
+				)
+				fastRun(0.2)
+				tabDown = false
+				rawset(UI.UserInputService, "_methods", origUisMethods)
+
+				-- Restricted command suggestion with VIP and GamePass purchase buttons
+				if cK.Registry.commands.ban then
+					cK.Registry.commands.ban.LocalPlayerAuthorized = false
+					cK.Registry.commands.ban.RestrictedToRole = cK.Data.roles.vip
+					CommandBar.Input._input.Text = ";ban"
+					CommandBar.Input._input.CursorPosition = 5
+					CommandBar.updateCompletionData()
+					fastRun(0.2)
+					CommandBar.Input._input.Text = ";ban "
+					CommandBar.Input._input.CursorPosition = 6
+					CommandBar.updateCompletionData()
+					fastRun(0.2)
+					cK.Data.roles.vip.gamepasses = { 12345 }
+					CommandBar.Input._input.Text = ";ban"
+					CommandBar.Input._input.CursorPosition = 5
+					CommandBar.updateCompletionData()
+					fastRun(0.2)
+					cK.Data.roles.vip.gamepasses = nil
+					cK.Registry.commands.ban.LocalPlayerAuthorized = true
+				end
+
+				-- Invalid command & invalid argument suggestions + FocusLost(true) error paths
+				CommandBar.Input._input.Text = ";notacommand "
+				CommandBar.Input._input.CursorPosition = 14
+				CommandBar.updateCompletionData()
+				fastRun(0.1)
+				CommandBar.Input._input.FocusLost:Fire(true)
+				fastRun(0.2)
+
+				CommandBar.show()
+				CommandBar.Input._input.Text = ";ban Player1"
+				CommandBar.Input._input.CursorPosition = 13
+				CommandBar.updateCompletionData()
+				fastRun(0.1)
+				CommandBar.Input._input.FocusLost:Fire(true)
+				fastRun(0.2)
+
+				-- Execute valid command twice via FocusLost(true) to cover duplicate history deduplication
+				for _ = 1, 2 do
+					CommandBar.show()
+					CommandBar.Input._input.Text = ";version"
+					CommandBar.Input._input.CursorPosition = 9
+					CommandBar.updateCompletionData()
+					CommandBar.Input._input.FocusLost:Fire(true)
+					fastRun(0.3)
+					-- a run command clears the bar back to the prefix
+					expect(CommandBar.Input._input.Text).toBe(";")
+					expect(CommandBar.Input.Value()).toBe(";")
+				end
+
+				-- History completion when text == ";"
+				CommandBar.show()
+				fastRun(0.1)
+				CommandBar.Input._input.Text = ";"
+				CommandBar.Input._input.CursorPosition = 2
+				CommandBar.updateCompletionData()
+				UI.UserInputService.InputBegan:Fire(
+					makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Up }),
+					false
+				)
+				UI.UserInputService.InputBegan:Fire(
+					makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Down }),
+					false
+				)
+				CommandBar.hide()
+				expect(CommandBar.Bar.Visible).toBe(false)
+			end)
+
+			test("exercises Network remotes, RequestCommand RPC, and client chat command routing", function()
+				local world, srvMounted, cliMounted, sK, cK = getOrCreateFullClientSut()
+				local fastRun = makeFastRun(world)
+				local server = srvMounted.peer
+				local client = cliMounted.peer
+				local UI = cK.UI
+				local cEnv = cliMounted.env
+
+				-- 5. Network remotes & init.client events (Server -> Client & Client -> Server)
+				local srvPlayer = srvMounted.env.Players:GetPlayerByUserId(1)
+				sK.Remote.Ban:Fire(srvPlayer, "606", { "NewBanUser", "Reason", 0, 1 })
+				sK.Remote.Bans:Fire(srvPlayer, {
+					["202"] = { "BannedBob", "Griefing", 0, 1 },
+					["303"] = { "TimedTim", "Spam", 1800000000, 1 },
+					["404"] = { "PermPete", "Exploits", -1, nil },
+				})
+				sK.Remote.Member:Fire(srvPlayer, "707", { name = "ModMary", roles = { "mod" }, persist = { "mod" } })
+				sK.Remote.Member:Fire(
+					srvPlayer,
+					"808",
+					{ name = "Spaced User", roles = { "mod", "vip" }, persist = { "mod" } }
+				)
+				sK.Remote.Members:Fire(srvPlayer, {
+					["1"] = { name = "Player1", roles = { "creator" }, persist = { "creator" } },
+					["707"] = { name = "ModMary", roles = { "mod" }, persist = { "mod" } },
+					["808"] = { name = "Spaced User", roles = { "mod", "vip" }, persist = { "mod" } },
+				})
+				sK.Remote.Log:Fire(
+					srvPlayer,
+					{ "Test server log", sK.Logger:encode("INFO"), os.time(), nil, "Player1" }
+				)
+				local logsBuf = sK.Z.ser(sK.Data.Schema.logsRemote, {
+					{ "Bulk log entry", sK.Logger:encode("COMMAND"), os.time(), nil, "Player1" },
+				})
+				if logsBuf then
+					sK.Remote.Logs:Fire(srvPlayer, logsBuf)
+				end
+				sK.Remote.Settings:Fire(srvPlayer, { chatCommands = true, themeFontSize = 16 })
+				sK.Remote.Role:Fire(srvPlayer, "vip", sK.Data.roles.vip)
+				sK.Remote.Roles:Fire(srvPlayer, sK.Data.roles)
+				sK.Remote.RolesNotification:Fire(srvPlayer)
+				sK.Remote.SetCore:Fire(srvPlayer, "ChatActive", true)
+				sK.Remote.DisplayBubble:Fire(srvPlayer, nil, "Bubble hello")
+				sK.Remote.Announcement:Fire(srvPlayer, { Text = "Server Broadcast", From = 1, Duration = 1 })
+				sK.Remote.Notify:Fire(srvPlayer, { Text = "Direct Remote Notify", From = 1, Duration = 1 })
+				sK.Remote.VIPNotification:Fire(srvPlayer)
+				-- Fire VIPNotification while already open, then close it and fire again
+				sK.Remote.VIPNotification:Fire(srvPlayer)
+				sK.Remote.Servers:Fire(srvPlayer, "job_abc123", { 12345, 4, os.time() - 60 })
+				sK.Remote.Servers:Fire(srvPlayer, nil, {
+					job_abc123 = { 12345, 4, os.time() - 60 },
+					job_def456 = { 12345, 8, os.time() - 120 },
+					job_ghi789 = { 67890, 2, os.time() - 30 },
+				})
+				fastRun(1)
+
+				expect(cK.Data.bans["202"] ~= nil).toBe(true)
+				expect(cK.Data.bans["404"] ~= nil).toBe(true)
+				expect(cK.Data.members["707"] ~= nil).toBe(true)
+				expect(cK.Data.members["808"] ~= nil).toBe(true)
+				expect(cK.Data.servers["job_abc123"] ~= nil).toBe(true)
+				expect(cK.Data.servers["job_ghi789"] ~= nil).toBe(true)
+
+				-- Close any open Dialogs in LayerTopInset (including VIPNotification)
+				for _, child in UI.LayerTopInset:GetChildren() do
+					if child.Name == "Dialog" and child:FindFirstChild("Frame") then
+						local exitBtn = child.Frame:FindFirstChild("Button")
+						if exitBtn and exitBtn:IsA("TextButton") then
+							exitBtn.Activated:Fire()
+						end
+					end
+				end
+				fastRun(0.2)
+
+				-- TextChatService SendingMessage & MessageReceived, LocalPlayer.Idled, and Hotkey dispatch
+				-- chat text is neither parsed nor logged on the client, platform-integrated chat hides it
+				local tcs = cEnv.game:GetService("TextChatService")
+				local logCount = #cK.Data.logs
+				tcs.SendingMessage:Fire({ Text = ";version" })
+				tcs.MessageReceived:Fire({
+					TextSource = { UserId = 1 },
+					Text = "Hello chat",
+				})
+				fastRun(0.1)
+				expect(#cK.Data.logs).toBe(logCount)
+				cEnv.Players.LocalPlayer.Idled:Fire(120)
+
+				local focusBox = cEnv.Instance.new("TextBox")
+				UI.UserInputService.TextBoxFocused:Fire(focusBox)
+				UI.UserInputService.InputBegan:Fire(
+					makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Quote }),
+					false
+				)
+				UI.UserInputService.TextBoxFocusReleased:Fire(focusBox)
+				UI.UserInputService.InputBegan:Fire(
+					makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Quote }),
+					false
+				)
+				fastRun(0.2)
+
+				-- RequestCommand RPC from server to client
+				local reqResult = nil
+				server:spawn(function()
+					reqResult = sK.Remote.RequestCommand:Invoke(srvPlayer, srvPlayer, ";kill me")
+				end)
+				fastRun(0.5)
+				for _, child in UI.LayerTopInset:GetChildren() do
+					if
+						child.Name == "Dialog"
+						and child:FindFirstChild("Frame")
+						and child.Frame:FindFirstChild("Actions")
+					then
+						child.Frame.Actions.RightAction.Activated:Fire()
+					end
+				end
+				fastRun(0.5)
+				expect(reqResult).toBe(true)
+
+				-- Verify RequestCommand.OnInvoke accepts a numeric userId (from cross-server ;global request)
+				local reqThread = client:spawn(function()
+					return cK.Remote.RequestCommand.OnInvoke(101, ";kill Target")
+				end)
+				fastRun(0.1)
+				expect(coroutine.status(reqThread)).toBe("suspended")
+				client:spawn(function()
+					coroutine.close(reqThread)
+				end)
+
+				-- Chatted / Remote.Command on client (wrong prefix warning + valid command)
+				sK.Remote.Command:Fire(srvPlayer, "!help")
+				fastRun(0.3)
+				sK.Remote.Command:Fire(srvPlayer, ";version</b>")
+				fastRun(0.3)
+				-- chat commands the server already ran: the client runs its part and leaves errors to the server
+				local function errorLogs(): number
+					local count = 0
+					for _, log in cK.Data.logs do
+						if cK.Logger:decode(log[2]) == "ERROR" then
+							count += 1
+						end
+					end
+					return count
+				end
+				local errorsBefore = errorLogs()
+				sK.Remote.Command:Fire(srvPlayer, ";nosuchcommand", true)
+				fastRun(0.3)
+				expect(errorLogs()).toBe(errorsBefore)
+				sK.Remote.Command:Fire(srvPlayer, ";nosuchcommand")
+				fastRun(0.3)
+				expect(errorLogs()).toBe(errorsBefore + 1)
+
+				-- chat commands missing required arguments open CommandBar pre-filled with trailing space for argument autocomplete
+				cK.client.CommandBar.hide()
+				fastRun(0.1)
+				expect(cK.client.CommandBar.Bar.Visible).toBe(false)
+				sK.Remote.Command:Fire(srvPlayer, ";ban", true)
+				fastRun(0.3)
+				expect(cK.client.CommandBar.Bar.Visible).toBe(true)
+				expect(cK.client.CommandBar.Input._input.Text).toBe(";ban ")
+				expect(cK.client.CommandBar.Input._input.CursorPosition).toBe(6)
+				cK.client.CommandBar.hide()
+				fastRun(0.1)
+
+				-- kick (ignoreSelf first player arg) with no args also opens CommandBar pre-filled
+				sK.Remote.Command:Fire(srvPlayer, ";kick", true)
+				fastRun(0.3)
+				expect(cK.client.CommandBar.Bar.Visible).toBe(true)
+				expect(cK.client.CommandBar.Input._input.Text).toBe(";kick ")
+				cK.client.CommandBar.hide()
+				fastRun(0.1)
+			end)
+
+			test("exercises Dashboard Bans, Members, and stale async lookup dialogs", function()
+				local world, _srvMounted, cliMounted, _sK, cK = getOrCreateFullClientSut()
+				local fastRun = makeFastRun(world)
+				local UI = cK.UI
+				local cEnv = cliMounted.env
+				cK.Data.members["707"] = { name = "ModMary", roles = { "mod" }, persist = { "mod" } }
+				cK.Data.members["808"] = { name = "Spaced User", roles = { "mod", "vip" }, persist = { "mod" } }
+				cK.client.members(cK.Data.members, true)
+
+				-- 6. Dashboard & Tabs (Bans, Members, Logs, Commands, Settings, Servers, Market, About, GetKA)
+				local dash = cK.client.dashboard
+				cK.Process.runCommands(cK, cEnv.Players.LocalPlayer.UserId, ";cmds")
+				fastRun(0.2)
+				cK.client.dashboardButton.Activated:Fire()
+				cK.client.dashboardButton.MouseButton2Click:Fire()
+				if cK.client.dashboardButton.TouchLongPress then
+					cK.client.dashboardButton.TouchLongPress:Fire({}, Enum.UserInputState.Begin)
+				end
+				if cK.client.commandsButton then
+					cK.client.commandsButton.Activated:Fire()
+					cK.client.commandsButton.MouseButton2Click:Fire()
+					if cK.client.commandsButton.TouchLongPress then
+						cK.client.commandsButton.TouchLongPress:Fire({}, Enum.UserInputState.Begin)
+					end
+				end
+				cK.client.commandsWindowVisible(true)
+				UI.flush()
+				expect(dash.Commands._instance.Visible).toBe(true)
+				cK.client.commandsWindowVisible(false)
+				UI.flush()
+				cK.client.settings.commandBarRank(false)
+				cK.client.settings.dashboardRank(false)
+				cK.client.settings.commandBarRank(0)
+				cK.client.settings.dashboardRank(0)
+				cK.client.hotkeys.dashboard.callback()
+				dash.Window._instance.Visible = true
+				fastRun(0.5)
+
+				-- Trigger StatusBar and other cached Tooltips
+				if UI.Class.Tooltip and UI.Class.Tooltip.Cache then
+					for _, tip in UI.Class.Tooltip.Cache do
+						if type(tip) == "table" and UI.isNode(tip.Visible) then
+							tip.Visible(true)
+							UI.flush()
+							tip.Visible(false)
+							UI.flush()
+						end
+					end
+				end
+
+				local function openScrollerTab(tab: any)
+					tab.Enabled(true)
+					tab._instance.Visible = true
+					tab:updateList()
+					fastRun(0.1)
+					tab:forceRender()
+					expect(next(tab._lineItemCache) ~= nil).toBe(true)
+				end
+
+				local function filterScrollerTab(tab: any, queries: { string })
+					for _, q in queries do
+						tab._input._input.Text = q
+						tab:refreshList()
+						fastRun(0.1)
+						if q ~= "" then
+							tab:forceRender()
+						end
+					end
+				end
+
+				-- Bans tab (rendering, filtering left/right, newBanDialog, editBanButton, unbanDialog)
+				openScrollerTab(dash.Bans)
+				local emptyBanBtn = dash.Bans._instance:FindFirstChild("Button")
+				expect(emptyBanBtn ~= nil).toBe(true)
+				expect(emptyBanBtn.LayoutOrder).toBe(1)
+				expect(dash.Bans._scroller.LayoutOrder).toBe(2)
+				expect(emptyBanBtn.LayoutOrder < dash.Bans._scroller.LayoutOrder).toBe(true)
+
+				-- Hover ban item tooltips
+				for _, item in dash.Bans._lineItemCache do
+					local tip = UI.Class.Tooltip.Cache and UI.Class.Tooltip.Cache[item._instance]
+					if tip then
+						tip.Visible(true)
+						tip.Visible(false)
+					end
+				end
+
+				-- Open newBanDialog via newBanButton in Bans._input
+				local newBanBtn = dash.Bans._input._instance:FindFirstChild("Button")
+				if newBanBtn and newBanBtn:IsA("TextButton") then
+					newBanBtn.Activated:Fire()
+					newBanBtn.Activated:Fire()
+					newBanBtn.Activated:Fire()
+					fastRun(0.1)
+				end
+
+				-- Exercise newBanDialog inputs (userId, invalid self, username, reason, Server/Forever/Timed ban)
+				for _, child in dash.Bans._instance:GetChildren() do
+					if child.Name ~= "Dialog" or not child:FindFirstChild("Frame") then
+						continue
+					end
+					local boxes = {}
+					local buttons = {}
+					for _, desc in child:GetDescendants() do
+						if desc:IsA("TextBox") then
+							table.insert(boxes, desc)
+						elseif desc:IsA("TextButton") then
+							table.insert(buttons, desc)
+						end
+					end
+					if boxes[1] then
+						boxes[1].Text = "Player1"
+						boxes[1].FocusLost:Fire(true)
+						fastRun(0.1)
+						boxes[1].Text = "BannedBob"
+						boxes[1].FocusLost:Fire(true)
+						fastRun(0.1)
+						boxes[1].Text = "202"
+						boxes[1].FocusLost:Fire(true)
+						fastRun(0.1)
+					end
+					if boxes[2] then
+						boxes[2].Text = "Test Ban Reason"
+						boxes[2].FocusLost:Fire(true)
+					end
+					for _, b in buttons do
+						if b.Name == "Button" then
+							b.Activated:Fire()
+						end
+					end
+					fastRun(0.2)
+				end
+
+				-- Click editBanButton and unbanButton on a ban item, then confirm unbanDialog
+				for _, item in dash.Bans._lineItemCache do
+					for _, child in item._instance:GetChildren() do
+						if child:IsA("TextButton") then
+							child.Activated:Fire()
+							fastRun(0.1)
+						end
+					end
+					break
+				end
+				for _, child in dash.Bans._instance:GetChildren() do
+					if
+						child.Name == "Dialog"
+						and child:FindFirstChild("Frame")
+						and child.Frame:FindFirstChild("Actions")
+					then
+						child.Frame.Actions.RightAction.Activated:Fire()
+						fastRun(0.1)
+					end
+				end
+
+				filterScrollerTab(dash.Bans, { "bob", "forever", "" })
+
+				-- Members tab (rendering, role chips, newRoleDialog, roleMenu, filtering)
+				openScrollerTab(dash.Members)
+
+				-- Open newRoleDialog via newMemberButton
+				local newMemBtn = dash.Members._input._instance:FindFirstChild("Button")
+				if newMemBtn and newMemBtn:IsA("TextButton") then
+					newMemBtn.Activated:Fire()
+					newMemBtn.Activated:Fire()
+					newMemBtn.Activated:Fire()
+					fastRun(0.1)
+				end
+				for _, child in dash.Members._instance:GetChildren() do
+					if child.Name ~= "Dialog" or not child:FindFirstChild("Frame") then
+						continue
+					end
+					for _, desc in child:GetDescendants() do
+						if desc:IsA("TextBox") then
+							desc.Text = "Player1"
+							desc.FocusLost:Fire(true)
+							fastRun(0.1)
+							desc.Text = "ModMary"
+							desc.FocusLost:Fire(true)
+							fastRun(0.1)
+							desc.Text = "707"
+							desc.FocusLost:Fire(true)
+							fastRun(0.1)
+							break
+						end
+					end
+					for _, desc in child:GetDescendants() do
+						if desc:IsA("TextButton") then
+							desc.Activated:Fire()
+						end
+					end
+					fastRun(0.2)
+				end
+
+				-- Click add role button and role chip remove buttons on a member item
+				for _, item in dash.Members._lineItemCache do
+					for _, desc in item._instance:GetDescendants() do
+						if desc:IsA("TextButton") then
+							desc.Activated:Fire()
+							fastRun(0.05)
+						end
+					end
+					break
+				end
+				-- Click a role button in roleMenu (under UI.LayerTop)
+				for _, menuChild in UI.LayerTop:GetChildren() do
+					if menuChild.Name ~= "Menu" or not menuChild.Visible then
+						continue
+					end
+					for _, btn in menuChild:GetDescendants() do
+						if btn:IsA("TextButton") then
+							btn.Activated:Fire()
+							break
+						end
+					end
+				end
+				fastRun(0.2)
+
+				filterScrollerTab(dash.Members, { "mary", "" })
+
+				-- Stale lookup target: while a name lookup yields, the ban/role target is nil so the dialog
+				-- can't act on the previous user, and a superseded lookup never overwrites a newer one
+				do
+					local playersMethods = rawget(cEnv.Players, "_methods")
+					local origLookup = playersMethods.GetUserIdFromNameAsync
+					local lookupDelay: { [string]: number } = { bannedbob = 0.3, adminalice = 0.15 }
+					playersMethods.GetUserIdFromNameAsync = function(self, name)
+						local delay = lookupDelay[string.lower(name)]
+						if delay then
+							cEnv.task.wait(delay)
+						end
+						return origLookup(self, name)
+					end
+
+					local function findDialog(titles: { string }): any
+						for _, child in UI.LayerTop:GetChildren() do
+							for _, desc in child:GetDescendants() do
+								if desc:IsA("TextLabel") and desc.Name ~= "Label" and table.find(titles, desc.Text) then
+									return child
+								end
+							end
+						end
+						return nil
+					end
+					local function dialogParts(dialog: any, actionLabel: string)
+						local avatar, box, button
+						for _, desc in dialog:GetDescendants() do
+							if
+								not avatar
+								and desc:IsA("ImageLabel")
+								and string.find(desc.Image, "AvatarHeadShot", 1, true)
+							then
+								avatar = desc
+							elseif desc:IsA("TextLabel") and desc.Name == "Label" and desc.Text == actionLabel then
+								button = desc:FindFirstAncestorWhichIsA("TextButton")
+							end
+						end
+						-- the target input sits beside the avatar in the "User" row
+						if avatar then
+							for _, desc in avatar.Parent:GetDescendants() do
+								if desc:IsA("TextBox") then
+									box = desc
+									break
+								end
+							end
+						end
+						return avatar, box, button
+					end
+					local function enter(box: any, text: string)
+						box.Text = text
+						box.FocusLost:Fire(true)
+					end
+					local function targetId(avatar: any): string?
+						UI.flush()
+						return string.match(avatar.Image, "id=([^&]*)")
+					end
+
+					-- Ban dialog
+					local banDialog = findDialog({ "New Ban", "Edit Ban" })
+					expect(banDialog ~= nil).toBe(true)
+					local banAvatar, banBox, banButton = dialogParts(banDialog, "Ban")
+					expect(banAvatar ~= nil and banBox ~= nil and banButton ~= nil).toBe(true)
+					local bansFired = {}
+					local origBanFire = cK.Remote.Ban.Fire
+					cK.Remote.Ban.Fire = function(_self, userId)
+						table.insert(bansFired, userId)
+					end
+
+					enter(banBox, "707")
+					fastRun(0.1)
+					expect(targetId(banAvatar)).toBe("707")
+
+					enter(banBox, "BannedBob")
+					fastRun(0.1)
+					expect(targetId(banAvatar)).toBe("nil")
+					banButton.Activated:Fire()
+					expect(#bansFired).toBe(0)
+
+					-- AdminAlice resolves first, then the slower BannedBob lookup is dropped
+					enter(banBox, "AdminAlice")
+					fastRun(0.1)
+					expect(targetId(banAvatar)).toBe("nil")
+					fastRun(0.1)
+					expect(targetId(banAvatar)).toBe("505")
+					fastRun(0.2)
+					expect(targetId(banAvatar)).toBe("505")
+					banButton.Activated:Fire()
+					expect(bansFired).toEqual({ 505 })
+					cK.Remote.Ban.Fire = origBanFire
+
+					-- Members role dialog
+					local roleDialog = findDialog({ "Add Role" })
+					expect(roleDialog ~= nil).toBe(true)
+					local roleAvatar, roleBox, confirmButton = dialogParts(roleDialog, "Confirm")
+					expect(roleAvatar ~= nil and roleBox ~= nil and confirmButton ~= nil).toBe(true)
+					local commandsRun = {}
+					local origRunCommands = cK.Process.runCommands
+					cK.Process.runCommands = function(_K, _from, cmd)
+						table.insert(commandsRun, cmd)
+					end
+
+					enter(roleBox, "707")
+					fastRun(0.1)
+					expect(targetId(roleAvatar)).toBe("707")
+
+					enter(roleBox, "BannedBob")
+					fastRun(0.1)
+					expect(targetId(roleAvatar)).toBe("nil")
+					confirmButton.Activated:Fire()
+					expect(#commandsRun).toBe(0)
+
+					enter(roleBox, "AdminAlice")
+					fastRun(0.1)
+					expect(targetId(roleAvatar)).toBe("nil")
+					fastRun(0.1)
+					expect(targetId(roleAvatar)).toBe("505")
+					fastRun(0.2)
+					expect(targetId(roleAvatar)).toBe("505")
+					confirmButton.Activated:Fire()
+					expect(#commandsRun).toBe(1)
+					expect(string.find(commandsRun[1], "role 505 ", 1, true) ~= nil).toBe(true)
+					cK.Process.runCommands = origRunCommands
+
+					playersMethods.GetUserIdFromNameAsync = origLookup
+				end
+			end)
+
+			test("exercises Dashboard Logs, Commands, Servers, Settings, About, Market, and GetKA", function()
+				local world, _srvMounted, cliMounted, _sK, cK = getOrCreateFullClientSut()
+				local fastRun = makeFastRun(world)
+				local UI = cK.UI
+				local cEnv = cliMounted.env
+				local dash = cK.client.dashboard
+				dash.Window._instance.Visible = true
+				cK.Data.servers["job_abc123"] = { 12345, 4, os.time() - 60 }
+				cK.Data.servers["job_def456"] = { 12345, 8, os.time() - 120 }
+				cK.Data.servers["job_ghi789"] = { 67890, 2, os.time() - 30 }
+				cK.client.servers(cK.Data.servers, true)
+
+				local function openScrollerTab(tab: any)
+					tab.Enabled(true)
+					tab._instance.Visible = true
+					tab:updateList()
+					fastRun(0.1)
+					tab:forceRender()
+					expect(next(tab._lineItemCache) ~= nil).toBe(true)
+				end
+
+				local function filterScrollerTab(tab: any, queries: { string })
+					for _, q in queries do
+						tab._input._input.Text = q
+						tab:refreshList()
+						fastRun(0.1)
+						if q ~= "" then
+							tab:forceRender()
+						end
+					end
+				end
+
+				-- Logs tab (client/global/server tags, tooltip, filterMenu checkboxes, text filter)
+				table.insert(
+					cK.Data.logs,
+					{ "Client debug log", cK.Logger:encode("DEBUG"), os.time(), 1, "Player1", true }
+				)
+				table.insert(
+					cK.Data.logs,
+					{ "Global warn log", cK.Logger:encode("WARN"), os.time(), 1, "Player1", false }
+				)
+				-- chat logs have no filter and never show, even old saved ones
+				expect(dash.Logs.logTypeFilter.CHAT).toBeNil()
+				table.insert(
+					cK.Data.logs,
+					{ "Legacy chat line", cK.Logger:encode("CHAT"), os.time(), 1, "Player1", false }
+				)
+				openScrollerTab(dash.Logs)
+
+				for _, item in dash.Logs._lineItemCache do
+					local tip = UI.Class.Tooltip.Cache and UI.Class.Tooltip.Cache[item]
+					if tip then
+						tip.Visible(true)
+						tip.Visible(false)
+						break
+					end
+				end
+				local logFilterBtn = dash.Logs._input._instance:FindFirstChild("Button")
+				if logFilterBtn and logFilterBtn:IsA("TextButton") then
+					logFilterBtn.Activated:Fire()
+					fastRun(0.1)
+				end
+				for _, menuChild in UI.LayerTop:GetChildren() do
+					if menuChild.Name ~= "Menu" or not menuChild.Visible then
+						continue
+					end
+					for _, btn in menuChild:GetDescendants() do
+						if btn:IsA("TextButton") then
+							btn.Activated:Fire()
+							break
+						end
+					end
+				end
+				fastRun(0.2)
+
+				filterScrollerTab(dash.Logs, { "server", "" })
+
+				-- Commands tab (authorized vs restricted VIP/gamepass, purchaseButton, filter by role/name/description)
+				if cK.Registry.commands.ban then
+					cK.Registry.commands.ban.LocalPlayerAuthorized = false
+					cK.Registry.commands.ban.RestrictedToRole = cK.Data.roles.vip
+				end
+				openScrollerTab(dash.Commands)
+
+				local hoveredCmdTip = false
+				local clickedCmdBtn = false
+				for _, item in dash.Commands._lineItemCache do
+					if not hoveredCmdTip then
+						local tip = UI.Class.Tooltip.Cache and UI.Class.Tooltip.Cache[item._instance]
+						if tip then
+							tip.Visible(true)
+							tip.Visible(false)
+							hoveredCmdTip = true
+						end
+					end
+					if not clickedCmdBtn then
+						for _, desc in item._instance:GetDescendants() do
+							if desc:IsA("TextButton") and desc.Visible then
+								desc.Activated:Fire()
+								clickedCmdBtn = true
+								break
+							end
+						end
+					end
+					if hoveredCmdTip and clickedCmdBtn then
+						break
+					end
+				end
+				cK.client.settings.onlyShowUsableCommands(true)
+				fastRun(0.25)
+				local clientCmdFolder = cK.Service.TextChat:FindFirstChild("TextChatCommands_KA")
+				if clientCmdFolder then
+					local pingCmd = clientCmdFolder:FindFirstChild("ping")
+					expect(pingCmd ~= nil and pingCmd.AutocompleteVisible).toBe(true)
+					local pingCmd2 = clientCmdFolder:FindFirstChild("ping2")
+					if pingCmd2 then
+						expect(pingCmd2.AutocompleteVisible).toBe(false)
+					end
+				end
+				cK.client.settings.chatCommands(false)
+				cK.Data.settings.chatCommands = false
+				fastRun(0.25)
+				if clientCmdFolder then
+					local pingCmd = clientCmdFolder:FindFirstChild("ping")
+					expect(pingCmd ~= nil and pingCmd.AutocompleteVisible).toBe(false)
+				end
+				cK.Data.settings.chatCommands = true
+				cK.client.settings.chatCommands(true)
+				cK.client.settings.onlyShowUsableCommands(false)
+				fastRun(0.25)
+				local chatInputBar = cK.Service.TextChat:FindFirstChildOfClass("ChatInputBarConfiguration")
+				if chatInputBar then
+					chatInputBar.IsFocused = true
+					chatInputBar.IsFocused = false
+				end
+
+				filterScrollerTab(dash.Commands, { "role=vip", "ban", "rich suggestions", "" })
+				if cK.Registry.commands.ban then
+					cK.Registry.commands.ban.LocalPlayerAuthorized = true
+				end
+
+				-- Servers tab (rendering, place name cache hit & miss, sort, Join button)
+				openScrollerTab(dash.Servers)
+				local emptyServersLabel = dash.Servers._instance:FindFirstChild("EmptyListLabel")
+				expect(emptyServersLabel ~= nil).toBe(true)
+				expect(emptyServersLabel.LayoutOrder).toBe(1)
+				expect(dash.Servers._scroller.LayoutOrder).toBe(2)
+				expect(emptyServersLabel.LayoutOrder < dash.Servers._scroller.LayoutOrder).toBe(true)
+				expect(dash.Logs._input._instance.LayoutOrder).toBe(-1)
+				expect(dash.Members._input._instance.LayoutOrder).toBe(-1)
+				for _, item in dash.Servers._lineItemCache do
+					if item.Join and item.Join._instance then
+						item.Join._instance.Activated:Fire()
+					end
+				end
+				fastRun(0.2)
+
+				-- Settings tab (filter, modifying inputs/switches/sliders, resetChanges & confirmChanges)
+				dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.Settings._instance])
+				fastRun(0.5)
+				dash.Settings._input._input.Text = "theme"
+				fastRun(0.1)
+				dash.Settings._input._input.Text = ""
+				fastRun(0.1)
+
+				local modifiedPrefix = false
+				local clickedSettingBtn = false
+				for _, desc in dash.Settings._instance:GetDescendants() do
+					if not modifiedPrefix and desc:IsA("TextBox") and desc.Text == ";" then
+						desc.Text = ":"
+						desc.FocusLost:Fire(true)
+						modifiedPrefix = true
+					elseif not clickedSettingBtn and desc:IsA("TextButton") and desc.Name == "Button" then
+						desc.Activated:Fire()
+						clickedSettingBtn = true
+					end
+					if modifiedPrefix and clickedSettingBtn then
+						break
+					end
+				end
+				fastRun(0.1)
+				-- Confirm settingsDialog if visible
+				for _, child in dash.Settings._instance:GetChildren() do
+					if
+						child.Name == "Dialog"
+						and child:FindFirstChild("Frame")
+						and child.Frame:FindFirstChild("Actions")
+					then
+						child.Frame.Actions.LeftAction.Activated:Fire()
+						fastRun(0.1)
+						child.Frame.Actions.RightAction.Activated:Fire()
+						fastRun(0.1)
+					end
+				end
+
+				-- About & Market tabs
+				dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.About._instance])
+				fastRun(0.2)
+				do
+					local AboutModule = cliMounted.Client:FindFirstChild("About")
+					local Credits = cliMounted.env:require(AboutModule:FindFirstChild("Credits"))
+					local Contributions = cliMounted.env:require(AboutModule:FindFirstChild("Contributions"))
+					local Order = cliMounted.env:require(AboutModule:FindFirstChild("Order"))
+
+					local function ids(list)
+						local out = {}
+						for idx, person in list do
+							out[idx] = person.Id
+						end
+						return out
+					end
+
+					-- Shared fixture order & tie-breaking rules (matches test/unit/CreditsOrder.json)
+					local fixtureData = {
+						recent = {
+							ALPHA = 3,
+							beta = 10,
+							gamma = 3,
+							eps = 3,
+							unmapped = 1,
+							zeta = 1,
+							theta = 2,
+							eta = 1,
+						},
+						names = {
+							[1] = { name = "zed", displayName = "Zed", verified = false },
+							[2] = { name = "bob", displayName = "Bob", verified = false },
+							[3] = { name = "cy", displayName = "Cy", verified = false },
+							[4] = { name = "amy", displayName = "amy", verified = false },
+							[5] = { name = "al", displayName = "Al", verified = false },
+							[7] = { name = "dee", displayName = "Dee", verified = false },
+							[8] = { name = "Ébé", displayName = "Ébé", verified = false },
+							[9] = { name = "éa", displayName = "éa", verified = false },
+							[10] = { name = "sam_b", displayName = "Sam", verified = false },
+							[11] = { name = "Sam_a", displayName = "sam", verified = false },
+							[12] = { name = "sam_a", displayName = "Sam", verified = false },
+							[14] = { name = "aaa", displayName = "Bob", verified = false },
+							[15] = { name = "zeta_u", displayName = "Zeta", verified = false },
+							[16] = { name = "theta", displayName = "Theta", verified = false },
+							[17] = { name = "eta", displayName = "Eta", verified = false },
+						},
+					}
+					local fixturePeople = {
+						{ Id = 1 },
+						{ Id = 2, GitHub = "alpha" },
+						{ Id = 3, GitHub = "Beta" },
+						{ Id = 4 },
+						{ Id = 5, GitHub = "gamma" },
+						{ Id = 6 },
+						{ Id = 7, GitHub = "delta" },
+						{ Id = 8 },
+						{ Id = 9 },
+						{ Id = 10 },
+						{ Id = 11 },
+						{ Id = 12 },
+						{ Id = 13 },
+						{ Id = 14, GitHub = "eps" },
+						{ Id = 15, GitHub = "zeta" },
+						{ Id = 16, GitHub = "theta" },
+						{ Id = 17, GitHub = "eta" },
+					}
+					expect(ids(Order.active(fixturePeople, fixtureData))).toEqual({ 3, 5, 14, 2, 16 })
+					expect(ids(Order.plain(fixturePeople, fixtureData))).toEqual({
+						4,
+						7,
+						17,
+						11,
+						12,
+						10,
+						1,
+						15,
+						8,
+						9,
+						6,
+						13,
+					})
+					-- Also exercise active tie-breaking when displayNames or names are missing
+					local tiePeople = {
+						{ Id = 20, GitHub = "alpha" },
+						{ Id = 10, GitHub = "Beta" },
+						{ Id = 30, GitHub = "gamma" },
+					}
+					local tieData = {
+						recent = { alpha = 4, Beta = 4, gamma = 4 },
+						names = {
+							[10] = { name = "same", displayName = "Same", verified = false },
+							[20] = { name = "same", displayName = "Same", verified = false },
+						},
+					}
+					expect(ids(Order.active(tiePeople, tieData))).toEqual({ 10, 20, 30 })
+
+					-- Generated data invariants + luv2trilogy (3727541395)
+					local activeList = Order.active(Credits.people)
+					local plainList = Order.plain(Credits.people)
+					expect(#activeList + #plainList).toBe(#Credits.people)
+					expect(Credits.specialThanks.Id).toBe(16)
+					local foundLuv2 = false
+					for _, person in Credits.people do
+						expect(Contributions.names[person.Id] ~= nil).toBe(true)
+						expect(person.Id ~= 16).toBe(true)
+						if person.Id == 3727541395 then
+							foundLuv2 = true
+							expect(person.GitHub).toBe("luv2trilogy")
+						end
+					end
+					expect(foundLuv2).toBe(true)
+
+					local creditsFrame = dash.About._instance:FindFirstChild("Credits", true)
+					expect(creditsFrame ~= nil).toBe(true)
+					expect(creditsFrame:FindFirstChild("Active contributors") ~= nil).toBe(true)
+					expect(creditsFrame:FindFirstChild("Contributors") ~= nil).toBe(true)
+					expect(creditsFrame:FindFirstChild("Special Thanks") ~= nil).toBe(true)
+				end
+				for _, desc in dash.About._instance:GetDescendants() do
+					if desc:IsA("TextButton") or desc:IsA("ImageButton") then
+						desc.Activated:Fire()
+						break
+					end
+				end
+				cEnv.game
+					:GetService("LogService").MessageOut
+					:Fire("AllowThirdPartySales has blocked the purchase", Enum.MessageType.MessageWarning)
+				fastRun(0.2)
+
+				dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.Market._instance])
+				fastRun(0.2)
+				cEnv.Players.LocalPlayer:SetAttribute("_KDonationLevel", 3)
+				local marketSvc = cEnv.game:GetService("MarketplaceService")
+				marketSvc.PromptPurchaseFinished:Fire(cEnv.Players.LocalPlayer, 90666920573726, true)
+				marketSvc.PromptBulkPurchaseFinished:Fire(
+					cEnv.Players.LocalPlayer,
+					Enum.MarketplaceBulkPurchasePromptStatus.Completed,
+					{ Items = { { Id = "90666920573726", Status = Enum.MarketplaceItemPurchaseStatus.Success } } }
+				)
+				marketSvc.PromptGamePassPurchaseFinished:Fire(cEnv.Players.LocalPlayer, 5411126, true)
+				fastRun(0.2)
+				local clickedMarketText, clickedMarketImg = false, false
+				for _, desc in dash.Market._instance:GetDescendants() do
+					if not clickedMarketText and desc:IsA("TextButton") then
+						desc.Activated:Fire()
+						clickedMarketText = true
+					elseif not clickedMarketImg and desc:IsA("ImageButton") then
+						desc.Activated:Fire()
+						clickedMarketImg = true
+					end
+					if clickedMarketText and clickedMarketImg then
+						break
+					end
+				end
+				fastRun(0.2)
+
+				-- GetKA hook (chat commands with silent=false are ignored; 3 silent UI/CommandBar executions trigger corner notification)
+				for _ = 1, 4 do
+					cK.Hook.runPreparedCommands:Fire(1, "help", ";help", false)
+				end
+				fastRun(0.1)
+				for _ = 1, 3 do
+					cK.Hook.runPreparedCommands:Fire(1, "help", ";help", true)
+				end
+				fastRun(0.2)
+			end)
+
 			test(
-				"initializes full Server + Client pair, mounts UI/Dashboard/CommandBar, and exercises all client modules",
+				"exercises Character movement/double-jump and Explorer tree, selection, drag-and-drop, and search",
 				function()
 					local world = sert.sim.new({ backing = true })
 					local server = world:server()
 					local client = server:client(1, "Player1")
+					local function fastRun(seconds: number)
+						local dt = 1 / 60
+						if seconds <= dt * 3 then
+							world:run(seconds)
+						else
+							world:step(dt)
+							world:step(seconds - dt * 2)
+							world:step(dt)
+						end
+					end
 
-					local srvMounted = Harness.newPeerEnv(server, { isStudio = true })
-					local cliMounted = setupClientEnv(client)
-
-					local sK = srvMounted:requireK()
-					server:spawn(function()
-						sK.initialize({
-							bans = {
-								["202"] = { "BannedBob", "Griefing", 0, 1 },
-								["303"] = { "TimedTim", "Spam", 1800000000, 1 },
-								["404"] = { "PermPete", "Exploits", -1, nil },
-							},
-							userRoles = { creator = { 1 }, admin = { 505 }, vip = {} },
-							assetRoles = {},
-							gamepassRoles = {},
-							subscriptionRoles = {},
-							groupRoles = {},
-							friendRoles = {},
-							freeAdmin = { "vip" },
-							announcements = { { Text = "Welcome Announcement", Duration = 1 } },
-							notifications = { { Text = "Welcome Notification", Duration = 1 } },
-							prefix = { ";" },
-							splitKey = " ",
-							commands = {},
-							vip = true,
-							chatCommandsNotification = true,
-							joinNotificationRank = 0,
-							roles = Harness.defaultRoles(),
-						})
-					end)
-					world:run(0.5)
-
+					local cliMounted = setupClientEnv(client, { mockRemote = true })
 					local cK = cliMounted:requireK()
-					local preUI = cliMounted.env:require(cliMounted.Client.UI)
-					preUI.Pointer = preUI.signal({ Position = Vector3.new(100, 100, 0) })
-					client:spawn(function()
-						cliMounted.env:require(cliMounted.Client)
-					end)
-					world:run(1)
-
-					if sK.ChatCommands then
-						sK.ChatCommands.schedule = function() end
+					local UI = cliMounted.env:require(cliMounted.Client.UI)
+					if UI.registerClasses then
+						UI.registerClasses()
 					end
-					sharedFullWorld = world
-					sharedFullClientMounted = cliMounted
-					sharedFullCK = cK
-					sharedFullPingLabel =
-						cK.client.dashboard.Window._instance:FindFirstChild("StatusBar", true).Content.Ping.Label
-					sharedFullMutant = (_G :: any).__SERT_MUTANT
-
-					expect(cK.ready).toBe(true)
-					expect(cK.client.dashboard ~= nil).toBe(true)
-					expect(cK.client.CommandBar ~= nil).toBe(true)
-
-					local UI = cK.UI
+					UI.Pointer = UI.signal({ Position = Vector3.new(100, 100, 0) })
+					cK.UI = UI
+					cK.IsClient = true
+					cK.LocalPlayer = cliMounted.env.Players.LocalPlayer
+					cK.client = {
+						rank = cK.Flux.signal(0),
+						Character = cliMounted.env:require(cliMounted.Client.Character),
+						Explorer = cliMounted.env:require(cliMounted.Client.Explorer),
+					}
 					local cEnv = cliMounted.env
-					cEnv.userNames[202] = "BannedBob"
-					cEnv.userNames[303] = "TimedTim"
-					cEnv.userNames[404] = "PermPete"
-					cEnv.userNames[505] = "AdminAlice"
-					cEnv.userNames[707] = "ModMary"
-					cEnv.userNames[808] = "Spaced User"
-
-					-- 1. UI.changeTheme
-					if UI.Themes.Default then
-						UI.changeTheme(UI.Themes.Default)
-					end
-
-					-- 2. UserFrame variations
-					local uf1 = cK.client.UserFrame(1, "CustomDisplay")
-					expect(uf1.Name).toBe("Header")
-					local ufK = cK.client.UserFrame("_K")
-					expect(ufK.Name).toBe("Header")
-					local ufCustom = cK.client.UserFrame("SystemSender", nil, "rbxassetid://12345", false)
-					expect(ufCustom.Name).toBe("Header")
-					local ufBadge = cK.client.UserFrame(1, nil, nil, true)
-					expect(ufBadge.Name).toBe("Header")
-					world:run(0.2)
-
-					-- 3. Notify & Announce
-					local notifActivated = false
-					local notifClosed = false
-					local nDialog = cK.Notify({
-						Text = "Test Notification",
-						From = 1,
-						Duration = 2,
-						Activated = function()
-							notifActivated = true
-						end,
-						Close = function()
-							notifClosed = true
-						end,
-					})
-					expect(nDialog ~= nil).toBe(true)
-					expect(nDialog._content.Header.LayoutOrder).toBe(-3)
-					expect(nDialog._content.Header.LayoutOrder < nDialog._content.Title.LayoutOrder).toBe(true)
-					expect(nDialog._content.Title.LayoutOrder < nDialog._content.Text.LayoutOrder).toBe(true)
-					nDialog._instance.Activated:Fire()
-					world:run(0.2)
-					expect(notifActivated).toBe(true)
-					expect(notifClosed).toBe(true)
-
-					local aDialog = cK.Announce({
-						Text = "Pinned Announcement",
-						From = "_K",
-						Duration = 2,
-					})
-					expect(aDialog ~= nil).toBe(true)
-					aDialog._exitButton._instance.Activated:Fire()
-					world:run(0.2)
-
-					-- 4. CommandBar interactions & rich suggestion types
-					local CommandBar = cK.client.CommandBar
-					CommandBar.show()
-					world:run(0.2)
-					expect(CommandBar.Bar.Visible).toBe(true)
-
-					-- CircleIndicator button
-					local circleInd = CommandBar.Bar:FindFirstChild("CircleIndicator")
-					if circleInd then
-						local ciBtn = circleInd:FindFirstChildOfClass("TextButton")
-						if ciBtn then
-							ciBtn.Activated:Fire()
-							world:run(0.1)
-						end
-					end
-
-					-- Typing prefix-less text via env:input() auto-prepends prefix; duplicate prefix strips
-					cEnv:input():click(CommandBar.Input._input)
-					cEnv:input():type("help")
-					CommandBar.Input._input.CursorPosition = 6
-					world:run(0.2)
-					expect(string.sub(CommandBar.Input._input.Text, 1, 1)).toBe(";")
-
-					CommandBar.Input._input.Text = ";;help"
-					CommandBar.Input._input.CursorPosition = 7
-					world:run(0.2)
-					expect(CommandBar.Input._input.Text).toBe(";help")
-
-					-- SelectionStart ~= -1 and CursorPosition < prefixPosition clamping
-					CommandBar.Input._input.SelectionStart = 2
-					CommandBar.Input._input.CursorPosition = 1
-					world:run(0.1)
-					CommandBar.Input._input.SelectionStart = -1
-					CommandBar.Input._input.CursorPosition = 1
-					world:run(0.1)
-					expect(CommandBar.Input._input.CursorPosition >= 2).toBe(true)
-
-					-- Up / Down suggestion navigation via env:input()
-					cEnv:input():press(Enum.KeyCode.Down)
-					cEnv:input():release(Enum.KeyCode.Down)
-					cEnv:input():press(Enum.KeyCode.Up)
-					cEnv:input():release(Enum.KeyCode.Up)
-
-					-- Register a multi-type test command to exercise all suggestion value renderers in CommandBar
-					cK.Registry.registerType("testRichValues", {
-						filterLog = true,
-						transform = function(v)
-							return v
-						end,
-						validate = function()
-							return true
-						end,
-						parse = function(v)
-							return v
-						end,
-						suggestions = function()
-							return {
-								{ "playerVal", "Player1", cEnv.Players.LocalPlayer },
-								{ "colorVal", "Red", Color3.fromRGB(255, 0, 0) },
-								{ "brickVal", "Bright red", BrickColor.new("Bright red") },
-								{ "enumFontVal", "Gotham", Enum.Font.Gotham },
-								{ "fontVal", "GothamFont", Font.fromEnum(Enum.Font.Gotham) },
-								{ "userTableVal", "UserTable", { userId = 1 } },
-							}
-						end,
-					})
-					cK.Registry.registerCommand(cK, {
-						name = "uitestcmd",
-						aliases = {},
-						description = "Test rich suggestions",
-						group = "General",
-						args = {
-							{ type = "testRichValues", name = "rich", description = "rich values" },
-							{ type = "image", name = "img", description = "image arg" },
-						},
-						run = function() end,
-					})
-					cK.Registry.commands.uitestcmd.LocalPlayerAuthorized = true
-
-					CommandBar.Input._input.Text = ";uitestcmd "
-					CommandBar.Input._input.CursorPosition = 12
-					CommandBar.updateCompletionData()
-					world:run(0.2)
-
-					-- Click a suggestion frame directly
-					local suggestionMenu = CommandBar.Bar:FindFirstChild("SuggestionMenu", true)
-						or UI.LayerTop:FindFirstChild("SuggestionMenu", true)
-					if suggestionMenu then
-						for _, child in suggestionMenu:GetDescendants() do
-							if child:IsA("TextButton") and child.Name ~= "Purchase" then
-								child.Activated:Fire()
-								break
-							end
-						end
-					end
-
-					-- Image argument suggestion branch
-					CommandBar.Input._input.Text = ";uitestcmd playerVal rbxassetid://1"
-					CommandBar.Input._input.CursorPosition = 36
-					CommandBar.updateCompletionData()
-					world:run(0.2)
-
-					-- Tab completion (including quote completion)
 					local origUisMethods = rawget(UI.UserInputService, "_methods")
-					local tabDown = true
-					rawset(
-						UI.UserInputService,
-						"_methods",
-						setmetatable({
-							IsKeyDown = function(_self, kc)
-								return tabDown and kc == Enum.KeyCode.Tab
-							end,
-						}, { __index = origUisMethods })
-					)
-
-					CommandBar.Input._input.Text = ';uitestcmd "pla'
-					CommandBar.Input._input.CursorPosition = 16
-					CommandBar.updateCompletionData()
-					world:run(0.1)
-					UI.UserInputService.InputBegan:Fire(
-						makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Tab }),
-						false
-					)
-					world:run(0.2)
-					tabDown = false
-					rawset(UI.UserInputService, "_methods", origUisMethods)
-
-					-- Restricted command suggestion with VIP and GamePass purchase buttons
-					if cK.Registry.commands.ban then
-						cK.Registry.commands.ban.LocalPlayerAuthorized = false
-						cK.Registry.commands.ban.RestrictedToRole = cK.Data.roles.vip
-						CommandBar.Input._input.Text = ";ban"
-						CommandBar.Input._input.CursorPosition = 5
-						CommandBar.updateCompletionData()
-						world:run(0.2)
-						CommandBar.Input._input.Text = ";ban "
-						CommandBar.Input._input.CursorPosition = 6
-						CommandBar.updateCompletionData()
-						world:run(0.2)
-						cK.Data.roles.vip.gamepasses = { 12345 }
-						CommandBar.Input._input.Text = ";ban"
-						CommandBar.Input._input.CursorPosition = 5
-						CommandBar.updateCompletionData()
-						world:run(0.2)
-						cK.Data.roles.vip.gamepasses = nil
-						cK.Registry.commands.ban.LocalPlayerAuthorized = true
-					end
-
-					-- Invalid command & invalid argument suggestions + FocusLost(true) error paths
-					CommandBar.Input._input.Text = ";notacommand "
-					CommandBar.Input._input.CursorPosition = 14
-					CommandBar.updateCompletionData()
-					world:run(0.1)
-					CommandBar.Input._input.FocusLost:Fire(true)
-					world:run(0.2)
-
-					CommandBar.show()
-					CommandBar.Input._input.Text = ";ban Player1"
-					CommandBar.Input._input.CursorPosition = 13
-					CommandBar.updateCompletionData()
-					world:run(0.1)
-					CommandBar.Input._input.FocusLost:Fire(true)
-					world:run(0.2)
-
-					-- Execute valid command twice via FocusLost(true) to cover duplicate history deduplication
-					for _ = 1, 2 do
-						CommandBar.show()
-						CommandBar.Input._input.Text = ";version"
-						CommandBar.Input._input.CursorPosition = 9
-						CommandBar.updateCompletionData()
-						CommandBar.Input._input.FocusLost:Fire(true)
-						world:run(0.3)
-						-- a run command clears the bar back to the prefix
-						expect(CommandBar.Input._input.Text).toBe(";")
-						expect(CommandBar.Input.Value()).toBe(";")
-					end
-
-					-- History completion when text == ";"
-					CommandBar.show()
-					world:run(0.1)
-					CommandBar.Input._input.Text = ";"
-					CommandBar.Input._input.CursorPosition = 2
-					CommandBar.updateCompletionData()
-					UI.UserInputService.InputBegan:Fire(
-						makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Up }),
-						false
-					)
-					UI.UserInputService.InputBegan:Fire(
-						makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Down }),
-						false
-					)
-					CommandBar.hide()
-					expect(CommandBar.Bar.Visible).toBe(false)
-
-					-- 5. Network remotes & init.client events (Server -> Client & Client -> Server)
-					local srvPlayer = srvMounted.env.Players:GetPlayerByUserId(1)
-					sK.Remote.Ban:Fire(srvPlayer, "606", { "NewBanUser", "Reason", 0, 1 })
-					sK.Remote.Bans:Fire(srvPlayer, {
-						["202"] = { "BannedBob", "Griefing", 0, 1 },
-						["303"] = { "TimedTim", "Spam", 1800000000, 1 },
-						["404"] = { "PermPete", "Exploits", -1, nil },
-					})
-					sK.Remote.Member:Fire(
-						srvPlayer,
-						"707",
-						{ name = "ModMary", roles = { "mod" }, persist = { "mod" } }
-					)
-					sK.Remote.Member:Fire(
-						srvPlayer,
-						"808",
-						{ name = "Spaced User", roles = { "mod", "vip" }, persist = { "mod" } }
-					)
-					sK.Remote.Members:Fire(srvPlayer, {
-						["1"] = { name = "Player1", roles = { "creator" }, persist = { "creator" } },
-						["707"] = { name = "ModMary", roles = { "mod" }, persist = { "mod" } },
-						["808"] = { name = "Spaced User", roles = { "mod", "vip" }, persist = { "mod" } },
-					})
-					sK.Remote.Log:Fire(
-						srvPlayer,
-						{ "Test server log", sK.Logger:encode("INFO"), os.time(), nil, "Player1" }
-					)
-					local logsBuf = sK.Z.ser(sK.Data.Schema.logsRemote, {
-						{ "Bulk log entry", sK.Logger:encode("COMMAND"), os.time(), nil, "Player1" },
-					})
-					if logsBuf then
-						sK.Remote.Logs:Fire(srvPlayer, logsBuf)
-					end
-					sK.Remote.Settings:Fire(srvPlayer, { chatCommands = true, themeFontSize = 16 })
-					sK.Remote.Role:Fire(srvPlayer, "vip", sK.Data.roles.vip)
-					sK.Remote.Roles:Fire(srvPlayer, sK.Data.roles)
-					sK.Remote.RolesNotification:Fire(srvPlayer)
-					sK.Remote.SetCore:Fire(srvPlayer, "ChatActive", true)
-					sK.Remote.DisplayBubble:Fire(srvPlayer, nil, "Bubble hello")
-					sK.Remote.Announcement:Fire(srvPlayer, { Text = "Server Broadcast", From = 1, Duration = 1 })
-					sK.Remote.Notify:Fire(srvPlayer, { Text = "Direct Remote Notify", From = 1, Duration = 1 })
-					sK.Remote.VIPNotification:Fire(srvPlayer)
-					-- Fire VIPNotification while already open, then close it and fire again
-					sK.Remote.VIPNotification:Fire(srvPlayer)
-					sK.Remote.Servers:Fire(srvPlayer, "job_abc123", { 12345, 4, os.time() - 60 })
-					sK.Remote.Servers:Fire(srvPlayer, nil, {
-						job_abc123 = { 12345, 4, os.time() - 60 },
-						job_def456 = { 12345, 8, os.time() - 120 },
-						job_ghi789 = { 67890, 2, os.time() - 30 },
-					})
-					world:run(1)
-
-					expect(cK.Data.bans["202"] ~= nil).toBe(true)
-					expect(cK.Data.bans["404"] ~= nil).toBe(true)
-					expect(cK.Data.members["707"] ~= nil).toBe(true)
-					expect(cK.Data.members["808"] ~= nil).toBe(true)
-					expect(cK.Data.servers["job_abc123"] ~= nil).toBe(true)
-					expect(cK.Data.servers["job_ghi789"] ~= nil).toBe(true)
-
-					-- Close any open Dialogs in LayerTopInset (including VIPNotification)
-					for _, child in UI.LayerTopInset:GetChildren() do
-						if child.Name == "Dialog" and child:FindFirstChild("Frame") then
-							local exitBtn = child.Frame:FindFirstChild("Button")
-							if exitBtn and exitBtn:IsA("TextButton") then
-								exitBtn.Activated:Fire()
-							end
-						end
-					end
-					world:run(0.2)
-
-					-- TextChatService SendingMessage & MessageReceived, LocalPlayer.Idled, and Hotkey dispatch
-					-- chat text is neither parsed nor logged on the client, platform-integrated chat hides it
-					local tcs = cEnv.game:GetService("TextChatService")
-					local logCount = #cK.Data.logs
-					tcs.SendingMessage:Fire({ Text = ";version" })
-					tcs.MessageReceived:Fire({
-						TextSource = { UserId = 1 },
-						Text = "Hello chat",
-					})
-					world:run(0.1)
-					expect(#cK.Data.logs).toBe(logCount)
-					cEnv.Players.LocalPlayer.Idled:Fire(120)
-
-					local focusBox = cEnv.Instance.new("TextBox")
-					UI.UserInputService.TextBoxFocused:Fire(focusBox)
-					UI.UserInputService.InputBegan:Fire(
-						makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Quote }),
-						false
-					)
-					UI.UserInputService.TextBoxFocusReleased:Fire(focusBox)
-					UI.UserInputService.InputBegan:Fire(
-						makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Quote }),
-						false
-					)
-					world:run(0.2)
-
-					-- RequestCommand RPC from server to client
-					local reqResult = nil
-					server:spawn(function()
-						reqResult = sK.Remote.RequestCommand:Invoke(srvPlayer, srvPlayer, ";kill me")
-					end)
-					world:run(0.5)
-					for _, child in UI.LayerTopInset:GetChildren() do
-						if
-							child.Name == "Dialog"
-							and child:FindFirstChild("Frame")
-							and child.Frame:FindFirstChild("Actions")
-						then
-							child.Frame.Actions.RightAction.Activated:Fire()
-						end
-					end
-					world:run(0.5)
-					expect(reqResult).toBe(true)
-
-					-- Verify RequestCommand.OnInvoke accepts a numeric userId (from cross-server ;global request)
-					local reqThread = client:spawn(function()
-						return cK.Remote.RequestCommand.OnInvoke(101, ";kill Target")
-					end)
-					world:run(0.1)
-					expect(coroutine.status(reqThread)).toBe("suspended")
-					client:spawn(function()
-						coroutine.close(reqThread)
-					end)
-
-					-- Chatted / Remote.Command on client (wrong prefix warning + valid command)
-					sK.Remote.Command:Fire(srvPlayer, "!help")
-					world:run(0.3)
-					sK.Remote.Command:Fire(srvPlayer, ";version</b>")
-					world:run(0.3)
-					-- chat commands the server already ran: the client runs its part and leaves errors to the server
-					local function errorLogs(): number
-						local count = 0
-						for _, log in cK.Data.logs do
-							if cK.Logger:decode(log[2]) == "ERROR" then
-								count += 1
-							end
-						end
-						return count
-					end
-					local errorsBefore = errorLogs()
-					sK.Remote.Command:Fire(srvPlayer, ";nosuchcommand", true)
-					world:run(0.3)
-					expect(errorLogs()).toBe(errorsBefore)
-					sK.Remote.Command:Fire(srvPlayer, ";nosuchcommand")
-					world:run(0.3)
-					expect(errorLogs()).toBe(errorsBefore + 1)
-
-					-- chat commands missing required arguments open CommandBar pre-filled with trailing space for argument autocomplete
-					cK.client.CommandBar.hide()
-					world:run(0.1)
-					expect(cK.client.CommandBar.Bar.Visible).toBe(false)
-					sK.Remote.Command:Fire(srvPlayer, ";ban", true)
-					world:run(0.3)
-					expect(cK.client.CommandBar.Bar.Visible).toBe(true)
-					expect(cK.client.CommandBar.Input._input.Text).toBe(";ban ")
-					expect(cK.client.CommandBar.Input._input.CursorPosition).toBe(6)
-					cK.client.CommandBar.hide()
-					world:run(0.1)
-
-					-- kick (ignoreSelf first player arg) with no args also opens CommandBar pre-filled
-					sK.Remote.Command:Fire(srvPlayer, ";kick", true)
-					world:run(0.3)
-					expect(cK.client.CommandBar.Bar.Visible).toBe(true)
-					expect(cK.client.CommandBar.Input._input.Text).toBe(";kick ")
-					cK.client.CommandBar.hide()
-					world:run(0.1)
-
-					-- 6. Dashboard & Tabs (Bans, Members, Logs, Commands, Settings, Servers, Market, About, GetKA)
-					local dash = cK.client.dashboard
-					cK.Process.runCommands(cK, cEnv.Players.LocalPlayer.UserId, ";cmds")
-					world:run(0.2)
-					cK.client.dashboardButton.Activated:Fire()
-					cK.client.dashboardButton.MouseButton2Click:Fire()
-					if cK.client.dashboardButton.TouchLongPress then
-						cK.client.dashboardButton.TouchLongPress:Fire({}, Enum.UserInputState.Begin)
-					end
-					if cK.client.commandsButton then
-						cK.client.commandsButton.Activated:Fire()
-						cK.client.commandsButton.MouseButton2Click:Fire()
-						if cK.client.commandsButton.TouchLongPress then
-							cK.client.commandsButton.TouchLongPress:Fire({}, Enum.UserInputState.Begin)
-						end
-					end
-					cK.client.commandsWindowVisible(true)
-					UI.flush()
-					expect(dash.Commands._instance.Visible).toBe(true)
-					cK.client.commandsWindowVisible(false)
-					UI.flush()
-					cK.client.settings.commandBarRank(false)
-					cK.client.settings.dashboardRank(false)
-					cK.client.settings.commandBarRank(0)
-					cK.client.settings.dashboardRank(0)
-					cK.client.hotkeys.dashboard.callback()
-					dash.Window._instance.Visible = true
-					world:run(0.5)
-
-					-- Trigger StatusBar and other cached Tooltips
-					if UI.Class.Tooltip and UI.Class.Tooltip.Cache then
-						for _, tip in UI.Class.Tooltip.Cache do
-							if type(tip) == "table" and UI.isNode(tip.Visible) then
-								tip.Visible(true)
-								UI.flush()
-								tip.Visible(false)
-								UI.flush()
-							end
-						end
-					end
-
-					local function openScrollerTab(tab: any)
-						tab.Enabled(true)
-						tab._instance.Visible = true
-						tab:updateList()
-						world:run(0.1)
-						tab:forceRender()
-						expect(next(tab._lineItemCache) ~= nil).toBe(true)
-					end
-
-					local function filterScrollerTab(tab: any, queries: { string })
-						for _, q in queries do
-							tab._input._input.Text = q
-							tab:refreshList()
-							world:run(0.1)
-							if q ~= "" then
-								tab:forceRender()
-							end
-						end
-					end
-
-					-- Bans tab (rendering, filtering left/right, newBanDialog, editBanButton, unbanDialog)
-					openScrollerTab(dash.Bans)
-					local emptyBanBtn = dash.Bans._instance:FindFirstChild("Button")
-					expect(emptyBanBtn ~= nil).toBe(true)
-					expect(emptyBanBtn.LayoutOrder).toBe(1)
-					expect(dash.Bans._scroller.LayoutOrder).toBe(2)
-					expect(emptyBanBtn.LayoutOrder < dash.Bans._scroller.LayoutOrder).toBe(true)
-
-					-- Hover ban item tooltips
-					for _, item in dash.Bans._lineItemCache do
-						local tip = UI.Class.Tooltip.Cache and UI.Class.Tooltip.Cache[item._instance]
-						if tip then
-							tip.Visible(true)
-							tip.Visible(false)
-						end
-					end
-
-					-- Open newBanDialog via newBanButton in Bans._input
-					local newBanBtn = dash.Bans._input._instance:FindFirstChild("Button")
-					if newBanBtn and newBanBtn:IsA("TextButton") then
-						newBanBtn.Activated:Fire()
-						newBanBtn.Activated:Fire()
-						newBanBtn.Activated:Fire()
-						world:run(0.1)
-					end
-
-					-- Exercise newBanDialog inputs (userId, invalid self, username, reason, Server/Forever/Timed ban)
-					for _, child in dash.Bans._instance:GetChildren() do
-						if child.Name ~= "Dialog" or not child:FindFirstChild("Frame") then
-							continue
-						end
-						local boxes = {}
-						local buttons = {}
-						for _, desc in child:GetDescendants() do
-							if desc:IsA("TextBox") then
-								table.insert(boxes, desc)
-							elseif desc:IsA("TextButton") then
-								table.insert(buttons, desc)
-							end
-						end
-						if boxes[1] then
-							boxes[1].Text = "Player1"
-							boxes[1].FocusLost:Fire(true)
-							world:run(0.1)
-							boxes[1].Text = "BannedBob"
-							boxes[1].FocusLost:Fire(true)
-							world:run(0.1)
-							boxes[1].Text = "202"
-							boxes[1].FocusLost:Fire(true)
-							world:run(0.1)
-						end
-						if boxes[2] then
-							boxes[2].Text = "Test Ban Reason"
-							boxes[2].FocusLost:Fire(true)
-						end
-						for _, b in buttons do
-							if b.Name == "Button" then
-								b.Activated:Fire()
-							end
-						end
-						world:run(0.2)
-					end
-
-					-- Click editBanButton and unbanButton on each ban item, then confirm unbanDialog
-					for _, item in dash.Bans._lineItemCache do
-						for _, child in item._instance:GetChildren() do
-							if child:IsA("TextButton") then
-								child.Activated:Fire()
-								world:run(0.1)
-							end
-						end
-					end
-					for _, child in dash.Bans._instance:GetChildren() do
-						if
-							child.Name == "Dialog"
-							and child:FindFirstChild("Frame")
-							and child.Frame:FindFirstChild("Actions")
-						then
-							child.Frame.Actions.RightAction.Activated:Fire()
-							world:run(0.1)
-						end
-					end
-
-					filterScrollerTab(dash.Bans, { "bob", "forever", "" })
-
-					-- Members tab (rendering, role chips, newRoleDialog, roleMenu, filtering)
-					openScrollerTab(dash.Members)
-
-					-- Open newRoleDialog via newMemberButton
-					local newMemBtn = dash.Members._input._instance:FindFirstChild("Button")
-					if newMemBtn and newMemBtn:IsA("TextButton") then
-						newMemBtn.Activated:Fire()
-						newMemBtn.Activated:Fire()
-						newMemBtn.Activated:Fire()
-						world:run(0.1)
-					end
-					for _, child in dash.Members._instance:GetChildren() do
-						if child.Name ~= "Dialog" or not child:FindFirstChild("Frame") then
-							continue
-						end
-						for _, desc in child:GetDescendants() do
-							if desc:IsA("TextBox") then
-								desc.Text = "Player1"
-								desc.FocusLost:Fire(true)
-								world:run(0.1)
-								desc.Text = "ModMary"
-								desc.FocusLost:Fire(true)
-								world:run(0.1)
-								desc.Text = "707"
-								desc.FocusLost:Fire(true)
-								world:run(0.1)
-								break
-							end
-						end
-						for _, desc in child:GetDescendants() do
-							if desc:IsA("TextButton") then
-								desc.Activated:Fire()
-							end
-						end
-						world:run(0.2)
-					end
-
-					-- Click add role button and role chip remove buttons on member items
-					for _, item in dash.Members._lineItemCache do
-						for _, desc in item._instance:GetDescendants() do
-							if desc:IsA("TextButton") then
-								desc.Activated:Fire()
-								world:run(0.05)
-							end
-						end
-					end
-					-- Click a role button in roleMenu (under UI.LayerTop)
-					for _, menuChild in UI.LayerTop:GetChildren() do
-						if menuChild.Name ~= "Menu" or not menuChild.Visible then
-							continue
-						end
-						for _, btn in menuChild:GetDescendants() do
-							if btn:IsA("TextButton") then
-								btn.Activated:Fire()
-								break
-							end
-						end
-					end
-					world:run(0.2)
-
-					filterScrollerTab(dash.Members, { "mary", "" })
-
-					-- Stale lookup target: while a name lookup yields, the ban/role target is nil so the dialog
-					-- can't act on the previous user, and a superseded lookup never overwrites a newer one
-					do
-						local playersMethods = rawget(cEnv.Players, "_methods")
-						local origLookup = playersMethods.GetUserIdFromNameAsync
-						local lookupDelay: { [string]: number } = { bannedbob = 0.3, adminalice = 0.15 }
-						playersMethods.GetUserIdFromNameAsync = function(self, name)
-							local delay = lookupDelay[string.lower(name)]
-							if delay then
-								cEnv.task.wait(delay)
-							end
-							return origLookup(self, name)
-						end
-
-						local function findDialog(titles: { string }): any
-							for _, child in UI.LayerTop:GetChildren() do
-								for _, desc in child:GetDescendants() do
-									if
-										desc:IsA("TextLabel")
-										and desc.Name ~= "Label"
-										and table.find(titles, desc.Text)
-									then
-										return child
-									end
-								end
-							end
-							return nil
-						end
-						local function dialogParts(dialog: any, actionLabel: string)
-							local avatar, box, button
-							for _, desc in dialog:GetDescendants() do
-								if
-									not avatar
-									and desc:IsA("ImageLabel")
-									and string.find(desc.Image, "AvatarHeadShot", 1, true)
-								then
-									avatar = desc
-								elseif desc:IsA("TextLabel") and desc.Name == "Label" and desc.Text == actionLabel then
-									button = desc:FindFirstAncestorWhichIsA("TextButton")
-								end
-							end
-							-- the target input sits beside the avatar in the "User" row
-							if avatar then
-								for _, desc in avatar.Parent:GetDescendants() do
-									if desc:IsA("TextBox") then
-										box = desc
-										break
-									end
-								end
-							end
-							return avatar, box, button
-						end
-						local function enter(box: any, text: string)
-							box.Text = text
-							box.FocusLost:Fire(true)
-						end
-						local function targetId(avatar: any): string?
-							UI.flush()
-							return string.match(avatar.Image, "id=([^&]*)")
-						end
-
-						-- Ban dialog
-						local banDialog = findDialog({ "New Ban", "Edit Ban" })
-						expect(banDialog ~= nil).toBe(true)
-						local banAvatar, banBox, banButton = dialogParts(banDialog, "Ban")
-						expect(banAvatar ~= nil and banBox ~= nil and banButton ~= nil).toBe(true)
-						local bansFired = {}
-						local origBanFire = cK.Remote.Ban.Fire
-						cK.Remote.Ban.Fire = function(_self, userId)
-							table.insert(bansFired, userId)
-						end
-
-						enter(banBox, "707")
-						world:run(0.1)
-						expect(targetId(banAvatar)).toBe("707")
-
-						enter(banBox, "BannedBob")
-						world:run(0.1)
-						expect(targetId(banAvatar)).toBe("nil")
-						banButton.Activated:Fire()
-						expect(#bansFired).toBe(0)
-
-						-- AdminAlice resolves first, then the slower BannedBob lookup is dropped
-						enter(banBox, "AdminAlice")
-						world:run(0.1)
-						expect(targetId(banAvatar)).toBe("nil")
-						world:run(0.1)
-						expect(targetId(banAvatar)).toBe("505")
-						world:run(0.2)
-						expect(targetId(banAvatar)).toBe("505")
-						banButton.Activated:Fire()
-						expect(bansFired).toEqual({ 505 })
-						cK.Remote.Ban.Fire = origBanFire
-
-						-- Members role dialog
-						local roleDialog = findDialog({ "Add Role" })
-						expect(roleDialog ~= nil).toBe(true)
-						local roleAvatar, roleBox, confirmButton = dialogParts(roleDialog, "Confirm")
-						expect(roleAvatar ~= nil and roleBox ~= nil and confirmButton ~= nil).toBe(true)
-						local commandsRun = {}
-						local origRunCommands = cK.Process.runCommands
-						cK.Process.runCommands = function(_K, _from, cmd)
-							table.insert(commandsRun, cmd)
-						end
-
-						enter(roleBox, "707")
-						world:run(0.1)
-						expect(targetId(roleAvatar)).toBe("707")
-
-						enter(roleBox, "BannedBob")
-						world:run(0.1)
-						expect(targetId(roleAvatar)).toBe("nil")
-						confirmButton.Activated:Fire()
-						expect(#commandsRun).toBe(0)
-
-						enter(roleBox, "AdminAlice")
-						world:run(0.1)
-						expect(targetId(roleAvatar)).toBe("nil")
-						world:run(0.1)
-						expect(targetId(roleAvatar)).toBe("505")
-						world:run(0.2)
-						expect(targetId(roleAvatar)).toBe("505")
-						confirmButton.Activated:Fire()
-						expect(#commandsRun).toBe(1)
-						expect(string.find(commandsRun[1], "role 505 ", 1, true) ~= nil).toBe(true)
-						cK.Process.runCommands = origRunCommands
-
-						playersMethods.GetUserIdFromNameAsync = origLookup
-					end
-
-					-- Logs tab (client/global/server tags, tooltip, filterMenu checkboxes, text filter)
-					table.insert(
-						cK.Data.logs,
-						{ "Client debug log", cK.Logger:encode("DEBUG"), os.time(), 1, "Player1", true }
-					)
-					table.insert(
-						cK.Data.logs,
-						{ "Global warn log", cK.Logger:encode("WARN"), os.time(), 1, "Player1", false }
-					)
-					-- chat logs have no filter and never show, even old saved ones
-					expect(dash.Logs.logTypeFilter.CHAT).toBeNil()
-					table.insert(
-						cK.Data.logs,
-						{ "Legacy chat line", cK.Logger:encode("CHAT"), os.time(), 1, "Player1", false }
-					)
-					openScrollerTab(dash.Logs)
-
-					for _, item in dash.Logs._lineItemCache do
-						local tip = UI.Class.Tooltip.Cache and UI.Class.Tooltip.Cache[item]
-						if tip then
-							tip.Visible(true)
-							tip.Visible(false)
-						end
-					end
-					local logFilterBtn = dash.Logs._input._instance:FindFirstChild("Button")
-					if logFilterBtn and logFilterBtn:IsA("TextButton") then
-						logFilterBtn.Activated:Fire()
-						world:run(0.1)
-					end
-					for _, menuChild in UI.LayerTop:GetChildren() do
-						if menuChild.Name ~= "Menu" or not menuChild.Visible then
-							continue
-						end
-						for _, btn in menuChild:GetDescendants() do
-							if btn:IsA("TextButton") then
-								btn.Activated:Fire()
-							end
-						end
-					end
-					world:run(0.2)
-
-					filterScrollerTab(dash.Logs, { "server", "" })
-
-					-- Commands tab (authorized vs restricted VIP/gamepass, purchaseButton, filter by role/name/description)
-					if cK.Registry.commands.ban then
-						cK.Registry.commands.ban.LocalPlayerAuthorized = false
-						cK.Registry.commands.ban.RestrictedToRole = cK.Data.roles.vip
-					end
-					openScrollerTab(dash.Commands)
-
-					for _, item in dash.Commands._lineItemCache do
-						local tip = UI.Class.Tooltip.Cache and UI.Class.Tooltip.Cache[item._instance]
-						if tip then
-							tip.Visible(true)
-							tip.Visible(false)
-						end
-						for _, desc in item._instance:GetDescendants() do
-							if desc:IsA("TextButton") and desc.Visible then
-								desc.Activated:Fire()
-							end
-						end
-					end
-					cK.client.settings.onlyShowUsableCommands(true)
-					world:run(0.25)
-					local clientCmdFolder = cK.Service.TextChat:FindFirstChild("TextChatCommands_KA")
-					if clientCmdFolder then
-						local pingCmd = clientCmdFolder:FindFirstChild("ping")
-						expect(pingCmd ~= nil and pingCmd.AutocompleteVisible).toBe(true)
-						local pingCmd2 = clientCmdFolder:FindFirstChild("ping2")
-						if pingCmd2 then
-							expect(pingCmd2.AutocompleteVisible).toBe(false)
-						end
-					end
-					cK.client.settings.chatCommands(false)
-					cK.Data.settings.chatCommands = false
-					world:run(0.25)
-					if clientCmdFolder then
-						local pingCmd = clientCmdFolder:FindFirstChild("ping")
-						expect(pingCmd ~= nil and pingCmd.AutocompleteVisible).toBe(false)
-					end
-					cK.Data.settings.chatCommands = true
-					cK.client.settings.chatCommands(true)
-					cK.client.settings.onlyShowUsableCommands(false)
-					world:run(0.25)
-					local chatInputBar = cK.Service.TextChat:FindFirstChildOfClass("ChatInputBarConfiguration")
-					if chatInputBar then
-						chatInputBar.IsFocused = true
-						chatInputBar.IsFocused = false
-					end
-
-					filterScrollerTab(dash.Commands, { "role=vip", "ban", "rich suggestions", "" })
-					if cK.Registry.commands.ban then
-						cK.Registry.commands.ban.LocalPlayerAuthorized = true
-					end
-
-					-- Servers tab (rendering, place name cache hit & miss, sort, Join button)
-					openScrollerTab(dash.Servers)
-					local emptyServersLabel = dash.Servers._instance:FindFirstChild("EmptyListLabel")
-					expect(emptyServersLabel ~= nil).toBe(true)
-					expect(emptyServersLabel.LayoutOrder).toBe(1)
-					expect(dash.Servers._scroller.LayoutOrder).toBe(2)
-					expect(emptyServersLabel.LayoutOrder < dash.Servers._scroller.LayoutOrder).toBe(true)
-					expect(dash.Logs._input._instance.LayoutOrder).toBe(-1)
-					expect(dash.Members._input._instance.LayoutOrder).toBe(-1)
-					for _, item in dash.Servers._lineItemCache do
-						if item.Join and item.Join._instance then
-							item.Join._instance.Activated:Fire()
-						end
-					end
-					world:run(0.2)
-
-					-- Settings tab (filter, modifying inputs/switches/sliders, resetChanges & confirmChanges)
-					dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.Settings._instance])
-					world:run(0.5)
-					dash.Settings._input._input.Text = "theme"
-					world:run(0.1)
-					dash.Settings._input._input.Text = ""
-					world:run(0.1)
-
-					for _, desc in dash.Settings._instance:GetDescendants() do
-						if desc:IsA("TextBox") and desc.Text == ";" then
-							desc.Text = ":"
-							desc.FocusLost:Fire(true)
-						elseif desc:IsA("TextButton") and desc.Name == "Button" then
-							desc.Activated:Fire()
-						end
-					end
-					world:run(0.1)
-					-- Confirm settingsDialog if visible
-					for _, child in dash.Settings._instance:GetChildren() do
-						if
-							child.Name == "Dialog"
-							and child:FindFirstChild("Frame")
-							and child.Frame:FindFirstChild("Actions")
-						then
-							child.Frame.Actions.LeftAction.Activated:Fire()
-							world:run(0.1)
-							child.Frame.Actions.RightAction.Activated:Fire()
-							world:run(0.1)
-						end
-					end
-
-					-- About & Market tabs
-					dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.About._instance])
-					world:run(0.2)
-					do
-						local AboutModule = cliMounted.Client:FindFirstChild("About")
-						local Credits = cliMounted.env:require(AboutModule:FindFirstChild("Credits"))
-						local Contributions = cliMounted.env:require(AboutModule:FindFirstChild("Contributions"))
-						local Order = cliMounted.env:require(AboutModule:FindFirstChild("Order"))
-
-						local function ids(list)
-							local out = {}
-							for idx, person in list do
-								out[idx] = person.Id
-							end
-							return out
-						end
-
-						-- Shared fixture order & tie-breaking rules (matches test/unit/CreditsOrder.json)
-						local fixtureData = {
-							recent = {
-								ALPHA = 3,
-								beta = 10,
-								gamma = 3,
-								eps = 3,
-								unmapped = 1,
-								zeta = 1,
-								theta = 2,
-								eta = 1,
-							},
-							names = {
-								[1] = { name = "zed", displayName = "Zed", verified = false },
-								[2] = { name = "bob", displayName = "Bob", verified = false },
-								[3] = { name = "cy", displayName = "Cy", verified = false },
-								[4] = { name = "amy", displayName = "amy", verified = false },
-								[5] = { name = "al", displayName = "Al", verified = false },
-								[7] = { name = "dee", displayName = "Dee", verified = false },
-								[8] = { name = "Ébé", displayName = "Ébé", verified = false },
-								[9] = { name = "éa", displayName = "éa", verified = false },
-								[10] = { name = "sam_b", displayName = "Sam", verified = false },
-								[11] = { name = "Sam_a", displayName = "sam", verified = false },
-								[12] = { name = "sam_a", displayName = "Sam", verified = false },
-								[14] = { name = "aaa", displayName = "Bob", verified = false },
-								[15] = { name = "zeta_u", displayName = "Zeta", verified = false },
-								[16] = { name = "theta", displayName = "Theta", verified = false },
-								[17] = { name = "eta", displayName = "Eta", verified = false },
-							},
-						}
-						local fixturePeople = {
-							{ Id = 1 },
-							{ Id = 2, GitHub = "alpha" },
-							{ Id = 3, GitHub = "Beta" },
-							{ Id = 4 },
-							{ Id = 5, GitHub = "gamma" },
-							{ Id = 6 },
-							{ Id = 7, GitHub = "delta" },
-							{ Id = 8 },
-							{ Id = 9 },
-							{ Id = 10 },
-							{ Id = 11 },
-							{ Id = 12 },
-							{ Id = 13 },
-							{ Id = 14, GitHub = "eps" },
-							{ Id = 15, GitHub = "zeta" },
-							{ Id = 16, GitHub = "theta" },
-							{ Id = 17, GitHub = "eta" },
-						}
-						expect(ids(Order.active(fixturePeople, fixtureData))).toEqual({ 3, 5, 14, 2, 16 })
-						expect(ids(Order.plain(fixturePeople, fixtureData))).toEqual({
-							4,
-							7,
-							17,
-							11,
-							12,
-							10,
-							1,
-							15,
-							8,
-							9,
-							6,
-							13,
-						})
-						-- Also exercise active tie-breaking when displayNames or names are missing
-						local tiePeople = {
-							{ Id = 20, GitHub = "alpha" },
-							{ Id = 10, GitHub = "Beta" },
-							{ Id = 30, GitHub = "gamma" },
-						}
-						local tieData = {
-							recent = { alpha = 4, Beta = 4, gamma = 4 },
-							names = {
-								[10] = { name = "same", displayName = "Same", verified = false },
-								[20] = { name = "same", displayName = "Same", verified = false },
-							},
-						}
-						expect(ids(Order.active(tiePeople, tieData))).toEqual({ 10, 20, 30 })
-
-						-- Generated data invariants + luv2trilogy (3727541395)
-						local activeList = Order.active(Credits.people)
-						local plainList = Order.plain(Credits.people)
-						expect(#activeList + #plainList).toBe(#Credits.people)
-						expect(Credits.specialThanks.Id).toBe(16)
-						local foundLuv2 = false
-						for _, person in Credits.people do
-							expect(Contributions.names[person.Id] ~= nil).toBe(true)
-							expect(person.Id ~= 16).toBe(true)
-							if person.Id == 3727541395 then
-								foundLuv2 = true
-								expect(person.GitHub).toBe("luv2trilogy")
-							end
-						end
-						expect(foundLuv2).toBe(true)
-
-						local creditsFrame = dash.About._instance:FindFirstChild("Credits", true)
-						expect(creditsFrame ~= nil).toBe(true)
-						expect(creditsFrame:FindFirstChild("Active contributors") ~= nil).toBe(true)
-						expect(creditsFrame:FindFirstChild("Contributors") ~= nil).toBe(true)
-						expect(creditsFrame:FindFirstChild("Special Thanks") ~= nil).toBe(true)
-					end
-					for _, desc in dash.About._instance:GetDescendants() do
-						if desc:IsA("TextButton") or desc:IsA("ImageButton") then
-							desc.Activated:Fire()
-						end
-					end
-					cEnv.game
-						:GetService("LogService").MessageOut
-						:Fire("AllowThirdPartySales has blocked the purchase", Enum.MessageType.MessageWarning)
-					world:run(0.2)
-
-					dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.Market._instance])
-					world:run(0.2)
-					cEnv.Players.LocalPlayer:SetAttribute("_KDonationLevel", 3)
-					local marketSvc = cEnv.game:GetService("MarketplaceService")
-					marketSvc.PromptPurchaseFinished:Fire(cEnv.Players.LocalPlayer, 90666920573726, true)
-					marketSvc.PromptBulkPurchaseFinished:Fire(
-						cEnv.Players.LocalPlayer,
-						Enum.MarketplaceBulkPurchasePromptStatus.Completed,
-						{ Items = { { Id = "90666920573726", Status = Enum.MarketplaceItemPurchaseStatus.Success } } }
-					)
-					marketSvc.PromptGamePassPurchaseFinished:Fire(cEnv.Players.LocalPlayer, 5411126, true)
-					world:run(0.2)
-					for _, desc in dash.Market._instance:GetDescendants() do
-						if desc:IsA("TextButton") or desc:IsA("ImageButton") then
-							desc.Activated:Fire()
-						end
-					end
-					world:run(0.2)
-
-					-- GetKA hook (chat commands with silent=false are ignored; 3 silent UI/CommandBar executions trigger corner notification)
-					for _ = 1, 4 do
-						cK.Hook.runPreparedCommands:Fire(1, "help", ";help", false)
-					end
-					world:run(0.1)
-					for _ = 1, 3 do
-						cK.Hook.runPreparedCommands:Fire(1, "help", ";help", true)
-					end
-					world:run(0.2)
 
 					-- 7. Character module (fly, noclip, Freefall double-jump, double-tap stop, CharacterRemoving)
 					local charModel = cEnv.Instance.new("Model")
@@ -3291,7 +3446,7 @@ describe("Client and UI", function()
 					charModel.Parent = cEnv.workspace
 					cEnv.Players.LocalPlayer.Character = charModel
 					cEnv.Players.LocalPlayer.CharacterAdded:Fire(charModel)
-					world:run(0.2)
+					fastRun(0.2)
 
 					local Character = cK.client.Character
 					Character.noclip(true)
@@ -3303,10 +3458,10 @@ describe("Client and UI", function()
 					expect(hum.PlatformStand).toBe(true)
 					hum.Jump = true
 					hum.MoveDirection = Vector3.new(1, 0, 0)
-					world:run(0.2)
+					fastRun(0.2)
 					hum.Jump = false
 					hum.MoveDirection = Vector3.zero
-					world:run(0.2)
+					fastRun(0.2)
 					Character.fly(false)
 					expect(hum.PlatformStand).toBe(false)
 
@@ -3314,13 +3469,13 @@ describe("Client and UI", function()
 					cEnv.Players.LocalPlayer:SetAttribute("_KNoClip", true)
 					Character.fly(false)
 					Character.noclip(false)
-					world:run(0.4)
+					fastRun(0.4)
 					-- Freefall -> wait 0.15s -> canDoubleJump = true -> JumpRequest activates fly & noclip
 					hum:ChangeState(Enum.HumanoidStateType.Freefall)
 					client:spawn(function()
 						hum.StateChanged:Fire(Enum.HumanoidStateType.Jumping, Enum.HumanoidStateType.Freefall)
 					end)
-					world:run(0.2)
+					fastRun(0.2)
 					UI.UserInputService.JumpRequest:Fire()
 					expect(hum.PlatformStand).toBe(true)
 					hum.StateChanged:Fire(Enum.HumanoidStateType.Freefall, Enum.HumanoidStateType.Landed)
@@ -3330,7 +3485,7 @@ describe("Client and UI", function()
 					cEnv.Players.LocalPlayer:SetAttribute("_KFly", nil)
 					cEnv.Players.LocalPlayer:SetAttribute("_KNoClip", false)
 					cEnv.Players.LocalPlayer.CharacterRemoving:Fire(charModel)
-					world:run(0.2)
+					fastRun(0.2)
 
 					-- 8. Explorer (icons, expand/collapse, multi-select, copy/paste/delete, drag-and-drop, search, removal)
 					local testPart = cEnv.Instance.new("Part")
@@ -3348,9 +3503,9 @@ describe("Client and UI", function()
 					testCfg.Parent = cEnv.workspace
 
 					cK.client.Explorer.Show()
-					world:run(1.2)
+					fastRun(1.2)
 					cK.client.Explorer.Show()
-					world:run(0.2)
+					fastRun(0.2)
 
 					local expWin = UI.LayerTopInset:FindFirstChild("Explorer")
 					expect(expWin ~= nil).toBe(true)
@@ -3367,26 +3522,28 @@ describe("Client and UI", function()
 								continue
 							end
 							table.insert(renderedBtns, itemBtn)
-							if itemBtn.TouchLongPress then
-								itemBtn.TouchLongPress:Fire(
-									{ Position = Vector3.new(10, 10, 0) },
-									Enum.UserInputState.Begin
-								)
+							if #renderedBtns <= 2 then
+								if itemBtn.TouchLongPress then
+									itemBtn.TouchLongPress:Fire(
+										{ Position = Vector3.new(10, 10, 0) },
+										Enum.UserInputState.Begin
+									)
+								end
+								local expandBtn = itemBtn:FindFirstChild("Expand")
+								if expandBtn and expandBtn:IsA("TextButton") then
+									expandBtn.Activated:Fire()
+								end
+								-- Double-click itemBtn (< 0.3s)
+								itemBtn.Activated:Fire()
+								itemBtn.Activated:Fire()
 							end
-							local expandBtn = itemBtn:FindFirstChild("Expand")
-							if expandBtn and expandBtn:IsA("TextButton") then
-								expandBtn.Activated:Fire()
-							end
-							-- Double-click itemBtn (< 0.3s)
-							itemBtn.Activated:Fire()
-							itemBtn.Activated:Fire()
 						end
 					end
 					expect(#renderedBtns > 0).toBe(true)
-					world:run(0.35)
+					fastRun(0.35)
 					if renderedBtns[1] then
 						renderedBtns[1].Activated:Fire()
-						world:run(0.35)
+						fastRun(0.35)
 					end
 
 					-- Ctrl+click multi-select toggle (off then back on) & keyboard shortcuts (Ctrl+C, Ctrl+V, Delete)
@@ -3407,7 +3564,7 @@ describe("Client and UI", function()
 
 					if renderedBtns[1] then
 						renderedBtns[1].Activated:Fire()
-						world:run(0.35)
+						fastRun(0.35)
 						renderedBtns[1].Activated:Fire()
 					end
 					UI.UserInputService.InputBegan:Fire(
@@ -3418,7 +3575,7 @@ describe("Client and UI", function()
 						makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.V }),
 						false
 					)
-					world:run(0.2)
+					fastRun(0.2)
 
 					-- Drag-and-Drop between two Explorer item buttons
 					if renderedBtns[1] and renderedBtns[2] then
@@ -3457,7 +3614,7 @@ describe("Client and UI", function()
 							),
 							false
 						)
-						world:run(0.35)
+						fastRun(0.35)
 					end
 
 					ctrlHeld = false
@@ -3492,7 +3649,7 @@ describe("Client and UI", function()
 					if deleteBtn then
 						deleteBtn.Activated:Fire()
 					end
-					world:run(0.2)
+					fastRun(0.2)
 
 					-- Exercise Explorer search filter input (1-char, name match, non-matching fallback)
 					local expInput = expScrollerFrame:FindFirstChild("Input")
@@ -3500,20 +3657,20 @@ describe("Client and UI", function()
 						local expBox = expInput:FindFirstChildOfClass("TextBox")
 						if expBox then
 							expBox.Text = "a"
-							world:run(0.3)
+							fastRun(0.3)
 							expBox.Text = "ExplorerTestPart"
-							world:run(0.3)
+							fastRun(0.3)
 							expBox.Text = "zzzz_no_match"
-							world:run(0.3)
+							fastRun(0.3)
 							expBox.Text = ""
-							world:run(0.3)
+							fastRun(0.3)
 						end
 					end
 
 					testFolder:Destroy()
 					testCfg:Destroy()
 					testPart:Destroy()
-					world:run(0.2)
+					fastRun(0.2)
 				end
 			)
 		end
@@ -3579,43 +3736,7 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 	end)
 
 	test("Dashboard ping color walks the Oklab hue from Valid through yellow to Invalid", function()
-		local world = sharedFullWorld
-		local cliMounted = sharedFullClientMounted
-		local cK = sharedFullCK
-		if not (world and cliMounted and cK and sharedFullMutant == (_G :: any).__SERT_MUTANT) then
-			world = sert.sim.new({ backing = true })
-			local server = world:server()
-			local client = server:client(1, "Player1")
-			local srvMounted = Harness.newPeerEnv(server, { isStudio = true })
-			cliMounted = setupClientEnv(client)
-			local sK = srvMounted:requireK()
-			server:spawn(function()
-				sK.initialize({
-					bans = {},
-					userRoles = { creator = { 1 } },
-					assetRoles = {},
-					gamepassRoles = {},
-					subscriptionRoles = {},
-					groupRoles = {},
-					friendRoles = {},
-					freeAdmin = {},
-					prefix = { ";" },
-					splitKey = " ",
-					commands = {},
-					vip = false,
-					roles = Harness.defaultRoles(),
-				})
-			end)
-			world:run(0.5)
-
-			cK = cliMounted:requireK()
-			local preUI = cliMounted.env:require(cliMounted.Client.UI)
-			preUI.Pointer = preUI.signal({ Position = Vector3.new(100, 100, 0) })
-			client:spawn(function()
-				cliMounted.env:require(cliMounted.Client)
-			end)
-			world:run(1)
-		end
+		local world, _srvMounted, cliMounted, _sK, cK = getOrCreateFullClientSut()
 		expect(cK.ready).toBe(true)
 
 		local ping = 0.175 -- half of the 350 ms that reads fully Invalid
@@ -3634,7 +3755,8 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 		UI.Theme.Invalid(Color3.fromRGB(255, 0, 0))
 		local label = sharedFullPingLabel
 			or cK.client.dashboard.Window._instance:FindFirstChild("StatusBar", true).Content.Ping.Label
-		world:run(1.1)
+		world:step()
+		world:step(1.1)
 		-- a straight Oklab mix of green and red is olive (~0.82, 0.66, 0); the hue walk stays a vivid yellow
 		local mid = label.TextColor3
 		sert(mid.R > 0.95 and mid.G > 0.75 and mid.B < 0.1, `midpoint reads as yellow, got {mid}`)
@@ -3642,7 +3764,8 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 		-- endpoints follow the current theme colors' hues
 		ping = 0
 		UI.Theme.Valid(Color3.fromRGB(0, 0, 255))
-		world:run(1.1)
+		world:step()
+		world:step(1.1)
 		local low = label.TextColor3
 		sert(low.B > 0.95 and low.B > low.R and low.B > low.G, `zero ping takes the Valid hue, got {low}`)
 

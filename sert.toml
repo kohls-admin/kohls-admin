@@ -10,6 +10,7 @@ luau = "0.724"
 [test]
 entries = ["test/spec.client.luau"]
 stage = "default.project.json"
+codegen = false
 
 [coverage]
 include = ["src"]
