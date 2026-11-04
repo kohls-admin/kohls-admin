@@ -12,24 +12,74 @@ Class.__index = Class
 setmetatable(Class, BaseClass)
 
 function Class:_updateSelection()
+	if self._updatingSelection then
+		return
+	end
 	local instance = self._instance
-	if instance:IsFocused() and (instance.SelectionStart ~= 1 or instance.CursorPosition ~= #instance.Text + 1) then
-		instance.SelectionStart = 1
-		instance.CursorPosition = #instance.Text + 1
+	if instance and instance:IsFocused() then
+		local cursor = #instance.Text + 1
+		if instance.SelectionStart ~= 1 or instance.CursorPosition ~= cursor then
+			self._updatingSelection = true
+			instance.CursorPosition = cursor
+			instance.SelectionStart = 1
+			self._updatingSelection = false
+		end
 	end
 end
 
 function Class:Select()
-	self._instance:CaptureFocus()
+	if not UI.isReactive() then
+		UI.flush()
+	end
+	local instance = self._instance
+	if not instance then
+		return
+	end
+	instance:CaptureFocus()
 	self:_updateSelection()
+	task.defer(function()
+		if instance.Parent and not instance:IsFocused() then
+			instance:CaptureFocus()
+		end
+		self:_updateSelection()
+	end)
 end
 
 function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
 
+	local selectionDeferred = false
 	local function onFocused()
 		self:_updateSelection()
+		if not selectionDeferred then
+			selectionDeferred = true
+			task.defer(function()
+				selectionDeferred = false
+				if self._instance.Parent then
+					self:_updateSelection()
+				end
+			end)
+		end
+	end
+
+	local function clearSelection()
+		if self._instance.Parent and not self._instance:IsFocused() then
+			self._updatingSelection = true
+			self._instance.SelectionStart = -1
+			self._updatingSelection = false
+		end
+	end
+
+	local function onPointerInput(input: InputObject)
+		local inputType = input.UserInputType
+		if
+			inputType == Enum.UserInputType.MouseButton1
+			or inputType == Enum.UserInputType.MouseMovement
+			or inputType == Enum.UserInputType.Touch
+		then
+			onFocused()
+		end
 	end
 
 	local cleanup = {}
@@ -54,12 +104,16 @@ function Class.new(properties: Properties?)
 
 		Focused = onFocused,
 		FocusLost = function()
-			self._instance.SelectionStart = -1
-			self._instance.CursorPosition = -1
+			clearSelection()
+			task.defer(clearSelection)
 		end,
+		InputBegan = onPointerInput,
+		InputChanged = onPointerInput,
+		InputEnded = onPointerInput,
 
 		_CursorPosition = onFocused,
 		_SelectionStart = onFocused,
+		_Text = onFocused,
 	} :: TextBox & { UICorner: UICorner, UIPadding: UIPadding, UISizeConstraint: UISizeConstraint }
 
 	local richText = UI.property(self._instance, "RichText")

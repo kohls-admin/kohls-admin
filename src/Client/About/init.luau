@@ -49,13 +49,21 @@ function About.new(_K)
 
 	_K.client.purchaseKADialog = purchaseKADialog
 
+	local favoriteConn: RBXScriptConnection?
 	local function showFallbackDialog()
 		purchaseKADialog.Visible(true)
-		task.defer(function()
-			purchaseLink:Select()
-		end)
+		purchaseLink:Select()
 		local _ = pcall(function()
 			_K.Service.AvatarEditor:PromptSetFavorite(KA_MODEL_ID, 1, true)
+			if favoriteConn then
+				favoriteConn:Disconnect()
+			end
+			favoriteConn = _K.Service.AvatarEditor.PromptSetFavoriteCompleted:Once(function()
+				favoriteConn = nil
+				if purchaseKADialog.Visible:peek() then
+					purchaseLink:Select()
+				end
+			end)
 		end)
 	end
 

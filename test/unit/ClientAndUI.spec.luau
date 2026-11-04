@@ -306,6 +306,39 @@ do
 					local plainUsers = plainSection:FindFirstChild("Users")
 					expect(plainUsers ~= nil and plainUsers:FindFirstChild("Header") == nil).toBe(true)
 					expect(plainUsers:FindFirstChild("Credit") ~= nil).toBe(true)
+
+					local linkA = UI.new "Link" {
+						Parent = UI.LayerDefault,
+						Text = "roblox.com/communities/3403354/Kohls-Admin",
+					}
+					local linkB = UI.new "Link" {
+						Parent = UI.LayerDefault,
+						Text = "create.roblox.com/store/asset/1868400649",
+					}
+					linkA:Select()
+					frames(UI, 2)
+					expect(linkA._instance:IsFocused()).toBe(true)
+					expect(linkA._instance.SelectionStart).toBe(1)
+					expect(linkA._instance.CursorPosition).toBe(#linkA._instance.Text + 1)
+
+					-- Switching focus to a second Link must not lose focus when linkA's FocusLost fires
+					linkB:Select()
+					frames(UI, 2)
+					expect(linkA._instance:IsFocused()).toBe(false)
+					expect(linkA._instance.SelectionStart).toBe(-1)
+					expect(linkB._instance:IsFocused()).toBe(true)
+					expect(linkB._instance.SelectionStart).toBe(1)
+					expect(linkB._instance.CursorPosition).toBe(#linkB._instance.Text + 1)
+
+					-- Mutating cursor/selection while focused snaps back to full-text selection
+					linkB._instance.SelectionStart = -1
+					linkB._instance.CursorPosition = 1
+					frames(UI, 1)
+					expect(linkB._instance.SelectionStart).toBe(1)
+					expect(linkB._instance.CursorPosition).toBe(#linkB._instance.Text + 1)
+
+					linkA:Destroy()
+					linkB:Destroy()
 				end
 			end
 		end)
@@ -1167,9 +1200,25 @@ describe("Client and UI", function()
 			}
 			link:Select()
 			link._instance.Focused:Fire()
+			expect(link._instance.SelectionStart).toBe(1)
+			expect(link._instance.CursorPosition).toBe(#link._instance.Text + 1)
+			link._instance.CursorPosition = 1
+			expect(link._instance.SelectionStart).toBe(1)
+			expect(link._instance.CursorPosition).toBe(#link._instance.Text + 1)
+			link._instance.InputEnded:Fire(
+				makeInput(env, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(10, 10, 0) })
+			)
+			expect(link._instance.SelectionStart).toBe(1)
+			expect(link._instance.CursorPosition).toBe(#link._instance.Text + 1)
+			link._instance:ReleaseFocus()
 			link._instance.FocusLost:Fire()
+			expect(link._instance.SelectionStart).toBe(-1)
 			expect(link._instance.Text).toBe("https://example.com")
 			link:Destroy()
+			-- Firing Focused / FocusLost after Link:Destroy() is a safe no-op
+			link._instance.Focused:Fire()
+			link._instance.FocusLost:Fire()
+			world:run(0.05)
 
 			local tipTarget = UI.new "Frame" {
 				Parent = UI.LayerDefault,
