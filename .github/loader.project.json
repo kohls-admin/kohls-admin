@@ -1,10 +1,18 @@
 {
 	"name": "Kohl's Admin",
 	"emitLegacyScripts": false,
+	"globIgnorePaths": ["**/*.spec.lua", "**/*.spec.luau", "**/ThumbnailCamera.model.json"],
 	"tree": {
 		"$className": "Model",
 		"Config": {
-			"$path": "../model/Config"
+			"$path": "../model/Config",
+			"Themes": {
+				"$className": "Folder",
+				"$path": "../src/Client/UI/Theme/Themes",
+				"Default": {
+					"$path": "../src/Client/UI/Theme/Default.luau"
+				}
+			}
 		},
 		"Loader": {
 			"$path": "../model/Loader.server.luau",
@@ -20,6 +28,9 @@
 					"$path": "../VERSION.txt"
 				}
 			},
+			"MainModuleLegacy": {
+				"$path": "../test/migrate/KAI"
+			},
 			"Tools": {
 				"$className": "Folder",
 				"Building Tools": {
@@ -30,7 +41,7 @@
 				}
 			}
 		},
-		"README": {
+		"READ_ME": {
 			"$path": "../model/README.luau"
 		},
 		"ThumbnailCamera": {

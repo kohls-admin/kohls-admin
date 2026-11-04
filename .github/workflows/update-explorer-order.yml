@@ -19,5 +19,5 @@ jobs:
       - run: python .github/scripts/explorer_order.py
       - uses: stefanzweifel/git-auto-commit-action@v7
         with:
-          commit_message: "chore: Update ExplorerOrder.luau"
+          commit_message: "chore: update ExplorerOrder.luau"
           file_pattern: "src/Client/Explorer/ExplorerOrder.luau"

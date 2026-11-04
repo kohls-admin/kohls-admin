@@ -50,7 +50,7 @@ Kohl's Admin is published to the Wally package registry as `kohltastrophe/kohls-
 
 ```toml
 [dependencies]
-KohlsAdmin = "kohltastrophe/kohls-admin@0.2.3"
+KohlsAdmin = "kohltastrophe/kohls-admin@0.18.1"
 ```
 
 2. Run `wally install` to fetch the package.

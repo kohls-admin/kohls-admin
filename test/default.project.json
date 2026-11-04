@@ -67,6 +67,12 @@
 				},
 				"Config": {
 					"$path": "../model/Config",
+					"$properties": {
+						"Attributes": {
+							"AutoUpdate": { "Bool": false },
+							"Legacy": { "Bool": false }
+						}
+					},
 					"Themes": {
 						"$className": "Folder",
 						"$path": "../src/Client/UI/Theme/Themes",

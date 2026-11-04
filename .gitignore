@@ -9,6 +9,7 @@ __pycache__
 .sert/
 sert.local.toml
 coverage.out
+coverage.json
 coverage-table.txt
 
 # plexer's local graph cache — regenerable, not committed (run `plexer build`).

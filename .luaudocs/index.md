@@ -1,5 +1,6 @@
 ---
 layout: page
+description: "Administration, moderation, and command suite for Roblox."
 sidebar: false
 editLink: false
 lastUpdated: false
@@ -517,7 +518,7 @@ onBeforeUnmount(() => {
 				<p class="lede">
 					We welcome and reward contributions from developers across the Roblox
 					ecosystem. Check out our
-					<a href="https://github.com/kohls-admin/kohls-admin/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contributor Guidelines</a>
+					<a href="https://github.com/kohls-admin/kohls-admin/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contributor Guidelines</a>
 					to get involved.
 				</p>
 			</div>

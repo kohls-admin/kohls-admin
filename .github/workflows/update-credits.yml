@@ -1,0 +1,33 @@
+name: Update Credits
+
+on:
+  schedule:
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      # A release checks out its tag; the regenerated module goes to the default branch either way.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.x"
+      # Rewrites Contributions.luau only when the credits page would change: the active contributors (the rolling
+      # 12-month window) or their order, or the plain list's order or usernames. It checks its window and orders
+      # against the shared fixture first. A week where nothing visible moved leaves nothing to commit.
+      - run: python .github/scripts/credits.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
+        with:
+          commit_message: "chore: update the credits' contribution counts"
+          file_pattern: "src/Client/About/Contributions.luau"

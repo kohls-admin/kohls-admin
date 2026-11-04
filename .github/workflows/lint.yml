@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -25,11 +25,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
+      - name: Conventional Commits and version check
+        uses: kohltastrophe/release@v1
+        with:
+          mode: check
+          pr-title: ${{ github.event.pull_request.title }}
+
       - uses: kohltastrophe/sert/actions/setup@v0.1.0
+
+      - name: luaudocs llms --check
+        run: npx --yes luaudocs@latest llms --check
 
       - name: sert lint
         run: python3 tools/sert.py lint
@@ -39,7 +49,13 @@ jobs:
 
       # coverage and mutate write their own $GITHUB_STEP_SUMMARY
       - name: sert coverage
-        run: python3 tools/sert.py coverage --min 90
+        run: python3 tools/sert.py coverage --min 90 --badge
 
       - name: sert mutate
         run: python3 tools/sert.py mutate --no-coverage-run --min 85
+
+      - name: Update coverage badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/sert.py coverage --badge-branch --badge-push

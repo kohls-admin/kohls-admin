@@ -1,15 +1,16 @@
-# Release Kohl's Admin. release-please keeps a release PR open on main that bumps VERSION.txt and
-# .release-please-manifest.json and writes CHANGELOG.md; merging it tags v<version> and creates the GitHub release.
-# When a release is created (or workflow_dispatch is triggered), the remaining steps in the same job check the version,
-# wait for CI on that commit, build MainModule.rbxm and KohlsAdmin.rbxm, attach them to the GitHub release, and
-# publish them to the Roblox Creator Store.
+# Release Kohl's Admin. kohltastrophe/release keeps a release PR open on main that bumps VERSION.txt and wally.toml;
+# merging it tags v<version> and creates the GitHub release with Keep a Changelog release notes.
+# When a release commit is merged (or workflow_dispatch is triggered), the remaining steps in the same job check the
+# version, wait for CI on that commit, build MainModule.rbxm and KohlsAdmin.rbxm, attach them to the GitHub release,
+# and publish them to Wally and the Roblox Creator Store.
 #
-#   push to main               release-please updates its PR, or releases when its PR was just merged
+#   push to main               kohltastrophe/release updates its PR, or releases when its PR was just merged
 #   Run workflow on a v* tag   (dry_run off) publish that release again; every publish step is safe to repeat
 #   Run workflow (dry_run on)  build and package only
 #
 # Secrets:
 #   MY_RELEASE_PLEASE_TOKEN  a token that may push branches and open PRs, so the release PR runs CI
+#   WALLY_AUTH_TOKEN         a Wally registry token for publishing kohltastrophe/kohls-admin
 #   MODEL_TOKEN              an Open Cloud API key with Assets API read/write access for MAIN_MODULE_ASSET_ID & LOADER_ASSET_ID
 name: Release
 
@@ -50,73 +51,45 @@ jobs:
       pull-requests: write
       actions: read
     steps:
-      - name: Release Please
-        id: release-please
-        if: github.event_name == 'push'
-        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
-        with:
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: steps.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
         with:
-          ref: ${{ steps.release-please.outputs.tag_name || github.ref }}
-          persist-credentials: false
+          fetch-depth: 0
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
 
-      - uses: kohltastrophe/sert/actions/setup@v0.1.0
-        if: steps.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
+      - name: Release PR or Release
+        id: release
+        uses: kohltastrophe/release@v1.0.0
         with:
-          rokit: "false"
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
 
       - uses: CompeyDev/setup-rokit@1d9390883f7ebce19d48f5b8d006e11d387c92ab # v0.2.1
-        if: steps.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.release.outputs.should_release == 'true' || github.event_name == 'workflow_dispatch'
         with:
           version: v1.2.0
 
-      - name: Check the version (and the tag)
-        id: check
-        if: steps.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
-        env:
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
-          RELEASED_TAG: ${{ steps.release-please.outputs.tag_name }}
-        run: |
-          if [ -n "$RELEASED_TAG" ]; then
-            tag=$RELEASED_TAG
-          elif [ "$DRY_RUN" = true ]; then
-            tag=""
-          elif [ "$GITHUB_REF_TYPE" = tag ]; then
-            tag=$GITHUB_REF_NAME
-          else
-            echo "::error::Only a release is published: merge the release PR, or run this workflow on its v* tag."
-            exit 1
-          fi
-          if [ -n "$tag" ]; then
-            version=$(python3 tools/sert.py release check-version --tag "$tag")
-            release=true
-          else
-            version=$(python3 tools/sert.py release check-version)
-            release=false
-          fi
-          {
-            echo "version=$version"
-            echo "tag=$tag"
-            echo "release=$release"
-          } >> "$GITHUB_OUTPUT"
-          echo "Kohl's Admin $version: release=$release tag=${tag:-none}"
-
       - name: Wait for CI to pass on this commit
-        if: steps.check.outputs.release == 'true'
+        if: steps.release.outputs.should_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           for workflow in lint.yml; do
             empty=0
+            api_errors=0
             while true; do
-              RESULT=$(gh api \
-                "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?head_sha=$GITHUB_SHA&event=push" \
-                --jq '.workflow_runs | sort_by(.run_number) | last | "\(.status // "none") \(.conclusion // "none")"') || RESULT="none none"
+              if ! RESULT=$(gh api \
+                "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?head_sha=$GITHUB_SHA" \
+                --jq '.workflow_runs | sort_by(.run_number) | last | "\(.status // "none") \(.conclusion // "none")"'); then
+                api_errors=$((api_errors + 1))
+                if [ "$api_errors" -ge 8 ]; then
+                  echo "::error::Failed to query $workflow status after $api_errors consecutive gh api errors"
+                  exit 1
+                fi
+                echo "gh api error ($api_errors/8); retrying in 15s..."
+                sleep 15
+                continue
+              fi
+              api_errors=0
               STATUS="${RESULT%% *}"
               CONCLUSION="${RESULT##* }"
               echo "$workflow status=$STATUS conclusion=$CONCLUSION"
@@ -127,7 +100,7 @@ jobs:
               elif [ "$STATUS" = "none" ]; then
                 empty=$((empty + 1))
                 if [ "$empty" -ge 8 ]; then
-                  echo "::error::No push run of $workflow found for $GITHUB_SHA after 2 minutes"
+                  echo "::error::No run of $workflow found for $GITHUB_SHA after 2 minutes"
                   exit 1
                 fi
               else
@@ -139,34 +112,76 @@ jobs:
           done
 
       - name: Build the release assets
-        if: steps.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.release.outputs.should_release == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p dist
-          rojo build default.project.json --output dist/MainModule.rbxm
+          rojo build .github/mainmodule.project.json --output dist/MainModule.rbxm
           rojo build .github/loader.project.json --output dist/KohlsAdmin.rbxm
+          wally package --list
+          wally package --output "$RUNNER_TEMP/wally.zip"
+          size=$(stat -c %s "$RUNNER_TEMP/wally.zip")
+          echo "Wally package: $size bytes (the registry refuses more than 2 MiB)"
+          [ "$size" -le 2097152 ]
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: steps.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.release.outputs.should_release == 'true' || github.event_name == 'workflow_dispatch'
         with:
           name: release
           path: dist/
           if-no-files-found: error
           overwrite: true
 
-      # release-please created the release; a re-run replaces its assets.
-      - name: Attach the models to the release
-        if: steps.check.outputs.release == 'true'
+      - name: Create or update the GitHub release
+        if: steps.release.outputs.should_release == 'true'
         working-directory: dist
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ steps.check.outputs.tag }}
-        run: gh release upload "$TAG" MainModule.rbxm KohlsAdmin.rbxm --clobber
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+          NOTES_FILE: ${{ steps.release.outputs.notes_file }}
+        run: |
+          assets=(MainModule.rbxm KohlsAdmin.rbxm)
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            if [ -n "$NOTES_FILE" ] && [ -f "$NOTES_FILE" ]; then
+              gh release edit "$TAG" --title "Kohl's Admin $VERSION" --notes-file "$NOTES_FILE"
+            fi
+            gh release upload "$TAG" "${assets[@]}" --clobber
+          elif [ "$PRERELEASE" = true ]; then
+            gh release create "$TAG" "${assets[@]}" \
+              --target "$GITHUB_SHA" \
+              --title "Kohl's Admin $VERSION" \
+              --notes-file "$NOTES_FILE" \
+              --prerelease
+          else
+            gh release create "$TAG" "${assets[@]}" \
+              --target "$GITHUB_SHA" \
+              --title "Kohl's Admin $VERSION" \
+              --notes-file "$NOTES_FILE"
+          fi
+
+      - name: Publish kohltastrophe/kohls-admin to Wally
+        if: steps.release.outputs.should_release == 'true'
+        env:
+          WALLY_AUTH_TOKEN: ${{ secrets.WALLY_AUTH_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          if [ -z "$WALLY_AUTH_TOKEN" ]; then echo "::notice::No WALLY_AUTH_TOKEN secret: Wally publish skipped"; exit 0; fi
+          wally login --token "$WALLY_AUTH_TOKEN"
+          # `wally publish` exits 0 even when the registry refuses the package, so read what it printed.
+          output=$(wally publish 2>&1) || { echo "$output"; exit 1; }
+          echo "$output"
+          case "$output" in
+            *"published successfully"*) ;;
+            *"already exists"*) echo "::notice::kohltastrophe/kohls-admin@$VERSION was already on Wally" ;;
+            *) echo "::error::Wally did not accept kohltastrophe/kohls-admin@$VERSION"; exit 1 ;;
+          esac
 
       # Uploading a model again only adds an asset version, so a re-run is safe. The MainModule goes first: every
       # auto-updating game loads it on its next server.
       - name: Update the MainModule and the Loader
-        if: steps.check.outputs.release == 'true'
+        if: steps.release.outputs.should_release == 'true'
         env:
           MODEL_TOKEN: ${{ secrets.MODEL_TOKEN }}
         run: |
