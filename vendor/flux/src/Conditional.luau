@@ -1,8 +1,6 @@
 --!strict
 --[[
-Control flow, list mapping, and keyed selection: `show`, `showKeyed`, `switch` and `presence` mount one branch at a
-time in its own scope; `pick` and `fallback` choose between values without mounting anything; `forValue` and `forIndex`
-map reactive arrays; `selector` tracks which key matches a source in O(1).
+Control flow, list mapping, and keyed selection helpers (`show`, `showKeyed`, `switch`, `presence`, `pick`, `fallback`, `forValue`, `forIndex`, `selector`).
 
 ```luau
 Flux.show(loggedIn, function() return Profile {} end, function() return SignIn {} end)
@@ -170,14 +168,8 @@ local function showKeyed<T, F>(
 end
 
 --[[
-Mounts the branch keyed by `source`'s current value. Curries: pass the reactive
-`source`, then a map of <code>value → factory</code>; the matching factory runs once in its own
-branch [scope](https://flux.kohl.gg/guide/concepts/scopes) and receives a `value`
-accessor. For a keyed branch `value()` is the matched key (fixed for the branch's lifetime); under
-`Flux.otherwise` (which mounts for any unmatched value), `value()` tracks the live unmatched value.
-Returns a [node](https://flux.kohl.gg/guide/concepts/signals)
-usable at a numeric index of [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function) /
-[`Flux.edit`](https://flux.kohl.gg/guide/roblox/hydration#the-flux-edit-function).
+Mounts the branch factory matching `source`'s current value in its own child [scope](https://flux.kohl.gg/guide/concepts/scopes).
+Use `[Flux.otherwise]` in `map` as a catch-all branch for unmatched values.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/conditionals#switching-between-many-branches)
 ]]
@@ -189,15 +181,8 @@ local function switch<S>(source: S)
 end
 
 --[[
-Mounts `component` while `condition` is truthy and keeps it mounted through its exit transition. `component`
-receives `(exiting, done)`: when `condition` turns falsy, the branch stays mounted with its boolean `exiting`
-[node](https://flux.kohl.gg/guide/concepts/signals) set to `true`, and unmounts once it calls `done()` (ignored
-unless exiting), typically when its exit animation settles. A truthy `condition` before then reverses the exit
-(`exiting` returns to `false`) instead of remounting. The factory runs once per mount in its own branch
-[scope](https://flux.kohl.gg/guide/concepts/scopes), like
-[`Flux.show`](https://flux.kohl.gg/guide/concepts/conditionals#showing-one-of-two-branches), and the returned node works
-at a numeric index of [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function) /
-[`Flux.edit`](https://flux.kohl.gg/guide/roblox/hydration#the-flux-edit-function).
+Mounts `component(exiting, done)` while `condition` is truthy and keeps it mounted while `exiting()` is `true` until `done()` is called.
+If `condition` turns truthy again before `done()` runs, `exiting` flips back to `false` without remounting.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/conditionals#animating-exits-with-presence)
 ]]
@@ -269,15 +254,8 @@ local function presence<T>(condition: unknown, component: (exiting: Node<boolean
 end
 
 --[[
-Derives a [node](https://flux.kohl.gg/guide/concepts/signals) that is `whenTrue` while `condition` is truthy and
-`whenFalse` otherwise (`nil` when omitted): the terse form of
-`Flux.computed(function() return if Flux.read(cond) then Flux.read(a) else Flux.read(b) end)`{luau}. Every argument may be a plain
-value, a node, or a `() -> T`{luau} getter, and <strong>only the branch actually taken is read</strong>, so the
-untaken side never becomes a dependency and never re-runs the derivation.
-- Unlike [`Flux.show`](https://flux.kohl.gg/guide/concepts/conditionals#showing-one-of-two-branches) this picks a
-  <em>value</em>, not a subtree: nothing is mounted, no branch [scope](https://flux.kohl.gg/guide/concepts/scopes) is
-  created, and swapping sides does not rebuild anything.
-- Omit `whenFalse` for a value that is present only while `condition` holds.
+Derives a [node](https://flux.kohl.gg/guide/concepts/signals) returning `whenTrue` while `condition` is truthy and `whenFalse` otherwise.
+Only the active branch is read, and no branch scope is created.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/conditionals#picking-between-values)
 ]]
@@ -288,14 +266,8 @@ local pick = function(condition: unknown, whenTrue: any, whenFalse: any?): Node<
 end :: (<A, B>(condition: unknown, whenTrue: A, whenFalse: B) -> Node<Graph.Unwrap<A> | Graph.Unwrap<B>>) & (<A>(condition: unknown, whenTrue: A) -> Node<Graph.Unwrap<A>?>)
 
 --[[
-Derives a [node](https://flux.kohl.gg/guide/concepts/signals) that is `value` while it is non-`nil` and `default`
-otherwise: the terse form of
-`Flux.computed(function() return Flux.read(value) or default end)`{luau}, and the idiomatic way to give an optional
-prop a default. Either argument may be a plain value, a node, or a `() -> T`{luau} getter, and `default` is read
-<strong>only</strong> while `value` is `nil`, so it never becomes a dependency otherwise.
-- Coalesces on `nil` alone, <strong>not</strong> on falsiness: a `value` of `false` is kept, where `or`{luau} would
-  have replaced it with `default`. That is the point of reaching for this over `or`{luau} on a
-  `Reactive<boolean>?`{luau} prop.
+Derives a [node](https://flux.kohl.gg/guide/concepts/signals) returning `value` when non-`nil`, or `default` when `value` is `nil`.
+Preserves `false` instead of replacing it like `or`.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/conditionals#defaulting-a-nil-value)
 ]]
@@ -404,11 +376,7 @@ local function createMapper(list: any, mapFn: any, keyedByValue: boolean): Node<
 end
 
 --[[
-Maps `list` (a plain array, [node](https://flux.kohl.gg/guide/concepts/signals), or getter) by
-<strong>index</strong> (<em>unkeyed</em>): `mapFn(index, item)` runs once per position, reusing the mapped result and
-passing the item as a reactive [node](https://flux.kohl.gg/guide/concepts/signals) that updates in place as the value
-at that index changes. Reach for this over `Flux.forValue` when the array holds primitives, has duplicates, or churns
-by position rather than identity.
+Maps `list` by numeric index, running `mapFn(index, item)` once per slot and updating `item` in place when the value at that index changes.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/mapping#flux-forindex-keyed-by-index)
 ]]
@@ -417,12 +385,8 @@ local function forIndex<L, U>(list: L, mapFn: (index: number, item: Node<Item<L>
 end
 
 --[[
-Maps `list` (a plain array, [node](https://flux.kohl.gg/guide/concepts/signals), or getter) by
-<strong>value</strong> (<em>keyed</em>): `mapFn(index, value)` runs once per unique value, caching each item's mapped
-result against the value itself so results stay stable across reorders and only the item's reactive `index`
-[node](https://flux.kohl.gg/guide/concepts/signals) updates when it moves. Values must be <strong>unique</strong>:
-the value is the cache key, so duplicates collapse onto one mapped instance; for primitives, duplicates, or
-position-based churn use `Flux.forIndex` instead.
+Maps `list` by item identity, running `mapFn(index, value)` once per unique value and updating `index` when an item moves.
+Values must be unique (use `Flux.forIndex` for primitive or duplicate values).
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/mapping#flux-forvalue-keyed-by-value)
 ]]
@@ -438,24 +402,13 @@ local SWEEP_REQUESTED = math.huge
 -- A selector: `selector(key)` or `selector:get(key)` reads whether `key` is selected.
 export type Selector<K> = setmetatable<{
 	--[[
-	Reactively reads whether `key` is currently selected, returning a `boolean`.
-	Call inside a [computed](https://flux.kohl.gg/guide/concepts/computeds) or
-	[effect](https://flux.kohl.gg/guide/concepts/effects) so it re-runs when this key
-	gains or loses selection. The shorthand `selector(key)` is equivalent to
-	`selector:get(key)`. Each key tracks its own
-	[node](https://flux.kohl.gg/guide/concepts/signals), so only the two keys whose
-	selection actually flipped re-run; nodes no reaction observes anymore are swept as new keys are read. The
-	answer is current even before the next [flush](https://flux.kohl.gg/guide/concepts/effects).
+	Reactively reads whether `key` matches the selector's source.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/selectors#reading-a-selection)
 	]]
 	get: (self: any, key: K) -> boolean,
 	--[[
-	Tears down the selector: disposes the internal watcher and every per-key
-	[node](https://flux.kohl.gg/guide/concepts/signals), then empties the object.
-	Call when the source [node](https://flux.kohl.gg/guide/concepts/signals) outlives
-	the selector; a selector created inside a
-	[scope](https://flux.kohl.gg/guide/concepts/scopes) is cleaned up automatically.
+	Destroys the selector and disposes its internal watcher and per-key nodes.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/selectors#cleaning-up)
 	]]
@@ -493,14 +446,7 @@ local function sweep(self: SelectorData)
 end
 
 --[[
-Reactively reads whether `key` is currently selected, returning a `boolean`.
-Call inside a [computed](https://flux.kohl.gg/guide/concepts/computeds) or
-[effect](https://flux.kohl.gg/guide/concepts/effects) so it re-runs when this key
-gains or loses selection. The shorthand `selector(key)` is equivalent to
-`selector:get(key)`. Each key tracks its own
-[node](https://flux.kohl.gg/guide/concepts/signals), so only the two keys whose
-selection actually flipped re-run; nodes no reaction observes anymore are swept as new keys are read. The
-answer is current even before the next [flush](https://flux.kohl.gg/guide/concepts/effects).
+Reactively reads whether `key` matches the selector's source.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/selectors#reading-a-selection)
 ]]
@@ -533,11 +479,7 @@ end
 SelectorMT.__call = SelectorMT.get
 
 --[[
-Tears down the selector: disposes the internal watcher and every per-key
-[node](https://flux.kohl.gg/guide/concepts/signals), then empties the object.
-Call when the source [node](https://flux.kohl.gg/guide/concepts/signals) outlives
-the selector; a selector created inside a
-[scope](https://flux.kohl.gg/guide/concepts/scopes) is cleaned up automatically.
+Destroys the selector and disposes its internal watcher and per-key nodes.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/selectors#cleaning-up)
 ]]
@@ -548,14 +490,7 @@ function SelectorMT.Destroy(self: SelectorData)
 end
 
 --[[
-Creates an <strong>O(1)</strong> keyed selector that tracks which of many keys matches `source` (a
-[node](https://flux.kohl.gg/guide/concepts/signals), `() -> S`
-[computed](https://flux.kohl.gg/guide/concepts/computeds), or plain value) for row, tab, or focus selection.
-The returned object is callable: `selector(key)` reactively reads whether `key` is selected, so flipping the
-selection re-runs only the two affected keys instead of every observer. By default keys are compared with `==`,
-flipping at most two per-key [node](https://flux.kohl.gg/guide/concepts/signals)s per change
-(<strong>O(1)</strong>); passing a custom `equals(sourceValue, key)` comparator re-tests every live key on each
-change (<strong>O(live keys)</strong>).
+Creates a keyed selector that tracks which key matches `source` in O(1) (or O(observed keys) with a custom `equals` comparator).
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/selectors#creating-a-selector)
 ]]
@@ -622,8 +557,7 @@ end
 
 return table.freeze({
 	--[[
-	The catch-all key of a `Flux.switch` map: its factory mounts whenever the source matches no other key. Every
-	unmatched value shares it, so moving between two unmatched values keeps the branch mounted.
+	Catch-all branch key for [`Flux.switch`](https://flux.kohl.gg/guide/concepts/conditionals#a-catch-all-branch) maps when `source` matches no explicit key.
 
 	```luau
 	Flux.switch(state) {
@@ -636,15 +570,8 @@ return table.freeze({
 	]]
 	otherwise = OTHERWISE,
 	--[[
-	Mounts `component` while `condition` is truthy, swapping to `fallback` (if given) when it
-	turns falsy. Re-evaluates only when `condition`'s truthiness flips, not on every value change.
-	The chosen factory runs once per mount in its own branch
-	[scope](https://flux.kohl.gg/guide/concepts/scopes) (the effects and cleanups it registers are
-	torn down automatically on the next swap) and receives a `value` accessor for the live
-	`condition` value. Returns a
-	[node](https://flux.kohl.gg/guide/concepts/signals) usable at a numeric
-	index of [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function) /
-	[`Flux.edit`](https://flux.kohl.gg/guide/roblox/hydration#the-flux-edit-function).
+	Mounts `component` while `condition` is truthy, or `fallback` when falsy, in its own child [scope](https://flux.kohl.gg/guide/concepts/scopes).
+	Rebuilds only when truthiness flips (use [`Flux.showKeyed`](https://flux.kohl.gg/guide/concepts/conditionals#keyed-show) to rebuild on every identity change).
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/conditionals#showing-one-of-two-branches)
 	]]
@@ -654,12 +581,7 @@ return table.freeze({
 		fallback: (value: () -> any) -> F
 	) -> Node<(T | F)?>),
 	--[[
-	Identity-keyed variant of [`Flux.show`](https://flux.kohl.gg/guide/concepts/conditionals#keyed-show): instead
-	of rebuilding only when `condition`'s truthiness flips, it rebuilds whenever the value's <em>identity</em>
-	changes, so swapping one truthy value for another remounts `component` (or `fallback` when falsy) with fresh
-	state. The chosen factory runs in its own branch [scope](https://flux.kohl.gg/guide/concepts/scopes) and
-	receives a `value` accessor; since the value is fixed for the branch's lifetime, reading `value()` in the
-	factory body yields it directly. Mirrors SolidJS's <code>&lt;Show keyed&gt;</code>.
+	Mounts `component` while `condition` is truthy (or `fallback` when falsy) and remounts in a fresh [scope](https://flux.kohl.gg/guide/concepts/scopes) whenever `condition` changes identity.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/conditionals#keyed-show)
 	]]

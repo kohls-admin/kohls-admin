@@ -385,12 +385,8 @@ end
 local Layout = {}
 
 --[[
-Creates a [`UIPadding`](https://create.roblox.com/docs/reference/engine/classes/UIPadding) from a single
-length (applied to all sides), a per-side `{ top, bottom, left, right, x, y }` table, or a reactive
-[node](https://flux.kohl.gg/guide/concepts/signals) or function yielding a length or a
-`{ top, bottom, left, right }` struct. Plain `number` values are offset pixels; a [`UDim`](https://create.roblox.com/docs/reference/engine/datatypes/UDim) is used as-is.
-<em>Reactive sides bind and update in place; a reactive source may change shape between updates, and
-`nil` reads as no padding.</em>
+Creates a [`UIPadding`](https://create.roblox.com/docs/reference/engine/classes/UIPadding) from a single length, a `{ top, bottom, left, right, x, y }` table, or a reactive source.
+Plain `number` values are interpreted as offset pixels.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/layout#padding)
 ]]
@@ -422,12 +418,7 @@ function Layout.padding(value: Length | PaddingSides | Graph.Node<any> | (() -> 
 end
 
 --[[
-Creates a [`UICorner`](https://create.roblox.com/docs/reference/engine/classes/UICorner) rounding the
-parent's corners. `radius` is offset pixels or a
-[`UDim`](https://create.roblox.com/docs/reference/engine/datatypes/UDim), optionally reactive; omit it
-for the engine default (8 px). A `{ topLeft, topRight, bottomLeft, bottomRight, top, bottom, left, right, radius }`
-table rounds each corner on its own, for a card whose header meets its body or a button at the end of a
-group; a corner named nowhere keeps the engine default.
+Creates a [`UICorner`](https://create.roblox.com/docs/reference/engine/classes/UICorner) from an offset pixel radius, a [`UDim`](https://create.roblox.com/docs/reference/engine/datatypes/UDim), or a per-corner `{ topLeft, topRight, bottomLeft, bottomRight, top, bottom, left, right, radius }` table.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/layout#corner)
 ]]
@@ -446,12 +437,7 @@ function Layout.corner(radius: ReactiveLength | CornerSides?): UICorner
 end
 
 --[[
-Creates a [`UIStroke`](https://create.roblox.com/docs/reference/engine/classes/UIStroke) outlining the
-parent. `thickness` (px), `color`, and `transparency` bind reactively; `mode` is `"contextual"` (text
-outline on text objects, border otherwise) or `"border"`, and `joins` is `"round"`/`"bevel"`/`"miter"`,
-each also accepting the raw Enum or a reactive source. For a border, `position` is `"inner"` (drawn inside the
-parent's box, so nothing around it clips it and a thicker stroke grows inward), `"center"` or `"outer"` (the engine
-default), and `offset` moves it out (px or a `UDim`; negative moves it in).
+Creates a [`UIStroke`](https://create.roblox.com/docs/reference/engine/classes/UIStroke) with static or reactive `thickness`, `color`, `transparency`, `mode`, `joins`, `position`, and `offset`.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/layout#stroke)
 ]]
@@ -471,12 +457,7 @@ function Layout.stroke(config: StrokeConfig?): UIStroke
 end
 
 --[[
-Creates a [`UIAspectRatioConstraint`](https://create.roblox.com/docs/reference/engine/classes/UIAspectRatioConstraint)
-constraining a frame's width-to-height ratio to `ratio`. `aspectType` accepts `"fit"` (`FitWithinMaxSize`), `"scale"`
-(`ScaleWithParentSize`), or an [`Enum.AspectType`](https://create.roblox.com/docs/reference/engine/enums/AspectType);
-`dominantAxis` accepts `"width"`, `"height"`, or an
-[`Enum.DominantAxis`](https://create.roblox.com/docs/reference/engine/enums/DominantAxis) (unknown strings warn and
-fall back). Every argument may be reactive.
+Creates a [`UIAspectRatioConstraint`](https://create.roblox.com/docs/reference/engine/classes/UIAspectRatioConstraint) with `ratio`, `aspectType` (`"fit"` or `"scale"`), and `dominantAxis` (`"width"` or `"height"`).
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/layout#aspectratio)
 ]]
@@ -493,15 +474,7 @@ function Layout.aspectRatio(
 end
 
 --[[
-Creates a [`UIListLayout`](https://create.roblox.com/docs/reference/engine/classes/UIListLayout) that
-arranges siblings in a line with flexbox semantics. `gap` is the spacing between items (offset px or a
-[`UDim`](https://create.roblox.com/docs/reference/engine/datatypes/UDim)); `direction` is `"x"`/`"y"`.
-`align` sets the <strong>cross-axis</strong> and `justify` the <strong>main-axis</strong> value:
-`"start"`/`"center"`/`"end"` align items, `"between"`/`"around"`/`"evenly"` distribute the free space,
-and `"stretch"`/`"fill"` resize items to fill the axis. `horizontalAlign` and `verticalAlign` provide explicit
-axis-pinned overrides; `wraps` flows items onto multiple lines, and `lineAlign` aligns items within
-their wrapped line. <em>Every value, including `direction`, may be reactive; alignments re-route when a
-reactive `direction` flips.</em>
+Creates a [`UIListLayout`](https://create.roblox.com/docs/reference/engine/classes/UIListLayout) with `SortOrder = LayoutOrder` and flexbox-style `gap`, `direction`, `align` (cross-axis), `justify` (main-axis), and `wraps` options.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/layout#list)
 ]]
@@ -534,12 +507,7 @@ function Layout.list(config: ListConfig?): UIListLayout
 end
 
 --[[
-Creates a [`UIGridLayout`](https://create.roblox.com/docs/reference/engine/classes/UIGridLayout) that
-arranges siblings in a uniform grid. `cell` is the cell size and `gap` is the spacing; each accepts a
-[`Vector2`](https://create.roblox.com/docs/reference/engine/datatypes/Vector2), a `number` (offset px), or a
-[`UDim2`](https://create.roblox.com/docs/reference/engine/datatypes/UDim2). `fill` is the flow direction
-`"x"`/`"y"`; `align`/`justify` map to horizontal/vertical alignment; `maxCells` caps cells per line.
-<em>Every value may be reactive.</em>
+Creates a [`UIGridLayout`](https://create.roblox.com/docs/reference/engine/classes/UIGridLayout) with `SortOrder = LayoutOrder` and `cell`, `gap`, `fill`, `align`, `justify`, and `maxCells` options.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/layout#grid)
 ]]
@@ -557,11 +525,7 @@ function Layout.grid(config: GridConfig?): UIGridLayout
 end
 
 --[[
-Creates a [`UIFlexItem`](https://create.roblox.com/docs/reference/engine/classes/UIFlexItem) controlling how
-a child grows or shrinks inside a flex
-[`UIListLayout`](https://create.roblox.com/docs/reference/engine/classes/UIListLayout). `mode` is `"fill"`
-(the default when omitted), `"grow"`, `"shrink"`, or `"none"`, or a raw
-[`Enum.UIFlexMode`](https://create.roblox.com/docs/reference/engine/enums/UIFlexMode), optionally reactive.
+Creates a [`UIFlexItem`](https://create.roblox.com/docs/reference/engine/classes/UIFlexItem) with `mode` (`"fill"` by default, `"grow"`, `"shrink"`, or `"none"`).
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/layout#flex)
 ]]
@@ -582,13 +546,7 @@ function Layout.flex(mode: Reactive<FlexMode | Enum.UIFlexMode>?): UIFlexItem
 end
 
 --[[
-Creates a [`UIGradient`](https://create.roblox.com/docs/reference/engine/classes/UIGradient). `color` takes a
-[`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3), an array of stops spread evenly from start
-to end, or a [`ColorSequence`](https://create.roblox.com/docs/reference/engine/datatypes/ColorSequence); `transparency`
-takes a number, an array of stops, or a
-[`NumberSequence`](https://create.roblox.com/docs/reference/engine/datatypes/NumberSequence). `rotation` is in degrees,
-and `offset` and `enabled` map straight through. <em>Every value may be reactive; a reactive stop array re-spreads
-when it changes.</em>
+Creates a [`UIGradient`](https://create.roblox.com/docs/reference/engine/classes/UIGradient) from single values, evenly spaced stop arrays, or sequences for `color` and `transparency`.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/layout#gradient)
 ]]
@@ -604,10 +562,7 @@ function Layout.gradient(config: GradientConfig?): UIGradient
 end
 
 --[[
-Creates a [`UISizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UISizeConstraint) bounding its
-parent's size. `min` and `max` are whole [`Vector2`](https://create.roblox.com/docs/reference/engine/datatypes/Vector2)
-bounds; `minWidth`, `minHeight`, `maxWidth`, and `maxHeight` set a single axis and win over the matching vector
-component. An axis not specified in `config` remains unconstrained. <em>Every value may be reactive.</em>
+Creates a [`UISizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UISizeConstraint) from `min`/`max` `Vector2` bounds or per-axis `minWidth`, `minHeight`, `maxWidth`, and `maxHeight` bounds.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/layout#sizeconstraint)
 ]]
@@ -620,10 +575,7 @@ function Layout.sizeConstraint(config: SizeConstraintConfig?): UISizeConstraint
 end
 
 --[[
-Creates a [`UITextSizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UITextSizeConstraint)
-bounding the text size of its parent to `min`/`max` pixels; an omitted bound keeps the engine default (1 and 100). A
-`max` also caps the enlargement players get from a larger preferred
-[text size](https://flux.kohl.gg/guide/utilities/responsive#text-size). <em>Both values may be reactive.</em>
+Creates a [`UITextSizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UITextSizeConstraint) bounding text size between `min` and `max` pixels.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/layout#textsizeconstraint)
 ]]

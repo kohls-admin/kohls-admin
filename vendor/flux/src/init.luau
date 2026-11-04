@@ -1,8 +1,6 @@
 --!strict
 --[[
-Flux: fine-grained reactive UI for Roblox. The reactive graph and the instance API are flat on `Flux`; utilities live
-in namespaces (`Flux.Color`, `Flux.Find`, `Flux.Interact`, `Flux.Motion`, `Flux.Responsive`, `Flux.Store`, and the
-`Flux.Defaults` and `Flux.Flags` settings).
+Reactive UI library for Roblox and Luau, including fine-grained signals, declarative instances, layout, motion, `Flux.Clock`, and `Flux.Sync`.
 
 ```luau
 local count = Flux.signal(0)
@@ -25,6 +23,7 @@ local Layout = require("@self/Layout")
 local Motion = require("@self/Motion")
 local Responsive = require("@self/Responsive")
 local Store = require("@self/Store")
+local Sync = require("@self/Sync")
 local Type = require("@self/Type")
 
 export type Node<T> = Graph.Node<T>
@@ -49,6 +48,8 @@ export type AsyncState = Async.AsyncState
 export type Context<T> = Graph.Context<T>
 export type Selector<K> = Conditional.Selector<K>
 export type Spring<T> = Motion.Spring<T>
+export type SyncSignal<T = any> = Sync.SyncSignal<T>
+export type SyncValidator<T> = Sync.Validator<T>
 export type HoverOptions = Interact.HoverOptions
 
 export type Breakpoint = Responsive.Breakpoint
@@ -91,11 +92,8 @@ local Constructors = setmetatable({}, {
 
 local Flux = {
 	--[[
-	<strong>Clock</strong>: the time Flux and your code run on. `now` (monotonic) and `wall` (Unix, server-synced) read
-	it; `delay`, `wait`, `defer`, `cancel` and `connect(phase, fn)` schedule on it, like `task.*` and the RunService
-	frame signals. Tests turn on a manual clock (`manual(true)`; always on headless): `step(seconds, frameLength?)`
-	advances time, runs due timers and frame subscribers, steps springs and tweens, and flushes the reactive graph in
-	order; `drain` runs deferred work and `reset` cancels all pending tasks.
+	Shared time source for timers, frame callbacks, and deterministic test stepping.
+	Call `Clock.manual(true)` and `Clock.step(seconds)` in tests to advance timers, motion, and frame flushes in order.
 
 	[Open Documentation](https://flux.kohl.gg/guide/tips/testing)
 	]]
@@ -114,38 +112,31 @@ local Flux = {
 		reset = Clock.reset,
 	}),
 	--[[
-	<strong>Color</strong>: a perceptual
-	[`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3) toolkit working in gamut-clipped
-	Oklab: `lighten`/`saturate` (negative amounts darken/desaturate), `mix`, `rotateHue`, and WCAG `contrast`/`readable`.
+	Perceptual [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3) utilities in Oklab (`lighten`, `saturate`, `mix`, `rotateHue`, and WCAG `contrast`/`readable`).
 
 	[Open Documentation](https://flux.kohl.gg/guide/motion/color)
 	]]
 	Color = Motion.Color,
 	--[[
-	<strong>Defaults</strong>: per-class default properties applied to every
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) built by
-	[`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function). Mutable.
+	Mutable table of per-class default properties applied by [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function).
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/defaults)
 	]]
 	Defaults = Edit.Defaults,
 	--[[
-	<strong>Find</strong>: instance selectors for hydration. `Child`, `Descendant`, `Ancestor`, `Query` and their
-	class-filtered variants apply props to matching instances around the one being edited.
+	Instance selectors (`Child`, `Descendant`, `Ancestor`, `Path`, `Query`) for hydrating trees inside [`Flux.edit`](https://flux.kohl.gg/guide/roblox/hydration).
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#instance-selectors-flux-find)
 	]]
 	Find = Edit.Find,
 	--[[
-	<strong>Flags</strong>: process-wide switches. `Flags.defaults` turns the per-class defaults of
-	[`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function) on or off.
+	Global behavior flags (`Flags.defaults` toggles per-class defaults in [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function)).
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/defaults#disabling-defaults)
 	]]
 	Flags = Edit.Flags,
 	--[[
-	<strong>Interact</strong>: interaction state as read-only boolean nodes (`hover`, `press`, `selected`,
-	`focused`) and the hit tests `pointIn`, `sunk` and `covered`.
+	Read-only interaction state nodes (`hover`, `press`, `selected`, `focused`) and pointer hit-testing helpers (`pointIn`, `sunk`, `covered`).
 
 	[Open Documentation](https://flux.kohl.gg/guide/utilities/interact)
 	]]
@@ -159,9 +150,8 @@ local Flux = {
 		focused = Interact.focused,
 	}),
 	--[[
-	<strong>Motion</strong>: the engine behind [`Flux.spring`](https://flux.kohl.gg/guide/motion/spring) and
-	[`Flux.tween`](https://flux.kohl.gg/guide/motion/tween). `step(dt?)` advances every motion (wired to the frame
-	automatically); call it yourself only to step motion in tests.
+	Advances active [`Flux.spring`](https://flux.kohl.gg/guide/motion/spring) and [`Flux.tween`](https://flux.kohl.gg/guide/motion/tween) nodes.
+	Stepped automatically each frame, or manually in tests via `Motion.step(dt)`.
 
 	[Open Documentation](https://flux.kohl.gg/guide/tips/testing#full-engine-tests-in-ci)
 	]]
@@ -169,10 +159,7 @@ local Flux = {
 		step = Motion.step,
 	}),
 	--[[
-	<strong>Responsive</strong>: the screen and the player as nodes: `viewport`, `scale`, and `breakpoint` follow the
-	camera; `displaySize` and `platform` report the physical screen dimensions and device category; `input` follows the
-	active input device; `textSize`, `reducedMotion`, and `preferredTransparency` track accessibility settings.
-	`scaleOf`/`breakpointOf` build per-surface variants; `config` holds the defaults.
+	Reactive nodes for viewport size, UI scale, breakpoints, device platform, active input mode, and accessibility settings.
 
 	[Open Documentation](https://flux.kohl.gg/guide/utilities/responsive)
 	]]
@@ -191,9 +178,7 @@ local Flux = {
 		breakpointOf = Responsive.breakpointOf,
 	}),
 	--[[
-	<strong>Store</strong>: helpers for [`Flux.store`](https://flux.kohl.gg/guide/concepts/stores) proxies:
-	`insert`, `remove` and `move` for arrays, `reconcile` to diff in a snapshot, `unwrap` for the raw table, and
-	`Destroy`.
+	Array mutation (`insert`, `remove`, `move`), snapshot diffing (`reconcile`), unwrapping (`unwrap`), and teardown (`Destroy`) for [`Flux.store`](https://flux.kohl.gg/guide/concepts/stores) proxies.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/stores)
 	]]
@@ -205,6 +190,13 @@ local Flux = {
 		unwrap = Store.unwrap,
 		Destroy = Store.Destroy,
 	}),
+	--[[
+	Network-synchronized signals replicated from the server to clients once per frame.
+	Use `sig:of(player)` for per-player values and pass a `validate` callback to allow client writes.
+
+	[Open Documentation](https://flux.kohl.gg/guide/concepts/sync)
+	]]
+	Sync = Sync :: Sync.Namespace,
 
 	-- The reactive graph
 	signal = Graph.signal,
@@ -270,11 +262,8 @@ local Flux = {
 
 local FluxMT = table.freeze({
 	--[[
-	The terse constructor: `Flux(value)` is a [signal](https://flux.kohl.gg/guide/concepts/signals), `Flux(fn)` a
-	[computed](https://flux.kohl.gg/guide/concepts/computeds), and `Flux(instance, property)` a node following a Roblox
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, `"$Attribute"` /
-	`"_attr_Attribute"`, or `"#Tag"` / `"_tag_Tag"`. A node is returned as is. The result is a `Node<any>`; use
-	`Flux.signal`, `Flux.computed`, `Flux.effect` and `Flux.property` for typed nodes.
+	Terse untyped constructor for a [signal](https://flux.kohl.gg/guide/concepts/signals) (`Flux(value)`), [computed](https://flux.kohl.gg/guide/concepts/computeds) (`Flux(fn)`), or [instance property node](https://flux.kohl.gg/guide/concepts/signals#binding-from-an-instance-property) (`Flux(instance, key)`).
+	Use `Flux.signal`, `Flux.computed`, and `Flux.property` when you want strict type inference.
 
 	```luau
 	local size = Flux(frame, "AbsoluteSize")
@@ -289,9 +278,7 @@ local FluxMT = table.freeze({
 })
 
 --[[
-Hydrates an existing Roblox [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance): applies
-reactive properties, events and directives like
-[`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function), onto an instance you already have.
+Applies reactive properties, events, children, and directives to an existing [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance).
 Bindings created inside a [`Flux.scope`](https://flux.kohl.gg/guide/concepts/scopes) disconnect when the scope is destroyed.
 
 ```luau
@@ -307,11 +294,8 @@ function Flux.edit<T>(instance: T & Instance)
 end
 
 --[[
-Creates a Roblox [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) of `className` with
-its per-class [defaults](https://flux.kohl.gg/guide/roblox/defaults), then takes a property table of values, nodes,
-getters, events, children, prefix keys (`_Prop`, `_attr_Name`, `__attr_Name`, `_tag_Name`, `__tag_Name`), and
-directives (`__EVENT`, `__ATTR`, `__TAG`, `__REF`, `__CLEAN`). Created inside a
-[`Flux.scope`](https://flux.kohl.gg/guide/concepts/scopes), the instance is destroyed when the scope is destroyed.
+Creates a Roblox [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) of `className` with its per-class [defaults](https://flux.kohl.gg/guide/roblox/defaults) and applies a table of properties, events, children, and directives.
+When called inside a [`Flux.scope`](https://flux.kohl.gg/guide/concepts/scopes), the instance is destroyed with the scope.
 
 ```luau
 Flux.new "Frame" {
@@ -329,20 +313,23 @@ function Flux.new<T>(className: T | keyof<Type.Creatable>)
 	return Constructors[className] :: (Type.Properties<Type.Resolve<T>>) -> Type.Resolve<T>
 end
 
+local syncStep = Sync._internal.flushAll
+local function stepFrame(dt: number)
+	Motion.step(dt)
+	Graph.flush()
+	syncStep()
+end
+
 if game then
 	local RunService = game:GetService("RunService")
 	local frame = if RunService:IsClient() then RunService.PreRender else RunService.Heartbeat
 	local _frameConnection = frame:Connect(function(dt: number)
 		if not Clock.isManual() then
-			Motion.step(dt)
-			Graph.flush()
+			stepFrame(dt)
 		end
 	end)
 end
 
-Clock._internal.setFrame(function(dt: number)
-	Motion.step(dt)
-	Graph.flush()
-end)
+Clock._internal.setFrame(stepFrame)
 
 return table.freeze(setmetatable(Flux, FluxMT))

@@ -561,110 +561,95 @@ function goDead(node: any)
 end
 
 local function reconcile(node: any, nslot: number, last: number, idx: number, newList: any, live: boolean)
-	if newList then
-		local nNew = newList[2]
-		if not live then
-			local k = idx
-			for i = 3, nNew do
-				node[k] = newList[i]
-				newList[i] = nil
-				node[k + 1] = 0
-				k += 2
+	if not newList then
+		if idx > last then
+			if live then
+				for i = last, idx - 2, 2 do
+					node[i + 1] = subscribe(node[i], node)
+				end
 			end
-			freeNew = newList
-			for i = k, last - 1 do
-				node[i] = nil
+		else
+			for i = last - 2, idx, -2 do
+				local s = node[i]
+				if live then
+					unsubscribe(s, node, node[i + 1])
+					if s[CHILDREN] == false then
+						s[CHILDREN] = nil
+					end
+				end
+				node[i], node[i + 1] = nil, nil
 			end
-			node[nslot] = k
-			return
 		end
-		local nOld = last - idx
-		if nOld == 2 and nNew == 3 then
-			local oldS = node[idx]
-			local oldBack = node[idx + 1]
-			local s = newList[3]
-			newList[3] = nil
-			freeNew = newList
-			node[idx] = s
-			node[idx + 1] = subscribe(s, node)
-			unsubscribe(oldS, node, oldBack)
-			if oldS[CHILDREN] == false then
-				oldS[CHILDREN] = nil
-			end
-			return
-		end
-		local tail: { any } = if tailBusy then {} else oldTail
-		local wasBusy = tailBusy
-		tailBusy = true
-		table.move(node, idx, last - 1, 1, tail)
+		node[nslot] = idx
+		return
+	end
+	local nNew = newList[2]
+	if not live then
 		local k = idx
-		local prevJ = 1
 		for i = 3, nNew do
-			local s = newList[i]
-			newList[i] = nil
-			node[k] = s
-			local back = 0
-			local hint = prevJ + 2
-			if hint <= nOld and tail[hint] == s then
-				back = tail[hint + 1]
-				tail[hint] = false
-				prevJ = hint
-			else
-				for j = 1, nOld, 2 do
-					if tail[j] == s then
-						back = tail[j + 1]
-						tail[j] = false
-						prevJ = j
-						break
-					end
-				end
-				if back == 0 then
-					back = subscribe(s, node)
-					if prevJ == 1 then
-						prevJ = -1
-					end
-				end
-			end
-			node[k + 1] = back
+			node[k], node[k + 1], newList[i] = newList[i], 0, nil
 			k += 2
 		end
-		freeNew = newList
-		node[nslot] = k
+		freeNew, node[nslot] = newList, k
 		for i = k, last - 1 do
 			node[i] = nil
 		end
-		for j = nOld - 1, 1, -2 do
-			local s = tail[j]
-			if s then
-				tail[j] = false
-				unsubscribe(s, node, tail[j + 1])
-				if s[CHILDREN] == false then
-					s[CHILDREN] = nil
-				end
-			end
-		end
-		tailBusy = wasBusy
-	elseif idx > last then
-		if live then
-			for i = last, idx - 2, 2 do
-				node[i + 1] = subscribe(node[i], node)
-			end
-		end
-		node[nslot] = idx
-	else
-		for i = last - 2, idx, -2 do
-			local s = node[i]
-			if live then
-				unsubscribe(s, node, node[i + 1])
-				if s[CHILDREN] == false then
-					s[CHILDREN] = nil
-				end
-			end
-			node[i] = nil
-			node[i + 1] = nil
-		end
-		node[nslot] = idx
+		return
 	end
+	local nOld = last - idx
+	if nOld == 2 and nNew == 3 then
+		local oldS, oldBack, s = node[idx], node[idx + 1], newList[3]
+		newList[3], freeNew = nil, newList
+		node[idx], node[idx + 1] = s, subscribe(s, node)
+		unsubscribe(oldS, node, oldBack)
+		if oldS[CHILDREN] == false then
+			oldS[CHILDREN] = nil
+		end
+		return
+	end
+	local tail: { any } = if tailBusy then {} else oldTail
+	local wasBusy = tailBusy
+	tailBusy = true
+	table.move(node, idx, last - 1, 1, tail)
+	local k, prevJ = idx, 1
+	for i = 3, nNew do
+		local s = newList[i]
+		newList[i], node[k] = nil, s
+		local back, hint = 0, prevJ + 2
+		if hint <= nOld and tail[hint] == s then
+			back, tail[hint], prevJ = tail[hint + 1], false, hint
+		else
+			for j = 1, nOld, 2 do
+				if tail[j] == s then
+					back, tail[j], prevJ = tail[j + 1], false, j
+					break
+				end
+			end
+			if back == 0 then
+				back = subscribe(s, node)
+				if prevJ == 1 then
+					prevJ = -1
+				end
+			end
+		end
+		node[k + 1] = back
+		k += 2
+	end
+	freeNew, node[nslot] = newList, k
+	for i = k, last - 1 do
+		node[i] = nil
+	end
+	for j = nOld - 1, 1, -2 do
+		local s = tail[j]
+		if s then
+			tail[j] = false
+			unsubscribe(s, node, tail[j + 1])
+			if s[CHILDREN] == false then
+				s[CHILDREN] = nil
+			end
+		end
+	end
+	tailBusy = wasBusy
 end
 
 local TOMB = {}
@@ -2081,7 +2066,7 @@ local Node: any = {
 	__le = function(a: any, b: any): boolean return getData(a[1]) <= getData(b[1]) end,
 	--stylua: ignore end
 	--[[
-	Reads the node's up-to-date value <strong>without</strong> subscribing the caller.
+	Reads the node's current value without subscribing the caller.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#reading-a-signal)
 	]]
@@ -2089,10 +2074,8 @@ local Node: any = {
 		return peekData(self[1])
 	end,
 	--[[
-	Reads the node's current value. This is a <strong>tracked</strong> read: inside a
-	[computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects) it
-	subscribes the running reaction, which re-runs when this node changes. `node()` is the same read; `node:peek()` reads
-	without subscribing.
+	Reads the node's current value (`node()` does the same) and subscribes the running
+	[computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects).
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#reading-a-signal)
 	]]
@@ -2100,8 +2083,8 @@ local Node: any = {
 		return getData(self[1])
 	end,
 	--[[
-	Writes a value, skipping propagation when it equals the current one (`~=`, or the node's `equals`). Pass `force` as
-	`true` to notify dependents anyway; `node(value)` is the same write. Returns `value`.
+	Writes `value` (`node(value)` does the same), skipping propagation when it equals the current value (`~=` or the
+	node's `equals`). Pass `force = true` to notify dependents anyway.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#updating-a-signal)
 	]]
@@ -2109,8 +2092,7 @@ local Node: any = {
 		return setData(self[1], value, force)
 	end,
 	--[[
-	Re-fires the node's dependents <strong>without writing</strong>, as if a changed value had been set: the way to push
-	an in-place table mutation (same reference) through the graph. Returns the node.
+	Notifies the node's dependents without changing its value, useful after mutating a table in place.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#forcing-an-update)
 	]]
@@ -2119,8 +2101,8 @@ local Node: any = {
 		return self
 	end,
 	--[[
-	Destroys the node: severs every link to its sources and observers, then runs its pending `Flux.cleanup` values and
-	`node:onDestroy` callbacks. A later read returns `nil`; `Flux.isNode` stays `true`. Destroying twice is a no-op.
+	Disconnects the node from its sources and observers, then runs its pending [`Flux.cleanup`](https://flux.kohl.gg/guide/concepts/effects#cleanup-with-flux-cleanup)
+	values and `onDestroy` callbacks. Later reads return `nil`.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#destroying-a-signal)
 	]]
@@ -2128,9 +2110,8 @@ local Node: any = {
 		disposeOne(self[1])
 	end,
 	--[[
-	Runs `fn` with the node's last value when the node is destroyed: by `node:Destroy()`, or with the scope that owns a
-	computed or effect. A signal has no owner, so only its own `Destroy` fires it. Unlike `Flux.cleanup`, it survives
-	re-runs.
+	Registers `fn` to run with the node's last value when the node is destroyed. Unlike `Flux.cleanup`, `onDestroy`
+	callbacks only run on final teardown and survive re-runs.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#destroying-a-signal)
 	]]
@@ -2138,15 +2119,14 @@ local Node: any = {
 		onDestroy(self[1], fn)
 	end,
 	--[[
-	Runs `fn` when the node becomes observed: when its first observer arrives, directly or through computeds, so that
-	some effect now depends on it. Pair it with `node:onUnobserved` to start and stop work (a connection, a poll) only
-	while anything is listening. A computed counts as observed while an effect transitively reads it.
+	Registers `fn` to run when the node gains its first transitive effect observer. Pair with `onUnobserved` to start
+	and stop external listeners on demand.
 	]]
 	onObserved = function(self: any, fn: () -> ())
 		onHook(self[1], 1, fn)
 	end,
 	--[[
-	Runs `fn` when the node no longer has any observers: no effect depends on it anymore, directly or through computeds.
+	Registers `fn` to run when the node loses its last transitive effect observer.
 	]]
 	onUnobserved = function(self: any, fn: () -> ())
 		onHook(self[1], 2, fn)
@@ -2522,18 +2502,15 @@ end
 export type Context<T> = {
 	read default: T,
 	--[[
-	Reads the current value: the innermost `provide` around the running code, falling back to the `default` when
-	none is active. A [computed](https://flux.kohl.gg/guide/concepts/computeds), [effect](https://flux.kohl.gg/guide/concepts/effects),
-	or [scope](https://flux.kohl.gg/guide/concepts/scopes) remembers the values provided where it was <em>created</em>, so its
-	later runs keep reading them.
+	Returns the value from the innermost active `provide` call, or `default` if none is active. Computeds, effects, and
+	scopes remember the context values active when they were created.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/context#providing-and-reading)
 	]]
 	get: (self: any) -> T,
 	--[[
-	Runs `fn` with this context set to `value`, so any `get` reached during `fn` (no matter how deep) sees
-	`value`, and so do the later runs of every computed, effect, and scope created during `fn`. The previous value is
-	restored once `fn` returns or throws. Returns whatever `fn` returns.
+	Runs `fn` with this context set to `value` for all code and reactive nodes created inside `fn`, then restores the
+	previous value.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/context#providing-and-reading)
 	]]
@@ -2548,10 +2525,8 @@ do
 	local Context = {}
 	Context.__index = Context
 	--[[
-	Reads the current value: the innermost `provide` around the running code, falling back to the `default` when
-	none is active. A [computed](https://flux.kohl.gg/guide/concepts/computeds), [effect](https://flux.kohl.gg/guide/concepts/effects),
-	or [scope](https://flux.kohl.gg/guide/concepts/scopes) remembers the values provided where it was <em>created</em>, so its
-	later runs keep reading them.
+	Returns the value from the innermost active `provide` call, or `default` if none is active. Computeds, effects, and
+	scopes remember the context values active when they were created.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/context#providing-and-reading)
 	]]
@@ -2567,9 +2542,8 @@ do
 	end
 
 	--[[
-	Runs `fn` with this context set to `value`, so any `get` reached during `fn` (no matter how deep) sees
-	`value`, and so do the later runs of every computed, effect, and scope created during `fn`. The previous value is
-	restored once `fn` returns or throws. Returns whatever `fn` returns.
+	Runs `fn` with this context set to `value` for all code and reactive nodes created inside `fn`, then restores the
+	previous value.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/context#providing-and-reading)
 	]]
@@ -2616,33 +2590,32 @@ local function bindContext<A..., R...>(fn: (A...) -> R...): (A...) -> R...
 	end
 end
 
+local function attach(o: any, node: any)
+	if o then
+		local slot = if o[HEIGHT] == INF then E_CHILDREN else CHILDREN
+		local c = o[slot]
+		if c then
+			local n = c[1] + 1
+			c[1] = n
+			c[n] = node
+		else
+			o[slot] = { 2, node }
+		end
+	end
+end
+
+local function enqueue(node: any)
+	local qt = queueTail + 1
+	queueTail = qt
+	queue[qt] = node
+end
+
 local function scope<T>(fn: (scope: Node<any>) -> T): (Node<any>, T)
 	local inner = { nil, true, false, false, SCOPE, INF, true, false, false, false }
 	if ownExtra then
 		ownSlow(inner)
 	else
-		local o = curNode or curOwner
-		if o then
-			if o[HEIGHT] == INF then
-				local c = o[E_CHILDREN]
-				if c then
-					local n = c[1] + 1
-					c[1] = n
-					c[n] = inner
-				else
-					o[E_CHILDREN] = { 2, inner }
-				end
-			else
-				local c = o[CHILDREN]
-				if c then
-					local n = c[1] + 1
-					c[1] = n
-					c[n] = inner
-				else
-					o[CHILDREN] = { 2, inner }
-				end
-			end
-		end
+		attach(curNode or curOwner, inner)
 	end
 	local node: any = setmetatable({ inner }, Node)
 	local pNode, pOwner, pSet, pSusp, pIdx, pNew = curNode, curOwner, ownerSet, susp, curIdx, curNew
@@ -2690,28 +2663,7 @@ local function computed(fn: any, equals: any): any
 	if ownExtra then
 		ownSlow(node)
 	else
-		local o = curNode or curOwner
-		if o then
-			if o[HEIGHT] == INF then
-				local c = o[E_CHILDREN]
-				if c then
-					local n = c[1] + 1
-					c[1] = n
-					c[n] = node
-				else
-					o[E_CHILDREN] = { 2, node }
-				end
-			else
-				local c = o[CHILDREN]
-				if c then
-					local n = c[1] + 1
-					c[1] = n
-					c[n] = node
-				else
-					o[CHILDREN] = { 2, node }
-				end
-			end
-		end
+		attach(curNode or curOwner, node)
 	end
 	return setmetatable({ node }, ComputedMT)
 end
@@ -2721,32 +2673,9 @@ local function createEffect(fn: (...any) -> ...any)
 	if ownExtra then
 		ownSlow(node)
 	else
-		local o = curNode or curOwner
-		if o then
-			if o[HEIGHT] == INF then
-				local c = o[E_CHILDREN]
-				if c then
-					local n = c[1] + 1
-					c[1] = n
-					c[n] = node
-				else
-					o[E_CHILDREN] = { 2, node }
-				end
-			else
-				local c = o[CHILDREN]
-				if c then
-					local n = c[1] + 1
-					c[1] = n
-					c[n] = node
-				else
-					o[CHILDREN] = { 2, node }
-				end
-			end
-		end
+		attach(curNode or curOwner, node)
 	end
-	local qt = queueTail + 1
-	queueTail = qt
-	queue[qt] = node
+	enqueue(node)
 end
 
 local function effect(fn: (...any) -> ...any): any
@@ -2754,32 +2683,9 @@ local function effect(fn: (...any) -> ...any): any
 	if ownExtra then
 		ownSlow(node)
 	else
-		local o = curNode or curOwner
-		if o then
-			if o[HEIGHT] == INF then
-				local c = o[E_CHILDREN]
-				if c then
-					local n = c[1] + 1
-					c[1] = n
-					c[n] = node
-				else
-					o[E_CHILDREN] = { 2, node }
-				end
-			else
-				local c = o[CHILDREN]
-				if c then
-					local n = c[1] + 1
-					c[1] = n
-					c[n] = node
-				else
-					o[CHILDREN] = { 2, node }
-				end
-			end
-		end
+		attach(curNode or curOwner, node)
 	end
-	local qt = queueTail + 1
-	queueTail = qt
-	queue[qt] = node
+	enqueue(node)
 	return setmetatable({ node }, Node)
 end
 
@@ -2841,28 +2747,7 @@ local function createMemo<T>(fn: () -> T, equals: ((T, T) -> boolean)?): () -> T
 	if ownExtra then
 		ownSlow(node)
 	else
-		local o = curNode or curOwner
-		if o then
-			if o[HEIGHT] == INF then
-				local c = o[E_CHILDREN]
-				if c then
-					local n = c[1] + 1
-					c[1] = n
-					c[n] = node
-				else
-					o[E_CHILDREN] = { 2, node }
-				end
-			else
-				local c = o[CHILDREN]
-				if c then
-					local n = c[1] + 1
-					c[1] = n
-					c[n] = node
-				else
-					o[CHILDREN] = { 2, node }
-				end
-			end
-		end
+		attach(curNode or curOwner, node)
 	end
 	return function(): any
 		return getMemo(node)
@@ -2917,13 +2802,12 @@ end
 --- @ignore
 type Hooks = {
 	--[[
-	Runs `fn` when the node becomes observed: when its first observer arrives, directly or through computeds, so that
-	some effect now depends on it. Pair it with `node:onUnobserved` to start and stop work (a connection, a poll) only
-	while anything is listening. A computed counts as observed while an effect transitively reads it.
+	Runs `fn` when an effect starts depending on the node, either directly or through computeds. Pair it with
+	`node:onUnobserved` to start and stop external work only while anything is listening.
 	]]
 	read onObserved: (self: any, fn: () -> ()) -> (),
 	--[[
-	Runs `fn` when the node no longer has any observers: no effect depends on it anymore, directly or through computeds.
+	Runs `fn` when no effect depends on the node anymore, either directly or through computeds.
 	]]
 	read onUnobserved: (self: any, fn: () -> ()) -> (),
 }
@@ -2949,51 +2833,46 @@ type Operators<T> = {
 }
 
 --[[
-A reactive cell holding a `T`: a signal, computed, effect or scope. Call it to read (`node()`) or write (`node(v)`).
-Covariant, so a `Node<"a">` is a `Node<string>` and a `Node<string>` a `Node<string?>`: the type props and parameters
-take. A write through a `Node<T>` is not checked against `T`; the `State<T>` a signal returns is.
+A reactive node holding a `T` (a signal, computed, effect, or scope). Covariant in `T` so `Node<"a">` is assignable to
+`Node<string>`.
 ]]
 export type Node<T = any> = setmetatable<{
 	--[[
-	Reads the node's up-to-date value <strong>without</strong> subscribing the caller.
+	Reads the node's current value without subscribing the caller.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#reading-a-signal)
 	]]
 	read peek: (self: any) -> T,
 	--[[
-	Reads the node's current value. This is a <strong>tracked</strong> read: inside a
-	[computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects) it
-	subscribes the running reaction, which re-runs when this node changes. `node()` is the same read; `node:peek()` reads
-	without subscribing.
+	Reads the node's current value (`node()` does the same) and subscribes the running
+	[computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects).
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#reading-a-signal)
 	]]
 	read get: (self: any) -> T,
 	--[[
-	Writes a value, skipping propagation when it equals the current one (`~=`, or the node's `equals`). Pass `force` as
-	`true` to notify dependents anyway; `node(value)` is the same write. Returns `value`.
+	Writes `value` (`node(value)` does the same), skipping propagation when it equals the current value (`~=` or the
+	node's `equals`). Pass `force = true` to notify dependents anyway.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#updating-a-signal)
 	]]
 	read set: (self: any, value: any, force: boolean?) -> T,
 	--[[
-	Re-fires the node's dependents <strong>without writing</strong>, as if a changed value had been set: the way to push
-	an in-place table mutation (same reference) through the graph. Returns the node.
+	Notifies the node's dependents without changing its value, useful after mutating a table in place.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#forcing-an-update)
 	]]
 	read update: <N>(self: N) -> N,
 	--[[
-	Destroys the node: severs every link to its sources and observers, then runs its pending `Flux.cleanup` values and
-	`node:onDestroy` callbacks. A later read returns `nil`; `Flux.isNode` stays `true`. Destroying twice is a no-op.
+	Disconnects the node from its sources and observers, then runs its pending [`Flux.cleanup`](https://flux.kohl.gg/guide/concepts/effects#cleanup-with-flux-cleanup)
+	values and `onDestroy` callbacks. Later reads return `nil`.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#destroying-a-signal)
 	]]
 	read Destroy: (self: any) -> (),
 	--[[
-	Runs `fn` with the node's last value when the node is destroyed: by `node:Destroy()`, or with the scope that owns a
-	computed or effect. A signal has no owner, so only its own `Destroy` fires it. Unlike `Flux.cleanup`, it survives
-	re-runs.
+	Registers `fn` to run with the node's last value when the node is destroyed. Unlike `Flux.cleanup`, `onDestroy`
+	callbacks only run on final teardown and survive re-runs.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#destroying-a-signal)
 	]]
@@ -3001,51 +2880,46 @@ export type Node<T = any> = setmetatable<{
 }, Operators<T>>
 
 --[[
-A writable source, as `Flux.signal` returns it: a `Node<T>` whose `set` is checked, so `state:set(5)` on a string
-state is an error (the call form `state(5)` is not checked, so typed code writes with `:set`). Exact in `T`; pass it wherever a `Node<T>` or
-`Reactive<T>` is taken.
+A writable signal node whose `:set(value)` method is type-checked against `T`. Assignable wherever `Node<T>` or
+`Reactive<T>` is expected.
 ]]
 export type State<T = any> = setmetatable<{
 	--[[
-	Reads the node's up-to-date value <strong>without</strong> subscribing the caller.
+	Reads the node's current value without subscribing the caller.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#reading-a-signal)
 	]]
 	read peek: (self: any) -> T,
 	--[[
-	Reads the node's current value. This is a <strong>tracked</strong> read: inside a
-	[computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects) it
-	subscribes the running reaction, which re-runs when this node changes. `node()` is the same read; `node:peek()` reads
-	without subscribing.
+	Reads the node's current value (`node()` does the same) and subscribes the running
+	[computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects).
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#reading-a-signal)
 	]]
 	read get: (self: any) -> T,
 	--[[
-	Writes a value, skipping propagation when it equals the current one (`~=`, or the node's `equals`). Pass `force` as
-	`true` to notify dependents anyway; `node(value)` is the same write. Returns `value`.
+	Writes `value` (`node(value)` does the same), skipping propagation when it equals the current value (`~=` or the
+	node's `equals`). Pass `force = true` to notify dependents anyway.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#updating-a-signal)
 	]]
 	read set: (self: any, value: T, force: boolean?) -> T,
 	--[[
-	Re-fires the node's dependents <strong>without writing</strong>, as if a changed value had been set: the way to push
-	an in-place table mutation (same reference) through the graph. Returns the node.
+	Notifies the node's dependents without changing its value, useful after mutating a table in place.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#forcing-an-update)
 	]]
 	read update: <N>(self: N) -> N,
 	--[[
-	Destroys the node: severs every link to its sources and observers, then runs its pending `Flux.cleanup` values and
-	`node:onDestroy` callbacks. A later read returns `nil`; `Flux.isNode` stays `true`. Destroying twice is a no-op.
+	Disconnects the node from its sources and observers, then runs its pending [`Flux.cleanup`](https://flux.kohl.gg/guide/concepts/effects#cleanup-with-flux-cleanup)
+	values and `onDestroy` callbacks. Later reads return `nil`.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#destroying-a-signal)
 	]]
 	read Destroy: (self: any) -> (),
 	--[[
-	Runs `fn` with the node's last value when the node is destroyed: by `node:Destroy()`, or with the scope that owns a
-	computed or effect. A signal has no owner, so only its own `Destroy` fires it. Unlike `Flux.cleanup`, it survives
-	re-runs.
+	Registers `fn` to run with the node's last value when the node is destroyed. Unlike `Flux.cleanup`, `onDestroy`
+	callbacks only run on final teardown and survive re-runs.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/signals#destroying-a-signal)
 	]]
@@ -3053,9 +2927,7 @@ export type State<T = any> = setmetatable<{
 }, Operators<T>>
 
 --[[
-A value that may be reactive: a plain `T`, a node whose value fits `T`, or a getter returning a `T`. `Flux.read`
-reads any of them, and `Flux.new` binds any of them to a property. A generic helper should take any `A` and return
-`Unwrap<A>`: a `<T>(value: Reactive<T>)` parameter binds `T` to the node itself when given a node.
+A plain `T`, a `Node<T>`, or a `() -> T` getter function. Read it with `Flux.read` or `Flux.raw`.
 
 ```luau
 type Props = { label: Flux.Reactive<string>, disabled: Flux.Reactive<boolean>? }
@@ -3071,8 +2943,7 @@ end
 export type Reactive<T> = T | Node<T> | (() -> T)
 
 --[[
-The value a `Reactive` reads as: a node's value, a getter's result, or the value itself. Distributes over unions, so
-`Unwrap<Reactive<string>?>` is `string?`. The result type of `Flux.read` and `Flux.raw`.
+Extracts the underlying value type `T` from a `Node<T>`, getter `() -> T`, or plain `T` (distributing over unions).
 ]]
 export type function Unwrap(value: type): type
 	local function returned(fn: type): type
@@ -3129,16 +3000,14 @@ export type Owner = { any }
 
 local Graph = {
 	--[[
-	Creates a node from `obj`: a [signal](https://flux.kohl.gg/guide/concepts/signals) for a value, a
+	Wraps `obj` in a reactive node: a [signal](https://flux.kohl.gg/guide/concepts/signals) for a plain value, a
 	[computed](https://flux.kohl.gg/guide/concepts/computeds) for a function, or an
-	[effect](https://flux.kohl.gg/guide/concepts/effects) for a function when `isEffect` is `true`. A node is returned
-	as is.
+	[effect](https://flux.kohl.gg/guide/concepts/effects) when `isEffect` is `true` (existing nodes pass through as-is).
 	]]
 	new = new :: <T>(obj: T, isEffect: boolean?, equals: ((T, T: any) -> boolean)?) -> Node<T>,
 	--[[
-	Creates a writable [signal](https://flux.kohl.gg/guide/concepts/signals) holding `initial`. Reading it inside a
-	reaction subscribes; writing a new value re-runs dependents. `equals` replaces the `~=` change check. A signal is
-	never owned by a scope: the GC reclaims it once dropped.
+	Creates a writable [signal](https://flux.kohl.gg/guide/concepts/signals) holding `initial`, using `equals` (default
+	`==`) to skip unchanged writes. Signals aren't owned by enclosing scopes and are garbage-collected once unreferenced.
 
 	```luau
 	local count = Flux.signal(0)
@@ -3149,8 +3018,8 @@ local Graph = {
 	]]
 	signal = signal :: <T>(initial: T, equals: ((T, T: any) -> boolean)?) -> State<T>,
 	--[[
-	Creates a lazily cached node derived from `fn`. It re-evaluates only when read after a dependency changed, and
-	`equals` stops propagation when the new result compares equal.
+	Creates a lazily cached [computed](https://flux.kohl.gg/guide/concepts/computeds) node derived from `fn`. Re-evaluates
+	only when read after a dependency changes, and uses `equals` (default `==`) to stop propagation when the result is unchanged.
 
 	```luau
 	local total = Flux.computed(function()
@@ -3162,8 +3031,8 @@ local Graph = {
 	]]
 	computed = computed :: <T>(fn: () -> T, equals: ((T, T) -> boolean)?) -> Node<T>,
 	--[[
-	Creates an effect: `fn` runs on the next flush and again whenever a node it read changes. Returns the effect node;
-	`node:Destroy()` stops it, as does destroying the scope that created it.
+	Schedules `fn` to run on the next flush and re-run whenever any node it reads changes. Owned by the enclosing scope or
+	stopped manually with `node:Destroy()`.
 
 	```luau
 	Flux.effect(function() print("count is", count()) end)
@@ -3173,8 +3042,7 @@ local Graph = {
 	]]
 	effect = effect :: (fn: (...any) -> ...any) -> Node<any>,
 	--[[
-	A plain function that reads `node` with tracking, like `node()`: for hot code, since calling it skips the
-	wrapper's `__call` dispatch. It works anywhere a getter does (`Flux.read`, a binding, a prop).
+	Returns a plain function that reads `node` with tracking, avoiding wrapper `__call` overhead in hot loops.
 
 	```luau
 	local count = Flux.signal(0)
@@ -3186,16 +3054,12 @@ local Graph = {
 	]]
 	getter = getter :: <A>(node: A) -> () -> Unwrap<A>,
 	--[[
-	A plain function that writes `node`, like `node:set(value, force)` (so `nil` is a write): for hot code, since
-	calling it skips the wrapper's `__call` dispatch.
+	Returns a plain function that writes `node` (`setter(value, force)`), avoiding wrapper `__call` overhead in hot loops.
 	]]
 	setter = setter :: <T>(node: State<T>) -> (value: T, force: boolean?) -> T,
 	--[[
-	A signal without a node: returns a getter and a setter, like Solid's `createSignal`. The getter reads with
-	tracking, like `node()`; the setter writes, like `node:set(value, force)` (so `nil` is a write). They are smaller
-	and faster than a node from `Flux.signal`, and they work anywhere a getter does (`Flux.read`, a binding, a prop),
-	but there are no methods: nothing to `Destroy` (the signal is collected once nothing holds the functions), no
-	`onObserved` or `Flux.dispose`.
+	Creates a lightweight signal without a node wrapper and returns `(getter, setter)`. Faster and smaller than
+	`Flux.signal`, with no methods (`Destroy`, `onObserved`, etc.).
 
 	```luau
 	local count, setCount = Flux.createSignal(0)
@@ -3207,8 +3071,8 @@ local Graph = {
 	]]
 	createSignal = createSignal,
 	--[[
-	A computed without a node: returns its getter, like Solid's `createMemo`. It is owned like `Flux.computed` (destroyed
-	with the scope or reaction that created it) and reads like `node()`, but it has no methods.
+	Creates a lightweight computed without a node wrapper and returns its tracked getter function. Owned by the active
+	scope or reaction like `Flux.computed`.
 
 	```luau
 	local count, setCount = Flux.createSignal(1)
@@ -3219,9 +3083,7 @@ local Graph = {
 	]]
 	createMemo = createMemo,
 	--[[
-	An effect without a node: schedules `fn` on the next flush and re-runs it whenever a node it read changes, like
-	Solid's `createEffect`. It is owned like `Flux.effect` (destroyed with the scope or reaction that created it), but
-	returns nothing.
+	Creates a lightweight effect without returning a node wrapper. Owned by the active scope or reaction like `Flux.effect`.
 
 	```luau
 	local count, setCount = Flux.createSignal(0)
@@ -3232,16 +3094,15 @@ local Graph = {
 	]]
 	createEffect = createEffect,
 	--[[
-	Runs the pending [effects](https://flux.kohl.gg/guide/concepts/effects) now instead of on the next frame. Mainly
-	for tests, to observe a write's effects synchronously.
+	Runs all queued [effects](https://flux.kohl.gg/guide/concepts/effects) immediately instead of waiting for the next frame.
 
 	[Open Documentation](https://flux.kohl.gg/guide/tips/testing#deterministic-effects-with-flux-flush)
 	]]
 	flush = flush,
 	-- Overloaded so a body that returns nothing type-checks: a generic `T` can't stand for an empty return.
 	--[[
-	Runs `fn` in a new owner [scope](https://flux.kohl.gg/guide/concepts/scopes) and returns `(scope, result)`. The
-	computeds, effects, instances and `cleanup` values created inside are torn down together by `scope:Destroy()`.
+	Runs `fn` in a new owner [scope](https://flux.kohl.gg/guide/concepts/scopes) and returns `(scope, result)`. Calling
+	`scope:Destroy()` tears down every computed, effect, instance, and `cleanup` created inside `fn`.
 
 	```luau
 	local scope, frame = Flux.scope(function() return Flux.new "Frame" { Parent = gui } end)
@@ -3252,10 +3113,8 @@ local Graph = {
 	]]
 	scope = scope :: ((fn: (scope: Node<any>) -> ()) -> Node<any>) & (<T>(fn: (scope: Node<any>) -> T) -> (Node<any>, T)),
 	--[[
-	Registers `obj` to be disposed, like [`Flux.dispose`](https://flux.kohl.gg/guide/concepts/scopes#disposing-by-hand-with-flux-dispose),
-	right before the running computed or effect re-runs and when its owner is destroyed, after the owner's children
-	are torn down in both cases. A function receives the owner's previous value and a `destroyed` boolean (`true` on
-	final teardown, `false` on re-computation). Errors outside an owner, and on a value `Flux.dispose` can't tear down.
+	Registers `obj` to be disposed via [`Flux.dispose`](https://flux.kohl.gg/guide/concepts/scopes#disposing-by-hand-with-flux-dispose)
+	before the running reaction re-runs and when its owner is destroyed. Cleanup functions receive `(previousValue, isDestroyed)`.
 
 	```luau
 	Flux.effect(function()
@@ -3268,13 +3127,8 @@ local Graph = {
 	]]
 	cleanup = cleanup,
 	--[[
-	Disposes `obj` right now, the same teardown a scope runs on its `Flux.cleanup` values. A function is called with
-	no arguments, an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) is destroyed, a
-	connection is disconnected, a suspended thread is canceled, a table is torn down by its `Destroy`/`destroy`/
-	`Disconnect`/`disconnect` method (a node, a scope, an async, a selector, a store) or else, when it is an array, each
-	item in turn. It runs [untracked](https://flux.kohl.gg/guide/concepts/tracking), so reads inside a disposed function
-	never subscribe the running reaction. An error is warned, never raised, and anything else (`nil` included) is
-	ignored.
+	Tears down `obj` immediately (functions, instances, connections, threads, objects with `Destroy`/`Disconnect` methods,
+	or arrays of cleanables). Runs untracked and warns on error instead of throwing.
 
 	```luau
 	local connections = { part.Touched:Connect(onTouched), part.Destroying:Connect(onGone) }
@@ -3285,25 +3139,23 @@ local Graph = {
 	]]
 	dispose = dispose,
 	--[[
-	Returns the current owner, or `nil` at the root. Capture it to create reactions from deferred work that still
-	belong to it, with [`Flux.withOwner`](https://flux.kohl.gg/guide/concepts/scopes#capturing-the-active-scope).
+	Returns the active reactive owner, or `nil` at the root. Pass it to [`Flux.withOwner`](https://flux.kohl.gg/guide/concepts/scopes#capturing-the-active-scope)
+	to attach deferred work to the same scope.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/scopes#capturing-the-active-scope)
 	]]
 	getOwner = getOwner,
 	--[[
-	Runs `fn` with `owner` (from `Flux.getOwner`, or a node) as the current owner, so the reactions and cleanups
-	created inside belong to it, and the [context](https://flux.kohl.gg/guide/concepts/context#deferred-code) provided
-	where it was created is visible again. Tracking is left as it is. Pass `nil` to create unowned roots. On an owner
-	already destroyed (a late callback), what `fn` creates and registers is disposed as soon as `fn` returns or throws.
+	Runs `fn` with `owner` (from `Flux.getOwner`, a node, or `nil` for unowned roots) as the active owner and restores its
+	captured [context](https://flux.kohl.gg/guide/concepts/context#deferred-code). If `owner` is already destroyed, anything
+	created inside `fn` is disposed as soon as `fn` finishes.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/scopes#capturing-the-active-scope)
 	]]
 	withOwner = withOwner :: <T...>(node: Node<any> | Owner | nil, fn: () -> T...) -> T...,
 	--[[
-	Runs `fn` without [tracking](https://flux.kohl.gg/guide/concepts/tracking): reads inside don't subscribe the running
-	computed or effect. Returns what `fn` returns. Called with no function, it stops tracking for the rest of the current
-	run, or until `Flux.retrack()`.
+	Runs `fn` without dependency [tracking](https://flux.kohl.gg/guide/concepts/tracking) and returns its result. Called with
+	no arguments (`Flux.untrack()`), it suspends tracking for the rest of the current reaction body or until `Flux.retrack()`.
 
 	```luau
 	Flux.effect(function()
@@ -3316,11 +3168,7 @@ local Graph = {
 	]]
 	untrack = untrack :: <T>(fn: (() -> ...T)?) -> ...T,
 	--[[
-	Resumes [tracking](https://flux.kohl.gg/guide/concepts/tracking) after a bare `Flux.untrack()` in the same body,
-	restoring exactly the reaction it suspended, so the pair fences a stretch of untracked reads. Without a matching
-	bare `untrack()` (in a scope body, inside `untrack(fn)` or `withOwner`, or when tracking is already on) it changes
-	nothing. Pair `untrack()` and `retrack()` within one function body: a getter read through `Flux.raw` does not get a
-	slot of its own.
+	Resumes [tracking](https://flux.kohl.gg/guide/concepts/tracking) after a bare `Flux.untrack()` in the same function body.
 
 	```luau
 	Flux.untrack()
@@ -3332,15 +3180,13 @@ local Graph = {
 	]]
 	retrack = retrack,
 	--[[
-	Reads a `Reactive` <strong>without</strong> tracking: a node's current value, a getter's result (the getter's own
-	reads untracked too), or a plain value as is.
+	Reads a `Reactive` value (node, getter function, or plain value) without subscribing the running reaction.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/tracking#flux-raw)
 	]]
 	raw = raw :: <T>(object: T) -> Unwrap<T>,
 	--[[
-	Reads a `Reactive` <strong>with</strong> tracking: a node's value, a getter's result, or a plain value as is. The
-	way to read a prop that may be any of them.
+	Reads a `Reactive` value (node, getter function, or plain value) and subscribes the running reaction if it's dynamic.
 
 	```luau
 	local function Label(props: { text: Flux.Reactive<string> })
@@ -3352,21 +3198,16 @@ local Graph = {
 	]]
 	read = read :: <T>(object: T) -> Unwrap<T>,
 	--[[
-	Creates a [computed](https://flux.kohl.gg/guide/concepts/computeds) that evaluates `tryFn` and, if it throws,
-	falls back to `fallback`, re-running and recovering automatically whenever its tracked dependencies change.
-	`fallback` may be a static value or a recovery function receiving the caught error; a recovery function runs
-	[untracked](https://flux.kohl.gg/guide/concepts/tracking) so it cannot accidentally subscribe to extra
-	dependencies, and if it throws in turn, its own error propagates unchanged. Pass `equals` to customize change
-	detection (default `==`).
+	Creates a [computed](https://flux.kohl.gg/guide/concepts/computeds) that evaluates `tryFn` and returns `fallback` (a
+	static value or an untracked `(err) -> T` function) if `tryFn` throws. Automatically recovers when tracked dependencies
+	change.
 
 	[Open Documentation](https://flux.kohl.gg/guide/tips/errors#structured-error-handling-flux-safe)
 	]]
 	safe = safe,
 	--[[
-	Creates a context with the given `default`, read by any code built under a `provide` without threading it
-	through arguments. Outside any active provide, reads return `default`. Pair with
-	[component](https://flux.kohl.gg/guide/concepts/components)s to share theme, services, or the current user
-	down a tree.
+	Creates a [context](https://flux.kohl.gg/guide/concepts/context) with the given `default` value for passing data down a
+	component tree without prop drilling.
 
 	```luau
 	local Theme = Flux.context("dark")
@@ -3377,10 +3218,8 @@ local Graph = {
 	]]
 	context = context :: <T>(default: T) -> Context<T>,
 	--[[
-	Wraps `fn` so every call runs with the [context](https://flux.kohl.gg/guide/concepts/context#deferred-code) values
-	provided where it was wrapped, as a node created there would. Handlers declared in `Flux.new`/`Flux.edit` props get
-	this already; use it for a connection made by hand, a `task` callback or a callback handed to other code, so a
-	handler that opens a dialog draws it in the trigger's theme. Ownership and tracking are left as they are.
+	Wraps `fn` so every call sees the [context](https://flux.kohl.gg/guide/concepts/context#deferred-code) values active
+	when `bindContext` was called. Event handlers in `Flux.new`/`Flux.edit` do this automatically.
 
 	```luau
 	local onClick = Flux.bindContext(function()
@@ -3392,7 +3231,7 @@ local Graph = {
 	]]
 	bindContext = bindContext,
 	--[[
-	Whether `object` is a [node](https://flux.kohl.gg/guide/concepts/signals).
+	Returns `true` if `object` is a Flux [node](https://flux.kohl.gg/guide/concepts/signals).
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/components#_2-reading-node-or-value-props-with-flux-read)
 	]]
@@ -3401,8 +3240,8 @@ local Graph = {
 	--- @ignore
 	isDynamic = isDynamic,
 	--[[
-	Whether the caller runs inside a tracking [computed](https://flux.kohl.gg/guide/concepts/computeds) or
-	[effect](https://flux.kohl.gg/guide/concepts/effects), where reads subscribe it.
+	Returns `true` if called inside a tracking [computed](https://flux.kohl.gg/guide/concepts/computeds) or
+	[effect](https://flux.kohl.gg/guide/concepts/effects).
 	]]
 	isReactive = isReactive,
 	-- Internal (not on `Flux`): whether an effect node may be stale before the next flush (Selector's watcher).

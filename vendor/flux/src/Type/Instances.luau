@@ -1,33 +1,4 @@
---!strict
-
-type AnimationPlayer = Instance
-type AppHandle = Instance
-type BackendReplicatedStorage = Instance
-type BackendServerScriptService = Instance
-type BackendServerStorage = Instance
-type CloudClientService = Instance
-type FeatureMatchingService = Instance
-type FeatureMatchingSession = Instance
-type FeatureMatchingTable = Instance
-type FriendsCallingInstance = Instance
-type FriendsCallingParticipant = Instance
-type FriendsCallingService = Instance
-type HiddenPlayerService = Instance
-type InputReplayService = Instance
-type InstanceRegistryService = Instance
-type IntegrityService = Instance
-type ParticleEmitter2D = Instance
-type ParticipantHandle = Instance
-type PhysicsActivitySensor = Instance
-type ProjectService = Instance
-type TestCoordinatorService = Instance
-type TestExecutionContext = Instance
-type TestFailure = Instance
-type TestResult = Instance
-type TestRunResult = Instance
-type TestSuite = Instance
-type TextDocument = Instance
-type UIBlur = Instance
+--!nocheck
 
 export type Creatable = {
 	Accessory: Accessory,

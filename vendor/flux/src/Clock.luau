@@ -1,29 +1,14 @@
 --!strict
 --[[
-Clock: the one source of time for Flux and the code built on it. In a game it is the engine's own: `now` is
-`os.clock()`, `wall` is the server's synchronized time, and `delay`, `wait`, `defer`, `cancel` and `connect` are
-`task.*` and the RunService frame signals. Each call costs one branch over calling those directly.
-
-Tests switch it to a manual clock (`manual(true)`; headless Luau is always manual), where time only moves
-when the test says so: `step(seconds)` advances it in frames and runs what came due, in order.
+Shared clock for timers, frame callbacks, and deterministic stepping in tests.
+Delegates to `os.clock()`, `workspace:GetServerTimeNow()`, `task.*`, and `RunService` in live games, or steps virtual time in manual mode (`Clock.manual(true)`).
 
 ```luau
 local Clock = Flux.Clock
 Clock.manual(true)
 Clock.delay(1, function() print("one second later") end)
-Clock.step(1) -- prints, in 60 frames of 1/60 s
+Clock.step(1) -- advances 1 second in 1/60s frames
 ```
-
-A manual frame of `dt` seconds:
-1. advances `now` by `dt` and resumes every timer and `wait` now due, earliest deadline first (ties in the order they
-   were scheduled); a timer scheduled for zero seconds while they run waits for the next frame, like the engine's;
-2. calls the `PreRender`/`RenderStepped` subscribers with `dt`;
-3. steps Flux itself: every spring and tween by `dt`, then a `Flux.flush()`;
-4. calls the `Heartbeat` subscribers with `dt`;
-5. after each of those phases, `drain()`s the work deferred with `defer`.
-
-`reset()` drops every pending timer, `wait`, deferred call and manual subscriber (between tests); `now` keeps counting,
-so time never runs backwards. `wall()` on a manual clock starts at 2026-01-01T00:00:00Z.
 ]]
 
 local IS_ROBLOX = game ~= nil
@@ -302,8 +287,8 @@ function Clock.connect(phase: Phase, fn: (dt: number) -> ()): () -> ()
 end
 
 --[[
-Tests only: turns the manual clock on or off. Headless Luau is always manual (`manual(false)` does nothing there).
-Turning it on starts virtual time at `os.clock()`; turning it off drops what was pending, like `reset()`.
+Toggles manual clock mode for tests (headless Luau is always manual).
+Disabling manual mode clears pending tasks via `Clock.reset()`.
 ]]
 function Clock.manual(on: boolean)
 	if not IS_ROBLOX or on == manual then

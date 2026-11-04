@@ -242,12 +242,8 @@ end
 local Store = {}
 
 --[[
-Wraps a plain table in a deep reactive proxy: reading a field inside a
-[computed](https://flux.kohl.gg/guide/concepts/computeds) or
-[effect](https://flux.kohl.gg/guide/concepts/effects) subscribes to that field, and assigning a new value
-re-runs only the dependents of the leaves that changed. Nested plain tables are proxied recursively on
-access; metatable'd values (Flux [node](https://flux.kohl.gg/guide/concepts/signals)s, class instances) stay
-atomic. Available as `Flux.store`.
+Wraps a plain table in a deep reactive proxy that tracks each read key, nested table, and array length independently.
+Values that already have a metatable (such as Flux nodes or class instances) are left untouched.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/stores#creating-a-store)
 ]]
@@ -261,12 +257,7 @@ function Store.new<T>(initialState: T): T
 end
 
 --[[
-Tears down a store and every nested proxy beneath it, destroying their per-key
-[node](https://flux.kohl.gg/guide/concepts/signals)s so dependents stop tracking them; the proxy is left an empty
-plain table and the raw table is left intact. A store created inside a
-[scope](https://flux.kohl.gg/guide/concepts/scopes) is torn down when the scope is destroyed; [Flux.dispose] performs the
-same cleanup. An unreferenced store is garbage-collected automatically; call this method only to disconnect its
-dependents early.
+Tears down a store and all of its nested proxies, disposing their per-key nodes via [`Flux.dispose`](https://flux.kohl.gg/api/Flux#dispose) while leaving the raw backing table intact.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/stores#destroying-a-store)
 ]]
@@ -275,10 +266,7 @@ function Store.Destroy<T>(proxy: T)
 end
 
 --[[
-Returns the raw, un-proxied table underlying a store: the live backing object,
-not a copy. Reads through it bypass tracking entirely (no
-[node](https://flux.kohl.gg/guide/concepts/signals) is subscribed), so use it for cheap snapshots or to hand a
-plain table to non-reactive code. Passing a value that is not a store returns it unchanged.
+Returns the raw, unproxied backing table of a store for untracked reads or serialization.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/stores#unwrapping-a-store)
 ]]
@@ -287,10 +275,7 @@ function Store.unwrap<T>(proxy: T): T
 end
 
 --[[
-Reactive counterpart of [`table.insert`](https://create.roblox.com/docs/reference/engine/libraries/table#insert):
-with no third argument, appends `posOrValue` to the end; with a third argument, inserts `value` at 1-based position
-`posOrValue` and shifts subsequent elements up. Use this instead of assigning past the array's length so iteration
-and `#` watchers fire and the shifted indices re-sync. An out-of-range position errors.
+Inserts `value` into a store array (appending with 2 arguments, or inserting at `posOrValue` with 3) and notifies length and index observers.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/stores#arrays-and-iteration)
 ]]
@@ -324,9 +309,7 @@ function Store.insert(proxy: any, posOrValue: any, value: any?)
 end
 
 --[[
-Reactive counterpart of [`table.remove`](https://create.roblox.com/docs/reference/engine/libraries/table#remove):
-removes and returns the element at `pos` (default: the last), shifting subsequent elements down. Use this
-instead of `proxy[i] = nil`, which leaves a hole that corrupts the array part. An out-of-range `pos` errors.
+Removes and returns the element at `pos` (defaulting to the last element) from a store array and notifies length and index observers.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/stores#arrays-and-iteration)
 ]]
@@ -361,12 +344,7 @@ function Store.remove(proxy: any, pos: number?): any
 end
 
 --[[
-Reactively reorders the array, moving the element at 1-based index `from` to `to` and shifting the elements between
-them so positional readers and `#`/iteration watchers follow. Equivalent to a
-[`table.remove`](https://create.roblox.com/docs/reference/engine/libraries/table#remove) +
-[`table.insert`](https://create.roblox.com/docs/reference/engine/libraries/table#insert) but as a single tracked
-step: the length is unchanged, so nothing is removed and no nested proxy is torn down, ideal for drag-and-drop
-list reordering. Both indices must be in `[1, #proxy]`; an out-of-range index errors.
+Moves the element at 1-based index `from` to `to` in a single tracked step without tearing down nested item proxies.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/stores#arrays-and-iteration)
 ]]
@@ -575,13 +553,8 @@ function reconcileTable(proxy: any, target: { [any]: any }, newData: { [any]: an
 end
 
 --[[
-Diffs the snapshot `newData` into the live store `proxy`, firing only the
-[node](https://flux.kohl.gg/guide/concepts/signals)s whose leaves actually changed and reusing unchanged
-nested proxies instead of tearing them down. Arrays diff positionally by default; when `key` is given, array
-elements are matched by `element[key]` instead (recursively through every nested array), so reordered or inserted
-rows keep their proxy (and their
-[`Flux.forValue`](https://flux.kohl.gg/guide/concepts/mapping#flux-forvalue-keyed-by-value) result) and only
-changed rows fire. `newData` should be a plain, acyclic snapshot. Returns `proxy`.
+Diffs `newData` into the store `proxy` in place, firing only changed leaf nodes and reusing unchanged nested proxies.
+Pass `key` to match array elements by `element[key]` instead of array index.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/stores#reconciling-snapshots)
 ]]

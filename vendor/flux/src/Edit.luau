@@ -6,7 +6,7 @@ local Type = require("./Type")
 
 local IS_ROBLOX = Compat.isRoblox
 local Color3 = Compat.Color3
-local Enum = if IS_ROBLOX then Enum else Compat.Enum
+local Enum = Compat.Enum
 local compatTypeof = Compat.typeof
 local task = Compat.task
 local warn = Compat.warn
@@ -36,13 +36,9 @@ local kindOf = Graph.kindOf
 
 local Flags = {
 	--[[
-	Process-wide on/off switch for the automatic per-class defaults: flipping it affects every later `Flux.new` from any
-	script using this copy of Flux, so set it once at startup. When `true` (the default), every Roblox
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) built by
-	[`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function) has its matching `Flux.Defaults`
-	entries applied first. Set it to `false` to opt out globally and get raw, unstyled instances. One override stays
-	either way: `AutoButtonColor = false` on `TextButton` and `ImageButton`, since it changes how a button behaves
-	rather than how it looks (pass `AutoButtonColor = true` for the engine's behavior).
+	Controls whether [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function) applies the
+	per-class [`Flux.Defaults`](https://flux.kohl.gg/guide/roblox/defaults) table to new instances (`true` by default).
+	`AutoButtonColor = false` is still applied to `TextButton` and `ImageButton` even when `false`.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/defaults#disabling-defaults)
 	]]
@@ -165,18 +161,22 @@ local function warnFind(query: string?, value: any)
 	warn(`[Flux] Instance expected for {desc}, got {compatTypeof(value)}`)
 end
 
-local function resolveFind(applied: { any }, instance: Instance, apply: (Instance, Type.Map<any>, ...any) -> ...any)
+local function resolveFind(
+	applied: { any },
+	instance: Instance,
+	applyProps: (Instance, Type.Map<any>, ...any) -> ...any
+)
 	local query = applied[4]
 	local result = applied[2](instance, query)
 	local properties = applied[3]
 	local kind = kindOf(result)
 
 	if kind == "Instance" then
-		apply(result, properties)
+		applyProps(result, properties)
 	elseif kind == "table" then
 		for _, item in result do
 			if kindOf(item) == "Instance" then
-				apply(item, properties)
+				applyProps(item, properties)
 			else
 				warnFind(query, item)
 			end
@@ -189,66 +189,55 @@ end
 local Find = table.freeze({
 	--[[
 	Selects the first ancestor named `name` via
-	[`Instance:FindFirstAncestor`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestor),
-	then applies the property table to it. Use to reach an
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) above the hydrated element
-	in the tree.
+	[`Instance:FindFirstAncestor`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestor)
+	and applies the property table to it.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#available-selectors)
 	]]
 	Ancestor = makeSelector("FindFirstAncestor") :: QuerySelector,
 	--[[
 	Selects the first ancestor of class `className` via
-	[`Instance:FindFirstAncestorOfClass`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestorOfClass),
-	then applies the property table to that matched
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance). Matches the exact
-	`ClassName`.
+	[`Instance:FindFirstAncestorOfClass`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestorOfClass)
+	and applies the property table to it.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#available-selectors)
 	]]
 	AncestorClass = makeSelector("FindFirstAncestorOfClass") :: ClassSelector,
 	--[[
-	Selects the first ancestor whose class is or inherits `className` via
-	[`Instance:FindFirstAncestorWhichIsA`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestorWhichIsA),
-	then applies the property table. Unlike `AncestorClass`, this honors the
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) inheritance chain.
+	Selects the first ancestor matching `IsA(className)` via
+	[`Instance:FindFirstAncestorWhichIsA`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestorWhichIsA)
+	and applies the property table to it.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#available-selectors)
 	]]
 	AncestorIsA = makeSelector("FindFirstAncestorWhichIsA") :: ClassSelector,
 	--[[
-	Selects the first child named `name` via
-	[`Instance:FindFirstChild`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChild),
-	then applies the property table to it. The most common selector for reaching a named
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) one level down.
+	Selects the first direct child named `name` via
+	[`Instance:FindFirstChild`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChild)
+	and applies the property table to it.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#instance-selectors-flux-find)
 	]]
 	Child = makeSelector("FindFirstChild") :: QuerySelector,
 	--[[
-	Selects the first child of class `className` via
-	[`Instance:FindFirstChildOfClass`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChildOfClass),
-	then applies the property table to that matched
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance). Matches the exact
-	`ClassName`.
+	Selects the first direct child of class `className` via
+	[`Instance:FindFirstChildOfClass`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChildOfClass)
+	and applies the property table to it.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#available-selectors)
 	]]
 	ChildClass = makeSelector("FindFirstChildOfClass") :: ClassSelector,
 	--[[
-	Selects the first child whose class is or inherits `className` via
-	[`Instance:FindFirstChildWhichIsA`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChildWhichIsA),
-	then applies the property table. Unlike `ChildClass`, this honors the
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) inheritance chain.
+	Selects the first direct child matching `IsA(className)` via
+	[`Instance:FindFirstChildWhichIsA`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChildWhichIsA)
+	and applies the property table to it.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#available-selectors)
 	]]
 	ChildIsA = makeSelector("FindFirstChildWhichIsA") :: ClassSelector,
 	--[[
-	Selects the first descendant named `name` via a recursive
-	[`Instance:FindFirstChild`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChild)
-	(`FindFirstChild(name, true)`), then applies the property table to it. Searches the entire subtree, not just direct children of the
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance).
+	Selects the first descendant named `name` via `Instance:FindFirstChild(name, true)` and applies the property
+	table to it.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#instance-selectors-flux-find)
 	]]
@@ -256,37 +245,31 @@ local Find = table.freeze({
 		return instance:FindFirstChild(name, true)
 	end) :: QuerySelector,
 	--[[
-	Selects the hydrated element's [`Instance.Parent`](https://create.roblox.com/docs/reference/engine/classes/Instance#Parent),
-	then applies the property table to it. Use to reach one level up the tree without naming the parent. Takes no
-	argument: `Find.Parent() { ... }`.
+	Selects the target's [`Instance.Parent`](https://create.roblox.com/docs/reference/engine/classes/Instance#Parent)
+	and applies the property table to it (`Find.Parent() { ... }`).
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#instance-selectors-flux-find)
 	]]
 	Parent = makeSelector(indexParent) :: ParentSelector,
 	--[[
-	Walks a `.`-separated path from the hydrated element, one [`Instance:FindFirstChild`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChild)
-	step per segment, then applies the property table to the final [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance). A `Parent` or `^` segment
-	climbs to [`Instance.Parent`](https://create.roblox.com/docs/reference/engine/classes/Instance#Parent) instead; empty segments are skipped. If any step misses, nothing is applied.
+	Walks a `.`-separated child path from the target (`Parent` or `^` climbs to `Instance.Parent`) and applies the
+	property table to the final [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance).
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#instance-selectors-flux-find)
 	]]
 	Path = makeSelector(findPath) :: QuerySelector,
 	--[[
-	Selects <strong>every</strong> descendant matching a Roblox path query via
-	[`Instance:QueryDescendants`](https://create.roblox.com/docs/reference/engine/classes/Instance#QueryDescendants),
-	applying the property table to each matched
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance). Fan out one property table
-	across many elements at once.
+	Selects every descendant matching a Roblox query string via
+	[`Instance:QueryDescendants`](https://create.roblox.com/docs/reference/engine/classes/Instance#QueryDescendants)
+	and applies the property table to each match.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#instance-selectors-flux-find)
 	]]
 	Query = makeSelector("QueryDescendants") :: QuerySelector,
 	--[[
-	Selects only the <strong>first</strong> descendant matching a Roblox path query via
-	[`Instance:QueryDescendants`](https://create.roblox.com/docs/reference/engine/classes/Instance#QueryDescendants),
-	then applies the property table to that single
-	[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance). The single-match counterpart
-	to `Query`.
+	Selects the first descendant matching a Roblox query string via
+	[`Instance:QueryDescendants`](https://create.roblox.com/docs/reference/engine/classes/Instance#QueryDescendants)
+	and applies the property table to it.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/hydration#instance-selectors-flux-find)
 	]]
@@ -1083,19 +1066,13 @@ return table.freeze({
 	Defaults = Defaults,
 	Find = Find,
 	--[[
-	Splits a props table by key into fresh tables: one per `keys` group holding just the keys that group names, then a
-	final table with everything else (instance properties, numeric children, `__EVENT`-style directives), ready to forward
-	to a root instance. A group is an array of key names or a table whose keys are used; a key named by several groups
-	is assigned to the first group. Values move by reference and `props` itself is left untouched.
-
-	With one group, it is typed as a `Pick` of the props type and the rest as its `Omit`, keeping required members
-	required. That needs the names as types: pass a schema table, or annotate a name array
-	(`local OWN: { "label" | "onClick" } = ...`). An unannotated array resolves to `{ string }`, and several groups are more
-	than the solver can pick through, so those tables are `Partial` (every member optional).
+	Partitions `props` into one table per `keys` group plus a final table holding every remaining key, leaving `props`
+	untouched. Pass a schema table or an annotated key-literal array (`{ "label" | "onClick" }`) to preserve exact
+	`Pick`/`Omit` types on a single group.
 
 	```luau
 	local OWN: { "label" | "onClick" } = { "label", "onClick" }
-	local own, rest = Flux.split(props, OWN) -- own.label: string, own.onClick: (() -> ())?
+	local own, rest = Flux.split(props, OWN)
 	```
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/components#splitting-props-with-flux-split)

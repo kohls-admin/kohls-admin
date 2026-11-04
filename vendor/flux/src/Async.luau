@@ -198,15 +198,8 @@ function Async.refetch(self: Data, refetching: any?)
 end
 
 --[[
-Creates a non-blocking asynchronous [node](https://flux.kohl.gg/guide/concepts/signals) that runs yielding
-work off the reactive graph and exposes its progress as four nodes: `.data` (seeded with `initialValue` before
-the first fetch resolves), `.error`, `.loading`, and `.state`. `source` is a tracked input (a
-[node](https://flux.kohl.gg/guide/concepts/signals) or computation) whose value is passed to `fetcher` and
-re-runs it on every change; omit `source` and pass `fetcher` first for a one-shot fetch, or let `source`
-evaluate to `nil`/`false` to gate the fetch off until it turns truthy. `fetcher(value, previous, refetching)`
-runs untracked (where `previous` is the last resolved data and `refetching` flags a manual refetch, so reactive
-reads inside it are <strong>not</strong> tracked as dependencies), and a race guard discards stale results so
-only the latest fetch ever writes back.
+Runs yielding work off the reactive graph and exposes its progress as `.data`, `.error`, `.loading`, and `.state` nodes.
+`fetcher(value, previous, refetching)` runs untracked whenever `source` is truthy, and stale in-flight results are discarded automatically.
 
 ```luau
 local profile = Flux.async(userId, function(id) return Players:GetNameFromUserIdAsync(id) end)

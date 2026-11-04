@@ -393,11 +393,8 @@ local Bind = {
 }
 
 --[[
-Wraps a reactive [node](https://flux.kohl.gg/guide/concepts/signals) for <strong>two-way binding</strong>.
-Assigning `Flux.model(node)` to a property (or attribute) drives the
-[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) from the node AND writes the node
-back whenever the user changes that property. Only sound for properties that fire a changed signal (e.g.
-[`TextBox`](https://create.roblox.com/docs/reference/engine/classes/TextBox)`.Text`).
+Wraps a reactive [node](https://flux.kohl.gg/guide/concepts/signals) for two-way binding on an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, attribute, or tag.
+Updates the instance from `node` and writes changes back to `node` when the instance fires its changed signal.
 
 [Open Documentation](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key)
 ]]
@@ -410,8 +407,7 @@ function Bind.model<N>(node: N): Graph.Unwrap<N>
 end
 
 --[[
-Whether `value` is a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key)
-binding: lets a component tell a two-way value prop from a plain or one-way one.
+Returns `true` when `value` is a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key) wrapper.
 
 [Open Documentation](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key)
 ]]
@@ -421,8 +417,7 @@ function Bind.isModel(value: unknown): boolean
 end
 
 --[[
-The node inside a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key)
-binding, or `nil` when `value` is not one. A component that takes a value prop writes user changes back through it.
+Returns the underlying node from a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key) wrapper, or `nil` if `value` is not a model.
 
 ```luau
 local node = Flux.modelNode(props.value)
@@ -524,13 +519,8 @@ end
 
 -- The `"Name"` singleton in `property`'s type keeps a literal argument from widening to `string`, so `K` stays the key.
 --[[
-A [node](https://flux.kohl.gg/guide/concepts/signals) following a property of a Roblox
-[`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance), an attribute when `property` starts
-with `_attr_` or `$`, or a [CollectionService](https://create.roblox.com/docs/reference/engine/classes/CollectionService)
-tag when `property` starts with `_tag_` or `#`. It is seeded with the current value and set again on every change, and
-typed after the target: `Flux.property(textBox, "Text")` is a `Node<string>`, `Flux.property(npc, "#Enemy")` (or
-`"_tag_Enemy"`) is a `Node<boolean>`, and an attribute (or a name the type can't resolve) gives a `Node<any>`. The node
-stops following when it is destroyed.
+Creates a [node](https://flux.kohl.gg/guide/concepts/signals) mirroring an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, an attribute (`$Name` or `_attr_Name`), or a [`CollectionService`](https://create.roblox.com/docs/reference/engine/classes/CollectionService) tag (`#Tag` or `_tag_Tag`).
+Disconnects automatically when the node or its owning scope is destroyed.
 
 ```luau
 local text = Flux.property(textBox, "Text")
@@ -568,12 +558,8 @@ function Bind.node(obj: any, second: string?): Graph.Node<any>
 end
 
 --[[
-Builds an explicit-dependency reaction: it tracks only `deps` (a single
-[node](https://flux.kohl.gg/guide/concepts/signals), function, or value, or an array of them) and runs `fn`
-<em>untracked</em> whenever one changes, so reads inside `fn` never become dependencies. Wrap it in a
-[computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects);
-`fn(input, prevInput, prevResult)` receives the current input, the previous input, and its own previous result.
-Pass `defer = true` to skip the initial run and fire only on subsequent changes.
+Wraps `fn` so a [computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects) tracks only `deps` and runs `fn(input, prevInput, prevResult)` untracked.
+Pass `defer = true` to skip the initial run and fire only when `deps` change.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/tracking#flux-on)
 ]]

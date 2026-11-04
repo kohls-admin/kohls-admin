@@ -140,11 +140,8 @@ local function claimedAt(
 end
 
 --[[
-Whether input at `(x, y)` would be claimed by an `Active` or input-sinking gui rendered
-<strong>above</strong> `object`, e.g. dropping a hover state while a floating menu covers the
-control. Outside a `BasePlayerGui` (a plugin dock, a `SurfaceGui` in workspace) nothing can claim
-the point, so this yields `false`. With `token` (the InputObject), the hit test is asked once per
-input per point, however many objects under the pointer ask.
+Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI rendered above `object` (or while the Roblox escape menu is open).
+Pass the `InputObject` as `token` to share the hit-test query across multiple controls on the same input event.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/interact#sunk)
 ]]
@@ -153,10 +150,7 @@ local function sunk(x: number, y: number, object: GuiObject, token: any?): boole
 end
 
 --[[
-Whether input at `(x, y)` would be claimed by an `Active` or input-sinking gui above `object` that is <strong>not
-inside it</strong>: another panel, window or menu on top. Unlike [`sunk`](https://flux.kohl.gg/guide/utilities/interact#sunk),
-the object's own buttons don't count, so a container (a scrolling list, a row list you drag to reorder, a window's
-body) still hears a press on its rows while nothing else covers it.
+Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI above `object` that is not a descendant of `object`.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/interact#covered)
 ]]
@@ -285,7 +279,7 @@ local function leave(tracker: Tracker, entry: Entry)
 	end
 end
 
-local function step(tracker: Tracker)
+local function stepTracker(tracker: Tracker)
 	if menuOpen(tracker.env) then
 		for entry in tracker.inside do
 			entry.state:set(false)
@@ -329,7 +323,7 @@ local function connectTracker(tracker: Tracker): { RBXScriptConnection }
 		memoToken, memoRoot, memoList = nil, nil, {}
 	end
 	local onHeartbeat = env.RunService.Heartbeat:Connect(function()
-		step(tracker)
+		stepTracker(tracker)
 	end)
 	local onChanged = input.InputChanged:Connect(function(changed: InputObject)
 		if changed.UserInputType == MOUSE_MOVEMENT then
@@ -529,14 +523,8 @@ end
 local hoverOverride: HoverServices? = nil
 
 --[[
-Whether a mouse pointer or touch contact is over `object` with no input-claiming gui drawn
-<strong>above</strong> it (see [`sunk`](https://flux.kohl.gg/guide/utilities/interact#sunk)), as a read-only boolean
-[node](https://flux.kohl.gg/guide/concepts/signals). It is settled again every frame the pointer is in its bounds, so
-a menu or dialog opening over it, the pointer moving onto one, a scroll that carries it away, or it hiding drops the
-hover, and the cover closing over a still pointer brings it back. With `{ within = true }`, only guis outside
-`object` cover it (see [`covered`](https://flux.kohl.gg/guide/utilities/interact#covered)): a row or card stays
-hovered over its own buttons. Listening starts on call and stops when the node, the
-[scope](https://flux.kohl.gg/guide/concepts/scopes) that created it, or `object` is destroyed, which settles it `false`.
+Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) that is `true` while a pointer or touch contact is inside `object` with no input-claiming GUI above it.
+Pass `{ within = true }` on containers so child controls inside `object` do not count as covering it.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/interact#hover)
 ]]
@@ -632,11 +620,8 @@ local function _pressWith(object: GuiObject, env: Services?): Graph.Node<boolean
 end
 
 --[[
-Whether `object` is held down, as a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals): from a
-left mouse button or touch that begins on it (unless a gui above claims the input), or `ButtonA`/`Enter` pressed while
-it is the [`GuiService.SelectedObject`](https://create.roblox.com/docs/reference/engine/classes/GuiService#SelectedObject)
-and no text box has focus, until that same input ends <em>anywhere</em>, so dragging off a control never leaves it stuck. It cleans up like
-[`hover`](https://flux.kohl.gg/guide/utilities/interact#hover).
+Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) that is `true` while `object` is held down by pointer, touch, or gamepad/keyboard activation (`ButtonA`/`Enter`).
+Stays `true` until that input ends anywhere on screen.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/interact#press)
 ]]
@@ -663,10 +648,7 @@ local function _selectedWith(object: GuiObject, env: Services?): Graph.Node<bool
 end
 
 --[[
-Whether `object` is the [`GuiService.SelectedObject`](https://create.roblox.com/docs/reference/engine/classes/GuiService#SelectedObject),
-the gui that gamepad or keyboard UI navigation currently highlights, as a read-only boolean
-[node](https://flux.kohl.gg/guide/concepts/signals). It cleans up like
-[`hover`](https://flux.kohl.gg/guide/utilities/interact#hover).
+Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) tracking whether `object` is currently [`GuiService.SelectedObject`](https://create.roblox.com/docs/reference/engine/classes/GuiService#SelectedObject).
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/interact#selected)
 ]]
@@ -675,9 +657,7 @@ local function selected(object: GuiObject): Graph.Node<boolean>
 end
 
 --[[
-Whether `textBox` has keyboard focus, as a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals)
-seeded from `IsFocused()` and kept current by `Focused` and `FocusLost`. It cleans up like
-[`hover`](https://flux.kohl.gg/guide/utilities/interact#hover).
+Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) tracking whether `textBox` currently has keyboard focus.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/interact#focused)
 ]]

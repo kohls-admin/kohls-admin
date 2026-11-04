@@ -47,7 +47,7 @@ export type PartialConfig = {
 local DEFAULT_SIZE = Compat.Vector2.new(1920, 1080)
 
 --[[
-Live defaults shared by every derived node; mutate once at startup.
+Default responsive configuration shared by derived nodes. Mutate once at startup before building UI.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/responsive#configuration)
 ]]
@@ -141,13 +141,13 @@ local function breakpointOf(partial: PartialConfig?): Graph.Node<Breakpoint>
 end
 
 --[[
-UIScale factor derived from `viewport`; `1.0` at `config.reference`.
+UI scale factor derived from `viewport` (`1.0` at `config.reference`).
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/responsive#scale)
 ]]
 local scale: Graph.Node<number> = scaleOf()
 --[[
-Size class derived from `viewport` width.
+Size class (`"phone" | "tablet" | "desktop"`) derived from `viewport` width.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/responsive#breakpoint)
 ]]
@@ -169,16 +169,13 @@ local function detectPlatform(): Platform
 end
 
 --[[
-The device class: `"vr"`, `"console"` (ten-foot interface), `"pc"` (keyboard and mouse), or `"mobile"`. Live on
-the client, so plugging in a keyboard and mouse or putting on a headset changes it; `"pc"` elsewhere.
+Active device class (`"vr"`, `"console"`, `"pc"`, or `"mobile"`), updated live on the client (`"pc"` off-client).
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/responsive#platform)
 ]]
 local platform: Graph.Node<Platform> = signal((if isClient then detectPlatform() else "pc") :: Platform)
 --[[
-How large the screen is physically (`GuiService.ViewportDisplaySize`): `"Small"` (phones, tablets, handhelds),
-`"Medium"` (laptops and monitors, the default) or `"Large"` (TVs). Live on the client; where the engine lacks the
-property, a ten-foot interface counts as `"Large"`.
+Physical screen size class (`"Small"`, `"Medium"`, or `"Large"`) mirroring `GuiService.ViewportDisplaySize`.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/responsive#display-size)
 ]]
@@ -211,31 +208,26 @@ local INPUT_BY_PLATFORM: { [Platform]: Input } = {
 }
 
 --[[
-The input the player is using right now: `"keyboard"` (keyboard and mouse), `"touch"`, or `"gamepad"`. Follows
-`UserInputService.PreferredInput` live on the client, so picking up a controller switches it; elsewhere it holds
-the mode matching `platform`.
+Active input mode (`"keyboard"`, `"touch"`, or `"gamepad"`) tracking `UserInputService.PreferredInput` on the client.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/responsive#input)
 ]]
 local input: Graph.Node<Input> = signal(INPUT_BY_PLATFORM[platform:peek()] :: Input)
 --[[
-The player's preferred text size (`GuiService.PreferredTextSize`): `"Medium"` (default), `"Large"`, `"Larger"`, or
-`"Largest"`. The engine already draws text larger to match, so use it to make room around text, never to
-multiply `TextSize` again.
+Player's preferred text size (`"Medium"`, `"Large"`, `"Larger"`, or `"Largest"`) from `GuiService.PreferredTextSize`.
+Roblox scales rendered text automatically, so use this to adjust surrounding container spacing rather than multiplying `TextSize`.
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/responsive#text-size)
 ]]
 local textSize: Graph.Node<TextSize> = signal("Medium" :: TextSize)
 --[[
-Whether the player asked for reduced motion (`GuiService.ReducedMotionEnabled`). When `true`, swap movement and
-scaling animations for instant changes or simple fades.
+Tracks `GuiService.ReducedMotionEnabled` (`true` when the player prefers reduced motion).
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/responsive#reduced-motion)
 ]]
 local reducedMotion: Graph.Node<boolean> = signal(false)
 --[[
-The player's background transparency preference (`GuiService.PreferredTransparency`), from `0` (opaque
-backgrounds) to `1` (the default). Multiply translucent `BackgroundTransparency` values by it.
+Tracks `GuiService.PreferredTransparency` from `0` (opaque backgrounds) to `1` (default).
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/responsive#preferred-transparency)
 ]]

@@ -1,6 +1,6 @@
 --!strict
 --[[
-Animation: `spring` and `tween` return nodes that animate toward a reactive target, stepped once per frame.
+Spring and tween animations (`spring`, `tween`) stepped once per frame, plus perceptual `Color` utilities.
 
 ```luau
 local width = Flux.spring(function() return if open() then 300 else 0 end)
@@ -63,11 +63,11 @@ local function toLinear(c: number): number
 end
 
 local sRGB = table.freeze({
-	--- Converts linear sRGB space to sRGB space
+	--- Converts linear sRGB space to sRGB space.
 	fromLinear = function(color: Color3): Color3
 		return Color3.new(fromLinear(color.R), fromLinear(color.G), fromLinear(color.B))
 	end,
-	--- Converts sRGB space to linear sRGB space
+	--- Converts sRGB space to linear sRGB space.
 	toLinear = function(color: Color3): Color3
 		return Color3.new(toLinear(color.R), toLinear(color.G), toLinear(color.B))
 	end,
@@ -152,7 +152,7 @@ local function rotateAB(a: number, b: number, degrees: number): (number, number)
 end
 
 local Oklab = table.freeze({
-	--- Converts a Color3 in linear sRGB space to a Vector3 in Oklab space
+	--- Converts a Color3 in linear sRGB space to a Vector3 in Oklab space.
 	fromLinear = function(color: Color3): Vector3
 		return Vector3.new(linearToOklab(color.R, color.G, color.B))
 	end,
@@ -160,19 +160,19 @@ local Oklab = table.freeze({
 	toLinear = function(color: Vector3, clamped: boolean?): Color3
 		return Color3.new(oklabComponentsToLinear(color.X, color.Y, color.Z, clamped))
 	end,
-	--- Converts a Color3 in sRGB space to a Vector3 in Oklab space
+	--- Converts a Color3 in sRGB space to a Vector3 in Oklab space.
 	fromRGB = function(rgb: Color3): Vector3
 		return Vector3.new(rgbToOklab(rgb))
 	end,
-	--- Converts a Vector3 in Oklab space to a Color3 in sRGB space
+	--- Converts a Vector3 in Oklab space to a Color3 in sRGB space.
 	toRGB = function(lab: Vector3, clamped: boolean?): Color3
 		return oklabToSRGB(lab.X, lab.Y, lab.Z, clamped)
 	end,
-	--- Raises Oklab lightness by `amount`; a negative `amount` darkens
+	--- Raises Oklab lightness by `amount` (negative darkens).
 	lighten = function(lab: Vector3, amount: number): Vector3
 		return Vector3.new(math.clamp(lab.X + amount, 0, 1), lab.Y, lab.Z)
 	end,
-	--- Raises chroma by `amount`, preserving hue and lightness; a negative `amount` desaturates
+	--- Raises Oklab chroma by `amount`, preserving hue and lightness (negative desaturates).
 	saturate = function(lab: Vector3, amount: number): Vector3
 		local a, b = saturateAB(lab.Y, lab.Z, amount)
 		return if a == lab.Y and b == lab.Z then lab else Vector3.new(lab.X, a, b)
@@ -186,88 +186,16 @@ local Oklab = table.freeze({
 	grayscale = function(lab: Vector3): Vector3
 		return Vector3.new(lab.X, 0, 0)
 	end,
-	--- Returns an Oklab Vector3 linearly interpolated between lab1 and lab2 by the given alpha. Equivalent to `lab1:Lerp(lab2, alpha)`.
+	--- Linearly interpolates between `lab1` and `lab2` in Oklab space by `alpha`.
 	mix = function(lab1: Vector3, lab2: Vector3, alpha: number): Vector3
 		return lab1:Lerp(lab2, alpha)
 	end,
 })
 
-local Color = {
-	Oklab = Oklab,
-	sRGB = sRGB,
-}
+local BLACK = Color3.new(0, 0, 0)
+local WHITE = Color3.new(1, 1, 1)
 
---[[
-Raises the perceptual lightness of a [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3)
-by `amount`, working in Oklab so the shift looks uniform across hues. A negative `amount` darkens.
-
-[Open Documentation](https://flux.kohl.gg/guide/motion/color#manipulation)
-]]
-function Color.lighten(c: Color3, amount: number): Color3
-	local L, a, b = rgbToOklab(c)
-	return oklabToSRGB(math.clamp(L + amount, 0, 1), a, b)
-end
-
---[[
-Raises the chroma of a [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3) by `amount`
-(making it more vivid) while preserving its perceptual hue and lightness in Oklab. Achromatic colors have
-no hue to grow along and pass through unchanged. A negative `amount` desaturates (washes it out), stopping at gray.
-
-[Open Documentation](https://flux.kohl.gg/guide/motion/color#manipulation)
-]]
-function Color.saturate(c: Color3, amount: number): Color3
-	local L, a, b = rgbToOklab(c)
-	a, b = saturateAB(a, b, amount)
-	return oklabToSRGB(L, a, b)
-end
-
---[[
-Rotates the hue of a [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3) by `degrees`
-around the Oklab color wheel, preserving chroma and lightness. `degrees` is in <strong>degrees</strong>
-(not turns); `360` is a full revolution and negative values rotate the other way.
-
-[Open Documentation](https://flux.kohl.gg/guide/motion/color#manipulation)
-]]
-function Color.rotateHue(c: Color3, degrees: number): Color3
-	local L, a, b = rgbToOklab(c)
-	a, b = rotateAB(a, b, degrees)
-	return oklabToSRGB(L, a, b)
-end
-
---[[
-Strips all chroma from a [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3),
-returning the neutral gray of the same perceptual lightness in Oklab. A truer gray than averaging RGB channels.
-
-[Open Documentation](https://flux.kohl.gg/guide/motion/color#manipulation)
-]]
-function Color.grayscale(c: Color3): Color3
-	local L = rgbToOklab(c)
-	return oklabToSRGB(L, 0, 0)
-end
-
---[[
-Perceptually blends two [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3)s in
-Oklab, where `t` is the fraction from `a` (`0`) to `b` (`1`). Mixing through Oklab avoids the muddy midpoints
-of a raw RGB lerp. `t` is unclamped: values outside <code>[0, 1]</code> extrapolate, matching how
-[`Flux.spring`](https://flux.kohl.gg/guide/motion/spring) and [`Flux.tween`](https://flux.kohl.gg/guide/motion/tween)
-animate color.
-
-[Open Documentation](https://flux.kohl.gg/guide/motion/color#blending)
-]]
-function Color.mix(a: Color3, b: Color3, t: number): Color3
-	local L1, a1, b1 = rgbToOklab(a)
-	local L2, a2, b2 = rgbToOklab(b)
-	return oklabToSRGB(L1 + (L2 - L1) * t, a1 + (a2 - a1) * t, b1 + (b2 - b1) * t)
-end
-
---[[
-The WCAG relative luminance of a [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3),
-from `0` (black) to `1` (white). This is the perceived brightness used to compute `Color.contrast`, weighting
-green most and blue least.
-
-[Open Documentation](https://flux.kohl.gg/guide/motion/color#accessibility)
-]]
-function Color.luminance(c: Color3): number
+local function luminance(c: Color3): number
 	return 0.2126 * toLinear(c.R) + 0.7152 * toLinear(c.G) + 0.0722 * toLinear(c.B)
 end
 
@@ -275,35 +203,83 @@ local function contrastLuminance(la: number, lb: number): number
 	return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05)
 end
 
---[[
-The WCAG contrast ratio between two [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3)s,
-from `1` (identical) to `21` (black on white). The result is order-independent. WCAG asks for at least
-<code>4.5</code> for body text and <code>3</code> for large text.
+local Color = table.freeze({
+	Oklab = Oklab,
+	sRGB = sRGB,
+	--[[
+	Raises the perceptual lightness of `c` in Oklab space by `amount` (negative darkens).
 
-[Open Documentation](https://flux.kohl.gg/guide/motion/color#accessibility)
-]]
-function Color.contrast(a: Color3, b: Color3): number
-	return contrastLuminance(Color.luminance(a), Color.luminance(b))
-end
+	[Open Documentation](https://flux.kohl.gg/guide/motion/color#manipulation)
+	]]
+	lighten = function(c: Color3, amount: number): Color3
+		local L, a, b = rgbToOklab(c)
+		return oklabToSRGB(math.clamp(L + amount, 0, 1), a, b)
+	end,
+	--[[
+	Raises the chroma of `c` in Oklab space by `amount` while preserving hue and lightness (negative desaturates).
 
-local BLACK = Color3.new(0, 0, 0)
-local WHITE = Color3.new(1, 1, 1)
+	[Open Documentation](https://flux.kohl.gg/guide/motion/color#manipulation)
+	]]
+	saturate = function(c: Color3, amount: number): Color3
+		local L, a, b = rgbToOklab(c)
+		a, b = saturateAB(a, b, amount)
+		return oklabToSRGB(L, a, b)
+	end,
+	--[[
+	Rotates the hue of `c` by `degrees` around the Oklab color wheel while preserving chroma and lightness.
 
---[[
-Picks whichever foreground [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3) reads
-more legibly on `bg`: the one with the higher WCAG contrast ratio. `dark` and `light` default to black
-and white; pass your own brand tints to keep on-brand text readable over any background.
+	[Open Documentation](https://flux.kohl.gg/guide/motion/color#manipulation)
+	]]
+	rotateHue = function(c: Color3, degrees: number): Color3
+		local L, a, b = rgbToOklab(c)
+		a, b = rotateAB(a, b, degrees)
+		return oklabToSRGB(L, a, b)
+	end,
+	--[[
+	Strips all chroma from `c`, returning a neutral gray with the same Oklab perceptual lightness.
 
-[Open Documentation](https://flux.kohl.gg/guide/motion/color#accessibility)
-]]
-function Color.readable(bg: Color3, dark: Color3?, light: Color3?): Color3
-	local d = dark or BLACK
-	local l = light or WHITE
-	local lBg = Color.luminance(bg)
-	return if contrastLuminance(lBg, Color.luminance(d)) >= contrastLuminance(lBg, Color.luminance(l)) then d else l
-end
+	[Open Documentation](https://flux.kohl.gg/guide/motion/color#manipulation)
+	]]
+	grayscale = function(c: Color3): Color3
+		local L = rgbToOklab(c)
+		return oklabToSRGB(L, 0, 0)
+	end,
+	--[[
+	Blends `a` and `b` in Oklab space by unclamped fraction `t` (`0` = `a`, `1` = `b`).
 
-table.freeze(Color)
+	[Open Documentation](https://flux.kohl.gg/guide/motion/color#blending)
+	]]
+	mix = function(a: Color3, b: Color3, t: number): Color3
+		local L1, a1, b1 = rgbToOklab(a)
+		local L2, a2, b2 = rgbToOklab(b)
+		return oklabToSRGB(L1 + (L2 - L1) * t, a1 + (a2 - a1) * t, b1 + (b2 - b1) * t)
+	end,
+	--[[
+	Returns the WCAG relative luminance of `c` from `0` (black) to `1` (white).
+
+	[Open Documentation](https://flux.kohl.gg/guide/motion/color#accessibility)
+	]]
+	luminance = luminance,
+	--[[
+	Returns the WCAG contrast ratio between `a` and `b` from `1` (identical) to `21` (black on white).
+
+	[Open Documentation](https://flux.kohl.gg/guide/motion/color#accessibility)
+	]]
+	contrast = function(a: Color3, b: Color3): number
+		return contrastLuminance(luminance(a), luminance(b))
+	end,
+	--[[
+	Returns whichever of `dark` (default black) or `light` (default white) has the higher WCAG contrast ratio against `bg`.
+
+	[Open Documentation](https://flux.kohl.gg/guide/motion/color#accessibility)
+	]]
+	readable = function(bg: Color3, dark: Color3?, light: Color3?): Color3
+		local d = dark or BLACK
+		local l = light or WHITE
+		local lBg = luminance(bg)
+		return if contrastLuminance(lBg, luminance(d)) >= contrastLuminance(lBg, luminance(l)) then d else l
+	end,
+})
 
 -- DataType ------------------------------------------------------------------------------------------------------------
 
@@ -1027,10 +1003,8 @@ end
 MotionStateMetatable.__index = MotionStateMetatable
 
 --[[
-Retargets the animation: the motion now eases toward `value` from wherever it
-currently is, preserving momentum. Equivalent to calling the motion node directly,
-`motion(value)`. A node passed as the goal is read once; to follow a reactive goal
-continuously, pass it as the constructor's `target`.
+Retargets the animation toward `value` from its current position (`motion(value)` does the same). If `value` is a node,
+it's read once.
 
 [Open Documentation](https://flux.kohl.gg/guide/motion/spring#reactive-targets)
 ]]
@@ -1049,9 +1023,7 @@ function MotionStateMetatable.set<T>(self: Graph.Node<T>, value: T)
 end
 
 --[[
-Adds `delta` to the spring's current velocity to nudge it without changing the goal, such as on a drag release or flick.
-<em>Spring only</em>; calling it on a [`Flux.tween`](https://flux.kohl.gg/guide/motion/tween)
-warns and is ignored.
+*(Spring only)* Adds `delta` to the spring's current velocity without changing its goal.
 
 [Open Documentation](https://flux.kohl.gg/guide/motion/spring#velocity-control-impulse-set-velocity)
 ]]
@@ -1063,10 +1035,7 @@ function MotionStateMetatable.impulse<T>(self: Graph.Node<T>, delta: T)
 end
 
 --[[
-Overwrites the spring's velocity outright, replacing
-any existing momentum without changing the goal. Use `impulse` to add to the current velocity
-instead. <em>Spring only</em>; calling it on a
-[`Flux.tween`](https://flux.kohl.gg/guide/motion/tween) warns and is ignored.
+*(Spring only)* Replaces the spring's current velocity with `velocity` without changing its goal.
 
 [Open Documentation](https://flux.kohl.gg/guide/motion/spring#velocity-control-impulse-set-velocity)
 ]]
@@ -1078,7 +1047,9 @@ function MotionStateMetatable.setVelocity<T>(self: Graph.Node<T>, velocity: T)
 end
 
 --[[
-Sets the spring's current animated value immediately without altering the current target or velocity, waking it if it was sleeping.
+*(Spring only)* Sets the spring's current animated value immediately without changing its target or velocity.
+
+[Open Documentation](https://flux.kohl.gg/guide/motion/spring)
 ]]
 function MotionStateMetatable.setCurrent<T>(self: Graph.Node<T>, value: T)
 	local spring = packSpring(self, "setCurrent", value)
@@ -1092,10 +1063,7 @@ function MotionStateMetatable.setCurrent<T>(self: Graph.Node<T>, value: T)
 end
 
 --[[
-Jumps the spring to `value` at rest: the goal and the animated value both become `value` and the velocity drops to
-zero, so nothing animates until the next retarget. Use it to place a spring without a transition, e.g. on first
-show or when a drag hands back to the spring. A node passed as `value` is read once. <em>Spring only</em>; calling
-it on a [`Flux.tween`](https://flux.kohl.gg/guide/motion/tween) warns and is ignored.
+*(Spring only)* Jumps both the target and current value of the spring to `value` and zeroes its velocity.
 
 [Open Documentation](https://flux.kohl.gg/guide/motion/spring#snap)
 ]]
@@ -1158,10 +1126,8 @@ local MotionModule = {
 	NodeToMotion = NodeToMotion,
 	--[[
 	Advances every active [spring](https://flux.kohl.gg/guide/motion/spring) and
-	[tween](https://flux.kohl.gg/guide/motion/tween) by the same `dt` seconds, or by the time since the last step. Wired
-	automatically to [`RunService.PreRender`](https://create.roblox.com/docs/reference/engine/classes/RunService) on a
-	client and `RunService.Heartbeat` on a server, so you call it yourself only to step motion in tests:
-	`Flux.Motion.step(1 / 60)`.
+	[tween](https://flux.kohl.gg/guide/motion/tween) by `dt` seconds (or the time since the last step). Wired to
+	`RunService` automatically in Roblox, so you only call this in tests (`Flux.Motion.step(1 / 60)`).
 
 	[Open Documentation](https://flux.kohl.gg/guide/tips/testing#full-engine-tests-in-ci)
 	]]
@@ -1169,15 +1135,9 @@ local MotionModule = {
 }
 
 --[[
-Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that springs toward `target`, animating any
-supported value type (numbers, [`Vector2`](https://create.roblox.com/docs/reference/engine/datatypes/Vector2),
-[`UDim2`](https://create.roblox.com/docs/reference/engine/datatypes/UDim2),
-[`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3), …). When `target` is reactive,
-the spring retargets on every change, carrying its momentum through. `frequency` sets oscillations per second
-(default `1`, where higher values snap faster) and `damping` sets the damping ratio (`1` is critically damped
-with no overshoot, `<1` springs past and settles, `>1` is sluggish; default `1`); both may be reactive.
-`initialVelocity` sets the starting velocity in the target's type (read once; omit to start at rest). Read the
-returned node anywhere to subscribe to the live animated value.
+Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that animates toward `target` using an analytic harmonic
+oscillator (`frequency` in Hz and `damping` ratio both default to `1` and may be reactive). Retargets preserve current
+velocity.
 
 ```luau
 local size = Flux.spring(function() return if open() then 300 else 0 end, 4)
@@ -1234,13 +1194,9 @@ function MotionModule.spring<A>(
 end
 
 --[[
-Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that animates toward `target` over a fixed
-duration described by a [`TweenInfo`](https://create.roblox.com/docs/reference/engine/datatypes/TweenInfo)
-(easing style, direction, time, repeats). When `target` or the
-[`TweenInfo`](https://create.roblox.com/docs/reference/engine/datatypes/TweenInfo) is reactive, the tween
-restarts toward the new goal from its current value, without the `DelayTime` (a retarget never waits). Read the
-returned node to subscribe to the live animated value. Prefer a
-[`Flux.spring`](https://flux.kohl.gg/guide/motion/spring) for momentum-driven, interruptible motion.
+Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that eases toward `target` over a
+[`TweenInfo`](https://create.roblox.com/docs/reference/engine/datatypes/TweenInfo) curve. When `target` or `tweenInfo`
+changes, the tween restarts from its current value without waiting for `DelayTime`.
 
 [Open Documentation](https://flux.kohl.gg/guide/motion/tween#basic-usage)
 ]]
