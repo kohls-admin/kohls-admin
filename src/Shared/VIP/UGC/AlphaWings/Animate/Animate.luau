@@ -59,7 +59,7 @@ function Animate.play(rig: MeshPart, sequence: KeyframeSequence, loop: boolean?)
 				local originalSize = rig:GetAttribute("OriginalSize")
 				if not originalSize then
 					originalSize = rig.Size
-					rig:SetAttribute("OriginalCFrame", originalSize)
+					rig:SetAttribute("OriginalSize", originalSize)
 				end
 
 				local scale = rig.Size / originalSize

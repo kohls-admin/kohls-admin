@@ -115,11 +115,13 @@ local Title = {
 				local colorAtEnd = hclToRGB(Vector3.new((1 - offset), 0.4, 1))
 				table.insert(keypoints, ColorSequenceKeypoint.new(1, colorAtEnd))
 
-				for i = 0, steps do
+				for i = 1, steps - 1 do
 					local step = i / steps
 					local color = hclToRGB(Vector3.new(step, 0.4, 1))
 					local timeOffset = 1 - ((step + elapsed) % 1)
-					table.insert(keypoints, ColorSequenceKeypoint.new(timeOffset, color))
+					if timeOffset > 0 and timeOffset < 1 then
+						table.insert(keypoints, ColorSequenceKeypoint.new(timeOffset, color))
+					end
 				end
 				table.sort(keypoints, sortKeypoints)
 				return ColorSequence.new(keypoints)
@@ -201,6 +203,9 @@ if RunService:IsClient() then
 		local tag = "_K" .. titleRef
 		local cache = { getValue = definition.getValue, update = definition.update, objects = {} }
 		titleCache[tag] = cache
+		for _, obj in CollectionService:GetTagged(tag) do
+			cache.objects[obj] = true
+		end
 		CollectionService:GetInstanceAddedSignal(tag):Connect(function(obj)
 			cache.objects[obj] = true
 		end)

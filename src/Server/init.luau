@@ -106,7 +106,10 @@ return function(_K)
 	end
 
 	local _initialized
-	function _K.initialize(config: Configuration | ModuleScript | { [string]: any }, oldAddonStructure: Folder?)
+	function _K.initialize(
+		config: Configuration | Folder | ModuleScript | { [string]: any }?,
+		oldAddonStructure: Folder?
+	)
 		if _initialized then
 			return _K
 		end
@@ -118,20 +121,26 @@ return function(_K)
 		if typeof(config) == "Instance" then
 			if config:IsA("ModuleScript") then
 				settings = require(config)
-			elseif config:IsA("Configuration") then
-				config.Parent = Package
+			elseif config:IsA("Configuration") or config:IsA("Folder") then
+				(config :: Instance).Parent = Package
 				local addons = config:FindFirstChild("Addons")
-				addons.Parent = Server
+				if addons then
+					addons.Parent = Server
+				end
 				local settingsModule = config:FindFirstChild("Settings")
 				if settingsModule and settingsModule:IsA("ModuleScript") then
 					settings = require(settingsModule)
 				end
 				local studioThemes = config:FindFirstChild("Themes")
 				if studioThemes then
-					Client.UI.Theme.Themes:ClearAllChildren()
 					for _, child in studioThemes:GetChildren() do
+						local existing = Client.UI.Theme.Themes:FindFirstChild(child.Name)
+						if existing then
+							existing:Destroy()
+						end
 						child.Parent = Client.UI.Theme.Themes
 					end
+					_K.Data.syncThemeDefaults()
 				end
 			end
 		elseif type(config) == "table" then
@@ -146,29 +155,56 @@ return function(_K)
 
 		-- format array role hierarchy
 		do
-			if settings.roles.default then
-				settings.roles.everyone = settings.roles.default
-				settings.roles.default = nil
-			end
-			local roles = {}
-			for rank, definition in settings.roles do
-				if definition.permissions.targetOthers == nil then
-					definition.permissions.targetOthers = not definition.onlyTargetSelf
+			local roles = Util.Table.deepCopy(_K.Data.defaultRoles)
+			if type(settings.roles) == "table" then
+				if settings.roles.default then
+					settings.roles.everyone = settings.roles.default
+					settings.roles.default = nil
 				end
-				if type(rank) == "number" then
-					if definition._key == "default" then
-						definition._key = "everyone"
+				local customRoles = {}
+				for rank, definition in settings.roles do
+					if type(rank) == "number" then
+						if definition._key == "default" then
+							definition._key = "everyone"
+						end
+						settings.roles[rank] = nil
+						definition._rank = rank - 1
+						customRoles[definition._key] = definition
+					else
+						definition._key = rank
+						customRoles[rank] = definition
 					end
-					settings.roles[rank] = nil
-					definition._rank = rank - 1
-					roles[definition._key] = definition
-				else
-					definition._key = rank
+				end
+				for roleKey, definition in customRoles do
+					local existing = roles[roleKey]
+					if existing then
+						for k, v in definition do
+							if type(v) == "table" and type(existing[k]) == "table" and not Util.Table.isArray(v) then
+								Util.Table.merge(existing[k], v)
+							else
+								existing[k] = v
+							end
+						end
+						if
+							definition.onlyTargetSelf ~= nil
+							and (not definition.permissions or definition.permissions.targetOthers == nil)
+						then
+							existing.permissions.targetOthers = not definition.onlyTargetSelf
+						end
+					else
+						definition._rank = definition._rank or 0
+						definition.permissions = definition.permissions or {}
+						if definition.permissions.targetOthers == nil then
+							definition.permissions.targetOthers = not definition.onlyTargetSelf
+						end
+						roles[roleKey] = definition
+					end
 				end
 			end
-			Util.Table.merge(settings.roles, roles)
+			settings.roles = roles
 		end
 
+		settings.bans = settings.bans or {}
 		_K.Data.bans = table.clone(settings.bans)
 		_K.Data.roles = table.clone(settings.roles)
 
@@ -234,12 +270,7 @@ return function(_K)
 
 			local dataStoreScope = "_K_0.1" -- WARN: REQUIRES DATA MIGRATION WHEN CHANGED
 			if _K.Data.SEPARATE_DATASTORE then
-				for role, users in settings.userRoles do
-					if table.find(users, game.PrivateServerOwnerId) then
-						dataStoreScope ..= game.PrivateServerOwnerId
-						break
-					end
-				end
+				dataStoreScope ..= game.PrivateServerOwnerId
 			end
 
 			_K.Data.initialize(dataStoreScope)
@@ -254,24 +285,26 @@ return function(_K)
 		end)
 
 		-- define user roles
-		for role, users in settings.userRoles do
-			for _, user in users do
-				task.spawn(function()
-					local userId
-					if type(user) == "string" then
-						local ok, result = _K.Util.Retry(function()
-							return _K.Service.Players:GetUserIdFromNameAsync(user)
-						end)
-						if ok then
-							userId = result
+		if settings.userRoles then
+			for role, users in settings.userRoles do
+				for _, user in users do
+					task.spawn(function()
+						local userId
+						if type(user) == "string" then
+							local ok, result = _K.Util.Retry(function()
+								return _K.Service.Players:GetUserIdFromNameAsync(user)
+							end)
+							if ok then
+								userId = result
+							end
+						elseif (tonumber(user) or 0) > 0 then
+							userId = tonumber(user)
 						end
-					elseif (tonumber(user) or 0) > 0 then
-						userId = tonumber(user)
-					end
-					if userId then
-						task.spawn(_K.Auth.userRoleAdd, userId, role)
-					end
-				end)
+						if userId then
+							task.spawn(_K.Auth.userRoleAdd, userId, role)
+						end
+					end)
+				end
 			end
 		end
 
@@ -464,7 +497,20 @@ return function(_K)
 		}
 
 		-- server network events
-		local lastLog, cachedLogsBuffer
+		local LogsSubscribers = {}
+		local lastLogsVersion, cachedLogsBuffer
+		local function getSerializedLogs()
+			if lastLogsVersion ~= _K.Data.logsVersion or not cachedLogsBuffer then
+				lastLogsVersion = _K.Data.logsVersion
+				local err
+				cachedLogsBuffer, err = _K.Z.ser(_K.Data.Schema.logsRemote, _K.Data.logs)
+				if not cachedLogsBuffer then
+					warn("Failed to serialize logs:", err)
+				end
+			end
+			return cachedLogsBuffer
+		end
+
 		local _ = _K.Remote.Init:Connect(function(player, initData)
 			local attributes = type(initData) == "table" and initData.Attributes
 			if type(attributes) == "table" then
@@ -482,15 +528,8 @@ return function(_K)
 
 			local logs
 			if _K.Auth.hasPermission(player.UserId, "serverlogs") then
-				if lastLog ~= _K.Data.logs[#_K.Data.logs] or not cachedLogsBuffer then
-					lastLog = _K.Data.logs[#_K.Data.logs]
-					local err
-					cachedLogsBuffer, err = _K.Z.ser(_K.Data.Schema.logsRemote, _K.Data.logs)
-					if not cachedLogsBuffer then
-						warn("Failed to serialize logs:", err)
-					end
-				end
-				logs = cachedLogsBuffer
+				logs = getSerializedLogs()
+				LogsSubscribers[player] = true
 			end
 
 			local bans = if _K.Auth.hasCommand(player.UserId, "ban") then _K.Data.bans else nil
@@ -538,8 +577,8 @@ return function(_K)
 			end
 
 			if
-				settings.vip
-				and settings.addToCharts
+				_K.Data.settings.vip
+				and _K.Data.settings.addToCharts
 				and not _K.Service.Http.HttpEnabled
 				and _K.Auth.hasPermission(player.UserId, "settings")
 			then
@@ -879,7 +918,9 @@ return function(_K)
 				then _K.Data.savedSettings
 				else _K.Data.defaultSettings
 			-- the prefixes and chatCommands are chat command aliases
-			_K.ChatCommands.schedule()
+			if _K.ChatCommands then
+				_K.ChatCommands.schedule()
+			end
 
 			if #changeStrings > 0 then
 				_K.log(`changed settings: {table.concat(changeStrings, " ")}`, "COMMAND", player.UserId)
@@ -1121,6 +1162,24 @@ return function(_K)
 					end
 					ServersSubscribers[player] = true
 				end
+				if player:GetAttribute("_K_READY") then
+					if _K.Auth.hasCommand(userId, "ban") then
+						_K.Remote.Bans:Fire(player, _K.Data.bans)
+					end
+					if _K.Auth.hasCommand(userId, "members") then
+						_K.Remote.Members:Fire(player, _K.Data.members)
+					end
+					if _K.Auth.hasCommand(userId, "place") or _K.Auth.hasCommand(userId, "unreserve") then
+						_K.Remote.ReservedServers:Fire(player, nil, _K.Data.reservedServers)
+					end
+					if _K.Auth.hasPermission(userId, "serverlogs") and not LogsSubscribers[player] then
+						LogsSubscribers[player] = true
+						local logs = getSerializedLogs()
+						if logs then
+							_K.Remote.Logs:Fire(player, logs)
+						end
+					end
+				end
 			end
 		end)
 
@@ -1129,6 +1188,9 @@ return function(_K)
 			if player then
 				if not _K.Auth.hasCommand(userId, "servers") then
 					ServersSubscribers[player] = nil
+				end
+				if not _K.Auth.hasPermission(userId, "serverlogs") then
+					LogsSubscribers[player] = nil
 				end
 			end
 		end)
@@ -1192,6 +1254,7 @@ return function(_K)
 
 		local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
 			ServersSubscribers[player] = nil
+			LogsSubscribers[player] = nil
 
 			local userId = player.UserId
 

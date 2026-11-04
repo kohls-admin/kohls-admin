@@ -122,6 +122,9 @@ function Auth.banUsers(
 
 	local banned, unbanAsync = {}, {}
 	for _, userId in userIds do
+		if userId == Data.creatorId or userId <= 0 then
+			continue
+		end
 		local key = tostring(userId)
 		local ban = Data.bans[key]
 		local savedBan = ban and ban[3] and (ban[3] < 0 or ban[3] > os.time())
@@ -143,8 +146,8 @@ function Auth.banUsers(
 		task.spawn(saveBan, key, userId, newBan, timestamp)
 	end
 
-	if banAsync and timestamp and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
-		banApi(Players.BanAsync, "BanAsync", userIds, {
+	if banAsync and timestamp and #banned > 0 and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio then
+		banApi(Players.BanAsync, "BanAsync", banned, {
 			PrivateReason = reason or "No reason.",
 			DisplayReason = reason or "No reason.",
 			Duration = duration,
@@ -220,7 +223,9 @@ function Auth.networkMember(userId: number)
 		if not player:GetAttribute("_K_READY") then
 			continue
 		end
-		Remote.Member:Fire(player, userIdString, member)
+		if player.UserId == userId or Auth.hasCommand(player.UserId, "members") then
+			Remote.Member:Fire(player, userIdString, member)
+		end
 	end
 end
 
@@ -239,7 +244,10 @@ end
 
 --- Sorts roleIds by lowest to highest
 function Auth.roleIdSortAscending(a: Role, b: Role): boolean
-	return Data.roles[a]._rank < Data.roles[b]._rank
+	local roleA, roleB = Data.roles[a], Data.roles[b]
+	local rankA = if roleA then roleA._rank else 0
+	local rankB = if roleB then roleB._rank else 0
+	return rankA < rankB
 end
 
 --- Adds a role to a user if they don't already have it

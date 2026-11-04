@@ -512,8 +512,10 @@ return {
 			},
 		},
 		run = function(context, players, userId)
-			local appearance = context._K.Service.Players:GetHumanoidDescriptionFromUserId(userId)
-			if not appearance then
+			local appearance = if userId ~= nil
+				then context._K.Service.Players:GetHumanoidDescriptionFromUserId(userId)
+				else nil
+			if userId ~= nil and not appearance then
 				return "Invalid character appearance!"
 			end
 			for _, player in players do
@@ -522,11 +524,16 @@ return {
 				if not humanoid then
 					continue
 				end
+				local playerAppearance = appearance
+					or context._K.Service.Players:GetHumanoidDescriptionFromUserId(player.UserId)
+				if not playerAppearance then
+					continue
+				end
 				local oldDescription = player:FindFirstChild("_KHumanoidDescription")
 				if oldDescription then
 					oldDescription:Destroy()
 				end
-				task.spawn(humanoid.ApplyDescription, humanoid, appearance)
+				task.spawn(humanoid.ApplyDescription, humanoid, playerAppearance)
 			end
 			return
 		end,
@@ -748,7 +755,7 @@ return {
 				if enable and character then
 					local d = distance or 1
 					local switch = false
-					connection = _K.Service.RunService.preRender:Connect(function()
+					connection = _K.Service.Run.PreRender:Connect(function()
 						switch = not switch
 						character:PivotTo(character:GetPivot() * CFrame.new(0, 0, if switch then -d else d))
 					end)
@@ -1364,19 +1371,23 @@ return {
 			end
 			return {
 				apply = function(humanoid: Humanoid, damage: number, duration: number?)
+					if damage <= 0 then
+						return
+					end
+					local dur = math.clamp(duration or 8, 1, 999)
 					local effect = Instance.new("Smoke")
 					effect.Name = "_KPoisonEffect"
 					effect.Color = Color3.new(0.5, 0, 1)
 					effect.Opacity = 0.1
 					effect.RiseVelocity = 0
 					effect.Parent = humanoid.RootPart
-					task.delay(math.clamp(duration or 8, 0, 999), removeEffect, effect)
+					task.delay(dur, removeEffect, effect)
 					local dealt = 0
 					repeat
-						local hit = math.min(damage / (duration or 8) * task.wait(0.8), damage - dealt)
+						local hit = math.min(damage / dur * task.wait(0.8), damage - dealt)
 						dealt += hit
 						humanoid:TakeDamage(hit)
-					until dealt >= damage
+					until dealt >= damage or not humanoid.Parent or humanoid.Health <= 0
 				end,
 			}
 		end,
@@ -1671,8 +1682,11 @@ return {
 		},
 
 		run = function(context, players, scale)
+			local targetScale = if context.undo or scale == nil then 1 else math.clamp(scale, 0.01, 50)
 			for _, player in players do
-				player.Character:ScaleTo(math.clamp(scale, 0.01, 50) or 1)
+				if player.Character then
+					player.Character:ScaleTo(targetScale)
+				end
 			end
 		end,
 	},

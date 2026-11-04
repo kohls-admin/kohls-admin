@@ -755,7 +755,7 @@ return {
 
 		run = function(context, duration)
 			if duration then
-				context.env.remote:FireAll(workspace:GetServerTimeNow(), math.min(duration, 3600))
+				context.env.remote:FireAll(workspace:GetServerTimeNow(), math.clamp(duration, 1, 3600))
 			else
 				context.env.remote:FireAll()
 			end

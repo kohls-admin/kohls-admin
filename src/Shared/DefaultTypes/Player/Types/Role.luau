@@ -4,6 +4,9 @@ local generateValidate = require(script.Parent.Parent:WaitForChild("generateVali
 
 return function(_K)
 	local function roleParse(arg, self)
+		if arg == "" then
+			return false, "Invalid role"
+		end
 		local feedback = {}
 		local players, valid = {}, false
 		for roleId in _K.Data.roles do

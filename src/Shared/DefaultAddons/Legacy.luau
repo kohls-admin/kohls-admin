@@ -141,10 +141,10 @@ return function(_K)
 
 	task.spawn(function()
 		local Package = script.Parent.Parent
-		local Config = Package and Package:WaitForChild("Config", 5)
+		local Config = Package
+			and (if _K.IsServer then Package:FindFirstChild("Config") else Package:WaitForChild("Config", 5))
 		local LEGACY_CONFIG = Config and (Config:FindFirstChild("Legacy") or Config:FindFirstChild("LegacyConfig"))
 		if not LEGACY_CONFIG then
-			warn("LegacyConfig was not found", Package ~= nil, Config ~= nil)
 			return
 		end
 
@@ -336,6 +336,12 @@ return function(_K)
 
 		if settings.Prefix ~= ";" then
 			_K.Data.defaultSettings.prefix = { settings.Prefix }
+			if not _K.Data.savedSettings.useSavedSettings then
+				_K.Data.settings.prefix = _K.Data.defaultSettings.prefix
+			end
+			if _K.ChatCommands then
+				_K.ChatCommands.schedule()
+			end
 		end
 
 		if tonumber(settings.FreeAdmin) then

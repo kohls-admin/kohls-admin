@@ -36,8 +36,9 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 
 		local matched = false
 		for _, target in suggestions do
-			if string.lower(target :: string) == query then
-				table.insert(results, 1, { target, display, value or target })
+			local targetStr = if typeof(target) == "Instance" then target.Name else tostring(target)
+			if string.lower(targetStr) == query then
+				table.insert(results, 1, { targetStr, display, value or target })
 				matched = true
 				break
 			end
@@ -45,12 +46,13 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 		if not matched then
 			local length, suggestion, partial = 0, nil, nil
 			for _, target in suggestions do
-				local startIndex, endIndex = string.find(string.lower(target :: string), query, 1, true)
+				local targetStr = if typeof(target) == "Instance" then target.Name else tostring(target)
+				local startIndex, endIndex = string.find(string.lower(targetStr), query, 1, true)
 				if startIndex then
 					if startIndex == 1 and endIndex > length then -- starts
-						length, suggestion = endIndex, target
+						length, suggestion = endIndex, targetStr
 					elseif length == 0 and not partial then -- contains
-						partial = target
+						partial = targetStr
 					end
 				end
 			end
@@ -62,7 +64,8 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 		end
 		if not matched then
 			for _, target in suggestions do
-				table.insert(levenshtein, { target, display, value or target })
+				local targetStr = if typeof(target) == "Instance" then target.Name else tostring(target)
+				table.insert(levenshtein, { targetStr, display, value or target })
 			end
 		end
 	end

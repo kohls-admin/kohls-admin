@@ -4,7 +4,7 @@ local generateValidate = require(script.Parent.Parent:WaitForChild("generateVali
 
 local function parseRandom(arg, self)
 	arg = if arg == "" then 1 else tonumber(arg)
-	if not arg or math.floor(arg) ~= arg then
+	if not arg or arg ~= arg or arg < 1 or arg == math.huge or math.floor(arg) ~= arg then
 		return nil, "Invalid integer"
 	end
 

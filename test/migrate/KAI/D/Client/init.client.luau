@@ -332,7 +332,7 @@ function f.MatchClr(a, b)
 		end
 	end
 	if not b and a:find("^random") then
-		b = BrickColor.Random()
+		b = BrickColor.random()
 	end
 	b = b and b.Color
 	return b
@@ -600,8 +600,14 @@ do
 	end)
 end
 s.Market.PromptBulkPurchaseFinished:Connect(function(player, status, results)
-	local id = results.Items[1].id
-	if player ~= plr or (id ~= 88978146769822 and id ~= 115403290087767 and id ~= 130880915606069) then
+	if player ~= plr or status ~= Enum.MarketplaceBulkPurchasePromptStatus.Completed then
+		return
+	end
+	if type(results) ~= "table" or type(results.Items) ~= "table" or not results.Items[1] then
+		return
+	end
+	local id = tonumber(results.Items[1].Id or results.Items[1].id)
+	if id ~= 88978146769822 and id ~= 115403290087767 and id ~= 130880915606069 then
 		return
 	end
 	server:FireServer(f.uID .. "KVIPCheck")
@@ -679,7 +685,7 @@ TextChatService.SendingMessage:Connect(function(message)
 	if type(message.Metadata) == "string" and message.Metadata ~= "" then
 		return
 	end
-	if string.find(message.Text, Set.Prefix, 1, true) == 1 then
+	if Set and Set.Prefix and string.find(message.Text, Set.Prefix, 1, true) == 1 then
 		server:FireServer(f.uID .. "KCmdBar", message.Text)
 	end
 end)
@@ -704,7 +710,7 @@ TextChatService.MessageReceived:Connect(function(message)
 		type(text) ~= "string"
 		or text == ""
 		or string.find(text, "^/e ")
-		or string.find(text, Set.Prefix, 1, true) == 1
+		or (Set and Set.Prefix and string.find(text, Set.Prefix, 1, true) == 1)
 	then
 		return
 	end

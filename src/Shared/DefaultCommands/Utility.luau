@@ -174,7 +174,7 @@ return {
 	},
 	{
 		name = "donate",
-		aliases = { "market", "support" },
+		aliases = { "market", "shop", "store", "support" },
 		description = "Shows the market tab in a separate window.",
 		optionalPrefix = true,
 		envClient = function(_K)

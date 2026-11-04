@@ -125,6 +125,7 @@ function _K.removeExcessLogs()
 	local excess = #logs - _K.Logger.limit
 	if excess > 0 then
 		_K.Util.Table.fastRemove(logs, 1, excess)
+		_K.Data.logsVersion = (_K.Data.logsVersion or 0) + 1
 	end
 end
 
@@ -158,6 +159,7 @@ local function flushLogReveals()
 	for _, entry in ready do
 		local stored = entry.stored
 		stored[1] = entry.fullText
+		_K.Data.logsVersion = (_K.Data.logsVersion or 0) + 1
 		if entry.save then
 			table.insert(_K.Data.Sync.logs, stored)
 		end
@@ -250,6 +252,7 @@ function _K.log(text: string, level: LogType, from: number?, filtered: boolean?,
 		end
 
 		table.insert(_K.Data.logs, stored)
+		_K.Data.logsVersion = (_K.Data.logsVersion or 0) + 1
 		_K.Hook.log:Fire(stored)
 		_K.removeExcessLogs()
 

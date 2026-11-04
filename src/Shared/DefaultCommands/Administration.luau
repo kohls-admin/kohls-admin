@@ -292,12 +292,32 @@ return {
 			local membersUnroled = {}
 			for _, userId in members do
 				local key = tostring(userId)
+				local userIdNumber = tonumber(userId) :: number
 				local member = context._K.Data.members[key]
 				if member then
-					context._K.Data.members[key] = nil
+					local removedRoles = {}
+					local remainingRoles = {}
+					for _, roleId in member.roles or {} do
+						if userIdNumber and context._K.Auth.hasAsyncRole(userIdNumber, roleId) then
+							table.insert(remainingRoles, roleId)
+						else
+							table.insert(removedRoles, roleId)
+						end
+					end
+					if #remainingRoles > 0 then
+						member.roles = remainingRoles
+						member.persist = {}
+					else
+						context._K.Data.members[key] = nil
+					end
 					context._K.Data.Sync.members[key] = context._K.Data.REMOVE
-					context._K.Remote.Member:FireAll(key)
-					table.insert(membersUnroled, member and member.name or key)
+					if userIdNumber then
+						context._K.Auth.networkMember(userIdNumber)
+						for _, roleId in removedRoles do
+							context._K.Hook.roleRemoved:Fire(userIdNumber, roleId)
+						end
+					end
+					table.insert(membersUnroled, member.name or key)
 				end
 			end
 

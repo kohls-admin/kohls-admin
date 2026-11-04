@@ -2142,7 +2142,7 @@ return {
 			end
 
 			local _ = _K.Remote.FPS:Connect(function(amount: number?)
-				fps = amount or 32
+				fps = math.max(1, amount or 32)
 				if connection then
 					connection:Disconnect()
 				end

@@ -83,10 +83,79 @@ local Data = {
 	bans = {},
 	members = {},
 	logs = {},
+	logsVersion = 0,
 	reservedServers = {},
 	servers = {},
 	roles = nil,
 	rolesList = {},
+	defaultRoles = {
+		everyone = {
+			_key = "everyone",
+			_rank = 0,
+			name = "Player",
+			color = "#ffffff",
+			groups = { "utility" },
+			limits = { cooldown = 4, commands = 4, targets = 1 },
+			permissions = {
+				admin = false,
+				banasync = false,
+				saveRoles = false,
+				settings = false,
+				serverlogs = false,
+				targetOthers = false,
+			},
+			onlyTargetSelf = true,
+		},
+		vip = {
+			_key = "vip",
+			_rank = 1,
+			name = "VIP",
+			color = "#0ff",
+			groups = { "vip" },
+			limits = { cooldown = 4, commands = 16, targets = 1 },
+			permissions = { targetOthers = false },
+			onlyTargetSelf = true,
+		},
+		mod = {
+			_key = "mod",
+			_rank = 2,
+			name = "Moderator",
+			color = "#0f0",
+			groups = { "moderation", "general", "environment", "fun", "vip" },
+			limits = { cooldown = 4, commands = 32, targets = math.huge },
+			permissions = { serverlogs = true, targetOthers = true },
+		},
+		admin = {
+			_key = "admin",
+			_rank = 3,
+			name = "Administrator",
+			color = "#fc0",
+			groups = { "administration", "moderation", "general", "environment", "fun", "vip" },
+			limits = { cooldown = 4, commands = 64, targets = math.huge },
+			permissions = { banasync = true, serverlogs = true, targetOthers = true },
+		},
+		superadmin = {
+			_key = "superadmin",
+			_rank = 4,
+			name = "SuperAdmin",
+			color = "#f80",
+			groups = { "superadmin", "administration", "moderation", "general", "environment", "fun", "vip" },
+			permissions = {
+				banasync = true,
+				saveRoles = true,
+				settings = true,
+				serverlogs = true,
+				targetOthers = true,
+			},
+		},
+		creator = {
+			_key = "creator",
+			_rank = math.huge,
+			name = "Game Creator",
+			color = "#f00",
+			permissions = { admin = true, targetOthers = true },
+		},
+	},
 
 	logsHidden = {},
 	pendingLogReveals = {} :: { any },
@@ -153,13 +222,16 @@ if game:GetService("RunService"):IsClient() then
 end
 
 -- UI Theme initial settings
-for key, state in pairs(Theme) do
-	if key == "Themes" then
-		continue
-	end
-	if type(state.peek) == "function" then
-		Data.settings["theme" .. key] = state:peek()
+function Data.syncThemeDefaults()
+	for key, state in pairs(Theme) do
+		if key == "Themes" then
+			continue
+		end
+		if type(state) == "table" and type(state.set) == "function" and type(state.peek) == "function" then
+			Data.settings["theme" .. key] = state:peek()
+		end
 	end
 end
+Data.syncThemeDefaults()
 
 return Data

@@ -11,8 +11,14 @@ local LEGACY = false
 
 local CONFIG = Package:FindFirstChild("Config")
 if CONFIG then
-	AUTO_UPDATE = CONFIG:GetAttribute("AutoUpdate")
-	LEGACY = CONFIG:GetAttribute("Legacy")
+	local autoUpdate = CONFIG:GetAttribute("AutoUpdate")
+	if autoUpdate ~= nil then
+		AUTO_UPDATE = autoUpdate
+	end
+	local legacy = CONFIG:GetAttribute("Legacy")
+	if legacy ~= nil then
+		LEGACY = legacy
+	end
 end
 
 do

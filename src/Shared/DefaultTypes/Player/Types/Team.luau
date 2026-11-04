@@ -4,6 +4,9 @@ local generateValidate = require(script.Parent.Parent:WaitForChild("generateVali
 
 return function(_K)
 	local function teamParse(arg, self)
+		if arg == "" then
+			return false, "Invalid team"
+		end
 		local feedback = {}
 		local players, valid = {}, false
 		for _, team in Teams:GetTeams() do

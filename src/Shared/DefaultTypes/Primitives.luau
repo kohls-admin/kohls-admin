@@ -51,7 +51,8 @@ local integerType = {
 		return if v == "" then 0 else tonumber(v), "Invalid number"
 	end,
 	validate = function(v)
-		return v ~= nil and v == math.floor(v), "Only whole numbers are valid"
+		return type(v) == "number" and v == v and math.abs(v) ~= math.huge and v == math.floor(v),
+			"Only whole numbers are valid"
 	end,
 	parse = function(v)
 		return v
@@ -61,7 +62,9 @@ local integerType = {
 local numberType = {
 	filterLog = true,
 	transform = integerType.transform,
-	validate = notNil,
+	validate = function(v)
+		return type(v) == "number" and v == v and math.abs(v) ~= math.huge, "Invalid number"
+	end,
 	parse = function(v)
 		return v
 	end,

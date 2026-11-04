@@ -727,11 +727,11 @@ return {
 			for _, player in players do
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if not humanoid then
-					return
+					continue
 				end
 				local description = humanoid:FindFirstChildOfClass("HumanoidDescription")
 				if not description then
-					return
+					continue
 				end
 
 				local originalDescription = player:FindFirstChild("_KHumanoidDescription")
@@ -771,11 +771,11 @@ return {
 			},
 		},
 		run = function(context, players, fullBundle)
+			if fullBundle then
+				context._K.Registry.commands.bundle:run(players, 201)
+				return
+			end
 			for _, player in players do
-				if fullBundle then
-					context._K.Registry.commands.bundle:run(players, 201)
-					continue
-				end
 				Util.Humanoid.attributeDescription(player, "Head", 15093053680)
 			end
 		end,
@@ -799,12 +799,12 @@ return {
 			},
 		},
 		run = function(context, players, rightLeg)
-			for _, player in players do
-				if rightLeg then
-					Util.Humanoid.attributeDescription(player, "RightLeg", 139607718)
-					continue
-				end
+			if not rightLeg then
 				context._K.Registry.commands.bundle:run(players, 192)
+				return
+			end
+			for _, player in players do
+				Util.Humanoid.attributeDescription(player, "RightLeg", 139607718)
 			end
 		end,
 	},
@@ -821,9 +821,7 @@ return {
 			},
 		},
 		run = function(context, players)
-			for _, player in players do
-				context._K.Registry.commands.bundle:run(players, 292)
-			end
+			context._K.Registry.commands.bundle:run(players, 292)
 		end,
 	},
 	{
@@ -839,9 +837,7 @@ return {
 			},
 		},
 		run = function(context, players)
-			for _, player in players do
-				context._K.Registry.commands.bundle:run(players, 293)
-			end
+			context._K.Registry.commands.bundle:run(players, 293)
 		end,
 	},
 	{
@@ -1848,9 +1844,16 @@ return {
 			fireColor = fireColor or crown:GetAttribute("_KCrownFireColor")
 			crown:RemoveTag("_KSuperCrownRainbow")
 			task.defer(function()
-				crown.Handle.Color = crownColor
-				crown.Handle.Fire.Color = fireColor
-				crown.Handle.Fire.SecondaryColor = crownColor
+				local handle = crown:FindFirstChild("Handle")
+				if not handle or not handle:IsA("BasePart") then
+					return
+				end
+				handle.Color = crownColor
+				local fire = handle:FindFirstChild("Fire")
+				if fire and fire:IsA("Fire") then
+					fire.Color = fireColor
+					fire.SecondaryColor = crownColor
+				end
 			end)
 			return
 		end,
@@ -1879,11 +1882,18 @@ return {
 			if crown:HasTag("_KSuperCrownRainbow") then
 				crown:RemoveTag("_KSuperCrownRainbow")
 				task.defer(function()
+					local handle = crown:FindFirstChild("Handle")
+					if not handle or not handle:IsA("BasePart") then
+						return
+					end
 					local primary = crown:GetAttribute("_KCrownColor") or Color3.new(1, 1, 1)
 					local secondary = crown:GetAttribute("_KCrownFireColor") or Color3.new()
-					crown.Handle.Color = primary
-					crown.Handle.Fire.Color = secondary
-					crown.Handle.Fire.SecondaryColor = primary
+					handle.Color = primary
+					local fire = handle:FindFirstChild("Fire")
+					if fire and fire:IsA("Fire") then
+						fire.Color = secondary
+						fire.SecondaryColor = primary
+					end
 				end)
 			else
 				crown:AddTag("_KSuperCrownRainbow")

@@ -10,8 +10,11 @@ function Property.override(instance: Instance, property: string, value: any)
 		overrides = {}
 		overrideCache[instance] = overrides
 		instance.Destroying:Once(function()
-			for property in overrides do
-				Property.reset(instance, property)
+			for _, cache in overrides do
+				if typeof(cache[3]) == "RBXScriptConnection" then
+					cache[3]:Disconnect()
+				end
+				table.clear(cache)
 			end
 			table.clear(overrides)
 			overrideCache[instance] = nil

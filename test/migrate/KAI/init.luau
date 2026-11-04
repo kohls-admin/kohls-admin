@@ -849,7 +849,7 @@ function f.MatchClr(colorName: string): Color3
 		end
 	end
 	if not brickColor and colorName:find("^random") then
-		brickColor = BrickColor.Random()
+		brickColor = BrickColor.random()
 	end
 	return brickColor and brickColor.Color
 end
@@ -2038,14 +2038,15 @@ function ServerEvent(plr: Player, event, arguments, uID)
 			services.Marketplace:PromptBulkPurchase(plr, items, {})
 		end
 	elseif event == "KVIPCheck" then
-		local value = 4
-		if
-			f.Has(plr, 88978146769822)
-			or f.Has(plr, 115403290087767)
-			or f.Has(plr, 130880915606069) and plr:FindFirstChild("KDonor") and value > plr.KDonor.Value
-		then
-			plr.KDonor.Value = math.max(value, plr.KDonor.Value)
-			DonorCache[plr.UserId] = math.max(value, DonorCache[plr.UserId])
+		local value = if f.Has(plr, 130880915606069)
+			then 4
+			elseif f.Has(plr, 115403290087767) then 3
+			elseif f.Has(plr, 88978146769822) then 2
+			else 0
+		local donor = plr:FindFirstChild("KDonor")
+		if donor and value > donor.Value then
+			donor.Value = math.max(value, donor.Value)
+			DonorCache[plr.UserId] = math.max(value, DonorCache[plr.UserId] or 0)
 			if f.isVIPAdmin(plr) then
 				f.Msg(plr, { ScriptName, "Welcome!", f.AdminMsg(plr) }, plr)
 			end
@@ -4140,7 +4141,7 @@ function LoadCommands()
 						if plr2 and plr2.Character and FindChild(plr2.Character, "HumanoidRootPart") then
 							local pt = new("SelectionPartLasso")({
 								Parent = plr.Character,
-								Color = BrickColor.Random(),
+								Color = BrickColor.random(),
 								Name = "KLink",
 								Humanoid = plr.Character.Humanoid,
 								Part = plr2.Character.HumanoidRootPart,

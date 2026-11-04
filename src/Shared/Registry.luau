@@ -109,15 +109,27 @@ function Registry.makeSequenceType(definition: SequenceDefinition?)
 	return {
 		prefixes = options.prefixes,
 		transform = function(text)
-			return Util.Table.map(string.split(text, ","), function(text)
-				return options.transform(text)
-			end)
+			local raw = string.split(text, ",")
+			local out = {}
+			for i = 1, #raw do
+				local val = options.transform(raw[i])
+				out[i] = val
+				if val == nil then
+					out.n = #raw
+				end
+			end
+			return out
 		end,
 		validate = function(components)
-			if options.length and #components > options.length then
-				return false, `Maximum of {options.length} values allowed in sequence`
+			local count = components.n or #components
+			local maxLen = options.length or options.Length
+			if maxLen and count > maxLen then
+				return false, `Maximum of {maxLen} values allowed in sequence`
 			end
-			for i = 1, options.Length or #components do
+			for i = 1, maxLen or count do
+				if i > count then
+					break
+				end
 				local valid, reason = options.validate(components[i], i)
 				if not valid then
 					return false, reason
@@ -126,7 +138,7 @@ function Registry.makeSequenceType(definition: SequenceDefinition?)
 			return true
 		end,
 		parse = options.parse or function(components)
-			return options.constructor(unpack(components))
+			return options.constructor(unpack(components, 1, components.n or #components))
 		end,
 	}
 end
@@ -257,14 +269,11 @@ end
 
 --- Registers a local command alias
 function Registry.registerCommandAlias(_K: any, alias: string, command: string)
-	print("command alias", alias, command)
 	local oldAlias = aliases[alias]
 	if not oldAlias and Registry.commands[string.lower(alias)] then
 		warn("Command alias already exists")
 		return
 	end
-
-	print("adding command alias", alias, command)
 
 	Registry.registerCommand(_K, {
 		name = alias,
@@ -273,7 +282,7 @@ function Registry.registerCommandAlias(_K: any, alias: string, command: string)
 		group = "Utility",
 		args = {},
 		runClient = function(context)
-			context.Process.runCommands(context, Players.LocalPlayer, command)
+			context._K.Process.runCommands(context._K, Players.LocalPlayer.UserId, `{_K.getCommandPrefix()}{command}`)
 		end,
 	})
 end

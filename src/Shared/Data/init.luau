@@ -65,7 +65,7 @@ end
 local function fillMemberName(key, data)
 	local userId = tonumber(key)
 	data.name = Util.getUserInfo(userId).Username
-	if data.persist then
+	if data.persist and #data.persist > 0 then
 		Data.Sync.members[key] = { data.name, data.persist }
 	end
 end
@@ -81,6 +81,7 @@ local SAVE_TIME = {
 	members = {},
 	settings = {},
 }
+local lastSyncTime = 0
 
 local updatingBans = false
 local function updateBans()
@@ -88,18 +89,19 @@ local function updateBans()
 		return
 	end
 	updatingBans = true
-	local saveBans = SAVE.bans
-	SAVE.bans = {}
+	while next(SAVE.bans) ~= nil do
+		local saveBans = SAVE.bans
+		SAVE.bans = {}
 
-	local ok, result = Data.Store.updateAsync("Bans", function(value)
-		return if not value then Data.filterRemove(saveBans) else Data.mergeRemove(value, saveBans)
-	end)
+		local ok, result = Data.Store.updateAsync("Bans", function(value)
+			return Data.mergeRemove(value or {}, saveBans)
+		end)
 
-	updatingBans = false
-
-	if ok and not Data.gameClosing then
-		task.defer(dataLimitWarning, "ban", #Http:JSONEncode(result))
+		if ok and not Data.gameClosing then
+			task.defer(dataLimitWarning, "ban", #Http:JSONEncode(result))
+		end
 	end
+	updatingBans = false
 end
 
 local updatingMain = false
@@ -108,23 +110,24 @@ local function updateMain()
 		return
 	end
 	updatingMain = true
-	local saveMembers, saveSettings = SAVE.members, SAVE.settings
-	SAVE.members, SAVE.settings = {}, {}
+	while next(SAVE.members) ~= nil or next(SAVE.settings) ~= nil do
+		local saveMembers, saveSettings = SAVE.members, SAVE.settings
+		SAVE.members, SAVE.settings = {}, {}
 
-	local ok, result = Data.Store.updateAsync("Main", function(value)
-		if not value then
-			return Data.filterRemove({ saveMembers, saveSettings })
+		local ok, result = Data.Store.updateAsync("Main", function(value)
+			if not value then
+				return { Data.mergeRemove({}, saveMembers), Data.mergeRemove({}, saveSettings) }
+			end
+			Data.mergeRemove(value[1], saveMembers)
+			Data.mergeRemove(value[2], saveSettings)
+			return value
+		end)
+
+		if ok and not Data.gameClosing then
+			task.defer(dataLimitWarning, "member", #Http:JSONEncode(result))
 		end
-		Data.mergeRemove(value[1], saveMembers)
-		Data.mergeRemove(value[2], saveSettings)
-		return value
-	end)
-
-	updatingMain = false
-
-	if ok and not Data.gameClosing then
-		task.defer(dataLimitWarning, "member", #Http:JSONEncode(result))
 	end
+	updatingMain = false
 end
 
 -- serialized log sizes, kept off the log rows because the same rows are sent to other servers as JSON arrays
@@ -157,70 +160,78 @@ local function updateLogs()
 		return
 	end
 	updatingLogs = true
-	local saveLogs = SAVE.logs
-	SAVE.logs = {}
 
-	local n = 0
-	local saveLogsSize = getLogsSize(saveLogs)
-	while saveLogsSize > DATA_LIMIT do
-		n += 1
-		saveLogsSize -= logSizes[saveLogs[n]]
-		saveLogs[n] = nil
-	end
-	if n > 0 then
-		Util.Table.settle(saveLogs)
-	end
+	while #SAVE.logs > 0 do
+		local saveLogs = SAVE.logs
+		SAVE.logs = {}
 
-	Data.Store.updateAsync("Logs_" .. math.random(4), function(value, keyInfo: DataStoreKeyInfo)
-		local metadata = if keyInfo then keyInfo:GetMetadata() else {}
-		local formatVersion = if value then (metadata.version or 0) else LOG_FORMAT_VERSION
-
-		metadata.version = LOG_FORMAT_VERSION
-
-		if not value or type(value) ~= "buffer" then
-			return serLogs(saveLogs), {}, metadata
+		local n = 0
+		local saveLogsSize = getLogsSize(saveLogs)
+		while saveLogsSize > DATA_LIMIT and n < #saveLogs do
+			n += 1
+			saveLogsSize -= logSizes[saveLogs[n]]
+			saveLogs[n] = nil
+		end
+		if n > 0 then
+			Util.Table.settle(saveLogs)
 		end
 
-		local desSchema = if formatVersion <= 0 then Data.Schema.logsV0 else Data.Schema.logs
-		local ok, result = pcall((Z.des :: unknown) :: (...any) -> ...any, desSchema, value)
+		Data.Store.updateAsync("Logs_" .. math.random(4), function(value, keyInfo: DataStoreKeyInfo)
+			local metadata = if keyInfo then keyInfo:GetMetadata() else {}
+			local formatVersion = if value then (metadata.version or 0) else LOG_FORMAT_VERSION
 
-		if not ok then
-			warn("Failed to deserialize logs:", result)
-			return serLogs(saveLogs), {}, metadata
-		end
+			metadata.version = LOG_FORMAT_VERSION
 
-		local logs = result
-
-		if formatVersion <= 0 then
-			for i, log in logs do
-				log[1], log[2], log[3], log[4], log[5] = log.text, log.level, log.time, log.from, log.name
-				log.text, log.level, log.time, log.from, log.name = nil, nil, nil, nil, nil
+			if not value or type(value) ~= "buffer" then
+				return serLogs(saveLogs), {}, metadata
 			end
-		end
 
-		local thirtyDaysAgo = workspace:GetServerTimeNow() - 30 * 86400
-		local count = 1
-		for i, log in logs do
-			if log[3] < thirtyDaysAgo then
-				logs[i] = nil
+			local desSchema = if formatVersion <= 0 then Data.Schema.logsV0 else Data.Schema.logs
+			local ok, result = pcall((Z.des :: unknown) :: (...any) -> ...any, desSchema, value)
+
+			if not ok then
+				warn("Failed to deserialize logs:", result)
+				return serLogs(saveLogs), {}, metadata
+			end
+
+			local logs = result
+
+			if formatVersion <= 0 then
+				for i, log in logs do
+					log[1], log[2], log[3], log[4], log[5] = log.text, log.level, log.time, log.from, log.name
+					log.text, log.level, log.time, log.from, log.name = nil, nil, nil, nil, nil
+				end
+			end
+
+			local thirtyDaysAgo = workspace:GetServerTimeNow() - 30 * 86400
+			local expired = false
+			for i, log in logs do
+				if log[3] < thirtyDaysAgo then
+					logs[i] = nil
+					expired = true
+				end
+			end
+			if expired then
+				Util.Table.settle(logs)
+			end
+
+			local count = 1
+			local totalLogs = #logs
+			local size = getLogsSize(logs) + saveLogsSize
+			while size > DATA_LIMIT and count <= totalLogs do
+				size -= logSizes[logs[count]]
+				logs[count] = nil
 				count += 1
 			end
-		end
+			if count > 1 then
+				Util.Table.settle(logs)
+			end
 
-		local size = getLogsSize(logs) + saveLogsSize
-		while size > DATA_LIMIT do
-			size -= logSizes[logs[count]]
-			logs[count] = nil
-			count += 1
-		end
-		if count > 1 then
-			Util.Table.settle(logs)
-		end
+			Util.Table.mergeList(logs, saveLogs)
 
-		Util.Table.mergeList(logs, saveLogs)
-
-		return serLogs(logs), {}, metadata
-	end)
+			return serLogs(logs), {}, metadata
+		end)
+	end
 
 	updatingLogs = false
 end
@@ -265,6 +276,8 @@ local SYNC = {
 			end
 			data.persist = persist
 
+			local userIdNumber = tonumber(key) :: number
+			local removedRoles, addedRoles = {}, {}
 			local member = state[key]
 			if member then
 				data.roles = member.roles
@@ -278,13 +291,13 @@ local SYNC = {
 
 				-- remove roles that were saved but now aren't
 				if member.persist then
-					local userIdNumber = tonumber(key) :: number
 					for i = #data.roles, 1, -1 do
 						local role = data.roles[i]
 						local hadRole = table.find(member.persist, role)
 						local hasRole = table.find(data.persist, role)
 						if hadRole and not hasRole and not Auth.hasAsyncRole(userIdNumber, role) then
 							table.remove(data.roles, i)
+							table.insert(removedRoles, role)
 						end
 					end
 				end
@@ -293,20 +306,37 @@ local SYNC = {
 				for _, roleId in data.persist do
 					if not table.find(data.roles, roleId) then
 						table.insert(data.roles, roleId)
+						table.insert(addedRoles, roleId)
 					end
 				end
 			else
 				data.roles = table.clone(data.persist)
+				for _, roleId in data.roles do
+					table.insert(addedRoles, roleId)
+				end
 			end
 
 			if #data.roles == 0 then -- remove member
 				state[key] = nil
 				changes[userId] = nil
+				if userIdNumber then
+					for _, roleId in removedRoles do
+						Hook.roleRemoved:Fire(userIdNumber, roleId)
+					end
+				end
 				continue
 			end
 
 			table.sort(data.persist, Auth.roleIdSort)
 			table.sort(data.roles, Auth.roleIdSort)
+			if userIdNumber then
+				for _, roleId in removedRoles do
+					Hook.roleRemoved:Fire(userIdNumber, roleId)
+				end
+				for _, roleId in addedRoles do
+					Hook.roleAdded:Fire(userIdNumber, roleId)
+				end
+			end
 		end
 
 		Util.Table.merge(state, changes)
@@ -320,7 +350,12 @@ local SYNC = {
 
 		for _, player in Players:GetPlayers() do
 			if player:GetAttribute("_K_READY") then
-				Remote.Members:Fire(player, state)
+				if Auth.hasCommand(player.UserId, "members") then
+					Remote.Members:Fire(player, state)
+				else
+					local selfKey = tostring(player.UserId)
+					Remote.Members:Fire(player, { [selfKey] = state[selfKey] })
+				end
 			end
 		end
 	end,
@@ -342,11 +377,17 @@ local SYNC = {
 		Migrate.Settings(changes)
 
 		if changes.prefix then
-			local prefix = if type(changes.prefix) == "table" then changes.prefix[1] else changes.prefix
-			state.prefix = table.clone(Data.settingsModuleData.prefix)
-			if not table.find(state.prefix, prefix) then
-				table.insert(state.prefix, 1, prefix)
+			local prefixes = if type(changes.prefix) == "table"
+				then table.clone(changes.prefix)
+				else { tostring(changes.prefix) }
+			if Data.settingsModuleData and type(Data.settingsModuleData.prefix) == "table" then
+				for _, p in Data.settingsModuleData.prefix do
+					if not table.find(prefixes, p) then
+						table.insert(prefixes, p)
+					end
+				end
 			end
+			state.prefix = prefixes
 			changes.prefix = state.prefix
 		end
 
@@ -392,6 +433,7 @@ local SYNC = {
 			end
 			Util.Defer.wait()
 			table.sort(state, Util.Logger.sortTime)
+			Data.logsVersion = (Data.logsVersion or 0) + 1
 
 			local ser, feedback = Z.ser(Data.Schema.logsRemote, filtered)
 			if ser == nil then
@@ -450,6 +492,9 @@ local function syncChanges(changes)
 		Hook.preSyncMain:Fire(changes)
 	end
 	local syncTime = changes._time
+	if type(syncTime) == "number" and syncTime > lastSyncTime then
+		lastSyncTime = syncTime
+	end
 	for key, info in changes do
 		if key == "_time" then
 			continue
@@ -545,7 +590,8 @@ local cacheKeys = { bans = "set", members = "set", settings = "set", logs = "ins
 local function processSync()
 	local changes = {}
 	local changed = false
-	local now = DateTime.now().UnixTimestampMillis
+	lastSyncTime = math.max(DateTime.now().UnixTimestampMillis, lastSyncTime + 1)
+	local now = lastSyncTime
 
 	-- process changes
 	for key, action in cacheKeys do
@@ -612,7 +658,6 @@ local function processSync()
 		local id = Http:GenerateGUID(false)
 		idsFromThisServer[id] = true
 
-		local now = DateTime.now().UnixTimestampMillis
 		local chunks = ChunkChanges(changes)
 
 		for chunkId, chunk in chunks do
@@ -623,20 +668,12 @@ local function processSync()
 					SYNC_HASH_MAPS[n]:SetAsync(id .. "_" .. chunkId, chunk, HASH_EXPIRY)
 				end, math.huge)
 			end
-			table.clear(chunk)
 		end
 
 		task.delay(HASH_EXPIRY, removeIdFromThisServer, id)
 		Util.Retry(function()
 			Util.Service.Messaging:PublishAsync(DATA_KEY, { id, #chunks })
 		end, math.huge)
-		for _, v in changes do
-			if type(v) == "table" then
-				table.clear(v)
-			end
-		end
-		table.clear(changes)
-		table.clear(chunks)
 	end
 
 	return changed
@@ -776,13 +813,19 @@ function Data.initialize(scope)
 				end
 
 				for chunkId = 1, chunkCount do
-					local ok, changes = Util.Retry(function()
-						-- get random map for #HASH_PARTITIONS * request limit
-						return SYNC_HASH_MAPS[math.random(HASH_PARTITIONS)]:GetAsync(id .. "_" .. chunkId)
-					end, math.huge)
-					-- the chunk can expire before it's read, skip it instead of erroring out of the rest
-					if ok and type(changes) == "table" then
-						syncChanges(changes)
+					local key = id .. "_" .. chunkId
+					local start = math.random(HASH_PARTITIONS)
+					for offset = 0, HASH_PARTITIONS - 1 do
+						local partition = (start + offset - 1) % HASH_PARTITIONS + 1
+						local ok, changes = Util.Retry(function()
+							-- get random map for #HASH_PARTITIONS * request limit
+							return SYNC_HASH_MAPS[partition]:GetAsync(key)
+						end, math.huge)
+						-- the chunk can expire or be evicted/stale on one partition; fall back across partitions
+						if ok and type(changes) == "table" and next(changes) ~= nil then
+							syncChanges(changes)
+							break
+						end
 					end
 				end
 			end)
@@ -794,28 +837,40 @@ function Data.initialize(scope)
 			settings = if metaMain then metaMain.UpdatedTime else 0,
 			logs = logsUpdatedTime,
 		}
+		lastSyncTime = math.max(lastSyncTime, times.bans, times.members, times.settings, times.logs)
 		task.spawn(function()
-			local hashmap = SYNC_HASH_MAPS[math.random(HASH_PARTITIONS)]
-			local success, items = pcall(Util.MemoryStore.getItemsFromHashMap, hashmap)
-			if success then
-				local sorted = {}
-				for _, changes in items do
-					table.insert(sorted, changes)
-				end
-				table.sort(sorted, function(a, b)
-					return (a._time or 0) < (b._time or 0)
-				end)
-				for _, changes in sorted do
-					for setting in changes do
-						if setting == "_time" then
-							continue
-						end
-						if (changes._time or math.huge) <= (times[setting] or 0) then
-							changes[setting] = nil -- strip stale data
+			local items = {}
+			local start = math.random(HASH_PARTITIONS)
+			for offset = 0, HASH_PARTITIONS - 1 do
+				local hashmap = SYNC_HASH_MAPS[(start + offset - 1) % HASH_PARTITIONS + 1]
+				local success, partItems = Util.Retry(function()
+					return Util.MemoryStore.getItemsFromHashMap(hashmap)
+				end, math.huge)
+				if success and type(partItems) == "table" then
+					for k, changes in partItems do
+						if type(changes) == "table" and items[k] == nil then
+							items[k] = changes
 						end
 					end
-					syncChanges(changes)
 				end
+			end
+			local sorted = {}
+			for _, changes in items do
+				table.insert(sorted, changes)
+			end
+			table.sort(sorted, function(a, b)
+				return (a._time or 0) < (b._time or 0)
+			end)
+			for _, changes in sorted do
+				for setting in changes do
+					if setting == "_time" then
+						continue
+					end
+					if (changes._time or math.huge) <= (times[setting] or 0) then
+						changes[setting] = nil -- strip stale data
+					end
+				end
+				syncChanges(changes)
 			end
 		end)
 	end

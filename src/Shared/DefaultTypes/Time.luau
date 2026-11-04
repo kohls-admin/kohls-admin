@@ -40,9 +40,13 @@ return function(_K)
 			return true, -1
 		end
 
-		if tonumber(input) then
+		local num = tonumber(input)
+		if num then
+			if num ~= num or num < 0 or num == math.huge then
+				return false, "Invalid time duration"
+			end
 			-- no units specified, default to seconds?
-			return true, tonumber(input) :: number
+			return true, num
 		end
 		-- the whole input must be durations, so text that only contains one falls through to the next argument
 		local rest, count = string.gsub(input :: string, TIME_PATTERN, "")

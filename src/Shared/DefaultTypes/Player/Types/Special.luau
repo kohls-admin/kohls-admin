@@ -17,15 +17,23 @@ return function(_K)
 			return not _K.Data.members[tostring(player.UserId)]
 		end,
 		friends = function(player, from)
-			return player ~= from and player:IsFriendsWith(from)
+			return player ~= from and from ~= nil and player:IsFriendsWith(from.UserId)
 		end,
 		close = function(player, from)
-			return if player.Character and from.Character
+			return if player.Character
+					and player.Character.PrimaryPart
+					and from
+					and from.Character
+					and from.Character.PrimaryPart
 				then player:DistanceFromCharacter(from.Character.PrimaryPart.Position) <= 100
 				else false
 		end,
 		far = function(player, from)
-			return if player.Character and from.Character
+			return if player.Character
+					and player.Character.PrimaryPart
+					and from
+					and from.Character
+					and from.Character.PrimaryPart
 				then player:DistanceFromCharacter(from.Character.PrimaryPart.Position) > 100
 				else false
 		end,
@@ -95,6 +103,9 @@ return function(_K)
 	table.sort(specialSuggestions)
 
 	local function specialParse(arg, self)
+		if arg == "" then
+			return false, "Invalid match"
+		end
 		for match, check in specialReference do
 			if match == "distance" or match == "group" then
 				if string.find(arg, match :: string, 1, true) ~= 1 then

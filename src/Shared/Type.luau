@@ -1,3 +1,4 @@
+--- @within Registry
 export type Dict = { [any]: any }
 
 --- @within Registry
