@@ -674,7 +674,10 @@ return {
 					ownsEmote(false)
 				end
 
-				if not animation then
+				if type(animation) ~= "number" then
+					if env.window then
+						env.window._instance.Visible = false
+					end
 					return
 				end
 

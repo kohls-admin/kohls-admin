@@ -1519,9 +1519,12 @@ describe("DefaultCommands", function()
 		runSrv(";emote TargetPlr 507771019")
 		_K.Remote.Emote:Fire(srvP1, 507771019)
 		c.world:run(0.05)
+		local emoteEnv = clientK.Registry.commands.emote.env
+		expect(emoteEnv.window._instance.Visible).toBe(true)
 		runSrv(";stopemote TargetPlr")
 		_K.Remote.Emote:Fire(srvP1, nil)
 		c.world:run(0.05)
+		expect(emoteEnv.window._instance.Visible).toBe(false)
 
 		-- Verify emote ownership & VIP bypass in emote.run
 		do
