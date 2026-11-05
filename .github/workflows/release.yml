@@ -62,7 +62,6 @@ jobs:
         id: release
         uses: kohltastrophe/release@v1.0.0
         with:
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
           wait-for-ci: ci.yml
 
@@ -104,10 +103,13 @@ jobs:
         run: |
           assets=(MainModule.rbxm KohlsAdmin.rbxm)
           if gh release view "$TAG" > /dev/null 2>&1; then
-            if [ -n "$NOTES_FILE" ] && [ -f "$NOTES_FILE" ]; then
-              gh release edit "$TAG" --title "Kohl's Admin $VERSION" --notes-file "$NOTES_FILE"
-            fi
+            git push --force origin "$GITHUB_SHA:refs/tags/$TAG"
             gh release upload "$TAG" "${assets[@]}" --clobber
+            if [ -n "$NOTES_FILE" ] && [ -f "$NOTES_FILE" ]; then
+              gh release edit "$TAG" --target "$GITHUB_SHA" --title "Kohl's Admin $VERSION" --notes-file "$NOTES_FILE"
+            else
+              gh release edit "$TAG" --target "$GITHUB_SHA" --title "Kohl's Admin $VERSION"
+            fi
           elif git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null 2>&1; then
             if [ "$PRERELEASE" = true ]; then
               gh release create "$TAG" "${assets[@]}" \
