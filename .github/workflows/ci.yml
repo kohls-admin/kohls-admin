@@ -28,7 +28,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          persist-credentials: false
 
       - name: Conventional Commits and version check
         uses: kohltastrophe/release@v1.0.0
@@ -40,6 +39,16 @@ jobs:
 
       - name: sert lint
         run: python3 tools/sert.py lint
+
+      - name: Update llms.txt
+        run: npx --yes luaudocs@latest llms
+
+      - name: Commit llms.txt
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
+        with:
+          commit_message: "docs: update llms.txt"
+          file_pattern: "llms.txt"
 
       - name: sert run
         run: python3 tools/sert.py run --coverage
