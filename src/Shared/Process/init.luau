@@ -39,6 +39,9 @@ end
 
 --- Parses a string into a raw command format.
 function Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?
+	if delimiter == "%s" then
+		delimiter = " "
+	end
 	local escapedSplit = Util.String.escapePattern(delimiter)
 	local commandFormat = '%s[^%s"`,%s]'
 	local commandStart, prefix

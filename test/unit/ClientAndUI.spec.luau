@@ -2041,6 +2041,21 @@ describe("Client and UI", function()
 				expect(dArg3.argIndex).toBe(4)
 				expect(dArg3.rawArg).toBe("some reason here   ")
 
+				-- Greedy chatString / stringGreedy commands (`;m h` and `;m he`) with legacy splitKey = "%s"
+				_K.Data.settings.splitKey = "%s"
+				local dMsgH = CompletionData(_K, ";m h", 5)
+				expect(dMsgH.commandDefinition).toBe(_K.Registry.commands.message)
+				expect(dMsgH.argIndex).toBe(2)
+				expect(dMsgH.rawArg).toBe("h")
+				expect(#dMsgH.invalid).toBe(0)
+				local dMsgHe = CompletionData(_K, ";m he   ", 9)
+				expect(dMsgHe.commandDefinition).toBe(_K.Registry.commands.message)
+				expect(dMsgHe.argIndex).toBe(2)
+				expect(dMsgHe.rawArg).toBe("he   ")
+				expect(dMsgHe.suggestionType).toBe(_K.Registry.types.chatString)
+				expect(#dMsgHe.invalid).toBe(0)
+				_K.Data.settings.splitKey = " "
+
 				-- Invalid argument value (targeting self when ignoreSelf = true)
 				local dBadArg = CompletionData(_K, ";ban Player1 10m", 17)
 				expect(#dBadArg.invalid > 0).toBe(true)

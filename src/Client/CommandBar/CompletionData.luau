@@ -47,9 +47,10 @@ return function(_K, text, cursorPosition)
 		local commandDefinition = _K.Registry.commands[commandAlias]
 
 		local lastArgDefinition = commandDefinition and commandDefinition.args[#commandDefinition.args]
+		local lastArgType = lastArgDefinition and _K.Registry.types[lastArgDefinition.type]
 		local lastArg = commandArray[#commandArray]
 		local commandEnd = lastArg[1] + #lastArg[2]
-		local greedy = lastArgDefinition and (lastArgDefinition.type == "string" or lastArgDefinition.type == "strings")
+		local greedy = lastArgType ~= nil and lastArgType.freeText == true
 
 		if cursorPosition < commandArray[1][1] or cursorPosition > commandEnd then --outside current query
 			if not commandDefinition and not greedy then

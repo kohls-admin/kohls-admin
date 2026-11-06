@@ -495,7 +495,7 @@ describe("Chat and Server", function()
 						chatCommands = true,
 						commandRequests = true,
 						prefix = ";",
-						splitKey = " ",
+						splitKey = "%s",
 						defaultTheme = "MigratedTheme",
 						commands = {
 							mod = { ban = true },
@@ -553,6 +553,7 @@ describe("Chat and Server", function()
 				expect(table.find(_K.Data.rolesList, _K.Data.roles.customStr) ~= nil).toBe(true)
 				expect(_K.Data.rolesList[1]._rank <= _K.Data.rolesList[#_K.Data.rolesList]._rank).toBe(true)
 				expect(_K.Data.defaultSettings.vip).toBe(true)
+				expect(_K.Data.defaultSettings.splitKey).toBe(" ")
 				expect(_K.Data.defaultSettings.welcomeBadgeId).toBe(1234)
 				expect(_K.Data.settings).toBe(_K.Data.savedSettings)
 				expect(_K.Data.roles.mod.commands.ban).toBe(true)

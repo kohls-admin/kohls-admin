@@ -1122,7 +1122,7 @@ describe("Process · Command filters & async roles", function()
 			Data.settings.prefix = { ";" }
 			local Process = _K.Process
 
-			-- 1. Pattern-special splitKey (% and .) does not error or split every character
+			-- 1. Pattern-special splitKey (% and .) does not error or split every character, and legacy "%s" normalizes to " "
 			for _, delim in { "%", "." } do
 				local parsed = Process.rawParse(";cmds%a%;version", { ";" }, delim)
 				expect(parsed ~= nil).toBe(true)
@@ -1133,6 +1133,9 @@ describe("Process · Command filters & async roles", function()
 					expect((parsed :: any)[2][1][2]).toBe("version")
 				end
 			end
+			local legacyParsed = Process.rawParse(";m h", { ";" }, "%s")
+			expect(legacyParsed).toEqual({ { { 2, "m" }, { 4, "h" } } })
+			expect(Process.rawParse(";m he", { ";" }, "%s")).toEqual({ { { 2, "m" }, { 4, "he" } } })
 
 			-- 2. Argument:prepare with limits.targets = 1 allows 1 target across validate + parse and rejects 2
 			local vipPlr = h.env:addPlayer(501, "VipTargetTester")

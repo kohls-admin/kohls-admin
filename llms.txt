@@ -734,12 +734,12 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [Process](src/Shared/Process/init.luau)
 - [`Process.ignoreFormat: string`](src/Shared/Process/init.luau#L18)
 - [`Process.addCommandFilter(filter: (command: any) -> (boolean, string?)): () -> ()`](src/Shared/Process/init.luau#L29-L38): Adds a filter that every command passes before it runs on this side, synchronously in Command:run before command requests are split off.
-- [`Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?`](src/Shared/Process/init.luau#L41-L128): Parses a string into a raw command format.
-- [`Process.resetLimit(from: number)`](src/Shared/Process/init.luau#L135-L137)
-- [`Process.onCooldown(_K: any, from: number): boolean`](src/Shared/Process/init.luau#L139-L146)
-- [`Process.countCommand(_K: any, from: number, amount: number?)`](src/Shared/Process/init.luau#L148-L161)
-- [`Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?)`](src/Shared/Process/init.luau#L163-L249): [Client]
-- [`Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?, clientOnly: boolean?): boolean`](src/Shared/Process/init.luau#L256-L461): [Client] Parses and runs a command string from a user.
+- [`Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?`](src/Shared/Process/init.luau#L41-L131): Parses a string into a raw command format.
+- [`Process.resetLimit(from: number)`](src/Shared/Process/init.luau#L138-L140)
+- [`Process.onCooldown(_K: any, from: number): boolean`](src/Shared/Process/init.luau#L142-L149)
+- [`Process.countCommand(_K: any, from: number, amount: number?)`](src/Shared/Process/init.luau#L151-L164)
+- [`Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?)`](src/Shared/Process/init.luau#L166-L252): [Client]
+- [`Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?, clientOnly: boolean?): boolean`](src/Shared/Process/init.luau#L259-L464): [Client] Parses and runs a command string from a user.
 
 ## MainModule.Registry
 
