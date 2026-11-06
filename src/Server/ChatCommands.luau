@@ -118,16 +118,15 @@ function ChatCommands.aliasGroups(
 	return groups, skipped
 end
 
+local DEFAULT_ALIASES_MAP = Table.toHashMap(DEFAULT_ALIASES)
+
 -- the aliases of every TextChatCommand under TextChatService that isn't in `folder`
 local function takenAliases(folder: Instance?): { [string]: true }
-	local taken = {}
 	-- the defaults may not exist yet, they are only left free when the game turns them off
 	local ok, createsDefaults = pcall(function()
 		return TextChatService.CreateDefaultCommands
 	end)
-	if not ok or createsDefaults ~= false then
-		Table.merge(taken, Table.toHashMap(DEFAULT_ALIASES))
-	end
+	local taken = if not ok or createsDefaults ~= false then table.clone(DEFAULT_ALIASES_MAP) else {}
 	for _, descendant in TextChatService:GetDescendants() do
 		if descendant:IsA("TextChatCommand") and not (folder and descendant:IsDescendantOf(folder)) then
 			for _, alias in { descendant.PrimaryAlias, descendant.SecondaryAlias } do
@@ -138,22 +137,6 @@ local function takenAliases(folder: Instance?): { [string]: true }
 		end
 	end
 	return taken
-end
-
-local function canPurchase(_K: any, commandDefinition: any): boolean
-	for role, roleData in _K.Data.roles do
-		if
-			(
-				(role == "vip" and _K.Data.settings.vip)
-				or (roleData.gamepasses and next(roleData.gamepasses))
-				or (roleData.assets and next(roleData.assets))
-				or (roleData.subscriptions and next(roleData.subscriptions))
-			) and _K.Auth.roleCanUseCommand(role, commandDefinition)
-		then
-			return true
-		end
-	end
-	return false
 end
 
 local function handleTriggered(_K: any, source: TextSource, text: string)
@@ -175,15 +158,14 @@ local function handleTriggered(_K: any, source: TextSource, text: string)
 	if usedPrefix ~= playerPrefix and not table.find(_K.Data.settings.prefix, usedPrefix) then
 		return
 	end
-	local command = _K.Registry.commands[string.lower(string.sub(word, nextChar))]
-	local hasCommand = command ~= nil and _K.Auth.hasCommand(player.UserId, command)
-	local allowed = hasCommand or (command ~= nil and canPurchase(_K, command))
 	local onCooldown = _K.Process.onCooldown(_K, player.UserId)
+	local command = not onCooldown and _K.Registry.commands[string.lower(string.sub(word, nextChar))]
+	local hasCommand = command and _K.Auth.hasCommand(player.UserId, command)
+	local allowed = hasCommand or (command ~= nil and _K.VIP.canPurchaseCommand(command))
 	if
 		isSlash
 		and command
 		and allowed
-		and not onCooldown
 		and _K.Data.settings.vip
 		and VIP_BUBBLES[string.lower(command.name)]
 		and player.Character
@@ -192,7 +174,7 @@ local function handleTriggered(_K: any, source: TextSource, text: string)
 	end
 
 	local ready = player:GetAttribute("_K_READY") == true
-	if ready and hasCommand and not onCooldown then
+	if ready and hasCommand then
 		local commandBarRank = _K.Data.settings.commandBarRank
 		if commandBarRank == nil then
 			commandBarRank = 0
@@ -218,16 +200,10 @@ local function handleTriggered(_K: any, source: TextSource, text: string)
 	end
 end
 
-local function syncInstances(
-	_K: any,
-	self: any,
-	key: string,
-	groups: { { string } },
-	onTriggered: (TextSource, string) -> ()
-)
+local function syncInstances(self: any, key: string, groups: { { string } })
 	local list = self.instances[key] or {}
 	self.instances[key] = list
-	local enabled = _K.Data.settings.chatCommands ~= false
+	local enabled = self._K.Data.settings.chatCommands ~= false
 	local aliases = {}
 	for i, group in groups do
 		local instance = list[i]
@@ -236,7 +212,7 @@ local function syncInstances(
 			instance = Instance.new("TextChatCommand")
 			instance.Name = if i == 1 then key else `{key}{i}`
 			instance.AutocompleteVisible = false
-			local _ = instance.Triggered:Connect(onTriggered)
+			local _ = instance.Triggered:Connect(self.onTriggered)
 			list[i] = instance
 			reparent = true
 		elseif instance.PrimaryAlias ~= group[1] then
@@ -261,17 +237,17 @@ local function syncInstances(
 	end
 end
 
-local function logSkipped(_K: any, logged: { [string]: true }, skipped: { string })
+local function logSkipped(self: any, skipped: { string })
 	local new = {}
 	for _, alias in skipped do
-		if not logged[alias] then
-			logged[alias] = true
+		if not self.logged[alias] then
+			self.logged[alias] = true
 			table.insert(new, alias)
 		end
 	end
 	if #new > 0 then
 		task.spawn(
-			_K.log,
+			self._K.log,
 			`Skipped chat command aliases used by other TextChatCommands: {table.concat(new, ", ")}`,
 			"INFO"
 		)
@@ -281,7 +257,7 @@ end
 local function watchExternalCommands(folder: Instance, schedule: () -> ())
 	local watched: { [Instance]: { RBXScriptConnection } } = {}
 	local function watch(descendant: Instance)
-		if descendant:IsA("TextChatCommand") and not descendant:IsDescendantOf(folder) then
+		if descendant:IsA("TextChatCommand") and not watched[descendant] and not descendant:IsDescendantOf(folder) then
 			watched[descendant] = {
 				descendant:GetPropertyChangedSignal("PrimaryAlias"):Connect(schedule),
 				descendant:GetPropertyChangedSignal("SecondaryAlias"):Connect(schedule),
@@ -308,29 +284,29 @@ end
 --- Creates the chat commands for every registered command and keeps them in sync, returns the running instance
 function ChatCommands.start(_K)
 	local self = {
+		_K = _K,
 		folder = Instance.new("Folder"),
 		instances = {} :: { [string]: { TextChatCommand } },
 		aliases = {} :: { [string]: { string } },
 		logged = {} :: { [string]: true },
 		prefixes = {} :: { string },
 		taken = {} :: { [string]: true },
+		onTriggered = function(source: TextSource, text: string)
+			handleTriggered(_K, source, text)
+		end,
 	}
 	self.folder.Name = FOLDER_NAME
-
-	local function onTriggered(source: TextSource, text: string)
-		handleTriggered(_K, source, text)
-	end
 
 	local scheduled = false
 
 	--- Updates the instances of one command
 	function self.refreshCommand(definition: any, batchSkipped: { string }?)
 		local groups, skipped = ChatCommands.aliasGroups(definition, self.prefixes, self.taken)
-		syncInstances(_K, self, string.lower(definition.name), groups, onTriggered)
+		syncInstances(self, string.lower(definition.name), groups)
 		if batchSkipped then
 			Table.mergeList(batchSkipped, skipped)
 		else
-			logSkipped(_K, self.logged, skipped)
+			logSkipped(self, skipped)
 		end
 	end
 
@@ -350,10 +326,10 @@ function ChatCommands.start(_K)
 		end
 		for key in self.instances do
 			if not current[key] then
-				syncInstances(_K, self, key, {}, onTriggered)
+				syncInstances(self, key, {})
 			end
 		end
-		logSkipped(_K, self.logged, skipped)
+		logSkipped(self, skipped)
 	end
 
 	--- The first chat alias of a command name or alias, e.g. ";kill", or nil when it has none

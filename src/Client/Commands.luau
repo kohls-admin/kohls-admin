@@ -80,103 +80,97 @@ local function renderItem(_self, itemData, lineData)
 end
 
 local function updateRenderParameters(_K, command)
+	if command.aliasText then
+		return
+	end
 	local escape = _K.Util.String.escapeRichText
-	if not command.aliasText then
-		command.aliasText = if command.aliases and #command.aliases ~= 0
-			then table.concat(command.aliases, ", ")
-			else ""
+	command.aliasText = if command.aliases and #command.aliases ~= 0 then table.concat(command.aliases, ", ") else ""
 
-		command.argNames = table.create(#command.args)
-		command.argTooltip = table.create(#command.args)
+	command.argNames = table.create(#command.args)
+	command.argTooltip = table.create(#command.args)
 
-		if #command.args > 0 then
-			table.insert(command.argTooltip, "")
-		end
-
-		for _, arg in command.args do
-			table.insert(command.argNames, if arg.optional then arg.name .. "?" else arg.name)
-			table.insert(
-				command.argTooltip,
-				`\n<b><sc>{arg.name}</sc> <font transparency="0.66"><i>&lt;{arg.type}{if arg.optional then `?` else ""}&gt;</i></font></b>\n{arg.description or "No description."}`
-			)
-			if arg.ignoreSelf then
-				table.insert(command.argTooltip, `\t<font transparency="0.5"><b>ignoreSelf:</b> true</font>`)
-			end
-			if arg.lowerRank then
-				table.insert(command.argTooltip, `\t<font transparency="0.5"><b>lowerRank:</b> true</font>`)
-			end
-			if arg.shouldRequest and _K.Data.settings.commandRequests ~= false then
-				table.insert(command.argTooltip, `\t<font transparency="0.5"><b>shouldRequest:</b> true</font>`)
-			end
-		end
-
-		command.argNames = table.concat(command.argNames, " ")
-		command.argTooltip = table.concat(command.argTooltip, "\n")
-
-		local roles = {}
-		for role, _roleData in _K.Data.roles do
-			if _K.Auth.roleCanUseCommand(role, command) then
-				table.insert(roles, role)
-			end
-		end
-
-		table.sort(roles, function(a, b)
-			return _K.Data.roles[a]._rank < _K.Data.roles[b]._rank
-		end)
-
-		-- non-breaking spaces
-		local narrowSpace = " "
-		local thinSpace = " "
-
-		local roleColor = if #roles > 0 then _K.Data.roles[roles[1]].color else UI.Theme.Primary:peek():ToHex()
-		local roleCircle = `<font color="{roleColor}">●</font>{narrowSpace}`
-		command.roleCircle = roleCircle
-
-		for i, roleId in roles do
-			local role = _K.Data.roles[roleId]
-			roles[i] = `<font color="{role.color}">●</font>{narrowSpace}{string.gsub(role.name, " ", thinSpace)}`
-		end
-
-		command.roleText = table.concat(roles, ", ")
-
-		local credit = command.credit or "Kohl @Scripth"
-		local description = command.description or "No description."
-
-		command.creditText = if type(credit) == "table" then table.concat(credit, ", ") else credit
-		command.tipText =
-			`<b>Restricted to:</b> {command.roleText}{command.argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {command.creditText}</font>`
-
-		command.rawTextNoAlias = `{_K.getCommandPrefix()}{command.name} {command.argNames}`
-		command.rawText = `{command.rawTextNoAlias} {command.aliasText}`
-
-		command.richText = `{roleCircle}<b>{escape(command.rawTextNoAlias)}</b> <font transparency="0.66">{escape(
-			command.aliasText
-		)}</font>`
-		command.richDesc = `<font transparency="0.33">{description}</font>`
-
-		command.filterTest = string.lower(`{command.rawText} {description}`)
-		command.filterText = string.lower(command.rawText)
-		command.filterDesc = string.lower(description)
+	if #command.args > 0 then
+		table.insert(command.argTooltip, "")
 	end
 
-	command.colorAuth = if command.LocalPlayerAuthorized
-		then UI.Theme.PrimaryText:peek()
-		else UI.Theme.PrimaryText:peek():Lerp(UI.Theme.Primary:peek(), 0.5)
+	for _, arg in command.args do
+		table.insert(command.argNames, if arg.optional then arg.name .. "?" else arg.name)
+		table.insert(
+			command.argTooltip,
+			`\n<b><sc>{arg.name}</sc> <font transparency="0.66"><i>&lt;{arg.type}{if arg.optional then `?` else ""}&gt;</i></font></b>\n{arg.description or "No description."}`
+		)
+		if arg.ignoreSelf then
+			table.insert(command.argTooltip, `\t<font transparency="0.5"><b>ignoreSelf:</b> true</font>`)
+		end
+		if arg.lowerRank then
+			table.insert(command.argTooltip, `\t<font transparency="0.5"><b>lowerRank:</b> true</font>`)
+		end
+		if arg.shouldRequest and _K.Data.settings.commandRequests ~= false then
+			table.insert(command.argTooltip, `\t<font transparency="0.5"><b>shouldRequest:</b> true</font>`)
+		end
+	end
+
+	command.argNames = table.concat(command.argNames, " ")
+	command.argTooltip = table.concat(command.argTooltip, "\n")
+
+	local roles = {}
+	for role, _roleData in _K.Data.roles do
+		if _K.Auth.roleCanUseCommand(role, command) then
+			table.insert(roles, role)
+		end
+	end
+
+	table.sort(roles, _K.Auth.roleIdSortAscending)
+
+	-- non-breaking spaces
+	local narrowSpace = " "
+	local thinSpace = " "
+
+	local roleColor = if #roles > 0 then _K.Data.roles[roles[1]].color else UI.Theme.Primary:peek():ToHex()
+	local roleCircle = `<font color="{roleColor}">●</font>{narrowSpace}`
+	command.roleCircle = roleCircle
+
+	for i, roleId in roles do
+		local role = _K.Data.roles[roleId]
+		roles[i] = `<font color="{role.color}">●</font>{narrowSpace}{string.gsub(role.name, " ", thinSpace)}`
+	end
+
+	command.roleText = table.concat(roles, ", ")
+	command.filterRole = string.lower(command.roleText)
+
+	local credit = command.credit or "Kohl @Scripth"
+	local description = command.description or "No description."
+
+	command.creditText = if type(credit) == "table" then table.concat(credit, ", ") else credit
+	command.tipText =
+		`<b>Restricted to:</b> {command.roleText}{command.argTooltip}\n\n<font transparency="0.5"><b>Credit:</b> {command.creditText}</font>`
+
+	command.rawTextNoAlias = `{_K.getCommandPrefix()}{command.name} {command.argNames}`
+	command.rawText = `{command.rawTextNoAlias} {command.aliasText}`
+
+	command.richText = `{roleCircle}<b>{escape(command.rawTextNoAlias)}</b> <font transparency="0.66">{escape(
+		command.aliasText
+	)}</font>`
+	command.richDesc = `<font transparency="0.33">{description}</font>`
+
+	command.filterTest = string.lower(`{command.rawText} {description}`)
+	command.filterText = string.lower(command.rawText)
+	command.filterDesc = string.lower(description)
 end
 
-local function filterCommands(_K, scroller, self, list)
+local function filterCommands(_K, self, list)
 	local escape = _K.Util.String.escapeRichText
-	local filter = string.lower(scroller._input._input.Text)
+	local filter = string.lower(self._input._input.Text)
 	self._filter = filter
 
-	local noFilter = string.find(self._filter, "^%s*$")
+	local noFilter = string.find(filter, "^%s*$")
 	local new = {}
 
 	if string.find(filter, "role=", 1, true) == 1 then
 		filter = string.sub(filter, 6)
 		for _, command in list do
 			updateRenderParameters(_K, command)
-			if string.find(string.lower(command.roleText), filter, 1, true) then
+			if string.find(command.filterRole, filter, 1, true) then
 				command.renderText = command.richText
 				command.renderDesc = command.richDesc
 				table.insert(new, command)
@@ -184,6 +178,16 @@ local function filterCommands(_K, scroller, self, list)
 		end
 
 		return new
+	end
+
+	local function formatMatch(text: string, found: number): string
+		local filterEnd = found + #filter
+		return string.format(
+			filterRichFormat,
+			escape(string.sub(text, 1, found - 1)),
+			escape(string.sub(text, found, filterEnd - 1)),
+			escape(string.sub(text, filterEnd))
+		)
 	end
 
 	for _, command in list do
@@ -194,25 +198,15 @@ local function filterCommands(_K, scroller, self, list)
 			command.renderDesc = command.richDesc
 			table.insert(new, command)
 		elseif string.find(command.filterTest, filter, 1, true) then
-			local filterFound = string.find(command.filterText, self._filter, 1, true)
+			local filterFound = string.find(command.filterText, filter, 1, true)
 			command.renderText = if filterFound
-				then command.roleCircle .. string.format(
-					filterRichFormat,
-					escape(string.sub(command.rawText, 1, filterFound - 1)),
-					escape(string.sub(command.rawText, filterFound, filterFound + #self._filter - 1)),
-					escape(string.sub(command.rawText, filterFound + #self._filter))
-				)
+				then command.roleCircle .. formatMatch(command.rawText, filterFound)
 				else `{command.roleCircle}<font transparency="0.5">{command.rawText}</font>`
 
 			local description = command.description or "No description."
-			local descFound = string.find(command.filterDesc, self._filter, 1, true)
+			local descFound = string.find(command.filterDesc, filter, 1, true)
 			command.renderDesc = if descFound
-				then string.format(
-					filterRichFormat,
-					escape(string.sub(description, 1, descFound - 1)),
-					escape(string.sub(description, descFound, descFound + #self._filter - 1)),
-					escape(string.sub(description, descFound + #self._filter))
-				)
+				then formatMatch(description, descFound)
 				else `<font transparency="0.5">{description}</font>`
 
 			table.insert(new, command)
@@ -337,10 +331,13 @@ local function setupChatCommands(_K, onChanged: () -> ())
 	end)
 
 	if chatInputBar then
-		local focusedOnce = false
-		local _ = chatInputBar:GetPropertyChangedSignal("IsFocused"):Connect(function()
-			if not focusedOnce and chatInputBar.IsFocused then
-				focusedOnce = true
+		local focusedConn: RBXScriptConnection?
+		focusedConn = chatInputBar:GetPropertyChangedSignal("IsFocused"):Connect(function()
+			if chatInputBar.IsFocused then
+				if focusedConn then
+					focusedConn:Disconnect()
+					focusedConn = nil
+				end
 				reparentChatCommands()
 			end
 		end)
@@ -349,18 +346,10 @@ local function setupChatCommands(_K, onChanged: () -> ())
 	return updateChatCommandsAutocomplete
 end
 
-local function updatePurchaseData(_K, purchaseData, list)
+local function updatePurchaseData(purchaseData, list)
 	table.clear(purchaseData)
 	local current
 	for index, command in list do
-		if not command.RestrictedToRole then
-			for _rank, role in _K.Data.rolesList do
-				if _K.Auth.roleCanUseCommand(role._key, command) then
-					command.RestrictedToRole = role
-					break
-				end
-			end
-		end
 		if command.LocalPlayerAuthorized then
 			continue
 		end
@@ -429,38 +418,29 @@ local function buildCommandsList(_K)
 	if _K.client.settings.onlyShowUsableCommands:peek() then
 		list = {}
 		for _, command in _K.Registry.commandsList do
-			local added
-			for role, roleData in _K.Data.roles do
-				if
-					(
-						(roleData.assets and next(roleData.assets))
-						or (roleData.gamepasses and next(roleData.gamepasses))
-						or (roleData.subscriptions and next(roleData.subscriptions))
-						or (role == "vip" and _K.Data.settings.vip)
-					) and _K.Auth.roleCanUseCommand(role, command)
-				then
-					table.insert(list, command)
-					added = true
-					break
-				end
-			end
-			if not added and _K.Auth.hasCommand(_K.LocalPlayer.UserId, command) then
+			if _K.VIP.canPurchaseCommand(command) or _K.Auth.hasCommand(_K.LocalPlayer.UserId, command) then
 				table.insert(list, command)
 			end
 		end
 	else
 		list = _K.Registry.commandsList
 	end
-	table.sort(list, function(a, b)
-		local rankA, rankB = math.huge, math.huge
+	local ranks = {}
+	for _, command in list do
+		local minRank = math.huge
 		for rank, role in _K.Data.rolesList do
-			if rankA > rank and _K.Auth.roleCanUseCommand(role._key, a) then
-				rankA = rank
-			end
-			if rankB > rank and _K.Auth.roleCanUseCommand(role._key, b) then
-				rankB = rank
+			if _K.Auth.roleCanUseCommand(role._key, command) then
+				minRank = rank
+				if not command.RestrictedToRole then
+					command.RestrictedToRole = role
+				end
+				break
 			end
 		end
+		ranks[command] = minRank
+	end
+	table.sort(list, function(a, b)
+		local rankA, rankB = ranks[a], ranks[b]
 		return if rankA == rankB then a.name < b.name else rankA < rankB
 	end)
 	return list
@@ -477,7 +457,7 @@ function Commands.new(_K)
 	local function updateCommandsList()
 		local list = buildCommandsList(_K)
 		commandsList(list, true)
-		updatePurchaseData(_K, purchaseData, list)
+		updatePurchaseData(purchaseData, list)
 		if updateChatCommandsAutocomplete then
 			updateChatCommandsAutocomplete(list)
 		end
@@ -554,7 +534,7 @@ function Commands.new(_K)
 
 	task.defer(function()
 		scroller:filter(function(self, list)
-			return filterCommands(_K, scroller, self, list)
+			return filterCommands(_K, self, list)
 		end)
 	end)
 

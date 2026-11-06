@@ -20,19 +20,563 @@ local function hasEmoteAccess(_K: any, userId: number, player: Player?): boolean
 	if
 		_K.Auth.getRank(userId) >= 1
 		or _K.Auth.hasRole(userId, "vip")
-		or _K.Auth.hasPermission(userId, "targetOthers") == true
-		or _K.Auth.hasPermission(userId, "admin")
+		or _K.Auth.hasPermission(userId, "targetOthers")
 	then
 		return true
 	end
 	local member = _K.Data.members and _K.Data.members[tostring(userId)]
-	if member and hasVIPGroupRole(_K, member.roles) then
-		return true
+	return (member ~= nil and hasVIPGroupRole(_K, member.roles))
+		or (_K.Data.settings ~= nil and hasVIPGroupRole(_K, _K.Data.settings.freeAdmin))
+end
+
+local function createEmotePreviewViewport(UI: any, previewCamera: Camera, worldModel: WorldModel, state: any)
+	return UI.new "ViewportFrame" {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 1, 0),
+		Ambient = Color3.fromRGB(127, 127, 127),
+		LightColor = Color3.fromRGB(200, 200, 200),
+		LightDirection = Vector3.new(0, -1, 1),
+		CurrentCamera = previewCamera,
+
+		previewCamera,
+		worldModel,
+		MouseWheelBackward = function()
+			state.cameraZ = math.clamp(state.cameraZ + 1, 3, 15)
+			state.updateCamera()
+		end,
+		MouseWheelForward = function()
+			state.cameraZ = math.clamp(state.cameraZ - 1, 3, 15)
+			state.updateCamera()
+		end,
+		TouchPinch = function(_touchPositions, scale, _velocity, pinchState)
+			if pinchState == Enum.UserInputState.Change then
+				state.cameraZ = math.clamp(scale * 15, 3, 15)
+				state.updateCamera()
+			end
+		end,
+		InputBegan = function(input)
+			if
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
+				state.dragStart = input.Position
+				state.startAngleX = state.cameraAngleX
+				state.startAngleY = state.cameraAngleY
+			end
+		end,
+		InputChanged = function(input, gameProcessed)
+			if gameProcessed or not state.dragStart then
+				return
+			end
+			if
+				input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
+				local delta = state.dragStart - input.Position
+				state.cameraAngleX = (state.startAngleX + delta.Y) % 360
+				state.cameraAngleY = (state.startAngleY + delta.X) % 360
+				state.updateCamera()
+			end
+		end,
+		InputEnded = function(input)
+			if
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
+				state.dragStart = nil
+			end
+		end,
+	}
+end
+
+local function createEmoteUnlockButton(_K: any, UI: any, env: any, state: any)
+	return UI.new "TextButton" {
+		Name = "Unlock",
+		AnchorPoint = Vector2.new(0.5, 1),
+		AutomaticSize = Enum.AutomaticSize.XY,
+		BackgroundColor3 = Color3.fromRGB(51, 95, 255),
+		FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+		Position = UDim2.new(0.5, 0, 1, -38),
+		Text = "UNLOCK",
+		TextColor3 = Color3.new(1, 1, 1),
+		TextSize = 28,
+
+		UI.corner(12),
+		UI.padding { x = 34, y = 12 },
+
+		Activated = function()
+			local previewId = state.previewId
+			if not previewId then
+				return
+			end
+			local item = _K.Data.emoteItemFromId and _K.Data.emoteItemFromId[previewId]
+			if item and item.canSell == false then
+				if _K.Data.settings.vip and _K.PromptPurchaseVIP then
+					env.preview.Visible = false
+					_K.PromptPurchaseVIP()
+				end
+				return
+			end
+			_K.PromptBulkPurchase(previewId)
+		end,
+	}
+end
+
+local function createEmotePreviewFrame(
+	_K: any,
+	UI: any,
+	env: any,
+	previewCamera: Camera,
+	worldModel: WorldModel,
+	state: any
+)
+	return UI.new "Frame" {
+		Name = "Preview",
+		Parent = UI.LayerTopInset,
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		Size = UDim2.new(0, 300, 0, 360),
+		Position = UDim2.new(0.5, -150, 0.5, -180),
+		Visible = false,
+		ZIndex = 9e8,
+
+		UI.corner(12),
+		UI.gradient {
+			color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 18, 21)),
+				ColorSequenceKeypoint.new(1 / 3, Color3.fromRGB(36, 36, 42)),
+				ColorSequenceKeypoint.new(2 / 3, Color3.fromRGB(36, 36, 42)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 21)),
+			}),
+			rotation = 90,
+		},
+
+		createEmotePreviewViewport(UI, previewCamera, worldModel, state),
+
+		UI.new "ImageButton" {
+			Name = "Close",
+			AnchorPoint = Vector2.new(1, 0),
+			BackgroundTransparency = 1,
+			Image = "rbxasset://textures/ui/ScreenshotHud/Close.png",
+			Position = UDim2.new(1, -4, 0, 4),
+			Size = UDim2.fromOffset(32, 32),
+			Activated = function()
+				env.preview.Visible = false
+			end,
+		},
+
+		UI.new "TextLabel" {
+			Name = "Title",
+			BackgroundTransparency = 1,
+			FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+			Position = UDim2.fromOffset(0, 16),
+			Size = UDim2.new(1, 0, 0, 28),
+			Text = "Loading",
+			TextColor3 = Color3.new(1, 1, 1),
+			TextSize = 28,
+
+			UI.new "TextLabel" {
+				Name = "Category",
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BackgroundTransparency = 1,
+				FontFace = Font.new("rbxassetid://12187365364"),
+				Position = UDim2.fromScale(0, 1),
+				Size = UDim2.fromScale(1, 0),
+				Text = "Emote",
+				TextColor3 = Color3.new(1, 1, 1),
+				TextSize = 16,
+			},
+		},
+
+		createEmoteUnlockButton(_K, UI, env, state),
+
+		UI.new "TextLabel" {
+			Name = "Tip",
+			AnchorPoint = Vector2.new(0, 1),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Light, Enum.FontStyle.Normal),
+			Position = UDim2.new(0, 0, 1, -16),
+			RichText = true,
+			Size = UDim2.fromScale(1, 0),
+			Text = "Use in <b>every</b> Roblox game",
+			TextColor3 = Color3.new(1, 1, 1),
+			TextSize = 16,
+		},
+	}
+end
+
+local function setupEmotePreviewModel(_K: any, env: any, worldModel: WorldModel, state: any)
+	task.spawn(function()
+		local ok, model = _K.Util.Retry(function()
+			return _K.Service.Players:CreateHumanoidModelFromUserId(math.max(1, _K.LocalPlayer.UserId))
+		end)
+		if not ok then
+			model = _K.Flux.new "Model" {
+				_K.Flux.new "Humanoid" {
+					_K.Flux.new "Animator" {},
+				},
+			}
+		end
+		model:PivotTo(CFrame.new(0, 3, 0))
+
+		task.spawn(function()
+			local animate = model:WaitForChild("Animate", 5)
+			if typeof(animate) == "Instance" and animate:IsA("LocalScript") then
+				animate:Destroy()
+			end
+			model.Parent = worldModel
+		end)
+
+		local humanoid = model:WaitForChild("Humanoid")
+		local animator = humanoid:WaitForChild("Animator")
+
+		local anim: Animation = Instance.new("Animation")
+		local animTrack: AnimationTrack
+
+		function env.updatePreview(id)
+			if animTrack then
+				animTrack:Stop()
+				animTrack:Destroy()
+			end
+			state.previewId = id
+			if id then
+				state.cameraAngleX = 0
+				state.cameraAngleY = 180
+				state.cameraZ = 9
+				state.updateCamera()
+				local item = _K.Data.emoteItemFromId[id]
+				env.preview.Title.Text = item.name
+				anim.AnimationId = "rbxassetid://" .. item.animationId
+				animTrack = animator:LoadAnimation(anim)
+				animTrack.Looped = true
+				animTrack:Play()
+			end
+		end
+	end)
+end
+
+local function connectEmoteBulkPurchase(_K: any, env: any, emoteId: any, ownsEmote: any, state: any)
+	if not _K.Service.Marketplace.PromptBulkPurchaseFinished then
+		return
 	end
-	if _K.Data.settings and hasVIPGroupRole(_K, _K.Data.settings.freeAdmin) then
-		return true
+	local _ = _K.Service.Marketplace.PromptBulkPurchaseFinished:Connect(function(player, status, results)
+		if
+			player ~= _K.LocalPlayer
+			or status ~= Enum.MarketplaceBulkPurchasePromptStatus.Completed
+			or type(results) ~= "table"
+			or type(results.Items) ~= "table"
+		then
+			return
+		end
+		local updated = false
+		for _, resultItem in results.Items do
+			local itemId = type(resultItem) == "table" and tonumber(resultItem.Id or resultItem.id)
+			local emoteItem = itemId and _K.Data.emoteItemFromId and _K.Data.emoteItemFromId[itemId]
+			if type(emoteItem) == "table" then
+				emoteItem.owned = true
+				updated = true
+				if emoteId:peek() == itemId then
+					ownsEmote(true)
+				end
+				if state.previewId == itemId and env.preview then
+					env.preview.Visible = false
+				end
+			end
+		end
+		if
+			updated
+			and _K.Registry.commands.emotes
+			and _K.Registry.commands.emotes.env
+			and _K.Registry.commands.emotes.env.scroller
+		then
+			_K.Registry.commands.emotes.env.scroller:render(true)
+		end
+	end)
+end
+
+local function createEmoteControlWindow(_K: any, UI: any, env: any, emoteId: any, ownsEmote: any)
+	local looped = UI.new "Switch" {
+		[UI.Hook] = {
+			Value = function(loop: boolean)
+				if env.playing then
+					env.playing.Looped = loop
+					if not env.playing.IsPlaying then
+						env.playing:Play(0.1, 99, env.speed.Value:peek() * 2)
+					end
+				end
+			end,
+		},
+	}
+	local speed = UI.new "Slider" {
+		[UI.Hook] = {
+			Value = function(alpha: number)
+				if env.playing then
+					env.playing:AdjustSpeed(alpha * 2)
+				end
+			end,
+		},
+	}
+	env.looped = looped
+	env.speed = speed
+
+	local window = UI.new "Window" {
+		Parent = UI.LayerTopInset,
+		Title = "Emote",
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Resizable = false,
+		Size = UDim2.new(0, 256, 0, 0),
+		Position = UDim2.new(1, -256 - 6, 0.5, -16),
+		UI.new "List" {
+			UI.new "ListItem" { Text = "Looped", looped },
+			UI.new "ListItem" { Text = "Speed", speed },
+		},
+	}
+
+	local buttonSize = function()
+		local h = UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2
+		return UDim2.fromOffset(h, h)
 	end
-	return false
+	local buttonVisible = function()
+		return emoteId() ~= nil
+	end
+
+	UI.new "Button" {
+		LayoutOrder = 3,
+		Parent = window._instance.Frame.TitleBar,
+		Label = "🔓",
+		Size = buttonSize,
+		Visible = function()
+			return buttonVisible() and not ownsEmote()
+		end,
+		Activated = function()
+			if env.updatePreview and env.preview then
+				env.updatePreview(emoteId:peek())
+				env.preview.Visible = true
+			end
+		end,
+	}
+
+	UI.new "Button" {
+		LayoutOrder = 3,
+		Parent = window._instance.Frame.TitleBar,
+		Label = "⭐",
+		Size = buttonSize,
+		Visible = buttonVisible,
+		Activated = function()
+			local _ = pcall(function()
+				_K.Service.AvatarEditor:PromptSetFavorite(emoteId:peek(), 1, true)
+			end)
+		end,
+	}
+
+	env.window = window
+end
+
+local function createPlayEmote(_K: any, env: any, emoteId: any, ownsEmote: any)
+	return function(animation: number, loop: boolean?, speed: number?)
+		if env.playing then
+			env.playing:Stop()
+			env.playing:Destroy()
+			env.playing = nil
+			emoteId:set(nil)
+			ownsEmote(false)
+		end
+
+		if type(animation) ~= "number" then
+			if env.window then
+				env.window._instance.Visible = false
+			end
+			return
+		end
+
+		local player = _K.LocalPlayer
+		local character = player.Character or player.CharacterAdded:Wait()
+		local humanoid = character:WaitForChild("Humanoid")
+		local animator = humanoid:WaitForChild("Animator")
+		local anim: Animation = _K.Flux.new "Animation" { AnimationId = `rbxassetid://{animation}` }
+
+		local playing = animator:LoadAnimation(anim)
+		playing.Priority = Enum.AnimationPriority.Action
+		anim.Parent = playing
+
+		if loop ~= nil then
+			playing.Looped = loop
+			env.looped.Value(playing.Looped)
+		else
+			task.spawn(function()
+				local start = tick()
+				repeat
+					task.wait()
+				until playing.Looped == true or tick() - start > 1
+				env.looped.Value(true)
+			end)
+		end
+
+		-- the slider's hook applies its speed on the next flush, so play at the same clamped speed
+		local playSpeed = math.clamp(speed or 1, 0, 2)
+		env.speed.Value(playSpeed / 2)
+
+		if not playing.Looped then
+			playing.Stopped:Once(function()
+				playing:Destroy()
+			end)
+		end
+
+		local id = _K.Data.animationToEmoteId[animation]
+		local emoteItem = id and _K.Data.emoteItemFromId[id]
+		env.window.Title(if emoteItem then emoteItem.name else "Emote")
+		emoteId:set(id)
+		ownsEmote(false)
+		if id then
+			task.spawn(function()
+				local ok, result = _K.Util.Retry(function()
+					return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, id)
+				end)
+				if ok then
+					ownsEmote(result)
+				end
+			end)
+		end
+
+		playing:Play(0.1, 99, playSpeed)
+		env.playing = playing
+		env.window._instance.Visible = true
+
+		return playing
+	end
+end
+
+local function createEmotesPlayButton(_K: any, UI: any, EMOTE: any, item: any)
+	return UI.new "ImageButton" {
+		BackgroundTransparency = 1,
+		BackgroundColor3 = UI.Theme.PrimaryText,
+		Size = UDim2.new(1, 0, 1, 0),
+		SizeConstraint = Enum.SizeConstraint.RelativeYY,
+
+		ImageTransparency = 0.25,
+		ImageColor3 = function()
+			return if item.lineData and EMOTE.emoteId() == item.lineData.emoteId
+				then Color3.new(1, 0, 0)
+				else Color3.new(1, 1, 1)
+		end,
+		Image = function()
+			return if item.lineData and EMOTE.emoteId() == item.lineData.emoteId
+				then UI.Theme.Image.Stop()
+				else UI.Theme.Image.Play()
+		end,
+
+		function(button)
+			local _ = button.Activated:Connect(function()
+				if not item.lineData.owned and not hasEmoteAccess(_K, _K.LocalPlayer.UserId, _K.LocalPlayer) then
+					EMOTE.updatePreview(item.lineData.emoteId)
+					EMOTE.preview.Visible = true
+					return
+				end
+				if EMOTE.emoteId:peek() == item.lineData.emoteId then
+					_K.UI.Sound.Hover01:Play()
+					EMOTE.playEmote()
+				else
+					_K.UI.Sound.Hover03:Play()
+					local name = item.lineData.name
+					if string.find(name, _K.Data.settings.splitKey, 1, true) then
+						name = `"{name}"`
+					end
+					_K.Process.runCommands(_K, _K.LocalPlayer.UserId, `{_K.getCommandPrefix()}emote me {name}`)
+				end
+			end)
+			local hovering = UI.Interact.hover(button)
+			UI.edit(button)({
+				ImageTransparency = UI.pick(hovering, 0, 0.25),
+				__CLEAN = { hovering },
+			})
+		end,
+	}
+end
+
+local function createEmotesItem(_K: any, UI: any, EMOTE: any, self: any, initialLineData: any)
+	local item = {
+		lineData = initialLineData,
+	}
+	item._instance = UI.new "Frame" {
+		BackgroundTransparency = 1,
+		Size = self.ItemSize,
+
+		UI.padding {
+			y = UI.Theme.PaddingHalf,
+		},
+
+		UI.list {
+			direction = "x",
+			gap = UI.Theme.Padding,
+			verticalAlign = "center",
+		},
+
+		createEmotesPlayButton(_K, UI, EMOTE, item),
+
+		UI.new "TextLabel" {
+			AutoLocalize = false,
+			AutomaticSize = Enum.AutomaticSize.X,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0, 0, 1, 0),
+			RichText = true,
+			FontFace = UI.Theme.FontMono,
+			TextSize = UI.Theme.FontSize,
+			TextColor3 = UI.Theme.PrimaryText,
+			TextStrokeColor3 = UI.Theme.Primary,
+			TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
+			TextTruncate = Enum.TextTruncate.SplitWord,
+			TextXAlignment = Enum.TextXAlignment.Left,
+
+			UI.flex("fill"),
+		},
+
+		UI.new "Spacer" {},
+
+		UI.new "Button" {
+			Name = "Unlock",
+			Label = "🔓",
+			Padding = UI.Theme.PaddingHalf,
+			Size = UDim2.new(1, 0, 1, 0),
+			SizeConstraint = Enum.SizeConstraint.RelativeYY,
+			Activated = function()
+				EMOTE.updatePreview(item.lineData.emoteId)
+				EMOTE.preview.Visible = true
+			end,
+		},
+
+		UI.new "Button" {
+			Label = "⭐",
+			Padding = UI.Theme.PaddingHalf,
+			Size = UDim2.new(1, 0, 1, 0),
+			SizeConstraint = Enum.SizeConstraint.RelativeYY,
+			Activated = function()
+				local _ = pcall(function()
+					_K.Service.AvatarEditor:PromptSetFavorite(item.lineData.emoteId, 1, true)
+				end)
+			end,
+		},
+	}
+
+	return item
+end
+
+local function renderEmotesItem(_K: any, self: any, lineItem: any, lineData: any)
+	lineItem.lineData = lineData
+	local instance = lineItem._instance
+	instance.TextLabel.Text = lineData.name
+	if lineData.owned == nil then
+		lineData.owned = false
+		task.spawn(function()
+			local ok, result = _K.Util.Retry(function()
+				return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, lineData.emoteId)
+			end)
+			if ok then
+				lineData.owned = result
+				self:render(true)
+			end
+		end)
+	end
+	instance.Unlock.Visible = not lineData.owned
 end
 
 return {
@@ -385,15 +929,21 @@ return {
 					task.wait()
 				end
 
-				local cameraAngleX = 0
-				local cameraAngleY = 180
-				local cameraZ = 9
 				local worldModel = Instance.new("WorldModel")
 				local previewCamera = UI.new "Camera" {}
+				local state = {
+					cameraAngleX = 0,
+					cameraAngleY = 180,
+					cameraZ = 9,
+					dragStart = nil,
+					startAngleX = 0,
+					startAngleY = 0,
+					previewId = nil,
+				}
 
 				local cameraStartCFrame = CFrame.new(0, 3, 0)
-					* CFrame.fromOrientation(math.rad(cameraAngleX), math.rad(cameraAngleY), 0)
-					* CFrame.new(0, 0, cameraZ)
+					* CFrame.fromOrientation(math.rad(state.cameraAngleX), math.rad(state.cameraAngleY), 0)
+					* CFrame.new(0, 0, state.cameraZ)
 
 				local resetCameraTween =
 					_K.Service.Tween:Create(previewCamera, TweenInfo.new(1, Enum.EasingStyle.Cubic), {
@@ -404,420 +954,24 @@ return {
 					resetCameraTween:Play()
 				end)
 
-				local function updatePreviewCamera()
+				function state.updateCamera()
 					previewCamera.CFrame = CFrame.new(0, 3, 0)
-						* CFrame.fromOrientation(math.rad(cameraAngleX), math.rad(cameraAngleY), 0)
-						* CFrame.new(0, 0, cameraZ)
+						* CFrame.fromOrientation(math.rad(state.cameraAngleX), math.rad(state.cameraAngleY), 0)
+						* CFrame.new(0, 0, state.cameraZ)
 					if not (previewCamera.CFrame):FuzzyEq(cameraStartCFrame) then
 						resetCamera()
 					end
 				end
 
-				updatePreviewCamera()
+				state.updateCamera()
 
-				local dragStart, startAngleX, startAngleY
-
-				local previewId
-				env.preview = UI.new "Frame" {
-					Name = "Preview",
-					Parent = UI.LayerTopInset,
-					BackgroundColor3 = Color3.new(1, 1, 1),
-					Size = UDim2.new(0, 300, 0, 360),
-					Position = UDim2.new(0.5, -150, 0.5, -180),
-					Visible = false,
-					ZIndex = 9e8,
-
-					UI.corner(12),
-					UI.gradient {
-						color = ColorSequence.new({
-							ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 18, 21)),
-							ColorSequenceKeypoint.new(1 / 3, Color3.fromRGB(36, 36, 42)),
-							ColorSequenceKeypoint.new(2 / 3, Color3.fromRGB(36, 36, 42)),
-							ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 21)),
-						}),
-						rotation = 90,
-					},
-
-					UI.new "ViewportFrame" {
-						BackgroundTransparency = 1,
-						Size = UDim2.new(1, 0, 1, 0),
-						Ambient = Color3.fromRGB(127, 127, 127),
-						LightColor = Color3.fromRGB(200, 200, 200),
-						LightDirection = Vector3.new(0, -1, 1),
-						CurrentCamera = previewCamera,
-
-						previewCamera,
-						worldModel,
-						MouseWheelBackward = function()
-							cameraZ = math.clamp(cameraZ + 1, 3, 15)
-							updatePreviewCamera()
-						end,
-						MouseWheelForward = function()
-							cameraZ = math.clamp(cameraZ - 1, 3, 15)
-							updatePreviewCamera()
-						end,
-						TouchPinch = function(_touchPositions, scale, _velocity, state)
-							if state == Enum.UserInputState.Change then
-								cameraZ = math.clamp(scale * 15, 3, 15)
-								updatePreviewCamera()
-							end
-						end,
-						InputBegan = function(input)
-							if
-								input.UserInputType == Enum.UserInputType.MouseButton1
-								or input.UserInputType == Enum.UserInputType.Touch
-							then
-								dragStart = input.Position
-								startAngleX = cameraAngleX
-								startAngleY = cameraAngleY
-							end
-						end,
-						InputChanged = function(input, gameProcessed)
-							if gameProcessed or not dragStart then
-								return
-							end
-							if
-								input.UserInputType == Enum.UserInputType.MouseMovement
-								or input.UserInputType == Enum.UserInputType.Touch
-							then
-								local delta = dragStart - input.Position
-								cameraAngleX = (startAngleX + delta.Y) % 360
-								cameraAngleY = (startAngleY + delta.X) % 360
-								updatePreviewCamera()
-							end
-						end,
-						InputEnded = function(input)
-							if
-								input.UserInputType == Enum.UserInputType.MouseButton1
-								or input.UserInputType == Enum.UserInputType.Touch
-							then
-								dragStart = nil
-							end
-						end,
-					},
-
-					UI.new "ImageButton" {
-						Name = "Close",
-						AnchorPoint = Vector2.new(1, 0),
-						BackgroundTransparency = 1,
-						Image = "rbxasset://textures/ui/ScreenshotHud/Close.png",
-						Position = UDim2.new(1, -4, 0, 4),
-						Size = UDim2.fromOffset(32, 32),
-						Activated = function()
-							env.preview.Visible = false
-						end,
-					},
-
-					UI.new "TextLabel" {
-						Name = "Title",
-						BackgroundTransparency = 1,
-						FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-						Position = UDim2.fromOffset(0, 16),
-						Size = UDim2.new(1, 0, 0, 28),
-						Text = "Loading",
-						TextColor3 = Color3.new(1, 1, 1),
-						TextSize = 28,
-
-						UI.new "TextLabel" {
-							Name = "Category",
-							AutomaticSize = Enum.AutomaticSize.Y,
-							BackgroundTransparency = 1,
-							FontFace = Font.new("rbxassetid://12187365364"),
-							Position = UDim2.fromScale(0, 1),
-							Size = UDim2.fromScale(1, 0),
-							Text = "Emote",
-							TextColor3 = Color3.new(1, 1, 1),
-							TextSize = 16,
-						},
-					},
-
-					UI.new "TextButton" {
-						Name = "Unlock",
-						AnchorPoint = Vector2.new(0.5, 1),
-						AutomaticSize = Enum.AutomaticSize.XY,
-						BackgroundColor3 = Color3.fromRGB(51, 95, 255),
-						FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-						Position = UDim2.new(0.5, 0, 1, -38),
-						Text = "UNLOCK",
-						TextColor3 = Color3.new(1, 1, 1),
-						TextSize = 28,
-
-						UI.corner(12),
-
-						UI.padding {
-							x = 34,
-							y = 12,
-						},
-
-						Activated = function()
-							if previewId then
-								local item = _K.Data.emoteItemFromId and _K.Data.emoteItemFromId[previewId]
-								if item and item.canSell == false then
-									if _K.Data.settings.vip and _K.PromptPurchaseVIP then
-										env.preview.Visible = false
-										_K.PromptPurchaseVIP()
-									end
-								else
-									_K.PromptBulkPurchase(previewId)
-								end
-							end
-						end,
-					},
-
-					UI.new "TextLabel" {
-						Name = "Tip",
-						AnchorPoint = Vector2.new(0, 1),
-						AutomaticSize = Enum.AutomaticSize.Y,
-						BackgroundTransparency = 1,
-						FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Light, Enum.FontStyle.Normal),
-						Position = UDim2.new(0, 0, 1, -16),
-						RichText = true,
-						Size = UDim2.fromScale(1, 0),
-						Text = "Use in <b>every</b> Roblox game",
-						TextColor3 = Color3.new(1, 1, 1),
-						TextSize = 16,
-					},
-				}
-
-				task.spawn(function()
-					local ok, model = _K.Util.Retry(function()
-						return _K.Service.Players:CreateHumanoidModelFromUserId(math.max(1, _K.LocalPlayer.UserId))
-					end)
-					if not ok then
-						model = _K.Flux.new "Model" {
-							_K.Flux.new "Humanoid" {
-								_K.Flux.new "Animator" {},
-							},
-						}
-					end
-					model:PivotTo(CFrame.new(0, 3, 0))
-
-					task.spawn(function()
-						local animate = model:WaitForChild("Animate", 5)
-						if typeof(animate) == "Instance" and animate:IsA("LocalScript") then
-							animate:Destroy()
-						end
-						model.Parent = worldModel
-					end)
-
-					local humanoid = model:WaitForChild("Humanoid")
-					local animator = humanoid:WaitForChild("Animator")
-
-					local anim: Animation = Instance.new("Animation")
-					local animTrack: AnimationTrack
-
-					local function updatePreview(id)
-						if animTrack then
-							animTrack:Stop()
-							animTrack:Destroy()
-						end
-						previewId = id
-						if id then
-							cameraAngleX = 0
-							cameraAngleY = 180
-							cameraZ = 9
-							updatePreviewCamera()
-							local item = _K.Data.emoteItemFromId[id]
-							env.preview.Title.Text = item.name
-							anim.AnimationId = "rbxassetid://" .. item.animationId
-							animTrack = animator:LoadAnimation(anim)
-							animTrack.Looped = true
-							animTrack:Play()
-						end
-					end
-					env.updatePreview = updatePreview
-
-					if _K.Service.Marketplace.PromptBulkPurchaseFinished then
-						local _ = _K.Service.Marketplace.PromptBulkPurchaseFinished:Connect(
-							function(player, status, results)
-								if
-									player ~= _K.LocalPlayer
-									or status ~= Enum.MarketplaceBulkPurchasePromptStatus.Completed
-									or type(results) ~= "table"
-									or type(results.Items) ~= "table"
-								then
-									return
-								end
-								local updated = false
-								for _, resultItem in results.Items do
-									local itemId = type(resultItem) == "table"
-										and tonumber(resultItem.Id or resultItem.id)
-									local emoteItem = itemId
-										and _K.Data.emoteItemFromId
-										and _K.Data.emoteItemFromId[itemId]
-									if type(emoteItem) == "table" then
-										emoteItem.owned = true
-										updated = true
-										if emoteId:peek() == itemId then
-											ownsEmote(true)
-										end
-										if previewId == itemId and env.preview then
-											env.preview.Visible = false
-										end
-									end
-								end
-								if
-									updated
-									and _K.Registry.commands.emotes
-									and _K.Registry.commands.emotes.env
-									and _K.Registry.commands.emotes.env.scroller
-								then
-									_K.Registry.commands.emotes.env.scroller:render(true)
-								end
-							end
-						)
-					end
-				end)
-
-				local looped = UI.new "Switch" {
-					[UI.Hook] = {
-						Value = function(loop: boolean)
-							if env.playing then
-								env.playing.Looped = loop
-								if not env.playing.IsPlaying then
-									env.playing:Play(0.1, 99, env.speed.Value:peek() * 2)
-								end
-							end
-						end,
-					},
-				}
-				local speed = UI.new "Slider" {
-					[UI.Hook] = {
-						Value = function(alpha: number)
-							if env.playing then
-								env.playing:AdjustSpeed(alpha * 2)
-							end
-						end,
-					},
-				}
-				env.looped = looped
-				env.speed = speed
-
-				local window = UI.new "Window" {
-					Parent = UI.LayerTopInset,
-					Title = "Emote",
-					AutomaticSize = Enum.AutomaticSize.Y,
-					Resizable = false,
-					Size = UDim2.new(0, 256, 0, 0),
-					Position = UDim2.new(1, -256 - 6, 0.5, -16),
-					UI.new "List" {
-						UI.new "ListItem" { Text = "Looped", looped },
-						UI.new "ListItem" { Text = "Speed", speed },
-					},
-				}
-
-				local buttonSize = function()
-					local h = UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2
-					return UDim2.fromOffset(h, h)
-				end
-				local buttonVisible = function()
-					return emoteId() ~= nil
-				end
-
-				UI.new "Button" {
-					LayoutOrder = 3,
-					Parent = window._instance.Frame.TitleBar,
-					Label = "🔓",
-					Size = buttonSize,
-					Visible = function()
-						return buttonVisible() and not ownsEmote()
-					end,
-					Activated = function()
-						if env.updatePreview and env.preview then
-							env.updatePreview(emoteId:peek())
-							env.preview.Visible = true
-						end
-					end,
-				}
-
-				UI.new "Button" {
-					LayoutOrder = 3,
-					Parent = window._instance.Frame.TitleBar,
-					Label = "⭐",
-					Size = buttonSize,
-					Visible = buttonVisible,
-					Activated = function()
-						local _ = pcall(function()
-							_K.Service.AvatarEditor:PromptSetFavorite(emoteId:peek(), 1, true)
-						end)
-					end,
-				}
-
-				env.window = window
+				env.preview = createEmotePreviewFrame(_K, UI, env, previewCamera, worldModel, state)
+				setupEmotePreviewModel(_K, env, worldModel, state)
+				connectEmoteBulkPurchase(_K, env, emoteId, ownsEmote, state)
+				createEmoteControlWindow(_K, UI, env, emoteId, ownsEmote)
 			end)
 
-			local function playEmote(animation: number, loop: boolean?, speed: number?)
-				if env.playing then
-					env.playing:Stop()
-					env.playing:Destroy()
-					env.playing = nil
-					emoteId:set(nil)
-					ownsEmote(false)
-				end
-
-				if type(animation) ~= "number" then
-					if env.window then
-						env.window._instance.Visible = false
-					end
-					return
-				end
-
-				local player = _K.LocalPlayer
-				local character = player.Character or player.CharacterAdded:Wait()
-				local humanoid = character:WaitForChild("Humanoid")
-				local animator = humanoid:WaitForChild("Animator")
-				local anim: Animation = _K.Flux.new "Animation" { AnimationId = `rbxassetid://{animation}` }
-
-				local playing = animator:LoadAnimation(anim)
-				playing.Priority = Enum.AnimationPriority.Action
-				anim.Parent = playing
-
-				if loop ~= nil then
-					playing.Looped = loop
-					env.looped.Value(playing.Looped)
-				else
-					task.spawn(function()
-						local start = tick()
-						repeat
-							task.wait()
-						until playing.Looped == true or tick() - start > 1
-						env.looped.Value(true)
-					end)
-				end
-
-				-- the slider's hook applies its speed on the next flush, so play at the same clamped speed
-				local playSpeed = math.clamp(speed or 1, 0, 2)
-				env.speed.Value(playSpeed / 2)
-
-				if not playing.Looped then
-					playing.Stopped:Once(function()
-						playing:Destroy()
-					end)
-				end
-
-				local id = _K.Data.animationToEmoteId[animation]
-				local emoteItem = id and _K.Data.emoteItemFromId[id]
-				env.window.Title(if emoteItem then emoteItem.name else "Emote")
-				emoteId:set(id)
-				ownsEmote(false)
-				if id then
-					task.spawn(function()
-						local ok, result = _K.Util.Retry(function()
-							return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, id)
-						end)
-						if ok then
-							ownsEmote(result)
-						end
-					end)
-				end
-
-				playing:Play(0.1, 99, playSpeed)
-				env.playing = playing
-				env.window._instance.Visible = true
-
-				return playing
-			end
-
+			local playEmote = createPlayEmote(_K, env, emoteId, ownsEmote)
 			env.playEmote = playEmote
 			local _ = _K.Remote.Emote:Connect(playEmote)
 
@@ -829,35 +983,35 @@ return {
 			}
 		end,
 		run = function(context, players, animation: number, loop: boolean?, speed: number?)
-			if type(animation) == "number" and not hasEmoteAccess(context._K, context.from, context.fromPlayer) then
-				if not context.fromPlayer or not context.fromPlayer.Parent then
+			local _K, fromPlayer = context._K, context.fromPlayer
+			if type(animation) == "number" and not hasEmoteAccess(_K, context.from, fromPlayer) then
+				if not fromPlayer or not fromPlayer.Parent then
 					return
 				end
-				if
-					context.fromPlayer:GetAttribute("_KDonationLevel") == nil
-					and context._K.VIP
-					and context._K.VIP.setDonationLevel
-				then
-					context._K.VIP.setDonationLevel(context.fromPlayer)
-					if not context.fromPlayer.Parent then
+				local hasAccess = false
+				if fromPlayer:GetAttribute("_KDonationLevel") == nil and _K.VIP and _K.VIP.setDonationLevel then
+					_K.VIP.setDonationLevel(fromPlayer)
+					if not fromPlayer.Parent then
 						return
 					end
+					hasAccess = hasEmoteAccess(_K, context.from, fromPlayer)
 				end
-				if not hasEmoteAccess(context._K, context.from, context.fromPlayer) then
-					local emoteId = context._K.Data.animationToEmoteId[animation] or animation
-					local ok, owned = context._K.Util.Retry(function()
-						return context._K.Service.Marketplace:PlayerOwnsAssetAsync(context.fromPlayer, emoteId)
+				if not hasAccess then
+					local emoteId = _K.Data.animationToEmoteId[animation] or animation
+					local ok, owned = _K.Util.Retry(function()
+						return _K.Service.Marketplace:PlayerOwnsAssetAsync(fromPlayer, emoteId)
 					end, 3)
-					if not ok or not owned then
-						if ok and context.fromPlayer.Parent then
-							if context._K.VIP.allowedBulkPurchaseIds[emoteId] then
-								local items = {
-									{ Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(emoteId) },
-								}
-								context._K.Service.Marketplace:PromptBulkPurchase(context.fromPlayer, items, {})
-							elseif context._K.Data.settings.vip then
-								context._K.Remote.VIPNotification:Fire(context.fromPlayer, true)
-							end
+					if not ok or not fromPlayer.Parent then
+						return
+					end
+					if not owned then
+						if _K.VIP.allowedBulkPurchaseIds[emoteId] then
+							local items = {
+								{ Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(emoteId) },
+							}
+							_K.Service.Marketplace:PromptBulkPurchase(fromPlayer, items, {})
+						elseif _K.Data.settings.vip then
+							_K.Remote.VIPNotification:Fire(fromPlayer, true)
 						end
 						return
 					end
@@ -889,139 +1043,10 @@ return {
 					Enabled = true,
 					Visible = true,
 					CreateItem = function(self, initialLineData)
-						local item = {
-							lineData = initialLineData,
-						}
-						item._instance = UI.new "Frame" {
-							BackgroundTransparency = 1,
-							Size = self.ItemSize,
-
-							UI.padding {
-								y = UI.Theme.PaddingHalf,
-							},
-
-							UI.list {
-								direction = "x",
-								gap = UI.Theme.Padding,
-								verticalAlign = "center",
-							},
-
-							UI.new "ImageButton" {
-								BackgroundTransparency = 1,
-								BackgroundColor3 = UI.Theme.PrimaryText,
-								Size = UDim2.new(1, 0, 1, 0),
-								SizeConstraint = Enum.SizeConstraint.RelativeYY,
-
-								ImageTransparency = 0.25,
-								ImageColor3 = function()
-									return if item.lineData and EMOTE.emoteId() == item.lineData.emoteId
-										then Color3.new(1, 0, 0)
-										else Color3.new(1, 1, 1)
-								end,
-								Image = function()
-									return if item.lineData and EMOTE.emoteId() == item.lineData.emoteId
-										then UI.Theme.Image.Stop()
-										else UI.Theme.Image.Play()
-								end,
-
-								function(button)
-									local _ = button.Activated:Connect(function()
-										if
-											not item.lineData.owned
-											and not hasEmoteAccess(_K, _K.LocalPlayer.UserId, _K.LocalPlayer)
-										then
-											EMOTE.updatePreview(item.lineData.emoteId)
-											EMOTE.preview.Visible = true
-											return
-										end
-										if EMOTE.emoteId:peek() == item.lineData.emoteId then
-											_K.UI.Sound.Hover01:Play()
-											EMOTE.playEmote()
-										else
-											_K.UI.Sound.Hover03:Play()
-											local name = item.lineData.name
-											if string.find(name, _K.Data.settings.splitKey, 1, true) then
-												name = `"{name}"`
-											end
-											_K.Process.runCommands(
-												_K,
-												_K.LocalPlayer.UserId,
-												`{_K.getCommandPrefix()}emote me {name}`
-											)
-										end
-									end)
-									local hovering = UI.Interact.hover(button)
-									UI.edit(button)({
-										ImageTransparency = UI.pick(hovering, 0, 0.25),
-										__CLEAN = { hovering },
-									})
-								end,
-							},
-
-							UI.new "TextLabel" {
-								AutoLocalize = false,
-								AutomaticSize = Enum.AutomaticSize.X,
-								BackgroundTransparency = 1,
-								Size = UDim2.new(0, 0, 1, 0),
-								RichText = true,
-								FontFace = UI.Theme.FontMono,
-								TextSize = UI.Theme.FontSize,
-								TextColor3 = UI.Theme.PrimaryText,
-								TextStrokeColor3 = UI.Theme.Primary,
-								TextStrokeTransparency = UI.Theme.TextStrokeTransparency,
-								TextTruncate = Enum.TextTruncate.SplitWord,
-								TextXAlignment = Enum.TextXAlignment.Left,
-
-								UI.flex("fill"),
-							},
-
-							UI.new "Spacer" {},
-
-							UI.new "Button" {
-								Name = "Unlock",
-								Label = "🔓",
-								Padding = UI.Theme.PaddingHalf,
-								Size = UDim2.new(1, 0, 1, 0),
-								SizeConstraint = Enum.SizeConstraint.RelativeYY,
-								Activated = function()
-									EMOTE.updatePreview(item.lineData.emoteId)
-									EMOTE.preview.Visible = true
-								end,
-							},
-
-							UI.new "Button" {
-								Label = "⭐",
-								Padding = UI.Theme.PaddingHalf,
-								Size = UDim2.new(1, 0, 1, 0),
-								SizeConstraint = Enum.SizeConstraint.RelativeYY,
-								Activated = function()
-									local _ = pcall(function()
-										_K.Service.AvatarEditor:PromptSetFavorite(item.lineData.emoteId, 1, true)
-									end)
-								end,
-							},
-						}
-
-						return item
+						return createEmotesItem(_K, UI, EMOTE, self, initialLineData)
 					end,
-
 					RenderItem = function(self, lineItem, lineData)
-						lineItem.lineData = lineData
-						local instance = lineItem._instance
-						instance.TextLabel.Text = lineData.name
-						if lineData.owned == nil then
-							lineData.owned = false
-							task.spawn(function()
-								local ok, result = _K.Util.Retry(function()
-									return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, lineData.emoteId)
-								end)
-								if ok then
-									lineData.owned = result
-									self:render(true)
-								end
-							end)
-						end
-						instance.Unlock.Visible = not lineData.owned
+						renderEmotesItem(_K, self, lineItem, lineData)
 					end,
 				}
 

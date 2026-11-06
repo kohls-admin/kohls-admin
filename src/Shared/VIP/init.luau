@@ -50,6 +50,22 @@ function VIP.getPriceAsync(id: number, productType: Enum.InfoType): number?
 	return nil
 end
 
+function VIP.canPurchaseCommand(command: any): boolean
+	for role, roleData in Data.roles do
+		if
+			(
+				(role == "vip" and Data.settings.vip)
+				or (roleData.gamepasses and next(roleData.gamepasses))
+				or (roleData.assets and next(roleData.assets))
+				or (roleData.subscriptions and next(roleData.subscriptions))
+			) and Auth.roleCanUseCommand(role, command)
+		then
+			return true
+		end
+	end
+	return false
+end
+
 function VIP.updatePurchasePrice(purchase: { role: string?, gamepass: number? }, button: any)
 	local isVIPAsset = purchase.role == "vip" and Data.settings.vip
 	local onSale = isVIPAsset and VIP.isOnSale()
@@ -127,45 +143,35 @@ end
 local donationLevelWaiters: { [Player]: { thread } } = {}
 
 local function setDonationLevel(player: Player, level: number?): number
-	if not level then
+	local waiters: { thread }?
+	local resolvedLevel: number
+	if level then
+		resolvedLevel = level
+	else
 		local existing = player:GetAttribute("_KDonationLevel")
 		if type(existing) == "number" then
 			return existing
 		end
-		local waiters = donationLevelWaiters[player]
+		waiters = donationLevelWaiters[player]
 		if waiters then
 			table.insert(waiters, coroutine.running())
 			return coroutine.yield()
 		end
-		waiters = {}
-		donationLevelWaiters[player] = waiters
-		local fetchedLevel: number = getDonationLevel(player)
+		local newWaiters: { thread } = {}
+		waiters = newWaiters
+		donationLevelWaiters[player] = newWaiters
+		resolvedLevel = getDonationLevel(player)
 		donationLevelWaiters[player] = nil
 		if not player.Parent then
-			for _, waiter in waiters do
-				task.spawn(waiter, fetchedLevel)
+			for _, waiter in newWaiters do
+				task.spawn(waiter, resolvedLevel)
 			end
-			return fetchedLevel
+			return resolvedLevel
 		end
-		local current = player:GetAttribute("_KDonationLevel")
-		local finalLevel = math.max(fetchedLevel, current or 0)
-		player:SetAttribute("_KDonationLevel", finalLevel)
-		if Data.settings.vip then
-			if finalLevel > 0 then
-				Auth.asyncRoleAdd(player.UserId, "vip")
-			end
-			if finalLevel < 3 then
-				task.delay(8, Remote.VIPNotification.Fire, Remote.VIPNotification, player)
-			end
-		end
-		for _, waiter in waiters do
-			task.spawn(waiter, finalLevel)
-		end
-		return finalLevel
 	end
 
 	local current = player:GetAttribute("_KDonationLevel")
-	local finalLevel = math.max(level :: number, current or 0)
+	local finalLevel = math.max(resolvedLevel, current or 0)
 	player:SetAttribute("_KDonationLevel", finalLevel)
 
 	if Data.settings.vip then
@@ -174,6 +180,11 @@ local function setDonationLevel(player: Player, level: number?): number
 		end
 		if finalLevel < 3 then
 			task.delay(8, Remote.VIPNotification.Fire, Remote.VIPNotification, player)
+		end
+	end
+	if waiters then
+		for _, waiter in waiters do
+			task.spawn(waiter, finalLevel)
 		end
 	end
 	return finalLevel

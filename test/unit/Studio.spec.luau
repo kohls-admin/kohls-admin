@@ -173,7 +173,6 @@ describe("Studio · Client", function()
 
 	clientTest("custom-prefix chat commands show in chat while slash commands stay silent", function()
 		local TextChatService = game:GetService("TextChatService")
-		local _K = shared._K_INTERFACE
 		local channels = sert.waitFor(function()
 			return TextChatService:FindFirstChild("TextChannels")
 		end, 5, "TextChannels folder")
