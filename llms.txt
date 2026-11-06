@@ -732,14 +732,14 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.Process
 
 - [Process](src/Shared/Process/init.luau)
-- [`Process.ignoreFormat: string`](src/Shared/Process/init.luau#L19)
-- [`Process.addCommandFilter(filter: (command: any) -> (boolean, string?)): () -> ()`](src/Shared/Process/init.luau#L30-L39): Adds a filter that every command passes before it runs on this side, synchronously in Command:run before command requests are split off.
-- [`Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?`](src/Shared/Process/init.luau#L42-L129): Parses a string into a raw command format.
-- [`Process.resetLimit(from: number)`](src/Shared/Process/init.luau#L136-L138)
-- [`Process.onCooldown(_K: any, from: number): boolean`](src/Shared/Process/init.luau#L140-L147)
-- [`Process.countCommand(_K: any, from: number, amount: number?)`](src/Shared/Process/init.luau#L149-L162)
-- [`Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?)`](src/Shared/Process/init.luau#L164-L250): [Client]
-- [`Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?, clientOnly: boolean?): boolean`](src/Shared/Process/init.luau#L257-L462): [Client] Parses and runs a command string from a user.
+- [`Process.ignoreFormat: string`](src/Shared/Process/init.luau#L18)
+- [`Process.addCommandFilter(filter: (command: any) -> (boolean, string?)): () -> ()`](src/Shared/Process/init.luau#L29-L38): Adds a filter that every command passes before it runs on this side, synchronously in Command:run before command requests are split off.
+- [`Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?`](src/Shared/Process/init.luau#L41-L128): Parses a string into a raw command format.
+- [`Process.resetLimit(from: number)`](src/Shared/Process/init.luau#L135-L137)
+- [`Process.onCooldown(_K: any, from: number): boolean`](src/Shared/Process/init.luau#L139-L146)
+- [`Process.countCommand(_K: any, from: number, amount: number?)`](src/Shared/Process/init.luau#L148-L161)
+- [`Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?)`](src/Shared/Process/init.luau#L163-L249): [Client]
+- [`Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?, clientOnly: boolean?): boolean`](src/Shared/Process/init.luau#L256-L461): [Client] Parses and runs a command string from a user.
 
 ## MainModule.Registry
 
@@ -767,15 +767,15 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.Remote
 
 - [Remote](src/Shared/Util/Remote.luau): Single-remote networking wrapper with byte-packed IDs and auto-batching.
-- [`type RemoteData`](src/Shared/Util/Remote.luau#L105-L114)
-- [`type Remote = typeof(setmetatable({} :: RemoteData, RemoteObject))`](src/Shared/Util/Remote.luau#L116)
-- [`Remote:Connect(callback: (...any) -> ()): Signal.Connection`](src/Shared/Util/Remote.luau#L138-L140)
-- [`Remote:Once(callback: (...any) -> ()): Signal.Connection`](src/Shared/Util/Remote.luau#L142-L144)
-- [`Remote:Wait(): ...any`](src/Shared/Util/Remote.luau#L146-L148): [Yields]
-- [`Remote:FireAll(...)`](src/Shared/Util/Remote.luau#L150-L152): [Server]
-- [`Remote:SetUnreliable(state: boolean)`](src/Shared/Util/Remote.luau#L154-L166): [Server]
-- [`Remote:Fire(...)`](src/Shared/Util/Remote.luau#L250-L259): [Client]
-- [`Remote:Invoke(...): ...any`](src/Shared/Util/Remote.luau#L261-L271): [Yields] [Client]
+- [`type RemoteData`](src/Shared/Util/Remote.luau#L105-L115)
+- [`type Remote = typeof(setmetatable({} :: RemoteData, RemoteObject))`](src/Shared/Util/Remote.luau#L117)
+- [`Remote:Connect(callback: (...any) -> ()): Signal.Connection`](src/Shared/Util/Remote.luau#L139-L141)
+- [`Remote:Once(callback: (...any) -> ()): Signal.Connection`](src/Shared/Util/Remote.luau#L143-L145)
+- [`Remote:Wait(): ...any`](src/Shared/Util/Remote.luau#L262-L267): [Yields]
+- [`Remote:FireAll(...)`](src/Shared/Util/Remote.luau#L151-L153): [Server]
+- [`Remote:SetUnreliable(state: boolean)`](src/Shared/Util/Remote.luau#L155-L167): [Server]
+- [`Remote:Fire(...)`](src/Shared/Util/Remote.luau#L269-L278): [Client]
+- [`Remote:Invoke(...): ...any`](src/Shared/Util/Remote.luau#L280-L291): [Yields] [Client]
 
 ## MainModule.Service
 
@@ -1137,7 +1137,7 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.Util.SafeTeleport
 
 - [SafeTeleport](src/Shared/Util/SafeTeleport.luau)
-- [`SafeTeleport(placeId, players, options)`](src/Shared/Util/SafeTeleport.luau#L9-L18): [Yields]
+- [`SafeTeleport(placeId, players, options)`](src/Shared/Util/SafeTeleport.luau#L18-L27): [Yields]
 
 ## MainModule.Util.Signal
 
@@ -1155,29 +1155,29 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.Util.String
 
 - [String](src/Shared/Util/String.luau)
-- [`String.escapePattern(s: string): string`](src/Shared/Util/String.luau#L11-L13): Escape magic string pattern characters: % .
-- [`String.escapeRichText(s: string): string`](src/Shared/Util/String.luau#L24-L27): Escape RichText tags
-- [`String.unescapeRichText(s: string): string`](src/Shared/Util/String.luau#L30-L37): Unescape RichText tags
-- [`String.levenshteinDistance(s1: string, s2: string): number`](src/Shared/Util/String.luau#L40-L75): Calculates the Levenshtein distance between two strings.
-- [`String.splitOutsideQuotes(text: string, delimiter: string?): { string }?`](src/Shared/Util/String.luau#L78-L114): Splits a string by a specified delimiter, but does not split within quoted sequences.
-- [`String.stripQuotes(s: string): string`](src/Shared/Util/String.luau#L117-L123): Strip enclosing quotes from a string
-- [`String.trimStart(s: string): string`](src/Shared/Util/String.luau#L126-L128): Strip whitespace from the start of a string
-- [`String.trimEnd(s: string): string`](src/Shared/Util/String.luau#L131-L133): Strip whitespace from the end of a string
-- [`String.trim(s: string): string`](src/Shared/Util/String.luau#L136-L138): Strip whitespace from both ends of a string
-- [`String.filterResult(message: string, fromUserId: number, filterContext: Enum.TextFilterContext?): (boolean, TextFilterResult | string)`](src/Shared/Util/String.luau#L141-L149): [Yields] Returns a [TextFilterResult] with [TextService.FilterStringAsync] to be used with [String.filterResultForBroadcast] or [String.filterResultForUser]
-- [`String.filterResultForBroadcast(filterResult: TextFilterResult | string, fromUserId: number): string`](src/Shared/Util/String.luau#L152-L165): [Yields] Filters a [TextFilterResult] for broadcast messages with [TextService.FilterStringAsync]
-- [`String.filterResultForUser(filterResult: TextFilterResult | string, fromUserId: number, toUserId: number): string`](src/Shared/Util/String.luau#L168-L189): [Yields] Filters a [TextFilterResult] for non-chat text shown to a specific user with [TextService.FilterStringAsync]
-- [`String.filterForBroadcast(message: string, fromUserId: number, filterContext: Enum.TextFilterContext?): string`](src/Shared/Util/String.luau#L192-L204): [Yields] Filters a broadcast message with [TextService.FilterStringAsync]
-- [`String.filterForUser(message: string, fromUserId: number, toUserId: number, filterContext: Enum.TextFilterContext?): string`](src/Shared/Util/String.luau#L207-L222): [Yields] Filters a chat message with [TextService.FilterStringAsync]
-- [`String.toFlag(locale: string): string`](src/Shared/Util/String.luau#L225-L232): Converts a locale string (e.g., "US") to a flag emoji representation, or an empty string if the locale is invalid.
-- [`String.hash(s: string, seed: number?): number`](src/Shared/Util/String.luau#L235-L246): Computes a deterministic 32-bit FNV-1a hash of a string.
+- [`String.escapePattern(s: string): string`](src/Shared/Util/String.luau#L10-L12): Escape magic string pattern characters: % .
+- [`String.escapeRichText(s: string): string`](src/Shared/Util/String.luau#L23-L26): Escape RichText tags
+- [`String.unescapeRichText(s: string): string`](src/Shared/Util/String.luau#L29-L36): Unescape RichText tags
+- [`String.levenshteinDistance(s1: string, s2: string): number`](src/Shared/Util/String.luau#L39-L74): Calculates the Levenshtein distance between two strings.
+- [`String.splitOutsideQuotes(text: string, delimiter: string?): { string }?`](src/Shared/Util/String.luau#L77-L113): Splits a string by a specified delimiter, but does not split within quoted sequences.
+- [`String.stripQuotes(s: string): string`](src/Shared/Util/String.luau#L116-L122): Strip enclosing quotes from a string
+- [`String.trimStart(s: string): string`](src/Shared/Util/String.luau#L125-L127): Strip whitespace from the start of a string
+- [`String.trimEnd(s: string): string`](src/Shared/Util/String.luau#L130-L132): Strip whitespace from the end of a string
+- [`String.trim(s: string): string`](src/Shared/Util/String.luau#L135-L137): Strip whitespace from both ends of a string
+- [`String.filterResult(message: string, fromUserId: number, filterContext: Enum.TextFilterContext?): (boolean, TextFilterResult | string)`](src/Shared/Util/String.luau#L140-L148): [Yields] Returns a [TextFilterResult] with [TextService.FilterStringAsync] to be used with [String.filterResultForBroadcast] or [String.filterResultForUser]
+- [`String.filterResultForBroadcast(filterResult: TextFilterResult | string, fromUserId: number): string`](src/Shared/Util/String.luau#L151-L164): [Yields] Filters a [TextFilterResult] for broadcast messages with [TextService.FilterStringAsync]
+- [`String.filterResultForUser(filterResult: TextFilterResult | string, fromUserId: number, toUserId: number): string`](src/Shared/Util/String.luau#L167-L188): [Yields] Filters a [TextFilterResult] for non-chat text shown to a specific user with [TextService.FilterStringAsync]
+- [`String.filterForBroadcast(message: string, fromUserId: number, filterContext: Enum.TextFilterContext?): string`](src/Shared/Util/String.luau#L191-L203): [Yields] Filters a broadcast message with [TextService.FilterStringAsync]
+- [`String.filterForUser(message: string, fromUserId: number, toUserId: number, filterContext: Enum.TextFilterContext?): string`](src/Shared/Util/String.luau#L206-L221): [Yields] Filters a chat message with [TextService.FilterStringAsync]
+- [`String.toFlag(locale: string): string`](src/Shared/Util/String.luau#L224-L231): Converts a locale string (e.g., "US") to a flag emoji representation, or an empty string if the locale is invalid.
+- [`String.hash(s: string, seed: number?): number`](src/Shared/Util/String.luau#L234-L245): Computes a deterministic 32-bit FNV-1a hash of a string.
 
 ## MainModule.Util.Suggest
 
 - [Suggest](src/Shared/Util/Suggest.luau)
-- [`Suggest.getNames(objects: any): { string }`](src/Shared/Util/Suggest.luau#L9-L21)
-- [`Suggest.query(text: string, names: { string | { string } }, instances: { any }?)`](src/Shared/Util/Suggest.luau#L23-L100)
-- [`Suggest.new(setOrContainer: any): ({ string }, { any })`](src/Shared/Util/Suggest.luau#L102-L139)
+- [`Suggest.getNames(objects: any): { string }`](src/Shared/Util/Suggest.luau#L8-L20)
+- [`Suggest.query(text: string, names: { string | { string } }, instances: { any }?)`](src/Shared/Util/Suggest.luau#L22-L99)
+- [`Suggest.new(setOrContainer: any): ({ string }, { any })`](src/Shared/Util/Suggest.luau#L101-L138)
 
 ## MainModule.Util.Table
 
