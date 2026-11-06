@@ -212,6 +212,17 @@ local function decorateEnvironment(peerEnv: any)
 	end
 	rawset(assetService, "_methods", assetMethods)
 
+	for _, audioId in { 123456, 999999 } do
+		peerEnv.marketplace.products[audioId] = {
+			AssetId = audioId,
+			Name = `Audio{audioId}`,
+			Description = "",
+			PriceInRobux = 0,
+			AssetTypeId = Enum.AssetType.Audio.Value,
+			IsForSale = true,
+		}
+	end
+
 	-- Ensure InsertService:LoadAsset returns tools, decals, parts, and models as needed
 	local insertService = peerEnv.game:GetService("InsertService")
 	local insertMethods = rawget(insertService, "_methods") or {}
@@ -2416,6 +2427,28 @@ describe("DefaultCommands", function()
 		expect(#_K.cleanupCommands >= 1).toBe(true)
 
 		runSrv(";jumpscare TargetPlr")
+		runSrv(";jumpscare TargetPlr 1119705746 999999")
+		runSrv(";jumpscare TargetPlr 1119705746 999999")
+		expect(
+			_K.Registry.commands.play.run(
+				{ _K = _K, env = _K.Registry.commands.play.env, from = 1, fromPlayer = srvP1 },
+				10764744805
+			)
+		).toBe("Invalid audio asset.")
+		expect(
+			_K.Registry.commands.play.run(
+				{ _K = _K, env = _K.Registry.commands.play.env, from = 1, fromPlayer = srvP1 },
+				10764744805
+			)
+		).toBe("Invalid audio asset.")
+		expect(
+			_K.Registry.commands.jumpscare.run(
+				{ _K = _K, env = _K.Registry.commands.jumpscare.env, from = 1, fromPlayer = srvP1 },
+				{ srvP2 },
+				nil,
+				10764744805
+			)
+		).toBe("Invalid audio asset.")
 		_K.Remote.Jumpscare:Fire(srvP1)
 		c.world:run(0.05)
 

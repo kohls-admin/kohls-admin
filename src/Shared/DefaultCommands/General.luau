@@ -1765,9 +1765,22 @@ return {
 		},
 
 		env = function(_K)
-			return { playing = nil }
+			return { playing = nil, audioCache = {} }
 		end,
 		run = function(context, assetId)
+			local isAudio = context.env.audioCache[assetId]
+			if isAudio == nil then
+				local ok, info =
+					pcall(context._K.Service.Marketplace.GetProductInfoAsync, context._K.Service.Marketplace, assetId)
+				if ok and type(info) == "table" and info.AssetTypeId ~= nil then
+					isAudio = info.AssetTypeId == Enum.AssetType.Audio.Value
+					context.env.audioCache[assetId] = isAudio
+				end
+			end
+			if isAudio == false then
+				return "Invalid audio asset."
+			end
+
 			if context.env.playing then
 				context.env.playing:Stop()
 				context.env.playing:Destroy()
@@ -1780,6 +1793,7 @@ return {
 			sound.Looped = true
 			sound.Parent = workspace
 			sound:Play()
+			return
 		end,
 	},
 	{

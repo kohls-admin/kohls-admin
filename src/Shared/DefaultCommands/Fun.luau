@@ -715,15 +715,33 @@ return {
 			end)
 		end,
 		env = function(_K)
-			return { remote = _K.Remote.Jumpscare }
+			return { remote = _K.Remote.Jumpscare, audioCache = {} }
 		end,
 		run = function(context, players: { Players }, decalId: string?, soundId: number?)
 			decalId = decalId or "rbxassetid://1119705746"
 			soundId = soundId or 130285917830946
+			if soundId ~= 130285917830946 then
+				local isAudio = context.env.audioCache[soundId]
+				if isAudio == nil then
+					local ok, info = pcall(
+						context._K.Service.Marketplace.GetProductInfoAsync,
+						context._K.Service.Marketplace,
+						soundId
+					)
+					if ok and type(info) == "table" and info.AssetTypeId ~= nil then
+						isAudio = info.AssetTypeId == Enum.AssetType.Audio.Value
+						context.env.audioCache[soundId] = isAudio
+					end
+				end
+				if isAudio == false then
+					return "Invalid audio asset."
+				end
+			end
 
 			for _, player in players do
 				context.env.remote:Fire(player, decalId, soundId)
 			end
+			return
 		end,
 	},
 	{
