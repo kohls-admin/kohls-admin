@@ -1231,11 +1231,13 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`VIP.isOnSale(): boolean`](src/Shared/VIP/init.luau#L25-L32): [Client]
 - [`VIP.getActiveAssetId(): number`](src/Shared/VIP/init.luau#L34-L36): [Client]
 - [`VIP.getPriceAsync(id: number, productType: Enum.InfoType): number?`](src/Shared/VIP/init.luau#L38-L51): [Yields]
-- [`VIP.updatePurchasePrice(purchase: { role: string?, gamepass: number? }, button: any)`](src/Shared/VIP/init.luau#L53-L64): [Yields] [Client]
-- [`VIP.Effect(player: Player, assetId: number, match: string, equip: boolean, name: string)`](src/Shared/VIP/init.luau#L199-L269): [Yields]
-- [`VIP.Title(player: Player, title, ...)`](src/Shared/VIP/init.luau#L274-L345): [Yields]
-- [`VIP.EffectHandler(character)`](src/Shared/VIP/init.luau#L362-L404)
-- [`VIP.CharacterAdded(character)`](src/Shared/VIP/init.luau#L408-L416)
+- [`VIP.canPurchaseCommand(command: any): boolean`](src/Shared/VIP/init.luau#L53-L67)
+- [`VIP.updatePurchasePrice(purchase: { role: string?, gamepass: number? }, button: any)`](src/Shared/VIP/init.luau#L69-L80): [Yields] [Client]
+- [`VIP.setDonationLevel(player: Player, level: number?): number`](src/Shared/VIP/init.luau#L193): [Yields]
+- [`VIP.Effect(player: Player, assetId: number, match: string, equip: boolean, name: string)`](src/Shared/VIP/init.luau#L249-L319): [Yields]
+- [`VIP.Title(player: Player, title, ...)`](src/Shared/VIP/init.luau#L324-L395): [Yields]
+- [`VIP.EffectHandler(character)`](src/Shared/VIP/init.luau#L412-L454)
+- [`VIP.CharacterAdded(character)`](src/Shared/VIP/init.luau#L458-L466)
 
 ## MainModule.VIP.purchasables
 
