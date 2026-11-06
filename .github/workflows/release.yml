@@ -9,7 +9,6 @@
 #   Run workflow (dry_run on)  build and package only
 #
 # Secrets:
-#   MY_RELEASE_PLEASE_TOKEN  a token that may push branches and open PRs, so the release PR runs CI
 #   WALLY_AUTH_TOKEN         a Wally registry token for publishing kohltastrophe/kohls-admin
 #   MODEL_TOKEN              an Open Cloud API key with Assets API read/write access for MAIN_MODULE_ASSET_ID & LOADER_ASSET_ID
 name: Release
@@ -56,7 +55,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
 
       - name: Release PR or Release
         id: release
