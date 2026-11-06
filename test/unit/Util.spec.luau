@@ -837,26 +837,23 @@ describe(
 			expect(failOk).toBe(false)
 			expect(attempts).toBe(5)
 
-			-- TeleportInitFailed signal handling: GameNotFound / Unauthorized / Studio should NOT retry
+			-- TeleportInitFailed signal handling: GameNotFound / Unauthorized / GameFull / GameEnded / IsTeleporting / Studio should NOT retry
 			local initRetryCalls = 0
 			tpMethods.TeleportAsync = function()
 				initRetryCalls += 1
 				return true
 			end
-			TeleportService.TeleportInitFailed:Fire(
-				plr,
-				h.env.globals.Enum.TeleportResult.GameNotFound,
-				"not found",
-				12345,
-				options
-			)
-			TeleportService.TeleportInitFailed:Fire(
-				plr,
-				h.env.globals.Enum.TeleportResult.Unauthorized,
-				"unauthorized",
-				12345,
-				options
-			)
+			for _, nonRetryable in
+				{
+					h.env.globals.Enum.TeleportResult.GameNotFound,
+					h.env.globals.Enum.TeleportResult.Unauthorized,
+					h.env.globals.Enum.TeleportResult.GameFull,
+					h.env.globals.Enum.TeleportResult.GameEnded,
+					h.env.globals.Enum.TeleportResult.IsTeleporting,
+				}
+			do
+				TeleportService.TeleportInitFailed:Fire(plr, nonRetryable, "non-retryable", 12345, options)
+			end
 			TeleportService.TeleportInitFailed:Fire(
 				plr,
 				h.env.globals.Enum.TeleportResult.Failure,

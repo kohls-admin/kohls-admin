@@ -1,3 +1,4 @@
+local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 
 local Retry = require(script.Parent:WaitForChild("Retry"))
@@ -5,6 +6,14 @@ local Retry = require(script.Parent:WaitForChild("Retry"))
 local ATTEMPT_LIMIT = 5
 local RETRY_DELAY = 1
 local FLOOD_DELAY = 15
+
+local NON_RETRYABLE_RESULTS = {
+	[Enum.TeleportResult.GameEnded] = true,
+	[Enum.TeleportResult.GameFull] = true,
+	[Enum.TeleportResult.GameNotFound] = true,
+	[Enum.TeleportResult.IsTeleporting] = true,
+	[Enum.TeleportResult.Unauthorized] = true,
+}
 
 local function SafeTeleport(placeId, players, options)
 	local success, result =
@@ -18,23 +27,21 @@ local function SafeTeleport(placeId, players, options)
 end
 
 local function handleFailedTeleport(player, teleportResult, errorMessage, targetPlaceId, teleportOptions)
+	if NON_RETRYABLE_RESULTS[teleportResult] or string.find(errorMessage, "Roblox Studio") then
+		return
+	end
+
 	if teleportResult == Enum.TeleportResult.Flooded then
 		task.wait(FLOOD_DELAY)
 	elseif teleportResult == Enum.TeleportResult.Failure then
 		task.wait(RETRY_DELAY)
 	end
 
-	if
-		teleportResult == Enum.TeleportResult.GameNotFound
-		or teleportResult == Enum.TeleportResult.Unauthorized
-		or string.find(errorMessage, "Roblox Studio")
-	then
-		return
-	end
-
 	SafeTeleport(targetPlaceId, { player }, teleportOptions)
 end
 
-local _ = TeleportService.TeleportInitFailed:Connect(handleFailedTeleport)
+if RunService:IsServer() then
+	local _ = TeleportService.TeleportInitFailed:Connect(handleFailedTeleport)
+end
 
 return SafeTeleport
