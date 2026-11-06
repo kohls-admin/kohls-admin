@@ -61,7 +61,7 @@ jobs:
   demo:
     name: Publish Demo Place
     needs: check
-    if: "(github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore: release')) || github.event_name == 'workflow_dispatch'"
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: testing
     steps:
