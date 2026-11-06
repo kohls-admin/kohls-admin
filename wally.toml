@@ -2,7 +2,7 @@
 name = "kohltastrophe/kohls-admin"
 description = "An administration, moderation, and command suite for Roblox. Taken by 30M+ creators since 2010 and running across 100K+ active games."
 authors = ["Kohl <admin@kohl.gg>"]
-version = "0.19.2"
+version = "0.19.3"
 license = "MIT"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
