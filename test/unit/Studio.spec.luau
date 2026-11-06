@@ -97,6 +97,17 @@ describe("Studio · Client", function()
 		w1:Destroy()
 		w2:Destroy()
 
+		-- Verify cmdbar2 Window with AutomaticSize.Y expands to fit its Input + Button children in Studio
+		local cmdbar2Win = _K.Registry.commands.cmdbar2.env.window
+		cmdbar2Win._instance.Visible = true
+		local cb2Settled, cb2Moving = sert.roblox.Layout.settle(cmdbar2Win._instance)
+		sert(cb2Settled, `cmdbar2 Window layout settled ({cb2Moving})`)
+		expect(cmdbar2Win._instance.AbsoluteSize.X).toBe(420)
+		expect(cmdbar2Win._instance.AbsoluteSize.Y > 60).toBe(true)
+		expect(cmdbar2Win._content.AbsoluteSize.Y > 30).toBe(true)
+		expect(cmdbar2Win._instance.UISizeConstraint.MaxSize.X > 0).toBe(true)
+		cmdbar2Win._instance.Visible = false
+
 		-- Verify Slider synchronous knob & hook update
 		local sliderHookVal = nil
 		local testSlider = UI.new "Slider" {

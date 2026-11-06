@@ -6,18 +6,19 @@ Class.__index = Class
 setmetatable(Class, BaseClass)
 
 local resizeReference = {
-	{ -1, 1, 0, 0, 48 }, -- left
-	{ 1, 0, 0, 0, 48 }, -- right
-	{ 0, 0, -1, 1, 0 }, -- top
-	{ 0, 0, 1, 0, 0 }, -- bottom
-	{ -1, 1, -1, 1, 72 }, -- top left
-	{ 1, 0, -1, 1, 24 }, -- top right
-	{ 1, 0, 1, 0, 72 }, -- bottom right
-	{ -1, 1, 1, 0, 24 }, -- bottom left
+	[0] = nil,
+	[1] = { -1, 1, 0, 0, 48 }, -- left
+	[2] = { 1, 0, 0, 0, 48 }, -- right
+	[4] = { 0, 0, -1, 1, 0 }, -- top
+	[8] = { 0, 0, 1, 0, 0 }, -- bottom
+	[5] = { -1, 1, -1, 1, 72 }, -- top left
+	[6] = { 1, 0, -1, 1, 24 }, -- top right
+	[10] = { 1, 0, 1, 0, 72 }, -- bottom right
+	[9] = { -1, 1, 1, 0, 24 }, -- bottom left
 }
 
 -- TODO: account for anchorpoint...
-local function getResizeIndex(point, size, position, buffer: number): number?
+local function getResizeIndex(point, size, position, buffer: number, auto: Enum.AutomaticSize?): { number }?
 	local max = position + size
 	-- not inside box buffer
 	if
@@ -29,37 +30,25 @@ local function getResizeIndex(point, size, position, buffer: number): number?
 		return
 	end
 
-	local edges = {
-		math.abs(point.X - position.X), -- left
-		math.abs(point.X - max.X), -- right
-		math.abs(point.Y - position.Y), -- top
-		math.abs(point.Y - max.Y), -- bottom
-	}
-	-- PERF: can't be close to corner if not close to edge
-	if math.min(unpack(edges)) > buffer then
-		return
+	local autoX = auto == Enum.AutomaticSize.X or auto == Enum.AutomaticSize.XY
+	local autoY = auto == Enum.AutomaticSize.Y or auto == Enum.AutomaticSize.XY
+	local mask = 0
+	if not autoX then
+		if math.abs(point.X - position.X) <= buffer then
+			mask += 1
+		elseif math.abs(point.X - max.X) <= buffer then
+			mask += 2
+		end
 	end
-
-	local corners = {
-		point - position, -- top left
-		point - Vector2.new(max.X, position.Y), -- top right
-		point - max, -- bottom right
-		point - Vector2.new(position.X, max.Y), -- bottom left
-	}
-
-	for i, corner in corners do
-		if math.abs(corner.X) <= buffer and math.abs(corner.Y) <= buffer then
-			return resizeReference[i + 4] -- THE CURRENT CORNER
+	if not autoY then
+		if math.abs(point.Y - position.Y) <= buffer then
+			mask += 4
+		elseif math.abs(point.Y - max.Y) <= buffer then
+			mask += 8
 		end
 	end
 
-	for i, distance in edges do
-		if distance <= buffer then
-			return resizeReference[i]
-		end
-	end
-
-	return
+	return resizeReference[mask]
 end
 
 local windowCache = {}
@@ -202,11 +191,25 @@ function Class.new(properties: Properties?)
 		) - dragStart
 		local resizeMin = self.SizeBounds:peek().Min - startSize
 		local resizeMax = self.SizeBounds:peek().Max - startSize
+		local auto = self.AutomaticSize:peek()
+		local autoX = auto == Enum.AutomaticSize.X or auto == Enum.AutomaticSize.XY
+		local autoY = auto == Enum.AutomaticSize.Y or auto == Enum.AutomaticSize.XY
+		local curSize = self.Size:peek()
 		inputPosition(input.Position)
 		self.Size(
-			UDim2.fromOffset(
-				math.round(startSize.X + math.clamp(xSize * delta.X, resizeMin.X, math.max(resizeMin.X, resizeMax.X))),
-				math.round(startSize.Y + math.clamp(ySize * delta.Y, resizeMin.Y, math.max(resizeMin.Y, resizeMax.Y)))
+			UDim2.new(
+				if autoX then curSize.X.Scale else 0,
+				if autoX
+					then curSize.X.Offset
+					else math.round(
+						startSize.X + math.clamp(xSize * delta.X, resizeMin.X, math.max(resizeMin.X, resizeMax.X))
+					),
+				if autoY then curSize.Y.Scale else 0,
+				if autoY
+					then curSize.Y.Offset
+					else math.round(
+						startSize.Y + math.clamp(ySize * delta.Y, resizeMin.Y, math.max(resizeMin.Y, resizeMax.Y))
+					)
 			)
 		)
 
@@ -231,7 +234,8 @@ function Class.new(properties: Properties?)
 				Vector2.new(input.Position.X, input.Position.Y),
 				self._instance.AbsoluteSize,
 				self._instance.AbsolutePosition,
-				resizeBuffer
+				resizeBuffer,
+				self.AutomaticSize:peek()
 			)
 			if resize then
 				xSize, xPos, ySize, yPos = unpack(resize, 1, 4)
@@ -289,14 +293,24 @@ function Class.new(properties: Properties?)
 	self._exitButton._instance:FindFirstChildOfClass("UIStroke"):Destroy()
 	UI.edit(self._exitButton._instance.UICorner)({ CornerRadius = UI.Theme.CornerPadded })
 
+	local autoSize = UI.computed(function()
+		local auto = self.AutomaticSize()
+		local x = auto ~= Enum.AutomaticSize.X and auto ~= Enum.AutomaticSize.XY
+		local y = auto ~= Enum.AutomaticSize.Y and auto ~= Enum.AutomaticSize.XY
+		return UDim2.fromScale(x and 1 or 0, y and 1 or 0)
+	end)
+
 	self._content = UI.new "Frame" {
 		Name = "UIContent",
 		AutomaticSize = self.AutomaticSize,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = autoSize,
 		ClipsDescendants = true,
 
-		UI.flex("fill"),
+		UI.flex(function()
+			local auto = self.AutomaticSize()
+			return if auto == Enum.AutomaticSize.Y or auto == Enum.AutomaticSize.XY then "none" else "fill"
+		end),
 		UI.padding {
 			x = UI.Theme.Padding,
 			bottom = UI.Theme.Padding,
@@ -317,6 +331,17 @@ function Class.new(properties: Properties?)
 		end
 	end
 
+	local sizeConstraint = UI.new "UISizeConstraint" {
+		MinSize = function()
+			local auto = self.AutomaticSize()
+			local min = self.SizeBounds().Min
+			return Vector2.new(
+				if auto == Enum.AutomaticSize.X or auto == Enum.AutomaticSize.XY then 0 else min.X,
+				if auto == Enum.AutomaticSize.Y or auto == Enum.AutomaticSize.XY then 0 else min.Y
+			)
+		end,
+	}
+
 	self._instance = UI.new "ImageLabel" {
 		Name = "Window",
 		AutomaticSize = self.AutomaticSize,
@@ -329,6 +354,7 @@ function Class.new(properties: Properties?)
 		Size = self.Size,
 		Visible = false,
 
+		sizeConstraint,
 		UI.corner(UI.Theme.CornerRadius),
 		UI.new "Gradient" {},
 		UI.new "Stroke" {},
@@ -354,7 +380,7 @@ function Class.new(properties: Properties?)
 			AutomaticSize = self.AutomaticSize,
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
-			Size = UDim2.fromScale(1, 1),
+			Size = autoSize,
 
 			UI.list {},
 
@@ -466,7 +492,8 @@ function Class.new(properties: Properties?)
 					Vector2.new(input.Position.X, input.Position.Y),
 					self._instance.AbsoluteSize,
 					self._instance.AbsolutePosition,
-					resizeBuffer
+					resizeBuffer,
+					self.AutomaticSize:peek()
 				)
 				if resize then
 					inputPosition(input.Position)
@@ -491,7 +518,7 @@ function Class.new(properties: Properties?)
 		end
 	end)
 
-	local parentConn, visibleConn
+	local parentConn, visibleConn, sizeConn
 	self._instance:GetPropertyChangedSignal("Parent"):Connect(function()
 		if parentConn then
 			parentConn:Disconnect()
@@ -500,6 +527,10 @@ function Class.new(properties: Properties?)
 		if visibleConn then
 			visibleConn:Disconnect()
 			visibleConn = nil
+		end
+		if sizeConn then
+			sizeConn:Disconnect()
+			sizeConn = nil
 		end
 		local parent = self._instance.Parent
 		if parent and parent:IsA("GuiBase2d") then
@@ -527,11 +558,10 @@ function Class.new(properties: Properties?)
 						+ parentSize.Y * padding.PaddingBottom.Scale
 					else 0
 
-				self.Size(
-					UDim2.fromOffset(
-						math.clamp(windowSize.X, 0, math.max(0, parentSize.X - paddingX)),
-						math.clamp(windowSize.Y, 0, math.max(0, parentSize.Y - paddingY))
-					)
+				local boundsMax = self.SizeBounds:peek().Max
+				sizeConstraint.MaxSize = Vector2.new(
+					math.min(boundsMax.X, math.max(0, parentSize.X - paddingX)),
+					math.min(boundsMax.Y, math.max(0, parentSize.Y - paddingY))
 				)
 				self.Position(
 					UDim2.fromOffset(
@@ -543,6 +573,15 @@ function Class.new(properties: Properties?)
 			end
 			parentConn = parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateSize)
 			visibleConn = self._instance:GetPropertyChangedSignal("Visible"):Connect(updateSize)
+			sizeConn = self._instance:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+				if
+					self.AutomaticSize:peek() ~= Enum.AutomaticSize.None
+					and not dragging:peek()
+					and not resizing:peek()
+				then
+					updateSize()
+				end
+			end)
 			if self._instance.Visible then
 				updateSize()
 			end
@@ -559,7 +598,11 @@ function Class.new(properties: Properties?)
 				if visibleConn then
 					visibleConn:Disconnect()
 				end
+				if sizeConn then
+					sizeConn:Disconnect()
+				end
 			end,
+			autoSize,
 			inputPosition,
 			dragging,
 			resizing,

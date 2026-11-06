@@ -85,6 +85,7 @@ return {
 				Name = "Cmdbar2",
 				Title = "Command Bar",
 				AutomaticSize = Enum.AutomaticSize.Y,
+				Position = UDim2.new(0.5, -210, 0.5, -56),
 				Size = UDim2.fromOffset(420, 0),
 
 				UI.list {
@@ -611,19 +612,15 @@ return {
 				local window = UI.new "Window" {
 					Parent = UI.LayerTopInset,
 					Title = "Emote",
+					AutomaticSize = Enum.AutomaticSize.Y,
 					Resizable = false,
-					Size = UDim2.new(0, 256, 0, 32),
+					Size = UDim2.new(0, 256, 0, 0),
 					Position = UDim2.new(1, -256 - 6, 0.5, -16),
 					UI.new "List" {
 						UI.new "ListItem" { Text = "Looped", looped },
 						UI.new "ListItem" { Text = "Speed", speed },
 					},
 				}
-
-				window._content.Size = UDim2.fromScale(1, 0)
-				window._content.AutomaticSize = Enum.AutomaticSize.Y
-				window._instance.Frame.AutomaticSize = Enum.AutomaticSize.Y
-				window._instance.AutomaticSize = Enum.AutomaticSize.Y
 
 				local buttonSize = function()
 					local h = UI.Theme.FontSize() + UI.Theme.Padding().Offset * 2

@@ -1784,6 +1784,10 @@ describe("Client and UI", function()
 			win1._instance.Visible = true
 			win1._instance.Parent = paddedParent
 			paddedParent.Size = UDim2.fromOffset(700, 500)
+			expect(win1._instance.UISizeConstraint.MaxSize).toEqual(Vector2.new(680, 480))
+			paddedParent.Size = UDim2.fromOffset(200, 180)
+			expect(win1._instance.UISizeConstraint.MaxSize).toEqual(Vector2.new(180, 160))
+			expect(win1.Size()).toEqual(UDim2.fromOffset(300, 300))
 			win1._instance.Parent = UI.LayerDefault
 			win1.Position(UDim2.fromOffset(100, 100))
 			UI.flush()
@@ -1855,6 +1859,42 @@ describe("Client and UI", function()
 				Position = Vector3.new(wPos.X + 100, wPos.Y + 100, 0),
 			}))
 			expect(UI.UserInputService.MouseIconEnabled).toBe(true)
+
+			-- AutomaticSize.Y window preserves auto-sized Y scale/offset and disables vertical resize
+			local autoWin = UI.new "Window" {
+				Parent = UI.LayerDefault,
+				Title = "AutoWin",
+				AutomaticSize = Enum.AutomaticSize.Y,
+				Position = UDim2.fromOffset(50, 50),
+				Size = UDim2.fromOffset(420, 0),
+			}
+			expect(autoWin._content.Size).toEqual(UDim2.fromScale(1, 0))
+			expect(autoWin._instance.Frame.Size).toEqual(UDim2.fromScale(1, 0))
+			expect(autoWin._content.UIFlexItem.FlexMode).toBe(Enum.UIFlexMode.None)
+			autoWin._instance.Visible = true
+			expect(autoWin._instance.Size).toEqual(UDim2.fromOffset(420, 0))
+			-- Top edge hover does not trigger vertical resize on AutomaticSize.Y
+			local awPos = autoWin._instance.AbsolutePosition
+			UI.UserInputService.InputChanged:Fire(makeInput(env, {
+				UserInputType = Enum.UserInputType.MouseMovement,
+				Position = Vector3.new(awPos.X + 100, awPos.Y, 0),
+			}))
+			expect(autoWin._instance.ResizeIcon.Visible).toBe(false)
+			-- Left edge hover still allows horizontal resize
+			UI.UserInputService.InputChanged:Fire(makeInput(env, {
+				UserInputType = Enum.UserInputType.MouseMovement,
+				Position = Vector3.new(awPos.X, awPos.Y, 0),
+			}))
+			expect(autoWin._instance.ResizeIcon.Visible).toBe(true)
+			expect(autoWin._instance.ResizeIcon.ImageRectOffset).toEqual(Vector2.new(48, 0))
+			-- When AutomaticSize grows the window's AbsoluteSize past the bottom edge, Position re-clamps on-screen
+			local parentHeight = UI.LayerDefault.AbsoluteSize.Y
+			autoWin.Position(UDim2.fromOffset(50, parentHeight - 20))
+			UI.flush()
+			autoWin.Size(UDim2.fromOffset(420, 120))
+			UI.flush()
+			expect(autoWin._instance.Position.Y.Offset).toBe(math.max(0, parentHeight - 120))
+			autoWin:Destroy()
 
 			-- Exit buttons
 			win1._exitButton._instance.Activated:Fire()
