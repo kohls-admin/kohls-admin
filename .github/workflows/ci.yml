@@ -57,3 +57,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 tools/sert.py coverage --badge-branch --badge-push
+
+  demo:
+    name: Publish Demo Place
+    needs: check
+    if: "(github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore: release')) || github.event_name == 'workflow_dispatch'"
+    runs-on: ubuntu-latest
+    environment: testing
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: CompeyDev/setup-rokit@1d9390883f7ebce19d48f5b8d006e11d387c92ab # v0.2.1
+        with:
+          version: v1.2.0
+      - name: Publish demo place
+        env:
+          PLACE_PUBLISHING_KEY: ${{ secrets.PLACE_PUBLISHING_KEY }}
+          TEST_UNIVERSE_ID: ${{ secrets.TEST_UNIVERSE_ID }}
+          TEST_PLACE_ID: ${{ secrets.TEST_PLACE_ID }}
+        run: |
+          if [ -z "$PLACE_PUBLISHING_KEY" ] || [ -z "$TEST_UNIVERSE_ID" ] || [ -z "$TEST_PLACE_ID" ]; then
+            echo "::notice::Demo place secrets not configured: publish skipped"
+            exit 0
+          fi
+          rojo upload --api_key "$PLACE_PUBLISHING_KEY" --universe_id "$TEST_UNIVERSE_ID" --asset_id "$TEST_PLACE_ID" test
