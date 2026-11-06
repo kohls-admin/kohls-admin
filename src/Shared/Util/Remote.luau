@@ -109,6 +109,7 @@ export type RemoteData = {
 	_remote: RemoteEvent | UnreliableRemoteEvent,
 	_fireQueue: { { n: number, [number]: any } }?,
 	_invokeQueue: { { n: number, [number]: any } }?,
+	_warnScheduled: boolean?,
 
 	OnInvoke: ((...any) -> ...any)?,
 }
@@ -247,6 +248,24 @@ if IS_SERVER then
 
 	EVENT:SetAttribute("ServerReady", true)
 else -- Client
+	local function warnIfUnlinked(self: Remote)
+		if not self._warnScheduled then
+			self._warnScheduled = true
+			task.delay(5, function()
+				if not self._id then
+					warn(`Infinite yield possible on Remote '{self._key}'`)
+				end
+			end)
+		end
+	end
+
+	function RemoteObject.Wait(self: Remote): ...any
+		if not self._id then
+			warnIfUnlinked(self)
+		end
+		return self._signal:Wait()
+	end
+
 	function RemoteObject.Fire(self: Remote, ...)
 		if self._id then
 			(self._remote :: RemoteEvent):FireServer(self._id, ...)
@@ -262,6 +281,7 @@ else -- Client
 		if self._id then
 			return FUNCTION:InvokeServer(self._id, ...)
 		else
+			warnIfUnlinked(self)
 			local invokeQueue: { { [number]: any, n: number } } = self._invokeQueue or {}
 			self._invokeQueue = invokeQueue
 			table.insert(invokeQueue, table.pack(coroutine.running(), ...))
@@ -272,15 +292,7 @@ else -- Client
 
 	setmetatable(Remote, {
 		__index = function(_, key: string)
-			local new = newRemote(key)
-
-			task.delay(5, function()
-				if not new._id then
-					warn(`Infinite yield possible on Remote '{key}'`)
-				end
-			end)
-
-			return new
+			return newRemote(key)
 		end,
 	})
 

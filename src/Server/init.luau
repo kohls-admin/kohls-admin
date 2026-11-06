@@ -481,9 +481,6 @@ return function(_K)
 			loadAddons(oldAddonStructure:GetChildren())
 		end
 
-		Package.Name = "Kohl's Admin Source"
-		Package.Parent = _K.Service.ReplicatedStorage
-
 		-- ;whois shows Platform as RichText, so only take what the client sets it to (UI.Platform)
 		local platforms = { Console = true, Mobile = true, PC = true, VR = true }
 		local function isValidSessionStart(value)
@@ -595,9 +592,6 @@ return function(_K)
 
 		-- chat commands are TextChatCommands, Player.Chatted never fires with platform-integrated chat
 		_K.ChatCommands = require(script.ChatCommands).start(_K)
-
-		-- enable client
-		Client.Enabled = true
 
 		-- initialize core remotes
 		local _
@@ -1154,6 +1148,11 @@ return function(_K)
 				end
 			end
 		end)
+
+		-- replicate and enable client after all core and command remotes are registered
+		Package.Name = "Kohl's Admin Source"
+		Package.Parent = _K.Service.ReplicatedStorage
+		Client.Enabled = true
 
 		local _ = _K.Hook.roleAdded:Connect(function(userId: number, roleId: string)
 			local player = _K.Service.Players:GetPlayerByUserId(userId)

@@ -1522,8 +1522,16 @@ describe(
 				expect(cFunc.OnClientInvoke("\255\255")).toBeNil()
 				expect(cFunc.OnClientInvoke(cRemote.ServerCreatedOnly._id)).toBeNil()
 
-				-- Indexing a remote on client that is never created on server warns after 5s (line 270)
-				local _never = cRemote.NeverRegisteredOnServer
+				-- Passive indexing/Connect/Fire on client does not warn after 5s, whereas yielding (Wait/Invoke) on an unlinked remote warns once after 5s
+				local _passive = cRemote.PassiveClientListener:Connect(function() end)
+				cRemote.NeverRegisteredOnServer:Fire("queued_without_server")
+				cRemote.NeverRegisteredOnServer:Fire("second_queued_fire")
+				client:spawn(function()
+					cRemote.NeverRegisteredWait:Wait()
+				end)
+				client:spawn(function()
+					cRemote.NeverRegisteredWait:Wait()
+				end)
 				world:run(5.5)
 
 				-- Requiring Remote on client when script is not a descendant of ReplicatedStorage warns (line 93)
