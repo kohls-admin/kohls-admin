@@ -580,18 +580,28 @@ local _ = MarketplaceService.PromptBulkPurchaseFinished:Connect(function(player,
 	if player ~= LocalPlayer or type(results) ~= "table" or type(results.Items) ~= "table" or not results.Items[1] then
 		return
 	end
+	local _K = shared._K_INTERFACE
+	for _, item in results.Items do
+		local id = type(item) == "table" and tonumber(item.Id or item.id)
+		if
+			id
+			and _K
+			and (id == ORIGINAL_PRODUCT_ID or id == SALE_PRODUCT_ID or (_K.VIP and _K.VIP.allowedBulkPurchaseIds[id]))
+		then
+			_K.Remote.VIPCheck:Fire(id)
+		end
+	end
 	local itemId = tonumber(results.Items[1].Id or results.Items[1].id)
 	if itemId ~= ORIGINAL_PRODUCT_ID and itemId ~= SALE_PRODUCT_ID then
 		return
 	end
-	shared._K_INTERFACE.Remote.VIPCheck:Fire(itemId)
 	if status == Enum.MarketplaceBulkPurchasePromptStatus.Completed then
 		local function noop() end
-		shared._K_INTERFACE.client.VIPNotification = noop
+		_K.client.VIPNotification = noop
 		vip.Visible = false
 		task.wait(4)
 		local _ = pcall(function()
-			shared._K_INTERFACE.Service.AvatarEditor:PromptSetFavorite(17873329124, 1, true)
+			_K.Service.AvatarEditor:PromptSetFavorite(17873329124, 1, true)
 		end)
 	end
 end)

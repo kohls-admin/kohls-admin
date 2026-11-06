@@ -2784,6 +2784,11 @@ describe("Client and UI", function()
 				sK.Remote.VIPNotification:Fire(srvPlayer)
 				-- Fire VIPNotification while already open, then close it and fire again
 				sK.Remote.VIPNotification:Fire(srvPlayer)
+				-- Fire VIPNotification with forcePopup = true to open VIP.popup directly
+				sK.Remote.VIPNotification:Fire(srvPlayer, true)
+				fastRun(0.1)
+				expect(cK.VIP.popup.Visible).toBe(true)
+				cK.VIP.popup.Visible = false
 				sK.Remote.Servers:Fire(srvPlayer, "job_abc123", { 12345, 4, os.time() - 60 })
 				sK.Remote.Servers:Fire(srvPlayer, nil, {
 					job_abc123 = { 12345, 4, os.time() - 60 },

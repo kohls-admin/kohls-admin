@@ -1,5 +1,40 @@
 -- safe utilily commands for all players
 
+local function hasVIPGroupRole(_K: any, roleIds: { string }?): boolean
+	if type(roleIds) ~= "table" then
+		return false
+	end
+	for _, roleId in roleIds do
+		local role = _K.Data.roles and _K.Data.roles[roleId]
+		if role and type(role.groups) == "table" and table.find(role.groups, "vip") then
+			return true
+		end
+	end
+	return false
+end
+
+local function hasEmoteAccess(_K: any, userId: number, player: Player?): boolean
+	if player and (player:GetAttribute("_KDonationLevel") or 0) >= 1 then
+		return true
+	end
+	if
+		_K.Auth.getRank(userId) >= 1
+		or _K.Auth.hasRole(userId, "vip")
+		or _K.Auth.hasPermission(userId, "targetOthers") == true
+		or _K.Auth.hasPermission(userId, "admin")
+	then
+		return true
+	end
+	local member = _K.Data.members and _K.Data.members[tostring(userId)]
+	if member and hasVIPGroupRole(_K, member.roles) then
+		return true
+	end
+	if _K.Data.settings and hasVIPGroupRole(_K, _K.Data.settings.freeAdmin) then
+		return true
+	end
+	return false
+end
+
 return {
 	{
 		name = "version",
@@ -516,7 +551,15 @@ return {
 
 						Activated = function()
 							if previewId then
-								_K.PromptBulkPurchase(previewId)
+								local item = _K.Data.emoteItemFromId and _K.Data.emoteItemFromId[previewId]
+								if item and item.canSell == false then
+									if _K.Data.settings.vip and _K.PromptPurchaseVIP then
+										env.preview.Visible = false
+										_K.PromptPurchaseVIP()
+									end
+								else
+									_K.PromptBulkPurchase(previewId)
+								end
 							end
 						end,
 					},
@@ -583,6 +626,47 @@ return {
 						end
 					end
 					env.updatePreview = updatePreview
+
+					if _K.Service.Marketplace.PromptBulkPurchaseFinished then
+						local _ = _K.Service.Marketplace.PromptBulkPurchaseFinished:Connect(
+							function(player, status, results)
+								if
+									player ~= _K.LocalPlayer
+									or status ~= Enum.MarketplaceBulkPurchasePromptStatus.Completed
+									or type(results) ~= "table"
+									or type(results.Items) ~= "table"
+								then
+									return
+								end
+								local updated = false
+								for _, resultItem in results.Items do
+									local itemId = type(resultItem) == "table"
+										and tonumber(resultItem.Id or resultItem.id)
+									local emoteItem = itemId
+										and _K.Data.emoteItemFromId
+										and _K.Data.emoteItemFromId[itemId]
+									if type(emoteItem) == "table" then
+										emoteItem.owned = true
+										updated = true
+										if emoteId:peek() == itemId then
+											ownsEmote(true)
+										end
+										if previewId == itemId and env.preview then
+											env.preview.Visible = false
+										end
+									end
+								end
+								if
+									updated
+									and _K.Registry.commands.emotes
+									and _K.Registry.commands.emotes.env
+									and _K.Registry.commands.emotes.env.scroller
+								then
+									_K.Registry.commands.emotes.env.scroller:render(true)
+								end
+							end
+						)
+					end
 				end)
 
 				local looped = UI.new "Switch" {
@@ -745,33 +829,38 @@ return {
 			}
 		end,
 		run = function(context, players, animation: number, loop: boolean?, speed: number?)
-			if
-				type(animation) == "number"
-				and (not context.fromPlayer or (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 1)
-				and not context._K.Auth.hasRole(context.from, "vip")
-				and context._K.Auth.hasPermission(context.from, "targetOthers") ~= true
-				and not context._K.Auth.hasPermission(context.from, "admin")
-			then
+			if type(animation) == "number" and not hasEmoteAccess(context._K, context.from, context.fromPlayer) then
 				if not context.fromPlayer or not context.fromPlayer.Parent then
 					return
 				end
-				local emoteId = context._K.Data.animationToEmoteId[animation] or animation
-				local ok, owned = context._K.Util.Retry(function()
-					return context._K.Service.Marketplace:PlayerOwnsAssetAsync(context.fromPlayer, emoteId)
-				end, 3)
-				if not ok or not owned then
-					if ok and context.fromPlayer.Parent then
-						local id = tostring(emoteId)
-						if not context._K.VIP.allowedBulkPurchaseIds[emoteId] then
-							if not context._K.Data.settings.vip then
-								return
-							end
-							id = "115444443724463" -- chat commands
-						end
-						local items = { { Type = Enum.MarketplaceProductType.AvatarAsset, Id = id } }
-						context._K.Service.Marketplace:PromptBulkPurchase(context.fromPlayer, items, {})
+				if
+					context.fromPlayer:GetAttribute("_KDonationLevel") == nil
+					and context._K.VIP
+					and context._K.VIP.setDonationLevel
+				then
+					context._K.VIP.setDonationLevel(context.fromPlayer)
+					if not context.fromPlayer.Parent then
+						return
 					end
-					return
+				end
+				if not hasEmoteAccess(context._K, context.from, context.fromPlayer) then
+					local emoteId = context._K.Data.animationToEmoteId[animation] or animation
+					local ok, owned = context._K.Util.Retry(function()
+						return context._K.Service.Marketplace:PlayerOwnsAssetAsync(context.fromPlayer, emoteId)
+					end, 3)
+					if not ok or not owned then
+						if ok and context.fromPlayer.Parent then
+							if context._K.VIP.allowedBulkPurchaseIds[emoteId] then
+								local items = {
+									{ Type = Enum.MarketplaceProductType.AvatarAsset, Id = tostring(emoteId) },
+								}
+								context._K.Service.Marketplace:PromptBulkPurchase(context.fromPlayer, items, {})
+							elseif context._K.Data.settings.vip then
+								context._K.Remote.VIPNotification:Fire(context.fromPlayer, true)
+							end
+						end
+						return
+					end
 				end
 			end
 			for _, player in players do
@@ -839,10 +928,7 @@ return {
 									local _ = button.Activated:Connect(function()
 										if
 											not item.lineData.owned
-											and (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) < 1
-											and not _K.Auth.hasRole(_K.LocalPlayer.UserId, "vip")
-											and _K.Auth.hasPermission(_K.LocalPlayer.UserId, "targetOthers") ~= true
-											and not _K.Auth.hasPermission(_K.LocalPlayer.UserId, "admin")
+											and not hasEmoteAccess(_K, _K.LocalPlayer.UserId, _K.LocalPlayer)
 										then
 											EMOTE.updatePreview(item.lineData.emoteId)
 											EMOTE.preview.Visible = true

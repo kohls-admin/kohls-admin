@@ -355,7 +355,15 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 			})
 		end
 
-		local _ = _K.Remote.VIPNotification:Connect(_K.client.VIPNotification)
+		local _ = _K.Remote.VIPNotification:Connect(function(forcePopup: boolean?)
+			if forcePopup then
+				if _K.Data.settings.vip and _K.PromptPurchaseVIP then
+					_K.PromptPurchaseVIP()
+				end
+				return
+			end
+			_K.client.VIPNotification()
+		end)
 		_K.client.dashboard.Commands._instance:GetPropertyChangedSignal("Visible"):Once(_K.client.VIPNotification)
 		_K.client.dashboard.Window._instance:GetPropertyChangedSignal("Visible"):Once(_K.client.VIPNotification)
 

@@ -1766,12 +1766,21 @@ describe("DefaultCommands", function()
 			expect(#bulkPrompts).toBe(1)
 			expect(bulkPrompts[1].items[1].Id).toBe("2001")
 
-			-- 2. Non-VIP who does not own an offsale/non-bulk emote gets prompted for Chat Commands (115444443724463)
+			-- 2. Non-VIP who does not own an offsale/non-bulk emote gets the VIP Popup via Remote.VIPNotification:Fire(plr, true)
 			table.clear(bulkPrompts)
+			local vipNotifications: { any } = {}
+			local origVipNotifFire = _K.Remote.VIPNotification.Fire
+			_K.Remote.VIPNotification.Fire = function(_self: any, plr: any, forcePopup: any)
+				table.insert(vipNotifications, { plr = plr, forcePopup = forcePopup })
+				return origVipNotifFire(_self, plr, forcePopup)
+			end
+			clientK.VIP.popup.Visible = false
 			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
 			expect(#emoteFires).toBe(0)
-			expect(#bulkPrompts).toBe(1)
-			expect(bulkPrompts[1].items[1].Id).toBe("115444443724463")
+			expect(#bulkPrompts).toBe(0)
+			expect(#vipNotifications).toBe(1)
+			expect(vipNotifications[1].plr).toBe(srvP2)
+			expect(vipNotifications[1].forcePopup).toBe(true)
 
 			-- 3. Non-VIP who owns the emote asset (2001) plays it without purchase prompt
 			table.clear(bulkPrompts)
@@ -1781,7 +1790,7 @@ describe("DefaultCommands", function()
 			expect(#emoteFires).toBe(1)
 			expect(emoteFires[1].anim).toBe(9001)
 
-			-- 4. VIP user (via _KDonationLevel >= 1 or vip role) plays unowned emote without purchase prompt
+			-- 4. VIP user (via _KDonationLevel >= 1, vip role, freeAdmin vip, or custom VIP group role) plays unowned emote without purchase prompt
 			table.clear(emoteFires)
 			ownedAssets[2001] = false
 			srvP2:SetAttribute("_KDonationLevel", 1)
@@ -1797,6 +1806,44 @@ describe("DefaultCommands", function()
 			expect(#emoteFires).toBe(1)
 			_K.Auth.userRoleRemove(srvP2.UserId, "vip")
 
+			-- 4b. freeAdmin = { "vip" } grants free emote access even when Auth.hasRole is false for same rank
+			table.clear(emoteFires)
+			_K.Data.settings.freeAdmin = { "vip" }
+			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
+			expect(#bulkPrompts).toBe(0)
+			expect(#emoteFires).toBe(1)
+			_K.Data.settings.freeAdmin = {}
+
+			-- 4c. Custom role with groups = { "vip" } at rank 0 grants free emote access
+			table.clear(emoteFires)
+			_K.Data.roles.customVip = {
+				_key = "customVip",
+				_rank = 0,
+				name = "CustomVIP",
+				color = "#0ff",
+				groups = { "vip" },
+				permissions = {},
+			}
+			_K.Auth.userRoleAdd(srvP2.UserId, "customVip")
+			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
+			expect(#bulkPrompts).toBe(0)
+			expect(#emoteFires).toBe(1)
+			_K.Auth.userRoleRemove(srvP2.UserId, "customVip")
+			_K.Data.roles.customVip = nil
+
+			-- 4d. Joining player with _KDonationLevel == nil awaits VIP.setDonationLevel before prompting
+			table.clear(emoteFires)
+			srvP2:SetAttribute("_KDonationLevel", nil)
+			ownedAssets[115444443724463] = true
+			_K.Data.settings.vip = false
+			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
+			_K.Data.settings.vip = true
+			expect(srvP2:GetAttribute("_KDonationLevel")).toBe(4)
+			expect(#bulkPrompts).toBe(0)
+			expect(#emoteFires).toBe(1)
+			ownedAssets[115444443724463] = false
+			srvP2:SetAttribute("_KDonationLevel", 0)
+
 			-- 5. Stopping an emote (animation == nil) does not prompt purchase
 			table.clear(emoteFires)
 			emoteCmd.run(p2Ctx, { srvP2 }, nil :: any)
@@ -1806,9 +1853,11 @@ describe("DefaultCommands", function()
 			-- 6. When settings.vip == false, offsale/non-bulk emotes (9002) do not prompt purchase and do not play
 			table.clear(bulkPrompts)
 			table.clear(emoteFires)
+			table.clear(vipNotifications)
 			_K.Data.settings.vip = false
 			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
 			expect(#bulkPrompts).toBe(0)
+			expect(#vipNotifications).toBe(0)
 			expect(#emoteFires).toBe(0)
 			_K.Data.settings.vip = true
 
@@ -1820,6 +1869,46 @@ describe("DefaultCommands", function()
 			expect(#bulkPrompts).toBe(0)
 			expect(#emoteFires).toBe(0)
 
+			-- 8. Client Emote preview Unlock button opens VIP popup on off-sale emotes and updates owned state on PromptBulkPurchaseFinished
+			clientK.Data.emoteItemFromId[2002] = {
+				emoteId = 2002,
+				animationId = 9002,
+				name = "OffsaleEmote",
+				nameLower = "offsaleemote",
+				canSell = false,
+				owned = false,
+			}
+			clientK.Data.emoteItemFromId[2001] = {
+				emoteId = 2001,
+				animationId = 9001,
+				name = "SellableEmote",
+				nameLower = "sellableemote",
+				canSell = true,
+				owned = false,
+			}
+			if emoteEnv.updatePreview and emoteEnv.preview then
+				emoteEnv.updatePreview(2002)
+				emoteEnv.preview.Visible = true
+				clientK.VIP.popup.Visible = false
+				emoteEnv.preview.Unlock.Activated:Fire()
+				expect(emoteEnv.preview.Visible).toBe(false)
+				expect(clientK.VIP.popup.Visible).toBe(true)
+				clientK.VIP.popup.Visible = false
+
+				emoteEnv.updatePreview(2001)
+				emoteEnv.preview.Visible = true
+				local cliMkt = c.ch1.env.game:GetService("MarketplaceService")
+				cliMkt.PromptBulkPurchaseFinished:Fire(
+					c.ch1.env.Players.LocalPlayer,
+					Enum.MarketplaceBulkPurchasePromptStatus.Completed,
+					{ Items = { { Id = "2001", Status = Enum.MarketplaceItemPurchaseStatus.Success } } }
+				)
+				c.world:run(0.05)
+				expect(clientK.Data.emoteItemFromId[2001].owned).toBe(true)
+				expect(emoteEnv.preview.Visible).toBe(false)
+			end
+
+			_K.Remote.VIPNotification.Fire = origVipNotifFire
 			emoteCmd.env.remote.Fire = origEmoteFire
 			if mktMethods then
 				mktMethods.PromptBulkPurchase = origPromptBulk

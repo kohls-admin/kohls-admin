@@ -120,16 +120,20 @@ task.spawn(function()
 
 		local tasks = Util.Tasks.new()
 		for item in iter do
+			local canSell = item.IsPurchasable ~= false
 			local emote = {
 				default = true,
 				animationId = 0,
 				emoteId = item.Id,
 				name = item.Name,
 				nameLower = string.lower(item.Name),
+				canSell = canSell,
 			}
 			table.insert(emotes, emote)
 			emoteItemFromId[item.Id] = emote
-			_K.VIP.allowedBulkPurchaseIds[item.Id] = true
+			if canSell then
+				_K.VIP.allowedBulkPurchaseIds[item.Id] = true
+			end
 			tasks:add(getAnimationIdFromEmoteId, item.Id)
 		end
 		tasks:wait()

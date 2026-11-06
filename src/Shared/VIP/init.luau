@@ -124,23 +124,62 @@ local function getDonationLevel(player)
 	return 0
 end
 
-local function setDonationLevel(player: Player, level: number?)
+local donationLevelWaiters: { [Player]: { thread } } = {}
+
+local function setDonationLevel(player: Player, level: number?): number
 	if not level then
-		level = getDonationLevel(player)
+		local existing = player:GetAttribute("_KDonationLevel")
+		if type(existing) == "number" then
+			return existing
+		end
+		local waiters = donationLevelWaiters[player]
+		if waiters then
+			table.insert(waiters, coroutine.running())
+			return coroutine.yield()
+		end
+		waiters = {}
+		donationLevelWaiters[player] = waiters
+		local fetchedLevel: number = getDonationLevel(player)
+		donationLevelWaiters[player] = nil
+		if not player.Parent then
+			for _, waiter in waiters do
+				task.spawn(waiter, fetchedLevel)
+			end
+			return fetchedLevel
+		end
+		local current = player:GetAttribute("_KDonationLevel")
+		local finalLevel = math.max(fetchedLevel, current or 0)
+		player:SetAttribute("_KDonationLevel", finalLevel)
+		if Data.settings.vip then
+			if finalLevel > 0 then
+				Auth.asyncRoleAdd(player.UserId, "vip")
+			end
+			if finalLevel < 3 then
+				task.delay(8, Remote.VIPNotification.Fire, Remote.VIPNotification, player)
+			end
+		end
+		for _, waiter in waiters do
+			task.spawn(waiter, finalLevel)
+		end
+		return finalLevel
 	end
 
 	local current = player:GetAttribute("_KDonationLevel")
-	player:SetAttribute("_KDonationLevel", math.max(level :: number, current or 0))
+	local finalLevel = math.max(level :: number, current or 0)
+	player:SetAttribute("_KDonationLevel", finalLevel)
 
 	if Data.settings.vip then
-		if level > 0 then
+		if finalLevel > 0 then
 			Auth.asyncRoleAdd(player.UserId, "vip")
 		end
-		if level < 3 then
+		if finalLevel < 3 then
 			task.delay(8, Remote.VIPNotification.Fire, Remote.VIPNotification, player)
 		end
 	end
+	return finalLevel
 end
+
+VIP.setDonationLevel = setDonationLevel
 
 local adminUGCMap = {}
 for _, module in script:WaitForChild("UGC"):GetChildren() do
@@ -426,6 +465,7 @@ if Util.Service.Run:IsServer() then
 			table.clear(playerCleanup[player])
 		end
 		playerCleanup[player] = nil
+		donationLevelWaiters[player] = nil
 		ownedCache[player.UserId] = nil
 		VIP.effects[player.UserId] = nil
 	end)
