@@ -1172,11 +1172,13 @@ describe("Chat and Server", function()
 						"_KAdminServers",
 						{ "remote-job-99", 1000, 5, sh.env.globals.os.time() }
 					)
+					sh.env.globals.task.wait(0.5)
 					-- Identical player count does not re-broadcast (changed == false)
 					MessagingService:PublishAsync(
 						"_KAdminServers",
 						{ "remote-job-99", 1000, 5, sh.env.globals.os.time() }
 					)
+					sh.env.globals.task.wait(0.5)
 					-- Changed player count updates existing Map["remote-job-99"] entry and broadcasts
 					MessagingService:PublishAsync(
 						"_KAdminServers",
