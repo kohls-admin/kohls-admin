@@ -1167,14 +1167,42 @@ describe("Process · Command filters & async roles", function()
 			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(true)
 			h.env:step(10)
 
-			-- Chaining 2 single-target commands in one message also fails validation when limits.targets == 1
+			-- Chaining multiple single-target commands in one message succeeds when limits.targets == 1 (per-argument target limit, #590)
 			_K.Data.roles.vip.limits = { commands = 2, cooldown = 10, targets = 1 }
 			expect(Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me ;testlimitcmd OtherTargetTester", true)).toBe(
-				false
+				true
 			)
-			expect(runs).toBe(0)
+			expect(runs).toBe(2)
 			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(true)
 			h.env:step(10)
+
+			-- Multi-player-argument command also resets targetLimits per argument when limits.targets == 1
+			local dualArgRuns = 0
+			_K.Registry.registerCommand(_K, {
+				name = "testdualtargetcmd",
+				description = "Test dual player argument limits",
+				group = "general",
+				permissions = {},
+				args = {
+					{ type = "players", name = "From", description = "From" },
+					{ type = "player", name = "To", description = "To" },
+				},
+				run = function(_context, fromTargets, _toTarget)
+					dualArgRuns += #fromTargets
+				end,
+			})
+			expect(Process.runCommands(_K, vipPlr.UserId, ";testdualtargetcmd me OtherTargetTester", true)).toBe(true)
+			expect(dualArgRuns).toBe(1)
+			expect(
+				Process.runCommands(
+					_K,
+					vipPlr.UserId,
+					";testdualtargetcmd me,OtherTargetTester OtherTargetTester",
+					true
+				)
+			).toBe(false)
+			h.env:step(10)
+			runs = 0
 			_K.Data.roles.vip.limits = { commands = 1, cooldown = 10, targets = 1 }
 
 			-- Targeting 1 player succeeds through both validate and parse, and consumes the 1 command limit
@@ -1455,7 +1483,7 @@ describe("Process · Command filters & async roles", function()
 			h.env:flush()
 			expect(#multiRuns).toBe(0)
 
-			-- Direct Command:validate resets targetLimits when not _keepTargetLimits and sets array[2] pos to start + #text
+			-- Direct Command:validate resets targetLimits and sets array[2] pos to start + #text
 			_K.Data.targetLimits[superPlr.UserId] = 99
 			local rawCmd = Command.new(
 				_K,
@@ -1470,7 +1498,7 @@ describe("Process · Command filters & async roles", function()
 			expect(rawCmd.array[2][2]).toBe("")
 			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(1)
 
-			-- Argument:transform invalidates when transform returns nil for non-whitespace optional arg; validate/parse restore targetLimits
+			-- Argument:transform invalidates when transform returns nil for non-whitespace optional arg; validate/parse reset targetLimits
 			_K.Registry.registerType("testniltransform", {
 				transform = function(txt)
 					if txt == "bad" then
@@ -1536,17 +1564,18 @@ describe("Process · Command filters & async roles", function()
 			local okVal, valErr = valFailArg:validate()
 			expect(okVal).toBe(false)
 			expect(valErr.message).toBe("Invalid argument: invalidval")
-			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(7)
+			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(0)
 
+			_K.Data.targetLimits[superPlr.UserId] = 7
 			local parseFailArg =
 				Argument.new(dummyCmd, { type = "testniltransform", name = "P", description = "P" }, 5, "parsefail")
 			expect(parseFailArg:transform()).toBe(true)
 			expect(parseFailArg:validate()).toBe(true)
-			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(12)
+			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(5)
 			local okParse, parseErr = parseFailArg:parse()
 			expect(okParse).toBe(false)
 			expect(parseErr.message).toBe("Custom parse error")
-			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(7)
+			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(0)
 
 			-- Prefix type switching listable -> non-listable and listable -> different listable
 			_K.Registry.registerType("testsublist", {

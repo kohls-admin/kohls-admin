@@ -105,15 +105,14 @@ function Argument:validate()
 		return false, self.invalid.message
 	end
 
-	local baseTargets = self._K.Data.targetLimits[self.command.from] or 0
-	self._baseTargets = baseTargets
+	self._K.Data.targetLimits[self.command.from] = 0
 	local transformPos = self.argPos
 	for i, arg in self.transformedArgs do
 		local rawArg = self.rawArgs[i]
 		local argType = self.transformedTypes[i]
 		local ok, result = argType.validate(arg, self)
 		if not ok then
-			self._K.Data.targetLimits[self.command.from] = baseTargets
+			self._K.Data.targetLimits[self.command.from] = 0
 			return self:invalidate(rawArg, transformPos, result or "Invalid argument: " .. rawArg)
 		end
 		transformPos += #rawArg + 1
@@ -128,9 +127,8 @@ function Argument:parse()
 		return false, "Argument must be validated before parsing"
 	end
 
-	-- validate already counted these targets, count them once from this argument's starting total
-	local baseTargets = self._baseTargets or 0
-	self._K.Data.targetLimits[self.command.from] = baseTargets
+	-- validate already counted these targets, count them once
+	self._K.Data.targetLimits[self.command.from] = 0
 
 	local argPos = self.argPos
 	for i, transformedArg in self.transformedArgs do
@@ -138,7 +136,7 @@ function Argument:parse()
 		local argType = self.transformedTypes[i]
 		local ok, arg, feedback = pcall(argType.parse, transformedArg, self)
 		if not ok or arg == nil then
-			self._K.Data.targetLimits[self.command.from] = baseTargets
+			self._K.Data.targetLimits[self.command.from] = 0
 			return self:invalidate(rawArg, argPos, feedback or arg or "Invalid argument: " .. rawArg)
 		end
 
@@ -163,6 +161,8 @@ function Argument:parse()
 end
 
 function Argument:prepare()
+	self._K.Data.targetLimits[self.command.from] = 0
+
 	if self.validated then
 		return true, if self.rawType.listable then self.parsedArgs else self.parsedArgs[1]
 	end

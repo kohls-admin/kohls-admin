@@ -235,9 +235,7 @@ function Command:validate()
 	if self.validated then
 		return true
 	end
-	if not self._keepTargetLimits then
-		self._K.Data.targetLimits[self.from] = 0
-	end
+	self._K.Data.targetLimits[self.from] = 0
 
 	-- always try first argument for player types
 	if self.definition.args[1] and string.find(self.definition.args[1].type, "player", 1, true) and #self.array < 2 then

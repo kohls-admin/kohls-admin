@@ -237,7 +237,6 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 		end
 
 		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text, global)
-		command._keepTargetLimits = true
 		local ok, result = command:validate()
 
 		table.insert(commands, command)
