@@ -38,9 +38,6 @@ jobs:
 
       - uses: kohltastrophe/sert/actions/setup@v0.1.0
 
-      - name: luaudocs llms --check
-        run: npx --yes luaudocs@latest llms --check
-
       - name: sert lint
         run: python3 tools/sert.py lint
 

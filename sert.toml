@@ -87,7 +87,10 @@ solvers = ["old"]
 selene = false
 ignore = ["vendor/**", "**/.sert/**", "test/migrate/**"]
 registration = { aggregator = "test/unit/init.luau", specs = "test/unit/**/*.spec.luau" }
-extra = [["selene", "test/unit", "test/runner", "test/sert.luau", "test/spec.client.luau"]]
+extra = [
+  ["selene", "test/unit", "test/runner", "test/sert.luau", "test/spec.client.luau"],
+  ["npx", "--yes", "luaudocs@latest", "llms", "--check"],
+]
 
 [studio]
 project = "test/test.project.json"
