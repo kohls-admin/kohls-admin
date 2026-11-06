@@ -146,11 +146,18 @@ end;
 
 function CreateWelds()
 	-- Creates welds for every selected part to the focused part
+	local Focus = Selection.Focus
+	if not Focus or #Selection.Parts == 0 then
+		return
+	end
 
 	-- Determine welding target
-	local WeldTarget = (Selection.Focus:IsA 'BasePart' and Selection.Focus) or
-		(Selection.Focus:IsA 'Model' and Selection.Focus.PrimaryPart) or
-		Selection.Focus:FindFirstChildWhichIsA('BasePart', true)
+	local WeldTarget = (Focus:IsA 'BasePart' and Focus) or
+		(Focus:IsA 'Model' and Focus.PrimaryPart) or
+		Focus:FindFirstChildWhichIsA('BasePart', true)
+	if not WeldTarget then
+		return
+	end
 
 	-- Send the change request to the server API
 	local Welds = Core.SyncAPI:Invoke('CreateWelds', Selection.Parts, WeldTarget)

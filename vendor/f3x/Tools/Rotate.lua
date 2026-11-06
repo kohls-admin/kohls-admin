@@ -328,7 +328,7 @@ function AttachHandles(Part, Autofocus)
 			PivotPoint = BoundingBox.GetBoundingBox().CFrame;
 
 		-- Set the pivot point to the center of the focused part if in Last mode
-		elseif RotateTool.Pivot == 'Last' and not CustomPivotPoint then
+		elseif RotateTool.Pivot == 'Last' and not CustomPivotPoint and Selection.Focus then
 			if Selection.Focus:IsA 'BasePart' then
 				PivotPoint = Selection.Focus.CFrame
 			elseif Selection.Focus:IsA 'Model' then
@@ -765,7 +765,7 @@ function NudgeSelectionByAxis(Axis, Direction)
 		PivotPoint = BoundingBoxCFrame;
 
 	-- Set the pivot point to the center of the focused part if in Last mode
-	elseif RotateTool.Pivot == 'Last' and not CustomPivotPoint then
+	elseif RotateTool.Pivot == 'Last' and not CustomPivotPoint and Selection.Focus then
 		if Selection.Focus:IsA 'BasePart' then
 			PivotPoint = Selection.Focus.CFrame
 		elseif Selection.Focus:IsA 'Model' then
