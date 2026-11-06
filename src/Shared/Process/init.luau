@@ -1,5 +1,4 @@
 --!optimize 2
---!native
 
 local Shared = script.Parent
 

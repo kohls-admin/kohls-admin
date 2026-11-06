@@ -1,5 +1,4 @@
 --!optimize 2
---!native
 
 local String = require("./String")
 local Table = require("./Table")
