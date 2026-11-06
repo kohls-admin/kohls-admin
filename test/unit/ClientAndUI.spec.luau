@@ -3372,6 +3372,32 @@ describe("Client and UI", function()
 					if pingCmd2 then
 						expect(pingCmd2.AutocompleteVisible).toBe(false)
 					end
+					if pingCmd then
+						local channelsFolder = cK.Service.TextChat:FindFirstChild("TextChannels")
+							or cEnv.Instance.new("Folder", cK.Service.TextChat)
+						channelsFolder.Name = "TextChannels"
+						local generalChannel = channelsFolder:FindFirstChild("RBXGeneral")
+							or cEnv.Instance.new("TextChannel", channelsFolder)
+						generalChannel.Name = "RBXGeneral"
+						local sentChatMessages = {}
+						local enabledDuringSend = nil
+						rawset(generalChannel, "_methods", {
+							SendAsync = function(_self, msgText)
+								enabledDuringSend = pingCmd.Enabled
+								table.insert(sentChatMessages, msgText)
+							end,
+						})
+						-- Other user and slash commands do not re-send to chat
+						pingCmd.Triggered:Fire({ UserId = 99999 }, ";ping me")
+						pingCmd.Triggered:Fire({ UserId = cK.LocalPlayer.UserId }, "/ping me")
+						pingCmd.Triggered:Fire({ UserId = cK.LocalPlayer.UserId }, "   ")
+						-- Non-slash command temporarily disables the TextChatCommand and re-sends to chat
+						pingCmd.Triggered:Fire({ UserId = cK.LocalPlayer.UserId }, ";ping me")
+						fastRun(0.1)
+						expect(sentChatMessages).toEqual({ ";ping me" })
+						expect(enabledDuringSend).toBe(false)
+						expect(pingCmd.Enabled).toBe(true)
+					end
 				end
 				cK.client.settings.chatCommands(false)
 				cK.Data.settings.chatCommands = false

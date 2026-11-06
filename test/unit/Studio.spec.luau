@@ -170,6 +170,53 @@ describe("Studio · Client", function()
 		expect(input.Value()).toBe(prefix)
 		expect(CommandBar.Bar.Visible).toBe(false)
 	end)
+
+	clientTest("custom-prefix chat commands show in chat while slash commands stay silent", function()
+		local TextChatService = game:GetService("TextChatService")
+		local _K = shared._K_INTERFACE
+		local channels = sert.waitFor(function()
+			return TextChatService:FindFirstChild("TextChannels")
+		end, 5, "TextChannels folder")
+		local general = sert.waitFor(function()
+			return channels:FindFirstChild("RBXGeneral") :: TextChannel?
+		end, 5, "RBXGeneral channel")
+		local cmdFolder = sert.waitFor(function()
+			return TextChatService:FindFirstChild("TextChatCommands_KA")
+		end, 5, "TextChatCommands_KA folder")
+		local pingCmd = sert.waitFor(function()
+			return cmdFolder:FindFirstChild("ping") :: TextChatCommand?
+		end, 5, "ping TextChatCommand")
+		expect(pingCmd ~= nil).toBe(true)
+
+		local sendingTexts = {}
+		local triggeredTexts = {}
+		local sendingConn = TextChatService.SendingMessage:Connect(function(msg)
+			table.insert(sendingTexts, msg.Text)
+		end)
+		local trigConn = pingCmd.Triggered:Connect(function(_src, text)
+			table.insert(triggeredTexts, text)
+		end)
+
+		-- TextChannel:SendAsync never resolves its yielding thread when a TextChatCommand intercepts the message
+		task.spawn(pcall, general.SendAsync, general, "/ping me")
+		sert.waitFor(function()
+			return #triggeredTexts == 1
+		end, 5, "/ping me triggered")
+		task.wait(0.1)
+		expect(triggeredTexts[1]).toBe("/ping me")
+		expect(#sendingTexts).toBe(0)
+
+		task.spawn(pcall, general.SendAsync, general, ";ping me")
+		sert.waitFor(function()
+			return #triggeredTexts == 2 and #sendingTexts == 1
+		end, 5, ";ping me triggered and sent to chat")
+		sendingConn:Disconnect()
+		trigConn:Disconnect()
+
+		expect(triggeredTexts[2]).toBe(";ping me")
+		expect(sendingTexts[1]).toBe(";ping me")
+		expect(pingCmd.Enabled).toBe(true)
+	end)
 end)
 
 return {}

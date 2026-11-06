@@ -1939,6 +1939,9 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 		end
 		folder:FindFirstChild("fire").Triggered:Fire({ UserId = 101 }, "!fire me")
 		world:run(0.5)
+		expect(#bubblesFired).toBe(0)
+		folder:FindFirstChild("fire").Triggered:Fire({ UserId = 101 }, "/fire me")
+		world:run(0.5)
 		expect(#bubblesFired).toBe(1)
 		expect(bubblesFired[1].char).toBe(srvAdminChar)
 		expect(bubblesFired[1].word).toBe("!fire")

@@ -5,8 +5,8 @@
 	https://create.roblox.com/docs/chat/platform-integrated-chat
 
 	Every command gets instances whose aliases are the chat prefixes before its name and each of its aliases, two to
-	an instance (";kill" with ":kill"), followed by "/kill". Matching is whole-word and ignores case. The matching
-	line is hidden from chat and its full text reaches the server, which parses it like the command bar.
+	an instance (";kill" with ":kill"), followed by "/kill". Matching is whole-word and ignores case. Its full text
+	reaches the server, which parses it like the command bar, while the client re-sends non-"/" lines to chat.
 
 	An alias another TextChatCommand already uses, such as Roblox's own "/team" or "/e", is skipped and logged,
 	because both commands would run.
@@ -140,6 +140,171 @@ local function takenAliases(folder: Instance?): { [string]: true }
 	return taken
 end
 
+local function canPurchase(_K: any, commandDefinition: any): boolean
+	for role, roleData in _K.Data.roles do
+		if
+			(
+				(role == "vip" and _K.Data.settings.vip)
+				or (roleData.gamepasses and next(roleData.gamepasses))
+				or (roleData.assets and next(roleData.assets))
+				or (roleData.subscriptions and next(roleData.subscriptions))
+			) and _K.Auth.roleCanUseCommand(role, commandDefinition)
+		then
+			return true
+		end
+	end
+	return false
+end
+
+local function handleTriggered(_K: any, source: TextSource, text: string)
+	local player = Players:GetPlayerByUserId(source.UserId)
+	if not player or _K.Data.settings.chatCommands == false then
+		return
+	end
+	text = _K.Util.String.trim(text)
+	local isSlash = string.sub(text, 1, 1) == SLASH
+	-- "/" is only a command prefix when it is configured as one
+	local playerPrefix = _K.Data.playerPrefix[player.UserId]
+	if isSlash and not table.find(_K.Data.settings.prefix, SLASH) and playerPrefix ~= SLASH then
+		text = (playerPrefix or _K.Data.settings.prefix[1] or ";") .. string.sub(text, 2)
+	end
+
+	local word = string.match(text, "^%S+") or ""
+	local nextChar = utf8.offset(word, 2) or #word + 1
+	local usedPrefix = string.sub(word, 1, nextChar - 1)
+	if usedPrefix ~= playerPrefix and not table.find(_K.Data.settings.prefix, usedPrefix) then
+		return
+	end
+	local command = _K.Registry.commands[string.lower(string.sub(word, nextChar))]
+	local hasCommand = command ~= nil and _K.Auth.hasCommand(player.UserId, command)
+	local allowed = hasCommand or (command ~= nil and canPurchase(_K, command))
+	local onCooldown = _K.Process.onCooldown(_K, player.UserId)
+	if
+		isSlash
+		and command
+		and allowed
+		and not onCooldown
+		and _K.Data.settings.vip
+		and VIP_BUBBLES[string.lower(command.name)]
+		and player.Character
+	then
+		_K.Remote.DisplayBubble:FireAll(player.Character, word)
+	end
+
+	local ready = player:GetAttribute("_K_READY") == true
+	if ready and hasCommand and not onCooldown then
+		local commandBarRank = _K.Data.settings.commandBarRank
+		if commandBarRank == nil then
+			commandBarRank = 0
+		end
+		if commandBarRank and _K.Auth.getRank(player.UserId) >= commandBarRank then
+			local ok, _err, prepared = _K.Process.prepareCommands(_K, player.UserId, text)
+			local lastCommand = not ok and prepared and prepared[#prepared]
+			if
+				lastCommand
+				and (lastCommand.argMissing ~= nil or (#lastCommand.array == 2 and lastCommand.array[2][2] == ""))
+			then
+				_K.Process.countCommand(_K, player.UserId, #prepared)
+				_K.Remote.Command:Fire(player, text, true)
+				return
+			end
+		end
+	end
+
+	local ok = _K.Process.runCommands(_K, player.UserId, text)
+	-- the client runs its own part of the commands, opens windows and prompts purchases
+	if ready and not onCooldown and (ok or allowed) then
+		_K.Remote.Command:Fire(player, text, true)
+	end
+end
+
+local function syncInstances(
+	_K: any,
+	self: any,
+	key: string,
+	groups: { { string } },
+	onTriggered: (TextSource, string) -> ()
+)
+	local list = self.instances[key] or {}
+	self.instances[key] = list
+	local enabled = _K.Data.settings.chatCommands ~= false
+	local aliases = {}
+	for i, group in groups do
+		local instance = list[i]
+		local reparent = false
+		if not instance then
+			instance = Instance.new("TextChatCommand")
+			instance.Name = if i == 1 then key else `{key}{i}`
+			instance.AutocompleteVisible = false
+			local _ = instance.Triggered:Connect(onTriggered)
+			list[i] = instance
+			reparent = true
+		elseif instance.PrimaryAlias ~= group[1] then
+			instance.Parent = nil
+			reparent = true
+		end
+		instance.PrimaryAlias = group[1]
+		instance.SecondaryAlias = group[2] or ""
+		instance.Enabled = enabled
+		if reparent then
+			instance.Parent = self.folder
+		end
+		Table.mergeList(aliases, group)
+	end
+	for i = #list, #groups + 1, -1 do
+		list[i]:Destroy()
+		list[i] = nil
+	end
+	self.aliases[key] = aliases
+	if #list == 0 then
+		self.instances[key] = nil
+	end
+end
+
+local function logSkipped(_K: any, logged: { [string]: true }, skipped: { string })
+	local new = {}
+	for _, alias in skipped do
+		if not logged[alias] then
+			logged[alias] = true
+			table.insert(new, alias)
+		end
+	end
+	if #new > 0 then
+		task.spawn(
+			_K.log,
+			`Skipped chat command aliases used by other TextChatCommands: {table.concat(new, ", ")}`,
+			"INFO"
+		)
+	end
+end
+
+local function watchExternalCommands(folder: Instance, schedule: () -> ())
+	local watched: { [Instance]: { RBXScriptConnection } } = {}
+	local function watch(descendant: Instance)
+		if descendant:IsA("TextChatCommand") and not descendant:IsDescendantOf(folder) then
+			watched[descendant] = {
+				descendant:GetPropertyChangedSignal("PrimaryAlias"):Connect(schedule),
+				descendant:GetPropertyChangedSignal("SecondaryAlias"):Connect(schedule),
+			}
+			schedule()
+		end
+	end
+	local _ = TextChatService.DescendantAdded:Connect(watch)
+	local _ = TextChatService.DescendantRemoving:Connect(function(descendant)
+		local connections = watched[descendant]
+		if connections then
+			watched[descendant] = nil
+			for _, connection in connections do
+				connection:Disconnect()
+			end
+			schedule()
+		end
+	end)
+	for _, descendant in TextChatService:GetDescendants() do
+		watch(descendant)
+	end
+end
+
 --- Creates the chat commands for every registered command and keeps them in sync, returns the running instance
 function ChatCommands.start(_K)
 	local self = {
@@ -152,138 +317,8 @@ function ChatCommands.start(_K)
 	}
 	self.folder.Name = FOLDER_NAME
 
-	local function canPurchase(commandDefinition: any): boolean
-		for role, roleData in _K.Data.roles do
-			if
-				(
-					(role == "vip" and _K.Data.settings.vip)
-					or (roleData.gamepasses and next(roleData.gamepasses))
-					or (roleData.assets and next(roleData.assets))
-					or (roleData.subscriptions and next(roleData.subscriptions))
-				) and _K.Auth.roleCanUseCommand(role, commandDefinition)
-			then
-				return true
-			end
-		end
-		return false
-	end
-
 	local function onTriggered(source: TextSource, text: string)
-		local player = Players:GetPlayerByUserId(source.UserId)
-		if not player or _K.Data.settings.chatCommands == false then
-			return
-		end
-		text = _K.Util.String.trim(text)
-		-- "/" is only a command prefix when it is configured as one
-		local playerPrefix = _K.Data.playerPrefix[player.UserId]
-		if
-			string.sub(text, 1, 1) == SLASH
-			and not table.find(_K.Data.settings.prefix, SLASH)
-			and playerPrefix ~= SLASH
-		then
-			text = (playerPrefix or _K.Data.settings.prefix[1] or ";") .. string.sub(text, 2)
-		end
-
-		local word = string.match(text, "^%S+") or ""
-		local nextChar = utf8.offset(word, 2) or #word + 1
-		local usedPrefix = string.sub(word, 1, nextChar - 1)
-		if usedPrefix ~= playerPrefix and not table.find(_K.Data.settings.prefix, usedPrefix) then
-			return
-		end
-		local command = _K.Registry.commands[string.lower(string.sub(word, nextChar))]
-		local hasCommand = command ~= nil and _K.Auth.hasCommand(player.UserId, command)
-		local allowed = hasCommand or (command ~= nil and canPurchase(command))
-		local onCooldown = _K.Process.onCooldown(_K, player.UserId)
-		if
-			command
-			and allowed
-			and not onCooldown
-			and _K.Data.settings.vip
-			and VIP_BUBBLES[string.lower(command.name)]
-			and player.Character
-		then
-			_K.Remote.DisplayBubble:FireAll(player.Character, word)
-		end
-
-		local ready = player:GetAttribute("_K_READY") == true
-		if ready and hasCommand and not onCooldown then
-			local commandBarRank = _K.Data.settings.commandBarRank
-			if commandBarRank == nil then
-				commandBarRank = 0
-			end
-			if commandBarRank and _K.Auth.getRank(player.UserId) >= commandBarRank then
-				local ok, _err, prepared = _K.Process.prepareCommands(_K, player.UserId, text)
-				local lastCommand = not ok and prepared and prepared[#prepared]
-				if
-					lastCommand
-					and (lastCommand.argMissing ~= nil or (#lastCommand.array == 2 and lastCommand.array[2][2] == ""))
-				then
-					_K.Process.countCommand(_K, player.UserId, #prepared)
-					_K.Remote.Command:Fire(player, text, true)
-					return
-				end
-			end
-		end
-
-		local ok = _K.Process.runCommands(_K, player.UserId, text)
-		-- the client runs its own part of the commands, opens windows and prompts purchases
-		if ready and not onCooldown and (ok or allowed) then
-			_K.Remote.Command:Fire(player, text, true)
-		end
-	end
-
-	local function sync(key: string, groups: { { string } })
-		local list = self.instances[key] or {}
-		self.instances[key] = list
-		local enabled = _K.Data.settings.chatCommands ~= false
-		local aliases = {}
-		for i, group in groups do
-			local instance = list[i]
-			local reparent = false
-			if not instance then
-				instance = Instance.new("TextChatCommand")
-				instance.Name = if i == 1 then key else `{key}{i}`
-				instance.AutocompleteVisible = false
-				local _ = instance.Triggered:Connect(onTriggered)
-				list[i] = instance
-				reparent = true
-			elseif instance.PrimaryAlias ~= group[1] then
-				instance.Parent = nil
-				reparent = true
-			end
-			instance.PrimaryAlias = group[1]
-			instance.SecondaryAlias = group[2] or ""
-			instance.Enabled = enabled
-			if reparent then
-				instance.Parent = self.folder
-			end
-			Table.mergeList(aliases, group)
-		end
-		for i = #list, #groups + 1, -1 do
-			list[i]:Destroy()
-			list[i] = nil
-		end
-		self.aliases[key] = aliases
-		if #list == 0 then
-			self.instances[key] = nil
-		end
-	end
-
-	local function logSkipped(skipped: { string })
-		local new = {}
-		for _, alias in skipped do
-			if not self.logged[alias] then
-				self.logged[alias] = true
-				table.insert(new, alias)
-			end
-		end
-		if #new > 0 then
-			task.spawn(
-				_K.log,
-				`Skipped chat command aliases used by other TextChatCommands: {table.concat(new, ", ")}`,
-				"INFO"
-			)
-		end
+		handleTriggered(_K, source, text)
 	end
 
 	local scheduled = false
@@ -291,11 +326,11 @@ function ChatCommands.start(_K)
 	--- Updates the instances of one command
 	function self.refreshCommand(definition: any, batchSkipped: { string }?)
 		local groups, skipped = ChatCommands.aliasGroups(definition, self.prefixes, self.taken)
-		sync(string.lower(definition.name), groups)
+		syncInstances(_K, self, string.lower(definition.name), groups, onTriggered)
 		if batchSkipped then
 			Table.mergeList(batchSkipped, skipped)
 		else
-			logSkipped(skipped)
+			logSkipped(_K, self.logged, skipped)
 		end
 	end
 
@@ -315,10 +350,10 @@ function ChatCommands.start(_K)
 		end
 		for key in self.instances do
 			if not current[key] then
-				sync(key, {})
+				syncInstances(_K, self, key, {}, onTriggered)
 			end
 		end
-		logSkipped(skipped)
+		logSkipped(_K, self.logged, skipped)
 	end
 
 	--- The first chat alias of a command name or alias, e.g. ";kill", or nil when it has none
@@ -349,30 +384,7 @@ function ChatCommands.start(_K)
 		end
 	end
 
-	local watched: { [Instance]: { RBXScriptConnection } } = {}
-	local function watch(descendant: Instance)
-		if descendant:IsA("TextChatCommand") and not descendant:IsDescendantOf(self.folder) then
-			watched[descendant] = {
-				descendant:GetPropertyChangedSignal("PrimaryAlias"):Connect(self.schedule),
-				descendant:GetPropertyChangedSignal("SecondaryAlias"):Connect(self.schedule),
-			}
-			self.schedule()
-		end
-	end
-	local _ = TextChatService.DescendantAdded:Connect(watch)
-	local _ = TextChatService.DescendantRemoving:Connect(function(descendant)
-		local connections = watched[descendant]
-		if connections then
-			watched[descendant] = nil
-			for _, connection in connections do
-				connection:Disconnect()
-			end
-			self.schedule()
-		end
-	end)
-	for _, descendant in TextChatService:GetDescendants() do
-		watch(descendant)
-	end
+	watchExternalCommands(self.folder, self.schedule)
 
 	local _ = _K.Hook.commandRegistered:Connect(self.schedule)
 	-- saved settings load and sync from other servers
