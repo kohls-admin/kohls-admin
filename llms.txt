@@ -738,8 +738,8 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Process.resetLimit(from: number)`](src/Shared/Process/init.luau#L138-L140)
 - [`Process.onCooldown(_K: any, from: number): boolean`](src/Shared/Process/init.luau#L142-L149)
 - [`Process.countCommand(_K: any, from: number, amount: number?)`](src/Shared/Process/init.luau#L151-L164)
-- [`Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?)`](src/Shared/Process/init.luau#L166-L252): [Client]
-- [`Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?, clientOnly: boolean?): boolean`](src/Shared/Process/init.luau#L259-L464): [Client] Parses and runs a command string from a user.
+- [`Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?)`](src/Shared/Process/init.luau#L166-L251): [Client]
+- [`Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?, clientOnly: boolean?): boolean`](src/Shared/Process/init.luau#L258-L463): [Client] Parses and runs a command string from a user.
 
 ## MainModule.Registry
 
