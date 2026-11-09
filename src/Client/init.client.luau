@@ -57,7 +57,7 @@ function UI.changeTheme(new)
 end
 
 -- chat commands are TextChatCommands the server runs, it forwards their text so this client runs its own part (windows,
--- purchase prompts); scripts can't read chat text with platform-integrated chat
+-- purchase prompts)
 local _ = _K.Remote.Command:Connect(function(message: string, clientOnly: boolean?)
 	if _K.ready then
 		if clientOnly and type(message) == "string" then
@@ -86,6 +86,56 @@ local _ = _K.Remote.Command:Connect(function(message: string, clientOnly: boolea
 			end
 		end
 		_K.Process.runCommands(_K, _K.LocalPlayer.UserId, message, nil, nil, clientOnly == true)
+	end
+end)
+
+local function isEmoteMessage(text: string): boolean
+	return string.find(text, "^/[eE]$") ~= nil
+		or string.find(text, "^/[eE]%s") ~= nil
+		or string.find(text, "^/[eE][mM][oO][tT][eE]$") ~= nil
+		or string.find(text, "^/[eE][mM][oO][tT][eE]%s") ~= nil
+end
+
+local function isEchoedCommand(text: string): boolean
+	local firstWord = string.match(text, "^%s*(%S+)")
+	if not firstWord then
+		return false
+	end
+	local folder = _K.Service.TextChat:FindFirstChild("TextChatCommands_KA")
+	if not folder then
+		return false
+	end
+	local lowered = string.lower(firstWord)
+	for _, child in folder:GetChildren() do
+		if child:IsA("TextChatCommand") and child.Enabled then
+			if
+				(child.PrimaryAlias ~= "" and string.lower(child.PrimaryAlias) == lowered)
+				or (child.SecondaryAlias ~= "" and string.lower(child.SecondaryAlias) == lowered)
+			then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local _ = _K.Service.TextChat.MessageReceived:Connect(function(textChatMessage: TextChatMessage)
+	if not (_K.ready and _K.Auth.hasCommand(_K.LocalPlayer.UserId, "logs")) then
+		return
+	end
+	local source = textChatMessage.TextSource
+	local channel = textChatMessage.TextChannel
+	if
+		not source
+		or textChatMessage.Status ~= Enum.TextChatMessageStatus.Success
+		or (channel and string.find(channel.Name, "KA_", 1, true) == 1)
+		or textChatMessage.Metadata == "_K_CMD"
+	then
+		return
+	end
+	local text = _K.Util.String.unescapeRichText(textChatMessage.Text)
+	if text ~= "" and not isEmoteMessage(text) and not isEchoedCommand(text) then
+		task.spawn(_K.log, text, "CHAT", source.UserId)
 	end
 end)
 

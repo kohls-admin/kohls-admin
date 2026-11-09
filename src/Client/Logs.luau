@@ -12,7 +12,7 @@ local logTypes = {
 	{ "INFO", "#ccc" },
 	{ "WARN", "#ff0" },
 	{ "ERROR", "#f00" },
-	-- no CHAT, chat text is never logged
+	{ "CHAT", "#0f8" },
 	{ "COMMAND", "#80f" },
 	{ "JOIN", "#0f0" },
 	{ "LEAVE", "#080" },

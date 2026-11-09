@@ -380,6 +380,7 @@ local LOG_TYPES = {
 	"INFO",
 	"WARN",
 	"ERROR",
+	"CHAT",
 	"COMMAND",
 	"JOIN",
 	"LEAVE",
@@ -1705,7 +1706,11 @@ describe("DefaultCommands", function()
 		sert.eq(clientK.client.dashboard.Logs._instance.Visible, true)
 		runCli(";debuglogs")
 		runCli(";errorlogs")
-		sert.eq(clientK.Registry.commands.chatlogs, nil)
+		runCli(";chatlogs")
+		sert.eq(clientK.client.dashboard.Logs.logTypeFilter.CHAT:peek(), true)
+		sert.eq(clientK.client.dashboard.Logs.logTypeFilter.COMMAND:peek(), false)
+		runCli(";clogs")
+		sert.eq(clientK.client.dashboard.Logs.logTypeFilter.CHAT:peek(), true)
 		runCli(";commandlogs")
 		runCli(";joinlogs")
 		runCli(";damagelogs")

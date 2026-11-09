@@ -18,7 +18,7 @@ end
 local MIGRATE = {
 	defaultTheme = "theme",
 	gameHubEnabled = "addToCharts",
-	-- chat text is never logged, platform-integrated chat hides it from scripts
+	-- chat is only logged client-side
 	saveChatLogs = never,
 	splitKey = migrateSplitKey,
 	themeFont = convertFont,

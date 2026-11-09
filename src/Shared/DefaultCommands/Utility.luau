@@ -773,11 +773,13 @@ return {
 			"logs",
 			"debuglogs",
 			"errorlogs",
+			"chatlogs",
 			"commandlogs",
 			"joinlogs",
 			"damagelogs",
 			"killlogs",
 			"purchaselogs",
+			"clogs",
 			"cmdlogs",
 			"dmglogs",
 			"buylogs",
@@ -787,6 +789,7 @@ return {
 		envClient = function(_K)
 			local env = {
 				aliasMap = {
+					clogs = "chatlogs",
 					cmdlogs = "commandlogs",
 					dmglogs = "damagelogs",
 					buylogs = "purchaselogs",
@@ -794,6 +797,7 @@ return {
 				typeMap = {
 					DEBUG = { "DEBUG", "INFO", "WARN", "ERROR" },
 					ERROR = { "WARN", "ERROR" },
+					CHAT = { "CHAT" },
 					COMMAND = { "COMMAND" },
 					JOIN = { "JOIN", "LEAVE" },
 					KILL = { "KILL", "DEATH", "DAMAGE" },

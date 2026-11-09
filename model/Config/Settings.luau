@@ -106,7 +106,7 @@ return {
 	getKohlsAdminPopup = true, --      Show the Get Kohl's Admin popup
 	wrongPrefixWarning = true, --      Warn on incorrect prefix
 	saveLogs = true, --                Save/sync command logs across servers
-	saveChatLogs = false, --           Always off, chat text is never logged (platform-integrated chat hides it from scripts)
+	saveChatLogs = false, --           Always off, chat is only logged client-side
 	saveLogsForAllRoles = false, --    Save/sync logs from all roles, instead of only restricted roles (non-purchasable)
 
 	theme = "Default", --               Initial theme (customize in Config.Themes)

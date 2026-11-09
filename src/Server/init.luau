@@ -665,7 +665,7 @@ return function(_K)
 			elseif key == "changeThemeAuthority" then
 				return value == "Client" or value == "Server" or value == "Studio"
 			elseif key == "saveChatLogs" then
-				return value == false -- chat text is never logged
+				return value == false -- chat is only logged client-side
 			end
 			local defaultType = typeof(default)
 			if defaultType == "string" or defaultType == "table" then

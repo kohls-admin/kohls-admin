@@ -2837,16 +2837,76 @@ describe("Client and UI", function()
 				fastRun(0.2)
 
 				-- TextChatService SendingMessage & MessageReceived, LocalPlayer.Idled, and Hotkey dispatch
-				-- chat text is neither parsed nor logged on the client, platform-integrated chat hides it
 				local tcs = cEnv.game:GetService("TextChatService")
 				local logCount = #cK.Data.logs
 				tcs.SendingMessage:Fire({ Text = ";version" })
 				tcs.MessageReceived:Fire({
 					TextSource = { UserId = 1 },
+					Text = "Ignored without Success status",
+				})
+				tcs.MessageReceived:Fire({
+					Status = Enum.TextChatMessageStatus.Success,
+					TextChannel = { Name = "KA_Announce" },
+					TextSource = { UserId = 1 },
+					Text = "Ignored KA channel",
+					Metadata = "",
+				})
+				tcs.MessageReceived:Fire({
+					Status = Enum.TextChatMessageStatus.Success,
+					TextSource = { UserId = 1 },
+					Text = "Experience metadata message",
+					Metadata = "meta",
+				})
+				tcs.MessageReceived:Fire({
+					Status = Enum.TextChatMessageStatus.Success,
+					TextSource = { UserId = 1 },
+					Text = ";version",
+					Metadata = "_K_CMD",
+				})
+				for _, emoteText in { "/e", "/e wave", "/E dance", "/emote", "/emote wave" } do
+					tcs.MessageReceived:Fire({
+						Status = Enum.TextChatMessageStatus.Success,
+						TextSource = { UserId = 1 },
+						Text = emoteText,
+						Metadata = "",
+					})
+				end
+				tcs.MessageReceived:Fire({
+					Status = Enum.TextChatMessageStatus.Success,
+					TextSource = { UserId = 1 },
+					Text = "/everyone wave",
+					Metadata = "",
+				})
+				tcs.MessageReceived:Fire({
+					Status = Enum.TextChatMessageStatus.Success,
+					TextSource = { UserId = 1 },
 					Text = "Hello chat",
+					Metadata = "",
 				})
 				fastRun(0.1)
-				sert.eq(#cK.Data.logs, logCount)
+				sert.eq(#cK.Data.logs, logCount + 3)
+				sert.eq(cK.Data.logs[logCount + 1][1], "Experience metadata message")
+				sert.eq(cK.Data.logs[logCount + 2][1], "/everyone wave")
+				sert.eq(cK.Data.logs[logCount + 3][1], "Hello chat")
+				sert.eq(cK.Logger:decode(cK.Data.logs[#cK.Data.logs][2]), "CHAT")
+
+				-- Unauthorized clients (without `logs` command access) do not accumulate CHAT logs
+				local origHasCommand = cK.Auth.hasCommand
+				cK.Auth.hasCommand = function(userId, cmd)
+					if cmd == "logs" then
+						return false
+					end
+					return origHasCommand(userId, cmd)
+				end
+				tcs.MessageReceived:Fire({
+					Status = Enum.TextChatMessageStatus.Success,
+					TextSource = { UserId = 1 },
+					Text = "Should not log when unauthorized",
+					Metadata = "",
+				})
+				cK.Auth.hasCommand = origHasCommand
+				fastRun(0.05)
+				sert.eq(#cK.Data.logs, logCount + 3)
 				cEnv.Players.LocalPlayer.Idled:Fire(120)
 
 				local focusBox = cEnv.Instance.new("TextBox")
@@ -3321,12 +3381,9 @@ describe("Client and UI", function()
 					cK.Data.logs,
 					{ "Global warn log", cK.Logger:encode("WARN"), os.time(), 1, "Player1", false }
 				)
-				-- chat logs have no filter and never show, even old saved ones
-				sert.eq(dash.Logs.logTypeFilter.CHAT, nil)
-				table.insert(
-					cK.Data.logs,
-					{ "Legacy chat line", cK.Logger:encode("CHAT"), os.time(), 1, "Player1", false }
-				)
+				-- chat logs filter is enabled by default on the client
+				sert.eq(dash.Logs.logTypeFilter.CHAT:peek(), true)
+				table.insert(cK.Data.logs, { "Client chat line", cK.Logger:encode("CHAT"), os.time(), 1, "Player1" })
 				openScrollerTab(dash.Logs)
 
 				for _, item in dash.Logs._lineItemCache do
@@ -3406,23 +3463,37 @@ describe("Client and UI", function()
 							or cEnv.Instance.new("TextChannel", channelsFolder)
 						generalChannel.Name = "RBXGeneral"
 						local sentChatMessages = {}
+						local sentChatMetadatas = {}
 						local enabledDuringSend = nil
 						rawset(generalChannel, "_methods", {
-							SendAsync = function(_self, msgText)
+							SendAsync = function(_self, msgText, msgMetadata)
 								enabledDuringSend = pingCmd.Enabled
 								table.insert(sentChatMessages, msgText)
+								table.insert(sentChatMetadatas, msgMetadata)
 							end,
 						})
 						-- Other user and slash commands do not re-send to chat
 						pingCmd.Triggered:Fire({ UserId = 99999 }, ";ping me")
 						pingCmd.Triggered:Fire({ UserId = cK.LocalPlayer.UserId }, "/ping me")
 						pingCmd.Triggered:Fire({ UserId = cK.LocalPlayer.UserId }, "   ")
-						-- Non-slash command temporarily disables the TextChatCommand and re-sends to chat
+						-- Non-slash command temporarily disables the TextChatCommand and re-sends to chat with _K_CMD sentinel
 						pingCmd.Triggered:Fire({ UserId = cK.LocalPlayer.UserId }, ";ping me")
 						fastRun(0.1)
 						sert.eq(sentChatMessages, { ";ping me" })
+						sert.eq(sentChatMetadatas, { "_K_CMD" })
 						sert.eq(enabledDuringSend, false)
 						sert.eq(pingCmd.Enabled, true)
+
+						-- Echoed command fallback skips CHAT logging even if experience callback overwrote Metadata
+						local preEchoCount = #cK.Data.logs
+						cK.Service.TextChat.MessageReceived:Fire({
+							Status = Enum.TextChatMessageStatus.Success,
+							TextSource = { UserId = cK.LocalPlayer.UserId },
+							Text = `{pingCmd.PrimaryAlias} me`,
+							Metadata = "overwritten_by_game",
+						})
+						fastRun(0.05)
+						sert.eq(#cK.Data.logs, preEchoCount)
 					end
 				end
 				cK.client.settings.chatCommands(false)

@@ -245,7 +245,7 @@ local function connectChatCommand(
 			return
 		end
 		child.Enabled = false
-		task.spawn(pcall, channel.SendAsync, channel, text)
+		task.spawn(pcall, channel.SendAsync, channel, text, "_K_CMD")
 		child.Enabled = _K.Data.settings.chatCommands ~= false
 	end)
 end

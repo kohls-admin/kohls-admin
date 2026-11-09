@@ -479,7 +479,7 @@ local SYNC = {
 		end
 		Hook.preSyncLogs:Fire(logs)
 
-		-- chat text is never logged, skip any legacy saved chat logs and deduplicate against existing state
+		-- chat is logged client-side through TextChatService, skip any legacy saved chat logs and deduplicate against existing state
 		local existing = {}
 		for _, log in state do
 			existing[`{log[3]}_{log[4] or ""}_{log[2]}_{log[1]}`] = true
