@@ -495,6 +495,20 @@ return function(_K)
 
 		-- server network events
 		local LogsSubscribers = {}
+		local function updateServersSubscriber(player: Player)
+			if _K.Auth.hasCommand(player.UserId, "servers") then
+				if not ServersSubscribers[player] then
+					ServersSubscribers[player] = true
+					Servers.syncSubscription()
+					if player:GetAttribute("_K_READY") then
+						_K.Remote.Servers:Fire(player, nil, Servers.Map)
+					end
+				end
+			elseif ServersSubscribers[player] then
+				ServersSubscribers[player] = nil
+				Servers.syncSubscription()
+			end
+		end
 		local lastLogsVersion, cachedLogsBuffer
 		local function getSerializedLogs()
 			if lastLogsVersion ~= _K.Data.logsVersion or not cachedLogsBuffer then
@@ -542,7 +556,12 @@ return function(_K)
 				_K.Data.ensureServersLoaded(true)
 				reservedServers = _K.Data.reservedServers
 			end
-			local servers = if _K.Auth.hasCommand(player.UserId, "servers") then Servers.Map else nil
+			local servers
+			if _K.Auth.hasCommand(player.UserId, "servers") then
+				ServersSubscribers[player] = true
+				Servers.syncSubscription()
+				servers = Servers.Map
+			end
 			local savedSettings = _K.Data.savedSettings
 			local defaultSettings = _K.Data.defaultSettings
 
@@ -913,6 +932,9 @@ return function(_K)
 			_K.Data.settings = if _K.Data.savedSettings.useSavedSettings
 				then _K.Data.savedSettings
 				else _K.Data.defaultSettings
+			for _, toPlayer in _K.Service.Players:GetPlayers() do
+				updateServersSubscriber(toPlayer)
+			end
 			-- the prefixes and chatCommands are chat command aliases
 			if _K.ChatCommands then
 				_K.ChatCommands.schedule()
@@ -1154,15 +1176,16 @@ return function(_K)
 		Package.Parent = _K.Service.ReplicatedStorage
 		Client.Enabled = true
 
+		local _ = _K.Hook.postSyncMain:Connect(function()
+			for _, player in _K.Service.Players:GetPlayers() do
+				updateServersSubscriber(player)
+			end
+		end)
+
 		local _ = _K.Hook.roleAdded:Connect(function(userId: number, roleId: string)
 			local player = _K.Service.Players:GetPlayerByUserId(userId)
 			if player then
-				if _K.Auth.hasCommand(userId, "servers") then
-					if not ServersSubscribers[player] then
-						_K.Remote.Servers:Fire(player, nil, Servers.Map)
-					end
-					ServersSubscribers[player] = true
-				end
+				updateServersSubscriber(player)
 				if player:GetAttribute("_K_READY") then
 					if _K.Auth.hasCommand(userId, "ban") then
 						_K.Remote.Bans:Fire(player, _K.Data.bans)
@@ -1189,9 +1212,7 @@ return function(_K)
 		local _ = _K.Hook.roleRemoved:Connect(function(userId: number, roleId: string)
 			local player = _K.Service.Players:GetPlayerByUserId(userId)
 			if player then
-				if not _K.Auth.hasCommand(userId, "servers") then
-					ServersSubscribers[player] = nil
-				end
+				updateServersSubscriber(player)
 				if not _K.Auth.hasPermission(userId, "serverlogs") then
 					LogsSubscribers[player] = nil
 				end
@@ -1224,9 +1245,7 @@ return function(_K)
 			table.insert(cleanup, player.CharacterAdded:Connect(characterAdded))
 			table.insert(cleanup, player.CharacterRemoving:Connect(characterRemoving))
 
-			if _K.Auth.hasCommand(player.UserId, "servers") then
-				ServersSubscribers[player] = true
-			end
+			updateServersSubscriber(player)
 
 			if player.Character then
 				task.spawn(characterAdded, player.Character)
@@ -1256,7 +1275,10 @@ return function(_K)
 		end)
 
 		local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
-			ServersSubscribers[player] = nil
+			if ServersSubscribers[player] then
+				ServersSubscribers[player] = nil
+				Servers.syncSubscription()
+			end
 			LogsSubscribers[player] = nil
 
 			local userId = player.UserId
@@ -1274,6 +1296,8 @@ return function(_K)
 				end
 			end
 		end)
+
+		Servers.start()
 
 		task.spawn(_K.log, `Initialized in {math.round((os.clock() - initStart) * 1000)} ms`, "DEBUG")
 		_K.ready = true

@@ -1156,7 +1156,7 @@ describe("Chat and Server", function()
 				world:run(1)
 
 				-- 6. Servers.luau cross-server discovery & TeleportToServer
-				sert.eq(serversTable.Enabled, false)
+				sert.eq(serversTable.Enabled, true)
 				serversTable.Subscribers[srvAdmin] = true
 				serversTable.Subscribers[srvMod] = false
 				local serverBroadcasts = {}
@@ -1219,6 +1219,13 @@ describe("Chat and Server", function()
 				sert.eq(#serverBroadcasts, 3)
 				sert.eq(serverBroadcasts[3].jobId, "remote-job-99")
 
+				-- Unsubscribing all admins disconnects topic listener & clears Map; re-subscribing re-attaches
+				table.clear(serversTable.Subscribers)
+				serversTable.syncSubscription()
+				sert.eq(_K.Data.servers["remote-job-fresh"], nil)
+				serversTable.Subscribers[srvAdmin] = true
+				serversTable.syncSubscription()
+				world:run(0.5)
 				sert.eq(serverBroadcasts[3].count, nil)
 				_K.Remote.Servers.Fire = origServersFire
 			end
@@ -2247,12 +2254,18 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 					backfilled.logs = true
 				end
 			end
+			_K.Remote.Servers.Fire = function(_self, plr)
+				if plr == p2 then
+					backfilled.servers = true
+				end
+			end
 
 			_K.Auth.userRoleAdd(202, "superadmin")
 			sert.eq(backfilled.bans, true)
 			sert.eq(backfilled.members, true)
 			sert.eq(backfilled.reserved, true)
 			sert.eq(backfilled.logs, true)
+			sert.eq(backfilled.servers, true)
 
 			-- _K.chatCommandAlias, _K.removeExcessLogs logsVersion, and client _K.log log[6]
 			_K.ChatCommands = {

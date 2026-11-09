@@ -327,15 +327,13 @@ local SYNC = {
 				changes[userId] = nil
 				continue
 			end
-			local name = if data[1] ~= nil then data[1] else data.name
 			local rawPersist = if data[2] ~= nil then data[2] else data.persist
-			data.name, data[1] = name, nil
-			data.persist, data[2] = rawPersist, nil
+			data.name, data[1], data[2] = if data[1] ~= nil then data[1] else data.name, nil, nil
 
 			-- filter out invalid roleIds
 			local persist = {}
-			if type(data.persist) == "table" then
-				for _, roleId in data.persist do
+			if type(rawPersist) == "table" then
+				for _, roleId in rawPersist do
 					if Data.roles[roleId] then
 						table.insert(persist, roleId)
 					end
@@ -384,22 +382,20 @@ local SYNC = {
 			if #data.roles == 0 then -- remove member
 				state[key] = nil
 				changes[userId] = nil
-				if userIdNumber then
-					for _, roleId in removedRoles do
-						Hook.roleRemoved:Fire(userIdNumber, roleId)
-					end
-				end
-				continue
+			else
+				table.sort(data.persist, Auth.roleIdSort)
+				table.sort(data.roles, Auth.roleIdSort)
+				state[key] = data
 			end
 
-			table.sort(data.persist, Auth.roleIdSort)
-			table.sort(data.roles, Auth.roleIdSort)
 			if userIdNumber then
 				for _, roleId in removedRoles do
 					Hook.roleRemoved:Fire(userIdNumber, roleId)
 				end
-				for _, roleId in addedRoles do
-					Hook.roleAdded:Fire(userIdNumber, roleId)
+				if #data.roles > 0 then
+					for _, roleId in addedRoles do
+						Hook.roleAdded:Fire(userIdNumber, roleId)
+					end
 				end
 			end
 		end
@@ -415,12 +411,11 @@ local SYNC = {
 
 		for _, player in Players:GetPlayers() do
 			if player:GetAttribute("_K_READY") then
-				if Auth.hasCommand(player.UserId, "members") then
-					Remote.Members:Fire(player, state)
-				else
-					local selfKey = tostring(player.UserId)
-					Remote.Members:Fire(player, { [selfKey] = state[selfKey] })
-				end
+				local selfKey = tostring(player.UserId)
+				local payload = if Auth.hasCommand(player.UserId, "members")
+					then state
+					else { [selfKey] = state[selfKey] }
+				Remote.Members:Fire(player, payload)
 			end
 		end
 	end,

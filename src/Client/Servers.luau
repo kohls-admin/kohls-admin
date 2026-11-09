@@ -4,21 +4,42 @@ local Servers = {}
 Servers.__index = Servers
 
 function Servers.new(_K)
+	local escape = _K.Util.String.escapeRichText
 	local servers = _K.Data.servers
 
 	local placeNames = {}
-	local function getPlaceName(placeId: number)
+	local placeNameCallbacks: { [number]: { (string) -> () } } = {}
+	local function fetchPlaceName(placeId: number, callback: (string) -> ())
 		if placeNames[placeId] then
-			return placeNames[placeId]
+			callback(placeNames[placeId])
+			return
 		end
+		local pending = placeNameCallbacks[placeId]
+		if pending then
+			table.insert(pending, callback)
+			return
+		end
+		pending = { callback }
+		placeNameCallbacks[placeId] = pending
 
-		local success, info =
-			_K.Util.Retry(_K.Service.Marketplace.GetProductInfoAsync, 5, 2, _K.Service.Marketplace, placeId)
+		task.spawn(function()
+			local success, info =
+				_K.Util.Retry(_K.Service.Marketplace.GetProductInfoAsync, 5, 2, _K.Service.Marketplace, placeId)
 
-		local name = if success then info.Name else "Unknown"
-		placeNames[placeId] = name
+			local name = if success
+					and type(info) == "table"
+					and type(info.Name) == "string"
+				then info.Name
+				else "Unknown"
+			if success then
+				placeNames[placeId] = name
+			end
+			placeNameCallbacks[placeId] = nil
 
-		return name
+			for _, cb in pending do
+				cb(name)
+			end
+		end)
 	end
 
 	local _ = _K.Remote.Servers:Connect(function(jobId: string?, data: any?)
@@ -131,18 +152,17 @@ function Servers.new(_K)
 
 			lineItem.placeId = placeId
 
-			lineItem._instance.Id.Text = string.sub(jobId, -6, -1)
+			lineItem._instance.Id.Text = escape(string.sub(jobId, -6, -1))
 			lineItem._instance.Count.Text = string.format(playerCountFormat, playerCount)
 
-			task.spawn(function()
-				local name = getPlaceName(placeId)
+			fetchPlaceName(placeId, function(name)
 				if lineItem.lastRender == now then
-					lineItem._instance.Place.Text = name
+					lineItem._instance.Place.Text = escape(name)
 				end
 			end)
 
 			task.spawn(function()
-				while lineItem.lastRender == now do
+				while lineItem.lastRender == now and lineItem._instance.Parent do
 					lineItem._instance.Age.Text = _K.Util.Time.clock(DateTime.now().UnixTimestamp - startTime)
 					task.wait(1)
 				end
