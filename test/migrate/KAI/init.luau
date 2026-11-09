@@ -17,6 +17,8 @@ local dataKey = {
 local IS_PRIVATE_SERVER = game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0
 local PRIVATE_OWNER_PERMISSIONS = false
 
+_G.KAU = true
+shared._K_LOADER_LOADED = true
 script.Parent = nil
 local version = 79
 local f = { s = script }

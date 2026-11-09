@@ -3,8 +3,19 @@
 if shared._K_INTERFACE then
 	return shared._K_INTERFACE
 end
+if shared._K_LOADING then
+	while not shared._K_INTERFACE do
+		task.wait()
+	end
+	return shared._K_INTERFACE
+end
+shared._K_LOADING = true
 
 local RunService = game:GetService("RunService")
+if RunService:IsServer() then
+	shared._K_LOADER_LOADED = true
+	_G.KAU = true
+end
 local requireStart = os.clock()
 
 local Client = script:WaitForChild("Client")
@@ -319,8 +330,6 @@ task.spawn(
 	"DEBUG"
 )
 
-shared._K_INTERFACE = _K
-
 if _K.IsServer then
 	require(Server)(_K)
 else
@@ -328,6 +337,9 @@ else
 		print(`🛡️ Running Kohl's Admin v{_K.VERSION} by @Scripth`)
 	end
 end
+
+shared._K_INTERFACE = _K
+shared._K_LOADING = nil
 
 task.spawn(_K.log, `Required in {math.round((os.clock() - requireStart) * 1000)} ms`, "DEBUG")
 

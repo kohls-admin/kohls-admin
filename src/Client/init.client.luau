@@ -437,8 +437,13 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 	end
 
 	-- finally load client and shared addons
+	local loadedAddons: { [Instance]: boolean } = {}
 	local function loadAddons(list)
 		for _, object in list do
+			if loadedAddons[object] then
+				continue
+			end
+			loadedAddons[object] = true
 			if object:IsA("ModuleScript") then
 				task.spawn(function()
 					require(object :: ModuleScript)(_K)

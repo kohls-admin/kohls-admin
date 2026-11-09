@@ -10,6 +10,7 @@ local AUTO_UPDATE = true
 local LEGACY = false
 
 local CONFIG = Package:FindFirstChild("Config")
+local ADDONS = Package:FindFirstChild("Addons")
 if CONFIG then
 	local autoUpdate = CONFIG:GetAttribute("AutoUpdate")
 	if autoUpdate ~= nil then
@@ -18,6 +19,11 @@ if CONFIG then
 	local legacy = CONFIG:GetAttribute("Legacy")
 	if legacy ~= nil then
 		LEGACY = legacy
+	else
+		local legacyValue = CONFIG:FindFirstChild("Legacy")
+		if legacyValue and legacyValue:IsA("ValueBase") then
+			LEGACY = (legacyValue :: any).Value == true
+		end
 	end
 end
 
@@ -41,27 +47,35 @@ while obj and obj ~= game do obj.Sandboxed = false obj = obj.Parent end
 	end
 end
 
-if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
-	local legacyConfig = CONFIG:FindFirstChild("Legacy")
+if not _G.KAU and not shared._K_LOADER_LOADED then
+	_G.KAU = true
+	shared._K_LOADER_LOADED = true
+	shared._K_MODERN_LOADER = not LEGACY
+
+	local legacyConfig = CONFIG and CONFIG:FindFirstChild("Legacy")
 
 	if LEGACY then
-		_G.KAU = true
 		MAIN_MODULE_NAME = "MainModuleLegacy"
-		for _, child in legacyConfig:GetChildren() do
-			child.Parent = script
+		if legacyConfig then
+			for _, child in legacyConfig:GetChildren() do
+				child.Parent = script
+			end
 		end
 		script.Name = "Kohl's Admin Infinite"
 		script.Parent = game:GetService("ServerScriptService")
 	else
-		shared._K_LOADER_LOADED = true
 		Package.Parent = game:GetService("ServerScriptService")
 	end
 	AUTO_UPDATE = AUTO_UPDATE and game.PlaceId ~= DEMO_PLACE
 
 	local localMainModule = script:FindFirstChild(MAIN_MODULE_NAME) or MAIN_MODULE_ID
+	local localTools = script:FindFirstChild("Tools") or Package:FindFirstChild("Tools", true)
 
-	if typeof(localMainModule) == "Instance" then
-		script:WaitForChild("Tools").Parent = localMainModule:FindFirstChild("Server") or localMainModule
+	if typeof(localMainModule) == "Instance" and localTools then
+		local targetParent = localMainModule:FindFirstChild("Server") or localMainModule
+		if not targetParent:FindFirstChild("Tools") then
+			(if AUTO_UPDATE then localTools:Clone() else localTools).Parent = targetParent
+		end
 	end
 
 	local ok, result = pcall(require, if AUTO_UPDATE then MAIN_MODULE_ID else localMainModule)
@@ -70,25 +84,48 @@ if (LEGACY and not _G.KAU) or not shared._K_LOADER_LOADED then
 		if AUTO_UPDATE then
 			local function loadModuleAsset(assetId: number)
 				local asset = InsertService:LoadAsset(assetId)
-				local module = asset:FindFirstChild("MainModule", true)
+				local module = asset:FindFirstChild(MAIN_MODULE_NAME, true) or asset:FindFirstChild("MainModule", true)
 				if module then
+					if not LEGACY then
+						local serverFolder = module:FindFirstChild("Server")
+						if serverFolder and not serverFolder:FindFirstChild("Tools") then
+							local tools = asset:FindFirstChild("Tools", true)
+								or script:FindFirstChild("Tools")
+								or Package:FindFirstChild("Tools", true)
+							if tools then
+								tools:Clone().Parent = serverFolder
+							end
+						end
+					end
 					return assert(require(module), ":LoadAsset() module returned invalid values!")
 				end
 				error(`Failed to find the source for {assetId}.`)
 			end
 
-			warn("Kohl's Admin failed to auto-update from MainModule, trying to load from asset\nReason:\t" .. result)
+			warn(
+				"Kohl's Admin failed to auto-update from MainModule, trying to load from asset\nReason:\t"
+					.. tostring(result)
+			)
 			ok, result = pcall(loadModuleAsset, 172732271)
 			if not ok then
-				warn("Kohl's Admin failed to auto-update from asset, loading from local package\nReason:\t" .. result)
-				result = require(localMainModule)
+				warn(
+					"Kohl's Admin failed to auto-update from asset, loading from local package\nReason:\t"
+						.. tostring(result)
+				)
+				ok, result = pcall(require, localMainModule)
+				if not ok then
+					error(result)
+				end
 			end
 		else
-			warn("Kohl's Admin failed to load from local package\nReason:\t" .. result)
+			warn("Kohl's Admin failed to load from local package\nReason:\t" .. tostring(result))
 		end
 	end
 
-	if not LEGACY then
-		result.initialize(CONFIG)
+	if not LEGACY and ok and type(result) == "table" and type(result.initialize) == "function" then
+		result.initialize(CONFIG, ADDONS)
 	end
+else
+	warn(`Multiple Kohl's Admin models detected; removing duplicate at {Package:GetFullName()}`)
+	Package:Destroy()
 end

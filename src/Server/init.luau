@@ -453,8 +453,13 @@ return function(_K)
 		sharedAddons.Name = "Addons"
 		sharedAddons.Parent = Package
 
+		local loadedAddons = {}
 		local function loadAddons(list)
 			for _, object in list do
+				if loadedAddons[object] then
+					continue
+				end
+				loadedAddons[object] = true
 				if object:IsA("ModuleScript") then
 					if string.find(object.Name, "Server", 1, true) then
 						object.Parent = serverAddons
@@ -476,7 +481,25 @@ return function(_K)
 		end
 
 		loadAddons(Shared.DefaultAddons:GetChildren())
-		loadAddons(_K.Service.Collection:GetTagged(_K._addonTag))
+		local taggedAddons = {}
+		for _, object in _K.Service.Collection:GetTagged(_K._addonTag) do
+			local parent = object.Parent
+			local grandParent = parent and parent.Parent
+			if
+				object.Name == "Addons"
+				and parent
+				and parent.Name == "Config"
+				and grandParent
+				and grandParent ~= Package
+				and grandParent:FindFirstChild("Loader")
+			then
+				warn(`Multiple Kohl's Admin models detected; removing duplicate at {grandParent:GetFullName()}`)
+				grandParent:Destroy()
+				continue
+			end
+			table.insert(taggedAddons, object)
+		end
+		loadAddons(taggedAddons)
 		if oldAddonStructure and not oldAddonStructure:HasTag(_K._addonTag) then
 			loadAddons(oldAddonStructure:GetChildren())
 		end

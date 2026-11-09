@@ -1306,14 +1306,34 @@ describe("Chat and Server", function()
 				local customTheme = hStudio.env.Instance.new("ModuleScript", themesFolder)
 				customTheme.Name = "CustomTheme"
 
+				local collectionService = hStudio.env.game:GetService("CollectionService")
 				local addonsFolder = hStudio.env.Instance.new("Folder", configObj)
 				addonsFolder.Name = "Addons"
-				local sharedAddonran, serverAddonRan, subAddonRan = false, false, false
+				collectionService:AddTag(addonsFolder, "Kohl's Admin Addon")
+				local sharedAddonRuns, serverAddonRan, subAddonRan, dupAddonRan = 0, false, false, false
 				local sharedAddon = hStudio.env.Instance.new("ModuleScript", addonsFolder)
 				sharedAddon.Name = "SharedTestAddon"
+				collectionService:AddTag(sharedAddon, "Kohl's Admin Addon")
 				rawset(sharedAddon, "_factory", function()
 					return function()
-						sharedAddonran = true
+						sharedAddonRuns += 1
+					end
+				end)
+
+				local dupModel = hStudio.env.Instance.new("Folder", hStudio.env.workspace)
+				dupModel.Name = "Kohl's Admin"
+				local dupLoader = hStudio.env.Instance.new("Script", dupModel)
+				dupLoader.Name = "Loader"
+				local dupConfig = hStudio.env.Instance.new("Configuration", dupModel)
+				dupConfig.Name = "Config"
+				local dupAddons = hStudio.env.Instance.new("Folder", dupConfig)
+				dupAddons.Name = "Addons"
+				collectionService:AddTag(dupAddons, "Kohl's Admin Addon")
+				local dupAddon = hStudio.env.Instance.new("ModuleScript", dupAddons)
+				dupAddon.Name = "DuplicateAddon"
+				rawset(dupAddon, "_factory", function()
+					return function()
+						dupAddonRan = true
 					end
 				end)
 				local serverAddon = hStudio.env.Instance.new("ModuleScript", addonsFolder)
@@ -1378,7 +1398,9 @@ describe("Chat and Server", function()
 				sert.eq(sK.ready, true)
 				sert.eq(sK.groupId, 500)
 				sert.eq(table.find(sK.Data.settingsModuleData.userRoles.superadmin, 777) ~= nil, true)
-				sert.eq(sharedAddonran, true)
+				sert.eq(sharedAddonRuns, 1)
+				sert.eq(dupAddonRan, false)
+				sert.eq(dupModel.Parent, nil)
 				sert.eq(serverAddonRan, true)
 				sert.eq(subAddonRan, true)
 				sert.eq(configObj.Parent, hStudio.KA)

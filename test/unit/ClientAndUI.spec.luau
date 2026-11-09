@@ -4510,6 +4510,67 @@ describe("Client and UI · motion nodes die with their component", function()
 	end
 end)
 
+describe("Client and UI · 2026 Compliance & UI Regressions", function()
+	test("Client loadAddons deduplicates addons present in both Addons folder and addonTag", function()
+		local world = sert.sim.new({ backing = true })
+		local server = world:server()
+		local client = server:client(1, "Player1")
+
+		local srvMounted = Harness.newPeerEnv(server, { isStudio = true })
+		local cliMounted = setupClientEnv(client)
+		local sK = srvMounted:requireK()
+		server:spawn(function()
+			sK.initialize({
+				bans = {},
+				userRoles = { creator = { 1 } },
+				assetRoles = {},
+				gamepassRoles = {},
+				subscriptionRoles = {},
+				groupRoles = {},
+				friendRoles = {},
+				freeAdmin = {},
+				announcements = {},
+				notifications = {},
+				prefix = { ";" },
+				splitKey = " ",
+				commands = {},
+				vip = false,
+				chatCommandsNotification = false,
+				joinNotificationRank = 0,
+				roles = Harness.defaultRoles(),
+			})
+		end)
+		for _ = 1, 5 do
+			world:step(0.1)
+		end
+
+		local cEnv = cliMounted.env
+		local cK = cliMounted:requireK()
+		local preUI = cEnv:require(cliMounted.Client.UI)
+		preUI.Pointer = preUI.signal({ Position = Vector3.new(0, 0, 0) })
+
+		local addonRuns = 0
+		local addonMod = cEnv.Instance.new("ModuleScript")
+		addonMod.Name = "DualTaggedClientAddon"
+		addonMod.Parent = cliMounted.KA:FindFirstChild("Addons")
+		rawset(addonMod, "_factory", function()
+			return function()
+				addonRuns += 1
+			end
+		end)
+		cEnv.game:GetService("CollectionService"):AddTag(addonMod, cK._addonTag)
+
+		client:spawn(function()
+			cEnv:require(cliMounted.Client)
+		end)
+		for _ = 1, 10 do
+			world:step(0.125)
+		end
+		sert.eq(cK.ready, true)
+		sert.eq(addonRuns, 1)
+	end)
+end)
+
 do
 	return {}
 end
