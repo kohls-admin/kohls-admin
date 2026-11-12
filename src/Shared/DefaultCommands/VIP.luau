@@ -36,13 +36,19 @@ local function applyClothing(context: any, players: { Player }, className: strin
 			continue
 		end
 		local existing = player.Character:FindFirstChildOfClass(className)
-		if not existing then
-			existing = Instance.new(className)
-			existing.Parent = player.Character
-		end
-		if context.undo then
-			context._K.Util.Property.reset(existing, prop)
+		if context.undo or not image then
+			if existing then
+				context._K.Util.Property.reset(existing, prop)
+				if existing:GetAttribute("_KCreated") then
+					existing:Destroy()
+				end
+			end
 		else
+			if not existing then
+				existing = Instance.new(className)
+				existing:SetAttribute("_KCreated", true)
+				existing.Parent = player.Character
+			end
 			context._K.Util.Property.override(existing, prop, image)
 		end
 	end
@@ -699,7 +705,7 @@ return {
 
 				for _, item in pairs(info.Items) do
 					if item.Type == "UserOutfit" then
-						return item.Id
+						return item.Id, info.BundleType
 					end
 				end
 
@@ -707,9 +713,9 @@ return {
 			end
 
 			local function getHumanoidDescriptionBundle(bundleId)
-				local itemId = getOutfitId(bundleId)
+				local itemId, bundleType = getOutfitId(bundleId)
 				if itemId and itemId > 0 then
-					return Util.Service.Players:GetHumanoidDescriptionFromOutfitIdAsync(itemId)
+					return Util.Service.Players:GetHumanoidDescriptionFromOutfitIdAsync(itemId), bundleType
 				end
 
 				return nil
@@ -720,7 +726,10 @@ return {
 		end,
 
 		run = function(context, players, assetId: number?)
-			local bundleDescription = if assetId then context.env.getHumanoidDescriptionBundle(assetId) else nil
+			local bundleDescription, bundleType
+			if assetId then
+				bundleDescription, bundleType = context.env.getHumanoidDescriptionBundle(assetId)
+			end
 			if assetId and not bundleDescription then
 				return `Failed to load bundle.`
 			end
@@ -742,7 +751,17 @@ return {
 				end
 
 				if bundleDescription then
-					humanoid:ApplyDescription(bundleDescription)
+					if bundleType == "DynamicHead" then
+						local merged = description:Clone()
+						merged.Head = bundleDescription.Head
+						if bundleDescription.MoodAnimation ~= 0 then
+							merged.MoodAnimation = bundleDescription.MoodAnimation
+						end
+						humanoid:ApplyDescription(merged)
+						merged:Destroy()
+					else
+						humanoid:ApplyDescription(bundleDescription)
+					end
 				else
 					humanoid:ApplyDescription(originalDescription)
 				end
@@ -1305,6 +1324,7 @@ return {
 		},
 
 		run = function(context, players, image)
+			local Property = context._K.Util.Property
 			for _, player in players do
 				local head = player.Character and player.Character:FindFirstChild("Head")
 				if not head then
@@ -1316,10 +1336,23 @@ return {
 					face.Name = "face"
 					face.Parent = head
 				end
-				if context.undo then
-					context._K.Util.Property.reset(face, "Texture")
+				local mesh = head:FindFirstChildOfClass("SpecialMesh")
+				if context.undo or not image then
+					Property.reset(face, "Texture")
+					if head:IsA("MeshPart") then
+						Property.reset(head, "TextureID")
+					end
+					if mesh then
+						Property.reset(mesh, "TextureId")
+					end
 				else
-					context._K.Util.Property.override(face, "Texture", image)
+					Property.override(face, "Texture", image)
+					if head:IsA("MeshPart") then
+						Property.override(head, "TextureID", "")
+					end
+					if mesh then
+						Property.override(mesh, "TextureId", "")
+					end
 				end
 			end
 		end,
@@ -1409,9 +1442,12 @@ return {
 		},
 
 		run = function(context, players: { Player }, color: Color3?)
+			if context.undo then
+				color = nil
+			end
 			for _, player in players do
 				local character = player.Character
-				if not player.Character then
+				if not character then
 					continue
 				end
 				local bodyColors = character:FindFirstChildOfClass("BodyColors")
@@ -1461,43 +1497,32 @@ return {
 				[Enum.Material.Water] = true,
 			}
 
-			local function updatePart(part: BasePart, color: Color3?, reflectance: number?, material: Enum.Material?)
-				local apply = color or reflectance or material
+			local function setOrReset(instance: Instance, property: string, value: any)
+				if value ~= nil then
+					_K.Util.Property.override(instance, property, value)
+				else
+					_K.Util.Property.reset(instance, property)
+				end
+			end
 
-				if part:IsA("MeshPart") and material ~= Enum.Material.ForceField then
-					if apply then
-						_K.Util.Property.override(part, "TextureID", "")
-					else
-						_K.Util.Property.reset(part, "TextureID")
-					end
+			local function updatePart(part: BasePart, color: Color3?, reflectance: number?, material: Enum.Material?)
+				local clearTexture = if (color or reflectance or material)
+						and material ~= Enum.Material.ForceField
+					then ""
+					else nil
+
+				if part:IsA("MeshPart") then
+					setOrReset(part, "TextureID", clearTexture)
 				end
 
 				local mesh = part:FindFirstChildOfClass("SpecialMesh")
-				if mesh and material ~= Enum.Material.ForceField then
-					if apply then
-						_K.Util.Property.override(mesh, "TextureId", "")
-					else
-						_K.Util.Property.reset(mesh, "TextureId")
-					end
+				if mesh then
+					setOrReset(mesh, "TextureId", clearTexture)
 				end
 
-				if color then
-					_K.Util.Property.override(part, "Color", color)
-				else
-					_K.Util.Property.reset(part, "Color")
-				end
-
-				if reflectance then
-					_K.Util.Property.override(part, "Reflectance", reflectance)
-				else
-					_K.Util.Property.reset(part, "Reflectance")
-				end
-
-				if material then
-					_K.Util.Property.override(part, "Material", material)
-				else
-					_K.Util.Property.reset(part, "Material")
-				end
+				setOrReset(part, "Color", color)
+				setOrReset(part, "Reflectance", reflectance)
+				setOrReset(part, "Material", material)
 			end
 
 			return {
@@ -1514,34 +1539,21 @@ return {
 					local bodyColors = character:FindFirstChildOfClass("BodyColors")
 					if bodyColors then
 						for _, key in { "Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg" } do
-							if color then
-								_K.Util.Property.override(bodyColors, key .. "Color3", color)
-							else
-								_K.Util.Property.reset(bodyColors, key .. "Color3")
-							end
+							setOrReset(bodyColors, key .. "Color3", color)
 						end
 					end
 
 					local apply = color or reflectance or material
+					local clearTexture = if apply and material ~= Enum.Material.ForceField then "" else nil
 
-					if material ~= Enum.Material.ForceField then
-						local shirt = character:FindFirstChildOfClass("Shirt")
-						if shirt then
-							if apply then
-								_K.Util.Property.override(shirt, "ShirtTemplate", "")
-							else
-								_K.Util.Property.reset(shirt, "ShirtTemplate")
-							end
-						end
+					local shirt = character:FindFirstChildOfClass("Shirt")
+					if shirt then
+						setOrReset(shirt, "ShirtTemplate", clearTexture)
+					end
 
-						local pants = character:FindFirstChildOfClass("Pants")
-						if pants then
-							if apply then
-								_K.Util.Property.override(pants, "PantsTemplate", "")
-							else
-								_K.Util.Property.reset(pants, "PantsTemplate")
-							end
-						end
+					local pants = character:FindFirstChildOfClass("Pants")
+					if pants then
+						setOrReset(pants, "PantsTemplate", clearTexture)
 					end
 
 					for _, descendant in character:GetDescendants() do
@@ -1565,6 +1577,9 @@ return {
 		end,
 
 		run = function(context, players, color: Color3?, reflectance: number?, material: Enum.Material?)
+			if context.undo then
+				color, reflectance, material = nil, nil, nil
+			end
 			for _, player in players do
 				if player.Character and player.Character.PrimaryPart then
 					context.env.update(player.Character, color, reflectance, material)
@@ -1750,13 +1765,17 @@ return {
 		},
 
 		runClient = function(context)
-			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 and context._K.Data.settings.vip then
+			if
+				context.fromPlayer
+				and (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3
+				and context._K.Data.settings.vip
+			then
 				context._K.PromptPurchaseVIP()
 				return
 			end
 		end,
 		run = function(context, wingsColor: Color3?)
-			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
+			if not context.fromPlayer or (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
 				return
 			end
 			if not context.fromPlayer.Character then
@@ -1778,13 +1797,17 @@ return {
 		aliases = { "wingsrainbow" },
 		description = "Toggles the VIP wings rainbow.",
 		runClient = function(context)
-			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 and context._K.Data.settings.vip then
+			if
+				context.fromPlayer
+				and (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3
+				and context._K.Data.settings.vip
+			then
 				context._K.PromptPurchaseVIP()
 				return
 			end
 		end,
 		run = function(context)
-			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
+			if not context.fromPlayer or (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
 				return
 			end
 			if not context.fromPlayer.Character then
@@ -1824,13 +1847,17 @@ return {
 		},
 
 		runClient = function(context)
-			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 2 and context._K.Data.settings.vip then
+			if
+				context.fromPlayer
+				and (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 2
+				and context._K.Data.settings.vip
+			then
 				context._K.PromptPurchaseVIP()
 				return
 			end
 		end,
 		run = function(context, crownColor: Color3?, fireColor: Color3?)
-			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 2 then
+			if not context.fromPlayer or (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 2 then
 				return
 			end
 			if not context.fromPlayer.Character then
@@ -1863,13 +1890,17 @@ return {
 		aliases = { "crownrainbow" },
 		description = "Toggles the VIP crown rainbow.",
 		runClient = function(context)
-			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 and context._K.Data.settings.vip then
+			if
+				context.fromPlayer
+				and (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3
+				and context._K.Data.settings.vip
+			then
 				context._K.PromptPurchaseVIP()
 				return
 			end
 		end,
 		run = function(context)
-			if (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
+			if not context.fromPlayer or (context.fromPlayer:GetAttribute("_KDonationLevel") or 0) < 3 then
 				return
 			end
 			if not context.fromPlayer.Character then

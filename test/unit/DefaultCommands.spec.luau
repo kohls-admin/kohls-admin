@@ -3500,7 +3500,7 @@ describe("DefaultCommands", function()
 			world:run(10)
 		end
 		local function expectPerks(granted: boolean)
-			sert.eq(srvP2:GetAttribute("_KDonationLevel"), if granted then 3 else 0)
+			sert.eq(srvP2:GetAttribute("_KDonationLevel"), if granted then 4 else 0)
 			sert.eq(_K.Auth.hasRole(2, "vip"), granted)
 			sert.eq(vip.ownerCache[2], if granted then true else nil)
 			sert.eq(hero.ownerCache[2], if granted then true else nil)
@@ -4129,6 +4129,515 @@ describe("DefaultCommands", function()
 			voteDef.env.remote.Invoke = origVoteInvoke
 			tcMethods.CanUserChatAsync = origCanUserChat
 			tcMethods.CanUsersChatAsync = origCanUsersChat
+		end
+	)
+
+	test(
+		"Batch 2 regressions: track persistence & stream-in, R15 AnimationConstraint dog, R6/dynamic head face & bundle, BindToClose pcall, jail streaming, createteam duplicates, and respawn/punish tool unequip",
+		function()
+			local c = createSimCluster()
+			local _K, clientK, srvP1, srvP2 = c._K, c.clientK, c.srvP1, c.srvP2
+
+			-- #519: BindToClose wrapped in pcall in Data/init.luau
+			sert.eq(_K.Data.gameClosing, false)
+
+			-- #481: ;createteam rejects duplicate team names (case-insensitive) and duplicate explicit TeamColors, and picks an unused BrickColor when omitted
+			local teams = c.sh.env.game:GetService("Teams")
+			for _, t in teams:GetChildren() do
+				t:Destroy()
+			end
+			local createTeamRun = _K.Registry.commands.createteam.run
+			local ctx = { _K = _K, from = 1, fromPlayer = srvP1, args = {} }
+			local err1 = createTeamRun(ctx, "RedGuard", Color3.fromRGB(255, 0, 0))
+			sert.eq(err1, nil)
+			local redTeam = teams:FindFirstChild("RedGuard")
+			sert.eq(redTeam ~= nil, true)
+
+			-- Case-insensitive duplicate name rejected
+			local errDupName = createTeamRun(ctx, "redguard", Color3.fromRGB(0, 255, 0))
+			sert.eq(string.find(tostring(errDupName), "already exists", 1, true) ~= nil, true)
+
+			-- Duplicate explicit TeamColor rejected
+			local errDupColor = createTeamRun(ctx, "CrimsonCopy", redTeam.TeamColor.Color)
+			sert.eq(string.find(tostring(errDupColor), "already in use", 1, true) ~= nil, true)
+
+			-- Omitted color picks an unused BrickColor
+			local errAutoColor = createTeamRun(ctx, "AutoTeam", nil)
+			sert.eq(errAutoColor, nil)
+			local autoTeam = teams:FindFirstChild("AutoTeam")
+			sert.eq(autoTeam ~= nil, true)
+			sert.eq(autoTeam.TeamColor ~= redTeam.TeamColor, true)
+
+			-- #517: ;jail sets root CanCollide = false and attaches ChildAdded watcher on client so streamed-in wall BaseParts get CanCollide = true
+			c.runSrv(";jail TargetPlr")
+			local jailPart = _K.Registry.commands.jail.env.parts[srvP2.UserId]
+			sert.eq(jailPart ~= nil, true)
+			sert.eq(jailPart.CanCollide, false)
+			local srvJail = c.sh.env.Instance.new("Part", c.sh.env.workspace)
+			srvJail.Name = "JailCollideTestPart"
+			srvJail.CanCollide = true
+			c.world:run(0.05)
+			local cliJail = c.ch1.env.workspace:FindFirstChild("JailCollideTestPart")
+			sert.eq(cliJail ~= nil, true)
+			_K.Remote.JailCollide:Fire(srvP1, srvJail)
+			c.world:run(0.05)
+			sert.eq(cliJail.CanCollide, false)
+			local streamedWall = c.ch1.env.Instance.new("Part")
+			streamedWall.CanCollide = false
+			streamedWall.Parent = cliJail
+			sert.eq(streamedWall.CanCollide, true)
+			srvJail:Destroy()
+			c.runSrv(";unjail TargetPlr")
+
+			-- #398: ;punish and ;respawn call Humanoid:UnequipTools() before removing/reloading character
+			local unequippedCount = 0
+			local humMethods = rawget(srvP2.Character:FindFirstChildOfClass("Humanoid"), "_methods")
+			local origUnequip = humMethods.UnequipTools
+			humMethods.UnequipTools = function(self)
+				unequippedCount += 1
+				if origUnequip then
+					origUnequip(self)
+				end
+			end
+			c.runSrv(";punish TargetPlr")
+			sert.eq(unequippedCount, 1)
+			c.runSrv(";unpunish TargetPlr")
+			c.runSrv(";respawn TargetPlr")
+			sert.eq(unequippedCount, 2)
+
+			-- #534: ;dog on R15 rig with AnimationConstraint joints modifies Attachment0.CFrame instead of throwing read-only C0 error
+			local r15Char = buildCharacter(c.sh.env, srvP2, Enum.HumanoidRigType.R15)
+			local upperTorso = r15Char:FindFirstChild("UpperTorso")
+			local existingWaist = upperTorso:FindFirstChild("Waist")
+			if existingWaist then
+				existingWaist:Destroy()
+			end
+			local att0 = c.sh.env.Instance.new("Attachment", upperTorso)
+			local origAttCFrame = CFrame.new(1, 2, 3)
+			att0.CFrame = origAttCFrame
+			local waistConstraint = c.sh.env.Instance.new("AnimationConstraint", upperTorso)
+			waistConstraint.Name = "Waist"
+			waistConstraint.Attachment0 = att0
+			c.runSrv(";dog TargetPlr")
+			sert.eq(att0.CFrame, origAttCFrame * CFrame.Angles(-math.rad(30), 0, 0))
+			c.runSrv(";undog TargetPlr")
+			sert.eq(att0.CFrame.Position, origAttCFrame.Position)
+
+			-- #532: ;face clears Head SpecialMesh.TextureId and MeshPart.TextureID and restores them on ;unface
+			local head = srvP2.Character:FindFirstChild("Head")
+			local headMesh = head:FindFirstChildOfClass("SpecialMesh") or c.sh.env.Instance.new("SpecialMesh", head)
+			headMesh.TextureId = "rbxassetid://999888"
+			c.runSrv(";face TargetPlr 1800")
+			sert.eq(headMesh.TextureId, "")
+			c.runSrv(";unface TargetPlr")
+			sert.eq(headMesh.TextureId, "rbxassetid://999888")
+
+			-- #255: ;bundle with BundleType == "DynamicHead" merges only Head and MoodAnimation onto existing HumanoidDescription
+			local assetSvc = c.sh.env.game:GetService("AssetService")
+			local playersSvc = c.sh.env.game:GetService("Players")
+			local assetMethods = rawget(assetSvc, "_methods")
+			local playersMethods = rawget(playersSvc, "_methods")
+			local origGetBundleDetails = assetMethods.GetBundleDetailsAsync
+			local origGetDescFromOutfit = playersMethods.GetHumanoidDescriptionFromOutfitIdAsync
+			assetMethods.GetBundleDetailsAsync = function(_self, bundleId)
+				if bundleId == 777 then
+					return {
+						BundleType = "DynamicHead",
+						Items = { { Type = "UserOutfit", Id = 888 } },
+					}
+				end
+				return origGetBundleDetails and origGetBundleDetails(_self, bundleId)
+			end
+			playersMethods.GetHumanoidDescriptionFromOutfitIdAsync = function(_self, outfitId)
+				if outfitId == 888 then
+					local d = c.sh.env.Instance.new("HumanoidDescription")
+					d.Head = 555444
+					d.MoodAnimation = 666333
+					d.Torso = 111222 -- should NOT overwrite player's existing Torso on DynamicHead bundle
+					return d
+				end
+				return origGetDescFromOutfit and origGetDescFromOutfit(_self, outfitId)
+			end
+			local hum = srvP2.Character:FindFirstChildOfClass("Humanoid")
+			local baseDesc = hum:FindFirstChildOfClass("HumanoidDescription")
+				or c.sh.env.Instance.new("HumanoidDescription", hum)
+			baseDesc.Torso = 424242
+			c.runSrv(";bundle TargetPlr 777")
+			local appliedDesc = hum:GetAppliedDescription()
+			sert.eq(appliedDesc.Head, 555444)
+			sert.eq(appliedDesc.MoodAnimation, 666333)
+			sert.eq(appliedDesc.Torso, 424242)
+			c.runSrv(";unbundle TargetPlr")
+			assetMethods.GetBundleDetailsAsync = origGetBundleDetails
+			playersMethods.GetHumanoidDescriptionFromOutfitIdAsync = origGetDescFromOutfit
+
+			-- #536: ;track defaults to persistent = true and auto-attaches when HumanoidRootPart streams in later
+			local cliLinkDef = clientK.Registry.commands.link
+			local cliP1 = c.ch1.env.Players.LocalPlayer
+			local cliP2 = c.ch1.env:addPlayer(2, "TargetPlr")
+			buildCharacter(c.ch1.env, cliP1)
+			-- Start with a character whose HumanoidRootPart hasn't streamed in yet
+			local partialChar = c.ch1.env.Instance.new("Model")
+			partialChar.Name = "TargetPlr"
+			cliP2.Character = partialChar
+			partialChar.Parent = c.ch1.env.workspace
+			cliLinkDef.runClient({ _K = clientK, env = cliLinkDef.env, from = 1 }, { cliP2 }, nil)
+			sert.eq(cliLinkDef.env.persist[cliP2] ~= nil, true)
+			sert.eq(cliLinkDef.env.watchCleanup[cliP2] ~= nil, true)
+			-- Now stream in HumanoidRootPart + Attachment
+			local streamedHrp = c.ch1.env.Instance.new("Part")
+			streamedHrp.Name = "HumanoidRootPart"
+			c.ch1.env.Instance.new("Attachment", streamedHrp)
+			streamedHrp.Parent = partialChar
+			c.world:run(0.05)
+			sert.eq(streamedHrp:FindFirstChild("_KLink") ~= nil, true)
+			-- Unlink cleans up both persist and watchCleanup
+			clientK.Registry.commands.unlink.runClient({ _K = clientK, env = cliLinkDef.env, from = 1 }, { cliP2 })
+			sert.eq(cliLinkDef.env.persist[cliP2], nil)
+			sert.eq(cliLinkDef.env.watchCleanup[cliP2], nil)
+		end
+	)
+
+	test(
+		"Slice 2 regressions: dog/undog exact Root.C0 identity, shirt nil AssetId, bodycolor/crm undo & ForceField textures, VIP single-asset purchases, antilag MeshPart/destroyed safety, team edits & RichText escaping, pre-load emotes preview, link/unlink race, and play/jumpscare/tts hardening",
+		function()
+			local c = createSimCluster()
+			local _K, clientK, srvP1, srvP2 = c._K, c.clientK, c.srvP1, c.srvP2
+
+			-- 1. dog / undog restores R15 Root.C0 (both Motor6D and AnimationConstraint) to exact original CFrame without drift
+			local dogChar = buildCharacter(c.sh.env, srvP2, Enum.HumanoidRigType.R15)
+			local rootMotor = dogChar.LowerTorso:FindFirstChild("Root")
+			local origRootC0 = CFrame.new(0.25, -1, 0.5) * CFrame.Angles(0.1, 0.2, -0.1)
+			rootMotor.C0 = origRootC0
+			for _ = 1, 3 do
+				c.runSrv(";dog TargetPlr")
+				sert.eq(rootMotor.C0:FuzzyEq(origRootC0), false)
+				c.runSrv(";undog TargetPlr")
+				sert.eq(rootMotor.C0:FuzzyEq(origRootC0), true)
+			end
+
+			-- 2. jumpscare and play reject <= 0, non-audio, and failed/nil GetProductInfoAsync
+			local playDef = _K.Registry.commands.play
+			local jumpDef = _K.Registry.commands.jumpscare
+			local playCtx = { _K = _K, env = playDef.env, from = 1, fromPlayer = srvP1 }
+			local jumpCtx = { _K = _K, env = jumpDef.env, from = 1, fromPlayer = srvP1 }
+			sert.eq(playDef.run(playCtx, 0), "Invalid audio asset.")
+			sert.eq(playDef.run(playCtx, -42), "Invalid audio asset.")
+			sert.eq(jumpDef.run(jumpCtx, { srvP2 }, nil, 0), "Invalid audio asset.")
+			sert.eq(jumpDef.run(jumpCtx, { srvP2 }, nil, -42), "Invalid audio asset.")
+
+			local marketMethods = rawget(_K.Service.Marketplace, "_methods")
+			local origGetProductInfo = marketMethods.GetProductInfoAsync
+			marketMethods.GetProductInfoAsync = function()
+				error("Marketplace HTTP timeout")
+			end
+			sert.eq(playDef.run(playCtx, 888777), "Invalid audio asset.")
+			sert.eq(jumpDef.run(jumpCtx, { srvP2 }, nil, 888777), "Invalid audio asset.")
+			-- Transient HTTP failure must not poison audioCache
+			sert.eq(playDef.env.audioCache[888777], nil)
+			sert.eq(jumpDef.env.audioCache[888777], nil)
+			marketMethods.GetProductInfoAsync = origGetProductInfo
+
+			-- 3. ;shirt / ;pants / ;tshirt with nil AssetId resets/destroys applied clothing cleanly without crashing Property.override
+			local shirtInst = srvP2.Character:FindFirstChildOfClass("Shirt")
+			shirtInst.ShirtTemplate = "rbxassetid://555"
+			c.runSrv(";shirt TargetPlr 1100")
+			sert.eq(string.find(shirtInst.ShirtTemplate, "1100", 1, true) ~= nil, true)
+			c.runSrv(";shirt TargetPlr") -- omitted AssetId == nil
+			sert.eq(shirtInst.ShirtTemplate, "rbxassetid://555")
+
+			-- Character originally without Shirt: created Shirt is destroyed on omitted AssetId, and bare ;shirt on shirtless character is a safe no-op
+			shirtInst:Destroy()
+			sert.eq(srvP2.Character:FindFirstChildOfClass("Shirt"), nil)
+			c.runSrv(";shirt TargetPlr")
+			sert.eq(srvP2.Character:FindFirstChildOfClass("Shirt"), nil)
+			c.runSrv(";shirt TargetPlr 1100")
+			sert.eq(srvP2.Character:FindFirstChildOfClass("Shirt") ~= nil, true)
+			c.runSrv(";shirt TargetPlr")
+			sert.eq(srvP2.Character:FindFirstChildOfClass("Shirt"), nil)
+
+			-- 4. bodycolor / unbodycolor and crm / uncrm undo aliases + ForceField texture restoration
+			buildCharacter(c.sh.env, srvP2, Enum.HumanoidRigType.R15)
+			local bc = srvP2.Character:FindFirstChildOfClass("BodyColors")
+			local origHeadColor = Color3.fromRGB(245, 205, 48)
+			bc.HeadColor3 = origHeadColor
+			c.runSrv(";bodycolor TargetPlr 255,0,0")
+			sert.eq(bc.HeadColor3, Color3.fromRGB(255, 0, 0))
+			-- ;unbodycolor with extra color arg still honors context.undo and restores original color
+			c.runSrv(";unbodycolor TargetPlr 0,255,0")
+			sert.eq(bc.HeadColor3, origHeadColor)
+
+			local headPart = srvP2.Character:FindFirstChild("Head")
+			headPart.TextureID = "rbxassetid://7001"
+			local headSpecialMesh = headPart:FindFirstChildOfClass("SpecialMesh")
+			headSpecialMesh.TextureId = "rbxassetid://7002"
+			local charShirt = srvP2.Character:FindFirstChildOfClass("Shirt")
+			charShirt.ShirtTemplate = "rbxassetid://7003"
+			local charPants = srvP2.Character:FindFirstChildOfClass("Pants")
+			charPants.PantsTemplate = "rbxassetid://7004"
+
+			-- Opaque crm clears textures
+			c.runSrv(";crm TargetPlr 255,0,0 0.25 SmoothPlastic")
+			sert.eq(headPart.TextureID, "")
+			sert.eq(headSpecialMesh.TextureId, "")
+			sert.eq(charShirt.ShirtTemplate, "")
+			sert.eq(charPants.PantsTemplate, "")
+
+			-- Switching to ForceField restores original textures while applying ForceField
+			c.runSrv(";crm TargetPlr 0,128,255 0 ForceField")
+			sert.eq(headPart.Material, Enum.Material.ForceField)
+			sert.eq(headPart.TextureID, "rbxassetid://7001")
+			sert.eq(headSpecialMesh.TextureId, "rbxassetid://7002")
+			sert.eq(charShirt.ShirtTemplate, "rbxassetid://7003")
+			sert.eq(charPants.PantsTemplate, "rbxassetid://7004")
+
+			-- ;uncrm with extra args honors context.undo and resets Material/Color/Reflectance
+			c.runSrv(";uncrm TargetPlr 255,0,0 0.5 Neon")
+			sert.eq(headPart.Reflectance, 0)
+
+			-- 5. VIP single-asset PromptPurchaseFinished credits chatCommandsLower and assetDonations when verified
+			local plrDonor = c.sh.env:addPlayer(55, "SingleAssetDonor")
+			plrDonor:SetAttribute("_KDonationLevel", 0)
+			local origOwnsAsset = marketMethods.PlayerOwnsAssetAsync
+			local ownedByDonor: { [number]: boolean } = {
+				[441133423] = true, -- assetDonations[1] -> level 1
+				[115403290087767] = true, -- chatCommandsLower[2] (Patron) -> level 2
+				[110019084552349] = true, -- chatCommands -> level 4
+			}
+			marketMethods.PlayerOwnsAssetAsync = function(_self, plr, id)
+				if plr == plrDonor then
+					return ownedByDonor[id] == true
+				end
+				return origOwnsAsset and origOwnsAsset(_self, plr, id) or false
+			end
+			_K.Service.Marketplace.PromptPurchaseFinished:Fire(plrDonor, 441133423, true)
+			c.world:run(0.5)
+			sert.eq(plrDonor:GetAttribute("_KDonationLevel"), 1)
+
+			_K.Service.Marketplace.PromptPurchaseFinished:Fire(plrDonor, 115403290087767, true)
+			c.world:run(0.5)
+			sert.eq(plrDonor:GetAttribute("_KDonationLevel"), 2)
+
+			_K.Service.Marketplace.PromptPurchaseFinished:Fire(plrDonor, 110019084552349, true)
+			c.world:run(0.5)
+			sert.eq(plrDonor:GetAttribute("_KDonationLevel"), 4)
+			marketMethods.PlayerOwnsAssetAsync = origOwnsAsset
+
+			-- 6. antilag resets MeshPart.TextureID and survives destroyed hidden instances on unantilag
+			local origDeferWait = clientK.Util.Defer.wait
+			clientK.Util.Defer.wait = function() end
+			local worldMesh = c.ch1.env.Instance.new("MeshPart", c.ch1.env.workspace)
+			worldMesh.Material = Enum.Material.Brick
+			worldMesh.TextureID = "rbxassetid://424242"
+			local worldDecalHolder = c.ch1.env.Instance.new("Part", c.ch1.env.workspace)
+			local worldDecal = c.ch1.env.Instance.new("Decal", worldDecalHolder)
+			local destroyedDecal = c.ch1.env.Instance.new("Decal", worldDecalHolder)
+			sert.eq(worldDecal.Parent, worldDecalHolder)
+
+			_K.Remote.AntiLag:Fire(srvP1, false)
+			c.world:run(0.1)
+			sert.eq(worldMesh.Material, Enum.Material.SmoothPlastic)
+			sert.eq(worldMesh.TextureID, "")
+			sert.eq(worldDecal.Parent, nil)
+			sert.eq(destroyedDecal.Parent, nil)
+
+			-- Destroy one hidden decal so its Parent is locked (throws on reparent), then verify unantilag still restores worldDecal
+			destroyedDecal:Destroy()
+			local okLocked = pcall(function()
+				destroyedDecal.Parent = worldDecalHolder
+			end)
+			sert.eq(okLocked, false)
+			_K.Remote.AntiLag:Fire(srvP1, true)
+			c.world:run(0.1)
+			clientK.Util.Defer.wait = origDeferWait
+			sert.eq(worldMesh.Material, Enum.Material.Brick)
+			sert.eq(worldMesh.TextureID, "rbxassetid://424242")
+			sert.eq(worldDecal.Parent, worldDecalHolder)
+			worldMesh:Destroy()
+			worldDecalHolder:Destroy()
+
+			-- 7. createteam / editteam / removeteam: optional preservation, duplicate checks, nil safety, BrickColor.palette, RichText escaping, and nil fromPlayer safety
+			local teams = c.sh.env.game:GetService("Teams")
+			for _, t in teams:GetChildren() do
+				t:Destroy()
+			end
+			local teamCtx = { _K = _K, from = 1, fromPlayer = srvP1, global = true, args = {} }
+			local createTeamRun = _K.Registry.commands.createteam.run
+			local editTeamRun = _K.Registry.commands.editteam.run
+			local removeTeamRun = _K.Registry.commands.removeteam.run
+
+			local lastNotifyText = ""
+			local origNotifyFire = _K.Remote.Notify.Fire
+			_K.Remote.Notify.Fire = function(selfRemote, plr, payload)
+				if type(payload) == "table" and type(payload.Text) == "string" then
+					lastNotifyText = payload.Text
+				end
+				return origNotifyFire(selfRemote, plr, payload)
+			end
+
+			sert.eq(createTeamRun(teamCtx, "<b>Alpha&One</b>", Color3.fromRGB(255, 0, 0), false), nil)
+			sert.eq(string.find(lastNotifyText, "&lt;b&gt;Alpha&amp;One&lt;/b&gt;", 1, true) ~= nil, true)
+			local alphaTeam = teams:FindFirstChild("<b>Alpha&One</b>")
+			sert.eq(alphaTeam ~= nil, true)
+			local origAlphaBrickColor = alphaTeam.TeamColor
+			sert.eq(alphaTeam.AutoAssignable, false)
+
+			sert.eq(createTeamRun(teamCtx, "BravoTeam", Color3.fromRGB(0, 0, 255), true), nil)
+			local bravoTeam = teams:FindFirstChild("BravoTeam")
+
+			-- editteam preserves TeamColor and AutoAssignable when omitted
+			sert.eq(editTeamRun(teamCtx, alphaTeam, "AlphaRenamed", nil, nil), nil)
+			sert.eq(alphaTeam.Name, "AlphaRenamed")
+			sert.eq(alphaTeam.TeamColor, origAlphaBrickColor)
+			sert.eq(alphaTeam.AutoAssignable, false)
+
+			-- editteam rejects name and color collisions with BravoTeam
+			sert.eq(
+				string.find(tostring(editTeamRun(teamCtx, alphaTeam, "bravoteam", nil, nil)), "already exists", 1, true)
+					~= nil,
+				true
+			)
+			sert.eq(
+				string.find(
+					tostring(editTeamRun(teamCtx, alphaTeam, "AlphaRenamed", bravoTeam.TeamColor.Color, nil)),
+					"already in use",
+					1,
+					true
+				) ~= nil,
+				true
+			)
+
+			-- editteam and removeteam safely handle nil team without crashing
+			sert.eq(editTeamRun(teamCtx, nil, "Missing", nil, nil), nil)
+			removeTeamRun(teamCtx, nil)
+
+			-- Ban notification escapes RichText in ban reason
+			_K.Registry.commands.ban.run(
+				{ _K = _K, from = 1, fromPlayer = srvP1, global = true, args = {} },
+				{ 2 },
+				0,
+				"<font color='bad'>Exploit & Spam"
+			)
+			sert.eq(string.find(lastNotifyText, "&lt;font", 1, true) ~= nil, true)
+			sert.eq(string.find(lastNotifyText, "Exploit &amp; Spam", 1, true) ~= nil, true)
+			_K.Data.bans["2"] = nil
+			_K.Remote.Notify.Fire = origNotifyFire
+
+			-- Nil fromPlayer under global context does not crash serverlock / bring / to / join / rejoin / spectate
+			local globalNilCtx = { _K = _K, from = 0, fromPlayer = nil, global = true, args = {} }
+			_K.Registry.commands.serverlock.run(globalNilCtx)
+			sert.eq(_K._serverLock ~= nil, true)
+			_K._serverLock = nil
+			_K.Registry.commands.bring.run(globalNilCtx, { srvP2 })
+			_K.Registry.commands.to.run(globalNilCtx, srvP2)
+			_K.Registry.commands.join.run(globalNilCtx, 2)
+			_K.Registry.commands.rejoin.run(globalNilCtx)
+			_K.Registry.commands.spectate.run(
+				{ _K = _K, env = _K.Registry.commands.spectate.env, from = 0, fromPlayer = nil, global = true },
+				srvP2
+			)
+
+			-- 8. ;emotes preview click before CreateHumanoidModelFromUserId resolves queues preview without crashing
+			local cliPlayersMethods = rawget(c.ch1.env.Players, "_methods")
+			local origCreateModel = cliPlayersMethods.CreateHumanoidModelFromUserId
+			local previewRigReady = false
+			cliPlayersMethods.CreateHumanoidModelFromUserId = function(selfPlr, uid)
+				while not previewRigReady do
+					c.ch1.env.task.wait(0.05)
+				end
+				return origCreateModel(selfPlr, uid)
+			end
+			clientK.Data.emoteItemFromId[7777] = {
+				emoteId = 7777,
+				animationId = 8888,
+				name = "QueuedDance",
+				nameLower = "queueddance",
+				owned = false,
+			}
+			-- Re-run setup via fresh emote envClient in ch1
+			local utilityDefs = c.ch1.env:require(c.ch1.Shared.DefaultCommands.Utility)
+			local emoteDefCli
+			for _, d in utilityDefs do
+				if d.name == "emote" then
+					emoteDefCli = d
+					break
+				end
+			end
+			local freshEmoteEnv = emoteDefCli.envClient(clientK)
+			-- Calling updatePreview even before task.defer runs and while CreateHumanoidModelFromUserId yields must not throw
+			freshEmoteEnv.updatePreview(7777)
+			c.world:run(0.05)
+			sert.eq(freshEmoteEnv.preview ~= nil, true)
+			sert.eq(freshEmoteEnv.preview.Visible, true)
+			sert.eq(freshEmoteEnv.preview.Title.Text, "QueuedDance")
+			previewRigReady = true
+			c.world:run(0.2)
+			cliPlayersMethods.CreateHumanoidModelFromUserId = origCreateModel
+
+			-- 9. link / unlink deferred race, cleanup[player], and localPlayer.Character == nil stream-in
+			local cliLinkDef = clientK.Registry.commands.link
+			local cliUnlinkDef = clientK.Registry.commands.unlink
+			local cliP1 = c.ch1.env.Players.LocalPlayer
+			local cliP3 = c.ch1.env:addPlayer(33, "RaceTarget")
+			local charP1 = buildCharacter(c.ch1.env, cliP1)
+			cliP1.Character = charP1
+			charP1.Parent = c.ch1.env.workspace
+			local charP3 = buildCharacter(c.ch1.env, cliP3)
+			cliP3.Character = charP3
+			charP3.Parent = c.ch1.env.workspace
+
+			cliLinkDef.runClient({ _K = clientK, env = cliLinkDef.env, from = 1 }, { cliP3 }, true)
+			sert.eq(charP3.HumanoidRootPart:FindFirstChild("_KLink") ~= nil, true)
+			sert.eq(cliLinkDef.env.cleanup[cliP3] ~= nil, true)
+
+			-- Queue deferred re-link via CharacterAdded, then immediately unlink before deferred runs
+			local respawnCharP3 = buildCharacter(c.ch1.env, cliP3)
+			cliP3.Character = respawnCharP3
+			respawnCharP3.Parent = c.ch1.env.workspace
+			cliP3.CharacterAdded:Fire(respawnCharP3)
+			cliUnlinkDef.runClient({ _K = clientK, env = cliLinkDef.env, from = 1 }, { cliP3 })
+			c.world:run(0.1)
+			sert.eq(respawnCharP3.HumanoidRootPart:FindFirstChild("_KLink"), nil)
+			sert.eq(cliLinkDef.env.active[cliP3], nil)
+			sert.eq(cliLinkDef.env.cleanup[cliP3], nil)
+
+			-- Link while localPlayer.Character == nil watches localPlayer.CharacterAdded and links on spawn
+			cliP1.Character = nil
+			cliLinkDef.runClient({ _K = clientK, env = cliLinkDef.env, from = 1 }, { cliP3 }, false)
+			sert.eq(respawnCharP3.HumanoidRootPart:FindFirstChild("_KLink"), nil)
+			local spawnedLocalChar = buildCharacter(c.ch1.env, cliP1)
+			cliP1.Character = spawnedLocalChar
+			spawnedLocalChar.Parent = c.ch1.env.workspace
+			cliP1.CharacterAdded:Fire(spawnedLocalChar)
+			c.world:run(0.1)
+			sert.eq(respawnCharP3.HumanoidRootPart:FindFirstChild("_KLink") ~= nil, true)
+			cliUnlinkDef.runClient({ _K = clientK, env = cliLinkDef.env, from = 1 }, { cliP3 })
+
+			-- 10. tts ignores RichText-only empty strings and cleans up instances when LoadAsync errors
+			local beforeChildren = #c.ch1.env.workspace:GetChildren()
+			c.runSrv(';tts "British male" "<b>   </b>"')
+			c.world:run(0.1)
+			sert.eq(#c.ch1.env.workspace:GetChildren(), beforeChildren)
+
+			-- Force AudioTextToSpeech:LoadAsync to throw and verify no Wire / AudioTextToSpeech leaks in workspace
+			local ttsConn = c.ch1.env.workspace.DescendantAdded:Connect(function(inst)
+				if inst.ClassName == "AudioTextToSpeech" then
+					local m = rawget(inst, "_methods") or {}
+					m.LoadAsync = function()
+						error("TTS LoadAsync failure")
+					end
+					rawset(inst, "_methods", m)
+				end
+			end)
+			c.world:run(61)
+			c.runSrv(';tts "British male" "Hello world"')
+			c.world:run(0.1)
+			ttsConn:Disconnect()
+			for _, child in c.ch1.env.workspace:GetChildren() do
+				sert.eq(child.ClassName ~= "AudioTextToSpeech", true)
+				sert.eq(child.ClassName ~= "AudioDeviceOutput", true)
+				sert.eq(child.ClassName ~= "Wire", true)
+			end
 		end
 	)
 end)

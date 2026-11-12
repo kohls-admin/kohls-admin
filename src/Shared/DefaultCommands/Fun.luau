@@ -1,5 +1,7 @@
 -- potentially abusive fun commands, moderator+ default
 
+local DOG_ROOT_OFFSET = CFrame.Angles(math.rad(-60), 0, 0) - Vector3.new(0, 0.5, 0)
+
 return {
 	{
 		name = "disco",
@@ -234,7 +236,19 @@ return {
 			},
 		},
 		env = function(_K)
+			local function multiplyJointC0(joint: Instance?, offset: CFrame)
+				if not joint then
+					return
+				end
+				if joint:IsA("JointInstance") then
+					joint.C0 *= offset
+				elseif joint:IsA("AnimationConstraint") and joint.Attachment0 then
+					joint.Attachment0.CFrame *= offset
+				end
+			end
+
 			return {
+				multiplyJointC0 = multiplyJointC0,
 				R6 = function(character)
 					if not (character and character.PrimaryPart) then
 						return
@@ -253,19 +267,19 @@ return {
 					local rightHip = torso:FindFirstChild("Right Hip")
 					local leftHip = torso:FindFirstChild("Left Hip")
 
-					if neck then
+					if neck and neck:IsA("JointInstance") then
 						neck.C0 = CFrame.new(0, -0.5, -2) * CFrame.Angles(math.rad(90), math.rad(180), 0)
 					end
-					if rightShoulder then
+					if rightShoulder and rightShoulder:IsA("JointInstance") then
 						rightShoulder.C0 = CFrame.new(0.5, -1.5, -1.5) * CFrame.Angles(0, math.pi / 2, 0)
 					end
-					if leftShoulder then
+					if leftShoulder and leftShoulder:IsA("JointInstance") then
 						leftShoulder.C0 = CFrame.new(-0.5, -1.5, -1.5) * CFrame.Angles(0, -math.pi / 2, 0)
 					end
-					if rightHip then
+					if rightHip and rightHip:IsA("JointInstance") then
 						rightHip.C0 = CFrame.new(1.5, -1, 1.5) * CFrame.Angles(0, math.pi / 2, 0)
 					end
-					if leftHip then
+					if leftHip and leftHip:IsA("JointInstance") then
 						leftHip.C0 = CFrame.new(-1.5, -1, 1.5) * CFrame.Angles(0, -math.pi / 2, 0)
 					end
 
@@ -312,27 +326,13 @@ return {
 					local rightHip = character:FindFirstChild("RightHip", true)
 					local leftHip = character:FindFirstChild("LeftHip", true)
 
-					if root then
-						root.C0 *= CFrame.Angles(-math.rad(60), 0, 0) - Vector3.new(0, 0.5, 0)
-					end
-					if waist then
-						waist.C0 *= CFrame.Angles(-math.rad(30), 0, 0)
-					end
-					if neck then
-						neck.C0 *= CFrame.Angles(math.pi / 2, 0, 0)
-					end
-					if rightShoulder then
-						rightShoulder.C0 *= CFrame.Angles(math.pi / 4, 0, 0)
-					end
-					if leftShoulder then
-						leftShoulder.C0 *= CFrame.Angles(math.pi / 4, 0, 0)
-					end
-					if rightHip then
-						rightHip.C0 *= CFrame.Angles(-math.pi / 4, 0, 0)
-					end
-					if leftHip then
-						leftHip.C0 *= CFrame.Angles(-math.pi / 4, 0, 0)
-					end
+					multiplyJointC0(root, DOG_ROOT_OFFSET)
+					multiplyJointC0(waist, CFrame.Angles(-math.rad(30), 0, 0))
+					multiplyJointC0(neck, CFrame.Angles(math.pi / 2, 0, 0))
+					multiplyJointC0(rightShoulder, CFrame.Angles(math.pi / 4, 0, 0))
+					multiplyJointC0(leftShoulder, CFrame.Angles(math.pi / 4, 0, 0))
+					multiplyJointC0(rightHip, CFrame.Angles(-math.pi / 4, 0, 0))
+					multiplyJointC0(leftHip, CFrame.Angles(-math.pi / 4, 0, 0))
 
 					local seat = _K.Flux.new "Seat" {
 						Name = "_KDogSeat",
@@ -411,19 +411,19 @@ return {
 					local rightHip = torso:FindFirstChild("Right Hip")
 					local leftHip = torso:FindFirstChild("Left Hip")
 
-					if neck then
+					if neck and neck:IsA("JointInstance") then
 						neck.C0 = CFrame.new(0, 1, 0) * CFrame.Angles(math.rad(90), math.rad(180), 0)
 					end
-					if rightShoulder then
+					if rightShoulder and rightShoulder:IsA("JointInstance") then
 						rightShoulder.C0 = CFrame.new(1, 0.5, 0) * CFrame.Angles(0, math.rad(90), 0)
 					end
-					if leftShoulder then
+					if leftShoulder and leftShoulder:IsA("JointInstance") then
 						leftShoulder.C0 = CFrame.new(-1, 0.5, 0) * CFrame.Angles(0, math.rad(-90), 0)
 					end
-					if rightHip then
+					if rightHip and rightHip:IsA("JointInstance") then
 						rightHip.C0 = CFrame.new(1, -1, 0) * CFrame.Angles(0, math.rad(90), 0)
 					end
-					if leftHip then
+					if leftHip and leftHip:IsA("JointInstance") then
 						leftHip.C0 = CFrame.new(-1, -1, 0) * CFrame.Angles(0, math.rad(-90), 0)
 					end
 				end,
@@ -437,6 +437,7 @@ return {
 						return
 					end
 
+					local multiplyJointC0 = _K.Registry.commands.dog.env.multiplyJointC0
 					local root = character:FindFirstChild("LowerTorso") and character.LowerTorso:FindFirstChild("Root")
 					local neck = character:FindFirstChild("Head") and character.Head:FindFirstChild("Neck")
 					local waist = character:FindFirstChild("UpperTorso")
@@ -446,27 +447,13 @@ return {
 					local rightHip = character:FindFirstChild("RightHip", true)
 					local leftHip = character:FindFirstChild("LeftHip", true)
 
-					if root then
-						root.C0 *= CFrame.Angles(math.rad(60), 0, 0) + Vector3.new(0, 0.5, 0)
-					end
-					if waist then
-						waist.C0 *= CFrame.Angles(math.rad(30), 0, 0)
-					end
-					if neck then
-						neck.C0 *= CFrame.Angles(-math.pi / 2, 0, 0)
-					end
-					if rightShoulder then
-						rightShoulder.C0 *= CFrame.Angles(-math.pi / 4, 0, 0)
-					end
-					if leftShoulder then
-						leftShoulder.C0 *= CFrame.Angles(-math.pi / 4, 0, 0)
-					end
-					if rightHip then
-						rightHip.C0 *= CFrame.Angles(math.pi / 4, 0, 0)
-					end
-					if leftHip then
-						leftHip.C0 *= CFrame.Angles(math.pi / 4, 0, 0)
-					end
+					multiplyJointC0(root, DOG_ROOT_OFFSET:Inverse())
+					multiplyJointC0(waist, CFrame.Angles(math.rad(30), 0, 0))
+					multiplyJointC0(neck, CFrame.Angles(-math.pi / 2, 0, 0))
+					multiplyJointC0(rightShoulder, CFrame.Angles(-math.pi / 4, 0, 0))
+					multiplyJointC0(leftShoulder, CFrame.Angles(-math.pi / 4, 0, 0))
+					multiplyJointC0(rightHip, CFrame.Angles(math.pi / 4, 0, 0))
+					multiplyJointC0(leftHip, CFrame.Angles(math.pi / 4, 0, 0))
 				end,
 			}
 		end,
@@ -631,6 +618,9 @@ return {
 			}
 		end,
 		run = function(context, player: Player)
+			if not context.fromPlayer then
+				return
+			end
 			local character = player and player.Character
 			if not character then
 				return `{player} doesn't have a character!`
@@ -720,6 +710,9 @@ return {
 		run = function(context, players: { Players }, decalId: string?, soundId: number?)
 			decalId = decalId or "rbxassetid://1119705746"
 			soundId = soundId or 130285917830946
+			if soundId <= 0 then
+				return "Invalid audio asset."
+			end
 			if soundId ~= 130285917830946 then
 				local isAudio = context.env.audioCache[soundId]
 				if isAudio == nil then
@@ -733,7 +726,7 @@ return {
 						context.env.audioCache[soundId] = isAudio
 					end
 				end
-				if isAudio == false then
+				if not isAudio then
 					return "Invalid audio asset."
 				end
 			end

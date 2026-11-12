@@ -387,10 +387,10 @@ if Util.Service.Run:IsServer() then
 			VIP.effects[player.UserId] = userEffects
 		end
 
-		userEffects.Title = if title then { Method = Title.Method, Params = { title, ... } } else nil
+		userEffects.Title = if title then { Method = Title.applyTitle, Params = { title, ... } } else nil
 
 		if player.Character then
-			Title.Method(player.Character, title, ...)
+			Title.applyTitle(player.Character, title, ...)
 		end
 	end
 
@@ -523,7 +523,23 @@ if Util.Service.Run:IsServer() then
 		return owned
 	end
 
-	local function handleAssetPurchase(player: Player, assetId: number, fromBulk: boolean?)
+	local function getAssetDonationLevel(assetId: number): number
+		if table.find(Purchasables.chatCommands, assetId) then
+			return 4
+		end
+		local lowerIndex = table.find(Purchasables.chatCommandsLower, assetId)
+		if lowerIndex then
+			return lowerIndex
+		end
+		for level = #assetDonations, 1, -1 do
+			if table.find(assetDonations[level], assetId) then
+				return level
+			end
+		end
+		return 0
+	end
+
+	local function handleAssetPurchase(player: Player, assetId: number, _fromBulk: boolean?)
 		local titles = {}
 		for _, definition in Title.definition do
 			if
@@ -534,11 +550,7 @@ if Util.Service.Run:IsServer() then
 			end
 		end
 
-		local chatLevel = if fromBulk
-			then (if table.find(Purchasables.chatCommands, assetId)
-				then 4
-				else table.find(Purchasables.chatCommandsLower, assetId) or 0)
-			else 0
+		local chatLevel = getAssetDonationLevel(assetId)
 
 		if
 			(ugcAssetMatch[assetId] or titles[1] or chatLevel > 0)

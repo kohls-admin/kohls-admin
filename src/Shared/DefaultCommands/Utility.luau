@@ -206,6 +206,25 @@ local function createEmotePreviewFrame(
 end
 
 local function setupEmotePreviewModel(_K: any, env: any, worldModel: WorldModel, state: any)
+	local pendingId: any = nil
+	local hasPending = false
+
+	function env.updatePreview(id)
+		pendingId = id
+		hasPending = true
+		state.previewId = id
+		if id then
+			state.cameraAngleX = 0
+			state.cameraAngleY = 180
+			state.cameraZ = 9
+			state.updateCamera()
+			local item = _K.Data.emoteItemFromId and _K.Data.emoteItemFromId[id]
+			if item and env.preview then
+				env.preview.Title.Text = item.name
+			end
+		end
+	end
+
 	task.spawn(function()
 		local ok, model = _K.Util.Retry(function()
 			return _K.Service.Players:CreateHumanoidModelFromUserId(math.max(1, _K.LocalPlayer.UserId))
@@ -231,12 +250,13 @@ local function setupEmotePreviewModel(_K: any, env: any, worldModel: WorldModel,
 		local animator = humanoid:WaitForChild("Animator")
 
 		local anim: Animation = Instance.new("Animation")
-		local animTrack: AnimationTrack
+		local animTrack: AnimationTrack?
 
 		function env.updatePreview(id)
 			if animTrack then
 				animTrack:Stop()
 				animTrack:Destroy()
+				animTrack = nil
 			end
 			state.previewId = id
 			if id then
@@ -244,13 +264,22 @@ local function setupEmotePreviewModel(_K: any, env: any, worldModel: WorldModel,
 				state.cameraAngleY = 180
 				state.cameraZ = 9
 				state.updateCamera()
-				local item = _K.Data.emoteItemFromId[id]
-				env.preview.Title.Text = item.name
-				anim.AnimationId = "rbxassetid://" .. item.animationId
-				animTrack = animator:LoadAnimation(anim)
-				animTrack.Looped = true
-				animTrack:Play()
+				local item = _K.Data.emoteItemFromId and _K.Data.emoteItemFromId[id]
+				if item then
+					if env.preview then
+						env.preview.Title.Text = item.name
+					end
+					anim.AnimationId = "rbxassetid://" .. item.animationId
+					local track: AnimationTrack = animator:LoadAnimation(anim)
+					track.Looped = true
+					track:Play()
+					animTrack = track
+				end
 			end
+		end
+
+		if hasPending then
+			env.updatePreview(pendingId)
 		end
 	end)
 end
@@ -468,8 +497,12 @@ local function createEmotesPlayButton(_K: any, UI: any, EMOTE: any, item: any)
 		function(button)
 			local _ = button.Activated:Connect(function()
 				if not item.lineData.owned and not hasEmoteAccess(_K, _K.LocalPlayer.UserId, _K.LocalPlayer) then
-					EMOTE.updatePreview(item.lineData.emoteId)
-					EMOTE.preview.Visible = true
+					if EMOTE.updatePreview then
+						EMOTE.updatePreview(item.lineData.emoteId)
+					end
+					if EMOTE.preview then
+						EMOTE.preview.Visible = true
+					end
 					return
 				end
 				if EMOTE.emoteId:peek() == item.lineData.emoteId then
@@ -539,8 +572,12 @@ local function createEmotesItem(_K: any, UI: any, EMOTE: any, self: any, initial
 			Size = UDim2.new(1, 0, 1, 0),
 			SizeConstraint = Enum.SizeConstraint.RelativeYY,
 			Activated = function()
-				EMOTE.updatePreview(item.lineData.emoteId)
-				EMOTE.preview.Visible = true
+				if EMOTE.updatePreview then
+					EMOTE.updatePreview(item.lineData.emoteId)
+				end
+				if EMOTE.preview then
+					EMOTE.preview.Visible = true
+				end
 			end,
 		},
 
@@ -928,6 +965,13 @@ return {
 
 			env.emoteId = emoteId
 
+			local earlyPendingId: any = nil
+			local hasEarlyPending = false
+			function env.updatePreview(id)
+				earlyPendingId = id
+				hasEarlyPending = true
+			end
+
 			task.defer(function()
 				while not _K.client do
 					task.wait()
@@ -971,6 +1015,12 @@ return {
 
 				env.preview = createEmotePreviewFrame(_K, UI, env, previewCamera, worldModel, state)
 				setupEmotePreviewModel(_K, env, worldModel, state)
+				if hasEarlyPending then
+					env.updatePreview(earlyPendingId)
+					if earlyPendingId ~= nil then
+						env.preview.Visible = true
+					end
+				end
 				connectEmoteBulkPurchase(_K, env, emoteId, ownsEmote, state)
 				createEmoteControlWindow(_K, UI, env, emoteId, ownsEmote)
 			end)
@@ -1226,6 +1276,9 @@ return {
 		description = "Rejoins the server.",
 
 		run = function(context)
+			if not context.fromPlayer then
+				return
+			end
 			local options = Instance.new("TeleportOptions")
 			options.ServerInstanceId = game.JobId
 			context._K.Util.SafeTeleport(game.PlaceId, { context.fromPlayer }, options)
@@ -1278,7 +1331,7 @@ return {
 					end
 				end
 				context._K.Data.members[key] = {
-					name = context.fromPlayer.Name,
+					name = if context.fromPlayer then context.fromPlayer.Name else tostring(context.from),
 					roles = roles or {},
 					persist = {},
 				}

@@ -165,7 +165,7 @@ stroke.Parent = title
 local gradient = Instance.new("UIGradient")
 gradient.Parent = title
 
-function Title.Method(character: Model, title: string?, color: Color3?, topColor: Color3?, font: Enum.Font?)
+function Title.applyTitle(character: Model, title: string?, color: Color3?, topColor: Color3?, font: Enum.Font?)
 	local titleGui = character:FindFirstChild("_K_Title")
 	if titleGui then
 		titleGui:Destroy()
@@ -193,6 +193,7 @@ function Title.Method(character: Model, title: string?, color: Color3?, topColor
 		titleGui.Title.Font = font
 	end
 end
+Title.Method = Title.applyTitle
 
 if RunService:IsClient() then
 	local titleCache = {}

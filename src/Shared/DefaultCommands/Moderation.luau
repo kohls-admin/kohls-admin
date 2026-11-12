@@ -168,16 +168,21 @@ return {
 			tasks:wait()
 
 			-- saved bans are kept unless the caller can use banasync
+			local escapeRichText = context._K.Util.String.escapeRichText
 			local bannedNames, keptNames = {}, {}
 			for _, userId in userIds do
-				table.insert(if table.find(banned, userId) then bannedNames else keptNames, names[userId])
+				table.insert(
+					if table.find(banned, userId) then bannedNames else keptNames,
+					escapeRichText(tostring(names[userId] or userId))
+				)
 			end
 
 			local lines = {}
 			if #bannedNames > 0 then
+				local safeReason = escapeRichText(reason or "no reason")
 				table.insert(
 					lines,
-					`Banned <b>{table.concat(bannedNames, ", ")}</b> for <b>{reason or "no reason"}</b>.\nDuration: <b>{term}</b>`
+					`Banned <b>{table.concat(bannedNames, ", ")}</b> for <b>{safeReason}</b>.\nDuration: <b>{term}</b>`
 				)
 			end
 			if #keptNames > 0 then
@@ -203,11 +208,12 @@ return {
 		},
 
 		run = function(context, bans)
+			local escapeRichText = context._K.Util.String.escapeRichText
 			local unbannedNames = {}
 			for i, userId in bans do
 				local ban = context._K.Data.bans[userId]
 				if ban then
-					table.insert(unbannedNames, ban[1] or userId)
+					table.insert(unbannedNames, escapeRichText(tostring(ban[1] or userId)))
 				end
 			end
 			context._K.Auth.unbanUsers(bans, context.from)
@@ -243,9 +249,15 @@ return {
 			end
 			if restrictedReason and context.args[2] then
 				context.args[2].parsedArgs = { restrictedReason }
+				if not context.global then
+					context.args[2].filtered = true
+				end
 				context.args[2].redactLog = false
 			elseif allowedReason and context.args[2] then
 				context.args[2].parsedArgs = { allowedReason }
+				if not context.global then
+					context.args[2].filtered = true
+				end
 			end
 			for _, player in players do
 				player:Kick(
@@ -254,7 +266,11 @@ return {
 						else restrictedReason
 				)
 			end
+			local escapeRichText = context._K.Util.String.escapeRichText
 			local names = context._K.Util.Suggest.getNames(players)
+			for i, name in names do
+				names[i] = escapeRichText(tostring(name))
+			end
 			context._K.Remote.Notify:Fire(
 				context.fromPlayer,
 				{ Text = `<b>Kicked:</b> <i>{table.concat(names, ", ")}</i>` }
@@ -442,6 +458,10 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				if player.Character then
+					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+					if humanoid then
+						humanoid:UnequipTools()
+					end
 					local oldChar = context.env.punished[player]
 					if oldChar then
 						oldChar:Destroy()
@@ -1816,11 +1836,20 @@ return {
 		envClient = function(_K)
 			local _ = _K.Remote.JailCollide:Connect(function(jail: Part)
 				if jail then
+					jail.CanCollide = false
 					for _, child in jail:GetChildren() do
 						if child:IsA("BasePart") then
 							child.CanCollide = true
 						end
 					end
+					local conn = jail.ChildAdded:Connect(function(child)
+						if child:IsA("BasePart") then
+							child.CanCollide = true
+						end
+					end)
+					jail.Destroying:Once(function()
+						conn:Disconnect()
+					end)
 				end
 			end)
 		end,
@@ -2061,24 +2090,31 @@ return {
 			local parentMap = {}
 			local _ = _K.Remote.AntiLag:Connect(function(undo: boolean?)
 				if undo then
-					for _, instance in game:GetDescendants() do
+					for _, instance in workspace:GetDescendants() do
 						if instance:HasTag("_K_Ignore") then
 							continue
 						end
 
-						if instance:IsA("BasePart") then
+						if instance:IsA("MeshPart") then
+							_K.Util.Property.reset(instance, "Material")
+							_K.Util.Property.reset(instance, "TextureID")
+						elseif instance:IsA("BasePart") and not instance:IsA("Terrain") then
 							_K.Util.Property.reset(instance, "Material")
 						end
 						_K.Util.Defer.wait()
 					end
 					for instance, parent in parentMap do
-						instance.Parent = parent
+						if parent then
+							pcall(function()
+								instance.Parent = parent
+							end)
+						end
 					end
 					table.clear(parentMap)
 					return
 				end
 
-				for _, instance in game:GetDescendants() do
+				for _, instance in workspace:GetDescendants() do
 					local parent = instance.Parent
 					local model = instance:FindFirstAncestorOfClass("Model")
 					local humanoid = model and model:FindFirstChildOfClass("Humanoid")
@@ -2090,11 +2126,11 @@ return {
 					if instance:IsA("Decal") or instance:IsA("Texture") then
 						parentMap[instance] = parent
 						instance.Parent = nil
-					elseif instance:IsA("BasePart") then
-						_K.Util.Property.override(instance, "Material", Enum.Material.SmoothPlastic)
 					elseif instance:IsA("MeshPart") then
 						_K.Util.Property.override(instance, "Material", Enum.Material.SmoothPlastic)
 						_K.Util.Property.override(instance, "TextureID", "")
+					elseif instance:IsA("BasePart") and not instance:IsA("Terrain") then
+						_K.Util.Property.override(instance, "Material", Enum.Material.SmoothPlastic)
 					end
 
 					_K.Util.Defer.wait()
@@ -2277,6 +2313,9 @@ return {
 		},
 
 		run = function(context, players)
+			if not (context.fromPlayer and context.fromPlayer.Character) then
+				return
+			end
 			for _, player in players do
 				if player == context.fromPlayer then
 					continue
@@ -2298,6 +2337,9 @@ return {
 		},
 
 		run = function(context, target)
+			if not (context.fromPlayer and context.fromPlayer.Character) then
+				return
+			end
 			local destination = if typeof(target) == "Vector3" then target else target.Character
 			context._K.Registry.commands.teleport.env.teleport(context.fromPlayer.Character, destination)
 		end,
@@ -2406,7 +2448,7 @@ return {
 				return "You're already in the same server!"
 			end
 
-			if placeId and jobId then
+			if placeId and jobId and context.fromPlayer then
 				local options = Instance.new("TeleportOptions")
 				options.ServerInstanceId = jobId
 				context._K.Util.SafeTeleport(placeId, { context.fromPlayer }, options)
@@ -2782,6 +2824,10 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if humanoid then
+					humanoid:UnequipTools()
+				end
 				player:LoadCharacterAsync()
 			end
 		end,
@@ -3266,6 +3312,49 @@ return {
 			},
 		},
 		run = function(context, name, color, autoAssignable)
+			local escapeRichText = context._K.Util.String.escapeRichText
+			local existingTeams = context._K.Service.Teams:GetTeams()
+			local lowerName = string.lower(name)
+			local usedColors = {}
+			for _, existing in existingTeams do
+				if string.lower(existing.Name) == lowerName then
+					return `Team "{existing.Name}" already exists.`
+				end
+				usedColors[existing.TeamColor.Name] = existing
+			end
+
+			local brickColor: BrickColor?
+			if color then
+				local chosen = BrickColor.new(color)
+				local conflict = usedColors[chosen.Name]
+				if conflict then
+					return `Team color "{chosen.Name}" is already in use by "{conflict.Name}".`
+				end
+				brickColor = chosen
+			else
+				local start = math.random(0, 127)
+				for offset = 0, 127 do
+					local candidate = BrickColor.palette((start + offset) % 128)
+					if not usedColors[candidate.Name] then
+						brickColor = candidate
+						break
+					end
+				end
+				if not brickColor then
+					for i = 1, 1032 do
+						local candidate = BrickColor.new(i)
+						if not usedColors[candidate.Name] then
+							brickColor = candidate
+							break
+						end
+					end
+				end
+				if not brickColor then
+					return "No unused team colors available."
+				end
+				color = brickColor.Color
+			end
+
 			if not context.global and context._K.Chat.hasRestrictedPeer(context.from) then
 				local err = context._K.Chat.cooldown(context.from, "team")
 				if err then
@@ -3277,17 +3366,16 @@ return {
 			end
 
 			local team = Instance.new("Team")
-			if not color then
-				color = BrickColor.random().Color
-			end
 			team.Name = name
-			team.TeamColor = BrickColor.new(color)
-			team.AutoAssignable = autoAssignable
+			team.TeamColor = brickColor
+			if autoAssignable ~= nil then
+				team.AutoAssignable = autoAssignable
+			end
 			team.Parent = context._K.Service.Teams
 
 			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				From = "_K",
-				Text = `<b>Created team:</b> <font color="#{color:ToHex()}">{name}</font>`,
+				Text = `<b>Created team:</b> <font color="#{color:ToHex()}">{escapeRichText(name)}</font>`,
 			})
 			return
 		end,
@@ -3326,7 +3414,21 @@ return {
 		},
 
 		run = function(context, team, name, color, autoAssignable)
+			local escapeRichText = context._K.Util.String.escapeRichText
 			if team and context._K.Service.Teams:FindFirstChild(team.Name) then
+				local lowerName = string.lower(name)
+				local newBrickColor = if color ~= nil then BrickColor.new(color) else nil
+				for _, existing in context._K.Service.Teams:GetTeams() do
+					if existing ~= team then
+						if string.lower(existing.Name) == lowerName then
+							return `Team "{existing.Name}" already exists.`
+						end
+						if newBrickColor and existing.TeamColor.Name == newBrickColor.Name then
+							return `Team color "{newBrickColor.Name}" is already in use by "{existing.Name}".`
+						end
+					end
+				end
+
 				if name ~= team.Name and not context.global and context._K.Chat.hasRestrictedPeer(context.from) then
 					local err = context._K.Chat.cooldown(context.from, "team")
 					if err then
@@ -3338,21 +3440,28 @@ return {
 				end
 
 				local oldColor, oldName = team.TeamColor.Color, team.Name
-				if not color then
-					color = BrickColor.random().Color
-				end
 				team.Name = name
-				team.TeamColor = BrickColor.new(color)
-				team.AutoAssignable = autoAssignable
+				if newBrickColor then
+					team.TeamColor = newBrickColor
+				end
+				if autoAssignable ~= nil then
+					team.AutoAssignable = autoAssignable
+				end
+				local finalColor = team.TeamColor.Color
 
 				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
-					Text = `<b>Edited team:</b> <font color="#{oldColor:ToHex()}">{oldName}</font> to <font color="#{color:ToHex()}">{name}</font>`,
+					Text = `<b>Edited team:</b> <font color="#{oldColor:ToHex()}">{escapeRichText(oldName)}</font> to <font color="#{finalColor:ToHex()}">{escapeRichText(
+						name
+					)}</font>`,
 				})
 			else
+				local teamDesc = if team
+					then ` <font color="#{team.TeamColor.Color:ToHex()}">{escapeRichText(team.Name)}</font>`
+					else ""
 				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
-					Text = `<b>Failed to edit team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
+					Text = `<b>Failed to edit team{if teamDesc ~= "" then ":" else "."}</b>{teamDesc}`,
 				})
 			end
 			return
@@ -3374,16 +3483,22 @@ return {
 		},
 
 		run = function(context, team)
+			local escapeRichText = context._K.Util.String.escapeRichText
 			if team and context._K.Service.Teams:FindFirstChild(team.Name) then
+				local teamColorHex = team.TeamColor.Color:ToHex()
+				local safeName = escapeRichText(team.Name)
 				team:Destroy()
 				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
-					Text = `<b>Removed team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
+					Text = `<b>Removed team:</b> <font color="#{teamColorHex}">{safeName}</font>`,
 				})
 			else
+				local teamDesc = if team
+					then ` <font color="#{team.TeamColor.Color:ToHex()}">{escapeRichText(team.Name)}</font>`
+					else ""
 				context._K.Remote.Notify:Fire(context.fromPlayer, {
 					From = "_K",
-					Text = `<b>Failed to remove team:</b> <font color="#{team.TeamColor.Color:ToHex()}">{team.Name}</font>`,
+					Text = `<b>Failed to remove team{if teamDesc ~= "" then ":" else "."}</b>{teamDesc}`,
 				})
 			end
 		end,

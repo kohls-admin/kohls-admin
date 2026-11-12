@@ -151,7 +151,10 @@ return {
 
 				local names = {}
 				for _, userId in userIds do
-					table.insert(names, context._K.Util.getUserInfo(userId).DisplayName)
+					table.insert(
+						names,
+						context._K.Util.String.escapeRichText(context._K.Util.getUserInfo(userId).DisplayName)
+					)
 				end
 
 				context._K.Remote.Notify:Fire(context.fromPlayer, {
@@ -211,7 +214,10 @@ return {
 
 				local names = {}
 				for _, userId in userIds do
-					table.insert(names, context._K.Util.getUserInfo(userId).DisplayName)
+					table.insert(
+						names,
+						context._K.Util.String.escapeRichText(context._K.Util.getUserInfo(userId).DisplayName)
+					)
 				end
 
 				context._K.Remote.Notify:Fire(context.fromPlayer, {
@@ -243,12 +249,13 @@ return {
 		},
 
 		run = function(context, members, roles)
+			local escapeRichText = context._K.Util.String.escapeRichText
 			local membersUnroled = {}
 			for _, userId in members do
 				local member = context._K.Data.members[tostring(userId)]
 				for _, role in roles do
 					if context._K.Auth.userRoleRemove(userId, role) then
-						table.insert(membersUnroled, member and member.name or userId)
+						table.insert(membersUnroled, escapeRichText(tostring(member and member.name or userId)))
 					end
 				end
 			end
@@ -285,6 +292,7 @@ return {
 		},
 
 		run = function(context, members)
+			local escapeRichText = context._K.Util.String.escapeRichText
 			local membersUnroled = {}
 			for _, userId in members do
 				local key = tostring(userId)
@@ -313,7 +321,7 @@ return {
 							context._K.Hook.roleRemoved:Fire(userIdNumber, roleId)
 						end
 					end
-					table.insert(membersUnroled, member.name or key)
+					table.insert(membersUnroled, escapeRichText(tostring(member.name or key)))
 				end
 			end
 
@@ -395,7 +403,9 @@ return {
 				return "Model has been blocked."
 			end
 			result.Parent = workspace
-			result:MoveTo(context.fromPlayer.Character:GetPivot().Position)
+			if context.fromPlayer and context.fromPlayer.Character then
+				result:MoveTo(context.fromPlayer.Character:GetPivot().Position)
+			end
 			result:MakeJoints()
 			table.insert(context._K.cleanupCommands, result)
 			return
@@ -441,7 +451,9 @@ return {
 		args = {},
 		run = function(context)
 			if not context._K._serverLock then
-				context._K._serverLock = context.fromPlayer.Name
+				context._K._serverLock = if context.fromPlayer
+					then context.fromPlayer.Name
+					else tostring(context.from or true)
 				context._K.Remote.Notify:FireAll({
 					Text = "The server has been <b>locked</b>.",
 					From = context.from,

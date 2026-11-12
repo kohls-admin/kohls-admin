@@ -1346,6 +1346,134 @@ describe("DefaultTypes · Image & Emote", function()
 		local sugText = emoteType.suggestions("salute")
 		sert.eq(sugText[1], "Salute")
 	end)
+
+	test(
+		"server Emote registers Remote synchronously, queues pre-load clients, flushes on load or error, cleans PlayerRemoving, and prevents duplicate catalog pushes",
+		function()
+			local h = Harness.newEnv({ isStudio = false })
+			local plrA = h.env:addPlayer(101, "EarlyJoiner")
+			local plrB = h.env:addPlayer(102, "LeavingJoiner")
+			local plrC = h.env:addPlayer(103, "LateJoiner")
+
+			local avatarEditor = h.env.game:GetService("AvatarEditorService")
+			local avatarMethods = rawget(avatarEditor, "_methods") or {}
+			local catalogReady = false
+			local failCatalog = false
+			avatarMethods.SearchCatalogAsync = function()
+				while not catalogReady do
+					h.env.task.wait(0.05)
+				end
+				if failCatalog then
+					error("Catalog service unavailable")
+				end
+				return {
+					GetCurrentPage = function()
+						return {
+							{ Id = 3301, Name = "CatalogWave", IsPurchasable = true },
+							{ Id = 3302, Name = "CatalogCheer", IsPurchasable = false },
+						}
+					end,
+					IsFinished = true,
+					AdvanceToNextPageAsync = function() end,
+				}
+			end
+			rawset(avatarEditor, "_methods", avatarMethods)
+
+			h.env.marketplace.products[3301] = {
+				AssetId = 3301,
+				Name = "CatalogWave",
+				AssetTypeId = Enum.AssetType.EmoteAnimation.Value,
+				IsForSale = true,
+			}
+			h.env.marketplace.products[3302] = {
+				AssetId = 3302,
+				Name = "CatalogCheer",
+				AssetTypeId = Enum.AssetType.EmoteAnimation.Value,
+				IsForSale = false,
+			}
+			local insertMethods = rawget(h.env.game:GetService("InsertService"), "_methods") or {}
+			insertMethods.LoadAsset = function(_self: any, id: number)
+				local model = h.env.Instance.new("Model")
+				local anim = h.env.Instance.new("Animation", model)
+				anim.AnimationId = `rbxassetid://{8000 + id}`
+				return model
+			end
+			rawset(h.env.game:GetService("InsertService"), "_methods", insertMethods)
+
+			h:requireData()
+			local _K = h:requireK()
+
+			local sentPayloads: { [any]: { any } } = {}
+			local remote = _K.Remote.EmoteType
+			local origFire = remote.Fire
+			remote.Fire = function(selfRemote: any, targetPlr: any, payload: any)
+				sentPayloads[targetPlr] = sentPayloads[targetPlr] or {}
+				table.insert(sentPayloads[targetPlr], payload)
+				return origFire(selfRemote, targetPlr, payload)
+			end
+
+			-- Fire server signal before catalog load finishes
+			sert.eq(remote._signal ~= nil, true)
+			remote._signal:Fire(plrA)
+			remote._signal:Fire(plrB)
+			-- LeavingJoiner disconnects before catalog finishes
+			_K.Service.Players.PlayerRemoving:Fire(plrB)
+			h.env:step(0.05)
+			sert.eq(sentPayloads[plrA], nil)
+			sert.eq(sentPayloads[plrB], nil)
+
+			-- Release catalog load; EarlyJoiner receives flushed emotes, LeavingJoiner does not
+			catalogReady = true
+			h.env:step(0.5)
+			sert.eq(sentPayloads[plrA] ~= nil and #sentPayloads[plrA] == 1, true)
+			sert.eq(#sentPayloads[plrA][1], 2)
+			sert.eq(sentPayloads[plrB], nil)
+
+			-- Duplicate Remote fire from EarlyJoiner is ignored; LateJoiner receives immediately
+			remote._signal:Fire(plrA)
+			remote._signal:Fire(plrC)
+			sert.eq(#sentPayloads[plrA], 1)
+			sert.eq(sentPayloads[plrC] ~= nil and #sentPayloads[plrC] == 1, true)
+
+			-- Re-initializing Emote module does not push duplicate items into _K.Data.emotes
+			local countBefore = #_K.Data.emotes
+			local emoteModule = h.env:require(h.Shared:WaitForChild("DefaultTypes"):WaitForChild("Emote"))
+			emoteModule(_K)
+			h.env:step(0.5)
+			sert.eq(#_K.Data.emotes, countBefore)
+
+			-- Even when catalog search errors completely, pre-load pending clients still flush cleanly
+			local hErr = Harness.newEnv({ isStudio = false })
+			local plrErr = hErr.env:addPlayer(201, "ErrorJoiner")
+			local errAvatar = hErr.env.game:GetService("AvatarEditorService")
+			local errReady = false
+			rawset(errAvatar, "_methods", {
+				SearchCatalogAsync = function()
+					while not errReady do
+						hErr.env.task.wait(0.05)
+					end
+					error("Catalog outage")
+				end,
+			})
+			hErr:requireData()
+			local errK = hErr:requireK()
+			local flushedOnError = 0
+			local origErrFire = errK.Remote.EmoteType.Fire
+			errK.Remote.EmoteType.Fire = function(selfRemote: any, targetPlr: any, payload: any)
+				if targetPlr == plrErr then
+					flushedOnError += 1
+				end
+				return origErrFire(selfRemote, targetPlr, payload)
+			end
+			errK.Remote.EmoteType._signal:Fire(plrErr)
+			sert.eq(flushedOnError, 0)
+			errReady = true
+			for _ = 1, 10 do
+				hErr.env:step(20)
+			end
+			sert.eq(flushedOnError, 1)
+		end
+	)
 end)
 
 describe("DefaultTypes · Player, UserId & Prefix Matchers", function()

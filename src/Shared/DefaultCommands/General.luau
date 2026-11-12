@@ -936,108 +936,191 @@ return {
 		},
 		envClient = function(_K)
 			local localPlayer = _K.Service.Players.LocalPlayer
-			local persist, link = {}, nil
+			local active, persist, watchCleanup, cleanup, link = {}, {}, {}, {}, nil
+
+			local function relink(player: Player?)
+				if not player or not active[player] then
+					return
+				end
+				link(player)
+			end
 
 			local function characterAddedHandler(character: Model)
-				task.defer(link, _K.Service.Players:GetPlayerFromCharacter(character))
+				task.defer(relink, _K.Service.Players:GetPlayerFromCharacter(character))
+			end
+
+			local function watchForStreamIn(player: Player)
+				_K.Flux.dispose(watchCleanup[player])
+				local conns = {}
+				watchCleanup[player] = conns
+
+				local function tryRelink(inst: Instance)
+					if inst.Name == "HumanoidRootPart" or inst:IsA("Attachment") then
+						task.defer(relink, player)
+					end
+				end
+
+				if player.Character then
+					table.insert(conns, player.Character.DescendantAdded:Connect(tryRelink))
+				else
+					table.insert(conns, player.CharacterAdded:Once(characterAddedHandler))
+				end
+				if localPlayer then
+					if localPlayer.Character then
+						table.insert(conns, localPlayer.Character.DescendantAdded:Connect(tryRelink))
+					else
+						table.insert(
+							conns,
+							localPlayer.CharacterAdded:Once(function()
+								task.defer(relink, player)
+							end)
+						)
+					end
+				end
 			end
 
 			link = function(player: Player, persistent: boolean?)
+				if not player then
+					return
+				end
+				if persistent ~= nil then
+					active[player] = true
+				elseif not active[player] then
+					return
+				end
 				if persistent and not persist[player] then
 					persist[player] = player.CharacterAdded:Connect(characterAddedHandler)
+				elseif persistent == false and persist[player] then
+					persist[player]:Disconnect()
+					persist[player] = nil
 				end
 
-				local playerRoot = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				local character = player.Character
+				local playerRoot = character and character:FindFirstChild("HumanoidRootPart")
 				local localRoot = localPlayer
 					and localPlayer.Character
 					and localPlayer.Character:FindFirstChild("HumanoidRootPart")
 				local playerAttachment = playerRoot and playerRoot:FindFirstChildOfClass("Attachment")
 				local localAttachment = localRoot and localRoot:FindFirstChildOfClass("Attachment")
-
-				if playerAttachment and localAttachment then
-					local billboard = playerRoot:FindFirstChild("_KLink")
-					if billboard then
-						billboard:Destroy()
-					end
-
-					billboard = Instance.new("BillboardGui")
-					billboard.Name = "_KLink"
-					billboard.LightInfluence = 0
-					billboard.AlwaysOnTop = true
-					billboard.Size = (player.DisplayName == player.Name) and UDim2.fromOffset(250, 35)
-						or UDim2.fromOffset(250, 50)
-					billboard.SizeOffset = Vector2.new(0, 0.5)
-					billboard.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
-
-					local beam = Instance.new("Beam")
-					beam.Color = ColorSequence.new(player.TeamColor.Color)
-					beam.Brightness = 2
-					beam.FaceCamera = true
-					beam.Segments = 1
-					beam.Transparency = NumberSequence.new(0)
-					beam.Width0 = 0.2
-					beam.Width1 = 0.2
-					beam.Attachment0 = playerAttachment
-					beam.Attachment1 = localAttachment
-					beam.Parent = billboard
-
-					local label = Instance.new("TextLabel")
-					label.TextColor3 = player.TeamColor.Color
-					label.BackgroundTransparency = 1
-					label.Font = Enum.Font.RobotoMono
-					label.RichText = true
-					label.TextScaled = true
-					label.Size = UDim2.fromScale(1, 1)
-					label.Text = (player.DisplayName == player.Name) and `@{player.Name}`
-						or `{player.DisplayName}\n@{player.Name}`
-					label.Parent = billboard
-					billboard.Parent = playerRoot
-
-					local cleanup = {
-						billboard,
-						player:GetPropertyChangedSignal("TeamColor"):Connect(function()
-							beam.Color = ColorSequence.new(player.TeamColor.Color)
-							label.TextColor3 = player.TeamColor.Color
-						end),
-					}
-
-					local function cleanLink()
-						_K.Flux.dispose(cleanup)
-					end
-
-					billboard.Destroying:Once(cleanLink)
-					localPlayer.CharacterRemoving:Once(cleanLink)
-
-					task.spawn(function()
-						local originalLabel = label.Text
-						while billboard and billboard.Parent do
-							local ok, distance = pcall(function()
-								return (localAttachment.WorldPosition - playerAttachment.WorldPosition).Magnitude
-							end)
-							if not ok then
-								break
-							end
-							label.Text = `{originalLabel}\n[{math.round(distance)}]`
-							task.wait(0.1)
-						end
-					end)
+				if not (character and playerAttachment and localAttachment) then
+					watchForStreamIn(player)
+					return
 				end
+
+				_K.Flux.dispose(watchCleanup[player])
+				watchCleanup[player] = character.ChildAdded:Connect(function(child)
+					if child.Name == "HumanoidRootPart" then
+						task.defer(relink, player)
+					end
+				end)
+
+				_K.Flux.dispose(cleanup[player])
+				cleanup[player] = nil
+
+				local existing = playerRoot:FindFirstChild("_KLink")
+				if existing then
+					existing:Destroy()
+				end
+
+				local billboard = Instance.new("BillboardGui")
+				billboard.Name = "_KLink"
+				billboard.LightInfluence = 0
+				billboard.AlwaysOnTop = true
+				billboard.Size = (player.DisplayName == player.Name) and UDim2.fromOffset(250, 35)
+					or UDim2.fromOffset(250, 50)
+				billboard.SizeOffset = Vector2.new(0, 0.5)
+				billboard.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
+
+				local beam = Instance.new("Beam")
+				beam.Color = ColorSequence.new(player.TeamColor.Color)
+				beam.Brightness = 2
+				beam.FaceCamera = true
+				beam.Segments = 1
+				beam.Transparency = NumberSequence.new(0)
+				beam.Width0 = 0.2
+				beam.Width1 = 0.2
+				beam.Attachment0 = playerAttachment
+				beam.Attachment1 = localAttachment
+				beam.Parent = billboard
+
+				local label = Instance.new("TextLabel")
+				label.TextColor3 = player.TeamColor.Color
+				label.BackgroundTransparency = 1
+				label.Font = Enum.Font.RobotoMono
+				label.RichText = true
+				label.TextScaled = true
+				label.Size = UDim2.fromScale(1, 1)
+				label.Text = (player.DisplayName == player.Name) and `@{player.Name}`
+					or `{player.DisplayName}\n@{player.Name}`
+				label.Parent = billboard
+				billboard.Parent = playerRoot
+
+				local playerCleanup
+				local function cleanLink()
+					if cleanup[player] == playerCleanup then
+						cleanup[player] = nil
+					end
+					_K.Flux.dispose(playerCleanup)
+				end
+				playerCleanup = {
+					billboard,
+					player:GetPropertyChangedSignal("TeamColor"):Connect(function()
+						beam.Color = ColorSequence.new(player.TeamColor.Color)
+						label.TextColor3 = player.TeamColor.Color
+					end),
+					billboard.Destroying:Once(cleanLink),
+				}
+				if localPlayer then
+					table.insert(playerCleanup, localPlayer.CharacterRemoving:Connect(cleanLink))
+				end
+				cleanup[player] = playerCleanup
+
+				task.spawn(function()
+					local originalLabel = label.Text
+					while billboard and billboard.Parent do
+						local ok, distance = pcall(function()
+							return (localAttachment.WorldPosition - playerAttachment.WorldPosition).Magnitude
+						end)
+						if not ok then
+							break
+						end
+						label.Text = `{originalLabel}\n[{math.round(distance)}]`
+						task.wait(0.1)
+					end
+				end)
 			end
 
 			local _ = localPlayer.CharacterAdded:Connect(function()
 				for player in persist do
-					task.defer(link, player)
+					task.defer(relink, player)
 				end
 			end)
 
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
+				active[player] = nil
+				if persist[player] then
+					persist[player]:Disconnect()
+					persist[player] = nil
+				end
+				_K.Flux.dispose(watchCleanup[player])
+				watchCleanup[player] = nil
+				_K.Flux.dispose(cleanup[player])
+				cleanup[player] = nil
+			end)
+
 			return {
+				active = active,
+				cleanup = cleanup,
 				persist = persist,
+				watchCleanup = watchCleanup,
 				link = link,
 			}
 		end,
 
 		runClient = function(context, players, persistent)
+			persistent = if persistent == nil then true else persistent
 			for _, player in players do
+				context.env.active[player] = true
 				context.env.link(player, persistent)
 			end
 		end,
@@ -1056,11 +1139,23 @@ return {
 		},
 
 		runClient = function(context, players)
+			local linkEnv = context._K.Registry.commands.link.env
 			for _, player in players do
-				local connection = context._K.Registry.commands.link.env.persist[player]
+				if linkEnv.active then
+					linkEnv.active[player] = nil
+				end
+				local connection = linkEnv.persist[player]
 				if connection then
 					connection:Disconnect()
-					context._K.Registry.commands.link.env.persist[player] = nil
+					linkEnv.persist[player] = nil
+				end
+				if linkEnv.watchCleanup then
+					context._K.Flux.dispose(linkEnv.watchCleanup[player])
+					linkEnv.watchCleanup[player] = nil
+				end
+				if linkEnv.cleanup then
+					context._K.Flux.dispose(linkEnv.cleanup[player])
+					linkEnv.cleanup[player] = nil
 				end
 				local playerRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 				local link = playerRoot and playerRoot:FindFirstChild("_KLink")
@@ -1265,6 +1360,9 @@ return {
 			end)
 		end,
 		run = function(context, player)
+			if not context.fromPlayer then
+				return
+			end
 			context.env.spectateCleanup(context)
 			if not context.env.spectators[player] then
 				context.env.spectators[player] = {}
@@ -1605,6 +1703,8 @@ return {
 				VR = "🥽",
 			}
 
+			local escapeRichText = context._K.Util.String.escapeRichText
+
 			-- stylua: ignore
 			local info = {
 				`<b>Account Age:</b> {context._K.Util.Time.readable(player.AccountAge * 86400) or "?"}`,
@@ -1612,7 +1712,7 @@ return {
 				`<b>Muted:</b> {if context._K.Data.muted[player.UserId] then "✅" else "❌"}\t<b>Verified:</b> {if player:IsVerified() then "✅" else "❌"}`,
 				`<b>Platform:</b> {if platform then `{platformEmoji[platform]} {platform}` else "?"}`,
 				`<b>Session:</b> {if sessionStart then context._K.Util.Time.readable(workspace:GetServerTimeNow() - sessionStart) else "?"}`,
-				`<b>Team:</b> <font color="{teamColor}">{player.Team and player.Team.Name or "None"}</font>`,
+				`<b>Team:</b> <font color="{teamColor}">{escapeRichText(player.Team and player.Team.Name or "None")}</font>`,
 				`<b>UserId:</b> {player.UserId}`,
 			}
 
@@ -1623,16 +1723,16 @@ return {
 			if player.FollowUserId > 0 then
 				local followInfo = context._K.Util.getUserInfo(player.FollowUserId)
 				local displayName = if followInfo.DisplayName ~= followInfo.Username
-					then " " .. followInfo.DisplayName
+					then " " .. escapeRichText(followInfo.DisplayName)
 					else ""
-				table.insert(info, `<b>Joined:</b>{displayName} @{followInfo.Username}`)
+				table.insert(info, `<b>Joined:</b>{displayName} @{escapeRichText(followInfo.Username)}`)
 			end
 
 			local joinedBy = {}
 			for _, v in context._K.Service.Players:GetPlayers() do
 				if v.FollowUserId == player.UserId then
-					local displayName = if v.DisplayName ~= v.Name then v.DisplayName .. " " else ""
-					table.insert(joinedBy, `{displayName}@{v.Name}`)
+					local displayName = if v.DisplayName ~= v.Name then escapeRichText(v.DisplayName) .. " " else ""
+					table.insert(joinedBy, `{displayName}@{escapeRichText(v.Name)}`)
 				end
 			end
 			if #joinedBy > 0 then
@@ -1713,9 +1813,15 @@ return {
 
 			-- speech is built locally from the text filtered through TextChatService
 			_K.Chat.onMessage("tts", function(text: string, _from: number, voiceId: number?)
+				local stripped =
+					_K.Util.String.trim(_K.Util.String.unescapeRichText((string.gsub(text, "<[^>]*>", ""))))
+				if stripped == "" then
+					return
+				end
+
 				local audioTextToSpeech: AudioTextToSpeech = Instance.new("AudioTextToSpeech")
 				-- speak the words, not the restored rich text tags
-				audioTextToSpeech.Text = _K.Util.String.unescapeRichText((string.gsub(text, "<[^>]*>", "")))
+				audioTextToSpeech.Text = stripped
 				audioTextToSpeech.VoiceId = tostring(tonumber(voiceId) or 1)
 				audioTextToSpeech.Parent = workspace
 
@@ -1728,17 +1834,26 @@ return {
 				wire.SourceInstance = audioTextToSpeech
 				wire.TargetInstance = deviceOutput
 
+				local cleaned = false
 				local function cleanup()
-					audioTextToSpeech:Unload()
+					if cleaned then
+						return
+					end
+					cleaned = true
+					pcall(audioTextToSpeech.Unload, audioTextToSpeech)
 					audioTextToSpeech:Destroy()
 					deviceOutput:Destroy()
 					wire:Destroy()
 				end
 
-				local status = audioTextToSpeech:LoadAsync()
-				if status == Enum.AssetFetchStatus.Success then
+				local ok, status = pcall(audioTextToSpeech.LoadAsync, audioTextToSpeech)
+				if ok and status == Enum.AssetFetchStatus.Success then
 					audioTextToSpeech.Ended:Once(cleanup)
-					audioTextToSpeech:Play()
+					task.delay(30, cleanup)
+					local okPlay = pcall(audioTextToSpeech.Play, audioTextToSpeech)
+					if not okPlay then
+						cleanup()
+					end
 				else
 					cleanup()
 				end
@@ -1768,16 +1883,19 @@ return {
 			return { playing = nil, audioCache = {} }
 		end,
 		run = function(context, assetId)
+			if assetId <= 0 then
+				return "Invalid audio asset."
+			end
 			local isAudio = context.env.audioCache[assetId]
 			if isAudio == nil then
-				local ok, info =
-					pcall(context._K.Service.Marketplace.GetProductInfoAsync, context._K.Service.Marketplace, assetId)
+				local marketplace = context._K.Service.Marketplace
+				local ok, info = pcall(marketplace.GetProductInfoAsync, marketplace, assetId)
 				if ok and type(info) == "table" and info.AssetTypeId ~= nil then
 					isAudio = info.AssetTypeId == Enum.AssetType.Audio.Value
 					context.env.audioCache[assetId] = isAudio
 				end
 			end
-			if isAudio == false then
+			if not isAudio then
 				return "Invalid audio asset."
 			end
 
