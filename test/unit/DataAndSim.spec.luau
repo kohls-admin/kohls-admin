@@ -1,7 +1,7 @@
 local Harness = require("./Harness")
 local sert = require("../sert")
 
-local describe, test, expect = sert.describe, sert.test, sert.expect
+local describe, test = sert.describe, sert.test
 
 describe("Data · Schema Codecs & ChunkChanges Laws", function()
 	local CHUNK_STAMPS = { -1, 0, 1700000000 }
@@ -65,39 +65,31 @@ describe("Data · Schema Codecs & ChunkChanges Laws", function()
 		local HttpService = h.env.game:GetService("HttpService")
 		local LIMIT = 32 * 1000 - 32
 
-		sert.laws.chunk({
-			name = "Data.ChunkChanges",
-			minSize = LIMIT,
-			maxSize = LIMIT,
-			gen = function(g)
-				local update: { [string]: any } = {}
-				local count = g:int(1, 20)
-				for i = 1, count do
-					update[`user_{i}_{g:int(1, 999)}`] = {
-						`Player{i}`,
-						g:string("abcdefghij ", 2, 40),
-						g:pick(CHUNK_STAMPS),
-						1,
-					}
-				end
-				return { bans = { update = update } }
-			end,
-			chunk = chunkChanges,
-			measure = function(piece)
-				return #HttpService:JSONEncode(piece)
-			end,
-			join = function(pieces)
-				local mergedUpdate: { [string]: any } = {}
-				for _, piece in pieces do
-					if piece.bans and piece.bans.update then
-						for k, v in piece.bans.update do
-							mergedUpdate[k] = v
-						end
+		sert.prop("Data.ChunkChanges", function(g)
+			local update: { [string]: any } = {}
+			local count = g:int(1, 20)
+			for i = 1, count do
+				update[`user_{i}_{g:int(1, 999)}`] = {
+					`Player{i}`,
+					g:string("abcdefghij ", 2, 40),
+					g:pick(CHUNK_STAMPS),
+					1,
+				}
+			end
+			local input = { bans = { update = update } }
+			local pieces = chunkChanges(input)
+			sert.eq(#pieces >= 1, true)
+			local mergedUpdate: { [string]: any } = {}
+			for _, piece in pieces do
+				sert.eq(#HttpService:JSONEncode(piece) <= LIMIT, true)
+				if piece.bans and piece.bans.update then
+					for k, v in piece.bans.update do
+						mergedUpdate[k] = v
 					end
 				end
-				return { bans = { update = mergedUpdate } }
-			end,
-		}, { runs = 30 })
+			end
+			sert.eq({ bans = { update = mergedUpdate } }, input)
+		end, { runs = 30 })
 	end)
 
 	test(
@@ -118,16 +110,16 @@ describe("Data · Schema Codecs & ChunkChanges Laws", function()
 				logs = { insert = logsInsert },
 				bans = { set = bansSet },
 			}
-			expect(#HttpService:JSONEncode(changes) > 32000).toBe(true)
+			sert.eq(#HttpService:JSONEncode(changes) > 32000, true)
 
 			local chunks = chunkChanges(changes)
-			expect(#chunks >= 2).toBe(true)
-			expect(#chunks <= 5).toBe(true)
+			sert.eq(#chunks >= 2, true)
+			sert.eq(#chunks <= 5, true)
 
 			local mergedLogs = {}
 			local mergedBans: { [string]: any } = {}
 			for _, chunk in chunks do
-				expect(#HttpService:JSONEncode(chunk) < 32000).toBe(true)
+				sert.eq(#HttpService:JSONEncode(chunk) < 32000, true)
 				if chunk.logs and chunk.logs.insert then
 					for _, entry in chunk.logs.insert do
 						table.insert(mergedLogs, entry)
@@ -140,9 +132,9 @@ describe("Data · Schema Codecs & ChunkChanges Laws", function()
 				end
 			end
 
-			expect(#mergedLogs).toBe(200)
-			expect(mergedLogs).toEqual(logsInsert)
-			expect(mergedBans).toEqual(bansSet)
+			sert.eq(#mergedLogs, 200)
+			sert.eq(mergedLogs, logsInsert)
+			sert.eq(mergedBans, bansSet)
 		end
 	)
 end)
@@ -153,37 +145,37 @@ describe("Data · Store CRUD, Budget & Studio/Publish Error Warnings", function(
 		local h = Harness.newEnv({ isStudio = false })
 		local Store = h.env:require(h.Shared:WaitForChild("Data"):WaitForChild("Store"))
 		local budget = Store.getBudget(h.env.globals.Enum.DataStoreRequestType.GetAsync)
-		expect(type(budget)).toBe("number")
+		sert.eq(type(budget), "number")
 
 		local canSave, ds = Store.loadStore("_KStoreTest", "scope1")
-		expect(canSave).toBe(true)
-		expect(ds ~= nil).toBe(true)
-		expect(Store.dataStore).toBe(ds)
+		sert.eq(canSave, true)
+		sert.eq(ds ~= nil, true)
+		sert.eq(Store.dataStore, ds)
 		-- Second loadStore call returns cached Store.dataStore
 		local canSave2, ds2 = Store.loadStore("_KStoreTest", "scope1")
-		expect(canSave2).toBe(true)
-		expect(ds2).toBe(ds)
+		sert.eq(canSave2, true)
+		sert.eq(ds2, ds)
 
 		local okSet = Store.setAsync("testKey", { count = 10 }, { 101 })
-		expect(okSet).toBe(true)
+		sert.eq(okSet, true)
 
 		local okGet, val = Store.getAsync("testKey")
-		expect(okGet).toBe(true)
-		expect(val.count).toBe(10)
+		sert.eq(okGet, true)
+		sert.eq(val.count, 10)
 
 		local okUpd, updVal = Store.updateAsync("testKey", function(old)
 			return { count = (old and old.count or 0) + 5 }
 		end)
-		expect(okUpd).toBe(true)
-		expect(updVal.count).toBe(15)
+		sert.eq(okUpd, true)
+		sert.eq(updVal.count, 15)
 
 		local okRem, remVal = Store.removeAsync("testKey")
-		expect(okRem).toBe(true)
-		expect(remVal.count).toBe(15)
+		sert.eq(okRem, true)
+		sert.eq(remVal.count, 15)
 
 		local okAfter, afterVal = Store.getAsync("testKey")
-		expect(okAfter).toBe(true)
-		expect(afterVal).toBeNil()
+		sert.eq(okAfter, true)
+		sert.eq(afterVal, nil)
 
 		-- Verify waitForBudget is invoked by getAsync, setAsync, updateAsync, and removeAsync, and respects closing & budget reserve
 		local waitedTypes = {}
@@ -199,7 +191,7 @@ describe("Data · Store CRUD, Budget & Studio/Publish Error Warnings", function(
 		end)
 		Store.removeAsync("bKey")
 		Store.waitForBudget = origWaitForBudget
-		expect(#waitedTypes).toBe(4)
+		sert.eq(#waitedTypes, 4)
 
 		-- Verify waitForBudget polls up to 5 times when budget < minBudget, stops early when Store.closing = true, and breaks when getBudget throws
 		local budgetChecks = 0
@@ -215,12 +207,12 @@ describe("Data · Store CRUD, Budget & Studio/Publish Error Warnings", function(
 			Store.waitForBudget(h.env.globals.Enum.DataStoreRequestType.GetAsync, 2)
 		end)
 		h.env:advance(5)
-		expect(budgetChecks).toBe(3)
+		sert.eq(budgetChecks, 3)
 
 		budgetChecks = 0
 		Store.closing = true
 		Store.waitForBudget(h.env.globals.Enum.DataStoreRequestType.GetAsync, 2)
-		expect(budgetChecks).toBe(0)
+		sert.eq(budgetChecks, 0)
 		Store.closing = false
 
 		Store.getBudget = function()
@@ -228,7 +220,7 @@ describe("Data · Store CRUD, Budget & Studio/Publish Error Warnings", function(
 			error("GetRequestBudget unavailable")
 		end
 		Store.waitForBudget(h.env.globals.Enum.DataStoreRequestType.GetAsync, 2)
-		expect(budgetChecks).toBe(1)
+		sert.eq(budgetChecks, 1)
 		Store.getBudget = origGetBudget
 
 		-- Verify transient DataStore failure retries with jitterBase > 1s
@@ -246,8 +238,8 @@ describe("Data · Store CRUD, Budget & Studio/Publish Error Warnings", function(
 			retryOk = Store.getAsync("testKey")
 		end)
 		h.env:advance(5)
-		expect(retryOk).toBe(true)
-		expect(retryTries).toBe(2)
+		sert.eq(retryOk, true)
+		sert.eq(retryTries, 2)
 		Store.dataStore.GetAsync = origGetAsync
 
 		-- 2. Studio unpublished game warning ("publish" error in GetDataStore) and non-publish permanent error clearing Store.dataStore
@@ -256,13 +248,13 @@ describe("Data · Store CRUD, Budget & Studio/Publish Error Warnings", function(
 		local origGetDS = dssPub.GetDataStore
 		local StorePub = hPub.env:require(hPub.Shared:WaitForChild("Data"):WaitForChild("Store"))
 		StorePub.loadStore("_KValidFirst", "s")
-		expect(StorePub.dataStore ~= nil).toBe(true)
+		sert.eq(StorePub.dataStore ~= nil, true)
 		dssPub.GetDataStore = function()
 			error("502: You must publish this place to the web to access DataStore.")
 		end
 		local canSavePub = StorePub.loadStore("_KUnpublished", "s")
-		expect(canSavePub).toBe(false)
-		expect(StorePub.dataStore).toBeNil()
+		sert.eq(canSavePub, false)
+		sert.eq(StorePub.dataStore, nil)
 		dssPub.GetDataStore = origGetDS
 
 		-- 3. Studio API access disabled warning ("Studio access" error in GetAsync("__TEST"))
@@ -277,8 +269,8 @@ describe("Data · Store CRUD, Budget & Studio/Publish Error Warnings", function(
 		end
 		local StoreApi = hApi.env:require(hApi.Shared:WaitForChild("Data"):WaitForChild("Store"))
 		local canSaveApi, msgApi = StoreApi.loadStore("_KNoApi", "s")
-		expect(canSaveApi).toBe(false)
-		expect(string.find(tostring(msgApi), "Enable Studio access", 1, true) ~= nil).toBe(true)
+		sert.eq(canSaveApi, false)
+		sert.eq(string.find(tostring(msgApi), "Enable Studio access", 1, true) ~= nil, true)
 	end)
 end)
 
@@ -294,19 +286,19 @@ describe("Data · Migrate (Settings & Legacy KAI)", function()
 			themeFontMono = h.env.globals.Enum.Font.RobotoMono,
 		}
 		Data.Migrate.Settings(settings)
-		expect(settings.theme).toBe("Cyan")
-		expect(settings.defaultTheme).toBeNil()
-		expect(settings.addToCharts).toBe(false)
-		expect(settings.gameHubEnabled).toBeNil()
-		expect(h.env.globals.typeof(settings.themeFont)).toBe("Font")
-		expect(h.env.globals.typeof(settings.themeFontMono)).toBe("Font")
-		expect(Data.Sync.settings.defaultTheme).toBe(Data.REMOVE)
-		expect(Data.Sync.settings.gameHubEnabled).toBe(Data.REMOVE)
+		sert.eq(settings.theme, "Cyan")
+		sert.eq(settings.defaultTheme, nil)
+		sert.eq(settings.addToCharts, false)
+		sert.eq(settings.gameHubEnabled, nil)
+		sert.eq(h.env.globals.typeof(settings.themeFont), "Font")
+		sert.eq(h.env.globals.typeof(settings.themeFontMono), "Font")
+		sert.eq(Data.Sync.settings.defaultTheme, Data.REMOVE)
+		sert.eq(Data.Sync.settings.gameHubEnabled, Data.REMOVE)
 
 		-- Passing an already-constructed Font instance preserves it unchanged (line 7 of Migrate/Settings.luau)
 		settings.themeFont = existingFont
 		Data.Migrate.Settings(settings)
-		expect(settings.themeFont).toBe(existingFont)
+		sert.eq(settings.themeFont, existingFont)
 	end)
 
 	test(
@@ -351,16 +343,16 @@ describe("Data · Migrate (Settings & Legacy KAI)", function()
 			})
 
 			Data.initialize("_K_MigrateTest")
-			expect(studioHashMaps).toBe(0)
-			expect(Data.bans["201"] ~= nil).toBe(true)
-			expect(Data.bans["201"][3]).toBe(-1)
-			expect(Data.bans["202"][3]).toBe(1750000000)
-			expect(Data.bans["203"]).toBeNil() -- positive duration is ignored
-			expect(Data.members["101"] ~= nil).toBe(true)
-			expect(table.find(Data.members["101"].roles, "customAdmin") ~= nil).toBe(true)
-			expect(Data.members["102"]).toBeNil() -- rank 4 had no matching role
-			expect(Data.members["103"]).toBeNil() -- positive power is ignored
-			expect(Data.savedSettings.prefix).toEqual({ "!", ";" })
+			sert.eq(studioHashMaps, 0)
+			sert.eq(Data.bans["201"] ~= nil, true)
+			sert.eq(Data.bans["201"][3], -1)
+			sert.eq(Data.bans["202"][3], 1750000000)
+			sert.eq(Data.bans["203"], nil) -- positive duration is ignored
+			sert.eq(Data.members["101"] ~= nil, true)
+			sert.eq(table.find(Data.members["101"].roles, "customAdmin") ~= nil, true)
+			sert.eq(Data.members["102"], nil) -- rank 4 had no matching role
+			sert.eq(Data.members["103"], nil) -- positive power is ignored
+			sert.eq(Data.savedSettings.prefix, { "!", ";" })
 
 			Data.roles.admin = origAdmin
 			Data.roles.customAdmin = nil
@@ -372,8 +364,8 @@ describe("Data · Migrate (Settings & Legacy KAI)", function()
 				error("GlobalDataStore unavailable")
 			end
 			local bansErr, mainErr = Data.Migrate.KAI()
-			expect(bansErr).toBeNil()
-			expect(mainErr).toBeNil()
+			sert.eq(bansErr, nil)
+			sert.eq(mainErr, nil)
 			dss.GetGlobalDataStore = origGetGlobal
 		end
 	)
@@ -470,6 +462,101 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 		return node
 	end
 
+	local function deepEqual(a: any, b: any): boolean
+		if a == b then
+			return true
+		end
+		if type(a) ~= "table" or type(b) ~= "table" then
+			return false
+		end
+		for k, v in a do
+			if not deepEqual(v, b[k]) then
+				return false
+			end
+		end
+		for k in b do
+			if a[k] == nil then
+				return false
+			end
+		end
+		return true
+	end
+
+	local function convergeCluster(world: any, project: (srv: any) -> any, opts: { timeout: number?, step: number? }?)
+		local o = opts or {}
+		local timeout = o.timeout or 30
+		local stepDt = o.step or 1
+		world:heal()
+		for _, gate in table.clone(world.gates) :: { [string]: any } do
+			gate:release()
+		end
+		table.clear(world.scripted)
+
+		local savedFaults = world.faults
+		local zeroFaults = table.clone(world.faults)
+		for k, v in zeroFaults do
+			if type(v) == "number" then
+				zeroFaults[k] = 0
+			end
+		end
+		zeroFaults.remoteLatencyRange = nil
+		zeroFaults.budget = nil
+		world.faults = zeroFaults
+
+		local function drainQueues()
+			world.scheduler:drain()
+			world.backing.messaging.drain()
+			world.scheduler:drain()
+		end
+
+		local function queuesIdle(): boolean
+			return (world.pendingCloud or 0) == 0
+				and (world.pendingRemotes or 0) == 0
+				and #world.backing.messaging.queue == 0
+		end
+
+		local function allEqual(): boolean
+			local ref: any, hasRef = nil, false
+			for _, srv in world.servers do
+				if srv.state == "up" then
+					local cur = project(srv)
+					if not hasRef then
+						ref, hasRef = cur, true
+					elseif not deepEqual(ref, cur) then
+						return false
+					end
+				end
+			end
+			return true
+		end
+
+		local converged = false
+		local ok, err = pcall(function()
+			local elapsed = 0
+			while elapsed + 1e-9 < timeout do
+				drainQueues()
+				if queuesIdle() and allEqual() then
+					converged = true
+					return
+				end
+				local dt = math.min(stepDt, timeout - elapsed)
+				world:step(dt)
+				elapsed += dt
+			end
+			drainQueues()
+			converged = queuesIdle() and allEqual()
+		end)
+
+		world.faults = savedFaults
+		if not ok then
+			error(err, 0)
+		end
+		world:assertNoErrors("convergeCluster")
+		if not converged then
+			error(`convergeCluster: did not converge within {timeout}s\n{world:summary()}`, 0)
+		end
+	end
+
 	local function settleCluster(world: any, sys: any, applyFn: ((node: any) -> ())?, nodeIdx: number?)
 		world:run(8)
 		local savedFaults = world.faults
@@ -486,54 +573,108 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 		ensureUp(world, sys, 1)
 		ensureUp(world, sys, 2)
 		world.faults = savedFaults
-		world:converge(function(srv: any)
+		convergeCluster(world, function(srv: any)
 			local node = if srv == sys.n1.server then sys.n1 else sys.n2
 			return projectNode(node)
 		end, convergeOpts)
 	end
 
+	local bfsBanArgs = {
+		{ nodeIdx = 1, userId = 301, reason = "spam" },
+		{ nodeIdx = 2, userId = 302, reason = "exploit" },
+	}
+	local bfsUnbanArgs = {
+		{ nodeIdx = 1, userId = 301 },
+		{ nodeIdx = 2, userId = 302 },
+	}
+	local bfsGrantArgs = {
+		{ nodeIdx = 1, userId = 301, role = "vip" },
+		{ nodeIdx = 2, userId = 302, role = "mod" },
+	}
+	local bfsRevokeArgs = {
+		{ nodeIdx = 1, userId = 301, role = "vip" },
+		{ nodeIdx = 2, userId = 302, role = "mod" },
+	}
+	local bfsSettingArgs = {
+		{ nodeIdx = 1, rank = 1 },
+		{ nodeIdx = 2, rank = 2 },
+	}
+	local bfsBurstArgs = {
+		{ seq = 1, targetId = 301 },
+	}
+	local bfsRestartArgs = { {} }
+
+	local function attachFaultRemotes(world: any, sys: any)
+		local node = ensureUp(world, sys, 1)
+		if rawget(node, "_faultRemotesReady") then
+			return node
+		end
+		rawset(node, "_faultRemotesReady", true)
+		local rs = node.h.env.game:GetService("ReplicatedStorage")
+		local guestRemote = node.h.env.Instance.new("RemoteEvent")
+		guestRemote.Name = "GuestAttemptPrivilege"
+		guestRemote.Parent = rs
+		guestRemote.OnServerEvent:Connect(function(player: any, _targetId: any, _roleOrReason: any)
+			if player and player.UserId == 202 then
+				return
+			end
+			error(`Unexpected caller for GuestAttemptPrivilege: {player and player.UserId}`)
+		end)
+		local hbRemote = node.h.env.Instance.new("RemoteEvent")
+		hbRemote.Name = "AdminHeartbeat"
+		hbRemote.Parent = rs
+		hbRemote.OnServerEvent:Connect(function(player: any, seq: any)
+			if player and player.UserId == 101 and type(seq) == "number" then
+				rawset(world, "_lastAdminHeartbeat", math.max(rawget(world, "_lastAdminHeartbeat") or 0, seq))
+			end
+		end)
+		local c202 = node.server:client(202, "Guest202")
+		local c101 = node.server:client(101, "Admin101")
+		local env202 = c202:env({ isClient = true })
+		local env101 = c101:env({ isClient = true })
+		world:run(0.2)
+		rawset(
+			node,
+			"_guestClientRemote",
+			env202.game:GetService("ReplicatedStorage"):FindFirstChild("GuestAttemptPrivilege")
+		)
+		rawset(node, "_adminClientRemote", env101.game:GetService("ReplicatedStorage"):FindFirstChild("AdminHeartbeat"))
+		return node
+	end
+
 	local KAdminDataSpec = sert.sim.spec({
 		name = "KAdminDistributedData",
 		world = {
-			backing = true,
 			autoRestart = false,
-			faults = { profile = "vopr", drop = 0 },
+			faults = {
+				profile = "vopr",
+				drop = 0,
+				remoteDropRate = 0.15,
+				remoteReorderRate = 0.2,
+				remoteDuplicateRate = 0.2,
+			},
 		},
-		remotes = {
-			GuestAttemptPrivilege = function(_world, player, _targetId, _roleOrReason)
-				-- Unprivileged guest packet arriving (possibly duplicated or reordered) must never grant roles or ban
-				if player and player.UserId == 202 then
-					return
-				end
-				error(`Unexpected caller for GuestAttemptPrivilege: {player and player.UserId}`)
-			end,
-			AdminHeartbeat = function(world, player, seq)
-				if player and player.UserId == 101 and type(seq) == "number" then
-					rawset(world, "_lastAdminHeartbeat", math.max(rawget(world, "_lastAdminHeartbeat") or 0, seq))
-				end
-			end,
-		},
-		init = function(world)
-			local state = {
+		init = function()
+			return {
 				bans = {},
 				roles = {},
 				dashboardRank = 0,
 				unbanned = {},
 				revoked = {},
 			}
-			if world == nil then
-				return state
-			end
-			world.faults.remoteDropRate = 0.15
-			world.faults.remoteReorderRate = 0.2
-			world.faults.remoteDuplicateRate = 0.2
+		end,
+		setup = function(world)
 			local sys: any = { n1 = nil, n2 = nil, nodes = {}, unbanned = {}, revoked = {} }
 			ensureUp(world, sys, 1)
 			ensureUp(world, sys, 2)
 			world:run(20)
 			ensureUp(world, sys, 1)
 			ensureUp(world, sys, 2)
-			return state, sys
+			attachFaultRemotes(world, sys)
+			return sys
+		end,
+		converge = function(_st, sys, world)
+			settleCluster(world, sys)
 		end,
 		project = function(sys)
 			local projected = projectNode(sys.n1)
@@ -545,16 +686,17 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				revoked = cloneRevoked(sys.revoked),
 			}
 		end,
-		actions = {
+		commands = {
 			BanUser = {
-				gen = function(g)
+				args = bfsBanArgs,
+				gen = function(_st, g)
 					return {
 						nodeIdx = g:int(1, 2),
 						userId = g:pick(targetUsers),
 						reason = g:pick(banReasons),
 					}
 				end,
-				guard = function(_st, args)
+				pre = function(_st, args)
 					return args ~= nil and (args.nodeIdx == 1 or args.nodeIdx == 2) and args.userId ~= nil
 				end,
 				run = function(sys, args, world)
@@ -576,13 +718,14 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				end,
 			},
 			UnbanUser = {
-				gen = function(g)
+				args = bfsUnbanArgs,
+				gen = function(_st, g)
 					return {
 						nodeIdx = g:int(1, 2),
 						userId = g:pick(targetUsers),
 					}
 				end,
-				guard = function(_st, args)
+				pre = function(_st, args)
 					return args ~= nil and (args.nodeIdx == 1 or args.nodeIdx == 2) and args.userId ~= nil
 				end,
 				run = function(sys, args, world)
@@ -604,14 +747,15 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				end,
 			},
 			GrantPersistRole = {
-				gen = function(g)
+				args = bfsGrantArgs,
+				gen = function(_st, g)
 					return {
 						nodeIdx = g:int(1, 2),
 						userId = g:pick(targetUsers),
 						role = g:pick(persistRoles),
 					}
 				end,
-				guard = function(_st, args)
+				pre = function(_st, args)
 					return args ~= nil and (args.nodeIdx == 1 or args.nodeIdx == 2) and args.role ~= nil
 				end,
 				run = function(sys, args, world)
@@ -649,14 +793,15 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				end,
 			},
 			RevokePersistRole = {
-				gen = function(g)
+				args = bfsRevokeArgs,
+				gen = function(_st, g)
 					return {
 						nodeIdx = g:int(1, 2),
 						userId = g:pick(targetUsers),
 						role = g:pick(persistRoles),
 					}
 				end,
-				guard = function(_st, args)
+				pre = function(_st, args)
 					return args ~= nil and (args.nodeIdx == 1 or args.nodeIdx == 2) and args.role ~= nil
 				end,
 				run = function(sys, args, world)
@@ -692,13 +837,14 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				end,
 			},
 			UpdateSetting = {
-				gen = function(g)
+				args = bfsSettingArgs,
+				gen = function(_st, g)
 					return {
 						nodeIdx = g:int(1, 2),
 						rank = g:int(0, 3),
 					}
 				end,
-				guard = function(_st, args)
+				pre = function(_st, args)
 					return args ~= nil and args.rank >= 0 and args.rank <= 3
 				end,
 				run = function(sys, args, world)
@@ -715,30 +861,39 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				end,
 			},
 			FaultyRemoteBurst = {
-				gen = function(g)
+				args = bfsBurstArgs,
+				gen = function(_st, g)
 					return {
 						seq = g:int(1, 50),
 						targetId = g:pick(targetUsers),
 					}
 				end,
-				guard = function(_st, args)
+				pre = function(_st, args)
 					return args ~= nil and type(args.seq) == "number"
 				end,
 				run = function(sys, args, world)
 					ensureUp(world, sys, 1)
 					ensureUp(world, sys, 2)
-					world:fireServer("client_202", "GuestAttemptPrivilege", args.targetId, "creator")
-					world:fireServer("client_101", "AdminHeartbeat", args.seq)
-					world:run(1)
-					world:flushRemotes()
+					local n1 = attachFaultRemotes(world, sys)
+					local guestRem = rawget(n1, "_guestClientRemote")
+					local adminRem = rawget(n1, "_adminClientRemote")
+					if guestRem then
+						guestRem:FireServer(args.targetId, "creator")
+					end
+					if adminRem then
+						adminRem:FireServer(args.seq)
+					end
+					world:run(2)
+					settleCluster(world, sys)
 				end,
 				next = function(_st) end,
 			},
 			RestartNode2 = {
+				args = bfsRestartArgs,
 				gen = function()
 					return {}
 				end,
-				guard = function()
+				pre = function()
 					return true
 				end,
 				run = function(sys, _, world)
@@ -755,33 +910,31 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				next = function(_st) end,
 			},
 		},
-		never = {
-			unbannedUserStillBanned = function(st)
+		invariants = {
+			noUnbannedUserStillBanned = function(st)
 				for uid in st.unbanned do
 					if st.bans[uid] ~= nil then
-						return true
+						return false
 					end
 				end
-				return false
+				return true
 			end,
-			revokedRoleStillPresent = function(st)
+			noRevokedRoleStillPresent = function(st)
 				for uid, roles in st.revoked do
 					local active = st.roles[uid]
 					if active ~= nil then
 						for role in roles do
 							if active[role] then
-								return true
+								return false
 							end
 						end
 					end
 				end
-				return false
+				return true
 			end,
-			invalidDashboardRank = function(st)
-				return type(st.dashboardRank) ~= "number" or st.dashboardRank < 0 or st.dashboardRank > 3
+			validDashboardRank = function(st)
+				return type(st.dashboardRank) == "number" and st.dashboardRank >= 0 and st.dashboardRank <= 3
 			end,
-		},
-		invariants = {
 			rolesNonEmpty = function(st)
 				for _, roleSet in st.roles do
 					if next(roleSet) == nil then
@@ -796,8 +949,8 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				end
 				local p1 = projectNode(sys.n1)
 				local p2 = projectNode(sys.n2)
-				expect(p1).toEqual(p2)
-				expect(p1).toEqual({
+				sert.eq(p1, p2)
+				sert.eq(p1, {
 					bans = st.bans,
 					roles = st.roles,
 					dashboardRank = st.dashboardRank,
@@ -816,7 +969,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 		local function sync(fn: () -> ())
 			n2.server:spawn(fn)
 			world:run(7)
-			world.messaging:drain()
+			world.backing.messaging.drain()
 			world:run(1)
 		end
 
@@ -825,25 +978,25 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			n1.Auth.userRoleAdd(301, "mod", false, true)
 		end)
 		world:run(0.1)
-		expect(n1.Auth.hasRestrictedRole(301)).toBe(false)
+		sert.eq(n1.Auth.hasRestrictedRole(301), false)
 
 		-- a developer on server 2 saves VIP for 301: server 1 keeps the session Moderator unrestricted
 		sync(function()
 			n2.Auth.userRoleAdd(301, "vip", true)
 		end)
 		local member = n1.Data.members["301"]
-		expect(member.roles).toEqual({ "mod", "vip" })
-		expect(member.unrestricted and member.unrestricted.mod).toBe(true)
-		expect(n1.Auth.hasRestrictedRole(301)).toBe(false)
+		sert.eq(member.roles, { "mod", "vip" })
+		sert.eq(member.unrestricted and member.unrestricted.mod, true)
+		sert.eq(n1.Auth.hasRestrictedRole(301), false)
 
 		-- once a developer saves the Moderator role itself, it is a developer's grant everywhere
 		sync(function()
 			n2.Auth.userRoleAdd(301, "mod", true)
 		end)
 		member = n1.Data.members["301"]
-		expect(member.persist).toEqual({ "mod", "vip" })
-		expect(member.unrestricted and member.unrestricted.mod).toBeNil()
-		expect(n1.Auth.hasRestrictedRole(301)).toBe(true)
+		sert.eq(member.persist, { "mod", "vip" })
+		sert.eq(member.unrestricted and member.unrestricted.mod, nil)
+		sert.eq(n1.Auth.hasRestrictedRole(301), true)
 	end)
 
 	test(
@@ -866,9 +1019,9 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				n1.Auth.banUsers({ 903 }, "fresh local ban", -1, nil, true)
 			end)
 			world:run(7)
-			expect(n1.Data.Sync.members["902"]).toBeNil()
-			expect(n1.Data.members["902"].persist).toEqual({ "admin" })
-			expect(n1.Data.bans["903"][2]).toBe("fresh local ban")
+			sert.eq(n1.Data.Sync.members["902"], nil)
+			sert.eq(n1.Data.members["902"].persist, { "admin" })
+			sert.eq(n1.Data.bans["903"][2], "fresh local ban")
 
 			-- Inject an older cross-server sync item into the MemoryStore hashmap and replay via MessagingService
 			local ms = n1.h.env.game:GetService("MemoryStoreService")
@@ -894,23 +1047,23 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				n2.h.env.game:GetService("MessagingService"):PublishAsync("_KData", { "stale_sync", 1 })
 			end)
 			world:run(0.5)
-			world.messaging:drain()
+			world.backing.messaging.drain()
 			world:run(1)
 
 			-- n1's newer saved (901) and unsaved (902, 903) changes must remain intact
-			expect(n1.Data.bans["901"] ~= nil).toBe(true)
-			expect(n1.Data.bans["901"][2]).toBe("initial ban")
-			expect(n1.Data.members["902"].persist).toEqual({ "admin" })
-			expect(n1.Data.bans["903"] ~= nil).toBe(true)
-			expect(n1.Data.bans["903"][2]).toBe("fresh local ban")
+			sert.eq(n1.Data.bans["901"] ~= nil, true)
+			sert.eq(n1.Data.bans["901"][2], "initial ban")
+			sert.eq(n1.Data.members["902"].persist, { "admin" })
+			sert.eq(n1.Data.bans["903"] ~= nil, true)
+			sert.eq(n1.Data.bans["903"][2], "fresh local ban")
 
 			-- Shutdown n1 so BindToClose flushes SAVE to DataStore, then verify a fresh server loads n1's local changes
 			n1.server:shutdown()
 			world:run(6)
 			local n3 = bootServer(world, "_K_SaveThrottleGuard")
 			world:run(6)
-			expect(n3.Data.members["902"].persist).toEqual({ "admin" })
-			expect(n3.Data.bans["903"][2]).toBe("fresh local ban")
+			sert.eq(n3.Data.members["902"].persist, { "admin" })
+			sert.eq(n3.Data.bans["903"][2], "fresh local ban")
 			n2.server:shutdown()
 			n3.server:shutdown()
 		end
@@ -932,10 +1085,10 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				n1.Auth.userRoleAdd(402, "admin", true)
 			end)
 			world:run(2)
-			world.messaging:drain()
+			world.backing.messaging.drain()
 			world:run(1)
-			expect(n2.Data.bans["401"] ~= nil).toBe(true)
-			expect(n2.Data.members["402"] ~= nil).toBe(true)
+			sert.eq(n2.Data.bans["401"] ~= nil, true)
+			sert.eq(n2.Data.members["402"] ~= nil, true)
 
 			-- 2. Inject late MemoryStore SetAsync, single-partition stale read, and -30s drift on n2 when unbanning 401 and revoking 402
 			n2.server:drift(-30)
@@ -947,13 +1100,13 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				n2.Auth.userRoleRemove(402, "admin")
 			end)
 			world:run(8)
-			world.messaging:drain()
+			world.backing.messaging.drain()
 			world:run(2)
 
-			expect(n1.Data.bans["401"]).toBeNil()
-			expect(n2.Data.bans["401"]).toBeNil()
-			expect(n1.Data.members["402"]).toBeNil()
-			expect(n2.Data.members["402"]).toBeNil()
+			sert.eq(n1.Data.bans["401"], nil)
+			sert.eq(n2.Data.bans["401"], nil)
+			sert.eq(n1.Data.members["402"], nil)
+			sert.eq(n2.Data.members["402"], nil)
 			n1.server:shutdown()
 			n2.server:shutdown()
 		end
@@ -964,6 +1117,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 		function()
 			local world = sert.sim.new({
 				seed = 424242,
+				mode = "random",
 				backing = true,
 				faults = "none",
 			})
@@ -974,6 +1128,54 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			waitServerReady(world, n2)
 			world:run(6)
 
+			local adminPackets = 0
+			local guestBlocked = 0
+
+			-- Register server RemoteEvent handlers on n1 and n2
+			local function attachAdminMutation(node: any)
+				local rs = node.h.env.game:GetService("ReplicatedStorage")
+				local rem = node.h.env.Instance.new("RemoteEvent")
+				rem.Name = "AdminMutation"
+				rem.Parent = rs
+				rem.OnServerEvent:Connect(function(player: any, op: any, userId: any, val: any)
+					if not player or player.UserId ~= 101 then
+						guestBlocked += 1
+						return
+					end
+					adminPackets += 1
+					node.server:spawn(function()
+						if op == "ban" then
+							node.Auth.banUsers({ userId }, tostring(val), -1, nil, true)
+						elseif op == "unban" then
+							node.Auth.unbanUsers({ userId }, nil, true)
+						elseif op == "role" then
+							if not node.Auth.userRoleAdd(userId, tostring(val), true) then
+								local member = node.Data.members[tostring(userId)]
+								if member and #member.persist > 0 then
+									node.Data.Sync.members[tostring(userId)] =
+										{ member.name or `User{userId}`, member.persist }
+								end
+							end
+						elseif op == "settings" then
+							node.Data.savedSettings.dashboardRank = tonumber(val) or 1
+							node.Data.Sync.settings.dashboardRank = tonumber(val) or 1
+						end
+					end)
+				end)
+				local gCli = node.server:client(202, "Guest202")
+				local aCli = node.server:client(101, "Admin101")
+				local gEnv = gCli:env({ isClient = true })
+				local aEnv = aCli:env({ isClient = true })
+				world:run(0.2)
+				return {
+					guest = gEnv.game:GetService("ReplicatedStorage"):FindFirstChild("AdminMutation"),
+					admin = aEnv.game:GetService("ReplicatedStorage"):FindFirstChild("AdminMutation"),
+				}
+			end
+
+			local r1 = attachAdminMutation(n1)
+			local r2 = attachAdminMutation(n2)
+
 			world.faults.remoteDropRate = 0.25
 			world.faults.remoteReorderRate = 0.35
 			world.faults.remoteDuplicateRate = 0.3
@@ -981,79 +1183,49 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			world.faults.reorder = 0.2
 			world.faults.duplicate = 0.2
 
-			local adminPackets = 0
-			local guestBlocked = 0
-
-			-- Register server remote handlers on the World remote fault bus
-			world:onServerEvent("AdminMutation", function(player, op, nodeIdx, userId, val)
-				if not player or player.UserId ~= 101 then
-					guestBlocked += 1
-					return
-				end
-				adminPackets += 1
-				local node = if nodeIdx == 2 then n2 else n1
-				node.server:spawn(function()
-					if op == "ban" then
-						node.Auth.banUsers({ userId }, tostring(val), -1, nil, true)
-					elseif op == "unban" then
-						node.Auth.unbanUsers({ userId }, nil, true)
-					elseif op == "role" then
-						if not node.Auth.userRoleAdd(userId, tostring(val), true) then
-							local member = node.Data.members[tostring(userId)]
-							if member and #member.persist > 0 then
-								node.Data.Sync.members[tostring(userId)] =
-									{ member.name or `User{userId}`, member.persist }
-							end
-						end
-					elseif op == "settings" then
-						node.Data.savedSettings.dashboardRank = tonumber(val) or 1
-						node.Data.Sync.settings.dashboardRank = tonumber(val) or 1
-					end
-				end)
-			end)
-
-			-- Fire a burst of hostile guest packets (peer client_202) and admin packets (peer client_101) under drop/reorder/duplicate faults
+			-- Fire a burst of hostile guest packets (peer 202) and admin packets (peer 101) under drop/reorder/duplicate faults
 			for i = 1, 20 do
-				world:fireServer("client_202", "AdminMutation", "role", (i % 2) + 1, 202, "creator")
-				world:fireServer("client_202", "AdminMutation", "ban", (i % 2) + 1, 101, "hostile")
-				world:fireServer("client_101", "AdminMutation", "ban", 1, 601, "griefing")
-				world:fireServer("client_101", "AdminMutation", "role", 2, 602, "mod")
-				world:fireServer("client_101", "AdminMutation", "settings", 1, 0, 2)
+				local guestTarget = if (i % 2) == 0 then r1.guest else r2.guest
+				guestTarget:FireServer("role", 202, "creator")
+				guestTarget:FireServer("ban", 101, "hostile")
+				r1.admin:FireServer("ban", 601, "griefing")
+				r2.admin:FireServer("role", 602, "mod")
+				r1.admin:FireServer("settings", 0, 2)
 			end
 
-			world:run(10)
-			world:flushRemotes()
-			world:run(10)
+			world:run(20)
 
 			-- Clear faults and issue deterministic final admin state across n1 and n2
-			for k in world.faults do
-				world.faults[k] = 0
+			for k, v in world.faults do
+				if type(v) == "number" then
+					world.faults[k] = 0
+				end
 			end
 			world.faults.remoteLatencyRange = nil
 
-			world:fireServer("client_101", "AdminMutation", "ban", 1, 601, "final_ban")
-			world:fireServer("client_101", "AdminMutation", "role", 2, 602, "admin")
-			world:fireServer("client_101", "AdminMutation", "settings", 1, 0, 2)
-			world:flushRemotes()
-			world:converge(function(srv: any)
+			r1.admin:FireServer("ban", 601, "final_ban")
+			r2.admin:FireServer("role", 602, "admin")
+			r1.admin:FireServer("settings", 0, 2)
+			world:run(1)
+			convergeCluster(world, function(srv: any)
 				local node = if srv == n1.server then n1 else n2
 				return projectNode(node)
 			end, convergeOpts)
 
-			expect(adminPackets > 0).toBe(true)
-			expect(guestBlocked > 0).toBe(true)
+			sert.eq(adminPackets > 0, true)
+			sert.eq(guestBlocked > 0, true)
 			-- Guest 202 never gained any role or banned admin 101
-			expect(n1.Auth.getRank(202)).toBe(0)
-			expect(n2.Auth.getRank(202)).toBe(0)
-			expect(n1.Data.bans["101"]).toBeNil()
-			expect(n2.Data.bans["101"]).toBeNil()
+			sert.eq(n1.Auth.getRank(202), 0)
+			sert.eq(n2.Auth.getRank(202), 0)
+			sert.eq(n1.Data.bans["101"], nil)
+			sert.eq(n2.Data.bans["101"], nil)
 			-- Both servers converged on the final ban, role, and settings updates
-			expect(n1.Data.bans["601"] ~= nil).toBe(true)
-			expect(n2.Data.bans["601"] ~= nil).toBe(true)
-			expect(n1.Auth.hasRole(602, "admin")).toBe(true)
-			expect(n2.Auth.hasRole(602, "admin")).toBe(true)
-			expect(n1.Data.savedSettings.dashboardRank).toBe(2)
-			expect(n2.Data.savedSettings.dashboardRank).toBe(2)
+			sert.eq(n1.Data.bans["601"] ~= nil, true)
+			sert.eq(n2.Data.bans["601"] ~= nil, true)
+			sert.eq(n1.Auth.hasRole(602, "admin"), true)
+			sert.eq(n2.Auth.hasRole(602, "admin"), true)
+			sert.eq(n1.Data.savedSettings.dashboardRank, 2)
+			sert.eq(n2.Data.savedSettings.dashboardRank, 2)
 
 			n1.server:shutdown()
 			n2.server:shutdown()
@@ -1169,20 +1341,20 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			Util1.Logger.limit = origLimit
 
 			-- Verify V0 logs were migrated and trimmed to Logger.limit (10)
-			expect(#Data1.logs).toBe(10)
+			sert.eq(#Data1.logs, 10)
 
 			-- Verify ReservedServers 2-tuple was converted to 3-tuple { code, accessCode, placeId }
-			expect(Data1.reservedServers.legacyLobby).toEqual({ "legacyLobby", "access_code_123", 98765 })
+			sert.eq(Data1.reservedServers.legacyLobby, { "legacyLobby", "access_code_123", 98765 })
 
 			-- Verify Main members & settings deserialization
-			expect(Data1.members["202"] ~= nil).toBe(true)
-			expect(Data1.members["202"].persist).toEqual({ "mod" })
-			expect(Data1.members["203"].roles).toEqual({ "mod" })
-			expect(Data1.members["204"]).toBeNil() -- was skipped due to pending Sync.members["204"]
-			expect(Data1.members["205"]).toBeNil() -- all invalid roles filtered out (#roles == 0 branch)
-			expect(h1.env.globals.typeof(Data1.savedSettings.themePrimary)).toBe("Color3")
-			expect(h1.env.globals.typeof(Data1.savedSettings.themeCornerRadius)).toBe("UDim")
-			expect(Data1.savedSettings.sampleEnum).toBe(h1.env.globals.Enum.Font.Roboto)
+			sert.eq(Data1.members["202"] ~= nil, true)
+			sert.eq(Data1.members["202"].persist, { "mod" })
+			sert.eq(Data1.members["203"].roles, { "mod" })
+			sert.eq(Data1.members["204"], nil) -- was skipped due to pending Sync.members["204"]
+			sert.eq(Data1.members["205"], nil) -- all invalid roles filtered out (#roles == 0 branch)
+			sert.eq(h1.env.globals.typeof(Data1.savedSettings.themePrimary), "Color3")
+			sert.eq(h1.env.globals.typeof(Data1.savedSettings.themeCornerRadius), "UDim")
+			sert.eq(Data1.savedSettings.sampleEnum, h1.env.globals.Enum.Font.Roboto)
 
 			-- Boot a second server s2 to verify REMOVE.bans, REMOVE.members, and logs insert cross-server sync
 			rawStore:SetAsync("Main", {
@@ -1197,8 +1369,8 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			local s2 = bootServer(world, scope)
 			seedServerAdminAndCommands(s2.h, s2.Auth, "AdminOnS2")
 			world:run(5)
-			expect(s2.Data.members["202"] ~= nil).toBe(true)
-			expect(s2.Data.bans["5001"] ~= nil).toBe(true)
+			sert.eq(s2.Data.members["202"] ~= nil, true)
+			sert.eq(s2.Data.bans["5001"] ~= nil, true)
 
 			-- Remove member 202, unban 5001, and insert a synced log on s1 -> syncs to s2
 			s1:spawn(function()
@@ -1212,10 +1384,10 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				Messaging1:PublishAsync("_KData", '"not_a_table"')
 			end)
 			world:run(7)
-			world.messaging:drain()
+			world.backing.messaging.drain()
 			world:run(1)
-			expect(s2.Data.members["202"]).toBeNil()
-			expect(s2.Data.bans["5001"]).toBeNil()
+			sert.eq(s2.Data.members["202"], nil)
+			sert.eq(s2.Data.bans["5001"], nil)
 
 			-- Queue 280KB of logs in Data1.Sync.logs (<= 512KB so first loop doesn't trim, but existing shard + saveLogs > 512KB so second loop trims!)
 			-- and queue >512KB in a second batch + >90% of 512KB in Data1.Sync.bans for dataLimitWarning
@@ -1237,7 +1409,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 					sawLimitWarn = true
 				end
 			end
-			expect(sawLimitWarn).toBe(true)
+			sert.eq(sawLimitWarn, true)
 
 			-- Also trigger >512KB single-batch saveLogs trimming (lines 156-163)
 			local newest
@@ -1247,13 +1419,13 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			end
 			world:run(65)
 			-- the log rows are also synced as JSON arrays, measuring them for the save mustn't add keys
-			expect(newest.size).toBeNil()
+			sert.eq(newest.size, nil)
 			-- the trimmed save keeps the newest log and stays under the DataStore limit
 			local savedNewest = false
 			for i = 1, 4 do
 				local shard = rawStore:GetAsync("Logs_" .. i)
 				if type(shard) == "buffer" then
-					expect(buffer.len(shard) <= 512 * 1024).toBe(true)
+					sert.eq(buffer.len(shard) <= 512 * 1024, true)
 					local ok, logs = pcall(Z1.des, Data1.Schema.logs, shard)
 					if ok then
 						for _, log in logs do
@@ -1264,7 +1436,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 					end
 				end
 			end
-			expect(savedNewest).toBe(true)
+			sert.eq(savedNewest, true)
 
 			-- Test Data.initialize when SEPARATE_DATASTORE = true (erases Logs_1..4, lines 627-629)
 			-- and when Store.loadStore fails (canSave = false, lines 561-565)
@@ -1291,8 +1463,8 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			DataPriv.SEPARATE_DATASTORE = true
 			DataPriv.initialize("_K_PrivScope")
 			hPriv.env:step(0.1)
-			expect(DataPriv.canSave).toBe(true)
-			expect(privHashMaps).toBe(0)
+			sert.eq(DataPriv.canSave, true)
+			sert.eq(privHashMaps, 0)
 
 			local hFail = Harness.newEnv({ isStudio = true })
 			local dssFail = hFail.env.game:GetService("DataStoreService")
@@ -1301,8 +1473,8 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			end
 			local DataFail = hFail:requireData()
 			DataFail.initialize("_K_FailScope")
-			expect(DataFail.canSave).toBe(false)
-			expect(type(DataFail.saveError)).toBe("string")
+			sert.eq(DataFail.canSave, false)
+			sert.eq(type(DataFail.saveError), "string")
 
 			-- Store.loadStore clears Store.dataStore when Studio __TEST check fails so a retry isn't short-circuited
 			local hStudioStore = Harness.newEnv({ isStudio = true })
@@ -1325,12 +1497,12 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			end
 			local StudioStore = hStudioStore.env:require(hStudioStore.Shared:WaitForChild("Data"):WaitForChild("Store"))
 			local canSave1 = StudioStore.loadStore("_KData", "_K_StudioRetry")
-			expect(canSave1).toBe(false)
-			expect(StudioStore.dataStore).toBeNil()
+			sert.eq(canSave1, false)
+			sert.eq(StudioStore.dataStore, nil)
 			studioTestFail = false
 			local canSave2 = StudioStore.loadStore("_KData", "_K_StudioRetry")
-			expect(canSave2).toBe(true)
-			expect(StudioStore.dataStore ~= nil).toBe(true)
+			sert.eq(canSave2, true)
+			sert.eq(StudioStore.dataStore ~= nil, true)
 		end
 	)
 
@@ -1344,8 +1516,8 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			waitServerReady(world, n2)
 			world:run(12)
 
-			expect(world.memory.calls.ListItemsAsync or 0).toBe(0)
-			local beforeGets = world.memory.calls.GetAsync or 0
+			sert.eq(world.backing.memorystore.calls.ListItemsAsync or 0, 0)
+			local beforeGets = world.backing.memorystore.calls.GetAsync or 0
 			local n2UpdateAsyncCalls = 0
 
 			local origUpdate = n2.Data.Store.updateAsync
@@ -1359,16 +1531,16 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				n1.Auth.banUsers({ 8801 }, "small inline ban", -1, nil, true)
 			end)
 			world:run(7)
-			world.messaging:drain()
+			world.backing.messaging.drain()
 			world:run(2)
 
-			expect(n2.Data.bans["8801"] ~= nil).toBe(true)
-			expect(n2.Data.bans["8801"][2]).toBe("small inline ban")
-			expect(world.memory.calls.ListItemsAsync or 0).toBe(0)
-			expect(world.memory.calls.GetAsync or 0).toBe(beforeGets)
+			sert.eq(n2.Data.bans["8801"] ~= nil, true)
+			sert.eq(n2.Data.bans["8801"][2], "small inline ban")
+			sert.eq(world.backing.memorystore.calls.ListItemsAsync or 0, 0)
+			sert.eq(world.backing.memorystore.calls.GetAsync or 0, beforeGets)
 			-- Receiver server n2 must not re-queue received syncs into its own DataStore SAVE queue
 			world:run(10)
-			expect(n2UpdateAsyncCalls).toBe(0)
+			sert.eq(n2UpdateAsyncCalls, 0)
 
 			-- Large delta (> 900B): spills to sharded MemoryStore keys in _KData without calling ListItemsAsync
 			local longReason = string.rep("X", 1200)
@@ -1376,14 +1548,14 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				n1.Auth.banUsers({ 8802 }, longReason, -1, nil, true)
 			end)
 			world:run(7)
-			world.messaging:drain()
+			world.backing.messaging.drain()
 			world:run(2)
 
-			expect(n2.Data.bans["8802"] ~= nil).toBe(true)
-			expect(n2.Data.bans["8802"][2]).toBe(longReason)
-			expect(world.memory.calls.ListItemsAsync or 0).toBe(0)
-			expect((world.memory.calls.GetAsync or 0) > beforeGets).toBe(true)
-			expect(n2UpdateAsyncCalls).toBe(0)
+			sert.eq(n2.Data.bans["8802"] ~= nil, true)
+			sert.eq(n2.Data.bans["8802"][2], longReason)
+			sert.eq(world.backing.memorystore.calls.ListItemsAsync or 0, 0)
+			sert.eq((world.backing.memorystore.calls.GetAsync or 0) > beforeGets, true)
+			sert.eq(n2UpdateAsyncCalls, 0)
 		end
 	)
 
@@ -1416,13 +1588,13 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			world:run(3)
 
 			-- Without an online admin, Logs_1..4 and Servers are not fetched on startup, and __TEST is skipped outside Studio
-			expect(getKeys["__TEST"]).toBeNil()
-			expect(getKeys["Logs_1"]).toBeNil()
-			expect(getKeys["Servers"]).toBeNil()
-			expect(Data1.logsLoaded).toBe(false)
-			expect(Data1.serversLoaded).toBe(false)
-			expect(Data1.members["303"] ~= nil).toBe(true)
-			expect(Data1.bans["404"] ~= nil).toBe(true)
+			sert.eq(getKeys["__TEST"], nil)
+			sert.eq(getKeys["Logs_1"], nil)
+			sert.eq(getKeys["Servers"], nil)
+			sert.eq(Data1.logsLoaded, false)
+			sert.eq(Data1.serversLoaded, false)
+			sert.eq(Data1.members["303"] ~= nil, true)
+			sert.eq(Data1.bans["404"] ~= nil, true)
 
 			-- Calling ensureLogsLoaded / ensureServersLoaded loads them once and is idempotent
 			s1:spawn(function()
@@ -1432,11 +1604,11 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				Data1.ensureServersLoaded()
 			end)
 			world:run(2)
-			expect(Data1.logsLoaded).toBe(true)
-			expect(Data1.serversLoaded).toBe(true)
-			expect(getKeys["Logs_1"]).toBe(1)
-			expect(getKeys["Servers"]).toBe(1)
-			expect(Data1.reservedServers.lobby1 ~= nil).toBe(true)
+			sert.eq(Data1.logsLoaded, true)
+			sert.eq(Data1.serversLoaded, true)
+			sert.eq(getKeys["Logs_1"], 1)
+			sert.eq(getKeys["Servers"], 1)
+			sert.eq(Data1.reservedServers.lobby1 ~= nil, true)
 
 			-- Populate all 16 shards of the previous 60s MemoryStore cache bucket (testing bucket - 1 rollover fallback)
 			-- and verify a warm server startup reads 0 DataStore keys
@@ -1469,7 +1641,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			local Data2 = h2:requireData()
 			Harness.seedRoles(Data2)
 			Data2.subscribeTopic("pre_init_topic", function() end)
-			expect(s2Subscribes).toBe(0) -- subscribeTopic before Data.initialize does not prematurely SubscribeAsync
+			sert.eq(s2Subscribes, 0) -- subscribeTopic before Data.initialize does not prematurely SubscribeAsync
 			local s2StoreGets = 0
 			local origGet2 = Data2.Store.getAsync
 			Data2.Store.getAsync = function(key: string, ...: any)
@@ -1481,10 +1653,10 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				Data2.initialize(scope)
 			end)
 			world:run(3)
-			expect(s2Subscribes).toBe(1) -- exactly 1 _KData subscription after Data.initialize
-			expect(s2StoreGets).toBe(0)
-			expect(Data2.members["505"] ~= nil).toBe(true)
-			expect(Data2.bans["606"] ~= nil).toBe(true)
+			sert.eq(s2Subscribes, 1) -- exactly 1 _KData subscription after Data.initialize
+			sert.eq(s2StoreGets, 0)
+			sert.eq(Data2.members["505"] ~= nil, true)
+			sert.eq(Data2.bans["606"] ~= nil, true)
 
 			-- Verify invalidateCache clears both current and previous bucket shards, and TOPIC_HANDLERS isolate errors
 			hm:SetAsync(`Bans_{prevBucket}_1`, { hit = true, value = {}, updatedTime = 99 }, 60)
@@ -1492,8 +1664,8 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				Auth1.banUsers({ 909 }, "invalidate both buckets", -1, nil, true)
 			end)
 			world:run(8)
-			expect(hm:GetAsync(`Bans_{bucket}_1`)).toBeNil()
-			expect(hm:GetAsync(`Bans_{prevBucket}_1`)).toBeNil()
+			sert.eq(hm:GetAsync(`Bans_{bucket}_1`), nil)
+			sert.eq(hm:GetAsync(`Bans_{prevBucket}_1`), nil)
 
 			-- Seed >28KB into Recent_1 and trigger an urgent update to verify trimRecentItemsToLimit evicts oldest entries
 			local bigRecentEntry = { _time = 10, bans = { set = { ["1"] = { "Old", string.rep("R", 14000), -1, 1 } } } }
@@ -1505,9 +1677,9 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			end)
 			world:run(8)
 			local recentAfterTrim = hm:GetAsync("Recent_1")
-			expect(type(recentAfterTrim)).toBe("table")
-			expect(recentAfterTrim.old_a).toBeNil()
-			expect(hm:GetAsync("Recent_8") ~= nil).toBe(true)
+			sert.eq(type(recentAfterTrim), "table")
+			sert.eq(recentAfterTrim.old_a, nil)
+			sert.eq(hm:GetAsync("Recent_8") ~= nil, true)
 
 			local secondHandlerCalled = false
 			local localDispatchCalls = 0
@@ -1528,11 +1700,11 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				Data1.publishTopic("isolated_test", "ping")
 			end)
 			world:run(1)
-			world.messaging:drain()
+			world.backing.messaging.drain()
 			world:run(1)
-			expect(secondHandlerCalled).toBe(true)
+			sert.eq(secondHandlerCalled, true)
 			-- Origin server dispatches TOPIC_HANDLERS locally once and suppresses its own MessagingService echo
-			expect(localDispatchCalls).toBe(1)
+			sert.eq(localDispatchCalls, 1)
 
 			-- Failed updateBans does not resurrect a ban key unset by a newer syncChanges during the in-flight UpdateAsync
 			Data1.Sync.bans["7777"] = { "TempBan", "reason", -1, 1 }
@@ -1552,7 +1724,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 							{ _time = newerTime, bans = { unset = { "7777" } } },
 						})
 					)
-					world.messaging:drain()
+					world.backing.messaging.drain()
 					h1.env.task.wait()
 					return false, "simulated DataStore outage"
 				end
@@ -1560,13 +1732,13 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			end
 			world:run(65)
 			Data1.Store.updateAsync = origStoreUpdate
-			expect(simulatedOutageHit).toBe(true)
+			sert.eq(simulatedOutageHit, true)
 			-- Trigger a second urgent save so SAVE.bans flushes to DataStore
 			Data1.Sync.bans["7779"] = { "TriggerFlush", "reason", -1, 1 }
 			world:run(10)
 			local savedBans = rawStore:GetAsync("Bans")
-			expect(savedBans["7777"]).toBeNil()
-			expect(savedBans["7778"] ~= nil).toBe(true)
+			sert.eq(savedBans["7777"], nil)
+			sert.eq(savedBans["7778"] ~= nil, true)
 
 			-- Verify local command logs persist to DataStore without broadcasting cross-server MessagingService packets,
 			-- while global command logs broadcast to servers with a logs audience without mutating log tuples
@@ -1588,43 +1760,45 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				K1.log(";fly me", "COMMAND", 101)
 			end)
 			world:run(35)
-			expect(localPublishes).toBe(0)
+			sert.eq(localPublishes, 0)
 
 			s1:spawn(function()
 				K1.log(";global fly all", "COMMAND", 101, nil, nil, true)
 			end)
 			world:run(35)
-			world.messaging:drain()
+			world.backing.messaging.drain()
 			world:run(2)
-			expect(localPublishes > 0).toBe(true)
+			sert.eq(localPublishes > 0, true)
 			local foundGlobalLogOnS2 = false
 			for _, logEntry in Data2.logs do
 				if logEntry[1] == ";global fly all" then
 					foundGlobalLogOnS2 = true
-					expect(rawget(logEntry, "_global")).toBeNil()
+					sert.eq(rawget(logEntry, "_global"), nil)
 				end
 			end
-			expect(foundGlobalLogOnS2).toBe(true)
+			sert.eq(foundGlobalLogOnS2, true)
 		end
 	)
 
 	test("KAdmin distributed data spec satisfies negative and positive invariants", function()
-		sert.sim.checkSpec(
-			"KAdmin distributed data spec satisfies negative and positive invariants",
-			KAdminDataSpec,
-			{ maxStates = if rawget(_G, "__SERT_MUTANT") ~= nil then 30 else 200, maxDepth = 6 }
-		)
-	end)
-
-	test("KAdmin multi-server sync converges under VOPR hazards", function()
-		sert.sim.vopr("KAdmin multi-server sync converges under VOPR hazards", KAdminDataSpec, {
-			runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 15,
-			length = 8,
+		sert.sim.check(KAdminDataSpec, {
+			bfs = true,
+			vopr = false,
+			maxStates = if rawget(_G, "__SERT_MUTANT") ~= nil then 30 else 200,
+			maxDepth = 6,
 		})
 	end)
 
+	sert.sim.vopr("KAdmin multi-server sync converges under VOPR hazards", KAdminDataSpec, {
+		runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 15,
+		steps = 8,
+	})
+
 	test("sert.sim.explore verifies BindToClose shutdown flushes pending bans, roles, and logs to DataStore", function()
-		sert.sim.explore(function(world)
+		sert.sim.explore({
+			maxRuns = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 12,
+			faults = "none",
+		}, function(world)
 			local n1 = bootServer(world, "_K_ShutdownFlush")
 			waitServerReady(world, n1)
 
@@ -1638,7 +1812,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 
 			-- Shutdown server 1 (triggers BindToClose DataStore/MemoryStore flush for bans, members, and logs)
 			n1.server:shutdown()
-			world:run(20)
+			world:run(31)
 
 			-- Boot a fresh server 2 on the same scope and verify it loads the ban, persistent role, and log
 			local n2 = bootServer(world, "_K_ShutdownFlush")
@@ -1646,23 +1820,25 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			n2.server:spawn(function()
 				n2.Data.ensureLogsLoaded()
 			end)
-			world:run(2)
+			for _ = 1, 100 do
+				if n2.Data.logsLoaded then
+					break
+				end
+				world:run(0.2)
+			end
 
-			expect(n2.Data.bans["777"] ~= nil).toBe(true)
-			expect(n2.Data.bans["777"][3]).toBe(-1)
-			expect(n2.Data.members["888"] ~= nil).toBe(true)
-			expect(table.find(n2.Data.members["888"].persist, "admin") ~= nil).toBe(true)
+			sert.eq(n2.Data.bans["777"] ~= nil, true)
+			sert.eq(n2.Data.bans["777"][3], -1)
+			sert.eq(n2.Data.members["888"] ~= nil, true)
+			sert.eq(table.find(n2.Data.members["888"].persist, "admin") ~= nil, true)
 			local sawShutdownLog = false
 			for _, entry in n2.Data.logs do
 				if entry[1] == "shutdown_flushed_log" then
 					sawShutdownLog = true
 				end
 			end
-			expect(sawShutdownLog).toBe(true)
-		end, {
-			maxRuns = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 12,
-			world = { faults = "none", backing = true },
-		})
+			sert.eq(sawShutdownLog, true)
+		end)
 	end)
 end)
 
@@ -1680,12 +1856,12 @@ describe("Data · ChunkChanges array actions", function()
 		local merged: { [string]: any } = {}
 		for _, chunk in chunks do
 			local ok, json = pcall(HttpService.JSONEncode, HttpService, chunk)
-			expect(ok).toBe(true)
-			expect(#json <= LIMIT).toBe(true)
+			sert.eq(ok, true)
+			sert.eq(#json <= LIMIT, true)
 			-- processSync stamps _time on each chunk before SetAsync, which takes items up to 32 KB
 			local stamped = table.clone(chunk)
 			stamped._time = 1700000000000
-			expect(#HttpService:JSONEncode(stamped) <= 32 * 1000).toBe(true)
+			sert.eq(#HttpService:JSONEncode(stamped) <= 32 * 1000, true)
 			for key, info in chunk do
 				local into = merged[key] or {}
 				merged[key] = into
@@ -1695,21 +1871,21 @@ describe("Data · ChunkChanges array actions", function()
 						for _ in data do
 							count += 1
 						end
-						expect(count > 0).toBe(true)
-						expect(count).toBe(#data)
+						sert.eq(count > 0, true)
+						sert.eq(count, #data)
 						into[action] = into[action] or {}
 						table.move(data, 1, #data, #into[action] + 1, into[action])
 					else
 						into[action] = into[action] or {}
 						for k, v in data do
-							expect(into[action][k]).toBeNil()
+							sert.eq(into[action][k], nil)
 							into[action][k] = v
 						end
 					end
 				end
 			end
 		end
-		expect(merged).toEqual(changes)
+		sert.eq(merged, changes)
 		return #chunks
 	end
 
@@ -1734,7 +1910,7 @@ describe("Data · ChunkChanges array actions", function()
 			members = { unset = membersUnset },
 			logs = { insert = logsInsert },
 		}
-		expect(checkChunks(changes) >= 3).toBe(true)
+		sert.eq(checkChunks(changes) >= 3, true)
 	end)
 
 	sert.prop("ChunkChanges chunks stay under the limit, encode as arrays and merge back losslessly", function(g)
@@ -1792,7 +1968,7 @@ describe("Data · ChunkChanges array actions", function()
 
 		local chunks = ChunkChanges(base)
 		for _, chunk in chunks do
-			expect(#Http:JSONEncode(chunk) <= LIMIT).toBe(true)
+			sert.eq(#Http:JSONEncode(chunk) <= LIMIT, true)
 		end
 	end)
 
@@ -1808,64 +1984,53 @@ describe("Data · ChunkChanges array actions", function()
 			return chunkChanges, HttpService
 		end
 
-		sert.laws.chunk("Data.ChunkChanges multi-action (set, unset, insert)", {
-			minSize = LIMIT,
-			maxSize = LIMIT,
-			gen = function(g)
-				local keyChars = "abcdef012345"
-				local changes: { [string]: any } = {}
-				for _, section in { "bans", "members", "settings" } do
-					local set: { [string]: any } = {}
-					for i = 1, g:int(1, 15) do
-						set[`{section}_s_{i}_{g:string(keyChars, 1, 4)}`] = {
-							g:string(keyChars, 1, g:int(10, 120)),
-							g:int(-1, 100000),
-						}
-					end
-					local unset = {}
-					for i = 1, g:int(1, 30) do
-						unset[i] = `{section}_u_{i}_{g:string(keyChars, 1, 4)}`
-					end
-					changes[section] = { set = set, unset = unset }
+		sert.prop("Data.ChunkChanges multi-action (set, unset, insert)", function(g)
+			local keyChars = "abcdef012345"
+			local changes: { [string]: any } = {}
+			for _, section in { "bans", "members", "settings" } do
+				local set: { [string]: any } = {}
+				for i = 1, g:int(1, 15) do
+					set[`{section}_s_{i}_{g:string(keyChars, 1, 4)}`] = {
+						g:string(keyChars, 1, g:int(10, 120)),
+						g:int(-1, 100000),
+					}
 				end
-				local logs = {}
-				for i = 1, g:int(1, 20) do
-					logs[i] = { g:string(keyChars, 1, g:int(10, 80)), string.char(g:int(0, 5)), 1700000000 + i }
+				local unset = {}
+				for i = 1, g:int(1, 30) do
+					unset[i] = `{section}_u_{i}_{g:string(keyChars, 1, 4)}`
 				end
-				changes.logs = { insert = logs }
-				return changes
-			end,
-			chunk = function(changes, _budget)
-				local fn = getChunkDeps()
-				return fn(changes)
-			end,
-			measure = function(piece)
-				local _, http = getChunkDeps()
-				return #http:JSONEncode(piece)
-			end,
-			join = function(pieces)
-				local merged: { [string]: any } = {}
-				for _, piece in pieces do
-					for key, info in piece do
-						local into = merged[key] or {}
-						merged[key] = into
-						for action, data in info do
-							if action == "insert" or action == "unset" then
-								into[action] = into[action] or {}
-								table.move(data, 1, #data, #into[action] + 1, into[action])
-							else
-								into[action] = into[action] or {}
-								for k, v in data do
-									into[action][k] = v
-								end
+				changes[section] = { set = set, unset = unset }
+			end
+			local logs = {}
+			for i = 1, g:int(1, 20) do
+				logs[i] = { g:string(keyChars, 1, g:int(10, 80)), string.char(g:int(0, 5)), 1700000000 + i }
+			end
+			changes.logs = { insert = logs }
+
+			local fn, http = getChunkDeps()
+			local pieces = fn(changes)
+			sert.eq(#pieces >= 1, true)
+			local merged: { [string]: any } = {}
+			for _, piece in pieces do
+				sert.eq(#http:JSONEncode(piece) <= LIMIT, true)
+				for key, info in piece do
+					local into = merged[key] or {}
+					merged[key] = into
+					for action, data in info do
+						if action == "insert" or action == "unset" then
+							into[action] = into[action] or {}
+							table.move(data, 1, #data, #into[action] + 1, into[action])
+						else
+							into[action] = into[action] or {}
+							for k, v in data do
+								into[action][k] = v
 							end
 						end
 					end
 				end
-				return merged
-			end,
-			eq = sert.eq,
-		}, { runs = 30 })
+			end
+			sert.eq(merged, changes)
+		end, { runs = 30 })
 
 		-- Helper that chunks `a` and `b` via ChunkChanges and composes their state transitions (`set` and `unset`)
 		local function composeChunkedDeltas(a: { [string]: any }, b: { [string]: any }): { [string]: any }
@@ -1957,7 +2122,7 @@ describe("Data · ChunkChanges array actions", function()
 			associative = true,
 			commutative = true,
 			idempotent = true,
-			eq = sert.eq,
+			eq = sert.equals,
 		}, { runs = 40 })
 
 		sert.laws.algebra("Data.ChunkChanges overlapping-key delta algebra (associativity & idempotence)", {
@@ -1994,9 +2159,11 @@ describe("Data · ChunkChanges array actions", function()
 			associative = true,
 			commutative = false,
 			idempotent = true,
-			eq = sert.eq,
+			eq = sert.equals,
 		}, { runs = 40 })
 	end
 end)
 
-return {}
+do
+	return {}
+end

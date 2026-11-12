@@ -1,7 +1,7 @@
 local Harness = require("./Harness")
 local sert = require("../sert")
 
-local describe, test, expect = sert.describe, sert.test, sert.expect
+local describe, test = sert.describe, sert.test
 local prop = sert.prop
 
 describe("Process · rawParse", function()
@@ -10,23 +10,23 @@ describe("Process · rawParse", function()
 
 	test("parses single, quoted, and chained commands with custom prefixes", function()
 		local Process = Harness.shared():requireProcess()
-		expect(Process.rawParse("hello world", DEFAULT_PREFIX, " ")).toBeNil()
-		expect(Process.rawParse(";", DEFAULT_PREFIX, " ")).toBeNil()
+		sert.eq(Process.rawParse("hello world", DEFAULT_PREFIX, " "), nil)
+		sert.eq(Process.rawParse(";", DEFAULT_PREFIX, " "), nil)
 
 		local single = Process.rawParse(";fly me 100", DEFAULT_PREFIX, " ")
-		expect(single ~= nil).toBe(true)
-		expect(#(single :: any)).toBe(1)
-		expect((single :: any)[1][1][2]).toBe("fly")
-		expect((single :: any)[1][2][2]).toBe("me")
-		expect((single :: any)[1][3][2]).toBe("100")
+		sert.eq(single ~= nil, true)
+		sert.eq(#(single :: any), 1)
+		sert.eq((single :: any)[1][1][2], "fly")
+		sert.eq((single :: any)[1][2][2], "me")
+		sert.eq((single :: any)[1][3][2], "100")
 
 		local chained = Process.rawParse(';announce "hello ; world" ;kick bob "bye"', { ";", ":" }, " ")
-		expect(chained ~= nil).toBe(true)
-		expect(#(chained :: any)).toBe(2)
-		expect((chained :: any)[1][1][2]).toBe("announce")
-		expect((chained :: any)[1][2][2]).toBe('"hello ; world"')
-		expect((chained :: any)[2][1][2]).toBe("kick")
-		expect((chained :: any)[2][2][2]).toBe("bob")
+		sert.eq(chained ~= nil, true)
+		sert.eq(#(chained :: any), 2)
+		sert.eq((chained :: any)[1][1][2], "announce")
+		sert.eq((chained :: any)[1][2][2], '"hello ; world"')
+		sert.eq((chained :: any)[2][1][2], "kick")
+		sert.eq((chained :: any)[2][2][2], "bob")
 	end)
 
 	local function sanitizeQuotePayload(raw: string, quoteChar: string): string
@@ -124,19 +124,19 @@ describe("Process · rawParse", function()
 			local Process = Harness.shared():requireProcess()
 			local message = unparseAst(spec)
 			local parsed = Process.rawParse(message, { spec.prefix }, " ")
-			expect(parsed ~= nil).toBe(true)
+			sert.eq(parsed ~= nil, true)
 			local out = {}
 			local leadLen = #spec.leadNoise
-			expect(string.sub(message, leadLen + 1, leadLen + #spec.prefix)).toBe(spec.prefix)
+			sert.eq(string.sub(message, leadLen + 1, leadLen + #spec.prefix), spec.prefix)
 			for i, cmdArr in parsed :: { any } do
-				expect(#cmdArr >= 1).toBe(true)
+				sert.eq(#cmdArr >= 1, true)
 				local row = {}
 				for j, tok in cmdArr do
 					local argPos: number = tok[1]
 					local argStr: string = tok[2]
 					local absStart = leadLen + argPos
 					local absEnd = absStart + #argStr - 1
-					expect(string.sub(message, absStart, absEnd)).toBe(argStr)
+					sert.eq(string.sub(message, absStart, absEnd), argStr)
 					row[j] = {
 						pos = argPos,
 						endPos = argPos + #argStr - 1,
@@ -159,10 +159,10 @@ describe("Process · rawParse", function()
 			local Process = Harness.shared():requireProcess()
 			local noise = g:string(nil, 0, 40)
 			local ok, parsed, err = pcall(Process.rawParse, noise, MULTI_PREFIX, " ")
-			expect(ok).toBe(true)
-			expect(parsed == nil or type(parsed) == "table").toBe(true)
+			sert.eq(ok, true)
+			sert.eq(parsed == nil or type(parsed) == "table", true)
 			if parsed ~= nil and utf8.len(noise) then
-				expect(#parsed >= 1).toBe(true)
+				sert.eq(#parsed >= 1, true)
 				local matchedPrefix, matchStart = nil, nil
 				for _, p in MULTI_PREFIX do
 					local escapedP = string.gsub(p, "([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
@@ -173,18 +173,18 @@ describe("Process · rawParse", function()
 						break
 					end
 				end
-				expect(matchedPrefix ~= nil).toBe(true)
-				expect(matchStart ~= nil).toBe(true)
+				sert.eq(matchedPrefix ~= nil, true)
+				sert.eq(matchStart ~= nil, true)
 				for _, cmdArr in parsed do
-					expect(#cmdArr >= 1).toBe(true)
+					sert.eq(#cmdArr >= 1, true)
 					for _, tok in cmdArr do
-						expect(type(tok[1])).toBe("number")
-						expect(type(tok[2])).toBe("string")
-						expect(tok[1] >= 1).toBe(true)
+						sert.eq(type(tok[1]), "number")
+						sert.eq(type(tok[2]), "string")
+						sert.eq(tok[1] >= 1, true)
 					end
 				end
 			elseif parsed == nil and err ~= nil then
-				expect(type(err) == "string" or type(err) == "number").toBe(true)
+				sert.eq(type(err) == "string" or type(err) == "number", true)
 			end
 
 			-- Unclosed quote law: verify exact unmatched opening quote byte offset
@@ -194,17 +194,17 @@ describe("Process · rawParse", function()
 			local quoteChar = g:pick({ '"', "`" })
 			local unclosedMsg = `;{cmd} {arg1} {quoteChar}{tail} ;not_a_new_cmd`
 			local expectedQuoteOffset = 1 + #cmd + 1 + #arg1 + 1 + 1
-			expect(string.sub(unclosedMsg, expectedQuoteOffset, expectedQuoteOffset)).toBe(quoteChar)
+			sert.eq(string.sub(unclosedMsg, expectedQuoteOffset, expectedQuoteOffset), quoteChar)
 
 			local unclosedParsed, unclosedErr = Process.rawParse(unclosedMsg, DEFAULT_PREFIX, " ")
 			if unclosedParsed == nil then
-				expect(unclosedErr).toBe(expectedQuoteOffset)
+				sert.eq(unclosedErr, expectedQuoteOffset)
 			else
-				expect(#unclosedParsed).toBe(1)
+				sert.eq(#unclosedParsed, 1)
 				local quoteTok = unclosedParsed[1][3]
-				expect(quoteTok[1]).toBe(expectedQuoteOffset)
-				expect(quoteTok[2]).toBe(string.sub(unclosedMsg, expectedQuoteOffset))
-				expect(string.sub(unclosedMsg, quoteTok[1], quoteTok[1] + #quoteTok[2] - 1)).toBe(quoteTok[2])
+				sert.eq(quoteTok[1], expectedQuoteOffset)
+				sert.eq(quoteTok[2], string.sub(unclosedMsg, expectedQuoteOffset))
+				sert.eq(string.sub(unclosedMsg, quoteTok[1], quoteTok[1] + #quoteTok[2] - 1), quoteTok[2])
 			end
 		end,
 		{ runs = 80 }
@@ -219,36 +219,29 @@ describe("Process · Registry & DefaultTypes Contract Laws", function()
 		local Registry = _K.Registry
 		local Argument = h.env:require(h.Shared:WaitForChild("Process"):WaitForChild("Argument"))
 
-		expect(#Registry.commandsList > 50).toBe(true)
+		sert.eq(#Registry.commandsList > 50, true)
 
-		sert.laws.registry({
-			name = "Registry.commands",
-			entries = Registry.commands,
-			aliases = Registry.commandsAlias,
-			check = function(def, name)
-				assert(type(def.name) == "string" and #def.name > 0, `command {name} missing name`)
-				assert(type(def.group) == "string" and #def.group > 0, `command {name} missing group`)
-				assert(type(def.args) == "table", `command {name} missing args table`)
-				for idx, argDef in def.args do
-					assert(type(argDef.name) == "string", `command {name} arg {idx} missing name`)
-					assert(type(argDef.type) == "string", `command {name} arg {idx} missing type`)
-					local parsedType = Argument.parseTypeUnion(argDef.type, "")
-					assert(
-						parsedType ~= nil and Registry.types[parsedType] ~= nil,
-						`command {name} arg {idx} references unregistered type {argDef.type}`
-					)
-				end
-			end,
-		})
+		sert.ok(next(Registry.commands) ~= nil, "Registry.commands non-empty")
+		for name, def in Registry.commands do
+			assert(type(def.name) == "string" and #def.name > 0, `command {name} missing name`)
+			assert(type(def.group) == "string" and #def.group > 0, `command {name} missing group`)
+			assert(type(def.args) == "table", `command {name} missing args table`)
+			for idx, argDef in def.args do
+				assert(type(argDef.name) == "string", `command {name} arg {idx} missing name`)
+				assert(type(argDef.type) == "string", `command {name} arg {idx} missing type`)
+				local parsedType = Argument.parseTypeUnion(argDef.type, "")
+				assert(
+					parsedType ~= nil and Registry.types[parsedType] ~= nil,
+					`command {name} arg {idx} references unregistered type {argDef.type}`
+				)
+			end
+		end
 
-		sert.laws.registry({
-			name = "Registry.types",
-			entries = Registry.types,
-			check = function(typeDef, name)
-				assert(type(typeDef.validate) == "function", `type {name} missing validate`)
-				assert(type(typeDef.parse) == "function", `type {name} missing parse`)
-			end,
-		})
+		sert.ok(next(Registry.types) ~= nil, "Registry.types non-empty")
+		for name, typeDef in Registry.types do
+			assert(type(typeDef.validate) == "function", `type {name} missing validate`)
+			assert(type(typeDef.parse) == "function", `type {name} missing parse`)
+		end
 	end)
 
 	local propMutant: any = nil
@@ -275,58 +268,56 @@ describe("Process · Registry & DefaultTypes Contract Laws", function()
 	end
 
 	local gen = sert.gen
-	sert.check(
+	sert.prop(
 		"built-in scalar, color, timeSimple, vector, and enum types round-trip valid inputs and reject malformed ones",
-		{
-			gen.int(-10000, 10000),
-			gen.color3(),
-			gen.int(1, 120),
-			gen.int(1, 59),
-			gen.vector3(gen.int(-500, 500)),
-			gen.enum(Harness.globals.Enum.Material),
-		},
-		function(n, expectedColor, mins, secs, vec, matItem)
+		function(g)
+			local n = g:int(-10000, 10000)
+			local expectedColor = gen.color3()(g)
+			local mins = g:int(1, 120)
+			local secs = g:int(1, 59)
+			local vec = gen.vector3(gen.int(-500, 500))(g)
+			local matItem = gen.enum(Harness.globals.Enum.Material)(g)
 			local types = getPropTypes()
 			local Vector2 = Harness.globals.Vector2
 
 			local intVal = types.integer.transform(tostring(n))
-			expect((types.integer.validate(intVal))).toBe(true)
-			expect(types.integer.parse(intVal)).toBe(n)
-			expect((types.integer.validate(types.integer.transform("not_a_number")))).toBe(false)
+			sert.eq((types.integer.validate(intVal)), true)
+			sert.eq(types.integer.parse(intVal), n)
+			sert.eq((types.integer.validate(types.integer.transform("not_a_number"))), false)
 
 			local r = math.round(expectedColor.R * 255)
 			local gr = math.round(expectedColor.G * 255)
 			local b = math.round(expectedColor.B * 255)
 			local hex = string.format("#%02x%02x%02x", r, gr, b)
 			local cHex = types.color.transform(hex)
-			expect((types.color.validate(cHex))).toBe(true)
-			expect(types.color.parse(cHex)).toEqual(expectedColor)
+			sert.eq((types.color.validate(cHex)), true)
+			sert.eq(types.color.parse(cHex), expectedColor)
 			local cRgb = types.color.transform(`{r},{gr},{b}`)
-			expect((types.color.validate(cRgb))).toBe(true)
-			expect(types.color.parse(cRgb)).toEqual(expectedColor)
-			expect((types.color.validate(types.color.transform("#zzzzzz")))).toBe(false)
+			sert.eq((types.color.validate(cRgb)), true)
+			sert.eq(types.color.parse(cRgb), expectedColor)
+			sert.eq((types.color.validate(types.color.transform("#zzzzzz"))), false)
 
 			local okTime, parsedTime = types.timeSimple.validate(`{mins}m {secs}s`)
-			expect(okTime).toBe(true)
-			expect(parsedTime).toBe(mins * 60 + secs)
-			expect((types.timeSimple.validate("invalid_time_xyz"))).toBe(false)
+			sert.eq(okTime, true)
+			sert.eq(parsedTime, mins * 60 + secs)
+			sert.eq((types.timeSimple.validate("invalid_time_xyz")), false)
 
 			local vx, vy, vz = vec.X, vec.Y, vec.Z
 			local v2Val = types.vector2.transform(`{vx},{vy}`)
-			expect((types.vector2.validate(v2Val))).toBe(true)
-			expect(types.vector2.parse(v2Val)).toEqual(Vector2.new(vx, vy))
-			expect((types.vector2.validate(types.vector2.transform("1,2,3")))).toBe(false)
+			sert.eq((types.vector2.validate(v2Val)), true)
+			sert.eq(types.vector2.parse(v2Val), Vector2.new(vx, vy))
+			sert.eq((types.vector2.validate(types.vector2.transform("1,2,3"))), false)
 
 			local v3Val = types.vector3.transform(`{vx},{vy},{vz}`)
-			expect((types.vector3.validate(v3Val))).toBe(true)
-			expect(types.vector3.parse(v3Val)).toEqual(vec)
-			expect((types.vector3.validate(types.vector3.transform("1,bad,3")))).toBe(false)
+			sert.eq((types.vector3.validate(v3Val)), true)
+			sert.eq(types.vector3.parse(v3Val), vec)
+			sert.eq((types.vector3.validate(types.vector3.transform("1,bad,3"))), false)
 
 			local enumType = types["Enum.Material"]
 			local matName = matItem.Name
-			expect((enumType.validate(matName))).toBe(true)
-			expect(enumType.parse(matName)).toBe(matItem)
-			expect(enumType.parse(string.lower(matName))).toBe(matItem)
+			sert.eq((enumType.validate(matName)), true)
+			sert.eq(enumType.parse(matName), matItem)
+			sert.eq(enumType.parse(string.lower(matName)), matItem)
 		end,
 		{ runs = 60 }
 	)
@@ -386,24 +377,24 @@ describe("Process · Command Preparation, Validation & Execution", function()
 
 		-- Guest lacks administration group permission
 		local okGuest = _K.Process.runCommands(_K, guestPlayer.UserId, ";tgive all 50 true", true)
-		expect(okGuest).toBe(false)
-		expect(#executed).toBe(0)
+		sert.eq(okGuest, false)
+		sert.eq(#executed, 0)
 
 		-- Admin succeeds via alias
 		local okAdmin = _K.Process.runCommands(_K, adminPlayer.UserId, ";tgive GuestUser 42 true", true)
-		expect(okAdmin).toBe(true)
-		expect(#executed).toBe(1)
-		expect(executed[1].from).toBe(adminPlayer.UserId)
-		expect(executed[1].targets[1]).toBe(guestPlayer)
-		expect(executed[1].amount).toBe(42)
-		expect(executed[1].silent).toBe(true)
-		expect(preCount).toBe(1)
-		expect(postCount).toBe(1)
+		sert.eq(okAdmin, true)
+		sert.eq(#executed, 1)
+		sert.eq(executed[1].from, adminPlayer.UserId)
+		sert.eq(executed[1].targets[1], guestPlayer)
+		sert.eq(executed[1].amount, 42)
+		sert.eq(executed[1].silent, true)
+		sert.eq(preCount, 1)
+		sert.eq(postCount, 1)
 
 		-- Missing required integer argument fails validation cleanly
 		local okMissing, errMissing = _K.Process.prepareCommands(_K, adminPlayer.UserId, ";tgive GuestUser")
-		expect(okMissing).toBe(false)
-		expect(string.find(tostring(errMissing), "missing", 1, true) ~= nil).toBe(true)
+		sert.eq(okMissing, false)
+		sert.eq(string.find(tostring(errMissing), "missing", 1, true) ~= nil, true)
 	end)
 
 	test("global command strings parse only with the server prefix", function()
@@ -426,19 +417,19 @@ describe("Process · Command Preparation, Validation & Execution", function()
 
 		-- a sender's own prefix and the settings prefixes start commands in their own messages
 		local ok, commands = _K.Process.prepareCommands(_K, admin.UserId, ';testsay "a !testother b"')
-		expect(ok).toBe(true)
-		expect(commands[1].alias).toBe("testother")
+		sert.eq(ok, true)
+		sert.eq(commands[1].alias, "testother")
 		ok, commands = _K.Process.prepareCommands(_K, admin.UserId, 'x :testsay "a ;testother b"')
-		expect(ok).toBe(true)
-		expect(commands[1].alias).toBe("testsay")
+		sert.eq(ok, true)
+		sert.eq(commands[1].alias, "testsay")
 
 		-- published global strings start with the server prefix, the others are text there
 		ok, commands = _K.Process.prepareCommands(_K, admin.UserId, ';testsay "a !testother b :testother c"', true)
-		expect(ok).toBe(true)
-		expect(#commands).toBe(1)
-		expect(commands[1].alias).toBe("testsay")
-		expect(commands[1].args[1].rawArg).toBe('"a !testother b :testother c"')
-		expect(_K.Process.prepareCommands(_K, admin.UserId, ':testsay "a"', true)).toBeNil()
+		sert.eq(ok, true)
+		sert.eq(#commands, 1)
+		sert.eq(commands[1].alias, "testsay")
+		sert.eq(commands[1].args[1].rawArg, '"a !testother b :testother c"')
+		sert.eq(_K.Process.prepareCommands(_K, admin.UserId, ':testsay "a"', true), nil)
 	end)
 
 	test(
@@ -473,19 +464,19 @@ describe("Process · Command Preparation, Validation & Execution", function()
 			})
 
 			-- Both singular and plural Enum types and CSV types are now registered
-			expect(Registry.types["Enum.Material"] ~= nil).toBe(true)
-			expect(Registry.types["Enum.Materials"] ~= nil).toBe(true)
-			expect(Registry.types["Enum.Materials"].listable).toBe(true)
-			expect(Registry.types["alpha,beta,gamma"] ~= nil).toBe(true)
-			expect(Registry.types["alpha,beta,gammas"] ~= nil).toBe(true)
-			expect((Registry.types["alpha,beta,gamma"].validate("beta"))).toBe(true)
-			expect(Registry.types["alpha,beta,gamma"].parse("beta")).toBe("beta")
+			sert.eq(Registry.types["Enum.Material"] ~= nil, true)
+			sert.eq(Registry.types["Enum.Materials"] ~= nil, true)
+			sert.eq(Registry.types["Enum.Materials"].listable, true)
+			sert.eq(Registry.types["alpha,beta,gamma"] ~= nil, true)
+			sert.eq(Registry.types["alpha,beta,gammas"] ~= nil, true)
+			sert.eq((Registry.types["alpha,beta,gamma"].validate("beta")), true)
+			sert.eq(Registry.types["alpha,beta,gamma"].parse("beta"), "beta")
 
 			local plr = h.env:addPlayer(10, "EnumUser")
 			local ok = _K.Process.runCommands(_K, plr.UserId, ";testenumcsv Plastic,Neon gamma", true)
-			expect(ok).toBe(true)
-			expect(#seenEnum).toBe(2)
-			expect(seenCsv).toBe("gamma")
+			sert.eq(ok, true)
+			sert.eq(#seenEnum, 2)
+			sert.eq(seenCsv, "gamma")
 
 			-- makeSequenceType transforms, validates length and components, and constructs result
 			local seqType = Registry.makeSequenceType({
@@ -501,15 +492,15 @@ describe("Process · Command Preparation, Validation & Execution", function()
 				end,
 			})
 			local transformed = seqType.transform("10,20,30")
-			expect((seqType.validate(transformed))).toBe(true)
-			expect(seqType.parse(transformed)).toEqual({ x = 10, y = 20, z = 30 })
-			expect((seqType.validate(seqType.transform("10,20,30,40")))).toBe(false)
-			expect((seqType.validate(seqType.transform("10,bad,30")))).toBe(false)
+			sert.eq((seqType.validate(transformed)), true)
+			sert.eq(seqType.parse(transformed), { x = 10, y = 20, z = 30 })
+			sert.eq((seqType.validate(seqType.transform("10,20,30,40"))), false)
+			sert.eq((seqType.validate(seqType.transform("10,bad,30"))), false)
 
 			-- registerCommandAlias registers a Utility command and ignores duplicate registration
 			Registry.registerCommandAlias(_K, "quickhelp", ";help")
-			expect(Registry.commands.quickhelp ~= nil).toBe(true)
-			expect(Registry.commands.quickhelp.group).toBe("Utility")
+			sert.eq(Registry.commands.quickhelp ~= nil, true)
+			sert.eq(Registry.commands.quickhelp.group, "Utility")
 			Registry.registerCommandAlias(_K, "quickhelp", ";help")
 		end
 	)
@@ -580,7 +571,7 @@ describe("Process · Command Preparation, Validation & Execution", function()
 			-- 1. freeText liveText redaction ("…"): first log off cooldown is revealed immediately;
 			-- second log within 60s sends full log to sender and redacted "…" to other admins and Data.logs
 			local okEcho = _K.Process.runCommands(_K, modPlayer.UserId, ";testecho secret_phrase", false)
-			expect(okEcho).toBe(true)
+			sert.eq(okEcho, true)
 			h.env:step(0.05)
 			local senderLog, otherLog
 			for _, entry in remoteLogs do
@@ -590,13 +581,13 @@ describe("Process · Command Preparation, Validation & Execution", function()
 					otherLog = entry.text
 				end
 			end
-			expect(senderLog).toBe(";testecho secret_phrase")
-			expect(otherLog).toBe(";testecho secret_phrase")
-			expect(_K.Data.logs[#_K.Data.logs][1]).toBe(";testecho secret_phrase")
+			sert.eq(senderLog, ";testecho secret_phrase")
+			sert.eq(otherLog, ";testecho secret_phrase")
+			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testecho secret_phrase")
 
 			table.clear(remoteLogs)
 			local okEcho2 = _K.Process.runCommands(_K, modPlayer.UserId, ";testecho second_secret", false)
-			expect(okEcho2).toBe(true)
+			sert.eq(okEcho2, true)
 			h.env:step(0.05)
 			local friendLog
 			senderLog, otherLog, friendLog = nil, nil, nil
@@ -609,17 +600,17 @@ describe("Process · Command Preparation, Validation & Execution", function()
 					friendLog = entry.text
 				end
 			end
-			expect(senderLog).toBe(";testecho second_secret")
-			expect(friendLog).toBe(";testecho second_secret")
-			expect(otherLog).toBe(";testecho …")
-			expect(_K.Data.logs[#_K.Data.logs][1]).toBe(";testecho …")
+			sert.eq(senderLog, ";testecho second_secret")
+			sert.eq(friendLog, ";testecho second_secret")
+			sert.eq(otherLog, ";testecho …")
+			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testecho …")
 
 			-- 2. Long rawText (> 1024 bytes) for non-restricted role (everyone/guest) is truncated to 1024 bytes
 			local longArg = string.rep("x", 1200)
 			local okLong = _K.Process.runCommands(_K, guestPlayer.UserId, ";testecho " .. longArg, true)
-			expect(okLong).toBe(true)
-			expect(#echoed[#echoed] < 1024).toBe(true)
-			expect(#echoed[#echoed]).toBe(1024 - #";testecho ")
+			sert.eq(okLong, true)
+			sert.eq(#echoed[#echoed] < 1024, true)
+			sert.eq(#echoed[#echoed], 1024 - #";testecho ")
 
 			-- 3. Rate limit & cooldown warning for guest (everyone role has limits.commands = 4, cooldown = 4)
 			-- Guest already ran 1 command above; chaining 5 more commands hits the limit of 4
@@ -636,26 +627,26 @@ describe("Process · Command Preparation, Validation & Execution", function()
 					sawLimitAlert = true
 				end
 			end
-			expect(sawLimitAlert).toBe(true)
+			sert.eq(sawLimitAlert, true)
 
 			-- Subsequent command while on cooldown returns false and alerts "Command usage on cooldown!"
 			table.clear(notifications)
 			local okCooldown = _K.Process.runCommands(_K, guestPlayer.UserId, ";testecho blocked", true)
-			expect(okCooldown).toBe(false)
-			expect(string.find(notifications[1].text, "cooldown", 1, true) ~= nil).toBe(true)
+			sert.eq(okCooldown, false)
+			sert.eq(string.find(notifications[1].text, "cooldown", 1, true) ~= nil, true)
 
 			-- Stepping past the 4-second cooldown resets the limit
 			h.env:step(4.5)
-			expect(_K.Process.runCommands(_K, guestPlayer.UserId, ";testecho after_cooldown", true)).toBe(true)
+			sert.eq(_K.Process.runCommands(_K, guestPlayer.UserId, ";testecho after_cooldown", true), true)
 
 			-- 4. Command execution failure (`run` throws) notifies caller and logs ERROR
 			table.clear(notifications)
 			table.clear(remoteLogs)
 			local okBoom = _K.Process.runCommands(_K, modPlayer.UserId, ";testboom", false)
-			expect(okBoom).toBe(false)
-			expect(#notifications >= 1).toBe(true)
-			expect(string.find(notifications[1].text, "command failed", 1, true) ~= nil).toBe(true)
-			expect(string.find(notifications[1].text, "kaboom failure", 1, true) ~= nil).toBe(true)
+			sert.eq(okBoom, false)
+			sert.eq(#notifications >= 1, true)
+			sert.eq(string.find(notifications[1].text, "command failed", 1, true) ~= nil, true)
+			sert.eq(string.find(notifications[1].text, "kaboom failure", 1, true) ~= nil, true)
 		end
 	)
 
@@ -723,17 +714,17 @@ describe("Process · Command Preparation, Validation & Execution", function()
 
 		-- 1. shouldFillWithSelf: omitting the player arg in ";testreq 77" auto-fills "me" (mod1) and shifts "77" to Power
 		local okSelf = _K.Process.runCommands(_K, mod1.UserId, ";testreq 77", true)
-		expect(okSelf).toBe(true)
-		expect(#ranTargets).toBe(1)
-		expect(ranTargets[1].target).toBe(mod1)
-		expect(ranTargets[1].power).toBe(77)
+		sert.eq(okSelf, true)
+		sert.eq(#ranTargets, 1)
+		sert.eq(ranTargets[1].target, mod1)
+		sert.eq(ranTargets[1].power, 77)
 
 		-- Two consecutive player args: ";testpair LowGuest" auto-fills arg 1 with "me" (mod1) and arg 2 with guest
 		local okPair = _K.Process.runCommands(_K, mod1.UserId, ";testpair LowGuest", true)
-		expect(okPair).toBe(true)
-		expect(ranPair ~= nil).toBe(true)
-		expect(ranPair.from[1]).toBe(mod1)
-		expect(ranPair.to).toBe(guest)
+		sert.eq(okPair, true)
+		sert.eq(ranPair ~= nil, true)
+		sert.eq(ranPair.from[1], mod1)
+		sert.eq(ranPair.to, guest)
 
 		-- 2. shouldRequest & requestCommand when targeting equal/higher rank player (mod2):
 		-- First test denied request (Invoke returns false)
@@ -744,10 +735,10 @@ describe("Process · Command Preparation, Validation & Execution", function()
 		end
 		table.clear(ranTargets)
 		local okDenied = _K.Process.runCommands(_K, mod1.UserId, ";testreq PeerMod 55", true)
-		expect(okDenied).toBe(true)
+		sert.eq(okDenied, true)
 		h.env:step(0.05)
-		expect(invokeCount).toBe(1)
-		expect(#ranTargets).toBe(0)
+		sert.eq(invokeCount, 1)
+		sert.eq(#ranTargets, 0)
 
 		-- Next test accepted request (Invoke returns true -> executes command)
 		_K.Remote.RequestCommand.Invoke = function(_self, _targetPlayer, _fromPlayer, _cmdText)
@@ -755,30 +746,30 @@ describe("Process · Command Preparation, Validation & Execution", function()
 			return true
 		end
 		local okAccepted = _K.Process.runCommands(_K, mod1.UserId, ";testreq PeerMod 88", true)
-		expect(okAccepted).toBe(true)
+		sert.eq(okAccepted, true)
 		h.env:step(0.05)
-		expect(invokeCount).toBe(2)
-		expect(#ranTargets).toBe(1)
-		expect(ranTargets[1].target).toBe(mod2)
-		expect(ranTargets[1].power).toBe(88)
+		sert.eq(invokeCount, 2)
+		sert.eq(#ranTargets, 1)
+		sert.eq(ranTargets[1].target, mod2)
+		sert.eq(ranTargets[1].power, 88)
 
 		-- a joining player's group and gamepass roles haven't loaded, so its rank reads 0 but it's still asked first
 		local joining = h.env:addPlayer(104, "JoiningAdmin")
 		table.clear(ranTargets)
 		local okJoining = _K.Process.runCommands(_K, mod1.UserId, ";testreq JoiningAdmin 66", true)
-		expect(okJoining).toBe(true)
+		sert.eq(okJoining, true)
 		h.env:step(0.05)
-		expect(invokeCount).toBe(3)
-		expect(#ranTargets).toBe(1)
-		expect(ranTargets[1].target).toBe(joining)
+		sert.eq(invokeCount, 3)
+		sert.eq(#ranTargets, 1)
+		sert.eq(ranTargets[1].target, joining)
 
 		-- the creator and loaded lower ranks are never asked
 		table.clear(ranTargets)
-		expect(_K.Process.runCommands(_K, _K.creatorId, ";testreq JoiningAdmin 67", true)).toBe(true)
-		expect(_K.Process.runCommands(_K, mod1.UserId, ";testreq LowGuest 68", true)).toBe(true)
+		sert.eq(_K.Process.runCommands(_K, _K.creatorId, ";testreq JoiningAdmin 67", true), true)
+		sert.eq(_K.Process.runCommands(_K, mod1.UserId, ";testreq LowGuest 68", true), true)
 		h.env:step(0.05)
-		expect(invokeCount).toBe(3)
-		expect(#ranTargets).toBe(2)
+		sert.eq(invokeCount, 3)
+		sert.eq(#ranTargets, 2)
 
 		-- 3. Player list (`players`) with shouldRequest = true (strips peer/higher-rank players and requests them individually)
 		local listTargets = {}
@@ -808,19 +799,19 @@ describe("Process · Command Preparation, Validation & Execution", function()
 		h.env:step(0.25)
 		registerReqList({ "trl_new" })
 		h.env:step(0.25)
-		expect(_K.Registry.commands.trl_old).toBeNil()
-		expect(_K.Registry.commands.trl_new ~= nil).toBe(true)
-		expect(table.find(_K.Registry.commandNames, "trl_new") ~= nil).toBe(true)
+		sert.eq(_K.Registry.commands.trl_old, nil)
+		sert.eq(_K.Registry.commands.trl_new ~= nil, true)
+		sert.eq(table.find(_K.Registry.commandNames, "trl_new") ~= nil, true)
 
 		-- Verify commandNames is sorted by length then alphabetically
 		for i = 2, #_K.Registry.commandNames do
 			local a, b = _K.Registry.commandNames[i - 1], _K.Registry.commandNames[i]
-			expect(#a < #b or (#a == #b and a <= b)).toBe(true)
+			sert.eq(#a < #b or (#a == #b and a <= b), true)
 		end
 
 		-- Verify suggestCommandAlias exact match (distance == 0) and prefix match
-		expect(_K.Registry.suggestCommandAlias("testreq")).toBe("testreq")
-		expect(_K.Registry.suggestCommandAlias("trl_ne")).toBe("trl_new")
+		sert.eq(_K.Registry.suggestCommandAlias("testreq"), "testreq")
+		sert.eq(_K.Registry.suggestCommandAlias("trl_ne"), "trl_new")
 
 		-- Run testreqlist targeting only PeerMod (prepared becomes empty -> returns true early and spawns requestCommand)
 		_K.Remote.RequestCommand.Invoke = function(_self, _targetPlayer, _fromPlayer, _cmdText)
@@ -828,15 +819,15 @@ describe("Process · Command Preparation, Validation & Execution", function()
 		end
 		table.clear(listTargets)
 		local okListSolo = _K.Process.runCommands(_K, mod1.UserId, ";testreqlist PeerMod", true)
-		expect(okListSolo).toBe(true)
+		sert.eq(okListSolo, true)
 		h.env:step(0.05)
-		expect(#listTargets).toBe(0)
+		sert.eq(#listTargets, 0)
 
 		-- Run testreqlist with NO arguments (`;testreqlist`) -> auto-inserts `""` for first player arg -> targets mod1 (self)
 		local okAutoSelf = _K.Process.runCommands(_K, mod1.UserId, ";testreqlist", true)
-		expect(okAutoSelf).toBe(true)
-		expect(#listTargets).toBe(1)
-		expect(listTargets[1]).toBe(mod1)
+		sert.eq(okAutoSelf, true)
+		sert.eq(#listTargets, 1)
+		sert.eq(listTargets[1], mod1)
 
 		-- Direct Command:validate() checks for missing arg, invalid arg, optional skipped arg, and client shouldFillWithSelf
 		local Command = h.env:require(h.Shared.Process.Command)
@@ -844,10 +835,10 @@ describe("Process · Command Preparation, Validation & Execution", function()
 		local cmdMissing =
 			Command.new(_K, "testreq", _K.Registry.commands.testreq, rawMissing[1], mod1.UserId, ";testreq")
 		local okMiss, errMiss = cmdMissing:validate()
-		expect(okMiss).toBe(false)
-		expect(type(errMiss)).toBe("string")
-		expect(cmdMissing.invalidPos).toBe(2)
-		expect(cmdMissing.invalidArg).toBe("testreq")
+		sert.eq(okMiss, false)
+		sert.eq(type(errMiss), "string")
+		sert.eq(cmdMissing.invalidPos, 2)
+		sert.eq(cmdMissing.invalidArg, "testreq")
 
 		local rawBad = _K.Process.rawParse(";testreq LowGuest notanint", { ";" }, " ")
 		local cmdBad = Command.new(
@@ -859,18 +850,18 @@ describe("Process · Command Preparation, Validation & Execution", function()
 			";testreq LowGuest notanint"
 		)
 		local okBad, errBad = cmdBad:validate()
-		expect(okBad).toBe(false)
-		expect(type(errBad)).toBe("string")
-		expect(cmdBad.invalidArg).toBe("notanint")
-		expect(cmdBad.invalidPos ~= nil).toBe(true)
-		expect(cmdBad.invalidMessage ~= nil).toBe(true)
+		sert.eq(okBad, false)
+		sert.eq(type(errBad), "string")
+		sert.eq(cmdBad.invalidArg, "notanint")
+		sert.eq(cmdBad.invalidPos ~= nil, true)
+		sert.eq(cmdBad.invalidMessage ~= nil, true)
 
 		local rawSelfShift = _K.Process.rawParse(";testreq 42", { ";" }, " ")
 		local cmdSelfShift =
 			Command.new(_K, "testreq", _K.Registry.commands.testreq, rawSelfShift[1], mod1.UserId, ";testreq 42")
 		local okShift = cmdSelfShift:validate()
-		expect(okShift).toBe(true)
-		expect(cmdSelfShift.args[1].skipped).toBe("42")
+		sert.eq(okShift, true)
+		sert.eq(cmdSelfShift.args[1].skipped, "42")
 
 		-- Command:requestCommand when self.fromPlayer is nil (e.g. triggered via ;global by an offline admin)
 		local invokedFrom
@@ -893,15 +884,15 @@ describe("Process · Command Preparation, Validation & Execution", function()
 		local rawOffline = _K.Process.rawParse(";testreq PeerMod 7", { ";" }, " ")
 		local cmdOffline =
 			Command.new(_K, "testreq", _K.Registry.commands.testreq, rawOffline[1], 9999, ";testreq PeerMod 7")
-		expect(cmdOffline.fromPlayer).toBeNil()
-		expect(cmdOffline:validate()).toBe(true)
+		sert.eq(cmdOffline.fromPlayer, nil)
+		sert.eq(cmdOffline:validate(), true)
 		local ranOffline = false
 		cmdOffline:requestCommand(mod2, { mod2, 7 }, function()
 			ranOffline = true
 		end)
-		expect(notifyFiredOnNil).toBe(false)
-		expect(invokedFrom).toBe(9999)
-		expect(ranOffline).toBe(true)
+		sert.eq(notifyFiredOnNil, false)
+		sert.eq(invokedFrom, 9999)
+		sert.eq(ranOffline, true)
 		_K.Remote.Notify.Fire = origNotifyFire
 	end)
 end)
@@ -976,10 +967,10 @@ describe("Process · Command filters & async roles", function()
 			end
 			return true
 		end)
-		expect(_K.Process.runCommands(_K, admin.UserId, ";testfilter me,FilterGuest", true)).toBe(false)
-		expect(#runs).toBe(0)
-		expect(seen.from).toBe(admin.UserId)
-		expect(string.find(notes[#notes], "Guests are protected here.", 1, true) ~= nil).toBe(true)
+		sert.eq(_K.Process.runCommands(_K, admin.UserId, ";testfilter me,FilterGuest", true), false)
+		sert.eq(#runs, 0)
+		sert.eq(seen.from, admin.UserId)
+		sert.eq(string.find(notes[#notes], "Guests are protected here.", 1, true) ~= nil, true)
 
 		-- dropped targets are gone before the request split: the peer isn't asked and the rest still run
 		local notTargeted = h.env:addPlayer(199, "NotTargeted")
@@ -991,16 +982,16 @@ describe("Process · Command filters & async roles", function()
 			end
 			return true
 		end)
-		expect(_K.Process.runCommands(_K, admin.UserId, ";testfilter FilterPeer,me", true)).toBe(true)
+		sert.eq(_K.Process.runCommands(_K, admin.UserId, ";testfilter FilterPeer,me", true), true)
 		h.env:step(0.05)
-		expect(dropped).toEqual({ true, false })
-		expect(#requested).toBe(0)
-		expect(#runs).toBe(1)
-		expect(runs[1].targets).toEqual({ admin })
+		sert.eq(dropped, { true, false })
+		sert.eq(#requested, 0)
+		sert.eq(#runs, 1)
+		sert.eq(runs[1].targets, { admin })
 		-- without targets left the command is cancelled
-		expect(_K.Process.runCommands(_K, admin.UserId, ";testfilter FilterPeer", true)).toBe(false)
-		expect(#runs).toBe(1)
-		expect(string.find(notes[#notes], "No players left", 1, true) ~= nil).toBe(true)
+		sert.eq(_K.Process.runCommands(_K, admin.UserId, ";testfilter FilterPeer", true), false)
+		sert.eq(#runs, 1)
+		sert.eq(string.find(notes[#notes], "No players left", 1, true) ~= nil, true)
 		removeDrop()
 		removeDrop() -- removing twice is harmless
 
@@ -1013,43 +1004,43 @@ describe("Process · Command filters & async roles", function()
 			end
 			return true
 		end)
-		expect(_K.Process.runCommands(_K, admin.UserId, ";testsingle me", true)).toBe(false)
-		expect(single.dropped).toBe(true)
-		expect(single.left).toBeNil()
-		expect(#runs).toBe(1)
-		expect(_K.Process.runCommands(_K, admin.UserId, ";testoptsingle me 42", false)).toBe(true)
+		sert.eq(_K.Process.runCommands(_K, admin.UserId, ";testsingle me", true), false)
+		sert.eq(single.dropped, true)
+		sert.eq(single.left, nil)
+		sert.eq(#runs, 1)
+		sert.eq(_K.Process.runCommands(_K, admin.UserId, ";testoptsingle me 42", false), true)
 		h.env:step(0.05)
-		expect(single.dropped).toBe(true)
-		expect(single.left).toBeNil()
-		expect(#runs).toBe(2)
-		expect(runs[2].targets).toEqual({})
-		expect(runs[2].count).toBe(42)
-		expect(_K.Data.logs[#_K.Data.logs][1]).toBe(";testoptsingle  42")
+		sert.eq(single.dropped, true)
+		sert.eq(single.left, nil)
+		sert.eq(#runs, 2)
+		sert.eq(runs[2].targets, {})
+		sert.eq(runs[2].count, 42)
+		sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testoptsingle  42")
 		removeSingle()
-		expect(_K.Process.runCommands(_K, admin.UserId, ";testsingle me", true)).toBe(true)
-		expect(#runs).toBe(3)
+		sert.eq(_K.Process.runCommands(_K, admin.UserId, ";testsingle me", true), true)
+		sert.eq(#runs, 3)
 
 		-- a filter that errors or forgets to allow cancels the command
 		local removeError = _K.Process.addCommandFilter(function()
 			error("filter bug")
 		end)
-		expect(_K.Process.runCommands(_K, admin.UserId, ";testfilter me", true)).toBe(false)
-		expect(string.find(notes[#notes], "filter error", 1, true) ~= nil).toBe(true)
+		sert.eq(_K.Process.runCommands(_K, admin.UserId, ";testfilter me", true), false)
+		sert.eq(string.find(notes[#notes], "filter error", 1, true) ~= nil, true)
 		removeError()
 		local removeNil = _K.Process.addCommandFilter(function()
 			return nil :: any
 		end)
-		expect(_K.Process.runCommands(_K, admin.UserId, ";testfilter me", true)).toBe(false)
-		expect(string.find(notes[#notes], "Command blocked.", 1, true) ~= nil).toBe(true)
+		sert.eq(_K.Process.runCommands(_K, admin.UserId, ";testfilter me", true), false)
+		sert.eq(string.find(notes[#notes], "Command blocked.", 1, true) ~= nil, true)
 		removeNil()
 
 		removeBlock()
-		expect(_K.Process.runCommands(_K, admin.UserId, ";testfilter me,FilterGuest", true)).toBe(true)
-		expect(#runs).toBe(4)
-		expect(table.find(runs[4].targets, guest) ~= nil).toBe(true)
-		expect(function()
+		sert.eq(_K.Process.runCommands(_K, admin.UserId, ";testfilter me,FilterGuest", true), true)
+		sert.eq(#runs, 4)
+		sert.eq(table.find(runs[4].targets, guest) ~= nil, true)
+		sert.throws(function()
 			_K.Process.addCommandFilter("nope" :: any)
-		end).toThrow()
+		end)
 	end)
 
 	test("roles from groups and purchases outlast userRoleRemove, given roles stay per session", function()
@@ -1059,25 +1050,25 @@ describe("Process · Command filters & async roles", function()
 		local userId = 404
 
 		-- a role given in the session isn't saved and is removed normally
-		expect(Auth.userRoleAdd(userId, "mod")).toBe(true)
-		expect(Data.Sync.members[tostring(userId)]).toBeNil()
-		expect(Data.members[tostring(userId)].persist).toEqual({})
-		expect(Auth.hasAsyncRole(userId, "mod")).toBe(false)
-		expect(Auth.userRoleRemove(userId, "mod")).toBe(true)
-		expect(Auth.hasRole(userId, "mod")).toBe(false)
+		sert.eq(Auth.userRoleAdd(userId, "mod"), true)
+		sert.eq(Data.Sync.members[tostring(userId)], nil)
+		sert.eq(Data.members[tostring(userId)].persist, {})
+		sert.eq(Auth.hasAsyncRole(userId, "mod"), false)
+		sert.eq(Auth.userRoleRemove(userId, "mod"), true)
+		sert.eq(Auth.hasRole(userId, "mod"), false)
 
 		-- an owned role stays, only its saved copy is removed
-		expect(Auth.asyncRoleAdd(userId, "mod")).toBe(true)
-		expect(Auth.hasAsyncRole(userId, "mod")).toBe(true)
-		expect(Auth.hasAsyncRole(tostring(userId) :: any, "mod")).toBe(true)
-		expect(Auth.hasAsyncRole(userId, "admin")).toBe(false)
-		expect(Auth.userRoleRemove(userId, "mod")).toBe(false)
-		expect(Auth.hasRole(userId, "mod")).toBe(true)
+		sert.eq(Auth.asyncRoleAdd(userId, "mod"), true)
+		sert.eq(Auth.hasAsyncRole(userId, "mod"), true)
+		sert.eq(Auth.hasAsyncRole(tostring(userId) :: any, "mod"), true)
+		sert.eq(Auth.hasAsyncRole(userId, "admin"), false)
+		sert.eq(Auth.userRoleRemove(userId, "mod"), false)
+		sert.eq(Auth.hasRole(userId, "mod"), true)
 		Auth.userRoleAdd(userId, "mod", true)
-		expect(Data.members[tostring(userId)].persist).toEqual({ "mod" })
-		expect(Auth.userRoleRemove(userId, "mod")).toBe(true)
-		expect(Data.members[tostring(userId)].persist).toEqual({})
-		expect(Auth.hasRole(userId, "mod")).toBe(true)
+		sert.eq(Data.members[tostring(userId)].persist, { "mod" })
+		sert.eq(Auth.userRoleRemove(userId, "mod"), true)
+		sert.eq(Data.members[tostring(userId)].persist, {})
+		sert.eq(Auth.hasRole(userId, "mod"), true)
 
 		-- gamepass, asset, subscription and group roles are owned
 		local player = h.env:addPlayer(405, "Owner")
@@ -1105,11 +1096,11 @@ describe("Process · Command filters & async roles", function()
 			done = true
 		end)
 		h.env:flush()
-		expect(done).toBe(true)
+		sert.eq(done, true)
 		for _, roleId in { "vip", "admin", "superadmin", "mod" } do
-			expect(Auth.hasAsyncRole(player.UserId, roleId)).toBe(true)
+			sert.eq(Auth.hasAsyncRole(player.UserId, roleId), true)
 			Auth.userRoleRemove(player.UserId, roleId)
-			expect(Auth.hasRole(player.UserId, roleId)).toBe(true)
+			sert.eq(Auth.hasRole(player.UserId, roleId), true)
 		end
 	end)
 
@@ -1125,17 +1116,17 @@ describe("Process · Command filters & async roles", function()
 			-- 1. Pattern-special splitKey (% and .) does not error or split every character, and legacy "%s" normalizes to " "
 			for _, delim in { "%", "." } do
 				local parsed = Process.rawParse(";cmds%a%;version", { ";" }, delim)
-				expect(parsed ~= nil).toBe(true)
+				sert.eq(parsed ~= nil, true)
 				if delim == "%" then
-					expect(#(parsed :: any)).toBe(2)
-					expect((parsed :: any)[1][1][2]).toBe("cmds")
-					expect((parsed :: any)[1][2][2]).toBe("a")
-					expect((parsed :: any)[2][1][2]).toBe("version")
+					sert.eq(#(parsed :: any), 2)
+					sert.eq((parsed :: any)[1][1][2], "cmds")
+					sert.eq((parsed :: any)[1][2][2], "a")
+					sert.eq((parsed :: any)[2][1][2], "version")
 				end
 			end
 			local legacyParsed = Process.rawParse(";m h", { ";" }, "%s")
-			expect(legacyParsed).toEqual({ { { 2, "m" }, { 4, "h" } } })
-			expect(Process.rawParse(";m he", { ";" }, "%s")).toEqual({ { { 2, "m" }, { 4, "he" } } })
+			sert.eq(legacyParsed, { { { 2, "m" }, { 4, "h" } } })
+			sert.eq(Process.rawParse(";m he", { ";" }, "%s"), { { { 2, "m" }, { 4, "he" } } })
 
 			-- 2. Argument:prepare with limits.targets = 1 allows 1 target across validate + parse and rejects 2
 			local vipPlr = h.env:addPlayer(501, "VipTargetTester")
@@ -1162,18 +1153,19 @@ describe("Process · Command filters & async roles", function()
 			_K.Data.roles.vip.groups = { "general" }
 
 			-- Targeting 2 players fails validation when limits.targets == 1 and still counts against commandLimits
-			expect(Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me,OtherTargetTester", true)).toBe(false)
-			expect(runs).toBe(0)
-			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(true)
+			sert.eq(Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me,OtherTargetTester", true), false)
+			sert.eq(runs, 0)
+			sert.eq(Process.onCooldown(_K, vipPlr.UserId), true)
 			h.env:step(10)
 
 			-- Chaining multiple single-target commands in one message succeeds when limits.targets == 1 (per-argument target limit, #590)
 			_K.Data.roles.vip.limits = { commands = 2, cooldown = 10, targets = 1 }
-			expect(Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me ;testlimitcmd OtherTargetTester", true)).toBe(
+			sert.eq(
+				Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me ;testlimitcmd OtherTargetTester", true),
 				true
 			)
-			expect(runs).toBe(2)
-			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(true)
+			sert.eq(runs, 2)
+			sert.eq(Process.onCooldown(_K, vipPlr.UserId), true)
 			h.env:step(10)
 
 			-- Multi-player-argument command also resets targetLimits per argument when limits.targets == 1
@@ -1191,60 +1183,61 @@ describe("Process · Command filters & async roles", function()
 					dualArgRuns += #fromTargets
 				end,
 			})
-			expect(Process.runCommands(_K, vipPlr.UserId, ";testdualtargetcmd me OtherTargetTester", true)).toBe(true)
-			expect(dualArgRuns).toBe(1)
-			expect(
+			sert.eq(Process.runCommands(_K, vipPlr.UserId, ";testdualtargetcmd me OtherTargetTester", true), true)
+			sert.eq(dualArgRuns, 1)
+			sert.eq(
 				Process.runCommands(
 					_K,
 					vipPlr.UserId,
 					";testdualtargetcmd me,OtherTargetTester OtherTargetTester",
 					true
-				)
-			).toBe(false)
+				),
+				false
+			)
 			h.env:step(10)
 			runs = 0
 			_K.Data.roles.vip.limits = { commands = 1, cooldown = 10, targets = 1 }
 
 			-- Targeting 1 player succeeds through both validate and parse, and consumes the 1 command limit
-			expect(Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me", true)).toBe(true)
-			expect(runs).toBe(1)
+			sert.eq(Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me", true), true)
+			sert.eq(runs, 1)
 
 			-- Second command within cooldown is blocked before execution
-			expect(Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me", true)).toBe(false)
-			expect(runs).toBe(1)
+			sert.eq(Process.runCommands(_K, vipPlr.UserId, ";testlimitcmd me", true), false)
+			sert.eq(runs, 1)
 			h.env:step(10)
 
 			-- 3. Process.countCommand & Process.onCooldown (client vs server)
 			_K.Data.roles.vip.limits = { commands = 2, cooldown = 5, targets = 4 }
 			Process.resetLimit(vipPlr.UserId)
 			_K.IsServer = false
-			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(false)
+			sert.eq(Process.onCooldown(_K, vipPlr.UserId), false)
 			Process.countCommand(_K, vipPlr.UserId, 2)
-			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(false)
+			sert.eq(Process.onCooldown(_K, vipPlr.UserId), false)
 			_K.IsServer = true
-			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(false)
+			sert.eq(Process.onCooldown(_K, vipPlr.UserId), false)
 			Process.countCommand(_K, vipPlr.UserId)
-			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(false)
+			sert.eq(Process.onCooldown(_K, vipPlr.UserId), false)
 			Process.countCommand(_K, vipPlr.UserId, 1)
-			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(true)
+			sert.eq(Process.onCooldown(_K, vipPlr.UserId), true)
 			h.env:step(5)
-			expect(Process.onCooldown(_K, vipPlr.UserId)).toBe(false)
+			sert.eq(Process.onCooldown(_K, vipPlr.UserId), false)
 
 			-- 4. Process.prepareCommands maxPrepare cap, command.Error, and client VIP / GamePass / RestrictedToRole
 			Process.countCommand(_K, vipPlr.UserId, 1) -- 1 left in limit of 2
 			local okPrepCap, cappedCmds =
 				Process.prepareCommands(_K, vipPlr.UserId, ";testlimitcmd me ;testlimitcmd me")
-			expect(okPrepCap).toBe(true)
-			expect(#cappedCmds).toBe(2)
-			expect(cappedCmds[1].validated).toBe(true)
-			expect(cappedCmds[2].validated).toBeNil()
-			expect(cappedCmds[2].alias).toBe("testlimitcmd")
+			sert.eq(okPrepCap, true)
+			sert.eq(#cappedCmds, 2)
+			sert.eq(cappedCmds[1].validated, true)
+			sert.eq(cappedCmds[2].validated, nil)
+			sert.eq(cappedCmds[2].alias, "testlimitcmd")
 			Process.resetLimit(vipPlr.UserId)
 
 			local okPrepFail, failMsg, failCmds =
 				Process.prepareCommands(_K, vipPlr.UserId, ";testlimitcmd NonExistentPlayerXYZ")
-			expect(okPrepFail).toBe(false)
-			expect(failCmds[1].Error).toBe(failMsg)
+			sert.eq(okPrepFail, false)
+			sert.eq(failCmds[1].Error, failMsg)
 
 			local guestPlr = h.env:addPlayer(503, "GuestPurchaseTester")
 			guestPlr:SetAttribute("_KRolesLoaded", true)
@@ -1271,12 +1264,12 @@ describe("Process · Command filters & async roles", function()
 			_K.Data.roles.mod.gamepasses = { 777 }
 			_K.Registry.commands.testlimitcmd.RestrictedToRole = { name = "VIP" }
 			local okClientRestr, restrMsg = Process.prepareCommands(_K, guestPlr.UserId, ";testlimitcmd me")
-			expect(okClientRestr).toBe(false)
-			expect(restrMsg).toBe('"<b>testlimitcmd</b>" command restricted to <b>VIP</b>')
-			expect(vipPrompted).toBe(1)
-			expect(#gpPrompted).toBe(1)
-			expect(gpPrompted[1].plr).toBe(guestPlr)
-			expect(gpPrompted[1].gpId).toBe(777)
+			sert.eq(okClientRestr, false)
+			sert.eq(restrMsg, '"<b>testlimitcmd</b>" command restricted to <b>VIP</b>')
+			sert.eq(vipPrompted, 1)
+			sert.eq(#gpPrompted, 1)
+			sert.eq(gpPrompted[1].plr, guestPlr)
+			sert.eq(gpPrompted[1].gpId, 777)
 			_K.Registry.commands.testlimitcmd.RestrictedToRole = nil
 			_K.Data.roles.mod.gamepasses = nil
 			_K.IsClient = false
@@ -1311,16 +1304,16 @@ describe("Process · Command filters & async roles", function()
 			local hookConn = _K.Hook.runPreparedCommands:Connect(function(f, res, raw)
 				hookFired = { from = f, count = #res, rawLen = #raw }
 			end)
-			expect(Process.runCommands(_K, superPlr.UserId, ";testecho " .. longPayload, true)).toBe(true)
-			expect(#(capturedEcho or "")).toBe(1050)
-			expect(hookFired ~= nil and hookFired.from == superPlr.UserId and hookFired.count == 1).toBe(true)
+			sert.eq(Process.runCommands(_K, superPlr.UserId, ";testecho " .. longPayload, true), true)
+			sert.eq(#(capturedEcho or ""), 1050)
+			sert.eq(hookFired ~= nil and hookFired.from == superPlr.UserId and hookFired.count == 1, true)
 			hookConn:Disconnect()
 
 			-- Guest / non-restricted role has >1024 truncated in prepareCommands and runCommands
 			_K.Data.roles.vip.limits = { commands = 2, cooldown = 5, targets = 4 }
 			Process.resetLimit(vipPlr.UserId)
-			expect(Process.runCommands(_K, vipPlr.UserId, ";testecho " .. longPayload, true)).toBe(true)
-			expect(#(capturedEcho or "")).toBe(1024 - #";testecho ")
+			sert.eq(Process.runCommands(_K, vipPlr.UserId, ";testecho " .. longPayload, true), true)
+			sert.eq(#(capturedEcho or ""), 1024 - #";testecho ")
 			Process.resetLimit(vipPlr.UserId)
 
 			-- Command limit reached mid-batch alerts with notRan command aliases
@@ -1337,17 +1330,18 @@ describe("Process · Command filters & async roles", function()
 				table.insert(res, table.clone(res[1]))
 				res[3].alias = "skippedtwo"
 			end)
-			expect(Process.runCommands(_K, vipPlr.UserId, ";testecho ok", true)).toBe(true)
+			sert.eq(Process.runCommands(_K, vipPlr.UserId, ";testecho ok", true), true)
 			expandConn:Disconnect()
 			_K.alert = origAlert
-			expect(lastAlert ~= nil).toBe(true)
-			expect(string.find((lastAlert :: any).msg, "Commands not ran: skippedone, skippedtwo", 1, true) ~= nil).toBe(
+			sert.eq(lastAlert ~= nil, true)
+			sert.eq(
+				string.find((lastAlert :: any).msg, "Commands not ran: skippedone, skippedtwo", 1, true) ~= nil,
 				true
 			)
 			Process.resetLimit(vipPlr.UserId)
 
 			-- Empty/non-command string returns true
-			expect(Process.runCommands(_K, superPlr.UserId, "hello world not a command", true)).toBe(true)
+			sert.eq(Process.runCommands(_K, superPlr.UserId, "hello world not a command", true), true)
 
 			-- Client runCommands: clientOnly suppresses prepare error notification; normal client forwards server commands & logs errors
 			_K.IsServer = false
@@ -1372,24 +1366,25 @@ describe("Process · Command filters & async roles", function()
 					table.insert(remoteCmdFired, cmdStr)
 				end,
 			} :: any
-			expect(Process.runCommands(_K, superPlr.UserId, ";nonexistentcmd", true, false, true)).toBe(false)
+			sert.eq(Process.runCommands(_K, superPlr.UserId, ";nonexistentcmd", true, false, true), false)
 			h.env:flush()
-			expect(#clientNotifies).toBe(0)
-			expect(#clientErrorLogs).toBe(0)
+			sert.eq(#clientNotifies, 0)
+			sert.eq(#clientErrorLogs, 0)
 
-			expect(Process.runCommands(_K, superPlr.UserId, ";nonexistentcmd", true, false, false)).toBe(false)
+			sert.eq(Process.runCommands(_K, superPlr.UserId, ";nonexistentcmd", true, false, false), false)
 			h.env:flush()
-			expect(#clientNotifies).toBe(1)
-			expect(#clientErrorLogs).toBe(1)
-			expect(clientErrorLogs[1].from).toBe(superPlr.UserId)
+			sert.eq(#clientNotifies, 1)
+			sert.eq(#clientErrorLogs, 1)
+			sert.eq(clientErrorLogs[1].from, superPlr.UserId)
 
-			expect(Process.runCommands(_K, superPlr.UserId, ";testclientonlycmd ;testecho hello", false, true, false)).toBe(
+			sert.eq(
+				Process.runCommands(_K, superPlr.UserId, ";testclientonlycmd ;testecho hello", false, true, false),
 				true
 			)
 			h.env:flush()
-			expect(#remoteCmdFired).toBe(1)
-			expect(remoteCmdFired[1]).toBe(";testecho hello")
-			expect(lastGlobalLogFlag).toBe(true)
+			sert.eq(#remoteCmdFired, 1)
+			sert.eq(remoteCmdFired[1], ";testecho hello")
+			sert.eq(lastGlobalLogFlag, true)
 			_K.log = origLog
 			_K.IsClient = false
 			_K.IsServer = true
@@ -1436,10 +1431,10 @@ describe("Process · Command filters & async roles", function()
 				error("player disconnected")
 			end
 			local okPrepReq, reqCmds = Process.prepareCommands(_K, superPlr.UserId, ";testmultireq PeerReqOne")
-			expect(okPrepReq).toBe(true)
+			sert.eq(okPrepReq, true)
 			local leftRes = reqCmds[1]:requestCommand(peer1, { { peer1 } }, _K.Registry.commands.testmultireq.run)
-			expect(leftRes).toBe(false)
-			expect(string.find(reqNotifies[#reqNotifies].text, "left during", 1, true) ~= nil).toBe(true)
+			sert.eq(leftRes, false)
+			sert.eq(string.find(reqNotifies[#reqNotifies].text, "left during", 1, true) ~= nil, true)
 
 			-- Accepted request where run errors notifies sender with "command failed:"
 			_K.Remote.RequestCommand.Invoke = function()
@@ -1448,28 +1443,28 @@ describe("Process · Command filters & async roles", function()
 			shouldErrInRun = true
 			table.clear(reqNotifies)
 			reqCmds[1]:requestCommand(peer1, { { peer1 } }, _K.Registry.commands.testmultireq.run)
-			expect(string.find(reqNotifies[#reqNotifies].text, "command failed:", 1, true) ~= nil).toBe(true)
+			sert.eq(string.find(reqNotifies[#reqNotifies].text, "command failed:", 1, true) ~= nil, true)
 			shouldErrInRun = false
 
 			-- Accepted request where run succeeds does NOT fire "command failed:"
 			table.clear(reqNotifies)
 			reqCmds[1]:requestCommand(peer1, { { peer1 } }, _K.Registry.commands.testmultireq.run)
-			expect(string.find(reqNotifies[#reqNotifies].text, "accepted", 1, true) ~= nil).toBe(true)
-			expect(#multiRuns).toBe(1)
-			expect(multiRuns[1]).toEqual({ "PeerReqOne" })
+			sert.eq(string.find(reqNotifies[#reqNotifies].text, "accepted", 1, true) ~= nil, true)
+			sert.eq(#multiRuns, 1)
+			sert.eq(multiRuns[1], { "PeerReqOne" })
 
 			-- Multi-target list with 2 peers + 1 lower-rank player splits solo requests for each peer and runs immediately for lowPlr
 			table.clear(multiRuns)
 			local okMulti, multiCmds =
 				Process.prepareCommands(_K, superPlr.UserId, ";testmultireq PeerReqOne,PeerReqTwo,LowReqTarget")
-			expect(okMulti).toBe(true)
+			sert.eq(okMulti, true)
 			local runOk = multiCmds[1]:run()
-			expect(runOk).toBe(true)
+			sert.eq(runOk, true)
 			h.env:flush()
-			expect(#multiRuns).toBe(3)
-			expect(multiRuns[1]).toEqual({ "PeerReqTwo" })
-			expect(multiRuns[2]).toEqual({ "PeerReqOne" })
-			expect(multiRuns[3]).toEqual({ "LowReqTarget" })
+			sert.eq(#multiRuns, 3)
+			sert.eq(multiRuns[1], { "PeerReqTwo" })
+			sert.eq(multiRuns[2], { "PeerReqOne" })
+			sert.eq(multiRuns[3], { "LowReqTarget" })
 
 			-- Multi-target list with ONLY peers skips running the initial command and only runs via requests
 			table.clear(multiRuns)
@@ -1478,10 +1473,10 @@ describe("Process · Command filters & async roles", function()
 			end
 			local okOnlyPeers, onlyPeerCmds =
 				Process.prepareCommands(_K, superPlr.UserId, ";testmultireq PeerReqOne,PeerReqTwo")
-			expect(okOnlyPeers).toBe(true)
-			expect(onlyPeerCmds[1]:run()).toBe(true)
+			sert.eq(okOnlyPeers, true)
+			sert.eq(onlyPeerCmds[1]:run(), true)
 			h.env:flush()
-			expect(#multiRuns).toBe(0)
+			sert.eq(#multiRuns, 0)
 
 			-- Direct Command:validate resets targetLimits and sets array[2] pos to start + #text
 			_K.Data.targetLimits[superPlr.UserId] = 99
@@ -1493,10 +1488,10 @@ describe("Process · Command filters & async roles", function()
 				superPlr.UserId,
 				";testmultireq"
 			)
-			expect(rawCmd:validate()).toBe(true)
-			expect(rawCmd.array[2][1]).toBe(14)
-			expect(rawCmd.array[2][2]).toBe("")
-			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(1)
+			sert.eq(rawCmd:validate(), true)
+			sert.eq(rawCmd.array[2][1], 14)
+			sert.eq(rawCmd.array[2][2], "")
+			sert.eq(_K.Data.targetLimits[superPlr.UserId], 1)
 
 			-- Argument:transform invalidates when transform returns nil for non-whitespace optional arg; validate/parse reset targetLimits
 			_K.Registry.registerType("testniltransform", {
@@ -1533,8 +1528,8 @@ describe("Process · Command filters & async roles", function()
 				"bad"
 			)
 			local okTr, trErr = optNilArg:transform()
-			expect(okTr).toBe(false)
-			expect(trErr.message).toBe("Custom transform error")
+			sert.eq(okTr, false)
+			sert.eq(trErr.message, "Custom transform error")
 
 			local wsNilArg = Argument.new(
 				dummyCmd,
@@ -1554,28 +1549,28 @@ describe("Process · Command filters & async roles", function()
 				end,
 			} :: any
 			local okWs, wsErr = wsNilArg:transform()
-			expect(okWs).toBe(false)
-			expect(wsErr.message).toBe("Invalid transform: nil")
+			sert.eq(okWs, false)
+			sert.eq(wsErr.message, "Invalid transform: nil")
 
 			_K.Data.targetLimits[superPlr.UserId] = 7
 			local valFailArg =
 				Argument.new(dummyCmd, { type = "testniltransform", name = "V", description = "V" }, 5, "invalidval")
-			expect(valFailArg:transform()).toBe(true)
+			sert.eq(valFailArg:transform(), true)
 			local okVal, valErr = valFailArg:validate()
-			expect(okVal).toBe(false)
-			expect(valErr.message).toBe("Invalid argument: invalidval")
-			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(0)
+			sert.eq(okVal, false)
+			sert.eq(valErr.message, "Invalid argument: invalidval")
+			sert.eq(_K.Data.targetLimits[superPlr.UserId], 0)
 
 			_K.Data.targetLimits[superPlr.UserId] = 7
 			local parseFailArg =
 				Argument.new(dummyCmd, { type = "testniltransform", name = "P", description = "P" }, 5, "parsefail")
-			expect(parseFailArg:transform()).toBe(true)
-			expect(parseFailArg:validate()).toBe(true)
-			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(5)
+			sert.eq(parseFailArg:transform(), true)
+			sert.eq(parseFailArg:validate(), true)
+			sert.eq(_K.Data.targetLimits[superPlr.UserId], 5)
 			local okParse, parseErr = parseFailArg:parse()
-			expect(okParse).toBe(false)
-			expect(parseErr.message).toBe("Custom parse error")
-			expect(_K.Data.targetLimits[superPlr.UserId]).toBe(0)
+			sert.eq(okParse, false)
+			sert.eq(parseErr.message, "Custom parse error")
+			sert.eq(_K.Data.targetLimits[superPlr.UserId], 0)
 
 			-- Prefix type switching listable -> non-listable and listable -> different listable
 			_K.Registry.registerType("testsublist", {
@@ -1610,14 +1605,14 @@ describe("Process · Command filters & async roles", function()
 			local singlePrefArg =
 				Argument.new(dummyCmd, { type = "testsinglepref", name = "SP", description = "SP" }, 5, "@item")
 			local okSP, resSP = singlePrefArg:prepare()
-			expect(okSP).toBe(true)
-			expect(resSP).toBe("sub_item")
+			sert.eq(okSP, true)
+			sert.eq(resSP, "sub_item")
 
 			local listPrefArg =
 				Argument.new(dummyCmd, { type = "testlistpref", name = "LP", description = "LP" }, 5, "@item")
 			local okLP, resLP = listPrefArg:prepare()
-			expect(okLP).toBe(true)
-			expect(resLP).toEqual({ "sub_item", "sub2_item" })
+			sert.eq(okLP, true)
+			sert.eq(resLP, { "sub_item", "sub2_item" })
 
 			-- 7. Registry edge cases: re-registering command aliases, suggestCommandAlias >32 chars, makeSequenceType, registerCommandModule
 			local regHookCmd = nil
@@ -1633,7 +1628,7 @@ describe("Process · Command filters & async roles", function()
 				run = function() end,
 			})
 			h.env:step(0.3)
-			expect(table.find(_K.Registry.commandNames, "tro_old") ~= nil).toBe(true)
+			sert.eq(table.find(_K.Registry.commandNames, "tro_old") ~= nil, true)
 			_K.Registry.registerCommand(_K, {
 				name = "testregoverride",
 				aliases = { "tro_new" },
@@ -1643,14 +1638,14 @@ describe("Process · Command filters & async roles", function()
 			})
 			h.env:step(0.3)
 			regConn:Disconnect()
-			expect(regHookCmd ~= nil and regHookCmd.name == "testregoverride").toBe(true)
-			expect(_K.Registry.commands.testregoverride.group).toBe("moderation")
-			expect(_K.Registry.commands.tro_old).toBeNil()
-			expect(table.find(_K.Registry.commandNames, "tro_old")).toBeNil()
-			expect(table.find(_K.Registry.commandNames, "tro_new") ~= nil).toBe(true)
+			sert.eq(regHookCmd ~= nil and regHookCmd.name == "testregoverride", true)
+			sert.eq(_K.Registry.commands.testregoverride.group, "moderation")
+			sert.eq(_K.Registry.commands.tro_old, nil)
+			sert.eq(table.find(_K.Registry.commandNames, "tro_old"), nil)
+			sert.eq(table.find(_K.Registry.commandNames, "tro_new") ~= nil, true)
 
 			local longAliasQuery = "testregoverride" .. string.rep("z", 30)
-			expect(#_K.Registry.suggestCommandAlias(longAliasQuery) > 0).toBe(true)
+			sert.eq(#_K.Registry.suggestCommandAlias(longAliasQuery) > 0, true)
 
 			-- Command:validate client suggestions disabling shouldFillWithSelf, and filledSelf second optional arg skipping
 			_K.Registry.registerType("testplayeropt", {
@@ -1678,22 +1673,22 @@ describe("Process · Command filters & async roles", function()
 			_K.IsServer = false
 			_K.IsClient = true
 			local okFillCli, fillCliErr = Process.prepareCommands(_K, superPlr.UserId, ";testfillsug PeerReq 10")
-			expect(okFillCli).toBe(false)
-			expect(fillCliErr).toBe("Not a player")
+			sert.eq(okFillCli, false)
+			sert.eq(fillCliErr, "Not a player")
 			_K.IsClient = false
 			_K.IsServer = true
 
 			local okFillSrv, fillSrvCmds = Process.prepareCommands(_K, superPlr.UserId, ";testfillsug 42")
-			expect(okFillSrv).toBe(true)
-			expect(fillSrvCmds[1].preparedArgs[1]).toBe("me")
-			expect(fillSrvCmds[1].args[2].skipped).toBe("42")
-			expect(fillSrvCmds[1].preparedArgs[3]).toBe(42)
+			sert.eq(okFillSrv, true)
+			sert.eq(fillSrvCmds[1].preparedArgs[1], "me")
+			sert.eq(fillSrvCmds[1].args[2].skipped, "42")
+			sert.eq(fillSrvCmds[1].preparedArgs[3], 42)
 
 			local okFillSrv2, fillSrvCmds2 = Process.prepareCommands(_K, superPlr.UserId, ";testfillsug PeerReqOne 42")
-			expect(okFillSrv2).toBe(true)
-			expect(fillSrvCmds2[1].preparedArgs[1]).toBe("PeerReqOne")
-			expect(fillSrvCmds2[1].args[2].skipped).toBe("42")
-			expect(fillSrvCmds2[1].preparedArgs[3]).toBe(42)
+			sert.eq(okFillSrv2, true)
+			sert.eq(fillSrvCmds2[1].preparedArgs[1], "PeerReqOne")
+			sert.eq(fillSrvCmds2[1].args[2].skipped, "42")
+			sert.eq(fillSrvCmds2[1].preparedArgs[3], 42)
 
 			-- Process.runCommands liveText redaction for freeText / redactLog args and failed command liveText
 			local capturedLogs = {}
@@ -1721,14 +1716,14 @@ describe("Process · Command filters & async roles", function()
 				},
 				run = function() end,
 			})
-			expect(Process.runCommands(_K, superPlr.UserId, ";testlogredact secretword", false)).toBe(true)
+			sert.eq(Process.runCommands(_K, superPlr.UserId, ";testlogredact secretword", false), true)
 			h.env:flush()
-			expect(capturedLogs[#capturedLogs].txt).toBe(";testlogredact secretword")
-			expect(capturedLogs[#capturedLogs].live).toBe(";testlogredact …")
+			sert.eq(capturedLogs[#capturedLogs].txt, ";testlogredact secretword")
+			sert.eq(capturedLogs[#capturedLogs].live, ";testlogredact …")
 
-			expect(Process.runCommands(_K, superPlr.UserId, ";testlimitcmd NonExistentPlrXYZ", false)).toBe(false)
+			sert.eq(Process.runCommands(_K, superPlr.UserId, ";testlimitcmd NonExistentPlrXYZ", false), false)
 			h.env:flush()
-			expect(capturedLogs[#capturedLogs].live).toBe(";testlimitcmd …")
+			sert.eq(capturedLogs[#capturedLogs].live, ";testlimitcmd …")
 			_K.log = origLog2
 		end
 	)
@@ -1811,15 +1806,15 @@ describe("Process · Command filters & async roles", function()
 					end
 					local raw = table.concat(parts, " ")
 					local parsed = Process.rawParse(raw, { spec.prefix }, " ")
-					expect(parsed ~= nil).toBe(true)
+					sert.eq(parsed ~= nil, true)
 					local simplified = {}
 					for i, cmdArr in parsed or {} do
-						expect(#cmdArr >= 1).toBe(true)
+						sert.eq(#cmdArr >= 1, true)
 						local row = {}
 						for j, tok in cmdArr do
 							local pos = tok[1]
 							local text = tok[2]
-							expect(string.sub(raw, pos, pos + #text - 1)).toBe(text)
+							sert.eq(string.sub(raw, pos, pos + #text - 1), text)
 							row[j] = { pos = pos, endPos = pos + #text - 1, text = text }
 						end
 						simplified[i] = row
@@ -1877,10 +1872,13 @@ describe("Process · Command filters & async roles", function()
 				"!me",
 			})
 
-			sert.check(
+			sert.prop(
 				"Process.rawParse, prepareCommands, and runCommands satisfy strict grammar and authorization contracts",
-				{ malformedGen, bIntGen, bFloatGen, selectorGen },
-				function(malformed, bInt, bFloat, selector)
+				function(g)
+					local malformed = malformedGen(g)
+					local bInt = bIntGen(g)
+					local bFloat = bFloatGen(g)
+					local selector = selectorGen(g)
 					for _, candidate in
 						{
 							malformed,
@@ -1890,16 +1888,16 @@ describe("Process · Command filters & async roles", function()
 						}
 					do
 						local okRaw, resRaw = pcall(Process.rawParse, candidate, { ";", "!" }, " ")
-						expect(okRaw).toBe(true)
-						expect(resRaw == nil or type(resRaw) == "table").toBe(true)
+						sert.eq(okRaw, true)
+						sert.eq(resRaw == nil or type(resRaw) == "table", true)
 						if resRaw ~= nil then
-							expect(#resRaw >= 1).toBe(true)
+							sert.eq(#resRaw >= 1, true)
 							for _, cmdArr in resRaw do
-								expect(#cmdArr >= 1).toBe(true)
+								sert.eq(#cmdArr >= 1, true)
 								for _, tok in cmdArr do
-									expect(type(tok[1])).toBe("number")
-									expect(type(tok[2])).toBe("string")
-									expect(tok[1] >= 1).toBe(true)
+									sert.eq(type(tok[1]), "number")
+									sert.eq(type(tok[2]), "string")
+									sert.eq(tok[1] >= 1, true)
 								end
 							end
 						end
@@ -1909,39 +1907,39 @@ describe("Process · Command filters & async roles", function()
 						Process.resetLimit(guest.UserId)
 						local okPrepGuest, prepGuest, guestErrOrCmds =
 							pcall(Process.prepareCommands, _K, guest.UserId, candidate)
-						expect(okPrepGuest).toBe(true)
-						expect(prepGuest ~= true).toBe(true)
+						sert.eq(okPrepGuest, true)
+						sert.eq(prepGuest ~= true, true)
 						if prepGuest == false then
-							expect(type(guestErrOrCmds)).toBe("string")
-							expect(#guestErrOrCmds > 0).toBe(true)
+							sert.eq(type(guestErrOrCmds), "string")
+							sert.eq(#guestErrOrCmds > 0, true)
 						end
 
 						Process.resetLimit(guest.UserId)
 						local okRunGuest, runGuestRes = pcall(Process.runCommands, _K, guest.UserId, candidate, true)
-						expect(okRunGuest).toBe(true)
+						sert.eq(okRunGuest, true)
 						if prepGuest == false then
-							expect(runGuestRes).toBe(false)
+							sert.eq(runGuestRes, false)
 						end
-						expect(#capturedCalls).toBe(beforeCount)
-						expect(_K.Auth.getRank(guest.UserId)).toBe(0)
+						sert.eq(#capturedCalls, beforeCount)
+						sert.eq(_K.Auth.getRank(guest.UserId), 0)
 
 						-- Admin preparing arbitrary fuzzed command strings returns validated Command objects or non-empty error string
 						Process.resetLimit(admin.UserId)
 						local okPrepAdmin, prepAdminOk, prepAdminResult =
 							pcall(Process.prepareCommands, _K, admin.UserId, candidate)
-						expect(okPrepAdmin).toBe(true)
+						sert.eq(okPrepAdmin, true)
 						if prepAdminOk == true then
-							expect(type(prepAdminResult)).toBe("table")
+							sert.eq(type(prepAdminResult), "table")
 							for _, cmdObj in prepAdminResult do
-								expect(cmdObj.validated).toBe(true)
-								expect(cmdObj.from).toBe(admin.UserId)
+								sert.eq(cmdObj.validated, true)
+								sert.eq(cmdObj.from, admin.UserId)
 							end
 						elseif prepAdminOk == false then
 							local errMsg = if type(prepAdminResult) == "table"
 								then prepAdminResult.message
 								else prepAdminResult
-							expect(type(errMsg)).toBe("string")
-							expect(#errMsg > 0).toBe(true)
+							sert.eq(type(errMsg), "string")
+							sert.eq(#errMsg > 0, true)
 						end
 					end
 				end,
@@ -2098,7 +2096,7 @@ describe("Process · Command filters & async roles", function()
 		end,
 		commands = {
 			setPolicy = {
-				gen = function(g)
+				gen = function(_state, g)
 					return {
 						filterCancel = g:bool(0.25),
 						commandRequests = g:bool(0.75),
@@ -2118,7 +2116,7 @@ describe("Process · Command filters & async roles", function()
 				end,
 			},
 			modRunOnLower = {
-				gen = function(g)
+				gen = function(_state, g)
 					return g:int(1, 100)
 				end,
 				run = function(sut, val)
@@ -2126,15 +2124,13 @@ describe("Process · Command filters & async roles", function()
 					sut.h.env:step(0.05)
 					return ok
 				end,
-				post = function(state, _val, ok)
-					if state.modCommandsUsed >= state.modCommandLimit or state.filterCancel then
-						expect(ok).toBe(false)
-					else
-						expect(ok).toBe(true)
-					end
+				post = function(state, _sut, _val, ok)
+					sert.eq(ok, state.lastModAllowed == true)
 				end,
 				next = function(state)
-					if state.modCommandsUsed < state.modCommandLimit then
+					local underLimit = state.modCommandsUsed < state.modCommandLimit
+					state.lastModAllowed = underLimit and not state.filterCancel
+					if underLimit then
 						state.modCommandsUsed += 1
 						if not state.filterCancel then
 							state.expectedExecutions += 1
@@ -2143,7 +2139,7 @@ describe("Process · Command filters & async roles", function()
 				end,
 			},
 			modRunOnPeerOrHigher = {
-				gen = function(g)
+				gen = function(_state, g)
 					return {
 						targetName = g:pick({ "ModelPeer", "ModelSuper" }),
 						val = g:int(1, 100),
@@ -2155,21 +2151,13 @@ describe("Process · Command filters & async roles", function()
 					sut.h.env:step(0.05)
 					return ok
 				end,
-				post = function(state, _arg, ok)
-					if
-						state.modCommandsUsed >= state.modCommandLimit
-						or not state.commandRequests
-						or state.filterCancel
-					then
-						-- Rejected due to cooldown limit, lowerRank without commandRequests, or pre-command filter
-						expect(ok).toBe(false)
-					else
-						-- requestCommand is spawned asynchronously; runCommands returns true
-						expect(ok).toBe(true)
-					end
+				post = function(state, _sut, _arg, ok)
+					sert.eq(ok, state.lastModAllowed == true)
 				end,
 				next = function(state)
-					if state.modCommandsUsed < state.modCommandLimit then
+					local underLimit = state.modCommandsUsed < state.modCommandLimit
+					state.lastModAllowed = underLimit and state.commandRequests and not state.filterCancel
+					if underLimit then
 						if not state.commandRequests then
 							-- Failed prepareCommands increments commandLimits by #prepared + 1 (2)
 							state.modCommandsUsed += 2
@@ -2183,7 +2171,7 @@ describe("Process · Command filters & async roles", function()
 				end,
 			},
 			guestAttemptCommand = {
-				gen = function(g)
+				gen = function(_state, g)
 					return {
 						targetName = g:pick({ "ModelGuest", "ModelMod", "ModelSuper" }),
 						val = g:int(1, 100),
@@ -2197,12 +2185,12 @@ describe("Process · Command filters & async roles", function()
 						true
 					)
 				end,
-				post = function(_state, _arg, ok)
-					expect(ok).toBe(false)
+				post = function(_state, _sut, _arg, ok)
+					sert.eq(ok, false)
 				end,
 			},
 			resetOrExpireCooldown = {
-				gen = function(g)
+				gen = function(_state, g)
 					return g:pick({ "step", "reset" })
 				end,
 				run = function(sut, mode)
@@ -2229,19 +2217,19 @@ describe("Process · Command filters & async roles", function()
 				return sut.Process.onCooldown(sut._K, sut.mod.UserId)
 					== (state.modCommandsUsed >= state.modCommandLimit)
 			end,
-		},
-		never = {
-			preHookCancelledButCommandRan = function(_state, sut)
-				return sut.preHookCancelledButCommandRan
+			noPreHookCancelledButCommandRan = function(_state, sut)
+				return not sut.preHookCancelledButCommandRan
 			end,
-			deniedOrTimedOutRequestRan = function(_state, sut)
-				return sut.deniedOrTimedOutRequestRan
+			noDeniedOrTimedOutRequestRan = function(_state, sut)
+				return not sut.deniedOrTimedOutRequestRan
 			end,
-			rankCeilingBypassed = function(_state, sut)
-				return sut.rankCeilingBypassed
+			noRankCeilingBypassed = function(_state, sut)
+				return not sut.rankCeilingBypassed
 			end,
 		},
 	}, { runs = 40, length = 15 })
 end)
 
-return {}
+do
+	return {}
+end

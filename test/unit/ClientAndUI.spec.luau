@@ -1,15 +1,15 @@
 local Harness = require("./Harness")
 local sert = require("../sert")
 
-local describe, test, expect = sert.describe, sert.test, sert.expect
+local describe, test = sert.describe, sert.test
 
 -- Live Studio UI & hover suite (play mode: a server and one client). Declared before the headless globals below so
 -- it uses the real engine Enum/UDim2/Vector2. Headless `luau` skips these (a skip is not a pass).
 do
 	local IS_ROBLOX = game ~= nil and typeof(game) == "Instance"
 	local IS_CLIENT = IS_ROBLOX and game:GetService("RunService"):IsClient()
-	local serverTest = if IS_ROBLOX and not IS_CLIENT then sert.rtest else sert.skip
-	local clientTest = if IS_CLIENT then sert.rtest else sert.skip
+	local serverTest = sert.test.server
+	local clientTest = sert.test.client
 
 	-- every error and warning the client prints while the suite runs, minus engine/CoreGui noise and sert's own report
 	local ENGINE_NOISE =
@@ -39,32 +39,31 @@ do
 					and _K.client.dashboard.Window
 				then _K
 				else nil
-		end, 15, "the Kohl's Admin client never became ready")
+		end, 15, nil, "the Kohl's Admin client never became ready")
 	end
 
 	local function frames(UI: any, n: number?)
+		UI.flush()
 		for _ = 1, n or 2 do
 			game:GetService("RunService").Heartbeat:Wait()
+			UI.flush()
 		end
-		UI.flush()
+		game:GetService("RunService").Heartbeat:Wait()
 	end
 
 	local function openDashboard(_K: any)
 		local window = _K.client.dashboard.Window
 		if not window._instance.Visible then
-			local flicker = sert.roblox.Flicker.around(function()
-				return window._instance
-			end, function()
+			sert.roblox.Flicker.steady(function()
 				_K.client.hotkeys.dashboard.callback()
+				return window._instance
 			end, { label = "Dashboard", fromSettledSize = true })
-			sert.roblox.Flicker.expect(flicker)
 		end
-		local settled, moving = sert.roblox.Layout.settle(window._instance)
-		sert(settled, `Dashboard layout settled ({moving})`)
+		sert.roblox.Layout.settle(window._instance)
 		frames(_K.UI, 3)
 		-- Opening the dashboard must never auto-open the VIP modal
 		if _K.VIP and _K.VIP.popup then
-			expect(_K.VIP.popup.Visible).toBe(false)
+			sert.eq(_K.VIP.popup.Visible, false)
 		end
 	end
 
@@ -78,9 +77,9 @@ do
 	describe("Studio · Server", function()
 		serverTest("Studio UI · seeds bans, members, servers and logs for the client", function()
 			local _K = shared._K_INTERFACE
-			expect(_K ~= nil and _K.ready).toBe(true)
+			sert.eq(_K ~= nil and _K.ready, true)
 			local player = game:GetService("Players"):GetPlayers()[1]
-			expect(player ~= nil).toBe(true)
+			sert.eq(player ~= nil, true)
 			_K.Auth.userRoleAdd(player.UserId, "creator")
 
 			_K.Data.bans["2"] = { "BannedBob", "Griefing spawn", nil, 1 }
@@ -112,14 +111,14 @@ do
 			local expected = math.ceil(game:GetService("TextService"):GetTextBoundsAsync(params).X)
 			sert.waitFor(function()
 				return width:peek() == expected
-			end, 5, "UI.textWidth initial measurement")
-			expect(width:peek()).toBe(expected)
+			end, 5, nil, "UI.textWidth initial measurement")
+			sert.eq(width:peek(), expected)
 
 			text:set("Kohl's Admin, but wider")
 			UI.flush()
 			sert.waitFor(function()
 				return width:peek() > expected
-			end, 5, "UI.textWidth updated measurement")
+			end, 5, nil, "UI.textWidth updated measurement")
 			sert(width:peek() > expected, "re-measures when its tracked inputs change")
 			measure:Destroy()
 			width:Destroy()
@@ -132,11 +131,12 @@ do
 			local button = UI.new "Button" {
 				Parent = UI.LayerTopInset,
 				Label = "Hit test",
-				Position = UDim2.fromOffset(240, 240),
+				Position = UDim2.fromOffset(60, 60),
 				Size = UDim2.fromOffset(140, 40),
 			}
-			frames(UI, 2)
 			local instance = button._instance
+			sert.roblox.Layout.settle(instance)
+			frames(UI, 2)
 			local center = instance.AbsolutePosition + instance.AbsoluteSize / 2
 			local hits = game:GetService("Players").LocalPlayer.PlayerGui:GetGuiObjectsAtPosition(center.X, center.Y)
 			local found = false
@@ -145,9 +145,12 @@ do
 					found = true
 				end
 			end
-			sert(found, "the button is under its own center")
-			expect(UI.Interact.sunk(center.X, center.Y, instance)).toBe(false)
-			expect(UI.Interact.covered(center.X, center.Y, instance)).toBe(false)
+			sert(
+				found,
+				`the button is under its own center ({center.X}, {center.Y}; size={instance.AbsoluteSize}; hits={#hits})`
+			)
+			sert.eq(UI.Interact.sunk(center.X, center.Y, instance), false)
+			sert.eq(UI.Interact.covered(center.X, center.Y, instance), false)
 			button:Destroy()
 		end)
 
@@ -179,7 +182,7 @@ do
 				UI.clearState("hover")
 				task.wait(0.6)
 				UI.flush()
-				expect(tipA.Visible:peek()).toBe(false)
+				sert.eq(tipA.Visible:peek(), false)
 
 				-- hovering again shows it after the delay
 				hoverA(false)
@@ -188,7 +191,7 @@ do
 				UI.flush()
 				task.wait(0.6)
 				UI.flush()
-				expect(tipA.Visible:peek()).toBe(true)
+				sert.eq(tipA.Visible:peek(), true)
 				label = label or UI.LayerTop:FindFirstChild("Tooltip")
 				sert(
 					label ~= nil and label.Visible and label.Text == "Tip A tip",
@@ -198,7 +201,7 @@ do
 				-- clearing the hover state (scroll, tab switch, window close) hides a shown tip
 				UI.clearState("hover")
 				frames(UI, 1)
-				expect(tipA.Visible:peek()).toBe(false)
+				sert.eq(tipA.Visible:peek(), false)
 				sert(not label.Visible, "the shared tooltip label hides")
 
 				-- hovering another tooltip releases the first
@@ -208,14 +211,14 @@ do
 				UI.flush()
 				task.wait(0.6)
 				UI.flush()
-				expect(tipA.Visible:peek()).toBe(true)
+				sert.eq(tipA.Visible:peek(), true)
 				hoverB(true)
 				UI.flush()
 				frames(UI, 1)
-				expect(tipA.Visible:peek()).toBe(false)
+				sert.eq(tipA.Visible:peek(), false)
 				task.wait(0.6)
 				UI.flush()
-				expect(tipB.Visible:peek()).toBe(true)
+				sert.eq(tipB.Visible:peek(), true)
 				sert(label.Text == "Tip B tip", "the shared tooltip label follows tip B")
 
 				buttonA:Destroy()
@@ -234,7 +237,7 @@ do
 			local UI = _K.UI
 			local dashboard = _K.client.dashboard
 			openDashboard(_K)
-			expect(dashboard.Window._instance.Visible).toBe(true)
+			sert.eq(dashboard.Window._instance.Visible, true)
 
 			local expectations = {
 				{ page = dashboard.Commands, child = "Description" },
@@ -250,18 +253,15 @@ do
 				local page = case.page
 				jumpTo(_K, page)
 				local name = page._instance.Name
-				expect(dashboard.Tabs.CurrentPage:peek()).toBe(page._instance)
+				sert.eq(dashboard.Tabs.CurrentPage:peek(), page._instance)
 				if page._lineItemCache then
-					sert.waitFor(
-						function()
-							return next(page._lineItemCache) ~= nil
-						end,
-						3,
-						`{name} rows rendered`,
-						function()
-							frames(UI, 1)
+					sert.waitFor(function()
+						if next(page._lineItemCache) ~= nil then
+							return true
 						end
-					)
+						frames(UI, 1)
+						return false
+					end, 3, nil, `{name} rows rendered`)
 					local rows, hitTested = 0, false
 					for _, item in page._lineItemCache do
 						rows += 1
@@ -284,28 +284,25 @@ do
 					sert(hitTested, `{name} has a row in view`)
 				end
 				if name == "About" then
-					local credits = sert.waitFor(
-						function()
-							local c = page._instance:FindFirstChild("Credits", true)
-							return if c and c:FindFirstChild("Contributors") then c else nil
-						end,
-						3,
-						"About credits sections rendered",
-						function()
-							frames(UI, 1)
+					local credits = sert.waitFor(function()
+						local c = page._instance:FindFirstChild("Credits", true)
+						if c and c:FindFirstChild("Contributors") then
+							return c
 						end
-					)
+						frames(UI, 1)
+						return nil
+					end, 3, nil, "About credits sections rendered")
 					local activeSection = credits:FindFirstChild("Active contributors")
 					local plainSection = credits:FindFirstChild("Contributors")
 					local specialSection = credits:FindFirstChild("Special Thanks")
-					expect(activeSection ~= nil).toBe(true)
-					expect(plainSection ~= nil).toBe(true)
-					expect(specialSection ~= nil).toBe(true)
-					expect(activeSection.LayoutOrder < plainSection.LayoutOrder).toBe(true)
-					expect(plainSection.LayoutOrder < specialSection.LayoutOrder).toBe(true)
+					sert.eq(activeSection ~= nil, true)
+					sert.eq(plainSection ~= nil, true)
+					sert.eq(specialSection ~= nil, true)
+					sert.eq(activeSection.LayoutOrder < plainSection.LayoutOrder, true)
+					sert.eq(plainSection.LayoutOrder < specialSection.LayoutOrder, true)
 					local plainUsers = plainSection:FindFirstChild("Users")
-					expect(plainUsers ~= nil and plainUsers:FindFirstChild("Header") == nil).toBe(true)
-					expect(plainUsers:FindFirstChild("Credit") ~= nil).toBe(true)
+					sert.eq(plainUsers ~= nil and plainUsers:FindFirstChild("Header") == nil, true)
+					sert.eq(plainUsers:FindFirstChild("Credit") ~= nil, true)
 
 					local linkA = UI.new "Link" {
 						Parent = UI.LayerDefault,
@@ -317,25 +314,25 @@ do
 					}
 					linkA:Select()
 					frames(UI, 2)
-					expect(linkA._instance:IsFocused()).toBe(true)
-					expect(linkA._instance.SelectionStart).toBe(1)
-					expect(linkA._instance.CursorPosition).toBe(#linkA._instance.Text + 1)
+					sert.eq(linkA._instance:IsFocused(), true)
+					sert.eq(linkA._instance.SelectionStart, 1)
+					sert.eq(linkA._instance.CursorPosition, #linkA._instance.Text + 1)
 
 					-- Switching focus to a second Link must not lose focus when linkA's FocusLost fires
 					linkB:Select()
 					frames(UI, 2)
-					expect(linkA._instance:IsFocused()).toBe(false)
-					expect(linkA._instance.SelectionStart).toBe(-1)
-					expect(linkB._instance:IsFocused()).toBe(true)
-					expect(linkB._instance.SelectionStart).toBe(1)
-					expect(linkB._instance.CursorPosition).toBe(#linkB._instance.Text + 1)
+					sert.eq(linkA._instance:IsFocused(), false)
+					sert.eq(linkA._instance.SelectionStart, -1)
+					sert.eq(linkB._instance:IsFocused(), true)
+					sert.eq(linkB._instance.SelectionStart, 1)
+					sert.eq(linkB._instance.CursorPosition, #linkB._instance.Text + 1)
 
 					-- Mutating cursor/selection while focused snaps back to full-text selection
 					linkB._instance.SelectionStart = -1
 					linkB._instance.CursorPosition = 1
 					frames(UI, 1)
-					expect(linkB._instance.SelectionStart).toBe(1)
-					expect(linkB._instance.CursorPosition).toBe(#linkB._instance.Text + 1)
+					sert.eq(linkB._instance.SelectionStart, 1)
+					sert.eq(linkB._instance.CursorPosition, #linkB._instance.Text + 1)
 
 					linkA:Destroy()
 					linkB:Destroy()
@@ -385,12 +382,12 @@ do
 
 			-- Verify VIP Popup layout, PromptPurchaseVIP, View button, and sale state sync in real Studio
 			local vip = _K.VIP.popup
-			expect(vip ~= nil).toBe(true)
-			expect(vip.Visible).toBe(false)
+			sert.eq(vip ~= nil, true)
+			sert.eq(vip.Visible, false)
 			_K.PromptPurchaseVIP()
 			frames(_K.UI, 2)
-			expect(vip.Visible).toBe(true)
-			expect(vip.Frame:FindFirstChild("Preview") ~= nil).toBe(true)
+			sert.eq(vip.Visible, true)
+			sert.eq(vip.Frame:FindFirstChild("Preview") ~= nil, true)
 			local previewCount = 0
 			for cmdName in string.gmatch(vip.Frame.Preview.Text, "<b>;([%w_]+)</b>") do
 				previewCount += 1
@@ -398,22 +395,22 @@ do
 				sert(cmd ~= nil, `VIP preview command {cmdName} exists`)
 				sert(_K.Auth.roleCanUseCommand("vip", cmd), `VIP preview command {cmdName} is usable by vip role`)
 			end
-			expect(previewCount).toBe(5)
-			expect(vip.Frame.BuyFrame.Favorite:IsA("ImageButton")).toBe(true)
-			expect(vip.Frame.BuyFrame.Favorite.Visible).toBe(true)
-			expect(vip.Frame.BuyFrame.Buy.Price.AutomaticSize).toBe(Enum.AutomaticSize.X)
-			expect(vip.Frame.BuyFrame.OriginalPrice.Label.AutomaticSize).toBe(Enum.AutomaticSize.X)
+			sert.eq(previewCount, 5)
+			sert.eq(vip.Frame.BuyFrame.Favorite:IsA("ImageButton"), true)
+			sert.eq(vip.Frame.BuyFrame.Favorite.Visible, true)
+			sert.eq(vip.Frame.BuyFrame.Buy.Price.AutomaticSize, Enum.AutomaticSize.X)
+			sert.eq(vip.Frame.BuyFrame.OriginalPrice.Label.AutomaticSize, Enum.AutomaticSize.X)
 			-- Calling _K.VIP.openFromView() exercises the View button action in live Studio
 			vip.Visible = false
 			_K.client.dashboard.Commands._instance.Visible = true
 			frames(_K.UI, 2)
-			expect(vip.Visible).toBe(false)
-			expect(_K.client.dashboard.Commands._instance.Visible).toBe(true)
-			expect(vip.ZIndex).toBe(9e8)
+			sert.eq(vip.Visible, false)
+			sert.eq(_K.client.dashboard.Commands._instance.Visible, true)
+			sert.eq(vip.ZIndex, 9e8)
 
 			-- Verify _K.VIP.saleStateChanged and _K.client.ownsKAModel signals in live Studio
-			expect(_K.VIP.getActiveAssetId()).toBe(110019084552349)
-			expect(type(_K.client.promptGetKA)).toBe("function")
+			sert.eq(_K.VIP.getActiveAssetId(), 110019084552349)
+			sert.eq(type(_K.client.promptGetKA), "function")
 		end)
 
 		clientTest("Studio UI · the suite printed no errors or warnings", function()
@@ -699,34 +696,34 @@ describe("Client and UI", function()
 
 			local UI = cliMounted.env:require(cliMounted.Client.UI)
 			if UI.registerClasses then
-				expect(UI.registerClasses()).toBe(UI)
+				sert.eq(UI.registerClasses(), UI)
 			end
-			expect(rawequal(UI.new("Frame"), UI.new("Frame"))).toBe(true)
+			sert.eq(rawequal(UI.new("Frame"), UI.new("Frame")), true)
 
 			-- Double registration throws
 			local okDup = pcall(function()
 				UI.register("Button", UI.Class.Button)
 			end)
-			expect(okDup).toBe(false)
+			sert.eq(okDup, false)
 
 			-- Fonts (Enum, family json path, known assetId, unknown assetId)
-			expect(UI.getFontName(Enum.Font.Gotham)).toBe("Gotham")
-			expect(UI.getFontName(Font.fromEnum(Enum.Font.Gotham))).toBe("Gotham")
-			expect(UI.getFontName(Font.new("rbxasset://fonts/families/GothamSSm.json"))).toBe("GothamSSm")
-			expect(UI.getFontName(Font.fromId(12187368317))).toBe("Akronim")
-			expect(UI.getFontName(Font.fromId(999999999))).toBeNil()
+			sert.eq(UI.getFontName(Enum.Font.Gotham), "Gotham")
+			sert.eq(UI.getFontName(Font.fromEnum(Enum.Font.Gotham)), "Gotham")
+			sert.eq(UI.getFontName(Font.new("rbxasset://fonts/families/GothamSSm.json")), "GothamSSm")
+			sert.eq(UI.getFontName(Font.fromId(12187368317)), "Akronim")
+			sert.eq(UI.getFontName(Font.fromId(999999999)), nil)
 
 			-- TopbarInset reactivity
 			UI.GuiService.TopbarInset = Rect.new(0, 0, 1280, 48)
 			world:step()
-			expect(UI.TopbarPadding().Offset).toBe(2)
-			expect(UI.TopbarFrame.Visible).toBe(true)
+			sert.eq(UI.TopbarPadding().Offset, 2)
+			sert.eq(UI.TopbarFrame.Visible, true)
 			UI.GuiService.TopbarInset = Rect.new(0, 0, 1280, 0)
 			world:step()
-			expect(UI.TopbarFrame.Visible).toBe(false)
+			sert.eq(UI.TopbarFrame.Visible, false)
 			UI.GuiService.TopbarInset = Rect.new(0, 0, 1280, 36)
 			world:step()
-			expect(UI.TopbarFrame.Visible).toBe(true)
+			sert.eq(UI.TopbarFrame.Visible, true)
 
 			-- Active state management (hover, floating, dialog)
 			local s1 = UI.signal(false)
@@ -738,58 +735,58 @@ describe("Client and UI", function()
 				s1Changes += 1
 			end)
 			s1Effect:get()
-			expect(s1Changes).toBe(1)
+			sert.eq(s1Changes, 1)
 			UI.activateState(s1, "hover")
-			expect(s1()).toBe(true)
-			expect(s1Changes).toBe(2)
+			sert.eq(s1(), true)
+			sert.eq(s1Changes, 2)
 			UI.activateState(s2, "hover")
-			expect(s1()).toBe(false)
-			expect(s2()).toBe(true)
+			sert.eq(s1(), false)
+			sert.eq(s2(), true)
 
 			-- Deactivating a non-matching state does not clear activeState
 			UI.deactivateState(s1, "hover")
-			expect(rawequal(UI._activeState.hover, s2)).toBe(true)
+			sert.eq(rawequal(UI._activeState.hover, s2), true)
 
 			UI.toggleState(s2, "hover")
-			expect(s2()).toBe(false)
+			sert.eq(s2(), false)
 			UI.toggleState(s2, "hover")
-			expect(s2()).toBe(true)
+			sert.eq(s2(), true)
 
 			local beforeDeactivate = s1Changes
 			UI.deactivateState(s2, "hover")
-			expect(s2()).toBe(false)
-			expect(s1Changes).toBe(beforeDeactivate + 1)
-			expect(UI._activeState.hover).toBeNil()
+			sert.eq(s2(), false)
+			sert.eq(s1Changes, beforeDeactivate + 1)
+			sert.eq(UI._activeState.hover, nil)
 
 			UI.activateState(s1, "floating")
 			UI.activateState(s2, "dialog")
-			expect(s1()).toBe(true)
-			expect(s2()).toBe(true)
+			sert.eq(s1(), true)
+			sert.eq(s2(), true)
 			local prevS1Changes = s1Changes
 			UI.clearState("floating")
-			expect(s1()).toBe(false)
-			expect(s1Changes).toBe(prevS1Changes + 1)
-			expect(UI._activeState.floating).toBeNil()
+			sert.eq(s1(), false)
+			sert.eq(s1Changes, prevS1Changes + 1)
+			sert.eq(UI._activeState.floating, nil)
 			UI.clearActiveStates()
-			expect(s2()).toBe(false)
-			expect(UI._activeState.dialog).toBeNil()
+			sert.eq(s2(), false)
+			sert.eq(UI._activeState.dialog, nil)
 			s1Effect:Destroy()
 
 			-- Invalid state throws
-			expect(pcall(UI.activateState, "not_a_state", "hover")).toBe(false)
-			expect(pcall(UI.deactivateState, "not_a_state", "hover")).toBe(false)
-			expect(pcall(UI.toggleState, "not_a_state", "hover")).toBe(false)
+			sert.eq(pcall(UI.activateState, "not_a_state", "hover"), false)
+			sert.eq(pcall(UI.deactivateState, "not_a_state", "hover"), false)
+			sert.eq(pcall(UI.toggleState, "not_a_state", "hover"), false)
 
 			-- Luminance & invertLuminance
 			local blackLum = UI.getLuminance(Color3.new(0, 0, 0))
 			local whiteLum = UI.getLuminance(Color3.new(1, 1, 1))
-			expect(blackLum).toBeCloseTo(0, 3)
-			expect(whiteLum).toBeCloseTo(1, 3)
+			sert.near(blackLum, 0, 5e-4)
+			sert.near(whiteLum, 1, 5e-4)
 
 			local invertedDark = UI.invertLuminance(Color3.new(0.1, 0.1, 0.1), 0.2)
-			expect(UI.getLuminance(invertedDark) > UI.getLuminance(Color3.new(0.1, 0.1, 0.1))).toBe(true)
+			sert.eq(UI.getLuminance(invertedDark) > UI.getLuminance(Color3.new(0.1, 0.1, 0.1)), true)
 			local invertedLight = UI.invertLuminance(Color3.new(0.9, 0.9, 0.9), 0.2)
-			expect(UI.getLuminance(invertedLight) < UI.getLuminance(Color3.new(0.9, 0.9, 0.9))).toBe(true)
+			sert.eq(UI.getLuminance(invertedLight) < UI.getLuminance(Color3.new(0.9, 0.9, 0.9)), true)
 
 			-- pointInGuiObject & sinkInput
 			local frame = UI.new "Frame" {
@@ -799,9 +796,9 @@ describe("Client and UI", function()
 			}
 			local pos = frame.AbsolutePosition
 			local sz = frame.AbsoluteSize
-			expect(UI.pointInGuiObject(pos.X, pos.Y, frame)).toBe(true)
-			expect(UI.pointInGuiObject(pos.X + sz.X + 50, pos.Y + sz.Y + 50, frame)).toBe(false)
-			expect(type(UI.sinkInput(0, 0, frame))).toBe("boolean")
+			sert.eq(UI.pointInGuiObject(pos.X, pos.Y, frame), true)
+			sert.eq(UI.pointInGuiObject(pos.X + sz.X + 50, pos.Y + sz.Y + 50, frame), false)
+			sert.eq(type(UI.sinkInput(0, 0, frame)), "boolean")
 
 			-- retryGetTextBoundsAsync with retry on transient failure
 			local origTextMethods = rawget(UI.TextService, "_methods")
@@ -822,8 +819,8 @@ describe("Client and UI", function()
 				retryBounds = UI.retryGetTextBoundsAsync({ Text = "Hello", Size = 14, Width = 200 })
 			end)
 			world:run(3)
-			expect(attempts).toBe(2)
-			expect(retryBounds ~= nil).toBe(true)
+			sert.eq(attempts, 2)
+			sert.eq(retryBounds ~= nil, true)
 
 			-- retryGetTextBoundsAsync falls back to Vector2.zero after 5 failed attempts
 			local failAttempts = 0
@@ -842,8 +839,8 @@ describe("Client and UI", function()
 			for _ = 1, 6 do
 				world:run(1)
 			end
-			expect(failAttempts).toBe(5)
-			expect(fallbackBounds).toBe(Vector2.zero)
+			sert.eq(failAttempts, 5)
+			sert.eq(fallbackBounds, Vector2.zero)
 			rawset(UI.TextService, "_methods", origTextMethods)
 
 			-- makeStatefulDefaults with Nil, Function, compute, and values
@@ -861,14 +858,14 @@ describe("Client and UI", function()
 				a = 20,
 				c = fn,
 			})
-			expect(UI.isNode(defs.a)).toBe(true)
-			expect(defs.a()).toBe(20)
-			expect(defs.b).toBeNil()
-			expect(UI.isNode(defs.c)).toBe(true)
-			expect(defs.c()).toBe(fn)
-			expect(UI.isNode(defs.d)).toBe(true)
-			expect(defs.d()).toBe(99)
-			expect(#defs._createdNodes).toBe(3)
+			sert.eq(UI.isNode(defs.a), true)
+			sert.eq(defs.a(), 20)
+			sert.eq(defs.b, nil)
+			sert.eq(UI.isNode(defs.c), true)
+			sert.eq(defs.c(), fn)
+			sert.eq(UI.isNode(defs.d), true)
+			sert.eq(defs.d(), 99)
+			sert.eq(#defs._createdNodes, 3)
 
 			-- UI.textWidth
 			local twSig, twMeasure = UI.textWidth(function()
@@ -881,17 +878,17 @@ describe("Client and UI", function()
 					},
 				}
 			end)
-			expect(twSig:peek() > 0).toBe(true)
+			sert.eq(twSig:peek() > 0, true)
 			world:run(2)
-			expect(twSig:peek() > 0).toBe(true)
+			sert.eq(twSig:peek() > 0, true)
 			twMeasure:Destroy()
 			twSig:Destroy()
 
 			-- newSinkHoverState (processed vs unprocessed)
 			local hoverFrame = UI.new "Frame" { Parent = UI.LayerDefault }
 			local hoverState = UI.newSinkHoverState(hoverFrame)
-			expect(UI.isNode(hoverState)).toBe(true)
-			expect(hoverState()).toBe(false)
+			sert.eq(UI.isNode(hoverState), true)
+			sert.eq(hoverState(), false)
 			UI.GuiService.MenuIsOpen = true
 			hoverFrame.InputChanged:Fire(
 				makeInput(
@@ -900,7 +897,7 @@ describe("Client and UI", function()
 				),
 				true
 			)
-			expect(hoverState()).toBe(false)
+			sert.eq(hoverState(), false)
 			UI.GuiService.MenuIsOpen = false
 			hoverFrame.InputChanged:Fire(
 				makeInput(
@@ -909,18 +906,18 @@ describe("Client and UI", function()
 				),
 				false
 			)
-			expect(hoverState()).toBe(true)
+			sert.eq(hoverState(), true)
 			hoverFrame.InputEnded:Fire(
 				makeInput(
 					cliMounted.env,
 					{ UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(5, 5, 0) }
 				)
 			)
-			expect(hoverState()).toBe(false)
+			sert.eq(hoverState(), false)
 			local externalHover = UI.signal(true)
 			local hoverFrame2 = UI.new "Frame" { Parent = UI.LayerDefault }
 			UI.newSinkHoverState(hoverFrame2, externalHover)
-			expect(externalHover()).toBe(false)
+			sert.eq(externalHover(), false)
 			hoverFrame2:Destroy()
 
 			-- UI.edit with numeric children (including wrapped class child & preset LayoutOrder), UI.Hook, and DefaultProperties
@@ -928,8 +925,8 @@ describe("Client and UI", function()
 			local child2 = UI.new "TextButton" { Name = "Child2", LayoutOrder = 7 }
 			local child3 = { _instance = UI.new "Frame" { Name = "Child3" } }
 			local imgBtn = UI.new "ImageButton" { Name = "ImgBtn" }
-			expect(child2.HoverHapticEffect).toBe(UI.Haptic.Hover)
-			expect(imgBtn.PressHapticEffect).toBe(UI.Haptic.Click)
+			sert.eq(child2.HoverHapticEffect, UI.Haptic.Hover)
+			sert.eq(imgBtn.PressHapticEffect, UI.Haptic.Click)
 
 			local hookedVal = nil
 			local customComp = {
@@ -948,59 +945,62 @@ describe("Client and UI", function()
 					end,
 				},
 			}
-			expect(customComp._instance.Name).toBe("EditedRoot")
-			expect(child1.Parent).toBe(customComp._content)
-			expect(child1.LayoutOrder).toBe(1)
-			expect(child2.LayoutOrder).toBe(7)
-			expect(child3._instance.Parent).toBe(customComp._content)
-			expect(child3._instance.LayoutOrder).toBe(2)
+			sert.eq(customComp._instance.Name, "EditedRoot")
+			sert.eq(child1.Parent, customComp._content)
+			sert.eq(child1.LayoutOrder, 1)
+			sert.eq(child2.LayoutOrder, 7)
+			sert.eq(child3._instance.Parent, customComp._content)
+			sert.eq(child3._instance.LayoutOrder, 2)
 			customComp.MyState("updated")
 			UI.flush()
-			expect(hookedVal).toBe("updated")
+			sert.eq(hookedVal, "updated")
 
 			-- Invalid UI.Hook throws
-			expect(pcall(function()
-				UI.edit(customComp) {
-					[UI.Hook] = { NonExistent = function() end },
-				}
-			end)).toBe(false)
+			sert.eq(
+				pcall(function()
+					UI.edit(customComp) {
+						[UI.Hook] = { NonExistent = function() end },
+					}
+				end),
+				false
+			)
 
 			-- Theme states and computed properties
 			local soundGroup = cliMounted.env.game:GetService("SoundService"):FindFirstChild("_KASounds")
 			UI.Theme.SoundEnabled(false)
 			UI.flush()
 			if soundGroup then
-				expect(soundGroup.Volume).toBe(0)
+				sert.eq(soundGroup.Volume, 0)
 			end
 			UI.Theme.SoundEnabled(true)
 			UI.flush()
 			if soundGroup then
-				expect(soundGroup.Volume).toBe(UI.Theme.Volume())
+				sert.eq(soundGroup.Volume, UI.Theme.Volume())
 			end
 			UI.Theme.TypingSounds(false)
-			expect(UI.Theme.TypingSounds()).toBe(false)
+			sert.eq(UI.Theme.TypingSounds(), false)
 			UI.Theme.TypingSounds(true)
-			expect(UI.Theme.TypingSounds()).toBe(true)
+			sert.eq(UI.Theme.TypingSounds(), true)
 			UI.Theme.TypingSoundsOnEveryTextBox(false)
-			expect(UI.Theme.TypingSoundsOnEveryTextBox()).toBe(false)
+			sert.eq(UI.Theme.TypingSoundsOnEveryTextBox(), false)
 			UI.Theme.TypingSoundsOnEveryTextBox(true)
-			expect(UI.Theme.TypingSoundsOnEveryTextBox()).toBe(true)
+			sert.eq(UI.Theme.TypingSoundsOnEveryTextBox(), true)
 			UI.Theme.FontSize(18)
-			expect(UI.Theme.FontSizeDouble()).toBe(36)
-			expect(UI.Theme.FontSizeLargest()).toBe(math.round(18 * 1.75))
-			expect(UI.Theme.FontSizeLarger()).toBe(27)
-			expect(UI.Theme.FontSizeLarge()).toBe(math.round(18 * 1.25))
-			expect(UI.Theme.FontSizeSmall()).toBe(math.round(18 * 0.75))
-			expect(UI.Theme.FontSizeSmaller()).toBe(9)
-			expect(UI.Theme.FontSizeSmallest()).toBe(math.round(18 * 0.25))
+			sert.eq(UI.Theme.FontSizeDouble(), 36)
+			sert.eq(UI.Theme.FontSizeLargest(), math.round(18 * 1.75))
+			sert.eq(UI.Theme.FontSizeLarger(), 27)
+			sert.eq(UI.Theme.FontSizeLarge(), math.round(18 * 1.25))
+			sert.eq(UI.Theme.FontSizeSmall(), math.round(18 * 0.75))
+			sert.eq(UI.Theme.FontSizeSmaller(), 9)
+			sert.eq(UI.Theme.FontSizeSmallest(), math.round(18 * 0.25))
 			UI.Theme.FontSize(16)
 
 			UI.Theme.CornerRadius(UDim.new(0, 0))
-			expect(UI.Theme.ScrollTopImage()).toBe("rbxassetid://18370268668")
-			expect(UI.Theme.ScrollBottomImage()).toBe("rbxassetid://18370268668")
+			sert.eq(UI.Theme.ScrollTopImage(), "rbxassetid://18370268668")
+			sert.eq(UI.Theme.ScrollBottomImage(), "rbxassetid://18370268668")
 			UI.Theme.CornerRadius(UDim.new(0, 8))
-			expect(UI.Theme.CornerHalf().Offset).toBe(4)
-			expect(UI.Theme.CornerDiameter().Offset).toBe(16)
+			sert.eq(UI.Theme.CornerHalf().Offset, 4)
+			sert.eq(UI.Theme.CornerDiameter().Offset, 16)
 
 			-- UI.new custom class constructor, unwrapChild in UI.new, direct GuiObject LayoutOrder, and parent._content unwrapping
 			local customChild1 = { _instance = UI.new "Frame" { Name = "WrappedChild1" } }
@@ -1016,27 +1016,27 @@ describe("Client and UI", function()
 				directChild1,
 				directChild2,
 			}
-			expect(hostFrame.Parent).toBe(customComp._content)
-			expect(customChild1._instance.Parent).toBe(hostFrame)
-			expect(customChild1._instance.LayoutOrder).toBe(1)
-			expect(customChild2._instance.Parent).toBe(hostFrame)
-			expect(customChild2._instance.LayoutOrder).toBe(2)
-			expect(customChild3[1].Parent).toBe(hostFrame)
-			expect(directChild1.LayoutOrder).toBe(4)
-			expect(directChild2.LayoutOrder).toBe(9)
+			sert.eq(hostFrame.Parent, customComp._content)
+			sert.eq(customChild1._instance.Parent, hostFrame)
+			sert.eq(customChild1._instance.LayoutOrder, 1)
+			sert.eq(customChild2._instance.Parent, hostFrame)
+			sert.eq(customChild2._instance.LayoutOrder, 2)
+			sert.eq(customChild3[1].Parent, hostFrame)
+			sert.eq(directChild1.LayoutOrder, 4)
+			sert.eq(directChild2.LayoutOrder, 9)
 
 			local customBtn = UI.new "Button" {
 				Parent = customComp,
 				Label = "Part1Btn",
 			}
-			expect(customBtn._instance.Parent).toBe(customComp._content)
-			expect(#customBtn._createdNodes > 0).toBe(true)
+			sert.eq(customBtn._instance.Parent, customComp._content)
+			sert.eq(#customBtn._createdNodes > 0, true)
 			local btnNodeDestroyed = 0
 			customBtn.ActiveSound:onDestroy(function()
 				btnNodeDestroyed += 1
 			end)
 			customBtn._instance:Destroy()
-			expect(btnNodeDestroyed).toBe(1)
+			sert.eq(btnNodeDestroyed, 1)
 
 			-- Hover state cleanup on destroy
 			local hoverDestroyFrame = UI.new "Frame" { Parent = UI.LayerDefault }
@@ -1046,7 +1046,7 @@ describe("Client and UI", function()
 				hoverDestroyed += 1
 			end)
 			hoverDestroyFrame:Destroy()
-			expect(hoverDestroyed).toBe(1)
+			sert.eq(hoverDestroyed, 1)
 
 			-- Invalid UTF-8 text width estimation falls back to #text
 			local badUtf8Sig, badUtf8Eff = UI.textWidth(function()
@@ -1058,7 +1058,7 @@ describe("Client and UI", function()
 					},
 				}
 			end)
-			expect(badUtf8Sig:peek()).toBe(math.ceil(4 * 20 * 0.55))
+			sert.eq(badUtf8Sig:peek(), math.ceil(4 * 20 * 0.55))
 			badUtf8Eff:Destroy()
 			badUtf8Sig:Destroy()
 
@@ -1066,7 +1066,7 @@ describe("Client and UI", function()
 			local fracFrame = UI.new "Frame" {
 				[1.5] = "custom_frac" :: any,
 			}
-			expect(fracFrame ~= nil).toBe(true)
+			sert.eq(fracFrame ~= nil, true)
 
 			local reactiveTxt = UI.signal("InitialTxt")
 			local reactiveLbl = UI.new "TextLabel" {
@@ -1074,51 +1074,53 @@ describe("Client and UI", function()
 					return reactiveTxt()
 				end,
 			}
-			expect(reactiveLbl.Text).toBe("InitialTxt")
+			sert.eq(reactiveLbl.Text, "InitialTxt")
 		end)
 	end)
 
 	describe("Part 1b · Console Top Bar", function()
-		test("console screens keep the fixed top bar layout and stay visible with a zero-height TopbarInset", function()
+		test("keeps a 50px top bar on console screens even when TopbarInset is empty", function()
 			local world = sert.sim.new({ backing = true })
 			local server = world:server()
 			local client = server:client(1, "Player1")
 			local cliMounted = setupClientEnv(client)
-
-			-- UI reads IsTenFootInterface once at load, so fake a console before the first require
-			local guiService: any = cliMounted.env.game:GetService("GuiService")
+			local guiService = cliMounted.env.game:GetService("GuiService")
 			local methods: any = rawget(guiService, "_methods")
 			methods.IsTenFootInterface = function()
 				return true
 			end
 			local UI = cliMounted.env:require(cliMounted.Client.UI)
-			expect(UI.IsConsoleScreen).toBe(true)
+			sert.eq(UI.IsConsoleScreen, true)
 
 			UI.GuiService.TopbarInset = Rect.new(0, 0, 1280, 0)
 			world:step()
 			UI.flush()
 
-			expect(UI.TopbarPadding().Offset).toBe(10)
-			expect(UI.TopbarFrame.Visible).toBe(true)
-			expect(UI.TopbarFrame.Position).toEqual(UDim2.fromOffset(0, 4))
-			expect(UI.TopbarFrame.Size.Y.Offset).toBe(50)
-			expect(UI.LayerTopInset.Size.Y.Offset).toBe(-54)
+			sert.eq(UI.TopbarPadding().Offset, 10)
+			sert.eq(UI.TopbarFrame.Visible, true)
+			sert.eq(UI.TopbarFrame.Position, UDim2.fromOffset(0, 4))
+			sert.eq(UI.TopbarFrame.Size.Y.Offset, 50)
+			sert.eq(UI.LayerTopInset.Size.Y.Offset, -54)
 
 			local padding = UI.TopbarFrame:FindFirstChildOfClass("UIPadding")
-			expect(padding ~= nil).toBe(true)
-			expect(padding.PaddingLeft.Offset).toBe(10)
-			expect(padding.PaddingTop.Offset).toBe(6)
-			expect(padding.PaddingBottom.Offset).toBe(0)
-			expect(padding.PaddingRight.Offset).toBe(10)
+			sert.eq(padding ~= nil, true)
+			if padding then
+				sert.eq(padding.PaddingLeft.Offset, 10)
+				sert.eq(padding.PaddingTop.Offset, 6)
+				sert.eq(padding.PaddingBottom.Offset, 0)
+				sert.eq(padding.PaddingRight.Offset, 10)
+			end
 
 			-- the console layout does not follow TopbarInset
 			UI.GuiService.TopbarInset = Rect.new(0, 0, 1280, 58)
 			world:step()
 			UI.flush()
-			expect(UI.TopbarPadding().Offset).toBe(10)
-			expect(UI.LayerTopInset.Size.Y.Offset).toBe(-54)
-			expect(UI.TopbarFrame.Size.Y.Offset).toBe(108)
-			expect(padding.PaddingTop.Offset).toBe(6)
+			sert.eq(UI.TopbarPadding().Offset, 10)
+			sert.eq(UI.LayerTopInset.Size.Y.Offset, -54)
+			sert.eq(UI.TopbarFrame.Size.Y.Offset, 108)
+			if padding then
+				sert.eq(padding.PaddingTop.Offset, 6)
+			end
 		end)
 	end)
 
@@ -1156,33 +1158,33 @@ describe("Client and UI", function()
 					btnClicked += 1
 				end,
 			}
-			expect(btn._content.Label.Visible).toBe(true)
-			expect(btn._content.Label.Text).toBe("Click Me")
-			expect(btn._content.IconFrame.Visible).toBe(true)
-			expect(btn._instance.Size.X.Scale).toBe(0)
+			sert.eq(btn._content.Label.Visible, true)
+			sert.eq(btn._content.Label.Text, "Click Me")
+			sert.eq(btn._content.IconFrame.Visible, true)
+			sert.eq(btn._instance.Size.X.Scale, 0)
 			btn.AutomaticSize(Enum.AutomaticSize.X)
 			btn.AutomaticSize(Enum.AutomaticSize.Y)
 			btn.AutomaticSize(Enum.AutomaticSize.None)
 			UI.flush()
-			expect(btn._instance.Size.X.Scale).toBe(1)
+			sert.eq(btn._instance.Size.X.Scale, 1)
 			env:input():click(btn._instance)
-			expect(btnClicked).toBe(1)
-			expect(hoverSoundPlays).toBe(1)
+			sert.eq(btnClicked, 1)
+			sert.eq(hoverSoundPlays, 1)
 			btn.ActiveSound(false)
 			env:input():click(btn._instance)
-			expect(hoverSoundPlays).toBe(1)
+			sert.eq(hoverSoundPlays, 1)
 			btn.ActiveSound(true)
 			UI.Sound.Hover01 = origHover01
 			btn._instance.InputBegan:Fire(
 				makeInput(env, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(50, 10, 0) }),
 				false
 			)
-			expect(btn._instance.Ripple.Position.X.Offset).toBe(50 - btn._instance.AbsolutePosition.X)
+			sert.eq(btn._instance.Ripple.Position.X.Offset, 50 - btn._instance.AbsolutePosition.X)
 			btn._instance.InputChanged:Fire(
 				makeInput(env, { UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(10, 10, 0) }),
 				false
 			)
-			expect(btn._hovering()).toBe(true)
+			sert.eq(btn._hovering(), true)
 
 			-- Button + child Tooltip hover never flickers across repeated MouseMovement events
 			local btnTip = UI.new "Tooltip" {
@@ -1198,29 +1200,29 @@ describe("Client and UI", function()
 					false
 				)
 				UI.flush()
-				expect(btn._hovering()).toBe(true)
-				expect(btnTip.Hovering()).toBe(true)
+				sert.eq(btn._hovering(), true)
+				sert.eq(btnTip.Hovering(), true)
 			end
 
 			btn._instance.InputEnded:Fire(
 				makeInput(env, { UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(10, 10, 0) })
 			)
 			UI.flush()
-			expect(btn._hovering()).toBe(false)
-			expect(btnTip.Hovering()).toBe(false)
+			sert.eq(btn._hovering(), false)
+			sert.eq(btnTip.Hovering(), false)
 			btn:Destroy()
-			expect(UI.Theme.Font:peek() ~= nil).toBe(true)
+			sert.eq(UI.Theme.Font:peek() ~= nil, true)
 
 			-- 2. Checkbox
 			local cb = UI.new "Checkbox" {
 				Parent = UI.LayerDefault,
 				Value = false,
 			}
-			expect(cb.Value()).toBe(false)
+			sert.eq(cb.Value(), false)
 			cb._instance.Activated:Fire()
-			expect(cb.Value()).toBe(true)
+			sert.eq(cb.Value(), true)
 			cb._instance.Activated:Fire()
-			expect(cb.Value()).toBe(false)
+			sert.eq(cb.Value(), false)
 			cb:Destroy()
 
 			-- 3. Switch
@@ -1228,11 +1230,11 @@ describe("Client and UI", function()
 				Parent = UI.LayerDefault,
 				Value = false,
 			}
-			expect(sw.Value()).toBe(false)
+			sert.eq(sw.Value(), false)
 			sw._instance.Activated:Fire()
-			expect(sw.Value()).toBe(true)
+			sert.eq(sw.Value(), true)
 			sw._instance.Activated:Fire()
-			expect(sw.Value()).toBe(false)
+			sert.eq(sw.Value(), false)
 			sw:Destroy()
 
 			-- 4. CircleProgress
@@ -1240,20 +1242,20 @@ describe("Client and UI", function()
 				Parent = UI.LayerDefault,
 				Alpha = 0,
 			}
-			expect(cp._instance.Left.Visible).toBe(false)
-			expect(cp._instance.Right.Visible).toBe(false)
+			sert.eq(cp._instance.Left.Visible, false)
+			sert.eq(cp._instance.Right.Visible, false)
 			cp.Alpha(0.25)
 			UI.flush()
-			expect(cp._instance.Left.Visible).toBe(false)
-			expect(cp._instance.Right.Visible).toBe(true)
+			sert.eq(cp._instance.Left.Visible, false)
+			sert.eq(cp._instance.Right.Visible, true)
 			cp.Alpha(0.75)
 			UI.flush()
-			expect(cp._instance.Left.Visible).toBe(true)
-			expect(cp._instance.Right.Visible).toBe(true)
+			sert.eq(cp._instance.Left.Visible, true)
+			sert.eq(cp._instance.Right.Visible, true)
 			cp.Alpha(1)
 			UI.flush()
-			expect(cp._instance.Left.ImageLabel.UIGradient.Rotation).toBe(0)
-			expect(cp._instance.Right.ImageLabel.UIGradient.Rotation).toBe(180)
+			sert.eq(cp._instance.Left.ImageLabel.UIGradient.Rotation, 0)
+			sert.eq(cp._instance.Right.ImageLabel.UIGradient.Rotation, 180)
 			cp:Destroy()
 
 			-- 5 & 6. Color & ColorPicker
@@ -1261,11 +1263,11 @@ describe("Client and UI", function()
 				Parent = UI.LayerDefault,
 				Value = Color3.fromRGB(255, 0, 0),
 			}
-			expect(colorComp._dialog.Visible()).toBe(false)
+			sert.eq(colorComp._dialog.Visible(), false)
 			colorComp._instance.Activated:Fire()
-			expect(colorComp._dialog.Visible()).toBe(true)
+			sert.eq(colorComp._dialog.Visible(), true)
 			colorComp._instance.Activated:Fire()
-			expect(colorComp._dialog.Visible()).toBe(false)
+			sert.eq(colorComp._dialog.Visible(), false)
 
 			local picker = colorComp._dialog
 			picker.hueSlider.Value(0.5)
@@ -1273,7 +1275,7 @@ describe("Client and UI", function()
 			picker.hexInput._input.Text = "#00ff00"
 			picker.hexInput._input.FocusLost:Fire(true)
 			UI.flush()
-			expect(colorComp.Value():ToHex()).toBe("00ff00")
+			sert.eq(colorComp.Value():ToHex(), "00ff00")
 
 			-- ColorPicker hueSlider on 0-saturation color (pure white)
 			colorComp.Value(Color3.new(1, 1, 1), true)
@@ -1281,9 +1283,9 @@ describe("Client and UI", function()
 			picker.hueSlider.Value(0.5, true)
 			UI.flush()
 			local hWhite, sWhite, vWhite = picker.sv.BackgroundColor3:ToHSV()
-			expect(hWhite).toBeCloseTo(0.5, 2)
-			expect(sWhite).toBeCloseTo(1, 2)
-			expect(vWhite).toBeCloseTo(1, 2)
+			sert.near(hWhite, 0.5, 5e-3)
+			sert.near(sWhite, 1, 5e-3)
+			sert.near(vWhite, 1, 5e-3)
 
 			-- Dragging SV box in ColorPicker
 			local svDragInput = makeInput(env, {
@@ -1335,11 +1337,11 @@ describe("Client and UI", function()
 
 			-- Trigger RightAction (true)
 			local actionsFrame = dlg._instance.Frame:FindFirstChild("Actions")
-			expect(actionsFrame ~= nil).toBe(true)
+			sert.eq(actionsFrame ~= nil, true)
 			actionsFrame.RightAction.Activated:Fire()
 			UI.flush()
-			expect(dialogActionResult).toBe(true)
-			expect(dialogClosed).toBe(true)
+			sert.eq(dialogActionResult, true)
+			sert.eq(dialogClosed, true)
 			dlg:Destroy()
 
 			-- Timed dialog auto-closes on PreRender
@@ -1350,7 +1352,7 @@ describe("Client and UI", function()
 				LeftAction = true,
 			}
 			world:run(0.2)
-			expect(timedDlg._instance.Parent).toBeNil()
+			sert.eq(timedDlg._instance.Parent, nil)
 
 			-- Dialog with Options and OptionColors fires Action with selected option index
 			local optionActionIndex = nil
@@ -1368,24 +1370,24 @@ describe("Client and UI", function()
 				},
 			}
 			local optionsFrame = optDlg._instance.Frame:FindFirstChild("Options")
-			expect(optionsFrame ~= nil).toBe(true)
-			expect(optionsFrame.Text.LayoutOrder).toBe(-1)
+			sert.eq(optionsFrame ~= nil, true)
+			sert.eq(optionsFrame.Text.LayoutOrder, -1)
 			optionsFrame.Option2.Activated:Fire()
 			UI.flush()
-			expect(optionActionIndex).toBe(2)
+			sert.eq(optionActionIndex, 2)
 			optDlg:Destroy()
 
 			-- 8, 9, 10, 11, 12. Gradient, Stroke, Spacer, Link, Tooltip
 			local grad = UI.new "Gradient" { Parent = UI.LayerDefault }
-			expect(grad._instance.ClassName).toBe("UIGradient")
+			sert.eq(grad._instance.ClassName, "UIGradient")
 			grad:Destroy()
 
 			local stroke = UI.new "Stroke" { Parent = UI.LayerDefault }
-			expect(stroke._instance.ClassName).toBe("UIStroke")
+			sert.eq(stroke._instance.ClassName, "UIStroke")
 			stroke:Destroy()
 
 			local spacer = UI.new "Spacer" { Parent = UI.LayerDefault }
-			expect(spacer._instance.ClassName).toBe("Frame")
+			sert.eq(spacer._instance.ClassName, "Frame")
 			spacer:Destroy()
 
 			local link = UI.new "Link" {
@@ -1395,20 +1397,20 @@ describe("Client and UI", function()
 			}
 			link:Select()
 			link._instance.Focused:Fire()
-			expect(link._instance.SelectionStart).toBe(1)
-			expect(link._instance.CursorPosition).toBe(#link._instance.Text + 1)
+			sert.eq(link._instance.SelectionStart, 1)
+			sert.eq(link._instance.CursorPosition, #link._instance.Text + 1)
 			link._instance.CursorPosition = 1
-			expect(link._instance.SelectionStart).toBe(1)
-			expect(link._instance.CursorPosition).toBe(#link._instance.Text + 1)
+			sert.eq(link._instance.SelectionStart, 1)
+			sert.eq(link._instance.CursorPosition, #link._instance.Text + 1)
 			link._instance.InputEnded:Fire(
 				makeInput(env, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(10, 10, 0) })
 			)
-			expect(link._instance.SelectionStart).toBe(1)
-			expect(link._instance.CursorPosition).toBe(#link._instance.Text + 1)
+			sert.eq(link._instance.SelectionStart, 1)
+			sert.eq(link._instance.CursorPosition, #link._instance.Text + 1)
 			link._instance:ReleaseFocus()
 			link._instance.FocusLost:Fire()
-			expect(link._instance.SelectionStart).toBe(-1)
-			expect(link._instance.Text).toBe("https://example.com")
+			sert.eq(link._instance.SelectionStart, -1)
+			sert.eq(link._instance.Text, "https://example.com")
 			link:Destroy()
 			-- Firing Focused / FocusLost after Link:Destroy() is a safe no-op
 			link._instance.Focused:Fire()
@@ -1419,8 +1421,8 @@ describe("Client and UI", function()
 			local lightThemeModule = cliMounted.Client.UI.Theme.Themes.Light
 			UI.Theme.Themes.Light = nil
 			UI.Theme.load(lightThemeModule)
-			expect(env.globals.typeof(UI.Theme.Themes.Light.Primary)).toBe("Color3")
-			expect(UI.isNode(UI.Theme.Themes.Light.Primary)).toBe(false)
+			sert.eq(env.globals.typeof(UI.Theme.Themes.Light.Primary), "Color3")
+			sert.eq(UI.isNode(UI.Theme.Themes.Light.Primary), false)
 
 			local tipTarget = UI.new "Frame" {
 				Parent = UI.LayerDefault,
@@ -1435,14 +1437,14 @@ describe("Client and UI", function()
 			local guiService = UI.GuiService
 			guiService.SelectedObject = tipTarget
 			UI.flush()
-			expect(tip.Hovering()).toBe(true)
+			sert.eq(tip.Hovering(), true)
 			world:run(0.5)
-			expect(tip.Visible()).toBe(true)
+			sert.eq(tip.Visible(), true)
 			tipTarget.Position = UDim2.fromOffset(1260, 5)
 			tipTarget.Size = UDim2.fromOffset(100, 750)
 			guiService.SelectedObject = nil
 			UI.flush()
-			expect(tip.Visible()).toBe(false)
+			sert.eq(tip.Visible(), false)
 			tip:Destroy()
 
 			-- 13 & 14. Input & Clack
@@ -1468,29 +1470,29 @@ describe("Client and UI", function()
 			UI.UserInputService.TextBoxFocusReleased:Fire(textInput._input)
 
 			textInput._input.Text = "hello_world"
-			expect(textInput._input.Text).toBe("hello") -- MaxChars = 5
+			sert.eq(textInput._input.Text, "hello") -- MaxChars = 5
 			textInput._input.SelectionStart = 1
 			textInput._input.CursorPosition = 3
 			world:run(0.1)
 			textInput._input.SelectionStart = -1
 			textInput._input.CursorPosition = -1
 			textInput._input.FocusLost:Fire(true)
-			expect(textInput.Value()).toBe("hello")
+			sert.eq(textInput.Value(), "hello")
 
 			-- Reject invalid via Validate
 			textInput._input.Text = "bad"
 			textInput._input.FocusLost:Fire(true)
-			expect(textInput.Value()).toBe("hello")
+			sert.eq(textInput.Value(), "hello")
 
 			-- SetValue reaches the TextBox before the next flush, so FocusLost keeps it instead of the stale text
 			textInput:SetValue("abc")
-			expect(textInput._input.Text).toBe("abc")
+			sert.eq(textInput._input.Text, "abc")
 			textInput._input.FocusLost:Fire(true)
-			expect(textInput.Value()).toBe("abc")
+			sert.eq(textInput.Value(), "abc")
 
 			-- ClearTextButton
 			textInput._instance.ImageButton.Activated:Fire()
-			expect(textInput.Value()).toBe("")
+			sert.eq(textInput.Value(), "")
 			textInput:Destroy()
 
 			-- NumberOnly / IntegerOnly Input
@@ -1503,16 +1505,16 @@ describe("Client and UI", function()
 			}
 			numInput._input.Text = ""
 			numInput._input.FocusLost:Fire(true)
-			expect(numInput.Value()).toBe(10)
-			expect(numInput._input.Text).toBe("10")
+			sert.eq(numInput.Value(), 10)
+			sert.eq(numInput._input.Text, "10")
 			-- Clearing again while Value is already at NumberRange.Min still restores _input.Text to Min
 			numInput._input.Text = ""
 			numInput._input.FocusLost:Fire(true)
-			expect(numInput.Value()).toBe(10)
-			expect(numInput._input.Text).toBe("10")
+			sert.eq(numInput.Value(), 10)
+			sert.eq(numInput._input.Text, "10")
 			numInput._input.Text = "999"
 			numInput._input.FocusLost:Fire(true)
-			expect(tonumber(numInput.Value())).toBe(50)
+			sert.eq(tonumber(numInput.Value()), 50)
 			numInput._input.Text = "abc"
 			numInput._input.FocusLost:Fire(true)
 			numInput:Destroy()
@@ -1533,7 +1535,7 @@ describe("Client and UI", function()
 				makeInput(env, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.K }),
 				false
 			)
-			expect(hkInput.Hotkey()).toBe(Enum.KeyCode.K)
+			sert.eq(hkInput.Hotkey(), Enum.KeyCode.K)
 			hkInput:Destroy()
 
 			-- 15 & 16. List & ListItem
@@ -1549,11 +1551,11 @@ describe("Client and UI", function()
 					ContentListLayout = false,
 				},
 			}
-			expect(listComp.Collapsed()).toBe(false)
+			sert.eq(listComp.Collapsed(), false)
 			listComp._instance.Header.Activated:Fire()
-			expect(listComp.Collapsed()).toBe(true)
+			sert.eq(listComp.Collapsed(), true)
 			listComp._instance.Header.Activated:Fire()
-			expect(listComp.Collapsed()).toBe(false)
+			sert.eq(listComp.Collapsed(), false)
 			listComp:Destroy()
 
 			-- 17. Menu
@@ -1568,22 +1570,22 @@ describe("Client and UI", function()
 				Visible = false,
 			}
 			UI.activateState(menuComp.Visible, "floating")
-			expect(menuComp.Visible()).toBe(true)
+			sert.eq(menuComp.Visible(), true)
 			menuComp._content.CanvasPosition = Vector2.new(0, 10)
 			-- Clicking outside closes menu
 			UI.UserInputService.InputBegan:Fire(
 				makeInput(env, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(500, 500, 0) }),
 				false
 			)
-			expect(menuComp.Visible()).toBe(false)
+			sert.eq(menuComp.Visible(), false)
 			menuComp:Destroy()
 
 			-- 18 & 19. Scroller & ScrollerFast
 			local scroller = UI.new "Scroller" { Parent = UI.LayerDefault }
-			expect(scroller._instance.ClassName).toBe("ScrollingFrame")
+			sert.eq(scroller._instance.ClassName, "ScrollingFrame")
 			scroller:Destroy()
 
-			expect(UI.Class.ScrollerFast.escapeRichText(`<a&"b'>`)).toBe("&lt;a&amp;&quot;b&apos;&gt;")
+			sert.eq(UI.Class.ScrollerFast.escapeRichText(`<a&"b'>`), "&lt;a&amp;&quot;b&apos;&gt;")
 			local arrayState = UI.signal({ "Alpha", "Beta", "Gamma" })
 			local fastArray = UI.new "ScrollerFast" {
 				Parent = UI.LayerDefault,
@@ -1594,7 +1596,7 @@ describe("Client and UI", function()
 			}
 			world:run(0.2)
 			fastArray:forceRender()
-			expect(next(fastArray._lineItemCache) ~= nil).toBe(true)
+			sert.eq(next(fastArray._lineItemCache) ~= nil, true)
 			-- Scroll canvas (> sizeY and < sizeY) and trigger pause-canvas adjustment on refresh
 			fastArray._scroller.CanvasPosition = Vector2.new(0, 200)
 			fastArray._scroller.CanvasPosition = Vector2.new(0, 210)
@@ -1607,28 +1609,28 @@ describe("Client and UI", function()
 			fastArray._input._input.Text = "beta"
 			world:run(0.2)
 			fastArray:forceRender()
-			expect(#fastArray._filteredList).toBe(1)
+			sert.eq(#fastArray._filteredList, 1)
 			fastArray._input._input.Text = ""
 			world:run(0.2)
 			fastArray:sort(function(a, b)
 				return a > b
 			end)
 			world:run(0.2)
-			expect(fastArray._filteredList[1]).toBe("Gamma")
+			sert.eq(fastArray._filteredList[1], "Gamma")
 			fastArray:sort(nil :: any)
 			world:run(0.2)
 			fastArray._scroller._props.AbsoluteCanvasSize = Vector2.new(100, 50)
 			fastArray._scroller:GetPropertyChangedSignal("AbsoluteCanvasSize"):Fire()
 			-- Calling render(true) while hidden defers cache invalidation until forceRender() runs while visible
 			fastArray._instance.Visible = false
-			expect(next(fastArray._lineItemCache) ~= nil).toBe(true)
+			sert.eq(next(fastArray._lineItemCache) ~= nil, true)
 			fastArray:render(true)
-			expect(fastArray._bustCache).toBe(true)
-			expect(next(fastArray._lineItemCache) ~= nil).toBe(true)
+			sert.eq(fastArray._bustCache, true)
+			sert.eq(next(fastArray._lineItemCache) ~= nil, true)
 			fastArray._instance.Visible = true
 			world:run(0.2)
-			expect(fastArray._bustCache).toBeNil()
-			expect(next(fastArray._lineItemCache) ~= nil).toBe(true)
+			sert.eq(fastArray._bustCache, nil)
+			sert.eq(next(fastArray._lineItemCache) ~= nil, true)
 			fastArray:Destroy()
 
 			local fastDict = UI.new "ScrollerFast" {
@@ -1646,7 +1648,7 @@ describe("Client and UI", function()
 			}
 			world:run(0.2)
 			fastDict:forceRender()
-			expect(next(fastDict._lineItemCache) ~= nil).toBe(true)
+			sert.eq(next(fastDict._lineItemCache) ~= nil, true)
 			fastDict:filter(function(_self, list)
 				local out = {}
 				for _, k in list do
@@ -1657,8 +1659,8 @@ describe("Client and UI", function()
 				return out
 			end)
 			world:run(0.2)
-			expect(#fastDict._filteredList).toBe(1)
-			expect(fastDict._filteredList[1]).toBe("k1")
+			sert.eq(#fastDict._filteredList, 1)
+			sert.eq(fastDict._filteredList[1], "k1")
 			fastDict:freeCache()
 			fastDict:Destroy()
 
@@ -1676,13 +1678,13 @@ describe("Client and UI", function()
 				},
 			}
 			sel._instance.Header.Activated:Fire()
-			expect(sel.menu.Visible()).toBe(true)
+			sert.eq(sel.menu.Visible(), true)
 			local choiceBBtn = sel.menu._content:FindFirstChild("Choice B") :: TextButton
-			expect(choiceBBtn ~= nil).toBe(true)
+			sert.eq(choiceBBtn ~= nil, true)
 			choiceBBtn.Activated:Fire()
-			expect(sel.Value()).toBe("Choice B")
+			sert.eq(sel.Value(), "Choice B")
 			sel.Choices({ "New 1", "New 2" })
-			expect(#sel.Choices()).toBe(2)
+			sert.eq(#sel.Choices(), 2)
 			sel:Destroy()
 
 			-- 21. Slider
@@ -1703,7 +1705,7 @@ describe("Client and UI", function()
 			)
 			sldInput.UserInputState = Enum.UserInputState.End
 			slider.Vertical(true)
-			expect(slider.Vertical()).toBe(true)
+			sert.eq(slider.Vertical(), true)
 			slider:Destroy()
 
 			-- 22. Tabs (including tab dragging and mousewheel scrolling)
@@ -1723,9 +1725,9 @@ describe("Client and UI", function()
 			barTabs._props.AbsoluteSize = Vector2.new(100, 30)
 			local page1Btn = barTabs:FindFirstChild("Page1") :: TextButton
 			local page2Btn = barTabs:FindFirstChild("Page2") :: TextButton
-			expect(page2Btn ~= nil).toBe(true)
+			sert.eq(page2Btn ~= nil, true)
 			page2Btn.Activated:Fire()
-			expect(tabsComp.CurrentPage()).toBe(page2)
+			sert.eq(tabsComp.CurrentPage(), page2)
 
 			if page1Btn and page2Btn then
 				page1Btn._props.AbsolutePosition = Vector2.new(0, 0)
@@ -1756,7 +1758,7 @@ describe("Client and UI", function()
 			barTabs.MouseWheelForward:Fire()
 			world:run(0.1)
 			tabsComp.Vertical(true)
-			expect(tabsComp.Vertical()).toBe(true)
+			sert.eq(tabsComp.Vertical(), true)
 			tabsComp:Destroy()
 
 			-- 23. Window
@@ -1784,10 +1786,10 @@ describe("Client and UI", function()
 			win1._instance.Visible = true
 			win1._instance.Parent = paddedParent
 			paddedParent.Size = UDim2.fromOffset(700, 500)
-			expect(win1._instance.UISizeConstraint.MaxSize).toEqual(Vector2.new(680, 480))
+			sert.eq(win1._instance.UISizeConstraint.MaxSize, Vector2.new(680, 480))
 			paddedParent.Size = UDim2.fromOffset(200, 180)
-			expect(win1._instance.UISizeConstraint.MaxSize).toEqual(Vector2.new(180, 160))
-			expect(win1.Size()).toEqual(UDim2.fromOffset(300, 300))
+			sert.eq(win1._instance.UISizeConstraint.MaxSize, Vector2.new(180, 160))
+			sert.eq(win1.Size(), UDim2.fromOffset(300, 300))
 			win1._instance.Parent = UI.LayerDefault
 			win1.Position(UDim2.fromOffset(100, 100))
 			UI.flush()
@@ -1801,9 +1803,9 @@ describe("Client and UI", function()
 			}
 			win2._instance.Visible = true
 			-- Setting Visible = true nudges win2 and preserves the nudged Position on the instance synchronously
-			expect(win2._instance.Position).never.toEqual(UDim2.fromOffset(100, 100))
+			sert.ne(win2._instance.Position, UDim2.fromOffset(100, 100))
 			UI.Class.Window.bringToFront(win1)
-			expect(win2.Position()).never.toEqual(UDim2.fromOffset(100, 100))
+			sert.ne(win2.Position(), UDim2.fromOffset(100, 100))
 
 			local win3 = UI.new "Window" {
 				Parent = UI.LayerDefault,
@@ -1812,7 +1814,7 @@ describe("Client and UI", function()
 				Size = UDim2.fromOffset(300, 300),
 				Visible = true,
 			}
-			expect(win3._instance.Position).never.toEqual(UDim2.fromOffset(100, 100))
+			sert.ne(win3._instance.Position, UDim2.fromOffset(100, 100))
 			win3:Destroy()
 
 			-- Drag window via TitleBar (updates _instance.Position synchronously on InputChanged)
@@ -1829,7 +1831,7 @@ describe("Client and UI", function()
 					{ UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(180, 140, 0) }
 				)
 			)
-			expect(win1._instance.Position).never.toEqual(preDragPos)
+			sert.ne(win1._instance.Position, preDragPos)
 			winDrag.UserInputState = Enum.UserInputState.End
 
 			-- Hover & resize window at top-left corner of win1 (with MouseIconEnabled true)
@@ -1841,8 +1843,8 @@ describe("Client and UI", function()
 					{ UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(wPos.X, wPos.Y, 0) }
 				)
 			)
-			expect(UI.UserInputService.MouseIconEnabled).toBe(false)
-			expect(win1._instance.ResizeIcon.Visible).toBe(true)
+			sert.eq(UI.UserInputService.MouseIconEnabled, false)
+			sert.eq(win1._instance.ResizeIcon.Visible, true)
 			local winResize = makeInput(env, {
 				UserInputType = Enum.UserInputType.MouseButton1,
 				UserInputState = Enum.UserInputState.Begin,
@@ -1858,7 +1860,7 @@ describe("Client and UI", function()
 				UserInputType = Enum.UserInputType.MouseMovement,
 				Position = Vector3.new(wPos.X + 100, wPos.Y + 100, 0),
 			}))
-			expect(UI.UserInputService.MouseIconEnabled).toBe(true)
+			sert.eq(UI.UserInputService.MouseIconEnabled, true)
 
 			-- AutomaticSize.Y window preserves auto-sized Y scale/offset and disables vertical resize
 			local autoWin = UI.new "Window" {
@@ -1868,39 +1870,39 @@ describe("Client and UI", function()
 				Position = UDim2.fromOffset(50, 50),
 				Size = UDim2.fromOffset(420, 0),
 			}
-			expect(autoWin._content.Size).toEqual(UDim2.fromScale(1, 0))
-			expect(autoWin._instance.Frame.Size).toEqual(UDim2.fromScale(1, 0))
-			expect(autoWin._content.UIFlexItem.FlexMode).toBe(Enum.UIFlexMode.None)
+			sert.eq(autoWin._content.Size, UDim2.fromScale(1, 0))
+			sert.eq(autoWin._instance.Frame.Size, UDim2.fromScale(1, 0))
+			sert.eq(autoWin._content.UIFlexItem.FlexMode, Enum.UIFlexMode.None)
 			autoWin._instance.Visible = true
-			expect(autoWin._instance.Size).toEqual(UDim2.fromOffset(420, 0))
+			sert.eq(autoWin._instance.Size, UDim2.fromOffset(420, 0))
 			-- Top edge hover does not trigger vertical resize on AutomaticSize.Y
 			local awPos = autoWin._instance.AbsolutePosition
 			UI.UserInputService.InputChanged:Fire(makeInput(env, {
 				UserInputType = Enum.UserInputType.MouseMovement,
 				Position = Vector3.new(awPos.X + 100, awPos.Y, 0),
 			}))
-			expect(autoWin._instance.ResizeIcon.Visible).toBe(false)
+			sert.eq(autoWin._instance.ResizeIcon.Visible, false)
 			-- Left edge hover still allows horizontal resize
 			UI.UserInputService.InputChanged:Fire(makeInput(env, {
 				UserInputType = Enum.UserInputType.MouseMovement,
 				Position = Vector3.new(awPos.X, awPos.Y, 0),
 			}))
-			expect(autoWin._instance.ResizeIcon.Visible).toBe(true)
-			expect(autoWin._instance.ResizeIcon.ImageRectOffset).toEqual(Vector2.new(48, 0))
+			sert.eq(autoWin._instance.ResizeIcon.Visible, true)
+			sert.eq(autoWin._instance.ResizeIcon.ImageRectOffset, Vector2.new(48, 0))
 			-- When AutomaticSize grows the window's AbsoluteSize past the bottom edge, Position re-clamps on-screen
 			local parentHeight = UI.LayerDefault.AbsoluteSize.Y
 			autoWin.Position(UDim2.fromOffset(50, parentHeight - 20))
 			UI.flush()
 			autoWin.Size(UDim2.fromOffset(420, 120))
 			UI.flush()
-			expect(autoWin._instance.Position.Y.Offset).toBe(math.max(0, parentHeight - 120))
+			sert.eq(autoWin._instance.Position.Y.Offset, math.max(0, parentHeight - 120))
 			autoWin:Destroy()
 
 			-- Exit buttons
 			win1._exitButton._instance.Activated:Fire()
-			expect(winClosed).toBe(true)
+			sert.eq(winClosed, true)
 			win2._exitButton._instance.Activated:Fire()
-			expect(win2._instance.Parent).toBeNil()
+			sert.eq(win2._instance.Parent, nil)
 		end)
 	end)
 
@@ -1943,84 +1945,84 @@ describe("Client and UI", function()
 
 				-- 1. Empty prefix -> History
 				local dHist = CompletionData(_K, ";", 2)
-				expect(dHist.suggestionType).toBe("History")
-				expect(dHist.argPos).toBe(2)
-				expect(dHist.argIndex).toBe(0)
-				expect(dHist.rawArg).toBe("")
-				expect(dHist.query).toBe("")
+				sert.eq(dHist.suggestionType, "History")
+				sert.eq(dHist.argPos, 2)
+				sert.eq(dHist.argIndex, 0)
+				sert.eq(dHist.rawArg, "")
+				sert.eq(dHist.query, "")
 
 				-- 2. Invalid command string (`; `)
 				local dInvalidStr = CompletionData(_K, "; ", 3)
-				expect(#dInvalidStr.invalid > 0).toBe(true)
-				expect(dInvalidStr.invalid[1][1]).toBe("Invalid command string")
+				sert.eq(#dInvalidStr.invalid > 0, true)
+				sert.eq(dInvalidStr.invalid[1][1], "Invalid command string")
 
 				-- 3. Cursor within command name (`;ver` at pos 5) and mid-word (`;version` at pos 5) and exact command (`;version` at pos 9)
 				local dCmd = CompletionData(_K, ";ver", 5)
-				expect(dCmd.argIndex).toBe(1)
-				expect(dCmd.argPos).toBe(2)
-				expect(dCmd.rawArg).toBe("ver")
-				expect(dCmd.query).toBe("ver")
-				expect(dCmd.suggestionType).toBe(_K.Registry.types.command)
-				expect(#dCmd.suggestions > 0).toBe(true)
-				expect(dCmd.validSuggestion).toBe(true)
-				expect(dCmd.commandDefinition).toBe(_K.Registry.commands.version)
+				sert.eq(dCmd.argIndex, 1)
+				sert.eq(dCmd.argPos, 2)
+				sert.eq(dCmd.rawArg, "ver")
+				sert.eq(dCmd.query, "ver")
+				sert.eq(dCmd.suggestionType, _K.Registry.types.command)
+				sert.eq(#dCmd.suggestions > 0, true)
+				sert.eq(dCmd.validSuggestion, true)
+				sert.eq(dCmd.commandDefinition, _K.Registry.commands.version)
 
 				local dMidCmd = CompletionData(_K, ";version", 5)
-				expect(dMidCmd.rawArg).toBe("version")
-				expect(dMidCmd.query).toBe("ver")
+				sert.eq(dMidCmd.rawArg, "version")
+				sert.eq(dMidCmd.query, "ver")
 
 				local dExactCmd = CompletionData(_K, ";version", 9)
-				expect(dExactCmd.commandDefinition).toBe(_K.Registry.commands.version)
-				expect(#dExactCmd.commands).toBe(1)
-				expect(dExactCmd.commands[1].validated).toBe(true)
+				sert.eq(dExactCmd.commandDefinition, _K.Registry.commands.version)
+				sert.eq(#dExactCmd.commands, 1)
+				sert.eq(dExactCmd.commands[1].validated, true)
 
 				-- 4. Restricted command when cursor is on command (with onlyShowUsableCommands false and true) or after command
 				local dRestrIn = CompletionData(_K, ";ban", 5)
-				expect(dRestrIn.argIndex).toBe(1)
-				expect(dRestrIn.commandDefinition).toBe(_K.Registry.commands.ban)
+				sert.eq(dRestrIn.argIndex, 1)
+				sert.eq(dRestrIn.commandDefinition, _K.Registry.commands.ban)
 				local foundInvalidSug = false
 				for _, sug in dRestrIn.suggestions do
 					if sug[4] == true then
 						foundInvalidSug = true
 					end
 				end
-				expect(foundInvalidSug).toBe(true)
+				sert.eq(foundInvalidSug, true)
 				_K.client.settings.onlyShowUsableCommands(true)
 				local dRestrHidden = CompletionData(_K, ";ban", 5)
-				expect(#dRestrHidden.invalid > 0).toBe(true)
+				sert.eq(#dRestrHidden.invalid > 0, true)
 				_K.client.settings.onlyShowUsableCommands(false)
 
 				local dRestrAfter = CompletionData(_K, ";ban ", 6)
-				expect(#dRestrAfter.invalid > 0).toBe(true)
-				expect(string.find(dRestrAfter.invalid[1][1], "restricted") ~= nil).toBe(true)
+				sert.eq(#dRestrAfter.invalid > 0, true)
+				sert.eq(string.find(dRestrAfter.invalid[1][1], "restricted") ~= nil, true)
 
 				-- Chained command where first command is restricted (`;ban ;ver`)
 				local dChainRestr = CompletionData(_K, ";ban ;ver", 10)
-				expect(#dChainRestr.invalid > 0).toBe(true)
-				expect(#dChainRestr.commands).toBe(1)
+				sert.eq(#dChainRestr.invalid > 0, true)
+				sert.eq(#dChainRestr.commands, 1)
 
 				-- 5. Invalid command name outside (`;notacommand `) and inside args (`;notacommand arg1`)
 				local dBadCmd = CompletionData(_K, ";notacommand ", 14)
-				expect(#dBadCmd.invalid > 0).toBe(true)
-				expect(string.find(dBadCmd.invalid[1][1], "did you mean") ~= nil).toBe(true)
+				sert.eq(#dBadCmd.invalid > 0, true)
+				sert.eq(string.find(dBadCmd.invalid[1][1], "did you mean") ~= nil, true)
 
 				local dBadCmdInArgs = CompletionData(_K, ";notacommand arg1", 18)
-				expect(#dBadCmdInArgs.invalid > 0).toBe(true)
-				expect(string.find(dBadCmdInArgs.invalid[1][1], "did you mean") ~= nil).toBe(true)
+				sert.eq(#dBadCmdInArgs.invalid > 0, true)
+				sert.eq(string.find(dBadCmdInArgs.invalid[1][1], "did you mean") ~= nil, true)
 
 				-- 6. Chained command where cursor is in second command (`;version ;ver`)
 				local dChain = CompletionData(_K, ";version ;ver", 14)
-				expect(#dChain.commands).toBe(1)
-				expect(dChain.commands[1].validated).toBe(true)
-				expect(dChain.argIndex).toBe(1)
+				sert.eq(#dChain.commands, 1)
+				sert.eq(dChain.commands[1].validated, true)
+				sert.eq(dChain.argIndex, 1)
 
 				-- Chained command where first command is invalid (`;notacommand ;help`)
 				local dChainBad = CompletionData(_K, ";notacommand ;help", 19)
-				expect(dChainBad.argIndex).toBe(1)
-				expect(dChainBad.argPos).toBe(2)
-				expect(dChainBad.rawArg).toBe("notacommand")
-				expect(dChainBad.query).toBe("notacommand")
-				expect(#dChainBad.invalid > 0).toBe(true)
+				sert.eq(dChainBad.argIndex, 1)
+				sert.eq(dChainBad.argPos, 2)
+				sert.eq(dChainBad.rawArg, "notacommand")
+				sert.eq(dChainBad.query, "notacommand")
+				sert.eq(#dChainBad.invalid > 0, true)
 
 				-- 7. Grant creator role and authorize all commands to test argument completion
 				_K.Auth.userRoleAdd(1, "creator")
@@ -2030,87 +2032,87 @@ describe("Client and UI", function()
 
 				-- Chained command where first command is authorized but has an invalid arg (`;ban Player1 ;ver`)
 				local dChainBadArg = CompletionData(_K, ";ban Player1 ;ver", 18)
-				expect(#dChainBadArg.invalid > 0).toBe(true)
+				sert.eq(#dChainBadArg.invalid > 0, true)
 
 				-- Cursor on 1st arg, 2nd arg, 3rd (greedy string) arg of `;ban`
 				local dArg1 = CompletionData(_K, ';ban "2"', 8)
-				expect(dArg1.commandDefinition).toBe(_K.Registry.commands.ban)
-				expect(#dArg1.commands).toBe(1)
-				expect(dArg1.arg ~= nil).toBe(true)
-				expect(dArg1.argIndex).toBe(2)
-				expect(dArg1.argPos).toBe(6)
-				expect(dArg1.rawArg).toBe('"2"')
-				expect(dArg1.rawQuery).toBe('"2')
-				expect(dArg1.query).toBe("2")
-				expect(dArg1.argDefinition).toBe(_K.Registry.commands.ban.args[1])
-				expect(dArg1.transformedArg).toBe("2")
-				expect(dArg1.suggestionType).toBe(_K.Registry.types.userIds)
-				expect(dArg1.suggestions ~= nil).toBe(true)
+				sert.eq(dArg1.commandDefinition, _K.Registry.commands.ban)
+				sert.eq(#dArg1.commands, 1)
+				sert.eq(dArg1.arg ~= nil, true)
+				sert.eq(dArg1.argIndex, 2)
+				sert.eq(dArg1.argPos, 6)
+				sert.eq(dArg1.rawArg, '"2"')
+				sert.eq(dArg1.rawQuery, '"2')
+				sert.eq(dArg1.query, "2")
+				sert.eq(dArg1.argDefinition, _K.Registry.commands.ban.args[1])
+				sert.eq(dArg1.transformedArg, "2")
+				sert.eq(dArg1.suggestionType, _K.Registry.types.userIds)
+				sert.eq(dArg1.suggestions ~= nil, true)
 
 				-- Prefix arg (`@admin`) transforms to rolePlayers suggestionType
 				local dPrefixArg = CompletionData(_K, ";ban @admin", 12)
-				expect(dPrefixArg.argPos).toBe(6)
-				expect(dPrefixArg.rawArg).toBe("@admin")
-				expect(dPrefixArg.suggestionType).toBe(_K.Registry.types.rolePlayers)
+				sert.eq(dPrefixArg.argPos, 6)
+				sert.eq(dPrefixArg.rawArg, "@admin")
+				sert.eq(dPrefixArg.suggestionType, _K.Registry.types.rolePlayers)
 
 				-- Listable arg with `,` delimiter
 				local dArgList = CompletionData(_K, ';ban 2,"34"', 10)
-				expect(dArgList.argIndex).toBe(2)
-				expect(dArgList.argPos).toBe(8)
-				expect(dArgList.rawArg).toBe('"34"')
-				expect(dArgList.rawQuery).toBe('"3')
-				expect(dArgList.query).toBe("3")
-				expect(CompletionData(_K, ';ban 2,"34"', 7).rawArg).toBe("2")
+				sert.eq(dArgList.argIndex, 2)
+				sert.eq(dArgList.argPos, 8)
+				sert.eq(dArgList.rawArg, '"34"')
+				sert.eq(dArgList.rawQuery, '"3')
+				sert.eq(dArgList.query, "3")
+				sert.eq(CompletionData(_K, ';ban 2,"34"', 7).rawArg, "2")
 
 				local dArg2 = CompletionData(_K, ";ban 2 10", 10)
-				expect(dArg2.argIndex).toBe(3)
-				expect(dArg2.argPos).toBe(8)
-				expect(dArg2.rawArg).toBe("10")
-				expect(CompletionData(_K, ';ban 2 "seconds"', 17).skipped).toBeNil()
-				expect(#CompletionData(_K, ";ban ", 5).invalid).toBe(0)
+				sert.eq(dArg2.argIndex, 3)
+				sert.eq(dArg2.argPos, 8)
+				sert.eq(dArg2.rawArg, "10")
+				sert.eq(CompletionData(_K, ';ban 2 "seconds"', 17).skipped, nil)
+				sert.eq(#CompletionData(_K, ";ban ", 5).invalid, 0)
 
 				-- Skipped optional argument with suggestions (`;ban 2 "seconds"` with cursor inside skipped arg)
 				local dSkipped = CompletionData(_K, ';ban 2 "seconds"', 10)
-				expect(dSkipped.skipped).toBe(true)
-				expect(dSkipped.rawQuery).toBe('"s')
-				expect(dSkipped.query).toBe("s")
-				expect(dSkipped.suggestions ~= nil and #dSkipped.suggestions > 0).toBe(true)
-				expect(dSkipped.suggestions[1][1] ~= "0").toBe(true)
+				sert.eq(dSkipped.skipped, true)
+				sert.eq(dSkipped.rawQuery, '"s')
+				sert.eq(dSkipped.query, "s")
+				sert.eq(dSkipped.suggestions ~= nil and #dSkipped.suggestions > 0, true)
+				sert.eq(dSkipped.suggestions[1][1] ~= "0", true)
 
 				local dArg3 = CompletionData(_K, ";ban 2 10m some reason here   ", 31)
-				expect(dArg3.argIndex).toBe(4)
-				expect(dArg3.rawArg).toBe("some reason here   ")
+				sert.eq(dArg3.argIndex, 4)
+				sert.eq(dArg3.rawArg, "some reason here   ")
 
 				-- Greedy chatString / stringGreedy commands (`;m h` and `;m he`) with legacy splitKey = "%s"
 				_K.Data.settings.splitKey = "%s"
 				local dMsgH = CompletionData(_K, ";m h", 5)
-				expect(dMsgH.commandDefinition).toBe(_K.Registry.commands.message)
-				expect(dMsgH.argIndex).toBe(2)
-				expect(dMsgH.rawArg).toBe("h")
-				expect(#dMsgH.invalid).toBe(0)
+				sert.eq(dMsgH.commandDefinition, _K.Registry.commands.message)
+				sert.eq(dMsgH.argIndex, 2)
+				sert.eq(dMsgH.rawArg, "h")
+				sert.eq(#dMsgH.invalid, 0)
 				local dMsgHe = CompletionData(_K, ";m he   ", 9)
-				expect(dMsgHe.commandDefinition).toBe(_K.Registry.commands.message)
-				expect(dMsgHe.argIndex).toBe(2)
-				expect(dMsgHe.rawArg).toBe("he   ")
-				expect(dMsgHe.suggestionType).toBe(_K.Registry.types.chatString)
-				expect(#dMsgHe.invalid).toBe(0)
+				sert.eq(dMsgHe.commandDefinition, _K.Registry.commands.message)
+				sert.eq(dMsgHe.argIndex, 2)
+				sert.eq(dMsgHe.rawArg, "he   ")
+				sert.eq(dMsgHe.suggestionType, _K.Registry.types.chatString)
+				sert.eq(#dMsgHe.invalid, 0)
 				_K.Data.settings.splitKey = " "
 
 				-- Invalid argument value (targeting self when ignoreSelf = true)
 				local dBadArg = CompletionData(_K, ";ban Player1 10m", 17)
-				expect(#dBadArg.invalid > 0).toBe(true)
-				expect(dBadArg.commands[1].Error ~= nil).toBe(true)
+				sert.eq(#dBadArg.invalid > 0, true)
+				sert.eq(dBadArg.commands[1].Error ~= nil, true)
 
 				-- Mid-token cursor slicing and empty rawArgs / nil suggestions / non-invalidArg command failure
 				local dMidArg = CompletionData(_K, ';ban "2345" 10m', 8)
-				expect(dMidArg.rawArg).toBe('"2345"')
-				expect(dMidArg.rawQuery).toBe('"2')
-				expect(dMidArg.query).toBe("2")
+				sert.eq(dMidArg.rawArg, '"2345"')
+				sert.eq(dMidArg.rawQuery, '"2')
+				sert.eq(dMidArg.query, "2")
 
 				local dMidSkip = CompletionData(_K, ';ban 2 "seconds"', 11)
-				expect(dMidSkip.skipped).toBe(true)
-				expect(dMidSkip.rawQuery).toBe('"se')
-				expect(dMidSkip.query).toBe("se")
+				sert.eq(dMidSkip.skipped, true)
+				sert.eq(dMidSkip.rawQuery, '"se')
+				sert.eq(dMidSkip.query, "se")
 
 				_K.Registry.registerType("testnosuggest", {
 					listable = false,
@@ -2136,20 +2138,20 @@ describe("Client and UI", function()
 				})
 				-- When shouldFillWithSelf fills "me" for arg 2 (players), arg.rawArg is "me" while arg.skipped is '"xyz"'
 				local dSelfSkip = CompletionData(_K, ';testcompedge 1 "xyz" 5', 18)
-				expect(dSelfSkip.skipped).toBe(true)
-				expect(dSelfSkip.rawQuery).toBe('"')
-				expect(dSelfSkip.query).toBe("")
+				sert.eq(dSelfSkip.skipped, true)
+				sert.eq(dSelfSkip.rawQuery, '"')
+				sert.eq(dSelfSkip.query, "")
 				local origSplit = _K.Util.String.splitOutsideQuotes
 				_K.Registry.types.testnosuggest.listable = true
 				_K.Util.String.splitOutsideQuotes = function()
 					return {}
 				end
 				local dNoRawArgs = CompletionData(_K, ';testcompedge "abc" 5', 18)
-				expect(dNoRawArgs.argPos).toBe(15)
-				expect(dNoRawArgs.rawArg).toBe('"abc"')
-				expect(dNoRawArgs.rawQuery).toBe('"ab')
-				expect(dNoRawArgs.query).toBe("ab")
-				expect(dNoRawArgs.suggestionType).toBe(_K.Registry.types.testnosuggest)
+				sert.eq(dNoRawArgs.argPos, 15)
+				sert.eq(dNoRawArgs.rawArg, '"abc"')
+				sert.eq(dNoRawArgs.rawQuery, '"ab')
+				sert.eq(dNoRawArgs.query, "ab")
+				sert.eq(dNoRawArgs.suggestionType, _K.Registry.types.testnosuggest)
 				_K.Util.String.splitOutsideQuotes = origSplit
 				_K.Registry.types.testnosuggest.listable = false
 
@@ -2160,10 +2162,10 @@ describe("Client and UI", function()
 				_K.Registry.types.testnosuggest.suggestions = function()
 					return {}
 				end
-				expect(CompletionData(_K, ';testcompedge "xyz" 42', 16).argIndex).toBe(3)
+				sert.eq(CompletionData(_K, ';testcompedge "xyz" 42', 16).argIndex, 3)
 				_K.Registry.types.testnosuggest.suggestions = nil
 				local dSkipNilSug = CompletionData(_K, ";testcompedge 42", 16)
-				expect(dSkipNilSug.suggestions == nil or type(dSkipNilSug.suggestions) == "table").toBe(true)
+				sert.eq(dSkipNilSug.suggestions == nil or type(dSkipNilSug.suggestions) == "table", true)
 				_K.Registry.types.testnosuggest.validate = function()
 					return true
 				end
@@ -2278,7 +2280,7 @@ describe("Client and UI", function()
 			}
 
 			sert.model("CommandBar & CompletionData Autocomplete and History State Machine", {
-				init = function()
+				setup = function()
 					local sut = getOrCreateCommandBarSut()
 					local input = sut.CommandBar.Input
 					input._input.SelectionStart = -1
@@ -2286,18 +2288,20 @@ describe("Client and UI", function()
 					input._input.CursorPosition = 2
 					sut.CommandBar.updateCompletionData()
 					sut.world:step()
+					return sut
+				end,
+				init = function()
 					return {
 						prefix = ";",
 						text = ";",
 						cursor = 2,
 						suggestionIndex = 1,
 						history = table.clone(liveHistory),
-					},
-						sut
+					}
 				end,
 				commands = {
 					TypeToken = {
-						gen = function(g)
+						gen = function(_state, g)
 							return g:pick(TOKEN_INPUTS)
 						end,
 						run = function(sut, text)
@@ -2316,7 +2320,7 @@ describe("Client and UI", function()
 						end,
 					},
 					MoveCursor = {
-						gen = function(g, state)
+						gen = function(state, g)
 							return g:int(1, #state.text + 1)
 						end,
 						run = function(sut, pos)
@@ -2333,7 +2337,7 @@ describe("Client and UI", function()
 						end,
 					},
 					CycleSuggestion = {
-						gen = function(g)
+						gen = function(_state, g)
 							return {
 								dir = g:pick({ "Up", "Down" }),
 								steps = g:int(1, 3),
@@ -2383,7 +2387,7 @@ describe("Client and UI", function()
 						end,
 					},
 					NavigateHistory = {
-						gen = function(g)
+						gen = function(_state, g)
 							return g:int(0, 3)
 						end,
 						run = function(sut, upSteps)
@@ -2417,7 +2421,7 @@ describe("Client and UI", function()
 						end,
 					},
 					ExecuteCommand = {
-						gen = function(g)
+						gen = function(_state, g)
 							return g:pick(EXECUTABLE_INPUTS)
 						end,
 						run = function(sut, cmdText)
@@ -2444,7 +2448,12 @@ describe("Client and UI", function()
 									break
 								end
 							end
-							if #d.invalid > 0 or (cmdText ~= state.prefix and #d.commands < 1) or hasInvalidArg then
+							if
+								d.hasInvalidCommand
+								or #d.invalid > 0
+								or (cmdText ~= state.prefix and (#d.commands < 1 or #d.commands < (d.rawCommandsCount or 1)))
+								or hasInvalidArg
+							then
 								local trimmedInvalid = sut._K.Util.String.trimEnd(cmdText)
 								state.text = trimmedInvalid
 								state.cursor = #trimmedInvalid + 1
@@ -2474,30 +2483,32 @@ describe("Client and UI", function()
 						end,
 					},
 				},
-				invariant = function(state, sut)
-					expect(sut.world.scheduler.errors).toEqual({})
-					local input = sut.CommandBar.Input
-					expect(input._input.Text).toBe(state.text)
-					expect(input._input.CursorPosition).toBe(state.cursor)
-					expect(input._input.CursorPosition >= #state.prefix + 1).toBe(true)
+				invariants = {
+					commandBarMatchesModel = function(state, sut)
+						sert.eq(sut.world.scheduler.errors, {})
+						local input = sut.CommandBar.Input
+						sert.eq(input._input.Text, state.text)
+						sert.eq(input._input.CursorPosition, state.cursor)
+						sert.eq(input._input.CursorPosition >= #state.prefix + 1, true)
 
-					local d = sut.CompletionData(sut._K, state.text, state.cursor)
-					if state.text == state.prefix then
-						expect(d.suggestionType).toBe("History")
-						expect(d.argIndex).toBe(0)
-						expect(d.argPos).toBe(2)
-						if #state.history > 0 then
-							local expectedCmd = state.history[state.suggestionIndex]
-							local display = input.DisplayText:peek()
-							expect(string.find(display, expectedCmd, 1, true) ~= nil).toBe(true)
+						local d = sut.CompletionData(sut._K, state.text, state.cursor)
+						if state.text == state.prefix then
+							sert.eq(d.suggestionType, "History")
+							sert.eq(d.argIndex, 0)
+							sert.eq(d.argPos, 2)
+							if #state.history > 0 then
+								local expectedCmd = state.history[state.suggestionIndex]
+								local display = input.DisplayText:peek()
+								sert.eq(string.find(display, expectedCmd, 1, true) ~= nil, true)
+							end
+						else
+							local validSignal = sut._K.client.CommandBarState[1]:peek()
+							if d.hasInvalidCommand or #d.invalid > 0 then
+								sert.eq(validSignal, false)
+							end
 						end
-					else
-						local validSignal = sut._K.client.CommandBarState[1]:peek()
-						if #d.invalid > 0 then
-							expect(validSignal).toBe(false)
-						end
-					end
-				end,
+					end,
+				},
 			}, { runs = 12, length = 12 })
 		end
 	end)
@@ -2522,9 +2533,9 @@ describe("Client and UI", function()
 				local world, _srvMounted, cliMounted, _sK, cK = getOrCreateFullClientSut()
 				local fastRun = makeFastRun(world)
 
-				expect(cK.ready).toBe(true)
-				expect(cK.client.dashboard ~= nil).toBe(true)
-				expect(cK.client.CommandBar ~= nil).toBe(true)
+				sert.eq(cK.ready, true)
+				sert.eq(cK.client.dashboard ~= nil, true)
+				sert.eq(cK.client.CommandBar ~= nil, true)
 
 				local UI = cK.UI
 				local cEnv = cliMounted.env
@@ -2536,13 +2547,13 @@ describe("Client and UI", function()
 
 				-- 2. UserFrame variations
 				local uf1 = cK.client.UserFrame(1, "CustomDisplay")
-				expect(uf1.Name).toBe("Header")
+				sert.eq(uf1.Name, "Header")
 				local ufK = cK.client.UserFrame("_K")
-				expect(ufK.Name).toBe("Header")
+				sert.eq(ufK.Name, "Header")
 				local ufCustom = cK.client.UserFrame("SystemSender", nil, "rbxassetid://12345", false)
-				expect(ufCustom.Name).toBe("Header")
+				sert.eq(ufCustom.Name, "Header")
 				local ufBadge = cK.client.UserFrame(1, nil, nil, true)
-				expect(ufBadge.Name).toBe("Header")
+				sert.eq(ufBadge.Name, "Header")
 				fastRun(0.2)
 
 				-- 3. Notify & Announce
@@ -2559,21 +2570,21 @@ describe("Client and UI", function()
 						notifClosed = true
 					end,
 				})
-				expect(nDialog ~= nil).toBe(true)
-				expect(nDialog._content.Header.LayoutOrder).toBe(-3)
-				expect(nDialog._content.Header.LayoutOrder < nDialog._content.Title.LayoutOrder).toBe(true)
-				expect(nDialog._content.Title.LayoutOrder < nDialog._content.Text.LayoutOrder).toBe(true)
+				sert.eq(nDialog ~= nil, true)
+				sert.eq(nDialog._content.Header.LayoutOrder, -3)
+				sert.eq(nDialog._content.Header.LayoutOrder < nDialog._content.Title.LayoutOrder, true)
+				sert.eq(nDialog._content.Title.LayoutOrder < nDialog._content.Text.LayoutOrder, true)
 				nDialog._instance.Activated:Fire()
 				fastRun(0.2)
-				expect(notifActivated).toBe(true)
-				expect(notifClosed).toBe(true)
+				sert.eq(notifActivated, true)
+				sert.eq(notifClosed, true)
 
 				local aDialog = cK.Announce({
 					Text = "Pinned Announcement",
 					From = "_K",
 					Duration = 2,
 				})
-				expect(aDialog ~= nil).toBe(true)
+				sert.eq(aDialog ~= nil, true)
 				aDialog._exitButton._instance.Activated:Fire()
 				fastRun(0.2)
 
@@ -2581,7 +2592,7 @@ describe("Client and UI", function()
 				local CommandBar = cK.client.CommandBar
 				CommandBar.show()
 				fastRun(0.2)
-				expect(CommandBar.Bar.Visible).toBe(true)
+				sert.eq(CommandBar.Bar.Visible, true)
 
 				-- CircleIndicator button
 				local circleInd = CommandBar.Bar:FindFirstChild("CircleIndicator")
@@ -2598,12 +2609,22 @@ describe("Client and UI", function()
 				cEnv:input():type("help")
 				CommandBar.Input._input.CursorPosition = 6
 				fastRun(0.2)
-				expect(string.sub(CommandBar.Input._input.Text, 1, 1)).toBe(";")
+				sert.eq(string.sub(CommandBar.Input._input.Text, 1, 1), ";")
 
 				CommandBar.Input._input.Text = ";;help"
 				CommandBar.Input._input.CursorPosition = 7
 				fastRun(0.2)
-				expect(CommandBar.Input._input.Text).toBe(";help")
+				sert.eq(CommandBar.Input._input.Text, ";help")
+
+				-- Input ClearTextButton clears CommandBar back to prefix and resets validState/suggestions
+				local clearBtn = CommandBar.Input._instance:FindFirstChild("ImageButton")
+				sert.eq(clearBtn ~= nil, true)
+				if clearBtn then
+					clearBtn.Activated:Fire()
+					fastRun(0.1)
+					sert.eq(CommandBar.Input._input.Text, ";")
+					sert.eq(cK.client.CommandBarState[1]:peek(), nil)
+				end
 
 				-- SelectionStart ~= -1 and CursorPosition < prefixPosition clamping
 				CommandBar.Input._input.SelectionStart = 2
@@ -2612,7 +2633,7 @@ describe("Client and UI", function()
 				CommandBar.Input._input.SelectionStart = -1
 				CommandBar.Input._input.CursorPosition = 1
 				fastRun(0.1)
-				expect(CommandBar.Input._input.CursorPosition >= 2).toBe(true)
+				sert.eq(CommandBar.Input._input.CursorPosition >= 2, true)
 
 				-- Up / Down suggestion navigation via env:input()
 				cEnv:input():press(Enum.KeyCode.Down)
@@ -2714,8 +2735,8 @@ describe("Client and UI", function()
 					CommandBar.Input._input.FocusLost:Fire(true)
 					fastRun(0.3)
 					-- a run command clears the bar back to the prefix
-					expect(CommandBar.Input._input.Text).toBe(";")
-					expect(CommandBar.Input.Value()).toBe(";")
+					sert.eq(CommandBar.Input._input.Text, ";")
+					sert.eq(CommandBar.Input.Value(), ";")
 				end
 
 				-- History completion when text == ";"
@@ -2733,7 +2754,7 @@ describe("Client and UI", function()
 					false
 				)
 				CommandBar.hide()
-				expect(CommandBar.Bar.Visible).toBe(false)
+				sert.eq(CommandBar.Bar.Visible, false)
 			end)
 
 			test("exercises Network remotes, RequestCommand RPC, and client chat command routing", function()
@@ -2787,7 +2808,7 @@ describe("Client and UI", function()
 				-- Fire VIPNotification with forcePopup = true to open VIP.popup directly
 				sK.Remote.VIPNotification:Fire(srvPlayer, true)
 				fastRun(0.1)
-				expect(cK.VIP.popup.Visible).toBe(true)
+				sert.eq(cK.VIP.popup.Visible, true)
 				cK.VIP.popup.Visible = false
 				sK.Remote.Servers:Fire(srvPlayer, "job_abc123", { 12345, 4, os.time() - 60 })
 				sK.Remote.Servers:Fire(srvPlayer, nil, {
@@ -2797,12 +2818,12 @@ describe("Client and UI", function()
 				})
 				fastRun(1)
 
-				expect(cK.Data.bans["202"] ~= nil).toBe(true)
-				expect(cK.Data.bans["404"] ~= nil).toBe(true)
-				expect(cK.Data.members["707"] ~= nil).toBe(true)
-				expect(cK.Data.members["808"] ~= nil).toBe(true)
-				expect(cK.Data.servers["job_abc123"] ~= nil).toBe(true)
-				expect(cK.Data.servers["job_ghi789"] ~= nil).toBe(true)
+				sert.eq(cK.Data.bans["202"] ~= nil, true)
+				sert.eq(cK.Data.bans["404"] ~= nil, true)
+				sert.eq(cK.Data.members["707"] ~= nil, true)
+				sert.eq(cK.Data.members["808"] ~= nil, true)
+				sert.eq(cK.Data.servers["job_abc123"] ~= nil, true)
+				sert.eq(cK.Data.servers["job_ghi789"] ~= nil, true)
 
 				-- Close any open Dialogs in LayerTopInset (including VIPNotification)
 				for _, child in UI.LayerTopInset:GetChildren() do
@@ -2825,7 +2846,7 @@ describe("Client and UI", function()
 					Text = "Hello chat",
 				})
 				fastRun(0.1)
-				expect(#cK.Data.logs).toBe(logCount)
+				sert.eq(#cK.Data.logs, logCount)
 				cEnv.Players.LocalPlayer.Idled:Fire(120)
 
 				local focusBox = cEnv.Instance.new("TextBox")
@@ -2857,14 +2878,14 @@ describe("Client and UI", function()
 					end
 				end
 				fastRun(0.5)
-				expect(reqResult).toBe(true)
+				sert.eq(reqResult, true)
 
 				-- Verify RequestCommand.OnInvoke accepts a numeric userId (from cross-server ;global request)
 				local reqThread = client:spawn(function()
 					return cK.Remote.RequestCommand.OnInvoke(101, ";kill Target")
 				end)
 				fastRun(0.1)
-				expect(coroutine.status(reqThread)).toBe("suspended")
+				sert.eq(coroutine.status(reqThread), "suspended")
 				client:spawn(function()
 					coroutine.close(reqThread)
 				end)
@@ -2887,28 +2908,28 @@ describe("Client and UI", function()
 				local errorsBefore = errorLogs()
 				sK.Remote.Command:Fire(srvPlayer, ";nosuchcommand", true)
 				fastRun(0.3)
-				expect(errorLogs()).toBe(errorsBefore)
+				sert.eq(errorLogs(), errorsBefore)
 				sK.Remote.Command:Fire(srvPlayer, ";nosuchcommand")
 				fastRun(0.3)
-				expect(errorLogs()).toBe(errorsBefore + 1)
+				sert.eq(errorLogs(), errorsBefore + 1)
 
 				-- chat commands missing required arguments open CommandBar pre-filled with trailing space for argument autocomplete
 				cK.client.CommandBar.hide()
 				fastRun(0.1)
-				expect(cK.client.CommandBar.Bar.Visible).toBe(false)
+				sert.eq(cK.client.CommandBar.Bar.Visible, false)
 				sK.Remote.Command:Fire(srvPlayer, ";ban", true)
 				fastRun(0.3)
-				expect(cK.client.CommandBar.Bar.Visible).toBe(true)
-				expect(cK.client.CommandBar.Input._input.Text).toBe(";ban ")
-				expect(cK.client.CommandBar.Input._input.CursorPosition).toBe(6)
+				sert.eq(cK.client.CommandBar.Bar.Visible, true)
+				sert.eq(cK.client.CommandBar.Input._input.Text, ";ban ")
+				sert.eq(cK.client.CommandBar.Input._input.CursorPosition, 6)
 				cK.client.CommandBar.hide()
 				fastRun(0.1)
 
 				-- kick (ignoreSelf first player arg) with no args also opens CommandBar pre-filled
 				sK.Remote.Command:Fire(srvPlayer, ";kick", true)
 				fastRun(0.3)
-				expect(cK.client.CommandBar.Bar.Visible).toBe(true)
-				expect(cK.client.CommandBar.Input._input.Text).toBe(";kick ")
+				sert.eq(cK.client.CommandBar.Bar.Visible, true)
+				sert.eq(cK.client.CommandBar.Input._input.Text, ";kick ")
 				cK.client.CommandBar.hide()
 				fastRun(0.1)
 			end)
@@ -2940,7 +2961,7 @@ describe("Client and UI", function()
 				end
 				cK.client.commandsWindowVisible(true)
 				UI.flush()
-				expect(dash.Commands._instance.Visible).toBe(true)
+				sert.eq(dash.Commands._instance.Visible, true)
 				cK.client.commandsWindowVisible(false)
 				UI.flush()
 				cK.client.settings.commandBarRank(false)
@@ -2969,7 +2990,7 @@ describe("Client and UI", function()
 					tab:updateList()
 					fastRun(0.1)
 					tab:forceRender()
-					expect(next(tab._lineItemCache) ~= nil).toBe(true)
+					sert.eq(next(tab._lineItemCache) ~= nil, true)
 				end
 
 				local function filterScrollerTab(tab: any, queries: { string })
@@ -2986,10 +3007,10 @@ describe("Client and UI", function()
 				-- Bans tab (rendering, filtering left/right, newBanDialog, editBanButton, unbanDialog)
 				openScrollerTab(dash.Bans)
 				local emptyBanBtn = dash.Bans._instance:FindFirstChild("Button")
-				expect(emptyBanBtn ~= nil).toBe(true)
-				expect(emptyBanBtn.LayoutOrder).toBe(1)
-				expect(dash.Bans._scroller.LayoutOrder).toBe(2)
-				expect(emptyBanBtn.LayoutOrder < dash.Bans._scroller.LayoutOrder).toBe(true)
+				sert.eq(emptyBanBtn ~= nil, true)
+				sert.eq(emptyBanBtn.LayoutOrder, 1)
+				sert.eq(dash.Bans._scroller.LayoutOrder, 2)
+				sert.eq(emptyBanBtn.LayoutOrder < dash.Bans._scroller.LayoutOrder, true)
 
 				-- Hover ban item tooltips
 				for _, item in dash.Bans._lineItemCache do
@@ -3191,9 +3212,9 @@ describe("Client and UI", function()
 
 					-- Ban dialog
 					local banDialog = findDialog({ "New Ban", "Edit Ban" })
-					expect(banDialog ~= nil).toBe(true)
+					sert.eq(banDialog ~= nil, true)
 					local banAvatar, banBox, banButton = dialogParts(banDialog, "Ban")
-					expect(banAvatar ~= nil and banBox ~= nil and banButton ~= nil).toBe(true)
+					sert.eq(banAvatar ~= nil and banBox ~= nil and banButton ~= nil, true)
 					local bansFired = {}
 					local origBanFire = cK.Remote.Ban.Fire
 					cK.Remote.Ban.Fire = function(_self, userId)
@@ -3202,31 +3223,31 @@ describe("Client and UI", function()
 
 					enter(banBox, "707")
 					fastRun(0.1)
-					expect(targetId(banAvatar)).toBe("707")
+					sert.eq(targetId(banAvatar), "707")
 
 					enter(banBox, "BannedBob")
 					fastRun(0.1)
-					expect(targetId(banAvatar)).toBe("nil")
+					sert.eq(targetId(banAvatar), "nil")
 					banButton.Activated:Fire()
-					expect(#bansFired).toBe(0)
+					sert.eq(#bansFired, 0)
 
 					-- AdminAlice resolves first, then the slower BannedBob lookup is dropped
 					enter(banBox, "AdminAlice")
 					fastRun(0.1)
-					expect(targetId(banAvatar)).toBe("nil")
+					sert.eq(targetId(banAvatar), "nil")
 					fastRun(0.1)
-					expect(targetId(banAvatar)).toBe("505")
+					sert.eq(targetId(banAvatar), "505")
 					fastRun(0.2)
-					expect(targetId(banAvatar)).toBe("505")
+					sert.eq(targetId(banAvatar), "505")
 					banButton.Activated:Fire()
-					expect(bansFired).toEqual({ 505 })
+					sert.eq(bansFired, { 505 })
 					cK.Remote.Ban.Fire = origBanFire
 
 					-- Members role dialog
 					local roleDialog = findDialog({ "Add Role" })
-					expect(roleDialog ~= nil).toBe(true)
+					sert.eq(roleDialog ~= nil, true)
 					local roleAvatar, roleBox, confirmButton = dialogParts(roleDialog, "Confirm")
-					expect(roleAvatar ~= nil and roleBox ~= nil and confirmButton ~= nil).toBe(true)
+					sert.eq(roleAvatar ~= nil and roleBox ~= nil and confirmButton ~= nil, true)
 					local commandsRun = {}
 					local origRunCommands = cK.Process.runCommands
 					cK.Process.runCommands = function(_K, _from, cmd)
@@ -3235,24 +3256,24 @@ describe("Client and UI", function()
 
 					enter(roleBox, "707")
 					fastRun(0.1)
-					expect(targetId(roleAvatar)).toBe("707")
+					sert.eq(targetId(roleAvatar), "707")
 
 					enter(roleBox, "BannedBob")
 					fastRun(0.1)
-					expect(targetId(roleAvatar)).toBe("nil")
+					sert.eq(targetId(roleAvatar), "nil")
 					confirmButton.Activated:Fire()
-					expect(#commandsRun).toBe(0)
+					sert.eq(#commandsRun, 0)
 
 					enter(roleBox, "AdminAlice")
 					fastRun(0.1)
-					expect(targetId(roleAvatar)).toBe("nil")
+					sert.eq(targetId(roleAvatar), "nil")
 					fastRun(0.1)
-					expect(targetId(roleAvatar)).toBe("505")
+					sert.eq(targetId(roleAvatar), "505")
 					fastRun(0.2)
-					expect(targetId(roleAvatar)).toBe("505")
+					sert.eq(targetId(roleAvatar), "505")
 					confirmButton.Activated:Fire()
-					expect(#commandsRun).toBe(1)
-					expect(string.find(commandsRun[1], "role 505 ", 1, true) ~= nil).toBe(true)
+					sert.eq(#commandsRun, 1)
+					sert.eq(string.find(commandsRun[1], "role 505 ", 1, true) ~= nil, true)
 					cK.Process.runCommands = origRunCommands
 
 					playersMethods.GetUserIdFromNameAsync = origLookup
@@ -3277,7 +3298,7 @@ describe("Client and UI", function()
 					tab:updateList()
 					fastRun(0.1)
 					tab:forceRender()
-					expect(next(tab._lineItemCache) ~= nil).toBe(true)
+					sert.eq(next(tab._lineItemCache) ~= nil, true)
 				end
 
 				local function filterScrollerTab(tab: any, queries: { string })
@@ -3301,7 +3322,7 @@ describe("Client and UI", function()
 					{ "Global warn log", cK.Logger:encode("WARN"), os.time(), 1, "Player1", false }
 				)
 				-- chat logs have no filter and never show, even old saved ones
-				expect(dash.Logs.logTypeFilter.CHAT).toBeNil()
+				sert.eq(dash.Logs.logTypeFilter.CHAT, nil)
 				table.insert(
 					cK.Data.logs,
 					{ "Legacy chat line", cK.Logger:encode("CHAT"), os.time(), 1, "Player1", false }
@@ -3372,10 +3393,10 @@ describe("Client and UI", function()
 				local clientCmdFolder = cK.Service.TextChat:FindFirstChild("TextChatCommands_KA")
 				if clientCmdFolder then
 					local pingCmd = clientCmdFolder:FindFirstChild("ping")
-					expect(pingCmd ~= nil and pingCmd.AutocompleteVisible).toBe(true)
+					sert.eq(pingCmd ~= nil and pingCmd.AutocompleteVisible, true)
 					local pingCmd2 = clientCmdFolder:FindFirstChild("ping2")
 					if pingCmd2 then
-						expect(pingCmd2.AutocompleteVisible).toBe(false)
+						sert.eq(pingCmd2.AutocompleteVisible, false)
 					end
 					if pingCmd then
 						local channelsFolder = cK.Service.TextChat:FindFirstChild("TextChannels")
@@ -3399,9 +3420,9 @@ describe("Client and UI", function()
 						-- Non-slash command temporarily disables the TextChatCommand and re-sends to chat
 						pingCmd.Triggered:Fire({ UserId = cK.LocalPlayer.UserId }, ";ping me")
 						fastRun(0.1)
-						expect(sentChatMessages).toEqual({ ";ping me" })
-						expect(enabledDuringSend).toBe(false)
-						expect(pingCmd.Enabled).toBe(true)
+						sert.eq(sentChatMessages, { ";ping me" })
+						sert.eq(enabledDuringSend, false)
+						sert.eq(pingCmd.Enabled, true)
 					end
 				end
 				cK.client.settings.chatCommands(false)
@@ -3409,7 +3430,7 @@ describe("Client and UI", function()
 				fastRun(0.25)
 				if clientCmdFolder then
 					local pingCmd = clientCmdFolder:FindFirstChild("ping")
-					expect(pingCmd ~= nil and pingCmd.AutocompleteVisible).toBe(false)
+					sert.eq(pingCmd ~= nil and pingCmd.AutocompleteVisible, false)
 				end
 				cK.Data.settings.chatCommands = true
 				cK.client.settings.chatCommands(true)
@@ -3429,12 +3450,12 @@ describe("Client and UI", function()
 				-- Servers tab (rendering, place name cache hit & miss, sort, Join button)
 				openScrollerTab(dash.Servers)
 				local emptyServersLabel = dash.Servers._instance:FindFirstChild("EmptyListLabel")
-				expect(emptyServersLabel ~= nil).toBe(true)
-				expect(emptyServersLabel.LayoutOrder).toBe(1)
-				expect(dash.Servers._scroller.LayoutOrder).toBe(2)
-				expect(emptyServersLabel.LayoutOrder < dash.Servers._scroller.LayoutOrder).toBe(true)
-				expect(dash.Logs._input._instance.LayoutOrder).toBe(-1)
-				expect(dash.Members._input._instance.LayoutOrder).toBe(-1)
+				sert.eq(emptyServersLabel ~= nil, true)
+				sert.eq(emptyServersLabel.LayoutOrder, 1)
+				sert.eq(dash.Servers._scroller.LayoutOrder, 2)
+				sert.eq(emptyServersLabel.LayoutOrder < dash.Servers._scroller.LayoutOrder, true)
+				sert.eq(dash.Logs._input._instance.LayoutOrder, -1)
+				sert.eq(dash.Members._input._instance.LayoutOrder, -1)
 				for _, item in dash.Servers._lineItemCache do
 					if item.Join and item.Join._instance then
 						item.Join._instance.Activated:Fire()
@@ -3546,8 +3567,8 @@ describe("Client and UI", function()
 						{ Id = 16, GitHub = "theta" },
 						{ Id = 17, GitHub = "eta" },
 					}
-					expect(ids(Order.active(fixturePeople, fixtureData))).toEqual({ 3, 5, 14, 2, 16 })
-					expect(ids(Order.plain(fixturePeople, fixtureData))).toEqual({
+					sert.eq(ids(Order.active(fixturePeople, fixtureData)), { 3, 5, 14, 2, 16 })
+					sert.eq(ids(Order.plain(fixturePeople, fixtureData)), {
 						4,
 						7,
 						17,
@@ -3574,29 +3595,29 @@ describe("Client and UI", function()
 							[20] = { name = "same", displayName = "Same", verified = false },
 						},
 					}
-					expect(ids(Order.active(tiePeople, tieData))).toEqual({ 10, 20, 30 })
+					sert.eq(ids(Order.active(tiePeople, tieData)), { 10, 20, 30 })
 
 					-- Generated data invariants + luv2trilogy (3727541395)
 					local activeList = Order.active(Credits.people)
 					local plainList = Order.plain(Credits.people)
-					expect(#activeList + #plainList).toBe(#Credits.people)
-					expect(Credits.specialThanks.Id).toBe(16)
+					sert.eq(#activeList + #plainList, #Credits.people)
+					sert.eq(Credits.specialThanks.Id, 16)
 					local foundLuv2 = false
 					for _, person in Credits.people do
-						expect(Contributions.names[person.Id] ~= nil).toBe(true)
-						expect(person.Id ~= 16).toBe(true)
+						sert.eq(Contributions.names[person.Id] ~= nil, true)
+						sert.eq(person.Id ~= 16, true)
 						if person.Id == 3727541395 then
 							foundLuv2 = true
-							expect(person.GitHub).toBe("luv2trilogy")
+							sert.eq(person.GitHub, "luv2trilogy")
 						end
 					end
-					expect(foundLuv2).toBe(true)
+					sert.eq(foundLuv2, true)
 
 					local creditsFrame = dash.About._instance:FindFirstChild("Credits", true)
-					expect(creditsFrame ~= nil).toBe(true)
-					expect(creditsFrame:FindFirstChild("Active contributors") ~= nil).toBe(true)
-					expect(creditsFrame:FindFirstChild("Contributors") ~= nil).toBe(true)
-					expect(creditsFrame:FindFirstChild("Special Thanks") ~= nil).toBe(true)
+					sert.eq(creditsFrame ~= nil, true)
+					sert.eq(creditsFrame:FindFirstChild("Active contributors") ~= nil, true)
+					sert.eq(creditsFrame:FindFirstChild("Contributors") ~= nil, true)
+					sert.eq(creditsFrame:FindFirstChild("Special Thanks") ~= nil, true)
 				end
 				for _, desc in dash.About._instance:GetDescendants() do
 					if desc:IsA("TextButton") or desc:IsA("ImageButton") then
@@ -3698,12 +3719,12 @@ describe("Client and UI", function()
 
 					local Character = cK.client.Character
 					Character.noclip(true)
-					expect(rootPart.CanCollide).toBe(false)
+					sert.eq(rootPart.CanCollide, false)
 					Character.noclip(false)
-					expect(rootPart.CanCollide).toBe(true)
+					sert.eq(rootPart.CanCollide, true)
 
 					Character.fly(true, true)
-					expect(hum.PlatformStand).toBe(true)
+					sert.eq(hum.PlatformStand, true)
 					hum.Jump = true
 					hum.MoveDirection = Vector3.new(1, 0, 0)
 					fastRun(0.2)
@@ -3711,7 +3732,7 @@ describe("Client and UI", function()
 					hum.MoveDirection = Vector3.zero
 					fastRun(0.2)
 					Character.fly(false)
-					expect(hum.PlatformStand).toBe(false)
+					sert.eq(hum.PlatformStand, false)
 
 					cEnv.Players.LocalPlayer:SetAttribute("_KFly", 100)
 					cEnv.Players.LocalPlayer:SetAttribute("_KNoClip", true)
@@ -3725,11 +3746,11 @@ describe("Client and UI", function()
 					end)
 					fastRun(0.2)
 					UI.UserInputService.JumpRequest:Fire()
-					expect(hum.PlatformStand).toBe(true)
+					sert.eq(hum.PlatformStand, true)
 					hum.StateChanged:Fire(Enum.HumanoidStateType.Freefall, Enum.HumanoidStateType.Landed)
 					-- Double-tap JumpRequest (< 0.4s since lastJump in tick()) stops fly & noclip
 					UI.UserInputService.JumpRequest:Fire()
-					expect(hum.PlatformStand).toBe(false)
+					sert.eq(hum.PlatformStand, false)
 					cEnv.Players.LocalPlayer:SetAttribute("_KFly", nil)
 					cEnv.Players.LocalPlayer:SetAttribute("_KNoClip", false)
 					cEnv.Players.LocalPlayer.CharacterRemoving:Fire(charModel)
@@ -3756,10 +3777,10 @@ describe("Client and UI", function()
 					fastRun(0.2)
 
 					local expWin = UI.LayerTopInset:FindFirstChild("Explorer")
-					expect(expWin ~= nil).toBe(true)
+					sert.eq(expWin ~= nil, true)
 					local expScrollerFrame = expWin:FindFirstChild("UIContent", true)
 						and expWin.Frame.UIContent:FindFirstChild("ScrollerFast")
-					expect(expScrollerFrame ~= nil).toBe(true)
+					sert.eq(expScrollerFrame ~= nil, true)
 
 					-- Exercise Explorer item buttons (Expand, double-click expand, Ctrl multi-select, & Drag-and-Drop)
 					local innerScroller = expScrollerFrame:FindFirstChild("ScrollerFast")
@@ -3787,7 +3808,7 @@ describe("Client and UI", function()
 							end
 						end
 					end
-					expect(#renderedBtns > 0).toBe(true)
+					sert.eq(#renderedBtns > 0, true)
 					fastRun(0.35)
 					if renderedBtns[1] then
 						renderedBtns[1].Activated:Fire()
@@ -3954,7 +3975,7 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 		env:setAbsolute(barTabs:FindFirstChild("Page1"), Vector2.new(40, 24), Vector2.new(0, 0))
 		env:setAbsolute(barTabs:FindFirstChild("Page2"), Vector2.new(40, 24), Vector2.new(150, 0))
 		world:run(0.5)
-		expect(barTabs.CanvasPosition.X).toBe(0)
+		sert.eq(barTabs.CanvasPosition.X, 0)
 
 		-- a mousewheel scroll eases toward the next tab over several frames (the first frame only retargets)
 		barTabs.MouseWheelBackward:Fire()
@@ -3969,7 +3990,7 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 		world:step()
 		local snapped = barTabs.CanvasPosition.X
 		world:run(1)
-		expect(barTabs.CanvasPosition.X).toBe(snapped)
+		sert.eq(barTabs.CanvasPosition.X, snapped)
 
 		-- the next scroll animates again
 		env:setAbsolute(barTabs:FindFirstChild("Page2"), Vector2.new(40, 24), Vector2.new(snapped + 60, 0))
@@ -3985,7 +4006,7 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 
 	test("Dashboard ping color walks the Oklab hue from Valid through yellow to Invalid", function()
 		local world, _srvMounted, cliMounted, _sK, cK = getOrCreateFullClientSut()
-		expect(cK.ready).toBe(true)
+		sert.eq(cK.ready, true)
 
 		local ping = 0.175 -- half of the 350 ms that reads fully Invalid
 		local player = cliMounted.env.Players.LocalPlayer
@@ -4032,16 +4053,16 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 		UI.edit(host)({ selection })
 		UI.flush()
 		world:step()
-		expect(host:FindFirstChild("Renamed") ~= nil).toBe(true)
+		sert.eq(host:FindFirstChild("Renamed") ~= nil, true)
 
 		-- the selection's own children are not unwrapped in place (Flux may reject them; only the rewrite matters)
 		local marker = { _instance = UI.new "Frame" { Name = "Marker" } }
 		local props = { marker }
 		local nested = UI.Find.Child("Renamed")(props)
 		pcall(UI.edit(host), { nested })
-		expect(nested[1]).toBe(selection[1])
-		expect(nested[3]).toBe(props)
-		expect(props[1]).toBe(marker)
+		sert.eq(nested[1], selection[1])
+		sert.eq(nested[3], props)
+		sert.eq(props[1], marker)
 		host:Destroy()
 	end)
 end)
@@ -4157,7 +4178,7 @@ describe("Client and UI · motion nodes die with their component", function()
 			UI.Theme.FontSize(UI.Theme.FontSize:peek() + 1)
 			UI.flush()
 			world:run(0.5)
-			expect(observers(UI.Theme.TweenOut)).toBe(baseline)
+			sert.eq(observers(UI.Theme.TweenOut), baseline)
 		end)
 	end
 
@@ -4204,11 +4225,11 @@ describe("Client and UI · motion nodes die with their component", function()
 
 		world:run(2)
 		UI.flush()
-		expect(card.Parent).toBe(nil)
+		sert.eq(card.Parent, nil)
 		UI.Theme.Padding(UDim.new(0, UI.Theme.Padding:peek().Offset + 1))
 		UI.flush()
 		world:run(0.5)
-		expect(observers(UI.Theme.Padding)).toBe(baseline)
+		sert.eq(observers(UI.Theme.Padding), baseline)
 
 		-- Verify UserFrame system notification (from = nil) does not leak Theme observers after Destroy
 		local fontBaseline = observers(UI.Theme.Font)
@@ -4216,21 +4237,21 @@ describe("Client and UI · motion nodes die with their component", function()
 		UI.flush()
 		sysHeader:Destroy()
 		UI.flush()
-		expect(observers(UI.Theme.Font)).toBe(fontBaseline)
+		sert.eq(observers(UI.Theme.Font), fontBaseline)
 
 		-- Verify Tooltip.Cache clears adornee on adornee change and tooltip destroy
 		local adornee1 = cliMounted.env.Instance.new("TextButton")
 		local adornee2 = cliMounted.env.Instance.new("TextButton")
 		local tip = UI.new "Tooltip" { Parent = adornee1, Text = "Tip" }
 		UI.flush()
-		expect(UI.Class.Tooltip.Cache[adornee1]).toBe(tip)
+		sert.eq(UI.Class.Tooltip.Cache[adornee1], tip)
 		tip._instance.Parent = adornee2
 		UI.flush()
-		expect(UI.Class.Tooltip.Cache[adornee1]).toBeNil()
-		expect(UI.Class.Tooltip.Cache[adornee2]).toBe(tip)
+		sert.eq(UI.Class.Tooltip.Cache[adornee1], nil)
+		sert.eq(UI.Class.Tooltip.Cache[adornee2], tip)
 		tip:Destroy()
 		UI.flush()
-		expect(UI.Class.Tooltip.Cache[adornee2]).toBeNil()
+		sert.eq(UI.Class.Tooltip.Cache[adornee2], nil)
 		adornee1:Destroy()
 		adornee2:Destroy()
 	end)
@@ -4275,17 +4296,10 @@ describe("Client and UI · motion nodes die with their component", function()
 	end
 
 	do
-		sert.laws.ui("UI Components · Multi-Viewport Responsive Layout Audit", {
-			viewports = {
-				{ name = "Phone", size = Vector2.new(390, 844) },
-				{ name = "Tablet", size = Vector2.new(820, 1180) },
-				{ name = "Desktop", size = Vector2.new(1920, 1080) },
-				{ name = "Console", size = Vector2.new(1920, 1080) },
-			},
-			noOverlap = true,
-			fitsViewport = true,
-			noTextOverflow = true,
-			mount = function(_env, _parent, viewport)
+		sert.roblox.Layout.matrix(
+			"UI Components · Multi-Viewport Responsive Layout Audit",
+			function(_container, preset)
+				local viewport = preset.size
 				local world, UI = newClientUI()
 				local screenGui = UI.LayerDefault.Parent
 				if screenGui then
@@ -4398,22 +4412,33 @@ describe("Client and UI · motion nodes die with their component", function()
 
 				UI.flush()
 				world:run(0.1)
-				return panel
+				return { root = panel }
 			end,
-			check = function(_env, root, vp)
-				expect(root.AbsoluteSize.X > 0 and root.AbsoluteSize.X <= vp.size.X).toBe(true)
-				expect(root.AbsoluteSize.Y > 0 and root.AbsoluteSize.Y <= vp.size.Y).toBe(true)
-				local toolbar = root:FindFirstChild("Toolbar")
-				expect(toolbar ~= nil).toBe(true)
-				local execBtn = toolbar:FindFirstChild("ExecuteButton")
-				local modeSw = toolbar:FindFirstChild("ModeSwitch")
-				local confirmCb = toolbar:FindFirstChild("ConfirmCheck")
-				expect(execBtn ~= nil and execBtn.AbsoluteSize.X > 0).toBe(true)
-				expect(modeSw ~= nil and modeSw.AbsoluteSize.X > 0).toBe(true)
-				expect(confirmCb ~= nil and confirmCb.AbsoluteSize.X > 0).toBe(true)
-			end,
-		})
+			{
+				presets = {
+					{ name = "Phone", size = Vector2.new(390, 844) },
+					{ name = "Tablet", size = Vector2.new(820, 1180) },
+					{ name = "Desktop", size = Vector2.new(1920, 1080) },
+					{ name = "Console", size = Vector2.new(1920, 1080) },
+				},
+				settle = false,
+				check = function(root, vp)
+					sert.eq(root.AbsoluteSize.X > 0 and root.AbsoluteSize.X <= vp.size.X, true)
+					sert.eq(root.AbsoluteSize.Y > 0 and root.AbsoluteSize.Y <= vp.size.Y, true)
+					local toolbar = root:FindFirstChild("Toolbar")
+					sert.eq(toolbar ~= nil, true)
+					local execBtn = toolbar:FindFirstChild("ExecuteButton")
+					local modeSw = toolbar:FindFirstChild("ModeSwitch")
+					local confirmCb = toolbar:FindFirstChild("ConfirmCheck")
+					sert.eq(execBtn ~= nil and execBtn.AbsoluteSize.X > 0, true)
+					sert.eq(modeSw ~= nil and modeSw.AbsoluteSize.X > 0, true)
+					sert.eq(confirmCb ~= nil and confirmCb.AbsoluteSize.X > 0, true)
+				end,
+			}
+		)
 	end
 end)
 
-return {}
+do
+	return {}
+end

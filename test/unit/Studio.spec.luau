@@ -1,9 +1,8 @@
 local sert = require("../sert")
 
-local describe, expect = sert.describe, sert.expect
-local IS_ROBLOX = game ~= nil and typeof(game) == "Instance"
-local serverTest = if IS_ROBLOX and game:GetService("RunService"):IsServer() then sert.rtest else sert.skip
-local clientTest = if IS_ROBLOX and game:GetService("RunService"):IsClient() then sert.rtest else sert.skip
+local describe = sert.describe
+local serverTest = sert.test.server
+local clientTest = sert.test.client
 
 describe("Studio · Server", function()
 	serverTest(
@@ -11,17 +10,17 @@ describe("Studio · Server", function()
 		function()
 			local Players = game:GetService("Players")
 			local _K = shared._K_INTERFACE
-			expect(_K ~= nil).toBe(true)
-			expect(_K.IsServer).toBe(true)
-			expect(_K.ready).toBe(true)
-			expect(#_K.Registry.commandsList > 50).toBe(true)
+			sert.eq(_K ~= nil, true)
+			sert.eq(_K.IsServer, true)
+			sert.eq(_K.ready, true)
+			sert.eq(#_K.Registry.commandsList > 50, true)
 
 			local player = Players:GetPlayers()[1]
-			expect(player ~= nil).toBe(true)
+			sert.eq(player ~= nil, true)
 			sert.waitFor(function()
 				return player:GetAttribute("_KRolesLoaded")
-			end, 10, "Studio player _KRolesLoaded")
-			expect(_K.Auth.hasPermission(player.UserId, "admin")).toBe(true)
+			end, 10, nil, "Studio player _KRolesLoaded")
+			sert.eq(_K.Auth.hasPermission(player.UserId, "admin"), true)
 		end
 	)
 
@@ -29,14 +28,14 @@ describe("Studio · Server", function()
 		local Players = game:GetService("Players")
 		local _K = shared._K_INTERFACE
 		local player = Players:GetPlayers()[1]
-		expect(player ~= nil).toBe(true)
+		sert.eq(player ~= nil, true)
 
 		local beforeLogs = #_K.Data.logs
 		local ok = _K.Process.runCommands(_K, player.UserId, ";ping me")
-		expect(ok).toBe(true)
+		sert.eq(ok, true)
 		task.wait(0.1)
-		expect(#_K.Data.logs > beforeLogs).toBe(true)
-		expect(_K.Data.logs[#_K.Data.logs][1]).toBe(`;ping {player.Name}`)
+		sert.eq(#_K.Data.logs > beforeLogs, true)
+		sert.eq(_K.Data.logs[#_K.Data.logs][1], `;ping {player.Name}`)
 	end)
 end)
 
@@ -45,13 +44,13 @@ describe("Studio · Client", function()
 		local _K = sert.waitFor(function()
 			local k = shared._K_INTERFACE
 			return if k and k.client and k.ready then k else nil
-		end, 15, "_K client interface ready")
-		expect(_K ~= nil).toBe(true)
-		expect(_K.IsClient).toBe(true)
-		expect(_K.client ~= nil).toBe(true)
-		expect(_K.UI ~= nil).toBe(true)
-		expect(_K.client.CommandBar ~= nil).toBe(true)
-		expect(_K.client.dashboard ~= nil).toBe(true)
+		end, 15, nil, "_K client interface ready")
+		sert.eq(_K ~= nil, true)
+		sert.eq(_K.IsClient, true)
+		sert.eq(_K.client ~= nil, true)
+		sert.eq(_K.UI ~= nil, true)
+		sert.eq(_K.client.CommandBar ~= nil, true)
+		sert.eq(_K.client.dashboard ~= nil, true)
 
 		-- Verify UI.new Button + Tooltip hover stability and Select choices in live Studio
 		local UI = _K.UI
@@ -65,8 +64,8 @@ describe("Studio · Client", function()
 			Parent = testBtn,
 			Text = "Studio Tooltip",
 		}
-		expect(testTip._instance.Parent).toBe(testBtn._content)
-		expect(UI.Class.Tooltip.Cache[testBtn._instance] == testTip).toBe(true)
+		sert.eq(testTip._instance.Parent, testBtn._content)
+		sert.eq(UI.Class.Tooltip.Cache[testBtn._instance] == testTip, true)
 		testBtn:Destroy()
 
 		local testSelect = UI.new "Select" {
@@ -74,7 +73,7 @@ describe("Studio · Client", function()
 			Value = "Choice B",
 			Choices = { "Choice A", "Choice B", "Choice C" },
 		}
-		expect(testSelect.menu._content:FindFirstChild("Choice B") ~= nil).toBe(true)
+		sert.eq(testSelect.menu._content:FindFirstChild("Choice B") ~= nil, true)
 		testSelect:Destroy()
 
 		-- Verify Window.nudge preserves nudged position when a second window opens at the same spot
@@ -93,19 +92,18 @@ describe("Studio · Client", function()
 			Visible = false,
 		}
 		w2._instance.Visible = true
-		expect(w2._instance.Position).toEqual(UDim2.fromOffset(52, 52))
+		sert.eq(w2._instance.Position, UDim2.fromOffset(52, 52))
 		w1:Destroy()
 		w2:Destroy()
 
 		-- Verify cmdbar2 Window with AutomaticSize.Y expands to fit its Input + Button children in Studio
 		local cmdbar2Win = _K.Registry.commands.cmdbar2.env.window
 		cmdbar2Win._instance.Visible = true
-		local cb2Settled, cb2Moving = sert.roblox.Layout.settle(cmdbar2Win._instance)
-		sert(cb2Settled, `cmdbar2 Window layout settled ({cb2Moving})`)
-		expect(cmdbar2Win._instance.AbsoluteSize.X).toBe(420)
-		expect(cmdbar2Win._instance.AbsoluteSize.Y > 60).toBe(true)
-		expect(cmdbar2Win._content.AbsoluteSize.Y > 30).toBe(true)
-		expect(cmdbar2Win._instance.UISizeConstraint.MaxSize.X > 0).toBe(true)
+		sert.roblox.Layout.settle(cmdbar2Win._instance)
+		sert.eq(cmdbar2Win._instance.AbsoluteSize.X, 420)
+		sert.eq(cmdbar2Win._instance.AbsoluteSize.Y > 60, true)
+		sert.eq(cmdbar2Win._content.AbsoluteSize.Y > 30, true)
+		sert.eq(cmdbar2Win._instance.UISizeConstraint.MaxSize.X > 0, true)
 		cmdbar2Win._instance.Visible = false
 
 		-- Verify Slider synchronous knob & hook update
@@ -122,8 +120,8 @@ describe("Studio · Client", function()
 		}
 		testSlider.Value(0.5, true)
 		UI.flush()
-		expect(sliderHookVal).toBeCloseTo(0.5, 4)
-		expect(testSlider._slider.Position.X.Scale).toBeCloseTo(0.5, 4)
+		sert.near(sliderHookVal, 0.5, 5e-5)
+		sert.near(testSlider._slider.Position.X.Scale, 0.5, 5e-5)
 		testSlider:Destroy()
 
 		-- Verify ColorPicker hueSlider on 0-saturation color
@@ -134,9 +132,9 @@ describe("Studio · Client", function()
 		testPicker.hueSlider.Value(0.5, true)
 		UI.flush()
 		local h, s, v = testPicker.sv.BackgroundColor3:ToHSV()
-		expect(h).toBeCloseTo(0.5, 2)
-		expect(s).toBeCloseTo(1, 2)
-		expect(v).toBeCloseTo(1, 2)
+		sert.near(h, 0.5, 5e-3)
+		sert.near(s, 1, 5e-3)
+		sert.near(v, 1, 5e-3)
 		testPicker:Destroy()
 	end)
 
@@ -147,17 +145,14 @@ describe("Studio · Client", function()
 		local prefix = _K.getCommandPrefix()
 		sert.waitFor(function()
 			return _K.Registry.commands.ping.LocalPlayerAuthorized
-		end, 10, "ping command LocalPlayerAuthorized")
-		expect(not not _K.Registry.commands.ping.LocalPlayerAuthorized).toBe(true)
+		end, 10, nil, "ping command LocalPlayerAuthorized")
+		sert.eq(not not _K.Registry.commands.ping.LocalPlayerAuthorized, true)
 
-		local flicker = sert.roblox.Flicker.around(function()
-			return CommandBar.Bar
-		end, function()
+		sert.roblox.Flicker.steady(function()
 			CommandBar.show()
+			return CommandBar.Bar
 		end, { label = "CommandBar", fromSettledSize = true })
-		sert.roblox.Flicker.expect(flicker)
-		local settled, moving = sert.roblox.Layout.settle(CommandBar.Bar)
-		sert(settled, `CommandBar layout settled ({moving})`)
+		sert.roblox.Layout.settle(CommandBar.Bar)
 		input._input.Text = `{prefix}ping me`
 		input._input.CursorPosition = #input._input.Text + 1
 		task.wait()
@@ -166,26 +161,26 @@ describe("Studio · Client", function()
 		input._input:ReleaseFocus(true)
 		task.wait(0.2)
 
-		expect(input._input.Text).toBe(prefix)
-		expect(input.Value()).toBe(prefix)
-		expect(CommandBar.Bar.Visible).toBe(false)
+		sert.eq(input._input.Text, prefix)
+		sert.eq(input.Value(), prefix)
+		sert.eq(CommandBar.Bar.Visible, false)
 	end)
 
 	clientTest("custom-prefix chat commands show in chat while slash commands stay silent", function()
 		local TextChatService = game:GetService("TextChatService")
 		local channels = sert.waitFor(function()
 			return TextChatService:FindFirstChild("TextChannels")
-		end, 5, "TextChannels folder")
+		end, 5, nil, "TextChannels folder")
 		local general = sert.waitFor(function()
 			return channels:FindFirstChild("RBXGeneral") :: TextChannel?
-		end, 5, "RBXGeneral channel")
+		end, 5, nil, "RBXGeneral channel")
 		local cmdFolder = sert.waitFor(function()
 			return TextChatService:FindFirstChild("TextChatCommands_KA")
-		end, 5, "TextChatCommands_KA folder")
+		end, 5, nil, "TextChatCommands_KA folder")
 		local pingCmd = sert.waitFor(function()
 			return cmdFolder:FindFirstChild("ping") :: TextChatCommand?
-		end, 5, "ping TextChatCommand")
-		expect(pingCmd ~= nil).toBe(true)
+		end, 5, nil, "ping TextChatCommand")
+		sert.eq(pingCmd ~= nil, true)
 
 		local sendingTexts = {}
 		local triggeredTexts = {}
@@ -200,22 +195,24 @@ describe("Studio · Client", function()
 		task.spawn(pcall, general.SendAsync, general, "/ping me")
 		sert.waitFor(function()
 			return #triggeredTexts == 1
-		end, 5, "/ping me triggered")
+		end, 5, nil, "/ping me triggered")
 		task.wait(0.1)
-		expect(triggeredTexts[1]).toBe("/ping me")
-		expect(#sendingTexts).toBe(0)
+		sert.eq(triggeredTexts[1], "/ping me")
+		sert.eq(#sendingTexts, 0)
 
 		task.spawn(pcall, general.SendAsync, general, ";ping me")
 		sert.waitFor(function()
 			return #triggeredTexts == 2 and #sendingTexts == 1
-		end, 5, ";ping me triggered and sent to chat")
+		end, 5, nil, ";ping me triggered and sent to chat")
 		sendingConn:Disconnect()
 		trigConn:Disconnect()
 
-		expect(triggeredTexts[2]).toBe(";ping me")
-		expect(sendingTexts[1]).toBe(";ping me")
-		expect(pingCmd.Enabled).toBe(true)
+		sert.eq(triggeredTexts[2], ";ping me")
+		sert.eq(sendingTexts[1], ";ping me")
+		sert.eq(pingCmd.Enabled, true)
 	end)
 end)
 
-return {}
+do
+	return {}
+end

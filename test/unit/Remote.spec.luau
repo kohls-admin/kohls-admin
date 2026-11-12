@@ -1,14 +1,14 @@
 local Harness = require("./Harness")
 local sert = require("../sert")
 
-local describe, test, expect = sert.describe, sert.test, sert.expect
+local describe, test = sert.describe, sert.test
 local prop = sert.prop
 
 describe("Remote · Multiplexed Packet Framing, Queue Flushing & Reliability", function()
 	test(
 		"synchronizes packed IDs, flushes pre-sync client queues, and supports bidirectional Fire/Invoke/SetUnreliable",
 		function()
-			local world = sert.sim.new({ backing = true })
+			local world = sert.sim.new({ backing = true, latency = { remotes = 0.02 } })
 			local server = world:server()
 			local client = server:client(101)
 
@@ -43,7 +43,7 @@ describe("Remote · Multiplexed Packet Framing, Queue Flushing & Reliability", f
 
 			-- Step the world so initial handshake and queued packets flush
 			world:run(1)
-			expect(preQueuedSeen).toBe("queued_before_sync")
+			sert.eq(preQueuedSeen, "queued_before_sync")
 
 			-- Client -> Server Fire
 			cRemote.ChatMsg:Fire("hello server", 42)
@@ -60,12 +60,12 @@ describe("Remote · Multiplexed Packet Framing, Queue Flushing & Reliability", f
 			sRemote.FastTick:Fire(srvPlr, 999)
 			world:run(1)
 
-			expect(#sReceived).toBe(1)
-			expect(sReceived[1].uid).toBe(101)
-			expect(sReceived[1].text).toBe("hello server")
-			expect(sReceived[1].code).toBe(42)
-			expect(cReceived[1]).toBe("welcome all")
-			expect(fastSeen).toBe(999)
+			sert.eq(#sReceived, 1)
+			sert.eq(sReceived[1].uid, 101)
+			sert.eq(sReceived[1].text, "hello server")
+			sert.eq(sReceived[1].code, 42)
+			sert.eq(cReceived[1], "welcome all")
+			sert.eq(fastSeen, 999)
 
 			-- Bidirectional RPC Invoke (Client -> Server and Server -> Client)
 			local rpcResult = nil
@@ -77,8 +77,8 @@ describe("Remote · Multiplexed Packet Framing, Queue Flushing & Reliability", f
 				clientRpcResult = sRemote.ClientPing:Invoke(srvPlr, "check")
 			end)
 			world:run(1)
-			expect(rpcResult).toBe(131)
-			expect(clientRpcResult).toBe("pong:check")
+			sert.eq(rpcResult, 131)
+			sert.eq(clientRpcResult, "pong:check")
 
 			-- Once, Wait, and client SetUnreliable guard
 			cRemote.FastTick:SetUnreliable(false) -- client guard warns and does not throw
@@ -93,8 +93,8 @@ describe("Remote · Multiplexed Packet Framing, Queue Flushing & Reliability", f
 			sRemote.OnceEvt:Fire(srvPlr, "second_ignored")
 			sRemote.WaitEvt:Fire(srvPlr, "waited_payload")
 			world:run(1)
-			expect(onceVal).toBe("first_once")
-			expect(waitVal).toBe("waited_payload")
+			sert.eq(onceVal, "first_once")
+			sert.eq(waitVal, "waited_payload")
 
 			-- Pre-sync client Invoke queue flushing & >256 2-byte packed IDs
 			local preInvokeVal = nil
@@ -114,8 +114,8 @@ describe("Remote · Multiplexed Packet Framing, Queue Flushing & Reliability", f
 			world:run(0.5)
 			sRemote.BulkEvent_260:Fire(srvPlr, "two_byte_id")
 			world:run(1)
-			expect(preInvokeVal).toBe(154)
-			expect(highIdSeen).toBe("two_byte_id")
+			sert.eq(preInvokeVal, 154)
+			sert.eq(highIdSeen, "two_byte_id")
 		end
 	)
 end)
@@ -153,13 +153,13 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 
 		mRemote.Unban:Fire(777011)
 		world:run(1)
-		expect(_K.Data.bans["777011"]).toBeNil()
-		expect(getGroupsSpy.callCount + ownsPassSpy.callCount).toBe(0)
+		sert.eq(_K.Data.bans["777011"], nil)
+		sert.eq(getGroupsSpy.callCount + ownsPassSpy.callCount, 0)
 
 		mRemote.Ban:Fire(777014, "nope", 0)
 		world:run(1)
-		expect(_K.Data.bans["777014"]).toBeNil()
-		expect(getGroupsSpy.callCount + ownsPassSpy.callCount > 0).toBe(true)
+		sert.eq(_K.Data.bans["777014"], nil)
+		sert.eq(getGroupsSpy.callCount + ownsPassSpy.callCount > 0, true)
 
 		getGroupsSpy:restore()
 		ownsPassSpy:restore()
@@ -186,15 +186,15 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 		aRemote.Ban:Fire(1e300, "junk")
 		aRemote.Ban:Fire(2 ^ 53 + 2, "junk")
 		world:run(1)
-		expect(next(_K.Data.bans)).toBeNil()
+		sert.eq(next(_K.Data.bans), nil)
 
 		aRemote.Ban:Fire(2 ^ 53, "edge")
 		world:run(1)
-		expect(world.scheduler.errors).toEqual({})
-		expect(_K.Data.bans["9007199254740992"] ~= nil).toBe(true)
+		sert.eq(world.scheduler.errors, {})
+		sert.eq(_K.Data.bans["9007199254740992"] ~= nil, true)
 		aRemote.Unban:Fire(2 ^ 53)
 		world:run(1)
-		expect(_K.Data.bans["9007199254740992"]).toBeNil()
+		sert.eq(_K.Data.bans["9007199254740992"], nil)
 
 		-- Unban takes the same bound, a junk key saved before this check is left to ;unban
 		_K.Data.bans["1e+300"] = { "Unknown", "junk", 0, 101 }
@@ -202,8 +202,8 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 		aRemote.Unban:Fire(1e300)
 		aRemote.Unban:Fire(2 ^ 53 + 2)
 		world:run(1)
-		expect(_K.Data.bans["1e+300"] ~= nil).toBe(true)
-		expect(_K.Data.bans["9007199254740994"] ~= nil).toBe(true)
+		sert.eq(_K.Data.bans["1e+300"] ~= nil, true)
+		sert.eq(_K.Data.bans["9007199254740994"] ~= nil, true)
 	end)
 
 	local fuzzWorld: any, fuzzK: any, fuzzGuestRemote: any, fuzzAdminRemote: any
@@ -233,7 +233,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 				fuzzAdminRemote = adminEnv:requireRemote()
 				fuzzWorld:run(0.5)
 				if fuzzK.ChatCommands then
-					fuzzK.ChatCommands.schedule = function() end
+					fuzzK.ChatCommands.resync = function() end
 				end
 			end
 			local world, _K, gRemote, aRemote = fuzzWorld, fuzzK, fuzzGuestRemote, fuzzAdminRemote
@@ -256,9 +256,9 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			gRemote.Idled:Fire("not_a_number")
 			world:run(0.1)
 
-			expect(world.scheduler.errors).toEqual({})
-			expect(next(_K.Data.bans)).toBeNil()
-			expect(_K.Data.playerPrefix[202]).toBeNil()
+			sert.eq(world.scheduler.errors, {})
+			sert.eq(next(_K.Data.bans), nil)
+			sert.eq(_K.Data.playerPrefix[202], nil)
 
 			-- Valid single-char prefix from guest is accepted
 			gRemote.PlayerPrefix:Fire("!")
@@ -267,15 +267,15 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			aRemote.Settings:Fire({ dashboardRank = 2 })
 			world:run(0.1)
 
-			expect(world.scheduler.errors).toEqual({})
-			expect(_K.Data.playerPrefix[202]).toBe("!")
-			expect(_K.Data.bans["303"] ~= nil).toBe(true)
-			expect(_K.Data.savedSettings.dashboardRank).toBe(2)
+			sert.eq(world.scheduler.errors, {})
+			sert.eq(_K.Data.playerPrefix[202], "!")
+			sert.eq(_K.Data.bans["303"] ~= nil, true)
+			sert.eq(_K.Data.savedSettings.dashboardRank, 2)
 
 			-- Authorized superadmin unbans user 303
 			aRemote.Unban:Fire(303)
-			world:run(0.9)
-			expect(_K.Data.bans["303"]).toBeNil()
+			world:run(2.1)
+			sert.eq(_K.Data.bans["303"], nil)
 		end,
 		{ runs = 25 }
 	)
@@ -283,7 +283,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 	test(
 		"Remote.Settings sanitizes announcement/notification Duration and rejects invalid UTF-8 or >1000-byte Text",
 		function()
-			local world = sert.sim.new({ backing = true })
+			local world = sert.sim.new({ backing = true, latency = { remotes = 0.02 } })
 			local server = world:server()
 			local adminClient = server:client(101)
 
@@ -316,8 +316,8 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			})
 			world:run(1)
 			-- Two valid new items in one burst trigger the burst guard ("Please wait before adding another message.")
-			expect(_K.Data.savedSettings.announcement).toBeFalsy()
-			expect(#(_K.Data.savedSettings.announcements or {})).toBe(0)
+			sert.ok(not _K.Data.savedSettings.announcement)
+			sert.eq(#(_K.Data.savedSettings.announcements or {}), 0)
 
 			-- Single valid item with NaN Duration -> Duration becomes nil
 			aRemote.Settings:Fire({
@@ -326,9 +326,9 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 				},
 			})
 			world:run(1)
-			expect(#_K.Data.savedSettings.announcements).toBe(1)
-			expect(_K.Data.savedSettings.announcements[1].Text).toBe("nan duration msg")
-			expect(_K.Data.savedSettings.announcements[1].Duration).toBeNil()
+			sert.eq(#_K.Data.savedSettings.announcements, 1)
+			sert.eq(_K.Data.savedSettings.announcements[1].Text, "nan duration msg")
+			sert.eq(_K.Data.savedSettings.announcements[1].Duration, nil)
 
 			-- Wait out broadcast cooldown (60s), then test math.huge Duration -> clamped to 600
 			world:run(61)
@@ -338,8 +338,8 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 				},
 			})
 			world:run(1)
-			expect(#_K.Data.savedSettings.notifications).toBe(1)
-			expect(_K.Data.savedSettings.notifications[1].Duration).toBe(600)
+			sert.eq(#_K.Data.savedSettings.notifications, 1)
+			sert.eq(_K.Data.savedSettings.notifications[1].Duration, 600)
 
 			-- Wait out broadcast cooldown (60s), then test negative Duration -> clamped to 0
 			world:run(61)
@@ -350,14 +350,14 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 				},
 			})
 			world:run(1)
-			expect(_K.Data.savedSettings.notifications[#_K.Data.savedSettings.notifications].Duration).toBe(0)
+			sert.eq(_K.Data.savedSettings.notifications[#_K.Data.savedSettings.notifications].Duration, 0)
 		end
 	)
 
 	test(
 		"Remote.Command, Remote.PlayerPrefix, Remote.VIPUGCMethod, and Remote.EmoteType enforce rate limits and input validation",
 		function()
-			local world = sert.sim.new({ backing = true })
+			local world = sert.sim.new({ backing = true, latency = { remotes = 0.02 } })
 			local server = world:server()
 			local guestClient = server:client(202)
 
@@ -394,23 +394,23 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					sawCooldown = true
 				end
 			end
-			expect(sawCooldown).toBe(true)
-			expect(_K.Process.onCooldown(_K, 202)).toBe(true)
+			sert.eq(sawCooldown, true)
+			sert.eq(_K.Process.onCooldown(_K, 202), true)
 			world:run(4.5)
-			expect(_K.Process.onCooldown(_K, 202)).toBe(false)
+			sert.eq(_K.Process.onCooldown(_K, 202), false)
 
 			-- 2. Remote.PlayerPrefix rate-limits rapid changes and cleans up on PlayerRemoving
 			local scheduleSpy = if _K.ChatCommands then sert.spy(_K.ChatCommands, "schedule", function() end) else nil
 			gRemote.PlayerPrefix:Fire("!")
 			gRemote.PlayerPrefix:Fire("?")
 			world:run(0.2)
-			expect(_K.Data.playerPrefix[202]).toBe("!")
+			sert.eq(_K.Data.playerPrefix[202], "!")
 			world:run(1.1)
 			gRemote.PlayerPrefix:Fire("?")
 			world:run(0.2)
-			expect(_K.Data.playerPrefix[202]).toBe("?")
+			sert.eq(_K.Data.playerPrefix[202], "?")
 			if scheduleSpy then
-				expect(scheduleSpy.callCount).toBe(2)
+				sert.eq(scheduleSpy.callCount, 2)
 			end
 
 			-- 3. Remote.VIPUGCMethod rejects spoofed assetId != ugcAssetMatch[assetId]
@@ -426,8 +426,8 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			end)
 			gRemote.VIPUGCMethod:Fire(999999, "rbxassetid://18966762965", true, "gold")
 			world:run(0.5)
-			expect(ownsAssetSpy).toHaveBeenCalledTimes(0)
-			expect(char:FindFirstChild("SuperCrown")).toBeNil()
+			sert.calledTimes(ownsAssetSpy, 0)
+			sert.eq(char:FindFirstChild("SuperCrown"), nil)
 			ownsAssetSpy:restore()
 
 			-- 4. Remote.EmoteType only sends full catalog once per player
@@ -439,19 +439,19 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			gRemote.EmoteType:Fire()
 			gRemote.EmoteType:Fire()
 			world:run(0.5)
-			expect(emotePayloads).toBe(1)
+			sert.eq(emotePayloads, 1)
 
 			-- Leaving clears playerPrefix and commandLimits
 			server:leave(srvGuest)
 			world:run(0.2)
-			expect(_K.Data.playerPrefix[202]).toBeNil()
+			sert.eq(_K.Data.playerPrefix[202], nil)
 		end
 	)
 
 	test(
 		"sert.laws.remote adversarial fuzzing of Ban, Unban, Settings, PlayerPrefix, Command, Explorer, Idled, and VIPUGCMethod",
 		function()
-			local world = sert.sim.new({ backing = true })
+			local world = sert.sim.new({ backing = true, latency = { remotes = 0.02 } })
 			local server = world:server()
 			local sh = Harness.newPeerEnv(server, { isStudio = false })
 			local _K = sh:requireK()
@@ -501,73 +501,71 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			end
 
 			local function assertGuestInvariants(plr: any)
-				expect(_K.Auth.getRank(plr.UserId)).toBe(0)
-				expect(_K.Auth.hasRestrictedRole(plr.UserId)).toBe(false)
-				expect(_K.Auth.getRank(101) >= 4).toBe(true)
-				expect(_K.Data.bans["101"]).toBeNil()
-				expect(_K.Data.bans["500"] ~= nil).toBe(true)
-				expect(_K.Data.bans["500"][3]).toBe(-1)
-				expect(_K.Data.savedSettings.dashboardRank).toBe(1)
-				expect(#(_K.Data.savedSettings.freeAdmin or {})).toBe(0)
-				expect(_K.script.Parent ~= nil).toBe(true)
-				expect(adminPlr.Character ~= nil and adminPlr.Character.Parent == sh.env.workspace).toBe(true)
+				sert.eq(_K.Auth.getRank(plr.UserId), 0)
+				sert.eq(_K.Auth.hasRestrictedRole(plr.UserId), false)
+				sert.eq(_K.Auth.getRank(101) >= 4, true)
+				sert.eq(_K.Data.bans["101"], nil)
+				sert.eq(_K.Data.bans["500"] ~= nil, true)
+				sert.eq(_K.Data.bans["500"][3], -1)
+				sert.eq(_K.Data.savedSettings.dashboardRank, 1)
+				sert.eq(#(_K.Data.savedSettings.freeAdmin or {}), 0)
+				sert.eq(_K.script.Parent ~= nil, true)
+				sert.eq(adminPlr.Character ~= nil and adminPlr.Character.Parent == sh.env.workspace, true)
 			end
 
 			-- 1. Remote.Ban from unprivileged guest
-			sert.laws.remote("Remote.Ban (guest)", {
+			sert.roblox.fuzzRemote("Remote.Ban (guest)", {
+				runs = 40,
+				maxArgs = 3,
 				makePlayer = function()
 					return guestPlr
 				end,
-				argCount = 3,
-				validGen = sert.gen.tuple({
-					sert.gen.boundaryInt(-10, 1000),
-					sert.gen.malformedString(),
-					sert.gen.boundaryInt(-1, 86400),
-				}),
-				invalidGen = sert.gen.tuple({
-					sert.gen.remotePayload(2),
-					sert.gen.adversarial(2),
-					sert.gen.remotePayload(2),
-				}),
+				validGen = sert.gen.map(
+					sert.gen.tuple({
+						sert.gen.boundaryInt(-10, 1000),
+						sert.gen.malformedString(),
+						sert.gen.boundaryInt(-1, 86400),
+					}),
+					function(tup)
+						tup._validTuple = true
+						return tup
+					end
+				),
 				handler = function(plr: any, userId: any, reason: any, duration: any)
+					if type(userId) == "table" and rawget(userId, "_validTuple") then
+						userId, reason, duration = userId[1], userId[2], userId[3]
+					end
 					invokeServerRemote(_K.Remote.Ban, plr, userId, reason, duration)
-				end,
-				post = function(plr: any, ok: boolean)
-					expect(ok).toBe(true)
-					expect(_K.Auth.getRank(plr.UserId)).toBe(0)
 				end,
 				checkState = function(plr: any)
 					assertGuestInvariants(plr)
 					for k in _K.Data.bans do
-						expect(k).toBe("500")
+						sert.eq(k, "500")
 					end
 				end,
-			}, { runs = 40 })
+			})
 
 			-- 2. Remote.Unban from unprivileged guest
-			sert.laws.remote("Remote.Unban (guest)", {
+			sert.roblox.fuzzRemote("Remote.Unban (guest)", {
+				runs = 40,
+				maxArgs = 1,
 				makePlayer = function()
 					return guestPlr
 				end,
-				argCount = 1,
 				validGen = sert.gen.oneOf({ sert.gen.constant(500), sert.gen.boundaryInt(-10, 1000) }),
-				invalidGen = sert.gen.oneOf({ sert.gen.remotePayload(2), sert.gen.adversarial(2) }),
 				handler = function(plr: any, userId: any)
 					invokeServerRemote(_K.Remote.Unban, plr, userId)
 				end,
-				post = function(_plr: any, ok: boolean)
-					expect(ok).toBe(true)
-					expect(_K.Data.bans["500"] ~= nil).toBe(true)
-				end,
 				checkState = assertGuestInvariants,
-			}, { runs = 40 })
+			})
 
 			-- 3. Remote.Settings from unprivileged guest
-			sert.laws.remote("Remote.Settings (guest)", {
+			sert.roblox.fuzzRemote("Remote.Settings (guest)", {
+				runs = 40,
+				maxArgs = 1,
 				makePlayer = function()
 					return guestPlr
 				end,
-				argCount = 1,
 				validGen = sert.gen.map(
 					sert.gen.tuple({ sert.gen.boundaryInt(0, 5), sert.gen.malformedString() }),
 					function(pair)
@@ -578,58 +576,43 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 						}
 					end
 				),
-				invalidGen = sert.gen.oneOf({
-					sert.gen.remotePayload(2),
-					sert.gen.adversarial(2),
-					sert.gen.sparseTable(),
-				}),
 				handler = function(plr: any, changes: any)
 					invokeServerRemote(_K.Remote.Settings, plr, changes)
 				end,
-				post = function(_plr: any, ok: boolean)
-					expect(ok).toBe(true)
-					expect(_K.Data.savedSettings.dashboardRank).toBe(1)
-				end,
 				checkState = assertGuestInvariants,
-			}, { runs = 40 })
+			})
 
 			-- 4. Remote.PlayerPrefix with malformed strings and adversarial payloads
-			sert.laws.remote("Remote.PlayerPrefix (guest)", {
+			sert.roblox.fuzzRemote("Remote.PlayerPrefix (guest)", {
+				runs = 40,
+				maxArgs = 1,
 				makePlayer = function()
 					return guestPlr
 				end,
-				argCount = 1,
 				validGen = sert.gen.pick({ "!", "?", ";", ":", "/", "-" }),
-				invalidGen = sert.gen.oneOf({
-					sert.gen.malformedString(),
-					sert.gen.remotePayload(2),
-					sert.gen.adversarial(2),
-				}),
 				handler = function(plr: any, prefix: any)
 					_K.Data.playerPrefix[plr.UserId] = nil
 					invokeServerRemote(_K.Remote.PlayerPrefix, plr, prefix)
 				end,
-				post = function(_plr: any, ok: boolean)
-					expect(ok).toBe(true)
-				end,
 				checkState = function(plr: any)
 					local p = _K.Data.playerPrefix[plr.UserId]
 					if p ~= nil then
-						expect(type(p)).toBe("string")
-						expect(#p).toBe(1)
-						expect(string.find(p, '[,"`@$%%*~%s]')).toBeNil()
+						sert.eq(type(p), "string")
+						sert.eq(#p, 1)
+						sert.eq(string.find(p, '[,"`@$%%*~%s]'), nil)
 					end
 					_K.Data.playerPrefix[plr.UserId] = nil
 					assertGuestInvariants(plr)
 				end,
-			}, { runs = 40 })
+			})
 
 			-- 5. Remote.Command from unprivileged guest attempting privilege escalation & malformed command strings
-			sert.laws.remote("Remote.Command (guest)", {
+			sert.roblox.fuzzRemote("Remote.Command (guest)", {
+				runs = 40,
+				maxArgs = 1,
 				makePlayer = function()
 					return guestPlr
 				end,
-				argCount = 1,
 				validGen = sert.gen.pick({
 					";ban 101",
 					";ban all",
@@ -645,121 +628,111 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					";place 101 1",
 					";global ban 101",
 				}),
-				invalidGen = sert.gen.oneOf({
-					sert.gen.malformedString(),
-					sert.gen.remotePayload(2),
-					sert.gen.adversarial(2),
-				}),
 				handler = function(plr: any, message: any)
 					_K.Process.resetLimit(plr.UserId)
 					invokeServerRemote(_K.Remote.Command, plr, message)
 				end,
-				post = function(plr: any, ok: boolean)
-					expect(ok).toBe(true)
-					expect(_K.Auth.getRank(plr.UserId)).toBe(0)
-				end,
 				checkState = assertGuestInvariants,
-			}, { runs = 40 })
+			})
 
 			-- 6. Remote.Explorer from moderator attempting to delete/paste protected or higher-rank instances
-			sert.laws.remote("Remote.Explorer (mod boundary)", {
+			sert.roblox.fuzzRemote("Remote.Explorer (mod boundary)", {
+				runs = 40,
+				maxArgs = 3,
 				makePlayer = function()
 					return modPlr
 				end,
-				argCount = 3,
 				validGen = sert.gen.map(sert.gen.pick({ "DELETE", "PASTE", "UNKNOWN" }), function(action)
 					return {
+						_validTuple = true,
 						action,
 						{ _K.script, _K.Server, _K.Service.Players, adminPlr, adminPlr.Character },
 						_K.script,
 					}
 				end),
-				invalidGen = sert.gen.tuple({
-					sert.gen.malformedString(),
-					sert.gen.remotePayload(2),
-					sert.gen.adversarial(2),
-				}),
 				handler = function(plr: any, action: any, data: any, selected: any)
+					if type(action) == "table" and rawget(action, "_validTuple") then
+						action, data, selected = action[1], action[2], action[3]
+					end
 					invokeServerRemote(_K.Remote.Explorer, plr, action, data, selected)
 				end,
-				post = function(_plr: any, ok: boolean)
-					expect(ok).toBe(true)
-				end,
 				checkState = function()
-					expect(_K.script.Parent ~= nil).toBe(true)
-					expect(_K.Server.Parent ~= nil).toBe(true)
-					expect(adminPlr.Parent == _K.Service.Players).toBe(true)
-					expect(adminPlr.Character ~= nil and adminPlr.Character.Parent == sh.env.workspace).toBe(true)
+					sert.eq(_K.script.Parent ~= nil, true)
+					sert.eq(_K.Server.Parent ~= nil, true)
+					sert.eq(adminPlr.Parent == _K.Service.Players, true)
+					sert.eq(adminPlr.Character ~= nil and adminPlr.Character.Parent == sh.env.workspace, true)
 				end,
-			}, { runs = 40 })
+			})
 
 			-- 7. Remote.Ban & Remote.Unban from moderator (has ban/unban, lacks banasync) against saved ban 500 & higher-rank 101
-			sert.laws.remote("Remote.Ban & Unban (mod without banasync)", {
+			sert.roblox.fuzzRemote("Remote.Ban & Unban (mod without banasync)", {
+				runs = 40,
+				maxArgs = 3,
 				makePlayer = function()
 					return modPlr
 				end,
-				argCount = 3,
-				validGen = sert.gen.tuple({
-					sert.gen.pick({ 101, 500, -1, 0 }),
-					sert.gen.malformedString(),
-					sert.gen.pick({ -1, 0, 60, 3600 }),
-				}),
-				invalidGen = sert.gen.tuple({
-					sert.gen.adversarial(2),
-					sert.gen.remotePayload(2),
-					sert.gen.boundaryFloat(-1e6, 1e6),
-				}),
+				validGen = sert.gen.map(
+					sert.gen.tuple({
+						sert.gen.pick({ 101, 500, -1, 0 }),
+						sert.gen.malformedString(),
+						sert.gen.pick({ -1, 0, 60, 3600 }),
+					}),
+					function(tup)
+						tup._validTuple = true
+						return tup
+					end
+				),
 				handler = function(plr: any, userId: any, reason: any, duration: any)
+					if type(userId) == "table" and rawget(userId, "_validTuple") then
+						userId, reason, duration = userId[1], userId[2], userId[3]
+					end
 					invokeServerRemote(_K.Remote.Ban, plr, userId, reason, duration)
 					invokeServerRemote(_K.Remote.Unban, plr, userId)
 				end,
-				post = function(plr: any, ok: boolean)
-					expect(ok).toBe(true)
-					expect(_K.Auth.getRank(plr.UserId)).toBe(2)
-				end,
-				checkState = function()
+				checkState = function(plr: any)
 					-- Moderator without banasync cannot lift or downgrade saved ban 500, and cannot ban superadmin 101
-					expect(_K.Data.bans["101"]).toBeNil()
-					expect(_K.Data.bans["500"] ~= nil).toBe(true)
-					expect(_K.Data.bans["500"][3]).toBe(-1)
+					sert.eq(_K.Auth.getRank(plr.UserId), 2)
+					sert.eq(_K.Data.bans["101"], nil)
+					sert.eq(_K.Data.bans["500"] ~= nil, true)
+					sert.eq(_K.Data.bans["500"][3], -1)
 				end,
-			}, { runs = 40 })
+			})
 
 			-- 8. Remote.Idled & Remote.VIPUGCMethod with adversarial payloads
-			sert.laws.remote("Remote.Idled & Remote.VIPUGCMethod (guest)", {
+			sert.roblox.fuzzRemote("Remote.Idled & Remote.VIPUGCMethod (guest)", {
+				runs = 40,
+				maxArgs = 4,
 				makePlayer = function()
 					return guestPlr
 				end,
-				argCount = 4,
-				validGen = sert.gen.tuple({
-					sert.gen.boundaryFloat(-100, 1000),
-					sert.gen.malformedString(),
-					sert.gen.bool(),
-					sert.gen.malformedString(),
-				}),
-				invalidGen = sert.gen.tuple({
-					sert.gen.adversarial(2),
-					sert.gen.remotePayload(2),
-					sert.gen.adversarial(2),
-					sert.gen.remotePayload(2),
-				}),
+				validGen = sert.gen.map(
+					sert.gen.tuple({
+						sert.gen.boundaryFloat(-100, 1000),
+						sert.gen.malformedString(),
+						sert.gen.bool(),
+						sert.gen.malformedString(),
+					}),
+					function(tup)
+						tup._validTuple = true
+						return tup
+					end
+				),
 				handler = function(plr: any, a: any, b: any, c: any, d: any)
+					if type(a) == "table" and rawget(a, "_validTuple") then
+						a, b, c, d = a[1], a[2], a[3], a[4]
+					end
 					invokeServerRemote(_K.Remote.Idled, plr, a)
 					invokeServerRemote(_K.Remote.VIPUGCMethod, plr, a, b, c, d)
-				end,
-				post = function(plr: any, ok: boolean)
-					expect(ok).toBe(true)
-					expect(_K.Auth.getRank(plr.UserId)).toBe(0)
 				end,
 				checkState = function(plr: any)
 					local idle = plr:GetAttribute("_KIdleTime")
 					if idle ~= nil then
-						expect(type(idle)).toBe("number")
-						expect(idle >= 0 and idle < math.huge).toBe(true)
+						sert.eq(type(idle), "number")
+						sert.eq(idle >= 0 and idle < math.huge, true)
 					end
 					assertGuestInvariants(plr)
 				end,
-			}, { runs = 40 })
+			})
 		end
 	)
 
@@ -781,7 +754,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			if simSut and #simSut.world.scheduler.errors == 0 then
 				return simSut
 			end
-			local world = sert.sim.new({ backing = true })
+			local world = sert.sim.new({ backing = true, latency = { remotes = 0.02 } })
 			local server = world:server()
 			local clients = {}
 			local remotes = {}
@@ -857,9 +830,10 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 		end
 
 		sert.model("Multi-Rank Remote Protocol & Authorization Model (in sert.sim)", {
-			init = function()
+			setup = function()
 				local sut = getOrCreateModelSut()
 				local _K = sut._K
+				sut.world:run(2.1)
 				table.clear(_K.Data.bans)
 				table.clear(_K.Data.playerPrefix)
 				_K.Data.savedSettings.dashboardRank = 1
@@ -869,6 +843,9 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					_K.Process.resetLimit(uid)
 					sut.players[uid]:SetAttribute("_KIdleTime", nil)
 				end
+				return sut
+			end,
+			init = function()
 				return {
 					ranks = table.clone(INITIAL_RANKS),
 					bans = {},
@@ -880,12 +857,11 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					idleTimes = {},
 					unauthorizedSettingsMutated = false,
 					prefixContaminated = false,
-				},
-					sut
+				}
 			end,
 			commands = {
 				RemoteBan = {
-					gen = function(g)
+					gen = function(_state, g)
 						return {
 							caller = g:pick(ACTOR_IDS),
 							target = g:pick(ACTOR_IDS),
@@ -927,7 +903,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					end,
 				},
 				RemoteUnban = {
-					gen = function(g)
+					gen = function(_state, g)
 						return {
 							caller = g:pick(ACTOR_IDS),
 							target = g:pick(ACTOR_IDS),
@@ -959,7 +935,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					end,
 				},
 				RemoteSettings = {
-					gen = function(g)
+					gen = function(_state, g)
 						return {
 							caller = g:pick(ACTOR_IDS),
 							dashboardRank = g:pick({ 0, 1, 2, 3 }),
@@ -997,7 +973,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					end,
 				},
 				RemotePlayerPrefix = {
-					gen = function(g)
+					gen = function(_state, g)
 						return {
 							caller = g:pick(ACTOR_IDS),
 							prefix = g:pick({ "!", "?", ":", "/", "-", "@", "$", "ab" }),
@@ -1026,7 +1002,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					end,
 				},
 				RemoteCommand = {
-					gen = function(g)
+					gen = function(_state, g)
 						return {
 							caller = g:pick(ACTOR_IDS),
 							cmdStr = g:pick({
@@ -1050,7 +1026,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					end,
 				},
 				RemoteIdled = {
-					gen = function(g)
+					gen = function(_state, g)
 						return {
 							caller = g:pick(ACTOR_IDS),
 							time = g:pick({ 0, 15, 120, -10, math.huge }),
@@ -1068,7 +1044,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					end,
 				},
 				RemoteVIPUGCMethod = {
-					gen = function(g)
+					gen = function(_state, g)
 						return {
 							caller = g:pick(ACTOR_IDS),
 							asset = {
@@ -1089,19 +1065,19 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					end,
 				},
 			},
-			never = {
-				privilegeEscalation = function(state, sut)
+			invariants = {
+				noPrivilegeEscalation = function(state, sut)
 					for uid, expectedRank in state.ranks do
 						if sut._K.Auth.getRank(uid) ~= expectedRank then
-							return true
+							return false
 						end
 					end
 					if #(sut._K.Data.savedSettings.freeAdmin or {}) > 0 then
-						return true
+						return false
 					end
-					return false
+					return true
 				end,
-				higherOrEqualRankBanned = function(state, sut)
+				noHigherOrEqualRankBanned = function(state, sut)
 					for key, ban in sut._K.Data.bans do
 						local targetId = tonumber(key)
 						local bannerId = ban[4]
@@ -1109,67 +1085,69 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 							local tRank = state.ranks[targetId] or 0
 							local bRank = state.ranks[bannerId] or 0
 							if tRank >= bRank then
-								return true
+								return false
 							end
 						end
 					end
-					return sut._K.Data.bans["204"] ~= nil
+					return sut._K.Data.bans["204"] == nil
 				end,
-				sessionModPersistedBan = function(state, sut)
+				noSessionModPersistedBan = function(state, sut)
 					for key, ban in sut._K.Data.bans do
 						if ban[4] == 202 and ban[3] ~= nil and ban[3] ~= 0 then
-							return true
+							return false
 						end
 						local ref = state.bans[key]
 						if ref and ref.persisted and (ban[3] == nil or ban[3] == 0) then
-							return true
+							return false
 						end
 					end
-					return false
+					return true
 				end,
-				unauthorizedSettingsMutation = function(state, sut)
+				noUnauthorizedSettingsMutation = function(state, sut)
 					local saved = sut._K.Data.savedSettings
-					return state.unauthorizedSettingsMutated
+					return not (
+						state.unauthorizedSettingsMutated
 						or saved.dashboardRank ~= state.settings.dashboardRank
 						or saved.chatCommands ~= state.settings.chatCommands
+					)
 				end,
-				prefixCrossContamination = function(state, sut)
+				noPrefixCrossContamination = function(state, sut)
 					if state.prefixContaminated then
-						return true
+						return false
 					end
 					for _, uid in ACTOR_IDS do
 						if sut._K.Data.playerPrefix[uid] ~= state.prefixes[uid] then
-							return true
+							return false
 						end
 					end
-					return false
+					return true
+				end,
+				modelMatchesSut = function(state, sut)
+					sert.eq(sut.world.scheduler.errors, {})
+					for _, uid in ACTOR_IDS do
+						local key = tostring(uid)
+						local actualBan = sut._K.Data.bans[key]
+						local refBan = state.bans[key]
+						if refBan == nil then
+							sert.eq(actualBan, nil)
+						else
+							sert.eq(actualBan ~= nil, true)
+							sert.eq(actualBan[4], refBan.by)
+							local isPersisted = actualBan[3] ~= nil and actualBan[3] ~= 0
+							sert.eq(isPersisted, refBan.persisted)
+						end
+						sert.eq(sut._K.Data.playerPrefix[uid], state.prefixes[uid])
+						sert.eq(sut.players[uid]:GetAttribute("_KIdleTime"), state.idleTimes[uid])
+					end
 				end,
 			},
-			invariant = function(state, sut)
-				expect(sut.world.scheduler.errors).toEqual({})
-				for _, uid in ACTOR_IDS do
-					local key = tostring(uid)
-					local actualBan = sut._K.Data.bans[key]
-					local refBan = state.bans[key]
-					if refBan == nil then
-						expect(actualBan).toBeNil()
-					else
-						expect(actualBan ~= nil).toBe(true)
-						expect(actualBan[4]).toBe(refBan.by)
-						local isPersisted = actualBan[3] ~= nil and actualBan[3] ~= 0
-						expect(isPersisted).toBe(refBan.persisted)
-					end
-					expect(sut._K.Data.playerPrefix[uid]).toBe(state.prefixes[uid])
-					expect(sut.players[uid]:GetAttribute("_KIdleTime")).toBe(state.idleTimes[uid])
-				end
-			end,
 		}, { runs = 25, length = 20 })
 	end
 
 	test(
 		"sert.sim sliding-window rate limiting & broadcast cooldowns enforce per-sender and global bounds without starving normal traffic",
 		function()
-			local world = sert.sim.new({ backing = true })
+			local world = sert.sim.new({ backing = true, latency = { remotes = 0.02 } })
 			local server = world:server()
 			local guestAClient = server:client(201, "GuestA")
 			local guestBClient = server:client(202, "GuestB")
@@ -1224,9 +1202,9 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 				rGuestA.Command:Fire(";version")
 			end
 			world:run(0.2)
-			expect(_K.Process.onCooldown(_K, 201)).toBe(true)
-			expect(_K.Process.onCooldown(_K, 202)).toBe(false)
-			expect(_K.Process.onCooldown(_K, 203)).toBe(false)
+			sert.eq(_K.Process.onCooldown(_K, 201), true)
+			sert.eq(_K.Process.onCooldown(_K, 202), false)
+			sert.eq(_K.Process.onCooldown(_K, 203), false)
 
 			-- At t = 0.7s: GuestB sends 2 normal commands, VIP sends 10 commands (within VIP limit of 16)
 			world:run(0.5)
@@ -1236,29 +1214,29 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 				rVip.Command:Fire(";version")
 			end
 			world:run(0.2)
-			expect(_K.Process.onCooldown(_K, 201)).toBe(true)
-			expect(_K.Process.onCooldown(_K, 202)).toBe(false)
-			expect(_K.Process.onCooldown(_K, 203)).toBe(false)
+			sert.eq(_K.Process.onCooldown(_K, 201), true)
+			sert.eq(_K.Process.onCooldown(_K, 202), false)
+			sert.eq(_K.Process.onCooldown(_K, 203), false)
 
 			-- At t = 2.0s: GuestB sends 2 more commands (reaching exact bound of 4 -> onCooldown becomes true)
 			world:run(1.1)
 			rGuestB.Command:Fire(";version")
 			rGuestB.Command:Fire(";version")
 			world:run(0.2)
-			expect(_K.Process.onCooldown(_K, 201)).toBe(true)
-			expect(_K.Process.onCooldown(_K, 202)).toBe(true)
-			expect(_K.Process.onCooldown(_K, 203)).toBe(false)
+			sert.eq(_K.Process.onCooldown(_K, 201), true)
+			sert.eq(_K.Process.onCooldown(_K, 202), true)
+			sert.eq(_K.Process.onCooldown(_K, 203), false)
 
 			-- At t = 4.2s: GuestA's 4s window from t = 0 has slid/reset, while GuestB's 4s window from t = 0.7s is still active!
 			world:run(2.0)
-			expect(_K.Process.onCooldown(_K, 201)).toBe(false)
-			expect(_K.Process.onCooldown(_K, 202)).toBe(true)
+			sert.eq(_K.Process.onCooldown(_K, 201), false)
+			sert.eq(_K.Process.onCooldown(_K, 202), true)
 
 			-- Normal command from GuestA now succeeds again
 			rGuestA.Command:Fire(";version")
 			world:run(0.8)
 			-- At t = 5.0s: GuestB's 4s window from t = 0.7s has now also expired
-			expect(_K.Process.onCooldown(_K, 202)).toBe(false)
+			sert.eq(_K.Process.onCooldown(_K, 202), false)
 
 			-- 2. Chat.limitBroadcast & Remote.ChatSystem sliding 60s broadcast cooldown across concurrent senders
 			-- AdminA (301) fires a burst of 4 broadcasts; only the 1st passes the 60s per-sender gate
@@ -1266,13 +1244,13 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			rAdminA.Command:Fire(";announce AdminA burst 2")
 			rAdminA.Command:Fire(";announce AdminA burst 3")
 			world:run(0.5)
-			expect(_K.Chat.limitBroadcast(301) ~= nil).toBe(true)
-			expect(_K.Chat.limitBroadcast(302)).toBeNil() -- consumes 302's slot when called directly; let's test via Chat.send next!
+			sert.eq(_K.Chat.limitBroadcast(301) ~= nil, true)
+			sert.eq(_K.Chat.limitBroadcast(302), nil) -- consumes 302's slot when called directly; let's test via Chat.send next!
 
 			-- Advance 10s: AdminA (301) is still cooling down (~50s left)
 			world:run(10)
 			local errA10 = _K.Chat.limitBroadcast(301)
-			expect(errA10 ~= nil and string.find(errA10, "Wait ", 1, true) ~= nil).toBe(true)
+			sert.eq(errA10 ~= nil and string.find(errA10, "Wait ", 1, true) ~= nil, true)
 
 			-- Wait out 302's 60s window from the direct check above while checking 301 at t + 50s:
 			-- Let's also verify a third sender (or AdminB after 50s) and Remote.ChatSystem delivery + 30s client dedup window
@@ -1284,24 +1262,24 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 				_K.Remote.ChatSystem:Fire(srvGuestA, "announce", "Deduplicated msg", 302, nil, "fixed-guid-1")
 			end
 			world:run(0.5)
-			expect(#receivedByGuestA).toBe(countBefore + 1)
-			expect(receivedByGuestA[#receivedByGuestA].id).toBe("fixed-guid-1")
+			sert.eq(#receivedByGuestA, countBefore + 1)
+			sert.eq(receivedByGuestA[#receivedByGuestA].id, "fixed-guid-1")
 
 			-- At +15s (still within 30s dedup window), duplicate packet is still ignored
 			world:run(15)
 			_K.Remote.ChatSystem:Fire(srvGuestA, "announce", "Deduplicated msg", 302, nil, "fixed-guid-1")
 			world:run(0.5)
-			expect(#receivedByGuestA).toBe(countBefore + 1)
+			sert.eq(#receivedByGuestA, countBefore + 1)
 
 			-- At +16s (total 31.5s > 30s client dedup window), the ID is evicted and can be received again
 			world:run(16)
 			_K.Remote.ChatSystem:Fire(srvGuestA, "announce", "Deduplicated msg", 302, nil, "fixed-guid-1")
 			world:run(0.5)
-			expect(#receivedByGuestA).toBe(countBefore + 2)
+			sert.eq(#receivedByGuestA, countBefore + 2)
 
 			-- Advance remaining 20s so both 301 and 302 cross their 60s broadcast cooldown window
 			world:run(20)
-			expect(_K.Chat.limitBroadcast(301)).toBeNil()
+			sert.eq(_K.Chat.limitBroadcast(301), nil)
 			local msgId, sendErr = _K.Chat.send(
 				{ from = 302, fromPlayer = srvAdminB },
 				"announce",
@@ -1310,13 +1288,15 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 				{ "AdminB broadcast after window", 302, 5, "pin-guid-2" }
 			)
 			world:run(0.5)
-			expect(sendErr).toBeNil()
-			expect(type(msgId)).toBe("string")
-			expect(receivedByGuestB[#receivedByGuestB].text).toBe("AdminB broadcast after window")
-			expect(receivedByGuestB[#receivedByGuestB].from).toBe(302)
+			sert.eq(sendErr, nil)
+			sert.eq(type(msgId), "string")
+			sert.eq(receivedByGuestB[#receivedByGuestB].text, "AdminB broadcast after window")
+			sert.eq(receivedByGuestB[#receivedByGuestB].from, 302)
 			local _ = rAdminB
 		end
 	)
 end)
 
-return {}
+do
+	return {}
+end

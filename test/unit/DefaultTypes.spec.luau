@@ -1,7 +1,7 @@
 local Harness = require("./Harness")
 local sert = require("../sert")
 
-local describe, test, expect = sert.describe, sert.test, sert.expect
+local describe, test = sert.describe, sert.test
 
 local G = Harness.globals
 local Color3 = G.Color3
@@ -136,48 +136,48 @@ describe("DefaultTypes · Primitives", function()
 		local boolType = _K.Registry.types.boolean
 		local boolsType = _K.Registry.types.booleans
 
-		expect(boolType.transform("TRUE")).toBe("true")
-		expect(boolType.transform("Yes")).toBe("yes")
+		sert.eq(boolType.transform("TRUE"), "true")
+		sert.eq(boolType.transform("Yes"), "yes")
 
 		-- Empty string defaults to true
-		expect((boolType.validate(""))).toBe(true)
-		expect(boolType.parse("")).toBe(true)
+		sert.eq((boolType.validate("")), true)
+		sert.eq(boolType.parse(""), true)
 
 		-- Truthy prefixes: +, true, yes, enabled
 		for _, input in { "+", "t", "true", "y", "yes", "e", "enabled" } do
 			local transformed = boolType.transform(input)
-			expect((boolType.validate(transformed))).toBe(true)
-			expect(boolType.parse(transformed)).toBe(true)
+			sert.eq((boolType.validate(transformed)), true)
+			sert.eq(boolType.parse(transformed), true)
 		end
 
 		-- Falsy prefixes: -, false, no, disabled
 		for _, input in { "-", "f", "false", "n", "no", "d", "disabled" } do
 			local transformed = boolType.transform(input)
-			expect((boolType.validate(transformed))).toBe(true)
-			expect(boolType.parse(transformed)).toBe(false)
+			sert.eq((boolType.validate(transformed)), true)
+			sert.eq(boolType.parse(transformed), false)
 		end
 
 		-- Invalid boolean
 		local okInvalid, errInvalid = boolType.validate("maybe")
-		expect(okInvalid).toBe(false)
-		expect(errInvalid).toBe("Invalid boolean")
+		sert.eq(okInvalid, false)
+		sert.eq(errInvalid, "Invalid boolean")
 		local parsedInvalid, parseErr = boolType.parse("maybe")
-		expect(parsedInvalid).toBeNil()
-		expect(parseErr).toBe("Invalid boolean")
+		sert.eq(parsedInvalid, nil)
+		sert.eq(parseErr, "Invalid boolean")
 
 		-- Suggestions
 		local suggestions = boolType.suggestions("", 1)
-		expect(type(suggestions)).toBe("table")
-		expect(table.find(suggestions, "true") ~= nil).toBe(true)
-		expect(table.find(suggestions, "false") ~= nil).toBe(true)
+		sert.eq(type(suggestions), "table")
+		sert.eq(table.find(suggestions, "true") ~= nil, true)
+		sert.eq(table.find(suggestions, "false") ~= nil, true)
 
 		-- Listable booleans via Argument:prepare()
-		expect(boolsType.listable).toBe(true)
+		sert.eq(boolsType.listable, true)
 		local cmd = makeCommandContext(_K, 1)
 		local arg = Argument.new(cmd, { type = "booleans", name = "Flags" }, 1, "true,no,+,disabled")
 		local ok, parsed = arg:prepare()
-		expect(ok).toBe(true)
-		expect(parsed).toEqual({ true, false, true, false })
+		sert.eq(ok, true)
+		sert.eq(parsed, { true, false, true, false })
 	end)
 
 	test("integer, integers, number, and numbers transform, validate, and parse", function()
@@ -187,53 +187,53 @@ describe("DefaultTypes · Primitives", function()
 		local numType = _K.Registry.types.number
 		local numsType = _K.Registry.types.numbers
 
-		expect(intType.filterLog).toBe(true)
-		expect(numType.filterLog).toBe(true)
+		sert.eq(intType.filterLog, true)
+		sert.eq(numType.filterLog, true)
 
 		-- Empty string transforms to 0
-		expect(intType.transform("")).toBe(0)
-		expect((intType.validate(0))).toBe(true)
-		expect(intType.parse(0)).toBe(0)
+		sert.eq(intType.transform(""), 0)
+		sert.eq((intType.validate(0)), true)
+		sert.eq(intType.parse(0), 0)
 
 		-- Valid integers
 		local v42 = intType.transform("42")
-		expect(v42).toBe(42)
-		expect((intType.validate(v42))).toBe(true)
-		expect(intType.parse(v42)).toBe(42)
+		sert.eq(v42, 42)
+		sert.eq((intType.validate(v42)), true)
+		sert.eq(intType.parse(v42), 42)
 
 		local vNeg = intType.transform("-15")
-		expect((intType.validate(vNeg))).toBe(true)
-		expect(intType.parse(vNeg)).toBe(-15)
+		sert.eq((intType.validate(vNeg)), true)
+		sert.eq(intType.parse(vNeg), -15)
 
 		-- Float rejected by integer, accepted by number
 		local vFloat = intType.transform("3.14")
 		local okIntFloat, errIntFloat = intType.validate(vFloat)
-		expect(okIntFloat).toBe(false)
-		expect(errIntFloat).toBe("Only whole numbers are valid")
+		sert.eq(okIntFloat, false)
+		sert.eq(errIntFloat, "Only whole numbers are valid")
 
-		expect((numType.validate(vFloat))).toBe(true)
-		expect(numType.parse(vFloat)).toBe(3.14)
+		sert.eq((numType.validate(vFloat)), true)
+		sert.eq(numType.parse(vFloat), 3.14)
 
 		-- Non-numeric rejected by both
 		local badVal, badErr = intType.transform("notanumber")
-		expect(badVal).toBeNil()
-		expect(badErr).toBe("Invalid number")
-		expect((intType.validate(badVal))).toBe(false)
-		expect((numType.validate(badVal))).toBe(false)
+		sert.eq(badVal, nil)
+		sert.eq(badErr, "Invalid number")
+		sert.eq((intType.validate(badVal)), false)
+		sert.eq((numType.validate(badVal)), false)
 
 		-- Listable integers and numbers
-		expect(intsType.listable).toBe(true)
-		expect(numsType.listable).toBe(true)
+		sert.eq(intsType.listable, true)
+		sert.eq(numsType.listable, true)
 		local cmd = makeCommandContext(_K, 1)
 		local intArg = Argument.new(cmd, { type = "integers", name = "Ids" }, 1, "10,-20,30")
 		local okInts, parsedInts = intArg:prepare()
-		expect(okInts).toBe(true)
-		expect(parsedInts).toEqual({ 10, -20, 30 })
+		sert.eq(okInts, true)
+		sert.eq(parsedInts, { 10, -20, 30 })
 
 		local numArg = Argument.new(cmd, { type = "numbers", name = "Coords" }, 1, "1.5,-2.25,0")
 		local okNums, parsedNums = numArg:prepare()
-		expect(okNums).toBe(true)
-		expect(parsedNums).toEqual({ 1.5, -2.25, 0 })
+		sert.eq(okNums, true)
+		sert.eq(parsedNums, { 1.5, -2.25, 0 })
 	end)
 
 	test("string, strings, rawString, rawStrings, chatString, and stringGreedy", function()
@@ -245,26 +245,26 @@ describe("DefaultTypes · Primitives", function()
 		local chatStrType = _K.Registry.types.chatString
 		local greedyStrType = _K.Registry.types.stringGreedy
 
-		expect(rawStrType.filterLog).toBe(true)
-		expect(rawStrType.freeText).toBe(true)
-		expect((rawStrType.validate("hello"))).toBe(true)
-		expect((rawStrType.validate(nil))).toBe(false)
-		expect(rawStrType.parse("hello")).toBe("hello")
-		expect(rawStrType.parse(123)).toBe("123")
-		expect(chatStrType.parse("chat msg")).toBe("chat msg")
-		expect(greedyStrType.parse("greedy msg")).toBe("greedy msg")
+		sert.eq(rawStrType.filterLog, true)
+		sert.eq(rawStrType.freeText, true)
+		sert.eq((rawStrType.validate("hello")), true)
+		sert.eq((rawStrType.validate(nil)), false)
+		sert.eq(rawStrType.parse("hello"), "hello")
+		sert.eq(rawStrType.parse(123), "123")
+		sert.eq(chatStrType.parse("chat msg"), "chat msg")
+		sert.eq(greedyStrType.parse("greedy msg"), "greedy msg")
 
-		expect(strType.freeText).toBe(true)
-		expect((strType.validate("broadcast"))).toBe(true)
-		expect((strType.validate(nil))).toBe(false)
+		sert.eq(strType.freeText, true)
+		sert.eq((strType.validate("broadcast")), true)
+		sert.eq((strType.validate(nil)), false)
 
 		-- Global command bypasses chat check and returns raw string
 		local globalSelf = makeArgSelf(_K, 10, { type = "string", name = "Msg" }, "global text", { global = true })
-		expect(strType.parse("global text", globalSelf)).toBe("global text")
+		sert.eq(strType.parse("global text", globalSelf), "global text")
 
 		-- Server non-global command filters string via TextChat / TextService
 		local serverSelf = makeArgSelf(_K, 10, { type = "string", name = "Msg" }, "server text", { global = false })
-		expect(strType.parse("server text", serverSelf)).toBe("server text")
+		sert.eq(strType.parse("server text", serverSelf), "server text")
 
 		-- When CanUserChatAsync returns false, string.parse fails with "User cannot chat"
 		local tcsMethods = rawget(_K.Service.TextChat, "_methods")
@@ -276,23 +276,23 @@ describe("DefaultTypes · Primitives", function()
 			return false
 		end
 		local blockedVal, blockedErr = strType.parse("blocked text", serverSelf)
-		expect(blockedVal).toBeNil()
-		expect(blockedErr).toBe("User cannot chat")
+		sert.eq(blockedVal, nil)
+		sert.eq(blockedErr, "User cannot chat")
 		tcsMethods.CanUserChatAsync = origCanChat
 
 		-- Listable strings and rawStrings via Argument:prepare()
-		expect(strsType.listable).toBe(true)
-		expect(rawStrsType.listable).toBe(true)
+		sert.eq(strsType.listable, true)
+		sert.eq(rawStrsType.listable, true)
 		local cmd = makeCommandContext(_K, 10)
 		local rawArg = Argument.new(cmd, { type = "rawStrings", name = "Reasons" }, 1, '"first reason",second')
 		local okRaw, parsedRaw = rawArg:prepare()
-		expect(okRaw).toBe(true)
-		expect(parsedRaw).toEqual({ "first reason", "second" })
+		sert.eq(okRaw, true)
+		sert.eq(parsedRaw, { "first reason", "second" })
 
 		local strArg = Argument.new(cmd, { type = "strings", name = "Words" }, 1, "alpha,beta")
 		local okStr, parsedStr = strArg:prepare()
-		expect(okStr).toBe(true)
-		expect(parsedStr).toEqual({ "alpha", "beta" })
+		sert.eq(okStr, true)
+		sert.eq(parsedStr, { "alpha", "beta" })
 	end)
 end)
 
@@ -301,71 +301,71 @@ describe("DefaultTypes · Time", function()
 		local _K = getSharedK()
 		local timeType = _K.Registry.types.timeSimple
 
-		expect(timeType.filterLog).toBe(true)
+		sert.eq(timeType.filterLog, true)
 
 		-- Empty string -> 1 second
 		local okEmpty, valEmpty = timeType.validate("")
-		expect(okEmpty).toBe(true)
-		expect(valEmpty).toBe(1)
-		expect(timeType.parse("")).toBe(1)
+		sert.eq(okEmpty, true)
+		sert.eq(valEmpty, 1)
+		sert.eq(timeType.parse(""), 1)
 
 		-- Forever (-1 and "-")
 		local okForever, valForever = timeType.validate("-1")
-		expect(okForever).toBe(true)
-		expect(valForever).toBe(-1)
-		expect(timeType.parse("-1")).toBe(-1)
-		expect(timeType.parse("-")).toBe(-1)
+		sert.eq(okForever, true)
+		sert.eq(valForever, -1)
+		sert.eq(timeType.parse("-1"), -1)
+		sert.eq(timeType.parse("-"), -1)
 
 		-- Session (0) and plain numbers
-		expect(timeType.parse("0")).toBe(0)
-		expect(timeType.parse("45")).toBe(45)
+		sert.eq(timeType.parse("0"), 0)
+		sert.eq(timeType.parse("45"), 45)
 
 		-- Individual units: ms, s, m, h/hr, d, w/wk, month, y/yr
-		expect(timeType.parse("500ms")).toBe(0.5)
-		expect(timeType.parse("500mss")).toBe(0.5)
-		expect(timeType.parse("30s")).toBe(30)
-		expect(timeType.parse("2m")).toBe(120)
-		expect(timeType.parse("2h")).toBe(7200)
-		expect(timeType.parse("1hr")).toBe(3600)
-		expect(timeType.parse("1d")).toBe(86400)
-		expect(timeType.parse("1w")).toBe(604800)
-		expect(timeType.parse("1wk")).toBe(604800)
-		expect(timeType.parse("1month")).toBe(2592000)
-		expect(timeType.parse("1y")).toBe(31557600)
-		expect(timeType.parse("1yr")).toBe(31557600)
+		sert.eq(timeType.parse("500ms"), 0.5)
+		sert.eq(timeType.parse("500mss"), 0.5)
+		sert.eq(timeType.parse("30s"), 30)
+		sert.eq(timeType.parse("2m"), 120)
+		sert.eq(timeType.parse("2h"), 7200)
+		sert.eq(timeType.parse("1hr"), 3600)
+		sert.eq(timeType.parse("1d"), 86400)
+		sert.eq(timeType.parse("1w"), 604800)
+		sert.eq(timeType.parse("1wk"), 604800)
+		sert.eq(timeType.parse("1month"), 2592000)
+		sert.eq(timeType.parse("1y"), 31557600)
+		sert.eq(timeType.parse("1yr"), 31557600)
 
 		-- Compound duration
-		expect(timeType.parse("1d 2h 30m 15s")).toBe(86400 + 7200 + 1800 + 15)
+		sert.eq(timeType.parse("1d 2h 30m 15s"), 86400 + 7200 + 1800 + 15)
 
 		-- Invalid inputs
 		local okNoMatch, errNoMatch = timeType.validate("not_a_time")
-		expect(okNoMatch).toBe(false)
-		expect(errNoMatch).toBe("Invalid time format")
-		expect(function()
+		sert.eq(okNoMatch, false)
+		sert.eq(errNoMatch, "Invalid time format")
+		sert.throws(function()
 			timeType.parse("not_a_time")
-		end).toThrow()
+		end)
 
 		local okBadUnit, errBadUnit = timeType.validate("10qqq")
-		expect(okBadUnit).toBe(false)
-		expect(errBadUnit).toBe("Invalid time format")
-		expect(function()
+		sert.eq(okBadUnit, false)
+		sert.eq(errBadUnit, "Invalid time format")
+		sert.throws(function()
 			timeType.parse("10qqq")
-		end).toThrow()
+		end)
 
 		-- Suggestions for empty, "-1", singular "1", and plural "5"
 		local sugDefault = timeType.suggestions("")
-		expect(type(sugDefault)).toBe("table")
-		expect(sugDefault[1][1]).toBe("0")
-		expect(sugDefault[2][1]).toBe("-1")
+		sert.eq(type(sugDefault), "table")
+		sert.eq(sugDefault[1][1], "0")
+		sert.eq(sugDefault[2][1], "-1")
 
 		local sugNeg = timeType.suggestions("-")
-		expect(#sugNeg).toBe(2)
+		sert.eq(#sugNeg, 2)
 
 		local sugOne = timeType.suggestions("1")
-		expect(#sugOne > 2).toBe(true)
+		sert.eq(#sugOne > 2, true)
 
 		local sugFive = timeType.suggestions("5")
-		expect(#sugFive > 2).toBe(true)
+		sert.eq(#sugFive > 2, true)
 	end)
 
 	test("timeSimple accepts only input made entirely of durations", function()
@@ -373,20 +373,20 @@ describe("DefaultTypes · Time", function()
 		local timeType = _K.Registry.types.timeSimple
 
 		-- every duration form still parses
-		expect(timeType.parse("1d2h")).toBe(86400 + 7200)
-		expect(timeType.parse("1.5h")).toBe(5400)
-		expect(timeType.parse("5 days")).toBe(5 * 86400)
-		expect(timeType.parse("10M")).toBe(600)
-		expect(timeType.parse(" 1h 30m ")).toBe(5400)
+		sert.eq(timeType.parse("1d2h"), 86400 + 7200)
+		sert.eq(timeType.parse("1.5h"), 5400)
+		sert.eq(timeType.parse("5 days"), 5 * 86400)
+		sert.eq(timeType.parse("10M"), 600)
+		sert.eq(timeType.parse(" 1h 30m "), 5400)
 
 		-- only -1 and - are forever, not any part of -1
-		expect(timeType.parse("1")).toBe(1)
+		sert.eq(timeType.parse("1"), 1)
 
 		-- text that only contains a duration is not one
 		for _, input in { "appeal in 5 days", "back in 5 minutes", "5d3", "appeal:5d", "5d!", " " } do
 			local ok, err = timeType.validate(input)
-			expect(ok).toBe(false)
-			expect(err).toBe("Invalid time format")
+			sert.eq(ok, false)
+			sert.eq(err, "Invalid time format")
 		end
 
 		-- so an optional duration skips it and the text reaches the reason
@@ -396,13 +396,13 @@ describe("DefaultTypes · Time", function()
 		local admin = h.env:addPlayer(10, "AdminUser")
 		Data.creatorId = admin.UserId
 		local ok, commands = _K2.Process.prepareCommands(_K2, admin.UserId, ';shutdown "back in 5 minutes"')
-		expect(ok).toBe(true)
-		expect(commands[1].preparedArgs[1]).toBeNil()
-		expect(commands[1].preparedArgs[2]).toBe("back in 5 minutes")
+		sert.eq(ok, true)
+		sert.eq(commands[1].preparedArgs[1], nil)
+		sert.eq(commands[1].preparedArgs[2], "back in 5 minutes")
 		ok, commands = _K2.Process.prepareCommands(_K2, admin.UserId, ";shutdown 5m back soon")
-		expect(ok).toBe(true)
-		expect(commands[1].preparedArgs[1]).toBe(300)
-		expect(commands[1].preparedArgs[2]).toBe("back soon")
+		sert.eq(ok, true)
+		sert.eq(commands[1].preparedArgs[1], 300)
+		sert.eq(commands[1].preparedArgs[2], "back soon")
 	end)
 
 	sert.laws.codec("timeSimple duration roundtrip (d, h, m, s, -1)", {
@@ -448,9 +448,9 @@ describe("DefaultTypes · Time", function()
 			local _K = getSharedK()
 			local timeType = _K.Registry.types.timeSimple
 			local ok, validated = timeType.validate(encoded)
-			expect(ok).toBe(true)
+			sert.eq(ok, true)
 			local parsed = timeType.parse(encoded)
-			expect(validated).toBe(parsed)
+			sert.eq(validated, parsed)
 			return parsed
 		end,
 	}, { runs = 80 })
@@ -462,78 +462,78 @@ describe("DefaultTypes · Color", function()
 		local colorType = _K.Registry.types.color
 
 		-- Empty string transforms to "" and fails validate
-		expect(colorType.transform("")).toBe("")
+		sert.eq(colorType.transform(""), "")
 		local okEmpty, errEmpty = colorType.validate("")
-		expect(okEmpty).toBe(false)
-		expect(errEmpty).toBe("Invalid Color3")
+		sert.eq(okEmpty, false)
+		sert.eq(errEmpty, "Invalid Color3")
 
 		-- Named colors
 		local red = colorType.transform("red")
-		expect((colorType.validate(red))).toBe(true)
-		expect(colorType.parse(red)).toEqual(Color3.new(1, 0, 0))
-		expect(colorType.transform("  BLUE ")).toEqual(Color3.new(0, 0, 1))
-		expect(colorType.transform("white")).toEqual(Color3.new(1, 1, 1))
-		expect(colorType.transform("black")).toEqual(Color3.new(0, 0, 0))
+		sert.eq((colorType.validate(red)), true)
+		sert.eq(colorType.parse(red), Color3.new(1, 0, 0))
+		sert.eq(colorType.transform("  BLUE "), Color3.new(0, 0, 1))
+		sert.eq(colorType.transform("white"), Color3.new(1, 1, 1))
+		sert.eq(colorType.transform("black"), Color3.new(0, 0, 0))
 
 		-- Random color
 		local rnd = colorType.transform("random")
-		expect(rbxTypeof(rnd)).toBe("Color3")
-		expect((colorType.validate(rnd))).toBe(true)
+		sert.eq(rbxTypeof(rnd), "Color3")
+		sert.eq((colorType.validate(rnd)), true)
 
 		-- BrickColor name and number
 		local bcName = colorType.transform("really red")
-		expect(rbxTypeof(bcName)).toBe("Color3")
+		sert.eq(rbxTypeof(bcName), "Color3")
 		local bcNum = colorType.transform("3")
-		expect(rbxTypeof(bcNum)).toBe("Color3")
+		sert.eq(rbxTypeof(bcNum), "Color3")
 
 		-- Partial name match
 		local partial = colorType.transform("magen")
-		expect(partial).toEqual(Color3.new(1, 0, 0.5))
+		sert.eq(partial, Color3.new(1, 0, 0.5))
 
 		-- Hex formats: #f, #fa, #0f0, #1234, #12345, #ff00aa
-		expect(colorType.transform("#000")).toEqual(Color3.new(0, 0, 0))
-		expect(colorType.transform("#fff")).toEqual(Color3.new(1, 1, 1))
-		expect(rbxTypeof(colorType.transform("#f"))).toBe("Color3")
-		expect(rbxTypeof(colorType.transform("#fa"))).toBe("Color3")
-		expect(rbxTypeof(colorType.transform("#1234"))).toBe("Color3")
-		expect(rbxTypeof(colorType.transform("#12345"))).toBe("Color3")
-		expect(colorType.transform("#ff0000")).toEqual(Color3.fromRGB(255, 0, 0))
+		sert.eq(colorType.transform("#000"), Color3.new(0, 0, 0))
+		sert.eq(colorType.transform("#fff"), Color3.new(1, 1, 1))
+		sert.eq(rbxTypeof(colorType.transform("#f")), "Color3")
+		sert.eq(rbxTypeof(colorType.transform("#fa")), "Color3")
+		sert.eq(rbxTypeof(colorType.transform("#1234")), "Color3")
+		sert.eq(rbxTypeof(colorType.transform("#12345")), "Color3")
+		sert.eq(colorType.transform("#ff0000"), Color3.fromRGB(255, 0, 0))
 
 		-- Invalid hex
-		expect(colorType.transform("#1234567")).toBeNil()
-		expect(colorType.transform("#gggggg")).toBeNil()
+		sert.eq(colorType.transform("#1234567"), nil)
+		sert.eq(colorType.transform("#gggggg"), nil)
 
 		-- RGB format
-		expect(colorType.transform("10,20,30")).toEqual(Color3.fromRGB(10, 20, 30))
-		expect(colorType.transform("0,0,0")).toEqual(Color3.new(0, 0, 0))
-		expect(colorType.transform("255,255,255")).toEqual(Color3.new(1, 1, 1))
+		sert.eq(colorType.transform("10,20,30"), Color3.fromRGB(10, 20, 30))
+		sert.eq(colorType.transform("0,0,0"), Color3.new(0, 0, 0))
+		sert.eq(colorType.transform("255,255,255"), Color3.new(1, 1, 1))
 
 		-- Out of range RGB & completely invalid color
 		local badRgb, badRgbErr = colorType.transform("300,0,0")
-		expect(badRgb).toBeNil()
-		expect(badRgbErr).toBe("Invalid Color")
+		sert.eq(badRgb, nil)
+		sert.eq(badRgbErr, "Invalid Color")
 
 		local badColor, badColorErr = colorType.transform("not_a_color_xyz")
-		expect(badColor).toBeNil()
-		expect(badColorErr).toBe("Invalid Color")
+		sert.eq(badColor, nil)
+		sert.eq(badColorErr, "Invalid Color")
 
 		-- Suggestions for hex, random, RGB, and empty
 		local sugEmpty, colorsMap = colorType.suggestions("")
-		expect(#sugEmpty > 10).toBe(true)
-		expect(type(colorsMap)).toBe("table")
+		sert.eq(#sugEmpty > 10, true)
+		sert.eq(type(colorsMap), "table")
 
 		local sugShortHex = colorType.suggestions("#a")
-		expect(table.find(sugShortHex, "#aff") ~= nil).toBe(true)
-		expect(table.find(sugShortHex, "#afffff") ~= nil).toBe(true)
+		sert.eq(table.find(sugShortHex, "#aff") ~= nil, true)
+		sert.eq(table.find(sugShortHex, "#afffff") ~= nil, true)
 
 		local sugMidHex = colorType.suggestions("#abcd")
-		expect(table.find(sugMidHex, "#abcdff") ~= nil).toBe(true)
+		sert.eq(table.find(sugMidHex, "#abcdff") ~= nil, true)
 
 		local sugRandom = colorType.suggestions("ran")
-		expect(#sugRandom > 10).toBe(true)
+		sert.eq(#sugRandom > 10, true)
 
 		local sugRgb = colorType.suggestions("12,34,56")
-		expect(table.find(sugRgb, "12,34,56") ~= nil).toBe(true)
+		sert.eq(table.find(sugRgb, "12,34,56") ~= nil, true)
 	end)
 
 	local function colorEq(a: any, b: any): boolean
@@ -555,7 +555,7 @@ describe("DefaultTypes · Color", function()
 			local _K = getSharedK()
 			local colorType = _K.Registry.types.color
 			local transformed = colorType.transform(hex)
-			expect((colorType.validate(transformed))).toBe(true)
+			sert.eq((colorType.validate(transformed)), true)
 			return colorType.parse(transformed)
 		end,
 		eq = colorEq,
@@ -572,7 +572,7 @@ describe("DefaultTypes · Color", function()
 			local _K = getSharedK()
 			local colorType = _K.Registry.types.color
 			local transformed = colorType.transform(rgb)
-			expect((colorType.validate(transformed))).toBe(true)
+			sert.eq((colorType.validate(transformed)), true)
 			return colorType.parse(transformed)
 		end,
 		eq = colorEq,
@@ -585,10 +585,10 @@ describe("DefaultTypes · Color", function()
 		-- Index 1 is "random"; indices 2..#namesList are deterministic named and BrickColor palette entries
 		local key = namesList[g:int(2, #namesList)]
 		local expected = colorsMap[key]
-		expect(rbxTypeof(expected)).toBe("Color3")
+		sert.eq(rbxTypeof(expected), "Color3")
 		local transformed = colorType.transform(key)
-		expect((colorType.validate(transformed))).toBe(true)
-		expect(colorType.parse(transformed)).toEqual(expected)
+		sert.eq((colorType.validate(transformed)), true)
+		sert.eq(colorType.parse(transformed), expected)
 	end, { runs = 40 })
 end)
 
@@ -600,40 +600,40 @@ describe("DefaultTypes · Vector", function()
 
 		-- Vector2 valid
 		local t2 = vec2.transform("10, -25.5")
-		expect(t2).toEqual({ 10, -25.5 })
-		expect((vec2.validate(t2))).toBe(true)
-		expect(vec2.parse(t2)).toEqual(Vector2.new(10, -25.5))
+		sert.eq(t2, { 10, -25.5 })
+		sert.eq((vec2.validate(t2)), true)
+		sert.eq(vec2.parse(t2), Vector2.new(10, -25.5))
 
 		-- Vector2 too many components
 		local t2Many = vec2.transform("1,2,3")
 		local ok2Many, err2Many = vec2.validate(t2Many)
-		expect(ok2Many).toBe(false)
-		expect(err2Many).toBe("Maximum of 2 values allowed in sequence")
+		sert.eq(ok2Many, false)
+		sert.eq(err2Many, "Maximum of 2 values allowed in sequence")
 
 		-- Vector invalid number component (middle nil component in sequence)
 		local t3Bad = vec3.transform("10,abc,30")
 		local ok3Bad, err3Bad = vec3.validate(t3Bad)
-		expect(ok3Bad).toBe(false)
-		expect(string.find(tostring(err3Bad), "position 2", 1, true) ~= nil).toBe(true)
+		sert.eq(ok3Bad, false)
+		sert.eq(string.find(tostring(err3Bad), "position 2", 1, true) ~= nil, true)
 
 		-- Vector3 valid
 		local t3 = vec3.transform("1,2,3")
-		expect(t3).toEqual({ 1, 2, 3 })
-		expect((vec3.validate(t3))).toBe(true)
-		expect(vec3.parse(t3)).toEqual(Vector3.new(1, 2, 3))
+		sert.eq(t3, { 1, 2, 3 })
+		sert.eq((vec3.validate(t3)), true)
+		sert.eq(vec3.parse(t3), Vector3.new(1, 2, 3))
 
 		-- Vector3 too many components
 		local t3Many = vec3.transform("1,2,3,4")
 		local ok3Many, err3Many = vec3.validate(t3Many)
-		expect(ok3Many).toBe(false)
-		expect(err3Many).toBe("Maximum of 3 values allowed in sequence")
+		sert.eq(ok3Many, false)
+		sert.eq(err3Many, "Maximum of 3 values allowed in sequence")
 
 		-- End-to-end via Argument:prepare()
 		local cmd = makeCommandContext(_K, 1)
 		local arg = Argument.new(cmd, { type = "vector3", name = "Offset" }, 1, "4,5,6")
 		local okArg, valArg = arg:prepare()
-		expect(okArg).toBe(true)
-		expect(valArg).toEqual(Vector3.new(4, 5, 6))
+		sert.eq(okArg, true)
+		sert.eq(valArg, Vector3.new(4, 5, 6))
 	end)
 
 	sert.laws.codec("vector2 roundtrip", {
@@ -647,7 +647,7 @@ describe("DefaultTypes · Vector", function()
 			local _K = getSharedK()
 			local vec2 = _K.Registry.types.vector2
 			local t = vec2.transform(s)
-			expect((vec2.validate(t))).toBe(true)
+			sert.eq((vec2.validate(t)), true)
 			return vec2.parse(t)
 		end,
 	}, { runs = 60 })
@@ -663,7 +663,7 @@ describe("DefaultTypes · Vector", function()
 			local _K = getSharedK()
 			local vec3 = _K.Registry.types.vector3
 			local t = vec3.transform(s)
-			expect((vec3.validate(t))).toBe(true)
+			sert.eq((vec3.validate(t)), true)
 			return vec3.parse(t)
 		end,
 	}, { runs = 60 })
@@ -691,23 +691,23 @@ describe("DefaultTypes · Ban", function()
 
 		-- Mod can unban session ban by username prefix or userId
 		local modSelf = makeArgSelf(_K, modUser.UserId, { type = "ban", name = "Ban" }, "bannedb")
-		expect(banType.validate("bannedb", modSelf)).toBe("501")
-		expect(banType.parse("501", modSelf)).toBe("501")
+		sert.eq(banType.validate("bannedb", modSelf), "501")
+		sert.eq(banType.parse("501", modSelf), "501")
 
 		-- Mod cannot unban saved/persistent ban (lacks banasync / admin)
 		local okSavedMod, errSavedMod = banType.parse("savedsally", modSelf)
-		expect(okSavedMod).toBeNil()
-		expect(errSavedMod).toBe("No permission to unban saved bans")
+		sert.eq(okSavedMod, nil)
+		sert.eq(errSavedMod, "No permission to unban saved bans")
 
 		-- Mod cannot unban arbitrary unbanned userId (since not ban requires banasync/admin)
 		local okUnbannedMod, errUnbannedMod = banType.parse("999", modSelf)
-		expect(okUnbannedMod).toBeNil()
-		expect(errUnbannedMod).toBe("No permission to unban saved bans")
+		sert.eq(okUnbannedMod, nil)
+		sert.eq(errUnbannedMod, "No permission to unban saved bans")
 
 		-- Admin (has banasync + restricted role) can unban saved ban and arbitrary numeric userId
 		local adminSelf = makeArgSelf(_K, adminUser.UserId, { type = "ban", name = "Ban" }, "savedsally")
-		expect(banType.parse("savedsally", adminSelf)).toBe("502")
-		expect(banType.parse("999", adminSelf)).toBe("999")
+		sert.eq(banType.parse("savedsally", adminSelf), "502")
+		sert.eq(banType.parse("999", adminSelf), "999")
 
 		-- The admin permission counts as banasync, but saved bans still need a developer (restricted) role
 		local superadmin = _K.Data.roles.superadmin.permissions
@@ -718,35 +718,35 @@ describe("DefaultTypes · Ban", function()
 		_K.Auth.userRoleAdd(41, "superadmin")
 		local boughtSelf = makeArgSelf(_K, 40, { type = "ban", name = "Ban" }, "savedsally")
 		local okBought, errBought = banType.parse("savedsally", boughtSelf)
-		expect(okBought).toBeNil()
-		expect(errBought).toBe("No permission to unban saved bans")
-		expect(select(2, banType.parse("999", boughtSelf))).toBe("No permission to unban saved bans")
-		expect(banType.parse("501", boughtSelf)).toBe("501")
+		sert.eq(okBought, nil)
+		sert.eq(errBought, "No permission to unban saved bans")
+		sert.eq(select(2, banType.parse("999", boughtSelf)), "No permission to unban saved bans")
+		sert.eq(banType.parse("501", boughtSelf), "501")
 		local devSelf = makeArgSelf(_K, 41, { type = "ban", name = "Ban" }, "savedsally")
-		expect(banType.parse("savedsally", devSelf)).toBe("502")
+		sert.eq(banType.parse("savedsally", devSelf), "502")
 		superadmin.admin, superadmin.banasync = nil, true
 
 		-- Invalid non-numeric, non-matching ban string
 		local badBan, badBanErr = banType.parse("nonexistent_user", adminSelf)
-		expect(badBan).toBeNil()
-		expect(badBanErr).toBe("Invalid ban.")
+		sert.eq(badBan, nil)
+		sert.eq(badBanErr, "Invalid ban.")
 
 		-- UserIds past 2^53 aren't real users, so they can't key a saved ban
 		for _, input in { "1e300", "9007199254740994" } do
 			local okHuge, errHuge = banType.parse(input, adminSelf)
-			expect(okHuge).toBeNil()
-			expect(errHuge).toBe("Invalid ban.")
+			sert.eq(okHuge, nil)
+			sert.eq(errHuge, "Invalid ban.")
 		end
-		expect(banType.parse("9007199254740992", adminSelf)).toBe("9007199254740992")
+		sert.eq(banType.parse("9007199254740992", adminSelf), "9007199254740992")
 		-- but a junk key saved before this check still matches by key, so it can be unbanned
 		_K.Data.bans["1e+300"] = { nil, "junk", 0, 10 }
-		expect(banType.parse("1e+300", adminSelf)).toBe("1e+300")
+		sert.eq(banType.parse("1e+300", adminSelf), "1e+300")
 		_K.Data.bans["1e+300"] = nil
 
 		-- Suggestions include *, named bans, and UNKNOWN for nameless bans
 		local suggestions = banType.suggestions("")
-		expect(suggestions[1][2]).toBe("*  [all] (Everyone)")
-		expect(#suggestions).toBe(4)
+		sert.eq(suggestions[1][2], "*  [all] (Everyone)")
+		sert.eq(#suggestions, 4)
 		local foundNamed, foundUnknown = false, false
 		for i = 2, #suggestions do
 			if type(suggestions[i][1]) == "table" and suggestions[i][1][1] == "BannedBob" then
@@ -755,46 +755,46 @@ describe("DefaultTypes · Ban", function()
 				foundUnknown = true
 			end
 		end
-		expect(foundNamed).toBe(true)
-		expect(foundUnknown).toBe(true)
+		sert.eq(foundNamed, true)
+		sert.eq(foundUnknown, true)
 
 		-- allBans parses all unbannable users for caller
-		expect(allBansType.transform("ALL")).toBe("all")
+		sert.eq(allBansType.transform("ALL"), "all")
 		local allForMod = allBansType.parse("all", modSelf)
-		expect(type(allForMod)).toBe("table")
-		expect(table.find(allForMod, "501") ~= nil).toBe(true)
-		expect(table.find(allForMod, "502")).toBeNil()
+		sert.eq(type(allForMod), "table")
+		sert.eq(table.find(allForMod, "501") ~= nil, true)
+		sert.eq(table.find(allForMod, "502"), nil)
 
 		local allForAdmin = allBansType.parse("all", adminSelf)
-		expect(#allForAdmin).toBe(3)
+		sert.eq(#allForAdmin, 3)
 
 		-- bans listable with prefix "*" via Argument:prepare()
-		expect(bansType.listable).toBe(true)
+		sert.eq(bansType.listable, true)
 		local cmd = makeCommandContext(_K, adminUser.UserId)
 		local argAll = Argument.new(cmd, { type = "bans", name = "Bans" }, 1, "*")
 		local okAll, parsedAll = argAll:prepare()
-		expect(okAll).toBe(true)
-		expect(#parsedAll).toBe(3)
+		sert.eq(okAll, true)
+		sert.eq(#parsedAll, 3)
 
 		-- allBans when only saved bans exist and caller is Mod -> deduplicated error feedback
 		table.clear(_K.Data.bans)
 		_K.Data.bans["502"] = { "SavedSally", "Exploiting", -1, creatorId }
 		_K.Data.bans["504"] = { "SavedSam", "Exploiting", -1, creatorId }
 		local savedOnlyAll, savedOnlyErr = allBansType.validate("all", modSelf)
-		expect(savedOnlyAll).toBeNil()
-		expect(savedOnlyErr).toBe("No permission to unban saved bans")
+		sert.eq(savedOnlyAll, nil)
+		sert.eq(savedOnlyErr, "No permission to unban saved bans")
 
 		-- Empty bans table returns "No targetable user found" on allBans
 		table.clear(_K.Data.bans)
 		local emptyAll, emptyErr = allBansType.validate("all", adminSelf)
-		expect(emptyAll).toBeNil()
-		expect(emptyErr).toBe("No targetable user found")
+		sert.eq(emptyAll, nil)
+		sert.eq(emptyErr, "No targetable user found")
 
 		-- Non-numeric ban key returns "Invalid ban."
 		_K.Data.bans["bad_key"] = { "BadKeyUser", "reason", 0, modUser.UserId }
 		local badKeyVal, badKeyErr = banType.parse("badkeyuser", adminSelf)
-		expect(badKeyVal).toBeNil()
-		expect(badKeyErr).toBe("Invalid ban.")
+		sert.eq(badKeyVal, nil)
+		sert.eq(badKeyErr, "Invalid ban.")
 	end)
 end)
 
@@ -820,29 +820,29 @@ describe("DefaultTypes · Member", function()
 		local adminSelf = makeArgSelf(_K, 30, { type = "member", name = "Member" }, "")
 
 		-- Self ("", "me")
-		expect(memberType.parse("", adminSelf)).toBe("30")
-		expect(memberType.parse("me", adminSelf)).toBe("30")
+		sert.eq(memberType.parse("", adminSelf), "30")
+		sert.eq(memberType.parse("me", adminSelf), "30")
 
 		-- Exact ID, exact name, partial name
-		expect(memberType.parse("10", adminSelf)).toBe("10")
-		expect(memberType.parse("bobmod", adminSelf)).toBe("20")
-		expect(memberType.parse("alice", adminSelf)).toBe("10")
+		sert.eq(memberType.parse("10", adminSelf), "10")
+		sert.eq(memberType.parse("bobmod", adminSelf), "20")
+		sert.eq(memberType.parse("alice", adminSelf), "10")
 
 		-- Invalid member
 		local badVal, badErr = memberType.parse("unknown_member", adminSelf)
-		expect(badVal).toBeNil()
-		expect(badErr).toBe("Invalid member")
+		sert.eq(badVal, nil)
+		sert.eq(badErr, "Invalid member")
 
 		-- Suggestions include "me", "*", and rank-filtered members sorted alphabetically
 		local modSuggestions = memberType.suggestions("", 20, { lowerRank = true })
-		expect(modSuggestions[1][1][1]).toBe("me")
+		sert.eq(modSuggestions[1][1][1], "me")
 		local adminSuggestions = memberType.suggestions("", 30, { lowerRank = true })
-		expect(adminSuggestions[1][1][1]).toBe("me")
-		expect(adminSuggestions[2][1][1]).toBe("*")
-		expect(adminSuggestions[3][1][1]).toBe("AliceVip")
-		expect(adminSuggestions[4][1][1]).toBe("BobMod")
+		sert.eq(adminSuggestions[1][1][1], "me")
+		sert.eq(adminSuggestions[2][1][1], "*")
+		sert.eq(adminSuggestions[3][1][1], "AliceVip")
+		sert.eq(adminSuggestions[4][1][1], "BobMod")
 		local reqSuggestions = memberType.suggestions("", 20, { shouldRequest = true })
-		expect(#reqSuggestions >= 2).toBe(true)
+		sert.eq(#reqSuggestions >= 2, true)
 		local foundAlice, foundCharlie = false, false
 		for _, item in modSuggestions do
 			if type(item[1]) ~= "table" then
@@ -854,32 +854,32 @@ describe("DefaultTypes · Member", function()
 				foundCharlie = true
 			end
 		end
-		expect(foundAlice).toBe(true)
-		expect(foundCharlie).toBe(false)
+		sert.eq(foundAlice, true)
+		sert.eq(foundCharlie, false)
 
 		-- allMembers and members listable via Argument:prepare()
-		expect(membersType.listable).toBe(true)
-		expect(allMembersType.transform("ALL")).toBe("all")
+		sert.eq(membersType.listable, true)
+		sert.eq(allMembersType.transform("ALL"), "all")
 		local allParsed = allMembersType.parse("all", adminSelf)
-		expect(#allParsed).toBe(3)
+		sert.eq(#allParsed, 3)
 
 		local cmd = makeCommandContext(_K, 30)
 		local argList = Argument.new(cmd, { type = "members", name = "Members" }, 1, "alice,20")
 		local okList, parsedList = argList:prepare()
-		expect(okList).toBe(true)
-		expect(parsedList).toEqual({ "10", "20" })
+		sert.eq(okList, true)
+		sert.eq(parsedList, { "10", "20" })
 
 		local argStar = Argument.new(cmd, { type = "members", name = "Members" }, 1, "*")
 		local okStar, parsedStar = argStar:prepare()
-		expect(okStar).toBe(true)
-		expect(#parsedStar).toBe(3)
+		sert.eq(okStar, true)
+		sert.eq(#parsedStar, 3)
 
 		-- allMembers when caller cannot target any member (VIP with ignoreSelf = true, lowerRank = true)
 		local vipNoTargetSelf =
 			makeArgSelf(_K, 10, { type = "member", name = "Member", ignoreSelf = true, lowerRank = true }, "all")
 		local noAllVal, noAllErr = allMembersType.validate("all", vipNoTargetSelf)
-		expect(noAllVal).toBeNil()
-		expect(noAllErr).toBe("Can only target yourself\nCan only target 1 user")
+		sert.eq(noAllVal, nil)
+		sert.eq(noAllErr, "Can only target yourself\nCan only target 1 user")
 	end)
 end)
 
@@ -896,37 +896,37 @@ describe("DefaultTypes · Role", function()
 
 		-- Mod (rank 2) can parse "vip" (rank 1), cannot parse "mod" (rank 2), "admin" (rank 3), or "everyone"
 		local modSelf = makeArgSelf(_K, 20, { type = "role", name = "Role" }, "vip")
-		expect(roleType.validate("vip", modSelf)).toBe("vip")
-		expect(roleType.parse("v", modSelf)).toBe("vip")
+		sert.eq(roleType.validate("vip", modSelf), "vip")
+		sert.eq(roleType.parse("v", modSelf), "vip")
 
 		local okSelfRole, errSelfRole = roleType.parse("mod", modSelf)
-		expect(okSelfRole).toBeNil()
-		expect(errSelfRole).toBe("Invalid role")
+		sert.eq(okSelfRole, nil)
+		sert.eq(errSelfRole, "Invalid role")
 
 		local okHigherRole = roleType.parse("admin", modSelf)
-		expect(okHigherRole).toBeNil()
+		sert.eq(okHigherRole, nil)
 
 		local okEveryone = roleType.parse("everyone", modSelf)
-		expect(okEveryone).toBeNil()
+		sert.eq(okEveryone, nil)
 
 		-- Creator can parse any non-everyone role
 		local creatorSelf = makeArgSelf(_K, _K.creatorId, { type = "role", name = "Role" }, "superadmin")
-		expect(roleType.parse("super", creatorSelf)).toBe("superadmin")
+		sert.eq(roleType.parse("super", creatorSelf), "superadmin")
 
 		-- Suggestions for Admin (rank 3) include mod (rank 2) and vip (rank 1) sorted descending by rank
 		local adminSug, rolesTable = roleType.suggestions("", 30)
-		expect(rolesTable).toBe(_K.Data.roles)
-		expect(#adminSug).toBe(2)
-		expect(adminSug[1][1]).toBe("mod")
-		expect(adminSug[2][1]).toBe("vip")
+		sert.eq(rolesTable, _K.Data.roles)
+		sert.eq(#adminSug, 2)
+		sert.eq(adminSug[1][1], "mod")
+		sert.eq(adminSug[2][1], "vip")
 
 		-- Listable roles via Argument:prepare()
-		expect(rolesType.listable).toBe(true)
+		sert.eq(rolesType.listable, true)
 		local cmd = makeCommandContext(_K, 30)
 		local arg = Argument.new(cmd, { type = "roles", name = "Roles" }, 1, "vip,mod")
 		local ok, parsed = arg:prepare()
-		expect(ok).toBe(true)
-		expect(parsed).toEqual({ "vip", "mod" })
+		sert.eq(ok, true)
+		sert.eq(parsed, { "vip", "mod" })
 	end)
 end)
 
@@ -938,8 +938,8 @@ describe("DefaultTypes · Team", function()
 
 		-- When no teams exist
 		local okNoTeams, errNoTeams = teamType.validate("Red", 1)
-		expect(okNoTeams).toBe(false)
-		expect(errNoTeams).toBe("No teams available")
+		sert.eq(okNoTeams, false)
+		sert.eq(errNoTeams, "No teams available")
 
 		-- Seed Red and Blue teams
 		local redTeam = h.env.Instance.new("Team", _K.Service.Teams)
@@ -947,29 +947,29 @@ describe("DefaultTypes · Team", function()
 		local blueTeam = h.env.Instance.new("Team", _K.Service.Teams)
 		blueTeam.Name = "Blue"
 
-		expect((teamType.validate("r", 1))).toBe(true)
-		expect((teamType.validate("blue", 1))).toBe(true)
+		sert.eq((teamType.validate("r", 1)), true)
+		sert.eq((teamType.validate("blue", 1)), true)
 		local okInvalid, errInvalid = teamType.validate("Green", 1)
-		expect(okInvalid).toBe(false)
-		expect(errInvalid).toBe("Invalid team")
+		sert.eq(okInvalid, false)
+		sert.eq(errInvalid, "Invalid team")
 
-		expect(teamType.parse("red", 1)).toBe(redTeam)
-		expect(teamType.parse("bl", 1)).toBe(blueTeam)
-		expect(function()
+		sert.eq(teamType.parse("red", 1), redTeam)
+		sert.eq(teamType.parse("bl", 1), blueTeam)
+		sert.throws(function()
 			teamType.parse("Green", 1)
-		end).toThrow()
+		end)
 
 		local sugNames, sugInstances = teamType.suggestions("", 1)
-		expect(#sugNames).toBe(2)
-		expect(#sugInstances).toBe(2)
+		sert.eq(#sugNames, 2)
+		sert.eq(#sugInstances, 2)
 
 		-- Listable teams via Argument:prepare()
-		expect(teamsType.listable).toBe(true)
+		sert.eq(teamsType.listable, true)
 		local cmd = makeCommandContext(_K, 1)
 		local arg = Argument.new(cmd, { type = "teams", name = "Teams" }, 1, "red,blue")
 		local ok, parsed = arg:prepare()
-		expect(ok).toBe(true)
-		expect(parsed).toEqual({ redTeam, blueTeam })
+		sert.eq(ok, true)
+		sert.eq(parsed, { redTeam, blueTeam })
 	end)
 end)
 
@@ -1003,40 +1003,40 @@ describe("DefaultTypes · Tool", function()
 		h.env:step(0.25)
 
 		-- Validate and parse exact vs partial prefix
-		expect((toolType.validate("sw", 1))).toBe(true)
-		expect((toolType.validate("secret", 1))).toBe(false)
-		expect(toolType.parse("sword", 1)).toBe(sword)
-		expect(toolType.parse("swordb", 1)).toBe(swordBow)
-		expect(function()
+		sert.eq((toolType.validate("sw", 1)), true)
+		sert.eq((toolType.validate("secret", 1)), false)
+		sert.eq(toolType.parse("sword", 1), sword)
+		sert.eq(toolType.parse("swordb", 1), swordBow)
+		sert.throws(function()
 			toolType.parse("nonexistent_tool", 1)
-		end).toThrow()
+		end)
 
 		-- Suggestions
 		local sugNames = toolType.suggestions("", 1)
-		expect(table.find(sugNames, "Sword") ~= nil).toBe(true)
-		expect(table.find(sugNames, "SwordBow") ~= nil).toBe(true)
-		expect(table.find(sugNames, "SecretWand")).toBeNil()
+		sert.eq(table.find(sugNames, "Sword") ~= nil, true)
+		sert.eq(table.find(sugNames, "SwordBow") ~= nil, true)
+		sert.eq(table.find(sugNames, "SecretWand"), nil)
 
 		-- allTools
-		expect(allToolsType.transform("ALL")).toBe("all")
+		sert.eq(allToolsType.transform("ALL"), "all")
 		local allParsed = allToolsType.parse()
-		expect(type(allParsed)).toBe("table")
-		expect(table.find(allParsed, sword) ~= nil).toBe(true)
-		expect(table.find(allParsed, swordBow) ~= nil).toBe(true)
+		sert.eq(type(allParsed), "table")
+		sert.eq(table.find(allParsed, sword) ~= nil, true)
+		sert.eq(table.find(allParsed, swordBow) ~= nil, true)
 
 		-- tools listable with "all" prefix and individual names via Argument:prepare()
-		expect(toolsType.listable).toBe(true)
+		sert.eq(toolsType.listable, true)
 		local cmd = makeCommandContext(_K, 1)
 		local argAll = Argument.new(cmd, { type = "tools", name = "Tools" }, 1, "all")
 		local okAll, parsedAll = argAll:prepare()
-		expect(okAll).toBe(true)
-		expect(table.find(parsedAll, sword) ~= nil).toBe(true)
-		expect(table.find(parsedAll, swordBow) ~= nil).toBe(true)
+		sert.eq(okAll, true)
+		sert.eq(table.find(parsedAll, sword) ~= nil, true)
+		sert.eq(table.find(parsedAll, swordBow) ~= nil, true)
 
 		local argSingleAll = Argument.new(cmd, { type = "tool", name = "Tool" }, 1, "all")
 		local okSingleAll, parsedSingleAll = argSingleAll:prepare()
-		expect(okSingleAll).toBe(true)
-		expect(parsedSingleAll ~= nil).toBe(true)
+		sert.eq(okSingleAll, true)
+		sert.eq(parsedSingleAll ~= nil, true)
 	end)
 end)
 
@@ -1069,24 +1069,24 @@ describe("DefaultTypes · Command", function()
 
 			-- Exact match & alias match when LocalPlayerAuthorized = true
 			local exact = cmdType.transform("customfly")
-			expect(exact ~= nil).toBe(true)
-			expect(exact.name).toBe("customfly")
-			expect((cmdType.validate(exact))).toBe(true)
-			expect(cmdType.parse(exact)).toBe(exact)
+			sert.eq(exact ~= nil, true)
+			sert.eq(exact.name, "customfly")
+			sert.eq((cmdType.validate(exact)), true)
+			sert.eq(cmdType.parse(exact), exact)
 
 			local byAlias = cmdType.transform("cfly")
-			expect(byAlias).toBe(exact)
+			sert.eq(byAlias, exact)
 
 			-- Substring match on command key and alias
-			expect(cmdType.transform("ustomf")).toBe(exact)
-			expect(cmdType.transform("fl")).toBe(exact)
+			sert.eq(cmdType.transform("ustomf"), exact)
+			sert.eq(cmdType.transform("fl"), exact)
 
 			-- Unauthorized command is not returned
 			local unauth = cmdType.transform("secretcmd")
-			expect(unauth).toBeNil()
+			sert.eq(unauth, nil)
 			local okUnauth, errUnauth = cmdType.validate(unauth)
-			expect(okUnauth).toBe(false)
-			expect(errUnauth).toBe("No command with that name could be found.")
+			sert.eq(okUnauth, false)
+			sert.eq(errUnauth, "No command with that name could be found.")
 
 			-- Suggestions with onlyShowUsableCommands = true vs false
 			_K.client = {
@@ -1095,12 +1095,12 @@ describe("DefaultTypes · Command", function()
 				},
 			}
 			local filteredNames = cmdType.suggestions("")
-			expect(table.find(filteredNames, "customfly") ~= nil).toBe(true)
-			expect(table.find(filteredNames, "secretcmd")).toBeNil()
+			sert.eq(table.find(filteredNames, "customfly") ~= nil, true)
+			sert.eq(table.find(filteredNames, "secretcmd"), nil)
 
 			_K.client.settings.onlyShowUsableCommands:set(false)
 			local allNames = cmdType.suggestions("")
-			expect(table.find(allNames, "secretcmd") ~= nil).toBe(true)
+			sert.eq(table.find(allNames, "secretcmd") ~= nil, true)
 		end
 	)
 end)
@@ -1117,26 +1117,26 @@ describe("DefaultTypes · ReservedServer", function()
 		_K.Data.reservedServers["BetaArena"] = dataBeta
 
 		-- Exact, case-insensitive, and substring match
-		expect(rsType.validate("AlphaLobby")).toBe(dataAlpha)
-		expect(rsType.parse("alphalobby")).toBe(dataAlpha)
-		expect(rsType.parse("arena")).toBe(dataBeta)
+		sert.eq(rsType.validate("AlphaLobby"), dataAlpha)
+		sert.eq(rsType.parse("alphalobby"), dataAlpha)
+		sert.eq(rsType.parse("arena"), dataBeta)
 
 		-- Invalid code
 		local badVal, badErr = rsType.validate("NonExistentServer")
-		expect(badVal).toBeNil()
-		expect(badErr).toBe("Invalid reserveCode")
+		sert.eq(badVal, nil)
+		sert.eq(badErr, "Invalid reserveCode")
 
 		-- Suggestions sorted alphabetically
 		local suggestions = rsType.suggestions("", 1)
-		expect(suggestions).toEqual({ "AlphaLobby", "BetaArena" })
+		sert.eq(suggestions, { "AlphaLobby", "BetaArena" })
 
 		-- Listable reservedServers via Argument:prepare()
-		expect(rssType.listable).toBe(true)
+		sert.eq(rssType.listable, true)
 		local cmd = makeCommandContext(_K, 1)
 		local arg = Argument.new(cmd, { type = "reservedServers", name = "Servers" }, 1, "alpha,beta")
 		local ok, parsed = arg:prepare()
-		expect(ok).toBe(true)
-		expect(parsed).toEqual({ dataAlpha, dataBeta })
+		sert.eq(ok, true)
+		sert.eq(parsed, { dataAlpha, dataBeta })
 	end)
 end)
 
@@ -1146,14 +1146,14 @@ describe("DefaultTypes · Image & Emote", function()
 		local imgType = _K.Registry.types.image
 		local imgsType = _K.Registry.types.images
 
-		expect(imgType.filterLog).toBe(true)
-		expect(imgType.transform("")).toBe(0)
-		expect(imgType.transform("12345")).toBe(12345)
-		expect(imgType.transform("abc")).toBeNil()
+		sert.eq(imgType.filterLog, true)
+		sert.eq(imgType.transform(""), 0)
+		sert.eq(imgType.transform("12345"), 12345)
+		sert.eq(imgType.transform("abc"), nil)
 
-		expect((imgType.validate(12345))).toBe(true)
-		expect((imgType.validate(12.5))).toBe(false)
-		expect((imgType.validate(nil))).toBe(false)
+		sert.eq((imgType.validate(12345)), true)
+		sert.eq((imgType.validate(12.5)), false)
+		sert.eq((imgType.validate(nil)), false)
 
 		-- Seed an Image product in MarketplaceService
 		h.env.marketplace.products[777] = {
@@ -1163,11 +1163,11 @@ describe("DefaultTypes · Image & Emote", function()
 			IsForSale = true,
 		}
 		local selfArg = makeArgSelf(_K, 1, { type = "image", name = "Img" }, "777")
-		expect(imgType.parse(777, selfArg)).toBe("rbxassetid://777")
+		sert.eq(imgType.parse(777, selfArg), "rbxassetid://777")
 
 		-- Non-Image asset falls back to rbxthumb
 		local thumbTex = imgType.parse(888, selfArg)
-		expect(string.find(thumbTex, "rbxthumb://type=Asset&id=888", 1, true) ~= nil).toBe(true)
+		sert.eq(string.find(thumbTex, "rbxthumb://type=Asset&id=888", 1, true) ~= nil, true)
 
 		-- Optional empty rawArg when getTexture fails
 		local mktMethods = rawget(_K.Service.Marketplace, "_methods")
@@ -1176,30 +1176,30 @@ describe("DefaultTypes · Image & Emote", function()
 			error("network error")
 		end
 		local optSelf = makeArgSelf(_K, 1, { type = "image", name = "Img", optional = true }, "")
-		expect(imgType.parse(0, optSelf)).toBe("")
+		sert.eq(imgType.parse(0, optSelf), "")
 
 		local reqSelf = makeArgSelf(_K, 1, { type = "image", name = "Img", optional = false }, "999999")
 		local failVal, failErr = imgType.parse(999999, reqSelf)
-		expect(failVal).toBeNil()
-		expect(failErr).toBe("Failed to load image")
+		sert.eq(failVal, nil)
+		sert.eq(failErr, "Failed to load image")
 
 		-- Client fallback placeholder
 		_K.IsClient = true
-		expect(imgType.parse(999999, reqSelf)).toBe("rbxasset://textures/ui/GuiImagePlaceholder.png")
+		sert.eq(imgType.parse(999999, reqSelf), "rbxasset://textures/ui/GuiImagePlaceholder.png")
 		_K.IsClient = false
 		mktMethods.GetProductInfoAsync = origGetInfo
 
 		-- Suggestions
-		expect(imgType.suggestions("12345")).toEqual({ "12345" })
-		expect(imgType.suggestions("notnum")).toEqual({})
+		sert.eq(imgType.suggestions("12345"), { "12345" })
+		sert.eq(imgType.suggestions("notnum"), {})
 
 		-- Listable images
-		expect(imgsType.listable).toBe(true)
+		sert.eq(imgsType.listable, true)
 		local cmd = makeCommandContext(_K, 1)
 		local arg = Argument.new(cmd, { type = "images", name = "Images" }, 1, "777,888")
 		local ok, parsed = arg:prepare()
-		expect(ok).toBe(true)
-		expect(#parsed).toBe(2)
+		sert.eq(ok, true)
+		sert.eq(#parsed, 2)
 	end)
 
 	test("emote and emotes transform, validate, parse numeric ID and catalog name, and suggest", function()
@@ -1207,18 +1207,18 @@ describe("DefaultTypes · Image & Emote", function()
 		local emoteType = _K.Registry.types.emote
 		local emotesType = _K.Registry.types.emotes
 
-		expect(emoteType.filterLog).toBe(true)
-		expect(emotesType.listable).toBe(true)
+		sert.eq(emoteType.filterLog, true)
+		sert.eq(emotesType.listable, true)
 
 		-- Transform and validate
-		expect(emoteType.transform("12345")).toBe(12345)
-		expect(emoteType.transform("salute")).toBe("salute")
-		expect((emoteType.validate(12345))).toBe(true)
-		expect((emoteType.validate("salute"))).toBe(true)
+		sert.eq(emoteType.transform("12345"), 12345)
+		sert.eq(emoteType.transform("salute"), "salute")
+		sert.eq((emoteType.validate(12345)), true)
+		sert.eq((emoteType.validate("salute")), true)
 		local okFloat, errFloat = emoteType.validate(12.34)
-		expect(okFloat).toBe(false)
-		expect(errFloat).toBe("Only whole numbers are valid")
-		expect((emoteType.validate(nil))).toBe(false)
+		sert.eq(okFloat, false)
+		sert.eq(errFloat, "Only whole numbers are valid")
+		sert.eq((emoteType.validate(nil)), false)
 
 		-- Seed catalog emotes in _K.Data.emotes
 		table.insert(_K.Data.emotes, {
@@ -1236,10 +1236,10 @@ describe("DefaultTypes · Image & Emote", function()
 
 		local selfArg = makeArgSelf(_K, 1, { type = "emote", name = "Emote" }, "salute")
 		-- Exact and partial prefix name lookup (first prefix match wins; non-prefix substring fails)
-		expect(emoteType.parse("salute", selfArg)).toBe(5001)
-		expect(emoteType.parse("stad", selfArg)).toBe(5002)
-		expect(emoteType.parse("s", selfArg)).toBe(5001)
-		expect(emoteType.parse("wave", selfArg)).toBeNil()
+		sert.eq(emoteType.parse("salute", selfArg), 5001)
+		sert.eq(emoteType.parse("stad", selfArg), 5002)
+		sert.eq(emoteType.parse("s", selfArg), 5001)
+		sert.eq(emoteType.parse("wave", selfArg), nil)
 
 		-- Numeric emote ID via MarketplaceService + InsertService:LoadAsset
 		h.env.marketplace.products[1] = {
@@ -1290,61 +1290,61 @@ describe("DefaultTypes · Image & Emote", function()
 			anim.AnimationId = `rbxassetid://{7000 + id}`
 			return model
 		end
-		expect(emoteType.parse(1, selfArg)).toBe(7001)
-		expect(emoteType.parse(0, selfArg)).toBeNil()
-		expect(emoteType.parse(1.5, selfArg)).toBeNil()
-		expect(emoteType.parse(2001, selfArg)).toBe(9001)
-		expect(firedEmoteBroadcasts).toBe(2)
-		expect(_K.Data.emoteItemFromId[2001] ~= nil).toBe(true)
-		expect(_K.Data.emoteItemFromId[2001].animationId).toBe(9001)
-		expect(_K.Data.animationToEmoteId[9001]).toBe(2001)
-		expect(_K.Data.emoteToAnimationId[2001]).toBe(9001)
-		expect(_K.VIP.allowedBulkPurchaseIds[2001]).toBe(true)
-		expect(emoteType.parse("danceemote", selfArg)).toBe(9001)
+		sert.eq(emoteType.parse(1, selfArg), 7001)
+		sert.eq(emoteType.parse(0, selfArg), nil)
+		sert.eq(emoteType.parse(1.5, selfArg), nil)
+		sert.eq(emoteType.parse(2001, selfArg), 9001)
+		sert.eq(firedEmoteBroadcasts, 2)
+		sert.eq(_K.Data.emoteItemFromId[2001] ~= nil, true)
+		sert.eq(_K.Data.emoteItemFromId[2001].animationId, 9001)
+		sert.eq(_K.Data.animationToEmoteId[9001], 2001)
+		sert.eq(_K.Data.emoteToAnimationId[2001], 9001)
+		sert.eq(_K.VIP.allowedBulkPurchaseIds[2001], true)
+		sert.eq(emoteType.parse("danceemote", selfArg), 9001)
 		-- Second call hits emoteToAnimationId cache without broadcasting again
-		expect(emoteType.parse(2001, selfArg)).toBe(9001)
-		expect(firedEmoteBroadcasts).toBe(2)
+		sert.eq(emoteType.parse(2001, selfArg), 9001)
+		sert.eq(firedEmoteBroadcasts, 2)
 		-- Offsale, Limited, and LimitedUnique emotes are not added to allowedBulkPurchaseIds
-		expect(emoteType.parse(2002, selfArg)).toBe(9002)
-		expect(_K.VIP.allowedBulkPurchaseIds[2002]).toBeNil()
-		expect(emoteType.parse(2003, selfArg)).toBe(9003)
-		expect(_K.VIP.allowedBulkPurchaseIds[2003]).toBeNil()
-		expect(emoteType.parse(2004, selfArg)).toBe(9004)
-		expect(_K.VIP.allowedBulkPurchaseIds[2004]).toBeNil()
+		sert.eq(emoteType.parse(2002, selfArg), 9002)
+		sert.eq(_K.VIP.allowedBulkPurchaseIds[2002], nil)
+		sert.eq(emoteType.parse(2003, selfArg), 9003)
+		sert.eq(_K.VIP.allowedBulkPurchaseIds[2003], nil)
+		sert.eq(emoteType.parse(2004, selfArg), 9004)
+		sert.eq(_K.VIP.allowedBulkPurchaseIds[2004], nil)
 		insertMethods.LoadAsset = origLoadAsset
 		_K.Util.Remote.EmoteType.FireAll = origFireAll
 
 		-- Optional empty emote (when v does not match any emote and rawArg is "")
 		local optSelf = makeArgSelf(_K, 1, { type = "emote", name = "Emote", optional = true }, "")
-		expect(emoteType.parse(0, optSelf)).toBe("")
+		sert.eq(emoteType.parse(0, optSelf), "")
 		local optNonEmpty = makeArgSelf(_K, 1, { type = "emote", name = "Emote", optional = true }, "nonexistent")
-		expect(emoteType.parse(0, optNonEmpty)).toBeNil()
+		sert.eq(emoteType.parse(0, optNonEmpty), nil)
 		local reqEmpty = makeArgSelf(_K, 1, { type = "emote", name = "Emote", optional = false }, "")
-		expect(emoteType.parse(0, reqEmpty)).toBeNil()
+		sert.eq(emoteType.parse(0, reqEmpty), nil)
 
 		-- Invalid emote (both unknown string and non-emote numeric ID, plus negative cache)
 		local badNumVal, badNumErr = emoteType.parse(999999, selfArg)
-		expect(badNumVal).toBeNil()
-		expect(badNumErr).toBe("Could not parse emote")
-		expect(_K.Data.emoteItemFromId[999999]).toBe(false)
+		sert.eq(badNumVal, nil)
+		sert.eq(badNumErr, "Could not parse emote")
+		sert.eq(_K.Data.emoteItemFromId[999999], false)
 		h.env.marketplace.products[999999] = {
 			AssetId = 999999,
 			Name = "LateAddedEmote",
 			AssetTypeId = Enum.AssetType.EmoteAnimation.Value,
 			IsForSale = true,
 		}
-		expect(emoteType.parse(999999, selfArg)).toBeNil()
+		sert.eq(emoteType.parse(999999, selfArg), nil)
 		local badVal, badErr = emoteType.parse("unknown_emote_xyz", selfArg)
-		expect(badVal).toBeNil()
-		expect(badErr).toBe("Could not parse emote")
+		sert.eq(badVal, nil)
+		sert.eq(badErr, "Could not parse emote")
 
 		-- Suggestions (numeric and non-numeric query)
 		local sugNum = emoteType.suggestions("2001")
-		expect(sugNum[1]).toBe("2001")
-		expect(table.find(sugNum, "Salute") ~= nil).toBe(true)
-		expect(table.find(sugNum, "DanceEmote") ~= nil).toBe(true)
+		sert.eq(sugNum[1], "2001")
+		sert.eq(table.find(sugNum, "Salute") ~= nil, true)
+		sert.eq(table.find(sugNum, "DanceEmote") ~= nil, true)
 		local sugText = emoteType.suggestions("salute")
-		expect(sugText[1]).toBe("Salute")
+		sert.eq(sugText[1], "Salute")
 	end)
 end)
 
@@ -1376,79 +1376,79 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 			local adminSelf = makeArgSelf(_K, 10, { type = "player", name = "Target" }, "")
 
 			-- Self matching ("", "me")
-			expect(playerType.parse("", adminSelf)).toBe(adminPlr)
-			expect(playerType.parse("me", adminSelf)).toBe(adminPlr)
+			sert.eq(playerType.parse("", adminSelf), adminPlr)
+			sert.eq(playerType.parse("me", adminSelf), adminPlr)
 
 			-- Exact and partial username matching
-			expect(playerType.parse("modbravo", adminSelf)).toBe(modPlr)
-			expect(playerType.parse("modb", adminSelf)).toBe(modPlr)
+			sert.eq(playerType.parse("modbravo", adminSelf), modPlr)
+			sert.eq(playerType.parse("modb", adminSelf), modPlr)
 
 			-- Exact and partial DisplayName matching
-			expect(playerType.parse("superbravo", adminSelf)).toBe(modPlr)
-			expect(playerType.parse("superb", adminSelf)).toBe(modPlr)
+			sert.eq(playerType.parse("superbravo", adminSelf), modPlr)
+			sert.eq(playerType.parse("superb", adminSelf), modPlr)
 
 			-- Exact and partial _KDisplayName attribute matching
-			expect(playerType.parse("nickcharlie", adminSelf)).toBe(vipPlr)
-			expect(playerType.parse("nickc", adminSelf)).toBe(vipPlr)
+			sert.eq(playerType.parse("nickcharlie", adminSelf), vipPlr)
+			sert.eq(playerType.parse("nickc", adminSelf), vipPlr)
 
 			-- Invalid player
 			local badPlr, badPlrErr = playerType.validate("no_such_player", adminSelf)
-			expect(badPlr).toBeNil()
-			expect(badPlrErr).toBe("Invalid player")
+			sert.eq(badPlr, nil)
+			sert.eq(badPlrErr, "Invalid player")
 
 			-- lowerRank check: Mod (20) cannot target Admin (10) when lowerRank = true and commandRequests = false
 			_K.Data.settings.commandRequests = false
 			local modSelf = makeArgSelf(_K, 20, { type = "player", name = "Target", lowerRank = true }, "adminalpha")
 			local lowVal, lowErr = playerType.parse("adminalpha", modSelf)
-			expect(lowVal).toBeNil()
-			expect(lowErr).toBe("Can only target lower ranks")
-			expect(playerType.parse("vipcharlie", modSelf)).toBe(vipPlr)
+			sert.eq(lowVal, nil)
+			sert.eq(lowErr, "Can only target lower ranks")
+			sert.eq(playerType.parse("vipcharlie", modSelf), vipPlr)
 			_K.Data.settings.commandRequests = true
 
 			-- Suggestions for player and userId (including LocalPlayer sorting, DisplayName, _KDisplayName, and ignoreSelf)
 			h.env.Players._props.LocalPlayer = modPlr
 			local plrSuggestions = playerType.suggestions("", 20, { lowerRank = false })
-			expect(#plrSuggestions > 3).toBe(true)
-			expect(plrSuggestions[1][1]).toEqual({ "me", "ModBravo", "SuperBravo" })
-			expect(plrSuggestions[1][3]).toBe(modPlr)
-			expect(plrSuggestions[2][1]).toEqual({ "AdminAlpha" })
-			expect(plrSuggestions[2][3]).toBe(adminPlr)
-			expect(plrSuggestions[3][1]).toEqual({ "VipCharlie", "NickCharlie" })
-			expect(plrSuggestions[3][3]).toBe(vipPlr)
+			sert.eq(#plrSuggestions > 3, true)
+			sert.eq(plrSuggestions[1][1], { "me", "ModBravo", "SuperBravo" })
+			sert.eq(plrSuggestions[1][3], modPlr)
+			sert.eq(plrSuggestions[2][1], { "AdminAlpha" })
+			sert.eq(plrSuggestions[2][3], adminPlr)
+			sert.eq(plrSuggestions[3][1], { "VipCharlie", "NickCharlie" })
+			sert.eq(plrSuggestions[3][3], vipPlr)
 
 			-- When _KDisplayName equals Name, it is not duplicated in suggestions
 			adminPlr:SetAttribute("_KDisplayName", "AdminAlpha")
 			local noSelfSuggestions = playerType.suggestions("", 20, { lowerRank = false, ignoreSelf = true })
-			expect(noSelfSuggestions[1][1]).toEqual({ "AdminAlpha" })
-			expect(noSelfSuggestions[1][3]).toBe(adminPlr)
+			sert.eq(noSelfSuggestions[1][1], { "AdminAlpha" })
+			sert.eq(noSelfSuggestions[1][3], adminPlr)
 			adminPlr:SetAttribute("_KDisplayName", nil)
 			h.env.Players._props.LocalPlayer = adminPlr
 
 			local uidSuggestions = userIdType.suggestions("999", 10, { lowerRank = false })
-			expect(uidSuggestions[1][1]).toBe("999")
-			expect(uidSuggestions[1][3].UserId).toBe(999)
+			sert.eq(uidSuggestions[1][1], "999")
+			sert.eq(uidSuggestions[1][3].UserId, 999)
 
 			-- userId online lookup, raw numeric ID, and disconnected userCache lookup
-			expect(userIdType.parse("modbravo", adminSelf)).toBe(20)
-			expect(userIdType.parse("77777", adminSelf)).toBe(77777)
+			sert.eq(userIdType.parse("modbravo", adminSelf), 20)
+			sert.eq(userIdType.parse("77777", adminSelf), 77777)
 			local badUid, badUidErr = userIdType.parse("no_such_user", adminSelf)
-			expect(badUid).toBeNil()
-			expect(badUidErr).toBe("Invalid user")
+			sert.eq(badUid, nil)
+			sert.eq(badUidErr, "Invalid user")
 			-- so does a userId past 2^53, which getUserInfo can't look up
 			for _, input in { "1e300", "9007199254740994" } do
 				local okHuge, errHuge = userIdType.parse(input, adminSelf)
-				expect(okHuge).toBeNil()
-				expect(errHuge).toBe("Invalid user")
+				sert.eq(okHuge, nil)
+				sert.eq(errHuge, "Invalid user")
 			end
-			expect(userIdType.parse("9007199254740992", adminSelf)).toBe(2 ^ 53)
+			sert.eq(userIdType.parse("9007199254740992", adminSelf), 2 ^ 53)
 
 			-- Disconnect vipPlr -> memoized in userCache -> userId still resolves "vipcharlie" and includes in suggestions
 			h.env:removePlayer(30)
 			h.env.Players.PlayerRemoving:Fire(vipPlr)
 			-- Firing PlayerRemoving a second time cancels previous freeThread and re-memoizes cleanly
 			h.env.Players.PlayerRemoving:Fire(vipPlr)
-			expect(playerType.parse("vipcharlie", adminSelf)).toBeNil()
-			expect(userIdType.parse("vipcharlie", adminSelf)).toBe(30)
+			sert.eq(playerType.parse("vipcharlie", adminSelf), nil)
+			sert.eq(userIdType.parse("vipcharlie", adminSelf), 30)
 			local cachedUidSuggestions = userIdType.suggestions("", 10, { lowerRank = false })
 			local foundCachedVip = false
 			for _, entry in cachedUidSuggestions do
@@ -1456,7 +1456,7 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 					foundCachedVip = true
 				end
 			end
-			expect(foundCachedVip).toBe(true)
+			sert.eq(foundCachedVip, true)
 			local nonCachedPlrSuggestions = playerType.suggestions("", 10, { lowerRank = false })
 			local foundInPlr = false
 			for _, entry in nonCachedPlrSuggestions do
@@ -1464,7 +1464,7 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 					foundInPlr = true
 				end
 			end
-			expect(foundInPlr).toBe(false)
+			sert.eq(foundInPlr, false)
 
 			-- Re-adding player clears userCache entry
 			vipPlr = h.env:addPlayer(30, "VipCharlie")
@@ -1473,26 +1473,26 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 			-- userId parse when parseIndividual fails with non-"Invalid player" reason (ignoreSelf)
 			local noSelfArg = makeArgSelf(_K, 10, { type = "userId", name = "Target", ignoreSelf = true }, "me")
 			local noSelfVal, noSelfErr = userIdType.parse("me", noSelfArg)
-			expect(noSelfVal).toBeNil()
-			expect(noSelfErr).toBe("Can't target yourself")
+			sert.eq(noSelfVal, nil)
+			sert.eq(noSelfErr, "Can't target yourself")
 
 			-- players and userId postParse with nested tables and direct values
-			expect(playersType.postParse({ { adminPlr, modPlr }, vipPlr })).toEqual({ adminPlr, modPlr, vipPlr })
-			expect(userIdType.postParse({ { adminPlr, { UserId = 20 }, 30 }, 40 })).toEqual({ 10, 20, 30, 40 })
+			sert.eq(playersType.postParse({ { adminPlr, modPlr }, vipPlr }), { adminPlr, modPlr, vipPlr })
+			sert.eq(userIdType.postParse({ { adminPlr, { UserId = 20 }, 30 }, 40 }), { 10, 20, 30, 40 })
 
 			-- players and userIds postParse flattening via Argument:prepare()
 			local cmd = makeCommandContext(_K, 10)
 			local argPlayers = Argument.new(cmd, { type = "players", name = "Targets" }, 1, "me,modbravo")
 			local okPlayers, parsedPlayers = argPlayers:prepare()
-			expect(okPlayers).toBe(true)
-			expect(parsedPlayers).toEqual({ adminPlr, modPlr })
+			sert.eq(okPlayers, true)
+			sert.eq(parsedPlayers, { adminPlr, modPlr })
 
 			local argUserIds = Argument.new(cmd, { type = "userIds", name = "Targets" }, 1, "me,modbravo,88888")
 			local okUserIds, parsedUserIds = argUserIds:prepare()
-			expect(okUserIds).toBe(true)
-			expect(parsedUserIds).toEqual({ 10, 20, 88888 })
-			expect(playersType.listable).toBe(true)
-			expect(userIdsType.listable).toBe(true)
+			sert.eq(okUserIds, true)
+			sert.eq(parsedUserIds, { 10, 20, 88888 })
+			sert.eq(playersType.listable, true)
+			sert.eq(userIdsType.listable, true)
 		end
 	)
 
@@ -1579,129 +1579,129 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 
 			-- 1. All.luau (* and all)
 			local okStar, starList = parsePlayersArg("*")
-			expect(okStar).toBe(true)
-			expect(#starList).toBe(3)
+			sert.eq(okStar, true)
+			sert.eq(#starList, 3)
 			local okAll, allList = parsePlayersArg("all")
-			expect(okAll).toBe(true)
-			expect(#allList).toBe(3)
-			expect(#_K.Registry.types.allPlayers.suggestions("", nil)).toBe(1)
+			sert.eq(okAll, true)
+			sert.eq(#allList, 3)
+			sert.eq(#_K.Registry.types.allPlayers.suggestions("", nil), 1)
 
 			-- 2. Others.luau (others)
 			local okOthers, othersList = parsePlayersArg("others")
-			expect(okOthers).toBe(true)
-			expect(#othersList).toBe(2)
-			expect(table.find(othersList, adminPlr)).toBeNil()
+			sert.eq(okOthers, true)
+			sert.eq(#othersList, 2)
+			sert.eq(table.find(othersList, adminPlr), nil)
 
 			-- 3. Role.luau (@mod, @admin, invalid @unknownrole)
 			local okRole, roleList = parsePlayersArg("@mod")
-			expect(okRole).toBe(true)
-			expect(roleList).toEqual({ modPlr })
+			sert.eq(okRole, true)
+			sert.eq(roleList, { modPlr })
 			local okBadRole = parsePlayersArg("@nonexistent")
-			expect(okBadRole).toBe(false)
+			sert.eq(okBadRole, false)
 			local okEmptyRole = parsePlayersArg("@vip")
-			expect(okEmptyRole).toBe(false)
-			expect(type(_K.Registry.types.rolePlayers.suggestions("", nil))).toBe("table")
+			sert.eq(okEmptyRole, false)
+			sert.eq(type(_K.Registry.types.rolePlayers.suggestions("", nil)), "table")
 
 			-- 4. Team.luau (%Red, %Blue, empty %Green, invalid %Purple)
 			local okRed, redList = parsePlayersArg("%red")
-			expect(okRed).toBe(true)
-			expect(redList).toEqual({ adminPlr, modPlr })
+			sert.eq(okRed, true)
+			sert.eq(redList, { adminPlr, modPlr })
 			local okBlue, blueList = parsePlayersArg("%blue")
-			expect(okBlue).toBe(true)
-			expect(blueList).toEqual({ guestPlr })
-			expect((parsePlayersArg("%green"))).toBe(false)
-			expect((parsePlayersArg("%purple"))).toBe(false)
-			expect(#_K.Registry.types.teamPlayers.suggestions("", nil)).toBe(3)
+			sert.eq(okBlue, true)
+			sert.eq(blueList, { guestPlr })
+			sert.eq((parsePlayersArg("%green")), false)
+			sert.eq((parsePlayersArg("%purple")), false)
+			sert.eq(#_K.Registry.types.teamPlayers.suggestions("", nil), 3)
 
 			-- 5. Random.luau (~, ~1, ~2, invalid ~abc)
 			local okRandDefault, randDefault = parsePlayersArg("~")
-			expect(okRandDefault).toBe(true)
-			expect(#randDefault).toBe(1)
+			sert.eq(okRandDefault, true)
+			sert.eq(#randDefault, 1)
 			local okRand2, rand2 = parsePlayersArg("~2")
-			expect(okRand2).toBe(true)
-			expect(#rand2).toBe(2)
-			expect((parsePlayersArg("~abc"))).toBe(false)
+			sert.eq(okRand2, true)
+			sert.eq(#rand2, 2)
+			sert.eq((parsePlayersArg("~abc")), false)
 
 			-- 6. Special.luau ($all, $others, $admins, $nonadmins, $friends, $close, $far, $distance, $group, invalid)
 			local okSpecAll, specAll = parsePlayersArg("$all")
-			expect(okSpecAll).toBe(true)
-			expect(#specAll).toBe(3)
+			sert.eq(okSpecAll, true)
+			sert.eq(#specAll, 3)
 
 			local okSpecOthers, specOthers = parsePlayersArg("$others")
-			expect(okSpecOthers).toBe(true)
-			expect(#specOthers).toBe(2)
+			sert.eq(okSpecOthers, true)
+			sert.eq(#specOthers, 2)
 
 			local okAdmins, specAdmins = parsePlayersArg("$admins")
-			expect(okAdmins).toBe(true)
-			expect(#specAdmins).toBe(2)
+			sert.eq(okAdmins, true)
+			sert.eq(#specAdmins, 2)
 
 			local okNonAdmins, specNonAdmins = parsePlayersArg("$nonadmins")
-			expect(okNonAdmins).toBe(true)
-			expect(specNonAdmins).toEqual({ guestPlr })
+			sert.eq(okNonAdmins, true)
+			sert.eq(specNonAdmins, { guestPlr })
 
 			local okFriends, specFriends = parsePlayersArg("$friends")
-			expect(okFriends).toBe(true)
-			expect(specFriends).toEqual({ modPlr })
+			sert.eq(okFriends, true)
+			sert.eq(specFriends, { modPlr })
 
 			local okClose, specClose = parsePlayersArg("$close")
-			expect(okClose).toBe(true)
-			expect(#specClose).toBe(2) -- adminPlr (0) and modPlr (30) <= 100
+			sert.eq(okClose, true)
+			sert.eq(#specClose, 2) -- adminPlr (0) and modPlr (30) <= 100
 
 			local okFar, specFar = parsePlayersArg("$far")
-			expect(okFar).toBe(true)
-			expect(specFar).toEqual({ guestPlr }) -- guestPlr (150) > 100
+			sert.eq(okFar, true)
+			sert.eq(specFar, { guestPlr }) -- guestPlr (150) > 100
 
 			-- Distance matcher: $distance<50 (adminPlr at 0, modPlr at 30) and $distance>100 (guestPlr at 150)
 			local okDistNear, distNear = parsePlayersArg("$distance<50")
-			expect(okDistNear).toBe(true)
-			expect(#distNear).toBe(2)
+			sert.eq(okDistNear, true)
+			sert.eq(#distNear, 2)
 
 			local okDistFar, distFar = parsePlayersArg("$distance>100")
-			expect(okDistFar).toBe(true)
-			expect(distFar).toEqual({ guestPlr })
+			sert.eq(okDistFar, true)
+			sert.eq(distFar, { guestPlr })
 
-			expect((parsePlayersArg("$distance<bad"))).toBe(false)
+			sert.eq((parsePlayersArg("$distance<bad")), false)
 
 			-- Characterless player during $close, $far, $distance
 			local savedChar = guestPlr.Character
 			guestPlr.Character = nil
-			expect((parsePlayersArg("$close"))).toBe(true)
-			expect((parsePlayersArg("$far"))).toBe(false)
-			expect((parsePlayersArg("$distance>100"))).toBe(false)
+			sert.eq((parsePlayersArg("$close")), true)
+			sert.eq((parsePlayersArg("$far")), false)
+			sert.eq((parsePlayersArg("$distance>100")), false)
 			guestPlr.Character = savedChar
 
 			-- Group matcher: $group=100=, $group=100>=50, $group=100>51, $group=100<=50, $group=100=50, $group=100<100
 			local okGrpAny, grpAny = parsePlayersArg("$group=100=")
-			expect(okGrpAny).toBe(true)
-			expect(#grpAny).toBe(2)
+			sert.eq(okGrpAny, true)
+			sert.eq(#grpAny, 2)
 
 			local okGrpGe, grpGe = parsePlayersArg("$group=100>=50")
-			expect(okGrpGe).toBe(true)
-			expect(#grpGe).toBe(2)
+			sert.eq(okGrpGe, true)
+			sert.eq(#grpGe, 2)
 
 			local okGrpGt, grpGt = parsePlayersArg("$group=100>50")
-			expect(okGrpGt).toBe(true)
-			expect(grpGt).toEqual({ adminPlr })
+			sert.eq(okGrpGt, true)
+			sert.eq(grpGt, { adminPlr })
 
 			local okGrpLe, grpLe = parsePlayersArg("$group=100<=50")
-			expect(okGrpLe).toBe(true)
-			expect(grpLe).toEqual({ modPlr })
+			sert.eq(okGrpLe, true)
+			sert.eq(grpLe, { modPlr })
 
 			local okGrpLt, grpLt = parsePlayersArg("$group=100<100")
-			expect(okGrpLt).toBe(true)
-			expect(grpLt).toEqual({ modPlr })
+			sert.eq(okGrpLt, true)
+			sert.eq(grpLt, { modPlr })
 
-			expect((parsePlayersArg("$group=100<50"))).toBe(false)
-			expect((parsePlayersArg("$group=100>255"))).toBe(false)
+			sert.eq((parsePlayersArg("$group=100<50")), false)
+			sert.eq((parsePlayersArg("$group=100>255")), false)
 
 			local okGrpEq, grpEq = parsePlayersArg("$group=100=50")
-			expect(okGrpEq).toBe(true)
-			expect(grpEq).toEqual({ modPlr })
+			sert.eq(okGrpEq, true)
+			sert.eq(grpEq, { modPlr })
 
-			expect((parsePlayersArg("$group=invalid"))).toBe(false)
-			expect((parsePlayersArg("$fps"))).toBe(false)
-			expect((parsePlayersArg("!me"))).toBe(false)
-			expect((parsePlayersArg("!@vip"))).toBe(false)
+			sert.eq((parsePlayersArg("$group=invalid")), false)
+			sert.eq((parsePlayersArg("$fps")), false)
+			sert.eq((parsePlayersArg("!me")), false)
+			sert.eq((parsePlayersArg("!@vip")), false)
 
 			-- Untargetable feedback branches across All, Others, Random, Role, Team, Special
 			-- Guest (30, everyone role) has onlyTargetSelf = true and limits.targets = 1
@@ -1709,26 +1709,26 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 			local selfAndLimitErr = "Can only target yourself\nCan only target 1 user"
 			for _, raw in { "*", "others", "~1", "@mod", "%red", "$all" } do
 				local okU, errU = parsePlayersArg(raw, 30, { ignoreSelf = true })
-				expect(okU).toBe(false)
-				expect(errU.message).toBe(selfAndLimitErr)
+				sert.eq(okU, false)
+				sert.eq(errU.message, selfAndLimitErr)
 			end
 
 			local specSug = _K.Registry.types.specialPlayers.suggestions("", nil)
-			expect(#specSug >= 9).toBe(true)
+			sert.eq(#specSug >= 9, true)
 
 			-- userIds with prefix matchers flattens players into UserIds
 			local cmd = makeCommandContext(_K, 10)
 			local uidArg = Argument.new(cmd, { type = "userIds", name = "Ids" }, 1, "%blue,@mod")
 			local okUids, parsedUids = uidArg:prepare()
-			expect(okUids).toBe(true)
-			expect(parsedUids).toEqual({ 30, 10, 20 })
+			sert.eq(okUids, true)
+			sert.eq(parsedUids, { 30, 10, 20 })
 
 			-- Others when only 1 player is online returns "No other players online"
 			h.env:removePlayer(20)
 			h.env:removePlayer(30)
 			local okSoloOthers, errSoloOthers = parsePlayersArg("others", 10)
-			expect(okSoloOthers).toBe(false)
-			expect(errSoloOthers.message).toBe("No other players online")
+			sert.eq(okSoloOthers, false)
+			sert.eq(errSoloOthers.message, "No other players online")
 		end
 	)
 
@@ -1794,70 +1794,70 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 				end
 				local callerRank = _K.Auth.getRank(callerId)
 				local targetRank = _K.Auth.getRank(targetUserId)
-				expect(callerRank > targetRank).toBe(true)
+				sert.eq(callerRank > targetRank, true)
 			end
 
 			local function assertPostcondition(typeName: string, callerId: number, val: any, rawInput: string?)
 				local stripped = if rawInput then _K.Util.String.stripQuotes(_K.Util.String.trim(rawInput)) else ""
 				if typeName == "integer" then
-					expect(type(val)).toBe("number")
-					expect(val == math.floor(val)).toBe(true)
+					sert.eq(type(val), "number")
+					sert.eq(val == math.floor(val), true)
 				elseif typeName == "number" then
-					expect(type(val)).toBe("number")
+					sert.eq(type(val), "number")
 					if tonumber(stripped) == tonumber(stripped) then
-						expect(val == val).toBe(true)
+						sert.eq(val == val, true)
 					end
 				elseif typeName == "boolean" then
-					expect(type(val)).toBe("boolean")
+					sert.eq(type(val), "boolean")
 				elseif typeName == "color" then
-					expect(rbxTypeof(val)).toBe("Color3")
+					sert.eq(rbxTypeof(val), "Color3")
 				elseif typeName == "vector2" then
-					expect(rbxTypeof(val)).toBe("Vector2")
+					sert.eq(rbxTypeof(val), "Vector2")
 					if not string.find(string.lower(stripped), "nan", 1, true) then
-						expect(val.X == val.X and val.Y == val.Y).toBe(true)
+						sert.eq(val.X == val.X and val.Y == val.Y, true)
 					end
 				elseif typeName == "vector3" then
-					expect(rbxTypeof(val)).toBe("Vector3")
+					sert.eq(rbxTypeof(val), "Vector3")
 					if not string.find(string.lower(stripped), "nan", 1, true) then
-						expect(val.X == val.X and val.Y == val.Y and val.Z == val.Z).toBe(true)
+						sert.eq(val.X == val.X and val.Y == val.Y and val.Z == val.Z, true)
 					end
 				elseif typeName == "timeSimple" then
-					expect(type(val)).toBe("number")
+					sert.eq(type(val), "number")
 					if tonumber(stripped) == nil then
-						expect(val == -1 or val >= 0).toBe(true)
+						sert.eq(val == -1 or val >= 0, true)
 					end
 				elseif typeName == "player" then
-					expect(rbxTypeof(val)).toBe("Instance")
-					expect(val:IsA("Player")).toBe(true)
+					sert.eq(rbxTypeof(val), "Instance")
+					sert.eq(val:IsA("Player"), true)
 					assertRankRespectsCaller(callerId, val.UserId, true)
 				elseif typeName == "players" then
-					expect(type(val)).toBe("table")
-					expect(#val >= 1).toBe(true)
+					sert.eq(type(val), "table")
+					sert.eq(#val >= 1, true)
 					for _, plr in val do
-						expect(rbxTypeof(plr)).toBe("Instance")
-						expect(plr:IsA("Player")).toBe(true)
+						sert.eq(rbxTypeof(plr), "Instance")
+						sert.eq(plr:IsA("Player"), true)
 						assertRankRespectsCaller(callerId, plr.UserId, true)
 					end
 				elseif typeName == "userId" then
-					expect(type(val)).toBe("number")
-					expect(val == math.floor(val) and val > 0 and val <= 2 ^ 53).toBe(true)
+					sert.eq(type(val), "number")
+					sert.eq(val == math.floor(val) and val > 0 and val <= 2 ^ 53, true)
 					assertRankRespectsCaller(callerId, val, true)
 				elseif typeName == "role" then
-					expect(type(val)).toBe("string")
+					sert.eq(type(val), "string")
 					local roleDef = _K.Data.roles[val]
-					expect(roleDef ~= nil).toBe(true)
+					sert.eq(roleDef ~= nil, true)
 					if callerId ~= _K.Data.creatorId then
-						expect(_K.Auth.getRank(callerId) > roleDef._rank).toBe(true)
+						sert.eq(_K.Auth.getRank(callerId) > roleDef._rank, true)
 					end
 				elseif typeName == "member" then
 					if type(val) == "table" then
 						for _, mId in val do
-							expect(_K.Data.members[tostring(mId)] ~= nil).toBe(true)
+							sert.eq(_K.Data.members[tostring(mId)] ~= nil, true)
 							assertRankRespectsCaller(callerId, tonumber(mId) :: number, true)
 						end
 					else
-						expect(type(val)).toBe("string")
-						expect(_K.Data.members[val] ~= nil).toBe(true)
+						sert.eq(type(val), "string")
+						sert.eq(_K.Data.members[val] ~= nil, true)
 						assertRankRespectsCaller(callerId, tonumber(val) :: number, true)
 					end
 				elseif typeName == "ban" then
@@ -1866,7 +1866,7 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 							assertRankRespectsCaller(callerId, tonumber(bId) :: number, true)
 						end
 					else
-						expect(type(val)).toBe("string")
+						sert.eq(type(val), "string")
 						assertRankRespectsCaller(callerId, tonumber(val) :: number, true)
 					end
 				end
@@ -1876,19 +1876,21 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 			local bIntGen = sert.gen.boundaryInt(-2 ^ 31, 2 ^ 31)
 			local bFloatGen = sert.gen.boundaryFloat(-1e9, 1e9)
 
-			sert.check(
+			sert.prop(
 				"DefaultTypes argument coercion satisfies strict per-type postcondition contracts and preserves server state on failure",
-				{ malformedGen, bIntGen, bFloatGen },
-				function(malformed, bInt, bFloat)
+				function(g)
+					local malformed = malformedGen(g)
+					local bInt = bIntGen(g)
+					local bFloat = bFloatGen(g)
 					local intType = _K.Registry.types.integer
 					local numType = _K.Registry.types.number
 
 					-- Finite integer strings transform, validate, and parse to exact integer within limits
 					local tInt = intType.transform(tostring(bInt))
-					expect((intType.validate(tInt))).toBe(true)
+					sert.eq((intType.validate(tInt)), true)
 					local parsedInt = intType.parse(tInt)
-					expect(parsedInt).toBe(bInt)
-					expect(math.abs(parsedInt) <= 2 ^ 31).toBe(true)
+					sert.eq(parsedInt, bInt)
+					sert.eq(math.abs(parsedInt) <= 2 ^ 31, true)
 					assertPostcondition("integer", 10, parsedInt, tostring(bInt))
 
 					-- Boundary float validation: NaN and ±inf are rejected by both integerType and numberType
@@ -1896,11 +1898,11 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 					local tFloat = numType.transform(floatStr)
 					local isFiniteFloat = tFloat ~= nil and tFloat == tFloat and math.abs(tFloat) ~= math.huge
 					if bFloat ~= bFloat then
-						expect((intType.validate(tFloat))).toBe(false)
+						sert.eq((intType.validate(tFloat)), false)
 					elseif math.abs(bFloat) < math.huge and bFloat == math.floor(bFloat) and tFloat ~= nil then
-						expect((intType.validate(tFloat))).toBe(true)
+						sert.eq((intType.validate(tFloat)), true)
 					end
-					expect((numType.validate(tFloat))).toBe(isFiniteFloat)
+					sert.eq((numType.validate(tFloat)), isFiniteFloat)
 					if isFiniteFloat then
 						assertPostcondition("number", 10, numType.parse(tFloat), floatStr)
 					end
@@ -1917,20 +1919,20 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 								malformed
 							)
 							local okCall, okPrep, resOrErr = pcall(arg.prepare, arg)
-							expect(okCall).toBe(true)
-							expect(type(okPrep)).toBe("boolean")
+							sert.eq(okCall, true)
+							sert.eq(type(okPrep), "boolean")
 							if okPrep then
 								assertPostcondition(typeName, callerId, resOrErr, malformed)
 							else
 								local feedback = if type(resOrErr) == "table" then resOrErr.message else resOrErr
-								expect(type(feedback)).toBe("string")
-								expect(#feedback > 0).toBe(true)
+								sert.eq(type(feedback), "string")
+								sert.eq(#feedback > 0, true)
 							end
 						end
 					end
 
 					-- Server state (bans, members, roles) is completely untouched after all coercion attempts
-					expect(snapshotServerState()).toEqual(initialState)
+					sert.eq(snapshotServerState(), initialState)
 
 					-- Guest (rank 0, everyone) attempting to target higher-rank players via player/players/userId is always rejected when lowerRank = true
 					local guestCmd = makeCommandContext(_K, 30)
@@ -1943,10 +1945,10 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 							rawTarget
 						)
 						local okGuest, parsedGuest = guestArg:prepare()
-						expect(okGuest).toBe(false)
+						sert.eq(okGuest, false)
 						local feedback = if type(parsedGuest) == "table" then parsedGuest.message else parsedGuest
-						expect(type(feedback)).toBe("string")
-						expect(#feedback > 0).toBe(true)
+						sert.eq(type(feedback), "string")
+						sert.eq(#feedback > 0, true)
 					end
 					_K.Data.settings.commandRequests = true
 				end,
@@ -2240,7 +2242,7 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 				return a .. "," .. b
 			end,
 			eq = function(a: string, b: string): boolean
-				return sert.rawEq(resolve(a, 10, false), resolve(b, 10, false))
+				return sert.equals(resolve(a, 10, false), resolve(b, 10, false))
 			end,
 			associative = true,
 			commutative = true,
@@ -2277,37 +2279,37 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 				-- 1. Differential match against pure set-theory oracle
 				local resolvedS = resolve(s, callerId, lowerRank)
 				local expectedS = oracleAtom(s, callerId, lowerRank)
-				expect(resolvedS).toEqual(expectedS)
+				sert.eq(resolvedS, expectedS)
 
 				-- 2. Disjoint complement partition: resolve(s) ∩ resolve("!" .. s) == ∅ and resolve(s) ∪ resolve("!" .. s) == eligibleTargets(caller)
 				local resolvedNotS = resolve("!" .. s, callerId, lowerRank)
 				local expectedNotS = oracleAtom("!" .. s, callerId, lowerRank)
-				expect(resolvedNotS).toEqual(expectedNotS)
-				expect(setIntersection(resolvedS, resolvedNotS)).toEqual({})
-				expect(setUnion(resolvedS, resolvedNotS)).toEqual(eligibleTargets(callerId, lowerRank))
+				sert.eq(resolvedNotS, expectedNotS)
+				sert.eq(setIntersection(resolvedS, resolvedNotS), {})
+				sert.eq(setUnion(resolvedS, resolvedNotS), eligibleTargets(callerId, lowerRank))
 
 				-- 3. Involution on unrestricted universe (caller 10 = superadmin): resolve("!!" .. s) == resolve(s)
-				expect(resolve("!!" .. s, 10, false)).toEqual(resolve(s, 10, false))
+				sert.eq(resolve("!!" .. s, 10, false), resolve(s, 10, false))
 
 				-- 4. Union commutativity & idempotence on unrestricted universe
-				expect(resolve(s .. "," .. b, 10, false)).toEqual(resolve(b .. "," .. s, 10, false))
-				expect(resolve(s .. "," .. s, 10, false)).toEqual(resolve(s, 10, false))
+				sert.eq(resolve(s .. "," .. b, 10, false), resolve(b .. "," .. s, 10, false))
+				sert.eq(resolve(s .. "," .. s, 10, false), resolve(s, 10, false))
 
 				-- 5. Self/other partition: resolve("all") == resolve("me,others") and resolve("me") ∩ resolve("others") == ∅
-				expect(resolve("all", 10, false)).toEqual(resolve("me,others", 10, false))
-				expect(setIntersection(resolve("me", 10, false), resolve("others", 10, false))).toEqual({})
+				sert.eq(resolve("all", 10, false), resolve("me,others", 10, false))
+				sert.eq(setIntersection(resolve("me", 10, false), resolve("others", 10, false)), {})
 
 				-- 6. Native _K complement pairs ($admins vs $nonadmins, $close vs $far, $distance<50 vs $distance>50)
-				expect(setIntersection(resolve("$admins", 10, false), resolve("$nonadmins", 10, false))).toEqual({})
-				expect(setUnion(resolve("$admins", 10, false), resolve("$nonadmins", 10, false))).toEqual(
+				sert.eq(setIntersection(resolve("$admins", 10, false), resolve("$nonadmins", 10, false)), {})
+				sert.eq(
+					setUnion(resolve("$admins", 10, false), resolve("$nonadmins", 10, false)),
 					resolve("all", 10, false)
 				)
-				expect(setIntersection(resolve("$close", 10, false), resolve("$far", 10, false))).toEqual({})
-				expect(setUnion(resolve("$close", 10, false), resolve("$far", 10, false))).toEqual(
-					resolve("all", 10, false)
-				)
-				expect(setIntersection(resolve("$distance<50", 10, false), resolve("$distance>50", 10, false))).toEqual({})
-				expect(setUnion(resolve("$distance<50", 10, false), resolve("$distance>50", 10, false))).toEqual(
+				sert.eq(setIntersection(resolve("$close", 10, false), resolve("$far", 10, false)), {})
+				sert.eq(setUnion(resolve("$close", 10, false), resolve("$far", 10, false)), resolve("all", 10, false))
+				sert.eq(setIntersection(resolve("$distance<50", 10, false), resolve("$distance>50", 10, false)), {})
+				sert.eq(
+					setUnion(resolve("$distance<50", 10, false), resolve("$distance>50", 10, false)),
 					resolve("all", 10, false)
 				)
 
@@ -2315,8 +2317,8 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 				local k = g:int(1, 3)
 				local randSet = resolve(`~{k}`, callerId, lowerRank)
 				local universe = eligibleTargets(callerId, lowerRank)
-				expect(#randSet).toBe(math.min(k, #universe))
-				expect(setIntersection(randSet, universe)).toEqual(randSet)
+				sert.eq(#randSet, math.min(k, #universe))
+				sert.eq(setIntersection(randSet, universe), randSet)
 
 				_K.Data.settings.commandRequests = true
 			end,
@@ -2335,25 +2337,27 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 			local vec3 = _K.Registry.types.vector3
 
 			for _, raw in { "nan", "inf", "-inf" } do
-				expect((intType.validate(intType.transform(raw)))).toBe(false)
-				expect((numType.validate(numType.transform(raw)))).toBe(false)
-				expect((timeType.validate(raw))).toBe(false)
+				sert.eq((intType.validate(intType.transform(raw))), false)
+				sert.eq((numType.validate(numType.transform(raw))), false)
+				sert.eq((timeType.validate(raw)), false)
 			end
-			expect((timeType.validate("-5"))).toBe(false)
+			sert.eq((timeType.validate("-5")), false)
 
 			-- Single-token invalid input to makeSequenceType must fail validation instead of collapsing to {}
-			expect((vec2.validate(vec2.transform("abc")))).toBe(false)
-			expect((vec3.validate(vec3.transform("1,abc")))).toBe(false)
+			sert.eq((vec2.validate(vec2.transform("abc"))), false)
+			sert.eq((vec3.validate(vec3.transform("1,abc"))), false)
 
 			-- Bare @, %, $ and invalid ~random selectors must fail prepare cleanly
 			local cmd = makeCommandContext(_K, 10)
 			for _, badSelector in { "@", "%", "$", "~nan", "~inf", "~-1", "~0" } do
 				local arg = Argument.new(cmd, { type = "players", name = "Target", lowerRank = false }, 1, badSelector)
 				local ok = arg:prepare()
-				expect(ok).toBe(false)
+				sert.eq(ok, false)
 			end
 		end
 	)
 end)
 
-return {}
+do
+	return {}
+end

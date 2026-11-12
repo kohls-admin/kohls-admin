@@ -1,7 +1,7 @@
 local Harness = require("./Harness")
 local sert = require("../sert")
 
-local describe, test, expect = sert.describe, sert.test, sert.expect
+local describe, test = sert.describe, sert.test
 local prop = sert.prop
 
 describe("Server · LoadScript & Loadstring (Yueliang + FiOne Differential Oracle)", function()
@@ -34,26 +34,26 @@ describe("Server · LoadScript & Loadstring (Yueliang + FiOne Differential Oracl
 
 		local envTable = setmetatable({}, { __index = _G })
 		local fnProto, errProto = Loadstring(source, envTable)
-		expect(errProto).toBeNil()
-		expect(type(fnProto)).toBe("function")
-		expect(fnProto()).toBe(2230)
+		sert.eq(errProto, nil)
+		sert.eq(type(fnProto), "function")
+		sert.eq(fnProto(), 2230)
 
 		-- Also test the "LuaC" bytecode dump + bc_to_state path
 		local fnBc, bytecode = Loadstring(source, "LuaC")
-		expect(type(bytecode)).toBe("string")
-		expect(string.find(bytecode, "\27Lua", 1, true) ~= nil).toBe(true)
-		expect(fnBc()).toBe(2230)
+		sert.eq(type(bytecode), "string")
+		sert.eq(string.find(bytecode, "\27Lua", 1, true) ~= nil, true)
+		sert.eq(fnBc(), 2230)
 
 		-- Also test LoadScript creating a Server / Client Script instance with Code attribute
 		local createdServer = LoadScript("return 1 + 1", "Server")
-		expect(createdServer ~= nil).toBe(true)
-		expect(string.find(createdServer:GetAttribute("Code"), "\27Lua", 1, true) ~= nil).toBe(true)
-		expect(createdServer.Enabled).toBe(true)
+		sert.eq(createdServer ~= nil, true)
+		sert.eq(string.find(createdServer:GetAttribute("Code"), "\27Lua", 1, true) ~= nil, true)
+		sert.eq(createdServer.Enabled, true)
 
 		-- Syntax errors return nil, errorMessage
 		local badFn, badErr = Loadstring("local x = == invalid syntax", envTable)
-		expect(badFn).toBeNil()
-		expect(type(badErr)).toBe("string")
+		sert.eq(badFn, nil)
+		sert.eq(type(badErr), "string")
 	end)
 
 	prop("differential oracle: Yueliang + FiOne matches native Luau loadstring on generated programs", function(g)
@@ -89,10 +89,10 @@ describe("Server · LoadScript & Loadstring (Yueliang + FiOne Differential Oracl
 
 		local envTable = setmetatable({}, { __index = _G })
 		local kaFn, kaErr = Loadstring(program, envTable)
-		expect(kaErr).toBeNil()
+		sert.eq(kaErr, nil)
 		local nativeFn = assert((loadstring :: any)(program))
 
-		expect(kaFn()).toBe(nativeFn())
+		sert.eq(kaFn(), nativeFn())
 	end, { runs = 60 })
 end)
 

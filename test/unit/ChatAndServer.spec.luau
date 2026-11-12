@@ -1,7 +1,7 @@
 local Harness = require("./Harness")
 local sert = require("../sert")
 
-local describe, test, expect = sert.describe, sert.test, sert.expect
+local describe, test = sert.describe, sert.test
 
 describe("Chat and Server", function()
 	describe("Chat · RichText Restoration, Rate-Limiting & Channel Routing", function()
@@ -16,44 +16,45 @@ describe("Chat and Server", function()
 				-- 1. Valid simple tags (b, i, u, s, sc, uc, br)
 				local simple =
 					esc("<b>bold</b> <i>italic</i> <u>under</u> <s>strike</s> <sc>small</sc> <uc>upper</uc><br/>line2")
-				expect(Chat.restoreRichText(simple)).toBe(
+				sert.eq(
+					Chat.restoreRichText(simple),
 					"<b>bold</b> <i>italic</i> <u>under</u> <s>strike</s> <sc>small</sc> <uc>upper</uc><br />line2"
 				)
 
 				-- 2. Valid <font> with hex color (#rrggbb and #rgb), rgb(r,g,b), clamped size, and transparency
 				local fontHex = esc('<font color="#ff0000" size="20" transparency="0.5">red</font>')
-				expect(Chat.restoreRichText(fontHex)).toBe(
-					'<font color="#ff0000" size="20" transparency="0.5">red</font>'
-				)
+				sert.eq(Chat.restoreRichText(fontHex), '<font color="#ff0000" size="20" transparency="0.5">red</font>')
 
 				local fontShortAndRgb =
 					esc('<font color="#0f0">green</font> <font color="rgb(255,128,0)" size="99">clamped</font>')
-				expect(Chat.restoreRichText(fontShortAndRgb)).toBe(
+				sert.eq(
+					Chat.restoreRichText(fontShortAndRgb),
 					'<font color="#0f0">green</font> <font color="rgb(255,128,0)" size="40">clamped</font>'
 				)
 
 				-- 3. Compact mode: strips <br/> to space and drops font size (inserting transparency="0" if size was sole attribute)
 				local compactInput =
 					esc('<font size="24">big</font><br/><font color="#ff0000" size="24">colored</font>')
-				expect(Chat.restoreRichText(compactInput, true)).toBe(
+				sert.eq(
+					Chat.restoreRichText(compactInput, true),
 					'<font transparency="0">big</font> <font color="#ff0000">colored</font>'
 				)
 
 				-- 4. Rejects unbalanced tags, disallowed tags (<script>), and invalid <font> attributes (face, weight, bad color)
 				local unbalanced = esc("<b>hello</i>")
-				expect(Chat.restoreRichText(unbalanced)).toBe(unbalanced)
+				sert.eq(Chat.restoreRichText(unbalanced), unbalanced)
 
 				local unclosed = esc("<b>hello")
-				expect(Chat.restoreRichText(unclosed)).toBe(unclosed)
+				sert.eq(Chat.restoreRichText(unclosed), unclosed)
 
 				local scriptTag = esc("<script>evil()</script>")
-				expect(Chat.restoreRichText(scriptTag)).toBe(scriptTag)
+				sert.eq(Chat.restoreRichText(scriptTag), scriptTag)
 
 				local badFont = esc('<font color="#ff0000" size="20" face="Gotham" weight="Bold">bad attrs</font>')
-				expect(Chat.restoreRichText(badFont)).toBe(badFont)
+				sert.eq(Chat.restoreRichText(badFont), badFont)
 
 				local badRgb = esc('<font color="rgb(999,0,0)">overflow</font>')
-				expect(Chat.restoreRichText(badRgb)).toBe(badRgb)
+				sert.eq(Chat.restoreRichText(badRgb), badRgb)
 			end
 		)
 
@@ -68,43 +69,43 @@ describe("Chat and Server", function()
 			Auth.userRoleAdd(admin.UserId, "admin")
 
 			-- cooldown returns nil first, then wait string, then nil after duration expires
-			expect(Chat.cooldown(guest.UserId, "customKey", 5)).toBeNil()
+			sert.eq(Chat.cooldown(guest.UserId, "customKey", 5), nil)
 			local waitMsg = Chat.cooldown(guest.UserId, "customKey", 5)
-			expect(type(waitMsg)).toBe("string")
-			expect(string.find(waitMsg :: string, "Wait", 1, true) ~= nil).toBe(true)
+			sert.eq(type(waitMsg), "string")
+			sert.eq(string.find(waitMsg :: string, "Wait", 1, true) ~= nil, true)
 			h.env:step(5.5)
-			expect(Chat.cooldown(guest.UserId, "customKey", 5)).toBeNil()
+			sert.eq(Chat.cooldown(guest.UserId, "customKey", 5), nil)
 
 			-- limitBroadcast checks CanUserChatAsync and enforces the announce cooldown
-			expect(Chat.limitBroadcast(admin.UserId)).toBeNil()
-			expect(Chat.limitBroadcast(admin.UserId) ~= nil).toBe(true)
+			sert.eq(Chat.limitBroadcast(admin.UserId), nil)
+			sert.eq(Chat.limitBroadcast(admin.UserId) ~= nil, true)
 
 			-- limitReason checks nil, CanUserChatAsync, and reason cooldown (notifying player when rate-limited)
-			expect(Chat.limitReason(admin.UserId, nil)).toBeNil()
+			sert.eq(Chat.limitReason(admin.UserId, nil), nil)
 			local tcs = h.env.game:GetService("TextChatService")
 			local tcsMethods = rawget(tcs, "_methods")
 			local origCanUsersChat = tcsMethods.CanUsersChatAsync
 			-- When all target players can chat with admin, limitReason doesn't spend the cooldown
 			local allowedReason, restrictedReason = Chat.limitReason(admin.UserId, "Friendly kick", { guest })
-			expect(allowedReason).toBe("Friendly kick")
-			expect(restrictedReason).toBe("Friendly kick")
+			sert.eq(allowedReason, "Friendly kick")
+			sert.eq(restrictedReason, "Friendly kick")
 
-			expect(Chat.limitReason(admin.UserId, "First valid reason")).toBe("First valid reason")
+			sert.eq(Chat.limitReason(admin.UserId, "First valid reason"), "First valid reason")
 
 			local notifiedReason = nil
 			Remote.Notify.Fire = function(_self, _plr, payload)
 				notifiedReason = payload.Text
 			end
-			expect(Chat.limitReason(admin.UserId, "Second rate-limited reason")).toBeNil()
-			expect(string.find(tostring(notifiedReason), "Reason removed:", 1, true) ~= nil).toBe(true)
+			sert.eq(Chat.limitReason(admin.UserId, "Second rate-limited reason"), nil)
+			sert.eq(string.find(tostring(notifiedReason), "Reason removed:", 1, true) ~= nil, true)
 
 			-- When cooling down with a restricted target, chat-allowed targets still get allowedReason while restricted get nil
 			tcsMethods.CanUsersChatAsync = function(_self, _from, to)
 				return to ~= guest.UserId
 			end
 			local allowedOnCd, restrictedOnCd = Chat.limitReason(admin.UserId, "Partial kick reason", { guest })
-			expect(allowedOnCd).toBe("Partial kick reason")
-			expect(restrictedOnCd).toBeNil()
+			sert.eq(allowedOnCd, "Partial kick reason")
+			sert.eq(restrictedOnCd, nil)
 			tcsMethods.CanUsersChatAsync = origCanUsersChat
 
 			-- CanUserChatAsync returning false blocks limitReason and limitBroadcast
@@ -112,8 +113,8 @@ describe("Chat and Server", function()
 			tcsMethods.CanUserChatAsync = function()
 				return false
 			end
-			expect(Chat.limitBroadcast(guest.UserId)).toBe("User cannot chat")
-			expect(Chat.limitReason(guest.UserId, "Blocked by privacy")).toBeNil()
+			sert.eq(Chat.limitBroadcast(guest.UserId), "User cannot chat")
+			sert.eq(Chat.limitReason(guest.UserId, "Blocked by privacy"), nil)
 			tcsMethods.CanUserChatAsync = origCanChat
 		end)
 
@@ -163,8 +164,8 @@ describe("Chat and Server", function()
 
 			-- a sender who isn't in the server can't send
 			local badId, badErr = Chat.send({ from = 99999 }, "announce", "ghost")
-			expect(badId).toBeNil()
-			expect(string.find(tostring(badErr), "must be run by a player", 1, true) ~= nil).toBe(true)
+			sert.eq(badId, nil)
+			sert.eq(string.find(tostring(badErr), "must be run by a player", 1, true) ~= nil, true)
 
 			-- everyone gets the text TextService filtered for broadcast, and freeText command args get the filtered text with redactLog = false
 			local rawText = "Hello <b>now</b> badword"
@@ -176,13 +177,13 @@ describe("Chat and Server", function()
 			}
 			local cmdCtx = { from = sender.UserId, fromPlayer = sender, args = { argObj } }
 			local id, err, delivered = Chat.send(cmdCtx, "message", rawText, nil, 7)
-			expect(type(id)).toBe("string")
-			expect(err).toBeNil()
-			expect(reached(delivered)).toEqual({ 101, 102, 103 })
-			expect(reached()).toEqual({ 101, 102, 103 })
-			expect(argObj.parsedArgs).toEqual({ "Hello <b>now</b> #######" })
-			expect(argObj.redactLog).toBe(false)
-			expect(filtered).toEqual({
+			sert.eq(type(id), "string")
+			sert.eq(err, nil)
+			sert.eq(reached(delivered), { 101, 102, 103 })
+			sert.eq(reached(), { 101, 102, 103 })
+			sert.eq(argObj.parsedArgs, { "Hello <b>now</b> #######" })
+			sert.eq(argObj.redactLog, false)
+			sert.eq(filtered, {
 				{
 					text = rawText,
 					from = 101,
@@ -190,25 +191,25 @@ describe("Chat and Server", function()
 				},
 			})
 			for _, packet in packets do
-				expect(packet.kind).toBe("message")
-				expect(packet.text).toBe(Util.String.escapeRichText("Hello <b>now</b> #######"))
-				expect(packet.from).toBe(101)
-				expect(packet.data).toBe(7)
-				expect(packet.id).toBe(id)
+				sert.eq(packet.kind, "message")
+				sert.eq(packet.text, Util.String.escapeRichText("Hello <b>now</b> #######"))
+				sert.eq(packet.from, 101)
+				sert.eq(packet.data, 7)
+				sert.eq(packet.id, id)
 			end
 			-- nothing goes through TextChannels
 			for _, child in tcs:GetDescendants() do
-				expect(child:IsA("TextChannel")).toBe(false)
+				sert.eq(child:IsA("TextChannel"), false)
 			end
-			expect(Chat.isChannel).toBeNil()
-			expect(Chat.canReply).toBeNil()
+			sert.eq(Chat.isChannel, nil)
+			sert.eq(Chat.canReply, nil)
 
 			-- messaging players the sender can chat with is never limited, while restricted players are limited to 1/60s
 			table.clear(packets)
 			local limitedId, limitedErr = Chat.send(context, "hint", "Too soon", { target })
-			expect(limitedId).toBeNil()
-			expect(string.find(tostring(limitedErr), "Wait", 1, true) ~= nil).toBe(true)
-			expect(#packets).toBe(0)
+			sert.eq(limitedId, nil)
+			sert.eq(string.find(tostring(limitedErr), "Wait", 1, true) ~= nil, true)
+			sert.eq(#packets, 0)
 
 			-- broadcasting to both restricted and chat-allowed players while on cooldown skips restricted and delivers to allowed
 			local skipNotices = {}
@@ -216,26 +217,24 @@ describe("Chat and Server", function()
 				table.insert(skipNotices, { to = plr.UserId, text = payload.Text })
 			end
 			local partialId, partialErr, partialDelivered = Chat.send(context, "message", "Partial broadcast")
-			expect(type(partialId)).toBe("string")
-			expect(partialErr).toBeNil()
-			expect(reached(partialDelivered)).toEqual({ 101, 103 })
-			expect(reached()).toEqual({ 101, 103 })
-			expect(#skipNotices).toBe(1)
-			expect(string.find(skipNotices[1].text, "Players you can't chat with were skipped.", 1, true) ~= nil).toBe(
-				true
-			)
+			sert.eq(type(partialId), "string")
+			sert.eq(partialErr, nil)
+			sert.eq(reached(partialDelivered), { 101, 103 })
+			sert.eq(reached(), { 101, 103 })
+			sert.eq(#skipNotices, 1)
+			sert.eq(string.find(skipNotices[1].text, "Players you can't chat with were skipped.", 1, true) ~= nil, true)
 
 			-- messaging only yourself or a player you can chat with is never limited
 			table.clear(packets)
 			local _, _, friendOnly = Chat.send(context, "hint", "Friend", { friend })
-			expect(reached(friendOnly)).toEqual({ 103 })
+			sert.eq(reached(friendOnly), { 103 })
 			table.clear(packets)
 			local _, _, selfOnly = Chat.send(context, "hint", "Self", { sender })
-			expect(reached(selfOnly)).toEqual({ 101 })
+			sert.eq(reached(selfOnly), { 101 })
 			local voteId, voteErr, voters = Chat.send(context, "vote", "Own timer?", { target })
-			expect(type(voteId)).toBe("string")
-			expect(voteErr).toBeNil()
-			expect(reached(voters)).toEqual({ 102 })
+			sert.eq(type(voteId), "string")
+			sert.eq(voteErr, nil)
+			sert.eq(reached(voters), { 102 })
 			h.env:step(61)
 
 			-- a sender who can't chat sends nothing and keeps their cooldown
@@ -243,8 +242,8 @@ describe("Chat and Server", function()
 				return false
 			end
 			local blockedId, blockedErr = Chat.send(context, "message", "Blocked")
-			expect(blockedId).toBeNil()
-			expect(blockedErr).toBe("User cannot chat")
+			sert.eq(blockedId, nil)
+			sert.eq(blockedErr, "User cannot chat")
 			tcsMethods.CanUserChatAsync = function()
 				return true
 			end
@@ -255,8 +254,8 @@ describe("Chat and Server", function()
 				error("filter down")
 			end
 			local unfilteredId, unfilteredErr = Chat.send(context, "message", "Unfiltered")
-			expect(unfilteredId).toBeNil()
-			expect(string.find(tostring(unfilteredErr), "filtered", 1, true) ~= nil).toBe(true)
+			sert.eq(unfilteredId, nil)
+			sert.eq(string.find(tostring(unfilteredErr), "filtered", 1, true) ~= nil, true)
 			textMethods.FilterStringAsync = function()
 				return {
 					GetNonChatStringForBroadcastAsync = function()
@@ -264,8 +263,8 @@ describe("Chat and Server", function()
 					end,
 				}
 			end
-			expect((Chat.send(context, "message", "Unfiltered"))).toBeNil()
-			expect(#packets).toBe(0)
+			sert.eq((Chat.send(context, "message", "Unfiltered")), nil)
+			sert.eq(#packets, 0)
 			-- cooldown was not spent by filter failures, so once filtering recovers it sends immediately
 			textMethods.FilterStringAsync = function(_self, text)
 				return {
@@ -276,19 +275,19 @@ describe("Chat and Server", function()
 			end
 			local recoveredId, recoveredErr, recoveredDelivered =
 				Chat.send(context, "message", "Recovered after filter error", { target })
-			expect(type(recoveredId)).toBe("string")
-			expect(recoveredErr).toBeNil()
-			expect(reached(recoveredDelivered)).toEqual({ 102 })
+			sert.eq(type(recoveredId), "string")
+			sert.eq(recoveredErr, nil)
+			sert.eq(reached(recoveredDelivered), { 102 })
 			table.clear(packets)
 
 			-- global messages were already filtered in their origin server
 			local globalId, globalErr, globalDelivered =
 				Chat.send({ global = true, from = 999 }, "announce", "<b>see</b> global", nil, 10)
-			expect(type(globalId)).toBe("string")
-			expect(globalErr).toBeNil()
-			expect(reached(globalDelivered)).toEqual({ 101, 102, 103 })
-			expect(packets[1].text).toBe(Util.String.escapeRichText("<b>see</b> global"))
-			expect(packets[1].from).toBe(999)
+			sert.eq(type(globalId), "string")
+			sert.eq(globalErr, nil)
+			sert.eq(reached(globalDelivered), { 101, 102, 103 })
+			sert.eq(packets[1].text, Util.String.escapeRichText("<b>see</b> global"))
+			sert.eq(packets[1].from, 999)
 		end)
 
 		test("Chat.send skips CanUserChatAsync for a developer testing in Studio", function()
@@ -309,22 +308,22 @@ describe("Chat and Server", function()
 			end
 			Chat.send({ from = 101, fromPlayer = sender }, "message", "Studio test")
 			table.sort(reached)
-			expect(reached).toEqual({ 101, 102 })
+			sert.eq(reached, { 101, 102 })
 			-- other senders are still checked
 			table.clear(reached)
 			local _, err = Chat.send({ from = 102, fromPlayer = other }, "message", "Not a developer")
-			expect(err).toBe("User cannot chat")
-			expect(#reached).toBe(0)
+			sert.eq(err, "User cannot chat")
+			sert.eq(#reached, 0)
 		end)
 
 		test("Chat.commandPrefixes keeps single non-alphanumeric characters once", function()
 			local Chat = Harness.newEnv():requireShared("Chat")
-			expect(Chat.commandPrefixes({ ";", ":", ";", "a", "1", " ", "!!", 5 :: any, "/" })).toEqual({
+			sert.eq(Chat.commandPrefixes({ ";", ":", ";", "a", "1", " ", "!!", 5 :: any, "/" }), {
 				";",
 				":",
 				"/",
 			})
-			expect(Chat.commandPrefixes(nil)).toEqual({})
+			sert.eq(Chat.commandPrefixes(nil), {})
 		end)
 
 		test("Client Chat dispatches Remote.ChatSystem messages and leaves TextChannels alone", function()
@@ -356,8 +355,8 @@ describe("Chat and Server", function()
 			-- Duplicate id is ignored
 			sRemote.ChatSystem:Fire(srvPlr, "announce", "&lt;b&gt;Duplicate&lt;/b&gt;", 999, 10, "pre-wait-id")
 			world:run(0.2)
-			expect(preWaitedText).toBe("<b>PreWaited</b>")
-			expect(#receivedMsgs).toBe(1)
+			sert.eq(preWaitedText, "<b>PreWaited</b>")
+			sert.eq(#receivedMsgs, 1)
 
 			-- 2. Global/System dispatch via Remote.ChatSystem caches in received[id] for subsequent waitForMessage
 			local waitedText = nil
@@ -377,11 +376,11 @@ describe("Chat and Server", function()
 			end)
 			world:run(1)
 
-			expect(waitedText).toBe('<b>Hello</b> <font color="#00ff00">Client</font>')
-			expect(#receivedMsgs).toBe(2)
-			expect(receivedMsgs[2].text).toBe('<b>Hello</b> <font color="#00ff00">Client</font>')
-			expect(receivedMsgs[2].from).toBe(999)
-			expect(receivedMsgs[2].data).toBe(15)
+			sert.eq(waitedText, '<b>Hello</b> <font color="#00ff00">Client</font>')
+			sert.eq(#receivedMsgs, 2)
+			sert.eq(receivedMsgs[2].text, '<b>Hello</b> <font color="#00ff00">Client</font>')
+			sert.eq(receivedMsgs[2].from, 999)
+			sert.eq(receivedMsgs[2].data, 15)
 
 			-- 3. waitForMessage timeout returns nil when id never arrives
 			local timedOutVal = "unset"
@@ -389,7 +388,7 @@ describe("Chat and Server", function()
 				timedOutVal = cChat.waitForMessage("nonexistent-id", 0.2)
 			end)
 			world:run(0.5)
-			expect(timedOutVal).toBeNil()
+			sert.eq(timedOutVal, nil)
 
 			-- 4. TextChannels are never touched: OnIncomingMessage can't be set and message text is empty with
 			-- platform-integrated chat
@@ -399,7 +398,7 @@ describe("Chat and Server", function()
 			kaChannel:SetAttribute("KohlsAdmin", true)
 			kaChannel.Parent = cTcs
 			world:run(0.1)
-			expect(kaChannel.OnIncomingMessage).toBeNil()
+			sert.eq(kaChannel.OnIncomingMessage, nil)
 			local HttpService = ch.env.game:GetService("HttpService")
 			kaChannel.MessageReceived:Fire({
 				MessageId = "m-1",
@@ -409,8 +408,8 @@ describe("Chat and Server", function()
 				TextSource = { UserId = 101 },
 			})
 			world:run(0.2)
-			expect(#receivedMsgs).toBe(2)
-			expect(cChat.onMessage ~= nil and cChat.send == nil).toBe(true)
+			sert.eq(#receivedMsgs, 2)
+			sert.eq(cChat.onMessage ~= nil and cChat.send == nil, true)
 
 			-- Advance past 30s to trigger received[id] cleanup timers
 			world:run(31)
@@ -468,7 +467,7 @@ describe("Chat and Server", function()
 				server:spawn(function()
 					_K = sh:requireK()
 					-- Requiring _K a second time returns shared._K_INTERFACE (src/init.luau line 4)
-					expect(sh:requireK()).toBe(_K)
+					sert.eq(sh:requireK(), _K)
 					_K.initialize({
 						bans = {
 							["303"] = { nil, "preban reason", 0, 101 },
@@ -526,63 +525,63 @@ describe("Chat and Server", function()
 						},
 					})
 					-- Duplicate _K.initialize call returns _K immediately (line 111)
-					expect(_K.initialize()).toBe(_K)
+					sert.eq(_K.initialize(), _K)
 				end)
 				world:run(2)
-				expect(_K.ready).toBe(true)
-				expect(sh.KA:GetAttribute("ServerStartTime") ~= nil).toBe(true)
-				expect(_K.Server:FindFirstChild("Shared").Value).toBe(sh.KA.Shared)
-				expect(sh.KA.Name).toBe("Kohl's Admin Source")
-				expect(sh.KA.Parent).toBe(sh.env.game:GetService("ReplicatedStorage"))
-				expect(sh.KA:FindFirstChild("Client").Enabled).toBe(true)
-				expect(sh.KA:FindFirstChild("Addons") ~= nil).toBe(true)
-				expect(sh.env.game:GetService("ServerStorage"):FindFirstChild("_KServerAddons") ~= nil).toBe(true)
-				expect(_K.Data.bans["303"][1] ~= nil).toBe(true)
-				expect(type(_K.LoadScript)).toBe("function")
-				expect(type(_K.Data.settingsModuleData)).toBe("table")
-				expect(_K.Data.settingsModuleData.roles.default).toBeNil()
-				expect(_K.Data.settingsModuleData.roles[1]).toBeNil()
-				expect(_K.Data.roles.everyone.name).toBe("EveryoneCustom")
-				expect(_K.Data.roles.vip._rank).toBe(0)
-				expect(_K.Data.roles.everyone.permissions.targetOthers).toBe(false)
-				expect(_K.Data.roles.customStr._key).toBe("customStr")
-				expect(_K.Data.roles.customStr.name).toBe("CustomRole")
-				expect(_K.Data.roles.customStr.permissions.targetOthers).toBe(true)
-				expect(_K.Data.roles.customDef._rank).toBe(0)
-				expect(_K.Data.roles.customDef.permissions.targetOthers).toBe(false)
-				expect(table.find(_K.Data.rolesList, _K.Data.roles.customStr) ~= nil).toBe(true)
-				expect(_K.Data.rolesList[1]._rank <= _K.Data.rolesList[#_K.Data.rolesList]._rank).toBe(true)
-				expect(_K.Data.defaultSettings.vip).toBe(true)
-				expect(_K.Data.defaultSettings.splitKey).toBe(" ")
-				expect(_K.Data.defaultSettings.welcomeBadgeId).toBe(1234)
-				expect(_K.Data.settings).toBe(_K.Data.savedSettings)
-				expect(_K.Data.roles.mod.commands.ban).toBe(true)
-				expect(_K.Data.roles.mod.commands.kick).toBe(true)
-				expect(badgesAwarded > 0).toBe(true)
-				expect(_K.Data.async.asset[777]).toEqual({ "vip" })
-				expect(_K.Data.async.gamepass[888]).toEqual({ "vip" })
-				expect(_K.Data.async.subscription["sub_vip"]).toEqual({ "vip" })
-				expect(table.find(_K.Data.roles.vip.assets, 777) ~= nil).toBe(true)
-				expect(table.find(_K.Data.roles.vip.gamepasses, 888) ~= nil).toBe(true)
-				expect(table.find(_K.Data.roles.vip.subscriptions, "sub_vip") ~= nil).toBe(true)
-				expect(_K.Data.roles.vip.gamepasss ~= nil).toBe(true)
-				expect(_K.Data.async.group[100]).toEqual({ { rank = 10, roles = { "mod" } } })
-				expect(_K.Data.async.group[200]).toEqual({ { rank = 5, roles = { "vip" } } })
-				expect(_K.Data.async.group[300]).toEqual({ { rank = 15, roles = { "mod" } } })
-				expect(_K.Data.friendRoles).toEqual({ "vip" })
-				expect(_K.Data.savedSettings.theme).toBe("MigratedTheme")
+				sert.eq(_K.ready, true)
+				sert.eq(sh.KA:GetAttribute("ServerStartTime") ~= nil, true)
+				sert.eq(_K.Server:FindFirstChild("Shared").Value, sh.KA.Shared)
+				sert.eq(sh.KA.Name, "Kohl's Admin Source")
+				sert.eq(sh.KA.Parent, sh.env.game:GetService("ReplicatedStorage"))
+				sert.eq(sh.KA:FindFirstChild("Client").Enabled, true)
+				sert.eq(sh.KA:FindFirstChild("Addons") ~= nil, true)
+				sert.eq(sh.env.game:GetService("ServerStorage"):FindFirstChild("_KServerAddons") ~= nil, true)
+				sert.eq(_K.Data.bans["303"][1] ~= nil, true)
+				sert.eq(type(_K.LoadScript), "function")
+				sert.eq(type(_K.Data.settingsModuleData), "table")
+				sert.eq(_K.Data.settingsModuleData.roles.default, nil)
+				sert.eq(_K.Data.settingsModuleData.roles[1], nil)
+				sert.eq(_K.Data.roles.everyone.name, "EveryoneCustom")
+				sert.eq(_K.Data.roles.vip._rank, 0)
+				sert.eq(_K.Data.roles.everyone.permissions.targetOthers, false)
+				sert.eq(_K.Data.roles.customStr._key, "customStr")
+				sert.eq(_K.Data.roles.customStr.name, "CustomRole")
+				sert.eq(_K.Data.roles.customStr.permissions.targetOthers, true)
+				sert.eq(_K.Data.roles.customDef._rank, 0)
+				sert.eq(_K.Data.roles.customDef.permissions.targetOthers, false)
+				sert.eq(table.find(_K.Data.rolesList, _K.Data.roles.customStr) ~= nil, true)
+				sert.eq(_K.Data.rolesList[1]._rank <= _K.Data.rolesList[#_K.Data.rolesList]._rank, true)
+				sert.eq(_K.Data.defaultSettings.vip, true)
+				sert.eq(_K.Data.defaultSettings.splitKey, " ")
+				sert.eq(_K.Data.defaultSettings.welcomeBadgeId, 1234)
+				sert.eq(_K.Data.settings, _K.Data.savedSettings)
+				sert.eq(_K.Data.roles.mod.commands.ban, true)
+				sert.eq(_K.Data.roles.mod.commands.kick, true)
+				sert.eq(badgesAwarded > 0, true)
+				sert.eq(_K.Data.async.asset[777], { "vip" })
+				sert.eq(_K.Data.async.gamepass[888], { "vip" })
+				sert.eq(_K.Data.async.subscription["sub_vip"], { "vip" })
+				sert.eq(table.find(_K.Data.roles.vip.assets, 777) ~= nil, true)
+				sert.eq(table.find(_K.Data.roles.vip.gamepasses, 888) ~= nil, true)
+				sert.eq(table.find(_K.Data.roles.vip.subscriptions, "sub_vip") ~= nil, true)
+				sert.eq(_K.Data.roles.vip.gamepasss ~= nil, true)
+				sert.eq(_K.Data.async.group[100], { { rank = 10, roles = { "mod" } } })
+				sert.eq(_K.Data.async.group[200], { { rank = 5, roles = { "vip" } } })
+				sert.eq(_K.Data.async.group[300], { { rank = 15, roles = { "mod" } } })
+				sert.eq(_K.Data.friendRoles, { "vip" })
+				sert.eq(_K.Data.savedSettings.theme, "MigratedTheme")
 
 				-- _K.log edge cases: logsHidden, >16KB truncation, liveText, and removeExcessLogs (src/init.luau lines 106-162)
 				_K.Data.logsHidden[9999] = true
-				expect(_K.log("hidden", "INFO", 9999)).toBeNil()
+				sert.eq(_K.log("hidden", "INFO", 9999), nil)
 				_K.Data.logsHidden[9999] = nil
 
 				local bigLog = _K.log(string.rep("X", 17000), "COMMAND", 101, true, "live replacement")
-				expect(bigLog ~= nil).toBe(true)
+				sert.eq(bigLog ~= nil, true)
 				local origLimit = _K.Logger.limit
 				_K.Logger.limit = 5
 				world:run(0.2)
-				expect(#_K.Data.logs <= 5).toBe(true)
+				sert.eq(#_K.Data.logs <= 5, true)
 				_K.Logger.limit = origLimit
 
 				-- _K.alert with number userId and Player instance, info and error modes (src/init.luau lines 172-188)
@@ -638,24 +637,24 @@ describe("Chat and Server", function()
 				local srvAdmin = sh.env.Players:GetPlayerByUserId(101)
 				local srvGuest = sh.env.Players:GetPlayerByUserId(202)
 				local srvMod = sh.env.Players:GetPlayerByUserId(301)
-				expect(srvAdmin:GetAttribute("_K_READY")).toBe(true)
-				expect(srvAdmin:GetAttribute("_KPlatform")).toBe("PC")
-				expect(srvAdmin:GetAttribute("_KSessionStart")).toBe(1700000000)
-				expect(srvGuest:GetAttribute("_K_READY")).toBe(true)
-				expect(srvGuest:GetAttribute("_KPlatform")).toBe("Mobile")
-				expect(srvMod:GetAttribute("_K_READY")).toBe(true)
-				expect(srvMod:GetAttribute("_KPlatform")).toBeNil()
-				expect(srvMod:GetAttribute("_KSessionStart")).toBeNil()
+				sert.eq(srvAdmin:GetAttribute("_K_READY"), true)
+				sert.eq(srvAdmin:GetAttribute("_KPlatform"), "PC")
+				sert.eq(srvAdmin:GetAttribute("_KSessionStart"), 1700000000)
+				sert.eq(srvGuest:GetAttribute("_K_READY"), true)
+				sert.eq(srvGuest:GetAttribute("_KPlatform"), "Mobile")
+				sert.eq(srvMod:GetAttribute("_K_READY"), true)
+				sert.eq(srvMod:GetAttribute("_KPlatform"), nil)
+				sert.eq(srvMod:GetAttribute("_KSessionStart"), nil)
 
-				expect(adminInitPayload ~= nil).toBe(true)
-				expect(adminInitPayload.bans ~= nil).toBe(true)
-				expect(adminInitPayload.logs ~= nil).toBe(true)
-				expect(adminInitPayload.reserved ~= nil).toBe(true)
-				expect(adminInitPayload.servers ~= nil).toBe(true)
+				sert.eq(adminInitPayload ~= nil, true)
+				sert.eq(adminInitPayload.bans ~= nil, true)
+				sert.eq(adminInitPayload.logs ~= nil, true)
+				sert.eq(adminInitPayload.reserved ~= nil, true)
+				sert.eq(adminInitPayload.servers ~= nil, true)
 
-				expect(guestInitPayload ~= nil).toBe(true)
-				expect(guestInitPayload.bans).toBeNil()
-				expect(guestInitPayload.logs).toBeNil()
+				sert.eq(guestInitPayload ~= nil, true)
+				sert.eq(guestInitPayload.bans, nil)
+				sert.eq(guestInitPayload.logs, nil)
 
 				-- 1b. every command is a TextChatCommand: ";" with the name or an alias, then "/" where it is free
 				local adminChar = sh.env.Instance.new("Model", sh.env.workspace)
@@ -668,15 +667,15 @@ describe("Chat and Server", function()
 
 				local tcs = sh.env.game:GetService("TextChatService")
 				local cmdFolder = tcs:FindFirstChild("TextChatCommands_KA")
-				expect(cmdFolder ~= nil).toBe(true)
+				sert.eq(cmdFolder ~= nil, true)
 				local headless = cmdFolder:FindFirstChild("headless")
-				expect(headless.PrimaryAlias).toBe("/headless")
-				expect(headless.SecondaryAlias).toBe(";headless")
-				expect(headless.Enabled).toBe(true)
-				expect(headless.AutocompleteVisible).toBe(false)
+				sert.eq(headless.PrimaryAlias, "/headless")
+				sert.eq(headless.SecondaryAlias, ";headless")
+				sert.eq(headless.Enabled, true)
+				sert.eq(headless.AutocompleteVisible, false)
 				local ping = cmdFolder:FindFirstChild("ping")
-				expect(ping.PrimaryAlias).toBe("/ping")
-				expect(ping.SecondaryAlias).toBe(";ping")
+				sert.eq(ping.PrimaryAlias, "/ping")
+				sert.eq(ping.SecondaryAlias, ";ping")
 				local bubbles = {}
 				local bubbleConn = aRemote.DisplayBubble:Connect(function(_character, text)
 					table.insert(bubbles, text)
@@ -693,8 +692,8 @@ describe("Chat and Server", function()
 				world:run(1)
 				bubbleConn:Disconnect()
 				guestBubbleConn:Disconnect()
-				expect(bubbles).toEqual({ ";headless" })
-				expect(guestBubbleFired).toBe(true)
+				sert.eq(bubbles, { ";headless" })
+				sert.eq(guestBubbleFired, true)
 
 				-- later Inits are held to the same values
 				for _, attributes in
@@ -703,12 +702,12 @@ describe("Chat and Server", function()
 					mRemote.Init:Fire({ Attributes = attributes })
 				end
 				world:run(1)
-				expect(srvMod:GetAttribute("_KPlatform")).toBeNil()
-				expect(srvMod:GetAttribute("_KSessionStart")).toBeNil()
+				sert.eq(srvMod:GetAttribute("_KPlatform"), nil)
+				sert.eq(srvMod:GetAttribute("_KSessionStart"), nil)
 				mRemote.Init:Fire({ Attributes = { Platform = "VR", SessionStart = -1700000010 } })
 				world:run(1)
-				expect(srvMod:GetAttribute("_KPlatform")).toBe("VR")
-				expect(srvMod:GetAttribute("_KSessionStart")).toBe(-1700000010)
+				sert.eq(srvMod:GetAttribute("_KPlatform"), "VR")
+				sert.eq(srvMod:GetAttribute("_KSessionStart"), -1700000010)
 
 				-- 1c. PromptGamePassPurchaseFinished (false and true granting role, lines 438-462)
 				local MarketplaceService = sh.env.game:GetService("MarketplaceService")
@@ -732,13 +731,13 @@ describe("Chat and Server", function()
 				_K.Data.async.gamepass[889] = { "mod" }
 				MarketplaceService.PromptGamePassPurchaseFinished:Fire(srvGuest, 889, true)
 				world:run(10)
-				expect(_K.Auth.hasRole(202, "mod")).toBe(false)
-				expect(passChecks).toBe(3) -- it gives up after three checks
+				sert.eq(_K.Auth.hasRole(202, "mod"), false)
+				sert.eq(passChecks, 3) -- it gives up after three checks
 				passChecks, ownedFromCheck = 0, 2
 				MarketplaceService.PromptGamePassPurchaseFinished:Fire(srvGuest, 889, true)
 				world:run(10)
-				expect(_K.Auth.hasRole(202, "mod")).toBe(true)
-				expect(passChecks).toBe(2)
+				sert.eq(_K.Auth.hasRole(202, "mod"), true)
+				sert.eq(passChecks, 2)
 				marketMethods.UserOwnsGamePassAsync = origOwnsPass
 				_K.Auth.userRoleRemove(202, "mod")
 				_K.Data.async.gamepass[889] = nil
@@ -809,17 +808,17 @@ describe("Chat and Server", function()
 						sawKill = true
 					end
 				end
-				expect(sawDamage).toBe(true)
-				expect(damage40Count).toBe(1)
-				expect(damage60Count).toBe(1)
-				expect(sawDeath).toBe(true)
-				expect(sawKill).toBe(true)
+				sert.eq(sawDamage, true)
+				sert.eq(damage40Count, 1)
+				sert.eq(damage60Count, 1)
+				sert.eq(sawDeath, true)
+				sert.eq(sawKill, true)
 
 				-- CharacterRemoving cleans up connections synchronously before deferred Destroy
 				srvGuest.CharacterRemoving:Fire(char)
 				hum.Died:Fire()
 				world:run(0.1)
-				expect(char.Parent).toBeNil()
+				sert.eq(char.Parent, nil)
 
 				local char2 = sh.env.Instance.new("Model", sh.env.workspace)
 				local hum2 = sh.env.Instance.new("Humanoid", char2)
@@ -842,8 +841,8 @@ describe("Chat and Server", function()
 						damage90Count += 1
 					end
 				end
-				expect(deathCountAfterRemove).toBe(deathCountBeforeRemove)
-				expect(damage90Count).toBe(0)
+				sert.eq(deathCountAfterRemove, deathCountBeforeRemove)
+				sert.eq(damage90Count, 0)
 
 				-- 3. Remote.Settings listener: valid prefix, splitKey, freeAdmin, theme, datatypes, EnumItem/Font, useSavedSettings, and non-developer limits
 				-- Temporarily add a fake EnumItem and Font setting to test serialization branches (lines 656, 770, 774)
@@ -865,27 +864,27 @@ describe("Chat and Server", function()
 				})
 				world:run(1)
 
-				expect(_K.Data.savedSettings.prefix).toEqual({ "!" })
-				expect(_K.Data.savedSettings.splitKey).toBe("/")
-				expect(_K.Data.savedSettings.freeAdmin).toEqual({ "vip" })
-				expect(_K.Data.savedSettings.theme).toBe("Cyan")
-				expect(_K.Data.savedSettings.themeBackgroundImage).toBe("rbxassetid://123456")
-				expect(_K.Data.savedSettings.changeThemeAuthority).toBe("Server")
-				expect(_K.Data.savedSettings.dashboardRank).toBe(2)
-				expect(_K.Data.savedSettings.nonExistentKey).toBeNil()
-				expect(sh.env.globals.typeof(_K.Data.savedSettings.themePrimary)).toBe("Color3")
-				expect(sh.env.globals.typeof(_K.Data.savedSettings.themeCornerRadius)).toBe("UDim")
-				expect(_K.Data.savedSettings.themeCornerRadius.Offset).toBe(10)
+				sert.eq(_K.Data.savedSettings.prefix, { "!" })
+				sert.eq(_K.Data.savedSettings.splitKey, "/")
+				sert.eq(_K.Data.savedSettings.freeAdmin, { "vip" })
+				sert.eq(_K.Data.savedSettings.theme, "Cyan")
+				sert.eq(_K.Data.savedSettings.themeBackgroundImage, "rbxassetid://123456")
+				sert.eq(_K.Data.savedSettings.changeThemeAuthority, "Server")
+				sert.eq(_K.Data.savedSettings.dashboardRank, 2)
+				sert.eq(_K.Data.savedSettings.nonExistentKey, nil)
+				sert.eq(sh.env.globals.typeof(_K.Data.savedSettings.themePrimary), "Color3")
+				sert.eq(sh.env.globals.typeof(_K.Data.savedSettings.themeCornerRadius), "UDim")
+				sert.eq(_K.Data.savedSettings.themeCornerRadius.Offset, 10)
 				_K.Data.settings.testEnumSetting = nil
 				_K.Data.settings.testFontSetting = nil
 
 				-- useSavedSettings = false branch (line 788) and restore to true
 				aRemote.Settings:Fire({ useSavedSettings = false })
 				world:run(0.5)
-				expect(_K.Data.savedSettings.useSavedSettings).toBe(false)
+				sert.eq(_K.Data.savedSettings.useSavedSettings, false)
 				aRemote.Settings:Fire({ useSavedSettings = true })
 				world:run(0.5)
-				expect(_K.Data.savedSettings.useSavedSettings).toBe(true)
+				sert.eq(_K.Data.savedSettings.useSavedSettings, true)
 
 				-- Restricted mod attempting freeAdmin >= own rank is blocked (line 707), non-developer (unrestricted mod) attempting freeAdmin is blocked (line 698)
 				_K.Data.roles.mod.permissions.settings = true
@@ -893,25 +892,27 @@ describe("Chat and Server", function()
 					freeAdmin = { "creator" },
 				})
 				world:run(0.2)
-				expect(_K.Data.savedSettings.freeAdmin).toEqual({ "vip" })
+				sert.eq(_K.Data.savedSettings.freeAdmin, { "vip" })
 
 				_K.Data.members["301"].unrestricted = { mod = true }
 				mRemote.Settings:Fire({
 					freeAdmin = { "mod" },
 					prefix = { "?", "extra" },
 				})
+				world:run(0.05)
 				mRemote.Settings:Fire({
 					prefix = { "?" },
 					splitKey = ",",
 				})
+				world:run(0.05)
 				-- Immediate second prefix change by non-developer hits cooldown (line 860)
 				mRemote.Settings:Fire({
 					prefix = { ":" },
 				})
 				world:run(0.5)
-				expect(_K.Data.savedSettings.freeAdmin).toEqual({ "vip" })
-				expect(_K.Data.savedSettings.prefix).toEqual({ "?" })
-				expect(_K.Data.savedSettings.splitKey).toBe(",")
+				sert.eq(_K.Data.savedSettings.freeAdmin, { "vip" })
+				sert.eq(_K.Data.savedSettings.prefix, { "?" })
+				sert.eq(_K.Data.savedSettings.splitKey, ",")
 				_K.Data.roles.mod.permissions.settings = nil
 				_K.Data.members["301"].unrestricted = nil
 
@@ -938,15 +939,15 @@ describe("Chat and Server", function()
 					prefix = {},
 				})
 				world:run(1)
-				expect(_K.Data.savedSettings.prefix).toEqual({ "?" })
-				expect(_K.Data.savedSettings.freeAdmin).toEqual({ "vip" })
-				expect(_K.Data.savedSettings.themeBackgroundImage).toBe("rbxassetid://123456")
-				expect(_K.Data.savedSettings.saveChatLogs).toBe(false)
-				expect(_K.Data.savedSettings.changeThemeAuthority).toBe("Server")
-				expect(_K.Data.savedSettings.theme).toBe("Cyan")
-				expect(_K.Data.savedSettings.dashboardRank).toBe(2)
-				expect(_K.Data.savedSettings.testStrSetting).toBe("origStr")
-				expect(_K.Data.savedSettings.testTblSetting).toEqual({ 1 })
+				sert.eq(_K.Data.savedSettings.prefix, { "?" })
+				sert.eq(_K.Data.savedSettings.freeAdmin, { "vip" })
+				sert.eq(_K.Data.savedSettings.themeBackgroundImage, "rbxassetid://123456")
+				sert.eq(_K.Data.savedSettings.saveChatLogs, false)
+				sert.eq(_K.Data.savedSettings.changeThemeAuthority, "Server")
+				sert.eq(_K.Data.savedSettings.theme, "Cyan")
+				sert.eq(_K.Data.savedSettings.dashboardRank, 2)
+				sert.eq(_K.Data.savedSettings.testStrSetting, "origStr")
+				sert.eq(_K.Data.savedSettings.testTblSetting, { 1 })
 				_K.Data.defaultSettings.testStrSetting = nil
 				_K.Data.savedSettings.testStrSetting = nil
 				_K.Data.defaultSettings.testTblSetting = nil
@@ -957,7 +958,7 @@ describe("Chat and Server", function()
 				_K.Remote.Settings._signal:Fire(srvAdmin, {
 					prefix = { ";", "?" },
 				})
-				expect(_K.Data.savedSettings.prefix).toEqual({ ";", "?" })
+				sert.eq(_K.Data.savedSettings.prefix, { ";", "?" })
 
 				-- Reset prefix/splitKey/freeAdmin back to standard, and test announcement/announcements/notifications via Remote.Settings
 				world:run(61)
@@ -979,9 +980,9 @@ describe("Chat and Server", function()
 					announcements = { { Text = "Allowed after cooldown", Duration = 5 } },
 				})
 				world:run(1)
-				expect(_K.Data.savedSettings.announcement).toBe(false)
-				expect(#_K.Data.savedSettings.announcements).toBe(1)
-				expect(_K.Data.savedSettings.announcements[1].Text).toBe("Allowed after cooldown")
+				sert.eq(_K.Data.savedSettings.announcement, false)
+				sert.eq(#_K.Data.savedSettings.announcements, 1)
+				sert.eq(_K.Data.savedSettings.announcements[1].Text, "Allowed after cooldown")
 
 				-- 4. Remote.Explorer (unauthorized guard, PASTE, DELETE Part, and DELETE Player with targetLimits)
 				_K.Remote.Explorer._signal:Fire(srvGuest, "DELETE", {}) -- unauthorized guest ignored (line 910)
@@ -994,17 +995,17 @@ describe("Chat and Server", function()
 
 				-- Trigger server handler directly with server Instances (simulating Explorer remote with Instance refs)
 				_K.Remote.Explorer._signal:Fire(srvAdmin, "PASTE", { template }, folder)
-				expect(folder:FindFirstChild("PasteMe") ~= nil).toBe(true)
-				expect(template.Archivable).toBe(false)
+				sert.eq(folder:FindFirstChild("PasteMe") ~= nil, true)
+				sert.eq(template.Archivable, false)
 
 				local pasted = folder:FindFirstChild("PasteMe")
 				_K.Remote.Explorer._signal:Fire(srvAdmin, "DELETE", { pasted })
-				expect(folder:FindFirstChild("PasteMe")).toBeNil()
+				sert.eq(folder:FindFirstChild("PasteMe"), nil)
 
 				-- Deleting a Player instance via Explorer checks targetUserArgument and targetLimits (lines 940-945)
 				local tempVictim = sh.env:addPlayer(808, "ExplorerVictim")
 				_K.Remote.Explorer._signal:Fire(srvAdmin, "DELETE", { tempVictim })
-				expect(tempVictim.Parent).toBeNil()
+				sert.eq(tempVictim.Parent, nil)
 				server:leave(tempVictim)
 
 				-- Deleting a container holding a higher-rank player's character or TextChatCommands_KA is blocked, while unowned parts succeed
@@ -1017,18 +1018,18 @@ describe("Chat and Server", function()
 					"DELETE",
 					{ charContainer, adminChar, adminHead, sh.KA, sh.env.Players, modPart }
 				)
-				expect(modPart.Parent).toBeNil()
-				expect(charContainer.Parent).toBe(sh.env.workspace)
-				expect(adminChar.Parent).toBe(charContainer)
-				expect(adminHead.Parent).toBe(adminChar)
-				expect(sh.KA.Parent).toBe(sh.env.game:GetService("ReplicatedStorage"))
-				expect(sh.env.Players.Parent).toBe(sh.env.game)
+				sert.eq(modPart.Parent, nil)
+				sert.eq(charContainer.Parent, sh.env.workspace)
+				sert.eq(adminChar.Parent, charContainer)
+				sert.eq(adminHead.Parent, adminChar)
+				sert.eq(sh.KA.Parent, sh.env.game:GetService("ReplicatedStorage"))
+				sert.eq(sh.env.Players.Parent, sh.env.game)
 				adminChar.Parent = sh.env.workspace
 				charContainer:Destroy()
 				_K.Data.roles.mod.commands = { ban = true }
 				if _K.ChatCommands and _K.ChatCommands.folder then
 					_K.Remote.Explorer._signal:Fire(srvAdmin, "DELETE", { _K.ChatCommands.folder })
-					expect(_K.ChatCommands.folder.Parent ~= nil).toBe(true)
+					sert.eq(_K.ChatCommands.folder.Parent ~= nil, true)
 				end
 
 				-- 5. Remote.Ban, Remote.Unban, Remote.Command, Remote.Idled, Hook.roleAdded/roleRemoved, and VIP remotes
@@ -1042,10 +1043,10 @@ describe("Chat and Server", function()
 				aRemote.Ban:Fire(406, "perm ban", -1)
 				-- saveBan waits on Util.getUserInfo's batched lookup, which can still be busy with earlier lookups
 				world:run(2)
-				expect(srvAdmin:GetAttribute("_KIdleTime")).toBe(42)
-				expect(_K.Data.bans["404"] ~= nil).toBe(true)
-				expect(_K.Data.bans["405"]).toBeNil()
-				expect(_K.Data.bans["406"][3]).toBe(-1)
+				sert.eq(srvAdmin:GetAttribute("_KIdleTime"), 42)
+				sert.eq(_K.Data.bans["404"] ~= nil, true)
+				sert.eq(_K.Data.bans["405"], nil)
+				sert.eq(_K.Data.bans["406"][3], -1)
 
 				-- Mod without banasync forces duration = 0 on Remote.Ban (line 825) and is blocked from unbanning persistent ban (line 875)
 				_K.Data.roles.mod.permissions.ban = true
@@ -1055,14 +1056,15 @@ describe("Chat and Server", function()
 					table.insert(modNotices, data.Text)
 				end)
 				mRemote.Ban:Fire(407, "mod server ban", 300)
+				world:run(0.05)
 				mRemote.Unban:Fire(406) -- persistent ban (-1) blocked for mod without banasync
 				mRemote.Ban:Fire(406, "mod server ban", 0) -- and re-banning can't demote it to a server ban
 				mRemote.Unban:Fire(999999) -- non-existent ban ignored (line 863)
 				world:run(1)
-				expect(_K.Data.bans["407"] ~= nil).toBe(true)
-				expect(_K.Data.bans["407"][3]).toBeNil()
-				expect(_K.Data.bans["406"] ~= nil).toBe(true)
-				expect(_K.Data.bans["406"][3]).toBe(-1)
+				sert.eq(_K.Data.bans["407"] ~= nil, true)
+				sert.eq(_K.Data.bans["407"][3], nil)
+				sert.eq(_K.Data.bans["406"] ~= nil, true)
+				sert.eq(_K.Data.bans["406"][3], -1)
 				-- the kept saved ban isn't logged as a ban, and the mod is told it was kept
 				local banLogs = {}
 				for _, log in _K.Data.logs do
@@ -1070,68 +1072,76 @@ describe("Chat and Server", function()
 						table.insert(banLogs, log[1])
 					end
 				end
-				expect(table.find(banLogs, ";ban 407 0 mod server ban") ~= nil).toBe(true)
-				expect(table.find(banLogs, ";ban 406 0 mod server ban")).toBeNil()
-				expect(table.find(modNotices, "Kept saved ban for <b>406</b>.") ~= nil).toBe(true)
-				expect(table.find(modNotices, "Kept saved ban for <b>407</b>.")).toBeNil()
+				sert.eq(table.find(banLogs, ";ban 407 0 mod server ban") ~= nil, true)
+				sert.eq(table.find(banLogs, ";ban 406 0 mod server ban"), nil)
+				sert.eq(table.find(modNotices, "Kept saved ban for <b>406</b>.") ~= nil, true)
+				sert.eq(table.find(modNotices, "Kept saved ban for <b>407</b>."), nil)
 
 				-- The admin permission from a role a non-developer gave still can't lift a saved ban
 				_K.Data.roles.mod.permissions.admin = true
 				_K.Data.members["301"].unrestricted = { mod = true }
 				mRemote.Unban:Fire(406)
 				world:run(1)
-				expect(_K.Data.bans["406"][3]).toBe(-1)
+				sert.eq(_K.Data.bans["406"][3], -1)
 				-- refused before it's logged as an unban
 				for _, log in _K.Data.logs do
-					expect(log[1] == ";unban 406").toBe(false)
+					sert.eq(log[1] == ";unban 406", false)
 				end
 				_K.Data.roles.mod.permissions.admin = nil
 				_K.Data.members["301"].unrestricted = nil
 
 				-- Banning an online player kicks them (line 840)
+				local function wasPlayerKicked(srv: any, plr: any): boolean
+					for _, entry in srv.kicks do
+						if entry.player == plr or entry.userId == plr.UserId then
+							return true
+						end
+					end
+					return false
+				end
 				server:client(408)
 				local onlineBanTarget = sh.env.Players:GetPlayerByUserId(408)
 				world:run(0.2)
 				aRemote.Ban:Fire(408, "kicked on ban", 0)
 				aRemote.Unban:Fire(404)
 				world:run(1)
-				expect(server.kicked[onlineBanTarget] ~= nil).toBe(true)
-				expect(_K.Data.bans["404"]).toBeNil()
+				sert.eq(wasPlayerKicked(server, onlineBanTarget), true)
+				sert.eq(_K.Data.bans["404"], nil)
 
 				-- Hook.roleAdded and Hook.roleRemoved update ServersSubscribers (lines 956-969)
 				local serversTable = sh.env:require(_K.Server:WaitForChild("Servers"))
 				_K.Auth.userRoleAdd(srvGuest.UserId, "admin")
-				expect(serversTable.Subscribers[srvGuest]).toBe(true)
+				sert.eq(serversTable.Subscribers[srvGuest], true)
 				_K.Auth.userRoleRemove(srvGuest.UserId, "admin")
 
 				-- Remote.Command executes a server command (e.g., ;serverlock and ;unserverlock)
 				aRemote.Command:Fire(";serverlock")
 				world:run(1)
-				expect(_K._serverLock).toBe(srvAdmin.Name)
+				sert.eq(_K._serverLock, srvAdmin.Name)
 
 				-- Player joining while _K._serverLock is active gets kicked (lines 1041-1042)
 				server:client(501)
 				local lockedPlr = sh.env.Players:GetPlayerByUserId(501)
 				sh.env.Players.PlayerAdded:Fire(lockedPlr)
 				world:run(0.5)
-				expect(server.kicked[lockedPlr] ~= nil).toBe(true)
+				sert.eq(wasPlayerKicked(server, lockedPlr), true)
 
 				aRemote.Command:Fire(";unserverlock")
 				world:run(1)
-				expect(_K._serverLock).toBeNil()
+				sert.eq(_K._serverLock, nil)
 
 				-- Banned player joining returns early when kicked (line 1033)
 				server:client(407)
 				local bannedJoiner = sh.env.Players:GetPlayerByUserId(407)
 				sh.env.Players.PlayerAdded:Fire(bannedJoiner)
 				world:run(0.5)
-				expect(server.kicked[bannedJoiner] ~= nil).toBe(true)
+				sert.eq(wasPlayerKicked(server, bannedJoiner), true)
 
 				-- Player.Chatted never fires with platform-integrated chat, nothing listens to it
 				srvAdmin.Chatted:Fire(";serverlock")
 				srvAdmin.Chatted:Fire("/e ;serverlock")
 				world:run(0.5)
-				expect(_K._serverLock).toBeNil()
+				sert.eq(_K._serverLock, nil)
 
 				-- PlayerRemoving logs LEAVE and cleans up state (lines 1047-1055)
 				sh.env.Players.PlayerRemoving:Fire(srvMod)
@@ -1146,7 +1156,7 @@ describe("Chat and Server", function()
 				world:run(1)
 
 				-- 6. Servers.luau cross-server discovery & TeleportToServer
-				expect(serversTable.Enabled).toBe(false)
+				sert.eq(serversTable.Enabled, false)
 				serversTable.Subscribers[srvAdmin] = true
 				serversTable.Subscribers[srvMod] = false
 				local serverBroadcasts = {}
@@ -1164,7 +1174,7 @@ describe("Chat and Server", function()
 					serversTable.start()
 				end)
 				world:run(0.5)
-				expect(serversTable.Enabled).toBe(true)
+				sert.eq(serversTable.Enabled, true)
 				local MessagingService = sh.env.game:GetService("MessagingService")
 				server:spawn(function()
 					-- Invalid payload is ignored; same SERVER_ID is already published by Servers.start()
@@ -1187,28 +1197,29 @@ describe("Chat and Server", function()
 					)
 				end)
 				world:run(5)
-				expect(_K.Data.servers["remote-job-99"] ~= nil).toBe(true)
-				expect(_K.Data.servers["remote-job-99"][2]).toBe(7)
-				expect(#serverBroadcasts).toBe(2)
-				expect(modBroadcasts).toBe(0)
-				expect(serverBroadcasts[1].player).toBe(srvAdmin)
-				expect(serverBroadcasts[1].jobId).toBe("remote-job-99")
-				expect(serverBroadcasts[1].count).toBe(5)
-				expect(serverBroadcasts[2].count).toBe(7)
+				sert.eq(_K.Data.servers["remote-job-99"] ~= nil, true)
+				sert.eq(_K.Data.servers["remote-job-99"][2], 7)
+				sert.eq(#serverBroadcasts, 2)
+				sert.eq(modBroadcasts, 0)
+				sert.eq(serverBroadcasts[1].player, srvAdmin)
+				sert.eq(serverBroadcasts[1].jobId, "remote-job-99")
+				sert.eq(serverBroadcasts[1].count, 5)
+				sert.eq(serverBroadcasts[2].count, 7)
 
 				aRemote.TeleportToServer:Fire(1000, "remote-job-99")
 				world:run(1)
-				expect(#sh.env.teleports >= 1).toBe(true)
-				expect(sh.env.teleports[#sh.env.teleports].placeId).toBe(1000)
+				sert.eq(#sh.env.teleports >= 1, true)
+				sert.eq(sh.env.teleports[#sh.env.teleports].placeId, 1000)
 
 				-- Advance past EXPIRE (35s) while keeping a fresh server entry to verify selective stale server removal
 				_K.Data.servers["remote-job-fresh"] = { 1000, 3, sh.env.globals.os.time(), sh.env.globals.tick() + 45 }
 				world:run(50)
-				expect(_K.Data.servers["remote-job-99"]).toBeNil()
-				expect(_K.Data.servers["remote-job-fresh"] ~= nil).toBe(true)
-				expect(#serverBroadcasts).toBe(3)
-				expect(serverBroadcasts[3].jobId).toBe("remote-job-99")
-				expect(serverBroadcasts[3].count).toBeNil()
+				sert.eq(_K.Data.servers["remote-job-99"], nil)
+				sert.eq(_K.Data.servers["remote-job-fresh"] ~= nil, true)
+				sert.eq(#serverBroadcasts, 3)
+				sert.eq(serverBroadcasts[3].jobId, "remote-job-99")
+
+				sert.eq(serverBroadcasts[3].count, nil)
 				_K.Remote.Servers.Fire = origServersFire
 			end
 		)
@@ -1236,10 +1247,11 @@ describe("Chat and Server", function()
 					Data = {},
 				}
 				local okClientSrv, errClientSrv = pcall(clientServerFn, fakeClientK)
-				expect(okClientSrv).toBe(false)
-				expect(
-					string.find(tostring(errClientSrv), "Cannot load server-side code on the client", 1, true) ~= nil
-				).toBe(true)
+				sert.eq(okClientSrv, false)
+				sert.eq(
+					string.find(tostring(errClientSrv), "Cannot load server-side code on the client", 1, true) ~= nil,
+					true
+				)
 				local leftoverSharedRef = hStudio.KA:WaitForChild("Server"):FindFirstChild("Shared")
 				if leftoverSharedRef then
 					leftoverSharedRef:Destroy()
@@ -1317,8 +1329,13 @@ describe("Chat and Server", function()
 				end)
 
 				-- Also add a legacy child inside Server/Addons to trigger oldAddonStructure warning (line 469)
-				local legacyAddon =
-					hStudio.env.Instance.new("Folder", hStudio.KA:WaitForChild("Server"):WaitForChild("Addons"))
+				local studioServer = hStudio.KA:WaitForChild("Server")
+				local serverAddonsFolder = studioServer:FindFirstChild("Addons")
+				if not serverAddonsFolder then
+					serverAddonsFolder = hStudio.env.Instance.new("Folder", studioServer)
+					serverAddonsFolder.Name = "Addons"
+				end
+				local legacyAddon = hStudio.env.Instance.new("Folder", serverAddonsFolder)
 				legacyAddon.Name = "LegacyChild"
 
 				local sK = hStudio:requireK()
@@ -1345,29 +1362,29 @@ describe("Chat and Server", function()
 				sK.Data.syncThemeDefaults = origSyncThemes
 				sK.Auth.prefetchGroupEntryRanks = origPrefetchGroups
 
-				expect(initRet).toBe(sK)
-				expect(studioRolesTable[1]).toBeNil()
-				expect(type(sK.Data.settingsModuleData.bans)).toBe("table")
-				expect(initHookFired).toBe(true)
-				expect(syncedThemes).toBe(1)
-				expect(prefetchedGroups).toBe(1)
-				expect(sK.ready).toBe(true)
-				expect(sK.groupId).toBe(500)
-				expect(table.find(sK.Data.settingsModuleData.userRoles.superadmin, 777) ~= nil).toBe(true)
-				expect(sharedAddonran).toBe(true)
-				expect(serverAddonRan).toBe(true)
-				expect(subAddonRan).toBe(true)
-				expect(configObj.Parent).toBe(hStudio.KA)
-				expect(addonsFolder.Parent).toBe(sK.Server)
-				expect(hStudio.KA.Client.UI.Theme.Themes:FindFirstChild("CustomTheme") ~= nil).toBe(true)
-				expect(serverAddon.Parent ~= nil and serverAddon.Parent.Name == "_KServerAddons").toBe(true)
-				expect(sharedAddon.Parent).toBe(hStudio.KA:FindFirstChild("Addons"))
-				expect(clientAddon.Parent).toBe(hStudio.KA:FindFirstChild("Addons"))
+				sert.eq(initRet, sK)
+				sert.eq(studioRolesTable[1], nil)
+				sert.eq(type(sK.Data.settingsModuleData.bans), "table")
+				sert.eq(initHookFired, true)
+				sert.eq(syncedThemes, 1)
+				sert.eq(prefetchedGroups, 1)
+				sert.eq(sK.ready, true)
+				sert.eq(sK.groupId, 500)
+				sert.eq(table.find(sK.Data.settingsModuleData.userRoles.superadmin, 777) ~= nil, true)
+				sert.eq(sharedAddonran, true)
+				sert.eq(serverAddonRan, true)
+				sert.eq(subAddonRan, true)
+				sert.eq(configObj.Parent, hStudio.KA)
+				sert.eq(addonsFolder.Parent, sK.Server)
+				sert.eq(hStudio.KA.Client.UI.Theme.Themes:FindFirstChild("CustomTheme") ~= nil, true)
+				sert.eq(serverAddon.Parent ~= nil and serverAddon.Parent.Name == "_KServerAddons", true)
+				sert.eq(sharedAddon.Parent, hStudio.KA:FindFirstChild("Addons"))
+				sert.eq(clientAddon.Parent, hStudio.KA:FindFirstChild("Addons"))
 
 				-- Studio Remote.Init with PlaceId == 0 alerts admin about publishing to save data (line 572)
 				sK.Remote.Init._signal:Fire(prePlr, { Attributes = { Platform = "Desktop" } })
 				hStudio.env:step(1)
-				expect(prePlr:GetAttribute("_K_READY")).toBe(true)
+				sert.eq(prePlr:GetAttribute("_K_READY"), true)
 
 				-- Client helper branches in src/init.luau (_K.getCommandPrefix, _K.alert, _K.log when _K.IsClient is true)
 				local updatedLogsList = false
@@ -1389,13 +1406,13 @@ describe("Chat and Server", function()
 				sK.Notify = function(props)
 					notifiedClient = props
 				end
-				expect(sK.getCommandPrefix()).toBe("!")
+				sert.eq(sK.getCommandPrefix(), "!")
 				sK.alert(prePlr, "Client alert")
-				expect(notifiedClient ~= nil).toBe(true)
-				expect(notifiedClient.Text).toBe("Client alert")
+				sert.eq(notifiedClient ~= nil, true)
+				sert.eq(notifiedClient.Text, "Client alert")
 				sK.log("Client command log", "COMMAND")
 				hStudio.env:step(0.1)
-				expect(updatedLogsList).toBe(true)
+				sert.eq(updatedLogsList, true)
 				sK.Notify = origNotify
 				sK.IsClient = false
 				sK.IsServer = true
@@ -1436,7 +1453,7 @@ describe("Chat and Server · Pinned announcements and disabled forced chat", fun
 			})
 		end)
 		world:run(2)
-		expect(_K.ready).toBe(true)
+		sert.eq(_K.ready, true)
 
 		local aRemote = Harness.newPeerEnv(adminClient, { isClient = true }):requireRemote()
 		local gRemote = Harness.newPeerEnv(guestClient, { isClient = true }):requireRemote()
@@ -1460,8 +1477,8 @@ describe("Chat and Server · Pinned announcements and disabled forced chat", fun
 		-- a rejected burst of new messages doesn't start the cooldown shared with ;announce
 		aRemote.Settings:Fire({ announcements = { { Text = "One", Duration = 5 }, { Text = "Two", Duration = 5 } } })
 		world:run(0.5)
-		expect(#(_K.Data.savedSettings.announcements or {})).toBe(0)
-		expect(_K.Chat.cooldown(101, "announce")).toBeNil()
+		sert.eq(#(_K.Data.savedSettings.announcements or {}), 0)
+		sert.eq(_K.Chat.cooldown(101, "announce"), nil)
 		world:run(61)
 
 		-- the editor gets the filtered pinned announcement back, other players get it with the changes
@@ -1469,30 +1486,30 @@ describe("Chat and Server · Pinned announcements and disabled forced chat", fun
 		table.clear(guestSettings)
 		aRemote.Settings:Fire({ announcement = { "Pinned via settings", 101 } })
 		world:run(0.5)
-		expect(#adminSettings).toBe(1)
-		expect(adminSettings[1].announcement[1]).toBe("Pinned via settings")
-		expect(adminSettings[1].announcement[2]).toBe(101)
-		expect(#guestSettings).toBe(1)
-		expect(guestSettings[1].announcement[1]).toBe("Pinned via settings")
+		sert.eq(#adminSettings, 1)
+		sert.eq(adminSettings[1].announcement[1], "Pinned via settings")
+		sert.eq(adminSettings[1].announcement[2], 101)
+		sert.eq(#guestSettings, 1)
+		sert.eq(guestSettings[1].announcement[1], "Pinned via settings")
 		world:run(61)
 
 		-- ;announce messages carry the pinned announcement so clients can tell it apart from a settings sync
 		aRemote.Command:Fire(";announce Pinned via command")
 		world:run(1)
-		world.messaging:drain()
+		world.backing.messaging.drain()
 		world:run(1)
-		expect(#guestAnnounces >= 1).toBe(true)
+		sert.eq(#guestAnnounces >= 1, true)
 		local last = guestAnnounces[#guestAnnounces]
-		expect(last.text).toBe("Pinned via command")
-		expect(type(last.data)).toBe("table")
-		expect(last.data[1]).toBe("Pinned via command")
-		expect(last.data[2]).toBe(101)
+		sert.eq(last.text, "Pinned via command")
+		sert.eq(type(last.data), "table")
+		sert.eq(last.data[1], "Pinned via command")
+		sert.eq(last.data[2], 101)
 
 		-- ;unannounce tells clients to forget it, so the same announcement shows again later
 		table.clear(guestSettings)
 		aRemote.Command:Fire(";unannounce")
 		world:run(1)
-		world.messaging:drain()
+		world.backing.messaging.drain()
 		world:run(1)
 		local cleared = false
 		for _, settings in guestSettings do
@@ -1500,7 +1517,7 @@ describe("Chat and Server · Pinned announcements and disabled forced chat", fun
 				cleared = true
 			end
 		end
-		expect(cleared).toBe(true)
+		sert.eq(cleared, true)
 	end)
 
 	test("clients show a pinned announcement once across settings and announce messages", function()
@@ -1510,6 +1527,7 @@ describe("Chat and Server · Pinned announcements and disabled forced chat", fun
 		local sh = Harness.newPeerEnv(server, { isStudio = false })
 		local ch = Harness.newPeerEnv(client, { isClient = true })
 		local sRemote = sh:requireRemote()
+		sh:requireUtil()
 		local cChat = ch:requireShared("Chat")
 		world:run(1)
 
@@ -1529,40 +1547,40 @@ describe("Chat and Server · Pinned announcements and disabled forced chat", fun
 		local srvPlr = sh.env.Players:GetPlayerByUserId(101)
 		local pinned = { "Pinned", 7 }
 		-- Remote.Settings delivered it first, the announce message that follows doesn't show it again
-		expect(cChat.pinAnnouncement(pinned)).toBe(true)
+		sert.eq(cChat.pinAnnouncement(pinned), true)
 		sRemote.ChatSystem:Fire(srvPlr, "announce", "Pinned", 7, pinned, "pin-1")
 		world:run(0.2)
-		expect(#shown).toBe(0)
+		sert.eq(#shown, 0)
 		-- an unchanged full settings sync doesn't show it again either
-		expect(cChat.pinAnnouncement({ "Pinned", 7 })).toBe(false)
+		sert.eq(cChat.pinAnnouncement({ "Pinned", 7 }), false)
 
 		-- a replaced announcement shows once, however it arrives
 		sRemote.ChatSystem:Fire(srvPlr, "announce", "Replaced", 7, { "Replaced", 7 }, "pin-2")
 		sRemote.ChatSystem:Fire(srvPlr, "announce", "Replaced", 7, { "Replaced", 7 }, "pin-3")
 		world:run(0.2)
-		expect(shown).toEqual({ "Replaced" })
-		expect(cChat.pinAnnouncement({ "Replaced", 7 })).toBe(false)
+		sert.eq(shown, { "Replaced" })
+		sert.eq(cChat.pinAnnouncement({ "Replaced", 7 }), false)
 
 		-- clearing it lets the same announcement show again
-		expect(cChat.pinAnnouncement(false)).toBe(false)
+		sert.eq(cChat.pinAnnouncement(false), false)
 		sRemote.ChatSystem:Fire(srvPlr, "announce", "Replaced", 7, { "Replaced", 7 }, "pin-4")
 		-- announce messages without a pinned announcement always show
 		sRemote.ChatSystem:Fire(srvPlr, "announce", "Plain", 7, 5, "plain-1")
 		sRemote.ChatSystem:Fire(srvPlr, "announce", "Plain", 7, 5, "plain-2")
 		world:run(0.2)
-		expect(shown).toEqual({ "Replaced", "Replaced", "Plain", "Plain" })
+		sert.eq(shown, { "Replaced", "Replaced", "Plain", "Plain" })
 
 		-- pins with an id show once each, so a settings sync that arrives after a clear or a replacement doesn't
 		-- bring the old pin back
 		local first, second = { "First", 7, 0, "id-1" }, { "Second", 7, 0, "id-2" }
-		expect(cChat.pinAnnouncement(first)).toBe(true)
-		expect(cChat.pinAnnouncement(false)).toBe(false)
-		expect(cChat.pinAnnouncement(table.clone(first))).toBe(false)
-		expect(cChat.pinAnnouncement(second)).toBe(true)
-		expect(cChat.pinAnnouncement(table.clone(first))).toBe(false)
-		expect(cChat.pinAnnouncement(table.clone(second))).toBe(false)
+		sert.eq(cChat.pinAnnouncement(first), true)
+		sert.eq(cChat.pinAnnouncement(false), false)
+		sert.eq(cChat.pinAnnouncement(table.clone(first)), false)
+		sert.eq(cChat.pinAnnouncement(second), true)
+		sert.eq(cChat.pinAnnouncement(table.clone(first)), false)
+		sert.eq(cChat.pinAnnouncement(table.clone(second)), false)
 		-- the same text pinned again gets a new id and shows
-		expect(cChat.pinAnnouncement({ "First", 7, 0, "id-3" })).toBe(true)
+		sert.eq(cChat.pinAnnouncement({ "First", 7, 0, "id-3" }), true)
 	end)
 
 	test("forced chat is disabled with a hint while privatemessage stays enabled", function()
@@ -1586,14 +1604,14 @@ describe("Chat and Server · Pinned announcements and disabled forced chat", fun
 		}
 		for _, alias in { "chat", "forcechat" } do
 			local command = commands[alias]
-			expect(command.run).toBeNil()
-			expect(#command.args).toBe(0)
+			sert.eq(command.run, nil)
+			sert.eq(#command.args, 0)
 			command.runClient(context)
 		end
-		expect(string.find(hints[1], "disabled", 1, true) ~= nil).toBe(true)
-		expect(#hints).toBe(2)
-		expect(type(commands.privatemessage.run)).toBe("function")
-		expect(#commands.privatemessage.args).toBe(2)
+		sert.eq(string.find(hints[1], "disabled", 1, true) ~= nil, true)
+		sert.eq(#hints, 2)
+		sert.eq(type(commands.privatemessage.run), "function")
+		sert.eq(#commands.privatemessage.args, 2)
 	end)
 end)
 
@@ -1628,7 +1646,7 @@ describe("Chat and Server · Repeated pinned announcements", function()
 			})
 		end)
 		world:run(2)
-		expect(_K.ready).toBe(true)
+		sert.eq(_K.ready, true)
 
 		local aRemote = Harness.newPeerEnv(adminClient, { isClient = true }):requireRemote()
 		local gh = Harness.newPeerEnv(guestClient, { isClient = true })
@@ -1656,19 +1674,19 @@ describe("Chat and Server · Repeated pinned announcements", function()
 			table.clear(pins)
 			aRemote.Command:Fire(";announce Server restarting soon")
 			world:run(1)
-			world.messaging:drain()
+			world.backing.messaging.drain()
 			world:run(1)
-			expect(#pins >= 1).toBe(true)
+			sert.eq(#pins >= 1, true)
 			for _, pin in pins do
 				if gChat.pinAnnouncement(pin) then
 					table.insert(shown, pin[1])
 				end
 			end
 			-- a later full settings sync repeats it unchanged
-			expect(gChat.pinAnnouncement(table.clone(_K.Data.savedSettings.announcement))).toBe(false)
+			sert.eq(gChat.pinAnnouncement(table.clone(_K.Data.savedSettings.announcement)), false)
 			world:run(61)
 		end
-		expect(shown).toEqual({ "Server restarting soon", "Server restarting soon" })
+		sert.eq(shown, { "Server restarting soon", "Server restarting soon" })
 
 		-- the same text pinned twice from the settings UI shows twice too
 		table.clear(shown)
@@ -1676,13 +1694,13 @@ describe("Chat and Server · Repeated pinned announcements", function()
 			table.clear(pins)
 			aRemote.Settings:Fire({ announcement = { "Pinned twice", 101 } })
 			world:run(0.5)
-			expect(#pins).toBe(1)
+			sert.eq(#pins, 1)
 			if gChat.pinAnnouncement(pins[1]) then
 				table.insert(shown, pins[1][1])
 			end
 			world:run(61)
 		end
-		expect(shown).toEqual({ "Pinned twice", "Pinned twice" })
+		sert.eq(shown, { "Pinned twice", "Pinned twice" })
 	end)
 end)
 
@@ -1692,18 +1710,18 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 		local ChatCommands = h.env:require(h.Server:WaitForChild("ChatCommands"))
 		local message = { name = "Message", aliases = { "m", "MSG", "two words" } }
 		local groups, skipped = ChatCommands.aliasGroups(message, { ";", ":" }, { ["/m"] = true, [":msg"] = true })
-		expect(groups).toEqual({
+		sert.eq(groups, {
 			{ "/message", ";message" },
 			{ ":message", ";m" },
 			{ ":m", ";msg" },
 			{ "/msg" },
 		})
-		expect(skipped).toEqual({ ":msg", "/m" })
+		sert.eq(skipped, { ":msg", "/m" })
 		-- "/" as a prefix isn't repeated, and every alias has a prefix
 		local slashGroups = ChatCommands.aliasGroups({ name = "kill" }, { "/" }, {})
-		expect(slashGroups).toEqual({ { "/kill" } })
-		expect(ChatCommands.aliasGroups({ name = "kill" }, {}, { ["/kill"] = true })).toEqual({})
-		expect(table.find(ChatCommands.DEFAULT_ALIASES, "/team") ~= nil).toBe(true)
+		sert.eq(slashGroups, { { "/kill" } })
+		sert.eq(ChatCommands.aliasGroups({ name = "kill" }, {}, { ["/kill"] = true }), {})
+		sert.eq(table.find(ChatCommands.DEFAULT_ALIASES, "/team") ~= nil, true)
 	end)
 
 	test("every command runs from chat on the server, with re-aliasing and late commands", function()
@@ -1738,9 +1756,9 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 			})
 		end)
 		world:run(2)
-		expect(_K.ready).toBe(true)
-		expect(type(_K.VERSION)).toBe("string")
-		expect(_K.features.platformIntegratedChat).toBe(true)
+		sert.eq(_K.ready, true)
+		sert.eq(type(_K.VERSION), "string")
+		sert.eq(_K.features.platformIntegratedChat, true)
 
 		local adminEnv = Harness.newPeerEnv(adminClient, { isClient = true })
 		local aRemote = adminEnv:requireRemote()
@@ -1787,9 +1805,9 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 
 		-- the primary "/" alias is first so ExperienceChat can index it, followed by the configured prefixes
 		local serverlock = folder:FindFirstChild("serverlock")
-		expect(serverlock.PrimaryAlias).toBe("/serverlock")
-		expect(serverlock.SecondaryAlias).toBe(";serverlock")
-		expect(aliasesOf("serverlock")).toEqual({
+		sert.eq(serverlock.PrimaryAlias, "/serverlock")
+		sert.eq(serverlock.SecondaryAlias, ";serverlock")
+		sert.eq(aliasesOf("serverlock"), {
 			"/serverlock",
 			"/slock",
 			":serverlock",
@@ -1800,59 +1818,59 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 		local seen, count = {}, 0
 		for _, instance in folder:GetChildren() do
 			count += 1
-			expect(instance.AutocompleteVisible).toBe(false)
-			expect(instance.Enabled).toBe(true)
+			sert.eq(instance.AutocompleteVisible, false)
+			sert.eq(instance.Enabled, true)
 			for _, alias in { instance.PrimaryAlias, instance.SecondaryAlias } do
 				if alias ~= "" then
-					expect(seen[alias]).toBeNil()
+					sert.eq(seen[alias], nil)
 					seen[alias] = true
-					expect(string.find(alias, "^[;:/]..*") ~= nil).toBe(true)
+					sert.eq(string.find(alias, "^[;:/]..*") ~= nil, true)
 				end
 			end
 		end
-		expect(count >= #_K.Registry.commandsList).toBe(true)
+		sert.eq(count >= #_K.Registry.commandsList, true)
 		-- Roblox's defaults and the game's commands keep their aliases, both would run otherwise
 		for _, alias in { "/ping", "/m", "/e", "/team", "/help", "/w" } do
-			expect(seen[alias]).toBeNil()
+			sert.eq(seen[alias], nil)
 		end
-		expect(seen[";m"] and seen[";ping"]).toBe(true)
-		expect(string.find(skippedLog(), "/ping", 1, true) ~= nil).toBe(true)
-		expect(string.find(skippedLog(), "/m", 1, true) ~= nil).toBe(true)
-		expect(_K.chatCommandAlias("SLOCK")).toBe(";slock")
-		expect(_K.chatCommandAlias("ping")).toBe(";ping")
-		expect(_K.chatCommandAlias("nope")).toBe(";nope")
+		sert.eq(seen[";m"] and seen[";ping"], true)
+		sert.eq(string.find(skippedLog(), "/ping", 1, true) ~= nil, true)
+		sert.eq(string.find(skippedLog(), "/m", 1, true) ~= nil, true)
+		sert.eq(_K.chatCommandAlias("SLOCK"), ";slock")
+		sert.eq(_K.chatCommandAlias("ping"), ";ping")
+		sert.eq(_K.chatCommandAlias("nope"), ";nope")
 
 		-- Triggered gets the whole line, the server runs it and forwards it so the client runs its part
 		local srvAdmin = sh.env.Players:GetPlayerByUserId(101)
 		serverlock.Triggered:Fire({ UserId = 101 }, ";serverlock")
 		world:run(1)
-		expect(_K._serverLock).toBe(srvAdmin.Name)
-		expect(forwarded[#forwarded].text).toBe(";serverlock")
-		expect(forwarded[#forwarded].clientOnly).toBe(true)
+		sert.eq(_K._serverLock, srvAdmin.Name)
+		sert.eq(forwarded[#forwarded].text, ";serverlock")
+		sert.eq(forwarded[#forwarded].clientOnly, true)
 		-- "/" isn't a configured prefix, it becomes the first one
 		folder:FindFirstChild("unserverlock3").Triggered:Fire({ UserId = 101 }, "  /UNSLOCK")
 		world:run(1)
-		expect(_K._serverLock).toBeNil()
-		expect(forwarded[#forwarded].text).toBe(";UNSLOCK")
+		sert.eq(_K._serverLock, nil)
+		sert.eq(forwarded[#forwarded].text, ";UNSLOCK")
 		-- only players in the server, and only with the command's permission (unauthorized isn't forwarded to client)
 		serverlock.Triggered:Fire({ UserId = 99999 }, ";serverlock")
 		serverlock.Triggered:Fire({ UserId = 202 }, ";serverlock")
 		world:run(1)
-		expect(_K._serverLock).toBeNil()
-		expect(#guestForwarded).toBe(0)
-		expect(string.find(table.concat(guestNotes, "\n"), "restricted", 1, true) ~= nil).toBe(true)
+		sert.eq(_K._serverLock, nil)
+		sert.eq(#guestForwarded, 0)
+		sert.eq(string.find(table.concat(guestNotes, "\n"), "restricted", 1, true) ~= nil, true)
 		-- client-only commands run on the client and stay out of the server's logs
 		folder:FindFirstChild("commands").Triggered:Fire({ UserId = 101 }, ";cmds")
 		world:run(1)
-		expect(forwarded[#forwarded].text).toBe(";cmds")
+		sert.eq(forwarded[#forwarded].text, ";cmds")
 		for _, log in _K.Data.logs do
-			expect(log[1] == ";cmds" or log[1] == ";commands").toBe(false)
+			sert.eq(log[1] == ";cmds" or log[1] == ";commands", false)
 		end
 
 		-- Player.Chatted isn't a command path
 		srvAdmin.Chatted:Fire(";serverlock")
 		world:run(0.5)
-		expect(_K._serverLock).toBeNil()
+		sert.eq(_K._serverLock, nil)
 
 		-- commands registered later get instances too
 		local lateRuns = 0
@@ -1867,34 +1885,36 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 			end,
 		})
 		world:run(0.2)
-		expect(aliasesOf("lateping")).toEqual({ "/lateping", "/lp", ":lateping", ":lp", ";lateping", ";lp" })
+		sert.eq(aliasesOf("lateping"), { "/lateping", "/lp", ":lateping", ":lp", ";lateping", ";lp" })
 		folder:FindFirstChild("lateping2").Triggered:Fire({ UserId = 202 }, ":lp")
 		world:run(1)
-		expect(lateRuns).toBe(1)
+		sert.eq(lateRuns, 1)
 
 		-- another TextChatCommand taking an alias later wins it, and so does an alias change
 		local later = sh.env.Instance.new("TextChatCommand")
 		later.PrimaryAlias = ";LP"
 		later.Parent = tcs
 		world:run(0.2)
-		expect(aliasesOf("lateping")).toEqual({ "/lateping", "/lp", ":lateping", ":lp", ";lateping" })
-		expect(string.find(skippedLog(), ";lp", 1, true) ~= nil).toBe(true)
+		sert.eq(aliasesOf("lateping"), { "/lateping", "/lp", ":lateping", ":lp", ";lateping" })
+		sert.eq(string.find(skippedLog(), ";lp", 1, true) ~= nil, true)
 		later.PrimaryAlias = ";lateping"
 		world:run(0.2)
-		expect(aliasesOf("lateping")).toEqual({ "/lateping", "/lp", ":lateping", ":lp", ";lp" })
-		later:Destroy()
+		sert.eq(aliasesOf("lateping"), { "/lateping", "/lp", ":lateping", ":lp", ";lp" })
+		server:spawn(function()
+			later:Destroy()
+		end)
 		world:run(0.2)
-		expect(#aliasesOf("lateping")).toBe(6)
+		sert.eq(#aliasesOf("lateping"), 6)
 
 		-- changing the prefixes re-aliases every command
 		aRemote.Settings:Fire({ prefix = { "!" } })
 		world:run(0.5)
-		expect(_K.Data.settings.prefix).toEqual({ "!" })
-		expect(aliasesOf("serverlock")).toEqual({ "!serverlock", "!slock", "/serverlock", "/slock" })
-		expect(_K.chatCommandAlias("serverlock")).toBe("!serverlock")
+		sert.eq(_K.Data.settings.prefix, { "!" })
+		sert.eq(aliasesOf("serverlock"), { "!serverlock", "!slock", "/serverlock", "/slock" })
+		sert.eq(_K.chatCommandAlias("serverlock"), "!serverlock")
 		folder:FindFirstChild("serverlock").Triggered:Fire({ UserId = 101 }, "!slock")
 		world:run(1)
-		expect(_K._serverLock).toBe(srvAdmin.Name)
+		sert.eq(_K._serverLock, srvAdmin.Name)
 		_K._serverLock = nil
 
 		-- chat commands missing required arguments hand off to the client CommandBar without firing server error notifications
@@ -1906,27 +1926,27 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 		_K.Data.roles.creator.limits = { commands = 1, cooldown = 10, targets = 10 }
 		_K.Process.resetLimit(101)
 		folder:FindFirstChild("announce").Triggered:Fire({ UserId = 101 }, "/announce ")
-		expect(_K.Process.onCooldown(_K, 101)).toBe(true)
+		sert.eq(_K.Process.onCooldown(_K, 101), true)
 		world:run(1)
 		_K.Process.resetLimit(101)
 		_K.Data.roles.creator.limits = nil
-		expect(#forwarded).toBe(beforeForwarded + 1)
-		expect(forwarded[#forwarded].text).toBe("!announce")
-		expect(forwarded[#forwarded].clientOnly).toBe(true)
-		expect(#adminNotes).toBe(0)
+		sert.eq(#forwarded, beforeForwarded + 1)
+		sert.eq(forwarded[#forwarded].text, "!announce")
+		sert.eq(forwarded[#forwarded].clientOnly, true)
+		sert.eq(#adminNotes, 0)
 
 		-- commandBarRank = false disables the missing-arg handoff so server reports the missing argument error
 		_K.Data.settings.commandBarRank = false
 		folder:FindFirstChild("announce").Triggered:Fire({ UserId = 101 }, "/announce ")
 		world:run(1)
-		expect(#adminNotes > 0).toBe(true)
+		sert.eq(#adminNotes > 0, true)
 		_K.Data.settings.commandBarRank = 0
 		table.clear(adminNotes)
 
 		-- explicit invalid arguments still report the server validation error
 		folder:FindFirstChild("ban").Triggered:Fire({ UserId = 101 }, "/ban nonexistentplayer")
 		world:run(1)
-		expect(#adminNotes > 0).toBe(true)
+		sert.eq(#adminNotes > 0, true)
 
 		-- VIP bubble display on VIP command, commandBarRank gating, and sync cleanup when a command is removed from commandsList
 		_K.Data.settings.vip = true
@@ -1939,19 +1959,19 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 		end
 		folder:FindFirstChild("fire").Triggered:Fire({ UserId = 101 }, "!fire me")
 		world:run(0.5)
-		expect(#bubblesFired).toBe(0)
+		sert.eq(#bubblesFired, 0)
 		folder:FindFirstChild("fire").Triggered:Fire({ UserId = 101 }, "/fire me")
 		world:run(0.5)
-		expect(#bubblesFired).toBe(1)
-		expect(bubblesFired[1].char).toBe(srvAdminChar)
-		expect(bubblesFired[1].word).toBe("!fire")
+		sert.eq(#bubblesFired, 1)
+		sert.eq(bubblesFired[1].char, srvAdminChar)
+		sert.eq(bubblesFired[1].word, "!fire")
 		_K.Remote.DisplayBubble.FireAll = origBubbleFireAll
 
 		-- Direct refreshCommand without batchSkipped logs skipped aliases immediately
 		_K.ChatCommands.taken["!lateping"] = true
 		_K.ChatCommands.refreshCommand(_K.Registry.commands.lateping)
 		world:run(0.2)
-		expect(string.find(skippedLog(), "!lateping", 1, true) ~= nil).toBe(true)
+		sert.eq(string.find(skippedLog(), "!lateping", 1, true) ~= nil, true)
 
 		-- Removing lateping from commandsList and refreshing cleans up its TextChatCommand instances
 		local lpIdx = table.find(_K.Registry.commandsList, _K.Registry.commands.lateping)
@@ -1959,23 +1979,23 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 			table.remove(_K.Registry.commandsList, lpIdx)
 		end
 		_K.ChatCommands.refresh()
-		expect(_K.ChatCommands.instances.lateping).toBeNil()
-		expect(_K.ChatCommands.aliases.lateping).toEqual({})
+		sert.eq(_K.ChatCommands.instances.lateping, nil)
+		sert.eq(_K.ChatCommands.aliases.lateping, {})
 
 		-- chat text is never logged, and the setting can't turn that back on
 		aRemote.Settings:Fire({ saveChatLogs = true })
 		world:run(0.5)
-		expect(_K.Data.savedSettings.saveChatLogs).toBe(false)
+		sert.eq(_K.Data.savedSettings.saveChatLogs, false)
 
 		-- turning chat commands off disables every instance, so lines reach chat again
 		aRemote.Settings:Fire({ chatCommands = false })
 		world:run(0.5)
 		for _, instance in folder:GetChildren() do
-			expect(instance.Enabled).toBe(false)
+			sert.eq(instance.Enabled, false)
 		end
 		folder:FindFirstChild("serverlock").Triggered:Fire({ UserId = 101 }, "!serverlock")
 		world:run(1)
-		expect(_K._serverLock).toBeNil()
+		sert.eq(_K._serverLock, nil)
 	end)
 
 	test("other prefixes than single symbols get no chat aliases and primary slash alias leads", function()
@@ -1998,12 +2018,12 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 		world:run(2)
 		local folder = sh.env.game:GetService("TextChatService"):FindFirstChild("TextChatCommands_KA")
 		local kill = folder:FindFirstChild("kill")
-		expect(kill.PrimaryAlias).toBe("/kill")
-		expect(kill.SecondaryAlias).toBe(";kill")
-		expect(kill.AutocompleteVisible).toBe(false)
+		sert.eq(kill.PrimaryAlias, "/kill")
+		sert.eq(kill.SecondaryAlias, ";kill")
+		sert.eq(kill.AutocompleteVisible, false)
 		-- a letter prefix still parses, it just isn't a chat alias
-		expect(_K.chatCommandAlias("kill")).toBe(";kill")
-		expect(_K.ChatCommands.alias("nosuchcommand")).toBeNil()
+		sert.eq(_K.chatCommandAlias("kill"), ";kill")
+		sert.eq(_K.ChatCommands.alias("nosuchcommand"), nil)
 	end)
 end)
 
@@ -2051,17 +2071,17 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			table.insert(texts, log[1])
 		end
 		table.sort(texts)
-		expect(texts).toEqual({ ";announce secret words", ";kill me ;announce hi ;nosuch x", "info ;announce kept" })
+		sert.eq(texts, { ";announce secret words", ";kill me ;announce hi ;nosuch x", "info ;announce kept" })
 
 		local names = {}
 		for _, item in fired do
 			table.insert(names, item.name)
 			if item.name == "postSyncMain" then
-				expect(item.value).toBe(Data1)
+				sert.eq(item.value, Data1)
 			end
 		end
-		expect(names).toEqual({ "preSyncMain", "postSyncMain", "preSyncLogs", "postSyncLogs" })
-		expect(Data1.members["202"] ~= nil).toBe(true)
+		sert.eq(names, { "preSyncMain", "postSyncMain", "preSyncLogs", "postSyncLogs" })
+		sert.eq(Data1.members["202"] ~= nil, true)
 	end)
 
 	test(
@@ -2115,22 +2135,22 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			-- 1. First command log off cooldown is immediately revealed to all admins and Sync.logs
 			local firstLog = _K.log(";kick Guest First reason", "COMMAND", 101, true, ";kick Guest …")
 			world:run(0.1)
-			expect(firstLog[1]).toBe(";kick Guest First reason")
-			expect(receivedBy1[#receivedBy1][1]).toBe(";kick Guest First reason")
-			expect(receivedBy2[#receivedBy2][1]).toBe(";kick Guest First reason")
-			expect(receivedBy3[#receivedBy3][1]).toBe(";kick Guest First reason")
-			expect(_K.Data.Sync.logs[#_K.Data.Sync.logs][1]).toBe(";kick Guest First reason")
+			sert.eq(firstLog[1], ";kick Guest First reason")
+			sert.eq(receivedBy1[#receivedBy1][1], ";kick Guest First reason")
+			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest First reason")
+			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest First reason")
+			sert.eq(_K.Data.Sync.logs[#_K.Data.Sync.logs][1], ";kick Guest First reason")
 
 			-- 2. Second command log within 60s sends full log to chat-allowed p3 and redacted liveText to restricted p2, then reveals after 60s
 			local syncCountBefore = #_K.Data.Sync.logs
 			_K.log(";kick Guest Second reason", "COMMAND", 101, true, ";kick Guest …")
 			world:run(0.1)
 			local secondStored = _K.Data.logs[#_K.Data.logs]
-			expect(secondStored[1]).toBe(";kick Guest …")
-			expect(receivedBy1[#receivedBy1][1]).toBe(";kick Guest Second reason")
-			expect(receivedBy2[#receivedBy2][1]).toBe(";kick Guest …")
-			expect(receivedBy3[#receivedBy3][1]).toBe(";kick Guest Second reason")
-			expect(#_K.Data.Sync.logs).toBe(syncCountBefore)
+			sert.eq(secondStored[1], ";kick Guest …")
+			sert.eq(receivedBy1[#receivedBy1][1], ";kick Guest Second reason")
+			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest …")
+			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest Second reason")
+			sert.eq(#_K.Data.Sync.logs, syncCountBefore)
 			local p3CountBeforeReveal = #receivedBy3
 
 			-- Another redacted log 30s later must not flush early when the first 60s timer fires
@@ -2138,22 +2158,22 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			_K.log(";kick Guest Later reason", "COMMAND", 101, true, ";kick Guest …")
 			world:run(0.1)
 			local laterStored = _K.Data.logs[#_K.Data.logs]
-			expect(laterStored[1]).toBe(";kick Guest …")
-			expect(receivedBy3[#receivedBy3][1]).toBe(";kick Guest Later reason")
+			sert.eq(laterStored[1], ";kick Guest …")
+			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest Later reason")
 			p3CountBeforeReveal = #receivedBy3
 
 			-- Advance 31s (61s total): secondStored reveals to p2, while p3 (already revealed) gets no duplicate and laterStored remains redacted
 			world:run(31)
-			expect(secondStored[1]).toBe(";kick Guest Second reason")
-			expect(receivedBy2[#receivedBy2][1]).toBe(";kick Guest Second reason")
-			expect(#receivedBy3).toBe(p3CountBeforeReveal)
-			expect(_K.Data.Sync.logs[#_K.Data.Sync.logs][1]).toBe(";kick Guest Second reason")
-			expect(laterStored[1]).toBe(";kick Guest …")
+			sert.eq(secondStored[1], ";kick Guest Second reason")
+			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest Second reason")
+			sert.eq(#receivedBy3, p3CountBeforeReveal)
+			sert.eq(_K.Data.Sync.logs[#_K.Data.Sync.logs][1], ";kick Guest Second reason")
+			sert.eq(laterStored[1], ";kick Guest …")
 
 			world:run(31)
-			expect(laterStored[1]).toBe(";kick Guest Later reason")
-			expect(receivedBy2[#receivedBy2][1]).toBe(";kick Guest Later reason")
-			expect(_K.Data.Sync.logs[#_K.Data.Sync.logs][1]).toBe(";kick Guest Later reason")
+			sert.eq(laterStored[1], ";kick Guest Later reason")
+			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest Later reason")
+			sert.eq(_K.Data.Sync.logs[#_K.Data.Sync.logs][1], ";kick Guest Later reason")
 
 			-- 3. If CanUserChatAsync is false, liveText stays permanently redacted for other admins and Sync.logs
 			tcsMethods.CanUserChatAsync = function()
@@ -2162,13 +2182,13 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			_K.log(";kick Guest Muted reason", "COMMAND", 101, true, ";kick Guest …")
 			world:run(0.1)
 			local mutedStored = _K.Data.logs[#_K.Data.logs]
-			expect(mutedStored[1]).toBe(";kick Guest …")
-			expect(receivedBy1[#receivedBy1][1]).toBe(";kick Guest Muted reason")
-			expect(receivedBy2[#receivedBy2][1]).toBe(";kick Guest …")
-			expect(receivedBy3[#receivedBy3][1]).toBe(";kick Guest …")
-			expect(_K.Data.Sync.logs[#_K.Data.Sync.logs][1]).toBe(";kick Guest …")
+			sert.eq(mutedStored[1], ";kick Guest …")
+			sert.eq(receivedBy1[#receivedBy1][1], ";kick Guest Muted reason")
+			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest …")
+			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest …")
+			sert.eq(_K.Data.Sync.logs[#_K.Data.Sync.logs][1], ";kick Guest …")
 			world:run(61)
-			expect(mutedStored[1]).toBe(";kick Guest …")
+			sert.eq(mutedStored[1], ";kick Guest …")
 		end
 	)
 
@@ -2196,12 +2216,12 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 
 			-- All 6 default roles exist and partial override on mod was merged
 			for _, roleKey in { "everyone", "vip", "mod", "admin", "superadmin", "creator" } do
-				expect(_K.Data.roles[roleKey] ~= nil).toBe(true)
+				sert.eq(_K.Data.roles[roleKey] ~= nil, true)
 			end
-			expect(_K.Data.roles.mod.color).toBe("#123456")
-			expect(_K.Data.roles.mod._rank).toBe(2)
-			expect(type(_K.Data.bans)).toBe("table")
-			expect(_K.Data.SEPARATE_DATASTORE).toBe(true)
+			sert.eq(_K.Data.roles.mod.color, "#123456")
+			sert.eq(_K.Data.roles.mod._rank, 2)
+			sert.eq(type(_K.Data.bans), "table")
+			sert.eq(_K.Data.SEPARATE_DATASTORE, true)
 
 			-- Promoting an already-ready player mid-session backfills Bans, Members, ReservedServers, and Logs
 			local p2 = sh.env:addPlayer(202, "PromotedAdmin")
@@ -2229,10 +2249,10 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			end
 
 			_K.Auth.userRoleAdd(202, "superadmin")
-			expect(backfilled.bans).toBe(true)
-			expect(backfilled.members).toBe(true)
-			expect(backfilled.reserved).toBe(true)
-			expect(backfilled.logs).toBe(true)
+			sert.eq(backfilled.bans, true)
+			sert.eq(backfilled.members, true)
+			sert.eq(backfilled.reserved, true)
+			sert.eq(backfilled.logs, true)
 
 			-- _K.chatCommandAlias, _K.removeExcessLogs logsVersion, and client _K.log log[6]
 			_K.ChatCommands = {
@@ -2240,12 +2260,12 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 					return if w == "fly" then "/fly" else nil
 				end,
 			}
-			expect(_K.chatCommandAlias("FLY")).toBe("/fly")
-			expect(_K.chatCommandAlias("KILL")).toBe("!kill")
+			sert.eq(_K.chatCommandAlias("FLY"), "/fly")
+			sert.eq(_K.chatCommandAlias("KILL"), "!kill")
 			_K.ChatCommands = nil
 			local origPrefixes = _K.Data.settings.prefix
 			_K.Data.settings.prefix = {}
-			expect(_K.chatCommandAlias("KILL")).toBe(";kill")
+			sert.eq(_K.chatCommandAlias("KILL"), ";kill")
 			_K.Data.settings.prefix = origPrefixes
 
 			local prevLogsVer = _K.Data.logsVersion or 0
@@ -2254,20 +2274,22 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			_K.Logger:log("one", "INFO")
 			_K.Logger:log("two", "INFO")
 			_K.removeExcessLogs()
-			expect(#_K.Data.logs).toBe(1)
-			expect(_K.Data.logsVersion).toBe(prevLogsVer + 1)
+			sert.eq(#_K.Data.logs, 1)
+			sert.eq(_K.Data.logsVersion, prevLogsVer + 1)
 			_K.Logger.limit = origLimit
 
 			_K.IsServer = false
 			_K.IsClient = true
 			local clientInfoLog = _K.log("client info", "INFO")
 			local clientChatLog = _K.log("client chat", "CHAT")
-			expect(clientInfoLog ~= nil and clientInfoLog[6] == true).toBe(true)
-			expect(clientChatLog ~= nil and clientChatLog[6] == nil).toBe(true)
+			sert.eq(clientInfoLog ~= nil and clientInfoLog[6] == true, true)
+			sert.eq(clientChatLog ~= nil and clientChatLog[6] == nil, true)
 			_K.IsClient = false
 			_K.IsServer = true
 		end
 	)
 end)
 
-return {}
+do
+	return {}
+end

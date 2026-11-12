@@ -4,7 +4,6 @@ local sert = require("../sert")
 
 local describe = sert.describe
 local test = sert.test
-local expect = sert.expect
 
 local _globals = Harness.globals
 local CFrame = _globals.CFrame
@@ -1013,13 +1012,15 @@ describe("DefaultCommands", function()
 			end
 
 			-- === Administration.luau ===
-			expect(
-				_K.Registry.commands.announce.run({ _K = _K, from = 1, fromPlayer = srvP1, global = true }, "GlobalMsg")
-			).toBe("Announcements are disabled in private servers.")
+			sert.eq(
+				_K.Registry.commands.announce.run({ _K = _K, from = 1, fromPlayer = srvP1, global = true }, "GlobalMsg"),
+				"Announcements are disabled in private servers."
+			)
 			_K.Data.SEPARATE_DATASTORE = true
-			expect(
-				_K.Registry.commands.announce.run({ _K = _K, from = 1, fromPlayer = srvP1, global = false }, "PrivMsg")
-			).toBe("Announcements are disabled in private servers.")
+			sert.eq(
+				_K.Registry.commands.announce.run({ _K = _K, from = 1, fromPlayer = srvP1, global = false }, "PrivMsg"),
+				"Announcements are disabled in private servers."
+			)
 			_K.Data.SEPARATE_DATASTORE = false
 
 			local announceArg = { redactLog = true }
@@ -1033,36 +1034,36 @@ describe("DefaultCommands", function()
 				{ _K = _K, from = 1, fromPlayer = srvP1, args = { announceArg } },
 				"DirectAnnounce"
 			)
-			expect(announceArg.redactLog).toBe(false)
-			expect(_K.Data.savedSettings.announcement[1]).toBe("DirectAnnounce")
-			expect(#publishedTopics).toBe(1)
-			expect(publishedTopics[1].topic).toBe("announce")
+			sert.eq(announceArg.redactLog, false)
+			sert.eq(_K.Data.savedSettings.announcement[1], "DirectAnnounce")
+			sert.eq(#publishedTopics, 1)
+			sert.eq(publishedTopics[1].topic, "announce")
 			_K.Registry.commands.unannounce.run({ _K = _K, from = 1, fromPlayer = srvP1 })
-			expect(_K.Data.savedSettings.announcement).toBe(false)
-			expect(_K.Data._skipNextAnnounceSync).toBe(_K.Data.REMOVE)
-			expect(#publishedTopics).toBe(2)
-			expect(publishedTopics[2].topic).toBe("announce")
+			sert.eq(_K.Data.savedSettings.announcement, false)
+			sert.eq(_K.Data._skipNextAnnounceSync, _K.Data.REMOVE)
+			sert.eq(#publishedTopics, 2)
+			sert.eq(publishedTopics[2].topic, "announce")
 			_K.Data.publishTopic = origPublishTopic
 			c.world:run(61)
 
 			runSrv(";announce Hello world")
 			-- { text, from, duration, id }, the id tells a repeated announcement apart from a settings sync
 			local pinned = _K.Data.savedSettings.announcement
-			expect({ pinned[1], pinned[2], pinned[3] }).toEqual({ "Hello world", 1, 0 })
-			expect(type(pinned[4])).toBe("string")
-			expect(_K.Data.Sync.settings.announcement).toEqual(pinned)
+			sert.eq({ pinned[1], pinned[2], pinned[3] }, { "Hello world", 1, 0 })
+			sert.eq(type(pinned[4]), "string")
+			sert.eq(_K.Data.Sync.settings.announcement, pinned)
 			-- Advance past 60s broadcast cooldown so subsequent announce/chat/global calls succeed
 			c.world:run(61)
 			runSrv(";unannounce")
-			expect(_K.Data.savedSettings.announcement).toBe(false)
-			expect(_K.Data.Sync.settings.announcement).toBe(_K.Data.REMOVE)
+			sert.eq(_K.Data.savedSettings.announcement, false)
+			sert.eq(_K.Data.Sync.settings.announcement, _K.Data.REMOVE)
 
 			table.clear(notifications)
 			runSrv(";role TargetPlr vip")
-			expect(_K.Auth.hasRole(2, "vip")).toBe(true)
-			expect(#notifications >= 1).toBe(true)
-			expect(notifications[1].plr).toBe(srvP2)
-			expect(string.find(notifications[1].msg.Text, "Gave you the", 1, true) ~= nil).toBe(true)
+			sert.eq(_K.Auth.hasRole(2, "vip"), true)
+			sert.eq(#notifications >= 1, true)
+			sert.eq(notifications[1].plr, srvP2)
+			sert.eq(string.find(notifications[1].msg.Text, "Gave you the", 1, true) ~= nil, true)
 
 			-- Re-giving the same role exercises "already has role" branch (no duplicate target notification)
 			table.clear(notifications)
@@ -1073,69 +1074,69 @@ describe("DefaultCommands", function()
 					gaveTargetAgain = true
 				end
 			end
-			expect(gaveTargetAgain).toBe(false)
+			sert.eq(gaveTargetAgain, false)
 
 			table.clear(notifications)
 			runSrv(";temprole TargetPlr mod")
-			expect(_K.Auth.hasRole(2, "mod")).toBe(true)
-			expect(#notifications >= 1).toBe(true)
-			expect(notifications[1].plr).toBe(srvP2)
+			sert.eq(_K.Auth.hasRole(2, "mod"), true)
+			sert.eq(#notifications >= 1, true)
+			sert.eq(notifications[1].plr, srvP2)
 
 			table.clear(notifications)
 			runSrv(";unrole TargetPlr mod")
-			expect(_K.Auth.hasRole(2, "mod")).toBe(false)
-			expect(#notifications >= 1).toBe(true)
-			expect(string.find(notifications[1].msg.Text, "TargetPlr", 1, true) ~= nil).toBe(true)
+			sert.eq(_K.Auth.hasRole(2, "mod"), false)
+			sert.eq(#notifications >= 1, true)
+			sert.eq(string.find(notifications[1].msg.Text, "TargetPlr", 1, true) ~= nil, true)
 
 			table.clear(notifications)
 			runSrv(";removemember TargetPlr")
-			expect(_K.Data.members["2"]).toBeNil()
-			expect(_K.Data.Sync.members["2"]).toBe(_K.Data.REMOVE)
-			expect(#notifications).toBe(1)
-			expect(string.find(notifications[1].msg.Text, "TargetPlr", 1, true) ~= nil).toBe(true)
+			sert.eq(_K.Data.members["2"], nil)
+			sert.eq(_K.Data.Sync.members["2"], _K.Data.REMOVE)
+			sert.eq(#notifications, 1)
+			sert.eq(string.find(notifications[1].msg.Text, "TargetPlr", 1, true) ~= nil, true)
 
 			-- Removing a non-member exercises "not a member" guard branch (no notification sent)
 			table.clear(notifications)
 			_K.Registry.commands.removemember.run({ _K = _K, from = 1, fromPlayer = srvP1 }, { "2" })
-			expect(#notifications).toBe(0)
+			sert.eq(#notifications, 0)
 
 			runSrv(";gear TargetPlr 12345")
-			expect(srvP2.Backpack:FindFirstChild("Tool12345")).toBeTruthy()
+			sert.ok((srvP2.Backpack:FindFirstChild("Tool12345")))
 			-- Authorized error & generic error branches in gear
 			runSrv(";gear TargetPlr 999998")
 			runSrv(";gear TargetPlr 999997")
 
 			runSrv(";insert 12345")
-			expect(#_K.cleanupCommands > 0).toBe(true)
-			expect(_K.cleanupCommands[1].Parent).toBe(c.sh.env.workspace)
+			sert.eq(#_K.cleanupCommands > 0, true)
+			sert.eq(_K.cleanupCommands[1].Parent, c.sh.env.workspace)
 			-- Test blocked insert asset id, packageRef path, and authorized/generic error paths
 			local insertCtx = { _K = _K, from = 1, fromPlayer = srvP1, env = _K.Registry.commands.insert.env }
-			expect(_K.Registry.commands.insert.run(insertCtx, 59524079)).toBe("Model has been blocked.")
-			expect(_K.Registry.commands.insert.run(insertCtx, 999999)).toBe("Model has been blocked.")
+			sert.eq(_K.Registry.commands.insert.run(insertCtx, 59524079), "Model has been blocked.")
+			sert.eq(_K.Registry.commands.insert.run(insertCtx, 999999), "Model has been blocked.")
 			local errAuth = _K.Registry.commands.insert.run(insertCtx, 999998)
-			expect(string.find(tostring(errAuth), "Game Creator's inventory!", 1, true) ~= nil).toBe(true)
+			sert.eq(string.find(tostring(errAuth), "Game Creator's inventory!", 1, true) ~= nil, true)
 			local errGen = _K.Registry.commands.insert.run(insertCtx, 999997)
-			expect(string.find(tostring(errGen), "Generic insert failure", 1, true) ~= nil).toBe(true)
-			expect(#_K.cleanupCommands).toBe(1)
+			sert.eq(string.find(tostring(errGen), "Generic insert failure", 1, true) ~= nil, true)
+			sert.eq(#_K.cleanupCommands, 1)
 
 			local prevTeleports = #c.sh.env.teleports
 			runSrv(";place TargetPlr 100")
-			expect(#c.sh.env.teleports > prevTeleports).toBe(true)
+			sert.eq(#c.sh.env.teleports > prevTeleports, true)
 
 			runSrv(";serverlock")
-			expect(_K._serverLock).toBe("CreatorPlr")
+			sert.eq(_K._serverLock, "CreatorPlr")
 			-- Calling serverlock again exercises "already locked" guard branch
 			runSrv(";serverlock")
-			expect(_K._serverLock).toBe("CreatorPlr")
+			sert.eq(_K._serverLock, "CreatorPlr")
 
 			runSrv(";unserverlock")
-			expect(_K._serverLock).toBeNil()
+			sert.eq(_K._serverLock, nil)
 
 			-- === Creator.luau ===
 			runSrv(";hidelogs")
-			expect(_K.Data.logsHidden[1]).toBe(true)
+			sert.eq(_K.Data.logsHidden[1], true)
 			runSrv(";unhidelogs")
-			expect(_K.Data.logsHidden[1]).toBeFalsy()
+			sert.ok(not _K.Data.logsHidden[1])
 			-- Verify clearlogs envClient preserves client logs (log[6] == true) and refreshes dashboard.Logs
 			local clientLogKept = { "client log", 0, 1, 1, "CreatorPlr", true }
 			local serverLogCleared = { "server log", 0, 2, 1, "CreatorPlr" }
@@ -1151,9 +1152,9 @@ describe("DefaultCommands", function()
 			_K.Remote.ClearLogs:Fire(srvP1)
 			c.world:run(0.05)
 			clientK.client.dashboard.Logs.updateList = origUpdateList
-			expect(#clientK.Data.logs).toBe(1)
-			expect(clientK.Data.logs[1]).toBe(clientLogKept)
-			expect(logsDashboardRefreshed).toBe(1)
+			sert.eq(#clientK.Data.logs, 1)
+			sert.eq(clientK.Data.logs[1], clientLogKept)
+			sert.eq(logsDashboardRefreshed, 1)
 
 			local removedLogKeys = {}
 			local origRemoveAsync = _K.Data.Store.removeAsync
@@ -1170,10 +1171,10 @@ describe("DefaultCommands", function()
 				env = _K.Registry.commands.clearlogs.env,
 			})
 			c.world:run(0.05)
-			expect(#_K.Data.logs).toBe(0)
-			expect(#_K.Data.pendingLogReveals).toBe(0)
-			expect(_K.Data.logsVersion > prevLogsVersion).toBe(true)
-			expect(#removedLogKeys).toBe(4)
+			sert.eq(#_K.Data.logs, 0)
+			sert.eq(#_K.Data.pendingLogReveals, 0)
+			sert.eq(_K.Data.logsVersion > prevLogsVersion, true)
+			sert.eq(#removedLogKeys, 4)
 
 			table.clear(removedLogKeys)
 			_K.Data.SEPARATE_DATASTORE = true
@@ -1185,107 +1186,107 @@ describe("DefaultCommands", function()
 				env = _K.Registry.commands.clearlogs.env,
 			})
 			c.world:run(0.05)
-			expect(#_K.Data.logs).toBe(0)
-			expect(#removedLogKeys).toBe(0)
+			sert.eq(#_K.Data.logs, 0)
+			sert.eq(#removedLogKeys, 0)
 			_K.Data.SEPARATE_DATASTORE = false
 			_K.Data.Store.removeAsync = origRemoveAsync
 
 			-- Verify ;global unannounce does not queue a local REMOVE sync and Settings UI edit is not suppressed by _skipNextAnnounceSync
 			runSrv(";announce LocalPinned")
 			local pinnedBeforeGlobalUnannounce = _K.Data.savedSettings.announcement
-			expect(pinnedBeforeGlobalUnannounce[1]).toBe("LocalPinned")
-			expect(_K.Data._skipNextAnnounceSync).toBe(pinnedBeforeGlobalUnannounce)
+			sert.eq(pinnedBeforeGlobalUnannounce[1], "LocalPinned")
+			sert.eq(_K.Data._skipNextAnnounceSync, pinnedBeforeGlobalUnannounce)
 			-- Simulate a different announcement value modified before processSync runs
 			local editedAnnouncement = { "EditedViaSettings", 1, 0, "edited_id" }
 			_K.Data.Sync.settings.announcement = editedAnnouncement
-			expect(_K.Data._skipNextAnnounceSync ~= _K.Data.Sync.settings.announcement).toBe(true)
+			sert.eq(_K.Data._skipNextAnnounceSync ~= _K.Data.Sync.settings.announcement, true)
 			-- Running ;global unannounce publishes to MessagingService without queuing REMOVE in local Sync.settings
 			_K.Registry.commands.unannounce.run({ _K = _K, from = 1, fromPlayer = srvP1, global = true })
-			expect(_K.Data.Sync.settings.announcement).toBe(editedAnnouncement)
+			sert.eq(_K.Data.Sync.settings.announcement, editedAnnouncement)
 			_K.Registry.commands.unannounce.run({ _K = _K, from = 1, fromPlayer = srvP1, global = false })
-			expect(_K.Data.Sync.settings.announcement).toBe(_K.Data.REMOVE)
+			sert.eq(_K.Data.Sync.settings.announcement, _K.Data.REMOVE)
 			local prevCleanupCount = #_K.cleanupCommands
 			runSrv(";script local x = 1 + 1")
-			expect(#_K.cleanupCommands).toBe(prevCleanupCount + 1)
+			sert.eq(#_K.cleanupCommands, prevCleanupCount + 1)
 			runSrv(";localscript CreatorPlr local y = 2 + 2")
-			expect(srvP1:FindFirstChildOfClass("PlayerGui"):FindFirstChild("local y = 2 + 2")).toBeTruthy()
+			sert.ok((srvP1:FindFirstChildOfClass("PlayerGui"):FindFirstChild("local y = 2 + 2")))
 
 			-- === Environment.luau ===
 			local lighting = c.sh.env.game:GetService("Lighting")
 			local terrain = c.sh.env.workspace.Terrain
 			local atmosphere = lighting:FindFirstChildOfClass("Atmosphere")
 			runSrv(";ambient 255,0,0")
-			expect(lighting.Ambient).toEqual(Color3.fromRGB(255, 0, 0))
+			sert.eq(lighting.Ambient, Color3.fromRGB(255, 0, 0))
 			runSrv(";outdoorambient 0,255,0")
-			expect(lighting.OutdoorAmbient).toEqual(Color3.fromRGB(0, 255, 0))
+			sert.eq(lighting.OutdoorAmbient, Color3.fromRGB(0, 255, 0))
 			runSrv(";atmosphere 0.5 0.1 255,255,255 10,20,30 0.2 0.3")
-			expect(atmosphere.Density).toBe(0.5)
-			expect(atmosphere.Offset).toBe(0.1)
-			expect(atmosphere.Color).toEqual(Color3.fromRGB(255, 255, 255))
-			expect(atmosphere.Decay).toEqual(Color3.fromRGB(10, 20, 30))
-			expect(atmosphere.Glare).toBe(0.2)
-			expect(atmosphere.Haze).toBe(0.3)
+			sert.eq(atmosphere.Density, 0.5)
+			sert.eq(atmosphere.Offset, 0.1)
+			sert.eq(atmosphere.Color, Color3.fromRGB(255, 255, 255))
+			sert.eq(atmosphere.Decay, Color3.fromRGB(10, 20, 30))
+			sert.eq(atmosphere.Glare, 0.2)
+			sert.eq(atmosphere.Haze, 0.3)
 			runSrv(";fogcolor 100,100,100")
-			expect(lighting.FogColor).toEqual(Color3.fromRGB(100, 100, 100))
-			expect(atmosphere.Color).toEqual(Color3.fromRGB(100, 100, 100))
-			expect(atmosphere.Haze >= 2 ^ -32).toBe(true)
+			sert.eq(lighting.FogColor, Color3.fromRGB(100, 100, 100))
+			sert.eq(atmosphere.Color, Color3.fromRGB(100, 100, 100))
+			sert.eq(atmosphere.Haze >= 2 ^ -32, true)
 			runSrv(";fogstart 10")
-			expect(lighting.FogStart).toBe(10)
-			expect(math.abs(atmosphere.Density - (64 / 10) ^ 0.25) < 1e-4).toBe(true)
-			expect(math.abs(atmosphere.Haze - 5 / 10 ^ 0.1) < 1e-4).toBe(true)
+			sert.eq(lighting.FogStart, 10)
+			sert.eq(math.abs(atmosphere.Density - (64 / 10) ^ 0.25) < 1e-4, true)
+			sert.eq(math.abs(atmosphere.Haze - 5 / 10 ^ 0.1) < 1e-4, true)
 			runSrv(";fogend 500")
-			expect(lighting.FogEnd).toBe(500)
-			expect(math.abs(atmosphere.Density - (64 / 500) ^ 0.25) < 1e-4).toBe(true)
-			expect(math.abs(atmosphere.Haze - 5 / 500 ^ 0.1) < 1e-4).toBe(true)
+			sert.eq(lighting.FogEnd, 500)
+			sert.eq(math.abs(atmosphere.Density - (64 / 500) ^ 0.25) < 1e-4, true)
+			sert.eq(math.abs(atmosphere.Haze - 5 / 500 ^ 0.1) < 1e-4, true)
 			runSrv(";brightness 3")
-			expect(lighting.Brightness).toBe(3)
+			sert.eq(lighting.Brightness, 3)
 			runSrv(";colorshift 255,0,0 0,0,255")
-			expect(lighting.ColorShift_Bottom).toEqual(Color3.fromRGB(255, 0, 0))
-			expect(lighting.ColorShift_Top).toEqual(Color3.fromRGB(0, 0, 255))
+			sert.eq(lighting.ColorShift_Bottom, Color3.fromRGB(255, 0, 0))
+			sert.eq(lighting.ColorShift_Top, Color3.fromRGB(0, 0, 255))
 			runSrv(";diffusescale 0.5")
-			expect(lighting.EnvironmentDiffuseScale).toBe(0.5)
+			sert.eq(lighting.EnvironmentDiffuseScale, 0.5)
 			runSrv(";specularscale 0.5")
-			expect(lighting.EnvironmentSpecularScale).toBe(0.5)
+			sert.eq(lighting.EnvironmentSpecularScale, 0.5)
 			runSrv(";exposure 1.5")
-			expect(lighting.ExposureCompensation).toBe(1.5)
+			sert.eq(lighting.ExposureCompensation, 1.5)
 			runSrv(";time 6")
-			expect(lighting.ClockTime).toBe(6)
+			sert.eq(lighting.ClockTime, 6)
 			runSrv(";time 12:30:36")
-			expect(math.abs(lighting.ClockTime - (12 + 30 / 60 + 36 / 3600)) < 1e-4).toBe(true)
+			sert.eq(math.abs(lighting.ClockTime - (12 + 30 / 60 + 36 / 3600)) < 1e-4, true)
 			runSrv(";time 12 0.01")
 			c.sh.env:advance(0.05)
-			expect(lighting.ClockTime).toBe(12)
+			sert.eq(lighting.ClockTime, 12)
 			runSrv(";latitude 45")
-			expect(lighting.GeographicLatitude).toBe(45)
+			sert.eq(lighting.GeographicLatitude, 45)
 			runSrv(";latitude")
-			expect(lighting.GeographicLatitude).toBe(_K.Registry.commands.latitude.env.defaultLatitude)
+			sert.eq(lighting.GeographicLatitude, _K.Registry.commands.latitude.env.defaultLatitude)
 			runSrv(";shadows false")
-			expect(lighting.GlobalShadows).toBe(false)
+			sert.eq(lighting.GlobalShadows, false)
 			runSrv(";skybox 1 2 3 4 5 6")
 			local sky = lighting:FindFirstChild("_KSky")
-			expect(sky).toBeTruthy()
-			expect(sky.SkyboxDn).toBeTruthy()
-			expect(sky.SkyboxBk ~= sky.SkyboxDn).toBe(true)
-			expect(sky.SkyboxLf ~= sky.SkyboxDn).toBe(true)
-			expect(sky.SkyboxUp ~= sky.SkyboxDn).toBe(true)
-			expect(sky.SkyboxFt ~= sky.SkyboxDn).toBe(true)
-			expect(sky.SkyboxRt ~= sky.SkyboxDn).toBe(true)
+			sert.ok(sky)
+			sert.ok(sky.SkyboxDn)
+			sert.eq(sky.SkyboxBk ~= sky.SkyboxDn, true)
+			sert.eq(sky.SkyboxLf ~= sky.SkyboxDn, true)
+			sert.eq(sky.SkyboxUp ~= sky.SkyboxDn, true)
+			sert.eq(sky.SkyboxFt ~= sky.SkyboxDn, true)
+			sert.eq(sky.SkyboxRt ~= sky.SkyboxDn, true)
 			runSrv(";skybox 7")
-			expect(sky.SkyboxBk).toBe(sky.SkyboxDn)
-			expect(sky.SkyboxLf).toBe(sky.SkyboxDn)
-			expect(sky.SkyboxUp).toBe(sky.SkyboxDn)
-			expect(sky.SkyboxFt).toBe(sky.SkyboxDn)
-			expect(sky.SkyboxRt).toBe(sky.SkyboxDn)
+			sert.eq(sky.SkyboxBk, sky.SkyboxDn)
+			sert.eq(sky.SkyboxLf, sky.SkyboxDn)
+			sert.eq(sky.SkyboxUp, sky.SkyboxDn)
+			sert.eq(sky.SkyboxFt, sky.SkyboxDn)
+			sert.eq(sky.SkyboxRt, sky.SkyboxDn)
 			runSrv(";unskybox")
-			expect(lighting:FindFirstChild("_KSky")).toBeNil()
+			sert.eq(lighting:FindFirstChild("_KSky"), nil)
 			runSrv(";airdensity 0.05")
-			expect(c.sh.env.workspace.AirDensity).toBe(0.05)
+			sert.eq(c.sh.env.workspace.AirDensity, 0.05)
 			runSrv(";gravity 100")
-			expect(c.sh.env.workspace.Gravity).toBe(100)
+			sert.eq(c.sh.env.workspace.Gravity, 100)
 			runSrv(";gravity")
-			expect(c.sh.env.workspace.Gravity).toBe(_K.Registry.commands.gravity.env.gravity)
+			sert.eq(c.sh.env.workspace.Gravity, _K.Registry.commands.gravity.env.gravity)
 			runSrv(";windspeed 20")
-			expect(math.round(c.sh.env.workspace.GlobalWind.Magnitude)).toBe(20)
+			sert.eq(math.round(c.sh.env.workspace.GlobalWind.Magnitude), 20)
 			local windDirThread = c.sh.env.task.spawn(function()
 				runSrv(";winddir")
 			end)
@@ -1293,27 +1294,27 @@ describe("DefaultCommands", function()
 			_K.Remote.SpectateSubject:Fire(srvP1, CFrame.new(0, 0, -1))
 			c.world:run(0.05)
 			c.sh.env.task.cancel(windDirThread)
-			expect(math.round(c.sh.env.workspace.GlobalWind.Magnitude)).toBe(20)
+			sert.eq(math.round(c.sh.env.workspace.GlobalWind.Magnitude), 20)
 			runSrv(";watercolor 0,100,200")
-			expect(terrain.WaterColor).toEqual(Color3.fromRGB(0, 100, 200))
+			sert.eq(terrain.WaterColor, Color3.fromRGB(0, 100, 200))
 			runSrv(";waterreflectance 0.5")
-			expect(terrain.WaterReflectance).toBe(0.5)
+			sert.eq(terrain.WaterReflectance, 0.5)
 			runSrv(";watertransparency 0.5")
-			expect(terrain.WaterTransparency).toBe(0.5)
+			sert.eq(terrain.WaterTransparency, 0.5)
 			runSrv(";watersize 0.2")
-			expect(terrain.WaterWaveSize).toBe(0.2)
+			sert.eq(terrain.WaterWaveSize, 0.2)
 			runSrv(";waterspeed 15")
-			expect(terrain.WaterWaveSpeed).toBe(15)
+			sert.eq(terrain.WaterWaveSpeed, 15)
 			runSrv(";fix")
-			expect(c.sh.env.workspace.Gravity).toBe(196.2)
-			expect(lighting.Brightness).toBe(_K.Registry.commands.fix.env[lighting].Brightness)
+			sert.eq(c.sh.env.workspace.Gravity, 196.2)
+			sert.eq(lighting.Brightness, _K.Registry.commands.fix.env[lighting].Brightness)
 
 			-- === SuperAdmin.luau ===
 			runSrv(";badge TargetPlr 555")
-			expect(c.sh.env.badges[2][555]).toBe(true)
+			sert.eq(c.sh.env.badges[2][555], true)
 			-- Second award triggers "already has badge" alert branch
 			runSrv(";badge TargetPlr 555")
-			expect(c.sh.env.badges[2][555]).toBe(true)
+			sert.eq(c.sh.env.badges[2][555], true)
 			-- Badge error path returns "Failed to award badges: ..."
 			local origAwardBadge = _K.Service.Badge.AwardBadge
 			_K.Service.Badge.AwardBadge = function()
@@ -1324,7 +1325,7 @@ describe("DefaultCommands", function()
 				badgeErrRes = _K.Registry.commands.badge.run({ _K = _K, fromPlayer = srvP1 }, { srvP2 }, 999)
 			end)
 			c.world:run(20)
-			expect(string.find(tostring(badgeErrRes), "Failed to award badges:", 1, true) ~= nil).toBe(true)
+			sert.eq(string.find(tostring(badgeErrRes), "Failed to award badges:", 1, true) ~= nil, true)
 			_K.Service.Badge.AwardBadge = origAwardBadge
 
 			-- btools
@@ -1332,7 +1333,7 @@ describe("DefaultCommands", function()
 			btoolMock.Name = "Building Tools"
 			_K.Registry.commands.btools.env.tool = btoolMock
 			runSrv(";btools TargetPlr")
-			expect(srvP2.Backpack:FindFirstChild("Building Tools")).toBeTruthy()
+			sert.ok((srvP2.Backpack:FindFirstChild("Building Tools")))
 			-- Second btools run skips duplicating when "Building Tools" is already in Backpack
 			runSrv(";btools TargetPlr")
 			local btoolCount = 0
@@ -1341,20 +1342,21 @@ describe("DefaultCommands", function()
 					btoolCount += 1
 				end
 			end
-			expect(btoolCount).toBe(1)
+			sert.eq(btoolCount, 1)
 
 			c.world:run(61)
 			runCli(";chat")
 			c.world:run(0.05)
-			expect(string.find(tostring(clientK._lastNotify and clientK._lastNotify.Text), "disabled", 1, true) ~= nil).toBe(
+			sert.eq(
+				string.find(tostring(clientK._lastNotify and clientK._lastNotify.Text), "disabled", 1, true) ~= nil,
 				true
 			)
 
 			runSrv(";clearterrain")
-			expect(c.sh.env.workspace.Terrain._props._cleared).toBe(true)
+			sert.eq(c.sh.env.workspace.Terrain._props._cleared, true)
 
 			runCli(";explorer")
-			expect(clientK._explorerShown).toBe(true)
+			sert.eq(clientK._explorerShown, true)
 
 			local incogSrvEnv = _K.Registry.commands.incognito.env
 			local incogFired = {}
@@ -1364,22 +1366,22 @@ describe("DefaultCommands", function()
 				return origIncogFireAll(self, ...)
 			end
 			runSrv(";incognito TargetPlr false")
-			expect(incogSrvEnv.hidden[srvP2]).toBe(false)
-			expect(incogFired[#incogFired][1]).toBe(srvP2.UserId)
-			expect(incogFired[#incogFired][3]).toBe(false)
+			sert.eq(incogSrvEnv.hidden[srvP2], false)
+			sert.eq(incogFired[#incogFired][1], srvP2.UserId)
+			sert.eq(incogFired[#incogFired][3], false)
 			runSrv(";incognito TargetPlr true")
-			expect(incogSrvEnv.hidden[srvP2]).toBe(true)
-			expect(incogFired[#incogFired][1]).toBe(srvP2.Name)
-			expect(incogFired[#incogFired][3]).toBe(true)
+			sert.eq(incogSrvEnv.hidden[srvP2], true)
+			sert.eq(incogFired[#incogFired][1], srvP2.Name)
+			sert.eq(incogFired[#incogFired][3], true)
 			incogSrvEnv.remote.FireAll = origIncogFireAll
 			c.world:run(0.05)
 			runCli(";incognitolist")
 			local incogEnv = clientK.Registry.commands.incognitolist.env
-			expect(incogEnv.window._instance.Visible).toBe(true)
+			sert.eq(incogEnv.window._instance.Visible, true)
 			if incogEnv.scroller and incogEnv.scroller.CreateItem then
 				local item = incogEnv.scroller:CreateItem()
 				incogEnv.scroller:RenderItem(item, 2)
-				expect(item).toBeTruthy()
+				sert.ok(item)
 			end
 			-- Toggle window visibility false to exercise close handler
 			incogEnv.window._instance.Visible = false
@@ -1400,36 +1402,37 @@ describe("DefaultCommands", function()
 				return origPublish(topic, payload)
 			end
 			runSrv(";reserve TestServer")
-			expect(ensuredServersCount).toBe(1)
-			expect(_K.Data.reservedServers["TestServer"]).toBeTruthy()
-			expect(#publishedReserve).toBe(1)
-			expect(type(publishedReserve[1])).toBe("table")
-			expect(publishedReserve[1][1]).toBe("TestServer")
-			expect(#notifications >= 1).toBe(true)
-			expect(string.find(notifications[#notifications].msg.Text, "has been reserved", 1, true) ~= nil).toBe(true)
+			sert.eq(ensuredServersCount, 1)
+			sert.ok(_K.Data.reservedServers["TestServer"])
+			sert.eq(#publishedReserve, 1)
+			sert.eq(type(publishedReserve[1]), "table")
+			sert.eq(publishedReserve[1][1], "TestServer")
+			sert.eq(#notifications >= 1, true)
+			sert.eq(string.find(notifications[#notifications].msg.Text, "has been reserved", 1, true) ~= nil, true)
 			-- Re-reserving same server code returns already-reserved message
 			local dupRes = _K.Registry.commands.reserve.run(
 				{ _K = _K, from = srvP1.UserId, fromPlayer = srvP1, args = { {} } },
 				"TestServer"
 			)
-			expect(string.find(tostring(dupRes), "already reserved", 1, true) ~= nil).toBe(true)
+			sert.eq(string.find(tostring(dupRes), "already reserved", 1, true) ~= nil, true)
 
 			local tpBefore = #c.sh.env.teleports
 			runSrv(";place TargetPlr @TestServer")
-			expect(#c.sh.env.teleports).toBe(tpBefore + 1)
-			expect(c.sh.env.teleports[#c.sh.env.teleports].options.ReservedServerAccessCode).toBe(
+			sert.eq(#c.sh.env.teleports, tpBefore + 1)
+			sert.eq(
+				c.sh.env.teleports[#c.sh.env.teleports].options.ReservedServerAccessCode,
 				_K.Data.reservedServers["TestServer"][2]
 			)
 
 			table.clear(notifications)
 			local beforeUnreserveEnsure = ensuredServersCount
 			runSrv(";unreserve TestServer")
-			expect(ensuredServersCount > beforeUnreserveEnsure).toBe(true)
-			expect(_K.Data.reservedServers["TestServer"]).toBeNil()
-			expect(#publishedReserve).toBe(2)
-			expect(publishedReserve[2]).toBe("TestServer")
-			expect(#notifications >= 1).toBe(true)
-			expect(string.find(notifications[#notifications].msg.Text, "has been removed", 1, true) ~= nil).toBe(true)
+			sert.eq(ensuredServersCount > beforeUnreserveEnsure, true)
+			sert.eq(_K.Data.reservedServers["TestServer"], nil)
+			sert.eq(#publishedReserve, 2)
+			sert.eq(publishedReserve[2], "TestServer")
+			sert.eq(#notifications >= 1, true)
+			sert.eq(string.find(notifications[#notifications].msg.Text, "has been removed", 1, true) ~= nil, true)
 			_K.Data.ensureServersLoaded = origEnsureServers
 			_K.Data.publishTopic = origPublish
 
@@ -1437,7 +1440,7 @@ describe("DefaultCommands", function()
 			runSrv(";global announce GlobalTest")
 			runSrv(";global gravity 80")
 			c.world:run(0.1)
-			expect(c.sh.env.workspace.Gravity).toBe(80)
+			sert.eq(c.sh.env.workspace.Gravity, 80)
 			local sawTimeLog, sawGlobalLog = false, false
 			for _, logEntry in _K.Data.logs do
 				local text = tostring(logEntry[1])
@@ -1447,8 +1450,8 @@ describe("DefaultCommands", function()
 					sawGlobalLog = true
 				end
 			end
-			expect(sawTimeLog).toBe(true)
-			expect(sawGlobalLog).toBe(true)
+			sert.eq(sawTimeLog, true)
+			sert.eq(sawGlobalLog, true)
 			-- Test Shutdown server cancellation branch and countdown > 0
 			local announceCount = 0
 			local origAnnounceFireAll = _K.Remote.Announce.FireAll
@@ -1460,9 +1463,9 @@ describe("DefaultCommands", function()
 				runSrv(";shutdown 2 Maintenance soon")
 			end)
 			c.world:run(0.05)
-			expect(announceCount).toBe(1)
+			sert.eq(announceCount, 1)
 			runSrv(";shutdown") -- cancel active shutdown (no delay -> no Announce:FireAll)
-			expect(announceCount).toBe(1)
+			sert.eq(announceCount, 1)
 			c.sh.env.task.cancel(shutThread)
 			_K.Remote.Announce.FireAll = origAnnounceFireAll
 			-- Trigger client Shutdown remote listener
@@ -1472,8 +1475,8 @@ describe("DefaultCommands", function()
 
 			runSrv(";shutdown 0 Server maintenance")
 			c.world:run(0.05)
-			expect(string.find(tostring(srvP2._props._kicked), "has shutdown the server.", 1, true) ~= nil).toBe(true)
-			expect(string.find(tostring(srvP2._props._kicked), "Reason: Server maintenance", 1, true) ~= nil).toBe(true)
+			sert.eq(string.find(tostring(srvP2._props._kicked), "has shutdown the server.", 1, true) ~= nil, true)
+			sert.eq(string.find(tostring(srvP2._props._kicked), "Reason: Server maintenance", 1, true) ~= nil, true)
 			-- Direct shutdown with nil fromPlayer falls back to tostring(context.from) and updates args[2].parsedArgs
 			local shutArg2: any = {}
 			_K.Registry.commands.shutdown.run(
@@ -1481,11 +1484,9 @@ describe("DefaultCommands", function()
 				nil,
 				"OfflineReason"
 			)
-			expect(shutArg2.parsedArgs).toEqual({ "OfflineReason" })
-			expect(shutArg2.redactLog).toBe(false)
-			expect(string.find(tostring(srvP2._props._kicked), "77777 has shutdown the server.", 1, true) ~= nil).toBe(
-				true
-			)
+			sert.eq(shutArg2.parsedArgs, { "OfflineReason" })
+			sert.eq(shutArg2.redactLog, false)
+			sert.eq(string.find(tostring(srvP2._props._kicked), "77777 has shutdown the server.", 1, true) ~= nil, true)
 		end
 	)
 
@@ -1526,8 +1527,8 @@ describe("DefaultCommands", function()
 			_K.Remote.ChatSystem:Fire(srvP1, kind, "Hello " .. kind, 1, "British male", "msg_" .. kind)
 		end
 		c.world:run(0.1)
-		expect(clientK._lastAnnounce).toBeTruthy()
-		expect(clientK._lastNotify).toBeTruthy()
+		sert.ok(clientK._lastAnnounce)
+		sert.ok(clientK._lastNotify)
 
 		-- Countdown start and cancel + client StartCountdown display
 		runSrv(";countdown 2")
@@ -1537,9 +1538,9 @@ describe("DefaultCommands", function()
 		c.world:run(0.05)
 
 		runSrv(";title TargetPlr Champion #ff0000 #00ff00 Legacy")
-		expect(srvP2.Character:FindFirstChild("_K_Title")).toBeTruthy()
+		sert.ok((srvP2.Character:FindFirstChild("_K_Title")))
 		runSrv(";untitle TargetPlr")
-		expect(srvP2.Character:FindFirstChild("_K_Title")).toBeNil()
+		sert.eq(srvP2.Character:FindFirstChild("_K_Title"), nil)
 
 		-- Vote & Poll: invoke the real client Vote OnInvoke handler inside ch1.env.task.spawn
 		local origVoteInvoke = clientK.Remote.Vote.OnInvoke
@@ -1572,12 +1573,13 @@ describe("DefaultCommands", function()
 		-- Client link / unlink / watch / spectate / unspectate
 		local cliP2Root = c.ch1.env.Players:GetPlayerByUserId(2).Character.HumanoidRootPart
 		runCli(";link TargetPlr true")
-		expect(cliP2Root:FindFirstChild("_KLink")).toBeTruthy()
+		sert.ok((cliP2Root:FindFirstChild("_KLink")))
 		c.ch1.env.game:GetService("RunService").RenderStepped:Fire(0.016)
 		runCli(";unlink TargetPlr")
-		expect(cliP2Root:FindFirstChild("_KLink")).toBeNil()
+		sert.eq(cliP2Root:FindFirstChild("_KLink"), nil)
 		runCli(";watch TargetPlr")
-		expect(c.ch1.env.workspace.CurrentCamera.CameraSubject).toBe(
+		sert.eq(
+			c.ch1.env.workspace.CurrentCamera.CameraSubject,
 			c.ch1.env.Players:GetPlayerByUserId(2).Character.Humanoid
 		)
 
@@ -1601,32 +1603,32 @@ describe("DefaultCommands", function()
 		c.world:run(0.05)
 		runSrv(";unspectate TargetPlr")
 		runCli(";unspectate")
-		expect(c.ch1.env.workspace.CurrentCamera.CameraSubject).toBe(localHum)
+		sert.eq(c.ch1.env.workspace.CurrentCamera.CameraSubject, localHum)
 
 		-- Fly / noclip / clip / notrip / xray
 		runSrv(";fly TargetPlr 50")
-		expect(srvP2:GetAttribute("_KFly")).toBe(50)
+		sert.eq(srvP2:GetAttribute("_KFly"), 50)
 		runSrv(";unfly TargetPlr")
-		expect(srvP2:GetAttribute("_KFly")).toBeNil()
+		sert.eq(srvP2:GetAttribute("_KFly"), nil)
 
 		runSrv(";noclip TargetPlr")
-		expect(srvP2:GetAttribute("_KNoClip")).toBe(true)
-		expect(srvP2:GetAttribute("_KFly")).toBe(128)
+		sert.eq(srvP2:GetAttribute("_KNoClip"), true)
+		sert.eq(srvP2:GetAttribute("_KFly"), 128)
 		runSrv(";clip TargetPlr")
-		expect(srvP2:GetAttribute("_KNoClip")).toBeNil()
+		sert.eq(srvP2:GetAttribute("_KNoClip"), nil)
 
 		runSrv(";notrip TargetPlr")
 		_K.Remote.Notrip:Fire(srvP1, true)
 		c.world:run(0.05)
-		expect(localHum:GetState()).toBeTruthy()
+		sert.ok((localHum:GetState()))
 		runSrv(";unnotrip TargetPlr")
 		_K.Remote.Notrip:Fire(srvP1, false)
 		c.world:run(0.05)
 
 		runCli(";xray")
-		expect(clientK.Registry.commands.xray.env.xray()).toBe(true)
+		sert.eq(clientK.Registry.commands.xray.env.xray(), true)
 		runCli(";unxray")
-		expect(clientK.Registry.commands.xray.env.xray()).toBe(false)
+		sert.eq(clientK.Registry.commands.xray.env.xray(), false)
 
 		local origShowFps = clientK.Remote.ShowFPS.OnInvoke
 		if type(origShowFps) == "function" then
@@ -1637,7 +1639,7 @@ describe("DefaultCommands", function()
 			runServiceCli.Heartbeat:Fire(0.016)
 			c.world:run(0.05)
 			c.ch1.env.task.cancel(showFpsThread)
-			expect(type(fpsVal)).toBe("number")
+			sert.eq(type(fpsVal), "number")
 		end
 		clientK.Remote.ShowFPS.OnClientInvoke = function()
 			return 60
@@ -1649,9 +1651,9 @@ describe("DefaultCommands", function()
 		c.sh.env.task.cancel(whoisThread)
 
 		runCli(";grouprank TargetPlr 100")
-		expect(clientK._lastNotify.Text).toBeTruthy()
+		sert.ok(clientK._lastNotify.Text)
 		runCli(";playercount")
-		expect(clientK._lastNotify.Text).toBe("<b>Player Count:</b> 2")
+		sert.eq(clientK._lastNotify.Text, "<b>Player Count:</b> 2")
 
 		c.world:run(61)
 		runSrv(';tts "British male" Hello voice')
@@ -1659,51 +1661,51 @@ describe("DefaultCommands", function()
 		c.world:run(0.05)
 
 		runSrv(";play 123456")
-		expect(_K.Registry.commands.play.env.playing.SoundId).toBe("rbxassetid://123456")
+		sert.eq(_K.Registry.commands.play.env.playing.SoundId, "rbxassetid://123456")
 		runSrv(";pause")
 		runSrv(";resume")
 		runSrv(";pitch 1.5")
-		expect(_K.Registry.commands.play.env.playing.Pitch).toBe(1.5)
+		sert.eq(_K.Registry.commands.play.env.playing.Pitch, 1.5)
 		runSrv(";volume 0.3")
-		expect(_K.Registry.commands.play.env.playing.Volume).toBe(0.3)
+		sert.eq(_K.Registry.commands.play.env.playing.Volume, 0.3)
 		runSrv(";stop")
-		expect(_K.Registry.commands.play.env.playing.Parent).toBeNil()
+		sert.eq(_K.Registry.commands.play.env.playing.Parent, nil)
 		runSrv(";clean")
 
 		-- === Utility.luau ===
 		runCli(";version")
-		expect(clientK._lastNotify.Text).toBeTruthy()
+		sert.ok(clientK._lastNotify.Text)
 		runCli(";prefix")
-		expect(clientK._lastNotify.Text).toBeTruthy()
+		sert.ok(clientK._lastNotify.Text)
 		runCli(";cmdbar2")
 		local cmdbar2Window = clientK.Registry.commands.cmdbar2.env.window
-		expect(cmdbar2Window._instance.Visible).toBe(true)
+		sert.eq(cmdbar2Window._instance.Visible, true)
 		runCli(";cmdbar2")
-		expect(cmdbar2Window._instance.Visible).toBe(false)
+		sert.eq(cmdbar2Window._instance.Visible, false)
 
 		runCli(";about")
-		expect(clientK.client.dashboard.About._instance.Visible).toBe(true)
+		sert.eq(clientK.client.dashboard.About._instance.Visible, true)
 		clientK.client.dashboard.About._instance.Visible = false
 
 		runCli(";commands")
-		expect(clientK.client.dashboard.Commands._instance.Visible).toBe(true)
+		sert.eq(clientK.client.dashboard.Commands._instance.Visible, true)
 		clientK.client.dashboard.Commands._instance.Visible = false
 
 		runCli(";commandbar")
 		c.world:run(0.05)
-		expect(clientK._cmdBarShown).toBe(true)
+		sert.eq(clientK._cmdBarShown, true)
 		runCli(";dashboard")
-		expect(clientK.client.dashboard.Window._instance.Visible).toBe(true)
+		sert.eq(clientK.client.dashboard.Window._instance.Visible, true)
 
 		runCli(";donate")
-		expect(clientK.client.dashboard.Market._instance.Visible).toBe(true)
+		sert.eq(clientK.client.dashboard.Market._instance.Visible, true)
 		clientK.client.dashboard.Market._instance.Visible = false
 
 		runCli(";log")
-		expect(clientK.client.dashboard.Logs._instance.Visible).toBe(true)
+		sert.eq(clientK.client.dashboard.Logs._instance.Visible, true)
 		runCli(";debuglogs")
 		runCli(";errorlogs")
-		expect(clientK.Registry.commands.chatlogs).toBeNil()
+		sert.eq(clientK.Registry.commands.chatlogs, nil)
 		runCli(";commandlogs")
 		runCli(";joinlogs")
 		runCli(";damagelogs")
@@ -1712,18 +1714,18 @@ describe("DefaultCommands", function()
 		clientK.client.dashboard.Logs._instance.Visible = false
 
 		runCli(";settings")
-		expect(clientK.client.dashboard.Settings._instance.Visible).toBe(true)
+		sert.eq(clientK.client.dashboard.Settings._instance.Visible, true)
 		clientK.client.dashboard.Settings._instance.Visible = false
 
 		runSrv(";emote TargetPlr 507771019")
 		_K.Remote.Emote:Fire(srvP1, 507771019)
 		c.world:run(0.05)
 		local emoteEnv = clientK.Registry.commands.emote.env
-		expect(emoteEnv.window._instance.Visible).toBe(true)
+		sert.eq(emoteEnv.window._instance.Visible, true)
 		runSrv(";stopemote TargetPlr")
 		_K.Remote.Emote:Fire(srvP1, nil)
 		c.world:run(0.05)
-		expect(emoteEnv.window._instance.Visible).toBe(false)
+		sert.eq(emoteEnv.window._instance.Visible, false)
 
 		-- Verify emote ownership & VIP bypass in emote.run
 		do
@@ -1762,9 +1764,9 @@ describe("DefaultCommands", function()
 			-- 1. Non-VIP who does not own a sellable emote gets prompted for emoteId (2001)
 			srvP2:SetAttribute("_KDonationLevel", 0)
 			emoteCmd.run(p2Ctx, { srvP2 }, 9001)
-			expect(#emoteFires).toBe(0)
-			expect(#bulkPrompts).toBe(1)
-			expect(bulkPrompts[1].items[1].Id).toBe("2001")
+			sert.eq(#emoteFires, 0)
+			sert.eq(#bulkPrompts, 1)
+			sert.eq(bulkPrompts[1].items[1].Id, "2001")
 
 			-- 2. Non-VIP who does not own an offsale/non-bulk emote gets the VIP Popup via Remote.VIPNotification:Fire(plr, true)
 			table.clear(bulkPrompts)
@@ -1776,42 +1778,42 @@ describe("DefaultCommands", function()
 			end
 			clientK.VIP.popup.Visible = false
 			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
-			expect(#emoteFires).toBe(0)
-			expect(#bulkPrompts).toBe(0)
-			expect(#vipNotifications).toBe(1)
-			expect(vipNotifications[1].plr).toBe(srvP2)
-			expect(vipNotifications[1].forcePopup).toBe(true)
+			sert.eq(#emoteFires, 0)
+			sert.eq(#bulkPrompts, 0)
+			sert.eq(#vipNotifications, 1)
+			sert.eq(vipNotifications[1].plr, srvP2)
+			sert.eq(vipNotifications[1].forcePopup, true)
 
 			-- 3. Non-VIP who owns the emote asset (2001) plays it without purchase prompt
 			table.clear(bulkPrompts)
 			ownedAssets[2001] = true
 			emoteCmd.run(p2Ctx, { srvP2 }, 9001)
-			expect(#bulkPrompts).toBe(0)
-			expect(#emoteFires).toBe(1)
-			expect(emoteFires[1].anim).toBe(9001)
+			sert.eq(#bulkPrompts, 0)
+			sert.eq(#emoteFires, 1)
+			sert.eq(emoteFires[1].anim, 9001)
 
 			-- 4. VIP user (via _KDonationLevel >= 1, vip role, freeAdmin vip, or custom VIP group role) plays unowned emote without purchase prompt
 			table.clear(emoteFires)
 			ownedAssets[2001] = false
 			srvP2:SetAttribute("_KDonationLevel", 1)
 			emoteCmd.run(p2Ctx, { srvP2 }, 9001)
-			expect(#bulkPrompts).toBe(0)
-			expect(#emoteFires).toBe(1)
+			sert.eq(#bulkPrompts, 0)
+			sert.eq(#emoteFires, 1)
 
 			table.clear(emoteFires)
 			srvP2:SetAttribute("_KDonationLevel", 0)
 			_K.Auth.userRoleAdd(srvP2.UserId, "vip")
 			emoteCmd.run(p2Ctx, { srvP2 }, 9001)
-			expect(#bulkPrompts).toBe(0)
-			expect(#emoteFires).toBe(1)
+			sert.eq(#bulkPrompts, 0)
+			sert.eq(#emoteFires, 1)
 			_K.Auth.userRoleRemove(srvP2.UserId, "vip")
 
 			-- 4b. freeAdmin = { "vip" } grants free emote access even when Auth.hasRole is false for same rank
 			table.clear(emoteFires)
 			_K.Data.settings.freeAdmin = { "vip" }
 			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
-			expect(#bulkPrompts).toBe(0)
-			expect(#emoteFires).toBe(1)
+			sert.eq(#bulkPrompts, 0)
+			sert.eq(#emoteFires, 1)
 			_K.Data.settings.freeAdmin = {}
 
 			-- 4c. Custom role with groups = { "vip" } at rank 0 grants free emote access
@@ -1826,8 +1828,8 @@ describe("DefaultCommands", function()
 			}
 			_K.Auth.userRoleAdd(srvP2.UserId, "customVip")
 			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
-			expect(#bulkPrompts).toBe(0)
-			expect(#emoteFires).toBe(1)
+			sert.eq(#bulkPrompts, 0)
+			sert.eq(#emoteFires, 1)
 			_K.Auth.userRoleRemove(srvP2.UserId, "customVip")
 			_K.Data.roles.customVip = nil
 
@@ -1838,17 +1840,17 @@ describe("DefaultCommands", function()
 			_K.Data.settings.vip = false
 			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
 			_K.Data.settings.vip = true
-			expect(srvP2:GetAttribute("_KDonationLevel")).toBe(4)
-			expect(#bulkPrompts).toBe(0)
-			expect(#emoteFires).toBe(1)
+			sert.eq(srvP2:GetAttribute("_KDonationLevel"), 4)
+			sert.eq(#bulkPrompts, 0)
+			sert.eq(#emoteFires, 1)
 			ownedAssets[115444443724463] = false
 			srvP2:SetAttribute("_KDonationLevel", 0)
 
 			-- 5. Stopping an emote (animation == nil) does not prompt purchase
 			table.clear(emoteFires)
 			emoteCmd.run(p2Ctx, { srvP2 }, nil :: any)
-			expect(#bulkPrompts).toBe(0)
-			expect(#emoteFires).toBe(1)
+			sert.eq(#bulkPrompts, 0)
+			sert.eq(#emoteFires, 1)
 
 			-- 6. When settings.vip == false, offsale/non-bulk emotes (9002) do not prompt purchase and do not play
 			table.clear(bulkPrompts)
@@ -1856,9 +1858,9 @@ describe("DefaultCommands", function()
 			table.clear(vipNotifications)
 			_K.Data.settings.vip = false
 			emoteCmd.run(p2Ctx, { srvP2 }, 9002)
-			expect(#bulkPrompts).toBe(0)
-			expect(#vipNotifications).toBe(0)
-			expect(#emoteFires).toBe(0)
+			sert.eq(#bulkPrompts, 0)
+			sert.eq(#vipNotifications, 0)
+			sert.eq(#emoteFires, 0)
 			_K.Data.settings.vip = true
 
 			-- 7. Disconnected fromPlayer (Parent == nil) is a safe no-op
@@ -1866,8 +1868,8 @@ describe("DefaultCommands", function()
 			srvP2.Parent = nil
 			emoteCmd.run(p2Ctx, { srvP2 }, 9001)
 			srvP2.Parent = origParent
-			expect(#bulkPrompts).toBe(0)
-			expect(#emoteFires).toBe(0)
+			sert.eq(#bulkPrompts, 0)
+			sert.eq(#emoteFires, 0)
 
 			-- 8. Client Emote preview Unlock button opens VIP popup on off-sale emotes and updates owned state on PromptBulkPurchaseFinished
 			clientK.Data.emoteItemFromId[2002] = {
@@ -1891,8 +1893,8 @@ describe("DefaultCommands", function()
 				emoteEnv.preview.Visible = true
 				clientK.VIP.popup.Visible = false
 				emoteEnv.preview.Unlock.Activated:Fire()
-				expect(emoteEnv.preview.Visible).toBe(false)
-				expect(clientK.VIP.popup.Visible).toBe(true)
+				sert.eq(emoteEnv.preview.Visible, false)
+				sert.eq(clientK.VIP.popup.Visible, true)
 				clientK.VIP.popup.Visible = false
 
 				emoteEnv.updatePreview(2001)
@@ -1904,8 +1906,8 @@ describe("DefaultCommands", function()
 					{ Items = { { Id = "2001", Status = Enum.MarketplaceItemPurchaseStatus.Success } } }
 				)
 				c.world:run(0.05)
-				expect(clientK.Data.emoteItemFromId[2001].owned).toBe(true)
-				expect(emoteEnv.preview.Visible).toBe(false)
+				sert.eq(clientK.Data.emoteItemFromId[2001].owned, true)
+				sert.eq(emoteEnv.preview.Visible, false)
 			end
 
 			_K.Remote.VIPNotification.Fire = origVipNotifFire
@@ -1918,7 +1920,7 @@ describe("DefaultCommands", function()
 
 		runCli(";emotes")
 		local emotesEnv = clientK.Registry.commands.emotes.env
-		expect(emotesEnv.window._instance.Visible).toBe(true)
+		sert.eq(emotesEnv.window._instance.Visible, true)
 		if emotesEnv.scroller and emotesEnv.scroller.CreateItem then
 			local createItemFn = if type(emotesEnv.scroller.CreateItem) == "table"
 				then emotesEnv.scroller.CreateItem:peek()
@@ -1929,24 +1931,24 @@ describe("DefaultCommands", function()
 			local waveData = { name = "Wave", emoteId = 507771019, owned = true }
 			local emoteItem = createItemFn(emotesEnv.scroller, waveData)
 			renderItemFn(emotesEnv.scroller, emoteItem, waveData)
-			expect(emoteItem).toBeTruthy()
+			sert.ok(emoteItem)
 			local imgButton = emoteItem._instance:FindFirstChildOfClass("ImageButton")
-			expect(imgButton).toBeTruthy()
-			expect(type(imgButton.Image)).toBe("string")
-			expect(imgButton.Image).toBe(clientK.UI.Theme.Image.Play:peek())
+			sert.ok(imgButton)
+			sert.eq(type(imgButton.Image), "string")
+			sert.eq(imgButton.Image, clientK.UI.Theme.Image.Play:peek())
 		end
 		emotesEnv.window._instance.Visible = false
 
 		runCli(";age TargetPlr")
-		expect(clientK._lastNotify.Text).toBeTruthy()
+		sert.ok(clientK._lastNotify.Text)
 		runCli(";serverage")
-		expect(clientK._lastNotify.Text).toBeTruthy()
+		sert.ok(clientK._lastNotify.Text)
 		runCli(";gameid")
-		expect(clientK._lastNotify.Text).toBeTruthy()
+		sert.ok(clientK._lastNotify.Text)
 		runCli(";jobid")
-		expect(clientK._lastNotify.Text).toBeTruthy()
+		sert.ok(clientK._lastNotify.Text)
 		runCli(";placeid")
-		expect(clientK._lastNotify.Text).toBeTruthy()
+		sert.ok(clientK._lastNotify.Text)
 
 		local fpsThread = c.sh.env.task.spawn(function()
 			runSrv(";showfps CreatorPlr")
@@ -1962,9 +1964,9 @@ describe("DefaultCommands", function()
 		runSrv(";rejoin")
 
 		runCli(";viewas vip")
-		expect(clientK.Registry.commands.viewas.env.originalCreatorId).toBe(1)
+		sert.eq(clientK.Registry.commands.viewas.env.originalCreatorId, 1)
 		runCli(";unviewas")
-		expect(clientK.Registry.commands.viewas.env.originalCreatorId).toBeNil()
+		sert.eq(clientK.Registry.commands.viewas.env.originalCreatorId, nil)
 	end)
 
 	test(
@@ -2007,162 +2009,162 @@ describe("DefaultCommands", function()
 
 			-- Client dashboard/window tabs in Moderation
 			runCli(";bans")
-			expect(clientK.client.dashboard.Bans._instance.Visible).toBe(true)
+			sert.eq(clientK.client.dashboard.Bans._instance.Visible, true)
 			clientK.client.dashboard.Bans._instance.Visible = false
 
 			runCli(";members")
-			expect(clientK.client.dashboard.Members._instance.Visible).toBe(true)
+			sert.eq(clientK.client.dashboard.Members._instance.Visible, true)
 			clientK.client.dashboard.Members._instance.Visible = false
 
 			runCli(";servers")
-			expect(clientK.client.dashboard.Servers._instance.Visible).toBe(true)
+			sert.eq(clientK.client.dashboard.Servers._instance.Visible, true)
 			clientK.client.dashboard.Servers._instance.Visible = false
 
 			runCli(";tools")
 			local toolsEnv = clientK.Registry.commands.tools.env
-			expect(toolsEnv.window._instance.Visible).toBe(true)
+			sert.eq(toolsEnv.window._instance.Visible, true)
 			if toolsEnv.scroller and toolsEnv.scroller.CreateItem then
 				local item = toolsEnv.scroller:CreateItem()
 				toolsEnv.scroller:RenderItem(item, "Launcher")
-				expect(item).toBeTruthy()
+				sert.ok(item)
 			end
 			toolsEnv.window._instance.Visible = false
 
 			runCli(";startertools")
-			expect(toolsEnv.window._instance.Visible).toBe(true)
+			sert.eq(toolsEnv.window._instance.Visible, true)
 			toolsEnv.window._instance.Visible = false
 
 			runCli(";viewtools TargetPlr")
-			expect(toolsEnv.window._instance.Visible).toBe(true)
+			sert.eq(toolsEnv.window._instance.Visible, true)
 			toolsEnv.window._instance.Visible = false
 
 			-- Mute / unmute
 			runSrv(";mute TargetPlr")
-			expect(_K.Registry.commands.mute.env.muted[2]).toBeTruthy()
+			sert.ok(_K.Registry.commands.mute.env.muted[2])
 			_K.Remote.Mute:Fire(srvP1, true)
 			c.world:run(0.05)
 			runSrv(";unmute TargetPlr")
-			expect(_K.Registry.commands.mute.env.muted[2]).toBeNil()
+			sert.eq(_K.Registry.commands.mute.env.muted[2], nil)
 			_K.Remote.Mute:Fire(srvP1, false)
 			c.world:run(0.05)
 
 			-- Punish / unpunish
 			runSrv(";punish TargetPlr")
-			expect(srvP2.Character).toBeNil()
+			sert.eq(srvP2.Character, nil)
 			runSrv(";unpunish TargetPlr")
-			expect(srvP2.Character.Parent).toBe(c.sh.env.workspace)
+			sert.eq(srvP2.Character.Parent, c.sh.env.workspace)
 
 			-- Name / hidename / showname / unname
 			runSrv(";name TargetPlr CustomNick")
-			expect(srvP2.Character.Humanoid.DisplayName).toBe("CustomNick")
+			sert.eq(srvP2.Character.Humanoid.DisplayName, "CustomNick")
 			runSrv(";hidename TargetPlr")
-			expect(srvP2.Character.Humanoid.DisplayDistanceType).toBe(Enum.HumanoidDisplayDistanceType.None)
+			sert.eq(srvP2.Character.Humanoid.DisplayDistanceType, Enum.HumanoidDisplayDistanceType.None)
 			runSrv(";showname TargetPlr")
-			expect(srvP2.Character.Humanoid.DisplayDistanceType).toBe(Enum.HumanoidDisplayDistanceType.Viewer)
+			sert.eq(srvP2.Character.Humanoid.DisplayDistanceType, Enum.HumanoidDisplayDistanceType.Viewer)
 			runSrv(";unname TargetPlr")
-			expect(srvP2.Character.Humanoid.DisplayName).toBe("TargetPlr")
+			sert.eq(srvP2.Character.Humanoid.DisplayName, "TargetPlr")
 
 			-- CoreGui
 			runSrv(";setcoregui TargetPlr Backpack false")
 			_K.Remote.SetCoreGuiEnabled:Fire(srvP1, Enum.CoreGuiType.Backpack, false)
 			c.world:run(0.05)
-			expect(c.ch1.env.game:GetService("StarterGui"):GetCoreGuiEnabled(Enum.CoreGuiType.Backpack)).toBe(false)
+			sert.eq(c.ch1.env.game:GetService("StarterGui"):GetCoreGuiEnabled(Enum.CoreGuiType.Backpack), false)
 
 			-- Tools: give, startergive, starterremove, copytools, removetools, sword, toolban, untoolban
 			runSrv(";give TargetPlr Launcher")
-			expect(srvP2.Backpack:FindFirstChild("Launcher")).toBeTruthy()
+			sert.ok((srvP2.Backpack:FindFirstChild("Launcher")))
 			runSrv(";give TargetPlr all")
-			expect(#srvP2.Backpack:GetChildren() >= 1).toBe(true)
+			sert.eq(#srvP2.Backpack:GetChildren() >= 1, true)
 			runSrv(";startergive TargetPlr Launcher")
-			expect(srvP2.StarterGear:FindFirstChild("Launcher")).toBeTruthy()
+			sert.ok((srvP2.StarterGear:FindFirstChild("Launcher")))
 			runSrv(";starterremove TargetPlr Launcher")
-			expect(srvP2.StarterGear:FindFirstChild("Launcher")).toBeNil()
+			sert.eq(srvP2.StarterGear:FindFirstChild("Launcher"), nil)
 			runSrv(";copytools TargetPlr CreatorPlr")
-			expect(srvP1.Backpack:FindFirstChild("Launcher")).toBeTruthy()
+			sert.ok((srvP1.Backpack:FindFirstChild("Launcher")))
 			runSrv(";sword TargetPlr")
 			runSrv(";removetools TargetPlr")
-			expect(#srvP2.Backpack:GetChildren()).toBe(0)
+			sert.eq(#srvP2.Backpack:GetChildren(), 0)
 			runSrv(";toolban TargetPlr")
-			expect(_K.Registry.commands.toolban.env.bans[srvP2]).toBeTruthy()
+			sert.ok(_K.Registry.commands.toolban.env.bans[srvP2])
 			-- Adding a tool while toolbanned destroys it via task.defer
 			local bannedTool = c.sh.env.Instance.new("Tool", srvP2.Backpack)
 			c.world:run(0.05)
-			expect(bannedTool.Parent).toBeNil()
+			sert.eq(bannedTool.Parent, nil)
 			runSrv(";untoolban TargetPlr")
-			expect(_K.Registry.commands.toolban.env.bans[srvP2]).toBeNil()
+			sert.eq(_K.Registry.commands.toolban.env.bans[srvP2], nil)
 
 			-- Health, damage, forcefield, immortal, kill, loopkill
 			runSrv(";health TargetPlr 250")
-			expect(srvP2.Character.Humanoid.MaxHealth).toBe(250)
+			sert.eq(srvP2.Character.Humanoid.MaxHealth, 250)
 			runSrv(";hurt TargetPlr 50")
-			expect(srvP2.Character.Humanoid.Health).toBe(200)
+			sert.eq(srvP2.Character.Humanoid.Health, 200)
 			runSrv(";heal TargetPlr")
-			expect(srvP2.Character.Humanoid.Health).toBe(250)
+			sert.eq(srvP2.Character.Humanoid.Health, 250)
 			runSrv(";forcefield TargetPlr")
-			expect(srvP2.Character:FindFirstChildOfClass("ForceField")).toBeTruthy()
+			sert.ok((srvP2.Character:FindFirstChildOfClass("ForceField")))
 			runSrv(";unforcefield TargetPlr")
-			expect(srvP2.Character:FindFirstChildOfClass("ForceField")).toBeNil()
+			sert.eq(srvP2.Character:FindFirstChildOfClass("ForceField"), nil)
 			runSrv(";immortal TargetPlr")
-			expect(srvP2.Character.Humanoid.MaxHealth).toBe(math.huge)
-			expect(srvP2.Character:FindFirstChild("_Kff")).toBeTruthy()
+			sert.eq(srvP2.Character.Humanoid.MaxHealth, math.huge)
+			sert.ok((srvP2.Character:FindFirstChild("_Kff")))
 			runSrv(";mortal TargetPlr")
-			expect(srvP2.Character.Humanoid.MaxHealth).toBe(250)
-			expect(srvP2.Character:FindFirstChild("_Kff")).toBeNil()
+			sert.eq(srvP2.Character.Humanoid.MaxHealth, 250)
+			sert.eq(srvP2.Character:FindFirstChild("_Kff"), nil)
 			runSrv(";kill TargetPlr")
-			expect(srvP2.Character.Humanoid.Health).toBe(0)
+			sert.eq(srvP2.Character.Humanoid.Health, 0)
 			buildCharacter(c.sh.env, srvP2)
 			runSrv(";loopkill TargetPlr")
-			expect(_K.Registry.commands.loopkill.env.killing[srvP2.UserId]).toBe(true)
+			sert.eq(_K.Registry.commands.loopkill.env.killing[srvP2.UserId], true)
 			c.world:run(0.1)
 			runSrv(";unloopkill TargetPlr")
-			expect(_K.Registry.commands.loopkill.env.killing[srvP2.UserId]).toBeNil()
+			sert.eq(_K.Registry.commands.loopkill.env.killing[srvP2.UserId], nil)
 			buildCharacter(c.sh.env, srvP2)
 
 			-- Visibility, blind, freeze, jail, lock, stun
 			runSrv(";invisible TargetPlr")
-			expect(srvP2.Character.Head.Transparency).toBe(1)
-			expect(srvP2.Character.HumanoidRootPart:FindFirstChildOfClass("PointLight").Enabled).toBe(false)
+			sert.eq(srvP2.Character.Head.Transparency, 1)
+			sert.eq(srvP2.Character.HumanoidRootPart:FindFirstChildOfClass("PointLight").Enabled, false)
 			runSrv(";visible TargetPlr")
-			expect(srvP2.Character.Head.Transparency).toBe(0)
-			expect(srvP2.Character.HumanoidRootPart:FindFirstChildOfClass("PointLight").Enabled).toBe(true)
+			sert.eq(srvP2.Character.Head.Transparency, 0)
+			sert.eq(srvP2.Character.HumanoidRootPart:FindFirstChildOfClass("PointLight").Enabled, true)
 
 			runSrv(";blind TargetPlr")
 			_K.Remote.Blind:Fire(srvP1, true)
 			c.world:run(0.05)
-			expect(clientK.Registry.commands.blind.env.frame.Visible).toBe(true)
+			sert.eq(clientK.Registry.commands.blind.env.frame.Visible, true)
 			runSrv(";unblind TargetPlr")
 			_K.Remote.Blind:Fire(srvP1, false)
 			c.world:run(0.05)
-			expect(clientK.Registry.commands.blind.env.frame.Visible).toBe(false)
+			sert.eq(clientK.Registry.commands.blind.env.frame.Visible, false)
 
 			runSrv(";freeze TargetPlr")
-			expect(srvP2.Character:FindFirstChild("kFreeze")).toBeTruthy()
-			expect(srvP2.Character.HumanoidRootPart.Anchored).toBe(true)
+			sert.ok((srvP2.Character:FindFirstChild("kFreeze")))
+			sert.eq(srvP2.Character.HumanoidRootPart.Anchored, true)
 			runSrv(";thaw TargetPlr")
-			expect(srvP2.Character:FindFirstChild("kFreeze")).toBeNil()
-			expect(srvP2.Character.HumanoidRootPart.Anchored).toBe(false)
+			sert.eq(srvP2.Character:FindFirstChild("kFreeze"), nil)
+			sert.eq(srvP2.Character.HumanoidRootPart.Anchored, false)
 
 			runSrv(";jail TargetPlr")
-			expect(_K.Registry.commands.jail.env.parts[srvP2.UserId]).toBeTruthy()
+			sert.ok(_K.Registry.commands.jail.env.parts[srvP2.UserId])
 			-- Re-jailing exercises existing jail guard, and respawn while jailed recaptures
 			runSrv(";jail TargetPlr")
 			_K.Registry.commands.jail.env.recapture(srvP2.Character)
 			runSrv(";unjail TargetPlr")
-			expect(_K.Registry.commands.jail.env.parts[srvP2.UserId]).toBeNil()
+			sert.eq(_K.Registry.commands.jail.env.parts[srvP2.UserId], nil)
 
 			runSrv(";lock TargetPlr")
-			expect(srvP2.Character.HumanoidRootPart.Locked).toBe(true)
+			sert.eq(srvP2.Character.HumanoidRootPart.Locked, true)
 			runSrv(";unlock TargetPlr")
-			expect(srvP2.Character.HumanoidRootPart.Locked).toBe(false)
+			sert.eq(srvP2.Character.HumanoidRootPart.Locked, false)
 			runSrv(";stun TargetPlr")
-			expect(srvP2.Character.Humanoid.PlatformStand).toBe(true)
+			sert.eq(srvP2.Character.Humanoid.PlatformStand, true)
 			runSrv(";unstun TargetPlr")
-			expect(srvP2.Character.Humanoid.PlatformStand).toBe(false)
+			sert.eq(srvP2.Character.Humanoid.PlatformStand, false)
 
 			-- CameraOffset, antilag, fps, fov
 			runSrv(";cameraoffset CreatorPlr 1,2,3")
 			c.world:run(0.05)
-			expect(c.ch1.env.Players.LocalPlayer.Character.Humanoid.CameraOffset).toEqual(Vector3.new(1, 2, 3))
+			sert.eq(c.ch1.env.Players.LocalPlayer.Character.Humanoid.CameraOffset, Vector3.new(1, 2, 3))
 			runSrv(";antilag TargetPlr")
 			runSrv(";unantilag TargetPlr")
 			runSrv(";fps TargetPlr 120")
@@ -2174,81 +2176,75 @@ describe("DefaultCommands", function()
 			runSrv(";fov TargetPlr 90")
 			_K.Remote.FOV:Fire(srvP1, 90)
 			c.world:run(0.05)
-			expect(c.ch1.env.workspace.CurrentCamera.FieldOfView).toBe(90)
+			sert.eq(c.ch1.env.workspace.CurrentCamera.FieldOfView, 90)
 			runSrv(";unfov TargetPlr")
 			_K.Remote.FOV:Fire(srvP1, nil)
 			c.world:run(0.05)
-			expect(c.ch1.env.workspace.CurrentCamera.FieldOfView).toBe(70)
+			sert.eq(c.ch1.env.workspace.CurrentCamera.FieldOfView, 70)
 
 			-- Teleportation & movement
 			srvP2.Character:PivotTo(CFrame.new(100, 0, 100))
 			runSrv(";bring TargetPlr")
-			expect((srvP2.Character:GetPivot().Position - srvP1.Character:GetPivot().Position).Magnitude <= 10).toBe(
-				true
-			)
+			sert.eq((srvP2.Character:GetPivot().Position - srvP1.Character:GetPivot().Position).Magnitude <= 10, true)
 			srvP2.Character:PivotTo(CFrame.new(200, 0, 200))
 			runSrv(";to TargetPlr")
-			expect((srvP1.Character:GetPivot().Position - srvP2.Character:GetPivot().Position).Magnitude <= 10).toBe(
-				true
-			)
+			sert.eq((srvP1.Character:GetPivot().Position - srvP2.Character:GetPivot().Position).Magnitude <= 10, true)
 			srvP2.Character:PivotTo(CFrame.new(0, 0, 0))
 			runSrv(";tp TargetPlr CreatorPlr")
-			expect((srvP2.Character:GetPivot().Position - srvP1.Character:GetPivot().Position).Magnitude <= 10).toBe(
-				true
-			)
+			sert.eq((srvP2.Character:GetPivot().Position - srvP1.Character:GetPivot().Position).Magnitude <= 10, true)
 			runSrv(";jump TargetPlr")
-			expect(srvP2.Character.Humanoid.Jump).toBe(true)
+			sert.eq(srvP2.Character.Humanoid.Jump, true)
 			runSrv(";jumppower TargetPlr 75")
-			expect(srvP2.Character.Humanoid.JumpPower).toBe(75)
+			sert.eq(srvP2.Character.Humanoid.JumpPower, 75)
 			runSrv(";starterjumppower 80")
-			expect(c.sh.env.game:GetService("StarterPlayer").CharacterJumpPower).toBe(80)
+			sert.eq(c.sh.env.game:GetService("StarterPlayer").CharacterJumpPower, 80)
 			runSrv(";sit TargetPlr")
-			expect(srvP2.Character.Humanoid.Sit).toBe(true)
+			sert.eq(srvP2.Character.Humanoid.Sit, true)
 			runSrv(";unsit TargetPlr")
-			expect(srvP2.Character.Humanoid.Sit).toBe(false)
+			sert.eq(srvP2.Character.Humanoid.Sit, false)
 			runSrv(";speed TargetPlr 32")
-			expect(srvP2.Character.Humanoid.WalkSpeed).toBe(32)
+			sert.eq(srvP2.Character.Humanoid.WalkSpeed, 32)
 			runSrv(";starterspeed 24")
-			expect(c.sh.env.game:GetService("StarterPlayer").CharacterWalkSpeed).toBe(24)
+			sert.eq(c.sh.env.game:GetService("StarterPlayer").CharacterWalkSpeed, 24)
 			runSrv(";slopeangle TargetPlr 60")
-			expect(srvP2.Character.Humanoid.MaxSlopeAngle).toBe(60)
+			sert.eq(srvP2.Character.Humanoid.MaxSlopeAngle, 60)
 			runSrv(";starterslopeangle 60")
-			expect(c.sh.env.game:GetService("StarterPlayer").CharacterMaxSlopeAngle).toBe(60)
+			sert.eq(c.sh.env.game:GetService("StarterPlayer").CharacterMaxSlopeAngle, 60)
 
 			-- VehicleSpeed / VehicleTorque with a VehicleSeat
 			local vSeat = c.sh.env.Instance.new("VehicleSeat", srvP2.Character)
 			srvP2.Character.Humanoid._props.SeatPart = vSeat
 			runSrv(";vehiclespeed TargetPlr 100")
-			expect(vSeat.MaxSpeed).toBe(100)
+			sert.eq(vSeat.MaxSpeed, 100)
 			runSrv(";vehicletorque TargetPlr 50")
-			expect(vSeat.Torque).toBe(50)
+			sert.eq(vSeat.Torque, 50)
 
 			-- Collide / nocollide
 			srvP2.Character.HumanoidRootPart.CollisionGroup = "Default"
 			runSrv(";nocollide TargetPlr")
-			expect(srvP2.Character.HumanoidRootPart.CollisionGroup).toBe("_KNoCollide")
+			sert.eq(srvP2.Character.HumanoidRootPart.CollisionGroup, "_KNoCollide")
 			runSrv(";collide TargetPlr")
-			expect(srvP2.Character.HumanoidRootPart.CollisionGroup).toBe("Default")
+			sert.eq(srvP2.Character.HumanoidRootPart.CollisionGroup, "Default")
 
 			-- Limbs & rig / respawn / refresh
 			runSrv(";removearms TargetPlr")
-			expect(srvP2.Character:FindFirstChild("LeftUpperArm")).toBeNil()
+			sert.eq(srvP2.Character:FindFirstChild("LeftUpperArm"), nil)
 			buildCharacter(c.sh.env, srvP2)
 			runSrv(";removelegs TargetPlr")
-			expect(srvP2.Character:FindFirstChild("LeftUpperLeg")).toBeNil()
+			sert.eq(srvP2.Character:FindFirstChild("LeftUpperLeg"), nil)
 			buildCharacter(c.sh.env, srvP2)
 			runSrv(";removelimbs TargetPlr")
-			expect(srvP2.Character:FindFirstChild("RightUpperArm")).toBeNil()
-			expect(srvP2.Character:FindFirstChild("RightUpperLeg")).toBeNil()
+			sert.eq(srvP2.Character:FindFirstChild("RightUpperArm"), nil)
+			sert.eq(srvP2.Character:FindFirstChild("RightUpperLeg"), nil)
 			buildCharacter(c.sh.env, srvP2)
 			runSrv(";r6 TargetPlr")
-			expect(srvP2.Character).toBeTruthy()
+			sert.ok(srvP2.Character)
 			runSrv(";r15 TargetPlr")
-			expect(srvP2.Character).toBeTruthy()
+			sert.ok(srvP2.Character)
 			runSrv(";respawn TargetPlr")
-			expect(srvP2.Character).toBeTruthy()
+			sert.ok(srvP2.Character)
 			runSrv(";refresh TargetPlr")
-			expect(srvP2.Character).toBeTruthy()
+			sert.ok(srvP2.Character)
 
 			-- Marketplace & Group commands: buy, has, promptgroup (arg order: players, infoType, id)
 			c.sh.env.marketplace.assets[2] = { [101] = true }
@@ -2265,18 +2261,18 @@ describe("DefaultCommands", function()
 			runSrv(";has TargetPlr Bundle 103")
 			runSrv(";has TargetPlr Subscription 104")
 			c.world:run(0.05)
-			expect(_K.Registry.commands.has.env.method[Enum.InfoType.Subscription]).toBeTruthy()
+			sert.ok(_K.Registry.commands.has.env.method[Enum.InfoType.Subscription])
 			runSrv(";promptgroup TargetPlr 100")
 
 			-- Leaderstats: change & resetstats
 			runSrv(";change TargetPlr Coins 999")
-			expect(coins.Value).toBe(999)
+			sert.eq(coins.Value, 999)
 			runSrv(";change TargetPlr Status Ready")
-			expect(statusStat.Value).toBe("Ready")
+			sert.eq(statusStat.Value, "Ready")
 			runSrv(";change TargetPlr Active true")
-			expect(activeStat.Value).toBe(true)
+			sert.eq(activeStat.Value, true)
 			runSrv(";resetstats TargetPlr")
-			expect(coins.Value).toBe(0)
+			sert.eq(coins.Value, 0)
 
 			-- Teams: createteam, editteam, team, substitute, randomizeteams, teamrespawn, removeteam, clearteams
 			runSrv(";createteam Red 255,0,0")
@@ -2285,34 +2281,34 @@ describe("DefaultCommands", function()
 			local teams = c.sh.env.game:GetService("Teams")
 			local redTeam = teams:FindFirstChild("Red")
 			local blueTeam = teams:FindFirstChild("Blue")
-			expect(redTeam).toBeTruthy()
-			expect(blueTeam).toBeTruthy()
+			sert.ok(redTeam)
+			sert.ok(blueTeam)
 			c.world:run(61)
 			runSrv(";editteam Red Crimson 200,0,0")
-			expect(redTeam.Name).toBe("Crimson")
+			sert.eq(redTeam.Name, "Crimson")
 			runSrv(";team CreatorPlr Crimson")
 			runSrv(";team TargetPlr Blue")
-			expect(srvP1.Team).toBe(redTeam)
-			expect(srvP2.Team).toBe(blueTeam)
+			sert.eq(srvP1.Team, redTeam)
+			sert.eq(srvP2.Team, blueTeam)
 			runSrv(";substitute CreatorPlr TargetPlr")
-			expect(srvP1.Team).toBe(blueTeam)
-			expect(srvP2.Team).toBe(redTeam)
+			sert.eq(srvP1.Team, blueTeam)
+			sert.eq(srvP2.Team, redTeam)
 			runSrv(";randomizeteams all Crimson Blue")
-			expect(srvP1.Team ~= nil or srvP2.Team ~= nil).toBe(true)
+			sert.eq(srvP1.Team ~= nil or srvP2.Team ~= nil, true)
 			runSrv(";teamrespawn Blue")
 			runSrv(";removeteam Crimson")
-			expect(teams:FindFirstChild("Crimson")).toBeNil()
+			sert.eq(teams:FindFirstChild("Crimson"), nil)
 			runSrv(";clearteams")
-			expect(#teams:GetChildren()).toBe(0)
+			sert.eq(#teams:GetChildren(), 0)
 
 			-- Ban / unban / kick / crash (server run)
 			runSrv(";crash TargetPlr")
 			runSrv(";ban TargetPlr 10m Griefing")
-			expect(_K.Data.bans["2"]).toBeTruthy()
+			sert.ok(_K.Data.bans["2"])
 			runSrv(";unban 2")
-			expect(_K.Data.bans["2"]).toBeNil()
+			sert.eq(_K.Data.bans["2"], nil)
 			runSrv(";kick TargetPlr Bye")
-			expect(srvP2._props._kicked).toBe("Bye")
+			sert.eq(srvP2._props._kicked, "Bye")
 		end
 	)
 
@@ -2331,130 +2327,124 @@ describe("DefaultCommands", function()
 
 		-- === VIP.luau ===
 		runSrv(";fire TargetPlr 5 255,0,0 255,128,0")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KFire")).toBeTruthy()
+		sert.ok((srvP2.Character.HumanoidRootPart:FindFirstChild("_KFire")))
 		runSrv(";unfire TargetPlr")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KFire")).toBeNil()
+		sert.eq(srvP2.Character.HumanoidRootPart:FindFirstChild("_KFire"), nil)
 
 		runSrv(";smoke TargetPlr 255,255,255")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KSmoke")).toBeTruthy()
+		sert.ok((srvP2.Character.HumanoidRootPart:FindFirstChild("_KSmoke")))
 		runSrv(";unsmoke TargetPlr")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KSmoke")).toBeNil()
+		sert.eq(srvP2.Character.HumanoidRootPart:FindFirstChild("_KSmoke"), nil)
 
 		runSrv(";sparkles TargetPlr 0,255,255")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KSparkles")).toBeTruthy()
+		sert.ok((srvP2.Character.HumanoidRootPart:FindFirstChild("_KSparkles")))
 		runSrv(";unsparkles TargetPlr")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KSparkles")).toBeNil()
+		sert.eq(srvP2.Character.HumanoidRootPart:FindFirstChild("_KSparkles"), nil)
 
 		runSrv(";light TargetPlr 10 255,255,0")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KLight")).toBeTruthy()
+		sert.ok((srvP2.Character.HumanoidRootPart:FindFirstChild("_KLight")))
 		runSrv(";unlight TargetPlr")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KLight")).toBeNil()
+		sert.eq(srvP2.Character.HumanoidRootPart:FindFirstChild("_KLight"), nil)
 
 		runSrv(";highlight TargetPlr 255,0,0 255,255,255 0.5 0")
-		expect(srvP2.Character:FindFirstChild("_KHighlight")).toBeTruthy()
+		sert.ok((srvP2.Character:FindFirstChild("_KHighlight")))
 		runSrv(";unhighlight TargetPlr")
-		expect(srvP2.Character:FindFirstChild("_KHighlight")).toBeNil()
+		sert.eq(srvP2.Character:FindFirstChild("_KHighlight"), nil)
 
 		runSrv(";particle TargetPlr 12345 255,0,0")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KParticleEffect")).toBeTruthy()
+		sert.ok((srvP2.Character.HumanoidRootPart:FindFirstChild("_KParticleEffect")))
 		_K.Remote.DonorTrail:Fire(srvP1, true)
 		_K.Remote.DonorTrail:Fire(srvP1, false)
 		runSrv(";unparticle TargetPlr")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KParticleEffect")).toBeNil()
+		sert.eq(srvP2.Character.HumanoidRootPart:FindFirstChild("_KParticleEffect"), nil)
 
 		runSrv(";trail TargetPlr 255,0,0")
-		expect(srvP2.Character.Torso:FindFirstChild("_KTrailEffect")).toBeTruthy()
+		sert.ok((srvP2.Character.Torso:FindFirstChild("_KTrailEffect")))
 		runSrv(";untrail TargetPlr")
-		expect(srvP2.Character.Torso:FindFirstChild("_KTrailEffect")).toBeNil()
+		sert.eq(srvP2.Character.Torso:FindFirstChild("_KTrailEffect"), nil)
 
 		runSrv(";shine TargetPlr")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KShineEffect")).toBeTruthy()
+		sert.ok((srvP2.Character.HumanoidRootPart:FindFirstChild("_KShineEffect")))
 		runSrv(";unshine TargetPlr")
-		expect(srvP2.Character.HumanoidRootPart:FindFirstChild("_KShineEffect")).toBeNil()
+		sert.eq(srvP2.Character.HumanoidRootPart:FindFirstChild("_KShineEffect"), nil)
 
 		runSrv(";cape TargetPlr 255,0,0 0.5 Neon 12345")
-		expect(srvP2.Character:FindFirstChild("_KCape")).toBeTruthy()
+		sert.ok((srvP2.Character:FindFirstChild("_KCape")))
 		c.sh.env.game:GetService("RunService").Heartbeat:Fire(0.016)
 		runSrv(";uncape TargetPlr")
-		expect(srvP2.Character:FindFirstChild("_KCape")).toBeNil()
+		sert.eq(srvP2.Character:FindFirstChild("_KCape"), nil)
 
 		runSrv(";hat TargetPlr 800 12345 255,0,0 0.5 Neon")
-		expect(srvP2.Character:FindFirstChild("_KHat800")).toBeTruthy()
+		sert.ok((srvP2.Character:FindFirstChild("_KHat800")))
 		-- Calling hat again replaces existing _KHat800
 		runSrv(";hat TargetPlr 800")
-		expect(srvP2.Character:FindFirstChild("_KHat800")).toBeTruthy()
+		sert.ok((srvP2.Character:FindFirstChild("_KHat800")))
 		runSrv(";removehats TargetPlr")
-		expect(srvP2.Character:FindFirstChild("_KHat800")).toBeNil()
+		sert.eq(srvP2.Character:FindFirstChild("_KHat800"), nil)
 
 		runSrv(";head TargetPlr 1700")
-		expect(srvP2.Character.Humanoid._props._description.Head).toBe(1700)
+		sert.eq(srvP2.Character.Humanoid._props._description.Head, 1700)
 		runSrv(";unhead TargetPlr")
-		expect(srvP2.Character.Humanoid._props._description.Head).toBe(0)
+		sert.eq(srvP2.Character.Humanoid._props._description.Head, 0)
 		runSrv(";headsize TargetPlr 2")
-		expect(srvP2.Character.Humanoid:FindFirstChild("HeadScale").Value).toBe(2)
+		sert.eq(srvP2.Character.Humanoid:FindFirstChild("HeadScale").Value, 2)
 		runSrv(";bighead TargetPlr")
-		expect(srvP2.Character.Humanoid:FindFirstChild("HeadScale").Value > 1).toBe(true)
+		sert.eq(srvP2.Character.Humanoid:FindFirstChild("HeadScale").Value > 1, true)
 		runSrv(";smallhead TargetPlr")
-		expect(srvP2.Character.Humanoid:FindFirstChild("HeadScale").Value < 1).toBe(true)
+		sert.eq(srvP2.Character.Humanoid:FindFirstChild("HeadScale").Value < 1, true)
 		runSrv(";normalhead TargetPlr")
-		expect(srvP2.Character.Humanoid:FindFirstChild("HeadScale").Value).toBe(1)
+		sert.eq(srvP2.Character.Humanoid:FindFirstChild("HeadScale").Value, 1)
 
 		-- Also test R6 headsize & normalhead branch
 		srvP2.Character.Humanoid.RigType = Enum.HumanoidRigType.R6
 		runSrv(";headsize TargetPlr 2")
-		expect(srvP2.Character.Head.Mesh.Scale).toEqual(Vector3.new(2, 2, 2))
+		sert.eq(srvP2.Character.Head.Mesh.Scale, Vector3.new(2, 2, 2))
 		runSrv(";normalhead TargetPlr")
-		expect(srvP2.Character.Head.Mesh.Scale).toEqual(Vector3.one)
+		sert.eq(srvP2.Character.Head.Mesh.Scale, Vector3.one)
 		srvP2.Character.Humanoid.RigType = Enum.HumanoidRigType.R15
 
 		runSrv(";face TargetPlr 1800")
-		expect(string.find(srvP2.Character.Head.face.Texture, "1800", 1, true) ~= nil).toBe(true)
+		sert.eq(string.find(srvP2.Character.Head.face.Texture, "1800", 1, true) ~= nil, true)
 		runSrv(";unface TargetPlr")
-		expect(srvP2.Character.Head.face.Texture).toBe("rbxasset://textures/face.png")
+		sert.eq(srvP2.Character.Head.face.Texture, "rbxasset://textures/face.png")
 		runSrv(";shirt TargetPlr 1100")
-		expect(string.find(srvP2.Character:FindFirstChildOfClass("Shirt").ShirtTemplate, "1100", 1, true) ~= nil).toBe(
-			true
-		)
+		sert.eq(string.find(srvP2.Character:FindFirstChildOfClass("Shirt").ShirtTemplate, "1100", 1, true) ~= nil, true)
 		runSrv(";unshirt TargetPlr")
-		expect(srvP2.Character:FindFirstChildOfClass("Shirt").ShirtTemplate).toBe("")
+		sert.eq(srvP2.Character:FindFirstChildOfClass("Shirt").ShirtTemplate, "")
 		runSrv(";pants TargetPlr 1200")
-		expect(string.find(srvP2.Character:FindFirstChildOfClass("Pants").PantsTemplate, "1200", 1, true) ~= nil).toBe(
-			true
-		)
+		sert.eq(string.find(srvP2.Character:FindFirstChildOfClass("Pants").PantsTemplate, "1200", 1, true) ~= nil, true)
 		runSrv(";unpants TargetPlr")
-		expect(srvP2.Character:FindFirstChildOfClass("Pants").PantsTemplate).toBe("")
+		sert.eq(srvP2.Character:FindFirstChildOfClass("Pants").PantsTemplate, "")
 		runSrv(";tshirt TargetPlr 200")
-		expect(string.find(srvP2.Character:FindFirstChildOfClass("ShirtGraphic").Graphic, "200", 1, true) ~= nil).toBe(
-			true
-		)
+		sert.eq(string.find(srvP2.Character:FindFirstChildOfClass("ShirtGraphic").Graphic, "200", 1, true) ~= nil, true)
 		runSrv(";untshirt TargetPlr")
-		expect(srvP2.Character:FindFirstChildOfClass("ShirtGraphic").Graphic).toBe("")
+		sert.eq(srvP2.Character:FindFirstChildOfClass("ShirtGraphic").Graphic, "")
 		runSrv(";bodycolor TargetPlr 255,200,150")
-		expect(srvP2.Character.BodyColors.HeadColor3).toEqual(Color3.fromRGB(255, 200, 150))
+		sert.eq(srvP2.Character.BodyColors.HeadColor3, Color3.fromRGB(255, 200, 150))
 		runSrv(";unbodycolor TargetPlr")
 
 		runSrv(";crm TargetPlr 255,0,0 0.5 Neon")
-		expect(srvP2.Character.Head.Material).toBe(Enum.Material.Neon)
+		sert.eq(srvP2.Character.Head.Material, Enum.Material.Neon)
 		runSrv(";uncrm TargetPlr")
-		expect(srvP2.Character.Head.Reflectance).toBe(0)
+		sert.eq(srvP2.Character.Head.Reflectance, 0)
 		runSrv(";goldify TargetPlr")
-		expect(srvP2.Character.Head.Material).toBe(Enum.Material.Metal)
+		sert.eq(srvP2.Character.Head.Material, Enum.Material.Metal)
 		runSrv(";shiny TargetPlr")
-		expect(srvP2.Character.Head.Reflectance).toBe(1)
+		sert.eq(srvP2.Character.Head.Reflectance, 1)
 		runSrv(";silverify TargetPlr")
-		expect(srvP2.Character.Head.Material).toBe(Enum.Material.Metal)
+		sert.eq(srvP2.Character.Head.Material, Enum.Material.Metal)
 		runSrv(";ungoldify TargetPlr")
-		expect(srvP2.Character.Head.Reflectance).toBe(0)
+		sert.eq(srvP2.Character.Head.Reflectance, 0)
 		runSrv(";swagify TargetPlr")
-		expect(srvP2.Character:FindFirstChild("_KCape")).toBeTruthy()
+		sert.ok((srvP2.Character:FindFirstChild("_KCape")))
 		runSrv(";unswagify TargetPlr")
-		expect(srvP2.Character:FindFirstChild("_KCape")).toBeNil()
+		sert.eq(srvP2.Character:FindFirstChild("_KCape"), nil)
 
 		runSrv(";bundle TargetPlr 101")
-		expect(srvP2:FindFirstChild("_KHumanoidDescription")).toBeTruthy()
+		sert.ok((srvP2:FindFirstChild("_KHumanoidDescription")))
 		runSrv(";unbundle TargetPlr")
 		runSrv(";headless TargetPlr")
-		expect(srvP2.Character.Humanoid._props._description.Head).toBe(15093053680)
+		sert.eq(srvP2.Character.Humanoid._props._description.Head, 15093053680)
 		runSrv(";korblox TargetPlr")
 		runSrv(";werewolf TargetPlr")
 		runSrv(";vampire TargetPlr")
@@ -2475,69 +2465,72 @@ describe("DefaultCommands", function()
 		runCli(";wingscolor 255,0,0")
 		runSrv(";wingscolor 255,0,0")
 		c.world:run(0.05)
-		expect(wingsPart.Color).toEqual(Color3.fromRGB(255, 0, 0))
+		sert.eq(wingsPart.Color, Color3.fromRGB(255, 0, 0))
 		runCli(";rainbowwings")
 		runSrv(";rainbowwings")
-		expect(wings:HasTag("_KAlphaWingsRainbow")).toBe(true)
+		sert.eq(wings:HasTag("_KAlphaWingsRainbow"), true)
 		runCli(";crowncolor 255,215,0 0,0,0")
 		runSrv(";crowncolor 255,215,0 0,0,0")
 		c.world:run(0.05)
-		expect(crownHandle.Color).toEqual(Color3.fromRGB(255, 215, 0))
+		sert.eq(crownHandle.Color, Color3.fromRGB(255, 215, 0))
 		runCli(";rainbowcrown")
 		runSrv(";rainbowcrown")
-		expect(crown:HasTag("_KSuperCrownRainbow")).toBe(true)
+		sert.eq(crown:HasTag("_KSuperCrownRainbow"), true)
 
 		-- === Fun.luau ===
 		local lighting = c.sh.env.game:GetService("Lighting")
 		runSrv(";disco")
-		expect(_K.Registry.commands.disco.env.id).toBeTruthy()
+		sert.ok(_K.Registry.commands.disco.env.id)
 		runSrv(";undisco")
-		expect(_K.Registry.commands.disco.env.id).toBe(false)
-		expect(lighting.Ambient).toBeTruthy()
+		sert.eq(_K.Registry.commands.disco.env.id, false)
+		sert.ok(lighting.Ambient)
 
 		for _, rigType in { Enum.HumanoidRigType.R15, Enum.HumanoidRigType.R6 } do
 			buildCharacter(c.sh.env, srvP2, rigType)
 			runSrv(";creeper TargetPlr")
-			expect(srvP2.Character:GetAttribute("_KCreeper")).toBeTruthy()
+			sert.ok((srvP2.Character:GetAttribute("_KCreeper")))
 			runSrv(";uncreeper TargetPlr")
-			expect(srvP2.Character:GetAttribute("_KCreeper")).toBeNil()
+			sert.eq(srvP2.Character:GetAttribute("_KCreeper"), nil)
 			runSrv(";dog TargetPlr")
-			expect(srvP2.Character:FindFirstChild("_KDogSeat")).toBeTruthy()
+			sert.ok((srvP2.Character:FindFirstChild("_KDogSeat")))
 			runSrv(";undog TargetPlr")
-			expect(srvP2.Character:FindFirstChild("_KDogSeat")).toBeNil()
+			sert.eq(srvP2.Character:FindFirstChild("_KDogSeat"), nil)
 		end
 
 		buildCharacter(c.sh.env, srvP2, Enum.HumanoidRigType.R15)
 		runSrv(";char TargetPlr 1")
-		expect(srvP2.CharacterAppearanceId).toBe(1)
+		sert.eq(srvP2.CharacterAppearanceId, 1)
 		runSrv(";unchar TargetPlr")
-		expect(srvP2.CharacterAppearanceId).toBe(2)
+		sert.eq(srvP2.CharacterAppearanceId, 2)
 		runSrv(";clone TargetPlr")
-		expect(#_K.cleanupCommands >= 1).toBe(true)
+		sert.eq(#_K.cleanupCommands >= 1, true)
 
 		runSrv(";jumpscare TargetPlr")
 		runSrv(";jumpscare TargetPlr 1119705746 999999")
 		runSrv(";jumpscare TargetPlr 1119705746 999999")
-		expect(
+		sert.eq(
 			_K.Registry.commands.play.run(
 				{ _K = _K, env = _K.Registry.commands.play.env, from = 1, fromPlayer = srvP1 },
 				10764744805
-			)
-		).toBe("Invalid audio asset.")
-		expect(
+			),
+			"Invalid audio asset."
+		)
+		sert.eq(
 			_K.Registry.commands.play.run(
 				{ _K = _K, env = _K.Registry.commands.play.env, from = 1, fromPlayer = srvP1 },
 				10764744805
-			)
-		).toBe("Invalid audio asset.")
-		expect(
+			),
+			"Invalid audio asset."
+		)
+		sert.eq(
 			_K.Registry.commands.jumpscare.run(
 				{ _K = _K, env = _K.Registry.commands.jumpscare.env, from = 1, fromPlayer = srvP1 },
 				{ srvP2 },
 				nil,
 				10764744805
-			)
-		).toBe("Invalid audio asset.")
+			),
+			"Invalid audio asset."
+		)
 		_K.Remote.Jumpscare:Fire(srvP1)
 		c.world:run(0.05)
 
@@ -2551,16 +2544,16 @@ describe("DefaultCommands", function()
 			runSrv(";seizure TargetPlr")
 		end)
 		c.world:run(0.05)
-		expect(srvP2.Character:GetAttribute("_KSeizure")).toBe(true)
+		sert.eq(srvP2.Character:GetAttribute("_KSeizure"), true)
 		runSrv(";unseizure TargetPlr")
-		expect(srvP2.Character:GetAttribute("_KSeizure")).toBeNil()
+		sert.eq(srvP2.Character:GetAttribute("_KSeizure"), nil)
 		c.sh.env.task.cancel(seizeThread)
 
 		runSrv(";infect TargetPlr")
-		expect(_K.Registry.commands.infect.env.infected[srvP2.Character]).toBeTruthy()
+		sert.ok(_K.Registry.commands.infect.env.infected[srvP2.Character])
 		-- Touching another character's HumanoidRootPart spreads infection
 		srvP2.Character.Humanoid.Touched:Fire(srvP1.Character.HumanoidRootPart)
-		expect(_K.Registry.commands.infect.env.infected[srvP1.Character]).toBeTruthy()
+		sert.ok(_K.Registry.commands.infect.env.infected[srvP1.Character])
 		runSrv(";normal TargetPlr")
 		runSrv(";normal CreatorPlr")
 
@@ -2572,58 +2565,58 @@ describe("DefaultCommands", function()
 		c.world:run(0.05)
 
 		runSrv(";fling TargetPlr")
-		expect(srvP2.Character.HumanoidRootPart.AssemblyLinearVelocity.Magnitude > 0).toBe(true)
+		sert.eq(srvP2.Character.HumanoidRootPart.AssemblyLinearVelocity.Magnitude > 0, true)
 		runSrv(";loopfling TargetPlr")
-		expect(_K.Registry.commands.loopfling.env.flinging[srvP2.UserId]).toBe(1)
+		sert.eq(_K.Registry.commands.loopfling.env.flinging[srvP2.UserId], 1)
 		c.world:run(0.05)
 		runSrv(";unloopfling TargetPlr")
-		expect(_K.Registry.commands.loopfling.env.flinging[srvP2.UserId]).toBeNil()
+		sert.eq(_K.Registry.commands.loopfling.env.flinging[srvP2.UserId], nil)
 
 		local poisonThread = c.sh.env.task.spawn(function()
 			runSrv(";poison TargetPlr 10 1")
 		end)
 		c.world:run(0.9)
 		c.sh.env.task.cancel(poisonThread)
-		expect(srvP2.Character.Humanoid.Health < 100).toBe(true)
+		sert.eq(srvP2.Character.Humanoid.Health < 100, true)
 
 		runSrv(";spin TargetPlr 1")
-		expect(srvP2.Character:FindFirstChild("_KSpin")).toBeTruthy()
+		sert.ok((srvP2.Character:FindFirstChild("_KSpin")))
 		runSrv(";unspin TargetPlr")
-		expect(srvP2.Character:FindFirstChild("_KSpin")).toBeNil()
+		sert.eq(srvP2.Character:FindFirstChild("_KSpin"), nil)
 
 		runSrv(";setgravity TargetPlr 0.5")
-		expect(srvP2.Character:FindFirstChild("_KGravityForce")).toBeTruthy()
+		sert.ok((srvP2.Character:FindFirstChild("_KGravityForce")))
 		runSrv(";nograv TargetPlr")
-		expect(srvP2.Character:FindFirstChild("_KGravityForce")).toBeTruthy()
+		sert.ok((srvP2.Character:FindFirstChild("_KGravityForce")))
 		runSrv(";ungravity TargetPlr")
-		expect(srvP2.Character:FindFirstChild("_KGravityForce")).toBeNil()
+		sert.eq(srvP2.Character:FindFirstChild("_KGravityForce"), nil)
 
 		runSrv(";skydive TargetPlr 500")
-		expect(srvP2.Character:GetPivot().Position.Y > 100).toBe(true)
+		sert.eq(srvP2.Character:GetPivot().Position.Y > 100, true)
 		runSrv(";trip CreatorPlr")
 		c.world:run(0.05)
-		expect(c.ch1.env.Players.LocalPlayer.Character.Humanoid:GetState()).toBe(Enum.HumanoidStateType.FallingDown)
+		sert.eq(c.ch1.env.Players.LocalPlayer.Character.Humanoid:GetState(), Enum.HumanoidStateType.FallingDown)
 		runSrv(";size TargetPlr 1.5")
-		expect(srvP2.Character:GetScale()).toBe(1.5)
+		sert.eq(srvP2.Character:GetScale(), 1.5)
 		runSrv(";unsize TargetPlr 1")
-		expect(srvP2.Character:GetScale()).toBe(1)
+		sert.eq(srvP2.Character:GetScale(), 1)
 
 		runSrv(";slim TargetPlr")
-		expect(srvP2.Character.Humanoid:GetAttribute("_KSlim")).toBe(true)
+		sert.eq(srvP2.Character.Humanoid:GetAttribute("_KSlim"), true)
 		runSrv(";unslim TargetPlr")
-		expect(srvP2.Character.Humanoid:GetAttribute("_KSlim")).toBe(false)
+		sert.eq(srvP2.Character.Humanoid:GetAttribute("_KSlim"), false)
 		runSrv(";noobify TargetPlr")
 		c.world:run(0.05)
-		expect(srvP2:FindFirstChild("_KHumanoidDescription")).toBeTruthy()
+		sert.ok((srvP2:FindFirstChild("_KHumanoidDescription")))
 
 		-- Run slippery on CreatorPlr so both server command and client Slippery remote run on ch1
 		runSrv(";slippery CreatorPlr")
 		c.world:run(0.05)
-		expect(srvP1.Character.HumanoidRootPart:FindFirstChild("_K_Slippery")).toBeTruthy()
+		sert.ok((srvP1.Character.HumanoidRootPart:FindFirstChild("_K_Slippery")))
 		_K.Registry.commands.slippery.run({ _K = _K, env = _K.Registry.commands.slippery.env, undo = true }, { srvP1 })
 		_K.Remote.Slippery:Fire(srvP1, nil)
 		c.world:run(0.05)
-		expect(srvP1.Character.HumanoidRootPart:FindFirstChild("_K_Slippery")).toBeNil()
+		sert.eq(srvP1.Character.HumanoidRootPart:FindFirstChild("_K_Slippery"), nil)
 
 		local smiteThread = c.sh.env.task.spawn(function()
 			runSrv(";smite TargetPlr")
@@ -2633,14 +2626,14 @@ describe("DefaultCommands", function()
 		buildCharacter(c.sh.env, srvP2)
 
 		runSrv(";explode TargetPlr")
-		expect(srvP2.Character.Humanoid.Health).toBe(0)
+		sert.eq(srvP2.Character.Humanoid.Health, 0)
 		buildCharacter(c.sh.env, srvP2)
 
 		local rocketThread = c.sh.env.task.spawn(function()
 			runSrv(";rocket TargetPlr")
 		end)
 		c.world:run(0.05)
-		expect(srvP2.Character:FindFirstChild("_KRocket")).toBeTruthy()
+		sert.ok((srvP2.Character:FindFirstChild("_KRocket")))
 		c.sh.env.task.cancel(rocketThread)
 
 		local nukeThread = c.sh.env.task.spawn(function()
@@ -2651,7 +2644,7 @@ describe("DefaultCommands", function()
 
 		buildCharacter(c.sh.env, srvP2)
 		runSrv(";control TargetPlr")
-		expect(srvP1.Character).toBe(srvP2.Character)
+		sert.eq(srvP1.Character, srvP2.Character)
 		buildCharacter(c.sh.env, srvP1)
 		buildCharacter(c.sh.env, srvP2)
 	end)
@@ -2724,18 +2717,18 @@ describe("DefaultCommands", function()
 			c.world:run(0.3)
 
 			-- Verify legacy settings migration
-			expect(_K.Data.defaultSettings.prefix[1]).toBe(":")
-			expect(_K.Auth.hasRole(500, "creator")).toBe(true)
-			expect(_K.Auth.hasRole(400, "superadmin")).toBe(true)
-			expect(_K.Auth.hasRole(300, "admin")).toBe(true)
-			expect(_K.Auth.hasRole(200, "mod")).toBe(true)
-			expect(_K.Auth.hasRole(100, "vip")).toBe(true)
-			expect(_K.Data.bans["50"]).toBeTruthy()
+			sert.eq(_K.Data.defaultSettings.prefix[1], ":")
+			sert.eq(_K.Auth.hasRole(500, "creator"), true)
+			sert.eq(_K.Auth.hasRole(400, "superadmin"), true)
+			sert.eq(_K.Auth.hasRole(300, "admin"), true)
+			sert.eq(_K.Auth.hasRole(200, "mod"), true)
+			sert.eq(_K.Auth.hasRole(100, "vip"), true)
+			sert.ok(_K.Data.bans["50"])
 
 			-- Verify legacy custom command registration & execution
-			expect(_K.Registry.commands.legacyhello).toBeTruthy()
+			sert.ok(_K.Registry.commands.legacyhello)
 			c.runSrv(";legacyhello TargetPlr Greetings")
-			expect(customRan).toBe(true)
+			sert.eq(customRan, true)
 
 			-- Verify legacy role commands (creator, superadmin, admin, mod, vip + temp* + un*)
 			local legacyNotifies: { any } = {}
@@ -2747,29 +2740,29 @@ describe("DefaultCommands", function()
 			for _, roleId in { "creator", "superadmin", "admin", "mod", "vip" } do
 				table.clear(legacyNotifies)
 				c.runSrv(`;temp{roleId} TargetPlr`)
-				expect(_K.Auth.hasRole(2, roleId)).toBe(true)
-				expect(#legacyNotifies >= 1).toBe(true)
+				sert.eq(_K.Auth.hasRole(2, roleId), true)
+				sert.eq(#legacyNotifies >= 1, true)
 				table.clear(legacyNotifies)
 				c.runSrv(`;un{roleId} TargetPlr`)
-				expect(_K.Auth.hasRole(2, roleId)).toBe(false)
-				expect(#legacyNotifies >= 1).toBe(true)
-				expect(string.find(legacyNotifies[1].msg.Text, "TargetPlr", 1, true) ~= nil).toBe(true)
+				sert.eq(_K.Auth.hasRole(2, roleId), false)
+				sert.eq(#legacyNotifies >= 1, true)
+				sert.eq(string.find(legacyNotifies[1].msg.Text, "TargetPlr", 1, true) ~= nil, true)
 				-- Running un<role> when member does not have that role sends no notification
 				table.clear(legacyNotifies)
 				_K.Registry.commands["un" .. roleId].run({ _K = _K, from = 1, fromPlayer = c.srvP1 }, { "2" })
-				expect(#legacyNotifies).toBe(0)
+				sert.eq(#legacyNotifies, 0)
 				c.runSrv(`;{roleId} TargetPlr`)
-				expect(_K.Auth.hasRole(2, roleId)).toBe(true)
+				sert.eq(_K.Auth.hasRole(2, roleId), true)
 				c.runSrv(`;un{roleId} TargetPlr`)
-				expect(_K.Auth.hasRole(2, roleId)).toBe(false)
+				sert.eq(_K.Auth.hasRole(2, roleId), false)
 			end
 			-- Also test giving role to an offline userId so `if not player then continue` is verified
 			table.clear(legacyNotifies)
 			c.runSrv(";vip 777777")
 			c.world:run(0.25)
-			expect(_K.Auth.hasRole(777777, "vip")).toBe(true)
-			expect(#legacyNotifies).toBe(1)
-			expect(legacyNotifies[1].plr).toBe(c.srvP1)
+			sert.eq(_K.Auth.hasRole(777777, "vip"), true)
+			sert.eq(#legacyNotifies, 1)
+			sert.eq(legacyNotifies[1].plr, c.srvP1)
 		end
 	)
 
@@ -2791,28 +2784,28 @@ describe("DefaultCommands", function()
 		_K.Data.roles.admin.gamepasses = { 123 }
 		_K.Data.roles.superadmin.gamepasses = { 124 }
 		_K.Auth.userRoleAdd(2, "admin")
-		expect(_K.Auth.hasRestrictedRole(2)).toBe(false)
+		sert.eq(_K.Auth.hasRestrictedRole(2), false)
 
 		-- giving itself a lower role doesn't make it a developer
 		runAs(2, ";tempmod me")
 		local member = _K.Data.members["2"]
-		expect(table.find(member.roles, "mod") ~= nil).toBe(true)
-		expect(member.unrestricted and member.unrestricted.mod).toBe(true)
-		expect(_K.Auth.hasRestrictedRole(2)).toBe(false)
+		sert.eq(table.find(member.roles, "mod") ~= nil, true)
+		sert.eq(member.unrestricted and member.unrestricted.mod, true)
+		sert.eq(_K.Auth.hasRestrictedRole(2), false)
 
 		-- a bought SuperAdmin has saveRoles, but its ;mod only lasts the session
 		_K.Auth.userRoleAdd(2, "superadmin")
 		runAs(2, ";mod 777001")
 		local given = _K.Data.members["777001"]
-		expect(table.find(given.roles, "mod") ~= nil).toBe(true)
-		expect(table.find(given.persist, "mod")).toBeNil()
-		expect(given.unrestricted and given.unrestricted.mod).toBe(true)
+		sert.eq(table.find(given.roles, "mod") ~= nil, true)
+		sert.eq(table.find(given.persist, "mod"), nil)
+		sert.eq(given.unrestricted and given.unrestricted.mod, true)
 
 		-- the developer still saves restricted roles
 		runAs(1, ";mod 777002")
 		local saved = _K.Data.members["777002"]
-		expect(table.find(saved.persist, "mod") ~= nil).toBe(true)
-		expect(saved.unrestricted).toBeNil()
+		sert.eq(table.find(saved.persist, "mod") ~= nil, true)
+		sert.eq(saved.unrestricted, nil)
 	end)
 
 	test("a moderator's ;ban can't turn a saved ban into a server ban", function()
@@ -2837,16 +2830,23 @@ describe("DefaultCommands", function()
 			_K.Process.runCommands(_K, 2, ";ban 777003,777004,3")
 		end)
 		c.world:run(0.3)
-		expect(_K.Data.bans["777003"][2]).toBe("Exploiting")
-		expect(_K.Data.bans["777003"][3]).toBe(-1)
-		expect(_K.Data.bans["777004"] ~= nil).toBe(true)
-		expect(_K.Data.bans["3"] ~= nil).toBe(true)
-		expect(c.server.kicked[online] ~= nil).toBe(true)
+		sert.eq(_K.Data.bans["777003"][2], "Exploiting")
+		sert.eq(_K.Data.bans["777003"][3], -1)
+		sert.eq(_K.Data.bans["777004"] ~= nil, true)
+		sert.eq(_K.Data.bans["3"] ~= nil, true)
+		local kickedOnline = false
+		for _, entry in c.server.kicks do
+			if entry.player == online or entry.userId == online.UserId then
+				kickedOnline = true
+				break
+			end
+		end
+		sert.eq(kickedOnline, true)
 
 		-- the kept saved ban is reported apart from the new server bans
 		local saved = _K.Util.getUserInfo(777003).Username
 		local fresh = _K.Util.getUserInfo(777004).Username
-		expect(notices).toEqual({
+		sert.eq(notices, {
 			`Banned <b>{fresh}, {online.Name}</b> for <b>no reason</b>.\nDuration: <b>Server</b>\nKept saved ban for <b>{saved}</b>.`,
 		})
 
@@ -2856,7 +2856,7 @@ describe("DefaultCommands", function()
 			_K.Process.runCommands(_K, 2, ";ban 777003")
 		end)
 		c.world:run(0.3)
-		expect(notices).toEqual({ `Kept saved ban for <b>{saved}</b>.` })
+		sert.eq(notices, { `Kept saved ban for <b>{saved}</b>.` })
 		_K.Remote.Notify.Fire = origNotifyFire
 	end)
 
@@ -2897,15 +2897,15 @@ describe("DefaultCommands", function()
 		end
 
 		run(";unban 777010")
-		expect(_K.Data.bans["777010"]).toBeNil()
+		sert.eq(_K.Data.bans["777010"], nil)
 		run(";unban all")
-		expect(_K.Data.bans["777011"]).toBeNil()
-		expect(_K.Data.bans["777012"]).toBeNil()
-		expect(webCalls).toBe(0)
+		sert.eq(_K.Data.bans["777011"], nil)
+		sert.eq(_K.Data.bans["777012"], nil)
+		sert.eq(webCalls, 0)
 
 		run(";ban 777013")
-		expect(_K.Data.bans["777013"]).toBeNil()
-		expect(webCalls > 0).toBe(true)
+		sert.eq(_K.Data.bans["777013"], nil)
+		sert.eq(webCalls > 0, true)
 
 		gMethods.GetGroupsAsync, mMethods.UserOwnsGamePassAsync = origGetGroups, origOwnsPass
 	end)
@@ -2925,15 +2925,15 @@ describe("DefaultCommands", function()
 			-- "Raw" isn't a delay, so the reason takes it again and only the reason is filtered
 			c.runSrv(';global shutdown "Raw" text')
 			c.world:run(0.1)
-			expect(published[1]).toBe(';shutdown "Filtered"')
-			expect(string.find(tostring(c.srvP2._props._kicked), "Raw", 1, true)).toBeNil()
-			expect(string.find(tostring(c.srvP2._props._kicked), "Reason: Filtered", 1, true) ~= nil).toBe(true)
+			sert.eq(published[1], ';shutdown "Filtered"')
+			sert.eq(string.find(tostring(c.srvP2._props._kicked), "Raw", 1, true), nil)
+			sert.eq(string.find(tostring(c.srvP2._props._kicked), "Reason: Filtered", 1, true) ~= nil, true)
 
 			-- an optional argument that took its token is still published
 			c.world:run(61)
 			c.runSrv(";global shutdown 0 text")
 			c.world:run(0.1)
-			expect(published[2]).toBe(';shutdown 0 "Filtered"')
+			sert.eq(published[2], ';shutdown 0 "Filtered"')
 		end)
 
 		test(";global always quotes text so receiving servers can't read commands out of it", function()
@@ -2962,27 +2962,27 @@ describe("DefaultCommands", function()
 
 			-- the last text argument of a single command used to be published unquoted and ran as two commands
 			runGlobal(';global m "x ;vote all question"')
-			expect(published[1]).toBe(';m "x ;vote all question"')
-			expect(received).toEqual({ "x ;vote all question" })
-			expect(voted).toBe(false)
+			sert.eq(published[1], ';m "x ;vote all question"')
+			sert.eq(received, { "x ;vote all question" })
+			sert.eq(voted, false)
 
 			-- text holding a double quote takes backticks, quotes have no escapes
 			runGlobal(';global `m "say ;vote all" now`')
-			expect(published[2]).toBe(';m `say ;vote all" now`')
-			expect(received[2]).toBe('say ;vote all" now')
+			sert.eq(published[2], ';m `say ;vote all" now`')
+			sert.eq(received[2], 'say ;vote all" now')
 
 			-- text holding both quotes keeps the double quotes and loses the backticks
 			filterResult = 'a "b" `c` ;vote all q'
 			runGlobal(";global m text")
-			expect(published[3]).toBe(";m `a \"b\" 'c' ;vote all q`")
-			expect(received[3]).toBe("a \"b\" 'c' ;vote all q")
-			expect(voted).toBe(false)
+			sert.eq(published[3], ";m `a \"b\" 'c' ;vote all q`")
+			sert.eq(received[3], "a \"b\" 'c' ;vote all q")
+			sert.eq(voted, false)
 			filterResult = nil
 
 			-- commands without text are published as before
 			runGlobal(";global gravity 80")
-			expect(published[4]).toBe(";gravity 80")
-			expect(c.sh.env.workspace.Gravity).toBe(80)
+			sert.eq(published[4], ";gravity 80")
+			sert.eq(c.sh.env.workspace.Gravity, 80)
 		end)
 
 		test(";global text arguments of every text type reach receiving servers without their quotes", function()
@@ -3013,9 +3013,9 @@ describe("DefaultCommands", function()
 				c.world:run(61)
 				c.runSrv(`;global global{argType} "x ;vote all q"`)
 				c.world:run(0.5)
-				expect(published[i]).toBe(`;global{string.lower(argType)} "x ;vote all q"`)
+				sert.eq(published[i], `;global{string.lower(argType)} "x ;vote all q"`)
 			end
-			expect(received).toEqual({
+			sert.eq(received, {
 				string = "x ;vote all q",
 				strings = { "x ;vote all q" },
 				chatString = "x ;vote all q",
@@ -3026,13 +3026,13 @@ describe("DefaultCommands", function()
 			c.world:run(61)
 			c.runSrv(';global globalstrings a,"b, ;vote all q",c')
 			c.world:run(0.5)
-			expect(published[5]).toBe(';globalstrings "a","b, ;vote all q","c"')
-			expect(received.strings).toEqual({ "a", "b, ;vote all q", "c" })
+			sert.eq(published[5], ';globalstrings "a","b, ;vote all q","c"')
+			sert.eq(received.strings, { "a", "b, ;vote all q", "c" })
 			c.world:run(61)
 			c.runSrv(";global globalstring a,b")
 			c.world:run(0.5)
-			expect(published[6]).toBe(';globalstring "a,b"')
-			expect(received.string).toBe("a,b")
+			sert.eq(published[6], ';globalstring "a,b"')
+			sert.eq(received.string, "a,b")
 		end)
 
 		test(";global change publishes the leaderstat value quoted and receivers still apply it", function()
@@ -3052,8 +3052,8 @@ describe("DefaultCommands", function()
 
 			c.runSrv(";global change TargetPlr Coins 5")
 			c.world:run(0.5)
-			expect(published[1]).toBe(';change TargetPlr Coins "5"')
-			expect(coins.Value).toBe(5)
+			sert.eq(published[1], ';change TargetPlr Coins "5"')
+			sert.eq(coins.Value, 5)
 		end)
 
 		test(";global receivers only parse the server prefix, not the sender's own prefix inside the text", function()
@@ -3075,9 +3075,9 @@ describe("DefaultCommands", function()
 
 			c.runSrv('!global m "hello !gravity 33 !m z"')
 			c.world:run(0.5)
-			expect(published[1]).toBe(';m "hello !gravity 33 !m z"')
-			expect(received).toEqual({ "hello !gravity 33 !m z" })
-			expect(c.sh.env.workspace.Gravity).toBe(gravity)
+			sert.eq(published[1], ';m "hello !gravity 33 !m z"')
+			sert.eq(received, { "hello !gravity 33 !m z" })
+			sert.eq(c.sh.env.workspace.Gravity, gravity)
 		end)
 
 		test(";global refuses command strings that receiving servers would parse differently", function()
@@ -3103,9 +3103,10 @@ describe("DefaultCommands", function()
 			_K.Data.playerPrefix[1] = "!"
 			c.runSrv("!global time ;gravity 33")
 			c.world:run(0.5)
-			expect(#published).toBe(0)
-			expect(c.sh.env.workspace.Gravity).toBe(gravity)
-			expect(string.find(tostring(notices[1]), "would parse this command string differently", 1, true) ~= nil).toBe(
+			sert.eq(#published, 0)
+			sert.eq(c.sh.env.workspace.Gravity, gravity)
+			sert.eq(
+				string.find(tostring(notices[1]), "would parse this command string differently", 1, true) ~= nil,
 				true
 			)
 
@@ -3116,9 +3117,9 @@ describe("DefaultCommands", function()
 			end
 			c.runSrv('!global `time ;" ;vote all q" !gravity 33`')
 			c.world:run(0.5)
-			expect(#published).toBe(0)
-			expect(voted).toBe(false)
-			expect(c.sh.env.workspace.Gravity).toBe(gravity)
+			sert.eq(#published, 0)
+			sert.eq(voted, false)
+			sert.eq(c.sh.env.workspace.Gravity, gravity)
 			_K.Data.playerPrefix[1] = nil
 
 			-- the same text parses back while graphemes keep the quote apart
@@ -3126,8 +3127,8 @@ describe("DefaultCommands", function()
 			c.world:run(61)
 			c.runSrv(";global m text")
 			c.world:run(0.5)
-			expect(published[1]).toBe(';m `\u{301}x"q" ;gravity 33 ;m z`')
-			expect(c.sh.env.workspace.Gravity).toBe(gravity)
+			sert.eq(published[1], ';m `\u{301}x"q" ;gravity 33 ;m z`')
+			sert.eq(c.sh.env.workspace.Gravity, gravity)
 			_K.Remote.Notify.Fire = origNotifyFire
 
 			-- in Roblox a combining mark after the opening quote joins its grapheme, so the quote isn't read as one
@@ -3142,8 +3143,8 @@ describe("DefaultCommands", function()
 			end)
 			c.runSrv(";global m text")
 			c.world:run(0.5)
-			expect(c.sh.env.workspace.Gravity).toBe(gravity)
-			expect(#published).toBe(0)
+			sert.eq(c.sh.env.workspace.Gravity, gravity)
+			sert.eq(#published, 0)
 
 			-- or text that splits into the next argument without adding a command
 			c._K.Registry.registerCommand(c._K, {
@@ -3161,7 +3162,7 @@ describe("DefaultCommands", function()
 			c.world:run(61)
 			c.runSrv(';global globalpair "text" 5')
 			c.world:run(0.5)
-			expect(#published).toBe(0)
+			sert.eq(#published, 0)
 
 			-- or a list item whose opening quote joins its grapheme, so receivers split it at its comma
 			c._K.Registry.registerCommand(c._K, {
@@ -3176,12 +3177,12 @@ describe("DefaultCommands", function()
 			c.world:run(61)
 			c.runSrv(";global globallist text")
 			c.world:run(0.5)
-			expect(#published).toBe(0)
+			sert.eq(#published, 0)
 			-- text that isn't a list isn't split there
 			c.world:run(61)
 			c.runSrv(";global m text")
 			c.world:run(0.5)
-			expect(published[1]).toBe(';m "\u{301}a,b"')
+			sert.eq(published[1], ';m "\u{301}a,b"')
 		end)
 
 		test(";global keeps a skipped optional argument skipped when the text starts with its type", function()
@@ -3198,21 +3199,21 @@ describe("DefaultCommands", function()
 			-- "3 strikes" isn't a duration, so receiving servers must not read its "3" as one
 			c.runSrv(';global ban 777005 "3 strikes"')
 			c.world:run(1)
-			expect(published[1]).toBe(';ban 777005 "3 strikes"')
+			sert.eq(published[1], ';ban 777005 "3 strikes"')
 			local ban = _K.Data.bans["777005"]
-			expect(ban ~= nil).toBe(true)
-			expect(ban[2]).toBe("3 strikes")
-			expect(ban[3]).toBeNil() -- a server ban, not a 3 second one
+			sert.eq(ban ~= nil, true)
+			sert.eq(ban[2], "3 strikes")
+			sert.eq(ban[3], nil) -- a server ban, not a 3 second one
 
 			-- nor find "5 days" in the quoted reason and ban for 5 days
 			c.world:run(61) -- past the broadcast cooldown
 			c.runSrv(";global ban 777006 appeal in 5 days")
 			c.world:run(1)
-			expect(published[2]).toBe(';ban 777006 "appeal in 5 days"')
+			sert.eq(published[2], ';ban 777006 "appeal in 5 days"')
 			ban = _K.Data.bans["777006"]
-			expect(ban ~= nil).toBe(true)
-			expect(ban[2]).toBe("appeal in 5 days")
-			expect(ban[3]).toBeNil()
+			sert.eq(ban ~= nil, true)
+			sert.eq(ban[2], "appeal in 5 days")
+			sert.eq(ban[3], nil)
 		end)
 
 		test(";global refuses strings where receivers bind arguments differently or cut them", function()
@@ -3241,10 +3242,11 @@ describe("DefaultCommands", function()
 			-- a quote after the sender's prefix in a raw token opens a quote on receivers and drops a token
 			_K.Data.playerPrefix[1] = "!"
 			runGlobal('!global change all !"coins 5')
-			expect(#published).toBe(0)
-			expect(
-				string.find(tostring(notices[#notices]), "would parse this command string differently", 1, true) ~= nil
-			).toBe(true)
+			sert.eq(#published, 0)
+			sert.eq(
+				string.find(tostring(notices[#notices]), "would parse this command string differently", 1, true) ~= nil,
+				true
+			)
 			_K.Data.playerPrefix[1] = nil
 
 			-- receivers cut command strings past 1024 bytes from users without a restricted role
@@ -3254,11 +3256,11 @@ describe("DefaultCommands", function()
 			end
 			filterResult = string.rep("a", 1020)
 			runGlobal(";global m text")
-			expect(#published).toBe(0)
-			expect(string.find(tostring(notices[#notices]), "too long to run globally", 1, true) ~= nil).toBe(true)
+			sert.eq(#published, 0)
+			sert.eq(string.find(tostring(notices[#notices]), "too long to run globally", 1, true) ~= nil, true)
 			_K.Auth.hasRestrictedRole = hasRestrictedRole
 			runGlobal(";global m text")
-			expect(#published).toBe(1)
+			sert.eq(#published, 1)
 			_K.Remote.Notify.Fire = origNotifyFire
 		end)
 
@@ -3294,7 +3296,7 @@ describe("DefaultCommands", function()
 				_K.Data.playerPrefix[1] = "!"
 				c.runSrv('!global change all !"coins 5')
 				c.world:run(1)
-				expect(refused()).toBe(true)
+				sert.eq(refused(), true)
 				_K.Data.playerPrefix[1] = nil
 
 				-- and a string too long for receivers, once each list item is quoted
@@ -3312,14 +3314,14 @@ describe("DefaultCommands", function()
 				end
 				c.runSrv(";global globalitems " .. string.rep("a,", 299) .. "a")
 				c.world:run(1)
-				expect(string.find(tostring(notices[#notices]), "too long to run globally", 1, true) ~= nil).toBe(true)
+				sert.eq(string.find(tostring(notices[#notices]), "too long to run globally", 1, true) ~= nil, true)
 				_K.Auth.hasRestrictedRole = hasRestrictedRole
-				expect(#published).toBe(0)
+				sert.eq(#published, 0)
 
 				-- so the next announcement doesn't wait for the cooldown
 				c.runSrv(";announce Hello world")
 				c.world:run(0.5)
-				expect(_K.Data.savedSettings.announcement[1]).toBe("Hello world")
+				sert.eq(_K.Data.savedSettings.announcement[1], "Hello world")
 
 				-- filtered text that starts with a combining mark is still refused, after the cooldown it spends
 				filterResult = '\u{301}x"q" ;gravity 33 ;m z'
@@ -3327,14 +3329,14 @@ describe("DefaultCommands", function()
 				c.world:run(61)
 				c.runSrv(";global m text")
 				c.world:run(0.5)
-				expect(refused()).toBe(true)
-				expect(#published).toBe(0)
-				expect(c.sh.env.workspace.Gravity).toBe(gravity)
+				sert.eq(refused(), true)
+				sert.eq(#published, 0)
+				sert.eq(c.sh.env.workspace.Gravity, gravity)
 				filterResult = nil
 				c.runSrv(";global m text")
 				c.world:run(0.5)
-				expect(string.find(tostring(notices[#notices]), "before using this again", 1, true) ~= nil).toBe(true)
-				expect(#published).toBe(0)
+				sert.eq(string.find(tostring(notices[#notices]), "before using this again", 1, true) ~= nil, true)
+				sert.eq(#published, 0)
 				_K.Remote.Notify.Fire = origNotifyFire
 			end
 		)
@@ -3361,50 +3363,50 @@ describe("DefaultCommands", function()
 			local target = srvP2.Character:FindFirstChild(name)
 			_K.VIP.Effect(srvP1, 18966788838, "rbxassetid://18966762965", true, target)
 			_K.VIP.Effect(srvP1, 133292294488871, "rbxassetid://89119211625300", true, target)
-			expect(srvP2.Character:FindFirstChild(name)).toBe(target)
+			sert.eq(srvP2.Character:FindFirstChild(name), target)
 		end
 		-- even the caller's own accessory, which the Methods would accept
 		local ownHat = wear("Accessory", "OwnHat", srvP1.Character)
 		_K.VIP.Effect(srvP1, 18966788838, "rbxassetid://18966762965", true, ownHat)
-		expect(srvP1.Character:FindFirstChild("OwnHat")).toBe(ownHat)
+		sert.eq(srvP1.Character:FindFirstChild("OwnHat"), ownHat)
 		ownHat:Destroy()
-		expect(srvP1.Character:FindFirstChild("SuperCrown")).toBeNil()
+		sert.eq(srvP1.Character:FindFirstChild("SuperCrown"), nil)
 
 		-- a color name still equips the effect
 		_K.VIP.Effect(srvP1, 18966788838, "rbxassetid://18966762965", true, "gold")
-		expect(srvP1.Character:FindFirstChild("SuperCrown")).toBeTruthy()
+		sert.ok((srvP1.Character:FindFirstChild("SuperCrown")))
 
 		-- a non-number asset id or a non-boolean equip is ignored, so it can't unequip or touch the caches
 		_K.VIP.Effect(srvP1, "18966788838", "rbxassetid://18966762965", false, "gold")
 		_K.VIP.Effect(srvP1, { 18966788838 }, "rbxassetid://18966762965", false, "gold")
 		_K.VIP.Effect(srvP1, 18966788838, "rbxassetid://18966762965", 0, "gold")
 		_K.VIP.Effect(srvP1, 18966788838, "rbxassetid://18966762965", nil, "gold")
-		expect(srvP1.Character:FindFirstChild("SuperCrown")).toBeTruthy()
-		expect(_K.VIP.effects[1]["rbxassetid://18966762965"]).toBeTruthy()
+		sert.ok((srvP1.Character:FindFirstChild("SuperCrown")))
+		sert.ok(_K.VIP.effects[1]["rbxassetid://18966762965"])
 
 		-- equip = false (what the client sends to hide it) still unequips, and it equips again afterwards
 		_K.VIP.Effect(srvP1, 18966788838, "rbxassetid://18966762965", false, "gold")
-		expect(srvP1.Character:FindFirstChild("SuperCrown")).toBeNil()
-		expect(_K.VIP.effects[1]["rbxassetid://18966762965"]).toBeNil()
+		sert.eq(srvP1.Character:FindFirstChild("SuperCrown"), nil)
+		sert.eq(_K.VIP.effects[1]["rbxassetid://18966762965"], nil)
 		_K.VIP.Effect(srvP1, 18966788838, "rbxassetid://18966762965", true, "gold")
-		expect(srvP1.Character:FindFirstChild("SuperCrown")).toBeTruthy()
+		sert.ok((srvP1.Character:FindFirstChild("SuperCrown")))
 
 		-- the Methods never destroy another character's accessory or a non-Accessory, and still replace the
 		-- wearer's own accessory, with or without a Handle
 		local ownTool = wear("Tool", "OwnTool", srvP1.Character)
 		for _, module in { c.sh.Shared.VIP.UGC.Crown, c.sh.Shared.VIP.UGC.AlphaWings } do
 			local ugc = env:require(module)
-			expect(ugc.Method(srvP1.Character, victimHat)).toBeNil()
-			expect(srvP2.Character:FindFirstChild("VictimHat")).toBe(victimHat)
-			expect(ugc.Method(srvP1.Character, ownTool)).toBeNil()
-			expect(srvP1.Character:FindFirstChild("OwnTool")).toBe(ownTool)
+			sert.eq(ugc.Method(srvP1.Character, victimHat), nil)
+			sert.eq(srvP2.Character:FindFirstChild("VictimHat"), victimHat)
+			sert.eq(ugc.Method(srvP1.Character, ownTool), nil)
+			sert.eq(srvP1.Character:FindFirstChild("OwnTool"), ownTool)
 			wear("Accessory", "OwnHat", srvP1.Character)
-			expect(ugc.Method(srvP1.Character, srvP1.Character:FindFirstChild("OwnHat"))).toBeTruthy()
-			expect(srvP1.Character:FindFirstChild("OwnHat")).toBeNil()
+			sert.ok((ugc.Method(srvP1.Character, srvP1.Character:FindFirstChild("OwnHat"))))
+			sert.eq(srvP1.Character:FindFirstChild("OwnHat"), nil)
 			local bareHat = env.Instance.new("Accessory", srvP1.Character)
 			bareHat.Name = "BareHat"
-			expect(ugc.Method(srvP1.Character, bareHat)).toBeTruthy()
-			expect(srvP1.Character:FindFirstChild("BareHat")).toBeNil()
+			sert.ok((ugc.Method(srvP1.Character, bareHat)))
+			sert.eq(srvP1.Character:FindFirstChild("BareHat"), nil)
 		end
 	end)
 
@@ -3431,14 +3433,14 @@ describe("DefaultCommands", function()
 		srvP1:SetAttribute("_KPlatform", nil)
 		srvP1:SetAttribute("_KSessionStart", nil)
 		local text = whois()
-		expect(string.find(text, "<b>Platform:</b> ?\n", 1, true) ~= nil).toBe(true)
-		expect(string.find(text, "<b>Session:</b> ?\n", 1, true) ~= nil).toBe(true)
+		sert.eq(string.find(text, "<b>Platform:</b> ?\n", 1, true) ~= nil, true)
+		sert.eq(string.find(text, "<b>Session:</b> ?\n", 1, true) ~= nil, true)
 
 		srvP1:SetAttribute("_KPlatform", "PC")
 		srvP1:SetAttribute("_KSessionStart", c.sh.env.workspace:GetServerTimeNow() - 120)
 		text = whois()
-		expect(string.find(text, "<b>Platform:</b> 🖥️ PC\n", 1, true) ~= nil).toBe(true)
-		expect(string.find(text, "<b>Session:</b> 2 minutes\n", 1, true) ~= nil).toBe(true)
+		sert.eq(string.find(text, "<b>Platform:</b> 🖥️ PC\n", 1, true) ~= nil, true)
+		sert.eq(string.find(text, "<b>Session:</b> 2 minutes\n", 1, true) ~= nil, true)
 		_K.Remote.Notify.Fire = origFire
 	end)
 
@@ -3493,32 +3495,32 @@ describe("DefaultCommands", function()
 			world:run(10)
 		end
 		local function expectPerks(granted: boolean)
-			expect(srvP2:GetAttribute("_KDonationLevel")).toBe(if granted then 3 else 0)
-			expect(_K.Auth.hasRole(2, "vip")).toBe(granted)
-			expect(vip.ownerCache[2]).toBe(if granted then true else nil)
-			expect(hero.ownerCache[2]).toBe(if granted then true else nil)
+			sert.eq(srvP2:GetAttribute("_KDonationLevel"), if granted then 3 else 0)
+			sert.eq(_K.Auth.hasRole(2, "vip"), granted)
+			sert.eq(vip.ownerCache[2], if granted then true else nil)
+			sert.eq(hero.ownerCache[2], if granted then true else nil)
 		end
 
 		-- fakes for ids KA grants nothing for are never checked
 		market.PromptGamePassPurchaseFinished:Fire(srvP2, 123, true)
 		market.PromptPurchaseFinished:Fire(srvP2, 456, true)
 		world:run(10)
-		expect(checks.other).toBe(0)
+		sert.eq(checks.other, 0)
 
 		-- an exploit fakes both purchases twice at once: nothing is granted, only one check per id runs at a
 		-- time and gives up after three tries, and a title it was already refused is checked again on next use
 		hero.ownerCache[2] = false
 		purchase(2)
 		expectPerks(false)
-		expect(checks.pass).toBe(3)
-		expect(checks.asset).toBe(3)
+		sert.eq(checks.pass, 3)
+		sert.eq(checks.asset, 3)
 
 		-- a real purchase that the ownership checks only see on the second try still grants every perk
 		checks.pass, checks.asset, ownedFrom = 0, 0, 2
 		purchase()
 		expectPerks(true)
-		expect(checks.pass).toBe(2)
-		expect(checks.asset).toBe(2)
+		sert.eq(checks.pass, 2)
+		sert.eq(checks.asset, 2)
 	end)
 
 	test("exercises Shared/VIP modules (Title, Crown, AlphaWings, Bones, Animate, Popup, Purchasables)", function()
@@ -3531,21 +3533,21 @@ describe("DefaultCommands", function()
 		local Title = c.sh.env:require(c.sh.Shared.VIP.Title)
 		Title.Method(srvChar, "Patron", Color3.new(1, 0, 0), Color3.new(1, 1, 0), Enum.Font.Code)
 		local titleGui = srvChar:FindFirstChild("_K_Title")
-		expect(titleGui).toBeTruthy()
+		sert.ok(titleGui)
 		for _, defName in { "epic", "hero", "legend", "mythic", "eternal" } do
 			local def = Title.definition[defName]
 			local seq = def.getValue(1.5)
-			expect(seq).toBeTruthy()
+			sert.ok(seq)
 			def.update(titleGui, seq)
 			local seqBoundary = def.getValue(0)
-			expect(seqBoundary).toBeTruthy()
+			sert.ok(seqBoundary)
 			for i = 2, #seqBoundary.Keypoints do
-				expect(seqBoundary.Keypoints[i].Time > seqBoundary.Keypoints[i - 1].Time).toBe(true)
+				sert.eq(seqBoundary.Keypoints[i].Time > seqBoundary.Keypoints[i - 1].Time, true)
 			end
 		end
 		-- Remove title when title == nil
 		Title.Method(srvChar, nil)
-		expect(srvChar:FindFirstChild("_K_Title")).toBeNil()
+		sert.eq(srvChar:FindFirstChild("_K_Title"), nil)
 
 		-- Client Title heartbeat loop
 		local cliTitle = c.ch1.env:require(c.ch1.Shared.VIP.Title)
@@ -3559,12 +3561,12 @@ describe("DefaultCommands", function()
 
 		-- 2. Crown module (`Shared.VIP.UGC.Crown`)
 		local Crown = c.sh.env:require(c.sh.Shared.VIP.UGC.Crown)
-		expect(Crown.Name).toBe("SuperCrown")
+		sert.eq(Crown.Name, "SuperCrown")
 		local crownAcc = Crown.Method(srvChar, "gold")
-		expect(crownAcc).toBeTruthy()
-		expect(crownAcc.Name).toBe("SuperCrown")
+		sert.ok(crownAcc)
+		sert.eq(crownAcc.Name, "SuperCrown")
 		local crownDark = Crown.Method(srvChar, "dark")
-		expect(crownDark).toBeTruthy()
+		sert.ok(crownDark)
 		crownDark:Destroy()
 
 		-- Client Crown heartbeat loop
@@ -3577,11 +3579,11 @@ describe("DefaultCommands", function()
 		-- 3. AlphaWings, Bones, and Animate (`Shared.VIP.UGC.AlphaWings`)
 		local AlphaWings = c.sh.env:require(c.sh.Shared.VIP.UGC.AlphaWings)
 		local Bones = c.sh.env:require(c.sh.Shared.VIP.UGC.AlphaWings.Bones)
-		expect(Bones).toBeTruthy()
-		expect(AlphaWings.Name).toBe("_KAlphaWings")
+		sert.ok(Bones)
+		sert.eq(AlphaWings.Name, "_KAlphaWings")
 		local wingsAcc = AlphaWings.Method(srvChar, "gold")
-		expect(wingsAcc).toBeTruthy()
-		expect(wingsAcc.Name).toBe("_KAlphaWings")
+		sert.ok(wingsAcc)
+		sert.eq(wingsAcc.Name, "_KAlphaWings")
 
 		-- Client AlphaWings heartbeat loop
 		local cliWings = c.ch1.env:require(c.ch1.Shared.VIP.UGC.AlphaWings)
@@ -3609,7 +3611,7 @@ describe("DefaultCommands", function()
 			end,
 		})
 		if wingsAcc:FindFirstChild("Wings") then
-			expect(Animate.getBoneFromPose(wingsAcc.Wings, childPose)).toBeTruthy()
+			sert.ok((Animate.getBoneFromPose(wingsAcc.Wings, childPose)))
 			local playThread = c.sh.env.task.spawn(function()
 				Animate.play(wingsAcc.Wings, idleSeq, false)
 			end)
@@ -3621,27 +3623,27 @@ describe("DefaultCommands", function()
 
 		-- 4. Purchasables (`Shared.VIP.Purchasables`)
 		local Purchasables = c.sh.env:require(c.sh.Shared.VIP.Purchasables)
-		expect(#Purchasables.donations).toBe(11)
-		expect(#Purchasables.scriptedUGC).toBe(6)
-		expect(#Purchasables.chatCommands).toBe(8)
+		sert.eq(#Purchasables.donations, 11)
+		sert.eq(#Purchasables.scriptedUGC, 6)
+		sert.eq(#Purchasables.chatCommands, 8)
 
 		-- 5. Popup (`Shared.VIP.Popup`)
 		local srvPopup = c.sh.env:require(c.sh.Shared.VIP.Popup)
-		expect(srvPopup).toBe(false)
-		expect(clientK.VIP.popup).toBeTruthy()
-		expect(clientK.VIP.popup.Name).toBe("VIP")
-		expect(clientK.VIP.popup.Frame:FindFirstChild("Preview")).toBeTruthy()
-		expect(clientK.VIP.popup.Frame.BuyFrame.Favorite:IsA("ImageButton")).toBe(true)
-		expect(clientK.VIP.popup.Frame.BuyFrame.Favorite.Visible).toBe(true)
+		sert.eq(srvPopup, false)
+		sert.ok(clientK.VIP.popup)
+		sert.eq(clientK.VIP.popup.Name, "VIP")
+		sert.ok((clientK.VIP.popup.Frame:FindFirstChild("Preview")))
+		sert.eq(clientK.VIP.popup.Frame.BuyFrame.Favorite:IsA("ImageButton"), true)
+		sert.eq(clientK.VIP.popup.Frame.BuyFrame.Favorite.Visible, true)
 
 		-- PromptPurchaseVIP opens the popup first when hidden, and View hides the popup while opening Commands
 		clientK.VIP.popup.Visible = false
 		clientK.PromptPurchaseVIP()
-		expect(clientK.VIP.popup.Visible).toBe(true)
+		sert.eq(clientK.VIP.popup.Visible, true)
 		clientK.VIP.popup.Frame.BuyFrame.View.Activated:Fire()
-		expect(clientK.VIP.popup.Visible).toBe(false)
-		expect(clientK.client.dashboard.Commands._instance.Visible).toBe(true)
-		expect(clientK.VIP.popup.ZIndex).toBe(9e8)
+		sert.eq(clientK.VIP.popup.Visible, false)
+		sert.eq(clientK.client.dashboard.Commands._instance.Visible, true)
+		sert.eq(clientK.VIP.popup.ZIndex, 9e8)
 
 		-- Completing a bulk purchase for the 40% OFF asset (capital .Id) hides the popup and disables VIPNotification
 		local cliMarket = c.ch1.env.game:GetService("MarketplaceService")
@@ -3652,7 +3654,7 @@ describe("DefaultCommands", function()
 			{ Items = { { Id = "115444443724463", Status = Enum.MarketplaceItemPurchaseStatus.Success } } }
 		)
 		c.world:run(0.1)
-		expect(clientK.VIP.popup.Visible).toBe(false)
+		sert.eq(clientK.VIP.popup.Visible, false)
 
 		-- 6. VIP purchase & receipt signals (`Shared.VIP.init`)
 		local market = c.sh.env.game:GetService("MarketplaceService")
@@ -3679,13 +3681,13 @@ describe("DefaultCommands", function()
 		end
 		_K.Registry.commands.localscript.run({ _K = _K, fromPlayer = nil }, { srvP1 }, "local x = 1")
 		_K.LoadScript = origLoadScript
-		expect(loadedParents).toEqual({ p1Gui })
+		sert.eq(loadedParents, { p1Gui })
 
 		-- Verify ;prefix / ;hotkeys reads Shift+ and Alt+ from mods:peek()
 		clientK.client.hotkeys.commandBar.mods({ Shift = true, Alt = true })
 		clientK.client.hotkeys.dashboard.mods({ Shift = true, Alt = false })
 		_K.Registry.commands.prefix.runClient({ _K = clientK })
-		expect(string.find(clientK._lastNotify.Text, "Shift+Alt+", 1, true) ~= nil).toBe(true)
+		sert.eq(string.find(clientK._lastNotify.Text, "Shift+Alt+", 1, true) ~= nil, true)
 	end)
 
 	test("disco tweens each client's Lighting at <= 1 Hz and honors KAH_NoFx and ReducedMotionEnabled", function()
@@ -3703,10 +3705,10 @@ describe("DefaultCommands", function()
 		local srvAmbient = srvLighting.Ambient
 		runSrv(";disco")
 		c.world:run(0.05)
-		expect(_K.Registry.commands.disco.env.id).toBeTruthy()
-		expect(srvLighting:GetAttribute("_KDisco")).toBe(_K.Registry.commands.disco.env.id)
+		sert.ok(_K.Registry.commands.disco.env.id)
+		sert.eq(srvLighting:GetAttribute("_KDisco"), _K.Registry.commands.disco.env.id)
 		c.world:run(2)
-		expect(srvLighting.Ambient).toEqual(srvAmbient)
+		sert.eq(srvLighting.Ambient, srvAmbient)
 
 		-- the attribute replicates in Roblox, in the sim each peer has its own Lighting
 		local tweens = {}
@@ -3719,75 +3721,75 @@ describe("DefaultCommands", function()
 		end
 		cliLighting:SetAttribute("_KDisco", 1)
 		c.world:run(0.05)
-		expect(cliEnv.restore).toEqual({ original, original })
-		expect(#tweens).toBe(1)
-		expect(tweens[1].target).toBe(cliLighting)
+		sert.eq(cliEnv.restore, { original, original })
+		sert.eq(#tweens, 1)
+		sert.eq(tweens[1].target, cliLighting)
 		-- one color per tween of at least a second: luminance changes at <= 1 Hz, eased, never a hard jump
-		expect(tweens[1].info.Time >= 1).toBe(true)
-		expect(tweens[1].info.EasingStyle).toBe(Enum.EasingStyle.Sine)
-		expect(tweens[1].goals.Ambient).toEqual(cliEnv.COLORS[1])
-		expect(tweens[1].goals.FogColor).toEqual(cliEnv.COLORS[1])
-		expect(cliLighting.Ambient).never.toEqual(cliEnv.COLORS[1])
+		sert.eq(tweens[1].info.Time >= 1, true)
+		sert.eq(tweens[1].info.EasingStyle, Enum.EasingStyle.Sine)
+		sert.eq(tweens[1].goals.Ambient, cliEnv.COLORS[1])
+		sert.eq(tweens[1].goals.FogColor, cliEnv.COLORS[1])
+		sert.ne(cliLighting.Ambient, cliEnv.COLORS[1])
 		c.world:run(cliEnv.STEP)
-		expect(#tweens).toBe(2)
-		expect(tweens[2].goals.Ambient).toEqual(cliEnv.COLORS[2])
+		sert.eq(#tweens, 2)
+		sert.eq(tweens[2].goals.Ambient, cliEnv.COLORS[2])
 		-- the colors wrap around
 		c.world:run(cliEnv.STEP * (#cliEnv.COLORS - 1))
-		expect(tweens[#tweens].goals.Ambient).toEqual(cliEnv.COLORS[1])
-		expect(#tweens).toBe(#cliEnv.COLORS + 1)
+		sert.eq(tweens[#tweens].goals.Ambient, cliEnv.COLORS[1])
+		sert.eq(#tweens, #cliEnv.COLORS + 1)
 		-- re-marking an active disco doesn't start a second loop
 		cliLighting:SetAttribute("_KDisco", 2)
 		c.world:run(0.05)
-		expect(#tweens).toBe(#cliEnv.COLORS + 1)
+		sert.eq(#tweens, #cliEnv.COLORS + 1)
 
 		-- opting out mid-effect stops the tweens and restores the player's lighting
 		cliPlayer:SetAttribute("KAH_NoFx", true)
 		c.world:run(0.05)
-		expect(cliEnv.running).toBe(false)
-		expect(cliEnv.tween).toBe(false)
-		expect(cliLighting.Ambient).toEqual(original)
-		expect(cliLighting.FogColor).toEqual(original)
+		sert.eq(cliEnv.running, false)
+		sert.eq(cliEnv.tween, false)
+		sert.eq(cliLighting.Ambient, original)
+		sert.eq(cliLighting.FogColor, original)
 		local count = #tweens
 		c.world:run(cliEnv.STEP * 2)
-		expect(#tweens).toBe(count)
+		sert.eq(#tweens, count)
 		-- a false attribute isn't an opt-out
 		cliPlayer:SetAttribute("KAH_NoFx", false)
 		c.world:run(0.05)
-		expect(cliEnv.running).toBeTruthy()
-		expect(#tweens).toBe(count + 1)
+		sert.ok(cliEnv.running)
+		sert.eq(#tweens, count + 1)
 
 		cliGui.ReducedMotionEnabled = true
 		c.world:run(0.05)
-		expect(cliEnv.running).toBe(false)
-		expect(cliLighting.Ambient).toEqual(original)
+		sert.eq(cliEnv.running, false)
+		sert.eq(cliLighting.Ambient, original)
 		c.world:run(cliEnv.STEP * 2)
-		expect(#tweens).toBe(count + 1)
+		sert.eq(#tweens, count + 1)
 		cliGui.ReducedMotionEnabled = false
 		c.world:run(0.05)
-		expect(cliEnv.running).toBeTruthy()
+		sert.ok(cliEnv.running)
 
 		-- undisco clears the mark, every client restores its lighting
 		runSrv(";undisco")
 		c.world:run(0.05)
-		expect(srvLighting:GetAttribute("_KDisco")).toBeNil()
-		expect(_K.Registry.commands.disco.env.id).toBe(false)
+		sert.eq(srvLighting:GetAttribute("_KDisco"), nil)
+		sert.eq(_K.Registry.commands.disco.env.id, false)
 		cliLighting:SetAttribute("_KDisco", nil)
 		c.world:run(0.05)
-		expect(cliEnv.running).toBe(false)
-		expect(cliEnv.restore).toBe(false)
-		expect(cliLighting.Ambient).toEqual(original)
-		expect(cliLighting.FogColor).toEqual(original)
+		sert.eq(cliEnv.running, false)
+		sert.eq(cliEnv.restore, false)
+		sert.eq(cliLighting.Ambient, original)
+		sert.eq(cliLighting.FogColor, original)
 		count = #tweens
 		c.world:run(cliEnv.STEP * 2)
-		expect(#tweens).toBe(count)
+		sert.eq(#tweens, count)
 
 		-- a player who opted out before disco started never gets it
 		cliPlayer:SetAttribute("KAH_NoFx", "yes")
 		cliLighting:SetAttribute("_KDisco", 3)
 		c.world:run(cliEnv.STEP * 2)
-		expect(#tweens).toBe(count)
-		expect(cliEnv.restore).toBe(false)
-		expect(cliLighting.Ambient).toEqual(original)
+		sert.eq(#tweens, count)
+		sert.eq(cliEnv.restore, false)
+		sert.eq(cliLighting.Ambient, original)
 	end)
 
 	test(
@@ -3809,37 +3811,44 @@ describe("DefaultCommands", function()
 			end
 
 			-- Validation errors: 0 targets, blank question, <2 options, blank/pipe-only options, duplicates, >8 options, >200 chars
-			expect(pollDef.run(makeCtx(), {}, "Map?")).toBe("No players to poll.")
-			expect(pollDef.run(makeCtx(), { srvP1 }, "   ")).toBe("A poll needs a question.")
-			expect(pollDef.run(makeCtx(), { srvP1 }, string.rep("q", 201))).toBe(
+			sert.eq(pollDef.run(makeCtx(), {}, "Map?"), "No players to poll.")
+			sert.eq(pollDef.run(makeCtx(), { srvP1 }, "   "), "A poll needs a question.")
+			sert.eq(
+				pollDef.run(makeCtx(), { srvP1 }, string.rep("q", 201)),
 				"The question can be at most 200 characters."
 			)
-			expect(pollDef.run(makeCtx(), { srvP1 }, "Map?", { "OnlyOne" })).toBe("A poll needs at least 2 options.")
-			expect(
+			sert.eq(pollDef.run(makeCtx(), { srvP1 }, "Map?", { "OnlyOne" }), "A poll needs at least 2 options.")
+			sert.eq(
 				pollDef.run(
 					makeCtx({ [2] = { rawArg = '"Map?"' }, [3] = { rawArg = '"OnlyOne" ""' } }),
 					{ srvP1 },
 					"Map?",
 					{ 'OnlyOne" "' }
-				)
-			).toBe("A poll needs at least 2 options.")
-			expect(pollDef.run(makeCtx(), { srvP1 }, "Map?", { "   ", "" })).toBe("A poll needs at least 2 options.")
-			expect(pollDef.run(makeCtx(), { srvP1 }, "Map?", { "Desert", "desert" })).toBe(
+				),
+				"A poll needs at least 2 options."
+			)
+			sert.eq(pollDef.run(makeCtx(), { srvP1 }, "Map?", { "   ", "" }), "A poll needs at least 2 options.")
+			sert.eq(
+				pollDef.run(makeCtx(), { srvP1 }, "Map?", { "Desert", "desert" }),
 				"Poll options must be different from each other."
 			)
-			expect(pollDef.run(makeCtx(), { srvP1 }, "Map?", { "A", string.rep("b", 201) })).toBe(
+			sert.eq(
+				pollDef.run(makeCtx(), { srvP1 }, "Map?", { "A", string.rep("b", 201) }),
 				"Each option can be at most 200 characters."
 			)
-			expect(pollDef.run(makeCtx(), { srvP1 }, "Map?", { "1", "2", "3", "4", "5", "6", "7", "8", "9" })).toBe(
+			sert.eq(
+				pollDef.run(makeCtx(), { srvP1 }, "Map?", { "1", "2", "3", "4", "5", "6", "7", "8", "9" }),
 				"A poll can have at most 8 options."
 			)
 
 			-- Global command block for both vote and poll
 			local globalDef = _K.Registry.commands.global
-			expect(globalDef.run({ _K = _K, from = srvP1.UserId, fromPlayer = srvP1 }, ";vote all Question?")).toBe(
+			sert.eq(
+				globalDef.run({ _K = _K, from = srvP1.UserId, fromPlayer = srvP1 }, ";vote all Question?"),
 				'"vote" can\'t run globally.'
 			)
-			expect(globalDef.run({ _K = _K, from = srvP1.UserId, fromPlayer = srvP1 }, ';poll all "Question?" A,B')).toBe(
+			sert.eq(
+				globalDef.run({ _K = _K, from = srvP1.UserId, fromPlayer = srvP1 }, ';poll all "Question?" A,B'),
 				'"poll" can\'t run globally.'
 			)
 
@@ -3860,8 +3869,8 @@ describe("DefaultCommands", function()
 				count: number,
 				labels: { string }
 			)
-				expect(count).toBe(3)
-				expect(labels).toEqual({ "<b>Red</b>", "Blue", "Green" })
+				sert.eq(count, 3)
+				sert.eq(labels, { "<b>Red</b>", "Blue", "Green" })
 				if player == srvP1 then
 					return 2
 				end
@@ -3889,25 +3898,25 @@ describe("DefaultCommands", function()
 				)
 			end)
 			c.world:run(0.1)
-			expect(err).toBeNil()
-			expect(qArg.redactLog).toBe(false)
-			expect(oArg.redactLog).toBe(false)
+			sert.eq(err, nil)
+			sert.eq(qArg.redactLog, false)
+			sert.eq(oArg.redactLog, false)
 
-			expect(lastResults ~= nil).toBe(true)
-			expect(lastResults.q).toBe("<b>Color?</b>")
-			expect(lastResults.labels).toEqual({ "<b>Red</b>", "Blue", "Green" })
-			expect(lastResults.tally).toEqual({ 0, 1, 0 })
-			expect(lastResults.missing).toBe(1) -- 2 unique players - 1 valid vote = 1 missing
-			expect(lastResults.yesNo).toBe(false)
+			sert.eq(lastResults ~= nil, true)
+			sert.eq(lastResults.q, "<b>Color?</b>")
+			sert.eq(lastResults.labels, { "<b>Red</b>", "Blue", "Green" })
+			sert.eq(lastResults.tally, { 0, 1, 0 })
+			sert.eq(lastResults.missing, 1) -- 2 unique players - 1 valid vote = 1 missing
+			sert.eq(lastResults.yesNo, false)
 
 			-- Verify Results Frame LayoutOrder is 3 (below Dialog's Title -2 and Text -1)
-			expect(lastDialog ~= nil).toBe(true)
+			sert.eq(lastDialog ~= nil, true)
 			local resultsFrame = lastDialog._content:FindFirstChild("Results")
-			expect(resultsFrame ~= nil).toBe(true)
-			expect(lastDialog._content.Title.LayoutOrder).toBe(-2)
-			expect(lastDialog._content.Text.LayoutOrder).toBe(-1)
-			expect(resultsFrame.LayoutOrder).toBe(3)
-			expect(resultsFrame.LayoutOrder > lastDialog._content.Text.LayoutOrder).toBe(true)
+			sert.eq(resultsFrame ~= nil, true)
+			sert.eq(lastDialog._content.Title.LayoutOrder, -2)
+			sert.eq(lastDialog._content.Text.LayoutOrder, -1)
+			sert.eq(resultsFrame.LayoutOrder, 3)
+			sert.eq(resultsFrame.LayoutOrder > lastDialog._content.Text.LayoutOrder, true)
 
 			-- Unquoted multi-word question in ;poll falls back to a yes/no vote
 			c.world:run(61)
@@ -3920,11 +3929,11 @@ describe("DefaultCommands", function()
 				errYesNo = pollDef.run(unquotedCtx, { srvP1 }, "Are", { "you ready?" })
 			end)
 			c.world:run(0.1)
-			expect(errYesNo).toBeNil()
-			expect(unquotedCtx.args[3]).toBeNil()
-			expect(lastResults.q).toBe("Are you ready?")
-			expect(lastResults.yesNo).toBe(true)
-			expect(lastResults.tally).toEqual({ 1, 0 })
+			sert.eq(errYesNo, nil)
+			sert.eq(unquotedCtx.args[3], nil)
+			sert.eq(lastResults.q, "Are you ready?")
+			sert.eq(lastResults.yesNo, true)
+			sert.eq(lastResults.tally, { 1, 0 })
 
 			-- Client OnInvoke resolves nil if dialog is destroyed externally (e.g. overflow eviction)
 			local origVoteOnInvoke = clientK.Remote.Vote.OnInvoke
@@ -3937,13 +3946,13 @@ describe("DefaultCommands", function()
 				invokeResolved = true
 			end)
 			c.world:run(0.05)
-			expect(lastDialog ~= nil).toBe(true)
+			sert.eq(lastDialog ~= nil, true)
 			c.ch1.env.task.spawn(function()
 				lastDialog._instance:Destroy()
 			end)
 			c.world:run(0.05)
-			expect(invokeResolved).toBe(true)
-			expect(invokeResult).toBeNil()
+			sert.eq(invokeResolved, true)
+			sert.eq(invokeResult, nil)
 
 			resultsCon:Disconnect()
 			pollDef.env.remote.Invoke = origInvoke
@@ -3964,17 +3973,17 @@ describe("DefaultCommands", function()
 		ExampleAddonServer(_K)
 
 		local customcommand = _K.Registry.commands.customcommand
-		expect(customcommand).toBeTruthy()
+		sert.ok(customcommand)
 		setfenv(customcommand.run, c.sh.env.globals)
 		local srvEnv = customcommand.env
 		local cliEnv = clientK.Registry.commands.customcommand.env
-		expect(srvEnv.countServer).toBe(0)
-		expect(cliEnv.countClient).toBe(0)
+		sert.eq(srvEnv.countServer, 0)
+		sert.eq(cliEnv.countClient, 0)
 
 		customcommand.run({ _K = _K, env = srvEnv, from = 1 }, nil)
-		expect(srvEnv.countServer).toBe(1)
+		sert.eq(srvEnv.countServer, 1)
 		customcommand.runClient({ _K = clientK, env = cliEnv, from = 1 }, "hello")
-		expect(cliEnv.countClient).toBe(1)
+		sert.eq(cliEnv.countClient, 1)
 	end)
 
 	test(
@@ -3993,7 +4002,7 @@ describe("DefaultCommands", function()
 			-- 1. ;time marks its Time argument redactLog = false
 			local timeArg = { rawArg = "14:30", parsedArgs = { "14:30" }, rawType = { freeText = true } }
 			_K.Registry.commands.time.run({ _K = _K, from = 1, args = { timeArg } }, "14:30", nil)
-			expect(timeArg.redactLog).toBe(false)
+			sert.eq(timeArg.redactLog, false)
 
 			-- 2. When all peers can chat with sender, world-text commands (name, custom title, createteam, editteam, change) do not spend cooldowns
 			tcMethods.CanUsersChatAsync = function()
@@ -4001,15 +4010,15 @@ describe("DefaultCommands", function()
 			end
 			c.runSrv(";name TargetPlr FirstNick")
 			c.runSrv(";name TargetPlr SecondNick")
-			expect(srvP2:GetAttribute("_KDisplayName")).toBe("SecondNick")
+			sert.eq(srvP2:GetAttribute("_KDisplayName"), "SecondNick")
 
 			c.runSrv(";createteam TeamAlpha #ff0000")
 			c.runSrv(";createteam TeamBeta #00ff00")
 			local teamBeta = c.sh.env.game:GetService("Teams"):FindFirstChild("TeamBeta")
-			expect(teamBeta ~= nil).toBe(true)
+			sert.eq(teamBeta ~= nil, true)
 			c.runSrv(";editteam TeamBeta TeamGamma")
 			c.runSrv(";editteam TeamGamma TeamDelta")
-			expect(teamBeta.Name).toBe("TeamDelta")
+			sert.eq(teamBeta.Name, "TeamDelta")
 
 			local ls = c.sh.env.Instance.new("Folder", srvP2)
 			ls.Name = "leaderstats"
@@ -4017,7 +4026,7 @@ describe("DefaultCommands", function()
 			rankStat.Name = "Rank"
 			c.runSrv(";change TargetPlr Rank Bronze")
 			c.runSrv(";change TargetPlr Rank Silver")
-			expect(rankStat.Value).toBe("Silver")
+			sert.eq(rankStat.Value, "Silver")
 
 			-- 3. Predefined VIP titles work even when sender cannot chat or is on custom title cooldown
 			-- First restrict srvP3 so custom title spends cooldown
@@ -4026,14 +4035,14 @@ describe("DefaultCommands", function()
 			end
 			c.runSrv(";title TargetPlr CustomOne")
 			c.world:run(0.05)
-			expect(srvP2.Character:FindFirstChild("_K_Title").Title.Text).toBe("CustomOne")
+			sert.eq(srvP2.Character:FindFirstChild("_K_Title").Title.Text, "CustomOne")
 			-- Second custom title within 60s is blocked by cooldown because RestrictedPlr (3) is in server
 			local titleErr = _K.Registry.commands.title.run(
 				{ _K = _K, from = 1, fromPlayer = srvP1, args = {} },
 				{ srvP2 },
 				"CustomTwo"
 			)
-			expect(string.find(tostring(titleErr), "Wait", 1, true) ~= nil).toBe(true)
+			sert.eq(string.find(tostring(titleErr), "Wait", 1, true) ~= nil, true)
 			-- Predefined VIP title ("vip") succeeds even while on cooldown and even when CanUserChatAsync is false
 			_K.VIP.titleDefinition.vip.ownerCache[srvP2.UserId] = true
 			tcMethods.CanUserChatAsync = function()
@@ -4041,24 +4050,24 @@ describe("DefaultCommands", function()
 			end
 			c.runSrv(";title TargetPlr vip")
 			c.world:run(0.05)
-			expect(string.lower(srvP2.Character:FindFirstChild("_K_Title").Title.Text)).toBe("vip")
+			sert.eq(string.lower(srvP2.Character:FindFirstChild("_K_Title").Title.Text), "vip")
 
 			-- 4. ban, kick, and shutdown still execute with reason stripped when CanUserChatAsync is false
 			srvP2._props._kicked = nil
 			c.runSrv(";ban TargetPlr 0 ShouldStripReason")
-			expect(_K.Data.bans["2"] ~= nil).toBe(true)
-			expect(_K.Data.bans["2"][2]).toBeNil()
-			expect(srvP2._props._kicked).toBe("No reason.")
+			sert.eq(_K.Data.bans["2"] ~= nil, true)
+			sert.eq(_K.Data.bans["2"][2], nil)
+			sert.eq(srvP2._props._kicked, "No reason.")
 			_K.Data.bans["2"] = nil
 
 			srvP2._props._kicked = nil
 			c.runSrv(";kick TargetPlr ShouldAlsoStrip")
-			expect(srvP2._props._kicked).toBe(true) -- nil reason passed to Kick
+			sert.eq(srvP2._props._kicked, true) -- nil reason passed to Kick
 
 			srvP2._props._kicked = nil
 			srvP3._props._kicked = nil
 			_K.Registry.commands.shutdown.run({ _K = _K, from = 1, fromPlayer = srvP1, args = {} }, nil, "MutedReason")
-			expect(string.find(tostring(srvP2._props._kicked), "Reason:", 1, true)).toBeNil()
+			sert.eq(string.find(tostring(srvP2._props._kicked), "Reason:", 1, true), nil)
 
 			-- 5. On reason cooldown, kick/shutdown still show the reason to chat-allowed players while stripping for restricted players
 			tcMethods.CanUserChatAsync = origCanUserChat
@@ -4068,7 +4077,7 @@ describe("DefaultCommands", function()
 				{ srvP3 },
 				"FirstKickReason"
 			)
-			expect(srvP3._props._kicked).toBe("FirstKickReason")
+			sert.eq(srvP3._props._kicked, "FirstKickReason")
 			-- Now on cooldown: kicking both srvP2 (allowed) and srvP3 (restricted) gives srvP2 the reason and srvP3 nil
 			srvP2._props._kicked = nil
 			srvP3._props._kicked = nil
@@ -4077,8 +4086,8 @@ describe("DefaultCommands", function()
 				{ srvP2, srvP3 },
 				"SecondKickReason"
 			)
-			expect(srvP2._props._kicked).toBe("SecondKickReason")
-			expect(srvP3._props._kicked).toBe(true)
+			sert.eq(srvP2._props._kicked, "SecondKickReason")
+			sert.eq(srvP3._props._kicked, true)
 
 			-- 6. startVote on "vote" cooldown skips restricted srvP3 and only polls delivered srvP2
 			local voteDef = _K.Registry.commands.vote
@@ -4098,7 +4107,7 @@ describe("DefaultCommands", function()
 			end)
 			c.world:run(0.1)
 			table.sort(polledIds)
-			expect(polledIds).toEqual({ 2, 3 })
+			sert.eq(polledIds, { 2, 3 })
 
 			-- Second vote within 60s skips srvP3 and only invokes Remote.Vote on srvP2
 			table.clear(polledIds)
@@ -4110,7 +4119,7 @@ describe("DefaultCommands", function()
 				)
 			end)
 			c.world:run(0.1)
-			expect(polledIds).toEqual({ 2 })
+			sert.eq(polledIds, { 2 })
 
 			voteDef.env.remote.Invoke = origVoteInvoke
 			tcMethods.CanUserChatAsync = origCanUserChat
@@ -4119,4 +4128,6 @@ describe("DefaultCommands", function()
 	)
 end)
 
-return {}
+do
+	return {}
+end
