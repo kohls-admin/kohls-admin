@@ -103,6 +103,8 @@ function MoveTool:Unequip()
 
 	-- Disable dragging
 	ContextActionService:UnbindAction 'BT: Start dragging'
+	ContextActionService:UnbindAction 'BT: Watch for dragging'
+	ContextActionService:UnbindAction 'BT: Dragging'
 
 	-- Clear unnecessary resources
 	self.UIController:HideUI()

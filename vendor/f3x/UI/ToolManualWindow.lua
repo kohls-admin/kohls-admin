@@ -14,6 +14,7 @@ end
 
 function ToolManualWindow:render()
     return new('ScreenGui', {
+        ResetOnSpawn = false;
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling;
     }, {
         Window = new('Frame', {

@@ -24,6 +24,7 @@ function Handles.new(Options)
     self.Gui = Gui
     Gui.Name = 'BTHandles'
     Gui.IgnoreGuiInset = true
+    Gui.ResetOnSpawn = false
     self.Maid.Gui = Gui
 
     -- Create interface

@@ -49,6 +49,7 @@ function ArcHandles.new(Options)
     self.Gui = Gui
     Gui.Name = 'BTArcHandles'
     Gui.IgnoreGuiInset = true
+    Gui.ResetOnSpawn = false
     self.Maid.Gui = Gui
 
     -- Create interface

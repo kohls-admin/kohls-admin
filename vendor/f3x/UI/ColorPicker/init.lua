@@ -79,6 +79,7 @@ end
 function ColorPicker:render()
     return new('ScreenGui', {
         DisplayOrder = 1;
+        ResetOnSpawn = false;
     }, {
         Dialog = new('Frame', {
             Active = true;

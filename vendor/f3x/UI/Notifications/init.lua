@@ -45,7 +45,9 @@ function Notifications:willUnmount()
 end
 
 function Notifications:render()
-    return new('ScreenGui', {}, {
+    return new('ScreenGui', {
+        ResetOnSpawn = false;
+    }, {
         Container = new('Frame', {
             AnchorPoint = Vector2.new(0.5, 0.5);
             BackgroundTransparency = 1;

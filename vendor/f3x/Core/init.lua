@@ -267,7 +267,9 @@ function Disable()
 
 	-- Hide UI
 	if UI then
-		UI.Parent = script;
+		pcall(function ()
+			UI.Parent = script;
+		end);
 	end;
 
 	-- Unequip current tool
@@ -311,6 +313,7 @@ function InitializeUI()
 	-- Create the root UI
 	UI = Instance.new('ScreenGui')
 	UI.Name = 'Building Tools by F3X (UI)'
+	UI.ResetOnSpawn = false
 
 	-- Create dock
 	local ToolList = {}
@@ -502,11 +505,19 @@ elseif Mode == 'Tool' then
 	end;
 
 	-- Disable the tool automatically if not equipped or in backpack
-	Tool.AncestryChanged:Connect(function (Item, Parent)
-		if not Parent or not (Parent:IsA 'Backpack' or (Parent:IsA 'Model' and Players:GetPlayerFromCharacter(Parent))) then
+	Tool.AncestryChanged:Connect(function ()
+		local Parent = Tool.Parent;
+		if not Tool:IsDescendantOf(game) or not Parent or not (Parent:IsA 'Backpack' or (Parent:IsA 'Model' and Players:GetPlayerFromCharacter(Parent) == Player)) then
 			Disable();
 		end;
 	end);
+
+	if Player then
+		local CharacterRemovingConnection = Player.CharacterRemoving:Connect(Disable);
+		Tool.Destroying:Once(function ()
+			CharacterRemovingConnection:Disconnect();
+		end);
+	end;
 
 end;
 

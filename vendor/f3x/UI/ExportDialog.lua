@@ -6,7 +6,9 @@ local Roact = require(Vendor:WaitForChild('Roact'))
 local new = Roact.createElement
 
 local function ExportDialog(props)
-    return new('ScreenGui', {}, {
+    return new('ScreenGui', {
+        ResetOnSpawn = false;
+    }, {
         Dialog = new('Frame', {
             AnchorPoint = Vector2.new(0.5, 0.5);
             BackgroundColor3 = Color3.fromRGB(31, 31, 31);
