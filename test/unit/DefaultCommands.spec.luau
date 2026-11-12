@@ -1486,7 +1486,7 @@ describe("DefaultCommands", function()
 				"OfflineReason"
 			)
 			sert.eq(shutArg2.parsedArgs, { "OfflineReason" })
-			sert.eq(shutArg2.redactLog, false)
+			sert.eq(shutArg2.redactLog, nil)
 			sert.eq(string.find(tostring(srvP2._props._kicked), "77777 has shutdown the server.", 1, true) ~= nil, true)
 		end
 	)

@@ -3509,6 +3509,30 @@ describe("Client and UI", function()
 						})
 						fastRun(0.05)
 						sert.eq(#cK.Data.logs, preEchoCount)
+
+						-- PlayerPrefix attribute gates per-player custom prefix TextChatCommands
+						local customCmd = cEnv.Instance.new("TextChatCommand")
+						customCmd.Name = "ping"
+						customCmd.PrimaryAlias = "!ping"
+						customCmd.SecondaryAlias = "!pong"
+						customCmd:SetAttribute("PlayerPrefix", "!")
+						customCmd.Parent = clientCmdFolder
+						fastRun(0.1)
+						sert.eq(customCmd.Enabled, false)
+						sert.eq(customCmd.AutocompleteVisible, false)
+
+						cK.Data.playerPrefix[cK.LocalPlayer.UserId] = "!"
+						cK.client.playerPrefix("!")
+						fastRun(0.1)
+						sert.eq(customCmd.Enabled, true)
+						sert.eq(customCmd.AutocompleteVisible, true)
+
+						cK.Data.playerPrefix[cK.LocalPlayer.UserId] = nil
+						cK.client.playerPrefix(";")
+						fastRun(0.1)
+						sert.eq(customCmd.Enabled, false)
+						sert.eq(customCmd.AutocompleteVisible, false)
+						customCmd:Destroy()
 					end
 				end
 				cK.client.settings.chatCommands(false)

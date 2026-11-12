@@ -400,17 +400,17 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			sert.eq(_K.Process.onCooldown(_K, 202), false)
 
 			-- 2. Remote.PlayerPrefix rate-limits rapid changes and cleans up on PlayerRemoving
-			local scheduleSpy = if _K.ChatCommands then sert.spy(_K.ChatCommands, "schedule", function() end) else nil
+			local resyncSpy = if _K.ChatCommands then sert.spy(_K.ChatCommands, "resync", function() end) else nil
 			gRemote.PlayerPrefix:Fire("!")
 			gRemote.PlayerPrefix:Fire("?")
 			world:run(0.2)
 			sert.eq(_K.Data.playerPrefix[202], "!")
-			world:run(1.1)
+			world:run(2.1)
 			gRemote.PlayerPrefix:Fire("?")
 			world:run(0.2)
 			sert.eq(_K.Data.playerPrefix[202], "?")
-			if scheduleSpy then
-				sert.eq(scheduleSpy.callCount, 2)
+			if resyncSpy then
+				sert.eq(resyncSpy.callCount, 2)
 			end
 
 			-- 3. Remote.VIPUGCMethod rejects spoofed assetId != ugcAssetMatch[assetId]
@@ -976,11 +976,11 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					gen = function(_state, g)
 						return {
 							caller = g:pick(ACTOR_IDS),
-							prefix = g:pick({ "!", "?", ":", "/", "-", "@", "$", "ab" }),
+							prefix = g:pick({ "!", "?", ":", "/", "-", ";", "@", "$", "ab" }),
 						}
 					end,
 					run = function(sut, arg)
-						sut.world:run(1.05)
+						sut.world:run(2.1)
 						sut.remotes[arg.caller].PlayerPrefix:Fire(arg.prefix)
 						sut.world:run(0.2)
 					end,
@@ -988,10 +988,12 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 						local sut = getOrCreateModelSut()
 						local _K = sut._K
 						local valid = type(arg.prefix) == "string"
-							and utf8.len(arg.prefix) == 1
+							and _K.Data.settings.chatCommands ~= false
+							and #_K.Chat.commandPrefixes({ arg.prefix }) == 1
 							and not table.find(RESERVED_PREFIXES, arg.prefix)
 						if valid then
-							state.prefixes[arg.caller] = arg.prefix
+							local defaultPrefix = _K.Data.settings.prefix[1] or ";"
+							state.prefixes[arg.caller] = if arg.prefix == defaultPrefix then nil else arg.prefix
 						end
 						for _, uid in ACTOR_IDS do
 							if uid ~= arg.caller and _K.Data.playerPrefix[uid] ~= state.prefixes[uid] then
@@ -1293,6 +1295,180 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			sert.eq(receivedByGuestB[#receivedByGuestB].text, "AdminB broadcast after window")
 			sert.eq(receivedByGuestB[#receivedByGuestB].from, 302)
 			local _ = rAdminB
+		end
+	)
+
+	test(
+		"Remote.Once avoids false unlinked warnings, Server Remote.Fire ignores nil/non-Player, Settings preserves announcements on cooldown and allows 8 prefixes, and Explorer enforces PARENT/TextChatService/cap/rate-limit",
+		function()
+			-- 1. Client Remote.Once does NOT warn after 5s when unlinked, while Wait still warns
+			do
+				local hc = Harness.newEnv({ isStudio = false, isClient = true })
+				hc:mockClientRemotes()
+				local warnings = {}
+				local origWarn = hc.env.globals.warn
+				hc.env.globals.warn = function(...: any)
+					table.insert(warnings, table.concat({ ... }, " "))
+				end
+				local cRemote = hc:requireRemote()
+				cRemote.UnlinkedOnceTest:Once(function() end)
+				hc.env:step(6)
+				sert.eq(#warnings, 0)
+
+				hc.env.task.spawn(function()
+					cRemote.UnlinkedWaitTest:Wait()
+				end)
+				hc.env:step(6)
+				sert.eq(#warnings, 1)
+				sert.eq(string.find(warnings[1], "Infinite yield possible", 1, true) ~= nil, true)
+				hc.env.globals.warn = origWarn
+			end
+
+			local world = sert.sim.new({ backing = true, latency = { remotes = 0.02 } })
+			local server = world:server()
+			local creatorClient = server:client(101)
+			local guestClient = server:client(202)
+
+			local sh = Harness.newPeerEnv(server, { isStudio = false })
+			sh.env.game._props.CreatorId = 101
+			local _K = sh:requireK()
+			server:spawn(function()
+				_K.initialize({
+					bans = {},
+					prefix = { ";" },
+					vip = false,
+					userRoles = { creator = { 101 } },
+					roles = Harness.defaultRoles(),
+				})
+			end)
+			world:run(1)
+
+			-- 2. Server Remote:Fire(nil, ...) and non-Player Instance is a safe no-op
+			_K.Remote.Notify:Fire(nil :: any, { Text = "global no-player" })
+			_K.Remote.Notify:Fire(sh.env.workspace :: any, { Text = "not a player" })
+			sert.eq(world.scheduler.errors, {})
+
+			local creatorEnv = Harness.newPeerEnv(creatorClient, { isClient = true })
+			local guestEnv = Harness.newPeerEnv(guestClient, { isClient = true })
+			local cRemote = creatorEnv:requireRemote()
+			local gRemote = guestEnv:requireRemote()
+			world:run(0.5)
+
+			-- 3. Remote.PlayerPrefix rejects caller when caller has 0 usable and 0 VIP-purchasable commands
+			local origEveryoneGroups = _K.Data.roles.everyone.groups
+			_K.Data.roles.everyone.groups = {}
+			gRemote.PlayerPrefix:Fire("!")
+			world:run(0.3)
+			sert.eq(_K.Data.playerPrefix[202], nil)
+			_K.Data.roles.everyone.groups = origEveryoneGroups
+
+			-- 4. Remote.Settings allows developer/creator up to 8 prefixes, rejects 9, sanitizes richText, and preserves announcements when rate-limited
+			local eightPrefixes = { ";", ":", "!", "?", "/", "-", "+", "=" }
+			cRemote.Settings:Fire({ prefix = eightPrefixes })
+			world:run(0.3)
+			sert.eq(_K.Data.savedSettings.prefix, eightPrefixes)
+
+			cRemote.Settings:Fire({ prefix = { ";", ":", "!", "?", "/", "-", "+", "=", "&" } })
+			world:run(0.3)
+			sert.eq(_K.Data.savedSettings.prefix, eightPrefixes)
+
+			-- First announcement with valid & invalid rich text: <b> + spaced rgb() restored, <font face="Gotham"> escaped
+			cRemote.Settings:Fire({
+				announcements = {
+					{
+						Text = '<b><font color="rgb(255, 165, 0)">Hello</font> <font face="Gotham">World</font></b>',
+						Duration = 30,
+					},
+				},
+			})
+			world:run(0.5)
+			sert.eq(#_K.Data.savedSettings.announcements, 1)
+			sert.eq(
+				_K.Data.savedSettings.announcements[1].Text,
+				'<b><font color="rgb(255,165,0)">Hello</font> &lt;font face=&quot;Gotham&quot;&gt;World&lt;/font&gt;</b>'
+			)
+
+			-- Rate-limited edit right afterward (within 60s broadcast cooldown) MUST NOT wipe savedSettings.announcements to {}!
+			cRemote.Settings:Fire({
+				announcements = {
+					{ Text = "Replacement while cooling down", Duration = 15 },
+				},
+			})
+			world:run(0.5)
+			sert.eq(#_K.Data.savedSettings.announcements, 1)
+			sert.eq(string.find(_K.Data.savedSettings.announcements[1].Text, "Hello", 1, true) ~= nil, true)
+
+			-- 5. Remote.Explorer protects TextChatService, supports PARENT, caps batch at 64, and rate-limits at 15/sec
+			local function toCli(inst: any): any
+				return creatorEnv.env._mirrorOf[inst] or inst
+			end
+			local tcs = sh.env.game:GetService("TextChatService")
+			local customCmd = sh.env.Instance.new("TextChatCommand", tcs)
+			customCmd.Name = "ProtectedGameCmd"
+			world:run(0.05)
+			cRemote.Explorer:Fire("DELETE", { toCli(customCmd), toCli(tcs) })
+			world:run(0.3)
+			sert.eq(customCmd.Parent, tcs)
+
+			local destFolder = sh.env.Instance.new("Folder", sh.env.workspace)
+			destFolder.Name = "ReparentDest"
+			local childFolder = sh.env.Instance.new("Folder", destFolder)
+			childFolder.Name = "ChildInsideDest"
+			local movablePart = sh.env.Instance.new("Part", sh.env.workspace)
+			local srvGuest = sh.env.Players:GetPlayerByUserId(202)
+			world:run(0.05)
+
+			-- PARENT moves movablePart into destFolder, while ignoring Player, selected itself, ancestor of selected, and protected instances
+			cRemote.Explorer:Fire(
+				"PARENT",
+				{ toCli(movablePart), toCli(srvGuest), toCli(destFolder), toCli(sh.env.workspace), toCli(customCmd) },
+				toCli(childFolder)
+			)
+			world:run(0.3)
+			sert.eq(movablePart.Parent, childFolder)
+			sert.eq(destFolder.Parent, sh.env.workspace)
+			sert.eq(customCmd.Parent, tcs)
+
+			-- 64-item cap: deleting 70 parts in one Explorer call deletes at most 64
+			local parts70 = {}
+			for i = 1, 70 do
+				local p = sh.env.Instance.new("Part", sh.env.workspace)
+				p.Name = `BulkPart_{i}`
+				parts70[i] = p
+			end
+			world:run(0.05)
+			local cliParts70 = {}
+			for i = 1, 70 do
+				cliParts70[i] = toCli(parts70[i])
+			end
+			cRemote.Explorer:Fire("DELETE", cliParts70)
+			world:run(0.3)
+			local remaining = 0
+			for i = 1, 70 do
+				if parts70[i].Parent ~= nil then
+					remaining += 1
+				end
+			end
+			sert.eq(remaining, 6)
+
+			-- 15 calls/sec rate limit: Wait for clean 1s window, then fire 20 single-part deletes; only first 15 execute
+			world:run(1.1)
+			local burstParts = {}
+			for i = 1, 20 do
+				burstParts[i] = sh.env.Instance.new("Part", sh.env.workspace)
+			end
+			world:run(0.05)
+			for i = 1, 20 do
+				cRemote.Explorer:Fire("DELETE", { toCli(burstParts[i]) })
+			end
+			world:run(0.3)
+			local burstRemaining = 0
+			for i = 1, 20 do
+				if burstParts[i].Parent ~= nil then
+					burstRemaining += 1
+				end
+			end
+			sert.eq(burstRemaining, 5)
 		end
 	)
 end)

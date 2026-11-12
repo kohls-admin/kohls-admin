@@ -37,6 +37,52 @@ describe("Studio · Server", function()
 		sert.eq(#_K.Data.logs > beforeLogs, true)
 		sert.eq(_K.Data.logs[#_K.Data.logs][1], `;ping {player.Name}`)
 	end)
+
+	serverTest("Loader initializes modern flags/Tools and syncs per-player PlayerPrefix TextChatCommands", function()
+		local Players = game:GetService("Players")
+		local ServerScriptService = game:GetService("ServerScriptService")
+		local TextChatService = game:GetService("TextChatService")
+
+		sert.eq((_G :: any).KAU, true)
+		sert.eq(shared._K_LOADER_LOADED, true)
+		sert.eq(shared._K_MODERN_LOADER, true)
+
+		local kaFolder = ServerScriptService:FindFirstChild("Kohl's Admin")
+		sert.eq(kaFolder ~= nil, true)
+		local loader = if kaFolder then kaFolder:FindFirstChild("Loader") else nil
+		sert.eq(loader ~= nil, true)
+
+		local _K = shared._K_INTERFACE
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		sert.eq(_K.script, ReplicatedStorage:FindFirstChild("Kohl's Admin Source"))
+		sert.eq(_K.Server ~= nil and _K.Tools ~= nil and _K.Server:FindFirstChild("Tools") ~= nil, true)
+		local player = Players:GetPlayers()[1]
+		sert.eq(player ~= nil, true)
+
+		local cmdFolder = sert.waitFor(function()
+			return TextChatService:FindFirstChild("TextChatCommands_KA")
+		end, 5, nil, "TextChatCommands_KA folder")
+
+		local prevPrefix = _K.Data.playerPrefix[player.UserId]
+		_K.Data.playerPrefix[player.UserId] = "!"
+		if _K.ChatCommands and _K.ChatCommands.refresh then
+			_K.ChatCommands.refresh()
+		end
+
+		local playerCmdName = string.format("_KPlayer_%d_ping", string.byte("!"))
+		local playerPing = cmdFolder:FindFirstChild(playerCmdName) :: TextChatCommand?
+		sert.eq(playerPing ~= nil, true)
+		if playerPing then
+			sert.eq(playerPing.PrimaryAlias, "!ping")
+			sert.eq(playerPing:GetAttribute("PlayerPrefix"), "!")
+		end
+
+		_K.Data.playerPrefix[player.UserId] = prevPrefix
+		if _K.ChatCommands and _K.ChatCommands.refresh then
+			_K.ChatCommands.refresh()
+		end
+		sert.eq(cmdFolder:FindFirstChild(playerCmdName), nil)
+	end)
 end)
 
 describe("Studio · Client", function()
@@ -219,6 +265,38 @@ describe("Studio · Client", function()
 		sert.eq(sendingTexts[1], ";ping me")
 		sert.eq(pingCmd.Enabled, true)
 	end)
+
+	clientTest(
+		"PlayerPrefix TextChatCommands stay disabled for non-matching local prefix and enable when matching",
+		function()
+			local TextChatService = game:GetService("TextChatService")
+			local _K = shared._K_INTERFACE
+			local cmdFolder = sert.waitFor(function()
+				return TextChatService:FindFirstChild("TextChatCommands_KA")
+			end, 5, nil, "TextChatCommands_KA folder")
+
+			local otherCmd = Instance.new("TextChatCommand")
+			otherCmd.Name = "_KPlayer_63_ping"
+			otherCmd.PrimaryAlias = "?ping"
+			otherCmd:SetAttribute("PlayerPrefix", "?")
+			otherCmd.Parent = cmdFolder
+			task.wait(0.1)
+			sert.eq(otherCmd.Enabled, false)
+			sert.eq(otherCmd.AutocompleteVisible, false)
+
+			local matchPrefix = _K.getCommandPrefix()
+			local matchCmd = Instance.new("TextChatCommand")
+			matchCmd.Name = "_KPlayer_match_ping"
+			matchCmd.PrimaryAlias = `{matchPrefix}pingtest`
+			matchCmd:SetAttribute("PlayerPrefix", matchPrefix)
+			matchCmd.Parent = cmdFolder
+			task.wait(0.1)
+			sert.eq(matchCmd.Enabled, true)
+
+			otherCmd:Destroy()
+			matchCmd:Destroy()
+		end
+	)
 end)
 
 do

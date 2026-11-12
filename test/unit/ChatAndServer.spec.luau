@@ -85,10 +85,10 @@ describe("Chat and Server", function()
 			local tcs = h.env.game:GetService("TextChatService")
 			local tcsMethods = rawget(tcs, "_methods")
 			local origCanUsersChat = tcsMethods.CanUsersChatAsync
-			-- When all target players can chat with admin, limitReason doesn't spend the cooldown
+			-- When all target players can chat with admin, limitReason doesn't spend the cooldown and restrictedReason is nil
 			local allowedReason, restrictedReason = Chat.limitReason(admin.UserId, "Friendly kick", { guest })
 			sert.eq(allowedReason, "Friendly kick")
-			sert.eq(restrictedReason, "Friendly kick")
+			sert.eq(restrictedReason, nil)
 
 			sert.eq(Chat.limitReason(admin.UserId, "First valid reason"), "First valid reason")
 
@@ -2321,6 +2321,279 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			sert.eq(clientChatLog ~= nil and clientChatLog[6] == nil, true)
 			_K.IsClient = false
 			_K.IsServer = true
+		end
+	)
+
+	test(
+		"Chat.restoreRichText handles spaced rgb() quotes, rejects duplicate/malformed font attrs, and preserves outer tags around escaped_font",
+		function()
+			local h = Harness.newEnv({ isStudio = false })
+			local Chat = h:requireShared("Chat")
+			local Util = h:requireUtil()
+			local esc = Util.String.escapeRichText
+
+			-- Double-quoted rgb() with spaces, single-quoted size, and unquoted transparency succeed
+			local spacedRgb = esc("<font color=\"rgb(255, 165, 0)\" size='20' transparency=0.5>warm</font>")
+			sert.eq(
+				Chat.restoreRichText(spacedRgb),
+				'<font color="rgb(255,165,0)" size="20" transparency="0.5">warm</font>'
+			)
+
+			-- Duplicate attributes, missing whitespace between attributes, and leftover garbage are rejected
+			local dupAttr = esc('<font color="#f00" color="#0f0">dup</font>')
+			sert.eq(Chat.restoreRichText(dupAttr), dupAttr)
+			local jammedAttr = esc('<font color="#f00"size="20">jammed</font>')
+			sert.eq(Chat.restoreRichText(jammedAttr), jammedAttr)
+			local trailingGarbage = esc('<font color="#f00" bogus>garbage</font>')
+			sert.eq(Chat.restoreRichText(trailingGarbage), trailingGarbage)
+
+			-- Invalid <font ...> or bare <font> inside valid outer tags keeps outer tags restored while escaping only the bad font pair
+			local outerBoldWithBadFont = esc('<b><font face="Gotham">styled</font></b>')
+			sert.eq(
+				Chat.restoreRichText(outerBoldWithBadFont),
+				"<b>&lt;font face=&quot;Gotham&quot;&gt;styled&lt;/font&gt;</b>"
+			)
+			local outerValidFontWithBadInner = esc('<font color="#ff0000"><font>plain</font></font>')
+			sert.eq(
+				Chat.restoreRichText(outerValidFontWithBadInner),
+				'<font color="#ff0000">&lt;font&gt;plain&lt;/font&gt;</font>'
+			)
+
+			-- Unclosed or mis-nested escaped_font still fails balance and returns original escaped text unchanged
+			local unclosedBadFont = esc('<b>ok</b><font face="Gotham">dangling')
+			sert.eq(Chat.restoreRichText(unclosedBadFont), unclosedBadFont)
+			local misnestedBadFont = esc('<b><font face="Gotham">oops</b></font>')
+			sert.eq(Chat.restoreRichText(misnestedBadFont), misnestedBadFont)
+		end
+	)
+
+	test(
+		"Chat.send, Process.runCommands freeText filtering, and flushLogReveals prevent double-filtering, redaction leaks, and duplicate ellipsis reveals",
+		function()
+			local world = sert.sim.new({ backing = true })
+			local server = world:server()
+			local sh = Harness.newPeerEnv(server, { isStudio = false })
+			sh.env.game._props.CreatorId = 101
+			local _K = sh:requireK()
+			-- shared._K_INTERFACE is exposed only after Server init defines _K.initialize
+			sert.eq(sh.env.globals.shared._K_INTERFACE, _K)
+			sert.eq(type(_K.initialize), "function")
+
+			server:spawn(function()
+				_K.initialize({
+					bans = {},
+					userRoles = { superadmin = { 101, 102 } },
+					roles = Harness.defaultRoles(),
+				})
+			end)
+			world:run(1)
+
+			local sender = sh.env:addPlayer(101, "AdminSender")
+			local friend = sh.env:addPlayer(201, "AllowedFriend")
+			local restrictedObserver = sh.env:addPlayer(102, "RestrictedAdminObserver")
+			sender:SetAttribute("_K_READY", true)
+			friend:SetAttribute("_K_READY", true)
+			restrictedObserver:SetAttribute("_K_READY", true)
+
+			local tcsMethods = rawget(sh.env.game:GetService("TextChatService"), "_methods")
+			tcsMethods.CanUserChatAsync = function()
+				return true
+			end
+			tcsMethods.CanUsersChatAsync = function(_self, fromId, toId)
+				-- sender (101) can chat with friend (201) ONLY, NOT with restrictedObserver (102)
+				return (fromId == 101 and toId == 201) or (fromId == 201 and toId == 101)
+			end
+
+			local broadcastFilterCalls = 0
+			local origFilterForBroadcast = _K.Util.String.filterForBroadcast
+			_K.Util.String.filterForBroadcast = function(str: string, fromId: number)
+				broadcastFilterCalls += 1
+				return origFilterForBroadcast(str, fromId)
+			end
+
+			-- Register a custom command that delegates to Chat.send with a rawString (filterLog=true, freeText=true) arg
+			_K.Registry.registerCommand(_K, {
+				name = "testpm",
+				aliases = {},
+				description = "Test direct Chat.send",
+				group = "Moderation",
+				args = {
+					{ type = "player", name = "Recipient" },
+					{ type = "rawString", name = "Message" },
+				},
+				run = function(context, targetPlr, msg)
+					_K.Chat.send(context, "pm", msg, { targetPlr })
+				end,
+			})
+
+			-- 1. Sending ONLY to chat-allowed friend sets arg.filtered = true (no double filterForBroadcast in Process)
+			--    and leaves redactLog unset so restrictedObserver sees redacted "…" once log cooldown is active
+			_K.Chat.cooldown(101, "log") -- put sender's log reveal on cooldown
+			local observerLogs = {}
+			_K.Remote.Log.Fire = function(_self, plr, payload)
+				if plr == restrictedObserver then
+					table.insert(observerLogs, table.clone(payload))
+				end
+			end
+
+			broadcastFilterCalls = 0
+			server:spawn(function()
+				_K.Process.runCommands(_K, 101, ";testpm AllowedFriend secret hello")
+			end)
+			world:run(0.5)
+			sert.eq(broadcastFilterCalls, 0) -- Chat.send filtered via filterResult; Process skipped second filterForBroadcast
+			sert.eq(#observerLogs, 1)
+			sert.eq(observerLogs[1][1], ";testpm AllowedFriend …")
+
+			-- 2. Rate-limited Chat.send with mixed allowed+restricted recipients sets arg.filtered = true but NOT redactLog = false
+			local mixedArg: { [string]: any } = {
+				rawType = { freeText = true, filterLog = true },
+				rawArg = "first public",
+				parsedArgs = { "first public" },
+			}
+			local id1, err1 = _K.Chat.send(
+				{ from = 101, fromPlayer = sender, args = { mixedArg } },
+				"message",
+				"first public",
+				{ friend, restrictedObserver }
+			)
+			sert.eq(id1 ~= nil and err1 == nil, true)
+			sert.eq(mixedArg.filtered, true)
+			sert.eq(mixedArg.redactLog, false)
+
+			local rateLimitedArg: { [string]: any } = {
+				rawType = { freeText = true, filterLog = true },
+				rawArg = "second rate limited",
+				parsedArgs = { "second rate limited" },
+			}
+			local id2, err2, recips2 = _K.Chat.send(
+				{ from = 101, fromPlayer = sender, args = { rateLimitedArg } },
+				"message",
+				"second rate limited",
+				{ friend, restrictedObserver }
+			)
+			sert.eq(id2 ~= nil and err2 == nil, true)
+			sert.eq(#(recips2 :: { any }), 1)
+			sert.eq(rateLimitedArg.filtered, true)
+			sert.eq(rateLimitedArg.redactLog, nil)
+
+			-- 3. flushLogReveals skips firing duplicate Remote.Log when fullText == prevText (literal "…")
+			table.clear(observerLogs)
+			server:spawn(function()
+				_K.Process.runCommands(_K, 101, ";testpm AllowedFriend …")
+			end)
+			world:run(0.5)
+			sert.eq(#observerLogs, 1)
+			sert.eq(observerLogs[1][1], ";testpm AllowedFriend …")
+			-- Advance past the 60s reveal timer: entry1 ("secret hello") reveals, entry2 (literal "…") does NOT re-fire!
+			world:run(61)
+			sert.eq(#observerLogs, 2)
+			sert.eq(observerLogs[2][1], ";testpm AllowedFriend secret hello")
+
+			_K.Util.String.filterForBroadcast = origFilterForBroadcast
+		end
+	)
+
+	test(
+		"ChatCommands isolates per-player playerPrefix buckets, preserves global VIP_BUBBLES prefix, hands off purchasable VIP commands without server error, and Dual-Admin routing honors _K_MODERN_LOADER",
+		function()
+			local world = sert.sim.new({ backing = true })
+			local server = world:server()
+			local guestClient = server:client(202)
+			local sh = Harness.newPeerEnv(server, { isStudio = false })
+			sh.env.game._props.CreatorId = 101
+			local _K = sh:requireK()
+			server:spawn(function()
+				_K.initialize({
+					bans = {},
+					prefix = { ";" },
+					vip = true,
+					userRoles = { creator = { 101 } },
+					roles = Harness.defaultRoles(),
+				})
+			end)
+			world:run(1)
+
+			local guestEnv = Harness.newPeerEnv(guestClient, { isClient = true })
+			local gRemote = guestEnv:requireRemote()
+			local guestForwarded = {}
+			local guestErrors = {}
+			gRemote.Command:Connect(function(text, clientOnly)
+				table.insert(guestForwarded, { text = text, clientOnly = clientOnly })
+			end)
+			gRemote.Notify:Connect(function(props)
+				if type(props) == "table" and type(props.Text) == "string" then
+					table.insert(guestErrors, props.Text)
+				end
+			end)
+			gRemote.Init:Fire({ Attributes = { Platform = "PC" } })
+			world:run(1)
+
+			local srvGuest = sh.env.Players:GetPlayerByUserId(202)
+			local guestChar = sh.env.Instance.new("Model")
+			srvGuest.Character = guestChar
+			local folder = sh.env.game:GetService("TextChatService"):FindFirstChild("TextChatCommands_KA")
+
+			-- 1. Setting playerPrefix = "?" creates isolated _KPlayer_63_<key> instances without polluting global prefixes/aliases
+			gRemote.PlayerPrefix:Fire("?")
+			world:run(0.3)
+			sert.eq(_K.Data.playerPrefix[202], "?")
+			sert.eq(_K.ChatCommands.prefixes, { ";" })
+			sert.eq(_K.chatCommandAlias("fire"), ";fire")
+			local playerFire = folder:FindFirstChild("_KPlayer_63_fire")
+			sert.eq(playerFire ~= nil, true)
+			sert.eq(playerFire:GetAttribute("PlayerPrefix"), "?")
+			sert.eq(playerFire.PrimaryAlias, "?fire")
+
+			-- 2. Triggering /fire by a guest with custom playerPrefix = "?":
+			--    - DisplayBubble shows global ";fire" (NOT "?fire")
+			--    - Server does NOT run Process.runCommands (0 restricted error notifications)
+			--    - Server counts the command and forwards to client so VIP modal can open
+			local bubbles = {}
+			local origBubble = _K.Remote.DisplayBubble.FireAll
+			_K.Remote.DisplayBubble.FireAll = function(_self, _char, word)
+				table.insert(bubbles, word)
+			end
+			folder:FindFirstChild("fire").Triggered:Fire({ UserId = 202 }, "/fire")
+			world:run(0.5)
+			_K.Remote.DisplayBubble.FireAll = origBubble
+
+			sert.eq(bubbles, { ";fire" })
+			sert.eq(#guestErrors, 0)
+			sert.eq(#guestForwarded, 1)
+			sert.eq(guestForwarded[1].text, "?fire")
+			sert.eq(guestForwarded[1].clientOnly, true)
+
+			-- 3. Resetting playerPrefix to default ";" clears _K.Data.playerPrefix[202] and destroys _KPlayer_63_* bucket
+			world:run(2.1)
+			gRemote.PlayerPrefix:Fire(";")
+			world:run(0.3)
+			sert.eq(_K.Data.playerPrefix[202], nil)
+			sert.eq(folder:FindFirstChild("_KPlayer_63_fire"), nil)
+
+			-- 4. Re-add "?" then disconnect player -> PlayerRemoving destroys bucket immediately
+			world:run(2.1)
+			gRemote.PlayerPrefix:Fire("?")
+			world:run(0.3)
+			sert.eq(folder:FindFirstChild("_KPlayer_63_fire") ~= nil, true)
+			sh.env:removePlayer(srvGuest)
+			world:run(0.2)
+			sert.eq(folder:FindFirstChild("_KPlayer_63_fire"), nil)
+
+			-- 5. Dual-admin routing in test/migrate/init.luau routes to modern KA when _K_MODERN_LOADER == true
+			local hDual = Harness.newEnv({ isStudio = false })
+			hDual.env.globals._G.KAU = true
+			hDual.env.globals.shared._K_MODERN_LOADER = true
+			local routed = hDual.env:require(hDual.root)
+			sert.eq(type(routed), "table")
+			sert.eq(type(routed.initialize), "function")
+
+			-- 6. Servers.luau handles table serversSync payload { jobId, count } with jitter without error
+			local Servers = sh.env:require(sh.Server:WaitForChild("Servers"))
+			Servers.Enabled = true
+			_K.Data.publishTopic("serversSync", { "remote-job-999", 42 })
+			world:run(2.5)
+			sert.eq(world.scheduler.errors, {})
 		end
 	)
 end)

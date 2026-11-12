@@ -139,28 +139,52 @@ local function restoreTag(inner: string, compact: boolean?): (string?, string?, 
 		return `<{closing}{name}>`, name, closing == ""
 	elseif name == "font" and closing == "/" then
 		return "</font>", name, false
+	elseif name == "font" and closing == "" then
+		return nil, "escaped_font", true
 	elseif (name == "br" and closing == "") or string.match(inner, "^%s*[bB][rR]%s*/%s*$") then
 		return if compact then " " else "<br />", nil, nil
 	end
 
 	local attributes = string.match(inner, "^%s*[fF][oO][nN][tT]%s+(.-)%s*$")
-	if not attributes then
+	if not attributes or attributes == "" then
 		return nil
 	end
-	local parts = {}
-	local rest = string.gsub(attributes, "(%a+)%s*=%s*([\"']?)([^\"'%s]*)%2", function(key, _, value)
-		key = string.lower(key)
-		local valid = validFontAttribute(key, value, compact)
-		if valid then
-			if valid ~= "" then
-				table.insert(parts, `{key}="{valid}"`)
+	local parts, seen = {}, {}
+	local pos, len = 1, #attributes
+	while pos <= len do
+		local wsStart, wsEnd = string.find(attributes, "^%s+", pos)
+		if wsStart then
+			pos = (wsEnd :: number) + 1
+			if pos > len then
+				break
 			end
-			return ""
+		elseif pos > 1 then
+			return nil, "escaped_font", true
 		end
-		return nil -- left in place, invalidates the tag
-	end)
-	if not string.find(rest, "^%s*$") then
-		return nil
+
+		local key, value, nextPos = string.match(attributes, '^([%a]+)%s*=%s*"([^"]*)"()', pos)
+		if not key then
+			key, value, nextPos = string.match(attributes, "^([%a]+)%s*=%s*'([^']*)'()", pos)
+		end
+		if not key then
+			key, value, nextPos = string.match(attributes, "^([%a]+)%s*=%s*([^\"'%s]+)()", pos)
+		end
+		if not key or not nextPos then
+			return nil, "escaped_font", true
+		end
+		key = string.lower(key)
+		if seen[key] then
+			return nil, "escaped_font", true
+		end
+		seen[key] = true
+		local valid = validFontAttribute(key, value :: string, compact)
+		if not valid then
+			return nil, "escaped_font", true
+		end
+		if valid ~= "" then
+			table.insert(parts, `{key}="{valid}"`)
+		end
+		pos = nextPos :: number
 	end
 	if #parts == 0 then
 		table.insert(parts, 'transparency="0"') -- every attribute was dropped, keep the pair balanced
@@ -185,10 +209,17 @@ function Chat.restoreRichText(text: string, compact: boolean?): string
 
 		local tag, name, opens = restoreTag(inner, compact)
 		if not tag then
+			if name == "escaped_font" then
+				table.insert(stack, "escaped_font")
+			end
 			return escaped
 		elseif opens == true then
 			table.insert(stack, name)
 		elseif opens == false then
+			if name == "font" and stack[#stack] == "escaped_font" then
+				table.remove(stack)
+				return prefix .. "&lt;/font&gt;"
+			end
 			if stack[#stack] ~= name then
 				balanced = false
 			end
@@ -259,8 +290,9 @@ if RunService:IsServer() then
 			end
 
 			-- messages to players the sender can chat with are never limited
+			local err
 			if hasRestricted then
-				local err = Chat.cooldown(from, if kind == "vote" then "vote" else "direct")
+				err = Chat.cooldown(from, if kind == "vote" then "vote" else "direct")
 				if err then
 					if not hasOtherAllowed then
 						return nil, err
@@ -278,7 +310,10 @@ if RunService:IsServer() then
 					and (arg.rawArg == text or Util.String.stripQuotes(arg.rawArg) == text)
 				then
 					arg.parsedArgs = { filtered }
-					arg.redactLog = false
+					arg.filtered = true
+					if hasRestricted and err == nil then
+						arg.redactLog = false
+					end
 				end
 			end
 		end
@@ -301,7 +336,7 @@ if RunService:IsServer() then
 		end
 		reason = Util.String.filterForBroadcast(reason, userId)
 		if players and not Chat.hasRestrictedPeer(userId, players) then
-			return reason, reason
+			return reason, nil
 		end
 		local err = Chat.cooldown(userId, "reason")
 		if not err then

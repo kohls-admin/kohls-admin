@@ -169,19 +169,22 @@ local function flushLogReveals()
 	end
 	for _, entry in ready do
 		local stored = entry.stored
+		local prevText = stored[1]
 		stored[1] = entry.fullText
 		_K.Data.logsVersion = (_K.Data.logsVersion or 0) + 1
 		if entry.save then
 			_K.Data.queueLogSave(stored, entry.global)
 		end
-		for _, player in _K.Service.Players:GetPlayers() do
-			if
-				player.UserId ~= stored[4]
-				and not (entry.revealedTo and entry.revealedTo[player.UserId])
-				and player:GetAttribute("_K_READY")
-				and _K.Auth.hasPermission(player.UserId, "serverlogs")
-			then
-				_K.Remote.Log:Fire(player, stored)
+		if entry.fullText ~= prevText then
+			for _, player in _K.Service.Players:GetPlayers() do
+				if
+					player.UserId ~= stored[4]
+					and not (entry.revealedTo and entry.revealedTo[player.UserId])
+					and player:GetAttribute("_K_READY")
+					and _K.Auth.hasPermission(player.UserId, "serverlogs")
+				then
+					_K.Remote.Log:Fire(player, stored)
+				end
 			end
 		end
 	end

@@ -662,19 +662,37 @@ return function(_K)
 
 		local reservedPrefixes = { ",", " ", "`", '"', "@", "$", "%", "*", "~" }
 
+		local function hasUsableOrPurchasableCommand(userId: number): boolean
+			for _, command in _K.Registry.commandsList do
+				if _K.Auth.hasCommand(userId, command) or _K.VIP.canPurchaseCommand(command) then
+					return true
+				end
+			end
+			return false
+		end
+
 		-- handle custom command prefix
 		local _ = _K.Remote.PlayerPrefix:Connect(function(player, prefix)
 			if
-				type(prefix) == "string"
-				and utf8.len(prefix) == 1
-				and not table.find(reservedPrefixes, prefix)
-				and _K.Data.playerPrefix[player.UserId] ~= prefix
-				and not _K.Chat.cooldown(player.UserId, "playerPrefix", 1)
+				type(prefix) ~= "string"
+				or _K.Data.settings.chatCommands == false
+				or #_K.Chat.commandPrefixes({ prefix }) ~= 1
+				or table.find(reservedPrefixes, prefix) ~= nil
+				or not hasUsableOrPurchasableCommand(player.UserId)
 			then
-				_K.Data.playerPrefix[player.UserId] = prefix
-				if _K.ChatCommands then
-					_K.ChatCommands.schedule()
-				end
+				return
+			end
+			local defaultPrefix = _K.Data.settings.prefix[1] or ";"
+			local nextPrefix = if prefix == defaultPrefix then nil else prefix
+			if _K.Data.playerPrefix[player.UserId] == nextPrefix then
+				return
+			end
+			if _K.Chat.cooldown(player.UserId, "playerPrefix", 2) then
+				return
+			end
+			_K.Data.playerPrefix[player.UserId] = nextPrefix
+			if _K.ChatCommands then
+				_K.ChatCommands:resync()
 			end
 		end)
 
@@ -821,22 +839,40 @@ return function(_K)
 			end
 
 			for key, entries in lists do
+				if err ~= nil then
+					changes[key] = nil
+					continue
+				end
 				local items = {}
 				for _, entry in entries do
 					if not entry.new then
 						table.insert(items, entry)
-					elseif not err then
+					else
 						local rawDuration = tonumber(entry.new.Duration)
+						local filteredText = _K.Util.String.filterForBroadcast(entry.new.Text, player.UserId)
 						table.insert(items, {
 							From = player.UserId,
 							Duration = if rawDuration and rawDuration == rawDuration
 								then math.clamp(rawDuration, 0, 600)
 								else nil,
-							Text = _K.Util.String.filterForBroadcast(entry.new.Text, player.UserId),
+							Text = _K.Chat.restoreRichText(_K.Util.String.escapeRichText(filteredText)),
 						})
 					end
 				end
-				changes[key] = items
+				local existingItems = _K.Data.savedSettings[key]
+				local same = type(existingItems) == "table" and #existingItems == #items
+				if existingItems == nil and #items == 0 then
+					same = true
+				elseif same then
+					for i = 1, #items do
+						local a, b = items[i], existingItems[i]
+						if type(b) ~= "table" or a.From ~= b.From or a.Duration ~= b.Duration or a.Text ~= b.Text then
+							same = false
+							break
+						end
+					end
+				end
+				changes[key] = if same then nil else items
 			end
 
 			-- the prefix and split key are shown to everyone, users are limited to single valid characters like the
@@ -846,7 +882,8 @@ return function(_K)
 				local existingPrefixes = current.prefix or {}
 				-- nil when invalid, otherwise number of newly added characters
 				local function countAddedCharacters(values, existing, isPrefix: boolean): number?
-					if type(values) ~= "table" or #values == 0 or #values > math.max(#existing, 1) then
+					local maxCount = if isPrefix then math.max(#existing, 8) else 1
+					if type(values) ~= "table" or #values == 0 or #values > maxCount then
 						return nil
 					end
 					local added = 0
@@ -1367,7 +1404,7 @@ return function(_K)
 			if _K.Data.playerPrefix[userId] then
 				_K.Data.playerPrefix[userId] = nil
 				if _K.ChatCommands then
-					_K.ChatCommands.schedule()
+					_K.ChatCommands:resync()
 				end
 			end
 		end)

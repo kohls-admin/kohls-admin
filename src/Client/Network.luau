@@ -176,17 +176,29 @@ local _ = _K.Remote.Log:Connect(function(log)
 		return
 	end
 
-	for i = #_K.Data.logs, 1, -1 do
-		local existing = _K.Data.logs[i]
-		if #_K.Data.logs - i > 250 and existing[3] < log[3] then
+	local logs = _K.Data.logs
+	local startIndex = 1
+	for i = #logs, 1, -1 do
+		if #logs - i > 250 and logs[i][3] < log[3] then
+			startIndex = i + 1
 			break
 		end
+	end
+
+	for i = startIndex, #logs do
+		local existing = logs[i]
+		local ellipsisPos = if existing[3] == log[3]
+				and existing[2] == log[2]
+				and existing[4] == log[4]
+				and existing[1] ~= log[1]
+			then string.find(existing[1], "…", 1, true)
+			else nil
 		if
-			existing[3] == log[3]
-			and existing[2] == log[2]
-			and existing[4] == log[4]
-			and existing[1] ~= log[1]
-			and string.find(existing[1], "…", 1, true)
+			ellipsisPos
+			and (
+				ellipsisPos == 1
+				or string.sub(log[1], 1, ellipsisPos - 1) == string.sub(existing[1], 1, ellipsisPos - 1)
+			)
 		then
 			existing[1] = log[1]
 			existing.filterText = nil
@@ -195,7 +207,7 @@ local _ = _K.Remote.Log:Connect(function(log)
 		end
 	end
 
-	table.insert(_K.Data.logs, log)
+	table.insert(logs, log)
 
 	_K.removeExcessLogs()
 

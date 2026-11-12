@@ -159,7 +159,8 @@ local function handleTriggered(_K: any, source: TextSource, text: string)
 		return
 	end
 	local onCooldown = _K.Process.onCooldown(_K, player.UserId)
-	local command = not onCooldown and _K.Registry.commands[string.lower(string.sub(word, nextChar))]
+	local cmdName = string.lower(string.sub(word, nextChar))
+	local command = not onCooldown and _K.Registry.commands[cmdName]
 	local hasCommand = command and _K.Auth.hasCommand(player.UserId, command)
 	local allowed = hasCommand or (command ~= nil and _K.VIP.canPurchaseCommand(command))
 	if
@@ -170,7 +171,7 @@ local function handleTriggered(_K: any, source: TextSource, text: string)
 		and VIP_BUBBLES[string.lower(command.name)]
 		and player.Character
 	then
-		_K.Remote.DisplayBubble:FireAll(player.Character, word)
+		_K.Remote.DisplayBubble:FireAll(player.Character, (_K.Data.settings.prefix[1] or ";") .. cmdName)
 	end
 
 	local ready = player:GetAttribute("_K_READY") == true
@@ -193,9 +194,17 @@ local function handleTriggered(_K: any, source: TextSource, text: string)
 		end
 	end
 
+	if not hasCommand and allowed then
+		_K.Process.countCommand(_K, player.UserId)
+		if ready and not onCooldown then
+			_K.Remote.Command:Fire(player, text, true)
+		end
+		return
+	end
+
 	local ok = _K.Process.runCommands(_K, player.UserId, text)
 	-- the client runs its own part of the commands, opens windows and prompts purchases
-	if ready and not onCooldown and (ok or allowed) then
+	if ready and not onCooldown and ok then
 		_K.Remote.Command:Fire(player, text, true)
 	end
 end
@@ -254,7 +263,7 @@ local function logSkipped(self: any, skipped: { string })
 	end
 end
 
-local function watchExternalCommands(folder: Instance, schedule: () -> ())
+local function watchExternalCommands(folder: Instance, schedule: () -> ()): () -> ()
 	local watched: { [Instance]: { RBXScriptConnection } } = {}
 	local function watch(descendant: Instance)
 		if descendant:IsA("TextChatCommand") and not watched[descendant] and not descendant:IsDescendantOf(folder) then
@@ -265,8 +274,8 @@ local function watchExternalCommands(folder: Instance, schedule: () -> ())
 			schedule()
 		end
 	end
-	local _ = TextChatService.DescendantAdded:Connect(watch)
-	local _ = TextChatService.DescendantRemoving:Connect(function(descendant)
+	local addedConn = TextChatService.DescendantAdded:Connect(watch)
+	local removingConn = TextChatService.DescendantRemoving:Connect(function(descendant)
 		local connections = watched[descendant]
 		if connections then
 			watched[descendant] = nil
@@ -279,6 +288,16 @@ local function watchExternalCommands(folder: Instance, schedule: () -> ())
 	for _, descendant in TextChatService:GetDescendants() do
 		watch(descendant)
 	end
+	return function()
+		addedConn:Disconnect()
+		removingConn:Disconnect()
+		for _, connections in watched do
+			for _, connection in connections do
+				connection:Disconnect()
+			end
+		end
+		table.clear(watched)
+	end
 end
 
 --- Creates the chat commands for every registered command and keeps them in sync, returns the running instance
@@ -287,6 +306,8 @@ function ChatCommands.start(_K)
 		_K = _K,
 		folder = Instance.new("Folder"),
 		instances = {} :: { [string]: { TextChatCommand } },
+		playerInstances = {} :: { [string]: { [string]: TextChatCommand } },
+		playerConnections = {} :: { [string]: { [string]: RBXScriptConnection } },
 		aliases = {} :: { [string]: { string } },
 		logged = {} :: { [string]: true },
 		prefixes = {} :: { string },
@@ -299,10 +320,125 @@ function ChatCommands.start(_K)
 
 	local scheduled = false
 
+	local function destroyPlayerCommand(prefix: string, key: string)
+		local conns = self.playerConnections[prefix]
+		if conns and conns[key] then
+			conns[key]:Disconnect()
+			conns[key] = nil
+		end
+		local bucket = self.playerInstances[prefix]
+		if bucket and bucket[key] then
+			bucket[key]:Destroy()
+			bucket[key] = nil
+		end
+	end
+
+	local function destroyPlayerBucket(prefix: string)
+		local conns = self.playerConnections[prefix]
+		if conns then
+			for _, conn in conns do
+				conn:Disconnect()
+			end
+			self.playerConnections[prefix] = nil
+		end
+		local bucket = self.playerInstances[prefix]
+		if bucket then
+			for _, instance in bucket do
+				instance:Destroy()
+			end
+			self.playerInstances[prefix] = nil
+		end
+	end
+
+	local function syncPlayerCommand(prefix: string, definition: any, skipped: { string })
+		local key = string.lower(definition.name)
+		local candidates = { key }
+		for _, alias in definition.aliases or {} do
+			table.insert(candidates, string.lower(alias))
+		end
+
+		local words = {}
+		for _, word in candidates do
+			if word ~= "" and not string.find(word, "%s") then
+				local fullAlias = prefix .. word
+				if self.taken[fullAlias] then
+					if not table.find(skipped, fullAlias) then
+						table.insert(skipped, fullAlias)
+					end
+				elseif not table.find(words, word) then
+					table.insert(words, word)
+				end
+			end
+		end
+
+		local primary, secondary = words[1], words[2]
+		if not primary then
+			destroyPlayerCommand(prefix, key)
+			return
+		end
+
+		local bucket = self.playerInstances[prefix]
+		if not bucket then
+			bucket = {}
+			self.playerInstances[prefix] = bucket
+		end
+		local conns = self.playerConnections[prefix]
+		if not conns then
+			conns = {}
+			self.playerConnections[prefix] = conns
+		end
+
+		local primaryAlias = prefix .. primary
+		local secondaryAlias = if secondary then prefix .. secondary else ""
+		local enabled = self._K.Data.settings.chatCommands ~= false
+		local instance = bucket[key]
+		local reparent = false
+
+		if not instance then
+			instance = Instance.new("TextChatCommand")
+			instance.Name = string.format("_KPlayer_%d_%s", string.byte(prefix), key)
+			instance.AutocompleteVisible = false
+			instance:SetAttribute("PlayerPrefix", prefix)
+			conns[key] = instance.Triggered:Connect(self.onTriggered)
+			bucket[key] = instance
+			reparent = true
+		elseif instance.PrimaryAlias ~= primaryAlias then
+			instance.Parent = nil
+			reparent = true
+		end
+
+		instance:SetAttribute("PlayerPrefix", prefix)
+		instance.PrimaryAlias = primaryAlias
+		instance.SecondaryAlias = secondaryAlias
+		instance.Enabled = enabled
+		if reparent then
+			instance.Parent = self.folder
+		end
+	end
+
+	local function collectActivePlayerPrefixes(): { [string]: true }
+		local active: { [string]: true } = {}
+		for _, player in Players:GetPlayers() do
+			local prefix = _K.Data.playerPrefix[player.UserId]
+			if
+				type(prefix) == "string"
+				and prefix ~= SLASH
+				and not table.find(self.prefixes, prefix)
+				and #_K.Chat.commandPrefixes({ prefix }) == 1
+			then
+				active[prefix] = true
+			end
+		end
+		return active
+	end
+
 	--- Updates the instances of one command
 	function self.refreshCommand(definition: any, batchSkipped: { string }?)
 		local groups, skipped = ChatCommands.aliasGroups(definition, self.prefixes, self.taken)
 		syncInstances(self, string.lower(definition.name), groups)
+		for prefix in self.playerInstances do
+			syncPlayerCommand(prefix, definition, skipped)
+		end
 		if batchSkipped then
 			Table.mergeList(batchSkipped, skipped)
 		else
@@ -313,23 +449,46 @@ function ChatCommands.start(_K)
 	--- Rereads the prefixes, settings and other TextChatCommands' aliases and updates every command
 	function self.refresh()
 		scheduled = false
-		local rawPrefixes = table.clone(_K.Data.settings.prefix)
-		for _, prefix in _K.Data.playerPrefix do
-			table.insert(rawPrefixes, prefix)
-		end
-		self.prefixes = _K.Chat.commandPrefixes(rawPrefixes)
+		self.prefixes = _K.Chat.commandPrefixes(_K.Data.settings.prefix)
 		self.taken = takenAliases(self.folder)
+		local activePlayerPrefixes = collectActivePlayerPrefixes()
+		for prefix in self.playerInstances do
+			if not activePlayerPrefixes[prefix] then
+				destroyPlayerBucket(prefix)
+			end
+		end
+
 		local current, skipped = {}, {}
 		for _, definition in _K.Registry.commandsList do
-			current[string.lower(definition.name)] = true
-			self.refreshCommand(definition, skipped)
+			local key = string.lower(definition.name)
+			current[key] = true
+			local groups, cmdSkipped = ChatCommands.aliasGroups(definition, self.prefixes, self.taken)
+			syncInstances(self, key, groups)
+			Table.mergeList(skipped, cmdSkipped)
+			for prefix in activePlayerPrefixes do
+				syncPlayerCommand(prefix, definition, skipped)
+			end
 		end
 		for key in self.instances do
 			if not current[key] then
 				syncInstances(self, key, {})
 			end
 		end
+		for prefix, bucket in self.playerInstances do
+			for key in bucket do
+				if not current[key] then
+					destroyPlayerCommand(prefix, key)
+				end
+			end
+			if next(bucket) == nil then
+				destroyPlayerBucket(prefix)
+			end
+		end
 		logSkipped(self, skipped)
+	end
+
+	function self.resync(_self: any?)
+		self.refresh()
 	end
 
 	--- The first chat alias of a command name or alias, e.g. ";kill", or nil when it has none
@@ -360,7 +519,25 @@ function ChatCommands.start(_K)
 		end
 	end
 
-	watchExternalCommands(self.folder, self.schedule)
+	local _ = Players.PlayerRemoving:Connect(function(leavingPlayer)
+		local prefix = _K.Data.playerPrefix[leavingPlayer.UserId]
+		_K.Data.playerPrefix[leavingPlayer.UserId] = nil
+		if type(prefix) == "string" and self.playerInstances[prefix] then
+			local stillUsed = false
+			for _, other in Players:GetPlayers() do
+				if other ~= leavingPlayer and _K.Data.playerPrefix[other.UserId] == prefix then
+					stillUsed = true
+					break
+				end
+			end
+			if not stillUsed then
+				destroyPlayerBucket(prefix)
+			end
+		end
+	end)
+
+	local disconnectExternal = watchExternalCommands(self.folder, self.schedule)
+	local _ = self.folder.Destroying:Once(disconnectExternal)
 
 	local _ = _K.Hook.commandRegistered:Connect(self.schedule)
 	-- saved settings load and sync from other servers

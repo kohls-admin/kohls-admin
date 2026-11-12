@@ -69,7 +69,7 @@ local function createItem(self, lineData)
 	return itemRef
 end
 
-local function renderItem(_self, itemData, lineData)
+local function renderItem(self, itemData, lineData)
 	local command = lineData
 	if command.renderText then
 		local item = itemData._instance
@@ -201,7 +201,7 @@ local function filterCommands(_K, self, list)
 			local filterFound = string.find(command.filterText, filter, 1, true)
 			command.renderText = if filterFound
 				then command.roleCircle .. formatMatch(command.rawText, filterFound)
-				else `{command.roleCircle}<font transparency="0.5">{command.rawText}</font>`
+				else `{command.roleCircle}<font transparency="0.5">{escape(command.rawText)}</font>`
 
 			local description = command.description or "No description."
 			local descFound = string.find(command.filterDesc, filter, 1, true)
@@ -226,6 +226,29 @@ local function getTargetChannel(textChat: Instance, chatInputBar: ChatInputBarCo
 	return if general and general:IsA("TextChannel") then general else nil
 end
 
+local function shouldEnable(_K, child: TextChatCommand): boolean
+	if _K.Data.settings.chatCommands == false then
+		return false
+	end
+	local attrPrefix = child:GetAttribute("PlayerPrefix")
+	if type(attrPrefix) == "string" then
+		local prefixes = _K.Data.settings.prefix
+		return attrPrefix == _K.getCommandPrefix()
+			or (type(prefixes) == "table" and table.find(prefixes, attrPrefix) ~= nil)
+	end
+	return true
+end
+
+local function canUseOrPurchase(_K, child: TextChatCommand): boolean
+	local cmd = _K.Registry.commands[child.Name]
+	if not cmd then
+		return false
+	end
+	return if _K.Auth.hasCommand(_K.LocalPlayer.UserId, cmd) or (_K.VIP and _K.VIP.canPurchaseCommand(cmd))
+		then true
+		else false
+end
+
 local function connectChatCommand(
 	_K,
 	textChat: Instance,
@@ -246,7 +269,7 @@ local function connectChatCommand(
 		end
 		child.Enabled = false
 		task.spawn(pcall, channel.SendAsync, channel, text, "_K_CMD")
-		child.Enabled = _K.Data.settings.chatCommands ~= false
+		child.Enabled = shouldEnable(_K, child)
 	end)
 end
 
@@ -254,69 +277,117 @@ local function setupChatCommands(_K, onChanged: () -> ())
 	local textChat = _K.Service.TextChat
 	local chatInputBar = textChat:FindFirstChildOfClass("ChatInputBarConfiguration")
 	local chatCommandsFolder: Instance?
+	local folderConns: { RBXScriptConnection } = {}
 	local folderReparented = false
-	local watchedChatCommands: { [Instance]: RBXScriptConnection } = {}
-
-	local function watchChatCommand(child: Instance)
-		if child:IsA("TextChatCommand") and not watchedChatCommands[child] then
-			watchedChatCommands[child] = connectChatCommand(_K, textChat, chatInputBar, child)
-		end
-	end
-
-	local function unwatchChatCommand(child: Instance)
-		local conn = watchedChatCommands[child]
-		if conn then
-			watchedChatCommands[child] = nil
-			conn:Disconnect()
-		end
-	end
+	local reparenting = false
+	local reparentQueued = false
+	local watchedChatCommands: { [Instance]: { RBXScriptConnection } } = {}
 
 	local function reparentChatCommands()
-		if chatCommandsFolder and chatCommandsFolder.Parent == textChat then
-			chatCommandsFolder.Parent = nil
-			chatCommandsFolder.Parent = textChat
+		if reparentQueued or reparenting then
+			return
 		end
+		reparentQueued = true
+		task.defer(function()
+			reparentQueued = false
+			if not reparenting and chatCommandsFolder and chatCommandsFolder.Parent == textChat then
+				reparenting = true
+				pcall(function()
+					chatCommandsFolder.Parent = nil
+					chatCommandsFolder.Parent = textChat
+				end)
+				reparenting = false
+			end
+		end)
 	end
 
-	local function updateChatCommandsAutocomplete(list)
+	local function syncChatCommands()
 		local folder = chatCommandsFolder or textChat:FindFirstChild("TextChatCommands_KA")
 		if not folder then
 			return
 		end
-		local visible = {}
-		if _K.Data.settings.chatCommands ~= false then
-			for _, command in list do
-				visible[string.lower(command.name)] = true
-			end
-		end
+		local changed = false
 		for _, child in folder:GetChildren() do
 			if child:IsA("TextChatCommand") then
-				child.AutocompleteVisible = visible[child.Name] == true and string.sub(child.PrimaryAlias, 1, 1) == "/"
+				local enabled = shouldEnable(_K, child)
+				if child.Enabled ~= enabled then
+					child.Enabled = enabled
+					changed = true
+				end
+				local autoVisible = enabled
+					and string.sub(child.PrimaryAlias, 1, 1) == "/"
+					and canUseOrPurchase(_K, child)
+				if child.AutocompleteVisible ~= autoVisible then
+					child.AutocompleteVisible = autoVisible
+					changed = true
+				end
 			end
 		end
-		if not folderReparented and game:IsLoaded() then
-			folderReparented = true
+		if changed or (not folderReparented and game:IsLoaded()) then
+			if game:IsLoaded() then
+				folderReparented = true
+			end
 			reparentChatCommands()
 		end
+	end
+
+	local function watchChatCommand(child: Instance)
+		if child:IsA("TextChatCommand") and not watchedChatCommands[child] then
+			child.Enabled = shouldEnable(_K, child)
+			watchedChatCommands[child] = {
+				connectChatCommand(_K, textChat, chatInputBar, child),
+				child:GetAttributeChangedSignal("PlayerPrefix"):Connect(syncChatCommands),
+			}
+		end
+	end
+
+	local function unwatchChatCommand(child: Instance)
+		local conns = watchedChatCommands[child]
+		if conns then
+			watchedChatCommands[child] = nil
+			for _, conn in conns do
+				conn:Disconnect()
+			end
+		end
+	end
+
+	local function updateChatCommandsAutocomplete(_list)
+		syncChatCommands()
 	end
 
 	local function watchChatCommandsFolder(folder: Instance)
 		if chatCommandsFolder == folder then
 			return
 		end
+		for _, conn in folderConns do
+			conn:Disconnect()
+		end
+		table.clear(folderConns)
+		for child in watchedChatCommands do
+			unwatchChatCommand(child)
+		end
 		chatCommandsFolder = folder
 		folderReparented = false
 		for _, child in folder:GetChildren() do
 			watchChatCommand(child)
 		end
-		local _ = folder.ChildAdded:Connect(function(child)
-			watchChatCommand(child)
-			onChanged()
-		end)
-		local _ = folder.ChildRemoved:Connect(function(child)
-			unwatchChatCommand(child)
-			onChanged()
-		end)
+		syncChatCommands()
+		table.insert(
+			folderConns,
+			folder.ChildAdded:Connect(function(child)
+				watchChatCommand(child)
+				syncChatCommands()
+				onChanged()
+			end)
+		)
+		table.insert(
+			folderConns,
+			folder.ChildRemoved:Connect(function(child)
+				unwatchChatCommand(child)
+				syncChatCommands()
+				onChanged()
+			end)
+		)
 		onChanged()
 	end
 
@@ -325,7 +396,7 @@ local function setupChatCommands(_K, onChanged: () -> ())
 		watchChatCommandsFolder(existingFolder)
 	end
 	local _ = textChat.ChildAdded:Connect(function(child)
-		if child.Name == "TextChatCommands_KA" then
+		if not reparenting and child.Name == "TextChatCommands_KA" then
 			watchChatCommandsFolder(child)
 		end
 	end)
@@ -343,7 +414,7 @@ local function setupChatCommands(_K, onChanged: () -> ())
 		end)
 	end
 
-	return updateChatCommandsAutocomplete
+	return updateChatCommandsAutocomplete, syncChatCommands
 end
 
 local function updatePurchaseData(purchaseData, list)
@@ -452,7 +523,7 @@ function Commands.new(_K)
 	local purchaseButton = createPurchaseButton(_K, purchase)
 
 	local commandsList = UI.signal(_K.Registry.commandsList)
-	local updateChatCommandsAutocomplete
+	local updateChatCommandsAutocomplete, syncChatCommands
 
 	local function updateCommandsList()
 		local list = buildCommandsList(_K)
@@ -464,17 +535,28 @@ function Commands.new(_K)
 	end
 
 	local debounceUpdateCommandsList = _K.Util.Function.debounce(0.2, updateCommandsList)
-	updateChatCommandsAutocomplete = setupChatCommands(_K, debounceUpdateCommandsList)
+	updateChatCommandsAutocomplete, syncChatCommands = setupChatCommands(_K, debounceUpdateCommandsList)
+
+	local function onChatPrefixOrSettingChanged()
+		syncChatCommands()
+		debounceUpdateCommandsList()
+	end
 
 	UI.effect(UI.on(_K.client.settings.onlyShowUsableCommands, debounceUpdateCommandsList, true)):get()
 	if _K.client.settings.chatCommands then
-		UI.effect(UI.on(_K.client.settings.chatCommands, debounceUpdateCommandsList, true)):get()
+		UI.effect(UI.on(_K.client.settings.chatCommands, onChatPrefixOrSettingChanged, true)):get()
+	end
+	if _K.client.settings.prefix then
+		UI.effect(UI.on(_K.client.settings.prefix, onChatPrefixOrSettingChanged, true)):get()
+	end
+	if _K.client.playerPrefix then
+		UI.effect(UI.on(_K.client.playerPrefix, onChatPrefixOrSettingChanged, true)):get()
 	end
 	if _K.client.settings.vip then
-		UI.effect(UI.on(_K.client.settings.vip, debounceUpdateCommandsList, true)):get()
+		UI.effect(UI.on(_K.client.settings.vip, onChatPrefixOrSettingChanged, true)):get()
 	end
-	local _ = _K.Hook.authChanged:Connect(debounceUpdateCommandsList)
-	local _ = _K.Hook.commandRegistered:Connect(debounceUpdateCommandsList)
+	local _ = _K.Hook.authChanged:Connect(onChatPrefixOrSettingChanged)
+	local _ = _K.Hook.commandRegistered:Connect(onChatPrefixOrSettingChanged)
 
 	debounceUpdateCommandsList()
 
