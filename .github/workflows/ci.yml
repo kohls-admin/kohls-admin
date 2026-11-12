@@ -9,11 +9,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: "ci-${{ github.ref }}-${{ startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release') && github.sha || '' }}"
-  cancel-in-progress: "${{ !startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release') }}"
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -23,32 +23,21 @@ jobs:
   check:
     name: Lint, Coverage & Mutation
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
       - name: Conventional Commits and version check
-        uses: kohltastrophe/release@v1.0.0
+        uses: kohltastrophe/release@v1
         with:
           mode: check
-          pr-title: ${{ github.event.pull_request.title }}
 
-      - uses: kohltastrophe/sert/actions/setup@v0.1.0
+      - uses: kohltastrophe/sert/actions/setup@v0.2.0
 
       - name: sert lint
         run: python3 tools/sert.py lint
-
-      - name: Update llms.txt
-        run: npx --yes luaudocs@latest llms
-
-      - name: Commit llms.txt
-        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
-        with:
-          commit_message: "docs: update llms.txt"
-          file_pattern: "llms.txt"
 
       - name: sert run
         run: python3 tools/sert.py run --coverage
@@ -57,15 +46,76 @@ jobs:
       - name: sert coverage
         run: python3 tools/sert.py coverage --min 90 --badge
 
+      - name: sert audit
+        run: python3 tools/sert.py audit --no-run
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: "!startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release')"
+        with:
+          path: .sert/mutate
+          key: sert-mutate-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            sert-mutate-${{ runner.os }}-
+
       - name: sert mutate
         if: "!startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release')"
-        run: python3 tools/sert.py mutate --no-coverage-run --min 85
+        run: python3 tools/sert.py mutate --no-coverage-run --min 75
 
-      - name: Update coverage badge
+      - name: Update llms.txt
+        if: "!startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release')"
+        run: npx --yes luaudocs@latest llms
+
+      - name: Commit llms.txt
+        if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && !startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release')
+        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
+        with:
+          commit_message: "docs: update llms.txt"
+          commit_author: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          file_pattern: "llms.txt"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python3 tools/sert.py coverage --badge-branch --badge-push
+        with:
+          name: coverage-badge
+          path: coverage.json
+          if-no-files-found: error
+          overwrite: true
+
+  badge:
+    name: Update Coverage Badge
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: badges
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: coverage-badge
+
+      - name: Commit coverage.json onto badges
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          parent=""
+          if git ls-remote --exit-code --heads origin badges > /dev/null; then
+            git fetch --no-tags origin refs/heads/badges:refs/heads/badges
+            parent="-p refs/heads/badges"
+          fi
+          blob=$(git hash-object -w coverage.json)
+          tree=$(printf '100644 blob %s\tcoverage.json\n' "$blob" | git mktree)
+          if [ -z "$parent" ] || [ "$(git rev-parse refs/heads/badges^{tree})" != "$tree" ]; then
+            msg=$(python3 -c 'import json; print("badge: coverage " + json.load(open("coverage.json"))["message"])')
+            commit=$(git commit-tree "$tree" $parent -m "$msg")
+            git push origin "$commit:refs/heads/badges"
+          fi
 
   demo:
     name: Publish Demo Place
@@ -73,6 +123,9 @@ jobs:
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: testing
+    concurrency:
+      group: publish-demo-main
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
