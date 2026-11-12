@@ -4526,6 +4526,11 @@ describe("Client and UI · motion nodes die with their component", function()
 end)
 
 describe("Client and UI · 2026 Compliance & UI Regressions", function()
+	local function observers(sig: any): number
+		local inner: any = rawget(sig, 1)
+		return inner[2]
+	end
+
 	test("Client loadAddons deduplicates addons present in both Addons folder and addonTag", function()
 		local world = sert.sim.new({ backing = true })
 		local server = world:server()
@@ -4584,6 +4589,216 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 		sert.eq(cK.ready, true)
 		sert.eq(addonRuns, 1)
 	end)
+
+	test(
+		"Explorer delegates PARENT and DELETE to Remote.Explorer, clears hover target on leave, and purges destroyed nodes",
+		function()
+			local world = sert.sim.new({ backing = true })
+			local server = world:server()
+			local client = server:client(1, "Player1")
+			local function fastRun(seconds: number)
+				local dt = 1 / 60
+				if seconds <= dt * 3 then
+					world:run(seconds)
+				else
+					world:step(dt)
+					world:step(seconds - dt * 2)
+					world:step(dt)
+				end
+			end
+
+			local cliMounted = setupClientEnv(client, { mockRemote = true })
+			local cK = cliMounted:requireK()
+			local UI = cliMounted.env:require(cliMounted.Client.UI)
+			if UI.registerClasses then
+				UI.registerClasses()
+			end
+			UI.Pointer = UI.signal({ Position = Vector3.new(100, 100, 0) })
+			cK.UI = UI
+			cK.IsClient = true
+			cK.LocalPlayer = cliMounted.env.Players.LocalPlayer
+			cK.client = {
+				rank = cK.Flux.signal(0),
+				Explorer = cliMounted.env:require(cliMounted.Client.Explorer),
+			}
+			local cEnv = cliMounted.env
+			local origUisMethods = rawget(UI.UserInputService, "_methods")
+
+			local remoteCalls = {}
+			cK.Remote.Explorer = {
+				Fire = function(_self, action, ...)
+					table.insert(remoteCalls, { action = action, args = { ... } })
+				end,
+			}
+
+			local folderA = cEnv.Instance.new("Folder")
+			folderA.Name = "AlphaFolder"
+			folderA.Parent = cEnv.workspace
+			local folderB = cEnv.Instance.new("Folder")
+			folderB.Name = "BetaFolder"
+			folderB.Parent = cEnv.workspace
+
+			cK.client.Explorer.Show()
+			fastRun(1.2)
+
+			local expWin = UI.LayerTopInset:FindFirstChild("Explorer")
+			sert.eq(expWin ~= nil, true)
+			local expScrollerFrame = expWin.Frame.UIContent:FindFirstChild("ScrollerFast")
+			local innerScroller = expScrollerFrame:FindFirstChild("ScrollerFast")
+
+			-- Expand Workspace so AlphaFolder and BetaFolder render
+			for _, btn in innerScroller:GetChildren() do
+				if btn:IsA("TextButton") and string.find(btn.Name, "Workspace", 1, true) or btn:IsA("TextButton") then
+					local label = btn:FindFirstChild("TextLabel")
+					if label and string.find(label.Text, "Workspace", 1, true) then
+						local expBtn = btn:FindFirstChild("Expand")
+						if expBtn then
+							expBtn.Activated:Fire()
+						end
+						break
+					end
+				end
+			end
+			fastRun(0.35)
+
+			local alphaBtn, betaBtn
+			for _, btn in innerScroller:GetChildren() do
+				if not btn:IsA("TextButton") then
+					continue
+				end
+				local label = btn:FindFirstChild("TextLabel")
+				if label and string.find(label.Text, "AlphaFolder", 1, true) then
+					alphaBtn = btn
+				elseif label and string.find(label.Text, "BetaFolder", 1, true) then
+					betaBtn = btn
+				end
+			end
+			sert.eq(alphaBtn ~= nil and betaBtn ~= nil, true)
+
+			-- 1. Select AlphaFolder and press Delete -> fires ("DELETE", { folderA }) WITHOUT destroying folderA client-side
+			alphaBtn.Activated:Fire()
+			fastRun(0.1)
+			local expTitleBar = expWin.Frame.TitleBar
+			local copyBtn, pasteBtn, deleteBtn
+			for _, child in expTitleBar:GetChildren() do
+				if child.Name == "Button" and child:IsA("TextButton") then
+					if child.LayoutOrder == 6 then
+						copyBtn = child
+					elseif child.LayoutOrder == 7 then
+						pasteBtn = child
+					elseif child.LayoutOrder == 4 then
+						deleteBtn = child
+					end
+				end
+			end
+			sert.eq(deleteBtn ~= nil, true)
+			deleteBtn.Activated:Fire()
+			fastRun(0.1)
+			sert.eq(folderA.Parent, cEnv.workspace)
+			sert.eq(#remoteCalls, 1)
+			sert.eq(remoteCalls[1].action, "DELETE")
+			sert.eq(remoteCalls[1].args[1][1], folderA)
+
+			-- 2. Drag AlphaFolder onto BetaFolder -> fires ("PARENT", { folderA }, folderB) WITHOUT client-side reparent
+			table.clear(remoteCalls)
+			cEnv:setAbsolute(alphaBtn, Vector2.new(200, 20), Vector2.new(10, 10))
+			cEnv:setAbsolute(betaBtn, Vector2.new(200, 20), Vector2.new(10, 30))
+			rawset(
+				UI.UserInputService,
+				"_methods",
+				setmetatable({
+					IsMouseButtonPressed = function(_self, btn)
+						return btn == Enum.UserInputType.MouseButton1
+					end,
+				}, { __index = origUisMethods })
+			)
+			alphaBtn.InputBegan:Fire(
+				makeInput(cEnv, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(10, 10, 0) }),
+				false
+			)
+			alphaBtn.InputChanged:Fire(
+				makeInput(cEnv, { UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(30, 30, 0) }),
+				false
+			)
+			UI.Pointer({ Position = Vector3.new(35, 35, 0) })
+			betaBtn.MouseEnter:Fire(35, 35)
+			betaBtn.InputChanged:Fire(
+				makeInput(cEnv, { UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(35, 35, 0) }),
+				false
+			)
+			UI.flush()
+			UI.UserInputService.InputEnded:Fire(
+				makeInput(cEnv, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(35, 35, 0) }),
+				false
+			)
+			fastRun(0.1)
+			sert.eq(folderA.Parent, cEnv.workspace)
+			sert.eq(#remoteCalls, 1)
+			sert.eq(remoteCalls[1].action, "PARENT")
+			sert.eq(remoteCalls[1].args[1][1], folderA)
+			sert.eq(remoteCalls[1].args[2], folderB)
+
+			-- 3. Drag hover-leave clears DragScope.TargetNode so dropping off-target fires nothing
+			table.clear(remoteCalls)
+			betaBtn.MouseLeave:Fire(90, 90)
+			UI.Pointer({ Position = Vector3.new(90, 90, 0) })
+			UI.flush()
+			alphaBtn.InputBegan:Fire(
+				makeInput(cEnv, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(10, 10, 0) }),
+				false
+			)
+			alphaBtn.InputChanged:Fire(
+				makeInput(cEnv, { UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(30, 30, 0) }),
+				false
+			)
+			UI.Pointer({ Position = Vector3.new(35, 35, 0) })
+			betaBtn.MouseEnter:Fire(35, 35)
+			betaBtn.InputChanged:Fire(
+				makeInput(cEnv, { UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(35, 35, 0) }),
+				false
+			)
+			UI.flush()
+			UI.Pointer({ Position = Vector3.new(90, 90, 0) })
+			betaBtn.MouseLeave:Fire(90, 90)
+			UI.flush()
+			UI.UserInputService.InputEnded:Fire(
+				makeInput(cEnv, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(90, 90, 0) }),
+				false
+			)
+			fastRun(0.1)
+			sert.eq(#remoteCalls, 0)
+			rawset(UI.UserInputService, "_methods", origUisMethods)
+
+			-- 4. Copy AlphaFolder, then Destroy AlphaFolder on server/world -> purges CLIPBOARD & SELECTION cleanly
+			alphaBtn.Activated:Fire()
+			fastRun(0.05)
+			copyBtn.Activated:Fire()
+			fastRun(0.05)
+			folderA:Destroy()
+			fastRun(0.2)
+			betaBtn.Activated:Fire()
+			fastRun(0.05)
+			table.clear(remoteCalls)
+			pasteBtn.Activated:Fire()
+			fastRun(0.1)
+			sert.eq(#remoteCalls, 0)
+
+			-- 5. Multi-character identifier search ("BetaFolder") prepends `#` via `^[%w_]+$` cleanly
+			local expInput = expScrollerFrame:FindFirstChild("Input")
+			local expBox = expInput and expInput:FindFirstChildWhichIsA("TextBox", true)
+			sert.eq(expBox ~= nil, true)
+			if expBox then
+				expBox.Text = "BetaFolder"
+				fastRun(0.25)
+				sert.eq(#world.scheduler.errors, 0)
+				expBox.Text = ""
+				fastRun(0.1)
+			end
+
+			folderB:Destroy()
+			fastRun(0.1)
+		end
+	)
 end)
 
 do

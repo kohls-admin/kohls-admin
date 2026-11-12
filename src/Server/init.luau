@@ -1080,11 +1080,15 @@ return function(_K)
 		-- the admin system's own instances, changing them breaks it for everyone
 		local function isProtectedInstance(instance: Instance, allowAncestors: boolean?): boolean
 			local chatFolder = _K.ChatCommands and _K.ChatCommands.folder
-			for _, root in { Package, Server, chatFolder } do
+			local textChatService = _K.Service.TextChatService or _K.Service.TextChat
+			for _, root in { Package, Server, chatFolder, textChatService } do
 				if
-					instance == root
-					or instance:IsDescendantOf(root)
-					or (not allowAncestors and root:IsDescendantOf(instance))
+					root
+					and (
+						instance == root
+						or instance:IsDescendantOf(root)
+						or (not allowAncestors and root:IsDescendantOf(instance))
+					)
 				then
 					return true
 				end
@@ -1110,11 +1114,24 @@ return function(_K)
 			return nil
 		end
 
+		local explorerRate: { [number]: { count: number, resetAt: number } } = {}
+
 		local _ = _K.Remote.Explorer:Connect(function(player: Player, action: string, data: any, selected: Instance?)
 			local explorerRank = _K.Auth.hasCommand(player.UserId, "explorer")
 			if not explorerRank or type(data) ~= "table" then
 				return
 			end
+
+			local now = os.clock()
+			local rate = explorerRate[player.UserId]
+			if not rate or now >= rate.resetAt then
+				rate = { count = 0, resetAt = now + 1 }
+				explorerRate[player.UserId] = rate
+			end
+			if rate.count >= 15 then
+				return
+			end
+			rate.count += 1
 
 			local fromRank, fromRole = _K.Auth.getRank(player.UserId)
 			local fauxArg = {
@@ -1166,7 +1183,12 @@ return function(_K)
 				if typeof(selected) ~= "Instance" or not canModify(selected, true) then
 					return
 				end
+				local count = 0
 				for _, copy in data do
+					count += 1
+					if count > 64 then
+						break
+					end
 					if
 						typeof(copy) ~= "Instance"
 						or copy:IsA("Player")
@@ -1183,8 +1205,37 @@ return function(_K)
 						copy.Archivable = false
 					end
 				end
+			elseif action == "PARENT" then
+				if typeof(selected) ~= "Instance" or not canModify(selected, true) then
+					return
+				end
+				local count = 0
+				for _, inst in data do
+					count += 1
+					if count > 64 then
+						break
+					end
+					if
+						typeof(inst) ~= "Instance"
+						or inst:IsA("Player")
+						or inst == selected
+						or inst:IsAncestorOf(selected)
+						or inst.Parent == selected
+						or not canModify(inst)
+					then
+						continue
+					end
+					local _ = pcall(function()
+						inst.Parent = selected
+					end)
+				end
 			elseif action == "DELETE" then
+				local count = 0
 				for _, instance in data do
+					count += 1
+					if count > 64 then
+						break
+					end
 					if typeof(instance) ~= "Instance" or not canModify(instance) then
 						continue
 					end
@@ -1310,6 +1361,7 @@ return function(_K)
 
 			_K.Flux.dispose(playerCleanup[userId])
 			playerCleanup[userId] = nil
+			explorerRate[userId] = nil
 			_K.Data.targetLimits[userId] = nil
 			_K.Process.resetLimit(userId)
 			if _K.Data.playerPrefix[userId] then
