@@ -136,6 +136,17 @@ local function newRemote(key: string, internalId: string?): Remote
 	return self
 end
 
+local function warnIfUnlinked(self: Remote)
+	if not (self._id or self._warnScheduled) then
+		self._warnScheduled = true
+		task.delay(5, function()
+			if not self._id then
+				warn(`Infinite yield possible on Remote '{self._key}'`)
+			end
+		end)
+	end
+end
+
 function RemoteObject.Connect(self: Remote, callback: (...any) -> ()): Signal.Connection
 	return self._signal:Connect(callback)
 end
@@ -145,6 +156,7 @@ function RemoteObject.Once(self: Remote, callback: (...any) -> ()): Signal.Conne
 end
 
 function RemoteObject.Wait(self: Remote): ...any
+	warnIfUnlinked(self)
 	return self._signal:Wait()
 end
 
@@ -168,6 +180,9 @@ end
 
 if IS_SERVER then
 	function RemoteObject.Fire(self: Remote, player: Player, ...)
+		if typeof(player) ~= "Instance" or not player:IsA("Player") then
+			return
+		end
 		(self._remote :: RemoteEvent):FireClient(player, self._id, ...)
 	end
 
@@ -248,24 +263,6 @@ if IS_SERVER then
 
 	EVENT:SetAttribute("ServerReady", true)
 else -- Client
-	local function warnIfUnlinked(self: Remote)
-		if not self._warnScheduled then
-			self._warnScheduled = true
-			task.delay(5, function()
-				if not self._id then
-					warn(`Infinite yield possible on Remote '{self._key}'`)
-				end
-			end)
-		end
-	end
-
-	function RemoteObject.Wait(self: Remote): ...any
-		if not self._id then
-			warnIfUnlinked(self)
-		end
-		return self._signal:Wait()
-	end
-
 	function RemoteObject.Fire(self: Remote, ...)
 		if self._id then
 			(self._remote :: RemoteEvent):FireServer(self._id, ...)

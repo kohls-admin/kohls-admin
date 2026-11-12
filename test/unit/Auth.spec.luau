@@ -1608,6 +1608,38 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 			}, { runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 10 else 35, length = 20 })
 		end
 	)
+
+	test("Auth.userRoleAdd networks member when clearing unrestricted flag on an already-held role", function()
+		local h = Harness.newEnv({ isStudio = false })
+		local Data = h:requireData()
+		local Auth = h:requireAuth()
+
+		Auth.userRoleAdd(808, "mod", false, true)
+		local member = Data.members["808"]
+		member.name = "ModUser808"
+		sert.eq(member.unrestricted and member.unrestricted.mod, true)
+		sert.eq(Auth.hasRestrictedRole(808), false)
+
+		local networkedUsers = {}
+		local origNetworkMember = Auth.networkMember
+		Auth.networkMember = function(uid: number)
+			table.insert(networkedUsers, uid)
+		end
+
+		-- Upgrading existing session "mod" from unrestricted=true to unrestricted=false returns false (not newly added)
+		-- but MUST call Auth.networkMember(808) because member.unrestricted changed!
+		local added = Auth.userRoleAdd(808, "mod", false, false)
+		sert.eq(added, false)
+		sert.eq(member.unrestricted and member.unrestricted.mod, nil)
+		sert.eq(Auth.hasRestrictedRole(808), true)
+		sert.eq(networkedUsers, { 808 })
+
+		-- Re-calling when already restricted does not re-network unnecessarily
+		Auth.userRoleAdd(808, "mod", false, false)
+		sert.eq(networkedUsers, { 808 })
+
+		Auth.networkMember = origNetworkMember
+	end)
 end)
 
 do

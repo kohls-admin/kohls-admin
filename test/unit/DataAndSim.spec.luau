@@ -352,7 +352,7 @@ describe("Data · Migrate (Settings & Legacy KAI)", function()
 			sert.eq(table.find(Data.members["101"].roles, "customAdmin") ~= nil, true)
 			sert.eq(Data.members["102"], nil) -- rank 4 had no matching role
 			sert.eq(Data.members["103"], nil) -- positive power is ignored
-			sert.eq(Data.savedSettings.prefix, { "!", ";" })
+			sert.eq(Data.savedSettings.prefix, { "!" })
 
 			Data.roles.admin = origAdmin
 			Data.roles.customAdmin = nil
@@ -2162,6 +2162,105 @@ describe("Data · ChunkChanges array actions", function()
 			eq = sert.equals,
 		}, { runs = 40 })
 	end
+
+	test(
+		"Data.initialize BindToClose distinguishes closing vs non-closing errors and cross-server members.unset fires Hook.roleRemoved",
+		function()
+			-- 1. Non-closing BindToClose failure does NOT mark gameClosing = true
+			do
+				local h = Harness.newEnv({ isStudio = false })
+				local gameMethods = rawget(h.env.game, "_methods")
+				local origBind = gameMethods.BindToClose
+				gameMethods.BindToClose = function()
+					error("BindToClose is unavailable in this capability context")
+				end
+				local Data = h:requireData()
+				Data.initialize("_K_BindNonClosing")
+				h.env:step(0.1)
+				sert.eq(Data.gameClosing, false)
+				sert.eq(Data.Store.closing ~= true, true)
+				gameMethods.BindToClose = origBind
+			end
+
+			-- 2. Closing BindToClose failure ("already closing") spawns onClose() and sets Data.gameClosing = true
+			do
+				local h = Harness.newEnv({ isStudio = false })
+				local gameMethods = rawget(h.env.game, "_methods")
+				local origBind = gameMethods.BindToClose
+				gameMethods.BindToClose = function()
+					error("Cannot BindToClose while game is closing")
+				end
+				local Data = h:requireData()
+				Data.initialize("_K_BindAlreadyClosing")
+				h.env:step(0.2)
+				sert.eq(Data.gameClosing, true)
+				sert.eq(Data.Store.closing, true)
+				gameMethods.BindToClose = origBind
+			end
+
+			-- 3. Cross-server members.unset fires Hook.roleRemoved on remote servers and SYNC.settings keeps exact prefix list
+			local function bootNode(world: any, scope: string)
+				local server = world:server({ skew = 0 })
+				local h = Harness.newPeerEnv(server, { isStudio = false })
+				local Data = h:requireData()
+				Data.savedSettings.useSavedSettings = true
+				Data.savedSettings.dashboardRank = 0
+				local Auth = h:requireAuth()
+				server:spawn(function()
+					Data.initialize(scope)
+				end)
+				return {
+					server = server,
+					h = h,
+					Data = Data,
+					Auth = Auth,
+				}
+			end
+
+			local world = sert.sim.new({ backing = true })
+			local n1 = bootNode(world, "_K_UnsetRoleRemoved")
+			local n2 = bootNode(world, "_K_UnsetRoleRemoved")
+			world:run(6)
+
+			n1.Data.settingsModuleData = { prefix = { ";", ":" } }
+			n2.Data.settingsModuleData = { prefix = { ";", ":" } }
+
+			local removedEvents = {}
+			n2.h:requireShared("Hook").roleRemoved:Connect(function(uid, role)
+				table.insert(removedEvents, { uid = uid, role = role })
+			end)
+
+			-- Give user 701 persisted "admin" on n1 and sync to n2
+			n1.server:spawn(function()
+				n1.Auth.userRoleAdd(701, "admin", true)
+				n1.Data.savedSettings.prefix = { "!" }
+				n1.Data.Sync.settings.prefix = { "!" }
+			end)
+			world:run(7)
+			world.backing.messaging.drain()
+			world:run(1)
+
+			sert.eq(n2.Auth.hasRole(701, "admin"), true)
+			-- Deterministic prefix sync without re-appending stale settingsModuleData.prefix { ";", ":" }
+			sert.eq(n2.Data.savedSettings.prefix, { "!" })
+
+			-- Now remove persisted "admin" from 701 on n1 (triggers Data.REMOVE -> members.unset) and sync to n2
+			n1.server:spawn(function()
+				n1.Auth.userRoleRemove(701, "admin")
+			end)
+			world:run(7)
+			world.backing.messaging.drain()
+			world:run(1)
+
+			sert.eq(n2.Data.members["701"], nil)
+			sert.eq(#removedEvents, 1)
+			sert.eq(removedEvents[1].uid, 701)
+			sert.eq(removedEvents[1].role, "admin")
+
+			n1.server:shutdown()
+			n2.server:shutdown()
+		end
+	)
 end)
 
 do

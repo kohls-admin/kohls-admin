@@ -440,13 +440,6 @@ local SYNC = {
 			local prefixes = if type(changes.prefix) == "table"
 				then table.clone(changes.prefix)
 				else { tostring(changes.prefix) }
-			if Data.settingsModuleData and type(Data.settingsModuleData.prefix) == "table" then
-				for _, p in Data.settingsModuleData.prefix do
-					if not table.find(prefixes, p) then
-						table.insert(prefixes, p)
-					end
-				end
-			end
 			state.prefix = prefixes
 			changes.prefix = state.prefix
 		end
@@ -653,18 +646,23 @@ local function syncChanges(changes)
 				if claimSyncKey(k) then
 					if key == "members" and state[k] then
 						local member = state[k]
+						local removedRoles = {}
+						local userIdNumber = tonumber(k) :: number
 						if member.persist then
-							local userIdNumber = tonumber(k) :: number
 							for i = #member.roles, 1, -1 do
 								local role = member.roles[i]
 								if table.find(member.persist, role) and not Auth.hasAsyncRole(userIdNumber, role) then
 									table.remove(member.roles, i)
+									table.insert(removedRoles, role)
 								end
 							end
 							table.clear(member.persist)
 						end
 						if #member.roles == 0 then
 							state[k] = nil
+						end
+						for _, role in removedRoles do
+							Hook.roleRemoved:Fire(userIdNumber, role)
 						end
 					else
 						state[k] = nil
@@ -1418,7 +1416,7 @@ function Data.initialize(scope)
 
 	if not bindToCloseConnected then
 		bindToCloseConnected = true
-		game:BindToClose(function()
+		local function onClose()
 			Data.gameClosing = true
 			if Data.Store then
 				Data.Store.closing = true
@@ -1449,7 +1447,14 @@ function Data.initialize(scope)
 			end
 
 			tasks:wait()
-		end)
+		end
+		local ok, bindErr = pcall(game.BindToClose, game, onClose)
+		if not ok then
+			local errLower = string.gsub(string.lower(tostring(bindErr)), "bindtoclose", "")
+			if string.find(errLower, "clos", 1, true) then
+				task.spawn(onClose)
+			end
+		end
 	end
 end
 

@@ -250,6 +250,7 @@ function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?, unres
 	local key = tostring(userId)
 	local member = Data.members[key]
 	local roleAdded = false
+	local unrestrictedChanged = false
 
 	if not member then
 		member = {
@@ -270,8 +271,9 @@ function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?, unres
 				member.unrestricted = member.unrestricted or {}
 				member.unrestricted[roleId] = true
 			end
-		elseif not unrestricted and member.unrestricted then
+		elseif not unrestricted and member.unrestricted and member.unrestricted[roleId] ~= nil then
 			member.unrestricted[roleId] = nil
+			unrestrictedChanged = true
 		end
 		if persist and not table.find(member.persist, roleId) then
 			table.insert(member.persist, roleId)
@@ -285,6 +287,12 @@ function Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?, unres
 			task.spawn(saveMember, key, userId)
 		end
 		Hook.roleAdded:Fire(userId, roleId)
+		if not member.name then
+			task.spawn(updateMemberName, member, userId)
+		else
+			Auth.networkMember(userId)
+		end
+	elseif unrestrictedChanged then
 		if not member.name then
 			task.spawn(updateMemberName, member, userId)
 		else
