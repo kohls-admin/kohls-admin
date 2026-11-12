@@ -14,6 +14,27 @@ local Class = {}
 Class.__index = Class
 setmetatable(Class, BaseClass)
 
+local function updateDragValue(self, input)
+	local axis = if self.Vertical:peek() then "Y" else "X"
+	local pad = self._padding:peek().Offset
+	local pos = input.Position[axis] - self._instance.AbsolutePosition[axis]
+	local size = self._instance.AbsoluteSize[axis]
+	local span = size - pad * 2
+	local value = if span > 0 then math.clamp((pos - pad) / span, 0, 1) else 0
+	local snap = self.Snap:peek()
+
+	if snap > 1 then
+		value = math.round(1 + value * (snap - 1))
+
+		if self.SnapSound:peek() and self.Value:peek() ~= value then
+			UI.Sound.Hover02:Play()
+		end
+	end
+
+	self.Value(value, true)
+	UI.flush()
+end
+
 function Class.new(properties: Properties?)
 	local self = table.clone(DEFAULT)
 	UI.makeStatefulDefaults(self, properties)
@@ -22,6 +43,12 @@ function Class.new(properties: Properties?)
 
 	local dragging = UI.signal(false)
 	self._dragging = dragging
+
+	local padding = UI.computed(function()
+		return UDim.new(0, UI.Theme.FontSizeSmaller() + UI.Theme.PaddingHalf().Offset)
+	end)
+	self._padding = padding
+	table.insert(cleanup, padding)
 
 	local valueAlpha = UI.computed(function()
 		local snap = self.Snap()
@@ -32,22 +59,7 @@ function Class.new(properties: Properties?)
 	table.insert(cleanup, valueAlpha)
 
 	local inputBegan = BaseClass.bindDragInput(dragging, function(input)
-		-- stylua: ignore
-		local value = if self.Vertical:peek()
-			then math.clamp((input.Position.Y - self._instance.AbsolutePosition.Y - 12) / (self._instance.AbsoluteSize.Y - 24), 0, 1)
-			else math.clamp((input.Position.X - self._instance.AbsolutePosition.X - 12) / (self._instance.AbsoluteSize.X - 24), 0, 1)
-		local snap = self.Snap:peek()
-
-		if snap > 1 then
-			value = math.round(1 + value * (snap - 1))
-
-			if self.SnapSound:peek() and self.Value:peek() ~= value then
-				UI.Sound.Hover02:Play()
-			end
-		end
-
-		self.Value(value, true)
-		UI.flush()
+		updateDragValue(self, input)
 	end, cleanup)
 
 	local knobSize = UI.tween(function()
@@ -70,12 +82,6 @@ function Class.new(properties: Properties?)
 
 		InputBegan = inputBegan,
 	} :: Frame & { UICorner: UICorner }
-
-	local padding = UI.computed(function()
-		return UDim.new(0, UI.Theme.FontSizeSmaller() + UI.Theme.PaddingHalf().Offset)
-	end)
-
-	table.insert(cleanup, padding)
 
 	self._instance = UI.new "Frame" {
 		Name = "Slider",

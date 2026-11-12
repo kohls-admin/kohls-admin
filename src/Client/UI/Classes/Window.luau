@@ -318,10 +318,37 @@ function Class.new(properties: Properties?)
 		},
 	}
 
+	local mouseIconWasEnabled, mouseIconChanging = UI.UserInputService.MouseIconEnabled, nil
+	local hidMouseIcon = false
+	local function restoreResizeState()
+		if resizeHover:peek() then
+			resizeHover(false)
+		end
+		if resizing:peek() then
+			dragInput = nil
+			resizing(false)
+		end
+		if dragging:peek() then
+			dragInput = nil
+			dragging(false)
+		end
+		if hidMouseIcon then
+			hidMouseIcon = false
+			if UI.UserInputService.MouseIconEnabled ~= mouseIconWasEnabled then
+				mouseIconChanging = true
+				UI.UserInputService.MouseIconEnabled = mouseIconWasEnabled
+				mouseIconChanging = false
+			end
+		end
+	end
+
 	local function onVisibleChanged()
 		if self._instance.Visible then
 			Class.bringToFront(self)
 			Class.nudge(self)
+		elseif resizeHover:peek() or resizing:peek() or dragging:peek() or hidMouseIcon then
+			restoreResizeState()
+			UI.flush()
 		end
 	end
 	local function onParentChanged()
@@ -368,10 +395,6 @@ function Class.new(properties: Properties?)
 			ImageRectOffset = resizeIconRectOffset,
 			Size = UDim2.new(0, 24, 0, 24),
 			Visible = resizeHover,
-			Position = function()
-				local inputPos = inputPosition()
-				return UDim2.fromOffset(inputPos.X - 12, inputPos.Y - 12) - self.Position()
-			end,
 
 			InputBegan = resizeBegan,
 		},
@@ -464,7 +487,17 @@ function Class.new(properties: Properties?)
 		_Parent = onParentChanged,
 	} :: Frame
 
-	local mouseIconWasEnabled, mouseIconChanging = UI.UserInputService.MouseIconEnabled, nil
+	local absPosition = UI.property(self._instance, "AbsolutePosition")
+	UI.edit((self._instance :: any).ResizeIcon)({
+		Position = function()
+			local inputPos = inputPosition()
+			self.Position()
+			absPosition()
+			local winPos = self._instance.AbsolutePosition
+			return UDim2.fromOffset(inputPos.X - winPos.X - 12, inputPos.Y - winPos.Y - 12)
+		end,
+	})
+
 	local mouseIconConn = UI.UserInputService:GetPropertyChangedSignal("MouseIconEnabled"):Connect(function()
 		if mouseIconChanging then
 			return
@@ -501,6 +534,8 @@ function Class.new(properties: Properties?)
 					resizeIconRectOffset(Vector2.new(resize[5]))
 					UI.flush()
 					if UI.UserInputService.MouseIconEnabled then
+						mouseIconWasEnabled = true
+						hidMouseIcon = true
 						mouseIconChanging = true
 						UI.UserInputService.MouseIconEnabled = false
 						mouseIconChanging = false
@@ -508,10 +543,13 @@ function Class.new(properties: Properties?)
 				elseif resizeHover:peek() then
 					resizeHover(false)
 					UI.flush()
-					if UI.UserInputService.MouseIconEnabled ~= mouseIconWasEnabled then
-						mouseIconChanging = true
-						UI.UserInputService.MouseIconEnabled = mouseIconWasEnabled
-						mouseIconChanging = false
+					if hidMouseIcon then
+						hidMouseIcon = false
+						if UI.UserInputService.MouseIconEnabled ~= mouseIconWasEnabled then
+							mouseIconChanging = true
+							UI.UserInputService.MouseIconEnabled = mouseIconWasEnabled
+							mouseIconChanging = false
+						end
 					end
 				end
 			end
@@ -591,6 +629,7 @@ function Class.new(properties: Properties?)
 	UI.edit(self._instance)({
 		__CLEAN = {
 			function()
+				restoreResizeState()
 				windowCache[self] = nil
 				if parentConn then
 					parentConn:Disconnect()
@@ -602,6 +641,7 @@ function Class.new(properties: Properties?)
 					sizeConn:Disconnect()
 				end
 			end,
+			absPosition,
 			autoSize,
 			inputPosition,
 			dragging,

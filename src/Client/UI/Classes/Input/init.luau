@@ -438,10 +438,12 @@ function Class.new(properties: Properties?)
 			end,
 
 			Activated = function()
-				self._input.Text = ""
 				self.DisplayText("", true)
-				self.Value("", true)
-				textState("", true)
+				self._inputOffset(0)
+				self._input.SelectionStart = -1
+				self:SetValue("")
+				self._input:CaptureFocus()
+				self._input.CursorPosition = math.max(1, #self._input.Text + 1)
 				UI.flush()
 			end,
 		},

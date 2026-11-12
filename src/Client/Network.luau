@@ -253,18 +253,27 @@ local _ = _K.Remote.Settings:Connect(function(settings)
 		})
 	end
 
-	local useSaved = _K.Data.savedSettings.useSavedSettings or settings.useSavedSettings
+	local useSaved = if settings.useSavedSettings ~= nil
+		then settings.useSavedSettings
+		else _K.Data.savedSettings.useSavedSettings ~= false
+	local activeTheme = if settings.theme ~= nil then settings.theme else _K.Data.savedSettings.theme
 	for key, value in settings do
 		value = UI.raw(value)
+		local isThemeProperty = key ~= "theme" and string.find(key :: string, "theme", 1, true) == 1
 		if
-			key ~= "theme"
-			and string.find(key :: string, "theme", 1, true) == 1
-			and (_K.Data.settings.changeThemeAuthority == "Studio" or settings.theme ~= "Custom (DataStore)")
+			isThemeProperty
+			and (_K.Data.settings.changeThemeAuthority == "Studio" or activeTheme ~= "Custom (DataStore)")
 		then
 			continue
 		end
 		_K.Data.savedSettings[key] = value
-		if useSaved and _K.client.settings[key] then
+		if isThemeProperty then
+			local themeKey = string.sub(key :: string, 6)
+			if useSaved and _K.UI.Theme[themeKey] and UI.isNode(_K.UI.Theme[themeKey]) then
+				_K.UI.Theme[themeKey](value, true)
+			end
+		end
+		if (useSaved or key == "useSavedSettings") and _K.client.settings[key] then
 			_K.client.settings[key](value, true)
 		end
 	end

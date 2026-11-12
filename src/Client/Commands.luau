@@ -419,21 +419,21 @@ end
 
 local function updatePurchaseData(purchaseData, list)
 	table.clear(purchaseData)
-	local current
 	for index, command in list do
 		if command.LocalPlayerAuthorized then
 			continue
 		end
 		local role = command.RestrictedToRole
-		if current and role == current then
-			purchaseData[current].lastIndex = index
-		end
-		if not current and role and (role._key == "vip" or role.gamepasses) then
-			current = role
-			purchaseData[role] = {
-				firstIndex = index - 1,
-				lastIndex = index,
-			}
+		if role and (role._key == "vip" or (role.gamepasses and next(role.gamepasses))) then
+			local entry = purchaseData[role]
+			if entry then
+				entry.lastIndex = index
+			else
+				purchaseData[role] = {
+					firstIndex = index - 1,
+					lastIndex = index,
+				}
+			end
 		end
 	end
 end
@@ -524,6 +524,7 @@ function Commands.new(_K)
 
 	local commandsList = UI.signal(_K.Registry.commandsList)
 	local updateChatCommandsAutocomplete, syncChatCommands
+	local updatePurchaseButton
 
 	local function updateCommandsList()
 		local list = buildCommandsList(_K)
@@ -531,6 +532,9 @@ function Commands.new(_K)
 		updatePurchaseData(purchaseData, list)
 		if updateChatCommandsAutocomplete then
 			updateChatCommandsAutocomplete(list)
+		end
+		if updatePurchaseButton then
+			updatePurchaseButton()
 		end
 	end
 
@@ -574,19 +578,21 @@ function Commands.new(_K)
 		purchaseButton,
 	}
 
-	local function updatePurchaseButton()
-		local itemHeight = UI.Theme.FontSize:peek() * 2
+	updatePurchaseButton = function()
+		local itemHeight = UI.Theme.FontSize:peek() * 2 + UI.Theme.Padding:peek().Offset
 		local windowHeight = scroller._scroller.AbsoluteWindowSize.Y
 		local top = scroller._scroller.CanvasPosition.Y
 		local middle = top + windowHeight / 2
 		local bottom = top + windowHeight
 
 		local role
+		local bestFirstIndex = math.huge
 		for roleData, data in purchaseData do
 			local first = data.firstIndex * itemHeight
 			local last = data.lastIndex * itemHeight
-			if first < bottom and last > middle then
+			if first < bottom and last > middle and data.firstIndex < bestFirstIndex then
 				role = roleData
+				bestFirstIndex = data.firstIndex
 			end
 		end
 
@@ -596,6 +602,7 @@ function Commands.new(_K)
 				then (_K.VIP.getActiveAssetId and _K.VIP.getActiveAssetId() or 110019084552349)
 				else role.gamepasses[1]
 			if not purchase.gamepass then
+				purchaseButton._instance.Visible = false
 				return
 			end
 			purchaseButton.Label(`<b>Unlock <font color="{role.color}">{role.name or role._key}</font> Commands</b>`)
@@ -612,6 +619,7 @@ function Commands.new(_K)
 		local _ = _K.VIP.saleStateChanged:Connect(updatePurchaseButton)
 	end
 	UI.effect(UI.on(UI.Theme.FontSize, updatePurchaseButton, true)):get()
+	UI.effect(UI.on(UI.Theme.Padding, updatePurchaseButton, true)):get()
 	local _ = scroller._scroller:GetPropertyChangedSignal("CanvasPosition"):Connect(updatePurchaseButton)
 
 	task.defer(function()

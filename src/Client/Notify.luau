@@ -33,6 +33,7 @@ return function(dialogOverride)
 	if type(dialogOverride) ~= "table" then
 		return
 	end
+	dialogOverride = table.clone(dialogOverride)
 
 	if not dialogOverride.Text then
 		dialogOverride.Text = "No text provided"

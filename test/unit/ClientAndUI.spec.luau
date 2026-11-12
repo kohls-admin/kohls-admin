@@ -4650,6 +4650,418 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 		return inner[2]
 	end
 
+	test("Slider avoids 0/0 NaN when zero-sized and uses dynamic _padding", function()
+		local world = sert.sim.new({ backing = true })
+		local server = world:server()
+		local client = server:client(1, "Player1")
+		local cliMounted = setupClientEnv(client)
+		local env = cliMounted.env
+		local UI = env:require(cliMounted.Client.UI)
+		if UI.registerClasses then
+			UI.registerClasses()
+		end
+
+		local slider = UI.new "Slider" {
+			Parent = UI.LayerDefault,
+			Snap = 0,
+			Value = 0.5,
+		}
+		UI.flush()
+		world:run(0.1)
+
+		-- Unmounted / zero-size slider drag produces 0 instead of NaN
+		env:setAbsolute(slider._instance, Vector2.zero, Vector2.zero)
+		local down = makeInput(env, {
+			UserInputType = Enum.UserInputType.MouseButton1,
+			UserInputState = Enum.UserInputState.Begin,
+			Position = Vector3.new(0, 0, 0),
+		})
+		slider._instance.InputBegan:Fire(down, false)
+		UI.flush()
+		local valZero = slider.Value:peek()
+		sert.eq(valZero == valZero, true)
+		sert.eq(valZero, 0)
+		down.UserInputState = Enum.UserInputState.End
+
+		-- Dynamic padding: FontSizeSmaller (12) + PaddingHalf (16) -> pad = 28; width = 156 -> span = 100
+		local origPadding = UI.Theme.Padding:peek()
+		UI.Theme.Padding(UDim.new(0, 32))
+		UI.flush()
+		local pad = slider._padding:peek().Offset
+		env:setAbsolute(slider._instance, Vector2.new(100 + pad * 2, 32), Vector2.new(10, 10))
+		local down2 = makeInput(env, {
+			UserInputType = Enum.UserInputType.MouseButton1,
+			UserInputState = Enum.UserInputState.Begin,
+			Position = Vector3.new(10 + pad + 50, 20, 0),
+		})
+		slider._instance.InputBegan:Fire(down2, false)
+		UI.flush()
+		sert.eq(math.abs(slider.Value:peek() - 0.5) < 1e-4, true)
+		down2.UserInputState = Enum.UserInputState.End
+
+		UI.Theme.Padding(origPadding)
+		slider:Destroy()
+		UI.flush()
+	end)
+
+	test("Window restores MouseIconEnabled on hide/Destroy and positions ResizeIcon in offset containers", function()
+		local world = sert.sim.new({ backing = true })
+		local server = world:server()
+		local client = server:client(1, "Player1")
+		local cliMounted = setupClientEnv(client)
+		local env = cliMounted.env
+		local UI = env:require(cliMounted.Client.UI)
+		if UI.registerClasses then
+			UI.registerClasses()
+		end
+		UI.UserInputService.MouseIconEnabled = true
+
+		local offsetContainer = UI.new "Frame" {
+			Parent = UI.LayerDefault,
+			Position = UDim2.fromOffset(50, 80),
+			Size = UDim2.fromOffset(800, 600),
+		}
+		env:setAbsolute(offsetContainer, Vector2.new(800, 600), Vector2.new(50, 80))
+
+		world:run(0.2)
+		UI.flush()
+		local baseline = observers(UI.Theme.TweenOut)
+
+		local win = UI.new "Window" {
+			Parent = offsetContainer,
+			Position = UDim2.fromOffset(100, 100),
+			Size = UDim2.fromOffset(300, 200),
+		}
+		win._instance.Visible = true
+		env:setAbsolute(win._instance, Vector2.new(300, 200), Vector2.new(150, 180))
+		UI.flush()
+
+		-- Hover right resize edge at screen (450, 250) -> local (300 - 12, 70 - 12) = (288, 58)
+		UI.UserInputService.InputChanged:Fire(
+			makeInput(env, {
+				UserInputType = Enum.UserInputType.MouseMovement,
+				Position = Vector3.new(450, 250, 0),
+			}),
+			false
+		)
+		UI.flush()
+		sert.eq(UI.UserInputService.MouseIconEnabled, false)
+		local resizeIcon = win._instance:FindFirstChild("ResizeIcon")
+		sert.eq(resizeIcon ~= nil, true)
+		sert.eq(resizeIcon.Visible, true)
+		sert.eq(resizeIcon.Position, UDim2.fromOffset(288, 58))
+
+		-- Hiding window while hovering resize edge restores MouseIconEnabled
+		win._instance.Visible = false
+		UI.flush()
+		sert.eq(UI.UserInputService.MouseIconEnabled, true)
+		sert.eq(resizeIcon.Visible, false)
+
+		-- Showing again, hovering resize edge, and destroying restores MouseIconEnabled and cleans observers
+		win._instance.Visible = true
+		env:setAbsolute(win._instance, Vector2.new(300, 200), Vector2.new(150, 180))
+		UI.UserInputService.InputChanged:Fire(
+			makeInput(env, {
+				UserInputType = Enum.UserInputType.MouseMovement,
+				Position = Vector3.new(450, 250, 0),
+			}),
+			false
+		)
+		UI.flush()
+		sert.eq(UI.UserInputService.MouseIconEnabled, false)
+
+		win:Destroy()
+		UI.flush()
+		world:step()
+		sert.eq(UI.UserInputService.MouseIconEnabled, true)
+		sert.eq(observers(UI.Theme.TweenOut), baseline)
+		offsetContainer:Destroy()
+	end)
+
+	test(
+		"Notify/Announce table cloning, Network FIFO logs & Custom (DataStore) sync, Settings, Bans/Servers/Members/Commands",
+		function()
+			local world, srvMounted, cliMounted, sK, cK = getOrCreateFullClientSut()
+			local srvPlayer = srvMounted.env.Players:GetPlayers()[1]
+			local UI = cK.UI
+			local function fastRun(seconds: number)
+				world:step(1 / 60)
+				if seconds > 1 / 30 then
+					world:step(seconds - 1 / 60)
+				end
+			end
+
+			-- 1. Notify & Announce never mutate caller tables in place
+			local notifyCfg = { Text = "Immutable Notify", From = "_K", Sound = "Hover01", Duration = 0.5 }
+			local nCard = cK.Notify(notifyCfg)
+			sert.eq(notifyCfg.From, "_K")
+			sert.eq((notifyCfg :: any).Announce, nil)
+			sert.eq((notifyCfg :: any).TextSize, nil)
+			nCard._exitButton._instance.Activated:Fire()
+
+			local announceCfg = { Text = "Immutable Announce", From = "_K", Duration = 0.5 }
+			local aCard = cK.Announce(announceCfg)
+			sert.eq(announceCfg.From, "_K")
+			sert.eq((announceCfg :: any).Announce, nil)
+			aCard._exitButton._instance.Activated:Fire()
+			fastRun(0.1)
+
+			-- 2. Network.luau FIFO same-timestamp delayed log reveal without clobbering distinct redacted commands
+			local cmdLevel = sK.Logger:encode("COMMAND")
+			local t0 = os.time() + 500
+			local baseIdx = #cK.Data.logs
+			table.insert(cK.Data.logs, { ";ban …", cmdLevel, t0, 1, "Player1" })
+			table.insert(cK.Data.logs, { ";kick …", cmdLevel, t0, 1, "Player1" })
+			table.insert(cK.Data.logs, { ";ban …", cmdLevel, t0, 1, "Player1" })
+
+			sK.Remote.Log:Fire(srvPlayer, { ";ban Alice first_secret", cmdLevel, t0, 1, "Player1" })
+			sK.Remote.Log:Fire(srvPlayer, { ";ban Bob second_secret", cmdLevel, t0, 1, "Player1" })
+			sK.Remote.Log:Fire(srvPlayer, { ";kick Carol third_secret", cmdLevel, t0, 1, "Player1" })
+			fastRun(0.1)
+
+			sert.eq(cK.Data.logs[baseIdx + 1][1], ";ban Alice first_secret")
+			sert.eq(cK.Data.logs[baseIdx + 2][1], ";kick Carol third_secret")
+			sert.eq(cK.Data.logs[baseIdx + 3][1], ";ban Bob second_secret")
+
+			-- 3. Network.luau Custom (DataStore) live theme* edits & non-node themeSoundEnabled safety
+			local origSavedUse = cK.Data.savedSettings.useSavedSettings
+			local origSavedTheme = cK.Data.savedSettings.theme
+			local origPrimary = UI.Theme.Primary:peek()
+
+			cK.Data.savedSettings.useSavedSettings = true
+			cK.Data.savedSettings.theme = "Custom (DataStore)"
+			local customColor = Color3.fromRGB(24, 48, 96)
+			sK.Remote.Settings:Fire(srvPlayer, {
+				themePrimary = customColor,
+				themeSoundEnabled = false,
+				themeTypingSounds = false,
+			})
+			fastRun(0.1)
+			sert.eq(UI.Theme.Primary:peek(), customColor)
+
+			sK.Remote.Settings:Fire(srvPlayer, { useSavedSettings = false })
+			fastRun(0.1)
+			sert.eq(cK.client.settings.useSavedSettings:peek(), false)
+
+			-- Restore savedSettings & Primary
+			cK.Data.savedSettings.useSavedSettings = origSavedUse
+			cK.Data.savedSettings.theme = origSavedTheme
+			cK.client.settings.useSavedSettings(true)
+			UI.Theme.Primary(origPrimary)
+			UI.flush()
+
+			-- 4. deepMergeTheme does not mutate _K.Data.savedSettings tables in place
+			local origSavedPrefix = cK.Data.savedSettings.prefix
+			local savedArr = { ";", ":" }
+			cK.Data.savedSettings.prefix = savedArr
+			if UI.Themes.Default then
+				UI.changeTheme(UI.Themes.Default)
+			end
+			sert.eq(cK.Data.savedSettings.prefix, savedArr)
+			sert.eq(savedArr[1], ";")
+			sert.eq(savedArr[2], ":")
+			cK.Data.savedSettings.prefix = origSavedPrefix
+
+			-- 5. Settings.luau preserves & deduplicates secondary prefixes when editing primary prefix
+			local dash = cK.client.dashboard
+			local origDataPrefix = table.clone(cK.Data.settings.prefix)
+			cK.Data.settings.prefix = { ";", ":", "!" }
+			cK.client.settings.prefix(cK.Data.settings.prefix, true)
+			UI.flush()
+
+			local prefixBox: TextBox? = nil
+			for _, desc in dash.Settings._instance:GetDescendants() do
+				if desc:IsA("TextBox") and desc.Text == ";" then
+					prefixBox = desc
+					break
+				end
+			end
+			sert.eq(prefixBox ~= nil, true)
+			if prefixBox then
+				prefixBox.Text = "$"
+				(prefixBox.FocusLost :: any):Fire(true)
+				fastRun(0.1)
+				-- Cancel via LeftAction to verify resetChanges restores original prefixes cleanly
+				for _, child in dash.Settings._instance:GetChildren() do
+					if
+						child.Name == "Dialog"
+						and child:FindFirstChild("Frame")
+						and child.Frame:FindFirstChild("Actions")
+					then
+						-- Before cancelling, check that secondary prefixes were preserved in pending changes:
+						-- Triggering deduplicating edit ("!") also deduplicates existing "!"
+						prefixBox.Text = "!"
+						(prefixBox.FocusLost :: any):Fire(true)
+						fastRun(0.05)
+						child.Frame.Actions.LeftAction.Activated:Fire()
+						fastRun(0.1)
+						break
+					end
+				end
+				sert.eq(cK.Data.settings.prefix[1], ";")
+				sert.eq(cK.Data.settings.prefix[2], ":")
+				sert.eq(cK.Data.settings.prefix[3], "!")
+			end
+			cK.Data.settings.prefix = origDataPrefix
+			cK.client.settings.prefix(origDataPrefix, true)
+
+			-- 6. Bans formatting: no stray `}` in rawTextLeft, RichText escaped in non-matching columns
+			local function activateScrollerTab(tab: any)
+				dash.Window._instance.Visible = true
+				tab.Enabled(true)
+				tab._instance.Visible = true
+				tab:updateList()
+				tab:refreshList()
+				fastRun(0.15)
+				tab:forceRender()
+			end
+
+			sK.Remote.Ban:Fire(srvPlayer, "909", { "Rich<User>", "Bad<b>Reason</b>", 0, 1 })
+			fastRun(0.2)
+			dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.Bans._instance])
+			activateScrollerTab(dash.Bans)
+			local found909 = cK.Data.bans["909"]
+			sert.eq(found909 ~= nil, true)
+			if found909 then
+				sert.eq(string.sub(found909.rawTextLeft, -1), "]")
+				sert.eq(string.find(found909.richTextLeft, "&lt;User&gt;", 1, true) ~= nil, true)
+				sert.eq(string.find(found909.tipText, "&lt;b&gt;Reason&lt;/b&gt;", 1, true) ~= nil, true)
+			end
+			-- Filtering by Right column ("server") escapes non-matching Left column (`Rich<User>`)
+			dash.Bans._input._input.Text = "server"
+			dash.Bans:refreshList()
+			fastRun(0.15)
+			dash.Bans:forceRender()
+			local verifiedNonMatchingLeft = false
+			for _, item in dash.Bans._lineItemCache do
+				local leftLabel = item._instance and item._instance:FindFirstChild("Left")
+				if leftLabel and string.find(leftLabel.Text, "909", 1, true) then
+					sert.eq(string.find(leftLabel.Text, "&lt;User&gt;", 1, true) ~= nil, true)
+					verifiedNonMatchingLeft = true
+				end
+			end
+			sert.eq(verifiedNonMatchingLeft, true)
+			dash.Bans._input._input.Text = ""
+			dash.Bans:refreshList()
+			fastRun(0.1)
+
+			-- 7. Servers RichText escaping on JobId and Place name
+			local marketSvc = cliMounted.env.game:GetService("MarketplaceService")
+			local marketMethods = rawget(marketSvc, "_methods") or {}
+			local origGetProductInfo = marketMethods.GetProductInfo
+			local origGetProductInfoAsync = marketMethods.GetProductInfoAsync
+			marketMethods.GetProductInfoAsync = function(_self, placeId)
+				if placeId == 987654 then
+					return { Name = "Danger<Place>" }
+				end
+				return { Name = "Place" }
+			end
+			rawset(marketSvc, "_methods", marketMethods)
+
+			sK.Remote.Servers:Fire(srvPlayer, "job_<tag>", { 987654, 2, os.time() - 10 })
+			fastRun(0.1)
+			dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.Servers._instance])
+			activateScrollerTab(dash.Servers)
+			fastRun(0.1)
+			local escapedServerFound = false
+			for _, item in dash.Servers._lineItemCache do
+				local idLabel = item._instance and item._instance:FindFirstChild("Id")
+				local placeLabel = item._instance and item._instance:FindFirstChild("Place")
+				if idLabel and string.find(idLabel.Text, "&lt;tag&gt;", 1, true) then
+					escapedServerFound = true
+					if placeLabel then
+						sert.eq(string.find(placeLabel.Text, "&lt;Place&gt;", 1, true) ~= nil, true)
+					end
+					break
+				end
+			end
+			marketMethods.GetProductInfo = origGetProductInfo
+			marketMethods.GetProductInfoAsync = origGetProductInfoAsync
+			sert.eq(escapedServerFound, true)
+
+			-- 8. Members missing role guard (`roleChip` returns nil) & roleMenu AutomaticSize.X
+			local foundAutoSizeRoleMenu = false
+			for _, child in UI.LayerTop:GetChildren() do
+				if child.Name == "Menu" and child.AutomaticSize == Enum.AutomaticSize.X then
+					foundAutoSizeRoleMenu = true
+					break
+				end
+			end
+			sert.eq(foundAutoSizeRoleMenu, true)
+			local preMemberErrCount = #world.scheduler.errors
+			sK.Remote.Member:Fire(srvPlayer, "919", {
+				name = "Tag<Member>",
+				roles = { "nonexistent_deleted_role", "vip" },
+				persist = { "nonexistent_deleted_role" },
+			})
+			dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.Members._instance])
+			activateScrollerTab(dash.Members)
+			for i = preMemberErrCount + 1, #world.scheduler.errors do
+				local errEntry = world.scheduler.errors[i]
+				local trace = tostring(errEntry and errEntry.traceback or "")
+				sert.eq(string.find(trace, "Members.luau", 1, true), nil)
+			end
+			local foundMember919 = false
+			for _, item in dash.Members._lineItemCache do
+				local label = item._instance and item._instance:FindFirstChild("TextLabel")
+				if label and string.find(label.Text, "919", 1, true) then
+					sert.eq(string.find(label.Text, "&lt;Member&gt;", 1, true) ~= nil, true)
+					foundMember919 = true
+					break
+				end
+			end
+			sert.eq(foundMember919, true)
+
+			-- 9. Commands multi-tier purchasable roles & RichText escaping in filterCommands
+			cK.Data.roles.tier1 = {
+				_rank = 1,
+				_key = "tier1",
+				name = "Tier1",
+				color = "#00ff00",
+				groups = { "vip" },
+				gamepasses = { 11111 },
+			}
+			cK.Data.roles.tier2 = {
+				_rank = 2,
+				_key = "tier2",
+				name = "Tier2",
+				color = "#00ffff",
+				groups = { "vip" },
+				gamepasses = { 22222 },
+			}
+			if not cK.Registry.commands.richtagcmd then
+				cK.Registry.registerCommand(cK, {
+					name = "richtagcmd",
+					aliases = {},
+					description = "Escape <script> tag",
+					group = "VIP",
+					args = {},
+					run = function() end,
+				})
+			end
+			dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.Commands._instance])
+			activateScrollerTab(dash.Commands)
+			dash.Commands._input._input.Text = "richtagcmd"
+			dash.Commands:refreshList()
+			fastRun(0.15)
+			dash.Commands:forceRender()
+			dash.Commands._input._input.Text = "Escape"
+			dash.Commands:refreshList()
+			fastRun(0.15)
+			dash.Commands:forceRender()
+			for _, item in dash.Commands._lineItemCache do
+				if item.Title and string.find(item.Title.Text, "richtagcmd", 1, true) then
+					sert.eq(string.find(item.Description.Text, "&lt;script&gt;", 1, true) ~= nil, true)
+				end
+			end
+			dash.Commands._input._input.Text = ""
+			dash.Commands:refreshList()
+			cK.Data.roles.tier1 = nil
+			cK.Data.roles.tier2 = nil
+			fastRun(0.1)
+		end
+	)
+
 	test("Client loadAddons deduplicates addons present in both Addons folder and addonTag", function()
 		local world = sert.sim.new({ backing = true })
 		local server = world:server()

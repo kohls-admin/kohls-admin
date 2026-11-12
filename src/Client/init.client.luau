@@ -39,14 +39,18 @@ local function deepMergeTheme(from, to, prefix: string?)
 	for key, value in from do
 		value = UI.raw(value)
 		if UI.isNode(to[key]) then
+			local cloned = if type(value) == "table" then _K.Util.Table.deepCopy(value) else value
 			if prefix then
-				key = prefix .. key
-				_K.Data.savedSettings[key] = value
-				_K.client.settings[key](value)
+				local settingKey = prefix .. key
+				if _K.client.settings[settingKey] then
+					_K.client.settings[settingKey](cloned)
+				else
+					to[key](cloned)
+				end
 			else
-				to[key](value)
+				to[key](cloned)
 			end
-		elseif type(value) == "table" then
+		elseif type(value) == "table" and type(to[key]) == "table" then
 			deepMergeTheme(value, to[key])
 		end
 	end
@@ -298,6 +302,9 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 				end
 			end, true)):get()
 		end
+	end
+	if not _K.client.settings.freeAdmin then
+		_K.client.settings.freeAdmin = _K.Flux.signal({})
 	end
 
 	_K.client.CommandBar = require(script:WaitForChild("CommandBar"))

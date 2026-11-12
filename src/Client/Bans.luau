@@ -349,11 +349,11 @@ function Bans.new(_K)
 					then (if ban[3] > 0 and ban[3] ~= math.huge then os.date("%y-%m-%d %X", ban[3]) else "Forever")
 					else "Server"
 
-				ban.rawTextLeft = `@{ban[1] or "UNKNOWN"} [{ban.userId}]}`
+				ban.rawTextLeft = `@{ban[1] or "UNKNOWN"} [{ban.userId}]`
 				ban.rawTextRight = `{ban.term}`
 
-				ban.richTextLeft = `<b>@{if ban[1] then escape(ban[1]) else "UNKNOWN"}</b> [{userId}]`
-				ban.richTextRight = `<font transparency="0.5">{ban.term}</font>`
+				ban.richTextLeft = `<b>@{if ban[1] then escape(ban[1]) else "UNKNOWN"}</b> [{escape(tostring(userId))}]`
+				ban.richTextRight = `<font transparency="0.5">{escape(ban.term)}</font>`
 
 				ban.filterTextLeft = string.lower(ban.rawTextLeft)
 				ban.filterTextRight = string.lower(ban.rawTextRight)
@@ -363,7 +363,7 @@ function Bans.new(_K)
 
 				task.spawn(function()
 					local name = if ban[4] then _K.Util.getUserInfo(ban[4]).Username else "SYSTEM"
-					ban.tipText = `<b>Author:</b> @{name}\n{ban.tipText}`
+					ban.tipText = `<b>Author:</b> @{escape(name)}\n{ban.tipText}`
 					scroller:render(true)
 				end)
 			end
@@ -384,7 +384,7 @@ function Bans.new(_K)
 					ban.renderTextLeft =
 						`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
 				else
-					ban.renderTextLeft = `<font transparency="0.5">{ban.rawTextLeft}</font>`
+					ban.renderTextLeft = `<font transparency="0.5">{escape(ban.rawTextLeft)}</font>`
 				end
 
 				if filterRight then
@@ -395,7 +395,7 @@ function Bans.new(_K)
 					ban.renderTextRight =
 						`<font transparency="0.5">{pre}</font><b>{query}</b><font transparency="0.5">{post}</font>`
 				else
-					ban.renderTextRight = `<font transparency="0.5">{ban.rawTextRight}</font>`
+					ban.renderTextRight = `<font transparency="0.5">{escape(ban.rawTextRight)}</font>`
 				end
 
 				table.insert(new, userId)

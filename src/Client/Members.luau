@@ -207,7 +207,7 @@ function Members.new(_K)
 	end)
 
 	local roleMenu = UI.new "Menu" {
-		AutomaticSize = Enum.AutomaticSize.XY,
+		AutomaticSize = Enum.AutomaticSize.X,
 		RightAlign = true,
 		Size = UDim2.new(),
 	}
@@ -287,15 +287,24 @@ function Members.new(_K)
 
 	local function roleChip(index, roleId: string, item)
 		local role = _K.Data.roles[roleId]
+		if not role then
+			return nil
+		end
 		local color = Color3.fromHex(role.color)
 
-		local canRemove = UI.computed(function() -- TODO need to check the highest role chip
-			local rank = 0
+		local canRemove = UI.computed(function()
+			local userRoleRank = _K.client.rank()
+			local rank = role._rank
 			for _, id in item.roles() do
-				rank = math.max(rank, _K.Data.roles[id]._rank)
+				local otherRole = _K.Data.roles[id]
+				if otherRole and otherRole._rank then
+					rank = math.max(rank, otherRole._rank)
+				end
 			end
-			return (_K.client.rank() > rank or _K.creatorId == _K.LocalPlayer.UserId)
-				and _K.Registry.commands.unrole.LocalPlayerAuthorized
+			return (
+				(role and userRoleRank > role._rank and userRoleRank > rank)
+				or _K.creatorId == _K.LocalPlayer.UserId
+			) and _K.Registry.commands.unrole.LocalPlayerAuthorized
 		end)
 
 		local button = UI.new "Button" {
@@ -312,7 +321,7 @@ function Members.new(_K)
 
 			Activated = function()
 				if
-					(_K.client.rank() > role._rank or _K.creatorId == _K.LocalPlayer.UserId)
+					(_K.client.rank:peek() > role._rank or _K.creatorId == _K.LocalPlayer.UserId)
 					and _K.Registry.commands.unrole.LocalPlayerAuthorized
 				then
 					local member = item.target:peek()
@@ -331,7 +340,7 @@ function Members.new(_K)
 		UI.edit(button._instance.UICorner)({ CornerRadius = roleRemoveCornerRadius })
 
 		return UI.new "Frame" {
-			__CLEAN = { button, tooltip },
+			__CLEAN = { button, tooltip, canRemove },
 			LayoutOrder = index,
 			AutomaticSize = Enum.AutomaticSize.X,
 			BackgroundColor3 = color,
@@ -417,15 +426,12 @@ function Members.new(_K)
 						count += 1
 					end
 				end
-				roleMenu._instance.Size = UDim2.fromOffset(0, math.min(count, 7.5) * itemSize().Y.Offset)
+				local size = itemSize:peek()
+				roleMenu._instance.Size = UDim2.fromOffset(size.X.Offset, math.min(count, 7.5) * size.Y.Offset)
 				roleMenu.Adornee(addButton._instance, true)
 				UI.toggleState(roleMenu.Visible, "floating")
-				local value = UI.raw(roleMenu.Visible)
-				if value then
-					UI.Sound.Hover03:Play()
-				else
-					UI.Sound.Hover01:Play()
-				end
+				local sound = if UI.raw(roleMenu.Visible) then UI.Sound.Hover03 else UI.Sound.Hover01
+				sound:Play()
 			end,
 		}
 		UI.new "Tooltip" { Parent = addButton, Text = "Add Role", Hovering = addButton._hovering }
@@ -435,15 +441,8 @@ function Members.new(_K)
 			BackgroundTransparency = 1,
 			Size = self.ItemSize,
 
-			UI.padding {
-				bottom = UI.Theme.Padding,
-			},
-
-			UI.list {
-				direction = "x",
-				gap = UI.Theme.Padding,
-				verticalAlign = "center",
-			},
+			UI.padding { bottom = UI.Theme.Padding },
+			UI.list { direction = "x", gap = UI.Theme.Padding, verticalAlign = "center" },
 
 			UI.new "ImageLabel" {
 				BackgroundTransparency = UI.Theme.TransparencyHeavy,
@@ -479,11 +478,7 @@ function Members.new(_K)
 				Size = UDim2.new(0, 0, 1, 0),
 				ScrollBarThickness = 0,
 				UI.flex("shrink"),
-				UI.list {
-					direction = "x",
-					gap = UI.Theme.Padding,
-					verticalAlign = "center",
-				},
+				UI.list { direction = "x", gap = UI.Theme.Padding, verticalAlign = "center" },
 				UI.forValue(item.roles, function(index, roleId)
 					return roleChip(index, roleId, item)
 				end),
@@ -572,7 +567,7 @@ function Members.new(_K)
 			member.roleString = ""
 		end
 
-		member.richText = `<b>{member.name or "UNKNOWN"}</b> [{member.userId}]`
+		member.richText = `<b>{escape(member.name or "UNKNOWN")}</b> [{escape(tostring(member.userId))}]`
 		member.rawText = `{member.name or "UNKNOWN"} [{member.userId}]`
 		member.filterText = string.lower(`{member.rawText} {member.roleString}`)
 	end

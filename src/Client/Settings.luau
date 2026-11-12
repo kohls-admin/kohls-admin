@@ -7,15 +7,29 @@ local filterRichFormat = `<font transparency="0.5">%s</font><b>%s</b><font trans
 
 function Settings.new(_K)
 	local settingsDialog
-	local originalValues = {}
-	local pendingChanges = {}
+	local originalValues: { [string]: any } = {}
+	local pendingChanges: { [string]: any } = {}
+
+	local function applySavedSetting(key, value)
+		_K.Data.savedSettings[key] = if type(value) == "table" then _K.Util.Table.deepCopy(value) else value
+		if _K.client.settings[key] then
+			_K.client.settings[key](if type(value) == "table" then _K.Util.Table.deepCopy(value) else value, true)
+		end
+	end
 
 	local function resetChanges()
+		if originalValues.theme ~= nil then
+			applySavedSetting("theme", originalValues.theme)
+			UI.flush()
+		end
 		for key, value in originalValues do
-			_K.Data.savedSettings[key] = value
-			if _K.client.settings[key] then
-				_K.client.settings[key](value, true)
+			if key ~= "theme" then
+				applySavedSetting(key, value)
 			end
+		end
+		UI.flush()
+		if settingsDialog then
+			settingsDialog.Visible(false)
 		end
 		table.clear(originalValues)
 		table.clear(pendingChanges)
@@ -23,12 +37,16 @@ function Settings.new(_K)
 
 	local function confirmChanges()
 		_K.Remote.Settings:Fire(pendingChanges)
+		if pendingChanges.theme ~= nil then
+			applySavedSetting("theme", pendingChanges.theme)
+			UI.flush()
+		end
 		for key, value in pendingChanges do
-			_K.Data.savedSettings[key] = value
-			if _K.client.settings[key] then
-				_K.client.settings[key](value, true)
+			if key ~= "theme" then
+				applySavedSetting(key, value)
 			end
 		end
+		UI.flush()
 		table.clear(originalValues)
 		table.clear(pendingChanges)
 	end
@@ -42,13 +60,13 @@ function Settings.new(_K)
 			return
 		end
 
-		if originalValues[key] == value then
+		if originalValues[key] ~= nil and _K.Util.Table.deepCompare(originalValues[key], value) then
 			pendingChanges[key] = nil
-		elseif _K.Data.savedSettings[key] ~= value then
+		elseif not _K.Util.Table.deepCompare(_K.Data.savedSettings[key], value) then
 			pendingChanges[key] = value
-			if not originalValues[key] then
+			if originalValues[key] == nil then
 				local original = _K.Data.savedSettings[key]
-				originalValues[key] = if type(original) == "table" then table.clone(original) else original
+				originalValues[key] = if type(original) == "table" then _K.Util.Table.deepCopy(original) else original
 			end
 		end
 
@@ -66,11 +84,11 @@ function Settings.new(_K)
 				themeModule
 				and k ~= "theme"
 				and string.find(k :: string, "theme", 1, true) == 1
-				and UI.raw(themeModule[string.sub(k :: string, 6)]) ~= v
+				and not _K.Util.Table.deepCompare(UI.raw(themeModule[string.sub(k :: string, 6)]), v)
 			then
 				differentTheme = true
 			end
-			if v ~= originalValues[k] then
+			if not _K.Util.Table.deepCompare(v, originalValues[k]) then
 				different = true
 			end
 		end
@@ -209,11 +227,12 @@ function Settings.new(_K)
 
 					[UI.Hook] = {
 						Value = function(value)
-							if value == _K.client.settings.prefix()[1] then
+							local currentPrefixes = _K.client.settings.prefix:peek()
+							if value == currentPrefixes[1] then
 								return
 							end
 							local newPrefixes = { value }
-							for i, prefix in _K.client.settings.prefix:peek() do
+							for i, prefix in currentPrefixes do
 								if i > 1 and prefix ~= value then
 									table.insert(newPrefixes, prefix)
 								end
@@ -228,7 +247,7 @@ function Settings.new(_K)
 				Tooltip = "🚨 Role given to every player who joins",
 				UI.new "Select" {
 					Value = function()
-						local freeAdmin = _K.client.settings.freeAdmin()
+						local freeAdmin = _K.client.settings.freeAdmin and _K.client.settings.freeAdmin()
 						return if type(freeAdmin) == "table" and freeAdmin[1]
 							then _K.Data.roles[freeAdmin[1]]
 							else disabledRankChoice
@@ -245,7 +264,7 @@ function Settings.new(_K)
 								end
 							end
 
-							local freeAdmin = _K.client.settings.freeAdmin()
+							local freeAdmin = _K.client.settings.freeAdmin and _K.client.settings.freeAdmin:peek()
 							local current = if type(freeAdmin) == "table" and freeAdmin[1]
 								then _K.Data.roles[freeAdmin[1]]
 								else disabledRankChoice
@@ -255,9 +274,11 @@ function Settings.new(_K)
 							end
 
 							change("freeAdmin", value)
-							_K.client.settings.freeAdmin(
-								_K.Util.Table.merge(table.clone(_K.Data.defaultSettings.freeAdmin), value)
-							)
+							if _K.client.settings.freeAdmin then
+								_K.client.settings.freeAdmin(
+									_K.Util.Table.merge(table.clone(_K.Data.defaultSettings.freeAdmin or {}), value)
+								)
+							end
 						end,
 					},
 				},
