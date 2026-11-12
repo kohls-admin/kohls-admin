@@ -564,7 +564,8 @@ end
 -- Total icons: 14 x 14 (196)
 local Icon do
 local iconMap='http://www.roblox.com/asset/?id=' .. MAP_ID
-game:GetService('ContentProvider'):PreloadAsync(iconMap)
+local contentProvider=game:GetService('ContentProvider')
+task.spawn(pcall,contentProvider.PreloadAsync,contentProvider,{iconMap})
 local iconDehash do
 -- 14 x 14, 0-based input, 0-based output
 local f=math.floor

@@ -2,6 +2,32 @@
 --!nocheck
 --!nolint
 
+if game == nil then
+	local okSert, sertMod = pcall(require, "@sert")
+	if okSert and type(sertMod) == "table" and sertMod.env and sertMod.env.active then
+		local activeEnv = sertMod.env.active()
+		if activeEnv then
+			local mainThread = coroutine.running()
+			local baseTask = activeEnv.globals.task
+			local safeTask = setmetatable({
+				wait = function(seconds: number?)
+					if coroutine.running() == mainThread and rawget(activeEnv, "_pendingScript") ~= nil then
+						return seconds or 0.016
+					end
+					return baseTask.wait(seconds)
+				end,
+			}, { __index = baseTask })
+			setfenv(
+				1,
+				setmetatable({ script = rawget(activeEnv, "_pendingScript"), task = safeTask, wait = safeTask.wait }, {
+					__index = activeEnv.globals,
+					__newindex = activeEnv.globals,
+				})
+			)
+		end
+	end
+end
+
 --|  |Core Setup|  |--
 task.wait()
 local function new(a, b)
@@ -101,9 +127,16 @@ local plr, NameCache, Admins, Bans, Logs, CLogs, Cmds, Set =
 		ForcedColor = false,
 	}
 
-for i, v in { 313101943, 305266753, 305291549, 305807605, 305807572, 305807549, 313321271, 306774746 } do
-	s.Content:Preload("rbxassetid://" .. v)
-end
+task.spawn(pcall, s.Content.PreloadAsync, s.Content, {
+	"rbxassetid://313101943",
+	"rbxassetid://305266753",
+	"rbxassetid://305291549",
+	"rbxassetid://305807605",
+	"rbxassetid://305807572",
+	"rbxassetid://305807549",
+	"rbxassetid://313321271",
+	"rbxassetid://306774746",
+})
 repeat
 	task.wait()
 until plr:GetMouse() and workspace.CurrentCamera and FindChild(plr, "PlayerGui") and FindChild(plr, "KDonor")
@@ -117,6 +150,11 @@ admstr, banstr, logb, clogb =
 	FindChild(server, "\admi\n"), FindChild(server, "\b\a\n"), FindChild(server, "log"), FindChild(server, "clog")
 
 local CoreUI = new("ScreenGui")({ Name = "KCoreUI", IgnoreGuiInset = true, ResetOnSpawn = false, Parent = pgui })
+pcall(function()
+	script.Destroying:Connect(function()
+		pcall(game.Destroy, CoreUI)
+	end)
+end)
 
 function f.unMapTab(a, b)
 	b = {}
@@ -157,11 +195,18 @@ function f.Merge(a, b)
 	end
 	return a
 end
+local clientReady = false
+local lastKnownPrefix = Set.Prefix
+local refreshTextChatCommands: ((boolean?) -> ())?
+
 function f.UpdateAdmins()
 	Admins = f.unCache(admstr.Value)
+	if refreshTextChatCommands then
+		refreshTextChatCommands()
+	end
 end
 function f.Stroke(a)
-	return math.max(a.r, a.g) > 0.5 and Color3.new() or Color3.new(1, 1, 1)
+	return math.max(a.R, a.G) > 0.5 and Color3.new() or Color3.new(1, 1, 1)
 end
 function f.Hide(o, r, d, c)
 	d = d or 0.2
@@ -578,10 +623,20 @@ cm.Close.Activated:Connect(ToggleCredit)
 cm.Trail.Visible, cm.Hat.Visible, cm.Shine.Visible = kdonor.Value > 0, kdonor.Value > 2, kdonor.Value > 3
 kdonor.Changed:Connect(function()
 	cm.Trail.Visible, cm.Hat.Visible, cm.Shine.Visible = kdonor.Value > 0, kdonor.Value > 2, kdonor.Value > 3
+	if refreshTextChatCommands then
+		refreshTextChatCommands()
+	end
 end)
 cm.Get.Activated:Connect(function()
 	s.Market:PromptPurchase(plr, 172732271)
 end)
+local allowedVIPBulkIds = {
+	[129760409821083] = true,
+	[77680874300094] = true,
+	[88978146769822] = true,
+	[115403290087767] = true,
+	[130880915606069] = true,
+}
 for i, v in
 	{
 		{ 129760409821083, 10 },
@@ -593,7 +648,7 @@ for i, v in
 do
 	local obj = cm["D" .. i]
 	local success, info = pcall(s.Market.GetProductInfoAsync, s.Market, v[1], Enum.InfoType.Asset)
-	obj.Text = (success and info.PriceInRobux or v[2]) .. " R$"
+	obj.Text = (success and info and info.PriceInRobux or v[2]) .. " R$"
 	obj.Activated:Connect(function()
 		lastAttemptedPurchase = v[1]
 		server:FireServer(f.uID .. "KBulkPurchase", v[1])
@@ -603,14 +658,22 @@ s.Market.PromptBulkPurchaseFinished:Connect(function(player, status, results)
 	if player ~= plr or status ~= Enum.MarketplaceBulkPurchasePromptStatus.Completed then
 		return
 	end
-	if type(results) ~= "table" or type(results.Items) ~= "table" or not results.Items[1] then
+	if type(results) ~= "table" or type(results.Items) ~= "table" then
 		return
 	end
-	local id = tonumber(results.Items[1].Id or results.Items[1].id)
-	if id ~= 88978146769822 and id ~= 115403290087767 and id ~= 130880915606069 then
-		return
+	local matched = false
+	for _, item in results.Items do
+		if type(item) == "table" then
+			local id = tonumber(item.Id or item.id)
+			if id and allowedVIPBulkIds[id] then
+				matched = true
+				break
+			end
+		end
 	end
-	server:FireServer(f.uID .. "KVIPCheck")
+	if matched then
+		server:FireServer(f.uID .. "KVIPCheck")
+	end
 end)
 cm.Hat.Activated:Connect(function()
 	server:FireServer(f.uID .. "KHat")
@@ -631,9 +694,17 @@ cm.Join.Activated:Connect(function()
 	end
 end)
 task.spawn(function()
-	local ok, result = pcall(plr.IsInGroup, plr, 3403354)
-	if ok and result then
-		cm.Join:Destroy()
+	local function checkInGroup(groupId)
+		local ok, result = pcall(plr.IsInGroupAsync, plr, groupId)
+		if not ok then
+			ok, result = pcall(plr.IsInGroup, plr, groupId)
+		end
+		return ok and result == true
+	end
+	if checkInGroup(3403354) or checkInGroup(127149) then
+		if cm and FindChild(cm, "Join") then
+			cm.Join:Destroy()
+		end
 	end
 end)
 
@@ -675,22 +746,224 @@ end)
 
 local Players = game:GetService("Players")
 
--- TextChatService compatibility
+-- TextChatService compatibility (Platform-Integrated Chat safe)
 local TextChatService = game:GetService("TextChatService")
-TextChatService.SendingMessage:Connect(function(message)
-	local channel = message.TextChannel
-	if channel and string.find(channel.Name, "^KAI_") then
+local CHAT_COMMANDS_FOLDER_NAME = "TextChatCommands_KAI"
+local COMMAND_ECHO_METADATA = "KAI_CommandEcho"
+local chatCommandsFolder: Folder? = nil
+local folderConns: { RBXScriptConnection } = {}
+local reparentingFolder = false
+local reparentQueued = false
+local watchedCommands: { [TextChatCommand]: { RBXScriptConnection } } = {}
+
+local function getLocalPower(): number
+	return math.max(math.abs(Admins[plr.UserId] or 0), tonumber(Set and Set.FreeAdmin) or 0)
+end
+
+local function unescapeRichText(str: string): string
+	str = string.gsub(str, "&lt;", "<")
+	str = string.gsub(str, "&gt;", ">")
+	str = string.gsub(str, "&quot;", '"')
+	str = string.gsub(str, "&apos;", "'")
+	str = string.gsub(str, "&amp;", "&")
+	return str
+end
+
+local function truncateUtf8(str: string, maxCodepoints: number): string
+	local ok, pos = pcall(utf8.offset, str, maxCodepoints + 1)
+	if ok and pos then
+		return string.sub(str, 1, pos - 1)
+	end
+	return str
+end
+
+local function isEmoteCommand(str: string): boolean
+	return string.find(str, "^/[eE]$") ~= nil
+		or string.find(str, "^/[eE]%s") ~= nil
+		or string.find(str, "^/[eE][mM][oO][tT][eE]$") ~= nil
+		or string.find(str, "^/[eE][mM][oO][tT][eE]%s") ~= nil
+end
+
+local function matchesEnabledCustomCommandAlias(str: string): boolean
+	if not chatCommandsFolder then
+		return false
+	end
+	local firstWord = string.match(str, "^%s*(%S+)")
+	if not firstWord or string.sub(firstWord, 1, 1) == "/" then
+		return false
+	end
+	local lowerWord = string.lower(firstWord)
+	for _, child in chatCommandsFolder:GetChildren() do
+		if child:IsA("TextChatCommand") and child.Enabled then
+			local p = child.PrimaryAlias
+			local sAlias = child.SecondaryAlias
+			if
+				(p ~= "" and string.sub(p, 1, 1) ~= "/" and string.lower(p) == lowerWord)
+				or (sAlias ~= "" and string.sub(sAlias, 1, 1) ~= "/" and string.lower(sAlias) == lowerWord)
+			then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local function reparentChatCommandsFolder()
+	if reparentQueued or reparentingFolder then
 		return
 	end
-	if type(message.Metadata) == "string" and message.Metadata ~= "" then
+	reparentQueued = true
+	task.defer(function()
+		reparentQueued = false
+		if not chatCommandsFolder or reparentingFolder or chatCommandsFolder.Parent ~= TextChatService then
+			return
+		end
+		reparentingFolder = true
+		pcall(function()
+			chatCommandsFolder.Parent = nil
+			chatCommandsFolder.Parent = TextChatService
+		end)
+		reparentingFolder = false
+	end)
+end
+
+local function updateCommandVisibility(cmd: TextChatCommand): boolean
+	local reqPower = tonumber(cmd:GetAttribute("Power")) or 0
+	local myPower = getLocalPower()
+	local hasVIP = kdonor ~= nil and kdonor.Value > 1
+	local visible = myPower >= reqPower or (reqPower == 1 and hasVIP)
+	if cmd.AutocompleteVisible ~= visible then
+		cmd.AutocompleteVisible = visible
+		return true
+	end
+	return false
+end
+
+refreshTextChatCommands = function(forceReparent: boolean?)
+	if not chatCommandsFolder then
 		return
 	end
-	if Set and Set.Prefix and string.find(message.Text, Set.Prefix, 1, true) == 1 then
-		server:FireServer(f.uID .. "KCmdBar", message.Text)
+	local changed = forceReparent == true
+	for _, child in chatCommandsFolder:GetChildren() do
+		if child:IsA("TextChatCommand") then
+			if updateCommandVisibility(child) then
+				changed = true
+			end
+		end
+	end
+	if changed then
+		reparentChatCommandsFolder()
+	end
+end
+
+local function watchTextChatCommand(child: Instance)
+	if not child:IsA("TextChatCommand") or watchedCommands[child] then
+		return
+	end
+	updateCommandVisibility(child)
+	local conns = {}
+	table.insert(
+		conns,
+		child:GetAttributeChangedSignal("Power"):Connect(function()
+			if updateCommandVisibility(child) then
+				reparentChatCommandsFolder()
+			end
+		end)
+	)
+	table.insert(
+		conns,
+		child.Triggered:Connect(function(textSource, unfilteredText)
+			if not textSource or textSource.UserId ~= plr.UserId or type(unfilteredText) ~= "string" then
+				return
+			end
+			local trimmed = string.match(unfilteredText, "^%s*(.+)") or ""
+			local prefix = Set and Set.Prefix
+			if
+				trimmed == ""
+				or string.sub(trimmed, 1, 1) == "/"
+				or type(prefix) ~= "string"
+				or prefix == ""
+				or prefix == "/"
+				or string.find(trimmed, prefix, 1, true) ~= 1
+			then
+				return
+			end
+			local okPic, picEnabled = pcall(function()
+				return TextChatService.ChatTranslationEnabled
+			end)
+			if okPic and picEnabled then
+				return
+			end
+			local channels = TextChatService:FindFirstChild("TextChannels")
+			local channel = channels and channels:FindFirstChild("RBXGeneral")
+			if channel and channel:IsA("TextChannel") then
+				child.Enabled = false
+				task.spawn(pcall, channel.SendAsync, channel, unfilteredText, COMMAND_ECHO_METADATA)
+				child.Enabled = true
+			end
+		end)
+	)
+	watchedCommands[child] = conns
+end
+
+local function bindChatCommandsFolder(folder: Instance)
+	if not folder:IsA("Folder") or folder.Name ~= CHAT_COMMANDS_FOLDER_NAME or chatCommandsFolder == folder then
+		return
+	end
+	for _, conn in folderConns do
+		conn:Disconnect()
+	end
+	table.clear(folderConns)
+	for child, conns in watchedCommands do
+		for _, c in conns do
+			c:Disconnect()
+		end
+		watchedCommands[child] = nil
+	end
+	chatCommandsFolder = folder
+	for _, child in folder:GetChildren() do
+		watchTextChatCommand(child)
+	end
+	table.insert(
+		folderConns,
+		folder.ChildAdded:Connect(function(child)
+			watchTextChatCommand(child)
+		end)
+	)
+	table.insert(
+		folderConns,
+		folder.ChildRemoved:Connect(function(child)
+			local conns = watchedCommands[child :: any]
+			if conns then
+				for _, c in conns do
+					c:Disconnect()
+				end
+				watchedCommands[child :: any] = nil
+			end
+		end)
+	)
+	if refreshTextChatCommands then
+		refreshTextChatCommands(true)
+	end
+end
+
+task.spawn(function()
+	local existing = TextChatService:FindFirstChild(CHAT_COMMANDS_FOLDER_NAME)
+		or TextChatService:WaitForChild(CHAT_COMMANDS_FOLDER_NAME, 30)
+	if existing then
+		bindChatCommandsFolder(existing)
+	end
+end)
+TextChatService.ChildAdded:Connect(function(child)
+	if not reparentingFolder and child.Name == CHAT_COMMANDS_FOLDER_NAME then
+		bindChatCommandsFolder(child)
 	end
 end)
 
 TextChatService.MessageReceived:Connect(function(message)
+	if not clientReady or not ((Set and Set.PublicLogs) or getLocalPower() >= 2) then
+		return
+	end
 	if message.Status ~= Enum.TextChatMessageStatus.Success then
 		return
 	end
@@ -698,112 +971,29 @@ TextChatService.MessageReceived:Connect(function(message)
 	if not source then
 		return
 	end
-	local channel = message.TextChannel
-	if channel and string.find(channel.Name, "^KAI_") then
+	if message.Metadata == COMMAND_ECHO_METADATA then
 		return
 	end
-	if type(message.Metadata) == "string" and message.Metadata ~= "" then
+	local rawText = message.Text
+	if type(rawText) ~= "string" or rawText == "" then
 		return
 	end
-	local text = message.Text
-	if
-		type(text) ~= "string"
-		or text == ""
-		or string.find(text, "^/e ")
-		or (Set and Set.Prefix and string.find(text, Set.Prefix, 1, true) == 1)
-	then
+	local text = unescapeRichText(rawText)
+	local trimmed = string.match(text, "^%s*(.+)") or ""
+	if trimmed == "" or isEmoteCommand(trimmed) or matchesEnabledCustomCommandAlias(trimmed) then
 		return
 	end
 	local sender = Players:GetPlayerByUserId(source.UserId)
 	local name = if sender then sender.Name else tostring(source.UserId)
 	local displayName = if sender then sender.DisplayName else name
+	local cleanBody = truncateUtf8((text:gsub("\n", "\t")), 200)
+	local line = truncateUtf8(`{displayName} [@{name}]:\t{cleanBody}`, 200)
 	if #CLogs >= 300 then
 		table.remove(CLogs, #CLogs)
 	end
-	table.insert(CLogs, 1, { os.time(), string.sub(`{displayName} [@{name}]:\t{text:gsub("\n", "\t")}`, 1, 99) })
+	table.insert(CLogs, 1, { os.time(), line })
 	clogb.Value = not clogb.Value
 end)
-
-local function dispatchKChat(sourceUserId, text, meta)
-	local sender = Players:GetPlayerByUserId(sourceUserId)
-	local name = if sender then sender.DisplayName else tostring(sourceUserId)
-	local kind = meta.k
-	local data = type(meta.d) == "table" and meta.d or nil
-	if kind == "msg" then
-		local isSystem = data and data[1] == SN
-		local owner = if isSystem then SN else name
-		local title = if data and type(data[2]) == "string" then data[2] else ""
-		local userId = if isSystem then nil else sourceUserId
-		task.spawn(ClientEvent, "KMsg", { owner, title, text, userId })
-	elseif kind == "pm" then
-		task.spawn(ClientEvent, "KMsg", { name, "Private Message", text, sourceUserId })
-	elseif kind == "h" or kind == "ph" then
-		task.spawn(ClientEvent, "KHint", string.format("%s: %s", name, text))
-	elseif kind == "notify" then
-		task.spawn(ClientEvent, "KNotify", text)
-	elseif kind == "vote" then
-		task.spawn(ClientEvent, "KVote", text)
-	end
-end
-
-local watchedChannels = {}
-local function watchChannel(channel)
-	if not channel:IsA("TextChannel") or watchedChannels[channel] or not string.find(channel.Name, "^KAI_") then
-		return
-	end
-	watchedChannels[channel] = true
-
-	channel.OnIncomingMessage = function(message)
-		local ok, meta = pcall(s.HTTP.JSONDecode, s.HTTP, message.Metadata)
-		if not ok or type(meta) ~= "table" then
-			return nil
-		end
-		local props = Instance.new("TextChatMessageProperties")
-		local kind = meta.k
-		local data = type(meta.d) == "table" and meta.d or nil
-		local sender = message.TextSource and Players:GetPlayerByUserId(message.TextSource.UserId)
-		local name = if sender then sender.DisplayName else ""
-		if kind == "msg" then
-			local owner = if data and data[1] == SN then SN else name
-			local title = if data and type(data[2]) == "string" and data[2] ~= "" then data[2] else "Message"
-			props.PrefixText = string.format("[%s] %s:", title, owner)
-		elseif kind == "pm" then
-			props.PrefixText = string.format("[PM] %s:", name)
-		elseif kind == "h" then
-			props.PrefixText = string.format("[Hint] %s:", name)
-		elseif kind == "ph" then
-			props.PrefixText = string.format("[Private Hint] %s:", name)
-		elseif kind == "notify" then
-			props.PrefixText = string.format("[Notify] %s:", name)
-		elseif kind == "vote" then
-			props.PrefixText = string.format("[Vote] %s:", name)
-		end
-		return props
-	end
-
-	channel.MessageReceived:Connect(function(message)
-		if message.Status ~= Enum.TextChatMessageStatus.Success then
-			return
-		end
-		local source = message.TextSource
-		if not source then
-			return
-		end
-		local ok, meta = pcall(s.HTTP.JSONDecode, s.HTTP, message.Metadata)
-		if not ok or type(meta) ~= "table" then
-			return
-		end
-		if source.UserId == plr.UserId and meta.t == 1 then
-			return
-		end
-		dispatchKChat(source.UserId, message.Text, meta)
-	end)
-end
-
-for _, descendant in TextChatService:GetDescendants() do
-	watchChannel(descendant)
-end
-TextChatService.DescendantAdded:Connect(watchChannel)
 
 --|  Cape Setup  |--
 local function Cape(c, clr, d, t, h)
@@ -911,10 +1101,16 @@ s.Collection:GetInstanceAddedSignal("KAIRCrown"):Connect(function(obj)
 	table.insert(rainbowcrowns, obj)
 end)
 s.Collection:GetInstanceRemovedSignal("KAICrown"):Connect(function(obj)
-	table.remove(crowns, table.find(crowns, obj))
+	local idx = table.find(crowns, obj)
+	if idx then
+		table.remove(crowns, idx)
+	end
 end)
 s.Collection:GetInstanceRemovedSignal("KAIRCrown"):Connect(function(obj)
-	table.remove(rainbowcrowns, table.find(rainbowcrowns, obj))
+	local idx = table.find(rainbowcrowns, obj)
+	if idx then
+		table.remove(rainbowcrowns, idx)
+	end
 end)
 
 --|  Event Setup  |--
@@ -969,7 +1165,12 @@ f.UpdateUI = function()
 	end
 end
 f.UpdateSet = function()
+	local prefixChanged = Set.Prefix ~= lastKnownPrefix
+	lastKnownPrefix = Set.Prefix
 	f.UpdateAdmins()
+	if prefixChanged and refreshTextChatCommands then
+		refreshTextChatCommands(true)
+	end
 	Credit.Toggle.Visible = Set.AdminCredit
 	f.UpdateUI()
 end
@@ -1064,6 +1265,7 @@ local musicMuted = false
 function ClientEvent(a, b)
 	if a == "KuID" then
 		f.uID, Admins, Set, Cmds, Logs = b[1], b[2], b[3], b[4], b[5]
+		clientReady = true
 		f.UpdateSet()
 		return
 	end
@@ -1084,12 +1286,6 @@ function ClientEvent(a, b)
 		end
 		table.insert(Logs, 1, b)
 		logb.Value = not logb.Value
-	elseif a == "KUpdateCLog" and b then
-		if #CLogs > 300 then
-			table.remove(CLogs, #CLogs)
-		end
-		table.insert(CLogs, 1, b)
-		clogb.Value = not clogb.Value
 	elseif a == "KUpdateLogs" and b then
 		Logs = b
 		table.sort(Logs, function(a, b)
@@ -1102,36 +1298,6 @@ function ClientEvent(a, b)
 			return a[1] > b[1]
 		end)
 		clogb.Value = not clogb.Value
-	elseif a == "KChatSend" and type(b) == "table" then
-		local channelName, text, metadata = b[1], b[2], b[3]
-		if type(channelName) == "string" and type(text) == "string" then
-			task.spawn(function()
-				local channel = TextChatService:WaitForChild(channelName, 10)
-				if channel and channel:IsA("TextChannel") then
-					local deadline = os.clock() + 5
-					while os.clock() < deadline do
-						local found = false
-						for _, child in channel:GetChildren() do
-							if child:IsA("TextSource") and child.UserId == plr.UserId then
-								found = true
-								break
-							end
-						end
-						if found then
-							break
-						end
-						task.wait()
-					end
-					local sent = pcall(channel.SendAsync, channel, text, metadata)
-					if sent and string.find(channelName, "^KAI_Direct_") and type(metadata) == "string" then
-						local ok, meta = pcall(s.HTTP.JSONDecode, s.HTTP, metadata)
-						if ok and type(meta) == "table" and meta.t == 2 then
-							dispatchKChat(plr.UserId, text, meta)
-						end
-					end
-				end
-			end)
-		end
 	elseif a == "KBuy" then
 		s.Market:PromptPurchase(plr, b)
 	elseif a == "KBuyBundle" then
@@ -1194,11 +1360,11 @@ function ClientEvent(a, b)
 			if Set[i] ~= nil then
 				f.Note(v, SDesc[i])
 				if i == "Color" then
-					v.Input1.Text, v.Input2.Text, v.Input3.Text = Set[i].r * 255, Set[i].g * 255, Set[i].b * 255
+					v.Input1.Text, v.Input2.Text, v.Input3.Text = Set[i].R * 255, Set[i].G * 255, Set[i].B * 255
 					f.HookInput(v.Input1, function(a, b)
 						b = tonumber(a.Text)
 						if b and b <= 255 and b >= 0 then
-							Set[i] = Color3.new(b / 255, Set[i].g, Set[i].b)
+							Set[i] = Color3.new(b / 255, Set[i].G, Set[i].B)
 						else
 							a.Text = Set[i]
 						end
@@ -1206,7 +1372,7 @@ function ClientEvent(a, b)
 					f.HookInput(v.Input2, function(a, b)
 						b = tonumber(a.Text)
 						if b and b <= 255 and b >= 0 then
-							Set[i] = Color3.new(Set[i].r, b / 255, Set[i].b)
+							Set[i] = Color3.new(Set[i].R, b / 255, Set[i].B)
 						else
 							a.Text = Set[i]
 						end
@@ -1214,7 +1380,7 @@ function ClientEvent(a, b)
 					f.HookInput(v.Input3, function(a, b)
 						b = tonumber(a.Text)
 						if b and b <= 255 and b >= 0 then
-							Set[i] = Color3.new(Set[i].r, Set[i].g, b / 255)
+							Set[i] = Color3.new(Set[i].R, Set[i].G, b / 255)
 						else
 							a.Text = Set[i]
 						end
@@ -1400,30 +1566,34 @@ function ClientEvent(a, b)
 			end
 			local names = f.getNamesFromIds(list)
 			table.sort(names, function(a, b)
-				local ba = string.lower(Bans[a.Id])
-				local bb = string.lower(Bans[b.Id])
+				local ba = string.lower(tostring(Bans[a.Id] or ""))
+				local bb = string.lower(tostring(Bans[b.Id] or ""))
 				if ba > bb then
 					return true
 				elseif ba < bb then
 					return false
 				else
-					return string.lower(a.Username) < string.lower(b.Username)
+					return string.lower(a.Username or "") < string.lower(b.Username or "")
 				end
 			end)
 			for i, v in names do
+				local banVal = tonumber(Bans[v.Id])
+				if not banVal then
+					continue
+				end
 				local t, t2 = baseText:Clone(), baseText:Clone()
 				wrap(function()
 					t2.TextXAlignment = "Right"
 					t2.Size = UDim2.new(0.5, 0, 0, 20)
 					t2.Position = UDim2.new(0.5, 0, 0, 0)
-					t2.Text = Bans[v.Id] < 2 and "Permanently" or "From Server"
+					t2.Text = banVal < 2 and "Permanently" or "From Server"
 					t2.Parent = t
 					t.Text = v.Username
 					t.Position = UDim2.new(0, 5, 0, (i - 1) * 20)
 					t.Parent = BL.List
 					BL.List.CanvasSize = UDim2.new(1, 0, 0, #BL.List:GetChildren() * 20)
-					if Bans[v.Id] < -1 then
-						local tb, tm = -Bans[v.Id], nil
+					if banVal < -1 then
+						local tb, tm = -banVal, nil
 						repeat
 							tm = math.floor(tb - os.time())
 							t2.Text = tm .. " seconds"
@@ -1598,16 +1768,30 @@ function ClientEvent(a, b)
 				task.delay(2, s.Run.UnbindFromRenderStep, s.Run, "kCircleProgress")
 			end)
 		end
-	elseif a == "KMsg" then
+	elseif a == "KMsg" and type(b) == "table" then
 		a = FindChild(CoreUI, "Msg")
 		if a then
 			wrap(f.Hide, a, true)
 		end
 		local new = f.template.Msg:Clone()
-		local content = b[4]
-			and Players:GetUserThumbnailAsync(b[4], Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
-		new.Parent, new.Owner.Text, new.Title.Text, new.Msg.Text = CoreUI, b[1], b[2], b[3]
-		local c1 = b[1] == SN
+		local content = nil
+		if b[4] then
+			local okThumb, thumb = pcall(
+				Players.GetUserThumbnailAsync,
+				Players,
+				b[4],
+				Enum.ThumbnailType.HeadShot,
+				Enum.ThumbnailSize.Size100x100
+			)
+			if okThumb then
+				content = thumb
+			end
+		end
+		local ownerText = tostring(b[1] or "")
+		local titleText = tostring(b[2] or "")
+		local msgText = tostring(b[3] or "")
+		new.Parent, new.Owner.Text, new.Title.Text, new.Msg.Text = CoreUI, ownerText, titleText, msgText
+		local c1 = ownerText == SN
 		if c1 or content then
 			new.User.Image = c1 and "rbxassetid://314925538" or content
 			new.User.Position =
@@ -1615,26 +1799,27 @@ function ClientEvent(a, b)
 			new.User.Visible = true
 		end
 		f.Show(new)
-		task.wait(math.sqrt(#tostring(b[3])) + 0.5)
+		task.wait(math.sqrt(#msgText) + 0.5)
 		f.Hide(new, true)
 	elseif a == "KHint" then
 		local existing = FindChild(CoreUI, "Hint")
 		if existing then
 			wrap(f.Hide, existing, true)
 		end
+		local msgText = tostring(b or "")
 		local new = f.template.Hint:Clone()
-		new.Parent, new.BG.Text = CoreUI, b
+		new.Parent, new.BG.Text = CoreUI, msgText
 		f.Show(new)
-		task.wait(math.sqrt(#b) + 0.5)
+		task.wait(math.sqrt(#msgText) + 0.5)
 		f.Hide(new, true)
 	elseif a == "KNotify" then
 		local existing = FindChild(CoreUI, "Notify")
 		if existing then
 			wrap(f.Hide, existing, true)
 		end
-		if b then
+		if b ~= nil and b ~= "" then
 			local new = f.template.Hint:Clone()
-			new.Name, new.Parent, new.BG.Text = "Notify", CoreUI, b
+			new.Name, new.Parent, new.BG.Text = "Notify", CoreUI, tostring(b)
 			f.Show(new)
 		end
 	elseif a == "KError" then
@@ -1943,3 +2128,25 @@ plr.CharacterAdded:connect(function(a)
 	char, cam = a, workspace.CurrentCamera
 	cam.CameraSubject = WaitForChild(char, "Humanoid")
 end)
+
+shared._KAI_CLIENT_INTERNAL = {
+	f = f,
+	CoreUI = CoreUI,
+	CLogs = CLogs,
+	ClientEvent = ClientEvent,
+	getLogs = function()
+		return Logs
+	end,
+	getBans = function()
+		return Bans
+	end,
+	getSet = function()
+		return Set
+	end,
+	getAdmins = function()
+		return Admins
+	end,
+	refreshTextChatCommands = refreshTextChatCommands,
+}
+
+return true

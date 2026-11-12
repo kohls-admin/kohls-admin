@@ -1,3 +1,13 @@
+if game == nil then
+	local okSert, sertMod = pcall(require, "@sert")
+	if okSert and type(sertMod) == "table" and sertMod.env and sertMod.env.active then
+		local activeEnv = sertMod.env.active()
+		if activeEnv then
+			setfenv(1, activeEnv.globals)
+		end
+	end
+end
+
 local a = Instance.new "Frame"
 a.Name = "Credit"
 a.Size = UDim2.new(1, 0, 1, 0)
@@ -102,7 +112,6 @@ g.Parent = d
 local h = Instance.new "TextLabel"
 h.Name = "T4"
 h.AutoLocalize = false
-h.Localize = false
 h.ZIndex = 10
 h.Size = UDim2.new(1, -10, 0, 20)
 h.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -110,25 +119,23 @@ h.BackgroundTransparency = 1
 h.Position = UDim2.new(0, 5, 0, 195)
 h.BorderSizePixel = 0
 h.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-h.FontSize = 6
 h.TextStrokeTransparency = 0.75
 h.TextSize = 18
 h.TextColor3 = Color3.fromRGB(255, 255, 255)
 h.TextYAlignment = 0
 h.Text = "ELITE DONATION"
 h.TextWrapped = true
-h.TextWrap = true
 h.Font = 4
 h.Parent = d
 
-local uIGradient_g = Instance.new("UIGradient")
-uIGradient_g.Name = "UIGradient"
-uIGradient_g.Color = ColorSequence.new({
+local uIGradient_h = Instance.new("UIGradient")
+uIGradient_h.Name = "UIGradient"
+uIGradient_h.Color = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(127, 0, 255)),
 	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 127)),
 })
-uIGradient_g.Rotation = -90
-uIGradient_g.Parent = h
+uIGradient_h.Rotation = -90
+uIGradient_h.Parent = h
 
 local i = Instance.new "TextButton"
 i.Name = "Close"
@@ -235,7 +242,6 @@ n.Parent = c
 local o = Instance.new "TextButton"
 o.Name = "D4"
 o.AutoLocalize = false
-o.Localize = false
 o.ZIndex = 9
 o.Size = UDim2.new(0, 75, 0, 20)
 o.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -243,7 +249,6 @@ o.BackgroundTransparency = 0.5
 o.Position = UDim2.new(0.5, 3, 0, 190)
 o.BorderSizePixel = 0
 o.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-o.FontSize = 6
 o.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
 o.TextStrokeTransparency = 0.9
 o.TextSize = 18
@@ -312,7 +317,6 @@ r.Parent = c
 local s = Instance.new "TextButton"
 s.Name = "D5"
 s.AutoLocalize = false
-s.Localize = false
 s.ZIndex = 9
 s.Size = UDim2.new(0, 156, 0, 20)
 s.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -320,7 +324,6 @@ s.BackgroundTransparency = 0.5
 s.Position = UDim2.new(0.5, -78, 0, 240)
 s.BorderSizePixel = 0
 s.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-s.FontSize = 6
 s.TextStrokeTransparency = 0.75
 s.TextSize = 18
 s.TextColor3 = Color3.fromRGB(0, 200, 0)
@@ -356,7 +359,7 @@ join.BackgroundColor3 = Color3.fromRGB(51, 95, 255)
 join.BackgroundTransparency = 0.5
 join.BorderColor3 = Color3.new()
 join.BorderSizePixel = 0
-join.Position = UDim2.fromOffset(0, 241)
+join.Position = UDim2.fromOffset(0, 288)
 join.Size = UDim2.new(1, 0, 0, 20)
 join.Text = "Join our Community!"
 join.TextColor3 = Color3.new(1, 1, 1)
