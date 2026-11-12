@@ -111,8 +111,7 @@ UI.Nil = table.freeze({ type = "Symbol" }) :: Symbol
 --- GuiService.TopbarInset as a Flux state
 UI.TopbarInset = Flux.property(GuiService, "TopbarInset")
 UI.TopbarPadding = Flux.computed(function()
-	local offset = UI.IsConsoleScreen and 10 or (UI.TopbarInset().Height - 46)
-	return UDim.new(0, offset)
+	return UDim.new(0, math.clamp(UI.TopbarInset().Height - 46, 0, 12))
 end)
 
 --- The lowermost ScreenGui for UI components
@@ -153,11 +152,9 @@ UI.LayerTopInset = UI.new "Frame" {
 	BackgroundTransparency = 1,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.fromScale(0, 1),
-	Size = if UI.IsConsoleScreen
-		then UDim2.new(1, 0, 1, -54)
-		else function()
-			return UDim2.new(1, 0, 1, -UI.TopbarInset().Height)
-		end,
+	Size = function()
+		return UDim2.new(1, 0, 1, -UI.TopbarInset().Height)
+	end,
 }
 
 --- The Topbar ScreenGui for UI components
@@ -175,12 +172,11 @@ UI.LayerTopbar = Flux.new "ScreenGui" {
 UI.TopbarFrame = UI.new "Frame" {
 	Parent = UI.LayerTopbar,
 	BackgroundTransparency = 1,
-	Position = UDim2.new(0, 0, 0, if UI.IsConsoleScreen then 4 else 0),
 	Size = function()
-		return UDim2.new(1, 0, 0, UI.TopbarInset().Height + if UI.IsConsoleScreen then 50 else 0)
+		return UDim2.new(1, 0, 0, UI.TopbarInset().Height)
 	end,
 	Visible = function()
-		return UI.IsConsoleScreen or UI.TopbarInset().Height > 0
+		return UI.TopbarInset().Height > 0
 	end,
 
 	UI.list {
@@ -189,14 +185,15 @@ UI.TopbarFrame = UI.new "Frame" {
 		gap = UI.TopbarPadding,
 	},
 	UI.padding {
-		left = if UI.IsConsoleScreen
-			then UDim.new(0, 10)
-			else function()
-				return UDim.new(0, 2 + UI.TopbarPadding().Offset / 2)
-			end,
+		left = function()
+			local pad = UI.TopbarPadding().Offset
+			return UDim.new(0, if UI.TopbarInset().Min.X == 0 then pad else 2 + pad / 2)
+		end,
 		right = UI.TopbarPadding,
-		top = if UI.IsConsoleScreen then UDim.new(0, 6) else UI.TopbarPadding,
-		bottom = UDim.new(0, if UI.IsConsoleScreen then 0 else 2),
+		top = function()
+			return UDim.new(0, math.max(0, UI.TopbarInset().Height - 46))
+		end,
+		bottom = UDim.new(0, 2),
 	},
 }
 

@@ -52,6 +52,14 @@ describe("Studio · Client", function()
 		sert.eq(_K.client.CommandBar ~= nil, true)
 		sert.eq(_K.client.dashboard ~= nil, true)
 
+		-- Verify dashboard topbar button stays 44x44 across desktop and console (Xbox 87px TopbarInset)
+		local dashboardButton = _K.client.dashboardButton
+		sert.eq(typeof(dashboardButton), "Instance")
+		if typeof(dashboardButton) == "Instance" and dashboardButton:IsA("GuiObject") then
+			sert.roblox.Layout.settle(_K.UI.TopbarFrame)
+			sert.eq(dashboardButton.AbsoluteSize, Vector2.new(44, 44))
+		end
+
 		-- Verify UI.new Button + Tooltip hover stability and Select choices in live Studio
 		local UI = _K.UI
 		local testBtn = UI.new "Button" {

@@ -1079,49 +1079,64 @@ describe("Client and UI", function()
 	end)
 
 	describe("Part 1b · Console Top Bar", function()
-		test("keeps a 50px top bar on console screens even when TopbarInset is empty", function()
-			local world = sert.sim.new({ backing = true })
-			local server = world:server()
-			local client = server:client(1, "Player1")
-			local cliMounted = setupClientEnv(client)
-			local guiService = cliMounted.env.game:GetService("GuiService")
-			local methods: any = rawget(guiService, "_methods")
-			methods.IsTenFootInterface = function()
-				return true
+		test(
+			"console screens follow TopbarInset height for 44px inner row while clamping horizontal padding to 12px",
+			function()
+				local world = sert.sim.new({ backing = true })
+				local server = world:server()
+				local client = server:client(1, "Player1")
+				local cliMounted = setupClientEnv(client)
+
+				-- UI reads IsTenFootInterface once at load, so fake a console before the first require
+				local guiService: any = cliMounted.env.game:GetService("GuiService")
+				local methods: any = rawget(guiService, "_methods")
+				methods.IsTenFootInterface = function()
+					return true
+				end
+				local UI = cliMounted.env:require(cliMounted.Client.UI)
+				sert.eq(UI.IsConsoleScreen, true)
+				sert.eq(UI.Platform, "Console")
+
+				UI.GuiService.TopbarInset = Rect.new(0, 0, 1920, 0)
+				world:step()
+				UI.flush()
+
+				sert.eq(UI.TopbarPadding().Offset, 0)
+				sert.eq(UI.TopbarFrame.Visible, false)
+				sert.eq(UI.TopbarFrame.Size.Y.Offset, 0)
+				sert.eq(UI.LayerTopInset.Size.Y.Offset, 0)
+
+				local padding = UI.TopbarFrame:FindFirstChildOfClass("UIPadding")
+				sert.eq(padding ~= nil, true)
+				sert.eq(padding.PaddingLeft.Offset, 0)
+				sert.eq(padding.PaddingTop.Offset, 0)
+				sert.eq(padding.PaddingBottom.Offset, 2)
+				sert.eq(padding.PaddingRight.Offset, 0)
+
+				-- Xbox ten-foot TopbarInset (87px tall, Min.X = 0): 41px top + 2px bottom = 44px inner height, 12px symmetric horizontal padding
+				UI.GuiService.TopbarInset = Rect.new(0, 0, 1920, 87)
+				world:step()
+				UI.flush()
+				sert.eq(UI.TopbarPadding().Offset, 12)
+				sert.eq(UI.TopbarFrame.Visible, true)
+				sert.eq(UI.TopbarFrame.Size.Y.Offset, 87)
+				sert.eq(UI.LayerTopInset.Size.Y.Offset, -87)
+				sert.eq(padding.PaddingLeft.Offset, 12)
+				sert.eq(padding.PaddingRight.Offset, 12)
+				sert.eq(padding.PaddingTop.Offset, 41)
+				sert.eq(padding.PaddingBottom.Offset, 2)
+
+				-- When left CoreGui Unibar controls occupy Min.X > 0 (e.g. Desktop 58px), left padding halves + 2px (8px)
+				UI.GuiService.TopbarInset = Rect.new(160, 0, 1920, 58)
+				world:step()
+				UI.flush()
+				sert.eq(UI.TopbarPadding().Offset, 12)
+				sert.eq(padding.PaddingLeft.Offset, 8)
+				sert.eq(padding.PaddingRight.Offset, 12)
+				sert.eq(padding.PaddingTop.Offset, 12)
+				sert.eq(padding.PaddingBottom.Offset, 2)
 			end
-			local UI = cliMounted.env:require(cliMounted.Client.UI)
-			sert.eq(UI.IsConsoleScreen, true)
-
-			UI.GuiService.TopbarInset = Rect.new(0, 0, 1280, 0)
-			world:step()
-			UI.flush()
-
-			sert.eq(UI.TopbarPadding().Offset, 10)
-			sert.eq(UI.TopbarFrame.Visible, true)
-			sert.eq(UI.TopbarFrame.Position, UDim2.fromOffset(0, 4))
-			sert.eq(UI.TopbarFrame.Size.Y.Offset, 50)
-			sert.eq(UI.LayerTopInset.Size.Y.Offset, -54)
-
-			local padding = UI.TopbarFrame:FindFirstChildOfClass("UIPadding")
-			sert.eq(padding ~= nil, true)
-			if padding then
-				sert.eq(padding.PaddingLeft.Offset, 10)
-				sert.eq(padding.PaddingTop.Offset, 6)
-				sert.eq(padding.PaddingBottom.Offset, 0)
-				sert.eq(padding.PaddingRight.Offset, 10)
-			end
-
-			-- the console layout does not follow TopbarInset
-			UI.GuiService.TopbarInset = Rect.new(0, 0, 1280, 58)
-			world:step()
-			UI.flush()
-			sert.eq(UI.TopbarPadding().Offset, 10)
-			sert.eq(UI.LayerTopInset.Size.Y.Offset, -54)
-			sert.eq(UI.TopbarFrame.Size.Y.Offset, 108)
-			if padding then
-				sert.eq(padding.PaddingTop.Offset, 6)
-			end
-		end)
+		)
 	end)
 
 	describe("Part 2 · UI.Class Component Suite", function()
