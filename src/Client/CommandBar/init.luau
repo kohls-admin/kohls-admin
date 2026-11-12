@@ -267,18 +267,13 @@ local function formatSuggestionLabel(label, display, query, invalid)
 	params.Font = label.FontFace
 	params.Size = label.TextSize
 	params.Width = math.huge
-	params.RichText = true
+	params.RichText = false
 
 	return UI.retryGetTextBoundsAsync(params).X + UI.Theme.PaddingDouble:peek().Offset
 end
 
-local suggestionUpdating
-local function updateSuggestionLabels(data)
-	if suggestionUpdating then
-		return
-	end
-	suggestionUpdating = true
-
+local completionId = 0
+local function updateSuggestionLabels(data, myId: number)
 	local query = string.lower(_K.Util.String.trim(data.query))
 
 	local amount = math.min(7, #data.suggestions - 1)
@@ -336,9 +331,16 @@ local function updateSuggestionLabels(data)
 				}
 				widthOffset = label.AbsoluteSize.Y
 				task.spawn(function()
-					display ..= ` ({value.Name or _K.Util.getUserInfo(value.UserId).Username})`
+					local username = value.Name or _K.Util.getUserInfo(value.UserId).Username
+					if myId ~= completionId or not frame.Parent then
+						return
+					end
+					display ..= ` ({username})`
 
 					local textWidth = formatSuggestionLabel(label, display, query, invalid)
+					if myId ~= completionId or not frame.Parent then
+						return
+					end
 					suggestionWidth = math.max(suggestionWidth, textWidth + widthOffset)
 					TooltipFrame.Size = UDim2.fromOffset(suggestionWidth, TooltipLayout.AbsoluteContentSize.Y)
 				end)
@@ -357,6 +359,10 @@ local function updateSuggestionLabels(data)
 		end
 
 		local textWidth = formatSuggestionLabel(label, display, query, invalid)
+		if myId ~= completionId then
+			frame:Destroy()
+			return
+		end
 		suggestionWidth = math.max(suggestionWidth, textWidth + widthOffset)
 
 		local _ = frame.Activated:Connect(function()
@@ -370,11 +376,10 @@ local function updateSuggestionLabels(data)
 	end
 
 	TooltipFrame.Size = UDim2.fromOffset(suggestionWidth, TooltipLayout.AbsoluteContentSize.Y)
-
-	suggestionUpdating = false
 end
 
 local function clearCompletion()
+	completionId += 1
 	TooltipFrame.Visible = false
 	Input.DisplayText(_K.Util.String.escapeRichText(Input._input.Text))
 	for _, label in suggestionLabels do
@@ -428,7 +433,7 @@ local function updateSuggestionPurchasePrice()
 end
 
 if _K.VIP and _K.VIP.saleStateChanged then
-	_K.VIP.saleStateChanged:Connect(function()
+	local _ = _K.VIP.saleStateChanged:Connect(function()
 		if suggestionPurchaseButton._instance.Parent and suggestionPurchase.role == "vip" then
 			suggestionPurchase.gamepass = _K.VIP.getActiveAssetId()
 			task.spawn(updateSuggestionPurchasePrice)
@@ -436,7 +441,7 @@ if _K.VIP and _K.VIP.saleStateChanged then
 	end)
 end
 
-local function invalidSuggestion(data, err, pos, text)
+local function invalidSuggestion(data, myId: number, err, pos, text)
 	validState(false)
 	Input.DisplayText(
 		string.format(
@@ -468,6 +473,27 @@ local function invalidSuggestion(data, err, pos, text)
 		math.max(TooltipFrame.AbsoluteSize.X, label.AbsoluteSize.X),
 		TooltipLayout.AbsoluteContentSize.Y
 	)
+	local params = Instance.new("GetTextBoundsParams")
+	params.Text =
+		string.sub(string.gsub(string.gsub(data.message, "\n", " "), "\r", " "), 1, (pos or data.argPos or 2) - 1)
+	params.Font = Tooltip.FontFace
+	params.Size = Tooltip.TextSize
+	params.Width = math.huge
+	params.RichText = false
+	local bounds = UI.retryGetTextBoundsAsync(params)
+	if myId ~= completionId then
+		return
+	end
+	local argX = bounds.X
+	TooltipFrame.Position = UDim2.new(
+		0,
+		math.floor(argX)
+			+ Input._input.AbsolutePosition.X
+			- Input._instance.AbsolutePosition.X
+			- UI.Theme.Padding:peek().Offset,
+		0.5,
+		Input._instance.AbsoluteSize.Y / 2 + 6
+	)
 	TooltipFrame.Visible = true
 
 	if not data.suggestions or not data.suggestions[suggestionIndex] then
@@ -487,6 +513,8 @@ end
 
 local commandHistory = {}
 updateCompletion = function()
+	completionId += 1
+	local myId = completionId
 	local data = currentCompletionData
 	currentCompletion = nil
 
@@ -504,22 +532,29 @@ updateCompletion = function()
 		end
 	end
 
-	validState:set(nil)
+	local hasBrokenChain = data.hasInvalidCommand == true or #data.invalid > 0
+	validState:set(if hasBrokenChain then false else nil)
 
-	-- handle validation hints
-	-- TODO: somehow show validated arguments/text as green :)
-	for _, invalid in data.invalid do
-		invalidSuggestion(data, unpack(invalid))
-	end
-
-	if not data.suggestionType or #data.invalid > 0 then
+	-- handle validation hints when cursor is inside an invalid command/arg or no suggestion query is active
+	if #data.invalid > 0 and (data.cursorInvalid or not data.suggestionType) then
+		for _, invalid in data.invalid do
+			invalidSuggestion(data, myId, unpack(invalid))
+			if myId ~= completionId then
+				return
+			end
+		end
 		return
 	end
 
-	if #data.commands > 0 then
-		local valid = true
+	if not data.suggestionType then
+		return
+	end
+
+	local expectedCount = data.rawCommandsCount or #data.commands
+	local valid = not hasBrokenChain and #data.commands > 0 and #data.commands == expectedCount
+	if valid then
 		for _, command in data.commands do
-			if not command.validated then
+			if not command.validated or command.invalidArg ~= nil then
 				valid = false
 				break
 			end
@@ -548,11 +583,15 @@ updateCompletion = function()
 	params.Font = Tooltip.FontFace
 	params.Size = Tooltip.TextSize
 	params.Width = math.huge
-	params.RichText = true
+	params.RichText = false
 
 	-- move tooltip to start of query
 	-- FIX: adjust with inputoffset
-	local argX = UI.retryGetTextBoundsAsync(params).X
+	local bounds = UI.retryGetTextBoundsAsync(params)
+	if myId ~= completionId then
+		return
+	end
+	local argX = bounds.X
 	TooltipFrame.Position = UDim2.new(
 		0,
 		math.floor(argX)
@@ -565,6 +604,9 @@ updateCompletion = function()
 
 	-- suggestion hints
 	if not (data.suggestions and #data.suggestions > 0) then
+		if not valid and data.argIndex == 1 then
+			validState(false)
+		end
 		return
 	end
 
@@ -607,13 +649,40 @@ updateCompletion = function()
 		end
 	end
 
-	if not string.find(string.lower(suggestion), `{string.lower(_K.Util.String.stripQuotes(arg))}`, 1, true) then
+	local queryTarget = string.lower(
+		_K.Util.String.stripQuotes(if data.cursorPosition and data.cursorPosition < endPos then data.query else arg)
+	)
+	if not string.find(string.lower(suggestion), queryTarget, 1, true) then
 		invalid = true
-		data.validSuggestion = false
 	end
 
-	if invalid and not data.validSuggestion then
-		validState(false)
+	if not valid then
+		local hasValidMatch = false
+		if data.argIndex == 1 then
+			if data.validSuggestion then
+				for _, s in data.suggestions do
+					if not s[4] and string.find(string.lower(s[1]), queryTarget, 1, true) then
+						hasValidMatch = true
+						break
+					end
+				end
+			end
+		else
+			for _, s in data.suggestions do
+				local sText = if type(s) == "table" then s[1] else s
+				local sDisplay = if type(s) == "table" then s[2] else nil
+				if
+					string.find(string.lower(tostring(sText)), queryTarget, 1, true)
+					or (type(sDisplay) == "string" and string.find(string.lower(sDisplay), queryTarget, 1, true))
+				then
+					hasValidMatch = true
+					break
+				end
+			end
+		end
+		if not hasValidMatch then
+			validState(false)
+		end
 	end
 
 	local completion = suggestion
@@ -671,7 +740,10 @@ updateCompletion = function()
 	)
 
 	if data.argDefinition or data.argIndex == 1 then
-		updateSuggestionLabels(data)
+		updateSuggestionLabels(data, myId)
+		if myId ~= completionId then
+			return
+		end
 		Tooltip.Visible = true
 		TooltipFrame.Visible = true
 	end
@@ -753,16 +825,17 @@ return {
 	Input = Input,
 	updateCompletionData = updateCompletionData,
 	init = function(self, _K)
+		CommandBar.Parent = UI.TopbarFrame
+		_K.client.hotkeys.commandBar =
+			{ key = UI.signal(Enum.KeyCode.Semicolon), mods = UI.signal({}), callback = self.show }
+		_K.client.CommandBarState = { validState, indicatorColor }
+
 		if initialized then
 			return
 		end
 		initialized = true
 
 		Input:SetValue(_K.getCommandPrefix())
-		CommandBar.Parent = UI.TopbarFrame
-		_K.client.hotkeys.commandBar =
-			{ key = UI.signal(Enum.KeyCode.Semicolon), mods = UI.signal({}), callback = self.show }
-		_K.client.CommandBarState = { validState, indicatorColor }
 
 		local lastPrefix = _K.getCommandPrefix()
 		local function updatePrefix()
@@ -829,13 +902,14 @@ return {
 		local _ = Input._input.FocusLost:Connect(function(enterPressed, input)
 			if enterPressed then
 				local data = currentCompletionData
-				if #data.invalid > 0 then
+				if data.hasInvalidCommand or #data.invalid > 0 then
 					UI.Sound.Negative:Play()
 					return Input._input:CaptureFocus()
 				end
 
 				local prefix = _K.getCommandPrefix()
-				if Input._input.Text ~= prefix and #data.commands < 1 then
+				local expectedCount = data.rawCommandsCount or 1
+				if Input._input.Text ~= prefix and (#data.commands < 1 or #data.commands < expectedCount) then
 					UI.Sound.Negative:Play()
 					return Input._input:CaptureFocus()
 				end
@@ -920,12 +994,17 @@ return {
 
 			if text ~= prefix then
 				-- remove duplicate starting prefix
-				if string.find(text, prefix, prefixLen + 1, true) == prefixLen + 1 then
+				if
+					not string.find(prefix, "^%w")
+					and string.find(text, prefix, prefixLen + 1, true) == prefixLen + 1
+				then
 					text = string.sub(text, prefixLen + 1)
 					input:SetValue(text)
 				else
 					input.DisplayText(_K.Util.String.escapeRichText(text), true)
 				end
+			else
+				input.DisplayText(_K.Util.String.escapeRichText(text), true)
 			end
 
 			updating[input] = false
@@ -935,6 +1014,9 @@ return {
 
 		Input._input:GetPropertyChangedSignal("Text"):Connect(function()
 			updateInput(Input, true)
+			if not UserInputService:IsKeyDown(Enum.KeyCode.Tab) then
+				task.defer(updateCompletionData)
+			end
 		end)
 	end,
 	show = function(initText: string?)

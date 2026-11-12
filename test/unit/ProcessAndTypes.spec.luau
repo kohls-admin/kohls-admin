@@ -94,7 +94,7 @@ describe("Process · rawParse", function()
 			local cmdRow = {}
 			local firstTok = spec.prefix .. c.name
 			table.insert(chunks, firstTok)
-			local nameStart = cursor + #spec.prefix - #spec.leadNoise
+			local nameStart = cursor + #spec.prefix
 			table.insert(cmdRow, {
 				pos = nameStart,
 				endPos = nameStart + #c.name - 1,
@@ -105,7 +105,7 @@ describe("Process · rawParse", function()
 				table.insert(chunks, " ")
 				cursor += 1
 				table.insert(chunks, a)
-				local argStart = cursor - #spec.leadNoise
+				local argStart = cursor
 				table.insert(cmdRow, {
 					pos = argStart,
 					endPos = argStart + #a - 1,
@@ -134,9 +134,8 @@ describe("Process · rawParse", function()
 				for j, tok in cmdArr do
 					local argPos: number = tok[1]
 					local argStr: string = tok[2]
-					local absStart = leadLen + argPos
-					local absEnd = absStart + #argStr - 1
-					sert.eq(string.sub(message, absStart, absEnd), argStr)
+					local absEnd = argPos + #argStr - 1
+					sert.eq(string.sub(message, argPos, absEnd), argStr)
 					row[j] = {
 						pos = argPos,
 						endPos = argPos + #argStr - 1,
@@ -233,6 +232,16 @@ describe("Process · Registry & DefaultTypes Contract Laws", function()
 				assert(
 					parsedType ~= nil and Registry.types[parsedType] ~= nil,
 					`command {name} arg {idx} references unregistered type {argDef.type}`
+				)
+			end
+		end
+		for alias, target in Registry.aliases do
+			if type(target) == "string" then
+				assert(Registry.commands[target] ~= nil, `command alias {alias} points to missing command {target}`)
+			else
+				assert(
+					type(target) == "table" and Registry.commands[target.name] ~= nil,
+					`command alias {alias} invalid`
 				)
 			end
 		end
@@ -502,6 +511,16 @@ describe("Process · Command Preparation, Validation & Execution", function()
 			sert.eq(Registry.commands.quickhelp ~= nil, true)
 			sert.eq(Registry.commands.quickhelp.group, "Utility")
 			Registry.registerCommandAlias(_K, "quickhelp", ";help")
+
+			-- #358: Process.rawParse parses commands starting with the same alphanumeric prefix character (e.g. prefix "e" -> "emote", prefix "f" -> "fly")
+			local parsedEmote = _K.Process.rawParse("eemote", "e", " ")
+			sert.eq(parsedEmote ~= nil, true)
+			sert.eq(parsedEmote[1][1][2], "emote")
+			local parsedFlyChain = _K.Process.rawParse("ffly me fff", "f", " ")
+			sert.eq(parsedFlyChain ~= nil, true)
+			sert.eq(#parsedFlyChain, 2)
+			sert.eq(parsedFlyChain[1][1][2], "fly")
+			sert.eq(parsedFlyChain[2][1][2], "ff")
 		end
 	)
 
@@ -2228,6 +2247,173 @@ describe("Process · Command filters & async roles", function()
 			end,
 		},
 	}, { runs = 40, length = 15 })
+
+	test(
+		"rawParse earliest-prefix/invalid-UTF8/leading-space slicing, omitted optional log args, asset/subscription purchase prompts, and registerCommandAlias",
+		function()
+			local h = Harness.newEnv({ isStudio = false })
+			h:requireData()
+			local _K = h:requireK()
+			local Process = _K.Process
+			local Registry = _K.Registry
+
+			-- 1. rawParse picks smallest commandStart across prefixList (and longest prefix on tie)
+			local parsedEarliest = Process.rawParse("chat before !fly me :god me", { ":", "!" }, " ")
+			sert.eq(parsedEarliest ~= nil, true)
+			sert.eq(parsedEarliest[1][1][2], "fly")
+			sert.eq(parsedEarliest[1][1][1], 14)
+
+			local parsedLongestTie = Process.rawParse("  ::fly me", { ":", "::" }, " ")
+			sert.eq(parsedLongestTie ~= nil, true)
+			sert.eq(parsedLongestTie[1][1][2], "fly")
+			sert.eq(parsedLongestTie[1][1][1], 5)
+
+			-- 2. Invalid UTF-8 fallback keeps valid prefix before invalidPos instead of slicing tail
+			local parsedBadUtf8 = Process.rawParse(";fly me\255garbage", ";", " ")
+			sert.eq(parsedBadUtf8 ~= nil, true)
+			sert.eq(parsedBadUtf8[1][1][2], "fly")
+			sert.eq(parsedBadUtf8[1][2][2], "me")
+
+			-- 3. Client runCommands slices single commands accurately even with leading whitespace and comma splitKey
+			local adminPlr = h.env:addPlayer(601, "SliceAdmin")
+			adminPlr:SetAttribute("_KRolesLoaded", true)
+			_K.Auth.userRoleAdd(601, "superadmin")
+			Registry.registerCommand(_K, {
+				name = "testslicesa",
+				aliases = {},
+				description = "Test server slice",
+				group = "Moderation",
+				args = {
+					{ type = "integer", name = "Num", optional = true },
+					{ type = "rawString", name = "Note", optional = true },
+				},
+				run = function() end,
+				runClient = function() end,
+			})
+
+			_K.IsServer = false
+			_K.IsClient = true
+			_K.LocalPlayer = adminPlr
+			_K.client = {
+				playerPrefix = {
+					peek = function()
+						return ";"
+					end,
+				},
+			} :: any
+			local firedToServer = {}
+			local origCmdFire = _K.Remote.Command.Fire
+			_K.Remote.Command.Fire = function(_self, payload)
+				table.insert(firedToServer, payload)
+			end
+			sert.eq(Process.runCommands(_K, 601, "   ;testslicesa 1 hello ;testslicesa 2 world", true), true)
+			sert.eq(firedToServer[#firedToServer], ";testslicesa 1 hello ;testslicesa 2 world")
+
+			_K.Data.settings.splitKey = ","
+			sert.eq(Process.runCommands(_K, 601, "  ;testslicesa,1,hi,;testslicesa,2,bye", true), true)
+			sert.eq(firedToServer[#firedToServer], ";testslicesa,1,hi ;testslicesa,2,bye")
+			_K.Data.settings.splitKey = " "
+			_K.Remote.Command.Fire = origCmdFire
+
+			-- 4. VIP role purchase prompts support roleData.assets (first unowned) and roleData.subscriptions
+			local guestPlr = h.env:addPlayer(602, "AssetSubGuest")
+			guestPlr:SetAttribute("_KRolesLoaded", true)
+			_K.LocalPlayer = guestPlr
+			_K.Data.roles.assetTier = {
+				_key = "assetTier",
+				_rank = 2,
+				name = "Asset Tier",
+				groups = {},
+				permissions = {},
+				commands = { testslicesa = true },
+				assets = { 11111, 22222 },
+			}
+			_K.Data.roles.subTier = {
+				_key = "subTier",
+				_rank = 2,
+				name = "Sub Tier",
+				groups = {},
+				permissions = {},
+				commands = { testslicesa = true },
+				subscriptions = { "EXP-999" },
+			}
+			local promptedAssets = {}
+			local promptedSubs = {}
+			local mktMethods = rawget(h.env.game:GetService("MarketplaceService"), "_methods")
+			local origOwnsAsset = mktMethods.PlayerOwnsAssetAsync
+			local origPromptPurchase = mktMethods.PromptPurchase
+			local origPromptSub = mktMethods.PromptSubscriptionPurchase
+			mktMethods.PlayerOwnsAssetAsync = function(_self, _plr, assetId)
+				return assetId == 11111 -- owns first asset, does NOT own second asset 22222
+			end
+			mktMethods.PromptPurchase = function(_self, plr, assetId)
+				table.insert(promptedAssets, { plr = plr, assetId = assetId })
+			end
+			mktMethods.PromptSubscriptionPurchase = function(_self, plr, subId)
+				table.insert(promptedSubs, { plr = plr, subId = subId })
+			end
+
+			local okPrepPrompt = Process.prepareCommands(_K, 602, ";testslicesa")
+			sert.eq(okPrepPrompt, false)
+			sert.eq(#promptedAssets, 1)
+			sert.eq(promptedAssets[1].assetId, 22222)
+			sert.eq(#promptedSubs, 1)
+			sert.eq(promptedSubs[1].subId, "EXP-999")
+
+			mktMethods.PlayerOwnsAssetAsync = origOwnsAsset
+			mktMethods.PromptPurchase = origPromptPurchase
+			mktMethods.PromptSubscriptionPurchase = origPromptSub
+			_K.Data.roles.assetTier = nil
+			_K.Data.roles.subTier = nil
+
+			-- 5. Registry.registerCommandAlias tracks Registry.aliases, allows re-registering aliases, and avoids double-prefixing
+			_K.LocalPlayer = adminPlr
+			local aliasRan = {}
+			Registry.registerCommand(_K, {
+				name = "testaliasdest",
+				aliases = {},
+				description = "Alias target",
+				group = "Utility",
+				args = { { type = "rawString", name = "Val", optional = true } },
+				runClient = function(_ctx, val)
+					table.insert(aliasRan, val or "none")
+				end,
+			})
+			Registry.registerCommandAlias(_K, "myshortcut", "testaliasdest first")
+			sert.eq(Registry.aliases.myshortcut ~= nil, true)
+			-- Re-registering with already-prefixed command overrides cleanly without double-prefixing
+			Registry.registerCommandAlias(_K, "MYSHORTCUT", ";testaliasdest second")
+			sert.eq(Process.runCommands(_K, 601, ";myshortcut", true), true)
+			sert.eq(aliasRan, { "second" })
+
+			-- Built-in command name cannot be overwritten by registerCommandAlias
+			Registry.registerCommandAlias(_K, "testaliasdest", ";testslicesa")
+			sert.eq(Registry.aliases.testaliasdest, nil)
+
+			-- 6. Server runCommands skips omitted middle and trailing-space optional arguments in command logs
+			_K.IsClient = false
+			_K.IsServer = true
+			table.clear(_K.Data.logs)
+			-- Skipped middle optional integer ("noteOnly" goes to arg 2 Note, arg 1 Num is skipped) -> single space, no ";testslicesa  noteOnly"
+			sert.eq(Process.runCommands(_K, 601, ";testslicesa noteOnly"), true)
+			h.env:step(0.1)
+			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testslicesa noteOnly")
+
+			-- Trailing space with omitted optional rawString (";testslicesa 42 ") -> logs ";testslicesa 42" with NO trailing "…" redaction
+			local restrictedPeer = h.env:addPlayer(603, "RestrictedPeer")
+			restrictedPeer:SetAttribute("_K_READY", true)
+			local tcsMethods = rawget(h.env.game:GetService("TextChatService"), "_methods")
+			local origCanUsersChat = tcsMethods.CanUsersChatAsync
+			tcsMethods.CanUsersChatAsync = function()
+				return false
+			end
+			_K.Chat.cooldown(601, "log")
+			sert.eq(Process.runCommands(_K, 601, ";testslicesa 42 "), true)
+			h.env:step(0.1)
+			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testslicesa 42")
+			tcsMethods.CanUsersChatAsync = origCanUsersChat
+		end
+	)
 end)
 
 do

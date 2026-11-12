@@ -231,6 +231,21 @@ function Command:run()
 	return ok, err
 end
 
+local function matchesClientSuggestion(self, definition, rawArg: string): boolean
+	local argType = self._K.Registry.types[definition.type]
+	if not (argType and argType.suggestions) then
+		return false
+	end
+	local suggestions = Util.Suggest.query(rawArg, argType.suggestions(rawArg, self.from, definition))
+	if #suggestions == 0 then
+		return false
+	end
+	local input = string.lower(rawArg)
+	local text, _, _, query = unpack(suggestions[1])
+	return string.find(string.lower(text), input, 1, true) ~= nil
+		or (query ~= nil and string.find(string.lower(query), `[{input}`, 1, true) ~= nil)
+end
+
 function Command:validate()
 	if self.validated then
 		return true
@@ -254,8 +269,9 @@ function Command:validate()
 				continue
 			end
 			local start: number = self.array[1][1]
+			local last = self.array[#self.array]
 			self.invalidPos = start
-			self.invalidArg = string.sub(self.text, start, start + #self.text)
+			self.invalidArg = string.sub(self.text, start, last[1] + #last[2] - 1)
 			self.argMissing = `Command "{self.definition.name}" failed, argument {index} missing: {definition.name}`
 			return false, self.argMissing
 		end
@@ -278,21 +294,8 @@ function Command:validate()
 			and index ~= #self.definition.args
 			and string.find(string.lower(definition.type), "player", 1, true)
 
-		if shouldFillWithSelf and self._K.IsClient then
-			local argType = self._K.Registry.types[definition.type]
-			if argType and argType.suggestions then
-				local suggestions = Util.Suggest.query(rawArg, argType.suggestions(rawArg, self.from, definition))
-				if #suggestions > 0 then
-					local input = string.lower(rawArg)
-					local text, _, _, query = unpack(suggestions[1])
-					if
-						string.find(string.lower(text), input, 1, true)
-						or (query and string.find(string.lower(query), `[{input}`, 1, true))
-					then
-						shouldFillWithSelf = false
-					end
-				end
-			end
+		if shouldFillWithSelf and self._K.IsClient and matchesClientSuggestion(self, definition, rawArg) then
+			shouldFillWithSelf = false
 		end
 
 		if shouldFillWithSelf and arrayIndex == #self.array then

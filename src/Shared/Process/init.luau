@@ -38,31 +38,44 @@ function Process.addCommandFilter(filter: (command: any) -> (boolean, string?)):
 end
 
 --- Parses a string into a raw command format.
-function Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?
+function Process.rawParse(message: string, prefixes: string | { string }, delimiter: string): { any }?
 	if delimiter == "%s" then
 		delimiter = " "
 	end
 	local escapedSplit = Util.String.escapePattern(delimiter)
 	local commandFormat = '%s[^%s"`,%s]'
-	local commandStart, prefix
-	for _, value in prefixes do
+	local commandStart: number?, prefix: string?
+	local prefixList: { string } = if type(prefixes) == "table" then prefixes else { prefixes }
+	for _, value in prefixList do
+		if value == "" then
+			continue
+		end
 		local escapedPrefix = Util.String.escapePattern(value)
-		commandStart = string.find(message, string.format(commandFormat, escapedPrefix, escapedPrefix, escapedSplit))
-		if commandStart then
+		local ignorePrefix = if string.find(value, "^%w") then "" else escapedPrefix
+		local startPos = string.find(message, string.format(commandFormat, escapedPrefix, ignorePrefix, escapedSplit))
+		if
+			startPos
+			and (
+				not commandStart
+				or startPos < commandStart
+				or (startPos == commandStart and #value > #(prefix :: string))
+			)
+		then
+			commandStart = startPos
 			prefix = value
-			break
 		end
 	end
-	if not prefix then
+	if not prefix or not commandStart then
 		return
 	end
 
-	local batchIgnore = string.format(`[%s{Process.ignoreFormat}%s]`, Util.String.escapePattern(prefix), escapedSplit)
+	local ignorePrefix = if string.find(prefix, "^%w") then "" else Util.String.escapePattern(prefix)
+	local batchIgnore = string.format(`[%s{Process.ignoreFormat}%s]`, ignorePrefix, escapedSplit)
 	message = string.sub(message, commandStart + #prefix)
 
 	local len, invalidPos = utf8.len(message)
 	if not len then
-		message = string.sub(message, invalidPos - 1)
+		message = string.sub(message, 1, (invalidPos :: number) - 1)
 	end
 
 	local argument = { 1 }
@@ -118,11 +131,11 @@ function Process.rawParse(message: string, prefixes: { string }, delimiter: stri
 
 	-- compiles arg char list into a string
 	for _, cmd in commands do
-		for argIndex, arg in cmd do
+		for _, arg in cmd do
 			local position = arg[1]
 			local text = table.concat(arg, nil, 2)
 			table.clear(arg)
-			arg[1] = position + #prefix
+			arg[1] = position + commandStart - 1 + #prefix
 			arg[2] = text
 		end
 	end
@@ -172,9 +185,8 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 		rawText = string.sub(rawText, 1, 1024)
 	end
 
-	local text = Util.String.trimStart(rawText)
 	local rawCommands = Process.rawParse(
-		text,
+		rawText,
 		-- global command strings are published with the server prefix, a sender's own prefix in their text isn't one
 		if global then { _K.getCommandPrefix() } else { _K.getCommandPrefix(from), unpack(_K.Data.settings.prefix) },
 		_K.Data.settings.splitKey or " "
@@ -216,15 +228,40 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 		if not Auth.hasCommand(from, commandDefinition) then
 			if _K.IsClient then
 				for role, roleData in Data.roles do
-					if
-						((role == "vip" and _K.Data.settings.vip) or roleData.gamepasses)
-						and Auth.roleCanUseCommand(role, commandDefinition)
-					then
-						if role == "vip" and _K.Data.settings.vip then
-							_K.PromptPurchaseVIP()
-						elseif roleData.gamepasses[1] then
-							_K.Service.Marketplace:PromptGamePassPurchase(_K.LocalPlayer, roleData.gamepasses[1])
-						end
+					if not Auth.roleCanUseCommand(role, commandDefinition) then
+						continue
+					end
+					if role == "vip" and _K.Data.settings.vip then
+						_K.PromptPurchaseVIP()
+					elseif roleData.gamepasses and roleData.gamepasses[1] then
+						_K.Service.Marketplace:PromptGamePassPurchase(
+							_K.LocalPlayer,
+							tonumber(roleData.gamepasses[1]) :: number
+						)
+					elseif roleData.assets and roleData.assets[1] then
+						local assets = roleData.assets
+						task.spawn(function()
+							for _, rawAssetId in assets do
+								local assetId = tonumber(rawAssetId)
+								if assetId then
+									local okOwns, owns = pcall(
+										_K.Service.Marketplace.PlayerOwnsAssetAsync,
+										_K.Service.Marketplace,
+										_K.LocalPlayer,
+										assetId
+									)
+									if not (okOwns and owns == true) then
+										_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, assetId)
+										break
+									end
+								end
+							end
+						end)
+					elseif roleData.subscriptions and roleData.subscriptions[1] then
+						_K.Service.Marketplace:PromptSubscriptionPurchase(
+							_K.LocalPlayer,
+							tostring(roleData.subscriptions[1])
+						)
 					end
 				end
 				-- RestrictedToRole is filled in once the client's roles load
@@ -236,7 +273,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 			return false, `"<b>{commandText}</b>" command restricted`, commands
 		end
 
-		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, text, global)
+		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, rawText, global)
 		local ok, result = command:validate()
 
 		table.insert(commands, command)
@@ -366,7 +403,7 @@ function Process.runCommands(
 			end
 			runOnServer = true
 			local last = command.array[#command.array]
-			table.insert(commandStrings, string.sub(rawText, command.array[1][1] :: number, last[1] + #last[2]))
+			table.insert(commandStrings, string.sub(rawText, command.array[1][1] :: number, last[1] + #last[2] - 1))
 		end
 		if runOnServer then
 			_K.Remote.Command:Fire(`{prefix}{table.concat(commandStrings, " " .. prefix)}`)
@@ -405,7 +442,21 @@ function Process.runCommands(
 				end
 				log[index] = prefix .. command.alias
 				index += 1
-				for _, arg in command.args do
+				for argIndex = 1, #definition.args do
+					local arg = command.args[argIndex]
+					if not arg then
+						continue
+					end
+					if
+						(arg.skipped == arg.rawArg and #arg.parsedArgs == 0)
+						or (
+							arg.definition.optional
+							and arg.rawArg == ""
+							and (#arg.parsedArgs == 0 or (#arg.parsedArgs == 1 and arg.parsedArgs[1] == ""))
+						)
+					then
+						continue
+					end
 					local position = index
 					if if arg.redactLog ~= nil then arg.redactLog else arg.rawType.freeText then
 						table.insert(textPositions, position)
@@ -416,7 +467,12 @@ function Process.runCommands(
 							argString = arg.rawType.log(arg)
 						else
 							argString = Util.Table.concat(arg.parsedArgs, ",")
-							if arg.rawType.filterLog and arg.redactLog ~= false and _K.IsServer then
+							if
+								arg.rawType.filterLog
+								and arg.redactLog ~= false
+								and not arg.filtered
+								and _K.IsServer
+							then
 								argString = Util.String.filterForBroadcast(argString, from)
 							end
 						end

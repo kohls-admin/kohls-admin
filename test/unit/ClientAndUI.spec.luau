@@ -2031,13 +2031,42 @@ describe("Client and UI", function()
 				sert.eq(dChain.commands[1].validated, true)
 				sert.eq(dChain.argIndex, 1)
 
-				-- Chained command where first command is invalid (`;notacommand ;help`)
+				-- Chained command where first command is invalid (`;notacommand ;help`) continues to complete second command
 				local dChainBad = CompletionData(_K, ";notacommand ;help", 19)
 				sert.eq(dChainBad.argIndex, 1)
-				sert.eq(dChainBad.argPos, 2)
-				sert.eq(dChainBad.rawArg, "notacommand")
-				sert.eq(dChainBad.query, "notacommand")
+				sert.eq(dChainBad.argPos, 15)
+				sert.eq(dChainBad.rawArg, "help")
+				sert.eq(dChainBad.query, "help")
+				sert.eq(dChainBad.hasInvalidCommand, true)
+				sert.eq(dChainBad.cursorInvalid, false)
 				sert.eq(#dChainBad.invalid > 0, true)
+
+				-- Leading or middle empty chained commands flag hasInvalidCommand while still completing trailing command
+				local dLeadingEmpty = CompletionData(_K, "; ;help", 8)
+				sert.eq(dLeadingEmpty.hasInvalidCommand, true)
+				sert.eq(#dLeadingEmpty.invalid > 0, true)
+				sert.eq(dLeadingEmpty.argIndex, 1)
+				sert.eq(dLeadingEmpty.rawArg, "help")
+				sert.eq(dLeadingEmpty.query, "help")
+
+				local dMidEmpty = CompletionData(_K, ";help ; ;version", 17)
+				sert.eq(dMidEmpty.hasInvalidCommand, true)
+				sert.eq(#dMidEmpty.invalid > 0, true)
+				sert.eq(dMidEmpty.rawArg, "version")
+
+				-- Unknown command with zero suggestions does not crash on suggestions[1][3]
+				local origCmdSuggestions = _K.Registry.types.command.suggestions
+				_K.Registry.types.command.suggestions = function()
+					return {}
+				end
+				local dNoSugg = CompletionData(_K, ";zzzzzzzzzzzz", 14)
+				_K.Registry.types.command.suggestions = origCmdSuggestions
+				sert.eq(dNoSugg.hasInvalidCommand, true)
+				sert.eq(#(dNoSugg.suggestions or {}), 0)
+				sert.eq(dNoSugg.commandDefinition, nil)
+				local dNoSuggPast = CompletionData(_K, ";zzzzzzzzzzzz ", 15)
+				sert.eq(dNoSuggPast.hasInvalidCommand, true)
+				sert.eq(dNoSuggPast.cursorInvalid, true)
 
 				-- 7. Grant creator role and authorize all commands to test argument completion
 				_K.Auth.userRoleAdd(1, "creator")
@@ -2184,6 +2213,21 @@ describe("Client and UI", function()
 				_K.Registry.types.testnosuggest.validate = function()
 					return true
 				end
+
+				-- #363: Chained commands validate subsequent commands even when cursor is at the end of the first command name
+				local dChainInvalid = CompletionData(_K, ";fly ;notacommand", 5)
+				sert.eq(#dChainInvalid.invalid > 0, true)
+				sert.eq(dChainInvalid.argPos, 2)
+				sert.eq(dChainInvalid.rawArg, "fly")
+
+				local dChainMissingArg = CompletionData(_K, ";fly ;ban", 5)
+				sert.eq(#dChainMissingArg.invalid > 0, true)
+
+				-- #364: Complete valid short commands (under 3 chars, e.g. ;ff or ;tp) populate data.commands and have no invalid entries
+				local dShortValid = CompletionData(_K, ";ff", 4)
+				sert.eq(#dShortValid.commands, 1)
+				sert.eq(dShortValid.commands[1].validated, true)
+				sert.eq(#dShortValid.invalid, 0)
 			end
 		)
 
@@ -2630,6 +2674,57 @@ describe("Client and UI", function()
 				CommandBar.Input._input.CursorPosition = 7
 				fastRun(0.2)
 				sert.eq(CommandBar.Input._input.Text, ";help")
+
+				-- #358: Alphanumeric prefix allows typing commands starting with the same letter (e.g. prefix "e" -> "eemote")
+				cK.client.playerPrefix("e")
+				CommandBar.Input._input.Text = "eemote"
+				CommandBar.Input._input.CursorPosition = 7
+				fastRun(0.1)
+				sert.eq(CommandBar.Input._input.Text, "eemote")
+				cK.client.playerPrefix(";")
+
+				-- #364 & #379: Short valid command (;ff) sets validState(true), partial with valid suggestions stays neutral (nil), and cycling suggestions does not flip validState
+				for _, cmd in cK.Registry.commands do
+					cmd.LocalPlayerAuthorized = true
+				end
+				CommandBar.Input._input.SelectionStart = -1
+				CommandBar.Input:SetValue(";ff")
+				CommandBar.Input._input.CursorPosition = 4
+				CommandBar.updateCompletionData()
+				fastRun(0.1)
+				sert.eq(cK.client.CommandBarState[1]:peek(), true)
+
+				CommandBar.Input:SetValue(";ver")
+				CommandBar.Input._input.CursorPosition = 5
+				CommandBar.updateCompletionData()
+				fastRun(0.1)
+				sert.eq(cK.client.CommandBarState[1]:peek(), nil)
+				CommandBar.Input._input:CaptureFocus()
+				UI.UserInputService.InputBegan:Fire(
+					makeInput(cEnv, { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.Down }),
+					false
+				)
+				fastRun(0.1)
+				sert.eq(cK.client.CommandBarState[1]:peek(), nil)
+
+				-- Broken multi-command chains (;xyz ;ff and ;ff ;xyz) turn validState red (false) and refuse Enter submission
+				CommandBar.Input:SetValue(";xyz ;ff")
+				CommandBar.Input._input.CursorPosition = 9
+				CommandBar.updateCompletionData()
+				fastRun(0.1)
+				sert.eq(cK.client.CommandBarState[1]:peek(), false)
+				CommandBar.Input._input.FocusLost:Fire(true)
+				fastRun(0.1)
+				sert.eq(CommandBar.Input._input.Text, ";xyz ;ff")
+
+				CommandBar.Input:SetValue(";ff ;xyz")
+				CommandBar.Input._input.CursorPosition = 4
+				CommandBar.updateCompletionData()
+				fastRun(0.1)
+				sert.eq(cK.client.CommandBarState[1]:peek(), false)
+				CommandBar.Input._input.FocusLost:Fire(true)
+				fastRun(0.1)
+				sert.eq(CommandBar.Input._input.Text, ";ff ;xyz")
 
 				-- Input ClearTextButton clears CommandBar back to prefix and resets validState/suggestions
 				local clearBtn = CommandBar.Input._instance:FindFirstChild("ImageButton")

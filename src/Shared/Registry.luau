@@ -11,6 +11,7 @@ local Registry = {
 	commands = {} :: { [string]: Type.CommandDefinition },
 	commandsList = {} :: { Type.CommandDefinition },
 	commandNames = {} :: { string },
+	aliases = {} :: { [string]: Type.CommandDefinition },
 }
 
 --- Makes an Enum argument type definition
@@ -241,7 +242,7 @@ function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition
 	end
 end
 
-local aliases = {}
+local aliases = Registry.aliases
 function Registry.dashboardWindowEnv(tab: string)
 	return function(_K: any)
 		local env = {}
@@ -271,22 +272,37 @@ end
 
 --- Registers a local command alias
 function Registry.registerCommandAlias(_K: any, alias: string, command: string)
-	local oldAlias = aliases[alias]
-	if not oldAlias and Registry.commands[string.lower(alias)] then
+	local lowerAlias = string.lower(alias)
+	local oldAlias = aliases[lowerAlias]
+	if not oldAlias and Registry.commands[lowerAlias] then
 		warn("Command alias already exists")
 		return
 	end
 
-	Registry.registerCommand(_K, {
+	local commandObject: Type.CommandDefinition = {
 		name = alias,
 		aliases = {},
 		description = `Alias of "{command}"`,
 		group = "Utility",
 		args = {},
 		runClient = function(context)
-			context._K.Process.runCommands(context._K, Players.LocalPlayer.UserId, `{_K.getCommandPrefix()}{command}`)
+			local userId = if Players.LocalPlayer then Players.LocalPlayer.UserId else context.from
+			local prefix = context._K.getCommandPrefix(userId)
+			local trimmed = Util.String.trimStart(command)
+			local hasPrefix = prefix ~= "" and string.sub(trimmed, 1, #prefix) == prefix
+			if not hasPrefix and context._K.Data and type(context._K.Data.settings.prefix) == "table" then
+				for _, configuredPrefix in context._K.Data.settings.prefix do
+					if configuredPrefix ~= "" and string.sub(trimmed, 1, #configuredPrefix) == configuredPrefix then
+						hasPrefix = true
+						break
+					end
+				end
+			end
+			context._K.Process.runCommands(context._K, userId, if hasPrefix then trimmed else `{prefix}{trimmed}`)
 		end,
-	})
+	}
+	aliases[lowerAlias] = commandObject
+	Registry.registerCommand(_K, commandObject)
 end
 
 --- Registers a list of commands with the module name as the command group
