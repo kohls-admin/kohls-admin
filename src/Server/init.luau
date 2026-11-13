@@ -99,7 +99,7 @@ return function(_K)
 		if ok and result.IsEnabled then
 			_K.Util.Retry(function()
 				if not _K.Service.Badge:UserHasBadgeAsync(userId, badgeId) then
-					_K.Service.Badge:AwardBadge(userId, badgeId)
+					_K.Service.Badge:AwardBadgeAsync(userId, badgeId)
 				end
 			end)
 		end

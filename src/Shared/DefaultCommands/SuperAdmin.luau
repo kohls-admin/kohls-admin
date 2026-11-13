@@ -22,36 +22,58 @@ return {
 
 		run = function(context, players, badge)
 			local service = context._K.Service.Badge
-			local tasks = Util.Tasks.new()
 
+			-- a missing or disabled badge fails for every target, check it once
+			local okInfo, info = Util.Retry(service.GetBadgeInfoAsync, 3, 2, service, badge)
+			if not okInfo then
+				return `Couldn't load badge {badge}: {info}`
+			end
+			if not info.IsEnabled then
+				return `Badge "{info.Name}" ({badge}) is disabled.`
+			end
+
+			local tasks = Util.Tasks.new()
 			for _, player in players do
 				tasks:add(function()
-					local ok, result = Util.Retry(service.UserHasBadgeAsync, 3, 2, service, player.UserId, badge)
-					if not ok then
-						error(result)
+					local okHas, has = Util.Retry(service.UserHasBadgeAsync, 3, 2, service, player.UserId, badge)
+					if not okHas then
+						return "failed", player.Name, tostring(has)
+					elseif has then
+						return "owned", player.Name
 					end
-					if result then
-						context._K.alert(context.fromPlayer, `{player.Name} already has the badge!`)
-						return
-					else
-						local ok2, result2 = Util.Retry(service.AwardBadge, 3, 2, service, player.UserId, badge)
-						if not ok2 then
-							error(result2)
-						end
-						return result2
+					-- AwardBadgeAsync returns false instead of erroring when Roblox declines the award
+					local okAward, awarded = Util.Retry(service.AwardBadgeAsync, 3, 2, service, player.UserId, badge)
+					if not okAward then
+						return "failed", player.Name, tostring(awarded)
+					elseif not awarded then
+						return "failed", player.Name, "Roblox declined (the badge must belong to this experience)"
 					end
+					return "awarded", player.Name
 				end)
 			end
 
-			local resultsList = tasks:wait()
-			for _, results in resultsList do
-				local ok, result = results[1], results[2]
+			local awarded, owned, failures = 0, 0, {}
+			for _, results in tasks:wait() or {} do
+				local ok, status, name, reason = results[1], results[2], results[3], results[4]
 				if not ok then
-					return `Failed to award badges: {result}`
+					table.insert(failures, tostring(status))
+				elseif status == "awarded" then
+					awarded += 1
+				elseif status == "owned" then
+					owned += 1
+				else
+					table.insert(failures, `{name}: {reason}`)
 				end
 			end
 
-			context._K.alert(context.fromPlayer, `Badges awarded!`)
+			local summary = `"{info.Name}": awarded {awarded}, already owned {owned}, failed {#failures}`
+			if #failures > 0 then
+				summary ..= `\n{table.concat(failures, "\n")}`
+			end
+			if awarded == 0 and owned == 0 then
+				return summary
+			end
+			context._K.alert(context.fromPlayer, summary, #failures > 0)
 			return
 		end,
 	},

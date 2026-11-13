@@ -451,7 +451,7 @@ describe("Chat and Server", function()
 				sert.spy(badgeService, "UserHasBadgeAsync", function()
 					return false
 				end)
-				sert.spy(badgeService, "AwardBadge", function()
+				sert.spy(badgeService, "AwardBadgeAsync", function()
 					badgesAwarded += 1
 					return true
 				end)

@@ -1311,23 +1311,62 @@ describe("DefaultCommands", function()
 			sert.eq(lighting.Brightness, _K.Registry.commands.fix.env[lighting].Brightness)
 
 			-- === SuperAdmin.luau ===
+			-- the sert BadgeService double predates AwardBadgeAsync
+			local badgeService = _K.Service.Badge
+			local function awardToEnv(_self, userId, badgeId)
+				local badges = c.sh.env.badges
+				badges[userId] = badges[userId] or {}
+				badges[userId][badgeId] = true
+				return true
+			end
+			badgeService.AwardBadgeAsync = awardToEnv
+			local function runBadge(badgeId)
+				local res = nil
+				c.sh.env.task.spawn(function()
+					res = _K.Registry.commands.badge.run({ _K = _K, fromPlayer = srvP1 }, { srvP2 }, badgeId)
+				end)
+				c.world:run(20)
+				return tostring(res)
+			end
+			local function has(text, needle)
+				return string.find(text, needle, 1, true) ~= nil
+			end
+
 			runSrv(";badge TargetPlr 555")
 			sert.eq(c.sh.env.badges[2][555], true)
-			-- Second award triggers "already has badge" alert branch
-			runSrv(";badge TargetPlr 555")
+			-- Second award counts as already owned, not a failure
+			sert.eq(runBadge(555), "nil")
 			sert.eq(c.sh.env.badges[2][555], true)
-			-- Badge error path returns "Failed to award badges: ..."
-			local origAwardBadge = _K.Service.Badge.AwardBadge
-			_K.Service.Badge.AwardBadge = function()
+			-- AwardBadgeAsync erroring every retry reports the error
+			badgeService.AwardBadgeAsync = function()
 				error("BadgeAPIError")
 			end
-			local badgeErrRes = nil
-			c.sh.env.task.spawn(function()
-				badgeErrRes = _K.Registry.commands.badge.run({ _K = _K, fromPlayer = srvP1 }, { srvP2 }, 999)
-			end)
-			c.world:run(20)
-			sert.eq(string.find(tostring(badgeErrRes), "Failed to award badges:", 1, true) ~= nil, true)
-			_K.Service.Badge.AwardBadge = origAwardBadge
+			local badgeErrRes = runBadge(999)
+			sert.eq(has(badgeErrRes, "failed 1"), true)
+			sert.eq(has(badgeErrRes, "BadgeAPIError"), true)
+			-- AwardBadgeAsync returning false (e.g. badge from another experience) is a failure, not a success
+			badgeService.AwardBadgeAsync = function()
+				return false
+			end
+			local declinedRes = runBadge(998)
+			sert.eq(has(declinedRes, "Roblox declined"), true)
+			sert.eq(c.sh.env.badges[2][998], nil)
+			badgeService.AwardBadgeAsync = awardToEnv
+			-- disabled badge fails fast without awarding
+			local origGetBadgeInfo = badgeService.GetBadgeInfoAsync
+			badgeService.GetBadgeInfoAsync = function(_self, badgeId)
+				return { Name = `Badge{badgeId}`, IsEnabled = false }
+			end
+			sert.eq(has(runBadge(997), "is disabled"), true)
+			sert.eq(c.sh.env.badges[2][997], nil)
+			-- missing badge info reports the lookup failure
+			badgeService.GetBadgeInfoAsync = function()
+				error("BadgeNotFound")
+			end
+			local missingRes = runBadge(996)
+			sert.eq(has(missingRes, "Couldn't load badge 996"), true)
+			sert.eq(has(missingRes, "BadgeNotFound"), true)
+			badgeService.GetBadgeInfoAsync = origGetBadgeInfo
 
 			-- btools
 			local btoolMock = c.sh.env.Instance.new("Tool")
