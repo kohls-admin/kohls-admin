@@ -715,7 +715,14 @@ return {
 			local function getHumanoidDescriptionBundle(bundleId)
 				local itemId, bundleType = getOutfitId(bundleId)
 				if itemId and itemId > 0 then
-					return Util.Service.Players:GetHumanoidDescriptionFromOutfitIdAsync(itemId), bundleType
+					local ok, desc = pcall(
+						Util.Service.Players.GetHumanoidDescriptionFromOutfitIdAsync,
+						Util.Service.Players,
+						itemId
+					)
+					if ok and desc then
+						return desc, bundleType
+					end
 				end
 
 				return nil
@@ -727,11 +734,11 @@ return {
 
 		run = function(context, players, assetId: number?)
 			local bundleDescription, bundleType
-			if assetId then
+			if not context.undo and assetId then
 				bundleDescription, bundleType = context.env.getHumanoidDescriptionBundle(assetId)
-			end
-			if assetId and not bundleDescription then
-				return `Failed to load bundle.`
+				if not bundleDescription then
+					return `Failed to load bundle.`
+				end
 			end
 			for _, player in players do
 				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -757,16 +764,19 @@ return {
 						if bundleDescription.MoodAnimation ~= 0 then
 							merged.MoodAnimation = bundleDescription.MoodAnimation
 						end
-						humanoid:ApplyDescription(merged)
+						pcall(humanoid.ApplyDescription, humanoid, merged)
 						merged:Destroy()
 					else
-						humanoid:ApplyDescription(bundleDescription)
+						pcall(humanoid.ApplyDescription, humanoid, bundleDescription)
 					end
 				else
-					humanoid:ApplyDescription(originalDescription)
+					pcall(humanoid.ApplyDescription, humanoid, originalDescription)
 				end
 				-- reapply other admin description changes
 				task.defer(Util.Humanoid.reapplyDescription, player)
+			end
+			if bundleDescription then
+				bundleDescription:Destroy()
 			end
 			return
 		end,

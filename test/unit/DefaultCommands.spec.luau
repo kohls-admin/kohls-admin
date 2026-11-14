@@ -2771,7 +2771,7 @@ describe("DefaultCommands", function()
 
 			-- Verify legacy custom command registration & execution
 			sert.ok(_K.Registry.commands.legacyhello)
-			c.runSrv(";legacyhello TargetPlr Greetings")
+			c.runSrv(":legacyhello TargetPlr Greetings")
 			sert.eq(customRan, true)
 
 			-- Verify legacy role commands (creator, superadmin, admin, mod, vip + temp* + un*)
@@ -2783,11 +2783,11 @@ describe("DefaultCommands", function()
 			end
 			for _, roleId in { "creator", "superadmin", "admin", "mod", "vip" } do
 				table.clear(legacyNotifies)
-				c.runSrv(`;temp{roleId} TargetPlr`)
+				c.runSrv(`:temp{roleId} TargetPlr`)
 				sert.eq(_K.Auth.hasRole(2, roleId), true)
 				sert.eq(#legacyNotifies >= 1, true)
 				table.clear(legacyNotifies)
-				c.runSrv(`;un{roleId} TargetPlr`)
+				c.runSrv(`:un{roleId} TargetPlr`)
 				sert.eq(_K.Auth.hasRole(2, roleId), false)
 				sert.eq(#legacyNotifies >= 1, true)
 				sert.eq(string.find(legacyNotifies[1].msg.Text, "TargetPlr", 1, true) ~= nil, true)
@@ -2795,14 +2795,14 @@ describe("DefaultCommands", function()
 				table.clear(legacyNotifies)
 				_K.Registry.commands["un" .. roleId].run({ _K = _K, from = 1, fromPlayer = c.srvP1 }, { "2" })
 				sert.eq(#legacyNotifies, 0)
-				c.runSrv(`;{roleId} TargetPlr`)
+				c.runSrv(`:{roleId} TargetPlr`)
 				sert.eq(_K.Auth.hasRole(2, roleId), true)
-				c.runSrv(`;un{roleId} TargetPlr`)
+				c.runSrv(`:un{roleId} TargetPlr`)
 				sert.eq(_K.Auth.hasRole(2, roleId), false)
 			end
 			-- Also test giving role to an offline userId so `if not player then continue` is verified
 			table.clear(legacyNotifies)
-			c.runSrv(";vip 777777")
+			c.runSrv(":vip 777777")
 			c.world:run(0.25)
 			sert.eq(_K.Auth.hasRole(777777, "vip"), true)
 			sert.eq(#legacyNotifies, 1)
@@ -4677,6 +4677,131 @@ describe("DefaultCommands", function()
 				sert.eq(child.ClassName ~= "AudioDeviceOutput", true)
 				sert.eq(child.ClassName ~= "Wire", true)
 			end
+		end
+	)
+
+	test(
+		"badge validates IDs and RichText-escapes alerts, btools cleans orphan GUIs, bundle respects undo, and VIP checks Player leaving",
+		function()
+			local c = createSimCluster()
+			local _K, clientK, srvP1, srvP2 = c._K, c.clientK, c.srvP1, c.srvP2
+
+			-- 1. badge rejects badge <= 0, records "player left", and RichText-escapes badge name in alert
+			local badgeCmd = _K.Registry.commands.badge
+			local zeroErr: string?
+			c.server:spawn(function()
+				zeroErr = badgeCmd.run({ _K = _K, from = 1, fromPlayer = srvP1 }, { srvP2 }, 0)
+			end)
+			c.world:run(0.1)
+			sert.eq(zeroErr, "Badge ID must be a positive whole number.")
+
+			local badgeMethods = rawget(_K.Service.Badge, "_methods") or {}
+			local origGetBadgeInfo = badgeMethods.GetBadgeInfoAsync
+			local origUserHasBadge = badgeMethods.UserHasBadgeAsync
+			badgeMethods.GetBadgeInfoAsync = function(_self: any, _id: number)
+				return { Name = "<script>TagBadge", IsEnabled = true }
+			end
+			badgeMethods.UserHasBadgeAsync = function()
+				return true
+			end
+			rawset(_K.Service.Badge, "_methods", badgeMethods)
+
+			local alerts = {}
+			local origAlert = _K.alert
+			_K.alert = function(player: any, msg: string, isErr: boolean?)
+				table.insert(alerts, { player = player, msg = msg, isErr = isErr })
+			end
+
+			local tempLeft = c.sh.env:addPlayer(909, "LeftUser")
+			c.world:run(0.05)
+			c.sh.env:removePlayer(tempLeft)
+			c.server:spawn(function()
+				badgeCmd.run({ _K = _K, from = 1, fromPlayer = srvP1 }, { srvP1, tempLeft }, 123)
+			end)
+			c.world:run(0.2)
+			_K.alert = origAlert
+			badgeMethods.GetBadgeInfoAsync = origGetBadgeInfo
+			badgeMethods.UserHasBadgeAsync = origUserHasBadge
+			sert.eq(#alerts, 1)
+			sert(string.find(alerts[1].msg, "&lt;script&gt;TagBadge", 1, true) ~= nil, alerts[1].msg)
+			sert(string.find(alerts[1].msg, "LeftUser: player left", 1, true) ~= nil, alerts[1].msg)
+
+			-- 2. btools.envClient cleans orphaned F3X GUIs in PlayerGui on Character.ChildRemoved
+			local cliP1 = c.ch1.env.Players.LocalPlayer
+			local pGui = cliP1:FindFirstChildOfClass("PlayerGui") or c.ch1.env.Instance.new("PlayerGui", cliP1)
+			c.client1:spawn(function()
+				local superAdminDefs = c.ch1.env:require(c.ch1.Shared.DefaultCommands.SuperAdmin)
+				local btoolsDefCli
+				for _, def in superAdminDefs do
+					if def.name == "btools" then
+						btoolsDefCli = def
+						break
+					end
+				end
+				btoolsDefCli.envClient(clientK)
+				local orphanUi = c.ch1.env.Instance.new("ScreenGui", pGui)
+				orphanUi.Name = "Building Tools by F3X (UI)"
+				local orphanHandles = c.ch1.env.Instance.new("ScreenGui", pGui)
+				orphanHandles.Name = "BTHandles"
+				local btTool = c.ch1.env.Instance.new("Tool", cliP1.Character)
+				btTool.Name = "Building Tools"
+				btTool.Parent = nil
+			end)
+			c.world:run(0.2)
+			sert.eq(pGui:FindFirstChild("Building Tools by F3X (UI)"), nil)
+			sert.eq(pGui:FindFirstChild("BTHandles"), nil)
+
+			-- 3. bundle handles GetHumanoidDescriptionFromOutfitIdAsync errors and undo restores without fetching bundle
+			local hum = srvP2.Character:FindFirstChildOfClass("Humanoid")
+			if not hum:FindFirstChildOfClass("HumanoidDescription") then
+				c.sh.env.Instance.new("HumanoidDescription", hum)
+			end
+			local plMethods = rawget(c.sh.env.Players, "_methods") or {}
+			local origGetOutfitDesc = plMethods.GetHumanoidDescriptionFromOutfitIdAsync
+			local outfitFetchCalls = 0
+			plMethods.GetHumanoidDescriptionFromOutfitIdAsync = function()
+				outfitFetchCalls += 1
+				error("Outfit load failed")
+			end
+			rawset(c.sh.env.Players, "_methods", plMethods)
+
+			local bundleCmd = _K.Registry.commands.bundle
+			local bundleErr: string?
+			c.server:spawn(function()
+				bundleErr = bundleCmd.run({ _K = _K, env = bundleCmd.env, undo = false }, { srvP2 }, 777)
+			end)
+			c.world:run(0.2)
+			sert.eq(bundleErr, "Failed to load bundle.")
+			sert.eq(outfitFetchCalls, 1)
+
+			local origDesc = c.sh.env.Instance.new("HumanoidDescription", srvP2)
+			origDesc.Name = "_KHumanoidDescription"
+			c.server:spawn(function()
+				bundleCmd.run({ _K = _K, env = bundleCmd.env, undo = true }, { srvP2 }, 777)
+			end)
+			c.world:run(0.2)
+			sert.eq(outfitFetchCalls, 1)
+			origDesc:Destroy()
+			plMethods.GetHumanoidDescriptionFromOutfitIdAsync = origGetOutfitDesc
+
+			-- 4. VIP PromptGamePassPurchaseFinished skips awarding when player disconnects during verifyPurchase
+			local tempBuyer = c.sh.env:addPlayer(910, "TempBuyer")
+			c.world:run(0.05)
+			local mkt = c.sh.env.game:GetService("MarketplaceService")
+			local mktMethods = rawget(mkt, "_methods") or {}
+			local origOwnsGP = mktMethods.UserOwnsGamePassAsync
+			mktMethods.UserOwnsGamePassAsync = function()
+				c.sh.env:removePlayer(tempBuyer)
+				return true
+			end
+			rawset(mkt, "_methods", mktMethods)
+			c.server:spawn(function()
+				mkt.PromptGamePassPurchaseFinished:Fire(tempBuyer, 5391359, true)
+			end)
+			c.world:run(0.2)
+			mktMethods.UserOwnsGamePassAsync = origOwnsGP
+			sert.eq(_K.Auth.hasRole(tempBuyer.UserId, "vip"), false)
+			sert.eq(tempBuyer:GetAttribute("_KDonationLevel"), 0)
 		end
 	)
 end)

@@ -2484,6 +2484,51 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 			end
 		end
 	)
+
+	test(
+		"Emote initialization is idempotent per context and preserves existing.owned on Remote.EmoteType updates",
+		function()
+			local h = Harness.newEnv({ isClient = true })
+			h:mockClientRemotes()
+			local Data = h:requireData()
+			local Util = h:requireUtil()
+			local Remote = h:requireRemote()
+			local Registry = h:requireRegistry()
+			local connectCalls = 0
+			local origConnect = Remote.EmoteType.Connect
+			Remote.EmoteType.Connect = function(selfRemote: any, cb: any)
+				connectCalls += 1
+				return origConnect(selfRemote, cb)
+			end
+
+			local fakeK: any = {
+				Data = Data,
+				Util = Util,
+				Remote = Remote,
+				Registry = Registry,
+				VIP = { allowedBulkPurchaseIds = {} },
+			}
+			local Emote = h.env:require(h.Shared:WaitForChild("DefaultTypes"):WaitForChild("Emote"))
+			Emote(fakeK)
+			sert.eq(connectCalls, 1)
+			Emote(fakeK)
+			sert.eq(connectCalls, 1)
+			Remote.EmoteType.Connect = origConnect
+
+			Data.emoteItemFromId[9001] = {
+				emoteId = 9001,
+				name = "Wave",
+				nameLower = "wave",
+				animationId = 0,
+				owned = true,
+			}
+			Remote.EmoteType._signal:Fire({
+				{ emoteId = 9001, name = "Wave", nameLower = "wave", animationId = 55555 },
+			})
+			sert.eq(Data.emoteItemFromId[9001].owned, true)
+			sert.eq(Data.emoteItemFromId[9001].animationId, 55555)
+		end
+	)
 end)
 
 do

@@ -269,11 +269,13 @@ local function setupEmotePreviewModel(_K: any, env: any, worldModel: WorldModel,
 					if env.preview then
 						env.preview.Title.Text = item.name
 					end
-					anim.AnimationId = "rbxassetid://" .. item.animationId
-					local track: AnimationTrack = animator:LoadAnimation(anim)
-					track.Looped = true
-					track:Play()
-					animTrack = track
+					if item.animationId and item.animationId ~= 0 then
+						anim.AnimationId = "rbxassetid://" .. item.animationId
+						local track: AnimationTrack = animator:LoadAnimation(anim)
+						track.Looped = true
+						track:Play()
+						animTrack = track
+					end
 				end
 			end
 		end

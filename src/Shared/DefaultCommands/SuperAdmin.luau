@@ -21,7 +21,11 @@ return {
 		},
 
 		run = function(context, players, badge)
+			if type(badge) ~= "number" or badge <= 0 or math.floor(badge) ~= badge then
+				return "Badge ID must be a positive whole number."
+			end
 			local service = context._K.Service.Badge
+			local servicePlayers = context._K.Service.Players
 
 			-- a missing or disabled badge fails for every target, check it once
 			local okInfo, info = Util.Retry(service.GetBadgeInfoAsync, 3, 2, service, badge)
@@ -35,11 +39,17 @@ return {
 			local tasks = Util.Tasks.new()
 			for _, player in players do
 				tasks:add(function()
+					if player.Parent ~= servicePlayers then
+						return "failed", player.Name, "player left"
+					end
 					local okHas, has = Util.Retry(service.UserHasBadgeAsync, 3, 2, service, player.UserId, badge)
 					if not okHas then
 						return "failed", player.Name, tostring(has)
 					elseif has then
 						return "owned", player.Name
+					end
+					if player.Parent ~= servicePlayers then
+						return "failed", player.Name, "player left"
 					end
 					-- AwardBadgeAsync returns false instead of erroring when Roblox declines the award
 					local okAward, awarded = Util.Retry(service.AwardBadgeAsync, 3, 2, service, player.UserId, badge)
@@ -73,7 +83,7 @@ return {
 			if awarded == 0 and owned == 0 then
 				return summary
 			end
-			context._K.alert(context.fromPlayer, summary, #failures > 0)
+			context._K.alert(context.fromPlayer, Util.String.escapeRichText(summary), #failures > 0)
 			return
 		end,
 	},
@@ -89,6 +99,51 @@ return {
 				description = "The player(s) to give Building Tools by F3X.",
 			},
 		},
+		envClient = function(_K)
+			local orphanGuis = {
+				["Building Tools by F3X (UI)"] = true,
+				BTHandles = true,
+				BTArcHandles = true,
+			}
+			local function cleanOrphanF3XGuis(character: Model)
+				local player = _K.LocalPlayer
+				if not player then
+					return
+				end
+				task.defer(function()
+					if player.Character == character and character:FindFirstChild("Building Tools") then
+						return
+					end
+					local playerGui = player:FindFirstChildOfClass("PlayerGui")
+					if not playerGui then
+						return
+					end
+					for _, gui in playerGui:GetChildren() do
+						if orphanGuis[gui.Name] then
+							gui:Destroy()
+						end
+					end
+				end)
+			end
+			local charConn: any
+			local function watchCharacter(character: Model)
+				if charConn then
+					charConn:Disconnect()
+				end
+				charConn = character.ChildRemoved:Connect(function(child)
+					if child:IsA("Tool") then
+						cleanOrphanF3XGuis(character)
+					end
+				end)
+			end
+			local player = _K.LocalPlayer
+			if player then
+				if player.Character then
+					watchCharacter(player.Character)
+				end
+				local _ = player.CharacterAdded:Connect(watchCharacter)
+			end
+		end,
 		env = function(_K)
 			local env = {}
 

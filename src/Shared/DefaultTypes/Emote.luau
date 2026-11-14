@@ -10,6 +10,7 @@ local emotes = {}
 local emoteItemFromId = {}
 local animationToEmoteId = {}
 local emoteToAnimationId = {}
+local initializedContexts = setmetatable({}, { __mode = "k" })
 
 local function isEmote(id: number)
 	if type(id) ~= "number" or id < 1 or id > 2 ^ 53 or math.floor(id) ~= id then
@@ -44,7 +45,7 @@ local function isEmote(id: number)
 	return false
 end
 
-local function getAnimationIdFromEmoteId(emoteId: number): number?
+local function getAnimationIdFromEmoteId(emoteId: number, skipBroadcast: boolean?): number?
 	if emoteToAnimationId[emoteId] then
 		return emoteToAnimationId[emoteId]
 	end
@@ -79,7 +80,9 @@ local function getAnimationIdFromEmoteId(emoteId: number): number?
 				if not table.find(emotes, item) then
 					table.insert(emotes, item)
 				end
-				Remote:FireAll({ item })
+				if not skipBroadcast then
+					Remote:FireAll({ item })
+				end
 			end
 			return result
 		else
@@ -139,6 +142,10 @@ local emoteType = {
 }
 
 return function(context)
+	if initializedContexts[context] then
+		return
+	end
+	initializedContexts[context] = true
 	_K = context
 	Remote = _K.Remote.EmoteType
 	_K.Data.animationToEmoteId = animationToEmoteId
@@ -225,7 +232,7 @@ return function(context)
 						if canSell then
 							_K.VIP.allowedBulkPurchaseIds[item.Id] = true
 						end
-						tasks:add(getAnimationIdFromEmoteId, item.Id)
+						tasks:add(getAnimationIdFromEmoteId, item.Id, true)
 					end
 				end)
 				if not okIter then
@@ -255,9 +262,13 @@ return function(context)
 				end
 				local existing = emoteItemFromId[item.emoteId]
 				if type(existing) == "table" then
+					local owned = existing.owned
 					table.clear(existing)
 					for k, v in item do
 						existing[k] = v
+					end
+					if existing.owned == nil then
+						existing.owned = owned
 					end
 				else
 					table.insert(emotes, item)

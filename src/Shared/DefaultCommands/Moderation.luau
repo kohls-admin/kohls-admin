@@ -2087,10 +2087,16 @@ return {
 			},
 		},
 		envClient = function(_K)
-			local parentMap = {}
+			local parentMap = setmetatable({}, { __mode = "k" })
+			local runId = 0
 			local _ = _K.Remote.AntiLag:Connect(function(undo: boolean?)
+				runId += 1
+				local myRunId = runId
 				if undo then
 					for _, instance in workspace:GetDescendants() do
+						if myRunId ~= runId then
+							return
+						end
 						if instance:HasTag("_K_Ignore") then
 							continue
 						end
@@ -2102,9 +2108,15 @@ return {
 							_K.Util.Property.reset(instance, "Material")
 						end
 						_K.Util.Defer.wait()
+						if myRunId ~= runId then
+							return
+						end
 					end
 					for instance, parent in parentMap do
-						if parent then
+						if myRunId ~= runId then
+							return
+						end
+						if typeof(parent) == "Instance" and parent.Parent then
 							pcall(function()
 								instance.Parent = parent
 							end)
@@ -2115,7 +2127,13 @@ return {
 				end
 
 				for _, instance in workspace:GetDescendants() do
+					if myRunId ~= runId then
+						return
+					end
 					local parent = instance.Parent
+					if not parent then
+						continue
+					end
 					local model = instance:FindFirstAncestorOfClass("Model")
 					local humanoid = model and model:FindFirstChildOfClass("Humanoid")
 
@@ -2125,7 +2143,9 @@ return {
 
 					if instance:IsA("Decal") or instance:IsA("Texture") then
 						parentMap[instance] = parent
-						instance.Parent = nil
+						pcall(function()
+							instance.Parent = nil
+						end)
 					elseif instance:IsA("MeshPart") then
 						_K.Util.Property.override(instance, "Material", Enum.Material.SmoothPlastic)
 						_K.Util.Property.override(instance, "TextureID", "")
@@ -2134,6 +2154,9 @@ return {
 					end
 
 					_K.Util.Defer.wait()
+					if myRunId ~= runId then
+						return
+					end
 				end
 			end)
 		end,

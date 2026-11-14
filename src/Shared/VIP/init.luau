@@ -558,6 +558,9 @@ if Util.Service.Run:IsServer() then
 				return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
 			end)
 		then
+			if player.Parent ~= Util.Service.Players then
+				return
+			end
 			local ownedUGC = ownedCache[player.UserId]
 			if not ownedUGC then
 				ownedUGC = {}
@@ -604,6 +607,9 @@ if Util.Service.Run:IsServer() then
 				return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, passId)
 			end)
 		then
+			if player.Parent ~= Util.Service.Players then
+				return
+			end
 			local level = player:GetAttribute("_KDonationLevel") or 0
 			if vipIndex then
 				level = math.max(level, vipIndex)
