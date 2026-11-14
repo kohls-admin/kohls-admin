@@ -78,6 +78,10 @@ if not _G.KAU and not shared._K_LOADER_LOADED then
 		end
 	end
 
+	if not game:GetService("RunService"):IsStudio() then
+		shared._KAI_TEST_HOOKS = nil
+	end
+
 	local ok, result = pcall(require, if AUTO_UPDATE then MAIN_MODULE_ID else localMainModule)
 
 	if not ok then

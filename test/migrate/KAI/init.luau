@@ -2,7 +2,8 @@
 --!nocheck
 --!nolint
 
-if game == nil then
+local isHeadlessSert = game == nil
+if isHeadlessSert then
 	local okSert, sertMod = pcall(require, "@sert")
 	if okSert and type(sertMod) == "table" and sertMod.env and sertMod.env.active then
 		local activeEnv = sertMod.env.active()
@@ -30,6 +31,9 @@ end
 
 --|   __________   |--
 --|  |Core Setup|  |--
+
+local testHookBox = if type(shared._KAI_TEST_HOOKS) == "table" then shared._KAI_TEST_HOOKS else nil
+shared._KAI_TEST_HOOKS = nil
 
 type CommandFunction = (Player, { any }) -> ()
 type Log = { number | string }
@@ -309,7 +313,7 @@ local cooldowns: { [string]: number } = {}
 local userChatCache: { [number]: { ok: boolean, expires: number } } = {}
 local pairChatCache: { [string]: { ok: boolean, expires: number } } = {}
 local activeNotify: { fromId: number, text: string }? = nil
-local currentCommandCooldownConsumed = false
+local commandCooldownConsumed: { [thread]: boolean } = setmetatable({}, { __mode = "k" }) :: any
 local logMeta: {
 	[Log]: {
 		fromId: number,
@@ -323,7 +327,10 @@ local logMeta: {
 ) :: any
 
 local function markCommandCooldownConsumed()
-	currentCommandCooldownConsumed = true
+	local co = coroutine.running()
+	if co and commandCooldownConsumed[co] ~= nil then
+		commandCooldownConsumed[co] = true
+	end
 end
 
 local function clearChatCaches()
@@ -565,7 +572,8 @@ function f.chatSend(
 
 	local cooldownPassed = true
 	if fromId > 0 and hasRestricted then
-		cooldownPassed = f.cooldown(fromId, kind)
+		local cooldownKey = if kind == "vote" then "vote" else "direct"
+		cooldownPassed = f.cooldown(fromId, cooldownKey)
 		if cooldownPassed then
 			markCommandCooldownConsumed()
 		else
@@ -646,10 +654,12 @@ local syncTextChatCommands: () -> ()
 
 local function isValidCustomPrefix(prefix: any): boolean
 	return type(prefix) == "string"
-		and prefix ~= "/"
 		and #prefix == 1
 		and utf8.len(prefix) == 1
-		and string.find(prefix, "[%w%s%c]") == nil
+		and prefix ~= "/"
+		and prefix ~= '"'
+		and prefix ~= "`"
+		and string.find(prefix, "^[%p]$") ~= nil
 end
 
 local function collectExternalAliases(): { [string]: boolean }
@@ -1729,7 +1739,7 @@ local function sanitizeSetting(key: string, value: any, power: number?): (boolea
 	if key == "Prefix" then
 		if type(value) == "string" then
 			value = value:gsub("%s", "")
-			if #value == 1 and utf8.len(value) == 1 then
+			if isValidCustomPrefix(value) then
 				return true, value
 			end
 		end
@@ -1964,7 +1974,8 @@ function f.Chatted(plr: any, msg: string, cmdbar: boolean?)
 		-- command limits
 		if CommandCooldown[plr] ~= nil then
 			if now < CommandCooldown[plr] then
-				if string.find(msg, "[%s]*%" .. Set.Prefix .. "%w+") then
+				local escapedPrefix = string.gsub(Set.Prefix, "([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
+				if string.find(msg, "[%s]*" .. escapedPrefix .. "%w+") then
 					f.Error(
 						`COMMAND USAGE ON COOLDOWN, TRY AGAIN IN {math.ceil((CommandCooldown[plr] or now + 1) - now)} SECONDS`,
 						plr
@@ -1980,6 +1991,7 @@ function f.Chatted(plr: any, msg: string, cmdbar: boolean?)
 	local CMD
 	local fullLogParts: { string } = {}
 	local redactedLogParts: { string } = {}
+	local safeCmdOnlyParts: { string } = {}
 	local needsRedaction = false
 	local hasPrivateCmd = false
 	local success, _result = wrap(function()
@@ -2068,26 +2080,66 @@ function f.Chatted(plr: any, msg: string, cmdbar: boolean?)
 					if not server and not CommandCooldown[plr] and (limits[2] or 0) > 0 then
 						CommandCooldown[plr] = time() + (limits[2] or 1)
 					end
-					local prevCooldownFlag = currentCommandCooldownConsumed
-					currentCommandCooldownConsumed = false
+					local co = coroutine.running()
+					local prevCooldownFlag = commandCooldownConsumed[co]
+					commandCooldownConsumed[co] = false
 					-- Prevents VIP and lower from using duplicate commands other than hat
+					local okExec, execErr: any = true, nil
 					if pow > 1 or v[1][1][1] == "hat" or not cmdCache[v[1][1][1]] then
 						cmdCache[v[1][1][1]] = true
-						v[1][5](plr, args)
+						okExec, execErr = pcall(v[1][5], plr, args)
 					end
-					local usedBroadcastCooldown = currentCommandCooldownConsumed
-					currentCommandCooldownConsumed = prevCooldownFlag
+					local usedBroadcastCooldown = commandCooldownConsumed[co] == true
+					commandCooldownConsumed[co] = prevCooldownFlag
+					if not okExec then
+						error(execErr, 0)
+					end
 
 					if v[1][3] > 1 then
 						CMD = true
 						local cmdName = string.lower(v[1][1][1])
 						local freeIdx = findFreeTextArgIndex(v[1])
+						local argDefs = if type(v[1][4]) == "table" then v[1][4] else {}
 						local cleanMs = (ms:gsub("\n", "\t"))
+						table.insert(safeCmdOnlyParts, cmd)
+
+						local function canonicalArgToken(ti: number): string?
+							local defType = string.lower(tostring(argDefs[ti] or "")):gsub("/$", "")
+							local parsed = args[ti]
+							if defType == "player" and type(parsed) == "table" and #parsed > 0 then
+								local names = {}
+								for _, target in parsed do
+									if typeof(target) == "Instance" and target:IsA("Player") then
+										table.insert(names, target.Name)
+									end
+								end
+								if #names > 0 then
+									return table.concat(names, ",")
+								end
+							elseif defType == "userid" and type(parsed) == "table" and #parsed > 0 then
+								local ids = {}
+								for _, id in parsed do
+									if type(id) == "number" then
+										table.insert(ids, tostring(id))
+									end
+								end
+								if #ids > 0 then
+									return table.concat(ids, ",")
+								end
+							end
+							local rawTok = rawWords[ti]
+							if type(rawTok) == "string" and rawTok ~= "" then
+								return (rawTok:gsub("\n", "\t"))
+							end
+							return nil
+						end
+
 						if privateCommands[cmdName] then
 							hasPrivateCmd = true
 							local prefixTokens = { cmd }
-							if rawWords[1] and rawWords[1] ~= "" then
-								table.insert(prefixTokens, rawWords[1])
+							local firstTok = canonicalArgToken(1)
+							if firstTok and firstTok ~= "" then
+								table.insert(prefixTokens, firstTok)
 							end
 							table.insert(prefixTokens, "…")
 							local redactedCmd = table.concat(prefixTokens, " ")
@@ -2099,8 +2151,9 @@ function f.Chatted(plr: any, msg: string, cmdbar: boolean?)
 						elseif freeIdx and rawWords[freeIdx] ~= nil and rawWords[freeIdx] ~= "" then
 							local prefixTokens = { cmd }
 							for ti = 1, freeIdx - 1 do
-								if rawWords[ti] then
-									table.insert(prefixTokens, rawWords[ti])
+								local tok = canonicalArgToken(ti)
+								if tok and tok ~= "" then
+									table.insert(prefixTokens, tok)
 								end
 							end
 							table.insert(prefixTokens, "…")
@@ -2111,8 +2164,16 @@ function f.Chatted(plr: any, msg: string, cmdbar: boolean?)
 								needsRedaction = true
 							end
 						else
-							table.insert(redactedLogParts, cleanMs)
-							table.insert(fullLogParts, cleanMs)
+							local boundedTokens = { cmd }
+							for ti = 1, math.min(#rawWords, #argDefs) do
+								local tok = canonicalArgToken(ti)
+								if tok and tok ~= "" then
+									table.insert(boundedTokens, tok)
+								end
+							end
+							local canonicalCmd = table.concat(boundedTokens, " ")
+							table.insert(redactedLogParts, canonicalCmd)
+							table.insert(fullLogParts, canonicalCmd)
 						end
 					end
 				else
@@ -2155,20 +2216,33 @@ function f.Chatted(plr: any, msg: string, cmdbar: boolean?)
 	if success and CMD and (server or not FindChild(plr, "KHideLogs")) then
 		local rawFull = table.concat(fullLogParts, " ")
 		local rawRedacted = table.concat(redactedLogParts, " ")
-		local filteredFull = rawRedacted
+		local safeFallback = table.concat(safeCmdOnlyParts, " ")
+		local filteredFull = safeFallback
+		local filteredRedacted = rawRedacted
 		if server then
 			filteredFull = rawFull
 		else
 			local okFilter, res = filterBroadcast(rawFull, plr.UserId)
 			if okFilter and res then
 				filteredFull = res
+				if rawRedacted ~= "" then
+					local okRedacted, resRedacted = filterBroadcast(rawRedacted, plr.UserId)
+					if okRedacted and resRedacted then
+						filteredRedacted = resRedacted
+					else
+						filteredRedacted = safeFallback
+						needsRedaction = false
+					end
+				end
 			else
+				filteredFull = safeFallback
+				filteredRedacted = safeFallback
 				needsRedaction = false
 			end
 		end
 		local header = `{plr.DisplayName} [@{plr.Name}]:\t`
 		local fullLine = truncateUtf8(header .. filteredFull, 200)
-		local redactedLine = truncateUtf8(header .. rawRedacted, 200)
+		local redactedLine = truncateUtf8(header .. filteredRedacted, 200)
 		local initialLine = if needsRedaction then redactedLine else fullLine
 		local CLog: Log = { os.time(), initialLine }
 		if needsRedaction then
@@ -6722,38 +6796,40 @@ pcall(function()
 	script.Destroying:Once(shutdownKAI)
 end)
 
-shared._KAI_INTERNAL = {
-	f = f,
-	state = state,
-	services = services,
-	RemoteEvent = RemoteEvent,
-	ServerEvent = ServerEvent,
-	serverContext = serverContext,
-	shutdown = shutdownKAI,
-	getSet = function()
-		return Set
-	end,
-	getAdmins = function()
-		return Admins
-	end,
-	getBans = function()
-		return Bans
-	end,
-	getDonorCache = function()
-		return DonorCache
-	end,
-	getActiveNotify = function()
-		return activeNotify
-	end,
-	syncTextChatCommands = syncTextChatCommands,
-	canUserChat = canUserChat,
-	canUsersChat = canUsersChat,
-	clearChatCaches = clearChatCaches,
-	clearCooldowns = function()
-		table.clear(cooldowns)
-		table.clear(chattedCache)
-		table.clear(CommandCooldown)
-	end,
-}
+if testHookBox and (isHeadlessSert or services.Run:IsStudio()) then
+	testHookBox.server = {
+		f = f,
+		state = state,
+		services = services,
+		RemoteEvent = RemoteEvent,
+		ServerEvent = ServerEvent,
+		serverContext = serverContext,
+		shutdown = shutdownKAI,
+		getSet = function()
+			return Set
+		end,
+		getAdmins = function()
+			return Admins
+		end,
+		getBans = function()
+			return Bans
+		end,
+		getDonorCache = function()
+			return DonorCache
+		end,
+		getActiveNotify = function()
+			return activeNotify
+		end,
+		syncTextChatCommands = syncTextChatCommands,
+		canUserChat = canUserChat,
+		canUsersChat = canUsersChat,
+		clearChatCaches = clearChatCaches,
+		clearCooldowns = function()
+			table.clear(cooldowns)
+			table.clear(chattedCache)
+			table.clear(CommandCooldown)
+		end,
+	}
+end
 
 return true

@@ -247,6 +247,8 @@ local function getKaiServer(): KaiServerHarness
 		}
 	end)
 
+	local hookBox: { [string]: any } = {}
+	env.shared._KAI_TEST_HOOKS = hookBox
 	rawset(env, "_pendingScript", kaiScript)
 	local loadErr: any = nil
 	env.task.spawn(function()
@@ -263,8 +265,10 @@ local function getKaiServer(): KaiServerHarness
 		error(`Failed to load headless KAI server: {tostring(loadErr)}`, 0)
 	end
 
-	local kai = env.shared._KAI_INTERNAL
-	assert(type(kai) == "table", "shared._KAI_INTERNAL must be populated")
+	assert(env.shared._KAI_INTERNAL == nil, "shared._KAI_INTERNAL must not be populated")
+	assert(env.shared._KAI_TEST_HOOKS == nil, "shared._KAI_TEST_HOOKS must be cleared after load")
+	local kai = hookBox.server
+	assert(type(kai) == "table", "KAI test hook box must populate server exports")
 
 	-- Intercept RemoteEvent:FireClient to record all server->client deliveries
 	local remoteMethods = rawget(kai.RemoteEvent, "_methods") or {}
@@ -462,7 +466,7 @@ local function getKaiClient(): KaiClientHarness
 		return cachedClientHarness
 	end
 
-	local env = sert.env.new({ isClient = true, isStudio = false, strict = false, signalBehavior = "Immediate" })
+	local env = sert.env.new({ isClient = true, isStudio = false, strict = false, signalBehavior = "Deferred" })
 	local plr = env.LocalPlayer
 	local plrMethods = rawget(plr, "_methods") or {}
 	rawset(plr, "_methods", plrMethods)
@@ -520,6 +524,8 @@ local function getKaiClient(): KaiClientHarness
 		return mockTemplates
 	end)
 
+	local hookBox: { [string]: any } = {}
+	env.shared._KAI_TEST_HOOKS = hookBox
 	rawset(env, "_pendingScript", clientScript)
 	local clientLoadErr: any = nil
 	env.task.spawn(function()
@@ -536,8 +542,10 @@ local function getKaiClient(): KaiClientHarness
 		error(`Failed to load headless KAI client: {tostring(clientLoadErr)}`, 0)
 	end
 
-	local clientInternal = env.shared._KAI_CLIENT_INTERNAL
-	assert(type(clientInternal) == "table", "shared._KAI_CLIENT_INTERNAL must be populated")
+	assert(env.shared._KAI_CLIENT_INTERNAL == nil, "shared._KAI_CLIENT_INTERNAL must not be populated")
+	assert(env.shared._KAI_TEST_HOOKS == nil, "shared._KAI_TEST_HOOKS must be cleared after load")
+	local clientInternal = hookBox.client
+	assert(type(clientInternal) == "table", "KAI test hook box must populate client exports")
 
 	local harness: KaiClientHarness = {
 		env = env,
@@ -917,6 +925,82 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 	)
 
 	headlessTest(
+		"KAI Server security regressions: filter failure falls back to command-only, trailing args stripped, :m/:h share direct cooldown, and Prefix rejects pattern classes",
+		function()
+			local s = getKaiServer()
+			local sender = s.env:addPlayer(60, "RegSender")
+			local friend = s.env:addPlayer(61, "RegFriend")
+			local restricted = s.env:addPlayer(62, "RegRestricted")
+			s.kai.getAdmins()[sender.UserId] = 6
+			s.kai.getAdmins()[friend.UserId] = 4
+			local uID = s.kai.f.uID
+
+			s.pairChatFn = function(a: number, b: number): boolean
+				return (a == 60 and b == 61) or (a == 61 and b == 60)
+			end
+
+			-- Non-free command (:fly has 1 arg) drops trailing unparsed args from Logs
+			s.kai.f.Chatted(sender, ":fly RegFriend ExtraSecretToken", false)
+			sert.eq(#s.kai.state.Logs, 1)
+			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), "ExtraSecretToken", 1, true), nil)
+			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), ":fly RegFriend", 1, true) ~= nil, true)
+
+			-- :pm logs resolved canonical target instead of raw mixed selector text
+			s.env:advance(1.5)
+			s.kai.f.Chatted(sender, ":pm RegFriend,NotARealSecret WhisperSecret", false)
+			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), "NotARealSecret", 1, true), nil)
+			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), ":pm RegFriend …", 1, true) ~= nil, true)
+
+			-- Filter failure falls back safely to command-only text (never unconfirmed args)
+			local _kickTarget = s.env:addPlayer(63, "KickDummy")
+			s.env:advance(1.5)
+			s.filterFail = true
+			s.kai.f.Chatted(sender, ":kick KickDummy FilteredOutSecret", false)
+			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), "FilteredOutSecret", 1, true), nil)
+			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), "KickDummy", 1, true), nil)
+			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), ":kick", 1, true) ~= nil, true)
+			s.filterFail = false
+
+			-- :m and :h share the single 60s "direct" broadcast cooldown toward restricted peers
+			s.kai.clearCooldowns()
+			table.clear(s.firedClients)
+			s.env:advance(1.5)
+			s.kai.f.Chatted(sender, ":m First Broadcast", false)
+			local sawRestrictedMsg = false
+			for _, ev in s.firedClients do
+				if ev.player == restricted and ev.action == "KMsg" then
+					sawRestrictedMsg = true
+				end
+			end
+			sert.eq(sawRestrictedMsg, true)
+
+			table.clear(s.firedClients)
+			s.env:advance(1.5)
+			s.kai.f.Chatted(sender, ":h Second Hint Broadcast", false)
+			local sawRestrictedHint, sawFriendHint = false, false
+			for _, ev in s.firedClients do
+				if ev.action == "KHint" then
+					if ev.player == restricted then
+						sawRestrictedHint = true
+					elseif ev.player == friend then
+						sawFriendHint = true
+					end
+				end
+			end
+			sert.eq(sawRestrictedHint, false)
+			sert.eq(sawFriendHint, true)
+
+			-- Prefix rejects regex classes (%w, %b), '/', quotes, and multi-char strings, while accepting single punctuation
+			for _, badPrefix in { "%w", "%b", "%0", "/", '"', "`", "a", "!!" } do
+				s.kai.ServerEvent(sender, uID .. "KUpdate", { IGS = true, Prefix = badPrefix })
+				sert.eq(s.kai.getSet().Prefix, ":")
+			end
+			s.kai.ServerEvent(sender, uID .. "KUpdate", { IGS = true, Prefix = "?" })
+			sert.eq(s.kai.getSet().Prefix, "?")
+		end
+	)
+
+	headlessTest(
 		"KAI Client & Serialized_Credit: non-overlapping Join button, AutocompleteVisible, non-slash echo, CLogs gating/UTF-8/RichText, and KBans sort",
 		function()
 			local c = getKaiClient()
@@ -932,7 +1016,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			sert.eq(joinBtn.Position, c.env.UDim2.fromOffset(0, 288))
 			sert.eq(t4 ~= nil and t4:FindFirstChildOfClass("UIGradient") ~= nil, true)
 
-			-- 2. Create TextChatCommands_KAI before KuID and verify AutocompleteVisible updates by local power
+			-- 2. Create TextChatCommands_KAI before KuID and verify AutocompleteVisible updates by local power (primary "/" alias only)
 			local folder = c.env.Instance.new("Folder")
 			folder.Name = "TextChatCommands_KAI"
 			local helpCmd = c.env.Instance.new("TextChatCommand")
@@ -940,6 +1024,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			helpCmd.PrimaryAlias = ":help"
 			helpCmd.AutocompleteVisible = false
 			helpCmd:SetAttribute("Power", 0)
+			helpCmd:SetAttribute("CmdName", "help")
 			helpCmd.Parent = folder
 			local flyCmd = c.env.Instance.new("TextChatCommand")
 			flyCmd.Name = "KAI_fly"
@@ -947,7 +1032,25 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			flyCmd.SecondaryAlias = ":fly"
 			flyCmd.AutocompleteVisible = false
 			flyCmd:SetAttribute("Power", 2)
+			flyCmd:SetAttribute("CmdName", "fly")
 			flyCmd.Parent = folder
+			local fCmd = c.env.Instance.new("TextChatCommand")
+			fCmd.Name = "KAI_f"
+			fCmd.PrimaryAlias = "/f"
+			fCmd.AutocompleteVisible = false
+			fCmd:SetAttribute("Power", 2)
+			fCmd:SetAttribute("CmdName", "fly")
+			fCmd.Parent = folder
+			-- visibility and alias changes re-add the changed command, the folder itself is never re-added
+			local folderRemoved, readded = 0, {}
+			local folderConn = tcs.ChildRemoved:Connect(function(child)
+				if child == folder then
+					folderRemoved += 1
+				end
+			end)
+			local childConn = folder.ChildRemoved:Connect(function(child)
+				readded[child.Name] = (readded[child.Name] or 0) + 1
+			end)
 			folder.Parent = tcs
 			c.env:flush()
 
@@ -977,8 +1080,9 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 				{} :: any,
 				{} :: any,
 			})
-			sert.eq(helpCmd.AutocompleteVisible, true)
+			sert.eq(helpCmd.AutocompleteVisible, false)
 			sert.eq(flyCmd.AutocompleteVisible, false)
+			sert.eq(fCmd.AutocompleteVisible, false)
 
 			-- Non-admin with PublicLogs == false still does NOT accumulate CLogs
 			tcs.MessageReceived:Fire({
@@ -987,31 +1091,78 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 				Text = "Blocked for non-admin",
 				Metadata = "",
 			})
+			c.env:flush()
 			sert.eq(#c.client.CLogs, 0)
 
-			-- Promote local player to power 3 -> flyCmd AutocompleteVisible becomes true & CLogs start recording
+			-- Promote local player to power 3 -> only primary "/" flyCmd AutocompleteVisible becomes true
 			c.admstr.Value = `{plr.UserId}:3`
 			c.env:flush()
+			sert.eq(helpCmd.AutocompleteVisible, false)
 			sert.eq(flyCmd.AutocompleteVisible, true)
+			sert.eq(fCmd.AutocompleteVisible, false)
+			c.env:advance(0.1)
+			sert.eq(readded.KAI_help, nil)
+			sert.eq(readded.KAI_fly, 1)
+			sert.eq(readded.KAI_f, nil)
+			sert.eq(flyCmd.Parent, folder)
 
-			-- Non-slash Triggered skips echo when ChatTranslationEnabled is true, and echoes to RBXGeneral when false; slash Triggered never echoes
+			-- the server rewrites aliases in place on prefix changes, so the command is re-added
+			flyCmd.SecondaryAlias = ";fly"
+			c.env:advance(0.1)
+			sert.eq(readded.KAI_fly, 2)
+			sert.eq(readded.KAI_help, nil)
+			sert.eq(folderRemoved, 0)
+
+			-- ChatInputBarConfiguration creation binds IsFocused flush under Deferred signals and preserves watching
+			local inputBar = tcs:FindFirstChildOfClass("ChatInputBarConfiguration")
+				or c.env.createInstance("ChatInputBarConfiguration", tcs)
+			c.env:flush()
+			flyCmd.SecondaryAlias = "!fly"
+			c.env:flush()
+			inputBar.IsFocused = true
+			c.env:flush()
+			sert.eq(readded.KAI_fly, 3)
+
+			flyCmd.SecondaryAlias = ":fly"
+			c.env:advance(0.1)
+			sert.eq(readded.KAI_fly, 4)
+			folderConn:Disconnect()
+			childConn:Disconnect()
+
+			-- Non-slash Triggered STILL echoes even when ChatTranslationEnabled is true; slash Triggered never echoes
 			table.clear(c.sentChannelMessages)
 			rawset(tcs, "_props", rawget(tcs, "_props") or {})
 			tcs._props.ChatTranslationEnabled = true
 			flyCmd.Triggered:Fire({ UserId = plr.UserId }, ":fly me")
 			c.env:advance(0.05)
-			sert.eq(#c.sentChannelMessages, 0)
+			sert.eq(#c.sentChannelMessages, 1)
+			sert.eq(c.sentChannelMessages[1].text, ":fly me")
+			sert.eq(c.sentChannelMessages[1].metadata, "KAI_CommandEcho")
 
 			tcs._props.ChatTranslationEnabled = false
 			flyCmd.Triggered:Fire({ UserId = plr.UserId }, "/fly me")
 			c.env:advance(0.05)
-			sert.eq(#c.sentChannelMessages, 0)
+			sert.eq(#c.sentChannelMessages, 1)
+
+			-- Echo prefers ChatInputBarConfiguration.TargetTextChannel when available
+			local targetSent: { { text: string, metadata: string? } } = {}
+			local channels = tcs:FindFirstChild("TextChannels")
+			local customChannel = c.env.Instance.new("TextChannel", channels)
+			customChannel.Name = "CustomTeamChannel"
+			local customMethods = rawget(customChannel, "_methods") or {}
+			rawset(customChannel, "_methods", customMethods)
+			customMethods.SendAsync = function(_self: any, text: string, metadata: string?)
+				table.insert(targetSent, { text = text, metadata = metadata })
+			end
+			inputBar.TargetTextChannel = customChannel
 
 			flyCmd.Triggered:Fire({ UserId = plr.UserId }, ":fly me")
 			c.env:advance(0.05)
+			sert.eq(#targetSent, 1)
+			sert.eq(targetSent[1].text, ":fly me")
+			sert.eq(targetSent[1].metadata, "KAI_CommandEcho")
 			sert.eq(#c.sentChannelMessages, 1)
-			sert.eq(c.sentChannelMessages[1].text, ":fly me")
-			sert.eq(c.sentChannelMessages[1].metadata, "KAI_CommandEcho")
+			inputBar.TargetTextChannel = nil
 
 			-- CLogs skips KAI_CommandEcho, enabled custom command ":fly", and "/e dance", but ALLOWS normal metadata & "/everyone"
 			for _, msg in
@@ -1029,6 +1180,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 					Metadata = msg.meta,
 				})
 			end
+			c.env:flush()
 			sert.eq(#c.client.CLogs, 0)
 
 			-- RichText entities unescaped, custom Metadata allowed, and UTF-8 multi-byte emoji safely truncated without splitting codepoints
@@ -1045,6 +1197,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 				Text = longEmoji,
 				Metadata = "",
 			})
+			c.env:flush()
 			sert.eq(#c.client.CLogs, 2)
 			sert.eq(string.find(tostring(c.client.CLogs[2][2]), "/everyone <b>Hi & Welcome</b>", 1, true) ~= nil, true)
 			sert.eq(utf8.len(tostring(c.client.CLogs[1][2])) ~= nil, true)
@@ -1103,11 +1256,15 @@ describe("Studio · Server", function()
 				toolsSource:Clone().Parent = kaiClone
 			end
 
+			local hookBox: { [string]: any } = {}
+			shared._KAI_TEST_HOOKS = hookBox
 			local okReq, reqResult = pcall(require, kaiClone)
 			sert.eq(okReq, true)
 			sert.eq(reqResult, true)
+			sert.eq(shared._KAI_INTERNAL, nil)
+			sert.eq(shared._KAI_TEST_HOOKS, nil)
 
-			local kai = shared._KAI_INTERNAL
+			local kai = hookBox.server
 			sert.eq(type(kai), "table")
 
 			local okTest, testErr = pcall(function(): any
@@ -1209,7 +1366,6 @@ describe("Studio · Server", function()
 			if legacyRemote then
 				legacyRemote:Destroy()
 			end
-			shared._KAI_INTERNAL = nil
 
 			if not okTest then
 				error(testErr, 0)

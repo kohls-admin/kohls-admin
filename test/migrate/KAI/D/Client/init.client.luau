@@ -2,7 +2,8 @@
 --!nocheck
 --!nolint
 
-if game == nil then
+local isHeadlessSert = game == nil
+if isHeadlessSert then
 	local okSert, sertMod = pcall(require, "@sert")
 	if okSert and type(sertMod) == "table" and sertMod.env and sertMod.env.active then
 		local activeEnv = sertMod.env.active()
@@ -27,6 +28,9 @@ if game == nil then
 		end
 	end
 end
+
+local testHookBox = if type(shared._KAI_TEST_HOOKS) == "table" then shared._KAI_TEST_HOOKS else nil
+shared._KAI_TEST_HOOKS = nil
 
 --|  |Core Setup|  |--
 task.wait()
@@ -752,9 +756,14 @@ local CHAT_COMMANDS_FOLDER_NAME = "TextChatCommands_KAI"
 local COMMAND_ECHO_METADATA = "KAI_CommandEcho"
 local chatCommandsFolder: Folder? = nil
 local folderConns: { RBXScriptConnection } = {}
-local reparentingFolder = false
-local reparentQueued = false
 local watchedCommands: { [TextChatCommand]: { RBXScriptConnection } } = {}
+-- Chat reads a command's AutocompleteVisible and aliases when the command is added, so only the commands that changed
+-- are re-added. Re-adding the whole folder made chat re-index every command, which froze Studio for seconds on Play.
+local pendingRefresh: { [Instance]: true } = {}
+local ignoreRemoved: { [Instance]: number } = {} -- counts expected ChildRemoved events from our own reparents
+local ignoreAdded: { [Instance]: number } = {} -- counts expected ChildAdded events from our own reparents
+local sending: { [Instance]: true } = {}
+local refreshScheduled = false
 
 local function getLocalPower(): number
 	return math.max(math.abs(Admins[plr.UserId] or 0), tonumber(Set and Set.FreeAdmin) or 0)
@@ -808,30 +817,86 @@ local function matchesEnabledCustomCommandAlias(str: string): boolean
 	return false
 end
 
-local function reparentChatCommandsFolder()
-	if reparentQueued or reparentingFolder then
+local function unwatchTextChatCommand(child: Instance)
+	pendingRefresh[child] = nil
+	sending[child] = nil
+	local conns = watchedCommands[child :: any]
+	if conns then
+		for _, c in conns do
+			c:Disconnect()
+		end
+		watchedCommands[child :: any] = nil
+	end
+end
+
+local function refreshOne(child: Instance)
+	pendingRefresh[child] = nil
+	local folder = chatCommandsFolder
+	if not folder or child.Parent ~= folder then
 		return
 	end
-	reparentQueued = true
-	task.defer(function()
-		reparentQueued = false
-		if not chatCommandsFolder or reparentingFolder or chatCommandsFolder.Parent ~= TextChatService then
-			return
-		end
-		reparentingFolder = true
-		pcall(function()
-			chatCommandsFolder.Parent = nil
-			chatCommandsFolder.Parent = TextChatService
-		end)
-		reparentingFolder = false
+	-- Track expected ChildRemoved / ChildAdded counts independently so Deferred reparents never drop tracking
+	ignoreRemoved[child] = (ignoreRemoved[child] or 0) + 1
+	ignoreAdded[child] = (ignoreAdded[child] or 0) + 1
+	local removedOk = pcall(function()
+		child.Parent = nil
 	end)
+	if not removedOk or child.Parent ~= nil then
+		local remCount = (ignoreRemoved[child] or 0) - 1
+		ignoreRemoved[child] = if remCount > 0 then remCount else nil
+		local addCount = (ignoreAdded[child] or 0) - 1
+		ignoreAdded[child] = if addCount > 0 then addCount else nil
+		return
+	end
+	local addedOk = pcall(function()
+		child.Parent = folder
+	end)
+	if not addedOk or child.Parent ~= folder then
+		local addCount = (ignoreAdded[child] or 0) - 1
+		ignoreAdded[child] = if addCount > 0 then addCount else nil
+		unwatchTextChatCommand(child)
+	end
+end
+
+local function flushRefresh()
+	for child in pendingRefresh do
+		refreshOne(child)
+	end
+end
+
+local function queueRefresh(child: Instance)
+	pendingRefresh[child] = true
+	if refreshScheduled then
+		return
+	end
+	refreshScheduled = true
+	-- chat rebuilds once per frame that has changes, so every queued change is re-added in one pass
+	task.defer(function()
+		if not game:IsLoaded() then
+			game.Loaded:Wait()
+		end
+		refreshScheduled = false
+		flushRefresh()
+	end)
+end
+
+local function isPrimarySlashAlias(cmd: TextChatCommand): boolean
+	if string.sub(cmd.PrimaryAlias, 1, 1) ~= "/" then
+		return false
+	end
+	local cmdName = cmd:GetAttribute("CmdName")
+	if type(cmdName) ~= "string" or cmdName == "" then
+		return true
+	end
+	return string.lower(cmd.Name) == "kai_" .. string.lower(cmdName)
 end
 
 local function updateCommandVisibility(cmd: TextChatCommand): boolean
 	local reqPower = tonumber(cmd:GetAttribute("Power")) or 0
 	local myPower = getLocalPower()
 	local hasVIP = kdonor ~= nil and kdonor.Value > 1
-	local visible = myPower >= reqPower or (reqPower == 1 and hasVIP)
+	local authorized = myPower >= reqPower or (reqPower == 1 and hasVIP)
+	local visible = authorized and isPrimarySlashAlias(cmd)
 	if cmd.AutocompleteVisible ~= visible then
 		cmd.AutocompleteVisible = visible
 		return true
@@ -839,20 +904,17 @@ local function updateCommandVisibility(cmd: TextChatCommand): boolean
 	return false
 end
 
-refreshTextChatCommands = function(forceReparent: boolean?)
+-- `refreshAll` re-adds every command (prefix changes), otherwise only the ones whose visibility changed
+refreshTextChatCommands = function(refreshAll: boolean?)
 	if not chatCommandsFolder then
 		return
 	end
-	local changed = forceReparent == true
 	for _, child in chatCommandsFolder:GetChildren() do
 		if child:IsA("TextChatCommand") then
-			if updateCommandVisibility(child) then
-				changed = true
+			if updateCommandVisibility(child) or refreshAll == true then
+				queueRefresh(child)
 			end
 		end
-	end
-	if changed then
-		reparentChatCommandsFolder()
 	end
 end
 
@@ -860,19 +922,39 @@ local function watchTextChatCommand(child: Instance)
 	if not child:IsA("TextChatCommand") or watchedCommands[child] then
 		return
 	end
-	updateCommandVisibility(child)
+	if updateCommandVisibility(child) then
+		queueRefresh(child)
+	end
 	local conns = {}
 	table.insert(
 		conns,
 		child:GetAttributeChangedSignal("Power"):Connect(function()
 			if updateCommandVisibility(child) then
-				reparentChatCommandsFolder()
+				queueRefresh(child)
 			end
 		end)
 	)
 	table.insert(
 		conns,
+		child:GetAttributeChangedSignal("CmdName"):Connect(function()
+			if updateCommandVisibility(child) then
+				queueRefresh(child)
+			end
+		end)
+	)
+	-- the server changes aliases in place when the prefix changes
+	local function aliasChanged()
+		updateCommandVisibility(child)
+		queueRefresh(child)
+	end
+	table.insert(conns, child:GetPropertyChangedSignal("PrimaryAlias"):Connect(aliasChanged))
+	table.insert(conns, child:GetPropertyChangedSignal("SecondaryAlias"):Connect(aliasChanged))
+	table.insert(
+		conns,
 		child.Triggered:Connect(function(textSource, unfilteredText)
+			if sending[child] then
+				return
+			end
 			if not textSource or textSource.UserId ~= plr.UserId or type(unfilteredText) ~= "string" then
 				return
 			end
@@ -888,18 +970,18 @@ local function watchTextChatCommand(child: Instance)
 			then
 				return
 			end
-			local okPic, picEnabled = pcall(function()
-				return TextChatService.ChatTranslationEnabled
-			end)
-			if okPic and picEnabled then
-				return
+			local chatInputBar = TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
+			local channel = if chatInputBar then chatInputBar.TargetTextChannel else nil
+			if not (channel and channel:IsA("TextChannel")) then
+				local channels = TextChatService:FindFirstChild("TextChannels")
+				channel = if channels then channels:FindFirstChild("RBXGeneral") else nil
 			end
-			local channels = TextChatService:FindFirstChild("TextChannels")
-			local channel = channels and channels:FindFirstChild("RBXGeneral")
 			if channel and channel:IsA("TextChannel") then
+				sending[child] = true
 				child.Enabled = false
 				task.spawn(pcall, channel.SendAsync, channel, unfilteredText, COMMAND_ECHO_METADATA)
 				child.Enabled = true
+				sending[child] = nil
 			end
 		end)
 	)
@@ -914,12 +996,13 @@ local function bindChatCommandsFolder(folder: Instance)
 		conn:Disconnect()
 	end
 	table.clear(folderConns)
-	for child, conns in watchedCommands do
-		for _, c in conns do
-			c:Disconnect()
-		end
-		watchedCommands[child] = nil
+	for child in watchedCommands do
+		unwatchTextChatCommand(child)
 	end
+	table.clear(pendingRefresh)
+	table.clear(ignoreRemoved)
+	table.clear(ignoreAdded)
+	table.clear(sending)
 	chatCommandsFolder = folder
 	for _, child in folder:GetChildren() do
 		watchTextChatCommand(child)
@@ -927,25 +1010,46 @@ local function bindChatCommandsFolder(folder: Instance)
 	table.insert(
 		folderConns,
 		folder.ChildAdded:Connect(function(child)
-			watchTextChatCommand(child)
+			local count = ignoreAdded[child]
+			if count and count > 0 then
+				ignoreAdded[child] = if count > 1 then count - 1 else nil
+			else
+				watchTextChatCommand(child)
+			end
 		end)
 	)
 	table.insert(
 		folderConns,
 		folder.ChildRemoved:Connect(function(child)
-			local conns = watchedCommands[child :: any]
-			if conns then
-				for _, c in conns do
-					c:Disconnect()
-				end
-				watchedCommands[child :: any] = nil
+			local count = ignoreRemoved[child]
+			if count and count > 0 then
+				ignoreRemoved[child] = if count > 1 then count - 1 else nil
+				return
 			end
+			unwatchTextChatCommand(child)
 		end)
 	)
 	if refreshTextChatCommands then
-		refreshTextChatCommands(true)
+		refreshTextChatCommands()
 	end
 end
+
+local chatInputBarConn: RBXScriptConnection? = nil
+local function bindChatInputBar(bar: Instance?)
+	if chatInputBarConn then
+		chatInputBarConn:Disconnect()
+		chatInputBarConn = nil
+	end
+	if bar and bar:IsA("ChatInputBarConfiguration") then
+		chatInputBarConn = bar:GetPropertyChangedSignal("IsFocused"):Connect(function()
+			if bar.IsFocused then
+				flushRefresh()
+			end
+		end)
+	end
+end
+
+bindChatInputBar(TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration"))
 
 task.spawn(function()
 	local existing = TextChatService:FindFirstChild(CHAT_COMMANDS_FOLDER_NAME)
@@ -955,8 +1059,10 @@ task.spawn(function()
 	end
 end)
 TextChatService.ChildAdded:Connect(function(child)
-	if not reparentingFolder and child.Name == CHAT_COMMANDS_FOLDER_NAME then
+	if child.Name == CHAT_COMMANDS_FOLDER_NAME then
 		bindChatCommandsFolder(child)
+	elseif child:IsA("ChatInputBarConfiguration") then
+		bindChatInputBar(child)
 	end
 end)
 
@@ -1265,6 +1371,7 @@ local musicMuted = false
 function ClientEvent(a, b)
 	if a == "KuID" then
 		f.uID, Admins, Set, Cmds, Logs = b[1], b[2], b[3], b[4], b[5]
+		lastKnownPrefix = Set.Prefix
 		clientReady = true
 		f.UpdateSet()
 		return
@@ -2129,24 +2236,26 @@ plr.CharacterAdded:connect(function(a)
 	cam.CameraSubject = WaitForChild(char, "Humanoid")
 end)
 
-shared._KAI_CLIENT_INTERNAL = {
-	f = f,
-	CoreUI = CoreUI,
-	CLogs = CLogs,
-	ClientEvent = ClientEvent,
-	getLogs = function()
-		return Logs
-	end,
-	getBans = function()
-		return Bans
-	end,
-	getSet = function()
-		return Set
-	end,
-	getAdmins = function()
-		return Admins
-	end,
-	refreshTextChatCommands = refreshTextChatCommands,
-}
+if testHookBox and (isHeadlessSert or s.Run:IsStudio()) then
+	testHookBox.client = {
+		f = f,
+		CoreUI = CoreUI,
+		CLogs = CLogs,
+		ClientEvent = ClientEvent,
+		getLogs = function()
+			return Logs
+		end,
+		getBans = function()
+			return Bans
+		end,
+		getSet = function()
+			return Set
+		end,
+		getAdmins = function()
+			return Admins
+		end,
+		refreshTextChatCommands = refreshTextChatCommands,
+	}
+end
 
 return true
