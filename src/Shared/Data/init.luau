@@ -421,7 +421,15 @@ local SYNC = {
 	end,
 
 	settings = function(state, changes)
+		local studioThemeLock = (Data.defaultSettings :: any).changeThemeAuthority == "Studio"
 		for key, setting in changes do
+			if
+				studioThemeLock
+				and (key == "changeThemeAuthority" or string.find(key :: string, "theme", 1, true) == 1)
+			then
+				changes[key] = nil
+				continue
+			end
 			if type(setting) == "table" then
 				local itemType = setting[1]
 				if itemType == "color" then
@@ -445,6 +453,15 @@ local SYNC = {
 		end
 
 		Util.Table.merge(state, changes)
+		if studioThemeLock then
+			for key, defaultValue in Data.defaultSettings do
+				if key == "changeThemeAuthority" or string.find(key, "theme", 1, true) == 1 then
+					state[key] = if type(defaultValue) == "table"
+						then Util.Table.deepCopy(defaultValue)
+						else defaultValue
+				end
+			end
+		end
 		Data.settings = if Data.savedSettings.useSavedSettings then state else Data.defaultSettings
 
 		for _, player in Players:GetPlayers() do
@@ -525,7 +542,10 @@ local REMOVE = {
 	end,
 	members = function(state, keys)
 		for _, key in keys do
-			Auth.networkMember(key)
+			local userId = tonumber(key)
+			if userId then
+				Auth.networkMember(userId)
+			end
 		end
 	end,
 }

@@ -267,9 +267,13 @@ function Disable()
 
 	-- Hide UI
 	if UI then
-		pcall(function ()
+		local ok = pcall(function ()
 			UI.Parent = script;
 		end);
+		if not ok then
+			pcall(UI.Destroy, UI);
+			UI = nil;
+		end;
 	end;
 
 	-- Unequip current tool
@@ -516,6 +520,10 @@ elseif Mode == 'Tool' then
 		local CharacterRemovingConnection = Player.CharacterRemoving:Connect(Disable);
 		Tool.Destroying:Once(function ()
 			CharacterRemovingConnection:Disconnect();
+			if UI then
+				pcall(UI.Destroy, UI);
+				UI = nil;
+			end;
 		end);
 	end;
 

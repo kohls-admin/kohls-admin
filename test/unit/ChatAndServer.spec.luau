@@ -1002,10 +1002,12 @@ describe("Chat and Server", function()
 				_K.Remote.Explorer._signal:Fire(srvAdmin, "DELETE", { pasted })
 				sert.eq(folder:FindFirstChild("PasteMe"), nil)
 
-				-- Deleting a Player instance via Explorer checks targetUserArgument and targetLimits (lines 940-945)
+				-- Deleting a Player instance via Explorer is rejected on the server as well
 				local tempVictim = sh.env:addPlayer(808, "ExplorerVictim")
+				local victimParent = tempVictim.Parent
 				_K.Remote.Explorer._signal:Fire(srvAdmin, "DELETE", { tempVictim })
-				sert.eq(tempVictim.Parent, nil)
+				sert.eq(tempVictim.Parent ~= nil, true)
+				sert.eq(tempVictim.Parent, victimParent)
 				server:leave(tempVictim)
 
 				-- Deleting a container holding a higher-rank player's character or TextChatCommands_KA is blocked, while unowned parts succeed
@@ -1219,13 +1221,16 @@ describe("Chat and Server", function()
 				sert.eq(#serverBroadcasts, 3)
 				sert.eq(serverBroadcasts[3].jobId, "remote-job-99")
 
-				-- Unsubscribing all admins disconnects topic listener & clears Map; re-subscribing re-attaches
+				-- Unsubscribing all admins disconnects topic listener while keeping fresh entries warm; re-subscribing purges expired entries
 				table.clear(serversTable.Subscribers)
 				serversTable.syncSubscription()
-				sert.eq(_K.Data.servers["remote-job-fresh"], nil)
+				sert.eq(_K.Data.servers["remote-job-fresh"] ~= nil, true)
+				_K.Data.servers["remote-job-stale"] = { 1000, 2, sh.env.globals.os.time(), sh.env.globals.tick() - 40 }
 				serversTable.Subscribers[srvAdmin] = true
 				serversTable.syncSubscription()
 				world:run(0.5)
+				sert.eq(_K.Data.servers["remote-job-stale"], nil)
+				sert.eq(_K.Data.servers["remote-job-fresh"] ~= nil, true)
 				sert.eq(serverBroadcasts[3].count, nil)
 				_K.Remote.Servers.Fire = origServersFire
 			end
@@ -2594,6 +2599,104 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			_K.Data.publishTopic("serversSync", { "remote-job-999", 42 })
 			world:run(2.5)
 			sert.eq(world.scheduler.errors, {})
+		end
+	)
+
+	test(
+		"Remote.PlayerPrefix decouples from chatCommands & rejects /, ChatCommands pairs >2 aliases, Remote.Settings enforces Studio lock, and Servers bounds TTL",
+		function()
+			local world = sert.sim.new({ backing = true })
+			local server = world:server()
+			local guestClient = server:client(202)
+			local sh = Harness.newPeerEnv(server, { isStudio = false })
+			sh.env.game._props.CreatorId = 101
+			local srvAdmin = sh.env:addPlayer(101, "Creator101")
+			srvAdmin:SetAttribute("_KRolesLoaded", true)
+			srvAdmin:SetAttribute("_K_READY", true)
+			local _K = sh:requireK()
+			server:spawn(function()
+				_K.initialize({
+					bans = {},
+					prefix = { ";" },
+					vip = true,
+					userRoles = { creator = { 101 } },
+					roles = Harness.defaultRoles(),
+				})
+			end)
+			world:run(1)
+
+			local guestEnv = Harness.newPeerEnv(guestClient, { isClient = true })
+			local gRemote = guestEnv:requireRemote()
+			gRemote.Init:Fire({ Attributes = { Platform = "PC" } })
+			world:run(1)
+
+			local srvGuest = sh.env.Players:GetPlayerByUserId(202)
+			local folder = sh.env.game:GetService("TextChatService"):FindFirstChild("TextChatCommands_KA")
+
+			-- 1. Remote.PlayerPrefix updates prefix & attribute even when chatCommands == false, and rejects "/"
+			_K.Data.savedSettings.chatCommands = false
+			_K.Data.settings.chatCommands = false
+			world:run(2.1)
+			gRemote.PlayerPrefix:Fire("!")
+			world:run(0.3)
+			sert.eq(_K.Data.playerPrefix[202], "!")
+			sert.eq(srvGuest:GetAttribute("_KPlayerPrefix"), "!")
+
+			world:run(2.1)
+			gRemote.PlayerPrefix:Fire("/")
+			world:run(0.3)
+			sert.eq(_K.Data.playerPrefix[202], "!")
+
+			-- 2. ChatCommands pairs >2 aliases into _KPlayer_<cp>_<key> and _KPlayer_<cp>_<key>_2
+			_K.Data.savedSettings.chatCommands = true
+			_K.Data.settings.chatCommands = true
+			_K.Registry.registerCommand(_K, {
+				name = "multialiascmd",
+				aliases = { "ma1", "ma2", "ma3" },
+				group = "utility",
+				args = {},
+				run = function() end,
+			})
+			world:run(2.1)
+			gRemote.PlayerPrefix:Fire("?")
+			world:run(0.5)
+			local firstPair = folder:FindFirstChild("_KPlayer_63_multialiascmd")
+			local secondPair = folder:FindFirstChild("_KPlayer_63_multialiascmd_2")
+			sert.eq(firstPair ~= nil, true)
+			sert.eq(secondPair ~= nil, true)
+
+			-- 3. Remote.Settings ignores changeThemeAuthority and theme* when locked to Studio
+			_K.Data.settings.changeThemeAuthority = "Studio"
+			local origTheme = _K.Data.settings.theme
+			_K.Remote.Settings._signal:Fire(srvAdmin, { changeThemeAuthority = "Client", theme = "Cyan" })
+			world:run(0.2)
+			sert.eq(_K.Data.settings.changeThemeAuthority, "Studio")
+			sert.eq(_K.Data.settings.theme, origTheme)
+
+			-- 4. Servers clamps TTL > 600 and ignores NaN TTL
+			local Servers = sh.env:require(sh.Server:WaitForChild("Servers"))
+			Servers.Enabled = true
+			Servers.Subscribers[srvAdmin] = true
+			Servers.syncSubscription()
+			world:run(0.2)
+			local MessagingService = sh.env.game:GetService("MessagingService")
+			MessagingService:PublishAsync("_KAdminServers", {
+				"ttl-cap-job",
+				1000,
+				4,
+				sh.env.globals.os.time(),
+				999999,
+			})
+			MessagingService:PublishAsync("_KAdminServers", {
+				"ttl-nan-job",
+				1000,
+				4,
+				sh.env.globals.os.time(),
+				0 / 0,
+			})
+			world:run(0.3)
+			sert.eq(_K.Data.servers["ttl-cap-job"][5], 600)
+			sert.eq(_K.Data.servers["ttl-nan-job"][5], 35)
 		end
 	)
 end)

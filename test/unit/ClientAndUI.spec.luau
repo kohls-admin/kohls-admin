@@ -3873,6 +3873,107 @@ describe("Client and UI", function()
 				fastRun(0.2)
 			end)
 
+			test("re-adds only changed chat commands in one pass, never the whole folder", function()
+				local world, _srvMounted, cliMounted, _sK, cK = getOrCreateFullClientSut()
+				local cEnv = cliMounted.env
+				local textChat = cK.Service.TextChat
+				-- the server folder doesn't replicate in this world, so add it the way replication would
+				local folder = textChat:FindFirstChild("TextChatCommands_KA")
+				if not folder then
+					folder = cEnv.Instance.new("Folder")
+					folder.Name = "TextChatCommands_KA"
+					folder.Parent = textChat
+				end
+				world:run(0.05)
+				sert.eq(folder.Parent, textChat)
+				cK.Data.settings.chatCommands = true
+				cK.client.settings.chatCommands(true)
+				world:run(0.1)
+
+				local readds, folderRemoved = 0, 0
+				local conns = {
+					folder.ChildRemoved:Connect(function()
+						readds += 1
+					end),
+					textChat.ChildRemoved:Connect(function(child)
+						if child == folder then
+							folderRemoved += 1
+						end
+					end),
+				}
+
+				-- the server adds commands one at a time, the client flips each to visible and re-adds it once
+				local added = {}
+				for i = 1, 230 do
+					local cmd = cEnv.Instance.new("TextChatCommand")
+					cmd.Name = "ping"
+					cmd.PrimaryAlias = `/pingbatch{i}`
+					cmd.AutocompleteVisible = false
+					cmd.Parent = folder
+					table.insert(added, cmd)
+				end
+				world:run(0.3)
+				local function countAdded()
+					local visible, inFolder = 0, 0
+					for _, cmd in added do
+						if cmd.AutocompleteVisible and cmd.Enabled then
+							visible += 1
+						end
+						if cmd.Parent == folder then
+							inFolder += 1
+						end
+					end
+					return visible, inFolder
+				end
+				local visible, inFolder = countAdded()
+				sert.eq(visible, #added)
+				sert.eq(inFolder, #added)
+				sert.eq(readds, #added)
+
+				-- turning chat commands off flips every command in one sync pass, all re-added in a single frame (chat rebuilds
+				-- once per frame with changes); stepping one frame at a time counts deferred events in their own frame
+				readds = 0
+				cK.Data.settings.chatCommands = false
+				cK.client.settings.chatCommands(false)
+				local maxPerFrame, framesWithReadds = 0, 0
+				for _ = 1, 60 do
+					local before = readds
+					world:run(1 / 60)
+					local count = readds - before
+					maxPerFrame = math.max(maxPerFrame, count)
+					if count > 0 then
+						framesWithReadds += 1
+					end
+				end
+				visible, inFolder = countAdded()
+				sert.eq(visible, 0)
+				sert.eq(inFolder, #added)
+				sert.eq(readds >= #added, true)
+				sert.eq(framesWithReadds, 1)
+				sert.eq(maxPerFrame, readds)
+				sert.eq(folderRemoved, 0)
+
+				cK.Data.settings.chatCommands = true
+				cK.client.settings.chatCommands(true)
+				world:run(1)
+				visible = countAdded()
+				sert.eq(visible, #added)
+
+				-- a sync with nothing changed re-adds nothing
+				readds = 0
+				added[1]:SetAttribute("PlayerPrefix", nil)
+				world:run(0.2)
+				sert.eq(readds, 0)
+
+				for _, conn in conns do
+					conn:Disconnect()
+				end
+				for _, cmd in added do
+					cmd:Destroy()
+				end
+				world:run(0.1)
+			end)
+
 			test(
 				"exercises Character movement/double-jump and Explorer tree, selection, drag-and-drop, and search",
 				function()
@@ -5129,12 +5230,14 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 			local client = server:client(1, "Player1")
 			local function fastRun(seconds: number)
 				local dt = 1 / 60
-				if seconds <= dt * 3 then
+				if seconds <= dt * 8 then
 					world:run(seconds)
 				else
 					world:step(dt)
-					world:step(seconds - dt * 2)
-					world:step(dt)
+					world:step(seconds - dt * 7)
+					for _ = 1, 6 do
+						world:step(dt)
+					end
 				end
 			end
 
@@ -5177,33 +5280,32 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 			local expScrollerFrame = expWin.Frame.UIContent:FindFirstChild("ScrollerFast")
 			local innerScroller = expScrollerFrame:FindFirstChild("ScrollerFast")
 
-			-- Expand Workspace so AlphaFolder and BetaFolder render
-			for _, btn in innerScroller:GetChildren() do
-				if btn:IsA("TextButton") and string.find(btn.Name, "Workspace", 1, true) or btn:IsA("TextButton") then
-					local label = btn:FindFirstChild("TextLabel")
-					if label and string.find(label.Text, "Workspace", 1, true) then
-						local expBtn = btn:FindFirstChild("Expand")
-						if expBtn then
-							expBtn.Activated:Fire()
-						end
-						break
+			local function findRowBtn(rowName: string): any
+				for _, btn in innerScroller:GetChildren() do
+					if not btn:IsA("TextButton") then
+						continue
 					end
+					local label = btn:FindFirstChild("TextLabel")
+					if label and label.Text == rowName then
+						return btn
+					end
+				end
+				return nil
+			end
+
+			-- Expand Workspace so AlphaFolder and BetaFolder render
+			local wsBtn = findRowBtn("Workspace")
+			sert.eq(wsBtn ~= nil, true)
+			if wsBtn then
+				local expBtn = wsBtn:FindFirstChild("Expand")
+				if expBtn then
+					expBtn.Activated:Fire()
 				end
 			end
 			fastRun(0.35)
 
-			local alphaBtn, betaBtn
-			for _, btn in innerScroller:GetChildren() do
-				if not btn:IsA("TextButton") then
-					continue
-				end
-				local label = btn:FindFirstChild("TextLabel")
-				if label and string.find(label.Text, "AlphaFolder", 1, true) then
-					alphaBtn = btn
-				elseif label and string.find(label.Text, "BetaFolder", 1, true) then
-					betaBtn = btn
-				end
-			end
+			local alphaBtn = findRowBtn("AlphaFolder")
+			local betaBtn = findRowBtn("BetaFolder")
 			sert.eq(alphaBtn ~= nil and betaBtn ~= nil, true)
 
 			-- 1. Select AlphaFolder and press Delete -> fires ("DELETE", { folderA }) WITHOUT destroying folderA client-side
@@ -5232,6 +5334,8 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 
 			-- 2. Drag AlphaFolder onto BetaFolder -> fires ("PARENT", { folderA }, folderB) WITHOUT client-side reparent
 			table.clear(remoteCalls)
+			alphaBtn = findRowBtn("AlphaFolder")
+			betaBtn = findRowBtn("BetaFolder")
 			cEnv:setAbsolute(alphaBtn, Vector2.new(200, 20), Vector2.new(10, 10))
 			cEnv:setAbsolute(betaBtn, Vector2.new(200, 20), Vector2.new(10, 30))
 			rawset(
@@ -5262,7 +5366,8 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 				makeInput(cEnv, { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(35, 35, 0) }),
 				false
 			)
-			fastRun(0.1)
+			-- Settle Explorer's 1.0s updateListThrottled window + ScrollerFast queues before Step 3
+			fastRun(1.2)
 			sert.eq(folderA.Parent, cEnv.workspace)
 			sert.eq(#remoteCalls, 1)
 			sert.eq(remoteCalls[1].action, "PARENT")
@@ -5271,6 +5376,10 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 
 			-- 3. Drag hover-leave clears DragScope.TargetNode so dropping off-target fires nothing
 			table.clear(remoteCalls)
+			alphaBtn = findRowBtn("AlphaFolder")
+			betaBtn = findRowBtn("BetaFolder")
+			cEnv:setAbsolute(alphaBtn, Vector2.new(200, 20), Vector2.new(10, 10))
+			cEnv:setAbsolute(betaBtn, Vector2.new(200, 20), Vector2.new(10, 30))
 			betaBtn.MouseLeave:Fire(90, 90)
 			UI.Pointer({ Position = Vector3.new(90, 90, 0) })
 			UI.flush()
@@ -5301,12 +5410,17 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 			rawset(UI.UserInputService, "_methods", origUisMethods)
 
 			-- 4. Copy AlphaFolder, then Destroy AlphaFolder on server/world -> purges CLIPBOARD & SELECTION cleanly
+			alphaBtn = findRowBtn("AlphaFolder")
+			sert.eq(alphaBtn ~= nil, true)
 			alphaBtn.Activated:Fire()
 			fastRun(0.05)
 			copyBtn.Activated:Fire()
 			fastRun(0.05)
 			folderA:Destroy()
-			fastRun(0.2)
+			fastRun(1.2)
+			sert.eq(findRowBtn("AlphaFolder"), nil)
+			betaBtn = findRowBtn("BetaFolder")
+			sert.eq(betaBtn ~= nil, true)
 			betaBtn.Activated:Fire()
 			fastRun(0.05)
 			table.clear(remoteCalls)
@@ -5328,6 +5442,105 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 
 			folderB:Destroy()
 			fastRun(0.1)
+		end
+	)
+
+	test(
+		"_K.getCommandPrefix reads remote _KPlayerPrefix, MessageReceived filters CHAT vs COMMAND echoes cleanly, and CompletionData/Network enforce multi-char positions & Studio lock",
+		function()
+			local world, srvMounted, cliMounted, sK, cK = getOrCreateFullClientSut()
+			local function fastRun(seconds: number)
+				world:step(1 / 60)
+				if seconds > 1 / 30 then
+					world:step(seconds - 1 / 60)
+				end
+			end
+			local tcs = cliMounted.env.game:GetService("TextChatService")
+
+			-- 1. _K.getCommandPrefix(otherUserId) uses otherPlayer's _KPlayerPrefix, never LocalPlayer's
+			local peer2 = cliMounted.env:addPlayer(222, "RemotePeer2")
+			peer2:SetAttribute("_KPlayerPrefix", "?")
+			cK.Data.playerPrefix[1] = "!"
+			cK.client.playerPrefix("!")
+			sert.eq(cK.getCommandPrefix(222), "?")
+			sert.eq(cK.getCommandPrefix(1), "!")
+
+			-- 2. MessageReceived CHAT logging vs shouldSuppressEchoedChatLog
+			cK.Registry.registerCommand(cK, {
+				name = "testecholog",
+				description = "Test server echo suppression",
+				group = "utility",
+				args = { { type = "string", name = "Val", description = "Value" } },
+				run = function() end,
+			})
+			cK.Registry.commands.testecholog.LocalPlayerAuthorized = true
+
+			local function fireMsg(uid: number, text: string)
+				tcs.MessageReceived:Fire({
+					Status = Enum.TextChatMessageStatus.Success,
+					TextSource = { UserId = uid },
+					Text = text,
+					Metadata = "",
+				})
+				fastRun(0.05)
+			end
+
+			local base = #cK.Data.logs
+			-- Non-matching prefix from another player ("!" while peer2 uses "?") logs as CHAT
+			fireMsg(222, "!version")
+			sert.eq(#cK.Data.logs, base + 1)
+
+			-- Sender on _KCommandCooldown logs as CHAT
+			peer2:SetAttribute("_KCommandCooldown", true)
+			fireMsg(222, "?version")
+			peer2:SetAttribute("_KCommandCooldown", nil)
+			sert.eq(#cK.Data.logs, base + 2)
+
+			-- chatCommands == false logs as CHAT
+			cK.Data.settings.chatCommands = false
+			fireMsg(1, ";version")
+			cK.Data.settings.chatCommands = true
+			sert.eq(#cK.Data.logs, base + 3)
+
+			-- Unauthorized server command from peer2 logs as CHAT
+			fireMsg(222, ";ban Player1")
+			sert.eq(#cK.Data.logs, base + 4)
+
+			-- Incomplete redirected server command logs as CHAT
+			fireMsg(1, ";ban")
+			sert.eq(#cK.Data.logs, base + 5)
+
+			-- Client-only command from another player produces no server COMMAND log -> logs as CHAT
+			fireMsg(222, ";version")
+			sert.eq(#cK.Data.logs, base + 6)
+
+			-- Authorized complete server command suppresses echoed CHAT log
+			fireMsg(1, ";testecholog hello")
+			sert.eq(#cK.Data.logs, base + 6)
+
+			-- 3. Multi-char prefix CompletionData positions & Network Studio lock
+			local CompletionData = cliMounted.env:require(cliMounted.Client.CommandBar.CompletionData)
+			local origPrefix = cK.Data.settings.prefix
+			cK.Data.settings.prefix = { "::" }
+			local cd = CompletionData(cK, "::ver", 6)
+			sert.eq(cd.argPos, 3)
+			local cdInv = CompletionData(cK, ":: ", 4)
+			sert.eq(cdInv.invalid[1][1], "Invalid command string")
+			cK.Data.settings.prefix = origPrefix
+
+			local origAuth = cK.Data.settings.changeThemeAuthority
+			cK.Data.settings.changeThemeAuthority = "Studio"
+			local srvPlayer = srvMounted.env.Players:GetPlayers()[1]
+			sK.Remote.Settings:Fire(srvPlayer, { changeThemeAuthority = "Client", theme = "Cyan" })
+			fastRun(0.1)
+			sert.eq(cK.Data.settings.changeThemeAuthority, "Studio")
+			sert.eq(cK.Data.savedSettings.theme ~= "Cyan", true)
+			cK.Data.settings.changeThemeAuthority = origAuth
+
+			cK.Data.playerPrefix[1] = nil
+			cK.client.playerPrefix(";")
+			cK.Registry.commands.testecholog = nil
+			peer2:Destroy()
 		end
 	)
 end)

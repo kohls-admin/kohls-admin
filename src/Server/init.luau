@@ -673,25 +673,30 @@ return function(_K)
 
 		-- handle custom command prefix
 		local _ = _K.Remote.PlayerPrefix:Connect(function(player, prefix)
+			if type(prefix) ~= "string" or not hasUsableOrPurchasableCommand(player.UserId) then
+				return
+			end
 			if
-				type(prefix) ~= "string"
-				or _K.Data.settings.chatCommands == false
-				or #_K.Chat.commandPrefixes({ prefix }) ~= 1
-				or table.find(reservedPrefixes, prefix) ~= nil
-				or not hasUsableOrPurchasableCommand(player.UserId)
+				prefix ~= ""
+				and (
+					prefix == "/"
+					or #_K.Chat.commandPrefixes({ prefix }) ~= 1
+					or table.find(reservedPrefixes, prefix) ~= nil
+				)
 			then
 				return
 			end
 			local defaultPrefix = _K.Data.settings.prefix[1] or ";"
-			local nextPrefix = if prefix == defaultPrefix then nil else prefix
+			local nextPrefix = if prefix == "" or prefix == defaultPrefix then nil else prefix
 			if _K.Data.playerPrefix[player.UserId] == nextPrefix then
 				return
 			end
-			if _K.Chat.cooldown(player.UserId, "playerPrefix", 2) then
+			if _K.Chat.cooldown(player.UserId, "playerPrefix", 1) then
 				return
 			end
 			_K.Data.playerPrefix[player.UserId] = nextPrefix
-			if _K.ChatCommands then
+			player:SetAttribute("_KPlayerPrefix", nextPrefix)
+			if _K.ChatCommands and _K.Data.settings.chatCommands ~= false then
 				_K.ChatCommands:resync()
 			end
 		end)
@@ -741,6 +746,8 @@ return function(_K)
 		-- handle changing of settings
 		local _ = _K.Remote.Settings:Connect(function(player, changes)
 			local themeAuthority = _K.Data.settings.changeThemeAuthority
+			local studioThemeLock = _K.Data.defaultSettings.changeThemeAuthority == "Studio"
+				or themeAuthority == "Studio"
 			--TODO: make the Client authority save each players' theming
 
 			if type(changes) ~= "table" or not _K.Auth.hasPermission(player.UserId, "settings") then
@@ -944,7 +951,7 @@ return function(_K)
 				-- skipped keys aren't sent to other players either
 				if
 					(_K.Data.savedSettings[key] == nil and not handledSettings[key])
-					or (string.find(key, "theme", 1, true) and themeAuthority == "Studio")
+					or (studioThemeLock and (key == "changeThemeAuthority" or string.find(key, "theme", 1, true) == 1))
 					or not isValidSetting(key, value)
 				then
 					changes[key] = nil
@@ -1173,7 +1180,7 @@ return function(_K)
 			local fromRank, fromRole = _K.Auth.getRank(player.UserId)
 			local fauxArg = {
 				_K = _K,
-				definition = _K.Registry.commands.ban.args[1],
+				definition = { type = "player", lowerRank = true, ignoreSelf = false },
 				command = {
 					from = player.UserId,
 					fromRank = fromRank,
@@ -1191,7 +1198,7 @@ return function(_K)
 					return false
 				end
 				local owner = getInstanceOwner(instance)
-				if owner and (owner ~= player or instance == owner) then
+				if owner and owner ~= player then
 					if checkedOwners[owner] == nil then
 						checkedOwners[owner] = _K.Auth.targetUserArgument(fauxArg, owner.UserId, owner.UserId) ~= nil
 					end
@@ -1273,7 +1280,7 @@ return function(_K)
 					if count > 64 then
 						break
 					end
-					if typeof(instance) ~= "Instance" or not canModify(instance) then
+					if typeof(instance) ~= "Instance" or instance:IsA("Player") or not canModify(instance) then
 						continue
 					end
 
@@ -1293,7 +1300,7 @@ return function(_K)
 			end
 		end)
 
-		local _ = _K.Hook.roleAdded:Connect(function(userId: number, roleId: string)
+		local _ = _K.Hook.roleAdded:Connect(function(userId: number, _roleId: string)
 			local player = _K.Service.Players:GetPlayerByUserId(userId)
 			if player then
 				updateServersSubscriber(player)
@@ -1320,7 +1327,7 @@ return function(_K)
 			end
 		end)
 
-		local _ = _K.Hook.roleRemoved:Connect(function(userId: number, roleId: string)
+		local _ = _K.Hook.roleRemoved:Connect(function(userId: number, _roleId: string)
 			local player = _K.Service.Players:GetPlayerByUserId(userId)
 			if player then
 				updateServersSubscriber(player)

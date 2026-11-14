@@ -253,28 +253,64 @@ local _ = _K.Remote.Settings:Connect(function(settings)
 		})
 	end
 
+	local studioThemeLock = _K.Data.defaultSettings.changeThemeAuthority == "Studio"
+		or _K.Data.settings.changeThemeAuthority == "Studio"
 	local useSaved = if settings.useSavedSettings ~= nil
 		then settings.useSavedSettings
 		else _K.Data.savedSettings.useSavedSettings ~= false
-	local activeTheme = if settings.theme ~= nil then settings.theme else _K.Data.savedSettings.theme
-	for key, value in settings do
-		value = UI.raw(value)
-		local isThemeProperty = key ~= "theme" and string.find(key :: string, "theme", 1, true) == 1
-		if
-			isThemeProperty
-			and (_K.Data.settings.changeThemeAuthority == "Studio" or activeTheme ~= "Custom (DataStore)")
-		then
-			continue
+
+	local function applySetting(key: string, rawValue: any)
+		if studioThemeLock and (key == "changeThemeAuthority" or string.find(key, "theme", 1, true) == 1) then
+			return
 		end
+		local value = UI.raw(rawValue)
 		_K.Data.savedSettings[key] = value
-		if isThemeProperty then
-			local themeKey = string.sub(key :: string, 6)
-			if useSaved and _K.UI.Theme[themeKey] and UI.isNode(_K.UI.Theme[themeKey]) then
+		local isThemeProperty = key ~= "theme" and string.find(key, "theme", 1, true) == 1
+		local clientTheme = if _K.client.settings.theme
+			then _K.client.settings.theme:peek()
+			else _K.Data.savedSettings.theme
+		local canApplyTheme = useSaved
+			and (
+				not isThemeProperty
+				or (
+					not studioThemeLock
+					and (
+						_K.Data.settings.changeThemeAuthority == "Server"
+						or clientTheme == "Custom (DataStore)"
+						or _K.Data.savedSettings.theme == "Custom (DataStore)"
+					)
+				)
+			)
+		if isThemeProperty and canApplyTheme then
+			local themeKey = string.sub(key, 6)
+			if _K.UI.Theme[themeKey] and UI.isNode(_K.UI.Theme[themeKey]) then
 				_K.UI.Theme[themeKey](value, true)
 			end
 		end
-		if (useSaved or key == "useSavedSettings") and _K.client.settings[key] then
+		if
+			(if isThemeProperty then canApplyTheme else (useSaved or key == "useSavedSettings"))
+			and _K.client.settings[key]
+		then
 			_K.client.settings[key](value, true)
+		end
+	end
+
+	-- apply authority/useSaved/theme preset before individual theme* properties so presets don't overwrite overrides
+	if settings.changeThemeAuthority ~= nil then
+		applySetting("changeThemeAuthority", settings.changeThemeAuthority)
+		if _K.Data.defaultSettings.changeThemeAuthority ~= "Studio" then
+			studioThemeLock = _K.Data.settings.changeThemeAuthority == "Studio"
+		end
+	end
+	if settings.useSavedSettings ~= nil then
+		applySetting("useSavedSettings", settings.useSavedSettings)
+	end
+	if settings.theme ~= nil then
+		applySetting("theme", settings.theme)
+	end
+	for key, value in settings do
+		if key ~= "changeThemeAuthority" and key ~= "useSavedSettings" and key ~= "theme" then
+			applySetting(key :: string, value)
 		end
 	end
 	_K.client.updateInterfaceAuth()

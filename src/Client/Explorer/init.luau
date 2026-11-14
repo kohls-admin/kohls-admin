@@ -199,6 +199,22 @@ local function removeNode(instance)
 	end
 end
 
+local function refreshSubtreeDepth(rootInstance: Instance, rootNode: any)
+	for _, desc in rootInstance:GetDescendants() do
+		local descNode = NODES[desc]
+		if descNode then
+			local depth = rootNode.Depth
+			local curr: Instance? = desc
+			while curr and curr ~= rootInstance do
+				depth += 1
+				curr = curr.Parent
+			end
+			descNode.Depth = depth
+			descNode.AncestorExpanded = isAncestorExpanded(desc)
+		end
+	end
+end
+
 local function instanceAdded(instance: Instance, parent: Instance?)
 	if not pcall(check, instance) then
 		return
@@ -208,11 +224,13 @@ local function instanceAdded(instance: Instance, parent: Instance?)
 		parent = instance.Parent
 	end
 
+	local existingNode = NODES[instance]
+	local wasVisible = existingNode and existingNode.AncestorExpanded
+
 	if not parent then
-		local node = NODES[instance]
-		if node then
+		if existingNode then
 			removeNode(instance)
-			if isAncestorExpanded(instance) then
+			if wasVisible or isAncestorExpanded(instance) then
 				updateListThrottled(scroller)
 			end
 		end
@@ -244,22 +262,26 @@ local function instanceAdded(instance: Instance, parent: Instance?)
 	local node = NODES[instance]
 	if node then
 		node.AncestorExpanded = isAncestorExpanded(instance)
+		refreshSubtreeDepth(instance, node)
 		if not node.Connection then
 			node.Connection = true
 
-			node._ancestryConn = instance.AncestryChanged:Connect(instanceAdded)
+			node._ancestryConn = instance.AncestryChanged:Connect(function()
+				instanceAdded(instance, instance.Parent)
+			end)
 			node._destroyingConn = instance.Destroying:Connect(function()
 				local parentNode = instance.Parent and NODES[instance.Parent]
-				if parentNode and parentNode.Expanded then
+				local destroyWasVisible = node.AncestorExpanded or (parentNode and parentNode.Expanded)
+				removeNode(instance)
+				if destroyWasVisible then
 					updateListThrottled(scroller)
 				end
-				removeNode(instance)
 			end)
 		end
 	end
 
 	local parentNode = NODES[parent]
-	if parentNode and parentNode.Expanded then
+	if wasVisible or (parentNode and parentNode.Expanded) then
 		updateListThrottled(scroller)
 	end
 end

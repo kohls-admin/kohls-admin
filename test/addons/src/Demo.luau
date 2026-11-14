@@ -14,7 +14,8 @@ return function(_K)
 		end
 		applyDemoSettings()
 		_K.Hook.preSyncMain:Connect(function(data)
-			local settings = type(data) == "table" and data[2]
+			local settings = type(data) == "table"
+				and (data[2] or (type(data.settings) == "table" and (data.settings.set or data.settings)))
 			if type(settings) == "table" and type(settings.freeAdmin) == "table" then
 				if not table.find(settings.freeAdmin, "admin") then
 					table.insert(settings.freeAdmin, "admin")
