@@ -901,8 +901,11 @@ return {
 
 		local _ = Input._input.FocusLost:Connect(function(enterPressed, input)
 			if enterPressed then
+				if not currentCompletionData or currentCompletionData.message ~= Input._input.Text then
+					updateCompletionData()
+				end
 				local data = currentCompletionData
-				if data.hasInvalidCommand or #data.invalid > 0 then
+				if not data or data.hasInvalidCommand or #data.invalid > 0 then
 					UI.Sound.Negative:Play()
 					return Input._input:CaptureFocus()
 				end
@@ -942,7 +945,23 @@ return {
 				local trimmed = _K.Util.String.trimEnd(Input._input.Text)
 				task.spawn(_K.Process.runCommands, _K, _K.LocalPlayer.UserId, trimmed)
 				-- Find the command in the history (and remove if not the most recent)
-				local cmd = string.sub(trimmed, 2)
+				local cmdStart = utf8.offset(trimmed, 2) or 2
+				if string.sub(trimmed, 1, #prefix) == prefix then
+					cmdStart = #prefix + 1
+				elseif type(_K.Data.settings.prefix) == "table" then
+					local longest = 0
+					for _, configuredPrefix in _K.Data.settings.prefix do
+						if
+							type(configuredPrefix) == "string"
+							and #configuredPrefix > longest
+							and string.sub(trimmed, 1, #configuredPrefix) == configuredPrefix
+						then
+							longest = #configuredPrefix
+							cmdStart = #configuredPrefix + 1
+						end
+					end
+				end
+				local cmd = string.sub(trimmed, cmdStart)
 				local foundIndex = table.find(commandHistory, cmd)
 				if foundIndex ~= 1 then
 					if foundIndex then

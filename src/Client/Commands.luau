@@ -253,7 +253,8 @@ local function connectChatCommand(
 	_K,
 	textChat: Instance,
 	chatInputBar: ChatInputBarConfiguration?,
-	child: TextChatCommand
+	child: TextChatCommand,
+	sending: { [Instance]: boolean }
 ): RBXScriptConnection
 	return child.Triggered:Connect(function(source: TextSource, text: string)
 		if source.UserId ~= _K.LocalPlayer.UserId then
@@ -267,48 +268,91 @@ local function connectChatCommand(
 		if not channel then
 			return
 		end
+		sending[child] = true
 		child.Enabled = false
 		task.spawn(pcall, channel.SendAsync, channel, text, "_K_CMD")
 		child.Enabled = shouldEnable(_K, child)
+		sending[child] = nil
 	end)
 end
 
+-- Chat reads a command's AutocompleteVisible when the command is added, so only the commands that changed are re-added.
+-- Re-adding the whole folder made chat re-index all ~1000 commands, which froze Studio for seconds when pressing Play.
 local function setupChatCommands(_K, onChanged: () -> ())
 	local textChat = _K.Service.TextChat
 	local chatInputBar = textChat:FindFirstChildOfClass("ChatInputBarConfiguration")
 	local chatCommandsFolder: Instance?
 	local folderConns: { RBXScriptConnection } = {}
-	local folderReparented = false
-	local reparenting = false
-	local reparentQueued = false
 	local watchedChatCommands: { [Instance]: { RBXScriptConnection } } = {}
+	-- commands waiting to be re-added, and the ones being re-added right now (their folder events are ignored)
+	local pendingRefresh: { [Instance]: true } = {}
+	local ignoreRemoved: { [Instance]: number } = {}
+	local ignoreAdded: { [Instance]: number } = {}
+	local sending: { [Instance]: boolean } = {}
+	local refreshScheduled = false
+	local syncScheduled = false
 
-	local function reparentChatCommands()
-		if reparentQueued or reparenting then
+	local function refreshOne(child: Instance)
+		pendingRefresh[child] = nil
+		local folder = chatCommandsFolder
+		if not folder or child.Parent ~= folder then
 			return
 		end
-		reparentQueued = true
-		task.defer(function()
-			reparentQueued = false
-			if not reparenting and chatCommandsFolder and chatCommandsFolder.Parent == textChat then
-				reparenting = true
-				pcall(function()
-					chatCommandsFolder.Parent = nil
-					chatCommandsFolder.Parent = textChat
-				end)
-				reparenting = false
+		-- decremented by the folder's ChildRemoved/ChildAdded handlers, which run later when signals are deferred
+		ignoreRemoved[child] = (ignoreRemoved[child] or 0) + 1
+		ignoreAdded[child] = (ignoreAdded[child] or 0) + 1
+		local ok = pcall(function()
+			child.Parent = nil
+			child.Parent = folder
+		end)
+		if not ok then
+			if (ignoreRemoved[child] or 0) > 1 then
+				ignoreRemoved[child] -= 1
+			else
+				ignoreRemoved[child] = nil
 			end
+			if (ignoreAdded[child] or 0) > 1 then
+				ignoreAdded[child] -= 1
+			else
+				ignoreAdded[child] = nil
+			end
+		end
+	end
+
+	local function flushRefresh()
+		for child in pendingRefresh do
+			refreshOne(child)
+		end
+	end
+
+	local function queueRefresh(child: Instance)
+		pendingRefresh[child] = true
+		if refreshScheduled then
+			return
+		end
+		refreshScheduled = true
+		-- chat rebuilds once per frame that has changes, so every queued change is re-added in one pass
+		task.defer(function()
+			if not game:IsLoaded() then
+				game.Loaded:Wait()
+			end
+			refreshScheduled = false
+			flushRefresh()
 		end)
 	end
 
+	local watchChatCommand: (child: Instance) -> ()
+
 	local function syncChatCommands()
+		syncScheduled = false
 		local folder = chatCommandsFolder or textChat:FindFirstChild("TextChatCommands_KA")
 		if not folder then
 			return
 		end
-		local changed = false
 		for _, child in folder:GetChildren() do
 			if child:IsA("TextChatCommand") then
+				watchChatCommand(child)
+				local changed = false
 				local enabled = shouldEnable(_K, child)
 				if child.Enabled ~= enabled then
 					child.Enabled = enabled
@@ -321,22 +365,38 @@ local function setupChatCommands(_K, onChanged: () -> ())
 					child.AutocompleteVisible = autoVisible
 					changed = true
 				end
+				if changed then
+					queueRefresh(child)
+				end
 			end
-		end
-		if changed or (not folderReparented and game:IsLoaded()) then
-			if game:IsLoaded() then
-				folderReparented = true
-			end
-			reparentChatCommands()
 		end
 	end
 
-	local function watchChatCommand(child: Instance)
+	-- batches syncs, the server adds and removes commands one at a time
+	local function scheduleSync()
+		if not syncScheduled then
+			syncScheduled = true
+			task.defer(function()
+				if syncScheduled then
+					syncChatCommands()
+				end
+			end)
+		end
+	end
+
+	watchChatCommand = function(child: Instance)
 		if child:IsA("TextChatCommand") and not watchedChatCommands[child] then
 			child.Enabled = shouldEnable(_K, child)
 			watchedChatCommands[child] = {
-				connectChatCommand(_K, textChat, chatInputBar, child),
-				child:GetAttributeChangedSignal("PlayerPrefix"):Connect(syncChatCommands),
+				connectChatCommand(_K, textChat, chatInputBar, child, sending),
+				child:GetAttributeChangedSignal("PlayerPrefix"):Connect(scheduleSync),
+				child:GetPropertyChangedSignal("PrimaryAlias"):Connect(scheduleSync),
+				child:GetPropertyChangedSignal("SecondaryAlias"):Connect(scheduleSync),
+				child:GetPropertyChangedSignal("Enabled"):Connect(function()
+					if not sending[child] and child.Enabled ~= shouldEnable(_K, child) then
+						scheduleSync()
+					end
+				end),
 			}
 		end
 	end
@@ -366,8 +426,11 @@ local function setupChatCommands(_K, onChanged: () -> ())
 		for child in watchedChatCommands do
 			unwatchChatCommand(child)
 		end
+		table.clear(pendingRefresh)
+		table.clear(ignoreRemoved)
+		table.clear(ignoreAdded)
+		table.clear(sending)
 		chatCommandsFolder = folder
-		folderReparented = false
 		for _, child in folder:GetChildren() do
 			watchChatCommand(child)
 		end
@@ -375,16 +438,35 @@ local function setupChatCommands(_K, onChanged: () -> ())
 		table.insert(
 			folderConns,
 			folder.ChildAdded:Connect(function(child)
+				local ignored = ignoreAdded[child]
+				if ignored then
+					if ignored > 1 then
+						ignoreAdded[child] = ignored - 1
+					else
+						ignoreAdded[child] = nil
+					end
+					return
+				end
 				watchChatCommand(child)
-				syncChatCommands()
+				scheduleSync()
 				onChanged()
 			end)
 		)
 		table.insert(
 			folderConns,
 			folder.ChildRemoved:Connect(function(child)
+				local ignored = ignoreRemoved[child]
+				if ignored then
+					if ignored > 1 then
+						ignoreRemoved[child] = ignored - 1
+					else
+						ignoreRemoved[child] = nil
+					end
+					return
+				end
+				pendingRefresh[child] = nil
 				unwatchChatCommand(child)
-				syncChatCommands()
+				scheduleSync()
 				onChanged()
 			end)
 		)
@@ -396,20 +478,19 @@ local function setupChatCommands(_K, onChanged: () -> ())
 		watchChatCommandsFolder(existingFolder)
 	end
 	local _ = textChat.ChildAdded:Connect(function(child)
-		if not reparenting and child.Name == "TextChatCommands_KA" then
+		if child.Name == "TextChatCommands_KA" then
 			watchChatCommandsFolder(child)
 		end
 	end)
 
 	if chatInputBar then
-		local focusedConn: RBXScriptConnection?
-		focusedConn = chatInputBar:GetPropertyChangedSignal("IsFocused"):Connect(function()
+		local _ = chatInputBar:GetPropertyChangedSignal("IsFocused"):Connect(function()
 			if chatInputBar.IsFocused then
-				if focusedConn then
-					focusedConn:Disconnect()
-					focusedConn = nil
+				if syncScheduled then
+					syncChatCommands()
 				end
-				reparentChatCommands()
+				-- the player is about to type, so finish the remaining re-adds now
+				flushRefresh()
 			end
 		end)
 	end
@@ -417,14 +498,14 @@ local function setupChatCommands(_K, onChanged: () -> ())
 	return updateChatCommandsAutocomplete, syncChatCommands
 end
 
-local function updatePurchaseData(purchaseData, list)
+local function updatePurchaseData(_K, purchaseData, list)
 	table.clear(purchaseData)
 	for index, command in list do
 		if command.LocalPlayerAuthorized then
 			continue
 		end
 		local role = command.RestrictedToRole
-		if role and (role._key == "vip" or (role.gamepasses and next(role.gamepasses))) then
+		if role and ((role._key == "vip" and _K.Data.settings.vip) or (role.gamepasses and next(role.gamepasses))) then
 			local entry = purchaseData[role]
 			if entry then
 				entry.lastIndex = index
@@ -529,7 +610,7 @@ function Commands.new(_K)
 	local function updateCommandsList()
 		local list = buildCommandsList(_K)
 		commandsList(list, true)
-		updatePurchaseData(purchaseData, list)
+		updatePurchaseData(_K, purchaseData, list)
 		if updateChatCommandsAutocomplete then
 			updateChatCommandsAutocomplete(list)
 		end

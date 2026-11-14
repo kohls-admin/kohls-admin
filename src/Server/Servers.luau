@@ -16,6 +16,7 @@ local TOPIC = "_KAdminServers"
 local SERVER_ID = game.JobId
 
 local EXPIRE = THROTTLE * 2 + 5
+local MAX_TTL = 600
 
 local SERVERS_REMOTE = Remote.Servers
 
@@ -37,6 +38,7 @@ if RunService:IsServer() then
 	local subscriptionConn: RBXScriptConnection? = nil
 	local lastPublishClock = 0
 	local lastSyncRequestClock = 0
+	local syncReplyPending = false
 	local knownServerCount = 1
 
 	local function hasSubscribers(): boolean
@@ -105,7 +107,10 @@ if RunService:IsServer() then
 		local changed = true
 		local existing = Map[jobId]
 		local now = tick()
-		local expireOffset = if type(ttl) == "number" and ttl > EXPIRE then ttl else EXPIRE
+		local expireOffset = EXPIRE
+		if type(ttl) == "number" and ttl == ttl then
+			expireOffset = math.clamp(ttl, EXPIRE, MAX_TTL)
+		end
 
 		if existing then
 			changed = existing[2] ~= count or existing[1] ~= placeId
@@ -134,21 +139,29 @@ if RunService:IsServer() then
 				network(jobId)
 			end
 		end
+		knownServerCount = math.max(countMap(), math.floor(knownServerCount * 0.5))
 	end
 
 	Data.subscribeTopic("serversSync", function(packet)
 		local payload = packet and packet.Data
 		local senderJobId = if type(payload) == "table" then payload[1] else payload
-		local senderCount = if type(payload) == "table" and type(payload[2]) == "number" then payload[2] else nil
+		local rawCount = if type(payload) == "table" then payload[2] else nil
+		local senderCount = if type(rawCount) == "number" and rawCount == rawCount
+			then math.clamp(rawCount, 1, 10000)
+			else nil
 		if senderCount then
 			knownServerCount = math.max(knownServerCount, senderCount)
 		end
 		if senderJobId and senderJobId ~= SERVER_ID and Servers.Enabled and canPublish() then
-			if os.clock() - lastPublishClock >= SYNC_COOLDOWN then
+			if not syncReplyPending and os.clock() - lastPublishClock >= SYNC_COOLDOWN then
+				syncReplyPending = true
 				lastPublishClock = os.clock()
 				task.spawn(function()
 					task.wait(math.random() * 2)
-					publish()
+					syncReplyPending = false
+					if Servers.Enabled then
+						publish()
+					end
 				end)
 			end
 		end
@@ -159,6 +172,7 @@ if RunService:IsServer() then
 			return
 		end
 		if hasSubscribers() then
+			cleanup()
 			if subscriptionConn or subscribing then
 				return
 			end
@@ -185,11 +199,10 @@ if RunService:IsServer() then
 				end
 			end)
 		elseif subscriptionConn then
-			knownServerCount = math.max(knownServerCount, countMap())
+			knownServerCount = math.max(countMap(), math.floor(knownServerCount * 0.5))
 			local conn = subscriptionConn
 			subscriptionConn = nil
 			conn:Disconnect()
-			table.clear(Map)
 		end
 	end
 

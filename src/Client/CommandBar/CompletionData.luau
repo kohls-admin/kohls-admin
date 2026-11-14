@@ -47,7 +47,7 @@ return function(_K, text, cursorPosition)
 	local prefix = _K.getCommandPrefix(from)
 
 	if text == prefix then
-		data.argPos = 2
+		data.argPos = #prefix + 1
 		data.argIndex = 0
 		data.rawArg = ""
 		data.query = ""
@@ -59,9 +59,15 @@ return function(_K, text, cursorPosition)
 	local splitKey = _K.Data.settings.splitKey or " "
 	local rawCommands = _K.Process.rawParse(text, prefixList, splitKey)
 	if not rawCommands then
+		local invalidPos = 1
+		for _, candidate in prefixList do
+			if type(candidate) == "string" and candidate ~= "" and string.sub(text, 1, #candidate) == candidate then
+				invalidPos = math.max(invalidPos, #candidate + 1)
+			end
+		end
 		data.hasInvalidCommand = true
 		data.cursorInvalid = true
-		table.insert(data.invalid, { "Invalid command string", 2, string.sub(text, 2) })
+		table.insert(data.invalid, { "Invalid command string", invalidPos, string.sub(text, invalidPos) })
 		return data -- invalid command string, show valid example
 	end
 

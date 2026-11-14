@@ -206,6 +206,9 @@ function Settings.new(_K)
 
 	local freeAdminCache = {}
 	local reservedPrefixes = { ",", " ", "`", '"', "@", "$", "%", "*", "~" }
+	local sendPlayerPrefix = _K.Util.Function.throttle(2, function(value: string)
+		_K.Remote.PlayerPrefix:Fire(value)
+	end)
 	local settingsLineItems = {
 		{
 			Name = "Admin",
@@ -347,16 +350,26 @@ function Settings.new(_K)
 						return _K.client.playerPrefix() or _K.client.settings.prefix()[1]
 					end,
 					Validate = function(text)
-						return not (text == "" or table.find(reservedPrefixes, text))
+						if text == "" then
+							return true
+						end
+						return text ~= "/"
+							and not table.find(reservedPrefixes, text)
+							and #_K.Chat.commandPrefixes({ text }) == 1
 					end,
 
 					[UI.Hook] = {
 						Value = function(value)
-							if value == _K.client.playerPrefix() then
+							local nextPrefix = if value == "" then nil else value
+							local current = _K.client.playerPrefix:peek()
+							if nextPrefix == current then
 								return
 							end
-							_K.client.playerPrefix(value)
-							_K.Remote.PlayerPrefix:Fire(value)
+							if not current and nextPrefix == _K.client.settings.prefix:peek()[1] then
+								return
+							end
+							_K.client.playerPrefix(nextPrefix)
+							sendPlayerPrefix(if nextPrefix then nextPrefix else "")
 						end,
 					},
 				},

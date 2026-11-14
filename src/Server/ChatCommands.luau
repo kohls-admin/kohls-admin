@@ -181,7 +181,7 @@ local function handleTriggered(_K: any, source: TextSource, text: string)
 			commandBarRank = 0
 		end
 		if commandBarRank and _K.Auth.getRank(player.UserId) >= commandBarRank then
-			local ok, _err, prepared = _K.Process.prepareCommands(_K, player.UserId, text)
+			local ok, _err, prepared = _K.Process.prepareCommands(_K, player.UserId, text, nil, true)
 			local lastCommand = not ok and prepared and prepared[#prepared]
 			if
 				lastCommand
@@ -306,8 +306,8 @@ function ChatCommands.start(_K)
 		_K = _K,
 		folder = Instance.new("Folder"),
 		instances = {} :: { [string]: { TextChatCommand } },
-		playerInstances = {} :: { [string]: { [string]: TextChatCommand } },
-		playerConnections = {} :: { [string]: { [string]: RBXScriptConnection } },
+		playerInstances = {} :: { [string]: { [string]: { TextChatCommand } } },
+		playerConnections = {} :: { [string]: { [string]: { RBXScriptConnection } } },
 		aliases = {} :: { [string]: { string } },
 		logged = {} :: { [string]: true },
 		prefixes = {} :: { string },
@@ -323,12 +323,16 @@ function ChatCommands.start(_K)
 	local function destroyPlayerCommand(prefix: string, key: string)
 		local conns = self.playerConnections[prefix]
 		if conns and conns[key] then
-			conns[key]:Disconnect()
+			for _, conn in conns[key] do
+				conn:Disconnect()
+			end
 			conns[key] = nil
 		end
 		local bucket = self.playerInstances[prefix]
 		if bucket and bucket[key] then
-			bucket[key]:Destroy()
+			for _, instance in bucket[key] do
+				instance:Destroy()
+			end
 			bucket[key] = nil
 		end
 	end
@@ -336,15 +340,19 @@ function ChatCommands.start(_K)
 	local function destroyPlayerBucket(prefix: string)
 		local conns = self.playerConnections[prefix]
 		if conns then
-			for _, conn in conns do
-				conn:Disconnect()
+			for _, keyConns in conns do
+				for _, conn in keyConns do
+					conn:Disconnect()
+				end
 			end
 			self.playerConnections[prefix] = nil
 		end
 		local bucket = self.playerInstances[prefix]
 		if bucket then
-			for _, instance in bucket do
-				instance:Destroy()
+			for _, instances in bucket do
+				for _, instance in instances do
+					instance:Destroy()
+				end
 			end
 			self.playerInstances[prefix] = nil
 		end
@@ -371,8 +379,7 @@ function ChatCommands.start(_K)
 			end
 		end
 
-		local primary, secondary = words[1], words[2]
-		if not primary then
+		if not words[1] then
 			destroyPlayerCommand(prefix, key)
 			return
 		end
@@ -388,31 +395,59 @@ function ChatCommands.start(_K)
 			self.playerConnections[prefix] = conns
 		end
 
-		local primaryAlias = prefix .. primary
-		local secondaryAlias = if secondary then prefix .. secondary else ""
-		local enabled = self._K.Data.settings.chatCommands ~= false
-		local instance = bucket[key]
-		local reparent = false
-
-		if not instance then
-			instance = Instance.new("TextChatCommand")
-			instance.Name = string.format("_KPlayer_%d_%s", string.byte(prefix), key)
-			instance.AutocompleteVisible = false
-			instance:SetAttribute("PlayerPrefix", prefix)
-			conns[key] = instance.Triggered:Connect(self.onTriggered)
-			bucket[key] = instance
-			reparent = true
-		elseif instance.PrimaryAlias ~= primaryAlias then
-			instance.Parent = nil
-			reparent = true
+		local instances = bucket[key]
+		if not instances then
+			instances = {}
+			bucket[key] = instances
+		end
+		local keyConns = conns[key]
+		if not keyConns then
+			keyConns = {}
+			conns[key] = keyConns
 		end
 
-		instance:SetAttribute("PlayerPrefix", prefix)
-		instance.PrimaryAlias = primaryAlias
-		instance.SecondaryAlias = secondaryAlias
-		instance.Enabled = enabled
-		if reparent then
-			instance.Parent = self.folder
+		local enabled = self._K.Data.settings.chatCommands ~= false
+		local codepoint = utf8.codepoint(prefix)
+		local pairIndex = 0
+		for i = 1, #words, 2 do
+			pairIndex += 1
+			local primaryAlias = prefix .. words[i]
+			local secondary = words[i + 1]
+			local secondaryAlias = if secondary then prefix .. secondary else ""
+			local instance = instances[pairIndex]
+			local reparent = false
+
+			if not instance then
+				instance = Instance.new("TextChatCommand")
+				instance.Name = if pairIndex == 1
+					then string.format("_KPlayer_%d_%s", codepoint, key)
+					else string.format("_KPlayer_%d_%s_%d", codepoint, key, pairIndex)
+				instance.AutocompleteVisible = false
+				instance:SetAttribute("PlayerPrefix", prefix)
+				keyConns[pairIndex] = instance.Triggered:Connect(self.onTriggered)
+				instances[pairIndex] = instance
+				reparent = true
+			elseif instance.PrimaryAlias ~= primaryAlias then
+				instance.Parent = nil
+				reparent = true
+			end
+
+			instance:SetAttribute("PlayerPrefix", prefix)
+			instance.PrimaryAlias = primaryAlias
+			instance.SecondaryAlias = secondaryAlias
+			instance.Enabled = enabled
+			if reparent then
+				instance.Parent = self.folder
+			end
+		end
+
+		for i = #instances, pairIndex + 1, -1 do
+			if keyConns[i] then
+				keyConns[i]:Disconnect()
+				keyConns[i] = nil
+			end
+			instances[i]:Destroy()
+			instances[i] = nil
 		end
 	end
 
@@ -488,7 +523,7 @@ function ChatCommands.start(_K)
 	end
 
 	function self.resync(_self: any?)
-		self.refresh()
+		self.schedule()
 	end
 
 	--- The first chat alias of a command name or alias, e.g. ";kill", or nil when it has none

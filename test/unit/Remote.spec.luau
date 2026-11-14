@@ -842,6 +842,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 				for _, uid in ACTOR_IDS do
 					_K.Process.resetLimit(uid)
 					sut.players[uid]:SetAttribute("_KIdleTime", nil)
+					sut.players[uid]:SetAttribute("_KPlayerPrefix", nil)
 				end
 				return sut
 			end,
@@ -976,7 +977,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 					gen = function(_state, g)
 						return {
 							caller = g:pick(ACTOR_IDS),
-							prefix = g:pick({ "!", "?", ":", "/", "-", ";", "@", "$", "ab" }),
+							prefix = g:pick({ "", "!", "?", ":", "/", "-", ";", "@", "$", "ab" }),
 						}
 					end,
 					run = function(sut, arg)
@@ -988,12 +989,19 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 						local sut = getOrCreateModelSut()
 						local _K = sut._K
 						local valid = type(arg.prefix) == "string"
-							and _K.Data.settings.chatCommands ~= false
-							and #_K.Chat.commandPrefixes({ arg.prefix }) == 1
-							and not table.find(RESERVED_PREFIXES, arg.prefix)
+							and (
+								arg.prefix == ""
+								or (
+									arg.prefix ~= "/"
+									and #_K.Chat.commandPrefixes({ arg.prefix }) == 1
+									and not table.find(RESERVED_PREFIXES, arg.prefix)
+								)
+							)
 						if valid then
 							local defaultPrefix = _K.Data.settings.prefix[1] or ";"
-							state.prefixes[arg.caller] = if arg.prefix == defaultPrefix then nil else arg.prefix
+							state.prefixes[arg.caller] = if arg.prefix == "" or arg.prefix == defaultPrefix
+								then nil
+								else arg.prefix
 						end
 						for _, uid in ACTOR_IDS do
 							if uid ~= arg.caller and _K.Data.playerPrefix[uid] ~= state.prefixes[uid] then
@@ -1139,6 +1147,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 							sert.eq(isPersisted, refBan.persisted)
 						end
 						sert.eq(sut._K.Data.playerPrefix[uid], state.prefixes[uid])
+						sert.eq(sut.players[uid]:GetAttribute("_KPlayerPrefix"), state.prefixes[uid])
 						sert.eq(sut.players[uid]:GetAttribute("_KIdleTime"), state.idleTimes[uid])
 					end
 				end,

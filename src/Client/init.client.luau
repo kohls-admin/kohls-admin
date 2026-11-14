@@ -66,18 +66,43 @@ local _ = _K.Remote.Command:Connect(function(message: string, clientOnly: boolea
 	if _K.ready then
 		if clientOnly and type(message) == "string" then
 			local trimmed = _K.Util.String.trim(message)
-			local nextChar = utf8.offset(trimmed, 2) or 2
-			local firstChar = string.sub(trimmed, 1, nextChar - 1)
 			local clientPrefix = _K.getCommandPrefix()
-			if
-				firstChar ~= clientPrefix
-				and not table.find(_K.Data.settings.prefix, firstChar)
-				and table.find(_K.Data.savedSettings.prefix or {}, firstChar)
-			then
-				message = clientPrefix .. string.sub(trimmed, nextChar)
+			local activeLen = if type(clientPrefix) == "string"
+					and clientPrefix ~= ""
+					and string.sub(trimmed, 1, #clientPrefix) == clientPrefix
+				then #clientPrefix
+				else 0
+			if type(_K.Data.settings.prefix) == "table" then
+				for _, activePrefix in _K.Data.settings.prefix do
+					if
+						type(activePrefix) == "string"
+						and activePrefix ~= ""
+						and #activePrefix > activeLen
+						and string.sub(trimmed, 1, #activePrefix) == activePrefix
+					then
+						activeLen = #activePrefix
+					end
+				end
+			end
+			if type(_K.Data.savedSettings.prefix) == "table" then
+				local savedMatch: string?
+				for _, savedPrefix in _K.Data.savedSettings.prefix do
+					if
+						type(savedPrefix) == "string"
+						and savedPrefix ~= ""
+						and #savedPrefix > activeLen
+						and string.sub(trimmed, 1, #savedPrefix) == savedPrefix
+						and (not savedMatch or #savedPrefix > #savedMatch)
+					then
+						savedMatch = savedPrefix
+					end
+				end
+				if savedMatch then
+					message = clientPrefix .. string.sub(trimmed, #savedMatch + 1)
+				end
 			end
 			if _K.client.commandBarEnabled then
-				local ok, _err, prepared = _K.Process.prepareCommands(_K, _K.LocalPlayer.UserId, message)
+				local ok, _err, prepared = _K.Process.prepareCommands(_K, _K.LocalPlayer.UserId, message, nil, true)
 				local lastCommand = not ok and prepared and prepared[#prepared]
 				if
 					lastCommand
@@ -100,26 +125,111 @@ local function isEmoteMessage(text: string): boolean
 		or string.find(text, "^/[eE][mM][oO][tT][eE]%s") ~= nil
 end
 
-local function isEchoedCommand(text: string): boolean
-	local firstWord = string.match(text, "^%s*(%S+)")
-	if not firstWord then
-		return false
+local function matchesLeadingCommandPrefix(text: string, sourceUserId: number): boolean
+	local senderPrefix = _K.getCommandPrefix(sourceUserId)
+	if type(senderPrefix) == "string" and senderPrefix ~= "" and string.sub(text, 1, #senderPrefix) == senderPrefix then
+		return true
 	end
-	local folder = _K.Service.TextChat:FindFirstChild("TextChatCommands_KA")
-	if not folder then
-		return false
-	end
-	local lowered = string.lower(firstWord)
-	for _, child in folder:GetChildren() do
-		if child:IsA("TextChatCommand") and child.Enabled then
+	if type(_K.Data.settings.prefix) == "table" then
+		for _, configuredPrefix in _K.Data.settings.prefix do
 			if
-				(child.PrimaryAlias ~= "" and string.lower(child.PrimaryAlias) == lowered)
-				or (child.SecondaryAlias ~= "" and string.lower(child.SecondaryAlias) == lowered)
+				type(configuredPrefix) == "string"
+				and configuredPrefix ~= ""
+				and string.sub(text, 1, #configuredPrefix) == configuredPrefix
 			then
 				return true
 			end
 		end
 	end
+	return false
+end
+
+local function shouldSuppressEchoedChatLog(sourceUserId: number, text: string): boolean
+	if _K.Data.settings.chatCommands == false then
+		return false
+	end
+
+	local trimmed = _K.Util.String.trim(text)
+	if trimmed == "" then
+		return false
+	end
+
+	local sourcePlayer = _K.Service.Players:GetPlayerByUserId(sourceUserId)
+	if sourcePlayer and sourcePlayer:GetAttribute("_KCommandCooldown") then
+		return false
+	end
+
+	local parseText: string?
+	if string.sub(trimmed, 1, 1) == "/" then
+		local firstWord = string.match(trimmed, "^(%S+)")
+		local folder = _K.Service.TextChat:FindFirstChild("TextChatCommands_KA")
+		if firstWord and folder then
+			local lowered = string.lower(firstWord)
+			for _, child in folder:GetChildren() do
+				if child:IsA("TextChatCommand") and child.Enabled then
+					if
+						(child.PrimaryAlias ~= "" and string.lower(child.PrimaryAlias) == lowered)
+						or (child.SecondaryAlias ~= "" and string.lower(child.SecondaryAlias) == lowered)
+					then
+						local senderPrefix = _K.getCommandPrefix(sourceUserId)
+						parseText = senderPrefix .. string.sub(trimmed, 2)
+						break
+					end
+				end
+			end
+		end
+	end
+
+	if not parseText then
+		if not matchesLeadingCommandPrefix(trimmed, sourceUserId) then
+			return false
+		end
+		parseText = trimmed
+	end
+
+	local ok, resultOrErr, prepared = _K.Process.prepareCommands(_K, sourceUserId, parseText :: string, nil, true)
+	if ok == nil then
+		return false
+	end
+
+	local localUserId = _K.LocalPlayer and _K.LocalPlayer.UserId
+	local isLocalSender = localUserId ~= nil and sourceUserId == localUserId
+	local canSeeServerLog = localUserId ~= nil and _K.Auth.hasPermission(localUserId, "serverlogs")
+
+	if not ok then
+		local commands = prepared
+		if not commands or #commands == 0 then
+			return false
+		end
+		local commandBarRank = _K.Data.settings.commandBarRank
+		if commandBarRank == nil then
+			commandBarRank = 0
+		end
+		local canRedirect = commandBarRank ~= false and _K.Auth.getRank(sourceUserId) >= commandBarRank
+		local lastCommand = commands[#commands]
+		if
+			canRedirect
+			and lastCommand
+			and (lastCommand.argMissing ~= nil or (#lastCommand.array == 2 and lastCommand.array[2][2] == ""))
+		then
+			return false
+		end
+		return canSeeServerLog
+	end
+
+	local commands = resultOrErr
+	for _, command in commands do
+		local def = command.definition
+		if def and not def.noLog then
+			if def.run and canSeeServerLog then
+				return true
+			end
+			if isLocalSender and def.runClient then
+				return true
+			end
+		end
+	end
+
 	return false
 end
 
@@ -138,7 +248,7 @@ local _ = _K.Service.TextChat.MessageReceived:Connect(function(textChatMessage: 
 		return
 	end
 	local text = _K.Util.String.unescapeRichText(textChatMessage.Text)
-	if text ~= "" and not isEmoteMessage(text) and not isEchoedCommand(text) then
+	if text ~= "" and not isEmoteMessage(text) and not shouldSuppressEchoedChatLog(source.UserId, text) then
 		task.spawn(_K.log, text, "CHAT", source.UserId)
 	end
 end)
