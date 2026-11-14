@@ -272,6 +272,13 @@ end
 
 --- Registers a local command alias
 function Registry.registerCommandAlias(_K: any, alias: string, command: string)
+	if type(alias) ~= "string" or alias == "" or string.find(alias, "%s") then
+		warn("Invalid command alias:", alias)
+		return
+	end
+	if not string.find(alias, "^%w") then
+		warn("Command alias should start with an alphanumeric character:", alias)
+	end
 	local lowerAlias = string.lower(alias)
 	local oldAlias = aliases[lowerAlias]
 	if not oldAlias and Registry.commands[lowerAlias] then
@@ -289,11 +296,37 @@ function Registry.registerCommandAlias(_K: any, alias: string, command: string)
 			local userId = if Players.LocalPlayer then Players.LocalPlayer.UserId else context.from
 			local prefix = context._K.getCommandPrefix(userId)
 			local trimmed = Util.String.trimStart(command)
-			local hasPrefix = prefix ~= "" and string.sub(trimmed, 1, #prefix) == prefix
+			local function matchesLeadingPrefix(cand: string): boolean
+				if cand == "" or string.sub(trimmed, 1, #cand) ~= cand then
+					return false
+				end
+				if not string.find(cand, "%w$") then
+					return true
+				end
+				local nextByte = string.sub(trimmed, #cand + 1, #cand + 1)
+				if nextByte == "" or not string.find(nextByte, "^%w") then
+					return true
+				end
+				local firstWord = string.match(trimmed, "^([^%s]+)")
+				if firstWord and Registry.commands[string.lower(firstWord)] then
+					return false
+				end
+				local restWord = string.match(string.sub(trimmed, #cand + 1), "^([^%s]+)")
+				return restWord ~= nil and Registry.commands[string.lower(restWord)] ~= nil
+			end
+			local hasPrefix = matchesLeadingPrefix(prefix)
 			if not hasPrefix and context._K.Data and type(context._K.Data.settings.prefix) == "table" then
 				for _, configuredPrefix in context._K.Data.settings.prefix do
-					if configuredPrefix ~= "" and string.sub(trimmed, 1, #configuredPrefix) == configuredPrefix then
+					if matchesLeadingPrefix(configuredPrefix) then
 						hasPrefix = true
+						break
+					end
+				end
+			end
+			if not hasPrefix and context._K.Data and type(context._K.Data.defaultSettings.prefix) == "table" then
+				for _, defaultPrefix in context._K.Data.defaultSettings.prefix do
+					if matchesLeadingPrefix(defaultPrefix) then
+						trimmed = string.sub(trimmed, #defaultPrefix + 1)
 						break
 					end
 				end

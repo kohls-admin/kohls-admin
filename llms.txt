@@ -26,26 +26,26 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule
 
 - [MainModule](src/init.luau)
-- [`type Log = Util.Log`](src/init.luau#L16)
-- [`type LogType = Util.LogType`](src/init.luau#L17)
-- [`type Logger = Util.Logger`](src/init.luau#L18)
-- [`type Hook = "log" | "preCommand" | "postCommand"`](src/init.luau#L19)
-- [`type _K = typeof(_K)`](src/init.luau#L334)
-- [`MainModule.script: Instance`](src/init.luau#L28)
-- [`MainModule.IsClient: boolean`](src/init.luau#L29)
-- [`MainModule.IsServer: boolean`](src/init.luau#L30)
-- [`MainModule.IsStudio: boolean`](src/init.luau#L31)
-- [`MainModule.DEBUG: boolean`](src/init.luau#L33)
-- [`MainModule.VERSION: string`](src/init.luau#L34)
-- [`MainModule.Logger: Logger`](src/init.luau#L40)
-- [`MainModule.Server: Instance?`](src/init.luau#L62): [Server]
-- [`MainModule.Tools: Instance?`](src/init.luau#L63): [Server]
-- [`MainModule.ChatCommands`](src/init.luau#L64)
-- [`MainModule.client`](src/init.luau#L66)
-- [`MainModule.pinnedAnnouncement`](src/init.luau#L67)
-- [`MainModule.ready: boolean`](src/init.luau#L68)
-- [`MainModule.Notify`](src/init.luau#L69)
-- [`MainModule.cleanupCommands: {}`](src/init.luau#L71)
+- [`type Log = Util.Log`](src/init.luau#L29)
+- [`type LogType = Util.LogType`](src/init.luau#L30)
+- [`type Logger = Util.Logger`](src/init.luau#L31)
+- [`type Hook = "log" | "preCommand" | "postCommand"`](src/init.luau#L32)
+- [`type _K = typeof(_K)`](src/init.luau#L369)
+- [`MainModule.script: Instance`](src/init.luau#L41)
+- [`MainModule.IsClient: boolean`](src/init.luau#L42)
+- [`MainModule.IsServer: boolean`](src/init.luau#L43)
+- [`MainModule.IsStudio: boolean`](src/init.luau#L44)
+- [`MainModule.DEBUG: boolean`](src/init.luau#L46)
+- [`MainModule.VERSION: string`](src/init.luau#L47)
+- [`MainModule.Logger: Logger`](src/init.luau#L53)
+- [`MainModule.Server: Instance?`](src/init.luau#L75): [Server]
+- [`MainModule.Tools: Instance?`](src/init.luau#L76): [Server]
+- [`MainModule.ChatCommands`](src/init.luau#L77)
+- [`MainModule.client`](src/init.luau#L79)
+- [`MainModule.pinnedAnnouncement`](src/init.luau#L80)
+- [`MainModule.ready: boolean`](src/init.luau#L81)
+- [`MainModule.Notify`](src/init.luau#L82)
+- [`MainModule.cleanupCommands: {}`](src/init.luau#L84)
 - [`MainModule.Util: Util`](src/Shared/Util/init.luau): [Module]
 - [`MainModule.Data: Defaults`](src/Shared/Data/Defaults.luau): [Module]
 - [`MainModule.Hook: Hook`](src/Shared/Hook.luau): [Module]
@@ -59,13 +59,13 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`MainModule.Registry: Registry`](src/Shared/Registry.luau): [Module]
 - [`MainModule.VIP: VIP`](src/Shared/VIP/init.luau): [Module]
 - [`MainModule.Service: Service`](src/Shared/Util/Service.luau): [Module]
-- [`MainModule.getCommandPrefix(from: number?)`](src/init.luau#L103-L108)
-- [`MainModule.chatCommandAlias(alias: string): string`](src/init.luau#L111-L121)
-- [`MainModule.removeExcessLogs()`](src/init.luau#L123-L130)
-- [`MainModule.log(text: string, level: LogType, from: number?, filtered: boolean?, liveText: string?, global: boolean?): Log?`](src/init.luau#L179-L275): [Client]
-- [`MainModule.alert(to: number | Player, text: string, isError: boolean?)`](src/init.luau#L278-L294)
-- [`MainModule.features`](src/init.luau#L36-L38)
-- [`MainModule.features.platformIntegratedChat: boolean`](src/init.luau#L37): [Read Only]
+- [`MainModule.getCommandPrefix(from: number?)`](src/init.luau#L116-L130)
+- [`MainModule.chatCommandAlias(alias: string): string`](src/init.luau#L133-L143)
+- [`MainModule.removeExcessLogs()`](src/init.luau#L145-L152)
+- [`MainModule.log(text: string, level: LogType, from: number?, filtered: boolean?, liveText: string?, global: boolean?): Log?`](src/init.luau#L204-L300): [Client]
+- [`MainModule.alert(to: number | Player, text: string, isError: boolean?)`](src/init.luau#L303-L319)
+- [`MainModule.features`](src/init.luau#L49-L51)
+- [`MainModule.features.platformIntegratedChat: boolean`](src/init.luau#L50): [Read Only]
 
 ## MainModule.Auth
 
@@ -74,26 +74,26 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Auth.banHandler(player)`](src/Shared/Auth.luau#L19-L61): [Yields]
 - [`Auth.banUsers(userIds: { number }, reason: string?, duration: number?, fromUserId: number?, forceBanAsync: boolean?): { number }`](src/Shared/Auth.luau#L94-L156): [Yields] Bans users and returns the ones banned; saved bans are kept unless the caller can use banasync
 - [`Auth.unbanUsers(userIds: { number }, fromUserId: number?, forceBanAsync: boolean?): { number }`](src/Shared/Auth.luau#L159-L198): [Yields] Unbans users and returns the ones unbanned; saved bans are kept unless the caller can use banasync
-- [`Auth.networkMember(userId: number)`](src/Shared/Auth.luau#L210-L221)
-- [`Auth.roleIdSort(a: Role, b: Role): boolean`](src/Shared/Auth.luau#L229-L234): Sorts roleIds by highest to lowest
-- [`Auth.roleIdSortAscending(a: Role, b: Role): boolean`](src/Shared/Auth.luau#L237-L242): Sorts roleIds by lowest to highest
-- [`Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?, unrestricted: boolean?): boolean`](src/Shared/Auth.luau#L245-L296): Adds a role to a user if they don't already have it
-- [`Auth.asyncRoleAdd(userId: number, roleId: Role, fromGroup: boolean?): boolean`](src/Shared/Auth.luau#L304-L314): Gives a user a role they own through a group, gamepass, asset or subscription, which userRoleRemove keeps
-- [`Auth.hasAsyncRole(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L317-L320): Checks if a user owns a role through a group, gamepass, asset or subscription
-- [`Auth.userRoleRemove(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L326-L366): Removes a role from a user if it exists.
-- [`Auth.userAsyncRoles(userId: number, bustCache: boolean?)`](src/Shared/Auth.luau#L451-L509): [Yields]
-- [`Auth.roleCanUseArgument(roleId: Role, argument: any): boolean`](src/Shared/Auth.luau#L514-L534): Checks if a role has access to a command argument
-- [`Auth.roleCanUseCommand(roleId: Role, command: any): boolean`](src/Shared/Auth.luau#L537-L585): Checks if a role has access to a command
-- [`Auth.hasArgument(userId: number, argument: any): boolean`](src/Shared/Auth.luau#L588-L608): Checks if a user has access to a command argument
-- [`Auth.hasCommand(userId: number, command: any): boolean | number`](src/Shared/Auth.luau#L611-L634): Checks if a user has access to a command, returns their rank if they do
-- [`Auth.hasPermission(userId: number, permission: string): boolean`](src/Shared/Auth.luau#L637-L663): Checks if a user has access to a permission
-- [`Auth.hasRole(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L666-L679): Checks if a user has a role or higher rank
-- [`Auth.getRank(userId: number): (number, Role)`](src/Shared/Auth.luau#L682-L706): Checks the maximum role rank of the user
-- [`Auth.getRoleFromRank(rank: number): Role`](src/Shared/Auth.luau#L709-L720): Gets the closest role equal to or above a given rank
-- [`Auth.targetUserArgument(arg: any, userId: number, value: Player | number | string)`](src/Shared/Auth.luau#L789-L838): [Yields] Validates if a user can be targeted by a command argument based on permissions and rank limits
-- [`Auth.prefetchGroupEntryRanks()`](src/Shared/Auth.luau#L873-L880): Starts fetching the entry rank of every group in the group roles, so role checks don't stay closed on first use
-- [`Auth.isPublicRole(roleId: Role): boolean`](src/Shared/Auth.luau#L883-L914): Checks if a role is handed out freely: free admin, friends of the creator, or every member of a group
-- [`Auth.hasRestrictedRole(userId: number): boolean`](src/Shared/Auth.luau#L917-L941): Checks if a user has any developer roles; Roles not associated with any assets, gamepasses, subscriptions, and not handed out freely
+- [`Auth.networkMember(userId: number | string)`](src/Shared/Auth.luau#L210-L225)
+- [`Auth.roleIdSort(a: Role, b: Role): boolean`](src/Shared/Auth.luau#L233-L238): Sorts roleIds by highest to lowest
+- [`Auth.roleIdSortAscending(a: Role, b: Role): boolean`](src/Shared/Auth.luau#L241-L246): Sorts roleIds by lowest to highest
+- [`Auth.userRoleAdd(userId: number, roleId: Role, persist: boolean?, unrestricted: boolean?): boolean`](src/Shared/Auth.luau#L249-L308): Adds a role to a user if they don't already have it
+- [`Auth.asyncRoleAdd(userId: number, roleId: Role, fromGroup: boolean?): boolean`](src/Shared/Auth.luau#L316-L326): Gives a user a role they own through a group, gamepass, asset or subscription, which userRoleRemove keeps
+- [`Auth.hasAsyncRole(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L329-L332): Checks if a user owns a role through a group, gamepass, asset or subscription
+- [`Auth.userRoleRemove(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L338-L378): Removes a role from a user if it exists.
+- [`Auth.userAsyncRoles(userId: number, bustCache: boolean?)`](src/Shared/Auth.luau#L463-L521): [Yields]
+- [`Auth.roleCanUseArgument(roleId: Role, argument: any): boolean`](src/Shared/Auth.luau#L526-L546): Checks if a role has access to a command argument
+- [`Auth.roleCanUseCommand(roleId: Role, command: any): boolean`](src/Shared/Auth.luau#L549-L597): Checks if a role has access to a command
+- [`Auth.hasArgument(userId: number, argument: any): boolean`](src/Shared/Auth.luau#L600-L620): Checks if a user has access to a command argument
+- [`Auth.hasCommand(userId: number, command: any): boolean | number`](src/Shared/Auth.luau#L623-L646): Checks if a user has access to a command, returns their rank if they do
+- [`Auth.hasPermission(userId: number, permission: string): boolean`](src/Shared/Auth.luau#L649-L675): Checks if a user has access to a permission
+- [`Auth.hasRole(userId: number, roleId: Role): boolean`](src/Shared/Auth.luau#L678-L691): Checks if a user has a role or higher rank
+- [`Auth.getRank(userId: number): (number, Role)`](src/Shared/Auth.luau#L694-L718): Checks the maximum role rank of the user
+- [`Auth.getRoleFromRank(rank: number): Role`](src/Shared/Auth.luau#L721-L732): Gets the closest role equal to or above a given rank
+- [`Auth.targetUserArgument(arg: any, userId: number, value: Player | number | string)`](src/Shared/Auth.luau#L801-L850): [Yields] Validates if a user can be targeted by a command argument based on permissions and rank limits
+- [`Auth.prefetchGroupEntryRanks()`](src/Shared/Auth.luau#L885-L892): Starts fetching the entry rank of every group in the group roles, so role checks don't stay closed on first use
+- [`Auth.isPublicRole(roleId: Role): boolean`](src/Shared/Auth.luau#L895-L926): Checks if a role is handed out freely: free admin, friends of the creator, or every member of a group
+- [`Auth.hasRestrictedRole(userId: number): boolean`](src/Shared/Auth.luau#L929-L953): Checks if a user has any developer roles; Roles not associated with any assets, gamepasses, subscriptions, and not handed out freely
 
 ## MainModule.Chat
 
@@ -105,12 +105,12 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Chat.canUsersChat(fromUserId: number, toUserId: number): boolean`](src/Shared/Chat.luau#L82): [Yields]
 - [`Chat.hasRestrictedPeer(fromUserId: number, players: { Player }?): boolean`](src/Shared/Chat.luau#L85-L95): [Yields] Returns true when any player in `players` (or the server) cannot chat with `fromUserId`
 - [`Chat.limitBroadcast(userId: number, _roleError: string?): string?`](src/Shared/Chat.luau#L98-L103): [Yields] Gates user text shown to everyone behind a chat check and the shared announcement cooldown
-- [`Chat.restoreRichText(text: string, compact: boolean?): string`](src/Shared/Chat.luau#L177-L203): Restores a safe subset of rich text in text that TextChatService filtered and escaped: b, i, u, s, sc, uc, br, and font with color, transparency and a clamped size.
-- [`Chat.send(context: any, kind: string, text: string, targets: { Player }?, data: any?): (string?, string?, { Player }?)`](src/Shared/Chat.luau#L218-L291): [Yields] Sends a message of `kind` to everyone in the server, or only to `targets`, through Remote.ChatSystem to the admin UI.
-- [`Chat.limitReason(userId: number, reason: string?, players: { Player }?): (string?, string?)`](src/Shared/Chat.luau#L298-L318): [Yields] Filters and rate limits a free-text reason (ban, kick, shutdown) that other users see.
-- [`Chat.onMessage(kind: string, callback: (text: string, from: number, data: any, id: string) -> ())`](src/Shared/Chat.luau#L325-L327): Registers the client handler for a message kind, called with the filtered text, sender UserId, data and id
-- [`Chat.pinAnnouncement(announcement: any): boolean`](src/Shared/Chat.luau#L339-L359): Tracks the pinned announcement ({ text, from, duration, id }) shown on this client.
-- [`Chat.waitForMessage(id: string, timeout: number?): string?`](src/Shared/Chat.luau#L362-L384): [Yields] Waits for the filtered text of a message by id, or nil when it doesn't arrive in time
+- [`Chat.restoreRichText(text: string, compact: boolean?): string`](src/Shared/Chat.luau#L201-L234): Restores a safe subset of rich text in text that TextChatService filtered and escaped: b, i, u, s, sc, uc, br, and font with color, transparency and a clamped size.
+- [`Chat.send(context: any, kind: string, text: string, targets: { Player }?, data: any?): (string?, string?, { Player }?)`](src/Shared/Chat.luau#L249-L326): [Yields] Sends a message of `kind` to everyone in the server, or only to `targets`, through Remote.ChatSystem to the admin UI.
+- [`Chat.limitReason(userId: number, reason: string?, players: { Player }?): (string?, string?)`](src/Shared/Chat.luau#L333-L353): [Yields] Filters and rate limits a free-text reason (ban, kick, shutdown) that other users see.
+- [`Chat.onMessage(kind: string, callback: (text: string, from: number, data: any, id: string) -> ())`](src/Shared/Chat.luau#L360-L362): Registers the client handler for a message kind, called with the filtered text, sender UserId, data and id
+- [`Chat.pinAnnouncement(announcement: any): boolean`](src/Shared/Chat.luau#L374-L394): Tracks the pinned announcement ({ text, from, duration, id }) shown on this client.
+- [`Chat.waitForMessage(id: string, timeout: number?): string?`](src/Shared/Chat.luau#L397-L419): [Yields] Waits for the filtered text of a message by id, or nil when it doesn't arrive in time
 
 ## MainModule.Data
 
@@ -732,19 +732,19 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.Process
 
 - [Process](src/Shared/Process/init.luau)
-- [`Process.ignoreFormat: string`](src/Shared/Process/init.luau#L18)
-- [`Process.addCommandFilter(filter: (command: any) -> (boolean, string?)): () -> ()`](src/Shared/Process/init.luau#L29-L38): Adds a filter that every command passes before it runs on this side, synchronously in Command:run before command requests are split off.
-- [`Process.rawParse(message: string, prefixes: { string }, delimiter: string): { any }?`](src/Shared/Process/init.luau#L41-L131): Parses a string into a raw command format.
-- [`Process.resetLimit(from: number)`](src/Shared/Process/init.luau#L138-L140)
-- [`Process.onCooldown(_K: any, from: number): boolean`](src/Shared/Process/init.luau#L142-L149)
-- [`Process.countCommand(_K: any, from: number, amount: number?)`](src/Shared/Process/init.luau#L151-L164)
-- [`Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?)`](src/Shared/Process/init.luau#L166-L251): [Client]
-- [`Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?, clientOnly: boolean?): boolean`](src/Shared/Process/init.luau#L258-L463): [Client] Parses and runs a command string from a user.
+- [`Process.ignoreFormat: string`](src/Shared/Process/init.luau#L19)
+- [`Process.addCommandFilter(filter: (command: any) -> (boolean, string?)): () -> ()`](src/Shared/Process/init.luau#L30-L39): Adds a filter that every command passes before it runs on this side, synchronously in Command:run before command requests are split off.
+- [`Process.rawParse(message: string, prefixes: string | { string }, delimiter: string): ({ any }?, string?)`](src/Shared/Process/init.luau#L42-L170): Parses a string into a raw command format.
+- [`Process.resetLimit(from: number)`](src/Shared/Process/init.luau#L185-L187)
+- [`Process.onCooldown(_K: any, from: number): boolean`](src/Shared/Process/init.luau#L189-L196)
+- [`Process.countCommand(_K: any, from: number, amount: number?)`](src/Shared/Process/init.luau#L198-L214)
+- [`Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?, noPrompt: boolean?)`](src/Shared/Process/init.luau#L216-L349): [Client]
+- [`Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?, clientOnly: boolean?): boolean`](src/Shared/Process/init.luau#L356-L591): [Client] Parses and runs a command string from a user.
 
 ## MainModule.Registry
 
 - [Registry](src/Shared/Registry.luau)
-- [`type SequenceDefinition`](src/Shared/Registry.luau#L33-L39)
+- [`type SequenceDefinition`](src/Shared/Registry.luau#L34-L40)
 - [`type Dict = { [any]: any }`](src/Shared/Type.luau#L2)
 - [`type Environment = {} | (_K: any) -> {}`](src/Shared/Type.luau#L5)
 - [`type ArgumentFunction = (value: any, from: Player) -> ...any`](src/Shared/Type.luau#L8)
@@ -755,27 +755,28 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Registry.commands: { [string]: Type.CommandDefinition }`](src/Shared/Registry.luau#L11)
 - [`Registry.commandsList: { Type.CommandDefinition }`](src/Shared/Registry.luau#L12)
 - [`Registry.commandNames: { string }`](src/Shared/Registry.luau#L13)
-- [`Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string })`](src/Shared/Registry.luau#L17-L31): Makes an Enum argument type definition
-- [`Registry.suggestCommandAlias(alias: string): string`](src/Shared/Registry.luau#L78-L99): Finds the command alias with the lowest Levenshtein distance to the provided alias.
-- [`Registry.makeSequenceType(definition: SequenceDefinition?)`](src/Shared/Registry.luau#L102-L148): Makes an sequence argument type definition, useful for Color3, Vector3, etc
-- [`Registry.registerType(name: string, typeObject: Type.ArgumentType, override: Type.Dict?)`](src/Shared/Registry.luau#L151-L162): Registers an argument type
-- [`Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition)`](src/Shared/Registry.luau#L165-L242): Registers a command
-- [`Registry.dashboardWindowEnv(tab: string)`](src/Shared/Registry.luau#L245-L270)
-- [`Registry.registerCommandAlias(_K: any, alias: string, command: string)`](src/Shared/Registry.luau#L273-L290): [Client] Registers a local command alias
-- [`Registry.registerCommandModule(_K: any, commandModule: ModuleScript)`](src/Shared/Registry.luau#L293-L304): Registers a list of commands with the module name as the command group
+- [`Registry.aliases: { [string]: Type.CommandDefinition }`](src/Shared/Registry.luau#L14)
+- [`Registry.makeEnumType(typeName: string, enumItems: { EnumItem | string })`](src/Shared/Registry.luau#L18-L32): Makes an Enum argument type definition
+- [`Registry.suggestCommandAlias(alias: string): string`](src/Shared/Registry.luau#L79-L100): Finds the command alias with the lowest Levenshtein distance to the provided alias.
+- [`Registry.makeSequenceType(definition: SequenceDefinition?)`](src/Shared/Registry.luau#L103-L149): Makes an sequence argument type definition, useful for Color3, Vector3, etc
+- [`Registry.registerType(name: string, typeObject: Type.ArgumentType, override: Type.Dict?)`](src/Shared/Registry.luau#L152-L163): Registers an argument type
+- [`Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition)`](src/Shared/Registry.luau#L166-L243): Registers a command
+- [`Registry.dashboardWindowEnv(tab: string)`](src/Shared/Registry.luau#L246-L271)
+- [`Registry.registerCommandAlias(_K: any, alias: string, command: string)`](src/Shared/Registry.luau#L274-L339): [Client] Registers a local command alias
+- [`Registry.registerCommandModule(_K: any, commandModule: ModuleScript)`](src/Shared/Registry.luau#L342-L353): Registers a list of commands with the module name as the command group
 
 ## MainModule.Remote
 
 - [Remote](src/Shared/Util/Remote.luau): Single-remote networking wrapper with byte-packed IDs and auto-batching.
 - [`type RemoteData`](src/Shared/Util/Remote.luau#L105-L115)
 - [`type Remote = typeof(setmetatable({} :: RemoteData, RemoteObject))`](src/Shared/Util/Remote.luau#L117)
-- [`Remote:Connect(callback: (...any) -> ()): Signal.Connection`](src/Shared/Util/Remote.luau#L139-L141)
-- [`Remote:Once(callback: (...any) -> ()): Signal.Connection`](src/Shared/Util/Remote.luau#L143-L145)
-- [`Remote:Wait(): ...any`](src/Shared/Util/Remote.luau#L262-L267): [Yields]
-- [`Remote:FireAll(...)`](src/Shared/Util/Remote.luau#L151-L153): [Server]
-- [`Remote:SetUnreliable(state: boolean)`](src/Shared/Util/Remote.luau#L155-L167): [Server]
-- [`Remote:Fire(...)`](src/Shared/Util/Remote.luau#L269-L278): [Client]
-- [`Remote:Invoke(...): ...any`](src/Shared/Util/Remote.luau#L280-L291): [Yields] [Client]
+- [`Remote:Connect(callback: (...any) -> ()): Signal.Connection`](src/Shared/Util/Remote.luau#L150-L152)
+- [`Remote:Once(callback: (...any) -> ()): Signal.Connection`](src/Shared/Util/Remote.luau#L154-L156)
+- [`Remote:Wait(): ...any`](src/Shared/Util/Remote.luau#L158-L161): [Yields]
+- [`Remote:FireAll(...)`](src/Shared/Util/Remote.luau#L163-L165): [Server]
+- [`Remote:SetUnreliable(state: boolean)`](src/Shared/Util/Remote.luau#L167-L179): [Server]
+- [`Remote:Fire(...)`](src/Shared/Util/Remote.luau#L266-L275): [Client]
+- [`Remote:Invoke(...): ...any`](src/Shared/Util/Remote.luau#L277-L288): [Yields] [Client]
 
 ## MainModule.Service
 
@@ -818,8 +819,8 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`type Dict<T> = { [T]: any }`](src/Client/UI/init.luau#L12)
 - [`type Symbol = { type: "Symbol" }`](src/Client/UI/init.luau#L13)
 - [`type Platform = "Console" | "Mobile" | "PC" | "VR"`](src/Client/UI/init.luau#L89)
-- [`type ActiveStateType = "hover" | "floating" | "dialog"`](src/Client/UI/init.luau#L203)
-- [`type TextRequest = { Text: string, Font: Font, Size: number, RichText: boolean? }`](src/Client/UI/init.luau#L300)
+- [`type ActiveStateType = "hover" | "floating" | "dialog"`](src/Client/UI/init.luau#L200)
+- [`type TextRequest = { Text: string, Font: Font, Size: number, RichText: boolean? }`](src/Client/UI/init.luau#L297)
 - [`UI.Class: {}`](src/Client/UI/init.luau#L18)
 - [`UI.Sound: {}`](src/Client/UI/init.luau#L30)
 - [`UI.GuiService: GuiService`](src/Client/UI/init.luau#L83)
@@ -834,31 +835,31 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`UI.Function: Symbol`](src/Client/UI/init.luau#L106): A marker for defining function defaultState in [UI.makeStatefulDefaults]
 - [`UI.Nil: Symbol`](src/Client/UI/init.luau#L109): A marker for defining Nil defaultState in [UI.makeStatefulDefaults]
 - [`UI.TopbarInset`](src/Client/UI/init.luau#L112): GuiService.TopbarInset as a Flux state
-- [`UI.TopbarPadding: any`](src/Client/UI/init.luau#L113-L116)
-- [`UI.LayerBottom`](src/Client/UI/init.luau#L119-L126): The lowermost ScreenGui for UI components
-- [`UI.LayerDefault`](src/Client/UI/init.luau#L129-L137): The default ScreenGui for UI components
-- [`UI.LayerTop`](src/Client/UI/init.luau#L140-L148): The topmost ScreenGui for UI components
-- [`UI.LayerTopInset`](src/Client/UI/init.luau#L150-L161)
-- [`UI.LayerTopbar`](src/Client/UI/init.luau#L164-L172): The Topbar ScreenGui for UI components
-- [`UI.TopbarFrame`](src/Client/UI/init.luau#L175-L201): A sorted Topbar Frame for UI components, parented under [UI.LayerTopbar]
+- [`UI.TopbarPadding: any`](src/Client/UI/init.luau#L113-L115)
+- [`UI.LayerBottom`](src/Client/UI/init.luau#L118-L125): The lowermost ScreenGui for UI components
+- [`UI.LayerDefault`](src/Client/UI/init.luau#L128-L136): The default ScreenGui for UI components
+- [`UI.LayerTop`](src/Client/UI/init.luau#L139-L147): The topmost ScreenGui for UI components
+- [`UI.LayerTopInset`](src/Client/UI/init.luau#L149-L158)
+- [`UI.LayerTopbar`](src/Client/UI/init.luau#L161-L169): The Topbar ScreenGui for UI components
+- [`UI.TopbarFrame`](src/Client/UI/init.luau#L172-L198): A sorted Topbar Frame for UI components, parented under [UI.LayerTopbar]
 - [`UI.Fonts: Fonts`](src/Client/UI/Fonts.luau): [Module]
 - [`UI.Theme: Theme`](src/Client/UI/Theme/init.luau): [Module]
 - [`UI.Themes: {}`](src/Client/UI/Theme/init.luau#L102): [from Theme]
 - [`UI.getFontName(font: Font | Enum.Font)`](src/Client/UI/init.luau#L70-L81)
-- [`UI.activateState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L208-L227): A generalized function to handle activation/deactivation of both floating and hover states
-- [`UI.deactivateState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L230-L246): A generalized function to deactivate both floating and hover states
-- [`UI.toggleState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L249-L258): A generalized function to toggle both floating and hover states
-- [`UI.clearState(stateType: ActiveStateType)`](src/Client/UI/init.luau#L261-L270): Function to clear a specific state type
-- [`UI.clearActiveStates()`](src/Client/UI/init.luau#L273-L277): Function to clear all active state types
-- [`UI.invertLuminance(color: Color3, amount: number): Color3`](src/Client/UI/init.luau#L283-L288): Inverts the luminance of a [Color3] by an amount
-- [`UI.retryGetTextBoundsAsync(params): Vector2`](src/Client/UI/init.luau#L295-L298): [Yields]
-- [`UI.textWidth(getRequests: () -> { TextRequest }): (Flux.Node<number>, Flux.Node<any>)`](src/Client/UI/init.luau#L313-L355): Measures the widest of `getRequests()` without yielding inside the reactive graph.
-- [`UI.makeStatefulDefaults(default: Dict<any>, definition: Dict<any>?)`](src/Client/UI/init.luau#L358-L383): Helper function for defining Flux state defaults
-- [`UI.newSinkHoverState(object: GuiObject, hovering: any?, options: Flux.HoverOptions?)`](src/Client/UI/init.luau#L385-L402)
-- [`UI.edit(new: Instance | Dict<any>)`](src/Client/UI/init.luau#L425-L515): Inherits [Flux.edit] * Parents children to the ._content variable of a UI component if one exists * Unwraps UI component children and auto-numbers [GuiObject.LayoutOrder] sequentially via [Flux.edit] * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
-- [`UI.new(className: string)`](src/Client/UI/init.luau#L586): Creates a new Instance with [UI.edit]
-- [`UI.register(className: string, class: Dict<any>)`](src/Client/UI/init.luau#L589-L594): Registers a new UI component class
-- [`UI.registerClasses(): typeof(UI)`](src/Client/UI/init.luau#L597-L605): Run to register the default classes for the UI module
+- [`UI.activateState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L205-L224): A generalized function to handle activation/deactivation of both floating and hover states
+- [`UI.deactivateState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L227-L243): A generalized function to deactivate both floating and hover states
+- [`UI.toggleState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L246-L255): A generalized function to toggle both floating and hover states
+- [`UI.clearState(stateType: ActiveStateType)`](src/Client/UI/init.luau#L258-L267): Function to clear a specific state type
+- [`UI.clearActiveStates()`](src/Client/UI/init.luau#L270-L274): Function to clear all active state types
+- [`UI.invertLuminance(color: Color3, amount: number): Color3`](src/Client/UI/init.luau#L280-L285): Inverts the luminance of a [Color3] by an amount
+- [`UI.retryGetTextBoundsAsync(params): Vector2`](src/Client/UI/init.luau#L292-L295): [Yields]
+- [`UI.textWidth(getRequests: () -> { TextRequest }): (Flux.Node<number>, Flux.Node<any>)`](src/Client/UI/init.luau#L310-L352): Measures the widest of `getRequests()` without yielding inside the reactive graph.
+- [`UI.makeStatefulDefaults(default: Dict<any>, definition: Dict<any>?)`](src/Client/UI/init.luau#L355-L380): Helper function for defining Flux state defaults
+- [`UI.newSinkHoverState(object: GuiObject, hovering: any?, options: Flux.HoverOptions?)`](src/Client/UI/init.luau#L382-L399)
+- [`UI.edit(new: Instance | Dict<any>)`](src/Client/UI/init.luau#L422-L512): Inherits [Flux.edit] * Parents children to the ._content variable of a UI component if one exists * Unwraps UI component children and auto-numbers [GuiObject.LayoutOrder] sequentially via [Flux.edit] * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
+- [`UI.new(className: string)`](src/Client/UI/init.luau#L583): Creates a new Instance with [UI.edit]
+- [`UI.register(className: string, class: Dict<any>)`](src/Client/UI/init.luau#L586-L591): Registers a new UI component class
+- [`UI.registerClasses(): typeof(UI)`](src/Client/UI/init.luau#L594-L602): Run to register the default classes for the UI module
 - [`UI.getLuminance(c: Color3): number`](vendor/flux/src/Motion.luau#L262): [from Motion] Gets the luminance of a [Color3]
 - [`UI.pointInGuiObject(x: number, y: number, object: GuiObject): boolean`](vendor/flux/src/Interact.luau#L681): [from Interact] Checks if x, y is within the absolute bounds of the GuiObject
 - [`UI.sinkInput(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L682): [from Interact] Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI rendered above `object` (or while the Roblox escape menu is open).
@@ -1250,7 +1251,8 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## Title
 
 - [Title](src/Shared/VIP/Title/init.luau)
-- [`Title.Method(character: Model, title: string?, color: Color3?, topColor: Color3?, font: Enum.Font?)`](src/Shared/VIP/Title/init.luau#L168-L195)
+- [`Title.applyTitle(character: Model, title: string?, color: Color3?, topColor: Color3?, font: Enum.Font?)`](src/Shared/VIP/Title/init.luau#L168-L195)
+- [`Title.Method(character: Model, title: string?, color: Color3?, topColor: Color3?, font: Enum.Font?)`](src/Shared/VIP/Title/init.luau#L196)
 - [`Title.definition.vip`](src/Shared/VIP/Title/init.luau#L16-L20)
 - [`Title.definition.vip.color: Color3`](src/Shared/VIP/Title/init.luau#L17)
 - [`Title.definition.vip.assetId: { number }`](src/Shared/VIP/Title/init.luau#L18)

@@ -4,10 +4,12 @@ if shared._K_INTERFACE then
 	return shared._K_INTERFACE
 end
 if shared._K_LOADING then
-	while not shared._K_INTERFACE do
+	while shared._K_LOADING do
 		task.wait()
 	end
-	return shared._K_INTERFACE
+	if shared._K_INTERFACE then
+		return shared._K_INTERFACE
+	end
 end
 shared._K_LOADING = true
 
@@ -113,9 +115,18 @@ end)
 
 function _K.getCommandPrefix(from: number?)
 	if _K.IsClient then
-		return _K.client.playerPrefix:peek()
+		local localPlayer = (_K :: any).LocalPlayer
+		if from and localPlayer and from ~= localPlayer.UserId then
+			local player = _K.Service.Players:GetPlayerByUserId(from)
+			local attrPrefix = if player then player:GetAttribute("_KPlayerPrefix") else nil
+			if type(attrPrefix) == "string" and attrPrefix ~= "" then
+				return attrPrefix
+			end
+			return _K.Data.settings.prefix[1] or ";"
+		end
+		return _K.client.playerPrefix:peek() or _K.Data.settings.prefix[1] or ";"
 	end
-	return _K.Data.playerPrefix[from] or ";"
+	return (if from then _K.Data.playerPrefix[from] else nil) or _K.Data.settings.prefix[1] or ";"
 end
 
 -- the first alias of a command that works in chat, e.g. ";kill", or the command prefix before it
@@ -307,38 +318,47 @@ function _K.alert(to: number | Player, text: string, isError: boolean?)
 	end
 end
 
--- register initial UI children
 if _K.IsClient then
 	_K.UI = require(Client:WaitForChild("UI"))
-	local uiRegisterStart = os.clock()
-	_K.UI.registerClasses()
-	task.spawn(_K.log, `UI classes registered in {math.round((os.clock() - uiRegisterStart) * 1000)} ms`, "DEBUG")
 end
 
-local typeRegisterStart = os.clock()
--- register types
-for _, child in Shared.DefaultTypes:GetChildren() do
-	require(child)(_K)
-end
-task.spawn(_K.log, `Default Types registered in {math.round((os.clock() - typeRegisterStart) * 1000)} ms`, "DEBUG")
-
-local commandRegisterStart = os.clock()
--- register commands
-for _, child in Shared.DefaultCommands:GetChildren() do
-	_K.Registry.registerCommandModule(_K, child)
-end
-task.spawn(
-	_K.log,
-	`Default Commands registered in {math.round((os.clock() - commandRegisterStart) * 1000)} ms`,
-	"DEBUG"
-)
-
-if _K.IsServer then
-	require(Server)(_K)
-else
-	if not _K.IsStudio or IS_DEMO_PLACE then
-		print(`🛡️ Running Kohl's Admin v{_K.VERSION} by @Scripth`)
+local okInit, initErr = pcall(function()
+	-- register initial UI children
+	if _K.IsClient then
+		local uiRegisterStart = os.clock()
+		_K.UI.registerClasses()
+		task.spawn(_K.log, `UI classes registered in {math.round((os.clock() - uiRegisterStart) * 1000)} ms`, "DEBUG")
 	end
+
+	local typeRegisterStart = os.clock()
+	-- register types
+	for _, child in Shared.DefaultTypes:GetChildren() do
+		require(child)(_K)
+	end
+	task.spawn(_K.log, `Default Types registered in {math.round((os.clock() - typeRegisterStart) * 1000)} ms`, "DEBUG")
+
+	local commandRegisterStart = os.clock()
+	-- register commands
+	for _, child in Shared.DefaultCommands:GetChildren() do
+		_K.Registry.registerCommandModule(_K, child)
+	end
+	task.spawn(
+		_K.log,
+		`Default Commands registered in {math.round((os.clock() - commandRegisterStart) * 1000)} ms`,
+		"DEBUG"
+	)
+
+	if _K.IsServer then
+		require(Server)(_K)
+	else
+		if not _K.IsStudio or IS_DEMO_PLACE then
+			print(`🛡️ Running Kohl's Admin v{_K.VERSION} by @Scripth`)
+		end
+	end
+end)
+if not okInit then
+	shared._K_LOADING = nil
+	error(initErr, 0)
 end
 
 shared._K_INTERFACE = _K

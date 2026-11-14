@@ -207,14 +207,18 @@ local function saveMember(key, userId)
 	end
 end
 
-function Auth.networkMember(userId: number)
-	local userIdString = tostring(userId)
+function Auth.networkMember(userId: number | string)
+	local userIdNumber = tonumber(userId)
+	if not userIdNumber then
+		return
+	end
+	local userIdString = tostring(userIdNumber)
 	local member = Data.members[userIdString]
 	for _, player in Players:GetPlayers() do
 		if not player:GetAttribute("_K_READY") then
 			continue
 		end
-		if player.UserId == userId or Auth.hasCommand(player.UserId, "members") then
+		if player.UserId == userIdNumber or Auth.hasCommand(player.UserId, "members") then
 			Remote.Member:Fire(player, userIdString, member)
 		end
 	end

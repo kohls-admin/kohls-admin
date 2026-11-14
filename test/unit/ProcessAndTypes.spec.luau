@@ -432,13 +432,13 @@ describe("Process · Command Preparation, Validation & Execution", function()
 		sert.eq(ok, true)
 		sert.eq(commands[1].alias, "testsay")
 
-		-- published global strings start with the server prefix, the others are text there
-		ok, commands = _K.Process.prepareCommands(_K, admin.UserId, ';testsay "a !testother b :testother c"', true)
+		-- published global strings start with the server prefix (:), the others are text there
+		ok, commands = _K.Process.prepareCommands(_K, admin.UserId, ':testsay "a !testother b ;testother c"', true)
 		sert.eq(ok, true)
 		sert.eq(#commands, 1)
 		sert.eq(commands[1].alias, "testsay")
-		sert.eq(commands[1].args[1].rawArg, '"a !testother b :testother c"')
-		sert.eq(_K.Process.prepareCommands(_K, admin.UserId, ':testsay "a"', true), nil)
+		sert.eq(commands[1].args[1].rawArg, '"a !testother b ;testother c"')
+		sert.eq(_K.Process.prepareCommands(_K, admin.UserId, ';testsay "a"', true), nil)
 	end)
 
 	test(
@@ -1286,9 +1286,14 @@ describe("Process · Command filters & async roles", function()
 			sert.eq(okClientRestr, false)
 			sert.eq(restrMsg, '"<b>testlimitcmd</b>" command restricted to <b>VIP</b>')
 			sert.eq(vipPrompted, 1)
+			sert.eq(#gpPrompted, 0)
+			_K.Data.settings.vip = false
+			Process.prepareCommands(_K, guestPlr.UserId, ";testlimitcmd me")
+			sert.eq(vipPrompted, 1)
 			sert.eq(#gpPrompted, 1)
 			sert.eq(gpPrompted[1].plr, guestPlr)
 			sert.eq(gpPrompted[1].gpId, 777)
+			_K.Data.settings.vip = true
 			_K.Registry.commands.testlimitcmd.RestrictedToRole = nil
 			_K.Data.roles.mod.gamepasses = nil
 			_K.IsClient = false
@@ -2330,7 +2335,7 @@ describe("Process · Command filters & async roles", function()
 			}
 			_K.Data.roles.subTier = {
 				_key = "subTier",
-				_rank = 2,
+				_rank = 3,
 				name = "Sub Tier",
 				groups = {},
 				permissions = {},
@@ -2357,6 +2362,16 @@ describe("Process · Command filters & async roles", function()
 			sert.eq(okPrepPrompt, false)
 			sert.eq(#promptedAssets, 1)
 			sert.eq(promptedAssets[1].assetId, 22222)
+			sert.eq(#promptedSubs, 0)
+
+			-- noPrompt = true suppresses all purchase prompts
+			Process.prepareCommands(_K, 602, ";testslicesa", nil, true)
+			sert.eq(#promptedAssets, 1)
+			sert.eq(#promptedSubs, 0)
+
+			-- Removing lower-rank assetTier allows subTier to be prompted next
+			_K.Data.roles.assetTier = nil
+			Process.prepareCommands(_K, 602, ";testslicesa")
 			sert.eq(#promptedSubs, 1)
 			sert.eq(promptedSubs[1].subId, "EXP-999")
 
@@ -2412,6 +2427,84 @@ describe("Process · Command filters & async roles", function()
 			h.env:step(0.1)
 			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testslicesa 42")
 			tcsMethods.CanUsersChatAsync = origCanUsersChat
+		end
+	)
+
+	test(
+		"rawParse returns matchedPrefix, client preserves prefix across forwarding, countCommand/resetLimit toggle cooldown, and registerCommandAlias keeps alphanumeric prefix chars",
+		function()
+			local h = Harness.newEnv({ isStudio = false })
+			local Data = h:requireData()
+			local _K = h:requireK()
+			local Process = _K.Process
+			local Registry = _K.Registry
+
+			local parsed, matched = Process.rawParse("::fly me ::god me", { "::", ";" }, " ")
+			sert.eq(parsed ~= nil, true)
+			sert.eq(#(parsed :: any), 2)
+			sert.eq(matched, "::")
+
+			local p701 = h.env:addPlayer(701, "ChainPlr")
+			p701:SetAttribute("_KRolesLoaded", true)
+			_K.Auth.userRoleAdd(701, "admin")
+
+			local explodeRuns = 0
+			Registry.registerCommand(_K, {
+				name = "explode",
+				group = "Utility",
+				args = {},
+				runClient = function()
+					explodeRuns += 1
+				end,
+			})
+			Registry.registerCommand(_K, {
+				name = "testecho",
+				group = "Utility",
+				args = { { type = "rawString", name = "Msg" } },
+				run = function() end,
+			})
+
+			local origLocalPlayer = h.env.Players.LocalPlayer
+			local origClient = _K.client
+			h.env.Players.LocalPlayer = p701
+			_K.IsClient = true
+			_K.IsServer = false
+			_K.LocalPlayer = p701
+			local prefixSig = _K.Flux.signal("e")
+			_K.client = { playerPrefix = prefixSig } :: any
+
+			Data.playerPrefix[701] = "e"
+			Registry.registerCommandAlias(_K, "boom", "explode")
+			sert.eq(Registry.aliases.boom ~= nil, true)
+			sert.eq(Process.runCommands(_K, 701, "eboom", true), true)
+			sert.eq(explodeRuns, 1)
+
+			Data.settings.prefix = { ";" }
+			Data.playerPrefix[701] = ":"
+			prefixSig(":")
+			local forwarded: { string } = {}
+			local origCommandFire = _K.Remote.Command.Fire
+			_K.Remote.Command.Fire = function(_self: any, text: string)
+				table.insert(forwarded, text)
+			end
+			sert.eq(Process.runCommands(_K, 701, ":testecho ;all", true), true)
+			_K.Remote.Command.Fire = origCommandFire
+			sert.eq(forwarded, { ":testecho ;all" })
+
+			h.env.Players.LocalPlayer = origLocalPlayer
+			_K.client = origClient
+			_K.IsClient = false
+			_K.IsServer = true
+			_K.LocalPlayer = nil
+
+			local p702 = h.env:addPlayer(702, "LimitPlr")
+			p702:SetAttribute("_KRolesLoaded", true)
+			_K.Auth.userRoleAdd(702, "vip")
+			Data.roles.vip.limits = { commands = 1, cooldown = 5 }
+			Process.countCommand(_K, 702)
+			sert.eq(p702:GetAttribute("_KCommandCooldown"), true)
+			Process.resetLimit(702)
+			sert.eq(p702:GetAttribute("_KCommandCooldown"), nil)
 		end
 	)
 end)

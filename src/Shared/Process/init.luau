@@ -1,5 +1,6 @@
 --!optimize 2
 
+local Players = game:GetService("Players")
 local Shared = script.Parent
 
 local Auth = require(Shared:WaitForChild("Auth"))
@@ -38,7 +39,7 @@ function Process.addCommandFilter(filter: (command: any) -> (boolean, string?)):
 end
 
 --- Parses a string into a raw command format.
-function Process.rawParse(message: string, prefixes: string | { string }, delimiter: string): { any }?
+function Process.rawParse(message: string, prefixes: string | { string }, delimiter: string): ({ any }?, string?)
 	if delimiter == "%s" then
 		delimiter = " "
 	end
@@ -66,12 +67,14 @@ function Process.rawParse(message: string, prefixes: string | { string }, delimi
 		end
 	end
 	if not prefix or not commandStart then
-		return
+		return nil, nil
 	end
 
-	local ignorePrefix = if string.find(prefix, "^%w") then "" else Util.String.escapePattern(prefix)
+	local firstByte = string.sub(prefix, 1, 1)
+	local ignorePrefix = if string.find(firstByte, "^%w") then "" else Util.String.escapePattern(firstByte)
 	local batchIgnore = string.format(`[%s{Process.ignoreFormat}%s]`, ignorePrefix, escapedSplit)
-	message = string.sub(message, commandStart + #prefix)
+	local prefixLen = #prefix
+	message = string.sub(message, commandStart + prefixLen)
 
 	local len, invalidPos = utf8.len(message)
 	if not len then
@@ -82,20 +85,38 @@ function Process.rawParse(message: string, prefixes: string | { string }, delimi
 	local command = { argument }
 	local commands = { command }
 	local lastChar, quote = "", nil
+	local skipUntil: number?
+	local prefixStart: number?
 
 	for first, last in utf8.graphemes(message) do
+		if skipUntil and first <= skipUntil then
+			continue
+		end
+		skipUntil = nil
 		local char: string = string.sub(message, first, last)
+		local wasPrefixStart = prefixStart
+		prefixStart = nil
 		if quote then
 			table.insert(argument, char)
 			if char == quote then
 				quote = nil
 			end
-		elseif lastChar == prefix and #argument == 1 and string.find(char, batchIgnore) then
+		elseif
+			wasPrefixStart
+			and #argument == 1
+			and (
+				string.find(char, batchIgnore)
+				or (prefixLen > 1 and string.sub(message, first, first + prefixLen - 1) == prefix)
+			)
+		then
 			table.remove(commands)
 			command = commands[#commands]
-			argument = { first - 1, prefix, char }
+			argument = { wasPrefixStart, prefix, char }
 			table.insert(command, argument)
-		elseif char == prefix and (string.find(lastChar, "%s") or string.find(lastChar, delimiter, 1, true)) then
+		elseif
+			(string.find(lastChar, "%s") or string.find(lastChar, delimiter, 1, true))
+			and string.sub(message, first, first + prefixLen - 1) == prefix
+		then
 			if
 				#argument == 1
 				or string.find(argument[2] :: string, "%s")
@@ -105,9 +126,14 @@ function Process.rawParse(message: string, prefixes: string | { string }, delimi
 			elseif string.find(lastChar, "%s") then
 				table.remove(argument)
 			end
-			argument = { first + 1 }
+			local prefixEnd = first + prefixLen - 1
+			argument = { prefixEnd + 1 }
 			command = { argument }
 			table.insert(commands, command)
+			prefixStart = first
+			skipUntil = prefixEnd
+			lastChar = string.sub(prefix, prefixLen, prefixLen)
+			continue
 		elseif char == "`" or char == '"' then
 			quote = char
 			if string.find(lastChar, delimiter, 1, true) then
@@ -135,21 +161,29 @@ function Process.rawParse(message: string, prefixes: string | { string }, delimi
 			local position = arg[1]
 			local text = table.concat(arg, nil, 2)
 			table.clear(arg)
-			arg[1] = position + commandStart - 1 + #prefix
+			arg[1] = position + commandStart - 1 + prefixLen
 			arg[2] = text
 		end
 	end
 
-	return commands
+	return commands, prefix
 end
 
 local commandLimits = {}
+local function setCooldownAttribute(from: number, active: boolean?)
+	local player = Players:GetPlayerByUserId(from)
+	if player then
+		player:SetAttribute("_KCommandCooldown", if active then true else nil)
+	end
+end
+
 local function resetLimit(from: number)
 	commandLimits[from] = nil
+	setCooldownAttribute(from, nil)
 end
 
 function Process.resetLimit(from: number)
-	commandLimits[from] = nil
+	resetLimit(from)
 end
 
 function Process.onCooldown(_K: any, from: number): boolean
@@ -173,10 +207,13 @@ function Process.countCommand(_K: any, from: number, amount: number?)
 			task.delay(limits.cooldown, resetLimit, from)
 		end
 		commandLimits[from] += amount or 1
+		if commandLimits[from] >= limits.commands then
+			setCooldownAttribute(from, true)
+		end
 	end
 end
 
-function Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?)
+function Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?, noPrompt: boolean?)
 	if not utf8.len(rawText) then
 		return false, "Invalid utf8 string"
 	end
@@ -185,7 +222,7 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 		rawText = string.sub(rawText, 1, 1024)
 	end
 
-	local rawCommands = Process.rawParse(
+	local rawCommands, matchedPrefix = Process.rawParse(
 		rawText,
 		-- global command strings are published with the server prefix, a sender's own prefix in their text isn't one
 		if global then { _K.getCommandPrefix() } else { _K.getCommandPrefix(from), unpack(_K.Data.settings.prefix) },
@@ -222,22 +259,39 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 		if not commandDefinition then
 			return false,
 				`Invalid command: {commandText}, did you mean "{Registry.suggestCommandAlias(commandAlias)}"?`,
-				commands
+				commands,
+				matchedPrefix
 		end
 
 		if not Auth.hasCommand(from, commandDefinition) then
-			if _K.IsClient then
-				for role, roleData in Data.roles do
-					if not Auth.roleCanUseCommand(role, commandDefinition) then
-						continue
+			if _K.IsClient and not noPrompt then
+				local roles = if _K.Data and _K.Data.roles then _K.Data.roles else Data.roles
+				local sortedRoles = {}
+				for role, roleData in roles do
+					if Auth.roleCanUseCommand(role, commandDefinition) then
+						table.insert(sortedRoles, { key = role, data = roleData })
 					end
+				end
+				table.sort(sortedRoles, function(a, b)
+					local aRank = a.data._rank or math.huge
+					local bRank = b.data._rank or math.huge
+					if aRank == bRank then
+						return a.key < b.key
+					end
+					return aRank < bRank
+				end)
+				for _, entry in sortedRoles do
+					local role = entry.key
+					local roleData = entry.data
 					if role == "vip" and _K.Data.settings.vip then
 						_K.PromptPurchaseVIP()
+						break
 					elseif roleData.gamepasses and roleData.gamepasses[1] then
 						_K.Service.Marketplace:PromptGamePassPurchase(
 							_K.LocalPlayer,
 							tonumber(roleData.gamepasses[1]) :: number
 						)
+						break
 					elseif roleData.assets and roleData.assets[1] then
 						local assets = roleData.assets
 						task.spawn(function()
@@ -257,20 +311,27 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 								end
 							end
 						end)
+						break
 					elseif roleData.subscriptions and roleData.subscriptions[1] then
 						_K.Service.Marketplace:PromptSubscriptionPurchase(
 							_K.LocalPlayer,
 							tostring(roleData.subscriptions[1])
 						)
+						break
 					end
 				end
+			end
+			if _K.IsClient then
 				-- RestrictedToRole is filled in once the client's roles load
 				local role = commandDefinition.RestrictedToRole
 				if role then
-					return false, `"<b>{commandText}</b>" command restricted to <b>{role.name}</b>`, commands
+					return false,
+						`"<b>{commandText}</b>" command restricted to <b>{role.name}</b>`,
+						commands,
+						matchedPrefix
 				end
 			end
-			return false, `"<b>{commandText}</b>" command restricted`, commands
+			return false, `"<b>{commandText}</b>" command restricted`, commands, matchedPrefix
 		end
 
 		local command = Command.new(_K, commandAlias, commandDefinition, commandArray, from, rawText, global)
@@ -280,11 +341,11 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 
 		if not ok then
 			command.Error = result
-			return false, result, commands
+			return false, result, commands, matchedPrefix
 		end
 	end
 
-	return true, commands
+	return true, commands, matchedPrefix
 end
 
 --[=[
@@ -309,6 +370,7 @@ function Process.runCommands(
 			cooldown, limit = role.limits.cooldown, role.limits.commands
 		end
 		if (commandLimits[from] or 0) >= (limit or math.huge) then
+			setCooldownAttribute(from, true)
 			_K.alert(from, `<b>Command usage on cooldown!</b>`, true)
 			return false
 		end
@@ -317,7 +379,11 @@ function Process.runCommands(
 		end
 	end
 
-	local ok, result, prepared = Process.prepareCommands(_K, from, rawText, global)
+	local ok, result, prepared, matchedPrefix = Process.prepareCommands(_K, from, rawText, global)
+	local sendPrefix = (if ok then prepared else matchedPrefix) or _K.getCommandPrefix(from)
+	if ok then
+		prepared = nil
+	end
 
 	local commandsRan = {}
 	local commandErrors = {}
@@ -333,6 +399,7 @@ function Process.runCommands(
 					task.delay(cooldown, resetLimit, from)
 				end
 				if commandLimits[from] >= limit then
+					setCooldownAttribute(from, true)
 					local notRan = {}
 					for i = index, #result do
 						table.insert(notRan, result[i].alias)
@@ -345,6 +412,9 @@ function Process.runCommands(
 					break
 				end
 				commandLimits[from] += 1
+				if commandLimits[from] >= limit then
+					setCooldownAttribute(from, true)
+				end
 			end
 			local _ok, err = command:run()
 			if err then
@@ -361,6 +431,9 @@ function Process.runCommands(
 				task.delay(cooldown, resetLimit, from)
 			end
 			commandLimits[from] += if prepared then #prepared + 1 else 1
+			if commandLimits[from] >= limit then
+				setCooldownAttribute(from, true)
+			end
 		end
 		table.insert(commandErrors, result)
 	end
@@ -395,7 +468,6 @@ function Process.runCommands(
 	end
 
 	if _K.IsClient and #commandsRan > 0 and not clientOnly then
-		local prefix = _K.getCommandPrefix(from)
 		local commandStrings, runOnServer = {}, false
 		for _, command in commandsRan do
 			if not command.definition.run then
@@ -406,7 +478,7 @@ function Process.runCommands(
 			table.insert(commandStrings, string.sub(rawText, command.array[1][1] :: number, last[1] + #last[2] - 1))
 		end
 		if runOnServer then
-			_K.Remote.Command:Fire(`{prefix}{table.concat(commandStrings, " " .. prefix)}`)
+			_K.Remote.Command:Fire(`{sendPrefix}{table.concat(commandStrings, " " .. sendPrefix)}`)
 		end
 	end
 

@@ -1640,6 +1640,72 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 
 		Auth.networkMember = origNetworkMember
 	end)
+
+	test("Auth.networkMember and Data SYNC/REMOVE coerce string keys and preserve Studio theme authority", function()
+		local world = sert.sim.new({ backing = true })
+		local server = world:server()
+		local h = Harness.newPeerEnv(server, { isStudio = false })
+		local Data = h:requireData()
+		local Auth = h:requireAuth()
+		local Remote = h:requireRemote()
+
+		local plr = h.env:addPlayer(808, "Member808")
+		plr:SetAttribute("_K_READY", true)
+
+		Data.SEPARATE_DATASTORE = false
+		Data.settingsModuleData = { prefix = { ";" }, changeThemeAuthority = "Studio", theme = "Default" }
+		server:spawn(function()
+			Data.initialize("_KDataTestSync")
+		end)
+		world:run(0.5)
+		local defaultSettings: any = Data.defaultSettings
+		defaultSettings.changeThemeAuthority = "Studio"
+		defaultSettings.theme = "Default"
+		Data.savedSettings.useSavedSettings = true
+		Data.savedSettings.changeThemeAuthority = "Studio"
+		Data.savedSettings.theme = "Default"
+
+		Data.members["808"] = { name = "Member808", roles = { "mod" }, persist = { "mod" } }
+		Data.Sync.members["808"] = nil
+
+		local memberFires = {}
+		local origFire = Remote.Member.Fire
+		Remote.Member.Fire = function(selfRemote: any, targetPlr: any, key: any, data: any)
+			table.insert(memberFires, { plr = targetPlr, key = key, data = data })
+			return origFire(selfRemote, targetPlr, key, data)
+		end
+
+		Auth.networkMember("808" :: any)
+		sert.eq(#memberFires, 1)
+		sert.eq(memberFires[1].plr, plr)
+		sert.eq(memberFires[1].key, "808")
+
+		table.clear(memberFires)
+		server:spawn(function()
+			h.env.game:GetService("MessagingService"):PublishAsync("_KData", {
+				"remote-sync-1",
+				1,
+				{
+					_time = h.env.DateTime.now().UnixTimestampMillis + 100000,
+					members = { unset = { "808" } },
+					settings = { set = { changeThemeAuthority = "Client", theme = "Cyan" } },
+				},
+			})
+		end)
+		world:run(0.2)
+		world.backing.messaging.drain()
+		world:run(0.5)
+
+		Remote.Member.Fire = origFire
+		sert.eq(Data.members["808"], nil)
+		sert.eq(#memberFires >= 1, true)
+		sert.eq(memberFires[#memberFires].plr, plr)
+		sert.eq(memberFires[#memberFires].key, "808")
+		sert.eq(Data.savedSettings.changeThemeAuthority, "Studio")
+		sert.eq(Data.savedSettings.theme, "Default")
+
+		server:shutdown()
+	end)
 end)
 
 do
