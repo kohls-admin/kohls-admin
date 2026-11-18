@@ -54,6 +54,15 @@ describe("Studio · Server", function()
 
 		local _K = shared._K_INTERFACE
 		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local LogService = game:GetService("LogService")
+		for _, entry in LogService:GetLogHistory() do
+			sert.eq(string.find(entry.message, "Duplicate theme", 1, true), nil)
+		end
+		local load: (Instance) -> any = require
+		local serverThemes = load(_K.script.Client.UI.Theme).Themes
+		sert.eq(type(serverThemes.Default), "table")
+		sert.eq(type(serverThemes.Legacy), "table")
+		sert.eq(type(serverThemes.Light), "table")
 		sert.eq(_K.script, ReplicatedStorage:FindFirstChild("Kohl's Admin Source"))
 		sert.eq(_K.Server ~= nil and _K.Tools ~= nil and _K.Server:FindFirstChild("Tools") ~= nil, true)
 		local player = Players:GetPlayers()[1]
@@ -97,6 +106,14 @@ describe("Studio · Client", function()
 		sert.eq(_K.UI ~= nil, true)
 		sert.eq(_K.client.CommandBar ~= nil, true)
 		sert.eq(_K.client.dashboard ~= nil, true)
+
+		local LogService = game:GetService("LogService")
+		for _, entry in LogService:GetLogHistory() do
+			sert.eq(string.find(entry.message, "Duplicate theme", 1, true), nil)
+		end
+		sert.eq(type(_K.UI.Themes.Default), "table")
+		sert.eq(type(_K.UI.Themes.Legacy), "table")
+		sert.eq(type(_K.UI.Themes.Light), "table")
 
 		-- Verify dashboard topbar button stays 44x44 across desktop and console (Xbox 87px TopbarInset)
 		local dashboardButton = _K.client.dashboardButton

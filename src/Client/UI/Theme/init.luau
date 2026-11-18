@@ -3,6 +3,7 @@ local Package = script.Parent.Parent.Parent
 local Flux = require(Package:WaitForChild("Flux"))
 local Table = require(Package:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("Table"))
 local ThemesFolder = script:WaitForChild("Themes")
+local defaultModule = script:WaitForChild("Default")
 local Default = require(script:WaitForChild("Default"))
 
 local computed = Flux.computed
@@ -10,6 +11,8 @@ local signal = Flux.signal
 
 local themes = {}
 local loadedModules = setmetatable({}, { __mode = "k" })
+local themeModules = setmetatable({}, { __mode = "v" })
+local moduleParents = setmetatable({}, { __mode = "k" })
 
 local function makeStateful(source: { [string]: any })
 	for key, value in source do
@@ -39,15 +42,26 @@ local Theme: { [string]: any } = {}
 
 function Theme.load(themeModule: ModuleScript)
 	if themeModule:IsA("ModuleScript") then
-		if loadedModules[themeModule] == themes[themeModule.Name] and themes[themeModule.Name] ~= nil then
+		if loadedModules[themeModule] ~= nil and themes[themeModule.Name] ~= nil then
 			return
-		end
-		if themes[themeModule.Name] and themeModule.Name ~= "Default" then
-			warn("Duplicate theme found, make sure they have different names!")
 		end
 		local ok, theme = pcall(require, themeModule)
 		if not ok or type(theme) ~= "table" then
 			return
+		end
+		local existingModule = themeModules[themeModule.Name]
+		if
+			themes[themeModule.Name] ~= nil
+			and existingModule ~= nil
+			and existingModule ~= themeModule
+			and existingModule ~= defaultModule
+			and existingModule.Parent == moduleParents[existingModule]
+			and (
+				themeModule.Name ~= "Default"
+				or (existingModule.Parent == ThemesFolder and themeModule.Parent == ThemesFolder)
+			)
+		then
+			warn("Duplicate theme found, make sure they have different names!")
 		end
 		if typeof(theme.Font) == "EnumItem" then
 			theme.Font = Font.fromEnum(theme.Font :: Enum.Font)
@@ -80,6 +94,8 @@ function Theme.load(themeModule: ModuleScript)
 		end
 		themes[themeModule.Name] = cloned
 		loadedModules[themeModule] = cloned
+		themeModules[themeModule.Name] = themeModule
+		moduleParents[themeModule] = themeModule.Parent
 		if Flux.isNode(Theme.Primary) and themeModule.Name == "Default" then
 			updateSignals(Theme, cloned)
 		end
@@ -88,7 +104,7 @@ end
 
 local load = Theme.load
 Theme.load = nil
-load(script:WaitForChild("Default"))
+load(defaultModule :: ModuleScript)
 for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
 	load(themeModule)
 end
@@ -103,8 +119,25 @@ Theme.Themes = themes
 Theme.load = load
 
 local _ = ThemesFolder.ChildRemoved:Connect(function(child)
-	themes[child.Name] = nil
 	loadedModules[child] = nil
+	moduleParents[child] = nil
+	if themeModules[child.Name] == child then
+		themes[child.Name] = nil
+		themeModules[child.Name] = nil
+		local replacement: ModuleScript?
+		for _, sibling in ThemesFolder:GetChildren() do
+			if sibling.Name == child.Name and sibling:IsA("ModuleScript") then
+				replacement = sibling
+				break
+			end
+		end
+		if not replacement and child.Name == "Default" and defaultModule:IsA("ModuleScript") then
+			replacement = defaultModule
+		end
+		if replacement then
+			Theme.load(replacement)
+		end
+	end
 end)
 
 local _ = ThemesFolder.ChildAdded:Connect(function(child)
