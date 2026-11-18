@@ -3620,23 +3620,41 @@ describe("DefaultCommands", function()
 		cliRunService.Heartbeat:Fire(0.016)
 		cliCrownAcc:Destroy()
 
-		-- 3. AlphaWings, Bones, and Animate (`Shared.VIP.UGC.AlphaWings`)
+		-- 3. AlphaWings, Bones, and Animate (`Server.Bones` / `Server.Animate` moved out of replicated `Shared.VIP.UGC.AlphaWings`)
 		local AlphaWings = c.sh.env:require(c.sh.Shared.VIP.UGC.AlphaWings)
-		local Bones = c.sh.env:require(c.sh.Shared.VIP.UGC.AlphaWings.Bones)
+		AlphaWings.detachServerAssets(c.sh.Server)
+		sert.eq(c.sh.Shared.VIP.UGC.AlphaWings:FindFirstChild("Bones"), nil)
+		sert.eq(c.sh.Shared.VIP.UGC.AlphaWings:FindFirstChild("Animate"), nil)
+		local srvBones = c.sh.Server:FindFirstChild("Bones")
+		sert.ok(srvBones)
+		local Bones = c.sh.env:require(srvBones)
 		sert.ok(Bones)
 		sert.eq(AlphaWings.Name, "_KAlphaWings")
 		local wingsAcc = AlphaWings.Method(srvChar, "gold")
 		sert.ok(wingsAcc)
 		sert.eq(wingsAcc.Name, "_KAlphaWings")
+		if wingsAcc:FindFirstChild("Wings") then
+			sert.ok(wingsAcc.Wings:FindFirstChild("Animate") ~= nil)
+		end
 
-		-- Client AlphaWings heartbeat loop
+		-- Client AlphaWings heartbeat loop without server-only Bones/Animate assets
+		for _, serverOnlyName in { "Bones", "Animate" } do
+			local child = c.ch1.Shared.VIP.UGC.AlphaWings:FindFirstChild(serverOnlyName)
+			if child then
+				child:Destroy()
+			end
+		end
+		sert.eq(c.ch1.Shared.VIP.UGC.AlphaWings:FindFirstChild("Bones"), nil)
+		sert.eq(c.ch1.Shared.VIP.UGC.AlphaWings:FindFirstChild("Animate"), nil)
 		local cliWings = c.ch1.env:require(c.ch1.Shared.VIP.UGC.AlphaWings)
 		local cliWingsAcc = cliWings.Method(cliChar, "dark")
 		cliWingsAcc:AddTag("_KAlphaWingsRainbow")
 		cliRunService.Heartbeat:Fire(0.016)
 
-		-- Exercise Animate module (`Shared.VIP.UGC.AlphaWings.Animate.Animate`)
-		local Animate = c.sh.env:require(c.sh.Shared.VIP.UGC.AlphaWings.Animate.Animate)
+		-- Exercise Animate module (`Server.Animate.Animate`)
+		local srvAnimate = c.sh.Server:FindFirstChild("Animate")
+		sert.ok(srvAnimate)
+		local Animate = c.sh.env:require(srvAnimate:FindFirstChild("Animate"))
 		local idleSeq = c.sh.env.Instance.new("KeyframeSequence")
 		local kf1 = c.sh.env.Instance.new("Keyframe", idleSeq)
 		kf1.Time = 0
@@ -3671,16 +3689,20 @@ describe("DefaultCommands", function()
 		sert.eq(#Purchasables.scriptedUGC, 6)
 		sert.eq(#Purchasables.chatCommands, 8)
 
-		-- 5. Popup (`Shared.VIP.Popup`)
+		-- 5. Popup (`Shared.VIP.Popup`) defers Frame construction until first Visible = true / PromptPurchaseVIP
 		local srvPopup = c.sh.env:require(c.sh.Shared.VIP.Popup)
 		sert.eq(srvPopup, false)
 		sert.ok(clientK.VIP.popup)
 		sert.eq(clientK.VIP.popup.Name, "VIP")
-		sert.ok((clientK.VIP.popup.Frame:FindFirstChild("Preview")))
+		sert.eq(clientK.VIP.popup:FindFirstChild("Frame"), nil)
+
+		-- PromptPurchaseVIP opens and builds the popup when hidden, and View hides the popup while opening Commands
+		clientK.VIP.popup.Visible = false
+		clientK.PromptPurchaseVIP()
+		sert.eq(clientK.VIP.popup.Visible, true)
+		sert.ok(clientK.VIP.popup.Frame:FindFirstChild("Preview"))
 		sert.eq(clientK.VIP.popup.Frame.BuyFrame.Favorite:IsA("ImageButton"), true)
 		sert.eq(clientK.VIP.popup.Frame.BuyFrame.Favorite.Visible, true)
-
-		-- PromptPurchaseVIP opens the popup first when hidden, and View hides the popup while opening Commands
 		clientK.VIP.popup.Visible = false
 		clientK.PromptPurchaseVIP()
 		sert.eq(clientK.VIP.popup.Visible, true)

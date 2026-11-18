@@ -73,7 +73,7 @@ local _K = {
 	-- shorthand
 	Service = Util.Service,
 	Server = Server,
-	Tools = Server and Server:WaitForChild("Tools"),
+	Tools = Server and Server:WaitForChild("Tools", 5),
 	ChatCommands = nil,
 
 	client = nil,

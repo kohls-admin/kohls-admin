@@ -115,7 +115,13 @@ return function(_K)
 		end
 		_initialized = true
 		local initStart = os.clock()
-		_K.LoadScript = require(Server.LoadScript)
+		local loadScript
+		_K.LoadScript = function(...)
+			if not loadScript then
+				loadScript = require(Server.LoadScript)
+			end
+			return loadScript(...)
+		end
 
 		local settings: { [string]: any } = {}
 		if typeof(config) == "Instance" then
@@ -133,9 +139,14 @@ return function(_K)
 				end
 				local studioThemes = config:FindFirstChild("Themes")
 				if studioThemes then
+					local builtinThemes: { [string]: Instance } = {}
+					for _, existing in Client.UI.Theme.Themes:GetChildren() do
+						builtinThemes[existing.Name] = existing
+					end
 					for _, child in studioThemes:GetChildren() do
-						local existing = Client.UI.Theme.Themes:FindFirstChild(child.Name)
-						if existing then
+						local existing = builtinThemes[child.Name]
+						if existing and child:IsA("ModuleScript") then
+							builtinThemes[child.Name] = nil
 							existing:Destroy()
 						end
 						child.Parent = Client.UI.Theme.Themes
@@ -1290,6 +1301,7 @@ return function(_K)
 		end)
 
 		-- replicate and enable client after all core and command remotes are registered
+		require(Package.Shared.VIP.UGC.AlphaWings).detachServerAssets(Server)
 		Package.Name = "Kohl's Admin Source"
 		Package.Parent = _K.Service.ReplicatedStorage
 		Client.Enabled = true

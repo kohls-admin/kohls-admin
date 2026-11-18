@@ -899,12 +899,12 @@ describe("Chat and Server", function()
 					freeAdmin = { "mod" },
 					prefix = { "?", "extra" },
 				})
-				world:run(0.05)
+				world:run(0.5)
 				mRemote.Settings:Fire({
 					prefix = { "?" },
 					splitKey = ",",
 				})
-				world:run(0.05)
+				world:run(0.5)
 				-- Immediate second prefix change by non-developer hits cooldown (line 860)
 				mRemote.Settings:Fire({
 					prefix = { ":" },
@@ -2050,14 +2050,43 @@ describe("Chat commands · TextChatCommands with platform-integrated chat", func
 			})
 		end)
 		world:run(2)
+		local replSource = sh.env.game:GetService("ReplicatedStorage"):FindFirstChild("Kohl's Admin Source")
+		sert.ok(replSource ~= nil)
+		sert.eq(replSource.Shared.VIP.UGC.AlphaWings:FindFirstChild("Bones"), nil)
+		sert.eq(replSource.Shared.VIP.UGC.AlphaWings:FindFirstChild("Animate"), nil)
 		local folder = sh.env.game:GetService("TextChatService"):FindFirstChild("TextChatCommands_KA")
+		-- With 0 connected players, everyone commands materialize while restricted commands stay deferred
+		local commandsCmd = folder:FindFirstChild("commands")
+		sert.ok(commandsCmd ~= nil)
+		sert.eq(commandsCmd.PrimaryAlias, "/commands")
+		sert.eq(commandsCmd.SecondaryAlias, ";commands")
+		sert.eq(commandsCmd.AutocompleteVisible, false)
+		sert.eq(folder:FindFirstChild("kill"), nil)
+		-- a letter prefix still parses, and all command aliases remain queryable even when unmaterialized
+		sert.eq(_K.chatCommandAlias("kill"), ";kill")
+		sert.eq(_K.ChatCommands.alias("nosuchcommand"), nil)
+
+		-- Connecting a permitted player (creator 101) materializes kill; replacing with a guest tears it down
+		local creator = sh.env:addPlayer(101, "Creator101")
+		world:run(0.2)
 		local kill = folder:FindFirstChild("kill")
+		sert.ok(kill ~= nil)
 		sert.eq(kill.PrimaryAlias, "/kill")
 		sert.eq(kill.SecondaryAlias, ";kill")
 		sert.eq(kill.AutocompleteVisible, false)
-		-- a letter prefix still parses, it just isn't a chat alias
-		sert.eq(_K.chatCommandAlias("kill"), ";kill")
-		sert.eq(_K.ChatCommands.alias("nosuchcommand"), nil)
+
+		sh.env:removePlayer(creator)
+		local guest = sh.env:addPlayer(202, "Guest202")
+		world:run(0.2)
+		sert.eq(folder:FindFirstChild("kill"), nil)
+
+		-- Granting then revoking a role dynamically syncs restricted commands
+		sert.eq(_K.Auth.userRoleAdd(guest.UserId, "admin"), true)
+		world:run(0.2)
+		sert.ok(folder:FindFirstChild("kill") ~= nil)
+		sert.eq(_K.Auth.userRoleRemove(guest.UserId, "admin"), true)
+		world:run(0.2)
+		sert.eq(folder:FindFirstChild("kill"), nil)
 	end)
 end)
 
@@ -2697,6 +2726,125 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			world:run(0.3)
 			sert.eq(_K.Data.servers["ttl-cap-job"][5], 600)
 			sert.eq(_K.Data.servers["ttl-nan-job"][5], 35)
+		end
+	)
+
+	test(
+		"Config.Themes replacing built-in themes under Deferred signals does not warn or drop themes, while true duplicates warn once",
+		function()
+			local function makeThemeFolder(env: any, defs: { { name: string, primary: any } })
+				local configObj = env.Instance.new("Configuration")
+				local folder = env.Instance.new("Folder", configObj)
+				folder.Name = "Themes"
+				local modules: { [string]: { any } } = {}
+				for _, def in defs do
+					local mod = env.Instance.new("ModuleScript", folder)
+					mod.Name = def.name
+					local primary = def.primary
+					rawset(mod, "_factory", function()
+						return { Primary = primary }
+					end)
+					modules[def.name] = modules[def.name] or {}
+					table.insert(modules[def.name], mod)
+				end
+				return configObj, modules
+			end
+
+			local function countDupWarnings(list: { string }): number
+				local count = 0
+				for _, msg in list do
+					if string.find(msg, "Duplicate theme", 1, true) then
+						count += 1
+					end
+				end
+				return count
+			end
+
+			-- 1. Mirror Loader/Config.Themes (Default, Legacy, Light) plus a custom theme under Deferred signals
+			local hd = Harness.newEnv({ signalBehavior = "Deferred" })
+			local warnings: { string } = {}
+			local origWarn = hd.env.globals.warn
+			hd.env.globals.warn = function(...: any)
+				table.insert(warnings, table.concat({ ... }, " "))
+			end
+
+			local Color3 = hd.env.globals.Color3
+			local defaultColor = Color3.fromRGB(11, 22, 33)
+			local legacyColor = Color3.fromRGB(44, 55, 66)
+			local lightColor = Color3.fromRGB(77, 88, 99)
+			local cyberColor = Color3.fromRGB(100, 110, 120)
+
+			local configObj = makeThemeFolder(hd.env, {
+				{ name = "Default", primary = defaultColor },
+				{ name = "Legacy", primary = legacyColor },
+				{ name = "Light", primary = lightColor },
+				{ name = "Cyberpunk", primary = cyberColor },
+			})
+
+			local dK = hd:requireK()
+			local Theme = hd.env:require(hd.Client:WaitForChild("UI"):WaitForChild("Theme"))
+			dK.initialize(configObj)
+
+			-- Before deferred ChildRemoved/ChildAdded flush
+			sert.eq(countDupWarnings(warnings), 0)
+			sert.eq(Theme.Themes.Default ~= nil and Theme.Themes.Default.Primary, defaultColor)
+			sert.eq(Theme.Themes.Legacy ~= nil and Theme.Themes.Legacy.Primary, legacyColor)
+			sert.eq(Theme.Themes.Light ~= nil and Theme.Themes.Light.Primary, lightColor)
+			sert.eq(Theme.Themes.Cyberpunk ~= nil and Theme.Themes.Cyberpunk.Primary, cyberColor)
+			sert.eq(Theme.Primary:peek(), defaultColor)
+
+			-- After deferred ChildRemoved/ChildAdded flush
+			hd.env:step(0.1)
+			hd.env.globals.warn = origWarn
+
+			sert.eq(countDupWarnings(warnings), 0)
+			sert.eq(Theme.Themes.Default ~= nil and Theme.Themes.Default.Primary, defaultColor)
+			sert.eq(Theme.Themes.Legacy ~= nil and Theme.Themes.Legacy.Primary, legacyColor)
+			sert.eq(Theme.Themes.Light ~= nil and Theme.Themes.Light.Primary, lightColor)
+			sert.eq(Theme.Themes.Cyberpunk ~= nil and Theme.Themes.Cyberpunk.Primary, cyberColor)
+			sert.eq(Theme.Primary:peek(), defaultColor)
+
+			-- 2. Genuine duplicate modules in Config.Themes warn exactly once, and removal promotes the surviving sibling or Default fallback
+			local hdDup = Harness.newEnv({ signalBehavior = "Deferred" })
+			local dupWarnings: { string } = {}
+			local origDupWarn = hdDup.env.globals.warn
+			hdDup.env.globals.warn = function(...: any)
+				table.insert(dupWarnings, table.concat({ ... }, " "))
+			end
+
+			local Color3Dup = hdDup.env.globals.Color3
+			local neon1Color = Color3Dup.fromRGB(10, 20, 30)
+			local neon2Color = Color3Dup.fromRGB(40, 50, 60)
+			local customDefaultColor = Color3Dup.fromRGB(70, 80, 90)
+
+			local dupConfig, dupMods = makeThemeFolder(hdDup.env, {
+				{ name = "Light", primary = Color3Dup.fromRGB(200, 200, 200) },
+				{ name = "Neon", primary = neon1Color },
+				{ name = "Neon", primary = neon2Color },
+				{ name = "Default", primary = customDefaultColor },
+			})
+
+			local dK2 = hdDup:requireK()
+			local Theme2 = hdDup.env:require(hdDup.Client:WaitForChild("UI"):WaitForChild("Theme"))
+			dK2.initialize(dupConfig)
+			hdDup.env:step(0.1)
+
+			sert.eq(countDupWarnings(dupWarnings), 1)
+			sert.eq(Theme2.Themes.Neon ~= nil and Theme2.Themes.Neon.Primary, neon2Color)
+			sert.eq(Theme2.Primary:peek(), customDefaultColor)
+
+			-- Removing the active duplicate promotes the surviving sibling without warning
+			dupMods.Neon[2]:Destroy()
+			hdDup.env:step(0.1)
+			sert.eq(countDupWarnings(dupWarnings), 1)
+			sert.eq(Theme2.Themes.Neon ~= nil and Theme2.Themes.Neon.Primary, neon1Color)
+
+			-- Removing the Default override falls back to built-in Default and updates Theme signals
+			dupMods.Default[1]:Destroy()
+			hdDup.env:step(0.1)
+			hdDup.env.globals.warn = origDupWarn
+			sert.eq(Theme2.Themes.Default ~= nil and Theme2.Themes.Default.Primary, Color3Dup.fromRGB(18, 18, 21))
+			sert.eq(Theme2.Primary:peek(), Color3Dup.fromRGB(18, 18, 21))
 		end
 	)
 end)

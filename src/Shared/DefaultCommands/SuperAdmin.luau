@@ -148,7 +148,14 @@ return {
 			local env = {}
 
 			task.defer(function()
-				env.tool = _K.Tools:WaitForChild("Building Tools") :: Tool
+				if not _K.Tools then
+					return
+				end
+				local tool = _K.Tools:WaitForChild("Building Tools", 5) :: Tool?
+				if not tool then
+					return
+				end
+				env.tool = tool
 				env.tool.CanBeDropped = false
 				local handle = Instance.new("Part")
 				handle.Name = "Handle"
@@ -171,6 +178,9 @@ return {
 		end,
 
 		run = function(context, players)
+			if not context.env.tool then
+				return
+			end
 			for _, player in players do
 				local backpack = player:FindFirstChildOfClass("Backpack")
 				if not backpack or backpack:FindFirstChild("Building Tools") then

@@ -8,13 +8,32 @@ local Util = require(Package.Shared:WaitForChild("Util"))
 
 local hclToRGB = Util.Color.hclToRGB
 
-local hat = Instance.new("Accessory")
-hat.AccessoryType = Enum.AccessoryType.Hat
-hat.Name = "SuperCrown"
-hat.AttachmentPoint = CFrame.new(0, -1, 0)
-hat:AddTag("_KSuperCrown")
+local HAT_NAME = "SuperCrown"
+local hat: Accessory?
+local building = false
+local waiters: { thread } = {}
 
-task.spawn(function()
+local function getBuiltHat(): Accessory
+	return assert(hat, "Expected built accessory")
+end
+
+local function ensureHat(): Accessory
+	if hat then
+		return hat
+	end
+	if building then
+		table.insert(waiters, coroutine.running())
+		coroutine.yield()
+		return getBuiltHat()
+	end
+	building = true
+
+	local newHat = Instance.new("Accessory")
+	newHat.AccessoryType = Enum.AccessoryType.Hat
+	newHat.Name = HAT_NAME
+	newHat.AttachmentPoint = CFrame.new(0, -1, 0)
+	newHat:AddTag("_KSuperCrown")
+
 	local ok, result = Util.Retry(function()
 		return InsertService:CreateMeshPartAsync(
 			"rbxassetid://18966762965",
@@ -22,35 +41,45 @@ task.spawn(function()
 			Enum.RenderFidelity.Automatic
 		)
 	end)
-	if not ok then
+	if ok and result then
+		local handle = result
+		handle.Parent = newHat
+		handle.Name = "Handle"
+		handle.Color = Color3.new(1, 1, 1)
+		handle.CastShadow = false
+		handle.CanCollide = false
+		handle.CanQuery = false
+		handle.CanTouch = false
+		handle.Massless = true
+		handle.Locked = true
+		handle.Material = Enum.Material.Neon
+		-- handle.Size = Vector3.new(1.2, 0.2, 1.2)
+
+		local attachment = Instance.new("Attachment")
+		attachment.Name = "HatAttachment"
+		attachment.CFrame = CFrame.new(0, -1.5, 0)
+		attachment.Parent = handle
+
+		local fire = Instance.new("Fire")
+		fire.Color = Color3.new(0, 0, 0)
+		fire.SecondaryColor = Color3.new(0, 0, 0)
+		fire.Heat = 4
+		fire.Size = 2
+		fire.Parent = handle
+	elseif not ok then
 		warn(result)
-		return
 	end
-	local handle = result
-	handle.Parent = hat
-	handle.Name = "Handle"
-	handle.Color = Color3.new(1, 1, 1)
-	handle.CastShadow = false
-	handle.CanCollide = false
-	handle.CanQuery = false
-	handle.CanTouch = false
-	handle.Massless = true
-	handle.Locked = true
-	handle.Material = Enum.Material.Neon
-	-- handle.Size = Vector3.new(1.2, 0.2, 1.2)
 
-	local attachment = Instance.new("Attachment")
-	attachment.Name = "HatAttachment"
-	attachment.CFrame = CFrame.new(0, -1.5, 0)
-	attachment.Parent = handle
+	hat = newHat
+	building = false
+	local pending = table.clone(waiters)
+	table.clear(waiters)
+	for _, thread in pending do
+		task.spawn(thread)
+	end
 
-	local fire = Instance.new("Fire")
-	fire.Color = Color3.new(0, 0, 0)
-	fire.SecondaryColor = Color3.new(0, 0, 0)
-	fire.Heat = 4
-	fire.Size = 2
-	fire.Parent = handle
-end)
+	return newHat
+end
 
 if RunService:IsClient() then
 	-- handle crown animations
@@ -106,7 +135,7 @@ local COLORS = {
 }
 
 return {
-	Name = hat.Name,
+	Name = HAT_NAME,
 	MatchId = "rbxassetid://18966762965",
 	Method = function(character: Model, accessory: Accessory)
 		local colors
@@ -135,12 +164,14 @@ return {
 			end
 		end
 
-		local existing = character:FindFirstChild(hat.Name)
+		local template = ensureHat()
+
+		local existing = character:FindFirstChild(HAT_NAME)
 		if existing then
 			existing:Destroy()
 		end
 
-		local clone = hat:Clone()
+		local clone = template:Clone()
 
 		if clone:FindFirstChild("Handle") then
 			if colors then
