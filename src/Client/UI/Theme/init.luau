@@ -42,9 +42,6 @@ function Theme.load(themeModule: ModuleScript)
 		if loadedModules[themeModule] == themes[themeModule.Name] and themes[themeModule.Name] ~= nil then
 			return
 		end
-		if themes[themeModule.Name] and themeModule.Name ~= "Default" then
-			warn("Duplicate theme found, make sure they have different names!")
-		end
 		local ok, theme = pcall(require, themeModule)
 		if not ok or type(theme) ~= "table" then
 			return
@@ -90,6 +87,9 @@ local load = Theme.load
 Theme.load = nil
 load(script:WaitForChild("Default"))
 for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
+	if themes[themeModule.Name] and themeModule.Name ~= "Default" then
+		warn("Duplicate theme found, make sure they have different names!")
+	end
 	load(themeModule)
 end
 
@@ -108,6 +108,9 @@ local _ = ThemesFolder.ChildRemoved:Connect(function(child)
 end)
 
 local _ = ThemesFolder.ChildAdded:Connect(function(child)
+	if themes[child.Name] and child.Name ~= "Default" then
+		warn("Duplicate theme found, make sure they have different names!")
+	end
 	Theme.load(child :: ModuleScript)
 end)
 
