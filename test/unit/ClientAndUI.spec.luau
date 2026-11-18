@@ -380,10 +380,11 @@ do
 			local env = _K.Registry.commands.emotes.env
 			sert(env and env.window and env.window._instance.Visible, "the emotes window opens")
 
-			-- Verify VIP Popup layout, PromptPurchaseVIP, View button, and sale state sync in real Studio
+			-- Verify VIP Popup lazy construction, layout, PromptPurchaseVIP, View button, and sale state sync in real Studio
 			local vip = _K.VIP.popup
 			sert.eq(vip ~= nil, true)
 			sert.eq(vip.Visible, false)
+			sert.eq(vip:FindFirstChild("Frame"), nil)
 			_K.PromptPurchaseVIP()
 			frames(_K.UI, 2)
 			sert.eq(vip.Visible, true)
@@ -1636,15 +1637,23 @@ describe("Client and UI", function()
 			world:run(0.2)
 			fastArray._scroller._props.AbsoluteCanvasSize = Vector2.new(100, 50)
 			fastArray._scroller:GetPropertyChangedSignal("AbsoluteCanvasSize"):Fire()
-			-- Calling render(true) while hidden defers cache invalidation until forceRender() runs while visible
+			-- Calling render(true) or mutating List while hidden defers work until Visible = true
 			fastArray._instance.Visible = false
 			sert.eq(next(fastArray._lineItemCache) ~= nil, true)
 			fastArray:render(true)
 			sert.eq(fastArray._bustCache, true)
+			sert.eq(fastArray._pendingRender, true)
 			sert.eq(next(fastArray._lineItemCache) ~= nil, true)
+			fastArray.List({ "Alpha", "Beta", "Gamma", "Delta", "Epsilon" })
+			UI.flush()
+			sert.eq(fastArray._pendingUpdate, true)
+			sert.eq(#fastArray._filteredList, 4)
 			fastArray._instance.Visible = true
 			world:run(0.2)
 			sert.eq(fastArray._bustCache, nil)
+			sert.eq(fastArray._pendingRender, nil)
+			sert.eq(fastArray._pendingUpdate, nil)
+			sert.eq(#fastArray._filteredList, 5)
 			sert.eq(next(fastArray._lineItemCache) ~= nil, true)
 			fastArray:Destroy()
 
@@ -3115,6 +3124,14 @@ describe("Client and UI", function()
 
 				-- 6. Dashboard & Tabs (Bans, Members, Logs, Commands, Settings, Servers, Market, About, GetKA)
 				local dash = cK.client.dashboard
+				-- Lazy startup state: unopened windows, dialogs, and VIP popup remain unbuilt before first display
+				sert.eq(rawget(cK.Registry.commands.cmds.env, "window"), nil)
+				sert.eq(rawget(cK.Registry.commands.cmdbar2.env, "window"), nil)
+				sert.eq(rawget(cK.Registry.commands.log.env, "window"), nil)
+				sert.eq(rawget(cK.Registry.commands.emote.env, "window"), nil)
+				sert.eq(rawget(cK.Registry.commands.emotes.env, "window"), nil)
+				sert.eq(cK.VIP.popup:FindFirstChild("Frame"), nil)
+				sert.eq(UI.LayerTop:FindFirstChild("Dialog"), nil)
 				cK.Process.runCommands(cK, cEnv.Players.LocalPlayer.UserId, ";cmds")
 				fastRun(0.2)
 				cK.client.dashboardButton.Activated:Fire()
@@ -3873,7 +3890,7 @@ describe("Client and UI", function()
 				fastRun(0.2)
 			end)
 
-			test("re-adds only changed chat commands in one pass, never the whole folder", function()
+			test("updates chat command visibility in place without reparenting commands or the folder", function()
 				local world, _srvMounted, cliMounted, _sK, cK = getOrCreateFullClientSut()
 				local cEnv = cliMounted.env
 				local textChat = cK.Service.TextChat
@@ -3928,10 +3945,10 @@ describe("Client and UI", function()
 				local visible, inFolder = countAdded()
 				sert.eq(visible, #added)
 				sert.eq(inFolder, #added)
-				sert.eq(readds, #added)
+				sert.eq(readds, 0)
+				sert.eq(folderRemoved, 0)
 
-				-- turning chat commands off flips every command in one sync pass, all re-added in a single frame (chat rebuilds
-				-- once per frame with changes); stepping one frame at a time counts deferred events in their own frame
+				-- turning chat commands off flips every command in place with zero reparents
 				readds = 0
 				cK.Data.settings.chatCommands = false
 				cK.client.settings.chatCommands(false)
@@ -3948,9 +3965,9 @@ describe("Client and UI", function()
 				visible, inFolder = countAdded()
 				sert.eq(visible, 0)
 				sert.eq(inFolder, #added)
-				sert.eq(readds >= #added, true)
-				sert.eq(framesWithReadds, 1)
-				sert.eq(maxPerFrame, readds)
+				sert.eq(readds, 0)
+				sert.eq(framesWithReadds, 0)
+				sert.eq(maxPerFrame, 0)
 				sert.eq(folderRemoved, 0)
 
 				cK.Data.settings.chatCommands = true
@@ -4313,6 +4330,9 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 	test("Dashboard ping color walks the Oklab hue from Valid through yellow to Invalid", function()
 		local world, _srvMounted, cliMounted, _sK, cK = getOrCreateFullClientSut()
 		sert.eq(cK.ready, true)
+		local dashWin = cK.client.dashboard.Window._instance
+		local prevDashVisible = dashWin.Visible
+		dashWin.Visible = true
 
 		local ping = 0.175 -- half of the 350 ms that reads fully Invalid
 		local player = cliMounted.env.Players.LocalPlayer
@@ -4347,6 +4367,7 @@ describe("Client and UI · Tabs, Dashboard & UI.edit regressions", function()
 		UI.Theme.Valid(origValid)
 		UI.Theme.Invalid(origInvalid)
 		rawset(player, "_methods", origMethods)
+		dashWin.Visible = prevDashVisible
 	end)
 
 	test("UI.edit leaves a Find selection passed as a child untouched", function()
@@ -4965,6 +4986,10 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 
 			-- 5. Settings.luau preserves & deduplicates secondary prefixes when editing primary prefix
 			local dash = cK.client.dashboard
+			local prevWinVis = dash.Window._instance.Visible
+			dash.Window._instance.Visible = true
+			dash.Tabs._pages:JumpTo(dash.Tabs._containerCache[dash.Settings._instance])
+			fastRun(0.1)
 			local origDataPrefix = table.clone(cK.Data.settings.prefix)
 			cK.Data.settings.prefix = { ";", ":", "!" }
 			cK.client.settings.prefix(cK.Data.settings.prefix, true)
@@ -5003,6 +5028,7 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 				sert.eq(cK.Data.settings.prefix[2], ":")
 				sert.eq(cK.Data.settings.prefix[3], "!")
 			end
+			dash.Window._instance.Visible = prevWinVis
 			cK.Data.settings.prefix = origDataPrefix
 			cK.client.settings.prefix(origDataPrefix, true)
 
@@ -5080,15 +5106,16 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 			marketMethods.GetProductInfoAsync = origGetProductInfoAsync
 			sert.eq(escapedServerFound, true)
 
-			-- 8. Members missing role guard (`roleChip` returns nil) & roleMenu AutomaticSize.X
-			local foundAutoSizeRoleMenu = false
-			for _, child in UI.LayerTop:GetChildren() do
-				if child.Name == "Menu" and child.AutomaticSize == Enum.AutomaticSize.X then
-					foundAutoSizeRoleMenu = true
-					break
+			-- 8. Members missing role guard (`roleChip` returns nil) & lazy roleMenu AutomaticSize.X
+			local function hasAutoSizeRoleMenu(): boolean
+				for _, child in UI.LayerTop:GetChildren() do
+					if child.Name == "Menu" and child.AutomaticSize == Enum.AutomaticSize.X then
+						return true
+					end
 				end
+				return false
 			end
-			sert.eq(foundAutoSizeRoleMenu, true)
+			sert.eq(hasAutoSizeRoleMenu(), false)
 			local preMemberErrCount = #world.scheduler.errors
 			sK.Remote.Member:Fire(srvPlayer, "919", {
 				name = "Tag<Member>",
@@ -5103,8 +5130,15 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 				sert.eq(string.find(trace, "Members.luau", 1, true), nil)
 			end
 			local foundMember919 = false
+			local addRoleBtn: any = nil
 			for _, item in dash.Members._lineItemCache do
 				local label = item._instance and item._instance:FindFirstChild("TextLabel")
+				if not addRoleBtn and item._instance then
+					local btn = item._instance:FindFirstChild("Button")
+					if btn and btn:IsA("TextButton") then
+						addRoleBtn = btn
+					end
+				end
 				if label and string.find(label.Text, "919", 1, true) then
 					sert.eq(string.find(label.Text, "&lt;Member&gt;", 1, true) ~= nil, true)
 					foundMember919 = true
@@ -5112,6 +5146,14 @@ describe("Client and UI · 2026 Compliance & UI Regressions", function()
 				end
 			end
 			sert.eq(foundMember919, true)
+			sert.eq(hasAutoSizeRoleMenu(), false)
+			sert.eq(addRoleBtn ~= nil, true)
+			if addRoleBtn then
+				addRoleBtn.Activated:Fire()
+				fastRun(0.05)
+				sert.eq(hasAutoSizeRoleMenu(), true)
+				addRoleBtn.Activated:Fire()
+			end
 
 			-- 9. Commands multi-tier purchasable roles & RichText escaping in filterCommands
 			cK.Data.roles.tier1 = {

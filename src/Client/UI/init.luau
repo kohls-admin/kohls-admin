@@ -582,6 +582,106 @@ local function createInstance(className: string)
 end
 UI.new = (createInstance :: unknown) :: Constructor
 
+local displayWatchers: { [GuiObject]: () -> () } = {}
+
+--- Re-evaluates all deferred UI display watchers after an ancestor visibility change.
+function UI.notifyDisplayWatchers()
+	for _, check in table.clone(displayWatchers) do
+		check()
+	end
+end
+
+local function isDisplayed(inst: GuiObject): boolean
+	if not (inst.Visible and inst.Parent) then
+		return false
+	end
+	local top: Instance = inst
+	local current: Instance? = inst.Parent
+	while current do
+		top = current
+		if current:IsA("GuiObject") and not current.Visible then
+			return false
+		end
+		current = current.Parent
+	end
+	if top ~= inst and top.Name == "TabController" and top:IsA("GuiObject") then
+		return false
+	end
+	return true
+end
+
+--- Runs `buildFn` once when `inst` and all its GuiObject ancestors are first displayed.
+function UI.onFirstDisplayed(inst: GuiObject, buildFn: () -> ())
+	local built = false
+	local conns: { RBXScriptConnection } = {}
+	local ancestorConns: { RBXScriptConnection } = {}
+
+	local function disconnectAll()
+		displayWatchers[inst] = nil
+		for _, conn in conns do
+			conn:Disconnect()
+		end
+		table.clear(conns)
+		for _, conn in ancestorConns do
+			conn:Disconnect()
+		end
+		table.clear(ancestorConns)
+	end
+
+	local function check()
+		if built then
+			return
+		end
+		if isDisplayed(inst) then
+			built = true
+			disconnectAll()
+			buildFn()
+		end
+	end
+
+	local function watchAncestors()
+		for _, conn in ancestorConns do
+			conn:Disconnect()
+		end
+		table.clear(ancestorConns)
+		if built then
+			return
+		end
+		local current: Instance? = inst.Parent
+		while current do
+			if current:IsA("GuiObject") then
+				table.insert(ancestorConns, current:GetPropertyChangedSignal("Visible"):Connect(check))
+			end
+			current = current.Parent
+		end
+	end
+
+	if isDisplayed(inst) then
+		built = true
+		buildFn()
+		return
+	end
+
+	displayWatchers[inst] = check
+	watchAncestors()
+	table.insert(conns, inst:GetPropertyChangedSignal("Visible"):Connect(check))
+	table.insert(
+		conns,
+		inst:GetPropertyChangedSignal("Parent"):Connect(function()
+			watchAncestors()
+			check()
+		end)
+	)
+	table.insert(
+		conns,
+		inst.AncestryChanged:Connect(function()
+			watchAncestors()
+			check()
+		end)
+	)
+	table.insert(conns, inst.Destroying:Connect(disconnectAll))
+end
+
 --- Registers a new UI component class
 function UI.register(className: string, class: Dict<any>)
 	if UI.Class[className] then

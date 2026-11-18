@@ -12,146 +12,153 @@ function Members.new(_K)
 		return UDim2.fromOffset(0, size + padding)
 	end
 
-	local roleChoice = UI.signal({ Id = "vip", Name = "VIP" })
-	local roleChoices = UI.signal({ { Id = "vip", Name = "VIP" } })
-	local roleDialogTarget = UI.signal(nil)
-	local roleDialogInput
-	local lookup = 0
-	local function resetRoleTargetInput()
-		roleDialogTarget:set(nil)
-		roleDialogInput:SetValue("")
-	end
+	local roleDialogTarget, roleDialogInput, newRoleDialog
+	local function ensureNewRoleDialog()
+		if newRoleDialog then
+			return
+		end
+		local roleChoice = UI.signal({ Id = "vip", Name = "VIP" })
+		local roleChoices = UI.signal({ { Id = "vip", Name = "VIP" } })
+		roleDialogTarget = UI.signal(nil)
+		local lookup = 0
+		local function resetRoleTargetInput()
+			roleDialogTarget:set(nil)
+			roleDialogInput:SetValue("")
+		end
 
-	roleDialogInput = UI.new "Input" {
-		AutomaticSize = Enum.AutomaticSize.X,
-		FontFace = UI.Theme.FontMono,
-		FontSize = UI.Theme.FontSize,
-		MaxChars = 20,
-		Placeholder = "UserId or Username",
-		Size = inputSize,
-		Value = "",
+		roleDialogInput = UI.new "Input" {
+			AutomaticSize = Enum.AutomaticSize.X,
+			FontFace = UI.Theme.FontMono,
+			FontSize = UI.Theme.FontSize,
+			MaxChars = 20,
+			Placeholder = "UserId or Username",
+			Size = inputSize,
+			Value = "",
 
-		UI.flex("shrink"),
+			UI.flex("shrink"),
 
-		[UI.Hook] = {
-			Value = function(value)
-				-- the name lookup yields, so it runs off the reactive graph; a newer lookup drops this one
-				-- clear the target until it resolves so actions can't hit the previous user
-				lookup += 1
-				local current = lookup
-				roleDialogTarget:set(nil)
-				if value == "" then
-					UI.flush()
-					return
-				end
-				task.spawn(function()
-					local userId
-					if tonumber(value) then
-						userId = tonumber(value)
-					else
-						local ok, result = pcall(_K.Service.Players.GetUserIdFromNameAsync, _K.Service.Players, value)
-						userId = ok and result
-					end
-					if current ~= lookup then
+			[UI.Hook] = {
+				Value = function(value)
+					-- the name lookup yields, so it runs off the reactive graph; a newer lookup drops this one
+					-- clear the target until it resolves so actions can't hit the previous user
+					lookup += 1
+					local current = lookup
+					roleDialogTarget:set(nil)
+					if value == "" then
+						UI.flush()
 						return
 					end
-
-					local fauxArg = {
-						_K = _K,
-						definition = _K.Registry.commands.role.args[1],
-						command = {
-							from = _K.LocalPlayer.UserId,
-							fromRank = _K.Auth.getRank(_K.LocalPlayer.UserId),
-							fromRole = {},
-							rank = _K.Auth.hasCommand(_K.LocalPlayer.UserId, "role") or 0,
-						},
-					}
-
-					_K.Data.targetLimits[_K.LocalPlayer.UserId] = 0
-					if userId and not _K.Auth.targetUserArgument(fauxArg, userId, userId) then
-						userId = nil
-						task.defer(resetRoleTargetInput)
-					end
-
-					local member = _K.Data.members[tostring(userId)] or {}
-					local availableRoles = {}
-					for rank, role in _K.Data.rolesList do
-						if rank == 0 or (rank >= _K.client.rank:peek() and _K.creatorId ~= _K.LocalPlayer.UserId) then
-							continue
+					task.spawn(function()
+						local userId
+						if tonumber(value) then
+							userId = tonumber(value)
+						else
+							local ok, result =
+								pcall(_K.Service.Players.GetUserIdFromNameAsync, _K.Service.Players, value)
+							userId = ok and result
 						end
-						local hasRole = if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
-							then table.find(member.persist or {}, role._key)
-							else table.find(member.roles or {}, role._key)
-						if hasRole then
-							continue
+						if current ~= lookup then
+							return
 						end
-						table.insert(availableRoles, { Id = role._key, Name = role.name })
-					end
-					-- roleChoice stays a role table, Confirm reads its Id
-					roleChoice(availableRoles[1] or { Id = "", Name = "" })
-					roleChoices(availableRoles)
-					roleDialogTarget:set(userId)
-					UI.flush()
-				end)
-			end,
-		},
-	}
 
-	local newRoleDialog
-	newRoleDialog = UI.new "Dialog" {
-		Parent = UI.LayerTop,
-		BackgroundTransparency = 0,
-		Draggable = true,
-		Title = "Add Role",
-		Visible = false,
-		ExitButton = true,
-		Modal = true,
-		Close = function()
-			newRoleDialog.Visible(false)
-		end,
+						local fauxArg = {
+							_K = _K,
+							definition = _K.Registry.commands.role.args[1],
+							command = {
+								from = _K.LocalPlayer.UserId,
+								fromRank = _K.Auth.getRank(_K.LocalPlayer.UserId),
+								fromRole = {},
+								rank = _K.Auth.hasCommand(_K.LocalPlayer.UserId, "role") or 0,
+							},
+						}
 
-		UI.padding(UI.Theme.Padding),
+						_K.Data.targetLimits[_K.LocalPlayer.UserId] = 0
+						if userId and not _K.Auth.targetUserArgument(fauxArg, userId, userId) then
+							userId = nil
+							task.defer(resetRoleTargetInput)
+						end
 
-		UI.new "ListItem" {
-			Text = "User",
-			UI.new "ImageLabel" {
-				BackgroundTransparency = UI.Theme.TransparencyHeavy,
-				BackgroundColor3 = UI.Theme.PrimaryText,
-				Size = inputSize,
-				Image = function()
-					return `rbxthumb://type=AvatarHeadShot&id={roleDialogTarget()}&w=48&h=48`
+						local member = _K.Data.members[tostring(userId)] or {}
+						local availableRoles = {}
+						for rank, role in _K.Data.rolesList do
+							if
+								rank == 0 or (rank >= _K.client.rank:peek() and _K.creatorId ~= _K.LocalPlayer.UserId)
+							then
+								continue
+							end
+							local hasRole = if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
+								then table.find(member.persist or {}, role._key)
+								else table.find(member.roles or {}, role._key)
+							if hasRole then
+								continue
+							end
+							table.insert(availableRoles, { Id = role._key, Name = role.name })
+						end
+						-- roleChoice stays a role table, Confirm reads its Id
+						roleChoice(availableRoles[1] or { Id = "", Name = "" })
+						roleChoices(availableRoles)
+						roleDialogTarget:set(userId)
+						UI.flush()
+					end)
 				end,
-				UI.aspectRatio(1, "scale", "height"),
-				UI.corner(UI.Theme.CornerPadded),
 			},
-			roleDialogInput,
-		},
+		}
 
-		UI.new "ListItem" {
-			Text = "Role",
-			UI.new "Select" {
-				Value = roleChoice,
-				Choices = roleChoices,
+		newRoleDialog = UI.new "Dialog" {
+			Parent = UI.LayerTop,
+			BackgroundTransparency = 0,
+			Draggable = true,
+			Title = "Add Role",
+			Visible = false,
+			ExitButton = true,
+			Modal = true,
+			Close = function()
+				newRoleDialog.Visible(false)
+			end,
+
+			UI.padding(UI.Theme.Padding),
+
+			UI.new "ListItem" {
+				Text = "User",
+				UI.new "ImageLabel" {
+					BackgroundTransparency = UI.Theme.TransparencyHeavy,
+					BackgroundColor3 = UI.Theme.PrimaryText,
+					Size = inputSize,
+					Image = function()
+						return `rbxthumb://type=AvatarHeadShot&id={roleDialogTarget()}&w=48&h=48`
+					end,
+					UI.aspectRatio(1, "scale", "height"),
+					UI.corner(UI.Theme.CornerPadded),
+				},
+				roleDialogInput,
 			},
-			Visible = function()
-				return roleDialogTarget() and #roleChoices() > 0
-			end,
-		},
 
-		UI.new "Button" {
-			Label = "Confirm",
-			Activated = function()
-				if roleDialogTarget:peek() and roleChoice:peek().Id ~= "" then
-					local save = _K.Registry.commands.role.LocalPlayerAuthorized
-					local cmd =
-						`{_K.getCommandPrefix()}{if save then "" else "temp"}role {roleDialogTarget()} {roleChoice().Id}`
-					_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
-					newRoleDialog.Visible(false)
-					resetRoleTargetInput()
-				end
-			end,
-		},
-	}
+			UI.new "ListItem" {
+				Text = "Role",
+				UI.new "Select" {
+					Value = roleChoice,
+					Choices = roleChoices,
+				},
+				Visible = function()
+					return roleDialogTarget() and #roleChoices() > 0
+				end,
+			},
+
+			UI.new "Button" {
+				Label = "Confirm",
+				Activated = function()
+					if roleDialogTarget:peek() and roleChoice:peek().Id ~= "" then
+						local save = _K.Registry.commands.role.LocalPlayerAuthorized
+						local cmd =
+							`{_K.getCommandPrefix()}{if save then "" else "temp"}role {roleDialogTarget()} {roleChoice().Id}`
+						_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
+						newRoleDialog.Visible(false)
+						resetRoleTargetInput()
+					end
+				end,
+			},
+		}
+	end
 
 	local newMemberButton = UI.new "Button" {
 		LayoutOrder = 3,
@@ -172,6 +179,7 @@ function Members.new(_K)
 		end,
 
 		Activated = function()
+			ensureNewRoleDialog()
 			if not newRoleDialog.Visible:peek() then
 				roleDialogTarget:set(nil)
 				roleDialogInput:SetValue("")
@@ -183,100 +191,107 @@ function Members.new(_K)
 	UI.new "Tooltip" { Parent = newMemberButton, Text = "New Member", Hovering = newMemberButton._hovering }
 	UI.edit(newMemberButton._instance.UICorner)({ CornerRadius = UI.Theme.CornerPadded })
 
-	-- measured off the reactive graph: GetTextBoundsAsync yields and must never run inside a computed
-	local roleTextWidth = UI.textWidth(function()
-		_K.client.rank()
-		local font = UI.Theme.Font()
-		local size = UI.Theme.FontSize()
-		local requests = {}
-		for _, role in _K.Data.roles do
-			table.insert(requests, { Text = role.name, Font = font, Size = size, RichText = true })
+	local itemSize, roleMenu, target
+	local function ensureRoleMenu()
+		if roleMenu then
+			return
 		end
-		return requests
-	end)
+		-- measured off the reactive graph: GetTextBoundsAsync yields and must never run inside a computed
+		local roleTextWidth = UI.textWidth(function()
+			_K.client.rank()
+			local font = UI.Theme.Font()
+			local size = UI.Theme.FontSize()
+			local requests = {}
+			for _, role in _K.Data.roles do
+				table.insert(requests, { Text = role.name, Font = font, Size = size, RichText = true })
+			end
+			return requests
+		end)
 
-	local itemSize = UI.computed(function()
-		_K.client.rank()
-		local size = UI.Theme.FontSize()
-		local padding = UI.Theme.Padding().Offset
-		local maxWidth: number = math.max(size, roleTextWidth())
+		itemSize = UI.computed(function()
+			_K.client.rank()
+			local size = UI.Theme.FontSize()
+			local padding = UI.Theme.Padding().Offset
+			local maxWidth: number = math.max(size, roleTextWidth())
 
-		local canSave = _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
-		local cloudWidth = canSave and (size + padding) or 0
-		return UDim2.fromOffset(maxWidth + padding * 3 + size + cloudWidth, math.round(size + padding))
-	end)
+			local canSave = _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
+			local cloudWidth = canSave and (size + padding) or 0
+			return UDim2.fromOffset(maxWidth + padding * 3 + size + cloudWidth, math.round(size + padding))
+		end)
 
-	local roleMenu = UI.new "Menu" {
-		AutomaticSize = Enum.AutomaticSize.X,
-		RightAlign = true,
-		Size = UDim2.new(),
-	}
-	roleMenu._content.AutomaticSize = Enum.AutomaticSize.X
-
-	local target = UI.signal(nil)
-
-	local function hoverClick(value)
-		if value then
-			UI.Sound.Hover02:Play()
-		end
-	end
-
-	for roleId, role in _K.Data.roles do
-		if not role._rank or role._rank == 0 then
-			continue
-		end
-		local roleButton = UI.new "Button" {
-			Parent = roleMenu,
-			LayoutOrder = math.min(1e9, role._rank :: number),
-			BackgroundTransparency = 1,
-			Label = role.name,
-			Icon = UI.Theme.Image.Circle,
-			IconProperties = {
-				ImageColor3 = Color3.fromHex(role.color),
-				Size = UDim2.fromScale(0.5, 0.5),
-				SizeConstraint = Enum.SizeConstraint.RelativeYY,
-				Visible = true,
-			},
-			Padding = UDim.new(),
-			Size = itemSize,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Visible = function()
-				local member = target() or {}
-				local hasCommand = _K.Registry.commands.role.LocalPlayerAuthorized
-					or _K.Registry.commands.temprole.LocalPlayerAuthorized
-				local hasRole = if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
-					then table.find(member.persist or {}, roleId)
-					else table.find(member.roles or {}, roleId)
-				return (_K.client.rank() > role._rank or _K.creatorId == _K.LocalPlayer.UserId)
-					and hasCommand
-					and not hasRole
-			end,
-
-			UI.new "ImageLabel" {
-				LayoutOrder = 9,
-				BackgroundTransparency = 1,
-				Image = UI.Theme.Image.Cloud_Save,
-				ScaleType = Enum.ScaleType.Fit,
-				Size = function()
-					return UDim2.new(1, UI.Theme.Padding().Offset, 1, 0)
-				end,
-				SizeConstraint = Enum.SizeConstraint.RelativeYY,
-				Visible = function()
-					_K.client.rank()
-					return _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
-				end,
-			},
-
-			Activated = function()
-				UI.deactivateState(roleMenu.Visible, "floating")
-				if _K.client.rank:peek() > role._rank or _K.creatorId == _K.LocalPlayer.UserId then
-					local save = _K.Registry.commands.role.LocalPlayerAuthorized
-					local cmd = `{_K.getCommandPrefix()}{if save then "" else "temp"}role {target().userId} {roleId}`
-					_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
-				end
-			end,
+		roleMenu = UI.new "Menu" {
+			AutomaticSize = Enum.AutomaticSize.X,
+			RightAlign = true,
+			Size = UDim2.new(),
 		}
-		UI.effect(UI.on(roleButton._hovering, hoverClick, true)):get()
+		roleMenu._content.AutomaticSize = Enum.AutomaticSize.X
+
+		target = UI.signal(nil)
+
+		local function hoverClick(value)
+			if value then
+				UI.Sound.Hover02:Play()
+			end
+		end
+
+		for roleId, role in _K.Data.roles do
+			if not role._rank or role._rank == 0 then
+				continue
+			end
+			local roleButton = UI.new "Button" {
+				Parent = roleMenu,
+				LayoutOrder = math.min(1e9, role._rank :: number),
+				BackgroundTransparency = 1,
+				Label = role.name,
+				Icon = UI.Theme.Image.Circle,
+				IconProperties = {
+					ImageColor3 = Color3.fromHex(role.color),
+					Size = UDim2.fromScale(0.5, 0.5),
+					SizeConstraint = Enum.SizeConstraint.RelativeYY,
+					Visible = true,
+				},
+				Padding = UDim.new(),
+				Size = itemSize,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				Visible = function()
+					local member = target() or {}
+					local hasCommand = _K.Registry.commands.role.LocalPlayerAuthorized
+						or _K.Registry.commands.temprole.LocalPlayerAuthorized
+					local hasRole = if _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
+						then table.find(member.persist or {}, roleId)
+						else table.find(member.roles or {}, roleId)
+					return (_K.client.rank() > role._rank or _K.creatorId == _K.LocalPlayer.UserId)
+						and hasCommand
+						and not hasRole
+				end,
+
+				UI.new "ImageLabel" {
+					LayoutOrder = 9,
+					BackgroundTransparency = 1,
+					Image = UI.Theme.Image.Cloud_Save,
+					ScaleType = Enum.ScaleType.Fit,
+					Size = function()
+						return UDim2.new(1, UI.Theme.Padding().Offset, 1, 0)
+					end,
+					SizeConstraint = Enum.SizeConstraint.RelativeYY,
+					Visible = function()
+						_K.client.rank()
+						return _K.Auth.hasPermission(_K.LocalPlayer.UserId, "saveRoles")
+					end,
+				},
+
+				Activated = function()
+					UI.deactivateState(roleMenu.Visible, "floating")
+					if _K.client.rank:peek() > role._rank or _K.creatorId == _K.LocalPlayer.UserId then
+						local save = _K.Registry.commands.role.LocalPlayerAuthorized
+						local cmd =
+							`{_K.getCommandPrefix()}{if save then "" else "temp"}role {target().userId} {roleId}`
+						_K.Process.runCommands(_K, _K.LocalPlayer.UserId, cmd)
+					end
+				end,
+			}
+			UI.effect(UI.on(roleButton._hovering, hoverClick, true)):get()
+		end
 	end
 
 	local function roleRemoveCornerRadius()
@@ -418,6 +433,7 @@ function Members.new(_K)
 			end,
 
 			Activated = function()
+				ensureRoleMenu()
 				target(item.target:peek(), true)
 				UI.flush()
 				local count = 0

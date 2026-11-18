@@ -245,28 +245,34 @@ end
 local aliases = Registry.aliases
 function Registry.dashboardWindowEnv(tab: string)
 	return function(_K: any)
-		local env = {}
-		task.defer(function()
-			while not (_K.UI and _K.client and _K.client.dashboard) do
-				task.wait()
-			end
-			local window = _K.UI.new "Window" {
-				Parent = _K.UI.LayerTopInset,
-				Icon = "rbxassetid://71961243872230",
-				Title = tab,
-			}
-			_K.UI.edit(window)({
-				_Visible = function()
-					if not window._instance.Visible and #_K.client.dashboard then
-						_K.UI.edit(_K.client.dashboard.Tabs)({
-							_K.client.dashboard[tab],
-						})
+		return setmetatable({}, {
+			__index = function(self, key)
+				if key ~= "window" or not (_K.UI and _K.client and _K.client.dashboard) then
+					return nil
+				end
+				local window = _K.UI.new "Window" {
+					Parent = _K.UI.LayerTopInset,
+					Icon = "rbxassetid://71961243872230",
+					Title = tab,
+				}
+				_K.UI.edit(window)({
+					_Visible = function()
+						if not window._instance.Visible and #_K.client.dashboard then
+							_K.UI.edit(_K.client.dashboard.Tabs)({
+								_K.client.dashboard[tab],
+							})
+						end
+					end,
+				})
+				window._instance:GetPropertyChangedSignal("Visible"):Connect(function()
+					if window._instance.Visible then
+						_K.UI.notifyDisplayWatchers()
 					end
-				end,
-			})
-			env.window = window
-		end)
-		return env
+				end)
+				rawset(self, "window", window)
+				return window
+			end,
+		})
 	end
 end
 

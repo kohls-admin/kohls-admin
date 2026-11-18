@@ -43,18 +43,27 @@ local cloneQueue = {}
 local refreshQueue = {}
 local renderQueue = {}
 RunService.Heartbeat:connect(function()
+	if not (next(updateQueue) or next(cloneQueue) or next(refreshQueue) or next(renderQueue)) then
+		return
+	end
 	local start = os.clock()
 
 	-- UPDATE
-	local queue = updateQueue
-	updateQueue = {}
-	for scroller in queue do
-		if not scroller._instance.Visible or os.clock() - start > queueBudget then
-			scroller:updateList()
-			continue
+	if next(updateQueue) then
+		local queue = updateQueue
+		updateQueue = {}
+		for scroller in queue do
+			if not scroller._instance.Visible then
+				scroller._pendingUpdate = true
+				continue
+			end
+			if os.clock() - start > queueBudget then
+				scroller:updateList()
+				continue
+			end
+			scroller:cloneRaw()
+			scroller:refreshList()
 		end
-		scroller:cloneRaw()
-		scroller:refreshList()
 	end
 
 	if os.clock() - start > queueBudget then
@@ -62,28 +71,34 @@ RunService.Heartbeat:connect(function()
 	end
 
 	-- CLONE
-	queue = cloneQueue
-	cloneQueue = {}
-	for scroller in queue do
-		if not scroller._instance.Visible or os.clock() - start > queueBudget then
-			scroller:cloneRaw()
-			continue
-		end
-		if scroller.DictList:peek() then
-			local list, index = scroller._sortedList ~= scroller.List:peek() and scroller._sortedList or {}, 1
-			table.clear(list)
-			for key in scroller.List:peek() do
-				list[index] = key
-				index += 1
+	if next(cloneQueue) then
+		local queue = cloneQueue
+		cloneQueue = {}
+		for scroller in queue do
+			if not scroller._instance.Visible then
+				scroller._pendingClone = true
+				continue
 			end
-			scroller._sortedList = list
-		elseif scroller._sortFunction then
-			scroller._sortedList = table.clone(scroller.List:peek())
-		else
-			scroller._sortedList = scroller.List:peek()
-		end
-		if scroller._sortFunction then
-			table.sort(scroller._sortedList, scroller._sortFunction)
+			if os.clock() - start > queueBudget then
+				scroller:cloneRaw()
+				continue
+			end
+			if scroller.DictList:peek() then
+				local list, index = scroller._sortedList ~= scroller.List:peek() and scroller._sortedList or {}, 1
+				table.clear(list)
+				for key in scroller.List:peek() do
+					list[index] = key
+					index += 1
+				end
+				scroller._sortedList = list
+			elseif scroller._sortFunction then
+				scroller._sortedList = table.clone(scroller.List:peek())
+			else
+				scroller._sortedList = scroller.List:peek()
+			end
+			if scroller._sortFunction then
+				table.sort(scroller._sortedList, scroller._sortFunction)
+			end
 		end
 	end
 
@@ -92,30 +107,36 @@ RunService.Heartbeat:connect(function()
 	end
 
 	-- REFRESH
-	queue = refreshQueue
-	refreshQueue = {}
-	for scroller in queue do
-		if not scroller._instance.Visible or os.clock() - start > queueBudget then
-			scroller:refreshList()
-			continue
-		end
-		scroller._filteredList = if scroller._filterFunction
-			then scroller._filterFunction(scroller, scroller._sortedList)
-			else scroller._sortedList
-		-- pause canvas
-		if not scroller.DictList:peek() then
-			local lineHeight = scroller.ItemSize:peek().Y.Offset
-			if scroller._lastValue and scroller._scroller.CanvasPosition.Y > lineHeight then
-				local change = #scroller._filteredList - scroller._lastLength
-				if change == 0 then
-					change = (table.find(scroller._filteredList, scroller._lastValue) or 1) - 1
-				end
-				scroller._scroller.CanvasPosition += Vector2.new(0, change * lineHeight)
+	if next(refreshQueue) then
+		local queue = refreshQueue
+		refreshQueue = {}
+		for scroller in queue do
+			if not scroller._instance.Visible then
+				scroller._pendingRefresh = true
+				continue
 			end
-			scroller._lastLength = #scroller._filteredList
-			scroller._lastValue = scroller._filteredList[1]
+			if os.clock() - start > queueBudget then
+				scroller:refreshList()
+				continue
+			end
+			scroller._filteredList = if scroller._filterFunction
+				then scroller._filterFunction(scroller, scroller._sortedList)
+				else scroller._sortedList
+			-- pause canvas
+			if not scroller.DictList:peek() then
+				local lineHeight = scroller.ItemSize:peek().Y.Offset
+				if scroller._lastValue and scroller._scroller.CanvasPosition.Y > lineHeight then
+					local change = #scroller._filteredList - scroller._lastLength
+					if change == 0 then
+						change = (table.find(scroller._filteredList, scroller._lastValue) or 1) - 1
+					end
+					scroller._scroller.CanvasPosition += Vector2.new(0, change * lineHeight)
+				end
+				scroller._lastLength = #scroller._filteredList
+				scroller._lastValue = scroller._filteredList[1]
+			end
+			scroller:render(true)
 		end
-		scroller:render(true)
 	end
 
 	if os.clock() - start > queueBudget then
@@ -123,14 +144,20 @@ RunService.Heartbeat:connect(function()
 	end
 
 	-- RENDER
-	queue = renderQueue
-	renderQueue = {}
-	for scroller in queue do
-		if not scroller._instance.Visible or os.clock() - start > queueBudget then
-			scroller:render()
-			continue
+	if next(renderQueue) then
+		local queue = renderQueue
+		renderQueue = {}
+		for scroller in queue do
+			if not scroller._instance.Visible then
+				scroller._pendingRender = true
+				continue
+			end
+			if os.clock() - start > queueBudget then
+				scroller:render()
+				continue
+			end
+			scroller:forceRender()
 		end
-		scroller:forceRender()
 	end
 end)
 
@@ -205,20 +232,36 @@ end
 
 -- Used to render changes from the _rawList
 function Class:updateList()
+	if self._instance and not self._instance.Visible then
+		self._pendingUpdate = true
+		return
+	end
 	updateQueue[self] = true
 end
 
 function Class:cloneRaw()
+	if self._instance and not self._instance.Visible then
+		self._pendingClone = true
+		return
+	end
 	cloneQueue[self] = true
 end
 
 function Class:refreshList()
+	if self._instance and not self._instance.Visible then
+		self._pendingRefresh = true
+		return
+	end
 	refreshQueue[self] = true
 end
 
 function Class:render(bustCache: boolean?)
 	if bustCache then
 		self._bustCache = true
+	end
+	if self._instance and not self._instance.Visible then
+		self._pendingRender = true
+		return
 	end
 	renderQueue[self] = true
 end
@@ -240,6 +283,8 @@ function Class:sort(sortFunction: (...any) -> any)
 			self:cloneRaw()
 		end
 		self:refreshList()
+	else
+		self._pendingUpdate = true
 	end
 end
 
@@ -348,6 +393,42 @@ function Class.new(properties: Properties?)
 	} :: Frame & { UIListLayout: UIListLayout, ScrollerFast: typeof(self._scroller) }
 
 	self = setmetatable(self, Class)
+
+	local function flushPendingQueues()
+		if not self._instance.Visible then
+			return
+		end
+		if self._pendingUpdate then
+			self._pendingUpdate = nil
+			updateQueue[self] = true
+		end
+		if self._pendingClone then
+			self._pendingClone = nil
+			cloneQueue[self] = true
+		end
+		if self._pendingRefresh then
+			self._pendingRefresh = nil
+			refreshQueue[self] = true
+		end
+		if self._pendingRender then
+			self._pendingRender = nil
+			renderQueue[self] = true
+		end
+	end
+	table.insert(cleanup, self._instance:GetPropertyChangedSignal("Visible"):Connect(flushPendingQueues))
+	table.insert(
+		cleanup,
+		self._instance.Destroying:Connect(function()
+			updateQueue[self] = nil
+			cloneQueue[self] = nil
+			refreshQueue[self] = nil
+			renderQueue[self] = nil
+			self._pendingUpdate = nil
+			self._pendingClone = nil
+			self._pendingRefresh = nil
+			self._pendingRender = nil
+		end)
+	)
 
 	local listEffect = UI.effect(UI.on(self.List, function()
 		self:updateList()

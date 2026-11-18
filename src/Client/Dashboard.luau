@@ -91,11 +91,11 @@ _K.client.dashboard.Window = dashboard
 dashboard._exitButton.ActiveSound(false)
 dashboard._content.UIPadding:Destroy()
 
-task.spawn(function()
-	repeat
-		task.wait(1)
-		dashboard.Title(DateTime.now():FormatLocalTime("LT", "en-us"))
-	until nil
+local dashboardVisibleSignal = dashboard._instance:GetPropertyChangedSignal("Visible")
+dashboardVisibleSignal:Connect(function()
+	if dashboard._instance.Visible then
+		UI.notifyDisplayWatchers()
+	end
 end)
 
 local titleBar = dashboard._instance.Frame.TitleBar
@@ -112,11 +112,26 @@ UI.edit(titleBar.Left.Title)({
 local timeTooltip = UI.new "Tooltip" {
 	Parent = titleBar.Left.Title,
 }
+
+local function updateClockDisplay()
+	local now = DateTime.now()
+	dashboard.Title(now:FormatLocalTime("LT", "en-us"))
+	timeTooltip.Text(now:FormatLocalTime("dddd, LL", UI.LocalPlayer.LocaleId))
+end
+dashboardVisibleSignal:Connect(function()
+	if dashboard._instance.Visible then
+		updateClockDisplay()
+	end
+end)
 task.spawn(function()
-	repeat
+	while true do
+		if not dashboard._instance.Visible then
+			dashboardVisibleSignal:Wait()
+			continue
+		end
+		updateClockDisplay()
 		task.wait(1)
-		timeTooltip.Text(DateTime.now():FormatLocalTime("dddd, LL", UI.LocalPlayer.LocaleId))
-	until nil
+	end
 end)
 
 local parented = {}
@@ -310,18 +325,25 @@ UI.new "Frame" {
 				task.spawn(function()
 					local ping, max, avg, nFrames, sum = 0, 0, 0, 0, 0
 					local nextAvgUpdate = tick()
-					local _ = _K.Service.Run.Heartbeat:Connect(function()
+					local hbConn: RBXScriptConnection? = nil
+
+					local function samplePing()
 						ping = math.round(_K.Service.Players.LocalPlayer:GetNetworkPing() * 1000)
 						max = math.min(math.max(max, ping), 30000)
 						nFrames += 1
 						sum += ping
-					end)
-					repeat
-						task.wait(1)
+					end
+
+					local function updateDisplay()
+						if nFrames == 0 then
+							samplePing()
+						end
 						if tick() > nextAvgUpdate then
 							nextAvgUpdate = tick() + 2
-							avg = sum // nFrames
+							avg = if nFrames > 0 then sum // nFrames else ping
 							sum, nFrames = 0, 0
+						elseif avg == 0 then
+							avg = ping
 						end
 
 						local alpha = math.clamp(ping / 350, 0, 1)
@@ -336,7 +358,33 @@ UI.new "Frame" {
 						if tooltip then
 							tooltip.Text(`Ping\n\n<b>Avg:</b>     {avg}ms\n<b>Max:</b>     {max}ms`)
 						end
-					until nil
+					end
+
+					local function syncVisible()
+						if dashboard._instance.Visible then
+							if not hbConn then
+								hbConn = _K.Service.Run.Heartbeat:Connect(samplePing)
+							end
+							updateDisplay()
+						elseif hbConn then
+							hbConn:Disconnect()
+							hbConn = nil
+						end
+					end
+
+					dashboardVisibleSignal:Connect(syncVisible)
+					syncVisible()
+
+					while true do
+						if not dashboard._instance.Visible then
+							dashboardVisibleSignal:Wait()
+							continue
+						end
+						task.wait(1)
+						if dashboard._instance.Visible then
+							updateDisplay()
+						end
+					end
 				end)
 			end,
 		}),
@@ -347,18 +395,26 @@ UI.new "Frame" {
 				task.spawn(function()
 					local fps, max, avg, low, sum = 0, 0, 0, 0, 0
 					local buffer, nextAvgUpdate = {}, tick()
-					local _ = _K.Service.Run.Heartbeat:Connect(function()
-						fps = math.round(1 / _K.Service.Stats.FrameTime)
+					local hbConn: RBXScriptConnection? = nil
+
+					local function sampleFPS()
+						local frameTime = _K.Service.Stats.FrameTime
+						if frameTime > 0 then
+							fps = math.round(1 / frameTime)
+						end
 						max = math.clamp(fps, max, 240)
 						sum += fps
 						table.insert(buffer, fps)
-					end)
-					repeat
-						task.wait(1)
+					end
+
+					local function updateDisplay()
+						if #buffer == 0 then
+							sampleFPS()
+						end
 						avg, low, sum, nextAvgUpdate = getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
 						avg = math.clamp(avg, 0, 240)
 
-						local alpha = math.clamp(fps / max, 0, 1)
+						local alpha = if max > 0 then math.clamp(fps / max, 0, 1) else 1
 						local color = lerpGreenRed(1 - alpha)
 						instance.Parent.ImageLabel.ImageColor3 = color
 						instance.TextColor3 = color
@@ -370,7 +426,33 @@ UI.new "Frame" {
 								`Frames Per Second\n\n<b>1% Low:</b>  {low} fps\n<b>Avg:</b>     {avg} fps\n<b>Max:</b>     {max} fps`
 							)
 						end
-					until nil
+					end
+
+					local function syncVisible()
+						if dashboard._instance.Visible then
+							if not hbConn then
+								hbConn = _K.Service.Run.Heartbeat:Connect(sampleFPS)
+							end
+							updateDisplay()
+						elseif hbConn then
+							hbConn:Disconnect()
+							hbConn = nil
+						end
+					end
+
+					dashboardVisibleSignal:Connect(syncVisible)
+					syncVisible()
+
+					while true do
+						if not dashboard._instance.Visible then
+							dashboardVisibleSignal:Wait()
+							continue
+						end
+						task.wait(1)
+						if dashboard._instance.Visible then
+							updateDisplay()
+						end
+					end
 				end)
 			end,
 		}),
@@ -379,20 +461,33 @@ UI.new "Frame" {
 			Image = UI.Theme.Image.Hourglass_Bottom,
 		}, {
 			function(instance)
-				task.spawn(function()
-					repeat
-						task.wait(1)
-						local uptime =
-							math.round(workspace:GetServerTimeNow() - _K.script:GetAttribute("ServerStartTime"))
-						instance.Text = _K.Util.Time.clock(uptime)
+				local function updateDisplay()
+					local uptime = math.round(workspace:GetServerTimeNow() - _K.script:GetAttribute("ServerStartTime"))
+					instance.Text = _K.Util.Time.clock(uptime)
 
-						local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
-						if tooltip then
-							tooltip.Text(
-								`Uptime\n\n<b>Server:</b>  {instance.Text}\n<b>Client:</b>  {_K.Util.Time.clock(time())}`
-							)
+					local tooltip = UI.Class.Tooltip.Cache[instance.Parent]
+					if tooltip then
+						tooltip.Text(
+							`Uptime\n\n<b>Server:</b>  {instance.Text}\n<b>Client:</b>  {_K.Util.Time.clock(time())}`
+						)
+					end
+				end
+
+				dashboardVisibleSignal:Connect(function()
+					if dashboard._instance.Visible then
+						updateDisplay()
+					end
+				end)
+
+				task.spawn(function()
+					while true do
+						if not dashboard._instance.Visible then
+							dashboardVisibleSignal:Wait()
+							continue
 						end
-					until nil
+						updateDisplay()
+						task.wait(1)
+					end
 				end)
 			end,
 		}),
@@ -519,15 +614,18 @@ local dashboardButton = UI.new "TextButton" {
 _K.client.dashboardButton = dashboardButton
 
 function _K.client.commandsWindowVisible(visible: boolean)
-	local context = _K.Registry.commands.cmds
+	local env = _K.Registry.commands.cmds.env
 	if visible then
-		UI.edit(context.env.window)({
+		UI.edit(env.window)({
 			Visible = true,
 			_K.client.dashboard.Commands,
 		})
 		_K.client.dashboard.Commands._instance.Visible = true
 	else
-		context.env.window._instance.Visible = false
+		local window = rawget(env, "window")
+		if window then
+			window._instance.Visible = false
+		end
 		_K.UI.edit(_K.client.dashboard.Tabs)({
 			_K.client.dashboard.Commands,
 		})
@@ -535,9 +633,9 @@ function _K.client.commandsWindowVisible(visible: boolean)
 end
 
 local function toggleCommandsWindow()
-	_K.client.commandsWindowVisible(
-		_K.client.dashboard.Commands._instance.Parent ~= _K.Registry.commands.cmds.env.window._content
-	)
+	local window = rawget(_K.Registry.commands.cmds.env, "window")
+	local inWindow = window ~= nil and _K.client.dashboard.Commands._instance.Parent == window._content
+	_K.client.commandsWindowVisible(not inWindow)
 end
 
 local commandsButton = UI.new "TextButton" {

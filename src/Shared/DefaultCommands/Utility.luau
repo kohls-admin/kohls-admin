@@ -222,6 +222,9 @@ local function setupEmotePreviewModel(_K: any, env: any, worldModel: WorldModel,
 			if item and env.preview then
 				env.preview.Title.Text = item.name
 			end
+			if env.preview then
+				env.preview.Visible = true
+			end
 		end
 	end
 
@@ -246,13 +249,16 @@ local function setupEmotePreviewModel(_K: any, env: any, worldModel: WorldModel,
 			model.Parent = worldModel
 		end)
 
-		local humanoid = model:WaitForChild("Humanoid")
-		local animator = humanoid:WaitForChild("Animator")
+		local humanoid = model:WaitForChild("Humanoid", 5)
+		local animator = if humanoid then humanoid:WaitForChild("Animator", 5) else nil
+		if not animator then
+			return
+		end
 
 		local anim: Animation = Instance.new("Animation")
 		local animTrack: AnimationTrack?
 
-		function env.updatePreview(id)
+		local function applyPreview(id)
 			if animTrack then
 				animTrack:Stop()
 				animTrack:Destroy()
@@ -280,8 +286,15 @@ local function setupEmotePreviewModel(_K: any, env: any, worldModel: WorldModel,
 			end
 		end
 
+		function env.updatePreview(id)
+			applyPreview(id)
+			if id and env.preview then
+				env.preview.Visible = true
+			end
+		end
+
 		if hasPending then
-			env.updatePreview(pendingId)
+			applyPreview(pendingId)
 		end
 	end)
 end
@@ -309,18 +322,15 @@ local function connectEmoteBulkPurchase(_K: any, env: any, emoteId: any, ownsEmo
 				if emoteId:peek() == itemId then
 					ownsEmote(true)
 				end
-				if state.previewId == itemId and env.preview then
+				if state.previewId == itemId and rawget(env, "preview") then
 					env.preview.Visible = false
 				end
 			end
 		end
-		if
-			updated
-			and _K.Registry.commands.emotes
-			and _K.Registry.commands.emotes.env
-			and _K.Registry.commands.emotes.env.scroller
-		then
-			_K.Registry.commands.emotes.env.scroller:render(true)
+		local emotesEnv = _K.Registry.commands.emotes and _K.Registry.commands.emotes.env
+		local emotesScroller = emotesEnv and rawget(emotesEnv, "scroller")
+		if updated and emotesScroller then
+			emotesScroller:render(true)
 		end
 	end)
 end
@@ -414,16 +424,20 @@ local function createPlayEmote(_K: any, env: any, emoteId: any, ownsEmote: any)
 		end
 
 		if type(animation) ~= "number" then
-			if env.window then
-				env.window._instance.Visible = false
+			local window = rawget(env, "window")
+			if window then
+				window._instance.Visible = false
 			end
 			return
 		end
 
 		local player = _K.LocalPlayer
 		local character = player.Character or player.CharacterAdded:Wait()
-		local humanoid = character:WaitForChild("Humanoid")
-		local animator = humanoid:WaitForChild("Animator")
+		local humanoid = character:WaitForChild("Humanoid", 5)
+		local animator = if humanoid then humanoid:WaitForChild("Animator", 5) else nil
+		if not animator then
+			return
+		end
 		local anim: Animation = _K.Flux.new "Animation" { AnimationId = `rbxassetid://{animation}` }
 
 		local playing = animator:LoadAnimation(anim)
@@ -671,53 +685,62 @@ return {
 		optionalPrefix = true,
 		envClient = function(_K)
 			local UI = _K.UI
-			local env = {}
+			local function buildWindow()
+				local input = UI.new "Input" {
+					ClearTextButton = true,
+					Fill = true,
+					FontFace = UI.Theme.FontMono,
+					FontSize = UI.Theme.FontSize,
+					Placeholder = ";command",
+					Value = "",
+				}
 
-			local input = UI.new "Input" {
-				ClearTextButton = true,
-				Fill = true,
-				FontFace = UI.Theme.FontMono,
-				FontSize = UI.Theme.FontSize,
-				Placeholder = ";command",
-				Value = "",
-			}
+				input._input:GetPropertyChangedSignal("Text"):Connect(function()
+					_K.client.updateCommandInput(input)
+				end)
 
-			input._input:GetPropertyChangedSignal("Text"):Connect(function()
-				_K.client.updateCommandInput(input)
-			end)
+				local function executeCommand()
+					local trimmed = _K.Util.String.trimEnd(input._input.Text)
+					task.spawn(_K.Process.runCommands, _K, _K.LocalPlayer.UserId, trimmed)
+				end
 
-			local function executeCommand()
-				local trimmed = _K.Util.String.trimEnd(input._input.Text)
-				task.spawn(_K.Process.runCommands, _K, _K.LocalPlayer.UserId, trimmed)
+				local _ = input._input.FocusLost:Connect(function(enterPressed)
+					if enterPressed then
+						executeCommand()
+					end
+				end)
+
+				return UI.new "Window" {
+					Parent = UI.LayerTopInset,
+					Icon = "rbxassetid://71961243872230",
+					Name = "Cmdbar2",
+					Title = "Command Bar",
+					AutomaticSize = Enum.AutomaticSize.Y,
+					Position = UDim2.new(0.5, -210, 0.5, -56),
+					Size = UDim2.fromOffset(420, 0),
+
+					UI.list {
+						gap = UI.Theme.Padding,
+					},
+
+					input,
+					UI.new "Button" {
+						Label = "Run Command",
+						Activated = executeCommand,
+					},
+				}
 			end
 
-			local _ = input._input.FocusLost:Connect(function(enterPressed)
-				if enterPressed then
-					executeCommand()
-				end
-			end)
-
-			env.window = UI.new "Window" {
-				Parent = UI.LayerTopInset,
-				Icon = "rbxassetid://71961243872230",
-				Name = "Cmdbar2",
-				Title = "Command Bar",
-				AutomaticSize = Enum.AutomaticSize.Y,
-				Position = UDim2.new(0.5, -210, 0.5, -56),
-				Size = UDim2.fromOffset(420, 0),
-
-				UI.list {
-					gap = UI.Theme.Padding,
-				},
-
-				input,
-				UI.new "Button" {
-					Label = "Run Command",
-					Activated = executeCommand,
-				},
-			}
-
-			return env
+			return setmetatable({}, {
+				__index = function(self, key)
+					if key ~= "window" then
+						return nil
+					end
+					local window = buildWindow()
+					rawset(self, "window", window)
+					return window
+				end,
+			})
 		end,
 
 		runClient = function(context)
@@ -846,33 +869,35 @@ return {
 				originalFilter = nil,
 			}
 
-			task.defer(function()
-				while not _K.client do
-					task.wait()
-				end
-				local window = _K.UI.new "Window" {
-					Parent = _K.UI.LayerTopInset,
-					Icon = "rbxassetid://71961243872230",
-					Title = "Logs",
-				}
-				_K.UI.edit(window)({
-					_Visible = function()
-						if not window._instance.Visible then
-							_K.UI.edit(_K.client.dashboard.Tabs)({
-								_K.client.dashboard.Logs,
-							})
-							if env.originalFilter then
-								for logType, value in env.originalFilter do
-									_K.client.dashboard.Logs.logTypeFilter[logType](value)
+			return setmetatable(env, {
+				__index = function(self, key)
+					if key ~= "window" or not (_K.UI and _K.client and _K.client.dashboard) then
+						return nil
+					end
+					local window = _K.UI.new "Window" {
+						Parent = _K.UI.LayerTopInset,
+						Icon = "rbxassetid://71961243872230",
+						Title = "Logs",
+					}
+					_K.UI.edit(window)({
+						_Visible = function()
+							if not window._instance.Visible then
+								_K.UI.edit(_K.client.dashboard.Tabs)({
+									_K.client.dashboard.Logs,
+								})
+								if self.originalFilter then
+									for logType, value in self.originalFilter do
+										_K.client.dashboard.Logs.logTypeFilter[logType](value)
+									end
+									self.originalFilter = nil
 								end
-								env.originalFilter = nil
 							end
-						end
-					end,
-				})
-				env.window = window
-			end)
-			return env
+						end,
+					})
+					rawset(self, "window", window)
+					return window
+				end,
+			})
 		end,
 
 		runClient = function(context)
@@ -956,28 +981,21 @@ return {
 			local UI = _K.UI
 			local env = {
 				playing = nil,
-				looped = nil,
-				speed = nil,
-				window = nil,
-				preview = nil,
 			}
 
 			local emoteId = UI.signal(nil)
 			local ownsEmote = UI.signal(false)
-
 			env.emoteId = emoteId
 
+			local built = false
 			local earlyPendingId: any = nil
 			local hasEarlyPending = false
-			function env.updatePreview(id)
-				earlyPendingId = id
-				hasEarlyPending = true
-			end
-
-			task.defer(function()
-				while not _K.client do
-					task.wait()
+			local waitingForClient = false
+			local function ensureBuilt()
+				if built or not _K.client then
+					return
 				end
+				built = true
 
 				local worldModel = Instance.new("WorldModel")
 				local previewCamera = UI.new "Camera" {}
@@ -1015,17 +1033,47 @@ return {
 
 				state.updateCamera()
 
-				env.preview = createEmotePreviewFrame(_K, UI, env, previewCamera, worldModel, state)
+				local preview = createEmotePreviewFrame(_K, UI, env, previewCamera, worldModel, state)
+				rawset(env, "preview", preview)
 				setupEmotePreviewModel(_K, env, worldModel, state)
 				if hasEarlyPending then
+					hasEarlyPending = false
 					env.updatePreview(earlyPendingId)
-					if earlyPendingId ~= nil then
-						env.preview.Visible = true
-					end
 				end
 				connectEmoteBulkPurchase(_K, env, emoteId, ownsEmote, state)
 				createEmoteControlWindow(_K, UI, env, emoteId, ownsEmote)
-			end)
+			end
+
+			setmetatable(env, {
+				__index = function(self, key)
+					if
+						key ~= "window"
+						and key ~= "preview"
+						and key ~= "looped"
+						and key ~= "speed"
+						and key ~= "updatePreview"
+					then
+						return nil
+					end
+					if not _K.client and key == "updatePreview" then
+						return function(id)
+							earlyPendingId = id
+							hasEarlyPending = true
+							if not waitingForClient then
+								waitingForClient = true
+								task.defer(function()
+									while not _K.client do
+										task.wait()
+									end
+									ensureBuilt()
+								end)
+							end
+						end
+					end
+					ensureBuilt()
+					return rawget(self, key)
+				end,
+			})
 
 			local playEmote = createPlayEmote(_K, env, emoteId, ownsEmote)
 			env.playEmote = playEmote
@@ -1085,15 +1133,8 @@ return {
 		envClient = function(_K)
 			local UI = _K.UI
 
-			local env = {}
-
-			task.spawn(function()
-				repeat
-					task.wait()
-				until _K.Registry.commands.emote and _K.Registry.commands.emote.env
-
+			local function buildEmotesUI()
 				local EMOTE = _K.Registry.commands.emote.env
-
 				local scroller = UI.new "ScrollerFast" {
 					List = _K.Data.emotes,
 					Enabled = true,
@@ -1114,8 +1155,7 @@ return {
 					PaddingBottom = UDim.new(),
 				})
 
-				env.scroller = scroller
-				env.window = UI.new "Window" {
+				local window = UI.new "Window" {
 					Parent = UI.LayerTopInset,
 					Name = "Emotes",
 					Title = "Emotes",
@@ -1125,9 +1165,23 @@ return {
 
 					scroller,
 				}
-			end)
+				return scroller, window
+			end
 
-			return env
+			return setmetatable({}, {
+				__index = function(self, key)
+					if
+						(key ~= "scroller" and key ~= "window")
+						or not (_K.Registry.commands.emote and _K.Registry.commands.emote.env)
+					then
+						return nil
+					end
+					local scroller, window = buildEmotesUI()
+					rawset(self, "scroller", scroller)
+					rawset(self, "window", window)
+					return rawget(self, key)
+				end,
+			})
 		end,
 		runClient = function(context, player)
 			context.env.window._instance.Visible = true

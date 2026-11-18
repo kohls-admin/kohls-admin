@@ -7,6 +7,9 @@ task.defer(function()
 		return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, ADMIN_MODEL_ID)
 	end)
 	local ownsModel = ok and result
+	if ownsModel and _K.client and _K.client.ownsKAModel then
+		_K.client.ownsKAModel(true)
+	end
 
 	if (_K.LocalPlayer:GetAttribute("_KDonationLevel") or 0) > 3 then
 		return

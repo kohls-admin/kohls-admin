@@ -20,37 +20,43 @@ function About.new(_K)
 
 	local KA_MODEL_ID = 172732271
 
-	local purchaseLink = UI.new "Link" {
-		LayoutOrder = 10,
-		Text = "create.roblox.com/store/asset/" .. KA_MODEL_ID,
-	}
+	local purchaseLink, purchaseKADialog
+	local function ensurePurchaseDialog()
+		if purchaseKADialog then
+			return
+		end
+		purchaseLink = UI.new "Link" {
+			LayoutOrder = 10,
+			Text = "create.roblox.com/store/asset/" .. KA_MODEL_ID,
+		}
 
-	local purchaseKADialog
-	purchaseKADialog = UI.new "Dialog" {
-		Parent = UI.LayerTop,
-		Title = "Get Kohl's Admin",
-		Text = "Third-party model sales are disabled in this experience.\n<b>Favorite ⭐</b> Kohl's Admin or copy the Creator Store link below to get it for <b>free</b>!",
-		Visible = false,
-		Draggable = true,
-		ExitButton = true,
-		BackgroundTransparency = 0,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(340, 0),
-		Modal = true,
-		ZIndex = 1000,
-		Close = function()
-			_K.client.lastAttemptedPurchase = false
-			purchaseKADialog.Visible(false)
-		end,
+		purchaseKADialog = UI.new "Dialog" {
+			Parent = UI.LayerTop,
+			Title = "Get Kohl's Admin",
+			Text = "Third-party model sales are disabled in this experience.\n<b>Favorite ⭐</b> Kohl's Admin or copy the Creator Store link below to get it for <b>free</b>!",
+			Visible = false,
+			Draggable = true,
+			ExitButton = true,
+			BackgroundTransparency = 0,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromOffset(340, 0),
+			Modal = true,
+			ZIndex = 1000,
+			Close = function()
+				_K.client.lastAttemptedPurchase = false
+				purchaseKADialog.Visible(false)
+			end,
 
-		purchaseLink,
-	}
+			purchaseLink,
+		}
 
-	_K.client.purchaseKADialog = purchaseKADialog
+		_K.client.purchaseKADialog = purchaseKADialog
+	end
 
 	local favoriteConn: RBXScriptConnection?
 	local function showFallbackDialog()
+		ensurePurchaseDialog()
 		purchaseKADialog.Visible(true)
 		purchaseLink:Select()
 		local _ = pcall(function()
@@ -70,7 +76,9 @@ function About.new(_K)
 	function _K.client.promptGetKA()
 		_K.client.lastAttemptedPurchase = KA_MODEL_ID
 		if _K.client.AllowThirdPartySales then
-			purchaseKADialog.Visible(false)
+			if purchaseKADialog then
+				purchaseKADialog.Visible(false)
+			end
 			_K.Service.Marketplace:PromptPurchase(_K.LocalPlayer, KA_MODEL_ID)
 		else
 			showFallbackDialog()
@@ -88,7 +96,7 @@ function About.new(_K)
 		end
 	end)
 
-	task.defer(function()
+	UI.onFirstDisplayed(scroller._instance, function()
 		local ctaLabel = UI.new "TextLabel" {
 			AutoLocalize = false,
 			AutomaticSize = Enum.AutomaticSize.Y,
@@ -213,14 +221,18 @@ function About.new(_K)
 			end
 		end)
 
-		task.defer(function()
-			local ok, owned = _K.Util.Retry(function()
-				return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, KA_MODEL_ID)
+		if _K.client.ownsKAModel:peek() then
+			markModelOwned()
+		else
+			task.defer(function()
+				local ok, owned = _K.Util.Retry(function()
+					return _K.Service.Marketplace:PlayerOwnsAssetAsync(_K.LocalPlayer, KA_MODEL_ID)
+				end)
+				if ok and owned then
+					markModelOwned()
+				end
 			end)
-			if ok and owned then
-				markModelOwned()
-			end
-		end)
+		end
 
 		local gamesTooltipText = "Find games using Kohl's Admin!\n\n"
 			.. "<font transparency='0.5'>Check the Kohl's Admin <b>Settings</b> script in Studio to add your game to the charts.</font>\n\n"

@@ -8,7 +8,7 @@ function Market.new(_K)
 		Name = "Market",
 	}
 
-	task.defer(function()
+	UI.onFirstDisplayed(scroller._instance, function()
 		local donationLevel = _K.LocalPlayer:GetAttribute("_KDonationLevel")
 
 		local equippedUGC = {}
