@@ -757,13 +757,8 @@ local COMMAND_ECHO_METADATA = "KAI_CommandEcho"
 local chatCommandsFolder: Folder? = nil
 local folderConns: { RBXScriptConnection } = {}
 local watchedCommands: { [TextChatCommand]: { RBXScriptConnection } } = {}
--- Chat reads a command's AutocompleteVisible and aliases when the command is added, so only the commands that changed
--- are re-added. Re-adding the whole folder made chat re-index every command, which froze Studio for seconds on Play.
-local pendingRefresh: { [Instance]: true } = {}
-local ignoreRemoved: { [Instance]: number } = {} -- counts expected ChildRemoved events from our own reparents
-local ignoreAdded: { [Instance]: number } = {} -- counts expected ChildAdded events from our own reparents
+local enabledCustomAliases: { [string]: boolean } = {}
 local sending: { [Instance]: true } = {}
-local refreshScheduled = false
 
 local function getLocalPower(): number
 	return math.max(math.abs(Admins[plr.UserId] or 0), tonumber(Set and Set.FreeAdmin) or 0)
@@ -801,24 +796,36 @@ local function matchesEnabledCustomCommandAlias(str: string): boolean
 	if not firstWord or string.sub(firstWord, 1, 1) == "/" then
 		return false
 	end
-	local lowerWord = string.lower(firstWord)
+	return enabledCustomAliases[string.lower(firstWord)] == true
+end
+
+local function registerCustomCommandAliases(cmd: TextChatCommand)
+	if not cmd.Enabled then
+		return
+	end
+	local p = cmd.PrimaryAlias
+	if p ~= "" and string.sub(p, 1, 1) ~= "/" then
+		enabledCustomAliases[string.lower(p)] = true
+	end
+	local sAlias = cmd.SecondaryAlias
+	if sAlias ~= "" and string.sub(sAlias, 1, 1) ~= "/" then
+		enabledCustomAliases[string.lower(sAlias)] = true
+	end
+end
+
+local function rebuildEnabledCustomAliases()
+	table.clear(enabledCustomAliases)
+	if not chatCommandsFolder then
+		return
+	end
 	for _, child in chatCommandsFolder:GetChildren() do
-		if child:IsA("TextChatCommand") and child.Enabled then
-			local p = child.PrimaryAlias
-			local sAlias = child.SecondaryAlias
-			if
-				(p ~= "" and string.sub(p, 1, 1) ~= "/" and string.lower(p) == lowerWord)
-				or (sAlias ~= "" and string.sub(sAlias, 1, 1) ~= "/" and string.lower(sAlias) == lowerWord)
-			then
-				return true
-			end
+		if child:IsA("TextChatCommand") then
+			registerCustomCommandAliases(child)
 		end
 	end
-	return false
 end
 
 local function unwatchTextChatCommand(child: Instance)
-	pendingRefresh[child] = nil
 	sending[child] = nil
 	local conns = watchedCommands[child :: any]
 	if conns then
@@ -827,57 +834,6 @@ local function unwatchTextChatCommand(child: Instance)
 		end
 		watchedCommands[child :: any] = nil
 	end
-end
-
-local function refreshOne(child: Instance)
-	pendingRefresh[child] = nil
-	local folder = chatCommandsFolder
-	if not folder or child.Parent ~= folder then
-		return
-	end
-	-- Track expected ChildRemoved / ChildAdded counts independently so Deferred reparents never drop tracking
-	ignoreRemoved[child] = (ignoreRemoved[child] or 0) + 1
-	ignoreAdded[child] = (ignoreAdded[child] or 0) + 1
-	local removedOk = pcall(function()
-		child.Parent = nil
-	end)
-	if not removedOk or child.Parent ~= nil then
-		local remCount = (ignoreRemoved[child] or 0) - 1
-		ignoreRemoved[child] = if remCount > 0 then remCount else nil
-		local addCount = (ignoreAdded[child] or 0) - 1
-		ignoreAdded[child] = if addCount > 0 then addCount else nil
-		return
-	end
-	local addedOk = pcall(function()
-		child.Parent = folder
-	end)
-	if not addedOk or child.Parent ~= folder then
-		local addCount = (ignoreAdded[child] or 0) - 1
-		ignoreAdded[child] = if addCount > 0 then addCount else nil
-		unwatchTextChatCommand(child)
-	end
-end
-
-local function flushRefresh()
-	for child in pendingRefresh do
-		refreshOne(child)
-	end
-end
-
-local function queueRefresh(child: Instance)
-	pendingRefresh[child] = true
-	if refreshScheduled then
-		return
-	end
-	refreshScheduled = true
-	-- chat rebuilds once per frame that has changes, so every queued change is re-added in one pass
-	task.defer(function()
-		if not game:IsLoaded() then
-			game.Loaded:Wait()
-		end
-		refreshScheduled = false
-		flushRefresh()
-	end)
 end
 
 local function isPrimarySlashAlias(cmd: TextChatCommand): boolean
@@ -904,16 +860,15 @@ local function updateCommandVisibility(cmd: TextChatCommand): boolean
 	return false
 end
 
--- `refreshAll` re-adds every command (prefix changes), otherwise only the ones whose visibility changed
-refreshTextChatCommands = function(refreshAll: boolean?)
+refreshTextChatCommands = function(_refreshAll: boolean?)
+	table.clear(enabledCustomAliases)
 	if not chatCommandsFolder then
 		return
 	end
 	for _, child in chatCommandsFolder:GetChildren() do
 		if child:IsA("TextChatCommand") then
-			if updateCommandVisibility(child) or refreshAll == true then
-				queueRefresh(child)
-			end
+			updateCommandVisibility(child)
+			registerCustomCommandAliases(child)
 		end
 	end
 end
@@ -922,33 +877,29 @@ local function watchTextChatCommand(child: Instance)
 	if not child:IsA("TextChatCommand") or watchedCommands[child] then
 		return
 	end
-	if updateCommandVisibility(child) then
-		queueRefresh(child)
-	end
+	updateCommandVisibility(child)
+	registerCustomCommandAliases(child)
 	local conns = {}
 	table.insert(
 		conns,
 		child:GetAttributeChangedSignal("Power"):Connect(function()
-			if updateCommandVisibility(child) then
-				queueRefresh(child)
-			end
+			updateCommandVisibility(child)
 		end)
 	)
 	table.insert(
 		conns,
 		child:GetAttributeChangedSignal("CmdName"):Connect(function()
-			if updateCommandVisibility(child) then
-				queueRefresh(child)
+			updateCommandVisibility(child)
+		end)
+	)
+	table.insert(
+		conns,
+		child:GetPropertyChangedSignal("Enabled"):Connect(function()
+			if not sending[child] then
+				rebuildEnabledCustomAliases()
 			end
 		end)
 	)
-	-- the server changes aliases in place when the prefix changes
-	local function aliasChanged()
-		updateCommandVisibility(child)
-		queueRefresh(child)
-	end
-	table.insert(conns, child:GetPropertyChangedSignal("PrimaryAlias"):Connect(aliasChanged))
-	table.insert(conns, child:GetPropertyChangedSignal("SecondaryAlias"):Connect(aliasChanged))
 	table.insert(
 		conns,
 		child.Triggered:Connect(function(textSource, unfilteredText)
@@ -999,9 +950,7 @@ local function bindChatCommandsFolder(folder: Instance)
 	for child in watchedCommands do
 		unwatchTextChatCommand(child)
 	end
-	table.clear(pendingRefresh)
-	table.clear(ignoreRemoved)
-	table.clear(ignoreAdded)
+	table.clear(enabledCustomAliases)
 	table.clear(sending)
 	chatCommandsFolder = folder
 	for _, child in folder:GetChildren() do
@@ -1010,46 +959,20 @@ local function bindChatCommandsFolder(folder: Instance)
 	table.insert(
 		folderConns,
 		folder.ChildAdded:Connect(function(child)
-			local count = ignoreAdded[child]
-			if count and count > 0 then
-				ignoreAdded[child] = if count > 1 then count - 1 else nil
-			else
-				watchTextChatCommand(child)
-			end
+			watchTextChatCommand(child)
 		end)
 	)
 	table.insert(
 		folderConns,
 		folder.ChildRemoved:Connect(function(child)
-			local count = ignoreRemoved[child]
-			if count and count > 0 then
-				ignoreRemoved[child] = if count > 1 then count - 1 else nil
-				return
-			end
 			unwatchTextChatCommand(child)
+			rebuildEnabledCustomAliases()
 		end)
 	)
 	if refreshTextChatCommands then
 		refreshTextChatCommands()
 	end
 end
-
-local chatInputBarConn: RBXScriptConnection? = nil
-local function bindChatInputBar(bar: Instance?)
-	if chatInputBarConn then
-		chatInputBarConn:Disconnect()
-		chatInputBarConn = nil
-	end
-	if bar and bar:IsA("ChatInputBarConfiguration") then
-		chatInputBarConn = bar:GetPropertyChangedSignal("IsFocused"):Connect(function()
-			if bar.IsFocused then
-				flushRefresh()
-			end
-		end)
-	end
-end
-
-bindChatInputBar(TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration"))
 
 task.spawn(function()
 	local existing = TextChatService:FindFirstChild(CHAT_COMMANDS_FOLDER_NAME)
@@ -1061,8 +984,6 @@ end)
 TextChatService.ChildAdded:Connect(function(child)
 	if child.Name == CHAT_COMMANDS_FOLDER_NAME then
 		bindChatCommandsFolder(child)
-	elseif child:IsA("ChatInputBarConfiguration") then
-		bindChatInputBar(child)
 	end
 end)
 

@@ -1041,7 +1041,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			fCmd:SetAttribute("Power", 2)
 			fCmd:SetAttribute("CmdName", "fly")
 			fCmd.Parent = folder
-			-- visibility and alias changes re-add the changed command, the folder itself is never re-added
+			-- client updates AutocompleteVisible in place without reparenting commands or the folder
 			local folderRemoved, readded = 0, {}
 			local folderConn = tcs.ChildRemoved:Connect(function(child)
 				if child == folder then
@@ -1094,7 +1094,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			c.env:flush()
 			sert.eq(#c.client.CLogs, 0)
 
-			-- Promote local player to power 3 -> only primary "/" flyCmd AutocompleteVisible becomes true
+			-- Promote local player to power 3 -> only primary "/" flyCmd AutocompleteVisible becomes true, with no reparenting
 			c.admstr.Value = `{plr.UserId}:3`
 			c.env:flush()
 			sert.eq(helpCmd.AutocompleteVisible, false)
@@ -1102,18 +1102,18 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			sert.eq(fCmd.AutocompleteVisible, false)
 			c.env:advance(0.1)
 			sert.eq(readded.KAI_help, nil)
-			sert.eq(readded.KAI_fly, 1)
+			sert.eq(readded.KAI_fly, nil)
 			sert.eq(readded.KAI_f, nil)
 			sert.eq(flyCmd.Parent, folder)
 
-			-- the server rewrites aliases in place on prefix changes, so the command is re-added
+			-- client ignores local alias property writes without reparenting; server owns alias changes
 			flyCmd.SecondaryAlias = ";fly"
 			c.env:advance(0.1)
-			sert.eq(readded.KAI_fly, 2)
+			sert.eq(readded.KAI_fly, nil)
 			sert.eq(readded.KAI_help, nil)
 			sert.eq(folderRemoved, 0)
 
-			-- ChatInputBarConfiguration creation binds IsFocused flush under Deferred signals and preserves watching
+			-- ChatInputBarConfiguration exists for TargetTextChannel without triggering client reparents
 			local inputBar = tcs:FindFirstChildOfClass("ChatInputBarConfiguration")
 				or c.env.createInstance("ChatInputBarConfiguration", tcs)
 			c.env:flush()
@@ -1121,11 +1121,11 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			c.env:flush()
 			inputBar.IsFocused = true
 			c.env:flush()
-			sert.eq(readded.KAI_fly, 3)
+			sert.eq(readded.KAI_fly, nil)
 
 			flyCmd.SecondaryAlias = ":fly"
 			c.env:advance(0.1)
-			sert.eq(readded.KAI_fly, 4)
+			sert.eq(readded.KAI_fly, nil)
 			folderConn:Disconnect()
 			childConn:Disconnect()
 

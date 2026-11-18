@@ -707,6 +707,7 @@ syncTextChatCommands = function()
 	if kaiStopped or Closed then
 		return
 	end
+	local parentFolderAfterSync = false
 	if not chatCommandsFolder or not chatCommandsFolder.Parent then
 		local existing = services.TextChat:FindFirstChild(CHAT_COMMANDS_FOLDER_NAME)
 		if existing and existing:IsA("Folder") then
@@ -714,7 +715,7 @@ syncTextChatCommands = function()
 		else
 			chatCommandsFolder = Instance.new("Folder")
 			chatCommandsFolder.Name = CHAT_COMMANDS_FOLDER_NAME
-			chatCommandsFolder.Parent = services.TextChat
+			parentFolderAfterSync = true
 		end
 	end
 
@@ -769,6 +770,7 @@ syncTextChatCommands = function()
 				local key = "KAI_" .. a
 				activeKeys[key] = true
 				local inst = commandInstances[key]
+				local created = false
 				if not inst or not inst.Parent then
 					local existingInst = chatCommandsFolder:FindFirstChild(key)
 					if existingInst and existingInst:IsA("TextChatCommand") then
@@ -780,8 +782,7 @@ syncTextChatCommands = function()
 						inst = Instance.new("TextChatCommand")
 						inst.Name = key
 						inst.AutocompleteVisible = false
-						inst.Enabled = true
-						inst.Parent = chatCommandsFolder
+						created = true
 					end
 					commandInstances[key] = inst
 				end
@@ -790,6 +791,12 @@ syncTextChatCommands = function()
 				end
 				inst:SetAttribute("Power", power)
 				inst:SetAttribute("CmdName", primaryCmdName)
+				local aliasChanged = inst.PrimaryAlias ~= primaryAlias or inst.SecondaryAlias ~= secondaryAlias
+				local reparent = created
+					or (not parentFolderAfterSync and aliasChanged and inst.Parent == chatCommandsFolder)
+				if not created and reparent then
+					inst.Parent = nil
+				end
 				if inst.PrimaryAlias ~= primaryAlias then
 					inst.PrimaryAlias = primaryAlias
 				end
@@ -798,6 +805,9 @@ syncTextChatCommands = function()
 				end
 				if not inst.Enabled then
 					inst.Enabled = true
+				end
+				if reparent then
+					inst.Parent = chatCommandsFolder
 				end
 			end
 		end
@@ -818,6 +828,9 @@ syncTextChatCommands = function()
 		if not activeKeys[child.Name] then
 			child:Destroy()
 		end
+	end
+	if parentFolderAfterSync then
+		chatCommandsFolder.Parent = services.TextChat
 	end
 end
 
