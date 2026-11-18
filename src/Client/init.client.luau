@@ -23,6 +23,7 @@ _K.client = {
 		dashboard = { key = UI.signal(Enum.KeyCode.Quote), mods = UI.signal({}), callback = nil },
 	},
 	settings = {},
+	slashCommands = {} :: { [string]: boolean },
 
 	playerPrefix = _K.Flux.signal(";"),
 }
@@ -162,21 +163,9 @@ local function shouldSuppressEchoedChatLog(sourceUserId: number, text: string): 
 	local parseText: string?
 	if string.sub(trimmed, 1, 1) == "/" then
 		local firstWord = string.match(trimmed, "^(%S+)")
-		local folder = _K.Service.TextChat:FindFirstChild("TextChatCommands_KA")
-		if firstWord and folder then
-			local lowered = string.lower(firstWord)
-			for _, child in folder:GetChildren() do
-				if child:IsA("TextChatCommand") and child.Enabled then
-					if
-						(child.PrimaryAlias ~= "" and string.lower(child.PrimaryAlias) == lowered)
-						or (child.SecondaryAlias ~= "" and string.lower(child.SecondaryAlias) == lowered)
-					then
-						local senderPrefix = _K.getCommandPrefix(sourceUserId)
-						parseText = senderPrefix .. string.sub(trimmed, 2)
-						break
-					end
-				end
-			end
+		if firstWord and _K.client.slashCommands[string.lower(firstWord)] then
+			local senderPrefix = _K.getCommandPrefix(sourceUserId)
+			parseText = senderPrefix .. string.sub(trimmed, 2)
 		end
 	end
 

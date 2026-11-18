@@ -209,14 +209,22 @@ local function handleTriggered(_K: any, source: TextSource, text: string)
 	end
 end
 
+local function flattenGroups(groups: { { string } }): { string }
+	local aliases = {}
+	for _, group in groups do
+		Table.mergeList(aliases, group)
+	end
+	return aliases
+end
+
 local function syncInstances(self: any, key: string, groups: { { string } })
 	local list = self.instances[key] or {}
 	self.instances[key] = list
 	local enabled = self._K.Data.settings.chatCommands ~= false
-	local aliases = {}
 	for i, group in groups do
 		local instance = list[i]
 		local reparent = false
+		local secondaryAlias = group[2] or ""
 		if not instance then
 			instance = Instance.new("TextChatCommand")
 			instance.Name = if i == 1 then key else `{key}{i}`
@@ -224,23 +232,21 @@ local function syncInstances(self: any, key: string, groups: { { string } })
 			local _ = instance.Triggered:Connect(self.onTriggered)
 			list[i] = instance
 			reparent = true
-		elseif instance.PrimaryAlias ~= group[1] then
+		elseif instance.PrimaryAlias ~= group[1] or instance.SecondaryAlias ~= secondaryAlias then
 			instance.Parent = nil
 			reparent = true
 		end
 		instance.PrimaryAlias = group[1]
-		instance.SecondaryAlias = group[2] or ""
+		instance.SecondaryAlias = secondaryAlias
 		instance.Enabled = enabled
 		if reparent then
 			instance.Parent = self.folder
 		end
-		Table.mergeList(aliases, group)
 	end
 	for i = #list, #groups + 1, -1 do
 		list[i]:Destroy()
 		list[i] = nil
 	end
-	self.aliases[key] = aliases
 	if #list == 0 then
 		self.instances[key] = nil
 	end
@@ -427,7 +433,7 @@ function ChatCommands.start(_K)
 				keyConns[pairIndex] = instance.Triggered:Connect(self.onTriggered)
 				instances[pairIndex] = instance
 				reparent = true
-			elseif instance.PrimaryAlias ~= primaryAlias then
+			elseif instance.PrimaryAlias ~= primaryAlias or instance.SecondaryAlias ~= secondaryAlias then
 				instance.Parent = nil
 				reparent = true
 			end
@@ -451,9 +457,21 @@ function ChatCommands.start(_K)
 		end
 	end
 
-	local function collectActivePlayerPrefixes(): { [string]: true }
-		local active: { [string]: true } = {}
+	local leaving: { [Player]: true } = setmetatable({}, { __mode = "k" }) :: any
+
+	local function getConnectedPlayers(): { Player }
+		local connected = {}
 		for _, player in Players:GetPlayers() do
+			if not leaving[player] then
+				table.insert(connected, player)
+			end
+		end
+		return connected
+	end
+
+	local function collectActivePlayerPrefixes(players: { Player }): { [string]: { Player } }
+		local active: { [string]: { Player } } = {}
+		for _, player in players do
 			local prefix = _K.Data.playerPrefix[player.UserId]
 			if
 				type(prefix) == "string"
@@ -461,18 +479,68 @@ function ChatCommands.start(_K)
 				and not table.find(self.prefixes, prefix)
 				and #_K.Chat.commandPrefixes({ prefix }) == 1
 			then
-				active[prefix] = true
+				local bucket = active[prefix]
+				if not bucket then
+					bucket = {}
+					active[prefix] = bucket
+				end
+				table.insert(bucket, player)
 			end
 		end
 		return active
 	end
 
+	local function isCommandActiveGlobal(definition: any, players: { Player }): boolean
+		if _K.VIP.canPurchaseCommand(definition) then
+			return true
+		end
+		if #players == 0 then
+			return _K.Auth.roleCanUseCommand("everyone", definition)
+		end
+		for _, player in players do
+			if _K.Auth.hasCommand(player.UserId, definition) then
+				return true
+			end
+		end
+		return false
+	end
+
+	local function isCommandActiveForPrefix(definition: any, prefixPlayers: { Player }): boolean
+		if _K.VIP.canPurchaseCommand(definition) then
+			return true
+		end
+		for _, player in prefixPlayers do
+			if _K.Auth.hasCommand(player.UserId, definition) then
+				return true
+			end
+		end
+		return false
+	end
+
 	--- Updates the instances of one command
 	function self.refreshCommand(definition: any, batchSkipped: { string }?)
-		local groups, skipped = ChatCommands.aliasGroups(definition, self.prefixes, self.taken)
-		syncInstances(self, string.lower(definition.name), groups)
+		local key = string.lower(definition.name)
+		local players = getConnectedPlayers()
+		local activePlayerPrefixes = collectActivePlayerPrefixes(players)
 		for prefix in self.playerInstances do
-			syncPlayerCommand(prefix, definition, skipped)
+			if not activePlayerPrefixes[prefix] then
+				destroyPlayerBucket(prefix)
+			end
+		end
+
+		local groups, skipped = ChatCommands.aliasGroups(definition, self.prefixes, self.taken)
+		self.aliases[key] = flattenGroups(groups)
+		if isCommandActiveGlobal(definition, players) then
+			syncInstances(self, key, groups)
+		else
+			syncInstances(self, key, {})
+		end
+		for prefix, prefixPlayers in activePlayerPrefixes do
+			if isCommandActiveForPrefix(definition, prefixPlayers) then
+				syncPlayerCommand(prefix, definition, skipped)
+			else
+				destroyPlayerCommand(prefix, key)
+			end
 		end
 		if batchSkipped then
 			Table.mergeList(batchSkipped, skipped)
@@ -486,7 +554,8 @@ function ChatCommands.start(_K)
 		scheduled = false
 		self.prefixes = _K.Chat.commandPrefixes(_K.Data.settings.prefix)
 		self.taken = takenAliases(self.folder)
-		local activePlayerPrefixes = collectActivePlayerPrefixes()
+		local players = getConnectedPlayers()
+		local activePlayerPrefixes = collectActivePlayerPrefixes(players)
 		for prefix in self.playerInstances do
 			if not activePlayerPrefixes[prefix] then
 				destroyPlayerBucket(prefix)
@@ -498,15 +567,29 @@ function ChatCommands.start(_K)
 			local key = string.lower(definition.name)
 			current[key] = true
 			local groups, cmdSkipped = ChatCommands.aliasGroups(definition, self.prefixes, self.taken)
-			syncInstances(self, key, groups)
+			self.aliases[key] = flattenGroups(groups)
+			if isCommandActiveGlobal(definition, players) then
+				syncInstances(self, key, groups)
+			else
+				syncInstances(self, key, {})
+			end
 			Table.mergeList(skipped, cmdSkipped)
-			for prefix in activePlayerPrefixes do
-				syncPlayerCommand(prefix, definition, skipped)
+			for prefix, prefixPlayers in activePlayerPrefixes do
+				if isCommandActiveForPrefix(definition, prefixPlayers) then
+					syncPlayerCommand(prefix, definition, skipped)
+				else
+					destroyPlayerCommand(prefix, key)
+				end
 			end
 		end
 		for key in self.instances do
 			if not current[key] then
 				syncInstances(self, key, {})
+			end
+		end
+		for key in self.aliases do
+			if not current[key] then
+				self.aliases[key] = {}
 			end
 		end
 		for prefix, bucket in self.playerInstances do
@@ -554,7 +637,11 @@ function ChatCommands.start(_K)
 		end
 	end
 
-	local _ = Players.PlayerRemoving:Connect(function(leavingPlayer)
+	local playerAddedConn = Players.PlayerAdded:Connect(function()
+		self.schedule()
+	end)
+	local playerRemovingConn = Players.PlayerRemoving:Connect(function(leavingPlayer)
+		leaving[leavingPlayer] = true
 		local prefix = _K.Data.playerPrefix[leavingPlayer.UserId]
 		_K.Data.playerPrefix[leavingPlayer.UserId] = nil
 		if type(prefix) == "string" and self.playerInstances[prefix] then
@@ -569,14 +656,28 @@ function ChatCommands.start(_K)
 				destroyPlayerBucket(prefix)
 			end
 		end
+		self.schedule()
 	end)
 
 	local disconnectExternal = watchExternalCommands(self.folder, self.schedule)
-	local _ = self.folder.Destroying:Once(disconnectExternal)
-
-	local _ = _K.Hook.commandRegistered:Connect(self.schedule)
+	local cmdRegisteredConn = _K.Hook.commandRegistered:Connect(self.schedule)
 	-- saved settings load and sync from other servers
-	local _ = _K.Hook.postSyncMain:Connect(self.schedule)
+	local postSyncMainConn = _K.Hook.postSyncMain:Connect(self.schedule)
+	local roleAddedConn = _K.Hook.roleAdded:Connect(self.schedule)
+	local roleRemovedConn = _K.Hook.roleRemoved:Connect(self.schedule)
+	local authChangedConn = _K.Hook.authChanged:Connect(self.schedule)
+
+	local _ = self.folder.Destroying:Once(function()
+		scheduled = false
+		disconnectExternal()
+		playerAddedConn:Disconnect()
+		playerRemovingConn:Disconnect()
+		cmdRegisteredConn:Disconnect()
+		postSyncMainConn:Disconnect()
+		roleAddedConn:Disconnect()
+		roleRemovedConn:Disconnect()
+		authChangedConn:Disconnect()
+	end)
 
 	self.refresh()
 	self.folder.Parent = TextChatService
