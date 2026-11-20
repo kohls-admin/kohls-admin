@@ -346,11 +346,11 @@ local function truncateUtf8(str: string, maxCodepoints: number): string
 	return str
 end
 
-function f.cooldown(userId: number, key: string, seconds: number?): boolean
+function f.cooldown(userId: number, key: string?, seconds: number?): boolean
 	if userId <= 0 then
 		return true
 	end
-	local id = `{key}:{userId}`
+	local id = `{key or "text"}:{userId}`
 	local duration = seconds or COOLDOWN
 	local now = os.clock()
 	local last = cooldowns[id]
@@ -477,9 +477,7 @@ local function getLogsForViewer(viewer: Player): { Log }
 	for i, entry in state.Logs do
 		local meta = logMeta[entry]
 		if meta and not meta.revealed then
-			local text = if viewerId == meta.fromId or canUsersChat(meta.fromId, viewerId)
-				then meta.fullText
-				else meta.redactedText
+			local text = if viewerId == meta.fromId then meta.fullText else meta.redactedText
 			out[i] = { entry[1], text }
 		else
 			out[i] = entry
@@ -550,18 +548,15 @@ function f.chatSend(
 		else {}
 
 	local recipients: { Player } = {}
-	local allowed: { Player } = {}
 	local seen: { [Player]: boolean } = {}
-	local hasRestricted = isBroadcast
+	local reachesOther = false
 
 	for _, player in rawList do
 		if player and typeof(player) == "Instance" and player:IsA("Player") and not seen[player] then
 			seen[player] = true
 			table.insert(recipients, player)
-			if isServerSender or player == sender or canUsersChat(fromId, player.UserId) then
-				table.insert(allowed, player)
-			else
-				hasRestricted = true
+			if isServerSender or player ~= sender then
+				reachesOther = true
 			end
 		end
 	end
@@ -570,17 +565,14 @@ function f.chatSend(
 		return false, nil
 	end
 
+	local needsCooldown = isBroadcast or reachesOther
 	local cooldownPassed = true
-	if fromId > 0 and hasRestricted then
-		local cooldownKey = if kind == "vote" then "vote" else "direct"
-		cooldownPassed = f.cooldown(fromId, cooldownKey)
+	if fromId > 0 and needsCooldown then
+		cooldownPassed = f.cooldown(fromId)
 		if cooldownPassed then
 			markCommandCooldownConsumed()
 		else
-			recipients = allowed
-			if #recipients == 0 then
-				return false, nil
-			end
+			return false, nil
 		end
 	elseif fromId <= 0 then
 		markCommandCooldownConsumed()
@@ -954,9 +946,7 @@ function f.KUpdateLog(a)
 	for _, player in f.Players() do
 		if Set.PublicLogs or f.getPower(player) >= 2 then
 			if meta and not meta.revealed then
-				local text = if player.UserId == meta.fromId or canUsersChat(meta.fromId, player.UserId)
-					then meta.fullText
-					else meta.redactedText
+				local text = if player.UserId == meta.fromId then meta.fullText else meta.redactedText
 				RemoteEvent:FireClient(player, "KUpdateLog", { a[1], text })
 			else
 				RemoteEvent:FireClient(player, "KUpdateLog", a)
@@ -2643,7 +2633,7 @@ function ServerEvent(plr: Player, event, arguments, uID)
 						if clean == Set.Prefix then
 							continue
 						end
-						if power < 6 and not f.cooldown(plr.UserId, "prefix") then
+						if not f.cooldown(plr.UserId) then
 							continue
 						end
 					end
@@ -2652,7 +2642,7 @@ function ServerEvent(plr: Player, event, arguments, uID)
 			end
 		else
 			local nextPrefix = StudioSet.Prefix
-			if nextPrefix ~= Set.Prefix and power < 6 and not f.cooldown(plr.UserId, "prefix") then
+			if nextPrefix ~= Set.Prefix and not f.cooldown(plr.UserId) then
 				nextPrefix = Set.Prefix
 			end
 			Set = {}
@@ -3538,39 +3528,22 @@ function LoadCommands()
 
 		local isServerSender = pl == serverContext or (type(pl) == "table" and pl.UserId == 0)
 		local fromId = if isServerSender then 0 else pl.UserId
-		local allowedReason, restrictedReason = "Kicked", "Kicked"
+		local reason = "Kicked"
 
 		if type(args[2]) == "string" and args[2] ~= "" then
 			if fromId <= 0 then
-				allowedReason, restrictedReason = args[2], args[2]
+				reason = args[2]
 				markCommandCooldownConsumed()
 			elseif canUserChat(fromId) then
 				local okFilter, filtered = filterBroadcast(args[2], fromId)
-				if okFilter and filtered then
-					allowedReason = filtered
-					local hasRestricted = false
-					for _, target in targets do
-						if target ~= pl and not canUsersChat(fromId, target.UserId) then
-							hasRestricted = true
-							break
-						end
-					end
-					if not hasRestricted then
-						restrictedReason = filtered
-					elseif f.cooldown(fromId, "reason") then
-						restrictedReason = filtered
-						markCommandCooldownConsumed()
-					end
+				if okFilter and filtered and f.cooldown(fromId) then
+					reason = filtered
+					markCommandCooldownConsumed()
 				end
 			end
 		end
 
 		for _, target in targets do
-			local reason = if fromId <= 0
-					or target == pl
-					or canUsersChat(fromId, target.UserId)
-				then allowedReason
-				else restrictedReason
 			if not pcall(target.Kick, target, reason) then
 				RemoteEvent:FireClient(target, "KCrash")
 			end
@@ -4233,7 +4206,7 @@ function LoadCommands()
 				return
 			end
 			local fromId = if pl == serverContext then 0 else pl.UserId
-			if not canUserChat(fromId) or not f.cooldown(fromId, "name") then
+			if not canUserChat(fromId) or not f.cooldown(fromId) then
 				return
 			end
 			local okFilter, filtered = filterBroadcast(args[2], fromId)
@@ -4566,7 +4539,7 @@ function LoadCommands()
 							if v:IsA("StringValue") then
 								if not filtered then
 									local fromId = if pl == serverContext then 0 else pl.UserId
-									if not canUserChat(fromId) or not f.cooldown(fromId, "leaderstat") then
+									if not canUserChat(fromId) or not f.cooldown(fromId) then
 										return
 									end
 									local okFilter, res = filterBroadcast(args[3], fromId)

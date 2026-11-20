@@ -1371,7 +1371,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			sert.eq(_K.Data.playerPrefix[202], nil)
 			_K.Data.roles.everyone.groups = origEveryoneGroups
 
-			-- 4. Remote.Settings allows developer/creator up to 8 prefixes, rejects 9, sanitizes richText, and preserves announcements when rate-limited
+			-- 4. Remote.Settings allows developer/creator up to 8 prefixes, rejects 9, shares 60s text cooldown, sanitizes richText, and preserves announcements when rate-limited
 			local eightPrefixes = { ";", ":", "!", "?", "/", "-", "+", "=" }
 			cRemote.Settings:Fire({ prefix = eightPrefixes })
 			world:run(0.3)
@@ -1380,6 +1380,15 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			cRemote.Settings:Fire({ prefix = { ";", ":", "!", "?", "/", "-", "+", "=", "&" } })
 			world:run(0.3)
 			sert.eq(_K.Data.savedSettings.prefix, eightPrefixes)
+
+			-- Adding prefixes consumed creator's shared 60s cooldown, so announcements right after are blocked until 60s elapse
+			cRemote.Settings:Fire({
+				announcements = { { Text = "Blocked during prefix cooldown", Duration = 15 } },
+			})
+			world:run(0.3)
+			sert.eq(_K.Data.savedSettings.announcements, nil)
+
+			world:run(61)
 
 			-- First announcement with valid & invalid rich text: <b> + spaced rgb() restored, <font face="Gotham"> escaped
 			cRemote.Settings:Fire({

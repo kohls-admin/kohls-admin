@@ -126,6 +126,9 @@ return {
 				end
 				if reason and context.args[3] then
 					context.args[3].parsedArgs = { reason }
+					if not context.global then
+						context.args[3].filtered = true
+					end
 					context.args[3].redactLog = false
 				end
 			end
@@ -243,28 +246,18 @@ return {
 		},
 		run = function(context, players, reason: string?)
 			-- kick reasons are user text the kicked players see
-			local allowedReason, restrictedReason = reason, reason
 			if not context.global then
-				allowedReason, restrictedReason = context._K.Chat.limitReason(context.from, reason, players)
+				reason = context._K.Chat.limitReason(context.from, reason)
 			end
-			if restrictedReason and context.args[2] then
-				context.args[2].parsedArgs = { restrictedReason }
+			if reason and context.args[2] then
+				context.args[2].parsedArgs = { reason }
 				if not context.global then
 					context.args[2].filtered = true
 				end
 				context.args[2].redactLog = false
-			elseif allowedReason and context.args[2] then
-				context.args[2].parsedArgs = { allowedReason }
-				if not context.global then
-					context.args[2].filtered = true
-				end
 			end
 			for _, player in players do
-				player:Kick(
-					if context.global or context._K.Chat.canUsersChat(context.from, player.UserId)
-						then allowedReason
-						else restrictedReason
-				)
+				player:Kick(reason)
 			end
 			local escapeRichText = context._K.Util.String.escapeRichText
 			local names = context._K.Util.Suggest.getNames(players)
@@ -621,8 +614,8 @@ return {
 			end
 
 			if displayName and #players > 0 then
-				if not context.global and context._K.Chat.hasRestrictedPeer(context.from) then
-					local err = context._K.Chat.cooldown(context.from, "name")
+				if not context.global then
+					local err = context._K.Chat.cooldown(context.from)
 					if err then
 						return err
 					end
@@ -3159,11 +3152,9 @@ return {
 										cooldownError = "User cannot chat"
 										continue
 									end
-									if context._K.Chat.hasRestrictedPeer(context.from) then
-										cooldownError = context._K.Chat.cooldown(context.from, "leaderstat")
-										if cooldownError then
-											continue
-										end
+									cooldownError = context._K.Chat.cooldown(context.from)
+									if cooldownError then
+										continue
 									end
 								end
 								filteredValue = if context.global
@@ -3378,8 +3369,8 @@ return {
 				color = brickColor.Color
 			end
 
-			if not context.global and context._K.Chat.hasRestrictedPeer(context.from) then
-				local err = context._K.Chat.cooldown(context.from, "team")
+			if not context.global then
+				local err = context._K.Chat.cooldown(context.from)
 				if err then
 					return err
 				end
@@ -3452,8 +3443,8 @@ return {
 					end
 				end
 
-				if name ~= team.Name and not context.global and context._K.Chat.hasRestrictedPeer(context.from) then
-					local err = context._K.Chat.cooldown(context.from, "team")
+				if name ~= team.Name and not context.global then
+					local err = context._K.Chat.cooldown(context.from)
 					if err then
 						return err
 					end

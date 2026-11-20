@@ -42,7 +42,7 @@ return function(_K)
 
 		run = function(context, message: string)
 			-- Rate-limit player-authored broadcast messages (Roblox chat compliance)
-			local err = context._K.Chat.cooldown(context.from, "shout")
+			local err = context._K.Chat.cooldown(context.from)
 			if err then
 				return err -- Returning a string displays an error notification to the caller
 			end

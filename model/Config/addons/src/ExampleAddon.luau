@@ -101,7 +101,7 @@ return function(_K)
 		run = function(context, message: string?)
 			-- Text that other users can see must be rate limited to at least once a minute (Roblox chat guidelines)
 			if message then
-				local err = context._K.Chat.cooldown(context.from, "customcommand")
+				local err = context._K.Chat.cooldown(context.from)
 				if err then
 					return err -- Returning a string shows it to the caller as an error
 				end

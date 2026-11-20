@@ -68,7 +68,10 @@ describe("Chat and Server", function()
 			local admin = h.env:addPlayer(20, "AdminPlr")
 			Auth.userRoleAdd(admin.UserId, "admin")
 
-			-- cooldown returns nil first, then wait string, then nil after duration expires
+			sert.eq(Chat.hasRestrictedPeer, nil)
+			sert.eq(type(Chat.canUsersChat), "function")
+
+			-- cooldown returns nil first, then wait string, then nil after duration expires (and defaults to shared "text" key)
 			sert.eq(Chat.cooldown(guest.UserId, "customKey", 5), nil)
 			local waitMsg = Chat.cooldown(guest.UserId, "customKey", 5)
 			sert.eq(type(waitMsg), "string")
@@ -76,21 +79,25 @@ describe("Chat and Server", function()
 			h.env:step(5.5)
 			sert.eq(Chat.cooldown(guest.UserId, "customKey", 5), nil)
 
-			-- limitBroadcast checks CanUserChatAsync and enforces the announce cooldown
+			-- limitBroadcast checks CanUserChatAsync and enforces the shared 60s text cooldown
 			sert.eq(Chat.limitBroadcast(admin.UserId), nil)
 			sert.eq(Chat.limitBroadcast(admin.UserId) ~= nil, true)
+			sert.eq(Chat.cooldown(admin.UserId) ~= nil, true)
+			h.env:step(61)
 
-			-- limitReason checks nil, CanUserChatAsync, and reason cooldown (notifying player when rate-limited)
+			-- limitReason checks nil, CanUserChatAsync, and unconditional shared 60s cooldown (even when CanUsersChatAsync is true)
 			sert.eq(Chat.limitReason(admin.UserId, nil), nil)
 			local tcs = h.env.game:GetService("TextChatService")
 			local tcsMethods = rawget(tcs, "_methods")
+			local origCanUserChat = tcsMethods.CanUserChatAsync
 			local origCanUsersChat = tcsMethods.CanUsersChatAsync
-			-- When all target players can chat with admin, limitReason doesn't spend the cooldown and restrictedReason is nil
-			local allowedReason, restrictedReason = Chat.limitReason(admin.UserId, "Friendly kick", { guest })
-			sert.eq(allowedReason, "Friendly kick")
-			sert.eq(restrictedReason, nil)
+			tcsMethods.CanUsersChatAsync = function()
+				return true
+			end
 
 			sert.eq(Chat.limitReason(admin.UserId, "First valid reason"), "First valid reason")
+			-- limitBroadcast shares the same 60s bucket with limitReason
+			sert.eq(Chat.limitBroadcast(admin.UserId) ~= nil, true)
 
 			local notifiedReason = nil
 			Remote.Notify.Fire = function(_self, _plr, payload)
@@ -99,23 +106,45 @@ describe("Chat and Server", function()
 			sert.eq(Chat.limitReason(admin.UserId, "Second rate-limited reason"), nil)
 			sert.eq(string.find(tostring(notifiedReason), "Reason removed:", 1, true) ~= nil, true)
 
-			-- When cooling down with a restricted target, chat-allowed targets still get allowedReason while restricted get nil
-			tcsMethods.CanUsersChatAsync = function(_self, _from, to)
-				return to ~= guest.UserId
-			end
-			local allowedOnCd, restrictedOnCd = Chat.limitReason(admin.UserId, "Partial kick reason", { guest })
-			sert.eq(allowedOnCd, "Partial kick reason")
-			sert.eq(restrictedOnCd, nil)
+			h.env:step(61)
 			tcsMethods.CanUsersChatAsync = origCanUsersChat
 
-			-- CanUserChatAsync returning false blocks limitReason and limitBroadcast
-			local origCanChat = tcsMethods.CanUserChatAsync
+			-- CanUserChatAsync returning false blocks limitReason and limitBroadcast without spending cooldown
 			tcsMethods.CanUserChatAsync = function()
 				return false
 			end
 			sert.eq(Chat.limitBroadcast(guest.UserId), "User cannot chat")
 			sert.eq(Chat.limitReason(guest.UserId, "Blocked by privacy"), nil)
-			tcsMethods.CanUserChatAsync = origCanChat
+			tcsMethods.CanUserChatAsync = origCanUserChat
+
+			-- canUsersChat allows self, delegates to TextChatService outside Studio, fails closed on error,
+			-- and allows restricted roles in Studio
+			sert.eq(Chat.canUsersChat(guest.UserId, guest.UserId), true)
+			tcsMethods.CanUsersChatAsync = function()
+				return true
+			end
+			sert.eq(Chat.canUsersChat(admin.UserId, guest.UserId), true)
+			tcsMethods.CanUsersChatAsync = function()
+				return false
+			end
+			sert.eq(Chat.canUsersChat(admin.UserId, guest.UserId), false)
+			tcsMethods.CanUsersChatAsync = function()
+				error("TextChatService unavailable")
+			end
+			sert.eq(Chat.canUsersChat(admin.UserId, guest.UserId), false)
+			tcsMethods.CanUsersChatAsync = origCanUsersChat
+
+			local studioEnv = Harness.newEnv({ isStudio = true })
+			local studioAuth = studioEnv:requireAuth()
+			local studioChat = studioEnv:requireShared("Chat")
+			local studioAdmin = studioEnv.env:addPlayer(30, "StudioAdmin")
+			studioAuth.userRoleAdd(studioAdmin.UserId, "admin")
+			local studioTcsMethods = rawget(studioEnv.env.game:GetService("TextChatService"), "_methods")
+			studioTcsMethods.CanUsersChatAsync = function()
+				return false
+			end
+			sert.eq(studioChat.canUsersChat(studioAdmin.UserId, 10), true)
+			sert.eq(studioChat.canUsersChat(10, studioAdmin.UserId), false)
 		end)
 
 		test("Chat.send filters for broadcast and enforces 60s per-sender cooldown over Remote.ChatSystem", function()
@@ -204,34 +233,49 @@ describe("Chat and Server", function()
 			sert.eq(Chat.isChannel, nil)
 			sert.eq(Chat.canReply, nil)
 
-			-- messaging players the sender can chat with is never limited, while restricted players are limited to 1/60s
+			-- every non-self send (including chat-allowed friends, broadcasts, and votes) shares the 60s cooldown
 			table.clear(packets)
 			local limitedId, limitedErr = Chat.send(context, "hint", "Too soon", { target })
 			sert.eq(limitedId, nil)
 			sert.eq(string.find(tostring(limitedErr), "Wait", 1, true) ~= nil, true)
 			sert.eq(#packets, 0)
 
-			-- broadcasting to both restricted and chat-allowed players while on cooldown skips restricted and delivers to allowed
-			local skipNotices = {}
-			Remote.Notify.Fire = function(_self, plr, payload)
-				table.insert(skipNotices, { to = plr.UserId, text = payload.Text })
-			end
-			local partialId, partialErr, partialDelivered = Chat.send(context, "message", "Partial broadcast")
-			sert.eq(type(partialId), "string")
-			sert.eq(partialErr, nil)
-			sert.eq(reached(partialDelivered), { 101, 103 })
-			sert.eq(reached(), { 101, 103 })
-			sert.eq(#skipNotices, 1)
-			sert.eq(string.find(skipNotices[1].text, "Players you can't chat with were skipped.", 1, true) ~= nil, true)
+			local friendBlockedId, friendBlockedErr = Chat.send(context, "hint", "Friend too soon", { friend })
+			sert.eq(friendBlockedId, nil)
+			sert.eq(string.find(tostring(friendBlockedErr), "Wait", 1, true) ~= nil, true)
+			sert.eq(#packets, 0)
 
-			-- messaging only yourself or a player you can chat with is never limited
+			local bcastBlockedId, bcastBlockedErr = Chat.send(context, "message", "Broadcast too soon")
+			sert.eq(bcastBlockedId, nil)
+			sert.eq(string.find(tostring(bcastBlockedErr), "Wait", 1, true) ~= nil, true)
+			sert.eq(#packets, 0)
+
+			local voteBlockedId, voteBlockedErr = Chat.send(context, "vote", "Vote too soon?", { friend })
+			sert.eq(voteBlockedId, nil)
+			sert.eq(string.find(tostring(voteBlockedErr), "Wait", 1, true) ~= nil, true)
+			sert.eq(#packets, 0)
+
+			-- messaging only yourself is never limited and keeps freeText redactLog unset
 			table.clear(packets)
-			local _, _, friendOnly = Chat.send(context, "hint", "Friend", { friend })
-			sert.eq(reached(friendOnly), { 103 })
-			table.clear(packets)
-			local _, _, selfOnly = Chat.send(context, "hint", "Self", { sender })
+			local selfArg = {
+				rawArg = "Self note",
+				parsedArgs = { "Self note" },
+				rawType = { freeText = true },
+				filtered = nil :: boolean?,
+				redactLog = nil :: boolean?,
+			}
+			local _, _, selfOnly = Chat.send(
+				{ from = sender.UserId, fromPlayer = sender, args = { selfArg } },
+				"hint",
+				"Self note",
+				{ sender }
+			)
 			sert.eq(reached(selfOnly), { 101 })
-			local voteId, voteErr, voters = Chat.send(context, "vote", "Own timer?", { target })
+			sert.eq(selfArg.filtered, true)
+			sert.eq(selfArg.redactLog, nil)
+
+			h.env:step(61)
+			local voteId, voteErr, voters = Chat.send(context, "vote", "After 60s?", { target })
 			sert.eq(type(voteId), "string")
 			sert.eq(voteErr, nil)
 			sert.eq(reached(voters), { 102 })
@@ -953,8 +997,15 @@ describe("Chat and Server", function()
 				_K.Data.defaultSettings.testTblSetting = nil
 				_K.Data.savedSettings.testTblSetting = nil
 
-				-- Multi-prefix existing list (#existing = 2) allows replacing with 2 prefixes (math.max(#existing, 1))
+				-- Multi-prefix existing list (#existing = 2) allows replacing with 2 prefixes (math.max(#existing, 1)); shares 60s cooldown for all roles
 				_K.Data.savedSettings.prefix = { ";", "!" }
+				_K.Remote.Settings._signal:Fire(srvAdmin, {
+					prefix = { ";", "?" },
+				})
+				-- Blocked within 60s of line 852's prefix change
+				sert.eq(_K.Data.savedSettings.prefix, { ";", "!" })
+
+				world:run(61)
 				_K.Remote.Settings._signal:Fire(srvAdmin, {
 					prefix = { ";", "?" },
 				})
@@ -2195,48 +2246,50 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 				end
 			end
 
-			-- 1. First command log off cooldown is immediately revealed to all admins and Sync.logs
+			-- 1. First command log with liveText is redacted for all other admins (including chat-allowed p3) and Sync.logs,
+			--    and reveals after 60s without spending the sender's shared text cooldown
 			local firstLog = _K.log(";kick Guest First reason", "COMMAND", 101, true, ";kick Guest …")
 			world:run(0.1)
+			local firstStored = _K.Data.logs[#_K.Data.logs]
 			sert.eq(firstLog[1], ";kick Guest First reason")
+			sert.eq(firstStored[1], ";kick Guest …")
 			sert.eq(receivedBy1[#receivedBy1][1], ";kick Guest First reason")
-			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest First reason")
-			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest First reason")
-			sert.eq(_K.Data.Sync.logs[#_K.Data.Sync.logs][1], ";kick Guest First reason")
-
-			-- 2. Second command log within 60s sends full log to chat-allowed p3 and redacted liveText to restricted p2, then reveals after 60s
-			local syncCountBefore = #_K.Data.Sync.logs
-			_K.log(";kick Guest Second reason", "COMMAND", 101, true, ";kick Guest …")
-			world:run(0.1)
-			local secondStored = _K.Data.logs[#_K.Data.logs]
-			sert.eq(secondStored[1], ";kick Guest …")
-			sert.eq(receivedBy1[#receivedBy1][1], ";kick Guest Second reason")
 			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest …")
-			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest Second reason")
-			sert.eq(#_K.Data.Sync.logs, syncCountBefore)
-			local p3CountBeforeReveal = #receivedBy3
+			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest …")
+			sert.eq(#_K.Data.Sync.logs, 0)
 
-			-- Another redacted log 30s later must not flush early when the first 60s timer fires
+			-- 2. Second command log 30s later also starts redacted and must not flush early when the first 60s timer fires
 			world:run(30)
 			_K.log(";kick Guest Later reason", "COMMAND", 101, true, ";kick Guest …")
 			world:run(0.1)
 			local laterStored = _K.Data.logs[#_K.Data.logs]
 			sert.eq(laterStored[1], ";kick Guest …")
-			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest Later reason")
-			p3CountBeforeReveal = #receivedBy3
+			sert.eq(receivedBy1[#receivedBy1][1], ";kick Guest Later reason")
+			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest …")
+			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest …")
+			local p2CountBeforeReveal, p3CountBeforeReveal = #receivedBy2, #receivedBy3
 
-			-- Advance 31s (61s total): secondStored reveals to p2, while p3 (already revealed) gets no duplicate and laterStored remains redacted
+			-- Advance 31s (61s total): firstStored reveals to BOTH p2 and p3 and Sync.logs, while laterStored remains redacted
 			world:run(31)
-			sert.eq(secondStored[1], ";kick Guest Second reason")
-			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest Second reason")
-			sert.eq(#receivedBy3, p3CountBeforeReveal)
-			sert.eq(_K.Data.Sync.logs[#_K.Data.Sync.logs][1], ";kick Guest Second reason")
+			sert.eq(firstStored[1], ";kick Guest First reason")
+			sert.eq(#receivedBy2, p2CountBeforeReveal + 1)
+			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest First reason")
+			sert.eq(#receivedBy3, p3CountBeforeReveal + 1)
+			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest First reason")
+			sert.eq(_K.Data.Sync.logs[#_K.Data.Sync.logs][1], ";kick Guest First reason")
 			sert.eq(laterStored[1], ";kick Guest …")
 
 			world:run(31)
 			sert.eq(laterStored[1], ";kick Guest Later reason")
 			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest Later reason")
+			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest Later reason")
 			sert.eq(_K.Data.Sync.logs[#_K.Data.Sync.logs][1], ";kick Guest Later reason")
+
+			-- Logging redacted text does NOT consume the sender's shared text cooldown
+			_K.log(";kick Guest Typo only", "COMMAND", 101, true, ";kick Guest …")
+			world:run(0.1)
+			sert.eq(_K.Chat.limitBroadcast(101), nil)
+			world:run(61)
 
 			-- 3. If CanUserChatAsync is false, liveText stays permanently redacted for other admins and Sync.logs
 			tcsMethods.CanUserChatAsync = function()
@@ -2460,9 +2513,8 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 				end,
 			})
 
-			-- 1. Sending ONLY to chat-allowed friend sets arg.filtered = true (no double filterForBroadcast in Process)
-			--    and leaves redactLog unset so restrictedObserver sees redacted "…" once log cooldown is active
-			_K.Chat.cooldown(101, "log") -- put sender's log reveal on cooldown
+			-- 1. Self-only Chat.send sets arg.filtered = true (no double filterForBroadcast in Process)
+			--    and leaves redactLog unset so restrictedObserver sees redacted "…" for 60s without spending cooldown
 			local observerLogs = {}
 			_K.Remote.Log.Fire = function(_self, plr, payload)
 				if plr == restrictedObserver then
@@ -2472,26 +2524,28 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 
 			broadcastFilterCalls = 0
 			server:spawn(function()
-				_K.Process.runCommands(_K, 101, ";testpm AllowedFriend secret hello")
+				_K.Process.runCommands(_K, 101, ";testpm AdminSender secret self")
 			end)
 			world:run(0.5)
 			sert.eq(broadcastFilterCalls, 0) -- Chat.send filtered via filterResult; Process skipped second filterForBroadcast
 			sert.eq(#observerLogs, 1)
-			sert.eq(observerLogs[1][1], ";testpm AllowedFriend …")
+			sert.eq(observerLogs[1][1], ";testpm AdminSender …")
 
-			-- 2. Rate-limited Chat.send with mixed allowed+restricted recipients sets arg.filtered = true but NOT redactLog = false
+			-- 2. First Chat.send to another player (friend) spends the shared cooldown and sets arg.filtered = true & arg.redactLog = false;
+			--    a subsequent send within 60s is blocked completely without setting redactLog = false
 			local mixedArg: { [string]: any } = {
 				rawType = { freeText = true, filterLog = true },
 				rawArg = "first public",
 				parsedArgs = { "first public" },
 			}
-			local id1, err1 = _K.Chat.send(
+			local id1, err1, recips1 = _K.Chat.send(
 				{ from = 101, fromPlayer = sender, args = { mixedArg } },
 				"message",
 				"first public",
 				{ friend, restrictedObserver }
 			)
 			sert.eq(id1 ~= nil and err1 == nil, true)
+			sert.eq(#(recips1 :: { any }), 2)
 			sert.eq(mixedArg.filtered, true)
 			sert.eq(mixedArg.redactLog, false)
 
@@ -2506,23 +2560,24 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 				"second rate limited",
 				{ friend, restrictedObserver }
 			)
-			sert.eq(id2 ~= nil and err2 == nil, true)
-			sert.eq(#(recips2 :: { any }), 1)
-			sert.eq(rateLimitedArg.filtered, true)
+			sert.eq(id2, nil)
+			sert.eq(string.find(tostring(err2), "Wait", 1, true) ~= nil, true)
+			sert.eq(recips2, nil)
+			sert.eq(rateLimitedArg.filtered, nil)
 			sert.eq(rateLimitedArg.redactLog, nil)
 
 			-- 3. flushLogReveals skips firing duplicate Remote.Log when fullText == prevText (literal "…")
 			table.clear(observerLogs)
 			server:spawn(function()
-				_K.Process.runCommands(_K, 101, ";testpm AllowedFriend …")
+				_K.Process.runCommands(_K, 101, ";testpm AdminSender …")
 			end)
 			world:run(0.5)
 			sert.eq(#observerLogs, 1)
-			sert.eq(observerLogs[1][1], ";testpm AllowedFriend …")
-			-- Advance past the 60s reveal timer: entry1 ("secret hello") reveals, entry2 (literal "…") does NOT re-fire!
+			sert.eq(observerLogs[1][1], ";testpm AdminSender …")
+			-- Advance past the 60s reveal timer: entry1 ("secret self") reveals, entry3 (literal "…") does NOT re-fire!
 			world:run(61)
 			sert.eq(#observerLogs, 2)
-			sert.eq(observerLogs[2][1], ";testpm AllowedFriend secret hello")
+			sert.eq(observerLogs[2][1], ";testpm AdminSender secret self")
 
 			_K.Util.String.filterForBroadcast = origFilterForBroadcast
 		end

@@ -122,10 +122,18 @@ local function startVote(context, players: { Player }, text: string, given: { st
 		table.move(VOTE_YES_NO, 1, count, 1, labels)
 	end
 
+	local reachesOther = false
+	for _, player in uniquePlayers do
+		if player ~= context.fromPlayer then
+			reachesOther = true
+			break
+		end
+	end
+
 	-- Chat.send already filtered the question into context.args[2] when rawArg matched; otherwise filter once
 	local questionArg = context.args and context.args[2]
 	local filteredQuestion = if questionArg
-			and questionArg.redactLog == false
+			and questionArg.filtered
 			and questionArg.parsedArgs
 		then questionArg.parsedArgs[1]
 		else _K.Util.String.filterForBroadcast(rawQuestion, context.from)
@@ -133,12 +141,18 @@ local function startVote(context, players: { Player }, text: string, given: { st
 
 	if questionArg and questionArg.rawType and questionArg.rawType.freeText then
 		questionArg.parsedArgs = { filteredQuestion }
-		questionArg.redactLog = false
+		questionArg.filtered = true
+		if reachesOther then
+			questionArg.redactLog = false
+		end
 	end
 	local optionsArg = context.args and context.args[3]
 	if optionsArg and filteredOptions then
 		optionsArg.parsedArgs = filteredOptions
-		optionsArg.redactLog = false
+		optionsArg.filtered = true
+		if reachesOther then
+			optionsArg.redactLog = false
+		end
 	end
 
 	local tally = table.create(count, 0)
@@ -808,11 +822,9 @@ return {
 						if not context._K.Chat.canUserChat(context.from) then
 							return "User cannot chat"
 						end
-						if context._K.Chat.hasRestrictedPeer(context.from) then
-							local err = context._K.Chat.cooldown(context.from, "title")
-							if err then
-								return err
-							end
+						local err = context._K.Chat.cooldown(context.from)
+						if err then
+							return err
 						end
 						title = context._K.Util.String.filterForBroadcast(title, context.from)
 						if context.args[2] then

@@ -894,7 +894,7 @@ return function(_K)
 			end
 
 			-- the prefix and split key are shown to everyone, users are limited to single valid characters like the
-			-- settings UI, and non-developers are rate limited
+			-- settings UI, and added characters share the 60s text cooldown
 			do
 				local current = _K.Data.savedSettings
 				local existingPrefixes = current.prefix or {}
@@ -948,8 +948,8 @@ return function(_K)
 				end
 				if invalid then
 					_K.alert(player, "Prefixes and split keys are limited to a single character.", true)
-				elseif not isDeveloper and totalAdded > 0 then
-					local cooldownError = _K.Chat.cooldown(player.UserId, "prefix")
+				elseif totalAdded > 0 then
+					local cooldownError = _K.Chat.cooldown(player.UserId)
 					if cooldownError then
 						changes.prefix, changes.splitKey = nil, nil
 						_K.alert(player, cooldownError, true)

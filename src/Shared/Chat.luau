@@ -3,9 +3,9 @@
 	to the admin UI of each recipient, as text the server filtered for broadcast.
 	https://create.roblox.com/docs/chat/guidelines
 
-	The sender must be allowed to chat, TextService filters the text for broadcast, and messages that reach other
-	players are limited to one a minute per sender. Nothing goes through TextChannels: with platform-integrated chat,
-	scripts can't send or read chat text.
+	The sender must be allowed to chat, TextService filters the text for broadcast, and user-authored text that
+	reaches other players is rate limited to one submission every 60 seconds per sender across a shared cooldown.
+	Nothing goes through TextChannels: with platform-integrated chat, scripts can't send or read chat text.
 	https://create.roblox.com/docs/chat/platform-integrated-chat
 ]]
 
@@ -28,8 +28,8 @@ local Chat = {
 local cooldowns = {}
 
 --- Rate limits user-editable text shown to other users, returns a message while cooling down
-function Chat.cooldown(userId: number, key: string, seconds: number?): string?
-	local id = `{key}:{userId}`
+function Chat.cooldown(userId: number, key: string?, seconds: number?): string?
+	local id = `{key or "text"}:{userId}`
 	local duration = seconds or COOLDOWN
 	local now = os.clock()
 	local last = cooldowns[id]
@@ -81,25 +81,12 @@ end
 
 Chat.canUsersChat = canUsersChat
 
---- Returns true when any player in `players` (or the server) cannot chat with `fromUserId`
-function Chat.hasRestrictedPeer(fromUserId: number, players: { Player }?): boolean
-	if RunService:IsStudio() and Auth.hasRestrictedRole(fromUserId) then
-		return false
-	end
-	for _, player in players or Players:GetPlayers() do
-		if player.UserId ~= fromUserId and not canUsersChat(fromUserId, player.UserId) then
-			return true
-		end
-	end
-	return false
-end
-
---- Gates user text shown to everyone behind a chat check and the shared announcement cooldown
+--- Gates user text shown to everyone behind a chat check and the shared 60s text cooldown
 function Chat.limitBroadcast(userId: number, _roleError: string?): string?
 	if not canUserChat(userId) then
 		return "User cannot chat"
 	end
-	return Chat.cooldown(userId, "announce")
+	return Chat.cooldown(userId)
 end
 
 -- rich text tags that may be restored in filtered text
@@ -242,7 +229,7 @@ if RunService:IsServer() then
 		admin UI. Returns the message id and, after a nil error, the players it reached; or nil and an error message.
 
 		The sender must be allowed to chat and the text is filtered for broadcast. Messages that reach other players
-		are rate limited to one a minute per sender, shared by every kind except `vote`.
+		are rate limited to one submission every 60 seconds per sender across the shared cooldown.
 
 		Global messages were rate limited and filtered in their origin server, so here they are delivered directly.
 	]=]
@@ -277,28 +264,18 @@ if RunService:IsServer() then
 				return nil, "Message could not be filtered"
 			end
 
-			local allowed, hasOtherAllowed, hasRestricted = {}, false, false
+			local reachesOther = false
 			for _, player in recipients do
-				if player == sender then
-					table.insert(allowed, player)
-				elseif canUsersChat(from, player.UserId) then
-					hasOtherAllowed = true
-					table.insert(allowed, player)
-				else
-					hasRestricted = true
+				if player ~= sender then
+					reachesOther = true
+					break
 				end
 			end
 
-			-- messages to players the sender can chat with are never limited
-			local err
-			if hasRestricted then
-				err = Chat.cooldown(from, if kind == "vote" then "vote" else "direct")
+			if reachesOther then
+				local err = Chat.cooldown(from)
 				if err then
-					if not hasOtherAllowed then
-						return nil, err
-					end
-					recipients = allowed
-					Remote.Notify:Fire(sender, { Text = `{err} Players you can't chat with were skipped.` })
+					return nil, err
 				end
 			end
 
@@ -311,7 +288,7 @@ if RunService:IsServer() then
 				then
 					arg.parsedArgs = { filtered }
 					arg.filtered = true
-					if hasRestricted and err == nil then
+					if reachesOther then
 						arg.redactLog = false
 					end
 				end
@@ -327,29 +304,21 @@ if RunService:IsServer() then
 
 	--[=[
 		Filters and rate limits a free-text reason (ban, kick, shutdown) that other users see.
-		Returns `(allowedReason, restrictedReason)`: chat-allowed targets always see `allowedReason`, while targets
-		the sender cannot chat with receive `restrictedReason` (which is `nil` while cooling down).
+		Returns the filtered reason, or nil and notifies the player while cooling down.
 	]=]
-	function Chat.limitReason(userId: number, reason: string?, players: { Player }?): (string?, string?)
+	function Chat.limitReason(userId: number, reason: string?): string?
 		if not reason or not canUserChat(userId) then
-			return nil, nil
+			return nil
 		end
-		reason = Util.String.filterForBroadcast(reason, userId)
-		if players and not Chat.hasRestrictedPeer(userId, players) then
-			return reason, nil
-		end
-		local err = Chat.cooldown(userId, "reason")
+		local err = Chat.cooldown(userId)
 		if not err then
-			return reason, reason
+			return Util.String.filterForBroadcast(reason, userId)
 		end
 		local player = Players:GetPlayerByUserId(userId)
 		if player then
 			Remote.Notify:Fire(player, { Text = `<b>Reason removed:</b> {err}` })
 		end
-		if players then
-			return reason, nil
-		end
-		return nil, nil
+		return nil
 	end
 else
 	local handlers = {}

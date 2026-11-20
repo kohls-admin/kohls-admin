@@ -190,7 +190,6 @@ local function flushLogReveals()
 			for _, player in _K.Service.Players:GetPlayers() do
 				if
 					player.UserId ~= stored[4]
-					and not (entry.revealedTo and entry.revealedTo[player.UserId])
 					and player:GetAttribute("_K_READY")
 					and _K.Auth.hasPermission(player.UserId, "serverlogs")
 				then
@@ -242,18 +241,11 @@ function _K.log(
 				and (not from or _K.Data.settings.saveLogsForAllRoles or _K.Auth.hasRestrictedRole(from))
 			local revealLater = false
 			local canChat = from ~= nil and _K.Chat.canUserChat(from)
-			local revealedTo = {}
-			-- liveText replaces the text for players who can't chat with the sender while the sender's 60s log cooldown is active
+			-- liveText replaces the text for other admins while the 60s reveal delay is active (or permanently if the sender can't chat)
 			if liveText then
-				if not canChat then
-					stored = table.clone(log)
-					stored[1] = liveText
-				elseif
-					(shouldSave or _K.Chat.hasRestrictedPeer(from :: number))
-					and _K.Chat.cooldown(from :: number, "log")
-				then
-					stored = table.clone(log)
-					stored[1] = liveText
+				stored = table.clone(log)
+				stored[1] = liveText
+				if canChat then
 					revealLater = true
 				end
 			end
@@ -262,12 +254,7 @@ function _K.log(
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if player:GetAttribute("_K_READY") and _K.Auth.hasPermission(player.UserId, "serverlogs") then
-					local full = player.UserId == from
-						or (canChat and _K.Chat.canUsersChat(from :: number, player.UserId))
-					if full then
-						revealedTo[player.UserId] = true
-					end
-					_K.Remote.Log:Fire(player, if full then log else stored)
+					_K.Remote.Log:Fire(player, if player.UserId == from then log else stored)
 				end
 			end
 			if revealLater then
@@ -277,7 +264,6 @@ function _K.log(
 					save = shouldSave,
 					global = isGlobalLog,
 					revealAt = os.clock() + _K.Chat.COOLDOWN,
-					revealedTo = revealedTo,
 				})
 				if not revealTimer then
 					revealTimer = true

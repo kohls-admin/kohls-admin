@@ -507,7 +507,7 @@ return {
 				return "That access code was filtered, choose another."
 			end
 
-			local err = context._K.Chat.cooldown(context.from, "reserve")
+			local err = context._K.Chat.cooldown(context.from)
 			if err then
 				return err
 			end
@@ -614,24 +614,19 @@ return {
 				task.wait(delay)
 			end
 			-- shutdown reasons are user text everyone sees
-			local allowedReason, restrictedReason = reason, reason
 			if not context.global then
-				allowedReason, restrictedReason =
-					context._K.Chat.limitReason(context.from, reason, context._K.Service.Players:GetPlayers())
+				reason = context._K.Chat.limitReason(context.from, reason)
 			end
-			if restrictedReason and context.args[2] then
-				context.args[2].parsedArgs = { restrictedReason }
+			if reason and context.args[2] then
+				context.args[2].parsedArgs = { reason }
+				if not context.global then
+					context.args[2].filtered = true
+				end
 				context.args[2].redactLog = false
-			elseif allowedReason and context.args[2] then
-				context.args[2].parsedArgs = { allowedReason }
 			end
 			local from = tostring(context.fromPlayer or context.from)
 			local function kick(player)
-				local playerReason = if context.global
-						or context._K.Chat.canUsersChat(context.from, player.UserId)
-					then allowedReason
-					else restrictedReason
-				player:Kick(`{from} has shutdown the server.{if playerReason then `\nReason: {playerReason}` else ""}`)
+				player:Kick(`{from} has shutdown the server.{if reason then `\nReason: {reason}` else ""}`)
 			end
 			context._K.Util.SafePlayerAdded(kick)
 		end,

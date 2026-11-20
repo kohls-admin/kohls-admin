@@ -612,12 +612,20 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			s.kai.getAdmins()[owner.UserId] = 5
 			local uID = s.kai.f.uID
 
-			-- Unchanged prefix in KUpdate does NOT consume the 60s "prefix" cooldown
+			-- Unchanged prefix in KUpdate does NOT consume the shared 60s cooldown, while changing Prefix DOES
 			s.kai.ServerEvent(owner, uID .. "KUpdate", { IGS = true, Prefix = ":" })
 			s.kai.ServerEvent(owner, uID .. "KUpdate", { IGS = true, Prefix = "!" })
 			sert.eq(s.kai.getSet().Prefix, "!")
 			sert.eq(folder:FindFirstChild("KAI_ping").SecondaryAlias, "!ping")
 			sert.eq(folder:FindFirstChild("KAI_help").PrimaryAlias, "!help")
+
+			-- Second Prefix change within 60s is blocked by shared cooldown (even for power >= 6)
+			s.kai.getAdmins()[owner.UserId] = 7
+			s.kai.ServerEvent(owner, uID .. "KUpdate", { IGS = true, Prefix = "?" })
+			sert.eq(s.kai.getSet().Prefix, "!")
+			s.kai.getAdmins()[owner.UserId] = 5
+
+			s.env:advance(61)
 
 			-- Triggered strips leading "/" or Set.Prefix while preserving exact argument casing
 			local _target = s.env:addPlayer(20, "TargetPlr")
@@ -682,7 +690,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 	)
 
 	headlessTest(
-		"f.chatSend filters broadcast text, aborts on filter error, enforces 60s cooldown on restricted peers, and gates KVote on VoteTargets",
+		"f.chatSend filters broadcast text, aborts on filter error, enforces unconditional shared 60s cooldown, and gates KVote on VoteTargets",
 		function()
 			local s = getKaiServer()
 			local admin = s.env:addPlayer(11, "AdminSender")
@@ -702,7 +710,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 				return "[filtered] " .. text
 			end
 
-			-- 1. Filter failure aborts delivery completely without leaking raw text
+			-- 1. Filter failure aborts delivery completely without leaking raw text or spending cooldown
 			s.filterFail = true
 			table.clear(s.firedClients)
 			s.kai.f.Chatted(admin, ":m secret unfiltered", false)
@@ -710,7 +718,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 				sert.eq(ev.action ~= "KMsg", true)
 			end
 
-			-- 2. First broadcast succeeds to ALL recipients (consumes 60s "msg" cooldown)
+			-- 2. First broadcast succeeds to ALL recipients (consumes shared 60s cooldown)
 			s.env:advance(1.5)
 			s.filterFail = false
 			table.clear(s.firedClients)
@@ -725,7 +733,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			sert.eq(firstRecipients[12], "[filtered] First Announcement")
 			sert.eq(firstRecipients[13], "[filtered] First Announcement")
 
-			-- 3. Second broadcast within 60s skips restrictedPeer (13) while still delivering to self (11) & unrestrictedPeer (12)
+			-- 3. Second broadcast or targeted :pm within 60s is completely blocked (no partial delivery to self or unrestrictedPeer)
 			s.env:advance(1.5)
 			table.clear(s.firedClients)
 			s.kai.f.Chatted(admin, ":m Second Announcement", false)
@@ -739,17 +747,51 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 				end
 			end
 			sert.eq(gotCooldownError, true)
-			sert.eq(secondRecipients[11], true)
-			sert.eq(secondRecipients[12], true)
+			sert.eq(secondRecipients[11], nil)
+			sert.eq(secondRecipients[12], nil)
 			sert.eq(secondRecipients[13], nil)
 
-			-- 4. :vote while on cooldown only marks actually-delivered recipients in VoteTargets
-			-- Consume "vote" cooldown first, then run a second :vote so restrictedPeer does not receive it
 			s.env:advance(1.5)
-			s.kai.f.Chatted(admin, ":vote all First Poll?", false)
+			table.clear(s.firedClients)
+			s.kai.f.Chatted(admin, ":pm FriendPeer Blocked on shared cooldown", false)
+			for _, ev in s.firedClients do
+				sert.eq(ev.action ~= "KMsg", true)
+			end
+
+			-- Self-only :pm is exempt from cooldown
+			s.env:advance(1.5)
+			table.clear(s.firedClients)
+			s.kai.f.Chatted(admin, ":pm AdminSender Self reminder", false)
+			local selfGotPm = false
+			for _, ev in s.firedClients do
+				if ev.action == "KMsg" and ev.player == admin then
+					selfGotPm = true
+				end
+			end
+			sert.eq(selfGotPm, true)
+
+			-- 4. :vote shares the same 60s cooldown, then delivers to all VoteTargets once cooldown expires
+			s.env:advance(1.5)
+			s.kai.f.Chatted(admin, ":vote all Too Soon Poll?", false)
+			sert.eq(s.kai.state.VoteTargets[unrestrictedPeer], nil)
+			sert.eq(s.kai.state.VoteTargets[restrictedPeer], nil)
+
+			s.env:advance(61)
+			s.kai.state.LastVote = 0
+			s.kai.f.Chatted(admin, ":vote all Allowed Poll?", false)
+			sert.eq(s.kai.state.VoteTargets[unrestrictedPeer], true)
+			sert.eq(s.kai.state.VoteTargets[restrictedPeer], true)
+
+			-- Within 60s of :vote, another :vote is blocked and leaves VoteTargets empty
 			s.env:advance(1.5)
 			s.kai.state.LastVote = 0
-			s.kai.f.Chatted(admin, ":vote all Second Poll?", false)
+			s.kai.f.Chatted(admin, ":vote all Blocked Followup?", false)
+			sert.eq(s.kai.state.VoteTargets[unrestrictedPeer], nil)
+			sert.eq(s.kai.state.VoteTargets[restrictedPeer], nil)
+
+			s.env:advance(61)
+			s.kai.state.LastVote = 0
+			s.kai.f.Chatted(admin, ":vote FriendPeer Only Friend?", false)
 			sert.eq(s.kai.state.VoteTargets[unrestrictedPeer], true)
 			sert.eq(s.kai.state.VoteTargets[restrictedPeer], nil)
 
@@ -759,7 +801,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			sert.eq(s.kai.state.Votes[restrictedPeer.UserId], nil)
 
 			-- 5. Sender with CanUserChatAsync == false cannot send chat/messages
-			s.env:advance(1.5)
+			s.env:advance(61)
 			s.canChatMap[admin.UserId] = false
 			s.kai.clearChatCaches()
 			table.clear(s.firedClients)
@@ -771,7 +813,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 	)
 
 	headlessTest(
-		":kick passes filtered reason to unrestricted targets without spending cooldown and falls back to 'Kicked' when rate-limited",
+		":kick enforces unconditional shared 60s cooldown on custom reasons and falls back to 'Kicked' when rate-limited",
 		function()
 			local s = getKaiServer()
 			local admin = s.env:addPlayer(30, "ModAdmin")
@@ -784,30 +826,30 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 				return (a == 30 and b == 31) or (a == 31 and b == 30)
 			end
 
-			-- Unrestricted peer gets custom reason without spending the 60s "reason" cooldown
+			-- Unrestricted peer STILL spends the shared 60s cooldown and gets filtered custom reason
 			s.kai.f.Chatted(admin, ":kick FriendTarget See you soon", false)
 			sert.eq(#s.env.kicks, 1)
 			sert.eq(s.env.kicks[1].userId, 31)
 			sert.eq(s.env.kicks[1].message, "See you soon")
 
-			-- First restricted peer consumes the 60s "reason" cooldown and receives the filtered custom reason
+			-- Second kick within 60s STILL kicks, but falls back to generic "Kicked" reason
 			s.env:advance(1.5)
 			s.kai.f.Chatted(admin, ":kick StrangerOne Rule violation", false)
 			sert.eq(#s.env.kicks, 2)
 			sert.eq(s.env.kicks[2].userId, 32)
-			sert.eq(s.env.kicks[2].message, "Rule violation")
+			sert.eq(s.env.kicks[2].message, "Kicked")
 
-			-- Second restricted peer within 60s STILL gets kicked, but with generic "Kicked" reason
-			s.env:advance(1.5)
-			s.kai.f.Chatted(admin, ":kick StrangerTwo Spamming reason", false)
+			-- After 60s elapse, restricted peer receives the filtered custom reason
+			s.env:advance(61)
+			s.kai.f.Chatted(admin, ":kick StrangerTwo Custom after cooldown", false)
 			sert.eq(#s.env.kicks, 3)
 			sert.eq(s.env.kicks[3].userId, 33)
-			sert.eq(s.env.kicks[3].message, "Kicked")
+			sert.eq(s.env.kicks[3].message, "Custom after cooldown")
 		end
 	)
 
 	headlessTest(
-		"Logs redact unconfirmed free-text arguments for restricted viewers & DataStore saves, then reveal non-private args after 60s",
+		"Logs redact unconfirmed free-text arguments for ALL other viewers & DataStore saves (ignoring CanUsersChatAsync), then reveal non-private args after 60s",
 		function()
 			local s = getKaiServer()
 			local sender = s.env:addPlayer(40, "SenderAdmin")
@@ -823,12 +865,14 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 				return (a == 40 and (b == 41 or b == 43)) or ((a == 41 or a == 43) and b == 40)
 			end
 
-			-- :kick to an unrestricted target has free-text reason WITHOUT spending a 60s broadcast cooldown -> redacted for restrictedAdmin, full for sender & friendAdmin
+			-- Spend sender's 60s cooldown first so the following :kick falls back to "Kicked" (unconfirmed free-text -> redacted)
+			s.kai.f.cooldown(sender.UserId)
 			table.clear(s.firedClients)
 			s.kai.f.Chatted(sender, ":kick KickableFriend SecretKickReason", false)
 			sert.eq(#s.kai.state.Logs, 1)
 			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), ":kick KickableFriend …", 1, true) ~= nil, true)
 
+			-- Both friendAdmin and restrictedAdmin see redacted "…", only sender sees full text initially
 			local liveLogByUser: { [number]: string } = {}
 			for _, ev in s.firedClients do
 				if ev.action == "KUpdateLog" then
@@ -836,16 +880,26 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 				end
 			end
 			sert.eq(string.find(liveLogByUser[40] or "", "SecretKickReason", 1, true) ~= nil, true)
-			sert.eq(string.find(liveLogByUser[41] or "", "SecretKickReason", 1, true) ~= nil, true)
+			sert.eq(string.find(liveLogByUser[41] or "", ":kick KickableFriend …", 1, true) ~= nil, true)
 			sert.eq(string.find(liveLogByUser[42] or "", ":kick KickableFriend …", 1, true) ~= nil, true)
 
 			-- Advancing 60s reveals non-private log entry
 			s.env:advance(61)
 			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), "SecretKickReason", 1, true) ~= nil, true)
 
-			-- Private command (:pm) stays redacted even after 60s!
+			-- Private command (:pm) stays redacted for both friendAdmin and restrictedAdmin even after 60s!
+			table.clear(s.firedClients)
 			s.kai.f.Chatted(sender, ":pm FriendAdmin WhisperTextOnly", false)
 			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), ":pm FriendAdmin …", 1, true) ~= nil, true)
+			local pmLogByUser: { [number]: string } = {}
+			for _, ev in s.firedClients do
+				if ev.action == "KUpdateLog" then
+					pmLogByUser[ev.player.UserId] = ev.payload[2]
+				end
+			end
+			sert.eq(string.find(pmLogByUser[40] or "", "WhisperTextOnly", 1, true) ~= nil, true)
+			sert.eq(string.find(pmLogByUser[41] or "", ":pm FriendAdmin …", 1, true) ~= nil, true)
+			sert.eq(string.find(pmLogByUser[42] or "", ":pm FriendAdmin …", 1, true) ~= nil, true)
 			s.env:advance(61)
 			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), ":pm FriendAdmin …", 1, true) ~= nil, true)
 		end
@@ -961,7 +1015,7 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 			sert.eq(string.find(tostring(s.kai.state.Logs[1][2]), ":kick", 1, true) ~= nil, true)
 			s.filterFail = false
 
-			-- :m and :h share the single 60s "direct" broadcast cooldown toward restricted peers
+			-- :m and :h share the single unconditional 60s cooldown (even toward chat-allowed friends)
 			s.kai.clearCooldowns()
 			table.clear(s.firedClients)
 			s.env:advance(1.5)
@@ -988,9 +1042,21 @@ describe("KAI · Legacy PIC Compliance & 2026 Regressions", function()
 				end
 			end
 			sert.eq(sawRestrictedHint, false)
-			sert.eq(sawFriendHint, true)
+			sert.eq(sawFriendHint, false)
+
+			s.env:advance(61)
+			table.clear(s.firedClients)
+			s.kai.f.Chatted(sender, ":h Allowed After Cooldown", false)
+			local sawBoth = 0
+			for _, ev in s.firedClients do
+				if ev.action == "KHint" and (ev.player == restricted or ev.player == friend) then
+					sawBoth += 1
+				end
+			end
+			sert.eq(sawBoth, 2)
 
 			-- Prefix rejects regex classes (%w, %b), '/', quotes, and multi-char strings, while accepting single punctuation
+			s.env:advance(61)
 			for _, badPrefix in { "%w", "%b", "%0", "/", '"', "`", "a", "!!" } do
 				s.kai.ServerEvent(sender, uID .. "KUpdate", { IGS = true, Prefix = badPrefix })
 				sert.eq(s.kai.getSet().Prefix, ":")

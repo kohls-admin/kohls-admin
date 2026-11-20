@@ -1513,6 +1513,7 @@ describe("DefaultCommands", function()
 			_K.Remote.Shutdown:Fire(srvP1, nil)
 			c.world:run(0.05)
 
+			c.world:run(61)
 			runSrv(";shutdown 0 Server maintenance")
 			c.world:run(0.05)
 			sert.eq(string.find(tostring(srvP2._props._kicked), "has shutdown the server.", 1, true) ~= nil, true)
@@ -1525,7 +1526,8 @@ describe("DefaultCommands", function()
 				"OfflineReason"
 			)
 			sert.eq(shutArg2.parsedArgs, { "OfflineReason" })
-			sert.eq(shutArg2.redactLog, nil)
+			sert.eq(shutArg2.filtered, true)
+			sert.eq(shutArg2.redactLog, false)
 			sert.eq(string.find(tostring(srvP2._props._kicked), "77777 has shutdown the server.", 1, true) ~= nil, true)
 		end
 	)
@@ -1577,6 +1579,7 @@ describe("DefaultCommands", function()
 		runSrv(";countdown") -- cancel countdown
 		c.world:run(0.05)
 
+		c.world:run(61)
 		runSrv(";title TargetPlr Champion #ff0000 #00ff00 Legacy")
 		sert.ok((srvP2.Character:FindFirstChild("_K_Title")))
 		runSrv(";untitle TargetPlr")
@@ -2311,6 +2314,7 @@ describe("DefaultCommands", function()
 			-- Leaderstats: change & resetstats
 			runSrv(";change TargetPlr Coins 999")
 			sert.eq(coins.Value, 999)
+			c.world:run(61)
 			runSrv(";change TargetPlr Status Ready")
 			sert.eq(statusStat.Value, "Ready")
 			runSrv(";change TargetPlr Active true")
@@ -2319,6 +2323,7 @@ describe("DefaultCommands", function()
 			sert.eq(coins.Value, 0)
 
 			-- Teams: createteam, editteam, team, substitute, randomizeteams, teamrespawn, removeteam, clearteams
+			c.world:run(61)
 			runSrv(";createteam Red 255,0,0")
 			c.world:run(61)
 			runSrv(";createteam Blue 0,0,255")
@@ -2347,10 +2352,12 @@ describe("DefaultCommands", function()
 
 			-- Ban / unban / kick / crash (server run)
 			runSrv(";crash TargetPlr")
+			c.world:run(61)
 			runSrv(";ban TargetPlr 10m Griefing")
 			sert.ok(_K.Data.bans["2"])
 			runSrv(";unban 2")
 			sert.eq(_K.Data.bans["2"], nil)
+			c.world:run(61)
 			runSrv(";kick TargetPlr Bye")
 			sert.eq(srvP2._props._kicked, "Bye")
 		end
@@ -4053,7 +4060,7 @@ describe("DefaultCommands", function()
 	end)
 
 	test(
-		"SuperAdmin and Administration PIC compliance skips restricted recipients on cooldown, allows predefined titles, and preserves moderation actions when sender cannot chat",
+		"SuperAdmin and Administration PIC compliance enforces unconditional shared 60s cooldown, allows predefined titles, and preserves moderation actions when sender cannot chat",
 		function()
 			local c = createSimCluster(nil, true)
 			local _K, srvP1, srvP2 = c._K, c.srvP1, c.srvP2
@@ -4070,45 +4077,56 @@ describe("DefaultCommands", function()
 			_K.Registry.commands.time.run({ _K = _K, from = 1, args = { timeArg } }, "14:30", nil)
 			sert.eq(timeArg.redactLog, false)
 
-			-- 2. When all peers can chat with sender, world-text commands (name, custom title, createteam, editteam, change) do not spend cooldowns
+			-- 2. Even when all peers pass CanUsersChatAsync, world-text commands (name, custom title, createteam, editteam, change) share the 60s cooldown
 			tcMethods.CanUsersChatAsync = function()
 				return true
 			end
 			c.runSrv(";name TargetPlr FirstNick")
 			c.runSrv(";name TargetPlr SecondNick")
-			sert.eq(srvP2:GetAttribute("_KDisplayName"), "SecondNick")
+			sert.eq(srvP2:GetAttribute("_KDisplayName"), "FirstNick")
 
+			-- Shared cooldown also blocks ;createteam within 60s of ;name
+			c.runSrv(";createteam TeamAlpha #ff0000")
+			sert.eq(c.sh.env.game:GetService("Teams"):FindFirstChild("TeamAlpha"), nil)
+
+			c.world:run(61)
 			c.runSrv(";createteam TeamAlpha #ff0000")
 			c.runSrv(";createteam TeamBeta #00ff00")
-			local teamBeta = c.sh.env.game:GetService("Teams"):FindFirstChild("TeamBeta")
-			sert.eq(teamBeta ~= nil, true)
-			c.runSrv(";editteam TeamBeta TeamGamma")
+			local teamAlpha = c.sh.env.game:GetService("Teams"):FindFirstChild("TeamAlpha")
+			sert.eq(teamAlpha ~= nil, true)
+			sert.eq(c.sh.env.game:GetService("Teams"):FindFirstChild("TeamBeta"), nil)
+
+			c.world:run(61)
+			c.runSrv(";editteam TeamAlpha TeamGamma")
 			c.runSrv(";editteam TeamGamma TeamDelta")
-			sert.eq(teamBeta.Name, "TeamDelta")
+			sert.eq(teamAlpha.Name, "TeamGamma")
 
 			local ls = c.sh.env.Instance.new("Folder", srvP2)
 			ls.Name = "leaderstats"
 			local rankStat = c.sh.env.Instance.new("StringValue", ls)
 			rankStat.Name = "Rank"
+			local scoreStat = c.sh.env.Instance.new("IntValue", ls)
+			scoreStat.Name = "Score"
+			c.world:run(61)
 			c.runSrv(";change TargetPlr Rank Bronze")
 			c.runSrv(";change TargetPlr Rank Silver")
-			sert.eq(rankStat.Value, "Silver")
+			sert.eq(rankStat.Value, "Bronze")
+			-- Non-text leaderstats still apply while on shared text cooldown
+			c.runSrv(";change TargetPlr Score 42")
+			sert.eq(scoreStat.Value, 42)
 
-			-- 3. Predefined VIP titles work even when sender cannot chat or is on custom title cooldown
-			-- First restrict srvP3 so custom title spends cooldown
-			tcMethods.CanUsersChatAsync = function(_self, _from, to)
-				return to ~= 3
-			end
+			-- 3. Custom titles share the 60s cooldown; predefined VIP titles remain exempt even when sender cannot chat or is cooling down
+			c.world:run(61)
 			c.runSrv(";title TargetPlr CustomOne")
 			c.world:run(0.05)
 			sert.eq(srvP2.Character:FindFirstChild("_K_Title").Title.Text, "CustomOne")
-			-- Second custom title within 60s is blocked by cooldown because RestrictedPlr (3) is in server
 			local titleErr = _K.Registry.commands.title.run(
 				{ _K = _K, from = 1, fromPlayer = srvP1, args = {} },
 				{ srvP2 },
 				"CustomTwo"
 			)
 			sert.eq(string.find(tostring(titleErr), "Wait", 1, true) ~= nil, true)
+
 			-- Predefined VIP title ("vip") succeeds even while on cooldown and even when CanUserChatAsync is false
 			_K.VIP.titleDefinition.vip.ownerCache[srvP2.UserId] = true
 			tcMethods.CanUserChatAsync = function()
@@ -4135,16 +4153,16 @@ describe("DefaultCommands", function()
 			_K.Registry.commands.shutdown.run({ _K = _K, from = 1, fromPlayer = srvP1, args = {} }, nil, "MutedReason")
 			sert.eq(string.find(tostring(srvP2._props._kicked), "Reason:", 1, true), nil)
 
-			-- 5. On reason cooldown, kick/shutdown still show the reason to chat-allowed players while stripping for restricted players
+			-- 5. On shared cooldown, kick strips reason for ALL targets (even chat-allowed peers)
 			tcMethods.CanUserChatAsync = origCanUserChat
-			-- Spend the reason cooldown on restricted srvP3
+			c.world:run(61)
 			_K.Registry.commands.kick.run(
 				{ _K = _K, from = 1, fromPlayer = srvP1, args = {} },
 				{ srvP3 },
 				"FirstKickReason"
 			)
 			sert.eq(srvP3._props._kicked, "FirstKickReason")
-			-- Now on cooldown: kicking both srvP2 (allowed) and srvP3 (restricted) gives srvP2 the reason and srvP3 nil
+			-- Now on shared cooldown: kicking both srvP2 (allowed) and srvP3 (restricted) strips reason for BOTH
 			srvP2._props._kicked = nil
 			srvP3._props._kicked = nil
 			_K.Registry.commands.kick.run(
@@ -4152,10 +4170,10 @@ describe("DefaultCommands", function()
 				{ srvP2, srvP3 },
 				"SecondKickReason"
 			)
-			sert.eq(srvP2._props._kicked, "SecondKickReason")
+			sert.eq(srvP2._props._kicked, true)
 			sert.eq(srvP3._props._kicked, true)
 
-			-- 6. startVote on "vote" cooldown skips restricted srvP3 and only polls delivered srvP2
+			-- 6. ;vote shares the 60s cooldown, delivers to all recipients once off cooldown, and blocks repeat polls within 60s
 			local voteDef = _K.Registry.commands.vote
 			local origVoteInvoke = voteDef.env.remote.Invoke
 			local polledIds = {}
@@ -4163,7 +4181,20 @@ describe("DefaultCommands", function()
 				table.insert(polledIds, plr.UserId)
 				return 1
 			end
-			-- First vote with srvP3 spends the "vote" cooldown
+			tcMethods.CanUsersChatAsync = function(_self, _from, to)
+				return to ~= 3
+			end
+			-- Blocked while kick reason cooldown is still active
+			local blockedVoteErr = voteDef.run(
+				{ _K = _K, from = 1, fromPlayer = srvP1, env = voteDef.env, args = {} },
+				{ srvP2, srvP3 },
+				"Blocked vote?"
+			)
+			sert.eq(string.find(tostring(blockedVoteErr), "Wait", 1, true) ~= nil, true)
+			sert.eq(polledIds, {})
+
+			-- Off cooldown: delivers to both srvP2 and restricted srvP3
+			c.world:run(61)
 			c.sh.env.task.spawn(function()
 				voteDef.run(
 					{ _K = _K, from = 1, fromPlayer = srvP1, env = voteDef.env, args = {} },
@@ -4175,17 +4206,12 @@ describe("DefaultCommands", function()
 			table.sort(polledIds)
 			sert.eq(polledIds, { 2, 3 })
 
-			-- Second vote within 60s skips srvP3 and only invokes Remote.Vote on srvP2
-			table.clear(polledIds)
-			c.sh.env.task.spawn(function()
-				voteDef.run(
-					{ _K = _K, from = 1, fromPlayer = srvP1, env = voteDef.env, args = {} },
-					{ srvP2, srvP3 },
-					"Second vote?"
-				)
-			end)
-			c.world:run(0.1)
-			sert.eq(polledIds, { 2 })
+			-- Cross-command shared cooldown: ;m is blocked within 60s of ;vote
+			local msgErr = select(
+				2,
+				_K.Chat.send({ from = 1, fromPlayer = srvP1, args = {} }, "message", "Blocked after vote", { srvP2 })
+			)
+			sert.eq(string.find(tostring(msgErr), "Wait", 1, true) ~= nil, true)
 
 			voteDef.env.remote.Invoke = origVoteInvoke
 			tcMethods.CanUserChatAsync = origCanUserChat
@@ -4222,7 +4248,8 @@ describe("DefaultCommands", function()
 			local errDupColor = createTeamRun(ctx, "CrimsonCopy", redTeam.TeamColor.Color)
 			sert.eq(string.find(tostring(errDupColor), "already in use", 1, true) ~= nil, true)
 
-			-- Omitted color picks an unused BrickColor
+			-- Omitted color picks an unused BrickColor (after 60s shared cooldown)
+			c.world:run(61)
 			local errAutoColor = createTeamRun(ctx, "AutoTeam", nil)
 			sert.eq(errAutoColor, nil)
 			local autoTeam = teams:FindFirstChild("AutoTeam")

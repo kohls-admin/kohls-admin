@@ -587,28 +587,30 @@ describe("Process · Command Preparation, Validation & Execution", function()
 				end,
 			})
 
-			-- 1. freeText liveText redaction ("…"): first log off cooldown is revealed immediately;
-			-- second log within 60s sends full log to sender and redacted "…" to other admins and Data.logs
+			-- 1. freeText liveText redaction ("…"): always sends full log to sender and redacted "…" to other admins
+			-- and Data.logs immediately, then reveals to everyone after 60s regardless of CanUsersChatAsync
 			local okEcho = _K.Process.runCommands(_K, modPlayer.UserId, ";testecho secret_phrase", false)
 			sert.eq(okEcho, true)
 			h.env:step(0.05)
-			local senderLog, otherLog
+			local senderLog, otherLog, friendLog
 			for _, entry in remoteLogs do
 				if entry.to == modPlayer.UserId and string.find(entry.text, ";testecho", 1, true) then
 					senderLog = entry.text
 				elseif entry.to == otherAdmin.UserId and string.find(entry.text, ";testecho", 1, true) then
 					otherLog = entry.text
+				elseif entry.to == friendAdmin.UserId and string.find(entry.text, ";testecho", 1, true) then
+					friendLog = entry.text
 				end
 			end
 			sert.eq(senderLog, ";testecho secret_phrase")
-			sert.eq(otherLog, ";testecho secret_phrase")
-			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testecho secret_phrase")
+			sert.eq(otherLog, ";testecho …")
+			sert.eq(friendLog, ";testecho …")
+			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testecho …")
 
 			table.clear(remoteLogs)
 			local okEcho2 = _K.Process.runCommands(_K, modPlayer.UserId, ";testecho second_secret", false)
 			sert.eq(okEcho2, true)
 			h.env:step(0.05)
-			local friendLog
 			senderLog, otherLog, friendLog = nil, nil, nil
 			for _, entry in remoteLogs do
 				if entry.to == modPlayer.UserId and string.find(entry.text, ";testecho", 1, true) then
@@ -620,9 +622,23 @@ describe("Process · Command Preparation, Validation & Execution", function()
 				end
 			end
 			sert.eq(senderLog, ";testecho second_secret")
-			sert.eq(friendLog, ";testecho second_secret")
+			sert.eq(friendLog, ";testecho …")
 			sert.eq(otherLog, ";testecho …")
 			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testecho …")
+
+			-- After 60s, both freeText logs reveal to otherAdmin and friendAdmin
+			table.clear(remoteLogs)
+			h.env:step(61)
+			local revealedOther, revealedFriend = {}, {}
+			for _, entry in remoteLogs do
+				if entry.to == otherAdmin.UserId then
+					table.insert(revealedOther, entry.text)
+				elseif entry.to == friendAdmin.UserId then
+					table.insert(revealedFriend, entry.text)
+				end
+			end
+			sert.eq(revealedOther, { ";testecho secret_phrase", ";testecho second_secret" })
+			sert.eq(revealedFriend, { ";testecho secret_phrase", ";testecho second_secret" })
 
 			-- 2. Long rawText (> 1024 bytes) for non-restricted role (everyone/guest) is truncated to 1024 bytes
 			local longArg = string.rep("x", 1200)
@@ -2412,21 +2428,14 @@ describe("Process · Command filters & async roles", function()
 			-- Skipped middle optional integer ("noteOnly" goes to arg 2 Note, arg 1 Num is skipped) -> single space, no ";testslicesa  noteOnly"
 			sert.eq(Process.runCommands(_K, 601, ";testslicesa noteOnly"), true)
 			h.env:step(0.1)
+			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testslicesa …")
+			h.env:step(61)
 			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testslicesa noteOnly")
 
 			-- Trailing space with omitted optional rawString (";testslicesa 42 ") -> logs ";testslicesa 42" with NO trailing "…" redaction
-			local restrictedPeer = h.env:addPlayer(603, "RestrictedPeer")
-			restrictedPeer:SetAttribute("_K_READY", true)
-			local tcsMethods = rawget(h.env.game:GetService("TextChatService"), "_methods")
-			local origCanUsersChat = tcsMethods.CanUsersChatAsync
-			tcsMethods.CanUsersChatAsync = function()
-				return false
-			end
-			_K.Chat.cooldown(601, "log")
 			sert.eq(Process.runCommands(_K, 601, ";testslicesa 42 "), true)
 			h.env:step(0.1)
 			sert.eq(_K.Data.logs[#_K.Data.logs][1], ";testslicesa 42")
-			tcsMethods.CanUsersChatAsync = origCanUsersChat
 		end
 	)
 
