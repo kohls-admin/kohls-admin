@@ -1789,10 +1789,14 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 		})
 	end)
 
-	sert.sim.vopr("KAdmin multi-server sync converges under VOPR hazards", KAdminDataSpec, {
-		runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 15,
-		steps = 8,
-	})
+	test("KAdmin multi-server sync converges under VOPR hazards", function()
+		sert.sim.check(KAdminDataSpec, {
+			bfs = false,
+			vopr = true,
+			runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 2 else 15,
+			steps = 8,
+		})
+	end)
 
 	test("sert.sim.explore verifies BindToClose shutdown flushes pending bans, roles, and logs to DataStore", function()
 		sert.sim.explore({
