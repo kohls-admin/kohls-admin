@@ -32,17 +32,88 @@ type Meta = {
 	__len: (proxy: any) -> number,
 	target: { [any]: any },
 	nodes: { [any]: Graph.Node<any> },
-	parent: Meta?,
+	proxy: any,
+	parents: { [any]: boolean }?,
 	children: { [any]: boolean }?,
+	root: boolean?,
 }
 
 local proxyCache: { [any]: any } = setmetatable({}, { __mode = "v" })
 local proxyToRaw: { [any]: { [any]: any } } = setmetatable({}, { __mode = "k" })
 
 local STORE_SYMBOL: any = table.freeze({})
+local NAN_KEY: any = table.freeze({})
 
 local function toRaw(value: any): any
 	return if type(value) == "table" then proxyToRaw[value] or value else value
+end
+
+local function isPlainMutable(value: any): boolean
+	return type(value) == "table" and getmetatable(value) == nil and not table.isfrozen(value)
+end
+
+local function isRootReachable(startProxy: any): boolean
+	local meta = getmetatable(startProxy) :: Meta?
+	if meta == nil then
+		return false
+	elseif meta.root then
+		return true
+	end
+	local parents = meta.parents
+	if parents == nil or next(parents) == nil then
+		return false
+	end
+	local seen: { [any]: boolean } = { [startProxy] = true }
+	local stack: { any } = { startProxy }
+	while #stack > 0 do
+		local cur = table.remove(stack)
+		local curMeta = getmetatable(cur) :: Meta?
+		local curParents = if curMeta then curMeta.parents else nil
+		if curParents then
+			for parentProxy in curParents do
+				if not seen[parentProxy] then
+					local parentMeta = getmetatable(parentProxy) :: Meta?
+					if parentMeta then
+						if parentMeta.root then
+							return true
+						end
+						seen[parentProxy] = true
+						table.insert(stack, parentProxy)
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+
+local function linkParent(childProxy: any, parentProxy: any)
+	if parentProxy == nil or childProxy == parentProxy then
+		return
+	end
+	local childMeta = getmetatable(childProxy) :: Meta?
+	local parentMeta = getmetatable(parentProxy) :: Meta?
+	if childMeta == nil or parentMeta == nil then
+		return
+	end
+	local parents = childMeta.parents
+	if parents == nil then
+		parents = {}
+		childMeta.parents = parents
+	end
+	(parents :: { [any]: boolean })[parentProxy] = true
+	local children = parentMeta.children
+	if children == nil then
+		children = {}
+		parentMeta.children = children
+	end
+	(children :: { [any]: boolean })[childProxy] = true
+end
+
+local function linkIfProxied(rawVal: any, parentProxy: any)
+	if type(rawVal) == "table" and proxyCache[rawVal] ~= nil then
+		linkParent(proxyCache[rawVal], parentProxy)
+	end
 end
 
 local index: (proxy: any, key: any) -> any
@@ -50,11 +121,17 @@ local newindex: (proxy: any, key: any, value: any) -> ()
 local iter: (proxy: any) -> ...any
 local len: (proxy: any) -> number
 
-local function destroyProxy(proxy: any)
+local function destroyProxy(proxy: any, visited: { [any]: boolean }?)
 	local target = proxyToRaw[proxy]
 	if target == nil then
 		return
 	end
+	local seen = visited or {}
+	if seen[proxy] then
+		return
+	end
+	seen[proxy] = true
+
 	local meta = getmetatable(proxy) :: Meta
 	if proxyCache[target] == proxy then
 		proxyCache[target] = nil
@@ -63,15 +140,30 @@ local function destroyProxy(proxy: any)
 	register(proxy, nil)
 	setmetatable(proxy, nil)
 
-	local parent = meta.parent
-	if parent and parent.children then
-		parent.children[proxy] = nil
+	local parents = meta.parents
+	if parents then
+		meta.parents = nil
+		for parentProxy in parents do
+			local parentMeta = getmetatable(parentProxy) :: Meta?
+			if parentMeta and parentMeta.children then
+				parentMeta.children[proxy] = nil
+			end
+		end
 	end
 	local children = meta.children
 	if children then
 		meta.children = nil
-		for child in children do
-			destroyProxy(child)
+		for childProxy in children do
+			local childMeta = getmetatable(childProxy) :: Meta?
+			if childMeta then
+				local cParents = childMeta.parents
+				if cParents then
+					cParents[proxy] = nil
+				end
+				if not isRootReachable(childProxy) then
+					destroyProxy(childProxy, seen)
+				end
+			end
 		end
 	end
 	local nodes = meta.nodes
@@ -81,10 +173,26 @@ local function destroyProxy(proxy: any)
 	table.clear(nodes)
 end
 
-local function createProxy<T>(target: T, parentMeta: Meta?): T
+local function disposeRootProxy(proxy: any)
+	destroyProxy(proxy)
+end
+
+local function createProxy<T>(target: T, parentProxy: any?): T
 	local rawTarget: any = target
 	local cached = proxyCache[rawTarget]
 	if cached then
+		if parentProxy ~= nil then
+			linkParent(cached, parentProxy)
+		else
+			local cachedMeta = getmetatable(cached) :: Meta?
+			if cachedMeta ~= nil then
+				local wasRoot = cachedMeta.root
+				cachedMeta.root = true
+				if not wasRoot and getOwner() ~= nil then
+					cleanup(cached)
+				end
+			end
+		end
 		return cached
 	end
 
@@ -96,22 +204,20 @@ local function createProxy<T>(target: T, parentMeta: Meta?): T
 		__len = len,
 		target = rawTarget,
 		nodes = nodes,
-		parent = parentMeta,
+		proxy = nil,
+		parents = nil,
 		children = nil,
+		root = parentProxy == nil,
 	}
 	local proxy: any = setmetatable({}, meta)
+	meta.proxy = proxy
 
 	proxyCache[rawTarget] = proxy
 	proxyToRaw[proxy] = rawTarget
-	register(proxy, destroyProxy)
+	register(proxy, disposeRootProxy)
 
-	if parentMeta then
-		local children = parentMeta.children
-		if children == nil then
-			children = {}
-			parentMeta.children = children
-		end
-		(children :: { [any]: boolean })[proxy] = true
+	if parentProxy ~= nil then
+		linkParent(proxy, parentProxy)
 	elseif getOwner() ~= nil then
 		cleanup(proxy)
 	end
@@ -119,7 +225,7 @@ local function createProxy<T>(target: T, parentMeta: Meta?): T
 	return proxy
 end
 
-local function teardownDisplaced(target: { [any]: any }, displaced: any)
+local function teardownDisplaced(parentProxy: any, target: { [any]: any }, displaced: any)
 	if type(displaced) ~= "table" then
 		return
 	end
@@ -132,7 +238,27 @@ local function teardownDisplaced(target: { [any]: any }, displaced: any)
 			return
 		end
 	end
-	destroyProxy(displacedProxy)
+	local parentMeta = getmetatable(parentProxy) :: Meta?
+	if parentMeta and parentMeta.children then
+		parentMeta.children[displacedProxy] = nil
+	end
+	local childMeta = getmetatable(displacedProxy) :: Meta?
+	if childMeta then
+		if childMeta.parents then
+			childMeta.parents[parentProxy] = nil
+		end
+		if not isRootReachable(displacedProxy) then
+			destroyProxy(displacedProxy)
+		end
+	end
+end
+
+local function setKeyValue(nodes: { [any]: any }, key: any, node: any, value: any)
+	setValue(node, value)
+	if value == nil and not isReactive() and getOwner() == nil and not isObserved(node) then
+		nodes[key] = nil
+		destroyNode(node)
+	end
 end
 
 local function fireTracker(nodes: { [any]: any }, target: { [any]: any })
@@ -188,8 +314,8 @@ function index(proxy: any, key: any): any
 		get(node)
 	end
 
-	if type(value) == "table" and getmetatable(value) == nil then
-		return createProxy(value, meta)
+	if isPlainMutable(value) then
+		return createProxy(value, proxy)
 	end
 	return value
 end
@@ -204,18 +330,15 @@ function newindex(proxy: any, key: any, newVal: any)
 	end
 
 	rawset(target, key, rawValue)
+	linkIfProxied(rawValue, proxy)
 	if type(oldValue) == "table" and oldValue ~= rawValue then
-		teardownDisplaced(target, oldValue)
+		teardownDisplaced(proxy, target, oldValue)
 	end
 
 	local nodes = meta.nodes
 	local node = nodes[key]
 	if node ~= nil then
-		setValue(node, rawValue)
-		if rawValue == nil and not isReactive() and getOwner() == nil and not isObserved(node) then
-			nodes[key] = nil
-			destroyNode(node)
-		end
+		setKeyValue(nodes, key, node, rawValue)
 	end
 
 	fireTracker(nodes, target)
@@ -223,8 +346,8 @@ end
 
 local function nextProxy(meta: Meta, k: any): (any, any)
 	local key, value = next(meta.target, k)
-	if type(value) == "table" and getmetatable(value) == nil then
-		return key, createProxy(value, meta)
+	if isPlainMutable(value) then
+		return key, createProxy(value, meta.proxy)
 	end
 	return key, value
 end
@@ -302,6 +425,7 @@ function Store.insert(proxy: any, posOrValue: any, value: any?)
 
 	local rawValue = toRaw(val)
 	table.insert(target, pos, rawValue)
+	linkIfProxied(rawValue, proxy)
 
 	local nodes = (getmetatable(proxy) :: Meta).nodes
 	resyncIndices(nodes, target, pos, #target)
@@ -330,13 +454,13 @@ function Store.remove(proxy: any, pos: number?): any
 	local idx = pos or length
 	local removed = table.remove(target, idx)
 
-	teardownDisplaced(target, removed)
+	teardownDisplaced(proxy, target, removed)
 
 	local nodes = (getmetatable(proxy) :: Meta).nodes
 	resyncIndices(nodes, target, idx, length - 1)
 	local tailNode = nodes[length]
 	if tailNode then
-		setValue(tailNode, nil)
+		setKeyValue(nodes, length, tailNode, nil)
 	end
 
 	fireTracker(nodes, target)
@@ -377,68 +501,122 @@ local function isArrayIndex(key: any, arrayLen: number): boolean
 	return type(key) == "number" and key >= 1 and key <= arrayLen and key == math.floor(key)
 end
 
-local reconcileTable: (proxy: any, target: { [any]: any }, newData: { [any]: any }, reconcileKey: string?) -> ()
+local reconcileTable: (
+	proxy: any,
+	target: { [any]: any },
+	newData: { [any]: any },
+	reconcileKey: string?,
+	seen: { [any]: boolean }?
+) -> ()
 
-local function syncRaw(old: { [any]: any }, newData: { [any]: any })
-	for field in old do
+local function destroyOrphanedProxy(rawVal: any)
+	if type(rawVal) == "table" then
+		local p = proxyCache[rawVal]
+		if p ~= nil and not isRootReachable(p) then
+			destroyProxy(p)
+		end
+	end
+end
+
+local function syncUnproxied(
+	old: { [any]: any },
+	newData: { [any]: any },
+	reconcileKey: string?,
+	seen: { [any]: boolean }
+)
+	if seen[old] then
+		return
+	end
+	seen[old] = true
+	for field, oldFieldVal in old do
 		if rawget(newData, field) == nil then
 			old[field] = nil
+			destroyOrphanedProxy(oldFieldVal)
 		end
 	end
 	for field, value in newData do
-		old[field] = toRaw(value)
+		local rawNew = toRaw(value)
+		local oldVal = rawget(old, field)
+		if isPlainMutable(oldVal) and isPlainMutable(rawNew) then
+			local subProxy = proxyCache[oldVal]
+			if subProxy ~= nil then
+				reconcileTable(subProxy, oldVal, rawNew, reconcileKey, seen)
+			elseif oldVal ~= rawNew then
+				syncUnproxied(oldVal, rawNew, reconcileKey, seen)
+			end
+		else
+			rawset(old, field, rawNew)
+			if oldVal ~= rawNew then
+				destroyOrphanedProxy(oldVal)
+			end
+		end
 	end
 end
 
 local function reconcileLeaf(
+	proxy: any,
 	target: { [any]: any },
 	nodes: { [any]: any },
 	key: any,
 	rawNew: any,
-	reconcileKey: string?
+	reconcileKey: string?,
+	seen: { [any]: boolean }
 ): boolean
 	local oldValue = rawget(target, key)
 	if oldValue == rawNew then
 		return false
 	end
-	if type(oldValue) == "table" and type(rawNew) == "table" then
+	if isPlainMutable(oldValue) and isPlainMutable(rawNew) then
 		local oldProxy = proxyCache[oldValue]
 		if oldProxy ~= nil then
-			reconcileTable(oldProxy, oldValue, rawNew, reconcileKey)
+			reconcileTable(oldProxy, oldValue, rawNew, reconcileKey, seen)
 		else
-			syncRaw(oldValue, rawNew)
+			syncUnproxied(oldValue, rawNew, reconcileKey, seen)
 		end
 		return false
 	end
 	rawset(target, key, rawNew)
 	if type(oldValue) == "table" then
-		teardownDisplaced(target, oldValue)
+		teardownDisplaced(proxy, target, oldValue)
 	end
+	linkIfProxied(rawNew, proxy)
 	local node = nodes[key]
 	if node ~= nil then
-		setValue(node, rawNew)
+		setKeyValue(nodes, key, node, rawNew)
 	end
 	return true
 end
 
-local function reconcileArray(target: { [any]: any }, newData: { [any]: any }, nodes: { [any]: any }): (number, boolean)
+local function reconcileArray(
+	proxy: any,
+	target: { [any]: any },
+	newData: { [any]: any },
+	nodes: { [any]: any },
+	seen: { [any]: boolean }
+): (number, boolean)
 	local oldLen = #target
 	local newLen = #newData
 	local span = if oldLen > newLen then oldLen else newLen
 	local structural = false
 
 	for i = 1, span do
-		structural = reconcileLeaf(target, nodes, i, toRaw(rawget(newData, i)), nil) or structural
+		structural = reconcileLeaf(proxy, target, nodes, i, toRaw(rawget(newData, i)), nil, seen) or structural
 	end
 
 	return span, structural
 end
 
+local function toKeySlot(k: any): any
+	return if k ~= k then NAN_KEY else k
+end
+
 local function reconcileArrayKeyed(
+	proxy: any,
 	target: { [any]: any },
 	newData: { [any]: any },
 	nodes: { [any]: any },
-	reconcileKey: string
+	reconcileKey: string,
+	seen: { [any]: boolean }
 ): (number, boolean)
 	local oldLen = #target
 	local newLen = #newData
@@ -456,7 +634,7 @@ local function reconcileArrayKeyed(
 		if type(el) == "table" then
 			local k = rawget(el, reconcileKey)
 			if k ~= nil then
-				oldByKey[k] = el
+				oldByKey[toKeySlot(k)] = el
 			end
 		end
 	end
@@ -467,31 +645,32 @@ local function reconcileArrayKeyed(
 		local rawNew = toRaw(rawget(newData, i))
 
 		local placed = rawNew
-		if type(rawNew) == "table" then
+		if isPlainMutable(rawNew) then
 			local k = rawget(rawNew, reconcileKey)
 			local reuse
 			if k ~= nil then
-				if seenKeys[k] then
+				local kSlot = toKeySlot(k)
+				if seenKeys[kSlot] then
 					warn(
 						`[Flux] Store.reconcile: duplicate key "{tostring(k)}" on field "{reconcileKey}"; keys must be unique or the duplicate aliases one element`
 					)
 				else
-					seenKeys[k] = true
+					seenKeys[kSlot] = true
 				end
-				reuse = oldByKey[k]
+				reuse = oldByKey[kSlot]
 			else
 				local old: any = oldElems[i]
-				if type(old) == "table" and rawget(old, reconcileKey) == nil then
+				if isPlainMutable(old) and rawget(old, reconcileKey) == nil then
 					reuse = old
 				end
 			end
-			if reuse ~= nil then
+			if reuse ~= nil and isPlainMutable(reuse) then
 				matched[reuse] = true
 				local childProxy = proxyCache[reuse]
 				if childProxy ~= nil then
-					reconcileTable(childProxy, reuse, rawNew, reconcileKey)
+					reconcileTable(childProxy, reuse, rawNew, reconcileKey, seen)
 				else
-					syncRaw(reuse, rawNew)
+					syncUnproxied(reuse, rawNew, reconcileKey, seen)
 				end
 				placed = reuse
 			end
@@ -500,9 +679,12 @@ local function reconcileArrayKeyed(
 		if rawget(target, i) ~= placed then
 			structural = true
 			rawset(target, i, placed)
+			if placed == rawNew then
+				linkIfProxied(placed, proxy)
+			end
 			local node = nodes[i]
 			if node ~= nil then
-				setValue(node, placed)
+				setKeyValue(nodes, i, node, placed)
 			end
 		end
 	end
@@ -510,23 +692,34 @@ local function reconcileArrayKeyed(
 	for i = 1, span do
 		local el = oldElems[i]
 		if type(el) == "table" and not matched[el] then
-			teardownDisplaced(target, el)
+			teardownDisplaced(proxy, target, el)
 		end
 	end
 
 	return span, structural
 end
 
-function reconcileTable(proxy: any, target: { [any]: any }, newData: { [any]: any }, reconcileKey: string?)
+function reconcileTable(
+	proxy: any,
+	target: { [any]: any },
+	newData: { [any]: any },
+	reconcileKey: string?,
+	seen: { [any]: boolean }?
+)
+	local visited = seen or {}
+	if visited[target] then
+		return
+	end
+	visited[target] = true
 	local nodes = (getmetatable(proxy) :: Meta).nodes
 	local structural = false
 
 	local arrayLen = 0
 	if isArrayLike(target) or isArrayLike(newData) then
 		if reconcileKey ~= nil then
-			arrayLen, structural = reconcileArrayKeyed(target, newData, nodes, reconcileKey)
+			arrayLen, structural = reconcileArrayKeyed(proxy, target, newData, nodes, reconcileKey, visited)
 		else
-			arrayLen, structural = reconcileArray(target, newData, nodes)
+			arrayLen, structural = reconcileArray(proxy, target, newData, nodes, visited)
 		end
 	end
 
@@ -534,7 +727,7 @@ function reconcileTable(proxy: any, target: { [any]: any }, newData: { [any]: an
 		if isArrayIndex(key, arrayLen) then
 			continue
 		end
-		structural = reconcileLeaf(target, nodes, key, toRaw(newVal), reconcileKey) or structural
+		structural = reconcileLeaf(proxy, target, nodes, key, toRaw(newVal), reconcileKey, visited) or structural
 	end
 
 	for key in target do
@@ -543,7 +736,7 @@ function reconcileTable(proxy: any, target: { [any]: any }, newData: { [any]: an
 		end
 		if rawget(newData, key) == nil then
 			structural = true
-			reconcileLeaf(target, nodes, key, nil, reconcileKey)
+			reconcileLeaf(proxy, target, nodes, key, nil, reconcileKey, visited)
 		end
 	end
 

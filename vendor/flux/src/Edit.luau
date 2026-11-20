@@ -7,12 +7,14 @@ local Type = require("./Type")
 local IS_ROBLOX = Compat.isRoblox
 local Color3 = Compat.Color3
 local Enum = Compat.Enum
+local Vector3 = Compat.Vector3
 local compatTypeof = Compat.typeof
 local task = Compat.task
 local warn = Compat.warn
 
 local dispose = Graph.dispose
 local get = Graph.Node.get
+local isolate = Graph.isolate
 local isNode = Graph.isNode
 local newNode: (init: any, equals: any?) -> Graph.Node<any> = Graph.new
 local effect = Graph.effect
@@ -38,72 +40,74 @@ local Flags = {
 	--[[
 	Controls whether [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function) applies the
 	per-class [`Flux.Defaults`](https://flux.kohl.gg/guide/roblox/defaults) table to new instances (`true` by default).
-	`AutoButtonColor = false` is still applied to `TextButton` and `ImageButton` even when `false`.
 
 	[Open Documentation](https://flux.kohl.gg/guide/roblox/defaults#disabling-defaults)
 	]]
 	defaults = true,
 }
 
-local WHITE = Color3.new(1, 1, 1)
-local BLACK = Color3.new(0, 0, 0)
+local Defaults: { [string]: { [string]: unknown } } = {}
+if Color3 ~= nil and Enum ~= nil and Vector3 ~= nil then
+	local WHITE = Color3.new(1, 1, 1)
+	local BLACK = Color3.new(0, 0, 0)
 
-local function guiBase(extra: { [string]: unknown }?): { [string]: unknown }
-	local t: { [string]: unknown } = {
-		BackgroundColor3 = WHITE,
-		BorderColor3 = BLACK,
-		BorderSizePixel = 0,
-	}
-	if extra then
-		for k, v in extra do
-			t[k] = v
+	local function guiBase(extra: { [string]: unknown }?): { [string]: unknown }
+		local t: { [string]: unknown } = {
+			BackgroundColor3 = WHITE,
+			BorderColor3 = BLACK,
+			BorderSizePixel = 0,
+		}
+		if extra then
+			for k, v in extra do
+				t[k] = v
+			end
 		end
+		return t
 	end
-	return t
-end
 
-local function textBase(extra: { [string]: unknown }?): { [string]: unknown }
-	local t = guiBase(extra)
-	t.Font = Enum.Font.SourceSans
-	t.Text = ""
-	t.TextColor3 = BLACK
-	return t
-end
+	local function textBase(extra: { [string]: unknown }?): { [string]: unknown }
+		local t = guiBase(extra)
+		t.Font = Enum.Font.SourceSans
+		t.Text = ""
+		t.TextColor3 = BLACK
+		return t
+	end
 
-local Defaults: { [string]: { [string]: unknown } } = {
-	Part = {
-		Material = Enum.Material.SmoothPlastic,
-		Size = vector.create(1, 1, 1),
-		Anchored = true,
-	},
-	BillboardGui = {
-		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	},
-	ScreenGui = {
-		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	},
-	SurfaceGui = {
-		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		PixelsPerStud = 50,
-		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
-	},
-	Frame = guiBase(),
-	ImageButton = guiBase(),
-	ImageLabel = guiBase(),
-	VideoFrame = guiBase(),
-	ViewportFrame = guiBase(),
-	ScrollingFrame = guiBase({ ScrollBarImageColor3 = BLACK }),
-	TextBox = textBase({ ClearTextOnFocus = false }),
-	TextButton = textBase(),
-	TextLabel = textBase(),
-	UIListLayout = { SortOrder = Enum.SortOrder.LayoutOrder },
-	UIGridLayout = { SortOrder = Enum.SortOrder.LayoutOrder },
-	UITableLayout = { SortOrder = Enum.SortOrder.LayoutOrder },
-	UIPageLayout = { SortOrder = Enum.SortOrder.LayoutOrder },
-}
+	Defaults = {
+		Part = {
+			Material = Enum.Material.SmoothPlastic,
+			Size = Vector3.new(1, 1, 1),
+			Anchored = true,
+		},
+		BillboardGui = {
+			ResetOnSpawn = false,
+			ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		},
+		ScreenGui = {
+			ResetOnSpawn = false,
+			ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		},
+		SurfaceGui = {
+			ResetOnSpawn = false,
+			ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+			PixelsPerStud = 50,
+			SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
+		},
+		Frame = guiBase(),
+		ImageButton = guiBase({ AutoButtonColor = false }),
+		ImageLabel = guiBase(),
+		VideoFrame = guiBase(),
+		ViewportFrame = guiBase(),
+		ScrollingFrame = guiBase({ ScrollBarImageColor3 = BLACK }),
+		TextBox = textBase({ ClearTextOnFocus = false }),
+		TextButton = textBase({ AutoButtonColor = false }),
+		TextLabel = textBase(),
+		UIListLayout = { SortOrder = Enum.SortOrder.LayoutOrder },
+		UIGridLayout = { SortOrder = Enum.SortOrder.LayoutOrder },
+		UITableLayout = { SortOrder = Enum.SortOrder.LayoutOrder },
+		UIPageLayout = { SortOrder = Enum.SortOrder.LayoutOrder },
+	}
+end
 
 -- Find ----------------------------------------------------------------------------------------------------------------
 
@@ -278,106 +282,155 @@ local Find = table.freeze({
 
 -- Split ---------------------------------------------------------------------------------------------------------------
 
+-- A handle returned by `Flux.portal(target, children)` that mounts UI into `target`.
+--- @ignore
+export type Portal = Bind.Portal
+-- A component schema marker returned by `Flux.prop(default)`.
+--- @ignore
+export type DefaultProp<T> = Type.DefaultProp<T>
+
 -- `T` with every property optional.
 --- @ignore
-export type function Partial(t: type): type
-	if not t:is("table") then
-		return t
-	end
-	local result = types.newtable()
-	for key, prop in t:properties() do
-		local valueType = prop.read or prop.write
-		if valueType then
-			result:setproperty(key, types.optional(valueType))
-		end
-	end
-	local indexer = t:indexer()
-	if indexer then
-		result:setindexer(indexer.index, indexer.readresult)
-	end
-	return result
-end
-
---- @ignore
-type function groupKeys(group: type): type
-	local keys = types.newtable()
-	if group:is("nil") then
-		return keys
-	elseif group:is("union") or group:is("intersection") then
-		for _, part in group:components() do
-			local partKeys = groupKeys(part)
-			if partKeys:is("string") then
-				return partKeys
-			end
-			for key in partKeys:properties() do
-				keys:setproperty(key, key)
-			end
-		end
-		return keys
-	elseif not group:is("table") then
-		return types.string
-	end
-	local indexer = group:indexer()
-	if indexer then
-		local result = indexer.readresult
-		for _, part in if result:is("union") then result:components() else { result } do
-			local name = if part:is("singleton") then part:value() else nil
-			if type(name) == "string" then
-				keys:setproperty(part, part)
-			elseif name ~= true then
-				return types.string
-			end
-		end
-	end
-	for key in group:properties() do
-		keys:setproperty(key, key)
-	end
-	return keys
-end
-
---- @ignore
-type function pickWhere(t: type, group: type, prior: type, inGroup: type): type
-	if not t:is("table") then
-		return t
-	end
-	local wanted, excluded = groupKeys(group), groupKeys(prior)
-	local wantAll = inGroup:is("singleton") and inGroup:value() == false
-	if wanted:is("string") or excluded:is("string") then
-		return Partial(t)
-	end
-	local function has(names: type, key: type): boolean
-		return names:readproperty(key) ~= nil
-	end
-	local result = types.newtable()
-	for key, prop in t:properties() do
-		local valueType = prop.read or prop.write
-		local inWanted = has(wanted, key)
-		if valueType and not has(excluded, key) and inWanted ~= wantAll then
-			result:setproperty(key, valueType)
-		end
-	end
-	local indexer = t:indexer()
-	if indexer and wantAll then
-		result:setindexer(indexer.index, indexer.readresult)
-	end
-	return result
-end
+export type Partial<T> = Type.Partial<T>
 
 -- The members of `T` a `split` group named by `G` receives. Required members stay required. When the names are only known as `string` (an unannotated array), every member is optional.
 --- @ignore
-export type Pick<T, G> = pickWhere<T, G, nil, true>
+export type Pick<T, G> = Type.Pick<T, G>
 -- The members of `T` that no `split` group took: properties forwarded to the root instance.
 --- @ignore
-export type Omit<T, G> = pickWhere<T, nil, G, false>
+export type Omit<T, G> = Type.Omit<T, G>
+
+local PROP_DEFAULT: any = table.freeze({ type = "PropDefault" })
+local mergeSources: { [any]: { n: number, [number]: any } } = setmetatable({}, { __mode = "k" })
+
+local MergeMT: { [string]: any } = {
+	__index = function(self: any, key: any): any
+		local sources = mergeSources[self]
+		if sources == nil then
+			return nil
+		end
+		for index = sources.n, 1, -1 do
+			local source = sources[index]
+			if source ~= nil then
+				local value = source[key]
+				if value ~= nil then
+					return value
+				end
+			end
+		end
+		return nil
+	end,
+	__newindex = function()
+		error("Flux.merge tables are read-only", 2)
+	end,
+	__len = function(self: any): number
+		local sources = mergeSources[self]
+		if sources == nil then
+			return 0
+		end
+		local maxLen = 0
+		for index = 1, sources.n do
+			local source = sources[index]
+			if source ~= nil then
+				local len = #source
+				if len > maxLen then
+					maxLen = len
+				end
+			end
+		end
+		return maxLen
+	end,
+	__iter = function(self: any)
+		local sources = mergeSources[self]
+		local snap: { [any]: any } = {}
+		if sources ~= nil then
+			for index = 1, sources.n do
+				local source = sources[index]
+				if source ~= nil then
+					for key, value in source do
+						snap[key] = value
+					end
+				end
+			end
+		end
+		return next, snap
+	end,
+}
+
+local function merge(...: any): any
+	local count = select("#", ...)
+	for index = 1, count do
+		local source = select(index, ...)
+		if source ~= nil and type(source) ~= "table" then
+			error(`Flux.merge expects tables or nil, got {compatTypeof(source)}`, 2)
+		end
+	end
+	local proxy = setmetatable({}, MergeMT)
+	mergeSources[proxy] = table.pack(...)
+	return proxy
+end
+
+type MergeProps = <A, B, C, D>(a: A & {}, b: (B & {})?, c: (C & {})?, d: (D & {})?) -> Type.MergeTables<A, B, C, D>
+
+local function clonePlainDefault(value: any, seen: { [any]: any }?): any
+	if type(value) ~= "table" or getmetatable(value) ~= nil or table.isfrozen(value) then
+		return value
+	end
+	if seen and seen[value] ~= nil then
+		return seen[value]
+	end
+	local copy = table.clone(value)
+	local nextSeen = seen
+	if nextSeen ~= nil then
+		nextSeen[value] = copy
+	end
+	for k, v in copy do
+		if type(v) == "table" and getmetatable(v) == nil and not table.isfrozen(v) then
+			if nextSeen == nil then
+				nextSeen = { [value] = copy }
+			end
+			copy[k] = clonePlainDefault(v, nextSeen)
+		end
+	end
+	return copy
+end
+
+local function isKeyList(group: { [any]: any }): boolean
+	local first = group[1]
+	if first == nil then
+		return false
+	end
+	return first ~= true and (type(first) ~= "table" or rawget(first, 1) ~= PROP_DEFAULT)
+end
+
+local function applySchemaDefaults(own: { [any]: any }, schema: { [any]: any })
+	for key, spec in schema do
+		if own[key] == nil and type(spec) == "table" and rawget(spec, 1) == PROP_DEFAULT then
+			own[key] = clonePlainDefault(rawget(spec, 2))
+		end
+	end
+end
 
 local function split(props: any, keys: any, ...: any): ...any
 	if keys == nil and select("#", ...) == 0 then
-		return if type(props) == "table" then table.clone(props) else {}
+		if type(props) ~= "table" then
+			return {}
+		elseif getmetatable(props) ~= nil then
+			local out: { [any]: any } = {}
+			for key, value in props do
+				out[key] = value
+			end
+			return out
+		end
+		return table.clone(props)
 	elseif select("#", ...) == 0 then
+		if type(keys) ~= "table" then
+			return {}, split(props, nil)
+		end
 		local own = {}
 		local rest = {}
-		if type(props) == "table" then
-			if keys[1] ~= nil then
+		if isKeyList(keys) then
+			if type(props) == "table" then
 				for _, key in keys do
 					local val = props[key]
 					if val ~= nil then
@@ -389,12 +442,15 @@ local function split(props: any, keys: any, ...: any): ...any
 						rest[key] = value
 					end
 				end
-			else
+			end
+		else
+			if type(props) == "table" then
 				for key, value in props do
 					local target = if keys[key] ~= nil then own else rest
 					target[key] = value
 				end
 			end
+			applySchemaDefaults(own, keys)
 		end
 		return own, rest
 	end
@@ -402,12 +458,19 @@ local function split(props: any, keys: any, ...: any): ...any
 	local groups = table.pack(keys, ...)
 	local count = groups.n
 	local owners: { [any]: number } = {}
+	local isSchemaGroup: { [number]: boolean } = {}
 	local results: any = {}
 
 	for index = 1, count do
 		results[index] = {}
 		local group = groups[index]
-		if group[1] ~= nil then
+		if type(group) ~= "table" then
+			isSchemaGroup[index] = false
+			continue
+		end
+		local keyList = isKeyList(group)
+		isSchemaGroup[index] = not keyList
+		if keyList then
 			for _, key in group do
 				if owners[key] == nil then
 					owners[key] = index
@@ -432,13 +495,63 @@ local function split(props: any, keys: any, ...: any): ...any
 		end
 	end
 
+	for index = 1, count do
+		if isSchemaGroup[index] then
+			local group = groups[index]
+			local target = results[index]
+			for key, spec in group do
+				if
+					owners[key] == index
+					and target[key] == nil
+					and type(spec) == "table"
+					and rawget(spec, 1) == PROP_DEFAULT
+				then
+					target[key] = clonePlainDefault(rawget(spec, 2))
+				end
+			end
+		end
+	end
+
 	return table.unpack(results, 1, count + 1)
 end
 
 type Split =
-	(<T>(props: T?) -> T)
-	& (<T, G>(props: T?, keys: G) -> (Pick<T, G>, Omit<T, G>))
-	& (<T>(props: T?, first: { [any]: any }, second: { [any]: any }, ...{ [any]: any }) -> ...Partial<T>)
+	(<T>(props: T) -> Type.CloneProps<T>)
+	& (<T, G>(props: T, keys: G) -> (Pick<T, G>, Omit<T, G>))
+	& (<T>(props: T, first: { [any]: any }, second: { [any]: any }, ...{ [any]: any }) -> ...Partial<T>)
+
+-- Marks a key in a component prop schema at runtime; pair with a type cast (`Flux.prop() :: Flux.Reactive<string>`)
+-- or pass a `default` value (`Flux.prop(16)`).
+type Prop = (() -> any) & (<T>(default: T) -> Type.DefaultProp<T>)
+
+local function prop(...: any): any
+	if select("#", ...) == 0 then
+		return true
+	end
+	local default = select(1, ...)
+	if default == nil then
+		return true
+	end
+	return table.freeze({ PROP_DEFAULT, default })
+end
+
+type Own = <A, B, C, D>(a: (A & {})?, b: (B & {})?, c: (C & {})?, d: (D & {})?) -> Type.MergeOwn<A, B, C, D>
+
+local function own(...: { [string]: any }): any
+	local schema = {}
+	for index = 1, select("#", ...) do
+		local part: any = select(index, ...)
+		if part ~= nil then
+			if type(part) ~= "table" then
+				error(`Flux.own expected table at argument #{index}, got {compatTypeof(part)}`, 2)
+			end
+			for key, value in part do
+				schema[key] = value
+			end
+		end
+	end
+	return table.freeze(schema)
+end
 
 -- Edit & Construct ----------------------------------------------------------------------------------------------------
 
@@ -451,6 +564,14 @@ end
 
 local tagCounts: { [Instance]: { [string]: number } } = setmetatable({}, { __mode = "k" })
 
+local function rawAddTag(instance: Instance, tag: string)
+	instance:AddTag(tag)
+end
+
+local function rawRemoveTag(instance: Instance, tag: string)
+	instance:RemoveTag(tag)
+end
+
 local function addTagRef(instance: Instance, tag: string)
 	local counts = tagCounts[instance]
 	if not counts then
@@ -460,27 +581,49 @@ local function addTagRef(instance: Instance, tag: string)
 	local count = counts[tag]
 	counts[tag] = (count or 0) + 1
 	if not count then
-		instance:AddTag(tag)
+		isolate(rawAddTag, instance, tag)
 	end
 end
 
-local function removeTagRef(instance: Instance, tag: string)
+local function decrementTagRef(instance: Instance, tag: string): boolean
 	local counts = tagCounts[instance]
 	local count = if counts then counts[tag] else nil
 	if count and count > 1 then
 		counts[tag] = count - 1
-	else
-		if counts then
-			counts[tag] = nil
-		end
-		instance:RemoveTag(tag)
+		return false
 	end
+	if counts then
+		counts[tag] = nil
+		if next(counts) == nil then
+			tagCounts[instance] = nil
+		end
+	end
+	return true
+end
+
+local function removeTagRef(instance: Instance, tag: string)
+	if decrementTagRef(instance, tag) then
+		isolate(rawRemoveTag, instance, tag)
+	end
+end
+
+local function releaseTagRefOnly(instance: Instance, tag: string)
+	decrementTagRef(instance, tag)
 end
 
 local function bindTag(instance: Instance, tagValue: any, _CLEAN: { any })
 	if type(tagValue) == "string" then
 		addTagRef(instance, tagValue)
+		local released = false
+		table.insert(_CLEAN, function()
+			if not released then
+				released = true
+				releaseTagRefOnly(instance, tagValue)
+			end
+		end)
 		return
+	elseif isModel(tagValue) then
+		error("__TAG does not accept Flux.model; use _tag_Name = Flux.model(node) for a two-way tag", 0)
 	elseif type(tagValue) == "function" then
 		tagValue = newNode(tagValue)
 		table.insert(_CLEAN, tagValue)
@@ -489,8 +632,12 @@ local function bindTag(instance: Instance, tagValue: any, _CLEAN: { any })
 	if isNode(tagValue) then
 		local node = tagValue :: Graph.Node<any>
 		local currentSet: { [string]: boolean } = {}
+		local disposed = false
 
 		local function updateTags(newTag: string | { string })
+			if disposed then
+				return
+			end
 			local newSet: { [string]: boolean } = {}
 			if type(newTag) == "table" then
 				for _, tag in newTag do
@@ -519,6 +666,16 @@ local function bindTag(instance: Instance, tagValue: any, _CLEAN: { any })
 				updateTags(get(node))
 			end)
 		)
+		table.insert(_CLEAN, function()
+			if disposed then
+				return
+			end
+			disposed = true
+			for tag in currentSet do
+				releaseTagRefOnly(instance, tag)
+			end
+			table.clear(currentSet)
+		end)
 	elseif type(tagValue) == "table" then
 		for _, value in tagValue do
 			bindTag(instance, value, _CLEAN)
@@ -529,11 +686,11 @@ end
 local function stripUnmanagedTag(instance: Instance, tag: string)
 	local counts = tagCounts[instance]
 	if (not counts or not counts[tag]) and instance:HasTag(tag) then
-		instance:RemoveTag(tag)
+		isolate(rawRemoveTag, instance, tag)
 	end
 end
 
-local namedTagClaims: { [Instance]: { [string]: () -> () } } = setmetatable({}, { __mode = "k" })
+local namedTagClaims: { [Instance]: { [string]: (strip: boolean) -> () } } = setmetatable({}, { __mode = "k" })
 
 local function releaseNamedTag(instance: Instance, tag: string)
 	local claims = namedTagClaims[instance]
@@ -548,16 +705,30 @@ local function releaseNamedTag(instance: Instance, tag: string)
 	if next(claims) == nil then
 		namedTagClaims[instance] = nil
 	end
-	release()
+	release(true)
 end
 
-local function claimNamedTag(instance: Instance, tag: string, release: () -> ())
+local function cleanupNamedTag(instance: Instance, tag: string, release: (strip: boolean) -> ())
+	local claims = namedTagClaims[instance]
+	if claims and claims[tag] == release then
+		claims[tag] = nil
+		if next(claims) == nil then
+			namedTagClaims[instance] = nil
+		end
+		release(false)
+	end
+end
+
+local function claimNamedTag(instance: Instance, tag: string, release: (strip: boolean) -> (), _CLEAN: { any })
 	local claims = namedTagClaims[instance]
 	if not claims then
 		claims = {}
 		namedTagClaims[instance] = claims
 	end
 	claims[tag] = release
+	table.insert(_CLEAN, function()
+		cleanupNamedTag(instance, tag, release)
+	end)
 end
 
 local function bindNamedTag(instance: Instance, tag: string, tagValue: any, _CLEAN: { any })
@@ -575,10 +746,14 @@ local function bindNamedTag(instance: Instance, tag: string, tagValue: any, _CLE
 		local claims = namedTagClaims[instance]
 		local prevRelease = claims and claims[tag]
 		if prevRelease then
-			claims[tag] = function()
+			local wrappedRelease = function(strip: boolean)
 				disconnect()
-				prevRelease()
+				prevRelease(strip)
 			end
+			claims[tag] = wrappedRelease
+			table.insert(_CLEAN, function()
+				cleanupNamedTag(instance, tag, wrappedRelease)
+			end)
 		end
 		return
 	end
@@ -614,25 +789,33 @@ local function bindNamedTag(instance: Instance, tag: string, tagValue: any, _CLE
 			end
 		end)
 		table.insert(_CLEAN, eff)
-		claimNamedTag(instance, tag, function()
+		claimNamedTag(instance, tag, function(strip: boolean)
 			eff:Destroy()
 			if made then
 				made:Destroy()
 			end
 			if active then
 				active = false
-				removeTagRef(instance, tag)
+				if strip then
+					removeTagRef(instance, tag)
+				else
+					releaseTagRefOnly(instance, tag)
+				end
 			end
-		end)
+		end, _CLEAN)
 	elseif tagValue then
 		addTagRef(instance, tag)
 		local released = false
-		claimNamedTag(instance, tag, function()
+		claimNamedTag(instance, tag, function(strip: boolean)
 			if not released then
 				released = true
-				removeTagRef(instance, tag)
+				if strip then
+					removeTagRef(instance, tag)
+				else
+					releaseTagRefOnly(instance, tag)
+				end
 			end
-		end)
+		end, _CLEAN)
 	else
 		stripUnmanagedTag(instance, tag)
 	end
@@ -675,11 +858,11 @@ local function applyBindingOrValue(
 		end
 	elseif isAttribute then
 		releaseBinding(instance, name, true)
-		setAttribute(instance, name, value)
+		isolate(setAttribute, instance, name, value)
 	else
 		releaseBinding(instance, name, false)
-		setProperty(instance, name, value)
-		if name == "LayoutOrder" and value == 0 then
+		isolate(setProperty, instance, name, value)
+		if name == "LayoutOrder" then
 			Bind.pinOrder(instance)
 		end
 	end
@@ -825,17 +1008,18 @@ local function finalizeEdit(
 	seenAttrs: { [any]: boolean }?,
 	seenProps: { [any]: boolean }?,
 	_CLEAN: { any },
-	inheritedClean: { any }?,
-	order: number,
+	isRoot: boolean,
 	applyEdit: (
 		Instance,
 		Type.Map<any>,
 		{ [any]: boolean }?,
 		{ [any]: boolean }?,
 		{ any }?,
-		number?
-	) -> number
-): number
+		boolean?,
+		{ any }?
+	) -> any,
+	findEdit: (Instance, Type.Map<any>) -> Instance
+): any
 	if childKeys then
 		if #childKeys > 1 then
 			table.sort(childKeys)
@@ -843,15 +1027,24 @@ local function finalizeEdit(
 		for _, key in childKeys do
 			local child: any = properties[key]
 			if kindOf(child) == "Instance" then
-				order = Bind.applyLayoutOrder(child, order)
+				Bind.placeChildOrder(instance, child)
 				child.Parent = instance
+			elseif type(child) == "function" then
+				if actions == nil then
+					actions = {}
+				end
+				table.insert(actions :: { any }, child)
 			elseif isNode(child) then
-				table.insert(_CLEAN, Bind.children(child, instance, order))
-				order += 1
-			elseif child[1] == FIND_SYMBOL then
-				resolveFind(child, instance, applyEdit)
+				table.insert(_CLEAN, Bind.children(child, instance))
+			elseif Bind.isPortal(child) then
+				table.insert(_CLEAN, Bind.mountPortal(child))
+			elseif rawget(child, 1) == FIND_SYMBOL then
+				resolveFind(child, instance, findEdit)
 			else
-				order = applyEdit(instance, child, seenAttrs, seenProps, _CLEAN, order)
+				local nestedParent = applyEdit(instance, child, seenAttrs, seenProps, _CLEAN, false, actions)
+				if parent == nil and nestedParent ~= nil then
+					parent = nestedParent
+				end
 			end
 		end
 	end
@@ -869,17 +1062,15 @@ local function finalizeEdit(
 		end
 	end
 
-	if actions then
-		for _, action in actions do
-			task.defer(bindContext(action), instance)
-		end
-	end
-
 	if signals then
 		for index = 1, #signals, 2 do
 			local connected: any = signals[index]:Connect(bindContext(signals[index + 1]))
 			table.insert(_CLEAN, connected)
 		end
+	end
+
+	if not isRoot then
+		return parent
 	end
 
 	local madeParent = nil
@@ -889,9 +1080,12 @@ local function finalizeEdit(
 		table.insert(_CLEAN, parent)
 	end
 	local parentIsNode = isNode(parent)
+	local hasActions = actions ~= nil and #actions > 0
+	local cleaned = false
 
-	if not inheritedClean and (parentIsNode or next(_CLEAN) ~= nil) then
+	if parentIsNode or next(_CLEAN) ~= nil or hasActions then
 		local function cleanAll()
+			cleaned = true
 			dispose(_CLEAN)
 			table.clear(_CLEAN)
 		end
@@ -909,22 +1103,35 @@ local function finalizeEdit(
 			end
 		else
 			releaseBinding(instance, "Parent", false)
-			instance.Parent = parent
+			isolate(setProperty, instance, "Parent", parent)
 		end
 	end
 
-	return order
+	if hasActions and actions ~= nil and not cleaned then
+		for _, action in actions do
+			table.insert(_CLEAN, task.defer(bindContext(action), instance))
+		end
+	end
+
+	return nil
 end
 
-local function ensureFlattenSeen(properties: Type.Map<any>): ({ [any]: boolean }, { [any]: boolean })
-	local nextAttrs: { [any]: boolean } = {}
+local function ensureFlattenSeen(
+	properties: Type.Map<any>,
+	existingAttrs: { [any]: boolean }?,
+	existingProps: { [any]: boolean }?
+): ({ [any]: boolean }, { [any]: boolean })
+	if existingAttrs and existingProps then
+		return existingAttrs, existingProps
+	end
+	local nextAttrs: { [any]: boolean } = existingAttrs or {}
 	local _ATTR = properties.__ATTR
 	if _ATTR then
 		for attrName in _ATTR do
 			nextAttrs[attrName] = true
 		end
 	end
-	local nextProps: { [any]: boolean } = {}
+	local nextProps: { [any]: boolean } = existingProps or {}
 	for key in properties do
 		if type(key) ~= "number" then
 			nextProps[key] = true
@@ -936,25 +1143,28 @@ local function ensureFlattenSeen(properties: Type.Map<any>): ({ [any]: boolean }
 	return nextAttrs, nextProps
 end
 
+local editInstance: (instance: Instance, properties: Type.Map<any>) -> Instance
+
 local function edit(
 	instance: Instance,
 	properties: Type.Map<any>,
 	seenAttrs: { [any]: boolean }?,
 	seenProps: { [any]: boolean }?,
-	inheritedClean: { any }?,
-	startOrder: number?
-): number
-	local actions: { any }? = nil
+	_CLEAN: { any },
+	isRoot: boolean,
+	actions: { any }?
+): any
 	local signals: { any }? = nil
 	local childKeys: { number }? = nil
 	local hasFlatten = false
-	local order = startOrder or 1
 	local rawInstance: any = instance
 	local applyEdit: any = edit
 	local _USER_CLEAN = properties.__CLEAN
-	local _CLEAN = inheritedClean or {}
 	if _USER_CLEAN ~= nil then
 		table.insert(_CLEAN, _USER_CLEAN)
+	end
+	if properties.__ATTR ~= nil and seenAttrs == nil then
+		seenAttrs = {}
 	end
 	local parent = properties.Parent
 	if parent and seenProps then
@@ -982,15 +1192,12 @@ local function edit(
 				continue
 			end
 		elseif propType == "number" and property == math.floor(property) then
-			if kindOf(value) == "Instance" then
+			if kindOf(value) == "Instance" or type(value) == "function" then
 				childKeys = childKeys or {}
 				table.insert(childKeys :: { number }, property)
-			elseif type(value) == "function" then
-				actions = actions or {}
-				table.insert(actions :: { any }, value)
 			elseif type(value) == "table" then
 				if not isModel(value) then
-					if value[1] ~= FIND_SYMBOL and not isNode(value) then
+					if rawget(value, 1) ~= FIND_SYMBOL and not Bind.isPortal(value) and not isNode(value) then
 						hasFlatten = true
 					end
 					childKeys = childKeys or {}
@@ -1011,8 +1218,11 @@ local function edit(
 		applyBindingOrValue(instance, property, value, false, seenProps, _CLEAN)
 	end
 	applyDirectives(instance, properties, seenAttrs, _CLEAN)
-	if hasFlatten and not seenAttrs then
-		seenAttrs, seenProps = ensureFlattenSeen(properties)
+	if hasFlatten then
+		seenAttrs, seenProps = ensureFlattenSeen(properties, seenAttrs, seenProps)
+		if isRoot and actions == nil then
+			actions = {}
+		end
 	end
 	return finalizeEdit(
 		instance,
@@ -1024,21 +1234,25 @@ local function edit(
 		seenAttrs,
 		seenProps,
 		_CLEAN,
-		inheritedClean,
-		order,
-		applyEdit
+		isRoot,
+		applyEdit,
+		editInstance
 	)
 end
 
-local function editInstance(instance: Instance, properties: Type.Map<any>): Instance
-	edit(instance, properties)
+function editInstance(instance: Instance, properties: Type.Map<any>): Instance
+	Compat.requireRoblox("Flux.edit")
+	local clean = {}
+	local ok, err = (pcall :: (any) -> (boolean, any))(function()
+		edit(instance, properties, nil, nil, clean, true, nil)
+	end)
+	if not ok then
+		dispose(clean)
+		table.clear(clean)
+		error(err, 0)
+	end
 	return instance
 end
-
-local ALWAYS: { [string]: { [string]: unknown } } = {
-	TextButton = { AutoButtonColor = false },
-	ImageButton = { AutoButtonColor = false },
-}
 
 local function assign(instance: Instance, values: { [string]: unknown }?)
 	if values then
@@ -1050,32 +1264,155 @@ local function assign(instance: Instance, values: { [string]: unknown }?)
 end
 
 local function new(className: string, properties: any): Instance
+	Compat.requireRoblox("Flux.new")
 	local instance = Compat.Instance.new(className)
-	assign(instance, ALWAYS[className])
 	assign(instance, if Flags.defaults then Defaults[className] else nil)
+	local ok, res = pcall(editInstance, instance, properties)
+	if not ok then
+		instance:Destroy()
+		error(res, 0)
+	end
 	if getOwner() then
 		cleanup(instance)
 	end
-	return editInstance(instance, properties)
+	return res
+end
+
+local EMPTY_PORTALS: { any } = table.freeze({} :: { any })
+
+local function collectMountedPortals(item: any, into: { any })
+	while isNode(item) do
+		item = get(item)
+	end
+	if item == nil then
+		return
+	elseif Bind.isPortal(item) then
+		table.insert(into, item)
+	elseif type(item) == "table" and kindOf(item) ~= "Instance" then
+		for _, child in item do
+			collectMountedPortals(child, into)
+		end
+	end
+end
+
+local function mountTopPortals(item: any)
+	if item == nil then
+		return
+	elseif Bind.isPortal(item) then
+		cleanup(Bind.mountPortal(item))
+	elseif isNode(item) then
+		local portalData: { portals: any?, nextPortals: any? } = {}
+		local stopped = false
+		local function stopAll()
+			if stopped then
+				return
+			end
+			stopped = true
+			Bind.syncPortals(portalData, EMPTY_PORTALS, 0)
+		end
+		cleanup(stopAll)
+		local eff = effect(function()
+			if stopped then
+				return
+			end
+			local desired: { any } = {}
+			collectMountedPortals(item, desired)
+			Bind.syncPortals(portalData, desired, #desired)
+		end)
+		eff:peek()
+	elseif type(item) == "table" and kindOf(item) ~= "Instance" then
+		for _, child in item do
+			mountTopPortals(child)
+		end
+	end
+end
+
+local function mount(fn: () -> any, target: Graph.Reactive<Instance?>?): () -> ()
+	if type(fn) ~= "function" then
+		error(`Flux.mount expects a function, got {compatTypeof(fn)}`, 2)
+	elseif target ~= nil and kindOf(target) ~= "Instance" and not Graph.isDynamic(target) then
+		error(`Flux.mount expects an Instance target, reactive target, or nil, got {compatTypeof(target)}`, 2)
+	end
+
+	local root = Graph.scope(function()
+		local result = fn()
+		if target ~= nil then
+			cleanup(Bind.mountPortal(Bind.portal(target, result)))
+		elseif result ~= nil then
+			mountTopPortals(result)
+		end
+	end)
+
+	local done = false
+	local targetConn: RBXScriptConnection? = nil
+	local function disconnectTarget()
+		if targetConn ~= nil then
+			targetConn:Disconnect()
+			targetConn = nil
+		end
+	end
+	local function unmount()
+		if done then
+			return
+		end
+		done = true
+		disconnectTarget()
+		root:Destroy()
+	end
+
+	root:onDestroy(disconnectTarget)
+	if target ~= nil and kindOf(target) == "Instance" then
+		targetConn = (target :: Instance).Destroying:Once(unmount)
+	end
+	return unmount
 end
 
 return table.freeze({
 	edit = editInstance,
 	new = new,
+	--[[
+	Runs `fn` inside a new root [scope](https://flux.kohl.gg/guide/concepts/scopes), mounts the returned UI into `target` (or mounts returned portals when `target` is omitted), and returns an idempotent `unmount` function. Never destroys `target`.
+
+	[Open Documentation](https://flux.kohl.gg/guide/roblox/creation#mounting-a-root-flux-mount)
+	]]
+	mount = mount,
+	portal = Bind.portal,
 	Flags = Flags,
 	Defaults = Defaults,
 	Find = Find,
 	--[[
 	Partitions `props` into one table per `keys` group plus a final table holding every remaining key, leaving `props`
-	untouched. Pass a schema table or an annotated key-literal array (`{ "label" | "onClick" }`) to preserve exact
-	`Pick`/`Omit` types on a single group.
+	untouched. Pass a `Flux.prop()` / `Flux.own()` schema or an annotated key-literal array (`{ "label" | "onClick" }`)
+	to preserve exact `Pick` and `Omit` types on a single group.
 
 	```luau
-	local OWN: { "label" | "onClick" } = { "label", "onClick" }
+	local OWN = {
+		label = Flux.prop() :: Flux.Reactive<string>,
+		onClick = Flux.prop() :: ((...any) -> ())?,
+	}
 	local own, rest = Flux.split(props, OWN)
 	```
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/components#splitting-props-with-flux-split)
 	]]
 	split = split :: Split,
+	--[[
+	Marks a key in a component prop schema for `Flux.split`; cast a bare call to declare the type (`Flux.prop() :: Flux.Reactive<string>`), or pass `default` (`Flux.prop(16)`) to fill missing/`nil` values automatically.
+
+	[Open Documentation](https://flux.kohl.gg/guide/concepts/components#splitting-props-with-flux-split)
+	]]
+	prop = prop :: Prop,
+	--[[
+	Merges one or more component prop schemas into a single frozen schema table for `Flux.Props` and `Flux.split`.
+
+	[Open Documentation](https://flux.kohl.gg/guide/concepts/components#splitting-props-with-flux-split)
+	]]
+	own = own :: Own,
+	--[[
+	Returns a shallow read-only live view merging 1-4 prop tables left-to-right where the rightmost non-`nil` value wins
+	per key. Nest `{ base, rest }` arrays or chain `Flux.edit` to combine children and directives instead.
+
+	[Open Documentation](https://flux.kohl.gg/guide/concepts/components#merging-props-with-flux-merge)
+	]]
+	merge = merge :: MergeProps,
 })

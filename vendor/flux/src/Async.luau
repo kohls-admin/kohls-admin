@@ -12,11 +12,10 @@ local Compat = require("./Compat")
 local Graph = require("./Graph")
 
 local effect = Graph.effect
+local isolate = Graph.isolate
 local raw = Graph.raw
 local read = Graph.read
 local signal = Graph.signal
-local untrack = Graph.untrack
-local retrack = Graph.retrack
 local task = Compat.task
 
 local function gatedOff(src: any, input: any): boolean
@@ -71,7 +70,14 @@ type Data = {
 	_src: any,
 	_fetcher: any,
 	_fetchId: number,
+	_effectRan: boolean,
+	_preFlushHandled: boolean,
+	_preFlushInput: any,
 }
+
+local function sameInput(a: any, b: any): boolean
+	return a == b or (a ~= a and b ~= b)
+end
 
 local function runFetcher(self: Data, input: any, currentId: number, refetching: any)
 	local ok, result = pcall(self._fetcher, input, raw(self.data), refetching)
@@ -95,9 +101,7 @@ local function trigger(self: Data, input: any, refetching: any)
 	self.loading:set(true)
 	self.error:set(nil)
 	self.state:set(if self._resolved then "refreshing" else "pending")
-	untrack()
-	task.spawn(runFetcher, self, input, currentId, refetching)
-	retrack()
+	isolate(task.spawn, runFetcher, self, input, currentId, refetching)
 end
 
 local Async = {}
@@ -121,10 +125,19 @@ local function new(source: any, fetcher: any, initialValue: any): Async<any>
 		_src = src,
 		_fetcher = fetch,
 		_fetchId = 0,
+		_effectRan = false,
+		_preFlushHandled = false,
+		_preFlushInput = nil,
 	}, Async)
 
 	self._effect = effect(function()
 		local input = read(src)
+		if not self._effectRan then
+			self._effectRan = true
+			if self._preFlushHandled and (src == nil or sameInput(input, self._preFlushInput)) then
+				return
+			end
+		end
 		if gatedOff(src, input) then
 			self._fetchId += 1
 			self.loading:set(false)
@@ -171,6 +184,10 @@ function Async.mutate(self: Data, value: any)
 	if self._effect == nil then
 		return
 	end
+	if not self._effectRan then
+		self._preFlushHandled = true
+		self._preFlushInput = raw(self._src)
+	end
 	self._fetchId += 1
 	self._resolved = true
 	self.loading:set(false)
@@ -194,7 +211,27 @@ function Async.refetch(self: Data, refetching: any?)
 	if gatedOff(src, input) then
 		return
 	end
+	if not self._effectRan then
+		self._preFlushHandled = true
+		self._preFlushInput = input
+	end
 	trigger(self, input, if refetching == nil then true else refetching)
+end
+
+--- @ignore
+type function NonFunction(t: type): type
+	if t:is("function") then
+		return types.never
+	elseif not t:is("union") then
+		return t
+	end
+	local parts = {}
+	for _, part in t:components() do
+		if not part:is("function") then
+			table.insert(parts, part)
+		end
+	end
+	return if #parts == 0 then types.never elseif #parts == 1 then parts[1] else types.unionof(table.unpack(parts))
 end
 
 --[[
@@ -212,6 +249,9 @@ Async.new = new :: (<S, T>(
 	source: S,
 	fetcher: (value: Graph.Unwrap<S>, previous: T?, refetching: any) -> T,
 	initialValue: T?
-) -> Async<T>) & (<T>(fetcher: (value: nil, previous: T?, refetching: any) -> T, initialValue: T?) -> Async<T>)
+) -> Async<T>) & (<T>(
+	fetcher: (value: nil, previous: T?, refetching: any) -> T,
+	initialValue: NonFunction<T>?
+) -> Async<T>)
 
 return table.freeze(Async)

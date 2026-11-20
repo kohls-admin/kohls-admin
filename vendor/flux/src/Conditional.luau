@@ -1,6 +1,6 @@
 --!strict
 --[[
-Control flow, list mapping, and keyed selection helpers (`show`, `showKeyed`, `switch`, `presence`, `pick`, `fallback`, `forValue`, `forIndex`, `selector`).
+Control flow, list mapping, and keyed selection helpers (`show`, `showKeyed`, `switch`, `presence`, `pick`, `fallback`, `forValue`, `forKey`, `forIndex`, `selector`).
 
 ```luau
 Flux.show(loggedIn, function() return Profile {} end, function() return SignIn {} end)
@@ -9,6 +9,7 @@ Flux.show(loggedIn, function() return Profile {} end, function() return SignIn {
 
 local Compat = require("./Compat")
 local Graph = require("./Graph")
+local Type = require("./Type")
 
 local warn = Compat.warn
 local computed = Graph.computed
@@ -34,23 +35,14 @@ type Node<T> = Graph.Node<T>
 type Item<L> = index<Graph.Unwrap<L>, number>
 
 --- @ignore
-type function NonNil(t: type): type
-	if t:is("nil") then
-		return types.never
-	elseif not t:is("union") then
-		return t
-	end
-	local parts = {}
-	for _, part in t:components() do
-		if not part:is("nil") then
-			table.insert(parts, part)
-		end
-	end
-	return if #parts == 0 then types.never elseif #parts == 1 then parts[1] else types.unionof(table.unpack(parts))
-end
+type NonNil<T> = Type.NonNil<T>
+--- @ignore
+type Truthy<T> = Type.Truthy<T>
 
 local OTHERWISE: any = table.freeze({ type = "SwitchOtherwise" })
 local UNSET = table.freeze({})
+local NAN_KEY: any = table.freeze({ type = "NaNKey" })
+local NIL_KEY: any = table.freeze({ type = "NilKey" })
 local NO_VALUE: any = nil
 
 -- Conditional (show, showKeyed, switch, presence, pick, fallback) -----------------------------------------------------
@@ -82,21 +74,28 @@ local function mount(
 ): Node<any>
 	local activeKey: any = UNSET
 	local activeBranch: Node<any>? = nil
+	local lastValid: any = NO_VALUE
 	local output = newValue(NO_VALUE)
+	local destroyed = false
 
 	local function valueOf()
 		local current = read(source)
-		return current
+		local key = selectBranch(current, argA, argB, argC)
+		if key == activeKey or (key ~= key and activeKey ~= activeKey) then
+			lastValid = current
+			return current
+		end
+		return lastValid
 	end
 
 	local driver = effect(function()
 		local value = read(source)
 		local key, factory = selectBranch(value, argA, argB, argC)
 
-		if key == activeKey then
+		if key == activeKey or (key ~= key and activeKey ~= activeKey) then
+			lastValid = value
 			return
 		end
-		activeKey = key
 
 		untrack()
 		local previous = activeBranch
@@ -104,9 +103,22 @@ local function mount(
 		if previous ~= nil then
 			previous:Destroy()
 		end
+		if destroyed then
+			retrack()
+			return
+		end
+		activeKey = key
+		lastValid = value
 
 		if factory ~= nil then
 			local ok, branch, result = mountBranch(factory, valueOf)
+			if destroyed then
+				if ok and branch ~= nil then
+					branch:Destroy()
+				end
+				retrack()
+				return
+			end
 			if ok then
 				activeBranch = branch
 				set(output, result)
@@ -123,6 +135,7 @@ local function mount(
 	end)
 
 	output:onDestroy(function()
+		destroyed = true
 		driver:Destroy()
 		local branch = activeBranch
 		activeBranch = nil
@@ -192,13 +205,7 @@ local function presence<T>(condition: unknown, component: (exiting: Node<boolean
 	local exiting: Node<boolean>? = nil
 	local finished = newValue(0)
 	local handled = 0
-
-	local function done()
-		local leaving = exiting
-		if leaving ~= nil and leaving:peek() then
-			set(finished, finished:peek() + 1)
-		end
-	end
+	local destroyed = false
 
 	local driver = effect(function()
 		local present = read(condition)
@@ -210,7 +217,20 @@ local function presence<T>(condition: unknown, component: (exiting: Node<boolean
 			handled = finishes
 			if current == nil then
 				local exit = newValue(false)
+				local function done()
+					if exiting == exit and exit:peek() then
+						set(finished, finished:peek() + 1)
+					end
+				end
 				local ok, mounted, result = mountBranch(component, exit, done)
+				if destroyed then
+					destroyNode(exit)
+					if ok and mounted ~= nil then
+						mounted:Destroy()
+					end
+					retrack()
+					return
+				end
 				if not ok then
 					destroyNode(exit)
 					set(output, nil)
@@ -237,6 +257,7 @@ local function presence<T>(condition: unknown, component: (exiting: Node<boolean
 	end)
 
 	output:onDestroy(function()
+		destroyed = true
 		driver:Destroy()
 		local current, leaving = branch, exiting
 		branch, exiting = nil, nil
@@ -278,25 +299,109 @@ local function fallback<V, D>(value: V, default: D): Node<NonNil<Graph.Unwrap<V>
 	end)
 end
 
--- For (forIndex, forValue) --------------------------------------------------------------------------------------------
+-- For (forIndex, forValue, forKey) ------------------------------------------------------------------------------------
 
-local function createMapper(list: any, mapFn: any, keyedByValue: boolean): Node<any>
+local function sweepMapperRows(
+	nodes: { [any]: Node<any> },
+	items: { [any]: Node<any> }?,
+	cache: { [any]: any },
+	currentKeys: { [any]: boolean }
+): number
+	local liveN = 0
+	for key, node in nodes do
+		if currentKeys[key] == nil then
+			destroyNode(node)
+			nodes[key] = nil
+			if items ~= nil then
+				destroyNode(items[key])
+				items[key] = nil
+			end
+			dispose(cache[key])
+			cache[key] = nil
+		else
+			liveN += 1
+		end
+	end
+	return liveN
+end
+
+local function destroyMapperRows(
+	nodes: { [any]: Node<any> },
+	items: { [any]: Node<any> }?,
+	cache: { [any]: any },
+	currentKeys: { [any]: boolean }
+)
+	for key, node in nodes do
+		destroyNode(node)
+		if items ~= nil then
+			destroyNode(items[key])
+		end
+		dispose(cache[key])
+	end
+	table.clear(nodes)
+	if items ~= nil then
+		table.clear(items)
+	end
+	table.clear(cache)
+	table.clear(currentKeys)
+end
+
+local function createMapper(
+	list: any,
+	mapFn: any,
+	keyedByValue: boolean,
+	keyOf: ((any) -> any)?,
+	fallbackFn: any?
+): Node<any>
+	local map: (any, any) -> any = mapFn
+	assert(type(mapFn) == "function", "mapFn must be a function")
+	local emptyFn: (() -> any)? = nil
+	if fallbackFn ~= nil then
+		local fb: () -> any = fallbackFn
+		assert(type(fallbackFn) == "function", "fallback must be a function")
+		emptyFn = fb
+	end
 	local cache: { [any]: any } = {}
 	local nodes: { [any]: Node<any> } = {}
+	local items: { [any]: Node<any> }? = if keyOf ~= nil then {} else nil
 	local currentKeys: { [any]: boolean } = {}
 	local cacheN = 0
 	local rebuildAborted = false
 	local rowA: any, rowB: any
+	local fallbackOwner: Node<any>? = nil
+	local fallbackItem: any = nil
+	local fallbackOut: { any }? = nil
+	local destroyed = false
+
+	local function clearFallback()
+		local owner = fallbackOwner
+		if owner ~= nil then
+			local item = fallbackItem
+			fallbackOwner = nil
+			fallbackItem = nil
+			fallbackOut = nil
+			destroyNode(owner)
+			dispose(item)
+		end
+	end
 
 	local function build()
 		local a, b = rowA, rowB
 		rowA, rowB = nil, nil
-		return mapFn(a, b)
+		return map(a, b)
 	end
 
 	local self = computed(function()
 		local current = read(list) :: { any }
 		if type(current) ~= "table" then
+			if cacheN > 0 or rebuildAborted or next(nodes) ~= nil or fallbackOwner ~= nil then
+				untrack()
+				clearFallback()
+				destroyMapperRows(nodes, items, cache, currentKeys)
+				cacheN = 0
+				rebuildAborted = false
+				retrack()
+			end
 			return {}
 		end
 
@@ -307,14 +412,44 @@ local function createMapper(list: any, mapFn: any, keyedByValue: boolean): Node<
 		rebuildAborted = true
 		untrack()
 
+		local getKey = keyOf
+		local itemsMap = items
 		local seen, added = 0, 0
 		for index, value in current do
+			if destroyed then
+				retrack()
+				return {}
+			end
 			local key: any, held: any = index, value
 			if keyedByValue then
-				key, held = value, index
+				if getKey ~= nil then
+					local okKey, rawKey = pcall(getKey, value)
+					if not okKey then
+						retrack()
+						error(rawKey, 0)
+					end
+					if rawKey ~= rawKey then
+						warn("[Flux] Flux.forKey: NaN key fell back to item identity; keys must not be NaN")
+						key = value
+					else
+						key = if rawKey == nil then value else rawKey
+					end
+				else
+					if value == nil then
+						warn("[Flux] Flux.forValue: nil item skipped; use Flux.forIndex for sparse lists")
+						continue
+					end
+					key = value
+				end
+				if key ~= key then
+					key = NAN_KEY
+				end
+				held = index
 				if currentKeys[key] ~= nil then
 					warn(
-						"[Flux] Flux.forValue: duplicate values share one mapped instance (the value is the cache key); use Flux.forIndex"
+						if getKey ~= nil
+							then "[Flux] Flux.forKey: duplicate keys share one mapped instance; keys must be unique"
+							else "[Flux] Flux.forValue: duplicate values share one mapped instance (the value is the cache key); use Flux.forIndex"
 					)
 					seen -= 1
 				end
@@ -324,15 +459,46 @@ local function createMapper(list: any, mapFn: any, keyedByValue: boolean): Node<
 			local node = nodes[key]
 			if node ~= nil then
 				set(node, held)
+				if itemsMap ~= nil then
+					set(itemsMap[key], value)
+				end
 				out[index] = cache[key]
 			else
 				node = newValue(held)
-				if keyedByValue then
+				local itemNode: Node<any>? = nil
+				if itemsMap ~= nil then
+					itemNode = newValue(value)
+					rowA, rowB = node, itemNode
+				elseif keyedByValue then
 					rowA, rowB = node, value
 				else
 					rowA, rowB = index, node
 				end
-				local mapped = withOwner(node, build)
+				local ok, mapped = pcall(withOwner, node, build)
+				if destroyed then
+					rowA, rowB = nil, nil
+					destroyNode(node)
+					if itemNode ~= nil then
+						destroyNode(itemNode)
+					end
+					if ok then
+						dispose(mapped)
+					end
+					retrack()
+					return {}
+				end
+				if not ok then
+					rowA, rowB = nil, nil
+					destroyNode(node)
+					if itemNode ~= nil then
+						destroyNode(itemNode)
+					end
+					retrack()
+					error(mapped, 0)
+				end
+				if itemNode ~= nil then
+					(itemsMap :: { [any]: Node<any> })[key] = itemNode
+				end
 				cache[key] = mapped
 				nodes[key] = node
 				added += 1
@@ -343,33 +509,45 @@ local function createMapper(list: any, mapFn: any, keyedByValue: boolean): Node<
 		rebuildAborted = false
 
 		if mustScan or seen ~= cacheN + added then
-			local liveN = 0
-			for key, node in nodes do
-				if currentKeys[key] == nil then
-					node:Destroy()
-					nodes[key] = nil
-					dispose(cache[key])
-					cache[key] = nil
-				else
-					liveN += 1
-				end
-			end
-			cacheN = liveN
+			cacheN = sweepMapperRows(nodes, itemsMap, cache, currentKeys)
 		else
 			cacheN += added
 		end
 
+		if seen == 0 and emptyFn ~= nil then
+			if fallbackOwner == nil then
+				local ok, branch, mapped = mountBranch(emptyFn, nil, nil)
+				if destroyed then
+					if ok then
+						if branch ~= nil then
+							destroyNode(branch)
+						end
+						dispose(mapped)
+					end
+					retrack()
+					return {}
+				end
+				if not ok then
+					retrack()
+					error(branch, 0)
+				end
+				fallbackOwner = branch
+				fallbackItem = mapped
+				fallbackOut = if mapped == nil then {} else { mapped }
+			end
+			retrack()
+			return fallbackOut :: { any }
+		end
+
+		clearFallback()
+		retrack()
 		return out
 	end)
 
 	self:onDestroy(function()
-		for key, node in nodes do
-			node:Destroy()
-			dispose(cache[key])
-		end
-		table.clear(nodes)
-		table.clear(cache)
-		table.clear(currentKeys)
+		destroyed = true
+		clearFallback()
+		destroyMapperRows(nodes, items, cache, currentKeys)
 	end)
 
 	return self
@@ -377,21 +555,35 @@ end
 
 --[[
 Maps `list` by numeric index, running `mapFn(index, item)` once per slot and updating `item` in place when the value at that index changes.
+When `fallback` is given, mounts `fallback()` in a child [scope](https://flux.kohl.gg/guide/concepts/scopes) while `list` is empty.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/mapping#flux-forindex-keyed-by-index)
 ]]
-local function forIndex<L, U>(list: L, mapFn: (index: number, item: Node<Item<L>>) -> U): Node<{ U }>
-	return createMapper(list, mapFn, false)
+local function forIndex(list: any, mapFn: any, fallback: any?): Node<any>
+	return createMapper(list, mapFn, false, nil, fallback)
 end
 
 --[[
 Maps `list` by item identity, running `mapFn(index, value)` once per unique value and updating `index` when an item moves.
 Values must be unique (use `Flux.forIndex` for primitive or duplicate values).
+When `fallback` is given, mounts `fallback()` in a child [scope](https://flux.kohl.gg/guide/concepts/scopes) while `list` is empty.
 
 [Open Documentation](https://flux.kohl.gg/guide/concepts/mapping#flux-forvalue-keyed-by-value)
 ]]
-local function forValue<L, U>(list: L, mapFn: (index: Node<number>, value: Item<L>) -> U): Node<{ U }>
-	return createMapper(list, mapFn, true)
+local function forValue(list: any, mapFn: any, fallback: any?): Node<any>
+	return createMapper(list, mapFn, true, nil, fallback)
+end
+
+--[[
+Maps `list` by `keyOf(item)`, running `mapFn(index, item)` once per unique key and updating both `index` and `item` in place when entries with that key move or rebuild.
+Entries whose key is `nil` fall back to item identity. Keys must be unique.
+When `fallback` is given, mounts `fallback()` in a child [scope](https://flux.kohl.gg/guide/concepts/scopes) while `list` is empty.
+
+[Open Documentation](https://flux.kohl.gg/guide/concepts/mapping#flux-forkey-keyed-by-function)
+]]
+local function forKey(list: any, keyOf: any, mapFn: any, fallback: any?): Node<any>
+	assert(type(keyOf) == "function", "keyOf must be a function")
+	return createMapper(list, mapFn, true, keyOf, fallback)
 end
 
 -- Selector ------------------------------------------------------------------------------------------------------------
@@ -430,6 +622,14 @@ type SelectorData = {
 local SelectorMT = {}
 SelectorMT.__index = SelectorMT
 
+local function keyToSlot(key: any): any
+	return if key == nil then NIL_KEY elseif key ~= key then NAN_KEY else key
+end
+
+local function slotToKey(slot: any): any
+	return if slot == NIL_KEY then nil elseif slot == NAN_KEY then 0 / 0 else slot
+end
+
 local function sweep(self: SelectorData)
 	local nodes = self._nodes
 	local count = 0
@@ -451,17 +651,21 @@ Reactively reads whether `key` matches the selector's source.
 [Open Documentation](https://flux.kohl.gg/guide/concepts/selectors#reading-a-selection)
 ]]
 function SelectorMT.get(self: SelectorData, key: any): boolean
+	if self._watcher == nil then
+		error("Cannot read a destroyed selector", 2)
+	end
 	if isStale(self._watcher) then
 		raw(self._watcher)
 	end
 	local nodes = self._nodes
-	local node = nodes[key]
+	local slot = keyToSlot(key)
+	local node = nodes[slot]
 	if node ~= nil then
 		return get(node :: Graph.Node<boolean>)
 	end
 
 	local equals = self._equals
-	local selected = if equals ~= nil then equals(self._active, key) else self._active == key
+	local selected = if equals ~= nil then equals(self._active, key) else self._active ~= UNSET and self._active == key
 	if not isReactive() then
 		return selected
 	end
@@ -471,7 +675,7 @@ function SelectorMT.get(self: SelectorData, key: any): boolean
 		set(self._sweepSignal, true, true)
 	end
 	node = newValue(selected)
-	nodes[key] = node
+	nodes[slot] = node
 	self._count += 1
 	return get(node)
 end
@@ -510,7 +714,7 @@ local function selector<S, K>(source: S, equals: ((sourceValue: Graph.Unwrap<S>,
 	self._watcher = effect(function()
 		local value = read(source)
 		local prev = self._active
-		if equals == nil and prev == value then
+		if equals == nil and (prev == value or (prev ~= prev and value ~= value)) then
 			return
 		end
 		self._active = value
@@ -520,17 +724,21 @@ local function selector<S, K>(source: S, equals: ((sourceValue: Graph.Unwrap<S>,
 
 		untrack()
 		if equals == nil then
-			local prevNode = if prev ~= nil then nodes[prev] else nil
-			if prevNode ~= nil then
-				set(prevNode, false)
+			if prev ~= UNSET and prev == prev then
+				local prevNode = nodes[keyToSlot(prev)]
+				if prevNode ~= nil then
+					set(prevNode, false)
+				end
 			end
-			local nextNode = if value ~= nil then nodes[value] else nil
-			if nextNode ~= nil then
-				set(nextNode, true)
+			if value == value then
+				local nextNode = nodes[keyToSlot(value)]
+				if nextNode ~= nil then
+					set(nextNode, true)
+				end
 			end
 		else
 			for key, node in nodes do
-				set(node, equals(value, key))
+				set(node, equals(value, slotToKey(key)))
 			end
 		end
 		retrack()
@@ -555,6 +763,14 @@ local function selector<S, K>(source: S, equals: ((sourceValue: Graph.Unwrap<S>,
 	return self
 end
 
+--- @ignore
+type function NonUnknown(t: type): type
+	if t:is("unknown") or t:is("never") then
+		return types.never
+	end
+	return t
+end
+
 return table.freeze({
 	--[[
 	Catch-all branch key for [`Flux.switch`](https://flux.kohl.gg/guide/concepts/conditionals#a-catch-all-branch) maps when `source` matches no explicit key.
@@ -575,26 +791,40 @@ return table.freeze({
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/conditionals#showing-one-of-two-branches)
 	]]
-	show = show :: (<T>(condition: unknown, component: (value: () -> any) -> T) -> Node<T?>) & (<T, F>(
-		condition: unknown,
-		component: (value: () -> any) -> T,
-		fallback: (value: () -> any) -> F
+	show = show :: (<S, T>(condition: S, component: (value: () -> Truthy<Graph.Unwrap<S>>) -> T) -> Node<T?>) & (<S, T, F>(
+		condition: S,
+		component: (value: () -> Truthy<Graph.Unwrap<S>>) -> T,
+		fallback: (value: () -> Graph.Unwrap<S>) -> F
 	) -> Node<(T | F)?>),
 	--[[
 	Mounts `component` while `condition` is truthy (or `fallback` when falsy) and remounts in a fresh [scope](https://flux.kohl.gg/guide/concepts/scopes) whenever `condition` changes identity.
 
 	[Open Documentation](https://flux.kohl.gg/guide/concepts/conditionals#keyed-show)
 	]]
-	showKeyed = showKeyed :: (<T>(condition: unknown, component: (value: () -> any) -> T) -> Node<T?>) & (<T, F>(
-		condition: unknown,
-		component: (value: () -> any) -> T,
-		fallback: (value: () -> any) -> F
+	showKeyed = showKeyed :: (<S, T>(condition: S, component: (value: () -> Truthy<Graph.Unwrap<S>>) -> T) -> Node<T?>) & (<S, T, F>(
+		condition: S,
+		component: (value: () -> Truthy<Graph.Unwrap<S>>) -> T,
+		fallback: (value: () -> Graph.Unwrap<S>) -> F
 	) -> Node<(T | F)?>),
 	switch = switch,
 	presence = presence,
 	pick = pick,
 	fallback = fallback,
-	forIndex = forIndex,
-	forValue = forValue,
+	forIndex = forIndex :: <L, U, F>(
+		list: L,
+		mapFn: (index: number, item: Node<Item<L>>) -> U,
+		fallback: (() -> F)?
+	) -> Node<{ U | NonUnknown<F> }>,
+	forValue = forValue :: <L, U, F>(
+		list: L,
+		mapFn: (index: Node<number>, value: Item<L>) -> U,
+		fallback: (() -> F)?
+	) -> Node<{ U | NonUnknown<F> }>,
+	forKey = forKey :: <L, U, F>(
+		list: L,
+		keyOf: (item: Item<L>) -> any,
+		mapFn: (index: Node<number>, item: Node<Item<L>>) -> U,
+		fallback: (() -> F)?
+	) -> Node<{ U | NonUnknown<F> }>,
 	selector = selector,
 })

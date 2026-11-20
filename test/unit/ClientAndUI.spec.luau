@@ -4400,9 +4400,9 @@ describe("Client and UI · motion nodes die with their component", function()
 	-- theme forever, so the observer count of a theme signal it reads must return to its baseline after Destroy. A nil
 	-- guard inside the getter would hide the error but leave the effect subscribed, and still fails this.
 	local function observers(sig: any): number
-		-- a Flux signal is { inner }, and inner[2] counts the nodes observing it
+		-- a Flux signal is { inner }, and inner[4] counts the nodes observing it
 		local inner: any = rawget(sig, 1)
-		return inner[2]
+		return inner[4]
 	end
 
 	local function newClientUI()
@@ -4769,7 +4769,7 @@ end)
 describe("Client and UI · 2026 Compliance & UI Regressions", function()
 	local function observers(sig: any): number
 		local inner: any = rawget(sig, 1)
-		return inner[2]
+		return inner[4]
 	end
 
 	test("Slider avoids 0/0 NaN when zero-sized and uses dynamic _padding", function()

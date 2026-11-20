@@ -37,9 +37,35 @@ export type HoverServices = {
 	events: ((object: any) -> any)?,
 }
 
+if Compat.Instance == nil or Enum == nil then
+	local stubs = Compat.robloxStubs("Flux.Interact", {
+		"pointIn",
+		"sunk",
+		"covered",
+		"hover",
+		"press",
+		"selected",
+		"focused",
+	})
+	return table.freeze({
+		pointIn = stubs.pointIn,
+		sunk = stubs.sunk,
+		covered = stubs.covered,
+		hover = stubs.hover,
+		press = stubs.press,
+		selected = stubs.selected,
+		focused = stubs.focused,
+		_useHoverServices = function()
+			return nil
+		end,
+	}) :: any
+end
+
 local MOUSE_MOVEMENT = Enum.UserInputType.MouseMovement
 local MOUSE_BUTTON1 = Enum.UserInputType.MouseButton1
 local TOUCH = Enum.UserInputType.Touch
+local STATE_END = Enum.UserInputState.End
+local STATE_CANCEL = Enum.UserInputState.Cancel
 local ACTIVATE_KEYS: { [any]: boolean } = {
 	[Enum.KeyCode.ButtonA] = true,
 	[Enum.KeyCode.Return] = true,
@@ -69,6 +95,16 @@ local function menuOpen(env: { GuiService: any }?): boolean
 	return env ~= nil and env.GuiService.MenuIsOpen == true
 end
 
+local function guiInset(env: { GuiService: any }?): (number, number)
+	if env ~= nil then
+		local ok, inset = pcall(env.GuiService.GetGuiInset, env.GuiService)
+		if ok and inset ~= nil then
+			return inset.X, inset.Y
+		end
+	end
+	return 0, 0
+end
+
 --[[
 Whether the point `(x, y)` lies within `object`'s absolute bounds (inclusive, ignoring rotation).
 Coordinates are inset-relative, matching `InputObject.Position` and `AbsolutePosition`.
@@ -84,19 +120,147 @@ local memoToken: any = nil
 local memoRoot: Instance? = nil
 local memoX, memoY = 0, 0
 local memoList: { GuiObject } = {}
+local memoClearScheduled = false
 
-local function guisAt(root: BasePlayerGui, x: number, y: number): { GuiObject }?
+local function clearMemo()
+	memoClearScheduled = false
+	memoToken, memoRoot, memoList = nil, nil, {}
+end
+
+local function scheduleClearMemo()
+	if not memoClearScheduled then
+		memoClearScheduled = true
+		Compat.task.defer(clearMemo)
+	end
+end
+
+local function guisAt(root: any, x: number, y: number): { GuiObject }?
 	local ok, list = pcall(root.GetGuiObjectsAtPosition, root, x, y)
 	return if ok then list else nil
 end
 
-local function hits(root: BasePlayerGui, x: number, y: number, token: any?): { GuiObject }?
+local function isClass(root: any, className: string): boolean
+	local ok, res = pcall(root.IsA, root, className)
+	return ok and res == true
+end
+
+local function findAncestor(object: any, className: string): any
+	return object:FindFirstAncestorWhichIsA(className)
+end
+
+local function getProp(object: any, prop: string): any
+	return object[prop]
+end
+
+local function readProp(object: any, prop: string): (boolean, any)
+	return pcall(getProp, object, prop)
+end
+
+local function connectSignal(object: any, signalName: string, handler: (...any) -> ()): RBXScriptConnection?
+	local sig = object[signalName]
+	return if sig ~= nil then sig:Connect(handler) else nil
+end
+
+local function tryConnect(object: any, signalName: string, handler: (...any) -> ()): RBXScriptConnection?
+	local ok, conn = pcall(connectSignal, object, signalName, handler)
+	return if ok then conn else nil
+end
+
+local function connectProperty(object: any, prop: string, handler: () -> ()): RBXScriptConnection
+	return object:GetPropertyChangedSignal(prop):Connect(handler)
+end
+
+local function tryConnectProperty(object: any, prop: string, handler: () -> ()): RBXScriptConnection?
+	local ok, conn = pcall(connectProperty, object, prop, handler)
+	return if ok then conn else nil
+end
+
+local function is3DCollector(root: any): boolean
+	return isClass(root, "BillboardGui") or isClass(root, "SurfaceGuiBase")
+end
+
+local function isPluginGui(root: any): boolean
+	return isClass(root, "PluginGui")
+end
+
+local function pluginGuiOf(object: any): any
+	if object == nil then
+		return nil
+	elseif isPluginGui(object) then
+		return object
+	end
+	local ok, ancestor = pcall(findAncestor, object, "PluginGui")
+	return if ok and ancestor ~= nil and isPluginGui(ancestor) then ancestor else nil
+end
+
+local function inPluginGui(object: any): boolean
+	return pluginGuiOf(object) ~= nil
+end
+
+local function menuBlocks(env: { GuiService: any }?, object: any): boolean
+	return menuOpen(env) and not inPluginGui(object)
+end
+
+local function find3DCollector(object: any): any
+	local ok, collector = pcall(findAncestor, object, "LayerCollector")
+	if ok and collector ~= nil and is3DCollector(collector) then
+		return collector
+	end
+	return nil
+end
+
+local function is3DVisible(object: any, collector: any): boolean
+	if collector == nil then
+		return false
+	end
+	local okEnabled, enabled = readProp(collector, "Enabled")
+	if okEnabled and enabled == false then
+		return false
+	end
+	local cur = object
+	while cur ~= nil and cur ~= collector do
+		if isClass(cur, "GuiObject") then
+			local okVis, vis = readProp(cur, "Visible")
+			if okVis and vis == false then
+				return false
+			end
+		end
+		local okParent, parent = readProp(cur, "Parent")
+		if not okParent then
+			break
+		end
+		cur = parent
+	end
+	return true
+end
+
+local function hitRoot(object: GuiObject): Instance?
+	local collector = object:FindFirstAncestorWhichIsA("LayerCollector")
+	if collector ~= nil and is3DCollector(collector) then
+		return nil
+	end
+	return object:FindFirstAncestorWhichIsA("BasePlayerGui") or collector
+end
+
+local function rootCursor(tracker: Tracker, root: any): (number?, number?)
+	if isPluginGui(root) then
+		local ok, at = pcall(root.GetRelativeMousePosition, root)
+		if ok and at ~= nil then
+			return at.X, at.Y
+		end
+		return nil, nil
+	end
+	return tracker.x, tracker.y
+end
+
+local function hits(root: Instance, x: number, y: number, token: any?): { GuiObject }?
 	if token ~= nil and token == memoToken and root == memoRoot and x == memoX and y == memoY then
 		return memoList
 	end
 	local list = guisAt(root, x, y)
 	if list ~= nil and token ~= nil then
 		memoToken, memoRoot, memoX, memoY, memoList = token, root, x, y, list
+		scheduleClearMemo()
 	end
 	return list
 end
@@ -125,11 +289,12 @@ local function claimedAt(
 	token: any?,
 	within: boolean
 ): boolean
-	local root = object:FindFirstAncestorWhichIsA("BasePlayerGui")
+	if menuBlocks(env, object) then
+		return true
+	end
+	local root = hitRoot(object)
 	if root == nil then
 		return false
-	elseif menuOpen(env) then
-		return true
 	end
 	local list = hits(root, x, y, token)
 	if list == nil then
@@ -198,6 +363,7 @@ type Entry = {
 	state: Graph.Node<boolean>,
 	within: boolean,
 	root: Instance?,
+	inWorld3d: boolean?,
 	touch: InputObject?,
 }
 
@@ -205,7 +371,9 @@ type Entry = {
 type Tracker = Listener & {
 	env: HoverServices,
 	inside: { [Entry]: true },
+	world3d: { [Entry]: true },
 	touched: { [Entry]: true },
+	pluginFocus: { [any]: { count: number, conn: RBXScriptConnection } }?,
 	x: number?,
 	y: number?,
 }
@@ -250,7 +418,15 @@ local function hubRemove(hub: Hub, object: Instance, handler: Handler)
 end
 
 local function leavesMouse(kind: any): boolean
-	return kind == TOUCH or string.sub(kind.Name, 1, 7) == "Gamepad"
+	if kind == nil then
+		return false
+	elseif TOUCH ~= nil and kind == TOUCH then
+		return true
+	elseif type(kind) ~= "userdata" and type(kind) ~= "table" then
+		return false
+	end
+	local name = kind.Name
+	return type(name) == "string" and string.sub(name, 1, 7) == "Gamepad"
 end
 
 local function settleTouch(tracker: Tracker, entry: Entry)
@@ -259,49 +435,169 @@ local function settleTouch(tracker: Tracker, entry: Entry)
 		tracker.touched[entry] = nil
 		release(tracker)
 	end
-	if entry.root == nil then
+	if entry.root == nil and not entry.inWorld3d then
 		entry.state:set(false)
 	end
 	memoToken, memoRoot, memoList = nil, nil, {}
 end
 
-local function leave(tracker: Tracker, entry: Entry)
-	if entry.root ~= nil then
-		if entry.root == memoRoot then
+local leave: (tracker: Tracker, entry: Entry) -> ()
+
+local function leave3D(tracker: Tracker, entry: Entry)
+	if entry.inWorld3d then
+		entry.inWorld3d = nil
+		tracker.world3d[entry] = nil
+		release(tracker)
+	end
+	if entry.touch == nil and entry.root == nil then
+		entry.state:set(false)
+	end
+end
+
+local function enter3D(tracker: Tracker, entry: Entry)
+	if not entry.inWorld3d then
+		entry.inWorld3d = true
+		tracker.world3d[entry] = true
+		retain(tracker)
+	end
+end
+
+local function releaseRoot(tracker: Tracker, root: any)
+	local map = tracker.pluginFocus
+	if map == nil then
+		return
+	end
+	local record = map[root]
+	if record == nil then
+		return
+	end
+	record.count -= 1
+	if record.count == 0 then
+		map[root] = nil
+		record.conn:Disconnect()
+	end
+end
+
+local function retainRoot(tracker: Tracker, root: any)
+	if not isPluginGui(root) then
+		return
+	end
+	local existing = tracker.pluginFocus
+	local map: { [any]: { count: number, conn: RBXScriptConnection } }
+	if existing ~= nil then
+		map = existing
+	else
+		map = {}
+		tracker.pluginFocus = map
+	end
+	local record = map[root]
+	if record ~= nil then
+		record.count += 1
+		return
+	end
+	local ok, conn = pcall(function(): any
+		local sig = root.WindowFocusReleased
+		if sig == nil then
+			return nil
+		end
+		return sig:Connect(function()
+			for entry in table.clone(tracker.inside) do
+				if entry.root == root then
+					leave(tracker, entry)
+				end
+			end
+			if memoRoot == root then
+				memoToken, memoRoot, memoList = nil, nil, {}
+			end
+		end)
+	end)
+	if ok and conn ~= nil then
+		map[root] = { count = 1, conn = conn :: RBXScriptConnection }
+	end
+end
+
+local function attachRoot(tracker: Tracker, entry: Entry, root: Instance)
+	local prevRoot = entry.root
+	if prevRoot == root then
+		return
+	end
+	entry.root = root
+	retainRoot(tracker, root)
+	if prevRoot == nil then
+		tracker.inside[entry] = true
+		retain(tracker)
+	else
+		releaseRoot(tracker, prevRoot)
+		if prevRoot == memoRoot then
+			memoToken, memoRoot, memoList = nil, nil, {}
+		end
+	end
+end
+
+leave = function(tracker: Tracker, entry: Entry)
+	local prevRoot = entry.root
+	if prevRoot ~= nil then
+		if prevRoot == memoRoot then
 			memoToken, memoRoot, memoList = nil, nil, {}
 		end
 		entry.root = nil
 		tracker.inside[entry] = nil
+		releaseRoot(tracker, prevRoot)
 		release(tracker)
 	end
-	if entry.touch == nil then
+	if entry.touch == nil and not entry.inWorld3d then
 		entry.state:set(false)
 	end
 end
 
 local function stepTracker(tracker: Tracker)
-	if menuOpen(tracker.env) then
-		for entry in tracker.inside do
-			entry.state:set(false)
-		end
-		for entry in tracker.touched do
-			settleTouch(tracker, entry)
-		end
-		return
-	end
-	local x, y = tracker.x, tracker.y
-	if x == nil or y == nil then
-		return
-	end
-	local lastRoot: any, lastList: { GuiObject } = nil, {}
-	for entry in tracker.inside do
-		local root: any = entry.root
-		if root ~= lastRoot then
-			local list = guisAt(root, x, y)
-			if list == nil then
-				continue
+	clearMemo()
+	local open = menuOpen(tracker.env)
+	if open then
+		for entry in table.clone(tracker.touched) do
+			if not inPluginGui(entry.object) then
+				settleTouch(tracker, entry)
 			end
-			lastRoot, lastList = root, list
+		end
+		for entry in table.clone(tracker.world3d) do
+			if not inPluginGui(entry.object) then
+				leave3D(tracker, entry)
+			end
+		end
+	else
+		for entry in table.clone(tracker.world3d) do
+			local collector = find3DCollector(entry.object)
+			if not is3DVisible(entry.object, collector) then
+				leave3D(tracker, entry)
+			end
+		end
+	end
+	local lastRoot: any, lastList: { GuiObject }? = nil, nil
+	for entry in table.clone(tracker.inside) do
+		local prevRoot: any = entry.root
+		if prevRoot == nil then
+			continue
+		end
+		local root: any = hitRoot(entry.object)
+		if root == nil then
+			leave(tracker, entry)
+			continue
+		end
+		attachRoot(tracker, entry, root)
+		if open and not isPluginGui(root) then
+			entry.state:set(false)
+			continue
+		end
+		if root ~= lastRoot then
+			lastRoot = root
+			local rx, ry = rootCursor(tracker, root)
+			lastList = if rx ~= nil then guisAt(root, rx, ry :: number) else nil
+		end
+		if lastList == nil then
+			if entry.touch == nil and not entry.inWorld3d then
+				entry.state:set(false)
+			end
+			continue
 		end
 		local found, claimed = scan(lastList, entry.object, entry.within)
 		if not found then
@@ -316,11 +612,22 @@ local function connectTracker(tracker: Tracker): { RBXScriptConnection }
 	local env = tracker.env
 	tracker.x, tracker.y = nil, nil
 	local input = env.UserInputService
-	local function clearMouse()
-		for entry in tracker.inside do
+	local function clearViewportMouse()
+		for entry in table.clone(tracker.inside) do
+			if not isPluginGui(entry.root) then
+				leave(tracker, entry)
+			end
+		end
+		for entry in table.clone(tracker.world3d) do
+			leave3D(tracker, entry)
+		end
+		clearMemo()
+	end
+	local function clearAllMouse()
+		clearViewportMouse()
+		for entry in table.clone(tracker.inside) do
 			leave(tracker, entry)
 		end
-		memoToken, memoRoot, memoList = nil, nil, {}
 	end
 	local onHeartbeat = env.RunService.Heartbeat:Connect(function()
 		stepTracker(tracker)
@@ -332,7 +639,7 @@ local function connectTracker(tracker: Tracker): { RBXScriptConnection }
 	end)
 	local onEnded = input.InputEnded:Connect(function(ended: InputObject)
 		if ended.UserInputType == TOUCH then
-			for entry in tracker.touched do
+			for entry in table.clone(tracker.touched) do
 				if entry.touch == ended then
 					settleTouch(tracker, entry)
 				end
@@ -341,10 +648,10 @@ local function connectTracker(tracker: Tracker): { RBXScriptConnection }
 	end)
 	local onLastInput = input.LastInputTypeChanged:Connect(function(kind: any)
 		if leavesMouse(kind) then
-			clearMouse()
+			clearAllMouse()
 		end
 	end)
-	local onFocusReleased = input.WindowFocusReleased:Connect(clearMouse)
+	local onFocusReleased = input.WindowFocusReleased:Connect(clearViewportMouse)
 	return { onHeartbeat, onChanged, onEnded, onLastInput, onFocusReleased }
 end
 
@@ -358,8 +665,11 @@ local function registryFor(env: any): Registry
 	activate.open = function(): { RBXScriptConnection }
 		local userInput = env.UserInputService
 		local onInputBegan = userInput.InputBegan:Connect(function(input: InputObject)
-			if ACTIVATE_KEYS[input.KeyCode] and userInput:GetFocusedTextBox() == nil and not menuOpen(env) then
-				dispatch(activate, env.GuiService.SelectedObject, input)
+			if ACTIVATE_KEYS[input.KeyCode] and userInput:GetFocusedTextBox() == nil then
+				local target = env.GuiService.SelectedObject
+				if target ~= nil and not menuBlocks(env, target) then
+					dispatch(activate, target, input)
+				end
 			end
 		end)
 		return { onInputBegan }
@@ -381,7 +691,7 @@ local function registryFor(env: any): Registry
 		return { onSelectedChanged }
 	end
 
-	local tracker: any = { env = env, inside = {}, touched = {}, count = 0 }
+	local tracker: any = { env = env, inside = {}, world3d = {}, touched = {}, count = 0 }
 	tracker.open = function(): { RBXScriptConnection }
 		local connected = connectTracker(tracker)
 		return connected
@@ -415,24 +725,34 @@ local function expose(state: Graph.Node<boolean>, object: Instance, onRelease: (
 end
 
 local function enter(tracker: Tracker, entry: Entry, x: number?, y: number?)
-	if entry.root == nil then
-		local root = entry.object:FindFirstAncestorWhichIsA("BasePlayerGui")
-		if root == nil then
-			return
+	local root = hitRoot(entry.object)
+	if root == nil then
+		if entry.root ~= nil then
+			leave(tracker, entry)
 		end
-		entry.root = root
-		tracker.inside[entry] = true
-		retain(tracker)
+		local collector = find3DCollector(entry.object)
+		if is3DVisible(entry.object, collector) and not menuBlocks(tracker.env, entry.object) then
+			enter3D(tracker, entry)
+		elseif entry.inWorld3d then
+			leave3D(tracker, entry)
+		end
+		return
+	end
+	if entry.inWorld3d then
+		leave3D(tracker, entry)
+	end
+	attachRoot(tracker, entry, root)
+	if isPluginGui(root) then
+		return
 	end
 	if x ~= nil then
 		tracker.x, tracker.y = x, y
 	elseif tracker.x == nil then
 		local env = tracker.env
-		local ok, at = pcall(function(): Vector2
-			return env.UserInputService:GetMouseLocation() - env.GuiService:GetGuiInset()
-		end)
-		if ok then
-			tracker.x, tracker.y = at.X, at.Y
+		local ok, at = pcall(env.UserInputService.GetMouseLocation, env.UserInputService)
+		if ok and at ~= nil then
+			local ix, iy = guiInset(env)
+			tracker.x, tracker.y = at.X - ix, at.Y - iy
 		end
 	end
 end
@@ -453,7 +773,7 @@ local function _hoverWith(object: GuiObject, env: HoverServices?, options: Hover
 			return
 		end
 		local pos = input.Position
-		local on = not menuOpen(env) and not claimedAt(env, pos.X, pos.Y, object, input, within)
+		local on = not menuBlocks(env, object) and not claimedAt(env, pos.X, pos.Y, object, input, within)
 		hovering:set(on)
 		if kind == MOUSE_MOVEMENT then
 			if tracker ~= nil then
@@ -477,6 +797,7 @@ local function _hoverWith(object: GuiObject, env: HoverServices?, options: Hover
 		if kind == MOUSE_MOVEMENT then
 			if tracker ~= nil then
 				leave(tracker, entry)
+				leave3D(tracker, entry)
 			else
 				hovering:set(false)
 			end
@@ -495,13 +816,19 @@ local function _hoverWith(object: GuiObject, env: HoverServices?, options: Hover
 	local mouseLeave: any = events.MouseLeave
 	if tracker ~= nil and mouseEnter ~= nil then
 		local tracking: Tracker = tracker
-		local onEnter: RBXScriptConnection = mouseEnter:Connect(function()
+		local onEnter: RBXScriptConnection = mouseEnter:Connect(function(mx: number?, my: number?)
 			if not leavesMouse(tracking.env.UserInputService:GetLastInputType()) then
-				enter(tracking, entry)
+				if mx ~= nil and my ~= nil and find3DCollector(entry.object) == nil then
+					local ix, iy = guiInset(tracking.env)
+					enter(tracking, entry, mx - ix, my - iy)
+				else
+					enter(tracking, entry)
+				end
 			end
 		end)
 		local onLeave: RBXScriptConnection = mouseLeave:Connect(function()
 			leave(tracking, entry)
+			leave3D(tracking, entry)
 		end)
 		table.insert(connections, onEnter)
 		table.insert(connections, onLeave)
@@ -515,6 +842,7 @@ local function _hoverWith(object: GuiObject, env: HoverServices?, options: Hover
 				settleTouch(tracker, entry)
 			end
 			leave(tracker, entry)
+			leave3D(tracker, entry)
 		end
 		hovering:set(false)
 	end)
@@ -542,19 +870,27 @@ local function _pressWith(object: GuiObject, env: Services?): Graph.Node<boolean
 	local pressed = signal(false)
 	local held: InputObject? = nil
 	local releaseListener: RBXScriptConnection? = nil
+	local objectReleaseListener: RBXScriptConnection? = nil
+	local focusListener: RBXScriptConnection? = nil
+	local pluginFocusListener: RBXScriptConnection? = nil
+	local stateListener: RBXScriptConnection? = nil
 	local menuListener: RBXScriptConnection? = nil
+
+	local function disconnectOne(conn: RBXScriptConnection?): nil
+		if conn ~= nil then
+			conn:Disconnect()
+		end
+		return nil
+	end
 
 	local function releasePress()
 		held = nil
-		if menuListener ~= nil then
-			menuListener:Disconnect()
-			menuListener = nil
-		end
-		local listener = releaseListener
-		if listener ~= nil then
-			releaseListener = nil
-			listener:Disconnect()
-		end
+		menuListener = disconnectOne(menuListener)
+		releaseListener = disconnectOne(releaseListener)
+		objectReleaseListener = disconnectOne(objectReleaseListener)
+		focusListener = disconnectOne(focusListener)
+		pluginFocusListener = disconnectOne(pluginFocusListener)
+		stateListener = disconnectOne(stateListener)
 		pressed:set(false)
 	end
 
@@ -570,29 +906,45 @@ local function _pressWith(object: GuiObject, env: Services?): Graph.Node<boolean
 	end
 
 	local function hold(input: InputObject)
-		if held ~= nil or menuOpen(env) then
+		if held ~= nil or menuBlocks(env, object) then
 			return
 		end
 		held = input
 		pressed:set(true)
+		local pluginRoot = pluginGuiOf(object)
+		local isPlugin = pluginRoot ~= nil
 		if env ~= nil then
-			menuListener = env.GuiService:GetPropertyChangedSignal("MenuIsOpen"):Connect(function()
-				if menuOpen(env) then
-					releasePress()
-				end
-			end)
-			releaseListener = env.UserInputService.InputEnded:Connect(function(ended: InputObject)
+			local services: Services = env
+			if not isPlugin then
+				menuListener = services.GuiService:GetPropertyChangedSignal("MenuIsOpen"):Connect(function()
+					if menuBlocks(services, object) then
+						releasePress()
+					end
+				end)
+			end
+			releaseListener = services.UserInputService.InputEnded:Connect(function(ended: InputObject)
 				if isHeld(ended) then
 					releasePress()
 				end
 			end)
-		else
-			releaseListener = object.InputEnded:Connect(function(ended: InputObject)
+			focusListener = tryConnect(services.UserInputService, "WindowFocusReleased", releasePress)
+		end
+		if env == nil or isPlugin then
+			objectReleaseListener = object.InputEnded:Connect(function(ended: InputObject)
 				if isHeld(ended) then
 					releasePress()
 				end
 			end)
 		end
+		if pluginRoot ~= nil then
+			pluginFocusListener = tryConnect(pluginRoot, "WindowFocusReleased", releasePress)
+		end
+		stateListener = tryConnectProperty(input, "UserInputState", function()
+			local state = input.UserInputState
+			if state == STATE_END or state == STATE_CANCEL then
+				releasePress()
+			end
+		end)
 	end
 
 	local pointer = object.InputBegan:Connect(function(input: InputObject)

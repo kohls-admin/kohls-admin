@@ -44,7 +44,9 @@ export type PartialConfig = {
 	viewport: Graph.Reactive<Vector2>?,
 }
 
-local DEFAULT_SIZE = Compat.Vector2.new(1920, 1080)
+local DEFAULT_SIZE: Vector2 = if Compat.Vector2
+	then Compat.Vector2.new(1920, 1080)
+	else table.freeze({ X = 1920, Y = 1080 }) :: any
 
 --[[
 Default responsive configuration shared by derived nodes. Mutate once at startup before building UI.
@@ -121,7 +123,7 @@ local function scaleOf(partial: PartialConfig?): Graph.Node<number>
 	local cfg = partial or EMPTY
 	local source = cfg.viewport or viewport
 	return computed(function(): number
-		local vp = read(source) :: Vector2
+		local vp = read(source) or viewport:get()
 		return scaleFor(vp.X, vp.Y, cfg)
 	end)
 end
@@ -135,7 +137,7 @@ local function breakpointOf(partial: PartialConfig?): Graph.Node<Breakpoint>
 	local cfg = partial or EMPTY
 	local source = cfg.viewport or viewport
 	return computed(function(): Breakpoint
-		local vp = read(source) :: Vector2
+		local vp = read(source) or viewport:get()
 		return breakpointFor(vp.X, cfg)
 	end)
 end
@@ -154,18 +156,40 @@ Size class (`"phone" | "tablet" | "desktop"`) derived from `viewport` width.
 local breakpoint: Graph.Node<Breakpoint> = breakpointOf()
 
 local RunService = getService("RunService")
-local isClient = RunService ~= nil and RunService:IsClient() and RunService:IsRunning()
+local isClient = RunService ~= nil and RunService:IsClient()
 local GuiService = isClient and getService("GuiService")
 local UserInputService = isClient and getService("UserInputService")
 local VRService = isClient and getService("VRService")
-local tenFoot = isClient and GuiService:IsTenFootInterface()
+
+local function readDisplaySize(): DisplaySize
+	if isClient and GuiService then
+		local ok, value = pcall(function()
+			return (GuiService :: any).ViewportDisplaySize
+		end)
+		if ok and value ~= nil and type(value.Name) == "string" then
+			return value.Name :: DisplaySize
+		end
+	end
+	return "Medium"
+end
 
 local function detectPlatform(): Platform
-	return if VRService.VREnabled
-		then "vr"
-		elseif tenFoot then "console"
-		elseif UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then "pc"
-		else "mobile"
+	if VRService.VREnabled then
+		return "vr"
+	end
+	local kbm = UserInputService.KeyboardEnabled and UserInputService.MouseEnabled
+	if
+		(readDisplaySize() == "Large" and not kbm)
+		or (
+			UserInputService.GamepadEnabled
+			and not UserInputService.TouchEnabled
+			and not UserInputService.KeyboardEnabled
+			and not UserInputService.MouseEnabled
+		)
+	then
+		return "console"
+	end
+	return if kbm then "pc" else "mobile"
 end
 
 --[[
@@ -179,7 +203,7 @@ Physical screen size class (`"Small"`, `"Medium"`, or `"Large"`) mirroring `GuiS
 
 [Open Documentation](https://flux.kohl.gg/guide/utilities/responsive#display-size)
 ]]
-local displaySize: Graph.Node<DisplaySize> = signal((if tenFoot then "Large" else "Medium") :: DisplaySize)
+local displaySize: Graph.Node<DisplaySize> = signal(readDisplaySize())
 
 local INPUT_BY_NAME: { [string]: Input } = {
 	KeyboardAndMouse = "keyboard",
@@ -191,6 +215,7 @@ local INPUT_BY_NAME: { [string]: Input } = {
 	MouseWheel = "keyboard",
 	Touch = "touch",
 	Gamepad = "gamepad",
+	MicroGamepad = "gamepad",
 }
 for slot = 1, 8 do
 	INPUT_BY_NAME[`Gamepad{slot}`] = "gamepad"
@@ -250,12 +275,10 @@ if isClient then
 		end
 	end
 
-	local serviceConnections: { RBXScriptConnection } = {}
 	bindCamera(Workspace.CurrentCamera)
-	local cameraConn: RBXScriptConnection = Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 		bindCamera(Workspace.CurrentCamera)
 	end)
-	table.insert(serviceConnections, cameraConn)
 	local function mirror(
 		object: Instance,
 		property: string,
@@ -268,15 +291,19 @@ if isClient then
 		end
 		local rawObject: any = object
 		local function sync()
-			local rawValue = rawObject[property]
+			local okRead, rawValue = pcall(function()
+				return rawObject[property]
+			end)
+			if not okRead or rawValue == nil then
+				return
+			end
 			local value = if map then map(rawValue) else rawValue
 			if value ~= nil then
 				node:set(value)
 			end
 		end
 		sync()
-		local conn: RBXScriptConnection = changed:Connect(sync)
-		table.insert(serviceConnections, conn)
+		changed:Connect(sync)
 		return true
 	end
 
@@ -293,27 +320,34 @@ if isClient then
 	local function bindPlatform(object: Instance, property: string)
 		local ok, changed = pcall(object.GetPropertyChangedSignal, object, property)
 		if ok then
-			local conn: RBXScriptConnection = changed:Connect(syncPlatform)
-			table.insert(serviceConnections, conn)
+			changed:Connect(syncPlatform)
 		end
 	end
 
 	if not mirror(UserInputService, "PreferredInput", input, inputOf) then
-		local conn: RBXScriptConnection = UserInputService.LastInputTypeChanged:Connect(
-			function(lastInputType: Enum.UserInputType)
-				local mode = inputFor(lastInputType.Name)
-				if mode ~= nil then
-					input:set(mode)
-				end
+		local okLast, lastType = pcall(UserInputService.GetLastInputType, UserInputService)
+		if okLast and lastType ~= nil then
+			local mode = inputFor(lastType.Name)
+			if mode ~= nil then
+				input:set(mode)
 			end
-		)
-		table.insert(serviceConnections, conn)
+		end
+		UserInputService.LastInputTypeChanged:Connect(function(lastInputType: Enum.UserInputType)
+			local mode = inputFor(lastInputType.Name)
+			if mode ~= nil then
+				input:set(mode)
+			end
+		end)
 	end
 	mirror(GuiService, "PreferredTextSize", textSize, nameOf)
 	mirror(GuiService, "ViewportDisplaySize", displaySize, nameOf)
+	bindPlatform(GuiService, "ViewportDisplaySize")
+	bindPlatform(UserInputService, "GamepadEnabled")
+	bindPlatform(UserInputService, "TouchEnabled")
 	bindPlatform(UserInputService, "KeyboardEnabled")
 	bindPlatform(UserInputService, "MouseEnabled")
 	bindPlatform(VRService, "VREnabled")
+	syncPlatform()
 	mirror(GuiService, "ReducedMotionEnabled", reducedMotion)
 	mirror(GuiService, "PreferredTransparency", preferredTransparency)
 end
