@@ -30,7 +30,7 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`type LogType = Util.LogType`](src/init.luau#L30)
 - [`type Logger = Util.Logger`](src/init.luau#L31)
 - [`type Hook = "log" | "preCommand" | "postCommand"`](src/init.luau#L32)
-- [`type _K = typeof(_K)`](src/init.luau#L369)
+- [`type _K = typeof(_K)`](src/init.luau#L355)
 - [`MainModule.script: Instance`](src/init.luau#L41)
 - [`MainModule.IsClient: boolean`](src/init.luau#L42)
 - [`MainModule.IsServer: boolean`](src/init.luau#L43)
@@ -62,8 +62,8 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`MainModule.getCommandPrefix(from: number?)`](src/init.luau#L116-L130)
 - [`MainModule.chatCommandAlias(alias: string): string`](src/init.luau#L133-L143)
 - [`MainModule.removeExcessLogs()`](src/init.luau#L145-L152)
-- [`MainModule.log(text: string, level: LogType, from: number?, filtered: boolean?, liveText: string?, global: boolean?): Log?`](src/init.luau#L204-L300): [Client]
-- [`MainModule.alert(to: number | Player, text: string, isError: boolean?)`](src/init.luau#L303-L319)
+- [`MainModule.log(text: string, level: LogType, from: number?, filtered: boolean?, liveText: string?, global: boolean?): Log?`](src/init.luau#L203-L286): [Client]
+- [`MainModule.alert(to: number | Player, text: string, isError: boolean?)`](src/init.luau#L289-L305)
 - [`MainModule.features`](src/init.luau#L49-L51)
 - [`MainModule.features.platformIntegratedChat: boolean`](src/init.luau#L50): [Read Only]
 
@@ -99,18 +99,17 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 
 - [Chat](src/Shared/Chat.luau): Delivers admin messages (hints, messages, notifications, private messages, votes, text to speech and announcements) to the admin UI of each recipient, as text the server filtered for broadcast.
 - [`Chat.COOLDOWN: number`](src/Shared/Chat.luau#L25)
-- [`Chat.cooldown(userId: number, key: string, seconds: number?): string?`](src/Shared/Chat.luau#L31-L46): Rate limits user-editable text shown to other users, returns a message while cooling down
+- [`Chat.cooldown(userId: number, key: string?, seconds: number?): string?`](src/Shared/Chat.luau#L31-L46): Rate limits user-editable text shown to other users, returns a message while cooling down
 - [`Chat.commandPrefixes(prefixes: { string }?): { string }`](src/Shared/Chat.luau#L49-L62): Lists the prefixes that can start a chat command alias: single characters that aren't letters, digits or spaces
 - [`Chat.canUserChat(userId: number): boolean`](src/Shared/Chat.luau#L72): [Yields]
 - [`Chat.canUsersChat(fromUserId: number, toUserId: number): boolean`](src/Shared/Chat.luau#L82): [Yields]
-- [`Chat.hasRestrictedPeer(fromUserId: number, players: { Player }?): boolean`](src/Shared/Chat.luau#L85-L95): [Yields] Returns true when any player in `players` (or the server) cannot chat with `fromUserId`
-- [`Chat.limitBroadcast(userId: number, _roleError: string?): string?`](src/Shared/Chat.luau#L98-L103): [Yields] Gates user text shown to everyone behind a chat check and the shared announcement cooldown
-- [`Chat.restoreRichText(text: string, compact: boolean?): string`](src/Shared/Chat.luau#L201-L234): Restores a safe subset of rich text in text that TextChatService filtered and escaped: b, i, u, s, sc, uc, br, and font with color, transparency and a clamped size.
-- [`Chat.send(context: any, kind: string, text: string, targets: { Player }?, data: any?): (string?, string?, { Player }?)`](src/Shared/Chat.luau#L249-L326): [Yields] Sends a message of `kind` to everyone in the server, or only to `targets`, through Remote.ChatSystem to the admin UI.
-- [`Chat.limitReason(userId: number, reason: string?, players: { Player }?): (string?, string?)`](src/Shared/Chat.luau#L333-L353): [Yields] Filters and rate limits a free-text reason (ban, kick, shutdown) that other users see.
-- [`Chat.onMessage(kind: string, callback: (text: string, from: number, data: any, id: string) -> ())`](src/Shared/Chat.luau#L360-L362): Registers the client handler for a message kind, called with the filtered text, sender UserId, data and id
-- [`Chat.pinAnnouncement(announcement: any): boolean`](src/Shared/Chat.luau#L374-L394): Tracks the pinned announcement ({ text, from, duration, id }) shown on this client.
-- [`Chat.waitForMessage(id: string, timeout: number?): string?`](src/Shared/Chat.luau#L397-L419): [Yields] Waits for the filtered text of a message by id, or nil when it doesn't arrive in time
+- [`Chat.limitBroadcast(userId: number, _roleError: string?): string?`](src/Shared/Chat.luau#L85-L90): [Yields] Gates user text shown to everyone behind a chat check and the shared 60s text cooldown
+- [`Chat.restoreRichText(text: string, compact: boolean?): string`](src/Shared/Chat.luau#L188-L221): Restores a safe subset of rich text in text that TextChatService filtered and escaped: b, i, u, s, sc, uc, br, and font with color, transparency and a clamped size.
+- [`Chat.send(context: any, kind: string, text: string, targets: { Player }?, data: any?): (string?, string?, { Player }?)`](src/Shared/Chat.luau#L236-L303): [Yields] Sends a message of `kind` to everyone in the server, or only to `targets`, through Remote.ChatSystem to the admin UI.
+- [`Chat.limitReason(userId: number, reason: string?): string?`](src/Shared/Chat.luau#L309-L322): [Yields] Filters and rate limits a free-text reason (ban, kick, shutdown) that other users see.
+- [`Chat.onMessage(kind: string, callback: (text: string, from: number, data: any, id: string) -> ())`](src/Shared/Chat.luau#L329-L331): Registers the client handler for a message kind, called with the filtered text, sender UserId, data and id
+- [`Chat.pinAnnouncement(announcement: any): boolean`](src/Shared/Chat.luau#L343-L363): Tracks the pinned announcement ({ text, from, duration, id }) shown on this client.
+- [`Chat.waitForMessage(id: string, timeout: number?): string?`](src/Shared/Chat.luau#L366-L388): [Yields] Waits for the filtered text of a message by id, or nil when it doesn't arrive in time
 
 ## MainModule.Data
 
@@ -268,400 +267,448 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.Flux
 
 - [Flux](vendor/flux/src/init.luau): Reactive UI library for Roblox and Luau, including fine-grained signals, declarative instances, layout, motion, `Flux.Clock`, and `Flux.Sync`.
-- [`type Node<T> = Graph.Node<T>`](vendor/flux/src/init.luau#L29)
-- [`type State<T> = Graph.State<T>`](vendor/flux/src/init.luau#L30)
-- [`type Reactive<T> = Graph.Reactive<T>`](vendor/flux/src/init.luau#L31)
-- [`type Unwrap<T> = Graph.Unwrap<T>`](vendor/flux/src/init.luau#L32)
-- [`type Owner = Graph.Owner`](vendor/flux/src/init.luau#L33)
-- [`type Cleanable = Graph.Cleanable`](vendor/flux/src/init.luau#L34)
-- [`type Props<ClassName, Extra = {}> = Type.Merge<Type.Properties<Type.Resolve<ClassName>>, Extra>`](vendor/flux/src/init.luau#L37)
-- [`type Child = Instance | GraphNode | ((instance: Instance) -> ()) | { [any]: any }`](vendor/flux/src/init.luau#L38)
-- [`type Children = { Child }`](vendor/flux/src/init.luau#L39)
-- [`type Component<P, I = Instance> = (props: P) -> I`](vendor/flux/src/init.luau#L41)
-- [`type Partial<T> = Edit.Partial<T>`](vendor/flux/src/init.luau#L42)
-- [`type Pick<T, G> = Edit.Pick<T, G>`](vendor/flux/src/init.luau#L43)
-- [`type Omit<T, G> = Edit.Omit<T, G>`](vendor/flux/src/init.luau#L44)
-- [`type Async<T> = Async.Async<T>`](vendor/flux/src/init.luau#L46)
-- [`type AsyncState = Async.AsyncState`](vendor/flux/src/init.luau#L47)
-- [`type Context<T> = Graph.Context<T>`](vendor/flux/src/init.luau#L48)
-- [`type Selector<K> = Conditional.Selector<K>`](vendor/flux/src/init.luau#L49)
-- [`type Spring<T> = Motion.Spring<T>`](vendor/flux/src/init.luau#L50)
-- [`type SyncSignal<T = any> = Sync.SyncSignal<T>`](vendor/flux/src/init.luau#L51)
-- [`type SyncValidator<T> = Sync.Validator<T>`](vendor/flux/src/init.luau#L52)
-- [`type HoverOptions = Interact.HoverOptions`](vendor/flux/src/init.luau#L53)
-- [`type Breakpoint = Responsive.Breakpoint`](vendor/flux/src/init.luau#L55)
-- [`type Input = Responsive.Input`](vendor/flux/src/init.luau#L56)
-- [`type Platform = Responsive.Platform`](vendor/flux/src/init.luau#L57)
-- [`type TextSize = Responsive.TextSize`](vendor/flux/src/init.luau#L58)
-- [`type DisplaySize = Responsive.DisplaySize`](vendor/flux/src/init.luau#L59)
-- [`type Length = Layout.Length`](vendor/flux/src/init.luau#L61)
-- [`type ReactiveLength = Layout.ReactiveLength`](vendor/flux/src/init.luau#L62)
-- [`type Insets = Layout.Insets`](vendor/flux/src/init.luau#L63)
-- [`type Align = Layout.Align`](vendor/flux/src/init.luau#L64)
-- [`type FlexAlign = Layout.FlexAlign`](vendor/flux/src/init.luau#L65)
-- [`type LineAlign = Layout.LineAlign`](vendor/flux/src/init.luau#L66)
-- [`type Direction = Layout.Direction`](vendor/flux/src/init.luau#L67)
-- [`type FlexMode = Layout.FlexMode`](vendor/flux/src/init.luau#L68)
-- [`type PaddingSides = Layout.PaddingSides`](vendor/flux/src/init.luau#L69)
-- [`type CornerSides = Layout.CornerSides`](vendor/flux/src/init.luau#L70)
-- [`type ListConfig = Layout.ListConfig`](vendor/flux/src/init.luau#L71)
-- [`type GridConfig = Layout.GridConfig`](vendor/flux/src/init.luau#L72)
-- [`type StrokeConfig = Layout.StrokeConfig`](vendor/flux/src/init.luau#L73)
-- [`type GradientConfig = Layout.GradientConfig`](vendor/flux/src/init.luau#L74)
-- [`type SizeConstraintConfig = Layout.SizeConstraintConfig`](vendor/flux/src/init.luau#L75)
-- [`type TextSizeConstraintConfig = Layout.TextSizeConstraintConfig`](vendor/flux/src/init.luau#L76)
-- [`Flux.Color: Color`](vendor/flux/src/Motion.luau#L1120): [from Motion] Perceptual [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3) utilities in Oklab (`lighten`, `saturate`, `mix`, `rotateHue`, and WCAG `contrast`/`readable`).
-- [`Flux.Defaults: { [string]: { [string]: unknown } }`](vendor/flux/src/Edit.luau#L1066): [Read Only] [from Edit] Mutable table of per-class default properties applied by [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function).
-- [`Flux.Find: Find`](vendor/flux/src/Edit.luau#L1067): [from Edit] Instance selectors (`Child`, `Descendant`, `Ancestor`, `Path`, `Query`) for hydrating trees inside [`Flux.edit`](https://flux.kohl.gg/guide/roblox/hydration).
-- [`Flux.Flags: Flags`](vendor/flux/src/Edit.luau#L1065): [from Edit] Global behavior flags (`Flags.defaults` toggles per-class defaults in [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function)).
+- [`type Node<T> = Graph.Node<T>`](vendor/flux/src/init.luau#L19)
+- [`type State<T> = Graph.State<T>`](vendor/flux/src/init.luau#L20)
+- [`type Reactive<T> = Graph.Reactive<T>`](vendor/flux/src/init.luau#L21)
+- [`type Unwrap<T> = Graph.Unwrap<T>`](vendor/flux/src/init.luau#L22)
+- [`type Owner = Graph.Owner`](vendor/flux/src/init.luau#L23)
+- [`type Cleanable = Graph.Cleanable`](vendor/flux/src/init.luau#L24)
+- [`type Props<ClassName, Extra = {}> = Type.Merge<Type.Properties<Type.Resolve<ClassName>>, Extra>`](vendor/flux/src/init.luau#L27)
+- [`type Merge<Base, Extra> = Type.Merge<Base, Extra>`](vendor/flux/src/init.luau#L28)
+- [`type Child = Instance | GraphNode | Portal | ((instance: Instance) -> ()) | { [any]: any }`](vendor/flux/src/init.luau#L29)
+- [`type Children = { Child }`](vendor/flux/src/init.luau#L30)
+- [`type Component<P, I = Instance> = (props: P) -> I`](vendor/flux/src/init.luau#L32)
+- [`type Partial<T> = Edit.Partial<T>`](vendor/flux/src/init.luau#L33)
+- [`type Pick<T, G> = Edit.Pick<T, G>`](vendor/flux/src/init.luau#L34)
+- [`type Omit<T, G> = Edit.Omit<T, G>`](vendor/flux/src/init.luau#L35)
+- [`type Portal = { read __fluxPortal: true }`](vendor/flux/src/init.luau#L36)
+- [`type DefaultProp<T> = { read __fluxDefault: T }`](vendor/flux/src/init.luau#L37)
+- [`type Async<T> = Async.Async<T>`](vendor/flux/src/init.luau#L38)
+- [`type AsyncState = Async.AsyncState`](vendor/flux/src/init.luau#L39)
+- [`type Context<T> = Graph.Context<T>`](vendor/flux/src/init.luau#L40)
+- [`type Selector<K> = Conditional.Selector<K>`](vendor/flux/src/init.luau#L41)
+- [`type Spring<T> = Motion.Spring<T>`](vendor/flux/src/init.luau#L42)
+- [`type Tween<T> = Motion.Tween<T>`](vendor/flux/src/init.luau#L43)
+- [`type TweenConfig = Motion.TweenConfig`](vendor/flux/src/init.luau#L44)
+- [`type ClockPhase = Clock.Phase`](vendor/flux/src/init.luau#L45)
+- [`type SyncSignal<T = any> = Sync.SyncSignal<T>`](vendor/flux/src/init.luau#L46)
+- [`type SyncValidator<T> = Sync.Validator<T>`](vendor/flux/src/init.luau#L47)
+- [`type SyncNamespace = Sync.SyncNamespace`](vendor/flux/src/init.luau#L48)
+- [`type HoverOptions = Interact.HoverOptions`](vendor/flux/src/init.luau#L49)
+- [`type ScaleMode = Responsive.ScaleMode`](vendor/flux/src/init.luau#L50)
+- [`type Breakpoint = Responsive.Breakpoint`](vendor/flux/src/init.luau#L51)
+- [`type Breakpoints = Responsive.Breakpoints`](vendor/flux/src/init.luau#L52)
+- [`type ResponsiveConfig = Responsive.Config`](vendor/flux/src/init.luau#L53)
+- [`type ResponsivePartialConfig = Responsive.PartialConfig`](vendor/flux/src/init.luau#L54)
+- [`type Input = Responsive.Input`](vendor/flux/src/init.luau#L55)
+- [`type Platform = Responsive.Platform`](vendor/flux/src/init.luau#L56)
+- [`type TextSize = Responsive.TextSize`](vendor/flux/src/init.luau#L57)
+- [`type DisplaySize = Responsive.DisplaySize`](vendor/flux/src/init.luau#L58)
+- [`type Length = Layout.Length`](vendor/flux/src/init.luau#L59)
+- [`type ReactiveLength = Layout.ReactiveLength`](vendor/flux/src/init.luau#L60)
+- [`type Insets = Layout.Insets`](vendor/flux/src/init.luau#L61)
+- [`type Align = Layout.Align`](vendor/flux/src/init.luau#L62)
+- [`type FlexAlign = Layout.FlexAlign`](vendor/flux/src/init.luau#L63)
+- [`type LineAlign = Layout.LineAlign`](vendor/flux/src/init.luau#L64)
+- [`type Direction = Layout.Direction`](vendor/flux/src/init.luau#L65)
+- [`type FlexMode = Layout.FlexMode`](vendor/flux/src/init.luau#L66)
+- [`type FlexConfig = Layout.FlexConfig`](vendor/flux/src/init.luau#L67)
+- [`type PaddingSides = Layout.PaddingSides`](vendor/flux/src/init.luau#L68)
+- [`type CornerSides = Layout.CornerSides`](vendor/flux/src/init.luau#L69)
+- [`type ListConfig = Layout.ListConfig`](vendor/flux/src/init.luau#L70)
+- [`type GridConfig = Layout.GridConfig`](vendor/flux/src/init.luau#L71)
+- [`type StrokeConfig = Layout.StrokeConfig`](vendor/flux/src/init.luau#L72)
+- [`type GradientConfig = Layout.GradientConfig`](vendor/flux/src/init.luau#L73)
+- [`type SizeConstraintConfig = Layout.SizeConstraintConfig`](vendor/flux/src/init.luau#L74)
+- [`type TextSizeConstraintConfig = Layout.TextSizeConstraintConfig`](vendor/flux/src/init.luau#L75)
+- [`type Namespace = typeof(Flux)`](vendor/flux/src/init.luau#L264)
+- [`Flux.Color: Color`](vendor/flux/src/Motion.luau#L1515): [from Motion] Perceptual [`Color3`](https://create.roblox.com/docs/reference/engine/datatypes/Color3) utilities in Oklab (`lighten`, `saturate`, `mix`, `rotateHue`, and WCAG `contrast`/`readable`).
+- [`Flux.Defaults: Defaults`](vendor/flux/src/Edit.luau#L1381): [from Edit] Mutable table of per-class default properties applied by [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function).
+- [`Flux.Find: Find`](vendor/flux/src/Edit.luau#L1382): [from Edit] Instance selectors (`Child`, `Descendant`, `Ancestor`, `Path`, `Query`) for hydrating trees inside [`Flux.edit`](https://flux.kohl.gg/guide/roblox/hydration).
+- [`Flux.Flags: Flags`](vendor/flux/src/Edit.luau#L1380): [from Edit] Global behavior flags (`Flags.defaults` toggles per-class defaults in [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function)).
 - [`Flux.Sync: Sync`](vendor/flux/src/Sync.luau): [Module] Network-synchronized signals replicated from the server to clients once per frame.
-- [`Flux.otherwise: any`](vendor/flux/src/Conditional.luau#L571): [Read Only] [from Conditional] Catch-all branch key for [`Flux.switch`](https://flux.kohl.gg/guide/concepts/conditionals#a-catch-all-branch) maps when `source` matches no explicit key.
-- [`Flux.edit<T>(instance: T & Instance)`](vendor/flux/src/init.luau#L290-L294): Applies reactive properties, events, children, and directives to an existing [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance).
-- [`Flux.new<T>(className: T | keyof<Type.Creatable>)`](vendor/flux/src/init.luau#L312-L314): Creates a Roblox [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) of `className` with its per-class [defaults](https://flux.kohl.gg/guide/roblox/defaults) and applies a table of properties, events, children, and directives.
-- [`Flux.signal(initial: any, equals: any): any`](vendor/flux/src/Graph.luau#L3019): [from Graph] Creates a writable [signal](https://flux.kohl.gg/guide/concepts/signals) holding `initial`, using `equals` (default `==`) to skip unchanged writes.
-- [`Flux.computed(fn: any, equals: any): any`](vendor/flux/src/Graph.luau#L3032): [from Graph] Creates a lazily cached [computed](https://flux.kohl.gg/guide/concepts/computeds) node derived from `fn`.
-- [`Flux.effect(fn: (...any) -> ...any): any`](vendor/flux/src/Graph.luau#L3043): [from Graph] Schedules `fn` to run on the next flush and re-run whenever any node it reads changes.
-- [`Flux.createSignal<T>(initial: T, equals: ((T, T: any) -> boolean)?): (() -> T, (value: T, force: boolean?) -> T)`](vendor/flux/src/Graph.luau#L3072): [from Graph] Creates a lightweight signal without a node wrapper and returns `(getter, setter)`.
-- [`Flux.createMemo<T>(fn: () -> T, equals: ((T, T) -> boolean)?): () -> T`](vendor/flux/src/Graph.luau#L3084): [from Graph] Creates a lightweight computed without a node wrapper and returns its tracked getter function.
-- [`Flux.createEffect(fn: (...any) -> ...any)`](vendor/flux/src/Graph.luau#L3095): [from Graph] Creates a lightweight effect without returning a node wrapper.
-- [`Flux.getter(node: any): any`](vendor/flux/src/Graph.luau#L3055): [from Graph] Returns a plain function that reads `node` with tracking, avoiding wrapper `__call` overhead in hot loops.
-- [`Flux.setter(node: any): any`](vendor/flux/src/Graph.luau#L3059): [from Graph] Returns a plain function that writes `node` (`setter(value, force)`), avoiding wrapper `__call` overhead in hot loops.
-- [`Flux.scope<T>(fn: (scope: Node<any>) -> T): (Node<any>, T)`](vendor/flux/src/Graph.luau#L3114): [from Graph] Runs `fn` in a new owner [scope](https://flux.kohl.gg/guide/concepts/scopes) and returns `(scope, result)`.
-- [`Flux.flush()`](vendor/flux/src/Graph.luau#L3101): [from Graph] Runs all queued [effects](https://flux.kohl.gg/guide/concepts/effects) immediately instead of waiting for the next frame.
-- [`Flux.cleanup(obj: Cleanable)`](vendor/flux/src/Graph.luau#L3128): [from Graph] Registers `obj` to be disposed via [`Flux.dispose`](https://flux.kohl.gg/guide/concepts/scopes#disposing-by-hand-with-flux-dispose) before the running reaction re-runs and when its owner is destroyed.
-- [`Flux.dispose(obj: Cleanable?)`](vendor/flux/src/Graph.luau#L3140): [from Graph] Tears down `obj` immediately (functions, instances, connections, threads, objects with `Destroy`/`Disconnect` methods, or arrays of cleanables).
-- [`Flux.getOwner(): Owner?`](vendor/flux/src/Graph.luau#L3147): [from Graph] Returns the active reactive owner, or `nil` at the root.
-- [`Flux.withOwner(node: any, fn: () -> ...any): ...any`](vendor/flux/src/Graph.luau#L3155): [from Graph] Runs `fn` with `owner` (from `Flux.getOwner`, a node, or `nil` for unowned roots) as the active owner and restores its captured [context](https://flux.kohl.gg/guide/concepts/context#deferred-code).
-- [`Flux.read(object: any): any`](vendor/flux/src/Graph.luau#L3199): [from Graph] Reads a `Reactive` value (node, getter function, or plain value) and subscribes the running reaction if it's dynamic.
-- [`Flux.raw(object: any): any`](vendor/flux/src/Graph.luau#L3187): [from Graph] Reads a `Reactive` value (node, getter function, or plain value) without subscribing the running reaction.
-- [`Flux.untrack(fn: (() -> ...any)?): ...any`](vendor/flux/src/Graph.luau#L3169): [from Graph] Runs `fn` without dependency [tracking](https://flux.kohl.gg/guide/concepts/tracking) and returns its result.
-- [`Flux.retrack()`](vendor/flux/src/Graph.luau#L3181): [from Graph] Resumes [tracking](https://flux.kohl.gg/guide/concepts/tracking) after a bare `Flux.untrack()` in the same function body.
-- [`Flux.isNode(object: any): boolean`](vendor/flux/src/Graph.luau#L3238): [from Graph] Returns `true` if `object` is a Flux [node](https://flux.kohl.gg/guide/concepts/signals).
-- [`Flux.isReactive(): boolean`](vendor/flux/src/Graph.luau#L3246): [from Graph] Returns `true` if called inside a tracking [computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects).
-- [`Flux.on<D, R>(deps: any, fn: (input: any, prevInput: any?, prevResult: R?) -> R, defer: boolean?): (prevResult: R?) -> R?`](vendor/flux/src/Bind.luau#L566-L604): [from Bind] Wraps `fn` so a [computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects) tracks only `deps` and runs `fn(input, prevInput, prevResult)` untracked.
-- [`Flux.context(default: any): any`](vendor/flux/src/Graph.luau#L3219): [from Graph] Creates a [context](https://flux.kohl.gg/guide/concepts/context) with the given `default` value for passing data down a component tree without prop drilling.
-- [`Flux.bindContext<A..., R...>(fn: (A...) -> R...): (A...) -> R...`](vendor/flux/src/Graph.luau#L3232): [from Graph] Wraps `fn` so every call sees the [context](https://flux.kohl.gg/guide/concepts/context#deferred-code) values active when `bindContext` was called.
-- [`Flux.async(source: any, fetcher: any, initialValue: any): Async<any>`](vendor/flux/src/Async.luau#L211-L215): [from Async] Runs yielding work off the reactive graph and exposes its progress as `.data`, `.error`, `.loading`, and `.state` nodes.
-- [`Flux.selector<S, K>(source: S, equals: ((sourceValue: Graph.Unwrap<S>, key: K) -> boolean)?): Selector<K>`](vendor/flux/src/Conditional.luau#L599): [from Conditional] Creates a keyed selector that tracks which key matches `source` in O(1) (or O(observed keys) with a custom `equals` comparator).
-- [`Flux.store<T>(initialState: T): T`](vendor/flux/src/Store.luau#L250-L257): [from Store] Wraps a plain table in a deep reactive proxy that tracks each read key, nested table, and array length independently.
-- [`Flux.split(props: any, keys: any, ...: any): ...any`](vendor/flux/src/Edit.luau#L1080): [from Edit] Partitions `props` into one table per `keys` group plus a final table holding every remaining key, leaving `props` untouched.
-- [`Flux.safe<T>(tryFn: () -> T, fallback: T | (err: unknown) -> T, equals: ((a: T, b: T) -> boolean)?): Node<T>`](vendor/flux/src/Graph.luau#L3207): [from Graph] Creates a [computed](https://flux.kohl.gg/guide/concepts/computeds) that evaluates `tryFn` and returns `fallback` (a static value or an untracked `(err) -> T` function) if `tryFn` throws.
-- [`Flux.property<I, K>(instance: I & Instance, property: K | "Name"): Graph.Node<Type.PropertyType<I, K>>`](vendor/flux/src/Bind.luau#L533-L540): [from Bind] Creates a [node](https://flux.kohl.gg/guide/concepts/signals) mirroring an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, an attribute (`$Name` or `_attr_Name`), or a [`CollectionService`](https://create.roblox.com/docs/reference/engine/classes/CollectionService) tag (`#Tag` or `_tag_Tag`).
-- [`Flux.model<N>(node: N): Graph.Unwrap<N>`](vendor/flux/src/Bind.luau#L401-L407): [from Bind] Wraps a reactive [node](https://flux.kohl.gg/guide/concepts/signals) for two-way binding on an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, attribute, or tag.
-- [`Flux.isModel(value: unknown): boolean`](vendor/flux/src/Bind.luau#L414-L417): [from Bind] Returns `true` when `value` is a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key) wrapper.
-- [`Flux.modelNode(value: unknown): Graph.Node<any>?`](vendor/flux/src/Bind.luau#L431-L434): [from Bind] Returns the underlying node from a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key) wrapper, or `nil` if `value` is not a model.
-- [`Flux.show<T, F>(condition: unknown, component: (value: () -> any) -> T, fallback: ((value: () -> any) -> F)?): Node<T | F>`](vendor/flux/src/Conditional.luau#L578-L582): [from Conditional] Mounts `component` while `condition` is truthy, or `fallback` when falsy, in its own child [scope](https://flux.kohl.gg/guide/concepts/scopes).
-- [`Flux.showKeyed<T, F>(condition: unknown, component: (value: () -> any) -> T, fallback: ((value: () -> any) -> F)?): Node<T | F>`](vendor/flux/src/Conditional.luau#L588-L592): [from Conditional] Mounts `component` while `condition` is truthy (or `fallback` when falsy) and remounts in a fresh [scope](https://flux.kohl.gg/guide/concepts/scopes) whenever `condition` changes identity.
-- [`Flux.switch<S>(source: S)`](vendor/flux/src/Conditional.luau#L593): [from Conditional] Mounts the branch factory matching `source`'s current value in its own child [scope](https://flux.kohl.gg/guide/concepts/scopes).
-- [`Flux.presence<T>(condition: unknown, component: (exiting: Node<boolean>, done: () -> ()) -> T): Node<T?>`](vendor/flux/src/Conditional.luau#L594): [from Conditional] Mounts `component(exiting, done)` while `condition` is truthy and keeps it mounted while `exiting()` is `true` until `done()` is called.
-- [`Flux.pick(condition: unknown, whenTrue: any, whenFalse: any?): Node<any>`](vendor/flux/src/Conditional.luau#L595): [from Conditional] Derives a [node](https://flux.kohl.gg/guide/concepts/signals) returning `whenTrue` while `condition` is truthy and `whenFalse` otherwise.
-- [`Flux.fallback<V, D>(value: V, default: D): Node<NonNil<Graph.Unwrap<V>> | Graph.Unwrap<D>>`](vendor/flux/src/Conditional.luau#L596): [from Conditional] Derives a [node](https://flux.kohl.gg/guide/concepts/signals) returning `value` when non-`nil`, or `default` when `value` is `nil`.
-- [`Flux.forValue<L, U>(list: L, mapFn: (index: Node<number>, value: Item<L>) -> U): Node<{ U }>`](vendor/flux/src/Conditional.luau#L598): [from Conditional] Maps `list` by item identity, running `mapFn(index, value)` once per unique value and updating `index` when an item moves.
-- [`Flux.forIndex<L, U>(list: L, mapFn: (index: number, item: Node<Item<L>>) -> U): Node<{ U }>`](vendor/flux/src/Conditional.luau#L597): [from Conditional] Maps `list` by numeric index, running `mapFn(index, item)` once per slot and updating `item` in place when the value at that index changes.
-- [`Flux.spring<A>(target: A, frequency: Reactive<number>?, damping: Reactive<number>?, initialVelocity: any?): Spring<Unwrap<A>>`](vendor/flux/src/Motion.luau#L1148-L1194): [from Motion] Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that animates toward `target` using an analytic harmonic oscillator (`frequency` in Hz and `damping` ratio both default to `1` and may be reactive).
-- [`Flux.tween<A>(target: A, tweenInfo: Reactive<TweenInfo>?): Graph.Node<Unwrap<A>>`](vendor/flux/src/Motion.luau#L1203-L1243): [from Motion] Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that eases toward `target` over a [`TweenInfo`](https://create.roblox.com/docs/reference/engine/datatypes/TweenInfo) curve.
-- [`Flux.padding(value: Length | PaddingSides | Graph.Node<any> | (() -> Length | Insets)): UIPadding`](vendor/flux/src/Layout.luau#L393-L418): [from Layout] Creates a [`UIPadding`](https://create.roblox.com/docs/reference/engine/classes/UIPadding) from a single length, a `{ top, bottom, left, right, x, y }` table, or a reactive source.
-- [`Flux.corner(radius: ReactiveLength | CornerSides?): UICorner`](vendor/flux/src/Layout.luau#L425-L437): [from Layout] Creates a [`UICorner`](https://create.roblox.com/docs/reference/engine/classes/UICorner) from an offset pixel radius, a [`UDim`](https://create.roblox.com/docs/reference/engine/datatypes/UDim), or a per-corner `{ topLeft, topRight, bottomLeft, bottomRight, top, bottom, left, right, radius }` table.
-- [`Flux.stroke(config: StrokeConfig?): UIStroke`](vendor/flux/src/Layout.luau#L444-L457): [from Layout] Creates a [`UIStroke`](https://create.roblox.com/docs/reference/engine/classes/UIStroke) with static or reactive `thickness`, `color`, `transparency`, `mode`, `joins`, `position`, and `offset`.
-- [`Flux.aspectRatio(ratio: Reactive<number>, aspectType: Reactive<"fit" | "scale" | Enum.AspectType>?, dominantAxis: Reactive<"width" | "height" | Enum.DominantAxis>?): UIAspectRatioConstraint`](vendor/flux/src/Layout.luau#L464-L474): [from Layout] Creates a [`UIAspectRatioConstraint`](https://create.roblox.com/docs/reference/engine/classes/UIAspectRatioConstraint) with `ratio`, `aspectType` (`"fit"` or `"scale"`), and `dominantAxis` (`"width"` or `"height"`).
-- [`Flux.list(config: ListConfig?): UIListLayout`](vendor/flux/src/Layout.luau#L481-L507): [from Layout] Creates a [`UIListLayout`](https://create.roblox.com/docs/reference/engine/classes/UIListLayout) with `SortOrder = LayoutOrder` and flexbox-style `gap`, `direction`, `align` (cross-axis), `justify` (main-axis), and `wraps` options.
-- [`Flux.grid(config: GridConfig?): UIGridLayout`](vendor/flux/src/Layout.luau#L514-L525): [from Layout] Creates a [`UIGridLayout`](https://create.roblox.com/docs/reference/engine/classes/UIGridLayout) with `SortOrder = LayoutOrder` and `cell`, `gap`, `fill`, `align`, `justify`, and `maxCells` options.
-- [`Flux.flex(mode: Reactive<FlexMode | Enum.UIFlexMode>?): UIFlexItem`](vendor/flux/src/Layout.luau#L532-L546): [from Layout] Creates a [`UIFlexItem`](https://create.roblox.com/docs/reference/engine/classes/UIFlexItem) with `mode` (`"fill"` by default, `"grow"`, `"shrink"`, or `"none"`).
-- [`Flux.gradient(config: GradientConfig?): UIGradient`](vendor/flux/src/Layout.luau#L553-L562): [from Layout] Creates a [`UIGradient`](https://create.roblox.com/docs/reference/engine/classes/UIGradient) from single values, evenly spaced stop arrays, or sequences for `color` and `transparency`.
-- [`Flux.sizeConstraint(config: SizeConstraintConfig?): UISizeConstraint`](vendor/flux/src/Layout.luau#L569-L575): [from Layout] Creates a [`UISizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UISizeConstraint) from `min`/`max` `Vector2` bounds or per-axis `minWidth`, `minHeight`, `maxWidth`, and `maxHeight` bounds.
-- [`Flux.textSizeConstraint(config: TextSizeConstraintConfig?): UITextSizeConstraint`](vendor/flux/src/Layout.luau#L582-L588): [from Layout] Creates a [`UITextSizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UITextSizeConstraint) bounding text size between `min` and `max` pixels.
-- [`Flux.__call(_: any, obj: any, propertyName: string?): Graph.Node<any>`](vendor/flux/src/init.luau#L274-L277): Terse untyped constructor for a [signal](https://flux.kohl.gg/guide/concepts/signals) (`Flux(value)`), [computed](https://flux.kohl.gg/guide/concepts/computeds) (`Flux(fn)`), or [instance property node](https://flux.kohl.gg/guide/concepts/signals#binding-from-an-instance-property) (`Flux(instance, key)`).
-- [`Flux.Clock`](vendor/flux/src/init.luau#L100-L113): Shared time source for timers, frame callbacks, and deterministic test stepping.
-- [`Flux.Clock.now(): number`](vendor/flux/src/Clock.luau#L168-L170): [from Clock] Seconds on a monotonic clock, for measuring intervals: `os.clock()` in a game, virtual time on a manual clock.
-- [`Flux.Clock.wall(): number`](vendor/flux/src/Clock.luau#L176-L181): [from Clock] Unix time in seconds, for dates and countdowns shared between players: `workspace:GetServerTimeNow()` in a game, `2026-01-01T00:00:00Z + now()` on a manual clock.
-- [`Flux.Clock.delay<A...>(seconds: number?, fn: ((A...) -> ...any) | thread, ...: A...): thread`](vendor/flux/src/Clock.luau#L194-L201): [from Clock] Runs `fn(...)` (or resumes a thread) after `seconds`, like `task.delay`.
-- [`Flux.Clock.wait(seconds: number?): number`](vendor/flux/src/Clock.luau#L207-L217): [Yields] [from Clock] Yields the running thread for `seconds` (default: one frame), like `task.wait`, and returns the time it waited.
-- [`Flux.Clock.defer<A...>(fn: ((A...) -> ...any) | thread, ...: A...): thread`](vendor/flux/src/Clock.luau#L223-L233): [from Clock] Runs `fn(...)` (or resumes a thread) once the current work finishes, like `task.defer`.
-- [`Flux.Clock.cancel(thread: thread)`](vendor/flux/src/Clock.luau#L238-L260): [from Clock] Cancels a thread from `delay`, `defer` or a `wait`, like `task.cancel`.
-- [`Flux.Clock.connect(phase: Phase, fn: (dt: number) -> ()): () -> ()`](vendor/flux/src/Clock.luau#L266-L287): [from Clock] Calls `fn(dt)` every frame at `phase` ("PreRender", "RenderStepped" or "Heartbeat").
-- [`Flux.Clock.manual(on: boolean)`](vendor/flux/src/Clock.luau#L293-L304): [from Clock] Toggles manual clock mode for tests (headless Luau is always manual).
-- [`Flux.Clock.isManual(): boolean`](vendor/flux/src/Clock.luau#L309-L311): [from Clock] Tests only: whether the clock is manual.
-- [`Flux.Clock.step(seconds: number, frameLength: number?)`](vendor/flux/src/Clock.luau#L378-L393): [from Clock] Tests only: advances a manual clock by `seconds`, in frames of at most `frameLength` seconds (default 1/60).
-- [`Flux.Clock.drain()`](vendor/flux/src/Clock.luau#L317-L338): [from Clock] Tests only: runs deferred work until none is left, including work it defers in turn.
-- [`Flux.Clock.reset()`](vendor/flux/src/Clock.luau#L398-L406): [from Clock] Tests only: drops every pending timer, `wait`, deferred call and manual subscriber.
-- [`Flux.Interact`](vendor/flux/src/init.luau#L143-L151): Read-only interaction state nodes (`hover`, `press`, `selected`, `focused`) and pointer hit-testing helpers (`pointIn`, `sunk`, `covered`).
-- [`Flux.Interact.pointIn(x: number, y: number, object: GuiObject): boolean`](vendor/flux/src/Interact.luau#L681): [from Interact] Whether the point `(x, y)` lies within `object`'s absolute bounds (inclusive, ignoring rotation).
-- [`Flux.Interact.sunk(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L682): [from Interact] Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI rendered above `object` (or while the Roblox escape menu is open).
-- [`Flux.Interact.covered(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L683): [from Interact] Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI above `object` that is not a descendant of `object`.
-- [`Flux.Interact.hover(object: GuiObject, options: HoverOptions?): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L685): [from Interact] Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) that is `true` while a pointer or touch contact is inside `object` with no input-claiming GUI above it.
-- [`Flux.Interact.press(object: GuiObject): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L686): [from Interact] Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) that is `true` while `object` is held down by pointer, touch, or gamepad/keyboard activation (`ButtonA`/`Enter`).
-- [`Flux.Interact.selected(object: GuiObject): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L687): [from Interact] Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) tracking whether `object` is currently [`GuiService.SelectedObject`](https://create.roblox.com/docs/reference/engine/classes/GuiService#SelectedObject).
-- [`Flux.Interact.focused(textBox: TextBox): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L688): [from Interact] Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) tracking whether `textBox` currently has keyboard focus.
-- [`Flux.Motion`](vendor/flux/src/init.luau#L158-L160): Advances active [`Flux.spring`](https://flux.kohl.gg/guide/motion/spring) and [`Flux.tween`](https://flux.kohl.gg/guide/motion/tween) nodes.
-- [`Flux.Motion.step(dt: number?)`](vendor/flux/src/Motion.luau#L1134): [from Motion] Advances every active [spring](https://flux.kohl.gg/guide/motion/spring) and [tween](https://flux.kohl.gg/guide/motion/tween) by `dt` seconds (or the time since the last step).
-- [`Flux.Responsive`](vendor/flux/src/init.luau#L166-L179): Reactive nodes for viewport size, UI scale, breakpoints, device platform, active input mode, and accessibility settings.
-- [`Flux.Responsive.config: Config`](vendor/flux/src/Responsive.luau#L322): [Read Only] [from Responsive] Default responsive configuration shared by derived nodes.
-- [`Flux.Responsive.platform: Graph.Node<Platform>`](vendor/flux/src/Responsive.luau#L323): [Read Only] [from Responsive] Active device class (`"vr"`, `"console"`, `"pc"`, or `"mobile"`), updated live on the client (`"pc"` off-client).
-- [`Flux.Responsive.viewport: Graph.Node<Vector2>`](vendor/flux/src/Responsive.luau#L325): [Read Only] [from Responsive] The active camera's `ViewportSize` as a node, live on the client.
-- [`Flux.Responsive.scale: Graph.Node<number>`](vendor/flux/src/Responsive.luau#L326): [Read Only] [from Responsive] UI scale factor derived from `viewport` (`1.0` at `config.reference`).
-- [`Flux.Responsive.breakpoint: Graph.Node<Breakpoint>`](vendor/flux/src/Responsive.luau#L327): [Read Only] [from Responsive] Size class (`"phone" | "tablet" | "desktop"`) derived from `viewport` width.
-- [`Flux.Responsive.displaySize: Graph.Node<DisplaySize>`](vendor/flux/src/Responsive.luau#L328): [Read Only] [from Responsive] Physical screen size class (`"Small"`, `"Medium"`, or `"Large"`) mirroring `GuiService.ViewportDisplaySize`.
-- [`Flux.Responsive.input: Graph.Node<Input>`](vendor/flux/src/Responsive.luau#L330): [Read Only] [from Responsive] Active input mode (`"keyboard"`, `"touch"`, or `"gamepad"`) tracking `UserInputService.PreferredInput` on the client.
-- [`Flux.Responsive.textSize: Graph.Node<TextSize>`](vendor/flux/src/Responsive.luau#L331): [Read Only] [from Responsive] Player's preferred text size (`"Medium"`, `"Large"`, `"Larger"`, or `"Largest"`) from `GuiService.PreferredTextSize`.
-- [`Flux.Responsive.reducedMotion: Graph.Node<boolean>`](vendor/flux/src/Responsive.luau#L332): [Read Only] [from Responsive] Tracks `GuiService.ReducedMotionEnabled` (`true` when the player prefers reduced motion).
-- [`Flux.Responsive.preferredTransparency: Graph.Node<number>`](vendor/flux/src/Responsive.luau#L333): [Read Only] [from Responsive] Tracks `GuiService.PreferredTransparency` from `0` (opaque backgrounds) to `1` (default).
-- [`Flux.Responsive.scaleOf(partial: PartialConfig?): Graph.Node<number>`](vendor/flux/src/Responsive.luau#L335): [from Responsive] Factory escape hatch: a `scale` node with per-surface config (merged over defaults).
-- [`Flux.Responsive.breakpointOf(partial: PartialConfig?): Graph.Node<Breakpoint>`](vendor/flux/src/Responsive.luau#L336): [from Responsive] Factory escape hatch: a `breakpoint` node with per-surface thresholds.
-- [`Flux.Store`](vendor/flux/src/init.luau#L185-L192): Array mutation (`insert`, `remove`, `move`), snapshot diffing (`reconcile`), unwrapping (`unwrap`), and teardown (`Destroy`) for [`Flux.store`](https://flux.kohl.gg/guide/concepts/stores) proxies.
-- [`Flux.Store.insert(proxy: any, posOrValue: any, value: any?)`](vendor/flux/src/Store.luau#L282-L309): [from Store] Inserts `value` into a store array (appending with 2 arguments, or inserting at `posOrValue` with 3) and notifies length and index observers.
-- [`Flux.Store.remove(proxy: any, pos: number?): any`](vendor/flux/src/Store.luau#L316-L344): [from Store] Removes and returns the element at `pos` (defaulting to the last element) from a store array and notifies length and index observers.
-- [`Flux.Store.move(proxy: any, from: number, to: number)`](vendor/flux/src/Store.luau#L351-L370): [from Store] Moves the element at 1-based index `from` to `to` in a single tracked step without tearing down nested item proxies.
-- [`Flux.Store.reconcile<T>(proxy: T, newData: T, key: string?): T`](vendor/flux/src/Store.luau#L561-L569): [from Store] Diffs `newData` into the store `proxy` in place, firing only changed leaf nodes and reusing unchanged nested proxies.
-- [`Flux.Store.unwrap<T>(proxy: T): T`](vendor/flux/src/Store.luau#L273-L275): [from Store] Returns the raw, unproxied backing table of a store for untracked reads or serialization.
-- [`Flux.Store.Destroy<T>(proxy: T)`](vendor/flux/src/Store.luau#L264-L266): [from Store] Tears down a store and all of its nested proxies, disposing their per-key nodes via [`Flux.dispose`](https://flux.kohl.gg/api/Flux#dispose) while leaving the raw backing table intact.
+- [`Flux.otherwise: any`](vendor/flux/src/Conditional.luau#L787): [Read Only] [from Conditional] Catch-all branch key for [`Flux.switch`](https://flux.kohl.gg/guide/concepts/conditionals#a-catch-all-branch) maps when `source` matches no explicit key.
+- [`Flux.edit<T>(instance: T & Instance)`](vendor/flux/src/init.luau#L251-L255): Applies reactive properties, events, children, and directives to an existing [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance).
+- [`Flux.new<T>(className: T | keyof<Type.Creatable>)`](vendor/flux/src/init.luau#L259-L261): Creates a Roblox [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) of `className` with its per-class [defaults](https://flux.kohl.gg/guide/roblox/defaults) and applies a table of properties, events, children, and directives.
+- [`Flux.signal(initial: any, equals: any): any`](vendor/flux/src/Graph.luau#L4065): [from Graph] Creates a writable [signal](https://flux.kohl.gg/guide/concepts/signals) holding `initial`, using `equals` (default `==`) to skip unchanged writes.
+- [`Flux.computed(fn: any, equals: any): any`](vendor/flux/src/Graph.luau#L4079): [from Graph] Creates a lazily cached [computed](https://flux.kohl.gg/guide/concepts/computeds) node derived from `fn`.
+- [`Flux.effect(fn: (...any) -> ...any): any`](vendor/flux/src/Graph.luau#L4090): [from Graph] Schedules `fn` to run on the next flush and re-run whenever any node it reads changes.
+- [`Flux.createSignal<T>(initial: T, equals: ((T, T: any) -> boolean)?): (() -> T, (value: T, force: boolean?) -> T)`](vendor/flux/src/Graph.luau#L4119): [from Graph] Creates a lightweight signal without a node wrapper and returns `(getter, setter)`.
+- [`Flux.createMemo<T>(fn: (prev: any) -> T, equals: ((T, T) -> boolean)?): () -> T`](vendor/flux/src/Graph.luau#L4131): [from Graph] Creates a lightweight computed without a node wrapper and returns its tracked getter function.
+- [`Flux.createEffect(fn: (...any) -> ...any)`](vendor/flux/src/Graph.luau#L4142): [from Graph] Creates a lightweight effect without returning a node wrapper.
+- [`Flux.getter(node: any): any`](vendor/flux/src/Graph.luau#L4102): [from Graph] Returns a plain function that reads `node` with tracking, avoiding wrapper `__call` overhead in hot loops.
+- [`Flux.setter(node: any): any`](vendor/flux/src/Graph.luau#L4106): [from Graph] Returns a plain function that writes `node` (`setter(value, force)`), avoiding wrapper `__call` overhead in hot loops.
+- [`Flux.scope<T>(fn: (scope: Node<any>) -> T): (Node<any>, T)`](vendor/flux/src/Graph.luau#L4161): [from Graph] Runs `fn` in a new owner [scope](https://flux.kohl.gg/guide/concepts/scopes) and returns `(scope, result)`.
+- [`Flux.flush()`](vendor/flux/src/Graph.luau#L4148): [from Graph] Runs all queued [effects](https://flux.kohl.gg/guide/concepts/effects) immediately instead of waiting for the next frame.
+- [`Flux.cleanup(obj: Cleanable)`](vendor/flux/src/Graph.luau#L4175): [from Graph] Registers `obj` to be disposed via [`Flux.dispose`](https://flux.kohl.gg/guide/concepts/scopes#disposing-by-hand-with-flux-dispose) before the running reaction re-runs and when its owner is destroyed.
+- [`Flux.dispose(obj: Cleanable?)`](vendor/flux/src/Graph.luau#L4187): [from Graph] Tears down `obj` immediately (functions, instances, connections, threads, objects with `Destroy`/`Disconnect` methods, or array-shaped tables traversed with cycle protection).
+- [`Flux.getOwner(): Owner?`](vendor/flux/src/Graph.luau#L4194): [from Graph] Returns the active reactive owner, or `nil` at the root.
+- [`Flux.withOwner(node: any, fn: () -> ...any): ...any`](vendor/flux/src/Graph.luau#L4202): [from Graph] Runs `fn` with `owner` (from `Flux.getOwner`, a node, or `nil` for unowned roots) as the active owner and restores its captured [context](https://flux.kohl.gg/guide/concepts/context#deferred-code).
+- [`Flux.read(object: any): any`](vendor/flux/src/Graph.luau#L4246): [from Graph] Reads a `Reactive` value (node, getter function, or plain value) and subscribes the running reaction if it's dynamic.
+- [`Flux.raw(object: any): any`](vendor/flux/src/Graph.luau#L4234): [from Graph] Reads a `Reactive` value (node, getter function, or plain value) without subscribing the running reaction.
+- [`Flux.untrack(fn: (() -> ...any)?): ...any`](vendor/flux/src/Graph.luau#L4216): [from Graph] Runs `fn` without dependency [tracking](https://flux.kohl.gg/guide/concepts/tracking) and returns its result.
+- [`Flux.retrack()`](vendor/flux/src/Graph.luau#L4228): [from Graph] Resumes [tracking](https://flux.kohl.gg/guide/concepts/tracking) after a bare `Flux.untrack()` in the same function body.
+- [`Flux.isNode(object: any): boolean`](vendor/flux/src/Graph.luau#L4289): [from Graph] Returns `true` if `object` is a Flux [node](https://flux.kohl.gg/guide/concepts/signals).
+- [`Flux.isReactive(): boolean`](vendor/flux/src/Graph.luau#L4297): [from Graph] Returns `true` if called inside a tracking [computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects).
+- [`Flux.on<D, R>(deps: D, fn: (input: Type.OnInput<D>, prevInput: Type.OnInput<D>?, prevResult: R?) -> R, defer: boolean?): (prevResult: R?) -> R?`](vendor/flux/src/Bind.luau#L1207): [from Bind]
+- [`Flux.listen<T>(node: Graph.Node<T>, fn: (value: T) -> ()): () -> ()`](vendor/flux/src/Bind.luau#L942-L974): [from Bind] Subscribes `fn` to updates of `node` with [`RBXScriptSignal:Connect`](https://create.roblox.com/docs/reference/engine/datatypes/RBXScriptSignal#Connect) semantics and returns an unsubscribe function.
+- [`Flux.context(default: any): any`](vendor/flux/src/Graph.luau#L4270): [from Graph] Creates a [context](https://flux.kohl.gg/guide/concepts/context) with the given `default` value for passing data down a component tree without prop drilling.
+- [`Flux.bindContext<A..., R...>(fn: (A...) -> R...): (A...) -> R...`](vendor/flux/src/Graph.luau#L4283): [from Graph] Wraps `fn` so every call sees the [context](https://flux.kohl.gg/guide/concepts/context#deferred-code) values active when `bindContext` was called.
+- [`Flux.async(source: any, fetcher: any, initialValue: any): Async<any>`](vendor/flux/src/Async.luau#L248-L255): [from Async] Runs yielding work off the reactive graph and exposes its progress as `.data`, `.error`, `.loading`, and `.state` nodes.
+- [`Flux.selector<S, K>(source: S, equals: ((sourceValue: Graph.Unwrap<S>, key: K) -> boolean)?): Selector<K>`](vendor/flux/src/Conditional.luau#L829): [from Conditional] Creates a keyed selector that tracks which key matches `source` in O(1) (or O(observed keys) with a custom `equals` comparator).
+- [`Flux.store<T>(initialState: T): T`](vendor/flux/src/Store.luau#L373-L380): [from Store] Wraps a plain table in a deep reactive proxy that tracks each read key, nested table, and array length independently.
+- [`Flux.split(props: any, keys: any, ...: any): ...any`](vendor/flux/src/Edit.luau#L1398): [from Edit] Partitions `props` into one table per `keys` group plus a final table holding every remaining key, leaving `props` untouched.
+- [`Flux.prop(...: any): any`](vendor/flux/src/Edit.luau#L1404): [from Edit] Marks a key in a component prop schema for `Flux.split`; cast a bare call to declare the type (`Flux.prop() :: Flux.Reactive<string>`), or pass `default` (`Flux.prop(16)`) to fill missing/`nil` values automatically.
+- [`Flux.own(...: { [string]: any }): any`](vendor/flux/src/Edit.luau#L1410): [from Edit] Merges one or more component prop schemas into a single frozen schema table for `Flux.Props` and `Flux.split`.
+- [`Flux.merge(...: any): any`](vendor/flux/src/Edit.luau#L1417): [from Edit] Returns a shallow read-only live view merging 1-4 prop tables left-to-right where the rightmost non-`nil` value wins per key.
+- [`Flux.safe(tryFn: () -> any, fallback: any, equals: any): Node<any>`](vendor/flux/src/Graph.luau#L4254-L4258): [from Graph] Creates a [computed](https://flux.kohl.gg/guide/concepts/computeds) that evaluates `tryFn` and returns `fallback` (a static value or an untracked `(err, reset) -> T` function) if `tryFn` throws.
+- [`Flux.property<I, K>(instance: I & Instance, property: K | "Name"): Graph.Node<Type.PropertyType<I, K>>`](vendor/flux/src/Bind.luau#L1112-L1119): [from Bind] Creates a [node](https://flux.kohl.gg/guide/concepts/signals) mirroring an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, an attribute (`$Name` or `_attr_Name`), or a [`CollectionService`](https://create.roblox.com/docs/reference/engine/classes/CollectionService) tag (`#Tag` or `_tag_Tag`).
+- [`Flux.fromSignal(sig: any, initial: any): Graph.Node<any>`](vendor/flux/src/Bind.luau#L1092-L1097): [from Bind] Creates a [node](https://flux.kohl.gg/guide/concepts/signals#bridging-signals) updated from the first argument of an [`RBXScriptSignal`](https://create.roblox.com/docs/reference/engine/datatypes/RBXScriptSignal) or signal table with `:Connect()` / `:connect()`, seeding from `initial` and deduplicating equal values.
+- [`Flux.model<T>(node: { read get: (any) -> T, read peek: (any) -> T, read set: (any, ...any) -> any }): T`](vendor/flux/src/Bind.luau#L836-L842): [from Bind] Wraps a reactive [node](https://flux.kohl.gg/guide/concepts/signals) for two-way binding on an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, attribute, or tag.
+- [`Flux.isModel(value: unknown): boolean`](vendor/flux/src/Bind.luau#L849-L852): [from Bind] Returns `true` when `value` is a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key) wrapper.
+- [`Flux.modelNode(value: unknown): Graph.Node<any>?`](vendor/flux/src/Bind.luau#L866-L869): [from Bind] Returns the underlying node from a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key) wrapper, or `nil` if `value` is not a model.
+- [`Flux.portal(target: Graph.Reactive<Instance?>, children: any): Portal`](vendor/flux/src/Bind.luau#L1310-L1316): [from Bind] Creates a portal mounting `children` into `target` (static [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) or reactive target node) without transferring ownership of `target`.
+- [`Flux.show<T, F>(condition: unknown, component: (value: () -> any) -> T, fallback: ((value: () -> any) -> F)?): Node<T | F>`](vendor/flux/src/Conditional.luau#L794-L798): [from Conditional] Mounts `component` while `condition` is truthy, or `fallback` when falsy, in its own child [scope](https://flux.kohl.gg/guide/concepts/scopes).
+- [`Flux.showKeyed<T, F>(condition: unknown, component: (value: () -> any) -> T, fallback: ((value: () -> any) -> F)?): Node<T | F>`](vendor/flux/src/Conditional.luau#L804-L808): [from Conditional] Mounts `component` while `condition` is truthy (or `fallback` when falsy) and remounts in a fresh [scope](https://flux.kohl.gg/guide/concepts/scopes) whenever `condition` changes identity.
+- [`Flux.switch<S>(source: S)`](vendor/flux/src/Conditional.luau#L809): [from Conditional] Mounts the branch factory matching `source`'s current value in its own child [scope](https://flux.kohl.gg/guide/concepts/scopes).
+- [`Flux.presence<T>(condition: unknown, component: (exiting: Node<boolean>, done: () -> ()) -> T): Node<T?>`](vendor/flux/src/Conditional.luau#L810): [from Conditional] Mounts `component(exiting, done)` while `condition` is truthy and keeps it mounted while `exiting()` is `true` until `done()` is called.
+- [`Flux.pick(condition: unknown, whenTrue: any, whenFalse: any?): Node<any>`](vendor/flux/src/Conditional.luau#L811): [from Conditional] Derives a [node](https://flux.kohl.gg/guide/concepts/signals) returning `whenTrue` while `condition` is truthy and `whenFalse` otherwise.
+- [`Flux.fallback<V, D>(value: V, default: D): Node<NonNil<Graph.Unwrap<V>> | Graph.Unwrap<D>>`](vendor/flux/src/Conditional.luau#L812): [from Conditional] Derives a [node](https://flux.kohl.gg/guide/concepts/signals) returning `value` when non-`nil`, or `default` when `value` is `nil`.
+- [`Flux.forValue(list: any, mapFn: any, fallback: any?): Node<any>`](vendor/flux/src/Conditional.luau#L818-L822): [from Conditional] Maps `list` by item identity, running `mapFn(index, value)` once per unique value and updating `index` when an item moves.
+- [`Flux.forIndex(list: any, mapFn: any, fallback: any?): Node<any>`](vendor/flux/src/Conditional.luau#L813-L817): [from Conditional] Maps `list` by numeric index, running `mapFn(index, item)` once per slot and updating `item` in place when the value at that index changes.
+- [`Flux.forKey(list: any, keyOf: any, mapFn: any, fallback: any?): Node<any>`](vendor/flux/src/Conditional.luau#L823-L828): [from Conditional] Maps `list` by `keyOf(item)`, running `mapFn(index, item)` once per unique key and updating both `index` and `item` in place when entries with that key move or rebuild.
+- [`Flux.spring<A>(target: A, frequency: Reactive<number>?, damping: Reactive<number>?, initialVelocity: any?): Spring<Unwrap<A>>`](vendor/flux/src/Motion.luau#L1543-L1613): [from Motion] Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that animates toward `target` using an analytic harmonic oscillator (`frequency` in Hz and `damping` ratio both default to `1` and may be reactive).
+- [`Flux.tween<A>(target: A, tweenInfo: Reactive<TweenInfo | TweenConfig>?): Tween<Unwrap<A>>`](vendor/flux/src/Motion.luau#L1623-L1687): [from Motion] Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that eases toward `target` over a [`TweenInfo`](https://create.roblox.com/docs/reference/engine/datatypes/TweenInfo) curve.
+- [`Flux.padding(value: Length | PaddingSides | Graph.Node<any> | (() -> Length | Insets)): UIPadding`](vendor/flux/src/Layout.luau#L480-L505): [from Layout] Creates a [`UIPadding`](https://create.roblox.com/docs/reference/engine/classes/UIPadding) from a single length, a `{ top, bottom, left, right, x, y }` table, or a reactive source.
+- [`Flux.corner(radius: ReactiveLength | CornerSides?): UICorner`](vendor/flux/src/Layout.luau#L512-L526): [from Layout] Creates a [`UICorner`](https://create.roblox.com/docs/reference/engine/classes/UICorner) from an offset pixel radius, a [`UDim`](https://create.roblox.com/docs/reference/engine/datatypes/UDim), or a per-corner `{ topLeft, topRight, bottomLeft, bottomRight, top, bottom, left, right, radius }` table.
+- [`Flux.stroke(config: StrokeConfig?): UIStroke`](vendor/flux/src/Layout.luau#L533-L546): [from Layout] Creates a [`UIStroke`](https://create.roblox.com/docs/reference/engine/classes/UIStroke) with static or reactive `thickness`, `color`, `transparency`, `mode`, `joins`, `position`, and `offset`.
+- [`Flux.aspectRatio(ratio: Reactive<number>, aspectType: Reactive<"fit" | "scale" | Enum.AspectType>?, dominantAxis: Reactive<"width" | "height" | Enum.DominantAxis>?): UIAspectRatioConstraint`](vendor/flux/src/Layout.luau#L574-L584): [from Layout] Creates a [`UIAspectRatioConstraint`](https://create.roblox.com/docs/reference/engine/classes/UIAspectRatioConstraint) with `ratio`, `aspectType` (`"fit"` or `"scale"`), and `dominantAxis` (`"width"` or `"height"`).
+- [`Flux.list(config: ListConfig?): UIListLayout`](vendor/flux/src/Layout.luau#L591-L621): [from Layout] Creates a [`UIListLayout`](https://create.roblox.com/docs/reference/engine/classes/UIListLayout) with `SortOrder = LayoutOrder` and flexbox-style `gap`, `direction`, `align` (cross-axis), `justify` (main-axis), and `wraps` options.
+- [`Flux.grid(config: GridConfig?): UIGridLayout`](vendor/flux/src/Layout.luau#L629-L657): [from Layout] Creates a [`UIGridLayout`](https://create.roblox.com/docs/reference/engine/classes/UIGridLayout) with `SortOrder = LayoutOrder` and `cell`, `gap`, `fill`, `align`, `justify`, and `maxCells` options.
+- [`Flux.flex(config: Reactive<FlexConfig | number | FlexMode | Enum.UIFlexMode>?): UIFlexItem`](vendor/flux/src/Layout.luau#L665-L736): [from Layout] Creates a [`UIFlexItem`](https://create.roblox.com/docs/reference/engine/classes/UIFlexItem) from `nil` (`"fill"`), a numeric `GrowRatio` (`Custom` mode), a preset `"fill"`/`"grow"`/`"shrink"`/`"none"`/`"custom"` string, or a `{ mode?, grow?, shrink?, lineAlign?
+- [`Flux.scale(scale: Reactive<number>?): UIScale`](vendor/flux/src/Layout.luau#L743-L747): [from Layout] Creates a [`UIScale`](https://create.roblox.com/docs/reference/engine/classes/UIScale) with `Scale` (`1` by default).
+- [`Flux.gradient(config: GradientConfig?): UIGradient`](vendor/flux/src/Layout.luau#L754-L763): [from Layout] Creates a [`UIGradient`](https://create.roblox.com/docs/reference/engine/classes/UIGradient) from single values, evenly spaced stop arrays, or sequences for `color` and `transparency`.
+- [`Flux.sizeConstraint(config: SizeConstraintConfig?): UISizeConstraint`](vendor/flux/src/Layout.luau#L770-L776): [from Layout] Creates a [`UISizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UISizeConstraint) from `min`/`max` `Vector2` bounds or per-axis `minWidth`, `minHeight`, `maxWidth`, and `maxHeight` bounds.
+- [`Flux.textSizeConstraint(config: TextSizeConstraintConfig?): UITextSizeConstraint`](vendor/flux/src/Layout.luau#L783-L789): [from Layout] Creates a [`UITextSizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UITextSizeConstraint) bounding text size between `min` and `max` pixels.
+- [`Flux.mount(fn: () -> any, target: Graph.Reactive<Instance?>?): () -> ()`](vendor/flux/src/Edit.luau#L1378): [from Edit] Runs `fn` inside a new root [scope](https://flux.kohl.gg/guide/concepts/scopes), mounts the returned UI into `target` (or mounts returned portals when `target` is omitted), and returns an idempotent `unmount` function.
+- [`Flux.__call(_: any, obj: any, second: any?): Graph.Node<any>`](vendor/flux/src/init.luau#L97-L100): Terse untyped constructor for a [signal](https://flux.kohl.gg/guide/concepts/signals) (`Flux(value)`), [computed](https://flux.kohl.gg/guide/concepts/computeds) (`Flux(fn)`), [instance property node](https://flux.kohl.gg/guide/concepts/signals#binding-from-an-instance-property) (`Flux(instance, key)`), or [event signal node](https://flux.kohl.gg/guide/concepts/signals#bridging-signals) (`Flux(signal, initial?)`).
+- [`Flux.Clock`](vendor/flux/src/init.luau#L106-L119): Shared time source for timers, frame callbacks, and deterministic test stepping.
+- [`Flux.Clock.now(): number`](vendor/flux/src/Clock.luau#L203-L205): [from Clock] Seconds on a monotonic clock, for measuring intervals: `os.clock()` in a game, virtual time on a manual clock.
+- [`Flux.Clock.wall(): number`](vendor/flux/src/Clock.luau#L211-L216): [from Clock] Unix time in seconds, for dates and countdowns shared between players: `workspace:GetServerTimeNow()` in a game, `2026-01-01T00:00:00Z + now()` on a manual clock.
+- [`Flux.Clock.delay<A...>(seconds: number?, fn: ((A...) -> ...any) | thread, ...: A...): thread`](vendor/flux/src/Clock.luau#L229-L239): [from Clock] Runs `fn(...)` (or resumes a thread) after `seconds`, like `task.delay`.
+- [`Flux.Clock.wait(seconds: number?): number`](vendor/flux/src/Clock.luau#L245-L258): [Yields] [from Clock] Yields the running thread for `seconds` (default: one frame), like `task.wait`, and returns the time it waited.
+- [`Flux.Clock.defer<A...>(fn: ((A...) -> ...any) | thread, ...: A...): thread`](vendor/flux/src/Clock.luau#L264-L290): [from Clock] Runs `fn(...)` (or resumes a thread) once the current work finishes, like `task.defer`.
+- [`Flux.Clock.cancel(thread: thread)`](vendor/flux/src/Clock.luau#L295-L323): [from Clock] Cancels a thread from `delay`, `defer` or a `wait`, like `task.cancel`.
+- [`Flux.Clock.connect(phase: Phase, fn: (dt: number) -> ()): () -> ()`](vendor/flux/src/Clock.luau#L329-L382): [from Clock] Calls `fn(dt)` every frame at `phase` ("PreRender", "RenderStepped" or "Heartbeat").
+- [`Flux.Clock.manual(on: boolean)`](vendor/flux/src/Clock.luau#L388-L399): [from Clock] Toggles manual clock mode for deterministic tests (defaults to `false` live mode in Roblox and `true` outside Roblox).
+- [`Flux.Clock.isManual(): boolean`](vendor/flux/src/Clock.luau#L404-L406): [from Clock] Tests only: whether the clock is manual.
+- [`Flux.Clock.step(seconds: number, frameLength: number?)`](vendor/flux/src/Clock.luau#L495-L528): [from Clock] Tests only: advances a manual clock by `seconds`, in frames of at most `frameLength` seconds (default 1/60).
+- [`Flux.Clock.drain()`](vendor/flux/src/Clock.luau#L412-L433): [from Clock] Tests only: runs deferred work until none is left, including work it defers in turn.
+- [`Flux.Clock.reset()`](vendor/flux/src/Clock.luau#L551-L559): [from Clock] Tests only: drops every pending timer, `wait`, deferred call and manual subscriber.
+- [`Flux.Interact`](vendor/flux/src/init.luau#L134-L142): Read-only interaction state nodes (`hover`, `press`, `selected`, `focused`) and pointer hit-testing helpers (`pointIn`, `sunk`, `covered`).
+- [`Flux.Interact.pointIn(x: number, y: number, object: GuiObject): boolean`](vendor/flux/src/Interact.luau#L1033): [from Interact] Whether the point `(x, y)` lies within `object`'s absolute bounds (inclusive, ignoring rotation).
+- [`Flux.Interact.sunk(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L1034): [from Interact] Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI rendered above `object` (or while the Roblox escape menu is open).
+- [`Flux.Interact.covered(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L1035): [from Interact] Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI above `object` that is not a descendant of `object`.
+- [`Flux.Interact.hover(object: GuiObject, options: HoverOptions?): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L1037): [from Interact] Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) that is `true` while a pointer or touch contact is inside `object` with no input-claiming GUI above it.
+- [`Flux.Interact.press(object: GuiObject): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L1038): [from Interact] Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) that is `true` while `object` is held down by pointer, touch, or gamepad/keyboard activation (`ButtonA`/`Enter`).
+- [`Flux.Interact.selected(object: GuiObject): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L1039): [from Interact] Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) tracking whether `object` is currently [`GuiService.SelectedObject`](https://create.roblox.com/docs/reference/engine/classes/GuiService#SelectedObject).
+- [`Flux.Interact.focused(textBox: TextBox): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L1040): [from Interact] Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) tracking whether `textBox` currently has keyboard focus.
+- [`Flux.Motion`](vendor/flux/src/init.luau#L145-L147): Advances active [`Flux.spring`](https://flux.kohl.gg/guide/motion/spring) and [`Flux.tween`](https://flux.kohl.gg/guide/motion/tween) nodes.
+- [`Flux.Motion.step(dt: number?)`](vendor/flux/src/Motion.luau#L1529): [from Motion] Advances every active [spring](https://flux.kohl.gg/guide/motion/spring) and [tween](https://flux.kohl.gg/guide/motion/tween) by `dt` seconds (or the time since the last step).
+- [`Flux.Responsive`](vendor/flux/src/init.luau#L150-L163): Reactive nodes for viewport size, UI scale, breakpoints, device platform, active input mode, and accessibility settings.
+- [`Flux.Responsive.config: Config`](vendor/flux/src/Responsive.luau#L356): [Read Only] [from Responsive] Default responsive configuration shared by derived nodes.
+- [`Flux.Responsive.platform: Graph.Node<Platform>`](vendor/flux/src/Responsive.luau#L357): [Read Only] [from Responsive] Active device class (`"vr"`, `"console"`, `"pc"`, or `"mobile"`), updated live on the client (`"pc"` off-client).
+- [`Flux.Responsive.viewport: Graph.Node<Vector2>`](vendor/flux/src/Responsive.luau#L359): [Read Only] [from Responsive] The active camera's `ViewportSize` as a node, live on the client.
+- [`Flux.Responsive.scale: Graph.Node<number>`](vendor/flux/src/Responsive.luau#L360): [Read Only] [from Responsive] UI scale factor derived from `viewport` (`1.0` at `config.reference`).
+- [`Flux.Responsive.breakpoint: Graph.Node<Breakpoint>`](vendor/flux/src/Responsive.luau#L361): [Read Only] [from Responsive] Size class (`"phone" | "tablet" | "desktop"`) derived from `viewport` width.
+- [`Flux.Responsive.displaySize: Graph.Node<DisplaySize>`](vendor/flux/src/Responsive.luau#L362): [Read Only] [from Responsive] Physical screen size class (`"Small"`, `"Medium"`, or `"Large"`) mirroring `GuiService.ViewportDisplaySize`.
+- [`Flux.Responsive.input: Graph.Node<Input>`](vendor/flux/src/Responsive.luau#L364): [Read Only] [from Responsive] Active input mode (`"keyboard"`, `"touch"`, or `"gamepad"`) tracking `UserInputService.PreferredInput` on the client.
+- [`Flux.Responsive.textSize: Graph.Node<TextSize>`](vendor/flux/src/Responsive.luau#L365): [Read Only] [from Responsive] Player's preferred text size (`"Medium"`, `"Large"`, `"Larger"`, or `"Largest"`) from `GuiService.PreferredTextSize`.
+- [`Flux.Responsive.reducedMotion: Graph.Node<boolean>`](vendor/flux/src/Responsive.luau#L366): [Read Only] [from Responsive] Tracks `GuiService.ReducedMotionEnabled` (`true` when the player prefers reduced motion).
+- [`Flux.Responsive.preferredTransparency: Graph.Node<number>`](vendor/flux/src/Responsive.luau#L367): [Read Only] [from Responsive] Tracks `GuiService.PreferredTransparency` from `0` (opaque backgrounds) to `1` (default).
+- [`Flux.Responsive.scaleOf(partial: PartialConfig?): Graph.Node<number>`](vendor/flux/src/Responsive.luau#L369): [from Responsive] Factory escape hatch: a `scale` node with per-surface config (merged over defaults).
+- [`Flux.Responsive.breakpointOf(partial: PartialConfig?): Graph.Node<Breakpoint>`](vendor/flux/src/Responsive.luau#L370): [from Responsive] Factory escape hatch: a `breakpoint` node with per-surface thresholds.
+- [`Flux.Store`](vendor/flux/src/init.luau#L166-L173): Array mutation (`insert`, `remove`, `move`), snapshot diffing (`reconcile`), unwrapping (`unwrap`), and teardown (`Destroy`) for [`Flux.store`](https://flux.kohl.gg/guide/concepts/stores) proxies.
+- [`Flux.Store.insert(proxy: any, posOrValue: any, value: any?)`](vendor/flux/src/Store.luau#L405-L433): [from Store] Inserts `value` into a store array (appending with 2 arguments, or inserting at `posOrValue` with 3) and notifies length and index observers.
+- [`Flux.Store.remove(proxy: any, pos: number?): any`](vendor/flux/src/Store.luau#L440-L468): [from Store] Removes and returns the element at `pos` (defaulting to the last element) from a store array and notifies length and index observers.
+- [`Flux.Store.move(proxy: any, from: number, to: number)`](vendor/flux/src/Store.luau#L475-L494): [from Store] Moves the element at 1-based index `from` to `to` in a single tracked step without tearing down nested item proxies.
+- [`Flux.Store.reconcile<T>(proxy: T, newData: T, key: string?): T`](vendor/flux/src/Store.luau#L754-L762): [from Store] Diffs `newData` into the store `proxy` in place, firing only changed leaf nodes and reusing unchanged nested proxies.
+- [`Flux.Store.unwrap<T>(proxy: T): T`](vendor/flux/src/Store.luau#L396-L398): [from Store] Returns the raw, unproxied backing table of a store for untracked reads or serialization.
+- [`Flux.Store.Destroy<T>(proxy: T)`](vendor/flux/src/Store.luau#L387-L389): [from Store] Tears down a store and all of its nested proxies, disposing their per-key nodes via [`Flux.dispose`](https://flux.kohl.gg/api/Flux#dispose) while leaving the raw backing table intact.
 
 ## Async
 
 - [Async](vendor/flux/src/Async.luau): Async resources: a fetcher runs off the graph, and its progress is exposed as nodes (`data`, `error`, `loading`, `state`). Constructors: `Async.new`.
-- [`type AsyncState = "unresolved" | "pending" | "ready" | "refreshing" | "errored"`](vendor/flux/src/Async.luau#L34): The state of an [async](https://flux.kohl.gg/guide/concepts/async) node, derived from its `.error`/`.loading` and whether a fetch has resolved.
-- [`type Async<T>`](vendor/flux/src/Async.luau#L37-L61)
-- [`Async.new(source: any, fetcher: any, initialValue: any): Async<any>`](vendor/flux/src/Async.luau#L211-L215): Runs yielding work off the reactive graph and exposes its progress as `.data`, `.error`, `.loading`, and `.state` nodes.
-- [`Async:Destroy()`](vendor/flux/src/Async.luau#L150-L163): Destroys the async node, cleaning up all resources.
-- [`Async:mutate(value: any)`](vendor/flux/src/Async.luau#L170-L180): Optimistically writes `data` and invalidates any in-flight fetch.
-- [`Async:refetch(refetching: any?)`](vendor/flux/src/Async.luau#L188-L198): Re-runs the fetcher with the current source value without writing the source node.
+- [`type AsyncState = "unresolved" | "pending" | "ready" | "refreshing" | "errored"`](vendor/flux/src/Async.luau#L33): The state of an [async](https://flux.kohl.gg/guide/concepts/async) node, derived from its `.error`/`.loading` and whether a fetch has resolved.
+- [`type Async<T>`](vendor/flux/src/Async.luau#L36-L60)
+- [`Async.new(source: any, fetcher: any, initialValue: any): Async<any>`](vendor/flux/src/Async.luau#L248-L255): Runs yielding work off the reactive graph and exposes its progress as `.data`, `.error`, `.loading`, and `.state` nodes.
+- [`Async:Destroy()`](vendor/flux/src/Async.luau#L163-L176): Destroys the async node, cleaning up all resources.
+- [`Async:mutate(value: any)`](vendor/flux/src/Async.luau#L183-L197): Optimistically writes `data` and invalidates any in-flight fetch.
+- [`Async:refetch(refetching: any?)`](vendor/flux/src/Async.luau#L205-L219): Re-runs the fetcher with the current source value without writing the source node.
 
 ## Bind
 
 - [Bind](vendor/flux/src/Bind.luau)
-- [`Bind.model<N>(node: N): Graph.Unwrap<N>`](vendor/flux/src/Bind.luau#L401-L407): Wraps a reactive [node](https://flux.kohl.gg/guide/concepts/signals) for two-way binding on an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, attribute, or tag.
-- [`Bind.isModel(value: unknown): boolean`](vendor/flux/src/Bind.luau#L414-L417): Returns `true` when `value` is a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key) wrapper.
-- [`Bind.modelNode(value: unknown): Graph.Node<any>?`](vendor/flux/src/Bind.luau#L431-L434): Returns the underlying node from a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key) wrapper, or `nil` if `value` is not a model.
-- [`Bind.property<I, K>(instance: I & Instance, property: K | "Name"): Graph.Node<Type.PropertyType<I, K>>`](vendor/flux/src/Bind.luau#L533-L540): Creates a [node](https://flux.kohl.gg/guide/concepts/signals) mirroring an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, an attribute (`$Name` or `_attr_Name`), or a [`CollectionService`](https://create.roblox.com/docs/reference/engine/classes/CollectionService) tag (`#Tag` or `_tag_Tag`).
-- [`Bind.on<D, R>(deps: any, fn: (input: any, prevInput: any?, prevResult: R?) -> R, defer: boolean?): (prevResult: R?) -> R?`](vendor/flux/src/Bind.luau#L566-L604): Wraps `fn` so a [computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects) tracks only `deps` and runs `fn(input, prevInput, prevResult)` untracked.
+- [`Bind.model<T>(node: { read get: (any) -> T, read peek: (any) -> T, read set: (any, ...any) -> any }): T`](vendor/flux/src/Bind.luau#L836-L842): Wraps a reactive [node](https://flux.kohl.gg/guide/concepts/signals) for two-way binding on an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, attribute, or tag.
+- [`Bind.isModel(value: unknown): boolean`](vendor/flux/src/Bind.luau#L849-L852): Returns `true` when `value` is a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key) wrapper.
+- [`Bind.modelNode(value: unknown): Graph.Node<any>?`](vendor/flux/src/Bind.luau#L866-L869): Returns the underlying node from a [`Flux.model`](https://flux.kohl.gg/guide/roblox/creation#flux-model-two-way-binding-in-one-key) wrapper, or `nil` if `value` is not a model.
+- [`Bind.listen<T>(node: Graph.Node<T>, fn: (value: T) -> ()): () -> ()`](vendor/flux/src/Bind.luau#L942-L974): Subscribes `fn` to updates of `node` with [`RBXScriptSignal:Connect`](https://create.roblox.com/docs/reference/engine/datatypes/RBXScriptSignal#Connect) semantics and returns an unsubscribe function.
+- [`Bind.fromSignal(sig: any, initial: any): Graph.Node<any>`](vendor/flux/src/Bind.luau#L1092-L1097): Creates a [node](https://flux.kohl.gg/guide/concepts/signals#bridging-signals) updated from the first argument of an [`RBXScriptSignal`](https://create.roblox.com/docs/reference/engine/datatypes/RBXScriptSignal) or signal table with `:Connect()` / `:connect()`, seeding from `initial` and deduplicating equal values.
+- [`Bind.property<I, K>(instance: I & Instance, property: K | "Name"): Graph.Node<Type.PropertyType<I, K>>`](vendor/flux/src/Bind.luau#L1112-L1119): Creates a [node](https://flux.kohl.gg/guide/concepts/signals) mirroring an [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) property, an attribute (`$Name` or `_attr_Name`), or a [`CollectionService`](https://create.roblox.com/docs/reference/engine/classes/CollectionService) tag (`#Tag` or `_tag_Tag`).
+- [`Bind.on<D, R>(deps: D, fn: (input: Type.OnInput<D>, prevInput: Type.OnInput<D>?, prevResult: R?) -> R, defer: boolean?): (prevResult: R?) -> R?`](vendor/flux/src/Bind.luau#L1207)
+- [`Bind.portal(target: Graph.Reactive<Instance?>, children: any): Portal`](vendor/flux/src/Bind.luau#L1310-L1316): Creates a portal mounting `children` into `target` (static [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) or reactive target node) without transferring ownership of `target`.
 
 ## Clock
 
 - [Clock](vendor/flux/src/Clock.luau): Shared clock for timers, frame callbacks, and deterministic stepping in tests.
-- [`type Phase = "PreRender" | "RenderStepped" | "Heartbeat"`](vendor/flux/src/Clock.luau#L16)
-- [`Clock.now(): number`](vendor/flux/src/Clock.luau#L168-L170): Seconds on a monotonic clock, for measuring intervals: `os.clock()` in a game, virtual time on a manual clock.
-- [`Clock.wall(): number`](vendor/flux/src/Clock.luau#L176-L181): Unix time in seconds, for dates and countdowns shared between players: `workspace:GetServerTimeNow()` in a game, `2026-01-01T00:00:00Z + now()` on a manual clock.
-- [`Clock.delay<A...>(seconds: number?, fn: ((A...) -> ...any) | thread, ...: A...): thread`](vendor/flux/src/Clock.luau#L194-L201): Runs `fn(...)` (or resumes a thread) after `seconds`, like `task.delay`.
-- [`Clock.wait(seconds: number?): number`](vendor/flux/src/Clock.luau#L207-L217): [Yields] Yields the running thread for `seconds` (default: one frame), like `task.wait`, and returns the time it waited.
-- [`Clock.defer<A...>(fn: ((A...) -> ...any) | thread, ...: A...): thread`](vendor/flux/src/Clock.luau#L223-L233): Runs `fn(...)` (or resumes a thread) once the current work finishes, like `task.defer`.
-- [`Clock.cancel(thread: thread)`](vendor/flux/src/Clock.luau#L238-L260): Cancels a thread from `delay`, `defer` or a `wait`, like `task.cancel`.
-- [`Clock.connect(phase: Phase, fn: (dt: number) -> ()): () -> ()`](vendor/flux/src/Clock.luau#L266-L287): Calls `fn(dt)` every frame at `phase` ("PreRender", "RenderStepped" or "Heartbeat").
-- [`Clock.manual(on: boolean)`](vendor/flux/src/Clock.luau#L293-L304): Toggles manual clock mode for tests (headless Luau is always manual).
-- [`Clock.isManual(): boolean`](vendor/flux/src/Clock.luau#L309-L311): Tests only: whether the clock is manual.
-- [`Clock.drain()`](vendor/flux/src/Clock.luau#L317-L338): Tests only: runs deferred work until none is left, including work it defers in turn.
-- [`Clock.step(seconds: number, frameLength: number?)`](vendor/flux/src/Clock.luau#L378-L393): Tests only: advances a manual clock by `seconds`, in frames of at most `frameLength` seconds (default 1/60).
-- [`Clock.reset()`](vendor/flux/src/Clock.luau#L398-L406): Tests only: drops every pending timer, `wait`, deferred call and manual subscriber.
+- [`type Phase = "PreRender" | "RenderStepped" | "Heartbeat"`](vendor/flux/src/Clock.luau#L17)
+- [`Clock.now(): number`](vendor/flux/src/Clock.luau#L203-L205): Seconds on a monotonic clock, for measuring intervals: `os.clock()` in a game, virtual time on a manual clock.
+- [`Clock.wall(): number`](vendor/flux/src/Clock.luau#L211-L216): Unix time in seconds, for dates and countdowns shared between players: `workspace:GetServerTimeNow()` in a game, `2026-01-01T00:00:00Z + now()` on a manual clock.
+- [`Clock.delay<A...>(seconds: number?, fn: ((A...) -> ...any) | thread, ...: A...): thread`](vendor/flux/src/Clock.luau#L229-L239): Runs `fn(...)` (or resumes a thread) after `seconds`, like `task.delay`.
+- [`Clock.wait(seconds: number?): number`](vendor/flux/src/Clock.luau#L245-L258): [Yields] Yields the running thread for `seconds` (default: one frame), like `task.wait`, and returns the time it waited.
+- [`Clock.defer<A...>(fn: ((A...) -> ...any) | thread, ...: A...): thread`](vendor/flux/src/Clock.luau#L264-L290): Runs `fn(...)` (or resumes a thread) once the current work finishes, like `task.defer`.
+- [`Clock.cancel(thread: thread)`](vendor/flux/src/Clock.luau#L295-L323): Cancels a thread from `delay`, `defer` or a `wait`, like `task.cancel`.
+- [`Clock.connect(phase: Phase, fn: (dt: number) -> ()): () -> ()`](vendor/flux/src/Clock.luau#L329-L382): Calls `fn(dt)` every frame at `phase` ("PreRender", "RenderStepped" or "Heartbeat").
+- [`Clock.manual(on: boolean)`](vendor/flux/src/Clock.luau#L388-L399): Toggles manual clock mode for deterministic tests (defaults to `false` live mode in Roblox and `true` outside Roblox).
+- [`Clock.isManual(): boolean`](vendor/flux/src/Clock.luau#L404-L406): Tests only: whether the clock is manual.
+- [`Clock.drain()`](vendor/flux/src/Clock.luau#L412-L433): Tests only: runs deferred work until none is left, including work it defers in turn.
+- [`Clock.step(seconds: number, frameLength: number?)`](vendor/flux/src/Clock.luau#L495-L528): Tests only: advances a manual clock by `seconds`, in frames of at most `frameLength` seconds (default 1/60).
+- [`Clock.reset()`](vendor/flux/src/Clock.luau#L551-L559): Tests only: drops every pending timer, `wait`, deferred call and manual subscriber.
 
 ## Compat
 
 - [Compat](vendor/flux/src/Compat.luau)
-- [`Compat.isRoblox: boolean`](vendor/flux/src/Compat.luau#L482)
-- [`Compat.task: any`](vendor/flux/src/Compat.luau#L486)
-- [`Compat.services: { [string]: any }`](vendor/flux/src/Compat.luau#L489)
-- [`Compat.Instance`](vendor/flux/src/Compat.luau#L493)
-- [`Compat.Enum`](vendor/flux/src/Compat.luau#L501)
-- [`Compat.ColorSequence: any`](vendor/flux/src/Compat.luau#L502)
-- [`Compat.NumberSequence: any`](vendor/flux/src/Compat.luau#L504)
-- [`Compat.traceback(err: any, level: number?): any`](vendor/flux/src/Compat.luau#L483)
-- [`Compat.warn(...: any)`](vendor/flux/src/Compat.luau#L484)
-- [`Compat.setWarnHook(hook: ((message: string) -> ())?)`](vendor/flux/src/Compat.luau#L485)
-- [`Compat.typeof(value: any): string`](vendor/flux/src/Compat.luau#L488)
-- [`Compat.getService(name: string): any`](vendor/flux/src/Compat.luau#L490-L492)
-- [`Compat.clock(): number`](vendor/flux/src/Clock.luau#L168-L170): [from Clock] Seconds on a monotonic clock, for measuring intervals: `os.clock()` in a game, virtual time on a manual clock.
-- [`Compat.Color3`](vendor/flux/src/Compat.luau#L494)
-- [`Compat.Color3.new(r: number?, g: number?, b: number?): any`](vendor/flux/src/Compat.luau#L175-L177)
-- [`Compat.Color3.fromRGB(r: number?, g: number?, b: number?): any`](vendor/flux/src/Compat.luau#L178-L180)
-- [`Compat.Color3.fromHex(hex: string): any`](vendor/flux/src/Compat.luau#L181-L195)
-- [`Compat.UDim`](vendor/flux/src/Compat.luau#L495)
-- [`Compat.UDim.new(scale: number?, offset: number?): any`](vendor/flux/src/Compat.luau#L224)
-- [`Compat.UDim2`](vendor/flux/src/Compat.luau#L496)
-- [`Compat.UDim2.new(a: any, b: any, c: number?, d: number?): any`](vendor/flux/src/Compat.luau#L236-L238)
-- [`Compat.UDim2.fromScale(x: number?, y: number?): any`](vendor/flux/src/Compat.luau#L239-L241)
-- [`Compat.UDim2.fromOffset(x: number?, y: number?): any`](vendor/flux/src/Compat.luau#L242-L244)
-- [`Compat.Vector2`](vendor/flux/src/Compat.luau#L497)
-- [`Compat.Vector2.zero: any`](vendor/flux/src/Compat.luau#L280)
-- [`Compat.Vector2.new(x: number?, y: number?): any`](vendor/flux/src/Compat.luau#L280)
-- [`Compat.Vector3`](vendor/flux/src/Compat.luau#L498)
-- [`Compat.Vector3.zero: any`](vendor/flux/src/Compat.luau#L321)
-- [`Compat.Vector3.new(x: number?, y: number?, z: number?): any`](vendor/flux/src/Compat.luau#L321)
-- [`Compat.Font`](vendor/flux/src/Compat.luau#L499)
-- [`Compat.Font.new(family: string, weight: any?, style: any?): any`](vendor/flux/src/Compat.luau#L402)
-- [`Compat.Font.fromEnum(item: any): any`](vendor/flux/src/Compat.luau#L403-L405)
-- [`Compat.Font.fromId(id: number, weight: any?, style: any?): any`](vendor/flux/src/Compat.luau#L406-L408)
-- [`Compat.TweenInfo`](vendor/flux/src/Compat.luau#L500)
-- [`Compat.TweenInfo.new(time: number?, easingStyle: any?, easingDirection: any?, repeatCount: number?, reverses: boolean?, delayTime: number?): any`](vendor/flux/src/Compat.luau#L416-L432)
-- [`Compat.ColorSequenceKeypoint`](vendor/flux/src/Compat.luau#L503)
-- [`Compat.ColorSequenceKeypoint.new(time: number, value: any): any`](vendor/flux/src/Compat.luau#L503)
-- [`Compat.NumberSequenceKeypoint`](vendor/flux/src/Compat.luau#L505)
-- [`Compat.NumberSequenceKeypoint.new(time: number, value: number, envelope: number?): any`](vendor/flux/src/Compat.luau#L505)
+- [`Compat.isRoblox: boolean`](vendor/flux/src/Compat.luau#L79): [Read Only]
+- [`Compat.task: any`](vendor/flux/src/Compat.luau#L83): [Read Only]
+- [`Compat.typeof`](vendor/flux/src/Compat.luau#L85): [Read Only]
+- [`Compat.services`](vendor/flux/src/Compat.luau#L86-L98): [Read Only]
+- [`Compat.Instance`](vendor/flux/src/Compat.luau#L99): [Read Only]
+- [`Compat.Color3`](vendor/flux/src/Compat.luau#L100): [Read Only]
+- [`Compat.UDim`](vendor/flux/src/Compat.luau#L101): [Read Only]
+- [`Compat.UDim2`](vendor/flux/src/Compat.luau#L102): [Read Only]
+- [`Compat.Vector2`](vendor/flux/src/Compat.luau#L103): [Read Only]
+- [`Compat.Vector3`](vendor/flux/src/Compat.luau#L104): [Read Only]
+- [`Compat.CFrame`](vendor/flux/src/Compat.luau#L105): [Read Only]
+- [`Compat.Rect`](vendor/flux/src/Compat.luau#L106): [Read Only]
+- [`Compat.NumberRange`](vendor/flux/src/Compat.luau#L107): [Read Only]
+- [`Compat.Font`](vendor/flux/src/Compat.luau#L108): [Read Only]
+- [`Compat.TweenInfo`](vendor/flux/src/Compat.luau#L109): [Read Only]
+- [`Compat.Enum`](vendor/flux/src/Compat.luau#L110): [Read Only]
+- [`Compat.ColorSequence`](vendor/flux/src/Compat.luau#L111): [Read Only]
+- [`Compat.ColorSequenceKeypoint`](vendor/flux/src/Compat.luau#L112): [Read Only]
+- [`Compat.NumberSequence`](vendor/flux/src/Compat.luau#L113): [Read Only]
+- [`Compat.NumberSequenceKeypoint`](vendor/flux/src/Compat.luau#L114): [Read Only]
+- [`Compat.traceback(err: any, level: number?): any`](vendor/flux/src/Compat.luau#L80)
+- [`Compat.warn(...: any)`](vendor/flux/src/Compat.luau#L81)
+- [`Compat.setWarnHook(hook: ((message: string) -> ())?)`](vendor/flux/src/Compat.luau#L82)
+- [`Compat.getService(name: string): any`](vendor/flux/src/Compat.luau#L117-L119)
+- [`Compat.requireRoblox(name: string)`](vendor/flux/src/Compat.luau#L121-L125)
+- [`Compat.robloxStubs(prefix: string, names: { string }): { [string]: any }`](vendor/flux/src/Compat.luau#L127-L136)
+- [`Compat.clock(): number`](vendor/flux/src/Clock.luau#L203-L205): [from Clock] Seconds on a monotonic clock, for measuring intervals: `os.clock()` in a game, virtual time on a manual clock.
 
 ## Conditional
 
-- [Conditional](vendor/flux/src/Conditional.luau): Control flow, list mapping, and keyed selection helpers (`show`, `showKeyed`, `switch`, `presence`, `pick`, `fallback`, `forValue`, `forIndex`, `selector`).
-- [`type Selector<K>`](vendor/flux/src/Conditional.luau#L403-L416)
-- [`Conditional.otherwise: any`](vendor/flux/src/Conditional.luau#L571): [Read Only] Catch-all branch key for [`Flux.switch`](https://flux.kohl.gg/guide/concepts/conditionals#a-catch-all-branch) maps when `source` matches no explicit key.
-- [`Conditional.show<T, F>(condition: unknown, component: (value: () -> any) -> T, fallback: ((value: () -> any) -> F)?): Node<T | F>`](vendor/flux/src/Conditional.luau#L578-L582): Mounts `component` while `condition` is truthy, or `fallback` when falsy, in its own child [scope](https://flux.kohl.gg/guide/concepts/scopes).
-- [`Conditional.showKeyed<T, F>(condition: unknown, component: (value: () -> any) -> T, fallback: ((value: () -> any) -> F)?): Node<T | F>`](vendor/flux/src/Conditional.luau#L588-L592): Mounts `component` while `condition` is truthy (or `fallback` when falsy) and remounts in a fresh [scope](https://flux.kohl.gg/guide/concepts/scopes) whenever `condition` changes identity.
-- [`Conditional.switch<S>(source: S)`](vendor/flux/src/Conditional.luau#L593): Mounts the branch factory matching `source`'s current value in its own child [scope](https://flux.kohl.gg/guide/concepts/scopes).
-- [`Conditional.presence<T>(condition: unknown, component: (exiting: Node<boolean>, done: () -> ()) -> T): Node<T?>`](vendor/flux/src/Conditional.luau#L594): Mounts `component(exiting, done)` while `condition` is truthy and keeps it mounted while `exiting()` is `true` until `done()` is called.
-- [`Conditional.pick(condition: unknown, whenTrue: any, whenFalse: any?): Node<any>`](vendor/flux/src/Conditional.luau#L595): Derives a [node](https://flux.kohl.gg/guide/concepts/signals) returning `whenTrue` while `condition` is truthy and `whenFalse` otherwise.
-- [`Conditional.fallback<V, D>(value: V, default: D): Node<NonNil<Graph.Unwrap<V>> | Graph.Unwrap<D>>`](vendor/flux/src/Conditional.luau#L596): Derives a [node](https://flux.kohl.gg/guide/concepts/signals) returning `value` when non-`nil`, or `default` when `value` is `nil`.
-- [`Conditional.forIndex<L, U>(list: L, mapFn: (index: number, item: Node<Item<L>>) -> U): Node<{ U }>`](vendor/flux/src/Conditional.luau#L597): Maps `list` by numeric index, running `mapFn(index, item)` once per slot and updating `item` in place when the value at that index changes.
-- [`Conditional.forValue<L, U>(list: L, mapFn: (index: Node<number>, value: Item<L>) -> U): Node<{ U }>`](vendor/flux/src/Conditional.luau#L598): Maps `list` by item identity, running `mapFn(index, value)` once per unique value and updating `index` when an item moves.
-- [`Conditional.selector<S, K>(source: S, equals: ((sourceValue: Graph.Unwrap<S>, key: K) -> boolean)?): Selector<K>`](vendor/flux/src/Conditional.luau#L599): Creates a keyed selector that tracks which key matches `source` in O(1) (or O(observed keys) with a custom `equals` comparator).
-- [`Selector`](vendor/flux/src/Conditional.luau#L430): Constructors: `Conditional.selector`.
-- [`Selector:get(key: any): boolean`](vendor/flux/src/Conditional.luau#L453-L477): Reactively reads whether `key` matches the selector's source.
-- [`Selector:Destroy()`](vendor/flux/src/Conditional.luau#L486-L490): Destroys the selector and disposes its internal watcher and per-key nodes.
+- [Conditional](vendor/flux/src/Conditional.luau): Control flow, list mapping, and keyed selection helpers (`show`, `showKeyed`, `switch`, `presence`, `pick`, `fallback`, `forValue`, `forKey`, `forIndex`, `selector`).
+- [`type Selector<K>`](vendor/flux/src/Conditional.luau#L595-L608)
+- [`Conditional.otherwise: any`](vendor/flux/src/Conditional.luau#L787): [Read Only] Catch-all branch key for [`Flux.switch`](https://flux.kohl.gg/guide/concepts/conditionals#a-catch-all-branch) maps when `source` matches no explicit key.
+- [`Conditional.show<T, F>(condition: unknown, component: (value: () -> any) -> T, fallback: ((value: () -> any) -> F)?): Node<T | F>`](vendor/flux/src/Conditional.luau#L794-L798): Mounts `component` while `condition` is truthy, or `fallback` when falsy, in its own child [scope](https://flux.kohl.gg/guide/concepts/scopes).
+- [`Conditional.showKeyed<T, F>(condition: unknown, component: (value: () -> any) -> T, fallback: ((value: () -> any) -> F)?): Node<T | F>`](vendor/flux/src/Conditional.luau#L804-L808): Mounts `component` while `condition` is truthy (or `fallback` when falsy) and remounts in a fresh [scope](https://flux.kohl.gg/guide/concepts/scopes) whenever `condition` changes identity.
+- [`Conditional.switch<S>(source: S)`](vendor/flux/src/Conditional.luau#L809): Mounts the branch factory matching `source`'s current value in its own child [scope](https://flux.kohl.gg/guide/concepts/scopes).
+- [`Conditional.presence<T>(condition: unknown, component: (exiting: Node<boolean>, done: () -> ()) -> T): Node<T?>`](vendor/flux/src/Conditional.luau#L810): Mounts `component(exiting, done)` while `condition` is truthy and keeps it mounted while `exiting()` is `true` until `done()` is called.
+- [`Conditional.pick(condition: unknown, whenTrue: any, whenFalse: any?): Node<any>`](vendor/flux/src/Conditional.luau#L811): Derives a [node](https://flux.kohl.gg/guide/concepts/signals) returning `whenTrue` while `condition` is truthy and `whenFalse` otherwise.
+- [`Conditional.fallback<V, D>(value: V, default: D): Node<NonNil<Graph.Unwrap<V>> | Graph.Unwrap<D>>`](vendor/flux/src/Conditional.luau#L812): Derives a [node](https://flux.kohl.gg/guide/concepts/signals) returning `value` when non-`nil`, or `default` when `value` is `nil`.
+- [`Conditional.forIndex(list: any, mapFn: any, fallback: any?): Node<any>`](vendor/flux/src/Conditional.luau#L813-L817): Maps `list` by numeric index, running `mapFn(index, item)` once per slot and updating `item` in place when the value at that index changes.
+- [`Conditional.forValue(list: any, mapFn: any, fallback: any?): Node<any>`](vendor/flux/src/Conditional.luau#L818-L822): Maps `list` by item identity, running `mapFn(index, value)` once per unique value and updating `index` when an item moves.
+- [`Conditional.forKey(list: any, keyOf: any, mapFn: any, fallback: any?): Node<any>`](vendor/flux/src/Conditional.luau#L823-L828): Maps `list` by `keyOf(item)`, running `mapFn(index, item)` once per unique key and updating both `index` and `item` in place when entries with that key move or rebuild.
+- [`Conditional.selector<S, K>(source: S, equals: ((sourceValue: Graph.Unwrap<S>, key: K) -> boolean)?): Selector<K>`](vendor/flux/src/Conditional.luau#L829): Creates a keyed selector that tracks which key matches `source` in O(1) (or O(observed keys) with a custom `equals` comparator).
+- [`Selector`](vendor/flux/src/Conditional.luau#L622): Constructors: `Conditional.selector`.
+- [`Selector:get(key: any): boolean`](vendor/flux/src/Conditional.luau#L653-L681): Reactively reads whether `key` matches the selector's source.
+- [`Selector:Destroy()`](vendor/flux/src/Conditional.luau#L690-L694): Destroys the selector and disposes its internal watcher and per-key nodes.
 
 ## Edit
 
 - [Edit](vendor/flux/src/Edit.luau)
-- [`type Selection = { any }`](vendor/flux/src/Edit.luau#L153)
-- [`type ClassSelector = <T>(className: T | keyof<Type.Editable>) -> (Type.EditProperties<Fallback<T>>) -> Selection`](vendor/flux/src/Edit.luau#L154)
-- [`type QuerySelector = (query: string) -> (Type.Map<any>) -> Selection`](vendor/flux/src/Edit.luau#L156)
-- [`type ParentSelector = () -> (Type.Map<any>) -> Selection`](vendor/flux/src/Edit.luau#L157)
-- [`Edit.Defaults: { [string]: { [string]: unknown } }`](vendor/flux/src/Edit.luau#L1066): [Read Only]
-- [`Edit.edit(instance: Instance, properties: Type.Map<any>): Instance`](vendor/flux/src/Edit.luau#L1063)
-- [`Edit.new(className: string, properties: any): Instance`](vendor/flux/src/Edit.luau#L1064)
-- [`Edit.split(props: any, keys: any, ...: any): ...any`](vendor/flux/src/Edit.luau#L1080): Partitions `props` into one table per `keys` group plus a final table holding every remaining key, leaving `props` untouched.
-- [`Edit.Flags`](vendor/flux/src/Edit.luau#L1065)
-- [`Edit.Flags.defaults: boolean`](vendor/flux/src/Edit.luau#L45): Controls whether [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function) applies the per-class [`Flux.Defaults`](https://flux.kohl.gg/guide/roblox/defaults) table to new instances (`true` by default).
-- [`Edit.Find`](vendor/flux/src/Edit.luau#L1067)
-- [`Edit.Find.Ancestor: QuerySelector`](vendor/flux/src/Edit.luau#L197): [Read Only] Selects the first ancestor named `name` via [`Instance:FindFirstAncestor`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestor) and applies the property table to it.
-- [`Edit.Find.AncestorClass: ClassSelector`](vendor/flux/src/Edit.luau#L205): [Read Only] Selects the first ancestor of class `className` via [`Instance:FindFirstAncestorOfClass`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestorOfClass) and applies the property table to it.
-- [`Edit.Find.AncestorIsA: ClassSelector`](vendor/flux/src/Edit.luau#L213): [Read Only] Selects the first ancestor matching `IsA(className)` via [`Instance:FindFirstAncestorWhichIsA`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestorWhichIsA) and applies the property table to it.
-- [`Edit.Find.Child: QuerySelector`](vendor/flux/src/Edit.luau#L221): [Read Only] Selects the first direct child named `name` via [`Instance:FindFirstChild`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChild) and applies the property table to it.
-- [`Edit.Find.ChildClass: ClassSelector`](vendor/flux/src/Edit.luau#L229): [Read Only] Selects the first direct child of class `className` via [`Instance:FindFirstChildOfClass`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChildOfClass) and applies the property table to it.
-- [`Edit.Find.ChildIsA: ClassSelector`](vendor/flux/src/Edit.luau#L237): [Read Only] Selects the first direct child matching `IsA(className)` via [`Instance:FindFirstChildWhichIsA`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChildWhichIsA) and applies the property table to it.
-- [`Edit.Find.Descendant: QuerySelector`](vendor/flux/src/Edit.luau#L244-L246): [Read Only] Selects the first descendant named `name` via `Instance:FindFirstChild(name, true)` and applies the property table to it.
-- [`Edit.Find.Parent: ParentSelector`](vendor/flux/src/Edit.luau#L253): [Read Only] Selects the target's [`Instance.Parent`](https://create.roblox.com/docs/reference/engine/classes/Instance#Parent) and applies the property table to it (`Find.Parent() { ...
-- [`Edit.Find.Path: QuerySelector`](vendor/flux/src/Edit.luau#L260): [Read Only] Walks a `.`-separated child path from the target (`Parent` or `^` climbs to `Instance.Parent`) and applies the property table to the final [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance).
-- [`Edit.Find.Query: QuerySelector`](vendor/flux/src/Edit.luau#L268): [Read Only] Selects every descendant matching a Roblox query string via [`Instance:QueryDescendants`](https://create.roblox.com/docs/reference/engine/classes/Instance#QueryDescendants) and applies the property table to each match.
-- [`Edit.Find.QueryFirst: QuerySelector`](vendor/flux/src/Edit.luau#L276): [Read Only] Selects the first descendant matching a Roblox query string via [`Instance:QueryDescendants`](https://create.roblox.com/docs/reference/engine/classes/Instance#QueryDescendants) and applies the property table to it.
+- [`type Selection = { any }`](vendor/flux/src/Edit.luau#L157)
+- [`type ClassSelector = <T>(className: T | keyof<Type.Editable>) -> (Type.EditProperties<Fallback<T>>) -> Selection`](vendor/flux/src/Edit.luau#L158)
+- [`type QuerySelector = (query: string) -> (Type.Map<any>) -> Selection`](vendor/flux/src/Edit.luau#L160)
+- [`type ParentSelector = () -> (Type.Map<any>) -> Selection`](vendor/flux/src/Edit.luau#L161)
+- [`Edit.edit(instance: Instance, properties: Type.Map<any>): Instance`](vendor/flux/src/Edit.luau#L1371)
+- [`Edit.new(className: string, properties: any): Instance`](vendor/flux/src/Edit.luau#L1372)
+- [`Edit.mount(fn: () -> any, target: Graph.Reactive<Instance?>?): () -> ()`](vendor/flux/src/Edit.luau#L1378): Runs `fn` inside a new root [scope](https://flux.kohl.gg/guide/concepts/scopes), mounts the returned UI into `target` (or mounts returned portals when `target` is omitted), and returns an idempotent `unmount` function.
+- [`Edit.split(props: any, keys: any, ...: any): ...any`](vendor/flux/src/Edit.luau#L1398): Partitions `props` into one table per `keys` group plus a final table holding every remaining key, leaving `props` untouched.
+- [`Edit.prop(...: any): any`](vendor/flux/src/Edit.luau#L1404): Marks a key in a component prop schema for `Flux.split`; cast a bare call to declare the type (`Flux.prop() :: Flux.Reactive<string>`), or pass `default` (`Flux.prop(16)`) to fill missing/`nil` values automatically.
+- [`Edit.own(...: { [string]: any }): any`](vendor/flux/src/Edit.luau#L1410): Merges one or more component prop schemas into a single frozen schema table for `Flux.Props` and `Flux.split`.
+- [`Edit.merge(...: any): any`](vendor/flux/src/Edit.luau#L1417): Returns a shallow read-only live view merging 1-4 prop tables left-to-right where the rightmost non-`nil` value wins per key.
+- [`Edit.portal(target: Graph.Reactive<Instance?>, children: any): Portal`](vendor/flux/src/Bind.luau#L1310-L1316): [from Bind] Creates a portal mounting `children` into `target` (static [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance) or reactive target node) without transferring ownership of `target`.
+- [`Edit.Flags`](vendor/flux/src/Edit.luau#L1380)
+- [`Edit.Flags.defaults: boolean`](vendor/flux/src/Edit.luau#L46): Controls whether [`Flux.new`](https://flux.kohl.gg/guide/roblox/creation#the-flux-new-function) applies the per-class [`Flux.Defaults`](https://flux.kohl.gg/guide/roblox/defaults) table to new instances (`true` by default).
+- [`Edit.Defaults.Part`](vendor/flux/src/Edit.luau#L77-L81)
+- [`Edit.Defaults.Part.Size`](vendor/flux/src/Edit.luau#L79)
+- [`Edit.Defaults.Part.Anchored: boolean`](vendor/flux/src/Edit.luau#L80)
+- [`Edit.Defaults.Part.Material`](vendor/flux/src/Edit.luau#L78)
+- [`Edit.Defaults.BillboardGui`](vendor/flux/src/Edit.luau#L82-L85)
+- [`Edit.Defaults.BillboardGui.ResetOnSpawn: boolean`](vendor/flux/src/Edit.luau#L83)
+- [`Edit.Defaults.BillboardGui.ZIndexBehavior`](vendor/flux/src/Edit.luau#L84)
+- [`Edit.Defaults.ScreenGui`](vendor/flux/src/Edit.luau#L86-L89)
+- [`Edit.Defaults.ScreenGui.ResetOnSpawn: boolean`](vendor/flux/src/Edit.luau#L87)
+- [`Edit.Defaults.ScreenGui.ZIndexBehavior`](vendor/flux/src/Edit.luau#L88)
+- [`Edit.Defaults.SurfaceGui`](vendor/flux/src/Edit.luau#L90-L95)
+- [`Edit.Defaults.SurfaceGui.ResetOnSpawn: boolean`](vendor/flux/src/Edit.luau#L91)
+- [`Edit.Defaults.SurfaceGui.PixelsPerStud: number`](vendor/flux/src/Edit.luau#L93)
+- [`Edit.Defaults.SurfaceGui.ZIndexBehavior`](vendor/flux/src/Edit.luau#L92)
+- [`Edit.Defaults.SurfaceGui.SizingMode`](vendor/flux/src/Edit.luau#L94)
+- [`Edit.Defaults.UIListLayout`](vendor/flux/src/Edit.luau#L105)
+- [`Edit.Defaults.UIListLayout.SortOrder`](vendor/flux/src/Edit.luau#L105)
+- [`Edit.Defaults.UIGridLayout`](vendor/flux/src/Edit.luau#L106)
+- [`Edit.Defaults.UIGridLayout.SortOrder`](vendor/flux/src/Edit.luau#L106)
+- [`Edit.Defaults.UITableLayout`](vendor/flux/src/Edit.luau#L107)
+- [`Edit.Defaults.UITableLayout.SortOrder`](vendor/flux/src/Edit.luau#L107)
+- [`Edit.Defaults.UIPageLayout`](vendor/flux/src/Edit.luau#L108)
+- [`Edit.Defaults.UIPageLayout.SortOrder`](vendor/flux/src/Edit.luau#L108)
+- [`Edit.Defaults`](vendor/flux/src/Edit.luau#L1381)
+- [`Edit.Defaults.Frame: { [string]: unknown }`](vendor/flux/src/Edit.luau#L96)
+- [`Edit.Defaults.ImageButton: { [string]: unknown }`](vendor/flux/src/Edit.luau#L97)
+- [`Edit.Defaults.ImageLabel: { [string]: unknown }`](vendor/flux/src/Edit.luau#L98)
+- [`Edit.Defaults.VideoFrame: { [string]: unknown }`](vendor/flux/src/Edit.luau#L99)
+- [`Edit.Defaults.ViewportFrame: { [string]: unknown }`](vendor/flux/src/Edit.luau#L100)
+- [`Edit.Defaults.ScrollingFrame: { [string]: unknown }`](vendor/flux/src/Edit.luau#L101)
+- [`Edit.Defaults.TextBox: { [string]: unknown }`](vendor/flux/src/Edit.luau#L102)
+- [`Edit.Defaults.TextButton: { [string]: unknown }`](vendor/flux/src/Edit.luau#L103)
+- [`Edit.Defaults.TextLabel: { [string]: unknown }`](vendor/flux/src/Edit.luau#L104)
+- [`Edit.Find`](vendor/flux/src/Edit.luau#L1382)
+- [`Edit.Find.Ancestor: QuerySelector`](vendor/flux/src/Edit.luau#L201): [Read Only] Selects the first ancestor named `name` via [`Instance:FindFirstAncestor`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestor) and applies the property table to it.
+- [`Edit.Find.AncestorClass: ClassSelector`](vendor/flux/src/Edit.luau#L209): [Read Only] Selects the first ancestor of class `className` via [`Instance:FindFirstAncestorOfClass`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestorOfClass) and applies the property table to it.
+- [`Edit.Find.AncestorIsA: ClassSelector`](vendor/flux/src/Edit.luau#L217): [Read Only] Selects the first ancestor matching `IsA(className)` via [`Instance:FindFirstAncestorWhichIsA`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstAncestorWhichIsA) and applies the property table to it.
+- [`Edit.Find.Child: QuerySelector`](vendor/flux/src/Edit.luau#L225): [Read Only] Selects the first direct child named `name` via [`Instance:FindFirstChild`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChild) and applies the property table to it.
+- [`Edit.Find.ChildClass: ClassSelector`](vendor/flux/src/Edit.luau#L233): [Read Only] Selects the first direct child of class `className` via [`Instance:FindFirstChildOfClass`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChildOfClass) and applies the property table to it.
+- [`Edit.Find.ChildIsA: ClassSelector`](vendor/flux/src/Edit.luau#L241): [Read Only] Selects the first direct child matching `IsA(className)` via [`Instance:FindFirstChildWhichIsA`](https://create.roblox.com/docs/reference/engine/classes/Instance#FindFirstChildWhichIsA) and applies the property table to it.
+- [`Edit.Find.Descendant: QuerySelector`](vendor/flux/src/Edit.luau#L248-L250): [Read Only] Selects the first descendant named `name` via `Instance:FindFirstChild(name, true)` and applies the property table to it.
+- [`Edit.Find.Parent: ParentSelector`](vendor/flux/src/Edit.luau#L257): [Read Only] Selects the target's [`Instance.Parent`](https://create.roblox.com/docs/reference/engine/classes/Instance#Parent) and applies the property table to it (`Find.Parent() { ...
+- [`Edit.Find.Path: QuerySelector`](vendor/flux/src/Edit.luau#L264): [Read Only] Walks a `.`-separated child path from the target (`Parent` or `^` climbs to `Instance.Parent`) and applies the property table to the final [`Instance`](https://create.roblox.com/docs/reference/engine/classes/Instance).
+- [`Edit.Find.Query: QuerySelector`](vendor/flux/src/Edit.luau#L272): [Read Only] Selects every descendant matching a Roblox query string via [`Instance:QueryDescendants`](https://create.roblox.com/docs/reference/engine/classes/Instance#QueryDescendants) and applies the property table to each match.
+- [`Edit.Find.QueryFirst: QuerySelector`](vendor/flux/src/Edit.luau#L280): [Read Only] Selects the first descendant matching a Roblox query string via [`Instance:QueryDescendants`](https://create.roblox.com/docs/reference/engine/classes/Instance#QueryDescendants) and applies the property table to it.
 
 ## Graph
 
 - [Graph](vendor/flux/src/Graph.luau): The reactive graph: signals hold values, computeds derive them lazily, effects react to them, and scopes own the reactions and cleanups created inside them.
-- [`type Cleanable`](vendor/flux/src/Graph.luau#L27-L38)
-- [`type Context<T>`](vendor/flux/src/Graph.luau#L2502-L2518)
-- [`type Node<T = any>`](vendor/flux/src/Graph.luau#L2839-L2880): A reactive node holding a `T` (a signal, computed, effect, or scope).
-- [`type State<T = any>`](vendor/flux/src/Graph.luau#L2886-L2927): A writable signal node whose `:set(value)` method is type-checked against `T`.
-- [`type Reactive<T> = T | Node<T> | (() -> T)`](vendor/flux/src/Graph.luau#L2943): A plain `T`, a `Node<T>`, or a `() -> T` getter function.
-- [`type function Unwrap(value: type)`](vendor/flux/src/Graph.luau#L2948-L2996): Extracts the underlying value type `T` from a `Node<T>`, getter `() -> T`, or plain `T` (distributing over unions).
-- [`type Owner = { any }`](vendor/flux/src/Graph.luau#L2999)
-- [`Graph.new(obj: any, isEffect: boolean?, equals: any): any`](vendor/flux/src/Graph.luau#L3007): Wraps `obj` in a reactive node: a [signal](https://flux.kohl.gg/guide/concepts/signals) for a plain value, a [computed](https://flux.kohl.gg/guide/concepts/computeds) for a function, or an [effect](https://flux.kohl.gg/guide/concepts/effects) when `isEffect` is `true` (existing nodes pass through as-is).
-- [`Graph.signal(initial: any, equals: any): any`](vendor/flux/src/Graph.luau#L3019): Creates a writable [signal](https://flux.kohl.gg/guide/concepts/signals) holding `initial`, using `equals` (default `==`) to skip unchanged writes.
-- [`Graph.computed(fn: any, equals: any): any`](vendor/flux/src/Graph.luau#L3032): Creates a lazily cached [computed](https://flux.kohl.gg/guide/concepts/computeds) node derived from `fn`.
-- [`Graph.effect(fn: (...any) -> ...any): any`](vendor/flux/src/Graph.luau#L3043): Schedules `fn` to run on the next flush and re-run whenever any node it reads changes.
-- [`Graph.getter(node: any): any`](vendor/flux/src/Graph.luau#L3055): Returns a plain function that reads `node` with tracking, avoiding wrapper `__call` overhead in hot loops.
-- [`Graph.setter(node: any): any`](vendor/flux/src/Graph.luau#L3059): Returns a plain function that writes `node` (`setter(value, force)`), avoiding wrapper `__call` overhead in hot loops.
-- [`Graph.createSignal<T>(initial: T, equals: ((T, T: any) -> boolean)?): (() -> T, (value: T, force: boolean?) -> T)`](vendor/flux/src/Graph.luau#L3072): Creates a lightweight signal without a node wrapper and returns `(getter, setter)`.
-- [`Graph.createMemo<T>(fn: () -> T, equals: ((T, T) -> boolean)?): () -> T`](vendor/flux/src/Graph.luau#L3084): Creates a lightweight computed without a node wrapper and returns its tracked getter function.
-- [`Graph.createEffect(fn: (...any) -> ...any)`](vendor/flux/src/Graph.luau#L3095): Creates a lightweight effect without returning a node wrapper.
-- [`Graph.flush()`](vendor/flux/src/Graph.luau#L3101): Runs all queued [effects](https://flux.kohl.gg/guide/concepts/effects) immediately instead of waiting for the next frame.
-- [`Graph.scope<T>(fn: (scope: Node<any>) -> T): (Node<any>, T)`](vendor/flux/src/Graph.luau#L3114): Runs `fn` in a new owner [scope](https://flux.kohl.gg/guide/concepts/scopes) and returns `(scope, result)`.
-- [`Graph.cleanup(obj: Cleanable)`](vendor/flux/src/Graph.luau#L3128): Registers `obj` to be disposed via [`Flux.dispose`](https://flux.kohl.gg/guide/concepts/scopes#disposing-by-hand-with-flux-dispose) before the running reaction re-runs and when its owner is destroyed.
-- [`Graph.dispose(obj: Cleanable?)`](vendor/flux/src/Graph.luau#L3140): Tears down `obj` immediately (functions, instances, connections, threads, objects with `Destroy`/`Disconnect` methods, or arrays of cleanables).
-- [`Graph.getOwner(): Owner?`](vendor/flux/src/Graph.luau#L3147): Returns the active reactive owner, or `nil` at the root.
-- [`Graph.withOwner(node: any, fn: () -> ...any): ...any`](vendor/flux/src/Graph.luau#L3155): Runs `fn` with `owner` (from `Flux.getOwner`, a node, or `nil` for unowned roots) as the active owner and restores its captured [context](https://flux.kohl.gg/guide/concepts/context#deferred-code).
-- [`Graph.untrack(fn: (() -> ...any)?): ...any`](vendor/flux/src/Graph.luau#L3169): Runs `fn` without dependency [tracking](https://flux.kohl.gg/guide/concepts/tracking) and returns its result.
-- [`Graph.retrack()`](vendor/flux/src/Graph.luau#L3181): Resumes [tracking](https://flux.kohl.gg/guide/concepts/tracking) after a bare `Flux.untrack()` in the same function body.
-- [`Graph.raw(object: any): any`](vendor/flux/src/Graph.luau#L3187): Reads a `Reactive` value (node, getter function, or plain value) without subscribing the running reaction.
-- [`Graph.read(object: any): any`](vendor/flux/src/Graph.luau#L3199): Reads a `Reactive` value (node, getter function, or plain value) and subscribes the running reaction if it's dynamic.
-- [`Graph.safe<T>(tryFn: () -> T, fallback: T | (err: unknown) -> T, equals: ((a: T, b: T) -> boolean)?): Node<T>`](vendor/flux/src/Graph.luau#L3207): Creates a [computed](https://flux.kohl.gg/guide/concepts/computeds) that evaluates `tryFn` and returns `fallback` (a static value or an untracked `(err) -> T` function) if `tryFn` throws.
-- [`Graph.context(default: any): any`](vendor/flux/src/Graph.luau#L3219): Creates a [context](https://flux.kohl.gg/guide/concepts/context) with the given `default` value for passing data down a component tree without prop drilling.
-- [`Graph.bindContext<A..., R...>(fn: (A...) -> R...): (A...) -> R...`](vendor/flux/src/Graph.luau#L3232): Wraps `fn` so every call sees the [context](https://flux.kohl.gg/guide/concepts/context#deferred-code) values active when `bindContext` was called.
-- [`Graph.isNode(object: any): boolean`](vendor/flux/src/Graph.luau#L3238): Returns `true` if `object` is a Flux [node](https://flux.kohl.gg/guide/concepts/signals).
-- [`Graph.isReactive(): boolean`](vendor/flux/src/Graph.luau#L3246): Returns `true` if called inside a tracking [computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects).
-- [`Node`](vendor/flux/src/Graph.luau#L2054-L2134): Constructors: `Graph.effect`, `Graph.scope`.
-- [`Node:peek(): any`](vendor/flux/src/Graph.luau#L2073-L2075): Reads the node's current value without subscribing the caller.
-- [`Node:get(): any`](vendor/flux/src/Graph.luau#L2082-L2084): Reads the node's current value (`node()` does the same) and subscribes the running [computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects).
-- [`Node:set(value: any, force: boolean?): any`](vendor/flux/src/Graph.luau#L2091-L2093): Writes `value` (`node(value)` does the same), skipping propagation when it equals the current value (`~=` or the node's `equals`).
-- [`Node:update(): any`](vendor/flux/src/Graph.luau#L2099-L2102): Notifies the node's dependents without changing its value, useful after mutating a table in place.
-- [`Node:Destroy()`](vendor/flux/src/Graph.luau#L2109-L2111): Disconnects the node from its sources and observers, then runs its pending [`Flux.cleanup`](https://flux.kohl.gg/guide/concepts/effects#cleanup-with-flux-cleanup) values and `onDestroy` callbacks.
-- [`Node:onDestroy(fn: (oldValue: any) -> ())`](vendor/flux/src/Graph.luau#L2118-L2120): Registers `fn` to run with the node's last value when the node is destroyed.
-- [`Node:onObserved(fn: () -> ())`](vendor/flux/src/Graph.luau#L2125-L2127): Registers `fn` to run when the node gains its first transitive effect observer.
-- [`Node:onUnobserved(fn: () -> ())`](vendor/flux/src/Graph.luau#L2131-L2133): Registers `fn` to run when the node loses its last transitive effect observer.
-- [`Context`](vendor/flux/src/Graph.luau#L2525): Constructors: `Graph.context`.
-- [`Context:get<T>(): T`](vendor/flux/src/Graph.luau#L2533-L2542): Returns the value from the innermost active `provide` call, or `default` if none is active.
-- [`Context:provide<T, R>(value: T, fn: () -> R): R`](vendor/flux/src/Graph.luau#L2550-L2563): Runs `fn` with this context set to `value` for all code and reactive nodes created inside `fn`, then restores the previous value.
+- [`type Cleanable`](vendor/flux/src/Graph.luau#L28-L39)
+- [`type Context<T>`](vendor/flux/src/Graph.luau#L3333-L3349)
+- [`type Node<T = any>`](vendor/flux/src/Graph.luau#L3869-L3910): A reactive node holding a `T` (a signal, computed, effect, or scope).
+- [`type State<T = any>`](vendor/flux/src/Graph.luau#L3916-L3957): A writable signal node whose `:set(value)` method is type-checked against `T`.
+- [`type Reactive<T> = T | Node<T> | (() -> T)`](vendor/flux/src/Graph.luau#L3973): A plain `T`, a `Node<T>`, or a `() -> T` getter function.
+- [`type function Unwrap(value: type)`](vendor/flux/src/Graph.luau#L3978-L4026): Extracts the underlying value type `T` from a `Node<T>`, getter `() -> T`, or plain `T` (distributing over unions).
+- [`type Owner = { any }`](vendor/flux/src/Graph.luau#L4029)
+- [`Graph.Node: any`](vendor/flux/src/Graph.luau#L4317): [Read Only]
+- [`Graph.new(obj: any, isEffect: boolean?, equals: any): any`](vendor/flux/src/Graph.luau#L4053): Wraps `obj` in a reactive node: a [signal](https://flux.kohl.gg/guide/concepts/signals) for a plain value, a [computed](https://flux.kohl.gg/guide/concepts/computeds) for a function, or an [effect](https://flux.kohl.gg/guide/concepts/effects) when `isEffect` is `true` (existing nodes pass through as-is).
+- [`Graph.signal(initial: any, equals: any): any`](vendor/flux/src/Graph.luau#L4065): Creates a writable [signal](https://flux.kohl.gg/guide/concepts/signals) holding `initial`, using `equals` (default `==`) to skip unchanged writes.
+- [`Graph.computed(fn: any, equals: any): any`](vendor/flux/src/Graph.luau#L4079): Creates a lazily cached [computed](https://flux.kohl.gg/guide/concepts/computeds) node derived from `fn`.
+- [`Graph.effect(fn: (...any) -> ...any): any`](vendor/flux/src/Graph.luau#L4090): Schedules `fn` to run on the next flush and re-run whenever any node it reads changes.
+- [`Graph.getter(node: any): any`](vendor/flux/src/Graph.luau#L4102): Returns a plain function that reads `node` with tracking, avoiding wrapper `__call` overhead in hot loops.
+- [`Graph.setter(node: any): any`](vendor/flux/src/Graph.luau#L4106): Returns a plain function that writes `node` (`setter(value, force)`), avoiding wrapper `__call` overhead in hot loops.
+- [`Graph.createSignal<T>(initial: T, equals: ((T, T: any) -> boolean)?): (() -> T, (value: T, force: boolean?) -> T)`](vendor/flux/src/Graph.luau#L4119): Creates a lightweight signal without a node wrapper and returns `(getter, setter)`.
+- [`Graph.createMemo<T>(fn: (prev: any) -> T, equals: ((T, T) -> boolean)?): () -> T`](vendor/flux/src/Graph.luau#L4131): Creates a lightweight computed without a node wrapper and returns its tracked getter function.
+- [`Graph.createEffect(fn: (...any) -> ...any)`](vendor/flux/src/Graph.luau#L4142): Creates a lightweight effect without returning a node wrapper.
+- [`Graph.flush()`](vendor/flux/src/Graph.luau#L4148): Runs all queued [effects](https://flux.kohl.gg/guide/concepts/effects) immediately instead of waiting for the next frame.
+- [`Graph.scope<T>(fn: (scope: Node<any>) -> T): (Node<any>, T)`](vendor/flux/src/Graph.luau#L4161): Runs `fn` in a new owner [scope](https://flux.kohl.gg/guide/concepts/scopes) and returns `(scope, result)`.
+- [`Graph.cleanup(obj: Cleanable)`](vendor/flux/src/Graph.luau#L4175): Registers `obj` to be disposed via [`Flux.dispose`](https://flux.kohl.gg/guide/concepts/scopes#disposing-by-hand-with-flux-dispose) before the running reaction re-runs and when its owner is destroyed.
+- [`Graph.dispose(obj: Cleanable?)`](vendor/flux/src/Graph.luau#L4187): Tears down `obj` immediately (functions, instances, connections, threads, objects with `Destroy`/`Disconnect` methods, or array-shaped tables traversed with cycle protection).
+- [`Graph.getOwner(): Owner?`](vendor/flux/src/Graph.luau#L4194): Returns the active reactive owner, or `nil` at the root.
+- [`Graph.withOwner(node: any, fn: () -> ...any): ...any`](vendor/flux/src/Graph.luau#L4202): Runs `fn` with `owner` (from `Flux.getOwner`, a node, or `nil` for unowned roots) as the active owner and restores its captured [context](https://flux.kohl.gg/guide/concepts/context#deferred-code).
+- [`Graph.untrack(fn: (() -> ...any)?): ...any`](vendor/flux/src/Graph.luau#L4216): Runs `fn` without dependency [tracking](https://flux.kohl.gg/guide/concepts/tracking) and returns its result.
+- [`Graph.retrack()`](vendor/flux/src/Graph.luau#L4228): Resumes [tracking](https://flux.kohl.gg/guide/concepts/tracking) after a bare `Flux.untrack()` in the same function body.
+- [`Graph.raw(object: any): any`](vendor/flux/src/Graph.luau#L4234): Reads a `Reactive` value (node, getter function, or plain value) without subscribing the running reaction.
+- [`Graph.read(object: any): any`](vendor/flux/src/Graph.luau#L4246): Reads a `Reactive` value (node, getter function, or plain value) and subscribes the running reaction if it's dynamic.
+- [`Graph.safe(tryFn: () -> any, fallback: any, equals: any): Node<any>`](vendor/flux/src/Graph.luau#L4254-L4258): Creates a [computed](https://flux.kohl.gg/guide/concepts/computeds) that evaluates `tryFn` and returns `fallback` (a static value or an untracked `(err, reset) -> T` function) if `tryFn` throws.
+- [`Graph.context(default: any): any`](vendor/flux/src/Graph.luau#L4270): Creates a [context](https://flux.kohl.gg/guide/concepts/context) with the given `default` value for passing data down a component tree without prop drilling.
+- [`Graph.bindContext<A..., R...>(fn: (A...) -> R...): (A...) -> R...`](vendor/flux/src/Graph.luau#L4283): Wraps `fn` so every call sees the [context](https://flux.kohl.gg/guide/concepts/context#deferred-code) values active when `bindContext` was called.
+- [`Graph.isNode(object: any): boolean`](vendor/flux/src/Graph.luau#L4289): Returns `true` if `object` is a Flux [node](https://flux.kohl.gg/guide/concepts/signals).
+- [`Graph.isReactive(): boolean`](vendor/flux/src/Graph.luau#L4297): Returns `true` if called inside a tracking [computed](https://flux.kohl.gg/guide/concepts/computeds) or [effect](https://flux.kohl.gg/guide/concepts/effects).
+- [`Context`](vendor/flux/src/Graph.luau#L3356): Constructors: `Graph.context`.
+- [`Context:get<T>(): T`](vendor/flux/src/Graph.luau#L3364-L3374): Returns the value from the innermost active `provide` call, or `default` if none is active.
+- [`Context:provide<T, R>(value: T, fn: () -> R): R`](vendor/flux/src/Graph.luau#L3382-L3395): Runs `fn` with this context set to `value` for all code and reactive nodes created inside `fn`, then restores the previous value.
 
 ## Interact
 
 - [Interact](vendor/flux/src/Interact.luau): Interaction state as read-only boolean nodes (`hover`, `press`, `selected`, `focused`) and the hit tests `pointIn`, `sunk` and `covered`.
 - [`type HoverOptions`](vendor/flux/src/Interact.luau#L26-L29)
-- [`Interact.pointIn(x: number, y: number, object: GuiObject): boolean`](vendor/flux/src/Interact.luau#L681): Whether the point `(x, y)` lies within `object`'s absolute bounds (inclusive, ignoring rotation).
-- [`Interact.sunk(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L682): Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI rendered above `object` (or while the Roblox escape menu is open).
-- [`Interact.covered(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L683): Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI above `object` that is not a descendant of `object`.
-- [`Interact.hover(object: GuiObject, options: HoverOptions?): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L685): Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) that is `true` while a pointer or touch contact is inside `object` with no input-claiming GUI above it.
-- [`Interact.press(object: GuiObject): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L686): Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) that is `true` while `object` is held down by pointer, touch, or gamepad/keyboard activation (`ButtonA`/`Enter`).
-- [`Interact.selected(object: GuiObject): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L687): Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) tracking whether `object` is currently [`GuiService.SelectedObject`](https://create.roblox.com/docs/reference/engine/classes/GuiService#SelectedObject).
-- [`Interact.focused(textBox: TextBox): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L688): Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) tracking whether `textBox` currently has keyboard focus.
+- [`Interact.pointIn(x: number, y: number, object: GuiObject): boolean`](vendor/flux/src/Interact.luau#L1033): Whether the point `(x, y)` lies within `object`'s absolute bounds (inclusive, ignoring rotation).
+- [`Interact.sunk(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L1034): Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI rendered above `object` (or while the Roblox escape menu is open).
+- [`Interact.covered(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L1035): Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI above `object` that is not a descendant of `object`.
+- [`Interact.hover(object: GuiObject, options: HoverOptions?): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L1037): Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) that is `true` while a pointer or touch contact is inside `object` with no input-claiming GUI above it.
+- [`Interact.press(object: GuiObject): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L1038): Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) that is `true` while `object` is held down by pointer, touch, or gamepad/keyboard activation (`ButtonA`/`Enter`).
+- [`Interact.selected(object: GuiObject): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L1039): Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) tracking whether `object` is currently [`GuiService.SelectedObject`](https://create.roblox.com/docs/reference/engine/classes/GuiService#SelectedObject).
+- [`Interact.focused(textBox: TextBox): Graph.Node<boolean>`](vendor/flux/src/Interact.luau#L1040): Returns a read-only boolean [node](https://flux.kohl.gg/guide/concepts/signals) tracking whether `textBox` currently has keyboard focus.
 
 ## Layout
 
-- [Layout](vendor/flux/src/Layout.luau): Layout instances with friendly, reactive arguments: `padding`, `corner`, `stroke`, `list`, `grid`, `flex`, `gradient`, `aspectRatio`, `sizeConstraint`, `textSizeConstraint`.
+- [Layout](vendor/flux/src/Layout.luau): Layout instances with friendly, reactive arguments: `padding`, `corner`, `stroke`, `list`, `grid`, `flex`, `scale`, `gradient`, `aspectRatio`, `sizeConstraint`, `textSizeConstraint`.
 - [`type Length = number | UDim`](vendor/flux/src/Layout.luau#L42)
 - [`type ReactiveLength = Reactive<number> | Reactive<UDim>`](vendor/flux/src/Layout.luau#L43)
-- [`type Insets = { top: number?, bottom: number?, left: number?, right: number? }`](vendor/flux/src/Layout.luau#L44)
-- [`type Align = "start" | "center" | "end"`](vendor/flux/src/Layout.luau#L45)
-- [`type FlexAlign = Align | "between" | "around" | "evenly" | "stretch" | "fill" | "none"`](vendor/flux/src/Layout.luau#L46)
-- [`type LineAlign = Align | "stretch" | "automatic"`](vendor/flux/src/Layout.luau#L47)
-- [`type Direction = "x" | "y"`](vendor/flux/src/Layout.luau#L48)
-- [`type FlexMode = "fill" | "grow" | "shrink" | "none"`](vendor/flux/src/Layout.luau#L49)
-- [`type PaddingSides`](vendor/flux/src/Layout.luau#L51-L58)
-- [`type ListConfig`](vendor/flux/src/Layout.luau#L60-L69)
-- [`type GridConfig`](vendor/flux/src/Layout.luau#L71-L78)
-- [`type StrokeConfig`](vendor/flux/src/Layout.luau#L80-L88)
-- [`type CornerSides`](vendor/flux/src/Layout.luau#L90-L100)
-- [`type GradientConfig`](vendor/flux/src/Layout.luau#L102-L108)
-- [`type SizeConstraintConfig`](vendor/flux/src/Layout.luau#L110-L117)
-- [`type TextSizeConstraintConfig`](vendor/flux/src/Layout.luau#L119-L122)
-- [`Layout.padding(value: Length | PaddingSides | Graph.Node<any> | (() -> Length | Insets)): UIPadding`](vendor/flux/src/Layout.luau#L393-L418): Creates a [`UIPadding`](https://create.roblox.com/docs/reference/engine/classes/UIPadding) from a single length, a `{ top, bottom, left, right, x, y }` table, or a reactive source.
-- [`Layout.corner(radius: ReactiveLength | CornerSides?): UICorner`](vendor/flux/src/Layout.luau#L425-L437): Creates a [`UICorner`](https://create.roblox.com/docs/reference/engine/classes/UICorner) from an offset pixel radius, a [`UDim`](https://create.roblox.com/docs/reference/engine/datatypes/UDim), or a per-corner `{ topLeft, topRight, bottomLeft, bottomRight, top, bottom, left, right, radius }` table.
-- [`Layout.stroke(config: StrokeConfig?): UIStroke`](vendor/flux/src/Layout.luau#L444-L457): Creates a [`UIStroke`](https://create.roblox.com/docs/reference/engine/classes/UIStroke) with static or reactive `thickness`, `color`, `transparency`, `mode`, `joins`, `position`, and `offset`.
-- [`Layout.aspectRatio(ratio: Reactive<number>, aspectType: Reactive<"fit" | "scale" | Enum.AspectType>?, dominantAxis: Reactive<"width" | "height" | Enum.DominantAxis>?): UIAspectRatioConstraint`](vendor/flux/src/Layout.luau#L464-L474): Creates a [`UIAspectRatioConstraint`](https://create.roblox.com/docs/reference/engine/classes/UIAspectRatioConstraint) with `ratio`, `aspectType` (`"fit"` or `"scale"`), and `dominantAxis` (`"width"` or `"height"`).
-- [`Layout.list(config: ListConfig?): UIListLayout`](vendor/flux/src/Layout.luau#L481-L507): Creates a [`UIListLayout`](https://create.roblox.com/docs/reference/engine/classes/UIListLayout) with `SortOrder = LayoutOrder` and flexbox-style `gap`, `direction`, `align` (cross-axis), `justify` (main-axis), and `wraps` options.
-- [`Layout.grid(config: GridConfig?): UIGridLayout`](vendor/flux/src/Layout.luau#L514-L525): Creates a [`UIGridLayout`](https://create.roblox.com/docs/reference/engine/classes/UIGridLayout) with `SortOrder = LayoutOrder` and `cell`, `gap`, `fill`, `align`, `justify`, and `maxCells` options.
-- [`Layout.flex(mode: Reactive<FlexMode | Enum.UIFlexMode>?): UIFlexItem`](vendor/flux/src/Layout.luau#L532-L546): Creates a [`UIFlexItem`](https://create.roblox.com/docs/reference/engine/classes/UIFlexItem) with `mode` (`"fill"` by default, `"grow"`, `"shrink"`, or `"none"`).
-- [`Layout.gradient(config: GradientConfig?): UIGradient`](vendor/flux/src/Layout.luau#L553-L562): Creates a [`UIGradient`](https://create.roblox.com/docs/reference/engine/classes/UIGradient) from single values, evenly spaced stop arrays, or sequences for `color` and `transparency`.
-- [`Layout.sizeConstraint(config: SizeConstraintConfig?): UISizeConstraint`](vendor/flux/src/Layout.luau#L569-L575): Creates a [`UISizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UISizeConstraint) from `min`/`max` `Vector2` bounds or per-axis `minWidth`, `minHeight`, `maxWidth`, and `maxHeight` bounds.
-- [`Layout.textSizeConstraint(config: TextSizeConstraintConfig?): UITextSizeConstraint`](vendor/flux/src/Layout.luau#L582-L588): Creates a [`UITextSizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UITextSizeConstraint) bounding text size between `min` and `max` pixels.
+- [`type Insets`](vendor/flux/src/Layout.luau#L44-L51)
+- [`type Align = "start" | "center" | "end"`](vendor/flux/src/Layout.luau#L52)
+- [`type FlexAlign = Align | "between" | "around" | "evenly" | "stretch" | "fill" | "none"`](vendor/flux/src/Layout.luau#L53)
+- [`type LineAlign = Align | "stretch" | "automatic"`](vendor/flux/src/Layout.luau#L54)
+- [`type Direction = "x" | "y"`](vendor/flux/src/Layout.luau#L55)
+- [`type FlexMode = "fill" | "grow" | "shrink" | "none" | "custom"`](vendor/flux/src/Layout.luau#L56)
+- [`type FlexConfig`](vendor/flux/src/Layout.luau#L58-L63)
+- [`type PaddingSides`](vendor/flux/src/Layout.luau#L65-L72)
+- [`type ListConfig`](vendor/flux/src/Layout.luau#L74-L83)
+- [`type GridConfig`](vendor/flux/src/Layout.luau#L85-L92)
+- [`type StrokeConfig`](vendor/flux/src/Layout.luau#L94-L102)
+- [`type CornerSides`](vendor/flux/src/Layout.luau#L104-L114)
+- [`type GradientConfig`](vendor/flux/src/Layout.luau#L116-L122)
+- [`type SizeConstraintConfig`](vendor/flux/src/Layout.luau#L124-L131)
+- [`type TextSizeConstraintConfig`](vendor/flux/src/Layout.luau#L133-L136)
+- [`Layout.padding(value: Length | PaddingSides | Graph.Node<any> | (() -> Length | Insets)): UIPadding`](vendor/flux/src/Layout.luau#L480-L505): Creates a [`UIPadding`](https://create.roblox.com/docs/reference/engine/classes/UIPadding) from a single length, a `{ top, bottom, left, right, x, y }` table, or a reactive source.
+- [`Layout.corner(radius: ReactiveLength | CornerSides?): UICorner`](vendor/flux/src/Layout.luau#L512-L526): Creates a [`UICorner`](https://create.roblox.com/docs/reference/engine/classes/UICorner) from an offset pixel radius, a [`UDim`](https://create.roblox.com/docs/reference/engine/datatypes/UDim), or a per-corner `{ topLeft, topRight, bottomLeft, bottomRight, top, bottom, left, right, radius }` table.
+- [`Layout.stroke(config: StrokeConfig?): UIStroke`](vendor/flux/src/Layout.luau#L533-L546): Creates a [`UIStroke`](https://create.roblox.com/docs/reference/engine/classes/UIStroke) with static or reactive `thickness`, `color`, `transparency`, `mode`, `joins`, `position`, and `offset`.
+- [`Layout.aspectRatio(ratio: Reactive<number>, aspectType: Reactive<"fit" | "scale" | Enum.AspectType>?, dominantAxis: Reactive<"width" | "height" | Enum.DominantAxis>?): UIAspectRatioConstraint`](vendor/flux/src/Layout.luau#L574-L584): Creates a [`UIAspectRatioConstraint`](https://create.roblox.com/docs/reference/engine/classes/UIAspectRatioConstraint) with `ratio`, `aspectType` (`"fit"` or `"scale"`), and `dominantAxis` (`"width"` or `"height"`).
+- [`Layout.list(config: ListConfig?): UIListLayout`](vendor/flux/src/Layout.luau#L591-L621): Creates a [`UIListLayout`](https://create.roblox.com/docs/reference/engine/classes/UIListLayout) with `SortOrder = LayoutOrder` and flexbox-style `gap`, `direction`, `align` (cross-axis), `justify` (main-axis), and `wraps` options.
+- [`Layout.grid(config: GridConfig?): UIGridLayout`](vendor/flux/src/Layout.luau#L629-L657): Creates a [`UIGridLayout`](https://create.roblox.com/docs/reference/engine/classes/UIGridLayout) with `SortOrder = LayoutOrder` and `cell`, `gap`, `fill`, `align`, `justify`, and `maxCells` options.
+- [`Layout.flex(config: Reactive<FlexConfig | number | FlexMode | Enum.UIFlexMode>?): UIFlexItem`](vendor/flux/src/Layout.luau#L665-L736): Creates a [`UIFlexItem`](https://create.roblox.com/docs/reference/engine/classes/UIFlexItem) from `nil` (`"fill"`), a numeric `GrowRatio` (`Custom` mode), a preset `"fill"`/`"grow"`/`"shrink"`/`"none"`/`"custom"` string, or a `{ mode?, grow?, shrink?, lineAlign?
+- [`Layout.scale(scale: Reactive<number>?): UIScale`](vendor/flux/src/Layout.luau#L743-L747): Creates a [`UIScale`](https://create.roblox.com/docs/reference/engine/classes/UIScale) with `Scale` (`1` by default).
+- [`Layout.gradient(config: GradientConfig?): UIGradient`](vendor/flux/src/Layout.luau#L754-L763): Creates a [`UIGradient`](https://create.roblox.com/docs/reference/engine/classes/UIGradient) from single values, evenly spaced stop arrays, or sequences for `color` and `transparency`.
+- [`Layout.sizeConstraint(config: SizeConstraintConfig?): UISizeConstraint`](vendor/flux/src/Layout.luau#L770-L776): Creates a [`UISizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UISizeConstraint) from `min`/`max` `Vector2` bounds or per-axis `minWidth`, `minHeight`, `maxWidth`, and `maxHeight` bounds.
+- [`Layout.textSizeConstraint(config: TextSizeConstraintConfig?): UITextSizeConstraint`](vendor/flux/src/Layout.luau#L783-L789): Creates a [`UITextSizeConstraint`](https://create.roblox.com/docs/reference/engine/classes/UITextSizeConstraint) bounding text size between `min` and `max` pixels.
 
 ## Motion
 
 - [Motion](vendor/flux/src/Motion.luau): Spring and tween animations (`spring`, `tween`) stepped once per frame, plus perceptual `Color` utilities.
-- [`type Spring<T>`](vendor/flux/src/Motion.luau#L44-L53)
-- [`Motion.step(dt: number?)`](vendor/flux/src/Motion.luau#L1134): Advances every active [spring](https://flux.kohl.gg/guide/motion/spring) and [tween](https://flux.kohl.gg/guide/motion/tween) by `dt` seconds (or the time since the last step).
-- [`Motion.spring<A>(target: A, frequency: Reactive<number>?, damping: Reactive<number>?, initialVelocity: any?): Spring<Unwrap<A>>`](vendor/flux/src/Motion.luau#L1148-L1194): Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that animates toward `target` using an analytic harmonic oscillator (`frequency` in Hz and `damping` ratio both default to `1` and may be reactive).
-- [`Motion.tween<A>(target: A, tweenInfo: Reactive<TweenInfo>?): Graph.Node<Unwrap<A>>`](vendor/flux/src/Motion.luau#L1203-L1243): Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that eases toward `target` over a [`TweenInfo`](https://create.roblox.com/docs/reference/engine/datatypes/TweenInfo) curve.
-- [`Motion.Color.Oklab`](vendor/flux/src/Motion.luau#L207)
-- [`Motion.Color.Oklab.fromLinear(color: Color3): Vector3`](vendor/flux/src/Motion.luau#L156-L158): Converts a Color3 in linear sRGB space to a Vector3 in Oklab space.
-- [`Motion.Color.Oklab.toLinear(color: Vector3, clamped: boolean?): Color3`](vendor/flux/src/Motion.luau#L160-L162): Converts a Vector3 in Oklab space to a Color3 in linear sRGB space.
-- [`Motion.Color.Oklab.fromRGB(rgb: Color3): Vector3`](vendor/flux/src/Motion.luau#L164-L166): Converts a Color3 in sRGB space to a Vector3 in Oklab space.
-- [`Motion.Color.Oklab.toRGB(lab: Vector3, clamped: boolean?): Color3`](vendor/flux/src/Motion.luau#L168-L170): Converts a Vector3 in Oklab space to a Color3 in sRGB space.
-- [`Motion.Color.Oklab.lighten(lab: Vector3, amount: number): Vector3`](vendor/flux/src/Motion.luau#L172-L174): Raises Oklab lightness by `amount` (negative darkens).
-- [`Motion.Color.Oklab.saturate(lab: Vector3, amount: number): Vector3`](vendor/flux/src/Motion.luau#L176-L179): Raises Oklab chroma by `amount`, preserving hue and lightness (negative desaturates).
-- [`Motion.Color.Oklab.rotateHue(lab: Vector3, degrees: number): Vector3`](vendor/flux/src/Motion.luau#L181-L184): Rotates hue by `degrees`, preserving chroma and lightness.
-- [`Motion.Color.Oklab.grayscale(lab: Vector3): Vector3`](vendor/flux/src/Motion.luau#L186-L188): Removes all chroma, preserving Oklab lightness.
-- [`Motion.Color.Oklab.mix(lab1: Vector3, lab2: Vector3, alpha: number): Vector3`](vendor/flux/src/Motion.luau#L190-L192): Linearly interpolates between `lab1` and `lab2` in Oklab space by `alpha`.
-- [`Motion.Color.sRGB`](vendor/flux/src/Motion.luau#L208)
-- [`Motion.Color.sRGB.fromLinear(color: Color3): Color3`](vendor/flux/src/Motion.luau#L67-L69): Converts linear sRGB space to sRGB space.
-- [`Motion.Color.sRGB.toLinear(color: Color3): Color3`](vendor/flux/src/Motion.luau#L71-L73): Converts sRGB space to linear sRGB space.
-- [`Motion.Color`](vendor/flux/src/Motion.luau#L1120)
-- [`Motion.Color.lighten(c: Color3, amount: number): Color3`](vendor/flux/src/Motion.luau#L214-L217): Raises the perceptual lightness of `c` in Oklab space by `amount` (negative darkens).
-- [`Motion.Color.saturate(c: Color3, amount: number): Color3`](vendor/flux/src/Motion.luau#L223-L227): Raises the chroma of `c` in Oklab space by `amount` while preserving hue and lightness (negative desaturates).
-- [`Motion.Color.rotateHue(c: Color3, degrees: number): Color3`](vendor/flux/src/Motion.luau#L233-L237): Rotates the hue of `c` by `degrees` around the Oklab color wheel while preserving chroma and lightness.
-- [`Motion.Color.grayscale(c: Color3): Color3`](vendor/flux/src/Motion.luau#L243-L246): Strips all chroma from `c`, returning a neutral gray with the same Oklab perceptual lightness.
-- [`Motion.Color.mix(a: Color3, b: Color3, t: number): Color3`](vendor/flux/src/Motion.luau#L252-L256): Blends `a` and `b` in Oklab space by unclamped fraction `t` (`0` = `a`, `1` = `b`).
-- [`Motion.Color.luminance(c: Color3): number`](vendor/flux/src/Motion.luau#L262): Returns the WCAG relative luminance of `c` from `0` (black) to `1` (white).
-- [`Motion.Color.contrast(a: Color3, b: Color3): number`](vendor/flux/src/Motion.luau#L268-L270): Returns the WCAG contrast ratio between `a` and `b` from `1` (identical) to `21` (black on white).
-- [`Motion.Color.readable(bg: Color3, dark: Color3?, light: Color3?): Color3`](vendor/flux/src/Motion.luau#L276-L281): Returns whichever of `dark` (default black) or `light` (default white) has the higher WCAG contrast ratio against `bg`.
-- [`Spring`](vendor/flux/src/Motion.luau#L989-L997): Constructors: `Motion.spring`, `Motion.tween`.
-- [`Spring:set<T>(value: T)`](vendor/flux/src/Motion.luau#L1011-L1023): Retargets the animation toward `value` from its current position (`motion(value)` does the same).
-- [`Spring:impulse<T>(delta: T)`](vendor/flux/src/Motion.luau#L1030-L1035): *(Spring only)* Adds `delta` to the spring's current velocity without changing its goal.
-- [`Spring:setVelocity<T>(velocity: T)`](vendor/flux/src/Motion.luau#L1042-L1047): *(Spring only)* Replaces the spring's current velocity with `velocity` without changing its goal.
-- [`Spring:setCurrent<T>(value: T)`](vendor/flux/src/Motion.luau#L1054-L1063): *(Spring only)* Sets the spring's current animated value immediately without changing its target or velocity.
-- [`Spring:snap<T>(value: T)`](vendor/flux/src/Motion.luau#L1070-L1076): *(Spring only)* Jumps both the target and current value of the spring to `value` and zeroes its velocity.
+- [`type Spring<T>`](vendor/flux/src/Motion.luau#L48-L66)
+- [`type Tween<T>`](vendor/flux/src/Motion.luau#L68-L80)
+- [`type TweenConfig`](vendor/flux/src/Motion.luau#L742-L749)
+- [`Motion.step(dt: number?)`](vendor/flux/src/Motion.luau#L1529): Advances every active [spring](https://flux.kohl.gg/guide/motion/spring) and [tween](https://flux.kohl.gg/guide/motion/tween) by `dt` seconds (or the time since the last step).
+- [`Motion.spring<A>(target: A, frequency: Reactive<number>?, damping: Reactive<number>?, initialVelocity: any?): Spring<Unwrap<A>>`](vendor/flux/src/Motion.luau#L1543-L1613): Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that animates toward `target` using an analytic harmonic oscillator (`frequency` in Hz and `damping` ratio both default to `1` and may be reactive).
+- [`Motion.tween<A>(target: A, tweenInfo: Reactive<TweenInfo | TweenConfig>?): Tween<Unwrap<A>>`](vendor/flux/src/Motion.luau#L1623-L1687): Creates a [node](https://flux.kohl.gg/guide/concepts/signals) that eases toward `target` over a [`TweenInfo`](https://create.roblox.com/docs/reference/engine/datatypes/TweenInfo) curve.
+- [`Motion.Color.Oklab`](vendor/flux/src/Motion.luau#L263)
+- [`Motion.Color.Oklab.fromLinear(color: Color3): Vector3`](vendor/flux/src/Motion.luau#L206-L209): Converts a Color3 in linear sRGB space to a Vector3 in Oklab space.
+- [`Motion.Color.Oklab.toLinear(color: Vector3, clamped: boolean?): Color3`](vendor/flux/src/Motion.luau#L211-L213): Converts a Vector3 in Oklab space to a Color3 in linear sRGB space.
+- [`Motion.Color.Oklab.fromRGB(rgb: Color3): Vector3`](vendor/flux/src/Motion.luau#L215-L217): Converts a Color3 in sRGB space to a Vector3 in Oklab space.
+- [`Motion.Color.Oklab.toRGB(lab: Vector3, clamped: boolean?): Color3`](vendor/flux/src/Motion.luau#L219-L221): Converts a Vector3 in Oklab space to a Color3 in sRGB space.
+- [`Motion.Color.Oklab.lighten(lab: Vector3, amount: number): Vector3`](vendor/flux/src/Motion.luau#L223-L225): Raises Oklab lightness by `amount` (negative darkens).
+- [`Motion.Color.Oklab.saturate(lab: Vector3, amount: number): Vector3`](vendor/flux/src/Motion.luau#L227-L230): Raises Oklab chroma by `amount`, preserving hue and lightness (negative desaturates).
+- [`Motion.Color.Oklab.rotateHue(lab: Vector3, degrees: number): Vector3`](vendor/flux/src/Motion.luau#L232-L235): Rotates hue by `degrees`, preserving chroma and lightness.
+- [`Motion.Color.Oklab.grayscale(lab: Vector3): Vector3`](vendor/flux/src/Motion.luau#L237-L239): Removes all chroma, preserving Oklab lightness.
+- [`Motion.Color.Oklab.mix(lab1: Vector3, lab2: Vector3, alpha: number): Vector3`](vendor/flux/src/Motion.luau#L241-L247): Linearly interpolates between `lab1` and `lab2` in Oklab space by `alpha`.
+- [`Motion.Color.sRGB`](vendor/flux/src/Motion.luau#L264)
+- [`Motion.Color.sRGB.fromLinear(color: Color3): Color3`](vendor/flux/src/Motion.luau#L113-L116): Converts linear sRGB space to sRGB space.
+- [`Motion.Color.sRGB.toLinear(color: Color3): Color3`](vendor/flux/src/Motion.luau#L118-L121): Converts sRGB space to linear sRGB space.
+- [`Motion.Color`](vendor/flux/src/Motion.luau#L1515)
+- [`Motion.Color.lighten(c: Color3, amount: number): Color3`](vendor/flux/src/Motion.luau#L270-L273): Raises the perceptual lightness of `c` in Oklab space by `amount` (negative darkens).
+- [`Motion.Color.saturate(c: Color3, amount: number): Color3`](vendor/flux/src/Motion.luau#L279-L283): Raises the chroma of `c` in Oklab space by `amount` while preserving hue and lightness (negative desaturates).
+- [`Motion.Color.rotateHue(c: Color3, degrees: number): Color3`](vendor/flux/src/Motion.luau#L289-L293): Rotates the hue of `c` by `degrees` around the Oklab color wheel while preserving chroma and lightness.
+- [`Motion.Color.grayscale(c: Color3): Color3`](vendor/flux/src/Motion.luau#L299-L302): Strips all chroma from `c`, returning a neutral gray with the same Oklab perceptual lightness.
+- [`Motion.Color.mix(a: Color3, b: Color3, t: number): Color3`](vendor/flux/src/Motion.luau#L308-L312): Blends `a` and `b` in Oklab space by unclamped fraction `t` (`0` = `a`, `1` = `b`).
+- [`Motion.Color.luminance(c: Color3): number`](vendor/flux/src/Motion.luau#L318): Returns the WCAG relative luminance of `c` from `0` (black) to `1` (white).
+- [`Motion.Color.contrast(a: Color3, b: Color3): number`](vendor/flux/src/Motion.luau#L324-L326): Returns the WCAG contrast ratio between `a` and `b` from `1` (identical) to `21` (black on white).
+- [`Motion.Color.readable(bg: Color3, dark: Color3?, light: Color3?): Color3`](vendor/flux/src/Motion.luau#L332-L337): Returns whichever of `dark` (default black) or `light` (default white) has the higher WCAG contrast ratio against `bg`.
+- [`Spring`](vendor/flux/src/Motion.luau#L1295-L1302): Constructors: `Motion.spring`, `Motion.tween`.
+- [`Spring:set(value: any, _force: boolean?): any`](vendor/flux/src/Motion.luau#L1322-L1338): Retargets the animation toward `value` from its current position (`motion(value)` does the same).
+- [`Spring:update<N>(fn: ((current: any) -> any)?): N`](vendor/flux/src/Motion.luau#L1345-L1366): Retargets the animation relative to its current target (not its current mid-flight value), calling `fn(target)` untracked.
+- [`Spring:impulse<T>(delta: T)`](vendor/flux/src/Motion.luau#L1373-L1378): *(Spring only)* Adds `delta` to the spring's current velocity without changing its goal.
+- [`Spring:setVelocity<T>(velocity: T)`](vendor/flux/src/Motion.luau#L1385-L1390): *(Spring only)* Replaces the spring's current velocity with `velocity` without changing its goal.
+- [`Spring:setCurrent<T>(value: T)`](vendor/flux/src/Motion.luau#L1397-L1420): *(Spring only)* Sets the spring's current animated value immediately without changing its target or velocity.
+- [`Spring:snap<T>(value: T?): any`](vendor/flux/src/Motion.luau#L1427-L1458): Jumps both the target and current value to `value` (or the current target when `value` is omitted), stopping active motion and resetting velocity/repeat state.
 
 ## Responsive
 
@@ -675,37 +722,37 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`type Breakpoints = { phone: number, tablet: number }`](vendor/flux/src/Responsive.luau#L28)
 - [`type Config`](vendor/flux/src/Responsive.luau#L30-L36)
 - [`type PartialConfig`](vendor/flux/src/Responsive.luau#L38-L45)
-- [`Responsive.config: Config`](vendor/flux/src/Responsive.luau#L322): [Read Only] Default responsive configuration shared by derived nodes.
-- [`Responsive.platform: Graph.Node<Platform>`](vendor/flux/src/Responsive.luau#L323): [Read Only] Active device class (`"vr"`, `"console"`, `"pc"`, or `"mobile"`), updated live on the client (`"pc"` off-client).
-- [`Responsive.viewport: Graph.Node<Vector2>`](vendor/flux/src/Responsive.luau#L325): [Read Only] The active camera's `ViewportSize` as a node, live on the client.
-- [`Responsive.scale: Graph.Node<number>`](vendor/flux/src/Responsive.luau#L326): [Read Only] UI scale factor derived from `viewport` (`1.0` at `config.reference`).
-- [`Responsive.breakpoint: Graph.Node<Breakpoint>`](vendor/flux/src/Responsive.luau#L327): [Read Only] Size class (`"phone" | "tablet" | "desktop"`) derived from `viewport` width.
-- [`Responsive.displaySize: Graph.Node<DisplaySize>`](vendor/flux/src/Responsive.luau#L328): [Read Only] Physical screen size class (`"Small"`, `"Medium"`, or `"Large"`) mirroring `GuiService.ViewportDisplaySize`.
-- [`Responsive.input: Graph.Node<Input>`](vendor/flux/src/Responsive.luau#L330): [Read Only] Active input mode (`"keyboard"`, `"touch"`, or `"gamepad"`) tracking `UserInputService.PreferredInput` on the client.
-- [`Responsive.textSize: Graph.Node<TextSize>`](vendor/flux/src/Responsive.luau#L331): [Read Only] Player's preferred text size (`"Medium"`, `"Large"`, `"Larger"`, or `"Largest"`) from `GuiService.PreferredTextSize`.
-- [`Responsive.reducedMotion: Graph.Node<boolean>`](vendor/flux/src/Responsive.luau#L332): [Read Only] Tracks `GuiService.ReducedMotionEnabled` (`true` when the player prefers reduced motion).
-- [`Responsive.preferredTransparency: Graph.Node<number>`](vendor/flux/src/Responsive.luau#L333): [Read Only] Tracks `GuiService.PreferredTransparency` from `0` (opaque backgrounds) to `1` (default).
-- [`Responsive.scaleOf(partial: PartialConfig?): Graph.Node<number>`](vendor/flux/src/Responsive.luau#L335): Factory escape hatch: a `scale` node with per-surface config (merged over defaults).
-- [`Responsive.breakpointOf(partial: PartialConfig?): Graph.Node<Breakpoint>`](vendor/flux/src/Responsive.luau#L336): Factory escape hatch: a `breakpoint` node with per-surface thresholds.
+- [`Responsive.config: Config`](vendor/flux/src/Responsive.luau#L356): [Read Only] Default responsive configuration shared by derived nodes.
+- [`Responsive.platform: Graph.Node<Platform>`](vendor/flux/src/Responsive.luau#L357): [Read Only] Active device class (`"vr"`, `"console"`, `"pc"`, or `"mobile"`), updated live on the client (`"pc"` off-client).
+- [`Responsive.viewport: Graph.Node<Vector2>`](vendor/flux/src/Responsive.luau#L359): [Read Only] The active camera's `ViewportSize` as a node, live on the client.
+- [`Responsive.scale: Graph.Node<number>`](vendor/flux/src/Responsive.luau#L360): [Read Only] UI scale factor derived from `viewport` (`1.0` at `config.reference`).
+- [`Responsive.breakpoint: Graph.Node<Breakpoint>`](vendor/flux/src/Responsive.luau#L361): [Read Only] Size class (`"phone" | "tablet" | "desktop"`) derived from `viewport` width.
+- [`Responsive.displaySize: Graph.Node<DisplaySize>`](vendor/flux/src/Responsive.luau#L362): [Read Only] Physical screen size class (`"Small"`, `"Medium"`, or `"Large"`) mirroring `GuiService.ViewportDisplaySize`.
+- [`Responsive.input: Graph.Node<Input>`](vendor/flux/src/Responsive.luau#L364): [Read Only] Active input mode (`"keyboard"`, `"touch"`, or `"gamepad"`) tracking `UserInputService.PreferredInput` on the client.
+- [`Responsive.textSize: Graph.Node<TextSize>`](vendor/flux/src/Responsive.luau#L365): [Read Only] Player's preferred text size (`"Medium"`, `"Large"`, `"Larger"`, or `"Largest"`) from `GuiService.PreferredTextSize`.
+- [`Responsive.reducedMotion: Graph.Node<boolean>`](vendor/flux/src/Responsive.luau#L366): [Read Only] Tracks `GuiService.ReducedMotionEnabled` (`true` when the player prefers reduced motion).
+- [`Responsive.preferredTransparency: Graph.Node<number>`](vendor/flux/src/Responsive.luau#L367): [Read Only] Tracks `GuiService.PreferredTransparency` from `0` (opaque backgrounds) to `1` (default).
+- [`Responsive.scaleOf(partial: PartialConfig?): Graph.Node<number>`](vendor/flux/src/Responsive.luau#L369): Factory escape hatch: a `scale` node with per-surface config (merged over defaults).
+- [`Responsive.breakpointOf(partial: PartialConfig?): Graph.Node<Breakpoint>`](vendor/flux/src/Responsive.luau#L370): Factory escape hatch: a `breakpoint` node with per-surface thresholds.
 
 ## Store
 
 - [Store](vendor/flux/src/Store.luau): Deep reactive stores: `Flux.store(table)` returns a proxy whose fields are tracked per key, with `Flux.Store` helpers for arrays, snapshots and teardown.
-- [`Store.new<T>(initialState: T): T`](vendor/flux/src/Store.luau#L250-L257): Wraps a plain table in a deep reactive proxy that tracks each read key, nested table, and array length independently.
-- [`Store.Destroy<T>(proxy: T)`](vendor/flux/src/Store.luau#L264-L266): Tears down a store and all of its nested proxies, disposing their per-key nodes via [`Flux.dispose`](https://flux.kohl.gg/api/Flux#dispose) while leaving the raw backing table intact.
-- [`Store.unwrap<T>(proxy: T): T`](vendor/flux/src/Store.luau#L273-L275): Returns the raw, unproxied backing table of a store for untracked reads or serialization.
-- [`Store.insert(proxy: any, posOrValue: any, value: any?)`](vendor/flux/src/Store.luau#L282-L309): Inserts `value` into a store array (appending with 2 arguments, or inserting at `posOrValue` with 3) and notifies length and index observers.
-- [`Store.remove(proxy: any, pos: number?): any`](vendor/flux/src/Store.luau#L316-L344): Removes and returns the element at `pos` (defaulting to the last element) from a store array and notifies length and index observers.
-- [`Store.move(proxy: any, from: number, to: number)`](vendor/flux/src/Store.luau#L351-L370): Moves the element at 1-based index `from` to `to` in a single tracked step without tearing down nested item proxies.
-- [`Store.reconcile<T>(proxy: T, newData: T, key: string?): T`](vendor/flux/src/Store.luau#L561-L569): Diffs `newData` into the store `proxy` in place, firing only changed leaf nodes and reusing unchanged nested proxies.
+- [`Store.new<T>(initialState: T): T`](vendor/flux/src/Store.luau#L373-L380): Wraps a plain table in a deep reactive proxy that tracks each read key, nested table, and array length independently.
+- [`Store.Destroy<T>(proxy: T)`](vendor/flux/src/Store.luau#L387-L389): Tears down a store and all of its nested proxies, disposing their per-key nodes via [`Flux.dispose`](https://flux.kohl.gg/api/Flux#dispose) while leaving the raw backing table intact.
+- [`Store.unwrap<T>(proxy: T): T`](vendor/flux/src/Store.luau#L396-L398): Returns the raw, unproxied backing table of a store for untracked reads or serialization.
+- [`Store.insert(proxy: any, posOrValue: any, value: any?)`](vendor/flux/src/Store.luau#L405-L433): Inserts `value` into a store array (appending with 2 arguments, or inserting at `posOrValue` with 3) and notifies length and index observers.
+- [`Store.remove(proxy: any, pos: number?): any`](vendor/flux/src/Store.luau#L440-L468): Removes and returns the element at `pos` (defaulting to the last element) from a store array and notifies length and index observers.
+- [`Store.move(proxy: any, from: number, to: number)`](vendor/flux/src/Store.luau#L475-L494): Moves the element at 1-based index `from` to `to` in a single tracked step without tearing down nested item proxies.
+- [`Store.reconcile<T>(proxy: T, newData: T, key: string?): T`](vendor/flux/src/Store.luau#L754-L762): Diffs `newData` into the store `proxy` in place, firing only changed leaf nodes and reusing unchanged nested proxies.
 
 ## MainModule.Flux.Sync
 
 - [Sync](vendor/flux/src/Sync.luau): Network-synchronized signals shared between the server and clients.
-- [`type Validator<T> = (player: Player, value: T) -> (boolean?, ...T)`](vendor/flux/src/Sync.luau#L47): Validates a client write on the server (`fn(player, value)`).
-- [`type SyncSignal<T = any>`](vendor/flux/src/Sync.luau#L53-L70): A signal synchronized between the server and clients.
-- [`type Namespace`](vendor/flux/src/Sync.luau#L74-L84)
-- [`Sync.flush()`](vendor/flux/src/Sync.luau#L773)
+- [`type Validator<T> = (player: Player, value: T) -> (boolean?, ...T?)`](vendor/flux/src/Sync.luau#L46): Validates a client write on the server (`fn(player, value)`).
+- [`type SyncSignal<T = any>`](vendor/flux/src/Sync.luau#L52-L69): A signal synchronized between the server and clients.
+- [`type SyncNamespace`](vendor/flux/src/Sync.luau#L71-L83)
+- [`Sync.flush()`](vendor/flux/src/Sync.luau#L962)
 
 ## MainModule.Hook
 
@@ -761,9 +808,9 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Registry.makeSequenceType(definition: SequenceDefinition?)`](src/Shared/Registry.luau#L103-L149): Makes an sequence argument type definition, useful for Color3, Vector3, etc
 - [`Registry.registerType(name: string, typeObject: Type.ArgumentType, override: Type.Dict?)`](src/Shared/Registry.luau#L152-L163): Registers an argument type
 - [`Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition)`](src/Shared/Registry.luau#L166-L243): Registers a command
-- [`Registry.dashboardWindowEnv(tab: string)`](src/Shared/Registry.luau#L246-L271)
-- [`Registry.registerCommandAlias(_K: any, alias: string, command: string)`](src/Shared/Registry.luau#L274-L339): [Client] Registers a local command alias
-- [`Registry.registerCommandModule(_K: any, commandModule: ModuleScript)`](src/Shared/Registry.luau#L342-L353): Registers a list of commands with the module name as the command group
+- [`Registry.dashboardWindowEnv(tab: string)`](src/Shared/Registry.luau#L246-L277)
+- [`Registry.registerCommandAlias(_K: any, alias: string, command: string)`](src/Shared/Registry.luau#L280-L345): [Client] Registers a local command alias
+- [`Registry.registerCommandModule(_K: any, commandModule: ModuleScript)`](src/Shared/Registry.luau#L348-L359): Registers a list of commands with the module name as the command group
 
 ## MainModule.Remote
 
@@ -844,7 +891,7 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`UI.TopbarFrame`](src/Client/UI/init.luau#L172-L198): A sorted Topbar Frame for UI components, parented under [UI.LayerTopbar]
 - [`UI.Fonts: Fonts`](src/Client/UI/Fonts.luau): [Module]
 - [`UI.Theme: Theme`](src/Client/UI/Theme/init.luau): [Module]
-- [`UI.Themes: {}`](src/Client/UI/Theme/init.luau#L102): [from Theme]
+- [`UI.Themes: {}`](src/Client/UI/Theme/init.luau#L118): [from Theme]
 - [`UI.getFontName(font: Font | Enum.Font)`](src/Client/UI/init.luau#L70-L81)
 - [`UI.activateState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L205-L224): A generalized function to handle activation/deactivation of both floating and hover states
 - [`UI.deactivateState(activeState: any, stateType: ActiveStateType)`](src/Client/UI/init.luau#L227-L243): A generalized function to deactivate both floating and hover states
@@ -858,11 +905,13 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`UI.newSinkHoverState(object: GuiObject, hovering: any?, options: Flux.HoverOptions?)`](src/Client/UI/init.luau#L382-L399)
 - [`UI.edit(new: Instance | Dict<any>)`](src/Client/UI/init.luau#L422-L512): Inherits [Flux.edit] * Parents children to the ._content variable of a UI component if one exists * Unwraps UI component children and auto-numbers [GuiObject.LayoutOrder] sequentially via [Flux.edit] * Allows UI.Hook to easily hook to default UI state or [RBXScriptSignal] aliases
 - [`UI.new(className: string)`](src/Client/UI/init.luau#L583): Creates a new Instance with [UI.edit]
-- [`UI.register(className: string, class: Dict<any>)`](src/Client/UI/init.luau#L586-L591): Registers a new UI component class
-- [`UI.registerClasses(): typeof(UI)`](src/Client/UI/init.luau#L594-L602): Run to register the default classes for the UI module
-- [`UI.getLuminance(c: Color3): number`](vendor/flux/src/Motion.luau#L262): [from Motion] Gets the luminance of a [Color3]
-- [`UI.pointInGuiObject(x: number, y: number, object: GuiObject): boolean`](vendor/flux/src/Interact.luau#L681): [from Interact] Checks if x, y is within the absolute bounds of the GuiObject
-- [`UI.sinkInput(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L682): [from Interact] Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI rendered above `object` (or while the Roblox escape menu is open).
+- [`UI.notifyDisplayWatchers()`](src/Client/UI/init.luau#L588-L592): Re-evaluates all deferred UI display watchers after an ancestor visibility change.
+- [`UI.onFirstDisplayed(inst: GuiObject, buildFn: () -> ())`](src/Client/UI/init.luau#L614-L683): Runs `buildFn` once when `inst` and all its GuiObject ancestors are first displayed.
+- [`UI.register(className: string, class: Dict<any>)`](src/Client/UI/init.luau#L686-L691): Registers a new UI component class
+- [`UI.registerClasses(): typeof(UI)`](src/Client/UI/init.luau#L694-L702): Run to register the default classes for the UI module
+- [`UI.getLuminance(c: Color3): number`](vendor/flux/src/Motion.luau#L318): [from Motion] Gets the luminance of a [Color3]
+- [`UI.pointInGuiObject(x: number, y: number, object: GuiObject): boolean`](vendor/flux/src/Interact.luau#L1033): [from Interact] Checks if x, y is within the absolute bounds of the GuiObject
+- [`UI.sinkInput(x: number, y: number, object: GuiObject, token: any?): boolean`](vendor/flux/src/Interact.luau#L1034): [from Interact] Returns `true` when input at `(x, y)` would be claimed by an `Active` or input-sinking GUI rendered above `object` (or while the Roblox escape menu is open).
 - [`UI.Haptic`](src/Client/UI/init.luau#L49-L68)
 - [`UI.Haptic.Click`](src/Client/UI/init.luau#L50-L59)
 - [`UI.Haptic.Hover`](src/Client/UI/init.luau#L60-L63)
@@ -959,40 +1008,40 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.UI.Theme
 
 - [Theme](src/Client/UI/Theme/init.luau): A directory of Flux state for UI components to use as theme variables
-- [`Theme.Themes: {}`](src/Client/UI/Theme/init.luau#L102)
-- [`Theme.TransparencySlight: any`](src/Client/UI/Theme/init.luau#L116-L118)
-- [`Theme.TransparencyLight: any`](src/Client/UI/Theme/init.luau#L120-L122)
-- [`Theme.TransparencyMedium: any`](src/Client/UI/Theme/init.luau#L124-L126)
-- [`Theme.TransparencyBalanced: any`](src/Client/UI/Theme/init.luau#L128-L130)
-- [`Theme.TransparencyStrong: any`](src/Client/UI/Theme/init.luau#L132-L134)
-- [`Theme.TransparencyHeavy: any`](src/Client/UI/Theme/init.luau#L136-L138)
-- [`Theme.TransparencyMax: any`](src/Client/UI/Theme/init.luau#L140-L142)
-- [`Theme.TransparencyClamped: any`](src/Client/UI/Theme/init.luau#L144-L146)
-- [`Theme.FontHeavy: any`](src/Client/UI/Theme/init.luau#L148-L150)
-- [`Theme.FontBold: any`](src/Client/UI/Theme/init.luau#L152-L154)
-- [`Theme.FontSemiBold: any`](src/Client/UI/Theme/init.luau#L156-L158)
-- [`Theme.FontLight: any`](src/Client/UI/Theme/init.luau#L160-L162)
-- [`Theme.FontThin: any`](src/Client/UI/Theme/init.luau#L164-L166)
-- [`Theme.FontSizeDouble: any`](src/Client/UI/Theme/init.luau#L168-L170)
-- [`Theme.FontSizeLargest: any`](src/Client/UI/Theme/init.luau#L172-L174)
-- [`Theme.FontSizeLarger: any`](src/Client/UI/Theme/init.luau#L176-L178)
-- [`Theme.FontSizeLarge: any`](src/Client/UI/Theme/init.luau#L180-L182)
-- [`Theme.FontSizeSmall: any`](src/Client/UI/Theme/init.luau#L184-L186)
-- [`Theme.FontSizeSmaller: any`](src/Client/UI/Theme/init.luau#L188-L190)
-- [`Theme.FontSizeSmallest: any`](src/Client/UI/Theme/init.luau#L192-L194)
-- [`Theme.PaddingHalf: any`](src/Client/UI/Theme/init.luau#L196-L199)
-- [`Theme.PaddingDouble: any`](src/Client/UI/Theme/init.luau#L201-L204)
-- [`Theme.PaddingStroke: any`](src/Client/UI/Theme/init.luau#L206-L208)
-- [`Theme.PaddingWithStroke: any`](src/Client/UI/Theme/init.luau#L210-L212)
-- [`Theme.CornerHalf: any`](src/Client/UI/Theme/init.luau#L214-L217)
-- [`Theme.CornerDiameter: any`](src/Client/UI/Theme/init.luau#L219-L222)
-- [`Theme.CornerPadded: any`](src/Client/UI/Theme/init.luau#L224-L228)
-- [`Theme.CornerPadded2: any`](src/Client/UI/Theme/init.luau#L230-L234)
-- [`Theme.CornerPadded3: any`](src/Client/UI/Theme/init.luau#L236-L240)
-- [`Theme.ScrollMidImage: any`](src/Client/UI/Theme/init.luau#L242)
-- [`Theme.ScrollTopImage: any`](src/Client/UI/Theme/init.luau#L243-L245)
-- [`Theme.ScrollBottomImage: any`](src/Client/UI/Theme/init.luau#L246-L248)
-- [`Theme.load(themeModule: ModuleScript)`](src/Client/UI/Theme/init.luau#L103)
+- [`Theme.Themes: {}`](src/Client/UI/Theme/init.luau#L118)
+- [`Theme.TransparencySlight: any`](src/Client/UI/Theme/init.luau#L149-L151)
+- [`Theme.TransparencyLight: any`](src/Client/UI/Theme/init.luau#L153-L155)
+- [`Theme.TransparencyMedium: any`](src/Client/UI/Theme/init.luau#L157-L159)
+- [`Theme.TransparencyBalanced: any`](src/Client/UI/Theme/init.luau#L161-L163)
+- [`Theme.TransparencyStrong: any`](src/Client/UI/Theme/init.luau#L165-L167)
+- [`Theme.TransparencyHeavy: any`](src/Client/UI/Theme/init.luau#L169-L171)
+- [`Theme.TransparencyMax: any`](src/Client/UI/Theme/init.luau#L173-L175)
+- [`Theme.TransparencyClamped: any`](src/Client/UI/Theme/init.luau#L177-L179)
+- [`Theme.FontHeavy: any`](src/Client/UI/Theme/init.luau#L181-L183)
+- [`Theme.FontBold: any`](src/Client/UI/Theme/init.luau#L185-L187)
+- [`Theme.FontSemiBold: any`](src/Client/UI/Theme/init.luau#L189-L191)
+- [`Theme.FontLight: any`](src/Client/UI/Theme/init.luau#L193-L195)
+- [`Theme.FontThin: any`](src/Client/UI/Theme/init.luau#L197-L199)
+- [`Theme.FontSizeDouble: any`](src/Client/UI/Theme/init.luau#L201-L203)
+- [`Theme.FontSizeLargest: any`](src/Client/UI/Theme/init.luau#L205-L207)
+- [`Theme.FontSizeLarger: any`](src/Client/UI/Theme/init.luau#L209-L211)
+- [`Theme.FontSizeLarge: any`](src/Client/UI/Theme/init.luau#L213-L215)
+- [`Theme.FontSizeSmall: any`](src/Client/UI/Theme/init.luau#L217-L219)
+- [`Theme.FontSizeSmaller: any`](src/Client/UI/Theme/init.luau#L221-L223)
+- [`Theme.FontSizeSmallest: any`](src/Client/UI/Theme/init.luau#L225-L227)
+- [`Theme.PaddingHalf: any`](src/Client/UI/Theme/init.luau#L229-L232)
+- [`Theme.PaddingDouble: any`](src/Client/UI/Theme/init.luau#L234-L237)
+- [`Theme.PaddingStroke: any`](src/Client/UI/Theme/init.luau#L239-L241)
+- [`Theme.PaddingWithStroke: any`](src/Client/UI/Theme/init.luau#L243-L245)
+- [`Theme.CornerHalf: any`](src/Client/UI/Theme/init.luau#L247-L250)
+- [`Theme.CornerDiameter: any`](src/Client/UI/Theme/init.luau#L252-L255)
+- [`Theme.CornerPadded: any`](src/Client/UI/Theme/init.luau#L257-L261)
+- [`Theme.CornerPadded2: any`](src/Client/UI/Theme/init.luau#L263-L267)
+- [`Theme.CornerPadded3: any`](src/Client/UI/Theme/init.luau#L269-L273)
+- [`Theme.ScrollMidImage: any`](src/Client/UI/Theme/init.luau#L275)
+- [`Theme.ScrollTopImage: any`](src/Client/UI/Theme/init.luau#L276-L278)
+- [`Theme.ScrollBottomImage: any`](src/Client/UI/Theme/init.luau#L279-L281)
+- [`Theme.load(themeModule: ModuleScript)`](src/Client/UI/Theme/init.luau#L119)
 
 ## MainModule.Util
 
