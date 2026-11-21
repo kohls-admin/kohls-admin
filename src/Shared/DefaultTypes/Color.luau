@@ -39,6 +39,25 @@ for i = 1, 1032 do
 	COLORS[name] = color.Color
 end
 
+local baseColorNames = {
+	"red",
+	"orange",
+	"yellow",
+	"yellowgreen",
+	"green",
+	"aqua",
+	"cyan",
+	"blue",
+	"purple",
+	"violet",
+	"pink",
+	"magenta",
+	"white",
+	"black",
+	"grey",
+	"gray",
+}
+
 local colorNames = {}
 for name in COLORS do
 	table.insert(colorNames, name)
@@ -82,12 +101,20 @@ local typeColor = {
 					end
 				end
 				if validRGB then
-					return Color3.fromRGB(r or 255, g or 255, b or 255)
+					return Color3.fromRGB(tonumber(r) :: number, tonumber(g) or 255, tonumber(b) or 255)
 				end
 			end
-			for name, color in COLORS do -- partial match
+			for _, name in baseColorNames do
 				if string.find(name, input, 1, true) == 1 then
-					return color
+					return COLORS[name]
+				end
+			end
+			if string.find("random", input, 1, true) == 1 then
+				return Color3.new(math.random(), math.random(), math.random())
+			end
+			for _, name in colorNames do -- partial match
+				if string.find(name, input, 1, true) == 1 then
+					return COLORS[name]
 				end
 			end
 		end
@@ -120,7 +147,10 @@ local typeColor = {
 				COLORS.random = Color3.new(math.random(), math.random(), math.random())
 			end
 			local r, g, b = string.match(text :: string, "^(%d+),?(%d*),?(%d*)$")
-			table.insert(names, `{r or 255},{g or 255},{b or 255}`)
+			local function channel(value: string?): string | number
+				return if value and value ~= "" then value else 255
+			end
+			table.insert(names, `{channel(r)},{channel(g)},{channel(b)}`)
 		end
 
 		return names, COLORS

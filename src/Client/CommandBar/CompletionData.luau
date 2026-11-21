@@ -55,7 +55,7 @@ return function(_K, text, cursorPosition)
 		return data
 	end
 
-	local prefixList = { prefix, unpack(_K.Data.settings.prefix) }
+	local prefixList = { prefix, table.unpack(_K.Data.settings.prefix) }
 	local splitKey = _K.Data.settings.splitKey or " "
 	local rawCommands = _K.Process.rawParse(text, prefixList, splitKey)
 	if not rawCommands then
@@ -96,7 +96,7 @@ return function(_K, text, cursorPosition)
 			data.hasInvalidCommand = true
 			continue
 		end
-		local commandPos, commandText = unpack(commandArray[1])
+		local commandPos, commandText = commandArray[1][1], commandArray[1][2]
 		local commandAlias = string.lower(commandText)
 		local commandDefinition = _K.Registry.commands[commandAlias]
 
@@ -159,7 +159,7 @@ return function(_K, text, cursorPosition)
 			data.suggestions = table.create(#rawSuggestions)
 			local invalidSuggestions = {}
 			for _, suggestionData in rawSuggestions do
-				local _name, _display, cmd = unpack(suggestionData)
+				local cmd = suggestionData[3]
 				if cmd then
 					if cmd.LocalPlayerAuthorized then
 						table.insert(data.suggestions, suggestionData)

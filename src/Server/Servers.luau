@@ -99,14 +99,14 @@ if RunService:IsServer() then
 			return
 		end
 
-		local jobId, placeId, count, start, ttl = unpack(data)
+		local jobId, placeId, count, start, ttl = table.unpack(data, 1, 5)
 		if jobId == SERVER_ID then
 			return
 		end
 
 		local changed = true
 		local existing = Map[jobId]
-		local now = tick()
+		local now = os.clock()
 		local expireOffset = EXPIRE
 		if type(ttl) == "number" and ttl == ttl then
 			expireOffset = math.clamp(ttl, EXPIRE, MAX_TTL)
@@ -128,7 +128,7 @@ if RunService:IsServer() then
 	end
 
 	local function cleanup()
-		local now = tick()
+		local now = os.clock()
 		local defaultExpireTime = now - EXPIRE
 		for jobId, data in Map do
 			local updated = data[4]

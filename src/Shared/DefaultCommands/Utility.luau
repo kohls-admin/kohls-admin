@@ -449,10 +449,10 @@ local function createPlayEmote(_K: any, env: any, emoteId: any, ownsEmote: any)
 			env.looped.Value(playing.Looped)
 		else
 			task.spawn(function()
-				local start = tick()
+				local start = os.clock()
 				repeat
 					task.wait()
-				until playing.Looped == true or tick() - start > 1
+				until playing.Looped == true or os.clock() - start > 1
 				env.looped.Value(true)
 			end)
 		end
@@ -789,7 +789,7 @@ return {
 				return "Command bar has been disabled."
 			end
 			if context._K.Data.settings.commandBarRank > context.fromRank then
-				local role = context._K.Auth.getRoleFromRank(context._K.Data.settings.dashboardRank)
+				local role = context._K.Auth.getRoleFromRank(context._K.Data.settings.commandBarRank)
 				return `Command bar has been restricted to {role.name}+.`
 			end
 			task.defer(context._K.client.CommandBar.show)
@@ -1216,7 +1216,8 @@ return {
 			context._K.Notify({
 				From = "_K",
 				Text = `<b>Server Age:</b> {context._K.Util.Time.readable(
-					workspace:GetServerTimeNow() - context._K.script:GetAttribute("ServerStartTime")
+					workspace:GetServerTimeNow()
+						- (context._K.script:GetAttribute("ServerStartTime") or workspace:GetServerTimeNow())
 				)}`,
 			})
 		end,
@@ -1259,31 +1260,86 @@ return {
 			},
 		},
 		env = function(_K)
-			return { remote = _K.Remote.ShowFPS }
+			local pending: { [Player]: { waiters: { thread }, timer: thread?, result: number? } } = {}
+			local function resolve(player: Player, fps: number)
+				local entry = pending[player]
+				if not entry then
+					return
+				end
+				entry.result = fps
+				pending[player] = nil
+				if entry.timer and coroutine.status(entry.timer) == "suspended" then
+					task.cancel(entry.timer)
+				end
+				for _, waiter in entry.waiters do
+					if coroutine.status(waiter) == "suspended" then
+						task.spawn(waiter, fps)
+					end
+				end
+			end
+
+			local _ = _K.Remote.ShowFPS:Connect(function(player: Player, rawFps: any)
+				if not pending[player] then
+					return
+				end
+				local fps = if type(rawFps) == "number" and rawFps == rawFps then math.clamp(rawFps, 0, 999) else 0
+				resolve(player, fps)
+			end)
+
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player: Player)
+				resolve(player, 0)
+			end)
+
+			local function getFPS(player: Player, timeout: number?): number
+				if not player or not player.Parent then
+					return 0
+				end
+				local entry = pending[player]
+				if entry then
+					table.insert(entry.waiters, coroutine.running())
+					return coroutine.yield()
+				end
+				entry = {
+					waiters = { coroutine.running() },
+					timer = nil,
+					result = nil,
+				}
+				pending[player] = entry
+				entry.timer = task.delay(timeout or 3, function()
+					if pending[player] == entry then
+						resolve(player, 0)
+					end
+				end)
+				_K.Remote.ShowFPS:Fire(player)
+				if entry.result ~= nil then
+					return entry.result
+				end
+				return coroutine.yield()
+			end
+
+			return { remote = _K.Remote.ShowFPS, getFPS = getFPS }
 		end,
 		envClient = function(_K)
 			local env = {
 				fps = 60,
 			}
-			local function onShowFPSInvoke()
-				return env.fps
-			end
-			_K.Remote.ShowFPS.OnInvoke = onShowFPSInvoke
-			local frames, last = 0, tick()
+			local _ = _K.Remote.ShowFPS:Connect(function()
+				_K.Remote.ShowFPS:Fire(env.fps)
+			end)
+			local frames, last = 0, os.clock()
 			local _ = _K.Service.Run.Heartbeat:Connect(function()
 				frames += 1
-				local dt = tick() - last
+				local now = os.clock()
+				local dt = now - last
 				if dt >= 1 then
 					env.fps = frames / dt
-					frames, last = 0, tick()
+					frames, last = 0, now
 				end
 			end)
 			return env
 		end,
 		run = function(context, player: Player)
-			-- the target's client answers, it can error or return anything
-			local ok, fps = pcall(context.env.remote.Invoke, context.env.remote, player)
-			fps = if ok and type(fps) == "number" and fps == fps then math.clamp(fps, 0, 999) else 0
+			local fps = context.env.getFPS(player)
 			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `<b>FPS:</b> {math.round(fps)}`,
 				From = player.UserId,

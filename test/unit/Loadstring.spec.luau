@@ -94,6 +94,34 @@ describe("Server · LoadScript & Loadstring (Yueliang + FiOne Differential Oracl
 
 		sert.eq(kaFn(), nativeFn())
 	end, { runs = 60 })
+
+	test("LoadScript caches up to 64 compiled scripts before clearing cache", function()
+		local h = Harness.newEnv()
+		local LoadScriptMod = h.Server:WaitForChild("LoadScript")
+		local luaU = h.env:require(LoadScriptMod:WaitForChild("Loadstring"):WaitForChild("LuaU"))
+		local dumpSpy = sert.spy(luaU, "dump")
+		local LoadScript = h.env:require(LoadScriptMod)
+
+		for i = 1, 64 do
+			local created = LoadScript(`return {i}`, "Server")
+			sert.eq(created ~= nil, true)
+		end
+		sert.eq(dumpSpy.callCount, 64)
+
+		-- 64th cached entry must still hit without clearing or recompiling
+		LoadScript("return 1", "Server")
+		sert.eq(dumpSpy.callCount, 64)
+
+		-- Adding a 65th unique source evicts the cache, so a previously cached source recompiles
+		LoadScript("return 65", "Server")
+		sert.eq(dumpSpy.callCount, 65)
+		LoadScript("return 65", "Server")
+		sert.eq(dumpSpy.callCount, 65)
+		LoadScript("return 1", "Server")
+		sert.eq(dumpSpy.callCount, 66)
+
+		dumpSpy:restore()
+	end)
 end)
 
 return {}

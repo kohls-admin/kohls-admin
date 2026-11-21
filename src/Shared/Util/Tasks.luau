@@ -25,7 +25,7 @@ function Tasks.new(): Tasks
 end
 
 local function _run(self: Tasks, callback: (...any) -> ...any, ...: any)
-	local result = { pcall(callback, ...) }
+	local result = table.pack(pcall(callback, ...))
 	self._numTasks -= 1
 
 	if self._waiting then
@@ -61,7 +61,11 @@ end
 --- Yields until the first task finishes and returns its `(ok, ...)` result.
 function Tasks.waitForFirst(self: Tasks): (boolean, ...any)
 	self._returnFirstResult = true
-	return unpack(self:wait())
+	local result = self:wait()
+	if not result then
+		return false
+	end
+	return table.unpack(result, 1, result.n)
 end
 
 return Tasks

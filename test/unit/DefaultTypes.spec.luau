@@ -1038,6 +1038,51 @@ describe("DefaultTypes · Tool", function()
 		sert.eq(okSingleAll, true)
 		sert.eq(parsedSingleAll ~= nil, true)
 	end)
+
+	test("Hook.init broadcasts empty and populated ToolData to authorized players", function()
+		local function runBroadcast(addSword: boolean)
+			local h = Harness.newEnv()
+			local insertSvc = h.env.game:GetService("InsertService")
+			local insertMethods = rawget(insertSvc, "_methods") :: any
+			if insertMethods then
+				insertMethods.LoadAsset = function()
+					return h.env.Instance.new("Model")
+				end
+			end
+			h:requireData()
+			local _K = h:requireK()
+			local admin = h.env:addPlayer(1, "ToolAdmin")
+			_K.Auth.userRoleAdd(1, "creator")
+
+			local payloads: { any } = {}
+			local spyFire = sert.spy(_K.Remote.Tools, "Fire", function(_self, player, data)
+				table.insert(payloads, { player = player, data = data })
+			end)
+
+			if addSword then
+				local sword = h.env.Instance.new("Tool")
+				sword.Name = "Sword"
+				sword.Parent = _K.Service.StarterPack
+				h.env:step(0.05)
+			end
+
+			_K.ready = true
+			_K.Hook.init:Fire()
+			h.env:step(0.05)
+			spyFire:restore()
+			return payloads, admin
+		end
+
+		local emptyPayloads, emptyAdmin = runBroadcast(false)
+		sert.eq(#emptyPayloads, 1)
+		sert.eq(emptyPayloads[1].player, emptyAdmin)
+		sert.eq(emptyPayloads[1].data, {})
+
+		local swordPayloads, swordAdmin = runBroadcast(true)
+		sert.eq(#swordPayloads, 1)
+		sert.eq(swordPayloads[1].player, swordAdmin)
+		sert.eq(swordPayloads[1].data, { { Name = "Sword" } })
+	end)
 end)
 
 describe("DefaultTypes · Command", function()
@@ -1857,6 +1902,136 @@ describe("DefaultTypes · Player, UserId & Prefix Matchers", function()
 			local okSoloOthers, errSoloOthers = parsePlayersArg("others", 10)
 			sert.eq(okSoloOthers, false)
 			sert.eq(errSoloOthers.message, "No other players online")
+
+			-- Others with exactly 1 untargetable higher-rank player returns #feedback == 1 message
+			local modCaller = h.env:addPlayer(20, "ModCaller")
+			local higher = h.env:addPlayer(40, "HigherRankPlr")
+			_K.Auth.userRoleAdd(20, "mod")
+			_K.Auth.userRoleAdd(40, "creator")
+			_K.Data.roles.mod.onlyTargetSelf = nil
+			_K.Data.roles.mod.limits = { targets = 10, targetOthers = true }
+			local okOneFeedback, errOneFeedback = parsePlayersArg("others", 20, { lowerRank = true })
+			sert.eq(okOneFeedback, false)
+			sert.eq(errOneFeedback.message ~= "No targetable player found", true)
+			sert.eq(modCaller ~= nil and higher ~= nil, true)
+		end
+	)
+
+	test(
+		"deterministic exact, prefix, tie-break, RGB, Ban, Member, Role, Team, ReservedServer, and Command matching",
+		function()
+			local h, _K, Argument = newMountedK({ isStudio = false })
+			local creator = h.env:addPlayer(1, "CreatorDet")
+			_K.Data.creatorId = 1
+			_K.Auth.userRoleAdd(1, "creator")
+
+			-- Color: unmapped brick number RGB partial, base color priority, "rand", "rea"
+			local colorType = _K.Registry.types.color
+			sert.eq(colorType.transform("0"), Color3.fromRGB(0, 255, 255))
+			sert.eq(colorType.transform("0,20"), Color3.fromRGB(0, 20, 255))
+			sert.eq(colorType.transform("0,,30"), Color3.fromRGB(0, 255, 30))
+			sert.eq(colorType.transform("r"), Color3.new(1, 0, 0))
+			sert.eq(colorType.transform("b"), Color3.new(0, 0, 1))
+			sert.eq(colorType.transform("g"), Color3.new(0, 1, 0))
+			sert.eq(rbxTypeof(colorType.transform("rand")), "Color3")
+			sert.eq(colorType.transform("rea"), h.env.globals.BrickColor.new("Really black").Color)
+
+			-- Ban: exact name match, nameless prefix + lexicographic tie-break, 3-candidate sort, mixed-case invalid ID
+			local banType = _K.Registry.types.ban
+			local argSelfBan = makeArgSelf(_K, 1, { type = "ban", name = "Ban" })
+			_K.Data.bans["105"] = { nil, "nameless1", 0, 1 }
+			_K.Data.bans["109"] = { nil, "nameless2", 0, 1 }
+			_K.Data.bans["500"] = { "AlphaName", "named", 0, 1 }
+			_K.Data.bans["701"] = { "Ban_C", "c", 0, 1 }
+			_K.Data.bans["702"] = { "Ban_A", "a", 0, 1 }
+			_K.Data.bans["703"] = { "Ban_B", "b", 0, 1 }
+			_K.Data.bans["704"] = { "DupBan", "d1", 0, 1 }
+			_K.Data.bans["705"] = { "DupBan", "d2", 0, 1 }
+			sert.eq(banType.parse("alphaname", argSelfBan), "500")
+			sert.eq(banType.parse("10", argSelfBan), "105")
+			sert.eq(banType.parse("ban_", argSelfBan), "702")
+			sert.eq(banType.parse("dupb", argSelfBan), "704")
+			_K.Data.bans["AbC"] = { "OtherBan", "badid", 0, 1 }
+			local okMixedBan = banType.parse("abc", argSelfBan)
+			sert.eq(okMixedBan, nil)
+
+			-- Member: 3-candidate prefix sort and lexicographic duplicate-name tie-break
+			local memberType = _K.Registry.types.member
+			local argSelfMem = makeArgSelf(_K, 1, { type = "member", name = "Member" })
+			_K.Data.members["801"] = { name = "Mem_C", roles = { "vip" }, persist = {} }
+			_K.Data.members["802"] = { name = "Mem_A", roles = { "vip" }, persist = {} }
+			_K.Data.members["803"] = { name = "Mem_B", roles = { "vip" }, persist = {} }
+			_K.Data.members["810"] = { name = "DupMem", roles = { "vip" }, persist = {} }
+			_K.Data.members["820"] = { name = "DupMem", roles = { "vip" }, persist = {} }
+			sert.eq(memberType.parse("mem_", argSelfMem), "802")
+			sert.eq(memberType.parse("dupm", argSelfMem), "810")
+
+			-- Role & @role: 3-candidate shared-prefix tie-break
+			for _, s in { "c", "a", "b" } do
+				local id = "pre_" .. s
+				_K.Data.roles[id] =
+					{ _key = id, _rank = 1, name = "Pre" .. s, color = "#ffffff", permissions = {}, groups = {} }
+			end
+			sert.eq(_K.Registry.types.role.parse("pre_", makeArgSelf(_K, 1, { type = "role", name = "Role" })), "pre_a")
+
+			local pPreC = h.env:addPlayer(911, "PreCRolePlr")
+			local pPreA = h.env:addPlayer(912, "PreARolePlr")
+			_K.Auth.userRoleAdd(911, "pre_c")
+			_K.Auth.userRoleAdd(912, "pre_a")
+			local okRolePlr, parsedRolePlr =
+				Argument.new(makeCommandContext(_K, 1), { type = "players", name = "Target" }, 1, "@pre_"):prepare()
+			sert.eq(okRolePlr, true)
+			sert.eq(parsedRolePlr, { pPreA })
+
+			-- Team & %team: empty string rejected, 3-candidate shared-prefix tie-break
+			local teamsSvc = h.env.game:GetService("Teams")
+			local pTeamA = h.env:addPlayer(913, "TeamAPlr")
+			local pTeamC = h.env:addPlayer(914, "TeamCPlr")
+			local playersByTeam = { Tpre_a = { pTeamA }, Tpre_c = { pTeamC }, Tpre_b = {} }
+			for _, name in { "Tpre_c", "Tpre_a", "Tpre_b" } do
+				local t = h.env.Instance.new("Team", teamsSvc)
+				t.Name = name
+				local list = playersByTeam[name]
+				rawset(t, "_methods", {
+					GetPlayers = function()
+						return list
+					end,
+				})
+			end
+			local teamType = _K.Registry.types.team
+			sert.eq((teamType.validate("", 1)), false)
+			sert.eq(teamType.parse("tpre_", 1).Name, "Tpre_a")
+			pTeamA.Team = teamsSvc:FindFirstChild("Tpre_a")
+			pTeamC.Team = teamsSvc:FindFirstChild("Tpre_c")
+			local okTeamPlr, parsedTeamPlr =
+				Argument.new(makeCommandContext(_K, 1), { type = "players", name = "Target" }, 1, "%tpre_"):prepare()
+			sert.eq(okTeamPlr, true)
+			sert.eq(parsedTeamPlr, { pTeamA })
+
+			-- ReservedServer: literal "." match (not wildcard) and deterministic equal-length tie-break
+			_K.Data.serversLoaded = true
+			for _, k in { "axb", "a.b", "rsv_c", "rsv_a", "rsv_b" } do
+				_K.Data.reservedServers[k] = { code = k }
+			end
+			local resType = _K.Registry.types.reservedServer
+			local argSelfRes = makeArgSelf(_K, 1, { type = "reservedServer", name = "Code" })
+			sert.eq(resType.parse("a.", argSelfRes).code, "a.b")
+			sert.eq(resType.parse("rsv_", argSelfRes).code, "rsv_a")
+
+			-- Command: sorted prefix beats substring deterministically
+			for _, name in { "zsub_qdet", "qdet_b", "qdet_a" } do
+				_K.Registry.registerCommand(_K, {
+					name = name,
+					description = name,
+					group = "general",
+					LocalPlayerAuthorized = true,
+					args = {},
+					run = function() end,
+				})
+			end
+			h.env:step(0.25)
+			sert.eq(_K.Registry.types.command.transform("qdet").name, "qdet_a")
+			sert.eq(creator ~= nil and pPreC ~= nil and pTeamC ~= nil, true)
 		end
 	)
 

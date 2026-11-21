@@ -245,7 +245,7 @@ local _ = _K.Remote.Settings:Connect(function(settings)
 	-- full settings syncs repeat the pinned announcement, it only shows when it changed
 	if settings.announcement ~= nil and _K.Chat.pinAnnouncement(settings.announcement) then
 		-- shown like the "announce" message would show it
-		local msg, from, duration = unpack(settings.announcement)
+		local msg, from, duration = table.unpack(settings.announcement, 1, 3)
 		_K.Announce({
 			From = from,
 			Text = _K.Chat.restoreRichText(_K.Util.String.escapeRichText(msg)),

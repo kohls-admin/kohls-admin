@@ -4,28 +4,20 @@ local generateValidate = require(script.Parent.Parent:WaitForChild("generateVali
 
 return function(_K)
 	local function teamParse(arg, self)
-		if arg == "" then
+		local matchedTeam = _K.Registry.types.team.find(arg)
+		if not matchedTeam then
 			return false, "Invalid team"
 		end
 		local feedback = {}
-		local players, valid = {}, false
-		for _, team in Teams:GetTeams() do
-			if string.find(string.lower(team.Name), arg, 1, true) == 1 then
-				valid = true
-				for _, player in team:GetPlayers() do
-					local message
-					player, message = self._K.Auth.targetUserArgument(self, player.UserId, player)
-					if player then
-						table.insert(players, player)
-					elseif not table.find(feedback, message) then
-						table.insert(feedback, message)
-					end
-				end
-				break
+		local players = {}
+		for _, player in matchedTeam:GetPlayers() do
+			local message
+			player, message = self._K.Auth.targetUserArgument(self, player.UserId, player)
+			if player then
+				table.insert(players, player)
+			elseif not table.find(feedback, message) then
+				table.insert(feedback, message)
 			end
-		end
-		if not valid then
-			return false, "Invalid team"
 		end
 		return #players > 0 and players, #feedback > 0 and table.concat(feedback, "\n") or "No targetable player found"
 	end

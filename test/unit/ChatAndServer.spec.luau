@@ -426,13 +426,28 @@ describe("Chat and Server", function()
 			sert.eq(receivedMsgs[2].from, 999)
 			sert.eq(receivedMsgs[2].data, 15)
 
-			-- 3. waitForMessage timeout returns nil when id never arrives
+			-- 3. waitForMessage timeout returns nil when id never arrives, without clearing another active waiter on the same id
 			local timedOutVal = "unset"
 			client:spawn(function()
 				timedOutVal = cChat.waitForMessage("nonexistent-id", 0.2)
 			end)
 			world:run(0.5)
 			sert.eq(timedOutVal, nil)
+
+			local wFirst: any = "unset"
+			local wSecond: any = "unset"
+			client:spawn(function()
+				wFirst = cChat.waitForMessage("shared-wait-id", 0.05)
+			end)
+			client:spawn(function()
+				wSecond = cChat.waitForMessage("shared-wait-id", 0.5)
+			end)
+			world:run(0.15)
+			sert.eq(wFirst, nil)
+			sert.eq(wSecond, "unset")
+			sRemote.ChatSystem:Fire(srvPlr, "announce", "KeptSecond", 999, 10, "shared-wait-id")
+			world:run(0.15)
+			sert.eq(wSecond, "KeptSecond")
 
 			-- 4. TextChannels are never touched: OnIncomingMessage can't be set and message text is empty with
 			-- platform-integrated chat
@@ -452,7 +467,7 @@ describe("Chat and Server", function()
 				TextSource = { UserId = 101 },
 			})
 			world:run(0.2)
-			sert.eq(#receivedMsgs, 2)
+			sert.eq(#receivedMsgs, 3)
 			sert.eq(cChat.onMessage ~= nil and cChat.send == nil, true)
 
 			-- Advance past 30s to trigger received[id] cleanup timers
@@ -608,17 +623,38 @@ describe("Chat and Server", function()
 				sert.eq(table.find(_K.Data.roles.vip.assets, 777) ~= nil, true)
 				sert.eq(table.find(_K.Data.roles.vip.gamepasses, 888) ~= nil, true)
 				sert.eq(table.find(_K.Data.roles.vip.subscriptions, "sub_vip") ~= nil, true)
-				sert.eq(_K.Data.roles.vip.gamepasss ~= nil, true)
+				sert.eq(_K.Data.roles.vip.gamepasss, nil)
+				sert.eq(table.find(_K.Data.roles.vip.gamepasses, 666) ~= nil, true)
+				sert.eq(table.find(_K.Data.roles.vip.assets, 555) ~= nil, true)
+				sert.eq(_K.Data.async.subscription["sub_inline"], { "vip" })
 				sert.eq(_K.Data.async.group[100], { { rank = 10, roles = { "mod" } } })
 				sert.eq(_K.Data.async.group[200], { { rank = 5, roles = { "vip" } } })
 				sert.eq(_K.Data.async.group[300], { { rank = 15, roles = { "mod" } } })
 				sert.eq(_K.Data.friendRoles, { "vip" })
+				sert.eq(_K.Auth.hasRole(202, "vip"), true)
 				sert.eq(_K.Data.savedSettings.theme, "MigratedTheme")
 
-				-- _K.log edge cases: logsHidden, >16KB truncation, liveText, and removeExcessLogs (src/init.luau lines 106-162)
+				-- _K.log edge cases: logsHidden, >16KB truncation, filtered=true, liveText, and removeExcessLogs (src/init.luau lines 106-162)
 				_K.Data.logsHidden[9999] = true
 				sert.eq(_K.log("hidden", "INFO", 9999), nil)
 				_K.Data.logsHidden[9999] = nil
+
+				local textMethods = rawget(sh.env.game:GetService("TextService"), "_methods") :: any
+				local origFilter = textMethods.FilterStringAsync
+				textMethods.FilterStringAsync = function(_self, txt)
+					return {
+						GetNonChatStringForBroadcastAsync = function()
+							return "filtered:" .. txt
+						end,
+						GetNonChatStringForUserAsync = function()
+							return "filtered:" .. txt
+						end,
+					}
+				end
+				local filteredEntry = _K.log("raw broadcast", "CHAT", 101, true)
+				world:run(0.1)
+				textMethods.FilterStringAsync = origFilter
+				sert.eq(filteredEntry and filteredEntry[1], "filtered:raw broadcast")
 
 				local bigLog = _K.log(string.rep("X", 17000), "COMMAND", 101, true, "live replacement")
 				sert.eq(bigLog ~= nil, true)
@@ -1196,9 +1232,25 @@ describe("Chat and Server", function()
 				world:run(0.5)
 				sert.eq(_K._serverLock, nil)
 
-				-- PlayerRemoving logs LEAVE and cleans up state (lines 1047-1055)
+				-- PlayerRemoving disposes characterCleanup when CharacterRemoving hasn't fired, and tolerates nil Character
+				local charForLeave = sh.env.Instance.new("Model", sh.env.workspace)
+				local humForLeave = sh.env.Instance.new("Humanoid", charForLeave)
+				humForLeave._props.ApplyDescriptionFinished = sh.env:signal()
+				srvMod.Character = charForLeave
+				srvMod.CharacterAdded:Fire(charForLeave)
+				world:run(0.1)
+				local logsBefore = #_K.Data.logs
+				humForLeave.Died:Fire()
+				world:run(0.05)
+				sert.eq(#_K.Data.logs > logsBefore, true)
+				sh.env.Players.PlayerRemoving:Fire(sh.env:addPlayer(399, "NoCharLeave"))
 				sh.env.Players.PlayerRemoving:Fire(srvMod)
 				world:run(0.2)
+				local logsAfterLeave = #_K.Data.logs
+				humForLeave.Died:Fire()
+				world:run(0.05)
+				sert.eq(#_K.Data.logs, logsAfterLeave)
+				srvMod.CharacterRemoving:Fire(charForLeave)
 
 				-- VIP remotes (Title, VIPUGCMethod, VIPCheck, PromptBulkPurchase)
 				aRemote.Title:Fire("vip")
@@ -1265,7 +1317,8 @@ describe("Chat and Server", function()
 				sert.eq(sh.env.teleports[#sh.env.teleports].placeId, 1000)
 
 				-- Advance past EXPIRE (35s) while keeping a fresh server entry to verify selective stale server removal
-				_K.Data.servers["remote-job-fresh"] = { 1000, 3, sh.env.globals.os.time(), sh.env.globals.tick() + 45 }
+				_K.Data.servers["remote-job-fresh"] =
+					{ 1000, 3, sh.env.globals.os.time(), sh.env.globals.os.clock() + 45 }
 				world:fastForward(50)
 				sert.eq(_K.Data.servers["remote-job-99"], nil)
 				sert.eq(_K.Data.servers["remote-job-fresh"] ~= nil, true)
@@ -1276,7 +1329,8 @@ describe("Chat and Server", function()
 				table.clear(serversTable.Subscribers)
 				serversTable.syncSubscription()
 				sert.eq(_K.Data.servers["remote-job-fresh"] ~= nil, true)
-				_K.Data.servers["remote-job-stale"] = { 1000, 2, sh.env.globals.os.time(), sh.env.globals.tick() - 40 }
+				_K.Data.servers["remote-job-stale"] =
+					{ 1000, 2, sh.env.globals.os.time(), sh.env.globals.os.clock() - 40 }
 				serversTable.Subscribers[srvAdmin] = true
 				serversTable.syncSubscription()
 				world:run(0.5)
@@ -1501,6 +1555,92 @@ describe("Chat and Server", function()
 				sK.Notify = origNotify
 				sK.IsClient = false
 				sK.IsServer = true
+			end
+		)
+
+		test(
+			"friendRoles skips creatorId <= 0, waits for delayed creatorId, and warns cleanly on GetFriendsAsync/iterPageItems errors",
+			function()
+				local function runFriendCase(mode: "zero" | "ok" | "getFail" | "iterFail")
+					local h = Harness.newEnv({ isStudio = false })
+					h.env.game._props.CreatorType = h.env.globals.Enum.CreatorType.Group
+					h.env.game._props.CreatorId = if mode == "zero" then 501 else 502
+					local grpSvc = h.env.game:GetService("GroupService")
+					local grpMethods = rawget(grpSvc, "_methods") :: any
+					grpMethods.GetGroupInfoAsync = function()
+						if mode == "zero" then
+							return { Owner = nil }
+						end
+						h.env.task.wait(0.1)
+						return { Owner = { Id = 42 } }
+					end
+					if mode ~= "zero" then
+						h.env:addPlayer(333, "FriendUser")
+					end
+					local warns: { string } = {}
+					local origWarn = h.env.globals.warn
+					h.env.globals.warn = function(...: any)
+						table.insert(warns, table.concat({ ... }, " "))
+					end
+					local getCalls = 0
+					sert.spy(h.env.Players, "GetFriendsAsync", function()
+						getCalls += 1
+						if mode == "getFail" then
+							error("GetFriendsAsync down")
+						elseif mode == "iterFail" then
+							return {
+								IsFinished = false,
+								GetCurrentPage = function()
+									return { { Id = 333 } }
+								end,
+								AdvanceToNextPageAsync = function()
+									error("Page iteration broken")
+								end,
+							}
+						end
+						return {
+							IsFinished = true,
+							GetCurrentPage = function()
+								return { { Id = 333 } }
+							end,
+						}
+					end)
+					local k = h:requireK()
+					k.initialize({
+						bans = {},
+						userRoles = {},
+						assetRoles = {},
+						gamepassRoles = {},
+						subscriptionRoles = {},
+						groupRoles = {},
+						friendRoles = { "vip" },
+						freeAdmin = {},
+						prefix = ";",
+						splitKey = " ",
+						commands = {},
+						roles = Harness.defaultRoles(),
+					})
+					h.env:advance(if mode == "zero" then 1 else 35)
+					h.env.globals.warn = origWarn
+					return k, warns, getCalls
+				end
+
+				local kZero, _, zeroCalls = runFriendCase("zero")
+				sert.eq(kZero.creatorId, 0)
+				sert.eq(zeroCalls, 0)
+
+				local kOk, okWarns, okCalls = runFriendCase("ok")
+				sert.eq(okCalls, 1)
+				sert.eq(kOk.Auth.hasRole(333, "vip"), true)
+				sert.eq(#okWarns, 0)
+
+				local _, getFailWarns, getFailCalls = runFriendCase("getFail")
+				sert.eq(getFailCalls >= 1, true)
+				sert.eq(#getFailWarns >= 1, true)
+
+				local _, iterFailWarns, iterFailCalls = runFriendCase("iterFail")
+				sert.eq(iterFailCalls, 1)
+				sert.eq(#iterFailWarns >= 1, true)
 			end
 		)
 	end)

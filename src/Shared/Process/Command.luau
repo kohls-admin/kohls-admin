@@ -95,10 +95,11 @@ function Command:requestCommand(targetPlayer: Player, args, run)
 
 	if accepted then
 		self._K.Hook.preCommand:Fire(self)
-		local _ok, err = pcall(run, self, unpack(args, 1, #self.definition.args))
+		local argCount = if self.definition.args then #self.definition.args else 0
+		local _ok, err = pcall(run, self, table.unpack(args, 1, argCount))
 		if err and self.fromPlayer then
 			self._K.Remote.Notify:Fire(self.fromPlayer, {
-				Text = `<b>"{self.alias}" command failed:</b> {err}`,
+				Text = `<b>"{self.alias}" command failed:</b> {Util.String.escapeRichText(tostring(err))}`,
 				From = "_K",
 				TextColor3 = Color3.new(1, 0, 0),
 				Sound = "Call_Leave",
@@ -221,7 +222,7 @@ function Command:run()
 
 	self._K.Hook.preCommand:Fire(self)
 	local argCount = if self.definition.args then #self.definition.args else 0
-	local ok, err = pcall(run, self, unpack(self.preparedArgs, 1, argCount))
+	local ok, err = pcall(run, self, table.unpack(self.preparedArgs, 1, argCount))
 	self._K.Hook.postCommand:Fire(self)
 
 	if not ok then
@@ -241,7 +242,7 @@ local function matchesClientSuggestion(self, definition, rawArg: string): boolea
 		return false
 	end
 	local input = string.lower(rawArg)
-	local text, _, _, query = unpack(suggestions[1])
+	local text, _, _, query = table.unpack(suggestions[1], 1, 4)
 	return string.find(string.lower(text), input, 1, true) ~= nil
 		or (query ~= nil and string.find(string.lower(query), `[{input}`, 1, true) ~= nil)
 end
@@ -254,7 +255,7 @@ function Command:validate()
 
 	-- always try first argument for player types
 	if self.definition.args[1] and string.find(self.definition.args[1].type, "player", 1, true) and #self.array < 2 then
-		local start, text = unpack(self.array[1])
+		local start, text = table.unpack(self.array[1], 1, 2)
 		self.array[2] = { start + #text, "" }
 	end
 
@@ -280,7 +281,7 @@ function Command:validate()
 			continue
 		end
 
-		local argPos, rawArg = unpack(data)
+		local argPos, rawArg = table.unpack(data, 1, 2)
 
 		if index == #self.definition.args then
 			local buffer = table.create(#self.array - arrayIndex)

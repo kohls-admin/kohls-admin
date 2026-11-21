@@ -352,7 +352,27 @@ describe("Data · Migrate (Settings & Legacy KAI)", function()
 			sert.eq(table.find(Data.members["101"].roles, "customAdmin") ~= nil, true)
 			sert.eq(Data.members["102"], nil) -- rank 4 had no matching role
 			sert.eq(Data.members["103"], nil) -- positive power is ignored
+			sert.eq(Data.savedSettings.freeAdmin, { "vip" })
 			sert.eq(Data.savedSettings.prefix, { "!" })
+
+			-- Malformed deserializeItem pairs ("123:bad bad:456"), FreeAdmin = 0 -> rolesList[1], and non-numeric FreeAdmin
+			globalStore:SetAsync("KSave", {
+				"123:bad bad:456 999:-2",
+				"555:bad bad:777 888:-1",
+				HttpService:JSONEncode({ FreeAdmin = 0, Prefix = ":" }),
+			})
+			local bans0, main0 = Data.Migrate.KAI()
+			sert.eq(bans0["888"] ~= nil and bans0["555"] == nil, true)
+			sert.eq(main0[1]["999"] ~= nil and main0[1]["123"] == nil, true)
+			sert.eq(main0[2].freeAdmin, { Data.rolesList[1]._key })
+
+			globalStore:SetAsync("KSave", {
+				"999:-2",
+				"",
+				HttpService:JSONEncode({ FreeAdmin = "bad" }),
+			})
+			local _, mainBadFree = Data.Migrate.KAI()
+			sert.eq(mainBadFree[2].freeAdmin, nil)
 
 			Data.roles.admin = origAdmin
 			Data.roles.customAdmin = nil
@@ -1391,6 +1411,17 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 
 			-- Queue 280KB of logs in Data1.Sync.logs (<= 512KB so first loop doesn't trim, but existing shard + saveLogs > 512KB so second loop trims!)
 			-- and queue >512KB in a second batch + >90% of 512KB in Data1.Sync.bans for dataLimitWarning
+			local function countLimitWarnings(): number
+				local count = 0
+				for _, w in warnings do
+					if string.find(tostring(w), "approaching the limit of the DataStore", 1, true) then
+						count += 1
+					end
+				end
+				return count
+			end
+			sert.eq(countLimitWarnings(), 0)
+
 			Data1.SEPARATE_DATASTORE = true
 			local bigLogText = string.rep("L", 15000)
 			for i = 1, 20 do
@@ -1403,13 +1434,36 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 
 			-- Advance past HASH_EXPIRY (60s) so dataStoreUpdateThrottle resets and processSync runs updateBans & updateLogs
 			world:fastForward(65)
-			local sawLimitWarn = false
-			for _, w in warnings do
-				if string.find(tostring(w), "approaching the limit of the DataStore", 1, true) then
-					sawLimitWarn = true
+			sert.eq(countLimitWarnings(), 1)
+
+			-- Second >90% ban save within 300s is suppressed by nextDataLimitWarning cooldown; after 300s it warns again
+			Data1.Sync.bans["5099"] = { "Banned99", bigBanReason, -1, 101 }
+			world:fastForward(65)
+			sert.eq(countLimitWarnings(), 1)
+			world:fastForward(250)
+			Data1.Sync.bans["5100"] = { "Banned100", bigBanReason, -1, 101 }
+			world:fastForward(65)
+			sert.eq(countLimitWarnings(), 2)
+
+			-- processSync loop error is caught by pcall and warns without crashing the loop
+			local hErr = Harness.newEnv({ isStudio = true })
+			local syncErrWarns = 0
+			hErr.env.globals.warn = function(...: any)
+				if string.find(table.concat({ ... }, " "), "Data sync failed", 1, true) then
+					syncErrWarns += 1
 				end
 			end
-			sert.eq(sawLimitWarn, true)
+			local DataErr = hErr:requireData()
+			DataErr.initialize("_K_SyncErrScope")
+			hErr.env:advance(1)
+			DataErr.Sync.settings = "corrupt_non_table" :: any
+			hErr.env:advance(2)
+			sert.eq(syncErrWarns >= 1, true)
+			DataErr.Sync.settings = {}
+			local errWarnsAfterFix = syncErrWarns
+			hErr.env:advance(2)
+			sert.eq(syncErrWarns, errWarnsAfterFix)
+			DataErr.gameClosing = true
 
 			-- Also trigger >512KB single-batch saveLogs trimming (lines 156-163)
 			local newest

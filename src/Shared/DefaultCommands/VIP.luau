@@ -88,11 +88,8 @@ return {
 				if dogSeat then
 					dogSeat:Destroy()
 					local undogCommand = context._K.Registry.commands.undog
-					if undogCommand then
-						local humanoid = character:FindFirstChild("Humanoid")
-						if not humanoid then
-							continue
-						end
+					local humanoid = character:FindFirstChild("Humanoid")
+					if undogCommand and humanoid then
 						if humanoid.RigType == Enum.HumanoidRigType.R6 then
 							undogCommand.env.R6(character)
 						else
@@ -509,8 +506,11 @@ return {
 				pe.Parent = root
 			end
 
-			local _ = _K.Remote.DonorTrail:Connect(function(player, enable: boolean?)
+			local _ = _K.Remote.DonorTrail:Connect(function(player, enable: (string | boolean)?)
 				if enable then
+					if not _K.VIP.ownsDonation(player, if type(enable) == "string" then enable else nil) then
+						return
+					end
 					apply(player, player, nil, nil)
 				else
 					local root = player.Character
@@ -1284,8 +1284,11 @@ return {
 						end
 
 						local headY = char.Head.Size.Y
-						char.Torso.Neck.C0 = CFrame.new(0, headY / 2 + (headY * scale / 2), 0)
-							* CFrame.Angles(math.pi / 2, math.pi, 0)
+						local neck = char.Torso:FindFirstChild("Neck")
+						if neck and neck:IsA("JointInstance") then
+							neck.C0 = CFrame.new(0, headY / 2 + (headY * scale / 2), 0)
+								* CFrame.Angles(math.pi / 2, math.pi, 0)
+						end
 					end
 				end
 			end
@@ -1795,9 +1798,12 @@ return {
 			if not wings then
 				return "You don't have VIP wings equipped!"
 			end
-			wingsColor = wingsColor or wings:GetAttribute("_KWingsColor")
+			wingsColor = wingsColor or wings:GetAttribute("_KWingsColor") or Color3.new(1, 1, 1)
 			task.defer(function()
-				wings.Wings.Color = wingsColor
+				local wingsPart = wings:FindFirstChild("Wings")
+				if wingsPart and wingsPart:IsA("BasePart") then
+					wingsPart.Color = wingsColor
+				end
 			end)
 			return
 		end,
@@ -1877,8 +1883,8 @@ return {
 			if not crown then
 				return "You don't have a VIP crown equipped!"
 			end
-			crownColor = crownColor or crown:GetAttribute("_KCrownColor")
-			fireColor = fireColor or crown:GetAttribute("_KCrownFireColor")
+			crownColor = crownColor or crown:GetAttribute("_KCrownColor") or Color3.new(1, 1, 1)
+			fireColor = fireColor or crown:GetAttribute("_KCrownFireColor") or Color3.new()
 			crown:RemoveTag("_KSuperCrownRainbow")
 			task.defer(function()
 				local handle = crown:FindFirstChild("Handle")

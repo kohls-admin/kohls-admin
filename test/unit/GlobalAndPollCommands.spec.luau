@@ -449,10 +449,7 @@ describe("DefaultCommands", function()
 
 	test(";whois shows ? for a Platform or SessionStart the server dropped", function()
 		local c = createSimCluster()
-		local _K, clientK, srvP1, world = c._K, c.clientK, c.srvP1, c.world
-		clientK.Remote.ShowFPS.OnClientInvoke = function()
-			return 60
-		end
+		local _K, srvP1, world = c._K, c.srvP1, c.world
 		local sent
 		local origFire = _K.Remote.Notify.Fire
 		_K.Remote.Notify.Fire = function(self, player, data)

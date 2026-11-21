@@ -8,14 +8,15 @@ local function parse(input: string, self: any): (boolean, string?)
 	if exact then
 		return exact
 	end
-	local query, partial = string.lower(input)
+	local query, partial, partialLower = string.lower(input)
 	for reservedCode, data in _K.Data.reservedServers do
 		local match = string.lower(reservedCode)
 		if match == query then
 			return data
-		elseif string.find(match, query) then
-			if not partial or #partial < #reservedCode then
+		elseif string.find(match, query, 1, true) then
+			if not partial or #partial < #reservedCode or (#partial == #reservedCode and match < partialLower) then
 				partial = reservedCode
+				partialLower = match
 			end
 		end
 	end

@@ -42,8 +42,8 @@ local DATA_LIMIT = 512 * 1024 -- 512 KB
 local nextDataLimitWarning = {}
 local function dataLimitWarning(dataType, size)
 	local ratio = size / DATA_LIMIT
-	if ratio > 0.9 and tick() > (nextDataLimitWarning[dataType] or 0) then
-		nextDataLimitWarning[dataType] = tick() + 300
+	if ratio > 0.9 and os.clock() > (nextDataLimitWarning[dataType] or 0) then
+		nextDataLimitWarning[dataType] = os.clock() + 300
 		for _, player in Players:GetPlayers() do
 			if
 				Auth.hasCommand(player.UserId, "ban")
@@ -433,11 +433,14 @@ local SYNC = {
 			if type(setting) == "table" then
 				local itemType = setting[1]
 				if itemType == "color" then
-					changes[key] = Color3.new(unpack(setting, 2))
+					changes[key] = Color3.new(table.unpack(setting, 2, 4))
 				elseif itemType == "udim" then
-					changes[key] = UDim.new(unpack(setting, 2))
+					changes[key] = UDim.new(table.unpack(setting, 2, 3))
 				elseif itemType == "enum" then
-					changes[key] = Enum[setting[2]][setting[3]]
+					local ok, enumItem = pcall(function()
+						return (Enum :: any)[setting[2]][setting[3]]
+					end)
+					changes[key] = if ok then enumItem else nil
 				end
 			end
 		end
@@ -763,7 +766,7 @@ local function onDataMessage(message)
 		return
 	end
 
-	local id, chunkCount, inlineChunk, logsOnly = unpack(data)
+	local id, chunkCount, inlineChunk, logsOnly = table.unpack(data, 1, 4)
 	if
 		type(id) ~= "string"
 		or type(chunkCount) ~= "number"
@@ -1407,7 +1410,11 @@ function Data.initialize(scope)
 		syncLoopStarted = true
 		task.spawn(function()
 			repeat
-				task.wait(if processSync() then 6 else 1)
+				local ok, synced = pcall(processSync)
+				if not ok then
+					warn(`[Kohl's Admin] Data sync failed: {synced}`)
+				end
+				task.wait(if ok and synced then 6 else 1)
 			until Data.gameClosing
 		end)
 	end

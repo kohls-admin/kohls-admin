@@ -120,6 +120,11 @@ describe("DefaultCommands", function()
 
 			runSrv(";gear TargetPlr 12345")
 			sert.ok((srvP2.Backpack:FindFirstChild("Tool12345")))
+			local savedBp = srvP2.Backpack
+			savedBp.Parent = nil
+			runSrv(";gear TargetPlr 12345")
+			sert.ok((srvP2.Character:FindFirstChild("Tool12345")))
+			savedBp.Parent = srvP2
 			-- Authorized error & generic error branches in gear
 			runSrv(";gear TargetPlr 999998")
 			runSrv(";gear TargetPlr 999997")
@@ -690,25 +695,21 @@ describe("DefaultCommands", function()
 		runCli(";unxray")
 		sert.eq(clientK.Registry.commands.xray.env.xray(), false)
 
-		local origShowFps = clientK.Remote.ShowFPS.OnInvoke
-		if type(origShowFps) == "function" then
-			local fpsVal
-			local showFpsThread = c.ch1.env.task.spawn(function()
-				fpsVal = origShowFps()
-			end)
-			runServiceCli.Heartbeat:Fire(0.016)
-			c.world:run(0.05)
-			c.ch1.env.task.cancel(showFpsThread)
-			sert.eq(type(fpsVal), "number")
+		runServiceCli.Heartbeat:Fire(0.016)
+		c.world:fastForward(1.1)
+		runServiceCli.Heartbeat:Fire(0.016)
+		sert.eq(type(clientK.Registry.commands.showfps.env.fps), "number")
+		local lastSrvNotify
+		local origSrvNotifyFire = _K.Remote.Notify.Fire
+		_K.Remote.Notify.Fire = function(self, player, data)
+			lastSrvNotify = data
+			return origSrvNotifyFire(self, player, data)
 		end
-		clientK.Remote.ShowFPS.OnClientInvoke = function()
-			return 60
-		end
-		local whoisThread = c.sh.env.task.spawn(function()
-			runSrv(";whois CreatorPlr")
-		end)
+		runSrv(";whois CreatorPlr")
 		c.world:run(0.1)
-		c.sh.env.task.cancel(whoisThread)
+		_K.Remote.Notify.Fire = origSrvNotifyFire
+		sert.ok(lastSrvNotify and lastSrvNotify.Text)
+		sert.eq(string.find(lastSrvNotify.Text, "<b>FPS:</b> ", 1, true) ~= nil, true)
 
 		runCli(";grouprank TargetPlr 100")
 		sert.ok(clientK._lastNotify.Text)
@@ -1014,14 +1015,20 @@ describe("DefaultCommands", function()
 		runCli(";placeid")
 		sert.ok(clientK._lastNotify.Text)
 
-		local fpsThread = c.sh.env.task.spawn(function()
-			runSrv(";showfps CreatorPlr")
-		end)
+		local lastFpsNotify
+		local origFpsNotifyFire = _K.Remote.Notify.Fire
+		_K.Remote.Notify.Fire = function(self, player, data)
+			lastFpsNotify = data
+			return origFpsNotifyFire(self, player, data)
+		end
+		runSrv(";showfps CreatorPlr")
 		local waitThread = c.sh.env.task.spawn(function()
 			runSrv(";wait 0.01")
 		end)
 		c.world:run(0.1)
-		c.sh.env.task.cancel(fpsThread)
+		_K.Remote.Notify.Fire = origFpsNotifyFire
+		sert.ok(lastFpsNotify and lastFpsNotify.Text)
+		sert.eq(string.find(lastFpsNotify.Text, "<b>FPS:</b> ", 1, true) ~= nil, true)
 		c.sh.env.task.cancel(waitThread)
 
 		runSrv(";ping TargetPlr")
@@ -1149,12 +1156,23 @@ describe("DefaultCommands", function()
 			runSrv(";removetools TargetPlr")
 			sert.eq(#srvP2.Backpack:GetChildren(), 0)
 			runSrv(";toolban TargetPlr")
-			sert.ok(_K.Registry.commands.toolban.env.bans[srvP2])
-			-- Adding a tool while toolbanned destroys it via task.defer
+			local toolBanHandle = _K.Registry.commands.toolban.env.bans[srvP2]
+			sert.ok(toolBanHandle)
+			sert.eq(toolBanHandle.Connected, true)
+			-- Adding a tool to Backpack or Character while toolbanned destroys it via task.defer
 			local bannedTool = c.sh.env.Instance.new("Tool", srvP2.Backpack)
+			local charBannedTool = c.sh.env.Instance.new("Tool", srvP2.Character)
 			c.world:run(0.05)
 			sert.eq(bannedTool.Parent, nil)
+			sert.eq(charBannedTool.Parent, nil)
+			-- Respawn creating a new Backpack keeps toolban active
+			srvP2.Backpack:Destroy()
+			local respawnBp = c.sh.env.Instance.new("Backpack", srvP2)
+			local respawnTool = c.sh.env.Instance.new("Tool", respawnBp)
+			c.world:run(0.05)
+			sert.eq(respawnTool.Parent, nil)
 			runSrv(";untoolban TargetPlr")
+			sert.eq(toolBanHandle.Connected, false)
 			sert.eq(_K.Registry.commands.toolban.env.bans[srvP2], nil)
 
 			-- Health, damage, forcefield, immortal, kill, loopkill
@@ -1834,6 +1852,96 @@ describe("DefaultCommands", function()
 		end
 	)
 
+	test(
+		"Legacy addon validates custom command defs, lowercases/falls back args, guards Prefix/freeAdmin/role.commands",
+		function()
+			local function runLegacy(c: any, legacyFolder: Instance, settingsTbl: any, customCmdsTbl: any?)
+				local prevSettings = legacyFolder:FindFirstChild("Settings")
+				if prevSettings then
+					prevSettings:Destroy()
+				end
+				local settingsMod = c.sh.env.Instance.new("ModuleScript", legacyFolder)
+				settingsMod.Name = "Settings"
+				rawset(settingsMod, "_factory", function()
+					return { settingsTbl, {} }
+				end)
+
+				local prevCmds = legacyFolder:FindFirstChild("Custom_Commands")
+				if prevCmds then
+					prevCmds:Destroy()
+				end
+				if customCmdsTbl ~= nil then
+					local cmdsMod = c.sh.env.Instance.new("ModuleScript", legacyFolder)
+					cmdsMod.Name = "Custom_Commands"
+					rawset(cmdsMod, "_factory", function()
+						return customCmdsTbl
+					end)
+				end
+
+				local warnings: { string } = {}
+				local origWarn = c.sh.env.globals.warn
+				c.sh.env.globals.warn = function(...: any)
+					table.insert(warnings, table.concat({ ... }, " "))
+				end
+				c.sh.env:require(c.sh.Shared.DefaultAddons:FindFirstChild("Legacy"))(c._K)
+				c.world:run(0.3)
+				c.sh.env.globals.warn = origWarn
+				return warnings
+			end
+
+			local function makeLegacyCluster(preSetup: ((any) -> ())?)
+				local c = createSimCluster(nil, true)
+				c._K.setupPurchasables = function() end
+				if preSetup then
+					preSetup(c._K)
+				end
+				local configFolder = c.sh.env.Instance.new("Folder", c.sh.Shared)
+				configFolder.Name = "Config"
+				local legacyFolder = c.sh.env.Instance.new("Folder", configFolder)
+				legacyFolder.Name = "Legacy"
+				return c, legacyFolder
+			end
+
+			-- Cluster 1: Invalid custom command defs, uppercase/unknown arg fallback, duplicate freeAdmin, and bad Prefix values
+			local c1, f1 = makeLegacyCluster(function(_K)
+				_K.Data.defaultSettings.prefix = { ";" }
+				_K.Data.settings.freeAdmin = { "vip" }
+			end)
+			local w1 = runLegacy(c1, f1, { Prefix = 123, FreeAdmin = 1 }, {
+				{ "not_a_table", "Bad aliases type", 1, {}, function() end },
+				{ { 123 }, "Non-string alias[1]", 1, {}, function() end },
+				{ { "legacy_nonfn" }, "Non-function run", 1, {}, "not_a_function" },
+				{ { "legacy_good" }, "Valid cmd", 1, { "PLAYER", "WEIRD_ARG/" }, function() end },
+			})
+			sert.eq(#c1.world.scheduler.errors, 0)
+			sert.eq(c1._K.Registry.commands.legacy_nonfn, nil)
+			sert.eq(c1._K.Registry.commands.legacy_good ~= nil, true)
+			sert.eq(c1._K.Registry.commands.legacy_good.args[1].type, "players")
+			sert.eq(c1._K.Registry.commands.legacy_good.args[2].type, "rawString")
+			sert.eq(c1._K.Registry.commands.legacy_good.args[2].optional ~= nil, true)
+			sert.eq(#w1 >= 3, true)
+			sert.eq(c1._K.Data.settings.freeAdmin, { "vip" })
+			for _, badPrefix in { "", ";" } do
+				runLegacy(c1, f1, { Prefix = badPrefix })
+				sert.eq(c1._K.Data.defaultSettings.prefix[1], ";")
+			end
+
+			-- Cluster 2: Valid custom Prefix, non-table freeAdmin recovery, and nil role.commands initialization
+			local c2, f2 = makeLegacyCluster(function(_K)
+				_K.Data.settings.freeAdmin = "bad_non_table"
+				_K.Data.roles.vip.commands = nil
+				_K.Data.roles.mod.commands = { keep = true }
+			end)
+			runLegacy(c2, f2, { Prefix = "!", FreeAdmin = 1, Permissions = { fly = 2 } })
+			sert.eq(#c2.world.scheduler.errors, 0)
+			sert.eq(c2._K.Data.defaultSettings.prefix[1], "!")
+			sert.eq(c2._K.Data.settings.freeAdmin, { "vip" })
+			sert.eq(c2._K.Data.roles.vip.commands.fly, false)
+			sert.eq(c2._K.Data.roles.mod.commands.keep, true)
+			sert.eq(c2._K.Data.roles.mod.commands.fly, true)
+		end
+	)
+
 	test("legacy role commands give unrestricted, unsaved roles unless the giver is a developer", function()
 		local c = createSimCluster(nil, true)
 		local _K = c._K
@@ -2494,6 +2602,141 @@ describe("DefaultCommands", function()
 		sert.eq(_K.Registry.commands.control.env.connections[srvP2], nil)
 		sert.eq(_K.Registry.commands.control.env.controllers[srvP2], nil)
 	end)
+
+	test("VIP.ownsDonation targets requested pass, caches negative checks, and clears cache on purchase", function()
+		local c = createSimCluster()
+		local _K, srvP1, srvP2, world = c._K, c.srvP1, c.srvP2, c.world
+		local market = c.sh.env.game:GetService("MarketplaceService")
+		local methods = rawget(market, "_methods")
+		srvP1:SetAttribute("_KDonationLevel", 0)
+		srvP2:SetAttribute("_KDonationLevel", 0)
+
+		local calls = 0
+		local ownsTip = false
+		methods.UserOwnsGamePassAsync = function()
+			calls += 1
+			return ownsTip
+		end
+		methods.PlayerOwnsAssetAsync = function()
+			calls += 1
+			return false
+		end
+
+		sert.eq(_K.VIP.ownsDonation(srvP2, "NotARealPass"), false)
+		sert.eq(calls, 0)
+		sert.eq(_K.VIP.ownsDonation(srvP2, "Tip"), false)
+		sert.eq(calls, 2)
+		-- Second check within 30s uses negative cache
+		sert.eq(_K.VIP.ownsDonation(srvP2, "Tip"), false)
+		sert.eq(calls, 2)
+
+		-- Real purchase clears negative cache immediately and grants access
+		ownsTip = true
+		c.sh.env.task.spawn(
+			market.PromptGamePassPurchaseFinished.Fire,
+			market.PromptGamePassPurchaseFinished,
+			srvP2,
+			5391355,
+			true
+		)
+		world:fastForward(10)
+		sert.eq(_K.VIP.ownsDonation(srvP2, "Tip"), true)
+		sert.eq(_K.VIP.ownsDonation(srvP2, nil), true)
+
+		-- Non-donor client firing Remote.DonorTrail with non-owned pass does not create a _KParticleEffect
+		ownsTip = false
+		local trailChar = buildCharacter(c.sh.env, srvP1)
+		local trailRoot = trailChar:FindFirstChild("HumanoidRootPart")
+		c.clientK.Remote.DonorTrail:Fire("Tip")
+		world:run(0.1)
+		sert.eq(trailRoot and trailRoot:FindFirstChild("_KParticleEffect"), nil)
+
+		-- Setting _KDonationLevel >= 1 bypasses Marketplace lookups and equips _KParticleEffect
+		srvP1:SetAttribute("_KDonationLevel", 1)
+		local beforeCalls = calls
+		sert.eq(_K.VIP.ownsDonation(srvP1, "Gift"), true)
+		sert.eq(calls, beforeCalls)
+		c.clientK.Remote.DonorTrail:Fire("Tip")
+		world:run(0.1)
+		sert.eq(trailRoot and trailRoot:FindFirstChild("_KParticleEffect") ~= nil, true)
+	end)
+
+	test(
+		"showfps.env.getFPS coalesces concurrent calls, handles timeout/PlayerRemoving, and spectate guards post-unspectate Humanoid",
+		function()
+			local c = createSimCluster()
+			local _K, srvP1, srvP2, world = c._K, c.srvP1, c.srvP2, c.world
+			local getFPS = _K.Registry.commands.showfps.env.getFPS
+
+			-- Concurrent calls for connected client coalesce into a single Remote.ShowFPS request
+			local origClientFire = c.clientK.Remote.ShowFPS.Fire
+			c.clientK.Remote.ShowFPS.Fire = function(selfRemote, ...)
+				local args = table.pack(...)
+				c.ch1.env.task.delay(0.03, function()
+					origClientFire(selfRemote, table.unpack(args, 1, args.n))
+				end)
+			end
+			local firesToP1 = 0
+			local origFire = _K.Remote.ShowFPS.Fire
+			_K.Remote.ShowFPS.Fire = function(selfRemote, player, ...)
+				if player == srvP1 then
+					firesToP1 += 1
+				end
+				return origFire(selfRemote, player, ...)
+			end
+			local fpsA, fpsB
+			c.sh.env.task.spawn(function()
+				fpsA = getFPS(srvP1, 0.2)
+			end)
+			c.sh.env.task.spawn(function()
+				fpsB = getFPS(srvP1, 0.2)
+			end)
+			world:run(0.15)
+			_K.Remote.ShowFPS.Fire = origFire
+			c.clientK.Remote.ShowFPS.Fire = origClientFire
+			sert.eq(firesToP1, 1)
+			sert.eq(type(fpsA), "number")
+			sert.eq(fpsA, fpsB)
+
+			-- Unsolicited client ShowFPS reply does not error
+			c.clientK.Remote.ShowFPS:Fire(999)
+			world:run(0.05)
+
+			-- Unresponsive player resolves to 0 on timeout
+			local timedOutFps = -1
+			c.sh.env.task.spawn(function()
+				timedOutFps = getFPS(srvP2, 0.05)
+			end)
+			world:run(0.1)
+			sert.eq(timedOutFps, 0)
+
+			-- Pending request resolves immediately to 0 on PlayerRemoving
+			local removedFps = -1
+			c.sh.env.task.spawn(function()
+				removedFps = getFPS(srvP2, 5)
+			end)
+			world:run(0.02)
+			_K.Service.Players.PlayerRemoving:Fire(srvP2)
+			world:run(0.02)
+			sert.eq(removedFps, 0)
+
+			-- Spectate: unspectate before WaitForChild("Humanoid") resolves does not re-attach subject
+			local bareChar = c.sh.env.Instance.new("Model", c.sh.env.workspace)
+			bareChar.Name = "BareTarget"
+			srvP2.Character = bareChar
+			local specEnv = _K.Registry.commands.spectate.env
+			c.sh.env.task.spawn(function()
+				_K.Registry.commands.spectate.run({ _K = _K, from = 1, fromPlayer = srvP1, env = specEnv }, { srvP2 })
+			end)
+			world:run(0.02)
+			_K.Registry.commands.unspectate.run({ _K = _K, from = 1, fromPlayer = srvP1, env = specEnv })
+			local delayedHum = c.sh.env.Instance.new("Humanoid", bareChar)
+			world:run(0.1)
+			sert.eq(specEnv.currentSubject, nil)
+			sert.eq(specEnv.spectators[srvP2], nil)
+			sert.eq(delayedHum ~= nil, true)
+		end
+	)
 end)
 
 do

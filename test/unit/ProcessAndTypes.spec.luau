@@ -441,6 +441,81 @@ describe("Process · Command Preparation, Validation & Execution", function()
 		sert.eq(_K.Process.prepareCommands(_K, admin.UserId, ';testsay "a"', true), nil)
 	end)
 
+	test("truncates over-length command strings on UTF-8 boundaries and handles postParse", function()
+		local h = Harness.newEnv()
+		local Data = h:requireData()
+		local _K = h:requireK()
+		Data.settings.prefix = { ";" }
+
+		local guest = h.env:addPlayer(55, "LimitGuest")
+		local received = {}
+		_K.Registry.registerCommand(_K, {
+			name = "testecho",
+			description = "Echo raw string",
+			group = "utility",
+			args = {
+				{
+					type = "string",
+					name = "Msg",
+					description = "Message",
+				},
+			},
+			run = function(_context, msg)
+				table.insert(received, msg)
+			end,
+		})
+
+		for _, case in
+			{
+				{ raw = string.rep("a", 1014), expected = string.rep("a", 1014) },
+				{ raw = string.rep("a", 1015), expected = string.rep("a", 1014) },
+				{ raw = string.rep("a", 1013) .. "€", expected = string.rep("a", 1013) },
+			}
+		do
+			local cmd = ";testecho " .. case.raw
+			local okPrep, prep = _K.Process.prepareCommands(_K, guest.UserId, cmd)
+			sert.eq(okPrep, true)
+			sert.eq(prep[1].args[1].parsedArgs[1], case.expected)
+			sert.eq(_K.Process.runCommands(_K, guest.UserId, cmd, true), true)
+			sert.eq(received[#received], case.expected)
+		end
+
+		sert.eq(
+			_K.Process.runCommands(
+				_K,
+				guest.UserId,
+				";testecho " .. string.rep("a", 1010) .. "\255\255\255\255\255",
+				true
+			),
+			false
+		)
+
+		-- Argument:validate() returns pre-invalidated state and Argument:parse() applies postParse result
+		local Argument = h.env:require(h.Shared:WaitForChild("Process"):WaitForChild("Argument"))
+		_K.Registry.registerType("testpostparse", {
+			validate = function()
+				return true
+			end,
+			parse = function(v)
+				return v .. "_parsed"
+			end,
+			postParse = function(parsed)
+				return { parsed[1] .. "_post" }
+			end,
+		})
+		local dummyCmd = { _K = _K, from = guest.UserId, fromPlayer = guest, fromRole = Data.roles.everyone }
+		local postArg = Argument.new(dummyCmd, { type = "testpostparse", name = "P", description = "P" }, 1, "val")
+		sert.eq(postArg:prepare(), true)
+		sert.eq(postArg.parsedArgs, { "val_parsed_post" })
+
+		local preInvalidArg =
+			Argument.new(dummyCmd, { type = "testpostparse", name = "P", description = "P" }, 1, "val")
+		preInvalidArg:invalidate("val", 1, "Already bad")
+		local okPre, preErr = preInvalidArg:validate()
+		sert.eq(okPre, false)
+		sert.eq(preErr.message, "Already bad")
+	end)
+
 	test(
 		"Registry auto-registers plural Enum.<Name>s, inline CSV enums, makeSequenceType, and command aliases",
 		function()

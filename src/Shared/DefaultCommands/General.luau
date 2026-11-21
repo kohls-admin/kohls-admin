@@ -451,12 +451,17 @@ return {
 		args = {},
 
 		run = function(context)
-			for _, object in context._K.cleanupCommands do
+			local cleanupCommands = table.clone(context._K.cleanupCommands)
+			table.clear(context._K.cleanupCommands)
+			for _, object in cleanupCommands do
 				local objectType = typeof(object)
 				if objectType == "Instance" then
 					object:Destroy()
 				elseif objectType == "function" then
-					object()
+					local ok, err = pcall(object)
+					if not ok then
+						warn(`Kohl's Admin cleanup error: {err}`)
+					end
 				end
 			end
 			local discoCommand = context._K.Registry.commands.disco
@@ -1368,8 +1373,12 @@ return {
 			if context.env.spectateConnection then
 				context.env.spectateConnection:Disconnect()
 			end
-			context.env.spectateConnection = player.CharacterAdded:Connect(function()
-				workspace.CurrentCamera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
+			context.env.spectateConnection = player.CharacterAdded:Connect(function(character)
+				local characterHumanoid = character:FindFirstChildOfClass("Humanoid")
+					or character:WaitForChild("Humanoid", 5)
+				if characterHumanoid and context.env.currentSubject == player and character == player.Character then
+					workspace.CurrentCamera.CameraSubject = characterHumanoid
+				end
 			end)
 		end,
 		run = function(context, player)
@@ -1555,9 +1564,13 @@ return {
 				if humanoid then
 					humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, not enable)
 					humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, not enable)
-					humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, enable)
+					humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
 					if connection then
 						connection:Disconnect()
+						connection = nil
+					end
+					if not enable then
+						return
 					end
 					connection = humanoid.StateChanged:Connect(
 						function(old: Enum.HumanoidStateType, state: Enum.HumanoidStateType)
@@ -1697,15 +1710,23 @@ return {
 			},
 		},
 		run = function(context, player: Player)
-			local okFps, rawFps = pcall(context._K.Remote.ShowFPS.Invoke, context._K.Remote.ShowFPS, player)
-			local fps = if okFps
-					and type(rawFps) == "number"
-					and rawFps == rawFps
-				then math.clamp(math.round(rawFps), 0, 999)
+			local showfpsCommand = context._K.Registry.commands.showfps
+			local rawFps = if showfpsCommand
+					and showfpsCommand.env
+					and showfpsCommand.env.getFPS
+				then showfpsCommand.env.getFPS(player)
 				else 0
+			local fps = math.clamp(math.round(rawFps), 0, 999)
 			local ping = math.min(9999, math.ceil(player:GetNetworkPing() * 1000))
 			local teamColor = player.Team and "#" .. player.Team.TeamColor.Color:ToHex() or "#16a085"
-			local locale = context._K.Service.LocalizationService:GetCountryRegionForPlayerAsync(player)
+			local okLocale, locale = pcall(
+				context._K.Service.LocalizationService.GetCountryRegionForPlayerAsync,
+				context._K.Service.LocalizationService,
+				player
+			)
+			if not okLocale or type(locale) ~= "string" then
+				locale = ""
+			end
 			-- the server leaves these unset when a client sends a value it doesn't accept
 			local platform = player:GetAttribute("_KPlatform")
 			local sessionStart = player:GetAttribute("_KSessionStart")

@@ -205,6 +205,62 @@ end
 if Util.Service.Run:IsServer() then
 	local ownedCache = {}
 	local checkingAsset = {}
+	local DONATION_RECHECK_DELAY = 30
+	local donationsByName = {}
+	local donationIds: { [number]: true } = {}
+	for _, data in Purchasables.donations do
+		donationsByName[data.name] = data
+		donationIds[data.assetId] = true
+		donationIds[data.id] = true
+	end
+	local donationCache: { [number]: true | { [string]: number } } = {}
+	local checkingDonation: { [string]: true } = {}
+
+	function VIP.ownsDonation(player: Player, donationName: string?): boolean
+		local userId = player.UserId
+		local cached = donationCache[userId]
+		if cached == true or (player:GetAttribute("_KDonationLevel") or 0) >= 1 then
+			return true
+		end
+		if type(donationName) ~= "string" then
+			return false
+		end
+		local donation = donationsByName[donationName]
+		if not donation then
+			return false
+		end
+
+		local checkKey = `{userId}:{donationName}`
+		local checkedMap = if type(cached) == "table" then cached else nil
+		local lastCheck = checkedMap and checkedMap[donationName]
+		if checkingDonation[checkKey] or (lastCheck and os.clock() - lastCheck < DONATION_RECHECK_DELAY) then
+			return false
+		end
+
+		checkingDonation[checkKey] = true
+		local okPass, ownsPass =
+			pcall(Util.Service.Marketplace.UserOwnsGamePassAsync, Util.Service.Marketplace, userId, donation.id)
+		local okAsset, ownsAsset = false, false
+		if not (okPass and ownsPass) then
+			okAsset, ownsAsset =
+				pcall(Util.Service.Marketplace.PlayerOwnsAssetAsync, Util.Service.Marketplace, player, donation.assetId)
+		end
+		checkingDonation[checkKey] = nil
+
+		if (okPass and ownsPass) or (okAsset and ownsAsset) then
+			if player.Parent then
+				donationCache[userId] = true
+			end
+			return true
+		elseif okPass and okAsset and player.Parent and donationCache[userId] ~= true then
+			local map = if type(donationCache[userId]) == "table"
+				then donationCache[userId] :: { [string]: number }
+				else {}
+			donationCache[userId] = map
+			map[donationName] = os.clock()
+		end
+		return false
+	end
 	local function ownsAsset(player, assetId)
 		local ownedUGC = ownedCache[player.UserId]
 		if not ownedUGC then
@@ -313,7 +369,7 @@ if Util.Service.Run:IsServer() then
 					end
 				end)
 			else
-				userEffects[match] = { Method = ugcEffect.Method, Params = { name } }
+				userEffects[match] = { Method = ugcEffect.Method, Params = table.pack(name) }
 			end
 		end
 	end
@@ -387,7 +443,7 @@ if Util.Service.Run:IsServer() then
 			VIP.effects[player.UserId] = userEffects
 		end
 
-		userEffects.Title = if title then { Method = Title.applyTitle, Params = { title, ... } } else nil
+		userEffects.Title = if title then { Method = Title.applyTitle, Params = table.pack(title, ...) } else nil
 
 		if player.Character then
 			Title.applyTitle(player.Character, title, ...)
@@ -449,7 +505,7 @@ if Util.Service.Run:IsServer() then
 		end
 
 		for _, effect in effects do
-			task.spawn(effect.Method, character, unpack(effect.Params))
+			task.spawn(effect.Method, character, table.unpack(effect.Params, 1, effect.Params.n or #effect.Params))
 		end
 	end
 
@@ -478,6 +534,7 @@ if Util.Service.Run:IsServer() then
 		playerCleanup[player] = nil
 		donationLevelWaiters[player] = nil
 		ownedCache[player.UserId] = nil
+		donationCache[player.UserId] = nil
 		VIP.effects[player.UserId] = nil
 	end)
 
@@ -551,9 +608,13 @@ if Util.Service.Run:IsServer() then
 		end
 
 		local chatLevel = getAssetDonationLevel(assetId)
+		local isDonation = donationIds[assetId]
+		if isDonation and type(donationCache[player.UserId]) == "table" then
+			donationCache[player.UserId] = nil
+		end
 
 		if
-			(ugcAssetMatch[assetId] or titles[1] or chatLevel > 0)
+			(ugcAssetMatch[assetId] or titles[1] or chatLevel > 0 or isDonation)
 			and verifyPurchase(player, assetId, titles, function()
 				return Util.Service.Marketplace:PlayerOwnsAssetAsync(player, assetId)
 			end)
@@ -567,6 +628,9 @@ if Util.Service.Run:IsServer() then
 				ownedCache[player.UserId] = ownedUGC
 			end
 			ownedUGC[assetId] = true
+			if isDonation then
+				donationCache[player.UserId] = true
+			end
 			if chatLevel > 0 then
 				setDonationLevel(player, chatLevel)
 				Remote.RolesNotification:Fire(player)
@@ -594,6 +658,10 @@ if Util.Service.Run:IsServer() then
 		end
 
 		local vipIndex = table.find(gamePassDonations, passId)
+		local isDonation = donationIds[passId]
+		if isDonation and type(donationCache[player.UserId]) == "table" then
+			donationCache[player.UserId] = nil
+		end
 		local titles = {}
 		for _, definition in Title.definition do
 			if definition.gamepass == passId then
@@ -602,13 +670,16 @@ if Util.Service.Run:IsServer() then
 		end
 
 		if
-			(vipIndex or titles[1])
+			(vipIndex or isDonation or titles[1])
 			and verifyPurchase(player, passId, titles, function()
 				return Util.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, passId)
 			end)
 		then
 			if player.Parent ~= Util.Service.Players then
 				return
+			end
+			if isDonation then
+				donationCache[player.UserId] = true
 			end
 			local level = player:GetAttribute("_KDonationLevel") or 0
 			if vipIndex then

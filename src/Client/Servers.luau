@@ -142,13 +142,13 @@ function Servers.new(_K)
 	local function renderItem(self, itemData, lineData)
 		local lineItem = itemData
 		local jobId = lineData
-		local now = tick()
+		local now = os.clock()
 		lineItem.lastRender = now
 		lineItem.jobId = jobId
 
 		local data = servers[jobId]
 		if data then
-			local placeId, playerCount, startTime = unpack(data)
+			local placeId, playerCount, startTime = data[1], data[2], data[3]
 
 			lineItem.placeId = placeId
 

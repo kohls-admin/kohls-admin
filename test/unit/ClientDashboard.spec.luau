@@ -505,6 +505,13 @@ describe("Client and UI", function()
 				sert.eq(notifActivated, true)
 				sert.eq(notifClosed, true)
 
+				local ufNotif = cK.Notify({
+					Text = "UserFrame Notify",
+					Duration = 1,
+					UserFrame = { 1, "UFDisplay", nil, true, true },
+				})
+				sert.eq(ufNotif ~= nil and ufNotif._instance:FindFirstChild("Header", true) ~= nil, true)
+
 				local aDialog = cK.Announce({
 					Text = "Pinned Announcement",
 					From = "_K",
@@ -1017,6 +1024,48 @@ describe("Client and UI", function()
 				cK.client.hotkeys.dashboard.callback()
 				dash.Window._instance.Visible = true
 				fastRun(0.5)
+
+				-- Hotkey modifier mismatch uses continue so a subsequent hotkey on the same key still fires
+				local origFreeAdmin = cK.Data.settings.freeAdmin
+				local origMember1 = cK.Data.members["1"]
+				cK.Data.members["1"] = nil
+				cK.Data.settings.freeAdmin = { "admin" }
+				cK.client.rolesNotification()
+				cK.Data.members["1"] = origMember1
+				cK.Data.settings.freeAdmin = origFreeAdmin
+				fastRun(0.1)
+
+				local sharedKey = cK.client.hotkeys.dashboard.key:peek()
+				local origDashCb = cK.client.hotkeys.dashboard.callback
+				local shiftHits, plainHits = 0, 0
+				cK.client.hotkeys.testShiftOnly = {
+					key = UI.signal(sharedKey),
+					mods = UI.signal({ Shift = true }),
+					callback = function()
+						shiftHits += 1
+					end,
+				}
+				cK.client.hotkeys.testPlainOnly = {
+					key = UI.signal(sharedKey),
+					mods = UI.signal({}),
+					callback = function()
+						plainHits += 1
+					end,
+				}
+				cK.client.hotkeys.dashboard.callback = function() end
+				UI.UserInputService.InputBegan:Fire({
+					UserInputType = Enum.UserInputType.Keyboard,
+					KeyCode = sharedKey,
+					IsModifierKeyDown = function()
+						return false
+					end,
+				}, false)
+				fastRun(0.1)
+				sert.eq(shiftHits, 0)
+				sert.eq(plainHits, 1)
+				cK.client.hotkeys.testShiftOnly = nil
+				cK.client.hotkeys.testPlainOnly = nil
+				cK.client.hotkeys.dashboard.callback = origDashCb
 
 				-- Trigger StatusBar and other cached Tooltips
 				if UI.Class.Tooltip and UI.Class.Tooltip.Cache then
@@ -1915,6 +1964,7 @@ describe("Client and UI", function()
 					fastRun(0.2)
 					Character.fly(false)
 					sert.eq(hum.PlatformStand, false)
+					Character.fly(nil :: any)
 
 					cEnv.Players.LocalPlayer:SetAttribute("_KFly", 100)
 					cEnv.Players.LocalPlayer:SetAttribute("_KNoClip", true)

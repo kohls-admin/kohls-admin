@@ -2,28 +2,38 @@ local Teams = game:GetService("Teams")
 
 local _K
 
+local function findTeam(input: string, teams: { Team }?): Team?
+	local query = string.lower(input)
+	if query == "" then
+		return nil
+	end
+	local partial, partialLower
+	for _, team in teams or Teams:GetTeams() do
+		local lowerName = string.lower(team.Name)
+		if lowerName == query then
+			return team
+		elseif string.find(lowerName, query, 1, true) == 1 and (not partial or lowerName < partialLower) then
+			partial = team
+			partialLower = lowerName
+		end
+	end
+	return partial
+end
+
 local typeTeam = {
+	find = findTeam,
 	validate = function(input: string, from: number): (boolean, string?)
-		local query = string.lower(input)
 		local teams = Teams:GetTeams()
 		if #teams == 0 then
 			return false, "No teams available"
 		end
-		for _, team in teams do
-			if string.find(string.lower(team.Name), query, 1, true) == 1 then
-				return true
-			end
+		if findTeam(input, teams) then
+			return true
 		end
 		return false, "Invalid team"
 	end,
-	parse = function(input: string, from: number): string
-		local query = string.lower(input)
-		for _, team in Teams:GetTeams() do
-			if string.find(string.lower(team.Name), query, 1, true) == 1 then
-				return team
-			end
-		end
-		error("Invalid team value")
+	parse = function(input: string, from: number): Team
+		return findTeam(input) or error("Invalid team value")
 	end,
 	suggestions = function(text: string, from: number)
 		return _K.Util.Suggest.new(Teams:GetTeams())

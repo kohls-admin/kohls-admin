@@ -96,7 +96,7 @@ task.spawn(function()
 		local ok, result = Util.Retry(function()
 			return _K.Service.Group:GetGroupInfoAsync(game.CreatorId)
 		end)
-		_K.creatorId = if ok then result.Owner.Id else 0
+		_K.creatorId = if ok and type(result) == "table" and result.Owner then result.Owner.Id else 0
 	else
 		_K.creatorId = game.CreatorId
 	end
@@ -234,7 +234,7 @@ function _K.log(
 				log[1] = string.sub(log[1] :: string, 1, 16 * 1024)
 			end
 			if from and filtered then
-				log[1] = Util.String.filterForBroadcast(text, from)
+				log[1] = Util.String.filterForBroadcast(log[1] :: string, from)
 			end
 			local shouldSave = level == "COMMAND"
 				and _K.Data.settings.saveLogs

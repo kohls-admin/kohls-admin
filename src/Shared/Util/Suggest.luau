@@ -26,7 +26,7 @@ function Suggest.query(text: string, names: { string | { string } }, instances: 
 	for index, name in names do
 		local suggestions, display, key = name, nil
 		if type(name) == "table" then
-			suggestions, display, key = unpack(name)
+			suggestions, display, key = name[1], name[2], name[3]
 		end
 		if type(suggestions) ~= "table" then
 			suggestions = { suggestions }

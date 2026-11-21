@@ -65,8 +65,8 @@ end
 
 function Humanoid.resetDescription(player)
 	-- reset particles
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		or player.Character.PrimaryPart
+	local character = player.Character
+	local root = character and (character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart)
 	if root then
 		for _, particle in particles do
 			local existing = root:FindFirstChild(particle)
@@ -76,12 +76,14 @@ function Humanoid.resetDescription(player)
 		end
 	end
 
-	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local description = humanoid and humanoid:FindFirstChildOfClass("HumanoidDescription")
 
 	local originalDescription = player:FindFirstChild("_KHumanoidDescription")
-	if originalDescription then
-		description:Destroy()
+	if originalDescription and humanoid then
+		if description then
+			description:Destroy()
+		end
 		originalDescription.Name = "HumanoidDescription"
 		originalDescription.Parent = humanoid
 		description = originalDescription

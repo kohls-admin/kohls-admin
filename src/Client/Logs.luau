@@ -25,7 +25,7 @@ local logTypes = {
 
 local logTypeColors = {}
 for _, array in logTypes do
-	local logType, color = unpack(array)
+	local logType, color = array[1], array[2]
 	logTypeColors[logType] = color
 end
 

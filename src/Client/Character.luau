@@ -76,6 +76,9 @@ local canDoubleJump, hasDoubleJumped = false, false
 local flying, flyConnection = false, nil
 
 function Character.fly(enable: boolean, constant: boolean?)
+	if not enable then
+		enable = false
+	end
 	if enable == flying then
 		return
 	end
@@ -125,7 +128,10 @@ local characterCleanup = {}
 local function onCharacter(character)
 	Character.fly(false)
 	Character.noclip(false)
-	local humanoid = character:WaitForChild("Humanoid")
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	if not humanoid then
+		return
+	end
 	if characterCleanup[character] then
 		characterCleanup[character]:Disconnect()
 	end
@@ -151,7 +157,7 @@ local function onJumpRequest()
 	local character = LocalPlayer.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if humanoid and humanoid:GetState() ~= Enum.HumanoidStateType.Dead and character:IsDescendantOf(workspace) then
-		local now = tick()
+		local now = os.clock()
 		local duration = now - lastJump
 		lastJump = now
 

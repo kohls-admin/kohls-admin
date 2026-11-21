@@ -102,11 +102,20 @@ return function(_K)
 	end
 	table.sort(specialSuggestions)
 
+	local specialOrder = {}
+	for match in specialReference do
+		table.insert(specialOrder, match)
+	end
+	table.sort(specialOrder)
+
 	local function specialParse(arg, self)
 		if arg == "" then
 			return false, "Invalid match"
 		end
-		for match, check in specialReference do
+		local exact = specialReference[arg]
+		local candidates: { string } = if exact then { arg } else specialOrder
+		for _, match in candidates do
+			local check = specialReference[match]
 			if match == "distance" or match == "group" then
 				if string.find(arg, match :: string, 1, true) ~= 1 then
 					continue

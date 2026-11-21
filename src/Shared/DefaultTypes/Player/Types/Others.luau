@@ -24,7 +24,7 @@ local function othersParse(arg, self)
 		return nil, "No other players online"
 	end
 
-	return nil, table.concat(feedback, "\n") or "No targetable player found"
+	return nil, #feedback > 0 and table.concat(feedback, "\n") or "No targetable player found"
 end
 
 local typeOthers = {

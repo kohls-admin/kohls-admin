@@ -328,6 +328,9 @@ return {
 						return
 					end
 					local system = channels:FindFirstChild("RBXSystem")
+					if not system then
+						return
+					end
 					system:DisplaySystemMessage(
 						`<font color="#{_K.UI.Theme[if muted then "Invalid" else "Valid"]:peek():ToHex()}"><b>You have been {muteText}!</b></font>`
 					)
@@ -507,7 +510,7 @@ return {
 					punished[player] = nil
 					if player.Character then
 						character:Destroy()
-						return
+						continue
 					end
 					local ok = pcall(context.env.reparent, character)
 					if ok then
@@ -547,13 +550,11 @@ return {
 			local _ = _K.Remote.DisplayName:Connect(function(name)
 				local character = _K.LocalPlayer.Character
 				local head = character and character:FindFirstChild("Head")
-				if head then
-					if not name then
-						if display then
-							display:Destroy()
-						end
-						return
-					end
+				if display and (not name or display.Parent ~= character) then
+					display:Destroy()
+					display = nil
+				end
+				if head and name then
 					if not display then
 						display = Instance.new("Model")
 						local humanoid = Instance.new("Humanoid")
@@ -589,7 +590,11 @@ return {
 					if not name then
 						return
 					end
-					character:FindFirstChildOfClass("Humanoid").DisplayName = name
+					local humanoid = character:FindFirstChildOfClass("Humanoid")
+						or character:WaitForChild("Humanoid", 5)
+					if humanoid and humanoid:IsA("Humanoid") then
+						humanoid.DisplayName = name
+					end
 					_K.Remote.DisplayName:Fire(player, name)
 				end)
 				cleanup[player] = { charConn }
@@ -735,7 +740,7 @@ return {
 						task.defer(tool.Destroy, tool)
 					end
 				end,
-				removeTools = function(source: Instance)
+				removeTools = function(source: Instance?)
 					if not source then
 						return
 					end
@@ -751,14 +756,38 @@ return {
 		run = function(context, players)
 			for _, player in players do
 				if context.env.bans[player] then
-					return
+					continue
 				end
-				local backpack = player:FindFirstChildOfClass("Backpack")
-				if backpack then
-					context.env.bans[player] = backpack.ChildAdded:Connect(context.env.removeTool)
-					context.env.removeTools(backpack)
+				local conns: { [string]: RBXScriptConnection } = {}
+				local function watch(key: string, container: Instance?)
+					if conns[key] then
+						conns[key]:Disconnect()
+					end
+					if container then
+						conns[key] = container.ChildAdded:Connect(context.env.removeTool)
+						context.env.removeTools(container)
+					end
 				end
-				context.env.removeTools(player.Character)
+				conns.child = player.ChildAdded:Connect(function(child)
+					if child:IsA("Backpack") then
+						watch("backpack", child)
+					end
+				end)
+				conns.charAdded = player.CharacterAdded:Connect(function(character)
+					watch("character", character)
+				end)
+				watch("backpack", player:FindFirstChildOfClass("Backpack"))
+				watch("character", player.Character)
+				context.env.bans[player] = {
+					Connected = true,
+					Disconnect = function(self)
+						self.Connected = false
+						for _, conn in conns do
+							conn:Disconnect()
+						end
+						table.clear(conns)
+					end,
+				}
 			end
 		end,
 	},
@@ -869,7 +898,7 @@ return {
 				for _, source in sources do
 					for _, tool in tools do
 						local existing = source:FindFirstChild(tool.Name)
-						if existing and (existing:IsA("Tool") or existing:IsA("Hopperbin")) then
+						if existing and (existing:IsA("Tool") or existing:IsA("HopperBin")) then
 							task.spawn(game.Destroy, existing)
 						end
 					end
@@ -1260,7 +1289,7 @@ return {
 			end
 
 			function env.childChanged(child)
-				if child:IsA("Tool") or child:IsA("HopperBin") then
+				if env.target and (child:IsA("Tool") or child:IsA("HopperBin")) then
 					env.updateTools(env.target)
 				end
 			end
@@ -1973,7 +2002,7 @@ return {
 						then
 							Jail.recapture(player)
 						end
-					until not player or Jail.parts[player.UserId] == nil
+					until not player or Jail.parts[player.UserId] ~= kJail
 				end)
 
 				task.delay(0, JailCollide.Fire, JailCollide, player, kJail)
@@ -2194,7 +2223,7 @@ return {
 
 			local frameStart = 0
 			local _ = _K.Service.Run.PreRender:Connect(function()
-				frameStart = tick()
+				frameStart = os.clock()
 			end)
 
 			local function lag()
@@ -2203,11 +2232,11 @@ return {
 					return
 				end
 
-				local now = tick()
+				local now = os.clock()
 				local elapsed = now - frameStart
 				local nextStep = now + (1 / fps :: number) - elapsed * 2
 				repeat
-				until tick() >= nextStep
+				until os.clock() >= nextStep
 			end
 
 			local _ = _K.Remote.FPS:Connect(function(amount: number?)
@@ -2247,6 +2276,9 @@ return {
 
 		run = function(context, players)
 			for _, player in players do
+				if not player.Character then
+					continue
+				end
 				for _, descendant in player.Character:GetDescendants() do
 					if descendant:IsA("BasePart") then
 						descendant.Locked = true
@@ -2471,8 +2503,11 @@ return {
 			if samePlace then
 				return "You're already in the same server!"
 			end
+			if not (placeId and jobId) then
+				return errorMessage or "Couldn't find that user's server."
+			end
 
-			if placeId and jobId and context.fromPlayer then
+			if context.fromPlayer then
 				local options = Instance.new("TeleportOptions")
 				options.ServerInstanceId = jobId
 				context._K.Util.SafeTeleport(placeId, { context.fromPlayer }, options)
@@ -3302,6 +3337,9 @@ return {
 		},
 		run = function(context, players, teams)
 			teams = context._K.Util.Table.shuffle(teams or context._K.Service.Teams:GetTeams())
+			if #teams == 0 then
+				return "No teams available."
+			end
 			for i, player in context._K.Util.Table.shuffle(players) do
 				player.Team = teams[((i - 1) % #teams) + 1]
 			end
@@ -3555,18 +3593,28 @@ return {
 		},
 		env = function(_K)
 			local COLLISION_GROUP = "_KNoCollide"
-			_K.Service.PhysicsService:RegisterCollisionGroup(COLLISION_GROUP)
-			_K.Service.PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP, COLLISION_GROUP, false)
+			local registered, err = pcall(function()
+				if not workspace:IsCollisionGroupRegistered(COLLISION_GROUP) then
+					workspace:RegisterCollisionGroup(COLLISION_GROUP)
+				end
+				workspace:CollisionGroupSetCollidable(COLLISION_GROUP, COLLISION_GROUP, false)
+			end)
+			if not registered then
+				warn(`Failed to register the {COLLISION_GROUP} collision group: {err}`)
+			end
 
 			return {
 				setCollision = function(character: Model, collide: boolean)
+					if not collide and not registered then
+						return
+					end
 					for _, descendant in character:GetDescendants() do
 						if descendant:IsA("BasePart") then
 							if not descendant:GetAttribute("_KCollisionGroup") then
 								descendant:SetAttribute("_KCollisionGroup", descendant.CollisionGroup)
 							end
 							descendant.CollisionGroup = if collide
-								then descendant:GetAttribute("_KCollisionGroup")
+								then descendant:GetAttribute("_KCollisionGroup") or "Default"
 								else COLLISION_GROUP
 							if collide then
 								descendant:SetAttribute("_KCollisionGroup", nil)

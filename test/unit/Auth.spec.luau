@@ -312,11 +312,16 @@ describe("Auth · Stateful RBAC & Ban Model", function()
 		sert.eq(string.find(tostring(kickOf(h, pPerm)), "permanently banned", 1, true) ~= nil, true)
 		sert.eq(string.find(tostring(kickOf(h, pPerm)), "Reason: Exploiting", 1, true) ~= nil, true)
 
-		-- 4. Server ban kick message (nil timestamp, no reason)
+		-- 4. Server ban kick message (nil timestamp, no reason) and nameless permanent ban
 		local pSrv = h.env:addPlayer(604, "ServerBanUser")
 		Data.bans["604"] = { "ServerBanUser", nil, nil, 1 }
 		sert.eq(Auth.banHandler(pSrv), true)
 		sert.eq(kickOf(h, pSrv), "You are banned from this server!")
+
+		local pHole = h.env:addPlayer(605, "HoleBanUser")
+		Data.bans["605"] = { nil, nil, -1, 1 }
+		sert.eq(Auth.banHandler(pHole), true)
+		sert.eq(kickOf(h, pHole), "You are permanently banned from this experience!")
 
 		-- 5. Creator or userId < 1 or unbanned player is never kicked
 		Data.creatorId = 777

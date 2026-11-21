@@ -306,7 +306,7 @@ function Class.new(properties: Properties?)
 	local lastCursorChange = 0
 	task.defer(function() -- blinking cursor
 		while cursor and cursor.Parent do
-			if cursor.Visible and tick() - lastCursorChange > 0.25 then
+			if cursor.Visible and os.clock() - lastCursorChange > 0.25 then
 				cursor.TextTransparency = if cursor.TextTransparency == 1 then 0 else 1
 			end
 			task.wait(0.5)
@@ -365,7 +365,7 @@ function Class.new(properties: Properties?)
 			end
 		end,
 		_CursorPosition = function()
-			lastCursorChange = tick()
+			lastCursorChange = os.clock()
 			cursor.TextTransparency = 0
 			if self._input.CursorPosition == -1 then
 				cursor.Visible = false
