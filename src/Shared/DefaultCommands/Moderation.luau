@@ -736,12 +736,11 @@ return {
 			return {
 				bans = bans,
 				removeTool = function(tool: Instance)
-					local parent = tool.Parent
-					if (tool:IsA("Tool") or tool:IsA("HopperBin")) and parent and parent:IsA("Backpack") then
+					if tool:IsA("Tool") or tool:IsA("HopperBin") then
 						task.defer(tool.Destroy, tool)
 					end
 				end,
-				removeTools = function(source: Instance)
+				removeTools = function(source: Instance?)
 					if not source then
 						return
 					end
@@ -759,9 +758,36 @@ return {
 				if context.env.bans[player] then
 					continue
 				end
-				context.env.bans[player] = player.DescendantAdded:Connect(context.env.removeTool)
-				context.env.removeTools(player:FindFirstChildOfClass("Backpack"))
-				context.env.removeTools(player.Character)
+				local conns: { [string]: RBXScriptConnection } = {}
+				local function watch(key: string, container: Instance?)
+					if conns[key] then
+						conns[key]:Disconnect()
+					end
+					if container then
+						conns[key] = container.ChildAdded:Connect(context.env.removeTool)
+						context.env.removeTools(container)
+					end
+				end
+				conns.child = player.ChildAdded:Connect(function(child)
+					if child:IsA("Backpack") then
+						watch("backpack", child)
+					end
+				end)
+				conns.charAdded = player.CharacterAdded:Connect(function(character)
+					watch("character", character)
+				end)
+				watch("backpack", player:FindFirstChildOfClass("Backpack"))
+				watch("character", player.Character)
+				context.env.bans[player] = {
+					Connected = true,
+					Disconnect = function(self)
+						self.Connected = false
+						for _, conn in conns do
+							conn:Disconnect()
+						end
+						table.clear(conns)
+					end,
+				}
 			end
 		end,
 	},
@@ -3567,26 +3593,28 @@ return {
 		},
 		env = function(_K)
 			local COLLISION_GROUP = "_KNoCollide"
-			local PhysicsService = _K.Service.PhysicsService
-			local ok, err = pcall(function()
-				if not PhysicsService:IsCollisionGroupRegistered(COLLISION_GROUP) then
-					PhysicsService:RegisterCollisionGroup(COLLISION_GROUP)
+			local registered, err = pcall(function()
+				if not workspace:IsCollisionGroupRegistered(COLLISION_GROUP) then
+					workspace:RegisterCollisionGroup(COLLISION_GROUP)
 				end
-				PhysicsService:CollisionGroupSetCollidable(COLLISION_GROUP, COLLISION_GROUP, false)
+				workspace:CollisionGroupSetCollidable(COLLISION_GROUP, COLLISION_GROUP, false)
 			end)
-			if not ok then
+			if not registered then
 				warn(`Failed to register the {COLLISION_GROUP} collision group: {err}`)
 			end
 
 			return {
 				setCollision = function(character: Model, collide: boolean)
+					if not collide and not registered then
+						return
+					end
 					for _, descendant in character:GetDescendants() do
 						if descendant:IsA("BasePart") then
 							if not descendant:GetAttribute("_KCollisionGroup") then
 								descendant:SetAttribute("_KCollisionGroup", descendant.CollisionGroup)
 							end
 							descendant.CollisionGroup = if collide
-								then descendant:GetAttribute("_KCollisionGroup")
+								then descendant:GetAttribute("_KCollisionGroup") or "Default"
 								else COLLISION_GROUP
 							if collide then
 								descendant:SetAttribute("_KCollisionGroup", nil)

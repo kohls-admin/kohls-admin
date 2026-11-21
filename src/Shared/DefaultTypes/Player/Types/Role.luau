@@ -7,14 +7,15 @@ return function(_K)
 		if arg == "" then
 			return false, "Invalid role"
 		end
-		local matchedRole
+		local matchedRole, matchedLower
 		for roleId in _K.Data.roles do
 			local lowerId = string.lower(roleId :: string)
 			if lowerId == arg then
 				matchedRole = roleId
 				break
-			elseif string.find(lowerId, arg, 1, true) == 1 and (not matchedRole or roleId < matchedRole) then
+			elseif string.find(lowerId, arg, 1, true) == 1 and (not matchedRole or lowerId < matchedLower) then
 				matchedRole = roleId
+				matchedLower = lowerId
 			end
 		end
 

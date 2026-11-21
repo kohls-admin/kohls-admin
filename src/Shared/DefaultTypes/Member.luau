@@ -8,15 +8,18 @@ local function parseMember(input: string, self: any): string?
 		return self._K.Auth.targetUserArgument(self, self.command.from, fromString)
 	end
 
-	local partial
+	local partial, partialName
 	for id, member in _K.Data.members do
 		-- names are fetched asynchronously, new members don't have one yet
 		local name = string.lower(member.name or id)
 		if id == query or name == query then
 			return self._K.Auth.targetUserArgument(self, tonumber(id) :: number, id)
 		end
-		if string.find(name, query, 1, true) == 1 and (not partial or id < partial) then
-			partial = id
+		if string.find(name, query, 1, true) == 1 then
+			if not partial or name < partialName or (name == partialName and id < partial) then
+				partial = id
+				partialName = name
+			end
 		end
 	end
 

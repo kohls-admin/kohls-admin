@@ -506,62 +506,9 @@ return {
 				pe.Parent = root
 			end
 
-			local DONOR_RECHECK_DELAY = 30
-			local donorOwners: { [Player]: true } = {}
-			local donorChecked: { [Player]: number } = {}
-			local donorChecking: { [Player]: true } = {}
-
-			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
-				donorOwners[player] = nil
-				donorChecked[player] = nil
-				donorChecking[player] = nil
-			end)
-
-			-- the market shows the trail to owners of any donation, as a game pass or as an asset
-			local function ownsDonation(player: Player): boolean
-				if donorOwners[player] or (player:GetAttribute("_KDonationLevel") or 0) >= 1 then
-					return true
-				end
-				local lastCheck = donorChecked[player]
-				if donorChecking[player] or (lastCheck and os.clock() - lastCheck < DONOR_RECHECK_DELAY) then
-					return false
-				end
-				donorChecking[player] = true
-				local owned = false
-				for _, donation in _K.VIP.purchasables.donations do
-					local okPass, ownsPass = pcall(
-						_K.Service.Marketplace.UserOwnsGamePassAsync,
-						_K.Service.Marketplace,
-						player.UserId,
-						donation.id
-					)
-					local okAsset, ownsAsset = false, false
-					if not (okPass and ownsPass) then
-						okAsset, ownsAsset = pcall(
-							_K.Service.Marketplace.PlayerOwnsAssetAsync,
-							_K.Service.Marketplace,
-							player,
-							donation.assetId
-						)
-					end
-					if (okPass and ownsPass) or (okAsset and ownsAsset) then
-						owned = true
-						break
-					end
-				end
-				donorChecking[player] = nil
-				if player.Parent then
-					donorChecked[player] = os.clock()
-					if owned then
-						donorOwners[player] = true
-					end
-				end
-				return owned
-			end
-
-			local _ = _K.Remote.DonorTrail:Connect(function(player, enable: boolean?)
+			local _ = _K.Remote.DonorTrail:Connect(function(player, enable: (string | boolean)?)
 				if enable then
-					if not ownsDonation(player) then
+					if not _K.VIP.ownsDonation(player, if type(enable) == "string" then enable else nil) then
 						return
 					end
 					apply(player, player, nil, nil)

@@ -1376,7 +1376,7 @@ return {
 			context.env.spectateConnection = player.CharacterAdded:Connect(function(character)
 				local characterHumanoid = character:FindFirstChildOfClass("Humanoid")
 					or character:WaitForChild("Humanoid", 5)
-				if characterHumanoid and character == player.Character then
+				if characterHumanoid and context.env.currentSubject == player and character == player.Character then
 					workspace.CurrentCamera.CameraSubject = characterHumanoid
 				end
 			end)
@@ -1710,19 +1710,13 @@ return {
 			},
 		},
 		run = function(context, player: Player)
-			local fpsTasks = context._K.Util.Tasks.new()
-			fpsTasks:add(function()
-				return pcall(context._K.Remote.ShowFPS.Invoke, context._K.Remote.ShowFPS, player)
-			end)
-			fpsTasks:add(function()
-				task.wait(3)
-			end)
-			local _ranFps, okFps, rawFps = fpsTasks:waitForFirst()
-			local fps = if okFps == true
-					and type(rawFps) == "number"
-					and rawFps == rawFps
-				then math.clamp(math.round(rawFps), 0, 999)
+			local showfpsCommand = context._K.Registry.commands.showfps
+			local rawFps = if showfpsCommand
+					and showfpsCommand.env
+					and showfpsCommand.env.getFPS
+				then showfpsCommand.env.getFPS(player)
 				else 0
+			local fps = math.clamp(math.round(rawFps), 0, 999)
 			local ping = math.min(9999, math.ceil(player:GetNetworkPing() * 1000))
 			local teamColor = player.Team and "#" .. player.Team.TeamColor.Color:ToHex() or "#16a085"
 			local okLocale, locale = pcall(

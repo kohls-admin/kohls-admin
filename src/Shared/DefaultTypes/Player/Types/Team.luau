@@ -4,19 +4,7 @@ local generateValidate = require(script.Parent.Parent:WaitForChild("generateVali
 
 return function(_K)
 	local function teamParse(arg, self)
-		if arg == "" then
-			return false, "Invalid team"
-		end
-		local matchedTeam
-		for _, team in Teams:GetTeams() do
-			local lowerName = string.lower(team.Name)
-			if lowerName == arg then
-				matchedTeam = team
-				break
-			elseif not matchedTeam and string.find(lowerName, arg, 1, true) == 1 then
-				matchedTeam = team
-			end
-		end
+		local matchedTeam = _K.Registry.types.team.find(arg)
 		if not matchedTeam then
 			return false, "Invalid team"
 		end

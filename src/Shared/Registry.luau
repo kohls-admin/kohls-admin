@@ -143,7 +143,7 @@ function Registry.makeSequenceType(definition: SequenceDefinition?)
 			return true
 		end,
 		parse = options.parse or function(components)
-			return options.constructor(table.unpack(components, 1, components.n or #components))
+			return options.constructor(table.unpack(components, 1, components.n))
 		end,
 	}
 end

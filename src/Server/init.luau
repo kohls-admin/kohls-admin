@@ -397,11 +397,16 @@ return function(_K)
 				if _K.creatorId <= 0 then
 					return
 				end
-				local ok, iterator = Util.Retry(function()
-					return Util.iterPageItems(_K.Service.Players:GetFriendsAsync(_K.creatorId))
+				local ok, friendPages = Util.Retry(function()
+					return _K.Service.Players:GetFriendsAsync(_K.creatorId)
 				end)
 				if not ok then
-					warn(`Failed to load friend roles: {iterator}`)
+					warn(`Failed to load friend roles: {friendPages}`)
+					return
+				end
+				local okIter, iterator = pcall(Util.iterPageItems, friendPages)
+				if not okIter then
+					warn(`Failed to iterate friend roles: {iterator}`)
 					return
 				end
 				for item, _pageNo in iterator do
@@ -421,11 +426,13 @@ return function(_K)
 					local listKey = key .. if string.find(key, "s$") then "es" else "s"
 					roleData[listKey] = roleData[listKey] or {}
 					for _, id in if type(value) == "table" then value else { value } do
-						table.insert(roleData[listKey], id)
+						if not table.find(roleData[listKey], id) then
+							table.insert(roleData[listKey], id)
+						end
 
 						if not _K.Data.async[key][id] then
 							_K.Data.async[key][id] = { role }
-						else
+						elseif not table.find(_K.Data.async[key][id], role) then
 							table.insert(_K.Data.async[key][id], role)
 						end
 					end

@@ -112,7 +112,7 @@ return function(_K)
 		if arg == "" then
 			return false, "Invalid match"
 		end
-		local exact = specialReference[arg] and arg ~= "distance" and arg ~= "group"
+		local exact = specialReference[arg]
 		local candidates: { string } = if exact then { arg } else specialOrder
 		for _, match in candidates do
 			local check = specialReference[match]

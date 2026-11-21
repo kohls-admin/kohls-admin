@@ -1260,16 +1260,72 @@ return {
 			},
 		},
 		env = function(_K)
-			return { remote = _K.Remote.ShowFPS }
+			local pending: { [Player]: { waiters: { thread }, timer: thread?, result: number? } } = {}
+			local function resolve(player: Player, fps: number)
+				local entry = pending[player]
+				if not entry then
+					return
+				end
+				entry.result = fps
+				pending[player] = nil
+				if entry.timer and coroutine.status(entry.timer) == "suspended" then
+					task.cancel(entry.timer)
+				end
+				for _, waiter in entry.waiters do
+					if coroutine.status(waiter) == "suspended" then
+						task.spawn(waiter, fps)
+					end
+				end
+			end
+
+			local _ = _K.Remote.ShowFPS:Connect(function(player: Player, rawFps: any)
+				if not pending[player] then
+					return
+				end
+				local fps = if type(rawFps) == "number" and rawFps == rawFps then math.clamp(rawFps, 0, 999) else 0
+				resolve(player, fps)
+			end)
+
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player: Player)
+				resolve(player, 0)
+			end)
+
+			local function getFPS(player: Player, timeout: number?): number
+				if not player or not player.Parent then
+					return 0
+				end
+				local entry = pending[player]
+				if entry then
+					table.insert(entry.waiters, coroutine.running())
+					return coroutine.yield()
+				end
+				entry = {
+					waiters = { coroutine.running() },
+					timer = nil,
+					result = nil,
+				}
+				pending[player] = entry
+				entry.timer = task.delay(timeout or 3, function()
+					if pending[player] == entry then
+						resolve(player, 0)
+					end
+				end)
+				_K.Remote.ShowFPS:Fire(player)
+				if entry.result ~= nil then
+					return entry.result
+				end
+				return coroutine.yield()
+			end
+
+			return { remote = _K.Remote.ShowFPS, getFPS = getFPS }
 		end,
 		envClient = function(_K)
 			local env = {
 				fps = 60,
 			}
-			local function onShowFPSInvoke()
-				return env.fps
-			end
-			_K.Remote.ShowFPS.OnInvoke = onShowFPSInvoke
+			local _ = _K.Remote.ShowFPS:Connect(function()
+				_K.Remote.ShowFPS:Fire(env.fps)
+			end)
 			local frames, last = 0, os.clock()
 			local _ = _K.Service.Run.Heartbeat:Connect(function()
 				frames += 1
@@ -1283,16 +1339,7 @@ return {
 			return env
 		end,
 		run = function(context, player: Player)
-			-- the target's client answers, it can error or return anything
-			local fpsTasks = context._K.Util.Tasks.new()
-			fpsTasks:add(function()
-				return pcall(context.env.remote.Invoke, context.env.remote, player)
-			end)
-			fpsTasks:add(function()
-				task.wait(3)
-			end)
-			local _ranFps, ok, fps = fpsTasks:waitForFirst()
-			fps = if ok == true and type(fps) == "number" and fps == fps then math.clamp(fps, 0, 999) else 0
+			local fps = context.env.getFPS(player)
 			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `<b>FPS:</b> {math.round(fps)}`,
 				From = player.UserId,

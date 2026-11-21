@@ -172,11 +172,8 @@ end
 local MAX_TEXT_LENGTH = 1024
 
 local function truncateText(text: string): string
-	if #text <= MAX_TEXT_LENGTH then
-		return text
-	end
-	local cut = utf8.offset(text, 0, MAX_TEXT_LENGTH + 1) or MAX_TEXT_LENGTH + 1
-	return string.sub(text, 1, cut - 1)
+	local cut = utf8.offset(text, 0, MAX_TEXT_LENGTH + 1)
+	return if cut then string.sub(text, 1, cut - 1) else text
 end
 
 local commandLimits = {}

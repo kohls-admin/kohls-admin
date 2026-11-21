@@ -266,24 +266,21 @@ local function statusIconLabel(name, imageDefinition, labelDefinition, tooltipDe
 	}
 end
 
-local function getAvgLow(buffer, avg, low, _sum, nextAvgUpdate)
+local function getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
 	local now = os.clock()
 	if now > nextAvgUpdate and #buffer > 0 then
 		nextAvgUpdate = now + 2
 		table.sort(buffer)
-		local total = 0
-		for _, value in buffer do
-			total += value
-		end
-		avg, low = math.round(total / #buffer), 0
+		avg, low = math.round(sum / #buffer), 0
 		local lowCount = math.ceil(#buffer / 100)
 		for i = 1, lowCount do
 			low += buffer[i]
 		end
 		low //= lowCount
+		sum = 0
 		table.clear(buffer)
 	end
-	return avg, low, 0, nextAvgUpdate
+	return avg, low, sum, nextAvgUpdate
 end
 
 local function oklabHue(color: Color3): number

@@ -117,7 +117,7 @@ return function(dialogOverride)
 
 	if userFrame or from then
 		userFrame = if userFrame
-			then _K.client.UserFrame(table.unpack(userFrame, 1, 3))
+			then _K.client.UserFrame(table.unpack(userFrame, 1, 5))
 			else _K.client.UserFrame(from, name, image)
 		UI.edit(userFrame)({
 			Parent = dialog,

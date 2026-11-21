@@ -39,6 +39,25 @@ for i = 1, 1032 do
 	COLORS[name] = color.Color
 end
 
+local baseColorNames = {
+	"red",
+	"orange",
+	"yellow",
+	"yellowgreen",
+	"green",
+	"aqua",
+	"cyan",
+	"blue",
+	"purple",
+	"violet",
+	"pink",
+	"magenta",
+	"white",
+	"black",
+	"grey",
+	"gray",
+}
+
 local colorNames = {}
 for name in COLORS do
 	table.insert(colorNames, name)
@@ -82,11 +101,19 @@ local typeColor = {
 					end
 				end
 				if validRGB then
-					return Color3.fromRGB(tonumber(r) or 255, tonumber(g) or 255, tonumber(b) or 255)
+					return Color3.fromRGB(tonumber(r) :: number, tonumber(g) or 255, tonumber(b) or 255)
 				end
 			end
+			for _, name in baseColorNames do
+				if string.find(name, input, 1, true) == 1 then
+					return COLORS[name]
+				end
+			end
+			if string.find("random", input, 1, true) == 1 then
+				return Color3.new(math.random(), math.random(), math.random())
+			end
 			for _, name in colorNames do -- partial match
-				if name ~= "random" and string.find(name, input, 1, true) == 1 then
+				if string.find(name, input, 1, true) == 1 then
 					return COLORS[name]
 				end
 			end

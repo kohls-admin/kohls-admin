@@ -8,7 +8,7 @@ return function(context)
 	local function roleParse(input: string, self: any)
 		local query = string.lower(input)
 		local rank = _K.Auth.getRank(self.command.from)
-		local partial
+		local partial, partialLower
 		for roleId, role in _K.Data.roles do
 			if role == _K.Data.roles.everyone or not (self.command.from == _K.creatorId or rank > role._rank) then
 				continue
@@ -16,8 +16,9 @@ return function(context)
 			local lowerId = string.lower(roleId)
 			if lowerId == query then
 				return roleId
-			elseif string.find(lowerId, query, 1, true) == 1 and (not partial or roleId < partial) then
+			elseif string.find(lowerId, query, 1, true) == 1 and (not partial or lowerId < partialLower) then
 				partial = roleId
+				partialLower = lowerId
 			end
 		end
 		if partial then
