@@ -109,7 +109,7 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Chat.limitReason(userId: number, reason: string?): string?`](src/Shared/Chat.luau#L309-L322): [Yields] Filters and rate limits a free-text reason (ban, kick, shutdown) that other users see.
 - [`Chat.onMessage(kind: string, callback: (text: string, from: number, data: any, id: string) -> ())`](src/Shared/Chat.luau#L329-L331): Registers the client handler for a message kind, called with the filtered text, sender UserId, data and id
 - [`Chat.pinAnnouncement(announcement: any): boolean`](src/Shared/Chat.luau#L343-L363): Tracks the pinned announcement ({ text, from, duration, id }) shown on this client.
-- [`Chat.waitForMessage(id: string, timeout: number?): string?`](src/Shared/Chat.luau#L366-L388): [Yields] Waits for the filtered text of a message by id, or nil when it doesn't arrive in time
+- [`Chat.waitForMessage(id: string, timeout: number?): string?`](src/Shared/Chat.luau#L366-L391): [Yields] Waits for the filtered text of a message by id, or nil when it doesn't arrive in time
 
 ## MainModule.Data
 
@@ -782,11 +782,11 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Process.ignoreFormat: string`](src/Shared/Process/init.luau#L19)
 - [`Process.addCommandFilter(filter: (command: any) -> (boolean, string?)): () -> ()`](src/Shared/Process/init.luau#L30-L39): Adds a filter that every command passes before it runs on this side, synchronously in Command:run before command requests are split off.
 - [`Process.rawParse(message: string, prefixes: string | { string }, delimiter: string): ({ any }?, string?)`](src/Shared/Process/init.luau#L42-L170): Parses a string into a raw command format.
-- [`Process.resetLimit(from: number)`](src/Shared/Process/init.luau#L185-L187)
-- [`Process.onCooldown(_K: any, from: number): boolean`](src/Shared/Process/init.luau#L189-L196)
-- [`Process.countCommand(_K: any, from: number, amount: number?)`](src/Shared/Process/init.luau#L198-L214)
-- [`Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?, noPrompt: boolean?)`](src/Shared/Process/init.luau#L216-L349): [Client]
-- [`Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?, clientOnly: boolean?): boolean`](src/Shared/Process/init.luau#L356-L591): [Client] Parses and runs a command string from a user.
+- [`Process.resetLimit(from: number)`](src/Shared/Process/init.luau#L192-L194)
+- [`Process.onCooldown(_K: any, from: number): boolean`](src/Shared/Process/init.luau#L196-L203)
+- [`Process.countCommand(_K: any, from: number, amount: number?)`](src/Shared/Process/init.luau#L205-L221)
+- [`Process.prepareCommands(_K: any, from: number, rawText: string, global: boolean?, noPrompt: boolean?)`](src/Shared/Process/init.luau#L223-L358): [Client]
+- [`Process.runCommands(_K: any, from: number, rawText: string, noLog: boolean?, global: boolean?, clientOnly: boolean?): boolean`](src/Shared/Process/init.luau#L365-L600): [Client] Parses and runs a command string from a user.
 
 ## MainModule.Registry
 
@@ -1094,7 +1094,7 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## MainModule.Util.getTexture
 
 - [getTexture](src/Shared/Util/getTexture.luau)
-- [`getTexture(assetId: number, small: boolean?): string?`](src/Shared/Util/getTexture.luau#L21-L55): [Yields]
+- [`getTexture(assetId: number, small: boolean?): string?`](src/Shared/Util/getTexture.luau#L21-L58): [Yields]
 
 ## MainModule.Util.getUserInfo
 
@@ -1109,7 +1109,7 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Humanoid.updateDescription(player, humanoid, description, property, value)`](src/Shared/Util/Humanoid.luau#L23-L30)
 - [`Humanoid.reapplyDescription(player)`](src/Shared/Util/Humanoid.luau#L32-L51): [Yields]
 - [`Humanoid.attributeDescription(player, property, value)`](src/Shared/Util/Humanoid.luau#L53-L64): [Yields]
-- [`Humanoid.resetDescription(player)`](src/Shared/Util/Humanoid.luau#L66-L109): [Yields]
+- [`Humanoid.resetDescription(player)`](src/Shared/Util/Humanoid.luau#L66-L111): [Yields]
 
 ## MainModule.Util.iterPageItems
 
@@ -1241,12 +1241,12 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Table.isArray(object: Dict)`](src/Shared/Util/Table.luau#L37-L46)
 - [`Table.merge(to: Dict, from: Dict): Dict`](src/Shared/Util/Table.luau#L48-L53)
 - [`Table.mergeList(to: List, from: List)`](src/Shared/Util/Table.luau#L55-L57)
-- [`Table.deepCompare(a: any, b: any)`](src/Shared/Util/Table.luau#L59-L69)
-- [`Table.deepMerge(to: Dict, from: Dict, appendArrays: boolean?): Dict`](src/Shared/Util/Table.luau#L71-L90)
-- [`Table.deepCopy(original: Dict): Dict`](src/Shared/Util/Table.luau#L92-L100)
-- [`Table.settle(t: { any })`](src/Shared/Util/Table.luau#L102-L109)
-- [`Table.fastRemove(t: { any }, index: number, indexEnd: number?)`](src/Shared/Util/Table.luau#L111-L123)
-- [`Table.shuffle(list: { any })`](src/Shared/Util/Table.luau#L125-L131)
+- [`Table.deepCompare(a: any, b: any)`](src/Shared/Util/Table.luau#L59-L74)
+- [`Table.deepMerge(to: Dict, from: Dict, appendArrays: boolean?): Dict`](src/Shared/Util/Table.luau#L76-L95)
+- [`Table.deepCopy(original: Dict): Dict`](src/Shared/Util/Table.luau#L97-L105)
+- [`Table.settle(t: { any })`](src/Shared/Util/Table.luau#L107-L114)
+- [`Table.fastRemove(t: { any }, index: number, indexEnd: number?)`](src/Shared/Util/Table.luau#L116-L128)
+- [`Table.shuffle(list: { any })`](src/Shared/Util/Table.luau#L130-L136)
 
 ## MainModule.Util.Tasks
 
@@ -1256,7 +1256,7 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`Tasks.new(): Tasks`](src/Shared/Util/Tasks.luau#L17-L25): Creates a new task group.
 - [`Tasks:add(callback: (...any) -> ...any, ...: any)`](src/Shared/Util/Tasks.luau#L46-L50): Schedules `callback` to run concurrently.
 - [`Tasks:wait(): { { any } }?`](src/Shared/Util/Tasks.luau#L53-L59): [Yields] Yields until all running tasks finish and returns their `{ ok, ...
-- [`Tasks:waitForFirst(): (boolean, ...any)`](src/Shared/Util/Tasks.luau#L62-L65): [Yields] Yields until the first task finishes and returns its `(ok, ...)` result.
+- [`Tasks:waitForFirst(): (boolean, ...any)`](src/Shared/Util/Tasks.luau#L62-L69): [Yields] Yields until the first task finishes and returns its `(ok, ...)` result.
 
 ## MainModule.Util.Time
 
@@ -1284,10 +1284,11 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 - [`VIP.canPurchaseCommand(command: any): boolean`](src/Shared/VIP/init.luau#L53-L67)
 - [`VIP.updatePurchasePrice(purchase: { role: string?, gamepass: number? }, button: any)`](src/Shared/VIP/init.luau#L69-L80): [Yields] [Client]
 - [`VIP.setDonationLevel(player: Player, level: number?): number`](src/Shared/VIP/init.luau#L193): [Yields]
-- [`VIP.Effect(player: Player, assetId: number, match: string, equip: boolean, name: string)`](src/Shared/VIP/init.luau#L249-L319): [Yields]
-- [`VIP.Title(player: Player, title, ...)`](src/Shared/VIP/init.luau#L324-L395): [Yields]
-- [`VIP.EffectHandler(character)`](src/Shared/VIP/init.luau#L412-L454)
-- [`VIP.CharacterAdded(character)`](src/Shared/VIP/init.luau#L458-L466)
+- [`VIP.ownsDonation(player: Player, donationName: string?): boolean`](src/Shared/VIP/init.luau#L219-L263): [Yields]
+- [`VIP.Effect(player: Player, assetId: number, match: string, equip: boolean, name: string)`](src/Shared/VIP/init.luau#L305-L375): [Yields]
+- [`VIP.Title(player: Player, title, ...)`](src/Shared/VIP/init.luau#L380-L451): [Yields]
+- [`VIP.EffectHandler(character)`](src/Shared/VIP/init.luau#L468-L510)
+- [`VIP.CharacterAdded(character)`](src/Shared/VIP/init.luau#L514-L522)
 
 ## MainModule.VIP.purchasables
 
@@ -1300,8 +1301,8 @@ Keep it current: after changing the public surface, a doc comment, or a guide, r
 ## Title
 
 - [Title](src/Shared/VIP/Title/init.luau)
-- [`Title.applyTitle(character: Model, title: string?, color: Color3?, topColor: Color3?, font: Enum.Font?)`](src/Shared/VIP/Title/init.luau#L168-L195)
-- [`Title.Method(character: Model, title: string?, color: Color3?, topColor: Color3?, font: Enum.Font?)`](src/Shared/VIP/Title/init.luau#L196)
+- [`Title.applyTitle(character: Model, title: string?, color: Color3?, topColor: Color3?, font: Enum.Font?)`](src/Shared/VIP/Title/init.luau#L168-L197)
+- [`Title.Method(character: Model, title: string?, color: Color3?, topColor: Color3?, font: Enum.Font?)`](src/Shared/VIP/Title/init.luau#L198)
 - [`Title.definition.vip`](src/Shared/VIP/Title/init.luau#L16-L20)
 - [`Title.definition.vip.color: Color3`](src/Shared/VIP/Title/init.luau#L17)
 - [`Title.definition.vip.assetId: { number }`](src/Shared/VIP/Title/init.luau#L18)
