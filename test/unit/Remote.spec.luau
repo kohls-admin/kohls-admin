@@ -331,7 +331,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			sert.eq(_K.Data.savedSettings.announcements[1].Duration, nil)
 
 			-- Wait out broadcast cooldown (60s), then test math.huge Duration -> clamped to 600
-			world:run(61)
+			world:fastForward(61)
 			aRemote.Settings:Fire({
 				notifications = {
 					{ Text = "clamped duration msg", Duration = math.huge },
@@ -342,7 +342,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			sert.eq(_K.Data.savedSettings.notifications[1].Duration, 600)
 
 			-- Wait out broadcast cooldown (60s), then test negative Duration -> clamped to 0
-			world:run(61)
+			world:fastForward(61)
 			aRemote.Settings:Fire({
 				notifications = {
 					{ Text = "clamped duration msg", Duration = 600, From = 101 },
@@ -1259,7 +1259,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			sert.eq(_K.Chat.limitBroadcast(302), nil) -- consumes 302's slot when called directly; let's test via Chat.send next!
 
 			-- Advance 10s: AdminA (301) is still cooling down (~50s left)
-			world:run(10)
+			world:fastForward(10)
 			local errA10 = _K.Chat.limitBroadcast(301)
 			sert.eq(errA10 ~= nil and string.find(errA10, "Wait ", 1, true) ~= nil, true)
 
@@ -1277,19 +1277,19 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			sert.eq(receivedByGuestA[#receivedByGuestA].id, "fixed-guid-1")
 
 			-- At +15s (still within 30s dedup window), duplicate packet is still ignored
-			world:run(15)
+			world:fastForward(15)
 			_K.Remote.ChatSystem:Fire(srvGuestA, "announce", "Deduplicated msg", 302, nil, "fixed-guid-1")
 			world:run(0.5)
 			sert.eq(#receivedByGuestA, countBefore + 1)
 
 			-- At +16s (total 31.5s > 30s client dedup window), the ID is evicted and can be received again
-			world:run(16)
+			world:fastForward(16)
 			_K.Remote.ChatSystem:Fire(srvGuestA, "announce", "Deduplicated msg", 302, nil, "fixed-guid-1")
 			world:run(0.5)
 			sert.eq(#receivedByGuestA, countBefore + 2)
 
 			-- Advance remaining 20s so both 301 and 302 cross their 60s broadcast cooldown window
-			world:run(20)
+			world:fastForward(20)
 			sert.eq(_K.Chat.limitBroadcast(301), nil)
 			local msgId, sendErr = _K.Chat.send(
 				{ from = 302, fromPlayer = srvAdminB },
@@ -1388,7 +1388,7 @@ describe("Remote · Server Endpoint Authorization & Hostile Client Fuzzing", fun
 			world:run(0.3)
 			sert.eq(_K.Data.savedSettings.announcements, nil)
 
-			world:run(61)
+			world:fastForward(61)
 
 			-- First announcement with valid & invalid rich text: <b> + spaced rgb() restored, <font face="Gotham"> escaped
 			cRemote.Settings:Fire({

@@ -23,7 +23,7 @@ jobs:
   check:
     name: Lint, Coverage & Mutation
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 30
     permissions:
       contents: write
     steps:
@@ -34,7 +34,7 @@ jobs:
         with:
           mode: check
 
-      - uses: kohltastrophe/sert/actions/setup@v0.2.0
+      - uses: kohltastrophe/sert/actions/setup@v0.2.1
 
       - name: sert lint
         run: python3 tools/sert.py lint
@@ -49,16 +49,26 @@ jobs:
       - name: sert audit
         run: python3 tools/sert.py audit --no-run
 
+      - name: Fetch PR base
+        if: "github.event_name == 'pull_request' && !startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release')"
+        run: git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: "!startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release')"
         with:
-          path: .sert/mutate
+          path: |
+            .sert/mutate
+            .sert/coverage-map.json
           key: sert-mutate-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             sert-mutate-${{ runner.os }}-
 
+      - name: sert mutate (PR diff)
+        if: "github.event_name == 'pull_request' && !startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release')"
+        run: python3 tools/sert.py mutate --diff "origin/${{ github.base_ref }}" --no-coverage-run --min 75
+
       - name: sert mutate
-        if: "!startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release')"
+        if: "github.event_name != 'pull_request' && !startsWith(github.event.head_commit.message || github.event.pull_request.title, 'chore: release')"
         run: python3 tools/sert.py mutate --no-coverage-run --min 75
 
       - name: Update llms.txt

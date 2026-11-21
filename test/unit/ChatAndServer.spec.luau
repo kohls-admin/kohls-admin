@@ -456,7 +456,7 @@ describe("Chat and Server", function()
 			sert.eq(cChat.onMessage ~= nil and cChat.send == nil, true)
 
 			-- Advance past 30s to trigger received[id] cleanup timers
-			world:run(31)
+			world:fastForward(31)
 		end)
 	end)
 
@@ -774,12 +774,12 @@ describe("Chat and Server", function()
 				end
 				_K.Data.async.gamepass[889] = { "mod" }
 				MarketplaceService.PromptGamePassPurchaseFinished:Fire(srvGuest, 889, true)
-				world:run(10)
+				world:fastForward(10)
 				sert.eq(_K.Auth.hasRole(202, "mod"), false)
 				sert.eq(passChecks, 3) -- it gives up after three checks
 				passChecks, ownedFromCheck = 0, 2
 				MarketplaceService.PromptGamePassPurchaseFinished:Fire(srvGuest, 889, true)
-				world:run(10)
+				world:fastForward(10)
 				sert.eq(_K.Auth.hasRole(202, "mod"), true)
 				sert.eq(passChecks, 2)
 				marketMethods.UserOwnsGamePassAsync = origOwnsPass
@@ -1005,14 +1005,14 @@ describe("Chat and Server", function()
 				-- Blocked within 60s of line 852's prefix change
 				sert.eq(_K.Data.savedSettings.prefix, { ";", "!" })
 
-				world:run(61)
+				world:fastForward(61)
 				_K.Remote.Settings._signal:Fire(srvAdmin, {
 					prefix = { ";", "?" },
 				})
 				sert.eq(_K.Data.savedSettings.prefix, { ";", "?" })
 
 				-- Reset prefix/splitKey/freeAdmin back to standard, and test announcement/announcements/notifications via Remote.Settings
-				world:run(61)
+				world:fastForward(61)
 				aRemote.Settings:Fire({
 					prefix = { ";" },
 					splitKey = " ",
@@ -1025,7 +1025,7 @@ describe("Chat and Server", function()
 				aRemote.Settings:Fire({
 					announcements = { { Text = "Second new", Duration = 5 } },
 				})
-				world:run(61)
+				world:fastForward(61)
 				aRemote.Settings:Fire({
 					announcement = false,
 					announcements = { { Text = "Allowed after cooldown", Duration = 5 } },
@@ -1249,7 +1249,7 @@ describe("Chat and Server", function()
 						{ "remote-job-99", 1000, 7, sh.env.globals.os.time() }
 					)
 				end)
-				world:run(5)
+				world:fastForward(5)
 				sert.eq(_K.Data.servers["remote-job-99"] ~= nil, true)
 				sert.eq(_K.Data.servers["remote-job-99"][2], 7)
 				sert.eq(#serverBroadcasts, 2)
@@ -1266,7 +1266,7 @@ describe("Chat and Server", function()
 
 				-- Advance past EXPIRE (35s) while keeping a fresh server entry to verify selective stale server removal
 				_K.Data.servers["remote-job-fresh"] = { 1000, 3, sh.env.globals.os.time(), sh.env.globals.tick() + 45 }
-				world:run(50)
+				world:fastForward(50)
 				sert.eq(_K.Data.servers["remote-job-99"], nil)
 				sert.eq(_K.Data.servers["remote-job-fresh"] ~= nil, true)
 				sert.eq(#serverBroadcasts, 3)
@@ -1564,7 +1564,7 @@ describe("Chat and Server · Pinned announcements and disabled forced chat", fun
 		world:run(0.5)
 		sert.eq(#(_K.Data.savedSettings.announcements or {}), 0)
 		sert.eq(_K.Chat.cooldown(101, "announce"), nil)
-		world:run(61)
+		world:fastForward(61)
 
 		-- the editor gets the filtered pinned announcement back, other players get it with the changes
 		table.clear(adminSettings)
@@ -1576,7 +1576,7 @@ describe("Chat and Server · Pinned announcements and disabled forced chat", fun
 		sert.eq(adminSettings[1].announcement[2], 101)
 		sert.eq(#guestSettings, 1)
 		sert.eq(guestSettings[1].announcement[1], "Pinned via settings")
-		world:run(61)
+		world:fastForward(61)
 
 		-- ;announce messages carry the pinned announcement so clients can tell it apart from a settings sync
 		aRemote.Command:Fire(";announce Pinned via command")
@@ -1769,7 +1769,7 @@ describe("Chat and Server · Repeated pinned announcements", function()
 			end
 			-- a later full settings sync repeats it unchanged
 			sert.eq(gChat.pinAnnouncement(table.clone(_K.Data.savedSettings.announcement)), false)
-			world:run(61)
+			world:fastForward(61)
 		end
 		sert.eq(shown, { "Server restarting soon", "Server restarting soon" })
 
@@ -1783,7 +1783,7 @@ describe("Chat and Server · Repeated pinned announcements", function()
 			if gChat.pinAnnouncement(pins[1]) then
 				table.insert(shown, pins[1][1])
 			end
-			world:run(61)
+			world:fastForward(61)
 		end
 		sert.eq(shown, { "Pinned twice", "Pinned twice" })
 	end)
@@ -2259,7 +2259,7 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			sert.eq(#_K.Data.Sync.logs, 0)
 
 			-- 2. Second command log 30s later also starts redacted and must not flush early when the first 60s timer fires
-			world:run(30)
+			world:fastForward(30)
 			_K.log(";kick Guest Later reason", "COMMAND", 101, true, ";kick Guest …")
 			world:run(0.1)
 			local laterStored = _K.Data.logs[#_K.Data.logs]
@@ -2270,7 +2270,7 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			local p2CountBeforeReveal, p3CountBeforeReveal = #receivedBy2, #receivedBy3
 
 			-- Advance 31s (61s total): firstStored reveals to BOTH p2 and p3 and Sync.logs, while laterStored remains redacted
-			world:run(31)
+			world:fastForward(31)
 			sert.eq(firstStored[1], ";kick Guest First reason")
 			sert.eq(#receivedBy2, p2CountBeforeReveal + 1)
 			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest First reason")
@@ -2279,7 +2279,7 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			sert.eq(_K.Data.Sync.logs[#_K.Data.Sync.logs][1], ";kick Guest First reason")
 			sert.eq(laterStored[1], ";kick Guest …")
 
-			world:run(31)
+			world:fastForward(31)
 			sert.eq(laterStored[1], ";kick Guest Later reason")
 			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest Later reason")
 			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest Later reason")
@@ -2289,7 +2289,7 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			_K.log(";kick Guest Typo only", "COMMAND", 101, true, ";kick Guest …")
 			world:run(0.1)
 			sert.eq(_K.Chat.limitBroadcast(101), nil)
-			world:run(61)
+			world:fastForward(61)
 
 			-- 3. If CanUserChatAsync is false, liveText stays permanently redacted for other admins and Sync.logs
 			tcsMethods.CanUserChatAsync = function()
@@ -2303,7 +2303,7 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			sert.eq(receivedBy2[#receivedBy2][1], ";kick Guest …")
 			sert.eq(receivedBy3[#receivedBy3][1], ";kick Guest …")
 			sert.eq(_K.Data.Sync.logs[#_K.Data.Sync.logs][1], ";kick Guest …")
-			world:run(61)
+			world:fastForward(61)
 			sert.eq(mutedStored[1], ";kick Guest …")
 		end
 	)
@@ -2575,7 +2575,7 @@ describe("Chat and Server · Saved logs, sync hooks & 60s command log reveal", f
 			sert.eq(#observerLogs, 1)
 			sert.eq(observerLogs[1][1], ";testpm AdminSender …")
 			-- Advance past the 60s reveal timer: entry1 ("secret self") reveals, entry3 (literal "…") does NOT re-fire!
-			world:run(61)
+			world:fastForward(61)
 			sert.eq(#observerLogs, 2)
 			sert.eq(observerLogs[2][1], ";testpm AdminSender secret self")
 

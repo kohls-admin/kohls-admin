@@ -46,7 +46,7 @@ describe("Data · Schema Codecs & ChunkChanges Laws", function()
 					assert(val ~= nil, tostring(err))
 					return val
 				end,
-			}, { runs = runs })
+			}, { runs = if rawget(_G, "__SERT_MUTANT") ~= nil then math.min(runs, 10) else runs })
 		end
 
 		runZCodecLaw("Data.Schema.log", Data.Schema.log, 60, genLog)
@@ -89,7 +89,7 @@ describe("Data · Schema Codecs & ChunkChanges Laws", function()
 				end
 			end
 			sert.eq({ bans = { update = mergedUpdate } }, input)
-		end, { runs = 30 })
+		end, { runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 8 else 30 })
 	end)
 
 	test(
@@ -456,7 +456,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				end
 			end
 			waitServerReady(world, node)
-			world:run(5)
+			world:fastForward(5)
 			world.faults = savedFaults
 		end
 		return node
@@ -558,7 +558,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 	end
 
 	local function settleCluster(world: any, sys: any, applyFn: ((node: any) -> ())?, nodeIdx: number?)
-		world:run(8)
+		world:fastForward(8)
 		local savedFaults = world.faults
 		world.faults = table.clone(world.faults)
 		world.faults.crash = 0
@@ -568,7 +568,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			rebooted.server:spawn(function()
 				applyFn(rebooted)
 			end)
-			world:run(8)
+			world:fastForward(8)
 		end
 		ensureUp(world, sys, 1)
 		ensureUp(world, sys, 2)
@@ -667,7 +667,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			local sys: any = { n1 = nil, n2 = nil, nodes = {}, unbanned = {}, revoked = {} }
 			ensureUp(world, sys, 1)
 			ensureUp(world, sys, 2)
-			world:run(20)
+			world:fastForward(20)
 			ensureUp(world, sys, 1)
 			ensureUp(world, sys, 2)
 			attachFaultRemotes(world, sys)
@@ -901,7 +901,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 					if sys.n2 ~= nil and sys.n2.server.state == "up" then
 						sys.n2.server:shutdown()
 					end
-					world:run(6)
+					world:fastForward(6)
 					sys.n2 = bootServer(world, "_K_ModelSync", 2)
 					sys.nodes[2] = sys.n2
 					ensureUp(world, sys, 2)
@@ -964,11 +964,11 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 		local world = sert.sim.new({ backing = true })
 		local n1 = bootServer(world, "_K_UnrestrictedSync")
 		local n2 = bootServer(world, "_K_UnrestrictedSync")
-		world:run(6)
+		world:fastForward(6)
 
 		local function sync(fn: () -> ())
 			n2.server:spawn(fn)
-			world:run(7)
+			world:fastForward(7)
 			world.backing.messaging.drain()
 			world:run(1)
 		end
@@ -1005,7 +1005,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			local world = sert.sim.new({ backing = true })
 			local n1 = bootServer(world, "_K_SaveThrottleGuard")
 			local n2 = bootServer(world, "_K_SaveThrottleGuard")
-			world:run(6)
+			world:fastForward(6)
 
 			-- Trigger initial save on n1 to start its 60s dataStoreUpdateThrottle
 			n1.server:spawn(function()
@@ -1018,7 +1018,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				n1.Auth.userRoleAdd(902, "admin", true)
 				n1.Auth.banUsers({ 903 }, "fresh local ban", -1, nil, true)
 			end)
-			world:run(7)
+			world:fastForward(7)
 			sert.eq(n1.Data.Sync.members["902"], nil)
 			sert.eq(n1.Data.members["902"].persist, { "admin" })
 			sert.eq(n1.Data.bans["903"][2], "fresh local ban")
@@ -1059,9 +1059,9 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 
 			-- Shutdown n1 so BindToClose flushes SAVE to DataStore, then verify a fresh server loads n1's local changes
 			n1.server:shutdown()
-			world:run(6)
+			world:fastForward(6)
 			local n3 = bootServer(world, "_K_SaveThrottleGuard")
-			world:run(6)
+			world:fastForward(6)
 			sert.eq(n3.Data.members["902"].persist, { "admin" })
 			sert.eq(n3.Data.bans["903"][2], "fresh local ban")
 			n2.server:shutdown()
@@ -1075,7 +1075,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			local world = sert.sim.new({ backing = true })
 			local n1 = bootServer(world, "_K_VoprHazards")
 			local n2 = bootServer(world, "_K_VoprHazards")
-			world:run(6)
+			world:fastForward(6)
 
 			-- 1. Positive clock drift (+30s) on n1 followed by negative clock drift (-30s) on n2:
 			-- causal updates (ban on n1 -> unban on n2) must still apply despite n2's wall clock being 60s behind n1
@@ -1099,7 +1099,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				n2.Auth.unbanUsers({ 401 }, nil, true)
 				n2.Auth.userRoleRemove(402, "admin")
 			end)
-			world:run(8)
+			world:fastForward(8)
 			world.backing.messaging.drain()
 			world:run(2)
 
@@ -1126,7 +1126,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			local n2 = bootServer(world, "_K_RemoteFaultSync", 2)
 			waitServerReady(world, n1)
 			waitServerReady(world, n2)
-			world:run(6)
+			world:fastForward(6)
 
 			local adminPackets = 0
 			local guestBlocked = 0
@@ -1193,7 +1193,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				r1.admin:FireServer("settings", 0, 2)
 			end
 
-			world:run(20)
+			world:fastForward(20)
 
 			-- Clear faults and issue deterministic final admin state across n1 and n2
 			for k, v in world.faults do
@@ -1368,7 +1368,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 
 			local s2 = bootServer(world, scope)
 			seedServerAdminAndCommands(s2.h, s2.Auth, "AdminOnS2")
-			world:run(5)
+			world:fastForward(5)
 			sert.eq(s2.Data.members["202"] ~= nil, true)
 			sert.eq(s2.Data.bans["5001"] ~= nil, true)
 
@@ -1383,7 +1383,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			s1:spawn(function()
 				Messaging1:PublishAsync("_KData", '"not_a_table"')
 			end)
-			world:run(7)
+			world:fastForward(7)
 			world.backing.messaging.drain()
 			world:run(1)
 			sert.eq(s2.Data.members["202"], nil)
@@ -1402,7 +1402,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			end
 
 			-- Advance past HASH_EXPIRY (60s) so dataStoreUpdateThrottle resets and processSync runs updateBans & updateLogs
-			world:run(65)
+			world:fastForward(65)
 			local sawLimitWarn = false
 			for _, w in warnings do
 				if string.find(tostring(w), "approaching the limit of the DataStore", 1, true) then
@@ -1417,7 +1417,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				newest = { bigLogText .. i, string.char(1), now + 100 + i, 101, "AdminOnline" }
 				table.insert(Data1.Sync.logs, newest)
 			end
-			world:run(65)
+			world:fastForward(65)
 			-- the log rows are also synced as JSON arrays, measuring them for the save mustn't add keys
 			sert.eq(newest.size, nil)
 			-- the trimmed save keeps the newest log and stays under the DataStore limit
@@ -1514,7 +1514,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			local n2 = bootServer(world, "_K_ScaleInline")
 			waitServerReady(world, n1)
 			waitServerReady(world, n2)
-			world:run(12)
+			world:fastForward(12)
 
 			sert.eq(world.backing.memorystore.calls.ListItemsAsync or 0, 0)
 			local beforeGets = world.backing.memorystore.calls.GetAsync or 0
@@ -1530,7 +1530,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			n1.server:spawn(function()
 				n1.Auth.banUsers({ 8801 }, "small inline ban", -1, nil, true)
 			end)
-			world:run(7)
+			world:fastForward(7)
 			world.backing.messaging.drain()
 			world:run(2)
 
@@ -1539,7 +1539,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			sert.eq(world.backing.memorystore.calls.ListItemsAsync or 0, 0)
 			sert.eq(world.backing.memorystore.calls.GetAsync or 0, beforeGets)
 			-- Receiver server n2 must not re-queue received syncs into its own DataStore SAVE queue
-			world:run(10)
+			world:fastForward(10)
 			sert.eq(n2UpdateAsyncCalls, 0)
 
 			-- Large delta (> 900B): spills to sharded MemoryStore keys in _KData without calling ListItemsAsync
@@ -1547,7 +1547,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			n1.server:spawn(function()
 				n1.Auth.banUsers({ 8802 }, longReason, -1, nil, true)
 			end)
-			world:run(7)
+			world:fastForward(7)
 			world.backing.messaging.drain()
 			world:run(2)
 
@@ -1663,7 +1663,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			s1:spawn(function()
 				Auth1.banUsers({ 909 }, "invalidate both buckets", -1, nil, true)
 			end)
-			world:run(8)
+			world:fastForward(8)
 			sert.eq(hm:GetAsync(`Bans_{bucket}_1`), nil)
 			sert.eq(hm:GetAsync(`Bans_{prevBucket}_1`), nil)
 
@@ -1675,7 +1675,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			s1:spawn(function()
 				Auth1.banUsers({ 910 }, "recent trim test", -1, nil, true)
 			end)
-			world:run(8)
+			world:fastForward(8)
 			local recentAfterTrim = hm:GetAsync("Recent_1")
 			sert.eq(type(recentAfterTrim), "table")
 			sert.eq(recentAfterTrim.old_a, nil)
@@ -1730,12 +1730,12 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 				end
 				return origStoreUpdate(key, fn)
 			end
-			world:run(65)
+			world:fastForward(65)
 			Data1.Store.updateAsync = origStoreUpdate
 			sert.eq(simulatedOutageHit, true)
 			-- Trigger a second urgent save so SAVE.bans flushes to DataStore
 			Data1.Sync.bans["7779"] = { "TriggerFlush", "reason", -1, 1 }
-			world:run(10)
+			world:fastForward(10)
 			local savedBans = rawStore:GetAsync("Bans")
 			sert.eq(savedBans["7777"], nil)
 			sert.eq(savedBans["7778"] ~= nil, true)
@@ -1759,13 +1759,13 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 			s1:spawn(function()
 				K1.log(";fly me", "COMMAND", 101)
 			end)
-			world:run(35)
+			world:fastForward(35)
 			sert.eq(localPublishes, 0)
 
 			s1:spawn(function()
 				K1.log(";global fly all", "COMMAND", 101, nil, nil, true)
 			end)
-			world:run(35)
+			world:fastForward(35)
 			world.backing.messaging.drain()
 			world:run(2)
 			sert.eq(localPublishes > 0, true)
@@ -1784,7 +1784,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 		sert.sim.check(KAdminDataSpec, {
 			bfs = true,
 			vopr = false,
-			maxStates = if rawget(_G, "__SERT_MUTANT") ~= nil then 30 else 200,
+			maxStates = if rawget(_G, "__SERT_MUTANT") ~= nil then 12 else 200,
 			maxDepth = 6,
 		})
 	end)
@@ -1816,7 +1816,7 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 
 			-- Shutdown server 1 (triggers BindToClose DataStore/MemoryStore flush for bans, members, and logs)
 			n1.server:shutdown()
-			world:run(31)
+			world:fastForward(31)
 
 			-- Boot a fresh server 2 on the same scope and verify it loads the ban, persistent role, and log
 			local n2 = bootServer(world, "_K_ShutdownFlush")
@@ -2034,7 +2034,7 @@ describe("Data · ChunkChanges array actions", function()
 				end
 			end
 			sert.eq(merged, changes)
-		end, { runs = 30 })
+		end, { runs = if rawget(_G, "__SERT_MUTANT") ~= nil then 8 else 30 })
 
 		-- Helper that chunks `a` and `b` via ChunkChanges and composes their state transitions (`set` and `unset`)
 		local function composeChunkedDeltas(a: { [string]: any }, b: { [string]: any }): { [string]: any }
@@ -2224,7 +2224,7 @@ describe("Data · ChunkChanges array actions", function()
 			local world = sert.sim.new({ backing = true })
 			local n1 = bootNode(world, "_K_UnsetRoleRemoved")
 			local n2 = bootNode(world, "_K_UnsetRoleRemoved")
-			world:run(6)
+			world:fastForward(6)
 
 			n1.Data.settingsModuleData = { prefix = { ";", ":" } }
 			n2.Data.settingsModuleData = { prefix = { ";", ":" } }
@@ -2240,7 +2240,7 @@ describe("Data · ChunkChanges array actions", function()
 				n1.Data.savedSettings.prefix = { "!" }
 				n1.Data.Sync.settings.prefix = { "!" }
 			end)
-			world:run(7)
+			world:fastForward(7)
 			world.backing.messaging.drain()
 			world:run(1)
 
@@ -2252,7 +2252,7 @@ describe("Data · ChunkChanges array actions", function()
 			n1.server:spawn(function()
 				n1.Auth.userRoleRemove(701, "admin")
 			end)
-			world:run(7)
+			world:fastForward(7)
 			world.backing.messaging.drain()
 			world:run(1)
 

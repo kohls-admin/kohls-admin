@@ -2,7 +2,7 @@
 # (fetch, run, studio, cloud, lint, coverage, audit, mutate, release).
 
 [sert]
-version = "0.2.0"
+version = "0.2.1"
 
 [test]
 specs = ["test/unit/**/*.spec.luau"]
@@ -42,7 +42,7 @@ exclude = [
   "src/Shared/DefaultTypes/Player/Types/Inverse.luau",
 ]
 min = 75
-timeout = 45
+codegen = false
 benign_calls = ['Util\.Defer\.wait']
 
 [mutate.specs]
@@ -50,7 +50,7 @@ benign_calls = ['Util\.Defer\.wait']
 "src/Shared/Util/Remote.luau" = "@file=Util,Remote"
 "src/Server/LoadScript" = "@file=Util,Loadstring"
 "src/Shared/Auth.luau" = "@file=Auth"
-"src/Shared/Process" = "@file=ProcessAndTypes,ChatAndServer,DefaultCommands"
+"src/Shared/Process" = "@file=ProcessAndTypes,ChatAndServer,DefaultCommands,GlobalAndPollCommands"
 "src/Shared/Registry.luau" = "@file=ProcessAndTypes,DefaultTypes"
 "src/Shared/Hook.luau" = "Command Preparation, Validation & Execution"
 "src/Shared/Data" = "@file=DataAndSim,ChatAndServer,Auth"
@@ -66,17 +66,16 @@ benign_calls = ['Util\.Defer\.wait']
 "src/Shared/DefaultCommands/Creator.luau" = "Administration, Creator, Environment, and SuperAdmin"
 "src/Shared/DefaultCommands/Administration.luau" = "Administration"
 "src/Shared/DefaultCommands/Environment.luau" = "Administration, Creator, Environment, and SuperAdmin"
-"src/Shared/DefaultCommands/SuperAdmin.luau" = "@file=DefaultCommands"
-"src/Shared/DefaultCommands" = "@file=DefaultCommands"
+"src/Shared/DefaultCommands" = "@file=DefaultCommands,GlobalAndPollCommands"
 "src/Shared/DefaultAddons/Legacy.luau" = "@file=DefaultCommands,KAI"
-"src/Shared/DefaultAddons" = "@file=DefaultCommands"
-"src/Shared/VIP" = "@file=DefaultCommands"
-"src/Client/UI/init.luau" = "@file=ClientAndUI"
-"src/Client/UI/Classes/Checkbox.luau" = "@file=ClientAndUI"
-"src/Client/UI/Classes" = "Part 2"
-"src/Client/CommandBar/CompletionData.luau" = "CommandBar"
+"src/Shared/DefaultAddons" = "@file=DefaultCommands,GlobalAndPollCommands"
+"src/Shared/VIP" = "@file=DefaultCommands,GlobalAndPollCommands"
+"src/Client/UI/init.luau" = "@file=UIEngine,ClientDashboard"
+"src/Client/UI/Classes/Checkbox.luau" = "@file=UIEngine,ClientDashboard"
+"src/Client/UI/Classes" = "@file=UIEngine"
+"src/Client/CommandBar/CompletionData.luau" = "@file=CommandBar"
 "src/Client/Explorer/ExplorerOrder.luau" = "ExplorerOrder"
-"src/Client" = "@file=ClientAndUI"
+"src/Client" = "@file=UIEngine,CommandBar,ClientDashboard"
 
 [lint]
 paths = ["model", "src", "test/unit", "test/runner", "test/sert.luau"]
