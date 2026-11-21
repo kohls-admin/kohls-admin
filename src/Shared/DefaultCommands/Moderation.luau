@@ -720,8 +720,16 @@ return {
 			},
 		},
 		env = function(_K)
+			local bans = {}
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
+				local toolBan = bans[player]
+				if toolBan then
+					toolBan:Disconnect()
+					bans[player] = nil
+				end
+			end)
 			return {
-				bans = {},
+				bans = bans,
 				removeTool = function(tool: Instance)
 					if tool:IsA("Tool") or tool:IsA("HopperBin") then
 						task.defer(tool.Destroy, tool)

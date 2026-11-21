@@ -2441,6 +2441,59 @@ describe("DefaultCommands", function()
 		customcommand.runClient({ _K = clientK, env = cliEnv, from = 1 }, "hello")
 		sert.eq(cliEnv.countClient, 1)
 	end)
+
+	test("cleans up toolban, spectate, control, and re-infect state on PlayerRemoving and re-run", function()
+		local c = createSimCluster()
+		local _K, srvP1, srvP2 = c._K, c.srvP1, c.srvP2
+		local runSrv = c.runSrv
+
+		-- Re-infecting the same character reuses the existing Touched connection without overwriting/leaking it
+		buildCharacter(c.sh.env, srvP2)
+		runSrv(";infect TargetPlr")
+		local firstInfectConn = _K.Registry.commands.infect.env.infected[srvP2.Character]
+		sert.ok(firstInfectConn)
+		sert.eq(firstInfectConn.Connected, true)
+		runSrv(";infect TargetPlr")
+		sert.eq(_K.Registry.commands.infect.env.infected[srvP2.Character], firstInfectConn)
+		sert.eq(firstInfectConn.Connected, true)
+
+		-- Target PlayerRemoving disconnects and clears toolban and control state
+		runSrv(";toolban TargetPlr")
+		local toolBanConn = _K.Registry.commands.toolban.env.bans[srvP2]
+		sert.ok(toolBanConn)
+		sert.eq(toolBanConn.Connected, true)
+
+		buildCharacter(c.sh.env, srvP2)
+		runSrv(";control TargetPlr")
+		local targetControlConn = _K.Registry.commands.control.env.connections[srvP2]
+		sert.ok(targetControlConn)
+		sert.eq(targetControlConn.Connected, true)
+
+		_K.Service.Players.PlayerRemoving:Fire(srvP2)
+		c.world:run(0.05)
+		sert.eq(toolBanConn.Connected, false)
+		sert.eq(_K.Registry.commands.toolban.env.bans[srvP2], nil)
+		sert.eq(targetControlConn.Connected, false)
+		sert.eq(_K.Registry.commands.control.env.connections[srvP2], nil)
+		sert.eq(_K.Registry.commands.control.env.controllers[srvP2], nil)
+
+		-- Spectator / controller PlayerRemoving cleans up spectate subject entry and pending control connection
+		buildCharacter(c.sh.env, srvP1)
+		buildCharacter(c.sh.env, srvP2)
+		runSrv(";spectate TargetPlr")
+		sert.ok(_K.Registry.commands.spectate.env.spectators[srvP2])
+		runSrv(";control TargetPlr")
+		local ctrlConnByController = _K.Registry.commands.control.env.connections[srvP2]
+		sert.ok(ctrlConnByController)
+		sert.eq(ctrlConnByController.Connected, true)
+
+		_K.Service.Players.PlayerRemoving:Fire(srvP1)
+		c.world:run(0.05)
+		sert.eq(_K.Registry.commands.spectate.env.spectators[srvP2], nil)
+		sert.eq(ctrlConnByController.Connected, false)
+		sert.eq(_K.Registry.commands.control.env.connections[srvP2], nil)
+		sert.eq(_K.Registry.commands.control.env.controllers[srvP2], nil)
+	end)
 end)
 
 do

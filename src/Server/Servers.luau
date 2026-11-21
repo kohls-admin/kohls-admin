@@ -215,8 +215,10 @@ if RunService:IsServer() then
 		started = true
 		task.spawn(function()
 			while Servers.Enabled do
-				task.spawn(cleanup)
-				task.spawn(publish)
+				cleanup()
+				if canPublish() then
+					task.spawn(publish)
+				end
 				task.wait(getInterval())
 			end
 			started = false

@@ -1342,6 +1342,7 @@ return {
 			end)
 
 			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player: Player)
+				spectateCleanup({ _K = _K, fromPlayer = player })
 				if spectators[player] then
 					table.clear(spectators[player])
 				end

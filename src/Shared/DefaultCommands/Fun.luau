@@ -612,8 +612,27 @@ return {
 			end)
 		end,
 		env = function(_K)
+			local connections = {}
+			local controllers = {}
+			local function clear(target: Player)
+				local conn = connections[target]
+				if conn then
+					conn:Disconnect()
+					connections[target] = nil
+				end
+				controllers[target] = nil
+			end
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
+				clear(player)
+				for target, controller in controllers do
+					if controller == player then
+						clear(target)
+					end
+				end
+			end)
 			return {
-				connections = {},
+				connections = connections,
+				controllers = controllers,
 				remote = _K.Remote.ControlCommand,
 			}
 		end,
@@ -641,10 +660,12 @@ return {
 			end
 
 			if not context.env.connections[player] then
+				context.env.controllers[player] = context.fromPlayer
 				context.env.connections[player] = context.fromPlayer
 					:GetPropertyChangedSignal("Character")
 					:Once(function()
 						context.env.connections[player] = nil
+						context.env.controllers[player] = nil
 						if player and player.Parent and humanoid and humanoid.Health > 0 then
 							local old = character:GetPivot()
 							player:LoadCharacterAsync()
@@ -915,25 +936,27 @@ return {
 				}
 					:Destroy()
 
-				env.infected[character] = humanoid.Touched:Connect(function(part)
-					if not part or not part.Parent or env.infected[part.Parent] then
-						return
-					end
+				if not env.infected[character] then
+					env.infected[character] = humanoid.Touched:Connect(function(part)
+						if not part or not part.Parent or env.infected[part.Parent] then
+							return
+						end
 
-					local player = _K.Service.Players:GetPlayerFromCharacter(part.Parent)
-					if not player then
-						return
-					end
+						local player = _K.Service.Players:GetPlayerFromCharacter(part.Parent)
+						if not player then
+							return
+						end
 
-					env.infect(player, part.Parent)
-				end)
+						env.infect(player, part.Parent)
+					end)
 
-				player.CharacterRemoving:Once(function()
-					if env.infected[character] then
-						env.infected[character]:Disconnect()
-						env.infected[character] = nil
-					end
-				end)
+					player.CharacterRemoving:Once(function()
+						if env.infected[character] then
+							env.infected[character]:Disconnect()
+							env.infected[character] = nil
+						end
+					end)
+				end
 			end
 
 			return env

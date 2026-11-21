@@ -956,11 +956,14 @@ local function recordRecentUrgentChunks(id: string, chunks: { any }, now: number
 	end
 end
 
-local function processSync(forceLogs: boolean?)
-	local changes = {}
-	local changed = false
+local function nextSyncTime(): number
 	lastSyncTime = math.max(DateTime.now().UnixTimestampMillis, lastSyncTime + 1)
-	local now = lastSyncTime
+	return lastSyncTime
+end
+
+local function processSync(forceLogs: boolean?)
+	local changes: { [string]: any }? = nil
+	local now: number? = nil
 
 	-- process urgent state changes (bans, members, settings)
 	for key, action in urgentKeys do
@@ -987,8 +990,9 @@ local function processSync(forceLogs: boolean?)
 
 			local changing, removing = next(change) ~= nil, next(remove) ~= nil
 			if changing or removing then
-				changed = true
-				changes[key] = {
+				local out = changes or {}
+				changes = out
+				out[key] = {
 					[action] = if changing then change else nil,
 					unset = if removing then remove else nil,
 				}
@@ -998,8 +1002,10 @@ local function processSync(forceLogs: boolean?)
 			Util.Table.merge(SAVE[key], pending)
 			local saveTime = SAVE_TIME[key]
 			if saveTime then
+				local syncTime = now or nextSyncTime()
+				now = syncTime
 				for k in pending do
-					saveTime[k] = now
+					saveTime[k] = syncTime
 				end
 			end
 			table.clear(pending)
@@ -1008,28 +1014,33 @@ local function processSync(forceLogs: boolean?)
 
 	-- batch non-urgent logs unless forced (BindToClose), piggybacking on urgent changes, or interval elapsed
 	local pendingLogs = Data.Sync.logs
-	local clockNow = os.clock()
-	if
-		next(pendingLogs) ~= nil
-		and (forceLogs or changed or lastLogSyncClock == 0 or (clockNow - lastLogSyncClock) >= LOG_SYNC_INTERVAL)
-	then
-		lastLogSyncClock = clockNow
-		Data.Sync.logs = {}
-		local globalLogs = {}
-		local localOnlyLogs = Data.localOnlyLogs
-		for _, entry in pendingLogs do
-			if localOnlyLogs and localOnlyLogs[entry] then
-				localOnlyLogs[entry] = nil
-			else
-				table.insert(globalLogs, entry)
+	if next(pendingLogs) ~= nil then
+		local clockNow = os.clock()
+		if
+			forceLogs
+			or changes ~= nil
+			or lastLogSyncClock == 0
+			or (clockNow - lastLogSyncClock) >= LOG_SYNC_INTERVAL
+		then
+			lastLogSyncClock = clockNow
+			Data.Sync.logs = {}
+			local globalLogs = {}
+			local localOnlyLogs = Data.localOnlyLogs
+			for _, entry in pendingLogs do
+				if localOnlyLogs and localOnlyLogs[entry] then
+					localOnlyLogs[entry] = nil
+				else
+					table.insert(globalLogs, entry)
+				end
 			end
+			if #globalLogs > 0 then
+				local out = changes or {}
+				changes = out
+				out.logs = { insert = globalLogs }
+			end
+			Util.Table.mergeList(SAVE.logs, pendingLogs)
+			table.clear(pendingLogs)
 		end
-		if #globalLogs > 0 then
-			changed = true
-			changes.logs = { insert = globalLogs }
-		end
-		Util.Table.mergeList(SAVE.logs, pendingLogs)
-		table.clear(pendingLogs)
 	end
 
 	-- update datastores on origin server (separate throttles so 30s log saves never block 6s urgent saves)
@@ -1057,7 +1068,8 @@ local function processSync(forceLogs: boolean?)
 	end
 
 	-- cross server sync
-	if not Data.gameClosing and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio and changed then
+	if not Data.gameClosing and not Data.SEPARATE_DATASTORE and not Util.RunContext.IsStudio and changes then
+		local syncTime = now or nextSyncTime()
 		local id = Http:GenerateGUID(false)
 		idsFromThisServer[id] = true
 
@@ -1067,11 +1079,11 @@ local function processSync(forceLogs: boolean?)
 			and changes.settings == nil
 		local chunks = ChunkChanges(changes)
 		for _, chunk in chunks do
-			chunk._time = now
+			chunk._time = syncTime
 		end
 
 		if not logsOnly then
-			recordRecentUrgentChunks(id, chunks, now)
+			recordRecentUrgentChunks(id, chunks, syncTime)
 		end
 
 		local inlineChunk = nil
@@ -1097,7 +1109,7 @@ local function processSync(forceLogs: boolean?)
 		end, 5)
 	end
 
-	return changed
+	return changes ~= nil
 end
 
 ----------

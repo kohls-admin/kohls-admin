@@ -1560,6 +1560,45 @@ describe("Data & Sim · Multi-Server Sync, Partition Heal & BindToClose Converge
 	)
 
 	test(
+		"short-circuits idle processSync without calling DateTime.now and still syncs subsequent urgent and log updates",
+		function()
+			local world = sert.sim.new({ backing = true })
+			local server = world:server()
+			local h = Harness.newPeerEnv(server, { isStudio = false })
+			local origDateTime = h.env.DateTime
+			local dtCalls = 0
+			rawset(h.env.globals, "DateTime", {
+				now = function()
+					dtCalls += 1
+					return origDateTime.now()
+				end,
+				fromUnixTimestamp = origDateTime.fromUnixTimestamp,
+				fromUnixTimestampMillis = origDateTime.fromUnixTimestampMillis,
+			})
+			local Data = h:requireData()
+			local Auth = h:requireAuth()
+			server:spawn(function()
+				Data.initialize("_K_IdleSync")
+			end)
+			waitServerReady(world, { server = server })
+			world:fastForward(12)
+
+			dtCalls = 0
+			world:fastForward(5)
+			sert.eq(dtCalls, 0)
+
+			server:spawn(function()
+				Auth.banUsers({ 8803 }, "post-idle sync", -1, nil, true)
+				table.insert(Data.Sync.logs, { "post-idle log", string.char(1), 1700000000, 101, "AdminOnline" })
+			end)
+			world:fastForward(7)
+			sert.eq(dtCalls > 0, true)
+			sert.eq(Data.bans["8803"] ~= nil, true)
+			sert.eq(Data.bans["8803"][2], "post-idle sync")
+		end
+	)
+
+	test(
 		"lazy-loads Logs_1..4 and Servers on demand, skips __TEST GetAsync outside Studio, and serves startup Main/Bans from sharded MemoryStore cache",
 		function()
 			local world = sert.sim.new({ backing = true })
