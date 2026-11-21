@@ -88,11 +88,8 @@ return {
 				if dogSeat then
 					dogSeat:Destroy()
 					local undogCommand = context._K.Registry.commands.undog
-					if undogCommand then
-						local humanoid = character:FindFirstChild("Humanoid")
-						if not humanoid then
-							continue
-						end
+					local humanoid = character:FindFirstChild("Humanoid")
+					if undogCommand and humanoid then
 						if humanoid.RigType == Enum.HumanoidRigType.R6 then
 							undogCommand.env.R6(character)
 						else
@@ -509,8 +506,64 @@ return {
 				pe.Parent = root
 			end
 
+			local DONOR_RECHECK_DELAY = 30
+			local donorOwners: { [Player]: true } = {}
+			local donorChecked: { [Player]: number } = {}
+			local donorChecking: { [Player]: true } = {}
+
+			local _ = _K.Service.Players.PlayerRemoving:Connect(function(player)
+				donorOwners[player] = nil
+				donorChecked[player] = nil
+				donorChecking[player] = nil
+			end)
+
+			-- the market shows the trail to owners of any donation, as a game pass or as an asset
+			local function ownsDonation(player: Player): boolean
+				if donorOwners[player] or (player:GetAttribute("_KDonationLevel") or 0) >= 1 then
+					return true
+				end
+				local lastCheck = donorChecked[player]
+				if donorChecking[player] or (lastCheck and os.clock() - lastCheck < DONOR_RECHECK_DELAY) then
+					return false
+				end
+				donorChecking[player] = true
+				local owned = false
+				for _, donation in _K.VIP.purchasables.donations do
+					local okPass, ownsPass = pcall(
+						_K.Service.Marketplace.UserOwnsGamePassAsync,
+						_K.Service.Marketplace,
+						player.UserId,
+						donation.id
+					)
+					local okAsset, ownsAsset = false, false
+					if not (okPass and ownsPass) then
+						okAsset, ownsAsset = pcall(
+							_K.Service.Marketplace.PlayerOwnsAssetAsync,
+							_K.Service.Marketplace,
+							player,
+							donation.assetId
+						)
+					end
+					if (okPass and ownsPass) or (okAsset and ownsAsset) then
+						owned = true
+						break
+					end
+				end
+				donorChecking[player] = nil
+				if player.Parent then
+					donorChecked[player] = os.clock()
+					if owned then
+						donorOwners[player] = true
+					end
+				end
+				return owned
+			end
+
 			local _ = _K.Remote.DonorTrail:Connect(function(player, enable: boolean?)
 				if enable then
+					if not ownsDonation(player) then
+						return
+					end
 					apply(player, player, nil, nil)
 				else
 					local root = player.Character
@@ -1284,8 +1337,11 @@ return {
 						end
 
 						local headY = char.Head.Size.Y
-						char.Torso.Neck.C0 = CFrame.new(0, headY / 2 + (headY * scale / 2), 0)
-							* CFrame.Angles(math.pi / 2, math.pi, 0)
+						local neck = char.Torso:FindFirstChild("Neck")
+						if neck and neck:IsA("JointInstance") then
+							neck.C0 = CFrame.new(0, headY / 2 + (headY * scale / 2), 0)
+								* CFrame.Angles(math.pi / 2, math.pi, 0)
+						end
 					end
 				end
 			end
@@ -1795,9 +1851,12 @@ return {
 			if not wings then
 				return "You don't have VIP wings equipped!"
 			end
-			wingsColor = wingsColor or wings:GetAttribute("_KWingsColor")
+			wingsColor = wingsColor or wings:GetAttribute("_KWingsColor") or Color3.new(1, 1, 1)
 			task.defer(function()
-				wings.Wings.Color = wingsColor
+				local wingsPart = wings:FindFirstChild("Wings")
+				if wingsPart and wingsPart:IsA("BasePart") then
+					wingsPart.Color = wingsColor
+				end
 			end)
 			return
 		end,
@@ -1877,8 +1936,8 @@ return {
 			if not crown then
 				return "You don't have a VIP crown equipped!"
 			end
-			crownColor = crownColor or crown:GetAttribute("_KCrownColor")
-			fireColor = fireColor or crown:GetAttribute("_KCrownFireColor")
+			crownColor = crownColor or crown:GetAttribute("_KCrownColor") or Color3.new(1, 1, 1)
+			fireColor = fireColor or crown:GetAttribute("_KCrownFireColor") or Color3.new()
 			crown:RemoveTag("_KSuperCrownRainbow")
 			task.defer(function()
 				local handle = crown:FindFirstChild("Handle")

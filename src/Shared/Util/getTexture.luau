@@ -37,14 +37,17 @@ local function getTexture(assetId: number, small: boolean?): string?
 		local success, model = pcall(function()
 			return InsertService:LoadAsset(assetId)
 		end)
-		if success then
+		if success and model then
 			local object = model:GetChildren()[1]
-			texture = object[textureProperty[object.ClassName]]
+			local property = object and textureProperty[object.ClassName]
+			if property then
+				texture = object[property]
+			end
 			model:Destroy()
 		end
 	end
 
-	if not texture then
+	if not texture or texture == "" then
 		local size = if small then 150 else 420
 		texture = `rbxthumb://type=Asset&id={assetId}&w={size}&h={size}`
 	end

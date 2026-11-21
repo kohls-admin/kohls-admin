@@ -229,7 +229,7 @@ local function updateCompletionData()
 end
 
 local function fillSuggestion()
-	local pos, text = unpack(currentCompletion)
+	local pos, text = currentCompletion[1], currentCompletion[2]
 	if not string.find(text, " $") then
 		text = text .. " "
 		pos += 1
@@ -282,7 +282,7 @@ local function updateSuggestionLabels(data, myId: number)
 	local suggestionWidth = 256
 	for i = start, start + amount do
 		local suggestion = data.suggestions[i]
-		local text, display, value, invalid = unpack(suggestion)
+		local text, display, value, invalid = suggestion[1], suggestion[2], suggestion[3], suggestion[4]
 		local frame = SuggestionFrame:Clone()
 		local label = frame:FindFirstChildOfClass("TextLabel")
 		frame.LayoutOrder = i
@@ -500,11 +500,12 @@ local function invalidSuggestion(data, myId: number, err, pos, text)
 		return
 	end
 
-	local suggestion, _, value = unpack(data.suggestions[suggestionIndex])
+	local suggestionData = data.suggestions[suggestionIndex]
+	local suggestion, value = suggestionData[1], suggestionData[3]
 	if data.argIndex == 1 then -- command
 		-- TODO: inline argument types if command
 		-- show command aliases too!
-		local desc = value.description or "No description."
+		local desc = if type(value) == "table" then value.description or "No description." else nil
 		local description = if type(value) == "table" and type(desc) == "string" then desc else "?"
 		Tooltip.Text = string.format(argumentFormat, _K.Util.String.escapeRichText(suggestion), "command", description)
 	end
@@ -538,7 +539,7 @@ updateCompletion = function()
 	-- handle validation hints when cursor is inside an invalid command/arg or no suggestion query is active
 	if #data.invalid > 0 and (data.cursorInvalid or not data.suggestionType) then
 		for _, invalid in data.invalid do
-			invalidSuggestion(data, myId, unpack(invalid))
+			invalidSuggestion(data, myId, table.unpack(invalid, 1, 3))
 			if myId ~= completionId then
 				return
 			end
@@ -612,12 +613,18 @@ updateCompletion = function()
 
 	local arg = _K.Util.String.trim(data.rawArg)
 	local endPos = data.argPos + #arg
-	local suggestion, _, value, invalid = unpack(data.suggestions[suggestionIndex])
+	local suggestionData = data.suggestions[suggestionIndex]
+	local suggestion, value, invalid = suggestionData[1], suggestionData[3], suggestionData[4]
 
 	suggestionPurchaseButton._instance.Parent = nil
 	if data.argIndex == 1 then -- command
-		Tooltip.Text =
-			string.format(argumentFormat, _K.Util.String.escapeRichText(suggestion), "command", value.description)
+		local description = if type(value) == "table" then value.description else nil
+		Tooltip.Text = string.format(
+			argumentFormat,
+			_K.Util.String.escapeRichText(suggestion),
+			"command",
+			if type(description) == "string" then description else "No description."
+		)
 		if invalid then
 			Tooltip.Text ..= string.format(
 				invalidFormat,

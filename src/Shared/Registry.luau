@@ -143,7 +143,7 @@ function Registry.makeSequenceType(definition: SequenceDefinition?)
 			return true
 		end,
 		parse = options.parse or function(components)
-			return options.constructor(unpack(components, 1, components.n or #components))
+			return options.constructor(table.unpack(components, 1, components.n or #components))
 		end,
 	}
 end
@@ -164,10 +164,10 @@ end
 
 --- Registers a command
 function Registry.registerCommand(_K: any, commandObject: Type.CommandDefinition)
-	local lowerName = string.lower(commandObject.name)
-	if not commandObject.name then
+	if type(commandObject.name) ~= "string" then
 		return -- invalid commandObject definition
 	end
+	local lowerName = string.lower(commandObject.name)
 	local oldCommand = Registry.commands[lowerName]
 	if oldCommand and string.lower(oldCommand.name) == lowerName then
 		print("Overriding Kohl's Admin command: " .. lowerName)

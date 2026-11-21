@@ -184,7 +184,9 @@ function Title.applyTitle(character: Model, title: string?, color: Color3?, topC
 	titleGui = gui:Clone()
 	titleGui.Parent = character
 	titleGui.Adornee = character:FindFirstChild("Head")
-	titleGui:AddTag("_K" .. titleRef)
+	if titleDefinition then
+		titleGui:AddTag("_K" .. titleRef)
+	end
 
 	titleGui.Title.Text = title
 	titleGui.Title.UIGradient.Color = ColorSequence.new(topColor or Color3.new(1, 1, 1), color or Color3.new(1, 1, 1))

@@ -222,7 +222,7 @@ end
 
 if RunService:IsServer() then
 	-- create the lazy remote now, clients connect to it on start
-	_ = Remote.ChatSystem
+	local _ = Remote.ChatSystem
 
 	--[=[
 		Sends a message of `kind` to everyone in the server, or only to `targets`, through Remote.ChatSystem to the
@@ -377,6 +377,9 @@ else
 			local index = table.find(threads, thread)
 			if index then
 				table.remove(threads, index)
+				if #threads == 0 and waiting[id] == threads then
+					waiting[id] = nil
+				end
 				task.spawn(thread, nil)
 			end
 		end)

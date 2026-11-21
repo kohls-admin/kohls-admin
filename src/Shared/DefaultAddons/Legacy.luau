@@ -179,18 +179,23 @@ return function(_K)
 			}
 
 			for _, definition in CUSTOM_COMMANDS do
-				local aliases, desc, rank, argList, run = unpack(definition)
+				local aliases, desc, rank, argList, run = table.unpack(definition, 1, 5)
+				if type(aliases) ~= "table" or type(aliases[1]) ~= "string" or type(run) ~= "function" then
+					warn("Skipped an invalid Legacy custom command definition")
+					continue
+				end
 
 				local args = {}
-				for _, arg in argList do
-					arg = string.lower(arg :: string)
+				for _, arg in if type(argList) == "table" then argList else {} do
+					arg = string.lower(tostring(arg))
 					local optional = string.find(arg, "/$")
 					if optional then
 						arg = string.sub(arg, 1, -2)
 					end
+					local argType = legacyArgToNew[arg] or "rawString"
 					table.insert(args, {
-						type = legacyArgToNew[arg],
-						name = legacyArgToNew[arg],
+						type = argType,
+						name = argType,
 						optional = optional,
 						description = "Migrated from Legacy custom commands.",
 					})
@@ -198,9 +203,10 @@ return function(_K)
 
 				_K.Registry.registerCommand(_K, {
 					name = aliases[1],
-					aliases = { unpack(aliases, 2) },
-					description = tostring(desc[1]) .. "\nMigrated from Legacy config.",
-					group = legacyCommandRankToGroup[math.clamp(rank, 0, 5)],
+					aliases = table.move(aliases, 2, #aliases, 1, {}),
+					description = tostring(if type(desc) == "table" then desc[1] else desc)
+						.. "\nMigrated from Legacy config.",
+					group = legacyCommandRankToGroup[math.clamp(tonumber(rank) or 0, 0, 5)],
 					args = args,
 					run = function(context, ...)
 						run(context.fromPlayer, { ... })
@@ -215,8 +221,12 @@ return function(_K)
 			return
 		end
 
-		local settings, ranks = unpack(SETTINGS)
-		local owners, superAdmins, admins, mods, vip, banned = unpack(ranks)
+		local settings, ranks = table.unpack(SETTINGS, 1, 2)
+		if type(settings) ~= "table" then
+			settings = {}
+		end
+		local owners, superAdmins, admins, mods, vip, banned =
+			table.unpack(if type(ranks) == "table" then ranks else {}, 1, 6)
 
 		-- BANS
 
@@ -234,7 +244,7 @@ return function(_K)
 			end
 		end
 
-		for index, nameOrUserId in banned do
+		for _, nameOrUserId in if type(banned) == "table" then banned else {} do
 			task.spawn(banUser, nameOrUserId)
 		end
 
@@ -276,6 +286,9 @@ return function(_K)
 		end
 
 		for rank, list in { vip, mods, admins, superAdmins, owners } do
+			if type(list) ~= "table" then
+				continue
+			end
 			for _, nameOrUserId in list do
 				task.spawn(roleUser, nameOrUserId, rank)
 			end
@@ -334,7 +347,7 @@ return function(_K)
 			_K.Data.roles.everyone.permissions.serverlogs = true
 		end
 
-		if settings.Prefix ~= ";" then
+		if type(settings.Prefix) == "string" and settings.Prefix ~= "" and settings.Prefix ~= ";" then
 			_K.Data.defaultSettings.prefix = { settings.Prefix }
 			if not _K.Data.savedSettings.useSavedSettings then
 				_K.Data.settings.prefix = _K.Data.defaultSettings.prefix
@@ -346,8 +359,13 @@ return function(_K)
 
 		if tonumber(settings.FreeAdmin) then
 			local roleId = getRoleFromRank(settings.FreeAdmin)
-			if roleId and not table.find(_K.Data.settings.freeAdmin, roleId) then
-				table.insert(_K.Data.settings.freeAdmin, roleId)
+			local freeAdmin = _K.Data.settings.freeAdmin
+			if type(freeAdmin) ~= "table" then
+				freeAdmin = {}
+				_K.Data.settings.freeAdmin = freeAdmin
+			end
+			if roleId and not table.find(freeAdmin, roleId) then
+				table.insert(freeAdmin, roleId)
 			end
 		end
 
@@ -356,7 +374,8 @@ return function(_K)
 				rank = tonumber(rank)
 				if alias and rank then
 					rank = math.clamp(rank, 0, math.huge)
-					for roleId, role in _K.Data.roles do
+					for _, role in _K.Data.roles do
+						role.commands = role.commands or {}
 						role.commands[alias] = role._rank >= rank
 					end
 				end

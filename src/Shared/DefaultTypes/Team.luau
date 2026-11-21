@@ -16,12 +16,19 @@ local typeTeam = {
 		end
 		return false, "Invalid team"
 	end,
-	parse = function(input: string, from: number): string
+	parse = function(input: string, from: number): Team
 		local query = string.lower(input)
+		local partial
 		for _, team in Teams:GetTeams() do
-			if string.find(string.lower(team.Name), query, 1, true) == 1 then
+			local lowerName = string.lower(team.Name)
+			if lowerName == query then
 				return team
+			elseif not partial and string.find(lowerName, query, 1, true) == 1 then
+				partial = team
 			end
+		end
+		if partial then
+			return partial
 		end
 		error("Invalid team value")
 	end,

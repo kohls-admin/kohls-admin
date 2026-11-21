@@ -20,14 +20,26 @@ end
 
 local function parseBan(input, self)
 	local query = string.lower(input)
+	local exactBan = _K.Data.bans[query]
+	if exactBan then
+		return canUnban(query, exactBan, self)
+	end
+	local partial
 	for userId, ban in _K.Data.bans do
 		local name = ban[1]
-		if
-			(name and string.find(string.lower(name), query, 1, true) == 1)
-			or string.find(string.lower(userId), query, 1, true) == 1
-		then
+		local lowerName = if name then string.lower(name) else nil
+		if lowerName == query then
 			return canUnban(userId, ban, self)
 		end
+		if
+			((lowerName and string.find(lowerName, query, 1, true) == 1) or string.find(userId, query, 1, true) == 1)
+			and (not partial or userId < partial)
+		then
+			partial = userId
+		end
+	end
+	if partial then
+		return canUnban(partial, _K.Data.bans[partial], self)
 	end
 
 	local userId = tonumber(input)

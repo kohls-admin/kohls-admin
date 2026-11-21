@@ -13,12 +13,12 @@ end
 function Function.throttle(delay: number, func: (...any) -> ...any)
 	local thread, throttled
 	local function trailing(...)
-		throttled = tick() + delay
+		throttled = os.clock() + delay
 		func(...)
 	end
 
 	return function(...)
-		local now = tick()
+		local now = os.clock()
 
 		if typeof(thread) == "thread" and coroutine.status(thread) == "suspended" then
 			task.cancel(thread)

@@ -82,12 +82,12 @@ local typeColor = {
 					end
 				end
 				if validRGB then
-					return Color3.fromRGB(r or 255, g or 255, b or 255)
+					return Color3.fromRGB(tonumber(r) or 255, tonumber(g) or 255, tonumber(b) or 255)
 				end
 			end
-			for name, color in COLORS do -- partial match
-				if string.find(name, input, 1, true) == 1 then
-					return color
+			for _, name in colorNames do -- partial match
+				if name ~= "random" and string.find(name, input, 1, true) == 1 then
+					return COLORS[name]
 				end
 			end
 		end
@@ -120,7 +120,10 @@ local typeColor = {
 				COLORS.random = Color3.new(math.random(), math.random(), math.random())
 			end
 			local r, g, b = string.match(text :: string, "^(%d+),?(%d*),?(%d*)$")
-			table.insert(names, `{r or 255},{g or 255},{b or 255}`)
+			local function channel(value: string?): string | number
+				return if value and value ~= "" then value else 255
+			end
+			table.insert(names, `{channel(r)},{channel(g)},{channel(b)}`)
 		end
 
 		return names, COLORS

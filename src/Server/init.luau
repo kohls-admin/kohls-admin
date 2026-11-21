@@ -32,6 +32,9 @@ return function(_K)
 	end
 
 	local function characterAdded(character: Model)
+		if characterCleanup[character] then
+			return
+		end
 		local cleanup = {}
 		characterCleanup[character] = cleanup
 		local player = _K.Service.Players:GetPlayerFromCharacter(character)
@@ -388,8 +391,20 @@ return function(_K)
 		if settings.friendRoles and #settings.friendRoles > 0 then
 			_K.Data.friendRoles = table.clone(settings.friendRoles)
 			task.spawn(function()
-				local friendPages = _K.Service.Players:GetFriendsAsync(_K.creatorId)
-				for item, _pageNo in Util.iterPageItems(friendPages) do
+				while not _K.creatorId do
+					task.wait()
+				end
+				if _K.creatorId <= 0 then
+					return
+				end
+				local ok, iterator = Util.Retry(function()
+					return Util.iterPageItems(_K.Service.Players:GetFriendsAsync(_K.creatorId))
+				end)
+				if not ok then
+					warn(`Failed to load friend roles: {iterator}`)
+					return
+				end
+				for item, _pageNo in iterator do
 					if item.Id then
 						for _, role in settings.friendRoles do
 							_K.Auth.userRoleAdd(item.Id, role)
@@ -401,16 +416,18 @@ return function(_K)
 
 		for role, roleData in _K.Data.roles do
 			for _, key in { "asset", "gamepass", "subscription" } do
-				local id = roleData[key]
-				if id then
-					local listKey = key .. if string.find(key, "s$", 1, true) then "es" else "s"
+				local value = roleData[key]
+				if value then
+					local listKey = key .. if string.find(key, "s$") then "es" else "s"
 					roleData[listKey] = roleData[listKey] or {}
-					table.insert(roleData[listKey], id)
+					for _, id in if type(value) == "table" then value else { value } do
+						table.insert(roleData[listKey], id)
 
-					if not _K.Data.async[key][id] then
-						_K.Data.async[key][id] = { role }
-					else
-						table.insert(_K.Data.async[key][id], role)
+						if not _K.Data.async[key][id] then
+							_K.Data.async[key][id] = { role }
+						else
+							table.insert(_K.Data.async[key][id], role)
+						end
 					end
 				end
 			end
@@ -422,10 +439,8 @@ return function(_K)
 					return
 				end
 				_K.log(`bought gamepass {gamePassId}`, "PURCHASE", player.UserId)
-				for id, roles in _K.Data.async.gamepass do
-					if gamePassId ~= id then
-						continue
-					end
+				local roles = _K.Data.async.gamepass[gamePassId]
+				if roles then
 					-- exploits can fake purchaseSuccess, and ownership can lag a few seconds behind a real purchase
 					local owned = _K.Util.Retry(function()
 						assert(_K.Service.Marketplace:UserOwnsGamePassAsync(player.UserId, gamePassId), "not owned")
@@ -613,7 +628,7 @@ return function(_K)
 			player:SetAttribute("_K_READY", true)
 
 			if type(_K.Data.savedSettings.announcement) == "table" then
-				local msg, from = unpack(_K.Data.savedSettings.announcement)
+				local msg, from = table.unpack(_K.Data.savedSettings.announcement)
 				_K.Chat.send(
 					{ global = true, from = from, fromPlayer = from and _K.Service.Players:GetPlayerByUserId(from) },
 					"announce",
@@ -684,7 +699,7 @@ return function(_K)
 
 		-- handle custom command prefix
 		local _ = _K.Remote.PlayerPrefix:Connect(function(player, prefix)
-			if type(prefix) ~= "string" or not hasUsableOrPurchasableCommand(player.UserId) then
+			if type(prefix) ~= "string" then
 				return
 			end
 			if
@@ -700,6 +715,9 @@ return function(_K)
 			local defaultPrefix = _K.Data.settings.prefix[1] or ";"
 			local nextPrefix = if prefix == "" or prefix == defaultPrefix then nil else prefix
 			if _K.Data.playerPrefix[player.UserId] == nextPrefix then
+				return
+			end
+			if not hasUsableOrPurchasableCommand(player.UserId) then
 				return
 			end
 			if _K.Chat.cooldown(player.UserId, "playerPrefix", 1) then
@@ -1381,10 +1399,10 @@ return function(_K)
 				task.spawn(characterAdded, player.Character)
 			end
 
-			local warning = tick() + 10
+			local warning = os.clock() + 10
 			while not _K.Data.roles do
 				task.wait()
-				if tick() > warning then
+				if os.clock() > warning then
 					warn("Unexpected yield while waiting for _K.Data.roles")
 					warning = math.huge
 				end
@@ -1412,6 +1430,12 @@ return function(_K)
 			LogsSubscribers[player] = nil
 
 			local userId = player.UserId
+
+			local character = player.Character
+			if character and characterCleanup[character] then
+				_K.Flux.dispose(characterCleanup[character])
+				characterCleanup[character] = nil
+			end
 
 			task.spawn(_K.log, "left the server.", "LEAVE", userId)
 

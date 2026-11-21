@@ -39,7 +39,7 @@ return {
 					env.tween = false
 				end
 				if env.restore then
-					Lighting.Ambient, Lighting.FogColor = unpack(env.restore)
+					Lighting.Ambient, Lighting.FogColor = env.restore[1], env.restore[2]
 					env.restore = false
 				end
 			end
@@ -106,6 +106,9 @@ return {
 					local oldRigType = humanoid.RigType
 					if humanoid.RigType == Enum.HumanoidRigType.R15 then
 						character = _K.Registry.commands.r6.env.apply(player, Enum.HumanoidRigType.R6)
+						if not character then
+							return
+						end
 					end
 
 					character:SetAttribute("_KCreeper", oldRigType)
@@ -553,7 +556,7 @@ return {
 					continue
 				end
 				player.CharacterAppearanceId = player.UserId
-				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				if not humanoid then
 					continue
 				end
@@ -850,7 +853,7 @@ return {
 		run = function(context, players: { Player })
 			for _, player in players do
 				if player.Character then
-					context.env.apply(player.Character)
+					task.spawn(context.env.apply, player.Character)
 				end
 			end
 		end,
@@ -1074,6 +1077,9 @@ return {
 			return {
 				explode = explode,
 				nuke = function(from: Player?, fromRank, position)
+					if not sphere then
+						return
+					end
 					local part = sphere:Clone()
 					part.Position = position
 
@@ -1099,10 +1105,10 @@ return {
 						sound:Play()
 					end)
 
-					local start, alpha = tick(), 0
+					local start, alpha = os.clock(), 0
 					repeat
 						alpha = _K.Service.Tween:GetValue(
-							1 - (1 - math.clamp((tick() + 1 - start) / 8, 0, 1)) ^ 2,
+							1 - (1 - math.clamp((os.clock() + 1 - start) / 8, 0, 1)) ^ 2,
 							Enum.EasingStyle.Bounce,
 							Enum.EasingDirection.In
 						)
@@ -1126,10 +1132,10 @@ return {
 						task.wait()
 					until alpha == 1
 
-					start, alpha = tick(), 0
+					start, alpha = os.clock(), 0
 					repeat
 						alpha = _K.Service.Tween:GetValue(
-							math.clamp((tick() - start) / 1, 0, 1),
+							math.clamp((os.clock() - start) / 1, 0, 1),
 							Enum.EasingStyle.Cubic,
 							Enum.EasingDirection.In
 						)
@@ -1172,14 +1178,15 @@ return {
 		},
 		run = function(context, players)
 			for _, player in players do
-				if player.Character then
-					local root = player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart
-					local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				local character = player.Character
+				if character then
+					local root = character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart
+					local humanoid = character:FindFirstChildOfClass("Humanoid")
 					if not (humanoid and root) then
 						continue
 					end
 
-					for _, descendant in player.Character:GetDescendants() do
+					for _, descendant in character:GetDescendants() do
 						if descendant:IsA("BasePart") then
 							task.delay(math.random(), function()
 								local effect = context._K.Flux.new "ParticleEmitter" {
@@ -1208,7 +1215,7 @@ return {
 					local sounds = { 9116282544, 9116282647, 9116282646, 9116282791, 9116282875 }
 					local sound = context._K.Flux.new "Sound" {
 						Parent = workspace,
-						SoundId = `rbxassetid://{sounds[math.random(4)]}`,
+						SoundId = `rbxassetid://{sounds[math.random(#sounds)]}`,
 						PlayOnRemove = true,
 						Volume = 1,
 					}
@@ -1219,6 +1226,9 @@ return {
 						else root.Size.Y * 1.5
 
 					task.delay(2.2, function()
+						if not character.Parent then
+							return
+						end
 						local part = context._K.Flux.new "Part" {
 							Parent = workspace,
 							Transparency = 0.9,
@@ -1230,7 +1240,7 @@ return {
 							CanTouch = false,
 							CastShadow = false,
 							Size = Vector3.one,
-							CFrame = CFrame.new(player.Character:GetPivot().Position - Vector3.new(0, hipHeight, 0)),
+							CFrame = CFrame.new(character:GetPivot().Position - Vector3.new(0, hipHeight, 0)),
 
 							context._K.Flux.new "BlockMesh" {
 								Scale = Vector3.new(2, 1e4, 2),
@@ -1308,6 +1318,9 @@ return {
 			},
 		},
 		env = function(_K)
+			local function randomRange(min: number, max: number): number
+				return min + math.random() * (max - min)
+			end
 			return {
 				apply = function(character, strength)
 					local angularStrength = strength * 10
@@ -1316,13 +1329,13 @@ return {
 
 						local direction = CFrame.Angles(0, math.random() * math.pi * 2, 0).LookVector
 						character.HumanoidRootPart.AssemblyLinearVelocity = direction
-								* math.random(strength * 160, strength * 200)
-							+ Vector3.new(0, math.random(strength * 160, strength * 200), 0)
+								* randomRange(strength * 160, strength * 200)
+							+ Vector3.new(0, randomRange(strength * 160, strength * 200), 0)
 
 						character.HumanoidRootPart.AssemblyAngularVelocity = Vector3.new(
-							math.random(-angularStrength, angularStrength),
-							math.random(-angularStrength, angularStrength),
-							math.random(-angularStrength, angularStrength)
+							randomRange(-angularStrength, angularStrength),
+							randomRange(-angularStrength, angularStrength),
+							randomRange(-angularStrength, angularStrength)
 						)
 					end
 				end,
@@ -1602,7 +1615,9 @@ return {
 					humanoid:ChangeState(Enum.HumanoidStateType.FallingDown)
 
 					local direction = CFrame.Angles(0, math.random() * math.pi * 2, 0).LookVector
-					character.PrimaryPart.AssemblyAngularVelocity = direction * 8
+					if character.PrimaryPart then
+						character.PrimaryPart.AssemblyAngularVelocity = direction * 8
+					end
 				end
 			end)
 			return true
@@ -1680,15 +1695,16 @@ return {
 						C1 = CFrame.new(0, 0, 1),
 					}
 
+					local character = player.Character
 					task.delay(5, function()
-						if player.Character then
-							player.Character:BreakJoints()
+						if character.Parent and player.Character == character and rocket.Parent == character then
+							character:BreakJoints()
 							rocket:Destroy()
 							local explosion = Instance.new("Explosion")
 							explosion.ExplosionType = Enum.ExplosionType.NoCraters
 							explosion.Position = rocket.Position
 							explosion.DestroyJointRadiusPercent = 0
-							explosion.Parent = player.Character
+							explosion.Parent = character
 						end
 					end)
 				end
@@ -1744,7 +1760,7 @@ return {
 						object:SetAttribute("_KSlimOriginal", if undo then nil else object[property].Z)
 					end
 					local value = object[property]
-					object[property] = Vector3.new(value.X, value.Y, if undo then originalValue or value else 0.2)
+					object[property] = Vector3.new(value.X, value.Y, if undo then originalValue or value.Z else 0.2)
 				end,
 			}
 		end,
@@ -1890,7 +1906,7 @@ return {
 	},
 	{
 		name = "slippery",
-		aliases = { "iceskate", "icewalk", "slide" },
+		aliases = { "iceskate", "icewalk", "slide", "unslippery" },
 		description = "Makes one or more player(s) slide when they walk",
 		args = {
 			{

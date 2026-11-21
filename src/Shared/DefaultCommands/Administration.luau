@@ -38,7 +38,7 @@ return {
 					return
 				end
 
-				local msg, from = unpack(data)
+				local msg, from = table.unpack(data, 1, 2)
 				_K.Data.savedSettings.announcement = data
 				_K.Chat.send(
 					{ global = true, from = from, fromPlayer = from and _K.Service.Players:GetPlayerByUserId(from) },
@@ -357,9 +357,8 @@ return {
 			local model = context._K.Service.Insert:LoadAsset(assetId)
 			for _, child in model:GetChildren() do
 				if child:IsA("BackpackItem") then
-					local gear = child:Clone()
 					for _, player in players do
-						gear:Clone().Parent = player:FindFirstChild("Backpack") or player.Character
+						child:Clone().Parent = player:FindFirstChild("Backpack") or player.Character
 					end
 				end
 			end

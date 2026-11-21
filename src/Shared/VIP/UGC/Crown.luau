@@ -175,7 +175,7 @@ return {
 
 		if clone:FindFirstChild("Handle") then
 			if colors then
-				local primary, secondary = unpack(colors)
+				local primary, secondary = colors[1], colors[2]
 				clone.Handle.Color = primary
 				clone.Handle.Fire.Color = secondary
 				clone.Handle.Fire.SecondaryColor = secondary

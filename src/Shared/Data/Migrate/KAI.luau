@@ -8,7 +8,10 @@ local function deserializeItem(data: string)
 	local result = {}
 	for i in string.gmatch(data, "%S+") do
 		local c, d = string.match(i, "(.+):(.+)")
-		result[tonumber(c)] = tonumber(d)
+		local key, value = tonumber(c), tonumber(d)
+		if key and value then
+			result[key] = value
+		end
 	end
 	return result
 end
@@ -47,7 +50,7 @@ local function migrateKAI()
 		return GlobalDataStore:GetAsync("KSave")
 	end)
 	if okGet and type(dataKAI) == "table" then
-		local admins, bans, settings = unpack(dataKAI)
+		local admins, bans, settings = table.unpack(dataKAI, 1, 3)
 		local newBans, main = {}, { {}, {} }
 
 		if bans then
@@ -80,10 +83,14 @@ local function migrateKAI()
 			end
 		end
 
-		if settings then
-			settings = HttpService:JSONDecode(settings)
-			if settings.FreeAdmin then
-				local role = Data.rolesList[settings.FreeAdmin + 1]
+		if type(settings) == "string" then
+			local okDecode, decoded = pcall(HttpService.JSONDecode, HttpService, settings)
+			settings = if okDecode and type(decoded) == "table" then decoded else nil
+		end
+		if type(settings) == "table" then
+			local freeAdmin = tonumber(settings.FreeAdmin)
+			if freeAdmin then
+				local role = Data.rolesList[freeAdmin + 1]
 				if role then
 					main[2].freeAdmin = { role._key }
 				end
