@@ -248,7 +248,7 @@ function Class.new(properties: Properties?)
 	} :: Frame
 
 	for i, v in UI.raw(self.Tabs) do
-		local page, icon = unpack(v)
+		local page, icon = v[1], v[2]
 		if type(page) == "table" then
 			page = page._instance
 		end

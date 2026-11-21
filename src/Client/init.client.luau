@@ -289,7 +289,7 @@ local _ = _K.Service.UserInput.InputBegan:Connect(function(input, gameProcessedE
 					end
 				end
 				if missingMod then
-					return
+					continue
 				end
 				task.defer(data.callback)
 			end
@@ -423,7 +423,7 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 				end
 			end
 		end
-		for _, roleId in _K.Data.settings.freeAdmin do
+		for _, roleId in _K.Data.settings.freeAdmin or {} do
 			if member and member.roles and table.find(member.roles, roleId) then
 				continue
 			end
@@ -434,7 +434,8 @@ _K.Remote.Init:Once(function(bans, logs, members, roles, reservedServers, server
 		end
 		table.insert(roleStrings, `<font color="{_K.Data.roles.everyone.color}">{_K.Data.roles.everyone.name}</font>`)
 		local roleString = table.concat(roleStrings, ", ")
-		local nString = if roleString:sub(1, 1):lower():match("aeiou") then "n" else ""
+		local plainRoles = string.gsub(roleString, "<[^>]*>", "")
+		local nString = if string.find(string.lower(string.sub(plainRoles, 1, 1)), "[aeiou]") then "n" else ""
 
 		_K.Notify({
 			From = "_K",

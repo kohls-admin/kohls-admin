@@ -6,7 +6,7 @@ local notifications = {}
 local function resetOffset(announce: boolean?)
 	local heightOffset = 0
 	for i, list in ipairs(if announce then announcements else notifications) do
-		local card, _, offset = unpack(list)
+		local card, offset = list[1], list[3]
 		offset(heightOffset, true)
 		heightOffset += card.AbsoluteSize.Y + UI.Theme.Padding:peek().Offset
 	end
@@ -15,7 +15,7 @@ end
 
 local function hide(info, announce: boolean?)
 	local list = if announce then announcements else notifications
-	local card, visible = unpack(info)
+	local card, visible = info[1], info[2]
 	local found = table.find(list, info)
 	if not found then
 		return
@@ -116,7 +116,9 @@ return function(dialogOverride)
 	UI.Haptic.Notification:Play()
 
 	if userFrame or from then
-		userFrame = if userFrame then _K.client.UserFrame(unpack(userFrame)) else _K.client.UserFrame(from, name, image)
+		userFrame = if userFrame
+			then _K.client.UserFrame(table.unpack(userFrame, 1, 3))
+			else _K.client.UserFrame(from, name, image)
 		UI.edit(userFrame)({
 			Parent = dialog,
 			LayoutOrder = -3,
@@ -142,7 +144,7 @@ return function(dialogOverride)
 
 	if resetOffset(announce) > UI.LayerTopInset.AbsoluteSize.Y / (if announce then 2 else 1) then
 		for index = #list, 1, -1 do
-			local _card, _visible, _offset, delay, closeEntry = unpack(list[index])
+			local delay, closeEntry = list[index][4], list[index][5]
 			if delay == 0 then
 				continue
 			end

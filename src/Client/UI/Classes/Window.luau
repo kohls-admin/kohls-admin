@@ -238,7 +238,7 @@ function Class.new(properties: Properties?)
 				self.AutomaticSize:peek()
 			)
 			if resize then
-				xSize, xPos, ySize, yPos = unpack(resize, 1, 4)
+				xSize, xPos, ySize, yPos = table.unpack(resize, 1, 4)
 				dragInput, dragStart = input, input.Position
 				startOffset = self._instance.AbsolutePosition - self._instance.Parent.AbsolutePosition
 				startSize = self._instance.AbsoluteSize

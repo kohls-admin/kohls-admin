@@ -266,12 +266,16 @@ local function statusIconLabel(name, imageDefinition, labelDefinition, tooltipDe
 	}
 end
 
-local function getAvgLow(buffer, avg, low, sum, nextAvgUpdate)
-	local now = tick()
-	if now > nextAvgUpdate then
+local function getAvgLow(buffer, avg, low, _sum, nextAvgUpdate)
+	local now = os.clock()
+	if now > nextAvgUpdate and #buffer > 0 then
 		nextAvgUpdate = now + 2
 		table.sort(buffer)
-		avg, low = math.round(sum / #buffer) * 2, 0
+		local total = 0
+		for _, value in buffer do
+			total += value
+		end
+		avg, low = math.round(total / #buffer), 0
 		local lowCount = math.ceil(#buffer / 100)
 		for i = 1, lowCount do
 			low += buffer[i]
@@ -324,7 +328,7 @@ UI.new "Frame" {
 			function(instance)
 				task.spawn(function()
 					local ping, max, avg, nFrames, sum = 0, 0, 0, 0, 0
-					local nextAvgUpdate = tick()
+					local nextAvgUpdate = os.clock()
 					local hbConn: RBXScriptConnection? = nil
 
 					local function samplePing()
@@ -338,8 +342,8 @@ UI.new "Frame" {
 						if nFrames == 0 then
 							samplePing()
 						end
-						if tick() > nextAvgUpdate then
-							nextAvgUpdate = tick() + 2
+						if os.clock() > nextAvgUpdate then
+							nextAvgUpdate = os.clock() + 2
 							avg = if nFrames > 0 then sum // nFrames else ping
 							sum, nFrames = 0, 0
 						elseif avg == 0 then
@@ -394,7 +398,7 @@ UI.new "Frame" {
 			function(instance)
 				task.spawn(function()
 					local fps, max, avg, low, sum = 0, 0, 0, 0, 0
-					local buffer, nextAvgUpdate = {}, tick()
+					local buffer, nextAvgUpdate = {}, os.clock()
 					local hbConn: RBXScriptConnection? = nil
 
 					local function sampleFPS()
