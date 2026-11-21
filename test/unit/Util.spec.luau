@@ -148,12 +148,23 @@ describe("Util · Table", function()
 		copy.nested.x = 99
 		sert.eq(dst.nested.x, 10)
 		sert.eq(Table.deepCompare(dst, copy), false)
+		sert.eq(Table.deepCompare(1, { 1 }), false)
+		sert.eq(Table.deepCompare({ 1 }, 1), false)
+		sert.eq(Table.deepCompare(1, 2), false)
+		local cyclic: { [string]: any } = {}
+		cyclic.self = cyclic
+		sert.eq(Table.deepCompare(cyclic, cyclic), true)
 
 		Table.deepMerge(dst, { b = 2, nested = { y = 20, arr = { 3 } } }, true)
 		sert.eq(dst.b, 2)
 		sert.eq(dst.nested.x, 10)
 		sert.eq(dst.nested.y, 20)
 		sert.eq(dst.nested.arr, { 1, 2, 3 })
+
+		local mixedDst: { [string]: any } = { a = { x = 1 }, b = 5 }
+		Table.deepMerge(mixedDst, { a = 5, b = { y = 2 } })
+		sert.eq(mixedDst.a, 5)
+		sert.eq(mixedDst.b, { y = 2 })
 
 		-- deepMerge with appendArrays = true when target is a non-array dictionary
 		local nonArr: { [any]: any } = { key = "val" }
@@ -224,6 +235,7 @@ describe("Util · Time & Logger", function()
 		sert.eq(Time.fromUnit("mss"), 1 / 1000)
 		sert.eq(Time.fromUnit("hours"), 3600)
 		sert.eq(Time.fromUnit("d"), 86400)
+		sert.eq(Time.fromUnit("."), nil)
 		sert.eq(Time.fromUnit("invalid_unit_xyz"), nil)
 
 		sert.eq(Time.clock(45), "45")
@@ -469,6 +481,10 @@ describe("Util · Queue, Signal, Tasks, Retry, Defer, Function, Rollout, Suggest
 		sert.eq(throttledCalls, { "immediate" })
 		h.env:step(0.06)
 		sert.eq(throttledCalls, { "immediate", "final_trailing" })
+		throttled("post_trailing")
+		sert.eq(throttledCalls, { "immediate", "final_trailing" })
+		h.env:step(0.06)
+		sert.eq(throttledCalls, { "immediate", "final_trailing", "post_trailing" })
 
 		local r = Util.Rollout.new("2025-01-01", "2025-12-31", "TestFeature", 42, 1)
 		sert.eq(type(r:test(12345)), "boolean")
@@ -477,6 +493,16 @@ describe("Util · Queue, Signal, Tasks, Retry, Defer, Function, Rollout, Suggest
 		r:setFFlagDictionary({ TestFeature = false })
 		sert.eq(r:test(12345), false)
 		r:setFFlagDictionary(nil)
+
+		sert.eq(Util.Rollout.new("2099-01-01", "2099-12-31", "FutureRollout", 1, 1):test(1), false)
+		local earlyRollout = Util.Rollout.new("2000-01-01", "2099-12-31", "EarlyRollout", 1, 1)
+		local earlyHits = 0
+		for sampleId = 1, 100 do
+			if earlyRollout:test(sampleId) then
+				earlyHits += 1
+			end
+		end
+		sert.eq(earlyHits < 50, true)
 	end)
 
 	test(
@@ -498,6 +524,11 @@ describe("Util · Queue, Signal, Tasks, Retry, Defer, Function, Rollout, Suggest
 
 			local lev = Suggest.query("kixk", names)
 			sert.eq(lev[1][1], "kick")
+
+			local tableSuggest = Suggest.query("alp", { { "alpha", "Alpha Display", "alpha_key" } })
+			sert.eq(tableSuggest[1][1], "alpha")
+			sert.eq(tableSuggest[1][2], "Alpha Display")
+			sert.eq(tableSuggest[1][3], "alpha_key")
 
 			local enumNames, enumInsts = Suggest.new(h.env.globals.Enum.Font)
 			sert.eq(#enumNames > 0, true)
@@ -960,7 +991,14 @@ describe(
 			end)
 			sert.eq(Util.getTexture(1003), "rbxassetid://999888")
 
-			-- 4. Fallback to rbxthumb when LoadAsset fails (both small=true 150 and small=false 420)
+			-- 4. Empty texture property and LoadAsset failure both fall back to rbxthumb (small=true 150 and small=false 420)
+			insertSpy:calls(function()
+				local model = h.env.Instance.new("Model")
+				local decal = h.env.Instance.new("Decal", model)
+				decal.Texture = ""
+				return model
+			end)
+			sert.eq(Util.getTexture(1006, true), "rbxthumb://type=Asset&id=1006&w=150&h=150")
 			insertSpy:calls(function()
 				error("LoadAsset blocked")
 			end)
