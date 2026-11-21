@@ -6,20 +6,15 @@ return function(_K)
 			if exactMatch and exactMatch.LocalPlayerAuthorized then
 				return exactMatch
 			end
-			for key, command in _K.Registry.commands do
-				if not command.LocalPlayerAuthorized then
-					continue
-				end
-				if string.find(string.lower(key), query, 1, true) then
+			for _, name in _K.Registry.commandNames do
+				local command = _K.Registry.commands[name]
+				if command and command.LocalPlayerAuthorized and string.find(name, query, 1, true) then
 					return command
 				end
-				if not command.aliases then
-					continue
-				end
-				for _, alias in command.aliases do
-					if string.find(string.lower(alias :: string), query, 1, true) then
-						return command
-					end
+			end
+			for key, command in _K.Registry.commands do
+				if command.LocalPlayerAuthorized and string.find(string.lower(key), query, 1, true) then
+					return command
 				end
 			end
 			return

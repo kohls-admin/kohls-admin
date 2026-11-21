@@ -57,11 +57,16 @@ function Table.mergeList(to: List, from: List)
 end
 
 function Table.deepCompare(a: any, b: any)
-	if type(a) ~= "table" or type(b) ~= "table" then
+	if type(a) ~= "table" or type(b) ~= "table" or a == b then
 		return a == b
 	end
 	for k, v in a do
 		if not Table.deepCompare(v, b[k]) then
+			return false
+		end
+	end
+	for k in b do
+		if a[k] == nil then
 			return false
 		end
 	end
@@ -79,7 +84,7 @@ function Table.deepMerge(to: Dict, from: Dict, appendArrays: boolean?): Dict
 		end
 	else
 		for key, value in from do
-			if to[key] and type(value) == "table" then
+			if type(to[key]) == "table" and type(value) == "table" then
 				Table.deepMerge(to[key], value, appendArrays)
 			else
 				to[key] = value

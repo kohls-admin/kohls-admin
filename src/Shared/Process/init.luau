@@ -169,6 +169,16 @@ function Process.rawParse(message: string, prefixes: string | { string }, delimi
 	return commands, prefix
 end
 
+local MAX_TEXT_LENGTH = 1024
+
+local function truncateText(text: string): string
+	if #text <= MAX_TEXT_LENGTH then
+		return text
+	end
+	local cut = utf8.offset(text, 0, MAX_TEXT_LENGTH + 1) or MAX_TEXT_LENGTH + 1
+	return string.sub(text, 1, cut - 1)
+end
+
 local commandLimits = {}
 local function setCooldownAttribute(from: number, active: boolean?)
 	local player = Players:GetPlayerByUserId(from)
@@ -218,14 +228,16 @@ function Process.prepareCommands(_K: any, from: number, rawText: string, global:
 		return false, "Invalid utf8 string"
 	end
 
-	if _K.IsServer and #rawText > 1024 and not _K.Auth.hasRestrictedRole(from) then
-		rawText = string.sub(rawText, 1, 1024)
+	if _K.IsServer and #rawText > MAX_TEXT_LENGTH and not _K.Auth.hasRestrictedRole(from) then
+		rawText = truncateText(rawText)
 	end
 
 	local rawCommands, matchedPrefix = Process.rawParse(
 		rawText,
 		-- global command strings are published with the server prefix, a sender's own prefix in their text isn't one
-		if global then { _K.getCommandPrefix() } else { _K.getCommandPrefix(from), unpack(_K.Data.settings.prefix) },
+		if global
+			then { _K.getCommandPrefix() }
+			else { _K.getCommandPrefix(from), table.unpack(_K.Data.settings.prefix) },
 		_K.Data.settings.splitKey or " "
 	)
 	if not rawCommands then
@@ -374,8 +386,8 @@ function Process.runCommands(
 			_K.alert(from, `<b>Command usage on cooldown!</b>`, true)
 			return false
 		end
-		if #rawText > 1024 and not _K.Auth.hasRestrictedRole(from) then
-			rawText = string.sub(rawText, 1, 1024)
+		if #rawText > MAX_TEXT_LENGTH and not _K.Auth.hasRestrictedRole(from) then
+			rawText = truncateText(rawText)
 		end
 	end
 

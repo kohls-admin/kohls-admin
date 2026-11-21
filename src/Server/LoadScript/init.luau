@@ -8,13 +8,20 @@ local BASE = {
 	Server = script.ServerBase,
 }
 
+local MAX_CACHED_SCRIPTS = 64
 local bytecodeCache = {}
+local cachedScripts = 0
 local function Bytecode(source: string)
 	if bytecodeCache[source] then
 		return bytecodeCache[source]
 	end
 	local _f, code = Loadstring(source, "LuaC")
+	if cachedScripts >= MAX_CACHED_SCRIPTS then
+		table.clear(bytecodeCache)
+		cachedScripts = 0
+	end
 	bytecodeCache[source] = code
+	cachedScripts += 1
 	return code
 end
 

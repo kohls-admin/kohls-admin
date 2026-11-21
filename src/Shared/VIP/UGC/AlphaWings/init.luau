@@ -111,8 +111,9 @@ if RunService:IsClient() then
 		if next(rainbow) then
 			local color = hclToRGB(Vector3.new((time() / 10) % 1, 0.4, 1))
 			for wings in rainbow do
-				if wings and wings.Parent and wings:FindFirstChild("Handle") then
-					wings.Wings.Color = color
+				local wingsPart = wings and wings.Parent and wings:FindFirstChild("Wings")
+				if wingsPart and wingsPart:IsA("BasePart") then
+					wingsPart.Color = color
 				else
 					rainbow[wings] = nil
 				end

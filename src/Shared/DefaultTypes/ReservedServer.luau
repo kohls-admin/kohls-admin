@@ -13,7 +13,7 @@ local function parse(input: string, self: any): (boolean, string?)
 		local match = string.lower(reservedCode)
 		if match == query then
 			return data
-		elseif string.find(match, query) then
+		elseif string.find(match, query, 1, true) then
 			if not partial or #partial < #reservedCode then
 				partial = reservedCode
 			end

@@ -449,10 +449,10 @@ local function createPlayEmote(_K: any, env: any, emoteId: any, ownsEmote: any)
 			env.looped.Value(playing.Looped)
 		else
 			task.spawn(function()
-				local start = tick()
+				local start = os.clock()
 				repeat
 					task.wait()
-				until playing.Looped == true or tick() - start > 1
+				until playing.Looped == true or os.clock() - start > 1
 				env.looped.Value(true)
 			end)
 		end
@@ -789,7 +789,7 @@ return {
 				return "Command bar has been disabled."
 			end
 			if context._K.Data.settings.commandBarRank > context.fromRank then
-				local role = context._K.Auth.getRoleFromRank(context._K.Data.settings.dashboardRank)
+				local role = context._K.Auth.getRoleFromRank(context._K.Data.settings.commandBarRank)
 				return `Command bar has been restricted to {role.name}+.`
 			end
 			task.defer(context._K.client.CommandBar.show)
@@ -1216,7 +1216,8 @@ return {
 			context._K.Notify({
 				From = "_K",
 				Text = `<b>Server Age:</b> {context._K.Util.Time.readable(
-					workspace:GetServerTimeNow() - context._K.script:GetAttribute("ServerStartTime")
+					workspace:GetServerTimeNow()
+						- (context._K.script:GetAttribute("ServerStartTime") or workspace:GetServerTimeNow())
 				)}`,
 			})
 		end,
@@ -1269,21 +1270,29 @@ return {
 				return env.fps
 			end
 			_K.Remote.ShowFPS.OnInvoke = onShowFPSInvoke
-			local frames, last = 0, tick()
+			local frames, last = 0, os.clock()
 			local _ = _K.Service.Run.Heartbeat:Connect(function()
 				frames += 1
-				local dt = tick() - last
+				local now = os.clock()
+				local dt = now - last
 				if dt >= 1 then
 					env.fps = frames / dt
-					frames, last = 0, tick()
+					frames, last = 0, now
 				end
 			end)
 			return env
 		end,
 		run = function(context, player: Player)
 			-- the target's client answers, it can error or return anything
-			local ok, fps = pcall(context.env.remote.Invoke, context.env.remote, player)
-			fps = if ok and type(fps) == "number" and fps == fps then math.clamp(fps, 0, 999) else 0
+			local fpsTasks = context._K.Util.Tasks.new()
+			fpsTasks:add(function()
+				return pcall(context.env.remote.Invoke, context.env.remote, player)
+			end)
+			fpsTasks:add(function()
+				task.wait(3)
+			end)
+			local _ranFps, ok, fps = fpsTasks:waitForFirst()
+			fps = if ok == true and type(fps) == "number" and fps == fps then math.clamp(fps, 0, 999) else 0
 			context._K.Remote.Notify:Fire(context.fromPlayer, {
 				Text = `<b>FPS:</b> {math.round(fps)}`,
 				From = player.UserId,

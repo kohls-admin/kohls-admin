@@ -189,8 +189,9 @@ return {
 			Lighting.FogStart = studs
 			local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 			if atmosphere then
-				atmosphere.Density = (64 / studs) ^ 0.25
-				atmosphere.Haze = math.max(2 ^ -32, 5 / studs ^ 0.1)
+				local distance = math.max(studs, 1)
+				atmosphere.Density = (64 / distance) ^ 0.25
+				atmosphere.Haze = math.max(2 ^ -32, 5 / distance ^ 0.1)
 			end
 		end,
 	},
@@ -210,8 +211,9 @@ return {
 			if not atmosphere then
 				return
 			end
-			atmosphere.Density = (64 / studs) ^ 0.25
-			atmosphere.Haze = math.max(2 ^ -32, 5 / studs ^ 0.1)
+			local distance = math.max(studs, 1)
+			atmosphere.Density = (64 / distance) ^ 0.25
+			atmosphere.Haze = math.max(2 ^ -32, 5 / distance ^ 0.1)
 		end,
 	},
 	{
@@ -315,7 +317,7 @@ return {
 			if context.args[1] then
 				context.args[1].redactLog = false
 			end
-			local hours, minutes, seconds = unpack(string.split(time, ":"))
+			local hours, minutes, seconds = table.unpack(string.split(time, ":"), 1, 3)
 			hours = math.clamp(tonumber(hours) or 0, 0, 23)
 			minutes = math.clamp(tonumber(minutes) or 0, 0, 59)
 			seconds = math.clamp(tonumber(seconds) or 0, 0, 59)
@@ -421,8 +423,8 @@ return {
 				end
 				return
 			end
-			local existing = context._K.Service.Lighting:FindFirstChildOfClass("Sky")
-			if not existing or existing.Name ~= "_KSky" then
+			local existing = context._K.Service.Lighting:FindFirstChild("_KSky")
+			if not (existing and existing:IsA("Sky")) then
 				existing = Instance.new("Sky")
 				existing.Name = "_KSky"
 			end

@@ -313,7 +313,7 @@ if Util.Service.Run:IsServer() then
 					end
 				end)
 			else
-				userEffects[match] = { Method = ugcEffect.Method, Params = { name } }
+				userEffects[match] = { Method = ugcEffect.Method, Params = table.pack(name) }
 			end
 		end
 	end
@@ -387,7 +387,7 @@ if Util.Service.Run:IsServer() then
 			VIP.effects[player.UserId] = userEffects
 		end
 
-		userEffects.Title = if title then { Method = Title.applyTitle, Params = { title, ... } } else nil
+		userEffects.Title = if title then { Method = Title.applyTitle, Params = table.pack(title, ...) } else nil
 
 		if player.Character then
 			Title.applyTitle(player.Character, title, ...)
@@ -449,7 +449,7 @@ if Util.Service.Run:IsServer() then
 		end
 
 		for _, effect in effects do
-			task.spawn(effect.Method, character, unpack(effect.Params))
+			task.spawn(effect.Method, character, table.unpack(effect.Params, 1, effect.Params.n or #effect.Params))
 		end
 	end
 

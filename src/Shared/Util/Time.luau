@@ -24,7 +24,7 @@ function Time.fromUnit(unit: string): number?
 	end
 	for _, list in Time.UNITS do
 		for i = 2, #list do
-			if string.find(list[i], unit) == 1 then
+			if string.find(list[i], unit, 1, true) == 1 then
 				-- match found, return duration in seconds
 				return list[1]
 			end
@@ -51,7 +51,7 @@ function Time.readable(seconds: number): string
 	local buffer = {}
 	for index = #Time.UNITS, 2, -1 do
 		local definition = Time.UNITS[index]
-		local unitDuration, unitName = unpack(definition)
+		local unitDuration, unitName = definition[1], definition[2]
 		local unitAmount = math.floor(seconds / unitDuration)
 		if unitAmount > 0 then
 			seconds = seconds % unitDuration

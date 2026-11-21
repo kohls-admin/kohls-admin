@@ -240,7 +240,7 @@ return {
 			}
 
 			local function removeCharacter(name: string)
-				local character = workspace:WaitForChild(name)
+				local character = workspace:WaitForChild(name, 10)
 				if not (character and character:FindFirstChildOfClass("Humanoid")) then
 					character = nil
 					for _, child in workspace:GetChildren() do
@@ -648,7 +648,7 @@ return {
 				if type(data) ~= "table" then
 					return
 				end
-				local from, commandString = unpack(data)
+				local from, commandString = table.unpack(data, 1, 2)
 				if from and commandString then
 					_K.Process.runCommands(_K, from, commandString, true, true)
 				end

@@ -97,14 +97,13 @@ return function(context)
 			end
 		end)
 
-		local toolData = table.create(#tools)
-		for i, tool in tools do
-			toolData[i] = { Name = tool.Name }
-		end
-
 		task.spawn(function()
 			if not _K.ready then
 				_K.Hook.init:Wait()
+			end
+			local toolData = table.create(#tools)
+			for i, tool in tools do
+				toolData[i] = { Name = tool.Name }
 			end
 			for _, player in _K.Service.Players:GetPlayers() do
 				if _K.Auth.hasCommand(player.UserId, "tools") then

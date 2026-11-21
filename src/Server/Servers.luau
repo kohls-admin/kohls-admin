@@ -99,7 +99,7 @@ if RunService:IsServer() then
 			return
 		end
 
-		local jobId, placeId, count, start, ttl = unpack(data)
+		local jobId, placeId, count, start, ttl = table.unpack(data, 1, 5)
 		if jobId == SERVER_ID then
 			return
 		end

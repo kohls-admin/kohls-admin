@@ -38,7 +38,7 @@ function Auth.banHandler(player)
 		end
 	end
 
-	local _name, reason, timeStamp = unpack(banInfo)
+	local _name, reason, timeStamp = table.unpack(banInfo, 1, 3)
 	local banMessage
 	if tonumber(timeStamp) then
 		if timeStamp > 0 then

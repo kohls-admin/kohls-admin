@@ -102,7 +102,7 @@ function Argument:validate()
 	end
 
 	if self.invalid then
-		return false, self.invalid.message
+		return false, self.invalid
 	end
 
 	self._K.Data.targetLimits[self.command.from] = 0
@@ -154,7 +154,11 @@ function Argument:parse()
 	end
 
 	if self.rawType.postParse then
-		_, self.parsedArgs = pcall(self.rawType.postParse, self.parsedArgs, self)
+		local ok, parsedArgs = pcall(self.rawType.postParse, self.parsedArgs, self)
+		if not ok then
+			return self:invalidate(self.rawArg, self.argPos, parsedArgs)
+		end
+		self.parsedArgs = parsedArgs
 	end
 
 	return true, if self.rawType.listable then self.parsedArgs else self.parsedArgs[1]

@@ -7,29 +7,34 @@ return function(_K)
 		if arg == "" then
 			return false, "Invalid role"
 		end
-		local feedback = {}
-		local players, valid = {}, false
+		local matchedRole
 		for roleId in _K.Data.roles do
-			if string.find(string.lower(roleId :: string), arg, 1, true) == 1 then
-				valid = true
-				for _, player in Players:GetPlayers() do
-					local userPermissions = _K.Data.members[tostring(player.UserId)]
-					if userPermissions and table.find(userPermissions.roles, roleId) then
-						local message
-						player, message = self._K.Auth.targetUserArgument(self, player.UserId, player)
-						if player then
-							table.insert(players, player)
-						elseif not table.find(feedback, message) then
-							table.insert(feedback, message)
-						end
-					end
-				end
+			local lowerId = string.lower(roleId :: string)
+			if lowerId == arg then
+				matchedRole = roleId
 				break
+			elseif string.find(lowerId, arg, 1, true) == 1 and (not matchedRole or roleId < matchedRole) then
+				matchedRole = roleId
 			end
 		end
 
-		if not valid then
+		if not matchedRole then
 			return false, "Invalid role"
+		end
+
+		local feedback = {}
+		local players = {}
+		for _, player in Players:GetPlayers() do
+			local userPermissions = _K.Data.members[tostring(player.UserId)]
+			if userPermissions and table.find(userPermissions.roles, matchedRole) then
+				local message
+				player, message = self._K.Auth.targetUserArgument(self, player.UserId, player)
+				if player then
+					table.insert(players, player)
+				elseif not table.find(feedback, message) then
+					table.insert(feedback, message)
+				end
+			end
 		end
 
 		return #players > 0 and players, #feedback > 0 and table.concat(feedback, "\n") or "No targetable player found"

@@ -296,7 +296,7 @@ else -- Client
 	local function flushQueue(remote: Remote)
 		if remote._fireQueue then
 			for _, args in remote._fireQueue do
-				(remote._remote :: RemoteEvent):FireServer(remote._id, unpack(args, 1, args.n))
+				(remote._remote :: RemoteEvent):FireServer(remote._id, table.unpack(args, 1, args.n))
 			end
 			remote._fireQueue = nil
 		end
@@ -306,11 +306,11 @@ else -- Client
 				local thread = args[1]
 				task.spawn(function()
 					local ok, result = pcall(function()
-						return table.pack(FUNCTION:InvokeServer(remote._id, unpack(args, 2, args.n)))
+						return table.pack(FUNCTION:InvokeServer(remote._id, table.unpack(args, 2, args.n)))
 					end)
 					if coroutine.status(thread) == "suspended" then
 						if ok then
-							task.spawn(thread, unpack(result, 1, result.n))
+							task.spawn(thread, table.unpack(result, 1, result.n))
 						else
 							warn("Error invoking remote function:", result)
 							task.spawn(thread)

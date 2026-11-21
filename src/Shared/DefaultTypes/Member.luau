@@ -15,7 +15,7 @@ local function parseMember(input: string, self: any): string?
 		if id == query or name == query then
 			return self._K.Auth.targetUserArgument(self, tonumber(id) :: number, id)
 		end
-		if not partial and string.find(name, query, 1, true) == 1 then
+		if string.find(name, query, 1, true) == 1 and (not partial or id < partial) then
 			partial = id
 		end
 	end
@@ -77,10 +77,10 @@ local typeMember = {
 			or (definition.shouldRequest and _K.Data.settings.commandRequests ~= false)
 
 		for id, member in _K.Data.members do
-			local memberRank = _K.Auth.getRank(id)
 			if id == fromString then
 				continue
 			end
+			local memberRank = _K.Auth.getRank(tonumber(id) :: number)
 			if from == _K.creatorId or not lowerRank or (fromString == id) or rank > memberRank then
 				local name = member.name or id
 				table.insert(names, { { name, id }, `{name} [{id}]` })

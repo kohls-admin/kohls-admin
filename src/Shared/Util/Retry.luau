@@ -13,9 +13,9 @@ local function Retry(callback: (...any) -> any | nil, attempts: number?, base: n
 	base = base or 2
 
 	for attempt = 1, attempts :: number do
-		local results = { pcall(callback, ...) }
+		local results = table.pack(pcall(callback, ...))
 		if results[1] or attempt == attempts then
-			return unpack(results)
+			return table.unpack(results, 1, results.n)
 		end
 		-- uncapped, endless retries (attempts = math.huge) would wait hours between tries during an outage
 		task.wait(math.min(base :: number ^ attempt, MAX_DELAY))
