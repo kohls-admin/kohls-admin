@@ -154,7 +154,7 @@ type node = any
 -- Node slots. Cache Line 0 (slots 1..4 = 64B) packs the 4 hot fields (VALUE, HEIGHT, STAMP, OBSERVERS):
 -- signal:   VALUE nil    CHANGED NOBS    SEEN                                            | observers from SIG_OBS0+1
 -- computed: VALUE HEIGHT STAMP OBSERVERS SEEN CHANGED FN NSRC NEXT CHILDREN              | (source, back) from SRC1
--- effect:   E_FN  INF    STAMP E_NSRC    E_CHILDREN false                                | (source, back) from E_SRC1
+-- effect:   E_FN  INF    STAMP E_NSRC    E_CHILDREN                                      | (source, back) from E_SRC1
 -- scope:    nil   SCOPE  INF   true      false false true false false CHILDREN
 local VALUE = 1
 local HEIGHT = 2 -- nil for signals, >= 1 for computeds, INF for effects, SCOPE for scopes, false for observer lists
@@ -175,7 +175,7 @@ local OBS1 = 3
 local E_FN = 1 -- nil once disposed (in VALUE's slot: an effect has no cached value)
 local E_NSRC = 4 -- in OBSERVERS's slot (>= E_SRC1, always truthy)
 local E_CHILDREN = 5
-local E_SRC1 = 7
+local E_SRC1 = 6
 
 local INF = math.huge
 local SCOPE = -1
@@ -214,8 +214,8 @@ local curIdx = 0
 local curNew: any = nil
 local DIVERGED = 2
 local DISPOSED_NSRC = 2 ^ 30
--- Run id for `SEEN` and `suspRun`. Runs start at `false`, and `track` or `untrack()` allocates an id on first use.
-local curRun: number | false = 0
+-- Run id for `SEEN` and `suspRun`. Runs start at `-1`, and `track` or `untrack()` allocates a positive id on first use.
+local curRun: number = -1
 local runId = 0
 
 local curOwner: any = nil
@@ -230,7 +230,7 @@ local evalFromUntrack = false
 local runningEffect: any = nil
 local OUTER_ACTIVE: any = {}
 local noEffect: any = nil
-type RunningFrame = { idx: number, newList: any, run: number | false, canCheck: boolean, written: boolean }
+type RunningFrame = { idx: number, newList: any, run: number, canCheck: boolean, written: boolean }
 local activeEffects: { [any]: RunningFrame } = {}
 local nestedRunning = 0
 
@@ -288,8 +288,8 @@ local function insert(node: any)
 	end
 end
 
-local function readThisRunFrom(r: any, idx: number, newList: any, run: number | false, s: any): boolean
-	if run ~= false and s[SEEN] == run then
+local function readThisRunFrom(r: any, idx: number, newList: any, run: number, s: any): boolean
+	if run > 0 and s[SEEN] == run then
 		return true
 	end
 	if idx == DIVERGED then
@@ -355,6 +355,8 @@ local function markOne(o: any)
 	end
 end
 
+local selfWritten: any = nil
+
 local function deferOuterEffect(e: any, s: any, ...: any)
 	local frame = activeEffects[e]
 	if frame.canCheck then
@@ -365,8 +367,6 @@ local function deferOuterEffect(e: any, s: any, ...: any)
 	end
 	markOne(e)
 end
-
-local selfWritten: any = nil
 
 local function deferSelf(e: any, s: any, ...: any)
 	if curNode == nil and not readThisRun(e, s) then
@@ -461,52 +461,109 @@ local function markSelf(node: any)
 end
 
 local CYCLE_ERR = "Flux detected a circular dependency between computeds"
-local MAX_HEIGHT = 4096
+local ITER_DEPTH = 128
+
 local raiseActive: { [any]: boolean } = {}
 
-@native
-local function raiseVisit(node: any, h: number): boolean
-	if h > MAX_HEIGHT then
-		return false
-	end
-	local obs = node[OBSERVERS]
-	if not obs then
-		node[HEIGHT] = h
-		if node[STAMP] <= LIVE_MAX_IDLE then
-			node[STAMP] = h + LIVE_BASE
-		end
-		return true
-	end
-	if raiseActive[node] then
-		return false
-	end
-	local oh = obs[HEIGHT]
-	if oh then
-		if oh > h then
+local function raiseIter(root: any, rootH: number, ...: any): boolean
+	local stNode: { any } = { root }
+	local stH: { number } = { rootH }
+	local stObs: { any } = { false }
+	local stIdx: { number } = { 0 }
+	local sp = 1
+	while sp > 0 do
+		local node, h, idx = stNode[sp], stH[sp], stIdx[sp]
+		if idx == 0 then
+			local obs = node[OBSERVERS]
+			if obs and raiseActive[node] then
+				for k = sp - 1, 1, -1 do
+					if stIdx[k] ~= 0 then
+						raiseActive[stNode[k]] = nil
+					end
+				end
+				return false
+			end
 			node[HEIGHT] = h
 			if node[STAMP] <= LIVE_MAX_IDLE then
 				node[STAMP] = h + LIVE_BASE
 			end
-			return true
+			if not obs then
+				sp -= 1
+				continue
+			end
+			local oh = obs[HEIGHT]
+			if oh then
+				if oh > h then
+					sp -= 1
+					continue
+				end
+				raiseActive[node] = true
+				stIdx[sp] = -1
+				sp += 1
+				stNode[sp], stH[sp], stObs[sp], stIdx[sp] = obs, h + 1, false, 0
+			else
+				raiseActive[node] = true
+				stObs[sp] = obs
+				stIdx[sp] = OBS1
+			end
+		elseif idx < 0 then
+			raiseActive[node] = nil
+			sp -= 1
+		else
+			local obs = stObs[sp]
+			local maxI = obs[1]
+			local pushed = false
+			while idx <= maxI do
+				local o = obs[idx]
+				idx += 1
+				if o[HEIGHT] <= h then
+					stIdx[sp] = idx
+					sp += 1
+					stNode[sp], stH[sp], stObs[sp], stIdx[sp] = o, h + 1, false, 0
+					pushed = true
+					break
+				end
+			end
+			if not pushed then
+				raiseActive[node] = nil
+				sp -= 1
+			end
 		end
-		raiseActive[node] = true
-		node[HEIGHT] = h
-		if node[STAMP] <= LIVE_MAX_IDLE then
-			node[STAMP] = h + LIVE_BASE
-		end
-		local ok = raiseVisit(obs, h + 1)
-		raiseActive[node] = nil
-		return ok
 	end
-	raiseActive[node] = true
+	return true
+end
+
+@native
+local function raiseVisit(node: any, h: number, depth: number): boolean
+	if depth >= ITER_DEPTH then
+		return raiseIter(node, h)
+	end
+	local obs = node[OBSERVERS]
+	if obs and raiseActive[node] then
+		return false
+	end
 	node[HEIGHT] = h
 	if node[STAMP] <= LIVE_MAX_IDLE then
 		node[STAMP] = h + LIVE_BASE
 	end
+	if not obs then
+		return true
+	end
+	local oh = obs[HEIGHT]
+	if oh then
+		if oh > h then
+			return true
+		end
+		raiseActive[node] = true
+		local ok = raiseVisit(obs, h + 1, depth + 1)
+		raiseActive[node] = nil
+		return ok
+	end
+	raiseActive[node] = true
 	for i = OBS1, obs[1] do
 		local o = obs[i]
 		if o[HEIGHT] <= h then
-			if not raiseVisit(o, h + 1) then
+			if not raiseVisit(o, h + 1, depth + 1) then
 				raiseActive[node] = nil
 				return false
 			end
@@ -515,7 +572,6 @@ local function raiseVisit(node: any, h: number): boolean
 	raiseActive[node] = nil
 	return true
 end
-
 local hookQueue: { any } = {}
 local hookHead = 1
 local hookTail = 0
@@ -560,14 +616,14 @@ local function flushHooks()
 		pNode, pEval, pRunning, pOwner, pSet, pCtx, pExtra, pSusp, pSuspRun, pChildren
 end
 
-local function endHooks()
+local function endHooks(...: any)
 	if hookDepth == 1 and hookTail >= hookHead then
 		flushHooks()
 	end
 	hookDepth -= 1
 end
 
-local function fireHook(n: any, _which: number)
+local function fireHook(n: any, _which: number, ...: any)
 	local h = n.hooks
 	if not h or (not h[1] and not h[2]) then
 		return
@@ -601,13 +657,13 @@ local oldTail: { any } = {}
 local tailBusy = false
 local freeNew: { any }? = {}
 
-local goLive: (any, any) -> boolean
-local goDead: (any) -> ()
+local goLive: (any, any, number) -> boolean
+local goDead: (any, number) -> ()
 
 local function rollbackSubRaise(s: any, list: any, n: number, ...: any): number
 	if not list then
 		s[OBSERVERS] = false
-		goDead(s)
+		goDead(s, 0)
 	elseif list[HEIGHT] then
 		s[OBSERVERS] = list
 	else
@@ -618,7 +674,7 @@ local function rollbackSubRaise(s: any, list: any, n: number, ...: any): number
 end
 
 @native
-local function subscribe(s: any, o: any): number
+local function subscribe(s: any, o: any, depth: number): number
 	local sh = s[HEIGHT]
 	if not sh then
 		local n0 = s[OBSERVERS]
@@ -642,7 +698,7 @@ local function subscribe(s: any, o: any): number
 		return 0
 	elseif not list then
 		n = OBS1
-		if not goLive(s, o) then
+		if not goLive(s, o, depth) then
 			return -1
 		end
 		sh = s[HEIGHT]
@@ -656,7 +712,7 @@ local function subscribe(s: any, o: any): number
 	end
 	if sh >= o[HEIGHT] then
 		if o[OBSERVERS] then
-			if not raiseVisit(o, sh + 1) then
+			if not raiseVisit(o, sh + 1, 0) then
 				return rollbackSubRaise(s, list, n)
 			end
 		else
@@ -690,7 +746,7 @@ local function unsubscribe(s: any, o: any, j: number)
 	local list = s[OBSERVERS]
 	if list == o then
 		s[OBSERVERS] = false
-		goDead(s)
+		goDead(s, 0)
 		return
 	elseif not list or list[HEIGHT] then
 		return
@@ -704,117 +760,263 @@ local function unsubscribe(s: any, o: any, j: number)
 	list[n] = nil
 	if n == OBS1 then
 		s[OBSERVERS] = false
-		goDead(s)
+		goDead(s, 0)
 	else
 		list[1] = n - 1
 	end
 end
 
-local function rollbackGoLive(node: any, i: number, hooked: boolean): boolean
-	for j = i - 2, SRC1, -2 do
-		unsubscribe(node[j], node, node[j + 1])
-		node[j + 1] = 0
+do
+	local function rollbackGoLive(node: any, i: number, hooked: boolean): boolean
+		for j = i - 2, SRC1, -2 do
+			unsubscribe(node[j], node, node[j + 1])
+			node[j + 1] = 0
+		end
+		node[OBSERVERS] = false
+		if hooked then
+			endHooks()
+		end
+		return false
 	end
-	node[OBSERVERS] = false
-	if hooked then
-		endHooks()
-	end
-	return false
-end
 
-@native
-function goLive(node: any, o: any): boolean
-	local hooked = hasHooks
-	if hooked then
-		hookDepth += 1
+	@native
+	local function finishGoLive(node: any, last: number, hooked: boolean)
+		local st = node[STAMP]
+		if st == epoch then
+			node[STAMP] = node[HEIGHT] + LIVE_BASE
+		elseif st ~= STALE and st ~= ERRORED then
+			local dirty = st == 0 or st == DEFERRED
+			if not dirty then
+				for i = SRC1, last, 2 do
+					local s = node[i]
+					local c = if s[HEIGHT] then s[CHANGED] else s[SIG_CHANGED]
+					if c == nil or c > st then
+						dirty = true
+						break
+					end
+				end
+			end
+			if dirty then
+				node[STAMP] = 0
+				epoch += 1
+				insert(node)
+			end
+		end
+		if hooked then
+			fireHook(node, 1)
+			endHooks()
+		end
 	end
-	node[OBSERVERS] = o
-	local last = node[NSRC] - 2
-	for i = SRC1, last, 2 do
-		local s = node[i]
-		if not s[HEIGHT] then
-			local n0 = s[OBSERVERS]
-			if n0 then
-				local n = n0 + 1
-				s[OBSERVERS] = n
-				s[n + SIG_OBS0] = node
-				node[i + 1] = n
-				if hooked and n == 1 then
-					fireHook(s, 1)
+
+	local function goLiveIter(rootNode: any, rootObs: any, ...: any): boolean
+		local stNode: { any } = { rootNode }
+		local stI: { number } = { SRC1 }
+		local stLast: { number } = { rootNode[NSRC] - 2 }
+		local stHooked: { boolean } = { hasHooks }
+		local sp = 1
+		if stHooked[1] then
+			hookDepth += 1
+		end
+		rootNode[OBSERVERS] = rootObs
+		while sp > 0 do
+			local node, i, last = stNode[sp], stI[sp], stLast[sp]
+			local pushed = false
+			while i <= last do
+				local s = node[i]
+				if not s[HEIGHT] then
+					local n0 = s[OBSERVERS]
+					if n0 then
+						local n = n0 + 1
+						s[OBSERVERS] = n
+						s[n + SIG_OBS0] = node
+						node[i + 1] = n
+						if stHooked[sp] and n == 1 then
+							fireHook(s, 1)
+						end
+					else
+						node[i + 1] = 0
+					end
+					i += 2
+				else
+					local list = s[OBSERVERS]
+					if list == nil then
+						node[i + 1] = 0
+						i += 2
+					elseif not list then
+						stI[sp] = i
+						sp += 1
+						local ch = hasHooks
+						if ch then
+							hookDepth += 1
+						end
+						s[OBSERVERS] = node
+						stNode[sp], stI[sp], stLast[sp], stHooked[sp] = s, SRC1, s[NSRC] - 2, ch
+						pushed = true
+						break
+					else
+						local res = subscribe(s, node, 0)
+						if res < 0 then
+							rollbackGoLive(node, i, stHooked[sp])
+							for k = sp - 1, 1, -1 do
+								rollbackGoLive(stNode[k], stI[k], stHooked[k])
+							end
+							return false
+						end
+						node[i + 1] = res
+						i += 2
+					end
+				end
+			end
+			if not pushed then
+				local hooked = stHooked[sp]
+				finishGoLive(node, last, hooked)
+				sp -= 1
+				if sp > 0 then
+					local p = stNode[sp]
+					local pi = stI[sp]
+					p[pi + 1] = OBS1
+					local sh = node[HEIGHT]
+					if sh >= p[HEIGHT] then
+						if not raiseVisit(p, sh + 1, 0) then
+							rollbackGoLive(p, pi + 2, stHooked[sp])
+							for k = sp - 1, 1, -1 do
+								rollbackGoLive(stNode[k], stI[k], stHooked[k])
+							end
+							return false
+						end
+					end
+					stI[sp] = pi + 2
+				end
+			end
+		end
+		return true
+	end
+
+	@native
+	function goLive(node: any, o: any, depth: number): boolean
+		if depth >= ITER_DEPTH then
+			return goLiveIter(node, o)
+		end
+		local hooked = hasHooks
+		if hooked then
+			hookDepth += 1
+		end
+		node[OBSERVERS] = o
+		local last = node[NSRC] - 2
+		for i = SRC1, last, 2 do
+			local s = node[i]
+			if not s[HEIGHT] then
+				local n0 = s[OBSERVERS]
+				if n0 then
+					local n = n0 + 1
+					s[OBSERVERS] = n
+					s[n + SIG_OBS0] = node
+					node[i + 1] = n
+					if hooked and n == 1 then
+						fireHook(s, 1)
+					end
+				else
+					node[i + 1] = 0
 				end
 			else
-				node[i + 1] = 0
-			end
-		else
-			local res = subscribe(s, node)
-			if res < 0 then
-				return rollbackGoLive(node, i, hooked)
-			end
-			node[i + 1] = res
-		end
-	end
-	node[OBSERVERS] = o
-	local st = node[STAMP]
-	if st == epoch then
-		node[STAMP] = node[HEIGHT] + LIVE_BASE
-	elseif st ~= STALE and st ~= ERRORED then
-		local dirty = st == 0 or st == DEFERRED
-		if not dirty then
-			for i = SRC1, last, 2 do
-				local s = node[i]
-				local c = if s[HEIGHT] then s[CHANGED] else s[SIG_CHANGED]
-				if c == nil or c > st then
-					dirty = true
-					break
+				local res = subscribe(s, node, depth + 1)
+				if res < 0 then
+					return rollbackGoLive(node, i, hooked)
 				end
+				node[i + 1] = res
 			end
 		end
-		if dirty then
-			node[STAMP] = 0
-			epoch += 1
-			insert(node)
-		end
+		node[OBSERVERS] = o
+		finishGoLive(node, last, hooked)
+		return true
 	end
-	if hooked then
-		fireHook(node, 1)
-		endHooks()
-	end
-	return true
 end
 
-@native
-function goDead(node: any)
-	local hooked = hasHooks
-	if hooked then
-		hookDepth += 1
-	end
-	for i = node[NSRC] - 2, SRC1, -2 do
-		local s, j = node[i], node[i + 1]
-		local obs = s[OBSERVERS]
-		if obs == j and not hooked then
-			s[j + SIG_OBS0] = nil
-			s[OBSERVERS] = j - 1
-		elseif obs == node then
-			s[OBSERVERS] = false
-			goDead(s)
-		else
-			unsubscribe(s, node, j)
+do
+	@native
+	local function finishGoDead(node: any, hooked: boolean)
+		local st = node[STAMP]
+		if st <= liveMax or (st > 0 and heapMin == INF) then
+			node[STAMP] = epoch
+		elseif st <= LIVE_MAX_IDLE then
+			epoch += 1
+			node[STAMP] = epoch - 1
+		elseif st == DEFERRED then
+			node[STAMP] = 0
+		elseif st == ERRORED then
+			node[STAMP] = STALE
+		end
+		if hooked then
+			fireHook(node, 2)
+			endHooks()
 		end
 	end
-	local st = node[STAMP]
-	if st <= liveMax or (st > 0 and heapMin == INF) then
-		node[STAMP] = epoch
-	elseif st <= LIVE_MAX_IDLE then
-		epoch += 1
-		node[STAMP] = epoch - 1
-	elseif st == DEFERRED then
-		node[STAMP] = 0
-	elseif st == ERRORED then
-		node[STAMP] = STALE
+
+	local function goDeadIter(root: any, ...: any)
+		local stNode: { any } = { root }
+		local stI: { number } = { root[NSRC] - 2 }
+		local stHooked: { boolean } = { hasHooks }
+		local sp = 1
+		if stHooked[1] then
+			hookDepth += 1
+		end
+		while sp > 0 do
+			local node, i, hooked = stNode[sp], stI[sp], stHooked[sp]
+			local pushed = false
+			while i >= SRC1 do
+				local s, j = node[i], node[i + 1]
+				local obs = s[OBSERVERS]
+				if obs == j and not hooked then
+					s[j + SIG_OBS0] = nil
+					s[OBSERVERS] = j - 1
+					i -= 2
+				elseif obs == node then
+					s[OBSERVERS] = false
+					stI[sp] = i - 2
+					sp += 1
+					local ch = hasHooks
+					if ch then
+						hookDepth += 1
+					end
+					stNode[sp], stI[sp], stHooked[sp] = s, s[NSRC] - 2, ch
+					pushed = true
+					break
+				else
+					unsubscribe(s, node, j)
+					i -= 2
+				end
+			end
+			if not pushed then
+				finishGoDead(node, hooked)
+				sp -= 1
+			end
+		end
 	end
-	if hooked then
-		fireHook(node, 2)
-		endHooks()
+
+	@native
+	function goDead(node: any, depth: number)
+		if depth >= ITER_DEPTH then
+			goDeadIter(node)
+			return
+		end
+		local hooked = hasHooks
+		if hooked then
+			hookDepth += 1
+		end
+		for i = node[NSRC] - 2, SRC1, -2 do
+			local s, j = node[i], node[i + 1]
+			local obs = s[OBSERVERS]
+			if obs == j and not hooked then
+				s[j + SIG_OBS0] = nil
+				s[OBSERVERS] = j - 1
+			elseif obs == node then
+				s[OBSERVERS] = false
+				goDead(s, depth + 1)
+			else
+				unsubscribe(s, node, j)
+			end
+		end
+		finishGoDead(node, hooked)
 	end
 end
 
@@ -836,6 +1038,7 @@ local function rollbackReconcileAdd(node: any, nslot: number, i: number, idx: nu
 		node[c] = nil
 	end
 	node[nslot] = i
+	curIdx = i
 	if hooked then
 		endHooks()
 	end
@@ -859,7 +1062,7 @@ local function rollbackReconcileTail(
 	for c = i + 1, nNew do
 		newList[c] = nil
 	end
-	freeNew, node[nslot] = newList, k
+	freeNew, node[nslot], curIdx, curNew = newList, k, k, nil
 	for c = k, last - 1 do
 		node[c] = nil
 	end
@@ -881,7 +1084,7 @@ local function reconcile(node: any, nslot: number, last: number, idx: number, ne
 		if idx > last then
 			if live then
 				for i = last, idx - 2, 2 do
-					local back = subscribe(node[i], node)
+					local back = subscribe(node[i], node, 0)
 					if back < 0 then
 						rollbackReconcileAdd(node, nslot, i, idx, hooked)
 					end
@@ -923,7 +1126,7 @@ local function reconcile(node: any, nslot: number, last: number, idx: number, ne
 	if nOld == 2 and nNew == 3 then
 		local oldS, oldBack, s = node[idx], node[idx + 1], newList[3]
 		newList[3], freeNew = nil, newList
-		local back = subscribe(s, node)
+		local back = subscribe(s, node, 0)
 		if back < 0 then
 			if hooked then
 				endHooks()
@@ -959,7 +1162,7 @@ local function reconcile(node: any, nslot: number, last: number, idx: number, ne
 				end
 			end
 			if back == 0 then
-				local res = subscribe(s, node)
+				local res = subscribe(s, node, 0)
 				if res < 0 then
 					rollbackReconcileTail(node, nslot, k, last, tail, nOld, wasBusy, newList, i, nNew, hooked)
 				end
@@ -983,58 +1186,64 @@ local function reconcile(node: any, nslot: number, last: number, idx: number, ne
 	end
 end
 
-local TOMB = {}
+local removeSource: (o: any, src: any) -> ()
+do
+	local TOMB = {}
 
-@native
-local function removeSource(o: any, src: any)
-	local base, nslot = SRC1, NSRC
-	if o[HEIGHT] == INF then
-		base, nslot = E_SRC1, E_NSRC
-	end
-	for i = base, o[nslot] - 2, 2 do
-		if o[i] == src then
-			o[i] = TOMB
-			return
+	@native
+	function removeSource(o: any, src: any)
+		local base, nslot = SRC1, NSRC
+		if o[HEIGHT] == INF then
+			base, nslot = E_SRC1, E_NSRC
+		end
+		for i = base, o[nslot] - 2, 2 do
+			if o[i] == src then
+				o[i] = TOMB
+				return
+			end
 		end
 	end
 end
 
-local callbackIndex = 0
+local runProtected: (callbacks: { any }, oldValue: any, destroyed: boolean, kind: string) -> ()
+do
+	local callbackIndex = 0
 
-local function runCallbacks(callbacks: { any }, from: number, oldValue: any, destroyed: boolean)
-	for i = from, #callbacks do
-		callbackIndex = i
-		local callback = callbacks[i]
-		if type(callback) == "function" then
-			(callback :: (any, boolean) -> ())(oldValue, destroyed)
-		else
-			clean(callback)
+	local function runCallbacks(callbacks: { any }, from: number, oldValue: any, destroyed: boolean)
+		for i = from, #callbacks do
+			callbackIndex = i
+			local callback = callbacks[i]
+			if type(callback) == "function" then
+				(callback :: (any, boolean) -> ())(oldValue, destroyed)
+			else
+				clean(callback)
+			end
 		end
 	end
-end
 
-local function runProtected(callbacks: { any }, oldValue: any, destroyed: boolean, kind: string)
-	local pNode, pSusp, pOwner, pSet, pIndex = curNode, susp, curOwner, ownerSet, callbackIndex
-	local pSuspRun = suspRun
-	curNode, susp, curChildren, curOwner, ownerSet = nil, nil, nil, nil, false
-	local from = 1
-	while true do
-		local ok, err = (xpcall :: (...any) -> (boolean, any))(
-			runCallbacks,
-			traceback,
-			callbacks,
-			from,
-			oldValue,
-			destroyed
-		)
-		if ok then
-			break
+	function runProtected(callbacks: { any }, oldValue: any, destroyed: boolean, kind: string)
+		local pNode, pSusp, pOwner, pSet, pIndex = curNode, susp, curOwner, ownerSet, callbackIndex
+		local pSuspRun = suspRun
+		curNode, susp, curChildren, curOwner, ownerSet = nil, nil, nil, nil, false
+		local from = 1
+		while true do
+			local ok, err = (xpcall :: (...any) -> (boolean, any))(
+				runCallbacks,
+				traceback,
+				callbacks,
+				from,
+				oldValue,
+				destroyed
+			)
+			if ok then
+				break
+			end
+			warn(`[Flux] {kind} error:\n{err}`)
+			from = callbackIndex + 1
 		end
-		warn(`[Flux] {kind} error:\n{err}`)
-		from = callbackIndex + 1
+		curNode, susp, curOwner, ownerSet, callbackIndex, curChildren = pNode, pSusp, pOwner, pSet, pIndex, nil
+		suspRun = pSuspRun
 	end
-	curNode, susp, curOwner, ownerSet, callbackIndex, curChildren = pNode, pSusp, pOwner, pSet, pIndex, nil
-	suspRun = pSuspRun
 end
 
 local disposeOne: (any) -> ()
@@ -1047,10 +1256,49 @@ local function unlinkSource(s: any, node: any, j: number)
 		s[OBSERVERS] = j - 1
 	elseif obs == node then
 		s[OBSERVERS] = false
-		goDead(s)
+		goDead(s, 0)
 	else
 		unsubscribe(s, node, j)
 	end
+end
+
+@native
+local function clearCompSrcs(s: any, snsrc: number, ...: any)
+	for si = snsrc - 2, SRC1, -2 do
+		unlinkSource(s[si], s, s[si + 1])
+		s[si], s[si + 1] = nil, nil
+	end
+end
+
+@native
+local function disposeChained(s: any)
+	local snsrc = s[NSRC]
+	if snsrc == SRC1 + 2 then
+		unlinkSource(s[SRC1], s, s[SRC1 + 1])
+		s[SRC1], s[SRC1 + 1] = nil, nil
+	elseif snsrc > SRC1 then
+		clearCompSrcs(s, snsrc)
+	end
+	s[FN] = nil
+	s[NSRC] = DISPOSED_NSRC
+	s[STAMP] = LIVE_MAX_IDLE
+	s[VALUE] = nil
+	s[OBSERVERS] = nil
+end
+
+@native
+local function disposeMultiEffect(c: any, k: number, node: any, nsrc: number, ...: any): number
+	for i = nsrc - 2, E_SRC1, -2 do
+		local s = node[i]
+		if s[OBSERVERS] == node and c[k - 1] == s and not s[CHILDREN] and s[FN] then
+			disposeChained(s)
+			k -= 1
+		else
+			unlinkSource(s, node, node[i + 1])
+		end
+		node[i], node[i + 1] = nil, nil
+	end
+	return k
 end
 
 @native
@@ -1083,13 +1331,16 @@ local function disposeChildren(owner: any, slot: number, value: any, destroyed: 
 				if node[E_CHILDREN] then
 					disposeChildren(node, E_CHILDREN, nil, true)
 				end
-				for i = node[E_NSRC] - 2, E_SRC1, -2 do
-					local s, j = node[i], node[i + 1]
-					local obs = s[OBSERVERS]
-					if obs == node and c[k - 1] == s and not s[CHILDREN] and s[FN] then
-						for si = s[NSRC] - 2, SRC1, -2 do
-							unlinkSource(s[si], s, s[si + 1])
-							s[si], s[si + 1] = nil, nil
+				local nsrc = node[E_NSRC]
+				if nsrc == E_SRC1 + 2 then
+					local s = node[E_SRC1]
+					if s[OBSERVERS] == node and c[k - 1] == s and not s[CHILDREN] and s[FN] then
+						local snsrc = s[NSRC]
+						if snsrc == SRC1 + 2 then
+							unlinkSource(s[SRC1], s, s[SRC1 + 1])
+							s[SRC1], s[SRC1 + 1] = nil, nil
+						elseif snsrc > SRC1 then
+							clearCompSrcs(s, snsrc)
 						end
 						s[FN] = nil
 						s[NSRC] = DISPOSED_NSRC
@@ -1098,9 +1349,11 @@ local function disposeChildren(owner: any, slot: number, value: any, destroyed: 
 						s[OBSERVERS] = nil
 						k -= 1
 					else
-						unlinkSource(s, node, j)
+						unlinkSource(s, node, node[E_SRC1 + 1])
 					end
-					node[i], node[i + 1] = nil, nil
+					node[E_SRC1], node[E_SRC1 + 1] = nil, nil
+				elseif nsrc > E_SRC1 then
+					k = disposeMultiEffect(c, k, node, nsrc)
 				end
 				node[E_NSRC] = DISPOSED_NSRC
 			else
@@ -1380,7 +1633,7 @@ local function runComputed(node: any)
 		susp, ownerSet = nil, false
 	end
 	evalNode = node
-	curRun = false
+	curRun = -1
 	curNode, curIdx, curNew, curChildren = node, SRC1, nil, nil
 	local new = node[FN](node[VALUE])
 	local idx, newList = curIdx, curNew
@@ -1426,70 +1679,206 @@ local function runComputed(node: any)
 	end
 end
 
-@native
-local function settle(node: any)
-	for i = SRC1, node[NSRC] - 2, 2 do
-		local s = node[i]
-		local h = s[HEIGHT]
-		if h and h >= heapMin then
-			local st = s[STAMP]
-			if st > liveMax and st ~= epoch and st ~= STALE and st ~= ERRORED then
-				local pNode = curNode
-				curNode = nil
-				settle(s)
-				curNode = pNode
+local refresh: (any, number?) -> ()
+
+local settle: (node: any, depth: number?) -> ()
+do
+	local function settleIter(root: any, ...: any)
+		local pNode = curNode
+		curNode = nil
+		local stNode: { any } = { root }
+		local stI: { number } = { SRC1 }
+		local stLast: { number } = { root[NSRC] - 2 }
+		local sp = 1
+		while sp > 0 do
+			local node, i, last = stNode[sp], stI[sp], stLast[sp]
+			local pushed = false
+			while i <= last do
+				local s = node[i]
+				i += 2
+				local h = s[HEIGHT]
+				if h and h >= heapMin then
+					local st = s[STAMP]
+					if st > liveMax and st ~= epoch and st ~= STALE and st ~= ERRORED then
+						stI[sp] = i
+						sp += 1
+						stNode[sp], stI[sp], stLast[sp] = s, SRC1, s[NSRC] - 2
+						pushed = true
+						break
+					end
+				end
+			end
+			if not pushed then
+				sp -= 1
+				local st = node[STAMP]
+				if st <= 0 and st >= STALE then
+					runComputed(node)
+				elseif st ~= ERRORED then
+					local h = node[HEIGHT]
+					node[STAMP] = if h <= heapMin then h + LIVE_BASE else epoch
+				end
 			end
 		end
+		curNode = pNode
 	end
-	local st = node[STAMP]
-	if st <= 0 and st >= STALE then
-		runComputed(node)
-	elseif st ~= ERRORED then
-		local h = node[HEIGHT]
-		node[STAMP] = if h <= heapMin then h + LIVE_BASE else epoch
-	end
-end
 
-local refresh: (any) -> ()
-
-@native
-local function pullDead(node: any)
-	local stamp = node[STAMP]
-	local dirty = stamp <= 0
-	if not dirty then
+	@native
+	function settle(node: any, depth: number?)
+		local d = depth or 0
+		if d >= ITER_DEPTH then
+			settleIter(node)
+			return
+		end
 		for i = SRC1, node[NSRC] - 2, 2 do
 			local s = node[i]
-			local st = s[STAMP]
-			local sh = s[HEIGHT]
-			if st == STALE then
-				local pNode = curNode
-				curNode = nil
-				refresh(s)
-				curNode = pNode
-				dirty = true
-				break
-			elseif sh and st > liveMax and st ~= epoch and st ~= ERRORED then
-				local pNode = curNode
-				curNode = nil
-				refresh(s)
-				curNode = pNode
-			end
-			local c = if sh then s[CHANGED] else st
-			if c == nil or c > stamp then
-				dirty = true
-				break
+			local h = s[HEIGHT]
+			if h and h >= heapMin then
+				local st = s[STAMP]
+				if st > liveMax and st ~= epoch and st ~= STALE and st ~= ERRORED then
+					local pNode = curNode
+					curNode = nil
+					settle(s, d + 1)
+					curNode = pNode
+				end
 			end
 		end
+		local st = node[STAMP]
+		if st <= 0 and st >= STALE then
+			runComputed(node)
+		elseif st ~= ERRORED then
+			local h = node[HEIGHT]
+			node[STAMP] = if h <= heapMin then h + LIVE_BASE else epoch
+		end
 	end
-	if dirty then
-		runComputed(node)
-	else
-		node[STAMP] = epoch
+end
+
+local pullDead: (node: any, depth: number?) -> ()
+do
+	local function pullDeadIter(root: any, ...: any)
+		local pNode = curNode
+		curNode = nil
+		local stNode: { any } = { root }
+		local stI: { number } = { SRC1 }
+		local stDirty: { boolean } = { root[STAMP] <= 0 }
+		local stWaiting: { boolean } = { false }
+		local sp = 1
+		while sp > 0 do
+			local node = stNode[sp]
+			if stDirty[sp] then
+				sp -= 1
+				runComputed(node)
+				continue
+			end
+			local i = stI[sp]
+			local last = node[NSRC] - 2
+			if stWaiting[sp] then
+				stWaiting[sp] = false
+				local s = node[i]
+				local c = s[CHANGED]
+				if c == nil or c > node[STAMP] then
+					stDirty[sp] = true
+					continue
+				end
+				i += 2
+			end
+			local stamp = node[STAMP]
+			local dirty = false
+			local pushed = false
+			while i <= last do
+				local s = node[i]
+				local st = s[STAMP]
+				local sh = s[HEIGHT]
+				if st == STALE then
+					if s[OBSERVERS] then
+						refresh(s, 0)
+						dirty = true
+						break
+					elseif s[FN] then
+						stDirty[sp] = true
+						stI[sp] = i
+						sp += 1
+						stNode[sp], stI[sp], stDirty[sp], stWaiting[sp] = s, SRC1, s[STAMP] <= 0, false
+						pushed = true
+						break
+					else
+						dirty = true
+						break
+					end
+				elseif sh and st > liveMax and st ~= epoch and st ~= ERRORED then
+					if s[OBSERVERS] then
+						refresh(s, 0)
+					elseif s[FN] then
+						stI[sp] = i
+						stWaiting[sp] = true
+						sp += 1
+						stNode[sp], stI[sp], stDirty[sp], stWaiting[sp] = s, SRC1, s[STAMP] <= 0, false
+						pushed = true
+						break
+					end
+				end
+				local c = if sh then s[CHANGED] else st
+				if c == nil or c > stamp then
+					dirty = true
+					break
+				end
+				i += 2
+			end
+			if not pushed then
+				sp -= 1
+				if dirty then
+					runComputed(node)
+				else
+					node[STAMP] = epoch
+				end
+			end
+		end
+		curNode = pNode
+	end
+
+	@native
+	function pullDead(node: any, depth: number?)
+		local d = depth or 0
+		if d >= ITER_DEPTH then
+			pullDeadIter(node)
+			return
+		end
+		local stamp = node[STAMP]
+		local dirty = stamp <= 0
+		if not dirty then
+			for i = SRC1, node[NSRC] - 2, 2 do
+				local s = node[i]
+				local st = s[STAMP]
+				local sh = s[HEIGHT]
+				if st == STALE then
+					local pNode = curNode
+					curNode = nil
+					refresh(s, d + 1)
+					curNode = pNode
+					dirty = true
+					break
+				elseif sh and st > liveMax and st ~= epoch and st ~= ERRORED then
+					local pNode = curNode
+					curNode = nil
+					refresh(s, d + 1)
+					curNode = pNode
+				end
+				local c = if sh then s[CHANGED] else st
+				if c == nil or c > stamp then
+					dirty = true
+					break
+				end
+			end
+		end
+		if dirty then
+			runComputed(node)
+		else
+			node[STAMP] = epoch
+		end
 	end
 end
 
 @native
-function refresh(node: any)
+function refresh(node: any, depth: number?)
 	if node[OBSERVERS] then
 		local st = node[STAMP]
 		if st == DEFERRED then
@@ -1498,12 +1887,12 @@ function refresh(node: any)
 			end
 			runComputed(node)
 		elseif st >= ERRORED or node[HEIGHT] > heapMin then
-			settle(node)
+			settle(node, depth)
 		else
 			node[STAMP] = node[HEIGHT] + LIVE_BASE
 		end
 	elseif node[FN] then
-		pullDead(node)
+		pullDead(node, depth)
 	end
 end
 
@@ -1521,7 +1910,7 @@ local function runComputedProtected(node: any)
 		susp, ownerSet = nil, false
 	end
 	evalNode = node
-	curRun = false
+	curRun = -1
 	curNode, curIdx, curNew, curChildren = node, SRC1, nil, nil
 	local ok, new = pcall(node[FN], node[VALUE])
 	local idx, newList = curIdx, curNew
@@ -1684,7 +2073,7 @@ local function runaway(e: any, ran: string)
 	disposeOne(e)
 end
 
-local function requeue(e: any)
+local function requeue(e: any, ...: any)
 	local n = (reruns[e] or 1) + 1
 	if n > RERUN_LIMIT then
 		runaway(e, `ran {RERUN_LIMIT} times`)
@@ -1731,7 +2120,7 @@ local function runEffectNow(e: any)
 		noEffect = OUTER_ACTIVE
 	end
 	runningEffect, selfWritten = e, nil
-	curNode, curIdx, curNew, curRun, curChildren = e, E_SRC1, nil, false, nil
+	curNode, curIdx, curNew, curRun, curChildren = e, E_SRC1, nil, -1, nil
 	local okFn, fnErr = pcall(e[E_FN])
 	runningEffect = pRunning
 	if outerFrame ~= nil then
@@ -1849,14 +2238,14 @@ local function stabilize()
 								end
 							end
 							node[STAMP] = lMax
-							curRun = false
+							curRun = -1
 							curNode, curIdx = node, SRC1
 							local old = node[VALUE]
 							local new = node[FN](old)
 							local idx = curIdx
 							local last = node[NSRC]
-							if idx ~= last or curNode ~= node then
-								if curNode ~= node then
+							if idx ~= last or not curNode then
+								if not curNode then
 									curNode = node
 									if susp or evalFromUntrack then
 										susp, evalNode, evalFromUntrack = nil, nil, false
@@ -1933,15 +2322,17 @@ local function stabilize()
 											if o[STAMP] ~= 0 then
 												o[STAMP] = 0
 												local oHeight = o[HEIGHT]
-												if oHeight == INF then
+												if oHeight ~= INF then
+													if not o[NEXT] then
+														o[NEXT] = hp[oHeight] or true
+														hp[oHeight] = o
+														if oHeight > hMax then
+															hMax = oHeight
+														end
+													end
+												else
 													qt += 1
 													q[qt] = o
-												elseif not o[NEXT] then
-													o[NEXT] = hp[oHeight] or true
-													hp[oHeight] = o
-													if oHeight > hMax then
-														hMax = oHeight
-													end
 												end
 											end
 										end
@@ -1985,7 +2376,7 @@ end
 
 local flush: () -> ()
 do
-	local function guard(tail: number)
+	local function guard(tail: number, ...: any)
 		for i = math.max(queueHead, counted + 1), tail do
 			local e = queue[i]
 			if e[STAMP] == 0 and e[E_FN] then
@@ -2003,7 +2394,7 @@ do
 
 	@native
 	local function reconcileEffect(e: any, idx: number, last: number)
-		local untracked = curNode ~= e
+		local untracked = not curNode
 		curNode, runningEffect = nil, noEffect
 		if untracked then
 			susp = nil
@@ -2022,11 +2413,12 @@ do
 			return
 		end
 		local newList = curNew
-		curIdx, curNew = last, nil
+		curIdx, curNew, evalNode = last, nil, e
 		if newList then
 			idx = newList[1]
 		end
 		reconcile(e, E_NSRC, last, idx, newList, true)
+		evalNode = nil
 		if not e[E_FN] then
 			reap(e)
 		end
@@ -2060,18 +2452,18 @@ do
 							disposeChildren(e, E_CHILDREN, nil, false)
 						end
 						e[STAMP] = INF
-						curRun = false
+						curRun = -1
 						runningEffect, curNode, curIdx = e, e, E_SRC1
 						fn()
 						local idx = curIdx
-						if selfWritten == e then
+						if selfWritten and selfWritten == e then
 							selfWritten = nil
 							requeue(e)
 						end
 						local last = e[E_NSRC]
-						if idx ~= last or curNode ~= e then
-							if idx > last and curNode == e and e[E_FN] then
-								curNode, runningEffect = nil, noEffect
+						if idx ~= last or not curNode then
+							if idx > last and curNode and e[E_FN] then
+								curNode, runningEffect, evalNode, curIdx = nil, noEffect, e, last
 								local hooked = hasHooks
 								if hooked then
 									hookDepth += 1
@@ -2092,7 +2484,7 @@ do
 											e[j + 1] = 0
 										end
 									else
-										local back = subscribe(s, e)
+										local back = subscribe(s, e, 0)
 										if back < 0 then
 											rollbackReconcileAdd(e, E_NSRC, j, idx, hooked)
 										end
@@ -2100,6 +2492,7 @@ do
 									end
 								end
 								e[E_NSRC] = idx
+								evalNode = nil
 								if hooked then
 									endHooks()
 								end
@@ -2167,7 +2560,7 @@ do
 		rawError = nil
 	end
 
-	local function clearRerunState()
+	local function clearRerunState(...: any)
 		table.clear(reruns)
 		table.clear(cycles)
 		anyReruns = false
@@ -2313,20 +2706,7 @@ end
 local stampedRun, stampedTo = 0, 0
 
 @native
-local function track(node: any)
-	local r = curNode
-	if node[OBSERVERS] == nil or node == r then
-		return
-	end
-	local run: number
-	local cur = curRun
-	if cur then
-		run = cur
-	else
-		run = runId + 1
-		runId, curRun = run, run
-	end
-	local new = curNew
+local function trackSlow(node: any, r: any, run: number, new: any, idx: number, ...: any)
 	if new then
 		if stampedRun ~= run then
 			stampedRun = run
@@ -2347,8 +2727,6 @@ local function track(node: any)
 		new[n] = node
 		return
 	end
-	local idx = curIdx
-	local old = r[idx]
 	local st = stampedTo
 	if stampedRun ~= run then
 		stampedRun = run
@@ -2360,34 +2738,66 @@ local function track(node: any)
 		end
 		if node[SEEN] == run then
 			stampedTo = idx
-			if old == nil then
-				r[idx] = false
-				r[idx] = nil
-			end
 			return
 		end
 	end
 	node[SEEN] = run
-	if old == nil then
+	stampedTo = idx
+	local f = freeNew
+	if f then
+		freeNew = nil
+		f[1] = idx
+		f[2] = 3
+		f[3] = node
+		curNew = f
+	else
+		curNew = { idx, 3, node }
+	end
+	curIdx = DIVERGED
+end
+
+@native
+local function track(node: any)
+	local r = curNode
+	if node[OBSERVERS] == nil or node == r then
+		return
+	end
+	local run: number
+	local cur = curRun
+	if cur > 0 then
+		run = cur
+	else
+		run = runId + 1
+		runId, curRun = run, run
+	end
+	local new = curNew
+	local idx = curIdx
+	if not new and r[idx] == nil then
+		local st = stampedTo
+		if stampedRun ~= run then
+			stampedRun = run
+			st = if idx < SRC1 or r[HEIGHT] == INF then E_SRC1 else SRC1
+		end
+		if st < idx then
+			for i = st, idx - 2, 2 do
+				r[i][SEEN] = run
+			end
+			if node[SEEN] == run then
+				stampedTo = idx
+				r[idx] = false
+				r[idx] = nil
+				return
+			end
+		end
+		node[SEEN] = run
 		r[idx] = node
 		r[idx + 1] = 0
 		local nextIdx = idx + 2
 		curIdx = nextIdx
 		stampedTo = nextIdx
-	else
-		stampedTo = idx
-		local f = freeNew
-		if f then
-			freeNew = nil
-			f[1] = idx
-			f[2] = 3
-			f[3] = node
-			curNew = f
-		else
-			curNew = { idx, 3, node }
-		end
-		curIdx = DIVERGED
+		return
 	end
+	trackSlow(node, r, run, new, idx)
 end
 
 @native
@@ -2444,8 +2854,10 @@ local function getMemo(node: any): any
 		local i = curIdx
 		if r[i] == node then
 			curIdx = i + 2
-			local st = node[STAMP]
-			if st > liveMax and st ~= epoch then
+			if node[STAMP] <= liveMax then
+				return node[VALUE]
+			end
+			if node[STAMP] ~= epoch then
 				pull(node)
 			end
 			return node[VALUE]
@@ -2453,8 +2865,10 @@ local function getMemo(node: any): any
 			track(node)
 		end
 	end
-	local st = node[STAMP]
-	if st > liveMax and st ~= epoch then
+	if node[STAMP] <= liveMax then
+		return node[VALUE]
+	end
+	if node[STAMP] ~= epoch then
 		pull(node)
 	end
 	return node[VALUE]
@@ -2502,6 +2916,25 @@ local function writeComputed(node: any, value: any, force: boolean?)
 end
 
 @native
+local function setSignalSlow(node: any, n: number, r: any, ...: any)
+	if n > 0 then
+		if n == 1 then
+			local o = node[SIG_OBS1]
+			if o[STAMP] ~= 0 and o ~= r then
+				if runningEffect ~= nil then
+					markOrDefer(o, node, runningEffect)
+				else
+					markOne(o)
+				end
+			end
+		else
+			markObservers(node, n)
+		end
+	end
+	markSelf(node)
+end
+
+@native
 local function setSignal(node: any, value: any, force: boolean?): any
 	if not hasSigEquals then
 		if node[VALUE] == value and not force then
@@ -2522,82 +2955,75 @@ local function setSignal(node: any, value: any, force: boolean?): any
 	epoch = ep
 	node[SIG_CHANGED] = ep
 	local r = curNode
-	if n > 0 then
-		if n == 1 then
-			local o = node[SIG_OBS1]
-			if o[STAMP] ~= 0 and o ~= r then
-				local h = o[HEIGHT]
-				if h == INF then
-					local re = runningEffect
-					if re then
-						markOrDefer(o, node, re)
-					else
-						o[STAMP] = 0
-						local qt = queueTail + 1
-						queueTail = qt
-						queue[qt] = o
-					end
-				else
-					o[STAMP] = 0
-					if not o[NEXT] then
-						local hp = heap
-						o[NEXT] = hp[h] or true
-						hp[h] = o
-						if h < heapMin then
-							heapMin = h
-							liveMax = h + LIVE_BASE
-						end
-						if h > heapMax then
-							heapMax = h
-						end
-					end
-				end
-			end
-		elseif r == nil and runningEffect == nil then
-			local hp = heap
-			local q = queue
-			local qt = queueTail
-			local hMin = heapMin
-			local hMax = heapMax
-			for i = SIG_OBS1, n + SIG_OBS0 do
-				local o = node[i]
+	if not r and not runningEffect then
+		if n > 0 then
+			if n == 1 then
+				local o = node[SIG_OBS1]
 				if o[STAMP] ~= 0 then
 					local h = o[HEIGHT]
 					if h == INF then
 						o[STAMP] = 0
-						qt += 1
-						q[qt] = o
+						local qt = queueTail + 1
+						queueTail = qt
+						queue[qt] = o
 					else
 						o[STAMP] = 0
 						if not o[NEXT] then
+							local hp = heap
 							o[NEXT] = hp[h] or true
 							hp[h] = o
-							if h < hMin then
-								hMin = h
+							if h < heapMin then
+								heapMin = h
+								liveMax = h + LIVE_BASE
 							end
-							if h > hMax then
-								hMax = h
+							if h > heapMax then
+								heapMax = h
 							end
 						end
 					end
 				end
+			else
+				local hp = heap
+				local q = queue
+				local qt = queueTail
+				local hMin = heapMin
+				local hMax = heapMax
+				for i = SIG_OBS1, n + SIG_OBS0 do
+					local o = node[i]
+					if o[STAMP] ~= 0 then
+						local h = o[HEIGHT]
+						if h == INF then
+							o[STAMP] = 0
+							qt += 1
+							q[qt] = o
+						else
+							o[STAMP] = 0
+							if not o[NEXT] then
+								o[NEXT] = hp[h] or true
+								hp[h] = o
+								if h < hMin then
+									hMin = h
+								end
+								if h > hMax then
+									hMax = h
+								end
+							end
+						end
+					end
+				end
+				queueTail = qt
+				if hMin < heapMin then
+					heapMin = hMin
+					liveMax = hMin + LIVE_BASE
+				end
+				if hMax > heapMax then
+					heapMax = hMax
+				end
 			end
-			queueTail = qt
-			if hMin < heapMin then
-				heapMin = hMin
-				liveMax = hMin + LIVE_BASE
-			end
-			if hMax > heapMax then
-				heapMax = hMax
-			end
-			return value
-		else
-			markObservers(node, n)
 		end
+		return value
 	end
-	if r or runningEffect then
-		markSelf(node)
-	end
+	setSignalSlow(node, n, r)
 	return value
 end
 
@@ -2932,8 +3358,10 @@ local Node: any, SignalMT: any, ComputedMT: any = (function(): (any, any, any)
 				local i = curIdx
 				if r[i] == node then
 					curIdx = i + 2
-					local st = node[STAMP]
-					if st > liveMax and st ~= epoch then
+					if node[STAMP] <= liveMax then
+						return node[VALUE]
+					end
+					if node[STAMP] ~= epoch then
 						pull(node)
 					end
 					return node[VALUE]
@@ -2941,8 +3369,10 @@ local Node: any, SignalMT: any, ComputedMT: any = (function(): (any, any, any)
 					track(node)
 				end
 			end
-			local st = node[STAMP]
-			if st > liveMax and st ~= epoch then
+			if node[STAMP] <= liveMax then
+				return node[VALUE]
+			end
+			if node[STAMP] ~= epoch then
 				pull(node)
 			end
 			return node[VALUE]
@@ -2954,8 +3384,10 @@ local Node: any, SignalMT: any, ComputedMT: any = (function(): (any, any, any)
 	@native
 	local function computedPeek(self: any): any
 		local node = rawget(self, 1)
-		local st = node[STAMP]
-		if st > liveMax and st ~= epoch then
+		if node[STAMP] <= liveMax then
+			return node[VALUE]
+		end
+		if node[STAMP] ~= epoch then
 			pull(node)
 		end
 		return node[VALUE]
@@ -2969,8 +3401,10 @@ local Node: any, SignalMT: any, ComputedMT: any = (function(): (any, any, any)
 			local i = curIdx
 			if r[i] == node then
 				curIdx = i + 2
-				local st = node[STAMP]
-				if st > liveMax and st ~= epoch then
+				if node[STAMP] <= liveMax then
+					return node[VALUE]
+				end
+				if node[STAMP] ~= epoch then
 					pull(node)
 				end
 				return node[VALUE]
@@ -2978,8 +3412,10 @@ local Node: any, SignalMT: any, ComputedMT: any = (function(): (any, any, any)
 				track(node)
 			end
 		end
-		local st = node[STAMP]
-		if st > liveMax and st ~= epoch then
+		if node[STAMP] <= liveMax then
+			return node[VALUE]
+		end
+		if node[STAMP] ~= epoch then
 			pull(node)
 		end
 		return node[VALUE]
@@ -3036,52 +3472,57 @@ local function isDynamic(object: any): boolean
 	return type(object) == "function" or isNode(object)
 end
 
-local function rawFn(object: () -> any, n: any, s: any): any
-	local pSuspRun, pOwner, pSet, pExtra, pEval = suspRun, curOwner, ownerSet, ownExtra, evalNode
-	curNode, susp, curChildren = nil, nil, nil
-	local active = n or (if s ~= nil and pSuspRun == curRun then s else nil)
-	if active then
-		if pEval == nil and active ~= runningEffect then
-			evalNode = active
-		end
-		if not pSet then
-			curOwner, ownerSet, ownExtra = active, true, true
-		end
-	end
-	local ok, result = pcall(object)
-	curNode, susp, curChildren, curOwner, ownerSet, ownExtra, evalNode = n, s, nil, pOwner, pSet, pExtra, pEval
-	suspRun = pSuspRun
-	if not ok then
-		error(result, 0)
-	end
-	return result
-end
-
-@native
-local function raw(object: any): any
-	local mt = getmetatable(object)
-	if mt ~= nil then
-		if mt == SignalMT then
-			return rawget(object, 1)[VALUE]
-		elseif mt == ComputedMT then
-			local node = rawget(object, 1)
-			local st = node[STAMP]
-			if st > liveMax and st ~= epoch then
-				pull(node)
+local raw: (object: any) -> any
+do
+	local function rawFn(object: () -> any, n: any, s: any): any
+		local pSuspRun, pOwner, pSet, pExtra, pEval = suspRun, curOwner, ownerSet, ownExtra, evalNode
+		curNode, susp, curChildren = nil, nil, nil
+		local active = n or (if s ~= nil and pSuspRun == curRun then s else nil)
+		if active then
+			if pEval == nil and active ~= runningEffect then
+				evalNode = active
 			end
-			return node[VALUE]
-		elseif mt == Node or (type(mt) == "table" and mt.__type == Node) then
-			return peekData(rawget(object, 1))
+			if not pSet then
+				curOwner, ownerSet, ownExtra = active, true, true
+			end
+		end
+		local ok, result = pcall(object)
+		curNode, susp, curChildren, curOwner, ownerSet, ownExtra, evalNode = n, s, nil, pOwner, pSet, pExtra, pEval
+		suspRun = pSuspRun
+		if not ok then
+			error(result, 0)
+		end
+		return result
+	end
+
+	@native
+	function raw(object: any): any
+		local mt = getmetatable(object)
+		if mt ~= nil then
+			if mt == SignalMT then
+				return rawget(object, 1)[VALUE]
+			elseif mt == ComputedMT then
+				local node = rawget(object, 1)
+				if node[STAMP] <= liveMax then
+					return node[VALUE]
+				end
+				if node[STAMP] ~= epoch then
+					pull(node)
+				end
+				return node[VALUE]
+			elseif mt == Node or (type(mt) == "table" and mt.__type == Node) then
+				return peekData(rawget(object, 1))
+			end
+			return object
+		elseif type(object) == "function" then
+			local n, s = curNode, susp
+			if n == nil and s == nil then
+				return (object :: () -> any)()
+			end
+			return rawFn(object :: () -> any, n, s)
 		end
 		return object
-	elseif type(object) == "function" then
-		local n, s = curNode, susp
-		if n == nil and s == nil then
-			return (object :: () -> any)()
-		end
-		return rawFn(object :: () -> any, n, s)
 	end
-	return object
 end
 
 @native
@@ -3146,113 +3587,118 @@ local function isDisposed(o: any): boolean
 	return not o[if h == INF then E_FN else FN]
 end
 
-local function finishWithOwner(
-	owner: any,
-	root: any,
-	pOwner: any,
-	pSet: boolean,
-	pSusp: any,
-	pCtx: any,
-	pExtra: boolean,
-	pSuspRun: number,
-	ok: boolean,
-	...: any
-): ...any
-	curOwner, ownerSet, susp, curCtx, ownExtra, curChildren = pOwner, pSet, pSusp, pCtx, pExtra, nil
-	suspRun = pSuspRun
-	if root then
-		disposeOne(root)
-	elseif owner and isDisposed(owner) then
-		reap(owner)
-	end
-	if not ok then
-		local err = (...)
-		error(if type(err) == "string" then `error while running withOwner():\n{err}` else err, 0)
-	end
-	return ...
-end
-
-local function withOwner(node: any, fn: () -> ...any): ...any
-	local rawOwner: any = if node == nil then nil elseif isNode(node) then rawget(node, 1) else node
-	local owner: node? = rawOwner
-	local tokenCtx: ContextFrame? = nil
-	if rawOwner ~= nil and rawOwner[HEIGHT] == OWNER_TOKEN then
-		owner = rawOwner.owner
-		tokenCtx = rawOwner.ctx
-	end
-	local pOwner, pSet, pSusp, pCtx, pExtra = curOwner, ownerSet, susp, curCtx, ownExtra
-	local pSuspRun = suspRun
-	local root = nil
-	if owner then
-		curCtx = tokenCtx or owner.ctx or pCtx
-		if isDisposed(owner) then
-			root = { nil, SCOPE, INF, true, false, false, true, false, false, false } :: node
-			owner = root
+local withOwner: (node: any, fn: () -> ...any) -> ...any
+do
+	local function finishWithOwner(
+		owner: any,
+		root: any,
+		pOwner: any,
+		pSet: boolean,
+		pSusp: any,
+		pCtx: any,
+		pExtra: boolean,
+		pSuspRun: number,
+		ok: boolean,
+		...: any
+	): ...any
+		curOwner, ownerSet, susp, curCtx, ownExtra, curChildren = pOwner, pSet, pSusp, pCtx, pExtra, nil
+		suspRun = pSuspRun
+		if root then
+			disposeOne(root)
+		elseif owner and isDisposed(owner) then
+			reap(owner)
 		end
-	elseif tokenCtx then
-		curCtx = tokenCtx
+		if not ok then
+			local err = (...)
+			error(if type(err) == "string" then `error while running withOwner():\n{err}` else err, 0)
+		end
+		return ...
 	end
-	curOwner, ownerSet, susp, ownExtra, curChildren = owner, true, nil, true, nil
-	return finishWithOwner(owner, root, pOwner, pSet, pSusp, pCtx, pExtra, pSuspRun, xpcall(fn, traceback))
-end
 
-local function finishUntrack(
-	n: any,
-	pSusp: any,
-	pOwner: any,
-	pSet: boolean,
-	pExtra: boolean,
-	pSuspRun: number,
-	pEval: any,
-	ok: boolean,
-	...: any
-): ...any
-	curNode, susp, curOwner, ownerSet, ownExtra, evalNode, curChildren = n, pSusp, pOwner, pSet, pExtra, pEval, nil
-	suspRun = pSuspRun
-	if not ok then
-		local err = ...
-		error(if type(err) == "string" then `error while running untrack():\n{err}` else err, 0)
-	end
-	return ...
-end
-
-@native
-function untrack(fn: (() -> ...any)?): ...any
-	local n = curNode
-	if not fn then
-		if n then
-			local run: number
-			local cur = curRun
-			if cur then
-				run = cur
-			else
-				run = runId + 1
-				runId, curRun = run, run
+	function withOwner(node: any, fn: () -> ...any): ...any
+		local rawOwner: any = if node == nil then nil elseif isNode(node) then rawget(node, 1) else node
+		local owner: node? = rawOwner
+		local tokenCtx: ContextFrame? = nil
+		if rawOwner ~= nil and rawOwner[HEIGHT] == OWNER_TOKEN then
+			owner = rawOwner.owner
+			tokenCtx = rawOwner.ctx
+		end
+		local pOwner, pSet, pSusp, pCtx, pExtra = curOwner, ownerSet, susp, curCtx, ownExtra
+		local pSuspRun = suspRun
+		local root = nil
+		if owner then
+			curCtx = tokenCtx or owner.ctx or pCtx
+			if isDisposed(owner) then
+				root = { nil, SCOPE, INF, true, false, false, true, false, false, false } :: node
+				owner = root
 			end
-			susp, suspRun = n, run
-			if evalNode == nil and n ~= runningEffect then
-				evalNode = n
-				evalFromUntrack = true
+		elseif tokenCtx then
+			curCtx = tokenCtx
+		end
+		curOwner, ownerSet, susp, ownExtra, curChildren = owner, true, nil, true, nil
+		return finishWithOwner(owner, root, pOwner, pSet, pSusp, pCtx, pExtra, pSuspRun, xpcall(fn, traceback))
+	end
+end
+
+do
+	local function finishUntrack(
+		n: any,
+		pSusp: any,
+		pOwner: any,
+		pSet: boolean,
+		pExtra: boolean,
+		pSuspRun: number,
+		pEval: any,
+		ok: boolean,
+		...: any
+	): ...any
+		curNode, susp, curOwner, ownerSet, ownExtra, evalNode, curChildren = n, pSusp, pOwner, pSet, pExtra, pEval, nil
+		suspRun = pSuspRun
+		if not ok then
+			local err = ...
+			error(if type(err) == "string" then `error while running untrack():\n{err}` else err, 0)
+		end
+		return ...
+	end
+
+	@native
+	function untrack(fn: (() -> ...any)?): ...any
+		local n = curNode
+		if not fn then
+			if n then
+				local run: number
+				local cur = curRun
+				if cur > 0 then
+					run = cur
+				else
+					run = runId + 1
+					runId, curRun = run, run
+				end
+				susp, suspRun = n, run
+				if evalNode == nil and n ~= runningEffect then
+					evalNode = n
+					evalFromUntrack = true
+				end
+				curNode = nil
+				ownExtra = true
+				curChildren = nil
 			end
-			curNode = nil
-			ownExtra = true
-			curChildren = nil
+			return
 		end
-		return
+		local pSusp, pOwner, pSet, pExtra, pEval = susp, curOwner, ownerSet, ownExtra, evalNode
+		local pSuspRun = suspRun
+		curNode, susp, curChildren = nil, nil, nil
+		local active = n or (if pSusp ~= nil and pSuspRun == curRun then pSusp else nil)
+		if active then
+			if pEval == nil and active ~= runningEffect then
+				evalNode = active
+			end
+			if not ownerSet then
+				curOwner, ownerSet, ownExtra = active, true, true
+			end
+		end
+		return finishUntrack(n, pSusp, pOwner, pSet, pExtra, pSuspRun, pEval, xpcall(fn, traceback))
 	end
-	local pSusp, pOwner, pSet, pExtra, pEval = susp, curOwner, ownerSet, ownExtra, evalNode
-	local pSuspRun = suspRun
-	curNode, susp, curChildren = nil, nil, nil
-	local active = n or (if pSusp ~= nil and pSuspRun == curRun then pSusp else nil)
-	if active then
-		if pEval == nil and active ~= runningEffect then
-			evalNode = active
-		end
-		if not ownerSet then
-			curOwner, ownerSet, ownExtra = active, true, true
-		end
-	end
-	return finishUntrack(n, pSusp, pOwner, pSet, pExtra, pSuspRun, pEval, xpcall(fn, traceback))
 end
 
 @native
@@ -3504,10 +3950,7 @@ local function wrapComputedEquals(node: any, fn: any, equals: any, ...: any)
 			return v
 		end
 		local pNode, pEval = curNode, evalNode
-		if pEval == nil and pNode ~= nil and pNode ~= runningEffect then
-			evalNode = pNode
-		end
-		curNode = nil
+		curNode, evalNode = nil, node
 		local okEq, same = pcall(equals, prev, v)
 		curNode, evalNode = pNode, pEval
 		if not okEq then
@@ -3545,7 +3988,7 @@ end
 
 @native
 local function newEffectNode(fn: (...any) -> ...any): any
-	local node: any = { fn, INF, 0, E_SRC1, false, false, nil, nil }
+	local node: any = { fn, INF, 0, E_SRC1, false, nil, nil }
 	local c = curChildren
 	if c then
 		local n = c[1] + 1
@@ -3568,6 +4011,18 @@ end
 @native
 local function effect(fn: (...any) -> ...any): any
 	return setmetatable({ newEffectNode(fn) }, Node)
+end
+
+@native
+local function memoSlow(n: any, needTrack: boolean, ...: any): any
+	if needTrack then
+		track(n)
+	end
+	local st = n[STAMP]
+	if st > liveMax and st ~= epoch then
+		pull(n)
+	end
+	return n[VALUE]
 end
 
 @native
@@ -3603,16 +4058,17 @@ local function getter(node: any): any
 					curIdx = i + 2
 					local st = n[STAMP]
 					if st > liveMax and st ~= epoch then
-						pull(n)
+						return memoSlow(n, false)
 					end
 					return n[VALUE]
-				elseif n[SEEN] ~= curRun then
-					track(n)
+				end
+				if n[SEEN] ~= curRun then
+					return memoSlow(n, true)
 				end
 			end
 			local st = n[STAMP]
 			if st > liveMax and st ~= epoch then
-				pull(n)
+				return memoSlow(n, false)
 			end
 			return n[VALUE]
 		end
@@ -3680,18 +4136,6 @@ local function createSignal<T>(initial: T, equals: ((T, T: any) -> boolean)?): (
 end
 
 @native
-local function memoSlow(n: any, needTrack: boolean): any
-	if needTrack then
-		track(n)
-	end
-	local st = n[STAMP]
-	if st > liveMax and st ~= epoch then
-		pull(n)
-	end
-	return n[VALUE]
-end
-
-@native
 local function createMemo<T>(fn: (prev: any) -> T, equals: ((T, T) -> boolean)?): () -> T
 	local node: any = { nil, 1, 0, false, 0, 0, fn, SRC1, false, false, nil, nil }
 	if equals then
@@ -3713,19 +4157,21 @@ local function createMemo<T>(fn: (prev: any) -> T, equals: ((T, T) -> boolean)?)
 			local i = curIdx
 			if r[i] == n then
 				curIdx = i + 2
-				if n[STAMP] <= liveMax then
-					return n[VALUE]
+				local st = n[STAMP]
+				if st > liveMax and st ~= epoch then
+					return memoSlow(n, false)
 				end
-				return memoSlow(n, false)
+				return n[VALUE]
 			end
 			if n[SEEN] ~= curRun then
 				return memoSlow(n, true)
 			end
 		end
-		if n[STAMP] <= liveMax then
-			return n[VALUE]
+		local st = n[STAMP]
+		if st > liveMax and st ~= epoch then
+			return memoSlow(n, false)
 		end
-		return memoSlow(n, false)
+		return n[VALUE]
 	end
 	return get
 end
