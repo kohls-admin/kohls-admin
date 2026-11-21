@@ -106,6 +106,9 @@ local load = Theme.load
 Theme.load = nil
 load(defaultModule :: ModuleScript)
 for _, themeModule: ModuleScript in ThemesFolder:GetChildren() do
+	if themes[themeModule.Name] and themeModule.Name ~= "Default" then
+		warn("Duplicate theme found, make sure they have different names!")
+	end
 	load(themeModule)
 end
 
@@ -141,6 +144,9 @@ local _ = ThemesFolder.ChildRemoved:Connect(function(child)
 end)
 
 local _ = ThemesFolder.ChildAdded:Connect(function(child)
+	if themes[child.Name] and child.Name ~= "Default" then
+		warn("Duplicate theme found, make sure they have different names!")
+	end
 	Theme.load(child :: ModuleScript)
 end)
 
