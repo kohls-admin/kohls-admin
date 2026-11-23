@@ -13,16 +13,15 @@ export type Contributions = {
 
 local contributions: Contributions = {
 	recent = {
-		["kohltastrophe"] = 680,
+		["kohltastrophe"] = 684,
 		["ItzMrRatsP"] = 5,
-		["Devourednuts"] = 3,
 		["luv2trilogy"] = 3,
 		["vonials"] = 3,
 		["yalafara"] = 3,
 		["DylWithlt"] = 2,
 		["meisox"] = 2,
 		["XoifaiI"] = 2,
-		["Lucatacos"] = 1,
+		["2l570"] = 1,
 		["zeejayym"] = 1,
 	},
 	names = {
@@ -60,10 +59,10 @@ local contributions: Contributions = {
 		[130170862] = { name = "matsagor1", displayName = "matsagor1", verified = false },
 		[131233603] = { name = "GiddyJHEE", displayName = "Giddy", verified = false },
 		[146573772] = { name = "Metallochrome", displayName = "Metallochrome", verified = false },
-		[190022817] = { name = "NousResearch", displayName = "emblazes", verified = false },
+		[190022817] = { name = "emblazes", displayName = "emblazes", verified = false },
 		[195261420] = { name = "OptimisticSide", displayName = "OptimisticSide", verified = false },
 		[197640401] = { name = "swibbo", displayName = "swibes", verified = false },
-		[200565345] = { name = "krampuszc", displayName = "krampuszc", verified = false },
+		[200565345] = { name = "krampuszc", displayName = "Dusk", verified = false },
 		[201989656] = { name = "iiRealistic_Dev", displayName = "Realistic", verified = false },
 		[208790398] = { name = "LiterallyChan", displayName = "Chan", verified = false },
 		[345072461] = { name = "WinnersTakesAll", displayName = "Winnerz", verified = false },
